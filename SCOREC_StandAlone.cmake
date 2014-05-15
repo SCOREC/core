@@ -11,10 +11,6 @@ if(BUILD_SHARED_LIBS)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
 endif()
 
-#Setting Version Number 
-set(SCOREC_VERSION_MAJOR 1)
-set(SCOREC_VERSION_MINOR 0) 
-
 set(CMAKE_MODULE_PATH 
    ${CMAKE_MODULE_PATH} 
    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
@@ -52,17 +48,5 @@ else()
   set(STK_LIBRARIES "")
   set(STK_INCLUDE_DIRS "")
 endif(HAVE_STK)
-
-
-#############################################################
-#zoltan and parmetis
-#############################################################
-find_package(Zoltan QUIET REQUIRED)
-if(NOT PARMETIS_FOUND)
-  message(FATAL_ERROR "ParMETIS install not found.  See INSTALL for ParMETIS install instructions.")
-endif()
-if(NOT ZOLTAN_FOUND)
-  message(FATAL_ERROR "Zoltan install not found.  See INSTALL for Zoltan install instructions.")
-endif()
 
 add_subdirectory(pcu)
