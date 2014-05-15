@@ -1,0 +1,105 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[super]{nth}
+\title{Interface for Field Access}
+\author{Dan Ibanez, SCOREC}
+\begin{document}
+\maketitle
+
+\section{Goal}
+
+This document aims to establish a consensus on
+basic operations that should be made available
+by finite element toolkits for accessing finite
+element field data attached to a mesh.
+
+\section{Definitions}
+
+A finite element mesh $M$ represents a domain
+$\Omega^h \subset {\mathbb R^D}$
+composed of entity domains $\Omega_e$:
+\[\Omega^h = \bigcup_{e\in M} \Omega_e\]
+
+A finite element field $f : \Omega^h \to T$ is a piece-wise field
+from the mesh domain to some tensor space $T$, where
+each piece is $f_e : \Omega_e \to T$.
+The entity domains have parametric, or parent, coordinate
+systems and a map from parametric points $\xi \in {\mathbb R^d}$
+to points in the entity domain $X_e(\xi) \in \Omega_e$.
+
+The value of a field at a point $x$ in an entity domain $\Omega_e$
+is entirely defined by the corresponding parametric point $\xi$
+and a set of tensor multipliers $\bar{W}_e = \{\bar{W}_e^0,...,\bar{W}_e^n\}$
+which affect that entity:
+\[x\in \Omega_e, x = X_e(\xi), f(x) = f_e(\xi,\bar{W}_e)\]
+For example, in a linear tetrahedral mesh the set $\bar{W}_e$ contains
+the field values at the vertices of an entity.
+
+The field multipliers are each associated with a unique mesh entity
+to allow sharing between entities.
+The set of multiplier tensors associated with entity $e$ is denoted
+$W_e = \{W_e^0,...,W_e^m\}$.
+The set of tensors which affect the field definition over an entity
+is composed of tensors associated to nearby entities, usually to
+entities in its closure:
+\[\bar{W}_e = \bigcup_{a \in \bar{e}} W_a\]
+To reuse our example, in linear tetrahedral meshes multipliers are
+the field values associated with vertices, and the multipliers
+which affect a tetrahedron are those associated to its vertices.
+
+\section{Requirements}
+
+To describe a field, two key pieces of information are needed:
+\begin{enumerate}
+\item The entity basis functions $f_e(\xi,\bar{W}_e)$ for all $e\in M$.
+\item The associated multipliers $W_e$ for all $e \in M$
+\end{enumerate}
+The description of $f_e$ encompasses several smaller pieces of information:
+\begin{enumerate}
+\item The parent domain $\Box_e$ such that $X_e(\Box_e)=\Omega_e$.
+\item The how many multipliers are associated with each entity: $|W_e|$.
+\item How to collect all affecting multipliers: $g(e) = \bar{W}_e$.
+\end{enumerate}
+Depending on the complexity of the field, much of this information
+can be recorded {\it a priori}.
+For example, the description of $f_e$ may be just ``\nth{2}-order Lagrange"
+or ``Cubic B\'ezier".
+In more complex cases such as variable-order fields, information
+such as $|W_e|$ and $g$ may have to be specified on a per-entity basis.
+
+\section{Coordinates}
+
+Note that the coordinates are themselves a field $X_e : \Box_e \to \Omega_e$,
+and should have equivalent availability of information.
+For example, it should be possible to query the basis functions
+being used to define coordinates.
+
+\section{Interface}
+
+We will assume an adequate existing interface for topological
+mesh descriptions, so that operations such as iterating over
+$e \in M$ and getting the entities $a \in \bar{e}$ are available
+and efficient.
+
+At a high level, it should also be possible to query the set of fields
+defined over a particular mesh.
+Fields and entities should have identifying handles that can be efficiently
+interpreted by the software.
+
+At a minimum, just to preserve field data, it must be possible to access
+tensor multipliers associated with entities.
+That is, for a given entity $e$, the count $n=|W_e|$ and values
+$W_e^i,1\leq i\leq n$ must be quickly accessible.
+Of course, prerequisite to retrieving $W_e^i$ is some agreement on the
+storage format for tensor values.
+For each $f : \Omega^h \to T$,
+the storage format for $t\in T$ should be accessible.
+
+To preserve a complete description of the field, it should also be
+possible to query the exact basis functions $f_e$ being used for
+each entity, along with the closely associated procedure $g$ for
+collecting the ordered set of tensor multipliers $\bar{W}_e$ that 
+are weighted by $f_e$ based on $\xi$ to produce $f(x)$.
+
+\end{document}

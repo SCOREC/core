@@ -1,0 +1,172 @@
+\documentclass{article}
+\usepackage{algpseudocode}
+\title{The Cavity Operator}
+\author{Dan Ibanez}
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+The Cavity Operator system, or CavityOp, is a framework
+for many of the operations carried out in field computation
+and mesh adaptation.
+The fundamental characteristic of a cavity operator is that
+it queries and modifies a local cavity around a given mesh
+entity.
+The CavityOp system exists to allow parallel applications to
+write their cavity-based logic in a serial mindset.
+The CavityOp runtime system then uses migration to provide
+local cavities to the user's operator for all entities.
+
+\section{User Operator}
+
+The operator provided by the user should define routines for
+the following:
+\begin{enumerate}
+\item Determining whether the operator should apply to an entity
+\item Building the cavity based on adjacencies while
+marking which entities need to be local
+\item Applying the operator to a cavity
+\end{enumerate}
+It should also follow these rules:
+\begin{enumerate}
+\item Building the cavity should not modify anything
+\item Only local entities should be modified, and only cavity
+entities should be queried.
+\item If upward adjacencies of an entity are added to the cavity,
+that entity must first be local
+\end{enumerate}
+A mesh entity is local when it has no remote copies.
+Given other assumptions about the mesh, this also means
+that all its upward adjacencies are fully retrievable.
+
+The user then gives this operator object containing the definitions
+to a routine that will apply the operator to every mesh
+entity of a given dimension.
+So far all operators target a particular dimension, but any
+iteration over the mesh fits this algorithm.
+The job of the CavityOp application routine is to use migration
+to deal with cavities that would otherwise be split by a
+partition boundary.
+
+\section{User Example}
+
+To illustrate what a cavity operator would do, we can use the simple
+example of averaging per-element values into per-vertex values.
+In an error estimator, each element receives a scalar target size,
+and the size field value at a vertex is the average of its adjacent
+elements' target sizes.
+
+A user operator for this would define the three functions described
+earlier.
+To determine whether it should apply to a vertex, it would check
+whether the size value has already been computed and attached to the vertex.
+To build the cavity, it must first insist that the vertex be local,
+then gather the upward adjacent elements of the vertex.
+To apply the operator, it queries the element values and attaches
+their average to the vertex.
+
+Notice that the vertex's locality is enforced before querying upward
+adjacencies or modifying its field data.
+
+\section{Pull Requests}
+
+The first concept towards understanding CavityOp is the pull request.
+This is a part requesting that a mesh entity be made local to it.
+In order to make an entity local, all its upward adjacent elements
+must be on the same part.
+So a pull request is really asking for all adjacent elements to
+move to the requesting part.
+Loosely, the cavity operator system is just trying to satisfy pull requests
+until there are no more.
+Given an algorithm that is guaranteed to make some progress on those pull requests,
+the application function will repeat these steps until completion:
+\begin{enumerate}
+\item apply the operator to all valid local cavities
+\item identify paritioned cavities and submit pull requests
+\item try to satisfy pull requests
+\end{enumerate}
+More specifically, here is pseudo-code for the application of a cavity operator:
+
+\begin{algorithmic}
+\Function{apply}{$d,o$}
+\State let $d$ be the dimension of target entities
+\State let $o$ be the operator
+\Loop
+  \For {$e \in M\{M^d\}$ of the local part}
+    \If {$e$ is owned and $o$ should apply to $e$}
+      \State try to build cavity around $e$
+      \If {locality requirements were met}
+        \State apply $o$ to $e$
+      \EndIf
+    \EndIf
+  \EndFor
+  \For {$e \in M\{M^d\}$ of the local part}
+    \If {$e$ is owned and $o$ should apply to $e$}
+      \State try to build cavity around $e$
+      \If {some entities that need to be local are not}
+        \State submit pull requests for them
+      \EndIf
+    \EndIf
+  \EndFor
+  \If {no pull requests were submitted}
+    \Return
+  \EndIf
+  \State try to satisfy pull requests
+\EndLoop
+\EndFunction
+\end{algorithmic}
+
+\section{Satisfying Pull Requests}
+
+A pull request for an entity is satisfied if all the
+entity's adjacent elements are migrated to one part.
+This naturally creates conflicts when two or more pull requests
+try to move an element to different parts.
+
+\emph{When this happens, the element is migrated to the part
+with the largest integer ID.}
+
+As long as this conflict resolution rule is a strict
+ordering of the parts, it guarantees that at least
+one pull request is satisfied during migration.
+In fact, the part with the highest ID that submits
+pull requests will have them all satisfied, since
+they win all conflicts.
+
+For an operator that will be applied to a fixed
+number of mesh entities, as is so far the case,
+this is guaranteed to terminate since
+targets are always eliminated after each migration.
+
+\section{Performance}
+
+The performance of this algorithm depends on
+the ability to satisfy pull requests.
+In the end, the problem can be reduced
+to finding the maximal independent set
+of a graph where the nodes are cavities 
+and the edges are pull request conflicts.
+In practice, the resolution heuristic should give
+a decent independent set.
+
+This is helped by the fact that operator application
+is based on ownership, and the PUMI mesh database
+selects ownership over partition model entities,
+so there are rarely conflicts in the middle of a
+partition model face.
+
+For varying cavities such as SPR or mesh-modifying
+operators, it is even harder to prove anything.
+
+The expectation is that the number of migrations should
+be a small constant not dependent on mesh size
+or part count.
+Early testing on a 10K region SLAC mesh used 2 migrations
+to completely perform SPR for 2 parallel parts and 3 migrations
+for 4 parallel parts.
+More performance data is now being gathered and
+should be available within a few days.
+
+\end{document}
