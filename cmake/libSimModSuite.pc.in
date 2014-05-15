@@ -1,0 +1,10 @@
+prefix=@prefix@
+libdir=@prefix@/lib/@SIM_ARCHOS@
+includedir=@includedir@
+
+Name: Simmetrix SimModSuite
+URL: http://www.simmetrix.com/
+Description: Simmetrix, Inc. tools
+Version: @SIM_VERSION@
+Libs: -L${libdir} @SIM_LINK_LIBS@ -lpthread
+Cflags: -I${includedir} 

@@ -1,0 +1,6 @@
+cmake_minimum_required (VERSION 2.8.6)
+IF(DEFINED TRIBITS_PACKAGE)
+   INCLUDE(SCOREC_TriBits.cmake)
+ELSE()
+   INCLUDE(SCOREC_StandAlone.cmake)
+ENDIF()
