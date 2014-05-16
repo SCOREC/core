@@ -19,7 +19,5 @@ struct gmi_mesh {
   int* tags[4];
 };
 
-struct gmi_iter* gmi_mesh_begin(struct gmi_model* m, int dim);
-
 #endif
 

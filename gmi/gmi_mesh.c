@@ -1,6 +1,8 @@
 #include "gmi_mesh.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 
 #define DIM(e) ((e) % 4)
 #define INDEX(e) ((e) / 4)
@@ -95,4 +97,85 @@ void gmi_mesh_destroy(struct gmi_model* m)
   for (i = 0; i < 4; ++i)
     free(mm->tags[i]);
   free(mm);
+}
+
+static struct gmi_model_ops mesh_ops = {
+  .begin   = gmi_mesh_begin,
+  .next    = gmi_mesh_next,
+  .end     = gmi_mesh_end,
+  .dim     = gmi_mesh_dim,
+  .tag     = gmi_mesh_tag,
+  .find    = gmi_mesh_find,
+  .destroy = gmi_mesh_destroy
+};
+
+void gmi_mesh_create(struct gmi_mesh* m, int n[4])
+{
+  int i;
+  m->model.ops = &mesh_ops;
+  memcpy(m->model.n, n, sizeof(m->model.n));
+  for (i = 0; i < 4; ++i)
+    m->tags[i] = malloc(n[i] * sizeof(int));
+}
+
+static void sort_dim(struct gmi_mesh* m, int dim)
+{
+  qsort(m->tags[dim], m->model.n[dim], sizeof(int), comp_ints);
+}
+
+void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
+{
+  int n[4];
+  int i,j,k;
+  int loops, shells;
+  int faces, edges;
+  FILE* f = fopen(filename, "r");
+  /* read entity counts */
+  fscanf(f, "%d %d %d %d", &n[3], &n[2], &n[1], &n[0]);
+  gmi_mesh_create(m, n);
+  /* bounding box */
+  fscanf(f, "%*f %*f %*f");
+  fscanf(f, "%*f %*f %*f");
+  /* vertices */
+  for (i = 0; i < n[0]; ++i)
+    fscanf(f, "%d %*f %*f %*f", &m->tags[0][i]);
+  sort_dim(m, 0);
+  /* edges */
+  for (i = 0; i < n[1]; ++i)
+    fscanf(f, "%d %*d %*d", &m->tags[1][i]);
+  sort_dim(m, 1);
+  /* faces */
+  for (i = 0; i < n[2]; ++i) {
+    fscanf(f, "%d %d", &m->tags[2][i], &loops);
+    for (j = 0; j < loops; ++j) {
+      fscanf(f, "%d", &edges);
+      for (k = 0; k < edges; ++k)
+        /* tag, direction */
+        fscanf(f, "%*d %*d");
+    }
+  }
+  /* regions */
+  for (i = 0; i < n[3]; ++i) {
+    fscanf(f, "%d %d", &m->tags[3][i], &shells);
+    for (j = 0; j < shells; ++j) {
+      fscanf(f, "%d", &faces);
+      for (k = 0; k < faces; ++k)
+        /* tag, direction */
+        fscanf(f, "%*d %*d");
+    }
+  }
+  fclose(f);
+}
+
+static struct gmi_model* mesh_creator(const char* filename)
+{
+  struct gmi_mesh* m;
+  m = malloc(sizeof(*m));
+  gmi_read_dmg(m, filename);
+  return &m->model;
+}
+
+void gmi_register_mesh(void)
+{
+  gmi_register(mesh_creator, "dmg");
 }
