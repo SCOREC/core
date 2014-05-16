@@ -55,4 +55,6 @@ add_subdirectory(apf)
 
 add_subdirectory(gmi)
 
+add_subdirectory(mds)
+
 add_subdirectory(test)

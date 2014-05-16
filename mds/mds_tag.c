@@ -1,0 +1,160 @@
+/*
+   Copyright 2014 Dan Ibanez
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "mds_tag.h"
+#include <stdlib.h>
+#include <string.h>
+
+void mds_create_tags(struct mds_tags* ts)
+{
+  ts->first = NULL;
+}
+
+void mds_destroy_tags(struct mds_tags* ts)
+{
+  while (ts->first)
+    mds_destroy_tag(ts,ts->first);
+}
+
+static void grow_tag(
+    struct mds_tag* tag,
+    struct mds* m,
+    mds_id old_cap[MDS_TYPES])
+{
+  int t;
+  mds_id i;
+  mds_id has[2];
+  for (t = 0; t < MDS_TYPES; ++t) {
+    if ( ! tag->has[t])
+      continue;
+    has[0] = (old_cap[t] / 8) + 1;
+    has[1] = (m->cap[t] / 8) + 1;
+    tag->has[t] = realloc(tag->has[t], has[1]);
+    for (i = has[0]; i < has[1]; ++i)
+      tag->has[t][i] = 0;
+    tag->data[t] = realloc(tag->data[t],
+        tag->bytes * m->cap[t]);
+  }
+}
+
+void mds_grow_tags(
+    struct mds_tags* ts,
+    struct mds* m,
+    mds_id old_cap[MDS_TYPES])
+{
+  struct mds_tag* t;
+  for (t = ts->first; t; t = t->next)
+    grow_tag(t,m,old_cap);
+}
+
+struct mds_tag* mds_create_tag(
+    struct mds_tags* ts,
+    struct mds* m,
+    const char* name,
+    int bytes,
+    int user_type)
+{
+  int l;
+  struct mds_tag* t;
+  t = calloc(1,sizeof(*t));
+  t->next = ts->first;
+  ts->first = t;
+  t->bytes = bytes;
+  t->user_type = user_type;
+  l = strlen(name);
+  t->name = malloc(l + 1);
+  strcpy(t->name,name);
+  return t;
+}
+
+void mds_destroy_tag(struct mds_tags* ts, struct mds_tag* t)
+{
+  struct mds_tag** p;
+  int i;
+  for (p = &(ts->first); *p != t; p = &((*p)->next));
+  *p = (*p)->next;
+  for (i = 0; i < MDS_TYPES; ++i)
+    free(t->data[i]);
+  for (i = 0; i < MDS_TYPES; ++i)
+    free(t->has[i]);
+  free(t->name);
+  free(t);
+}
+
+void* mds_get_tag(struct mds_tag* tag, mds_id e)
+{
+  return tag->data[mds_type(e)] + tag->bytes * mds_index(e);
+}
+
+struct mds_tag* mds_find_tag(struct mds_tags* ts, const char* name)
+{
+  struct mds_tag* p;
+  for (p = ts->first; p; p = p->next)
+    if ( ! strcmp(p->name,name))
+      return p;
+  return 0;
+}
+
+int mds_has_tag(struct mds_tag* tag, mds_id e)
+{
+  int t;
+  mds_id i;
+  mds_id c;
+  int b;
+  unsigned char v;
+  t = mds_type(e);
+  if ( ! tag->has[t])
+    return 0;
+  i = mds_index(e);
+  c = i / 8;
+  b = i % 8;
+  v = tag->has[t][c] & (1 << b);
+  return v != 0;
+}
+
+void mds_give_tag(struct mds_tag* tag, struct mds* m, mds_id e)
+{
+  int t;
+  mds_id i;
+  mds_id c;
+  int b;
+  unsigned char* has;
+  t = mds_type(e);
+  if ( ! tag->has[t]) {
+    tag->has[t] = calloc((m->cap[t] / 8) + 1, 1);
+    tag->data[t] = malloc(tag->bytes * m->cap[t]);
+  }
+  i = mds_index(e);
+  c = i / 8;
+  b = i % 8;
+  has = tag->has[t] + c;
+  *has |= (1<<b);
+}
+
+void mds_take_tag(struct mds_tag* tag, mds_id e)
+{
+  int t;
+  mds_id i;
+  mds_id c;
+  int b;
+  unsigned char* has;
+  t = mds_type(e);
+  i = mds_index(e);
+  c = i / 8;
+  b = i % 8;
+  has = tag->has[t] + c;
+  *has &= ~(1 << b);
+}

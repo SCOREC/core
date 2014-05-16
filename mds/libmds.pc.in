@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: MDS
+URL: http://www.scorec.rpi.edu/~dibanez/
+Description: Mesh Data Structure
+Version: @PACKAGE_VERSION@
+Requires: libapf libpcu
+Libs: -L${libdir} -lmds
+Cflags: -I${includedir} 
