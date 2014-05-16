@@ -154,6 +154,7 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
         fscanf(f, "%*d %*d");
     }
   }
+  sort_dim(m, 2);
   /* regions */
   for (i = 0; i < n[3]; ++i) {
     fscanf(f, "%d %d", &m->tags[3][i], &shells);
@@ -164,6 +165,7 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
         fscanf(f, "%*d %*d");
     }
   }
+  sort_dim(m, 3);
   fclose(f);
 }
 

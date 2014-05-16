@@ -233,6 +233,7 @@ static void read_class(struct pcu_file* f, struct mds_apf* m)
     for (j = 0; j < cap; ++j) {
       m->model[type_mds][j] =
         mds_find_model(m, class[2 * j + 1], class[2 * j]);
+      assert(m->model[type_mds][j]);
     }
     free(class);
   }
