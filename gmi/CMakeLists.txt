@@ -28,10 +28,12 @@ configure_file(
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES
-   gmi.c)
+   gmi.c
+   gmi_mesh.c)
 
 set(HEADERS
-   gmi.h)
+   gmi.h
+   gmi_mesh.h)
 
 #Library
 if(BUILD_IN_TRILINOS)

@@ -17,9 +17,9 @@ struct gmi_iter;
 struct gmi_model;
 
 struct gmi_model_ops {
-  struct gmi_iter* (*begin)(int dim);
-  struct gmi_ent* (*next)(struct gmi_iter* i);
-  void (*end)(struct gmi_iter* i);
+  struct gmi_iter* (*begin)(struct gmi_model* m, int dim);
+  struct gmi_ent* (*next)(struct gmi_model* m, struct gmi_iter* i);
+  void (*end)(struct gmi_model* m, struct gmi_iter* i);
   int (*dim)(struct gmi_model* m, struct gmi_ent* e);
   int (*tag)(struct gmi_model* m, struct gmi_ent* e);
   struct gmi_ent* (*find)(struct gmi_model* m, int dim, int tag);

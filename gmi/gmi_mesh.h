@@ -10,7 +10,16 @@
 #ifndef GMI_MESH_H
 #define GMI_MESH_H
 
+#include "gmi.h"
+
 void gmi_register_mesh(void);
+
+struct gmi_mesh {
+  struct gmi_model model;
+  int* tags[4];
+};
+
+struct gmi_iter* gmi_mesh_begin(struct gmi_model* m, int dim);
 
 #endif
 
