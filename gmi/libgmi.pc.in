@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: GMI
+URL: http://redmine.scorec.rpi.edu/projects/gmi
+Description: Geometric modeler interface
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lgmi
+Cflags: -I${includedir}
