@@ -12,12 +12,20 @@
 
 #include "gmi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void gmi_register_mesh(void);
 
 struct gmi_mesh {
   struct gmi_model model;
   int* tags[4];
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

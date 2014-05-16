@@ -44,6 +44,10 @@ struct gmi_model {
 
 typedef struct gmi_model* (*gmi_creator)(const char* filename);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int gmi_dim(struct gmi_model* m, struct gmi_ent* e);
 int gmi_tag(struct gmi_model* m, struct gmi_ent* e);
 struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag);
@@ -65,5 +69,9 @@ void gmi_register(gmi_creator f, const char* ext);
 struct gmi_model* gmi_load(const char* filename);
 
 void gmi_fail(const char* why);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

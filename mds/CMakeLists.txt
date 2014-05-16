@@ -7,15 +7,13 @@ else()
 endif()
 
 if(NOT BUILD_IN_TRILINOS)
-  find_package(pcu PATHS ${CMAKE_BINARY_DIR})
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
   find_package(gmi PATHS ${CMAKE_BINARY_DIR})
   set(MDS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${APF_INCLUDE_DIRS}
-    ${PCU_INCLUDE_DIRS}
     ${GMI_INCLUDE_DIRS})
-  set(DEP_LIBS ${GMI_LIBS} ${APF_LIBS} ${PCU_LIBS})
+  set(DEP_LIBS ${GMI_LIBS} ${APF_LIBS})
   set(MDS_LIBS mds ${DEP_LIBS})
 endif()
 
