@@ -54,3 +54,5 @@ add_subdirectory(pcu)
 add_subdirectory(apf)
 
 add_subdirectory(gmi)
+
+add_subdirectory(test)
