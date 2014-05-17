@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  Copyright (c) 2004-2014 Scientific Computation Research Center, 
+  Copyright 2013 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   The LICENSE file included with this distribution describes the terms
