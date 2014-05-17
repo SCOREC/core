@@ -1,0 +1,46 @@
+\documentclass{article}
+\title{New Developments}
+\author{Dan Ibanez}
+\begin{document}
+\maketitle
+This document makes a note of major new algorithmic and technical
+developments going from meshadapt 1.0 to 2.0.
+
+\section{Edge Collapse Conditions}
+Not sure this was or was not solid in the 1.0 code, but
+the documentation (Garimella's thesis) was not perfect...
+\section{Better Non-Manifold Swap}
+The 1.0 code has an ad-hoc reclassification system for
+swaps on non-manifold faces.
+We now take a better topological approach, but is has not
+been tested with non-manifold meshes yet
+\section{Short Edge Removal}
+Li's thesis (and version 1.0) did not use short edge removal
+as much as version 2.0.
+Low quality elements can be divided into two classes:
+short edges and large dihedral angles.
+This initial separation and the use of Jie Wan's short
+edge removal technique reduces the need for exotic operations
+aimed at large dihedral angles,
+since only tets without short edges are given to the large
+dihedral tet fixer.
+\section{CavityOp}
+The Cavity Operator has become a staple of MeshAdapt algorithms.
+It reduces the parallel concerns of a mesh modification operator
+down to what matters: the cavity definition.
+The only code that does explicit communication now is the
+refinement algorithm, where the global mesh is the cavity.
+Version 1.0 of MeshAdapt used to have checks all over the modification
+operator code for partition boundary entities, usually resulting
+in an abortion of the modification.
+\section{Tetrahedronization}
+The greedy algorithm that finds edge diagonal directions is completely
+novel and noteworthy, and the question of whether it ever splits stacks
+is still unresolved.
+\section{Load Balance Weights}
+Both the metric space volume integral (as opposed to counting split edges)
+and the clamping logic for out-of-range size fields.
+\section{APF-Supported Solution Transfer}
+\section{High-order solution transfer / curving}
+\end{document}
+

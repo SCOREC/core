@@ -57,4 +57,6 @@ add_subdirectory(gmi)
 
 add_subdirectory(mds)
 
+add_subdirectory(ma)
+
 add_subdirectory(test)

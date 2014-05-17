@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: MeshAdapt
+URL: http://redmine.scorec.rpi.edu/projects/meshadapt
+Description: Parallel unstructured anisotropic mixed mesh adaptation
+Version: @PACKAGE_VERSION@
+Requires: libapf
+Libs: -L${libdir} -lma
+Cflags: -I${includedir} 

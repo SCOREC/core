@@ -1,0 +1,286 @@
+\documentclass{article}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{latexsym}
+\usepackage[super]{nth}
+\title{MeshAdapt}
+\author{Dan Ibanez}
+\begin{document}
+
+\maketitle
+
+\section{Coarsening}
+
+Garimella outlines conditions for an
+edge collapse to be valid, which have since then been refined
+into the following four conditions:
+\begin{enumerate}
+\item If the vertices are classified on equal order model entities,
+then both vertices and the edge must have the same classification.
+\item If the vertices are classified on different orders, then
+the vertex to be collapsed and the edge must be classified on
+the higher-order entity.
+\item If there exists a ring of three edges containing the
+collapsing edge, there must exist a face bounded by this ring.
+The non-collapsing edge adjacent to the collapsing vertex
+must have the same classification as this face.
+\item If there exist two edge-adjacent faces that connect
+the vertices, those faces and the edge must bound a tet.
+The face adjacent to the collapsing vertex must
+have the same classification as this tet.
+\end{enumerate}
+
+The last two conditions can be checked by identifying the generalized
+"ring" cases and using findUpward in the 2D case or a specialized
+search on the adjacent regions of a face in the 3D case.
+
+For condition 4, here referred to as the face ring condition,
+it is useful to optimize the procedure since a naive implementation
+compares adjacent faces of one vertex to another, performing $n^2$
+comparisons where $n$ is the number of faces adjacent to a vertex.
+$n$ is on average 30 and can be as high as 78 as measured in some tet
+meshes, and this has been measured as the bottleneck in the current
+coarsening procedure.
+
+De Cougny outlines an algorithm for identifying the independent set
+of vertices to not collapse in order to maintain a decent vertex
+distribution:
+\begin{algorithmic}
+\For{$d \in [0..n_{sd}]$}
+\For{$v \sqsubset G^d_j$}
+\State $v \in S$
+\For{$e \in v\{M^1\}$}
+\If{$e \in E_{\text{collapse}}$}
+\State $v_2 = (e\{M^0\})\setminus v$
+\If{$v_2\in S$}
+\If{$(v\sqsubset g)\land(v_2\sqsubset\bar{g})$}
+\State $v\not\in S$
+\EndIf
+\EndIf
+\EndIf
+\EndFor
+\EndFor
+\EndFor
+\end{algorithmic}
+Basically, given a target vertex, if another vertex is adjacent via
+a collapsing edge and the other vertex is classified on the closure
+of the classification of the target, then the target is not placed
+in the set.
+
+Which is just another way of stating the definition of vertices to
+collapse as defined by conditions 1 and 2
+described by Garimella.
+
+In fact, we can use those conditions to more efficiently compute the
+set by avoiding the check $v_2\sqsubset\bar{g}$, which requires checking
+for classification on the closure of a model entity $g$, which may be
+expensive (model adjacency counts are not bounded in any way).
+
+If we first reverse the problem and choose to only identify vertices
+not in the independent set $v\in\bar{S}$ (i.e. vertices which we intend to collapse),
+then the algorithm can proceed as follows:
+\begin{enumerate}
+
+\item All vertices are implicitly assumed to be in $S$, $\bar{S}$ is empty.
+
+\item Identify candidate edges and vertices for collapsing based on the initial
+criteria (a mesh size field) and Garimella's first 2 conditions.
+If the edge satisfies condition 1, both vertices have equal classification and are on the closures
+of one another's classifications, and both are placed in $\bar{S}$ tentatively.
+If the edge satisfies condition 2, only the vertex with higher order classification
+is a candidate and the non-candidate is clearly on the closure of the candidate.
+The candidate is placed in $\bar{S}$.
+
+\item Run the modified graph algorithm as follows:
+\begin{algorithmic}
+\For{$d \in [0..n_{sd}]$}
+\For{$\{v|v\in\bar{S}, \sqsubset G^d_j\}$}
+\State {remove $v$ from $\bar{S}$}
+\For{$e \in v\{M^1\}$}
+\If{$e \in E_{\text{collapse}}$}
+\State $v_2 = (e\{M^0\})\setminus v$
+\If{$v_2\not\in\bar{S}$}
+\State {put $v$ back in $\bar{S}$}
+\EndIf
+\EndIf
+\EndFor
+\EndFor
+\EndFor
+\end{algorithmic}
+\end{enumerate}
+
+Note that the independent set algorithm can be most simply expressed as:
+mark a vertex as illegal to collapse unless doing so would prevent a marked
+edge from collapsing.
+By the end of the procedure, every vertex which is legal to collapse is required
+for some particular edge to collapse.
+
+In order to prevent confusion about which edge collapse is associated with a vertex
+to collapse, we coarsen one geometric dimension at a time, starting with model edges.
+The topological, classification, and independent set routines operate only over
+edges and vertices classified on model entities of dimension $d$, where $d$ increases from 1.
+
+Garimella's conditions 3 and 4 must be checked right before executing the collapse,
+since nearby edge collapses can affect the outcome of these topological checks.
+
+Collapsing an edge involves two sets of elements: the set of elements to collapse
+and the set of elements to keep.
+The set of elements to collapse are those adjacent to the edge to collapse,
+and the set of elements to keep are those adjacent to the vertex to collapse
+but not to the edge to collapse.
+To collapse an edge, the elements to keep are first reconstructed by with
+the vertex to collapse replaced by the vertex to keep.
+Care must be taken to exactly duplicate the geometric classification of
+entities as they are reconstructed.
+After that reconstruction, the elements to collapse are removed, taking
+with them the edge and vertex to collapse.
+
+Before an edge is collapsed, a final check is performed to ensure no invalid
+elements will be created.
+Since the mesh is straight-sided, the check temporarily moves the vertex to
+collapse onto the vertex to keep and then checks the resulting volumes of the elements to keep.
+
+All three steps of coarsening: initial checks, independent set finding, and collapsing
+operate on a single geometric model dimension using the cavity operator
+framework provided in APF.
+For the initial checks, the cavity includes all elements adjacent to both
+vertices of the edge.
+For independent set, the cavity is the elements around a vertex.
+Finally, an edge collapse requires all elements adjacent to the vertex to collapse.
+
+\section{Refinement}
+
+A single step of refinement is run as follows:
+\begin{enumerate}
+\item select edges to split
+\item for each dimension, split entities of that dimension
+by just creating new entities,
+classifying those new entities the same as the parent being split
+and performing solution transfer.
+\item link the edge split vertices based on the remote
+copies of their parent edges.
+\item invoke the refinement templates on all mesh entities,
+one dimension at a time from edges up to regions.
+\item remove all old entities that have been split
+\item link all other remote copies based on the remote copies
+of vertices
+\end{enumerate}
+
+The majority of the complexity in refinement is the use of
+whole-entity refinement templates as opposed to individual
+edge splits.
+Refinement is well-defined for simplex meshes, and
+templates exist for triangular faces and tetrahedra.
+In general, for a simplex, there is one template for
+each rotationally unique combination of split/unsplit edges.
+The total number of combinations is $2^e$ for a simplex
+with $e$ edges.
+The number of rotationally unique combinations is smaller:
+3 for triangles and 12 for tetrahedra.
+
+We first define lookup tables from the full set of combinations
+into the rotationally unique ones.
+To form a lookup table, we encode a combination as an integer
+in $[0..2^e-1]$ using binary numbers where each bit represents
+the state of one edge.
+These are called edge codes.
+A set of codes representing the rotationally unique combinations
+is chosen as the set of canonical edge codes.
+The lookup table maps all edge codes to a rotation and a
+canonical edge code.
+
+Rotation itself is a key tool for implementing refinement templates,
+and rotation functions and their properties are at the heart of
+the system.
+
+Also at the center of the code's simplicity is the representation
+of all domains as a set of vertices, and manipulating only
+vertex sets.
+This is supported by a set of entity creation functions that
+accept vertex sets and recursively construct the closure
+of the entity, using existing entities if possible.
+
+Given that all domains are represented by a set of vertices,
+we need to know the geometry of each domain and provide
+rotation functions for the geometries of interest.
+
+The usefulness of all this becomes apparent when templates
+are decomposed into sub-problems, where a sub-problem may
+involve tetrahedronizing a subspace of the parent tetrahedron
+that is shaped like a pyramid or a prism or an octahedron
+whose bounding vertices are known.
+This delegation to sub-problems shortens the code, which
+greatly improves maintainability and reduces the probability
+of programming errors.
+
+It also allows more advanced decisions, such as choosing
+the shortest edge when triangulating a quad or an octahedron,
+to be represented by one function for all cases.
+
+\section{Size Field}
+
+The size field is a \nth{2}-order tensor field over the mesh.
+It is meant to indicate the anisotropic desired fineness or
+coarseness of discretization along a particular direction
+at any point in space.
+
+One way to interpret the size field is as a generalization of the dot product.
+Where a vector $v$ at a particular point $p$ in space would have
+been measured as $v\cdot v$ (not dependent on $p$), it is now
+measured using the metric tensor $T(p)$ at $p$: $vT(p)v^T$.
+
+Another interpretation is to decompose the metric tensor into
+the product of a transformation matrix times itself: $T=QQ^T$.
+One can then see that the metric measures a transformed vector
+$v'=vQ$: $vTv^T=vQQ^Tv^T=v'(v')^T=v'\cdot v'$.
+
+The transformation $Q$ can be further decomposed into a rotation $R$
+and scaling $S$:
+\[Q=RS,
+R=\begin{bmatrix}
+e_1 & e_2 & e_3
+\end{bmatrix},
+S=\begin{bmatrix}
+\frac{1}{h_0} & 0 & 0 \\
+0 & \frac{1}{h_1} & 0 \\
+0 & 0 & \frac{1}{h_2} \\
+\end{bmatrix}\]
+Where $e_1,e_2,e_3$ are the principal axes of the transformed
+space expressed as real space unit vectors and
+$h_0,h_1,h_2$ are the desired edge lengths along each
+principal axis.
+
+The main complexity with this definition is that we have a non-trivial
+metric tensor that varies depending on position in real space, which
+makes measuring objects in real space using this metric field somewhat
+difficult.
+
+Algorithms in MeshAdapt are mainly interested in the length of edges
+in metric space and the volume of elements in metric space.
+There exists a generalized definition of volume called a measure,
+which is currently computed as follows:
+
+\[V=\int_{\Omega^e} |J(\xi)|\]
+
+In particular, $|J(\xi)|=d\Omega^e$ is the determinant of the Jacobian $J=x_{,\xi}$.
+Since we are interested in measuring edges (1D elements embedded in 3D)
+and faces (2D elements embedded in 3D), then $J$ sometimes has zero rows
+and $|J|$ is a more specialized computation that takes into account
+the dimension of the element.
+Regardless of dimension, $J$ represents the differential tangent vectors
+along the element's local coordinates, and transforming them into the
+metric space before taking the determinant is an simple way to obtain
+differential volume in the metric space:
+
+\[V'=\int_{\Omega^e} |J(\xi)Q(\xi)|\]
+
+Both real and metric space measures are computed using Gaussian quadrature:
+
+\[V'=\sum_{l=1}^{\text{nint}} |J(\xi_l)Q(\xi_l)|\]
+
+If the metric field is encoded as a \nth{2}-order tensor $Q(x)$ distributed
+over the mesh as a nodal field, then the existing framework for interpolation
+of $Q$ and performing quadrature are leveraged to easily measure any
+mesh entity in the metric space.
+
+\end{document}

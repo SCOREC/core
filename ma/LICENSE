@@ -1,0 +1,40 @@
+Copyright (c) 2004-2014, Scientific Computation Research Center
+All rights reserved.
+
+This license covers non-commercial use of the MeshAdapt software only.
+Non-commercial use includes use by academic, US government and non-profit
+organizations, as well as internal use by for profit organizations for
+evaluation and prototype testing.
+
+All other use is considered commercial use. Commercial use is possible through
+the execution of a commercial license agreement. For more information contact
+Rensselaer’s Scientific Computation Research Center at shephard@rpi.edu.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted within non-commercial organizations provided that the following
+conditions are met:  
+
+1. Redistribution of source code must retain all copyright notices, this
+   license document, and all notices that this License applies to the code.
+
+2. Redistribution in binary form must reproduce the above copyright notice and
+   include this license document along with all notices that this License
+   applies to the code.
+
+3. Neither the name of the Scientific Computation Research Center nor
+   the names of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+Note that in the case of US government users, redistribution to for profit
+contractors for their use in execution of their contracts is permitted. 
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

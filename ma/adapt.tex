@@ -1,0 +1,316 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{algpseudocode}
+\title{Mesh Adaptation}
+\author{Dan Ibanez}
+\begin{document}
+\maketitle
+
+\section{Overview}
+
+MeshAdapt modifies a finite element mesh to fit
+a specified degree of accuracy which varies over
+the domain, expressed as a metric field.
+
+MeshAdapt currently accepts simplicial meshes
+which may optionally contain structured boundary
+layers composed of prisms and pyramids.
+It does not accept hexahedral elements.
+
+\section{Size Field}
+
+The input to MeshAdapt is a metric field, whose value
+at each point defines the metric tensor used to
+evaluate the length of a vector.
+This, in turn, defines a metric space where vectors
+have different length.
+MeshAdapt is edge-driven, which means that its goal
+is to get all mesh edges to be of unit length
+in the metric space.
+The length of an edge is defined as a line integral
+over the edge of the metric applied to the tangent
+vector.
+\[L_M(e)=\int_0^1\sqrt{p_{,x}(\xi)M(\xi)p_{,x}(\xi)^Td\xi}\]
+Specifying desired edge length as a metric field
+allows full anisotropic control of mesh.
+
+Currently MeshAdapt accepts a linear vertex-based
+size field.
+Integration with a fields library will allow APF
+to accept any finite element distribution for its
+size field. 
+
+Remacle and Li talk about size field smoothing;
+I wonder how much of that belongs in MeshAdapt.
+It seems to me that we would want a routine
+taking only a size field as input and returning
+a faithful attempt to match the size field.
+
+Changing edge metric lengths is done by splitting
+long edges in half or collapsing short edges.
+In Remacle and Li's 2002 paper, the criteria are:
+split if $L_M(e) > \frac43$ and collapse if
+$L_M(e)<\frac23$.
+Li's thesis suggests the more general
+$\frac12L_{upper} < L_M(e) < L_{upper}$.
+
+Li presents MeshAdapt as the application of these
+phases in order, which together form one iteration:
+\begin{enumerate}
+\item coarsen
+\item refine
+\item optimize
+\end{enumerate}
+In this case, snapping is considered a necessary
+post-processing to refinement.
+
+Actually, Li's description uses an inner loop to
+do refinement as follows:
+\begin{algorithmic}
+\While{$L_{max}>L_{upper}$}
+\State let $L_{ref}=max(\alpha L_{max},L_{upper}), \frac12 < \alpha < 1$
+\State tag edges $>L_{ref}$ to refine
+\State apply templates
+\State snap new vertices
+\State coarsen edges $<\frac12L_{upper}$ created by splitting
+\State update $L_{max}$ as the longest edge metric
+\EndWhile
+\end{algorithmic}
+
+\section{Refinement}
+
+Refinement is a mesh modification aimed at reducing
+edge lengths where desired.
+This is done by splitting edges whose metric length
+is more than 2.
+The details involve templates to maintain a valid
+finite element mesh as the edges are split.
+
+Overall, the refinement process can be viewed mainly
+as a topological operation.
+There are other aspects, such as new vertex positioning
+and geometric classification, but these should be
+separated.
+Current MeshAdapt has all these concerns mixed into
+the same code.
+I think a wise choice is to have topological refinement
+routines with external callbacks to handle positioning,
+classification, etc.
+
+\subsection{Templates}
+
+Refinement is carried out using templates for splitting
+elements based on the edges of the element that should
+be split.
+The input to this algorithm is a simple marking of edges
+for splitting; the algorithm restructures the mesh such
+that only the marked edges are split.
+
+There are 4 non-symmetric cases for triangles and 11 non-symmetric
+cases for tetrahedra.
+The templates are called $0,1,2a,2b,3a,3b,3c,4a,4b,5,6$ and are
+clearly produced by a Pascal's triangle pattern.
+Ideally, the effect of a tetrahedral template on its triangles should
+match what the triangle templates alone do.
+Actually, the face templates dictate what must happen to the boundary,
+and must do so in a way that a valid element template exists.
+
+In the case of triangles, marking two edges creates ambiguity in how
+the old triangle should be split into three new ones.
+Ruprecht and Muller suggest that the longest old edge should
+provide the common vertex for the new edges.
+They show that this criteria always allows a valid tetrahedral split,
+which seems to require only that the edge choosing criteria impose
+a strict ordering among all edges.
+
+Currently, MeshAdapt does not use a geometric criteria; it chooses
+based on the ordering of edges around a triangle, which is arbitrarily
+determined when that face is created.
+It is consistent across copies so long as we require consistent
+orientation between copies.
+On the other hand, since this is not a strict edge ordering over the
+tetrahedron, some combinations of face ambiguities have to be supported
+that cannot be solved without introducing a centroid vertex.
+In total, there are 42 refinement templates when face ambiguities
+are factored in.
+
+Li's thesis describes that all ambiguities in creating new edges
+should be resolved by choosing the shortest edge in metric space.
+It also points out that two tetrahedral templates have an ambigous
+edge choice.
+Li's implementation of templates encodes the symmetric variations
+of marked edges and ambiguous edges as binary strings or
+integers to quickly look up templates.
+
+The common operation called ``uniform refinement" consists of marking
+all edges for splitting and then running the refinement algorithm,
+which uses template $6$ on all tetrahedra.
+
+\subsection{Positioning}
+
+New vertices should be positioned along split edges based on some
+criteria.
+The obvious one is the midpoint.
+MeshAdapt seems to go further, taking the midpoint of the edge
+in the metric space and mapping this point back to normal space.
+This makes sense since the goal is to reduce edge length
+in the metric space.
+
+\section{Coarsening}
+
+Coarsening makes use of edge collapsing.
+Like refinement, a number of edges are marked for
+collapse and an algorithm takes over to restructure
+the affected elements.
+
+Collapsing an edge affects all elements adjacent to the
+vertex being collapsed,
+which are collectively called a cavity.
+There are two sources of complexity in coarsening:
+overlapping cavities, and cavities separated by partitioning.
+
+One issue with overlapping cavities is selecting which vertices
+to collapse to which others.
+An independent set algorithm is used to select a set of vertices
+that will not be collapsed.
+See de Cougny and Shephard 1999 for the independent set algorithm.
+The independent set technique both provides uniform vertex distribution
+after coarsening and, more importantly, prevents topological
+and classification
+invalidity due to coarsening.
+
+In order to handle cavities broken by partitioning, the
+algorithm migrates elements such that the cavities become local.
+So far this is done by looping between local coarsening and
+migrating broken cavities to be local until no more
+edges are waiting to be coarsened.
+In practice this terminates, although a bounding proof
+on termination would be very useful.
+
+While migrating to coalesce cavities, an element may be
+requested to migrate to more than one part due to overlapping
+cavities.
+A simple strict ordering of priority on the parts allows
+one destination part to be chosen from the many that request
+an element (in this case it is minimum part ID).
+Due to the part ID heuristic, the migration is called
+``pulling the part boundary" since boundary elements are
+naturally pulled towards parts of low ID.
+
+Once all elements are local, an edge collapse can be
+cancelled for a few reasons:
+\begin{itemize}
+\item both vertices are in the independent set
+\item any new element would have a negative measure
+\end{itemize}
+
+De Cougny's 1999 paper says that the mesh should be
+load-balanced before coarsening based on the idea
+that collapsing an edge is ``work" and the weight
+of an element is how many of its edges are collapsing.
+However, I don't think that the computational effort
+of collapsing is that much compared to the cost
+of load balancing, if properly implemented.
+The paper admits that this choice can be made.
+
+\section{Input and Ouput Meshes}
+
+Currently, MeshAdapt is an in-place operation on a mesh.
+This means that individual entities are created and destroyed
+as the mesh modifications are being applied.
+More interestingly, each local modification creates a strange
+superposition of old and new meshes as an intermediate state.
+
+Both refinement templates and coarsening operators must replace
+the elements in a cavity with a new configuration of elements.
+They do this by first creating all the new entities, some of which
+are built using existing entities, then they destroy the old
+entities.
+The benefit of this is that callbacks can be conveniently
+provided with both the old and new cavities, allowing them
+to query the old cavity for things like solution transfer.
+The drawback is that the mesh is in a very
+invalid state topologically.
+We have to carefully define what the behavior of a mesh database
+should be in this ``superimposed" state, and even callbacks
+have to be careful regarding their adjacency queries.
+
+\section{Gradation Control}
+
+De Cougny's 1999 paper describes triangle refinement as being
+guided by two markings: bisection edges and refinement edges.
+Refinement edges are marked by size metric information,
+and a single bisection edge is marked on each and every face.
+The bisection edge is selected as the longest edge.
+One result of this is that it applies the geometric
+criteria described by Ruprecht and Muller to triangle
+subdivision for two marked edges.
+In addition, bisection edges are sometimes split even if
+they are not refinement edges, so this gradation control
+system can over-refine.
+
+\section{Snapping}
+
+Snapping a new refinement vertex of a simplicial mesh
+would typically just move the vertex.
+If this inverts regions, then an ``insertion polyhedron"
+is identified consisting of adjacent elements to the
+vertex and is expanded until it can be deleted and
+replaced with tets connecting the vertex to the leftover
+faces.
+See de Cougny 1999 for the exact algorithm.
+
+Like edge collapse cavities, this insertion polyhedron 
+can be broken by partitioning and must be coalesced
+before retriangulation.
+It thus makes sense to separate out the code
+dealing with the problem of coalescing cavities
+through repeated migration.
+
+\section{Optimization}
+
+The mesh optimizer is the more complex yet very important
+phase of MeshAdapt.
+Refinement and coarsening achieve overall size goals, and
+optimization achieves element quality goals.
+These two criteria should be more or less orthogonal.
+It is likely that the optimizer follows the size adaptation,
+since it may be easier to preserve size in optimizing
+than to preserve quality in size adaptation.
+
+Many new mesh modifications become available, giving this
+set of tools:
+\begin{enumerate}
+\item edge removal
+\item 2-to-3 face swapping
+\item edge collapse
+\item edge split
+\item face split
+\item region split
+\end{enumerate}
+Again, this is all in the context of simplicial meshes.
+
+Li's thesis provides a description of two types of sliver
+tetrahedra and the procedures for correcting their shape.
+
+In order to guarantee convergence, a modification is
+only made if it strictly improves quality.
+
+One element quality criteria is largest dihedral angle.
+Another is having a small metric measure compared to
+to the smallest metric measure of its edges.
+Other quality measures listed in Li's thesis include:
+\begin{itemize}
+\item inscribed/circumscribed radius ratio
+\item min height/max edge aspect ratio
+\item volume to face area measure
+\item volume to edge lengths: mean ratio
+\end{itemize}
+Li indicates that since these are mathematically equivalent,
+mean ratio is selected on the basis of its computational cost.
+\[\eta=15552 \frac{{V'}^2}{\left(\sum_{i=1}^6{l_i'}^2\right)^3}\]
+Where $V'$ and $l'$ are metric space volumes and lengths.
+The metric volume can be computed as follows:
+\[V'=\int_{\Omega^e}\sqrt{|M(\xi)|}d\Omega\]
+
+\end{document}

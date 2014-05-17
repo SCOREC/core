@@ -1,0 +1,57 @@
+/****************************************************************************** 
+
+  Copyright (c) 2004-2014 Scientific Computation Research Center, 
+      Rensselaer Polytechnic Institute. All rights reserved.
+  
+  The LICENSE file included with this distribution describes the terms
+  of the SCOREC Non-Commercial License this program is distributed under.
+ 
+*******************************************************************************/
+#ifndef MA_COLLAPSE_H
+#define MA_COLLAPSE_H
+
+#include "maAdapt.h"
+
+namespace apf {
+class CavityOp;
+}
+
+namespace ma {
+
+class Adapt;
+
+class Collapse
+{
+  public:
+    void Init(Adapt* a);
+    bool requestLocality(apf::CavityOp* o);
+    void destroyOldElements();
+    bool setEdge(Entity* e);
+    bool checkClass();
+    bool checkTopo();
+    void unmark();
+    void setVerts();
+    void computeElementSets();
+    void rebuildElements();
+    bool checkValidity(double qualityToBeat);
+    bool isGood2DMesh();
+    void cancel();
+    bool tryThisDirection(double qualityToBeat);
+    bool tryBothDirections(double qualityToBeat);
+    void getOldElements(EntityArray& oldElements);
+    double getOldQuality();
+    Adapt* adapt;
+    Entity* edge; 
+    Entity* vertToCollapse;
+    Entity* vertToKeep;
+    EntitySet elementsToCollapse;
+    EntitySet elementsToKeep;
+    EntityArray newElements;
+    Cavity cavity;
+};
+
+bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex);
+
+}
+
+#endif
