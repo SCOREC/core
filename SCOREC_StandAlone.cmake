@@ -53,6 +53,8 @@ add_subdirectory(pcu)
 
 add_subdirectory(apf)
 
+add_subdirectory(apf_sim)
+
 add_subdirectory(gmi)
 
 add_subdirectory(mds)

@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: APF-SIM
+URL: http://www.scorec.rpi.edu/~dibanez/
+Description: apf::Mesh implementation using Simmetrix
+Version: @PACKAGE_VERSION@
+Requires: libapf libSimModSuite
+Libs: -L${libdir} -lapf_sim 
+Cflags: -I${includedir} 
