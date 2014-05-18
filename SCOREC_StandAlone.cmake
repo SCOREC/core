@@ -57,6 +57,8 @@ add_subdirectory(apf_sim)
 
 add_subdirectory(gmi)
 
+add_subdirectory(gmi_sim)
+
 add_subdirectory(mds)
 
 add_subdirectory(ma)
