@@ -521,7 +521,6 @@ GlobalNumbering* makeGlobal(Numbering* n)
   GlobalNumbering* gn = createGlobalNumbering(
       m,name.c_str(),s);
   FieldDataOf<int>* nd = n->getData();
-  FieldDataOf<long>* gnd = gn->getData();
   for (int d = 0; d <= 3; ++d)
   {
     if (s->hasNodesIn(d))

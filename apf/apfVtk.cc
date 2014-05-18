@@ -180,7 +180,6 @@ static void writeNodalField(std::ostream& file, FieldBase* f, DynamicArray<Node>
 {
   int nc = f->countComponents();
   writeDataHeader(file,f->getName(),f->getScalarType(),nc);
-  FieldShape* s = f->getShape();
   NewArray<T> nodalData(nc);
   FieldDataOf<T>* data = static_cast<FieldDataOf<T>*>(f->getData());
   for (size_t i=0; i < nodes.getSize(); ++i)

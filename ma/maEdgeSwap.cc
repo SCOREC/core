@@ -252,7 +252,7 @@ static void getTriangulation_7(int i, apf::DynamicArray<int>& t)
 
 static void getTriangulation(int loopSize, int i, apf::DynamicArray<int>& t)
 {
-  assert(t.getSize() == triangulation_size[loopSize]);
+  assert(t.getSize() == static_cast<size_t>(triangulation_size[loopSize]));
   typedef void (*GetTriangulationFunction)(int,apf::DynamicArray<int>&);
   static GetTriangulationFunction table[MAX_VERTS+1] =
   {0

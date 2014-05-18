@@ -69,8 +69,7 @@ static void close_compressed(pcu_file* pf)
   buf = malloc (len);
 
   /* May change the last value (workfactor) to get different results.*/
-  int rc;
-  rc = BZ2_bzBuffToBuffCompress (buf, &len,
+  BZ2_bzBuffToBuffCompress (buf, &len,
       pf->buf.start, len,
       1, 0, 0);
   fwrite (buf, 1, len, pf->f);

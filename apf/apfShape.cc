@@ -485,7 +485,7 @@ class VoronoiShape : public IPShape
         {
           int idx = 0;
           double leastDistance = (p - points[0]).getLength();
-          for (int i = 1; i < points.getSize(); ++i)
+          for (size_t i = 1; i < points.getSize(); ++i)
           {
             double distance = (p - points[i]).getLength();
             if (distance < leastDistance)
