@@ -10,14 +10,9 @@
 #         include/*.h
 #         lib/ARCHOS/*.a
 
-set(SIM_ARCHOS "" CACHE STRING "Architecture and operating system string of the Simmetrix SimModSuite build")
-if(SIM_ARCHOS MATCHES "^$")
-  set(SIM_ARCHOS "x64_rhel5_gcc41")
-endif()
-
 set(SIM_MPI "" CACHE STRING "MPI implementation used for SimPartitionWrapper")
 if(SIM_MPI MATCHES "^$")
-  set(SIM_MPI "openmpi")
+  message(FATAL_ERROR "SIM_MPI is not defined... libSimPartitionWrapper-$SIM_MPI.a should exist in the SimModSuite lib directory")
 endif()
 
 # not sure how simmodsuite will work within tribits - ignore for now
@@ -29,15 +24,21 @@ set(SIM_LIB_NAMES
   SimMeshTools
   SimPartitionWrapper-${SIM_MPI})
 foreach(lib ${SIM_LIB_NAMES}) 
-  find_library(simlib ${lib} 
-    PATHS ${SIMMETRIX_LIB_DIR} 
-    PATH_SUFFIXES ${SIM_ARCHOS})  
+  unset(simlib CACHE)
+  find_library(simlib "${lib}"
+    PATHS ${SIMMETRIX_LIB_DIR})
   if(simlib MATCHES "^simlib-NOTFOUND$")
     message(FATAL_ERROR "simmetrix library ${lib} not found in ${SIMMETRIX_LIB_DIR}")
   endif()
   set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${simlib})
 endforeach()
-string(REGEX REPLACE "libSimMeshing.*" " " simLibDir "${simMesh}")
+
+string(FIND "${SIMMODSUITE_LIBS}" "/lib/" archStart)
+string(FIND "${SIMMODSUITE_LIBS}" "/libSim" archEnd)
+math(EXPR archStart "${archStart}+5")
+math(EXPR len "${archEnd}-${archStart}")
+string(SUBSTRING "${SIMMODSUITE_LIBS}" "${archStart}" "${len}" SIM_ARCHOS)
+message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
 find_path(SIMMODSUITE_INCLUDE_DIR 
   NAMES SimUtil.h SimError.h SimModel.h 
@@ -57,7 +58,7 @@ string(REGEX MATCH
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set PARMETIS_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set SIMMODSUITE_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(SIMMODSUITE  DEFAULT_MSG
                                   SIMMODSUITE_LIBS SIMMODSUITE_INCLUDE_DIR)
