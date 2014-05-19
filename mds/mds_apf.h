@@ -11,6 +11,8 @@
 #ifndef MDS_APF_H
 #define MDS_APF_H
 
+#include <gmi.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,25 +21,28 @@ extern "C" {
 #include "mds_tag.h"
 #include "mds_net.h"
 
+struct gmi_model;
+struct gmi_ent;
+
 struct mds_apf {
   struct mds mds;
   struct mds_tags tags;
   double (*point)[3];
   double (*param)[2];
-  void** model[MDS_TYPES];
-  void* user_model;
+  struct gmi_ent** model[MDS_TYPES];
+  struct gmi_model* user_model;
   void** parts[MDS_TYPES];
   struct mds_net remotes;
   struct mds_net matches;
 };
 
-struct mds_apf* mds_apf_create(void* model, int d, int cap[MDS_TYPES]);
+struct mds_apf* mds_apf_create(struct gmi_model* model, int d, int cap[MDS_TYPES]);
 void mds_apf_destroy(struct mds_apf* m);
 double* mds_apf_point(struct mds_apf* m, mds_id e);
 double* mds_apf_param(struct mds_apf* m, mds_id e);
-void* mds_apf_model(struct mds_apf* m, mds_id e);
+struct gmi_ent* mds_apf_model(struct mds_apf* m, mds_id e);
 mds_id mds_apf_create_entity(
-    struct mds_apf* m, int type, void* model, mds_id* from);
+    struct mds_apf* m, int type, struct gmi_ent* model, mds_id* from);
 void mds_apf_destroy_entity(struct mds_apf* m, mds_id e);
 
 void* mds_get_part(struct mds_apf* m, mds_id e);
@@ -46,11 +51,11 @@ void mds_set_part(struct mds_apf* m, mds_id e, void* p);
 struct mds_tag* mds_number(struct mds_apf* m);
 struct mds_apf* mds_reorder(struct mds_apf* m);
 
-void* mds_find_model(struct mds_apf* m, int dim, int id);
-int mds_model_dim(struct mds_apf* m, void* model);
-int mds_model_id(struct mds_apf* m, void* model);
+struct gmi_ent* mds_find_model(struct mds_apf* m, int dim, int id);
+int mds_model_dim(struct mds_apf* m, struct gmi_ent* model);
+int mds_model_id(struct mds_apf* m, struct gmi_ent* model);
 
-struct mds_apf* mds_read_smb(void* model, const char* pathname);
+struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname);
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname);
 
 void mds_verify(struct mds_apf* m);
