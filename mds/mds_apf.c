@@ -11,7 +11,7 @@
 #include "mds_apf.h"
 #include <stdlib.h>
 
-struct mds_apf* mds_apf_create(void* model, int d, int cap[MDS_TYPES])
+struct mds_apf* mds_apf_create(struct gmi_model* model, int d, int cap[MDS_TYPES])
 {
   struct mds_apf* m;
   int t;
@@ -56,13 +56,13 @@ double* mds_apf_param(struct mds_apf* m, mds_id e)
   return m->param[mds_index(e)];
 }
 
-void* mds_apf_model(struct mds_apf* m, mds_id e)
+struct gmi_ent* mds_apf_model(struct mds_apf* m, mds_id e)
 {
   return m->model[mds_type(e)][mds_index(e)];
 }
 
 mds_id mds_apf_create_entity(
-    struct mds_apf* m, int type, void* model, mds_id* from)
+    struct mds_apf* m, int type, struct gmi_ent* model, mds_id* from)
 {
   int t;
   mds_id old_cap[MDS_TYPES];
@@ -108,4 +108,19 @@ void* mds_get_part(struct mds_apf* m, mds_id e)
 void mds_set_part(struct mds_apf* m, mds_id e, void* p)
 {
   m->parts[mds_type(e)][mds_index(e)] = p;
+}
+
+struct gmi_ent* mds_find_model(struct mds_apf* m, int dim, int id)
+{
+  return gmi_find(m->user_model, dim, id);
+}
+
+int mds_model_dim(struct mds_apf* m, struct gmi_ent* model)
+{
+  return gmi_dim(m->user_model, model);
+}
+
+int mds_model_id(struct mds_apf* m, struct gmi_ent* model)
+{
+  return gmi_tag(m->user_model, model);
 }

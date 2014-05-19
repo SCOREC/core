@@ -239,7 +239,7 @@ static void write_class(struct pcu_file* f, struct mds_apf* m)
   size_t size;
   int type_mds;
   unsigned* class;
-  void* model;
+  struct gmi_ent* model;
   int i,j;
   for (i = 0; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
@@ -530,7 +530,7 @@ static void write_matches(struct pcu_file* f, struct mds_apf* m)
     write_type_matches(f, m, t);
 }
 
-static struct mds_apf* read_smb(void* model, const char* filename, int zip)
+static struct mds_apf* read_smb(struct gmi_model* model, const char* filename, int zip)
 {
   struct mds_apf* m;
   struct pcu_file* f;
@@ -659,7 +659,7 @@ static char* handle_path(const char* in, int is_write, int* zip)
   return out;
 }
 
-struct mds_apf* mds_read_smb(void* model, const char* pathname)
+struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname)
 {
   char* filename;
   int zip;

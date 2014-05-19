@@ -11,7 +11,6 @@
 #include "apfMDS.h"
 #include "mds_apf.h"
 #include "apfPM.h"
-#include <gmi.h>
 #include <apfMesh2.h>
 #include <apfConvert.h>
 #include <apfShape.h>
@@ -23,26 +22,6 @@ extern "C" {
 
 int const mds_apf_double = apf::Mesh::DOUBLE;
 int const mds_apf_int = apf::Mesh::INT;
-
-void* mds_find_model(mds_apf* m, int dim, int id)
-{
-  gmi_model* model = static_cast<gmi_model*>(m->user_model);
-  return gmi_find(model, dim, id);
-}
-
-int mds_model_dim(mds_apf* m, void* model)
-{
-  gmi_model* gm = static_cast<gmi_model*>(m->user_model);
-  gmi_ent* ge = static_cast<gmi_ent*>(model);
-  return gmi_dim(gm, ge);
-}
-
-int mds_model_id(mds_apf* m, void* model)
-{
-  gmi_model* gm = static_cast<gmi_model*>(m->user_model);
-  gmi_ent* ge = static_cast<gmi_ent*>(model);
-  return gmi_tag(gm, ge);
-}
 
 }
 
@@ -401,19 +380,19 @@ class MeshMDS : public Mesh2
     }
     int getModelType(ModelEntity* e)
     {
-      return mds_model_dim(mesh, static_cast<void*>(e));
+      return mds_model_dim(mesh, reinterpret_cast<gmi_ent*>(e));
     }
     int getModelTag(ModelEntity* e)
     {
-      return mds_model_id(mesh, static_cast<void*>(e));
+      return mds_model_id(mesh, reinterpret_cast<gmi_ent*>(e));
     }
     ModelEntity* findModelEntity(int type, int tag)
     {
-      return static_cast<ModelEntity*>(mds_find_model(mesh,type,tag));
+      return reinterpret_cast<ModelEntity*>(mds_find_model(mesh,type,tag));
     }
     ModelEntity* toModel(MeshEntity* e)
     {
-      return static_cast<ModelEntity*>(mds_apf_model(mesh,fromEnt(e)));
+      return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh,fromEnt(e)));
     }
     void getModelFaceNormal(ModelEntity* face, Vector3 const& p,
                                     Vector3& n)
@@ -531,7 +510,7 @@ class MeshMDS : public Mesh2
           s.e[i] = fromEnt(down[i]);
       }
       mds_id id = mds_apf_create_entity(
-          mesh, t, static_cast<void*>(c), s.e);
+          mesh, t, reinterpret_cast<gmi_ent*>(c), s.e);
       MeshEntity* e = toEnt(id);
       apf::Parts r;
       r.insert(getId());
