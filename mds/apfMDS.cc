@@ -405,7 +405,10 @@ class MeshMDS : public Mesh2
     }
     bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
     {
-      abort();
+      gmi_eval(mesh->user_model,
+               reinterpret_cast<gmi_ent*>(m),
+               &p[0], &x[0]);
+      return true;
     }
     void preMigrate_()
     {
@@ -486,14 +489,24 @@ class MeshMDS : public Mesh2
     }
     bool canSnap()
     {
-      return false;
+      return gmi_can_eval(mesh->user_model);
     }
     void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
     {
+      ModelEntity* from_g = toModel(e);
+      if (g == from_g)
+        return getParam(e, p);
+      gmi_ent* from = reinterpret_cast<gmi_ent*>(from_g);
+      gmi_ent* to = reinterpret_cast<gmi_ent*>(g);
+      Vector3 from_p;
+      getParam(e, from_p);
+      gmi_reparam(mesh->user_model, from, &from_p[0], to, &p[0]);
     }
     bool getPeriodicRange(ModelEntity* g, int axis, double range[2])
     {
-      return false;
+      gmi_ent* e = reinterpret_cast<gmi_ent*>(g);
+      gmi_range(mesh->user_model, e, axis, range);
+      return gmi_periodic(mesh->user_model, e, axis);
     }
     MeshEntity* createVert_(ModelEntity* c)
     {
