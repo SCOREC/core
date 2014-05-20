@@ -17,6 +17,9 @@ the name of the file converted to preprocessor symbol style
 Remember, no leading or trailing underscores on the include guard
 symbol.
 
+Files should not exceed 1000 lines,
+and lines should not exceed 80 characters.
+
 ## Symbols ##
 
 Global symbols are a concatenation of English words.
