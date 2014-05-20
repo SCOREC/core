@@ -8,8 +8,8 @@ The really important rules are:
 
 ## Files ##
 
-Header files use extension '.h', C++ source has extension '.cc',
-and C source has extension '.c'.
+Header files use extension `.h`, C++ source has extension `.cc`,
+and C source has extension `.c`.
 
 Header files are protected by an include guard, which should be
 the name of the file converted to preprocessor symbol style
@@ -23,32 +23,32 @@ Global symbols are a concatenation of English words.
 Ideally, spell the words out fully.
 If the word is too long, find a short synonym.
 If that doesn't work, find a good abbreviation with some vowels.
-For example, 'ctor' is better for 'constructor' than 'cnstrctr'.
+For example, `ctor` is better for `constructor` than `cnstrctr`.
 
 Words are concatenated either with nothing between them, in which
-case we use camel case to distinguish between words: 'createBetterMesh',
+case we use camel case to distinguish between words: `createBetterMesh`,
 or using underscores, in which case all letters are upper or lower case:
-'create_better_mesh'.
+`create_better_mesh`.
 
 All preprocessor symbols and enums should be all upper case,
 which forces them to use
-underscores to distinguish words: 'CREATE_BETTER_MESH'.
+underscores to distinguish words: `CREATE_BETTER_MESH`.
 Leading or trailing underscores on preprocessor symbols
 are reserved for system libraries,
 and mortals are forbidden from using these in their symbols:
-'__TURN_BACK_HUMAN__'.
+`__TURN_BACK_HUMAN__`.
 
 Some top-level APIs use a mix of camel case and underscores which really
-distinguishes the words: 'Create_Better_Mesh'.
+distinguishes the words: `Create_Better_Mesh`.
 Thats fine for high-level APIs, but its a bit too verbose for internal symbols.
 
-Choose one of the above styles, do not mix: 'thisIs_Reallynot_good'.
+Choose one of the above styles, do not mix: `thisIs_Reallynot_good`.
 
 Symbols which are local to a function or structure
 don't have to be fully spelled-out words,
 since functions and structures should be small,
 then there are few symbols to think about,
-so things like 'n' and 'i' are perfectly understandable.
+so things like `n` and `i` are perfectly understandable.
 
 ## Braces ##
 
@@ -91,9 +91,9 @@ the project prefix.
 This is useful for debugging reports which give source file names
 and line numbers as well as for include files which usually get
 mixed into the same directory.
-A name like 'util.h' could have come from any number of local
+A name like `util.h` could have come from any number of local
 or third-party libraries, and causes havoc in large applications.
-If its called 'gmiUtil.h', then at least it must be from GMI.
+If its called `gmiUtil.h`, then at least it must be from GMI.
 
 ## C++ ##
 
