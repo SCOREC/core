@@ -101,6 +101,10 @@ int PCU_Comm_Start(PCU_Method method);
 //special MPI_Comm replacement API
 void PCU_Switch_Comm(MPI_Comm new_comm);
 
+//stack trace helpers using GNU/Linux
+void PCU_Trace(void);
+void PCU_Protect(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
