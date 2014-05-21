@@ -448,9 +448,9 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
         continue;
       }
       if (tags[j]->user_type == mds_apf_int)
-        read_int_tag(f, m, tags[j], sizes[i], type_mds);
+        read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
-        read_dbl_tag(f, m, tags[j], sizes[i], type_mds);
+        read_dbl_tag(f, m, tags[j], sizes[j], type_mds);
     }
   }
   free(tags);
