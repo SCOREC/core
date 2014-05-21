@@ -14,6 +14,7 @@ add_executable(uniform EXCLUDE_FROM_ALL uniform.cc)
 add_executable(render EXCLUDE_FROM_ALL render.cc)
 add_executable(verify EXCLUDE_FROM_ALL verify.cc)
 add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
+add_executable(separate_bl EXCLUDE_FROM_ALL separate_bl.cc)
 
 set(tests
   gmi_test
@@ -22,7 +23,8 @@ set(tests
   uniform
   render
   verify
-  spr_test)
+  spr_test
+  separate_bl)
 
 foreach(test ${tests})
   target_link_libraries(${test}
