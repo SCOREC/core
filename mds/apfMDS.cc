@@ -95,6 +95,11 @@ static int apf2mds(int t_apf)
 class MeshMDS : public Mesh2
 {
   public:
+    MeshMDS(gmi_model* m, int d)
+    {
+      mds_id cap[MDS_TYPES] = {};
+      mesh = mds_apf_create(m, d, cap);
+    }
     MeshMDS(gmi_model* m, Mesh* from)
     {
       this->init(apf::getLagrange(1));
@@ -565,6 +570,13 @@ class MeshMDS : public Mesh2
     PM parts;
     bool isMatched;
 };
+
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim)
+{
+  Mesh2* m = new MeshMDS(model, dim);
+  initResidence(m, dim);
+  return m;
+}
 
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
 {

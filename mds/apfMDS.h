@@ -20,6 +20,8 @@ class Mesh2;
 class MeshTag;
 class MeshEntity;
 
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim);
+
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
