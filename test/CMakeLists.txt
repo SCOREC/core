@@ -15,6 +15,7 @@ add_executable(render EXCLUDE_FROM_ALL render.cc)
 add_executable(verify EXCLUDE_FROM_ALL verify.cc)
 add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
 add_executable(separate_bl EXCLUDE_FROM_ALL separate_bl.cc)
+add_executable(describe EXCLUDE_FROM_ALL describe.cc)
 
 set(tests
   gmi_test
@@ -24,7 +25,8 @@ set(tests
   render
   verify
   spr_test
-  separate_bl)
+  separate_bl
+  describe)
 
 foreach(test ${tests})
   target_link_libraries(${test}
