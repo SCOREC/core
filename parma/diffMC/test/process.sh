@@ -1,0 +1,1 @@
+for f in *.output; do echo "--------$f-------"; grep imbalance $f | tail -n 1; grep classified $f; grep 'run elapsed time\|fix elapsed time' $f; echo "stall count `grep 'stalling' $f | wc -l`";  grep 'initial number of disconnected' $f | tail -n 1 ; done

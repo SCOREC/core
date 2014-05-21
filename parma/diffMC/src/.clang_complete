@@ -1,0 +1,6 @@
+-D_HAVE_ZOLTAN_
+-D_HAVE_PARMETIS_
+-DFMDB_PARALLEL
+-DFMDB
+-DPUMI_PARALLEL
+-I/users/cwsmith/develop/ParMA/install/include

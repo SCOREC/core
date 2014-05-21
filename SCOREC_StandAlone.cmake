@@ -57,6 +57,8 @@ add_subdirectory(gmi)
 
 add_subdirectory(mds)
 
+add_subdirectory(parma)
+
 add_subdirectory(ma)
 
 add_subdirectory(spr)
