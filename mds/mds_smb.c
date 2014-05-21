@@ -683,7 +683,7 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname)
 {
   char* filename;
   int zip;
-  if (!is_compact(m))
+  if (PCU_Or(!is_compact(m)))
     m = mds_reorder(m);
   filename = handle_path(pathname, 0, &zip);
   write_smb(m, filename, zip);
