@@ -60,7 +60,7 @@ bool isFaceConnected(Mesh*& mesh, eArr& rgns) {
    APF_ITERATE(eArr, rgns, rit) 
       cavity.insert(*rit);
 
-   int count = 0;
+   size_t count = 0;
    eList elms;
    MeshEntity* elm;
    // start the walk
@@ -79,9 +79,9 @@ bool isFaceConnected(Mesh*& mesh, eArr& rgns) {
             elms.push_back(*eit);
       }
       if ( count > rgns.getSize() ) {
-   error("[%d] count > cavity size %d > %lu\n", 
-         mesh->getId(), count, rgns.getSize());
-         exit(EXIT_FAILURE);
+        error("[%d] count > cavity size %zu > %lu\n", 
+            mesh->getId(), count, rgns.getSize());
+        exit(EXIT_FAILURE);
       }
    }
 
@@ -165,31 +165,6 @@ inline bool isDone(imbInfo& imb, const int itr, const int entDim,
   return false;
 }
 
-void createPtnMdlBdryTopoHist(Mesh* mesh, const int pItr, 
-    const int dim, const int adjDim) {
-   const int meshDim = mesh->getDimension();
-   hist h;
-   MeshEntity* e;
-   eArr adjElms;
-   MeshIterator* itr = mesh->begin(dim);
-   while( (e = mesh->iterate(itr)) ) {
-     apf::Copies rmt;
-     mesh->getRemotes(e, rmt);
-     if( rmt.size() > 0 ) {
-       mesh->getAdjacent(e, adjDim, adjElms);
-       if( adjElms.getSize() < 11 )
-         h.add(adjElms.getSize());
-     }
-   }
-   mesh->end(itr);
-
-   const int numBins = 10;
-   std::stringstream ofname;
-   ofname << "hist" << dim << "-" << adjDim << "adj" << numBins << "bin" 
-          << PCU_Comm_Self() << "p" << pItr << "itr";
-   h.print(numBins, ofname.str());
-}
-
 } //end unnamed namespace
 
 /**
@@ -204,7 +179,7 @@ bool Parma::inputsValid(int (*priority)[4], int dbgLvl, int maxIter, double maxI
 }
 
 double Parma::tagPtnMdlEdgeCavities(partInfo& part, const double maxW, 
-    const int maxAdjElm, Migration* plan) {
+    const size_t maxAdjElm, Migration* plan) {
   MeshEntity* vtx;
   eArr adjElms;
   eArr adjEdges;
@@ -318,7 +293,7 @@ double Parma::tagElmsForMigr(partInfo& part, const double maxW,
 }
 
 double Parma::tagSmallCavitiesForMigr(partInfo& part, const double maxW, 
-    const int maxAdjElm, Migration* plan) {
+    const size_t maxAdjElm, Migration* plan) {
   int planWeight = 0;
 
   MeshEntity* vtx;

@@ -41,9 +41,9 @@ class Parma {
 
       double tagElmsForMigr_Vtx(partInfo& part, const double maxW, apf::Migration* plan);
       double tagSmallCavitiesForMigr(partInfo& part, const double maxW, 
-          const int maxAdjElm, apf::Migration* plan);
+          const size_t maxAdjElm, apf::Migration* plan);
       double tagPtnMdlEdgeCavities(partInfo& part, const double maxW, 
-          const int maxAdjElm, apf::Migration* plan);
+          const size_t maxAdjElm, apf::Migration* plan);
 
       bool inputsValid(int (*priority)[4], int dbgLvl, int maxIter, 
           double maxImb);

@@ -40,14 +40,14 @@ void hist::print(const int n, std::string outfile) {
   ofs.open(outfile.c_str(), std::ofstream::out);
 
   std::stringstream s;
-  for(int i=0; i<d.size(); i++) 
+  for(size_t i=0; i<d.size(); i++) 
     s << ' ' << d[i] << ' ';
   ofs << s.str() << '\n';
   s.str("");
 
   const int r = d[d.size()-1] - d[0];
   const int br = ceil((double)r/(double)n);
-  int i = 0;
+  size_t i = 0;
   int st = d[0];
   for(int b=0; b<n; b++) {
     const int l = i;

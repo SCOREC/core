@@ -85,7 +85,7 @@ int dcPart::numDisconnectedComps() {
    dcCompSz.clear();
    clearTag(m, vtag);
    int numDc = 0;
-   int count = 0;
+   size_t count = 0;
    while( count != m->count(3) ) {
       dcCompSz.push_back( walkPart(numDc) );
       count += dcCompSz[numDc];
@@ -96,7 +96,7 @@ int dcPart::numDisconnectedComps() {
 }
 
 int dcPart::walkPart(int visited) {
-   int count = 0;
+   size_t count = 0;
 
    eList elms;
    MeshEntity* elm;

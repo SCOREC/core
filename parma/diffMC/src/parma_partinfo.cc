@@ -30,7 +30,7 @@ int partInfo::recvWeightFromNeighbors() {
         int srcRank;
         PCU_Comm_From(&srcRank);
         int found = 0;
-	for (int apIdx = 0; apIdx < adjPartIds.size(); apIdx++) {
+	for (size_t apIdx = 0; apIdx < adjPartIds.size(); apIdx++) {
 	   if (adjPartIds[apIdx] == srcRank) {
               found = 1;
 	      for(int entDim=0; entDim<4; entDim++) {
@@ -97,8 +97,7 @@ inline void getWeight(apf::Mesh* m, apf::MeshTag* wtag, double* w) {
  * @param plIdx (In) priority list idx
  */
 void partInfo::getGreedyMigrationSchedule(const priorityList &pl, const int plIdx, double* maxImbW ) {
-   const int entDim = pl.entDim[plIdx];
-   for ( int apIdx=0; apIdx<adjPartIds.size(); apIdx++) {
+   for ( size_t apIdx=0; apIdx<adjPartIds.size(); apIdx++) {
       int ic = 1;
       for ( int pIdx=plIdx; pIdx>=0; pIdx-- ) {
 	 const int eDim = pl.entDim[pIdx];
@@ -112,8 +111,7 @@ void partInfo::getGreedyMigrationSchedule(const priorityList &pl, const int plId
 }
 
 void partInfo::getGreedyMigrationSchedule2(const priorityList &pl, const int plIdx, double* maxImbW ) {
-   const int entDim = pl.entDim[plIdx];
-   for ( int apIdx=0; apIdx<adjPartIds.size(); apIdx++) {
+   for ( size_t apIdx=0; apIdx<adjPartIds.size(); apIdx++) {
       int ic = 1;
       const int eDim = pl.entDim[plIdx];
       if ( isLess(weight[eDim], maxImbW[eDim])
@@ -151,7 +149,7 @@ void partInfo::initNeighbors(set<int>& ap) {
 }
 
 bool partInfo::isCandidate(const int adjPid) {
-   for(int i=0; i<adjPartIds.size(); i++) {
+   for(size_t i=0; i<adjPartIds.size(); i++) {
       if( adjPid == adjPartIds[i] && 1 == isCandidateAp[i] ) 
          return true; 
    }
