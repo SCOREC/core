@@ -12,7 +12,6 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Protect();
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile);
   apf::changeMeshShape(mesh, apf::getLagrange(2));
