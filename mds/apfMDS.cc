@@ -190,7 +190,6 @@ class MeshMDS : public Mesh2
     }
     int countUpward(MeshEntity* e)
     {
-      std::cerr << "countUpward is slow\n";
       mds_set s;
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,mds_dim[mds_type(id)] + 1,&s);
