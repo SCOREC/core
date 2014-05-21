@@ -95,14 +95,16 @@ static int apf2mds(int t_apf)
 class MeshMDS : public Mesh2
 {
   public:
-    MeshMDS(gmi_model* m, int d)
+    MeshMDS(gmi_model* m, int d, bool isMatched_)
     {
+      init(apf::getLagrange(1));
       mds_id cap[MDS_TYPES] = {};
       mesh = mds_apf_create(m, d, cap);
+      isMatched = isMatched_;
     }
     MeshMDS(gmi_model* m, Mesh* from)
     {
-      this->init(apf::getLagrange(1));
+      init(apf::getLagrange(1));
       mds_id cap[MDS_TYPES];
       cap[MDS_VERTEX] = from->count(0);
       cap[MDS_EDGE] = from->count(1);
@@ -267,6 +269,7 @@ class MeshMDS : public Mesh2
     MeshTag* createDoubleTag(const char* name, int size)
     {
       mds_tag* tag;
+      assert(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
           sizeof(double)*size, Mesh::DOUBLE);
       return reinterpret_cast<MeshTag*>(tag);
@@ -274,6 +277,7 @@ class MeshMDS : public Mesh2
     MeshTag* createIntTag(const char* name, int size)
     {
       mds_tag* tag;
+      assert(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
@@ -281,6 +285,7 @@ class MeshMDS : public Mesh2
     MeshTag* createLongTag(const char* name, int size)
     {
       mds_tag* tag;
+      assert(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
           sizeof(long)*size, Mesh::LONG);
       return reinterpret_cast<MeshTag*>(tag);
@@ -571,9 +576,9 @@ class MeshMDS : public Mesh2
     bool isMatched;
 };
 
-Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim)
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched)
 {
-  Mesh2* m = new MeshMDS(model, dim);
+  Mesh2* m = new MeshMDS(model, dim, isMatched);
   initResidence(m, dim);
   return m;
 }
