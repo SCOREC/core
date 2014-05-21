@@ -802,11 +802,15 @@ static mds_id skip(struct mds* m, mds_id e)
   t = TYPE(e);
   d = mds_dim[t];
   i = INDEX(e);
-  for (; t < MDS_TYPES; ++t)
-    if (mds_dim[t] == d)
-      for (; i < m->end[t]; ++i)
+  for (; t < MDS_TYPES; ++t) {
+    if (mds_dim[t] == d) {
+      for (; i < m->end[t]; ++i) {
         if (m->free[t][i] == MDS_LIVE)
           return ID(t,i);
+      }
+      i = 0;
+    }
+  }
   return MDS_NONE;
 }
 
