@@ -26,5 +26,6 @@ void PCU_Protect(void)
 {
   signal(SIGABRT, catch);
   signal(SIGSEGV, catch);
+  signal(SIGINT, catch);
 }
 
