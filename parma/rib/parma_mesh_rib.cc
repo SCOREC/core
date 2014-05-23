@@ -3,19 +3,6 @@
 
 namespace parma {
 
-static apf::Vector3 getElementCenter(apf::Mesh* m, apf::MeshEntity* e)
-{
-  apf::Downward v;
-  int nv = m->getDownward(e, 0, v);
-  apf::Vector3 c(0,0,0);
-  apf::Vector3 tmp;
-  for (int i = 0; i < nv; ++i) {
-    m->getPoint(v[i], 0, tmp);
-    c = c + tmp;
-  }
-  return c / nv;
-}
-
 static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
 {
   int dim = m->getDimension();
@@ -25,7 +12,7 @@ static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
   size_t i = 0;
   apf::MeshIterator* it = m->begin(dim);
   while ((e = m->iterate(it))) {
-    arr[i].point = getElementCenter(m, e);
+    arr[i].point = getLinearCentroid(m, e);
     if (weights)
       m->getDoubleTag(e, weights, &(arr[i].mass));
     else
