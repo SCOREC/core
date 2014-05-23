@@ -46,6 +46,12 @@ configure_file(
   @ONLY
   )
 
+SET(RIB_SOURCES  
+  rib/parma_rib_math.cc 
+  rib/parma_rib.cc 
+  rib/parma_mesh_rib.cc 
+  )
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(
@@ -68,11 +74,12 @@ SET(parmaDepLibs ${APF_LIBS})
 if(BUILD_IN_TRILINOS)
   TRIBITS_ADD_LIBRARY(
     parma
-    SOURCES ${DIFFMC_SOURCES} ${API_SOURCE}
+    SOURCES ${DIFFMC_SOURCES} ${RIB_SOURCES} ${API_SOURCE}
     HEADERS ${PARMA_EXTERNAL_HEADERS})
 else(BUILD_IN_TRILINOS)
   ADD_LIBRARY(parma 
     ${DIFFMC_SOURCES}
+    ${RIB_SOURCES}
     ${API_SOURCE})
   target_link_libraries(parma ${parmaDepLibs})
 endif(BUILD_IN_TRILINOS)
