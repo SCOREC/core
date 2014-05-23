@@ -16,7 +16,7 @@ class Splitter
 {
   public:
     virtual ~Splitter() {}
-    virtual void split(MeshTag* weights, double tolerance, int multiple) = 0;
+    virtual Migration* split(MeshTag* weights, double tolerance, int multiple) = 0;
 };
 
 class Balancer
