@@ -188,6 +188,7 @@ class MeshMDS : public Mesh2
     }
     int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent)
     {
+      assert((0 <= dimension) && (dimension <= 3));
       mds_set s;
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,dimension,&s);

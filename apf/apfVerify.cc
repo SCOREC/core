@@ -314,7 +314,7 @@ static void receiveOrder(Mesh* m)
 static void verifyOrder(Mesh* m)
 {
   PCU_Comm_Begin();
-  for (int d = 0; d <= m->getDimension(); ++d)
+  for (int d = 1; d <= m->getDimension(); ++d)
   {
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
