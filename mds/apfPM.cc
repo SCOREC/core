@@ -66,7 +66,8 @@ static void setOwners(PM& ps, CountMap& mp)
     std::vector<int> const& ids = p.ids;
     assert(ids.size());
     int owner = ids[0];
-    for (size_t i = 0; i < ids.size(); ++i) {
+    assert(mp.count(owner));
+    for (size_t i = 1; i < ids.size(); ++i) {
       assert(mp.count(ids[i]));
       if (mp[ids[i]] < mp[owner])
         owner = ids[i];

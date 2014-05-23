@@ -24,7 +24,7 @@ struct mds_apf* mds_apf_create(struct gmi_model* model, int d, int cap[MDS_TYPES
     m->model[t] = malloc(cap[t] * sizeof(*(m->model[t])));
   m->user_model = model;
   for (t = 0; t < MDS_TYPES; ++t)
-    m->parts[t] = malloc(cap[t] * sizeof(*(m->parts[t])));
+    m->parts[t] = calloc(cap[t], sizeof(*(m->parts[t])));
   mds_create_net(&m->remotes);
   mds_create_net(&m->matches);
   return m;
@@ -86,6 +86,7 @@ mds_id mds_apf_create_entity(
     mds_grow_net(&m->matches, &m->mds, old_cap);
   }
   m->model[type][mds_index(e)] = model;
+  m->parts[type][mds_index(e)] = NULL;
   return e;
 }
 

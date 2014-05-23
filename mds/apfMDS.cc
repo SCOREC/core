@@ -481,9 +481,17 @@ class MeshMDS : public Mesh2
     }
     void setResidence(MeshEntity* e, Parts& residence)
     {
+      mds_id id = fromEnt(e);
       PME* p = getPME(parts, residence);
       void* vp = static_cast<void*>(p);
-      mds_set_part(mesh, fromEnt(e), vp);
+      void* ovp = mds_get_part(mesh, id);
+      if (ovp) { /* partition model classification can be NULL during
+        early mesh initialization, such as after reading SMB or in
+        createEntity_ */
+        PME* op = static_cast<PME*>(ovp);
+        putPME(parts, op);
+      }
+      mds_set_part(mesh, id, vp);
     }
     void increment(MeshIterator* it)
     {
@@ -537,12 +545,15 @@ class MeshMDS : public Mesh2
       MeshEntity* e = toEnt(id);
       apf::Parts r;
       r.insert(getId());
-      setResidence(e,r);
+      setResidence(e, r);
       return e;
     }
     void destroy_(MeshEntity* e)
     {
       mds_id id = fromEnt(e);
+      void* ovp = mds_get_part(mesh, id);
+      PME* op = static_cast<PME*>(ovp);
+      putPME(parts, op);
       mds_apf_destroy_entity(mesh,id);
     }
     void stitch()
