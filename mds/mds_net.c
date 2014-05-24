@@ -165,7 +165,7 @@ static void for_type_net(struct mds_net* net, struct mds* m,
   int j;
   struct mds_copies* cs;
   for (i = 0; i < m->end[t]; ++i) {
-    cs = mds_get_copies(net, mds_identify(MDS_VERTEX, i));
+    cs = mds_get_copies(net, mds_identify(t, i));
     if (!cs)
       continue;
     for (j = 0; j < cs->n; ++j)
