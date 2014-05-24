@@ -1,8 +1,15 @@
-#include "gmi_mesh.h"
+#include <gmi_mesh.h>
+#include <assert.h>
+#include <PCU.h>
 
 int main(int argc, char** argv)
 {
+  assert(argc == 3);
+  struct gmi_model* m;
+  PCU_Protect();
   gmi_register_mesh();
-  gmi_destroy(gmi_load(argv[1]));
+  m = gmi_load(argv[1]);
+  gmi_write_dmg(m, argv[2]);
+  gmi_destroy(m);
   return 0;
 }
