@@ -19,18 +19,23 @@ class Mesh;
 class Mesh2;
 class MeshTag;
 class MeshEntity;
+class Migration;
 
-Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
+
+Mesh2* addMdsPart(Mesh2* original);
 
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
-MeshTag* numberMdsMesh(Mesh2* mesh);
+Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
 void defragMdsMesh(Mesh2* mesh);
 
 int getMdsId(MeshEntity* e);
 
 gmi_model* getMdsModel(Mesh2* mesh);
+
+void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 
 }
 

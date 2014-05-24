@@ -35,11 +35,13 @@ struct PME
 typedef std::set<PME> PM;
 
 PME* getPME(PM& ps, Parts const& ids);
-void putPME(PM& ps, PM* p);
+void putPME(PM& ps, PME* p);
 void updateOwners(Mesh* m, PM& ps);
 
 void initResidence(Mesh2* m, int dim);
 void stitchMesh(Mesh2* m);
+
+void scalePM(PM& pm, int factor);
 
 }
 

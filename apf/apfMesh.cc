@@ -562,4 +562,17 @@ bool isSimplex(int type)
   return table[type];
 }
 
+Vector3 getLinearCentroid(Mesh* m, MeshEntity* e)
+{
+  apf::Downward v;
+  int nv = m->getDownward(e, 0, v);
+  apf::Vector3 c(0,0,0);
+  apf::Vector3 tmp;
+  for (int i = 0; i < nv; ++i) {
+    m->getPoint(v[i], 0, tmp);
+    c = c + tmp;
+  }
+  return c / nv;
+}
+
 } //namespace apf

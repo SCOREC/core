@@ -61,6 +61,8 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname);
 void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
 
+void mds_apf_scale(struct mds_apf* m, int factor);
+
 extern int const mds_apf_double;
 extern int const mds_apf_int;
 

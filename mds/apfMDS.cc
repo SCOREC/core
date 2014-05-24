@@ -95,9 +95,16 @@ static int apf2mds(int t_apf)
 class MeshMDS : public Mesh2
 {
   public:
+    MeshMDS(gmi_model* m, int d, bool isMatched_)
+    {
+      init(apf::getLagrange(1));
+      mds_id cap[MDS_TYPES] = {};
+      mesh = mds_apf_create(m, d, cap);
+      isMatched = isMatched_;
+    }
     MeshMDS(gmi_model* m, Mesh* from)
     {
-      this->init(apf::getLagrange(1));
+      init(apf::getLagrange(1));
       mds_id cap[MDS_TYPES];
       cap[MDS_VERTEX] = from->count(0);
       cap[MDS_EDGE] = from->count(1);
@@ -181,6 +188,7 @@ class MeshMDS : public Mesh2
     }
     int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent)
     {
+      assert((0 <= dimension) && (dimension <= 3));
       mds_set s;
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,dimension,&s);
@@ -190,7 +198,6 @@ class MeshMDS : public Mesh2
     }
     int countUpward(MeshEntity* e)
     {
-      std::cerr << "countUpward is slow\n";
       mds_set s;
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,mds_dim[mds_type(id)] + 1,&s);
@@ -263,6 +270,7 @@ class MeshMDS : public Mesh2
     MeshTag* createDoubleTag(const char* name, int size)
     {
       mds_tag* tag;
+      assert(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
           sizeof(double)*size, Mesh::DOUBLE);
       return reinterpret_cast<MeshTag*>(tag);
@@ -270,6 +278,7 @@ class MeshMDS : public Mesh2
     MeshTag* createIntTag(const char* name, int size)
     {
       mds_tag* tag;
+      assert(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
@@ -277,6 +286,7 @@ class MeshMDS : public Mesh2
     MeshTag* createLongTag(const char* name, int size)
     {
       mds_tag* tag;
+      assert(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
           sizeof(long)*size, Mesh::LONG);
       return reinterpret_cast<MeshTag*>(tag);
@@ -405,7 +415,10 @@ class MeshMDS : public Mesh2
     }
     bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
     {
-      abort();
+      gmi_eval(mesh->user_model,
+               reinterpret_cast<gmi_ent*>(m),
+               &p[0], &x[0]);
+      return true;
     }
     void preMigrate_()
     {
@@ -468,9 +481,17 @@ class MeshMDS : public Mesh2
     }
     void setResidence(MeshEntity* e, Parts& residence)
     {
+      mds_id id = fromEnt(e);
       PME* p = getPME(parts, residence);
       void* vp = static_cast<void*>(p);
-      mds_set_part(mesh, fromEnt(e), vp);
+      void* ovp = mds_get_part(mesh, id);
+      if (ovp) { /* partition model classification can be NULL during
+        early mesh initialization, such as after reading SMB or in
+        createEntity_ */
+        PME* op = static_cast<PME*>(ovp);
+        putPME(parts, op);
+      }
+      mds_set_part(mesh, id, vp);
     }
     void increment(MeshIterator* it)
     {
@@ -486,14 +507,24 @@ class MeshMDS : public Mesh2
     }
     bool canSnap()
     {
-      return false;
+      return gmi_can_eval(mesh->user_model);
     }
     void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
     {
+      ModelEntity* from_g = toModel(e);
+      if (g == from_g)
+        return getParam(e, p);
+      gmi_ent* from = reinterpret_cast<gmi_ent*>(from_g);
+      gmi_ent* to = reinterpret_cast<gmi_ent*>(g);
+      Vector3 from_p;
+      getParam(e, from_p);
+      gmi_reparam(mesh->user_model, from, &from_p[0], to, &p[0]);
     }
     bool getPeriodicRange(ModelEntity* g, int axis, double range[2])
     {
-      return false;
+      gmi_ent* e = reinterpret_cast<gmi_ent*>(g);
+      gmi_range(mesh->user_model, e, axis, range);
+      return gmi_periodic(mesh->user_model, e, axis);
     }
     MeshEntity* createVert_(ModelEntity* c)
     {
@@ -514,12 +545,15 @@ class MeshMDS : public Mesh2
       MeshEntity* e = toEnt(id);
       apf::Parts r;
       r.insert(getId());
-      setResidence(e,r);
+      setResidence(e, r);
       return e;
     }
     void destroy_(MeshEntity* e)
     {
       mds_id id = fromEnt(e);
+      void* ovp = mds_get_part(mesh, id);
+      PME* op = static_cast<PME*>(ovp);
+      putPME(parts, op);
       mds_apf_destroy_entity(mesh,id);
     }
     void stitch()
@@ -554,6 +588,13 @@ class MeshMDS : public Mesh2
     bool isMatched;
 };
 
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched)
+{
+  Mesh2* m = new MeshMDS(model, dim, isMatched);
+  initResidence(m, dim);
+  return m;
+}
+
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
 {
   return new MeshMDS(model, from);
@@ -581,6 +622,43 @@ void defragMdsMesh(Mesh2* mesh)
 gmi_model* getMdsModel(Mesh2* mesh)
 {
   return static_cast<MeshMDS*>(mesh)->getPumiModel();
+}
+
+static void scaleMdsMesh(Mesh2* mesh, int n)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(mesh);
+  mds_apf_scale(m->mesh, n);
+  scalePM(m->parts, n);
+}
+
+static Mesh2* globalMesh;
+static Migration* globalPlan;
+static void (*globalThrdCall)(Mesh2*);
+
+static void* splitThrdMain(void*)
+{
+  Mesh2* m;
+  Migration* plan;
+  if (!PCU_Thrd_Self()) {
+    m = globalMesh;
+    plan = globalPlan;
+  } else {
+    m = makeEmptyMdsMesh(getMdsModel(globalMesh),
+        globalMesh->getDimension(), globalMesh->hasMatching());
+    plan = new apf::Migration(m);
+  }
+  m->migrate(plan);
+  globalThrdCall(m);
+  return NULL;
+}
+
+void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
+{
+  globalMesh = m;
+  globalPlan = plan;
+  globalThrdCall = runAfter;
+  scaleMdsMesh(m, n);
+  PCU_Thrd_Run(n, splitThrdMain, NULL);
 }
 
 }

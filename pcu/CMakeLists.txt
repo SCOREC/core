@@ -70,7 +70,8 @@ set(SOURCES
    pcu_mpi.c
    pcu_msg.c
    pcu_pmpi.c
-   pumi_comm.c)
+   pumi_comm.c
+   pcu_protect.c)
 
 if(ENABLE_THREADS)       
    set(SOURCES ${SOURCES}

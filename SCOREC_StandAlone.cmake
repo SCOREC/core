@@ -61,6 +61,10 @@ add_subdirectory(gmi_sim)
 
 add_subdirectory(mds)
 
+add_subdirectory(parma)
+
 add_subdirectory(ma)
+
+add_subdirectory(spr)
 
 add_subdirectory(test)
