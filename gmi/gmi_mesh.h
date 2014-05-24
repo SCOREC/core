@@ -23,6 +23,8 @@ struct gmi_mesh {
   int* tags[4];
 };
 
+void gmi_write_dmg(struct gmi_model* m, const char* filename);
+
 #ifdef __cplusplus
 }
 #endif

@@ -178,6 +178,39 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
   fclose(f);
 }
 
+void gmi_write_dmg(struct gmi_model* m, const char* filename)
+{
+  struct gmi_iter* it;
+  struct gmi_ent* e;
+  FILE* f = fopen(filename, "w");
+  /* entity counts */
+  fprintf(f, "%d %d %d %d\n", m->n[3], m->n[2], m->n[1], m->n[0]);
+  /* bounding box */
+  fprintf(f, "0 0 0\n");
+  fprintf(f, "0 0 0\n");
+  /* vertices */
+  it = gmi_begin(m, 0);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0 0 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
+  /* edges */
+  it = gmi_begin(m, 1);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
+  /* faces */
+  it = gmi_begin(m, 2);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
+  /* regions */
+  it = gmi_begin(m, 3);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
+  fclose(f);
+}
+
 static struct gmi_model* mesh_creator(const char* filename)
 {
   struct gmi_mesh* m;
