@@ -48,6 +48,9 @@ typedef struct gmi_model* (*gmi_creator)(const char* filename);
 extern "C" {
 #endif
 
+struct gmi_iter* gmi_begin(struct gmi_model* m, int dim);
+struct gmi_ent* gmi_next(struct gmi_model* m, struct gmi_iter* i);
+void gmi_end(struct gmi_model* m, struct gmi_iter* i);
 int gmi_dim(struct gmi_model* m, struct gmi_ent* e);
 int gmi_tag(struct gmi_model* m, struct gmi_ent* e);
 struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag);

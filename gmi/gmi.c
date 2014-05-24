@@ -24,6 +24,21 @@ struct creators {
 
 static struct creators* ctors = NULL;
 
+struct gmi_iter* gmi_begin(struct gmi_model* m, int dim)
+{
+  return m->ops->begin(m, dim);
+}
+
+struct gmi_ent* gmi_next(struct gmi_model* m, struct gmi_iter* i)
+{
+  return m->ops->next(m, i);
+}
+
+void gmi_end(struct gmi_model* m, struct gmi_iter* i)
+{
+  m->ops->end(m, i);
+}
+
 int gmi_dim(struct gmi_model* m, struct gmi_ent* e)
 {
   return m->ops->dim(m, e);
