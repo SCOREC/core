@@ -28,39 +28,20 @@ void freeMesh(apf::Mesh* m)
   apf::destroyMesh(m);
 }
 
-apf::Migration* globalMigr;
-
-void preparePartition(apf::Mesh* m)
+apf::Migration* getPlan(apf::Mesh* m)
 {
   apf::Splitter* splitter = Parma_MakeRibSplitter(m);
   double t0 = MPI_Wtime();
-  globalMigr = splitter->split(0, 0, partitionFactor);
+  apf::Migration* plan = splitter->split(0, 0, partitionFactor);
   double t1 = MPI_Wtime();
   if ( ! PCU_Comm_Self())
     printf("time to run RIB: %f seconds\n",t1-t0);
   delete splitter;
+  return plan;
 }
 
-apf::Mesh2* globalMesh;
-
-void* thread_main(void*)
+void runAfter(apf::Mesh2* m)
 {
-  int threadSelf = PCU_Thrd_Self();
-  apf::Mesh* m;
-  apf::Migration* plan;
-  if (!threadSelf) {
-    m = globalMesh;
-    plan = globalMigr;
-  } else {
-    m = apf::makeEmptyMdsMesh(getMdsModel(globalMesh),
-        globalMesh->getDimension(), globalMesh->hasMatching());
-    plan = new apf::Migration(m);
-  }
-  double t0 = MPI_Wtime();
-  m->migrate(plan);
-  double t1 = MPI_Wtime();
-  if ( ! PCU_Comm_Self())
-    printf("time to migrate: %f seconds\n",t1-t0);
   m->verify();
   double t2 = MPI_Wtime();
   m->writeNative(outFile);
@@ -68,7 +49,6 @@ void* thread_main(void*)
   if ( ! PCU_Comm_Self())
     printf("time to write %s: %f seconds\n",outFile,t3-t2);
   freeMesh(m);
-  return NULL;
 }
 
 void getConfig(int argc, char** argv)
@@ -92,9 +72,7 @@ int main(int argc, char** argv)
   PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = readMesh();
-  preparePartition(m);
-  globalMesh = m;
-  PCU_Thrd_Run(partitionFactor, thread_main, NULL);
+  splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);
   PCU_Comm_Free();
   MPI_Finalize();
 }

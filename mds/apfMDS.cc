@@ -624,4 +624,41 @@ gmi_model* getMdsModel(Mesh2* mesh)
   return static_cast<MeshMDS*>(mesh)->getPumiModel();
 }
 
+static void scaleMdsMesh(Mesh2* mesh, int n)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(mesh);
+  mds_apf_scale(m->mesh, n);
+  scalePM(m->parts, n);
+}
+
+static Mesh2* globalMesh;
+static Migration* globalPlan;
+static void (*globalThrdCall)(Mesh2*);
+
+static void* splitThrdMain(void*)
+{
+  Mesh2* m;
+  Migration* plan;
+  if (!PCU_Thrd_Self()) {
+    m = globalMesh;
+    plan = globalPlan;
+  } else {
+    m = makeEmptyMdsMesh(getMdsModel(globalMesh),
+        globalMesh->getDimension(), globalMesh->hasMatching());
+    plan = new apf::Migration(m);
+  }
+  m->migrate(plan);
+  globalThrdCall(m);
+  return NULL;
+}
+
+void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
+{
+  globalMesh = m;
+  globalPlan = plan;
+  globalThrdCall = runAfter;
+  scaleMdsMesh(m, n);
+  PCU_Thrd_Run(n, splitThrdMain, NULL);
+}
+
 }

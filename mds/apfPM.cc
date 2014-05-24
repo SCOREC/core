@@ -193,4 +193,23 @@ void stitchMesh(Mesh2* m)
   }
 }
 
+void scalePM(PM& pm, int factor)
+{
+  APF_ITERATE(PM, pm, it) {
+    PME const& cp = *it;
+    PME& p = const_cast<PME&>(cp); /* yep */
+    p.owner *= factor;
+    std::vector<int>& ids = p.ids;
+/* note: we can only do this because operator<(std::vector<T>...)
+   uses lexicographical comparison, and so for vectors A and B,
+   A < B does not change if all the elements of A and B are
+   multiplied by a constant factor.
+   
+   any operation which changes the results of lexicographical
+   comparison breaks the ordering of PME's in the PM. */
+    for (size_t i = 0; i < ids.size(); ++i)
+      ids[i] *= factor;
+  }
+}
+
 }

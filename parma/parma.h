@@ -116,6 +116,6 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m);
 
 apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1);
 
-apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m);
+apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
 
 #endif

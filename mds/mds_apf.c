@@ -125,3 +125,9 @@ int mds_model_id(struct mds_apf* m, struct gmi_ent* model)
 {
   return gmi_tag(m->user_model, model);
 }
+
+void mds_apf_scale(struct mds_apf* m, int factor)
+{
+  mds_scale_net(&m->remotes, &m->mds, factor);
+  mds_scale_net(&m->matches, &m->mds, factor);
+}

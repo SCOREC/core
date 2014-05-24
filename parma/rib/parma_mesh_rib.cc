@@ -40,9 +40,10 @@ static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
 class RibSplitter : public apf::Splitter
 {
   public:
-    RibSplitter(apf::Mesh* m)
+    RibSplitter(apf::Mesh* m, bool s)
     {
       mesh = m;
+      sync = s;
     }
     virtual ~RibSplitter() {}
     virtual apf::Migration* split(apf::MeshTag* weights, double tolerance,
@@ -51,16 +52,26 @@ class RibSplitter : public apf::Splitter
       int depth;
       for (depth = 0; (1 << depth) < multiple; ++depth);
       assert((1 << depth) == multiple);
-      return splitMesh(mesh, weights, depth);
+      apf::Migration* plan = splitMesh(mesh, weights, depth);
+      if (sync) {
+        int offset = mesh->getId() * multiple;
+        for (int i = 0; i < plan->count(); ++i) {
+          apf::MeshEntity* e = plan->get(i);
+          int p = plan->sending(e);
+          plan->send(e, p + offset);
+        }
+      }
+      return plan;
     }
   private:
     apf::Mesh* mesh;
+    bool sync;
 };
 
 }
 
-apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m)
+apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync)
 {
-  return new parma::RibSplitter(m);
+  return new parma::RibSplitter(m, sync);
 }
 

@@ -41,6 +41,8 @@ void updateOwners(Mesh* m, PM& ps);
 void initResidence(Mesh2* m, int dim);
 void stitchMesh(Mesh2* m);
 
+void scalePM(PM& pm, int factor);
+
 }
 
 #endif
