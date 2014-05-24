@@ -9,6 +9,7 @@ int main(int argc, char** argv)
   assert(argc == 3);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  PCU_Protect();
   gmi_register_mesh();
   //load model and mesh
   double t0 = MPI_Wtime();
@@ -17,8 +18,6 @@ int main(int argc, char** argv)
   if (!PCU_Comm_Self())
     std::cout << t1-t0 << " seconds to load\n";
   m->verify();
-  // adapt mds
-  apf::writeVtkFiles("out",m);
   t0 = MPI_Wtime();
   m->writeNative("out.smb");
   t1 = MPI_Wtime();
