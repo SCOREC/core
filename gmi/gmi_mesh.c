@@ -53,19 +53,23 @@ static int next(struct gmi_mesh* m, int e)
 
 struct gmi_iter* gmi_mesh_begin(struct gmi_model* m, int dim)
 {
-  return to_ptr(first(to_mesh(m), dim));
+  int* i;
+  i = malloc(sizeof(int));
+  *i = first(to_mesh(m), dim);
+  return (struct gmi_iter*)i;
 }
 
-struct gmi_ent* gmi_mesh_next(struct gmi_model* m, struct gmi_iter* i)
+struct gmi_ent* gmi_mesh_next(struct gmi_model* m, struct gmi_iter* it)
 {
-  struct gmi_ent* e;
-  e = (struct gmi_ent*)i;
-  i = to_ptr(next(to_mesh(m), from_ptr(i)));
-  return e;
+  int* i = (int*)it;
+  int e = *i;
+  *i = next(to_mesh(m), *i);
+  return to_ptr(e);
 }
 
 void gmi_mesh_end(struct gmi_model* m, struct gmi_iter* i)
 {
+  free(i);
 }
 
 int gmi_mesh_dim(struct gmi_model* m, struct gmi_ent* e)
@@ -190,8 +194,9 @@ void gmi_write_dmg(struct gmi_model* m, const char* filename)
   fprintf(f, "0 0 0\n");
   /* vertices */
   it = gmi_begin(m, 0);
-  while ((e = gmi_next(m, it)))
+  while ((e = gmi_next(m, it))) {
     fprintf(f, "%d 0 0 0\n", gmi_tag(m, e));
+  }
   gmi_end(m, it);
   /* edges */
   it = gmi_begin(m, 1);
