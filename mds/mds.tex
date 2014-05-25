@@ -497,6 +497,25 @@ The position of the first unused entry in the array is kept in
 \texttt{end}, which is also the number of used entries.
 Finally, the actual allocated size is stored in \texttt{cap}.
 
+\section{Results}
+
+The following table lists mesh memory usage (reported as ``in use bytes"
+by the C/C++ memory allocator) for different mesh libraries
+when loading a serial all-tet mesh of 93710 elements.
+The mesh has matched entities along the surface.
+All of these libraries are storing the same information:
+a full one-level adjacency representation, coordinates,
+classification, matches, etc.
+
+\begin{center}
+\begin{tabular}{lrrr}
+library & MB & bytes per tet & relative \\\hline
+pumi & 84.1 & 897 & 100\% \\
+sim  & 55.2 & 589 &  66\% \\
+mds  & 22.6 & 241 &  27\% \\
+\end{tabular}
+\end{center}
+
 \bibliography{mds}{}
 \bibliographystyle{plain}
 
