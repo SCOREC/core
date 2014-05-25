@@ -29,6 +29,7 @@ set(tests
   verify
   spr_test
   separate_bl
+  describe
   rib_test)
 
 foreach(test ${tests})
