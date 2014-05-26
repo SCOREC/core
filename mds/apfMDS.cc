@@ -610,6 +610,12 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   Mesh2* m = new MeshMDS(model, meshfile);
   initResidence(m, m->getDimension());
   m->stitch();
+  /* This is a hack to detect a mesh written to file
+     with a quadratic coordinate field stored in tags.
+     the proper solution is to work APF information into
+     the files */
+  if (m->findTag("coordinates_edg"))
+    changeMeshShape(m,getLagrange(2),/*project=*/false);
   return m;
 }
 
