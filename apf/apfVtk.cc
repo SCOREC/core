@@ -119,6 +119,11 @@ static void writeIP_PCellData(std::ostream& file, FieldBase* f)
   }
 }
 
+static void writePCellParts(std::ostream& file)
+{
+  writePDataArray(file, "apf_part", apf::Mesh::INT, 1);
+}
+
 static void writePCellData(std::ostream& file, Mesh* m)
 {
   file << "<PCellData>\n";
@@ -134,6 +139,7 @@ static void writePCellData(std::ostream& file, Mesh* m)
     if (isIPField(n))
       writeIP_PCellData(file,n);
   }
+  writePCellParts(file);
   file << "</PCellData>\n";
 }
 
@@ -335,6 +341,16 @@ class WriteIPField : public FieldOp
     }
 };
 
+static void writeCellParts(std::ostream& file, Mesh* m)
+{
+  writeDataHeader(file, "apf_part", apf::Mesh::INT, 1);
+  size_t n = m->count(m->getDimension());
+  int id = m->getId();
+  for (size_t i = 0; i < n; ++i)
+    file << id << '\n';
+  file << "</DataArray>\n";
+}
+
 static void writeCellData(std::ostream& file, Mesh* m)
 {
   file << "<CellData>\n";
@@ -352,6 +368,7 @@ static void writeCellData(std::ostream& file, Mesh* m)
     if (isIPField(n))
       wi.run(file,n);
   }
+  writeCellParts(file, m);
   file << "</CellData>\n";
 }
 
