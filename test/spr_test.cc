@@ -14,7 +14,6 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile);
-  apf::changeMeshShape(mesh, apf::getLagrange(2));
   apf::Field* f = apf::createLagrangeField(mesh, "solution", apf::VECTOR, 2);
   apf::Field* eps = apf::getGradIPField(f, "eps", 2);
   apf::destroyField(f);
