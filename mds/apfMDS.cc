@@ -667,4 +667,12 @@ void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
   PCU_Thrd_Run(n, splitThrdMain, NULL);
 }
 
+bool alignMdsMatches(Mesh2* in)
+{
+  if (!in->hasMatching())
+    return false;
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_align_matches(m->mesh);
+}
+
 }

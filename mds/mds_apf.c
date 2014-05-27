@@ -10,6 +10,8 @@
 
 #include "mds_apf.h"
 #include <stdlib.h>
+#include <assert.h>
+#include <PCU.h>
 
 struct mds_apf* mds_apf_create(struct gmi_model* model, int d, int cap[MDS_TYPES])
 {
@@ -130,4 +132,96 @@ void mds_apf_scale(struct mds_apf* m, int factor)
 {
   mds_scale_net(&m->remotes, &m->mds, factor);
   mds_scale_net(&m->matches, &m->mds, factor);
+}
+
+static void down_to_match(struct mds_apf* m, mds_id e,
+    struct mds_copy c)
+{
+  int i;
+  struct mds_copies* dc;
+  dc = mds_get_copies(&m->matches, e);
+  assert(dc);
+  for (i = 0; i < dc->n; ++i)
+    if (dc->c[i].p == c.p) {
+      PCU_COMM_PACK(c.p, dc->c[i].e);
+      return;
+    }
+  abort();
+}
+
+static void downs_to_match(struct mds_apf* m, struct mds_set* s,
+    struct mds_copy c)
+{
+  int i;
+  PCU_COMM_PACK(c.p, c.e);
+  for (i = 0; i < s->n; ++i)
+    down_to_match(m, s->e[i], c);
+}
+
+static void downs_to_matches(struct mds_apf* m, mds_id e, struct mds_copies* c)
+{
+  int i;
+  struct mds_set s;
+  mds_get_adjacent(&m->mds, e, mds_dim[mds_type(e)] - 1, &s);
+  for (i = 0; i < c->n; ++i)
+    downs_to_match(m, &s, c->c[i]);
+}
+
+static int are_same(struct mds_set* a, struct mds_set* b)
+{
+  int i;
+  if (a->n != b->n)
+    return 0;
+  for (i = 0; i < a->n; ++i)
+    if (a->e[i] != b->e[i])
+      return 0;
+  return 1;
+}
+
+static void change_down(struct mds* m, mds_id e, struct mds_set* s)
+{
+  /* note: this sortof hack relies on the LIFO property
+     of create/destroy */
+  mds_id e2;
+  mds_destroy_entity(m, e);
+  e2 = mds_create_entity(m, mds_type(e), s->e);
+  assert(e2 == e);
+}
+
+static int recv_down_matches(struct mds_apf* m)
+{
+  mds_id e;
+  struct mds_set s;
+  struct mds_set rs;
+  int i;
+  PCU_COMM_UNPACK(e);
+  mds_get_adjacent(&m->mds, e, mds_dim[mds_type(e)] - 1, &s);
+  rs.n = s.n;
+  for (i = 0; i < s.n; ++i)
+    PCU_COMM_UNPACK(rs.e[i]);
+  if (are_same(&s, &rs))
+    return 0;
+  change_down(&m->mds, e, &rs);
+  return 1;
+}
+
+int mds_align_matches(struct mds_apf* m)
+{
+  int d;
+  mds_id e;
+  struct mds_copies* c;
+  PCU_Comm_Begin();
+  for (d = 0; d <= m->mds.d; ++d)
+    for (e = mds_begin(&m->mds, d); e != MDS_NONE; e = mds_next(&m->mds, e)) {
+      c = mds_get_copies(&m->matches, e);
+      if (!c)
+        continue;
+      downs_to_matches(m, e, c);
+    }
+  PCU_Comm_Send();
+  int did_change = 0;
+  while (PCU_Comm_Listen())
+    while (!PCU_Comm_Unpacked())
+      did_change = did_change || recv_down_matches(m);
+  return did_change;
 }

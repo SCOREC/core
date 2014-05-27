@@ -17,6 +17,7 @@ int main(int argc, char** argv)
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     std::cout << t1-t0 << " seconds to load\n";
+  assert(!alignMdsMatches(m));
   m->verify();
   t0 = MPI_Wtime();
   m->writeNative("out.smb");
