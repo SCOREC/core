@@ -18,6 +18,7 @@ add_executable(verify EXCLUDE_FROM_ALL verify.cc)
 add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
 add_executable(separate_bl EXCLUDE_FROM_ALL separate_bl.cc)
 add_executable(describe EXCLUDE_FROM_ALL describe.cc)
+add_executable(balance EXCLUDE_FROM_ALL balance.cc)
 add_executable(split EXCLUDE_FROM_ALL split.cc)
 
 set(tests
@@ -30,6 +31,7 @@ set(tests
   spr_test
   separate_bl
   describe
+  balance
   split)
 
 foreach(test ${tests})

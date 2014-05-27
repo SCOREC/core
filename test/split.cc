@@ -32,11 +32,13 @@ apf::Migration* getPlan(apf::Mesh* m)
 {
   apf::Splitter* splitter = Parma_MakeRibSplitter(m);
   double t0 = MPI_Wtime();
-  apf::Migration* plan = splitter->split(0, 0, partitionFactor);
+  apf::MeshTag* weights = Parma_WeighByMemory(m);
+  apf::Migration* plan = splitter->split(weights, 1.10, partitionFactor);
+  m->destroyTag(weights);
   double t1 = MPI_Wtime();
+  delete splitter;
   if ( ! PCU_Comm_Self())
     printf("time to run RIB: %f seconds\n",t1-t0);
-  delete splitter;
   return plan;
 }
 

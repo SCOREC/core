@@ -157,6 +157,7 @@ class Mesh
     virtual void verify() = 0;
     virtual bool hasMatching() = 0;
     virtual void getMatches(MeshEntity* e, Matches& m) = 0;
+    virtual double getElementBytes(int type) {return 1.0;}
     void addField(Field* f);
     void removeField(Field* f);
     Field* findField(const char* name);

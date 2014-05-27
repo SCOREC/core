@@ -579,6 +579,20 @@ class MeshMDS : public Mesh2
     {
       abort();
     }
+    double getElementBytes(int type)
+    {
+      static double const table[TYPES] =
+      {1  , //vertex
+       1  , //edge
+       1  , //triangle
+       1  , //quad
+       250, //tet
+       1  , //hex
+       350, //prism
+       300, //pyramid
+      };
+      return table[type];
+    }
     gmi_model* getPumiModel()
     {
       return static_cast<gmi_model*>(mesh->user_model);

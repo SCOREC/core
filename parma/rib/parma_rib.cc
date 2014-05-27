@@ -40,7 +40,7 @@ static apf::Matrix3x3 getInertiaMatrix(Bodies const* b)
                    0,0,0);
   for (int i = 0; i < b->n; ++i)
     m = m + getInertiaContribution(b->body[i]);
-  return m;
+  return m * -1;
 }
 
 static apf::Vector3 getBisectionNormal(Bodies const* b)
@@ -54,11 +54,13 @@ static apf::Vector3 getBisectionNormal(Bodies const* b)
 static apf::Vector3 getCenterOfGravity(Bodies const* b)
 {
   apf::Vector3 c(0,0,0);
+  double mass = 0;
   for (int i = 0; i < b->n; ++i) {
     Body* body = b->body[i];
     c = c + (body->point * body->mass);
+    mass += body->mass;
   }
-  return c / b->n;
+  return c / mass;
 }
 
 static void centerBodies(Bodies* b, apf::Vector3 const& c)
