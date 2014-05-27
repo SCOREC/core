@@ -39,7 +39,10 @@ int main(int argc, char** argv)
   /* partition model ownership update */
   pumiApfMesh->preMigrate_();
   pumiApfMesh->postMigrate_();
-  assert(!pumiApfMesh->hasMatching());
+  if (alignMdsMatches(pumiApfMesh))
+    printf("fixed misaligned matches\n");
+  else
+    printf("matches (if any) are aligned ok\n");
   pumiApfMesh->verify();
   pumiApfMesh->writeNative(argv[3]);
 
