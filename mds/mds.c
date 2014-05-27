@@ -551,8 +551,6 @@ static void free_ent(struct mds* m, mds_id e)
   *node = *head;
   *head = i;
   --(m->n[t]);
-  if (i + 1 == m->end[t])
-    --(m->end[t]);
 }
 
 static mds_id add_ent(struct mds* m, int t, mds_id* from)

@@ -53,19 +53,23 @@ static int next(struct gmi_mesh* m, int e)
 
 struct gmi_iter* gmi_mesh_begin(struct gmi_model* m, int dim)
 {
-  return to_ptr(first(to_mesh(m), dim));
+  int* i;
+  i = malloc(sizeof(int));
+  *i = first(to_mesh(m), dim);
+  return (struct gmi_iter*)i;
 }
 
-struct gmi_ent* gmi_mesh_next(struct gmi_model* m, struct gmi_iter* i)
+struct gmi_ent* gmi_mesh_next(struct gmi_model* m, struct gmi_iter* it)
 {
-  struct gmi_ent* e;
-  e = (struct gmi_ent*)i;
-  i = to_ptr(next(to_mesh(m), from_ptr(i)));
-  return e;
+  int* i = (int*)it;
+  int e = *i;
+  *i = next(to_mesh(m), *i);
+  return to_ptr(e);
 }
 
 void gmi_mesh_end(struct gmi_model* m, struct gmi_iter* i)
 {
+  free(i);
 }
 
 int gmi_mesh_dim(struct gmi_model* m, struct gmi_ent* e)
@@ -175,6 +179,40 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
     }
   }
   sort_dim(m, 3);
+  fclose(f);
+}
+
+void gmi_write_dmg(struct gmi_model* m, const char* filename)
+{
+  struct gmi_iter* it;
+  struct gmi_ent* e;
+  FILE* f = fopen(filename, "w");
+  /* entity counts */
+  fprintf(f, "%d %d %d %d\n", m->n[3], m->n[2], m->n[1], m->n[0]);
+  /* bounding box */
+  fprintf(f, "0 0 0\n");
+  fprintf(f, "0 0 0\n");
+  /* vertices */
+  it = gmi_begin(m, 0);
+  while ((e = gmi_next(m, it))) {
+    fprintf(f, "%d 0 0 0\n", gmi_tag(m, e));
+  }
+  gmi_end(m, it);
+  /* edges */
+  it = gmi_begin(m, 1);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
+  /* faces */
+  it = gmi_begin(m, 2);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
+  /* regions */
+  it = gmi_begin(m, 3);
+  while ((e = gmi_next(m, it)))
+    fprintf(f, "%d 0\n", gmi_tag(m, e));
+  gmi_end(m, it);
   fclose(f);
 }
 

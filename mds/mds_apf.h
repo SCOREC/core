@@ -63,6 +63,8 @@ void mds_verify_residence(struct mds_apf* m, mds_id e);
 
 void mds_apf_scale(struct mds_apf* m, int factor);
 
+int mds_align_matches(struct mds_apf* m);
+
 extern int const mds_apf_double;
 extern int const mds_apf_int;
 

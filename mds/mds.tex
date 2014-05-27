@@ -497,6 +497,59 @@ The position of the first unused entry in the array is kept in
 \texttt{end}, which is also the number of used entries.
 Finally, the actual allocated size is stored in \texttt{cap}.
 
+\section{Results}
+
+The following table lists mesh memory usage (reported as ``in use bytes"
+by the C/C++ memory allocator) for different mesh libraries
+when loading a serial all-tet mesh of 93710 elements.
+The mesh has matched entities along the surface.
+All of these libraries are storing the same information:
+a full one-level adjacency representation, coordinates,
+classification, matches, etc.
+
+The first two are similar C++ object based structures,
+``pumi" being the version developed at SCOREC and
+``sim" at Simmetrix, Inc.
+
+\begin{center}
+\begin{tabular}{lrrr}
+library & MB & bytes per tet & relative \\\hline
+pumi & 84.1 & 897 & 100\% \\
+sim  & 55.2 & 589 &  66\% \\
+mds  & 22.6 & 241 &  27\% \\
+\end{tabular}
+\end{center}
+
+Simmetrix also offers a reduced representation structure.
+Re-generating a mesh of similar size in Simmetrix reduced form
+uses about 245 bytes per element, almost exactly what MDS
+uses for a full representation.
+Note that both libraries are storing additional information
+such as coordinates and classification.
+
+If we remove from MDS all the non-topological data such as coordinates,
+classification, etc., we are left with the core MDS structure described
+above, which uses 12.5 MB of data for this mesh, or 133 bytes per element.
+
+In addition, we can predict the memory use of an application using
+a reduced representation based on MDS by removing all interior
+faces and edges, then storing only the one-level adjacencies
+between elements and vertices, faces and edges, and edges and vertices.
+That structure took up 7.4 MB for this mesh.
+This works out to about 79 bytes per element for a reduced representation
+in MDS.
+
+By comparison, Dyedov et al published a half-facet mesh data structure
+called AHF,
+implemented both within the MOAB library and as standalone C code
+generated from MATLAB code \cite{dyedov2014ahf}.
+This structure stored only the topological data, and memory use
+was measured for both implementations on various meshes.
+For their largest mesh, which had similar proportions of explicit
+faces to our test mesh, the MOAB\_AHF implementation used 80 bytes
+per element while the standalone integer-based AHF C code used about
+39 bytes per element.
+
 \bibliography{mds}{}
 \bibliographystyle{plain}
 

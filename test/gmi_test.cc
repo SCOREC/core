@@ -9,7 +9,9 @@ int main(int argc, char** argv)
   SimModel_start();
   gmi_register_mesh();
   gmi_register_sim();
-  gmi_destroy(gmi_load(argv[1]));
+  gmi_model* m = gmi_load(argv[1]);
+  gmi_write_dmg(m, argv[2]);
+  gmi_destroy(m);
   SimModel_stop();
   Sim_unregisterAllKeys();
   return 0;

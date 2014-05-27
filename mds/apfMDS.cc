@@ -610,6 +610,12 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   Mesh2* m = new MeshMDS(model, meshfile);
   initResidence(m, m->getDimension());
   m->stitch();
+  /* This is a hack to detect a mesh written to file
+     with a quadratic coordinate field stored in tags.
+     the proper solution is to work APF information into
+     the files */
+  if (m->findTag("coordinates_edg"))
+    changeMeshShape(m,getLagrange(2),/*project=*/false);
   return m;
 }
 
@@ -659,6 +665,14 @@ void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
   globalThrdCall = runAfter;
   scaleMdsMesh(m, n);
   PCU_Thrd_Run(n, splitThrdMain, NULL);
+}
+
+bool alignMdsMatches(Mesh2* in)
+{
+  if (!in->hasMatching())
+    return false;
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_align_matches(m->mesh);
 }
 
 }

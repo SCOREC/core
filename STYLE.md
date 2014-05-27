@@ -70,7 +70,7 @@ or
 
 Anything else, like the GNU style, is too weird.
 
-## Indentation ##
+## Whitespace ##
 
 Currently, most of the code uses 2 spaces for indentation.
 Consistency requires that this is followed in existing code,
@@ -78,7 +78,9 @@ but new projects may choose a different self-consistent style.
 
 Setup your editor to automate indentation with the style of surrounding code.
 
-Do not mix tabs and spaces, this is inconsistency.
+Do not mix tabs and spaces, be consistent.
+
+Do not leave trailing whitespace.
 
 ## Projects ##
 

@@ -144,8 +144,10 @@ static int insert_peer(struct mds_links* ln, int p)
   ++(ln->np);
   ln->p = realloc(ln->p, ln->np * sizeof(unsigned));
   ln->n = realloc(ln->n, ln->np * sizeof(unsigned));
+  ln->l = realloc(ln->l, ln->np * sizeof(unsigned*));
   ln->p[i] = p;
   ln->n[i] = 0;
+  ln->l[i] = NULL;
   return i;
 }
 
@@ -163,7 +165,7 @@ static void for_type_net(struct mds_net* net, struct mds* m,
   int j;
   struct mds_copies* cs;
   for (i = 0; i < m->end[t]; ++i) {
-    cs = mds_get_copies(net, mds_identify(MDS_VERTEX, i));
+    cs = mds_get_copies(net, mds_identify(t, i));
     if (!cs)
       continue;
     for (j = 0; j < cs->n; ++j)
@@ -181,7 +183,6 @@ static void note_remote_link(mds_id i, struct mds_copy c, void* u)
 static void alloc_links(struct mds_links* ln)
 {
   int i;
-  ln->l = malloc(ln->np * sizeof(unsigned*));
   for (i = 0; i < ln->np; ++i)
     ln->l[i] = malloc(ln->n[i] * sizeof(unsigned));
 }

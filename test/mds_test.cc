@@ -14,6 +14,7 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(0);
   SimModel_start();
   PCU_Comm_Init();
+  PCU_Protect();
   gmi_register_mesh();
   gmi_register_sim();
   //load model and mesh
@@ -22,9 +23,8 @@ int main(int argc, char** argv)
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     std::cout << t1-t0 << " seconds to load\n";
+  assert(!alignMdsMatches(m));
   m->verify();
-  // adapt mds
-  apf::writeVtkFiles("out",m);
   t0 = MPI_Wtime();
   m->writeNative("out.smb");
   t1 = MPI_Wtime();
