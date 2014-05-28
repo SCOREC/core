@@ -95,38 +95,48 @@ static mds_id find_seed(struct mds_apf* m)
   return best_v;
 }
 
-struct mds_tag* mds_number(struct mds_apf* m)
+static void number_connected(struct mds* m, mds_id v,
+    struct mds_tag* tag, mds_id label[MDS_TYPES])
 {
   struct queue q;
+  struct mds_set adj[4];
+  int i,j;
+  if (!visit(m, tag, label, v))
+    return;
+  make_queue(&q, m->n[MDS_VERTEX]);
+  push_queue(&q, v);
+  while ( ! queue_empty(&q)) {
+    v = pop_queue(&q);
+    for (i = 1; i <= m->d; ++i)
+      mds_get_adjacent(m, v, i, adj + i);
+    adj[0].n = adj[1].n;
+    for (i = 0; i < adj[1].n; ++i)
+      adj[0].e[i] = other_vert(m, adj[1].e[i], v);
+    for (i = 0; i < adj[0].n; ++i)
+      if (visit(m, tag, label, adj[0].e[i]))
+        push_queue(&q, adj[0].e[i]);
+    for (i = 1; i <= m->d; ++i)
+      for (j = 0; j < adj[i].n; ++j)
+        visit(m, tag, label, adj[i].e[j]);
+  }
+  free_queue(&q);
+}
+
+struct mds_tag* mds_number(struct mds_apf* m)
+{
   struct mds_tag* tag;
   mds_id label[MDS_TYPES];
-  struct mds_set adj[4];
   mds_id v;
-  int i,j;
-  make_queue(&q,m->mds.n[MDS_VERTEX]);
+  int i;
   tag = mds_create_tag(&m->tags, &m->mds, "mds_number", sizeof(mds_id), 1);
   for (i = 0; i < MDS_TYPES; ++i)
     label[i] = m->mds.n[i] - 1;
   v = find_seed(m);
-  visit(&m->mds, tag, label, v);
-  push_queue(&q, v);
-  while ( ! queue_empty(&q)) {
-    v = pop_queue(&q);
-    for (i = 1; i <= m->mds.d; ++i)
-      mds_get_adjacent(&(m->mds),v,i,adj + i);
-    adj[0].n = adj[1].n;
-    for (i = 0; i < adj[1].n; ++i)
-      adj[0].e[i] = other_vert(&(m->mds),adj[1].e[i],v);
-    for (i = 0; i < adj[0].n; ++i)
-      if (visit(&(m->mds),tag,label,adj[0].e[i]))
-        push_queue(&q,adj[0].e[i]);
-    for (i = 1; i <= m->mds.d; ++i)
-      for (j = 0; j < adj[i].n; ++j)
-        visit(&(m->mds),tag,label,adj[i].e[j]);
-  }
+  number_connected(&m->mds, v, tag, label);
+  for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
+    number_connected(&m->mds, v, tag, label);
   for (i = 0; i < MDS_TYPES; ++i)
     assert(label[i] == -1);
-  free_queue(&q);
   return tag;
 }
 
