@@ -437,7 +437,11 @@ class MeshMDS : public Mesh2
     }
     void writeNative(const char* fileName)
     {
+      double t0 = MPI_Wtime();
       mesh = mds_write_smb(mesh, fileName);
+      double t1 = MPI_Wtime();
+      if (!PCU_Comm_Self())
+        printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
     }
     void destroyNative()
     {
@@ -616,11 +620,15 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
 
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
-  PCU_Barrier();
+  double t0 = MPI_Wtime();
+  PCU_Thrd_Barrier();
   static gmi_model* model;
   if (!PCU_Thrd_Self())
     model = gmi_load(modelfile);
-  PCU_Barrier();
+  PCU_Thrd_Barrier();
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
   Mesh2* m = new MeshMDS(model, meshfile);
   initResidence(m, m->getDimension());
   m->stitch();
@@ -630,6 +638,9 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
      the files */
   if (m->findTag("coordinates_edg"))
     changeMeshShape(m,getLagrange(2),/*project=*/false);
+  double t2 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("mesh %s loaded in %f seconds\n", meshfile, t2 - t1);
   return m;
 }
 
@@ -659,6 +670,7 @@ static void* splitThrdMain(void*)
 {
   Mesh2* m;
   Migration* plan;
+  double t0 = MPI_Wtime();
   if (!PCU_Thrd_Self()) {
     m = globalMesh;
     plan = globalPlan;
@@ -668,6 +680,9 @@ static void* splitThrdMain(void*)
     plan = new apf::Migration(m);
   }
   m->migrate(plan);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("mesh split in %f seconds\n", t1 - t0);
   globalThrdCall(m);
   return NULL;
 }
