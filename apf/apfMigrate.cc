@@ -324,7 +324,7 @@ static void packReference(
 static void packDownward(Mesh2* m, int to, MeshEntity* e)
 {
   Downward down;
-  int d = Mesh::typeDimension[m->getType(e)];
+  int d = getDimension(m, e);
   int n = m->getDownward(e,d-1,down);
   PCU_COMM_PACK(to,n);
   for (int i=0; i < n; ++i)
