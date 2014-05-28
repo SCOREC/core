@@ -150,11 +150,19 @@ static std::string getPieceFileName(const char* prefix, int id)
   return ss.str();
 }
 
+static std::string stripPath(std::string const& s)
+{
+  size_t i = s.rfind('/');
+  if (i == std::string::npos)
+    return s;
+  return s.substr(i + 1, std::string::npos);
+}
+
 static void writePSources(std::ostream& file, const char* prefix)
 {
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
-    std::string fileName = getPieceFileName(prefix,i);
+    std::string fileName = stripPath(getPieceFileName(prefix,i));
     file << "<Piece Source=\"" << fileName << "\"/>\n";
   }
 }
