@@ -141,27 +141,13 @@ class CentroidStepper
       return 0;
     }
 
-    apf::Vector3 getEntityCentroid(apf::MeshEntity* e)
-    {
-      apf::Downward v;
-      int nv = m->getDownward(e,0,v);
-      apf::Vector3 x(0,0,0);
-      for (int i=0; i < nv; ++i)
-      {
-        apf::Vector3 p;
-        m->getPoint(v[i],0,p);
-        x = x + p;
-      }
-      return x / nv;
-    }
-
     void getCentroid()
     {
       apf::Vector3 x(0,0,0);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(dim);
       while ((e = m->iterate(it)))
-        x = x + (getEntityCentroid(e)*getElementWeight(e));
+        x = x + (apf::getLinearCentroid(e) * getElementWeight(e));
       m->end(it);
       centroid = x / selfWeight;
     }
