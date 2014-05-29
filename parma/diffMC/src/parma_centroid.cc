@@ -147,7 +147,7 @@ class CentroidStepper
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(dim);
       while ((e = m->iterate(it)))
-        x = x + (apf::getLinearCentroid(e) * getElementWeight(e));
+        x = x + (apf::getLinearCentroid(m, e) * getElementWeight(e));
       m->end(it);
       centroid = x / selfWeight;
     }
@@ -220,7 +220,7 @@ class CentroidStepper
 
     double getDistanceTo(apf::MeshEntity* e, int to)
     {
-      return (getEntityCentroid(e)-centroids[to]).getLength();
+      return (apf::getLinearCentroid(m, e) - centroids[to]).getLength();
     }
 
     void pushDistanceQueue(apf::MeshEntity* e, int to)
