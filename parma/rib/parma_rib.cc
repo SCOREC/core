@@ -1,5 +1,6 @@
 #include "parma_rib.h"
 #include "parma_rib_math.h"
+#include <apfNew.h>
 #include <algorithm>
 
 namespace parma {
@@ -7,9 +8,10 @@ namespace parma {
 struct Bisector
 {
   apf::Vector3 normal;
+  double median;
   bool operator()(Body* body)
   {
-    return body->point * normal < 0;
+    return body->point * normal < median;
   }
 };
 
@@ -82,12 +84,23 @@ void testBisectionPlane(Body* b, int n)
   bodies.destroy();
 }
 
+double getBisectionMedian(Bodies* all, apf::Vector3 const& normal)
+{
+  apf::NewArray<double> v(all->n);
+  for (int i = 0; i < all->n; ++i)
+    v[i] = all->body[i]->point * normal;
+  int mid = all->n / 2;
+  std::nth_element(&v[0], &v[mid], &v[all->n]);
+  return v[mid];
+}
+
 void bisect(Bodies* all, Bodies* left, Bodies* right)
 {
   apf::Vector3 c = getCenterOfGravity(all);
   centerBodies(all, c);
   Bisector b;
   b.normal = getBisectionNormal(all);
+  b.median = getBisectionMedian(all, b.normal);
   Body** mid = std::partition(all->body, all->body + all->n, b);
   left->n = mid - all->body;
   right->n = all->n - left->n;
