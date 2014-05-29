@@ -292,15 +292,9 @@ class CentroidStepper
       double totalWeight = selfWeight;
       PCU_Add_Doubles(&totalWeight,1);
       double averageWeight = totalWeight / PCU_Comm_Peers();
-      double selfImbalance;
-      if (selfWeight < averageWeight)
-        /* we only care about spikes, not valleys */
-        selfImbalance = 1.0;
-      else
-        selfImbalance = selfWeight / averageWeight;
-      double imbalance = selfImbalance;
-      PCU_Max_Doubles(&imbalance,1);
-      return imbalance;
+      double maxWeight = selfWeight;
+      PCU_Max_Doubles(&maxWeight, 1);
+      return maxWeight / averageWeight;
     }
 
 /* send to other centroid strategy.
