@@ -5,13 +5,13 @@
 
 namespace parma {
 
-struct Bisector
+struct Compare
 {
   apf::Vector3 normal;
   double median;
-  bool operator()(Body* body)
+  bool operator()(Body* a, Body* b)
   {
-    return body->point * normal < median;
+    return (a->point * normal) < (b->point * normal);
   }
 };
 
@@ -53,16 +53,22 @@ static apf::Vector3 getBisectionNormal(Bodies const* b)
   return v;
 }
 
+static double getTotalMass(Bodies const* b)
+{
+  double mass = 0;
+  for (int i = 0; i < b->n; ++i)
+    mass += b->body[i]->mass;
+  return mass;
+}
+
 static apf::Vector3 getCenterOfGravity(Bodies const* b)
 {
   apf::Vector3 c(0,0,0);
-  double mass = 0;
   for (int i = 0; i < b->n; ++i) {
     Body* body = b->body[i];
     c = c + (body->point * body->mass);
-    mass += body->mass;
   }
-  return c / mass;
+  return c / getTotalMass(b);
 }
 
 static void centerBodies(Bodies* b, apf::Vector3 const& c)
@@ -84,29 +90,32 @@ void testBisectionPlane(Body* b, int n)
   bodies.destroy();
 }
 
-double getBisectionMedian(Bodies* all, apf::Vector3 const& normal)
+int findSortedMedian(Bodies const* b)
 {
-  apf::NewArray<double> v(all->n);
-  for (int i = 0; i < all->n; ++i)
-    v[i] = all->body[i]->point * normal;
-  int mid = all->n / 2;
-  std::nth_element(&v[0], &v[mid], &v[all->n]);
-  return v[mid];
+  double total = getTotalMass(b);
+  double half = 0;
+  for (int i = 0; i < b->n; ++i) {
+    half += b->body[i]->mass;
+    if (half >= total / 2)
+      return i;
+  }
+  abort();
+  return -1;
 }
 
 void bisect(Bodies* all, Bodies* left, Bodies* right)
 {
   apf::Vector3 c = getCenterOfGravity(all);
   centerBodies(all, c);
-  Bisector b;
-  b.normal = getBisectionNormal(all);
-  b.median = getBisectionMedian(all, b.normal);
-  Body** mid = std::partition(all->body, all->body + all->n, b);
-  left->n = mid - all->body;
-  right->n = all->n - left->n;
+  Compare comp;
+  comp.normal = getBisectionNormal(all);
+  std::sort(all->body, all->body + all->n, comp);
+  int mid = findSortedMedian(all);
+  left->n = mid;
+  right->n = all->n - mid;
 /* in-place bisection, left and right point to the same array as all */
   left->body = all->body;
-  right->body = mid;
+  right->body = all->body + mid;
 }
 
 void recursivelyBisect(Bodies* all, int depth, Bodies out[])
