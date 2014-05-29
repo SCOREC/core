@@ -18,6 +18,7 @@ class CentroidStepper
     apf::MeshTag* sideTag;
     double selfWeight;
     CountMap sides;
+    int totalSides;
     WeightMap peers;
     WeightMap targets;
     WeightMap sending;
@@ -45,6 +46,7 @@ class CentroidStepper
       sideTag = m->createIntTag("ma_side",1);
       apf::MeshEntity* s;
       apf::MeshIterator* it = m->begin(dim-1);
+      totalSides = 0;
       while ((s = m->iterate(it)))
         if (m->countUpward(s)==1)
         {
@@ -53,6 +55,7 @@ class CentroidStepper
           {
             peer = apf::getOtherCopy(m,s).first;
             ++(sides[peer]);
+            ++totalSides;
           }
           else
             peer = -1; //geometric boundary
@@ -102,8 +105,13 @@ class CentroidStepper
     void getTargets()
     {
       APF_ITERATE(WeightMap,peers,it)
-        if (it->second < selfWeight)
-          targets[it->first] = magicFactor * (selfWeight - it->second);
+        if (it->second < selfWeight) {
+          double difference = selfWeight - it->second;
+          double sideFraction = sides[it->first];
+          sideFraction /= totalSides;
+          targets[it->first] =
+            difference * sideFraction * magicFactor;
+        }
     }
 
     int getSidePeer(apf::MeshEntity* side)
