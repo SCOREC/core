@@ -794,7 +794,6 @@ static void deleteOldEntities(
 /* this is the main migration routine */
 static void migrate1(Mesh2* m, Migration* plan)
 {
-  m->preMigrate_();
   EntityVector affected[4];
   getAffected(m,plan,affected);
   EntityVector senders[4];
@@ -805,7 +804,7 @@ static void migrate1(Mesh2* m, Migration* plan)
   moveEntities(m,senders);
   updateMatching(m,affected,senders);
   deleteOldEntities(m,affected);
-  m->postMigrate_();
+  m->acceptChanges();
 }
 
 static size_t migrationLimit = 1000*1000;

@@ -420,10 +420,7 @@ class MeshMDS : public Mesh2
                &p[0], &x[0]);
       return true;
     }
-    void preMigrate_()
-    {
-    }
-    void postMigrate_()
+    void acceptChanges()
     {
       updateOwners(this, parts);
     }
@@ -560,11 +557,6 @@ class MeshMDS : public Mesh2
       putPME(parts, op);
       mds_apf_destroy_entity(mesh,id);
     }
-    void stitch()
-    {
-      stitchMesh(this);
-      updateOwners(this, parts);
-    }
     bool hasMatching()
     {
       return isMatched;
@@ -631,7 +623,8 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
     printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
   Mesh2* m = new MeshMDS(model, meshfile);
   initResidence(m, m->getDimension());
-  m->stitch();
+  stitchMesh(m);
+  m->acceptChanges();
   /* This is a hack to detect a mesh written to file
      with a quadratic coordinate field stored in tags.
      the proper solution is to work APF information into

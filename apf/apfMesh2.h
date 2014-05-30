@@ -52,15 +52,10 @@ class Mesh2 : public Mesh
       requireUnfrozen();
       destroy_(e);
     }
-    /* given that the remote copies of the vertices are set up correctly, this function
-       will synchronize the remote copies and resident part sets for all other entities
-       correctly */
-    virtual void stitch() = 0;
     virtual void addMatch(MeshEntity* e, int peer, MeshEntity* match) = 0;
     virtual void clearMatches(MeshEntity* e) = 0;
     virtual void repartition(MeshTag* elementWeights, double maximumImbalance) = 0;
-    virtual void preMigrate_() = 0;
-    virtual void postMigrate_() = 0;
+    virtual void acceptChanges() = 0;
 };
 
 /* apf's custom migration function, will work for anyone
@@ -99,6 +94,12 @@ MeshEntity* buildOneElement(
     ModelEntity* c,
     int type,
     Vector3* points);
+
+void initResidence(Mesh2* m, int dim);
+/* given that the remote copies of the vertices are set up correctly, this
+   function will synchronize the remote copies and resident part sets for all
+   other entities correctly */
+void stitchMesh(Mesh2* m);
 
 }//namespace apf
 
