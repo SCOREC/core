@@ -6,6 +6,7 @@ SET(SUBPACKAGES_DIRS_CLASSIFICATIONS_OPTREQS
     parma               parma           SS  REQUIRED
     ma                  ma              SS  REQUIRED
     spr                 spr             SS  REQUIRED
+    apf_stk             stk             SS  REQUIRED
 )
 
 SET(LIB_REQUIRED_DEP_PACKAGES)
