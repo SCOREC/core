@@ -57,8 +57,6 @@ class Mesh2 : public Mesh
     }
     virtual void addMatch(MeshEntity* e, int peer, MeshEntity* match) = 0;
     virtual void clearMatches(MeshEntity* e) = 0;
-    virtual void repartition(MeshTag* elementWeights,
-        double maximumImbalance) = 0;
     virtual void acceptChanges() = 0;
 };
 

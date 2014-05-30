@@ -571,10 +571,6 @@ class MeshMDS : public Mesh2
     void clearMatches(MeshEntity* e)
     {
     }
-    void repartition(MeshTag* elementWeights, double maximumImbalance)
-    {
-      abort();
-    }
     double getElementBytes(int type)
     {
       static double const table[TYPES] =

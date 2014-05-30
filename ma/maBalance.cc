@@ -73,19 +73,7 @@ Tag* getElementWeights(Adapt* a)
 
 void runZoltan(Adapt* a)
 {
-#if 0
-  double t0 = MPI_Wtime();
-  Mesh* m = a->mesh;
-  Input* in = a->input;
-  Tag* weights = getElementWeights(a);
-  m->repartition(weights,in->maximumImbalance);
-  removeTagFromDimension(m,weights,m->getDimension());
-  m->destroyTag(weights);
-  double t1 = MPI_Wtime();
-  print("zoltan run took %f seconds",t1-t0);
-#else
   apf::fail("waiting for apf::zoltan!");
-#endif
 }
 
 void runDiffusion(Adapt* a)
