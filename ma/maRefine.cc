@@ -466,8 +466,10 @@ long markEdgesToSplit(Adapt* a)
 void processNewElements(Refine* r)
 {
   linkNewVerts(r);
-  if (PCU_Comm_Peers()>1)
-    r->adapt->mesh->stitch();
+  if (PCU_Comm_Peers()>1) {
+    apf::stitchMesh(r->adapt->mesh);
+    r->adapt->mesh->acceptChanges();
+  }
   if (r->adapt->input->shouldHandleMatching)
     matchNewElements(r);
   transferElements(r);

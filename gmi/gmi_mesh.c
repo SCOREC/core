@@ -143,6 +143,8 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
   int loops, shells;
   int faces, edges;
   FILE* f = fopen(filename, "r");
+  if (!f)
+    gmi_fail("could not open model file");
   /* read entity counts */
   fscanf(f, "%d %d %d %d", &n[3], &n[2], &n[1], &n[0]);
   gmi_mesh_create(m, n);

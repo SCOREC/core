@@ -1,5 +1,6 @@
 #include "parma_rib.h"
 #include <apfPartition.h>
+#include <PCU.h>
 
 namespace parma {
 
@@ -49,6 +50,7 @@ class RibSplitter : public apf::Splitter
     virtual apf::Migration* split(apf::MeshTag* weights, double tolerance,
         int multiple)
     {
+      double t0 = MPI_Wtime();
       int depth;
       for (depth = 0; (1 << depth) < multiple; ++depth);
       assert((1 << depth) == multiple);
@@ -60,6 +62,10 @@ class RibSplitter : public apf::Splitter
           int p = plan->sending(e);
           plan->send(e, p + offset);
         }
+        double t1 = MPI_Wtime();
+        if (!PCU_Comm_Self())
+          printf("planned RIB factor %d in %f seconds\n",
+              multiple, t1 - t0);
       }
       return plan;
     }

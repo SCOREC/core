@@ -370,7 +370,7 @@ static void getClosureEntitiesWithNodes(
     EntitySet& out)
 {
   FieldShape* s = m->getShape();
-  int D = Mesh::typeDimension[m->getType(e)];
+  int D = getDimension(m, e);
   for (int d=0; d <= D; ++d)
     if (s->hasNodesIn(d))
     {

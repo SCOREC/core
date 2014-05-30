@@ -44,7 +44,11 @@ int main(int argc, char** argv)
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
   Linear sf(m);
-  ma::adapt(m, &sf);
+  ma::Input* in = ma::configure(m, &sf);
+  in->shouldRunPreDiffusion = true;
+  in->shouldRunMidDiffusion = true;
+  in->shouldRunPostDiffusion = true;
+  ma::adapt(in);
   m->verify();
   apf::writeVtkFiles("after",m);
   m->destroyNative();

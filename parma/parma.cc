@@ -128,4 +128,15 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
   }
 }
 
+apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m) {
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  apf::MeshEntity* e;
+  apf::MeshTag* tag = m->createDoubleTag("parma_bytes", 1);
+  while ((e = m->iterate(it))) {
+    double bytes = m->getElementBytes(m->getType(e));
+    m->setDoubleTag(e, tag, &bytes);
+  }
+  m->end(it);
+  return tag;
+}
 

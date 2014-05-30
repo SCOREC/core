@@ -25,10 +25,12 @@ class Mesh2 : public Mesh
     virtual bool canSnap() = 0;
     virtual void setParam(MeshEntity* e, Vector3 const& p) = 0;
     virtual void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p) = 0;
-    virtual bool getPeriodicRange(ModelEntity* g, int axis, double range[2]) = 0;
+    virtual bool getPeriodicRange(ModelEntity* g, int axis,
+        double range[2]) = 0;
     void setPoint(MeshEntity* e, int node, Vector3 const& p);
     virtual void setPoint_(MeshEntity* e, int node, Vector3 const& p) = 0;
-    MeshEntity* createVertex(ModelEntity* c, Vector3 const& point, Vector3 const& param);
+    MeshEntity* createVertex(ModelEntity* c, Vector3 const& point,
+        Vector3 const& param);
     void requireUnfrozen()
     {
       if (hasFrozenFields)
@@ -40,7 +42,8 @@ class Mesh2 : public Mesh
       requireUnfrozen();
       return createVert_(c);
     }
-    virtual MeshEntity* createEntity_(int type, ModelEntity* c, MeshEntity** down) = 0;
+    virtual MeshEntity* createEntity_(int type, ModelEntity* c,
+        MeshEntity** down) = 0;
     MeshEntity* createEntity(int type, ModelEntity* c, MeshEntity** down)
     {
       requireUnfrozen();
@@ -52,15 +55,9 @@ class Mesh2 : public Mesh
       requireUnfrozen();
       destroy_(e);
     }
-    /* given that the remote copies of the vertices are set up correctly, this function
-       will synchronize the remote copies and resident part sets for all other entities
-       correctly */
-    virtual void stitch() = 0;
     virtual void addMatch(MeshEntity* e, int peer, MeshEntity* match) = 0;
     virtual void clearMatches(MeshEntity* e) = 0;
-    virtual void repartition(MeshTag* elementWeights, double maximumImbalance) = 0;
-    virtual void preMigrate_() = 0;
-    virtual void postMigrate_() = 0;
+    virtual void acceptChanges() = 0;
 };
 
 /* apf's custom migration function, will work for anyone
@@ -99,6 +96,12 @@ MeshEntity* buildOneElement(
     ModelEntity* c,
     int type,
     Vector3* points);
+
+void initResidence(Mesh2* m, int dim);
+/* given that the remote copies of the vertices are set up correctly, this
+   function will synchronize the remote copies and resident part sets for all
+   other entities correctly */
+void stitchMesh(Mesh2* m);
 
 }//namespace apf
 

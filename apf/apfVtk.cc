@@ -119,6 +119,11 @@ static void writeIP_PCellData(std::ostream& file, FieldBase* f)
   }
 }
 
+static void writePCellParts(std::ostream& file)
+{
+  writePDataArray(file, "apf_part", apf::Mesh::INT, 1);
+}
+
 static void writePCellData(std::ostream& file, Mesh* m)
 {
   file << "<PCellData>\n";
@@ -134,6 +139,7 @@ static void writePCellData(std::ostream& file, Mesh* m)
     if (isIPField(n))
       writeIP_PCellData(file,n);
   }
+  writePCellParts(file);
   file << "</PCellData>\n";
 }
 
@@ -144,11 +150,19 @@ static std::string getPieceFileName(const char* prefix, int id)
   return ss.str();
 }
 
+static std::string stripPath(std::string const& s)
+{
+  size_t i = s.rfind('/');
+  if (i == std::string::npos)
+    return s;
+  return s.substr(i + 1, std::string::npos);
+}
+
 static void writePSources(std::ostream& file, const char* prefix)
 {
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
-    std::string fileName = getPieceFileName(prefix,i);
+    std::string fileName = stripPath(getPieceFileName(prefix,i));
     file << "<Piece Source=\"" << fileName << "\"/>\n";
   }
 }
@@ -335,6 +349,16 @@ class WriteIPField : public FieldOp
     }
 };
 
+static void writeCellParts(std::ostream& file, Mesh* m)
+{
+  writeDataHeader(file, "apf_part", apf::Mesh::INT, 1);
+  size_t n = m->count(m->getDimension());
+  int id = m->getId();
+  for (size_t i = 0; i < n; ++i)
+    file << id << '\n';
+  file << "</DataArray>\n";
+}
+
 static void writeCellData(std::ostream& file, Mesh* m)
 {
   file << "<CellData>\n";
@@ -352,6 +376,7 @@ static void writeCellData(std::ostream& file, Mesh* m)
     if (isIPField(n))
       wi.run(file,n);
   }
+  writeCellParts(file, m);
   file << "</CellData>\n";
 }
 
@@ -378,10 +403,15 @@ static void writeVtuFile(const char* prefix, Numbering* n)
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
+  double t0 = MPI_Wtime();
   writePvtuFile(prefix, m);
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("vtk files %s written in %f seconds\n",
+        prefix, t1 - t0);
   delete n;
 }
 

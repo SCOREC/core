@@ -1,6 +1,6 @@
 #include "maBalance.h"
 #include "maAdapt.h"
-#include <sstream>
+#include <parma.h>
 #include <PCU.h>
 
 namespace ma {
@@ -73,25 +73,11 @@ Tag* getElementWeights(Adapt* a)
 
 void runZoltan(Adapt* a)
 {
-#if 0
-  double t0 = MPI_Wtime();
-  Mesh* m = a->mesh;
-  Input* in = a->input;
-  Tag* weights = getElementWeights(a);
-  m->repartition(weights,in->maximumImbalance);
-  removeTagFromDimension(m,weights,m->getDimension());
-  m->destroyTag(weights);
-  double t1 = MPI_Wtime();
-  print("zoltan run took %f seconds",t1-t0);
-#else
   apf::fail("waiting for apf::zoltan!");
-#endif
 }
 
 void runDiffusion(Adapt* a)
 {
-#if 0
-  double t0 = MPI_Wtime();
   Mesh* m = a->mesh;
   Input* in = a->input;
   Tag* weights = getElementWeights(a);
@@ -100,16 +86,10 @@ void runDiffusion(Adapt* a)
   delete b;
   removeTagFromDimension(m,weights,m->getDimension());
   m->destroyTag(weights);
-  double t1 = MPI_Wtime();
-  print("diffusion run took %f seconds",t1-t0);
-#else
-  apf::fail("waiting for parma!");
-#endif
 }
 
 void runParma(Adapt* a)
 {
-#if 0
   double t0 = MPI_Wtime();
   Mesh* m = a->mesh;
   Input* in = a->input;
@@ -130,19 +110,14 @@ void runParma(Adapt* a)
   m->destroyTag(weights);
   double t1 = MPI_Wtime();
   print("parma run took %f seconds",t1-t0);
-#else
-  apf::fail("waiting for parma!");
-#endif
 }
 
 void printEntityImbalance(Mesh* m)
 {
-#if 0
   double imbalance[4];
   Parma_GetEntImbalance(m,&imbalance);
   double p = (imbalance[m->getDimension()]-1)*100;
   print("element imbalance %.0f%% of average",p);
-#endif
 }
 
 void preBalance(Adapt* a)

@@ -18,6 +18,7 @@ class CentroidStepper
     apf::MeshTag* sideTag;
     double selfWeight;
     CountMap sides;
+    int totalSides;
     WeightMap peers;
     WeightMap targets;
     WeightMap sending;
@@ -45,6 +46,7 @@ class CentroidStepper
       sideTag = m->createIntTag("ma_side",1);
       apf::MeshEntity* s;
       apf::MeshIterator* it = m->begin(dim-1);
+      totalSides = 0;
       while ((s = m->iterate(it)))
         if (m->countUpward(s)==1)
         {
@@ -53,6 +55,7 @@ class CentroidStepper
           {
             peer = apf::getOtherCopy(m,s).first;
             ++(sides[peer]);
+            ++totalSides;
           }
           else
             peer = -1; //geometric boundary
@@ -102,8 +105,13 @@ class CentroidStepper
     void getTargets()
     {
       APF_ITERATE(WeightMap,peers,it)
-        if (it->second < selfWeight)
-          targets[it->first] = magicFactor * (selfWeight - it->second);
+        if (it->second < selfWeight) {
+          double difference = selfWeight - it->second;
+          double sideFraction = sides[it->first];
+          sideFraction /= totalSides;
+          targets[it->first] =
+            difference * sideFraction * magicFactor;
+        }
     }
 
     int getSidePeer(apf::MeshEntity* side)
@@ -133,27 +141,13 @@ class CentroidStepper
       return 0;
     }
 
-    apf::Vector3 getEntityCentroid(apf::MeshEntity* e)
-    {
-      apf::Downward v;
-      int nv = m->getDownward(e,0,v);
-      apf::Vector3 x(0,0,0);
-      for (int i=0; i < nv; ++i)
-      {
-        apf::Vector3 p;
-        m->getPoint(v[i],0,p);
-        x = x + p;
-      }
-      return x / nv;
-    }
-
     void getCentroid()
     {
       apf::Vector3 x(0,0,0);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(dim);
       while ((e = m->iterate(it)))
-        x = x + (getEntityCentroid(e)*getElementWeight(e));
+        x = x + (apf::getLinearCentroid(m, e) * getElementWeight(e));
       m->end(it);
       centroid = x / selfWeight;
     }
@@ -226,7 +220,7 @@ class CentroidStepper
 
     double getDistanceTo(apf::MeshEntity* e, int to)
     {
-      return (getEntityCentroid(e)-centroids[to]).getLength();
+      return (apf::getLinearCentroid(m, e) - centroids[to]).getLength();
     }
 
     void pushDistanceQueue(apf::MeshEntity* e, int to)
@@ -292,15 +286,9 @@ class CentroidStepper
       double totalWeight = selfWeight;
       PCU_Add_Doubles(&totalWeight,1);
       double averageWeight = totalWeight / PCU_Comm_Peers();
-      double selfImbalance;
-      if (selfWeight < averageWeight)
-        /* we only care about spikes, not valleys */
-        selfImbalance = 1.0;
-      else
-        selfImbalance = selfWeight / averageWeight;
-      double imbalance = selfImbalance;
-      PCU_Max_Doubles(&imbalance,1);
-      return imbalance;
+      double maxWeight = selfWeight;
+      PCU_Max_Doubles(&maxWeight, 1);
+      return maxWeight / averageWeight;
     }
 
 /* send to other centroid strategy.
@@ -345,7 +333,12 @@ class CentroidDiffuser : public apf::Balancer
     }
     virtual void balance(apf::MeshTag* weights, double tolerance)
     {
+      double t0 = MPI_Wtime();
       while (runStep(weights,tolerance));
+      double t1 = MPI_Wtime();
+      if (!PCU_Comm_Self())
+        printf("centroid factor %f balanced to %f in %f seconds\n",
+            factor, tolerance, t1-t0);
     }
   private:
     apf::Mesh* mesh;

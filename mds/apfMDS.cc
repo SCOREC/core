@@ -420,10 +420,7 @@ class MeshMDS : public Mesh2
                &p[0], &x[0]);
       return true;
     }
-    void preMigrate_()
-    {
-    }
-    void postMigrate_()
+    void acceptChanges()
     {
       updateOwners(this, parts);
     }
@@ -437,7 +434,11 @@ class MeshMDS : public Mesh2
     }
     void writeNative(const char* fileName)
     {
+      double t0 = MPI_Wtime();
       mesh = mds_write_smb(mesh, fileName);
+      double t1 = MPI_Wtime();
+      if (!PCU_Comm_Self())
+        printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
     }
     void destroyNative()
     {
@@ -556,11 +557,6 @@ class MeshMDS : public Mesh2
       putPME(parts, op);
       mds_apf_destroy_entity(mesh,id);
     }
-    void stitch()
-    {
-      stitchMesh(this);
-      updateOwners(this, parts);
-    }
     bool hasMatching()
     {
       return isMatched;
@@ -575,9 +571,19 @@ class MeshMDS : public Mesh2
     void clearMatches(MeshEntity* e)
     {
     }
-    void repartition(MeshTag* elementWeights, double maximumImbalance)
+    double getElementBytes(int type)
     {
-      abort();
+      static double const table[TYPES] =
+      {1  , //vertex
+       1  , //edge
+       1  , //triangle
+       1  , //quad
+       250, //tet
+       1  , //hex
+       350, //prism
+       300, //pyramid
+      };
+      return table[type];
     }
     gmi_model* getPumiModel()
     {
@@ -602,20 +608,28 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
 
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
-  PCU_Barrier();
+  double t0 = MPI_Wtime();
+  PCU_Thrd_Barrier();
   static gmi_model* model;
   if (!PCU_Thrd_Self())
     model = gmi_load(modelfile);
-  PCU_Barrier();
+  PCU_Thrd_Barrier();
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
   Mesh2* m = new MeshMDS(model, meshfile);
   initResidence(m, m->getDimension());
-  m->stitch();
+  stitchMesh(m);
+  m->acceptChanges();
   /* This is a hack to detect a mesh written to file
      with a quadratic coordinate field stored in tags.
      the proper solution is to work APF information into
      the files */
   if (m->findTag("coordinates_edg"))
     changeMeshShape(m,getLagrange(2),/*project=*/false);
+  double t2 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("mesh %s loaded in %f seconds\n", meshfile, t2 - t1);
   return m;
 }
 
@@ -645,6 +659,7 @@ static void* splitThrdMain(void*)
 {
   Mesh2* m;
   Migration* plan;
+  double t0 = MPI_Wtime();
   if (!PCU_Thrd_Self()) {
     m = globalMesh;
     plan = globalPlan;
@@ -654,6 +669,9 @@ static void* splitThrdMain(void*)
     plan = new apf::Migration(m);
   }
   m->migrate(plan);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("mesh split in %f seconds\n", t1 - t0);
   globalThrdCall(m);
   return NULL;
 }

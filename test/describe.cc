@@ -3,7 +3,47 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <PCU.h>
+#include <parma.h>
 #include <malloc.h>
+
+#ifdef __bgq__
+#include <spi/include/kernel/memory.h>
+
+static double get_peak()
+{
+  uint64_t heap;
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
+  return heap;
+}
+
+#else
+
+static double get_peak()
+{
+  return mallinfo().arena;
+}
+
+#endif
+
+static void print_stats(const char* name, double value)
+{
+  double min, max, avg;
+  min = value;
+  PCU_Min_Doubles(&min, 1);
+  max = value;
+  PCU_Max_Doubles(&max, 1);
+  avg = value;
+  PCU_Add_Doubles(&avg, 1);
+  avg /= PCU_Comm_Peers();
+  double imb = max / avg;
+  if (!PCU_Comm_Self())
+    printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
+}
+
+static double get_chunks()
+{
+  return mallinfo().uordblks;
+}
 
 int main(int argc, char** argv)
 {
@@ -11,19 +51,12 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
-  fprintf(stderr,"memory before loading\n");
-  malloc_stats();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
-  fprintf(stderr,"memory after loading\n");
-  malloc_stats();
-  fprintf(stderr,"%d v %d e %d t %d q %d T %d W %d Y\n",
-      apf::countEntitiesOfType(m, apf::Mesh::VERTEX),
-      apf::countEntitiesOfType(m, apf::Mesh::EDGE),
-      apf::countEntitiesOfType(m, apf::Mesh::TRIANGLE),
-      apf::countEntitiesOfType(m, apf::Mesh::QUAD),
-      apf::countEntitiesOfType(m, apf::Mesh::TET),
-      apf::countEntitiesOfType(m, apf::Mesh::PRISM),
-      apf::countEntitiesOfType(m, apf::Mesh::PYRAMID));
+  print_stats("kernel heap", get_peak());
+  print_stats("malloc used", get_chunks());
+  print_stats("elements", m->count(m->getDimension()));
+  print_stats("vertices", m->count(0));
+  Parma_PrintPtnStats(m, "cake");
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
