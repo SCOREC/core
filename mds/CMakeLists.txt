@@ -78,6 +78,5 @@ configure_file(
 
 if(BUILD_IN_TRILINOS)
    tribits_subpackage_postprocess()
-else(BUILD_IN_TRILINOS)
 endif(BUILD_IN_TRILINOS)
 
