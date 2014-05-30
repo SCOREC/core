@@ -36,9 +36,6 @@ int main(int argc, char** argv)
   apf::Mesh2* pumiApfMesh = apf::createMdsMesh(pumiMdl, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  /* partition model ownership update */
-  pumiApfMesh->preMigrate_();
-  pumiApfMesh->postMigrate_();
   if (alignMdsMatches(pumiApfMesh))
     printf("fixed misaligned matches\n");
   else
