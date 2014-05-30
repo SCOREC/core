@@ -26,6 +26,7 @@ class Converter
         for (int i = 0; i <= inMesh->getDimension(); ++i)
           createMatches(i);
       convertQuadratic();
+      outMesh->acceptChanges();
     }
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
     {
