@@ -79,17 +79,6 @@ static void centerBodies(Bodies* b, apf::Vector3 const& c)
   }
 }
 
-void testBisectionPlane(Body* b, int n)
-{
-  Bodies bodies(b, n);
-  apf::Vector3 c = getCenterOfGravity(&bodies);
-  std::cerr << c << '\n';
-  centerBodies(&bodies, c);
-  apf::Vector3 normal = getBisectionNormal(&bodies);
-  std::cerr << normal << '\n';
-  bodies.destroy();
-}
-
 int findSortedMedian(Bodies const* b)
 {
   double total = getTotalMass(b);
