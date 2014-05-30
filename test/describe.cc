@@ -42,7 +42,8 @@ static void print_stats(const char* name, double value)
 
 static double get_chunks()
 {
-  return mallinfo().uordblks;
+  struct mallinfo m = mallinfo();
+  return m.uordblks + m.hblkhd;
 }
 
 int main(int argc, char** argv)
@@ -51,6 +52,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
+  print_stats("malloc used before", get_chunks());
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   print_stats("kernel heap", get_peak());
   print_stats("malloc used", get_chunks());
