@@ -8,8 +8,8 @@ namespace apf {
 class ZoltanSplitter : public Splitter
 {
   public:
-    ZoltanSplitter(Mesh* m, int method, int approach, bool sync):
-      bridge(m, true, method, approach)
+    ZoltanSplitter(Mesh* m, int method, int approach, bool debug, bool sync):
+      bridge(m, true, method, approach, debug)
     {
       isSynchronous = sync;
     }
@@ -34,8 +34,8 @@ class ZoltanSplitter : public Splitter
 class ZoltanBalancer : public Balancer
 {
   public:
-    ZoltanBalancer(Mesh* m, int method, int approach):
-      bridge(m, false, method, approach)
+    ZoltanBalancer(Mesh* m, int method, int approach, bool debug):
+      bridge(m, false, method, approach, debug)
     {}
     virtual ~ZoltanBalancer() {}
     virtual void balance(MeshTag* weights, double tolerance)
@@ -47,14 +47,16 @@ class ZoltanBalancer : public Balancer
     ZoltanMesh bridge;
 };
 
-Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach, bool sync)
+Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
+    bool debug, bool sync)
 {
-  return new ZoltanSplitter(mesh, method, approach, sync);
+  return new ZoltanSplitter(mesh, method, approach, debug, sync);
 }
 
-Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach)
+Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach,
+    bool debug)
 {
-  return new ZoltanBalancer(mesh, method, approach);
+  return new ZoltanBalancer(mesh, method, approach, debug);
 }
 
 }

@@ -4,12 +4,14 @@
 
 namespace apf {
 
-ZoltanMesh::ZoltanMesh(Mesh* mesh_, bool isLocal_, int method_, int approach_)
+ZoltanMesh::ZoltanMesh(Mesh* mesh_, bool isLocal_, int method_, int approach_,
+    bool dbg)
 {
   mesh = mesh_;
   isLocal = isLocal_;
   method = method_;
   approach = approach_;
+  debug = dbg;
   local = 0;
   global = 0;
   opposite = mesh->createLongTag("zb_opposite",1);

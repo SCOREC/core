@@ -33,8 +33,10 @@ class Mesh;
 class Splitter;
 class Balancer;
 
-Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach, bool sync = true);
-Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach);
+Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
+    bool debug = true, bool sync = true);
+Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach,
+    bool debug = true);
 
 }
 

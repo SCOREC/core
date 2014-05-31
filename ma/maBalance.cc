@@ -86,7 +86,8 @@ static void runBalancer(Adapt* a, apf::Balancer* b)
 void runZoltan(Adapt* a)
 {
   runBalancer(a, apf::makeZoltanBalancer(
-        a->mesh, apf::GRAPH, apf::REPARTITION));
+        a->mesh, apf::GRAPH, apf::REPARTITION,
+        /* debug = */ false));
 }
 
 void runDiffusion(Adapt* a)

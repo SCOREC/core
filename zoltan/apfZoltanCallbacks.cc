@@ -225,7 +225,7 @@ ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
   num_exported = 0;
   import_to_part = NULL;
   export_to_part = NULL;
-  dbgLvl=1;
+  dbgLvl = zb->debug ? (1) : (0);
   changes=0;
   lidSz=1;
   gidSz=1;
@@ -267,7 +267,7 @@ void ZoltanData::setup()
     sprintf(paramStr, "%d", 0);  //if local silence all but rank 0
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
-  Zoltan_Set_Param(ztn, "CHECK_GRAPH", (dbgLvl>1)?"1":"0");
+  Zoltan_Set_Param(ztn, "CHECK_GRAPH", "0");
 
   //tolerance
   sprintf(paramStr, "%lf", zb->tolerance);

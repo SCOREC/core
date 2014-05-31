@@ -9,7 +9,7 @@ namespace apf {
 class ZoltanMesh
 {
   public:
-    ZoltanMesh(Mesh* mesh_, bool local, int method_, int approach_);
+    ZoltanMesh(Mesh* mesh_, bool local, int method_, int approach_, bool dbg);
     ~ZoltanMesh();
     Migration* run(MeshTag* w, double tol, int mult);
   public:
@@ -18,6 +18,7 @@ class ZoltanMesh
     bool isLocal;
     int method;
     int approach;
+    bool debug;
     double tolerance;
     int multiple;
     Numbering* local;
