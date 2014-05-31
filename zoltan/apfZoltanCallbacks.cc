@@ -154,7 +154,6 @@ void zoltanGetEdges(void* data, int ngid, int nlid,
     int nweights, float* weights, int* ierr)
 {
   ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
-  int edges = 0;
   MeshEntity* element=zb->elements[*lid];
   Mesh* mesh = zb->mesh;
   int dim = getDimension(mesh, element);

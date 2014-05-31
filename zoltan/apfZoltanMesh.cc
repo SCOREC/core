@@ -116,7 +116,7 @@ static void tagOpposites(ZoltanMesh* b)
   m->end(it);
 }
 
-static Migration* convertResult(ZoltanMesh* b, zoltan* ztn)
+static Migration* convertResult(ZoltanMesh* b, ZoltanData* ztn)
 {
   Migration* plan = new Migration(b->mesh);
   //fill out the plan from zoltan class ztn->get(int localId)
@@ -137,7 +137,7 @@ Migration* ZoltanMesh::run(MeshTag* w, double tol, int mult)
   setupNumberings(this);
   getElements(this);
   tagOpposites(this);
-  zoltan ztn(this);
+  ZoltanData ztn(this);
   ztn.run();
   return convertResult(this, &ztn);
 }

@@ -52,7 +52,7 @@ configure_file(
 if(ENABLE_ZOLTAN)
   set(SOURCES
     apfZoltan.cc
-    apfZoltanBridge.cc
+    apfZoltanMesh.cc
     apfZoltanCallbacks.cc)
 else()
   set(SOURCES

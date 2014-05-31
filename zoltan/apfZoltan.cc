@@ -1,5 +1,5 @@
 #include "apfZoltan.h"
-#include "apfZoltanBridge.h"
+#include "apfZoltanMesh.h"
 #include <apfPartition.h>
 #include <PCU.h>
 
@@ -28,7 +28,7 @@ class ZoltanSplitter : public Splitter
     }
   private:
     bool isSynchronous;
-    ZoltanBridge bridge;
+    ZoltanMesh bridge;
 };
 
 class ZoltanBalancer : public Balancer
@@ -44,7 +44,7 @@ class ZoltanBalancer : public Balancer
       bridge.mesh->migrate(plan);
     }
   private:
-    ZoltanBridge bridge;
+    ZoltanMesh bridge;
 };
 
 Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach, bool sync)

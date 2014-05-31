@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   m->verify();
   Linear sf(m);
   ma::Input* in = ma::configure(m, &sf);
-  in->shouldRunPreDiffusion = true;
+  in->shouldRunPreZoltan = true;
   in->shouldRunMidDiffusion = true;
   in->shouldRunPostDiffusion = true;
   ma::adapt(in);
