@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.8.6)
 
 if(BUILD_IN_TRILINOS)
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(apf_zoltan) 
+  include(TribitsSubPackageMacros) 
+  include(TribitsLibraryMacros) 
+  tribits_subpackage(apf_zoltan) 
+  set(ENABLE_ZOLTAN ON)
 else()
   project(apf_zoltan)
   option(ENABLE_ZOLTAN "Enable Zoltan interface" OFF)

@@ -3,6 +3,7 @@
 
 #include <apf.h>
 #include <apfMesh.h>
+#include <apfNumbering.h>
 
 #include <stk_mesh/base/Field.hpp>
 #include <stk_mesh/base/FieldTraits.hpp>
@@ -17,20 +18,47 @@ typedef stk::mesh::fem::FEMMetaData StkMetaData;
 typedef stk::mesh::BulkData StkBulkData;
 typedef stk::mesh::Bucket StkBucket;
 
-void copyToMetaData(
-    Mesh* m,
-    StkMetaData* metaData);
+struct StkModel
+{
+  int dim;
+  int apfTag;
+  std::string stkName;
+};
 
-void copyToBulkData(
-    Mesh* m,
-    StkMetaData* metaData,
-    StkBulkData* bulkData);
+typedef Array<DynamicArray<StkModel>, 4> StkModels;
 
-void copyFromBulkData(
-    Mesh* m,
-    StkMetaData* metaData,
-    StkBulkData* bulkData);
+void copyToSTK(
+    GlobalNumbering* n[4],
+    StkModels& models,
+    StkMetaData* meta,
+    StkBulkData*& bulk);
 
+void copyMeshToMeta(
+    Mesh* m,
+    StkModels& models,
+    StkMetaData* meta);
+
+void copyFieldsToMeta(
+    Mesh* m,
+    StkMetaData* meta);
+
+void copyMeshToBulk(
+    GlobalNumbering* n[4],
+    StkModels& models,
+    StkMetaData* meta,
+    StkBulkData* bulk);
+
+void copyFieldsToBulk(
+    GlobalNumbering* n[4],
+    StkMetaData* meta,
+    StkBulkData* bulk);
+
+void copyFieldsFromBulk(
+    GlobalNumbering* n[4],
+    StkMetaData* meta,
+    StkBulkData* bulk);
+
+const CellTopologyData* getDimTopology(Mesh* m, int dim);
 const CellTopologyData* getCellTopology(Mesh* m);
 
 }

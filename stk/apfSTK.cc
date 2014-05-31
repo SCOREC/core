@@ -32,6 +32,8 @@ typedef stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian, stk::mesh::Cart
 typedef stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian > StkQPVectorField;
 typedef stk::mesh::Field<double, QPDimTag> StkQPScalarField;
 
+typedef std::map<long,Node> GlobalMap;
+
 template <class T>
 T* makeStkField(
     const char* name,
@@ -141,7 +143,7 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
   return result;
 }
 
-static MeshEntity* lookup(int id, std::map<int,MeshEntity*>& map)
+static Node lookup(long id, GlobalMap& map)
 {
   assert(map.count(id));
   return map[id];
@@ -151,16 +153,16 @@ void writeStkField(
     Field* field,
     StkScalarField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToVerts)
+    GlobalMap& globalIdsToNodes)
 {
   stk::mesh::BucketArray<StkScalarField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(0);
   for (int i=0; i < nodesInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* vert = lookup(globalId,globalIdsToVerts);
+    long globalId = (*bucket)[i].identifier();
+    Node node = lookup(globalId,globalIdsToNodes);
     double value;
-    value = getScalar(field,vert,0);
+    value = getScalar(field, node.entity, node.node);
     stkArray(i) = value;
   }
 }
@@ -169,16 +171,16 @@ void writeStkField(
     Field* field,
     StkVectorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToVerts)
+    GlobalMap& globalIdsToNodes)
 {
   stk::mesh::BucketArray<StkVectorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(1);
   for (int i=0; i < nodesInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* vert = lookup(globalId,globalIdsToVerts);
+    long globalId = (*bucket)[i].identifier();
+    Node node = lookup(globalId,globalIdsToNodes);
     Vector3 value;
-    getVector(field,vert,0,value);
+    getVector(field, node.entity, node.node, value);
     for (int j=0; j < 3; ++j)
       stkArray(j,i) = value[j];
   }
@@ -188,16 +190,16 @@ void writeStkField(
     Field* field,
     StkTensorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToVerts)
+    GlobalMap& globalIdsToNodes)
 {
   stk::mesh::BucketArray<StkTensorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(2);
   for (int i=0; i < nodesInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* vert = lookup(globalId,globalIdsToVerts);
+    long globalId = (*bucket)[i].identifier();
+    Node node = lookup(globalId,globalIdsToNodes);
     Matrix3x3 value;
-    getMatrix(field,vert,0,value);
+    getMatrix(field, node.entity, node.node, value);
     for (int j=0; j < 3; ++j)
     for (int k=0; k < 3; ++k)
       stkArray(k,j,i) = value[j][k];
@@ -208,15 +210,15 @@ void writeStkField(
     Field* field,
     StkQPScalarField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToElems)
+    GlobalMap& globalIdsToElems)
 {
   stk::mesh::BucketArray<StkQPScalarField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(0);
   int elemsInBucket = stkArray.dimension(1);
   for (int i=0; i < elemsInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* elem = lookup(globalId,globalIdsToElems);
+    long globalId = (*bucket)[i].identifier();
+    MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     for (int j=0; j < nqp; ++j)
       stkArray(j,i) = getScalar(field,elem,j);
   }
@@ -226,15 +228,15 @@ void writeStkField(
     Field* field,
     StkQPVectorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToElems)
+    GlobalMap& globalIdsToElems)
 {
   stk::mesh::BucketArray<StkQPVectorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(1);
   int elemsInBucket = stkArray.dimension(2);
   for (int i=0; i < elemsInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* elem = lookup(globalId,globalIdsToElems);
+    long globalId = (*bucket)[i].identifier();
+    MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Vector3 value;
     for (int j=0; j < nqp; ++j)
     {
@@ -249,15 +251,15 @@ void writeStkField(
     Field* field,
     StkQPTensorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToElems)
+    GlobalMap& globalIdsToElems)
 {
   stk::mesh::BucketArray<StkQPTensorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(2);
   int elemsInBucket = stkArray.dimension(3);
   for (int i=0; i < elemsInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* elem = lookup(globalId,globalIdsToElems);
+    long globalId = (*bucket)[i].identifier();
+    MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Matrix3x3 value;
     for (int j=0; j < nqp; ++j)
     {
@@ -273,17 +275,17 @@ void readStkField(
     Field* field,
     StkScalarField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToVerts)
+    GlobalMap& globalIdsToNodes)
 {
   stk::mesh::BucketArray<StkScalarField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(0);
   for (int i=0; i < nodesInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* vert = lookup(globalId,globalIdsToVerts);
+    long globalId = (*bucket)[i].identifier();
+    Node node = lookup(globalId,globalIdsToNodes);
     double value;
     value = stkArray(i);
-    setScalar(field,vert,0,value);
+    setScalar(field, node.entity, node.node, value);
   }
 }
 
@@ -291,18 +293,18 @@ void readStkField(
     Field* field,
     StkVectorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToVerts)
+    GlobalMap& globalIdsToNodes)
 {
   stk::mesh::BucketArray<StkVectorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(1);
   for (int i=0; i < nodesInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* vert = lookup(globalId,globalIdsToVerts);
+    long globalId = (*bucket)[i].identifier();
+    Node node = lookup(globalId,globalIdsToNodes);
     Vector3 value;
     for (int j=0; j < 3; ++j)
       value[j] = stkArray(j,i);
-    setVector(field,vert,0,value);
+    setVector(field, node.entity, node.node, value);
   }
 }
 
@@ -310,19 +312,19 @@ void readStkField(
     Field* field,
     StkTensorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToVerts)
+    GlobalMap& globalIdsToNodes)
 {
   stk::mesh::BucketArray<StkTensorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(2);
   for (int i=0; i < nodesInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* vert = lookup(globalId,globalIdsToVerts);
+    long globalId = (*bucket)[i].identifier();
+    Node node = lookup(globalId,globalIdsToNodes);
     Matrix3x3 value;
     for (int j=0; j < 3; ++j)
     for (int k=0; k < 3; ++k)
       value[j][k] = stkArray(k,j,i);
-    setMatrix(field,vert,0,value);
+    setMatrix(field, node.entity, node.node, value);
   }
 }
 
@@ -330,15 +332,15 @@ void readStkField(
     Field* field,
     StkQPScalarField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToElems)
+    GlobalMap& globalIdsToElems)
 {
   stk::mesh::BucketArray<StkQPScalarField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(0);
   int elemsInBucket = stkArray.dimension(1);
   for (int i=0; i < elemsInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* elem = lookup(globalId,globalIdsToElems);
+    long globalId = (*bucket)[i].identifier();
+    MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     for (int j=0; j < nqp; ++j)
       setScalar(field,elem,j,stkArray(j,i));
   }
@@ -348,15 +350,15 @@ void readStkField(
     Field* field,
     StkQPVectorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToElems)
+    GlobalMap& globalIdsToElems)
 {
   stk::mesh::BucketArray<StkQPVectorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(1);
   int elemsInBucket = stkArray.dimension(2);
   for (int i=0; i < elemsInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* elem = lookup(globalId,globalIdsToElems);
+    long globalId = (*bucket)[i].identifier();
+    MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Vector3 value;
     for (int j=0; j < nqp; ++j)
     {
@@ -371,15 +373,15 @@ void readStkField(
     Field* field,
     StkQPTensorField* stkField,
     StkBucket* bucket,
-    std::map<int,MeshEntity*>& globalIdsToElems)
+    GlobalMap& globalIdsToElems)
 {
   stk::mesh::BucketArray<StkQPTensorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(2);
   int elemsInBucket = stkArray.dimension(3);
   for (int i=0; i < elemsInBucket; ++i)
   {
-    int globalId = (*bucket)[i].identifier();
-    MeshEntity* elem = lookup(globalId,globalIdsToElems);
+    long globalId = (*bucket)[i].identifier();
+    MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     for (int j=0; j < nqp; ++j)
     {
       Matrix3x3 value;
@@ -402,8 +404,8 @@ class StkBridge
     void transfer(
         StkMetaData* metaData,
         StkBulkData* bulkData,
-        std::map<int,MeshEntity*>& globalIdsToVerts,
-        std::map<int,MeshEntity*>& globalIdsToElems,
+        GlobalMap& globalIdsToVerts,
+        GlobalMap& globalIdsToElems,
         bool toStk)
     {
       stk::mesh::Selector overlapSelector =
@@ -416,7 +418,7 @@ class StkBridge
           overlapSelector,
           bulkData->buckets(rank),
           buckets);
-      std::map<int,MeshEntity*>* globalIdsToEnts = &globalIdsToVerts;
+      GlobalMap* globalIdsToEnts = &globalIdsToVerts;
       if (isQP) globalIdsToEnts = &globalIdsToElems;
       APF_ITERATE(stk::mesh::BucketVector,buckets,it)
       {
@@ -428,10 +430,10 @@ class StkBridge
     }
     virtual void read(
         StkBucket* bucket,
-        std::map<int,MeshEntity*>& globalIdsToEnts) = 0;
+        GlobalMap& globalIdsToEnts) = 0;
     virtual void write(
         StkBucket* bucket,
-        std::map<int,MeshEntity*>& globalIdsToEnts) = 0;
+        GlobalMap& globalIdsToEnts) = 0;
     Field* apfField;
     bool isQP;
 };
@@ -454,13 +456,13 @@ class NodalBridge : public StkBridge
     virtual ~NodalBridge() {}
     virtual void read(
         StkBucket* bucket,
-        std::map<int,MeshEntity*>& globalIdsToEnts)
+        GlobalMap& globalIdsToEnts)
     {
       readStkField(apfField,stkField,bucket,globalIdsToEnts);
     }
     virtual void write(
         StkBucket* bucket,
-        std::map<int,MeshEntity*>& globalIdsToEnts)
+        GlobalMap& globalIdsToEnts)
     {
       writeStkField(apfField,stkField,bucket,globalIdsToEnts);
     }
@@ -494,13 +496,13 @@ class QPBridge : public StkBridge
     virtual ~QPBridge() {}
     virtual void read(
         StkBucket* bucket,
-        std::map<int,MeshEntity*>& globalIdsToEnts)
+        GlobalMap& globalIdsToEnts)
     {
       readStkField(apfField,stkField,bucket,globalIdsToEnts);
     }
     virtual void write(
         StkBucket* bucket,
-        std::map<int,MeshEntity*>& globalIdsToEnts)
+        GlobalMap& globalIdsToEnts)
     {
       writeStkField(apfField,stkField,bucket,globalIdsToEnts);
     }
@@ -541,88 +543,88 @@ StkBridge* StkBridge::get(
   }
 }
 
-int getGlobalStkId(Mesh* m, MeshEntity* e)
-{
-  abort();
-  return -1;
-}
-
 void generateGlobalIdsToEnts(
-    Mesh* m,
-    int dimension,
-    std::map<int,MeshEntity*>& globalIdsToEnts)
+    GlobalNumbering* n,
+    GlobalMap& globalIdsToEnts)
 {
-  MeshIterator* i = m->begin(dimension);
-  MeshEntity* e;
-  while ((e = m->iterate(i)))
-  {
-    int id = getGlobalStkId(m,e);
-    assert( ! globalIdsToEnts.count(id));
-    globalIdsToEnts[getGlobalStkId(m,e)]=e;
+  DynamicArray<Node> nodes;
+  getNodes(n, nodes);
+  for (size_t i = 0; i < nodes.getSize(); ++i) {
+    long id = getNumber(n, nodes[i]);
+    globalIdsToEnts[id] = nodes[i];
   }
-  m->end(i);
 }
 
-void copyToMetaData(
+void declareField(Field* f, StkMetaData* md)
+{
+  delete StkBridge::get(f, md, false);
+}
+
+void copyFieldsToMeta(
     Mesh* m,
     StkMetaData* metaData)
 {
+  declareField(m->getCoordinateField(), metaData);
   for (int i=0; i < m->countFields(); ++i)
-    delete StkBridge::get(m->getField(i),metaData,false);
+    declareField(m->getField(i), metaData);
 }
 
-void transferWithStk(
-    Mesh* m,
+void transferField(
+    Field* f,
+    StkMetaData* md,
+    StkBulkData* bd,
+    GlobalMap& vm,
+    GlobalMap& em,
+    bool toStk)
+{
+  StkBridge* bridge = StkBridge::get(f, md, true);
+  bridge->transfer(md, bd, vm, em, toStk);
+  delete bridge;
+}
+
+void transferFields(
+    GlobalNumbering* n[4],
     StkMetaData* metaData,
     StkBulkData* bulkData,
     bool toStk)
 {
-  std::map<int,MeshEntity*> globalIdsToVerts;
-  generateGlobalIdsToEnts(m,0,globalIdsToVerts);
-  std::map<int,MeshEntity*> globalIdsToElems;
-  generateGlobalIdsToEnts(m,m->getDimension(),globalIdsToElems);
+  Mesh* m = getMesh(n[0]);
+  GlobalMap nm;
+  generateGlobalIdsToEnts(n[0], nm);
+  GlobalMap em;
+  generateGlobalIdsToEnts(n[m->getDimension()], em);
+  transferField(m->getCoordinateField(), metaData, bulkData, nm, em, toStk);
   for (int i=0; i < m->countFields(); ++i)
-  {
-    StkBridge* bridge = StkBridge::get(m->getField(i),metaData,true);
-    bridge->transfer(metaData,bulkData,globalIdsToVerts,globalIdsToElems,toStk);
-    delete bridge;
-  }
+    transferField(m->getField(i), metaData, bulkData, nm, em, toStk);
 }
 
-void copyToBulkData(
-    Mesh* m,
-    StkMetaData* metaData,
-    StkBulkData* bulkData)
+void copyFieldsToBulk(
+    GlobalNumbering* n[4],
+    StkMetaData* meta,
+    StkBulkData* bulk)
 {
-  transferWithStk(m,metaData,bulkData,true);
+  transferFields(n, meta, bulk, true);
 }
 
-void copyFromBulkData(
-    Mesh* m,
-    StkMetaData* metaData,
-    StkBulkData* bulkData)
+void copyFieldsFromBulk(
+    GlobalNumbering* n[4],
+    StkMetaData* meta,
+    StkBulkData* bulk)
 {
-  transferWithStk(m,metaData,bulkData,false);
+  transferFields(n, meta, bulk, false);
 }
 
-static MeshEntity* getFirstElement(Mesh* m)
-{
-  MeshIterator* it = m->begin(m->getDimension());
-  MeshEntity* e = m->iterate(it);
-  m->end(it);
-  return e;
-}
-
-const CellTopologyData* getCellTopology(Mesh* m)
+const CellTopologyData* getTopology(Mesh* m, int t)
 {
   FieldShape* s = m->getShape();
-  MeshEntity* e = getFirstElement(m);
-  int t = m->getType(e);
-/* right now this ignores dimensions lower than 2
-   and boundary layer entities, both of which we
+  if (t == Mesh::VERTEX)
+    return shards::getCellTopologyData< shards::Node >();
+/* right now this ignores  boundary layer entities, which we
    are unlikely to deal with in STK in the near future */
   if (s->getOrder()==1)
   {
+    if (t == Mesh::EDGE)
+      return shards::getCellTopologyData< shards::Line<2> >();
     if (t == Mesh::TRIANGLE)
       return shards::getCellTopologyData< shards::Triangle<3> >();
     if (t == Mesh::QUAD)
@@ -636,6 +638,8 @@ const CellTopologyData* getCellTopology(Mesh* m)
    (lagrange and composite, so far) use these topologies */
   else if (s->getOrder()==2)
   {
+    if (t == Mesh::EDGE)
+      return shards::getCellTopologyData< shards::Line<3> >();
     if (t == Mesh::TRIANGLE)
       return shards::getCellTopologyData< shards::Triangle<6> >();
     if (t == Mesh::QUAD)
@@ -646,6 +650,24 @@ const CellTopologyData* getCellTopology(Mesh* m)
       return shards::getCellTopologyData< shards::Hexahedron<20> >();
   }
   return 0;
+}
+
+static int getFirstType(Mesh* m, int dim)
+{
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e = m->iterate(it);
+  m->end(it);
+  return m->getType(e);
+}
+
+const CellTopologyData* getDimTopology(Mesh* m, int dim)
+{
+  return getTopology(m, getFirstType(m, dim));
+}
+
+const CellTopologyData* getCellTopology(Mesh* m)
+{
+  return getDimTopology(m, m->getDimension());
 }
 
 }

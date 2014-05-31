@@ -70,7 +70,7 @@ class FieldDataOf : public FieldData
       for (int i=0; i < nc; ++i)
         components[i] = allComponents[node*nc+i];
     }
-    void getElementData(MeshEntity* entity, NewArray<T>& data)
+    int getElementData(MeshEntity* entity, NewArray<T>& data)
     {
       Mesh* mesh = field->getMesh();
       int t = mesh->getType(entity);
@@ -95,6 +95,7 @@ class FieldDataOf : public FieldData
         }
       }
       assert(n == nc * nen);
+      return n;
     }
 };
 

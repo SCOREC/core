@@ -7,6 +7,7 @@ SET(SUBPACKAGES_DIRS_CLASSIFICATIONS_OPTREQS
     ma                  ma              SS  REQUIRED
     spr                 spr             SS  REQUIRED
     apf_stk             stk             SS  REQUIRED
+    apf_zoltan          zoltan          SS  REQUIRED
 )
 
 SET(LIB_REQUIRED_DEP_PACKAGES)

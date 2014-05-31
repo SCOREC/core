@@ -41,6 +41,7 @@ configure_file(
 
 #Sources & Headers
 set(SOURCES
+  apfMeshSTK.cc
   apfSTK.cc)
 
 set(HEADERS

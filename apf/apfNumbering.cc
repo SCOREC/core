@@ -448,6 +448,11 @@ GlobalNumbering* createGlobalNumbering(
   return n;
 }
 
+Mesh* getMesh(GlobalNumbering* n)
+{
+  return n->getMesh();
+}
+
 void number(GlobalNumbering* n, Node node, long number)
 {
   n->set(node.entity,node.node,0,number);
@@ -458,10 +463,10 @@ long getNumber(GlobalNumbering* n, Node node)
   return n->get(node.entity,node.node,0);
 }
 
-void getElementNumbers(GlobalNumbering* n, MeshEntity* e,
+int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers)
 {
-  n->getData()->getElementData(e,numbers);
+  return n->getData()->getElementData(e,numbers);
 }
 
 static long exscan(long x)
