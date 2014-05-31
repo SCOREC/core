@@ -1,6 +1,7 @@
 #include "maBalance.h"
 #include "maAdapt.h"
 #include <parma.h>
+#include <apfZoltan.h>
 #include <PCU.h>
 
 namespace ma {
@@ -71,21 +72,26 @@ Tag* getElementWeights(Adapt* a)
   return weights;
 }
 
-void runZoltan(Adapt* a)
-{
-  apf::fail("waiting for apf::zoltan!");
-}
-
-void runDiffusion(Adapt* a)
+static void runBalancer(Adapt* a, apf::Balancer* b)
 {
   Mesh* m = a->mesh;
   Input* in = a->input;
   Tag* weights = getElementWeights(a);
-  apf::Balancer* b = Parma_MakeCentroidDiffuser(m);
   b->balance(weights,in->maximumImbalance);
   delete b;
   removeTagFromDimension(m,weights,m->getDimension());
   m->destroyTag(weights);
+}
+
+void runZoltan(Adapt* a)
+{
+  runBalancer(a, apf::makeZoltanBalancer(
+        a->mesh, apf::GRAPH, apf::REPARTITION));
+}
+
+void runDiffusion(Adapt* a)
+{
+  runBalancer(a, Parma_MakeCentroidDiffuser(a->mesh));
 }
 
 void runParma(Adapt* a)

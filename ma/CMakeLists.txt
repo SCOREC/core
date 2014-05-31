@@ -11,11 +11,13 @@ endif()
 if(NOT BUILD_IN_TRILINOS)
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
   find_package(parma PATHS ${CMAKE_BINARY_DIR})
+  find_package(apf_zoltan PATHS ${CMAKE_BINARY_DIR})
   set(MA_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${APF_INCLUDE_DIRS}
-    ${PARMA_INCLUDE_DIRS})
-  set(DEP_LIBS ${APF_LIBS} ${PARMA_LIBS})
+    ${PARMA_INCLUDE_DIRS}
+    ${APF_ZOLTAN_INCLUDE_DIRS})
+  set(DEP_LIBS ${APF_LIBS} ${PARMA_LIBS} ${APF_ZOLTAN_LIBS})
   set(MA_LIBS ma ${DEP_LIBS})
 endif()
 

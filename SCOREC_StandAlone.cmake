@@ -59,6 +59,8 @@ add_subdirectory(mds)
 
 add_subdirectory(parma)
 
+add_subdirectory(zoltan)
+
 add_subdirectory(ma)
 
 add_subdirectory(spr)
