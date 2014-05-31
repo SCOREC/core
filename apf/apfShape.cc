@@ -92,7 +92,8 @@ class Linear : public FieldShape
           values[2] = l1x*l1y/4;
           values[3] = l0x*l1y/4;
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
           grads.allocate(4);
           double l0x = (1-xi[0]);
@@ -200,7 +201,8 @@ class Quadratic : public FieldShape
           values[1] =  xi[0]*(1+xi[0])/2.0;
           values[2] = 1-xi[0]*xi[0];
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
           grads.allocate(3);
           grads[0] = Vector3((2*xi[0]-1)/2.0,0,0);
@@ -223,7 +225,8 @@ class Quadratic : public FieldShape
           values[4] = 4*xi[0]*xi[1];
           values[5] = 4*xi[1]*xi2;
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
           double xi2 = 1-xi[0]-xi[1];
           grads.allocate(6);
@@ -254,7 +257,8 @@ class Quadratic : public FieldShape
           values[8] = 4*xi[2]*xi[0];
           values[9] = 4*xi[1]*xi[2];
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
           double xi3 = 1-xi[0]-xi[1]-xi[2];
           grads.allocate(10);
@@ -550,9 +554,9 @@ FieldShape* getVoronoiShape(int dimension, int order)
 class Bezier : public FieldShape
 {
   public:
-    /* note that for compatibility with quadrature we still use xi = [-1,1],
-       so there is a conversion from that parameterization to the more Lagrangian
-       coordinates [1,0] and [0,1] in which Bezier polynomials are expressed */
+/* note that for compatibility with quadrature we still use xi = [-1,1],
+   so there is a conversion from that parameterization to the more Lagrangian
+   coordinates [1,0] and [0,1] in which Bezier polynomials are expressed */
     const char* getName() const {return "Bezier";}
     class Edge : public EntityShape
     {
@@ -566,7 +570,8 @@ class Bezier : public FieldShape
           values[1] = 2.0*xi_1*xi_2;
           values[2] = xi_2*xi_2;
         }
-        void getLocalGradients(Vector3 const& xi_in, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi_in,
+            NewArray<Vector3>& grads) const
         {
           double xi_2 = (xi_in[0]+1)/2;
           double xi_1 = 1-xi_2;
@@ -591,7 +596,8 @@ class Bezier : public FieldShape
           values[4] = 2*xi[0]*xi[1];
           values[5] = 2*xi[1]*xi2;
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
           double xi2 = 1-xi[0]-xi[1];
           grads.allocate(6);
@@ -622,7 +628,8 @@ class Bezier : public FieldShape
           values[8] = 2*xi[0]*xi[2];
           values[9] = 2*xi[1]*xi[2];
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
           double xi3 = 1-xi[0]-xi[1]-xi[2];
           grads.allocate(10);

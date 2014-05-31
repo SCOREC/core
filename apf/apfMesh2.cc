@@ -11,7 +11,8 @@ void Mesh2::setPoint(MeshEntity* e, int node, Vector3 const& p)
   setVector(Mesh::coordinateField,e,node,p);
 }
 
-MeshEntity* Mesh2::createVertex(ModelEntity* c, Vector3 const& point, Vector3 const& param)
+MeshEntity* Mesh2::createVertex(ModelEntity* c, Vector3 const& point,
+    Vector3 const& param)
 {
   MeshEntity* v = createVert(c);
   setPoint(v,0,point);

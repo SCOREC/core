@@ -286,7 +286,9 @@ void SetNumberingOffset(Numbering * num, int off)
   int components = countComponents(field);
   int dim = mesh->getDimension();
 
-  // iterate over all nodes in the mesh, get their current numbering, add the offset and set the new numbering
+  /* iterate over all nodes in the mesh,
+     get their current numbering,
+     add the offset and set the new numbering */
   MeshIterator * iter;
   MeshEntity * e;
   for(int ii = 0; ii < dim; ii++)

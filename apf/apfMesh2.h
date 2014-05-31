@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFMESH2_H
-#define APFMESH2_H
+#ifndef APF_MESH2_H
+#define APF_MESH2_H
 
 #include "apfMesh.h"
 #include <set>
@@ -98,6 +98,7 @@ MeshEntity* buildOneElement(
     Vector3* points);
 
 void initResidence(Mesh2* m, int dim);
+
 /* given that the remote copies of the vertices are set up correctly, this
    function will synchronize the remote copies and resident part sets for all
    other entities correctly */
