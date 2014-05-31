@@ -165,30 +165,6 @@ inline bool isDone(imbInfo& imb, const int itr, const int entDim,
   return false;
 }
 
-void createPtnMdlBdryTopoHist(Mesh* mesh, const int pItr,
-    const int dim, const int adjDim) {
-   hist h;
-   MeshEntity* e;
-   eArr adjElms;
-   MeshIterator* itr = mesh->begin(dim);
-   while( (e = mesh->iterate(itr)) ) {
-     apf::Copies rmt;
-     mesh->getRemotes(e, rmt);
-     if( rmt.size() > 0 ) {
-       mesh->getAdjacent(e, adjDim, adjElms);
-       if( adjElms.getSize() < 11 )
-         h.add(adjElms.getSize());
-     }
-   }
-   mesh->end(itr);
-
-   const int numBins = 10;
-   std::stringstream ofname;
-   ofname << "hist" << dim << "-" << adjDim << "adj" << numBins << "bin"
-          << PCU_Comm_Self() << "p" << pItr << "itr";
-   h.print(numBins, ofname.str());
-}
-
 } //end unnamed namespace
 
 /**
