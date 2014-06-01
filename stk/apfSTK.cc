@@ -32,11 +32,17 @@ struct QPDimTag : public shards::ArrayDimTag {
   }
 };
 
-typedef stk::mesh::Field<double, stk::mesh::Cartesian, stk::mesh::Cartesian> StkTensorField;
+typedef
+stk::mesh::Field<double, stk::mesh::Cartesian, stk::mesh::Cartesian>
+StkTensorField;
 typedef stk::mesh::Field<double, stk::mesh::Cartesian> StkVectorField;
 typedef stk::mesh::Field<double> StkScalarField;
-typedef stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian, stk::mesh::Cartesian> StkQPTensorField;
-typedef stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian > StkQPVectorField;
+typedef
+stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian, stk::mesh::Cartesian>
+StkQPTensorField;
+typedef
+stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian >
+StkQPVectorField;
 typedef stk::mesh::Field<double, QPDimTag> StkQPScalarField;
 
 typedef std::map<long,Node> GlobalMap;
@@ -522,7 +528,7 @@ StkBridge* StkBridge::get(
     StkMetaData* metaData,
     bool exists)
 {
-  if (getShape(f)==getLagrange(1))
+  if (getShape(f) == getMesh(f)->getShape())
   {
     switch(getValueType(f))
     {
