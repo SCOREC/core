@@ -34,12 +34,6 @@ struct StkModel
 
 typedef Array<DynamicArray<StkModel>, 4> StkModels;
 
-void copyToSTK(
-    GlobalNumbering* n[4],
-    StkModels& models,
-    StkMetaData* meta,
-    StkBulkData*& bulk);
-
 void copyMeshToMeta(
     Mesh* m,
     StkModels& models,
