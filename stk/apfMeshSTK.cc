@@ -81,7 +81,7 @@ static void special_declare_element_side(
   NewArray<long> node_ids;
   int node_count = getElementNumbers(nn, face, node_ids);
   for (int i = 0; i < node_count; ++i) {
-    stk::mesh::Entity* node = bulk->get_entity(0, node_ids[i]);
+    stk::mesh::Entity* node = bulk->get_entity(0, node_ids[i] + 1);
     bulk->declare_relation(side, *node, i);
   }
 }
@@ -91,9 +91,8 @@ static void get_stk_side(GlobalNumbering* en, MeshEntity* side,
 {
   Mesh* m = getMesh(en);
   MeshEntity* e = m->getUpward(side, 0);
-  id = getNumber(en, Node(e, 0));
-  local_id = getLocalSideId(m, e, side) + 1;
-  // STK indexing starts from 1 not 0 !---^
+  id = getStkId(en, Node(e, 0));
+  local_id = getLocalSideId(m, e, side);
 }
 
 static void buildSides(
@@ -115,7 +114,7 @@ static void buildSides(
     while ((s = m->iterate(it))) {
       if (m->getModelTag(m->toModel(s)) != model.apfTag)
         continue;
-      stk::mesh::EntityId s_id = getNumber(n[d], Node(s, 0));
+      stk::mesh::EntityId s_id = getStkId(n[d], Node(s, 0));
       stk::mesh::EntityId e_id;
       unsigned local_id;
       get_stk_side(n[d + 1], s, e_id, local_id);
@@ -143,7 +142,7 @@ static void buildElements(
     while ((e = m->iterate(it))) {
       if (m->getModelTag(m->toModel(e)) != model.apfTag)
         continue;
-      stk::mesh::EntityId e_id = getNumber(en, Node(e, 0));
+      stk::mesh::EntityId e_id = getStkId(en, Node(e, 0));
       int n;
       NewArray<long> node_ids;
       n = getElementNumbers(en, e, node_ids);
@@ -181,7 +180,7 @@ static void buildNodes(
         model.dim, model.apfTag);
     getNodesOnClosure(m, me, nodes);
     for (size_t j = 0; j < nodes.getSize(); ++j) {
-      stk::mesh::EntityId e_id = getNumber(nn, nodes[j]);
+      stk::mesh::EntityId e_id = getStkId(nn, nodes[j]);
       bulk->declare_entity(meta->node_rank(), e_id, parts);
     }
   }

@@ -71,6 +71,8 @@ const CellTopologyData* getCellTopology(Mesh* m);
 int getLocalSideId(Mesh* m, MeshEntity* e,
     MeshEntity* side);
 
+long getStkId(GlobalNumbering* numbers, Node node);
+
 }
 
 #endif

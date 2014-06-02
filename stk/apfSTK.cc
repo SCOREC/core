@@ -563,7 +563,7 @@ void generateGlobalIdsToEnts(
   DynamicArray<Node> nodes;
   getNodes(n, nodes);
   for (size_t i = 0; i < nodes.getSize(); ++i) {
-    long id = getNumber(n, nodes[i]);
+    long id = getStkId(n, nodes[i]);
     globalIdsToEnts[id] = nodes[i];
   }
 }
@@ -681,6 +681,11 @@ const CellTopologyData* getDimTopology(Mesh* m, int dim)
 const CellTopologyData* getCellTopology(Mesh* m)
 {
   return getDimTopology(m, m->getDimension());
+}
+
+long getStkId(GlobalNumbering* numbers, Node node)
+{
+  return getNumber(numbers, node) + 1;
 }
 
 }
