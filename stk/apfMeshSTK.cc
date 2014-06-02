@@ -92,7 +92,8 @@ static void get_stk_side(GlobalNumbering* en, MeshEntity* side,
   Mesh* m = getMesh(en);
   MeshEntity* e = m->getUpward(side, 0);
   id = getNumber(en, Node(e, 0));
-  local_id = getLocalSideId(m, e, side);
+  local_id = getLocalSideId(m, e, side) + 1;
+  // STK indexing starts from 1 not 0 !---^
 }
 
 static void buildSides(
