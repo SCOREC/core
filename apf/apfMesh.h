@@ -262,6 +262,8 @@ bool isSimplex(int type);
 
 Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
 
+int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
+
 } //namespace apf
 
 #endif

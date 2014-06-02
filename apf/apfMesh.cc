@@ -575,4 +575,16 @@ Vector3 getLinearCentroid(Mesh* m, MeshEntity* e)
   return c / nv;
 }
 
+int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
+{
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  int n = 0;
+  while ((e = m->iterate(it)))
+    if (m->toModel(e) == me)
+      ++n;
+  m->end(it);
+  return n;
+}
+
 } //namespace apf
