@@ -12,6 +12,7 @@ set(SOURCES
   phBC.cc)
 
 set(HEADERS
+  phIO.h
   phBC.h)
 
 include_directories(${PH_INCLUDE_DIRS})

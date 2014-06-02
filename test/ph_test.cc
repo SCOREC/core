@@ -1,19 +1,16 @@
-#include <phBC.h>
+#include <phIO.h>
 #include <apf.h>
+#include <cstdio>
+#include <cstdlib>
 
 int main(int argc, char** argv)
 {
-  ph::BCs bcs;
-  ph::readBCs(argv[1], bcs);
-  APF_ITERATE(ph::BCs::Map, bcs.fields, it) {
-    ph::FieldBCs& fbc = it->second;
-    APF_ITERATE(ph::FieldBCs::Set, fbc.bcs, it2) {
-      std::cout << it->first << ": ";
-      std::cout << it2->tag << ' ';
-      std::cout << it2->dim << ' ';
-      for (int i = 0; i < fbc.size; ++i)
-        std::cout << it2->values[i] << ' ';
-      std::cout << '\n';
-    }
-  }
+  int nodes, vars;
+  ph_read_params(argv[1], argv[2], &nodes, &vars);
+  printf("%d nodes, %d vars\n", nodes, vars);
+  double* field;
+  ph_read_field(argv[1], argv[2], &field);
+  printf("first three values: %f %f %f\n", field[0], field[1], field[2]);
+  ph_write_field("out", argv[2], field, nodes, vars, 0);
+  free(field);
 }

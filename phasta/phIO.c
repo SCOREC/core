@@ -2,13 +2,22 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
+#include <pcu_io.h>
+#include <phIO.h>
 
 #define PH_LINE 1024
 #define MAGIC 362436
+#define FIELD_PARAMS 3
+
+enum {
+NODES_PARAM,
+VARS_PARAM,
+STEP_PARAM
+};
 
 static const char* magic_name = "byteorder magic number";
 
-void ph_write_header(FILE* f, const char* name, size_t bytes,
+static void write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params)
 {
   int i;
@@ -28,36 +37,41 @@ static void cut_trailing_spaces(char* s)
   *e = '\0';
 }
 
-void ph_parse_header(char* header, char** name, size_t* bytes,
+static void parse_header(char* header, char** name, size_t* bytes,
     int nparam, int* params)
 {
   char* saveptr;
   int i;
   header = strtok_r(header, ":", &saveptr);
-  *name = header;
-  cut_trailing_spaces(*name);
+  if (name) {
+    *name = header;
+    cut_trailing_spaces(*name);
+  }
   strtok_r(NULL, "<", &saveptr);
   header = strtok_r(NULL, ">", &saveptr);
-  sscanf(header, "%zu", bytes);
+  if (bytes)
+    sscanf(header, "%zu", bytes);
   for (i = 0; i < nparam; ++i) {
     header = strtok_r(NULL, " \n", &saveptr);
     sscanf(header, "%d", &params[i]);
   }
 }
 
-void ph_seek_after_header(FILE* f, char* name)
+static void find_header(FILE* f, const char* name, char header[PH_LINE])
 {
-  char line[PH_LINE];
   char* hname;
   size_t bytes;
-  while (fgets(line, sizeof(line), f)) {
-    if (line[0] == '#')
+  char tmp[PH_LINE];
+  while (fgets(header, PH_LINE, f)) {
+    if ((header[0] == '#') || (header[0] == '\n'))
       continue;
-    ph_parse_header(line, &hname, &bytes, 0, NULL);
+    strcpy(tmp, header);
+    parse_header(tmp, &hname, &bytes, 0, NULL);
     if (!strcmp(name, hname))
       return;
     fseek(f, bytes, SEEK_CUR);
   }
+  header[0] = '\0';
 }
 
 static void get_now_string(char s[PH_LINE])
@@ -72,12 +86,27 @@ static void get_now_string(char s[PH_LINE])
 static void write_magic_number(FILE* f)
 {
   int why = 1;
-  ph_write_header(f, magic_name, sizeof(int), 1, &why);
-  /* todo: expose some PCU array byte swapping tools,
-     code array read/write, use it here */
+  write_header(f, magic_name, sizeof(int) + 1, 1, &why);
+  int magic = MAGIC;
+  fwrite(&magic, sizeof(int), 1, f);
+  fprintf(f,"\n");
 }
 
-void ph_write_preamble(FILE* f, int nodes, int vars)
+static void seek_after_header(FILE* f, const char* name)
+{
+  char dummy[PH_LINE];
+  find_header(f, name, dummy);
+}
+
+static int read_magic_number(FILE* f)
+{
+  seek_after_header(f, magic_name);
+  int magic;
+  fread(&magic, sizeof(int), 1, f);
+  return magic != MAGIC;
+}
+
+static void write_preamble(FILE* f, int nodes, int vars)
 {
   char timestr[PH_LINE];
   fprintf(f, "# PHASTA Input File Version 2.0\n");
@@ -86,6 +115,82 @@ void ph_write_preamble(FILE* f, int nodes, int vars)
   get_now_string(timestr);
   fprintf(f, "# %s\n", timestr);
   write_magic_number(f);
-  ph_write_header(f, "number of modes", 0, 1, &nodes);
-  ph_write_header(f, "number of variables", 0, 1, &nodes);
+  write_header(f, "number of modes", 0, 1, &nodes);
+  write_header(f, "number of variables", 0, 1, &vars);
+}
+
+static void parse_params(char* header, int* nodes, int* vars)
+{
+  int params[FIELD_PARAMS];
+  parse_header(header, NULL, NULL, FIELD_PARAMS, params);
+  *nodes = params[NODES_PARAM];
+  *vars = params[VARS_PARAM];
+}
+
+void ph_read_params(
+    const char* file,
+    const char* field,
+    int* nodes,
+    int* vars)
+{
+  char header[PH_LINE];
+  FILE* f = fopen(file, "r");
+  find_header(f, field, header);
+  parse_params(header, nodes, vars);
+  fclose(f);
+}
+
+static void parse_bytes(char* header, size_t* bytes)
+{
+  parse_header(header, NULL, bytes, 0, NULL);
+}
+
+void ph_read_field(const char* file, const char* field, double** data)
+{
+  size_t bytes, n;
+  char header[PH_LINE];
+  int should_swap;
+  FILE* f = fopen(file, "r");
+  should_swap = read_magic_number(f);
+  find_header(f, field, header);
+  parse_bytes(header, &bytes);
+  assert(((bytes - 1) % sizeof(double)) == 0);
+  n = (bytes - 1) / sizeof(double);
+  *data = malloc(bytes);
+  fread(*data, sizeof(double), n, f);
+  if (should_swap)
+    pcu_swap_doubles(*data, n);
+  fclose(f);
+}
+
+static void write_field_header(
+    FILE* f,
+    const char* field,
+    int nodes,
+    int vars,
+    int step)
+{
+  size_t n;
+  int params[FIELD_PARAMS];
+  params[NODES_PARAM] = nodes;
+  params[VARS_PARAM] = vars;
+  params[STEP_PARAM] = step;
+  n = nodes * vars;
+  write_header(f, field, n * sizeof(double) + 1, FIELD_PARAMS, params);
+}
+
+void ph_write_field(
+    const char* file,
+    const char* field,
+    double* data,
+    int nodes,
+    int vars,
+    int step)
+{
+  FILE* f = fopen(file, "w");
+  write_preamble(f, nodes, vars);
+  write_field_header(f, field, nodes, vars, step);
+  fwrite(data, sizeof(double), nodes * vars, f);
+  fprintf(f, "\n");
+  fclose(f);
 }
