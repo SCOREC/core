@@ -68,6 +68,7 @@ int countFixed(Numbering* n);
 
 void synchronize(Numbering * n);
 
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
 Numbering* numberElements(Mesh* mesh, const char* name);
 Numbering* numberOverlapNodes(
 		Mesh* mesh,

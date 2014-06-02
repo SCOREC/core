@@ -393,10 +393,13 @@ class Constant : public FieldShape
 
 FieldShape* getConstant(int dimension)
 {
+  static Constant<0> c0;
+  static Constant<1> c1;
+  static Constant<2> c2;
   static Constant<3> c3;
-  if (dimension == 3)
-    return &c3;
-  return NULL;
+  static FieldShape* const table[4] =
+  {&c0, &c1 ,&c2, &c3};
+  return table[dimension];
 }
 
 class IPShape : public FieldShape
@@ -550,136 +553,6 @@ FieldShape* getVoronoiShape(int dimension, int order)
   assert(order <= 3);
   return table[dimension][order];
 }
-
-class Bezier : public FieldShape
-{
-  public:
-/* note that for compatibility with quadrature we still use xi = [-1,1],
-   so there is a conversion from that parameterization to the more Lagrangian
-   coordinates [1,0] and [0,1] in which Bezier polynomials are expressed */
-    const char* getName() const {return "Bezier";}
-    class Edge : public EntityShape
-    {
-      public:
-        void getValues(Vector3 const& xi_in, NewArray<double>& values) const
-        {
-          double xi_2 = (xi_in[0]+1)/2;
-          double xi_1 = 1-xi_2;
-          values.allocate(3);
-          values[0] = xi_1*xi_1;
-          values[1] = 2.0*xi_1*xi_2;
-          values[2] = xi_2*xi_2;
-        }
-        void getLocalGradients(Vector3 const& xi_in,
-            NewArray<Vector3>& grads) const
-        {
-          double xi_2 = (xi_in[0]+1)/2;
-          double xi_1 = 1-xi_2;
-          grads.allocate(3);
-          grads[0] = Vector3(-xi_1,0,0);
-          grads[1] = Vector3(xi_1-xi_2,0,0);
-          grads[2] = Vector3(xi_2,0,0);
-        }
-        int countNodes() const {return 3;}
-    };
-    class Triangle : public EntityShape
-    {
-      public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
-        {
-          double xi2 = 1-xi[0]-xi[1];
-          values.allocate(6);
-          values[0] = xi2*xi2;
-          values[1] = xi[0]*xi[0];
-          values[2] = xi[1]*xi[1];
-          values[3] = 2*xi[0]*xi2;
-          values[4] = 2*xi[0]*xi[1];
-          values[5] = 2*xi[1]*xi2;
-        }
-        void getLocalGradients(Vector3 const& xi,
-            NewArray<Vector3>& grads) const
-        {
-          double xi2 = 1-xi[0]-xi[1];
-          grads.allocate(6);
-          grads[0] = Vector3(-2*xi2,-2*xi2,0);
-          grads[1] = Vector3(2*xi[0],0,0);
-          grads[2] = Vector3(0,2*xi[1],0);
-          grads[3] = Vector3(2*(xi2-xi[0]),-2*xi[0],0);
-          grads[4] = Vector3(2*xi[1],2*xi[0],0);
-          grads[5] = Vector3(-2*xi[1],2*(xi2-xi[1]),0);
-        }
-        int countNodes() const {return 6;}
-    };
-    class Tetrahedron : public EntityShape
-    {
-      public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
-        {
-          double xi3 = 1-xi[0]-xi[1]-xi[2];
-          values.allocate(10);
-          values[0] = xi3*xi3;
-          values[1] = xi[0]*xi[0];
-          values[2] = xi[1]*xi[1];
-          values[3] = xi[2]*xi[2];
-          values[4] = 2*xi3*xi[0];
-          values[5] = 2*xi[0]*xi[1];
-          values[6] = 2*xi3*xi[1];
-          values[7] = 2*xi3*xi[2];
-          values[8] = 2*xi[0]*xi[2];
-          values[9] = 2*xi[1]*xi[2];
-        }
-        void getLocalGradients(Vector3 const& xi,
-            NewArray<Vector3>& grads) const
-        {
-          double xi3 = 1-xi[0]-xi[1]-xi[2];
-          grads.allocate(10);
-          grads[0] = Vector3(-2*xi3,-2*xi3,-2*xi3);
-          grads[1] = Vector3(2*xi[0],0,0);
-          grads[2] = Vector3(0,2*xi[1],0);
-          grads[3] = Vector3(0,0,2*xi[2]);
-          grads[4] = Vector3(2*(xi3-xi[0]),-2*xi[0],-2*xi[0]);
-          grads[5] = Vector3(2*xi[1],2*xi[0],0);
-          grads[6] = Vector3(-2*xi[1],2*(xi3-xi[1]),-2*xi[1]);
-          grads[7] = Vector3(-2*xi[2],-2*xi[2],2*(xi3-xi[2]));
-          grads[8] = Vector3(2*xi[2],0,2*xi[0]);
-          grads[9] = Vector3(0,2*xi[2],2*xi[1]);
-        }
-        int countNodes() const {return 10;}
-    };
-    EntityShape* getEntityShape(int type)
-    {
-      static Edge edge;
-      static Triangle triangle;
-      static Tetrahedron tet;
-      static EntityShape* shapes[Mesh::TYPES] =
-      {NULL,      //vertex
-       &edge,     //edge
-       &triangle, //triangle
-       NULL,      //quad
-       &tet,      //tet
-       NULL,      //hex
-       NULL,      //prism
-       NULL};     //pyramid
-      return shapes[type];
-    }
-    bool hasNodesIn(int dimension)
-    {
-      if ((dimension == 0)||
-          (dimension == 1))
-        return true;
-      else
-        return false;
-    }
-    int countNodesOn(int type)
-    {
-      if ((type == Mesh::VERTEX)||
-          (type == Mesh::EDGE))
-        return 1;
-      else
-        return 0;
-    }
-    int getOrder() {return 2;}
-};
 
 int countElementNodes(FieldShape* s, int type)
 {
