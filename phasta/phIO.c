@@ -115,8 +115,6 @@ static void write_preamble(FILE* f, int nodes, int vars)
   get_now_string(timestr);
   fprintf(f, "# %s\n", timestr);
   write_magic_number(f);
-  write_header(f, "number of modes", 0, 1, &nodes);
-  write_header(f, "number of variables", 0, 1, &vars);
 }
 
 static void parse_params(char* header, int* nodes, int* vars)
@@ -189,6 +187,8 @@ void ph_write_field(
 {
   FILE* f = fopen(file, "w");
   write_preamble(f, nodes, vars);
+  write_header(f, "number of modes", 0, 1, &nodes);
+  write_header(f, "number of variables", 0, 1, &vars);
   write_field_header(f, field, nodes, vars, step);
   fwrite(data, sizeof(double), nodes * vars, f);
   fprintf(f, "\n");

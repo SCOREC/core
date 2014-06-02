@@ -9,10 +9,12 @@ void ph_read_params(
     const char* file,
     const char* field,
     int* nodes, int* vars);
+
 void ph_read_field(
     const char* file,
     const char* field,
     double** data);
+
 void ph_write_field(
     const char* file,
     const char* field,
