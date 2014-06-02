@@ -149,6 +149,8 @@ void mds_take_tag(struct mds_tag* tag, mds_id e)
   i = mds_index(e);
   c = i / 8;
   b = i % 8;
+  if (!tag->has[t])
+    return;
   has = tag->has[t] + c;
   *has &= ~(1 << b);
 }
