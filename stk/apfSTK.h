@@ -68,6 +68,9 @@ void copyFieldsFromBulk(
 const CellTopologyData* getDimTopology(Mesh* m, int dim);
 const CellTopologyData* getCellTopology(Mesh* m);
 
+int getLocalSideId(Mesh* m, MeshEntity* e,
+    MeshEntity* side);
+
 }
 
 #endif

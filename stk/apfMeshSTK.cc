@@ -38,7 +38,7 @@ static unsigned const* side_maps[Mesh::TYPES] =
  pyr_face_map,//PYRAMID
 };
 
-static unsigned get_local_side_id(Mesh* m, MeshEntity* e,
+int getLocalSideId(Mesh* m, MeshEntity* e,
     MeshEntity* side)
 {
   int type = m->getType(e);
@@ -54,7 +54,7 @@ static unsigned get_local_side_id(Mesh* m, MeshEntity* e,
         return i;
     }
   abort();
-  return 0;
+  return -1;
 }
 
 /* this function is copied from declare_element_side in STK FEMHelpers.cpp.
@@ -92,7 +92,7 @@ static void get_stk_side(GlobalNumbering* en, MeshEntity* side,
   Mesh* m = getMesh(en);
   MeshEntity* e = m->getUpward(side, 0);
   id = getNumber(en, Node(e, 0));
-  local_id = get_local_side_id(m, e, side);
+  local_id = getLocalSideId(m, e, side);
 }
 
 static void buildSides(
