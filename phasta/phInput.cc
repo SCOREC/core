@@ -81,9 +81,9 @@ static void readInputFile(
 {
   std::ifstream f(filename);
   if (!f)
-    fail("could not open %s", filename);
+    fail("could not open \"%s\"", filename);
   std::string name;
-  while (std::getline(f, name, ' ')) {
+  while (f >> name) {
     if (name[0] == '#') {
       std::getline(f, name, '\n');
       continue;
@@ -99,8 +99,9 @@ static void readInputFile(
       in.recursivePtnStep.allocate(in.recursivePtn);
       for (int i = 0; i < in.recursivePtn; ++i)
         f >> in.recursivePtnStep[i];
+      continue;
     }
-    fail("unknown variable %s in %s\n", name.c_str(), filename);
+    fail("unknown variable \"%s\" in %s\n", name.c_str(), filename);
   }
 }
 
