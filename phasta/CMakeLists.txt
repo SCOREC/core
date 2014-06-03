@@ -8,10 +8,13 @@ set(DEP_LIBS ${APF_LIBS})
 set(PH_LIBS ph ${DEP_LIBS})
 
 set(SOURCES
+  ph.cc
+  phInput.cc
   phIO.c
   phBC.cc)
 
 set(HEADERS
+  phInput.h
   phIO.h
   phBC.h)
 
