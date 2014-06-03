@@ -9,11 +9,13 @@ set(PH_LIBS ph ${DEP_LIBS})
 
 set(SOURCES
   ph.cc
+  phRestart.cc
   phInput.cc
   phIO.c
   phBC.cc)
 
 set(HEADERS
+  phRestart.h
   phInput.h
   phIO.h
   phBC.h)

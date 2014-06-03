@@ -105,9 +105,16 @@ static void readInputFile(
   }
 }
 
+static bool contains(std::string const& a, std::string const& b)
+{
+  return a.find(b) != std::string::npos;
+}
+
 static void validate(Input& in)
 {
   assert(in.parmaPtn == 0 || in.parmaPtn == 1);
+  if (in.adaptFlag)
+    assert(contains(in.attributeFileName, "NOIC.spj"));
 }
 
 Input::Input(const char* filename)
