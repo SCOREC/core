@@ -126,12 +126,12 @@ static void buildSides(
 }
 
 static void buildElements(
-    GlobalNumbering* en,
+    GlobalNumbering* n[4],
     StkModels& models,
     StkMetaData* meta,
     StkBulkData* bulk)
 {
-  Mesh* m = getMesh(en);
+  Mesh* m = getMesh(n[0]);
   static const char* required_by = "apf::buildElements";
   int d = m->getDimension();
   for (size_t i = 0; i < models[d].getSize(); ++i) {
@@ -142,13 +142,12 @@ static void buildElements(
     while ((e = m->iterate(it))) {
       if (m->getModelTag(m->toModel(e)) != model.apfTag)
         continue;
-      stk::mesh::EntityId e_id = getStkId(en, Node(e, 0));
-      int n;
+      stk::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
       NewArray<long> node_ids;
-      n = getElementNumbers(en, e, node_ids);
-      NewArray<stk::mesh::EntityId> stk_node_ids(n);
-      for (int j = 0; j < n; ++j)
-        stk_node_ids[j] = node_ids[j];
+      int nodes = getElementNumbers(n[0], e, node_ids);
+      NewArray<stk::mesh::EntityId> stk_node_ids(nodes);
+      for (int j = 0; j < nodes; ++j)
+        stk_node_ids[j] = node_ids[j] + 1;
       stk::mesh::fem::declare_element(*bulk, *part, e_id, &stk_node_ids[0]);
     }
     m->end(it);
@@ -219,7 +218,7 @@ void copyMeshToBulk(
   Mesh* m = getMesh(n[0]);
   int d = m->getDimension();
   bulk->modification_begin();
-  buildElements(n[d], models, meta, bulk);
+  buildElements(n, models, meta, bulk);
   buildSides(n, models, meta, bulk);
   buildNodes(n[0], models, meta, bulk);
   bulk->modification_end();
