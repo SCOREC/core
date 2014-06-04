@@ -206,7 +206,7 @@ void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
   for (int i = 0; i <= d; ++i)
     meta->register_cell_topology(topo[i], i);
   for (int i = 0; i <= d; ++i)
-    for (size_t j = 0; j <= models[i].getSize(); ++j)
+    for (size_t j = 0; j < models[i].getSize(); ++j)
       declarePart(models[i][j], i, topo[i], meta);
 }
 

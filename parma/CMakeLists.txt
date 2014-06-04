@@ -35,6 +35,7 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_priority.cc 
   diffMC/src/parma_hist.cc 
   diffMC/src/parma_centroid.cc 
+  diffMC/src/parma_ghost.cc 
   )
 
 set(PARMAIO_MAJOR_VERSION 1)
