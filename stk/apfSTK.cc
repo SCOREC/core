@@ -662,6 +662,7 @@ const CellTopologyData* getTopology(Mesh* m, int t)
     if (t == Mesh::HEX)
       return shards::getCellTopologyData< shards::Hexahedron<20> >();
   }
+  abort();
   return 0;
 }
 
