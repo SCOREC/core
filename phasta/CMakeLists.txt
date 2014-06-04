@@ -1,17 +1,25 @@
 project(ph)
 
-find_package(apf PATHS ${CMAKE_BINARY_DIR})
+find_package(ma PATHS ${CMAKE_BINARY_DIR})
 set(PH_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${APF_INCLUDE_DIRS})
-set(DEP_LIBS ${APF_LIBS})
+  ${MA_INCLUDE_DIRS})
+set(DEP_LIBS ${MA_LIBS})
 set(PH_LIBS ph ${DEP_LIBS})
 
 set(SOURCES
+  ph.cc
+  phAdapt.cc
+  phRestart.cc
+  phInput.cc
   phIO.c
   phBC.cc)
 
 set(HEADERS
+  ph.h
+  phAdapt.h
+  phRestart.h
+  phInput.h
   phIO.h
   phBC.h)
 

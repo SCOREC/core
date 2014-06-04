@@ -39,10 +39,12 @@ void adapt(Input* in)
   fixElementShapes(a);
   turnLayerToTets(a);
   postBalance(a);
+  Mesh* m = a->mesh;
   delete a;
   delete in;
   double t1 = MPI_Wtime();
   print("mesh adapted in %f seconds",t1-t0);
+  apf::printStats(m);
 }
 
 void adapt(Mesh* m, AnisotropicFunction* f, SolutionTransfer* s)

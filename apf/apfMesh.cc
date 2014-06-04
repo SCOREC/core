@@ -587,4 +587,15 @@ int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
   return n;
 }
 
+void printStats(Mesh* m)
+{
+  long n[4];
+  for (int i = 0; i < 4; ++i)
+    n[i] = m->count(i);
+  PCU_Add_Longs(n, 4);
+  if (!PCU_Comm_Self())
+    printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
+        n[0], n[1], n[2], n[3]);
+}
+
 } //namespace apf
