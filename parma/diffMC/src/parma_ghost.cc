@@ -1,9 +1,13 @@
+#include <apf.h>
+#include <apfMesh2.h>
+#include <PCU.h>
 #include <stdio.h>
 #include <map>
 #include <assert.h>
 
 namespace parma {
   template <class T> class Associative {
+    typedef std::map<int, T> Container;
     public:
       Associative() {
         iteratorActive = false;
@@ -31,9 +35,9 @@ namespace parma {
       void set(int key, T value) {
         c[key] = value;
       }
-    private:
-      typedef std::map<int, T> Container;
+    protected:
       Container c;
+    private:
       typename Container::iterator cItr;
       bool iteratorActive;
   };
@@ -51,19 +55,19 @@ namespace parma {
       int totalSides;
       void init(apf::Mesh* m) {
         apf::MeshEntity* s;
-        apf::MeshIterator* it = m->begin(dim-1);
+        apf::MeshIterator* it = m->begin(m->getDimension()-1);
         totalSides = 0;
         while ((s = m->iterate(it)))
           if (m->countUpward(s)==1 && m->isShared(s)) {
             const int peerId = apf::getOtherCopy(m,s).first;
-            c.set(peerId, c.get(peerId)+1);
+            set(peerId, get(peerId)+1);
             ++totalSides;
           }
         m->end(it);
       }
   };
 
-  double getEntWeight(apf::MeshEntity* e, apf::MeshTag* w) {
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
     assert(m->hasTag(e,w));
     double weight;
     m->getDoubleTag(e,w,&weight);
@@ -81,7 +85,7 @@ namespace parma {
     apf::MeshEntity* e;
     double sum = 0;
     while ((e = m->iterate(it)))
-      sum += getEntWeight(e, w);
+      sum += getEntWeight(m, e, w);
     m->end(it);
     return sum;
   }
@@ -100,49 +104,58 @@ namespace parma {
       double selfWeight;
       void init(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
         PCU_Comm_Begin();
-        Sides::Item* side;
-        s.begin();
-        while( (side = s.iterate()) ) 
+        const Sides::Item* side;
+        s->begin();
+        while( (side = s->iterate()) ) 
           PCU_COMM_PACK(side->first, selfWeight);
-        s.end();
+        s->end();
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
           double otherWeight;
           PCU_COMM_UNPACK(otherWeight);
-          c.set(PCU_Comm_Sender(), otherWeight);
+          set(PCU_Comm_Sender(), otherWeight);
         }
-      }
-  };
-
-  class Ghosts : public Associative<double> {
-    public:
-      Ghosts(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
-        init(m, finder, sides)
-      }
-    private:
-      void init(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
-        Sides::Item* side;
-        sides.begin();
-        while( (side = sides.iterate()) )
-          c.set(side->first, finder->weight(side->first));
-        sides.end();
       }
   };
 
   class GhostFinder {
     public:
-      GhostFinder(apf::Mesh* m, apf::Mesh* weight, int depth, int bridge);
+      GhostFinder(apf::Mesh* m, apf::Mesh* weight, int layer, int bridge);
       /**
        * @brief get the weight of vertices ghosted to peer
        */
       double weight(int peer);
     private:
       GhostFinder();
-      int depth;
+      int layers;
       int bridge;
       apf::Mesh* m;
       apf::MeshTag* w;
       apf::MeshTag* depth;
+  };
+
+  class Ghosts : public Associative<double> {
+    public:
+      Ghosts(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
+        init(m, finder, sides);
+      }
+      double total() {
+        double total=0;
+        const Ghosts::Item* ghost;
+        begin();
+        while( (ghost = iterate()) )
+          total += ghost->second;
+        end();
+        return total;
+      }
+    private:
+      void init(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
+        const Sides::Item* side;
+        sides->begin();
+        while( (side = sides->iterate()) )
+          set(side->first, finder->weight(side->first));
+        sides->end();
+      }
   };
 
   class ParmaGhost {
@@ -152,25 +165,27 @@ namespace parma {
       void run(double maxImb, int verbosity);
     private:
       ParmaGhost();
-      double maxImb;
-      int verbose;
-      int bridge;
-      int layers;
       apf::Mesh* m;
-      void getImbalance();
+      double maxImb;
+      apf::MeshTag* w;
+      int layers;
+      int bridge;
+      int verbose;
+      double imbalance();
       void exchangeGhosts();
       void diffuse();
       Sides* sides;
       Weights* weights;
       GhostFinder* ghostFinder;
+      Ghosts* ghosts;
   };
 
-  ParmaGhost::ParmaGhost(apf::Mesh* mIn, apf::MeshTag* w, 
+  ParmaGhost::ParmaGhost(apf::Mesh* mIn, apf::MeshTag* wIn, 
       int layersIn, int bridgeIn) 
-    : m(mIn), layers(layersIn), bridge(bridgeIn)
+    : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn)
   {
     sides = new Sides(m);
-    weights = new Weights(m, w, &sides);
+    weights = new Weights(m, w, sides);
   }
 
   ParmaGhost::~ParmaGhost() {
@@ -180,15 +195,14 @@ namespace parma {
   }
 
   void ParmaGhost::run(double maxImb, int verbosityIn) {
-    if ( imbalance() < maxImb) return;
-
+    if ( imbalance() < maxImb ) return;
   }
 
   double ParmaGhost::imbalance() { //FIXME
-    double totalWeight = weights.self() + ghosts;
+    double totalWeight = weights->self() + ghosts->total();
     PCU_Add_Doubles(&totalWeight,1);
     double averageWeight = totalWeight / PCU_Comm_Peers();
-    double maxWeight = selfWeight;
+    double maxWeight = weights->self();
     PCU_Max_Doubles(&maxWeight, 1);
     return maxWeight / averageWeight;
   }
