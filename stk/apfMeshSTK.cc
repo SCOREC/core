@@ -60,7 +60,8 @@ int getLocalSideId(Mesh* m, MeshEntity* e,
 /* this function is copied from declare_element_side in STK FEMHelpers.cpp.
    It is modified to create consistent side->node relations so that
    sidesets on non-manifold geometric faces are consistent in parallel.
-   We use the face->vertex ordering of our mesh database, which is consistent. */
+   We use the face->vertex ordering of our mesh database, which is consistent.
+ */
 
 static void special_declare_element_side(
   GlobalNumbering* nn,
