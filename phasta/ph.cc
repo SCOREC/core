@@ -43,10 +43,10 @@ enum {
   DIR_FANOUT = 2048
 };
 
-std::string setupOutputDir(int parts)
+std::string setupOutputDir()
 {
   std::stringstream ss;
-  ss << parts << "-procs_case";
+  ss << PCU_Comm_Peers() << "-procs_case";
   std::string s = ss.str();
   if (!PCU_Comm_Self())
     mkdir(s.c_str(), DIR_MODE);
@@ -54,7 +54,7 @@ std::string setupOutputDir(int parts)
   return s;
 }
 
-void setupOutputSubdir(int parts, std::string& path)
+void setupOutputSubdir(std::string& path)
 {
   if (PCU_Comm_Peers() <= DIR_FANOUT)
     return;

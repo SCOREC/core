@@ -114,7 +114,7 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)
     readAndAttachField(in, m, filename.c_str(), "dwal");
-  if (in.buildMapping && !in.adaptFlag) {
+  if (in.buildMapping) {
     double* mapping = buildMappingData(m);
     attachField(m, "mapping", mapping, 2);
     free(mapping);
@@ -134,7 +134,7 @@ void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)
     detachAndWriteField(in, m, f, "dwal");
-  if (in.buildMapping && !in.adaptFlag)
+  if (in.buildMapping)
     detachAndWriteField(in, m, f, "mapping");
   fclose(f);
 }

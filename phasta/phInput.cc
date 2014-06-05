@@ -117,6 +117,7 @@ static void validate(Input& in)
   if (in.adaptFlag)
     assert(contains(in.attributeFileName, "NOIC.spj"));
   assert(in.threaded);
+  assert( ! (in.buildMapping && in.adaptFlag));
 }
 
 Input::Input(const char* filename)

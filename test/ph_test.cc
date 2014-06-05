@@ -27,6 +27,10 @@ int main(int argc, char** argv)
   }
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
+  std::string path = ph::setupOutputDir();
+  ph::setupOutputSubdir(path);
+  if (in.solutionMigration && in.phastaIO)
+    ph::detachAndWriteSolution(in, m, path);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();

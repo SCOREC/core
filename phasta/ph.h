@@ -8,8 +8,8 @@ namespace ph {
 void fail(const char* format, ...) __attribute__((noreturn,format(printf,1,2)));
 
 void goToStepDir(int step);
-std::string setupOutputDir(int parts);
-void setupOutputSubdir(int parts, std::string& path);
+std::string setupOutputDir();
+void setupOutputSubdir(std::string& path);
 
 }
 
