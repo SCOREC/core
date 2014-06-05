@@ -43,6 +43,9 @@ void copyFieldsToMeta(
     Mesh* m,
     StkMetaData* meta);
 
+void makeStkNumberings(Mesh* m, GlobalNumbering* n[4]);
+void freeStkNumberings(Mesh* m, GlobalNumbering* n[4]);
+
 void copyMeshToBulk(
     GlobalNumbering* n[4],
     StkModels& models,

@@ -102,7 +102,7 @@ static void buildSides(
     StkBulkData* bulk)
 {
   Mesh* m = getMesh(n[0]);
-  static const char* required_by = "apf::buildSides";
+  static const char* required_by = "buildSides";
   int d = m->getDimension() - 1;
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
@@ -132,7 +132,7 @@ static void buildElements(
     StkBulkData* bulk)
 {
   Mesh* m = getMesh(n[0]);
-  static const char* required_by = "apf::buildElements";
+  static const char* required_by = "buildElements";
   int d = m->getDimension();
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
@@ -161,7 +161,7 @@ static void buildNodes(
     StkBulkData* bulk)
 {
   Mesh* m = getMesh(nn);
-  static const char* required_by = "apf::buildElements";
+  static const char* required_by = "buildElements";
   int d = 0;
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
@@ -222,6 +222,28 @@ void copyMeshToBulk(
   buildSides(n, models, meta, bulk);
   buildNodes(n[0], models, meta, bulk);
   bulk->modification_end();
+}
+
+void makeStkNumberings(Mesh* m, GlobalNumbering* n[4])
+{
+  int d = m->getDimension();
+  n[0] = makeGlobal(
+      numberOwnedNodes(m, "stk_node"));
+  synchronize(n[0]);
+  n[d - 1] = makeGlobal(
+      numberOwnedDimension(m, "stk_side", d - 1));
+  synchronize(n[d - 1]);
+  n[d] = makeGlobal(
+      numberOwnedDimension(m, "stk_elem", d));
+  synchronize(n[d]);
+}
+
+void freeStkNumberings(Mesh* m, GlobalNumbering* n[4])
+{
+  int d = m->getDimension();
+  destroyGlobalNumbering(n[0]);
+  destroyGlobalNumbering(n[d - 1]);
+  destroyGlobalNumbering(n[d]);
 }
 
 }
