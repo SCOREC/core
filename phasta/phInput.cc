@@ -18,6 +18,7 @@ static void setDefaults(Input& in)
   in.dwalMigration = 0; // Do not migrate dwal field by default
   in.buildMapping = 0; // Do not build the mapping field by default
   in.elementsPerMigration = 1000*1000; // 100k elms per round
+  in.threaded = 1;
 }
 
 typedef std::map<std::string, std::string*> StringMap;
@@ -115,6 +116,7 @@ static void validate(Input& in)
   assert(in.parmaPtn == 0 || in.parmaPtn == 1);
   if (in.adaptFlag)
     assert(contains(in.attributeFileName, "NOIC.spj"));
+  assert(in.threaded);
 }
 
 Input::Input(const char* filename)
