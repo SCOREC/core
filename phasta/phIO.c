@@ -17,7 +17,7 @@ STEP_PARAM
 
 static const char* magic_name = "byteorder magic number";
 
-static void write_header(FILE* f, const char* name, size_t bytes,
+void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params)
 {
   int i;
@@ -86,7 +86,7 @@ static void get_now_string(char s[PH_LINE])
 static void write_magic_number(FILE* f)
 {
   int why = 1;
-  write_header(f, magic_name, sizeof(int) + 1, 1, &why);
+  ph_write_header(f, magic_name, sizeof(int) + 1, 1, &why);
   int magic = MAGIC;
   fwrite(&magic, sizeof(int), 1, f);
   fprintf(f,"\n");
@@ -106,7 +106,7 @@ static int read_magic_number(FILE* f)
   return magic != MAGIC;
 }
 
-static void write_preamble(FILE* f, int nodes, int vars)
+void ph_write_preamble(FILE* f)
 {
   char timestr[PH_LINE];
   fprintf(f, "# PHASTA Input File Version 2.0\n");
@@ -117,33 +117,18 @@ static void write_preamble(FILE* f, int nodes, int vars)
   write_magic_number(f);
 }
 
-static void parse_params(char* header, int* nodes, int* vars)
+static void parse_params(char* header, size_t* bytes,
+    int* nodes, int* vars, int* step)
 {
   int params[FIELD_PARAMS];
-  parse_header(header, NULL, NULL, FIELD_PARAMS, params);
+  parse_header(header, NULL, bytes, FIELD_PARAMS, params);
   *nodes = params[NODES_PARAM];
   *vars = params[VARS_PARAM];
+  *step = params[STEP_PARAM];
 }
 
-void ph_read_params(
-    const char* file,
-    const char* field,
-    int* nodes,
-    int* vars)
-{
-  char header[PH_LINE];
-  FILE* f = fopen(file, "r");
-  find_header(f, field, header);
-  parse_params(header, nodes, vars);
-  fclose(f);
-}
-
-static void parse_bytes(char* header, size_t* bytes)
-{
-  parse_header(header, NULL, bytes, 0, NULL);
-}
-
-void ph_read_field(const char* file, const char* field, double** data)
+void ph_read_field(const char* file, const char* field, double** data,
+    int* nodes, int* vars, int* step)
 {
   size_t bytes, n;
   char header[PH_LINE];
@@ -151,9 +136,10 @@ void ph_read_field(const char* file, const char* field, double** data)
   FILE* f = fopen(file, "r");
   should_swap = read_magic_number(f);
   find_header(f, field, header);
-  parse_bytes(header, &bytes);
+  parse_params(header, &bytes, nodes, vars, step);
   assert(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
+  assert(n == (*nodes) * (*vars));
   *data = malloc(bytes);
   fread(*data, sizeof(double), n, f);
   if (should_swap)
@@ -174,23 +160,13 @@ static void write_field_header(
   params[VARS_PARAM] = vars;
   params[STEP_PARAM] = step;
   n = nodes * vars;
-  write_header(f, field, n * sizeof(double) + 1, FIELD_PARAMS, params);
+  ph_write_header(f, field, n * sizeof(double) + 1, FIELD_PARAMS, params);
 }
 
-void ph_write_field(
-    const char* file,
-    const char* field,
-    double* data,
-    int nodes,
-    int vars,
-    int step)
+void ph_write_field(FILE* f, const char* field, double* data,
+    int nodes, int vars, int step)
 {
-  FILE* f = fopen(file, "w");
-  write_preamble(f, nodes, vars);
-  write_header(f, "number of modes", 0, 1, &nodes);
-  write_header(f, "number of variables", 0, 1, &vars);
   write_field_header(f, field, nodes, vars, step);
   fwrite(data, sizeof(double), nodes * vars, f);
   fprintf(f, "\n");
-  fclose(f);
 }

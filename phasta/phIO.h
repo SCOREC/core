@@ -5,23 +5,14 @@
 extern "C" {
 #endif
 
-void ph_read_params(
-    const char* file,
-    const char* field,
-    int* nodes, int* vars);
+void ph_write_preamble(FILE* f);
+void ph_write_header(FILE* f, const char* name, size_t bytes,
+    int nparam, int* params);
 
-void ph_read_field(
-    const char* file,
-    const char* field,
-    double** data);
-
-void ph_write_field(
-    const char* file,
-    const char* field,
-    double* data,
-    int nodes,
-    int vars,
-    int step);
+void ph_read_field(const char* file, const char* field, double** data,
+    int* nodes, int* vars, int* step);
+void ph_write_field(FILE* f, const char* field, double* data,
+    int nodes, int vars, int step);
 
 #ifdef __cplusplus
 }
