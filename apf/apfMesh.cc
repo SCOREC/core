@@ -587,11 +587,22 @@ int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
   return n;
 }
 
+static int countOwned(Mesh* m, int dim)
+{
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  int n = 0;
+  while ((e = m->iterate(it)))
+    if (m->isOwned(e))
+      ++n;
+  return n;
+}
+
 void printStats(Mesh* m)
 {
   long n[4];
   for (int i = 0; i < 4; ++i)
-    n[i] = m->count(i);
+    n[i] = countOwned(m, i);
   PCU_Add_Longs(n, 4);
   if (!PCU_Comm_Self())
     printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
