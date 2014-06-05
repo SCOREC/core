@@ -10,13 +10,14 @@
 
 namespace apf {
 
-Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach, bool sync)
+Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
+    bool debug, bool sync)
 {
   fail("apf_zoltan compiled empty !");
   return 0;
 }
 
-Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach)
+Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach, bool debug)
 {
   fail("apf_zoltan compiled empty !");
   return 0;
