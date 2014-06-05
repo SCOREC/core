@@ -45,7 +45,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["prCD"] = &in.prCD;
   intMap["timing"] = &in.timing;
   intMap["internalBCNodes"] = &in.internalBCNodes;
-  intMap["WRITEASC"] = &in.writeAsc;
+  intMap["WRITEASC"] = &in.writeDebugFiles;
   intMap["phastaIO"] = &in.phastaIO;
   intMap["numTotParts"] = &in.numTotParts;
   intMap["SolutionMigration"] = &in.solutionMigration;

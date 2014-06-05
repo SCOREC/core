@@ -28,7 +28,7 @@ class Input
     int prCD;
     int timing;
     int internalBCNodes;
-    int writeAsc;
+    int writeDebugFiles;
     int phastaIO;
     int numTotParts;
     int solutionMigration;
