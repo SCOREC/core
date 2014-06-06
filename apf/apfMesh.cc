@@ -587,7 +587,7 @@ int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
   return n;
 }
 
-static int countOwned(Mesh* m, int dim)
+int countOwned(Mesh* m, int dim)
 {
   MeshIterator* it = m->begin(dim);
   MeshEntity* e;

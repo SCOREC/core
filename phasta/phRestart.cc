@@ -75,17 +75,24 @@ void detachAndWriteField(
   free(data);
 }
 
-/* silliest darn field I ever did see */
-static double* buildMappingData(apf::Mesh* m)
+/* silliest darn fields I ever did see */
+static double* buildMappingPartId(apf::Mesh* m)
 {
   int n = m->count(0);
   /* malloc instead of new[] for consistency with ph_read_field */
   double* data = (double*)malloc(sizeof(double) * n);
   int self = PCU_Comm_Self();
-  for (int i = 0; i < n; ++i) {
-    data[i * 2] = self;
-    data[i * 2 + 1] = i;
-  }
+  for (int i = 0; i < n; ++i)
+    data[i] = self;
+  return data;
+}
+static double* buildMappingVtxId(apf::Mesh* m)
+{
+  int n = m->count(0);
+  /* malloc instead of new[] for consistency with ph_read_field */
+  double* data = (double*)malloc(sizeof(double) * n);
+  for (int i = 0; i < n; ++i)
+    data[i] = i;
   return data;
 }
 
@@ -115,8 +122,11 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
   if (in.dwalMigration)
     readAndAttachField(in, m, filename.c_str(), "dwal");
   if (in.buildMapping) {
-    double* mapping = buildMappingData(m);
-    attachField(m, "mapping", mapping, 2);
+    double* mapping = buildMappingPartId(m);
+    attachField(m, "mapping_partid", mapping, 1);
+    free(mapping);
+    mapping = buildMappingVtxId(m);
+    attachField(m, "mapping_vtxid", mapping, 1);
     free(mapping);
   }
 }
@@ -134,8 +144,10 @@ void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)
     detachAndWriteField(in, m, f, "dwal");
-  if (in.buildMapping)
-    detachAndWriteField(in, m, f, "mapping");
+  if (in.buildMapping) {
+    detachAndWriteField(in, m, f, "mapping_partid");
+    detachAndWriteField(in, m, f, "mapping_vtxid");
+  }
   fclose(f);
 }
 

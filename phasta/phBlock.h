@@ -16,7 +16,8 @@ enum {
   WEDGE_QUAD   = 4,
   PYRAMID      = 5,
   PYRAMID_QUAD = 5,
-  PYRAMID_TRI  = 6
+  PYRAMID_TRI  = 6,
+  TYPES        = 7
 };
 
 struct BlockKey
@@ -42,6 +43,10 @@ struct Blocks
   BlockKey keys[MAX_BLOCK_KEYS];
   int nElements[MAX_BLOCK_KEYS];
   int nElementNodes[MAX_BLOCK_KEYS];
+  int getSize()
+  {
+    return keyToIndex.size();
+  }
 };
 
 struct AllBlocks
@@ -56,6 +61,8 @@ typedef std::vector<apf::MeshEntity*> MeshBounds;
 void getAllBlocks(apf::Mesh* m, AllBlocks& b,
     ModelBounds& modelFaces,
     MeshBounds& meshFaces);
+
+std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
 
 }
 

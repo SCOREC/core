@@ -264,6 +264,8 @@ Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
 
 int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
 
+int countOwned(Mesh* m, int dim);
+
 void printStats(Mesh* m);
 
 } //namespace apf

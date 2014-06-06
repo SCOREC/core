@@ -122,4 +122,26 @@ void getAllBlocks(apf::Mesh* m, AllBlocks& b,
   getBoundaryBlocks(m, b.boundary, modelFaces, meshFaces);
 }
 
+std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)
+{
+  std::string s = prefix;
+  static const char* const polyTable[5] =
+  {NULL
+  ,"linear "
+  ,"quadratic "
+  ,"cubic "
+  ,"quartic "};
+  s += polyTable[b.polynomialOrder];
+  static const char* typeTable[TYPES] =
+  {NULL
+  ,"tetrahedron "
+  ,"hexahedron "
+  ,"wedge "
+  ,"wedge quadface "
+  ,"pyramid "
+  ,"pyramid triface "};
+  s += typeTable[b.elementType];
+  return s;
+}
+
 }
