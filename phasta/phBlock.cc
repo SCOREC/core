@@ -59,7 +59,7 @@ static void insertKey(Blocks& b, BlockKey const& k)
   }
 }
 
-void getInternalBlocks(apf::Mesh* m, Blocks& b)
+void getInteriorBlocks(apf::Mesh* m, Blocks& b)
 {
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
@@ -118,7 +118,7 @@ void getAllBlocks(apf::Mesh* m, AllBlocks& b,
     ModelBounds& modelFaces,
     MeshBounds& meshFaces)
 {
-  getInternalBlocks(m, b.internal);
+  getInteriorBlocks(m, b.interior);
   getBoundaryBlocks(m, b.boundary, modelFaces, meshFaces);
 }
 

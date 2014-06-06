@@ -51,7 +51,7 @@ struct Blocks
 
 struct AllBlocks
 {
-  Blocks internal;
+  Blocks interior;
   Blocks boundary;
 };
 
