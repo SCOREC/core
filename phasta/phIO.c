@@ -118,6 +118,22 @@ void ph_write_preamble(FILE* f)
   write_magic_number(f);
 }
 
+void ph_write_doubles(FILE* f, const char* name, double* data,
+    size_t n, int nparam, int* params)
+{
+  ph_write_header(f, name, n * sizeof(double) + 1, nparam, params);
+  fwrite(data, sizeof(double), n, f);
+  fprintf(f, "\n");
+}
+
+void ph_write_ints(FILE* f, const char* name, int* data,
+    size_t n, int nparam, int* params)
+{
+  ph_write_header(f, name, n * sizeof(int) + 1, nparam, params);
+  fwrite(data, sizeof(int), n, f);
+  fprintf(f, "\n");
+}
+
 static void parse_params(char* header, size_t* bytes,
     int* nodes, int* vars, int* step)
 {
@@ -152,26 +168,12 @@ void ph_read_field(const char* file, const char* field, double** data,
   fclose(f);
 }
 
-static void write_field_header(
-    FILE* f,
-    const char* field,
-    int nodes,
-    int vars,
-    int step)
+void ph_write_field(FILE* f, const char* field, double* data,
+    int nodes, int vars, int step)
 {
-  size_t n;
   int params[FIELD_PARAMS];
   params[NODES_PARAM] = nodes;
   params[VARS_PARAM] = vars;
   params[STEP_PARAM] = step;
-  n = nodes * vars;
-  ph_write_header(f, field, n * sizeof(double) + 1, FIELD_PARAMS, params);
-}
-
-void ph_write_field(FILE* f, const char* field, double* data,
-    int nodes, int vars, int step)
-{
-  write_field_header(f, field, nodes, vars, step);
-  fwrite(data, sizeof(double), nodes * vars, f);
-  fprintf(f, "\n");
+  ph_write_doubles(f, field, data, nodes * vars, FIELD_PARAMS, params);
 }
