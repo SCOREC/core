@@ -23,6 +23,7 @@ apf::Migration* getPlan(apf::Mesh* m)
   apf::Splitter* splitter = Parma_MakeRibSplitter(m);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   apf::Migration* plan = splitter->split(weights, 1.10, partitionFactor);
+  apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
   delete splitter;
   return plan;
