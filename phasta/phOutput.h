@@ -50,7 +50,7 @@ struct Output
   int nGlobalNodes;
   int nBoundaryElements;
   int nMaxElementNodes;
-  int nDirichletNodes;
+  int nEssentialBCNodes;
   int nlwork; /* ??? */
   AllBlocks blocks;
   EnsaArrays arrays;

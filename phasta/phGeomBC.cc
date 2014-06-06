@@ -64,6 +64,7 @@ void getNaturalBCCodes(Output& o, int block, apf::DynamicArray<int>& codes)
 
 int countNaturalBCs(Input& in)
 {
+/* just copied, don't know the sense behind this */
   return in.ensa_dof + 1;
 }
 
@@ -150,7 +151,7 @@ void writeGeomBC(Output& o, std::string path)
   writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
   writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
   writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
-  writeInt(f, "number of nodes with Dirichlet BCs", o.nDirichletNodes);
+  writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
   params[0] = m->count(0);
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
