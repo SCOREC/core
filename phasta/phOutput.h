@@ -14,6 +14,8 @@ struct EnsaArrays
 {
   double* coordinates;
   int* ilwork; /* ??? */
+/* periodic masters array, one per node... */  
+  int* iper;
 /* note: int will overflow at about 2 billion total nodes */
   int* globalNodeNumbers;
 /* ien[i][j][k] is the local vertex id of
@@ -38,6 +40,17 @@ struct EnsaArrays
    element j of
    boundary block i */
   double*** bcb;
+/* nbc[i] is the index into essential boundary condition
+   arrays of local node i (probably ;) */
+  int* nbc;
+/* ibc[i] is the essential boundary condition
+   status code of essential BC node i */
+  int* ibc;
+/* bc[i][j] is the essential boundary condition
+   value of 
+   essential boundary condition j of
+   essential BC node i */
+  double** bc;
 };
 
 struct Output
