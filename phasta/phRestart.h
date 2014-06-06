@@ -9,6 +9,8 @@ namespace ph {
 void readAndAttachSolution(Input& in, apf::Mesh* m);
 void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path);
 
+void detachField(apf::Field* f, double*& data, int& size);
+
 }
 
 #endif

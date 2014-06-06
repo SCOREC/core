@@ -27,12 +27,11 @@ void attachField(
 }
 
 void detachField(
-    apf::Mesh* m,
-    const char* fieldname,
+    apf::Field* f,
     double*& data,
     int& size)
 {
-  apf::Field* f = m->findField(fieldname);
+  apf::Mesh* m = apf::getMesh(f);
   size = apf::countComponents(f);
   data = (double*)malloc(sizeof(double) * size * m->count(0));
   apf::MeshIterator* it = m->begin(0);
@@ -44,6 +43,16 @@ void detachField(
   }
   m->end(it);
   assert(i == size * m->count(0));
+}
+
+void detachField(
+    apf::Mesh* m,
+    const char* fieldname,
+    double*& data,
+    int& size)
+{
+  apf::Field* f = m->findField(fieldname);
+  detachField(f, data, size);
 }
 
 void readAndAttachField(
