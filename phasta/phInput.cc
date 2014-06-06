@@ -19,6 +19,7 @@ static void setDefaults(Input& in)
   in.buildMapping = 0; // Do not build the mapping field by default
   in.elementsPerMigration = 1000*1000; // 100k elms per round
   in.threaded = 1;
+  in.restartFileName = "restart";
 }
 
 typedef std::map<std::string, std::string*> StringMap;

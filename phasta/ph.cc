@@ -46,7 +46,7 @@ enum {
 std::string setupOutputDir()
 {
   std::stringstream ss;
-  ss << PCU_Comm_Peers() << "-procs_case";
+  ss << PCU_Comm_Peers() << "-procs_case/";
   std::string s = ss.str();
   if (!PCU_Comm_Self())
     mkdir(s.c_str(), DIR_MODE);
@@ -61,7 +61,7 @@ void setupOutputSubdir(std::string& path)
   int self = PCU_Comm_Self();
   int subSelf = self % DIR_FANOUT;
   std::stringstream ss(path);
-  ss << '/' << subSelf << '/';
+  ss << subSelf << '/';
   path = ss.str();
   if (!subSelf) {
     if (mkdir(path.c_str(), DIR_MODE)) {

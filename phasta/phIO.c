@@ -2,6 +2,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <pcu_io.h>
 #include <phIO.h>
 
@@ -134,6 +135,10 @@ void ph_read_field(const char* file, const char* field, double** data,
   char header[PH_LINE];
   int should_swap;
   FILE* f = fopen(file, "r");
+  if (!f) {
+    fprintf(stderr,"could not open \"%s\"\n", file);
+    abort();
+  }
   should_swap = read_magic_number(f);
   find_header(f, field, header);
   parse_params(header, &bytes, nodes, vars, step);
