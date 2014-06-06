@@ -120,6 +120,16 @@ void writeBlocks(FILE* f, Output& o)
   }
 }
 
+static void writeInt(FILE* f, const char* name,  int i)
+{
+  ph_write_header(f, name, 0, 1, &i);
+}
+
+static void writeInts(FILE* f, const char* name,  int* i, int n)
+{
+  ph_write_ints(f, name, i, n, 1, &n);
+}
+
 void writeGeomBC(Output& o, std::string path)
 {
   apf::Mesh* m = o.mesh;
@@ -127,46 +137,31 @@ void writeGeomBC(Output& o, std::string path)
   FILE* f = fopen(path.c_str(), "w");
   ph_write_preamble(f);
   int params[MAX_PARAMS];
-  params[0] = m->count(0);
-  ph_write_header(f, "number of nodes", 0, 1, params);
-  params[0] = o.nGlobalEntities[0];
-  ph_write_header(f, "number of nodes in the mesh", 0, 1, params);
-  params[0] = o.nGlobalEntities[1];
-  ph_write_header(f, "number of edges in the mesh", 0, 1, params);
-  params[0] = o.nGlobalEntities[2];
-  ph_write_header(f, "number of faces in the mesh", 0, 1, params);
-  params[0] = o.nOverlapNodes;
-  ph_write_header(f, "number of modes", 0, 1, params);
-  params[0] = o.nOwnedNodes;
-  ph_write_header(f, "number of shapefunctions soved on processor", 0, 1, params);
+  writeInt(f, "number of nodes", m->count(0));
+  writeInt(f, "number of nodes in the mesh", o.nGlobalEntities[0]);
+  writeInt(f, "number of edges in the mesh", o.nGlobalEntities[1]);
+  writeInt(f, "number of faces in the mesh", o.nGlobalEntities[2]);
+  writeInt(f, "number of modes", o.nOverlapNodes);
+  writeInt(f, "number of shapefunctions soved on processor", o.nOwnedNodes);
   /* keep the bad spelling ! ------------------- ^ */
-  params[0] = o.nGlobalNodes;
-  ph_write_header(f, "number of global modes", 0, 1, params);
-  params[0] = m->count(m->getDimension());
-  ph_write_header(f, "number of interior elements", 0, 1, params);
-  params[0] = o.nBoundaryElements;
-  ph_write_header(f, "number of boundary elements", 0, 1, params);
-  params[0] = o.nMaxElementNodes;
-  ph_write_header(f, "maximum number of element nodes", 0, 1, params);
-  params[0] = o.blocks.interior.getSize();
-  ph_write_header(f, "number of interior tpblocks", 0, 1, params);
-  params[0] = o.blocks.boundary.getSize();
-  ph_write_header(f, "number of boundary tpblocks", 0, 1, params);
-  params[0] = o.nDirichletNodes;
-  ph_write_header(f, "number of nodes with Dirichlet BCs", 0, 1, params);
+  writeInt(f, "number of global modes", o.nGlobalNodes);
+  writeInt(f, "number of interior elements", m->count(m->getDimension()));
+  writeInt(f, "number of boundary elements", o.nBoundaryElements);
+  writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
+  writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
+  writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
+  writeInt(f, "number of nodes with Dirichlet BCs", o.nDirichletNodes);
   params[0] = m->count(0);
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
       params[0] * params[1], 2, params);
-  params[0] = PCU_Comm_Peers();
-  ph_write_header(f, "number of processors", 0, 1, params);
-  params[0] = o.nlwork;
-  ph_write_header(f, "size of ilwork array", 0, 1, params);
+  writeInt(f, "number of processors", PCU_Comm_Peers());
+  writeInt(f, "size of ilwork array", o.nlwork);
   if (o.nlwork)
-    ph_write_ints(f, "ilwork", o.arrays.ilwork, o.nlwork, 1, params);
+    writeInts(f, "ilwork", o.arrays.ilwork, o.nlwork);
   params[0] = m->count(0);
-  ph_write_ints(f, " mode number map from partition to global",
-      o.arrays.globalNodeNumbers, m->count(0), 1, params);
+  writeInts(f, " mode number map from partition to global",
+      o.arrays.globalNodeNumbers, m->count(0));
   writeBlocks(f, o);
   fclose(f);
 }
