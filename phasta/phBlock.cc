@@ -1,6 +1,8 @@
 #include "phBlock.h"
 #include <apf.h>
 
+#include <cstdio>
+
 namespace ph {
 
 bool BlockKey::operator<(BlockKey const& other) const
@@ -45,18 +47,18 @@ int getBoundaryFaceEdges(apf::Mesh* m, apf::MeshEntity* e)
 static void insertKey(Blocks& b, BlockKey const& k)
 {
   if (b.keyToIndex.count(k)) {
+    int idx = b.keyToIndex[k];
+    ++(b.nElements[idx]);
+  } else {
     int idx = b.keyToIndex.size();
     b.keyToIndex[k] = idx;
     b.nElements[idx] = 1;
     b.keys[idx] = k;
     b.nElementNodes[idx] = k.nElementVertices;
-  } else {
-    int idx = b.keyToIndex[k];
-    ++(b.nElements[idx]);
   }
 }
 
-void getInteriorBlocks(apf::Mesh* m, Blocks& b)
+static void getInteriorBlocks(apf::Mesh* m, Blocks& b)
 {
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
@@ -70,6 +72,9 @@ void getInteriorBlocks(apf::Mesh* m, Blocks& b)
     insertKey(b, k);
   }
   m->end(it);
+  for (int i = 0; i < b.getSize(); ++i)
+    fprintf(stderr,"got %d elements of type %d\n",
+        b.nElements[i], b.keys[i].elementType);
 }
 
 void applyTriQuadHack(BlockKey& k)

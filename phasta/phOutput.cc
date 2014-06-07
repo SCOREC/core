@@ -83,7 +83,7 @@ static void getInterior(Output& o, apf::Numbering* n)
       apf::Downward v;
       getVertices(m, e, v);
       for (int k = 0; k < nv; ++k)
-        ien[i][j][k] = getNumber(n, v[k], 0, 0);
+        ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
       ++j;
     }
     m->end(it);
