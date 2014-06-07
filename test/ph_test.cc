@@ -3,6 +3,7 @@
 #include <phBC.h>
 #include <phRestart.h>
 #include <phAdapt.h>
+#include <phOutput.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
@@ -29,8 +30,13 @@ int main(int argc, char** argv)
     ph::tetrahedronize(in, m);
   std::string path = ph::setupOutputDir();
   ph::setupOutputSubdir(path);
-  if (in.solutionMigration && in.phastaIO)
-    ph::detachAndWriteSolution(in, m, path);
+  if (in.phastaIO) {
+    if (in.solutionMigration)
+      ph::detachAndWriteSolution(in, m, path);
+    ph::Output o;
+    ph::generateOutput(in, m, o);
+    ph::writeGeomBC(o, path);
+  }
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();

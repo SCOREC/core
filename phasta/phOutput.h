@@ -74,6 +74,7 @@ struct Output
 };
 
 void generateOutput(Input& in, apf::Mesh* mesh, Output& o);
+void writeGeomBC(Output& o, std::string path);
 
 }
 

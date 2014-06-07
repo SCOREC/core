@@ -22,6 +22,7 @@ set(SOURCES
 
 set(HEADERS
   ph.h
+  phOutput.h
   phAdapt.h
   phRestart.h
   phInput.h
