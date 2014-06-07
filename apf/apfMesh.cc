@@ -595,6 +595,7 @@ int countOwned(Mesh* m, int dim)
   while ((e = m->iterate(it)))
     if (m->isOwned(e))
       ++n;
+  m->end(it);
   return n;
 }
 

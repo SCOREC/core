@@ -170,16 +170,13 @@ static void getFakePeriodicMasters(Output& o)
   o.arrays.iper = iper;
 }
 
-static void getFakeNaturalBCs(Output& o)
-{
-  o.arrays.ibcb = 0;
-  o.arrays.bcb = 0;
-}
-
 static void getFakeEssentialBCs(Output& o)
 {
+  apf::Mesh* m = o.mesh;
   o.nEssentialBCNodes = 0;
-  o.arrays.nbc = 0;
+  o.arrays.nbc = new int[m->count(0)];
+  for (size_t i = 0; i < m->count(0); ++i)
+    o.arrays.nbc[i] = 42;
   o.arrays.ibc = 0;
   o.arrays.bc = 0;
 }
@@ -233,7 +230,6 @@ void generateOutput(Input& in, apf::Mesh* mesh, Output& o)
   getBoundaryElements(o);
   getMaxElementNodes(o);
   getFakePeriodicMasters(o);
-  getFakeNaturalBCs(o);
   getFakeEssentialBCs(o);
 }
 
