@@ -59,10 +59,11 @@ typedef std::set<apf::ModelEntity*> ModelBounds;
 typedef std::vector<apf::MeshEntity*> MeshBounds;
 
 void getAllBlocks(apf::Mesh* m, AllBlocks& b,
-    ModelBounds& modelFaces,
-    MeshBounds& meshFaces);
+    ModelBounds& modelFaces);
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
+
+int getPhastaType(apf::Mesh* m, apf::MeshEntity* e);
 
 }
 

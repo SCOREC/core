@@ -9,6 +9,8 @@ set(PH_LIBS ph ${DEP_LIBS})
 
 set(SOURCES
   ph.cc
+  phAdjacent.cc
+  phOutput.cc
   phLinks.cc
   phGeomBC.cc
   phBlock.cc

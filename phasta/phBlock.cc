@@ -14,7 +14,7 @@ bool BlockKey::operator<(BlockKey const& other) const
   return polynomialOrder < other.polynomialOrder;
 }
 
-int getElementType(apf::Mesh* m, apf::MeshEntity* e)
+int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
 {
   static int const table[apf::Mesh::TYPES] = 
   {-1  //vertex
@@ -69,7 +69,7 @@ void getInteriorBlocks(apf::Mesh* m, Blocks& b)
       apf::Mesh::adjacentCount[m->getType(e)][0];
     k.polynomialOrder = 1;
     k.nBoundaryFaceEdges = getBoundaryFaceEdges(m, e);
-    k.elementType = getElementType(m, e);
+    k.elementType = getPhastaType(m, e);
     insertKey(b, k);
   }
   m->end(it);
@@ -88,8 +88,7 @@ void applyTriQuadHack(BlockKey& k)
 }
 
 void getBoundaryBlocks(apf::Mesh* m, Blocks& b,
-    ModelBounds& modelFaces,
-    MeshBounds& meshFaces)
+    ModelBounds& modelFaces)
 {
   APF_ITERATE(ModelBounds, modelFaces, mit) {
     apf::ModelEntity* modelFace = *mit;
@@ -105,21 +104,19 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b,
       k.polynomialOrder = 1;
       k.nBoundaryFaceEdges =
         apf::Mesh::adjacentCount[m->getType(f)][1];
-      k.elementType = getElementType(m, e);
+      k.elementType = getPhastaType(m, e);
       applyTriQuadHack(k);
       insertKey(b, k);
-      meshFaces.push_back(f);
     }
     m->end(it);
   }
 }
 
 void getAllBlocks(apf::Mesh* m, AllBlocks& b,
-    ModelBounds& modelFaces,
-    MeshBounds& meshFaces)
+    ModelBounds& modelFaces)
 {
   getInteriorBlocks(m, b.interior);
-  getBoundaryBlocks(m, b.boundary, modelFaces, meshFaces);
+  getBoundaryBlocks(m, b.boundary, modelFaces);
 }
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)

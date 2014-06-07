@@ -12,8 +12,11 @@ namespace ph {
 
 struct EnsaArrays
 {
+  ~EnsaArrays();
   double* coordinates;
-  int* ilwork; /* ??? */
+/* describes inter-part connectivity,
+   see ph::encodeLinks */
+  int* ilwork;
 /* periodic masters array, one per node... */  
   int* iper;
 /* note: int will overflow at about 2 billion total nodes */
@@ -57,6 +60,7 @@ struct Output
 {
   Input* in;
   apf::Mesh* mesh;
+/* again, int will overflow */
   int nGlobalEntities[4];
   int nOverlapNodes;
   int nOwnedNodes;
@@ -64,10 +68,12 @@ struct Output
   int nBoundaryElements;
   int nMaxElementNodes;
   int nEssentialBCNodes;
-  int nlwork; /* ??? */
+  int nlwork; /* see ph::encodeLinks */
   AllBlocks blocks;
   EnsaArrays arrays;
 };
+
+void generateOutput(Input& in, apf::Mesh* mesh, Output& o);
 
 }
 
