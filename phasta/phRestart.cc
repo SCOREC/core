@@ -15,15 +15,19 @@ void attachField(
     int size)
 {
   apf::Field* f = apf::createPackedField(m, fieldname, size);
-  apf::MeshIterator* it = m->begin(0);
+  size_t n = m->count(0);
+  apf::NewArray<double> c(size);
   apf::MeshEntity* e;
   size_t i = 0;
+  apf::MeshIterator* it = m->begin(0);
   while ((e = m->iterate(it))) {
-    apf::setComponents(f, e, 0, data + i);
-    i += size;
+    for (int j = 0; j < size; ++j)
+      c[j] = data[j * n + i];
+    apf::setComponents(f, e, 0, &c[0]);
+    ++i;
   }
   m->end(it);
-  assert(i == size * m->count(0));
+  assert(i == n);
 }
 
 void detachField(
@@ -33,16 +37,20 @@ void detachField(
 {
   apf::Mesh* m = apf::getMesh(f);
   size = apf::countComponents(f);
+  size_t n = m->count(0);
+  apf::NewArray<double> c(size);
   data = (double*)malloc(sizeof(double) * size * m->count(0));
-  apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* e;
   size_t i = 0;
+  apf::MeshIterator* it = m->begin(0);
   while ((e = m->iterate(it))) {
-    apf::getComponents(f, e, 0, data + i);
-    i += size;
+    apf::getComponents(f, e, 0, &c[0]);
+    for (int j = 0; j < size; ++j)
+      data[j * n + i] = c[j];
+    ++i;
   }
   m->end(it);
-  assert(i == size * m->count(0));
+  assert(i == n);
 }
 
 void detachField(
