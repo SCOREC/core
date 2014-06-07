@@ -27,18 +27,6 @@ enum {
   MAX_PARAMS = 8
 };
 
-int countNaturalBCs(Input& in)
-{
-/* 1 extra for turbulence wall */
-  return in.ensa_dof + 1;
-}
-
-int countEssentialBCs(Input& in)
-{
-/* 7 accounts for "theta" ... */
-  return in.ensa_dof + 7;
-}
-
 void getInteriorConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
 {
   int nelem = o.blocks.interior.nElements[block];

@@ -131,4 +131,16 @@ Input::Input(const char* filename)
   validate(*this);
 }
 
+int countNaturalBCs(Input& in)
+{
+/* 1 extra for turbulence wall */
+  return in.ensa_dof + 1;
+}
+
+int countEssentialBCs(Input& in)
+{
+/* 7 accounts for "theta" ... */
+  return in.ensa_dof + 7;
+}
+
 }

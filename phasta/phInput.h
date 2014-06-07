@@ -47,6 +47,9 @@ class Input
     int threaded;
 };
 
+int countNaturalBCs(Input& in);
+int countEssentialBCs(Input& in);
+
 }
 
 #endif

@@ -12,7 +12,6 @@ namespace ph {
 
 struct EnsaArrays
 {
-  ~EnsaArrays();
   double* coordinates;
 /* describes inter-part connectivity,
    see ph::encodeLinks */
@@ -58,6 +57,7 @@ struct EnsaArrays
 
 struct Output
 {
+  ~Output();
   Input* in;
   apf::Mesh* mesh;
 /* again, int will overflow */
