@@ -50,9 +50,11 @@ static void insertKey(Blocks& b, BlockKey const& k)
    this is part of the reason why the indices
    are 1-based */
   if (idx) {
+    --idx;
     ++(b.nElements[idx]);
   } else {
     idx = b.keyToIndex.size() - 1;
+    b.keyToIndex[k] = idx + 1;
     b.nElements[idx] = 1;
     b.keys[idx] = k;
     b.nElementNodes[idx] = k.nElementVertices;
