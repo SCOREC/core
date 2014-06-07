@@ -44,20 +44,15 @@ int getBoundaryFaceEdges(apf::Mesh* m, apf::MeshEntity* e)
 
 static void insertKey(Blocks& b, BlockKey const& k)
 {
-  int idx = b.keyToIndex[k];
-/* rely on the fact that previously unmapped keys
-   get mapped to zero by default to identify them,
-   this is part of the reason why the indices
-   are 1-based */
-  if (idx) {
-    --idx;
-    ++(b.nElements[idx]);
-  } else {
-    idx = b.keyToIndex.size() - 1;
-    b.keyToIndex[k] = idx + 1;
+  if (b.keyToIndex.count(k)) {
+    int idx = b.keyToIndex.size();
+    b.keyToIndex[k] = idx;
     b.nElements[idx] = 1;
     b.keys[idx] = k;
     b.nElementNodes[idx] = k.nElementVertices;
+  } else {
+    int idx = b.keyToIndex[k];
+    ++(b.nElements[idx]);
   }
 }
 
