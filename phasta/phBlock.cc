@@ -1,8 +1,6 @@
 #include "phBlock.h"
 #include <apf.h>
 
-#include <cstdio>
-
 namespace ph {
 
 bool BlockKey::operator<(BlockKey const& other) const
@@ -72,9 +70,6 @@ static void getInteriorBlocks(apf::Mesh* m, Blocks& b)
     insertKey(b, k);
   }
   m->end(it);
-  for (int i = 0; i < b.getSize(); ++i)
-    fprintf(stderr,"got %d elements of type %d\n",
-        b.nElements[i], b.keys[i].elementType);
 }
 
 void applyTriQuadHack(BlockKey& k)
