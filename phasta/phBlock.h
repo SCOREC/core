@@ -29,7 +29,7 @@ struct BlockKey
   bool operator<(BlockKey const& other) const;
 };
 
-int getElementType(apf::Mesh* m, apf::MeshEntity* e);
+int getPhastaType(apf::Mesh* m, apf::MeshEntity* e);
 
 enum {
   MAX_BLOCK_KEYS = 12
