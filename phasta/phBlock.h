@@ -38,7 +38,6 @@ enum {
 struct Blocks
 {
   typedef std::map<BlockKey, int> Map;
-/* indices starting from 1 ! ^ */
   Map keyToIndex;
   BlockKey keys[MAX_BLOCK_KEYS];
   int nElements[MAX_BLOCK_KEYS];
