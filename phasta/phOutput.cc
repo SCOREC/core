@@ -176,7 +176,7 @@ static void getFakeEssentialBCs(Output& o)
   o.nEssentialBCNodes = 0;
   o.arrays.nbc = new int[m->count(0)];
   for (size_t i = 0; i < m->count(0); ++i)
-    o.arrays.nbc[i] = 42;
+    o.arrays.nbc[i] = -1;
   o.arrays.ibc = 0;
   o.arrays.bc = 0;
 }
