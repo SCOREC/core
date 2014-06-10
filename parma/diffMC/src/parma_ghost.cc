@@ -45,7 +45,7 @@ namespace parma {
           s << i->first << " " << i->second << " ";
         end();
         std::string str = s.str();
-        PCU_Debug_Print(str.c_str());
+        PCU_Debug_Print("%s", str.c_str());
       }
     protected:
       Container c;
@@ -283,7 +283,6 @@ class GhostBalancer : public apf::Balancer {
   public:
     GhostBalancer(apf::Mesh* m, int l, int b, double f, int v)
       : mesh(m), factor(f), layers(l), bridge(b), verbose(v) {
-        (void) factor; //suppress compiler warning
     }
     bool runStep(apf::MeshTag* weights, double tolerance) {
       const double alpha = 0.1;
