@@ -304,7 +304,6 @@ namespace parma {
       double alpha;
       int verbose;
       double imbalance();
-      void exchangeGhosts();
       Sides* sides;
       Weights* weights;
       GhostFinder* ghostFinder;
