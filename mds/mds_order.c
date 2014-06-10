@@ -286,6 +286,7 @@ static void rebuild_tags(
       continue;
     nt = mds_create_tag(&(m2->tags),&(m2->mds),
         t->name,t->bytes,t->user_type);
+    mds_swap_tag_structs(&m->tags, &t, &m2->tags, &nt);
     for (d = 0; d <= m2->mds.d; ++d) {
       for (ne = mds_begin(&(m2->mds),d);
            ne != MDS_NONE;

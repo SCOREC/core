@@ -154,3 +154,39 @@ void mds_take_tag(struct mds_tag* tag, mds_id e)
   has = tag->has[t] + c;
   *has &= ~(1 << b);
 }
+
+static struct mds_tag** find_prev(struct mds_tags* ts, struct mds_tag* t)
+{
+  struct mds_tag* p;
+  if (ts->first == t)
+    return &ts->first;
+  for (p = ts->first; p; p = p->next)
+    if (p->next == t)
+      return &p->next;
+  return NULL;
+}
+
+/* users that rely on struct mds_tag* (such as apf::MeshTag*)
+   not changing during the tag lifetime are
+   disappointed when those pointers are invalidated by mds_reorder.
+   Thus, this HACK swaps mds_tag structs so that the new mesh
+   has the same struct mds_tag pointers as the old one */
+
+void mds_swap_tag_structs(struct mds_tags* as, struct mds_tag** a,
+    struct mds_tags* bs, struct mds_tag** b)
+{
+  struct mds_tag** pa;
+  struct mds_tag** pb;
+  struct mds_tag tmp;
+  struct mds_tag* tmp_p;
+  pa = find_prev(as, *a);
+  pb = find_prev(bs, *b);
+  tmp = **a;
+  **a = **b;
+  **b = tmp;
+  *pa = *b;
+  *pb = *a;
+  tmp_p = *a;
+  *a = *b;
+  *b = tmp_p;
+}
