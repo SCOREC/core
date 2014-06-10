@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: APF-Zoltan
+URL: http://www.scorec.rpi.edu/~dibanez/
+Description: Zoltan applied to apf::Mesh
+Version: @PACKAGE_VERSION@
+Requires: libapf
+Libs: -L${libdir} -lapf_zoltan
+Cflags: -I${includedir} 

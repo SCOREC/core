@@ -106,11 +106,11 @@ Field* createStepField(Mesh* m, const char* name, int valueType);
   * \param m the mesh over which the field is defined
   * \param name a unique name for this field
   * \param value the type of field data
-  * \param order the polynomial order of accuracy to determine the integration points.
+  * \param order polynomial order of accuracy
   */
 Field* createIPField(Mesh* m, const char* name, int valueType, int order);
 
-/** \brief Create an apf::Field from any built-in or user-define apf::FieldShape.
+/** \brief Create a Field from any builtin or user defined FieldShape.
   */
 Field* createField(Mesh* m, const char* name, int valueType, FieldShape* shape);
 

@@ -53,7 +53,7 @@ void rotateTet(Entity** iv, int n, Entity** ov);
 void rotatePrism(Entity** iv, int n, Entity** ov);
 void rotatePyramid(Entity** iv, int n, Entity** ov);
 void rotateEntity(int type, Entity** iv, int n, Entity** ov);
-void rotateEntity(Mesh* m, Entity* e, int n, Entity** v);
+void rotateEntity(apf::Mesh* m, Entity* e, int n, Entity** v);
 
 int findTetRotation(Mesh* m, Entity* tet, Entity** v);
 void unrotateTetXi(Vector& xi, int rotation);

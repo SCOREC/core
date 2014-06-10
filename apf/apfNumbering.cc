@@ -207,56 +207,6 @@ void synchronize(Numbering * n)
   n->getData()->synchronize();
 }
 
-template <int D>
-class ElementShape : public FieldShape
-{
-  public:
-    ElementShape()
-    {
-      std::stringstream ss;
-      ss << "ElementShape_" << D;
-      name = ss.str();
-    }
-    virtual ~ElementShape() {}
-    virtual EntityShape* getEntityShape(int) {return 0;}
-    virtual bool hasNodesIn(int dimension) {return dimension==D;}
-    virtual int countNodesOn(int type)
-    {
-      if (Mesh::typeDimension[type]==D)
-        return 1;
-      return 0;
-    }
-    virtual int getOrder() {return -1;}
-    virtual const char* getName() const
-    {
-      return name.c_str();
-    }
-  private:
-    std::string name;
-};
-
-FieldShape* getElementShape(int dimension)
-{
-  static ElementShape<2> elementShape2;
-  static ElementShape<3> elementShape3;
-  static FieldShape* table[4] = 
-  {0,0,&elementShape2,&elementShape3};
-  return table[dimension];
-}
-
-Numbering* numberElements(Mesh* mesh, const char* name)
-{
-  int d = mesh->getDimension();
-  Numbering* n = createNumbering(mesh,name,getElementShape(d),1);
-  MeshIterator* it = mesh->begin(d);
-  MeshEntity* e;
-  int i = 0;
-  while ((e = mesh->iterate(it)))
-    number(n,e,0,0,i++);
-  mesh->end(it);
-  return n;
-}
-
 Numbering* numberNodes(
     Mesh* mesh,
     const char* name,
@@ -282,6 +232,17 @@ Numbering* numberNodes(
     mesh->end(it);
   }
   return n;
+}
+
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim)
+{
+  FieldShape* s = getConstant(dim);
+  return numberNodes(mesh, name, s, true);
+}
+
+Numbering* numberElements(Mesh* mesh, const char* name)
+{
+  return numberOwnedDimension(mesh, name, mesh->getDimension());
 }
 
 Numbering* numberOverlapNodes(Mesh* mesh, const char* name, FieldShape* s)
@@ -448,6 +409,11 @@ GlobalNumbering* createGlobalNumbering(
   return n;
 }
 
+Mesh* getMesh(GlobalNumbering* n)
+{
+  return n->getMesh();
+}
+
 void number(GlobalNumbering* n, Node node, long number)
 {
   n->set(node.entity,node.node,0,number);
@@ -458,10 +424,10 @@ long getNumber(GlobalNumbering* n, Node node)
   return n->get(node.entity,node.node,0);
 }
 
-void getElementNumbers(GlobalNumbering* n, MeshEntity* e,
+int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers)
 {
-  n->getData()->getElementData(e,numbers);
+  return n->getData()->getElementData(e,numbers);
 }
 
 static long exscan(long x)

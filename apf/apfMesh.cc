@@ -575,4 +575,39 @@ Vector3 getLinearCentroid(Mesh* m, MeshEntity* e)
   return c / nv;
 }
 
+int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
+{
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  int n = 0;
+  while ((e = m->iterate(it)))
+    if (m->toModel(e) == me)
+      ++n;
+  m->end(it);
+  return n;
+}
+
+int countOwned(Mesh* m, int dim)
+{
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  int n = 0;
+  while ((e = m->iterate(it)))
+    if (m->isOwned(e))
+      ++n;
+  m->end(it);
+  return n;
+}
+
+void printStats(Mesh* m)
+{
+  long n[4];
+  for (int i = 0; i < 4; ++i)
+    n[i] = countOwned(m, i);
+  PCU_Add_Longs(n, 4);
+  if (!PCU_Comm_Self())
+    printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
+        n[0], n[1], n[2], n[3]);
+}
+
 } //namespace apf

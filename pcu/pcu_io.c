@@ -206,20 +206,30 @@ static void pcu_swap_64(uint32_t* p)
   pcu_swap_32(p+1);
 }
 
-static void pcu_code_unsigneds(unsigned* p, size_t n)
+void pcu_swap_unsigneds(unsigned* p, size_t n)
 {
   assert(sizeof(unsigned)==4);
+  for (size_t i=0; i < n; ++i)
+    pcu_swap_32(p++);
+}
+
+void pcu_swap_doubles(double* p, size_t n)
+{
+  assert(sizeof(double)==8);
+  for (size_t i=0; i < n; ++i)
+    pcu_swap_64((uint32_t*)(p++));
+}
+
+static void pcu_code_unsigneds(unsigned* p, size_t n)
+{
   if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN)
-    for (size_t i=0; i < n; ++i)
-      pcu_swap_32(p++);
+    pcu_swap_unsigneds(p, n);
 }
 
 static void pcu_code_doubles(double* p, size_t n)
 {
-  assert(sizeof(double)==8);
   if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN)
-    for (size_t i=0; i < n; ++i)
-      pcu_swap_64((uint32_t*)(p++));
+    pcu_swap_doubles(p, n);
 }
 
 void pcu_write_unsigneds(pcu_file* f, unsigned* p, size_t n)

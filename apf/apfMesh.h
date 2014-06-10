@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFMESH_H
-#define APFMESH_H
+#ifndef APF_MESH_H
+#define APF_MESH_H
 
 #include <vector>
 #include <map>
@@ -186,6 +186,7 @@ extern int const pyramid_tri_verts[4][3];
 void unite(Parts& into, Parts const& from);
 
 void getFacePeers(Mesh* m, Parts& peers);
+
 /* given a mesh iterator from Mesh::begin, will use it to iterate
    only over entities of that dimension which have a copy on
    the given part. Call Mesh::end after as usual. */
@@ -220,6 +221,7 @@ void findTriDown(
     Mesh* m,
     MeshEntity** verts,
     MeshEntity** down);
+
 /* finds an element from a set of vertices */
 MeshEntity* findElement(
     Mesh* m,
@@ -247,6 +249,7 @@ std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s);
 /* equivalent to m->isShared(e) if there is no matching.
    Otherwise, returns whether the entity has remote copies or matched copies */
 bool hasCopies(Mesh* m, MeshEntity* e);
+
 /* equivalent to m->isOwned(e) if there is no matching.
    Otherwise, implements an ownership scheme over matched entities */
 bool isOriginal(Mesh* m, MeshEntity* e);
@@ -258,6 +261,12 @@ void verify(Mesh* m);
 bool isSimplex(int type);
 
 Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
+
+int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
+
+int countOwned(Mesh* m, int dim);
+
+void printStats(Mesh* m);
 
 } //namespace apf
 

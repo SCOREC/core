@@ -68,6 +68,7 @@ int countFixed(Numbering* n);
 
 void synchronize(Numbering * n);
 
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
 Numbering* numberElements(Mesh* mesh, const char* name);
 Numbering* numberOverlapNodes(
 		Mesh* mesh,
@@ -98,9 +99,10 @@ GlobalNumbering* createGlobalNumbering(
     Mesh* mesh,
     const char* name,
     FieldShape* shape);
+Mesh* getMesh(GlobalNumbering* n);
 void number(GlobalNumbering* n, Node node, long number);
 long getNumber(GlobalNumbering* n, Node node);
-void getElementNumbers(GlobalNumbering* n, MeshEntity* e, NewArray<long>& numbers);
+int getElementNumbers(GlobalNumbering* n, MeshEntity* e, NewArray<long>& numbers);
 GlobalNumbering* makeGlobal(Numbering* n);
 void synchronize(GlobalNumbering* n);
 void destroyGlobalNumbering(GlobalNumbering* n);

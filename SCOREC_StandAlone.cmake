@@ -63,8 +63,12 @@ add_subdirectory(mds)
 
 add_subdirectory(parma)
 
+add_subdirectory(zoltan)
+
 add_subdirectory(ma)
 
 add_subdirectory(spr)
+
+add_subdirectory(phasta)
 
 add_subdirectory(test)

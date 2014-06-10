@@ -630,6 +630,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   double t2 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("mesh %s loaded in %f seconds\n", meshfile, t2 - t1);
+  printStats(m);
   return m;
 }
 

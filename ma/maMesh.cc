@@ -100,7 +100,7 @@ void rotateEntity(int type, Entity** iv, int n, Entity** ov)
   rotateFunction(iv,n,ov);
 }
 
-void rotateEntity(Mesh* m, Entity* e, int n, Entity** v)
+void rotateEntity(apf::Mesh* m, Entity* e, int n, Entity** v)
 {
   Downward dv;
   m->getDownward(e,0,dv);

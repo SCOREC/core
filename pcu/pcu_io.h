@@ -36,6 +36,8 @@ void pcu_write_string(struct pcu_file* f, const char* p);
 
 FILE* pcu_open_parallel(const char* prefix, const char* ext);
 
+void pcu_swap_doubles(double* p, size_t n);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

@@ -12,6 +12,8 @@ simulations on supercomputers.
 * PARMA: Scalable partitioning and load balancing procedures
 * SPR: Superconvergent Patch Recovery error estimator
 * MA: Anisotropic mixed mesh adaptation and solution transfer
+* STK: Conversion from APF meshes to Sandia's STK meshes
+* ZOLTAN: Interface to run Sandia's Zoltan code on APF meshes
 
 ### How do I get set up? ###
 

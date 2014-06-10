@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2011-2013 Scientific Computation Research Center
+ * Copyright (C) 2011 Scientific Computation Research Center
  *
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFSINGULARVALUEDECOMP_H
-#define APFSINGULARVALUEDECOMP_H
+#ifndef APF_SVD_H
+#define APF_SVD_H
 
 #include "apfDynamicVector.h"
 #include "apfDynamicMatrix.h"

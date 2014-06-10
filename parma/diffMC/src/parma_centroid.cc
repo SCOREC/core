@@ -337,8 +337,7 @@ class CentroidDiffuser : public apf::Balancer
       while (runStep(weights,tolerance));
       double t1 = MPI_Wtime();
       if (!PCU_Comm_Self())
-        printf("centroid factor %f balanced to %f in %f seconds\n",
-            factor, tolerance, t1-t0);
+        printf("centroid balanced to %f in %f seconds\n", tolerance, t1-t0);
     }
   private:
     apf::Mesh* mesh;

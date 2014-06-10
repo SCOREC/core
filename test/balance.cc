@@ -17,6 +17,7 @@ int main(int argc, char** argv)
   apf::Balancer* balancer = Parma_MakeCentroidDiffuser(m, 0.1);
   balancer->balance(weights, 1.10);
   delete balancer;
+  apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
   m->writeNative(argv[3]);
   // destroy mds

@@ -34,7 +34,8 @@ MeshEntity* getMeshEntity(MeshElement* me)
 
 MeshElement* createMeshElement(Mesh* m, MeshEntity* e)
 {
-  return new VectorElement(static_cast<VectorField*>(m->getCoordinateField()),e);
+  return new VectorElement(static_cast<VectorField*>(
+        m->getCoordinateField()), e);
 }
 
 void destroyMeshElement(MeshElement* e)

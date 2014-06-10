@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: PH
+URL: http://www.scorec.rpi.edu/~dibanez/
+Description: helper libraries for PHASTA solver
+Version: @PACKAGE_VERSION@
+Requires: libapf
+Libs: -L${libdir} -lph
+Cflags: -I${includedir} 
