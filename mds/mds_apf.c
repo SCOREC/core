@@ -69,8 +69,10 @@ mds_id mds_apf_create_entity(
   int t;
   mds_id old_cap[MDS_TYPES];
   mds_id e;
+  mds_id i;
   old_cap[type] = m->mds.cap[type];
   e = mds_create_entity(&(m->mds),type,from);
+  i = mds_index(e);
   if (m->mds.cap[type] != old_cap[type]) {
     for (t = 0; t < MDS_TYPES; ++t)
       if (t != type)
@@ -87,8 +89,12 @@ mds_id mds_apf_create_entity(
     mds_grow_net(&m->remotes, &m->mds, old_cap);
     mds_grow_net(&m->matches, &m->mds, old_cap);
   }
-  m->model[type][mds_index(e)] = model;
-  m->parts[type][mds_index(e)] = NULL;
+  m->model[type][i] = model;
+  m->parts[type][i] = NULL;
+  if (type == MDS_VERTEX) {
+    m->point[i][0] = m->point[i][1] = m->point[i][2] = 0;
+    m->param[i][0] = m->param[i][1] = 0;
+  }
   return e;
 }
 
