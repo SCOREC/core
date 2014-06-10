@@ -220,40 +220,46 @@ void pcu_swap_doubles(double* p, size_t n)
     pcu_swap_64((uint32_t*)(p++));
 }
 
-static void pcu_code_unsigneds(unsigned* p, size_t n)
-{
-  if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN)
-    pcu_swap_unsigneds(p, n);
-}
-
-static void pcu_code_doubles(double* p, size_t n)
-{
-  if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN)
-    pcu_swap_doubles(p, n);
-}
-
 void pcu_write_unsigneds(pcu_file* f, unsigned* p, size_t n)
 {
-  pcu_code_unsigneds(p,n);
-  pcu_fwrite(p,sizeof(unsigned),n,f);
+  unsigned* tmp;
+  if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN) {
+    tmp = malloc(n * sizeof(unsigned));
+    memcpy(tmp, p, n * sizeof(unsigned));
+    pcu_swap_unsigneds(tmp, n);
+    pcu_fwrite(tmp,sizeof(unsigned),n,f);
+    free(tmp);
+  } else {
+    pcu_fwrite(p,sizeof(unsigned),n,f);
+  }
 }
 
 void pcu_write_doubles(pcu_file* f, double* p, size_t n)
 {
-  pcu_code_doubles(p,n);
-  pcu_fwrite(p,sizeof(double),n,f);
+  double* tmp;
+  if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN) {
+    tmp = malloc(n * sizeof(double));
+    memcpy(tmp, p, n * sizeof(double));
+    pcu_swap_doubles(tmp, n);
+    pcu_fwrite(tmp,sizeof(double),n,f);
+    free(tmp);
+  } else {
+    pcu_fwrite(p,sizeof(double),n,f);
+  }
 }
 
 void pcu_read_unsigneds(pcu_file* f, unsigned* p, size_t n)
 {
   pcu_fread(p,sizeof(unsigned),n,f);
-  pcu_code_unsigneds(p,n);
+  if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN)
+    pcu_swap_unsigneds(p,n);
 }
 
 void pcu_read_doubles(pcu_file* f, double* p, size_t n)
 {
   pcu_fread(p,sizeof(double),n,f);
-  pcu_code_doubles(p,n);
+  if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN)
+    pcu_swap_doubles(p,n);
 }
 
 void pcu_read_string (pcu_file* f, char ** p)

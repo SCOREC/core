@@ -15,7 +15,7 @@
 #include <assert.h>
 #include <PCU.h>
 #include <pcu_io.h>
-#include <sys/stat.h> //using POSIX mkdir call
+#include <sys/stat.h> //using POSIX mkdir call for SMB "foo/" path
 
 enum {
   SMB_VERT,
@@ -85,18 +85,12 @@ static void read_links(struct pcu_file* f, struct mds_links* l)
 
 static void write_links(struct pcu_file* f, struct mds_links* l)
 {
-  unsigned np;
-  unsigned* n;
   unsigned i;
-  np = l->np;
-  PCU_WRITE_UNSIGNED(f, np);
+  PCU_WRITE_UNSIGNED(f, l->np);
   if (!l->np)
     return;
   pcu_write_unsigneds(f, l->p, l->np);
-  n = malloc(l->np * sizeof(unsigned));
-  memcpy(n, l->n, l->np * sizeof(unsigned));
-  pcu_write_unsigneds(f, n, l->np);
-  free(n);
+  pcu_write_unsigneds(f, l->n, l->np);
   for (i = 0; i < l->np; ++i)
     pcu_write_unsigneds(f, l->l[i], l->n[i]);
 }
@@ -562,18 +556,11 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename, i
 
 static void write_coords(struct pcu_file* f, struct mds_apf* m)
 {
-  size_t count, size;
-  double* coords;
+  size_t count;
   count = m->mds.end[MDS_VERTEX] * 3;
-  size = count * sizeof(double);
-  coords = malloc(size);
-  memcpy(coords, &m->point[0][0], size);
-  pcu_write_doubles(f, coords, count);
+  pcu_write_doubles(f, &m->point[0][0], count);
   count = m->mds.end[MDS_VERTEX] * 2;
-  size = count * sizeof(double);
-  memcpy(coords, &m->param[0][0], size);
-  pcu_write_doubles(f, coords, count);
-  free(coords);
+  pcu_write_doubles(f, &m->param[0][0], count);
 }
 
 static void write_smb(struct mds_apf* m, const char* filename,
