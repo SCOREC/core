@@ -9,6 +9,7 @@
 #include "apfZoltanMesh.h"
 #include "apfZoltan.h"
 #include <PCU.h>
+#include <metis.h>
 
 namespace apf {
 
@@ -248,6 +249,8 @@ ZoltanData::~ZoltanData()
 
 void ZoltanData::run()
 {
+/* ensure Metis indices are the same size as Zoltan indices */
+  assert(IDXTYPEWIDTH == sizeof(ZOLTAN_ID_TYPE)*8);
   setup();
   ptn();
 }
