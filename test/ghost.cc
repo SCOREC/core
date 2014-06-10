@@ -23,10 +23,10 @@ void getConfig(int argc, char** argv)
   meshFile = argv[2];
 }
 
-apf::MeshTag* applyUnitElmWeight(apf::Mesh* m) {
+apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
   apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
   apf::MeshEntity* e;
-  apf::MeshIterator* itr = m->begin(m->getDimension());
+  apf::MeshIterator* itr = m->begin(0);
   double w = 1;
   while( (e = m->iterate(itr)) )
     m->setDoubleTag(e, wtag, &w);
@@ -35,10 +35,12 @@ apf::MeshTag* applyUnitElmWeight(apf::Mesh* m) {
 }
 
 void runParma(apf::Mesh* m) {
-  apf::MeshTag* weights = applyUnitElmWeight(m);
+  apf::MeshTag* weights = applyUnitVtxWeight(m);
   const int layers = 3;
   const int bridgeDim = 1;
-  Parma_RunGhostPtnImprovement(m, weights, 1.05, layers, bridgeDim, 1);
+  apf::Balancer* ghost = Parma_MakeGhostDiffuser(m, layers, bridgeDim);
+  ghost->balance(weights, 1.05);
+  delete ghost;
 }
 
 }
@@ -49,6 +51,7 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  PCU_Debug_Open();
   gmi_register_mesh();
   PCU_Protect();
   getConfig(argc,argv);

@@ -20,12 +20,6 @@ int Parma_RunPtnImprovement(apf::Mesh* mesh, int (*priority)[4],
    return ierr;
 }
 
-int Parma_RunGhostPtnImprovement(apf::Mesh* mesh, apf::MeshTag* weight,
-    const double maxImb, const int numlayers, const int bridgeDim, 
-    const int verbosity) {
-  return 0;
-}
-
 int Parma_RunWeightedPtnImprovement(apf::Mesh* mesh, 
                 apf::MeshTag* weight, int (*priority)[4], 
                 const double maxImb, const int dbgLvl, 

@@ -131,6 +131,9 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m);
 
 apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1);
 
+apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge, 
+    double stepFactor = 0.1, int verbosity=0);
+
 apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
 
 apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);

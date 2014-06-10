@@ -1,9 +1,10 @@
-#include <apf.h>
-#include <apfMesh2.h>
+#include <apfPartition.h>
 #include <PCU.h>
 #include <stdio.h>
 #include <map>
 #include <assert.h>
+#include <sstream>
+#include <string>
 
 namespace parma {
   template <class T> class Associative {
@@ -35,12 +36,24 @@ namespace parma {
       void set(int key, T value) {
         c[key] = value;
       }
+      void print(const char* key) {
+        std::stringstream s;
+        s << key << " ";
+        const Item* i;
+        begin();
+        while( (i = iterate()) ) 
+          s << i->first << " " << i->second << " ";
+        end();
+        std::string str = s.str();
+        PCU_Debug_Print(str.c_str());
+      }
     protected:
       Container c;
     private:
       typename Container::iterator cItr;
       bool iteratorActive;
   };
+
 
   class Sides : public Associative<int> {
     public:
@@ -120,11 +133,14 @@ namespace parma {
 
   class GhostFinder {
     public:
-      GhostFinder(apf::Mesh* m, apf::Mesh* weight, int layer, int bridge);
+      GhostFinder(apf::Mesh* m, apf::MeshTag* weight, int layer, int bridge) {
+      }
       /**
        * @brief get the weight of vertices ghosted to peer
        */
-      double weight(int peer);
+      double weight(int peer) {
+        return 0;
+      }
     private:
       GhostFinder();
       int layers;
@@ -137,18 +153,15 @@ namespace parma {
   class Ghosts : public Associative<double> {
     public:
       Ghosts(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
+        weight = 0;
         init(m, finder, sides);
+        exchange();
       }
-      double total() {
-        double total=0;
-        const Ghosts::Item* ghost;
-        begin();
-        while( (ghost = iterate()) )
-          total += ghost->second;
-        end();
-        return total;
+      double self() {
+        return weight;
       }
     private:
+      double weight;
       void init(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
         const Sides::Item* side;
         sides->begin();
@@ -156,13 +169,73 @@ namespace parma {
           set(side->first, finder->weight(side->first));
         sides->end();
       }
+      void exchange() {
+        PCU_Comm_Begin();
+        const Ghosts::Item* ghost;
+        begin();
+        while( (ghost = iterate()) ) 
+          PCU_COMM_PACK(ghost->first, ghost->second);
+        end();
+        PCU_Comm_Send();
+        while (PCU_Comm_Listen()) {
+          double otherWeight;
+          PCU_COMM_UNPACK(otherWeight);
+          weight += otherWeight;
+        }
+      }
+  };
+
+  class Targets : public Associative<double> {
+    public:
+      Targets(Sides* s, Weights* w, Ghosts* g, double alpha) {
+        init(s, w, g, alpha);
+      }
+    private:
+      void init(Sides* s, Weights* w, Ghosts* g, double alpha) {
+        const Sides::Item* side;
+        s->begin();
+        while( (side = s->iterate()) ) {
+          const int peer = side->first;
+          const double selfW = w->self() + g->self();
+          const double peerW = g->get(peer) + w->get(peer);
+          if ( selfW > peerW ) {
+            const double difference = selfW - peerW;
+            double sideFraction = side->second;
+            sideFraction /= s->total();
+            set(peer, difference * sideFraction * alpha);
+          }
+        }
+        s->end();
+      }
+  };
+
+  class Selector {
+    public:
+      Selector(apf::Mesh* m, Targets* tgts) {
+      }
+      void run() {
+      }
+    private:
+      Selector();
   };
 
   class ParmaGhost {
     public:
-      ParmaGhost(apf::Mesh* m, apf::MeshTag* w, int layers, int bridgeDim);
+      ParmaGhost(apf::Mesh* mIn, apf::MeshTag* wIn, 
+          int layersIn, int bridgeIn, double alphaIn) 
+        : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
+      {
+        sides = new Sides(m);
+        weights = new Weights(m, w, sides);
+        ghostFinder = new GhostFinder(m, w, layers, bridge);
+        ghosts = new Ghosts(m, ghostFinder, sides);
+        targets = new Targets(sides, weights, ghosts, alpha);
+        targets->print("tgts");
+        selects = new Selector(m, targets); //FIXME take targets and run selection
+      }
+
       ~ParmaGhost();
-      void run(double maxImb, int verbosity);
+      bool run(double maxImb, int verbosity);
     private:
       ParmaGhost();
       apf::Mesh* m;
@@ -170,40 +243,69 @@ namespace parma {
       apf::MeshTag* w;
       int layers;
       int bridge;
+      double alpha;
       int verbose;
       double imbalance();
       void exchangeGhosts();
-      void diffuse();
       Sides* sides;
       Weights* weights;
       GhostFinder* ghostFinder;
       Ghosts* ghosts;
+      Targets* targets;
+      Selector* selects;
   };
-
-  ParmaGhost::ParmaGhost(apf::Mesh* mIn, apf::MeshTag* wIn, 
-      int layersIn, int bridgeIn) 
-    : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn)
-  {
-    sides = new Sides(m);
-    weights = new Weights(m, w, sides);
-  }
 
   ParmaGhost::~ParmaGhost() {
     delete sides;
     delete weights;
     delete ghostFinder;
+    delete ghosts;
   }
 
-  void ParmaGhost::run(double maxImb, int verbosityIn) {
-    if ( imbalance() < maxImb ) return;
+  bool ParmaGhost::run(double maxImb, int verbosityIn) {
+    if ( imbalance() < maxImb ) 
+      return false;
+    selects->run();
+    return true;
   }
 
-  double ParmaGhost::imbalance() { //FIXME
-    double totalWeight = weights->self() + ghosts->total();
+  double ParmaGhost::imbalance() { 
+    double maxWeight = 0, totalWeight = 0;
+    maxWeight = totalWeight = weights->self() + ghosts->self();
     PCU_Add_Doubles(&totalWeight,1);
-    double averageWeight = totalWeight / PCU_Comm_Peers();
-    double maxWeight = weights->self();
     PCU_Max_Doubles(&maxWeight, 1);
+    double averageWeight = totalWeight / PCU_Comm_Peers();
     return maxWeight / averageWeight;
   }
+}
+
+class GhostBalancer : public apf::Balancer {
+  public:
+    GhostBalancer(apf::Mesh* m, int l, int b, double f, int v)
+      : mesh(m), factor(f), layers(l), bridge(b), verbose(v) {
+        (void) factor; //suppress compiler warning
+    }
+    bool runStep(apf::MeshTag* weights, double tolerance) {
+      const double alpha = 0.1;
+      parma::ParmaGhost ghost(mesh, weights, layers, bridge, alpha);
+      return ghost.run(tolerance, verbose);
+    }
+    virtual void balance(apf::MeshTag* weights, double tolerance) {
+      double t0 = MPI_Wtime();
+      while (runStep(weights,tolerance));
+      double t1 = MPI_Wtime();
+      if (!PCU_Comm_Self())
+        printf("ghost balanced to %f in %f seconds\n", tolerance, t1-t0);
+    }
+  private:
+    apf::Mesh* mesh;
+    double factor;
+    int layers;
+    int bridge;
+    int verbose;
+};
+
+apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, 
+    int layers, int bridge, double stepFactor, int verbosity) {
+  return new GhostBalancer(m, layers, bridge, stepFactor, verbosity);
 }
