@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 
 namespace parma {
   template <class T> class Associative {
@@ -35,6 +36,9 @@ namespace parma {
       }
       void set(int key, T value) {
         c[key] = value;
+      }
+      bool has(int key) {
+        return (c.count(key) != 0);
       }
       void print(const char* key) {
         std::stringstream s;
@@ -90,7 +94,7 @@ namespace parma {
   /**
    * @brief compute the weight of the mesh vertices
    * @remark since the mesh being partitioned is the delauney triangularization 
-   *         of the voroni mesh so the vertex weights will correspond to element 
+   *         of the voroni mesh the vertex weights will correspond to element 
    *         weights of the voroni mesh
    */
   double getWeight(apf::Mesh* m, apf::MeshTag* w) {
@@ -190,8 +194,13 @@ namespace parma {
       Targets(Sides* s, Weights* w, Ghosts* g, double alpha) {
         init(s, w, g, alpha);
       }
+      double total() {
+        return totW;
+      }
     private:
+      double totW;
       void init(Sides* s, Weights* w, Ghosts* g, double alpha) {
+        totW = 0;
         const Sides::Item* side;
         s->begin();
         while( (side = s->iterate()) ) {
@@ -202,7 +211,9 @@ namespace parma {
             const double difference = selfW - peerW;
             double sideFraction = side->second;
             sideFraction /= s->total();
-            set(peer, difference * sideFraction * alpha);
+            double peerW = difference * sideFraction * alpha;
+            set(peer, peerW);
+            totW+=peerW;
           }
         }
         s->end();
@@ -211,12 +222,59 @@ namespace parma {
 
   class Selector {
     public:
-      Selector(apf::Mesh* m, Targets* tgts) {
-      }
-      void run() {
+      Selector(apf::Mesh* m, apf::MeshTag* w, Targets* t) 
+        : mesh(m), tgts(t), wtag(w) {}
+      apf::Migration* run() {
+        apf::Migration* plan = new apf::Migration(mesh);
+        vtag = mesh->createIntTag("ghost_visited",1);
+        const int maxBoundedElm = 6;
+        double planW=0;
+        for( int maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
+          planW += select(planW, maxAdjElm, plan);
+        apf::removeTagFromDimension(mesh,vtag,0);
+        mesh->destroyTag(vtag);
+        return plan;
       }
     private:
+      apf::Mesh* mesh;
+      Targets* tgts;
+      apf::MeshTag* vtag;
+      apf::MeshTag* wtag;
       Selector();
+      double add(apf::MeshEntity* vtx, const int maxAdjElm, 
+          const int destPid, apf::Migration* plan) {
+        double weight = 0;
+        apf::DynamicArray<apf::MeshEntity*> adjElms;
+        mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
+        if( adjElms.getSize() > maxAdjElm ) 
+          return 0;
+        for(size_t i=0; i<adjElms.getSize(); i++) {
+          apf::MeshEntity* elm = adjElms[i];
+          if ( mesh->hasTag(elm, vtag) ) continue;
+          mesh->setIntTag(elm, vtag, &destPid); 
+          plan->send(elm, destPid);
+        }
+        return getEntWeight(mesh,vtx,wtag);
+      }
+      double select(const double planW, 
+          const size_t maxAdjElm, 
+          apf::Migration* plan) {
+        double planWeight = 0;
+        apf::MeshEntity* vtx;
+        apf::MeshIterator* itr = mesh->begin(0);
+        while( (vtx = mesh->iterate(itr)) ) {
+          if ( planW + planWeight > tgts->total() ) break;
+          apf::Copies rmt;
+          mesh->getRemotes(vtx, rmt);
+          if( 1 == rmt.size() ) {
+            int destPid = (rmt.begin())->first;
+            if( tgts->has(destPid) )
+              planWeight += add(vtx, maxAdjElm, destPid, plan);
+          }
+        }
+        mesh->end(itr);
+        return planWeight;
+      }
   };
 
   class ParmaGhost {
@@ -231,7 +289,7 @@ namespace parma {
         ghosts = new Ghosts(m, ghostFinder, sides);
         targets = new Targets(sides, weights, ghosts, alpha);
         targets->print("tgts");
-        selects = new Selector(m, targets); //FIXME take targets and run selection
+        selects = new Selector(m, w, targets); 
       }
 
       ~ParmaGhost();
@@ -263,9 +321,13 @@ namespace parma {
   }
 
   bool ParmaGhost::run(double maxImb, int verbosityIn) {
-    if ( imbalance() < maxImb ) 
+    const double imb = imbalance();
+    if ( 0 == PCU_Comm_Self() )
+      fprintf(stdout, "imbalance %.3f\n", imb);
+    if ( imb < maxImb ) 
       return false;
-    selects->run();
+    apf::Migration* plan = selects->run();
+    m->migrate(plan);
     return true;
   }
 
