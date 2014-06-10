@@ -24,6 +24,7 @@ add_executable(describe EXCLUDE_FROM_ALL describe.cc)
 add_executable(balance EXCLUDE_FROM_ALL balance.cc)
 add_executable(split EXCLUDE_FROM_ALL split.cc)
 add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
+add_executable(zoltanPtn EXCLUDE_FROM_ALL zoltanPtn.cc)
 
 set(tests
   gmi_test
@@ -38,7 +39,8 @@ set(tests
   describe
   balance
   split
-  ghost)
+  ghost
+  zoltanPtn)
 
 foreach(test ${tests})
   target_link_libraries(${test}
