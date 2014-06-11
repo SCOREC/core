@@ -241,9 +241,8 @@ namespace parma {
       apf::MeshTag* vtag;
       apf::MeshTag* wtag;
       Selector();
-      double add(apf::MeshEntity* vtx, const int maxAdjElm, 
+      double add(apf::MeshEntity* vtx, const size_t maxAdjElm, 
           const int destPid, apf::Migration* plan) {
-        double weight = 0;
         apf::DynamicArray<apf::MeshEntity*> adjElms;
         mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
         if( adjElms.getSize() > maxAdjElm ) 
