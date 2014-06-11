@@ -317,6 +317,8 @@ namespace parma {
     delete weights;
     delete ghostFinder;
     delete ghosts;
+    delete targets;
+    delete selects;
   }
 
   bool ParmaGhost::run(double maxImb, int verbosityIn) {
