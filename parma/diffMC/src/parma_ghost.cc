@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 
 namespace parma {
   template <class T> class Associative {
@@ -35,6 +36,9 @@ namespace parma {
       }
       void set(int key, T value) {
         c[key] = value;
+      }
+      bool has(int key) {
+        return (c.count(key) != 0);
       }
       void print(const char* key) {
         std::stringstream s;
@@ -90,7 +94,7 @@ namespace parma {
   /**
    * @brief compute the weight of the mesh vertices
    * @remark since the mesh being partitioned is the delauney triangularization 
-   *         of the voroni mesh so the vertex weights will correspond to element 
+   *         of the voroni mesh the vertex weights will correspond to element 
    *         weights of the voroni mesh
    */
   double getWeight(apf::Mesh* m, apf::MeshTag* w) {
@@ -107,7 +111,7 @@ namespace parma {
     public:
       Weights(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
         selfWeight = getWeight(m, w);
-        init(m, w, s);
+        init(s);
       }
       double self() {
         return selfWeight;
@@ -115,7 +119,7 @@ namespace parma {
     private:
       Weights();
       double selfWeight;
-      void init(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
+      void init(Sides* s) {
         PCU_Comm_Begin();
         const Sides::Item* side;
         s->begin();
@@ -133,28 +137,30 @@ namespace parma {
 
   class GhostFinder {
     public:
-      GhostFinder(apf::Mesh* m, apf::MeshTag* weight, int layer, int bridge) {
+      GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b) 
+        : mesh(m), wtag(w), layers(l), bridge(b) {
       }
       /**
        * @brief get the weight of vertices ghosted to peer
        */
       double weight(int peer) {
+        (void) peer; // shhhh, im trying to compile
         return 0;
       }
     private:
       GhostFinder();
+      apf::Mesh* mesh;
+      apf::MeshTag* wtag;
       int layers;
       int bridge;
-      apf::Mesh* m;
-      apf::MeshTag* w;
       apf::MeshTag* depth;
   };
 
   class Ghosts : public Associative<double> {
     public:
-      Ghosts(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
+      Ghosts(GhostFinder* finder, Sides* sides) {
         weight = 0;
-        init(m, finder, sides);
+        init(finder, sides);
         exchange();
       }
       double self() {
@@ -162,7 +168,7 @@ namespace parma {
       }
     private:
       double weight;
-      void init(apf::Mesh* m, GhostFinder* finder, Sides* sides) {
+      void init(GhostFinder* finder, Sides* sides) {
         const Sides::Item* side;
         sides->begin();
         while( (side = sides->iterate()) )
@@ -190,8 +196,13 @@ namespace parma {
       Targets(Sides* s, Weights* w, Ghosts* g, double alpha) {
         init(s, w, g, alpha);
       }
+      double total() {
+        return totW;
+      }
     private:
+      double totW;
       void init(Sides* s, Weights* w, Ghosts* g, double alpha) {
+        totW = 0;
         const Sides::Item* side;
         s->begin();
         while( (side = s->iterate()) ) {
@@ -202,21 +213,71 @@ namespace parma {
             const double difference = selfW - peerW;
             double sideFraction = side->second;
             sideFraction /= s->total();
-            set(peer, difference * sideFraction * alpha);
+            double scaledW = difference * sideFraction * alpha;
+            set(peer, scaledW);
+            totW+=scaledW;
           }
         }
         s->end();
       }
   };
 
-  class Selector {
+  class Selector : public Associative<double> {
     public:
-      Selector(apf::Mesh* m, Targets* tgts) {
-      }
-      void run() {
+      Selector(apf::Mesh* m, apf::MeshTag* w, Targets* t) 
+        : mesh(m), tgts(t), wtag(w) {}
+      apf::Migration* run() {
+        apf::Migration* plan = new apf::Migration(mesh);
+        vtag = mesh->createIntTag("ghost_visited",1);
+        const int maxBoundedElm = 6;
+        double planW=0;
+        for( size_t maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
+          planW += select(planW, maxAdjElm, plan);
+        apf::removeTagFromDimension(mesh,vtag,0);
+        mesh->destroyTag(vtag);
+        return plan;
       }
     private:
+      apf::Mesh* mesh;
+      Targets* tgts;
+      apf::MeshTag* vtag;
+      apf::MeshTag* wtag;
       Selector();
+      double add(apf::MeshEntity* vtx, const size_t maxAdjElm, 
+          const int destPid, apf::Migration* plan) {
+        apf::DynamicArray<apf::MeshEntity*> adjElms;
+        mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
+        if( adjElms.getSize() > maxAdjElm ) 
+          return 0;
+        double w = getEntWeight(mesh,vtx,wtag);
+        for(size_t i=0; i<adjElms.getSize(); i++) {
+          apf::MeshEntity* elm = adjElms[i];
+          if ( mesh->hasTag(elm, vtag) ) continue;
+          mesh->setIntTag(elm, vtag, &destPid); 
+          plan->send(elm, destPid);
+          set(destPid, get(destPid)+w);
+        }
+        return w;
+      }
+      double select(const double planW, 
+          const size_t maxAdjElm, 
+          apf::Migration* plan) {
+        double planWeight = 0;
+        apf::MeshEntity* vtx;
+        apf::MeshIterator* itr = mesh->begin(0);
+        while( (vtx = mesh->iterate(itr)) && 
+               (planW + planWeight < tgts->total()) ) {
+          apf::Copies rmt;
+          mesh->getRemotes(vtx, rmt);
+          if( 1 == rmt.size() ) {
+            int destPid = (rmt.begin())->first;
+            if( tgts->has(destPid) && get(destPid) < tgts->get(destPid) )
+              planWeight += add(vtx, maxAdjElm, destPid, plan);
+          }
+        }
+        mesh->end(itr);
+        return planWeight;
+      }
   };
 
   class ParmaGhost {
@@ -228,25 +289,23 @@ namespace parma {
         sides = new Sides(m);
         weights = new Weights(m, w, sides);
         ghostFinder = new GhostFinder(m, w, layers, bridge);
-        ghosts = new Ghosts(m, ghostFinder, sides);
+        ghosts = new Ghosts(ghostFinder, sides);
         targets = new Targets(sides, weights, ghosts, alpha);
         targets->print("tgts");
-        selects = new Selector(m, targets); //FIXME take targets and run selection
+        selects = new Selector(m, w, targets); 
       }
 
       ~ParmaGhost();
-      bool run(double maxImb, int verbosity);
+      bool run(double maxImb);
     private:
       ParmaGhost();
       apf::Mesh* m;
-      double maxImb;
       apf::MeshTag* w;
       int layers;
       int bridge;
       double alpha;
       int verbose;
       double imbalance();
-      void exchangeGhosts();
       Sides* sides;
       Weights* weights;
       GhostFinder* ghostFinder;
@@ -260,12 +319,18 @@ namespace parma {
     delete weights;
     delete ghostFinder;
     delete ghosts;
+    delete targets;
+    delete selects;
   }
 
-  bool ParmaGhost::run(double maxImb, int verbosityIn) {
-    if ( imbalance() < maxImb ) 
+  bool ParmaGhost::run(double maxImb) {
+    const double imb = imbalance();
+    if ( 0 == PCU_Comm_Self() )
+      fprintf(stdout, "imbalance %.3f\n", imb);
+    if ( imb < maxImb ) 
       return false;
-    selects->run();
+    apf::Migration* plan = selects->run();
+    m->migrate(plan);
     return true;
   }
 
@@ -283,11 +348,11 @@ class GhostBalancer : public apf::Balancer {
   public:
     GhostBalancer(apf::Mesh* m, int l, int b, double f, int v)
       : mesh(m), factor(f), layers(l), bridge(b), verbose(v) {
+        (void) verbose; // silence!
     }
     bool runStep(apf::MeshTag* weights, double tolerance) {
-      const double alpha = 0.1;
-      parma::ParmaGhost ghost(mesh, weights, layers, bridge, alpha);
-      return ghost.run(tolerance, verbose);
+      parma::ParmaGhost ghost(mesh, weights, layers, bridge, factor);
+      return ghost.run(tolerance);
     }
     virtual void balance(apf::MeshTag* weights, double tolerance) {
       double t0 = MPI_Wtime();
