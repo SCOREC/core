@@ -63,8 +63,8 @@ bit:  0  1 2 3 4 5  6   7   8   9    10    11 */
    essential boundary condition j of
    essential BC node i */
 /* bc is organized as follows:
-var:  rho t p c11 c12 c13 m1 c21 c22 c23 m2 theta sc_j
-idx:   0  1 2  3   4   5  6   7   8   9  10   11   12  */
+var:  rho t p c11 c12 c13 m1 c21 c22 c23 m2 theta sc1 sc2 sc3 sc4
+idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15  */
   double** bc;
 };
 
