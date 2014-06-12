@@ -222,7 +222,7 @@ namespace parma {
       }
   };
 
-  class Selector {
+  class Selector : public Associative<double> {
     public:
       Selector(apf::Mesh* m, apf::MeshTag* w, Targets* t) 
         : mesh(m), tgts(t), wtag(w) {}
@@ -249,13 +249,15 @@ namespace parma {
         mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
         if( adjElms.getSize() > maxAdjElm ) 
           return 0;
+        double w = getEntWeight(mesh,vtx,wtag);
         for(size_t i=0; i<adjElms.getSize(); i++) {
           apf::MeshEntity* elm = adjElms[i];
           if ( mesh->hasTag(elm, vtag) ) continue;
           mesh->setIntTag(elm, vtag, &destPid); 
           plan->send(elm, destPid);
+          set(destPid, get(destPid)+w);
         }
-        return getEntWeight(mesh,vtx,wtag);
+        return w;
       }
       double select(const double planW, 
           const size_t maxAdjElm, 
@@ -263,13 +265,13 @@ namespace parma {
         double planWeight = 0;
         apf::MeshEntity* vtx;
         apf::MeshIterator* itr = mesh->begin(0);
-        while( (vtx = mesh->iterate(itr)) ) {
-          if ( planW + planWeight > tgts->total() ) break;
+        while( (vtx = mesh->iterate(itr)) && 
+               (planW + planWeight < tgts->total()) ) {
           apf::Copies rmt;
           mesh->getRemotes(vtx, rmt);
           if( 1 == rmt.size() ) {
             int destPid = (rmt.begin())->first;
-            if( tgts->has(destPid) )
+            if( tgts->has(destPid) && get(destPid) < tgts->get(destPid) )
               planWeight += add(vtx, maxAdjElm, destPid, plan);
           }
         }

@@ -54,7 +54,9 @@ int main(int argc, char** argv)
   PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::writeVtkFiles("before", m);
   runParma(m);
+  apf::writeVtkFiles("after", m);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();
