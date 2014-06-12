@@ -168,6 +168,10 @@ Matrix3x3 cross(Vector3 const& u);
 Matrix3x3 rotate(Vector3 const& u, double a);
 Matrix3x3 getFrame(Vector3 const& v);
 
+int eigen(Matrix3x3 const& A,
+          Vector3* eigenVectors,
+          double* eigenValues);
+
 }//namespace apf
 
 std::ostream& operator<<(std::ostream& s, apf::Matrix3x3 const& v);
