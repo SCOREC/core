@@ -1,0 +1,3 @@
+create pdf:
+mkdir build
+make
