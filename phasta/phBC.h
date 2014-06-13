@@ -89,10 +89,10 @@ struct BCs
 
 void readBCs(const char* filename, BCs& bcs);
 
-void applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
+bool applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
     BCs& appliedBCs,
     double* values, int* bits);
-void applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
+bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
     BCs& appliedBCs,
     double* values, int* bits);
 

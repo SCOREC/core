@@ -178,7 +178,7 @@ double* checkForBC(int dim, int tag, BCs& bcs, KnownBC const& kbc)
   return bc.values;
 }
 
-void applyBCs(apf::Mesh* m, apf::MeshEntity* e,
+bool applyBCs(apf::Mesh* m, apf::MeshEntity* e,
     BCs& appliedBCs,
     KnownBC const* knownBCs,
     int nKnownBCs,
@@ -187,27 +187,28 @@ void applyBCs(apf::Mesh* m, apf::MeshEntity* e,
   apf::ModelEntity* me = m->toModel(e);
   int md = m->getModelType(me);
   int mt = m->getModelTag(me);
+  bool appliedAny = false;
   for (int i = 0; i < nKnownBCs; ++i) {
     double* bcvalues = checkForBC(md, mt, appliedBCs, knownBCs[i]);
     if (!bcvalues)
       continue;
     knownBCs[i].apply(values, bits, knownBCs[i], bcvalues);
+    appliedAny = true;
   }
+  return appliedAny;
 }
 
-void applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
-    BCs& appliedBCs,
-    double* values, int* bits)
+bool applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
+    BCs& appliedBCs, double* values, int* bits)
 {
-  applyBCs(m, f, appliedBCs, naturalBCs,
+  return applyBCs(m, f, appliedBCs, naturalBCs,
       sizeof(naturalBCs) / sizeof(KnownBC), values, bits);
 }
 
-void applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
-    BCs& appliedBCs,
-    double* values, int* bits)
+bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
+    BCs& appliedBCs, double* values, int* bits)
 {
-  applyBCs(m, v, appliedBCs, essentialBCs,
+  return applyBCs(m, v, appliedBCs, essentialBCs,
       sizeof(essentialBCs) / sizeof(KnownBC), values, bits);
 }
 
