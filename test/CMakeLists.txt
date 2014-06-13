@@ -24,6 +24,7 @@ add_executable(describe EXCLUDE_FROM_ALL describe.cc)
 add_executable(balance EXCLUDE_FROM_ALL balance.cc)
 add_executable(split EXCLUDE_FROM_ALL split.cc)
 add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
+add_executable(bfs EXCLUDE_FROM_ALL bfs.cc)
 add_executable(zoltanPtn EXCLUDE_FROM_ALL zoltanPtn.cc)
 
 set(tests
@@ -40,6 +41,7 @@ set(tests
   balance
   split
   ghost
+  bfs
   zoltanPtn)
 
 foreach(test ${tests})
