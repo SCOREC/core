@@ -1,6 +1,7 @@
 #include <apf.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
+#include <apfNumbering.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
 
@@ -12,9 +13,35 @@ apf::MeshEntity* grabFirstVertex(apf::Mesh* m)
   return v;
 }
 
+void renderIntTag(apf::Mesh* m, apf::MeshTag* tag, const char* filename)
+{
+  apf::Numbering* n = apf::createNumbering(m,
+      m->getTagName(tag), m->getShape(), 1);
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* v;
+  while ((v = m->iterate(it))) {
+    if (m->hasTag(v, tag)) {
+      int x;
+      m->getIntTag(v, tag, &x);
+      apf::number(n, v, 0, 0, x);
+    }
+  }
+  m->end(it);
+  apf::writeVtkFiles(filename, m);
+  apf::destroyNumbering(n);
+}
+
+void visit(apf::Mesh* m, apf::MeshTag* visited, apf::MeshEntity* vertex)
+{
+  int yes = 1;
+  m->setIntTag(vertex, visited, &yes);
+}
+
 void runBFS(apf::Mesh* m, apf::MeshEntity* startVertex)
 {
+  apf::MeshTag* visited = m->createIntTag("visited",1);
   /* ... */
+  renderIntTag(m, visited, "after");
 }
 
 int main(int argc, char** argv)
