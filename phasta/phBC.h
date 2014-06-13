@@ -6,8 +6,6 @@
 #include <set>
 #include <string>
 
-namespace ph {
-
 /* full names and abbreviations for boundary conditions:
 
    Essential boundary conditions:
@@ -59,6 +57,13 @@ namespace ph {
    the end of said arrays.
 */
 
+namespace apf {
+class Mesh;
+class MeshEntity;
+};
+
+namespace ph {
+
 struct BC
 {
   BC();
@@ -83,6 +88,13 @@ struct BCs
 };
 
 void readBCs(const char* filename, BCs& bcs);
+
+void applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
+    BCs& appliedBCs,
+    double* values, int* bits);
+void applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
+    BCs& appliedBCs,
+    double* values, int* bits);
 
 }
 
