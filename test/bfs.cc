@@ -33,16 +33,42 @@ void renderIntTag(apf::Mesh* m, apf::MeshTag* tag, const char* filename)
   apf::destroyNumbering(n);
 }
 
-void visit(apf::Mesh* m, apf::MeshTag* visited, apf::MeshEntity* vertex)
+void visit(apf::Mesh* m, apf::MeshTag* visited, apf::MeshEntity* vertex,int layer)
 {
-  int yes = 1;
+  int yes = layer;
   m->setIntTag(vertex, visited, &yes);
 }
 
 void runBFS(apf::Mesh* m, apf::MeshEntity* startVertex)
 {
   apf::MeshTag* visited = m->createIntTag("visited",1);
-  /* ... */
+  int layer=2;
+  std::vector<apf::MeshEntity*> current;
+  std::vector<apf::MeshEntity*> next;
+  current.push_back(startVertex);
+  visit(m,visited,startVertex,1);
+  for (int i=0;i<layer;i++) {
+    for (unsigned int j=0;j<current.size();j++) {
+      apf::MeshEntity* vertex = current[j];
+      apf::Up edges;
+      m->getUp(vertex,edges);
+      for (int k=0;k<edges.n;k++) {
+        apf::MeshEntity* edge = edges.e[k];
+        apf::Downward vertices;
+        int nvertices = m->getDownward(edge,getDimension(m,edge)-1,vertices);
+        assert(nvertices==2);
+        apf::MeshEntity* v = vertices[0];
+        if (v==vertex)
+          v=vertices[1];
+        if (m->hasTag(v,visited)) continue;
+        next.push_back(v);
+        visit(m,visited,v,i+2);
+      }
+      
+    }
+    current=next;
+    next.clear();
+  }
   renderIntTag(m, visited, "after");
 }
 
