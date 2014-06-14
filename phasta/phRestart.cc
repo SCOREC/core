@@ -131,6 +131,7 @@ static std::string buildRestartFileName(Input& in)
 
 void readAndAttachSolution(Input& in, apf::Mesh* m)
 {
+  double t0 = MPI_Wtime();
   readStepNum(in);
   std::string filename = buildRestartFileName(in);
   readAndAttachField(in, m, filename.c_str(), "solution");
@@ -146,10 +147,14 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     attachField(m, "mapping_vtxid", mapping, 1);
     free(mapping);
   }
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("solution read and attached in %f seconds\n", t1 - t0);
 }
 
 void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
 {
+  double t0 = MPI_Wtime();
   path += buildRestartFileName(in);
   FILE* f = fopen(path.c_str(), "w");
   ph_write_preamble(f);
@@ -166,6 +171,9 @@ void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
   fclose(f);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("solution written in %f seconds\n", t1 - t0);
 }
 
 }

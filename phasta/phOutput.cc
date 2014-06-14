@@ -130,8 +130,8 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
       ienb[i][j] = new int[nv];
       for (int k = 0; k < nv; ++k)
         ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
-      ibcb[i][j] = new int[2];
-      bcb[i][j] = new double[nbc];
+      ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
+      bcb[i][j] = new double[nbc]();
       applyNaturalBCs(m, f, bcs, bcb[i][j], ibcb[i][j]);
       ++js[i];
     }
@@ -179,10 +179,10 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
   int* nbc = new int[m->count(0)];
-  int* ibc = new int[m->count(0)];
+  int* ibc = new int[m->count(0)]();
   double** bc = new double*[m->count(0)];
   int nec = countEssentialBCs(in);
-  double* bc_j = new double[nec];
+  double* bc_j = new double[nec]();
   size_t i = 0;
   size_t j = 0;
   apf::MeshEntity* v;
@@ -194,7 +194,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
       nbc[i] = j;
       ibc[j] = ibc_j;
       bc[j] = bc_j;
-      bc_j = new double[nec];
+      bc_j = new double[nec]();
       ++j;
     } else {
       nbc[i] = -1;
@@ -202,10 +202,12 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     ++i;
   }
   m->end(it);
+  delete [] bc_j;
   o.arrays.nbc = nbc;
   o.arrays.ibc = ibc;
   o.arrays.bc = bc;
   o.nEssentialBCNodes = j;
+  printf("counted %zu essential BC nodes\n", j);
 }
 
 Output::~Output()
@@ -237,12 +239,14 @@ Output::~Output()
   delete [] arrays.bcb;
   delete [] arrays.nbc;
   delete [] arrays.ibc;
+  for (int i = 0; i < nEssentialBCNodes; ++i)
+    delete [] arrays.bc[i];
   delete [] arrays.bc;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
 {
-  ModelBounds modelFaces; //FIXME: BC application not done yet
+  double t0 = MPI_Wtime();
   o.in = &in;
   o.mesh = mesh;
   getCounts(o);
@@ -258,6 +262,9 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getMaxElementNodes(o);
   getFakePeriodicMasters(o);
   getEssentialBCs(bcs, o);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("generated output structs in %f seconds\n",t1 - t0);
 }
 
 }

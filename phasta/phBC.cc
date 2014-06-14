@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <cstdio>
+#include <PCU.h>
 
 namespace ph {
 
@@ -62,6 +62,7 @@ static void readBC(std::string const& line, BCs& bcs)
 
 void readBCs(const char* filename, BCs& bcs)
 {
+  double t0 = MPI_Wtime();
   std::ifstream file(filename);
   std::string line;
   while (std::getline(file, line, '\n')) {
@@ -69,6 +70,9 @@ void readBCs(const char* filename, BCs& bcs)
       continue;
     readBC(line, bcs);
   }
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("\"%s\" loaded in %f seconds\n", filename, t1 - t0);
 }
 
 struct KnownBC
@@ -220,10 +224,6 @@ void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces)
     APF_ITERATE(FieldBCs::Set, it->second.bcs, it2)
       if (it2->dim == 2)
         faces.insert(m->findModelEntity(it2->dim, it2->tag));
-  fprintf(stderr,"BC faces: ");
-  APF_ITERATE(std::set<apf::ModelEntity*>, faces, fit)
-    fprintf(stderr,"%d ", m->getModelTag(*fit));
-  fprintf(stderr,"\n");
 }
 
 }
