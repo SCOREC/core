@@ -35,7 +35,7 @@ void getInteriorConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   size_t i = 0;
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
-      c[i++] = o.arrays.ien[block][elem][vert];
+      c[i++] = o.arrays.ien[block][elem][vert] + 1; /* FORTRAN indexing */
   assert(i == c.getSize());
 }
 
@@ -47,7 +47,7 @@ void getBoundaryConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   size_t i = 0;
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
-      c[i++] = o.arrays.ienb[block][elem][vert];
+      c[i++] = o.arrays.ienb[block][elem][vert] + 1;
   assert(i == c.getSize());
 }
 
@@ -72,6 +72,14 @@ void getNaturalBCValues(Output& o, int block, apf::DynamicArray<double>& values)
     for (int elem = 0; elem < nelem; ++elem)
       values[i++] = o.arrays.bcb[block][elem][bc];
   assert(i == values.getSize());
+}
+
+void getEssentialBCMap(Output& o, apf::DynamicArray<int>& map)
+{
+  int nnode = o.mesh->count(0);
+  map.setSize(nnode);
+  for (int node = 0; node < nnode; ++node)
+    map[node] = o.arrays.nbc[node] + 1;
 }
 
 void getEssentialBCValues(Output& o, apf::DynamicArray<double>& values)
@@ -178,7 +186,9 @@ void writeGeomBC(Output& o, std::string path)
   writeInts(f, " mode number map from partition to global",
       o.arrays.globalNodeNumbers, m->count(0));
   writeBlocks(f, o);
-  writeInts(f, "bc mapping array", o.arrays.nbc, m->count(0));
+  apf::DynamicArray<int> nbc;
+  getEssentialBCMap(o, nbc);
+  writeInts(f, "bc mapping array", &nbc[0], m->count(0));
   writeInts(f, "bc codes array", o.arrays.ibc, o.nEssentialBCNodes);
   apf::DynamicArray<double> bc;
   getEssentialBCValues(o, bc);

@@ -14,6 +14,7 @@ simulations on supercomputers.
 * MA: Anisotropic mixed mesh adaptation and solution transfer
 * STK: Conversion from APF meshes to Sandia's STK meshes
 * ZOLTAN: Interface to run Sandia's Zoltan code on APF meshes
+* PHASTA: Tools and file formats related to the PHASTA fluid solver
 
 ### How do I get set up? ###
 
