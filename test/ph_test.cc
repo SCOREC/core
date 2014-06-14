@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     if (in.solutionMigration)
       ph::detachAndWriteSolution(in, m, path);
     ph::Output o;
-    ph::generateOutput(in, m, o);
+    ph::generateOutput(in, bcs, m, o);
     ph::writeGeomBC(o, path);
   }
   m->destroyNative();

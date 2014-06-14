@@ -212,4 +212,11 @@ bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
       sizeof(essentialBCs) / sizeof(KnownBC), values, bits);
 }
 
+void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces)
+{
+  APF_ITERATE(BCs::Map, bcs.fields, it)
+    APF_ITERATE(FieldBCs::Set, it->second.bcs, it2)
+      faces.insert(m->findModelEntity(it2->dim, it2->tag));
+}
+
 }

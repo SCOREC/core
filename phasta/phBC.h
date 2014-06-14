@@ -60,6 +60,7 @@
 namespace apf {
 class Mesh;
 class MeshEntity;
+class ModelEntity;
 };
 
 namespace ph {
@@ -95,6 +96,8 @@ bool applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
 bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
     BCs& appliedBCs,
     double* values, int* bits);
+
+void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces);
 
 }
 

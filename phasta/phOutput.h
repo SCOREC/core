@@ -3,6 +3,7 @@
 
 #include "phInput.h"
 #include "phBlock.h"
+#include "phBC.h"
 
 namespace apf {
 class Mesh;
@@ -86,7 +87,7 @@ struct Output
   EnsaArrays arrays;
 };
 
-void generateOutput(Input& in, apf::Mesh* mesh, Output& o);
+void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o);
 void writeGeomBC(Output& o, std::string path);
 
 }
