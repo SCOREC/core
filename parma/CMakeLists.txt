@@ -38,15 +38,6 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_ghost.cc 
   )
 
-set(PARMAIO_MAJOR_VERSION 1)
-set(PARMAIO_MINOR_VERSION 0)
-set(PARMAIO_PATCH_VERSION 0)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/io/parmaIO_version.h.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/io/parmaIO_version.h"
-  @ONLY
-  )
-
 SET(RIB_SOURCES  
   rib/parma_rib_math.cc 
   rib/parma_rib.cc 
@@ -55,11 +46,7 @@ SET(RIB_SOURCES
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(
-  diffMC/src
-  ptnQualMeasures
-  io/src
-  )
+INCLUDE_DIRECTORIES(diffMC/src)
 
 if(NOT BUILD_IN_TRILINOS) 
   set(parmaIncDirs 
