@@ -170,7 +170,7 @@ static void getFakePeriodicMasters(Output& o)
   apf::Mesh* m = o.mesh;
   int* iper = new int[m->count(0)];
   for (size_t i = 0; i < m->count(0); ++i)
-    iper[i] = 42;
+    iper[i] = 0;
   o.arrays.iper = iper;
 }
 
