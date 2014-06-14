@@ -104,38 +104,41 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   int*** ienb = new int**[bs.getSize()];
   int*** ibcb = new int**[bs.getSize()];
   double*** bcb = new double**[bs.getSize()];
-  int i = 0;
-  APF_ITERATE(ModelBounds, modelFaces, mit) {
-    apf::ModelEntity* mf = *mit;
+  apf::NewArray<int> js(bs.getSize());
+  for (int i = 0; i < bs.getSize(); ++i) {
     ienb[i] = new int*[bs.nElements[i]];
     ibcb[i] = new int*[bs.nElements[i]];
     bcb[i] = new double*[bs.nElements[i]];
-    int t = bs.keys[i].elementType;
-    int nv = bs.keys[i].nElementVertices;
+    js[i] = 0;
+  }
+  APF_ITERATE(ModelBounds, modelFaces, mit) {
+    apf::ModelEntity* mf = *mit;
     apf::MeshEntity* f;
-    int j = 0;
     apf::MeshIterator* it = m->begin(m->getDimension() - 1);
     while ((f = m->iterate(it))) {
       if (m->toModel(f) != mf)
         continue;
+      BlockKey k;
       apf::MeshEntity* e = m->getUpward(f, 0);
-      if (getPhastaType(m, e) != t)
-        continue;
-      ienb[i][j] = new int[nv];
+      getBoundaryBlockKey(m, e, f, k);
+      assert(bs.keyToIndex.count(k));
+      int i = bs.keyToIndex[k];
+      int j = js[i];
+      int nv = k.nElementVertices;
       apf::Downward v;
       getBoundaryVertices(m, e, f, v);
+      ienb[i][j] = new int[nv];
       for (int k = 0; k < nv; ++k)
-        ienb[i][j][k] = getNumber(n, v[k], 0, 0);
+        ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
       ibcb[i][j] = new int[2];
       bcb[i][j] = new double[nbc];
       applyNaturalBCs(m, f, bcs, bcb[i][j], ibcb[i][j]);
-      ++j;
+      ++js[i];
     }
     m->end(it);
-    assert(j == bs.nElements[i]);
-    ++i;
   }
-  assert(i == bs.getSize());
+  for (int i = 0; i < bs.getSize(); ++i)
+    assert(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
   o.arrays.ibcb = ibcb;
   o.arrays.bcb = bcb;

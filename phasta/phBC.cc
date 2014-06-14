@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <cstdio>
+
 namespace ph {
 
 BC::BC()
@@ -216,7 +218,12 @@ void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces)
 {
   APF_ITERATE(BCs::Map, bcs.fields, it)
     APF_ITERATE(FieldBCs::Set, it->second.bcs, it2)
-      faces.insert(m->findModelEntity(it2->dim, it2->tag));
+      if (it2->dim == 2)
+        faces.insert(m->findModelEntity(it2->dim, it2->tag));
+  fprintf(stderr,"BC faces: ");
+  APF_ITERATE(std::set<apf::ModelEntity*>, faces, fit)
+    fprintf(stderr,"%d ", m->getModelTag(*fit));
+  fprintf(stderr,"\n");
 }
 
 }
