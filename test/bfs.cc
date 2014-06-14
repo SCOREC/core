@@ -24,6 +24,8 @@ void renderIntTag(apf::Mesh* m, apf::MeshTag* tag, const char* filename)
       int x;
       m->getIntTag(v, tag, &x);
       apf::number(n, v, 0, 0, x);
+    } else {
+      apf::number(n, v, 0, 0, 0);
     }
   }
   m->end(it);
