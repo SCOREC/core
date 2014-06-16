@@ -102,7 +102,8 @@ namespace parma {
     apf::MeshEntity* e;
     double sum = 0;
     while ((e = m->iterate(it)))
-      sum += getEntWeight(m, e, w);
+      if (m->isOwned(e))
+        sum += getEntWeight(m, e, w);
     m->end(it);
     return sum;
   }
@@ -230,7 +231,7 @@ namespace parma {
         while ((v=mesh->iterate(itr))) {
           if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers)) {
             assert(mesh->hasTag(v,wtag));
-            int w;
+            double w;
             mesh->getDoubleTag(v,wtag,&w);
             totalWeight+=w;
           }
