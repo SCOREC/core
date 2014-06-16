@@ -134,7 +134,9 @@ namespace parma {
         }
       }
   };
-  void runBFS(apf::Mesh* m, int layers,std::vector<apf::MeshEntity*> current, std::vector<apf::MeshEntity*> next,apf::MeshTag* visited) {
+
+  void runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
+      std::vector<apf::MeshEntity*> next, apf::MeshTag* visited) {
     int yes=1;
     for (unsigned int i=0;i<next.size();i++) {
       m->setIntTag(next[i],visited,&yes);
@@ -163,6 +165,7 @@ namespace parma {
       }
     }
   }
+
   bool searchBFS(apf::Mesh* m,apf::MeshEntity* start, int target, int layers) {
     apf::MeshTag* visited = m->createIntTag("visited",1);
     std::vector<apf::MeshEntity*> current;
@@ -199,6 +202,7 @@ namespace parma {
     m->destroyTag(visited);
     return false;
   }
+
   class GhostFinder {
     public:
       GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b) 
@@ -208,7 +212,7 @@ namespace parma {
         apf::MeshEntity* v;
         std::vector<apf::MeshEntity*> current;
         std::vector<apf::MeshEntity*> next;
-        while (v=mesh->iterate(itr)) {
+        while ((v=mesh->iterate(itr))) {
           if (mesh->isShared(v)&&mesh->isOwned(v))
             next.push_back(v);
           if (!mesh->isOwned(v))
@@ -223,7 +227,7 @@ namespace parma {
         double totalWeight=0;
         apf::MeshIterator* itr = mesh->begin(0);
         apf::MeshEntity* v;
-        while (v=mesh->iterate(itr)) {
+        while ((v=mesh->iterate(itr))) {
           if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers)) {
             assert(mesh->hasTag(v,wtag));
             int w;
