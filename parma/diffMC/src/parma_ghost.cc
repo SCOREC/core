@@ -102,7 +102,8 @@ namespace parma {
     apf::MeshEntity* e;
     double sum = 0;
     while ((e = m->iterate(it)))
-      sum += getEntWeight(m, e, w);
+      if (m->isOwned(e))
+        sum += getEntWeight(m, e, w);
     m->end(it);
     return sum;
   }
@@ -135,18 +136,111 @@ namespace parma {
       }
   };
 
+  void runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
+      std::vector<apf::MeshEntity*> next, apf::MeshTag* visited) {
+    int yes=1;
+    for (unsigned int i=0;i<next.size();i++) {
+      m->setIntTag(next[i],visited,&yes);
+    }
+    for (int i=1;i<=layers;i++) {
+      for (unsigned int j=0;j<current.size();j++) {
+        apf::MeshEntity* vertex = current[j];
+        if (!m->isOwned(vertex))
+          continue;
+        apf::Up edges;
+        m->getUp(vertex,edges);
+        for (int k=0;k<edges.n;k++) {
+          apf::MeshEntity* edge = edges.e[k];
+          apf::Downward vertices;
+          int nvertices = m->getDownward(edge,getDimension(m,edge)-1,vertices);
+          assert(nvertices==2);
+          apf::MeshEntity* v = vertices[0];
+          if (v==vertex)
+            v=vertices[1];
+          if (m->hasTag(v,visited)) continue;
+          next.push_back(v);
+          m->setIntTag(current[i],visited,&i);
+        }
+        current=next;
+        next.clear();
+      }
+    }
+  }
+
+  bool searchBFS(apf::Mesh* m,apf::MeshEntity* start, int target, int layers) {
+    apf::MeshTag* visited = m->createIntTag("visited",1);
+    std::vector<apf::MeshEntity*> current;
+    std::vector<apf::MeshEntity*> next;
+    current.push_back(start);
+    int yes;
+    m->setIntTag(start,visited,&yes);
+    for (int i=0;i<layers;i++) {
+      for (unsigned int j=0;j<current.size();j++) {
+        apf::MeshEntity* vertex = current[j];
+        apf::Up edges;
+        m->getUp(vertex,edges);
+        for (int k=0;k<edges.n;k++) {
+          apf::MeshEntity* edge = edges.e[k];
+          apf::Downward vertices;
+          int nvertices = m->getDownward(edge,getDimension(m,edge)-1,vertices);
+          assert(nvertices==2);
+          apf::MeshEntity* v = vertices[0];
+          if (v==vertex)
+            v=vertices[1];
+          if (m->getOwner(v)==target) {
+            m->destroyTag(visited);
+            return true;
+          }
+          if (m->hasTag(v,visited)) continue;
+          next.push_back(v);
+          m->setIntTag(v,visited,&yes);
+        }
+        
+      }
+      current=next;
+      next.clear();
+    }
+    m->destroyTag(visited);
+    return false;
+  }
+
   class GhostFinder {
     public:
       GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b) 
         : mesh(m), wtag(w), layers(l), bridge(b) {
+        depth = m->createIntTag("depths",1);
+        apf::MeshIterator* itr = mesh->begin(0);
+        apf::MeshEntity* v;
+        std::vector<apf::MeshEntity*> current;
+        std::vector<apf::MeshEntity*> next;
+        while ((v=mesh->iterate(itr))) {
+          if (mesh->isShared(v)&&mesh->isOwned(v))
+            next.push_back(v);
+          if (!mesh->isOwned(v))
+            current.push_back(v);
+        }
+        runBFS(mesh,layers,current,next,depth);
       }
       /**
        * @brief get the weight of vertices ghosted to peer
        */
       double weight(int peer) {
-        (void) peer; // shhhh, im trying to compile
-        return 0;
+        double totalWeight=0;
+        apf::MeshIterator* itr = mesh->begin(0);
+        apf::MeshEntity* v;
+        while ((v=mesh->iterate(itr))) {
+          if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers)) {
+            assert(mesh->hasTag(v,wtag));
+            double w;
+            mesh->getDoubleTag(v,wtag,&w);
+            totalWeight+=w;
+          }
+        }
+        return totalWeight;
       }
+    ~GhostFinder() {
+      mesh->destroyTag(depth);
+    }
     private:
       GhostFinder();
       apf::Mesh* mesh;
@@ -173,9 +267,9 @@ namespace parma {
         sides->begin();
         while( (side = sides->iterate()) )
           set(side->first, finder->weight(side->first));
-        sides->end();
+        sides->end(); 
       }
-      void exchange() {
+    void exchange() {
         PCU_Comm_Begin();
         const Ghosts::Item* ghost;
         begin();
