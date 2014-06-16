@@ -49,7 +49,7 @@ namespace parma {
           s << i->first << " " << i->second << " ";
         end();
         std::string str = s.str();
-        PCU_Debug_Print("%s", str.c_str());
+        PCU_Debug_Print("%s\n", str.c_str());
       }
     protected:
       Container c;
@@ -161,9 +161,10 @@ namespace parma {
           next.push_back(v);
           m->setIntTag(current[i],visited,&i);
         }
-        current=next;
-        next.clear();
+        
       }
+      current=next;
+      next.clear();
     }
   }
 
@@ -187,6 +188,7 @@ namespace parma {
           apf::MeshEntity* v = vertices[0];
           if (v==vertex)
             v=vertices[1];
+	  
           if (m->getOwner(v)==target) {
             m->destroyTag(visited);
             return true;
@@ -216,8 +218,10 @@ namespace parma {
         while ((v=mesh->iterate(itr))) {
           if (mesh->isShared(v)&&mesh->isOwned(v))
             next.push_back(v);
-          if (!mesh->isOwned(v))
+          else if (!mesh->isOwned(v)) 
             current.push_back(v);
+	  else
+	    assert(!mesh->isShared(v));
         }
         runBFS(mesh,layers,current,next,depth);
       }
@@ -385,7 +389,6 @@ namespace parma {
         ghostFinder = new GhostFinder(m, w, layers, bridge);
         ghosts = new Ghosts(ghostFinder, sides);
         targets = new Targets(sides, weights, ghosts, alpha);
-        targets->print("tgts");
         selects = new Selector(m, w, targets); 
       }
 
@@ -430,7 +433,13 @@ namespace parma {
 
   double ParmaGhost::imbalance() { 
     double maxWeight = 0, totalWeight = 0;
-    maxWeight = totalWeight = weights->self() + ghosts->self();
+    sides->print("sides");
+    targets->print("tgts");
+    ghosts->print("ghosts");
+    const double w = weights->self();
+    const double gw = ghosts->self();
+    PCU_Debug_Print("w %.3f gw %.3f\n", w, gw);
+    maxWeight = totalWeight = w + gw;
     PCU_Add_Doubles(&totalWeight,1);
     PCU_Max_Doubles(&maxWeight, 1);
     double averageWeight = totalWeight / PCU_Comm_Peers();
