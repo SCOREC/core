@@ -227,7 +227,7 @@ namespace parma {
           if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers)) {
             assert(mesh->hasTag(v,wtag));
             int w;
-            mesh->getIntTag(v,wtag,&w);
+            mesh->getDoubleTag(v,wtag,&w);
             totalWeight+=w;
           }
         }
