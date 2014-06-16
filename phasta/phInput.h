@@ -49,6 +49,7 @@ class Input
 
 int countNaturalBCs(Input& in);
 int countEssentialBCs(Input& in);
+int countScalarBCs(Input& in);
 
 }
 

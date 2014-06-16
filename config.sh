@@ -4,4 +4,5 @@ cmake .. \
   -DCMAKE_C_FLAGS="$CFLAGS" \
   -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
   -DENABLE_THREADS=ON \
-  -DSIM_MPI="openmpi1.6.5"
+  -DSIM_MPI="openmpi1.6.5" \
+  -DENABLE_ZOLTAN=ON

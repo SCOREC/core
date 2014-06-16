@@ -131,16 +131,22 @@ Input::Input(const char* filename)
   validate(*this);
 }
 
+/* see the comments in phBC.h and
+   phOutput.h for explanations about
+   these count*BCs functions */
 int countNaturalBCs(Input& in)
 {
-/* 1 extra for turbulence wall */
   return in.ensa_dof + 1;
 }
 
 int countEssentialBCs(Input& in)
 {
-/* 7 accounts for "theta" ... */
   return in.ensa_dof + 7;
+}
+
+int countScalarBCs(Input& in)
+{
+  return in.ensa_dof - 5;
 }
 
 }

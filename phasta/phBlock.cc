@@ -84,6 +84,18 @@ void applyTriQuadHack(BlockKey& k)
     k.elementType = PYRAMID_TRI;
 }
 
+void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
+    apf::MeshEntity* f, BlockKey& k)
+{
+  k.nElementVertices =
+    apf::Mesh::adjacentCount[m->getType(e)][0];
+  k.polynomialOrder = 1;
+  k.nBoundaryFaceEdges =
+    apf::Mesh::adjacentCount[m->getType(f)][1];
+  k.elementType = getPhastaType(m, e);
+  applyTriQuadHack(k);
+}
+
 void getBoundaryBlocks(apf::Mesh* m, Blocks& b,
     ModelBounds& modelFaces)
 {
@@ -96,13 +108,7 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b,
         continue;
       apf::MeshEntity* e = m->getUpward(f, 0);
       BlockKey k;
-      k.nElementVertices =
-        apf::Mesh::adjacentCount[m->getType(e)][0];
-      k.polynomialOrder = 1;
-      k.nBoundaryFaceEdges =
-        apf::Mesh::adjacentCount[m->getType(f)][1];
-      k.elementType = getPhastaType(m, e);
-      applyTriQuadHack(k);
+      getBoundaryBlockKey(m, e, f, k);
       insertKey(b, k);
     }
     m->end(it);

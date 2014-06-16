@@ -35,7 +35,7 @@ void getInteriorConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   size_t i = 0;
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
-      c[i++] = o.arrays.ien[block][elem][vert];
+      c[i++] = o.arrays.ien[block][elem][vert] + 1; /* FORTRAN indexing */
   assert(i == c.getSize());
 }
 
@@ -47,7 +47,7 @@ void getBoundaryConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   size_t i = 0;
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
-      c[i++] = o.arrays.ienb[block][elem][vert];
+      c[i++] = o.arrays.ienb[block][elem][vert] + 1;
   assert(i == c.getSize());
 }
 
@@ -72,6 +72,14 @@ void getNaturalBCValues(Output& o, int block, apf::DynamicArray<double>& values)
     for (int elem = 0; elem < nelem; ++elem)
       values[i++] = o.arrays.bcb[block][elem][bc];
   assert(i == values.getSize());
+}
+
+void getEssentialBCMap(Output& o, apf::DynamicArray<int>& map)
+{
+  int nnode = o.mesh->count(0);
+  map.setSize(nnode);
+  for (int node = 0; node < nnode; ++node)
+    map[node] = o.arrays.nbc[node] + 1;
 }
 
 void getEssentialBCValues(Output& o, apf::DynamicArray<double>& values)
@@ -144,6 +152,7 @@ static void writeDoubles(FILE* f, const char* name, double* d, int n)
 
 void writeGeomBC(Output& o, std::string path)
 {
+  double t0 = MPI_Wtime();
   apf::Mesh* m = o.mesh;
   path += buildGeomBCFileName(*o.in);
   FILE* f = fopen(path.c_str(), "w");
@@ -177,13 +186,18 @@ void writeGeomBC(Output& o, std::string path)
   writeInts(f, " mode number map from partition to global",
       o.arrays.globalNodeNumbers, m->count(0));
   writeBlocks(f, o);
-  writeInts(f, "bc mapping array", o.arrays.nbc, m->count(0));
+  apf::DynamicArray<int> nbc;
+  getEssentialBCMap(o, nbc);
+  writeInts(f, "bc mapping array", &nbc[0], m->count(0));
   writeInts(f, "bc codes array", o.arrays.ibc, o.nEssentialBCNodes);
   apf::DynamicArray<double> bc;
   getEssentialBCValues(o, bc);
   writeDoubles(f, "boundary condition array", &bc[0], bc.getSize());
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   fclose(f);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("geombc file written in %f seconds\n", t1 - t0);
 }
 
 }
