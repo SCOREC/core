@@ -94,6 +94,62 @@ static gmi_ent* find(gmi_model* m, int dim, int tag)
   return (gmi_ent*)GM_entityByTag(mm->sim, dim, tag);
 }
 
+static void eval(struct gmi_model* m, struct gmi_ent* e,
+      double const p[2], double x[3])
+{
+  int dim = gmi_dim(m, e);
+  if (dim == 2) {
+    GF_point((pGFace)e, p, x);
+    return;
+  }
+  if (dim == 1) {
+    GE_point((pGEdge)e, p[0], x);
+    return;
+  }
+  gmi_fail("bad dimension in gmi_sim eval");
+}
+
+static void reparam(struct gmi_model* m, struct gmi_ent* from,
+      double const from_p[2], struct gmi_ent* to, double to_p[2])
+{
+  int from_dim, to_dim;
+  from_dim = gmi_dim(m, from);
+  to_dim = gmi_dim(m, to);
+  if ((from_dim == 1) && (to_dim == 2)) {
+    GF_edgeReparam((pGFace)to, (pGEdge)from, from_p[0], 1, to_p);
+    return;
+  }
+  if ((from_dim == 0) && (to_dim == 2)) {
+    GF_vertexReparam((pGFace)to, (pGVertex)from, to_p);
+    return;
+  }
+  if ((from_dim == 0) && (to_dim == 1)) {
+    to_p[0] = GE_vertexReparam((pGEdge)to, (pGVertex)from);
+    return;
+  }
+  gmi_fail("bad dimensions in gmi_sim reparam");
+}
+
+static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
+{
+  int md = gmi_dim(m, e);
+  if (md == 2)
+    return GF_isSurfacePeriodic((pGFace)e, dim);
+  if (md == 1)
+    return GE_periodic((pGEdge)e);
+  return 0;
+}
+
+static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
+    double r[2])
+{
+  int md = gmi_dim(m, e);
+  if (md == 2)
+    return GF_parRange((pGFace)e, dim, &r[0], &r[1]);
+  if (md == 1)
+    return GE_parRange((pGEdge)e, &r[0], &r[1]);
+}
+
 static void destroy(gmi_model* m)
 {
   sim_model* mm = (sim_model*)m;
@@ -116,6 +172,10 @@ void gmi_register_sim(void)
   ops.dim = get_dim;
   ops.tag = get_tag;
   ops.find = find;
+  ops.eval = eval;
+  ops.reparam = reparam;
+  ops.periodic = periodic;
+  ops.range = range;
   ops.destroy = destroy;
   gmi_register(create, "smd");
 }
