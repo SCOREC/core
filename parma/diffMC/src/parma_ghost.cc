@@ -168,7 +168,7 @@ namespace parma {
     }
   }
 
-  bool searchBFS(apf::Mesh* m,apf::MeshEntity* start, int target, int layers) {
+  bool searchBFS(apf::Mesh* m,apf::MeshEntity* start, int target, int layers,apf::MeshTag* depth) {
     apf::MeshTag* visited = m->createIntTag("visited",1);
     std::vector<apf::MeshEntity*> current;
     std::vector<apf::MeshEntity*> next;
@@ -189,10 +189,22 @@ namespace parma {
           if (v==vertex)
             v=vertices[1];
 	  
+          if (target==0)
+            printf("owner %d target %d\n",m->getOwner(v),target);
+	  apf::Copies rmts;
+	  m->getRemotes(v,rmts);
+	  for (apf::Copies::iterator itr = rmts.begin();itr!=rmts.end();itr++) 
+	    if (itr->first==target) {
+	      apf::removeTagFromDimension(m,visited,0);
+	      m->destroyTag(visited);
+	      return true;
+	    }
           if (m->getOwner(v)==target) {
+            apf::removeTagFromDimension(m,visited,0);
             m->destroyTag(visited);
             return true;
           }
+          if (!m->hasTag(v,depth)) continue;
           if (m->hasTag(v,visited)) continue;
           next.push_back(v);
           m->setIntTag(v,visited,&yes);
@@ -202,6 +214,7 @@ namespace parma {
       current=next;
       next.clear();
     }
+    apf::removeTagFromDimension(m,visited,0);
     m->destroyTag(visited);
     return false;
   }
@@ -220,8 +233,8 @@ namespace parma {
             next.push_back(v);
           else if (!mesh->isOwned(v)) 
             current.push_back(v);
-	  else
-	    assert(!mesh->isShared(v));
+          else
+            assert(!mesh->isShared(v));
         }
         runBFS(mesh,layers,current,next,depth);
       }
@@ -232,17 +245,13 @@ namespace parma {
         double totalWeight=0;
         apf::MeshIterator* itr = mesh->begin(0);
         apf::MeshEntity* v;
-        while ((v=mesh->iterate(itr))) {
-          if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers)) {
-            assert(mesh->hasTag(v,wtag));
-            double w;
-            mesh->getDoubleTag(v,wtag,&w);
-            totalWeight+=w;
-          }
-        }
+        while ((v=mesh->iterate(itr)))
+          if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers,depth))
+            totalWeight+=getEntWeight(mesh,v,wtag);
         return totalWeight;
       }
     ~GhostFinder() {
+      apf::removeTagFromDimension(mesh,depth,0);
       mesh->destroyTag(depth);
     }
     private:
