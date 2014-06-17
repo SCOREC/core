@@ -1,4 +1,5 @@
 #include <apfPartition.h>
+#include <apf.h>
 #include <PCU.h>
 #include <stdio.h>
 #include <map>
@@ -135,14 +136,39 @@ namespace parma {
         }
       }
   };
-
-  void runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
-      std::vector<apf::MeshEntity*> next, apf::MeshTag* visited) {
+  void destroyTag(apf::Mesh* m, apf::MeshTag* t, const int dim) {
+    apf::removeTagFromDimension(m,t,dim);
+    m->destroyTag(t);
+  }
+  bool isSharedWithTarget(apf::Mesh* m,apf::MeshEntity* v, int target) {
+    if( ! m->isShared(v) ) return false;
+    apf::Copies rmts;
+    m->getRemotes(v,rmts);
+    APF_ITERATE(apf::Copies, rmts, itr) 
+      if (itr->first==target) 
+        return true;
+  }
+  apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
+      apf::MeshEntity* edge, apf::MeshEntity* vtx) {
+    apf::Downward dwnVtx;
+    int nDwnVtx = m->getDownward(edge,getDimension(m,edge)-1,dwnVtx);
+    assert(nDwnVtx==2);
+    return (dwnVtx[0] != vtx) ? dwnVtx[0] : dwnVtx[1];
+  }
+  double runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
+		std::vector<apf::MeshEntity*> next, apf::MeshTag* visited, apf::MeshTag* wtag) {
     int yes=1;
+    double weight;
+    
     for (unsigned int i=0;i<next.size();i++) {
+      weight+=getEntWeight(m,next[i],wtag);
       m->setIntTag(next[i],visited,&yes);
     }
-    for (int i=1;i<=layers;i++) {
+    int target=1;
+    for (int i=0;i<layers;i++) {
+      if (PCU_Comm_Self()==target) {
+	printf("current %d",current.size());
+      }
       for (unsigned int j=0;j<current.size();j++) {
         apf::MeshEntity* vertex = current[j];
         if (!m->isOwned(vertex))
@@ -150,24 +176,23 @@ namespace parma {
         apf::Up edges;
         m->getUp(vertex,edges);
         for (int k=0;k<edges.n;k++) {
-          apf::MeshEntity* edge = edges.e[k];
-          apf::Downward vertices;
-          int nvertices = m->getDownward(edge,getDimension(m,edge)-1,vertices);
-          assert(nvertices==2);
-          apf::MeshEntity* v = vertices[0];
-          if (v==vertex)
-            v=vertices[1];
+          apf::MeshEntity* v = getOtherVtx(m,edges.e[k],vertex);
           if (m->hasTag(v,visited)) continue;
           next.push_back(v);
-          m->setIntTag(current[i],visited,&i);
+          m->setIntTag(current[i],visited,&yes);
+	  weight+=getEntWeight(m,v,wtag);
         }
         
+      }
+      if (PCU_Comm_Self()==target) {
+	printf("next %d\n",next.size());
       }
       current=next;
       next.clear();
     }
+    return weight;
   }
-
+  /*
   bool searchBFS(apf::Mesh* m,apf::MeshEntity* start, int target, int layers,apf::MeshTag* depth) {
     apf::MeshTag* visited = m->createIntTag("visited",1);
     std::vector<apf::MeshEntity*> current;
@@ -181,27 +206,16 @@ namespace parma {
         apf::Up edges;
         m->getUp(vertex,edges);
         for (int k=0;k<edges.n;k++) {
-          apf::MeshEntity* edge = edges.e[k];
-          apf::Downward vertices;
-          int nvertices = m->getDownward(edge,getDimension(m,edge)-1,vertices);
-          assert(nvertices==2);
-          apf::MeshEntity* v = vertices[0];
-          if (v==vertex)
-            v=vertices[1];
-	  
-          if (target==0)
-            printf("owner %d target %d\n",m->getOwner(v),target);
-	  apf::Copies rmts;
-	  m->getRemotes(v,rmts);
-	  for (apf::Copies::iterator itr = rmts.begin();itr!=rmts.end();itr++) 
-	    if (itr->first==target) {
-	      apf::removeTagFromDimension(m,visited,0);
-	      m->destroyTag(visited);
-	      return true;
-	    }
-          if (m->getOwner(v)==target) {
-            apf::removeTagFromDimension(m,visited,0);
-            m->destroyTag(visited);
+          apf::MeshEntity* v = getOtherVtx(m,edges.e[k],vertex); 
+	  // The first layer of BFS tagged vtx are 
+	  // (1) owned vtx and (2) vtx edge-adjacent to !owned vtx
+	  // if the part has no owned vtx on the common boundary we need
+	  // to check the vtx adjacent to the !owned vtx to see if those 
+	  // are shared with the target part. As it is I think those are 
+	  // not visited.
+	  // i think we need to check the vertices adjacent to
+          if (isSharedWithTarget(m,v,target)) {
+            destroyTag(m,visited,0);
             return true;
           }
           if (!m->hasTag(v,depth)) continue;
@@ -214,41 +228,43 @@ namespace parma {
       current=next;
       next.clear();
     }
-    apf::removeTagFromDimension(m,visited,0);
-    m->destroyTag(visited);
+    destroyTag(m,visited,0);
     return false;
-  }
+    }*/
 
   class GhostFinder {
     public:
       GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b) 
         : mesh(m), wtag(w), layers(l), bridge(b) {
         depth = m->createIntTag("depths",1);
-        apf::MeshIterator* itr = mesh->begin(0);
-        apf::MeshEntity* v;
-        std::vector<apf::MeshEntity*> current;
-        std::vector<apf::MeshEntity*> next;
-        while ((v=mesh->iterate(itr))) {
-          if (mesh->isShared(v)&&mesh->isOwned(v))
-            next.push_back(v);
-          else if (!mesh->isOwned(v)) 
-            current.push_back(v);
-          else
-            assert(!mesh->isShared(v));
-        }
-        runBFS(mesh,layers,current,next,depth);
+        
       }
       /**
        * @brief get the weight of vertices ghosted to peer
        */
       double weight(int peer) {
-        double totalWeight=0;
+	apf::MeshIterator* itr = mesh->begin(0);
+        apf::MeshEntity* v;
+        std::vector<apf::MeshEntity*> current;
+        std::vector<apf::MeshEntity*> next;
+        while ((v=mesh->iterate(itr))) {
+	  if (isSharedWithTarget(mesh,v,peer)) {
+          if (mesh->isOwned(v))
+            next.push_back(v);
+          else
+            current.push_back(v);
+	  }
+        }
+        return runBFS(mesh,layers,current,next,depth,wtag);
+	/*
+	if (peer==0)
+	  printf("hi %d\n",peer);
         apf::MeshIterator* itr = mesh->begin(0);
         apf::MeshEntity* v;
         while ((v=mesh->iterate(itr)))
           if (mesh->hasTag(v,depth)&&searchBFS(mesh,v,peer,layers,depth))
-            totalWeight+=getEntWeight(mesh,v,wtag);
-        return totalWeight;
+	  totalWeight+=getEntWeight(mesh,v,wtag);
+	  return totalWeight;*/
       }
     ~GhostFinder() {
       apf::removeTagFromDimension(mesh,depth,0);
