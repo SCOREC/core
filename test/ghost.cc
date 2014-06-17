@@ -26,7 +26,7 @@ namespace {
     apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
     apf::MeshEntity* e;
     apf::MeshIterator* itr = m->begin(0);
-    double w = (PCU_Comm_Self() % 2);
+    double w = 1;
     while( (e = m->iterate(itr)) )
       m->setDoubleTag(e, wtag, &w);
     m->end(itr);
