@@ -33,7 +33,8 @@ void renderIntTag(apf::Mesh* m, apf::MeshTag* tag, const char* filename)
   apf::destroyNumbering(n);
 }
 
-void visit(apf::Mesh* m, apf::MeshTag* visited, apf::MeshEntity* vertex,int layer)
+void visit(apf::Mesh* m, apf::MeshTag* visited, apf::MeshEntity* vertex,
+    int layer)
 {
   int yes = layer;
   m->setIntTag(vertex, visited, &yes);

@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <sstream>
 #include <string>
-#include <unistd.h>
+#include <apfNumbering.h>
 
 namespace parma {
   template <class T> class Associative {
@@ -135,6 +135,32 @@ namespace parma {
         }
       }
   };
+
+  void renderIntTag(apf::Mesh* m, apf::MeshTag* tag,
+      const char* filename, int peer)
+  {
+    apf::Numbering* n = apf::createNumbering(m,
+        m->getTagName(tag), m->getShape(), 1);
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* v;
+    while ((v = m->iterate(it))) {
+      if (m->hasTag(v, tag)) {
+        int x;
+        m->getIntTag(v, tag, &x);
+        apf::number(n, v, 0, 0, x);
+      } else {
+        apf::number(n, v, 0, 0, 0);
+      }
+    }
+    m->end(it);
+    std::stringstream ss;
+    ss << filename
+      << '_' << PCU_Comm_Self()
+      << '_' << peer;
+    std::string s = ss.str();
+    apf::writeOneVtkFile(s.c_str(), m);
+    apf::destroyNumbering(n);
+  }
 
   void runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
       std::vector<apf::MeshEntity*> next, apf::MeshTag* visited) {
