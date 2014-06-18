@@ -500,7 +500,6 @@ bool refine(Adapt* a)
   flagNewLayerEntities(r);
   destroySplitElements(r);
   cleanSplitVerts(r);
-  snap(r);
   forgetNewEntities(r);
   double t1 = MPI_Wtime();
   print("refined %li edges in %f seconds",count,t1-t0);
