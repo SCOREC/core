@@ -184,13 +184,15 @@ namespace parma {
   }
 
   double runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
-      std::vector<apf::MeshEntity*> next, apf::MeshTag* visited,apf::MeshTag* wtag) {
+      std::vector<apf::MeshEntity*> next, apf::MeshTag* visited,
+      apf::MeshTag* wtag)
+  {
     int yes=1;
-    double weight;
+    double weight = 0;
     apf::MeshEntity* checkVertex=NULL;
     for (unsigned int i=0;i<next.size();i++) {
       checkVertex=next[0];
-      weight+=getEntWeight(m,next[i],wtag);
+      weight += getEntWeight(m,next[i],wtag);
       m->setIntTag(next[i],visited,&yes);
     }
     for (int i=1;i<=layers;i++) {
@@ -202,11 +204,12 @@ namespace parma {
           apf::MeshEntity* v = getOtherVtx(m,edges.e[k],vertex);
           if (!m->isOwned(v))
             continue;
-          if (m->hasTag(v,visited)) continue;
+          if (m->hasTag(v,visited))
+            continue;
           assert(v!=checkVertex);
           next.push_back(v);
           m->setIntTag(v,visited,&i);
-          weight+=getEntWeight(m,v,wtag);
+          weight += getEntWeight(m,v,wtag);
         } 
       }
       current=next;
