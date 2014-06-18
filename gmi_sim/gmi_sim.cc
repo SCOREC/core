@@ -106,6 +106,9 @@ static void eval(struct gmi_model* m, struct gmi_ent* e,
     GE_point((pGEdge)e, p[0], x);
     return;
   }
+  if (dim == 0) {
+    GV_point((pGVertex)e, x);
+  }
   gmi_fail("bad dimension in gmi_sim eval");
 }
 
