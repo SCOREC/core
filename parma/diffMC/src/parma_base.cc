@@ -1,77 +1,25 @@
-#include "parma_base.h"
-#include "parma_associative.h"
-#include <PCU.h>
-#include <stdio.h>
-#include <assert.h>
-#include <sstream>
-#include <string>
-#include <unistd.h>
-
-namespace parma {
-  class Sides : public Associative<int> {
+  class Balancer {
     public:
-      Sides(apf::Mesh* m) {
-        totalSides = 0;
-        init(m);
+      Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, 
+          int layersIn, int bridgeIn, double alphaIn) 
+        : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
+      {
       }
-      int total() {
-        return totalSides;
-      }
+
+      ~Balancer();
+      bool run(double maxImb);
     private:
-      int totalSides;
-      void init(apf::Mesh* m) {
-        apf::MeshEntity* s;
-        apf::MeshIterator* it = m->begin(m->getDimension()-1);
-        totalSides = 0;
-        while ((s = m->iterate(it)))
-          if (m->countUpward(s)==1 && m->isShared(s)) {
-            const int peerId = apf::getOtherCopy(m,s).first;
-            set(peerId, get(peerId)+1);
-            ++totalSides;
-          }
-        m->end(it);
-      }
+      Balancer();
+      apf::Mesh* m;
+      apf::MeshTag* w;
+      double alpha;
+      int verbose;
+      double imbalance();
+      Sides* sides;
+      Weights* weights;
+      Targets* targets;
+      Selector* selects;
   };
-
-  class ElmTargets : public Targets {
-    public:
-      ElmTargets(Sides* s, Weights* w, double alpha) {
-        init(s, w, alpha);
-      }
-      double total() {
-        return totW;
-      }
-    private:
-      double totW;
-      void init(Sides* s, Weights* w, double alpha) {
-        totW = 0;
-        const Sides::Item* side;
-        s->begin();
-        while( (side = s->iterate()) ) {
-          const int peer = side->first;
-          const double selfW = w->self();
-          const double peerW = w->get(peer);
-          if ( selfW > peerW ) {
-            const double difference = selfW - peerW;
-            double sideFraction = side->second;
-            sideFraction /= s->total();
-            double peerW = difference * sideFraction * alpha;
-            set(peer, peerW);
-            totW+=peerW;
-          }
-        }
-        s->end();
-      }
-  };
-
-  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn) 
-    : m(mIn), w(wIn), alpha(alphaIn) {
-      sides = new Sides(m);
-  }
-
-  void Balancer::setSelector(Selector* s) { selects = s; }
-  void Balancer::setWeights(Weights* w) { weights = w };
-  void Balancer::setTargets(Targets* t) { targets = t };
 
   Balancer::~Balancer() {
     delete sides;
@@ -80,7 +28,7 @@ namespace parma {
     delete selects;
   }
 
-  bool Balancer::run(double maxImb, int verbosityIn) {
+  bool Balancer::run(double maxImb) {
     const double imb = imbalance();
     if ( 0 == PCU_Comm_Self() )
       fprintf(stdout, "imbalance %.3f\n", imb);
@@ -100,3 +48,4 @@ namespace parma {
     return maxWeight / averageWeight;
   }
 }
+
