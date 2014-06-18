@@ -21,9 +21,9 @@
 
 namespace apf {
 
-typedef stk::mesh::fem::FEMMetaData StkMetaData;
-typedef stk::mesh::BulkData StkBulkData;
-typedef stk::mesh::Bucket StkBucket;
+typedef stk_classic::mesh::fem::FEMMetaData StkMetaData;
+typedef stk_classic::mesh::BulkData StkBulkData;
+typedef stk_classic::mesh::Bucket StkBucket;
 
 struct StkModel
 {
