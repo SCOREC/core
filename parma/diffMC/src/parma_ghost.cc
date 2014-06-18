@@ -148,6 +148,7 @@ namespace parma {
     APF_ITERATE(apf::Copies, rmts, itr) 
       if (itr->first==target) 
         return true;
+    return false;
   }
   apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
       apf::MeshEntity* edge, apf::MeshEntity* vtx) {
@@ -233,10 +234,10 @@ namespace parma {
         std::vector<apf::MeshEntity*> next;
         while ((v=mesh->iterate(itr))) {
           if (isSharedWithTarget(mesh,v,peer)) {
-	    if (mesh->isOwned(v))
-	      next.push_back(v);
-	    else
-	      current.push_back(v);
+            if (mesh->isOwned(v))
+              next.push_back(v);
+            else if (mesh->getOwner(v)==peer)
+              current.push_back(v);
           }
         }
         double weight = runBFS(mesh,layers,current,next,depth,wtag);
@@ -390,6 +391,7 @@ namespace parma {
         ghosts = new Ghosts(ghostFinder, sides);
         targets = new Targets(sides, weights, ghosts, alpha);
         selects = new Selector(m, w, targets); 
+	iters=0;
       }
 
       ~ParmaGhost();
@@ -409,6 +411,7 @@ namespace parma {
       Ghosts* ghosts;
       Targets* targets;
       Selector* selects;
+      int iters;
   };
 
   ParmaGhost::~ParmaGhost() {
@@ -424,9 +427,10 @@ namespace parma {
     const double imb = imbalance();
     if ( 0 == PCU_Comm_Self() )
       fprintf(stdout, "imbalance %.3f\n", imb);
-    if ( imb < maxImb ) 
+    if ( imb < maxImb) 
       return false;
     apf::Migration* plan = selects->run();
+    PCU_Debug_Print("plan size %d\n",plan->count());
     m->migrate(plan);
     return true;
   }
@@ -458,8 +462,8 @@ class GhostBalancer : public apf::Balancer {
       return ghost.run(tolerance);
     }
     virtual void balance(apf::MeshTag* weights, double tolerance) {
-      double t0 = MPI_Wtime();
-      while (runStep(weights,tolerance));
+      double t0 = MPI_Wtime(); int iters=0;
+      while (runStep(weights,tolerance)&&iters<100) {iters++;}
       double t1 = MPI_Wtime();
       if (!PCU_Comm_Self())
         printf("ghost balanced to %f in %f seconds\n", tolerance, t1-t0);
