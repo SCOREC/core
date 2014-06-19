@@ -27,12 +27,7 @@ class VertRemover
     Entity* getVert() {return vert;}
     void findEdges();
     EntityArray& getEdges() {return edges;}
-    void getOldElements(EntityArray& oldElements);
     bool didImproveQuality();
-    bool startCollapsing(Entity* e);
-    void cancelCollapse();
-    void acceptCollapse();
-    EntityArray& getNewElements() {return collapse.newElements;}
     bool tryToCollapse(Entity* e);
     bool run();
   private:
