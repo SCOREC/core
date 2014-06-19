@@ -445,7 +445,6 @@ namespace parma {
   }
 
   bool ParmaGhost::run(double maxImb) {
-    static int iter = 0;
     const double imb = imbalance();
     if ( 0 == PCU_Comm_Self() )
       fprintf(stdout, "imbalance %.3f\n", imb);
