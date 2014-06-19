@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maCoarsen.h"
 #include "maRefine.h"
+#include "maSnap.h"
 #include "maShape.h"
 #include "maBalance.h"
 #include "maLayer.h"
@@ -33,6 +34,7 @@ void adapt(Input* in)
     coarsen(a);
     midBalance(a);
     refine(a);
+    snap(a);
   }
   preventChangesToLayer(a);
   allowSplitCollapseOutsideLayer(a);

@@ -14,14 +14,14 @@
 
 namespace ma {
 
-class Refine;
+class Adapt;
 
 void transferParametricOnEdgeSplit(
     Mesh* m,
     Entity* e,
     double t,
     Vector& p);
-void snap(Refine* r);
+void snap(Adapt* a);
 void visualizeGeometricInfo(Mesh* m, const char* name);
 
 }

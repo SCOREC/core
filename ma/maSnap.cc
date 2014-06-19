@@ -8,7 +8,6 @@
  
 *******************************************************************************/
 #include "maSnap.h"
-#include "maRefine.h"
 #include "maAdapt.h"
 #include <apfCavityOp.h>
 #include <PCU.h>
@@ -97,15 +96,17 @@ static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
 class Snapper : public apf::CavityOp
 {
   public:
-    Snapper(Adapt* a):
+    Snapper(Adapt* a, Tag* t):
       apf::CavityOp(a->mesh)
     {
       adapter = a;
+      mesh = a->mesh;
+      tag = t;
       successCount = 0;
     }
     Outcome setEntity(Entity* e)
     {
-      if ( ! getFlag(adapter,e,SNAP))
+      if ( ! mesh->hasTag(e, tag))
         return SKIP;
       if ( ! requestLocality(&e,1))
         return REQUEST;
@@ -114,65 +115,78 @@ class Snapper : public apf::CavityOp
     }
     void apply()
     {
-      Mesh* m = adapter->mesh;
-      Vector original = getPosition(m,vert);
-      Vector x;
-      getSnapPoint(m,vert,x);
-      m->setPoint(vert,0,x);
+      Vector x = getPosition(mesh, vert);
+      Vector s;
+      mesh->getDoubleTag(vert, tag, &s[0]);
+      mesh->setPoint(vert, 0, s);
       Upward elements;
-      m->getAdjacent(vert,m->getDimension(),elements);
+      mesh->getAdjacent(vert, mesh->getDimension(), elements);
       bool success = true;
       for (size_t i=0; i < elements.getSize(); ++i)
-        if ( ! isElementValid(adapter,elements[i]))
-        {
-          m->setPoint(vert,0,original);
+        if ( ! isElementValid(adapter, elements[i])) {
+          mesh->setPoint(vert, 0, x);
           success = false;
           break;
         }
-      if (success) ++successCount;
-      clearFlag(adapter,vert,SNAP);
+      if (success)
+        ++successCount;
+      mesh->removeTag(vert, tag);
     }
     int successCount;
   private:
     Adapt* adapter;
+    Mesh* mesh;
+    Tag* tag;
     Entity* vert;
 };
 
-int markVertsToSnap(Refine* r)
+static bool areExactlyEqual(Vector& a, Vector& b)
 {
-  int count = 0;
-  Adapt* a = r->adapt;
-  Mesh* m = r->adapt->mesh;
-  int dim = m->getDimension();
-/* currently we ignore mid-quad vertices in the context
-   of snapping.
-   When we re-develop boundary layer snapping this will
-   be revisited */
-  for (size_t i=0; i < r->newEntities[1].getSize(); ++i)
-  {
-    Entity* v = findSplitVert(r,1,i);
-    int modelDimension = m->getModelType(m->toModel(v));
-    if (modelDimension==dim) continue;
-    setFlag(a,v,SNAP);
-    if (m->isOwned(v))
-      ++count;
-  }
-  return count;
+  return a[0] == b[0] &&
+         a[1] == b[1] &&
+         a[2] == b[2];
 }
 
-void snap(Refine* r)
+long markVertsToSnap(Adapt* a, Tag*& t)
 {
-  if ( ! r->adapt->input->shouldSnap)
+  Mesh* m = a->mesh;
+  int dim = m->getDimension();
+  t = m->createDoubleTag("ma_snap", 3);
+  Entity* v;
+  long n = 0;
+  Iterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    if (getFlag(a, v, LAYER))
+      continue;
+    int md = m->getModelType(m->toModel(v));
+    if (md == dim) continue;
+    Vector s;
+    getSnapPoint(m, v, s);
+    Vector x = getPosition(m, v);
+    if (areExactlyEqual(s, x))
+      continue;
+    m->setDoubleTag(v, t, &s[0]);
+    if (m->isOwned(v))
+      ++n;
+  }
+  return n;
+}
+
+void snap(Adapt* a)
+{
+  if ( ! a->input->shouldSnap)
     return;
   long counts[2];
   long& targetCount = counts[0];
-  targetCount = markVertsToSnap(r);
-  Snapper snapper(r->adapt);
-  snapper.applyToDimension(0);
-  counts[1] = snapper.successCount;
-  PCU_Add_Longs(counts,2);
   long& successCount = counts[1];
-  print("snapped %li of %li vertices",successCount,targetCount);
+  Tag* tag;
+  targetCount = markVertsToSnap(a, tag);
+  Snapper snapper(a, tag);
+  snapper.applyToDimension(0);
+  a->mesh->destroyTag(tag);
+  successCount = snapper.successCount;
+  PCU_Add_Longs(counts,2);
+  print("snapped %li of %li vertices", successCount, targetCount);
 }
 
 void visualizeGeometricInfo(Mesh* m, const char* name)
