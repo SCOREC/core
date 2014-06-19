@@ -16,6 +16,7 @@ add_executable(mds_test EXCLUDE_FROM_ALL mds_test.cc)
 add_executable(ma_test EXCLUDE_FROM_ALL ma_test.cc)
 add_executable(ph_test EXCLUDE_FROM_ALL ph_test.cc)
 add_executable(uniform EXCLUDE_FROM_ALL uniform.cc)
+add_executable(fixshape EXCLUDE_FROM_ALL fixshape.cc)
 add_executable(render EXCLUDE_FROM_ALL render.cc)
 add_executable(verify EXCLUDE_FROM_ALL verify.cc)
 add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
@@ -32,6 +33,7 @@ set(tests
   ma_test
   ph_test
   uniform
+  fixshape
   render
   verify
   spr_test
