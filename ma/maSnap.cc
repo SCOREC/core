@@ -125,8 +125,9 @@ class Snapper : public Operator
     {
       adapter = a;
       tag = t;
-      successCount = 0;
       shouldDig = d;
+      successCount = 0;
+      didAnything = false;
     }
     int getTargetDimension() {return 0;}
     bool shouldApply(Entity* e)
@@ -144,16 +145,27 @@ class Snapper : public Operator
     }
     void apply()
     {
-      /* either we're not digging, in which case just
-         try snapping, or we are in the phase where
-         digging is necessary, so try digging and if it
-         worked try snapping again */
-      if (( ! shouldDig) || digger.run())
-        if (trySnapping(adapter, tag, vert))
-          ++successCount;
+      bool snapped = false;
+      if (shouldDig) {
+        bool dug = digger.run();
+        if (dug) {
+          didAnything = true;
+          snapped = trySnapping(adapter, tag, vert);
+          fprintf(stderr, "digging succeeded\n");
+        } else {
+          fprintf(stderr, "digging failed\n");
+        }
+      } else {
+        snapped = trySnapping(adapter, tag, vert);
+      }
+      if (snapped) {
+        didAnything = true;
+        ++successCount;
+      }
       clearFlag(adapter, vert, SNAP);
     }
     int successCount;
+    bool didAnything;
   private:
     Adapt* adapter;
     Tag* tag;
@@ -206,14 +218,15 @@ static void markVertsToSnap(Adapt* a, Tag* t)
   m->end(it);
 }
 
-long snapOneRound(Adapt* a, Tag* t)
+bool snapOneRound(Adapt* a, Tag* t, bool shouldDig, long& successCount)
 {
   markVertsToSnap(a, t);
-  Snapper snapper(a, t, false);
+  Snapper snapper(a, t, shouldDig);
   applyOperator(a, &snapper);
   long n = snapper.successCount;
   PCU_Add_Longs(&n, 1);
-  return n;
+  successCount += n;
+  return snapper.didAnything;
 }
 
 void snap(Adapt* a)
@@ -224,8 +237,17 @@ void snap(Adapt* a)
   long targetCount = tagVertsToSnap(a, tag);
   long successCount = 0;
   long roundSuccess;
-  while ((roundSuccess = snapOneRound(a, tag)))
-    successCount += roundSuccess;
+  /* first snap all the vertices we can without digging.
+     This is fast because it uses just the elements around
+     the vertex and doesn't think much, it should also handle
+     the vast majority of vertices */
+  while (snapOneRound(a, tag, false, successCount));
+  /* all the remaining vertices now need some kind of modification
+     in order to snap.
+     Here we turn on the "try digging before snapping" flag,
+     which requires two-layer cavities so hopefully fewer vertices
+     are involved here */
+  while (snapOneRound(a, tag, true, successCount));
   a->mesh->destroyTag(tag);
   print("snapped %li of %li vertices", successCount, targetCount);
 }
