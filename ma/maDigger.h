@@ -26,10 +26,14 @@ class Digger
 {
   public:
     Digger(Adapt* a, Tag* st);
+    /* this will request the vertex and all
+       vertices adjacent to it through an edge,
+       i.e. two layers of elements. That allows
+       us to try all possible collapses in that cavity.*/
     bool setVert(Entity* v, apf::CavityOp* o);
-    bool tryToCollapse(Entity* e);
     bool run();
   private:
+    bool tryToCollapse(Entity* e);
     Adapt* adapter;
     Mesh* mesh;
     Tag* snapTag;

@@ -9,7 +9,8 @@
 *******************************************************************************/
 #include "maSnap.h"
 #include "maAdapt.h"
-#include <apfCavityOp.h>
+#include <maOperator.h>
+#include <maDigger.h>
 #include <PCU.h>
 
 namespace ma {
@@ -93,53 +94,72 @@ static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
   m->snapToModel(g,p,x);
 }
 
-class Snapper : public apf::CavityOp
+static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert)
+{
+  Mesh* mesh = adapter->mesh;
+  Vector x = getPosition(mesh, vert);
+  Vector s;
+  mesh->getDoubleTag(vert, tag, &s[0]);
+  mesh->setPoint(vert, 0, s);
+  Upward elements;
+  mesh->getAdjacent(vert, mesh->getDimension(), elements);
+  bool success = true;
+  for (size_t i=0; i < elements.getSize(); ++i)
+    if ( ! isElementValid(adapter, elements[i])) {
+      mesh->setPoint(vert, 0, x);
+      success = false;
+      break;
+    }
+  if (success) {
+    mesh->removeTag(vert, tag);
+    return true;
+  }
+  return false;
+}
+
+class Snapper : public Operator
 {
   public:
-    Snapper(Adapt* a, Tag* t):
-      apf::CavityOp(a->mesh)
+    Snapper(Adapt* a, Tag* t, bool d):
+      digger(a, t)
     {
       adapter = a;
-      mesh = a->mesh;
       tag = t;
       successCount = 0;
+      shouldDig = d;
     }
-    Outcome setEntity(Entity* e)
+    int getTargetDimension() {return 0;}
+    bool shouldApply(Entity* e)
     {
       if ( ! getFlag(adapter, e, SNAP))
-        return SKIP;
-      if ( ! requestLocality(&e,1))
-        return REQUEST;
+        return false;
       vert = e;
-      return OK;
+      return true;
+    }
+    bool requestLocality(apf::CavityOp* o)
+    {
+      if (shouldDig)
+        return digger.setVert(vert, o);
+      return o->requestLocality(&vert, 1);
     }
     void apply()
     {
-      Vector x = getPosition(mesh, vert);
-      Vector s;
-      mesh->getDoubleTag(vert, tag, &s[0]);
-      mesh->setPoint(vert, 0, s);
-      Upward elements;
-      mesh->getAdjacent(vert, mesh->getDimension(), elements);
-      bool success = true;
-      for (size_t i=0; i < elements.getSize(); ++i)
-        if ( ! isElementValid(adapter, elements[i])) {
-          mesh->setPoint(vert, 0, x);
-          success = false;
-          break;
-        }
-      if (success) {
-        ++successCount;
-        mesh->removeTag(vert, tag);
-      }
+      /* either we're not digging, in which case just
+         try snapping, or we are in the phase where
+         digging is necessary, so try digging and if it
+         worked try snapping again */
+      if (( ! shouldDig) || digger.run())
+        if (trySnapping(adapter, tag, vert))
+          ++successCount;
       clearFlag(adapter, vert, SNAP);
     }
     int successCount;
   private:
     Adapt* adapter;
-    Mesh* mesh;
     Tag* tag;
     Entity* vert;
+    Digger digger;
+    bool shouldDig;
 };
 
 static bool areExactlyEqual(Vector& a, Vector& b)
@@ -189,8 +209,8 @@ static void markVertsToSnap(Adapt* a, Tag* t)
 long snapOneRound(Adapt* a, Tag* t)
 {
   markVertsToSnap(a, t);
-  Snapper snapper(a, t);
-  snapper.applyToDimension(0);
+  Snapper snapper(a, t, false);
+  applyOperator(a, &snapper);
   long n = snapper.successCount;
   PCU_Add_Longs(&n, 1);
   return n;
