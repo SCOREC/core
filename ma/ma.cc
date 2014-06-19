@@ -34,10 +34,10 @@ void adapt(Input* in)
     coarsen(a);
     midBalance(a);
     refine(a);
-    snap(a);
   }
   preventChangesToLayer(a);
   allowSplitCollapseOutsideLayer(a);
+  snap(a);
   fixElementShapes(a);
   turnLayerToTets(a);
   postBalance(a);

@@ -263,7 +263,8 @@ namespace parma {
       Ghosts(GhostFinder* finder, Sides* sides) {
         weight = 0;
         init(finder, sides);
-        exchange();
+        exchangeGhostsFrom();
+        exchangeGhostsTo();
       }
       double self() {
         return weight;
@@ -277,20 +278,37 @@ namespace parma {
           set(side->first, finder->weight(side->first));
         sides->end(); 
       }
-    void exchange() {
-        PCU_Comm_Begin();
-        const Ghosts::Item* ghost;
-        begin();
-        while( (ghost = iterate()) ) 
-          PCU_COMM_PACK(ghost->first, ghost->second);
-        end();
-        PCU_Comm_Send();
-        while (PCU_Comm_Listen()) {
-          double otherWeight;
-          PCU_COMM_UNPACK(otherWeight);
-          weight += otherWeight;
-        }
+    void exchangeGhostsFrom() {
+      //ghosts from this part
+      PCU_Comm_Begin();
+      const Ghosts::Item* ghost;
+      begin();
+      while( (ghost = iterate()) ) 
+        PCU_COMM_PACK(ghost->first, ghost->second);
+      end();
+      PCU_Comm_Send();
+      while (PCU_Comm_Listen()) {
+        double otherWeight;
+        PCU_COMM_UNPACK(otherWeight);
+        weight += otherWeight;
       }
+    }
+    void exchangeGhostsTo() {
+      //all elements ghosted to this part
+      PCU_Comm_Begin();
+      const Ghosts::Item* ghost;
+      begin();
+      while( (ghost = iterate()) ) 
+        PCU_COMM_PACK(ghost->first, weight);
+      end();
+      PCU_Comm_Send();
+      while (PCU_Comm_Listen()) {
+        double peerGhostWeight = 0;
+        PCU_COMM_UNPACK(peerGhostWeight);
+        set(PCU_Comm_Sender(), peerGhostWeight);
+      }
+    }
+
   };
 
   class Targets : public Associative<double> {
@@ -433,7 +451,6 @@ namespace parma {
     if ( imb < maxImb) 
       return false;
     apf::Migration* plan = selects->run();
-    PCU_Debug_Print("plan size %d\n",plan->count());
     m->migrate(plan);
     return true;
   }
@@ -466,10 +483,12 @@ class GhostBalancer : public apf::Balancer {
     }
     virtual void balance(apf::MeshTag* weights, double tolerance) {
       double t0 = MPI_Wtime(); int iters=0;
-      while (runStep(weights,tolerance)&&iters<100) {iters++;}
+      while (runStep(weights,tolerance)&&iters<20) {iters++;}
       double t1 = MPI_Wtime();
       if (!PCU_Comm_Self())
         printf("ghost balanced to %f in %f seconds\n", tolerance, t1-t0);
+      if (!PCU_Comm_Self())
+        printf("number of iterations %d\n", iters);
     }
   private:
     apf::Mesh* mesh;
