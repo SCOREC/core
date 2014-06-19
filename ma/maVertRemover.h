@@ -27,7 +27,6 @@ class VertRemover
     Entity* getVert() {return vert;}
     void findEdges();
     EntityArray& getEdges() {return edges;}
-    bool didImproveQuality();
     bool tryToCollapse(Entity* e);
     bool run();
   private:
