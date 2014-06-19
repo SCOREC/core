@@ -11,7 +11,13 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
-  ma::runUniformRefinement(m);
+  ma::Input* in = ma::configureUniformRefine(m, 1);
+  if (in->shouldSnap) {
+    in->shouldSnap = false;
+    assert(in->shouldTransferParametric);
+  }
+  in->shouldFixShape = false;
+  ma::adapt(in);
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
