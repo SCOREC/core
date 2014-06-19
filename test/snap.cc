@@ -16,8 +16,8 @@ int main(int argc, char** argv)
   gmi_register_sim();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
   ma::Input* in = ma::configureIdentity(m);
-  in->maximumIterations = 1;
-  assert(in->shouldSnap);
+  in->shouldSnap = true;
+  in->shouldTransferParametric = true;
   ma::adapt(in);
   m->writeNative(argv[3]);
   m->destroyNative();
@@ -27,5 +27,4 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
 
