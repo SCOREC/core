@@ -220,6 +220,7 @@ Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
   }
   in->maximumIterations = 0;
   in->shouldFixShape = false;
+  in->shouldSnap = false;
   return in;
 }
 
