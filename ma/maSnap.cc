@@ -115,16 +115,16 @@ class Snapper : public apf::CavityOp
     }
     void apply()
     {
-      Vector original = getPosition(mesh, vert);
-      Vector x;
-      mesh->getDoubleTag(vert, tag, &x[0]);
-      mesh->setPoint(vert,0,x);
+      Vector x = getPosition(mesh, vert);
+      Vector s;
+      mesh->getDoubleTag(vert, tag, &s[0]);
+      mesh->setPoint(vert, 0, s);
       Upward elements;
       mesh->getAdjacent(vert, mesh->getDimension(), elements);
       bool success = true;
       for (size_t i=0; i < elements.getSize(); ++i)
         if ( ! isElementValid(adapter, elements[i])) {
-          mesh->setPoint(vert, 0, original);
+          mesh->setPoint(vert, 0, x);
           success = false;
           break;
         }
@@ -162,11 +162,10 @@ long markVertsToSnap(Adapt* a, Tag*& t)
     if (md == dim) continue;
     Vector s;
     getSnapPoint(m, v, s);
-    Vector x;
-    m->getPoint(v, 0, x);
+    Vector x = getPosition(m, v);
     if (areExactlyEqual(s, x))
       continue;
-    m->setDoubleTag(v, t, &x[0]);
+    m->setDoubleTag(v, t, &s[0]);
     if (m->isOwned(v))
       ++n;
   }
