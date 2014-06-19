@@ -236,7 +236,6 @@ void snap(Adapt* a)
   Tag* tag;
   long targetCount = tagVertsToSnap(a, tag);
   long successCount = 0;
-  long roundSuccess;
   /* first snap all the vertices we can without digging.
      This is fast because it uses just the elements around
      the vertex and doesn't think much, it should also handle
