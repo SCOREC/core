@@ -392,4 +392,23 @@ bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex)
   return false;
 }
 
+bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
+{
+  Adapt* adapter = collapse.adapt;
+  if ( ! collapse.setEdge(edge))
+    return false;
+  if ( ! collapse.checkClass())
+    return false;
+  if ( ! collapse.checkTopo())
+    return false;
+  if ( ! getFlag(adapter, vert, COLLAPSE)) {
+    collapse.unmark();
+    return false;
+  }
+  if (collapse.vertToCollapse != vert)
+    std::swap(collapse.vertToCollapse, collapse.vertToKeep);
+  assert(collapse.vertToCollapse == vert);
+  return true;
+}
+
 }
