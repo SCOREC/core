@@ -46,6 +46,7 @@ set(SOURCES
   maDoubleSplitCollapse.cc
   maShortEdgeRemover.cc
   maVertRemover.cc
+  maDigger.cc
   maBalance.cc
   maLayer.cc
   maMap.cc)

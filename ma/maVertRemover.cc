@@ -9,7 +9,6 @@
 *******************************************************************************/
 #include "maVertRemover.h"
 #include "maAdapt.h"
-#include "maShape.h"
 
 namespace ma {
 
