@@ -451,10 +451,6 @@ namespace parma {
       fprintf(stdout, "imbalance %.3f\n", imb);
     if ( imb < maxImb) 
       return false;
-    std::stringstream ss;
-    ss << iter++ << "i";
-    std::string s = ss.str();
-    apf::writeVtkFiles(s.c_str(), m);
     apf::Migration* plan = selects->run();
     m->migrate(plan);
     return true;
