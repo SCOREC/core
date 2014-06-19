@@ -18,10 +18,8 @@ namespace parma {
         return plan;
       }
     private:
-      apf::Mesh* mesh;
       apf::MeshTag* vtag;
-      apf::MeshTag* wtag;
-      Selector();
+      VtxSelector();
       double add(apf::MeshEntity* vtx, const int maxAdjElm, 
           const int destPid, apf::Migration* plan) {
         double weight = 0;

@@ -2,20 +2,21 @@
 #define PARMA_BASE_H
 #include <apfMesh.h>
 #include "parma_associative.h"
-#include "parma_sides.h"
-#include "parma_weights.h"
-#include "parma_targets.h"
-#include "parma_selector.h"
 
 namespace parma {
+  class Sides;
+  class Weights;
+  class Targets;
+  class Selector;
   class Balancer {
     public:
       Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn);
+      void setSides(Sides* s);
       void setSelector(Selector* s);
       void setWeights(Weights* w);
       void setTargets(Targets* t);
       ~Balancer();
-      bool run(double maxImb, int verbosity);
+      bool run(double maxImb, int verbosity=0);
     private:
       Balancer();
       apf::Mesh* m;

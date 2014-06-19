@@ -2,7 +2,7 @@
 #include <assert.h>
 
 namespace parma {
-  Associative::Associative() {
+  template <class T> Associative<T>::Associative() {
     iteratorActive = false;
   }
   void Associative::begin() {
@@ -10,7 +10,7 @@ namespace parma {
     iteratorActive = true;
     cItr = c.begin();
   }
-  const Item* Associative::iterate() {
+  const Associative::Item* Associative::iterate() {
     assert(iteratorActive);
     if( cItr == c.end() ) 
       return NULL;
@@ -41,4 +41,4 @@ namespace parma {
     std::string str = s.str();
     fprintf(stdout, "%s\n", str.c_str());
   }
-};
+}

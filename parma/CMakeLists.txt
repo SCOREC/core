@@ -27,15 +27,26 @@ configure_file(
   )
 
 SET(DIFFMC_SOURCES  
-  diffMC/src/parma_diffmc.cc 
-  diffMC/src/parma_commons.cc 
-  diffMC/src/parma_partinfo.cc 
-  diffMC/src/parma_dcpart.cc 
-  diffMC/src/parma_imbinfo.cc 
-  diffMC/src/parma_priority.cc 
-  diffMC/src/parma_hist.cc 
-  diffMC/src/parma_centroid.cc 
-  diffMC/src/parma_ghost.cc 
+  diffMC/src/parma_base.cc
+  diffMC/src/parma_centroid.cc
+  diffMC/src/parma_commons.cc
+  diffMC/src/parma_dcpart.cc
+  diffMC/src/parma_diffmc.cc
+  diffMC/src/parma_elmBdrySides.cc
+  diffMC/src/parma_entWeights.cc
+  diffMC/src/parma_ghost.cc
+  diffMC/src/parma_ghostTargets.cc
+  diffMC/src/parma_hist.cc
+  diffMC/src/parma_histDriver.cc
+  diffMC/src/parma_hpsBalancer.cc
+  diffMC/src/parma_hpsSelector.cc
+  diffMC/src/parma_imbinfo.cc
+  diffMC/src/parma_ownedVtxWeights.cc
+  diffMC/src/parma_partinfo.cc
+  diffMC/src/parma_priority.cc
+  diffMC/src/parma_vtxBalancer.cc
+  diffMC/src/parma_vtxSelector.cc
+  diffMC/src/parma_weightTargets.cc
   )
 
 SET(RIB_SOURCES  

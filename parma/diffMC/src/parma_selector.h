@@ -6,11 +6,10 @@
 namespace parma {
   class Selector {
     public:
-      Selector(apf::Mesh* m, apf::MeshTag* w);
+      Selector(apf::Mesh* m, apf::MeshTag* w) : mesh(m), wtag(w) {}
       virtual apf::Migration* run(Targets* tgts)=0;
     private:
       apf::Mesh* mesh;
-      apf::MeshTag* vtag;
       apf::MeshTag* wtag;
       Selector();
   };

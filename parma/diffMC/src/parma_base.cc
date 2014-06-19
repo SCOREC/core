@@ -1,26 +1,15 @@
-  class Balancer {
-    public:
-      Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, 
-          int layersIn, int bridgeIn, double alphaIn) 
-        : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
-      {
-      }
+#include "parma_base.h"
+#include "parma_sides.h"
+#include "parma_weights.h"
+#include "parma_targets.h"
+#include "parma_selector.h"
 
-      ~Balancer();
-      bool run(double maxImb);
-    private:
-      Balancer();
-      apf::Mesh* m;
-      apf::MeshTag* w;
-      double alpha;
-      int verbose;
-      double imbalance();
-      Sides* sides;
-      Weights* weights;
-      Targets* targets;
-      Selector* selects;
-  };
-
+namespace parma {
+  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, 
+      int layersIn, int bridgeIn, double alphaIn) 
+    : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
+  {
+  }
   Balancer::~Balancer() {
     delete sides;
     delete weights;

@@ -14,7 +14,6 @@ namespace parma {
       Targets();
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
-  Targets* makeHpsTargets(Sides* s, Weights* w, double alpha); //FIXME 
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghost*g, double alpha);
 }
 #endif
