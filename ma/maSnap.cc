@@ -106,7 +106,7 @@ class Snapper : public apf::CavityOp
     }
     Outcome setEntity(Entity* e)
     {
-      if ( ! mesh->hasTag(e, tag))
+      if ( ! getFlag(adapter, e, SNAP))
         return SKIP;
       if ( ! requestLocality(&e,1))
         return REQUEST;
@@ -128,9 +128,11 @@ class Snapper : public apf::CavityOp
           success = false;
           break;
         }
-      if (success)
+      if (success) {
         ++successCount;
-      mesh->removeTag(vert, tag);
+        mesh->removeTag(vert, tag);
+      }
+      clearFlag(adapter, vert, SNAP);
     }
     int successCount;
   private:
@@ -147,7 +149,7 @@ static bool areExactlyEqual(Vector& a, Vector& b)
          a[2] == b[2];
 }
 
-long markVertsToSnap(Adapt* a, Tag*& t)
+long tagVertsToSnap(Adapt* a, Tag*& t)
 {
   Mesh* m = a->mesh;
   int dim = m->getDimension();
@@ -169,6 +171,28 @@ long markVertsToSnap(Adapt* a, Tag*& t)
     if (m->isOwned(v))
       ++n;
   }
+  PCU_Add_Longs(&n, 1);
+  return n;
+}
+
+static void markVertsToSnap(Adapt* a, Tag* t)
+{
+  Mesh* m = a->mesh;
+  Iterator* it = m->begin(0);
+  Entity* v;
+  while ((v = m->iterate(it)))
+    if (m->hasTag(v, t))
+      setFlag(a, v, SNAP);
+  m->end(it);
+}
+
+long snapOneRound(Adapt* a, Tag* t)
+{
+  markVertsToSnap(a, t);
+  Snapper snapper(a, t);
+  snapper.applyToDimension(0);
+  long n = snapper.successCount;
+  PCU_Add_Longs(&n, 1);
   return n;
 }
 
@@ -176,16 +200,13 @@ void snap(Adapt* a)
 {
   if ( ! a->input->shouldSnap)
     return;
-  long counts[2];
-  long& targetCount = counts[0];
-  long& successCount = counts[1];
   Tag* tag;
-  targetCount = markVertsToSnap(a, tag);
-  Snapper snapper(a, tag);
-  snapper.applyToDimension(0);
+  long targetCount = tagVertsToSnap(a, tag);
+  long successCount = 0;
+  long roundSuccess;
+  while ((roundSuccess = snapOneRound(a, tag)))
+    successCount += roundSuccess;
   a->mesh->destroyTag(tag);
-  successCount = snapper.successCount;
-  PCU_Add_Longs(counts,2);
   print("snapped %li of %li vertices", successCount, targetCount);
 }
 

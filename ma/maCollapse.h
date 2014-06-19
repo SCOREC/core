@@ -51,6 +51,7 @@ class Collapse
 };
 
 bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex);
+bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert);
 
 }
 

@@ -30,32 +30,10 @@ void VertRemover::findEdges()
   mesh->getAdjacent(vert,1,edges);
 }
 
-bool VertRemover::didImproveQuality()
-{
-  EntityArray oldElements;
-  collapse.getOldElements(oldElements);
-  EntityArray& newElements = collapse.newElements;
-  double oldQuality = getWorstQuality(adapter,oldElements);
-  double newQuality = getWorstQuality(adapter,newElements);
-  return newQuality > oldQuality;
-}
-
 bool VertRemover::tryToCollapse(Entity* e)
 {
-  if ( ! collapse.setEdge(e))
+  if (!setupCollapse(collapse, e, vert))
     return false;
-  if ( ! collapse.checkClass())
-    return false;
-  if ( ! collapse.checkTopo())
-    return false;
-  if ( ! getFlag(adapter,vert,COLLAPSE))
-  {
-    collapse.unmark();
-    return false;
-  }
-  if (collapse.vertToCollapse != vert)
-    std::swap(collapse.vertToCollapse,collapse.vertToKeep);
-  assert(collapse.vertToCollapse==vert);
   double oldQuality = collapse.getOldQuality();
   if ( ! collapse.tryThisDirection(oldQuality))
     return false;
