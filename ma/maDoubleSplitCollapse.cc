@@ -44,11 +44,7 @@ bool DoubleSplitCollapse::tryBothCollapses(Entity* e)
     return false;
   if ( ! collapse.checkTopo())
     return false;
-  if (collapse.tryThisDirection(oldQuality))
-    return true;
-  if ( ! getFlag(getAdapt(),collapse.vertToKeep,COLLAPSE))
-    return false;
-  return collapse.tryThisDirection(oldQuality);
+  return collapse.tryBothDirections(oldQuality);
 }
 
 void DoubleSplitCollapse::accept()
