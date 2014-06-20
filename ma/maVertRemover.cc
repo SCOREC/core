@@ -26,7 +26,7 @@ void VertRemover::setVert(Entity* v)
 
 void VertRemover::findEdges()
 {
-  mesh->getAdjacent(vert,1,edges);
+  mesh->getUp(vert,edges);
 }
 
 bool VertRemover::tryToCollapse(Entity* e)
@@ -42,8 +42,8 @@ bool VertRemover::tryToCollapse(Entity* e)
 
 bool VertRemover::run()
 {
-  for (size_t i=0; i < edges.getSize(); ++i)
-    if (tryToCollapse(edges[i]))
+  for (int i = 0; i < edges.n; ++i)
+    if (tryToCollapse(edges.e[i]))
       return true;
   return false;
 }
