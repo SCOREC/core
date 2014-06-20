@@ -43,55 +43,117 @@ namespace parma {
       }
   };
 
-  bool canSplit(Weights& weights, double tgtImb) {
-    //compute the number of empty parts
-    //compute the number of empty parts needed to split parts with an 
-    // imbalance greater than tgtImb s.t. their imbalance is less than
-    // tgtImb
-    //if ( number of empty parts >= number of parts neeeded ) 
-    //  return true
-    //else 
-    //  return false
+  int numSplits(Weights& w, double tgtWeight) {
+    return static_cast<int>(ciel(w.self()/tgtWeight));
+  }
+
+  int isEmpty(Weights& w) {
+    return (w.self() == 0) ? 1 : 0; //FIXME - dangerous comparison
+  }
+
+  int numHeavy(Weights& w, double tgtWeight) {
+    int splits = numSplits(w, tgtWeight);
+    PCU_Add_Ints(&splits, 1);
+    return splits;
+  }
+
+  int numEmpty(Weights& w) {
+    int empty = isEmpty(w);
+    PCU_Add_Ints(&empty, 1);
+    return empty;
+  }
+
+  bool canSplit(Weights& w, double tgt) {
+    if ( numHeavy(w, tgt) > numEmpty(w) )
+      return false;
+    else 
+      return true;
+  }
+
+  double avgWeight(Weights* w) {
+    double avg = w->self();
+    PCU_Add_Doubles(&avg, 1);
+    return avg/PCU_Comm_Peers();
+  }
+
+  double maxWeight(Weights* w) {
+    double max = w->self();
+    PCU_Max_Doubles(&max, 1);
+    return max;
   }
 
   double imbalance(Weights* w) {
-    double maxImb = 0;
-    // maxImb = max weight / averge weight
-    return maxImb;
+    return max(w)/avgWeight(w);
   }
 
   double chi(apf::Mesh* m, Sides* s, Weights* w) {
-    double testImb = imbalance(w);
+    double testW = imbalance(w)*avgWeight(w);
     double step = 0.2;
     bool splits = false;
     do {
       testImb -= step;
-      MergeTargets mergeTargets(sides, weights, testImb);
+      MergeTargets mergeTargets(sides, weights, testW);
       Migration* plan = selectMerges(m, mergeTargets);
       MergeWeights mergeWeights(m, w, sides, plan);
-      splits = canSplit(mergeWeights, testImb);
+      splits = canSplit(mergeWeights, testW);
       delete plan; // not migrating
     } while ( splits );
     return testImb;
   }
 
-  void split(Weights& weights, double tgtImb, apf::Migration* plan) {
+  void split(Weights& weights, double tgt, apf::Migration* plan) {
     const int partId = PCU_Comm_Self();
-    int type = 0; // { -1 if empty part, 1 if heavy part, 0 o.w.}
-    int needed = 0;// p[1] = number of empty parts needed by this (heavy) part to reach tgtImb
-    int payload[3] = {type, needed, partId};
-    // MPI_Exscan with custom type and operator
-    // see http://sbel.wisc.edu/Courses/ME964/2012/Lectures/lecture0419.pdf
-    // custom operator http://www.mcs.anl.gov/research/projects/mpi/mpi-standard/mpi-report-1.1/node80.htm
-    // ---write pseudo code for operator----
-    // ---add elements to plan if assignment---
+    int numSplit = numSplits(w, tgt);
+    int empty = isEmpty(w);
+    assert(!(numSplit && empty));
+    int hl[2] = {numSplit, empty};
+    //number the heavies and empties
+    PCU_Exscan_Ints(hl, 2);
+    //send heavy part ids to brokers
+    PCU_Comm_Begin();
+    for(int i=0; i<numSplit; i++)
+      PCU_COMM_PACK(hl[0]+i, partId);
+    PCU_Comm_Send();
+    int heavyPartId = 0;
+    int count = 0;
+    while(PCU_Comm_Listen()) {
+      count++;
+      PCU_COMM_UNPACK(heavyPartId);
+    }
+    assert(count==1);
+    //send empty part ids to brokers
+    PCU_Comm_Begin();
+    if ( empty )
+      PCU_COMM_PACK(hl[1], partId); 
+    PCU_Comm_Send();
+    int emptyPartId = -1;
+    count = 0;
+    while(PCU_Comm_Listen()) {
+      count++;
+      PCU_COMM_UNPACK(emptyPartId);
+    }
+    assert(count==1);
+    //brokers send empty part assignment to heavies
+    PCU_Comm_Begin();
+    if ( emptyPartId != -1 )
+      PCU_COMM_PACK(heavyPartId, emptyPartId); 
+    PCU_Comm_Send();
+    vector<int> tgtEmpties;
+    while(PCU_Comm_Listen()) {
+      int tgtPartId = 0;
+      PCU_COMM_UNPACK(emptyPartId);
+      tgtEmpties.push_back(tgtPartId);
+    }
+    assert( numSplit && tgtEmpties.size() );
+    //run async rib 
+    //assign rib blocks to tgtEmpties 
   }
 
-  void hps(apf::Mesh* m, Sides* s, Weights* w, double imb) {
-    MergeTargets mergeTargets(sides, weights, imb);
+  void hps(apf::Mesh* m, Sides* s, Weights* w, double tgt) {
+    MergeTargets mergeTargets(sides, weights, tgt);
     Migration* plan = selectMerges(m, mergeTargets);
     MergeWeights mergeWeights(m, w, sides, plan);
-    split(mergeWeights, imb, plan);
+    split(mergeWeights, tgt, plan);
     m->migrate(plan);
   }
 
@@ -105,8 +167,8 @@ namespace parma {
       void run(apf::MeshTag* weights, double tolerance) {
         Sides* sides = makeElmBdrySides(m);
         Weights* weights = makeEntWeights(m, w, sides, m->getDimension());
-        double imb = chi(m, sides, weights);
-        hps(m, sides, weights, imb);
+        double tgt = chi(m, sides, weights);
+        hps(m, sides, weights, tgt);
       }
       virtual void balance(apf::MeshTag* weights, double tolerance) {
         double t0 = MPI_Wtime();
