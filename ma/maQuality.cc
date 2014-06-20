@@ -64,6 +64,7 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
 
 double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
+  assert(n);
   ShapeHandler* sh = a->shape;
   double worst = 1;
   for (size_t i=0; i < n; ++i)

@@ -33,7 +33,6 @@ bool Collapse::requestLocality(apf::CavityOp* o)
 bool Collapse::tryThisDirection(double qualityToBeat)
 {
   assert( ! adapt->mesh->isShared(vertToCollapse));
-  computeElementSets();
   rebuildElements();
   if ( ! checkValidity(qualityToBeat))
     return false;
@@ -48,11 +47,13 @@ bool Collapse::tryThisDirection(double qualityToBeat)
 
 bool Collapse::tryBothDirections(double qualityToBeat)
 {
+  computeElementSets();
   if (tryThisDirection(qualityToBeat))
     return true;
   if ( ! getFlag(adapt,vertToKeep,COLLAPSE))
     return false;
   std::swap(vertToKeep,vertToCollapse);
+  computeElementSets();
   return tryThisDirection(qualityToBeat);
 }
 
@@ -296,6 +297,7 @@ void Collapse::computeElementSets()
 
 void Collapse::rebuildElements()
 {
+  assert(elementsToKeep.size());
   newElements.setSize(elementsToKeep.size());
   cavity.beforeBuilding();
   size_t ni=0;
@@ -342,7 +344,9 @@ void Collapse::cancel()
 void Collapse::getOldElements(EntityArray& oldElements)
 {
   EntitySet& toCollapse = elementsToCollapse;
+  assert(toCollapse.size());
   EntitySet& toKeep = elementsToKeep;
+  assert(toKeep.size());
   oldElements.setSize(toCollapse.size() + toKeep.size());
   size_t k=0;
   APF_ITERATE(EntitySet,toCollapse,it)
@@ -408,6 +412,7 @@ bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
   if (collapse.vertToCollapse != vert)
     std::swap(collapse.vertToCollapse, collapse.vertToKeep);
   assert(collapse.vertToCollapse == vert);
+  collapse.computeElementSets();
   return true;
 }
 
