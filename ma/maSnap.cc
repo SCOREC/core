@@ -9,8 +9,8 @@
 *******************************************************************************/
 #include "maSnap.h"
 #include "maAdapt.h"
-#include <maOperator.h>
-#include <maDigger.h>
+#include "maOperator.h"
+#include "maSnapper.h"
 #include <PCU.h>
 
 namespace ma {
@@ -94,38 +94,14 @@ static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
   m->snapToModel(g,p,x);
 }
 
-static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert)
-{
-  Mesh* mesh = adapter->mesh;
-  Vector x = getPosition(mesh, vert);
-  Vector s;
-  mesh->getDoubleTag(vert, tag, &s[0]);
-  mesh->setPoint(vert, 0, s);
-  Upward elements;
-  mesh->getAdjacent(vert, mesh->getDimension(), elements);
-  bool success = true;
-  for (size_t i=0; i < elements.getSize(); ++i)
-    if ( ! isElementValid(adapter, elements[i])) {
-      mesh->setPoint(vert, 0, x);
-      success = false;
-      break;
-    }
-  if (success) {
-    mesh->removeTag(vert, tag);
-    return true;
-  }
-  return false;
-}
-
-class Snapper : public Operator
+class SnapAll : public Operator
 {
   public:
-    Snapper(Adapt* a, Tag* t, bool d):
-      digger(a, t)
+    SnapAll(Adapt* a, Tag* t, bool simple):
+      snapper(a, t, simple)
     {
       adapter = a;
       tag = t;
-      shouldDig = d;
       successCount = 0;
       didAnything = false;
     }
@@ -139,29 +115,14 @@ class Snapper : public Operator
     }
     bool requestLocality(apf::CavityOp* o)
     {
-      if (shouldDig)
-        return digger.setVert(vert, o);
-      return o->requestLocality(&vert, 1);
+      return snapper.setVert(vert, o);
     }
     void apply()
     {
-      bool snapped = false;
-      if (shouldDig) {
-        bool dug = digger.run();
-        if (dug) {
-          didAnything = true;
-          snapped = trySnapping(adapter, tag, vert);
-          fprintf(stderr, "digging succeeded\n");
-        } else {
-          fprintf(stderr, "digging failed\n");
-        }
-      } else {
-        snapped = trySnapping(adapter, tag, vert);
-      }
-      if (snapped) {
-        didAnything = true;
+      bool snapped = snapper.run();
+      didAnything = didAnything || snapped || snapper.dug;
+      if (snapped)
         ++successCount;
-      }
       clearFlag(adapter, vert, SNAP);
     }
     int successCount;
@@ -170,8 +131,7 @@ class Snapper : public Operator
     Adapt* adapter;
     Tag* tag;
     Entity* vert;
-    Digger digger;
-    bool shouldDig;
+    Snapper snapper;
 };
 
 static bool areExactlyEqual(Vector& a, Vector& b)
@@ -218,15 +178,15 @@ static void markVertsToSnap(Adapt* a, Tag* t)
   m->end(it);
 }
 
-bool snapOneRound(Adapt* a, Tag* t, bool shouldDig, long& successCount)
+bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   markVertsToSnap(a, t);
-  Snapper snapper(a, t, shouldDig);
-  applyOperator(a, &snapper);
-  long n = snapper.successCount;
+  SnapAll op(a, t, isSimple);
+  applyOperator(a, &op);
+  long n = op.successCount;
   PCU_Add_Longs(&n, 1);
   successCount += n;
-  return snapper.didAnything;
+  return PCU_Or(op.didAnything);
 }
 
 void snap(Adapt* a)
@@ -240,13 +200,13 @@ void snap(Adapt* a)
      This is fast because it uses just the elements around
      the vertex and doesn't think much, it should also handle
      the vast majority of vertices */
-  while (snapOneRound(a, tag, false, successCount));
+  while (snapOneRound(a, tag, true, successCount));
   /* all the remaining vertices now need some kind of modification
      in order to snap.
      Here we turn on the "try digging before snapping" flag,
      which requires two-layer cavities so hopefully fewer vertices
      are involved here */
-  while (snapOneRound(a, tag, true, successCount));
+  while (snapOneRound(a, tag, false, successCount));
   a->mesh->destroyTag(tag);
   print("snapped %li of %li vertices", successCount, targetCount);
 }

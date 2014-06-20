@@ -82,9 +82,9 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n, Entity** worstEnt)
   return worst;
 }
 
-double getWorstQuality(Adapt* a, EntityArray& e)
+double getWorstQuality(Adapt* a, EntityArray& e, Entity** worstEnt)
 {
-  return getWorstQuality(a,&(e[0]),e.getSize());
+  return getWorstQuality(a, &(e[0]), e.getSize(), worstEnt);
 }
 
 /* applies the same measure as measureTetQuality
