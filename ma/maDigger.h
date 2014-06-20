@@ -38,7 +38,7 @@ class Digger
     Mesh* mesh;
     Tag* snapTag;
     Entity* vert;
-    EntityArray edges;
+    apf::Up edges;
     Collapse collapse;
 };
 

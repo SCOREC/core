@@ -25,15 +25,15 @@ class VertRemover
     void Init(Adapt* a);
     void setVert(Entity* v);
     Entity* getVert() {return vert;}
+    apf::Up& getEdges() {return edges;}
     void findEdges();
-    EntityArray& getEdges() {return edges;}
     bool tryToCollapse(Entity* e);
     bool run();
   private:
     Adapt* adapter;
     Mesh* mesh;
     Entity* vert;
-    EntityArray edges;
+    apf::Up edges;
     Collapse collapse;
 };
 

@@ -44,14 +44,14 @@ bool ShortEdgeRemover::requestLocality(apf::CavityOp* o)
   if (mesh->isShared(verts[0])||mesh->isShared(verts[1]))
     return o->requestLocality(verts,2);
   findEdges();
-  EntityArray* edges[2] = { & (vertRemovers[0].getEdges()),
-                            & (vertRemovers[1].getEdges()) };
-  EntityArray otherVerts(edges[0]->getSize() + edges[1]->getSize() - 2);
+  apf::Up* edges[2] = { & (vertRemovers[0].getEdges()),
+                        & (vertRemovers[1].getEdges()) };
+  EntityArray otherVerts(edges[0]->n + edges[1]->n - 2);
   size_t k=0;
   for (int i=0; i < 2; ++i)
-    for (size_t j=0; j < edges[i]->getSize(); ++j)
+    for (int j=0; j < edges[i]->n; ++j)
     {
-      Entity* e = (*(edges[i]))[j];
+      Entity* e = edges[i]->e[j];
       if (e == edge) continue;
       otherVerts[k++] = getEdgeVertOppositeVert(mesh,e,verts[i]);
     }

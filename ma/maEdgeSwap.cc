@@ -281,14 +281,14 @@ class EdgeSwap2D : public EdgeSwap
     virtual ~EdgeSwap2D() {}
     void findOldFaces()
     {
-      Upward faces;
-      mesh->getAdjacent(edge,2,faces);
+      apf::Up faces;
+      mesh->getUp(edge,faces);
       /* filter out mesh faces in model region 
          in the case of 2D embedded in 3D */
-      size_t n=0;
-      for (size_t i=0; i < faces.getSize(); ++i)
-        if (isOnModelFace(mesh,faces[i]))
-          oldFaces[n++]=faces[i];
+      int n = 0;
+      for (int i = 0; i < faces.n; ++i)
+        if (isOnModelFace(mesh,faces.e[i]))
+          oldFaces[n++]=faces.e[i];
     }
     void findQuad()
     {

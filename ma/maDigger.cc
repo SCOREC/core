@@ -27,8 +27,8 @@ bool Digger::setVert(Entity* v, apf::CavityOp* o)
   vert = v;
   if (!o->requestLocality(&vert, 1))
     return false;
-  mesh->getAdjacent(vert,1,edges);
-  return o->requestLocality(&edges[0], edges.getSize());
+  mesh->getUp(vert,edges);
+  return o->requestLocality(&edges.e[0], edges.n);
 }
 
 bool Digger::tryToCollapse(Entity* e)
@@ -55,15 +55,15 @@ static void sortEdges(
     Mesh* mesh,
     Tag* snapTag,
     Entity* vert,
-    EntityArray& edges,
+    apf::Up& edges,
     Map& map)
 {
   Vector x = getPosition(mesh, vert);
   Vector s;
   mesh->getDoubleTag(vert, snapTag, &s[0]);
   Vector snapVector = s - x;
-  for (size_t i = 0; i < edges.getSize(); ++i) {
-    Entity* e = edges[i];
+  for (int i = 0; i < edges.n; ++i) {
+    Entity* e = edges.e[i];
     Entity* ov = apf::getEdgeVertOppositeVert(mesh, e, vert);
     Vector ox = getPosition(mesh, ov);
     Vector edgeVector = ox - x;
