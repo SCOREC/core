@@ -8,7 +8,6 @@ namespace parma {
 struct Compare
 {
   apf::Vector3 normal;
-  double median;
   bool operator()(Body* a, Body* b)
   {
     return (a->point * normal) < (b->point * normal);
