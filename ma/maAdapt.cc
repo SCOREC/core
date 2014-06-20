@@ -144,8 +144,7 @@ DeleteCallback::~DeleteCallback()
 
 bool isElementValid(Adapt* a, Entity* e)
 {
-  return measureElementQuality(a->mesh,a->sizeField,e)
-       > a->input->validQuality;
+  return a->shape->getQuality(e) > a->input->validQuality;
 }
 
 bool checkFlagConsistency(Adapt* a, int dimension, int flag)
