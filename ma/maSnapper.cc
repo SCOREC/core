@@ -9,7 +9,7 @@
 *******************************************************************************/
 #include "maSnapper.h"
 #include "maAdapt.h"
-#include "maShape.h"
+#include "maShapeHandler.h"
 #include <apfCavityOp.h>
 
 namespace ma {
@@ -43,8 +43,19 @@ bool Snapper::setVert(Entity* v, apf::CavityOp* o)
   return o->requestLocality(&ovs.e[0], ovs.n);
 }
 
+static void collectBadElements(Adapt* a, Upward& es, apf::Up& bes)
+{
+  bes.n = 0;
+  for (size_t i = 0; i < es.getSize(); ++i) {
+    double quality = a->shape->getQuality(es[i]);
+    if (quality < a->input->validQuality)
+      bes.e[bes.n++] = es[i];
+  }
+  assert(bes.n < (int)(sizeof(bes.e) / sizeof(Entity*)));
+}
+
 static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
-    Entity*& worstElement)
+    apf::Up& badElements)
 {
   Mesh* mesh = adapter->mesh;
   Vector x = getPosition(mesh, vert);
@@ -54,13 +65,11 @@ static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
   mesh->setPoint(vert, 0, s);
   Upward elements;
   mesh->getAdjacent(vert, mesh->getDimension(), elements);
-  Entity* worst;
 /* check resulting cavity */
-  double quality = getWorstQuality(adapter, elements, &worst);
-  if (quality < adapter->input->validQuality) {
+  collectBadElements(adapter, elements, badElements);
+  if (badElements.n) {
     /* not ok, put the vertex back where it was */
     mesh->setPoint(vert, 0, x);
-    worstElement = worst;
     return false;
   } else {
     /* ok, take off the snap tag */
@@ -69,50 +78,12 @@ static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
   }
 }
 
-/* when simple snapping fails, we identify the worst element
-   (most inside-out) and try to push through it by collapsing
-   it. This is done by choosing one edge on that element from
-   the snapping vertex and collapsing the opposite vertex
-   into the snapping vertex.
-   The edge is chosen to be the one most aligned with the
-   desired snap vector */
-
-static Entity* pickEdgeToDig(
-    Mesh* mesh,
-    Tag* snapTag,
-    Entity* vert,
-    Entity* worstElement)
-{
-  Vector x = getPosition(mesh, vert);
-  Vector s;
-  mesh->getDoubleTag(vert, snapTag, &s[0]);
-  Vector snapVector = s - x;
-  Downward es;
-  int ne = mesh->getDownward(worstElement, 1, es);
-  double bestDot = 0;
-  Entity* edge = 0;
-  for (int i = 0; i < ne; ++i) {
-    Entity* vs[2];
-    mesh->getDownward(es[i], 0, vs);
-    if (vs[0] != vert)
-      std::swap(vs[0], vs[1]);
-    if (vs[0] != vert)
-      continue;
-    Vector ox = getPosition(mesh, vs[1]);
-    Vector edgeVector = ox - x;
-    double dot = edgeVector * snapVector;
-    if ((!edge) || (dot > bestDot)) {
-      bestDot = dot;
-      edge = es[i];
-    }
-  }
-  return edge;
-}
-
-static bool tryDigging(Adapt* adapter, Collapse& collapse,
+static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse,
     Entity* e, Entity* vert)
 {
   Mesh* mesh = adapter->mesh;
+  assert(mesh->getType(e) == EDGE);
+  assert(mesh->getType(vert) == VERT);
   Entity* ov = apf::getEdgeVertOppositeVert(mesh, e, vert);
   if (!setupCollapse(collapse, e, ov))
     return false;
@@ -123,20 +94,35 @@ static bool tryDigging(Adapt* adapter, Collapse& collapse,
   return true;
 }
 
+static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
+    apf::Up& badElements)
+{
+  Mesh* m = a->mesh;
+  for (int i = 0; i < badElements.n; ++i) {
+    Entity* elem = badElements.e[i];
+    Downward edges;
+    int nedges = m->getDownward(elem, 1, edges);
+    for (int j = 0; j < nedges; ++j)
+      if (isInClosure(m, edges[j], v))
+        if (tryDiggingEdge(a, c, edges[j], v))
+          return true;
+  }
+  return false;
+}
+
 bool Snapper::run()
 {
   dug = false;
-  Entity* worstElement;
-  bool ok = trySnapping(adapter, snapTag, vert, worstElement);
+  apf::Up badElements;
+  bool ok = trySnapping(adapter, snapTag, vert, badElements);
   if (isSimple)
     return ok;
-  if (!ok) {
-    Entity* edge = pickEdgeToDig(adapter->mesh, snapTag, vert, worstElement);
-    dug = tryDigging(adapter, collapse, edge, vert);
-    if (!dug)
-      return false;
-    return trySnapping(adapter, snapTag, vert, worstElement);
-  }
+  if (ok)
+    return true;
+  dug = tryDigging(adapter, collapse, vert, badElements);
+  if (!dug)
+    return false;
+  return trySnapping(adapter, snapTag, vert, badElements);
 }
 
 }

@@ -63,28 +63,22 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
   return table[m->getType(e)](m,f,e);
 }
 
-double getWorstQuality(Adapt* a, Entity** e, size_t n, Entity** worstEnt)
+double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
   assert(n);
   ShapeHandler* sh = a->shape;
   double worst = sh->getQuality(e[0]);
-  if (worstEnt)
-    *worstEnt = e[0];
-  for (size_t i = 1; i < n; ++i)
-  {
+  for (size_t i = 1; i < n; ++i) {
     double quality = sh->getQuality(e[i]);
-    if (quality < worst) {
+    if (quality < worst)
       worst = quality;
-      if (worstEnt)
-        *worstEnt = e[i];
-    }
   }
   return worst;
 }
 
-double getWorstQuality(Adapt* a, EntityArray& e, Entity** worstEnt)
+double getWorstQuality(Adapt* a, EntityArray& e)
 {
-  return getWorstQuality(a, &(e[0]), e.getSize(), worstEnt);
+  return getWorstQuality(a, &(e[0]), e.getSize());
 }
 
 /* applies the same measure as measureTetQuality

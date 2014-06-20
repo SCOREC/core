@@ -186,6 +186,7 @@ bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
   long n = op.successCount;
   PCU_Add_Longs(&n, 1);
   successCount += n;
+  fprintf(stderr,"round %s %ld\n", isSimple ? "simple" : "dig", n);
   return PCU_Or(op.didAnything);
 }
 
