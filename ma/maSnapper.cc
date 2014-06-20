@@ -78,36 +78,47 @@ static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
   }
 }
 
-static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse,
-    Entity* e, Entity* vert)
+static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
 {
   Mesh* mesh = adapter->mesh;
   assert(mesh->getType(e) == EDGE);
-  assert(mesh->getType(vert) == VERT);
-  Entity* ov = apf::getEdgeVertOppositeVert(mesh, e, vert);
-  if (!setupCollapse(collapse, e, ov))
+  if ( ! collapse.setEdge(e))
+    return false;
+  if ( ! collapse.checkClass())
+    return false;
+  if ( ! collapse.checkTopo())
     return false;
   double q = adapter->input->validQuality;
-  if ( ! collapse.tryThisDirection(q))
+  if ( ! collapse.tryBothDirections(q))
     return false;
   collapse.destroyOldElements();
   return true;
 }
 
-static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
-    apf::Up& badElements)
+static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements)
 {
   Mesh* m = a->mesh;
   for (int i = 0; i < badElements.n; ++i) {
     Entity* elem = badElements.e[i];
+    Vector center = apf::getLinearCentroid(m, elem);
     Downward edges;
     int nedges = m->getDownward(elem, 1, edges);
     for (int j = 0; j < nedges; ++j)
-      if (isInClosure(m, edges[j], v))
-        if (tryDiggingEdge(a, c, edges[j], v))
-          return true;
+      if (tryDiggingEdge(a, c, edges[j]))
+        return true;
   }
   return false;
+}
+
+static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
+    apf::Up& badElements)
+{
+  bool hadItBefore = getFlag(a, v, DONT_COLLAPSE);
+  setFlag(a, v, DONT_COLLAPSE);
+  bool ok = tryDigging2(a, c, badElements);
+  if (!hadItBefore)
+    clearFlag(a, v, DONT_COLLAPSE);
+  return ok;
 }
 
 bool Snapper::run()
