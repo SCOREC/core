@@ -443,6 +443,9 @@ void unfreeze(Field* f);
 bool isFrozen(Field* f);
 
 double* getArrayData(Field* f);
+
+void zeroField(Field* f);
+
 }
 
 #endif

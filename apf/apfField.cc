@@ -93,4 +93,34 @@ void FieldOp::apply(FieldBase* f)
   }
 }
 
+struct ZeroOp : public FieldOp
+{
+  ZeroOp(Field* f)
+  {
+    field = f;
+    int n = f->countComponents();
+    data.allocate(n);
+    for (int i = 0; i < n; ++i)
+      data[i] = 0;
+  }
+  bool inEntity(MeshEntity* e)
+  {
+    ent = e;
+    return true;
+  }
+  void atNode(int n)
+  {
+    setComponents(field, ent, n, &data[0]);
+  }
+  Field* field;
+  MeshEntity* ent;
+  apf::NewArray<double> data;
+};
+
+void zeroField(Field* f)
+{
+  ZeroOp op(f);
+  op.apply(f);
+}
+
 } //namespace apf
