@@ -25,7 +25,7 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e);
 double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 
 double getWorstQuality(Adapt* a, EntityArray& e);
-double getWorstQuality(Adapt* a, Entity** e, size_t n);
+double getWorstQuality(Adapt* a, Entity** e, size_t n, Entity** worstEnt = 0);
 
 void printQualityHistogram(
     Adapt* a,

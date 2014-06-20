@@ -13,6 +13,7 @@
 #include "maSize.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
+#include "maShape.h"
 
 namespace ma {
 
@@ -62,15 +63,21 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
   return table[m->getType(e)](m,f,e);
 }
 
-double getWorstQuality(Adapt* a, Entity** e, size_t n)
+double getWorstQuality(Adapt* a, Entity** e, size_t n, Entity** worstEnt)
 {
   assert(n);
   ShapeHandler* sh = a->shape;
-  double worst = 1;
-  for (size_t i=0; i < n; ++i)
+  double worst = sh->getQuality(e[0]);
+  if (worstEnt)
+    *worstEnt = e[0];
+  for (size_t i = 1; i < n; ++i)
   {
     double quality = sh->getQuality(e[i]);
-    if (quality < worst) worst = quality;
+    if (quality < worst) {
+      worst = quality;
+      if (worstEnt)
+        *worstEnt = e[i];
+    }
   }
   return worst;
 }
