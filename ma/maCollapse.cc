@@ -147,7 +147,7 @@ bool checkEdgeCollapseFaceRings(Adapt* a, Entity* edge)
 /* we filter out non-tri faces; collapses involving the boundary
    layer should ensure topological correctness by other methods */
     if (( m->getType(f[0])==TRI)
-      &&( ! isEdgeInTri(m,f[0],edge)))
+      &&( ! isInClosure(m,f[0],edge)))
     {
       Entity* oppositeEdge = getTriEdgeOppositeVert(m,f[0],v[0]);
       oppositeEdgesToFaces[oppositeEdge]=f[0];
@@ -156,7 +156,7 @@ bool checkEdgeCollapseFaceRings(Adapt* a, Entity* edge)
   for (size_t i=0; i < vf[1].getSize(); ++i)
   {
     f[1] = vf[1][i];
-    if ((m->getType(f[1])!=TRI)||(isEdgeInTri(m,f[1],edge)))
+    if ((m->getType(f[1])!=TRI)||(isInClosure(m,f[1],edge)))
       continue;
     Entity* oppositeEdge = getTriEdgeOppositeVert(m,f[1],v[1]);
     std::map<Entity*,Entity*>::iterator found =
@@ -399,6 +399,8 @@ bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex)
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
 {
   Adapt* adapter = collapse.adapt;
+  assert(adapter->mesh->getType(edge) == EDGE);
+  assert(adapter->mesh->getType(vert) == VERT);
   if ( ! collapse.setEdge(edge))
     return false;
   if ( ! collapse.checkClass())

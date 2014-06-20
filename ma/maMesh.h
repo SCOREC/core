@@ -79,7 +79,7 @@ Entity* rebuildElement(
     Entity* newVert,
     apf::BuildCallback* cb);
 
-bool isEdgeInTri(Mesh* m, Entity* tri, Entity* edge);
+bool isInClosure(Mesh* m, Entity* parent, Entity* e);
 
 void getBoundingBox(Mesh* m, Vector& lower, Vector& upper);
 Vector getCentroid(Mesh* m);

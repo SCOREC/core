@@ -25,14 +25,7 @@ class LinearHandler : public ShapeHandler
     }
     virtual double getQuality(Entity* e)
     {
-      int t = mesh->getType(e);
-      if (t == TET)
-        return measureTetQuality(mesh,sizeField,e);
-      else
-      {
-        assert(t == TRI);
-        return measureTriQuality(mesh,sizeField,e);
-      }
+      return measureElementQuality(mesh, sizeField, e);
     }
     virtual bool hasNodesOn(int dimension)
     {

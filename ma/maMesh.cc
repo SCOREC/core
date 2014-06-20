@@ -240,11 +240,12 @@ Entity* rebuildElement(
   return makeOrFind(m,m->toModel(original),type,down,cb);
 }
 
-bool isEdgeInTri(Mesh* m, Entity* tri, Entity* edge)
+bool isInClosure(Mesh* m, Entity* parent, Entity* e)
 {
-  Entity* edges[3];
-  m->getDownward(tri,1,edges);
-  return findIn(edges,3,edge)!=-1;
+  int d = getDimension(m, e);
+  Downward es;
+  int n = m->getDownward(parent, d, es);
+  return findIn(es, n, e) != -1;
 }
 
 void getBoundingBox(Mesh* m, Vector& lower, Vector& upper)

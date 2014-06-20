@@ -13,6 +13,7 @@
 #include "maSize.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
+#include "maShape.h"
 
 namespace ma {
 
@@ -66,18 +67,18 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
   assert(n);
   ShapeHandler* sh = a->shape;
-  double worst = 1;
-  for (size_t i=0; i < n; ++i)
-  {
+  double worst = sh->getQuality(e[0]);
+  for (size_t i = 1; i < n; ++i) {
     double quality = sh->getQuality(e[i]);
-    if (quality < worst) worst = quality;
+    if (quality < worst)
+      worst = quality;
   }
   return worst;
 }
 
 double getWorstQuality(Adapt* a, EntityArray& e)
 {
-  return getWorstQuality(a,&(e[0]),e.getSize());
+  return getWorstQuality(a, &(e[0]), e.getSize());
 }
 
 /* applies the same measure as measureTetQuality

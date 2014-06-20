@@ -7,8 +7,8 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#ifndef MA_DIGGER_H
-#define MA_DIGGER_H
+#ifndef MA_SNAPPER_H
+#define MA_SNAPPER_H
 
 #include "maCollapse.h"
 
@@ -22,24 +22,19 @@ namespace ma {
    a mesh by collapsing edges in the direction
    of desired snapping */
 
-class Digger
+class Snapper
 {
   public:
-    Digger(Adapt* a, Tag* st);
-    /* this will request the vertex and all
-       vertices adjacent to it through an edge,
-       i.e. two layers of elements. That allows
-       us to try all possible collapses in that cavity.*/
+    Snapper(Adapt* a, Tag* st, bool is);
     bool setVert(Entity* v, apf::CavityOp* o);
     bool run();
+    bool dug;
   private:
-    bool tryToCollapse(Entity* e);
     Adapt* adapter;
-    Mesh* mesh;
     Tag* snapTag;
     Entity* vert;
-    apf::Up edges;
     Collapse collapse;
+    bool isSimple;
 };
 
 }
