@@ -13,7 +13,8 @@ namespace parma {
       Weights();
   };
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim);
-  Weights* makeOwnedVtxWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s);
+  Weights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, 
+      int dim, int layers, int bridge);
 }
 
 #endif

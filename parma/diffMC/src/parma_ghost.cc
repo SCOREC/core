@@ -10,61 +10,13 @@
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
+#include "parma_selector.h"
 
-namespace parma {
-  void destroyTag(apf::Mesh* m, apf::MeshTag* t, const int dim) {
-    apf::removeTagFromDimension(m,t,dim);
-    m->destroyTag(t);
-  }
-  bool isSharedWithTarget(apf::Mesh* m,apf::MeshEntity* v, int target) {
-    if( ! m->isShared(v) ) return false;
-    apf::Copies rmts;
-    m->getRemotes(v,rmts);
-    APF_ITERATE(apf::Copies, rmts, itr) 
-      if (itr->first==target) 
-        return true;
-    return false;
-  }
-  apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
-      apf::MeshEntity* edge, apf::MeshEntity* vtx) {
-    apf::Downward dwnVtx;
-    int nDwnVtx = m->getDownward(edge,getDimension(m,edge)-1,dwnVtx);
-    assert(nDwnVtx==2);
-    return (dwnVtx[0] != vtx) ? dwnVtx[0] : dwnVtx[1];
-  }
-  void renderIntTag(apf::Mesh* m, apf::MeshTag* tag,
-      const char* filename, int peer)
-  {
-    apf::Numbering* n = apf::createNumbering(m,
-        m->getTagName(tag), m->getShape(), 1);
-    apf::MeshIterator* it = m->begin(0);
-    apf::MeshEntity* v;
-    while ((v = m->iterate(it))) {
-      if (m->hasTag(v, tag)) {
-        int x;
-        m->getIntTag(v, tag, &x);
-        apf::number(n, v, 0, 0, x);
-      } else {
-        apf::number(n, v, 0, 0, 0);
-      }
-    }
-    m->end(it);
-    std::stringstream ss;
-    ss << filename
-      << '_' << PCU_Comm_Self()
-      << '_' << peer;
-    std::string s = ss.str();
-    apf::writeOneVtkFile(s.c_str(), m);
-    apf::destroyNumbering(n);
-  }
-
-  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
-    double weight;
-    m->getDoubleTag(e,w,&weight);
-    return weight;
-  }
-
+using parma::Sides;
+using parma::Weights;
+using parma::Targets;
+using parma::Selector;
+namespace {
   double runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
       std::vector<apf::MeshEntity*> next, apf::MeshTag* visited,
       apf::MeshTag* wtag)
@@ -192,8 +144,6 @@ namespace parma {
       }
     }
 
-  };
-
   class GhostTargets : public Targets {
     public:
       GhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha) 
@@ -228,76 +178,16 @@ namespace parma {
       }
   };
 
-  class Selector : public Associative<double> {
-    public:
-      Selector(apf::Mesh* m, apf::MeshTag* w, Targets* t) 
-        : mesh(m), tgts(t), wtag(w) {}
-      apf::Migration* run() {
-        apf::Migration* plan = new apf::Migration(mesh);
-        vtag = mesh->createIntTag("ghost_visited",1);
-        const int maxBoundedElm = 6;
-        double planW=0;
-        for(int maxAdjElm = 2; maxAdjElm <= maxBoundedElm; maxAdjElm += 2)
-          planW += select(planW, maxAdjElm, plan);
-        apf::removeTagFromDimension(mesh,vtag,0);
-        mesh->destroyTag(vtag);
-        return plan;
-      }
-    private:
-      apf::Mesh* mesh;
-      Targets* tgts;
-      apf::MeshTag* vtag;
-      apf::MeshTag* wtag;
-      Selector();
-      double add(apf::MeshEntity* vtx, const size_t maxAdjElm, 
-          const int destPid, apf::Migration* plan) {
-        apf::DynamicArray<apf::MeshEntity*> adjElms;
-        mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
-        if( adjElms.getSize() > maxAdjElm ) 
-          return 0;
-        double w = getEntWeight(mesh,vtx,wtag);
-        for(size_t i=0; i<adjElms.getSize(); i++) {
-          apf::MeshEntity* elm = adjElms[i];
-          if ( mesh->hasTag(elm, vtag) ) continue;
-          mesh->setIntTag(elm, vtag, &destPid); 
-          plan->send(elm, destPid);
-          set(destPid, get(destPid)+w);
-        }
-        return w;
-      }
-      double select(const double planW, 
-          const size_t maxAdjElm, 
-          apf::Migration* plan) {
-        double planWeight = 0;
-        apf::MeshEntity* vtx;
-        apf::MeshIterator* itr = mesh->begin(0);
-        while( (vtx = mesh->iterate(itr)) && 
-               (planW + planWeight < tgts->total()) ) {
-          apf::Copies rmt;
-          mesh->getRemotes(vtx, rmt);
-          if( 1 == rmt.size() ) {
-            int destPid = (rmt.begin())->first;
-            if( tgts->has(destPid) && get(destPid) < tgts->get(destPid) )
-              planWeight += add(vtx, maxAdjElm, destPid, plan);
-          }
-        }
-        mesh->end(itr);
-        return planWeight;
-      }
-  };
-
   class ParmaGhost {
     public:
       ParmaGhost(apf::Mesh* mIn, apf::MeshTag* wIn, 
           int layersIn, int bridgeIn, double alphaIn) 
         : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
       {
-        sides = makeElmBdrySides(m);
-        weights = makeOwnedVtxWeights(m,w,sides);
-        ghostFinder = new GhostFinder(m, w, layers, bridge);
-        ghosts = new Ghosts(ghostFinder, sides);
+        sides = parma::makeElmBdrySides(m);
+        weights = parma::makeGhostWeights(m,w,sides);
         targets = new GhostTargets(sides, weights, ghosts, alpha);
-        selects = new Selector(m, w, targets); 
+        selects = parma::makeVtxSelector(m, w);
 	iters=0;
       }
 
@@ -336,7 +226,8 @@ namespace parma {
       fprintf(stdout, "imbalance %.3f\n", imb);
     if ( imb < maxImb) 
       return false;
-    apf::Migration* plan = selects->run();
+    apf::Migration* plan = selects->run(targets);
+    PCU_Debug_Print("plan size %d\n",plan->count());
     m->migrate(plan);
     return true;
   }
@@ -364,7 +255,17 @@ class GhostBalancer : public apf::Balancer {
         (void) verbose; // silence!
     }
     bool runStep(apf::MeshTag* weights, double tolerance) {
-      parma::ParmaGhost ghost(mesh, weights, layers, bridge, factor);
+        parma::Balancer ghost(mesh, wtag, factor);
+        Sides* s = makeElmBdrySides(mesh);
+        ghost.setSides(s);
+        Weights* w = makeEntWeights(mesh, wtag, s, mesh->getDimension());
+        ghost.setWeights(w);
+        Targets* t = makeTargets(s, w, factor);
+        ghost.setTargets(t);
+        ghost.setSelector(makeVtxSelector(mesh, wtag));
+        return ghost.run(tolerance);
+
+      ParmaGhost ghost(mesh, weights, layers, bridge, factor);
       return ghost.run(tolerance);
     }
     virtual void balance(apf::MeshTag* weights, double tolerance) {

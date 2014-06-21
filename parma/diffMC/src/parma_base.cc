@@ -37,4 +37,3 @@ namespace parma {
     return maxWeight / averageWeight;
   }
 }
-
