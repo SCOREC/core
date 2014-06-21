@@ -6,7 +6,7 @@
 namespace parma {
   class Sides : public Associative<int> {
     public:
-      Sides(apf::Mesh* m);
+      Sides(apf::Mesh* m) {}
       virtual int total()=0;
     private:
       int totalSides;

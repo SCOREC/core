@@ -7,7 +7,7 @@ namespace parma {
   class Sides;
   class Weights : public Associative<double> {
     public:
-      Weights(apf::Mesh* m, apf::MeshTag* w, Sides* s);
+      Weights(apf::Mesh* m, apf::MeshTag* w, Sides* s) {}
       virtual double self()=0;
     private:
       Weights();

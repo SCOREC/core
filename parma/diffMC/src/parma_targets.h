@@ -9,7 +9,7 @@ namespace parma {
   class Ghosts;
   class Targets : public Associative<double> {
     public:
-      Targets(Sides* s, Weights* w, double alpha);
+      Targets(Sides* s, Weights* w, double alpha) {}
       virtual double total()=0;
     private:
       Targets();
