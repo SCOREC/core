@@ -131,6 +131,7 @@ namespace parma {
         weight += ownedVtxWeight(m, wtag);
         exchange();
       }
+      ~GhostWeights() {};
       double self() {
         return weight;
       }

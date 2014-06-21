@@ -30,6 +30,7 @@ namespace parma {
     // part this part will be merged into then create a Migration 
     // object and set the 'target' part id for each element
     //return the migration object
+    return new apf::Migration(m);
   };
 
   class MergeWeights : public EntWeights {
@@ -167,10 +168,11 @@ namespace parma {
 
   class HpsBalancer : public apf::Balancer {
     public:
-      HpsBalancer(apf::Mesh* m, double f, int v)
-        : mesh(m), factor(f), verbose(v) 
+      HpsBalancer(apf::Mesh* m, double factor, int v)
+        : mesh(m), verbose(v) 
       {
         (void) verbose; // silence!
+        (void) factor; // silence!
       }
       void run(apf::MeshTag* wtag, double tolerance) {
         Sides* sides = makeElmBdrySides(mesh);
@@ -187,7 +189,6 @@ namespace parma {
       }
     private:
       apf::Mesh* mesh;
-      double factor;
       int verbose;
   };
 }; //end parma namespace

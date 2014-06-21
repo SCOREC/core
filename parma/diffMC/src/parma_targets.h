@@ -10,6 +10,7 @@ namespace parma {
   class Targets : public Associative<double> {
     public:
       Targets(Sides* s, Weights* w, double alpha) {}
+      virtual ~Targets() {}
       virtual double total()=0;
     private:
       Targets();

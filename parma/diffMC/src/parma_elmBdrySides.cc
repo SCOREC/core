@@ -4,14 +4,10 @@
 namespace parma {  
   class ElmBdrySides : public Sides {
     public:
-      ElmBdrySides(apf::Mesh* m) : Sides(m), totalSides(0) {
+      ElmBdrySides(apf::Mesh* m) : Sides(m) {
         init(m);
       }
-      int total() {
-        return totalSides;
-      }
     private:
-      int totalSides;
       void init(apf::Mesh* m) {
         apf::MeshEntity* s;
         apf::MeshIterator* it = m->begin(m->getDimension()-1);

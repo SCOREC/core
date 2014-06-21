@@ -7,8 +7,9 @@ namespace parma {
   class Sides : public Associative<int> {
     public:
       Sides(apf::Mesh* m) {}
-      virtual int total()=0;
-    private:
+      virtual ~Sides() {}
+      virtual int total() { return totalSides;}
+    protected:
       int totalSides;
   };
   Sides* makeElmBdrySides(apf::Mesh* m);

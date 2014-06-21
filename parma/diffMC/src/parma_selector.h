@@ -7,6 +7,7 @@ namespace parma {
   class Selector {
     public:
       Selector(apf::Mesh* m, apf::MeshTag* w) : mesh(m), wtag(w) {}
+      virtual ~Selector() {}
       virtual apf::Migration* run(Targets* tgts)=0;
     protected:
       apf::Mesh* mesh;
