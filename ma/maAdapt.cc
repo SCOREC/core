@@ -142,11 +142,6 @@ DeleteCallback::~DeleteCallback()
   this->adapt->deleteCallback = 0;
 }
 
-bool isElementValid(Adapt* a, Entity* e)
-{
-  return a->shape->getQuality(e) > a->input->validQuality;
-}
-
 bool checkFlagConsistency(Adapt* a, int dimension, int flag)
 {
   PCU_Comm_Begin();

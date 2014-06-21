@@ -78,8 +78,6 @@ class DeleteCallback
     Adapt* adapt;
 };
 
-bool isElementValid(Adapt* a, Entity* e);
-
 bool checkFlagConsistency(Adapt* a, int dimension, int flag);
 
 /* get the distance between two vertices in metric space */

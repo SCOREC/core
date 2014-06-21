@@ -32,9 +32,9 @@ simulations on supercomputers.
 
 ### Contribution guidelines ###
 
-* If in doubt, make a branch
-* See the `STYLE` file
 * Don't break the build
+* See the `STYLE` file
+* If in doubt, make a branch
 
 ### Who do I talk to? ###
 
