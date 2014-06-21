@@ -35,10 +35,10 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_elmBdrySides.cc
   diffMC/src/parma_entWeights.cc
   diffMC/src/parma_ghost.cc
+  diffMC/src/parma_ghostWeights.cc
   diffMC/src/parma_hist.cc
   diffMC/src/parma_hpsBalancer.cc
   diffMC/src/parma_imbinfo.cc
-  diffMC/src/parma_ownedVtxWeights.cc
   diffMC/src/parma_partinfo.cc
   diffMC/src/parma_priority.cc
   diffMC/src/parma_vtxBalancer.cc

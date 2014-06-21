@@ -11,10 +11,10 @@ namespace parma {
   class Balancer {
     public:
       Balancer(apf::Mesh* m, apf::MeshTag* w, double alpha);
-      void setSides(Sides* s);
-      void setWeights(Weights* w);
-      void setTargets(Targets* t);
-      void setSelector(Selector* s);
+      void setSides(Sides* s) {sides = s;}
+      void setWeights(Weights* w) {weights = w;}
+      void setTargets(Targets* t) {targets = t;}
+      void setSelector(Selector* s) {selects = s;}
       ~Balancer();
       bool run(double maxImb, int verbosity=0);
     private:
