@@ -7,136 +7,11 @@
 #include <sstream>
 #include <string>
 #include <apfNumbering.h>
+#include "parma_sides.h"
+#include "parma_weights.h"
+#include "parma_targets.h"
 
 namespace parma {
-  template <class T> class Associative {
-    typedef std::map<int, T> Container;
-    public:
-      Associative() {
-        iteratorActive = false;
-      }
-      void begin() {
-        assert(!iteratorActive);
-        iteratorActive = true;
-        cItr = c.begin();
-      }
-      typedef std::pair<const int, T> Item;
-      const Item* iterate() {
-        assert(iteratorActive);
-        if( cItr == c.end() ) 
-          return NULL;
-        else
-          return &(*cItr++); // there is no spoon ... and this is likely crap
-      }
-      void end() {
-        assert(iteratorActive);
-        iteratorActive = false;
-      }
-      T get(int key) {
-        return c[key];
-      }
-      void set(int key, T value) {
-        c[key] = value;
-      }
-      bool has(int key) {
-        return (c.count(key) != 0);
-      }
-      void print(const char* key) {
-        std::stringstream s;
-        s << key << " ";
-        const Item* i;
-        begin();
-        while( (i = iterate()) ) 
-          s << i->first << " " << i->second << " ";
-        end();
-        std::string str = s.str();
-        PCU_Debug_Print("%s\n", str.c_str());
-      }
-    protected:
-      Container c;
-    private:
-      typename Container::iterator cItr;
-      bool iteratorActive;
-  };
-
-
-  class Sides : public Associative<int> {
-    public:
-      Sides(apf::Mesh* m) {
-        totalSides = 0;
-        init(m);
-      }
-      int total() {
-        return totalSides;
-      }
-    private:
-      int totalSides;
-      void init(apf::Mesh* m) {
-        apf::MeshEntity* s;
-        apf::MeshIterator* it = m->begin(m->getDimension()-1);
-        totalSides = 0;
-        while ((s = m->iterate(it)))
-          if (m->countUpward(s)==1 && m->isShared(s)) {
-            const int peerId = apf::getOtherCopy(m,s).first;
-            set(peerId, get(peerId)+1);
-            ++totalSides;
-          }
-        m->end(it);
-      }
-  };
-
-  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
-    double weight;
-    m->getDoubleTag(e,w,&weight);
-    return weight;
-  }
-
-  /**
-   * @brief compute the weight of the mesh vertices
-   * @remark since the mesh being partitioned is the delauney triangularization 
-   *         of the voroni mesh the vertex weights will correspond to element 
-   *         weights of the voroni mesh
-   */
-  double getWeight(apf::Mesh* m, apf::MeshTag* w) {
-    apf::MeshIterator* it = m->begin(0);
-    apf::MeshEntity* e;
-    double sum = 0;
-    while ((e = m->iterate(it)))
-      if (m->isOwned(e))
-        sum += getEntWeight(m, e, w);
-    m->end(it);
-    return sum;
-  }
-
-  class Weights : public Associative<double> {
-    public:
-      Weights(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
-        selfWeight = getWeight(m, w);
-        init(s);
-      }
-      double self() {
-        return selfWeight;
-      }
-    private:
-      Weights();
-      double selfWeight;
-      void init(Sides* s) {
-        PCU_Comm_Begin();
-        const Sides::Item* side;
-        s->begin();
-        while( (side = s->iterate()) ) 
-          PCU_COMM_PACK(side->first, selfWeight);
-        s->end();
-        PCU_Comm_Send();
-        while (PCU_Comm_Listen()) {
-          double otherWeight;
-          PCU_COMM_UNPACK(otherWeight);
-          set(PCU_Comm_Sender(), otherWeight);
-        }
-      }
-  };
-
   void destroyTag(apf::Mesh* m, apf::MeshTag* t, const int dim) {
     apf::removeTagFromDimension(m,t,dim);
     m->destroyTag(t);
@@ -181,6 +56,13 @@ namespace parma {
     std::string s = ss.str();
     apf::writeOneVtkFile(s.c_str(), m);
     apf::destroyNumbering(n);
+  }
+
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
+    assert(m->hasTag(e,w));
+    double weight;
+    m->getDoubleTag(e,w,&weight);
+    return weight;
   }
 
   double runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
@@ -258,6 +140,7 @@ namespace parma {
       apf::MeshTag* depth;
   };
 
+
   class Ghosts : public Associative<double> {
     public:
       Ghosts(GhostFinder* finder, Sides* sides) {
@@ -311,15 +194,18 @@ namespace parma {
 
   };
 
-  class Targets : public Associative<double> {
+  class GhostTargets : public Targets {
     public:
-      Targets(Sides* s, Weights* w, Ghosts* g, double alpha) {
+      GhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha) 
+        : Targets(s, w, alpha)
+      {
         init(s, w, g, alpha);
       }
       double total() {
         return totW;
       }
     private:
+      GhostTargets();
       double totW;
       void init(Sides* s, Weights* w, Ghosts* g, double alpha) {
         totW = 0;
@@ -406,11 +292,11 @@ namespace parma {
           int layersIn, int bridgeIn, double alphaIn) 
         : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
       {
-        sides = new Sides(m);
-        weights = new Weights(m, w, sides);
+        sides = makeElmBdrySides(m);
+        weights = makeOwnedVtxWeights(m,w,sides);
         ghostFinder = new GhostFinder(m, w, layers, bridge);
         ghosts = new Ghosts(ghostFinder, sides);
-        targets = new Targets(sides, weights, ghosts, alpha);
+        targets = new GhostTargets(sides, weights, ghosts, alpha);
         selects = new Selector(m, w, targets); 
 	iters=0;
       }

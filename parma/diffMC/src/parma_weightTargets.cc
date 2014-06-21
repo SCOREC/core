@@ -1,5 +1,5 @@
-#include "parma_targets.h"
 #include "parma_sides.h"
+#include "parma_weights.h"
 #include "parma_targets.h"
 namespace parma {
   class WeightTargets : public Targets {

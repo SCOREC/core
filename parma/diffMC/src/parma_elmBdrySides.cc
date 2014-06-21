@@ -1,10 +1,10 @@
 #include "parma_base.h"
+#include "parma_sides.h"
 
 namespace parma {  
   class ElmBdrySides : public Sides {
     public:
-      ElmBdrySides(apf::Mesh* m) {
-        totalSides = 0;
+      ElmBdrySides(apf::Mesh* m) : Sides(m), totalSides(0) {
         init(m);
       }
       int total() {

@@ -1,6 +1,7 @@
 #ifndef PARMA_TARGETS_H
 #define PARMA_TARGETS_H
 #include <apfMesh.h>
+#include "parma_associative.h"
 
 namespace parma {
   class Sides;
@@ -14,6 +15,6 @@ namespace parma {
       Targets();
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
-  Targets* makeGhostTargets(Sides* s, Weights* w, Ghost*g, double alpha);
+  Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
 }
 #endif

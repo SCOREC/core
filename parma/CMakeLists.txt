@@ -35,11 +35,8 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_elmBdrySides.cc
   diffMC/src/parma_entWeights.cc
   diffMC/src/parma_ghost.cc
-  diffMC/src/parma_ghostTargets.cc
   diffMC/src/parma_hist.cc
-  diffMC/src/parma_histDriver.cc
   diffMC/src/parma_hpsBalancer.cc
-  diffMC/src/parma_hpsSelector.cc
   diffMC/src/parma_imbinfo.cc
   diffMC/src/parma_ownedVtxWeights.cc
   diffMC/src/parma_partinfo.cc

@@ -1,3 +1,11 @@
+#include <apfPartition.h>
+#include <PCU.h>
+#include "parma_base.h"
+#include "parma_sides.h"
+#include "parma_weights.h"
+#include "parma_targets.h"
+#include "parma_selector.h"
+
 namespace parma {
   class VtxBalancer : public apf::Balancer {
     public:
@@ -5,17 +13,20 @@ namespace parma {
         : mesh(m), factor(f), verbose(v) {
           (void) verbose; // silence!
         }
-      bool runStep(apf::MeshTag* weights, double tolerance) {
-        parma::Balancer parmaVtx(mesh, weights, layers, bridge, factor);
-        parmaVtx.setSides(makeElmBdrySides(m));
-        parmaVtx.setSelector(new VtxSelector(m, w));
-        parmaVtx.setWeights(new EntWeights(m, w, SIDES, m->getDimension()));
-        parmaVtx.setTargets(new ElmTargets(CAKE, CAKES, CATs));
+      bool runStep(apf::MeshTag* wtag, double tolerance) {
+        parma::Balancer parmaVtx(mesh, wtag, factor);
+        Sides* s = makeElmBdrySides(mesh);
+        parmaVtx.setSides(s);
+        Weights* w = makeEntWeights(mesh, wtag, s, mesh->getDimension());
+        parmaVtx.setWeights(w);
+        Targets* t = makeTargets(s, w, factor);
+        parmaVtx.setTargets(t);
+        parmaVtx.setSelector(makeVtxSelector(mesh, wtag));
         return parmaVtx.run(tolerance);
       }
-      virtual void balance(apf::MeshTag* weights, double tolerance) {
+      virtual void balance(apf::MeshTag* wtag, double tolerance) {
         double t0 = MPI_Wtime();
-        while (runStep(weights,tolerance));
+        while (runStep(wtag,tolerance));
         double t1 = MPI_Wtime();
         if (!PCU_Comm_Self())
           printf("vertices balanced to %f in %f seconds\n", tolerance, t1-t0);

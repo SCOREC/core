@@ -1,6 +1,7 @@
-#include <apf_partition.h>
+#include <apfPartition.h>
+#include <PCU.h>
 #include "parma_sides.h"
-#include "parma_weights.h"
+#include "parma_entWeights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
 
@@ -15,6 +16,10 @@ namespace parma {
         //if (weight < avgWeight * maxImb && weight > 0) then
         //  run knapsack and fill in the net 
         //  (see targets.h and associative.h for container API to use for net)
+      }
+      double total() {
+        //return the total number of targets
+        return 0;
       }
     private:
       MergeTargets();
@@ -36,15 +41,15 @@ namespace parma {
       MergeWeights();
       double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
         assert(m->hasTag(e,w));
-        double w = 0;
+        double entW = 0;
         if (!plan->has(e))
-          m->getDoubleTag(e,w,&w);
-        return w;
+          m->getDoubleTag(e,w,&entW);
+        return entW;
       }
   };
 
   int numSplits(Weights& w, double tgtWeight) {
-    return static_cast<int>(ciel(w.self()/tgtWeight));
+    return static_cast<int>(ceil(w.self()/tgtWeight));
   }
 
   int isEmpty(Weights& w) {
@@ -63,11 +68,12 @@ namespace parma {
     return empty;
   }
 
-  bool canSplit(Weights& w, double tgt) {
-    if ( numHeavy(w, tgt) > numEmpty(w) )
-      return false;
-    else 
+  bool canSplit(Weights& w, double tgt, int& extra) {
+    extra = numHeavy(w, tgt) - numEmpty(w);
+    if ( extra >= 0 )
       return true;
+    else 
+      return false;
   }
 
   double avgWeight(Weights* w) {
@@ -83,25 +89,27 @@ namespace parma {
   }
 
   double imbalance(Weights* w) {
-    return max(w)/avgWeight(w);
+    return maxWeight(w)/avgWeight(w);
   }
 
-  double chi(apf::Mesh* m, Sides* s, Weights* w) {
+  double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
     double testW = imbalance(w)*avgWeight(w);
     double step = 0.2;
     bool splits = false;
+    int extraEmpties = 0;
     do {
-      testImb -= step;
-      MergeTargets mergeTargets(sides, weights, testW);
-      Migration* plan = selectMerges(m, mergeTargets);
-      MergeWeights mergeWeights(m, w, sides, plan);
-      splits = canSplit(mergeWeights, testW);
+      testW -= step;
+      MergeTargets mergeTgts(s, w, testW);
+      apf::Migration* plan = selectMerges(m, mergeTgts);
+      MergeWeights mergeWeights(m, wtag, s, plan);
+      splits = canSplit(mergeWeights, testW, extraEmpties);
       delete plan; // not migrating
     } while ( splits );
-    return testImb;
+    assert(0==extraEmpties);
+    return testW;
   }
 
-  void split(Weights& weights, double tgt, apf::Migration* plan) {
+  void split(Weights& w, double tgt, apf::Migration* plan) {
     const int partId = PCU_Comm_Self();
     int numSplit = numSplits(w, tgt);
     int empty = isEmpty(w);
@@ -138,7 +146,7 @@ namespace parma {
     if ( emptyPartId != -1 )
       PCU_COMM_PACK(heavyPartId, emptyPartId); 
     PCU_Comm_Send();
-    vector<int> tgtEmpties;
+    std::vector<int> tgtEmpties;
     while(PCU_Comm_Listen()) {
       int tgtPartId = 0;
       PCU_COMM_UNPACK(emptyPartId);
@@ -149,10 +157,10 @@ namespace parma {
     //assign rib blocks to tgtEmpties 
   }
 
-  void hps(apf::Mesh* m, Sides* s, Weights* w, double tgt) {
-    MergeTargets mergeTargets(sides, weights, tgt);
-    Migration* plan = selectMerges(m, mergeTargets);
-    MergeWeights mergeWeights(m, w, sides, plan);
+  void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
+    MergeTargets mergeTargets(s, w, tgt);
+    apf::Migration* plan = selectMerges(m, mergeTargets);
+    MergeWeights mergeWeights(m, wtag, s, plan);
     split(mergeWeights, tgt, plan);
     m->migrate(plan);
   }
@@ -164,11 +172,11 @@ namespace parma {
       {
         (void) verbose; // silence!
       }
-      void run(apf::MeshTag* weights, double tolerance) {
-        Sides* sides = makeElmBdrySides(m);
-        Weights* weights = makeEntWeights(m, w, sides, m->getDimension());
-        double tgt = chi(m, sides, weights);
-        hps(m, sides, weights, tgt);
+      void run(apf::MeshTag* wtag, double tolerance) {
+        Sides* sides = makeElmBdrySides(mesh);
+        Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
+        double tgt = chi(mesh, wtag, sides, w);
+        hps(mesh, wtag, sides, w, tgt);
       }
       virtual void balance(apf::MeshTag* weights, double tolerance) {
         double t0 = MPI_Wtime();

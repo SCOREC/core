@@ -4,6 +4,7 @@
 #include "parma_associative.h"
 
 namespace parma {
+  class Sides;
   class Weights : public Associative<double> {
     public:
       Weights(apf::Mesh* m, apf::MeshTag* w, Sides* s);

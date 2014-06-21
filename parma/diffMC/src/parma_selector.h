@@ -8,9 +8,10 @@ namespace parma {
     public:
       Selector(apf::Mesh* m, apf::MeshTag* w) : mesh(m), wtag(w) {}
       virtual apf::Migration* run(Targets* tgts)=0;
-    private:
+    protected:
       apf::Mesh* mesh;
       apf::MeshTag* wtag;
+    private:
       Selector();
   };
   Selector* makeVtxSelector(apf::Mesh* m, apf::MeshTag* w);

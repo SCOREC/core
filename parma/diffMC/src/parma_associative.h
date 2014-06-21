@@ -1,6 +1,7 @@
 #ifndef PARMA_ASSOCIATIVE_H
 #define PARMA_ASSOCIATIVE_H
 #include <map>
+#include <sstream>
 
 namespace parma {
   template <class T> class Associative {
@@ -35,7 +36,7 @@ namespace parma {
       bool has(int key) {
         return (c.count(key) != 0);
       }
-      void print(const char* key) {
+      std::string print(const char* key) {
         std::stringstream s;
         s << key << " ";
         const Item* i;
@@ -43,8 +44,7 @@ namespace parma {
         while( (i = iterate()) ) 
           s << i->first << " " << i->second << " ";
         end();
-        std::string str = s.str();
-        PCU_Debug_Print("%s\n", str.c_str());
+        return s.str();
       }
     protected:
       Container c;

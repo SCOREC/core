@@ -2,6 +2,14 @@
 #include "parma_targets.h"
 
 namespace parma {
+
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
+    assert(m->hasTag(e,w));
+    double weight;
+    m->getDoubleTag(e,w,&weight);
+    return weight;
+  }
+
   class VtxSelector : public Selector {
     public:
       VtxSelector(apf::Mesh* m, apf::MeshTag* w)

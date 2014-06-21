@@ -1,3 +1,4 @@
+#include <PCU.h>
 #include "parma_base.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -5,9 +6,8 @@
 #include "parma_selector.h"
 
 namespace parma {
-  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, 
-      int layersIn, int bridgeIn, double alphaIn) 
-    : m(mIn), w(wIn), layers(layersIn), bridge(bridgeIn), alpha(alphaIn)
+  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn) 
+    : m(mIn), w(wIn), alpha(alphaIn)
   {
   }
   Balancer::~Balancer() {
@@ -17,13 +17,13 @@ namespace parma {
     delete selects;
   }
 
-  bool Balancer::run(double maxImb) {
+  bool Balancer::run(double maxImb, int verbosity) {
     const double imb = imbalance();
     if ( 0 == PCU_Comm_Self() )
       fprintf(stdout, "imbalance %.3f\n", imb);
     if ( imb < maxImb ) 
       return false;
-    apf::Migration* plan = selects->run();
+    apf::Migration* plan = selects->run(targets);
     m->migrate(plan);
     return true;
   }

@@ -1,6 +1,6 @@
-#include "parma_weights.h"
 #include <PCU.h>
 #include <assert.h>
+#include "parma_entWeights.h"
 
 namespace parma {  
   class OwnedVtxWeights : public EntWeights {
@@ -11,15 +11,13 @@ namespace parma {
       OwnedVtxWeights();
       double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
         assert(m->hasTag(e,w));
-        double w = 0;
+        double entW = 0;
         if (m->isOwned(e))
-          m->getDoubleTag(e,w,&w);
-        return w;
+          m->getDoubleTag(e,w,&entW);
+        return entW;
       }
   };
   Weights* makeOwnedVtxWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
     return new OwnedVtxWeights(m, w, s);
   }
 } //end namespace
-
-#endif
