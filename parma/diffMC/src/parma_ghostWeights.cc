@@ -109,9 +109,10 @@ namespace {
     double sum = 0;
     while ((e = m->iterate(it))) {
       assert(m->hasTag(e,w));
-      if (m->isOwned(e))
+      if (m->isOwned(e)) {
         m->getDoubleTag(e,w,&entW);
-      sum += entW;
+        sum += entW;
+      }
     }
     m->end(it);
     return sum;
@@ -153,9 +154,9 @@ namespace parma {
         end();
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
-          double otherWeight;
-          PCU_COMM_UNPACK(otherWeight);
-          weight += otherWeight;
+          double ghostsFromPeer = 0;
+          PCU_COMM_UNPACK(ghostsFromPeer);
+          weight += ghostsFromPeer;
         }
       }
       void exchange() {
