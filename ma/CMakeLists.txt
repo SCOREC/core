@@ -49,6 +49,7 @@ set(SOURCES
   maSnapper.cc
   maBalance.cc
   maLayer.cc
+  maCrawler.cc
   maMap.cc)
 
 set(HEADERS

@@ -120,7 +120,7 @@ void destroyElement(Adapt* a, Entity* e)
       return;
   }
   Downward down;
-  int nd;
+  int nd = 0;
   if (dim > 0)
     nd = m->getDownward(e,dim-1,down);
   if (a->deleteCallback) a->deleteCallback->call(e);
@@ -427,13 +427,6 @@ void syncFlag(Adapt* a, int dimension, int flag)
       PCU_COMM_UNPACK(e);
       setFlag(a,e,flag);
     }
-}
-
-bool parallelOr(bool local)
-{
-  int localInt = local;
-  PCU_Max_Ints(&localInt,1);
-  return localInt;
 }
 
 }

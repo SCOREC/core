@@ -148,8 +148,6 @@ void print(const char* format, ...) __attribute__((format(printf,1,2)));
 void setFlagOnClosure(Adapt* a, Entity* e, int flag);
 void syncFlag(Adapt* a, int dimension, int flag);
 
-bool parallelOr(bool local);
-
 }
 
 #endif
