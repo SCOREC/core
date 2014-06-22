@@ -19,10 +19,11 @@ add_executable(gmi_test EXCLUDE_FROM_ALL gmi_test.cc)
 add_executable(mds_test EXCLUDE_FROM_ALL mds_test.cc)
 add_executable(ma_test EXCLUDE_FROM_ALL ma_test.cc)
 add_executable(convert EXCLUDE_FROM_ALL convert.cc)
+add_executable(snap EXCLUDE_FROM_ALL snap.cc)
 add_executable(ph_test EXCLUDE_FROM_ALL ph_test.cc)
 add_executable(uniform EXCLUDE_FROM_ALL uniform.cc)
 add_executable(fixshape EXCLUDE_FROM_ALL fixshape.cc)
-add_executable(snap EXCLUDE_FROM_ALL snap.cc)
+add_executable(tetrahedronize EXCLUDE_FROM_ALL tetrahedronize.cc)
 add_executable(render EXCLUDE_FROM_ALL render.cc)
 add_executable(verify EXCLUDE_FROM_ALL verify.cc)
 add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
@@ -38,10 +39,11 @@ set(tests
   mds_test
   ma_test
   convert
+  snap
   ph_test
   uniform
   fixshape
-  snap
+  tetrahedronize
   render
   verify
   spr_test

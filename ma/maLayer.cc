@@ -2,6 +2,7 @@
 #include "maAdapt.h"
 #include "maRefine.h"
 #include "maBalance.h"
+#include "maCrawler.h"
 #include <apfNumbering.h>
 #include <apfCavityOp.h>
 #include <apfShape.h>
@@ -162,142 +163,10 @@ void chooseBaseDiagonals(Adapt* a)
   apf::destroyNumbering(n);
 }
 
-Entity* getOtherQuad(Adapt* a, Entity* e)
-{
-  Mesh* m = a->mesh;
-  apf::Up up;
-  m->getUp(e,up);
-  for (int i=0; i < up.n; ++i)
-  {
-    Entity* of = up.e[i];
-    if ((m->getType(of)==QUAD)&&
-        ( ! getFlag(a,of,DIAGONAL_1 | DIAGONAL_2)))
-      return of;
-  }
-  return 0;
-}
-
-Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e)
-{
-  Entity* edges[4];
-  m->getDownward(q,1,edges);
-  int i = findIn(edges,4,e);
-  i = (i+2)%4;
-  return edges[i];
-}
-
-int getQuadEdgeDiagonalBit(
-    Entity* edge,
-    Entity** quadEdges,
-    int* directions)
-{
-  int i = findIn(quadEdges,4,edge);
-  int i_bit = i & 1;
-  int dir_bit = directions[i];
-  return i_bit ^ dir_bit;
-}
-
-Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
-{
-  Mesh* m = a->mesh;
-  int diagonal = getDiagonalFromFlag(a,e);
-  if (diagonal == -1)
-  {
-    fprintf(stderr,"(flagQuad) edge on model dim %d has no flag\n",
-        m->getModelType(m->toModel(e)));
-    abort();
-  }
-  Entity* es[4];
-  int ds[4];
-  getFaceEdgesAndDirections(m,q,es,ds);
-  diagonal ^= getQuadEdgeDiagonalBit(e,es,ds);
-  setFlag(a,q,diagonalToFlag(diagonal));
-  e = getQuadEdgeOppositeEdge(m,q,e);
-  /* bit flip going out is the opposite of bit flip
-     going in   V   */
-  diagonal ^= 1 ^ getQuadEdgeDiagonalBit(e,es,ds);
-  setFlag(a,e,diagonalToFlag(diagonal));
-  return e;
-}
-
-void getBaseLayer(Adapt* a, std::vector<Entity*>& base)
-{
-  Mesh* m = a->mesh;
-  Iterator* it = m->begin(1);
-  Entity* e;
-  while ((e = m->iterate(it)))
-    if (getFlag(a,e,LAYER_BASE))
-      base.push_back(e);
-  m->end(it);
-}
-
-void flagLayer(Adapt* a, std::vector<Entity*>& layer)
-{
-  std::vector<Entity*> nextLayer;
-  for (size_t i = 0; i < layer.size(); ++i)
-  {
-    Entity* e = layer[i];
-    Entity* q = getOtherQuad(a,e);
-    if (q)
-    {
-      Entity* e2 = flagQuad(a,q,e);
-      nextLayer.push_back(e2);
-    }
-    clearFlag(a,e,DIAGONAL_1 | DIAGONAL_2);
-  }
-  layer.swap(nextLayer);
-}
-
-void syncLayer(Adapt* a, std::vector<Entity*>& layer)
-{
-  Mesh* m = a->mesh;
-  PCU_Comm_Begin();
-  for (size_t i = 0; i < layer.size(); ++i)
-  {
-    Entity* e = layer[i];
-    if (m->isShared(e))
-    {
-      int diagonal = getDiagonalFromFlag(a,e);
-      if (diagonal == -1)
-      {
-        fprintf(stderr,"(syncLayer) edge on model dim %d has no flag\n",
-            m->getModelType(m->toModel(e)));
-        abort();
-      }
-      apf::Copies remotes;
-      m->getRemotes(e,remotes);
-      APF_ITERATE(apf::Copies,remotes,it)
-      {
-        PCU_COMM_PACK(it->first,it->second);
-        PCU_COMM_PACK(it->first,diagonal);
-      }
-    }
-  }
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-    {
-      Entity* e;
-      PCU_COMM_UNPACK(e);
-      int diagonal;
-      PCU_COMM_UNPACK(diagonal);
-      if ( ! getFlag(a,e,DIAGONAL_1 | DIAGONAL_2))
-      {
-        setFlag(a,e,diagonalToFlag(diagonal));
-        layer.push_back(e);
-      }
-    }
-}
-
 void flagQuadDiagonals(Adapt* a)
 {
-  std::vector<Entity*> layer;
-  getBaseLayer(a,layer);
-  while (parallelOr( ! layer.empty()))
-  {
-    flagLayer(a,layer);
-    syncLayer(a,layer);
-  }
+  QuadFlagger op(a);
+  crawlLayers(&op);
 }
 
 static void findDelinquents(Adapt* a)

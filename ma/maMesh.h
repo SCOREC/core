@@ -67,6 +67,7 @@ int getDownIndex(Mesh* m, Entity* e, Entity* de);
 Entity* getTriEdgeOppositeVert(Mesh* m, Entity* tri, Entity* v);
 Entity* getTriVertOppositeEdge(Mesh* m, Entity* tri, Entity* v);
 Entity* getTetVertOppositeTri(Mesh* m, Entity* tet, Entity* tri);
+Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e);
 
 Entity* findTetByTwoTris(Mesh* m, Entity** tris);
 

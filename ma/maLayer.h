@@ -18,6 +18,7 @@ void collectForLayerRefine(Refine* r);
 void flagNewLayerEntities(Refine* r);
 
 int getDiagonalFromFlag(Adapt* a, Entity* e);
+int diagonalToFlag(int diagonal);
 
 }
 

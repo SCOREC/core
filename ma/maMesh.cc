@@ -200,6 +200,15 @@ Entity* getTetVertOppositeTri(Mesh* m, Entity* tet, Entity* tri)
   return 0;
 }
 
+Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e)
+{
+  Entity* edges[4];
+  m->getDownward(q,1,edges);
+  int i = findIn(edges,4,e);
+  i = (i+2)%4;
+  return edges[i];
+}
+
 Entity* findTetByTwoTris(Mesh* m, Entity** tris)
 {
   apf::Up rs;
