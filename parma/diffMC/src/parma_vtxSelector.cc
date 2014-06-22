@@ -17,9 +17,9 @@ namespace parma {
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
         vtag = mesh->createIntTag("selector_visited",1);
-        const int maxBoundedElm = 6;
+        const size_t maxBoundedElm = 6;
         double planW=0;
-        for( int maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
+        for( size_t maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
           planW += select(tgts, planW, maxAdjElm, plan);
         apf::removeTagFromDimension(mesh,vtag,0);
         mesh->destroyTag(vtag);
@@ -28,7 +28,7 @@ namespace parma {
     private:
       apf::MeshTag* vtag;
       VtxSelector();
-      double add(apf::MeshEntity* vtx, const int maxAdjElm, 
+      double add(apf::MeshEntity* vtx, const size_t maxAdjElm, 
           const int destPid, apf::Migration* plan) {
         apf::DynamicArray<apf::MeshEntity*> adjElms;
         mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
