@@ -27,6 +27,7 @@ add_executable(split EXCLUDE_FROM_ALL split.cc)
 add_executable(zsplit EXCLUDE_FROM_ALL zsplit.cc)
 add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
 add_executable(bfs EXCLUDE_FROM_ALL bfs.cc)
+add_executable(hps EXCLUDE_FROM_ALL hps.cc)
 
 set(tests
   gmi_test
@@ -44,7 +45,8 @@ set(tests
   split
   zsplit
   ghost
-  bfs)
+  bfs
+  hps)
 
 foreach(test ${tests})
   target_link_libraries(${test}

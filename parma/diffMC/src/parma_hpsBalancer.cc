@@ -93,6 +93,15 @@ namespace parma {
     return maxWeight(w)/avgWeight(w);
   }
 
+  double imbalance(apf::Mesh* m, apf::MeshTag* wtag) {
+    Sides* s = makeElmBdrySides(m);
+    Weights* w = makeEntWeights(m, wtag, s, m->getDimension());
+    double imb = imbalance(w);
+    delete w; 
+    delete s;
+    return imb;
+  }
+
   double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
     double testW = imbalance(w)*avgWeight(w);
     double step = 0.2;
@@ -154,8 +163,8 @@ namespace parma {
       tgtEmpties.push_back(tgtPartId);
     }
     assert( numSplit && tgtEmpties.size() );
-    //run async rib 
-    //assign rib blocks to tgtEmpties 
+    //TODO run async rib 
+    //TODO assign rib blocks to tgtEmpties 
   }
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
@@ -168,24 +177,28 @@ namespace parma {
 
   class HpsBalancer : public apf::Balancer {
     public:
-      HpsBalancer(apf::Mesh* m, double factor, int v)
+      HpsBalancer(apf::Mesh* m, int v)
         : mesh(m), verbose(v) 
       {
         (void) verbose; // silence!
-        (void) factor; // silence!
       }
-      void run(apf::MeshTag* wtag, double tolerance) {
+      void run(apf::MeshTag* wtag) {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
         hps(mesh, wtag, sides, w, tgt);
+        delete sides;
+        delete w;
       }
       virtual void balance(apf::MeshTag* weights, double tolerance) {
+        (void) tolerance; // shhh
         double t0 = MPI_Wtime();
-        run(weights,tolerance);
-        double t1 = MPI_Wtime();
+        run(weights);
+        double elapsed = MPI_Wtime()-t0;
+        PCU_Max_Doubles(&elapsed, 1);
+        double maxImb = imbalance(mesh, weights);
         if (!PCU_Comm_Self())
-          printf("elements balanced to %f in %f seconds\n", tolerance, t1-t0);
+          printf("elements balanced to %f in %f seconds\n", maxImb, elapsed);
       }
     private:
       apf::Mesh* mesh;
@@ -193,7 +206,6 @@ namespace parma {
   };
 }; //end parma namespace
 
-apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, 
-    double stepFactor, int verbosity) {
-  return new parma::HpsBalancer(m, stepFactor, verbosity);
+apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity) {
+  return new parma::HpsBalancer(m, verbosity);
 }
