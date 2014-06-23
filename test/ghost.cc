@@ -49,7 +49,6 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
-  PCU_Debug_Open();
   gmi_register_mesh();
   PCU_Protect();
   getConfig(argc,argv);
@@ -61,5 +60,3 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
-
