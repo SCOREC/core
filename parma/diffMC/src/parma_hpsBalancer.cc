@@ -7,13 +7,12 @@
 
 namespace parma {
 
-  class MergeTargets : public Targets {
+  class MergeTargets : public Targets {  // we don't really need a map/associative container here - a list/vector/array would work
     public:
-      MergeTargets(Sides* s, Weights* w, double maxImb) 
+      MergeTargets(Sides* s, Weights* w, double maxW) 
         : Targets(s,w,0.1) 
       {
-        //compute average part weight and maximum imbalance 
-        //if (weight < avgWeight * maxImb && weight > 0) then
+        //if (weight < maxW && weight > 0) then
         //  run knapsack and fill in the net 
         //  (see targets.h and associative.h for container API to use for net)
       }
@@ -47,20 +46,21 @@ namespace parma {
           m->getDoubleTag(e,w,&entW);
         return entW;
       }
+      //getMergedWeight() // how much weight is being merged into myself??
   };
 
-  int numSplits(Weights& w, double tgtWeight) {
-    return static_cast<int>(ceil(w.self()/tgtWeight));
+  int splits(Weights& w, double tgtWeight) {
+    return static_cast<int>(ceil(w.self()/tgtWeight))-1; //FIXME - self needs to return merged part size
   }
 
   int isEmpty(Weights& w) {
     return (w.self() == 0) ? 1 : 0; //FIXME - dangerous comparison
   }
 
-  int numHeavy(Weights& w, double tgtWeight) {
-    int splits = numSplits(w, tgtWeight);
-    PCU_Add_Ints(&splits, 1);
-    return splits;
+  int totSplits(Weights& w, double tgtWeight) {
+    int numSplits = splits(w, tgtWeight);
+    PCU_Add_Ints(&numSplits, 1);  // MPI_All_reduce(...,MPI_SUM,...)
+    return numSplits;
   }
 
   int numEmpty(Weights& w) {
@@ -70,11 +70,11 @@ namespace parma {
   }
 
   bool canSplit(Weights& w, double tgt, int& extra) {
-    extra = numHeavy(w, tgt) - numEmpty(w);
-    if ( extra >= 0 )
+    extra = numEmpty(w) - totSplits(w, tgt);
+    if ( extra < 0 )
+      return false;   
+    else
       return true;
-    else 
-      return false;
   }
 
   double avgWeight(Weights* w) {
@@ -110,8 +110,8 @@ namespace parma {
     do {
       testW -= step;
       MergeTargets mergeTgts(s, w, testW);
-      apf::Migration* plan = selectMerges(m, mergeTgts);
-      MergeWeights mergeWeights(m, wtag, s, plan);
+      apf::Migration* plan = selectMerges(m, mergeTgts); 
+      MergeWeights mergeWeights(m, wtag, s, plan); // compute the weight of each part post merges
       splits = canSplit(mergeWeights, testW, extraEmpties);
       delete plan; // not migrating
     } while ( splits );
@@ -121,7 +121,7 @@ namespace parma {
 
   void split(Weights& w, double tgt, apf::Migration* plan) {
     const int partId = PCU_Comm_Self();
-    int numSplit = numSplits(w, tgt);
+    int numSplit = splits(w, tgt);
     int empty = isEmpty(w);
     assert(!(numSplit && empty));
     int hl[2] = {numSplit, empty};
@@ -164,7 +164,8 @@ namespace parma {
     }
     assert( numSplit && tgtEmpties.size() );
     //TODO run async rib 
-    //TODO assign rib blocks to tgtEmpties 
+    //TODO assign rib blocks/sub-parts to tgtEmpties
+    //TODO add element empty assignments to plan 
   }
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
