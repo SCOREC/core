@@ -11,7 +11,7 @@ include_directories(
   ${PARMA_INCLUDE_DIRS}
   ${PH_INCLUDE_DIRS})
 
-add_executable(gmi_test EXCLUDE_FROM_ALL gmi_test.c)
+add_executable(mdlConvert EXCLUDE_FROM_ALL mdlConvert.c)
 add_executable(mds_test EXCLUDE_FROM_ALL mds_test.cc)
 add_executable(ma_test EXCLUDE_FROM_ALL ma_test.cc)
 add_executable(ph_test EXCLUDE_FROM_ALL ph_test.cc)
@@ -30,7 +30,7 @@ add_executable(bfs EXCLUDE_FROM_ALL bfs.cc)
 add_executable(hps EXCLUDE_FROM_ALL hps.cc)
 
 set(tests
-  gmi_test
+  mdlConvert
   mds_test
   ma_test
   ph_test
