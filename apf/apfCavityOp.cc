@@ -39,7 +39,8 @@ void CavityOp::applyLocallyWithModification(int d)
       { 
         movedByDeletion = false;
         apply();
-        if (movedByDeletion) continue;
+        if (movedByDeletion)
+          continue;
       }
     }
     mesh2->increment(this->iterator);
@@ -81,9 +82,11 @@ void CavityOp::applyLocallyWithoutModification(int d)
   isRequesting = true;
   while ((e = mesh->iterate(entities)))
   {
-    if ( ! mesh->isOwned(e)) continue;
+    if ( ! mesh->isOwned(e))
+      continue;
     Outcome o = setEntity(e);
-    if (o == OK) apply();
+    if (o == OK)
+      apply();
   }
   mesh->end(entities);
 }

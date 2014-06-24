@@ -175,8 +175,9 @@ struct TopFlagger : public apf::CavityOp
   }
   Outcome setEntity(Entity* v_)
   {
-    if (!getFlag(a, v_, LAYER) ||
-        getFlag(a, v_, LAYER_BASE))
+    if ((!getFlag(a, v_, LAYER)) ||
+        getFlag(a, v_, LAYER_BASE) ||
+        getFlag(a, v_, CHECKED))
       return SKIP;
     if (!requestLocality(&v_, 1))
       return REQUEST;
@@ -200,6 +201,7 @@ struct TopFlagger : public apf::CavityOp
   }
   void apply()
   {
+    setFlag(a, v, CHECKED);
     if (isTop())
       setFlag(a, v, LAYER_TOP);
   }
@@ -214,6 +216,7 @@ void flagLayerTop(Adapt* a)
   Tag* layerNumbers = numberLayer(a);
   TopFlagger op(a, layerNumbers);
   op.applyToDimension(0);
+  clearFlagFromDimension(a, CHECKED, 0);
   apf::removeTagFromDimension(a->mesh, layerNumbers, 0);
   a->mesh->destroyTag(layerNumbers);
 }

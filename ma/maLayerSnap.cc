@@ -297,7 +297,7 @@ void snapLayer(Adapt* a, Tag* snapTag)
   feedbackTopSnap(a, snapTag);
   snapLowerLayer(a, snapTag);
   double t1 = MPI_Wtime();
-  printf("snapped %ld of %ld layer curves in %f seconds\n",
+  print("snapped %ld of %ld layer curves in %f seconds",
       success, targets, t1 - t0);
 }
 
