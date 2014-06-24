@@ -166,16 +166,13 @@ class MeshMDS : public Mesh2
     }
     bool isOwned(MeshEntity* e)
     {
-      if (!isShared(e))
-        return true;
-      mds_copies* c = mds_get_copies(&mesh->remotes, fromEnt(e));
-      return getId() < c->c[0].p;
+      return getId() == getOwner(e);
     }
     int getOwner(MeshEntity* e)
     {
-      if (isOwned(e))
-        return getId();
-      return mds_get_copies(&mesh->remotes, fromEnt(e))->c[0].p;
+      void* vp = mds_get_part(mesh, fromEnt(e));
+      PME* p = static_cast<PME*>(vp);
+      return p->owner;
     }
     void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent)
     {
