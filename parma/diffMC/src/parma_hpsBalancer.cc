@@ -7,13 +7,12 @@
 
 namespace parma {
 
-  class MergeTargets : public Targets {
+  class MergeTargets : public Targets {  // we don't really need a map/associative container here - a list/vector/array would work
     public:
-      MergeTargets(Sides* s, Weights* w, double maxImb) 
+      MergeTargets(Sides* s, Weights* w, double maxW) 
         : Targets(s,w,0.1) 
       {
-        //compute average part weight and maximum imbalance 
-        //if (weight < avgWeight * maxImb && weight > 0) then
+        //if (weight < maxW && weight > 0) then
         //  run knapsack and fill in the net 
         //  (see targets.h and associative.h for container API to use for net)
       }
@@ -47,20 +46,21 @@ namespace parma {
           m->getDoubleTag(e,w,&entW);
         return entW;
       }
+      //getMergedWeight() // how much weight is being merged into myself??
   };
 
-  int numSplits(Weights& w, double tgtWeight) {
-    return static_cast<int>(ceil(w.self()/tgtWeight));
+  int splits(Weights& w, double tgtWeight) {
+    return static_cast<int>(ceil(w.self()/tgtWeight))-1; //FIXME - self needs to return merged part size
   }
 
   int isEmpty(Weights& w) {
     return (w.self() == 0) ? 1 : 0; //FIXME - dangerous comparison
   }
 
-  int numHeavy(Weights& w, double tgtWeight) {
-    int splits = numSplits(w, tgtWeight);
-    PCU_Add_Ints(&splits, 1);
-    return splits;
+  int totSplits(Weights& w, double tgtWeight) {
+    int numSplits = splits(w, tgtWeight);
+    PCU_Add_Ints(&numSplits, 1);  // MPI_All_reduce(...,MPI_SUM,...)
+    return numSplits;
   }
 
   int numEmpty(Weights& w) {
@@ -70,11 +70,11 @@ namespace parma {
   }
 
   bool canSplit(Weights& w, double tgt, int& extra) {
-    extra = numHeavy(w, tgt) - numEmpty(w);
-    if ( extra >= 0 )
+    extra = numEmpty(w) - totSplits(w, tgt);
+    if ( extra < 0 )
+      return false;   
+    else
       return true;
-    else 
-      return false;
   }
 
   double avgWeight(Weights* w) {
@@ -93,6 +93,15 @@ namespace parma {
     return maxWeight(w)/avgWeight(w);
   }
 
+  double imbalance(apf::Mesh* m, apf::MeshTag* wtag) {
+    Sides* s = makeElmBdrySides(m);
+    Weights* w = makeEntWeights(m, wtag, s, m->getDimension());
+    double imb = imbalance(w);
+    delete w; 
+    delete s;
+    return imb;
+  }
+
   double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
     double testW = imbalance(w)*avgWeight(w);
     double step = 0.2;
@@ -101,8 +110,8 @@ namespace parma {
     do {
       testW -= step;
       MergeTargets mergeTgts(s, w, testW);
-      apf::Migration* plan = selectMerges(m, mergeTgts);
-      MergeWeights mergeWeights(m, wtag, s, plan);
+      apf::Migration* plan = selectMerges(m, mergeTgts); 
+      MergeWeights mergeWeights(m, wtag, s, plan); // compute the weight of each part post merges
       splits = canSplit(mergeWeights, testW, extraEmpties);
       delete plan; // not migrating
     } while ( splits );
@@ -112,7 +121,7 @@ namespace parma {
 
   void split(Weights& w, double tgt, apf::Migration* plan) {
     const int partId = PCU_Comm_Self();
-    int numSplit = numSplits(w, tgt);
+    int numSplit = splits(w, tgt);
     int empty = isEmpty(w);
     assert(!(numSplit && empty));
     int hl[2] = {numSplit, empty};
@@ -154,8 +163,9 @@ namespace parma {
       tgtEmpties.push_back(tgtPartId);
     }
     assert( numSplit && tgtEmpties.size() );
-    //run async rib 
-    //assign rib blocks to tgtEmpties 
+    //TODO run async rib 
+    //TODO assign rib blocks/sub-parts to tgtEmpties
+    //TODO add element empty assignments to plan 
   }
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
@@ -168,24 +178,28 @@ namespace parma {
 
   class HpsBalancer : public apf::Balancer {
     public:
-      HpsBalancer(apf::Mesh* m, double factor, int v)
+      HpsBalancer(apf::Mesh* m, int v)
         : mesh(m), verbose(v) 
       {
         (void) verbose; // silence!
-        (void) factor; // silence!
       }
-      void run(apf::MeshTag* wtag, double tolerance) {
+      void run(apf::MeshTag* wtag) {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
         hps(mesh, wtag, sides, w, tgt);
+        delete sides;
+        delete w;
       }
       virtual void balance(apf::MeshTag* weights, double tolerance) {
+        (void) tolerance; // shhh
         double t0 = MPI_Wtime();
-        run(weights,tolerance);
-        double t1 = MPI_Wtime();
+        run(weights);
+        double elapsed = MPI_Wtime()-t0;
+        PCU_Max_Doubles(&elapsed, 1);
+        double maxImb = imbalance(mesh, weights);
         if (!PCU_Comm_Self())
-          printf("elements balanced to %f in %f seconds\n", tolerance, t1-t0);
+          printf("elements balanced to %f in %f seconds\n", maxImb, elapsed);
       }
     private:
       apf::Mesh* mesh;
@@ -193,7 +207,6 @@ namespace parma {
   };
 }; //end parma namespace
 
-apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, 
-    double stepFactor, int verbosity) {
-  return new parma::HpsBalancer(m, stepFactor, verbosity);
+apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity) {
+  return new parma::HpsBalancer(m, verbosity);
 }
