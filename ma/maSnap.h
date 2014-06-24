@@ -24,6 +24,8 @@ void transferParametricOnEdgeSplit(
 void snap(Adapt* a);
 void visualizeGeometricInfo(Mesh* m, const char* name);
 
+long snapTaggedVerts(Adapt* a, Tag* snapTag);
+
 }
 
 #endif

@@ -35,7 +35,7 @@ Adapt::Adapt(Input* in)
   shape = getShapeHandler(this);
   coarsensLeft = in->maximumIterations;
   refinesLeft = in->maximumIterations;
-  initLayer(this);
+  resetLayer(this);
 }
 
 Adapt::~Adapt()
@@ -215,7 +215,7 @@ int getClosestPair(Adapt* a, Entity* (*pairs)[2], int n)
 long markEntities(
     Adapt* a,
     int dimension,
-    bool (*predicate)(Adapt*,Entity*),
+    Predicate& predicate,
     int trueFlag,
     int falseFlag)
 {
@@ -230,7 +230,7 @@ long markEntities(
        3X speedup of the entire adaptation in some cases */
     if (getFlag(a,e,falseFlag))
       continue;
-    if (predicate(a,e))
+    if (predicate(e))
     {
       setFlag(a,e,trueFlag);
       if (a->mesh->isOwned(e))
@@ -427,6 +427,28 @@ void syncFlag(Adapt* a, int dimension, int flag)
       PCU_COMM_UNPACK(e);
       setFlag(a,e,flag);
     }
+}
+
+HasTag::HasTag(Mesh* m, Tag* t)
+{
+  mesh = m;
+  tag = t;
+}
+
+bool HasTag::operator()(Entity* e)
+{
+  return mesh->hasTag(e, tag);
+}
+
+HasFlag::HasFlag(Adapt* a, int f)
+{
+  adapter = a;
+  flag = f;
+}
+
+bool HasFlag::operator()(Entity* e)
+{
+  return getFlag(adapter, e, flag);
 }
 
 }

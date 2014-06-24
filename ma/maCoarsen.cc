@@ -147,14 +147,20 @@ static int collapseAllEdges(Adapt* a, int modelDimension)
   return collapser.successCount;
 }
 
-bool shouldCollapse(Adapt* a, Entity* e)
+struct ShouldCollapse : public Predicate
 {
-  return a->sizeField->shouldCollapse(e);
-}
+  ShouldCollapse(Adapt* a_):a(a_) {}
+  bool operator()(Entity* e)
+  {
+    return a->sizeField->shouldCollapse(e);
+  }
+  Adapt* a;
+};
 
 long markEdgesToCollapse(Adapt* a)
 {
-  return markEntities(a,1,shouldCollapse,COLLAPSE,DONT_COLLAPSE);
+  ShouldCollapse p(a);
+  return markEntities(a, 1, p, COLLAPSE, DONT_COLLAPSE);
 }
 
 bool coarsen(Adapt* a)
