@@ -453,14 +453,20 @@ void cleanSplitVerts(Refine* r)
     m->removeTag(findSplitVert(r,1,i),tag);
 }
 
-bool shouldSplit(Adapt* a, Entity* e)
+struct ShouldSplit : public Predicate
 {
-  return a->sizeField->shouldSplit(e);
-}
+  ShouldSplit(Adapt* a_):a(a_) {}
+  bool operator()(Entity* e)
+  {
+    return a->sizeField->shouldSplit(e);
+  }
+  Adapt* a;
+};
 
 long markEdgesToSplit(Adapt* a)
 {
-  return markEntities(a,1,shouldSplit,SPLIT,DONT_SPLIT);
+  ShouldSplit p(a);
+  return markEntities(a, 1, p, SPLIT, DONT_SPLIT);
 }
 
 void processNewElements(Refine* r)
@@ -485,6 +491,7 @@ bool refine(Adapt* a)
 {
   double t0 = MPI_Wtime();
   --(a->refinesLeft);
+  allowSplitInLayer(a);
   long count = markEdgesToSplit(a);
   if ( ! count)
     return false;
@@ -497,12 +504,12 @@ bool refine(Adapt* a)
   collectForLayerRefine(r);
   splitElements(r);
   processNewElements(r);
-  flagNewLayerEntities(r);
   destroySplitElements(r);
   cleanSplitVerts(r);
   forgetNewEntities(r);
   double t1 = MPI_Wtime();
   print("refined %li edges in %f seconds",count,t1-t0);
+  resetLayer(a);
   return true;
 }
 

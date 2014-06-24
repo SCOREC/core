@@ -99,12 +99,40 @@ Algorithm~\ref{alg:parma} outlines the top-level procedure for iterative diffusi
 \caption{\label{fig:ownership4} One layer edge-based ghosting of a Delaunay mesh element partition.  Green elements are ghosted to the bottom part and yellow elements ghosted to the top part.}
 \end{figure}
 
+\begin{figure} 
+\centering
+\includegraphics[width=0.4\textwidth]{ghostingOwnershipFig5.png}
+\caption{\label{fig:ownership4} One layer edge-based ghosting of a Delaunay mesh element partition.  Green elements are ghosted to the bottom part and yellow elements ghosted to the top part.}
+\end{figure}
+
 \section{Code}
 
 The source can be downloaded from the following github repo \\
 https://github.com/SCOREC/core
 
 The code in parma/diffMC/src/parma\_ghost.cc implements the partitioning procedures and test/ghost.cc provides a test driver.  The test driver can be built with the command `make ghost'.  In the plate/2 directory of the test meshes SVN repo http://redmine.scorec.rpi.edu/svn/meshes is a two part 2D mesh for testing.  This mesh is classified on the plate/plate.dmg model.  Run the driver with the command `mpirun -np PROCS ./ghost MODEL MESH'.
+
+\section{Results}
+
+\begin{figure} 
+\centering
+\includegraphics[width=0.4\textwidth]{plateghosts.png}
+\caption{\label{fig:ownership4} Three layers of ghosting between two parts of a test mesh.  The boundary is only ghosted from the part that owns the vertices to the not owned part.}
+\end{figure}
+
+\begin{center}
+\begin{tabular}{c | c | c | c}
+  \hline
+  parts & initial imbalance & final imbalance & parma-ghost runtime \\
+  64 & 1.135 & 1.046 & 2.0222 \\
+  128 & 1.158 & 1.040 & 1.2728 \\
+  256 & 1.194 & 1.048 & 1.8081 \\
+  512 & 1.348 & 1.058 & 1.7639 \\
+  \hline 
+\end{tabular}
+\end{center}
+
+Testing was done on AMOS with a 60km mesh of the ocean using 64 nodes with varying part numbers ranging from 64 to 512 parts. The method was repeated until imblance reached 1.05 or better.
 
 \section{Todo}
 

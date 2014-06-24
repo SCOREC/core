@@ -50,6 +50,8 @@ set(SOURCES
   maBalance.cc
   maLayer.cc
   maCrawler.cc
+  maTetrahedronize.cc
+  maLayerSnap.cc
   maMap.cc)
 
 set(HEADERS

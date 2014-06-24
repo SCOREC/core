@@ -14,8 +14,8 @@
 #include "maEdgeSwap.h"
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
+#include "maShapeHandler.h"
 #include <PCU.h>
-#include <cstdio>
 
 namespace ma {
 
@@ -73,16 +73,20 @@ CodeMatch matchSliver(
   return table[getSliverCode(a,tet)];
 }
 
-bool isBadQuality(Adapt* a, Entity* e)
+struct IsBadQuality : public Predicate
 {
-  return measureElementQuality(a->mesh,a->sizeField,e)
-       < a->input->goodQuality;
-}
+  IsBadQuality(Adapt* a_):a(a_) {}
+  bool operator()(Entity* e)
+  {
+    return a->shape->getQuality(e) < a->input->goodQuality;
+  }
+  Adapt* a;
+};
 
 int markBadQuality(Adapt* a)
 {
-  return markEntities(a,a->mesh->getDimension(),
-      isBadQuality,BAD_QUALITY,OK_QUALITY);
+  IsBadQuality p(a);
+  return markEntities(a, a->mesh->getDimension(), p, BAD_QUALITY, OK_QUALITY);
 }
 
 class ShortEdgeFixer : public Operator
@@ -108,7 +112,7 @@ class ShortEdgeFixer : public Operator
       element = e;
       Downward edges;
       int n = mesh->getDownward(element,1,edges);
-      double l[6];
+      double l[6] = {};
       for (int i=0; i < n; ++i)
         l[i] = sizeField->measure(edges[i]);
       double maxLength;

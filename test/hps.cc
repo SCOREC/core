@@ -23,9 +23,9 @@ namespace {
   }
 
   apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
-    apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
+    apf::MeshTag* wtag = m->createDoubleTag("hpsUnitWeight",1);
     apf::MeshEntity* e;
-    apf::MeshIterator* itr = m->begin(0);
+    apf::MeshIterator* itr = m->begin(m->getDimension());
     double w = 1;
     while( (e = m->iterate(itr)) )
       m->setDoubleTag(e, wtag, &w);
@@ -35,11 +35,10 @@ namespace {
 
   void runParma(apf::Mesh* m) {
     apf::MeshTag* weights = applyUnitVtxWeight(m);
-    const int layers = 3;
-    const int bridgeDim = 1;
-    apf::Balancer* ghost = Parma_MakeGhostDiffuser(m, layers, bridgeDim);
-    ghost->balance(weights, 1.05);
-    delete ghost;
+    apf::Balancer* hps = Parma_MakeHpsBalancer(m);
+    double ignored = 3.14;
+    hps->balance(weights, ignored);
+    delete hps;
   }
 }
 
@@ -49,6 +48,7 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  PCU_Debug_Open();
   gmi_register_mesh();
   PCU_Protect();
   getConfig(argc,argv);
@@ -60,3 +60,5 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
+
+
