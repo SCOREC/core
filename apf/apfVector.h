@@ -61,6 +61,13 @@ class Vector : public Array<double,N>
     }
     double getLength() const {return sqrt((*this)*(*this));}
     Vector<N> normalize() const {return (*this) / getLength();}
+    bool operator==(Vector<N> const& b) const
+    {
+      for (std::size_t i=0; i < N; ++i)
+        if (this->elements[i] != b.elements[i])
+          return false;
+      return true;
+    }
 };
 
 inline Vector<3> cross(Vector<3> const& a, Vector<3> const& b)

@@ -135,13 +135,6 @@ class SnapAll : public Operator
     Snapper snapper;
 };
 
-static bool areExactlyEqual(Vector& a, Vector& b)
-{
-  return a[0] == b[0] &&
-         a[1] == b[1] &&
-         a[2] == b[2];
-}
-
 long tagVertsToSnap(Adapt* a, Tag*& t)
 {
   Mesh* m = a->mesh;
@@ -157,7 +150,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
     Vector s;
     getSnapPoint(m, v, s);
     Vector x = getPosition(m, v);
-    if (areExactlyEqual(s, x))
+    if (s == x)
       continue;
     m->setDoubleTag(v, t, &s[0]);
     if (m->isOwned(v))

@@ -193,19 +193,34 @@ struct LayerSnapper : public Crawler
   }
   void snap(Entity* v)
   {
+    //tops should have already snapped
+    if (getFlag(a, v, LAYER_TOP))
+      return;
     Vector s;
     m->getDoubleTag(v, snapTag, &s[0]);
     m->setPoint(v, 0, s);
   }
+  void handle(Entity* v, bool shouldSnap)
+  {
+    setFlag(a, v, CHECKED);
+    if (shouldSnap) {
+      snap(v);
+    } else if (m->hasTag(v, snapTag)) {
+      m->removeTag(v, snapTag);
+    }
+  }
   void begin(Layer& first)
   {
     getDimensionBase(a, 0, first);
+    Layer owned;
     for (size_t i = 0; i < first.size(); ++i) {
       Entity* v = first[i];
-      setFlag(a, v, CHECKED);
-      if (m->hasTag(v, snapTag))
-        snap(v);
+      if (m->isOwned(v)) {
+        handle(v, m->hasTag(v, snapTag));
+        owned.push_back(v);
+      }
     }
+    syncLayer(this, owned);
   }
   void end()
   {
@@ -217,14 +232,7 @@ struct LayerSnapper : public Crawler
     Entity* ov = getOtherVert(m, v, p);
     if (!ov)
       return 0;
-    setFlag(a, ov, CHECKED);
-    if (m->hasTag(v, snapTag)) {
-      //tops should have already snapped
-      if (!getFlag(a, ov, LAYER_TOP))
-        snap(ov);
-    } else if (m->hasTag(ov, snapTag)) {
-      m->removeTag(ov, snapTag);
-    }
+    handle(ov, m->hasTag(v, snapTag));
     return ov;
   }
   void send(Entity* v, int to)
@@ -238,9 +246,7 @@ struct LayerSnapper : public Crawler
     PCU_COMM_UNPACK(has);
     if (getFlag(a, v, CHECKED))
       return false;
-    setFlag(a, v, CHECKED);
-    if (!has && m->hasTag(v, snapTag))
-      m->removeTag(v, snapTag);
+    handle(v, has);
     return true;
   }
   Adapt* a;
