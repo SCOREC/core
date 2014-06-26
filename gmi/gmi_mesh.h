@@ -18,12 +18,20 @@ extern "C" {
 
 void gmi_register_mesh(void);
 
+void gmi_write_dmg(struct gmi_model* m, const char* filename);
+
 struct gmi_mesh {
   struct gmi_model model;
   int* tags[4];
 };
 
-void gmi_write_dmg(struct gmi_model* m, const char* filename);
+struct gmi_iter* gmi_mesh_begin(struct gmi_model* m, int dim);
+struct gmi_ent* gmi_mesh_next(struct gmi_model* m, struct gmi_iter* it);
+void gmi_mesh_end(struct gmi_model* m, struct gmi_iter* i);
+int gmi_mesh_dim(struct gmi_model* m, struct gmi_ent* e);
+int gmi_mesh_tag(struct gmi_model* m, struct gmi_ent* e);
+void gmi_mesh_destroy(struct gmi_model* m);
+struct gmi_ent* gmi_identify(int dim, int idx);
 
 #ifdef __cplusplus
 }

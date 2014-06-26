@@ -29,11 +29,13 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES
    gmi.c
-   gmi_mesh.c)
+   gmi_mesh.c
+   gmi_null.c)
 
 set(HEADERS
    gmi.h
-   gmi_mesh.h)
+   gmi_mesh.h
+   gmi_null.h)
 
 #Library
 if(BUILD_IN_TRILINOS)
