@@ -29,6 +29,7 @@ add_executable(zsplit EXCLUDE_FROM_ALL zsplit.cc)
 add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
 add_executable(bfs EXCLUDE_FROM_ALL bfs.cc)
 add_executable(hps EXCLUDE_FROM_ALL hps.cc)
+add_executable(fan EXCLUDE_FROM_ALL fan.cc)
 
 set(tests
   mdlConvert
@@ -48,7 +49,8 @@ set(tests
   zsplit
   ghost
   bfs
-  hps)
+  hps
+  fan)
 
 foreach(test ${tests})
   target_link_libraries(${test}
