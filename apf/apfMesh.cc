@@ -53,6 +53,11 @@ int const tet_edge_verts[6][2] =
 ,{1,3}
 ,{2,3}};
 
+int const prism_edge_verts[9][2] =
+{{0,1},{1,2},{2,0}
+,{0,3},{1,4},{2,5}
+,{3,4},{4,5},{5,3}};
+
 int const tet_tri_verts[4][3] =
 {{0,1,2}
 ,{0,1,3}

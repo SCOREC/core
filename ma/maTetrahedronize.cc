@@ -18,7 +18,7 @@ int getDiagonalFromFlag(Adapt* a, Entity* e)
   return -1;
 }
 
-static int diagonalToFlag(int diagonal)
+int getFlagFromDiagonal(int diagonal)
 {
   if (diagonal==0)
     return DIAGONAL_1;
@@ -98,12 +98,12 @@ static Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
   int ds[4];
   getFaceEdgesAndDirections(m,q,es,ds);
   diagonal ^= getQuadEdgeDiagonalBit(e,es,ds);
-  setFlag(a,q,diagonalToFlag(diagonal));
+  setFlag(a, q, getFlagFromDiagonal(diagonal));
   e = getQuadEdgeOppositeEdge(m,q,e);
   /* bit flip going out is the opposite of bit flip
      going in   V   */
   diagonal ^= 1 ^ getQuadEdgeDiagonalBit(e,es,ds);
-  setFlag(a,e,diagonalToFlag(diagonal));
+  setFlag(a, e, getFlagFromDiagonal(diagonal));
   return e;
 }
 
@@ -134,7 +134,7 @@ struct QuadFlagger : public Crawler
     PCU_COMM_UNPACK(diagonal);
     if (getFlag(adapter, e, DIAGONAL_1 | DIAGONAL_2))
       return false;
-    setFlag(adapter, e, diagonalToFlag(diagonal));
+    setFlag(adapter, e, getFlagFromDiagonal(diagonal));
     return true;
   }
 };

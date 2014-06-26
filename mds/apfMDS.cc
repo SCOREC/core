@@ -603,6 +603,26 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
   return new MeshMDS(model, from);
 }
 
+Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
+{
+  double t0 = MPI_Wtime();
+  Mesh2* m = new MeshMDS(model, meshfile);
+  initResidence(m, m->getDimension());
+  stitchMesh(m);
+  m->acceptChanges();
+  /* This is a hack to detect a mesh written to file
+     with a quadratic coordinate field stored in tags.
+     the proper solution is to work APF information into
+     the files */
+  if (m->findTag("coordinates_edg"))
+    changeMeshShape(m,getLagrange(2),/*project=*/false);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
+  printStats(m);
+  return m;
+}
+
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
   double t0 = MPI_Wtime();
@@ -614,21 +634,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
-  Mesh2* m = new MeshMDS(model, meshfile);
-  initResidence(m, m->getDimension());
-  stitchMesh(m);
-  m->acceptChanges();
-  /* This is a hack to detect a mesh written to file
-     with a quadratic coordinate field stored in tags.
-     the proper solution is to work APF information into
-     the files */
-  if (m->findTag("coordinates_edg"))
-    changeMeshShape(m,getLagrange(2),/*project=*/false);
-  double t2 = MPI_Wtime();
-  if (!PCU_Comm_Self())
-    printf("mesh %s loaded in %f seconds\n", meshfile, t2 - t1);
-  printStats(m);
-  return m;
+  return loadMdsMesh(model, meshfile);
 }
 
 void defragMdsMesh(Mesh2* mesh)
