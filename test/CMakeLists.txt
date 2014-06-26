@@ -15,7 +15,7 @@ include_directories(
   ${PARMA_INCLUDE_DIRS}
   ${PH_INCLUDE_DIRS})
 
-add_executable(mdlConvert EXCLUDE_FROM_ALL mdlConvert.c)
+add_executable(mdlConvert EXCLUDE_FROM_ALL mdlConvert.cc)
 add_executable(mkmodel EXCLUDE_FROM_ALL mkmodel.cc)
 add_executable(mds_test EXCLUDE_FROM_ALL mds_test.cc)
 add_executable(ma_test EXCLUDE_FROM_ALL ma_test.cc)
