@@ -31,6 +31,7 @@ void gmi_mesh_end(struct gmi_model* m, struct gmi_iter* i);
 int gmi_mesh_dim(struct gmi_model* m, struct gmi_ent* e);
 int gmi_mesh_tag(struct gmi_model* m, struct gmi_ent* e);
 void gmi_mesh_destroy(struct gmi_model* m);
+int gmi_index(struct gmi_ent* e);
 struct gmi_ent* gmi_identify(int dim, int idx);
 
 #ifdef __cplusplus
