@@ -18,9 +18,14 @@ void allowSplitInLayer(Adapt* a);
 void collectForLayerRefine(Refine* r);
 
 int getDiagonalFromFlag(Adapt* a, Entity* e);
+int getFlagFromDiagonal(int diagonal);
+
 void tetrahedronize(Adapt* a);
 
 void snapLayer(Adapt* a, Tag* snapTag);
+
+void setupLayerForSplit(Adapt* a);
+void setupRefineForLayer(Refine* r);
 
 }
 

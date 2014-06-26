@@ -245,19 +245,21 @@ int const oct_rotation[24][6] =
 ,{5,2,1,4,3,0}
 };
 
-int const quad_edge_codes[3] =
+int const quad_edge_codes[quad_edge_code_count] =
 {0x0//0000 not split (tetrahedronize)
 ,0x5//0101 split two edges
 ,0xF//1111 split all edges
 };
 
-int const prism_edge_codes[3] =
+int const prism_edge_codes[prism_edge_code_count] =
 {0x000//000.000.000 not split (tetrahedronize)
 ,0x041//001.000.001 split two horizontal edges
+,0x0C3//011.000.011 split four horizontal edges
+,0x1C7//111.000.111 split all horizontal edges
 ,0x1FF//111.111.111 split all edges
 };
 
-int const pyramid_edge_codes[3] =
+int const pyramid_edge_codes[pyramid_edge_code_count] =
 {0x00//0000.0000 not split (tetrahedronize)
 ,0x05//0000.0101 split two quad edges
 ,0xFF//1111.1111 split all edges

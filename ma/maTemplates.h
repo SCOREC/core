@@ -5,14 +5,20 @@
 
 namespace ma {
 
-/* given a quad-shaped area, splits it into
-   triangles along diagonal 0--2 */
-void quadToTris(Refine* r, Entity* parent, Entity** v);
-/* given a quad-shaped area, splits into
-   triangles based on shortest diagonal.
-   returns 0 if v[0]-v[2] is chosen, 1 otherwise. */
-int quadToTrisGeometric(Refine* r, Entity* parent, Entity** v);
+Entity* makeSplitVert(Refine* r, Entity* edge);
 
+int quadToTrisChoice(Refine* r, Entity* p, Entity** v, int rotation);
+
+int getPrismDiagonalCode(Mesh* m, Entity** v);
+bool checkPrismDiagonalCode(int code);
+void prismToTetsGoodCase(Refine* r, Entity* parent, Entity** v_in, int code);
+
+void pyramidToTets(Refine* r, Entity* parent, Entity** v);
+
+void octToTetsGeometric(Refine* r, Entity* parent, Entity** v);
+
+extern SplitFunction edge_templates[edge_edge_code_count];
+extern SplitFunction tri_templates[tri_edge_code_count];
 extern SplitFunction tet_templates[tet_edge_code_count];
 extern SplitFunction quad_templates[quad_edge_code_count];
 extern SplitFunction prism_templates[prism_edge_code_count];

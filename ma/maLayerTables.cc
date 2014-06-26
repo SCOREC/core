@@ -28,7 +28,7 @@ CodeMatch const quad_code_match[(1<<4)] =
    on edge codes, but unless we break 1024 entries it
    really doesn't make sense to have special cases or redesign
    the system. */
-CodeMatch const prism_code_match[(1<<9)] = 
+CodeMatch const prism_code_match[(1<<9)] =
 {{0,0}
 ,{0,-1}
 ,{0,-1}
@@ -224,7 +224,7 @@ CodeMatch const prism_code_match[(1<<9)] =
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
-,{0,-1}
+,{0,2}
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
@@ -354,6 +354,7 @@ CodeMatch const prism_code_match[(1<<9)] =
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
+,{2,2}
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
@@ -418,6 +419,7 @@ CodeMatch const prism_code_match[(1<<9)] =
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
+,{1,2}
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
@@ -482,6 +484,7 @@ CodeMatch const prism_code_match[(1<<9)] =
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
+,{0,3}
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
@@ -537,10 +540,7 @@ CodeMatch const prism_code_match[(1<<9)] =
 ,{0,-1}
 ,{0,-1}
 ,{0,-1}
-,{0,-1}
-,{0,-1}
-,{0,-1}
-,{0,2}
+,{0,4}
 };
 
 /* again, this is a 256-entry array with 4 meaningful entries.

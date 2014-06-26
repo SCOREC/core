@@ -87,6 +87,23 @@ Entity* getOtherVert(Mesh* m, Entity* v, Predicate& visited)
   return 0;
 }
 
+Entity* getOtherEdge(Mesh* m, Entity* e, Predicate& visited)
+{
+  Upward faces;
+  m->getAdjacent(e, 2, faces);
+  APF_ITERATE(Upward, faces, it) {
+    if (m->getType(*it) != QUAD)
+      continue;
+    Entity* es[4];
+    m->getDownward(*it, 1, es);
+    int i = apf::findIn(es, 4, e);
+    int j = (i + 2) % 4;
+    if (!visited(es[j]))
+      return es[j];
+  }
+  return 0;
+}
+
 struct Tagger
 {
   void init(Mesh* m_, Tag* t_)

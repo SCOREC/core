@@ -62,6 +62,8 @@ Entity* findPlacedSplitVert(Refine* r, Entity* v0, Entity* v1, double& place);
 
 typedef void (*SplitFunction)(Refine* r, Entity* face, Entity** v);
 
+int matchEntityToTemplate(Adapt* a, Entity* e, Entity** v);
+
 }
 
 #endif

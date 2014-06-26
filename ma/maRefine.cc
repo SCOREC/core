@@ -128,7 +128,7 @@ Refine::~Refine()
   m->destroyTag(vertPlaceTag);
 }
 
-static Entity* makeSplitVert(Refine* r, Entity* edge)
+Entity* makeSplitVert(Refine* r, Entity* edge)
 {
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
@@ -204,16 +204,6 @@ Entity* findPlacedSplitVert(Refine* r, Entity* v0, Entity* v1, double& place)
   return vert;
 }
 
-static void splitEdge(Refine* r, Entity* edge, Entity** v)
-{
-  Entity* sv = makeSplitVert(r,edge);
-  Entity* ev[2];
-  ev[0] = v[0]; ev[1] = sv;
-  buildSplitElement(r,edge,EDGE,ev);
-  ev[0] = sv; ev[1] = v[1];
-  buildSplitElement(r,edge,EDGE,ev);
-}
-
 static int getEdgeSplitCode(Adapt* a, Entity* e)
 {
   Downward edges;
@@ -231,7 +221,7 @@ static int getEdgeSplitCode(Adapt* a, Entity* e)
    rotated vertices.
    in the case of no splits, this function doesn't bother
    returning the vertices. */
-static int matchEntityToTemplate(Adapt* a, Entity* e, Entity** v)
+int matchEntityToTemplate(Adapt* a, Entity* e, Entity** v)
 {
   int code = getEdgeSplitCode(a,e);
   Mesh* m = a->mesh;
@@ -242,58 +232,6 @@ static int matchEntityToTemplate(Adapt* a, Entity* e, Entity** v)
   rotateEntity(m,e,rotation,v);
   return table[code].code_index;
 }
-
-static void splitTri1(Refine* r, Entity* face, Entity** v)
-{
-  Entity* sv = findSplitVert(r,v[0],v[1]);
-  Entity* tv[3];
-  tv[0] = v[0]; tv[1] = sv; tv[2] = v[2];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[2]; tv[1] = sv; tv[2] = v[1];
-  buildSplitElement(r,face,TRI,tv);
-}
-
-static void splitTri2(Refine* r, Entity* face, Entity** v)
-{
-  Entity* sv[2];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[1],v[2]);
-  Entity* tv[3];
-  tv[0] = sv[1]; tv[1] = sv[0]; tv[2] = v[1];
-  buildSplitElement(r,face,TRI,tv);
-  Entity* qv[4];
-  qv[0] = v[0]; qv[1] = sv[0]; qv[2] = sv[1]; qv[3] = v[2];
-  quadToTrisGeometric(r,face,qv);
-}
-
-static void splitTri3(Refine* r, Entity* face, Entity** v)
-{
-  Entity* sv[3];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[1],v[2]);
-  sv[2] = findSplitVert(r,v[2],v[0]);
-  Entity* tv[3];
-  tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = sv[2];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[0]; tv[1] = sv[0]; tv[2] = sv[2];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[1]; tv[1] = sv[1]; tv[2] = sv[0];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[2]; tv[1] = sv[2]; tv[2] = sv[1];
-  buildSplitElement(r,face,TRI,tv);
-}
-
-static SplitFunction edge_templates[edge_edge_code_count] =
-{0,
- splitEdge,
-};
-
-static SplitFunction tri_templates[tri_edge_code_count] =
-{0,
- splitTri1,
- splitTri2,
- splitTri3
-};
 
 static SplitFunction* all_templates[TYPES] =
 {0,//vert
@@ -491,17 +429,17 @@ bool refine(Adapt* a)
 {
   double t0 = MPI_Wtime();
   --(a->refinesLeft);
-  allowSplitInLayer(a);
+  setupLayerForSplit(a);
   long count = markEdgesToSplit(a);
   if ( ! count)
     return false;
   assert(checkFlagConsistency(a,1,SPLIT));
   Refine* r = a->refine;
-  addAllMarkedEdges(r);
   resetCollection(r);
   collectForTransfer(r);
   collectForMatching(r);
-  collectForLayerRefine(r);
+  setupRefineForLayer(r);
+  addAllMarkedEdges(r);
   splitElements(r);
   processNewElements(r);
   destroySplitElements(r);
