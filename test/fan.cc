@@ -103,6 +103,7 @@ int main( int argc, char* argv[])
   m->verify();
   Vortex sf(m);
   ma::Input* in = ma::configure(m, &sf);
+  in->maximumIterations = 9;
   in->shouldRunPreZoltan = true;
   in->shouldRunMidDiffusion = true;
   in->shouldRunPostDiffusion = true;
