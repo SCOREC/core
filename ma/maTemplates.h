@@ -14,6 +14,7 @@ bool checkPrismDiagonalCode(int code);
 void prismToTetsGoodCase(Refine* r, Entity* parent, Entity** v_in, int code);
 
 void pyramidToTets(Refine* r, Entity* parent, Entity** v);
+void prismAndPyramidToTets(Refine* r, Entity* p, Entity** wv, Entity* v);
 
 void octToTetsGeometric(Refine* r, Entity* parent, Entity** v);
 

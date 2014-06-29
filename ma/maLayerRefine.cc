@@ -5,6 +5,21 @@
 
 namespace ma {
 
+static void preventQuadEdgeSplits(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  Iterator* it = m->begin(2);
+  Entity* e;
+  while ((e = m->iterate(it)))
+    if (m->getType(e) == QUAD) {
+      Entity* qe[4];
+      m->getDownward(e, 1, qe);
+      for (int i = 0; i < 4; ++i)
+        setFlag(a, qe[i], DONT_SPLIT);
+    }
+  m->end(it);
+}
+
 static void allowBaseToSplit(Adapt* a)
 {
   Mesh* m = a->mesh;
@@ -32,7 +47,15 @@ struct SplitTagger : public Crawler
   }
   void end()
   {
-    clearFlagFromDimension(a, CHECKED, 0);
+    clearFlagFromDimension(a, CHECKED, 1);
+  }
+  void handle(Entity* e, bool split)
+  {
+    setFlag(a, e, CHECKED);
+    if (split) {
+      clearFlag(a, e, DONT_SPLIT);
+      setFlag(a, e, SPLIT);
+    }
   }
   Entity* crawl(Entity* e)
   {
@@ -40,9 +63,7 @@ struct SplitTagger : public Crawler
     Entity* oe = getOtherEdge(m, e, p);
     if (!oe)
       return 0;
-    setFlag(a, oe, CHECKED);
-    if (getFlag(a, e, SPLIT))
-      setFlag(a, oe, SPLIT);
+    handle(oe, getFlag(a, e, SPLIT));
     return oe;
   }
   void send(Entity* e, int to)
@@ -56,9 +77,7 @@ struct SplitTagger : public Crawler
     PCU_COMM_UNPACK(has);
     if (getFlag(a, e, CHECKED))
       return false;
-    setFlag(a, e, CHECKED);
-    if (has)
-      setFlag(a, e, SPLIT);
+    handle(e, has);
     return true;
   }
   Adapt* a;
@@ -217,8 +236,12 @@ void setupLayerForSplit(Adapt* a)
     return;
   if (!a->input->shouldRefineLayer)
     return;
-  findLayerBase(a);
-  allowBaseToSplit(a);
+  unfreezeLayer(a);
+  if (!a->input->isUniform) {
+    preventQuadEdgeSplits(a);
+    findLayerBase(a);
+    allowBaseToSplit(a);
+  }
 }
 
 void setupRefineForLayer(Refine* r)
@@ -228,8 +251,10 @@ void setupRefineForLayer(Refine* r)
     return;
   if (!a->input->shouldRefineLayer)
     return;
-  tagSplits(a);
-  disambiguateLayerTris(a);
+  if (!a->input->isUniform) {
+    tagSplits(a);
+    disambiguateLayerTris(a);
+  }
   collectForLayerRefine(r);
 }
 

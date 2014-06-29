@@ -179,6 +179,7 @@ extern int const tri_edge_verts[3][2];
 extern int const quad_edge_verts[4][2];
 extern int const tet_edge_verts[6][2];
 extern int const prism_edge_verts[9][2];
+extern int const pyramid_edge_verts[8][2];
 extern int const tet_tri_verts[4][3];
 extern int const prism_tri_verts[2][3];
 extern int const prism_quad_verts[3][4];

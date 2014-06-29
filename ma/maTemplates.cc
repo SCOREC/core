@@ -558,6 +558,23 @@ void splitTet_4_2(Refine* r, Entity* tet, Entity** v)
   assert(wasOk == static_cast<bool>(ok1 & (1<<diag)));
 }
 
+/* given a prism shaped area denoted by wv and a pyramid from the
+   first quad of the prism to v, tetrahedronize the whole thing.
+   Assumes that the other two quads of the prism have diagonals
+   and uses them to prevent the bad case */
+void prismAndPyramidToTets(Refine* r, Entity* p, Entity** wv, Entity* v)
+{
+  Mesh* m = r->adapt->mesh;
+  int restriction = getPrismDiagonalChoices(m, wv);
+  Entity* qv[4] = {wv[0], wv[1], wv[4], wv[3]};
+  quadToTrisRestricted(r, p, qv, restriction);
+  Entity* pv[5] = {qv[0], qv[1], qv[2], qv[3], v};
+  pyramidToTets(r, p, pv);
+  int diagonals = getPrismDiagonalCode(m, wv);
+  assert(checkPrismDiagonalCode(diagonals));
+  prismToTetsGoodCase(r, p, wv, diagonals);
+}
+
 /* five edges are split, creating two tets,
    a pyramid, and a prism. the quad between
    the pyramid and prism is undecided; we
@@ -574,13 +591,7 @@ void splitTet_5(Refine* r, Entity* tet, Entity** v)
   Entity* pr[6]; //prism vertices
   pr[3] = q[3]; pr[4] = q[2]; pr[5] = v[3];
   pr[0] = q[0]; pr[1] = q[1]; pr[2] = v[2];
-  Mesh* m = r->adapt->mesh;
-  int ok = getPrismDiagonalChoices(m,pr);
-  quadToTrisRestricted(r,tet,q,ok);
-  pyramidToTets(r,tet,py);
-  int code = getPrismDiagonalCode(m,pr);
-  assert(checkPrismDiagonalCode(code));
-  prismToTetsGoodCase(r,tet,pr,code);
+  prismAndPyramidToTets(r, tet, pr, py[4]);
   Entity* t[4]; //tet vertices
   t[0] = v[0]; t[1] = py[4]; t[2] = py[0]; t[3] = py[3];
   buildSplitElement(r,tet,TET,t);

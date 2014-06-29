@@ -22,6 +22,7 @@ add_executable(tetrahedronize EXCLUDE_FROM_ALL tetrahedronize.cc)
 add_executable(render EXCLUDE_FROM_ALL render.cc)
 add_executable(verify EXCLUDE_FROM_ALL verify.cc)
 add_executable(prismCodeMatch EXCLUDE_FROM_ALL ../ma/prismCodeMatch.cc)
+add_executable(pyramidCodeMatch EXCLUDE_FROM_ALL ../ma/pyramidCodeMatch.cc)
 add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
 add_executable(describe EXCLUDE_FROM_ALL describe.cc)
 add_executable(balance EXCLUDE_FROM_ALL balance.cc)
@@ -44,6 +45,7 @@ set(tests
   render
   verify
   prismCodeMatch
+  pyramidCodeMatch
   spr_test
   describe
   balance

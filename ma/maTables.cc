@@ -191,6 +191,12 @@ int const prism_rotation[6][6] =
 ,{4,3,5,1,0,2}
 ,{5,4,3,2,1,0}};
 
+int const pyramid_rotation[4][5] =
+{{0,1,2,3,4}
+,{1,2,3,0,4}
+,{2,3,0,1,4}
+,{3,0,1,2,4}};
+
 /* maps all 8 possible diagonal orientations
    to the index of a common vertex.
    This also identifies which rotation to use
@@ -261,8 +267,22 @@ int const prism_edge_codes[prism_edge_code_count] =
 
 int const pyramid_edge_codes[pyramid_edge_code_count] =
 {0x00//0000.0000 not split (tetrahedronize)
-,0x05//0000.0101 split two quad edges
-,0xFF//1111.1111 split all edges
+,0x10//0001.0000 split one vertical edge (1_b0)
+,0x30//0011.0000 split two vertical edges (2_b0)
+,0x50//0101.0000 split opposite vertical edges (3_b0)
+,0xE0//1110.0000 split three vertical edges (4_b0)
+,0xF0//1111.0000 split all vertical edges (5_b0)
+,0x05//0000.0101 0_b1
+,0x15//0001.0101 1_b1
+,0x35//0011.0101 2_b1
+,0x55//0101.0101 3_b1
+,0xE5//1110.0101 4_b1
+,0xF5//1111.0101 5_b1
+,0x1A//0001.1010 1_b2
+,0x3A//0011.1010 2_b2
+,0x5A//0101.1010 3_b2
+,0xEA//1110.1010 4_b2
+,0xFF//1111.1111 split all edges (uniform refine)
 };
 
 }//namespace ma

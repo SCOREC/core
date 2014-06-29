@@ -9,7 +9,8 @@ class Adapt;
 class Refine;
 
 void resetLayer(Adapt* a);
-
+void freezeLayer(Adapt* a);
+void unfreezeLayer(Adapt* a);
 void findLayerBase(Adapt* a);
 
 void allowSplitCollapseOutsideLayer(Adapt* a);

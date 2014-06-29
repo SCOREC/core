@@ -28,7 +28,7 @@ static long markLayerElements(Adapt* a)
   return n;
 }
 
-static void freezeLayer(Adapt* a)
+void freezeLayer(Adapt* a)
 {
   if ( ! a->hasLayer)
     return;
@@ -48,6 +48,27 @@ static void freezeLayer(Adapt* a)
   while ((e = m->iterate(it)))
     if (getFlag(a, e, LAYER))
       setFlag(a, e, OK_QUALITY);
+  m->end(it);
+}
+
+void unfreezeLayer(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  Entity* e;
+  Iterator* it = m->begin(0);
+  while ((e = m->iterate(it)))
+    if (getFlag(a, e, LAYER))
+      clearFlag(a, e, DONT_COLLAPSE | DONT_SNAP);
+  m->end(it);
+  it = m->begin(1);
+  while ((e = m->iterate(it)))
+    if (getFlag(a, e, LAYER))
+      clearFlag(a, e, DONT_COLLAPSE | DONT_SPLIT | DONT_SWAP);
+  m->end(it);
+  it = m->begin(m->getDimension());
+  while ((e = m->iterate(it)))
+    if (getFlag(a, e, LAYER))
+      clearFlag(a, e, OK_QUALITY);
   m->end(it);
 }
 

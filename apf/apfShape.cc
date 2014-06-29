@@ -142,8 +142,13 @@ class Linear : public FieldShape
     class Pyramid : public EntityShape
     {
       public:
-        void getValues(Vector3 const&, NewArray<double>& ) const
-        {
+        void getValues(Vector3 const&, NewArray<double>& values) const
+        {/* hack warning: this just averages values, it is meant
+          to hold up the interpolation system in meshadapt for
+          splitting pyramid in the worst case */
+          values.allocate(5);
+          for (int i = 0; i < 5; ++i)
+            values[i] = 1.0/5.0;
         }
         void getLocalGradients(Vector3 const&, NewArray<Vector3>& ) const
         {

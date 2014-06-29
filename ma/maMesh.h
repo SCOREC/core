@@ -29,15 +29,15 @@ typedef apf::Downward Downward;
 typedef apf::ModelEntity Model;
 
 enum {
-  VERT = apf::Mesh::VERTEX,
-  EDGE = apf::Mesh::EDGE,
-  TRI = apf::Mesh::TRIANGLE,
-  QUAD = apf::Mesh::QUAD,
-  TET = apf::Mesh::TET,
-  HEX = apf::Mesh::HEX,
-  PRISM = apf::Mesh::PRISM,
-  PYRAMID = apf::Mesh::PYRAMID,
-  TYPES = apf::Mesh::TYPES
+  VERT = apf::Mesh::VERTEX,      //0
+  EDGE = apf::Mesh::EDGE,        //1
+  TRI = apf::Mesh::TRIANGLE,     //2
+  QUAD = apf::Mesh::QUAD,        //3
+  TET = apf::Mesh::TET,          //4
+  HEX = apf::Mesh::HEX,          //5
+  PRISM = apf::Mesh::PRISM,      //6
+  PYRAMID = apf::Mesh::PYRAMID,  //7
+  TYPES = apf::Mesh::TYPES       //8
 };
 
 Vector getPosition(Mesh* m, Entity* vertex);
@@ -111,6 +111,9 @@ int getFaceEdgeDirection(
     Mesh* m,
     Entity* face,
     Entity* edge);
+
+Entity* findEdge(Mesh* m, Entity* v0, Entity* v1);
+bool edgeExists(Mesh* m, Entity* v0, Entity* v1);
 
 }
 

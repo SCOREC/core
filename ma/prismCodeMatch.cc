@@ -68,7 +68,5 @@ int main()
     printf("{%d,%d}\n",rotation,index);
   }
   printf("};\n");
-  for (int i=0; i < ma::prism_edge_code_count; ++i)
-    fprintf(stderr,"canonical code %d is %d\n",i,ma::prism_edge_codes[i]);
 }
 

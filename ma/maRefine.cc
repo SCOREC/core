@@ -215,22 +215,27 @@ static int getEdgeSplitCode(Adapt* a, Entity* e)
   return code;
 }
 
-/* looks at which edges have been split and rotates
+/* based on type and edge split code, rotates
    the entity to the standard orientation for its template,
    returning the code index for the template and the
-   rotated vertices.
-   in the case of no splits, this function doesn't bother
-   returning the vertices. */
-int matchEntityToTemplate(Adapt* a, Entity* e, Entity** v)
+   rotated vertices. */
+int matchToTemplate(Adapt* a, int type, Entity** vi, int code, Entity** vo)
+{
+  CodeMatch const* table = code_match[type];
+  assert(table[code].code_index != -1);
+  int rotation = table[code].rotation;
+  rotateEntity(type, vi, rotation, vo);
+  return table[code].code_index;
+}
+
+int matchEntityToTemplate(Adapt* a, Entity* e, Entity** vo)
 {
   int code = getEdgeSplitCode(a,e);
   Mesh* m = a->mesh;
   int type = m->getType(e);
-  CodeMatch const* table = code_match[type];
-  assert(table[code].code_index != -1);
-  int rotation = table[code].rotation;
-  rotateEntity(m,e,rotation,v);
-  return table[code].code_index;
+  Downward vi;
+  m->getDownward(e, 0, vi);
+  return matchToTemplate(a, type, vi, code, vo);
 }
 
 static SplitFunction* all_templates[TYPES] =
@@ -431,8 +436,10 @@ bool refine(Adapt* a)
   --(a->refinesLeft);
   setupLayerForSplit(a);
   long count = markEdgesToSplit(a);
-  if ( ! count)
+  if ( ! count) {
+    freezeLayer(a);
     return false;
+  }
   assert(checkFlagConsistency(a,1,SPLIT));
   Refine* r = a->refine;
   resetCollection(r);
