@@ -56,6 +56,7 @@ void setDefaultValues(Input* in)
   in->diffuseIterations = 30;
   in->shouldTurnLayerToTets = false;
   in->shouldRefineLayer = false;
+  in->isUniform = false;
 }
 
 void rejectInput(const char* str)
@@ -194,6 +195,7 @@ Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
   in->sizeField = new UniformRefiner(m);
   in->maximumIterations = n;
   in->shouldRefineLayer = true;
+  in->isUniform = true;
   return in;
 }
 

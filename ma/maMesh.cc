@@ -74,13 +74,10 @@ void rotatePrism(Entity** iv, int n, Entity** ov)
     ov[i] = iv[prism_rotation[n][i]];
 }
 
-/* pyramid rotation is essentially just quad rotation,
-   and we are lucky enough that the quad vertices occupy
-   the first part of the array in the appropriate order. */
 void rotatePyramid(Entity** iv, int n, Entity** ov)
 {
-  rotateQuad(iv,n,ov);
-  ov[4] = iv[4];
+  for (int i=0; i < 5; ++i)
+    ov[i] = iv[pyramid_rotation[n][i]];
 }
 
 void rotateEntity(int type, Entity** iv, int n, Entity** ov)
@@ -398,6 +395,17 @@ void getFaceEdgesAndDirections(
     else
       directions[i] = 1;
   }
+}
+
+Entity* findEdge(Mesh* m, Entity* v0, Entity* v1)
+{
+  Entity* ev[2] = {v0,v1};
+  return findUpward(m, EDGE, ev);
+}
+
+bool edgeExists(Mesh* m, Entity* v0, Entity* v1)
+{
+  return findEdge(m, v0, v1) != 0;
 }
 
 }

@@ -69,6 +69,8 @@ class Input
     bool shouldTurnLayerToTets;
 /* whether to allow layer refinement */
     bool shouldRefineLayer;
+/* hack to enable boundary layer uniform refinement. do not touch */
+    bool isUniform;
 };
 
 Input* configure(

@@ -22,6 +22,7 @@ void crawlLayers(Crawler* c);
 void syncLayer(Crawler* c, Crawler::Layer& layer);
 void getDimensionBase(Adapt* a, int d, Crawler::Layer& base);
 Entity* getOtherVert(Mesh* m, Entity* v, Predicate& visited);
+Entity* getOtherEdge(Mesh* m, Entity* e, Predicate& visited);
 
 void flagLayerTop(Adapt* a);
 

@@ -31,6 +31,7 @@ extern CodeMatch const* code_match[TYPES];
    vertex indices for one of the 12 rotations. */
 extern int const tet_rotation[12][4];
 extern int const prism_rotation[6][6];
+extern int const pyramid_rotation[4][5];
 
 enum
 {
@@ -38,8 +39,8 @@ enum
   tri_edge_code_count = 4,
   quad_edge_code_count = 3,
   tet_edge_code_count = 12,
-  prism_edge_code_count = 3,
-  pyramid_edge_code_count = 3,
+  prism_edge_code_count = 5,
+  pyramid_edge_code_count = 17,
 };
 
 extern int const edge_edge_codes[edge_edge_code_count];

@@ -60,7 +60,10 @@ Entity* findSplitVert(Refine* r, Entity* parent);
 Entity* findSplitVert(Refine* r, Entity* v0, Entity* v1);
 Entity* findPlacedSplitVert(Refine* r, Entity* v0, Entity* v1, double& place);
 
-typedef void (*SplitFunction)(Refine* r, Entity* face, Entity** v);
+typedef void (*SplitFunction)(Refine* r, Entity* p, Entity** v);
+
+int matchEntityToTemplate(Adapt* a, Entity* e, Entity** vo);
+int matchToTemplate(Adapt* a, int type, Entity** vi, int code, Entity** vo);
 
 }
 
