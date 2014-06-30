@@ -65,7 +65,7 @@ class UniformRefiner : public IdentitySizeField
     virtual bool shouldSplit(Entity* edge);
 };
 
-class MetricSizeField : public IdentitySizeField
+class MetricSizeField : public SizeField
 {
   public:
     MetricSizeField(
@@ -92,6 +92,7 @@ class MetricSizeField : public IdentitySizeField
     void setIsotropicValue(
         Entity* vert,
         double value);
+    Mesh* mesh;
     apf::Field* rField;
     apf::Field* hField;
 };

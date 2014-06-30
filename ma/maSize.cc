@@ -79,9 +79,9 @@ bool UniformRefiner::shouldSplit(Entity*)
 
 MetricSizeField::MetricSizeField(
     Mesh* m,
-    std::string const& name):
-  IdentitySizeField(m)
+    std::string const& name)
 {
+  mesh = m;
   std::string fieldName = name;
   fieldName += "_r";
   rField = apf::createLagrangeField(m,fieldName.c_str(),apf::MATRIX,1);
@@ -173,7 +173,7 @@ class SizeFieldIntegrator : public apf::Integrator
 double MetricSizeField::measure(Entity* e)
 {
   SizeFieldIntegrator integrator(this);
-  apf::MeshElement* me = apf::createMeshElement(getMesh(),e);
+  apf::MeshElement* me = apf::createMeshElement(mesh, e);
   integrator.process(me);
   apf::destroyMeshElement(me);
   return integrator.measurement;
@@ -191,12 +191,11 @@ bool MetricSizeField::shouldCollapse(Entity* edge)
 
 double MetricSizeField::placeSplit(Entity* edge)
 {
-  Mesh* m = getMesh();
   Entity* v[2];
-  m->getDownward(edge,0,v);
+  mesh->getDownward(edge,0,v);
   Vector p[2];
-  m->getPoint(v[0],0,p[0]);
-  m->getPoint(v[1],0,p[1]);
+  mesh->getPoint(v[0],0,p[0]);
+  mesh->getPoint(v[1],0,p[1]);
   Vector e = (p[1]-p[0]).normalize();
   double h[2];
   for (int i=0; i < 2; ++i)
@@ -259,9 +258,8 @@ double parentMeasure[TYPES] =
 
 double MetricSizeField::getWeight(Entity* e)
 {
-  Mesh* m = getMesh();
   /* parentMeasure is used to normalize */
-  return measure(e) / parentMeasure[m->getType(e)];
+  return measure(e) / parentMeasure[mesh->getType(e)];
 }
 
 void MetricSizeField::setValue(
@@ -290,7 +288,7 @@ AnisotropicFunction::~AnisotropicFunction()
 
 void initialize(MetricSizeField* field, AnisotropicFunction* function)
 {
-  Mesh* m = field->getMesh();
+  Mesh* m = field->mesh;
   apf::MeshIterator* it = m->begin(0);
   Entity* e;
   while ((e = m->iterate(it)))
@@ -309,7 +307,7 @@ IsotropicFunction::~IsotropicFunction()
 
 void initialize(MetricSizeField* field, IsotropicFunction* function)
 {
-  Mesh* m = field->getMesh();
+  Mesh* m = field->mesh;
   apf::MeshIterator* it = m->begin(0);
   Entity* e;
   while ((e = m->iterate(it)))
