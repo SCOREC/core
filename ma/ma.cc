@@ -56,11 +56,6 @@ void adapt(Mesh* m, IsotropicFunction* f, SolutionTransfer* s)
   adapt(configure(m,f,s));
 }
 
-void adapt(Mesh* m, apf::Field* f, SolutionTransfer* s)
-{
-  adapt(configure(m,f,s));
-}
-
 void runUniformRefinement(Mesh* m, int n, SolutionTransfer* s)
 {
   adapt(configureUniformRefine(m,n,s));

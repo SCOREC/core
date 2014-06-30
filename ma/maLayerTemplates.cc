@@ -51,8 +51,8 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
    and the transfer logic is non-trivial,
    this is left alone for now */
   Entity* cv = buildVertex(a,m->toModel(q),point,Vector(0,0,0));
-  a->sizeField->interpolate(me,xi,cv);
   a->solutionTransfer->onVertex(me,xi,cv);
+  a->sizeField->interpolate(me,xi,cv);
   apf::destroyMeshElement(me);
   for (int i=0; i < 4; ++i)
   {
@@ -366,8 +366,8 @@ static Entity* makePyramidCentroid(Adapt* a, Entity* p)
   Entity* v = buildVertex(a, c, point, param);
   apf::MeshElement* me = apf::createMeshElement(m, p);
   Vector xi(0,0,0); //pyramid shape function is fake right now
-  a->sizeField->interpolate(me, xi, v);
   a->solutionTransfer->onVertex(me, xi, v);
+  a->sizeField->interpolate(me, xi, v);
   apf::destroyMeshElement(me);
   return v;
 }

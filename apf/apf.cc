@@ -15,6 +15,8 @@
 #include "apfPackedField.h"
 #include "apfIntegrate.h"
 #include "apfArrayData.h"
+#include "apfTagData.h"
+#include "apfUserData.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -43,7 +45,13 @@ void destroyMeshElement(MeshElement* e)
   delete e;
 }
 
-Field* createField(Mesh* m, const char* name, int valueType, FieldShape* shape)
+static Field* makeField(
+    Mesh* m,
+    const char* name,
+    int valueType,
+    int components,
+    FieldShape* shape,
+    FieldData* data)
 {
   assert( ! m->findField(name));
   Field* f = 0;
@@ -53,9 +61,16 @@ Field* createField(Mesh* m, const char* name, int valueType, FieldShape* shape)
     f = new VectorField();
   else if (valueType == MATRIX)
     f = new MatrixField();
-  f->init(name,m,shape);
+  else if (valueType == PACKED)
+    f = new PackedField(components);
+  f->init(name,m,shape,data);
   m->addField(f);
   return f;
+}
+
+Field* createField(Mesh* m, const char* name, int valueType, FieldShape* shape)
+{
+  return makeField(m, name, valueType, 0, shape, new TagDataOf<double>);
 }
 
 Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order)
@@ -80,11 +95,8 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType)
 
 Field* createPackedField(Mesh* m, const char* name, int components)
 {
-  assert( ! m->findField(name));
-  Field* f = new PackedField(components);
-  f->init(name,m,m->getShape());
-  m->addField(f);
-  return f;
+  return makeField(m, name, PACKED, components, m->getShape(),
+      new TagDataOf<double>());
 }
 
 Mesh* getMesh(Field* f)
@@ -362,6 +374,16 @@ void unfreeze(Field* f)
 bool isFrozen(Field* f)
 {
   return f->getData()->isFrozen();
+}
+
+Function::~Function()
+{
+}
+
+Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
+    Function* f)
+{
+  return makeField(m, name, valueType, 0, s, new UserData(f));
 }
 
 }//namespace apf

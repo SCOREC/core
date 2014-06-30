@@ -36,65 +36,35 @@ class SizeField
     virtual double getWeight(Entity* e) = 0;
 };
 
-class IdentitySizeField : public SizeField
+struct IdentitySizeField : public SizeField
 {
-  public:
-    IdentitySizeField(Mesh* m);
-    virtual double measure(Entity* e);
-    virtual bool shouldSplit(Entity* edge);
-    virtual bool shouldCollapse(Entity* edge);
-    virtual double placeSplit(Entity* edge);
-    virtual void interpolate(
-        apf::MeshElement* parent,
-        Vector const& xi,
-        Entity* newVert);
-    virtual void getTransform(
-        apf::MeshElement* e,
-        Vector const& xi,
-        Matrix& t);
-    virtual double getWeight(Entity* e);
-    Mesh* getMesh() {return mesh;}
-  private:
-    Mesh* mesh;
+  IdentitySizeField(Mesh* m);
+  double measure(Entity* e);
+  bool shouldSplit(Entity*);
+  bool shouldCollapse(Entity*);
+  double placeSplit(Entity*);
+  void interpolate(
+      apf::MeshElement* parent,
+      Vector const& xi,
+      Entity* newVert);
+  void getTransform(
+          apf::MeshElement*,
+          Vector const&,
+          Matrix& t);
+  double getWeight(Entity*);
+  Mesh* mesh;
 };
 
-class UniformRefiner : public IdentitySizeField
+struct UniformRefiner : public IdentitySizeField
 {
-  public:
-    UniformRefiner(Mesh* m);
-    virtual bool shouldSplit(Entity* edge);
-};
-
-class MetricSizeField : public SizeField
-{
-  public:
-    MetricSizeField(
-        Mesh* m,
-        std::string const& name = "ma_size");
-    ~MetricSizeField();
-    virtual double measure(Entity* e);
-    virtual bool shouldSplit(Entity* edge);
-    virtual bool shouldCollapse(Entity* edge);
-    virtual double placeSplit(Entity* edge);
-    virtual void interpolate(
-        apf::MeshElement* parent,
-        Vector const& xi,
-        Entity* newVert);
-    virtual void getTransform(
-        apf::MeshElement* e,
-        Vector const& xi,
-        Matrix& t);
-    virtual double getWeight(Entity* e);
-    void setValue(
-        Entity* vert,
-        Matrix const& r,
-        Vector const& h);
-    void setIsotropicValue(
-        Entity* vert,
-        double value);
-    Mesh* mesh;
-    apf::Field* rField;
-    apf::Field* hField;
+  UniformRefiner(Mesh* m):
+    IdentitySizeField(m)
+  {
+  }
+  bool shouldSplit(Entity*)
+  {
+    return true;
+  }
 };
 
 class AnisotropicFunction
@@ -104,8 +74,6 @@ class AnisotropicFunction
     virtual void getValue(Entity* vert, Matrix& r, Vector& h) = 0;
 };
 
-void initialize(MetricSizeField* field, AnisotropicFunction* function);
-
 class IsotropicFunction
 {
   public:
@@ -113,12 +81,11 @@ class IsotropicFunction
     virtual double getValue(Entity* vert) = 0;
 };
 
-void initialize(MetricSizeField* field, IsotropicFunction* function);
+SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames);
+SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f);
+SizeField* makeSizeField(Mesh* m, IsotropicFunction* f);
 
 double getAverageEdgeLength(Mesh* m);
-
-void printIsotropic(MetricSizeField* sf);
-void printAnisotropic(MetricSizeField* sf);
 
 }
 
