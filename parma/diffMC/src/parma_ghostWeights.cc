@@ -2,8 +2,11 @@
 #include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
+#include <apfNumbering.h>
 #include "parma_weights.h"
 #include "parma_sides.h"
+
+int ghostIteration = 0;
 
 namespace {
   int getOwner(apf::Mesh* m, apf::MeshEntity* v) {
@@ -11,7 +14,34 @@ namespace {
     m->getResidence(v, res);
     return *(res.begin());
   }
+  void renderIntTag(apf::Mesh* m, apf::MeshTag* tag,
+      const char* filename, int peer)
+  {
+    apf::Numbering* n = apf::createNumbering(m,
+        m->getTagName(tag), m->getShape(), 1);
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* v;
+    while ((v = m->iterate(it))) {
+      if (m->hasTag(v, tag)) {
+        int x;
+        m->getIntTag(v, tag, &x);
+        apf::number(n, v, 0, 0, x);
+      } else {
+        apf::number(n, v, 0, 0, 0);
+      }
+    }
+    m->end(it);
+    std::stringstream ss;
+    ss << filename
+      << '_' << PCU_Comm_Self()
+      << '_' << peer 
+      << '_' << ghostIteration
+      << '_';
+    std::string s = ss.str();
+    apf::writeOneVtkFile(s.c_str(), m);
+    apf::destroyNumbering(n);
 
+  }
   bool isOwned(apf::Mesh* m, apf::MeshEntity* v) {
     return PCU_Comm_Self() == getOwner(m,v);
   }
@@ -94,11 +124,12 @@ namespace {
           if (isSharedWithTarget(mesh,v,peer)) {
             if (isOwned(mesh,v))
               next.push_back(v);
-            else if (mesh->getOwner(v)==peer)
+            else if (getOwner(mesh,v)==peer)
               current.push_back(v);
           }
         }
         double weight = runBFS(mesh,layers,current,next,depth,wtag);
+	renderIntTag(mesh,depth,"depth",peer);
         apf::removeTagFromDimension(mesh,depth,0);
         mesh->destroyTag(depth);
         return weight;
@@ -140,6 +171,7 @@ namespace parma {
         exchangeGhostsFrom();
         weight += ownedVtxWeight(m, wtag);
         exchange();
+        ghostIteration++;
       }
       ~GhostWeights() {};
       double self() {
