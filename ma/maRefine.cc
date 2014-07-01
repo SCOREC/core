@@ -146,8 +146,8 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
     transferParametricOnEdgeSplit(m,edge,place,param);
   Entity* vert = buildVertex(a,c,point,param);
   m->setDoubleTag(vert,r->vertPlaceTag,&(place));
-  sf->interpolate(me,xi,vert);
   st->onVertex(me,xi,vert);
+  sf->interpolate(me,xi,vert);
   apf::destroyMeshElement(me);
   return vert;
 }

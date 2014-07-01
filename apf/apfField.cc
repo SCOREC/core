@@ -45,13 +45,6 @@ void FieldBase::changeData(FieldData* d)
   data = d;
 }
 
-void Field::init(const char* n,
-                     Mesh* m,
-                     FieldShape* s)
-{
-  FieldBase::init(n,m,s,new TagDataOf<double>());
-}
-
 FieldDataOf<double>* Field::getData()
 {
   return static_cast<FieldDataOf<double>*>(data);

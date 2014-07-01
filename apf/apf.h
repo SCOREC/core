@@ -446,6 +446,15 @@ double* getArrayData(Field* f);
 
 void zeroField(Field* f);
 
+struct Function
+{
+  virtual ~Function();
+  virtual void eval(MeshEntity* e, double* result) = 0;
+};
+
+Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
+    Function* f);
+
 }
 
 #endif

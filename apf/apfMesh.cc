@@ -9,6 +9,7 @@
 #include "apfVectorField.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
+#include "apfTagData.h"
 #include <PCU.h>
 
 namespace apf {
@@ -499,7 +500,8 @@ void changeMeshShape(Mesh* m, FieldShape* newShape, bool project)
 {
   Field* oldCoordinateField = m->getCoordinateField();
   VectorField* newCoordinateField = new VectorField();
-  newCoordinateField->init(oldCoordinateField->getName(),m,newShape);
+  newCoordinateField->init(oldCoordinateField->getName(), m, newShape,
+      new TagDataOf<double>());
   if (project)
     newCoordinateField->project(oldCoordinateField);
   m->changeCoordinateField(newCoordinateField);

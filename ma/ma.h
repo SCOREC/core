@@ -29,8 +29,6 @@ namespace ma {
    what MeshAdapt does and adjust some parameters.
 */
 
-/* adapt based on an isotropic field */
-void adapt(Mesh* m, apf::Field* f, SolutionTransfer* s=0);
 /* adapt based on an isotropic function
    see maSize.h for how to define a function */
 void adapt(Mesh* m, IsotropicFunction* f, SolutionTransfer* s=0);

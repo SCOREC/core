@@ -420,8 +420,8 @@ bool splitTet_prismToTets(
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
   Entity* vert = prismToTetsBadCase(r,tet,pv,code,point);
-  a->sizeField->interpolate(me,xi,vert);
   a->solutionTransfer->onVertex(me,xi,vert);
+  a->sizeField->interpolate(me,xi,vert);
   apf::destroyMeshElement(me);
   return false;
 }

@@ -2,8 +2,11 @@
 #include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
+#include <apfNumbering.h>
 #include "parma_weights.h"
 #include "parma_sides.h"
+
+int ghostIteration = 0;
 
 namespace {
   int getOwner(apf::Mesh* m, apf::MeshEntity* v) {
@@ -94,7 +97,7 @@ namespace {
           if (isSharedWithTarget(mesh,v,peer)) {
             if (isOwned(mesh,v))
               next.push_back(v);
-            else if (mesh->getOwner(v)==peer)
+            else if (getOwner(mesh,v)==peer)
               current.push_back(v);
           }
         }
@@ -140,6 +143,7 @@ namespace parma {
         exchangeGhostsFrom();
         weight += ownedVtxWeight(m, wtag);
         exchange();
+        ghostIteration++;
       }
       ~GhostWeights() {};
       double self() {
