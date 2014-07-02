@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   print_stats("malloc used", get_chunks());
   print_stats("elements", m->count(m->getDimension()));
   print_stats("vertices", m->count(0));
-  Parma_PrintPtnStats(m, "cake");
+  Parma_PrintPtnStats(m, "");
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
