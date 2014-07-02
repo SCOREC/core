@@ -13,7 +13,7 @@
 
 \title{ParMA Partition Improvement with Ghosting}
 
-\author{Cameron W. Smith}
+\author{Cameron W. Smith, Gerrett Diamond, Dan Ibanez}
 
 \date{\today}
 
@@ -99,18 +99,12 @@ Algorithm~\ref{alg:parma} outlines the top-level procedure for iterative diffusi
 \caption{\label{fig:ownership4} One layer edge-based ghosting of a Delaunay mesh element partition.  Green elements are ghosted to the bottom part and yellow elements ghosted to the top part.}
 \end{figure}
 
-\section{Code}
-
-The source can be downloaded from the following github repo \\
-https://github.com/SCOREC/core
-
-The code in parma/diffMC/src/parma\_ghost.cc implements the partitioning procedures and test/ghost.cc provides a test driver.  The test driver can be built with the command `make ghost'.  In the plate/2 directory of the test meshes SVN repo http://redmine.scorec.rpi.edu/svn/meshes is a two part 2D mesh for testing.  This mesh is classified on the plate/plate.dmg model.  Run the driver with the command `mpirun -np PROCS ./ghost MODEL MESH'.
 
 \section{Results}
 
 \begin{figure} 
 \centering
-\includegraphics[width=0.4\textwidth]{plateghosts.png}
+\includegraphics[width=0.8\textwidth]{plateghosts.png}
 \caption{\label{fig:ownership4} Three layers of ghosting between two parts of a test mesh.  The boundary is only ghosted from the part that owns the vertices to the not owned part.}
 \end{figure}
 
@@ -128,7 +122,20 @@ The code in parma/diffMC/src/parma\_ghost.cc implements the partitioning procedu
 
 Testing was done on AMOS with a 60km mesh of the ocean using 64 nodes with varying part numbers ranging from 64 to 512 parts. The method was repeated until imblance reached 1.05 or better.
 
-\section{Todo}
+\begin{figure} 
+\centering
+\includegraphics[width=0.45\textwidth]{60km/init/0_255.png}
+\includegraphics[width=0.5\textwidth]{60km/final/0_255.png}
+\caption{\label{fig:60km0_255} RIB initial partition (left) and the ParMA ghost balanced partition (right).}
+\end{figure}
+
+\begin{figure} 
+\centering
+\includegraphics[width=0.8\textwidth]{60km/init/384_404.png}
+\includegraphics[width=0.8\textwidth]{60km/final/384_404.png}
+\caption{\label{fig:60km384_404} RIB initial partition (top) and the ParMA ghost balanced partition (bottom).}
+\end{figure}
+
 
 \begin{algorithm}
 \caption{ParMA Ghosting improvement}
@@ -162,7 +169,12 @@ Testing was done on AMOS with a 60km mesh of the ocean using 64 nodes with varyi
 \end{algorithmic}
 \end{algorithm}
 
+\section{Code}
 
+The source can be downloaded from the following github repo \\
+https://github.com/SCOREC/core
+
+The code in parma/diffMC/src/parma\_ghost.cc implements the partitioning procedures and test/ghost.cc provides a test driver.  The test driver can be built with the command `make ghost'.  In the plate/2 directory of the test meshes SVN repo http://redmine.scorec.rpi.edu/svn/meshes is a two part 2D mesh for testing.  This mesh is classified on the plate/plate.dmg model.  Run the driver with the command `mpirun -np PROCS ./ghost MODEL MESH'.
 
 \newpage
 \bibliographystyle{plain}

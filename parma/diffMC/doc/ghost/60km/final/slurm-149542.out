@@ -1,0 +1,37 @@
++ RJopts='PAMI_MAX_COMMTHREADS=0 PAMID_ASYNC_PROGRESS=0 PAMID_CONTEXT_POST=1 BG_THREADMODEL=1 '
++ ghost=/gpfs/u/home/ITAP/ITAPsmth/barn/core/build/test/ghost
++ sixtykm=/gpfs/u/scratch/ITAP/shared/ocean/60km/
++ sixtykmMdl=/gpfs/u/scratch/ITAP/shared/ocean/60km//60km.dmg
++ sixtykm512p=/gpfs/u/scratch/ITAP/shared/ocean/60km//512/
++ srun -n 512 '--runjob-opts=--verbose level=INFO --envs PAMI_MAX_COMMTHREADS=0 PAMID_ASYNC_PROGRESS=0 PAMID_CONTEXT_POST=1 BG_THREADMODEL=1 ' /gpfs/u/home/ITAP/ITAPsmth/barn/core/build/test/ghost /gpfs/u/scratch/ITAP/shared/ocean/60km//60km.dmg /gpfs/u/scratch/ITAP/shared/ocean/60km//512/
+model /gpfs/u/scratch/ITAP/shared/ocean/60km//60km.dmg loaded in 0.057744 seconds
+mesh /gpfs/u/scratch/ITAP/shared/ocean/60km//512/ loaded in 0.807110 seconds
+mesh entity counts: v 114378 e 337634 f 223163 r 0
+imbalance 1.348
+imbalance 1.207
+imbalance 1.168
+imbalance 1.139
+imbalance 1.117
+imbalance 1.110
+imbalance 1.099
+imbalance 1.095
+imbalance 1.093
+imbalance 1.089
+imbalance 1.085
+imbalance 1.080
+imbalance 1.074
+imbalance 1.070
+imbalance 1.070
+imbalance 1.068
+imbalance 1.063
+imbalance 1.063
+imbalance 1.063
+imbalance 1.061
+imbalance 1.059
+imbalance 1.057
+imbalance 1.054
+imbalance 1.064
+imbalance 1.052
+imbalance 1.050
+ghost balanced to 1.050000 in 0.596172 seconds
+vtk files after written in 52.754847 seconds
