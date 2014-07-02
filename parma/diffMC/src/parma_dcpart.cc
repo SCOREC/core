@@ -86,7 +86,7 @@ int dcPart::numDisconnectedComps() {
    clearTag(m, vtag);
    int numDc = 0;
    size_t count = 0;
-   while( count != m->count(3) ) {
+   while( count != m->count(m->getDimension()) ) {
       dcCompSz.push_back( walkPart(numDc) );
       count += dcCompSz[numDc];
       numDc++;
@@ -97,11 +97,12 @@ int dcPart::numDisconnectedComps() {
 
 int dcPart::walkPart(int visited) {
    size_t count = 0;
+   const int dim = m->getDimension();
 
    eList elms;
    MeshEntity* elm;
    // find an untagged element
-   MeshIterator* itr = m->begin(m->getDimension());
+   MeshIterator* itr = m->begin(dim);
    while( (elm = m->iterate(itr)) && m->hasTag(elm, vtag) );
    m->end(itr);
    // start the walk
@@ -120,9 +121,9 @@ int dcPart::walkPart(int visited) {
          if ( ! m->hasTag(*eit, vtag) ) 
             elms.push_back(*eit);
       }
-      if ( count > m->count(3) ) { 
+      if ( count > m->count(dim) ) { 
 	 error("[%d] count > part size %d > %lu\n", 
-	       m->getId(), count, m->count(3));
+	       m->getId(), count, m->count(dim));
          exit(EXIT_FAILURE);
       }
    }
