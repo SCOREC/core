@@ -7,6 +7,6 @@ Name: MDS
 URL: http://www.scorec.rpi.edu/~dibanez/
 Description: Mesh Data Structure
 Version: @PACKAGE_VERSION@
-Requires: libapf libpcu
+Requires: libapf libgmi libpcu
 Libs: -L${libdir} -lmds
 Cflags: -I${includedir} 
