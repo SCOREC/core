@@ -63,7 +63,7 @@ static void chooseBaseDiagonals(Adapt* a)
   apf::destroyNumbering(n);
 }
 
-static Entity* getOtherQuad(Adapt* a, Entity* e)
+static Entity* getOtherQuad(Adapt* a, Entity* e, Predicate& visited)
 {
   Mesh* m = a->mesh;
   apf::Up up;
@@ -72,7 +72,7 @@ static Entity* getOtherQuad(Adapt* a, Entity* e)
   {
     Entity* of = up.e[i];
     if ((m->getType(of)==QUAD)&&
-        ( ! getFlag(a,of,DIAGONAL_1 | DIAGONAL_2)))
+        ( ! visited(of)))
       return of;
   }
   return 0;
@@ -116,7 +116,8 @@ struct QuadFlagger : public Crawler
   }
   Entity* crawl(Entity* e)
   {
-    Entity* q = getOtherQuad(adapter, e);
+    HasFlag p(adapter, DIAGONAL_1 | DIAGONAL_2);
+    Entity* q = getOtherQuad(adapter, e, p);
     Entity* e2 = 0;
     if (q)
       e2 = flagQuad(adapter, q, e);
@@ -145,62 +146,11 @@ static void flagQuadDiagonals(Adapt* a)
   crawlLayers(&op);
 }
 
-static void findDelinquents(Adapt* a)
-{
-  Mesh* m = a->mesh;
-  Iterator* faces = m->begin(2);
-  Entity* f;
-  bool guilty = false;
-  while ((f = m->iterate(faces)))
-    if ((m->getType(f) == QUAD) &&
-        (getDiagonalFromFlag(a, f) == -1))
-    {
-      guilty = true;
-      apf::Up regions;
-      m->getUp(f, regions);
-      int pri = 0;
-      int pyr = 0;
-      for (int i = 0; i < regions.n; ++i)
-      {
-        if (m->getType(regions.e[i])==PRISM)
-          ++pri;
-        else if (m->getType(regions.e[i])==PYRAMID)
-          ++pyr;
-        else if (m->getType(regions.e[i])==TET)
-          fprintf(stderr,"tet adjacent to quad !\n");
-        else if (m->getType(regions.e[i])==HEX)
-          fprintf(stderr,"hex adjacent to quad !\n");
-        else
-          fprintf(stderr,"unbelievable!\n");
-      }
-      int sh = m->isShared(f);
-      int md = m->getModelType(m->toModel(f));
-      int mt = m->getModelTag(m->toModel(f));
-      Downward v;
-      m->getDownward(f, 0, v);
-      Vector c = (getPosition(m, v[0]) +
-                  getPosition(m, v[1]) +
-                  getPosition(m, v[2]) +
-                  getPosition(m, v[3])) / 4;
-      fprintf(stderr,"%d missed quad pri %d pyr %d nr %d sh %d md %d mt %d at %f %f %f\n",
-          PCU_Comm_Self(), pri, pyr, regions.n,
-          sh, md, mt, c[0], c[1], c[2]);
-/* we assume they are between two pyramids, so set them to any diagonal
-   and continue */
-      setFlag(a, f, DIAGONAL_1);
-    }
-  m->end(faces);
-  if (guilty)
-    apf::writeOneVtkFile("quads", m);
-  PCU_Barrier();
-}
-
 static void prepareLayerToTets(Adapt* a)
 {
   findLayerBase(a);
   chooseBaseDiagonals(a);
   flagQuadDiagonals(a);
-  findDelinquents(a);
 }
 
 static void addAllLayerElements(Refine* r)
@@ -230,6 +180,17 @@ static void addAllLayerElements(Refine* r)
   assert(nr == r->toSplit[3].getSize());
 }
 
+void tetrahedronizeCommon(Refine* r)
+{
+  resetCollection(r);
+  collectForTransfer(r);
+  collectForMatching(r);
+  splitElements(r);
+  processNewElements(r);
+  destroySplitElements(r);
+  cleanupAfter(r);
+}
+
 void tetrahedronize(Adapt* a)
 {
   if ( ! a->input->shouldTurnLayerToTets)
@@ -239,15 +200,157 @@ void tetrahedronize(Adapt* a)
   prepareLayerToTets(a);
   Refine* r = a->refine;
   addAllLayerElements(r);
-  resetCollection(r);
-  collectForTransfer(r);
-  collectForMatching(r);
-  splitElements(r);
-  processNewElements(r);
-  destroySplitElements(r);
-  cleanupAfter(r);
+  tetrahedronizeCommon(r);
   double t1 = MPI_Wtime();
   print("boundary layer converted to tets in %f seconds",t1-t0);
+}
+
+/* like QuadFlagger, but just sets CHECKED to find the remaining
+   delinquent quads */
+struct QuadMarker : public Crawler
+{
+  QuadMarker(Adapt* a_):
+    Crawler(a_)
+  {
+    a = a_;
+    m = a->mesh;
+  }
+  void begin(Layer& first)
+  {
+    getDimensionBase(a, 1, first);
+    for (size_t i = 0; i < first.size(); ++i)
+      setFlag(a, first[i], CHECKED);
+  }
+  void end()
+  {
+    clearFlagFromDimension(a, CHECKED, 1);
+  }
+  Entity* crawl(Entity* e)
+  {
+    HasFlag p(a, CHECKED);
+    Entity* q = getOtherQuad(a, e, p);
+    if (!q)
+      return 0;
+    setFlag(a, q, CHECKED);
+    Entity* oe = getQuadEdgeOppositeEdge(m, q, e);
+    setFlag(a, oe, CHECKED);
+    return oe;
+  }
+  void send(Entity* e, int to)
+  {
+  }
+  bool recv(Entity* e, int from)
+  {
+    if (getFlag(a, e, CHECKED))
+      return false;
+    setFlag(a, e, CHECKED);
+    return true;
+  }
+  Adapt* a;
+  Mesh* m;
+};
+
+static void markGoodQuads(Adapt* a)
+{
+  QuadMarker op(a);
+  crawlLayers(&op);
+}
+
+static void markBadQuads(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  PCU_Comm_Begin();
+  Entity* e;
+  Iterator* it = m->begin(2);
+  while ((e = m->iterate(it)))
+    if (m->getType(e) == QUAD && (!getFlag(a, e, CHECKED))) {
+      apf::Copies remotes;
+      m->getRemotes(e, remotes);
+      APF_ITERATE(apf::Copies, remotes, rit)
+        PCU_COMM_PACK(rit->first, rit->second);
+    }
+  m->end(it);
+  PCU_Comm_Send();
+  while (PCU_Comm_Listen())
+    while (!PCU_Comm_Unpacked()) {
+      PCU_COMM_UNPACK(e);
+      setFlag(a, e, SPLIT);
+    }
+  clearFlagFromDimension(a, CHECKED, 2);
+}
+
+static long markBadPyramids(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  Entity* e;
+  long n = 0;
+  Iterator* it = m->begin(2);
+  while ((e = m->iterate(it)))
+    if (getFlag(a, e, SPLIT)) {
+      apf::Up up;
+      m->getUp(e, up);
+      for (int i = 0; i < up.n; ++i) {
+        Entity* elem = up.e[i];
+        assert(m->getType(elem) == PYRAMID);
+        setFlag(a, elem, SPLIT);
+        ++n;
+      }
+    }
+  m->end(it);
+  PCU_Add_Longs(&n, 1);
+  return n;
+}
+
+static int countEntitiesWithFlag(Adapt* a, int flag, int dim)
+{
+  Mesh* m = a->mesh;
+  Iterator* it = m->begin(dim);
+  Entity* e;
+  int n = 0;
+  while ((e = m->iterate(it)))
+    if (getFlag(a, e, flag))
+      ++n;
+  m->end(it);
+  return n;
+}
+
+static void addBadPyramids(Refine* r)
+{
+  Adapt* a = r->adapt;
+  Mesh* m = a->mesh;
+  for (int d = 2; d <= 3; ++d)
+    r->toSplit[d].setSize(countEntitiesWithFlag(a, SPLIT, d));
+  size_t n[4] = {};
+  for (int d = 2; d <= 3; ++d) {
+    Iterator* it = m->begin(d);
+    Entity* e;
+    while ((e = m->iterate(it)))
+      if (getFlag(a, e, SPLIT))
+        r->toSplit[d][n[d]++] = e;
+    m->end(it);
+    assert(r->toSplit[d].getSize() == n[d]);
+  }
+}
+
+static long prepareLayerCleanup(Adapt* a)
+{
+  markGoodQuads(a);
+  markBadQuads(a);
+  return markBadPyramids(a);
+}
+
+void cleanupLayer(Adapt* a)
+{
+  assert(a->hasLayer);
+  double t0 = MPI_Wtime();
+  long n = prepareLayerCleanup(a);
+  if (!n)
+    return;
+  Refine* r = a->refine;
+  addBadPyramids(r);
+  tetrahedronizeCommon(r);
+  double t1 = MPI_Wtime();
+  print("tetrahedronized %ld bad pyramids in %f seconds", n, t1-t0);
 }
 
 }
