@@ -341,11 +341,15 @@ static long prepareLayerCleanup(Adapt* a)
 
 void cleanupLayer(Adapt* a)
 {
+  if (!a->input->shouldCleanupLayer)
+    return;
   assert(a->hasLayer);
   double t0 = MPI_Wtime();
   long n = prepareLayerCleanup(a);
-  if (!n)
+  if (!n) {
+    print("no bad pyramids found");
     return;
+  }
   Refine* r = a->refine;
   addBadPyramids(r);
   tetrahedronizeCommon(r);
