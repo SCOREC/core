@@ -8,6 +8,11 @@ FieldData::~FieldData()
 {
 }
 
+FieldData* FieldData::clone()
+{
+  abort();
+}
+
 template <class T>
 void synchronizeFieldData(FieldDataOf<T>* data)
 {
