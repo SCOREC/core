@@ -55,6 +55,7 @@ void setDefaultValues(Input* in)
   in->shouldRunPostDiffusion = false;
   in->diffuseIterations = 30;
   in->shouldTurnLayerToTets = false;
+  in->shouldCleanupLayer = false;
   in->shouldRefineLayer = false;
   in->isUniform = false;
 }

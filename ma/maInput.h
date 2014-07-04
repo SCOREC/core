@@ -67,6 +67,8 @@ class Input
     double maximumEdgeRatio;
 /* whether to tetrahedronize the boundary layer */
     bool shouldTurnLayerToTets;
+/* whether to tetrahedronize abnormal pyramids */
+    bool shouldCleanupLayer;
 /* whether to allow layer refinement */
     bool shouldRefineLayer;
 /* hack to enable boundary layer uniform refinement. do not touch */

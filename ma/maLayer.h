@@ -22,6 +22,7 @@ int getDiagonalFromFlag(Adapt* a, Entity* e);
 int getFlagFromDiagonal(int diagonal);
 
 void tetrahedronize(Adapt* a);
+void cleanupLayer(Adapt* a);
 
 void snapLayer(Adapt* a, Tag* snapTag);
 

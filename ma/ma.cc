@@ -36,6 +36,7 @@ void adapt(Input* in)
   allowSplitCollapseOutsideLayer(a);
   snap(a);
   fixElementShapes(a);
+  cleanupLayer(a);
   tetrahedronize(a);
   postBalance(a);
   Mesh* m = a->mesh;
