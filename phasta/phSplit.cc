@@ -24,6 +24,8 @@ void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
   apf::Splitter* splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   apf::Migration* plan = splitter->split(weights, 1.03, factor);
+  apf::removeTagFromDimension(m, weights, m->getDimension());
+  m->destroyTag(weights);
   delete splitter;
   apf::splitMdsMesh(m, plan, factor, runAfter);
 }
