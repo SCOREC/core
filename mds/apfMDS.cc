@@ -655,6 +655,15 @@ static void scaleMdsMesh(Mesh2* mesh, int n)
   scalePM(m->parts, n);
 }
 
+static Mesh2* clone(Mesh2* from)
+{
+  Mesh2* m = makeEmptyMdsMesh(getMdsModel(from),
+        from->getDimension(), from->hasMatching());
+  for (int i = 0; i < from->countFields(); ++i)
+    apf::cloneField(from->getField(i), m);
+  return m;
+}
+
 static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
@@ -668,8 +677,7 @@ static void* splitThrdMain(void*)
     m = globalMesh;
     plan = globalPlan;
   } else {
-    m = makeEmptyMdsMesh(getMdsModel(globalMesh),
-        globalMesh->getDimension(), globalMesh->hasMatching());
+    m = clone(globalMesh);
     plan = new apf::Migration(m);
   }
   m->migrate(plan);
