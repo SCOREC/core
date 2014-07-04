@@ -152,6 +152,14 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     printf("solution read and attached in %f seconds\n", t1 - t0);
 }
 
+void attachZeroSolution(Input& in, apf::Mesh* m)
+{
+  int vars = in.ensa_dof;
+  int nodes = m->count(0);
+  double* data = new double[nodes * vars]();
+  attachField(m, "solution", data, vars);
+}
+
 void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
 {
   double t0 = MPI_Wtime();

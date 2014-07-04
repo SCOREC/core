@@ -22,6 +22,8 @@ int main(int argc, char** argv)
   ph::readBCs(in.attributeFileName.c_str(), bcs);
   if (in.solutionMigration)
     ph::readAndAttachSolution(in, m);
+  else
+    ph::attachZeroSolution(in, m);
   if (in.adaptFlag) {
     ph::adapt(in, m);
     ph::goToStepDir(in.timeStepNumber);
@@ -31,10 +33,9 @@ int main(int argc, char** argv)
   std::string path = ph::setupOutputDir();
   ph::setupOutputSubdir(path);
   if (in.phastaIO) {
-    if (in.solutionMigration)
-      ph::detachAndWriteSolution(in, m, path);
     ph::Output o;
     ph::generateOutput(in, bcs, m, o);
+    ph::detachAndWriteSolution(in, m, path);
     ph::writeGeomBC(o, path);
   }
   m->destroyNative();
