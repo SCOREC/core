@@ -4,16 +4,41 @@
 #include <phRestart.h>
 #include <phAdapt.h>
 #include <phOutput.h>
+#include <phSplit.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
 
+ph::Input* globalInput;
+ph::BCs* globalBCs;
+
+static void afterSplit(apf::Mesh2* m)
+{
+  ph::Input& in = *globalInput;
+  ph::BCs& bcs = *globalBCs;
+  std::string path = ph::setupOutputDir();
+  ph::setupOutputSubdir(path);
+  if (in.phastaIO) {
+    apf::defragMdsMesh(m);
+    ph::Output o;
+    ph::generateOutput(in, bcs, m, o);
+    ph::detachAndWriteSolution(in, m, path);
+    ph::writeGeomBC(o, path);
+    m->writeNative(in.outMeshFileName.c_str());
+  }
+  m->destroyNative();
+  apf::destroyMesh(m);
+}
+
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  assert(provided == MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  PCU_Protect();
   gmi_register_mesh();
   ph::Input in("adapt.inp");
   apf::Mesh2* m = apf::loadMdsMesh(
@@ -30,16 +55,9 @@ int main(int argc, char** argv)
   }
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  std::string path = ph::setupOutputDir();
-  ph::setupOutputSubdir(path);
-  if (in.phastaIO) {
-    ph::Output o;
-    ph::generateOutput(in, bcs, m, o);
-    ph::detachAndWriteSolution(in, m, path);
-    ph::writeGeomBC(o, path);
-  }
-  m->destroyNative();
-  apf::destroyMesh(m);
+  globalInput = &in;
+  globalBCs = &bcs;
+  ph::split(in, m, afterSplit);
   PCU_Comm_Free();
   MPI_Finalize();
 }
