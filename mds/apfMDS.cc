@@ -655,10 +655,28 @@ static void scaleMdsMesh(Mesh2* mesh, int n)
   scalePM(m->parts, n);
 }
 
+static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
+{
+  int type = from->getTagType(t);
+  const char* name = from->getTagName(t);
+  int size = from->getTagSize(t);
+  if (type == Mesh::INT)
+    return onto->createIntTag(name, size);
+  if (type == Mesh::DOUBLE)
+    return onto->createDoubleTag(name, size);
+  if (type == Mesh::LONG)
+    return onto->createLongTag(name, size);
+  return 0;
+}
+
 static Mesh2* clone(Mesh2* from)
 {
   Mesh2* m = makeEmptyMdsMesh(getMdsModel(from),
         from->getDimension(), from->hasMatching());
+  DynamicArray<MeshTag*> tags;
+  from->getTags(tags);
+  for (size_t i = 0; i < tags.getSize(); ++i)
+    cloneTag(from, tags[i], m);
   for (int i = 0; i < from->countFields(); ++i)
     apf::cloneField(from->getField(i), m);
   return m;
