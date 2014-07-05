@@ -207,7 +207,6 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   o.arrays.ibc = ibc;
   o.arrays.bc = bc;
   o.nEssentialBCNodes = j;
-  printf("counted %zu essential BC nodes\n", j);
 }
 
 static void applyInitialConditions(BCs& bcs, Output& o)
