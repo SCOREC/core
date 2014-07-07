@@ -99,6 +99,12 @@ Field* createPackedField(Mesh* m, const char* name, int components)
       new TagDataOf<double>());
 }
 
+Field* cloneField(Field* f, Mesh* onto)
+{
+  return makeField(onto, f->getName(), f->getValueType(), f->countComponents(),
+      f->getShape(), f->getData()->clone());
+}
+
 Mesh* getMesh(Field* f)
 {
   return f->getMesh();

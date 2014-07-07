@@ -70,7 +70,6 @@ set(SOURCES
    pcu_mpi.c
    pcu_msg.c
    pcu_pmpi.c
-   pumi_comm.c
    pcu_protect.c)
 
 if(ENABLE_THREADS)       
@@ -81,8 +80,7 @@ endif(ENABLE_THREADS)
 
 set(HEADERS
    PCU.h
-   pcu_io.h
-   pumi_comm.h)
+   pcu_io.h)
 
 #Library
 if(BUILD_IN_TRILINOS)

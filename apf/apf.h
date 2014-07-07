@@ -118,6 +118,8 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType);
 
 Field* createPackedField(Mesh* m, const char* name, int components);
 
+Field* cloneField(Field* f, Mesh* onto);
+
 /** \brief Retrieve the Mesh over which a Field is defined.
   */
 Mesh* getMesh(Field* f);

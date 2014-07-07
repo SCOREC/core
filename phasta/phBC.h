@@ -96,6 +96,8 @@ bool applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
 bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
     BCs& appliedBCs,
     double* values, int* bits);
+bool applySolutionBCs(apf::Mesh* m, apf::MeshEntity* v,
+    BCs& appliedBCs, double* values);
 
 void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces);
 

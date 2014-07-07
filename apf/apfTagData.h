@@ -124,8 +124,13 @@ class TagDataOf : public FieldDataOf<T>
     {
       helper.set(mesh,e,tagData.getTag(e),data);
     }
-    virtual bool isFrozen() {
+    virtual bool isFrozen()
+    {
       return false;
+    }
+    virtual FieldData* clone()
+    {
+      return new TagDataOf<T>();
     }
   private:
     Mesh* mesh;
