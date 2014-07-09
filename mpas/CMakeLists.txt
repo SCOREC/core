@@ -3,22 +3,16 @@ cmake_minimum_required(VERSION 2.8.6)
 project(apf_mpas)
 option(ENABLE_MPAS "Enable MPAS interface" OFF)
 
-if (NOT ENABLE_MPAS)
-  return()
+if (ENABLE_MPAS)
+  find_package(apf PATHS ${CMAKE_BINARY_DIR})
+  set(NETCDF_CXX "YES")
+  find_package(NetCDF REQUIRED)
+  set(APF_MPAS_INCLUDE_DIRS
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${APF_INCLUDE_DIRS})
+  set(DEP_LIBS ${APF_LIBS} ${NETCDF_LIBRARIES})
+  set(MPAS_LIBS apf_mpas ${DEP_LIBS})
 endif()
-
-find_package(apf PATHS ${CMAKE_BINARY_DIR})
-set(NETCDF_CXX "YES")
-find_package(NetCDF REQUIRED)
-
-set(MPAS_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${APF_INCLUDE_DIRS})
-set(DEP_LIBS ${APF_LIBS} ${NETCDF_LIBRARIES})
-set(MPAS_LIBS apf_mpas ${DEP_LIBS})
-
-include_directories(${MPAS_INCLUDE_DIRS})
-include_directories(${NETCDF_INCLUDES})
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_mpasConfig.cmake.in"
@@ -35,6 +29,13 @@ configure_file(
     "${PROJECT_BINARY_DIR}/libapf_mpas.pc"
     @ONLY)
 #pkgconfig }
+
+if (NOT ENABLE_MPAS)
+  return()
+endif ()
+
+include_directories(${APF_MPAS_INCLUDE_DIRS})
+include_directories(${NETCDF_INCLUDES})
 
 #Sources & Headers
 set(SOURCES
@@ -53,4 +54,3 @@ INSTALL(TARGETS
    apf_mpas
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib)
-

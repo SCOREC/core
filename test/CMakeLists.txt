@@ -3,13 +3,15 @@ find_package(ma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(spr REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(parma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
   ${MDS_INCLUDE_DIRS}
   ${SPR_INCLUDE_DIRS}
   ${PARMA_INCLUDE_DIRS}
-  ${PH_INCLUDE_DIRS})
+  ${PH_INCLUDE_DIRS}
+  ${APF_MPAS_INCLUDE_DIRS})
 
 add_executable(mdlConvert EXCLUDE_FROM_ALL mdlConvert.c)
 add_executable(mkmodel EXCLUDE_FROM_ALL mkmodel.cc)
@@ -64,5 +66,6 @@ foreach(test ${tests})
     ${MDS_LIBS}
     ${SPR_LIBS}
     ${PARMA_LIBS}
-    ${PH_LIBS})
+    ${PH_LIBS}
+    ${APF_MPAS_LIBS})
 endforeach()
