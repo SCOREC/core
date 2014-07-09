@@ -4,14 +4,67 @@
 #include "parma_entWeights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
+#include "zeroOneKnapsack.h"
+#include <limits>
+
+using std::vector;
 
 namespace parma {
+	//header for avgWeights
+   double avgWeight(Weights* w);
 
   class MergeTargets : public Targets {  // we don't really need a map/associative container here - a list/vector/array would work
     public:
-      MergeTargets(Sides* s, Weights* w, double maxW) 
-        : Targets(s,w,0.1) 
+	   //Have this storing the results in Targets associative class and assuming maxW = avgWeight * maxImb
+      MergeTargets(Sides* s, Weights* w, double maxW) : Targets(s,w,0.1) 
       {
+         const double avgW = avgWeight(w);
+			if (w->self() < maxW && w->self() > 0){ 
+				const int rank = PCU_Comm_Self();
+
+				PCU_Debug_Print("Part %d is light and not empty\n", rank);				
+
+				double minWeight = std::numeric_limits<double>::max(); 
+				const Weights::Item* weight;
+            w->begin(); 
+				while( (weight = w->iterate()) ) 
+               if ( weight->second < minWeight )
+                  minWeight = weight->second;
+            w->end();
+
+				PCU_Debug_Print("minWeight = %f \n", minWeight);
+
+            //TODO use something less than integer table entries, possibly 0.5 ???
+				int* normalizedIntWeights = new int[w->size()];
+				unsigned int weightIdx = 0;
+            w->begin(); 
+				while( (weight = w->iterate()) ){
+					normalizedIntWeights[weightIdx++] = (int) ceil( weight->second / minWeight ); 
+					PCU_Debug_Print("weight %d, normalized to %d\n", weight->first, normalizedIntWeights[weightIdx-1]);
+				}
+            w->end();
+
+				const double weightCapacity = maxW - w->self();
+				const int knapsackCapacity = floor(weightCapacity/minWeight);
+				const float imbalance = (float) w->self() / (float) avgW; 
+
+				int* value = new int[s->total()];
+				std::fill (value, value + s->total(),1);
+				knapsack* ks = new knapsack(knapsackCapacity, w->size(), normalizedIntWeights, value);
+								
+				const int solnVal = ks->solve();		
+				mergeTargetsResults.reserve(solnVal);
+				ks->getSolution(mergeTargetsResults);
+
+            PCU_Debug_Print("mergetargets start\n");  
+				PCU_Debug_Print("mergetargets size = %d\n", mergeTargetsResults.size());
+            for(size_t i=0; i<mergeTargetsResults.size(); i++)  
+               PCU_Debug_Print("mergetargets %d\n", mergeTargetsResults[i]);
+
+            delete value;	
+				delete normalizedIntWeights;
+				delete ks;					
+		  }	
         //if (weight < maxW && weight > 0) then
         //  run knapsack and fill in the net 
         //  (see targets.h and associative.h for container API to use for net)
@@ -22,6 +75,7 @@ namespace parma {
       }
     private:
       MergeTargets();
+		vector<int> mergeTargetsResults;
   };
 
   apf::Migration* selectMerges(apf::Mesh* m, MergeTargets& tgts) {
