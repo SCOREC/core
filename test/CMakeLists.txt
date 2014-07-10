@@ -5,6 +5,7 @@ find_package(apf_sim REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(spr REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(parma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -13,7 +14,8 @@ include_directories(
   ${APF_SIM_INCLUDE_DIRS}
   ${SPR_INCLUDE_DIRS}
   ${PARMA_INCLUDE_DIRS}
-  ${PH_INCLUDE_DIRS})
+  ${PH_INCLUDE_DIRS}
+  ${APF_MPAS_INCLUDE_DIRS})
 
 add_executable(mdlConvert EXCLUDE_FROM_ALL mdlConvert.cc)
 add_executable(mkmodel EXCLUDE_FROM_ALL mkmodel.cc)
@@ -36,7 +38,8 @@ add_executable(balance EXCLUDE_FROM_ALL balance.cc)
 add_executable(split EXCLUDE_FROM_ALL split.cc)
 add_executable(zsplit EXCLUDE_FROM_ALL zsplit.cc)
 add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
-add_executable(bfs EXCLUDE_FROM_ALL bfs.cc)
+add_executable(mpas_read EXCLUDE_FROM_ALL mpas_read.cc)
+add_executable(mpas_write EXCLUDE_FROM_ALL mpas_write.cc)
 add_executable(hps EXCLUDE_FROM_ALL hps.cc)
 add_executable(fan EXCLUDE_FROM_ALL fan.cc)
 
@@ -62,7 +65,8 @@ set(tests
   split
   zsplit
   ghost
-  bfs
+  mpas_read
+  mpas_write
   hps
   fan)
 
@@ -74,5 +78,6 @@ foreach(test ${tests})
     ${APF_SIM_LIBS}
     ${SPR_LIBS}
     ${PARMA_LIBS}
-    ${PH_LIBS})
+    ${PH_LIBS}
+    ${APF_MPAS_LIBS})
 endforeach()

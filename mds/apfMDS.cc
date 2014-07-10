@@ -723,4 +723,10 @@ bool alignMdsMatches(Mesh2* in)
   return mds_align_matches(m->mesh);
 }
 
+void deriveMdsModel(Mesh2* in)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_derive_model(m->mesh);
+}
+
 }

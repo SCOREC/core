@@ -71,4 +71,6 @@ add_subdirectory(spr)
 
 add_subdirectory(phasta)
 
+add_subdirectory(mpas)
+
 add_subdirectory(test)
