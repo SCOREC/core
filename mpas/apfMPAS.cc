@@ -110,7 +110,7 @@ void buildInitialMesh(MpasFile& in, apf::Mesh2* out)
     }
     apf::buildElement(out, c, t, ev);
 bad_vi:
-   continue;
+    continue;
   }
   numberInitialNodes(in, out, v);
   delete [] v;
