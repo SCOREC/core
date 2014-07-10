@@ -26,8 +26,6 @@ void adapt(Input* in)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  preventChangesToLayer(a);
-  allowSplitInLayer(a);
   for (int i=0; i < in->maximumIterations; ++i)
   {
     print("iteration %d",i);
@@ -35,11 +33,11 @@ void adapt(Input* in)
     midBalance(a);
     refine(a);
   }
-  preventChangesToLayer(a);
   allowSplitCollapseOutsideLayer(a);
   snap(a);
   fixElementShapes(a);
-  turnLayerToTets(a);
+  cleanupLayer(a);
+  tetrahedronize(a);
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
@@ -55,11 +53,6 @@ void adapt(Mesh* m, AnisotropicFunction* f, SolutionTransfer* s)
 }
 
 void adapt(Mesh* m, IsotropicFunction* f, SolutionTransfer* s)
-{
-  adapt(configure(m,f,s));
-}
-
-void adapt(Mesh* m, apf::Field* f, SolutionTransfer* s)
 {
   adapt(configure(m,f,s));
 }

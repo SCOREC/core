@@ -118,6 +118,8 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType);
 
 Field* createPackedField(Mesh* m, const char* name, int components);
 
+Field* cloneField(Field* f, Mesh* onto);
+
 /** \brief Retrieve the Mesh over which a Field is defined.
   */
 Mesh* getMesh(Field* f);
@@ -445,6 +447,15 @@ bool isFrozen(Field* f);
 double* getArrayData(Field* f);
 
 void zeroField(Field* f);
+
+struct Function
+{
+  virtual ~Function();
+  virtual void eval(MeshEntity* e, double* result) = 0;
+};
+
+Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
+    Function* f);
 
 }
 

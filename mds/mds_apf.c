@@ -231,3 +231,41 @@ int mds_align_matches(struct mds_apf* m)
       did_change = did_change || recv_down_matches(m);
   return did_change;
 }
+
+/* uses the null model to classify a mesh
+   that did not have a model in such a way
+   that verification will accept it */
+void mds_derive_model(struct mds_apf* m)
+{
+  int d;
+  mds_id e;
+  int i;
+  mds_id de;
+  struct mds_set s;
+  struct mds_copies* c;
+  struct gmi_ent* interior = mds_find_model(m, m->mds.d, 0);
+  struct gmi_ent* boundary = mds_find_model(m, m->mds.d - 1, 0);
+  /* first classify everything to the interior */
+  for (d = 0; d <= m->mds.d; ++d)
+    for (e = mds_begin(&m->mds, d);
+         e != MDS_NONE;
+         e = mds_next(&m->mds, e))
+      m->model[mds_type(e)][mds_index(e)] = interior;
+  /* then if a face has neither two adjacent elements
+     nor a remote copy, classify its closure onto the model boundary */
+  for (e = mds_begin(&m->mds, m->mds.d - 1);
+       e != MDS_NONE;
+       e = mds_next(&m->mds, e)) {
+    mds_get_adjacent(&m->mds, e, m->mds.d, &s);
+    c = mds_get_copies(&m->remotes, e);
+    if (c || s.n == 2)
+      continue;
+    for (d = 0; d < m->mds.d; ++d) {
+      mds_get_adjacent(&m->mds, e, d, &s);
+      for (i = 0; i < s.n; ++i) {
+        de = s.e[i];
+        m->model[mds_type(de)][mds_index(de)] = boundary;
+      }
+    }
+  }
+}

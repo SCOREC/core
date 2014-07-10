@@ -26,6 +26,7 @@ Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 Mesh2* addMdsPart(Mesh2* original);
 
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
+Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
@@ -38,6 +39,8 @@ gmi_model* getMdsModel(Mesh2* mesh);
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 
 bool alignMdsMatches(Mesh2* in);
+
+void deriveMdsModel(Mesh2* in);
 
 }
 

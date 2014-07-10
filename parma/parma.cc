@@ -33,7 +33,7 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
    imbInfo imb;
    apf::MeshTag* weight = mesh->createDoubleTag("weight",1);
    imb.get(mesh,weight);
-   for(int i=0; i<4; i++) 
+   for(int i=0; i<= mesh->getDimension(); i++) 
       (*entImb)[i] = imb.maxImb[i];
    mesh->destroyTag(weight); 
 }

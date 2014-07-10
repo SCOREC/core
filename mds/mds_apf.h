@@ -65,6 +65,8 @@ void mds_apf_scale(struct mds_apf* m, int factor);
 
 int mds_align_matches(struct mds_apf* m);
 
+void mds_derive_model(struct mds_apf* m);
+
 extern int const mds_apf_double;
 extern int const mds_apf_int;
 

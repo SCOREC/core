@@ -128,7 +128,7 @@ Refine::~Refine()
   m->destroyTag(vertPlaceTag);
 }
 
-static Entity* makeSplitVert(Refine* r, Entity* edge)
+Entity* makeSplitVert(Refine* r, Entity* edge)
 {
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
@@ -146,8 +146,8 @@ static Entity* makeSplitVert(Refine* r, Entity* edge)
     transferParametricOnEdgeSplit(m,edge,place,param);
   Entity* vert = buildVertex(a,c,point,param);
   m->setDoubleTag(vert,r->vertPlaceTag,&(place));
-  sf->interpolate(me,xi,vert);
   st->onVertex(me,xi,vert);
+  sf->interpolate(me,xi,vert);
   apf::destroyMeshElement(me);
   return vert;
 }
@@ -204,16 +204,6 @@ Entity* findPlacedSplitVert(Refine* r, Entity* v0, Entity* v1, double& place)
   return vert;
 }
 
-static void splitEdge(Refine* r, Entity* edge, Entity** v)
-{
-  Entity* sv = makeSplitVert(r,edge);
-  Entity* ev[2];
-  ev[0] = v[0]; ev[1] = sv;
-  buildSplitElement(r,edge,EDGE,ev);
-  ev[0] = sv; ev[1] = v[1];
-  buildSplitElement(r,edge,EDGE,ev);
-}
-
 static int getEdgeSplitCode(Adapt* a, Entity* e)
 {
   Downward edges;
@@ -225,75 +215,28 @@ static int getEdgeSplitCode(Adapt* a, Entity* e)
   return code;
 }
 
-/* looks at which edges have been split and rotates
+/* based on type and edge split code, rotates
    the entity to the standard orientation for its template,
    returning the code index for the template and the
-   rotated vertices.
-   in the case of no splits, this function doesn't bother
-   returning the vertices. */
-static int matchEntityToTemplate(Adapt* a, Entity* e, Entity** v)
+   rotated vertices. */
+int matchToTemplate(Adapt* a, int type, Entity** vi, int code, Entity** vo)
+{
+  CodeMatch const* table = code_match[type];
+  assert(table[code].code_index != -1);
+  int rotation = table[code].rotation;
+  rotateEntity(type, vi, rotation, vo);
+  return table[code].code_index;
+}
+
+int matchEntityToTemplate(Adapt* a, Entity* e, Entity** vo)
 {
   int code = getEdgeSplitCode(a,e);
   Mesh* m = a->mesh;
   int type = m->getType(e);
-  CodeMatch const* table = code_match[type];
-  assert(table[code].code_index != -1);
-  int rotation = table[code].rotation;
-  rotateEntity(m,e,rotation,v);
-  return table[code].code_index;
+  Downward vi;
+  m->getDownward(e, 0, vi);
+  return matchToTemplate(a, type, vi, code, vo);
 }
-
-static void splitTri1(Refine* r, Entity* face, Entity** v)
-{
-  Entity* sv = findSplitVert(r,v[0],v[1]);
-  Entity* tv[3];
-  tv[0] = v[0]; tv[1] = sv; tv[2] = v[2];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[2]; tv[1] = sv; tv[2] = v[1];
-  buildSplitElement(r,face,TRI,tv);
-}
-
-static void splitTri2(Refine* r, Entity* face, Entity** v)
-{
-  Entity* sv[2];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[1],v[2]);
-  Entity* tv[3];
-  tv[0] = sv[1]; tv[1] = sv[0]; tv[2] = v[1];
-  buildSplitElement(r,face,TRI,tv);
-  Entity* qv[4];
-  qv[0] = v[0]; qv[1] = sv[0]; qv[2] = sv[1]; qv[3] = v[2];
-  quadToTrisGeometric(r,face,qv);
-}
-
-static void splitTri3(Refine* r, Entity* face, Entity** v)
-{
-  Entity* sv[3];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[1],v[2]);
-  sv[2] = findSplitVert(r,v[2],v[0]);
-  Entity* tv[3];
-  tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = sv[2];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[0]; tv[1] = sv[0]; tv[2] = sv[2];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[1]; tv[1] = sv[1]; tv[2] = sv[0];
-  buildSplitElement(r,face,TRI,tv);
-  tv[0] = v[2]; tv[1] = sv[2]; tv[2] = sv[1];
-  buildSplitElement(r,face,TRI,tv);
-}
-
-static SplitFunction edge_templates[edge_edge_code_count] =
-{0,
- splitEdge,
-};
-
-static SplitFunction tri_templates[tri_edge_code_count] =
-{0,
- splitTri1,
- splitTri2,
- splitTri3
-};
 
 static SplitFunction* all_templates[TYPES] =
 {0,//vert
@@ -453,14 +396,20 @@ void cleanSplitVerts(Refine* r)
     m->removeTag(findSplitVert(r,1,i),tag);
 }
 
-bool shouldSplit(Adapt* a, Entity* e)
+struct ShouldSplit : public Predicate
 {
-  return a->sizeField->shouldSplit(e);
-}
+  ShouldSplit(Adapt* a_):a(a_) {}
+  bool operator()(Entity* e)
+  {
+    return a->sizeField->shouldSplit(e);
+  }
+  Adapt* a;
+};
 
 long markEdgesToSplit(Adapt* a)
 {
-  return markEntities(a,1,shouldSplit,SPLIT,DONT_SPLIT);
+  ShouldSplit p(a);
+  return markEntities(a, 1, p, SPLIT, DONT_SPLIT);
 }
 
 void processNewElements(Refine* r)
@@ -485,24 +434,27 @@ bool refine(Adapt* a)
 {
   double t0 = MPI_Wtime();
   --(a->refinesLeft);
+  setupLayerForSplit(a);
   long count = markEdgesToSplit(a);
-  if ( ! count)
+  if ( ! count) {
+    freezeLayer(a);
     return false;
+  }
   assert(checkFlagConsistency(a,1,SPLIT));
   Refine* r = a->refine;
-  addAllMarkedEdges(r);
   resetCollection(r);
   collectForTransfer(r);
   collectForMatching(r);
-  collectForLayerRefine(r);
+  setupRefineForLayer(r);
+  addAllMarkedEdges(r);
   splitElements(r);
   processNewElements(r);
-  flagNewLayerEntities(r);
   destroySplitElements(r);
   cleanSplitVerts(r);
   forgetNewEntities(r);
   double t1 = MPI_Wtime();
   print("refined %li edges in %f seconds",count,t1-t0);
+  resetLayer(a);
   return true;
 }
 

@@ -26,8 +26,8 @@ class Array
       copy(other);
       return *this;
     }
-    T& operator[](std::size_t i) {/*assert(i<N);*/ return elements[i];}
-    T const& operator[](std::size_t i) const {/*assert(i<N);*/ return elements[i];}
+    T& operator[](std::size_t i) {return elements[i];}
+    T const& operator[](std::size_t i) const {return elements[i];}
   protected:
     void copy(Array<T,N> const& other)
     {

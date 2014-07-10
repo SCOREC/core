@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFCOORDDDATA_H
-#define APFCOORDDDATA_H
+#ifndef APF_COORD_DATA_H
+#define APF_COORD_DATA_H
 
 #include "apfFieldData.h"
 

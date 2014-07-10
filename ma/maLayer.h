@@ -8,17 +8,26 @@ namespace ma {
 class Adapt;
 class Refine;
 
-void initLayer(Adapt* a);
-void preventChangesToLayer(Adapt* a);
-void allowSplitCollapseOutsideLayer(Adapt* a);
-void allowSplitInLayer(Adapt* a);
-void turnLayerToTets(Adapt* a);
+void resetLayer(Adapt* a);
+void freezeLayer(Adapt* a);
+void unfreezeLayer(Adapt* a);
+void findLayerBase(Adapt* a);
 
+void allowSplitCollapseOutsideLayer(Adapt* a);
+
+void allowSplitInLayer(Adapt* a);
 void collectForLayerRefine(Refine* r);
-void flagNewLayerEntities(Refine* r);
 
 int getDiagonalFromFlag(Adapt* a, Entity* e);
-int diagonalToFlag(int diagonal);
+int getFlagFromDiagonal(int diagonal);
+
+void tetrahedronize(Adapt* a);
+void cleanupLayer(Adapt* a);
+
+void snapLayer(Adapt* a, Tag* snapTag);
+
+void setupLayerForSplit(Adapt* a);
+void setupRefineForLayer(Refine* r);
 
 }
 

@@ -215,27 +215,19 @@ static void sendCoords(Mesh* m, MeshEntity* e)
   }
 }
 
-static bool areExactlyEqual(Vector3 const& a, Vector3 const& b)
-{
-  return a[0] == b[0] &&
-         a[1] == b[1] &&
-         a[2] == b[2];
-}
-
 static bool receiveCoords(Mesh* m)
 {
   MeshEntity* e;
+  Vector3 ox;
+  Vector3 op;
   PCU_COMM_UNPACK(e);
+  PCU_COMM_UNPACK(ox);
+  PCU_COMM_UNPACK(op);
   Vector3 x;
-  PCU_COMM_UNPACK(x);
-  Vector3 v;
-  m->getPoint(e, 0, v);
-  if (!areExactlyEqual(v, x))
-    return false;
-  PCU_COMM_UNPACK(x);
-  v = Vector3(0,0,0);
-  m->getParam(e, v);
-  return areExactlyEqual(v, x);
+  Vector3 p(0,0,0);
+  m->getPoint(e, 0, x);
+  m->getParam(e, p);
+  return (x == ox) && (p == op);
 }
 
 static long verifyCoords(Mesh* m)

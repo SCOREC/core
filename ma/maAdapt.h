@@ -23,11 +23,13 @@ enum {
   BAD_QUALITY   = (1<< 5),
   OK_QUALITY    = (1<< 6),
   SNAP          = (1<< 7),
-  DONT_SWAP     = (1<< 8),
-  LAYER         = (1<< 9),
-  LAYER_BASE    = (1<<10),
-  DIAGONAL_1    = (1<<11),
-  DIAGONAL_2    = (1<<12),
+  DONT_SNAP     = (1<< 8),
+  DONT_SWAP     = (1<< 9),
+  LAYER         = (1<<10),
+  LAYER_BASE    = (1<<11),
+  LAYER_TOP     = (1<<12),
+  DIAGONAL_1    = (1<<13),
+  DIAGONAL_2    = (1<<14)
 };
 
 class DeleteCallback;
@@ -86,10 +88,15 @@ double getDistance(Adapt* a, Entity* v0, Entity* v1);
    return the index of the closest pair in metric space */
 int getClosestPair(Adapt* a, Entity* (*pairs)[2], int n);
 
+struct Predicate
+{
+  virtual bool operator()(Entity* e) = 0;
+};
+
 long markEntities(
     Adapt* a,
     int dimension,
-    bool (*predicate)(Adapt*,Entity*),
+    Predicate& predicate,
     int trueFlag,
     int falseFlag);
 
@@ -147,6 +154,22 @@ void print(const char* format, ...) __attribute__((format(printf,1,2)));
 
 void setFlagOnClosure(Adapt* a, Entity* e, int flag);
 void syncFlag(Adapt* a, int dimension, int flag);
+
+struct HasTag : public Predicate
+{
+  HasTag(Mesh* m, Tag* t);
+  bool operator()(Entity* e);
+  Mesh* mesh;
+  Tag* tag;
+};
+
+struct HasFlag : public Predicate
+{
+  HasFlag(Adapt* a, int f);
+  bool operator()(Entity* e);
+  Adapt* adapter;
+  int flag;
+};
 
 }
 

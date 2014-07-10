@@ -28,9 +28,11 @@ set(SOURCES
   maAdapt.cc
   maMesh.cc
   maRefine.cc
+  maLayerRefine.cc
   maTables.cc
   maLayerTables.cc
   maTemplates.cc
+  maLayerTemplates.cc
   maCoarsen.cc
   maSize.cc
   maOperator.cc
@@ -50,6 +52,8 @@ set(SOURCES
   maBalance.cc
   maLayer.cc
   maCrawler.cc
+  maTetrahedronize.cc
+  maLayerSnap.cc
   maMap.cc)
 
 set(HEADERS

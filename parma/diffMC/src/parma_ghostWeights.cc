@@ -2,10 +2,23 @@
 #include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
+#include <apfNumbering.h>
 #include "parma_weights.h"
 #include "parma_sides.h"
 
+int ghostIteration = 0;
+
 namespace {
+  int getOwner(apf::Mesh* m, apf::MeshEntity* v) {
+    apf::Parts res;
+    m->getResidence(v, res);
+    return *(res.begin());
+  }
+
+  bool isOwned(apf::Mesh* m, apf::MeshEntity* v) {
+    return PCU_Comm_Self() == getOwner(m,v);
+  }
+
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
     assert(m->hasTag(e,w));
     double weight;
@@ -50,7 +63,7 @@ namespace {
         m->getUp(vertex,edges);
         for (int k=0;k<edges.n;k++) {
           apf::MeshEntity* v = getOtherVtx(m,edges.e[k],vertex);
-          if (!m->isOwned(v))
+          if (!isOwned(m, v))
             continue;
           if (m->hasTag(v,visited))
             continue;
@@ -82,9 +95,9 @@ namespace {
         std::vector<apf::MeshEntity*> next;
         while ((v=mesh->iterate(itr))) {
           if (isSharedWithTarget(mesh,v,peer)) {
-            if (mesh->isOwned(v))
+            if (isOwned(mesh,v))
               next.push_back(v);
-            else if (mesh->getOwner(v)==peer)
+            else if (getOwner(mesh,v)==peer)
               current.push_back(v);
           }
         }
@@ -109,7 +122,7 @@ namespace {
     double sum = 0;
     while ((e = m->iterate(it))) {
       assert(m->hasTag(e,w));
-      if (m->isOwned(e)) {
+      if (isOwned(m,e)) {
         m->getDoubleTag(e,w,&entW);
         sum += entW;
       }
@@ -130,6 +143,7 @@ namespace parma {
         exchangeGhostsFrom();
         weight += ownedVtxWeight(m, wtag);
         exchange();
+        ghostIteration++;
       }
       ~GhostWeights() {};
       double self() {

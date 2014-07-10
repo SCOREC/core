@@ -52,9 +52,6 @@ class VectorElement;
 class Field : public FieldBase
 {
   public:
-    void init(const char* n,
-              Mesh* m,
-              FieldShape* s);
     virtual Element* getElement(VectorElement* e) = 0;
     virtual int getValueType() const = 0;
     virtual int getScalarType() {return Mesh::DOUBLE;}

@@ -27,6 +27,16 @@ static int from_ptr(void* e)
   return (((char*)e) - ((char*)0)) - 1;
 }
 
+int gmi_index(struct gmi_ent* e)
+{
+  return INDEX(from_ptr(e));
+}
+
+struct gmi_ent* gmi_identify(int dim, int idx)
+{
+  return to_ptr(ENT(dim, idx));
+}
+
 static struct gmi_mesh* to_mesh(struct gmi_model* m)
 {
   return (struct gmi_mesh*)m;

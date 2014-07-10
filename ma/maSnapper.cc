@@ -47,6 +47,12 @@ static void collectBadElements(Adapt* a, Upward& es, apf::Up& bes)
 {
   bes.n = 0;
   for (size_t i = 0; i < es.getSize(); ++i) {
+/* for now, when snapping a vertex on the boundary
+   layer, ignore the quality of layer elements.
+   not only do we not have metrics for this, but the
+   algorithm that moves curves would need to change */
+    if (getFlag(a, es[i], LAYER))
+      continue;
     double quality = a->shape->getQuality(es[i]);
     if (quality < a->input->validQuality)
       bes.e[bes.n++] = es[i];

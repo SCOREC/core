@@ -9,6 +9,7 @@
 #include "apfVectorField.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
+#include "apfTagData.h"
 #include <PCU.h>
 
 namespace apf {
@@ -52,6 +53,15 @@ int const tet_edge_verts[6][2] =
 ,{0,3}
 ,{1,3}
 ,{2,3}};
+
+int const prism_edge_verts[9][2] =
+{{0,1},{1,2},{2,0}
+,{0,3},{1,4},{2,5}
+,{3,4},{4,5},{5,3}};
+
+int const pyramid_edge_verts[8][2] =
+{{0,1},{1,2},{2,3},{3,0}
+,{0,4},{1,4},{2,4},{3,4}};
 
 int const tet_tri_verts[4][3] =
 {{0,1,2}
@@ -231,7 +241,9 @@ MeshEntity* iterateBoundary(Mesh* m, MeshIterator* it, int part)
 Migration::Migration(Mesh* m)
 {
   mesh = m;
-  tag = m->createIntTag("apf_migrate",1);
+  tag = m->findTag("apf_migrate");
+  if (!tag)
+    tag = m->createIntTag("apf_migrate",1);
 }
 
 Migration::~Migration()
@@ -490,7 +502,8 @@ void changeMeshShape(Mesh* m, FieldShape* newShape, bool project)
 {
   Field* oldCoordinateField = m->getCoordinateField();
   VectorField* newCoordinateField = new VectorField();
-  newCoordinateField->init(oldCoordinateField->getName(),m,newShape);
+  newCoordinateField->init(oldCoordinateField->getName(), m, newShape,
+      new TagDataOf<double>());
   if (project)
     newCoordinateField->project(oldCoordinateField);
   m->changeCoordinateField(newCoordinateField);

@@ -55,7 +55,9 @@ void setDefaultValues(Input* in)
   in->shouldRunPostDiffusion = false;
   in->diffuseIterations = 30;
   in->shouldTurnLayerToTets = false;
+  in->shouldCleanupLayer = false;
   in->shouldRefineLayer = false;
+  in->isUniform = false;
 }
 
 void rejectInput(const char* str)
@@ -144,9 +146,7 @@ Input* configure(
    the metric field, which has its own built-in
    solution transfer */
   Input* in = configure(m,s);
-  MetricSizeField* sf = new MetricSizeField(m);
-  initialize(sf,f);
-  in->sizeField = sf;
+  in->sizeField = makeSizeField(m, f);
   return in;
 }
 
@@ -156,9 +156,18 @@ Input* configure(
     SolutionTransfer* s)
 {
   Input* in = configure(m,s);
-  MetricSizeField* sf = new MetricSizeField(m);
-  initialize(sf,f);
-  in->sizeField = sf;
+  in->sizeField = makeSizeField(m, f);
+  return in;
+}
+
+Input* configure(
+    Mesh* m,
+    apf::Field* sizes,
+    apf::Field* frames,
+    SolutionTransfer* s)
+{
+  Input* in = configure(m,s);
+  in->sizeField = makeSizeField(m, sizes, frames);
   return in;
 }
 
@@ -179,21 +188,13 @@ class FieldReader : public IsotropicFunction
     apf::Field* field;
 };
 
-Input* configure(
-    Mesh* m,
-    apf::Field* f,
-    SolutionTransfer* s)
-{
-  FieldReader fieldReader(f);
-  return configure(m,&fieldReader,s);
-}
-
 Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {
   Input* in = configure(m,s);
   in->sizeField = new UniformRefiner(m);
   in->maximumIterations = n;
   in->shouldRefineLayer = true;
+  in->isUniform = true;
   return in;
 }
 

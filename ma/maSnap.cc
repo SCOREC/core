@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maOperator.h"
 #include "maSnapper.h"
+#include "maLayer.h"
 #include <PCU.h>
 
 namespace ma {
@@ -134,13 +135,6 @@ class SnapAll : public Operator
     Snapper snapper;
 };
 
-static bool areExactlyEqual(Vector& a, Vector& b)
-{
-  return a[0] == b[0] &&
-         a[1] == b[1] &&
-         a[2] == b[2];
-}
-
 long tagVertsToSnap(Adapt* a, Tag*& t)
 {
   Mesh* m = a->mesh;
@@ -150,32 +144,27 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
   long n = 0;
   Iterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
-    if (getFlag(a, v, LAYER))
-      continue;
     int md = m->getModelType(m->toModel(v));
-    if (md == dim) continue;
+    if (md == dim)
+      continue;
     Vector s;
     getSnapPoint(m, v, s);
     Vector x = getPosition(m, v);
-    if (areExactlyEqual(s, x))
+    if (s == x)
       continue;
     m->setDoubleTag(v, t, &s[0]);
     if (m->isOwned(v))
       ++n;
   }
+  m->end(it);
   PCU_Add_Longs(&n, 1);
   return n;
 }
 
 static void markVertsToSnap(Adapt* a, Tag* t)
 {
-  Mesh* m = a->mesh;
-  Iterator* it = m->begin(0);
-  Entity* v;
-  while ((v = m->iterate(it)))
-    if (m->hasTag(v, t))
-      setFlag(a, v, SNAP);
-  m->end(it);
+  HasTag p(a->mesh, t);
+  markEntities(a, 0, p, SNAP, DONT_SNAP);
 }
 
 bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
@@ -186,16 +175,11 @@ bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
   long n = op.successCount;
   PCU_Add_Longs(&n, 1);
   successCount += n;
-  fprintf(stderr,"round %s %ld\n", isSimple ? "simple" : "dig", n);
   return PCU_Or(op.didAnything);
 }
 
-void snap(Adapt* a)
+long snapTaggedVerts(Adapt* a, Tag* tag)
 {
-  if ( ! a->input->shouldSnap)
-    return;
-  Tag* tag;
-  long targetCount = tagVertsToSnap(a, tag);
   long successCount = 0;
   /* first snap all the vertices we can without digging.
      This is fast because it uses just the elements around
@@ -208,8 +192,23 @@ void snap(Adapt* a)
      which requires two-layer cavities so hopefully fewer vertices
      are involved here */
   while (snapOneRound(a, tag, false, successCount));
+  return successCount;
+}
+
+void snap(Adapt* a)
+{
+  if ( ! a->input->shouldSnap)
+    return;
+  double t0 = MPI_Wtime();
+  Tag* tag;
+  long targets = tagVertsToSnap(a, tag);
+  long success = snapTaggedVerts(a, tag);
+  snapLayer(a, tag);
+  apf::removeTagFromDimension(a->mesh, tag, 0);
   a->mesh->destroyTag(tag);
-  print("snapped %li of %li vertices", successCount, targetCount);
+  double t1 = MPI_Wtime();
+  print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
+    t1 - t0, targets, success);
 }
 
 void visualizeGeometricInfo(Mesh* m, const char* name)

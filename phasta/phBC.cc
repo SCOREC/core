@@ -134,7 +134,8 @@ static void applyVector(double* values, int* bits,
 {
   for (int i = 0; i < 3; ++i)
     values[bc.offset + i] = inval[i];
-  *bits |= (1<<bc.bit);
+  if (bc.bit != -1)
+    *bits |= (1<<bc.bit);
 }
 
 static void applySurfID(double* values, int* bits,
@@ -166,6 +167,16 @@ static KnownBC const naturalBCs[10] = {
   {"scalar_3 flux",    8, 7, applyScalar},
   {"scalar_4 flux",    9, 8, applyScalar},
   {"surf ID",         -1,-1, applySurfID},
+};
+
+static KnownBC const solutionBCs[7] = {
+  {"initial pressure",         0,-1, applyScalar},
+  {"initial velocity",         1,-1, applyVector},
+  {"initial temperature",      4,-1, applyScalar},
+  {"initial scalar_1",         5,-1, applyScalar},
+  {"initial scalar_2",         6,-1, applyScalar},
+  {"initial scalar_3",         7,-1, applyScalar},
+  {"initial scalar_4",         8,-1, applyScalar},
 };
 
 double* checkForBC(int dim, int tag, BCs& bcs, KnownBC const& kbc)
@@ -216,6 +227,13 @@ bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
 {
   return applyBCs(m, v, appliedBCs, essentialBCs,
       sizeof(essentialBCs) / sizeof(KnownBC), values, bits);
+}
+
+bool applySolutionBCs(apf::Mesh* m, apf::MeshEntity* v,
+    BCs& appliedBCs, double* values)
+{
+  return applyBCs(m, v, appliedBCs, solutionBCs,
+      sizeof(solutionBCs) / sizeof(KnownBC), values, 0);
 }
 
 void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces)

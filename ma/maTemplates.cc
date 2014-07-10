@@ -7,14 +7,135 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include "maRefine.h"
+#include "maTemplates.h"
 #include "maAdapt.h"
 #include "maTables.h"
 #include "maSolutionTransfer.h"
 #include "maLayer.h"
-#include <cstdio>
 
 namespace ma {
+
+/* given a quad-shaped area, splits it into
+   triangles along diagonal 0--2 */
+void quadToTris(Refine* r, Entity* parent, Entity** v)
+{
+  Entity* tv[3];
+  tv[0] = v[0]; tv[1] = v[1]; tv[2] = v[2];
+  buildSplitElement(r,parent,TRI,tv);
+  tv[0] = v[0]; tv[1] = v[2]; tv[2] = v[3];
+  buildSplitElement(r,parent,TRI,tv);
+}
+
+int quadToTrisChoice(Refine* r, Entity* p, Entity** v, int rotation)
+{
+  Entity* v2[4];
+  rotateQuad(v,rotation,v2);
+  quadToTris(r,p,v2);
+  return rotation;
+}
+
+/* given a quad-shaped area, splits into
+   triangles based on shortest diagonal.
+   returns 0 if v[0]-v[2] is chosen, 1 otherwise. */
+int quadToTrisGeometric(Refine* r, Entity* parent, Entity** v)
+{
+  Adapt* a = r->adapt;
+  if (getDistance(a,v[1],v[3]) < getDistance(a,v[0],v[2]))
+    return quadToTrisChoice(r,parent,v,1);
+  else
+    return quadToTrisChoice(r,parent,v,0);
+}
+
+/* in mixed mesh in-plane adaptation, we will want to
+   align the ambiguous triangle diagonals in one stack.
+   This function handles using the diagonal flag from the triangle
+   to split the quad, or none if the triangle was not part of a layer */
+void quadToTrisMixed(Refine* r, Entity* p, Entity** v, int diagonal)
+{
+  if (diagonal == -1)
+    quadToTrisGeometric(r, p, v);
+  else
+    quadToTrisChoice(r, p, v, diagonal);
+}
+
+/* given a quad-shaped area, splits into
+   triangles based a bit vector of
+   good diagonals, falls back to shortest edge.
+   The first bit means v[0]-v[2] is ok,
+   the second bit means v[1]-v[3] is ok.
+   returns 0 if v[0]-v[2] is chosen, 1 otherwise. */
+int quadToTrisRestricted(Refine* r, Entity* parent, Entity** v, int good)
+{
+  //if both diagonals are bad or both are good, choose the shortest edge
+  if ((good == 0x0)||(good == 0x3))
+    return quadToTrisGeometric(r,parent,v);
+  if (good == 0x2)
+    return quadToTrisChoice(r,parent,v,1);
+  else
+    return quadToTrisChoice(r,parent,v,0);
+}
+
+static void splitEdge(Refine* r, Entity* edge, Entity** v)
+{
+  Entity* sv = makeSplitVert(r,edge);
+  Entity* ev[2];
+  ev[0] = v[0]; ev[1] = sv;
+  buildSplitElement(r,edge,EDGE,ev);
+  ev[0] = sv; ev[1] = v[1];
+  buildSplitElement(r,edge,EDGE,ev);
+}
+
+static void splitTri1(Refine* r, Entity* face, Entity** v)
+{
+  Entity* sv = findSplitVert(r,v[0],v[1]);
+  Entity* tv[3];
+  tv[0] = v[0]; tv[1] = sv; tv[2] = v[2];
+  buildSplitElement(r,face,TRI,tv);
+  tv[0] = v[2]; tv[1] = sv; tv[2] = v[1];
+  buildSplitElement(r,face,TRI,tv);
+}
+
+static void splitTri2(Refine* r, Entity* p, Entity** v)
+{
+  Entity* sv[2];
+  sv[0] = findSplitVert(r,v[0],v[1]);
+  sv[1] = findSplitVert(r,v[1],v[2]);
+  Entity* tv[3];
+  tv[0] = sv[1]; tv[1] = sv[0]; tv[2] = v[1];
+  buildSplitElement(r, p, TRI, tv);
+  Entity* qv[4];
+  qv[0] = v[0]; qv[1] = sv[0]; qv[2] = sv[1]; qv[3] = v[2];
+  quadToTrisMixed(r, p, qv, getDiagonalFromFlag(r->adapt, p));
+}
+
+static void splitTri3(Refine* r, Entity* face, Entity** v)
+{
+  Entity* sv[3];
+  sv[0] = findSplitVert(r,v[0],v[1]);
+  sv[1] = findSplitVert(r,v[1],v[2]);
+  sv[2] = findSplitVert(r,v[2],v[0]);
+  Entity* tv[3];
+  tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = sv[2];
+  buildSplitElement(r,face,TRI,tv);
+  tv[0] = v[0]; tv[1] = sv[0]; tv[2] = sv[2];
+  buildSplitElement(r,face,TRI,tv);
+  tv[0] = v[1]; tv[1] = sv[1]; tv[2] = sv[0];
+  buildSplitElement(r,face,TRI,tv);
+  tv[0] = v[2]; tv[1] = sv[2]; tv[2] = sv[1];
+  buildSplitElement(r,face,TRI,tv);
+}
+
+SplitFunction edge_templates[edge_edge_code_count] =
+{0,
+ splitEdge,
+};
+
+SplitFunction tri_templates[tri_edge_code_count] =
+{0,
+ splitTri1,
+ splitTri2,
+ splitTri3
+};
 
 void splitTet_1(Refine* r, Entity* parent, Entity** v)
 {
@@ -299,8 +420,8 @@ bool splitTet_prismToTets(
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
   Entity* vert = prismToTetsBadCase(r,tet,pv,code,point);
-  a->sizeField->interpolate(me,xi,vert);
   a->solutionTransfer->onVertex(me,xi,vert);
+  a->sizeField->interpolate(me,xi,vert);
   apf::destroyMeshElement(me);
   return false;
 }
@@ -347,62 +468,6 @@ void splitTet_4_1(Refine* r, Entity* tet, Entity** v)
   pyramidToTets(r,tet,dv);
 }
 
-/* given a prism-shaped volume with all diagonals
-   created except the one on the first face,
-   this returns a bit vector as an integer that
-   indicates which diagonal(s) would prevent
-   the bad case of tetrahedronization.
-   the first bit means v[0] <-> v[4] is ok,
-   the second bit means v[1] <-> v[3] is ok.
- */
-int getPrismDiagonalChoices(Mesh* m, Entity** v)
-{
-  int code = getPrismDiagonalCode(m,v);
-  code >>= 1;//forget the state of the first face
-  return prism_diag_choices[code];
-}
-
-/* splits a quad into two tris using the v[0]-v[2] diagonal */
-void quadToTris(Refine* r, Entity* parent, Entity** v)
-{
-  Entity* tv[3];
-  tv[0] = v[0]; tv[1] = v[1]; tv[2] = v[2];
-  buildSplitElement(r,parent,TRI,tv);
-  tv[0] = v[0]; tv[1] = v[2]; tv[2] = v[3];
-  buildSplitElement(r,parent,TRI,tv);
-}
-
-int quadToTrisGeometric(Refine* r, Entity* parent, Entity** v)
-{
-  Adapt* a = r->adapt;
-  int rotation = 0;
-  if (getDistance(a,v[1],v[3])<getDistance(a,v[0],v[2]))
-    rotation = 1;
-  Entity* v2[4];
-  rotateQuad(v,rotation,v2);
-  quadToTris(r,parent,v2);
-  return rotation;
-}
-
-/* given a quad-shaped area, splits into
-   triangles based a bit vector of
-   good diagonals, falls back to shortest edge.
-   The first bit means v[0]-v[2] is ok,
-   the second bit means v[1]-v[3] is ok.
-   returns 0 if v[0]-v[2] is chosen, 1 otherwise. */
-int quadToTrisRestricted(Refine* r, Entity* parent, Entity** v, int good)
-{
-  //if both diagonals are bad or both are good, choose the shortest edge
-  if ((good == 0x0)||(good == 0x3))
-    return quadToTrisGeometric(r,parent,v);
-  int rotation = 0;
-  if (good == 0x2) rotation = 1;
-  Entity* v2[4];
-  rotateQuad(v,rotation,v2);
-  quadToTris(r,parent,v2);
-  return rotation;
-}
-
 /* knowing how vertex-along-edge placements are retrieved,
    converts placements to element-local tet coordinates,
    picks the right vertex coordinates to average in,
@@ -442,6 +507,21 @@ Vector splitTet_4_2_getCentroidXi(
   return xi;
 }
 
+/* given a prism-shaped volume with all diagonals
+   created except the one on the first face,
+   this returns a bit vector as an integer that
+   indicates which diagonal(s) would prevent
+   the bad case of tetrahedronization.
+   the first bit means v[0] <-> v[4] is ok,
+   the second bit means v[1] <-> v[3] is ok.
+ */
+int getPrismDiagonalChoices(Mesh* m, Entity** v)
+{
+  int code = getPrismDiagonalCode(m,v);
+  code >>= 1;//forget the state of the first face
+  return prism_diag_choices[code];
+}
+
 /* four split edges divide a tet into two prisms,
    with ambiguity in all the faces.
    the quad inside the tet is undetermined, so
@@ -478,6 +558,23 @@ void splitTet_4_2(Refine* r, Entity* tet, Entity** v)
   assert(wasOk == static_cast<bool>(ok1 & (1<<diag)));
 }
 
+/* given a prism shaped area denoted by wv and a pyramid from the
+   first quad of the prism to v, tetrahedronize the whole thing.
+   Assumes that the other two quads of the prism have diagonals
+   and uses them to prevent the bad case */
+void prismAndPyramidToTets(Refine* r, Entity* p, Entity** wv, Entity* v)
+{
+  Mesh* m = r->adapt->mesh;
+  int restriction = getPrismDiagonalChoices(m, wv);
+  Entity* qv[4] = {wv[0], wv[1], wv[4], wv[3]};
+  quadToTrisRestricted(r, p, qv, restriction);
+  Entity* pv[5] = {qv[0], qv[1], qv[2], qv[3], v};
+  pyramidToTets(r, p, pv);
+  int diagonals = getPrismDiagonalCode(m, wv);
+  assert(checkPrismDiagonalCode(diagonals));
+  prismToTetsGoodCase(r, p, wv, diagonals);
+}
+
 /* five edges are split, creating two tets,
    a pyramid, and a prism. the quad between
    the pyramid and prism is undecided; we
@@ -494,13 +591,7 @@ void splitTet_5(Refine* r, Entity* tet, Entity** v)
   Entity* pr[6]; //prism vertices
   pr[3] = q[3]; pr[4] = q[2]; pr[5] = v[3];
   pr[0] = q[0]; pr[1] = q[1]; pr[2] = v[2];
-  Mesh* m = r->adapt->mesh;
-  int ok = getPrismDiagonalChoices(m,pr);
-  quadToTrisRestricted(r,tet,q,ok);
-  pyramidToTets(r,tet,py);
-  int code = getPrismDiagonalCode(m,pr);
-  assert(checkPrismDiagonalCode(code));
-  prismToTetsGoodCase(r,tet,pr,code);
+  prismAndPyramidToTets(r, tet, pr, py[4]);
   Entity* t[4]; //tet vertices
   t[0] = v[0]; t[1] = py[4]; t[2] = py[0]; t[3] = py[3];
   buildSplitElement(r,tet,TET,t);
@@ -580,259 +671,6 @@ SplitFunction tet_templates[tet_edge_code_count] =
 ,splitTet_4_2  // 9
 ,splitTet_5    //10
 ,splitTet_6    //11
-};
-
-/* this is the template used on quads during tetrahedronization.
-   the choice of diagonal has been made by the algorithms in
-   maLayer.cc, we just retrieve it and split the quad */
-void splitQuad_0(Refine* r, Entity* q, Entity** v)
-{
-  Adapt* a = r->adapt;
-  int rotation = getDiagonalFromFlag(a,q);
-  if (rotation == -1)
-  {
-    fprintf(stderr,"(splitQuad) quad on model dim %d has no flag\n",
-        a->mesh->getModelType(a->mesh->toModel(q)));
-    abort();
-  }
-  Entity* v2[4];
-  rotateQuad(v,rotation,v2);
-  quadToTris(r,q,v2);
-}
-
-/* splits the quad in half along edges v[0]-v[1] and v[2]-v[3] */
-void splitQuad_2(Refine* r, Entity* q, Entity** v)
-{
-  Entity* sv[2];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[2],v[3]);
-  Entity* qv[4];
-  qv[0] = v[0]; qv[1] = sv[0]; qv[2] = sv[1]; qv[3] = v[3];
-  buildSplitElement(r,q,QUAD,qv);
-  qv[0] = sv[0]; qv[1] = v[1]; qv[2] = v[2]; qv[3] = sv[1];
-  buildSplitElement(r,q,QUAD,qv);
-}
-
-/* splits the quad into 4 along all edges */
-void splitQuad_4(Refine* r, Entity* q, Entity** v)
-{
-  Adapt* a = r->adapt;
-  Mesh* m = a->mesh;
-  Entity* sv[4];
-  double places[4];
-  sv[0] = findPlacedSplitVert(r,v[0],v[1],places[0]);
-  sv[1] = findPlacedSplitVert(r,v[1],v[2],places[1]);
-  sv[2] = findPlacedSplitVert(r,v[3],v[2],places[2]);
-  sv[3] = findPlacedSplitVert(r,v[0],v[3],places[3]);
-  double x = (places[0] + places[2])/2;
-  double y = (places[1] + places[3])/2;
-  Vector xi(x*2-1,y*2-1,0);
-/* since no rotation should have been applied, we actually don't
-   need to unrotate xi */
-  apf::MeshElement* me = apf::createMeshElement(m,q);
-  Vector point;
-  apf::mapLocalToGlobal(me,xi,point);
-/* TODO: in truth, we should be transferring parametric
-   coordinates here. since we are a ways away from boundary
-   layer snapping and the transfer logic is non-trivial,
-   this is left alone for now */
-  Entity* cv = buildVertex(a,m->toModel(q),point,Vector(0,0,0));
-  a->sizeField->interpolate(me,xi,cv);
-  a->solutionTransfer->onVertex(me,xi,cv);
-  apf::destroyMeshElement(me);
-  for (int i=0; i < 4; ++i)
-  {
-    Entity* v2[4];
-    Entity* sv2[4];
-    rotateQuad(v,i,v2);
-    rotateQuad(sv,i,sv2);
-    Entity* qv[4];
-    qv[0] = v2[0]; qv[1] = sv2[0]; qv[2] = cv; qv[3] = sv2[3];
-    buildSplitElement(r,q,QUAD,qv);
-  }
-}
-
-SplitFunction quad_templates[quad_edge_code_count] = 
-{splitQuad_0,
- splitQuad_2,
- splitQuad_4
-};
-
-/* this is the template used on prisms during tetrahedronization.
-   the algorithms in maLayer.cc are required to ensure no centroids,
-   so we check that and use the good case template */
-void splitPrism_0(Refine* r, Entity* p, Entity** v)
-{
-  Adapt* a = r->adapt;
-  Mesh* m = a->mesh;
-  int code = getPrismDiagonalCode(m,v);
-  assert(checkPrismDiagonalCode(code));
-  prismToTetsGoodCase(r,p,v,code);
-}
-
-/* split the prism into two prisms separated by a quad face.
-   edges v[0]-v[1] and v[3]-v[4] are split */
-void splitPrism_2(Refine* r, Entity* p, Entity** v)
-{
-  Entity* sv[2];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[3],v[4]);
-  Entity* pv[6];
-  pv[3] = v[3]; pv[4] = sv[1]; pv[5] = v[5];
-  pv[0] = v[0]; pv[1] = sv[0]; pv[2] = v[2];
-  buildSplitElement(r,p,PRISM,pv);
-  pv[3] = sv[1]; pv[4] = v[4]; pv[5] = v[5];
-  pv[0] = sv[0]; pv[1] = v[1]; pv[2] = v[2];
-  buildSplitElement(r,p,PRISM,pv);
-}
-
-/* split the prism into four when all 6 triangular
-   face edges have been split.
-   This has to be told the split vertices since
-   it is called from splitPrism_9 which has to deal
-   with quad-associated vertices
- */
-void splitPrism_6(Refine* r, Entity* p, Entity** v, Entity** sv)
-{
-/* make center prism */
-  buildSplitElement(r,p,PRISM,sv);
-/* make the three corner prisms through rotation */
-  for (int i=0; i < 3; ++i)
-  {
-    Entity* v2[6];
-    Entity* sv2[6];
-    rotatePrism(v,i,v2);
-    rotatePrism(sv,i,sv2);
-    Entity* pv[6];
-    pv[3] = sv2[3]; pv[4] = v2[4]; pv[5] = sv2[4];
-    pv[0] = sv2[0]; pv[1] = v2[1]; pv[2] = sv2[1];
-    buildSplitElement(r,p,PRISM,pv);
-  }
-}
-
-/* uniform refinement of a prism: start by dividing
-   the prism across the middle, splitting the vertical
-   edges. give the resulting sub-problems to 
-   splitPrism_6 */
-void splitPrism_9(Refine* r, Entity* p, Entity** v)
-{
-  Adapt* a = r->adapt;
-  Mesh* m = a->mesh;
-  Entity* botv[3];
-  botv[0] = findSplitVert(r,v[0],v[1]);
-  botv[1] = findSplitVert(r,v[1],v[2]);
-  botv[2] = findSplitVert(r,v[2],v[0]);
-  Entity* midv[3];
-  midv[0] = findSplitVert(r,v[0],v[3]);
-  midv[1] = findSplitVert(r,v[1],v[4]);
-  midv[2] = findSplitVert(r,v[2],v[5]);
-  Entity* topv[3];
-  topv[0] = findSplitVert(r,v[3],v[4]);
-  topv[1] = findSplitVert(r,v[4],v[5]);
-  topv[2] = findSplitVert(r,v[5],v[3]);
-  Entity* quads[3];
-  Entity* qv[4];
-  qv[3] = v[3]; qv[2] = v[4];
-  qv[0] = v[0]; qv[1] = v[1];
-  quads[0] = apf::findElement(m,QUAD,qv);
-  qv[3] = v[4]; qv[2] = v[5];
-  qv[0] = v[1]; qv[1] = v[2];
-  quads[1] = apf::findElement(m,QUAD,qv);
-  qv[3] = v[5]; qv[2] = v[3];
-  qv[0] = v[2]; qv[1] = v[0];
-  quads[2] = apf::findElement(m,QUAD,qv);
-  Entity* cenv[3];
-  cenv[0] = findSplitVert(r,quads[0]);
-  cenv[1] = findSplitVert(r,quads[1]);
-  cenv[2] = findSplitVert(r,quads[2]);
-  Entity* pv[6];
-  Entity* sv[6];
-  pv[3] =    v[3]; pv[4] =    v[4]; pv[5] =    v[5];
-  pv[0] = midv[0]; pv[1] = midv[1]; pv[2] = midv[2];
-  sv[3] = topv[0]; sv[4] = topv[1]; sv[5] = topv[2];
-  sv[0] = cenv[0]; sv[1] = cenv[1]; sv[2] = cenv[2];
-  splitPrism_6(r,p,pv,sv);
-  pv[3] = midv[0]; pv[4] = midv[1]; pv[5] = midv[2];
-  pv[0] =    v[0]; pv[1] =    v[1]; pv[2] =    v[2];
-  sv[3] = cenv[0]; sv[4] = cenv[1]; sv[5] = cenv[2];
-  sv[0] = botv[0]; sv[1] = botv[1]; sv[2] = botv[2];
-  splitPrism_6(r,p,pv,sv);
-}
-
-SplitFunction prism_templates[prism_edge_code_count] = 
-{splitPrism_0
-,splitPrism_2
-,splitPrism_9
-};
-
-/* split the pyramid into two new ones when edges
-   v[0]-v[1] and v[2]-v[3] have been split */
-void splitPyramid_2(Refine* r, Entity* p, Entity** v)
-{
-  Entity* sv[2];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[2],v[3]);
-  Entity* pv[5];
-  pv[0] = v[0]; pv[1] = sv[0];
-  pv[3] = v[3]; pv[2] = sv[1];
-  pv[4] = v[4];
-  buildSplitElement(r,p,PYRAMID,pv);
-  pv[0] = sv[0]; pv[1] = v[1];
-  pv[3] = sv[1]; pv[2] = v[2];
-  pv[4] = v[4];
-  buildSplitElement(r,p,PYRAMID,pv);
-}
-
-/* uniform refinement of a pyramid */
-void splitPyramid_4(Refine* r, Entity* p, Entity** v)
-{
-  Mesh* m = r->adapt->mesh;
-  Entity* botv[4];
-  botv[0] = findSplitVert(r,v[0],v[1]);
-  botv[1] = findSplitVert(r,v[1],v[2]);
-  botv[2] = findSplitVert(r,v[2],v[3]);
-  botv[3] = findSplitVert(r,v[3],v[0]);
-  Entity* midv[4];
-  midv[0] = findSplitVert(r,v[0],v[4]);
-  midv[1] = findSplitVert(r,v[1],v[4]);
-  midv[2] = findSplitVert(r,v[2],v[4]);
-  midv[3] = findSplitVert(r,v[3],v[4]);
-/* the first four entries of v also specify the bottom quad */
-  Entity* quad = apf::findElement(m,QUAD,v);
-  Entity* cv = findSplitVert(r,quad);
-/* make the four new pyramids and four new tets by rotation */
-  for (int i=0; i < 4; ++i)
-  {
-    Entity* midv2[4];
-    rotateQuad(midv,i,midv2);
-    Entity* botv2[4];
-    rotateQuad(botv,i,botv2);
-    Entity* v2[4];
-    rotateQuad(v,i,v2);
-    Entity* pv[5];
-    pv[3] = cv;       pv[2] = botv2[1];
-    pv[0] = botv2[0]; pv[1] = v2[1];
-    pv[4] = midv2[1];
-    buildSplitElement(r,p,PYRAMID,pv);
-    Entity* tv[4];
-    tv[0] = midv2[0]; tv[1] = midv2[1];
-    tv[2] = botv2[0]; tv[3] = cv;
-    buildSplitElement(r,p,TET,tv);
-  }
-/* tetrahedronize the central octahedron by choosing the
-   best metric space diagonal */
-  Entity* octv[6];
-  octv[5] = v[4];
-  octv[4] = midv[3]; octv[3] = midv[2];
-  octv[1] = midv[0]; octv[2] = midv[1];
-  octv[0] = cv;
-  octToTetsGeometric(r,p,octv);
-}
-
-SplitFunction pyramid_templates[pyramid_edge_code_count] = 
-{pyramidToTets
-,splitPyramid_2
-,splitPyramid_4
 };
 
 }

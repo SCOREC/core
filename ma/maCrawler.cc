@@ -2,10 +2,11 @@
 #include "maAdapt.h"
 #include "maLayer.h"
 #include <PCU.h>
+#include <apfCavityOp.h>
 
 namespace ma {
 
-static void syncLayer(Crawler* c, Crawler::Layer& layer)
+void syncLayer(Crawler* c, Crawler::Layer& layer)
 {
   Mesh* m = c->adapter->mesh;
   PCU_Comm_Begin();
@@ -34,7 +35,7 @@ static void syncLayer(Crawler* c, Crawler::Layer& layer)
 
 static void crawlLayer(Crawler* c, Crawler::Layer& layer)
 {
-  std::vector<Entity*> nextLayer;
+  Crawler::Layer nextLayer;
   for (size_t i = 0; i < layer.size(); ++i) {
     Entity* e = layer[i];
     Entity* e2 = c->crawl(e);
@@ -55,89 +56,186 @@ void crawlLayers(Crawler* c)
   c->end();
 }
 
-void QuadFlagger::begin(Layer& layer)
+void getDimensionBase(Adapt* a, int d, Crawler::Layer& base)
 {
-  Mesh* m = adapter->mesh;
-  Iterator* it = m->begin(1);
+  Mesh* m = a->mesh;
+  Iterator* it = m->begin(d);
   Entity* e;
   while ((e = m->iterate(it)))
-    if (getFlag(adapter, e, LAYER_BASE))
-      layer.push_back(e);
+    if (getFlag(a, e, LAYER_BASE))
+      base.push_back(e);
   m->end(it);
 }
 
-void QuadFlagger::end()
+Entity* getOtherVert(Mesh* m, Entity* v, Predicate& visited)
 {
-}
-
-static Entity* getOtherQuad(Adapt* a, Entity* e)
-{
-  Mesh* m = a->mesh;
-  apf::Up up;
-  m->getUp(e,up);
-  for (int i=0; i < up.n; ++i)
-  {
-    Entity* of = up.e[i];
-    if ((m->getType(of)==QUAD)&&
-        ( ! getFlag(a,of,DIAGONAL_1 | DIAGONAL_2)))
-      return of;
+  Upward faces;
+  m->getAdjacent(v, 2, faces);
+  APF_ITERATE(Upward, faces, it) {
+    if (m->getType(*it) != QUAD)
+      continue;
+    Entity* vs[4];
+    m->getDownward(*it, 0, vs);
+    int i = apf::findIn(vs, 4, v);
+    int j = (i + 1) % 4;
+    int k = (i - 1 + 4) % 4;
+    if (!visited(vs[j]))
+      return vs[j];
+    if (!visited(vs[k]))
+      return vs[k];
   }
   return 0;
 }
 
-static int getQuadEdgeDiagonalBit(
-    Entity* edge,
-    Entity** quadEdges,
-    int* directions)
+Entity* getOtherEdge(Mesh* m, Entity* e, Predicate& visited)
 {
-  int i = findIn(quadEdges,4,edge);
-  int i_bit = i & 1;
-  int dir_bit = directions[i];
-  return i_bit ^ dir_bit;
+  Upward faces;
+  m->getAdjacent(e, 2, faces);
+  APF_ITERATE(Upward, faces, it) {
+    if (m->getType(*it) != QUAD)
+      continue;
+    Entity* es[4];
+    m->getDownward(*it, 1, es);
+    int i = apf::findIn(es, 4, e);
+    int j = (i + 2) % 4;
+    if (!visited(es[j]))
+      return es[j];
+  }
+  return 0;
 }
 
-static Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
+struct Tagger
 {
-  Mesh* m = a->mesh;
-  int diagonal = getDiagonalFromFlag(a,e);
-  assert(diagonal != -1);
-  Entity* es[4];
-  int ds[4];
-  getFaceEdgesAndDirections(m,q,es,ds);
-  diagonal ^= getQuadEdgeDiagonalBit(e,es,ds);
-  setFlag(a,q,diagonalToFlag(diagonal));
-  e = getQuadEdgeOppositeEdge(m,q,e);
-  /* bit flip going out is the opposite of bit flip
-     going in   V   */
-  diagonal ^= 1 ^ getQuadEdgeDiagonalBit(e,es,ds);
-  setFlag(a,e,diagonalToFlag(diagonal));
-  return e;
+  void init(Mesh* m_, Tag* t_)
+  {
+    m = m_;
+    tag = t_;
+  }
+  int getNumber(Entity* v)
+  {
+    int n;
+    m->getIntTag(v, tag, &n);
+    return n;
+  }
+  void setNumber(Entity* v, int n)
+  {
+    m->setIntTag(v, tag, &n);
+  }
+  bool hasNumber(Entity* v)
+  {
+    return m->hasTag(v, tag);
+  }
+  Mesh* m;
+  Tag* tag;
+};
+
+struct LayerNumberer : public Crawler
+{
+  LayerNumberer(Adapt* a_):
+    Crawler(a_)
+  {
+    a = a_;
+    m = a->mesh;
+    tag = m->createIntTag("ma_layer", 1);
+    t.init(m, tag);
+  }
+  void begin(Layer& first)
+  {
+    getDimensionBase(a, 0, first);
+    for (size_t i = 0; i < first.size(); ++i)
+      t.setNumber(first[i], 0);
+  }
+  Entity* crawl(Entity* v)
+  {
+    HasTag p(m, tag);
+    Entity* ov = getOtherVert(m, v, p);
+    if (!ov)
+      return 0;
+    t.setNumber(ov, t.getNumber(v) + 1);
+    return ov;
+  }
+  void send(Entity* v, int to)
+  {
+    int n = t.getNumber(v);
+    PCU_COMM_PACK(to, n);
+  }
+  bool recv(Entity* v, int from)
+  {
+    int n;
+    PCU_COMM_UNPACK(n);
+    if (t.hasNumber(v))
+      return false;
+    t.setNumber(v, n);
+    return true;
+  }
+  Adapt* a;
+  Mesh* m;
+  Tag* tag;
+  Tagger t;
+};
+
+static Tag* numberLayer(Adapt* a)
+{
+  LayerNumberer op(a);
+  crawlLayers(&op);
+  return op.tag;
 }
 
-Entity* QuadFlagger::crawl(Entity* e)
+struct TopFlagger : public apf::CavityOp
 {
-  Entity* q = getOtherQuad(adapter, e);
-  Entity* e2 = 0;
-  if (q)
-    e2 = flagQuad(adapter, q, e);
-  clearFlag(adapter, e, DIAGONAL_1 | DIAGONAL_2);
-  return e2;
-}
+  TopFlagger(Adapt* a_, Tag* t_):
+    apf::CavityOp(a_->mesh)
+  {
+    a = a_;
+    m = a->mesh;
+    t.init(m, t_);
+  }
+  Outcome setEntity(Entity* v_)
+  {
+    if ((!getFlag(a, v_, LAYER)) ||
+        getFlag(a, v_, LAYER_BASE) ||
+        getFlag(a, v_, CHECKED))
+      return SKIP;
+    if (!requestLocality(&v_, 1))
+      return REQUEST;
+    v = v_;
+    return OK;
+  }
+  bool isTop()
+  {
+    int n = t.getNumber(v);
+    apf::Up es;
+    m->getUp(v, es);
+    for (int i = 0; i < es.n; ++i) {
+      Entity* ov = apf::getEdgeVertOppositeVert(m, es.e[i], v);
+      if (!t.hasNumber(ov))
+        continue;
+      int on = t.getNumber(ov);
+      if (on > n)
+        return false;
+    }
+    return true;
+  }
+  void apply()
+  {
+    setFlag(a, v, CHECKED);
+    if (isTop())
+      setFlag(a, v, LAYER_TOP);
+  }
+  Adapt* a;
+  Mesh* m;
+  Entity* v;
+  Tagger t;
+};
 
-void QuadFlagger::send(Entity* e, int to)
+void flagLayerTop(Adapt* a)
 {
-  int diagonal = getDiagonalFromFlag(adapter, e);
-  PCU_COMM_PACK(to, diagonal);
-}
-
-bool QuadFlagger::recv(Entity* e, int from)
-{
-  int diagonal;
-  PCU_COMM_UNPACK(diagonal);
-  if (getFlag(adapter, e, DIAGONAL_1 | DIAGONAL_2))
-    return false;
-  setFlag(adapter, e, diagonalToFlag(diagonal));
-  return true;
+  Tag* layerNumbers = numberLayer(a);
+  TopFlagger op(a, layerNumbers);
+  op.applyToDimension(0);
+  clearFlagFromDimension(a, CHECKED, 0);
+  apf::removeTagFromDimension(a->mesh, layerNumbers, 0);
+  a->mesh->destroyTag(layerNumbers);
 }
 
 }

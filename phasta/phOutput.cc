@@ -207,7 +207,22 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   o.arrays.ibc = ibc;
   o.arrays.bc = bc;
   o.nEssentialBCNodes = j;
-  printf("counted %zu essential BC nodes\n", j);
+}
+
+static void applyInitialConditions(BCs& bcs, Output& o)
+{
+  Input& in = *o.in;
+  apf::Mesh* m = o.mesh;
+  apf::MeshEntity* v;
+  apf::NewArray<double> s(in.ensa_dof);
+  apf::Field* f = m->findField("solution");
+  apf::MeshIterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    apf::getComponents(f, v, 0, &s[0]);
+    applySolutionBCs(m, v, bcs, &s[0]);
+    apf::setComponents(f, v, 0, &s[0]);
+  }
+  m->end(it);
 }
 
 Output::~Output()
@@ -262,6 +277,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getMaxElementNodes(o);
   getFakePeriodicMasters(o);
   getEssentialBCs(bcs, o);
+  applyInitialConditions(bcs, o);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("generated output structs in %f seconds\n",t1 - t0);

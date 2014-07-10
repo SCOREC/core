@@ -333,7 +333,7 @@ static void rebuild_parts(
   int d;
   mds_id ne;
   mds_id e;
-  for (d = 0; d < m->mds.d; ++d)
+  for (d = 0; d <= m->mds.d; ++d)
     for (ne = mds_begin(&m2->mds, d);
          ne != MDS_NONE;
          ne = mds_next(&m2->mds, ne)) {

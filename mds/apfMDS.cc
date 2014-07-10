@@ -166,16 +166,13 @@ class MeshMDS : public Mesh2
     }
     bool isOwned(MeshEntity* e)
     {
-      if (!isShared(e))
-        return true;
-      mds_copies* c = mds_get_copies(&mesh->remotes, fromEnt(e));
-      return getId() < c->c[0].p;
+      return getId() == getOwner(e);
     }
     int getOwner(MeshEntity* e)
     {
-      if (isOwned(e))
-        return getId();
-      return mds_get_copies(&mesh->remotes, fromEnt(e))->c[0].p;
+      void* vp = mds_get_part(mesh, fromEnt(e));
+      PME* p = static_cast<PME*>(vp);
+      return p->owner;
     }
     void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent)
     {
@@ -606,6 +603,26 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
   return new MeshMDS(model, from);
 }
 
+Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
+{
+  double t0 = MPI_Wtime();
+  Mesh2* m = new MeshMDS(model, meshfile);
+  initResidence(m, m->getDimension());
+  stitchMesh(m);
+  m->acceptChanges();
+  /* This is a hack to detect a mesh written to file
+     with a quadratic coordinate field stored in tags.
+     the proper solution is to work APF information into
+     the files */
+  if (m->findTag("coordinates_edg"))
+    changeMeshShape(m,getLagrange(2),/*project=*/false);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
+  printStats(m);
+  return m;
+}
+
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
   double t0 = MPI_Wtime();
@@ -617,21 +634,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
-  Mesh2* m = new MeshMDS(model, meshfile);
-  initResidence(m, m->getDimension());
-  stitchMesh(m);
-  m->acceptChanges();
-  /* This is a hack to detect a mesh written to file
-     with a quadratic coordinate field stored in tags.
-     the proper solution is to work APF information into
-     the files */
-  if (m->findTag("coordinates_edg"))
-    changeMeshShape(m,getLagrange(2),/*project=*/false);
-  double t2 = MPI_Wtime();
-  if (!PCU_Comm_Self())
-    printf("mesh %s loaded in %f seconds\n", meshfile, t2 - t1);
-  printStats(m);
-  return m;
+  return loadMdsMesh(model, meshfile);
 }
 
 void defragMdsMesh(Mesh2* mesh)
@@ -652,6 +655,33 @@ static void scaleMdsMesh(Mesh2* mesh, int n)
   scalePM(m->parts, n);
 }
 
+static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
+{
+  int type = from->getTagType(t);
+  const char* name = from->getTagName(t);
+  int size = from->getTagSize(t);
+  if (type == Mesh::INT)
+    return onto->createIntTag(name, size);
+  if (type == Mesh::DOUBLE)
+    return onto->createDoubleTag(name, size);
+  if (type == Mesh::LONG)
+    return onto->createLongTag(name, size);
+  return 0;
+}
+
+static Mesh2* clone(Mesh2* from)
+{
+  Mesh2* m = makeEmptyMdsMesh(getMdsModel(from),
+        from->getDimension(), from->hasMatching());
+  DynamicArray<MeshTag*> tags;
+  from->getTags(tags);
+  for (size_t i = 0; i < tags.getSize(); ++i)
+    cloneTag(from, tags[i], m);
+  for (int i = 0; i < from->countFields(); ++i)
+    apf::cloneField(from->getField(i), m);
+  return m;
+}
+
 static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
@@ -665,8 +695,7 @@ static void* splitThrdMain(void*)
     m = globalMesh;
     plan = globalPlan;
   } else {
-    m = makeEmptyMdsMesh(getMdsModel(globalMesh),
-        globalMesh->getDimension(), globalMesh->hasMatching());
+    m = clone(globalMesh);
     plan = new apf::Migration(m);
   }
   m->migrate(plan);
@@ -692,6 +721,12 @@ bool alignMdsMatches(Mesh2* in)
     return false;
   MeshMDS* m = static_cast<MeshMDS*>(in);
   return mds_align_matches(m->mesh);
+}
+
+void deriveMdsModel(Mesh2* in)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_derive_model(m->mesh);
 }
 
 }
