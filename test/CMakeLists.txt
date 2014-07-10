@@ -33,7 +33,6 @@ add_executable(split EXCLUDE_FROM_ALL split.cc)
 add_executable(zsplit EXCLUDE_FROM_ALL zsplit.cc)
 add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
 add_executable(mpas_test EXCLUDE_FROM_ALL mpas_test.cc)
-add_executable(bfs EXCLUDE_FROM_ALL bfs.cc)
 add_executable(hps EXCLUDE_FROM_ALL hps.cc)
 add_executable(fan EXCLUDE_FROM_ALL fan.cc)
 
@@ -58,7 +57,6 @@ set(tests
   zsplit
   ghost
   mpas_test
-  bfs
   hps
   fan)
 
