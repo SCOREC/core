@@ -146,4 +146,21 @@ void loadMpasMesh(apf::Mesh2* m, const char* filename)
   removeIsolatedNodes(m);
 }
 
+
+void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
+  NcFile in(filename, NcFile::read);
+  /* this is the dual of a hexagonal mesh,
+     hence the reversing of terms */
+  int numMpasVtx = readDim(in, "nCells");
+  
+  apf::Numbering* n = apf::createNumbering(m, "mpas_id", m->getShape(), 1);
+
+  // collect N/#parts contiguous vertex assignments on each process (and deal with any remainders)
+  
+  // assign missing vertices to a random part id
+  
+  // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
+  // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
+}
+
 }
