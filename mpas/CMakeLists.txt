@@ -36,6 +36,7 @@ endif ()
 
 include_directories(${APF_MPAS_INCLUDE_DIRS})
 include_directories(${NETCDF_INCLUDES})
+include_directories(${NETCDF_INCLUDES_CXX})
 
 #Sources & Headers
 set(SOURCES

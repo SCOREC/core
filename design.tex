@@ -1,0 +1,553 @@
+\documentclass{article}
+
+\usepackage{listings}
+\usepackage{color}
+
+\title{Notes on C/C++ Programming}
+\author{Dan Ibanez}
+\begin{document}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\lstdefinestyle{myc}{
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\bfseries\color{mygreen}
+}
+\lstset{language=C++,style=myc}
+
+\maketitle
+
+\section{The Interface}
+
+In many cases, we would like to be able to have multiple providers of a
+predefined set of services.
+For example, multiple geometric modelers or mesh databases.
+This pattern is also useful for plugging user-defined code into a
+general-purpose system.
+Callbacks are, for all intensive purposes, the same thing as an interface.
+
+An interface is a collection of functions set up in such a way that code
+can be written that calls those functions, and the implementations of the
+functions can be changed without modifying the code.
+
+Technically regular functions fit this description and, as long as the overall
+behavior is not changed, the implementation can be replaced by recompiling
+the code and linking with a different library.
+MPI is an example of this setup.
+Programs that call MPI functions can be linked agains MPICH or OpenMPI
+without modification.
+However, the ``one provider at a time" limit is often too restrictive.
+It works well when the services provided are functional rather than
+data-oriented.
+MPI doesn't store much, it only passes messages.
+On the other hand, if we would like to convert a geometric model from
+one representation to another and both implementations have the same
+function names, it is very difficult to create a code that calls them
+both at once.
+
+For this reason, interfaces should ideally be dynamic, which means there
+is some form of lookup or dispatch at runtime depending on which provider
+is being used.
+We will begin by looking at C++ virtual functions, and then implement
+a very similar system in C.
+
+Lets look at a simple interface which stores a string.
+
+\begin{lstlisting}
+struct StringStore
+{
+  virtual ~StringStore() {}
+  virtual void store(const char* s) = 0;
+  virtual const char* retrieve() = 0;
+};
+
+struct MyStore : public StringStore
+{
+  MyStore() {str = NULL;}
+  ~MyStore() {free(str);}
+  void store(const char* s) {str = strdup(s);}
+  const char* retrieve() {return str;}
+  const char* str;
+};
+\end{lstlisting}
+
+We use \verb+struct+ instead of \verb+class+ because it saves us having
+to denote things as \verb+public+.
+The \verb+StringStore+ class is the interface.
+It defines what the \verb+store+ and \verb+retrieve+ functions look like.
+The virtual destructor needs to be there so that the following situation
+will properly free the string:
+
+\begin{lstlisting}
+StringStore* ss = new MyStore();
+ss->store("hello");
+delete ss;
+\end{lstlisting}
+
+The last line calls \verb+~StringStore+, but because it is virtual
+this correctly dispatches to \verb+~MyStore+, which frees the string.
+
+The \verb+= 0+ after each \verb+StringStore+ function means there is no
+default implementation, which makes them pure virtual, which makes
+\verb+StringStore+ an abstract base class.
+This means you can't make a plain old \verb+StringStore+ object, since
+it would have no code in its functions.
+
+Now lets look at how the C++ compiler implements all this \verb+virtual+
+business, and in the process derive a more flexible C implementation.
+First, C++ class methods have access to the object on which they act
+through a hidden argument called \verb+this+.
+For example, the function \verb+MyStore::store+ eventually ends up
+looking something like this:
+
+\begin{lstlisting}
+void MyStore_store(MyStore* this, const char* s)
+{
+  this->str = strdup(s);
+}
+\end{lstlisting}
+
+Virtual function dispatch is typically implemented via a virtual
+function table, or \verb+vtable+ for short.
+The base class, \verb+StringStore+, defines what this table
+should look like:
+
+\begin{lstlisting}
+struct StringStore_vtable
+{
+  void (*destroy)(struct StringStore* this);
+  void (*store)(struct StringStore* this, const char* s);
+  const char* (*retrieve)(struct StringStore* this);
+};
+\end{lstlisting}
+
+It is a structure containing pointers to functions.
+The functions all have the implicit \verb+this+ argument.
+Also, the \verb+destroy+ function represents the virtual destructor.
+
+Each object derived from \verb+StringStore+ must then carry a pointer
+to this \verb+vtable+ around.
+Programmers should be aware that objects which have virtual functions
+start with a hidden pointer, which will affect design decisions in terms
+of memory use.
+
+\begin{lstlisting}
+struct StringStore
+{
+  struct StringStore_vtable* vtable;
+};
+
+struct MyStore
+{
+  struct StringStore base;
+  const char* str;
+};
+\end{lstlisting}
+
+When the C++ code calls \verb+ss->store+, it is translated to
+something like the following:
+
+\begin{lstlisting}
+ss->vtable.store(ss, "hello");
+\end{lstlisting}
+
+In the case of \verb+MyStore+, its implementation would look something like
+this:
+
+\begin{lstlisting}
+void MyStore_destroy(struct StringStore* this)
+{
+  free( ((MyStore*)this)->str );
+}
+
+void MyStore_store(struct StringStore* this, const char* s)
+{
+  ((MyStore*)this)->str = s;
+}
+
+const char* MyStore_retrieve(struct StringStore* this)
+{
+  return ((MyStore*)this)->str;
+}
+
+struct StringStore_vtable MyStore_vtable =
+{
+  .destroy = MyStore_destroy,
+  .store = MyStore_store,
+  .retrieve = MyStore_retrieve
+};
+
+StringStore* MyStore_create(void)
+{
+  struct MyStore* p = malloc(sizeof(struct MyStore));
+  p->base.vtable = &MyStore_vtable;
+  p->str = NULL;
+  return &p->base;
+}
+\end{lstlisting}
+
+Clearly this is a bit more verbose, which is why the C++ version is preferable
+for users with less programming experience.
+However, the C++ syntax is just a shorthand which the compiler translates
+into this \verb+vtable+ and function system.
+
+With the dive into a lower level, naturally, comes greater flexibility.
+Notice that now we have the opportunity to fill in the interface through
+this \verb+vtable+ structure.
+This is more powerful than the inheritance tree system offered by C++.
+
+Assume we have a mostly functional interface, and we would like to mix and
+match the best functions from many different providers:
+
+\begin{lstlisting}
+struct animal_skills chimera_skills =
+{
+  .run = cheetah_run,
+  .swim = dolphin_swim,
+  .fly = eagle_fly
+};
+\end{lstlisting}
+
+Doing this with C++ inheritance would likely require a more complicated
+setup that obscures the original intention.
+However, trying to picture what this animal looks like gives a sense of
+the data structure issues that mixing and matching can cause, if the
+interface is more data-oriented than functional.
+
+In addition to free-form mixing, we can also omit functions with relative
+ease: just set their pointer to zero.
+This is useful in large interfaces where not all providers can provide
+all services.
+Checking for services is a simple pointer comparison.
+Although C++ can do something similar with empty base class implementations,
+it does not allow true omission, since that would be an abstract base class,
+and so there is no mechanism in C++ to check whether the function exists,
+it just has to.
+
+The C version of this interface system is used throughout the Linux kernel.
+A notable example of this use is file systems.
+Each file system provides services like creating, renaming, and deleting
+files and directories.
+Each of these services then becomes a function pointer in a structure,
+implemented differently by each file system.
+In addition, advanced features like asynchronous data transfer are
+also function pointers, which some file systems set to zero if they
+cannot provide them.
+
+\section{The Function Table}
+
+In the last section we covered \verb+vtable+ structures, which are actually
+more structure than table.
+In this case, we look at a similar pattern which is a proper table of
+function pointers with the same type.
+There are situations when we must pick one of many numbered choices.
+A switch statement can solve this problem, but if each choice contains
+lots of code then it usually results in a giant block of code.
+If the cases are separated out into functions, this starts to look much
+like the table we are about to present anyway.
+
+Consider this enumeration of element types in a finite element simulation:
+
+\begin{lstlisting}
+enum {
+  VERTEX,
+  EDGE,
+  TRIANGLE,
+  QUADRILATERAL,
+  TETRAHEDRON,
+  HEXAHEDRON
+};
+
+int getType(Entity* e);
+\end{lstlisting}
+
+During mesh adaptation, we would like to choose how to split an entity
+based on its type.
+We can do this using a type table like this:
+
+\begin{lstlisting}
+void split(Entity* e)
+{
+  int type = getType(e);
+  typedef void (*SplitFunction)(Entity* e);
+  static SplitFunction table[6] =
+  {splitVertex,
+   splitEdge,
+   splitTriangle,
+   splitQuadrilateral,
+   splitTetrahedron,
+   splitHexahedron};
+  table[type](e);
+}
+\end{lstlisting}
+
+C++ users will immediately protest: why not use a virtual function ?
+The Entity object can have a virtual function called split, whose
+implementation can be defined by the sub-classes such as Triangle.
+Assuming Entity and Triangle already exist like this, that is a reasonable
+objection for a small code with a few such functions to dispatch.
+Now consider the existence of one or two dozen such operations.
+Making them all virtual functions starts to clutter the class definitions.
+In addition, it requires the class definition to know about everything
+everyone will ever do to said class, which is not very extensible.
+Finally, there are cases where the decision is based on something
+other than ``object type", loosely defined, such as a number describing
+one of many possible states of each element.
+
+\section{Workers}
+
+Another special case of the Interface pattern comes up when there
+is considerable boilerplate code involved in what is essentially iteration,
+and programmers would prefer not to copy and paste that boilerplate
+every time something different is done for each item.
+More generally, there exist complex algorithms, slight variations of which
+produce very different but equally useful results.
+Classic examples include tree and graph traversals, but those may even be
+too simple to really justify this method.
+
+The setup begins with identifying the bits of the code that do not change
+and writing them in a general way once and for all.
+The parts that do change, usually the code that is executed when an item
+is visited, are put into an Interface.
+
+The interface for a graph traversal might look as follows:
+
+\begin{lstlisting}
+struct GraphTraversal
+{
+  virtual bool visited(Node* n);
+  virtual void visit(Node* n);
+};
+
+void breadthFirstSearch(Graph* g, GraphTraversal* t);
+void depthFirstSearch(Graph* g, GraphTraversal* t);
+\end{lstlisting}
+
+The mesh adaptation code has a Worker called a Crawler, which acts on
+every quadrilateral in the boundary layer of the mesh, one layer at a
+time, correctly handling boundary layers that are separated by partitioning.
+The iteration code lives in one place, and the Crawler interface provides
+user-defined code to invoke at each entity and across part boundaries.
+
+\section{Class Hiding}
+
+In C++, if a user wants access to methods of a class, they must include
+a file that also describes the internal variables of a class.
+This in turns requires including descriptions of the types of those
+variables, which may be classes that in turn include other classes,
+and so on.
+
+In C, a structure can be separated from the functions that act on it
+by declaring it only as an opaque pointer.
+
+\begin{lstlisting}
+struct genie;
+struct genie* make_genie(void);
+void make_wish(struct genie* g);
+void free_genie(struct genie* g);
+\end{lstlisting}
+
+The same thing can be done in C++, in which case it is sometimes called
+``forward declaration" of a class.
+To reduce the amount of internals the user has to deal with, it may be
+beneficial to write free functions acting on opaque classes, even if they
+are just wrappers over class methods.
+
+\begin{lstlisting}
+class Genie;
+Genie* makeGenie();
+void makeWish(Genie* g);
+void freeGenie(Genie* g);
+\end{lstlisting}
+
+\section{Fake Pointers}
+
+Recall that Interfaces can be used to make two very different implementations
+of the same services look exactly the same on the outside.
+If these interfaces involve handling many small objects or entities,
+one runs into the case where these objects have very different types in
+each implementation.
+They may be objects of unrelated type or in some implementations they may
+not be objects at all and instead are referenced by array indices.
+
+If they were all objects then there is a chance of using a C++ inheritance
+system, but that falls apart when the implementations are developed by someone
+else who is in all likelihood not interested in deriving from your wrapper
+classes.
+
+In the case of integer identifiers, assuming that the range $[0,n-1]$ is
+valid and the null identifier is -1, we can convert the integers to pointers
+and back by adding or subtracting one.
+This has the benefit that the null identifier translates to zero as a pointer,
+which is the {\it de facto} standard value for null pointers.
+
+\begin{lstlisting}
+namespace all {
+class Sound;
+struct Listener
+{
+  virtual Sound* listen();
+};
+}
+
+namespace one {
+class Noise;
+Noise* getNextNoise();
+struct Listener : public all::Listener
+{
+  virtual Sound* listen() {return (Sound*)getNextNoise();}
+};
+}
+
+int two_make_phonon();
+
+namespace two {
+struct  Listener : public all::Listener
+{
+  virtual Sound* listen()
+  {
+    int n = two_make_phonon();
+    return (Sound*)(((char*)0) + (n + 1));
+  }
+};
+\end{lstlisting}
+
+\section{Dependency Inversion}
+
+A truly great use for interfaces is to decouple high and low level components
+by inverting their dependencies.
+Traditionally, we would think that high-level code would depend on low-level
+components which it uses directly.
+This works fine until there arise multiple competing implementations for
+a low-level component, or even when the single third-party provider changes
+their functions significantly.
+
+A wise alternative is to isolate each low-level component behind an Interface.
+That Interface is not the native one provided by the low-level component,
+but rather a common agreement between the low-level and high-level component.
+In fact, the low-level component rarely has to agree or care, so long as it
+provides the requisite services in some form.
+
+A high-level component should identify exactly what it expects from the lower
+levels and create its ideal Interface for those services.
+Then, that Interface is fulfilled using the native functions of each low-level
+component.
+
+The first immediate benefit is that the high-level component no longer depends
+on any low-level component, only on the Interface.
+The low-level component can be built separately from and later than
+the high-level code.
+The Interface implementation for a particular low-level component can also
+be compiled separately, after both the high-level and low-level components
+are compiled.
+This can be done for multiple providers of the same service, or even none at
+all.
+
+If a native function of or the dominant provider of a low-level service
+changes, then the Interface protects all the high-level code from that change.
+
+Interfaces are analogous to standards like Internet communication
+protocols, building material sizes, file formats, and national currencies.
+Standards enable interoperability, which in turn makes the whole system
+much more efficient.
+
+Note that there is no need for a single governing standard.
+Like national currencies, there may be multiple standards, each one reaching
+as far as the people who agree to use it.
+Connecting two different interfaces is fairly trivial, like exchange rates
+between national currencies, as opposed to asking Russia to change their whole
+economy to use Chinese currency, for example.
+
+By defining an Interface, a group makes a formal and clear statement about
+its expectations for a particular low-level component, and immediately
+protects all their code against future changes in that component.
+The best Interface will be adaptable to all providers which satisfy
+the overall service needs.
+
+Provider lock-in is a very serious danger for many codes today.
+Realize that calling the native functions of another code directly is a
+very committed relationship, and will force the caller to bear with
+unnecessary hardship from the provider due to the increasingly high
+cost and risk of the surgical operation to replace all such calls.
+
+A low-level interface is something you choose for life.
+You may as well define it yourself as a set of ideal qualities,
+not as any specific provider at the time.
+
+One last theoretical note: this process changes a strict high-to-low
+dependency into something more powerful.
+The dependency graph can now have cycles, because all components (graph nodes)
+are built first and then the interfaces (graph edges) between them are built.
+Gone are the headaches associated with trying to resolve cyclic dependencies
+between components, since everything is decoupled.
+
+\section{Arrays}
+
+Alright, not quite a design pattern.
+However, great programmers including Rob Pike have made it clear that
+programming is very much guided by the data structures used, so it is well
+worth discussing them.
+Most programs need containers, which are schemes for storing and accessing
+many objects.
+A great variety of data structures qualify as containers, and many
+can become quite intricate and special-purpose.
+
+The argument made here is that is that structures should be built from
+arrays if at all possible.
+Professor Chuck Steward once said that when using the C++ STL, one should
+try to use \verb+std::vector+ first, then \verb+std::list+, then
+\verb+std::map+.
+These are implementations of growable arrays, linked lists, and red-black
+trees, respectively.
+
+If the array's size is known at compile time, it can be declared directly
+without using memory allocation functions.
+This is useful for manipulating small sets and saves time with functions
+that take arrays as arguments.
+
+\begin{lstlisting}
+void sort(int* array, int size);
+int main()
+{
+  int numbers[5] = {0,2,1,3,4};
+  sort(numbers, 5);
+}
+\end{lstlisting}
+
+If the array's size is given at runtime and does not change during its
+lifetime, it can be created and destroyed using a variety of memory
+allocation functions (\verb+malloc/free+, \verb+new/delete+, ...).
+
+Finally, if the array is expected to change in size, there are several
+tricks that can be employed.
+
+The first is geometric growth.
+Suppose we use an array to implement a stack.
+Users push entities onto the stack and remove them from the top.
+If the user pushes enough entities to fill the current array, we
+can allocate a new and bigger array, copy all items from the old
+to the new array, then deallocate the old array.
+If the new array is only one item larger, this expensive process
+will repeat itself every time the user pushes an item.
+Instead, we can choose a constant factor greater than one and multiply
+the current array size by this factor to get the new array size.
+This ensures that we have room left over for several more pushes
+before the expensive process kicks in.
+If the growth uses multiplication, one can prove that the cost
+of pushing $n$ items takes $O(n)$ time, as opposed to $O(n^2)$
+when growing only by one.
+C++'s \verb+std::vector+ uses a growth factor of 2.
+The Git version control program uses the formula $n' = \frac32(n + 16)$.
+Notice that there is balance to strike since extra room
+improves performance for possible later pushes but wastes space
+in the present.
+
+The second is the use of C's \verb+realloc+ function.
+This function behaves as though it makes a new array, copies content,
+and frees the old one, but leaves open the possibility of a
+more efficient implementation.
+On systems with virtual memory for instance, using the POSIX
+\verb+mmap+ system to handle large arrays allows \verb+realloc+
+to grow an array without copying any items, simply by changing
+the way physical RAM maps to virtual memory.
+
+\end{document}

@@ -85,7 +85,8 @@ Input* configure(
     SolutionTransfer* s=0);
 Input* configure(
     Mesh* m,
-    apf::Field* f,
+    apf::Field* sizes,
+    apf::Field* frames,
     SolutionTransfer* s=0);
 Input* configureUniformRefine(Mesh* m, int n=1, SolutionTransfer* s=0);
 Input* configureMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
