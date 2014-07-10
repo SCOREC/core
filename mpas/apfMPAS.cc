@@ -1,5 +1,6 @@
 #include "apfMPAS.h"
 #include <apfMesh2.h>
+#include <apfNumbering.h>
 #include <netcdf>
 
 namespace apf {
@@ -73,9 +74,18 @@ static int getType(int nodesPerElement)
   abort();
 }
 
-void buildMesh(MpasFile& in, apf::Mesh2* out)
+void numberInitialNodes(MpasFile& in, apf::Mesh2* out,
+    apf::MeshEntity** v)
+{
+  apf::Numbering* n = apf::createNumbering(out, "mpas_id", out->getShape(), 1);
+  for (int i = 0; i < in.nodes; ++i)
+    apf::number(n, v[i], 0, 0, i);
+}
+
+void buildInitialMesh(MpasFile& in, apf::Mesh2* out)
 {
   apf::MeshEntity** v = new apf::MeshEntity* [in.nodes];
+/* fake classification for now, deriveMdsModel will fix this up */
   apf::ModelEntity* c = out->findModelEntity(2, 0);
   int t = getType(in.nodesPerElement);
   for (int i = 0; i < in.nodes; ++i)
@@ -88,12 +98,11 @@ void buildMesh(MpasFile& in, apf::Mesh2* out)
     apf::Downward ev;
     for (int j = 0; j < in.nodesPerElement; ++j) {
       int vi = in.conn[i * in.nodesPerElement + j] - 1;
-/* MPAS files seem to have connectivity numbered from 1,
-   (the value nCells occurs in the indices),
-   but many entries have zero indices, and whats worse
-   some of them have multiple zero indices.
-   this is reflected in the reader from VTK as well.
-   We ditch anything with a zero (-1 after convert) index. */
+/* zero indices (-1 after conversion) indicate that an MPAS
+   vertex does not have an adjacent cell in that direction
+   (it is a boundary vertex). In our dual mesh, we simply
+   omit that dual element. This is correct and should not
+   cause problems. */
       if (vi < 0)
         goto bad_vi;
       assert(vi < in.nodes);
@@ -101,16 +110,40 @@ void buildMesh(MpasFile& in, apf::Mesh2* out)
     }
     apf::buildElement(out, c, t, ev);
 bad_vi:
-    continue;
+   continue;
   }
+  numberInitialNodes(in, out, v);
   delete [] v;
+}
+
+void removeIsolatedNodes(apf::Mesh2* m)
+{
+/* another problem with the dual: MPAS cells without adjacent
+   cells become vertices with no adjacent elements in the
+   dual mesh, which our codes don't handle.
+   We have to give up on these cells, but tell the user about it.
+   We also need to be aware of these omitted cells going forward */
+  apf::MeshIterator* it = m->begin(0);
+  int n = 0;
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it)))
+    if ( ! m->countUpward(e)) {
+      m->destroy(e);
+      ++n;
+    }
+  m->end(it);
+  if (n)
+    fprintf(stderr,
+        "warning: removed %d isolated nodes from MPAS dual mesh\n",
+        n);
 }
 
 void loadMpasMesh(apf::Mesh2* m, const char* filename)
 {
   MpasFile f;
   readMpasFile(f, filename);
-  buildMesh(f, m);
+  buildInitialMesh(f, m);
+  removeIsolatedNodes(m);
 }
 
 }
