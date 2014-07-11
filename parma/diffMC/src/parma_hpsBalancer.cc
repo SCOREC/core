@@ -10,80 +10,76 @@
 using std::vector;
 
 namespace parma {
-	//header for avgWeights
-   double avgWeight(Weights* w);
+  //header for avgWeights
+  double avgWeight(Weights* w);
 
   class MergeTargets : public Targets {  // we don't really need a map/associative container here - a list/vector/array would work
     public:
-	   //Have this storing the results in Targets associative class and assuming maxW = avgWeight * maxImb
-		//maxW is also = HeavyImb
+      //Have this storing the results in Targets associative class and assuming maxW = avgWeight * maxImb
+      //maxW is also = HeavyImb
       MergeTargets(Sides* s, Weights* w, double maxW) : Targets(s,w,0.1) 
-      {
-         const double avgW = avgWeight(w);
-			if (w->self() < maxW && w->self() > 0){ 
-				const int rank = PCU_Comm_Self();
+    {
+      if (w->self() < maxW && w->self() > 0){ 
+        //PCU_Debug_Print("Part %d of weight %f is light and not empty\n", rank, w->self());
+        //PCU_Debug_Print("HeavyImb = %f\n", maxW);
 
-				//PCU_Debug_Print("Part %d of weight %f is light and not empty\n", rank, w->self());
-				//PCU_Debug_Print("HeavyImb = %f\n", maxW);
+        double minWeight = std::numeric_limits<double>::max(); 
+        const Weights::Item* weight;
+        w->begin(); 
+        while( (weight = w->iterate()) ) 
+          if ( weight->second < minWeight )
+            minWeight = weight->second;
+        w->end();
 
-				double minWeight = std::numeric_limits<double>::max(); 
-				const Weights::Item* weight;
-            w->begin(); 
-				while( (weight = w->iterate()) ) 
-               if ( weight->second < minWeight )
-                  minWeight = weight->second;
-            w->end();
+        //PCU_Debug_Print("minWeight = %f \n", minWeight);
 
-				//PCU_Debug_Print("minWeight = %f \n", minWeight);
+        //TODO use something less than integer table entries, possibly 0.5 ???
+        int* normalizedIntWeights = new int[w->size()];
+        unsigned int weightIdx = 0;
+        w->begin(); 
+        while( (weight = w->iterate()) ){
+          normalizedIntWeights[weightIdx++] = (int) ceil( weight->second / minWeight ); 
+          //PCU_Debug_Print("weight %d, normalized to %d from %f\n", weight->first, normalizedIntWeights[(weightIdx-1)], weight->second);
+        }
+        w->end();
 
-            //TODO use something less than integer table entries, possibly 0.5 ???
-				int* normalizedIntWeights = new int[w->size()];
-				unsigned int weightIdx = 0;
-            w->begin(); 
-				while( (weight = w->iterate()) ){
-					normalizedIntWeights[weightIdx++] = (int) ceil( weight->second / minWeight ); 
-					//PCU_Debug_Print("weight %d, normalized to %d from %f\n", weight->first, normalizedIntWeights[(weightIdx-1)], weight->second);
-				}
-            w->end();
+        const double weightCapacity = maxW - w->self(); //How much weight can be added on to the current part before it reaches the HeavyImb
+        const int knapsackCapacity = floor(weightCapacity/minWeight); //How many parts could potentially be merged into the current part
 
-				const double weightCapacity = maxW - w->self(); //How much weight can be added on to the current part before it reaches the HeavyImb
-				const int knapsackCapacity = floor(weightCapacity/minWeight); //How many parts could potentially be merged into the current part
-				const float imbalance = (float) w->self() / (float) avgW; //How imbalanced the current part is compared to the average (Don't really know why this is significant right now)
-
-				//PCU_Debug_Print("Weight Capcity = %f \nknapsackCapacity = %d \nimbalance = %f \n",
-									//weightCapacity, knapsackCapacity,imbalance);
+        //PCU_Debug_Print("Weight Capcity = %f \nknapsackCapacity = %d \n",
+        //weightCapacity, knapsackCapacity);
 
 
-				int* value = new int[s->total()];
-				std::fill (value, value + s->total(),1);
-				
-				//if(knapsackCapacity == 0) {PCU_Debug_Print("No possible Merges\n");return;}
+        int* value = new int[s->total()];
+        std::fill (value, value + s->total(),1);
 
-				knapsack* ks = new knapsack(knapsackCapacity, w->size(), normalizedIntWeights, value);				
-				const int solnVal = ks->solve();		
-				mergeTargetsResults.reserve(solnVal);
-				ks->getSolution(mergeTargetsResults);
+        //if(knapsackCapacity == 0) {PCU_Debug_Print("No possible Merges\n");return;}
 
-            //PCU_Debug_Print("mergetargets start\n");  
-				PCU_Debug_Print("mergetargets size = %d\n", mergeTargetsResults.size());
-            for(size_t i=0; i<mergeTargetsResults.size(); i++)  
-               //PCU_Debug_Print("mergetargets %d\n", mergeTargetsResults[i]);
+        knapsack* ks = new knapsack(knapsackCapacity, w->size(), normalizedIntWeights, value);				
+        const int solnVal = ks->solve();		
+        mergeTargetsResults.reserve(solnVal);
+        ks->getSolution(mergeTargetsResults);
 
-            delete value;	
-				delete normalizedIntWeights;
-				delete ks;					
-		  }	
-        //if (weight < maxW && weight > 0) then
-        //  run knapsack and fill in the net 
-        //  (see targets.h and associative.h for container API to use for net)
-      }
+        //PCU_Debug_Print("mergetargets start\n");  
+        PCU_Debug_Print("mergetargets size = %zu\n", mergeTargetsResults.size());
+        for(size_t i=0; i<mergeTargetsResults.size(); i++)  
+          //PCU_Debug_Print("mergetargets %d\n", mergeTargetsResults[i]);
+
+          delete value;	
+        delete normalizedIntWeights;
+        delete ks;					
+      }	
+      //if (weight < maxW && weight > 0) then
+      //  run knapsack and fill in the net 
+      //  (see targets.h and associative.h for container API to use for net)
+    }
       double total() {
         //return the total number of targets
         return 0;
       }
     private:
       MergeTargets();
-		vector<int> mergeTargetsResults;
+      vector<int> mergeTargetsResults;
   };
 
   apf::Migration* selectMerges(apf::Mesh* m, MergeTargets& tgts) {
@@ -248,11 +244,11 @@ namespace parma {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
-		  delete sides;
+        delete sides;
         delete w;
-		  return; //TODO REMOVE AFTER TESTING AND PUT DELETES BELOW
+        return; //TODO REMOVE AFTER TESTING AND PUT DELETES BELOW
         hps(mesh, wtag, sides, w, tgt);
-        
+
       }
       virtual void balance(apf::MeshTag* weights, double tolerance) {
         (void) tolerance; // shhh
