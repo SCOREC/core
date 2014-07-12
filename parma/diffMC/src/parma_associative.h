@@ -36,6 +36,9 @@ namespace parma {
       bool has(int key) {
         return (c.count(key) != 0);
       }
+      size_t size() {
+        return c.size();
+      }
       std::string print(const char* key) {
         std::stringstream s;
         s << key << " ";

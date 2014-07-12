@@ -8,7 +8,7 @@
 int main(int argc, char** argv)
 {
   if (argc != 4) {
-    printf("usage: %s <model (.dmg)>  <mesh (.smb)> <NetCDF file>", argv[0]);
+    printf("usage: %s <model (.dmg)>  <mesh (.smb)> <NetCDF file>\n", argv[0]);
     return 0;
   }
   MPI_Init(&argc,&argv);
