@@ -9,15 +9,6 @@
 int ghostIteration = 0;
 
 namespace parma {
-  int getOwner(apf::Mesh* m, apf::MeshEntity* v) {
-    apf::Parts res;
-    m->getResidence(v, res);
-    return *(res.begin());
-  }
-
-  bool isOwned(apf::Mesh* m, apf::MeshEntity* v) {
-    return PCU_Comm_Self() == getOwner(m,v);
-  }
 
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
     assert(m->hasTag(e,w));
