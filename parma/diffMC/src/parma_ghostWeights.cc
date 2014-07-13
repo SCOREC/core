@@ -5,10 +5,10 @@
 #include <apfNumbering.h>
 #include "parma_weights.h"
 #include "parma_sides.h"
-
+#include "parma_ghostOwner.h"
 int ghostIteration = 0;
 
-namespace {
+namespace parma {
   int getOwner(apf::Mesh* m, apf::MeshEntity* v) {
     apf::Parts res;
     m->getResidence(v, res);
