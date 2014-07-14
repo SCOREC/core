@@ -226,9 +226,8 @@ int mds_align_matches(struct mds_apf* m)
     }
   PCU_Comm_Send();
   int did_change = 0;
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked())
-      did_change = did_change || recv_down_matches(m);
+  while (PCU_Comm_Receive())
+    did_change = did_change || recv_down_matches(m);
   return did_change;
 }
 

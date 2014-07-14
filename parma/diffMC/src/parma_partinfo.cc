@@ -17,32 +17,32 @@ using parmaCommons::isMore;
 using parmaCommons::status;
 
 int partInfo::sendWeightToNeighbors() {
-    APF_ITERATE(vector<int>,adjPartIds,adjPartIdItr) {
-       const int destRank = *adjPartIdItr;  
-       //pack weight for current part
-       PCU_COMM_PACK(destRank, weight);
-    }
-    return 0;
+  APF_ITERATE(vector<int>,adjPartIds,adjPartIdItr) {
+    const int destRank = *adjPartIdItr;  
+    //pack weight for current part
+    PCU_COMM_PACK(destRank, weight);
+  }
+  return 0;
 }
 
 int partInfo::recvWeightFromNeighbors() {
-    while (PCU_Comm_Listen()) {
-        int srcRank;
-        PCU_Comm_From(&srcRank);
-        int found = 0;
-	for (size_t apIdx = 0; apIdx < adjPartIds.size(); apIdx++) {
-	   if (adjPartIds[apIdx] == srcRank) {
-              found = 1;
-	      for(int entDim=0; entDim<4; entDim++) {
-		 double weight;
-		 PCU_COMM_UNPACK(weight);
-		 adjPartWeights[apIdx][entDim] = weight;
-	      }
-	   }
-	} 
-        assert(1 == found);
-    }
-    return 0;
+  while (PCU_Comm_Listen()) {
+    int srcRank;
+    PCU_Comm_From(&srcRank);
+    int found = 0;
+    for (size_t apIdx = 0; apIdx < adjPartIds.size(); apIdx++) {
+      if (adjPartIds[apIdx] == srcRank) {
+        found = 1;
+        for(int entDim=0; entDim<4; entDim++) {
+          double weight;
+          PCU_COMM_UNPACK(weight);
+          adjPartWeights[apIdx][entDim] = weight;
+        }
+      }
+    } 
+    assert(1 == found);
+  }
+  return 0;
 }
 
 /**
