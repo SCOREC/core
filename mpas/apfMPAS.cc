@@ -181,26 +181,35 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   m->end(itr);
 
   PCU_Comm_Send();
-  while (PCU_Comm_Listen()) {
+  while (PCU_Comm_Receive()) {
     int owner =PCU_Comm_Sender();
-    while (!PCU_Comm_Unpacked()) {
-      int num;
-      PCU_COMM_UNPACK(num);
-      vtxs[num%numPerPart]=owner;
-    }
+    int num;
+    PCU_COMM_UNPACK(num);
+    vtxs[num%numPerPart]=owner;
   }
+
   // assign missing vertices to a random part id
   int count = 0;
   for (int i = 0;
-       (i < numPerPart) && (i+numPerPart*PCU_Comm_Self() < numMpasVtx);
+       (i < size);
        i++)
     if (vtxs[i]==-1) {
       vtxs[i] = 0; //to be random
       count++;
     }
   fprintf(stdout,"missing vertices found %d\n",count);
+  
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
+  FILE* file;
+  char name[32];
+  sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
+  file = fopen(name, "w");
+  fseek(file,numPerPart*PCU_Comm_Self(),SEEK_SET);
+  for (int i=0;i<size;i++) 
+    fprintf(file,"%-15d\n",vtxs[i]);
+  
+  fclose(file);
 }
 
 }
