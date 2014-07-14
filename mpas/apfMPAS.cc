@@ -205,8 +205,8 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   char name[32];
   sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
   file = fopen(name, "w");
-  fseek(file,numPerPart*PCU_Comm_Self(),SEEK_SET);
-  for (int i=0;i<size;i++) 
+  fseek(file,numPerPart*PCU_Comm_Self()*16,SEEK_SET);
+  for (int i=0;i<size;i++)
     fprintf(file,"%-15d\n",vtxs[i]);
   
   fclose(file);
