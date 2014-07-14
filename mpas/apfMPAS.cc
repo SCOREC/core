@@ -166,9 +166,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     size=numMpasVtx%numPerPart;
   else
     size=numPerPart;
-  int* vtxs = new int[size];
-  for (int i=0;i<size;i++)
-    vtxs[i]=-1;
+  std::vector<int> vtxs(size,-1);
   PCU_Comm_Begin();
   while ((e = m->iterate(itr))) {
     if (!parma::isOwned(m, e))
@@ -203,8 +201,6 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   fprintf(stdout,"missing vertices found %d\n",count);
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
-
-  delete [] vtxs;
 }
 
 }
