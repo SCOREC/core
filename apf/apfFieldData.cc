@@ -45,16 +45,15 @@ void synchronizeFieldData(FieldDataOf<T>* data)
     }
     m->end(it);
     PCU_Comm_Send();
-    while (PCU_Comm_Listen())
-      while ( ! PCU_Comm_Unpacked())
-      {
-        MeshEntity* e;
-        PCU_COMM_UNPACK(e);
-        int n = f->countValuesOn(e);
-        NewArray<T> values(n);
-        PCU_Comm_Unpack(&(values[0]),n*sizeof(T));
-        data->set(e,&(values[0]));
-      }
+    while (PCU_Comm_Receive())
+    {
+      MeshEntity* e;
+      PCU_COMM_UNPACK(e);
+      int n = f->countValuesOn(e);
+      NewArray<T> values(n);
+      PCU_Comm_Unpack(&(values[0]),n*sizeof(T));
+      data->set(e,&(values[0]));
+    }
   }
 }
 
