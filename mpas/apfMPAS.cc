@@ -161,7 +161,14 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   int numPerPart = numMpasVtx / PCU_Comm_Peers() + 1;
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* e;
-  std::map<int,int> vtxs;
+  int size;
+  if (PCU_Comm_Self()==PCU_Comm_Peers()-1)
+    size=numMpasVtx%numPerPart;
+  else
+    size=numPerPart;
+  int* vtxs = new int[size];
+  for (int i=0;i<size;i++)
+    vtxs[i]=-1;
   PCU_Comm_Begin();
   while ((e = m->iterate(itr))) {
     if (!parma::isOwned(m, e))
@@ -169,7 +176,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     int num = getNumber(n, e, 0, 0);
     int target = num / numPerPart;
     if (target == PCU_Comm_Self())
-      vtxs[num] = PCU_Comm_Self();
+      vtxs[num%numPerPart] = PCU_Comm_Self();
     else
       PCU_COMM_PACK(target,num);
   }
@@ -181,21 +188,23 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     while (!PCU_Comm_Unpacked()) {
       int num;
       PCU_COMM_UNPACK(num);
-      vtxs[num]=owner;
+      vtxs[num%numPerPart]=owner;
     }
   }
   // assign missing vertices to a random part id
   int count = 0;
-  for (int i = numPerPart * PCU_Comm_Self();
-       (i < numPerPart * (PCU_Comm_Self() + 1)) && (i < numMpasVtx);
+  for (int i = 0;
+       (i < numPerPart) && (i+numPerPart*PCU_Comm_Self() < numMpasVtx);
        i++)
-    if (vtxs.find(i)==vtxs.end()) {
+    if (vtxs[i]==-1) {
       vtxs[i] = 0; //to be random
       count++;
     }
   fprintf(stdout,"missing vertices found %d\n",count);
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
+
+  delete [] vtxs;
 }
 
 }
