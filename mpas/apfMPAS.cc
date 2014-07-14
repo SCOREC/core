@@ -1,6 +1,7 @@
 #include "apfMPAS.h"
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <diffMC/src/parma_ghostOwner.h>
 #include <netcdf>
 
 namespace apf {
