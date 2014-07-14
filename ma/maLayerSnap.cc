@@ -173,13 +173,12 @@ static void feedbackTopSnap(Adapt* a, Tag* snapTag)
     }
   m->end(it);
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked()) {
-      int link;
-      PCU_COMM_UNPACK(link);
-      Entity* v = l.lookup(link);
-      m->removeTag(v, snapTag);
-    }
+  while (PCU_Comm_Receive()) {
+    int link;
+    PCU_COMM_UNPACK(link);
+    Entity* v = l.lookup(link);
+    m->removeTag(v, snapTag);
+  }
 }
 
 struct LayerSnapper : public Crawler
