@@ -156,22 +156,24 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   
   apf::Numbering* n = apf::createNumbering(m, "mpas_id", m->getShape(), 1);
 
-  // collect N/#parts contiguous vertex assignments on each process (and deal with any remainders)
-  int numPerPart=numMpasVtx/PCU_Comm_Peers()+1;
+  /* collect N/#parts contiguous vertex assignments on each process
+     (and deal with any remainders) */
+  int numPerPart = numMpasVtx / PCU_Comm_Peers() + 1;
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* e;
   std::map<int,int> vtxs;
   PCU_Comm_Begin();
-  while (e=m->iterate(itr)) {
-    if (!parma::isOwned(m,e))
+  while ((e = m->iterate(itr))) {
+    if (!parma::isOwned(m, e))
       continue;
-    int num=getNumber(n,e,0,0);
-    int target = num/numPerPart;
-    if (target==PCU_Comm_Self())
-      vtxs[num]=parma::getOwner(m,e);
-    else 
+    int num = getNumber(n, e, 0, 0);
+    int target = num / numPerPart;
+    if (target == PCU_Comm_Self())
+      vtxs[num] = PCU_Comm_Self();
+    else
       PCU_COMM_PACK(target,num);
   }
+  m->end(itr);
 
   PCU_Comm_Send();
   while (PCU_Comm_Listen()) {
@@ -182,10 +184,12 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     vtxs[num]=owner;
   }
   // assign missing vertices to a random part id
-  int count=0;
-  for (int i=numPerPart*PCU_Comm_Self();i<numPerPart*(PCU_Comm_Self()+1)&&i<numMpasVtx;i++)
-    if (vtxs.find(i)==vtxs.end())  {
-      vtxs[i]=0; //to be random
+  int count = 0;
+  for (int i = numPerPart * PCU_Comm_Self();
+       (i < numPerPart * (PCU_Comm_Self() + 1)) && (i < numMpasVtx);
+       i++)
+    if (vtxs.find(i)==vtxs.end()) {
+      vtxs[i] = 0; //to be random
       count++;
     }
   fprintf(stdout,"missing vertices found %d\n",count);
