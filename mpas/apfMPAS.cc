@@ -157,9 +157,38 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   apf::Numbering* n = apf::createNumbering(m, "mpas_id", m->getShape(), 1);
 
   // collect N/#parts contiguous vertex assignments on each process (and deal with any remainders)
-  
+  int numPerPart=numMpasVtx/PCU_Comm_Peers()+1;
+  apf::MeshIterator* itr = m->begin(0);
+  apf::MeshEntity* e;
+  std::map<int,int> vtxs;
+  PCU_Comm_Begin();
+  while (e=m->iterate(itr)) {
+    if (!parma::isOwned(m,e))
+      continue;
+    int num=getNumber(n,e,0,0);
+    int target = num/numPerPart;
+    if (target==PCU_Comm_Self())
+      vtxs[num]=parma::getOwner(m,e);
+    else 
+      PCU_COMM_PACK(target,num);
+  }
+
+  PCU_Comm_Send();
+  while (PCU_Comm_Listen()) {
+    int num;
+    PCU_COMM_UNPACK(num);
+    int owner =PCU_Comm_Sender();
+    
+    vtxs[num]=owner;
+  }
   // assign missing vertices to a random part id
-  
+  int count=0;
+  for (int i=numPerPart*PCU_Comm_Self();i<numPerPart*(PCU_Comm_Self()+1)&&i<numMpasVtx;i++)
+    if (vtxs.find(i)==vtxs.end())  {
+      vtxs[i]=0; //to be random
+      count++;
+    }
+  fprintf(stdout,"missing vertices found %d\n",count);
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
 }
