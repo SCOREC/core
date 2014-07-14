@@ -6,16 +6,10 @@
 #include "parma_weights.h"
 #include "parma_sides.h"
 #include "parma_ghostOwner.h"
+
 int ghostIteration = 0;
 
 namespace parma {
-
-  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
-    double weight;
-    m->getDoubleTag(e,w,&weight);
-    return weight;
-  }
 
   apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
       apf::MeshEntity* edge, apf::MeshEntity* vtx) {

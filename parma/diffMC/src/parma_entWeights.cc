@@ -46,4 +46,11 @@ namespace parma {
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim) {
     return new EntWeights(m, w, s, dim);
   }
+
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
+    assert(m->hasTag(e,w));
+    double weight;
+    m->getDoubleTag(e,w,&weight);
+    return weight;
+  }
 } //end namespace
