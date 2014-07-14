@@ -177,11 +177,12 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
 
   PCU_Comm_Send();
   while (PCU_Comm_Listen()) {
-    int num;
-    PCU_COMM_UNPACK(num);
     int owner =PCU_Comm_Sender();
-    
-    vtxs[num]=owner;
+    while (!PCU_Comm_Unpacked()) {
+      int num;
+      PCU_COMM_UNPACK(num);
+      vtxs[num]=owner;
+    }
   }
   // assign missing vertices to a random part id
   int count = 0;
