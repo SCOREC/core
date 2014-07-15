@@ -6,11 +6,8 @@
 *
 * ParMA API: parma.h
 *
-* Redmine page:
-* http://redmine.scorec.rpi.edu/projects/parma
-*
-* Anonymous SVN access:
-* https://redmine.scorec.rpi.edu/anonsvn/parma/trunk
+* GitHub page:
+* https://github.com/SCOREC/core
 *
 * @section References
 *
