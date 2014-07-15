@@ -361,8 +361,8 @@ static void write_int_tag(struct pcu_file* f, struct mds_apf* m,
   free(ids);
 }
 
-static void read_dbl_tag(struct pcu_file* f, struct mds_apf* m, struct mds_tag* tag,
-                         unsigned count, int t)
+static void read_dbl_tag(struct pcu_file* f, struct mds_apf* m,
+    struct mds_tag* tag, unsigned count, int t)
 {
   unsigned* ids;
   double* tmp;
