@@ -312,7 +312,7 @@ class MeshMDS : public Mesh2
     }
     void getTag(MeshEntity* e, MeshTag* t, void* data)
     {
-      assert(hasTag(e,t))
+      assert(hasTag(e,t));
       mds_tag* tag;
       tag = reinterpret_cast<mds_tag*>(t);
       mds_id id = fromEnt(e);
