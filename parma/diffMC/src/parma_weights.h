@@ -16,6 +16,7 @@ namespace parma {
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim);
   Weights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, 
       int layers, int bridge);
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w);
 }
 
 #endif

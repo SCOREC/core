@@ -271,11 +271,10 @@ static void markBadQuads(Adapt* a)
     }
   m->end(it);
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked()) {
-      PCU_COMM_UNPACK(e);
-      setFlag(a, e, SPLIT);
-    }
+  while (PCU_Comm_Receive()) {
+    PCU_COMM_UNPACK(e);
+    setFlag(a, e, SPLIT);
+  }
   clearFlagFromDimension(a, CHECKED, 2);
 }
 

@@ -35,6 +35,7 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_elmBdrySides.cc
   diffMC/src/parma_entWeights.cc
   diffMC/src/parma_ghost.cc
+  diffMC/src/parma_ghostOwner.cc
   diffMC/src/parma_ghostWeights.cc
   diffMC/src/parma_hist.cc
   diffMC/src/parma_hpsBalancer.cc

@@ -1,6 +1,7 @@
 #include "apfMPAS.h"
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <diffMC/src/parma_ghostOwner.h>
 #include <netcdf>
 
 namespace apf {
@@ -155,12 +156,66 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   
   apf::Numbering* n = apf::createNumbering(m, "mpas_id", m->getShape(), 1);
 
-  // collect N/#parts contiguous vertex assignments on each process (and deal with any remainders)
-  
+  /* collect N/#parts contiguous vertex assignments on each process
+     (and deal with any remainders) */
+  int numPerPart = numMpasVtx / PCU_Comm_Peers() + 1;
+  apf::MeshIterator* itr = m->begin(0);
+  apf::MeshEntity* e;
+  int size;
+  if (PCU_Comm_Self()==PCU_Comm_Peers()-1)
+    size=numMpasVtx%numPerPart;
+  else
+    size=numPerPart;
+  std::vector<int> vtxs(size,-1);
+  PCU_Comm_Begin();
+  while ((e = m->iterate(itr))) {
+    if (!parma::isOwned(m, e))
+      continue;
+    int num = getNumber(n, e, 0, 0);
+    int target = num / numPerPart;
+    if (target == PCU_Comm_Self())
+      vtxs[num%numPerPart] = PCU_Comm_Self();
+    else
+      PCU_COMM_PACK(target,num);
+  }
+  m->end(itr);
+
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int owner =PCU_Comm_Sender();
+    int num;
+    PCU_COMM_UNPACK(num);
+    vtxs[num%numPerPart]=owner;
+  }
+
   // assign missing vertices to a random part id
+  int count = 0;
+  for (int i = 0;
+       (i < size);
+       i++)
+    if (vtxs[i]==-1) {
+      vtxs[i] = 0; //to be random
+      count++;
+    }
+  fprintf(stdout,"missing vertices found %d\n",count);
   
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
+  double startTime=MPI_Wtime();
+  FILE* file;
+  char name[32];
+  
+  sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
+  file = fopen(name, "w");
+  fseek(file,numPerPart*PCU_Comm_Self()*16,SEEK_SET);
+  for (int i=0;i<size;i++)
+    fprintf(file,"%-15d\n",vtxs[i]);
+  
+  fclose(file);
+  double totalTime= MPI_Wtime()-startTime; 
+  PCU_Max_Doubles(&totalTime,1);
+  if (!PCU_Comm_Self())
+    fprintf(stdout,"File writing time: %f seconds\n", totalTime); 
 }
 
 }

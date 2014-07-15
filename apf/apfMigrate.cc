@@ -66,17 +66,16 @@ static void getAffected(
       }//downward adjacent loop
     }//upward affected loop
     PCU_Comm_Send();
-    while (PCU_Comm_Listen())
-      while ( ! PCU_Comm_Unpacked())
+    while (PCU_Comm_Receive())
+    {
+      MeshEntity* entity;
+      PCU_COMM_UNPACK(entity);
+      if ( ! m->hasTag(entity,tag))
       {
-        MeshEntity* entity;
-        PCU_COMM_UNPACK(entity);
-        if ( ! m->hasTag(entity,tag))
-        {
-          m->setIntTag(entity,tag,&dummy);
-          affected[dimension].push_back(entity);
-        }
+        m->setIntTag(entity,tag,&dummy);
+        affected[dimension].push_back(entity);
       }
+    }
     APF_ITERATE(EntityVector,affected[dimension],it)
       m->removeTag(*it,tag);
   }//dimension loop
@@ -224,18 +223,17 @@ static void updateResidences(
       }
     }
     PCU_Comm_Send();
-    while(PCU_Comm_Listen())
-      while( ! PCU_Comm_Unpacked())
-      {
-        MeshEntity* entity;
-        PCU_COMM_UNPACK(entity);
-        Parts current;
-        m->getResidence(entity,current);
-        Parts incoming;
-        unpackParts(incoming);
-        unite(current,incoming);
-        m->setResidence(entity,current);
-      }
+    while(PCU_Comm_Receive())
+    {
+      MeshEntity* entity;
+      PCU_COMM_UNPACK(entity);
+      Parts current;
+      m->getResidence(entity,current);
+      Parts incoming;
+      unpackParts(incoming);
+      unite(current,incoming);
+      m->setResidence(entity,current);
+    }
   }
 }
 
@@ -488,9 +486,8 @@ static void receiveEntities(
     EntityVector& received)
 {
   received.reserve(1024);
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-      received.push_back(unpackEntity(m,tags));
+  while (PCU_Comm_Receive())
+    received.push_back(unpackEntity(m,tags));
 }
 
 static void echoRemotes(
@@ -601,16 +598,15 @@ static void bcastRemotes(
     m->setRemotes(e,newCopies);
   }
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-    {
-      MeshEntity* e;
-      PCU_COMM_UNPACK(e);
-      Copies copies;
-      unpackCopies(copies);
-      copies.erase(rank);
-      m->setRemotes(e,copies);
-    }
+  while (PCU_Comm_Receive())
+  {
+    MeshEntity* e;
+    PCU_COMM_UNPACK(e);
+    Copies copies;
+    unpackCopies(copies);
+    copies.erase(rank);
+    m->setRemotes(e,copies);
+  }
 }
 
 static void setupRemotes(
@@ -687,16 +683,15 @@ static void updateSenderMatching(
       m->clearMatches(affected[d][i]);
   }
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-    {
-      MeshEntity* e;
-      PCU_COMM_UNPACK(e);
-      Copies copies;
-      unpackCopies(copies);
-      APF_ITERATE(Copies,copies,cit)
-        m->addMatch(e,cit->first,cit->second);
-    }
+  while (PCU_Comm_Receive())
+  {
+    MeshEntity* e;
+    PCU_COMM_UNPACK(e);
+    Copies copies;
+    unpackCopies(copies);
+    APF_ITERATE(Copies,copies,cit)
+      m->addMatch(e,cit->first,cit->second);
+  }
 }
 
 /* now senders just broadcast the full matching to their remote copies */
@@ -740,23 +735,22 @@ static void bcastMatching(
     }
   }
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
+  while (PCU_Comm_Receive())
+  {
+    MeshEntity* e;
+    PCU_COMM_UNPACK(e);
+    Match match;
+    size_t n;
+    PCU_COMM_UNPACK(n);
+    for (size_t i=0; i < n; ++i)
     {
-      MeshEntity* e;
-      PCU_COMM_UNPACK(e);
-      Match match;
-      size_t n;
-      PCU_COMM_UNPACK(n);
-      for (size_t i=0; i < n; ++i)
-      {
-        PCU_COMM_UNPACK(match.peer);
-        PCU_COMM_UNPACK(match.entity);
-        if ( ! ((match.peer == self)&&
-                (match.entity == e)))
-          m->addMatch(e,match.peer,match.entity);
-      }
+      PCU_COMM_UNPACK(match.peer);
+      PCU_COMM_UNPACK(match.entity);
+      if ( ! ((match.peer == self)&&
+              (match.entity == e)))
+        m->addMatch(e,match.peer,match.entity);
     }
+  }
 }
 
 /* matched senders now have updated remote copies,

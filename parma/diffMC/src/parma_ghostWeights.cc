@@ -5,26 +5,11 @@
 #include <apfNumbering.h>
 #include "parma_weights.h"
 #include "parma_sides.h"
+#include "parma_ghostOwner.h"
 
 int ghostIteration = 0;
 
-namespace {
-  int getOwner(apf::Mesh* m, apf::MeshEntity* v) {
-    apf::Parts res;
-    m->getResidence(v, res);
-    return *(res.begin());
-  }
-
-  bool isOwned(apf::Mesh* m, apf::MeshEntity* v) {
-    return PCU_Comm_Self() == getOwner(m,v);
-  }
-
-  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
-    double weight;
-    m->getDoubleTag(e,w,&weight);
-    return weight;
-  }
+namespace parma {
 
   apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
       apf::MeshEntity* edge, apf::MeshEntity* vtx) {
