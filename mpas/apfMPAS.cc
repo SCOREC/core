@@ -141,6 +141,7 @@ void removeIsolatedNodes(apf::Mesh2* m)
 
 void loadMpasMesh(apf::Mesh2* m, const char* filename)
 {
+  assert(PCU_Comm_Peers() == 1);
   MpasFile f;
   readMpasFile(f, filename);
   buildInitialMesh(f, m);
