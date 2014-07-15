@@ -201,8 +201,10 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
+  double startTime=MPI_Wtime();
   FILE* file;
   char name[32];
+  
   sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
   file = fopen(name, "w");
   fseek(file,numPerPart*PCU_Comm_Self()*16,SEEK_SET);
@@ -210,6 +212,10 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     fprintf(file,"%-15d\n",vtxs[i]);
   
   fclose(file);
+  double totalTime= MPI_Wtime()-startTime; 
+  PCU_Max_Doubles(&totalTime,1);
+  if (!PCU_Comm_Self())
+    fprintf(stdout,"File writing time: %f seconds\n", totalTime); 
 }
 
 }
