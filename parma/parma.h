@@ -127,17 +127,53 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc);
  */
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key);
 
+/**
+ * @brief re-connect disconnected parts
+ * @param mesh (In) partitioned mesh
+ */
 void Parma_ProcessDisconnectedParts(apf::Mesh* m);
 
+/**
+ * @brief create an APF Balancer using centroid diffusion
+ * @param mesh (In) partitioned mesh
+ * @param stepFactor (In) amount of weight to migrate between parts during diffusion, lower values migrate fewer elements per iteration
+ * @return apf balancer instance
+ */
 apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1);
 
+/**
+ * @brief create an APF Balancer using ghost element aware diffusion
+ * @param mesh (In) partitioned mesh
+ * @param layers (In) depth of ghosting
+ * @param bridge (In) dimension of entity ghosting depth is based on, typically meshDim-1
+ * @param stepFactor (In) amount of weight to migrate between parts during diffusion, lower values migrate fewer elements per iteration
+ * @param verbosity (In) output control, higher values output more
+ * @return apf balancer instance
+ */
 apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge, 
     double stepFactor = 0.1, int verbosity=0);
 
+/**
+ * @brief create an APF Balancer using heavy part splitting
+ * @param mesh (In) partitioned mesh
+ * @param verbosity (In) output control, higher values output more
+ * @return apf balancer instance
+ */
 apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity=0);
 
+/**
+ * @brief create an APF Splitter using recursive inertial bisection
+ * @param mesh (In) partitioned mesh
+ * @param sync (In) true if all parts will be split, false o.w.
+ * @return apf splitter instance
+ */
 apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
 
+/**
+ * @brief create a mesh tag that weighs elements by their memory consumption
+ * @param mesh (In) partitioned mesh
+ * @return mesh tag
+ */
 apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);
 
 #endif
