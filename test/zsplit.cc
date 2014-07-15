@@ -39,7 +39,11 @@ void runAfter(apf::Mesh2* m)
 
 void getConfig(int argc, char** argv)
 {
-  assert(argc==5);
+  if ( argc != 5 ) {
+    if ( !PCU_Comm_Self() )
+      printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
   modelFile = argv[1];
   meshFile = argv[2];
   outFile = argv[3];
