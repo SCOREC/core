@@ -8,6 +8,7 @@
 namespace {
   const char* modelFile = 0;
   const char* meshFile = 0;
+	std::string name;
 
   void freeMesh(apf::Mesh* m)
   {
@@ -26,16 +27,19 @@ namespace {
     apf::MeshTag* wtag = m->createDoubleTag("hpsUnitWeight",1);
     apf::MeshEntity* e;
     apf::MeshIterator* itr = m->begin(m->getDimension());
-    double w = 1;
-    while( (e = m->iterate(itr)) )
-      m->setDoubleTag(e, wtag, &w);
+	 double w = 1.0;
+	 if (name == "../meshes/torus/torus.dmg" && PCU_Comm_Self() == 0) w = 1.5;
+//crap
+	 //TODO Remove after finished testing with Torus 
+    while( (e = m->iterate(itr)) )	
+			m->setDoubleTag(e, wtag, &w);
     m->end(itr);
     return wtag;
   }
 
   void runParma(apf::Mesh* m) {
-    apf::MeshTag* weights = applyUnitVtxWeight(m);
-    apf::Balancer* hps = Parma_MakeHpsBalancer(m);
+    apf::MeshTag* weights = applyUnitVtxWeight(m); 
+		apf::Balancer* hps = Parma_MakeHpsBalancer(m);
     double ignored = 3.14;
     hps->balance(weights, ignored);
     delete hps;
@@ -44,6 +48,7 @@ namespace {
 
 int main(int argc, char** argv)
 {
+	name = argv[1];
   int provided;
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);

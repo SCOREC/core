@@ -23,7 +23,7 @@ namespace parma {
 			if (w->self() < maxW && w->self() > 0){ 
 				const int rank = PCU_Comm_Self();
 
-				//PCU_Debug_Print("Part %d of weight %f is light and not empty\n", rank, w->self());
+				PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f--", rank, w->self(), maxW);
 				//PCU_Debug_Print("HeavyImb = %f\n", maxW);
 
 				double minWeight = std::numeric_limits<double>::max(); 
@@ -57,7 +57,7 @@ namespace parma {
 				int* value = new int[s->total()];
 				std::fill (value, value + s->total(),1);
 				
-				//if(knapsackCapacity == 0) {PCU_Debug_Print("No possible Merges\n");return;}
+				if(knapsackCapacity == 0) {PCU_Debug_Print("No possible Merges\n");return;}
 
 				knapsack* ks = new knapsack(knapsackCapacity, w->size(), normalizedIntWeights, value);				
 				const int solnVal = ks->solve();		
@@ -66,11 +66,12 @@ namespace parma {
 
             //PCU_Debug_Print("mergetargets start\n");  
 				PCU_Debug_Print("mergetargets size = %d\n", mergeTargetsResults.size());
-            for(size_t i=0; i<mergeTargetsResults.size(); i++)  
+            for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
                //PCU_Debug_Print("mergetargets %d\n", mergeTargetsResults[i]);
+            }
 
-            delete value;	
-				delete normalizedIntWeights;
+            delete [] value;	
+				delete [] normalizedIntWeights;
 				delete ks;					
 		  }	
         //if (weight < maxW && weight > 0) then
@@ -79,7 +80,7 @@ namespace parma {
       }
       double total() {
         //return the total number of targets
-        return 0;
+        return mergeTargetsResults.size();
       }
     private:
       MergeTargets();
@@ -94,45 +95,28 @@ namespace parma {
     return new apf::Migration(m);
   };
 
-  class MergeWeights : public EntWeights {
-    public:
-      MergeWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, apf::Migration* p)
-        : EntWeights(m, w, s, m->getDimension()), plan(p) {}
-    private:
-      apf::Migration* plan;
-      MergeWeights();
-      double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-        assert(m->hasTag(e,w));
-        double entW = 0;
-        if (!plan->has(e))
-          m->getDoubleTag(e,w,&entW);
-        return entW;
-      }
-      //getMergedWeight() // how much weight is being merged into myself??
-  };
-
-  int splits(Weights& w, double tgtWeight) {
-    return static_cast<int>(ceil(w.self()/tgtWeight))-1; //FIXME - self needs to return merged part size
+  int splits(Weights* w, double tgtWeight) {
+    return static_cast<int>(ceil(w->self()/tgtWeight))-1; 
   }
 
-  int isEmpty(Weights& w) {
-    return (w.self() == 0) ? 1 : 0; //FIXME - dangerous comparison
+  int isEmpty(apf::Mesh* m, apf::Migration* plan) {
+    return (m->count(m->getDimension()) - plan->count() == 0) ? 1 : 0;
   }
 
-  int totSplits(Weights& w, double tgtWeight) {
+  int totSplits(Weights* w, double tgtWeight) {
     int numSplits = splits(w, tgtWeight);
     PCU_Add_Ints(&numSplits, 1);  // MPI_All_reduce(...,MPI_SUM,...)
     return numSplits;
   }
 
-  int numEmpty(Weights& w) {
-    int empty = isEmpty(w);
+  int numEmpty(apf::Mesh* m, apf::Migration* plan) {
+    int empty = isEmpty(m, plan);
     PCU_Add_Ints(&empty, 1);
     return empty;
   }
 
-  bool canSplit(Weights& w, double tgt, int& extra) {
-    extra = numEmpty(w) - totSplits(w, tgt);
+  bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt, int& extra) {
+    extra = numEmpty(m, plan) - totSplits(w, tgt);
     if ( extra < 0 )
       return false;   
     else
@@ -165,25 +149,26 @@ namespace parma {
   }
 
   double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
-    double testW = imbalance(w)*avgWeight(w)*1.5;
-    double step = 0.2;
+    double testW = maxWeight(w); 
+    double step = 0.1 * avgWeight(w); //Not necessarily arbitrary but can be changed.
     bool splits = false;
     int extraEmpties = 0;
     do {
       testW -= step;
+		//PCU_Debug_Print("Test Imb = %f\n", testW);
       MergeTargets mergeTgts(s, w, testW);
       apf::Migration* plan = selectMerges(m, mergeTgts); 
-      MergeWeights mergeWeights(m, wtag, s, plan); // compute the weight of each part post merges
-      splits = canSplit(mergeWeights, testW, extraEmpties);
+      splits = canSplit(m, w, plan, testW, extraEmpties);
       delete plan; // not migrating
     } while ( splits );
+	 testW += step;
     return testW;
   }
 
-  void split(Weights& w, double tgt, apf::Migration* plan) {
+  void split(apf::Mesh* m, Weights* w, double tgt, apf::Migration* plan) {
     const int partId = PCU_Comm_Self();
     int numSplit = splits(w, tgt);
-    int empty = isEmpty(w);
+    int empty = isEmpty(m, plan);
     assert(!(numSplit && empty));
     int hl[2] = {numSplit, empty};
     //number the heavies and empties
@@ -231,9 +216,8 @@ namespace parma {
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
     MergeTargets mergeTargets(s, w, tgt);
-    apf::Migration* plan = selectMerges(m, mergeTargets);
-    MergeWeights mergeWeights(m, wtag, s, plan);
-    split(mergeWeights, tgt, plan);
+    apf::Migration* plan = selectMerges(m, mergeTargets);   
+    split(m, w, tgt, plan);
     m->migrate(plan);
   }
 
@@ -248,9 +232,10 @@ namespace parma {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
+		  PCU_Debug_Print("Final Chi = %f\n",tgt);
 		  delete sides;
         delete w;
-		  return; //TODO REMOVE AFTER TESTING AND PUT DELETES BELOW
+		  return; //TODO remove return after testing and put deletes below
         hps(mesh, wtag, sides, w, tgt);
         
       }
