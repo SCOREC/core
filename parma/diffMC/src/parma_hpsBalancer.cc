@@ -23,9 +23,16 @@ namespace parma {
           return;
         PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f--", PCU_Comm_Self(), w->self(), maxW);
         //PCU_Debug_Print("HeavyImb = %f\n", maxW);
+        
+        int* nborPartIds = new int[w->size()];
+        int i = 0;
+        const Weights::Item* weight;        
+        w->begin();         
+        while( (weight = w->iterate()) ) 
+         nborPartIds[i++] = weight->first;      
+        w->end();         
 
         double minWeight = std::numeric_limits<double>::max(); 
-        const Weights::Item* weight;
         w->begin(); 
         while( (weight = w->iterate()) ) 
          if ( weight->second < minWeight )
@@ -60,9 +67,10 @@ namespace parma {
         //PCU_Debug_Print("mergetargets start\n");  
         PCU_Debug_Print("mergetargets size = %d\n", mergeTargetsResults.size());
         for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-         //PCU_Debug_Print("mergetargets %d\n", mergeTargetsResults[i]);
+          PCU_Debug_Print("mergetargets %d\n", nborPartIds[mergeTargetsResults[i]]);
         }
 
+        delete [] nborPartIds;
         delete [] value;	
         delete [] normalizedIntWeights;
         delete ks;					
@@ -77,6 +85,8 @@ namespace parma {
       vector<int> mergeTargetsResults;
   };
 
+  //TODO does this expect indexes of neighbors that will be absorbed 
+  //     into the local part or the part ids of the neighbors???
   apf::Migration* selectMerges(apf::Mesh* m, MergeTargets& tgts) {
     //run MIS and getMergeTargets(...) to determine which 'target'
     // part this part will be merged into then create a Migration 
