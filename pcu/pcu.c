@@ -168,7 +168,7 @@ int PCU_Comm_Pack(int to_rank, const void* data, size_t size)
 /** \brief Sends all buffers for this communication phase.
   \details This function should be called by all threads in the MPI job
   after calls to PCU_Comm_Pack or PCU_Comm_Write and before calls
-  to PCU_Comm_Receive or PCU_Comm_Read.
+  to PCU_Comm_Listen or PCU_Comm_Read.
   All buffers from this thread are sent out and receiving may begin after this call.
  */
 int PCU_Comm_Send(void)
@@ -198,7 +198,7 @@ bool PCU_Comm_Listen(void)
 }
 
 /** \brief Returns in * \a from_rank the sender of the current received buffer.
-  \details This function should be called after a successful PCU_Comm_Receive.
+  \details This function should be called after a successful PCU_Comm_Listen.
  */
 int PCU_Comm_Sender(void)
 {
@@ -208,7 +208,7 @@ int PCU_Comm_Sender(void)
 }
 
 /** \brief Returns true if the current received buffer has been completely unpacked.
-  \details This function should be called after a successful PCU_Comm_Receive.
+  \details This function should be called after a successful PCU_Comm_Listen.
  */
 bool PCU_Comm_Unpacked(void)
 {
@@ -218,7 +218,7 @@ bool PCU_Comm_Unpacked(void)
 }
 
 /** \brief Unpacks a block of data from the current received buffer.
-  \details This function should be called after a successful PCU_Comm_Receive.
+  \details This function should be called after a successful PCU_Comm_Listen.
   \a data must point to a block of memory of at least \a size bytes,
   into which the next \a size bytes of the current received buffer will be written.
   Subsequent calls to this function will begin unpacking where this call left off,
@@ -547,13 +547,13 @@ int PCU_Comm_Write(int to_rank, const void* data, size_t size)
   return PCU_SUCCESS;
 }
 
-/** \brief Similar to PCU_Comm_Listen, returns the status as an argument. */
-int PCU_Comm_Receive(bool* done)
+/** \brief Convenience wrapper over Listen and Unpacked */
+bool PCU_Comm_Receive(void)
 {
-  if (global_state == uninit)
-    pcu_fail("Comm_Receive called before Comm_Init");
-  *done = ! pcu_msg_receive(get_msg());
-  return PCU_SUCCESS;
+  while (PCU_Comm_Unpacked())
+    if (!PCU_Comm_Listen())
+      return false;
+  return true;
 }
 
 /** \brief Receives a message for this communication phase.

@@ -356,13 +356,12 @@ static void synchronizeEntitySet(
         PCU_COMM_PACK(rit->first,rit->second);
     }
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-    {
-      MeshEntity* e;
-      PCU_COMM_UNPACK(e);
-      set.insert(e);
-    }
+  while (PCU_Comm_Receive())
+  {
+    MeshEntity* e;
+    PCU_COMM_UNPACK(e);
+    set.insert(e);
+  }
 }
 
 static void getNodesOnEntitySet(

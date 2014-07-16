@@ -165,15 +165,14 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
   m->end(it);
   PCU_Comm_Send();
   bool ok = true;
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-    {
-      PCU_COMM_UNPACK(e);
-      bool value;
-      PCU_COMM_UNPACK(value);
-      if(value != getFlag(a,e,flag))
-        ok = false;
-    }
+  while (PCU_Comm_Receive())
+  {
+    PCU_COMM_UNPACK(e);
+    bool value;
+    PCU_COMM_UNPACK(value);
+    if(value != getFlag(a,e,flag))
+      ok = false;
+  }
   return ok;
 }
 
@@ -421,12 +420,11 @@ void syncFlag(Adapt* a, int dimension, int flag)
   }
   m->end(it);
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while ( ! PCU_Comm_Unpacked())
-    {
-      PCU_COMM_UNPACK(e);
-      setFlag(a,e,flag);
-    }
+  while (PCU_Comm_Receive())
+  {
+    PCU_COMM_UNPACK(e);
+    setFlag(a,e,flag);
+  }
 }
 
 HasTag::HasTag(Mesh* m, Tag* t)

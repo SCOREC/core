@@ -194,9 +194,8 @@ static void verifyConnectivity(Mesh* m)
     m->end(it);
   }
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked())
-      receiveAllCopies(m);
+  while (PCU_Comm_Receive())
+    receiveAllCopies(m);
 }
 
 static void sendCoords(Mesh* m, MeshEntity* e)
@@ -241,10 +240,9 @@ static long verifyCoords(Mesh* m)
   m->end(it);
   PCU_Comm_Send();
   long n = 0;
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked())
-      if (!receiveCoords(m))
-        ++n;
+  while (PCU_Comm_Receive())
+    if (!receiveCoords(m))
+      ++n;
   PCU_Add_Longs(&n, 1);
   return n;
 }
@@ -316,9 +314,8 @@ static void verifyOrder(Mesh* m)
     m->end(it);
   }
   PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked())
-      receiveOrder(m);
+  while (PCU_Comm_Receive())
+    receiveOrder(m);
 }
 
 void verify(Mesh* m)

@@ -675,7 +675,10 @@ static Mesh2* clone(Mesh2* from)
         from->getDimension(), from->hasMatching());
   DynamicArray<MeshTag*> tags;
   from->getTags(tags);
-  for (size_t i = 0; i < tags.getSize(); ++i)
+/* yea, we have to do this backwards since it uses
+   stack-like semantics and migration expects the
+   ordering to be the same... */
+  for (int i = tags.getSize() - 1; i >= 0; --i)
     cloneTag(from, tags[i], m);
   for (int i = 0; i < from->countFields(); ++i)
     apf::cloneField(from->getField(i), m);
