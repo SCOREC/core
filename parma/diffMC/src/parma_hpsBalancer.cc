@@ -65,7 +65,7 @@ namespace parma {
         ks->getSolution(mergeTargetsResults);
 
         //PCU_Debug_Print("mergetargets start\n");  
-        PCU_Debug_Print("mergetargets size = %d\n", mergeTargetsResults.size());
+        PCU_Debug_Print("mergetargets size = %zu\n", mergeTargetsResults.size());
         for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
           PCU_Debug_Print("mergetargets %d\n", nborPartIds[mergeTargetsResults[i]]);
         }

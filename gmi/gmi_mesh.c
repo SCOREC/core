@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdarg.h>
+#include <assert.h>
 
 #define DIM(e) ((e) % 4)
 #define INDEX(e) ((e) / 4)
@@ -146,6 +148,16 @@ static void sort_dim(struct gmi_mesh* m, int dim)
   qsort(m->tags[dim], m->model.n[dim], sizeof(int), comp_ints);
 }
 
+static void my_fscanf(FILE* f, int n, const char* format, ...)
+{
+  va_list ap;
+  int r;
+  va_start(ap, format);
+  r = vfscanf(f, format, ap);
+  va_end(ap);
+  assert(r == n);
+}
+
 void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
 {
   int n[4];
@@ -156,38 +168,38 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
   if (!f)
     gmi_fail("could not open model file");
   /* read entity counts */
-  fscanf(f, "%d %d %d %d", &n[3], &n[2], &n[1], &n[0]);
+  my_fscanf(f, 4, "%d %d %d %d", &n[3], &n[2], &n[1], &n[0]);
   gmi_mesh_create(m, n);
   /* bounding box */
-  fscanf(f, "%*f %*f %*f");
-  fscanf(f, "%*f %*f %*f");
+  my_fscanf(f, 0, "%*f %*f %*f");
+  my_fscanf(f, 0, "%*f %*f %*f");
   /* vertices */
   for (i = 0; i < n[0]; ++i)
-    fscanf(f, "%d %*f %*f %*f", &m->tags[0][i]);
+    my_fscanf(f, 1, "%d %*f %*f %*f", &m->tags[0][i]);
   sort_dim(m, 0);
   /* edges */
   for (i = 0; i < n[1]; ++i)
-    fscanf(f, "%d %*d %*d", &m->tags[1][i]);
+    my_fscanf(f, 1, "%d %*d %*d", &m->tags[1][i]);
   sort_dim(m, 1);
   /* faces */
   for (i = 0; i < n[2]; ++i) {
-    fscanf(f, "%d %d", &m->tags[2][i], &loops);
+    my_fscanf(f, 2, "%d %d", &m->tags[2][i], &loops);
     for (j = 0; j < loops; ++j) {
-      fscanf(f, "%d", &edges);
+      my_fscanf(f, 1, "%d", &edges);
       for (k = 0; k < edges; ++k)
         /* tag, direction */
-        fscanf(f, "%*d %*d");
+        my_fscanf(f, 0, "%*d %*d");
     }
   }
   sort_dim(m, 2);
   /* regions */
   for (i = 0; i < n[3]; ++i) {
-    fscanf(f, "%d %d", &m->tags[3][i], &shells);
+    my_fscanf(f, 2, "%d %d", &m->tags[3][i], &shells);
     for (j = 0; j < shells; ++j) {
-      fscanf(f, "%d", &faces);
+      my_fscanf(f, 1, "%d", &faces);
       for (k = 0; k < faces; ++k)
         /* tag, direction */
-        fscanf(f, "%*d %*d");
+        my_fscanf(f, 0, "%*d %*d");
     }
   }
   sort_dim(m, 3);
