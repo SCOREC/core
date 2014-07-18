@@ -7,7 +7,7 @@ if (ENABLE_MPAS)
   find_package(parma PATHS ${CMAKE_BINARY_DIR})
   set(NETCDF_CXX "YES")
   find_package(NetCDF REQUIRED)
-  find_package(HDF5 REQUIRED HL)
+  find_package(HDF5 REQUIRED HL C)
   find_package(ZLIB REQUIRED)
   set(APF_MPAS_INCLUDE_DIRS
       ${CMAKE_CURRENT_SOURCE_DIR}
