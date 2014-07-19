@@ -125,11 +125,14 @@ void removeIsolatedNodes(apf::Mesh2* m)
    dual mesh, which our codes don't handle.
    We have to give up on these cells, but tell the user about it.
    We also need to be aware of these omitted cells going forward */
+  apf::Numbering* nums = apf::createNumbering(m, "mpas_id", m->getShape(), 1);
   apf::MeshIterator* it = m->begin(0);
   int n = 0;
   apf::MeshEntity* e;
   while ((e = m->iterate(it)))
     if ( ! m->countUpward(e)) {
+      int num =getNumber(nums, e, 0, 0);
+      fprintf(stdout, "Missing vertex with number %d\n",num);
       m->destroy(e);
       ++n;
     }
@@ -197,9 +200,10 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
        i++)
     if (vtxs[i]==-1) {
       vtxs[i] = 0; //to be random
+      fprintf(stdout,"missing vertex %d\n",i);
       count++;
     }
-  fprintf(stdout,"missing vertices found %d\n",count);
+  //  fprintf(stdout,"missing vertices found %d\n",count);
   
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
