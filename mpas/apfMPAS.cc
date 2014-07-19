@@ -200,7 +200,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
        i++)
     if (vtxs[i]==-1) {
       vtxs[i] = 0; //to be random
-      fprintf(stdout,"missing vertex %d\n",i);
+      fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
       count++;
     }
   //  fprintf(stdout,"missing vertices found %d\n",count);
