@@ -73,6 +73,7 @@ static int getType(int nodesPerElement)
   if (nodesPerElement == 4)
     return apf::Mesh::QUAD;
   abort();
+  return 0;
 }
 
 void numberInitialNodes(MpasFile& in, apf::Mesh2* out,
