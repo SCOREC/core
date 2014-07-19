@@ -163,12 +163,12 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
 
   /* collect N/#parts contiguous vertex assignments on each process
      (and deal with any remainders) */
-  int numPerPart = numMpasVtx / PCU_Comm_Peers() + 1;
+  int numPerPart = numMpasVtx / PCU_Comm_Peers();
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* e;
   int size;
   if (PCU_Comm_Self()==PCU_Comm_Peers()-1)
-    size=numMpasVtx%numPerPart;
+    size=numMpasVtx%numPerPart+numPerPart;
   else
     size=numPerPart;
   std::vector<int> vtxs(size,-1);
@@ -178,8 +178,10 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
       continue;
     int num = getNumber(n, e, 0, 0);
     int target = num / numPerPart;
+    if (target>=PCU_Comm_Peers())
+      target = PCU_Comm_Peers()-1;
     if (target == PCU_Comm_Self())
-      vtxs[num%numPerPart] = PCU_Comm_Self();
+      vtxs[num%size] = PCU_Comm_Self();
     else
       PCU_COMM_PACK(target,num);
   }
@@ -190,7 +192,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     int owner =PCU_Comm_Sender();
     int num;
     PCU_COMM_UNPACK(num);
-    vtxs[num%numPerPart]=owner;
+    vtxs[num%size]=owner;
   }
 
   // assign missing vertices to a random part id
