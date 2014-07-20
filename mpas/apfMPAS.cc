@@ -164,45 +164,46 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
 
   /* collect N/#parts contiguous vertex assignments on each process
      (and deal with any remainders) */
-  int numPerPart = numMpasVtx / PCU_Comm_Peers();
+  int const self = PCU_Comm_Self();
+  int const peers = PCU_Comm_Peers();
+  int numPerPart = numMpasVtx / peers;
+  int size = numPerPart;
+  if (self == peers - 1) {
+    size += numMpasVtx % numPerPart;
+    printf("mysize: %d, size: %d\n", size, numPerPart);
+  }
+  std::vector<int> vtxs(size, -1);
+  PCU_Comm_Begin();
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* e;
-  int size;
-  if (PCU_Comm_Self()==PCU_Comm_Peers()-1) {
-    size=numMpasVtx%numPerPart+numPerPart;
-    fprintf(stdout,"mysize: %d, size: %d\n",size,numPerPart);
-  }
-  else
-    size=numPerPart;
-  std::vector<int> vtxs(size,-1);
-  PCU_Comm_Begin();
   while ((e = m->iterate(itr))) {
     if (!parma::isOwned(m, e))
       continue;
     int num = getNumber(n, e, 0, 0);
     int target = num / numPerPart;
-    if (target>=PCU_Comm_Peers())
-      target = PCU_Comm_Peers()-1;
-    if (target == PCU_Comm_Self())
-      vtxs[num%size] = PCU_Comm_Self();
-    else
-      PCU_COMM_PACK(target,num);
+    assert(target >= 0);
+    assert(target <= peers);
+    if (target == peers)
+      target = peers - 1;
+    int local = num - (target * numPerPart);
+    /* target may be self, PCU handles that */
+    PCU_COMM_PACK(target, local);
   }
   m->end(itr);
 
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
-    int owner =PCU_Comm_Sender();
-    int num;
-    PCU_COMM_UNPACK(num);
-    vtxs[num%size]=owner;
+    int owner = PCU_Comm_Sender();
+    int local;
+    PCU_COMM_UNPACK(local);
+    assert(local >= 0);
+    assert(local < size);
+    vtxs[local]=owner;
   }
 
   // assign missing vertices to a random part id
   int count = 0;
-  for (int i = 0;
-       (i < size);
-       i++)
+  for (int i = 0; i < size; i++)
     if (vtxs[i]==-1) {
       vtxs[i] = 0; //to be random
       //fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
@@ -227,13 +228,14 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   MPI_Type_commit(&filetype);
   MPI_File_set_view(file,offset,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);
   char* str = new char[16*size+1];
-  for (int i=0;
-       i<size;
-       i++) {
-    sprintf(str,"%s%-7d %-7d\n",str,vtxs[i],PCU_Comm_Self());
+  char line[17];
+  for (int i=0; i < size; i++) {
+    int n = sprintf(line,"%-7d %-7d\n",vtxs[i],PCU_Comm_Self());
+    assert(n == 16);
+    memcpy(&str[16*i], line, 16);
   }
   MPI_Status status;
-  MPI_File_write(file,str,strlen(str),MPI_CHAR,&status);
+  MPI_File_write(file,str,16*size,MPI_CHAR,&status);
 
   delete [] str;
   MPI_File_close(&file);
