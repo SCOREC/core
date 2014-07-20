@@ -206,22 +206,36 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
       //fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
       count++;
     }
-  fprintf(stdout,"missing vertices found %d\n",count);
+  if (count)
+    fprintf(stdout,"missing vertices found %d on part %d\n",count,PCU_Comm_Self());
   
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
   double startTime=MPI_Wtime();
-  FILE* file;
+  MPI_File file;
   char name[32];
-  
+
   sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
-  file = fopen(name, "w");
-  fseek(file,numPerPart*PCU_Comm_Self()*16,SEEK_SET);
-  for (int i=0;i<size;i++)
-    fprintf(file,"%-15d\n",vtxs[i]);
-  
-  fclose(file);
-  double totalTime= MPI_Wtime()-startTime; 
+  MPI_File_open(MPI_COMM_WORLD, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
+		MPI_INFO_NULL, &file);
+  MPI_Offset offset = numPerPart*PCU_Comm_Self()*16;
+  MPI_File_seek(file, offset, MPI_SEEK_SET);
+  MPI_Datatype filetype;
+  MPI_Type_contiguous(size,MPI_CHAR,&filetype);
+  MPI_Type_commit(&filetype);
+  MPI_File_set_view(file,offset,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);
+  char* str = new char[16*size];
+  for (int i=0;
+       i<size;
+       i++) {
+    sprintf(str,"%s%-15d\n",str,vtxs[i]);
+  }
+  MPI_Status status;
+  MPI_File_write(file,str,strlen(str),MPI_CHAR,&status);
+
+  delete [] str;
+  MPI_File_close(&file);
+  double totalTime= MPI_Wtime()-startTime;
   PCU_Max_Doubles(&totalTime,1);
   if (!PCU_Comm_Self())
     fprintf(stdout,"File writing time: %f seconds\n", totalTime); 
