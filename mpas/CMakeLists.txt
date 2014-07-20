@@ -49,6 +49,7 @@ set(HEADERS
 
 #Library
 add_library(apf_mpas ${SOURCES})
+target_link_libraries(apf_mpas ${DEP_LIBS})
 
 #Install
 INSTALL(FILES ${HEADERS} DESTINATION include)
