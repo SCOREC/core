@@ -168,8 +168,10 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* e;
   int size;
-  if (PCU_Comm_Self()==PCU_Comm_Peers()-1)
+  if (PCU_Comm_Self()==PCU_Comm_Peers()-1) {
     size=numMpasVtx%numPerPart+numPerPart;
+    fprintf(stdout,"mysize: %d, size: %d\n",size,numPerPart);
+  }
   else
     size=numPerPart;
   std::vector<int> vtxs(size,-1);
@@ -224,11 +226,11 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   MPI_Type_contiguous(size,MPI_CHAR,&filetype);
   MPI_Type_commit(&filetype);
   MPI_File_set_view(file,offset,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);
-  char* str = new char[16*size];
+  char* str = new char[16*size+1];
   for (int i=0;
        i<size;
        i++) {
-    sprintf(str,"%s%-15d\n",str,vtxs[i]);
+    sprintf(str,"%s%-7d %-7d\n",str,vtxs[i],PCU_Comm_Self());
   }
   MPI_Status status;
   MPI_File_write(file,str,strlen(str),MPI_CHAR,&status);
