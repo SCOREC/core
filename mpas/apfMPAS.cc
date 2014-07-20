@@ -221,21 +221,22 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
   MPI_File_open(MPI_COMM_WORLD, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
 		MPI_INFO_NULL, &file);
-  MPI_Offset offset = numPerPart*PCU_Comm_Self()*16;
+  int const width = 8;
+  MPI_Offset offset = numPerPart * PCU_Comm_Self() * width;
   MPI_File_seek(file, offset, MPI_SEEK_SET);
   MPI_Datatype filetype;
   MPI_Type_contiguous(size,MPI_CHAR,&filetype);
   MPI_Type_commit(&filetype);
   MPI_File_set_view(file,offset,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);
-  char* str = new char[16*size+1];
-  char line[17];
+  char* str = new char[width * size];
+  char line[width + 1];
   for (int i=0; i < size; i++) {
-    int n = sprintf(line,"%-7d %-7d\n",vtxs[i],PCU_Comm_Self());
-    assert(n == 16);
-    memcpy(&str[16*i], line, 16);
+    int n = sprintf(line,"%-*d\n", width - 1, vtxs[i]);
+    assert(n == width);
+    memcpy(&str[width * i], line, width);
   }
   MPI_Status status;
-  MPI_File_write(file,str,16*size,MPI_CHAR,&status);
+  MPI_File_write(file,str,width * size,MPI_CHAR,&status);
 
   delete [] str;
   MPI_File_close(&file);
