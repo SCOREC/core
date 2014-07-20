@@ -293,6 +293,7 @@ void Collapse::computeElementSets()
   APF_ITERATE(Upward,adjacent,it)
     if ( ! elementsToCollapse.count(*it))
       elementsToKeep.insert(*it);
+  assert(elementsToKeep.size());
 }
 
 void Collapse::rebuildElements()
