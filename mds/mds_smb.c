@@ -462,9 +462,6 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
   for (t = m->tags.first; t; t = t->next)
     ++n;
   PCU_WRITE_UNSIGNED(f,n);
-  n = 0;
-  for (t = m->tags.first; t; t = t->next)
-    ++n;
   sizes = malloc(n * sizeof(*sizes));
   for (t = m->tags.first; t; t = t->next)
     write_tag_header(f, m, t);
