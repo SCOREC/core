@@ -460,15 +460,19 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
   int type_mds;
   n = 0;
   for (t = m->tags.first; t; t = t->next)
-    ++n;
+    if (t->user_type != mds_apf_long)
+      ++n;
   PCU_WRITE_UNSIGNED(f,n);
   sizes = malloc(n * sizeof(*sizes));
   for (t = m->tags.first; t; t = t->next)
-    write_tag_header(f, m, t);
+    if (t->user_type != mds_apf_long)
+      write_tag_header(f, m, t);
   for (i = 0; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
     j = 0;
     for (t = m->tags.first; t; t = t->next) {
+      if (t->user_type == mds_apf_long)
+        continue;
       if (type_mds != -1)
         sizes[j++] = count_tagged(m, t, type_mds);
       else
@@ -481,7 +485,7 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
     for (t = m->tags.first; t; t = t->next) {
       if (t->user_type == mds_apf_int)
         write_int_tag(f, m, t, sizes[j++], type_mds);
-      else
+      else if (t->user_type == mds_apf_double)
         write_dbl_tag(f, m, t, sizes[j++], type_mds);
     }
   }

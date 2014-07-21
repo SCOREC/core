@@ -22,6 +22,7 @@ extern "C" {
 
 int const mds_apf_double = apf::Mesh::DOUBLE;
 int const mds_apf_int = apf::Mesh::INT;
+int const mds_apf_long = apf::Mesh::LONG;
 
 }
 
