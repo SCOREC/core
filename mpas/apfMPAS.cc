@@ -73,6 +73,7 @@ static int getType(int nodesPerElement)
   if (nodesPerElement == 4)
     return apf::Mesh::QUAD;
   abort();
+  return 0;
 }
 
 void numberInitialNodes(MpasFile& in, apf::Mesh2* out,
@@ -124,11 +125,15 @@ void removeIsolatedNodes(apf::Mesh2* m)
    dual mesh, which our codes don't handle.
    We have to give up on these cells, but tell the user about it.
    We also need to be aware of these omitted cells going forward */
+  //apf::Numbering* nums = apf::createNumbering(m, "mpas_id", m->getShape(), 1);
   apf::MeshIterator* it = m->begin(0);
   int n = 0;
   apf::MeshEntity* e;
   while ((e = m->iterate(it)))
     if ( ! m->countUpward(e)) {
+      /*int num =getNumber(nums, e, 0, 0);
+        fprintf(stdout, "Missing vertex with number %d\n",num);
+      */
       m->destroy(e);
       ++n;
     }
@@ -159,61 +164,83 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
 
   /* collect N/#parts contiguous vertex assignments on each process
      (and deal with any remainders) */
-  int numPerPart = numMpasVtx / PCU_Comm_Peers() + 1;
+  int const self = PCU_Comm_Self();
+  int const peers = PCU_Comm_Peers();
+  int numPerPart = numMpasVtx / peers;
+  int size = numPerPart;
+  if (self == peers - 1) {
+    size += numMpasVtx % numPerPart;
+  }
+  std::vector<int> vtxs(size, -1);
+  PCU_Comm_Begin();
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* e;
-  int size;
-  if (PCU_Comm_Self()==PCU_Comm_Peers()-1)
-    size=numMpasVtx%numPerPart;
-  else
-    size=numPerPart;
-  std::vector<int> vtxs(size,-1);
-  PCU_Comm_Begin();
   while ((e = m->iterate(itr))) {
     if (!parma::isOwned(m, e))
       continue;
     int num = getNumber(n, e, 0, 0);
     int target = num / numPerPart;
-    if (target == PCU_Comm_Self())
-      vtxs[num%numPerPart] = PCU_Comm_Self();
-    else
-      PCU_COMM_PACK(target,num);
+    assert(target >= 0);
+    assert(target <= peers);
+    if (target == peers)
+      target = peers - 1;
+    int local = num - (target * numPerPart);
+    /* target may be self, PCU handles that */
+    PCU_COMM_PACK(target, local);
   }
   m->end(itr);
 
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
-    int owner =PCU_Comm_Sender();
-    int num;
-    PCU_COMM_UNPACK(num);
-    vtxs[num%numPerPart]=owner;
+    int owner = PCU_Comm_Sender();
+    int local;
+    PCU_COMM_UNPACK(local);
+    assert(local >= 0);
+    assert(local < size);
+    vtxs[local]=owner;
   }
-
+  
   // assign missing vertices to a random part id
+  srand(time(NULL)*PCU_Comm_Self());
   int count = 0;
-  for (int i = 0;
-       (i < size);
-       i++)
+  for (int i = 0; i < size; i++)
     if (vtxs[i]==-1) {
-      vtxs[i] = 0; //to be random
+      vtxs[i] = rand()%PCU_Comm_Peers(); //to be random
+      //fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
       count++;
     }
-  fprintf(stdout,"missing vertices found %d\n",count);
+  if (count)
+    fprintf(stdout,"missing vertices found %d on part %d\n",count,PCU_Comm_Self());
   
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
   double startTime=MPI_Wtime();
-  FILE* file;
+  MPI_File file;
   char name[32];
-  
+
   sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
-  file = fopen(name, "w");
-  fseek(file,numPerPart*PCU_Comm_Self()*16,SEEK_SET);
-  for (int i=0;i<size;i++)
-    fprintf(file,"%-15d\n",vtxs[i]);
-  
-  fclose(file);
-  double totalTime= MPI_Wtime()-startTime; 
+  MPI_File_open(MPI_COMM_WORLD, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
+		MPI_INFO_NULL, &file);
+  int const width = 8;
+  MPI_Offset offset = numPerPart * PCU_Comm_Self() * width;
+  MPI_File_seek(file, offset, MPI_SEEK_SET);
+  MPI_Datatype filetype;
+  MPI_Type_contiguous(size,MPI_CHAR,&filetype);
+  MPI_Type_commit(&filetype);
+  MPI_File_set_view(file,offset,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);
+  char* str = new char[width * size];
+  char line[width + 1];
+  for (int i=0; i < size; i++) {
+    int n = sprintf(line,"%-*d\n", width - 1, vtxs[i]);
+    assert(n == width);
+    memcpy(&str[width * i], line, width);
+  }
+  MPI_Status status;
+  MPI_File_write(file,str,width * size,MPI_CHAR,&status);
+
+  delete [] str;
+  MPI_File_close(&file);
+  double totalTime= MPI_Wtime()-startTime;
   PCU_Max_Doubles(&totalTime,1);
   if (!PCU_Comm_Self())
     fprintf(stdout,"File writing time: %f seconds\n", totalTime); 

@@ -99,11 +99,17 @@ static void seek_after_header(FILE* f, const char* name)
   find_header(f, name, dummy);
 }
 
+static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
+{
+  size_t r = fread(p, size, nmemb, f);
+  assert(r == nmemb);
+}
+
 static int read_magic_number(FILE* f)
 {
   seek_after_header(f, magic_name);
   int magic;
-  fread(&magic, sizeof(int), 1, f);
+  my_fread(&magic, sizeof(int), 1, f);
   return magic != MAGIC;
 }
 
@@ -162,7 +168,7 @@ void ph_read_field(const char* file, const char* field, double** data,
   n = (bytes - 1) / sizeof(double);
   assert(n == (*nodes) * (*vars));
   *data = malloc(bytes);
-  fread(*data, sizeof(double), n, f);
+  my_fread(*data, sizeof(double), n, f);
   if (should_swap)
     pcu_swap_doubles(*data, n);
   fclose(f);
