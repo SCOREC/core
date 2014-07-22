@@ -21,7 +21,7 @@ namespace parma {
       {
         if (w->self() >= maxW || w->self() == 0) 
           return;
-        PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f--", PCU_Comm_Self(), w->self(), maxW);
+        PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f--\n", PCU_Comm_Self(), w->self(), maxW);
         //PCU_Debug_Print("HeavyImb = %f\n", maxW);
         
         int* nborPartIds = new int[w->size()];
@@ -35,45 +35,61 @@ namespace parma {
         double minWeight = std::numeric_limits<double>::max(); 
         w->begin(); 
         while( (weight = w->iterate()) ) 
-         if ( weight->second < minWeight )
-           minWeight = weight->second;
+          if ( weight->second < minWeight )
+            minWeight = weight->second;
         w->end();
-
+        double t0 = MPI_Wtime();
+        bool divide = true;
         //TODO use something less than integer table entries, possibly 0.5 ???
         int* normalizedIntWeights = new int[w->size()];
         unsigned int weightIdx = 0;
+        double divide_factor = .5;
         w->begin(); 
         while( (weight = w->iterate()) ){
-         normalizedIntWeights[weightIdx++] = (int) ceil( weight->second / minWeight ); 
-         //PCU_Debug_Print("weight %d, normalized to %d from %f\n", weight->first, normalizedIntWeights[(weightIdx-1)], weight->second);
+          
+          //Divide Factor normalizing weight code
+          double normalized_weight = weight->second / minWeight;
+          normalized_weight /= divide_factor;
+          normalizedIntWeights[weightIdx++] = (int) ceil(normalized_weight); 
+          
+          //interger normalizing weight code
+          // normalizedIntWeights[weightIdx++] = (int) ceil( weight->second / minWeight );
+          // divide = false; 
+
+          PCU_Debug_Print("weight %d, normalized to %d from %f\n", weight->first, normalizedIntWeights[(weightIdx-1)], weight->second);
         }
-        w->end();
 
-        const double weightCapacity = maxW - w->self(); //How much weight can be added on to the current part before it reaches the HeavyImb
-        const int knapsackCapacity = floor(weightCapacity/minWeight); //How many parts could potentially be merged into the current part
+        w->end();            
 
-        //PCU_Debug_Print("Weight Capcity = %f \nknapsackCapacity = %d \n",
-        //weightCapacity, knapsackCapacity);
+        const double weightCapacity = (maxW - w->self()); //How much weight can be added on to the current part before it reaches the HeavyImb
+        const int knapsackCapacity = floor((weightCapacity/minWeight)/divide_factor); //totalweights that can be added to self normalized
+
+        // const int knapsackCapacity = floor(weightCapacity/minWeight);
+
+        PCU_Debug_Print("Weight Capcity = %f \nknapsackCapacity = %d \n", weightCapacity, knapsackCapacity);
 
 
         int* value = new int[s->total()];
         std::fill (value, value + s->total(),1);
 
-        knapsack* ks = new knapsack(knapsackCapacity, w->size(), normalizedIntWeights, value);				
-        const int solnVal = ks->solve();		
+        knapsack* ks = new knapsack(knapsackCapacity, w->size(), normalizedIntWeights, value);        
+        const int solnVal = ks->solve();    
         mergeTargetsResults.reserve(solnVal);
         ks->getSolution(mergeTargetsResults);
-
+        double t1 = MPI_Wtime();
+        if (divide) printf("%d part executed knapsack in %f with knapsack type dividing factor\n", PCU_Comm_Self(), t1 - t0);
+        else printf("%d part executed knapsack in %f with knapsack type interger rounding\n", PCU_Comm_Self(), t1 - t0);
+        
         //PCU_Debug_Print("mergetargets start\n");  
         PCU_Debug_Print("mergetargets size = %d\n", mergeTargetsResults.size());
         for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-          PCU_Debug_Print("mergetargets %d\n", nborPartIds[mergeTargetsResults[i]]);
+          //PCU_Debug_Print("mergetargets %d\n", nborPartIds[mergeTargetsResults[i]]);
         }
 
         delete [] nborPartIds;
-        delete [] value;	
+        delete [] value;  
         delete [] normalizedIntWeights;
-        delete ks;					
+        delete ks;          
       }
 
       double total() {
@@ -116,11 +132,14 @@ namespace parma {
   }
 
   bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt, int& extra) {
+    //PCU_Debug_Print("Empty parts = %f, total Splits = %f\n", numEmpty(m,plan), totSplits(w,tgt));
     extra = numEmpty(m, plan) - totSplits(w, tgt);
-    if ( extra < 0 )
-      return false;   
-    else
+    //PCU_Debug_Print("Extra = %f\n", extra);
+    if ( extra < 0 ){
+      return false;  } 
+    else{
       return true;
+     }
   }
 
   double avgWeight(Weights* w) {
@@ -147,7 +166,7 @@ namespace parma {
     delete s;
     return imb;
   }
-
+  //Should we test the maxWeight first and not do a step first?
   double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
     double testW = maxWeight(w); 
     double step = 0.1 * avgWeight(w); //Not necessarily arbitrary but can be changed.
@@ -155,14 +174,14 @@ namespace parma {
     int extraEmpties = 0;
     do {
       testW -= step;
-		//PCU_Debug_Print("Test Imb = %f\n", testW);
+      //PCU_Debug_Print("Test Imb = %f\n", testW);
       MergeTargets mergeTgts(s, w, testW);
       apf::Migration* plan = selectMerges(m, mergeTgts); 
       splits = canSplit(m, w, plan, testW, extraEmpties);
       delete plan; // not migrating
     } while ( splits );
-	 testW += step;
-    return testW;
+   testW += step;
+   return testW;
   }
 
   void split(apf::Mesh* m, Weights* w, double tgt, apf::Migration* plan) {

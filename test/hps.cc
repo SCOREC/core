@@ -24,11 +24,14 @@ namespace {
   }
 
   apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
-    apf::MeshTag* wtag = m->createDoubleTag("hpsUnitWeight",1);
-    apf::MeshEntity* e;
-    apf::MeshIterator* itr = m->begin(m->getDimension());
-	 double w = 1.0;
-	 if (name == "../meshes/torus/torus.dmg" && PCU_Comm_Self() == 0) w = 1.5;
+  apf::MeshTag* wtag = m->createDoubleTag("hpsUnitWeight",1);
+  apf::MeshEntity* e;
+  apf::MeshIterator* itr = m->begin(m->getDimension());
+  double w = 1.0;
+  if (name == "../meshes/torus/torus.dmg"){
+    if(PCU_Comm_Self() == 0) w = 1.8193;
+    else if (PCU_Comm_Self() == 3) w = .804069;
+  } 
 //crap
 	 //TODO Remove after finished testing with Torus 
     while( (e = m->iterate(itr)) )	
@@ -65,5 +68,3 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
-
