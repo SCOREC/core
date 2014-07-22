@@ -170,7 +170,6 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   int size = numPerPart;
   if (self == peers - 1) {
     size += numMpasVtx % numPerPart;
-    printf("mysize: %d, size: %d\n", size, numPerPart);
   }
   std::vector<int> vtxs(size, -1);
   PCU_Comm_Begin();
@@ -200,12 +199,13 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     assert(local < size);
     vtxs[local]=owner;
   }
-
+  
   // assign missing vertices to a random part id
+  srand(time(NULL)*PCU_Comm_Self());
   int count = 0;
   for (int i = 0; i < size; i++)
     if (vtxs[i]==-1) {
-      vtxs[i] = 0; //to be random
+      vtxs[i] = rand()%PCU_Comm_Peers(); //to be random
       //fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
       count++;
     }
