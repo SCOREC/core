@@ -76,12 +76,12 @@ bool Collapse::setEdge(Entity* e)
 static bool checkRingSide(Adapt* a, Entity* side, Entity* vert, Model* centerModel)
 {
   Mesh* m = a->mesh;
-  if (getFlag(a,vert,COLLAPSE))
-  {
+  if (getFlag(a,vert,COLLAPSE)) {
     if (m->toModel(side)==centerModel)
       return true;
-    else
-    {
+    else {
+/* this function is responsible for disabling collapse of a
+   vertex that has no material to pull from ! */
       clearFlag(a,vert,COLLAPSE);
       return false;
     }
@@ -118,9 +118,12 @@ bool checkEdgeCollapseEdgeRings(Adapt* a, Entity* edge)
       if (!face) return false; //the ring doesn't bound a face
       Model* c = m->toModel(face);
 /* the face must have the same classification
-   as one edge adjacent to a collapsing vertex */
-      if ( ! (checkRingSide(a,ring[0],v[0],c) ||
-              checkRingSide(a,ring[1],v[1],c)))
+   as one edge adjacent to a collapsing vertex.
+   explicit booleans because checkRingSide has side
+   effects and should be run on both vertices. */
+      bool ok0 = checkRingSide(a,ring[0],v[0],c);
+      bool ok1 = checkRingSide(a,ring[1],v[1],c);
+      if ( ! (ok0 || ok1))
         return false;
     }
   }
@@ -168,9 +171,12 @@ bool checkEdgeCollapseFaceRings(Adapt* a, Entity* edge)
     if (!tet) return false;
     Model* c = m->toModel(tet);
 /* at least one face adjacent to a collapsing vertex
-   must have the same classification as the tet */
-    if ( ! (checkRingSide(a,f[0],v[0],c) ||
-            checkRingSide(a,f[1],v[1],c)))
+   must have the same classification as the tet.
+   explicit booleans because checkRingSide has side
+   effects and should be run on both vertices. */
+    bool ok0 = checkRingSide(a,f[0],v[0],c);
+    bool ok1 = checkRingSide(a,f[1],v[1],c);
+    if ( ! (ok0 || ok1))
       return false;
   }
   return true;
@@ -293,6 +299,7 @@ void Collapse::computeElementSets()
   APF_ITERATE(Upward,adjacent,it)
     if ( ! elementsToCollapse.count(*it))
       elementsToKeep.insert(*it);
+  assert(elementsToKeep.size());
 }
 
 void Collapse::rebuildElements()

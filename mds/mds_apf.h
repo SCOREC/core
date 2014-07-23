@@ -69,6 +69,7 @@ void mds_derive_model(struct mds_apf* m);
 
 extern int const mds_apf_double;
 extern int const mds_apf_int;
+extern int const mds_apf_long;
 
 #ifdef __cplusplus
 }
