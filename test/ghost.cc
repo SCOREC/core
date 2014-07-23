@@ -17,7 +17,7 @@ namespace {
 
   void getConfig(int argc, char** argv)
   {
-    assert(argc==3);
+    assert(argc==3||argc==4);
     modelFile = argv[1];
     meshFile = argv[2];
   }
@@ -55,6 +55,8 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   apf::writeVtkFiles("before", m);
   runParma(m);
+  if (argc==4)
+    m->writeNative(argv[3]);
   apf::writeVtkFiles("after", m);
   freeMesh(m);
   PCU_Comm_Free();
