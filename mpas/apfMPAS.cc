@@ -182,8 +182,6 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
     int num = getNumber(n, e, 0, 0);
     assert(num<numMpasVtx);
     int target = num / numPerPart;
-    if (target > peers)
-      fprintf(stdout,"Self: %d, Number: %d Target: %d\n",self, num, target);
     assert(target >= 0);
     if (target >= peers)
       target = peers - 1;
