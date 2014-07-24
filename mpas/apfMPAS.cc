@@ -169,7 +169,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   int numPerPart = numMpasVtx / peers;
   int size = numPerPart;
   if (self == peers - 1) {
-    size += numMpasVtx % numPerPart;
+    size += numMpasVtx % peers;
   }
   std::vector<int> vtxs(size, -1);
   PCU_Comm_Begin();
@@ -179,10 +179,12 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     if (!parma::isOwned(m, e))
       continue;
     int num = getNumber(n, e, 0, 0);
+    assert(num<numMpasVtx);
     int target = num / numPerPart;
+    if (target > peers)
+      fprintf(stdout,"Self: %d, Number: %d Target: %d\n",self, num, target);
     assert(target >= 0);
-    assert(target <= peers);
-    if (target == peers)
+    if (target >= peers)
       target = peers - 1;
     int local = num - (target * numPerPart);
     /* target may be self, PCU handles that */
