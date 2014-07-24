@@ -154,8 +154,9 @@ void loadMpasMesh(apf::Mesh2* m, const char* filename)
 }
 
 
-void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
-  NcFile in(filename, NcFile::read);
+void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* outFilename)
+{
+  NcFile in(ncFilename, NcFile::read);
   /* this is the dual of a hexagonal mesh,
      hence the reversing of terms */
   int numMpasVtx = readDim(in, "nCells");
@@ -216,10 +217,8 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
   double startTime=MPI_Wtime();
   MPI_File file;
-  char name[32];
-
-  sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
-  MPI_File_open(MPI_COMM_WORLD, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
+  char* mpiIsBroken = const_cast<char*>(outFilename);
+  MPI_File_open(MPI_COMM_WORLD, mpiIsBroken, MPI_MODE_CREATE|MPI_MODE_WRONLY,
 		MPI_INFO_NULL, &file);
   int const width = 8;
   MPI_Offset offset = numPerPart * PCU_Comm_Self() * width;
