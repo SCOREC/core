@@ -38,7 +38,8 @@ namespace {
     const int layers = 3;
     const int bridgeDim = 1;
     apf::Balancer* ghost = Parma_MakeGhostDiffuser(m, layers, bridgeDim);
-    ghost->balance(weights, 1.05);
+    ghost->balance(weights, 1.01);
+    m->destroyTag(weights);
     delete ghost;
   }
 }
