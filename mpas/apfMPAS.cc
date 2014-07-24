@@ -204,7 +204,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
   }
   
   // assign missing vertices to a random part id
-  srand(time(NULL)*PCU_Comm_Self());
+  srand(PCU_Comm_Self());
   int count = 0;
   for (int i = 0; i < size; i++)
     if (vtxs[i]==-1) {
