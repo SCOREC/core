@@ -207,11 +207,11 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
   for (int i = 0; i < size; i++)
     if (vtxs[i]==-1) {
       vtxs[i] = rand()%PCU_Comm_Peers(); //to be random
-      //fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
       count++;
     }
-  if (count)
-    fprintf(stdout,"missing vertices found %d on part %d\n",count,PCU_Comm_Self());
+  PCU_Add_Ints(&count, 1);
+  if ( !PCU_Comm_Self() )
+    fprintf(stdout,"missing vertices found %d\n", count);
   
   // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
   // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
