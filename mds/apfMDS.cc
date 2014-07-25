@@ -621,6 +621,7 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
   if (!PCU_Comm_Self())
     printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
   printStats(m);
+  warnAboutEmptyParts(m);
   return m;
 }
 

@@ -270,6 +270,8 @@ int countOwned(Mesh* m, int dim);
 
 void printStats(Mesh* m);
 
+void warnAboutEmptyParts(Mesh* m);
+
 } //namespace apf
 
 #endif
