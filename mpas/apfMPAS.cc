@@ -154,7 +154,7 @@ void loadMpasMesh(apf::Mesh2* m, const char* filename)
 }
 
 
-void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* outFilename)
+void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* outPrefix)
 {
   NcFile in(ncFilename, NcFile::read);
   /* this is the dual of a hexagonal mesh,
@@ -213,28 +213,21 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
   if ( !PCU_Comm_Self() )
     fprintf(stdout,"missing vertices found %d\n", count);
   
-  // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file                            
-  // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments                                      
   double startTime=MPI_Wtime();
   MPI_File file;
-  char name[32];
+  char name[1024];
   int const numPerFile = 16;
   int filenum=self/numPerFile;
   int filerank=self%numPerFile;
   MPI_Comm filecomm;
   MPI_Comm_split(MPI_COMM_WORLD, filenum, filerank, &filecomm);
-  sprintf(name,"graph.%04d",filenum);
-  //FILE* file = fopen(name,"w");                                                                                   
+  snprintf(name, sizeof(name), "%s%04d", outPrefix, filenum);
   MPI_File_open(filecomm, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
                 MPI_INFO_NULL, &file);
 
   int const width = 8;
   MPI_Offset offset = numPerPart * filerank * width;
   MPI_File_seek(file, offset, MPI_SEEK_SET);
-  //MPI_Datatype filetype;                                                                                          
-  //MPI_Type_contiguous(size,MPI_CHAR,&filetype);                                                                   
-  //MPI_Type_commit(&filetype);                                                                                     
-  //MPI_File_set_view(file,0,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);                                           
   char* str = new char[width * size];
   char line[width + 1];
   for (int i=0; i < size; i++) {
