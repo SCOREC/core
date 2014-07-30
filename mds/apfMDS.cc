@@ -639,7 +639,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   return loadMdsMesh(model, meshfile);
 }
 
-void defragMdsMesh(Mesh2* mesh)
+void reorderMdsMesh(Mesh2* mesh)
 {
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
   m->mesh = mds_reorder(m->mesh);
