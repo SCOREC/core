@@ -23,8 +23,6 @@ class Migration;
 
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
-Mesh2* addMdsPart(Mesh2* original);
-
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
