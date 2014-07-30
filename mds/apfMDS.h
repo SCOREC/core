@@ -28,7 +28,7 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
-void defragMdsMesh(Mesh2* mesh);
+void reorderMdsMesh(Mesh2* mesh);
 
 int getMdsId(MeshEntity* e);
 
