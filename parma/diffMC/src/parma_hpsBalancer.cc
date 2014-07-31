@@ -15,7 +15,7 @@ namespace parma {
   //header for avgWeights
   double avgWeight(Weights* w);
 
-  class MergeTargets {  // we don't really need a map/associative container here - a list/vector/array would work
+  class MergeTargets { 
     public:
       //Have this storing the results in Targets associative class and assuming maxW = avgWeight * maxImb
       //maxW is also = HeavyImb
@@ -92,14 +92,11 @@ namespace parma {
         for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
           partIdMergeTargets.push_back(nborPartIds[mergeTargetsResults[i]]);
           
-          PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
-          PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
+          //PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
+          //PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
         }
-        PCU_Debug_Print("\n$$");
 
         mergeTargetsResults.swap(partIdMergeTargets);
-
-
 
         // for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
         //   PCU_Debug_Print("new merge Target result %d\n", mergeTargetsResults[i]);
@@ -119,11 +116,6 @@ namespace parma {
       const int mergeTargetIndex(int& index){
         return mergeTargetsResults.at(index);
       }
-
-      const int test(){
-        return mergeTargetsResults[0];
-      }
-
       
     private:
       MergeTargets();
@@ -132,8 +124,8 @@ namespace parma {
 
   //Convert part indexes to part ID's in MergeTargets // Done
   //TODO is what i did in mergeTargets with the vector valid?
-  //Can i change the return of total to be an int? **Change to size_t
-  //how does putting const in front of 158 allow it to be changed.
+  //Can i change the return of total to be an int? **Change to size_t //Done
+  //how does putting const in front of 158 allow it to be changed. //Done
   //Changed FMDB_mesh_getNeighborPartId to directly push into misLuby part instead of creating a set and then passing it in
   //TODO **write function to pull ith partId from mergeTargetResults**
 
@@ -151,10 +143,10 @@ namespace parma {
     
     //Generating misLuby part info for current part 
     misLuby::partInfo part;
-    part.id = m->getId(); //same info as FMDB_Part_ID
+    part.id = m->getId(); 
 
     //Passing in the adjPartIds (works)
-    const Sides::Item* partId; //Kind onf understand the const   
+    const Sides::Item* partId;  
     s->begin();         
     while( (partId = s->iterate()) ) 
       part.adjPartIds.push_back(partId->first);
@@ -168,9 +160,15 @@ namespace parma {
       PCU_Debug_Print("adjPartIds end\n");
       */
 
-    int i = 0;
-    PCU_Debug_Print("size %f\n", tgts.total());
-    // PCU_Debug_Print("test %d\n", tgts.mergeTargetIndex(i));
+    //Passing in the mergingNet (works)
+    for(int i = 0; i < tgts.total(); ++i){
+      part.net.push_back(tgts.mergeTargetIndex(i));
+      // PCU_Debug_Print("mergingNet %d\n", part.net[i]);
+    }
+
+    part.net.push_back(part.id);
+    parts.push_back(part); //End creating misLuby part info
+    
 
     // use Sides to get neighbor part ids
     // merging net comes from MergeTargets
