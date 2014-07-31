@@ -5,45 +5,47 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 #include "zeroOneKnapsack.h"
+#include "maximalIndependentSet/mis.h"
 #include <limits>
 
 using std::vector;
+using std::set;
 
 namespace parma {
   //header for avgWeights
   double avgWeight(Weights* w);
 
-  class MergeTargets : public Targets {  // we don't really need a map/associative container here - a list/vector/array would work
+  class MergeTargets {  // we don't really need a map/associative container here - a list/vector/array would work
     public:
       //Have this storing the results in Targets associative class and assuming maxW = avgWeight * maxImb
       //maxW is also = HeavyImb
-      MergeTargets(Sides* s, Weights* w, double maxW) : Targets(s,w,0.1) 
+      MergeTargets(Sides* s, Weights* w, double maxW)
       {
-        if (w->self() >= maxW || w->self() == 0) 
-          return;
-        PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f--\n", PCU_Comm_Self(), w->self(), maxW);
-        //PCU_Debug_Print("HeavyImb = %f\n", maxW);
+        //If part is heavy or empty, exit function
+        if (w->self() >= maxW || w->self() == 0) return;
+        PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f, %u neighbors--\n", PCU_Comm_Self(), w->self(), maxW, w->size());
         
         int* nborPartIds = new int[w->size()];
         int i = 0;
         const Weights::Item* weight;        
         w->begin();         
         while( (weight = w->iterate()) ) 
-         nborPartIds[i++] = weight->first;      
+          nborPartIds[i++] = weight->first;    
         w->end();         
 
+        //iterating through the neighbor weights to determine the minimum weight
         double minWeight = std::numeric_limits<double>::max(); 
         w->begin(); 
         while( (weight = w->iterate()) ) 
           if ( weight->second < minWeight )
             minWeight = weight->second;
         w->end();
+        //normalizing the neighbor weights with a dividing factor to increase the accuracy of knapsack
         double t0 = MPI_Wtime();
         bool divide = true;
-        //TODO use something less than integer table entries, possibly 0.5 ???
         int* normalizedIntWeights = new int[w->size()];
         unsigned int weightIdx = 0;
-        double divide_factor = .5;
+        double divide_factor = .1;
         w->begin(); 
         while( (weight = w->iterate()) ){
           
@@ -62,7 +64,7 @@ namespace parma {
         w->end();            
 
         const double weightCapacity = (maxW - w->self()); //How much weight can be added on to the current part before it reaches the HeavyImb
-        const int knapsackCapacity = floor((weightCapacity/minWeight)/divide_factor); //totalweights that can be added to self normalized
+        const int knapsackCapacity = floor((weightCapacity/minWeight)/divide_factor); //total weight that can be added to self, normalized to min
 
         // const int knapsackCapacity = floor(weightCapacity/minWeight);
 
@@ -77,38 +79,105 @@ namespace parma {
         mergeTargetsResults.reserve(solnVal);
         ks->getSolution(mergeTargetsResults);
         double t1 = MPI_Wtime();
-        if (divide) printf("%d part executed knapsack in %f with knapsack type dividing factor\n", PCU_Comm_Self(), t1 - t0);
-        else printf("%d part executed knapsack in %f with knapsack type interger rounding\n", PCU_Comm_Self(), t1 - t0);
+        if (divide) printf("Part %d executed knapsack in %f with knapsack type dividing factor, %f\n", PCU_Comm_Self(), t1 - t0, divide_factor);
+        else printf("Part %d executed knapsack in %f with knapsack type interger rounding\n", PCU_Comm_Self(), t1 - t0);
         
         //PCU_Debug_Print("mergetargets start\n");  
-        PCU_Debug_Print("mergetargets size = %zu\n", mergeTargetsResults.size());
-        for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-          //PCU_Debug_Print("mergetargets %d\n", nborPartIds[mergeTargetsResults[i]]);
-        }
+        PCU_Debug_Print("mergetargets size = %u\n", mergeTargetsResults.size());
 
+        //Converting mergeTargetsResults to partId's
+        vector<int> partIdMergeTargets;
+        partIdMergeTargets.reserve(mergeTargetsResults.size());
+        
+        for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
+          partIdMergeTargets.push_back(nborPartIds[mergeTargetsResults[i]]);
+          
+          PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
+          PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
+        }
+        PCU_Debug_Print("\n$$");
+
+        mergeTargetsResults.swap(partIdMergeTargets);
+
+
+
+        // for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
+        //   PCU_Debug_Print("new merge Target result %d\n", mergeTargetsResults[i]);
+        // }
+         
         delete [] nborPartIds;
         delete [] value;  
         delete [] normalizedIntWeights;
-        delete ks;          
+        delete ks;    
+               
       }
 
-      double total() {
-        //return the total number of targets
+      size_t total() {
         return mergeTargetsResults.size();
       }
+
+      const int mergeTargetIndex(int& index){
+        return mergeTargetsResults.at(index);
+      }
+
+      const int test(){
+        return mergeTargetsResults[0];
+      }
+
+      
     private:
       MergeTargets();
       vector<int> mergeTargetsResults;
   };
 
-  //TODO does this expect indexes of neighbors that will be absorbed 
-  //     into the local part or the part ids of the neighbors???
-  apf::Migration* selectMerges(apf::Mesh* m, MergeTargets& tgts) {
+  //Convert part indexes to part ID's in MergeTargets // Done
+  //TODO is what i did in mergeTargets with the vector valid?
+  //Can i change the return of total to be an int? **Change to size_t
+  //how does putting const in front of 158 allow it to be changed.
+  //Changed FMDB_mesh_getNeighborPartId to directly push into misLuby part instead of creating a set and then passing it in
+  //TODO **write function to pull ith partId from mergeTargetResults**
+
+
+  apf::Migration* selectMerges(apf::Mesh* m, Sides* s, MergeTargets& tgts) {
     //run MIS and getMergeTargets(...) to determine which 'target'
     // part this part will be merged into then create a Migration 
     // object and set the 'target' part id for each element
     //return the migration object
+
+    
+    //Vector to be passed into misLuby (later to be changed to just a single part info since vector is still from multi parts per process)
+    vector<misLuby::partInfo> parts;
+    parts.reserve(1); //Don't know if this is necessary, thought I'd throw it in anyway, remove if believed to be unnecessary
+    
+    //Generating misLuby part info for current part 
+    misLuby::partInfo part;
+    part.id = m->getId(); //same info as FMDB_Part_ID
+
+    //Passing in the adjPartIds (works)
+    const Sides::Item* partId; //Kind onf understand the const   
+    s->begin();         
+    while( (partId = s->iterate()) ) 
+      part.adjPartIds.push_back(partId->first);
+    s->end();
+      /*
+      PCU_Debug_Print("adjPartIds:\n");
+      vector<int>::iterator itr = part.adjPartIds.begin();
+      while(itr != part.adjPartIds.end()){
+        PCU_Debug_Print("\t%i\n", *itr++);
+        }
+      PCU_Debug_Print("adjPartIds end\n");
+      */
+
+    int i = 0;
+    PCU_Debug_Print("size %f\n", tgts.total());
+    // PCU_Debug_Print("test %d\n", tgts.mergeTargetIndex(i));
+
+    // use Sides to get neighbor part ids
+    // merging net comes from MergeTargets
+    // make variable for random number and set it to 0 for testing purposes
+    // we can hardcode the random number in the misLuby::partInfo object for testing purposes
     return new apf::Migration(m);
+    //Check to see 
   };
 
   int splits(Weights* w, double tgtWeight) {
@@ -134,7 +203,7 @@ namespace parma {
   bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt, int& extra) {
     //PCU_Debug_Print("Empty parts = %f, total Splits = %f\n", numEmpty(m,plan), totSplits(w,tgt));
     extra = numEmpty(m, plan) - totSplits(w, tgt);
-    //PCU_Debug_Print("Extra = %f\n", extra);
+    // PCU_Debug_Print("Extra = %d\n", extra);
     if ( extra < 0 ){
       return false;  } 
     else{
@@ -176,10 +245,11 @@ namespace parma {
       testW -= step;
       //PCU_Debug_Print("Test Imb = %f\n", testW);
       MergeTargets mergeTgts(s, w, testW);
-      apf::Migration* plan = selectMerges(m, mergeTgts); 
+      // PCU_Debug_Print("Test mergeindex 0, %u",mergeTgts.mergeTargetIndex(i));
+      apf::Migration* plan = selectMerges(m, s, mergeTgts); 
       splits = canSplit(m, w, plan, testW, extraEmpties);
       delete plan; // not migrating
-    } while ( splits );
+   } while ( splits );
    testW += step;
    return testW;
   }
@@ -235,7 +305,7 @@ namespace parma {
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
     MergeTargets mergeTargets(s, w, tgt);
-    apf::Migration* plan = selectMerges(m, mergeTargets);   
+    apf::Migration* plan = selectMerges(m, s, mergeTargets);   
     split(m, w, tgt, plan);
     m->migrate(plan);
   }

@@ -1,0 +1,114 @@
+#ifndef _MIS_H_
+#define _MIS_H_
+
+#include <map>
+#include <vector>
+#include <iostream>
+#include <iterator>
+#include <limits.h>
+
+#include "mpi.h"
+
+#include <stddef.h>
+#include "PCU.h"
+
+#define MIS_ITERATE(t,w,i) \
+for (t::iterator (i) = (w).begin(); \
+     (i) != (w).end(); ++(i))
+
+#define MIS_FAIL(message)\
+{fprintf(stderr,"MIS ERROR: %s: "message"\n",__func__);\
+abort();}
+#define MIS_FAIL_IF(condition,message)\
+if (condition)\
+MIS_FAIL(message)
+
+namespace misLuby {
+
+    typedef std::map<int, int> mapIntInt;
+    typedef std::map<int, int>::iterator netAdjItr;
+
+    typedef struct AdjPart {
+        int partId;
+        int randNum;
+        std::vector<int> net;
+    } adjPart;
+
+    typedef struct PartInfo {
+        int id;
+        std::vector<int> adjPartIds;
+        std::vector<int> net;
+
+        int randNum;
+        bool isInNetGraph;
+        bool isInMIS;
+        std::map<int, int> netAdjParts; // (partId, randNum)
+        void addNetNeighbors(std::vector<adjPart>& nbNet);
+        void updateNeighbors();
+    } partInfo;
+
+    typedef std::vector<partInfo>::iterator partInfoVecItrType;
+
+    //from http://learningcppisfun.blogspot.com/2007/02/
+    //    functors-with-state-3-print-contents-of.html
+    template<typename T, typename InputIterator>
+    void Print(std::ostream& ostr, char* dbgMsg, InputIterator itbegin, 
+        InputIterator itend, const std::string& delimiter, bool dbg=false) {
+        if (dbg) {
+            ostr << "DEBUG " << dbgMsg;
+            std::ostream_iterator<T> out_it(ostr, delimiter.c_str());
+            std::copy(itbegin, itend, out_it);
+            ostr << "\n";
+        }
+    }
+    void Print(std::ostream& ostr, char* dbgMsg, 
+        std::vector<misLuby::adjPart>::iterator itbegin, 
+        std::vector<misLuby::adjPart>::iterator itend, 
+        const std::string& delimiter, bool dbg=false);
+    void Print(std::ostream& ostr, char* dbgMsg, 
+        std::map<int, int>::iterator itbegin, 
+        std::map<int, int>::iterator itend, 
+        const std::string& delimiter, bool dbg=false);
+} //end misLuby namespace
+
+/**
+ * @brief generate randNums.size() random numbers
+ * @param randNums (InOut) random numbers
+ * @return 0 on success, non-zero otherwise
+ */
+int generateRandomNumbers(std::vector<int>& randNums);
+
+/**
+ * @brief compute the maximal independent set
+ * @param rank (In) MPI process rank
+ * @param totNumParts (In) total number of parts in the partition
+ * @param parts (In) info on each part 
+ * @param mis (InOut) on exit, parts in the MIS
+ * @param setRandNums (In) 1:set random numbers, 0:use defined random numbers
+ * @return 0 on success, non-zero otherwise
+ */
+int mis(const int rank, const int totNumParts, 
+    std::vector<misLuby::partInfo>& parts, 
+    std::vector<int>& mis, 
+    bool randNumsPredefined = false);
+
+/**
+ * @brief for each local part get the partId of the part to which the 
+ *        local parts elements will be merged into
+ * @param rank (In) MPI process rank
+ * @param totNumParts (In) total number of parts in the partition
+ * @param parts (In) info on each part 
+ * @param mis (In) parts in the MIS
+ * @param mergeTargets (InOut) map of partId to the partId to which 
+ *        the local parts elements will be merged into
+ */
+void getMergeTargets(const int rank, const int totNumParts, 
+    std::vector<misLuby::partInfo>& parts, 
+    std::vector<int>& mis, std::map<int,int>& mergeTargets);
+
+void mis_init(int randNumSeed, int debugMode, const char* maj = "1", 
+    const char* min = "0", const char* patch = "0");
+
+void misFinalize();
+
+#endif
