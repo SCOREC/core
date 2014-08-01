@@ -50,6 +50,7 @@ set(tests
   mds_test
   ma_test
   convert
+  generate
   snap
   ph_test
   uniform

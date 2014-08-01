@@ -49,9 +49,36 @@ struct AdvMeshing_EXPORT MeshingOptions {
 AdvMeshing_EXPORT void MS_setupSimModelerMeshCase(pACase sourceCase, pACase meshCase, MeshingOptions *options);
 pAManager SModel_attManager(pModel model);
 
-pParMesh generate(pGModel mdl, std::string caseName) {
+namespace {
+
+const char* modelFile = 0;
+const char* caseName = 0;
+const char* outMeshFile = 0;
+
+void messageHandler(int type, const char* msg)
+{
+  switch (type) {
+    case Sim_WarningMsg:
+      if(!PCU_Comm_Self())
+        fprintf(stdout, "Warning SimModeler %s\n", msg);
+      break;
+    case Sim_ErrorMsg:
+      if(!PCU_Comm_Self()) 
+        fprintf(stdout, "Error SimModeler %s ... exiting\n", msg);
+      MPI_Finalize();
+      exit(EXIT_SUCCESS); 
+      break;
+    default:
+      // Ignore sim info and debug messages
+      break;
+  }
+}
+
+pParMesh generate(pGModel mdl, std::string meshCaseName) {
   pAManager attmngr = SModel_attManager(mdl);
-  pACase mcaseFile = AMAN_findCase(attmngr, caseName.c_str());
+  if(0==PCU_Comm_Self())
+    fprintf(stdout, "Loading mesh case %s...\n", meshCaseName.c_str());
+  pACase mcaseFile = AMAN_findCase(attmngr, meshCaseName.c_str());
   assert(mcaseFile);
 
   AttCase_setModel(mcaseFile, mdl);
@@ -62,37 +89,56 @@ pParMesh generate(pGModel mdl, std::string caseName) {
 
   pParMesh pmesh = PM_new(0, mdl, PMU_size());
 
-  pProgress prog = Progress_new();
+  if(0==PCU_Comm_Self())
+    fprintf(stdout, "Meshing surface...\n");
   pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, pmesh);
-  SurfaceMesher_execute(surfaceMesher, prog);
+  SurfaceMesher_execute(surfaceMesher, NULL);
 
+  if(0==PCU_Comm_Self())
+    fprintf(stdout, "Meshing volume...\n");
   pVolumeMesher volumeMesher = VolumeMesher_new(mcase, pmesh);
-  VolumeMesher_execute(volumeMesher, prog);
+  VolumeMesher_execute(volumeMesher, NULL);
 
   SurfaceMesher_delete(surfaceMesher);
   VolumeMesher_delete(volumeMesher);
   return pmesh;
 }
 
+void getConfig(int argc, char** argv)
+{
+  if (argc != 4) {
+    if(0==PCU_Comm_Self())
+      printf("Usage: %s <model (.smd)> <mesh case name> <outMesh>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_SUCCESS);
+  }
+  modelFile = argv[1];
+  caseName = argv[2];
+  outMeshFile = argv[3];
+}
+
+} //end unnamed namespace
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
-  if (argc != 4) {
-    if(0==PCU_Comm_Self())
-      std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <pumi mesh>\n";
-    return 0;
-  }
-  Sim_readLicenseFile(NULL);
-  SimPartitionedMesh_start(&argc,&argv);
+  PCU_Protect();
+  getConfig(argc,argv);
+
   SimModel_start();
-  pProgress progress = Progress_new();
-  Progress_setDefaultCallback(progress);
+  SimPartitionedMesh_start(NULL,NULL);
+  Sim_readLicenseFile(NULL);
+  MS_init();
+  Sim_setMessageHandler(messageHandler);
 
-  pGModel simModel;
-  simModel = GM_load(argv[1], NULL, progress);
+  pGModel simModel = GM_load(modelFile, NULL, NULL);
 
-  pParMesh sim_mesh = generate(simModel, argv[2]);
+  const double t0 = MPI_Wtime();
+  pParMesh sim_mesh = generate(simModel, caseName);
+  const double t1 = MPI_Wtime();
+  if(0==PCU_Comm_Self())
+    fprintf(stdout, "Mesh generated in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
   gmi_register_sim();
@@ -105,12 +151,11 @@ int main(int argc, char** argv)
   else
     printf("matches (if any) are aligned ok\n");
   pumiApfMesh->verify();
-  pumiApfMesh->writeNative(argv[3]);
+  pumiApfMesh->writeNative(outMeshFile);
 
   pumiApfMesh->destroyNative();
   apf::destroyMesh(pumiApfMesh);
 
-  Progress_delete(progress);
   SimModel_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
