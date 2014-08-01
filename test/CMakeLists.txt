@@ -17,60 +17,40 @@ include_directories(
   ${PH_INCLUDE_DIRS}
   ${APF_MPAS_INCLUDE_DIRS})
 
-add_executable(mdlConvert EXCLUDE_FROM_ALL mdlConvert.cc)
-add_executable(mkmodel EXCLUDE_FROM_ALL mkmodel.cc)
-add_executable(mds_test EXCLUDE_FROM_ALL mds_test.cc)
-add_executable(ma_test EXCLUDE_FROM_ALL ma_test.cc)
-add_executable(convert EXCLUDE_FROM_ALL convert.cc)
-add_executable(generate EXCLUDE_FROM_ALL generate.cc)
-add_executable(snap EXCLUDE_FROM_ALL snap.cc)
-add_executable(ph_test EXCLUDE_FROM_ALL ph_test.cc)
-add_executable(uniform EXCLUDE_FROM_ALL uniform.cc)
-add_executable(fixshape EXCLUDE_FROM_ALL fixshape.cc)
-add_executable(tetrahedronize EXCLUDE_FROM_ALL tetrahedronize.cc)
-add_executable(fixlayer EXCLUDE_FROM_ALL fixlayer.cc)
-add_executable(render EXCLUDE_FROM_ALL render.cc)
-add_executable(verify EXCLUDE_FROM_ALL verify.cc)
-add_executable(prismCodeMatch EXCLUDE_FROM_ALL ../ma/prismCodeMatch.cc)
-add_executable(pyramidCodeMatch EXCLUDE_FROM_ALL ../ma/pyramidCodeMatch.cc)
-add_executable(spr_test EXCLUDE_FROM_ALL spr_test.cc)
-add_executable(describe EXCLUDE_FROM_ALL describe.cc)
-add_executable(balance EXCLUDE_FROM_ALL balance.cc)
-add_executable(split EXCLUDE_FROM_ALL split.cc)
-add_executable(zsplit EXCLUDE_FROM_ALL zsplit.cc)
-add_executable(ghost EXCLUDE_FROM_ALL ghost.cc)
-add_executable(mpas_read EXCLUDE_FROM_ALL mpas_read.cc)
-add_executable(mpas_write EXCLUDE_FROM_ALL mpas_write.cc)
-add_executable(hps EXCLUDE_FROM_ALL hps.cc)
-add_executable(fan EXCLUDE_FROM_ALL fan.cc)
+macro(buildExe exe src)
+  add_executable(${exe} EXCLUDE_FROM_ALL ${src})
+  set(tests ${tests} ${exe})
+endmacro(buildExe)
 
-set(tests
-  mdlConvert
-  mkmodel
-  mds_test
-  ma_test
-  convert
-  generate
-  snap
-  ph_test
-  uniform
-  fixshape
-  tetrahedronize
-  fixlayer
-  render
-  verify
-  prismCodeMatch
-  pyramidCodeMatch
-  spr_test
-  describe
-  balance
-  split
-  zsplit
-  ghost
-  mpas_read
-  mpas_write
-  hps
-  fan)
+set(tests)
+buildExe(mdlConvert mdlConvert.cc)
+buildExe(mkmodel mkmodel.cc)
+buildExe(mds_test mds_test.cc)
+buildExe(ma_test ma_test.cc)
+buildExe(convert convert.cc)
+if(SIMMODSUITE_SimAdvMeshing_FOUND)
+  buildExe(generate generate.cc)
+endif()
+buildExe(snap snap.cc)
+buildExe(ph_test ph_test.cc)
+buildExe(uniform uniform.cc)
+buildExe(fixshape fixshape.cc)
+buildExe(tetrahedronize tetrahedronize.cc)
+buildExe(fixlayer fixlayer.cc)
+buildExe(render render.cc)
+buildExe(verify verify.cc)
+buildExe(prismCodeMatch ../ma/prismCodeMatch.cc)
+buildExe(pyramidCodeMatch ../ma/pyramidCodeMatch.cc)
+buildExe(spr_test spr_test.cc)
+buildExe(describe describe.cc)
+buildExe(balance balance.cc)
+buildExe(split split.cc)
+buildExe(zsplit zsplit.cc)
+buildExe(ghost ghost.cc)
+buildExe(mpas_read mpas_read.cc)
+buildExe(mpas_write mpas_write.cc)
+buildExe(hps hps.cc)
+buildExe(fan fan.cc)
 
 foreach(test ${tests})
   target_link_libraries(${test}
