@@ -18,6 +18,7 @@ endif()
 # not sure how simmodsuite will work within tribits - ignore for now
 set(SIMMODSUITE_LIBS "")
 set(SIM_LIB_NAMES
+  SimAdvMeshing
   SimPartitionedMesh-mpi
   SimMeshing 
   SimModel 
