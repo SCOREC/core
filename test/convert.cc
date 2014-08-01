@@ -16,7 +16,7 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   if (argc != 4) {
     if(0==PCU_Comm_Self())
-      std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <pumi mesh>\n";
+      std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <scorec mesh>\n";
     return 0;
   }
   Sim_readLicenseFile(NULL);
@@ -32,19 +32,19 @@ int main(int argc, char** argv)
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
   gmi_register_sim();
-  gmi_model* pumiMdl = gmi_import_sim(simModel);
-  apf::Mesh2* pumiApfMesh = apf::createMdsMesh(pumiMdl, simApfMesh);
+  gmi_model* mdl = gmi_import_sim(simModel);
+  apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  if (alignMdsMatches(pumiApfMesh))
+  if (alignMdsMatches(mesh))
     printf("fixed misaligned matches\n");
   else
     printf("matches (if any) are aligned ok\n");
-  pumiApfMesh->verify();
-  pumiApfMesh->writeNative(argv[3]);
+  mesh->verify();
+  mesh->writeNative(argv[3]);
 
-  pumiApfMesh->destroyNative();
-  apf::destroyMesh(pumiApfMesh);
+  mesh->destroyNative();
+  apf::destroyMesh(mesh);
 
   Progress_delete(progress);
   SimModel_stop();
