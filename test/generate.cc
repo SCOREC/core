@@ -141,19 +141,19 @@ int main(int argc, char** argv)
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
   gmi_register_sim();
-  gmi_model* pumiMdl = gmi_import_sim(simModel);
-  apf::Mesh2* pumiApfMesh = apf::createMdsMesh(pumiMdl, simApfMesh);
+  gmi_model* model = gmi_import_sim(simModel);
+  apf::Mesh2* mesh = apf::createMdsMesh(model, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  if (alignMdsMatches(pumiApfMesh))
+  if (alignMdsMatches(mesh))
     printf("fixed misaligned matches\n");
   else
     printf("matches (if any) are aligned ok\n");
-  pumiApfMesh->verify();
-  pumiApfMesh->writeNative(outMeshFile);
+  mesh->verify();
+  mesh->writeNative(outMeshFile);
 
-  pumiApfMesh->destroyNative();
-  apf::destroyMesh(pumiApfMesh);
+  mesh->destroyNative();
+  apf::destroyMesh(mesh);
 
   SimModel_stop();
   SimPartitionedMesh_stop();
