@@ -147,8 +147,6 @@ int main(int argc, char** argv)
   M_release(sim_mesh);
   if (alignMdsMatches(mesh))
     printf("fixed misaligned matches\n");
-  else
-    printf("matches (if any) are aligned ok\n");
   mesh->verify();
   mesh->writeNative(outMeshFile);
 
