@@ -147,11 +147,17 @@ void dcPart::fix() {
    APF_ITERATE(vector<int>, dcCompSz, dc) 
       if( *dc > maxSz ) 
          maxSz = *dc; 
-   
+  
+   int isolated = 0; 
    for(size_t i=0; i<dcCompSz.size(); i++)
-      if( dcCompSz[i] != maxSz ) 
-         dcCompTgts[i] = checkResidence(i);
-   assert( dcCompTgts.size() == dcCompSz.size()-1 );
+      if( dcCompSz[i] != maxSz ) {
+         int res = checkResidence(i);
+         if ( res != -1 )
+           dcCompTgts[i] = res;
+         else 
+           isolated++;
+      } 
+   assert( dcCompTgts.size() + isolated == dcCompSz.size()-1 );
    Migration* plan = new Migration(m);
    setupPlan(dcCompTgts, plan);
    clearTag(m, vtag);
@@ -201,8 +207,8 @@ int dcPart::checkResidence(const int dcComp) {
       debug(false, "[%d] bdryFaceCnt dcComp %d ap %d faces %d\n", 
 	    PCU_Comm_Self(), dcComp, bf->first, bf->second);
    }
-   debug(false, "[%d] %s maxId %d max %d\n", 
-	 PCU_Comm_Self(), __func__, maxId, max);
+   debug(false, "[%d] %s dcComp %d maxId %d max %d\n", 
+	 PCU_Comm_Self(), __func__, dcComp, maxId, max);
    return maxId;
 }
 

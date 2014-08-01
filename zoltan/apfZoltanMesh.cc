@@ -44,7 +44,7 @@ static void getElements(ZoltanMesh* b)
   size_t i = 0;
   while ((e = m->iterate(it)))
     b->elements[i++] = e;
-  assert(i = b->elements.getSize());
+  assert(i == b->elements.getSize());
   m->end(it);
 }
 

@@ -623,4 +623,14 @@ void printStats(Mesh* m)
         n[0], n[1], n[2], n[3]);
 }
 
+void warnAboutEmptyParts(Mesh* m)
+{
+  int emptyParts = 0;
+  if (!m->count(m->getDimension()))
+    ++emptyParts;
+  PCU_Add_Ints(&emptyParts, 1);
+  if (emptyParts && (!PCU_Comm_Self()))
+    fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
+}
+
 } //namespace apf

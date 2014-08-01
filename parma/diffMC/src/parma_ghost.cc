@@ -14,16 +14,26 @@ namespace parma {
         : mesh(m), factor(f), layers(l), bridge(b), verbose(v) {
           (void) verbose; // silence!
         }
+      void printStats(Weights* w) {
+        double max = w->self();
+        PCU_Max_Doubles(&max, 1);
+        double avg = w->self();
+        PCU_Add_Doubles(&avg, 1);
+        if ( !PCU_Comm_Self() )
+          fprintf(stdout, "Max weight %.3f Avg weight %.3f\n", max, avg/PCU_Comm_Peers());
+      }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Balancer ghost(mesh, wtag, factor);
         Sides* s = makeElmBdrySides(mesh);
         ghost.setSides(s);
         Weights* w = makeGhostWeights(mesh, wtag, s, layers, bridge);
+        printStats(w);
         ghost.setWeights(w);
         Targets* t = makeTargets(s, w, factor);
         ghost.setTargets(t);
         ghost.setSelector(makeVtxSelector(mesh, wtag));
-        return ghost.run(tolerance);
+        bool ret = ghost.run(tolerance);
+        return ret;
       }
       void balance(apf::MeshTag* weights, double tolerance) {
         double t0 = MPI_Wtime(); 

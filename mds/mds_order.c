@@ -95,7 +95,7 @@ static mds_id find_seed(struct mds_apf* m)
   return best_v;
 }
 
-static void number_connected(struct mds* m, mds_id v,
+static void number_connected_graph(struct mds* m, mds_id v,
     struct mds_tag* tag, mds_id label[MDS_TYPES])
 {
   struct queue q;
@@ -122,7 +122,7 @@ static void number_connected(struct mds* m, mds_id v,
   free_queue(&q);
 }
 
-struct mds_tag* mds_number(struct mds_apf* m)
+static struct mds_tag* number_graph(struct mds_apf* m)
 {
   struct mds_tag* tag;
   mds_id label[MDS_TYPES];
@@ -132,9 +132,9 @@ struct mds_tag* mds_number(struct mds_apf* m)
   for (i = 0; i < MDS_TYPES; ++i)
     label[i] = m->mds.n[i] - 1;
   v = find_seed(m);
-  number_connected(&m->mds, v, tag, label);
+  number_connected_graph(&m->mds, v, tag, label);
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
-    number_connected(&m->mds, v, tag, label);
+    number_connected_graph(&m->mds, v, tag, label);
   for (i = 0; i < MDS_TYPES; ++i)
     assert(label[i] == -1);
   return tag;
@@ -390,7 +390,7 @@ struct mds_apf* mds_reorder(struct mds_apf* m)
 {
   struct mds_tag* new_of;
   struct mds_apf* m2;
-  new_of = mds_number(m);
+  new_of = number_graph(m);
   m2 = rebuild(m, new_of);
   mds_apf_destroy(m);
   return m2;

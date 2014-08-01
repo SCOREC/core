@@ -154,8 +154,9 @@ void loadMpasMesh(apf::Mesh2* m, const char* filename)
 }
 
 
-void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
-  NcFile in(filename, NcFile::read);
+void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* outPrefix)
+{
+  NcFile in(ncFilename, NcFile::read);
   /* this is the dual of a hexagonal mesh,
      hence the reversing of terms */
   int numMpasVtx = readDim(in, "nCells");
@@ -169,7 +170,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   int numPerPart = numMpasVtx / peers;
   int size = numPerPart;
   if (self == peers - 1) {
-    size += numMpasVtx % numPerPart;
+    size += numMpasVtx % peers;
   }
   std::vector<int> vtxs(size, -1);
   PCU_Comm_Begin();
@@ -179,10 +180,10 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
     if (!parma::isOwned(m, e))
       continue;
     int num = getNumber(n, e, 0, 0);
+    assert(num<numMpasVtx);
     int target = num / numPerPart;
     assert(target >= 0);
-    assert(target <= peers);
-    if (target == peers)
+    if (target >= peers)
       target = peers - 1;
     int local = num - (target * numPerPart);
     /* target may be self, PCU handles that */
@@ -201,33 +202,32 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   }
   
   // assign missing vertices to a random part id
-  srand(time(NULL)*PCU_Comm_Self());
+  srand(PCU_Comm_Self());
   int count = 0;
   for (int i = 0; i < size; i++)
     if (vtxs[i]==-1) {
       vtxs[i] = rand()%PCU_Comm_Peers(); //to be random
-      //fprintf(stdout,"missing vertex %d\n",i+numPerPart*PCU_Comm_Self());
       count++;
     }
-  if (count)
-    fprintf(stdout,"missing vertices found %d on part %d\n",count,PCU_Comm_Self());
+  PCU_Add_Ints(&count, 1);
+  if ( !PCU_Comm_Self() )
+    fprintf(stdout,"missing vertices found %d\n", count);
   
-  // use MPI IO to write the contiguous blocks to a single graph.info.part.<#parts> file
-  // see https://gist.github.com/cwsmith/166d5beb400f3a8136f7 and the comments
   double startTime=MPI_Wtime();
   MPI_File file;
-  char name[32];
+  char name[1024];
+  int const numPerFile = 16;
+  int filenum=self/numPerFile;
+  int filerank=self%numPerFile;
+  MPI_Comm filecomm;
+  MPI_Comm_split(MPI_COMM_WORLD, filenum, filerank, &filecomm);
+  snprintf(name, sizeof(name), "%s%04d", outPrefix, filenum);
+  MPI_File_open(filecomm, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                MPI_INFO_NULL, &file);
 
-  sprintf(name,"graph.info.part.%d",PCU_Comm_Peers());
-  MPI_File_open(MPI_COMM_WORLD, name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
-		MPI_INFO_NULL, &file);
   int const width = 8;
-  MPI_Offset offset = numPerPart * PCU_Comm_Self() * width;
+  MPI_Offset offset = numPerPart * filerank * width;
   MPI_File_seek(file, offset, MPI_SEEK_SET);
-  MPI_Datatype filetype;
-  MPI_Type_contiguous(size,MPI_CHAR,&filetype);
-  MPI_Type_commit(&filetype);
-  MPI_File_set_view(file,offset,MPI_CHAR,MPI_CHAR,"internal",MPI_INFO_NULL);
   char* str = new char[width * size];
   char line[width + 1];
   for (int i=0; i < size; i++) {
@@ -237,13 +237,15 @@ void writeMpasAssignments(apf::Mesh2* m, const char* filename) {
   }
   MPI_Status status;
   MPI_File_write(file,str,width * size,MPI_CHAR,&status);
-
+  //fwrite(str,sizeof(char),width*size,file);                                                                       
   delete [] str;
+  //fclose(file);                                                                                                   
   MPI_File_close(&file);
   double totalTime= MPI_Wtime()-startTime;
   PCU_Max_Doubles(&totalTime,1);
   if (!PCU_Comm_Self())
-    fprintf(stdout,"File writing time: %f seconds\n", totalTime); 
+    fprintf(stdout,"File writing time: %f seconds\n", totalTime);
+
 }
 
 }

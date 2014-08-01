@@ -23,14 +23,12 @@ class Migration;
 
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
-Mesh2* addMdsPart(Mesh2* original);
-
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
-void defragMdsMesh(Mesh2* mesh);
+void reorderMdsMesh(Mesh2* mesh);
 
 int getMdsId(MeshEntity* e);
 

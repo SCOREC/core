@@ -839,6 +839,7 @@ void migrate(Mesh2* m, Migration* plan)
     migrate2(m, plan);
   else
     migrate1(m, plan);
+  warnAboutEmptyParts(m);
 }
 
 }//namespace apf
