@@ -1,5 +1,4 @@
 #include <MeshSim.h>
-#include <SimPartitionedMesh.h>
 #include <SimUtil.h>
 #include <apf.h>
 #include <gmi_mesh.h>
@@ -17,7 +16,6 @@ int main(int argc, char** argv)
   gmi_register_mesh();
 
   Sim_readLicenseFile(NULL);
-  SimPartitionedMesh_start(&argc,&argv);
   SimModel_start();
 
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
