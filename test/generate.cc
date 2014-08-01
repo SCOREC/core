@@ -2,7 +2,6 @@
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
 #include <SimUtil.h>
-#include <SimParasolidKrnl.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
 #include <gmi_sim.h>
