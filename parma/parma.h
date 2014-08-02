@@ -9,7 +9,7 @@
 #define PARMA_H
 
 #include "apf.h"
-#include "apfMesh.h"
+#include "apfMesh2.h"
 #include "apfPartition.h"
 
 /**
@@ -175,5 +175,8 @@ apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
  * @return mesh tag
  */
 apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);
+
+void Parma_ShrinkPartition(apf::Mesh2* m, int factor,
+    void (*runAfter)(apf::Mesh2* m));
 
 #endif

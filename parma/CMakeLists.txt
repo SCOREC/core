@@ -78,6 +78,7 @@ else(BUILD_IN_TRILINOS)
   ADD_LIBRARY(parma 
     ${DIFFMC_SOURCES}
     ${RIB_SOURCES}
+    parmaShrink.cc
     ${API_SOURCE})
   target_link_libraries(parma ${parmaDepLibs})
 endif(BUILD_IN_TRILINOS)
