@@ -2,6 +2,7 @@
 #include "parma.h"
 #include <mpi.h>
 #include <apfMesh2.h>
+#include <apfMDS.h> /* yea, implementation dependent for now. */
 
 static bool amChosen(int factor)
 {
@@ -31,9 +32,10 @@ static void migrateToChosen(apf::Mesh2* m, int factor)
 static MPI_Comm shrinkComm(int factor)
 {
   int self = PCU_Comm_Self();
+  int newSelf = self / factor;
   int group = self % factor;
   MPI_Comm newComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, self, &newComm);
+  MPI_Comm_split(MPI_COMM_WORLD, group, newSelf, &newComm);
   return newComm;
 }
 
@@ -41,7 +43,8 @@ static apf::Migration* finishChosen(apf::Mesh2* m, int factor)
 {
   apf::Splitter* s = Parma_MakeRibSplitter(m);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
-  apf::Migration* plan = s->split(weights, 1.10, factor);
+  double const doesntMatter = 1.10;
+  apf::Migration* plan = s->split(weights, doesntMatter, factor);
   apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
   return plan;
@@ -54,19 +57,25 @@ static void expand(apf::Mesh2* m, int factor, apf::Migration* plan)
   m->migrate(plan);
 }
 
-void Parma_ShrinkPartition(apf::Mesh2* m, int factor,
-    void (*runAfter)(apf::Mesh2* m))
+namespace alb {
+
+void shrinkPartition(apf::Mesh2* m, int factor, void (*runAfter)(apf::Mesh2* m))
 {
   migrateToChosen(m, factor);
   MPI_Comm subComm = shrinkComm(factor);
   bool chosen = amChosen(factor);
+  shrinkMdsPartition(m, factor);
   PCU_Switch_Comm(subComm);
   apf::Migration* plan = 0;
   if (chosen) {
     runAfter(m);
     plan = finishChosen(m, factor);
+    expandMdsPartition(m, factor);
   }
   MPI_Barrier(MPI_COMM_WORLD);
   PCU_Switch_Comm(MPI_COMM_WORLD);
+  MPI_Comm_free(&subComm);
   expand(m, factor, plan);
+}
+
 }

@@ -176,7 +176,4 @@ apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
  */
 apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);
 
-void Parma_ShrinkPartition(apf::Mesh2* m, int factor,
-    void (*runAfter)(apf::Mesh2* m));
-
 #endif
