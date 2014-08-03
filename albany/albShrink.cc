@@ -9,7 +9,7 @@ static bool amChosen(int factor)
   return (PCU_Comm_Self() % factor) == 0;
 }
 
-static bool nearestChosen(int factor)
+static int nearestChosen(int factor)
 {
   int self = PCU_Comm_Self();
   return self - (self % factor);
@@ -26,6 +26,9 @@ static void migrateToChosen(apf::Mesh2* m, int factor)
       plan->send(e, to);
     m->end(it);
   }
+  if (!PCU_Comm_Self())
+    fprintf(stderr,"migrating to multiples of %d (ignore empty part warning)\n",
+        factor);
   m->migrate(plan);
 }
 
