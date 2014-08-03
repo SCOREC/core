@@ -14,7 +14,7 @@ if(NOT BUILD_IN_TRILINOS)
     ${PARMA_INCLUDE_DIRS}
     ${MDS_INCLUDE_DIRS})
   set(DEP_LIBS ${MDS_LIBS} ${PARMA_LIBS})
-  set(APF_ALBANY_LIBS mds ${DEP_LIBS})
+  set(APF_ALBANY_LIBS apf_albany ${DEP_LIBS})
 endif()
 
 #Sources & Headers
