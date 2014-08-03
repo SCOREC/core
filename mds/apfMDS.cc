@@ -650,11 +650,28 @@ gmi_model* getMdsModel(Mesh2* mesh)
   return static_cast<MeshMDS*>(mesh)->getPumiModel();
 }
 
-static void scaleMdsMesh(Mesh2* mesh, int n)
+static int divide(int n, void* data)
+{
+  return n / (*((int*)data));
+}
+
+static int multiply(int n, void* data)
+{
+  return n * (*((int*)data));
+}
+
+void shrinkMdsPartition(Mesh2* mesh, int n)
 {
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  mds_apf_scale(m->mesh, n);
-  scalePM(m->parts, n);
+  mds_apf_remap(m->mesh, divide, (void*)&n);
+  remapPM(m->parts, divide, (void*)&n);
+}
+
+void expandMdsPartition(Mesh2* mesh, int n)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(mesh);
+  mds_apf_remap(m->mesh, multiply, (void*)&n);
+  remapPM(m->parts, multiply, (void*)&n);
 }
 
 static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
@@ -716,7 +733,7 @@ void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
   globalMesh = m;
   globalPlan = plan;
   globalThrdCall = runAfter;
-  scaleMdsMesh(m, n);
+  expandMdsPartition(m, n);
   PCU_Thrd_Run(n, splitThrdMain, NULL);
 }
 

@@ -34,6 +34,9 @@ int getMdsId(MeshEntity* e);
 
 gmi_model* getMdsModel(Mesh2* mesh);
 
+void shrinkMdsPartition(Mesh2* mesh, int n);
+void expandMdsPartition(Mesh2* mesh, int n);
+
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 
 bool alignMdsMatches(Mesh2* in);

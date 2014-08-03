@@ -40,7 +40,8 @@ void updateOwners(Mesh* m, PM& ps);
 
 void stitchMesh(Mesh2* m);
 
-void scalePM(PM& pm, int factor);
+void remapPM(PM& pm,
+    int (*map)(int, void*), void* user);
 
 }
 
