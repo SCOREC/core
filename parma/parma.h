@@ -9,7 +9,7 @@
 #define PARMA_H
 
 #include "apf.h"
-#include "apfMesh2.h"
+#include "apfMesh.h"
 #include "apfPartition.h"
 
 /**
