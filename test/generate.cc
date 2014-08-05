@@ -50,10 +50,10 @@ pAManager SModel_attManager(pModel model);
 
 namespace {
 
-const char* modelFile = 0;
-const char* caseName = 0;
-const char* outMeshFile = 0;
-const char* outVtkFile = 0;
+std::string modelFile;
+std::string caseName;
+std::string outMeshFile;
+std::string outVtkFile;
 
 void messageHandler(int type, const char* msg)
 {
@@ -89,18 +89,26 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
 
   pParMesh pmesh = PM_new(0, mdl, PMU_size());
 
-  if(0==PCU_Comm_Self())
-    fprintf(stdout, "Meshing surface...\n");
+  const double stime = MPI_Wtime();
+  if(0==PCU_Comm_Self()) {
+    printf("Meshing surface..."); fflush(stdout);
+  }
   pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, pmesh);
   SurfaceMesher_execute(surfaceMesher, NULL);
-
+  SurfaceMesher_delete(surfaceMesher);
   if(0==PCU_Comm_Self())
-    fprintf(stdout, "Meshing volume...\n");
+    printf(" %f seconds\n", MPI_Wtime()-stime);
+
+  const double vtime = MPI_Wtime();
+  if(0==PCU_Comm_Self()) {
+    printf("Meshing volume..."); fflush(stdout);
+  }
   pVolumeMesher volumeMesher = VolumeMesher_new(mcase, pmesh);
   VolumeMesher_execute(volumeMesher, NULL);
-
-  SurfaceMesher_delete(surfaceMesher);
   VolumeMesher_delete(volumeMesher);
+  if(0==PCU_Comm_Self())
+    printf(" %f seconds\n", MPI_Wtime()-vtime);
+
   return pmesh;
 }
 
@@ -113,11 +121,10 @@ void getConfig(int argc, char** argv)
     exit(EXIT_SUCCESS);
   }
   modelFile = argv[1];
-  outVtkFile = caseName = argv[2];
-  std::string out = std::string(caseName) + "/";
-  outMeshFile = out.c_str();
+  outMeshFile = outVtkFile = caseName = argv[2];
+  outMeshFile.append("/");
   if(0==PCU_Comm_Self())
-    printf("Inputs: model %s case %s outmesh %s outVtk %s\n", modelFile, caseName, outMeshFile, outVtkFile);
+    printf("Inputs: model %s case %s\n", modelFile.c_str(), caseName.c_str());
 }
 
 } //end unnamed namespace
@@ -131,27 +138,17 @@ int main(int argc, char** argv)
 
   SimModel_start();
   SimPartitionedMesh_start(NULL,NULL);
-  Sim_registerKey("ccn001 attributes 20140815 0 Ww2Ojapzp2cApoZb25fx7Q==");
-  Sim_registerKey("ccn001 acis 20140815 0 vyFN96MTPpNr8yxqLb/7pA==");
-  Sim_registerKey("ccn001 parasolid 20140815 0 L7Sw9cjWPaWLuVr+yEOm6g==");
-  Sim_registerKey("ccn001 surface 20140815 0 6+TLARr8V8AGYoFsE0peYQ==");
-  Sim_registerKey("ccn001 volume 20140815 0 aZXldX18SMn8bun36ufpqQ==");
-  Sim_registerKey("ccn001 export 20140815 0 5JqmOzdvkIR2yRHflFOI+g==");
-  Sim_registerKey("ccn001 adapt 20140815 0 2g03xabXcWPCV0ZSpinRfQ==");
-  Sim_registerKey("ccn001 adv 20140815 0 1HAvwlLch+7fzmHsjdxiaA==");
-  Sim_registerKey("ccn001 parallelmeshing 20140815 0 VxqkTzcinL0IhwmMWnarZg==");
-  Sim_registerKey("ccn001 paralleladapt 20140815 0 VmSjUupcVCjAdtvoDQXMkg==");
-  Sim_registerKey("ccn001 paralleladv 20140815 0 VGNI+XwEzg6xlcoMDQSgUg==");
+  Sim_readLicenseFile(NULL);
   MS_init();
   Sim_setMessageHandler(messageHandler);
 
-  pGModel simModel = GM_load(modelFile, NULL, NULL);
+  pGModel simModel = GM_load(modelFile.c_str(), NULL, NULL);
 
   const double t0 = MPI_Wtime();
   pParMesh sim_mesh = generate(simModel, caseName);
   const double t1 = MPI_Wtime();
   if(0==PCU_Comm_Self())
-    fprintf(stdout, "Mesh generated in %f seconds\n", t1-t0);
+    printf("Mesh generated in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
   gmi_register_sim();
@@ -165,9 +162,9 @@ int main(int argc, char** argv)
   int elms = mesh->count(mesh->getDimension());
   PCU_Add_Ints(&elms, 1);
   if(0==PCU_Comm_Self())
-    fprintf(stdout, "Mesh elements: %d \n", elms);
-  mesh->writeNative(outMeshFile);
-  writeVtkFiles(outVtkFile, mesh);
+    printf("Mesh elements: %d \n", elms);
+  mesh->writeNative(outMeshFile.c_str());
+  writeVtkFiles(outVtkFile.c_str(), mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
