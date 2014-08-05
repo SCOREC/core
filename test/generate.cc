@@ -53,6 +53,7 @@ namespace {
 const char* modelFile = 0;
 const char* caseName = 0;
 const char* outMeshFile = 0;
+const char* outVtkFile = 0;
 
 void messageHandler(int type, const char* msg)
 {
@@ -105,15 +106,18 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
 
 void getConfig(int argc, char** argv)
 {
-  if (argc != 4) {
+  if (argc != 3) {
     if(0==PCU_Comm_Self())
-      printf("Usage: %s <model (.smd)> <mesh case name> <outMesh>\n", argv[0]);
+      printf("Usage: %s <model (.smd)> <mesh case name>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_SUCCESS);
   }
   modelFile = argv[1];
-  caseName = argv[2];
-  outMeshFile = argv[3];
+  outVtkFile = caseName = argv[2];
+  std::string out = std::string(caseName) + "/";
+  outMeshFile = out.c_str();
+  if(0==PCU_Comm_Self())
+    printf("Inputs: model %s case %s outmesh %s outVtk %s\n", modelFile, caseName, outMeshFile, outVtkFile);
 }
 
 } //end unnamed namespace
@@ -127,7 +131,17 @@ int main(int argc, char** argv)
 
   SimModel_start();
   SimPartitionedMesh_start(NULL,NULL);
-  Sim_readLicenseFile(NULL);
+  Sim_registerKey("ccn001 attributes 20140815 0 Ww2Ojapzp2cApoZb25fx7Q==");
+  Sim_registerKey("ccn001 acis 20140815 0 vyFN96MTPpNr8yxqLb/7pA==");
+  Sim_registerKey("ccn001 parasolid 20140815 0 L7Sw9cjWPaWLuVr+yEOm6g==");
+  Sim_registerKey("ccn001 surface 20140815 0 6+TLARr8V8AGYoFsE0peYQ==");
+  Sim_registerKey("ccn001 volume 20140815 0 aZXldX18SMn8bun36ufpqQ==");
+  Sim_registerKey("ccn001 export 20140815 0 5JqmOzdvkIR2yRHflFOI+g==");
+  Sim_registerKey("ccn001 adapt 20140815 0 2g03xabXcWPCV0ZSpinRfQ==");
+  Sim_registerKey("ccn001 adv 20140815 0 1HAvwlLch+7fzmHsjdxiaA==");
+  Sim_registerKey("ccn001 parallelmeshing 20140815 0 VxqkTzcinL0IhwmMWnarZg==");
+  Sim_registerKey("ccn001 paralleladapt 20140815 0 VmSjUupcVCjAdtvoDQXMkg==");
+  Sim_registerKey("ccn001 paralleladv 20140815 0 VGNI+XwEzg6xlcoMDQSgUg==");
   MS_init();
   Sim_setMessageHandler(messageHandler);
 
@@ -148,7 +162,12 @@ int main(int argc, char** argv)
   if (alignMdsMatches(mesh))
     printf("fixed misaligned matches\n");
   mesh->verify();
+  int elms = mesh->count(mesh->getDimension());
+  PCU_Add_Ints(&elms, 1);
+  if(0==PCU_Comm_Self())
+    fprintf(stdout, "Mesh elements: %d \n", elms);
   mesh->writeNative(outMeshFile);
+  writeVtkFiles(outVtkFile, mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
