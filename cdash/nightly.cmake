@@ -75,7 +75,7 @@ macro(run_subproject subproject_name repo_url config_opts)
   submit_part(${subproject_name} "Update")
 
   ctest_configure(
-    BUILD "${CTEST_BINARY_DIRECTORY}/${subproject_name}" 
+    BUILD "${CTEST_BINARY_DIRECTORY}" 
     SOURCE "${CTEST_SOURCE_DIRECTORY}/${subproject_name}"
     OPTIONS "${config_opts}"
     RETURN_VALUE HAD_ERROR)
@@ -85,7 +85,7 @@ macro(run_subproject subproject_name repo_url config_opts)
  
   submit_part(${subproject_name} Configure)
 
-  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}/${subproject_name}"
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"
       RETURN_VALUE HAD_ERROR)
   if(HAD_ERROR)
     message(FATAL_ERROR "Cannot build ${subproject_name}!")
@@ -93,7 +93,7 @@ macro(run_subproject subproject_name repo_url config_opts)
 
   submit_part(${subproject_name} Build)
 
-  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}/${subproject_name}")
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}")
 
   submit_part(${subproject_name} Test)
 endmacro()
