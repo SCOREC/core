@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-SET(CTEST_DO_SUBMIT OFF)
+SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
 
 set(CTEST_SITE             "twister.scorec.rpi.edu" )
@@ -26,7 +26,7 @@ endif()
 configure_file(${CTEST_SCRIPT_DIRECTORY}/CTestConfig.cmake
                ${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake COPYONLY)
 
-SET(CTEST_NIGHTLY_START_TIME "19:00:00 UTC")
+set(CTEST_NIGHTLY_START_TIME "19:00:00 EST")
 set(CTEST_BUILD_FLAGS -j4)
 
 set(CTEST_DROP_METHOD "http")
@@ -39,16 +39,12 @@ set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
 SET(SCOREC_REPO https://github.com/SCOREC/core.git)
 
-if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/publicTrilinos/SCOREC")
+if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/core")
   EXECUTE_PROCESS(COMMAND "${CTEST_GIT_COMMAND}" 
     clone ${SCOREC_REPO} ${CTEST_SOURCE_DIRECTORY}/core
     OUTPUT_VARIABLE _out
     ERROR_VARIABLE _err
     RESULT_VARIABLE HAD_ERROR)
-  
-  message(STATUS "out: ${_out}")
-  message(STATUS "err: ${_err}")
-  message(STATUS "res: ${HAD_ERROR}")
   if(HAD_ERROR)
     message(FATAL_ERROR "Cannot checkout core repository!")
   endif()
@@ -73,7 +69,7 @@ message("Found ${count} changed files")
 if(CTEST_DO_SUBMIT)
   ctest_submit(PARTS Update RETURN_VALUE HAD_ERROR)
   if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot update core!")
+    message(FATAL_ERROR "Cannot submit core update results!")
   endif()
 endif()
 
