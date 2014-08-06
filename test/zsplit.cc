@@ -43,7 +43,7 @@ void getConfig(int argc, char** argv)
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
     MPI_Finalize();
-    exit(EXIT_SUCCESS);
+    exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
   meshFile = argv[2];
