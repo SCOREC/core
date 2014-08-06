@@ -33,12 +33,12 @@ add_test(split_4
 add_test(verify_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ma_test
-  "${MDIR}/cube.dmg"
+  "${MDIR}/pipe.dmg"
   "pipe_4_.smb")
 add_test(ma_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ma_test
-  "${MDIR}/cube.dmg"
+  "${MDIR}/pipe.dmg"
   "pipe_4_.smb")
 add_test(tet_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
