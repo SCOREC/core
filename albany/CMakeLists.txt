@@ -44,7 +44,7 @@ endif()
 
 if(NOT BUILD_IN_TRILINOS)
    INSTALL(FILES ${HEADERS} DESTINATION include)
-   INSTALL(FILES "${PROJECT_BINARY_DIR}/libmds.pc" DESTINATION lib/pkgconfig)
+   INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_albany.pc" DESTINATION lib/pkgconfig)
    INSTALL(TARGETS 
      apf_albany
      RUNTIME DESTINATION bin
