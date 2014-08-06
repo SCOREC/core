@@ -46,4 +46,27 @@ add_test(tet_parallel
   "${MDIR}/pipe.dmg"
   "pipe_4_.smb"
   "tet.smb")
-#todo - mpas, ph_test on crossflow, ...
+set(MDIR ../../meshes/mpas)
+add_test(read_mpas
+  mpas_read
+  "${MDIR}/ocean_QU_240km.nc"
+  "mpas.dmg"
+  "mpas.smb")
+add_test(split_mpas
+  split
+  "mpas.dmg"
+  "mpas.smb"
+  "mpas_4_.smb")
+add_test(verify_mpas
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  verify
+  "mpas.dmg"
+  "mpas_4_.smb")
+add_test(write_mpas
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  mpas_write
+  "mpas.dmg"
+  "mpas_4_.smb"
+  "${MDIR}/ocean_QU_240km.nc"
+  "mpas_part_")
+#todo - ph_test on crossflow, fusion (fan.cc), etc...
