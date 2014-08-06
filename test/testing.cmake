@@ -56,7 +56,8 @@ add_test(split_mpas
   split
   "mpas.dmg"
   "mpas.smb"
-  "mpas_4_.smb")
+  "mpas_4_.smb"
+  4)
 add_test(verify_mpas
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   verify
