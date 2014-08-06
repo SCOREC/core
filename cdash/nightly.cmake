@@ -113,14 +113,14 @@ if(CTEST_DO_SUBMIT)
   endif()
 endif()
 
-# ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}")
+ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}")
 
-# if(CTEST_DO_SUBMIT)
-#   ctest_submit(PARTS Build RETURN_VALUE HAD_ERROR)
-#   if(HAD_ERROR)
-#     message(FATAL_ERROR "Cannot submit core test results!")
-#   endif()
-# endif()
+if(CTEST_DO_SUBMIT)
+  ctest_submit(PARTS Test RETURN_VALUE HAD_ERROR)
+  if(HAD_ERROR)
+    message(FATAL_ERROR "Cannot submit core test results!")
+  endif()
+endif()
 
 message("DONE")
 
