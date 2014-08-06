@@ -62,11 +62,17 @@ add_test(verify_mpas
   verify
   "mpas.dmg"
   "mpas_4_.smb")
+add_test(ghost_mpas
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ghost
+  "mpas.dmg"
+  "mpas_4_.smb"
+  "ghost_4_.smb")
 add_test(write_mpas
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   mpas_write
   "mpas.dmg"
-  "mpas_4_.smb"
+  "ghost_4_.smb"
   "${MDIR}/ocean_QU_240km.nc"
   "mpas_part_")
 #todo - ph_test on crossflow, fusion (fan.cc), etc...
