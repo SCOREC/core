@@ -647,4 +647,10 @@ void PCU_Switch_Comm(MPI_Comm new_comm)
   pcu_pmpi_switch(new_comm);
 }
 
+MPI_Comm PCU_Get_Comm(void)
+{
+  if (global_state == uninit)
+    pcu_fail("Get_Comm called before Comm_Init");
+  return pcu_pmpi_comm();
+}
 

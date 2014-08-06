@@ -359,7 +359,8 @@ void mds_free_local_links(struct mds_links* ln)
   ln->l[self] = ln->l[other] = NULL;
 }
 
-void mds_scale_net(struct mds_net* net, struct mds* m, int factor)
+void mds_remap_net(struct mds_net* net, struct mds* m,
+    int (*map)(int, void*), void* user)
 {
   int d;
   mds_id e;
@@ -372,6 +373,6 @@ void mds_scale_net(struct mds_net* net, struct mds* m, int factor)
       c = mds_get_copies(net, e);
       if (c)
         for (i = 0; i < c->n; ++i)
-          c->c[i].p *= factor;
+          c->c[i].p = map(c->c[i].p, user);
     }
 }

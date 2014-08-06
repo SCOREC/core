@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: APF-Albany
+URL: https://github.com/SCOREC/core
+Description: Special features for Albany
+Version: @PACKAGE_VERSION@
+Requires: libmds libparma
+Libs: -L${libdir} -lapf_albany
+Cflags: -I${includedir} 

@@ -221,7 +221,11 @@ ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
     fprintf(stderr, "ERROR: Zoltan initialization failed\n");
     exit(1);
   }
-  MPI_Comm comm = (zb->isLocal) ? MPI_COMM_SELF : MPI_COMM_WORLD;
+  MPI_Comm comm;
+  if (zb->isLocal)
+    comm = MPI_COMM_SELF;
+  else
+    comm = PCU_Get_Comm();
   ztn =Zoltan_Create(comm);
   import_gids = NULL;
   import_lids = NULL;

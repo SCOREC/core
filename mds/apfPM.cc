@@ -83,22 +83,24 @@ void updateOwners(apf::Mesh* m, PM& ps)
   setOwners(ps, mp);
 }
 
-void scalePM(PM& pm, int factor)
+void remapPM(PM& pm,
+    int (*map)(int, void*), void* user)
 {
   APF_ITERATE(PM, pm, it) {
     PME const& cp = *it;
     PME& p = const_cast<PME&>(cp); /* yep */
-    p.owner *= factor;
+    p.owner = map(p.owner, user);
     std::vector<int>& ids = p.ids;
 /* note: we can only do this because operator<(std::vector<T>...)
    uses lexicographical comparison, and so for vectors A and B,
    A < B does not change if all the elements of A and B are
-   multiplied by a constant factor.
+   multiplied or divided by a constant factor, so long as
+   the resulting ids are also unique.
    
-   any operation which changes the results of lexicographical
+   any map which changes the results of lexicographical
    comparison breaks the ordering of PME's in the PM. */
     for (size_t i = 0; i < ids.size(); ++i)
-      ids[i] *= factor;
+      ids[i] = map(ids[i], user);
   }
 }
 

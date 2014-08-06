@@ -16,50 +16,56 @@ include_directories(
   ${PARMA_INCLUDE_DIRS}
   ${PH_INCLUDE_DIRS}
   ${APF_MPAS_INCLUDE_DIRS})
+set(ALL_LIBS
+  ${MA_LIBS}
+  ${MDS_LIBS}
+  ${GMI_SIM_LIBS}
+  ${APF_SIM_LIBS}
+  ${SPR_LIBS}
+  ${PARMA_LIBS}
+  ${PH_LIBS}
+  ${APF_MPAS_LIBS})
 
-macro(buildExe exe src)
-  add_executable(${exe} EXCLUDE_FROM_ALL ${src})
-  set(tests ${tests} ${exe})
-endmacro(buildExe)
-
-set(tests)
-buildExe(mdlConvert mdlConvert.cc)
-buildExe(mkmodel mkmodel.cc)
-buildExe(mds_test mds_test.cc)
-buildExe(ma_test ma_test.cc)
-buildExe(convert convert.cc)
-if(SIMMODSUITE_SimAdvMeshing_FOUND)
-  buildExe(generate generate.cc)
+if(NOT IS_TESTING)
+  set(MYEXCLUDE EXCLUDE_FROM_ALL)
+else()
+  set(MYEXCLUDE)
 endif()
-buildExe(snap snap.cc)
-buildExe(ph_test ph_test.cc)
-buildExe(uniform uniform.cc)
-buildExe(fixshape fixshape.cc)
-buildExe(tetrahedronize tetrahedronize.cc)
-buildExe(fixlayer fixlayer.cc)
-buildExe(render render.cc)
-buildExe(verify verify.cc)
-buildExe(prismCodeMatch ../ma/prismCodeMatch.cc)
-buildExe(pyramidCodeMatch ../ma/pyramidCodeMatch.cc)
-buildExe(spr_test spr_test.cc)
-buildExe(describe describe.cc)
-buildExe(balance balance.cc)
-buildExe(split split.cc)
-buildExe(zsplit zsplit.cc)
-buildExe(ghost ghost.cc)
-buildExe(mpas_read mpas_read.cc)
-buildExe(mpas_write mpas_write.cc)
-buildExe(hps hps.cc)
-buildExe(fan fan.cc)
 
-foreach(test ${tests})
-  target_link_libraries(${test}
-    ${MA_LIBS}
-    ${MDS_LIBS}
-    ${GMI_SIM_LIBS}
-    ${APF_SIM_LIBS}
-    ${SPR_LIBS}
-    ${PARMA_LIBS}
-    ${PH_LIBS}
-    ${APF_MPAS_LIBS})
-endforeach()
+macro(setup_exe exename srcname)
+  add_executable(${exename} ${MYEXCLUDE} ${srcname})
+  target_link_libraries(${exename} ${ALL_LIBS})
+endmacro(setup_exe)
+
+setup_exe(mdlConvert mdlConvert.cc)
+setup_exe(mkmodel mkmodel.cc)
+setup_exe(mds_test mds_test.cc)
+setup_exe(ma_test ma_test.cc)
+setup_exe(convert convert.cc)
+if(SIMMODSUITE_SimAdvMeshing_FOUND)
+  setup_exe(generate generate.cc)
+endif()
+setup_exe(snap snap.cc)
+setup_exe(ph_test ph_test.cc)
+setup_exe(uniform uniform.cc)
+setup_exe(fixshape fixshape.cc)
+setup_exe(tetrahedronize tetrahedronize.cc)
+setup_exe(fixlayer fixlayer.cc)
+setup_exe(render render.cc)
+setup_exe(verify verify.cc)
+setup_exe(prismCodeMatch ../ma/prismCodeMatch.cc)
+setup_exe(pyramidCodeMatch ../ma/pyramidCodeMatch.cc)
+setup_exe(spr_test spr_test.cc)
+setup_exe(describe describe.cc)
+setup_exe(balance balance.cc)
+setup_exe(split split.cc)
+setup_exe(zsplit zsplit.cc)
+setup_exe(ghost ghost.cc)
+setup_exe(mpas_read mpas_read.cc)
+setup_exe(mpas_write mpas_write.cc)
+setup_exe(hps hps.cc)
+setup_exe(fan fan.cc)
+
+if(IS_TESTING)
+  include(testing.cmake)
+endif()

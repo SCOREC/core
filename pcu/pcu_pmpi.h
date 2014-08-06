@@ -25,6 +25,7 @@ bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm);
 bool pcu_pmpi_done(pcu_message* m);
 
 void pcu_pmpi_switch(MPI_Comm new_comm);
+MPI_Comm pcu_pmpi_comm(void);
 
 extern pcu_mpi pcu_pmpi;
 
