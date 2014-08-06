@@ -1,4 +1,5 @@
-set(MDIR ../../meshes/pipe)
+set(MESHES /lore/dibanez/meshes)
+set(MDIR ${MESHES}/pipe)
 add_test(verify_serial
   verify
   "${MDIR}/pipe.dmg"
@@ -46,7 +47,7 @@ add_test(tet_parallel
   "${MDIR}/pipe.dmg"
   "pipe_4_.smb"
   "tet.smb")
-set(MDIR ../../meshes/mpas)
+set(MDIR ${MESHES}/mpas)
 add_test(read_mpas
   mpas_read
   "${MDIR}/ocean_QU_240km.nc"
