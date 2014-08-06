@@ -37,19 +37,6 @@ set(CTEST_DROP_SITE_CDASH TRUE)
 find_program(CTEST_GIT_COMMAND NAMES git)
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
-SET(SCOREC_REPO https://github.com/SCOREC/core.git)
-
-if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/core")
-  EXECUTE_PROCESS(COMMAND "${CTEST_GIT_COMMAND}" 
-    clone ${SCOREC_REPO} ${CTEST_SOURCE_DIRECTORY}/core
-    OUTPUT_VARIABLE _out
-    ERROR_VARIABLE _err
-    RESULT_VARIABLE HAD_ERROR)
-  if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot checkout core repository!")
-  endif()
-endif()
-
 ctest_start(${CTEST_TEST_TYPE})
 
 if(CTEST_DO_SUBMIT)
@@ -60,67 +47,85 @@ if(CTEST_DO_SUBMIT)
   endif()
 endif()
 
-set_property(GLOBAL PROPERTY SubProject core)
-set_property(GLOBAL PROPERTY Label core)
-
-ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}/core" RETURN_VALUE count)
-message("Found ${count} changed files")
-
-if(CTEST_DO_SUBMIT)
-  ctest_submit(PARTS Update RETURN_VALUE HAD_ERROR)
-  if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot submit core update results!")
+macro(submit_part subproject_name part)
+  if(CTEST_DO_SUBMIT)
+    ctest_submit(PARTS ${part} RETURN_VALUE HAD_ERROR)
+    if(HAD_ERROR)
+      message(FATAL_ERROR "Cannot submit ${subproject_name} ${part} results!")
+    endif()
   endif()
-endif()
+endmacro()
+
+macro(run_subproject subproject_name repo_url config_opts)
+  set_property(GLOBAL PROPERTY SubProject ${subproject_name})
+  set_property(GLOBAL PROPERTY Label ${subproject_name})
+
+  if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/${subproject_name}")
+    EXECUTE_PROCESS(COMMAND "${CTEST_GIT_COMMAND}" 
+      clone ${repo_url} ${CTEST_SOURCE_DIRECTORY}/${subproject_name}
+      RESULT_VARIABLE HAD_ERROR)
+    if(HAD_ERROR)
+      message(FATAL_ERROR "Cannot checkout ${subproject_name} repository!")
+    endif()
+  endif()
+
+  ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}/${subproject_name}" RETURN_VALUE count)
+  message("Found ${count} changed files")
+
+  submit_part(${subproject_name} "Update")
+
+  ctest_configure(
+    BUILD "${CTEST_BINARY_DIRECTORY}" 
+    SOURCE "${CTEST_SOURCE_DIRECTORY}/${subproject_name}"
+    OPTIONS "${config_opts}"
+    RETURN_VALUE HAD_ERROR)
+  if(HAD_ERROR)
+    message(FATAL_ERROR "Cannot configure ${subproject_name}!")
+  endif()
+ 
+  submit_part(${subproject_name} Configure)
+
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"
+      RETURN_VALUE HAD_ERROR)
+  if(HAD_ERROR)
+    message(FATAL_ERROR "Cannot build ${subproject_name}!")
+  endif()
+
+  submit_part(${subproject_name} Build)
+
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}")
+
+  submit_part(${subproject_name} Test)
+endmacro()
 
 SET(CONFIGURE_OPTIONS
   "-DCMAKE_C_COMPILER=mpicc"
   "-DCMAKE_CXX_COMPILER=mpicxx"
-  "-DCMAKE_C_FLAGS=-O2 -g"
-  "-DCMAKE_CXX_FLAGS=-O2 -g"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall"
   "-DENABLE_THREADS=ON"
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
+  "-DIS_TESTING=True"
 )
+SET(REPO https://github.com/SCOREC/core.git)
 
-ctest_configure(
-  BUILD "${CTEST_BINARY_DIRECTORY}" 
-  SOURCE "${CTEST_SOURCE_DIRECTORY}/core"
-  OPTIONS "${CONFIGURE_OPTIONS}"
-  RETURN_VALUE HAD_ERROR)
+run_subproject("core" "${REPO}" "${CONFIGURE_OPTIONS}")
 
-if(HAD_ERROR)
-	message(FATAL_ERROR "Cannot configure core build!")
-endif()
+SET(CONFIGURE_OPTIONS
+  "-DCMAKE_C_COMPILER=mpicc"
+  "-DCMAKE_CXX_COMPILER=mpicxx"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall"
+  "-DENABLE_THREADS=ON"
+  "-DENABLE_ZOLTAN=ON"
+  "-DENABLE_MPAS=ON"
+  "-DIS_TESTING=True"
+  "-DSIM_MPI=openmpi16"
+)
+SET(REPO git@bitbucket.org:ibaned/scorec.git)
 
-if(CTEST_DO_SUBMIT)
-  ctest_submit(PARTS Configure RETURN_VALUE HAD_ERROR)
-  if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot submit core configure results!")
-  endif()
-endif()
-
-ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" RETURN_VALUE HAD_ERROR)
-
-if(HAD_ERROR)
-	message(FATAL_ERROR "Cannot build core!")
-endif()
-
-if(CTEST_DO_SUBMIT)
-  ctest_submit(PARTS Build RETURN_VALUE HAD_ERROR)
-  if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot submit core build results!")
-  endif()
-endif()
-
-# ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}")
-
-# if(CTEST_DO_SUBMIT)
-#   ctest_submit(PARTS Build RETURN_VALUE HAD_ERROR)
-#   if(HAD_ERROR)
-#     message(FATAL_ERROR "Cannot submit core test results!")
-#   endif()
-# endif()
+run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
 
 message("DONE")
 
