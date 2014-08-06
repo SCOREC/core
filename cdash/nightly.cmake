@@ -112,20 +112,20 @@ SET(REPO https://github.com/SCOREC/core.git)
 
 run_subproject("core" "${REPO}" "${CONFIGURE_OPTIONS}")
 
-# SET(CONFIGURE_OPTIONS
-#   "-DCMAKE_C_COMPILER=mpicc"
-#   "-DCMAKE_CXX_COMPILER=mpicxx"
-#   "-DCMAKE_C_FLAGS=-O2 -g -Wall"
-#   "-DCMAKE_CXX_FLAGS=-O2 -g -Wall"
-#   "-DENABLE_THREADS=ON"
-#   "-DENABLE_ZOLTAN=ON"
-#   "-DENABLE_MPAS=ON"
-#   "-DIS_TESTING=True"
-#   "-DSIM_MPI=openmpi16"
-# )
-# SET(REPO git@bitbucket.org:ibaned/scorec.git)
-#
-# run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
+SET(CONFIGURE_OPTIONS
+  "-DCMAKE_C_COMPILER=mpicc"
+  "-DCMAKE_CXX_COMPILER=mpicxx"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall"
+  "-DENABLE_THREADS=ON"
+  "-DENABLE_ZOLTAN=ON"
+  "-DENABLE_MPAS=ON"
+  "-DIS_TESTING=True"
+  "-DSIM_MPI=openmpi16"
+)
+SET(REPO git@bitbucket.org:ibaned/scorec.git)
+
+run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
 
 message("DONE")
 
