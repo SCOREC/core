@@ -18,7 +18,7 @@ class Linear : public ma::IsotropicFunction
     {
       ma::Vector p = ma::getPosition(mesh,v);
       double x = (p[0] - lower[0])/(upper[0] - lower[0]);
-      return average*(3*x+1)/2;
+      return average*(4*x+2)/3;
     }
   private:
     ma::Mesh* mesh;
