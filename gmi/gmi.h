@@ -25,10 +25,6 @@ struct gmi_model_ops {
   struct gmi_ent* (*find)(struct gmi_model* m, int dim, int tag);
   void (*eval)(struct gmi_model* m, struct gmi_ent* e,
       double const p[2], double x[3]);
-  void (*eval_du)(struct gmi_model* m, struct gmi_ent* e,
-      double const p[2], double t[3]);
-  void (*eval_dv)(struct gmi_model* m, struct gmi_ent* e,
-      double const p[2], double t[3]);
   void (*reparam)(struct gmi_model* m, struct gmi_ent* from,
       double const from_p[2], struct gmi_ent* to, double to_p[2]);
   int (*periodic)(struct gmi_model* m, struct gmi_ent* e, int dim);
@@ -57,10 +53,6 @@ struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag);
 int gmi_can_eval(struct gmi_model* m);
 void gmi_eval(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double x[3]);
-void gmi_eval_du(struct gmi_model* m, struct gmi_ent* e,
-    double const p[2], double t[3]);
-void gmi_eval_dv(struct gmi_model* m, struct gmi_ent* e,
-    double const p[2], double t[3]);
 void gmi_reparam(struct gmi_model* m, struct gmi_ent* from,
     double const from_p[2], struct gmi_ent* to, double to_p[2]);
 int gmi_periodic(struct gmi_model* m, struct gmi_ent* e, int dim);

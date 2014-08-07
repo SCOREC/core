@@ -17,7 +17,7 @@ namespace {
 
   void getConfig(int argc, char** argv)
   {
-    assert(argc==3);
+    assert(argc==4);
     modelFile = argv[1];
     meshFile = argv[2];
   }
@@ -38,7 +38,8 @@ namespace {
     const int layers = 3;
     const int bridgeDim = 1;
     apf::Balancer* ghost = Parma_MakeGhostDiffuser(m, layers, bridgeDim);
-    ghost->balance(weights, 1.05);
+    ghost->balance(weights, 1.01);
+    m->destroyTag(weights);
     delete ghost;
   }
 }
@@ -53,9 +54,8 @@ int main(int argc, char** argv)
   PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
-  apf::writeVtkFiles("before", m);
   runParma(m);
-  apf::writeVtkFiles("after", m);
+  m->writeNative(argv[3]);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();

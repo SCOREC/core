@@ -39,6 +39,7 @@ int PCU_Comm_Pack(int to_rank, const void* data, size_t size);
 #define PCU_COMM_PACK(to_rank,object)\
 PCU_Comm_Pack(to_rank,&(object),sizeof(object))
 int PCU_Comm_Send(void);
+bool PCU_Comm_Receive(void);
 bool PCU_Comm_Listen(void);
 int PCU_Comm_Sender(void);
 bool PCU_Comm_Unpacked(void);
@@ -83,7 +84,6 @@ void PCU_Debug_Print(const char* format, ...) __attribute__((format(printf,1,2))
 //lesser-used APIs
 bool PCU_Comm_Initialized(void);
 int PCU_Comm_Packed(int to_rank, size_t* size);
-bool PCU_Comm_Receive(void);
 int PCU_Comm_From(int* from_rank);
 int PCU_Comm_Received(size_t* size);
 void* PCU_Comm_Extract(size_t size);
@@ -100,6 +100,7 @@ int PCU_Comm_Start(PCU_Method method);
 
 //special MPI_Comm replacement API
 void PCU_Switch_Comm(MPI_Comm new_comm);
+MPI_Comm PCU_Get_Comm(void);
 
 //stack trace helpers using GNU/Linux
 void PCU_Trace(void);

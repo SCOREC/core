@@ -63,6 +63,7 @@ void mds_set_local_matches(struct mds_net* net, struct mds* m,
                          int t, struct mds_links* ln);
 void mds_free_local_links(struct mds_links* ln);
 
-void mds_scale_net(struct mds_net* net, struct mds* m, int factor);
+void mds_remap_net(struct mds_net* net, struct mds* m,
+    int (*map)(int, void*), void* user);
 
 #endif

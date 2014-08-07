@@ -93,6 +93,8 @@ void svdDecompose(DynamicMatrix& A,
   double anorm = 0.0, g = 0.0, scale = 0.0;
   DynamicVector rv1(n);
 
+  l = 0; /* silence warning on less-able compilers */
+
   /* Householder reduction to bidiagonal form */
   for (i = 0; i < n; i++)
   {

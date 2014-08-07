@@ -99,7 +99,6 @@ int main( int argc, char* argv[])
   PCU_Comm_Init();
   gmi_model* model = makeModel();
   ma::Mesh* m = apf::loadMdsMesh(model, meshFile);
-  apf::writeVtkFiles("before", m);
   m->verify();
   Vortex sf(m);
   ma::Input* in = ma::configure(m, &sf);

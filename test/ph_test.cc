@@ -21,7 +21,7 @@ static void afterSplit(apf::Mesh2* m)
   std::string path = ph::setupOutputDir();
   ph::setupOutputSubdir(path);
   if (in.phastaIO) {
-    apf::defragMdsMesh(m);
+    apf::reorderMdsMesh(m);
     ph::Output o;
     ph::generateOutput(in, bcs, m, o);
     ph::detachAndWriteSolution(in, m, path);

@@ -1,0 +1,7 @@
+<Project name="SCOREC">
+  <SubProject name="core">
+  </SubProject>
+  <SubProject name="core-sim">
+  </SubProject>
+</Project>
+
