@@ -48,7 +48,7 @@ void misLuby::Print(std::ostream& ostr, char* dbgMsg,
     vector<adjPart>::iterator itr;
     for (itr = itbegin; itr != itend; itr++) {
       ostr << "(" << itr->partId << ", {";
-      for (int i = 0; i < itr->net.size(); i++) {
+      for (size_t i = 0; i < itr->net.size(); i++) {
         ostr << itr->net[i] << ";";
       }
       ostr << "} )" << delimiter;
@@ -94,7 +94,7 @@ void seedRandomNumberGenerator(int seed, int debug) {
  * @return 0 on success, non-zero otherwise
  */
 int generateRandomNumbers(vector<int>& randNums) {//, bool seedGenerator) {
-  for (int i = 0; i < randNums.size(); i++) {
+  for (size_t i = 0; i < randNums.size(); i++) {
     randNums[i] = rand();
   }
   return 0;
@@ -110,7 +110,6 @@ size_t createNeighborAndGetBufSize(const int destRank) {
 
 int sendAdjNetsToNeighbors(vector<partInfo>& parts, 
     vector<adjPart>*& nbNet) {  
-  const int rank = PCU_Comm_Self();
 
   PCU_Comm_Start(PCU_GLOBAL_METHOD);
 
@@ -124,7 +123,7 @@ int sendAdjNetsToNeighbors(vector<partInfo>& parts,
             createNeighborAndGetBufSize(destRank);
 
           //number of bytes in message
-          int numIntsInMsg = 5 + nbItr->net.size();
+          size_t numIntsInMsg = 5 + nbItr->net.size();
           PCU_COMM_PACK(destRank,numIntsInMsg);
 
           //pack source part Id
@@ -162,7 +161,7 @@ int sendAdjNetsToNeighbors(vector<partInfo>& parts,
 }
 
 int sendNetToNeighbors(vector<partInfo>& parts) {
-  const int rank = PCU_Comm_Self();
+
   PCU_Comm_Start(PCU_GLOBAL_METHOD);
 
   int partIdx = 0;
@@ -172,7 +171,7 @@ int sendNetToNeighbors(vector<partInfo>& parts) {
       const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
 
       //number of bytes in message
-      int numIntsInMsg = 4 + partItr->net.size();
+      size_t numIntsInMsg = 4 + partItr->net.size();
       PCU_COMM_PACK(destRank,numIntsInMsg);
 
       //pack source part Id
@@ -215,7 +214,7 @@ int sendIntsToNeighbors(vector<partInfo>& parts,
       const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
 
       //number of bytes in message
-      int numIntsInMsg = 4 + msg[partIdx].size();
+      size_t numIntsInMsg = 4 + msg[partIdx].size();
       PCU_COMM_PACK( destRank, numIntsInMsg);
 
       //pack msg tag
@@ -280,13 +279,13 @@ void unpackInts(vector<partInfo>& parts, vector<int>*& msg,
   numIntsUnpacked++;
 
   //find index to store message
-  int partIdx = 0;
+  size_t partIdx = 0;
   for (; partIdx < parts.size(); partIdx++) {
     if (parts[partIdx].id == destPartId) {
       break;
     }
   }
-  assert(partIdx >= 0 && partIdx < parts.size());
+  assert(partIdx < parts.size());
 
   //unpack int array
   const size_t buffSize = (numIntsInMsg - numIntsUnpacked) * sizeof (int);
@@ -298,7 +297,7 @@ void unpackInts(vector<partInfo>& parts, vector<int>*& msg,
   }
 
   int buff;
-  for(int i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
+  for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
     PCU_COMM_UNPACK(buff);    
     msg[partIdx].push_back(buff);
   }
@@ -352,7 +351,7 @@ void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg,
   numIntsUnpacked++;
 
   //find index to store message
-  int partIdx = 0;
+  size_t partIdx = 0;
   for (; partIdx < parts.size(); partIdx++) {
     if (parts[partIdx].id == destPartId) {
       break;
@@ -374,7 +373,7 @@ void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg,
   assert(buffSize > 0);
 
   int buff;
-  for(int i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
+  for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
     PCU_COMM_UNPACK(buff);    
     ap.net.push_back(buff);
   }    
@@ -431,7 +430,7 @@ void unpackAdjPart(vector<partInfo>& parts,
   numIntsUnpacked++;
 
   //find index to store message
-  int partIdx = 0;
+  size_t partIdx = 0;
   for (; partIdx < parts.size(); partIdx++) {
     if (parts[partIdx].id == destPartId) {
       break;
@@ -448,7 +447,7 @@ void unpackAdjPart(vector<partInfo>& parts,
   assert(buffSize > 0);
 
   int buff;
-  for(int i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
+  for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
     PCU_COMM_UNPACK(buff);    
     ap.net.push_back(buff);
   }    
@@ -505,7 +504,6 @@ void setNodeStateInGraph(vector<partInfo>& parts) {
  * @param nbNet (In) neighbor parts and their nets
  */
 void partInfo::addNetNeighbors(vector<adjPart>& nbNet) {
-  const int rank = PCU_Comm_Self();
   stable_sort(this->net.begin(), this->net.end());
 
   //loop over each neighbor to the part
@@ -748,7 +746,6 @@ int mis(const int rank, const int totNumParts, vector<partInfo>& parts,
 
 void sendMisStatusToNeighbors(vector<partInfo>& parts) {
    
-  const int rank = PCU_Comm_Self();
   PCU_Comm_Start(PCU_GLOBAL_METHOD);
 
   //pack
@@ -801,7 +798,7 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
     int srcRank;
     PCU_Comm_From(&srcRank);
     do {
-      int numIntsPacked;
+      size_t numIntsPacked;
       size_t numIntsUnpacked = 0;
       PCU_COMM_UNPACK(numIntsPacked);
       numIntsUnpacked++;
@@ -814,13 +811,13 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
       numIntsUnpacked++;
 
       //find index to store message
-      int partIdx = 0;
+      size_t partIdx = 0;
       for (; partIdx < parts.size(); partIdx++) {
         if (parts[partIdx].id == destPartId) {
           break;
         }
       }
-      assert(partIdx >= 0 && partIdx < parts.size());
+      assert(partIdx < parts.size());
 
       //unpack source part Id
       int srcPartId;
@@ -834,7 +831,7 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
         debugPrint(msg);
         if (-1 != neighborsInMIS.at(partIdx)) {
           if (neighborsInMIS.at(partIdx) != srcPartId) {
-            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%d) = %d\n", 
+            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%zu) = %d\n", 
                 rank, srcPartId, partIdx, val);
           }
         }
