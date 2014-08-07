@@ -24,6 +24,18 @@ struct creators {
 
 static struct creators* ctors = NULL;
 
+struct gmi_set* gmi_make_set(int n)
+{
+  struct gmi_set* s = malloc(sizeof(*s) + n * sizeof(struct gmi_ent*));
+  s->n = n;
+  return s;
+}
+
+void gmi_free_set(struct gmi_set* s)
+{
+  free(s);
+}
+
 struct gmi_iter* gmi_begin(struct gmi_model* m, int dim)
 {
   return m->ops->begin(m, dim);
@@ -52,6 +64,13 @@ int gmi_tag(struct gmi_model* m, struct gmi_ent* e)
 struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag)
 {
   return m->ops->find(m, dim, tag);
+}
+
+struct gmi_set* gmi_adjacent(struct gmi_model* m, struct gmi_ent* e, int dim)
+{
+  if (m->ops->adjacent)
+    return m->ops->adjacent(m, e, dim);
+  return gmi_make_set(0);
 }
 
 int gmi_can_eval(struct gmi_model* m)

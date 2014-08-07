@@ -115,32 +115,80 @@ struct gmi_ent* gmi_mesh_find(struct gmi_model* m, int dim, int tag)
   return to_ptr(ENT(dim, i));
 }
 
+static struct gmi_set* copy_set(struct gmi_set* s)
+{
+  int i;
+  struct gmi_set* s2 = gmi_make_set(s->n);
+  for (i = 0; i < s->n; ++i)
+    s2->e[i] = s->e[i];
+  return s2;
+}
+
+struct gmi_set* gmi_mesh_adjacent(struct gmi_model* m,
+    struct gmi_ent* e, int dim)
+{
+  int index, edim;
+  struct gmi_mesh* mm = to_mesh(m);
+  index = gmi_index(e);
+  edim = gmi_dim(m, e);
+  if (dim == edim - 1) {
+    return copy_set(mm->down[edim][index]);
+  } else if (dim == edim + 1)
+    return copy_set(mm->up[edim][index]);
+  else
+    gmi_fail("only one-level adjacencies available");
+  return NULL;
+}
+
 void gmi_mesh_destroy(struct gmi_model* m)
 {
   struct gmi_mesh* mm = to_mesh(m);
-  int i;
+  int i, j;
   for (i = 0; i < 4; ++i)
     free(mm->tags[i]);
+  for (i = 1; i < 4; ++i) {
+    for (j = 0; j < m->n[i]; ++j)
+      gmi_free_set(mm->down[i][j]);
+    free(mm->down[i]);
+  }
+  for (i = 0; i < 3; ++i) {
+    for (j = 0; j < m->n[i]; ++j)
+      gmi_free_set(mm->up[i][j]);
+    free(mm->up[i]);
+  }
   free(mm);
 }
 
 static struct gmi_model_ops mesh_ops = {
-  .begin   = gmi_mesh_begin,
-  .next    = gmi_mesh_next,
-  .end     = gmi_mesh_end,
-  .dim     = gmi_mesh_dim,
-  .tag     = gmi_mesh_tag,
-  .find    = gmi_mesh_find,
-  .destroy = gmi_mesh_destroy
+  .begin    = gmi_mesh_begin,
+  .next     = gmi_mesh_next,
+  .end      = gmi_mesh_end,
+  .dim      = gmi_mesh_dim,
+  .tag      = gmi_mesh_tag,
+  .find     = gmi_mesh_find,
+  .adjacent = gmi_mesh_adjacent,
+  .destroy  = gmi_mesh_destroy
 };
 
 void gmi_mesh_create(struct gmi_mesh* m, int n[4])
 {
-  int i;
+  int i, j;
   m->model.ops = &mesh_ops;
   memcpy(m->model.n, n, sizeof(m->model.n));
   for (i = 0; i < 4; ++i)
     m->tags[i] = malloc(n[i] * sizeof(int));
+  for (i = 1; i < 4; ++i) {
+    m->down[i] = calloc(n[i], sizeof(struct gmi_set*));
+    for (j = 0; j < n[i]; ++j)
+      m->down[i][j] = gmi_make_set(0);
+  }
+  m->down[0] = NULL;
+  for (i = 0; i < 3; ++i) {
+    m->up[i] = calloc(n[i], sizeof(struct gmi_set*));
+    for (j = 0; j < n[i]; ++j)
+      m->up[i][j] = gmi_make_set(0);
+  }
+  m->up[3] = NULL;
 }
 
 static void sort_dim(struct gmi_mesh* m, int dim)
@@ -158,15 +206,41 @@ static void my_fscanf(FILE* f, int n, const char* format, ...)
   assert(r == n);
 }
 
-void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
+static void add_adjacent(struct gmi_mesh* m, struct gmi_ent* e,
+    int is_up, int atag)
+{
+  int dim;
+  struct gmi_ent* ae;
+  int index;
+  struct gmi_set** ps;
+  struct gmi_set* s;
+  int i;
+  dim = gmi_dim(&m->model, e);
+  if (is_up)
+    ae = gmi_find(&m->model, dim + 1, atag);
+  else
+    ae = gmi_find(&m->model, dim - 1, atag);
+  if (!ae)
+    return;
+  index = gmi_index(e);
+  if (is_up)
+    ps = m->up[dim] + index;
+  else
+    ps = m->down[dim] + index;
+  s = gmi_make_set((*ps)->n + 1);
+  for (i = 0; i < (*ps)->n; ++i)
+    s->e[i] = (*ps)->e[i];
+  s->e[(*ps)->n] = ae;
+  gmi_free_set(*ps);
+  *ps = s;
+}
+
+void read_tags(struct gmi_mesh* m, FILE* f)
 {
   int n[4];
   int i,j,k;
   int loops, shells;
   int faces, edges;
-  FILE* f = fopen(filename, "r");
-  if (!f)
-    gmi_fail("could not open model file");
   /* read entity counts */
   my_fscanf(f, 4, "%d %d %d %d", &n[3], &n[2], &n[1], &n[0]);
   gmi_mesh_create(m, n);
@@ -203,6 +277,67 @@ void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
     }
   }
   sort_dim(m, 3);
+}
+
+void read_topology(struct gmi_mesh* m, FILE* f)
+{
+  int i,j,k;
+  int loops, shells;
+  int faces, edges;
+  int tag;
+  struct gmi_ent* e;
+  /* read entity counts */
+  my_fscanf(f, 0, "%*d %*d %*d %*d");
+  /* bounding box */
+  my_fscanf(f, 0, "%*f %*f %*f");
+  my_fscanf(f, 0, "%*f %*f %*f");
+  /* vertices */
+  for (i = 0; i < m->model.n[0]; ++i)
+    my_fscanf(f, 0, "%*d %*f %*f %*f");
+  /* edges */
+  for (i = 0; i < m->model.n[1]; ++i) {
+    my_fscanf(f, 1, "%d", &tag);
+    e = gmi_find(&m->model, 1, tag);
+    for (j = 0; j < 2; ++j) {
+      my_fscanf(f, 1, "%d", &tag);
+      add_adjacent(m, e, 0, tag);
+    }
+  }
+  /* faces */
+  for (i = 0; i < m->model.n[2]; ++i) {
+    my_fscanf(f, 2, "%d %d", &tag, &loops);
+    e = gmi_find(&m->model, 2, tag);
+    for (j = 0; j < loops; ++j) {
+      my_fscanf(f, 1, "%d", &edges);
+      for (k = 0; k < edges; ++k) {
+        /* tag, direction */
+        my_fscanf(f, 1, "%d %*d", &tag);
+        add_adjacent(m, e, 0, tag);
+      }
+    }
+  }
+  /* regions */
+  for (i = 0; i < m->model.n[3]; ++i) {
+    my_fscanf(f, 2, "%d %d", &tag, &shells);
+    e = gmi_find(&m->model, 3, tag);
+    for (j = 0; j < shells; ++j) {
+      my_fscanf(f, 1, "%d", &faces);
+      for (k = 0; k < faces; ++k) {
+        my_fscanf(f, 1, "%d %*d", &tag);
+        add_adjacent(m, e, 0, tag);
+      }
+    }
+  }
+}
+
+void gmi_read_dmg(struct gmi_mesh* m, const char* filename)
+{
+  FILE* f = fopen(filename, "r");
+  if (!f)
+    gmi_fail("could not open model file");
+  read_tags(m, f);
+  rewind(f);
+  read_topology(m, f);
   fclose(f);
 }
 
@@ -210,7 +345,9 @@ void gmi_write_dmg(struct gmi_model* m, const char* filename)
 {
   struct gmi_iter* it;
   struct gmi_ent* e;
+  struct gmi_set* s;
   FILE* f = fopen(filename, "w");
+  int i;
   /* entity counts */
   fprintf(f, "%d %d %d %d\n", m->n[3], m->n[2], m->n[1], m->n[0]);
   /* bounding box */
@@ -224,18 +361,43 @@ void gmi_write_dmg(struct gmi_model* m, const char* filename)
   gmi_end(m, it);
   /* edges */
   it = gmi_begin(m, 1);
-  while ((e = gmi_next(m, it)))
-    fprintf(f, "%d 0 0\n", gmi_tag(m, e));
+  while ((e = gmi_next(m, it))) {
+    s = gmi_adjacent(m, e, 0);
+    fprintf(f, "%d ", gmi_tag(m, e));
+    if (s->n == 0)
+      fprintf(f,"-42 -42\n");
+    else if (s->n == 1)
+      fprintf(f,"%d -42\n", gmi_tag(m, s->e[0]));
+    else
+      fprintf(f, "%d %d\n",
+          gmi_tag(m, s->e[0]), gmi_tag(m, s->e[1]));
+    gmi_free_set(s);
+  }
   gmi_end(m, it);
   /* faces */
   it = gmi_begin(m, 2);
-  while ((e = gmi_next(m, it)))
-    fprintf(f, "%d 0\n", gmi_tag(m, e));
+  while ((e = gmi_next(m, it))) {
+    /* we're going to cheat a bit here and
+       treat all edges as one giant loop */
+    fprintf(f, "%d 1\n", gmi_tag(m, e));
+    s = gmi_adjacent(m, e, 1);
+    fprintf(f, "%d\n", s->n);
+    for (i = 0; i < s->n; ++i)
+      fprintf(f, " %d 0\n", gmi_tag(m, s->e[i]));
+    gmi_free_set(s);
+  }
   gmi_end(m, it);
   /* regions */
   it = gmi_begin(m, 3);
-  while ((e = gmi_next(m, it)))
-    fprintf(f, "%d 0\n", gmi_tag(m, e));
+  while ((e = gmi_next(m, it))) {
+    /* same sort of cheat, all faces are one shell */
+    fprintf(f, "%d 1\n", gmi_tag(m, e));
+    s = gmi_adjacent(m, e, 2);
+    fprintf(f, "%d\n", s->n);
+    for (i = 0; i < s->n; ++i)
+      fprintf(f, " %d 0\n", gmi_tag(m, s->e[i]));
+    gmi_free_set(s);
+  }
   gmi_end(m, it);
   fclose(f);
 }
