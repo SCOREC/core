@@ -77,4 +77,19 @@ add_test(write_mpas
   "ghost_4_.smb"
   "${MDIR}/ocean_QU_240km.nc"
   "mpas_part_")
+set(MDIR ${MESHES}/fusion)
+add_test(mkmodel_fusion
+  mkmodel
+  "${MDIR}/fusion.smb"
+  "fusion.dmg")
+add_test(split_fusion
+  split
+  "fusion.dmg"
+  "${MDIR}/fusion.smb"
+  "fusion_4_.smb"
+  4)
+add_test(adapt_fusion
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  fan
+  "fusion_4_.smb")
 #todo - ph_test on crossflow, fusion (fan.cc), etc...
