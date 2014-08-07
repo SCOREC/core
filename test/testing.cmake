@@ -77,4 +77,15 @@ add_test(write_mpas
   "ghost_4_.smb"
   "${MDIR}/ocean_QU_240km.nc"
   "mpas_part_")
+set(MDIR ${MESHES}/upright)
+add_test(parallel_meshgen
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  generate
+  "${MDIR}/upright.smd"
+  "67k")
+add_test(adapt_meshgen
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ma_test
+  "${MDIR}/upright.smd"
+  "67k/")
 #todo - ph_test on crossflow, fusion (fan.cc), etc...
