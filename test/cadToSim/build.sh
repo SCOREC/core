@@ -1,5 +1,5 @@
 #!/bin/bash -ex
-module load simmetrix/simModSuite/9.0-140403
+module load simmetrix/simModSuite
 
 g++ \
 -g \
