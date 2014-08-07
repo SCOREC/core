@@ -65,18 +65,6 @@ void gmi_eval(struct gmi_model* m, struct gmi_ent* e,
   m->ops->eval(m, e, p, x);
 }
 
-void gmi_eval_du(struct gmi_model* m, struct gmi_ent* e,
-    double const p[2], double t[3])
-{
-  m->ops->eval_du(m, e, p, t);
-}
-
-void gmi_eval_dv(struct gmi_model* m, struct gmi_ent* e,
-    double const p[2], double t[3])
-{
-  m->ops->eval_dv(m, e, p, t);
-}
-
 void gmi_reparam(struct gmi_model* m, struct gmi_ent* from,
     double const from_p[2], struct gmi_ent* to, double to_p[2])
 {

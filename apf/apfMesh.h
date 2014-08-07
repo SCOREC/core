@@ -132,8 +132,6 @@ class Mesh
     virtual ModelEntity* findModelEntity(int type, int tag) = 0;
     /* get geometric classification */
     virtual ModelEntity* toModel(MeshEntity* e) = 0;
-    virtual void getModelFaceNormal(ModelEntity* face, Vector3 const& p, Vector3& n) = 0;
-    virtual void getModelEdgeTangent(ModelEntity* edge, double p, Vector3& n) = 0;
     /* evaluate parametric coordinate (p) as a spatial point (x)
        Return true iff the evaluation worked (i.e. the modeler supports it) */
     virtual bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x) = 0;
