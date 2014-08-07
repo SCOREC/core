@@ -96,8 +96,8 @@ namespace parma {
         for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
           partIdMergeTargets.push_back(nborPartIds[mergeTargetsResults[i]]);
           
-          // PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
-          // PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
+           // PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
+           // PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
         }
 
         mergeTargetsResults.swap(partIdMergeTargets);
@@ -168,17 +168,16 @@ namespace parma {
     PCU_Debug_Print("Part %d mergeNet size %d\n", PCU_Comm_Self(), tgts.total());
     for(int i = 0; i < tgts.total(); ++i){
       part.net.push_back(tgts.mergeTargetIndex(i));
-      // PCU_Debug_Print("mergingNet %d\n", part.net[i]);
+      PCU_Debug_Print("\tmergingNet %d\n", part.net[i]);
     }
-    assert(part.id == PCU_Comm_Self());
     part.net.push_back(part.id);
     int temp_partId = part.id;
       /*
       //Testing for examples, additionally add paramter [4] in mis as true if testing random numbers
-      if(temp_partId == 0) part.randNum = 2;
-      else if (temp_partId == 1) part.randNum = 1;
+      if(temp_partId == 0) part.randNum = 1;
+      else if (temp_partId == 1) part.randNum = 2;
       else if (temp_partId == 2) part.randNum = 3;
-      else if (temp_partId == 3) part.randNum = 2;
+      else if (temp_partId == 3) part.randNum = 1;
       else if (temp_partId == 4) part.randNum = 2;
       else if (temp_partId == 5) part.randNum = 2;
       else if (temp_partId == 6) part.randNum = 1;
@@ -194,22 +193,29 @@ namespace parma {
 
     
     if (!ierr) PCU_Debug_Print("Part %d had a successful MIS\n", PCU_Comm_Self());
-    PCU_Debug_Print("\tPart %d in MIS\n", part.id);
-    /*
+    if (maximalIndSet.size() == 1) PCU_Debug_Print("\tPart %d in MIS\n", part.id);
+    
     PCU_Comm_Begin();
 
     if (maximalIndSet.size() != 0) {
-        for(int i=0; part.net.size(); ++i){
-          PCU_COMM_PACK(part.net[i], NULL);
-        }
+      for(int i=0; i < tgts.total(); ++i){
+        PCU_Debug_Print("send dest = %d\n", tgts.mergeTargetIndex(i));
+        PCU_Comm_Pack(tgts.mergeTargetIndex(i), NULL, 0);
       }
     }
+    
     PCU_Comm_Send();
-
-    if (PCU_Comm_Listen()) {
-
+    bool received = false;
+    int destination = -1;
+    while (PCU_Comm_Listen()) {
+      assert(!received);
+      destination = PCU_Comm_Sender();
+      received = true;
     }
-    */
+    PCU_Debug_Print("destination = %d\n", destination);
+
+    
+    
     //TODO need to exhange mergeTargets between parts
       // if (local part is in MIS) then send local part id to mergeTargets
       // listen for incoming message (there shuold be exactly one) containing an interger which is the destination part id for the element in the part
