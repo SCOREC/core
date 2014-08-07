@@ -12,7 +12,6 @@ export PATH=/lore/dibanez/bin:$PATH
 
 cd /lore/dibanez/cdash
 
-svn up meshes/
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> log
 
 rm -rf build/
