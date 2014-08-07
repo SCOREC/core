@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
 
-set(CTEST_SITE             "twister.scorec.rpi.edu" )
+set(CTEST_SITE             "avatar.scorec.rpi.edu" )
 set(CTEST_DASHBOARD_ROOT   "/lore/dibanez/cdash" )
 set(CTEST_CMAKE_GENERATOR  "Unix Makefiles" )
 set(CTEST_BUILD_CONFIGURATION  RelWithDebInfo)
