@@ -1,0 +1,306 @@
+{
+   parallel_begin2_addr8
+   Memcheck:Addr8
+   ...
+   fun:parallel_begin2
+   fun:main
+}
+{
+   parallel_begin2_addr8_top
+   Memcheck:Addr8
+   ...
+   fun:parallel_begin2
+}
+{
+   parallel_begin2_cond
+   Memcheck:Cond
+   ...
+   fun:parallel_begin2
+   fun:main
+}
+{
+   parallel_begin2_leak
+   Memcheck:Leak
+   ...
+   fun:parallel_begin2
+   fun:main
+}
+
+{
+   parallel_begin2_leak_top
+   Memcheck:Leak
+   ...
+   fun:parallel_begin2
+}
+{
+   writev
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+   fun:mca_oob_tcp_msg_send_handler
+   fun:mca_oob_tcp_peer_send
+   fun:mca_oob_tcp_send_nb
+   fun:orte_rml_oob_send_buffer
+   fun:allgather
+   fun:modex
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:parallel_begin2
+   fun:main
+}
+{
+   PMPI
+   Memcheck:Addr1
+   ...
+   fun:PMPI_Scatter
+   ...
+   fun:main
+}
+{
+   parallel
+   Memcheck:Param
+   ...
+   fun:parallel_begin2
+   fun:main
+}
+{
+   PMPI_Init_leak
+   Memcheck:Leak
+   ...
+   fun:PMPI_Init
+}
+
+{
+   PMPI_Iprobe_param
+   Memcheck:Param
+   ...
+   fun:PMPI_Iprobe
+}
+
+
+{
+   PMPI_Init_cond
+   Memcheck:Cond
+   ...
+   fun:PMPI_Init
+}
+{
+   PMPI_Init_addr8
+   Memcheck:Addr8
+   ...
+   fun:PMPI_Init
+}
+{
+   mpi_init_cond
+   Memcheck:Cond
+   ...
+   fun:ompi_mpi_init
+}
+{
+   MPI
+   Memcheck:Addr8
+   ...
+   fun:ompi_mpi_init
+}
+{
+   mpi_init_val8
+   Memcheck:Value8
+   ...
+   fun:ompi_mpi_init
+}
+{
+   opal_register_params_Addr8
+   Memcheck:Addr8
+   fun:mca_base_param_reg_string_name
+   fun:opal_register_params
+}
+{
+   vsnprintf
+   Memcheck:Cond
+   fun:vsnprintf
+   fun:snprintf
+   fun:mca_base_param_reg_string_name
+   fun:opal_register_params
+}
+{
+   vfprintf
+   Memcheck:Value8
+   fun:_IO_default_xsputn
+   fun:vfprintf
+   fun:vsnprintf
+   fun:snprintf
+   fun:mca_base_param_reg_string_name
+   fun:opal_register_params
+}
+{
+   vsnprintf
+   Memcheck:Value8
+   fun:vsnprintf
+   fun:snprintf
+   fun:mca_base_param_reg_string_name
+   fun:opal_register_params
+}
+{
+   GI_strncpy
+   Memcheck:Value8
+   fun:__GI_strncpy
+   fun:save_filename
+   fun:foreachfile_callback
+   obj:*
+   obj:*
+   fun:free_dependency_list
+   obj:*
+}
+{
+   free_dependency_list
+   Memcheck:Cond
+   ...
+   fun:free_dependency_list
+   ...
+}
+
+{
+   orte_init
+   Memcheck:Value8
+   ...
+   fun:orte_init
+}
+{
+   orte_init
+   Memcheck:Cond
+   ...
+   fun:orte_init
+}
+
+{
+   orte_init
+   Memcheck:Value8
+   ...
+   fun:orte_init
+}
+
+{
+   mca_base_param_reg_string_name
+   Memcheck:Cond
+   fun:mca_base_param_reg_string_name
+   fun:opal_register_params
+}
+
+{
+   parallel_end
+   Memcheck:Addr8
+   ...
+   fun:parallel_end
+   fun:main
+}
+{
+   parallel_end
+   Memcheck:Cond
+   ...
+   fun:parallel_end
+   fun:main
+}
+{
+   parallel_end
+   Memcheck:Leak
+   ...
+   fun:parallel_end
+   fun:main
+}
+{
+   malloc
+   Memcheck:Leak
+   fun:malloc
+   fun:orte_grpcomm_base_update_modex_entries
+   obj:*
+   fun:opal_dss_unpack_buffer
+}
+{
+   malloc
+   Memcheck:Leak
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   malloc
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   fun:param_lookup
+   fun:mca_base_param_reg_string
+   obj:*
+   fun:mca_base_components_open
+   fun:mca_oob_base_open
+   obj:*
+   fun:mca_base_components_open
+   fun:orte_rml_base_open
+   fun:orte_ess_base_app_setup
+   obj:*
+}
+
+{
+   ompi_mpi_init
+   Memcheck:Param
+   ...
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   PMPI_Init_Param
+   Memcheck:Param
+   sched_setaffinity(mask)
+   fun:syscall
+   fun:opal_paffinity_linux_plpa_api_probe_init
+   fun:opal_paffinity_linux_plpa_init
+   fun:opal_paffinity_linux_plpa_have_topology_information
+   fun:linux_module_init
+   fun:opal_paffinity_base_select
+   fun:opal_init
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+
+{
+   PMPI_Iprobe_Param
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+   ...
+   fun:PMPI_Iprobe
+   ...
+}
+
+{
+   PMPI_Issend_param
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+   ...
+   fun:PMPI_Issend
+   ...
+}
+
+{
+   writev
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+   ...
+   fun:PMPI_Recv
+   ...
+}
+{
+   PMPI_Test_param
+   Memcheck:Param
+   writev(vector[...])
+   fun:writev
+   ...
+   fun:PMPI_Test
+   ...
+}
