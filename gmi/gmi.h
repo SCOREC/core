@@ -16,6 +16,14 @@ struct gmi_iter;
 
 struct gmi_model;
 
+struct gmi_set {
+  int n;
+  struct gmi_ent* e[];
+};
+
+struct gmi_set* gmi_make_set(int n);
+void gmi_free_set(struct gmi_set* s);
+
 struct gmi_model_ops {
   struct gmi_iter* (*begin)(struct gmi_model* m, int dim);
   struct gmi_ent* (*next)(struct gmi_model* m, struct gmi_iter* i);
@@ -23,6 +31,7 @@ struct gmi_model_ops {
   int (*dim)(struct gmi_model* m, struct gmi_ent* e);
   int (*tag)(struct gmi_model* m, struct gmi_ent* e);
   struct gmi_ent* (*find)(struct gmi_model* m, int dim, int tag);
+  struct gmi_set* (*adjacent)(struct gmi_model* m, struct gmi_ent* e, int dim);
   void (*eval)(struct gmi_model* m, struct gmi_ent* e,
       double const p[2], double x[3]);
   void (*reparam)(struct gmi_model* m, struct gmi_ent* from,
@@ -50,6 +59,7 @@ void gmi_end(struct gmi_model* m, struct gmi_iter* i);
 int gmi_dim(struct gmi_model* m, struct gmi_ent* e);
 int gmi_tag(struct gmi_model* m, struct gmi_ent* e);
 struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag);
+struct gmi_set* gmi_adjacent(struct gmi_model* m, struct gmi_ent* e, int dim);
 int gmi_can_eval(struct gmi_model* m);
 void gmi_eval(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double x[3]);

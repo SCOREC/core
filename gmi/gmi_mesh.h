@@ -23,6 +23,8 @@ void gmi_write_dmg(struct gmi_model* m, const char* filename);
 struct gmi_mesh {
   struct gmi_model model;
   int* tags[4];
+  struct gmi_set** up[4];
+  struct gmi_set** down[4];
 };
 
 struct gmi_iter* gmi_mesh_begin(struct gmi_model* m, int dim);
