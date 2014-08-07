@@ -164,7 +164,6 @@ int main(int argc, char** argv)
   if(0==PCU_Comm_Self())
     printf("Mesh elements: %d \n", elms);
   mesh->writeNative(outMeshFile.c_str());
-  writeVtkFiles(outVtkFile.c_str(), mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
