@@ -402,15 +402,6 @@ class MeshMDS : public Mesh2
     {
       return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh,fromEnt(e)));
     }
-    void getModelFaceNormal(ModelEntity* face, Vector3 const& p,
-                                    Vector3& n)
-    {
-      abort();
-    }
-    void getModelEdgeTangent(ModelEntity* edge, double p, Vector3& n)
-    {
-      abort();
-    }
     bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
     {
       gmi_eval(mesh->user_model,
