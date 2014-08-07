@@ -84,7 +84,7 @@ int generateRandomNumbers(std::vector<int>& randNums);
  * @param totNumParts (In) total number of parts in the partition
  * @param parts (In) info on each part 
  * @param mis (InOut) on exit, parts in the MIS
- * @param setRandNums (In) 1:set random numbers, 0:use defined random numbers
+ * @param randNumsPredefined (In) 0: compute random numbers, 1:uses defined random numbers
  * @return 0 on success, non-zero otherwise
  */
 int mis(const int rank, const int totNumParts, 

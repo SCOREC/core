@@ -21,8 +21,12 @@ namespace parma {
       //maxW is also = HeavyImb
       MergeTargets(Sides* s, Weights* w, double maxW)
       {
+
         //If part is heavy or empty, exit function
-        if (w->self() >= maxW || w->self() == 0) return;
+        if (w->self() >= maxW || w->self() == 0) {
+          PCU_Debug_Print("Part %d of weight %f is heavy\n", PCU_Comm_Self(), w->self());  
+          return;
+        }
         PCU_Debug_Print("Part %d of weight %f is light and not empty with imb of %f, %u neighbors--\n", PCU_Comm_Self(), w->self(), maxW, w->size());
         
         int* nborPartIds = new int[w->size()];
@@ -79,8 +83,8 @@ namespace parma {
         mergeTargetsResults.reserve(solnVal);
         ks->getSolution(mergeTargetsResults);
         double t1 = MPI_Wtime();
-        if (divide) printf("Part %d executed knapsack in %f with knapsack type dividing factor, %f\n", PCU_Comm_Self(), t1 - t0, divide_factor);
-        else printf("Part %d executed knapsack in %f with knapsack type interger rounding\n", PCU_Comm_Self(), t1 - t0);
+        //if (divide) printf("Part %d executed knapsack in %f with knapsack type dividing factor, %f\n", PCU_Comm_Self(), t1 - t0, divide_factor);
+        //else printf("Part %d executed knapsack in %f with knapsack type interger rounding\n", PCU_Comm_Self(), t1 - t0);
         
         //PCU_Debug_Print("mergetargets start\n");  
         PCU_Debug_Print("mergetargets size = %u\n", mergeTargetsResults.size());
@@ -92,15 +96,15 @@ namespace parma {
         for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
           partIdMergeTargets.push_back(nborPartIds[mergeTargetsResults[i]]);
           
-          //PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
-          //PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
+          // PCU_Debug_Print("merge Target result %d -- ", mergeTargetsResults[i]);
+          // PCU_Debug_Print("merge target part ID %d\n", nborPartIds[mergeTargetsResults[i]]);
         }
 
         mergeTargetsResults.swap(partIdMergeTargets);
 
-        // for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-        //   PCU_Debug_Print("new merge Target result %d\n", mergeTargetsResults[i]);
-        // }
+        for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
+          PCU_Debug_Print("\tmerge Target result %d\n", mergeTargetsResults[i]);
+        }
          
         delete [] nborPartIds;
         delete [] value;  
@@ -122,24 +126,24 @@ namespace parma {
       vector<int> mergeTargetsResults;
   };
 
-  //Convert part indexes to part ID's in MergeTargets // Done
-  //TODO is what i did in mergeTargets with the vector valid?
-  //Can i change the return of total to be an int? **Change to size_t //Done
-  //how does putting const in front of 158 allow it to be changed. //Done
-  //Changed FMDB_mesh_getNeighborPartId to directly push into misLuby part instead of creating a set and then passing it in
-  //TODO **write function to pull ith partId from mergeTargetResults**
 
+  //Create example of random numbers that will and will not find a merge. 2 or 3 //Done
+  //1a) Look into luby paper about running maximal solution to tell you some kind of properties about the maximum //None that I could find
+  //1b) Approximation of the maximum independent set using a maximal independent set undefined algo. //NPC unless graph can be classified
+  //2a) Look into running it multiple times  //Far as i can tell, nothing
+  //2b) **Possibly assign an upper bound to mergeTargets in Chi in that there's no possible way to get enough empties //Believe this is still doable (ask about it tomorrow)
+  //3) write getMergeTargets(...) function
 
+  //4) Create PDF with exmaples and make them highly instructional for others to run them
   apf::Migration* selectMerges(apf::Mesh* m, Sides* s, MergeTargets& tgts) {
     //run MIS and getMergeTargets(...) to determine which 'target'
     // part this part will be merged into then create a Migration 
     // object and set the 'target' part id for each element
     //return the migration object
 
-    
     //Vector to be passed into misLuby (later to be changed to just a single part info since vector is still from multi parts per process)
     vector<misLuby::partInfo> parts;
-    parts.reserve(1); //Don't know if this is necessary, thought I'd throw it in anyway, remove if believed to be unnecessary
+    parts.reserve(1);
     
     //Generating misLuby part info for current part 
     misLuby::partInfo part;
@@ -161,19 +165,58 @@ namespace parma {
       */
 
     //Passing in the mergingNet (works)
+    PCU_Debug_Print("Part %d mergeNet size %d\n", PCU_Comm_Self(), tgts.total());
     for(int i = 0; i < tgts.total(); ++i){
       part.net.push_back(tgts.mergeTargetIndex(i));
       // PCU_Debug_Print("mergingNet %d\n", part.net[i]);
     }
-
+    assert(part.id == PCU_Comm_Self());
     part.net.push_back(part.id);
+    int temp_partId = part.id;
+      /*
+      //Testing for examples, additionally add paramter [4] in mis as true if testing random numbers
+      if(temp_partId == 0) part.randNum = 2;
+      else if (temp_partId == 1) part.randNum = 1;
+      else if (temp_partId == 2) part.randNum = 3;
+      else if (temp_partId == 3) part.randNum = 2;
+      else if (temp_partId == 4) part.randNum = 2;
+      else if (temp_partId == 5) part.randNum = 2;
+      else if (temp_partId == 6) part.randNum = 1;
+      else if (temp_partId == 7) part.randNum = 2;
+      */
+
     parts.push_back(part); //End creating misLuby part info
     
+    mis_init(0,false); //RandNumSeed set to 0 for testing purposes.
+    vector<int> maximalIndSet; 
+    int ierr = mis(PCU_Comm_Self(), s->total(), parts, maximalIndSet, true); //rank, total number of parts, parts mis vector, maximalindset vec
+    //Todo** Remove true when done testing random numbers
 
-    // use Sides to get neighbor part ids
-    // merging net comes from MergeTargets
-    // make variable for random number and set it to 0 for testing purposes
-    // we can hardcode the random number in the misLuby::partInfo object for testing purposes
+    
+    if (!ierr) PCU_Debug_Print("Part %d had a successful MIS\n", PCU_Comm_Self());
+    PCU_Debug_Print("\tPart %d in MIS\n", part.id);
+    /*
+    PCU_Comm_Begin();
+
+    if (maximalIndSet.size() != 0) {
+        for(int i=0; part.net.size(); ++i){
+          PCU_COMM_PACK(part.net[i], NULL);
+        }
+      }
+    }
+    PCU_Comm_Send();
+
+    if (PCU_Comm_Listen()) {
+
+    }
+    */
+    //TODO need to exhange mergeTargets between parts
+      // if (local part is in MIS) then send local part id to mergeTargets
+      // listen for incoming message (there shuold be exactly one) containing an interger which is the destination part id for the element in the part
+      // loop over elements in the part and set the destination part id 
+
+      // Don't completely understand isEmpty function, essentially is the current part contained in the plan?
+      // Seems that you use Migration::send function to pass in parts and their targets
     return new apf::Migration(m);
     //Check to see 
   };
@@ -199,7 +242,7 @@ namespace parma {
   }
 
   bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt, int& extra) {
-    //PCU_Debug_Print("Empty parts = %f, total Splits = %f\n", numEmpty(m,plan), totSplits(w,tgt));
+    //PCU_Debug_Print("Empty parts = %d, total Splits = %d $$ ", numEmpty(m,plan), totSplits(w,tgt));
     extra = numEmpty(m, plan) - totSplits(w, tgt);
     // PCU_Debug_Print("Extra = %d\n", extra);
     if ( extra < 0 ){
@@ -235,7 +278,7 @@ namespace parma {
   }
   //Should we test the maxWeight first and not do a step first?
   double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
-    double testW = maxWeight(w); 
+    double testW = maxWeight(w)*1.2;//*1.1476; 
     double step = 0.1 * avgWeight(w); //Not necessarily arbitrary but can be changed.
     bool splits = false;
     int extraEmpties = 0;
@@ -319,7 +362,7 @@ namespace parma {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
-        PCU_Debug_Print("Final Chi = %f\n",tgt);
+        PCU_Debug_Print("Final Chi = %f\n======================================\n",tgt);
         delete sides;
         delete w;
         return; //TODO remove return after testing and put deletes below
@@ -329,6 +372,7 @@ namespace parma {
       virtual void balance(apf::MeshTag* weights, double tolerance) {
         (void) tolerance; // shhh
         double t0 = MPI_Wtime();
+        PCU_Debug_Print("======================================\n");
         run(weights);
         double elapsed = MPI_Wtime()-t0;
         PCU_Max_Doubles(&elapsed, 1);
