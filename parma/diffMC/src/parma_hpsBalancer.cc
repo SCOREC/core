@@ -214,16 +214,14 @@ namespace parma {
     }
     PCU_Debug_Print("destination = %d\n", destination);
 
+    apf::MeshIterator* it = m->begin(m->getDimension());
+    apf::MeshEntity* e;
+    apf::Migration* plan = new apf::Migration(m);
+    while ((e = m->iterate(it)) && received)
+      plan->send(e, destination);
+    m->end(it);
     
-    
-    //TODO need to exhange mergeTargets between parts
-      // if (local part is in MIS) then send local part id to mergeTargets
-      // listen for incoming message (there shuold be exactly one) containing an interger which is the destination part id for the element in the part
-      // loop over elements in the part and set the destination part id 
-
-      // Don't completely understand isEmpty function, essentially is the current part contained in the plan?
-      // Seems that you use Migration::send function to pass in parts and their targets
-    return new apf::Migration(m);
+    return plan;
     //Check to see 
   };
 
@@ -244,13 +242,14 @@ namespace parma {
   int numEmpty(apf::Mesh* m, apf::Migration* plan) {
     int empty = isEmpty(m, plan);
     PCU_Add_Ints(&empty, 1);
+
     return empty;
   }
 
   bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt, int& extra) {
-    //PCU_Debug_Print("Empty parts = %d, total Splits = %d $$ ", numEmpty(m,plan), totSplits(w,tgt));
+    PCU_Debug_Print("Empty parts = %d, total Splits = %d $$ ", numEmpty(m,plan), totSplits(w,tgt));
     extra = numEmpty(m, plan) - totSplits(w, tgt);
-    // PCU_Debug_Print("Extra = %d\n", extra);
+    PCU_Debug_Print("Extra = %d\n", extra);
     if ( extra < 0 ){
       return false;  } 
     else{
