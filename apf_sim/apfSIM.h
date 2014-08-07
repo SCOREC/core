@@ -64,8 +64,6 @@ class MeshSIM : public Mesh
     int getModelTag(ModelEntity* e);
     ModelEntity* findModelEntity(int type, int tag);
     ModelEntity* toModel(MeshEntity* e);
-    void getModelFaceNormal(ModelEntity* face, Vector3 const& p, Vector3& n);
-    void getModelEdgeTangent(ModelEntity* edge, double p, Vector3& n);
     bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x);
     void migrate(Migration* plan);
     int getId();

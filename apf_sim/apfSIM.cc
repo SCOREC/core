@@ -744,18 +744,6 @@ ModelEntity* MeshSIM::toModel(MeshEntity* e)
   return reinterpret_cast<ModelEntity*>(EN_whatIn(entity));
 }
 
-void MeshSIM::getModelFaceNormal(ModelEntity* f, Vector3 const& p, Vector3& n)
-{
-  pGFace face = reinterpret_cast<pGFace>(f);
-  GF_normal(face,&(p[0]),&(n[0]));
-}
-
-void MeshSIM::getModelEdgeTangent(ModelEntity* e, double p, Vector3& t)
-{
-  pGEdge edge = reinterpret_cast<pGEdge>(e);
-  GE_firstDerivative(edge,p,&(t[0]));
-}
-
 bool MeshSIM::snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
 {
   return false;
