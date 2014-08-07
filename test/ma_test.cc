@@ -42,6 +42,7 @@ int main(int argc, char** argv)
   in->shouldRunPreZoltan = true;
   in->shouldRunMidDiffusion = true;
   in->shouldRunPostDiffusion = true;
+  in->shouldRefineLayer = true;
   ma::adapt(in);
   m->verify();
   apf::writeVtkFiles("after",m);
