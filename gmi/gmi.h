@@ -10,6 +10,8 @@
 #ifndef GMI_H
 #define GMI_H
 
+#include <stdio.h>
+
 struct gmi_ent;
 
 struct gmi_iter;
@@ -74,6 +76,10 @@ void gmi_register(gmi_creator f, const char* ext);
 struct gmi_model* gmi_load(const char* filename);
 
 void gmi_fail(const char* why);
+
+void gmi_fscanf(FILE* f, int n, const char* format, ...);
+
+void gmi_write_dmg(struct gmi_model* m, const char* filename);
 
 #ifdef __cplusplus
 }

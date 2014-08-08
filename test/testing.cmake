@@ -1,4 +1,6 @@
-set(MESHES /lore/dibanez/meshes)
+set(MESHES "/lore/dibanez/meshes"
+    CACHE string 
+    "path to the meshes svn repo")
 set(MDIR ${MESHES}/pipe)
 add_test(verify_serial
   verify
@@ -31,24 +33,24 @@ add_test(split_2
   2)
 add_test(split_4
   ${MPIRUN} ${MPIRUN_PROCFLAG} 2
-  zsplit
+  ./zsplit
   "${MDIR}/pipe.smd"
   "pipe_2_.smb"
   "pipe_4_.smb"
   2)
 add_test(verify_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  verify
+  ./verify
   "${MDIR}/pipe.smd"
   "pipe_4_.smb")
 add_test(ma_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ma_test
+  ./ma_test
   "${MDIR}/pipe.smd"
   "pipe_4_.smb")
 add_test(tet_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  tetrahedronize
+  ./tetrahedronize
   "${MDIR}/pipe.smd"
   "pipe_4_.smb"
   "tet.smb")
@@ -66,18 +68,18 @@ add_test(split_mpas
   4)
 add_test(verify_mpas
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  verify
+  ./verify
   "mpas.dmg"
   "mpas_4_.smb")
 add_test(ghost_mpas
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ghost
+  ./ghost
   "mpas.dmg"
   "mpas_4_.smb"
   "ghost_4_.smb")
 add_test(write_mpas
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  mpas_write
+  ./mpas_write
   "mpas.dmg"
   "ghost_4_.smb"
   "${MDIR}/ocean_QU_240km.nc"
@@ -95,7 +97,7 @@ add_test(split_fusion
   4)
 add_test(adapt_fusion
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  fan
+  ./fan
   "fusion_4_.smb")
 set(MDIR ${MESHES}/upright)
 add_test(parallel_meshgen

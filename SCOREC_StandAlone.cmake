@@ -28,12 +28,10 @@ include(CTest)
 option(IS_TESTING "Build for CTest" OFF)
 set(MPIRUN "mpirun"
     CACHE string 
-    "the mpirun or srun executable"
-    FORCE)
+    "the mpirun or srun executable")
 set(MPIRUN_PROCFLAG "-np"
     CACHE string 
-    "the command line flag to give process count to MPIRUN"
-    FORCE)
+    "the command line flag to give process count to MPIRUN")
 
 #############################################################
 #STK
