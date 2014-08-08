@@ -386,28 +386,13 @@ class MeshMDS : public Mesh2
       tag = reinterpret_cast<mds_tag*>(t);
       return tag->name;
     }
-    int getModelType(ModelEntity* e)
-    {
-      return mds_model_dim(mesh, reinterpret_cast<gmi_ent*>(e));
-    }
-    int getModelTag(ModelEntity* e)
-    {
-      return mds_model_id(mesh, reinterpret_cast<gmi_ent*>(e));
-    }
-    ModelEntity* findModelEntity(int type, int tag)
-    {
-      return reinterpret_cast<ModelEntity*>(mds_find_model(mesh,type,tag));
-    }
     ModelEntity* toModel(MeshEntity* e)
     {
-      return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh,fromEnt(e)));
+      return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh, fromEnt(e)));
     }
-    bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
+    gmi_model* getModel()
     {
-      gmi_eval(mesh->user_model,
-               reinterpret_cast<gmi_ent*>(m),
-               &p[0], &x[0]);
-      return true;
+      return mesh->user_model;
     }
     void acceptChanges()
     {
@@ -495,27 +480,6 @@ class MeshMDS : public Mesh2
     {
       return toEnt(fromIter(it));
     }
-    bool canSnap()
-    {
-      return gmi_can_eval(mesh->user_model);
-    }
-    void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
-    {
-      ModelEntity* from_g = toModel(e);
-      if (g == from_g)
-        return getParam(e, p);
-      gmi_ent* from = reinterpret_cast<gmi_ent*>(from_g);
-      gmi_ent* to = reinterpret_cast<gmi_ent*>(g);
-      Vector3 from_p;
-      getParam(e, from_p);
-      gmi_reparam(mesh->user_model, from, &from_p[0], to, &p[0]);
-    }
-    bool getPeriodicRange(ModelEntity* g, int axis, double range[2])
-    {
-      gmi_ent* e = reinterpret_cast<gmi_ent*>(g);
-      gmi_range(mesh->user_model, e, axis, range);
-      return gmi_periodic(mesh->user_model, e, axis);
-    }
     MeshEntity* createVert_(ModelEntity* c)
     {
       return createEntity_(VERTEX,c,0);
@@ -573,10 +537,6 @@ class MeshMDS : public Mesh2
        300, //pyramid
       };
       return table[type];
-    }
-    gmi_model* getPumiModel()
-    {
-      return static_cast<gmi_model*>(mesh->user_model);
     }
     mds_apf* mesh;
     PM parts;
@@ -636,11 +596,6 @@ void reorderMdsMesh(Mesh2* mesh)
   m->mesh = mds_reorder(m->mesh);
 }
 
-gmi_model* getMdsModel(Mesh2* mesh)
-{
-  return static_cast<MeshMDS*>(mesh)->getPumiModel();
-}
-
 static int divide(int n, void* data)
 {
   return n / (*((int*)data));
@@ -681,7 +636,7 @@ static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
 
 static Mesh2* clone(Mesh2* from)
 {
-  Mesh2* m = makeEmptyMdsMesh(getMdsModel(from),
+  Mesh2* m = makeEmptyMdsMesh(from->getModel(),
         from->getDimension(), from->hasMatching());
   DynamicArray<MeshTag*> tags;
   from->getTags(tags);

@@ -4,6 +4,8 @@
 #include <SimModel.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
+#include <gmi.h>
+#include <gmi_sim.h>
 
 namespace apf {
 
@@ -13,6 +15,12 @@ MeshSIM::MeshSIM(pParMesh m):
   part = PM_mesh(mesh,0);
   d = M_numRegions(part) ? 3 : 2;
   iterDim = -1;
+  model = gmi_import_sim(M_model(part));
+}
+
+MeshSIM::~MeshSIM()
+{
+  gmi_destroy(model);
 }
 
 int MeshSIM::getDimension()
@@ -720,33 +728,15 @@ const char* MeshSIM::getTagName(MeshTag* t)
   return tag->name.c_str();
 }
 
-int MeshSIM::getModelType(ModelEntity* e)
-{
-  pGEntity entity = reinterpret_cast<pGEntity>(e);
-  return GEN_type(entity);
-}
-
-int MeshSIM::getModelTag(ModelEntity* e)
-{
-  pGEntity entity = reinterpret_cast<pGEntity>(e);
-  return GEN_tag(entity);
-}
-
-ModelEntity* MeshSIM::findModelEntity(int type, int tag)
-{
-  pGModel model = M_model(mesh);
-  return reinterpret_cast<ModelEntity*>(GM_entityByTag(model,type,tag));
-}
-
 ModelEntity* MeshSIM::toModel(MeshEntity* e)
 {
   pEntity entity = reinterpret_cast<pEntity>(e);
   return reinterpret_cast<ModelEntity*>(EN_whatIn(entity));
 }
 
-bool MeshSIM::snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
+gmi_model* MeshSIM::getModel()
 {
-  return false;
+  return model;
 }
 
 void MeshSIM::migrate(Migration* plan)

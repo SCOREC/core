@@ -14,6 +14,8 @@
 #include "apfVector.h"
 #include "apfDynamicArray.h"
 
+struct gmi_model;
+
 namespace apf {
 
 class FieldShape;
@@ -25,6 +27,7 @@ typedef NumberingOf<int> Numbering;
 class MeshEntity;
 class MeshIterator;
 class MeshTag;
+
 class ModelEntity;
 
 typedef std::map<int,MeshEntity*> Copies;
@@ -124,17 +127,22 @@ class Mesh
     virtual int getTagType(MeshTag* t) = 0;
     virtual int getTagSize(MeshTag* t) = 0;
     virtual const char* getTagName(MeshTag* t) = 0;
-    /* return the model entity dimension */
-    virtual int getModelType(ModelEntity* e) = 0;
-    /* get the dimension-unique model entity identifier */
-    virtual int getModelTag(ModelEntity* e) = 0;
-    /* get the model entity by dimension and identifier */
-    virtual ModelEntity* findModelEntity(int type, int tag) = 0;
     /* get geometric classification */
     virtual ModelEntity* toModel(MeshEntity* e) = 0;
-    /* evaluate parametric coordinate (p) as a spatial point (x)
-       Return true iff the evaluation worked (i.e. the modeler supports it) */
-    virtual bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x) = 0;
+    /* get an interface to the geometric model */
+    virtual gmi_model* getModel() = 0;
+    /* return the model entity dimension */
+    int getModelType(ModelEntity* e);
+    /* get the dimension-unique model entity identifier */
+    int getModelTag(ModelEntity* e);
+    /* get the model entity by dimension and identifier */
+    ModelEntity* findModelEntity(int type, int tag);
+    /* evaluate parametric coordinate (p) as a spatial point (x) */
+    bool canSnap();
+    void snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x);
+    void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p);
+    bool getPeriodicRange(ModelEntity* g, int axis,
+        double range[2]);
     /* static lookup table for the dimension of each type in
        Mesh::Type */
     static int getEntityDimension(int type);

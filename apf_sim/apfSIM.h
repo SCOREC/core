@@ -23,7 +23,7 @@ class MeshSIM : public Mesh
 {
   public:
     MeshSIM(pParMesh m);
-    virtual ~MeshSIM() {}
+    virtual ~MeshSIM();
     int getDimension();
     std::size_t count(int dimension);
     MeshIterator* begin(int dimension);
@@ -60,11 +60,8 @@ class MeshSIM : public Mesh
     int getTagType(MeshTag* t);
     int getTagSize(MeshTag* t);
     const char* getTagName(MeshTag* t);
-    int getModelType(ModelEntity* e);
-    int getModelTag(ModelEntity* e);
-    ModelEntity* findModelEntity(int type, int tag);
     ModelEntity* toModel(MeshEntity* e);
-    bool snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x);
+    gmi_model* getModel();
     void migrate(Migration* plan);
     int getId();
     void writeNative(const char* fileName);
@@ -83,6 +80,7 @@ class MeshSIM : public Mesh
     RIter riter;
     int d;
     std::vector<TagSIM*> tags;
+    gmi_model* model;
 };
 
 };//namespace apf

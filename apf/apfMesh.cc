@@ -10,6 +10,7 @@
 #include "apfShape.h"
 #include "apfNumbering.h"
 #include "apfTagData.h"
+#include <gmi.h>
 #include <PCU.h>
 
 namespace apf {
@@ -124,6 +125,50 @@ void Mesh::init(FieldShape* s)
 Mesh::~Mesh()
 {
   delete coordinateField;
+}
+
+int Mesh::getModelType(ModelEntity* e)
+{
+  return gmi_dim(getModel(), (gmi_ent*)e);
+}
+
+int Mesh::getModelTag(ModelEntity* e)
+{
+  return gmi_tag(getModel(), (gmi_ent*)e);
+}
+
+ModelEntity* Mesh::findModelEntity(int type, int tag)
+{
+  return (ModelEntity*)gmi_find(getModel(), type, tag);
+}
+
+bool Mesh::canSnap()
+{
+  return gmi_can_eval(getModel());
+}
+
+void Mesh::snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
+{
+  gmi_eval(getModel(), (gmi_ent*)m, &p[0], &x[0]);
+}
+
+void Mesh::getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
+{
+  ModelEntity* from_g = toModel(e);
+  if (g == from_g)
+    return getParam(e, p);
+  gmi_ent* from = (gmi_ent*)from_g;
+  gmi_ent* to = (gmi_ent*)g;
+  Vector3 from_p;
+  getParam(e, from_p);
+  gmi_reparam(getModel(), from, &from_p[0], to, &p[0]);
+}
+
+bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
+{
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_range(getModel(), e, axis, range);
+  return gmi_periodic(getModel(), e, axis);
 }
 
 int Mesh::getEntityDimension(int type)

@@ -10,10 +10,12 @@ endif()
 
 if(NOT BUILD_IN_TRILINOS)
   find_package(pcu PATHS ${CMAKE_BINARY_DIR})
+  find_package(gmi PATHS ${CMAKE_BINARY_DIR})
   set(APF_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PCU_INCLUDE_DIRS})
-  set(DEP_LIBS ${PCU_LIBS})
+    ${PCU_INCLUDE_DIRS}
+    ${GMI_INCLUDE_DIRS})
+  set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS})
   set(APF_LIBS apf ${DEP_LIBS})
 endif()
 
