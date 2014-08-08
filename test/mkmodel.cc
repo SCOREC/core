@@ -12,7 +12,7 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   gmi_register_null();
   apf::Mesh2* m = apf::loadMdsMesh(".null", argv[1]);
-  gmi_model* g = getMdsModel(m);
+  gmi_model* g = m->getModel();
   gmi_write_dmg(g, argv[2]);
   m->destroyNative();
   apf::destroyMesh(m);
