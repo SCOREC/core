@@ -1,7 +1,6 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string 
-    "path to the meshes svn repo"
-    FORCE)
+    "path to the meshes svn repo")
 set(MDIR ${MESHES}/pipe)
 add_test(verify_serial
   verify
