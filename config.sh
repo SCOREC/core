@@ -1,7 +1,7 @@
 cmake .. \
   -DCMAKE_C_COMPILER="$CC" \
   -DCMAKE_CXX_COMPILER="$CXX" \
-  -DCMAKE_C_FLAGS="-g -Wall" \
-  -DCMAKE_CXX_FLAGS="-g -Wall" \
+  -DCMAKE_C_FLAGS="-O2 -g -Wall" \
+  -DCMAKE_CXX_FLAGS="-O2 -g -Wall" \
   -DENABLE_THREADS=ON \
-  -DENABLE_ZOLTAN=ON 
+  -DENABLE_ZOLTAN=ON
