@@ -26,6 +26,19 @@ struct gmi_ent* gmi_null_find(struct gmi_model* m, int dim, int tag)
   return gmi_identify(dim, i);
 }
 
+/* this is different from gmi_mesh_destroy
+   because the null model doesn't develop
+   a topology, and gmi_mesh_destroy tries
+   to free the topology */
+static void destroy(struct gmi_model* m)
+{
+  struct gmi_mesh* mm = (struct gmi_mesh*)m;
+  int i;
+  for (i = 0; i < 4; ++i)
+    free(mm->tags[i]);
+  free(mm);
+}
+
 static struct gmi_model_ops ops = {
   .begin   = gmi_mesh_begin,
   .next    = gmi_mesh_next,
@@ -33,7 +46,7 @@ static struct gmi_model_ops ops = {
   .dim     = gmi_mesh_dim,
   .tag     = gmi_mesh_tag,
   .find    = gmi_null_find,
-  .destroy = gmi_mesh_destroy
+  .destroy = destroy
 };
 
 static struct gmi_model* create(const char* filename)
