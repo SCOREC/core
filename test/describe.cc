@@ -46,6 +46,16 @@ static double get_chunks()
   return m.uordblks + m.hblkhd;
 }
 
+static void list_tags(apf::Mesh* m)
+{
+  if (PCU_Comm_Self())
+    return;
+  apf::DynamicArray<apf::MeshTag*> tags;
+  m->getTags(tags);
+  for (size_t i = 0; i < tags.getSize(); ++i)
+    printf("tag: \"%s\"\n",m->getTagName(tags[i]));
+}
+
 int main(int argc, char** argv)
 {
   assert(argc==3);
@@ -59,6 +69,7 @@ int main(int argc, char** argv)
   print_stats("elements", m->count(m->getDimension()));
   print_stats("vertices", m->count(0));
   Parma_PrintPtnStats(m, "");
+  list_tags(m);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
