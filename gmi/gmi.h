@@ -21,9 +21,6 @@ struct gmi_set {
   struct gmi_ent* e[];
 };
 
-struct gmi_set* gmi_make_set(int n);
-void gmi_free_set(struct gmi_set* s);
-
 struct gmi_model_ops {
   struct gmi_iter* (*begin)(struct gmi_model* m, int dim);
   struct gmi_ent* (*next)(struct gmi_model* m, struct gmi_iter* i);
@@ -52,6 +49,9 @@ typedef struct gmi_model* (*gmi_creator)(const char* filename);
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmi_set* gmi_make_set(int n);
+void gmi_free_set(struct gmi_set* s);
 
 struct gmi_iter* gmi_begin(struct gmi_model* m, int dim);
 struct gmi_ent* gmi_next(struct gmi_model* m, struct gmi_iter* i);
