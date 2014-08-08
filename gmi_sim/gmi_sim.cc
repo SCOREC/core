@@ -94,6 +94,34 @@ static gmi_ent* find(gmi_model* m, int dim, int tag)
   return (gmi_ent*)GM_entityByTag(mm->sim, dim, tag);
 }
 
+static gmi_set* plist_to_set(pPList l)
+{
+  gmi_set* s = gmi_make_set(PList_size(l));
+  for (int i = 0; i < s->n; ++i)
+    s->e[i] = (gmi_ent*)PList_item(l, i);
+  PList_delete(l);
+  return s;
+}
+
+static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
+{
+  int edim = gmi_dim(m, e);
+  if (edim == 1 && dim == 0)
+    return plist_to_set(GE_vertices((pGEdge)e));
+  if (edim == 2 && dim == 1)
+    return plist_to_set(GF_edges((pGFace)e));
+  if (edim == 3 && dim == 2)
+    return plist_to_set(GR_faces((pGRegion)e));
+  if (edim == 0 && dim == 1)
+    return plist_to_set(GV_edges((pGVertex)e));
+  if (edim == 1 && dim == 2)
+    return plist_to_set(GE_faces((pGEdge)e));
+  if (edim == 2 && dim == 3)
+    return plist_to_set(GF_regions((pGFace)e));
+  gmi_fail("requested adjacency is not one-level");
+  return 0;
+}
+
 static void eval(struct gmi_model* m, struct gmi_ent* e,
       double const p[2], double x[3])
 {
@@ -176,6 +204,7 @@ void gmi_register_sim(void)
   ops.dim = get_dim;
   ops.tag = get_tag;
   ops.find = find;
+  ops.adjacent = adjacent;
   ops.eval = eval;
   ops.reparam = reparam;
   ops.periodic = periodic;
