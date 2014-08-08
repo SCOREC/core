@@ -7,6 +7,6 @@ Name: APF
 URL: http://www.scorec.rpi.edu/~dibanez/
 Description: parallel finite element fields
 Version: @PACKAGE_VERSION@
-Requires: libpcu
+Requires: libpcu libgmi
 Libs: -L${libdir} -lapf
 Cflags: -I${includedir} 

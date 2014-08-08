@@ -19,14 +19,10 @@ class Mesh2 : public Mesh
     virtual void setRemotes(MeshEntity* e, Copies& remotes) = 0;
     virtual void addRemote(MeshEntity* e, int p, MeshEntity* r) = 0;
     virtual void setResidence(MeshEntity* e, Parts& residence) = 0;
+    virtual void setParam(MeshEntity* e, Vector3 const& p) = 0;
     virtual void increment(MeshIterator* it) = 0;
     virtual bool isDone(MeshIterator* it) = 0;
     virtual MeshEntity* deref(MeshIterator* it) = 0;
-    virtual bool canSnap() = 0;
-    virtual void setParam(MeshEntity* e, Vector3 const& p) = 0;
-    virtual void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p) = 0;
-    virtual bool getPeriodicRange(ModelEntity* g, int axis,
-        double range[2]) = 0;
     void setPoint(MeshEntity* e, int node, Vector3 const& p);
     virtual void setPoint_(MeshEntity* e, int node, Vector3 const& p) = 0;
     MeshEntity* createVertex(ModelEntity* c, Vector3 const& point,

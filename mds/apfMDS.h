@@ -32,8 +32,6 @@ void reorderMdsMesh(Mesh2* mesh);
 
 int getMdsId(MeshEntity* e);
 
-gmi_model* getMdsModel(Mesh2* mesh);
-
 void shrinkMdsPartition(Mesh2* mesh, int n);
 void expandMdsPartition(Mesh2* mesh, int n);
 
