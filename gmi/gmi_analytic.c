@@ -9,7 +9,7 @@
 ******************************************************************************/
 #include "gmi_analytic.h"
 #include "gmi_null.h"
-#include "gmi_mesh.h"
+#include "gmi_base.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +19,7 @@ typedef double (*ptr_to_2x2_doubles)[2][2];
 
 struct gmi_analytic
 {
-  struct gmi_mesh mesh;
+  struct gmi_base base;
   gmi_analytic_fun* f[4];
   ptr_to_2_u8s periodic[4];
   ptr_to_2x2_doubles ranges[4];
@@ -43,7 +43,7 @@ void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
     REALLOC(m2->periodic[dim], m->n[dim]);
     REALLOC(m2->ranges[dim], m->n[dim]);
   }
-  i = gmi_index(e);
+  i = gmi_base_index(e);
   m2->f[dim][i] = f;
   for (j = 0; j < dim; ++j) {
     m2->periodic[dim][i][j] = periodic[j];
@@ -60,10 +60,10 @@ void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
 static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
   int i;
-  struct gmi_mesh* m2 = (struct gmi_mesh*)m;
+  struct gmi_base* m2 = (struct gmi_base*)m;
   for (i = 0; i < m->n[dim]; ++i)
     if (m2->tags[dim][i] == tag)
-      return gmi_identify(dim, i);
+      return gmi_base_identify(dim, i);
   return 0;
 }
 
@@ -72,7 +72,7 @@ static void eval(struct gmi_model* m, struct gmi_ent* e,
 {
   struct gmi_analytic* m2;
   m2 = (struct gmi_analytic*)m;
-  m2->f[gmi_dim(m, e)][gmi_index(e)](p, x);
+  m2->f[gmi_dim(m, e)][gmi_base_index(e)](p, x);
 }
 
 static void reparam(struct gmi_model* m, struct gmi_ent* from,
@@ -85,13 +85,13 @@ static void reparam(struct gmi_model* m, struct gmi_ent* from,
 static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
 {
   struct gmi_analytic* m2 = (struct gmi_analytic*)m;
-  return m2->periodic[gmi_dim(m, e)][gmi_index(e)][dim];
+  return m2->periodic[gmi_dim(m, e)][gmi_base_index(e)][dim];
 }
 
 static void range(struct gmi_model* m, struct gmi_ent* e, int dim, double r[2])
 {
   struct gmi_analytic* m2 = (struct gmi_analytic*)m;
-  memcpy(r, m2->ranges[gmi_dim(m, e)][gmi_index(e)][dim], 2 * sizeof(double));
+  memcpy(r, m2->ranges[gmi_dim(m, e)][gmi_base_index(e)][dim], 2 * sizeof(double));
 }
 
 static void destroy(struct gmi_model* m)
@@ -104,15 +104,15 @@ static void destroy(struct gmi_model* m)
     free(m2->periodic[i]);
     free(m2->ranges[i]);
   }
-  gmi_mesh_destroy(m);
+  gmi_base_destroy(m);
 }
 
 static struct gmi_model_ops ops = {
-  .begin   = gmi_mesh_begin,
-  .next    = gmi_mesh_next,
-  .end     = gmi_mesh_end,
-  .dim     = gmi_mesh_dim,
-  .tag     = gmi_mesh_tag,
+  .begin   = gmi_base_begin,
+  .next    = gmi_base_next,
+  .end     = gmi_base_end,
+  .dim     = gmi_base_dim,
+  .tag     = gmi_base_tag,
   .find    = find,
   .eval    = eval,
   .reparam = reparam,
@@ -125,6 +125,6 @@ struct gmi_model* gmi_make_analytic(void)
 {
   struct gmi_analytic* m;
   m = calloc(1, sizeof(*m));
-  m->mesh.model.ops = &ops;
-  return &m->mesh.model;
+  m->base.model.ops = &ops;
+  return &m->base.model;
 }

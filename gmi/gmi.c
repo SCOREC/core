@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+#include <assert.h>
 
 struct creator {
   gmi_creator f;
@@ -160,4 +162,75 @@ void gmi_fail(const char* why)
 {
   fprintf(stderr,"gmi failed: %s\n",why);
   abort();
+}
+
+void gmi_fscanf(FILE* f, int n, const char* format, ...)
+{
+  va_list ap;
+  int r;
+  va_start(ap, format);
+  r = vfscanf(f, format, ap);
+  va_end(ap);
+  assert(r == n);
+}
+
+void gmi_write_dmg(struct gmi_model* m, const char* filename)
+{
+  struct gmi_iter* it;
+  struct gmi_ent* e;
+  struct gmi_set* s;
+  FILE* f = fopen(filename, "w");
+  int i;
+  /* entity counts */
+  fprintf(f, "%d %d %d %d\n", m->n[3], m->n[2], m->n[1], m->n[0]);
+  /* bounding box */
+  fprintf(f, "0 0 0\n");
+  fprintf(f, "0 0 0\n");
+  /* vertices */
+  it = gmi_begin(m, 0);
+  while ((e = gmi_next(m, it))) {
+    fprintf(f, "%d 0 0 0\n", gmi_tag(m, e));
+  }
+  gmi_end(m, it);
+  /* edges */
+  it = gmi_begin(m, 1);
+  while ((e = gmi_next(m, it))) {
+    s = gmi_adjacent(m, e, 0);
+    fprintf(f, "%d ", gmi_tag(m, e));
+    if (s->n == 0)
+      fprintf(f,"-42 -42\n");
+    else if (s->n == 1)
+      fprintf(f,"%d -42\n", gmi_tag(m, s->e[0]));
+    else
+      fprintf(f, "%d %d\n",
+          gmi_tag(m, s->e[0]), gmi_tag(m, s->e[1]));
+    gmi_free_set(s);
+  }
+  gmi_end(m, it);
+  /* faces */
+  it = gmi_begin(m, 2);
+  while ((e = gmi_next(m, it))) {
+    /* we're going to cheat a bit here and
+       treat all edges as one giant loop */
+    fprintf(f, "%d 1\n", gmi_tag(m, e));
+    s = gmi_adjacent(m, e, 1);
+    fprintf(f, "%d\n", s->n);
+    for (i = 0; i < s->n; ++i)
+      fprintf(f, " %d 0\n", gmi_tag(m, s->e[i]));
+    gmi_free_set(s);
+  }
+  gmi_end(m, it);
+  /* regions */
+  it = gmi_begin(m, 3);
+  while ((e = gmi_next(m, it))) {
+    /* same sort of cheat, all faces are one shell */
+    fprintf(f, "%d 1\n", gmi_tag(m, e));
+    s = gmi_adjacent(m, e, 2);
+    fprintf(f, "%d\n", s->n);
+    for (i = 0; i < s->n; ++i)
+      fprintf(f, " %d 0\n", gmi_tag(m, s->e[i]));
+    gmi_free_set(s);
+  }
+  gmi_end(m, it);
+  fclose(f);
 }
