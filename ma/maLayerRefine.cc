@@ -18,6 +18,9 @@ static void preventQuadEdgeSplits(Adapt* a)
         setFlag(a, qe[i], DONT_SPLIT);
     }
   m->end(it);
+/* other parts may have copies of these edges
+   but no quads next to them */
+  syncFlag(a, 1, DONT_SPLIT);
 }
 
 static void allowBaseToSplit(Adapt* a)
