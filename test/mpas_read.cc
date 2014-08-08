@@ -22,7 +22,7 @@ int main(int argc, char** argv)
   m->acceptChanges();
   apf::deriveMdsModel(m);
   m->verify();
-  gmi_write_dmg(apf::getMdsModel(m), argv[2]);
+  gmi_write_dmg(m->getModel(), argv[2]);
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
