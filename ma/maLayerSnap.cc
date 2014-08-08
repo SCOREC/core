@@ -85,6 +85,11 @@ struct BaseTopLinker : public Crawler
     m = a->mesh;
     linkTag = m->createIntTag("ma_base_top", 2);
   }
+  ~BaseTopLinker()
+  {
+    apf::removeTagFromDimension(m, linkTag, 0);
+    m->destroyTag(linkTag);
+  }
   void getLink(Entity* v, int& peer, int& idx)
   {
     int link[2];
