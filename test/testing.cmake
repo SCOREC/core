@@ -8,6 +8,11 @@ add_test(uniform_serial
   uniform
   "${MDIR}/pipe.smd"
   "${MDIR}/pipe.smb"
+  "pipe_unif.smb")
+add_test(snap_serial
+  snap
+  "${MDIR}/pipe.smd"
+  "pipe_unif.smb"
   "pipe.smb")
 add_test(ma_serial
   ma_test

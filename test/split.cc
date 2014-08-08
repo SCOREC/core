@@ -1,9 +1,12 @@
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
+#include <SimUtil.h>
+#include <SimModel.h>
 
 namespace {
 
@@ -57,11 +60,16 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  Sim_readLicenseFile(0);
+  SimModel_start();
   gmi_register_mesh();
+  gmi_register_sim();
   PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);
+  SimModel_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
