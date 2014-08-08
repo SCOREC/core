@@ -46,6 +46,7 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_vtxSelector.cc
   diffMC/src/parma_weightTargets.cc
   diffMC/src/zeroOneKnapsack.cc
+  diffMC/src/maximalIndependentSet/misLuby.cc
   )
 
 SET(RIB_SOURCES  

@@ -28,16 +28,17 @@ namespace {
   apf::MeshEntity* e;
   apf::MeshIterator* itr = m->begin(m->getDimension());
   double w = 1.0;
+  //TODO Remove after finished testing with Torus 
+  //Edit section for changing part weights
   if (name == "../meshes/torus/torus.dmg"){
     if(PCU_Comm_Self() == 0) w = 1.8193;
     else if (PCU_Comm_Self() == 3) w = .804069;
   } 
-//crap
-	 //TODO Remove after finished testing with Torus 
-    while( (e = m->iterate(itr)) )	
-			m->setDoubleTag(e, wtag, &w);
-    m->end(itr);
-    return wtag;
+  //end part weights edit testing
+  while( (e = m->iterate(itr)) )	
+  	m->setDoubleTag(e, wtag, &w);
+  m->end(itr);
+  return wtag;
   }
 
   void runParma(apf::Mesh* m) {
