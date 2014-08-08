@@ -33,7 +33,7 @@ add_test(split_4
   2)
 add_test(verify_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ma_test
+  verify
   "${MDIR}/pipe.dmg"
   "pipe_4_.smb")
 add_test(ma_parallel
