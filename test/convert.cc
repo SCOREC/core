@@ -43,6 +43,7 @@ int main(int argc, char** argv)
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
+  GM_release(simModel);
 
   Progress_delete(progress);
   SimModel_stop();

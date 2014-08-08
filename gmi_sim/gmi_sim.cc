@@ -16,6 +16,7 @@
 struct sim_model {
   struct gmi_model model;
   SGModel* sim;
+  bool owned;
 };
 
 struct sim_iter {
@@ -185,7 +186,8 @@ static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
 static void destroy(gmi_model* m)
 {
   sim_model* mm = (sim_model*)m;
-  GM_release(mm->sim);
+  if (mm->owned)
+    GM_release(mm->sim);
   free(mm);
 }
 
@@ -193,7 +195,11 @@ static struct gmi_model_ops ops;
 
 static gmi_model* create(const char* filename)
 {
-  return gmi_import_sim(GM_load(filename, NULL, NULL));
+  gmi_model* m = gmi_import_sim(GM_load(filename, NULL, NULL));
+  ((sim_model*)m)->owned = true;
+  return m;
+}
+
 }
 
 void gmi_register_sim(void)
@@ -223,7 +229,12 @@ gmi_model* gmi_import_sim(SGModel* sm)
   m->model.n[1] = GM_numEdges(sm);
   m->model.n[2] = GM_numFaces(sm);
   m->model.n[3] = GM_numRegions(sm);
+  m->owned = false;
   return &m->model;
 }
 
+SGModel* gmi_export_sim(gmi_model* m)
+{
+  sim_model* mm = (sim_model*)m;
+  return mm->sim;
 }
