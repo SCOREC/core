@@ -61,14 +61,16 @@ typedef std::map<ModelEntity*, bool> SideManifoldness;
 
 static void getUpwardCounts(gmi_model* gm, int meshDimension, UpwardCounts& uc)
 {
-  gmi_iter* it = gmi_begin(gm, meshDimension - 1);
-  gmi_ent* ge;
-  while ((ge = gmi_next(gm, it))) {
-    gmi_set* up = gmi_adjacent(gm, ge, meshDimension);
-    uc[(ModelEntity*)ge] = up->n;
-    gmi_free_set(up);
+  for (int d = 0; d < meshDimension; ++d) {
+    gmi_iter* it = gmi_begin(gm, d);
+    gmi_ent* ge;
+    while ((ge = gmi_next(gm, it))) {
+      gmi_set* up = gmi_adjacent(gm, ge, d + 1);
+      uc[(ModelEntity*)ge] = up->n;
+      gmi_free_set(up);
+    }
+    gmi_end(gm, it);
   }
-  gmi_end(gm, it);
 }
 
 static void verifyUp(Mesh* m, UpwardCounts& guc,
@@ -86,27 +88,24 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   }
   ModelEntity* ge = m->toModel(e);
   int modelDimension = m->getModelType(ge);
-/* minimum number of upward adjacencies if
-   everything is manifold: */
-  int manifoldMin;
-/* test for boundary exposure in the manifold case */
-  if ((modelDimension < meshDimension) || m->isShared(e))
-    manifoldMin = difference;
-  else
-    manifoldMin = difference + 1;
-  assert(upwardCount >= manifoldMin);
-/* mesh faces must have exactly the right number of
-   adjacent elements, other entities can have fans
-   of any size above the minimum */
-  if (difference == 1) {
-    int expected = manifoldMin;
-    /* account for classification on non-manifold model faces that have 2
-       adjacent regions as well as model faces with no topology
-       that have "0" adjacent regions */
-    if (modelDimension == entityDimension)
-      expected = std::max( guc[ge], expected );
-    assert(upwardCount == expected);
+  int modelUpwardCount = guc[ge];
+  bool isOnNonManifoldFace = (modelDimension == meshDimension - 1) &&
+                             (modelUpwardCount > 1);
+  bool isOnManifoldBoundary = ( ! isOnNonManifoldFace) &&
+                              (modelDimension < meshDimension);
+  bool isExposed = m->isShared(e) || isOnManifoldBoundary;
+  bool isOnEqualOrder = (modelDimension == entityDimension);
+  int expected;
+  if (isExposed) {
+    expected = difference;
+  } else {
+    expected = difference + 1;
+    if (isOnEqualOrder)
+      expected = std::max(expected, modelUpwardCount);
   }
+  assert(upwardCount >= expected);
+  if (difference == 1)
+    assert(upwardCount == expected);
 }
 
 static void verifyResidence(Mesh* m, MeshEntity* e)
