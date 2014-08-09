@@ -34,20 +34,6 @@ struct Round : public Remap
   int operator()(int n) {return (n / factor) * factor;}
 };
 
-struct Unmodulo : public Remap
-{
-  Unmodulo(int q, int f):
-    quotient(q),
-    factor(f)
-  {}
-  int quotient;
-  int factor;
-  int operator()(int n)
-  {
-    return n + quotient * factor;
-  }
-};
-
 static void remapResidence(apf::Mesh2* m, Remap& remap)
 {
   for (int d = 0; d <= m->getDimension(); ++d) {
@@ -124,15 +110,11 @@ static void retreat(apf::Mesh* m, Remap& remap)
   m->migrate(plan);
 }
 
-static apf::Migration* planExpansion(apf::Mesh* m, int factor,
-    Remap& outMap)
+static apf::Migration* planExpansion(apf::Mesh* m, int factor)
 {
   apf::Splitter* s = Parma_MakeRibSplitter(m);
   apf::Migration* plan = s->split(NULL, 1.10, factor);
-  for (int i = 0; i < plan->count(); ++i) {
-    apf::MeshEntity* e = plan->get(i);
-    plan->send(e, outMap(plan->sending(e)));
-  }
+  delete s;
   return plan;
 }
 
@@ -150,8 +132,6 @@ static void runInGroups(
   int group = groupMap(self);
   MPI_Comm oldComm = PCU_Get_Comm();
   MPI_Comm groupComm;
-  fprintf(stderr,"%d call comm_split(group %d, rank %d)\n",
-      self, group, groupRank);
   MPI_Comm_split(oldComm, group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
   remapPartition(m, inMap);
@@ -167,20 +147,18 @@ struct RetreatCode : public GroupCode
   apf::Migration* plan;
   apf::Mesh* mesh;
   int factor;
-  Remap* outMap;
-  RetreatCode(GroupCode& c, apf::Mesh* m, int f, Remap& om)
+  RetreatCode(GroupCode& c, apf::Mesh* m, int f)
   {
     next = &c;
     plan = 0;
     mesh = m;
     factor = f;
-    outMap = &om;
   }
   void run(int group)
   {
     if (!group) {
       next->run(group);
-      plan = planExpansion(mesh, factor, *outMap);
+      plan = planExpansion(mesh, factor);
     } else {
       plan = new apf::Migration(mesh);
     }
@@ -197,7 +175,7 @@ static void retreatToGroup(
     GroupCode& code)
 {
   retreat(m, retreatMap);
-  RetreatCode retreatCode(code, m, factor, outMap);
+  RetreatCode retreatCode(code, m, factor);
   runInGroups(m, inMap, groupMap, outMap, retreatCode);
   m->migrate(retreatCode.plan);
 }
