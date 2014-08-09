@@ -93,16 +93,16 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
                              (modelUpwardCount > 1);
   bool isOnManifoldBoundary = ( ! isOnNonManifoldFace) &&
                               (modelDimension < meshDimension);
-  bool isExposed = m->isShared(e) || isOnManifoldBoundary;
+  bool isShared = m->isShared(e);
+  bool isExposed = isShared || isOnManifoldBoundary;
   bool isOnEqualOrder = (modelDimension == entityDimension);
   int expected;
-  if (isExposed) {
+  if (isExposed)
     expected = difference;
-  } else {
+  else
     expected = difference + 1;
-    if (isOnEqualOrder)
-      expected = std::max(expected, modelUpwardCount);
-  }
+  if (( ! isShared) && isOnEqualOrder)
+    expected = std::max(expected, modelUpwardCount);
   assert(upwardCount >= expected);
   if (difference == 1)
     assert(upwardCount == expected);
