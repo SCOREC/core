@@ -1,6 +1,7 @@
 #include "apfMesh.h"
 #include "apf.h"
 #include <PCU.h>
+#include <gmi.h>
 
 namespace apf {
 
@@ -55,33 +56,64 @@ static void verifyDown(Mesh* m, MeshEntity* e, int gd, int ed)
   assert(isSubset(r, getCandidateParts(m, e)));
 }
 
-static bool isExposed(Mesh* m, MeshEntity* e)
+typedef std::map<ModelEntity*, int> UpwardCounts;
+typedef std::map<ModelEntity*, bool> SideManifoldness;
+
+static void getUpwardCounts(gmi_model* gm, UpwardCounts& uc)
 {
-  return (getDimension(m, e) == m->getDimension()) ||
-         (m->getModelType(m->toModel(e)) < m->getDimension()) ||
-         (m->isShared(e));
+  for (int d = 0; d < 4; ++d) {
+    gmi_iter* it = gmi_begin(gm, d);
+    gmi_ent* ge;
+    while ((ge = gmi_next(gm, it))) {
+      gmi_set* up = gmi_adjacent(gm, ge, d + 1);
+      uc[(ModelEntity*)ge] = up->n;
+      gmi_free_set(up);
+    }
+    gmi_end(gm, it);
+  }
 }
 
-static int effectiveDimension(Mesh* m, MeshEntity* e)
+static void verifyUp(Mesh* m, UpwardCounts& guc,
+    MeshEntity* e)
 {
-  return isExposed(m, e) ? (m->getDimension() - 1) : m->getDimension();
-}
-
-static void verifyUp(Mesh* m, MeshEntity* e)
-{
-  int df = effectiveDimension(m, e);
-  int ed = getDimension(m, e);
-  Up up;
+  apf::Up up;
   m->getUp(e, up);
-  /* minimum (and sometimes also maximum) number of
-     upward adjacencies can be calculated by this
-     simple function for all types based on entity
-     and mesh dimension plus consideration of exposure */
-  int nu = df + 1 - ed;
-  if (ed + 1 >= m->getDimension())
-    assert(up.n == nu);
+  int upwardCount = up.n;
+  int meshDimension = m->getDimension();
+  int entityDimension = getDimension(m, e);
+  int difference = meshDimension - entityDimension;
+  if (!difference) { //element
+    assert(upwardCount == 0);
+    return;
+  }
+  ModelEntity* ge = m->toModel(e);
+  int modelDimension = m->getModelType(ge);
+/* minimum number of upward adjacencies if
+   everything is manifold: */
+  int manifoldMin;
+/* test for boundary exposure in the manifold case */
+  if ((modelDimension < meshDimension) || m->isShared(e))
+    manifoldMin = difference;
   else
-    assert(up.n >= nu);
+    manifoldMin = difference + 1;
+  int modelUpwardCount = guc[ge];
+/* non-manifold models can raise the minimum
+   for equal-order classified entities
+   (two model regions on a face means two mesh
+    regions on its mesh faces)
+   don't trust the model upward count too much though,
+   models without topology return zero everywhere */
+  int min;
+  if (modelDimension == entityDimension)
+    min = std::max(manifoldMin, modelUpwardCount);
+  else
+    min = manifoldMin;
+  assert(upwardCount >= min);
+/* mesh faces must have exactly the right number of
+   adjacent elements, other entities can have fans
+   of any size above the minimum */
+  if (difference == 1)
+    assert(upwardCount == min);
 }
 
 static void verifyResidence(Mesh* m, MeshEntity* e)
@@ -96,7 +128,7 @@ static void verifyResidence(Mesh* m, MeshEntity* e)
     assert(p.count(it->first));
 }
 
-static void verifyEntity(Mesh* m, MeshEntity* e)
+static void verifyEntity(Mesh* m, UpwardCounts& guc, MeshEntity* e)
 {
   int ed = getDimension(m, e);
   int md = m->getDimension();
@@ -106,7 +138,7 @@ static void verifyEntity(Mesh* m, MeshEntity* e)
   if (ed)
     verifyDown(m, e, gd, ed);
   if (ed < md)
-    verifyUp(m, e);
+    verifyUp(m, guc, e);
   verifyResidence(m, e);
 }
 
@@ -321,6 +353,8 @@ static void verifyOrder(Mesh* m)
 void verify(Mesh* m)
 {
   double t0 = MPI_Wtime();
+  UpwardCounts guc;
+  getUpwardCounts(m->getModel(), guc);
   /* got to 3 on purpose, so we can verify if
      m->getDimension is lying */
   for (int d = 0; d <= 3; ++d)
@@ -330,7 +364,7 @@ void verify(Mesh* m)
     size_t n = 0;
     while ((e = m->iterate(it)))
     {
-      verifyEntity(m, e);
+      verifyEntity(m, guc, e);
       ++n;
     }
     m->end(it);
@@ -340,6 +374,7 @@ void verify(Mesh* m)
     else
       assert(!n);
   }
+  guc.clear();
   verifyConnectivity(m);
   verifyOrder(m);
   long n = verifyCoords(m);
