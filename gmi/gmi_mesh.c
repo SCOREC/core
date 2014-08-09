@@ -37,9 +37,9 @@ struct gmi_set* gmi_mesh_adjacent(struct gmi_model* m,
   struct gmi_mesh* mm = to_mesh(m);
   index = gmi_base_index(e);
   edim = gmi_dim(m, e);
-  if (dim == edim - 1) {
+  if (dim == edim - 1)
     return copy_set(mm->down[edim][index]);
-  } else if (dim == edim + 1)
+  else if (dim == edim + 1)
     return copy_set(mm->up[edim][index]);
   else
     gmi_fail("only one-level adjacencies available");
@@ -50,12 +50,12 @@ void gmi_mesh_destroy(struct gmi_model* m)
 {
   struct gmi_mesh* mm = to_mesh(m);
   int i, j;
-  for (i = 1; i < 4; ++i) {
+  for (i = 0; i < 4; ++i) {
     for (j = 0; j < m->n[i]; ++j)
       gmi_free_set(mm->down[i][j]);
     free(mm->down[i]);
   }
-  for (i = 0; i < 3; ++i) {
+  for (i = 0; i < 4; ++i) {
     for (j = 0; j < m->n[i]; ++j)
       gmi_free_set(mm->up[i][j]);
     free(mm->up[i]);
@@ -80,47 +80,43 @@ void alloc_topology(struct gmi_mesh* m)
   int* n;
   m->base.model.ops = &ops;
   n = m->base.model.n;
-  for (i = 1; i < 4; ++i) {
+  for (i = 0; i < 4; ++i) {
     m->down[i] = calloc(n[i], sizeof(struct gmi_set*));
     for (j = 0; j < n[i]; ++j)
       m->down[i][j] = gmi_make_set(0);
   }
-  m->down[0] = NULL;
-  for (i = 0; i < 3; ++i) {
+  for (i = 0; i < 4; ++i) {
     m->up[i] = calloc(n[i], sizeof(struct gmi_set*));
     for (j = 0; j < n[i]; ++j)
       m->up[i][j] = gmi_make_set(0);
   }
-  m->up[3] = NULL;
 }
 
-static void add_adjacent(struct gmi_mesh* m, struct gmi_ent* e,
-    int is_up, int atag)
+static void set_push(struct gmi_set** ps, struct gmi_ent* e)
 {
-  int dim;
-  struct gmi_ent* ae;
-  int index;
-  struct gmi_set** ps;
-  struct gmi_set* s;
   int i;
-  dim = gmi_dim(&m->base.model, e);
-  if (is_up)
-    ae = gmi_find(&m->base.model, dim + 1, atag);
-  else
-    ae = gmi_find(&m->base.model, dim - 1, atag);
-  if (!ae)
-    return;
-  index = gmi_base_index(e);
-  if (is_up)
-    ps = m->up[dim] + index;
-  else
-    ps = m->down[dim] + index;
+  struct gmi_set* s;
   s = gmi_make_set((*ps)->n + 1);
   for (i = 0; i < (*ps)->n; ++i)
     s->e[i] = (*ps)->e[i];
-  s->e[(*ps)->n] = ae;
+  s->e[(*ps)->n] = e;
   gmi_free_set(*ps);
   *ps = s;
+}
+
+static void add_adjacent(struct gmi_mesh* m, struct gmi_ent* e, int atag)
+{
+  int dim;
+  struct gmi_ent* ae;
+  int index, aindex;
+  dim = gmi_dim(&m->base.model, e);
+  ae = gmi_find(&m->base.model, dim - 1, atag);
+  if (!ae)
+    return;
+  index = gmi_base_index(e);
+  aindex = gmi_base_index(ae);
+  set_push(m->up[dim - 1] + aindex, e);
+  set_push(m->down[dim] + index, ae);
 }
 
 void read_topology(struct gmi_mesh* m, FILE* f)
@@ -145,7 +141,7 @@ void read_topology(struct gmi_mesh* m, FILE* f)
     e = gmi_find(mod, 1, tag);
     for (j = 0; j < 2; ++j) {
       gmi_fscanf(f, 1, "%d", &tag);
-      add_adjacent(m, e, 0, tag);
+      add_adjacent(m, e, tag);
     }
   }
   /* faces */
@@ -157,7 +153,7 @@ void read_topology(struct gmi_mesh* m, FILE* f)
       for (k = 0; k < edges; ++k) {
         /* tag, direction */
         gmi_fscanf(f, 1, "%d %*d", &tag);
-        add_adjacent(m, e, 0, tag);
+        add_adjacent(m, e, tag);
       }
     }
   }
@@ -169,7 +165,7 @@ void read_topology(struct gmi_mesh* m, FILE* f)
       gmi_fscanf(f, 1, "%d", &faces);
       for (k = 0; k < faces; ++k) {
         gmi_fscanf(f, 1, "%d %*d", &tag);
-        add_adjacent(m, e, 0, tag);
+        add_adjacent(m, e, tag);
       }
     }
   }
