@@ -97,3 +97,11 @@ void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun)
   retreatToGroup(m, factor, inMap, retreatMap, groupMap, outMap, toRun);
 }
 
+void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun)
+{
+  apf::Modulo inMap(factor);
+  apf::Divide groupMap(factor);
+  apf::Unmodulo outMap(PCU_Comm_Self(), factor);
+  runInGroups(m, inMap, groupMap, outMap, toRun);
+}
+

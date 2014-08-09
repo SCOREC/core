@@ -52,6 +52,16 @@ struct Modulo : public Remap
   int operator()(int n) {return n % by;}
 };
 
+struct Unmodulo : public Remap
+{
+  Unmodulo(int original, int factor)
+  {
+    offset = (original / factor) * factor;
+  }
+  int offset;
+  int operator()(int n) {return n + offset;}
+};
+
 struct Round : public Remap
 {
   Round(int n):factor(n) {}

@@ -182,4 +182,6 @@ struct Parma_GroupCode
 
 void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
 
+void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
+
 #endif
