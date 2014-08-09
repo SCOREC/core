@@ -42,11 +42,13 @@ static void runInGroups(
   MPI_Comm groupComm;
   MPI_Comm_split(oldComm, group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
-  apf::remapPartition(m, inMap);
+  if (m)
+    apf::remapPartition(m, inMap);
   code.run(group);
   PCU_Switch_Comm(oldComm);
   MPI_Comm_free(&groupComm);
-  apf::remapPartition(m, outMap);
+  if (m)
+    apf::remapPartition(m, outMap);
 }
 
 struct RetreatCode : public GroupCode
