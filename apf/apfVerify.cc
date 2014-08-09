@@ -59,18 +59,16 @@ static void verifyDown(Mesh* m, MeshEntity* e, int gd, int ed)
 typedef std::map<ModelEntity*, int> UpwardCounts;
 typedef std::map<ModelEntity*, bool> SideManifoldness;
 
-static void getUpwardCounts(gmi_model* gm, UpwardCounts& uc)
+static void getUpwardCounts(gmi_model* gm, int meshDimension, UpwardCounts& uc)
 {
-  for (int d = 0; d < 4; ++d) {
-    gmi_iter* it = gmi_begin(gm, d);
-    gmi_ent* ge;
-    while ((ge = gmi_next(gm, it))) {
-      gmi_set* up = gmi_adjacent(gm, ge, d + 1);
-      uc[(ModelEntity*)ge] = up->n;
-      gmi_free_set(up);
-    }
-    gmi_end(gm, it);
+  gmi_iter* it = gmi_begin(gm, meshDimension - 1);
+  gmi_ent* ge;
+  while ((ge = gmi_next(gm, it))) {
+    gmi_set* up = gmi_adjacent(gm, ge, meshDimension);
+    uc[(ModelEntity*)ge] = up->n;
+    gmi_free_set(up);
   }
+  gmi_end(gm, it);
 }
 
 static void verifyUp(Mesh* m, UpwardCounts& guc,
@@ -96,24 +94,19 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     manifoldMin = difference;
   else
     manifoldMin = difference + 1;
-  int modelUpwardCount = guc[ge];
-/* non-manifold models can raise the minimum
-   for equal-order classified entities
-   (two model regions on a face means two mesh
-    regions on its mesh faces)
-   don't trust the model upward count too much though,
-   models without topology return zero everywhere */
-  int min;
-  if (modelDimension == entityDimension)
-    min = std::max(manifoldMin, modelUpwardCount);
-  else
-    min = manifoldMin;
-  assert(upwardCount >= min);
+  assert(upwardCount >= manifoldMin);
 /* mesh faces must have exactly the right number of
    adjacent elements, other entities can have fans
    of any size above the minimum */
-  if (difference == 1)
-    assert(upwardCount == min);
+  if (difference == 1) {
+    int expected = manifoldMin;
+    /* account for classification on non-manifold model faces that have 2
+       adjacent regions as well as model faces with no topology
+       that have "0" adjacent regions */
+    if (modelDimension == entityDimension)
+      expected = std::max( guc[ge], expected );
+    assert(upwardCount == expected);
+  }
 }
 
 static void verifyResidence(Mesh* m, MeshEntity* e)
@@ -354,7 +347,7 @@ void verify(Mesh* m)
 {
   double t0 = MPI_Wtime();
   UpwardCounts guc;
-  getUpwardCounts(m->getModel(), guc);
+  getUpwardCounts(m->getModel(), m->getDimension(), guc);
   /* got to 3 on purpose, so we can verify if
      m->getDimension is lying */
   for (int d = 0; d <= 3; ++d)
