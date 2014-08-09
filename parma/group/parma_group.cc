@@ -107,6 +107,9 @@ static void retreat(apf::Mesh* m, Remap& remap)
   while ((e = m->iterate(it)))
     plan->send(e, to);
   m->end(it);
+  if (!PCU_Comm_Self())
+    fprintf(stderr,"retreating to a subgroup, ignore the"
+                   "empty part warning\n");
   m->migrate(plan);
 }
 
