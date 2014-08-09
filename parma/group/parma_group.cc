@@ -1,4 +1,5 @@
 #include <parma.h>
+#include <PCU.h>
 
 struct Remap
 {
@@ -7,23 +8,30 @@ struct Remap
 
 struct Divide : public Remap
 {
-  Divide(int n):by(n) {};
+  Divide(int n):by(n) {}
   int by;
   int operator()(int n) {return n / by;}
 };
 
 struct Multiply : public Remap
 {
-  Multiply(int n):by(n) {};
+  Multiply(int n):by(n) {}
   int by;
   int operator()(int n) {return n * by;}
 };
 
 struct Modulo : public Remap
 {
-  Modulo(int n):by(n) {};
+  Modulo(int n):by(n) {}
   int by;
   int operator()(int n) {return n % by;}
+};
+
+struct Round : public Remap
+{
+  Round(int n):factor(n) {}
+  int factor;
+  int operator()(int n) {return (n / factor) * factor;}
 };
 
 struct Unmodulo : public Remap
@@ -106,7 +114,7 @@ static void remapPartition(apf::Mesh2* m, Remap& remap)
 
 static void retreat(apf::Mesh* m, Remap& remap)
 {
-  int to = remap(PCU_Comm_Self())
+  int to = remap(PCU_Comm_Self());
   apf::Migration* plan = new apf::Migration(m);
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
@@ -142,6 +150,8 @@ static void runInGroups(
   int group = groupMap(self);
   MPI_Comm oldComm = PCU_Get_Comm();
   MPI_Comm groupComm;
+  fprintf(stderr,"%d call comm_split(group %d, rank %d)\n",
+      self, group, groupRank);
   MPI_Comm_split(oldComm, group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
   remapPartition(m, inMap);
@@ -151,7 +161,7 @@ static void runInGroups(
   remapPartition(m, outMap);
 }
 
-struct RetreatCode
+struct RetreatCode : public GroupCode
 {
   GroupCode* next;
   apf::Migration* plan;
@@ -194,12 +204,10 @@ static void retreatToGroup(
 
 void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun)
 {
-  int self = PCU_Comm_Self();
-  int peers = PCU_Comm_Peers();
-  Modulo inMap(factor);
-  Divide groupMap(factor);
-  GroupCode& retreatMap = groupMap;
-  Unmodulo outMap(self / factor, factor);
+  Divide inMap(factor);
+  Modulo groupMap(factor);
+  Round retreatMap(factor);
+  Multiply outMap(factor);
   retreatToGroup(m, factor, inMap, retreatMap, groupMap, outMap, toRun);
 }
 
