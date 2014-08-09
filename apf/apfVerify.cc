@@ -361,9 +361,7 @@ void verify(Mesh* m)
     }
     m->end(it);
     assert(n == m->count(d));
-    if (d <= m->getDimension())
-      assert(n);
-    else
+    if (d > m->getDimension())
       assert(!n);
   }
   guc.clear();
