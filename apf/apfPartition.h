@@ -8,7 +8,7 @@
 #ifndef APF_PARTITION_H
 #define APF_PARTITION_H
 
-#include "apfMesh.h"
+#include "apfMesh2.h"
 
 namespace apf {
 
@@ -25,6 +25,41 @@ class Balancer
     virtual ~Balancer() {}
     virtual void balance(MeshTag* weights, double tolerance) = 0;
 };
+
+struct Remap
+{
+  virtual int operator()(int n) = 0;
+};
+
+struct Divide : public Remap
+{
+  Divide(int n):by(n) {}
+  int by;
+  int operator()(int n) {return n / by;}
+};
+
+struct Multiply : public Remap
+{
+  Multiply(int n):by(n) {}
+  int by;
+  int operator()(int n) {return n * by;}
+};
+
+struct Modulo : public Remap
+{
+  Modulo(int n):by(n) {}
+  int by;
+  int operator()(int n) {return n % by;}
+};
+
+struct Round : public Remap
+{
+  Round(int n):factor(n) {}
+  int factor;
+  int operator()(int n) {return (n / factor) * factor;}
+};
+
+void remapPartition(apf::Mesh2* m, Remap& remap);
 
 }
 

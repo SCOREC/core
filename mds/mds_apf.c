@@ -134,13 +134,6 @@ int mds_model_id(struct mds_apf* m, struct gmi_ent* model)
   return gmi_tag(m->user_model, model);
 }
 
-void mds_apf_remap(struct mds_apf* m,
-    int (*map)(int, void*), void* user)
-{
-  mds_remap_net(&m->remotes, &m->mds, map, user);
-  mds_remap_net(&m->matches, &m->mds, map, user);
-}
-
 static void down_to_match(struct mds_apf* m, mds_id e,
     struct mds_copy c)
 {

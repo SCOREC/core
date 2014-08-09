@@ -358,21 +358,3 @@ void mds_free_local_links(struct mds_links* ln)
   free(ln->l[other]);
   ln->l[self] = ln->l[other] = NULL;
 }
-
-void mds_remap_net(struct mds_net* net, struct mds* m,
-    int (*map)(int, void*), void* user)
-{
-  int d;
-  mds_id e;
-  struct mds_copies* c;
-  int i;
-  for (d = 0; d <= m->d; ++d)
-    for (e = mds_begin(m, d);
-         e != MDS_NONE;
-         e = mds_next(m, e)) {
-      c = mds_get_copies(net, e);
-      if (c)
-        for (i = 0; i < c->n; ++i)
-          c->c[i].p = map(c->c[i].p, user);
-    }
-}

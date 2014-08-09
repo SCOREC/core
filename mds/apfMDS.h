@@ -32,9 +32,6 @@ void reorderMdsMesh(Mesh2* mesh);
 
 int getMdsId(MeshEntity* e);
 
-void shrinkMdsPartition(Mesh2* mesh, int n);
-void expandMdsPartition(Mesh2* mesh, int n);
-
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 
 bool alignMdsMatches(Mesh2* in);

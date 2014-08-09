@@ -15,6 +15,7 @@
 #include <apfConvert.h>
 #include <apfShape.h>
 #include <apfNumbering.h>
+#include <apfPartition.h>
 #include <PCU.h>
 #include <cstring>
 
@@ -596,30 +597,6 @@ void reorderMdsMesh(Mesh2* mesh)
   m->mesh = mds_reorder(m->mesh);
 }
 
-static int divide(int n, void* data)
-{
-  return n / (*((int*)data));
-}
-
-static int multiply(int n, void* data)
-{
-  return n * (*((int*)data));
-}
-
-void shrinkMdsPartition(Mesh2* mesh, int n)
-{
-  MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  mds_apf_remap(m->mesh, divide, (void*)&n);
-  remapPM(m->parts, divide, (void*)&n);
-}
-
-void expandMdsPartition(Mesh2* mesh, int n)
-{
-  MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  mds_apf_remap(m->mesh, multiply, (void*)&n);
-  remapPM(m->parts, multiply, (void*)&n);
-}
-
 static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
 {
   int type = from->getTagType(t);
@@ -650,6 +627,7 @@ static Mesh2* clone(Mesh2* from)
   return m;
 }
 
+static int globalFactor;
 static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
@@ -666,6 +644,8 @@ static void* splitThrdMain(void*)
     m = clone(globalMesh);
     plan = new apf::Migration(m);
   }
+  apf::Multiply remap(globalFactor);
+  apf::remapPartition(m, remap);
   m->migrate(plan);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
@@ -676,10 +656,10 @@ static void* splitThrdMain(void*)
 
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
 {
+  globalFactor = n;
   globalMesh = m;
   globalPlan = plan;
   globalThrdCall = runAfter;
-  expandMdsPartition(m, n);
   PCU_Thrd_Run(n, splitThrdMain, NULL);
 }
 
