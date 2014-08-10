@@ -88,10 +88,12 @@ add_test(split_fusion
   split
   "fusion.dmg"
   "${MDIR}/fusion.smb"
-  "fusion_4_.smb"
-  4)
+  "fusion_2_.smb"
+  2)
+# the part count mismatch is intentional,
+# this test runs on half its procs
 add_test(adapt_fusion
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fan
-  "fusion_4_.smb")
+  "fusion_2_.smb")
 #todo - ph_test on crossflow, fusion (fan.cc), etc...
