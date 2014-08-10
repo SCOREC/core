@@ -96,4 +96,6 @@ add_test(adapt_fusion
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fan
   "fusion_2_.smb")
-#todo - ph_test on crossflow, fusion (fan.cc), etc...
+add_test(change_dim
+  ./newdim)
+#todo - ph_test on crossflow ?

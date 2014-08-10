@@ -677,4 +677,10 @@ void deriveMdsModel(Mesh2* in)
   return mds_derive_model(m->mesh);
 }
 
+void changeMdsDimension(Mesh2* in, int d)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_change_dimension(&(m->mesh->mds), d);
+}
+
 }

@@ -856,3 +856,29 @@ int mds_has_up(struct mds* m, mds_id e)
     return 0;
   return *at_id(m->first_up[d + 1],e) != MDS_NONE;
 }
+
+static void increase_dimension(struct mds* m)
+{
+  int old_d;
+  old_d = m->d;
+  ++(m->d);
+  mds_add_adjacency(m, old_d, m->d);
+  mds_add_adjacency(m, m->d, old_d);
+}
+
+static void decrease_dimension(struct mds* m)
+{
+  int old_d;
+  old_d = m->d;
+  --(m->d);
+  mds_remove_adjacency(m, old_d, m->d);
+  mds_remove_adjacency(m, m->d, old_d);
+}
+
+void mds_change_dimension(struct mds* m, int d)
+{
+  while (d > m->d)
+    increase_dimension(m);
+  while (d < m->d)
+    decrease_dimension(m);
+}

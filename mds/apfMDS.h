@@ -38,6 +38,8 @@ bool alignMdsMatches(Mesh2* in);
 
 void deriveMdsModel(Mesh2* in);
 
+void changeMdsDimension(Mesh2* in, int d);
+
 }
 
 #endif
