@@ -71,6 +71,4 @@ add_subdirectory(phasta)
 
 add_subdirectory(mpas)
 
-add_subdirectory(albany)
-
 add_subdirectory(test)

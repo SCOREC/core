@@ -172,6 +172,7 @@ static void writePvtuFile(const char* prefix, Mesh* m)
   std::string fileName = prefix;
   fileName += ".pvtu";
   std::ofstream file(fileName.c_str());
+  assert(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
   file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
   writePPoints(file,m->getCoordinateField());
@@ -384,6 +385,7 @@ static void writeVtuFile(const char* prefix, Numbering* n)
 {
   std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
   std::ofstream file(fileName.c_str());
+  assert(file.is_open());
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
   getNodes(n,nodes);

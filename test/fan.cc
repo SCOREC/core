@@ -4,6 +4,8 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <parma.h>
+#include <apfZoltan.h>
 
 double const a_param = 0.2;
 double const b_param = 1.0;
@@ -91,15 +93,8 @@ class Vortex : public ma::AnisotropicFunction
     ma::Vector centroid;
 };
 
-int main( int argc, char* argv[])
+static void fusionAdapt(apf::Mesh2* m)
 {
-  assert(argc==2);
-  const char* meshFile = argv[1];
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
-  gmi_model* model = makeModel();
-  ma::Mesh* m = apf::loadMdsMesh(model, meshFile);
-  m->verify();
   Vortex sf(m);
   ma::Input* in = ma::configure(m, &sf);
   in->maximumIterations = 9;
@@ -108,9 +103,39 @@ int main( int argc, char* argv[])
   in->shouldRunPostDiffusion = true;
   ma::adapt(in);
   m->verify();
-  apf::writeVtkFiles("after", m);
-  m->destroyNative();
-  apf::destroyMesh(m);
+}
+
+struct GroupCode : public Parma_GroupCode
+{
+  apf::Mesh2* mesh;
+  gmi_model* model;
+  const char* meshFile;
+  void run(int group)
+  {
+    if (group == 0) {
+      mesh = apf::loadMdsMesh(model, meshFile);
+      mesh->verify();
+      fusionAdapt(mesh);
+    } else {
+      mesh = apf::makeEmptyMdsMesh(model, 2, false);
+    }
+  }
+};
+
+int main( int argc, char* argv[])
+{
+  assert(argc==2);
+  MPI_Init(&argc,&argv);
+  PCU_Comm_Init();
+  GroupCode code;
+  code.model = makeModel();
+  code.meshFile = argv[1];
+  apf::Unmodulo outMap(PCU_Comm_Self(), 2);
+  Parma_SplitPartition(NULL, 2, code);
+  apf::remapPartition(code.mesh, outMap);
+  code.mesh->verify();
+  code.mesh->destroyNative();
+  apf::destroyMesh(code.mesh);
   PCU_Comm_Free();
   MPI_Finalize();
 }

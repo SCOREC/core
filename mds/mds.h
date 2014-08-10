@@ -66,4 +66,6 @@ void mds_remove_adjacency(struct mds* m, int from_dim, int to_dim);
 
 int mds_has_up(struct mds* m, mds_id e);
 
+void mds_change_dimension(struct mds* m, int d);
+
 #endif

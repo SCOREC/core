@@ -47,6 +47,7 @@ set(APF_SOURCES
   apfCoordData.cc
   apfArrayData.cc
   apfUserData.cc
+  apfPartition.cc
   apfConvert.cc
   apfVerify.cc)
 

@@ -65,6 +65,7 @@ setup_exe(mpas_read mpas_read.cc)
 setup_exe(mpas_write mpas_write.cc)
 setup_exe(hps hps.cc)
 setup_exe(fan fan.cc)
+setup_exe(newdim newdim.cc)
 
 if(IS_TESTING)
   include(testing.cmake)

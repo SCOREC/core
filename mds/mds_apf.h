@@ -61,9 +61,6 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname);
 void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
 
-void mds_apf_remap(struct mds_apf* m,
-    int (*map)(int, void*), void* user);
-
 int mds_align_matches(struct mds_apf* m);
 
 void mds_derive_model(struct mds_apf* m);
