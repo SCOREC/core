@@ -17,7 +17,12 @@ static void* mds_realloc(void* p, size_t n)
 {
   if ((!p)&&(!n))
     return NULL;
-  p = realloc(p,n);
+  if (n)
+    p = realloc(p,n);
+  else {
+    free(p);
+    p = NULL;
+  }
   assert((p) || (!n));
   return p;
 }
