@@ -684,6 +684,7 @@ static void check_set(struct mds* m, struct mds_set* s)
 {
   int i;
   int dim;
+  assert(s->n);
   for (i = 0; i < s->n; ++i)
     check_ent(m,s->e[i]);
   dim = mds_dim[TYPE(s->e[0])];
