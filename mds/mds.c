@@ -877,6 +877,8 @@ static void decrease_dimension(struct mds* m)
 
 void mds_change_dimension(struct mds* m, int d)
 {
+  assert(0 <= d && d <= 3);
+  assert(0 <= m->d && m->d <= 3);
   while (d > m->d)
     increase_dimension(m);
   while (d < m->d)
