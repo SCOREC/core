@@ -156,6 +156,7 @@ pcu_aa_node* pcu_aa_remove(pcu_aa_node* x, pcu_aa_tree* t, pcu_aa_less* less)
   v.deleted = &pcu_aa_bottom;
   v.last = 0;
   v.successor = 0;
+  assert(*t != &pcu_aa_bottom);
   remove_successor(t,&v);
   if (!v.successor)
     return 0;
