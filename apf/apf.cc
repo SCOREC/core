@@ -357,7 +357,7 @@ void synchronize(Field* f)
 
 void accumulate(Field* f)
 {
-  synchronizeFieldData(f->getData());
+  accumulateFieldData(f->getData());
 }
 
 void fail(const char* why)
