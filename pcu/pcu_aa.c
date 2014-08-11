@@ -18,6 +18,7 @@
 */
 
 #include <stdlib.h>
+#include <assert.h>
 #include "pcu_aa.h"
 
 static pcu_aa_node pcu_aa_bottom = 
@@ -98,6 +99,7 @@ struct remove_vars
 
 static void remove_successor(pcu_aa_tree* t, struct remove_vars* v)
 {
+  assert(*t);
   if (*t != &pcu_aa_bottom)
   { /* search down the tree and set pointers last and deleted */
     v->last = *t;
@@ -156,7 +158,6 @@ pcu_aa_node* pcu_aa_remove(pcu_aa_node* x, pcu_aa_tree* t, pcu_aa_less* less)
   v.deleted = &pcu_aa_bottom;
   v.last = 0;
   v.successor = 0;
-  assert(*t != &pcu_aa_bottom);
   remove_successor(t,&v);
   if (!v.successor)
     return 0;

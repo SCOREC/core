@@ -175,8 +175,10 @@ static void resize_up(struct mds* m, int from, int to,
       REALLOC(m->up[from][t],new_cap[t] * deg);
     } else if (mds_dim[t] == from) {
       REALLOC(m->first_up[to][t],new_cap[t]);
-      for (i = old_cap[t]; i < new_cap[t]; ++i)
+      for (i = old_cap[t]; i < new_cap[t]; ++i) {
+        assert(m->first_up[to][t]);
         m->first_up[to][t][i] = MDS_NONE;
+      }
     }
   }
 }
@@ -288,9 +290,8 @@ static void relate_down(struct mds* m, mds_id from, mds_id* to)
   i = INDEX(from);
   to_dim = mds_dim[TYPE(to[0])];
   deg = mds_degree[t][to_dim];
-  for (j = 0; j < deg; ++j) {
+  for (j = 0; j < deg; ++j)
     *at_id(m->down[to_dim],ID(t,i * deg + j)) = to[j];
-  }
 }
 
 static void relate_up(struct mds* m, mds_id e, mds_id node)
@@ -488,6 +489,7 @@ static mds_id common_up(struct mds* m, struct mds_set* s, int d)
   struct mds_set found;
   struct mds_set adjacent;
   int i;
+  assert(0 < s->n);
   for (i = 0; i < s->n; ++i)
     if (s->e[i] == MDS_NONE)
       return MDS_NONE;
@@ -689,7 +691,7 @@ static void check_set(struct mds* m, struct mds_set* s)
 {
   int i;
   int dim;
-  assert(s->n);
+  assert(0 < s->n);
   for (i = 0; i < s->n; ++i)
     check_ent(m,s->e[i]);
   dim = mds_dim[TYPE(s->e[0])];
@@ -868,6 +870,7 @@ static void increase_dimension(struct mds* m)
   int old_d;
   old_d = m->d;
   ++(m->d);
+  assert(old_d < m->d);
   mds_add_adjacency(m, old_d, m->d);
   mds_add_adjacency(m, m->d, old_d);
 }
@@ -883,10 +886,8 @@ static void decrease_dimension(struct mds* m)
 
 void mds_change_dimension(struct mds* m, int d)
 {
-  assert(0 <= d && d <= 3);
-  assert(0 <= m->d && m->d <= 3);
-  while (d > m->d)
+  while (m->d < d)
     increase_dimension(m);
-  while (d < m->d)
+  while (m->d > d)
     decrease_dimension(m);
 }
