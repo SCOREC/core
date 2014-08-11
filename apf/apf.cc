@@ -63,6 +63,8 @@ static Field* makeField(
     f = new MatrixField();
   else if (valueType == PACKED)
     f = new PackedField(components);
+  else
+    fail("invalid valueType in field construction\n");
   f->init(name,m,shape,data);
   m->addField(f);
   return f;
@@ -357,7 +359,7 @@ void synchronize(Field* f)
 
 void accumulate(Field* f)
 {
-  synchronizeFieldData(f->getData());
+  accumulateFieldData(f->getData());
 }
 
 void fail(const char* why)

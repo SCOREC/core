@@ -47,12 +47,14 @@ int getMdsId(MeshEntity* e)
 
 static MeshIterator* makeIter()
 {
-  return static_cast<MeshIterator*>(malloc(sizeof(mds_id)));
+  mds_id* p = new mds_id;
+  return reinterpret_cast<MeshIterator*>(p);
 }
 
 static void freeIter(MeshIterator* it)
 {
-  free(static_cast<void*>(it));
+  mds_id* p = reinterpret_cast<mds_id*>(it);
+  delete p;
 }
 
 static void toIter(mds_id id, MeshIterator* it)

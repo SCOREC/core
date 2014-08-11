@@ -436,7 +436,7 @@ void synchronize(Field* f);
 
 void accumulate(Field* f);
 
-void fail(const char* why);
+void fail(const char* why) __attribute__((noreturn));
 
 void freeze(Field* f);
 

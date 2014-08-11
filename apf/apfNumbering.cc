@@ -435,12 +435,6 @@ static long exscan(long x)
   return x;
 }
 
-static int exscan(int x)
-{
-  PCU_Exscan_Ints(&x,1);
-  return x;
-}
-
 template <class T>
 class Globalizer : public FieldOp
 {
@@ -520,12 +514,6 @@ void destroyGlobalNumbering(GlobalNumbering* n)
 void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes)
 {
   getFieldNodes(n,nodes);
-}
-
-void globalize(Numbering* n)
-{
-  Globalizer<int> g;
-  g.run(n);
 }
 
 }
