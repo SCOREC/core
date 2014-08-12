@@ -54,6 +54,7 @@ void mds_set_copies(struct mds_net* net, struct mds* m, mds_id e,
       return;
   }
   p = &net->data[t][i];
+  assert(p);
   if (!*p && c)
     ++net->n[t];
   else if (*p && !c)
