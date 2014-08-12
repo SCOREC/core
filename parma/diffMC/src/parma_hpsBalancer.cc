@@ -121,7 +121,7 @@ class MergeTargets {
       return mergeTargetsResults.size();
     }
 
-    const int mergeTargetIndex(int index){
+    int mergeTargetIndex(int index) {
       return mergeTargetsResults.at(index);
     }
 
