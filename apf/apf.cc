@@ -352,14 +352,14 @@ int getDimension(MeshElement* me)
   return me->getDimension();
 }
 
-void synchronize(Field* f)
+void synchronize(Field* f, Sharing* shr)
 {
-  f->getData()->synchronize();
+  f->getData()->synchronize(shr);
 }
 
-void accumulate(Field* f)
+void accumulate(Field* f, Sharing* shr)
 {
-  accumulateFieldData(f->getData());
+  accumulateFieldData(f->getData(), shr);
 }
 
 void fail(const char* why)

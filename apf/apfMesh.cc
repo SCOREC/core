@@ -573,33 +573,6 @@ std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s)
   return *(remotes.begin());
 }
 
-bool hasCopies(Mesh* m, MeshEntity* e)
-{
-  if (!m->hasMatching())
-    return m->isShared(e);
-  Matches ms;
-  m->getMatches(e,ms);
-  return ms.getSize();
-}
-
-bool isOriginal(Mesh* m, MeshEntity* e)
-{
-  if (!m->hasMatching())
-    return m->isOwned(e);
-  Matches ms;
-  m->getMatches(e,ms);
-  int self = m->getId();
-  for (size_t i = 0; i < ms.getSize(); ++i)
-  {
-    if (ms[i].peer < self)
-      return false;
-    if ((ms[i].peer == self) &&
-        (ms[i].entity < e))
-      return false;
-  }
-  return true;
-}
-
 int getDimension(Mesh* m, MeshEntity* e)
 {
   return Mesh::typeDimension[m->getType(e)];
@@ -676,6 +649,74 @@ void warnAboutEmptyParts(Mesh* m)
   PCU_Add_Ints(&emptyParts, 1);
   if (emptyParts && (!PCU_Comm_Self()))
     fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
+}
+
+static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)
+{
+  Copies remotes;
+  m->getRemotes(e, remotes);
+  a.setSize(remotes.size());
+  size_t i = 0;
+  APF_ITERATE(Copies, remotes, it) {
+    a[i].peer = it->first;
+    a[i].entity = it->second;
+    ++i;
+  }
+}
+
+struct NormalSharing : public Sharing
+{
+  NormalSharing(Mesh* m):mesh(m) {}
+  bool isOwned(MeshEntity* e)
+  {
+    return mesh->isOwned(e);
+  }
+  virtual void getCopies(MeshEntity* e,
+      CopyArray& copies)
+  {
+    if (!mesh->isShared(e))
+      return;
+    getRemotesArray(mesh, e, copies);
+  }
+  Mesh* mesh;
+};
+
+struct MatchedSharing : public Sharing
+{
+  MatchedSharing(Mesh* m):helper(m),mesh(m) {}
+  bool isOwned(MeshEntity* e)
+  {
+    Matches ms;
+    mesh->getMatches(e,ms);
+    if (!ms.getSize())
+      return helper.isOwned(e);
+    int self = mesh->getId();
+    for (size_t i = 0; i < ms.getSize(); ++i)
+    {
+      if (ms[i].peer < self)
+        return false;
+      if ((ms[i].peer == self) &&
+          (ms[i].entity < e))
+        return false;
+    }
+    return true;
+  }
+  void getCopies(MeshEntity* e,
+      CopyArray& copies)
+  {
+    mesh->getMatches(e, copies);
+    if (!copies.getSize())
+      helper.getCopies(e, copies);
+  }
+  NormalSharing helper;
+  Mesh* mesh;
+};
+
+Sharing* getSharing(Mesh* m)
+{
+  if (m->hasMatching())
+    return new MatchedSharing(m);
+  return new NormalSharing(m);
 }
 
 } //namespace apf

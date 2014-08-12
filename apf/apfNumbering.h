@@ -78,7 +78,7 @@ int countFixed(Numbering* n);
 /* numbers non-owned nodes with the values from their owned copies on
    other parts. Works even if the non-owned nodes have no number currently
    assigned, after this they are all numbered */
-void synchronize(Numbering * n);
+void synchronize(Numbering * n, Sharing* shr = 0);
 
 /* creates a local numbering of the owned entities of a given dimension */
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
@@ -96,7 +96,8 @@ Numbering* numberOverlapNodes(
 Numbering* numberOwnedNodes(
     Mesh* mesh,
     const char* name,
-    FieldShape* s = 0);
+    FieldShape* s = 0,
+    Sharing* shr = 0);
 /* count the number of nodes that have been explicitly numbered */
 int countNodes(Numbering* n);
 
@@ -156,7 +157,7 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
 GlobalNumbering* makeGlobal(Numbering* n);
 
 /* see synchronize(Numbering*) and makeGlobal */
-void synchronize(GlobalNumbering* n);
+void synchronize(GlobalNumbering* n, Sharing* shr = 0);
 
 void destroyGlobalNumbering(GlobalNumbering* n);
 

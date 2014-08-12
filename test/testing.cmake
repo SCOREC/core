@@ -25,17 +25,22 @@ add_test(tet_serial
   "${MDIR}/pipe.smd"
   "pipe.smb"
   "tet.smb")
+if (PCU_COMPRESS)
+  set(MESHFILE "bz2:pipe_2_.smb")
+else()
+  set(MESHFILE "pipe_2_.smb")
+endif()
 add_test(split_2
   split
   "${MDIR}/pipe.smd"
   "pipe.smb"
-  "pipe_2_.smb"
+  ${MESHFILE}
   2)
 add_test(split_4
   ${MPIRUN} ${MPIRUN_PROCFLAG} 2
   ./zsplit
   "${MDIR}/pipe.smd"
-  "pipe_2_.smb"
+  ${MESHFILE}
   "pipe_4_.smb"
   2)
 add_test(verify_parallel
@@ -54,6 +59,12 @@ add_test(tet_parallel
   "${MDIR}/pipe.smd"
   "pipe_4_.smb"
   "tet.smb")
+set(MDIR ${MESHES}/spr)
+add_test(spr
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./spr_test
+  "${MDIR}/spr.dmg"
+  "${MDIR}/quadspr.smb")
 set(MDIR ${MESHES}/nonmanifold)
 add_test(nonmanif_verify
   ./verify

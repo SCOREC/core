@@ -519,13 +519,25 @@ class MeshMDS : public Mesh2
     }
     void getMatches(MeshEntity* e, Matches& m)
     {
+      mds_copies* c = mds_get_copies(&mesh->matches, fromEnt(e));
+      if (!c)
+        return;
+      m.setSize(c->n);
+      for (int i = 0; i < c->n; ++i) {
+        m[i].entity = toEnt(c->c[i].e);
+        m[i].peer = c->c[i].p;
+      }
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
-      abort();
+      mds_copy c;
+      c.e = fromEnt(match);
+      c.p = peer;
+      mds_add_copy(&mesh->matches, &mesh->mds, fromEnt(e), c);
     }
     void clearMatches(MeshEntity* e)
     {
+      mds_set_copies(&mesh->matches, &mesh->mds, fromEnt(e), 0);
     }
     double getElementBytes(int type)
     {
