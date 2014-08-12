@@ -123,7 +123,7 @@ int sendAdjNetsToNeighbors(vector<partInfo>& parts,
             createNeighborAndGetBufSize(destRank);
 
           //number of bytes in message
-          size_t numIntsInMsg = 5 + nbItr->net.size();
+          int numIntsInMsg = 5 + nbItr->net.size();
           PCU_COMM_PACK(destRank,numIntsInMsg);
 
           //pack source part Id
@@ -150,7 +150,7 @@ int sendAdjNetsToNeighbors(vector<partInfo>& parts,
           PCU_Comm_Packed(destRank, &buffSizeFinal);                                
           const size_t numIntsPacked = 
             (buffSizeFinal - buffSizeInitial) / sizeof (int);
-          MIS_FAIL_IF(numIntsInMsg != numIntsPacked, 
+          MIS_FAIL_IF((size_t)numIntsInMsg != numIntsPacked, 
               "number of ints packed does not match msg header");
         }
       }
@@ -160,45 +160,7 @@ int sendAdjNetsToNeighbors(vector<partInfo>& parts,
   return 0;
 }
 
-int sendNetToNeighbors(vector<partInfo>& parts) {
 
-  PCU_Comm_Start(PCU_GLOBAL_METHOD);
-
-  int partIdx = 0;
-  MIS_ITERATE(vector<partInfo>, parts, partItr) {
-    MIS_ITERATE(vector<int>, partItr->adjPartIds, adjPartIdItr) {
-      const int destRank = GetOwningProcessRank(*adjPartIdItr, parts.size());
-      const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
-
-      //number of bytes in message
-      size_t numIntsInMsg = 4 + partItr->net.size();
-      PCU_COMM_PACK(destRank,numIntsInMsg);
-
-      //pack source part Id
-      PCU_COMM_PACK( destRank, partItr->id);
-
-      //pack destination part Id
-      PCU_COMM_PACK( destRank, *adjPartIdItr);
-
-      //part's random number
-      PCU_COMM_PACK( destRank, partItr->randNum);
-
-      //pack int array           
-      MIS_ITERATE(vector<int>, partItr->net, pItr)
-        PCU_COMM_PACK( destRank, *pItr);    
-
-      //sanity check
-      size_t buffSizeFinal;
-      PCU_Comm_Packed(destRank, &buffSizeFinal);            
-      const size_t numIntsPacked = 
-        (buffSizeFinal - buffSizeInitial) / sizeof (int);
-      MIS_FAIL_IF(numIntsInMsg != numIntsPacked, 
-          "number of ints packed does not match msg header");
-    }
-    partIdx++;
-  }
-  return 0;
-}
 
 int sendIntsToNeighbors(vector<partInfo>& parts, 
     vector<int>*& msg, set<int>& destRanks, int tag) {
@@ -214,7 +176,7 @@ int sendIntsToNeighbors(vector<partInfo>& parts,
       const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
 
       //number of bytes in message
-      size_t numIntsInMsg = 4 + msg[partIdx].size();
+      int numIntsInMsg = 4 + msg[partIdx].size();
       PCU_COMM_PACK( destRank, numIntsInMsg);
 
       //pack msg tag
@@ -245,7 +207,7 @@ int sendIntsToNeighbors(vector<partInfo>& parts,
       PCU_Comm_Packed(destRank, &buffSizeFinal);
       const size_t numIntsPacked = 
         (buffSizeFinal - buffSizeInitial) / sizeof (int);
-      MIS_FAIL_IF(numIntsInMsg != numIntsPacked, 
+      MIS_FAIL_IF((size_t)numIntsInMsg != numIntsPacked, 
           "number of ints packed does not match msg header");
     }
     partIdx++;
@@ -324,31 +286,51 @@ void recvIntsFromNeighbors(vector<partInfo>& parts,
   } 
 }
 
-void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg, 
-    const size_t numIntsInMsg) {
+int sendNetToNeighbors(vector<partInfo>& parts) {
+
+  PCU_Comm_Start(PCU_GLOBAL_METHOD); //TODO update this
+
+  int partIdx = 0;
+  MIS_ITERATE(vector<partInfo>, parts, partItr) {
+    MIS_ITERATE(vector<int>, partItr->adjPartIds, adjPartIdItr) {
+      const int destRank = GetOwningProcessRank(*adjPartIdItr, parts.size());
+      //pack source part Id
+      PCU_COMM_PACK( destRank, partItr->id);
+      //pack destination part Id
+      PCU_COMM_PACK( destRank, *adjPartIdItr);
+      //part's random number
+      PCU_COMM_PACK( destRank, partItr->randNum);
+      //pack size of int array and its contents
+      size_t netSz = partItr->net.size();
+      PCU_COMM_PACK( destRank, netSz);
+      MIS_ITERATE(vector<int>, partItr->net, pItr)
+        PCU_COMM_PACK( destRank, *pItr);    
+    }
+    partIdx++;
+  }
+  return 0;
+}
+
+void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg) {
   int rank;
   PCU_Comm_Rank(&rank);
 
   int srcRank;
   PCU_Comm_From(&srcRank);
 
-  size_t numIntsUnpacked = 0;
   //unpack source part Id
   int srcPartId;
   PCU_COMM_UNPACK(srcPartId);
   assert(srcRank == GetOwningProcessRank(srcPartId, parts.size())); 
-  numIntsUnpacked++;
 
   //unpack destination part Id
   int destPartId;
   PCU_COMM_UNPACK(destPartId);
   assert(rank == GetOwningProcessRank(destPartId, parts.size()));
-  numIntsUnpacked++;
 
   //unpack random number
   int randNum;
   PCU_COMM_UNPACK(randNum);
-  numIntsUnpacked++;
 
   //find index to store message
   size_t partIdx = 0;
@@ -368,12 +350,13 @@ void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg,
   ap.partId = srcPartId;
   ap.randNum = randNum;
 
-  //unpack int array
-  const size_t buffSize = (numIntsInMsg - numIntsUnpacked) * sizeof (int);
-  assert(buffSize > 0);
+  //unpack size of int array
+  size_t arrayLen;
+  PCU_COMM_UNPACK(arrayLen);
+  assert(arrayLen > 0);
 
   int buff;
-  for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
+  for(size_t i=0; i < arrayLen; i++) {
     PCU_COMM_UNPACK(buff);    
     ap.net.push_back(buff);
   }    
@@ -383,21 +366,8 @@ void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg,
 
 void recvNetsFromNeighbors(vector<partInfo>& parts, 
     vector<adjPart>*& msg) {
-
-  while( PCU_Comm_Listen() ) {
-    size_t msgSz;
-    PCU_Comm_Received(&msgSz); 
-    const size_t numIntsInBuff = msgSz / sizeof (int);
-    assert(numIntsInBuff > 0);
-    size_t numIntsProcessed = 0;
-
-    do {
-      int numIntsPacked;
-      PCU_COMM_UNPACK(numIntsPacked);
-      numIntsProcessed += numIntsPacked;
-      unpackNet(parts, msg, numIntsPacked - 1);
-    } while (numIntsProcessed != numIntsInBuff);  
-  }
+  while( PCU_Comm_Listen() )
+    unpackNet(parts, msg);
 }
 
 void unpackAdjPart(vector<partInfo>& parts, 
@@ -757,8 +727,8 @@ void sendMisStatusToNeighbors(vector<partInfo>& parts) {
       createNeighborAndGetBufSize(destRank);
 
       //number of integers in message
-      int numIntsInMsg = 3;
-      PCU_COMM_PACK( destRank, numIntsInMsg);
+      int numIntsInMsg = 3; //TODO remove this
+      PCU_COMM_PACK( destRank, numIntsInMsg); //TODO remove this
 
       //pack destination part Id
       PCU_COMM_PACK( destRank, *adjPartIdItr);
