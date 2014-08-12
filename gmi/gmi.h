@@ -75,7 +75,7 @@ void gmi_destroy(struct gmi_model* m);
 void gmi_register(gmi_creator f, const char* ext);
 struct gmi_model* gmi_load(const char* filename);
 
-void gmi_fail(const char* why);
+void gmi_fail(const char* why) __attribute__((noreturn));
 
 void gmi_fscanf(FILE* f, int n, const char* format, ...);
 
