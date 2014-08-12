@@ -18,8 +18,7 @@ class MergeTargets {
     //maxW == HeavyImb
     //Produces the optimal merging combination of the part's neighbors into
     // itself for a given maxW
-    MergeTargets(Sides* s, Weights* w, double maxW)
-    {
+    MergeTargets(Sides* s, Weights* w, double maxW, bool chi) {
       //If part is heavy or empty, exit function
       if (w->self() >= maxW || w->self() == 0) {
         //PCU_Debug_Print("Part %d of weight %f is heavy\n", PCU_Comm_Self(),
@@ -29,51 +28,32 @@ class MergeTargets {
       /*PCU_Debug_Print("Part %d of weight %f is light"
           "and not empty with imb of %f, %zu neighbors--\n",
           PCU_Comm_Self(), w->self(), maxW, w->size());
-      rating 0 (only in HPS, not CHI)*/ 
-      //Create array of partId's for passing into mergingNet
+      rating 0 (only in HPS, not CHI)*/
+
+      //Create array of neighbor partId's for assignment in mergingNet
+      // PCU_Debug_Print("Neighbor part Ids \n"); //rating 1
       int* nborPartIds = new int[w->size()];
       const Weights::Item* weight;
       unsigned int weightIdx = 0;
       w->begin();
       while( (weight = w->iterate()) )
         nborPartIds[weightIdx++] = weight->first;
+        // PCU_Debug_Print("\tNeighbor %d = %d\n", weightIdx-1,
+          // nborPartIds[weightIdx-1]); //rating 1
       w->end();
 
-      //iterating through the neighbor weights to determine the minimum weight
       double minWeight = std::numeric_limits<double>::max();
-      w->begin();
-      while( (weight = w->iterate()) )
-        if ( weight->second < minWeight )
-          minWeight = weight->second;
-      w->end();
-
-      //normalizing the neighbor weights to the minimum neighbor weight with a
-      // dividing factor to increase the accuracy of knapsack
-      int* normalizedIntWeights = new int[w->size()];
-      weightIdx = 0;
-      double divideFactor = .1;
-      w->begin();
-      while( (weight = w->iterate()) ){
-        //Divide Factor normalizing weight code
-        double normalizedWeight = weight->second / minWeight;
-        normalizedWeight /= divideFactor;
-        normalizedIntWeights[weightIdx++] = (int) ceil(normalizedWeight);
-
-        //PCU_Debug_Print("weight %d, normalized to %d from %f\n",
-        // weight->first, normalizedIntWeights[(weightIdx-1)], weight->second); rating 1 
-      }
-      w->end();
+      int* normalizedIntWeights = normalizeWeights(w, minWeight);
 
       //How much weight can be added on to the current part before it
       // reaches the HeavyImb
       const double weightCapacity = (maxW - w->self());
       //total weight that can be added to self, normalized to min
-      const int knapsackCapacity = floor(
-          (weightCapacity/minWeight)/divideFactor);
+      const int knapsackCapacity = floor(scale(weightCapacity/minWeight));
 
       /*PCU_Debug_Print("Weight Capcity = %f \nknapsackCapacity = %d \n",
           weightCapacity, knapsackCapacity);
-      rating 1*/ 
+      rating 1*/
       //Knapsack execution
       //Declared for knapsack class (**might be removed later**)
       int* value = new int[s->total()];
@@ -119,7 +99,86 @@ class MergeTargets {
   private:
     MergeTargets();
     vector<int> mergeTargetsResults;
+
+    double scale(double v) {
+      double divideFactor = .1;
+      return v/divideFactor;
+    }
+
+    int* normalizeWeights(Weights* w, double& minWeight){
+      //iterating through the neighbor weights to determine the minimum weight
+      const Weights::Item* weight;
+      w->begin();
+      while( (weight = w->iterate()) )
+        if ( weight->second < minWeight )
+          minWeight = weight->second;
+      w->end();
+
+      // PCU_Debug_Print("min weight == %f\n", minWeight); rating 2 
+
+      //normalizing the neighbor weights to the minimum neighbor weight with a
+      // dividing factor to increase the accuracy of knapsack
+      int* normalizedIntWeights = new int[w->size()];
+      int weightIdx = 0;
+      w->begin();
+      while( (weight = w->iterate()) ){
+        //Divide Factor normalizing weight code
+        double normalizedWeight = weight->second / minWeight;
+        normalizedWeight = scale(normalizedWeight);
+        normalizedIntWeights[weightIdx++] = (int) ceil(normalizedWeight);
+
+        // PCU_Debug_Print("weight %d, normalized to %d from %f\n",
+        // weight->first, normalizedIntWeights[(weightIdx-1)], weight->second); //rating 1, 2 if CHI
+      }
+      w->end();
+
+      return normalizedIntWeights;
+    }
 };
+
+
+
+void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts, 
+  vector<misLuby::partInfo>& parts){
+    //Generating misLuby part info for current part
+    misLuby::partInfo part;
+    part.id = m->getId();
+
+    //Passing in the adjPartIds
+    const Sides::Item* partId;
+    s->begin();
+    while( (partId = s->iterate()) )
+      part.adjPartIds.push_back(partId->first);
+    s->end();
+
+    PCU_Debug_Print("adjpartIds size = %zu\n", part.adjPartIds.size()); //rating 2
+
+    PCU_Debug_Print("Part %d mergeNet size %zu\n", PCU_Comm_Self(),
+      tgts.total()); //rating 0
+
+    //Passing in the mergingNet
+    for(size_t i = 0; i < tgts.total(); ++i){
+      part.net.push_back(tgts.mergeTargetIndex(i));
+      PCU_Debug_Print("\t%zu mergingNet %d\n",i , part.net[i]);//rating 1 (CHI 2)
+    }
+    part.net.push_back(part.id);
+
+  //Testing for examples, additionally add paramter [4]
+  //in mis as true if testing random numbers
+  //Change random numbers as you please, MIS selects lowest numbers (only ints)
+  //Additionally, more can be added for more parts
+  if(part.id == 0) part.randNum = 1;
+  else if (part.id == 1) part.randNum = 2;
+  else if (part.id == 2) part.randNum = 3;
+  else if (part.id == 3) part.randNum = 1;
+  else if (part.id == 4) part.randNum = 2;
+  else if (part.id == 5) part.randNum = 2;
+  else if (part.id == 6) part.randNum = 1;
+  else if (part.id == 7) part.randNum = 2;
+
+    parts.push_back(part);
+    //End creating misLuby part
+}
 
   //Using MIS Luby, selects the merges to be executed based on the merging nets
   // and returns it in the plan
@@ -129,71 +188,31 @@ class MergeTargets {
     vector<misLuby::partInfo> parts;
     parts.reserve(1);
 
-    //Generating misLuby part info for current part
-    misLuby::partInfo part;
-    part.id = m->getId();
+    generatemMisPart(m,s,tgts,parts);
 
-    //Passing in the adjPartIds (works)
-    const Sides::Item* partId;
-    s->begin();
-    while( (partId = s->iterate()) )
-      part.adjPartIds.push_back(partId->first);
-    s->end();
-/*
-    PCU_Debug_Print("adjpartIds size = %zu\n", part.adjPartIds.size())//rating 0
-    //rating 1
-    PCU_Debug_Print("adjPartIds:\n");
-    vector<int>::iterator itr = part.adjPartIds.begin();
-    while(itr != part.adjPartIds.end()){
-      PCU_Debug_Print("\t%i\n", *itr++);
-    }
-    PCU_Debug_Print("adjPartIds end\n");
-      */
+    int randNumSeed = time(NULL)%(PCU_Comm_Self()+1);
 
-    // PCU_Debug_Print("Part %d mergeNet size %zu\n", PCU_Comm_Self(),
-    //   tgts.total()); //rating 0 
-    //Passing in the mergingNet
-    for(size_t i = 0; i < tgts.total(); ++i){
-      part.net.push_back(tgts.mergeTargetIndex(i));
-      // PCU_Debug_Print("\t%d mergingNet %zu\n",i , part.net[i]);//rating 1
-    }
-    part.net.push_back(part.id);
-
-//Testing for examples, additionally add paramter [4]
-//in mis as true if testing random numbers
-//Change random numbers as you please, MIS selects lowest numbers (only ints)
-if(part.id == 0) part.randNum = 1;
-else if (part.id == 1) part.randNum = 2;
-else if (part.id == 2) part.randNum = 1;
-else if (part.id == 3) part.randNum = 2;
-else if (part.id == 4) part.randNum = 2;
-else if (part.id == 5) part.randNum = 2;
-else if (part.id == 6) part.randNum = 1;
-else if (part.id == 7) part.randNum = 2;
-
-    parts.push_back(part);
-    //End creating misLuby part
-
-    mis_init(0,false); //RandNumSeed set to 0 for testing purposes.
+    mis_init(randNumSeed,false);
     vector<int> maximalIndSet;
     //Maximal Independent Set Call
     int ierr = mis(PCU_Comm_Self(), s->total()+1, parts, maximalIndSet, true);
     //Assert will fail if MIS fails
     assert(!ierr);
 
-    // Debug statement rating 0 
+    // Debug if in MIS rating 0
     if (maximalIndSet.size() == 1)
-      PCU_Debug_Print("\tPart %d in MIS\n", part.id);
-    
+      PCU_Debug_Print("Part %d in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
+    else PCU_Debug_Print("Part %d NOT in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
 
     PCU_Comm_Begin();
-    //If the current part is in the MIS, send notification to its net
+    //If the current part is in the MIS, send notification to its mergingNet
     if (maximalIndSet.size() != 0) {
       for(size_t i=0; i < tgts.total(); ++i){
         //PCU_Debug_Print("send dest = %d\n", tgts.mergeTargetIndex(i)); rating 1
         PCU_Comm_Pack(tgts.mergeTargetIndex(i), NULL, 0);
       }
     }
+
     PCU_Comm_Send();
     //Listening to see if it needs to merge into another part, one msg only
     //Only data needed is sender
@@ -204,7 +223,7 @@ else if (part.id == 7) part.randNum = 2;
       destination = PCU_Comm_Sender();
       received = true;
     }
-    PCU_Debug_Print("destination = %d\n", destination); //rating 0
+    PCU_Debug_Print("destination = %d\n", destination); //rating 0 (1 if CHI)
 
     //Migration of part entities to its destination part if received one
     apf::MeshIterator* it = m->begin(m->getDimension());
@@ -242,8 +261,8 @@ else if (part.id == 7) part.randNum = 2;
       int& extra)
   {
     extra = numEmpty(m, plan) - totSplits(w, tgt);
-    //PCU_Debug_Print("Empty parts = %d - total Splits = %d = Extra %d ", 
-    // numEmpty(m,plan),totSplits(w,tgt), extra); rating 2 
+    //PCU_Debug_Print("Empty parts = %d - total Splits = %d = Extra %d ",
+    // numEmpty(m,plan),totSplits(w,tgt), extra); rating 2
     if ( extra < 0 ){
       return false;  }
     else {
@@ -277,7 +296,6 @@ else if (part.id == 7) part.randNum = 2;
   }
   //Function used to find the optimal heavy imbalance for executing HPS
   double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
-    // **TEst
     double testW = maxWeight(w);
     //Step size can change arbitrarily as needed
     double step = 0.1 * avgWeight(w);
@@ -287,10 +305,10 @@ else if (part.id == 7) part.randNum = 2;
       testW -= step;
       //**IDEA** Add sizes of mergeNets across processes and subtract
       // from totSplits and if postitve, fail
-      MergeTargets mergeTgts(s, w, testW);
+      MergeTargets mergeTgts(s, w, testW, false);
       apf::Migration* plan = selectMerges(m, s, mergeTgts);
       splits = canSplit(m, w, plan, testW, extraEmpties);
-      // PCU_Debug_Print("Test imb %f, result %d\n", testW, splits); rating 0
+      PCU_Debug_Print("Test imb %f, result %d\n", testW, splits); //rating 0
       delete plan; // not migrating
    }
    while ( splits );
@@ -348,7 +366,7 @@ else if (part.id == 7) part.randNum = 2;
   }
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
-    MergeTargets mergeTargets(s, w, tgt);
+    MergeTargets mergeTargets(s, w, tgt, true);
     apf::Migration* plan = selectMerges(m, s, mergeTargets);
     split(m, w, tgt, plan);
     m->migrate(plan);
@@ -365,7 +383,7 @@ else if (part.id == 7) part.randNum = 2;
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
-        // PCU_Debug_Print("Final Chi = %f",tgt); rating 0 
+        // PCU_Debug_Print("Final Chi = %f",tgt); rating 0
         //hps(mesh, wtag, sides, w, tgt); **Uncomment when done with testing
         delete sides;
         delete w;
