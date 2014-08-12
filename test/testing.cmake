@@ -54,6 +54,12 @@ add_test(tet_parallel
   "${MDIR}/pipe.dmg"
   "pipe_4_.smb"
   "tet.smb")
+set(MDIR ${MESHES}/spr)
+add_test(spr
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./spr_test
+  "${MDIR}/spr.dmg"
+  "${MDIR}/quadspr.smb")
 set(MDIR ${MESHES}/nonmanifold)
 add_test(nonmanif_verify
   ./verify
