@@ -54,6 +54,22 @@ add_test(tet_parallel
   "${MDIR}/pipe.smd"
   "pipe_4_.smb"
   "tet.smb")
+set(MDIR ${MESHES}/nonmanifold)
+add_test(nonmanif_verify
+  ./verify
+  "${MDIR}/nonmanifold.dmg"
+  "${MDIR}/nonmanifold.smb")
+add_test(nonmanif_split
+  ./split
+  "${MDIR}/nonmanifold.dmg"
+  "${MDIR}/nonmanifold.smb"
+  "nonmanifold_2_.smb"
+  2)
+add_test(nonmanif_verify2
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 2
+  ./verify
+  "${MDIR}/nonmanifold.dmg"
+  "nonmanifold_2_.smb")
 if (ENABLE_MPAS)
   set(MDIR ${MESHES}/mpas)
   add_test(read_mpas
