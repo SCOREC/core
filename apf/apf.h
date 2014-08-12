@@ -35,6 +35,7 @@ class MeshEntity;
 class VectorElement;
 typedef VectorElement MeshElement;
 class FieldShape;
+class Sharing;
 
 /** \brief Destroys an apf::Mesh.
   *
@@ -432,9 +433,9 @@ double getJacobianDeterminant(Matrix3x3 const& J, int dimension);
 
 int getDimension(MeshElement* me);
 
-void synchronize(Field* f);
+void synchronize(Field* f, Sharing* shr = 0);
 
-void accumulate(Field* f);
+void accumulate(Field* f, Sharing* shr = 0);
 
 void fail(const char* why) __attribute__((noreturn));
 

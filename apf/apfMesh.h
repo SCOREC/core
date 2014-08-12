@@ -44,13 +44,15 @@ struct Up
   MeshEntity* e[256];
 };
 
-struct Match
+struct Copy
 {
   int peer;
   MeshEntity* entity;
 };
+typedef Copy Match;
 
-typedef DynamicArray<Match> Matches;
+typedef DynamicArray<Copy> CopyArray;
+typedef CopyArray Matches;
 
 class Mesh
 {
@@ -252,16 +254,6 @@ void changeMeshShape(Mesh* m, FieldShape* newShape, bool project = true);
 
 void unfreezeFields(Mesh* m);
 
-std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s);
-
-/* equivalent to m->isShared(e) if there is no matching.
-   Otherwise, returns whether the entity has remote copies or matched copies */
-bool hasCopies(Mesh* m, MeshEntity* e);
-
-/* equivalent to m->isOwned(e) if there is no matching.
-   Otherwise, implements an ownership scheme over matched entities */
-bool isOriginal(Mesh* m, MeshEntity* e);
-
 int getDimension(Mesh* m, MeshEntity* e);
 
 void verify(Mesh* m);
@@ -277,6 +269,18 @@ int countOwned(Mesh* m, int dim);
 void printStats(Mesh* m);
 
 void warnAboutEmptyParts(Mesh* m);
+
+std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s);
+
+struct Sharing
+{
+  virtual ~Sharing() {};
+  virtual bool isOwned(MeshEntity* e) = 0;
+  virtual void getCopies(MeshEntity* e,
+      CopyArray& copies) = 0;
+};
+
+Sharing* getSharing(Mesh* m);
 
 } //namespace apf
 
