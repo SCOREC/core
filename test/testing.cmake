@@ -20,17 +20,22 @@ add_test(tet_serial
   "${MDIR}/pipe.dmg"
   "pipe.smb"
   "tet.smb")
+if (PCU_COMPRESS)
+  set(MESHFILE "bz2:pipe_2_.smb")
+else()
+  set(MESHFILE "pipe_2_.smb")
+endif()
 add_test(split_2
   split
   "${MDIR}/pipe.dmg"
   "pipe.smb"
-  "pipe_2_.smb"
+  ${MESHFILE}
   2)
 add_test(split_4
   ${MPIRUN} ${MPIRUN_PROCFLAG} 2
   ./zsplit
   "${MDIR}/pipe.dmg"
-  "pipe_2_.smb"
+  ${MESHFILE}
   "pipe_4_.smb"
   2)
 add_test(verify_parallel
