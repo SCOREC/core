@@ -26,41 +26,35 @@ int getFlagFromDiagonal(int diagonal)
   return DIAGONAL_2;
 }
 
-static bool getEdgeDirection(apf::Numbering* n, Entity* e)
+static bool getEdgeDirection(apf::GlobalNumbering* n, Entity* e)
 {
   apf::Mesh* m = getMesh(n);
   Entity* v[2];
   m->getDownward(e,0,v);
-  int o[2];
-  o[0] = m->getOwner(v[0]);
-  o[1] = m->getOwner(v[1]);
-  if (o[0] != o[1])
-    return o[0] < o[1];
-  int vn[2];
-  vn[0] = apf::getNumber(n,v[0],0,0);
-  vn[1] = apf::getNumber(n,v[1],0,0);
-  assert(vn[0] != vn[1]);
-  return vn[0] < vn[1];
+  return apf::getNumber(n, apf::Node(v[0], 0))
+         <
+         apf::getNumber(n, apf::Node(v[1], 0));
 }
 
 static void chooseBaseDiagonals(Adapt* a)
 {
   Mesh* m = a->mesh;
-  apf::Numbering* n = apf::numberOwnedNodes(
-      m,"layer_base_number",apf::getLagrange(1));
-  apf::synchronize(n);
+  apf::Numbering* local =
+    apf::numberOwnedDimension(m, "layer_base_number", 0);
+  apf::GlobalNumbering* global = apf::makeGlobal(local);
+  apf::synchronize(global);
   Entity* e;
   Iterator * it = m->begin(1);
   while ((e = m->iterate(it)))
     if (getFlag(a,e,LAYER_BASE))
     {
-      if (getEdgeDirection(n,e))
+      if (getEdgeDirection(global, e))
         setFlag(a,e,DIAGONAL_1);
       else
         setFlag(a,e,DIAGONAL_2);
     }
   m->end(it);
-  apf::destroyNumbering(n);
+  apf::destroyGlobalNumbering(global);
 }
 
 static Entity* getOtherQuad(Adapt* a, Entity* e, Predicate& visited)
