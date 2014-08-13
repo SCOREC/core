@@ -19,7 +19,7 @@ static void constructVerts(
   int end = nelem * apf::Mesh::adjacentCount[etype][0];
   for (int i = 0; i < end; ++i)
     if ( ! result.count(conn[i]))
-      result[i] = m->createVert_(interior);
+      result[conn[i]] = m->createVert_(interior);
 }
 
 static void constructElements(
@@ -156,13 +156,14 @@ void construct(Mesh2* m, int* conn, int nelem, int etype)
   constructResidence(m, globalToVert);
   constructRemotes(m, globalToVert);
   stitchMesh(m);
+  m->acceptChanges();
 }
 
 void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
 {
   int dim = m->getDimension();
   nelem = m->count(dim);
-  conn = new int[nelem];
+  conn = 0;
   Numbering* local = numberOverlapNodes(m, "apf_destruct");
   MeshIterator* it = m->begin(dim);
   MeshEntity* e;
@@ -171,6 +172,8 @@ void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
     etype = m->getType(e);
     Downward verts;
     int nverts = m->getDownward(e, 0, verts);
+    if (!conn)
+      conn = new Gid[nelem * nverts];
     for (int j = 0; j < nverts; ++j)
       conn[i++] = getNumber(local, verts[j], 0, 0);
   }
