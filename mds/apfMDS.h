@@ -30,7 +30,9 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
 void reorderMdsMesh(Mesh2* mesh);
 
-int getMdsId(MeshEntity* e);
+int getMdsIndex(MeshEntity* e);
+
+MeshEntity* getMdsEntity(int apfType, int index);
 
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 
