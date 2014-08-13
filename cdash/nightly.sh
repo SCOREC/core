@@ -7,6 +7,7 @@ module load parmetis/OpenMPI-1.6.5/4.0.2
 module load zoltan/OpenMPI-1.6.5/3.8
 module load simmetrix/simModSuite
 module load netcdf
+module load llvm/latest
 
 export PATH=/lore/dibanez/bin:$PATH
 

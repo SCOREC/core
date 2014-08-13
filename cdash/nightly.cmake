@@ -56,7 +56,7 @@ macro(submit_part subproject_name part)
   endif()
 endmacro()
 
-macro(run_subproject subproject_name repo_url config_opts)
+macro(build_subproject subproject_name repo_url config_opts)
   set_property(GLOBAL PROPERTY SubProject ${subproject_name})
   set_property(GLOBAL PROPERTY Label ${subproject_name})
 
@@ -96,10 +96,17 @@ macro(run_subproject subproject_name repo_url config_opts)
   endif()
 
   submit_part(${subproject_name} Build)
+endmacro()
 
+macro(test_subproject subproject_name)
   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}/${subproject_name}")
 
   submit_part(${subproject_name} Test)
+endmacro()
+
+macro(run_subproject subproject_name repo_url config_opts)
+build_subproject("${subproject_name}" "${repo_url}" "${config_opts}")
+test_subproject("${subproject_name}")
 endmacro()
 
 SET(CONFIGURE_OPTIONS
@@ -132,6 +139,41 @@ SET(CONFIGURE_OPTIONS
 SET(REPO git@bitbucket.org:ibaned/scorec.git)
 
 run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
+
+#after this we do the same thing but this time with the clang
+#static analysis tool
+SET(CONFIGURE_OPTIONS
+  "-DCMAKE_C_COMPILER=ccc-analyzer"
+  "-DCMAKE_CXX_COMPILER=c++-analyzer"
+  "-DCMAKE_C_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
+  "-DENABLE_THREADS=ON"
+  "-DENABLE_ZOLTAN=ON"
+  "-DENABLE_MPAS=ON"
+  "-DPCU_COMPRESS=ON"
+  "-DCMAKE_MAKE_PROGRAM:FILEPATH=/lore/dibanez/danmake.sh"
+)
+# danmake.sh is just a shell script that calls clang's scan-build
+# in front of gmake
+SET(REPO https://github.com/SCOREC/core.git)
+
+build_subproject("core-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
+
+SET(CONFIGURE_OPTIONS
+  "-DCMAKE_C_COMPILER=ccc-analyzer"
+  "-DCMAKE_CXX_COMPILER=c++-analyzer"
+  "-DCMAKE_C_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
+  "-DENABLE_THREADS=ON"
+  "-DENABLE_ZOLTAN=ON"
+  "-DENABLE_MPAS=ON"
+  "-DPCU_COMPRESS=ON"
+  "-DCMAKE_MAKE_PROGRAM:FILEPATH=/lore/dibanez/danmake.sh"
+  "-DSIM_MPI=openmpi16"
+)
+SET(REPO git@bitbucket.org:ibaned/scorec.git)
+
+build_subproject("core-sim-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
 
 message("DONE")
 
