@@ -6,51 +6,13 @@
  */
 
 #include "spr.h"
-#include "apf.h"
 #include "apfMesh.h"
-#include "apfField.h"
 #include "apfShape.h"
+#include "apfField.h"
 #include "apfCavityOp.h"
 #include <set>
 
 namespace apf {
-
-Field* getGradIPField(Field* f, const char* name, int order)
-{
-  Mesh* m = getMesh(f);
-  int vt = getValueType(f);
-  assert(vt == SCALAR || vt == VECTOR);
-  Field* ipField = createIPField(m,name,vt+1,order);
-  MeshIterator* it = m->begin(m->getDimension());
-  MeshEntity* e;
-  while ((e = m->iterate(it)))
-  {
-    MeshElement* me = createMeshElement(m,e);
-    Element* fe = createElement(f,me);
-    int np = countIntPoints(me,order);
-    for (int p=0; p < np; ++p)
-    {
-      Vector3 xi;
-      getIntPoint(me,order,p,xi);
-      if (vt == SCALAR)
-      {
-        Vector3 value;
-        getGrad(fe,xi,value);
-        setVector(ipField,e,p,value);
-      }
-      else
-      {
-        Matrix3x3 value;
-        getVectorGrad(fe,xi,value);
-        setMatrix(ipField,e,p,value);
-      }
-    }
-    destroyElement(fe);
-    destroyMeshElement(me);
-  }
-  m->end(it);
-  return ipField;
-}
 
 struct SprPoints {
   SprPoints():count(0) {}

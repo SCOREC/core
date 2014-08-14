@@ -42,9 +42,10 @@ configure_file(
 
 #Sources & Headers
 set(SOURCES
-  sprEstimateError.cc
+  sprGetGradIPField.cc
+  sprSVD.cc
   sprRecoverField.cc
-  sprSVD.cc)
+  sprEstimateError.cc)
 
 set(HEADERS
   spr.h)

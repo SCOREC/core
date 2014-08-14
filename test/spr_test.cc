@@ -1,4 +1,4 @@
-#include <apfSPR.h>
+#include <spr.h>
 #include <apfMesh2.h>
 #include <apfShape.h>
 #include <gmi_mesh.h>

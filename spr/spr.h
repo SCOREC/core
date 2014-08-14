@@ -15,9 +15,12 @@
 
 namespace apf {
 
-
-/* \brief Samples the gradient of a scalar or vector field at 
-   integration points */
+/** @brief compute the gradient of a vector or scalar
+  *        field at integration points
+  * @param f (In) scalar or vector nodal field
+  * @param name (In) name of integration point field
+  * @param order (In) integration order of accuracy
+  */
 Field* getGradIPField(Field* f, const char* name, int order);
 
 /** \brief Computes an isotropic size field from a gradient field.
@@ -47,7 +50,6 @@ Field* recoverField(Field* ipMatrixField);
 void solveSVD(apf::DynamicMatrix& A,
               apf::DynamicVector& x,
               apf::DynamicVector& b);
-
 
 }
 
