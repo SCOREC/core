@@ -95,19 +95,24 @@ void evalPolynomialTerms(int order,
     apf::fail("SPR: invalid polynomial order");
 }
 
+/** @brief least squares solution of polynomial coefficients
+  * @param order (In) order of polynomial to be fit to data
+  * @param num_points (In) number of integration points in patch
+  * @param points (In) coordinates of integration points in patch
+  * @param values (In) data value associated with integration points
+  * @param coeffs (Out) coefficients of fit polynomial
+  */
 void evalPolynomialCoeffs(int order,
-                          int count,
+                          int num_points,
                           NewArray<Vector3> const& points,
                           NewArray<double> const& values,
-                          DynamicVector& coefficients)
+                          DynamicVector& coeffs)
 {
-  DynamicVector v(count);
-  for (int i=0; i < count; ++i)
-    v(i) = values[i];
-  int m = (order+1)*(order+2)*(order+3)/6;
-  DynamicMatrix P(count,m);
+  int m = num_points;
+  int n = (order+1)*(order+2)*(order+3)/6;
+  DynamicMatrix P(m,n);
   DynamicVector p;
-  for (int i = 0; i < count; ++i)
+  for (int i = 0; i < m; ++i)
   {
     evalPolynomialTerms(order,points[i],p);
     P.setRow(i,p);
@@ -116,15 +121,16 @@ void evalPolynomialCoeffs(int order,
   transpose(P,PT);
   DynamicMatrix A;
   multiply(PT,P,A);
+  DynamicVector v(m);
+  for (int i=0; i < m; ++i)
+    v(i) = values[i];
   DynamicVector b;
   multiply(PT,v,b);
   DynamicVector a;
-  /* HELP: both these values are random and we need
-     to get good values with supporting evidence */
   solveSVD(A,a,b);
-  coefficients.setSize(m);
-  for (int i=0; i < m; ++i)
-    coefficients[i] = a[i];
+  coeffs.setSize(n);
+  for (int i=0; i < n; ++i)
+    coeffs[i] = a[i];
 }
 
 void getSprPoints(Field* eps,
