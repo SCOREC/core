@@ -13,14 +13,13 @@ using std::set;
 
 namespace parma {
 
-// void print(int level,...) {
-//   if (level == MAX_VERBOSE) {
-//     PCU_Debug_Print(...);
-//   } else {
-//     if( ! PCU_Comm_Self() )
-//       printf(...);    
-//   }
-// }
+void print(int level, char* printStr,...) {
+  if (level == 2) {
+    // PCU_Debug_Print(printStr, ...);
+  }
+  else if (!PCU_Comm_Self()){}
+    // printf(printStr, ...);
+}
 
 class MergeTargets {
   public:
@@ -48,7 +47,7 @@ class MergeTargets {
       while( (weight = w->iterate()) )
         nborPartIds[weightIdx++] = weight->first;
         // PCU_Debug_Print("\tNeighbor %d = %d\n", weightIdx-1,
-          // nborPartIds[weightIdx-1]); //rating 1
+        //   nborPartIds[weightIdx-1]); //rating 1
       w->end();
 
       double minWeight = std::numeric_limits<double>::max();
@@ -64,7 +63,7 @@ class MergeTargets {
           weightCapacity, knapsackCapacity);
       rating 1*/
       //Knapsack execution
-      //Declared for knapsack class 
+      //Declared for knapsack class
       int* value = new int[s->total()];
       std::fill (value, value + s->total(),1);
 
@@ -123,7 +122,7 @@ class MergeTargets {
           minWeight = weight->second;
       w->end();
 
-      // PCU_Debug_Print("min weight == %f\n", minWeight); rating 2 
+      // PCU_Debug_Print("min weight == %f\n", minWeight); rating 2
 
       //normalizing the neighbor weights to the minimum neighbor weight with a
       // dividing factor to increase the accuracy of knapsack
@@ -145,9 +144,7 @@ class MergeTargets {
     }
 };
 
-
-
-  void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts, 
+  void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts,
     vector<misLuby::partInfo>& parts){
       //Generating misLuby part info for current part
       misLuby::partInfo part;
