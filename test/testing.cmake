@@ -149,4 +149,6 @@ add_test(adapt_meshgen
   ma_test
   "${MDIR}/upright.smd"
   "67k/")
+add_test(ma_insphere
+  ma_insphere)
 #todo - ph_test on crossflow ?

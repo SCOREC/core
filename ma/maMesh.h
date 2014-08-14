@@ -98,6 +98,11 @@ Vector getTriNormal(Mesh* m, Vector* x);
 bool isTwoTriAngleAcute(Mesh* m, Entity** va, Entity** vb);
 bool isTwoTriAngleAcute(Mesh* m, Entity* a, Entity* b);
 
+/** \brief Computes the insphere radius of an element
+  * \todo currently only implemented for tets
+  */
+double getInsphere(Mesh* m, Entity* e);
+
 double getAverageElementSize(Mesh* m);
 double getMinimumElementSize(Mesh* m);
 
