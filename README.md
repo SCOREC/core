@@ -36,6 +36,7 @@ simulations on supercomputers.
 * Don't break the build
 * See the `STYLE` file
 * If in doubt, make a branch
+* Run the ctest suite
 
 ### Who do I talk to? ###
 
