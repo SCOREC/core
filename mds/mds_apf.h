@@ -62,6 +62,7 @@ void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
 
 int mds_align_matches(struct mds_apf* m);
+int mds_align_remotes(struct mds_apf* m);
 
 void mds_derive_model(struct mds_apf* m);
 

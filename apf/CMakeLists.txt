@@ -49,6 +49,7 @@ set(APF_SOURCES
   apfUserData.cc
   apfPartition.cc
   apfConvert.cc
+  apfConstruct.cc
   apfVerify.cc)
 
 set(APF_HEADERS
