@@ -388,7 +388,7 @@ class MergeTargets {
       void run(apf::MeshTag* wtag) {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
-        double tgt = chi(mesh, wtag, sides, w);
+        // double tgt = chi(mesh, wtag, sides, w);
         // PCU_Debug_Print("Final Chi = %f",tgt); rating 0
         //hps(mesh, wtag, sides, w, tgt); **Uncomment when done with testing
         delete sides;
