@@ -70,7 +70,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
   PCU_Comm_Begin();
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     int gid = it->first;
-    int to = std::max(peers - 1, gid / quotient);
+    int to = std::min(peers - 1, gid / quotient);
     PCU_COMM_PACK(to, gid);
   }
   PCU_Comm_Send();
@@ -164,7 +164,8 @@ void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
   int dim = m->getDimension();
   nelem = m->count(dim);
   conn = 0;
-  Numbering* local = numberOverlapNodes(m, "apf_destruct");
+  GlobalNumbering* global = makeGlobal(numberOwnedNodes(m, "apf_destruct"));
+  synchronize(global);
   MeshIterator* it = m->begin(dim);
   MeshEntity* e;
   int i = 0;
@@ -175,10 +176,10 @@ void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
     if (!conn)
       conn = new Gid[nelem * nverts];
     for (int j = 0; j < nverts; ++j)
-      conn[i++] = getNumber(local, verts[j], 0, 0);
+      conn[i++] = getNumber(global, Node(verts[j], 0));
   }
   m->end(it);
-  destroyNumbering(local);
+  destroyGlobalNumbering(global);
 }
 
 }
