@@ -10,39 +10,37 @@ namespace {
   const char* meshFile = 0;
 	std::string name;
 
-  void freeMesh(apf::Mesh* m)
-  {
+  void freeMesh(apf::Mesh* m) {
     m->destroyNative();
     apf::destroyMesh(m);
   }
 
-  void getConfig(int argc, char** argv)
-  {
+  void getConfig(int argc, char** argv) {
     assert(argc==3);
     modelFile = argv[1];
     meshFile = argv[2];
   }
 
   apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
-  apf::MeshTag* wtag = m->createDoubleTag("hpsUnitWeight",1);
-  apf::MeshEntity* e;
-  apf::MeshIterator* itr = m->begin(m->getDimension());
-  double w = 1.0;
-  //TODO Remove after finished testing with Torus 
-  //Edit section for changing part weights
-  if (name == "../meshes/torus/torus.dmg"){
-    if(PCU_Comm_Self() == 0) w = 1.8193;
-    else if (PCU_Comm_Self() == 3) w = .804069;
-  } 
-  //end part weights edit testing
-  while( (e = m->iterate(itr)) )	
-  	m->setDoubleTag(e, wtag, &w);
-  m->end(itr);
-  return wtag;
+    apf::MeshTag* wtag = m->createDoubleTag("hpsUnitWeight",1);
+    apf::MeshEntity* e;
+    apf::MeshIterator* itr = m->begin(m->getDimension());
+    double w = 1.0;
+    //TODO Remove after finished testing with Torus
+    //Edit section for changing part weights
+    if (name == "../meshes/torus/torus.dmg"){
+      if(PCU_Comm_Self() == 0) w = 1.8193;
+      else if (PCU_Comm_Self() == 3) w = .804069;
+    }
+    //end part weights edit testing
+    while( (e = m->iterate(itr)) )
+    	m->setDoubleTag(e, wtag, &w);
+    m->end(itr);
+    return wtag;
   }
 
   void runParma(apf::Mesh* m) {
-    apf::MeshTag* weights = applyUnitVtxWeight(m); 
+    apf::MeshTag* weights = applyUnitVtxWeight(m);
 		apf::Balancer* hps = Parma_MakeHpsBalancer(m);
     double ignored = 3.14;
     hps->balance(weights, ignored);
