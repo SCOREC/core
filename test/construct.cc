@@ -26,6 +26,7 @@ int main(int argc, char** argv)
   m = apf::makeEmptyMdsMesh(model, dim, false);
   apf::construct(m, conn, nelem, etype);
   delete [] conn;
+  apf::alignMdsRemotes(m);
   apf::deriveMdsModel(m);
   m->verify();
   m->destroyNative();
@@ -33,7 +34,4 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
-
-
 

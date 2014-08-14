@@ -48,7 +48,7 @@ static Gid getMax(GlobalToVert& globalToVert)
 
 typedef std::map<Gid, std::vector<int> > GidToParts;
 
-/* algorithm courtesy of Sebastien Rettenberger:
+/* algorithm courtesy of Sebastian Rettenberger:
    use brokers/routers for the vertex global ids.
    Although we have used this trick before (see mpas/apfMPAS.cc),
    I didn't think to use it here, so credit is given. */

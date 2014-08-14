@@ -135,12 +135,11 @@ int mds_model_id(struct mds_apf* m, struct gmi_ent* model)
   return gmi_tag(m->user_model, model);
 }
 
-static void down_to_match(struct mds_apf* m, mds_id e,
-    struct mds_copy c)
+static void down_to_copy(struct mds_net* net, mds_id e, struct mds_copy c)
 {
   int i;
   struct mds_copies* dc;
-  dc = mds_get_copies(&m->matches, e);
+  dc = mds_get_copies(net, e);
   assert(dc);
   for (i = 0; i < dc->n; ++i)
     if (dc->c[i].p == c.p) {
@@ -150,22 +149,23 @@ static void down_to_match(struct mds_apf* m, mds_id e,
   abort();
 }
 
-static void downs_to_match(struct mds_apf* m, struct mds_set* s,
+static void downs_to_copy(struct mds_net* net, struct mds_set* s,
     struct mds_copy c)
 {
   int i;
   PCU_COMM_PACK(c.p, c.e);
   for (i = 0; i < s->n; ++i)
-    down_to_match(m, s->e[i], c);
+    down_to_copy(net, s->e[i], c);
 }
 
-static void downs_to_matches(struct mds_apf* m, mds_id e, struct mds_copies* c)
+static void downs_to_copies(struct mds_net* net,
+    struct mds* m, mds_id e, struct mds_copies* c)
 {
   int i;
   struct mds_set s;
-  mds_get_adjacent(&m->mds, e, mds_dim[mds_type(e)] - 1, &s);
+  mds_get_adjacent(m, e, mds_dim[mds_type(e)] - 1, &s);
   for (i = 0; i < c->n; ++i)
-    downs_to_match(m, &s, c->c[i]);
+    downs_to_copy(net, &s, c->c[i]);
 }
 
 static int are_same(struct mds_set* a, struct mds_set* b)
@@ -189,41 +189,70 @@ static void change_down(struct mds* m, mds_id e, struct mds_set* s)
   assert(e2 == e);
 }
 
-static int recv_down_matches(struct mds_apf* m)
+static int recv_down_copies(struct mds* m)
 {
   mds_id e;
   struct mds_set s;
   struct mds_set rs;
   int i;
   PCU_COMM_UNPACK(e);
-  mds_get_adjacent(&m->mds, e, mds_dim[mds_type(e)] - 1, &s);
+  mds_get_adjacent(m, e, mds_dim[mds_type(e)] - 1, &s);
   rs.n = s.n;
   for (i = 0; i < s.n; ++i)
     PCU_COMM_UNPACK(rs.e[i]);
   if (are_same(&s, &rs))
     return 0;
-  change_down(&m->mds, e, &rs);
+  change_down(m, e, &rs);
   return 1;
 }
 
-int mds_align_matches(struct mds_apf* m)
+static int copy_less(struct mds_copy a, struct mds_copy b)
+{
+  if (a.p != b.p)
+    return a.p < b.p;
+  return a.e < b.e;
+}
+
+static int owns_copies(mds_id e, struct mds_copies* c)
+{
+  int i;
+  struct mds_copy mc = { e, PCU_Comm_Self() };
+  for (i = 0; i < c->n; ++i)
+    if (copy_less(c->c[i], mc))
+      return 0;
+  return 1;
+}
+
+static int align_copies(struct mds_net* net, struct mds* m)
 {
   int d;
   mds_id e;
   struct mds_copies* c;
   PCU_Comm_Begin();
-  for (d = 0; d <= m->mds.d; ++d)
-    for (e = mds_begin(&m->mds, d); e != MDS_NONE; e = mds_next(&m->mds, e)) {
-      c = mds_get_copies(&m->matches, e);
+  for (d = 1; d < m->d; ++d)
+    for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
+      c = mds_get_copies(net, e);
       if (!c)
         continue;
-      downs_to_matches(m, e, c);
+      if (owns_copies(e, c))
+        downs_to_copies(net, m, e, c);
     }
   PCU_Comm_Send();
   int did_change = 0;
   while (PCU_Comm_Receive())
-    did_change = did_change || recv_down_matches(m);
-  return did_change;
+    if (recv_down_copies(m))
+      did_change = 1;
+  return PCU_Or(did_change);
+}
+
+int mds_align_matches(struct mds_apf* m)
+{
+  return align_copies(&m->matches, &m->mds);
+}
+
+int mds_align_remotes(struct mds_apf* m)
+{
+  return align_copies(&m->remotes, &m->mds);
 }
 
 /* uses the null model to classify a mesh
