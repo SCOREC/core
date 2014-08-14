@@ -133,32 +133,38 @@ void evalPolynomialCoeffs(int order,
     coeffs[i] = a[i];
 }
 
-void getSprPoints(Field* eps,
+/** @brief get spr point data from element patch
+  * @param f (In) integration point field
+  * @param elements (In) elements in patch
+  * @param spr_points (Out) coord and data at points
+  * @details assumes constant #IP/element
+  */
+void getSprPoints(Field* f,
                   std::set<MeshEntity*>& elements,
-                  SprPoints& sprPoints)
+                  SprPoints& spr_points)
 {
-  Mesh* mesh = getMesh(eps);
+  Mesh* mesh = getMesh(f);
   std::set<MeshEntity*>::iterator elem = elements.begin();
   MeshElement* me = createMeshElement(mesh,*elem);
-  int order = getOrder(me);
-  int pointCount = countIntPoints(me,order);
+  int order = mesh->getShape()->getOrder();
+  int num_points_elem = countIntPoints(me,order);
   destroyMeshElement(me);
-  /* assumes const #IP across elements */
-  sprPoints.setCount(elements.size()*pointCount);
+  int np = elements.size()*num_points_elem;
+  spr_points.setCount(np);
   std::size_t p = 0;
   for (std::set<MeshEntity*>::iterator it = elements.begin();
       it != elements.end(); ++it)
   {
-    MeshElement* meshElement = createMeshElement(mesh,*it);
-    for (int l=0; l < pointCount; ++l)
+    MeshElement* mesh_element = createMeshElement(mesh,*it);
+    for (int l=0; l < num_points_elem; ++l)
     {
       Vector3 param;
-      getIntPoint(meshElement,order,l,param);
-      mapLocalToGlobal(meshElement,param,sprPoints.points[p]);
-      getMatrix(eps,*it,l,sprPoints.values[p]);
+      getIntPoint(mesh_element,order,l,param);
+      mapLocalToGlobal(mesh_element,param,spr_points.points[p]);
+      getMatrix(f,*it,l,spr_points.values[p]);
       ++p;
     }
-    destroyMeshElement(meshElement);
+    destroyMeshElement(mesh_element);
   }
 }
 
