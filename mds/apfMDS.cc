@@ -40,7 +40,7 @@ static mds_id fromEnt(MeshEntity* e)
   return (reinterpret_cast<char*>(e) - ((char*)1));
 }
 
-int getMdsId(MeshEntity* e)
+int getMdsIndex(MeshEntity* e)
 {
   return mds_index(fromEnt(e));
 }
@@ -94,6 +94,11 @@ static int apf2mds(int t_apf)
   ,MDS_PYRAMID
   };
   return table[t_apf];
+}
+
+MeshEntity* getMdsEntity(int apfType, int index)
+{
+  return toEnt(mds_identify(apf2mds(apfType), index));
 }
 
 class MeshMDS : public Mesh2
@@ -683,6 +688,12 @@ bool alignMdsMatches(Mesh2* in)
     return false;
   MeshMDS* m = static_cast<MeshMDS*>(in);
   return mds_align_matches(m->mesh);
+}
+
+bool alignMdsRemotes(Mesh2* in)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_align_remotes(m->mesh);
 }
 
 void deriveMdsModel(Mesh2* in)
