@@ -15,10 +15,10 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile);
   apf::Field* f = apf::createLagrangeField(mesh, "solution", apf::VECTOR, 2);
-  apf::Field* eps = apf::getGradIPField(f, "eps", 2);
+  apf::Field* eps = spr::getGradIPField(f, "eps", 2);
   apf::destroyField(f);
   double adaptRatio = 0.1;
-  apf::Field* sizef = apf::getSPRSizeField(eps,adaptRatio);
+  apf::Field* sizef = spr::getSPRSizeField(eps,adaptRatio);
   apf::destroyField(eps);
   writeVtkFiles("out",mesh);
   apf::destroyField(sizef);

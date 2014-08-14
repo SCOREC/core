@@ -7,7 +7,7 @@
 
 #include "spr.h"
 
-namespace apf {
+namespace spr {
 
 int getMax(int a, int b)
 {
@@ -99,7 +99,7 @@ void decomposeSVD(apf::DynamicMatrix& A,
     sweep++;
   }
   if (count > 0)
-    fail("SPR: Jacobi iterations did not reach tolerance");
+    apf::fail("SPR: Jacobi iterations did not reach tolerance");
   apf::DynamicVector aj;
   for (std::size_t j=0; j < n; ++j)
   {

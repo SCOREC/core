@@ -8,7 +8,7 @@
 #include "spr.h"
 #include "apfMesh.h"
 
-namespace apf {
+namespace spr {
 
 apf::Field* getGradIPField(apf::Field* f, const char* name, int order)
 {

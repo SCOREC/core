@@ -12,7 +12,7 @@
 #include "apfCavityOp.h"
 #include <set>
 
-namespace apf {
+namespace spr {
 
 struct SprPoints {
   SprPoints():count(0) {}
@@ -23,36 +23,36 @@ struct SprPoints {
     values.allocate(n);
   }
   int count;
-  NewArray<Vector3> points;
-  NewArray<Matrix3x3> values;
+  apf::NewArray<apf::Vector3> points;
+  apf::NewArray<apf::Matrix3x3> values;
 };
 
 void evalPolynomialTerms(int order,
-                         Vector3 const& point,
-                         DynamicVector& polynomial)
+                         apf::Vector3 const& point,
+                         apf::DynamicVector& terms)
 {
-  Vector3 const& x = point;
+  apf::Vector3 const& x = point;
   if (order == 1)
   {
-    polynomial.setSize(4);
-    polynomial(0) = 1.0;
-    polynomial(1) = x[0];
-    polynomial(2) = x[1];
-    polynomial(3) = x[2];
+    terms.setSize(4);
+    terms(0) = 1.0;
+    terms(1) = x[0];
+    terms(2) = x[1];
+    terms(3) = x[2];
   }
   else if (order == 2)
   {
-    polynomial.setSize(10);
-    polynomial(0) = 1.0;
-    polynomial(1) = x[0];
-    polynomial(2) = x[1];
-    polynomial(3) = x[2];
-    polynomial(4) = x[0]*x[1];
-    polynomial(5) = x[1]*x[2];
-    polynomial(6) = x[2]*x[0];
-    polynomial(7) = x[0]*x[0];
-    polynomial(8) = x[1]*x[1];
-    polynomial(9) = x[2]*x[2];
+    terms.setSize(10);
+    terms(0) = 1.0;
+    terms(1) = x[0];
+    terms(2) = x[1];
+    terms(3) = x[2];
+    terms(4) = x[0]*x[1];
+    terms(5) = x[1]*x[2];
+    terms(6) = x[2]*x[0];
+    terms(7) = x[0]*x[0];
+    terms(8) = x[1]*x[1];
+    terms(9) = x[2]*x[2];
   }
   else
     apf::fail("SPR: invalid polynomial order");
@@ -67,29 +67,29 @@ void evalPolynomialTerms(int order,
   */
 void evalPolynomialCoeffs(int order,
                           int num_points,
-                          NewArray<Vector3> const& points,
-                          NewArray<double> const& values,
-                          DynamicVector& coeffs)
+                          apf::NewArray<apf::Vector3> const& points,
+                          apf::NewArray<double> const& values,
+                          apf::DynamicVector& coeffs)
 {
   int m = num_points;
   int n = (order+1)*(order+2)*(order+3)/6;
-  DynamicMatrix P(m,n);
-  DynamicVector p;
+  apf::DynamicMatrix P(m,n);
+  apf::DynamicVector p;
   for (int i = 0; i < m; ++i)
   {
     evalPolynomialTerms(order,points[i],p);
     P.setRow(i,p);
   }
-  DynamicMatrix PT;
-  transpose(P,PT);
-  DynamicMatrix A;
-  multiply(PT,P,A);
-  DynamicVector v(m);
+  apf::DynamicMatrix PT;
+  apf::transpose(P,PT);
+  apf::DynamicMatrix A;
+  apf::multiply(PT,P,A);
+  apf::DynamicVector v(m);
   for (int i=0; i < m; ++i)
     v(i) = values[i];
-  DynamicVector b;
-  multiply(PT,v,b);
-  DynamicVector a;
+  apf::DynamicVector b;
+  apf::multiply(PT,v,b);
+  apf::DynamicVector a;
   solveSVD(A,a,b);
   coeffs.setSize(n);
   for (int i=0; i < n; ++i)
@@ -102,32 +102,32 @@ void evalPolynomialCoeffs(int order,
   * @param spr_points (Out) coord and data at points
   * @details assumes constant #IP/element
   */
-void getSprPoints(Field* f,
-                  std::set<MeshEntity*>& elements,
+void getSprPoints(apf::Field* f,
+                  std::set<apf::MeshEntity*>& elements,
                   SprPoints& spr_points)
 {
-  Mesh* mesh = getMesh(f);
-  std::set<MeshEntity*>::iterator elem = elements.begin();
-  MeshElement* me = createMeshElement(mesh,*elem);
+  apf::Mesh* mesh = apf::getMesh(f);
+  std::set<apf::MeshEntity*>::iterator elem = elements.begin();
+  apf::MeshElement* me = apf::createMeshElement(mesh,*elem);
   int order = mesh->getShape()->getOrder();
-  int num_points_elem = countIntPoints(me,order);
-  destroyMeshElement(me);
+  int num_points_elem = apf::countIntPoints(me,order);
+  apf::destroyMeshElement(me);
   int np = elements.size()*num_points_elem;
   spr_points.setCount(np);
   std::size_t p = 0;
-  for (std::set<MeshEntity*>::iterator it = elements.begin();
+  for (std::set<apf::MeshEntity*>::iterator it = elements.begin();
       it != elements.end(); ++it)
   {
-    MeshElement* mesh_element = createMeshElement(mesh,*it);
+    apf::MeshElement* mesh_element = apf::createMeshElement(mesh,*it);
     for (int l=0; l < num_points_elem; ++l)
     {
-      Vector3 param;
-      getIntPoint(mesh_element,order,l,param);
-      mapLocalToGlobal(mesh_element,param,spr_points.points[p]);
-      getMatrix(f,*it,l,spr_points.values[p]);
+      apf::Vector3 param;
+      apf::getIntPoint(mesh_element,order,l,param);
+      apf::mapLocalToGlobal(mesh_element,param,spr_points.points[p]);
+      apf::getMatrix(f,*it,l,spr_points.values[p]);
       ++p;
     }
-    destroyMeshElement(mesh_element);
+    apf::destroyMeshElement(mesh_element);
   }
 }
 
@@ -137,51 +137,51 @@ void getSprPoints(Field* f,
   * @elements (In) elements in patch
   * @param entity (In) central entity of patch
   */
-void runSpr(Field* f,
-            Field* f_star,
-            std::set<MeshEntity*>& elements,
-            MeshEntity* entity)
+void runSpr(apf::Field* f,
+            apf::Field* f_star,
+            std::set<apf::MeshEntity*>& elements,
+            apf::MeshEntity* entity)
 {
   SprPoints spr_points;
   getSprPoints(f,elements,spr_points);
-  NewArray<double> component_values(spr_points.count);
-  Vector3 point;
-  getMesh(f)->getPoint(entity,0,point);
-  Matrix3x3 value;
-  Mesh* mesh = getMesh(f);
+  apf::NewArray<double> component_values(spr_points.count);
+  apf::Vector3 point;
+  apf::getMesh(f)->getPoint(entity,0,point);
+  apf::Matrix3x3 value;
+  apf::Mesh* mesh = apf::getMesh(f);
   int order = mesh->getShape()->getOrder();
   for (int i=0; i < 3; ++i)
     for (int j=0; j < 3; ++j)
     {
       for (int p=0; p < spr_points.count; ++p)
         component_values[p] = spr_points.values[p][i][j];
-      DynamicVector coeffs;
+      apf::DynamicVector coeffs;
       evalPolynomialCoeffs(order,spr_points.count,
           spr_points.points,component_values,coeffs);
-      DynamicVector terms;
+      apf::DynamicVector terms;
       evalPolynomialTerms(order,point,terms);
       value[i][j] = coeffs*terms;
     }
   setMatrix(f_star,entity,0,value);
 }
 
-class PatchOp : public CavityOp
+class PatchOp : public apf::CavityOp
 {
   public:
-    PatchOp(Field* f_, Field* f_star_):
-      CavityOp(getMesh(f_)),
+    PatchOp(apf::Field* f_, apf::Field* f_star_):
+      apf::CavityOp(apf::getMesh(f_)),
       f(f_),
       f_star(f_star_),
       num_points(0)
     {
     }
-    void reset(MeshEntity* e)
+    void reset(apf::MeshEntity* e)
     {
       num_points = 0;
       elements.clear();
       entity = e;
     }
-    virtual Outcome setEntity(MeshEntity* e)
+    virtual Outcome setEntity(apf::MeshEntity* e)
     {
       if (hasEntity(f_star,e))
         return SKIP;
@@ -203,7 +203,7 @@ class PatchOp : public CavityOp
     bool getInitialPatch()
     {
       if ( ! requestLocality(&entity,1)) return false;
-      DynamicArray<MeshEntity*> adjacent;
+      apf::DynamicArray<apf::MeshEntity*> adjacent;
       mesh->getAdjacent(entity,mesh->getDimension(),adjacent);
       add(adjacent);
       return true;
@@ -214,7 +214,7 @@ class PatchOp : public CavityOp
       int num_desired_points = (o+1)*(o+2)*(o+3)/6;
       if (num_points >= num_desired_points)
         return true;
-      std::set<MeshEntity*> old_set = elements;
+      std::set<apf::MeshEntity*> old_set = elements;
       int d = mesh->getDimension();
       for (int shared_dim=d-1; shared_dim >= 0; --shared_dim)
       {
@@ -228,62 +228,62 @@ class PatchOp : public CavityOp
         return expandAsNecessary();
       else
       {
-        fail("SPR: patch construction: all hope is lost.");
+        apf::fail("SPR: patch construction: all hope is lost.");
         return false;
       }
     }
     bool addElementsThatShare(int dimension,
-                              std::set<MeshEntity*>& old_set)
+                              std::set<apf::MeshEntity*>& old_set)
     {
-      std::set<MeshEntity*> bridges;
-      for (std::set<MeshEntity*>::iterator it = old_set.begin();
+      std::set<apf::MeshEntity*> bridges;
+      for (std::set<apf::MeshEntity*>::iterator it = old_set.begin();
           it != old_set.end(); ++it)
       {
-        Downward down;
+        apf::Downward down;
         int nd = mesh->getDownward(*it,dimension,down);
         for (int i=0; i < nd; ++i)
           bridges.insert(down[i]);
       }
-      std::vector<MeshEntity*> bridge_array(bridges.begin(),bridges.end());
+      std::vector<apf::MeshEntity*> bridge_array(bridges.begin(),bridges.end());
       bridges.clear();
       if ( ! requestLocality(&(bridge_array[0]),bridge_array.size()))
         return false;
       for (size_t i=0; i < bridge_array.size(); ++i)
       {
-        Adjacent candidates;
+        apf::Adjacent candidates;
         mesh->getAdjacent(bridge_array[i],mesh->getDimension(),candidates);
         add(candidates);
       }
       return true;
     }
-    void add(DynamicArray<MeshEntity*>& es)
+    void add(apf::DynamicArray<apf::MeshEntity*>& es)
     {
       for (std::size_t i=0; i < es.getSize(); ++i)
         add(es[i]);
     }
-    void add(MeshEntity* e)
+    void add(apf::MeshEntity* e)
     {
       if (elements.count(e))
         return;
       elements.insert(e);
-      MeshElement* element = createMeshElement(mesh,e);
+      apf::MeshElement* element = apf::createMeshElement(mesh,e);
       int integration_order = f->getShape()->getOrder();
-      num_points += countIntPoints(element,integration_order);
-      destroyMeshElement(element);
+      num_points += apf::countIntPoints(element,integration_order);
+      apf::destroyMeshElement(element);
     }
-    Field* f;
-    Field* f_star;
+    apf::Field* f;
+    apf::Field* f_star;
     int num_points;
-    std::set<MeshEntity*> elements;
-    MeshEntity* entity;
+    std::set<apf::MeshEntity*> elements;
+    apf::MeshEntity* entity;
 };
 
-Field* recoverField(Field* f)
+apf::Field* recoverField(apf::Field* f)
 {
   std::string name = "spr_";
   name += getName(f);
-  Mesh* m = getMesh(f);
-  Field* f_star = createFieldOn(m,name.c_str(),MATRIX);
+  apf::Mesh* m = apf::getMesh(f);
+  apf::Field* f_star = apf::createFieldOn(m,name.c_str(),apf::MATRIX);
   PatchOp op(f,f_star);
   for (int i=0; i <= 3; ++i)
   {

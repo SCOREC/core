@@ -5,15 +5,15 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFSPR_H
-#define APFSPR_H
+#ifndef SPR_H
+#define SPR_H
 
 #include "apf.h"
 #include "apfNew.h"
 #include "apfDynamicVector.h"
 #include "apfDynamicMatrix.h"
 
-namespace apf {
+namespace spr {
 
 /** @brief compute the gradient of a vector or scalar
   *        field at integration points
@@ -28,9 +28,9 @@ apf::Field* getGradIPField(apf::Field* f,
 /** @brief recover a nodal field using patch recovery
   * @param f (In) integration point field
   */
-Field* recoverField(Field* ipMatrixField);
+apf::Field* recoverField(apf::Field* ip_field);
 
-Field* getSPRSizeField(Field* eps, double adaptRatio);
+apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
 
 /** @brief solve linear least squares problem Ax=b
   * @param A (In) mxn matrix
