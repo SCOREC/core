@@ -28,7 +28,9 @@ configure_file(
 
 SET(DIFFMC_SOURCES  
   diffMC/src/parma_base.cc
-  diffMC/src/parma_centroid.cc
+  diffMC/src/parma_centroidDiffuser.cc
+  diffMC/src/parma_centroids.cc
+  diffMC/src/parma_centroidSelector.cc
   diffMC/src/parma_commons.cc
   diffMC/src/parma_dcpart.cc
   diffMC/src/parma_diffmc.cc

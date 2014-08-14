@@ -138,7 +138,7 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m);
  * @param stepFactor (In) amount of weight to migrate between parts during diffusion, lower values migrate fewer elements per iteration
  * @return apf balancer instance
  */
-apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1);
+apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1, int verbose=0);
 
 /**
  * @brief create an APF Balancer using ghost element aware diffusion
@@ -159,6 +159,15 @@ apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
  * @return apf balancer instance
  */
 apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity=0);
+
+/**
+ * @brief create an APF Balancer targeting vertex imbalance
+ * @param mesh (In) partitioned mesh
+ * @param verbosity (In) output control, higher values output more
+ * @return apf balancer instance
+ */
+apf::Balancer* Parma_MakeVtxBalancer(apf::Mesh* m, double stepFactor=0.1, int verbosity=0);
+
 
 /**
  * @brief create an APF Splitter using recursive inertial bisection
