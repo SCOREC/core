@@ -9,6 +9,10 @@ class ModelEntity;
 
 void convert(Mesh *in, Mesh2 *out);
 
+void construct(Mesh2* m, int* conn, int nelem, int etype);
+
+void destruct(Mesh2* m, int*& conn, int& nelem, int &etype);
+
 }
 
 #endif
