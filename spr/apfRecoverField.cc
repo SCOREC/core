@@ -7,6 +7,7 @@
 
 #include "apf.h"
 #include "apfMesh.h"
+#include "apfField.h"
 #include "apfShape.h"
 #include "apfSVDecomp.h"
 #include "apfCavityOp.h"
@@ -247,7 +248,8 @@ class PatchOp : public CavityOp
     }
     bool expandAsNecessary()
     {
-      const int num_desired_points = 4;
+      int o = mesh->getShape()->getOrder();
+      int num_desired_points = (o+1)*(o+2)*(o+3)/6;
       if (num_points >= num_desired_points)
         return true;
       std::set<MeshEntity*> old_set = elements;
@@ -303,7 +305,8 @@ class PatchOp : public CavityOp
         return;
       elements.insert(e);
       MeshElement* element = createMeshElement(mesh,e);
-      num_points += countIntPoints(element,1);
+      int integration_order = f->getShape()->getOrder();
+      num_points += countIntPoints(element,integration_order);
       destroyMeshElement(element);
     }
     Field* f;
