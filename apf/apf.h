@@ -35,7 +35,7 @@ class MeshEntity;
 class VectorElement;
 typedef VectorElement MeshElement;
 class FieldShape;
-class Sharing;
+struct Sharing;
 
 /** \brief Destroys an apf::Mesh.
   *
