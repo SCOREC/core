@@ -96,6 +96,17 @@ inline double det(Matrix<3,3> const& m)
   return m[0]*cross(m[1],m[2]);
 }
 
+/* the following three functions are explicitly
+   instantiated for square matrices of 1,2,3,4 */
+template <std::size_t M, std::size_t N>
+Matrix<M-1,N-1> getMinor(Matrix<M,N> const& A, std::size_t i, std::size_t j);
+
+template <std::size_t M, std::size_t N>
+double getCofactor(Matrix<M,N> const& A, std::size_t i, std::size_t j);
+
+template <std::size_t M, std::size_t N>
+double getDeterminant(Matrix<M,N> const& A);
+
 inline Matrix<3,3> cofactor(Matrix<3,3> const &m)
 {
   Matrix<3,3> r;
@@ -174,6 +185,9 @@ int eigen(Matrix3x3 const& A,
 
 }//namespace apf
 
-std::ostream& operator<<(std::ostream& s, apf::Matrix3x3 const& v);
+std::ostream& operator<<(std::ostream& s, apf::Matrix<1,1> const& A);
+std::ostream& operator<<(std::ostream& s, apf::Matrix<2,2> const& A);
+std::ostream& operator<<(std::ostream& s, apf::Matrix<3,3> const& A);
+std::ostream& operator<<(std::ostream& s, apf::Matrix<4,4> const& A);
 
 #endif

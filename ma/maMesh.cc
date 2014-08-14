@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include "maMath.h"
 #include "maMesh.h"
 #include "maTables.h"
 #include <algorithm>
@@ -363,17 +362,14 @@ double getInsphere(Mesh* m, Entity* e)
   Entity* v[4];
   m->getDownward(e, 0, v);
 
-  double matrix[4][4] = {
-    {0, 0, 0, 1},
-    {0, 0, 0, 1},
-    {0, 0, 0, 1},
-    {0, 0, 0, 1}
-  };
+  apf::Matrix<4,3> x;
+  apf::Matrix<4,4> matrix;
 
-  Vector x[4];
   for (int i=0; i < 4; ++i) {
     x[i] = getPosition(m, v[i]);
-    x[i].toArray(matrix[i]);
+    for (int j = 0; j < 3; ++j)
+      matrix[i][j] = x[i][j];
+    matrix[i][3] = 1;
   }
 
   double l = apf::cross(x[1]-x[0], x[2]-x[0]).getLength()
@@ -381,7 +377,7 @@ double getInsphere(Mesh* m, Entity* e)
            + apf::cross(x[2]-x[0], x[3]-x[0]).getLength()
            + apf::cross(x[2]-x[1], x[3]-x[1]).getLength();
 
-  return std::abs(determinant4x4(matrix)) / l;
+  return std::abs(apf::getDeterminant(matrix)) / l;
 }
 
 double getAverageElementSize(Mesh* m)
