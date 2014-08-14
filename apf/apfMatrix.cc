@@ -159,7 +159,7 @@ static void getCharacteristicPolynomial(Matrix3x3 const& A, Cubic& p)
   p.a = -1;
   p.b = tA;
   p.c = -c2;
-  p.d = det(A);
+  p.d = getDeterminant(A);
 }
 
 static int getEigenvalues(Matrix3x3 const& A, double* v)

@@ -86,16 +86,6 @@ Matrix<M,N> tensorProduct(Vector<M> const& a, Vector<N> const& b)
   return r;
 }
 
-inline double det(Matrix<2,2> const& m)
-{
-  return m[0][0] * m[1][1] - m[1][0] * m[0][1];
-}
-
-inline double det(Matrix<3,3> const& m)
-{
-  return m[0]*cross(m[1],m[2]);
-}
-
 /* the following three functions are explicitly
    instantiated for square matrices of 1,2,3,4 */
 template <std::size_t M, std::size_t N>
@@ -133,7 +123,7 @@ inline Matrix<3,3> invert(Matrix<3,3> const& m)
   r[0] = cross(x[1],x[2]);
   r[1] = cross(x[2],x[0]);
   r[2] = cross(x[0],x[1]);
-  return r/det(m);
+  return r / getDeterminant(m);
 }
 
 class Matrix3x3 : public Matrix<3,3>
