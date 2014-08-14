@@ -5,7 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfSVDecomp.h"
+#include "apfSPR.h"
 
 #include <stdio.h>
 #include <cassert>

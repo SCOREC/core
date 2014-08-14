@@ -44,8 +44,7 @@ configure_file(
 set(SOURCES
   apfEstimateError.cc
   apfRecoverField.cc
-  apfSVDecomp.cc
-  apfGradientByVolume.cc)
+  apfSVDecomp.cc)
 
 set(HEADERS
   apfSPR.h)

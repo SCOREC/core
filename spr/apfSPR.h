@@ -10,8 +10,11 @@
 
 #include "apf.h"
 #include "apfNew.h"
+#include "apfDynamicVector.h"
+#include "apfDynamicMatrix.h"
 
 namespace apf {
+
 
 /* \brief Samples the gradient of a scalar or vector field at 
    integration points */
@@ -36,14 +39,15 @@ Field* getSPRSizeField(Field* eps, double adaptRatio);
   */
 Field* recoverField(Field* ipMatrixField);
 
-/* auxiliary functions for polynomial fitting */
-double evalLinearPolynomial(double coefficients[4], Vector3 const& point);
-void fitLinearPolynomial(int count,
-                         NewArray<Vector3> const& points,
-                         NewArray<double> const& values,
-                         double coefficients[4]);
+/** @brief solve linear least squares problem Ax=b
+  * @param A (In) mxn matrix
+  * @param x (Out) nx1 solution vector
+  * @param b (In) mx1 right hand side vector
+  */
+void solveSVD(apf::DynamicMatrix& A,
+              apf::DynamicVector& x,
+              apf::DynamicVector& b);
 
-Field* recoverGradientByVolume(Field* f);
 
 }
 

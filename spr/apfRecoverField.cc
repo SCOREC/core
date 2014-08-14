@@ -5,11 +5,11 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "apfSPR.h"
 #include "apf.h"
 #include "apfMesh.h"
 #include "apfField.h"
 #include "apfShape.h"
-#include "apfSVDecomp.h"
 #include "apfCavityOp.h"
 #include <set>
 
