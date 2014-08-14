@@ -13,7 +13,8 @@
 #include <assert.h>
 #include <PCU.h>
 
-struct mds_apf* mds_apf_create(struct gmi_model* model, int d, int cap[MDS_TYPES])
+struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
+    int cap[MDS_TYPES])
 {
   struct mds_apf* m;
   int t;
