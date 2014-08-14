@@ -64,9 +64,9 @@ struct SprPoints {
   NewArray<Matrix3x3> values;
 };
 
-void pointToPolynomial(Vector3 const& point,
-    int order,
-    DynamicVector& polynomial)
+void evalPolynomialTerms(int order,
+                         Vector3 const& point,
+                         DynamicVector& polynomial)
 {
   Vector3 const& x = point;
   if (order == 1)
@@ -92,7 +92,7 @@ void pointToPolynomial(Vector3 const& point,
     polynomial(9) = x[2]*x[2];
   }
   else
-    std::cerr << "invalid polynomial order\n";
+    apf::fail("SPR: invalid polynomial order");
 }
 
 void fitPolynomial(int count,
@@ -109,7 +109,7 @@ void fitPolynomial(int count,
   DynamicVector p;
   for (int i = 0; i < count; ++i)
   {
-    pointToPolynomial(points[i],order,p);
+    evalPolynomialTerms(order,points[i],p);
     P.setRow(i,p);
   }
   DynamicMatrix PT;
@@ -181,7 +181,7 @@ void runSpr(Field* eps,
                     sprPoints.points,
                     componentValues,
                     coefficients);
-      pointToPolynomial(point,order,polynomial);
+      evalPolynomialTerms(order,point,polynomial);
       value[i][j] = coefficients*polynomial;
     }
   /* Need to set a matrix value to each node on a mesh
