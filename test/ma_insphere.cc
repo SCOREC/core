@@ -16,11 +16,6 @@ int main(int argc, char** argv)
 			{3, 7, 8, 6}
 	};
 
-	double vec1[3] = {1, 2, 3};
-	double vec2[3] = {4, 5, 6};
-	double vec3[3] = {7, 10, 3};
-	double res[3];
-
 	assert(ma::determinant3x3<0>(matrix) == 135);
 	assert(ma::determinant3x3<1>(matrix) == 145);
 	assert(ma::determinant3x3<2>(matrix) == 35);
