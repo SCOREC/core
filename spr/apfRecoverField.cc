@@ -95,11 +95,11 @@ void evalPolynomialTerms(int order,
     apf::fail("SPR: invalid polynomial order");
 }
 
-void fitPolynomial(int count,
-                   int order,
-                   NewArray<Vector3> const& points,
-                   NewArray<double> const& values,
-                   DynamicVector& coefficients)
+void evalPolynomialCoeffs(int order,
+                          int count,
+                          NewArray<Vector3> const& points,
+                          NewArray<double> const& values,
+                          DynamicVector& coefficients)
 {
   DynamicVector v(count);
   for (int i=0; i < count; ++i)
@@ -176,11 +176,8 @@ void runSpr(Field* eps,
         componentValues[p] = sprPoints.values[p][i][j];
       DynamicVector polynomial;
       DynamicVector coefficients;
-      fitPolynomial(sprPoints.count,
-                    order,
-                    sprPoints.points,
-                    componentValues,
-                    coefficients);
+      evalPolynomialCoeffs(order,sprPoints.count,
+          sprPoints.points,componentValues,coefficients);
       evalPolynomialTerms(order,point,polynomial);
       value[i][j] = coefficients*polynomial;
     }
