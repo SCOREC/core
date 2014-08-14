@@ -21,7 +21,7 @@ class FieldData
     virtual void init(FieldBase* f) = 0;
     virtual bool hasEntity(MeshEntity* e) = 0;
     virtual void removeEntity(MeshEntity* e) = 0;
-    virtual void synchronize() = 0;
+    virtual void synchronize(Sharing* shr) = 0;
     virtual bool isFrozen() = 0;
     virtual FieldData* clone();
     FieldBase* getField() {return field;}
@@ -33,18 +33,21 @@ template <class T>
 class FieldDataOf;
 
 template <class T>
-void synchronizeFieldData(FieldDataOf<T>* data);
+void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr);
 
 template <class T>
 void copyFieldData(FieldDataOf<T>* to, FieldDataOf<T>* from);
 
-void accumulateFieldData(FieldDataOf<double>* data);
+void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr);
 
 template <class T>
 class FieldDataOf : public FieldData
 {
   public:
-    virtual void synchronize() {synchronizeFieldData<T>(this);}
+    virtual void synchronize(Sharing* shr)
+    {
+      synchronizeFieldData<T>(this, shr);
+    }
     virtual void get(MeshEntity* e, T* data) = 0;
     virtual void set(MeshEntity* e, T const* data) = 0;
     void setNodeComponents(MeshEntity* e, int node, T const* components)

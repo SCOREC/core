@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <sstream>
 
-using std::vector;
 using std::set;
 
 using apf::Mesh;
@@ -17,7 +16,7 @@ using parmaCommons::isMore;
 using parmaCommons::status;
 
 int partInfo::sendWeightToNeighbors() {
-  APF_ITERATE(vector<int>,adjPartIds,adjPartIdItr) {
+  APF_ITERATE(std::vector<int>,adjPartIds,adjPartIdItr) {
     const int destRank = *adjPartIdItr;  
     //pack weight for current part
     PCU_COMM_PACK(destRank, weight);
@@ -134,18 +133,23 @@ void partInfo::get(Mesh* m, MeshTag* wtag) {
 }
 
 void partInfo::initNeighbors(set<int>& ap) {
-   const int numNp = ap.size();
-   assert(numNp > 0);
-   adjPartWeights.resize(numNp);
-   APF_ITERATE(set<int>, ap, it) {
-      adjPartIds.push_back(*it);
-   }
-   isCandidateAp.resize(numNp);
-   for(int i=0; i<numNp; i++) {
-      isCandidateAp[i] = 0;
-      for(int j=0; j<4; j++) 
-	 adjPartWeights[i][j] = 0;
-   }
+  const int numNp = ap.size();
+  assert(numNp > 0);
+/* the clang static analyzer emits a warning in GNU STL
+   code when resizing vectors of non-trivial things.
+   this swap hack does the same without a warning */
+//adjPartWeights.resize(numNp);
+  std::vector< apf::Array<double, 4> > clang_v(numNp);
+  std::swap(adjPartWeights, clang_v);
+  APF_ITERATE(set<int>, ap, it) {
+    adjPartIds.push_back(*it);
+  }
+  isCandidateAp.resize(numNp);
+  for(int i=0; i<numNp; i++) {
+    isCandidateAp[i] = 0;
+    for(int j=0; j<4; j++) 
+      adjPartWeights[i][j] = 0;
+  }
 }
 
 bool partInfo::isCandidate(const int adjPid) {
@@ -183,3 +187,4 @@ partInfo::partInfo(Mesh* m, MeshTag* wtag, const priorityList& pl, const int plI
    get(m, wtag);
    getGreedyMigrationSchedule(pl, plIdx, maxImb);
 }
+

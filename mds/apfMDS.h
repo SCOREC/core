@@ -30,16 +30,17 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
 void reorderMdsMesh(Mesh2* mesh);
 
-int getMdsId(MeshEntity* e);
+int getMdsIndex(MeshEntity* e);
 
-void shrinkMdsPartition(Mesh2* mesh, int n);
-void expandMdsPartition(Mesh2* mesh, int n);
+MeshEntity* getMdsEntity(int apfType, int index);
 
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 
 bool alignMdsMatches(Mesh2* in);
 
 void deriveMdsModel(Mesh2* in);
+
+void changeMdsDimension(Mesh2* in, int d);
 
 }
 

@@ -15,6 +15,7 @@
 #include <apfConvert.h>
 #include <apfShape.h>
 #include <apfNumbering.h>
+#include <apfPartition.h>
 #include <PCU.h>
 #include <cstring>
 
@@ -39,19 +40,21 @@ static mds_id fromEnt(MeshEntity* e)
   return (reinterpret_cast<char*>(e) - ((char*)1));
 }
 
-int getMdsId(MeshEntity* e)
+int getMdsIndex(MeshEntity* e)
 {
   return mds_index(fromEnt(e));
 }
 
 static MeshIterator* makeIter()
 {
-  return static_cast<MeshIterator*>(malloc(sizeof(mds_id)));
+  mds_id* p = new mds_id;
+  return reinterpret_cast<MeshIterator*>(p);
 }
 
 static void freeIter(MeshIterator* it)
 {
-  free(static_cast<void*>(it));
+  mds_id* p = reinterpret_cast<mds_id*>(it);
+  delete p;
 }
 
 static void toIter(mds_id id, MeshIterator* it)
@@ -91,6 +94,11 @@ static int apf2mds(int t_apf)
   ,MDS_PYRAMID
   };
   return table[t_apf];
+}
+
+MeshEntity* getMdsEntity(int apfType, int index)
+{
+  return toEnt(mds_identify(apf2mds(apfType), index));
 }
 
 class MeshMDS : public Mesh2
@@ -516,13 +524,25 @@ class MeshMDS : public Mesh2
     }
     void getMatches(MeshEntity* e, Matches& m)
     {
+      mds_copies* c = mds_get_copies(&mesh->matches, fromEnt(e));
+      if (!c)
+        return;
+      m.setSize(c->n);
+      for (int i = 0; i < c->n; ++i) {
+        m[i].entity = toEnt(c->c[i].e);
+        m[i].peer = c->c[i].p;
+      }
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
-      abort();
+      mds_copy c;
+      c.e = fromEnt(match);
+      c.p = peer;
+      mds_add_copy(&mesh->matches, &mesh->mds, fromEnt(e), c);
     }
     void clearMatches(MeshEntity* e)
     {
+      mds_set_copies(&mesh->matches, &mesh->mds, fromEnt(e), 0);
     }
     double getElementBytes(int type)
     {
@@ -596,30 +616,6 @@ void reorderMdsMesh(Mesh2* mesh)
   m->mesh = mds_reorder(m->mesh);
 }
 
-static int divide(int n, void* data)
-{
-  return n / (*((int*)data));
-}
-
-static int multiply(int n, void* data)
-{
-  return n * (*((int*)data));
-}
-
-void shrinkMdsPartition(Mesh2* mesh, int n)
-{
-  MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  mds_apf_remap(m->mesh, divide, (void*)&n);
-  remapPM(m->parts, divide, (void*)&n);
-}
-
-void expandMdsPartition(Mesh2* mesh, int n)
-{
-  MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  mds_apf_remap(m->mesh, multiply, (void*)&n);
-  remapPM(m->parts, multiply, (void*)&n);
-}
-
 static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
 {
   int type = from->getTagType(t);
@@ -650,6 +646,7 @@ static Mesh2* clone(Mesh2* from)
   return m;
 }
 
+static int globalFactor;
 static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
@@ -666,6 +663,8 @@ static void* splitThrdMain(void*)
     m = clone(globalMesh);
     plan = new apf::Migration(m);
   }
+  apf::Multiply remap(globalFactor);
+  apf::remapPartition(m, remap);
   m->migrate(plan);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
@@ -676,10 +675,10 @@ static void* splitThrdMain(void*)
 
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
 {
+  globalFactor = n;
   globalMesh = m;
   globalPlan = plan;
   globalThrdCall = runAfter;
-  expandMdsPartition(m, n);
   PCU_Thrd_Run(n, splitThrdMain, NULL);
 }
 
@@ -695,6 +694,12 @@ void deriveMdsModel(Mesh2* in)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   return mds_derive_model(m->mesh);
+}
+
+void changeMdsDimension(Mesh2* in, int d)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  return mds_change_dimension(&(m->mesh->mds), d);
 }
 
 }

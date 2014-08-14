@@ -63,6 +63,8 @@ static Field* makeField(
     f = new MatrixField();
   else if (valueType == PACKED)
     f = new PackedField(components);
+  else
+    fail("invalid valueType in field construction\n");
   f->init(name,m,shape,data);
   m->addField(f);
   return f;
@@ -350,14 +352,14 @@ int getDimension(MeshElement* me)
   return me->getDimension();
 }
 
-void synchronize(Field* f)
+void synchronize(Field* f, Sharing* shr)
 {
-  f->getData()->synchronize();
+  f->getData()->synchronize(shr);
 }
 
-void accumulate(Field* f)
+void accumulate(Field* f, Sharing* shr)
 {
-  synchronizeFieldData(f->getData());
+  accumulateFieldData(f->getData(), shr);
 }
 
 void fail(const char* why)

@@ -245,7 +245,6 @@ void svdDecompose(DynamicMatrix& A,
       }
       if (flag) 
       {
-        c = 0.0;
         s = 1.0;
         for (i = l; i <= k; i++) 
         {

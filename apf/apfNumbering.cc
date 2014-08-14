@@ -202,16 +202,23 @@ int countFixed(Numbering* n)
   return num_fixed;
 }
 
-void synchronize(Numbering * n)
+void synchronize(Numbering * n, Sharing* shr)
 {
-  n->getData()->synchronize();
+  n->getData()->synchronize(shr);
 }
+
+struct NoSharing : public Sharing
+{
+  bool isOwned(MeshEntity*) {return true;}
+  virtual void getCopies(MeshEntity* e,
+      CopyArray& copies) {}
+};
 
 Numbering* numberNodes(
     Mesh* mesh,
     const char* name,
     FieldShape* s,
-    bool ownedOnly)
+    Sharing* shr)
 {
   Numbering* n = createNumbering(mesh,name,s,1);
   int i=0;
@@ -223,7 +230,7 @@ Numbering* numberNodes(
     MeshEntity* e;
     while ((e = mesh->iterate(it)))
     {
-      if (ownedOnly && ( ! isOriginal(mesh,e)))
+      if ( ! shr->isOwned(e))
         continue;
       int nnodes = n->countNodesOn(e);
       for (int node=0; node < nnodes; ++node)
@@ -231,13 +238,15 @@ Numbering* numberNodes(
     }
     mesh->end(it);
   }
+  delete shr;
   return n;
 }
 
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim)
 {
   FieldShape* s = getConstant(dim);
-  return numberNodes(mesh, name, s, true);
+  Sharing* shr = getSharing(mesh);
+  return numberNodes(mesh, name, s, shr);
 }
 
 Numbering* numberElements(Mesh* mesh, const char* name)
@@ -249,17 +258,21 @@ Numbering* numberOverlapNodes(Mesh* mesh, const char* name, FieldShape* s)
 {
   if (!s)
     s = mesh->getShape();
-  return numberNodes(mesh,name,s,false);
+  Sharing* shr = new NoSharing();
+  return numberNodes(mesh, name, s, shr);
 }
 
 Numbering* numberOwnedNodes(
     Mesh* mesh,
     const char* name,
-    FieldShape* s)
+    FieldShape* s,
+    Sharing* shr)
 {
   if (!s)
     s = mesh->getShape();
-  return numberNodes(mesh,name,s,true);
+  if (!shr)
+    shr = getSharing(mesh);
+  return numberNodes(mesh, name, s, shr);
 }
 
 class Counter : public FieldOp
@@ -435,12 +448,6 @@ static long exscan(long x)
   return x;
 }
 
-static int exscan(int x)
-{
-  PCU_Exscan_Ints(&x,1);
-  return x;
-}
-
 template <class T>
 class Globalizer : public FieldOp
 {
@@ -507,9 +514,9 @@ GlobalNumbering* makeGlobal(Numbering* n)
   return gn;
 }
 
-void synchronize(GlobalNumbering * n)
+void synchronize(GlobalNumbering* n, Sharing* shr)
 {
-  n->getData()->synchronize();
+  n->getData()->synchronize(shr);
 }
 
 void destroyGlobalNumbering(GlobalNumbering* n)
@@ -520,12 +527,6 @@ void destroyGlobalNumbering(GlobalNumbering* n)
 void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes)
 {
   getFieldNodes(n,nodes);
-}
-
-void globalize(Numbering* n)
-{
-  Globalizer<int> g;
-  g.run(n);
 }
 
 }
