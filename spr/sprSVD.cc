@@ -5,11 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfSPR.h"
-
-#include <stdio.h>
-#include <cassert>
-#include <math.h>
+#include "spr.h"
 
 namespace apf {
 

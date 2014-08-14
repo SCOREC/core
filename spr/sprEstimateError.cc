@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <PCU.h>
-#include "apfSPR.h"
+#include "spr.h"
 #include "apfMesh.h"
 #include "apfShape.h"
 #include "apfCavityOp.h"

@@ -42,12 +42,12 @@ configure_file(
 
 #Sources & Headers
 set(SOURCES
-  apfEstimateError.cc
-  apfRecoverField.cc
-  apfSVDecomp.cc)
+  sprEstimateError.cc
+  sprRecoverField.cc
+  sprSVD.cc)
 
 set(HEADERS
-  apfSPR.h)
+  spr.h)
 
 #Library
 if(BUILD_IN_TRILINOS)
