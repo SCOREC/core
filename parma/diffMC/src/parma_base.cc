@@ -7,9 +7,11 @@
 
 namespace parma {
   Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn) 
-    : m(mIn), w(wIn), alpha(alphaIn)
-  {
-  }
+    : m(mIn), w(wIn), alpha(alphaIn) {}
+  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
+     Sides* s, Weights* w, Targets* t, Selector* sel) 
+    : m(mIn), w(wIn), alpha(alphaIn), 
+      sides(s), weights(w), targets(t), selects(sel) {}
   Balancer::~Balancer() {
     delete sides;
     delete weights;
@@ -19,7 +21,7 @@ namespace parma {
 
   bool Balancer::run(double maxImb, int verbosity) {
     const double imb = imbalance();
-    if ( 0 == PCU_Comm_Self() )
+    if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "imbalance %.3f\n", imb);
     if ( imb < maxImb ) 
       return false;
