@@ -118,29 +118,41 @@ void decomposeSVD(apf::DynamicMatrix& A,
   }
 }
 
+/** @brief solve a diagonal linear system Ax = b
+  * @param A (In) nxn diagonal matrix stored in vector
+  * @param x (Out) nx1 solution vector
+  * @param b (In) nx1 right hand side
+  */
+void solveDiag(apf::DynamicVector& A,
+               apf::DynamicVector& x,
+               apf::DynamicVector& b)
+{
+  std::size_t n = A.getSize();
+  x.setSize(n);
+  double tol = 1.0e-9;
+  for (std::size_t i=0; i < n; ++i)
+  {
+    if (A[i] < tol)
+      x[i] = 0.0;
+    else
+      x[i] = b[i]/A[i];
+  }
+}
+
 void solveSVD(apf::DynamicMatrix& A,
               apf::DynamicVector& x,
               apf::DynamicVector& b)
 {
-  apf::DynamicVector w;
+  apf::DynamicVector W;
   apf::DynamicMatrix V;
-  decomposeSVD(A,w,V);
+  decomposeSVD(A,W,V);
   apf::DynamicMatrix UT;
   apf::transpose(A,UT);
-  apf::DynamicVector utb;
-  apf::multiply(UT,b,utb);
-  double tol = 1.0e-9;
-  for (std::size_t i=0; i < w.getSize(); ++i)
-  {
-    if (w(i) < tol) 
-      w(i) = 0.0;
-    else
-      w(i) = 1.0/w[i];
-  }
-  for (std::size_t i=0; i < V.getRows(); ++i)
-  for (std::size_t j=0; j < V.getColumns(); ++j)
-    V(i,j) *= w(j);
-  apf::multiply(V,utb,x);
+  apf::DynamicVector UTb;
+  apf::multiply(UT,b,UTb);
+  apf::DynamicVector y;
+  solveDiag(W,y,UTb);
+  apf::multiply(V,y,x);
 }
 
 }
