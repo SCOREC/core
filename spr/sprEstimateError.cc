@@ -6,10 +6,11 @@
  */
 
 #include "spr.h"
+#include "PCU.h"
 #include "apfMesh.h"
 #include "apfShape.h"
 #include "apfCavityOp.h"
-#include <PCU.h>
+#include <mpi.h>
 #include <algorithm>
 
 namespace spr {
@@ -268,6 +269,7 @@ apf::Field* elementToVertexField(apf::Field* eSize)
 
 apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio)
 {
+  double t0 = MPI_Wtime();
   apf::Field* eps_star = recoverField(eps);
   double sizeFactor = computeSizeFactor(eps,eps_star,adaptRatio);
   apf::Field* eSize = getElementSizeField(eps,eps_star,sizeFactor);
@@ -275,6 +277,9 @@ apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio)
   apf::Field* sizeField;
   sizeField = elementToVertexField(eSize);
   apf::destroyField(eSize);
+  double t1 = MPI_Wtime();
+  if (!PCU_Comm_Self())
+    fprintf(stderr,"SPR: error estimated in %f seconds\n",t1-t0);
   return sizeField;
 }
 
