@@ -9,8 +9,6 @@ namespace apf {
 
 typedef int Gid;
 
-typedef std::map<Gid, MeshEntity*> GlobalToVert;
-
 static void constructVerts(
     Mesh2* m, Gid* conn, int nelem, int etype,
     GlobalToVert& result)
@@ -148,9 +146,9 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   }
 }
 
-void construct(Mesh2* m, int* conn, int nelem, int etype)
+void construct(Mesh2* m, int* conn, int nelem, int etype,
+    GlobalToVert& globalToVert)
 {
-  GlobalToVert globalToVert;
   constructVerts(m, conn, nelem, etype, globalToVert);
   constructElements(m, conn, nelem, etype, globalToVert);
   constructResidence(m, globalToVert);

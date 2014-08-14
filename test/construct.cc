@@ -24,7 +24,9 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
   gmi_model* model = gmi_load(".null");
   m = apf::makeEmptyMdsMesh(model, dim, false);
-  apf::construct(m, conn, nelem, etype);
+  apf::GlobalToVert outMap;
+  apf::construct(m, conn, nelem, etype, outMap);
+  outMap.clear();
   delete [] conn;
   apf::alignMdsRemotes(m);
   apf::deriveMdsModel(m);
