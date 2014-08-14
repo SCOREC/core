@@ -121,9 +121,7 @@ void fitPolynomial(int count,
   DynamicVector a;
   /* HELP: both these values are random and we need
      to get good values with supporting evidence */
-  int maxIters = 20;
-  double tol = 1e-9;
-  svdSolve(A,b,maxIters,tol,a);
+  solveSVD(A,a,b);
   coefficients.setSize(m);
   for (int i=0; i < m; ++i)
     coefficients[i] = a[i];
