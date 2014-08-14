@@ -13,6 +13,15 @@ using std::set;
 
 namespace parma {
 
+// void print(int level,...) {
+//   if (level == MAX_VERBOSE) {
+//     PCU_Debug_Print(...);
+//   } else {
+//     if( ! PCU_Comm_Self() )
+//       printf(...);    
+//   }
+// }
+
 class MergeTargets {
   public:
     //maxW == HeavyImb
@@ -55,7 +64,7 @@ class MergeTargets {
           weightCapacity, knapsackCapacity);
       rating 1*/
       //Knapsack execution
-      //Declared for knapsack class (**might be removed later**)
+      //Declared for knapsack class 
       int* value = new int[s->total()];
       std::fill (value, value + s->total(),1);
 
@@ -138,47 +147,47 @@ class MergeTargets {
 
 
 
-void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts, 
-  vector<misLuby::partInfo>& parts){
-    //Generating misLuby part info for current part
-    misLuby::partInfo part;
-    part.id = m->getId();
+  void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts, 
+    vector<misLuby::partInfo>& parts){
+      //Generating misLuby part info for current part
+      misLuby::partInfo part;
+      part.id = m->getId();
 
-    //Passing in the adjPartIds
-    const Sides::Item* partId;
-    s->begin();
-    while( (partId = s->iterate()) )
-      part.adjPartIds.push_back(partId->first);
-    s->end();
+      //Passing in the adjPartIds
+      const Sides::Item* partId;
+      s->begin();
+      while( (partId = s->iterate()) )
+        part.adjPartIds.push_back(partId->first);
+      s->end();
 
-    PCU_Debug_Print("adjpartIds size = %zu\n", part.adjPartIds.size()); //rating 2
+      PCU_Debug_Print("adjpartIds size = %zu\n", part.adjPartIds.size()); //rating 2
 
-    PCU_Debug_Print("Part %d mergeNet size %zu\n", PCU_Comm_Self(),
-      tgts.total()); //rating 0
+      PCU_Debug_Print("Part %d mergeNet size %zu\n", PCU_Comm_Self(),
+        tgts.total()); //rating 0
 
-    //Passing in the mergingNet
-    for(size_t i = 0; i < tgts.total(); ++i){
-      part.net.push_back(tgts.mergeTargetIndex(i));
-      PCU_Debug_Print("\t%zu mergingNet %d\n",i , part.net[i]);//rating 1 (CHI 2)
-    }
-    part.net.push_back(part.id);
+      //Passing in the mergingNet
+      for(size_t i = 0; i < tgts.total(); ++i){
+        part.net.push_back(tgts.mergeTargetIndex(i));
+        PCU_Debug_Print("\t%zu mergingNet %d\n",i , part.net[i]);//rating 1 (CHI 2)
+      }
+      part.net.push_back(part.id);
 
-  //Testing for examples, additionally add paramter [4]
-  //in mis as true if testing random numbers
-  //Change random numbers as you please, MIS selects lowest numbers (only ints)
-  //Additionally, more can be added for more parts
-  if(part.id == 0) part.randNum = 1;
-  else if (part.id == 1) part.randNum = 2;
-  else if (part.id == 2) part.randNum = 3;
-  else if (part.id == 3) part.randNum = 1;
-  else if (part.id == 4) part.randNum = 2;
-  else if (part.id == 5) part.randNum = 2;
-  else if (part.id == 6) part.randNum = 1;
-  else if (part.id == 7) part.randNum = 2;
+    //Testing for examples, additionally add paramter [4]
+    //in mis as true if testing random numbers
+    //Change random numbers as you please, MIS selects lowest numbers (only ints)
+    //Additionally, more can be added for more parts
+    if(part.id == 0) part.randNum = 1;
+    else if (part.id == 1) part.randNum = 2;
+    else if (part.id == 2) part.randNum = 3;
+    else if (part.id == 3) part.randNum = 1;
+    else if (part.id == 4) part.randNum = 2;
+    else if (part.id == 5) part.randNum = 2;
+    else if (part.id == 6) part.randNum = 1;
+    else if (part.id == 7) part.randNum = 2;
 
-    parts.push_back(part);
-    //End creating misLuby part
-}
+      parts.push_back(part);
+      //End creating misLuby part
+  }
 
   //Using MIS Luby, selects the merges to be executed based on the merging nets
   // and returns it in the plan
@@ -239,14 +248,14 @@ void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts,
   int splits(Weights* w, double tgtWeight) {
     return static_cast<int>(ceil(w->self()/tgtWeight))-1;
   }
-  //TODO is this still a dangerous comparison?
+
   int isEmpty(apf::Mesh* m, apf::Migration* plan) {
     return (m->count(m->getDimension()) - plan->count() == 0) ? 1 : 0;
   }
 
   int totSplits(Weights* w, double tgtWeight) {
     int numSplits = splits(w, tgtWeight);
-    PCU_Add_Ints(&numSplits, 1);  // MPI_All_reduce(...,MPI_SUM,...)
+    PCU_Add_Ints(&numSplits, 1);
     return numSplits;
   }
 
