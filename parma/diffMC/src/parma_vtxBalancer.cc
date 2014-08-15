@@ -17,7 +17,7 @@ namespace parma {
         parma::Balancer parmaVtx(mesh, wtag, factor);
         Sides* s = makeElmBdrySides(mesh);
         parmaVtx.setSides(s);
-        Weights* w = makeEntWeights(mesh, wtag, s, mesh->getDimension());
+        Weights* w = makeEntWeights(mesh, wtag, s, 0);
         parmaVtx.setWeights(w);
         Targets* t = makeTargets(s, w, factor);
         parmaVtx.setTargets(t);

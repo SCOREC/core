@@ -10,8 +10,6 @@ namespace ph {
 
 void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
 {
-  if (in.numTotParts <= PCU_Comm_Peers())
-    return;
   assert(in.recursivePtn <= 1);
   int factor = in.recursivePtnStep[0];
   assert(factor * PCU_Comm_Peers() == in.numTotParts);
