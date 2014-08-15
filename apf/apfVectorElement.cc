@@ -73,7 +73,7 @@ double getJacobianDeterminant(Matrix3x3 const& J, int dimension)
        "tangent vectors" in 3D, the volume of their
        parallelpiped, which is the differential volume
        of the coordinate field */
-    return det(J);
+    return getDeterminant(J);
   }
   if (dimension == 2)
   {
