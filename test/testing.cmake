@@ -54,6 +54,13 @@ add_test(tet_parallel
   "${MDIR}/pipe.dmg"
   "pipe_4_.smb"
   "tet.smb")
+set(MDIR ${MESHES}/torus)
+add_test(balance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./balance
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusBal4p/")
 set(MDIR ${MESHES}/cube)
 add_test(construct
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
