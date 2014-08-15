@@ -15,16 +15,20 @@
 namespace spr {
 
 struct SprPoints {
-  SprPoints():count(0) {}
-  void setCount(int n)
+  SprPoints():num_points(0) {}
+  void allocate(int np, int nc)
   {
-    count = n;
-    points.allocate(n);
-    values.allocate(n);
+    num_points = np;
+    points.allocate(np);
+    values.allocate(np);
+    values2.allocate(np);
+    for (int i=0; i < np; ++i)
+      values2[i].allocate(nc);
   }
-  int count;
+  int num_points;
   apf::NewArray<apf::Vector3> points;
   apf::NewArray<apf::Matrix3x3> values;
+  apf::NewArray<apf::NewArray<double> > values2;
 };
 
 void evalPolynomialTerms(int order,
@@ -113,7 +117,8 @@ void getSprPoints(apf::Field* f,
   int num_points_elem = apf::countIntPoints(me,order);
   apf::destroyMeshElement(me);
   int np = elements.size()*num_points_elem;
-  spr_points.setCount(np);
+  int nc = f->countComponents();
+  spr_points.allocate(np,nc);
   std::size_t p = 0;
   for (std::set<apf::MeshEntity*>::iterator it = elements.begin();
       it != elements.end(); ++it)
@@ -125,6 +130,7 @@ void getSprPoints(apf::Field* f,
       apf::getIntPoint(mesh_element,order,l,param);
       apf::mapLocalToGlobal(mesh_element,param,spr_points.points[p]);
       apf::getMatrix(f,*it,l,spr_points.values[p]);
+      apf::getComponents(f,*it,l,&(spr_points.values2[p])[0]);
       ++p;
     }
     apf::destroyMeshElement(mesh_element);
@@ -144,7 +150,7 @@ void runSpr(apf::Field* f,
 {
   SprPoints spr_points;
   getSprPoints(f,elements,spr_points);
-  apf::NewArray<double> component_values(spr_points.count);
+  apf::NewArray<double> component_values(spr_points.num_points);
   apf::Vector3 point;
   apf::getMesh(f)->getPoint(entity,0,point);
   apf::Matrix3x3 value;
@@ -153,10 +159,10 @@ void runSpr(apf::Field* f,
   for (int i=0; i < 3; ++i)
     for (int j=0; j < 3; ++j)
     {
-      for (int p=0; p < spr_points.count; ++p)
+      for (int p=0; p < spr_points.num_points; ++p)
         component_values[p] = spr_points.values[p][i][j];
       apf::DynamicVector coeffs;
-      evalPolynomialCoeffs(order,spr_points.count,
+      evalPolynomialCoeffs(order,spr_points.num_points,
           spr_points.points,component_values,coeffs);
       apf::DynamicVector terms;
       evalPolynomialTerms(order,point,terms);
