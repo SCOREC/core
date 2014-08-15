@@ -16,6 +16,7 @@
 
 ph::Input* globalInput;
 ph::BCs* globalBCs;
+int globalPeers;
 
 static void afterSplit(apf::Mesh2* m)
 {
@@ -24,7 +25,10 @@ static void afterSplit(apf::Mesh2* m)
   std::string path = ph::setupOutputDir();
   ph::setupOutputSubdir(path);
   if (in.phastaIO) {
-    apf::reorderMdsMesh(m);
+    if ((PCU_Comm_Peers()!=globalPeers) ||
+        in.adaptFlag ||
+        in.tetrahedronize)
+      apf::reorderMdsMesh(m);
     ph::Output o;
     ph::generateOutput(in, bcs, m, o);
     ph::detachAndWriteSolution(in, m, path);
@@ -46,6 +50,7 @@ int main(int argc, char** argv)
   SimModel_start();
   gmi_register_mesh();
   gmi_register_sim();
+  globalPeers = PCU_Comm_Peers();
   ph::Input in("adapt.inp");
   apf::Mesh2* m = apf::loadMdsMesh(
       in.modelFileName.c_str(), in.meshFileName.c_str());
