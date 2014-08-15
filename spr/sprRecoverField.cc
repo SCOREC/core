@@ -288,7 +288,8 @@ apf::Field* recoverField(apf::Field* f)
   std::string name = "spr_";
   name += getName(f);
   apf::Mesh* m = apf::getMesh(f);
-  apf::Field* f_star = apf::createFieldOn(m,name.c_str(),apf::MATRIX);
+  apf::Field* f_star =
+    apf::createFieldOn(m,name.c_str(),apf::getValueType(f));
   PatchOp op(f,f_star);
   for (int i=0; i <= 3; ++i)
   {
