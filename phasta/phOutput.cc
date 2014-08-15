@@ -167,12 +167,38 @@ static void getMaxElementNodes(Output& o)
   o.nMaxElementNodes = n;
 }
 
-static void getFakePeriodicMasters(Output& o)
+static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
+{
+  if ( ! m->hasMatching())
+    return e;
+  apf::Matches matches;
+  m->getMatches(e, matches);
+  if (!matches.getSize())
+    return e;
+  apf::MeshEntity* master = e;
+  int self = PCU_Comm_Self();
+  for (size_t i = 0; i < matches.getSize(); ++i)
+    if ((matches[i].peer == self)&&(matches[i].entity < master))
+      master = matches[i].entity;
+  return master;
+}
+
+static void getPeriodicMasters(Output& o, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   int* iper = new int[m->count(0)];
-  for (size_t i = 0; i < m->count(0); ++i)
-    iper[i] = 0;
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* e;
+  int i = 0;
+  while ((e = m->iterate(it))) {
+    apf::MeshEntity* master = getPeriodicMaster(m, e);
+    if (master == e)
+      iper[i] = 0;
+    else
+      iper[i] = apf::getNumber(n, master, 0, 0) + 1;
+    ++i;
+  }
+  m->end(it);
   o.arrays.iper = iper;
 }
 
@@ -274,10 +300,10 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getLinks(o, n);
   getInterior(o, n);
   getBoundary(o, bcs, n);
+  getPeriodicMasters(o, n);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getMaxElementNodes(o);
-  getFakePeriodicMasters(o);
   getEssentialBCs(bcs, o);
   applyInitialConditions(bcs, o);
   double t1 = MPI_Wtime();
