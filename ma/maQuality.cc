@@ -89,7 +89,7 @@ double measureLinearTetQuality(Vector xyz[4])
   J[0] = xyz[1] - xyz[0];
   J[1] = xyz[2] - xyz[0];
   J[2] = xyz[3] - xyz[0];
-  double j = apf::det(J);
+  double j = apf::getDeterminant(J);
   double V = j/6;
   double s = 0;
   for (int i = 0; i < 6; ++i) {

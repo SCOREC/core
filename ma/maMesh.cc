@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include "maMath.h"
 #include "maMesh.h"
 #include "maTables.h"
 #include <algorithm>
@@ -349,41 +348,36 @@ bool isTwoTriAngleAcute(Mesh* m, Entity* a, Entity* b)
 
 double getInsphere(Mesh* m, Entity* e)
 {
-	if (m->getType(e) != TET)
-		// Only tets are currently supported
-		return NAN;
+  assert(m->getType(e) == TET);
 
-	// Insphere r of a tet compute by the forumla on
-	// http://maths.ac-noumea.nc/polyhedr/stuff/tetra_sf_.htm
-	// a, b, c, d are the four points of the tet
-	// N_abc = (b-a) x (c-a) (x is the cross product)
-	//              a_x a_y a_z 1
-	// alpha = det( b_x b_y b_z 1 )
-	//              a_x a_y a_z 1
-	//              a_x a_y a_z 1
-	// r = |alpha| / (||N_abc||+||N_abd||+||N_acd||+||N_bcd||)
-	Entity* v[4];
-	m->getDownward(e, 0, v);
+  // Insphere r of a tet computed by the forumla at
+  // http://maths.ac-noumea.nc/polyhedr/stuff/tetra_sf_.htm
+  // a, b, c, d are the four points of the tet
+  // N_abc = (b-a) x (c-a) (x is the cross product)
+  //              a_x a_y a_z 1
+  // alpha = det( b_x b_y b_z 1 )
+  //              a_x a_y a_z 1
+  //              a_x a_y a_z 1
+  // r = |alpha| / (||N_abc||+||N_abd||+||N_acd||+||N_bcd||)
+  Entity* v[4];
+  m->getDownward(e, 0, v);
 
-	double matrix[4][4] = {
-			{0, 0, 0, 1},
-			{0, 0, 0, 1},
-			{0, 0, 0, 1},
-			{0, 0, 0, 1}
-	};
+  apf::Matrix<4,3> x;
+  apf::Matrix<4,4> matrix;
 
-	Vector x[4];
-	for (int i=0; i < 4; ++i) {
-		x[i] = getPosition(m, v[i]);
-		x[i].toArray(matrix[i]);
-	}
+  for (int i=0; i < 4; ++i) {
+    x[i] = getPosition(m, v[i]);
+    for (int j = 0; j < 3; ++j)
+      matrix[i][j] = x[i][j];
+    matrix[i][3] = 1;
+  }
 
-	double l = apf::cross(x[1]-x[0], x[2]-x[0]).getLength()
-			+ apf::cross(x[1]-x[0], x[3]-x[0]).getLength()
-			+ apf::cross(x[2]-x[0], x[3]-x[0]).getLength()
-			+ apf::cross(x[2]-x[1], x[3]-x[1]).getLength();
+  double l = apf::cross(x[1]-x[0], x[2]-x[0]).getLength()
+           + apf::cross(x[1]-x[0], x[3]-x[0]).getLength()
+           + apf::cross(x[2]-x[0], x[3]-x[0]).getLength()
+           + apf::cross(x[2]-x[1], x[3]-x[1]).getLength();
 
-	return std::abs(determinant4x4(matrix)) / l;
+  return std::abs(apf::getDeterminant(matrix)) / l;
 }
 
 double getAverageElementSize(Mesh* m)
