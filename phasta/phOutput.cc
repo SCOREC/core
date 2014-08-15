@@ -18,18 +18,20 @@ static void getCounts(Output& o)
 static void getCoordinates(Output& o)
 {
   apf::Mesh* m = o.mesh;
-  double* x = new double[m->count(0) * 3];
+  int n = m->count(0);
+  double* x = new double[n * 3];
   apf::MeshEntity* v;
-  size_t i = 0;
+  int i = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
     apf::Vector3 p;
     m->getPoint(v, 0, p);
-    p.toArray(&x[i]);
-    i += 3;
+    for (int j = 0; j < 3; ++j)
+      x[j * n + i] = p[j]; /* FORTRAN indexing */
+    ++i;
   }
   m->end(it);
-  assert(i == m->count(0) * 3);
+  assert(i == n);
   o.arrays.coordinates = x;
 }
 
