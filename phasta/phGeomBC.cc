@@ -156,6 +156,10 @@ void writeGeomBC(Output& o, std::string path)
   apf::Mesh* m = o.mesh;
   path += buildGeomBCFileName(*o.in);
   FILE* f = fopen(path.c_str(), "w");
+  if (!f) {
+    fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
+    abort();
+  }
   ph_write_preamble(f);
   int params[MAX_PARAMS];
 /* all of these strings are looked for by the other programs
