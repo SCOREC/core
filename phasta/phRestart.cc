@@ -121,11 +121,11 @@ static void readStepNum(Input& in)
   assert(in.timeStepNumber == step);
 }
 
-static std::string buildRestartFileName(Input& in)
+static std::string buildRestartFileName(std::string prefix, int step)
 {
   std::stringstream ss;
   int rank = PCU_Comm_Self() + 1;
-  ss << in.restartFileName << '.' << in.timeStepNumber << '.' << rank;
+  ss << prefix << '.' << step << '.' << rank;
   return ss.str();
 }
 
@@ -133,7 +133,7 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
 {
   double t0 = MPI_Wtime();
   readStepNum(in);
-  std::string filename = buildRestartFileName(in);
+  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
   readAndAttachField(in, m, filename.c_str(), "solution");
   if (in.displacementMigration)
     readAndAttachField(in, m, filename.c_str(), "displacement");
@@ -163,8 +163,12 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
 void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
 {
   double t0 = MPI_Wtime();
-  path += buildRestartFileName(in);
+  path += buildRestartFileName("restart", in.timeStepNumber);
   FILE* f = fopen(path.c_str(), "w");
+  if (!f) {
+    fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
+    abort();
+  }
   ph_write_preamble(f);
   int nodes = m->count(0);
   ph_write_header(f, "number of modes", 0, 1, &nodes);
