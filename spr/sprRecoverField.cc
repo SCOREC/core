@@ -21,14 +21,12 @@ struct SprPoints {
     num_points = np;
     points.allocate(np);
     values.allocate(np);
-    values2.allocate(np);
     for (int i=0; i < np; ++i)
-      values2[i].allocate(nc);
+      values[i].allocate(nc);
   }
   int num_points;
   apf::NewArray<apf::Vector3> points;
-  apf::NewArray<apf::Matrix3x3> values;
-  apf::NewArray<apf::NewArray<double> > values2;
+  apf::NewArray<apf::NewArray<double> > values;
 };
 
 void evalPolynomialTerms(int order,
@@ -129,8 +127,7 @@ void getSprPoints(apf::Field* f,
       apf::Vector3 param;
       apf::getIntPoint(mesh_element,order,l,param);
       apf::mapLocalToGlobal(mesh_element,param,spr_points.points[p]);
-      apf::getMatrix(f,*it,l,spr_points.values[p]);
-      apf::getComponents(f,*it,l,&(spr_points.values2[p])[0]);
+      apf::getComponents(f,*it,l,&(spr_points.values[p])[0]);
       ++p;
     }
     apf::destroyMeshElement(mesh_element);
@@ -150,25 +147,27 @@ void runSpr(apf::Field* f,
 {
   SprPoints spr_points;
   getSprPoints(f,elements,spr_points);
-  apf::NewArray<double> component_values(spr_points.num_points);
+  int num_spr_points = spr_points.num_points;
+  apf::NewArray<double> component_values(num_spr_points);
   apf::Vector3 point;
   apf::getMesh(f)->getPoint(entity,0,point);
-  apf::Matrix3x3 value;
+  int num_field_components = f->countComponents();
+  apf::NewArray<double> value;
+  value.allocate(num_field_components);
   apf::Mesh* mesh = apf::getMesh(f);
   int order = mesh->getShape()->getOrder();
-  for (int i=0; i < 3; ++i)
-    for (int j=0; j < 3; ++j)
-    {
-      for (int p=0; p < spr_points.num_points; ++p)
-        component_values[p] = spr_points.values[p][i][j];
-      apf::DynamicVector coeffs;
-      evalPolynomialCoeffs(order,spr_points.num_points,
-          spr_points.points,component_values,coeffs);
-      apf::DynamicVector terms;
-      evalPolynomialTerms(order,point,terms);
-      value[i][j] = coeffs*terms;
-    }
-  setMatrix(f_star,entity,0,value);
+  for (int i=0; i < num_field_components; ++i)
+  {
+    for (int p=0; p < num_spr_points; ++p)
+      component_values[p] = spr_points.values[p][i];
+    apf::DynamicVector coeffs;
+    evalPolynomialCoeffs(order,num_spr_points,
+        spr_points.points,component_values,coeffs);
+    apf::DynamicVector terms;
+    evalPolynomialTerms(order,point,terms);
+    value[i] = coeffs*terms;
+  }
+  setComponents(f_star,entity,0,&(value)[0]);
 }
 
 class PatchOp : public apf::CavityOp
