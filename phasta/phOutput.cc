@@ -46,7 +46,7 @@ static void getGlobal(Output& o)
   size_t i = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it)))
-    o.arrays.globalNodeNumbers[i++] = apf::getNumber(gn, apf::Node(v, 0));
+    o.arrays.globalNodeNumbers[i++] = apf::getNumber(gn, apf::Node(v, 0)) + 1;
   m->end(it);
   assert(i == m->count(0));
   apf::destroyGlobalNumbering(gn);
