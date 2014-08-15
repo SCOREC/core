@@ -11,6 +11,49 @@ bool LinkKey::operator<(LinkKey const& other) const
   return peer < other.peer;
 }
 
+/* the PhastaSharing class is responsible for ensuring that
+   ILWORK links matched entities correctly.
+   Only on-part owners are treated as remotes of one another,
+   where on-part ownership is defined by smallest entity pointer */
+
+struct PhastaSharing : public apf::Sharing {
+  PhastaSharing(apf::Mesh* m)
+  {
+    mesh = m;
+    helper = apf::getSharing(m);
+  }
+  ~PhastaSharing()
+  {
+    delete helper;
+  }
+  bool isOwned(apf::MeshEntity* e)
+  {
+    return helper->isOwned(e);
+  }
+  void getCopies(apf::MeshEntity* e,
+      apf::CopyArray& copies)
+  {
+    helper->getCopies(e, copies);
+    if ( ! mesh->hasMatching())
+      return;
+    /* filter out matches which are on the same part,
+       choose from each part the one with the smallest pointer */
+    size_t i = 0;
+    for (size_t j = 0; j < copies.getSize(); ++j) {
+      if (copies[j].peer == copies[i].peer) {
+        if (copies[j].entity < copies[i].entity)
+          copies[i].entity = copies[j].entity;
+      } else {
+        ++i;
+        copies[i] = copies[j];
+      }
+    }
+    copies.setSize(i + 1);
+  }
+  apf::Mesh* mesh;
+  apf::Sharing* helper;
+};
+
 /* this algorithm is essential to parallel
    scalability: generate local inter-part 
    communication arrays describing shared entities.
@@ -39,22 +82,19 @@ void getVertexLinks(apf::Mesh* m, Links& links)
   PCU_Comm_Begin();
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;
+  PhastaSharing shr(m);
   while ((v = m->iterate(it))) {
-    if (!m->isShared(v))
-      continue;
 /* the alignement is such that the owner part's
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
    other part by sending remote copies */
-    if (!m->isOwned(v))
+    if (shr.isOwned(v))
       continue;
-    apf::Copies remotes;
-    m->getRemotes(v, remotes);
-    APF_ITERATE(apf::Copies, remotes, rit) {
-      int peer = rit->first;
-      apf::MeshEntity* c = rit->second;
-      links[LinkKey(true, peer)].push_back(v);
-      PCU_COMM_PACK(peer, c);
+    apf::CopyArray remotes;
+    shr.getCopies(v, remotes);
+    for (size_t i = 0; i < remotes.getSize(); ++i) {
+      links[LinkKey(true, remotes[i].peer)].push_back(v);
+      PCU_COMM_PACK(remotes[i].peer, remotes[i].entity);
     }
   }
   m->end(it);
