@@ -35,10 +35,10 @@ static void constructElements(
   }
 }
 
-static Gid getMax(GlobalToVert& globalToVert)
+static Gid getMax(const GlobalToVert& globalToVert)
 {
   Gid max = -1;
-  APF_ITERATE(GlobalToVert, globalToVert, it)
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
   PCU_Max_Ints(&max, 1); // this is type-dependent
   return max;
@@ -157,6 +157,89 @@ void construct(Mesh2* m, int* conn, int nelem, int etype,
   m->acceptChanges();
 }
 
+void setCoords(Mesh2* m, const double* coords, int nverts,
+    const GlobalToVert& globalToVert)
+{
+  Gid max = getMax(globalToVert);
+  Gid total = max + 1;
+  int peers = PCU_Comm_Peers();
+  int quotient = total / peers;
+  int remainder = total % peers;
+  int mySize = quotient;
+  int self = PCU_Comm_Self();
+  if (self == (peers - 1))
+    mySize += remainder;
+  int myOffset = self * quotient;
+
+  /* Force each peer to have exactly mySize verts.
+     This means we might need to send and recv some coords */
+  double* c = new double[mySize*3];
+
+  int start = nverts;
+  PCU_Exscan_Ints(&start, 1);
+
+  PCU_Comm_Begin();
+  int to = std::min(peers - 1, start / quotient);
+  int n = std::min((to+1)*quotient-start, nverts);
+  while (nverts > 0) {
+    PCU_COMM_PACK(to, start);
+    PCU_COMM_PACK(to, n);
+    PCU_Comm_Pack(to, coords, n*3*sizeof(double));
+
+    nverts -= n;
+    start += n;
+    coords += n*3;
+    to = std::min(peers - 1, to + 1);
+    n = std::min(quotient, nverts);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    PCU_COMM_UNPACK(start);
+    PCU_COMM_UNPACK(n);
+    PCU_Comm_Unpack(&c[(start - myOffset) * 3], n*3*sizeof(double));
+  }
+
+  /* Tell all the owners of the coords what we need */
+  typedef std::vector< std::vector<int> > TmpParts;
+  TmpParts tmpParts(mySize);
+  PCU_Comm_Begin();
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
+    int gid = it->first;
+    int to = std::min(peers - 1, gid / quotient);
+    PCU_COMM_PACK(to, gid);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    int from = PCU_Comm_Sender();
+    tmpParts.at(gid - myOffset).push_back(from);
+  }
+  
+  /* Send the coords to everybody who want them */
+  PCU_Comm_Begin();
+  for (int i = 0; i < mySize; ++i) {
+    std::vector<int>& parts = tmpParts[i];
+    for (size_t j = 0; j < parts.size(); ++j) {
+      int to = parts[j];
+      int gid = i + myOffset;
+      PCU_COMM_PACK(to, gid);
+      PCU_Comm_Pack(to, &c[i*3], 3*sizeof(double));
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    double v[3];
+    PCU_Comm_Unpack(v, sizeof(v));
+    Vector3 vv(v);
+    m->setPoint(globalToVert.at(gid), 0, vv);
+  }
+
+  delete [] c;
+}
+
 void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
 {
   int dim = m->getDimension();
@@ -178,6 +261,24 @@ void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
   }
   m->end(it);
   destroyGlobalNumbering(global);
+}
+
+void extractCoords(Mesh2* m, double*& coords, int& nverts)
+{
+  nverts = countOwned(m, 0);
+  coords = new double[nverts * 3];
+
+  MeshIterator* it = m->begin(0);
+  int i = 0;
+  while (MeshEntity* v = m->iterate(it)) {
+    if (m->isOwned(v)) {
+      Vector3 p;
+      m->getPoint(v, 0, p);
+      p.toArray(&coords[i*3]);
+      i++;
+    }
+  }
+  m->end(it);
 }
 
 }

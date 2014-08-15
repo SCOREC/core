@@ -419,6 +419,10 @@ int countComponents(Field* f);
 for (t::iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
+#define APF_CONST_ITERATE(t,w,i) \
+for (t::const_iterator (i) = (w).begin(); \
+     (i) != (w).end(); ++(i))
+
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   */
 void writeVtkFiles(const char* prefix, Mesh* m);
