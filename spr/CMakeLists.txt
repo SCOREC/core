@@ -42,13 +42,13 @@ configure_file(
 
 #Sources & Headers
 set(SOURCES
-  apfEstimateError.cc
-  apfRecoverField.cc
-  apfSVDecomp.cc
-  apfGradientByVolume.cc)
+  sprGetGradIPField.cc
+  sprSVD.cc
+  sprRecoverField.cc
+  sprEstimateError.cc)
 
 set(HEADERS
-  apfSPR.h)
+  spr.h)
 
 #Library
 if(BUILD_IN_TRILINOS)

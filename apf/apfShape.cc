@@ -431,9 +431,9 @@ class IPShape : public FieldShape
       }
       return 0;
     }
-    /* the polynomial order of a set of integration points
-       has no meaning */
-    int getOrder() {return -1;}
+    /* this field can integrate a polynomial of
+       this order exactly */
+    int getOrder() {return order;}
   protected:
     int dimension;
     int order;
