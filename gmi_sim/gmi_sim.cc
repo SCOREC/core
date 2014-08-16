@@ -119,6 +119,8 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
     return plist_to_set(GE_faces((pGEdge)e));
   if (edim == 2 && dim == 3)
     return plist_to_set(GF_regions((pGFace)e));
+  if (edim == 3 && dim == 4) /* sometimes people just keep looking up */
+    return gmi_make_set(0);
   gmi_fail("requested adjacency is not one-level");
   return 0;
 }
