@@ -141,11 +141,11 @@ void encodeLinks(apf::Numbering* n, Links& links, size_t& size, int*& a)
     Link& l = it->second;
     a[i++] = 0;
     a[i++] = k.send ? 0 : 1;
-    a[i++] = k.peer;
+    a[i++] = k.peer + 1; /* peers numbered from 1 */
     a[i++] = l.size();
     APF_ITERATE(Link, l, lit) {
-      int id = apf::getNumber(n, *lit, 0, 0);
-      a[i++] = id;
+      /* entities also numbered from 1 */
+      a[i++] = apf::getNumber(n, *lit, 0, 0) + 1;
       a[i++] = 1;
     }
   }

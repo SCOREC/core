@@ -35,21 +35,23 @@ static void getCoordinates(Output& o)
   o.arrays.coordinates = x;
 }
 
+/* so apparently old phParAdapt just used EN_id,
+   and the id generator from pumi would do things
+   like this. I guess PHASTA is ok with a unique
+   number for each copy, regardless of part boundary
+   sharing... */
 static void getGlobal(Output& o)
 {
   apf::Mesh* m = o.mesh;
-  apf::Numbering* n = apf::numberOwnedNodes(o.mesh, "ph_owned");
-  apf::GlobalNumbering* gn = apf::makeGlobal(n);
-  apf::synchronize(gn);
-  o.arrays.globalNodeNumbers = new int[m->count(0)];
-  apf::MeshEntity* v;
-  size_t i = 0;
-  apf::MeshIterator* it = m->begin(0);
-  while ((v = m->iterate(it)))
-    o.arrays.globalNodeNumbers[i++] = apf::getNumber(gn, apf::Node(v, 0)) + 1;
-  m->end(it);
-  assert(i == m->count(0));
-  apf::destroyGlobalNumbering(gn);
+  int n = m->count(0);
+  int self = PCU_Comm_Self();
+  int peers = PCU_Comm_Peers();
+  int id = self + 1;
+  o.arrays.globalNodeNumbers = new int[n];
+  for (int i = 0; i < n; ++i) {
+    o.arrays.globalNodeNumbers[i] = id;
+    id += peers;
+  }
 }
 
 static void getBlocks(Output& o, BCs& bcs)
