@@ -119,7 +119,7 @@ void writeBlocks(FILE* f, Output& o)
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity boundary ");
-    params[0] = o.blocks.interior.nElements[i];
+    params[0] = o.blocks.boundary.nElements[i];
     fillBlockKeyParams(params, k);
     params[7] = countNaturalBCs(*o.in);
     getBoundaryConnectivity(o, i, c);
