@@ -3,8 +3,8 @@
 #include <apfMesh.h>
 #include <fstream>
 #include <sstream>
-
 #include <PCU.h>
+#include <gmi.h>
 
 namespace ph {
 
@@ -179,20 +179,39 @@ static KnownBC const solutionBCs[7] = {
   {"initial scalar_4",         8,-1, applyScalar},
 };
 
-double* checkForBC(int dim, int tag, BCs& bcs, KnownBC const& kbc)
+/* starting from the current geometric entity,
+   try to find an attribute (kbc) attached to
+   a geometric entity by searching all upward
+   adjacencies.
+ex: for a mesh vertex classified on a model
+    vertex, the model vertex is first checked
+    for the attribute, then the model edges
+    adjacent to the model vertex, then the model
+    faces adjacent to those model edges.
+   this is done by the following recursive function. */
+double* checkForBC(gmi_model* gm, gmi_ent* ge,
+    BCs& bcs, KnownBC const& kbc)
 {
   std::string name(kbc.name);
   if (!bcs.fields.count(name))
     return 0;
   FieldBCs& fbcs = bcs.fields[name];
   BC key;
-  key.tag = tag;
-  key.dim = dim;
+  key.tag = gmi_tag(gm, ge);
+  key.dim = gmi_dim(gm, ge);
   FieldBCs::Set::iterator it = fbcs.bcs.find(key);
-  if (it == fbcs.bcs.end())
-    return 0;
-  BC& bc = const_cast<BC&>(*it);
-  return bc.values;
+  if (it != fbcs.bcs.end()) {
+    BC& bc = const_cast<BC&>(*it);
+    return bc.values;
+  }
+  gmi_set* up = gmi_adjacent(gm, ge, key.dim + 1);
+  for (int i = 0; i < up->n; ++i) {
+    double* v = checkForBC(gm, up->e[i], bcs, kbc);
+    if (v)
+      return v;
+  }
+  gmi_free_set(up);
+  return 0;
 }
 
 bool applyBCs(apf::Mesh* m, apf::MeshEntity* e,
@@ -201,12 +220,11 @@ bool applyBCs(apf::Mesh* m, apf::MeshEntity* e,
     int nKnownBCs,
     double* values, int* bits)
 {
-  apf::ModelEntity* me = m->toModel(e);
-  int md = m->getModelType(me);
-  int mt = m->getModelTag(me);
+  gmi_model* gm = m->getModel();
+  gmi_ent* ge = (gmi_ent*)m->toModel(e);
   bool appliedAny = false;
   for (int i = 0; i < nKnownBCs; ++i) {
-    double* bcvalues = checkForBC(md, mt, appliedBCs, knownBCs[i]);
+    double* bcvalues = checkForBC(gm, ge, appliedBCs, knownBCs[i]);
     if (!bcvalues)
       continue;
     knownBCs[i].apply(values, bits, knownBCs[i], bcvalues);
