@@ -216,7 +216,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   apf::MeshEntity* v;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
-    int ibc_j;
+    int ibc_j = 0;
     bool did = applyEssentialBCs(m, v, bcs, bc_j, &ibc_j);
     if (did) {
       nbc[i] = j;
