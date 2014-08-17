@@ -100,6 +100,7 @@ struct PointConstraint : public Constraint
 {
   PointConstraint():Constraint(0) {}
   apf::Vector3 point;
+  apf::Vector3 originalDirection_;
   virtual void write(int* iBC, double* BC)
   {
     for (int i = 0; i < 3; ++i) {
@@ -111,6 +112,8 @@ struct PointConstraint : public Constraint
     if (magnitude) {
       apf::Vector3 direction = point.normalize();
       direction.toArray(BC + 3);
+    } else {
+      originalDirection_.toArray(BC + 3);
     }
   }
 };
@@ -118,8 +121,8 @@ struct PointConstraint : public Constraint
 static Constraint* makePointConstraint(double* values)
 {
   PointConstraint* c = new PointConstraint();
-  c->point.fromArray(values + 1);
-  c->point = c->point * values[0];
+  c->originalDirection_.fromArray(values + 1);
+  c->point = c->originalDirection_ * values[0];
   return c;
 }
 
