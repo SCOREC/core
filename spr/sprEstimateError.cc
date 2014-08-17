@@ -9,11 +9,28 @@
 #include "PCU.h"
 #include "apfMesh.h"
 #include "apfShape.h"
+#include "apfField.h"
 #include "apfCavityOp.h"
 #include <mpi.h>
 #include <algorithm>
 
 namespace spr {
+
+double getSelfInnerProduct(apf::DynamicVector const& a)
+{
+  double r = a(0)*a(0);
+  for (std::size_t i=0; i < a.getSize(); ++i)
+    r += a(i)*a(i);
+  return r;
+}
+
+void subtract(apf::DynamicVector const& a,
+              apf::DynamicVector const& b,
+              apf::DynamicVector& c)
+{
+  for (std::size_t i=0; i < a.getSize(); ++i)
+    c(i) = a(i) - b(i);
+}
 
 /* common base for Scalar Integrator. */
 class SInt : public apf::Integrator
@@ -46,9 +63,10 @@ class SelfProduct : public SInt
     }
     void atPoint(apf::Vector3 const& p, double w, double dV)
     {
-      apf::Matrix3x3 v;
-      apf::getMatrix(e,p,v);
-      r += apf::getInnerProduct(v,v)*w*dV;
+      int nc = f->countComponents();
+      apf::DynamicVector v(nc);
+      apf::getComponents(e,p,&v[0]);
+      r += getSelfInnerProduct(v)*w*dV;
     }
   private:
     apf::Field* f;
@@ -78,11 +96,13 @@ class Error : public SInt
     }
     void atPoint(apf::Vector3 const& xi, double w, double dV)
     {
-      apf::Matrix3x3 v1,v2,diff;
-      apf::getMatrix(eps,apf::getMeshEntity(apf::getMeshElement(e)),ip,v1);
-      apf::getMatrix(e,xi,v2);
-      diff = v1-v2;
-      er += apf::getInnerProduct(diff,diff)*w*dV;
+      int nc = eps->countComponents();
+      apf::DynamicVector v1(nc),v2(nc),diff(nc);
+      apf::getComponents(
+          eps,apf::getMeshEntity(apf::getMeshElement(e)),ip,&v1[0]);
+      apf::getComponents(e,xi,&v2[0]);
+      subtract(v1,v2,diff);
+      er += getSelfInnerProduct(diff)*w*dV;
       ++ip;
     }
   private:
@@ -117,11 +137,13 @@ class Error2 : public SInt
     }
     void atPoint(apf::Vector3 const& p, double w, double dV)
     {
-      apf::Matrix3x3 v1,v2,diff;
-      apf::getMatrix(eps,apf::getMeshEntity(apf::getMeshElement(e)),ip,v1);
-      apf::getMatrix(e,p,v2);
-      diff = v1-v2;
-      r += apf::getInnerProduct(diff,diff)*w*dV;
+      int nc = eps->countComponents();
+      apf::DynamicVector v1(nc),v2(nc),diff(nc);
+      apf::getComponents(
+          eps,apf::getMeshEntity(apf::getMeshElement(e)),ip,&v1[0]);
+      apf::getComponents(e,p,&v2[0]);
+      subtract(v1,v2,diff);
+      r += getSelfInnerProduct(diff)*w*dV;
       ++ip;
     }
   private:
