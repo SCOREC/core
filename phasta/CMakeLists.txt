@@ -21,7 +21,8 @@ set(SOURCES
   phInput.cc
   phSplit.cc
   phIO.c
-  phBC.cc)
+  phBC.cc
+  phConstraint.cc)
 
 set(HEADERS
   ph.h

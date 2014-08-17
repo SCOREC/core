@@ -99,36 +99,6 @@ static void applyScalar(double* outval, int* bits,
   applyScalar(outval, bits, *inval, bc.offset, bc.bit);
 }
 
-static void applyMagnitude(double* values, KnownBC const& bc, double v)
-{
-  values[bc.offset + 3] = v;
-}
-
-static void applyComp1(double* values, int* bits,
-    KnownBC const& bc, double* inval)
-{
-  int best = 0;
-  for (int i = 1; i < 3; ++i)
-    if (fabs(inval[i]) > fabs(inval[best]))
-      best = i;
-  apf::Vector3 v(inval);
-  double mag = v.getLength();
-  v = v / mag;
-  applyScalar(values, bits, v[best], bc.offset + best, bc.bit + best);
-  applyMagnitude(values, bc, mag);
-}
-
-static void applyComp3(double* values, int* bits,
-    KnownBC const& bc, double* inval)
-{
-  apf::Vector3 v(inval);
-  double mag = v.getLength();
-  v = v / mag;
-  for (int i = 0; i < 3; ++i)
-    applyScalar(values, bits, v[i], bc.offset + i, bc.bit + i);
-  applyMagnitude(values, bc, mag);
-}
-
 static void applyVector(double* values, int* bits,
     KnownBC const& bc, double* inval)
 {
@@ -148,8 +118,10 @@ static KnownBC const essentialBCs[9] = {
   {"density",          0, 0, applyScalar},
   {"temperature",      1, 1, applyScalar},
   {"pressure",         2, 2, applyScalar},
-  {"comp1",           3, 3, applyComp1},
-  {"comp3",           3, 3, applyComp3},
+/*  these guys are too complex to be dealt with
+    here, see phConstraint.cc */
+//{"comp1",           3, 3, applyComp1},
+//{"comp3",           3, 3, applyComp3},
   {"scalar_1",        12, 6, applyScalar},
   {"scalar_2",        13, 7, applyScalar},
   {"scalar_3",        14, 8, applyScalar},
@@ -179,6 +151,23 @@ static KnownBC const solutionBCs[7] = {
   {"initial scalar_4",         8,-1, applyScalar},
 };
 
+bool hasBC(BCs& bcs, std::string const& name)
+{
+  return bcs.fields.count(name);
+}
+
+double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge)
+{
+  BC key;
+  key.tag = gmi_tag(gm, ge);
+  key.dim = gmi_dim(gm, ge);
+  FieldBCs::Set::iterator it = bcs.bcs.find(key);
+  if (it == bcs.bcs.end())
+    return 0;
+  BC& bc = const_cast<BC&>(*it);
+  return bc.values;
+}
+
 /* starting from the current geometric entity,
    try to find an attribute (kbc) attached to
    a geometric entity by searching all upward
@@ -189,24 +178,15 @@ ex: for a mesh vertex classified on a model
     adjacent to the model vertex, then the model
     faces adjacent to those model edges.
    this is done by the following recursive function. */
-double* checkForBC(gmi_model* gm, gmi_ent* ge,
-    BCs& bcs, KnownBC const& kbc)
+static double* getFirstApplied(gmi_model* gm, gmi_ent* ge,
+    FieldBCs& bcs, KnownBC const& kbc)
 {
-  std::string name(kbc.name);
-  if (!bcs.fields.count(name))
-    return 0;
-  FieldBCs& fbcs = bcs.fields[name];
-  BC key;
-  key.tag = gmi_tag(gm, ge);
-  key.dim = gmi_dim(gm, ge);
-  FieldBCs::Set::iterator it = fbcs.bcs.find(key);
-  if (it != fbcs.bcs.end()) {
-    BC& bc = const_cast<BC&>(*it);
-    return bc.values;
-  }
-  gmi_set* up = gmi_adjacent(gm, ge, key.dim + 1);
+  double* v = getValuesOn(gm, bcs, ge);
+  if (v)
+    return v;
+  gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
   for (int i = 0; i < up->n; ++i) {
-    double* v = checkForBC(gm, up->e[i], bcs, kbc);
+    double* v = getFirstApplied(gm, up->e[i], bcs, kbc);
     if (v)
       return v;
   }
@@ -214,17 +194,19 @@ double* checkForBC(gmi_model* gm, gmi_ent* ge,
   return 0;
 }
 
-bool applyBCs(apf::Mesh* m, apf::MeshEntity* e,
+static bool applyBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs,
     KnownBC const* knownBCs,
     int nKnownBCs,
     double* values, int* bits)
 {
-  gmi_model* gm = m->getModel();
-  gmi_ent* ge = (gmi_ent*)m->toModel(e);
   bool appliedAny = false;
   for (int i = 0; i < nKnownBCs; ++i) {
-    double* bcvalues = checkForBC(gm, ge, appliedBCs, knownBCs[i]);
+    std::string s(knownBCs[i].name);
+    if ( ! hasBC(appliedBCs, s))
+      continue;
+    FieldBCs& fbcs = appliedBCs.fields[s];
+    double* bcvalues = getFirstApplied(gm, ge, fbcs, knownBCs[i]);
     if (!bcvalues)
       continue;
     knownBCs[i].apply(values, bits, knownBCs[i], bcvalues);
@@ -233,24 +215,29 @@ bool applyBCs(apf::Mesh* m, apf::MeshEntity* e,
   return appliedAny;
 }
 
-bool applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
+bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, double* values, int* bits)
 {
-  return applyBCs(m, f, appliedBCs, naturalBCs,
+  return applyBCs(gm, ge, appliedBCs, naturalBCs,
       sizeof(naturalBCs) / sizeof(KnownBC), values, bits);
 }
 
-bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
+bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, double* values, int* bits)
 {
-  return applyBCs(m, v, appliedBCs, essentialBCs,
+  bool didSimple = applyBCs(gm, ge, appliedBCs, essentialBCs,
       sizeof(essentialBCs) / sizeof(KnownBC), values, bits);
+  /* the complexity of velocity constraints is delegated to
+     the code in phConstraint.cc */
+  bool didVelocity = applyVelocityConstaints(gm, appliedBCs,
+      ge, values, bits);
+  return didSimple || didVelocity;
 }
 
-bool applySolutionBCs(apf::Mesh* m, apf::MeshEntity* v,
+bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, double* values)
 {
-  return applyBCs(m, v, appliedBCs, solutionBCs,
+  return applyBCs(gm, ge, appliedBCs, solutionBCs,
       sizeof(solutionBCs) / sizeof(KnownBC), values, 0);
 }
 
