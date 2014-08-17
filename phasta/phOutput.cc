@@ -223,7 +223,7 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
     int& ei = o.nEssentialBCNodes;
     while ((v = m->iterate(it))) {
       if (m->toModel(v) == (apf::ModelEntity*)ge) {
-        o.arrays.nbc[i] = ei;
+        o.arrays.nbc[i] = ei + 1;
         o.arrays.ibc[ei] = ibcMaster;
         double* bc_ei = new double[nec]();
         for (int j = 0; j < nec; ++j)

@@ -74,14 +74,6 @@ void getNaturalBCValues(Output& o, int block, apf::DynamicArray<double>& values)
   assert(i == values.getSize());
 }
 
-void getEssentialBCMap(Output& o, apf::DynamicArray<int>& map)
-{
-  int nnode = o.mesh->count(0);
-  map.setSize(nnode);
-  for (int node = 0; node < nnode; ++node)
-    map[node] = o.arrays.nbc[node] + 1;
-}
-
 void getEssentialBCValues(Output& o, apf::DynamicArray<double>& values)
 {
   int nnode = o.nEssentialBCNodes;
@@ -190,9 +182,7 @@ void writeGeomBC(Output& o, std::string path)
   writeInts(f, " mode number map from partition to global",
       o.arrays.globalNodeNumbers, m->count(0));
   writeBlocks(f, o);
-  apf::DynamicArray<int> nbc;
-  getEssentialBCMap(o, nbc);
-  writeInts(f, "bc mapping array", &nbc[0], m->count(0));
+  writeInts(f, "bc mapping array", o.arrays.nbc, m->count(0));
   writeInts(f, "bc codes array", o.arrays.ibc, o.nEssentialBCNodes);
   apf::DynamicArray<double> bc;
   getEssentialBCValues(o, bc);
