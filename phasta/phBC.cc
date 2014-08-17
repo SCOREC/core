@@ -114,7 +114,7 @@ static void applySurfID(double* values, int* bits,
   bits[1] = *inval;
 }
 
-static KnownBC const essentialBCs[9] = {
+static KnownBC const essentialBCs[7] = {
   {"density",          0, 0, applyScalar},
   {"temperature",      1, 1, applyScalar},
   {"pressure",         2, 2, applyScalar},
