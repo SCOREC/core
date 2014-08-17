@@ -52,6 +52,9 @@ static Constraint* makePlaneConstraint(double* values)
   PlaneConstraint* c = new PlaneConstraint();
   c->radius = values[0];
   c->normal.fromArray(values + 1);
+/* plane normal must absolutely be a unit vector */
+  c->radius *= c->normal.getLength();
+  c->normal = c->normal.normalize();
   return c;
 }
 
@@ -123,6 +126,8 @@ static Constraint* makePointConstraint(double* values)
   PointConstraint* c = new PointConstraint();
   c->originalDirection_.fromArray(values + 1);
   c->point = c->originalDirection_ * values[0];
+  /* just-in-case normalization */
+  c->originalDirection_ = c->originalDirection_.normalize();
   return c;
 }
 
