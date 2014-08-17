@@ -325,6 +325,7 @@ bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
   if (!c)
     return false;
   c->write(iBC, BC);
+  delete c;
   return true;
 }
 

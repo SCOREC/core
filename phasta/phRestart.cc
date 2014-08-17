@@ -158,6 +158,7 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
   int nodes = m->count(0);
   double* data = new double[nodes * vars]();
   attachField(m, "solution", data, vars);
+  delete [] data;
 }
 
 void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
