@@ -147,15 +147,19 @@ void runSpr(apf::Field* f,
 {
   SprPoints spr_points;
   getSprPoints(f,elements,spr_points);
-  int num_spr_points = spr_points.num_points;
-  apf::NewArray<double> component_values(num_spr_points);
-  apf::Vector3 point;
-  apf::getMesh(f)->getPoint(entity,0,point);
-  int num_field_components = f->countComponents();
-  apf::NewArray<double> value;
-  value.allocate(num_field_components);
   apf::Mesh* mesh = apf::getMesh(f);
   int order = mesh->getShape()->getOrder();
+  int num_spr_points = spr_points.num_points;
+  int num_field_components = f->countComponents();
+  int num_nodes_entity = f_star->countNodesOn(entity);
+  apf::NewArray<double> component_values(num_spr_points);
+  apf::NewArray<apf::Vector3> nodal_points(num_nodes_entity);
+  apf::NewArray<apf::NewArray<double> > recovered_values(num_nodes_entity);
+  for (int n=0; n < num_nodes_entity; ++n)
+  {
+    recovered_values[n].allocate(num_field_components);
+    mesh->getPoint(entity,n,nodal_points[n]);
+  }
   for (int i=0; i < num_field_components; ++i)
   {
     for (int p=0; p < num_spr_points; ++p)
@@ -164,10 +168,14 @@ void runSpr(apf::Field* f,
     evalPolynomialCoeffs(order,num_spr_points,
         spr_points.points,component_values,coeffs);
     apf::DynamicVector terms;
-    evalPolynomialTerms(order,point,terms);
-    value[i] = coeffs*terms;
+    for (int n=0; n < num_nodes_entity; ++n)
+    {
+      evalPolynomialTerms(order,nodal_points[n],terms);
+      recovered_values[n][i] = coeffs*terms;
+    }
   }
-  setComponents(f_star,entity,0,&(value)[0]);
+  for (int n=0; n < num_nodes_entity; ++n)
+    setComponents(f_star,entity,n,&(recovered_values[n])[0]);
 }
 
 class PatchOp : public apf::CavityOp
@@ -249,7 +257,8 @@ class PatchOp : public apf::CavityOp
         for (int i=0; i < nd; ++i)
           bridges.insert(down[i]);
       }
-      std::vector<apf::MeshEntity*> bridge_array(bridges.begin(),bridges.end());
+      std::vector<apf::MeshEntity*> 
+        bridge_array(bridges.begin(),bridges.end());
       bridges.clear();
       if ( ! requestLocality(&(bridge_array[0]),bridge_array.size()))
         return false;

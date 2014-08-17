@@ -1,5 +1,6 @@
 #include "phBlock.h"
 #include <apf.h>
+#include <gmi.h>
 
 namespace ph {
 
@@ -96,11 +97,13 @@ void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
   applyTriQuadHack(k);
 }
 
-void getBoundaryBlocks(apf::Mesh* m, Blocks& b,
-    ModelBounds& modelFaces)
+void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
 {
-  APF_ITERATE(ModelBounds, modelFaces, mit) {
-    apf::ModelEntity* modelFace = *mit;
+  gmi_model* gm = m->getModel();
+  gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
+  gmi_ent* gf;
+  while ((gf = gmi_next(gm, git))) {
+    apf::ModelEntity* modelFace = (apf::ModelEntity*)gf;
     apf::MeshIterator* it = m->begin(m->getDimension() - 1);
     apf::MeshEntity* f;
     while ((f = m->iterate(it))) {
@@ -113,13 +116,13 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b,
     }
     m->end(it);
   }
+  gmi_end(gm, git);
 }
 
-void getAllBlocks(apf::Mesh* m, AllBlocks& b,
-    ModelBounds& modelFaces)
+void getAllBlocks(apf::Mesh* m, AllBlocks& b)
 {
   getInteriorBlocks(m, b.interior);
-  getBoundaryBlocks(m, b.boundary, modelFaces);
+  getBoundaryBlocks(m, b.boundary);
 }
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)

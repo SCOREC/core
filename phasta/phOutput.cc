@@ -54,14 +54,6 @@ static void getGlobal(Output& o)
   }
 }
 
-static void getBlocks(Output& o, BCs& bcs)
-{
-  apf::Mesh* m = o.mesh;
-  ModelBounds modelFaces;
-  getBCFaces(m, bcs, modelFaces);
-  getAllBlocks(o.mesh, o.blocks, modelFaces);
-}
-
 static void getLinks(Output& o, apf::Numbering* n)
 {
   Links links;
@@ -102,7 +94,6 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   ModelBounds modelFaces;
-  getBCFaces(m, bcs, modelFaces);
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
@@ -115,8 +106,14 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     bcb[i] = new double*[bs.nElements[i]];
     js[i] = 0;
   }
-  APF_ITERATE(ModelBounds, modelFaces, mit) {
-    apf::ModelEntity* mf = *mit;
+  gmi_model* gm = m->getModel();
+  gmi_ent* gf;
+  gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
+  while ((gf = gmi_next(gm, git))) {
+    apf::ModelEntity* mf = (apf::ModelEntity*)gf;
+    int* ibcbMaster = new int[2]();
+    double* bcbMaster = new double[nbc]();
+    applyNaturalBCs(gm, gf, bcs, bcbMaster, ibcbMaster);
     apf::MeshEntity* f;
     apf::MeshIterator* it = m->begin(m->getDimension() - 1);
     while ((f = m->iterate(it))) {
@@ -134,13 +131,19 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
       ienb[i][j] = new int[nv];
       for (int k = 0; k < nv; ++k)
         ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
-      ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
       bcb[i][j] = new double[nbc]();
-      applyNaturalBCs(m, f, bcs, bcb[i][j], ibcb[i][j]);
+      for (int k = 0; k < nbc; ++k)
+        bcb[i][j][k] = bcbMaster[k];
+      ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
+      for (int k = 0; k < 2; ++k)
+        ibcb[i][j][k] = ibcbMaster[k];
       ++js[i];
     }
+    delete [] ibcbMaster;
+    delete [] bcbMaster;
     m->end(it);
   }
+  gmi_end(gm, git);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
@@ -204,42 +207,59 @@ static void getPeriodicMasters(Output& o, apf::Numbering* n)
   o.arrays.iper = iper;
 }
 
+static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
+{
+  Input& in = *o.in;
+  apf::Mesh* m = o.mesh;
+  int ibcMaster = 0;
+  int nec = countEssentialBCs(in);
+  double* bcMaster = new double[nec]();
+  gmi_model* gm = m->getModel();
+  bool did = applyEssentialBCs(gm, ge, bcs, bcMaster, &ibcMaster);
+  if (did) {
+    apf::MeshEntity* v;
+    apf::MeshIterator* it = m->begin(0);
+    int i = 0;
+    int& ei = o.nEssentialBCNodes;
+    while ((v = m->iterate(it))) {
+      if (m->toModel(v) == (apf::ModelEntity*)ge) {
+        o.arrays.nbc[i] = ei;
+        o.arrays.ibc[ei] = ibcMaster;
+        double* bc_ei = new double[nec]();
+        for (int j = 0; j < nec; ++j)
+          bc_ei[j] = bcMaster[j];
+        o.arrays.bc[ei] = bc_ei;
+        ++ei;
+      }
+      ++i;
+    }
+    m->end(it);
+  }
+  delete [] bcMaster;
+}
+
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
-  int* nbc = new int[m->count(0)];
-  int* ibc = new int[m->count(0)]();
-  double** bc = new double*[m->count(0)];
-  int nec = countEssentialBCs(in);
-  double* bc_j = new double[nec]();
-  size_t i = 0;
-  size_t j = 0;
-  apf::MeshEntity* v;
-  apf::MeshIterator* it = m->begin(0);
-  while ((v = m->iterate(it))) {
-    int ibc_j = 0;
-    bool did = applyEssentialBCs(m, v, bcs, bc_j, &ibc_j);
-    if (did) {
-      nbc[i] = j;
-      ibc[j] = ibc_j;
-      bc[j] = bc_j;
-      bc_j = new double[nec]();
-      ++j;
-    } else {
-      nbc[i] = -1;
-    }
-    ++i;
+  int nv = m->count(0);
+  o.arrays.nbc = new int[nv];
+  for (int i = 0; i < nv; ++i)
+    o.arrays.nbc[i] = -1;
+  o.arrays.ibc = new int[nv]();
+  o.arrays.bc = new double*[nv];
+  o.nEssentialBCNodes = 0;
+  gmi_model* gm = m->getModel();
+  for (int d = 3; d >= 0; --d) {
+    gmi_iter* it = gmi_begin(gm, d);
+    gmi_ent* ge;
+    while ((ge = gmi_next(gm, it)))
+      getEssentialBCsOn(bcs, o, ge);
+    gmi_end(gm, it);
   }
-  m->end(it);
-  delete [] bc_j;
-  o.arrays.nbc = nbc;
-  o.arrays.ibc = ibc;
-  o.arrays.bc = bc;
-  o.nEssentialBCNodes = j;
 }
 
-static void applyInitialConditions(BCs& bcs, Output& o)
+static void getInitialConditions(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
@@ -247,9 +267,16 @@ static void applyInitialConditions(BCs& bcs, Output& o)
   apf::NewArray<double> s(in.ensa_dof);
   apf::Field* f = m->findField("solution");
   apf::MeshIterator* it = m->begin(0);
+  gmi_model* gm = m->getModel();
   while ((v = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*)m->toModel(v);
     apf::getComponents(f, v, 0, &s[0]);
-    applySolutionBCs(m, v, bcs, &s[0]);
+/* unfortunately, there is no way to know which
+   components this overwrites without creating
+   bad coupling between pieces of code, so we
+   call this for every vertex even though it
+   only depends on classification */
+    applySolutionBCs(gm, ge, bcs, &s[0]);
     apf::setComponents(f, v, 0, &s[0]);
   }
   m->end(it);
@@ -297,7 +324,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getCounts(o);
   getCoordinates(o);
   getGlobal(o);
-  getBlocks(o, bcs);
+  getAllBlocks(o.mesh, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
   getLinks(o, n);
   getInterior(o, n);
@@ -307,7 +334,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getBoundaryElements(o);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
-  applyInitialConditions(bcs, o);
+  getInitialConditions(bcs, o);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("generated output structs in %f seconds\n",t1 - t0);

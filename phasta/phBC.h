@@ -6,6 +6,8 @@
 #include <set>
 #include <string>
 
+#include <gmi.h>
+
 /* full names and abbreviations for boundary conditions:
 
    Essential boundary conditions:
@@ -90,16 +92,23 @@ struct BCs
 
 void readBCs(const char* filename, BCs& bcs);
 
-bool applyNaturalBCs(apf::Mesh* m, apf::MeshEntity* f,
+bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs,
     double* values, int* bits);
-bool applyEssentialBCs(apf::Mesh* m, apf::MeshEntity* v,
+bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs,
     double* values, int* bits);
-bool applySolutionBCs(apf::Mesh* m, apf::MeshEntity* v,
+bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, double* values);
 
 void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces);
+
+bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
+    double* BC, int* iBC);
+
+double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge);
+
+bool hasBC(BCs& bcs, std::string const& name);
 
 }
 
