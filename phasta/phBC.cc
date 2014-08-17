@@ -186,12 +186,12 @@ static double* getFirstApplied(gmi_model* gm, gmi_ent* ge,
     return v;
   gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
   for (int i = 0; i < up->n; ++i) {
-    double* v = getFirstApplied(gm, up->e[i], bcs, kbc);
+    v = getFirstApplied(gm, up->e[i], bcs, kbc);
     if (v)
-      return v;
+      break;
   }
   gmi_free_set(up);
-  return 0;
+  return v;
 }
 
 static bool applyBCs(gmi_model* gm, gmi_ent* ge,
@@ -239,14 +239,6 @@ bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
 {
   return applyBCs(gm, ge, appliedBCs, solutionBCs,
       sizeof(solutionBCs) / sizeof(KnownBC), values, 0);
-}
-
-void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces)
-{
-  APF_ITERATE(BCs::Map, bcs.fields, it)
-    APF_ITERATE(FieldBCs::Set, it->second.bcs, it2)
-      if (it2->dim == 2)
-        faces.insert(m->findModelEntity(it2->dim, it2->tag));
 }
 
 }

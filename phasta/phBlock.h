@@ -57,8 +57,7 @@ struct AllBlocks
 typedef std::set<apf::ModelEntity*> ModelBounds;
 typedef std::vector<apf::MeshEntity*> MeshBounds;
 
-void getAllBlocks(apf::Mesh* m, AllBlocks& b,
-    ModelBounds& modelFaces);
+void getAllBlocks(apf::Mesh* m, AllBlocks& b);
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
 

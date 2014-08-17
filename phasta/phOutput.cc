@@ -54,14 +54,6 @@ static void getGlobal(Output& o)
   }
 }
 
-static void getBlocks(Output& o, BCs& bcs)
-{
-  apf::Mesh* m = o.mesh;
-  ModelBounds modelFaces;
-  getBCFaces(m, bcs, modelFaces);
-  getAllBlocks(o.mesh, o.blocks, modelFaces);
-}
-
 static void getLinks(Output& o, apf::Numbering* n)
 {
   Links links;
@@ -102,7 +94,6 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   ModelBounds modelFaces;
-  getBCFaces(m, bcs, modelFaces);
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
@@ -116,13 +107,13 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     js[i] = 0;
   }
   gmi_model* gm = m->getModel();
-  APF_ITERATE(ModelBounds, modelFaces, mit) {
-    apf::ModelEntity* mf = *mit;
-    gmi_ent* gf = (gmi_ent*)mf;
+  gmi_ent* gf;
+  gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
+  while ((gf = gmi_next(gm, git))) {
+    apf::ModelEntity* mf = (apf::ModelEntity*)gf;
     int* ibcbMaster = new int[2]();
     double* bcbMaster = new double[nbc]();
-    bool did = applyNaturalBCs(gm, gf, bcs, bcbMaster, ibcbMaster);
-    assert(did);
+    applyNaturalBCs(gm, gf, bcs, bcbMaster, ibcbMaster);
     apf::MeshEntity* f;
     apf::MeshIterator* it = m->begin(m->getDimension() - 1);
     while ((f = m->iterate(it))) {
@@ -152,6 +143,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     delete [] bcbMaster;
     m->end(it);
   }
+  gmi_end(gm, git);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
@@ -332,7 +324,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getCounts(o);
   getCoordinates(o);
   getGlobal(o);
-  getBlocks(o, bcs);
+  getAllBlocks(o.mesh, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
   getLinks(o, n);
   getInterior(o, n);
