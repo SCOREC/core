@@ -240,7 +240,6 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
 
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
-  Input& in = *o.in;
   apf::Mesh* m = o.mesh;
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
