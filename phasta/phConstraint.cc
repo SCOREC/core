@@ -4,6 +4,23 @@
 
 namespace ph {
 
+struct DebugConstraint
+{
+  int modelDim;
+  int modelTag;
+};
+
+}
+
+std::ostream& operator<<(std::ostream& s, ph::DebugConstraint const& dbg)
+{
+  s << "\nat model entity dim " << dbg.modelDim
+    << " tag " << dbg.modelTag << '\n';
+  return s;
+}
+
+namespace ph {
+
 struct Constraint
 {
   Constraint(int n)
@@ -131,19 +148,6 @@ static Constraint* makePointConstraint(double* values)
   return c;
 }
 
-struct DebugConstraint
-{
-  int modelDim;
-  int modelTag;
-};
-
-std::ostream& operator<<(std::ostream& s, DebugConstraint const& dbg)
-{
-  s << "\nat model entity dim " << dbg.modelDim
-    << " tag " << dbg.modelTag << '\n';
-  return s;
-}
-
 static Constraint* takeOne(Constraint* a, Constraint* b, bool takeFirst = true)
 {
   if ( ! takeFirst)
@@ -169,11 +173,8 @@ static Constraint* combinePoints(Constraint* a, Constraint* b,
   if (mb == 0)
     return takeOne(a, b, false);
   /* multiple non-zero point constraints ? we got a problem. */
-//std::cerr << "ph error: point overconstrain: ";
-//std::cerr << pa->point;
-//std::cerr << " and ";
-//std::cerr << pb->point;
-//std::cerr << dbg;
+  std::cerr << "ph error: point overconstrain: ";
+  std::cerr << pa->point << " and " << pb->point << dbg;
   abort();
   return 0;
 }
@@ -324,6 +325,7 @@ bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
   if (!c)
     return false;
   c->write(iBC, BC);
+  delete c;
   return true;
 }
 
