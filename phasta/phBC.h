@@ -63,7 +63,7 @@ namespace apf {
 class Mesh;
 class MeshEntity;
 class ModelEntity;
-};
+}
 
 namespace ph {
 
