@@ -448,13 +448,29 @@ int PCU_Thrd_Peers(void)
 
 /** \brief Blocks all threads of a process until all have hit the barrier.
  */
-void PCU_Thrd_Barrier (void)
+void PCU_Thrd_Barrier(void)
 {
   if (global_state == uninit)
     pcu_fail("Thrd_Barrier called before Comm_Init");
 #if ENABLE_THREADS  
   if (pcu_get_mpi()==&pcu_tmpi)
     pcu_thread_barrier();
+#endif
+}
+
+void PCU_Thrd_Lock(void)
+{
+#if ENABLE_THREADS  
+  if (pcu_get_mpi()==&pcu_tmpi)
+    pcu_thread_lock();
+#endif
+}
+
+void PCU_Thrd_Unlock(void)
+{
+#if ENABLE_THREADS  
+  if (pcu_get_mpi()==&pcu_tmpi)
+    pcu_thread_lock();
 #endif
 }
 
