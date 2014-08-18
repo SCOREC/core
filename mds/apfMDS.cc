@@ -430,10 +430,10 @@ class MeshMDS : public Mesh2
         apf::destroyNumbering(this->getNumbering(0));
       changeCoordinateField(0);
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);
-      PCU_Barrier();
+      PCU_Thrd_Barrier();
       if (!PCU_Thrd_Self())
         gmi_destroy(model);
-      PCU_Barrier();
+      PCU_Thrd_Barrier();
       mds_apf_destroy(mesh);
       mesh = 0;
     }
