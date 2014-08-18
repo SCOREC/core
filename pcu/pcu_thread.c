@@ -15,6 +15,7 @@ static pthread_t* global_threads = NULL;
 static int global_nthreads = 0;
 static pthread_key_t global_key;
 static pthread_barrier_t global_barrier;
+static pthread_spinlock_t global_lock;
 
 void pcu_run_threads(int count, pcu_thread* function)
 {
@@ -23,6 +24,7 @@ void pcu_run_threads(int count, pcu_thread* function)
   PCU_MALLOC(global_threads,(size_t)count);
   *global_threads = pthread_self();
   pthread_barrier_init(&global_barrier, NULL, count);
+  pthread_spin_init(&global_lock, PTHREAD_PROCESS_PRIVATE);
 
   int err;
   err = pthread_key_create(&global_key,NULL);
@@ -41,6 +43,7 @@ void pcu_run_threads(int count, pcu_thread* function)
     err = pthread_join(global_threads[i],NULL);
     if (err) pcu_fail("pthread_join failed");
   }
+  pthread_spin_destroy(&global_lock);
   pthread_barrier_destroy(&global_barrier);
 
   err = pthread_key_delete(global_key);
@@ -74,8 +77,17 @@ void pcu_thread_init(void)
   pcu_fail("could not find thread");
 }
 
-
 void pcu_thread_barrier(void)
 {
   pthread_barrier_wait(&global_barrier);
+}
+
+void pcu_thread_lock(void)
+{
+  pthread_spin_lock(&global_lock);
+}
+
+void pcu_thread_unlock(void)
+{
+  pthread_spin_unlock(&global_lock);
 }

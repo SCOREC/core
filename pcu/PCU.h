@@ -66,6 +66,8 @@ int PCU_Thrd_Run(int nthreads, PCU_Thrd_Func function, void** in_out);
 int PCU_Thrd_Self(void);
 int PCU_Thrd_Peers(void);
 void PCU_Thrd_Barrier(void);
+void PCU_Thrd_Lock(void);
+void PCU_Thrd_Unlock(void);
 
 //process-level self/peers (mpi wrappers)
 int PCU_Proc_Self(void);
