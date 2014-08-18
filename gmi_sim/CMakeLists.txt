@@ -10,14 +10,16 @@ endif()
 
 if(NOT BUILD_IN_TRILINOS)
   find_package(gmi PATHS ${CMAKE_BINARY_DIR})
+  find_package(pcu PATHS ${CMAKE_BINARY_DIR})
   find_package(SimModSuite REQUIRED)
 
   set(GMI_SIM_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${GMI_INCLUDE_DIRS}
+    ${PCU_INCLUDE_DIRS}
     ${SIMMODSUITE_INCLUDE_DIR})
   include_directories(${GMI_SIM_INCLUDE_DIRS})
-  set(DEP_LIBS ${GMI_LIBS} ${SIMMODSUITE_LIBS})
+  set(DEP_LIBS ${GMI_LIBS} ${PCU_LIBS} ${SIMMODSUITE_LIBS})
   set(GMI_SIM_LIBS gmi_sim ${DEP_LIBS})
 else()
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})

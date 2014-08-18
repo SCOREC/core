@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <gmi.h>
 #include <SimModel.h>
+#include <PCU.h>
 
 struct sim_model {
   struct gmi_model model;
@@ -31,7 +32,15 @@ struct sim_iter {
 
 extern "C" {
 
-static gmi_iter* begin(gmi_model* m, int dim)
+/* apparently much of what Simmetrix does
+   uses a custom memory allocator which is not
+   thread-safe. This is a relic of the old scorec
+   codebase that simmetrix built on.
+   hopefully they will get rid of it..
+   until then we protect these code segments
+   with a spinlock */
+
+static gmi_iter* begin_nolock(gmi_model* m, int dim)
 {
   sim_model* mm;
   sim_iter* i;
@@ -49,6 +58,14 @@ static gmi_iter* begin(gmi_model* m, int dim)
   return (gmi_iter*)i;
 }
 
+static gmi_iter* begin(gmi_model* m, int dim)
+{
+  PCU_Thrd_Lock();
+  gmi_iter* i = begin_nolock(m, dim);
+  PCU_Thrd_Unlock();
+  return i;
+}
+
 static gmi_ent* next(gmi_model* m, gmi_iter* i)
 {
   sim_iter* si;
@@ -64,7 +81,7 @@ static gmi_ent* next(gmi_model* m, gmi_iter* i)
   return 0;
 }
 
-static void end(gmi_model* m, gmi_iter* i)
+static void end_nolock(gmi_model* m, gmi_iter* i)
 {
   sim_iter* si;
   si = (sim_iter*)i;
@@ -77,6 +94,13 @@ static void end(gmi_model* m, gmi_iter* i)
   else if (si->dim == 3)
     GRIter_delete(si->i.r);
   free(si);
+}
+
+static void end(gmi_model* m, gmi_iter* i)
+{
+  PCU_Thrd_Lock();
+  end_nolock(m, i);
+  PCU_Thrd_Unlock();
 }
 
 static int get_dim(gmi_model* m, gmi_ent* e)
@@ -104,7 +128,7 @@ static gmi_set* plist_to_set(pPList l)
   return s;
 }
 
-static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
+static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
 {
   int edim = gmi_dim(m, e);
   if (edim == 1 && dim == 0)
@@ -123,6 +147,14 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
     return gmi_make_set(0);
   gmi_fail("requested adjacency is not one-level");
   return 0;
+}
+
+static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
+{
+  PCU_Thrd_Lock();
+  gmi_set* s = adjacent_nolock(m, e, dim);
+  PCU_Thrd_Unlock();
+  return s;
 }
 
 static void eval(struct gmi_model* m, struct gmi_ent* e,
