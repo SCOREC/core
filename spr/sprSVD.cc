@@ -128,10 +128,10 @@ void solveDiag(apf::DynamicVector& A,
   double tol = 1.0e-9;
   for (std::size_t i=0; i < n; ++i)
   {
-    if (A[i] < tol)
-      x[i] = 0.0;
+    if (A(i) < tol)
+      x(i) = 0.0;
     else
-      x[i] = b[i]/A[i];
+      x(i) = b(i)/A(i);
   }
 }
 
