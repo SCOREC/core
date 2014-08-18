@@ -69,13 +69,13 @@ static void end(gmi_model* m, gmi_iter* i)
   sim_iter* si;
   si = (sim_iter*)i;
   if (si->dim == 0)
-    return GVIter_delete(si->i.v);
-  if (si->dim == 1)
-    return GEIter_delete(si->i.e);
-  if (si->dim == 2)
-    return GFIter_delete(si->i.f);
-  if (si->dim == 3)
-    return GRIter_delete(si->i.r);
+    GVIter_delete(si->i.v);
+  else if (si->dim == 1)
+    GEIter_delete(si->i.e);
+  else if (si->dim == 2)
+    GFIter_delete(si->i.f);
+  else if (si->dim == 3)
+    GRIter_delete(si->i.r);
   free(si);
 }
 
