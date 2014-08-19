@@ -11,9 +11,8 @@ namespace ph {
 void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
 {
   assert(in.recursivePtn <= 1);
-  int factor = in.recursivePtnStep[0];
-  assert(factor * PCU_Comm_Peers() == in.numTotParts);
-  assert(in.localPtn);
+  int factor = in.numTotParts / PCU_Comm_Peers();
+  assert(in.numTotParts % PCU_Comm_Peers() == 0);
   std::map<std::string, int> methodMap;
   methodMap["rib"] = apf::RIB;
   methodMap["graph"] = apf::GRAPH;
