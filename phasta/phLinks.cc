@@ -88,12 +88,12 @@ void getVertexLinks(apf::Mesh* m, Links& links)
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
    other part by sending remote copies */
-    if (shr.isOwned(v))
+    if ( ! shr.isOwned(v))
       continue;
     apf::CopyArray remotes;
     shr.getCopies(v, remotes);
     for (size_t i = 0; i < remotes.getSize(); ++i) {
-      links[LinkKey(true, remotes[i].peer)].push_back(v);
+      links[LinkKey(1, remotes[i].peer)].push_back(v);
       PCU_COMM_PACK(remotes[i].peer, remotes[i].entity);
     }
   }
@@ -104,7 +104,7 @@ void getVertexLinks(apf::Mesh* m, Links& links)
     while (!PCU_Comm_Unpacked()) {
       apf::MeshEntity* v;
       PCU_COMM_UNPACK(v);
-      links[LinkKey(false, peer)].push_back(v);
+      links[LinkKey(0, peer)].push_back(v);
     }
   }
 }
@@ -140,7 +140,7 @@ void encodeLinks(apf::Numbering* n, Links& links, size_t& size, int*& a)
     LinkKey k = it->first;
     Link& l = it->second;
     a[i++] = 0;
-    a[i++] = k.send ? 0 : 1;
+    a[i++] = k.send;
     a[i++] = k.peer + 1; /* peers numbered from 1 */
     a[i++] = l.size();
     APF_ITERATE(Link, l, lit) {

@@ -9,8 +9,8 @@ namespace ph {
 
 struct LinkKey
 {
-  LinkKey(bool s, int p):send(s),peer(p) {}
-  bool send;
+  LinkKey(int s, int p):send(s),peer(p) {}
+  int send;
   int peer;
   bool operator<(LinkKey const& other) const;
 };
