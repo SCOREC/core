@@ -250,6 +250,7 @@ static Constraint* combineLinePlane(Constraint* a, Constraint* b,
   double lambda = numerator / denominator;
   PointConstraint* result = new PointConstraint();
   result->point = origin + (direction * lambda);
+  result->originalDirection_ = apf::Vector3(1,0,0);
   delete pa;
   delete pb;
   return result;
