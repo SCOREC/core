@@ -470,7 +470,7 @@ void PCU_Thrd_Unlock(void)
 {
 #if ENABLE_THREADS  
   if (pcu_get_mpi()==&pcu_tmpi)
-    pcu_thread_lock();
+    pcu_thread_unlock();
 #endif
 }
 
