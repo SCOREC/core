@@ -51,6 +51,7 @@ void detachField(
   }
   m->end(it);
   assert(i == n);
+  apf::destroyField(f);
 }
 
 void detachField(
