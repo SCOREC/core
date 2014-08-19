@@ -244,7 +244,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
   for (int i = 0; i < nv; ++i)
-    o.arrays.nbc[i] = -1;
+    o.arrays.nbc[i] = 0;
   o.arrays.ibc = new int[nv]();
   o.arrays.bc = new double*[nv];
   o.nEssentialBCNodes = 0;
