@@ -16,7 +16,7 @@ VARS_PARAM,
 STEP_PARAM
 };
 
-static const char* magic_name = "byteorder magic number";
+static const char* magic_name = "byteorder magic number ";
 
 void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params)
