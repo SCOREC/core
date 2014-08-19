@@ -88,7 +88,7 @@ void getVertexLinks(apf::Mesh* m, Links& links)
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
    other part by sending remote copies */
-    if (shr.isOwned(v))
+    if ( ! shr.isOwned(v))
       continue;
     apf::CopyArray remotes;
     shr.getCopies(v, remotes);
