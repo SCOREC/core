@@ -25,7 +25,7 @@ enum {
 typedef int mds_id;
 
 #define MDS_NONE -1
-#define MDS_SET_MAX 256
+#define MDS_SET_MAX 300
 
 struct mds {
   int d;
