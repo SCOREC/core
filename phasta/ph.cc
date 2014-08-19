@@ -5,6 +5,7 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 /* OS-specific things try to stay here */
 #include <sys/stat.h>
@@ -70,6 +71,22 @@ void setupOutputSubdir(std::string& path)
     }
   }
   PCU_Barrier();
+}
+
+void writeAuxiliaryFiles(std::string path, int timestep)
+{
+  std::string numpePath = path;
+  numpePath += "numpe.in";
+  std::ofstream numpe(numpePath.c_str());
+  assert(numpe.is_open());
+  numpe << PCU_Comm_Peers() << '\n';
+  numpe.close();
+  std::string numstartPath = path;
+  numstartPath += "numstart.dat";
+  std::ofstream numstart(numstartPath.c_str());
+  assert(numstart.is_open());
+  numstart << timestep << '\n';
+  numstart.close();
 }
 
 }

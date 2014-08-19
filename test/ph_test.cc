@@ -30,6 +30,7 @@ static void afterSplit(apf::Mesh2* m)
     ph::generateOutput(in, bcs, m, o);
     ph::detachAndWriteSolution(in, m, path);
     ph::writeGeomBC(o, path);
+    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->writeNative(in.outMeshFileName.c_str());
   }
   m->destroyNative();
