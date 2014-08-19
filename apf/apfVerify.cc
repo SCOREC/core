@@ -106,6 +106,12 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   assert(upwardCount >= expected);
   if (difference == 1)
     assert(upwardCount == expected);
+  /* this is here for some spiderwebby simmetrix meshes */
+  if (upwardCount >= 200) {
+    std::cerr << "warning: entity of type " << m->getType(e)
+      << " at " << getLinearCentroid(m, e) << " has "
+      << upwardCount << " upward adjacencies\n";
+  }
 }
 
 static void verifyResidence(Mesh* m, MeshEntity* e)
