@@ -10,9 +10,10 @@ void orderForPhasta(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
   /* phasta's tet orders the curl of the bottom face outward */
   /* the first face is the bottom face */
   static int const tet_ph2apf[4] = {0,2,1,3};
-  /* same for the pyramid, the quad face curls outward */
-  /* the first faces are the bottom face and the face {0,1,4} */
-  static int const pyr_ph2apf[5] = {1,0,3,2,4};
+  /* despite what some comments in phParAdapt say, the pyramid
+     quad face curls inward by their output ordering, making
+     this the identity map */
+  static int const pyr_ph2apf[5] = {0,1,2,3,4};
   /* prism ordering is identical, cool. */
   static int const pri_ph2apf[6] = {0,1,2,3,4,5};
   static int const* const ph2apf[apf::Mesh::TYPES] =
