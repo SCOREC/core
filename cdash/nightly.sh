@@ -17,6 +17,7 @@ ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> log
 
 cd /lore/dibanez/cdash/build/core
 make doc
+rm -rf /net/web/public/dibanez/core
 cp -r doc/html /net/web/public/dibanez/core
 
 cd /lore/dibanez/cdash
