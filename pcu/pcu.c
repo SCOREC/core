@@ -35,6 +35,8 @@
   API from within threads, which will behave as if each thread
   were an MPI process. Threads have unique ranks and can send messages
   to one another, regardless of which process they are in.
+
+  The API documentation is here: pcu.c
 */
 
 #include <string.h>
