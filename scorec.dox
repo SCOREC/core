@@ -2,8 +2,9 @@
 
 Welcome to the SCOREC core documentation.
 The following packages are documented:
+- \subpage pcu
 - \subpage apf
 - \subpage parma
-- \subpage pcu
+- \subpage spr
 
 */

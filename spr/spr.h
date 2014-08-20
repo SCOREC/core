@@ -8,6 +8,8 @@
 #ifndef SPR_H
 #define SPR_H
 
+/** \file spr.h */
+
 #include "apf.h"
 #include "apfNew.h"
 #include "apfDynamicVector.h"
