@@ -8,7 +8,7 @@
 
 *******************************************************************************/
 /** \file pcu.c */
-/** \mainpage Introduction
+/** \page pcu PCU
   PCU (the Parallel Control Utility) is a library for parallel computation
   based on MPI with additional support for hybrid MPI/thread environments.
   PCU provides three things to users:
