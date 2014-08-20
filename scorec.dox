@@ -3,7 +3,8 @@
 This is the API documentation for SCOREC
 core packages.
 The following packages are documented:
-- \subpage pcu
+- \subpage apf
 - \subpage parma
+- \subpage pcu
 
 */
