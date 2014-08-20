@@ -3,6 +3,9 @@
 The SCOREC Core is a set of C/C++ libraries for unstructured mesh
 simulations on supercomputers.
 
+For more information, start at our
+[wiki page](https://github.com/SCOREC/core/wiki)
+
 ### What is in this repository? ###
 
 * PCU: Communication, threading, and file IO built on MPI 
