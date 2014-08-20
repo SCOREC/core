@@ -1,0 +1,8 @@
+/** \page apf APF
+
+APF (Attached Parallel Fields) is a library of finite element simulation
+abstractions, including Fields and Meshes.
+
+The API for dealing with fields is here: apf.h
+
+*/
