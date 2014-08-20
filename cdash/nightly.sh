@@ -15,4 +15,9 @@ cd /lore/dibanez/cdash
 
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> log
 
+cd /lore/dibanez/cdash/build/core
+make doc
+cp -r doc/html /net/web/public/dibanez/core
+
+cd /lore/dibanez/cdash
 rm -rf build/
