@@ -1,0 +1,128 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algpseudocode}
+\title{Parallel Stitching}
+\author{Dan Ibanez}
+\begin{document}
+\maketitle
+
+\section{Theory}
+
+This section outlines the theorical proof of the algorithm
+to follow which sets up a partition model and remote
+copy links from incomplete data for a distributed mesh.
+It assumes a full one-level mesh representation with
+correct partition model classification.
+
+In a distributed mesh, each mesh entity of the entire mesh
+resides on a set of parts.
+If a mesh entity resides on a part, then a copy of it exists
+in the mesh data structure of that part.
+Let $\sim$ denote residence: $e\sim p$ means mesh entity $e$ resides
+on part $p$.
+\[(e \sim p)\equiv(e \sqsubset \bar{P^3_p})\]
+Along the same lines, let $R(e)$ denote the resident part set of
+a mesh entity, which consist of all parts on which the entity resides.
+\[R(e) = \{p|(e\sim p)\}\]
+Also let $\downarrow$ denote the one-level downward adjacency of
+a mesh entity.
+\[\downarrow e = e\{M^{d-1}\}, e \in M^d\]
+
+A fundamental axiom of distributed meshes is this: if a
+mesh entity resides on a part, its boundary must also reside
+on that part.
+\[(e\sim p) \to (\partial e\sim p)\]
+The same goes for the downward adjacent entities, since they are contained
+in the boundary.
+\[\downarrow e \subseteq \partial e,
+(e\sim p)\to(\downarrow e\sim p)\]
+Therefore, if the downward entities do
+not fully reside on a part, the entity cannot reside on that part.
+\[\neg (\downarrow e\sim p) \to \neg (e\sim p)\]
+
+Given this, we can define the set of parts on which a mesh entity
+is allowed to reside as the intersection of the resident sets of
+its downward entities, since these are the parts on which
+they all reside.
+We can denote this candidate resident set as $R^*(e)$, a superset
+of the true resident part set.
+\[R(e) \subseteq R^*(e), R^*(e) = \cap_{c\in \downarrow e} R(c)\]
+
+Finally, If the one-level downward adjacent set is known,
+the existence and identity of an entity can be confirmed
+using upward adjacencies.
+Let $\uparrow$ denote the one-level upward adjacent set.
+\[\uparrow e = e\{M^{d+1}\}, e \in M^d\]
+Given a candidate downward set $(\downarrow e)^*$, we can
+find $e$ as follows.
+First, if $e$ exists on the same part, it will appear in
+the upward sets of all the candidate downward entities.
+\[\forall c\in (\downarrow e)^* : (e \in \uparrow c)\]
+So, any upward set from a candidate downward entity
+gives us a set of candidate entities $\{e\}^*$
+to look through.
+\[\{e\}^* = \uparrow c, c \in (\downarrow e)^*\]
+The candidates can be tested, obviously, by comparing
+their downward sets $\downarrow e$ with the candidate
+downward set $(\downarrow e)^*$.
+
+\section{Algorithm}
+
+We now have enough proofs to write an algorithm that takes
+as input the remote copy links of mesh vertices and
+derives the remote copy links for the rest of the mesh.
+Remote copy links are required to communicate identities
+between parts, and we rightfully assume that having
+remote copy information implies having resident part information
+about an entity.
+
+For every dimension starting from 1, the algorithm will establish
+candidate resident part sets $R^*(e)$ for every entity on a part.
+To every candidate part $p \in R^*(e)$ it sends a link proposal
+consisting of the downward set $\downarrow e$ on the local part,
+which on the remote part becomes a candidate downward set
+$(\downarrow e)^*$.
+It also sends the local identity of $e$, which
+on the remote part becomes $e^*$, and a
+remote copy link is made if $e$ is found on
+the remote part.
+Since all parts will perform this algorithm, it can be seen
+that correct links will be established both ways between
+copies.
+At each dimension, full remote copy information is established
+for all entities of that dimension, which is then used to
+do the same for the next dimension up.
+
+This algorithm will work correctly even in the case of ghosted
+regions and pathological single-element parts,
+but it only works for one part per process.
+Making it work for multiple parts per process is left as
+an exercise for the reader.
+
+\pagebreak
+
+\begin{algorithmic}
+\Function{stitch}{$M, R(v)$ for $v \in M^0$}
+\State Let $d_\text{max}$ be the highest entity dimension allowed
+to have remote copies.
+\State Let $p$ be the local part number
+\For{$d$ from 1 up to and including $d_\text{max}$}
+\For{$e \in M^d$}
+\For{$b \in (R^*(e)\setminus p)$}
+\State send $(e,\downarrow e)$ to $b$
+\EndFor
+\EndFor
+\For{$(e^*,(\downarrow e)^*)$ received from $a$}
+\State choose any $c \in (\downarrow e)^*$
+\For{$e \in \uparrow c$}
+\If{$\downarrow e = (\downarrow e)^*$}
+\State add $(e^*,a)$ as remote copy of $e$
+\EndIf
+\EndFor
+\EndFor
+\EndFor
+\EndFunction
+\end{algorithmic}
+
+\end{document}
