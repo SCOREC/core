@@ -1,7 +1,6 @@
 /** \mainpage The SCOREC core tools
 
-This is the API documentation for SCOREC
-core packages.
+Welcome to the SCOREC core documentation.
 The following packages are documented:
 - \subpage apf
 - \subpage parma
