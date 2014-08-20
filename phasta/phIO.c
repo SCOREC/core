@@ -16,8 +16,7 @@ VARS_PARAM,
 STEP_PARAM
 };
 
-static const char* magic_out_name = "byteorder magic number ";
-static const char* magic_in_name = "byteorder magic number";
+static const char* magic_name = "byteorder magic number";
 
 void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params)
@@ -88,7 +87,7 @@ static void get_now_string(char s[PH_LINE])
 static void write_magic_number(FILE* f)
 {
   int why = 1;
-  ph_write_header(f, magic_out_name, sizeof(int) + 1, 1, &why);
+  ph_write_header(f, magic_name, sizeof(int) + 1, 1, &why);
   int magic = MAGIC;
   fwrite(&magic, sizeof(int), 1, f);
   fprintf(f,"\n");
@@ -108,7 +107,7 @@ static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 
 static int read_magic_number(FILE* f)
 {
-  seek_after_header(f, magic_in_name);
+  seek_after_header(f, magic_name);
   int magic;
   my_fread(&magic, sizeof(int), 1, f);
   return magic != MAGIC;

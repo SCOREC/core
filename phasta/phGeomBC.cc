@@ -166,13 +166,13 @@ void writeGeomBC(Output& o, std::string path)
   writeInt(f, "number of global modes", 0);
   writeInt(f, "number of interior elements", m->count(m->getDimension()));
   writeInt(f, "number of boundary elements", o.nBoundaryElements);
-  writeInt(f, "maximum number of element nodes ", o.nMaxElementNodes);
+  writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
   writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
   writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
   writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
   params[0] = m->count(0);
   params[1] = 3;
-  ph_write_doubles(f, "co-ordinates ", o.arrays.coordinates,
+  ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
       params[0] * params[1], 2, params);
   writeInt(f, "number of processors", PCU_Comm_Peers());
   writeInt(f, "size of ilwork array", o.nlwork);
@@ -182,12 +182,12 @@ void writeGeomBC(Output& o, std::string path)
   writeInts(f, " mode number map from partition to global",
       o.arrays.globalNodeNumbers, m->count(0));
   writeBlocks(f, o);
-  writeInts(f, "bc mapping array ", o.arrays.nbc, m->count(0));
-  writeInts(f, "bc codes array ", o.arrays.ibc, o.nEssentialBCNodes);
+  writeInts(f, "bc mapping array", o.arrays.nbc, m->count(0));
+  writeInts(f, "bc codes array", o.arrays.ibc, o.nEssentialBCNodes);
   apf::DynamicArray<double> bc;
   getEssentialBCValues(o, bc);
-  writeDoubles(f, "boundary condition array ", &bc[0], bc.getSize());
-  writeInts(f, "periodic masters array ", o.arrays.iper, m->count(0));
+  writeDoubles(f, "boundary condition array", &bc[0], bc.getSize());
+  writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   fclose(f);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())

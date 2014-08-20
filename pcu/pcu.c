@@ -9,31 +9,32 @@
 *******************************************************************************/
 /** \file pcu.c */
 /** \mainpage Introduction
-  PCU (the Parallel Control Utility) is a library for parallel computation based on
-  MPI with additional support for hybrid MPI/thread environments.
+  PCU (the Parallel Control Utility) is a library for parallel computation
+  based on MPI with additional support for hybrid MPI/thread environments.
   PCU provides three things to users:
     1. A hybrid phased message passing system
     2. Hybrid collective operations
     3. A thread management system
 
   Phased message passing is similar to Bulk Synchronous Parallel.
-  All messages are exchanged in a phase, which is a collective operation involving
-  all threads in the parallel program.
+  All messages are exchanged in a phase, which is a collective operation
+  involving all threads in the parallel program.
   During a phase, the following events happen in sequence:
     1. All threads send non-blocking messages to other threads
     2. All threads receive all messages sent to them during this phase
-  PCU provides termination detection, which is the ability to detect when all messages
-  have been received without prior knowledge of which threads are sending to which.
+  PCU provides termination detection, which is the ability to detect when all
+  messages have been received without prior knowledge of which threads
+  are sending to which.
 
-  To write hybrid MPI/thread programs, PCU provides a function that creates threads
-  within an MPI process, similar to the way mpirun creates multiple processes.
-  PCU assigns ranks to these threads and has them each run the same function, with
-  thread-specific input arguments to the function.
+  To write hybrid MPI/thread programs, PCU provides a function that creates
+  threads within an MPI process, similar to the way mpirun creates multiple
+  processes. PCU assigns ranks to these threads and has them each run the same
+  function, with thread-specific input arguments to the function.
 
   Once a program has created threads using PCU, it can call the message passing
-  API from within threads, which will behave as if each thread were an MPI process.
-  Threads have unique ranks and can send messages to one another, regardless of which
-  process they are in.
+  API from within threads, which will behave as if each thread
+  were an MPI process. Threads have unique ranks and can send messages
+  to one another, regardless of which process they are in.
 */
 
 #include <string.h>
@@ -104,15 +105,15 @@ int PCU_Comm_Free(void)
 }
 
 /** \brief Returns the communication rank of the calling thread.
-  \details when called from a non-threaded MPI process, this function is equivalent
-  to MPI_Comm_rank(MPI_COMM_WORLD,rank).
+  \details when called from a non-threaded MPI process, this function is
+  equivalent to MPI_Comm_rank(MPI_COMM_WORLD,rank).
 
   When called from a thread inside PCU_Thrd_Run, the rank is unique to a thread
   in the whole MPI job.
-  Ranks are consecutive from 0 to \f$pt-1\f$ for a program with \f$p\f$ processes and \f$t\f$ threads
-  per process.
-  Ranks are contiguous within a process, so that the \f$t\f$ threads in process \f$i\f$ are numbered
-  from \f$ti\f$ to \f$ti+t-1\f$.
+  Ranks are consecutive from 0 to \f$pt-1\f$ for a program with
+  \f$p\f$ processes and \f$t\f$ threads per process.
+  Ranks are contiguous within a process, so that the \f$t\f$ threads in process
+  \f$i\f$ are numbered from \f$ti\f$ to \f$ti+t-1\f$.
  */
 int PCU_Comm_Self(void)
 {
@@ -122,12 +123,12 @@ int PCU_Comm_Self(void)
 }
 
 /** \brief Returns the number of threads in the program.
-  \details when called from a non-threaded MPI process, this function is equivalent
-  to MPI_Comm_size(MPI_COMM_WORLD,size).
+  \details when called from a non-threaded MPI process, this function is
+  equivalent to MPI_Comm_size(MPI_COMM_WORLD,size).
 
-  When called from a thread inside PCU_Thrd_Run, the size is \f$pt\f$, where \f$p\f$ is the
-  number of MPI processes and \f$t\f$ is the number of threads per process, which
-  is the nthreads argument passed to PCU_Thrd_Run.
+  When called from a thread inside PCU_Thrd_Run, the size is \f$pt\f$, where
+  \f$p\f$ is the number of MPI processes and \f$t\f$ is the number of threads
+  per process, which is the nthreads argument passed to PCU_Thrd_Run.
  */
 int PCU_Comm_Peers(void)
 {
@@ -169,7 +170,8 @@ int PCU_Comm_Pack(int to_rank, const void* data, size_t size)
   \details This function should be called by all threads in the MPI job
   after calls to PCU_Comm_Pack or PCU_Comm_Write and before calls
   to PCU_Comm_Listen or PCU_Comm_Read.
-  All buffers from this thread are sent out and receiving may begin after this call.
+  All buffers from this thread are sent out and receiving
+  may begin after this call.
  */
 int PCU_Comm_Send(void)
 {
@@ -181,14 +183,14 @@ int PCU_Comm_Send(void)
 
 /** \brief Tries to receive a buffer for this communication phase.
   \details Either this function or PCU_Comm_Read should be called at least
-  once by all threads during the communication phase, after PCU_Comm_Send is called.
-  The result will be false if and only if the communication phase
+  once by all threads during the communication phase, after PCU_Comm_Send
+  is called. The result will be false if and only if the communication phase
   is over and there are no more buffers to receive.
   Otherwise, a buffer was received.
   Its contents are retrievable through PCU_Comm_Unpack, and its metadata through
   PCU_Comm_Sender and PCU_Comm_Received.
-  Users should unpack all data from this buffer before calling this function again,
-  because the previously received buffer is destroyed by the call.
+  Users should unpack all data from this buffer before calling this function
+  again, because the previously received buffer is destroyed by the call.
  */
 bool PCU_Comm_Listen(void)
 {
@@ -207,7 +209,7 @@ int PCU_Comm_Sender(void)
   return pcu_msg_received_from(get_msg());
 }
 
-/** \brief Returns true if the current received buffer has been completely unpacked.
+/** \brief Returns true if the current received buffer has been unpacked.
   \details This function should be called after a successful PCU_Comm_Listen.
  */
 bool PCU_Comm_Unpacked(void)
@@ -219,12 +221,12 @@ bool PCU_Comm_Unpacked(void)
 
 /** \brief Unpacks a block of data from the current received buffer.
   \details This function should be called after a successful PCU_Comm_Listen.
-  \a data must point to a block of memory of at least \a size bytes,
-  into which the next \a size bytes of the current received buffer will be written.
-  Subsequent calls to this function will begin unpacking where this call left off,
+  \a data must point to a block of memory of at least \a size bytes, into
+  which the next \a size bytes of the current received buffer will be written.
+  Subsequent calls will begin unpacking where this call left off,
   so that the entire received buffer can be unpacked by a sequence of calls to
   this function.
-  It is up to the user to ensure that there remains \a size bytes to be unpacked,
+  Users must ensure that there remain \a size bytes to be unpacked,
   PCU_Comm_Unpacked can help with this.
  */
 int PCU_Comm_Unpack(void* data, size_t size)
@@ -381,14 +383,14 @@ static void* run(void* in)
   If in_out is NULL, all threads will receive NULL as their argument.
 
   Currently, PCU requires that this call is collective and homogeneous.
-  This means that all processes in an MPI job should call PCU_Thrd_Run at the same time,
-  and they should all pass the same number for \a nthreads.
+  This means that all processes in an MPI job should call PCU_Thrd_Run
+  at the same time, and they should all pass the same number for \a nthreads.
   MPI_Init_thread should have been called before this function.
 
-  Any calls to PCU_Comm functions from within one of these threads will have access
-  to the hybrid communication interface.
-  This means that ranks will be unique to a thread in the whole MPI job, and messages
-  are sent and received between threads.
+  Any calls to PCU_Comm functions from within one of these threads
+  will have access to the hybrid communication interface.
+  This means that ranks will be unique to a thread in the whole MPI job,
+  and messages are sent and received between threads.
   Phases will be synchronized across all threads in the MPI job.
  */
 
@@ -419,8 +421,8 @@ int PCU_Thrd_Run(int nthreads, PCU_Thrd_Func function, void** in_out)
 }
 
 /** \brief Returns the process-unique rank of the calling thread.
-  \details When called from a thread inside PCU_Thrd_Run, the resulting rank will
-  be unique only within the same process.
+  \details When called from a thread inside PCU_Thrd_Run, the resulting rank
+  will be unique only within the same process.
   Ranks are contiguous integers from 0 to nthreads-1, with the thread that
   called PCU_Thrd_Run being assigned rank 0.
  */
@@ -434,8 +436,9 @@ int PCU_Thrd_Self(void)
 }
 
 /** \brief Returns the number of threads running in the current process.
-  \details When called from a thread inside PCU_Thrd_Run, returns the number of threads
-  running in this process, which is equivalent to the nthreads argument to PCU_Thrd_Run.
+  \details When called from a thread inside PCU_Thrd_Run, returns the number
+  of threads running in this process,
+  which is equivalent to the nthreads argument to PCU_Thrd_Run.
  */
 int PCU_Thrd_Peers(void)
 {
@@ -528,7 +531,7 @@ int PCU_Comm_Start(PCU_Method method)
 }
 
 /** \brief Returns in * \a size the number of bytes being sent to \a to_rank.
-  \details This function returns the size of the buffer being sent to \a to_rank.
+  \details Returns the size of the buffer being sent to \a to_rank.
   This function should be called after PCU_Comm_Start and before
   PCU_Comm_Send.
  */

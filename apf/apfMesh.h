@@ -41,7 +41,7 @@ class Migration;
 struct Up
 {
   int n;
-  MeshEntity* e[256];
+  MeshEntity* e[300];
 };
 
 struct Copy

@@ -84,28 +84,54 @@ struct KnownBC
     struct KnownBC const& bc, double* inval);
 };
 
-static void applyScalar(double* values, int* bits,
+static bool applyBit2(int* bits, int bit)
+{
+  if (bit == -1)
+    return true;
+  int mask = (1<<bit);
+  if (*bits & mask)
+    return false;
+  *bits |= mask;
+  return true;
+}
+
+static void applyBit(double* outval, int* bits,
+    KnownBC const& bc, double* inval)
+{
+  applyBit2(bits, bc.bit);
+}
+
+static void applyScalar2(double* values, int* bits,
     double value, int offset, int bit)
 {
-  if (offset != -1)
+  bool alreadySet = ! applyBit2(bits, bit);
+  /* only zero values override existing values */
+  if (( ! alreadySet) || ( ! value))
     values[offset] = value;
-  if (bit != -1)
-    *bits |= (1<<bit);
 }
 
 static void applyScalar(double* outval, int* bits,
     KnownBC const& bc, double* inval)
 {
-  applyScalar(outval, bits, *inval, bc.offset, bc.bit);
+  applyScalar2(outval, bits, *inval, bc.offset, bc.bit);
 }
 
-static void applyVector(double* values, int* bits,
+static void applyVector2(double* values, int* bits,
+    double* inval, int offset, int bit)
+{
+  bool alreadySet = ! applyBit2(bits, bit);
+  if (alreadySet)
+    /* nonzero vectors cannot override */
+    if (inval[0] || inval[1] || inval[2])
+      return;
+  for (int i = 0; i < 3; ++i)
+    values[offset + i] = inval[i];
+}
+
+static void applyVector(double* outval, int* bits,
     KnownBC const& bc, double* inval)
 {
-  for (int i = 0; i < 3; ++i)
-    values[bc.offset + i] = inval[i];
-  if (bc.bit != -1)
-    *bits |= (1<<bc.bit);
+  applyVector2(outval, bits, inval, bc.offset, bc.bit);
 }
 
 static void applySurfID(double* values, int* bits,
@@ -118,7 +144,7 @@ static KnownBC const essentialBCs[7] = {
   {"density",          0, 0, applyScalar},
   {"temperature",      1, 1, applyScalar},
   {"pressure",         2, 2, applyScalar},
-/*  these guys are too complex to be dealt with
+/*  these conditions are too complex to be dealt with
     here, see phConstraint.cc */
 //{"comp1",           3, 3, applyComp1},
 //{"comp3",           3, 3, applyComp3},
@@ -133,7 +159,7 @@ static KnownBC const naturalBCs[10] = {
   {"natural pressure", 1, 1, applyScalar},
   {"traction vector",  2, 2, applyVector},
   {"heat flux",        5, 3, applyScalar},
-  {"turbulence wall", -1, 4, applyScalar},
+  {"turbulence wall", -1, 4, applyBit},
   {"scalar_1 flux",    6, 5, applyScalar},
   {"scalar_2 flux",    7, 6, applyScalar},
   {"scalar_3 flux",    8, 7, applyScalar},
@@ -169,29 +195,32 @@ double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge)
 }
 
 /* starting from the current geometric entity,
-   try to find an attribute (kbc) attached to
-   a geometric entity by searching all upward
+   try to find attribute (kbc) attached to
+   geometric entities by searching all upward
    adjacencies.
-ex: for a mesh vertex classified on a model
-    vertex, the model vertex is first checked
-    for the attribute, then the model edges
-    adjacent to the model vertex, then the model
-    faces adjacent to those model edges.
-   this is done by the following recursive function. */
-static double* getFirstApplied(gmi_model* gm, gmi_ent* ge,
-    FieldBCs& bcs, KnownBC const& kbc)
+   we use depth first search starting from
+   the model entity of origin, using upward
+   adjacencies as graph edges.
+   if an attached attribute is found on an
+   entity, the search continues without looking
+   at its upward adjacencies */
+static bool applyBC(gmi_model* gm, gmi_ent* ge,
+    FieldBCs& bcs,
+    KnownBC const& kbc,
+    double* values, int* bits)
 {
   double* v = getValuesOn(gm, bcs, ge);
-  if (v)
-    return v;
-  gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
-  for (int i = 0; i < up->n; ++i) {
-    v = getFirstApplied(gm, up->e[i], bcs, kbc);
-    if (v)
-      break;
+  if (v) {
+    kbc.apply(values, bits, kbc, v);
+    return true;
   }
+  bool appliedAny = false;
+  gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
+  for (int i = 0; i < up->n; ++i)
+    if ( applyBC(gm, up->e[i], bcs, kbc, values, bits) )
+      appliedAny = true;
   gmi_free_set(up);
-  return v;
+  return appliedAny;
 }
 
 static bool applyBCs(gmi_model* gm, gmi_ent* ge,
@@ -206,11 +235,8 @@ static bool applyBCs(gmi_model* gm, gmi_ent* ge,
     if ( ! hasBC(appliedBCs, s))
       continue;
     FieldBCs& fbcs = appliedBCs.fields[s];
-    double* bcvalues = getFirstApplied(gm, ge, fbcs, knownBCs[i]);
-    if (!bcvalues)
-      continue;
-    knownBCs[i].apply(values, bits, knownBCs[i], bcvalues);
-    appliedAny = true;
+    if ( applyBC(gm, ge, fbcs, knownBCs[i], values, bits) )
+      appliedAny = true;
   }
   return appliedAny;
 }
