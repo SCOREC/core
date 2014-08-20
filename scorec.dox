@@ -1,0 +1,9 @@
+/** \mainpage The SCOREC core tools
+
+Welcome to the SCOREC core documentation.
+The following packages are documented:
+- \subpage apf
+- \subpage parma
+- \subpage pcu
+
+*/
