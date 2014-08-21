@@ -8,7 +8,8 @@
 #ifndef PARMA_H
 #define PARMA_H
 
-/** \file parma.h */
+/** \file parma.h
+    \brief The ParMA tools interface */
 
 #include "apf.h"
 #include "apfPartition.h"

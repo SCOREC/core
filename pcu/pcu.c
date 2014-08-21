@@ -7,7 +7,8 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
-/** \file pcu.c */
+/** \file pcu.c
+    \brief The PCU communication interface */
 /** \page pcu PCU
   PCU (the Parallel Control Utility) is a library for parallel computation
   based on MPI with additional support for hybrid MPI/thread environments.

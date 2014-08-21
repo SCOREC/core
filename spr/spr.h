@@ -9,7 +9,7 @@
 #define SPR_H
 
 /** \file spr.h
- *  \brief Interface to the SPR ZZ error estimator
+ *  \brief The SPR error estimator interface
  */
 
 #include "apf.h"
