@@ -361,6 +361,10 @@ MeshEntity* findElement(
 /** \brief get the other vertex of an edge */
 MeshEntity* getEdgeVertOppositeVert(Mesh* m, MeshEntity* edge, MeshEntity* v);
 
+/** \brief get 2nd-order adjacent entities */
+void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
+    int bridgeDimension, int targetDimension, Adjacent& result);
+
 /** \brief count all on-part entities of one topological type */
 int countEntitiesOfType(Mesh* m, int type);
 
