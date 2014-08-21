@@ -25,6 +25,7 @@ class FieldShape;
 class Field;
 template <class T>
 class NumberingOf;
+/** \brief Numbering is meant to be a 32-bit local numbering */
 typedef NumberingOf<int> Numbering;
 
 class MeshEntity;
@@ -332,34 +333,60 @@ class Mesh
     std::vector<Numbering*> numberings;
 };
 
-extern int const tri_edge_verts[3][2];
-extern int const quad_edge_verts[4][2];
-extern int const tet_edge_verts[6][2];
-extern int const prism_edge_verts[9][2];
-extern int const pyramid_edge_verts[8][2];
-extern int const tet_tri_verts[4][3];
-extern int const prism_tri_verts[2][3];
-extern int const prism_quad_verts[3][4];
-extern int const pyramid_tri_verts[4][3];
+/** \brief run consistency checks on an apf::Mesh structure
+  \details this can be used to implement apf::Mesh::verify.
+  Other implementations may define their own. */
+void verify(Mesh* m);
 
+/** \brief get the dimension of a mesh entity */
+int getDimension(Mesh* m, MeshEntity* e);
+
+/** \brief unite two sets of unique part ids
+  \param into becomes the union */
 void unite(Parts& into, Parts const& from);
 
-void getFacePeers(Mesh* m, Parts& peers);
+/** \brief removes a tag from all entities of dimension (d) */
+void removeTagFromDimension(Mesh* m, MeshTag* tag, int d);
 
-/* given a mesh iterator from Mesh::begin, will use it to iterate
-   only over entities of that dimension which have a copy on
-   the given part. Call Mesh::end after as usual. */
-MeshEntity* iterateBoundary(Mesh* m, MeshIterator* it, int part);
+/** \brief find an entity from one-level downward adjacencies
+   \details this function ignores the ordering of adjacent entities */
+MeshEntity* findUpward(Mesh* m, int type, MeshEntity** down);
 
+/** \brief finds an entity from a set of vertices */
+MeshEntity* findElement(
+    Mesh* m,
+    int type,
+    MeshEntity** verts);
+
+/** \brief get the other vertex of an edge */
+MeshEntity* getEdgeVertOppositeVert(Mesh* m, MeshEntity* edge, MeshEntity* v);
+
+/** \brief count all on-part entities of one topological type */
+int countEntitiesOfType(Mesh* m, int type);
+
+/** \brief return true if the topological type is a simplex */
+bool isSimplex(int type);
+
+/** \brief get the average of the entity's vertex coordinates
+  \details this also works if given just a vertex,
+  so its a convenient way to get the centroid of any entity */
+Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
+
+/** \brief Migration plan object: local elements to destinations. */
 class Migration
 {
   public:
     Migration(Mesh* m);
     ~Migration();
+/** \brief return the number of elements with assigned destinations */
     int count();
+/** \brief get the i'th element with an assigned destination */
     MeshEntity* get(int i);
+/** \brief return true if the element has been assigned a destination */
     bool has(MeshEntity* e);
+/** \brief assign a destination part id to an element */
     void send(MeshEntity* e, int to);
+/** \brief return the destination part id of an element */
     int sending(MeshEntity* e);
     Mesh* getMesh() {return mesh;}
   private:
@@ -368,28 +395,83 @@ class Migration
     std::vector<MeshEntity*> elements;
 };
 
-void removeTagFromDimension(Mesh* m, MeshTag* tag, int d);
+/** \brief abstract description of entity copy sharing
+  \details this interface abstracts over remote copies,
+  matching, and possible user-defined sharing models.
+  For example, users can define a new Sharing object
+  that uses a different ownership rule. */
+struct Sharing
+{
+  virtual ~Sharing() {};
+/** \brief return true if the entity is owned */
+  virtual bool isOwned(MeshEntity* e) = 0;
+/** \brief get the copies of the entity */
+  virtual void getCopies(MeshEntity* e,
+      CopyArray& copies) = 0;
+};
 
+/** \brief create a default sharing object for this mesh
+  \details for normal meshes, the sharing object just
+  describes remote copies. For matched meshes, the
+  sharing object describes matches for matched entities
+  and remote copies for other entities */
+Sharing* getSharing(Mesh* m);
+
+/** \brief map from triangle edge order to triangle vertex order */
+extern int const tri_edge_verts[3][2];
+/** \brief map from quad edge order to quad vertex order */
+extern int const quad_edge_verts[4][2];
+/** \brief map from tet edge order to tet vertex order */
+extern int const tet_edge_verts[6][2];
+/** \brief map from prism edge order to prism vertex order */
+extern int const prism_edge_verts[9][2];
+/** \brief map from pyramid edge order to pyramid vertex order */
+extern int const pyramid_edge_verts[8][2];
+/** \brief map from tet triangle order to tet vertex order */
+extern int const tet_tri_verts[4][3];
+/** \brief map from prism triangle order to prism vertex order */
+extern int const prism_tri_verts[2][3];
+/** \brief map from prism quad order to prism vertex order */
+extern int const prism_quad_verts[3][4];
+/** \brief map from pyramid triangle order to pyramid vertex order */
+extern int const pyramid_tri_verts[4][3];
+
+/** \brief scan the part for face-adjacent part ids */
+void getFacePeers(Mesh* m, Parts& peers);
+
+/** \brief find pointer (e) in array (a) of length (n)
+  \returns -1 if not found, otherwise i such that a[i] = e */
 int findIn(MeshEntity** a, int n, MeshEntity* e);
 
-/* finds the entity with the given downward adjacencies,
-   regardless of ordering */
-MeshEntity* findUpward(Mesh* m, int type, MeshEntity** down);
-
+/** \brief given the vertices of a triangle, find its edges
+  \param down the resulting array of edges */
 void findTriDown(
     Mesh* m,
     MeshEntity** verts,
     MeshEntity** down);
 
-/* finds an element from a set of vertices */
-MeshEntity* findElement(
-    Mesh* m,
-    int type,
-    MeshEntity** verts);
+/** \brief change the distribution of the mesh coordinate nodes
+    \param project whether to project coordinate values from the old field */
+void changeMeshShape(Mesh* m, FieldShape* newShape, bool project = true);
 
-MeshEntity* getEdgeVertOppositeVert(Mesh* m, MeshEntity* edge, MeshEntity* v);
+/** \brief unfreeze all associated fields
+  \details see apf::unfreezeField */
+void unfreezeFields(Mesh* m);
 
-int countEntitiesOfType(Mesh* m, int type);
+/** \brief count the number of mesh entities classified on a model entity */
+int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
+
+/** \brief count the number of owned entities of dimension (dim) */
+int countOwned(Mesh* m, int dim);
+
+/** \brief print global mesh entity counts per dimension */
+void printStats(Mesh* m);
+
+/** \brief print to stderr the number of empty parts, if any */
+void warnAboutEmptyParts(Mesh* m);
+
+/** \brief given a mesh face, return its remote copy */
+std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s);
 
 class ElementVertOp
 {
@@ -398,38 +480,6 @@ class ElementVertOp
     MeshEntity* run(int type, MeshEntity** verts);
     void runDown(int type, MeshEntity** verts, MeshEntity** down);
 };
-
-void changeMeshShape(Mesh* m, FieldShape* newShape, bool project = true);
-
-void unfreezeFields(Mesh* m);
-
-int getDimension(Mesh* m, MeshEntity* e);
-
-void verify(Mesh* m);
-
-bool isSimplex(int type);
-
-Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
-
-int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
-
-int countOwned(Mesh* m, int dim);
-
-void printStats(Mesh* m);
-
-void warnAboutEmptyParts(Mesh* m);
-
-std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s);
-
-struct Sharing
-{
-  virtual ~Sharing() {};
-  virtual bool isOwned(MeshEntity* e) = 0;
-  virtual void getCopies(MeshEntity* e,
-      CopyArray& copies) = 0;
-};
-
-Sharing* getSharing(Mesh* m);
 
 } //namespace apf
 
