@@ -33,8 +33,14 @@ class MeshTag;
 
 class ModelEntity;
 
+/** \brief Remote copy container.
+  \details the key is the part id, the value
+  is the on-part pointer to the remote copy */
 typedef std::map<int,MeshEntity*> Copies;
+/** \brief Set of unique part ids */
 typedef std::set<int> Parts;
+/** \brief Set of adjacent mesh entities
+  \details see also apf::Downward and apf::Up */
 typedef DynamicArray<MeshEntity*> Adjacent;
 /** \brief a static array type downward adjacency queries.
     \details using statically sized arrays saves time by
@@ -54,7 +60,9 @@ class Migration;
   */
 struct Up
 {
+  /** \brief actual number of adjacent entities */
   int n;
+  /** \brief array containing pointers to adjacent entities */
   MeshEntity* e[300];
 };
 
@@ -118,7 +126,7 @@ class Mesh
     /** \brief Returns the owning part number of this entity */
     virtual int getOwner(MeshEntity* e) = 0;
     /** \brief Entity topological types */
-    enum {
+    enum Type {
       /** \brief vertex */
       VERTEX,
       /** \brief edge */
@@ -160,96 +168,163 @@ class Mesh
                array if the size is known, otherwise use apf::Downward */
     virtual int getDownward(MeshEntity* e, int dimension,
         MeshEntity** adjacent) = 0;
+    /** \brief Return the number of one-level upward adjacent entities. */
     virtual int countUpward(MeshEntity* e) = 0;
+    /** \brief Get the i'th one-level upward adjacent entity. */
     virtual MeshEntity* getUpward(MeshEntity* e, int i) = 0;
+    /** \brief Get the unordered set of one-level upward entities. */
     virtual void getUp(MeshEntity* e, Up& up) = 0;
+    /** \brief Return true iff the entity has upward adjacencies. */
     virtual bool hasUp(MeshEntity* e) = 0;
-    /* Returns the coordinates of a mesh coordinate field node
-       on a mesh entity. Most databases support at most
+    /** \brief Returns the coordinates of a node on a mesh entity.
+       \details Most databases support at most
        one node on a vertex and one node on an edge for
-       a 2nd-order Serendipity coordinate field. */
+       a 2nd-order Serendipity coordinate field.
+       \param e the entity associated with the node
+       \param node in the case of curved meshes, which node on the entity
+       \param point nodal coordinates
+     */
     void getPoint(MeshEntity* e, int node, Vector3& point);
+    /** \brief Implementation-defined code for apf::Mesh::getPoint */
     virtual void getPoint_(MeshEntity* e, int node, Vector3& point) = 0;
+    /** \brief Get the geometric parametric coordinates of a vertex */
     virtual void getParam(MeshEntity* e, Vector3& p) = 0;
-    /* Returns the type of a mesh entity using the Mesh::Type enumeration */
+    /** \brief Get the topological type of a mesh entity.
+      \returns a value from the apf::Mesh::Type enumeration */
     virtual int getType(MeshEntity* e) = 0;
+    /** \brief Get the remote copies of an entity */
     virtual void getRemotes(MeshEntity* e, Copies& remotes) = 0;
+    /** \brief Get the resident parts of an entity
+      \details this includes parts with remote copies and the
+               current part as well */
     virtual void getResidence(MeshEntity* e, Parts& residence) = 0;
-    /* Creates a double array tag over the mesh given a name and size */
+    /** \brief Creates a double array tag over the mesh given a name and size */
     virtual MeshTag* createDoubleTag(const char* name, int size) = 0;
-    /* Creates an int array tag over the mesh given a name and size */
+    /** \brief Creates an int array tag over the mesh given a name and size */
     virtual MeshTag* createIntTag(const char* name, int size) = 0;
-    /* Creates a long array tag over the mesh given a name and size */
+    /** \brief Creates a long array tag over the mesh given a name and size */
     virtual MeshTag* createLongTag(const char* name, int size) = 0;
-    /* Finds a tag by name, returns 0 if it doesn't exist */
+    /** \brief Finds a tag by name, returns 0 if it doesn't exist */
     virtual MeshTag* findTag(const char* name) = 0;
-    /* Removes a mesh tag. This does not detach data from entities. */
+    /** \brief Removes a mesh tag. This does not detach data from entities. */
     virtual void destroyTag(MeshTag* tag) = 0;
+    /** \brief Get all the tags on a mesh part. */
     virtual void getTags(DynamicArray<MeshTag*>& tags) = 0;
-    /* get/set double array tag data */
+    /** \brief get double array tag data */
     virtual void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data) = 0;
+    /** \brief set double array tag data */
     virtual void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data) = 0;
-    /* get/set int array tag data */
+    /** \brief get int array tag data */
     virtual void getIntTag(MeshEntity* e, MeshTag* tag, int* data) = 0;
+    /** \brief set int array tag data */
     virtual void setIntTag(MeshEntity* e, MeshTag* tag, int const* data) = 0;
-    /* get/set long array tag data */
+    /** \brief get long array tag data */
     virtual void getLongTag(MeshEntity* e, MeshTag* tag, long* data) = 0;
+    /** \brief set long array tag data */
     virtual void setLongTag(MeshEntity* e, MeshTag* tag, long const* data) = 0;
-    /* Detach tag data from an entity. must be attached already */
+    /** \brief detach tag data from an entity.
+        \details data must be attached already. */
     virtual void removeTag(MeshEntity* e, MeshTag* tag) = 0;
-    /* Returns true if there is data for this tag attached */
+    /** \brief Returns true if there is data for this tag attached */
     virtual bool hasTag(MeshEntity* e, MeshTag* tag) = 0;
-    enum { DOUBLE, INT, LONG };
+    /** \brief Tag data type enumeration */
+    enum TagType {
+      /** \brief 64-bit IEE754 floating-point number */
+      DOUBLE,
+      /** \brief signed 32-bit integer */
+      INT,
+      /** \brief signed 64-bit integer */
+      LONG };
+    /** \brief get the data type of a tag
+        \return a value in apf::Mesh::TagType */
     virtual int getTagType(MeshTag* t) = 0;
+    /** \brief return the array size of a tag */
     virtual int getTagSize(MeshTag* t) = 0;
+    /** \brief return the name of a tag
+      \returns a pointer to an internal C string.
+               do not free this pointer */
     virtual const char* getTagName(MeshTag* t) = 0;
-    /* get geometric classification */
+    /** \brief get geometric classification */
     virtual ModelEntity* toModel(MeshEntity* e) = 0;
-    /* get an interface to the geometric model */
+    /** \brief get a GMI interface to the geometric model */
     virtual gmi_model* getModel() = 0;
-    /* return the model entity dimension */
+    /** \brief return the model entity dimension */
     int getModelType(ModelEntity* e);
-    /* get the dimension-unique model entity identifier */
+    /** \brief get the dimension-unique model entity identifier */
     int getModelTag(ModelEntity* e);
-    /* get the model entity by dimension and identifier */
+    /** \brief get the model entity by dimension and identifier */
     ModelEntity* findModelEntity(int type, int tag);
-    /* evaluate parametric coordinate (p) as a spatial point (x) */
+    /** \brief return true if the geometric model supports snapping */
     bool canSnap();
+    /** \brief evaluate parametric coordinate (p) as a spatial point (x) */
     void snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x);
+    /** \brief reparameterize mesh vertex (e) onto model entity (g) */
     void getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p);
+    /** \brief get the periodic properties of a model entity
+      \param range if periodic, the parametric range
+      \returns true if (g) is periodic along this axis */
     bool getPeriodicRange(ModelEntity* g, int axis,
         double range[2]);
-    /* static lookup table for the dimension of each type in
-       Mesh::Type */
+    /** \brief helper for looking up in apf::Mesh::typeDimension */
     static int getEntityDimension(int type);
-    /* get the shape of the mesh's coordinate field */
+    /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
+    /** \brief get the mesh's coordinate field */
     Field* getCoordinateField() {return coordinateField;}
+    /** \brief replace the mesh's coordinate field */
     void changeCoordinateField(Field* f);
-    /* Migrate elements.
-       This is called with a mapping from elements
-       to process IDs, which will be deleted during migration */
+    /** \brief Migrate elements.
+       \param plan a mapping from local elements
+                   to process IDs, which will be deleted during migration */
     virtual void migrate(Migration* plan) = 0;
+    /** \brief Get the part ID */
     virtual int getId() = 0;
-    /* write the underlying mesh into a set of files */
+    /** \brief write the underlying mesh into a set of files */
     virtual void writeNative(const char* fileName) = 0;
-    /* actually destroy the underlying mesh data structure */
+    /** \brief actually destroy the underlying mesh data structure */
     virtual void destroyNative() = 0;
-    /* run a set of consistency checks on the underlying data structure */
+    /** \brief run a set of consistency checks on the underlying
+               data structure */
     virtual void verify() = 0;
+    /** \brief return true if the mesh has matched entities */
     virtual bool hasMatching() = 0;
+    /** \brief get the matches of an entity */
     virtual void getMatches(MeshEntity* e, Matches& m) = 0;
+    /** \brief estimate mesh entity memory usage.
+      \details this is used by Parma_WeighByMemory
+      \param type a value from apf::Mesh::Type
+      \returns an estimate of how many bytes are needed
+      to store an entity of (type) */
     virtual double getElementBytes(int type) {return 1.0;}
+    /** \brief associate a field with this mesh
+      \details most users don't need this, functions in apf.h
+               automatically call it */
     void addField(Field* f);
+    /** \brief disassociate a field from this mesh
+      \details most users don't need this, functions in apf.h
+               automatically call it */
     void removeField(Field* f);
+    /** \brief lookup a field by its unique name */
     Field* findField(const char* name);
+    /** \brief get the number of associated fields */
     int countFields();
+    /** \brief get the i'th associated field */
     Field* getField(int i);
+    /** \brief associate a numbering with this mesh
+      \details most users don't need this, functions in apfNumbering.h
+               automatically call it */
     void addNumbering(Numbering* f);
+    /** \brief disassociate a numbering from this mesh
+      \details most users don't need this, functions in apfNumbering.h
+               automatically call it */
     void removeNumbering(Numbering* f);
+    /** \brief lookup a numbering by its unique name */
     Numbering* findNumbering(const char* name);
+    /** \brief get the number of associated numberings */
     int countNumberings();
+    /** \brief get the i'th associated numbering */
     Numbering* getNumbering(int i);
+    /** \brief true if any associated fields use Array storage */
     bool hasFrozenFields;
   protected:
     Field* coordinateField;
