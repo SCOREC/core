@@ -186,13 +186,50 @@ apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
  */
 apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);
 
+/** 
+ * @brief User-defined code to run on process sub-groups.
+ */
 struct Parma_GroupCode
 {
+  /**
+   * @brief Called withing sub-groups.
+   * @details Within a group, all PCU functions behave
+   *          as though only the group processes exist.
+   *          PCU_Comm_Peers and PCU_Comm_Self reflect
+   *          the number of processes in the group and
+   *          the process id within the group, and all
+   *          collective operations are confined inside
+   *          the group.
+   * @param group the group id number, starting from zero
+   */
   virtual void run(int group) = 0;
 };
 
+/**
+ * @brief Shrink the mesh into N/factor processes.
+ * @details This function will take N=PCU_Comm_Peers() and generate
+ *          (factor) subgroups, each of (N/factor) processes.
+ *          It then migrates the mesh onto group 0 and then calls
+ *          the user's group code on all groups.
+ *          After the user's code completes, the mesh is repartitioned
+ *          to all N processes and this function returns.
+ *          groups are organized such that contiguous ranges of (factor)
+ *          parts are combined into one and then that one is split back
+ *          out into (factor) contiguous part ids again.
+ */
 void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
 
+/**
+ * @brief Split the processes into groups of (factor).
+ * @details This function groups contiguous ranges of (factor)
+ *          processes into (PCU_Comm_Peers()/factor) total groups,
+ *          then calls the user's group code.
+ *          After the user's code completes, execution returns
+ *          to the global communicator.
+ *          If a non-zero mesh pointer is given, then
+ *          apf::remapPartition is used to maintain the mesh structure
+ *          during these transitions.
+ */
 void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
 
 #endif
