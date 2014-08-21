@@ -239,6 +239,7 @@ int PCU_Comm_Unpack(void* data, size_t size)
   return PCU_SUCCESS;
 }
 
+/** \brief Blocking barrier over all threads. */
 void PCU_Barrier(void)
 {
   if (global_state == uninit)
@@ -463,6 +464,13 @@ void PCU_Thrd_Barrier(void)
 #endif
 }
 
+/** \brief Acquire the PCU master spinlock.
+  \details usage is discouraged, this function
+  and PCU_Thrd_Unlock exist as a patch to allow
+  people to use thread-unsafe third-party code
+  at the expense of performance by serializing
+  calls to said code.
+ */
 void PCU_Thrd_Lock(void)
 {
 #if ENABLE_THREADS  
@@ -471,6 +479,7 @@ void PCU_Thrd_Lock(void)
 #endif
 }
 
+/** \brief Release the PCU master spinlock. */
 void PCU_Thrd_Unlock(void)
 {
 #if ENABLE_THREADS  
@@ -516,6 +525,7 @@ int PCU_Comm_Size(int* size)
   return PCU_SUCCESS;
 }
 
+/** \brief Returns true iff PCU has been initialized */
 bool PCU_Comm_Initialized(void)
 {
   return global_state == init;
@@ -603,6 +613,7 @@ bool PCU_Comm_Read(int* from_rank, void** data, size_t* size)
   return true;
 }
 
+/** \brief Open file debugN.txt, where N = PCU_Comm_Self(). */
 void PCU_Debug_Open(void)
 {
   if (global_state == uninit)
@@ -612,6 +623,7 @@ void PCU_Debug_Open(void)
     msg->file = pcu_open_parallel("debug","txt");
 }
 
+/** \brief like fprintf, contents go to debugN.txt */
 void PCU_Debug_Print(const char* format, ...)
 {
   if (global_state == uninit)
@@ -661,6 +673,14 @@ void* PCU_Comm_Extract(size_t size)
   return pcu_msg_unpack(get_msg(),size);
 }
 
+/** \brief Reinitializes PCU with a new MPI communicator.
+ \details All of PCU's logic is based off two duplicates
+ of this communicator, so you can safely get PCU to act
+ on sub-groups of processes using this function.
+ This call should be collective over all processes
+ in the previous communicator.
+ Please do not mix this feature with PCU threading. 
+ */
 void PCU_Switch_Comm(MPI_Comm new_comm)
 {
   if (global_state == uninit)
@@ -668,6 +688,11 @@ void PCU_Switch_Comm(MPI_Comm new_comm)
   pcu_pmpi_switch(new_comm);
 }
 
+/** \brief Return the current MPI communicator
+  \details Returns the communicator given to the 
+  most recent PCU_Switch_Comm call, or MPI_COMM_WORLD
+  otherwise.
+ */
 MPI_Comm PCU_Get_Comm(void)
 {
   if (global_state == uninit)
