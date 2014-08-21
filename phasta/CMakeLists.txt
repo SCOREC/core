@@ -24,16 +24,6 @@ set(SOURCES
   phBC.cc
   phConstraint.cc)
 
-set(HEADERS
-  ph.h
-  phOutput.h
-  phAdapt.h
-  phRestart.h
-  phInput.h
-  phSplit.h
-  phIO.h
-  phBC.h)
-
 include_directories(${PH_INCLUDE_DIRS})
 
 add_library(ph ${SOURCES})

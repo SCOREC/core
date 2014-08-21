@@ -44,9 +44,6 @@ include_directories(${NETCDF_INCLUDES_CXX})
 set(SOURCES
    apfMPAS.cc)
 
-set(HEADERS
-   apfMPAS.h)
-
 #Library
 add_library(apf_mpas ${SOURCES})
 target_link_libraries(apf_mpas ${DEP_LIBS})
