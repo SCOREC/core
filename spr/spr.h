@@ -17,6 +17,9 @@
 #include "apfDynamicVector.h"
 #include "apfDynamicMatrix.h"
 
+/** \namespace spr
+  * \brief All SPR error estimator functions
+  */
 namespace spr {
 
 /** @brief compute the gradient of a vector or scalar

@@ -12,9 +12,7 @@
 #include "apfNew.h"
 
 /** \file apf.h
-  * \brief The Attached Parallel Fields interface.
-  *
-  * \details This is the API available to users of APF.
+  * \brief The APF Field interface
   */
 
 /** \namespace apf
