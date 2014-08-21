@@ -78,6 +78,7 @@ enum ValueType {
   MATRIX,
  /** \brief a user-defined set of components */
   PACKED,
+ /** \brief placeholder used to set array sizes */
   VALUE_TYPES
 };
 
@@ -115,10 +116,20 @@ Field* createIPField(Mesh* m, const char* name, int valueType, int order);
   */
 Field* createField(Mesh* m, const char* name, int valueType, FieldShape* shape);
 
+/** \brief Create a field using the mesh's coordinate nodal distribution */
 Field* createFieldOn(Mesh* m, const char* name, int valueType);
 
+/** \brief Create a field of N components without a tensor type.
+  \details Packed fields are used to interface with applications
+  whose fields are not easily categorized as tensors of order 0,1,2.
+  They contain enough information to interpolate values in an
+  element and such, but some higher-level functionality is left out.
+  */
 Field* createPackedField(Mesh* m, const char* name, int components);
 
+/** \brief Declare a copy of a field on another apf::Mesh
+   \details This will just make a Field object with the same
+   properties, but not fill in any data. */
 Field* cloneField(Field* f, Mesh* onto);
 
 /** \brief Retrieve the Mesh over which a Field is defined.
@@ -181,7 +192,13 @@ void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value);
   */
 void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value);
 
+/** \brief Set the nodal value from an array of component values. */
 void setComponents(Field* f, MeshEntity* e, int node, double const* components);
+
+/** \brief Copy the nodal value into an array of component values.
+  \details the output array must already be allocated, apf::countComponents
+  can help with this.
+ */
 void getComponents(Field* f, MeshEntity* e, int node, double* components);
 
 /** \brief Create a Field Element from a Mesh Element.
@@ -195,6 +212,7 @@ void getComponents(Field* f, MeshEntity* e, int node, double* components);
   */
 Element* createElement(Field* f, MeshElement* e);
 
+/** \brief Create an apf::Element. */
 Element* createElement(Field* f, MeshEntity* e);
 
 /** \brief Destroy a Field Element.
@@ -203,12 +221,14 @@ void destroyElement(Element* e);
 
 /** \brief Get the Mesh Element of a Field Element.
   *
-  * \details Each Field Element operates over
-  * a Mesh Element, which must be maintained
-  * as long as the Field Element exists. Multiple
-  * Field Elements may share a Mesh Element.
+  * \details Each apf::Element operates over
+  * an apf::MeshElement, which must be maintained
+  * as long as the apf::Element exists. Multiple
+  * apf::Elements may share an apf::MeshElement.
   */
 MeshElement* getMeshElement(Element* e);
+
+/** \brief Retrieve the mesh entity of an apf::Element. */
 MeshEntity* getMeshEntity(Element* e);
 
 /** \brief Evaluate a scalar field at a point.
@@ -260,6 +280,7 @@ void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
   */
 void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value);
 
+/** \brief Evaluate a field into an array of component values. */
 void getComponents(Element* e, Vector3 const& param, double* components);
 
 /** \brief Get the number of integration points for an element.
@@ -415,10 +436,19 @@ FieldShape* getShape(Field* f);
   */
 int countComponents(Field* f);
 
+/** \brief Stress-free iteration over STL-like containers.
+  \param t The type of the container
+  \param w The container itself
+  \param i The name to give to the iterator
+  \details given an STL container or anything that implements
+  Type::iterator, Type::begin, Type::end, and Type::iterator::operator++(),
+  this macro fills in the boilerplate of a for() loop over this container.
+ */
 #define APF_ITERATE(t,w,i) \
 for (t::iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
+/** \brief APF_ITERATE for const containers. */
 #define APF_CONST_ITERATE(t,w,i) \
 for (t::const_iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
@@ -426,39 +456,95 @@ for (t::const_iterator (i) = (w).begin(); \
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   */
 void writeVtkFiles(const char* prefix, Mesh* m);
+/** \brief Output just the .vtu file for this part.
+  \details this function is useful for debugging large parallel meshes.
+  */
 void writeOneVtkFile(const char* prefix, Mesh* m);
 
+/** \brief Return the location of a gaussian integration point.
+  \param type the element type, from apf::Mesh::getType
+  \param order the order of the integration rule
+  \param point which point of the integration rule
+  \param param the resulting parent element coordinates
+ */
 void getGaussPoint(int type, int order, int point, Vector3& param);
+
+/** \brief Return the number of Gaussian integration points. */
 int countGaussPoints(int type, int order);
 
-/* a special function taking into account the various
-   formulae for differential volume at each dimension. */
+/** \brief Return the Jacobian determinant or dimensional equivalent.
+  \details this is a special function taking into account the various
+  formulae for differential volume, area, lenght, etc.
+  \param J Jacobian matrix, vector gradient of coordinate field
+           with respect to parent element coordinates
+  \param dimension spacial dimension of the entity being measured
+  */
 double getJacobianDeterminant(Matrix3x3 const& J, int dimension);
 
+/** \brief Return the dimension of a MeshElement's MeshEntity. */
 int getDimension(MeshElement* me);
 
+/** \brief Synchronize field values along partition boundary.
+  \details Using the ownership and copies described by an apf::Sharing
+  object, copy values from the owned nodes to their copies,
+  possibly assigning them values for the first time.
+  */
 void synchronize(Field* f, Sharing* shr = 0);
 
+/** \brief Add field values along partition boundary.
+  \details Using the copies described by
+  an apf::Sharing object, add up the field values of
+  all copies of an entity and assign the sum as the
+  value for all copies.
+  */
 void accumulate(Field* f, Sharing* shr = 0);
 
+/** \brief Declare failure of code inside APF.
+  \details This function prints the string as an APF
+  failure to stderr and then calls abort.
+  It can be called from code that is part of the
+  apf namespace, but not outside of that.
+  */
 void fail(const char* why) __attribute__((noreturn));
 
+/** \brief Convert a Field from Tag to Array storage. */
 void freeze(Field* f);
 
+/** \brief Convert a Field from Array to Tag storage. */
 void unfreeze(Field* f);
 
+/** \brief Returns true iff the Field uses Array storage. */
 bool isFrozen(Field* f);
 
+/** \brief Return the contiguous array storing this field.
+  \details This function is only defined for fields
+  which are using Array storage, for which apf::isFrozen
+  returns true.
+ */
 double* getArrayData(Field* f);
 
+/** \brief Initialize all nodal values with all-zero components */
 void zeroField(Field* f);
 
+/** \brief User-defined Analytic Function. */
 struct Function
 {
+  /** \brief Possible user-defined cleanup */
   virtual ~Function();
+  /** \brief The user's analytic function call.
+    \details For simplicity, this
+    currently only supports one node per entity.
+    \param e the entity on which the node is
+    \param result the field component values for that node
+    */
   virtual void eval(MeshEntity* e, double* result) = 0;
 };
 
+/** \brief Create a Field from a user's analytic function.
+  \details This field will use no memory, has values on all
+  nodes, and calls the user Function for all value queries.
+  Writing to this field does nothing.
+  */
 Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
     Function* f);
 
