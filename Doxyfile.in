@@ -125,7 +125,7 @@ ABBREVIATE_BRIEF       =
 # description.
 # The default value is: NO.
 
-ALWAYS_DETAILED_SEC    = YES
+ALWAYS_DETAILED_SEC    = NO
 
 # If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all
 # inherited members of a class in the documentation of that class as if those
@@ -759,7 +759,10 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfMesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfVector.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfMatrix.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfArray.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfNew.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
