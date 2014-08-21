@@ -8,11 +8,18 @@
 #ifndef SPR_H
 #define SPR_H
 
+/** \file spr.h
+ *  \brief The SPR error estimator interface
+ */
+
 #include "apf.h"
 #include "apfNew.h"
 #include "apfDynamicVector.h"
 #include "apfDynamicMatrix.h"
 
+/** \namespace spr
+  * \brief All SPR error estimator functions
+  */
 namespace spr {
 
 /** @brief compute the gradient of a vector or scalar
@@ -30,9 +37,16 @@ apf::Field* getGradIPField(apf::Field* f,
   */
 apf::Field* recoverField(apf::Field* ip_field);
 
+/** @brief run the SPR ZZ error estimator
+  * @param f the integration-point input field
+  * @param adapt_ratio the fraction of allowable error,
+  *                    scales the output size field.
+  * @returns a nodal scalar size field with the same distribution
+  *          as the mesh coordinate field
+  */
 apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
 
-/** @brief solve linear least squares problem Ax=b
+/** @brief solve linear least squares problem Ax=b.
   * @param A (In) mxn matrix
   * @param x (Out) nx1 solution vector
   * @param b (In) mx1 right hand side vector

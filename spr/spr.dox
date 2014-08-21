@@ -1,0 +1,16 @@
+/** \page spr SPR
+
+The Superconvergent Patch Recovery (SPR) library implements
+a general algorithm for parallel super-convergent patch-based
+recovery of first and second order nodal fields from integration
+point field quantities.
+
+It also implements an error estimator based on the difference
+between a solution field on integration points and its
+corresponding recovered field.
+
+Helper functions are provided for some operations that
+are used by SPR but are widely applicable.
+
+The API is found in: spr.h
+*/

@@ -719,4 +719,24 @@ Sharing* getSharing(Mesh* m)
   return new NormalSharing(m);
 }
 
+void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
+    int bridgeDimension, int targetDimension, Adjacent& result)
+{
+  assert(targetDimension < bridgeDimension);
+  std::set<MeshEntity*> s;
+  Adjacent bridges;
+  m->getAdjacent(origin, bridgeDimension, bridges);
+  for (size_t i = 0; i < bridges.getSize(); ++i) {
+    Downward targets;
+    int nt = m->getDownward(bridges[i], targetDimension, targets);
+    for (int j = 0; j < nt; ++j)
+      s.insert(targets[j]);
+  }
+  s.erase(origin);
+  result.setSize(s.size());
+  size_t i = 0;
+  APF_ITERATE(std::set<MeshEntity*>, s, it)
+    result[i++] = *it;
+}
+
 } //namespace apf

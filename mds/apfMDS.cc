@@ -40,11 +40,6 @@ static mds_id fromEnt(MeshEntity* e)
   return (reinterpret_cast<char*>(e) - ((char*)1));
 }
 
-int getMdsIndex(MeshEntity* e)
-{
-  return mds_index(fromEnt(e));
-}
-
 static MeshIterator* makeIter()
 {
   mds_id* p = new mds_id;
@@ -94,11 +89,6 @@ static int apf2mds(int t_apf)
   ,MDS_PYRAMID
   };
   return table[t_apf];
-}
-
-MeshEntity* getMdsEntity(int apfType, int index)
-{
-  return toEnt(mds_identify(apf2mds(apfType), index));
 }
 
 class MeshMDS : public Mesh2
@@ -706,6 +696,35 @@ void changeMdsDimension(Mesh2* in, int d)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   return mds_change_dimension(&(m->mesh->mds), d);
+}
+
+int getMdsIndex(Mesh2* in, MeshEntity* e)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  mds* mds = &(m->mesh->mds);
+  int i = 0;
+  mds_id id = fromEnt(e);
+  int type = mds_type(id);
+  for (int t = 0; t < type; ++t)
+    if (mds_dim[t] == mds_dim[type])
+      i += mds->n[t];
+  i += mds_index(id);
+  return i;
+}
+
+MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  mds* mds = &(m->mesh->mds);
+  int i = 0;
+  for (int t = 0; t < MDS_TYPES; ++t)
+    if (mds_dim[t] == dimension) {
+      if (i < mds->n[t])
+        return toEnt(mds_identify(t, i));
+      else
+        i -= mds->n[t];
+    }
+  return 0;
 }
 
 }
