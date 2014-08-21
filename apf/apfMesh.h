@@ -8,6 +8,9 @@
 #ifndef APF_MESH_H
 #define APF_MESH_H
 
+/** \file apfMesh.h
+    \brief The APF Mesh interface*/
+
 #include <vector>
 #include <map>
 #include <set>
@@ -33,59 +36,130 @@ class ModelEntity;
 typedef std::map<int,MeshEntity*> Copies;
 typedef std::set<int> Parts;
 typedef DynamicArray<MeshEntity*> Adjacent;
-/* a static array type for higher-performance downward adjacency queries */
+/** \brief a static array type downward adjacency queries.
+    \details using statically sized arrays saves time by
+             avoiding dynamic allocation, and downward
+             adjacencies have a guaranteed bound.
+ */
 typedef MeshEntity* Downward[12];
 
 class Migration;
 
+/** \brief statically sized container for upward adjacency queries.
+    \details see apf::Downward for static size rationale.
+    Although our algorithmic complexity proofs rely on upward
+    adjacencies being bound by a constant, this constant has yet
+    to be pinpointed. Some (bad) Simmetrix meshes have exceeded 256
+    edges per vertex, so we are now at 300.
+  */
 struct Up
 {
   int n;
   MeshEntity* e[300];
 };
 
+/** \brief a reference to an object representing the same entity
+  \details This may represent a copy along a partition boundary
+  or a matched copy for periodic meshes.
+  */
 struct Copy
 {
+  /** \brief resident part of the copy object */
   int peer;
+  /** \brief on-part pointer to the copy object */
   MeshEntity* entity;
 };
+/** \brief matches are just a special case of copies */
 typedef Copy Match;
 
+/** \brief a set of copies, possibly multiple copies per part */
 typedef DynamicArray<Copy> CopyArray;
+/** \brief a set of matched copies */
 typedef CopyArray Matches;
 
+/** \brief Interface to a mesh part
+  \details This base class is the interface for almost all mesh
+  operations in APF. Code that interacts with a mesh should do
+  so through an apf::Mesh interface object.
+  Mesh databases should derive an interface object and implement
+  all pure virtual functions to be usable from APF.
+ */
 class Mesh
 {
   public:
+    /** \brief initialize the base class structures.
+      \param s the field distribution of the coordinate field,
+               apf::getLagrange(1) is a good default
+      */
     void init(FieldShape* s);
+    /** \brief destroy the base class structures.
+        \details this does not destroy the underlying data
+                 structure, use apf::Mesh::destroyNative for that.
+      */
     virtual ~Mesh();
-    /* returns the element dimension of this mesh */
+    /** \brief returns the element dimension of this mesh */
     virtual int getDimension() = 0;
-    /* returns the number of entities in this dimension */
+    /** \brief returns the number of entities in this dimension */
     virtual std::size_t count(int dimension) = 0;
-    /* begins iteration over elements of one dimension */
+    /** \brief begins iteration over elements of one dimension */
     virtual MeshIterator* begin(int dimension) = 0;
-    /* iterate over mesh entities
-       0 is returned at the end of the iteration */
+    /** \brief iterate over mesh entities
+        \details 0 is returned at the end of the iteration */
     virtual MeshEntity* iterate(MeshIterator* it) = 0;
-    /* destroy the iterator. and end() call should match
-       every begin() call to prevent memory leaks */
+    /** \brief destroy an iterator.
+        \details an end() call should match every begin()
+                 call to prevent memory leaks */
     virtual void end(MeshIterator* it) = 0;
-    /* Returns true if the entity is shared in parallel */
+    /** \brief Returns true if the entity is shared in parallel */
     virtual bool isShared(MeshEntity* e) = 0;
-    /* Returns true if the entity is shared in parallel
-       and this is the dominant copy, or the entity is not shared. */
+    /** \brief Returns true if the entity is shared in parallel
+              and this is the dominant copy, or the entity is not shared. */
     virtual bool isOwned(MeshEntity* e) = 0;
-    /* Returns the owning part number of this entity */
+    /** \brief Returns the owning part number of this entity */
     virtual int getOwner(MeshEntity* e) = 0;
-    enum { VERTEX, EDGE, TRIANGLE, QUAD, TET, HEX, PRISM, PYRAMID, TYPES };
+    /** \brief Entity topological types */
+    enum {
+      /** \brief vertex */
+      VERTEX,
+      /** \brief edge */
+      EDGE,
+      /** \brief triangle */
+      TRIANGLE,
+      /** \brief quadrilateral (square) */
+      QUAD,
+      /** \brief tetrahedron */
+      TET,
+      /** \brief hexahedron (cube, brick) */
+      HEX,
+      /** \brief triangular prism (wedge) */
+      PRISM,
+      /** \brief quadrilateral pyramid */
+      PYRAMID,
+      /** \brief placeholder to set array sizes */
+      TYPES };
+    /** \brief for a given entity type,
+               number of adjacent entities of a given dimension */
     static int const adjacentCount[TYPES][4];
+    /** \brief for a given entity type, its dimension. */
     static int const typeDimension[TYPES];
-    /* Returns the set of entities of one dimension adjacent to a
-       given entity. Unlike some databases, this includes the
-       entity itself if the same dimension is given. */
-    virtual void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent) = 0;
-    virtual int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent) = 0;
+    /** \brief Returns the set of entities of one dimension adjacent to a
+       given entity.
+       \details prefer to use apf::Mesh::getDownward and apf::Mesh::getUp
+                when possible, this function is only superior for upward
+                adjacencies of more than one level.
+      */
+    virtual void getAdjacent(MeshEntity* e, int dimension,
+        Adjacent& adjacent) = 0;
+    /** \brief Returns an ordered set of downward adjacent entities.
+        \details Downward adjacent entities follow a strict ordering
+        which was defined at entity creation time and should be consistent
+        with the topological orderings shown below:
+        \image html region_faces.jpg
+        \image html region_edges.jpg
+        \param adjacent the output array. can be a user-sized static
+               array if the size is known, otherwise use apf::Downward */
+    virtual int getDownward(MeshEntity* e, int dimension,
+        MeshEntity** adjacent) = 0;
     virtual int countUpward(MeshEntity* e) = 0;
     virtual MeshEntity* getUpward(MeshEntity* e, int i) = 0;
     virtual void getUp(MeshEntity* e, Up& up) = 0;
