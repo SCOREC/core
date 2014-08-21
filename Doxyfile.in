@@ -759,6 +759,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfMesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
