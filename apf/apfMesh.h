@@ -325,7 +325,7 @@ class Mesh
     int countNumberings();
     /** \brief get the i'th associated numbering */
     Numbering* getNumbering(int i);
-    /** \brief true if any associated fields use Array storage */
+    /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
   protected:
     Field* coordinateField;

@@ -506,18 +506,18 @@ void accumulate(Field* f, Sharing* shr = 0);
   */
 void fail(const char* why) __attribute__((noreturn));
 
-/** \brief Convert a Field from Tag to Array storage. */
+/** \brief Convert a Field from Tag to array storage. */
 void freeze(Field* f);
 
-/** \brief Convert a Field from Array to Tag storage. */
+/** \brief Convert a Field from array to Tag storage. */
 void unfreeze(Field* f);
 
-/** \brief Returns true iff the Field uses Array storage. */
+/** \brief Returns true iff the Field uses array storage. */
 bool isFrozen(Field* f);
 
 /** \brief Return the contiguous array storing this field.
   \details This function is only defined for fields
-  which are using Array storage, for which apf::isFrozen
+  which are using array storage, for which apf::isFrozen
   returns true.
  */
 double* getArrayData(Field* f);
