@@ -33,6 +33,7 @@ class Element;
 class Mesh;
 class MeshEntity;
 class VectorElement;
+/** \brief Mesh Elements represent the mesh coordinate vector field. */
 typedef VectorElement MeshElement;
 class FieldShape;
 struct Sharing;
