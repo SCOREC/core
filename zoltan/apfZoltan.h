@@ -29,13 +29,21 @@ enum ZoltanMethod {
 
 /** \brief Zoltan partitioning approach */
 enum ZoltanApproach {
+  /** \brief (Hyper)Graph - does not consider the initial distribution */
   PARTITION,
+  /** \brief (Hyper)Graph - considers the initial distribution */
   REPARTITION,
+  /** \brief (HYPER)Graph - targets partitions needing only small changes */
   REFINE,
+  /** \brief Graph - multilevel */
   PART_KWAY, 
+  /** \brief Graph - space filling curves */
   PART_GEOM,
+  /** \brief Graph - hybrid method combining PART_KWAY and PART_GEOM */
   PART_GEOM_KWAY,
+  /** \brief Graph - targets graphs generated from adaptively refined meshes */
   ADAPT_REPART,
+  /** \brief Graph - targets partitions needing only small changes*/
   REFINE_KWAY
 };
 
