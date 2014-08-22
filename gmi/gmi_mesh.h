@@ -10,12 +10,16 @@
 #ifndef GMI_MESH_H
 #define GMI_MESH_H
 
+/** \file gmi_mesh.h
+  \brief GMI meshmodel interface */
+
 #include "gmi_base.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** \brief register the meshmodel reader for .dmg files */
 void gmi_register_mesh(void);
 
 #ifdef __cplusplus
