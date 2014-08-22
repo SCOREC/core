@@ -10,6 +10,17 @@
 #ifndef GMI_H
 #define GMI_H
 
+/** \page gmi GMI
+  The Geometric Model Interface (GMI) is designed to allow SCOREC codes
+  to query many different kinds of geometric models from one unified
+  set of APIs.
+
+  - The main GMI interface is in gmi.h
+  - The built-in meshmodel system is in gmi_mesh.h
+  - The built-in analytic model is in gmi_analytic.h
+  - The don't-use null model is in gmi_null.h
+  */
+
 /** \file gmi.h
   \brief abstract Geometric Model Interface */
 
