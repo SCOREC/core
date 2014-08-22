@@ -775,6 +775,9 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/mds/apfMDS.h \
 @CMAKE_CURRENT_SOURCE_DIR@/ma/ma.h \
 @CMAKE_CURRENT_SOURCE_DIR@/ma/maInput.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maMesh.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maSolutionTransfer.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maSize.h \
 @CMAKE_CURRENT_SOURCE_DIR@/zoltan/apfZoltan.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \

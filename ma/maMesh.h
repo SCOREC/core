@@ -85,8 +85,9 @@ Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e);
 
 Entity* findTetByTwoTris(Mesh* m, Entity** tris);
 
-/* constructs a new element using the original
-   to reconstruct geometric classification */
+/** \brief rebuild an element with one vertex being different
+  \details uses the original
+  to reconstruct geometric classification */
 Entity* rebuildElement(
     Mesh* m,
     Entity* original,
