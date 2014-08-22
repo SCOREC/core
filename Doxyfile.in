@@ -778,6 +778,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.h \
+@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
 @CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu.c
 
 # This tag can be used to specify the character encoding of the source files
