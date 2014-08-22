@@ -10,8 +10,6 @@
 #include "apfNumbering.h"
 #include "apfShape.h"
 
-#include "apfNumberingAlgorithms.h"
-
 #include <list>
 
 namespace apf {

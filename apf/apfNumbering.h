@@ -164,6 +164,11 @@ void destroyGlobalNumbering(GlobalNumbering* n);
 /* see the Numbering equivalent */
 void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes);
 
+MeshTag* reorder(Mesh* mesh, const char* name);
+int NaiveOrder(Numbering * num);
+int AdjReorder(Numbering * num);
+void SetNumberingOffset(Numbering * num, int off);
+
 }
 
 #endif

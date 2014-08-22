@@ -67,7 +67,6 @@ set(APF_HEADERS
   apfCavityOp.h
   apfShape.h
   apfNumbering.h
-  apfNumberingAlgorithms.h
   apfPartition.h
   apfConvert.h)
 
