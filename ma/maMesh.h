@@ -64,8 +64,6 @@ typedef apf::Copies Remotes;
 /** \brief part id set name */
 typedef apf::Parts Parts;
 
-void addRemote(Mesh* m, Entity* e, int p, Entity* r);
-
 void rotateTri(Entity** iv, int n, Entity** ov);
 void rotateQuad(Entity** iv, int n, Entity** ov);
 void rotateTet(Entity** iv, int n, Entity** ov);

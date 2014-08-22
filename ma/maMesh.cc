@@ -23,14 +23,6 @@ Vector getPosition(Mesh* m, Entity* vertex)
   return r;
 }
 
-void addRemote(Mesh* m, Entity* e, int p, Entity* r)
-{
-  Remotes remotes;
-  m->getRemotes(e,remotes);
-  remotes[p]=r;
-  m->setRemotes(e,remotes);
-}
-
 /* returns true if the arrays are equal */
 static bool same(int n, Entity** a, Entity** b)
 {
