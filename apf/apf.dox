@@ -9,6 +9,7 @@ abstractions, including Fields and Meshes.
 - The API for fixed-size linear algebra is in apfVector.h and apfMatrix.h
 - The API for runtime-sized linear algebra is in apfDynamicVector.h and
   apfDynamicMatrix.h
+- The API for partitioning is in apfPartition.h, see also parma.h
 - Useful data structures can be found in
   apfArray.h, apfNew.h, and apfDynamicArray.h
 - When coding operations on groups of elements in parallel,
