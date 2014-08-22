@@ -50,7 +50,8 @@ set(APF_SOURCES
   apfPartition.cc
   apfConvert.cc
   apfConstruct.cc
-  apfVerify.cc)
+  apfVerify.cc
+  apfGradientByVolume.cc)
 
 set(APF_HEADERS
   apf.h
