@@ -547,6 +547,12 @@ struct Function
 Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
     Function* f);
 
+/** \brief Compute a nodal gradient field from a nodal input field
+  \details given a nodal field, compute approximate nodal gradient
+  values by giving each node a volume-weighted average of the
+  gradients computed at each element around it. */
+Field* recoverGradientByVolume(Field* f);
+
 }
 
 #endif
