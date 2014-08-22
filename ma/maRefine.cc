@@ -293,7 +293,7 @@ static void linkNewVerts(Refine* r)
     {
       PCU_COMM_UNPACK(message);
       Entity* v = findSplitVert(r,message.parent);
-      addRemote(m,v,from,message.vert);
+      m->addRemote(v,from,message.vert);
     }
   }
 }

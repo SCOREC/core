@@ -8,6 +8,23 @@
 #ifndef APF_ZOLTAN_H
 #define APF_ZOLTAN_H
 
+/** \page zoltan APF-Zoltan
+
+  Zoltan is a unification of several scientific data partitioning tools
+  which are especially suited to parallel mesh partitioning.
+  It is developed at Sandia National Labs, and its home page is
+  http://www.cs.sandia.gov/zoltan/
+
+  This package implements an interface between APF and Zoltan,
+  Converting data from an apf::Mesh to Zoltan data structures,
+  running one of the many algorithms available in Zoltan, and
+  using the result to migrate the mesh.
+  By using a mesh abstraction together with a partitioner abstraction,
+  we create a very general and useful component.
+
+  The interface is in apfZoltan.h
+  */
+
 /** \file apfZoltan.h
   \brief Zoltan partitioning for apf::Mesh objects */
 
@@ -29,13 +46,21 @@ enum ZoltanMethod {
 
 /** \brief Zoltan partitioning approach */
 enum ZoltanApproach {
+  /** \brief (Hyper)Graph - does not consider the initial distribution */
   PARTITION,
+  /** \brief (Hyper)Graph - considers the initial distribution */
   REPARTITION,
+  /** \brief (HYPER)Graph - targets partitions needing only small changes */
   REFINE,
+  /** \brief Graph - multilevel */
   PART_KWAY, 
+  /** \brief Graph - space filling curves */
   PART_GEOM,
+  /** \brief Graph - hybrid method combining PART_KWAY and PART_GEOM */
   PART_GEOM_KWAY,
+  /** \brief Graph - targets graphs generated from adaptively refined meshes */
   ADAPT_REPART,
+  /** \brief Graph - targets partitions needing only small changes*/
   REFINE_KWAY
 };
 

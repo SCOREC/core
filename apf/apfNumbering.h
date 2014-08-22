@@ -8,12 +8,16 @@
 #ifndef APFNUMBERING_H
 #define APFNUMBERING_H
 
+/** \file apfNumbering.h
+  \brief Local and global numbering interface */
+
 #include "apf.h"
 #include "apfDynamicArray.h"
 #include "apfMesh.h"
 
 namespace apf {
 
+/** \brief Global numberings use 64-bit integers */
 typedef NumberingOf<long> GlobalNumbering;
 
 /** \brief Create a Numbering of degrees of freedom of a Field.
@@ -66,56 +70,72 @@ int getNumber(Numbering* n, MeshEntity* e, int node, int component);
   */
 Field* getField(Numbering* n);
 
+/** \brief get the FieldShape used by a Numbering */
 FieldShape* getShape(Numbering* n);
+/** \brief get the name of a Numbering */
 const char* getName(Numbering* n);
+/** \brief get the mesh associated with a Numbering */
 Mesh* getMesh(Numbering* n);
 
-/* returns the numbers of the nodes of an element, in the standard
-   element node ordering for that element */
+/** \brief returns the node numbers of an element
+  \details numbers are returned in the standard
+           element node ordering for its shape functions */
 void getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
+
+/** \brief return the number of fixed degrees of freedom */ 
 int countFixed(Numbering* n);
 
-/* numbers non-owned nodes with the values from their owned copies on
-   other parts. Works even if the non-owned nodes have no number currently
-   assigned, after this they are all numbered */
+/** \brief numbers non-owned nodes with the values from their owners
+   \details Works even if the non-owned nodes have no number currently
+   assigned, after this they are all numbered
+   \param shr if non-zero, use this Sharing model to determine ownership
+              and copies, otherwise call apf::getSharing */
 void synchronize(Numbering * n, Sharing* shr = 0);
 
-/* creates a local numbering of the owned entities of a given dimension */
+/** \brief number the local owned entities of a given dimension */
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
-/* creates a local element numbering */
+/** \brief number the local elements */
 Numbering* numberElements(Mesh* mesh, const char* name);
-/* creates a local numbering of all nodes (owned or not)
-   in the mesh's default field shape.
-   usually this is the vertices. */
+/** \brief number all local nodes
+  \param s if non-zero, use nodes from this FieldShape, otherwise
+           use the mesh's coordinate nodes */
 Numbering* numberOverlapNodes(
 		Mesh* mesh,
 		const char* name,
 		FieldShape* s = 0);
-/* creates a local numbering of the owned nodes in the
-   mesh's default field shape. */
+/** \brief number the local owned nodes
+  \param s if non-zero, use nodes from this FieldShape, otherwise
+           use the mesh's coordinate nodes
+  \param shr if non-zero, use this Sharing to determine ownership,
+             otherwise call apf::getSharing */
 Numbering* numberOwnedNodes(
     Mesh* mesh,
     const char* name,
     FieldShape* s = 0,
     Sharing* shr = 0);
-/* count the number of nodes that have been explicitly numbered */
+/** \brief count the number of nodes that have been numbered */
 int countNodes(Numbering* n);
 
+/** \brief Node identifier */
 struct Node
 {
   Node() {}
   Node(MeshEntity* e, int n):entity(e),node(n) {}
+  /** \brief unique entity to which the node is associated */
   MeshEntity* entity;
+  /** \brief which node on the entity it is */
   int node;
 };
 
-/* returns an array of all local nodes (owned or not) with
-   an explicit number assignment. the array is sorted by
-   dimension first and then by mesh iterator order */
+/** \brief get an array of numbered nodes
+  \details the array is sorted by
+  dimension first and then by mesh iterator order */
 void getNodes(Numbering* n, DynamicArray<Node>& nodes);
 
-/* returns an array of all nodes associated with entities which
-   are classified on the closure of a model face.
+/** \brief get nodes on the closure of a model entity
+  \details
+   all local nodes associated with mesh entities classified
+   on the closure of the model entity are returned.
    this is useful for applying boundary conditions, and correctly
    handles cases when a part has, for example, vertices classified
    on the edge of a model face, but none of the triangles classified
@@ -125,20 +145,25 @@ void getNodesOnClosure(
     ModelEntity* me,
     DynamicArray<Node>& on);
 
-/* creates an empty global numbering, see createNumbering.
+/** \brief create global numbering
+   \details see apf::createNumbering.
    so far global numberings have one component */
 GlobalNumbering* createGlobalNumbering(
     Mesh* mesh,
     const char* name,
     FieldShape* shape);
-/* see the Numbering equivalents of these functions */
+/** \brief get the mesh associated with a global numbering */
 Mesh* getMesh(GlobalNumbering* n);
+/** \brief assign a global number */
 void number(GlobalNumbering* n, Node node, long number);
+/** \brief get a global number */
 long getNumber(GlobalNumbering* n, Node node);
+/** \brief get an element's global node numbers */
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers);
 
-/* converts a local numbering into a global numbering.
+/** \brief converts a local numbering into a global numbering.
+  \details
    the original local numbering is destroyed.
    All local numbers are increased by an offset;
    the offset on part P is the sum of the numbered nodes
@@ -156,13 +181,31 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
  */
 GlobalNumbering* makeGlobal(Numbering* n);
 
-/* see synchronize(Numbering*) and makeGlobal */
+/** \brief see the Numbering equivalent and apf::makeGlobal */
 void synchronize(GlobalNumbering* n, Sharing* shr = 0);
 
+/** \brief destroy a global numbering */
 void destroyGlobalNumbering(GlobalNumbering* n);
 
-/* see the Numbering equivalent */
+/** \brief see the Numbering equivalent */
 void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes);
+
+/** \brief Number by adjacency graph traversal
+  \details a plain single-integer tag is used to
+  number the vertices and elements of a mesh */
+MeshTag* reorder(Mesh* mesh, const char* name);
+
+/** \brief number all components by simple iteration
+ \todo name should be lower-case */
+int NaiveOrder(Numbering * num);
+
+/** \brief like apf::reorder, but numbers all free nodal components
+ \todo name should be lower-case */
+int AdjReorder(Numbering * num);
+
+/** \brief add an offset to all free nodal component numbers
+ \todo name should be lower-case */
+void SetNumberingOffset(Numbering * num, int off);
 
 }
 

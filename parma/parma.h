@@ -94,7 +94,7 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
  * @brief get the maximum and average number of vtx-connected neighboring parts
  * @remark for each part count the number of parts it shares mesh
  *         vertices with
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param max (InOut) max neighbors
  * @param avg (InOut) average neighbors
  * @param loc (InOut) local neighbors
@@ -104,7 +104,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc);
 
 /**
  * @brief get the number of vertices on inter-part boundaries
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @return number of vertices
  */
 long Parma_GetNumBdryVtx(apf::Mesh* m);
@@ -112,10 +112,10 @@ long Parma_GetNumBdryVtx(apf::Mesh* m);
 /**
  * @brief get the maximum, average and local number of face-disconnected
  * components 
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param max (InOut) max disconnected
  * @param avg (InOut) average disconnected
- * @param isMax (InOut) local disconnected 
+ * @param loc (InOut) local disconnected 
  */
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc);
 
@@ -124,31 +124,37 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc);
  * @remark includes face-disconnected components, number of vertices on 
  *         inter-part boundaries, number of vtx-connected neighboring parts, 
  *         entity imbalance, and number of empty parts
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param key (In) identifying string to write with stat output
  */
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key);
 
 /**
  * @brief re-connect disconnected parts
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  */
 void Parma_ProcessDisconnectedParts(apf::Mesh* m);
 
 /**
  * @brief create an APF Balancer using centroid diffusion
- * @param mesh (In) partitioned mesh
- * @param stepFactor (In) amount of weight to migrate between parts during diffusion, lower values migrate fewer elements per iteration
+ * @param m (In) partitioned mesh
+ * @param stepFactor (In) amount of weight to migrate between parts
+                          during diffusion, lower values migrate
+                          fewer elements per iteration
  * @return apf balancer instance
  */
-apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1, int verbose=0);
+apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1,
+    int verbose=0);
 
 /**
  * @brief create an APF Balancer using ghost element aware diffusion
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param layers (In) depth of ghosting
- * @param bridge (In) dimension of entity ghosting depth is based on, typically meshDim-1
- * @param stepFactor (In) amount of weight to migrate between parts during diffusion, lower values migrate fewer elements per iteration
+ * @param bridge (In) dimension of entity ghosting depth is based on,
+                      typically meshDim-1
+ * @param stepFactor (In) amount of weight to migrate between parts during
+                          diffusion, lower values migrate fewer
+                          elements per iteration
  * @param verbosity (In) output control, higher values output more
  * @return apf balancer instance
  */
@@ -157,7 +163,7 @@ apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
 
 /**
  * @brief create an APF Balancer using heavy part splitting
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param verbosity (In) output control, higher values output more
  * @return apf balancer instance
  */
@@ -165,7 +171,7 @@ apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity=0);
 
 /**
  * @brief create an APF Balancer targeting vertex imbalance
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param verbosity (In) output control, higher values output more
  * @return apf balancer instance
  */
@@ -174,7 +180,7 @@ apf::Balancer* Parma_MakeVtxBalancer(apf::Mesh* m, double stepFactor=0.1, int ve
 
 /**
  * @brief create an APF Splitter using recursive inertial bisection
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param sync (In) true if all parts will be split, false o.w.
  * @return apf splitter instance
  */
@@ -182,7 +188,7 @@ apf::Splitter* Parma_MakeRibSplitter(apf::Mesh* m, bool sync = true);
 
 /**
  * @brief create a mesh tag that weighs elements by their memory consumption
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @return mesh tag
  */
 apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);
