@@ -76,11 +76,10 @@ FieldShape* getConstant(int dimension);
 /** \brief Get the Integration Point distribution
   \param dimension The dimensionality of the elements
   \param order The order of accuracy, determines the integration points
-               see apf::EntityIntegration::getAccurate
- \details 
- This allows users to create a field which has values at the integration
- points of elements.
- Orders 1 to 3 for dimension 3 are available */
+  \details 
+  This allows users to create a field which has values at the integration
+  points of elements.
+  Orders 1 to 3 for dimension 3 are available */
 FieldShape* getIPShape(int dimension, int order);
 /** \brief Get the Voronoi shape function
   \details the Voronoi FieldShape is equivalent to the IPShape except
