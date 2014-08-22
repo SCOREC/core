@@ -6,6 +6,7 @@ abstractions, including Fields and Meshes.
 - The API for mesh queries is in apfMesh.h, especially apf::Mesh
 - The API for mesh modification is in apfMesh2.h, especially apf::Mesh2
 - The API for fields is in apf.h
+- Field types and shape functions are in apfShape.h
 - The API for fixed-size linear algebra is in apfVector.h and apfMatrix.h
 - The API for runtime-sized linear algebra is in apfDynamicVector.h and
   apfDynamicMatrix.h
