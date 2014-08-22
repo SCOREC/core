@@ -145,15 +145,6 @@ void rotateOct(Entity** iv, int n, Entity** ov)
     ov[i] = iv[oct_rotation[n][i]];
 }
 
-Vector averagePositions(Mesh* m, Entity** v, int n)
-{
-  Vector result = getPosition(m,v[0]);
-  for (int i=1; i < n; ++i)
-    result = result + getPosition(m,v[i]);
-  result = result / n;
-  return result;
-}
-
 int getDownIndex(Mesh* m, Entity* e, Entity* de)
 {
   Downward down;

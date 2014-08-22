@@ -60,9 +60,6 @@ void unrotateTetXi(Vector& xi, int rotation);
 
 void rotateOct(Entity** iv, int n, Entity** ov);
 
-/* averages the real coordinates of n vertices together */
-Vector averagePositions(Mesh* m, Entity** v, int n);
-
 int getDownIndex(Mesh* m, Entity* e, Entity* de);
 Entity* getTriEdgeOppositeVert(Mesh* m, Entity* tri, Entity* v);
 Entity* getTriVertOppositeEdge(Mesh* m, Entity* tri, Entity* v);
