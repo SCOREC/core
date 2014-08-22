@@ -781,6 +781,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \
+@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_null.h \
 @CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu.c
 
 # This tag can be used to specify the character encoding of the source files
