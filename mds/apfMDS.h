@@ -111,13 +111,17 @@ void deriveMdsModel(Mesh2* in);
   (when reducing a high dimensional mesh to a lower one) */
 void changeMdsDimension(Mesh2* in, int d);
 
-/** \brief returns the dimension-unique index for this entity */
+/** \brief returns the dimension-unique index for this entity
+ \details this function only works when the arrays have no gaps,
+ so call apf::reorderMdsMesh after any mesh modification. */
 int getMdsIndex(Mesh2* in, MeshEntity* e);
 
 /** \brief retrieve an entity by dimension and index
   \details indices follow iteration order, so this
   function is equivalent to iterating (index) times,
-  but is actually much faster than that. */
+  but is actually much faster than that.
+  this function only works when the arrays have no gaps,
+  so call apf::reorderMdsMesh after any mesh modification. */
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 }
