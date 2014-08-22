@@ -42,7 +42,6 @@ typedef apf::Downward Downward;
 /** \brief convenient geometric model entity name */
 typedef apf::ModelEntity Model;
 
-/** \brief shorter enum for topological types */
 enum MeshEntityType
 {
   VERT = apf::Mesh::VERTEX,      //0
