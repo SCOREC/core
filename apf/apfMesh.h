@@ -380,6 +380,8 @@ Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
 class Migration
 {
   public:
+/** \brief must be constructed with a mesh
+  \details use (new apf::Migration(mesh)) to make these objects */
     Migration(Mesh* m);
     ~Migration();
 /** \brief return the number of elements with assigned destinations */
