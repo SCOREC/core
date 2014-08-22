@@ -10,25 +10,41 @@
 #ifndef MA_MESH_H
 #define MA_MESH_H
 
+/** \file maMesh.h
+  \brief mesh functions for MeshAdapt */
+
 #include <apfMesh2.h>
 #include <apfMatrix.h>
 #include <set>
 
 namespace ma {
 
+/** \brief convenient vector name */
 typedef apf::Vector3 Vector;
+/** \brief convenient matrix name */
 typedef apf::Matrix3x3 Matrix;
+/** \brief convenient mesh name */
 typedef apf::Mesh2 Mesh;
+/** \brief convenient mesh entity name */
 typedef apf::MeshEntity Entity;
+/** \brief convenient mesh iterator name */
 typedef apf::MeshIterator Iterator;
+/** \brief convenient mesh tag name */
 typedef apf::MeshTag Tag;
+/** \brief convenient mesh entity array name */
 typedef apf::DynamicArray<Entity*> EntityArray;
+/** \brief convenient mesh entity set name */
 typedef std::set<Entity*> EntitySet;
+/** \brief convenient mesh entity upward adjacencies name */
 typedef EntityArray Upward;
+/** \brief convenient mesh entity downward adjacencies name */
 typedef apf::Downward Downward;
+/** \brief convenient geometric model entity name */
 typedef apf::ModelEntity Model;
 
-enum {
+/** \brief shorter enum for topological types */
+enum MeshEntityType
+{
   VERT = apf::Mesh::VERTEX,      //0
   EDGE = apf::Mesh::EDGE,        //1
   TRI = apf::Mesh::TRIANGLE,     //2
@@ -40,9 +56,12 @@ enum {
   TYPES = apf::Mesh::TYPES       //8
 };
 
+/** \brief get vertex spatial coordinates */
 Vector getPosition(Mesh* m, Entity* vertex);
 
+/** \brief convenient remote copies name */
 typedef apf::Copies Remotes;
+/** \brief part id set name */
 typedef apf::Parts Parts;
 
 void addRemote(Mesh* m, Entity* e, int p, Entity* r);
