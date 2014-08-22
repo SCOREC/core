@@ -14,10 +14,10 @@
    This is the main API for SCOREC's MeshAdapt software, version 2
 
    These functions run parallel mesh adaptation based on various
-   types of size fields, with optional user-specific solution transfer.
+   types of size fields, with optional user-defined solution transfer.
 
    If no solution transfer is specified, MeshAdapt will automatically
-   transfer all linear nodal fields.
+   transfer all nodal fields and some integration point fields.
 
    Features such a snapping and matched entity support are activated
    automatically if the input structures support them.
@@ -25,7 +25,10 @@
    An interface is also provided where users can pick and choose
    what MeshAdapt does and adjust some parameters.
 
-   See the API list in ma.h
+ - The main API is in ma.h
+ - Most users may need to also tweak settings using maInput.h
+ - For defining size functions, see maSize.h
+ - In you need special solution transfer, see maSolutionTransfer.h
 */
 
 /** \file ma.h
