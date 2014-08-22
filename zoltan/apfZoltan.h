@@ -8,6 +8,23 @@
 #ifndef APF_ZOLTAN_H
 #define APF_ZOLTAN_H
 
+/** \page zoltan APF-Zoltan
+
+  Zoltan is a unification of several scientific data partitioning tools
+  which are especially suited to parallel mesh partitioning.
+  It is developed at Sandia National Labs, and its home page is
+  http://www.cs.sandia.gov/zoltan/
+
+  This package implements an interface between APF and Zoltan,
+  Converting data from an apf::Mesh to Zoltan data structures,
+  running one of the many algorithms available in Zoltan, and
+  using the result to migrate the mesh.
+  By using a mesh abstraction together with a partitioner abstraction,
+  we create a very general and useful component.
+
+  The interface is in apfZoltan.h
+  */
+
 /** \file apfZoltan.h
   \brief Zoltan partitioning for apf::Mesh objects */
 
