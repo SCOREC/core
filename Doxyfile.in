@@ -764,6 +764,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfVector.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfMatrix.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicVector.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicMatrix.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfNew.h \
