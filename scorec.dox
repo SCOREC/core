@@ -4,6 +4,7 @@ Welcome to the SCOREC core documentation.
 The following packages are documented:
 - \subpage pcu
 - \subpage apf
+- \subpage mds
 - \subpage zoltan
 - \subpage parma
 - \subpage spr
