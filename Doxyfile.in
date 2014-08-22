@@ -773,6 +773,8 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfCavityOp.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfPartition.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mds/apfMDS.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/ma.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maInput.h \
 @CMAKE_CURRENT_SOURCE_DIR@/zoltan/apfZoltan.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \

@@ -10,11 +10,8 @@
 #ifndef MA_H
 #define MA_H
 
-#include "maInput.h"
-
-namespace ma {
-
-/* This is the main API for SCOREC's MeshAdapt software, version 2
+/** \page ma MeshAdapt
+   This is the main API for SCOREC's MeshAdapt software, version 2
 
    These functions run parallel mesh adaptation based on various
    types of size fields, with optional user-specific solution transfer.
@@ -27,21 +24,32 @@ namespace ma {
 
    An interface is also provided where users can pick and choose
    what MeshAdapt does and adjust some parameters.
+
+   See the API list in ma.h
 */
 
-/* adapt based on an isotropic function
-   see maSize.h for how to define a function */
+/** \file ma.h
+  \brief The MeshAdapt interface */
+
+#include "maInput.h"
+
+/** \namespace ma
+    \brief All MeshAdapt symbols */
+namespace ma {
+
+/** \brief adapt based on an isotropic function
+   \details see maSize.h for how to define a function */
 void adapt(Mesh* m, IsotropicFunction* f, SolutionTransfer* s=0);
-/* adapt based on an anisotropic function */
+/** \brief adapt based on an anisotropic function */
 void adapt(Mesh* m, AnisotropicFunction* f, SolutionTransfer* s=0);
-/* adapt with custom configuration
-   see maInput.h for details
-   note that this function will delete the Input object */
+/** \brief adapt with custom configuration
+  \details see maInput.h for details.
+  note that this function will delete the Input object */
 void adapt(Input* in);
-/* run uniform refinement, plus snapping and shape correction if applicable */
+/** \brief run uniform refinement, plus snapping and shape correction */
 void runUniformRefinement(Mesh* m, int n=1, SolutionTransfer* s=0);
-/* run uniform refinement with matched entity support
-   currently this supports snapping but not shape correction */
+/** \brief run uniform refinement with matched entity support
+  \details currently this supports snapping but not shape correction */
 void adaptMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
 
 }
