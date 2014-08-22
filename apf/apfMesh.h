@@ -276,7 +276,7 @@ class Mesh
     void changeCoordinateField(Field* f);
     /** \brief Migrate elements.
        \param plan a mapping from local elements
-                   to process IDs, which will be deleted during migration */
+                   to part IDs, which will be deleted during migration */
     virtual void migrate(Migration* plan) = 0;
     /** \brief Get the part ID */
     virtual int getId() = 0;
