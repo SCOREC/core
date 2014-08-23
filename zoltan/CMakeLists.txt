@@ -52,11 +52,13 @@ configure_file(
 #Sources & Headers
 if(ENABLE_ZOLTAN)
   set(SOURCES
+    apfInterElement.cc
     apfZoltan.cc
     apfZoltanMesh.cc
     apfZoltanCallbacks.cc)
 else()
   set(SOURCES
+    apfInterElement.cc
     apfZoltanEmpty.cc)
 endif()
 

@@ -565,12 +565,13 @@ void unfreezeFields(Mesh* m) {
   m->hasFrozenFields = false;
 }
 
-std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s)
+Copy getOtherCopy(Mesh* m, MeshEntity* s)
 {
   Copies remotes;
   m->getRemotes(s,remotes);
   assert(remotes.size()==1);
-  return *(remotes.begin());
+  Copies::iterator it = remotes.begin();
+  return Copy(it->first, it->second);
 }
 
 int getDimension(Mesh* m, MeshEntity* e)
@@ -737,6 +738,14 @@ void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
   size_t i = 0;
   APF_ITERATE(std::set<MeshEntity*>, s, it)
     result[i++] = *it;
+}
+
+int getFirstType(Mesh* m, int dim)
+{
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e = m->iterate(it);
+  m->end(it);
+  return m->getType(e);
 }
 
 } //namespace apf
