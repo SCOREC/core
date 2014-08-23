@@ -136,7 +136,7 @@ add_test(split_fusion
 # this test runs on half its procs
 add_test(adapt_fusion
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./fan
+  ./fusion
   "fusion_2_.smb")
 add_test(change_dim
   ./newdim)
