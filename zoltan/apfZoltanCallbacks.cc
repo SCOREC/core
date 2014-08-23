@@ -13,16 +13,7 @@
 
 namespace apf {
 
-size_t typeSize(size_t t)
-{
-  const size_t quotient = t / sizeof(ZOLTAN_ID_TYPE);
-  const size_t mod = t % sizeof(ZOLTAN_ID_TYPE);
-  if (mod)
-    return quotient+1;
-  return quotient;
-}
-
-int setZoltanLbMethod(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
+static int setZoltanLbMethod(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
 {
   // setting LB_METHOD
   std::string lbMethod = "GRAPH";
@@ -47,7 +38,7 @@ int setZoltanLbMethod(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
   return 0;
 }
 
-int setZoltanLbApproach(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
+static int setZoltanLbApproach(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
 {
   // setting LB_Approach
   std::string ptnAp = "REPARTITION";
@@ -80,7 +71,7 @@ int setZoltanLbApproach(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
   return 0;
 }
 
-long get(MeshEntity* e, ZoltanMesh *zz)
+static long get(MeshEntity* e, ZoltanMesh *zz)
 {
   if (!zz->isLocal)
     return getNumber(zz->global,Node(e,0));
@@ -88,10 +79,10 @@ long get(MeshEntity* e, ZoltanMesh *zz)
     return getNumber(zz->local, e, 0, 0);
 }
 
-int getPartId(Mesh* m, MeshEntity* s)
+static int getPartId(Mesh* m, MeshEntity* s)
 {
   if (m->isShared(s))
-    return getOtherCopy(m, s).first;
+    return getOtherCopy(m, s).peer;
   Matches matches;
   m->getMatches(s, matches);
   assert(matches.getSize() == 1);
@@ -117,7 +108,6 @@ void zoltanGetNodes(void* data, int ngid, int nlid,
     lids[ind*nlid]=ind;
     MeshEntity *ent = zb->elements[ind];
     gids[ind*ngid]= get(ent, zb);
-    //current support for 2 weights
     double* w = (double*)calloc(nweights,sizeof(double));
     zb->mesh->getDoubleTag(ent,zb->weights,w);
     for (int i=0;i<nweights;i++)

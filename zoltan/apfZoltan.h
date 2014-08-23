@@ -28,6 +28,8 @@
 /** \file apfZoltan.h
   \brief Zoltan partitioning for apf::Mesh objects */
 
+#include <apfNumbering.h>
+
 namespace apf {
 
 /** \brief Zoltan partitioning method */
@@ -67,6 +69,7 @@ enum ZoltanApproach {
 class Mesh;
 class Splitter;
 class Balancer;
+class MeshTag;
 
 /** \brief Make a Zoltan Splitter object
   \details the resulting splitter will apply Zoltan
@@ -91,6 +94,23 @@ Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
   \param debug print the full Zoltan configuration */
 Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach,
     bool debug = true);
+
+/** \brief Tag global ids of opposite elements to boundary faces
+  \details this function creates a LONG tag of one value
+  and attaches to all partition boundary faces the global
+  id of the element on the other side.
+  \param gn global element numbering
+  \param name the name of the resulting tag */
+MeshTag* tagOpposites(GlobalNumbering* gn, const char* name);
+
+/** \brief Get an element-to-element connectivity array
+  \details this function assumes the mesh has one element type.
+  the resulting array is created with new int[nelements * nsides].
+  nsides is the number of faces of an element.
+  entry [i * nsides + j] is the global id of the j'th adjacent
+  element to local element i, which can be -1 for a geometric
+  boundary. */
+int* getElementToElement(apf::Mesh* m);
 
 }
 

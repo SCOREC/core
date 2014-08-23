@@ -666,14 +666,6 @@ const CellTopologyData* getTopology(Mesh* m, int t)
   return 0;
 }
 
-static int getFirstType(Mesh* m, int dim)
-{
-  MeshIterator* it = m->begin(dim);
-  MeshEntity* e = m->iterate(it);
-  m->end(it);
-  return m->getType(e);
-}
-
 const CellTopologyData* getDimTopology(Mesh* m, int dim)
 {
   return getTopology(m, getFirstType(m, dim));
