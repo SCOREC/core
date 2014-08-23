@@ -716,13 +716,12 @@ MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   mds* mds = &(m->mesh->mds);
-  int i = 0;
   for (int t = 0; t < MDS_TYPES; ++t)
     if (mds_dim[t] == dimension) {
-      if (i < mds->n[t])
-        return toEnt(mds_identify(t, i));
+      if (index < mds->n[t])
+        return toEnt(mds_identify(t, index));
       else
-        i -= mds->n[t];
+        index -= mds->n[t];
     }
   return 0;
 }

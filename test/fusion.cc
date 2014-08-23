@@ -93,6 +93,21 @@ class Vortex : public ma::AnisotropicFunction
     ma::Vector centroid;
 };
 
+static void testIndexing(apf::Mesh2* m)
+{
+  for (int d = 0; d <= m->getDimension(); ++d) {
+    apf::MeshIterator* it = m->begin(d);
+    int i = 0;
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))) {
+      assert( apf::getMdsIndex(m, e) == i );
+      assert( apf::getMdsEntity(m, d, i) == e );
+      ++i;
+    }
+    m->end(it);
+  }
+}
+
 static void fusionAdapt(apf::Mesh2* m)
 {
   Vortex sf(m);
@@ -115,6 +130,7 @@ struct GroupCode : public Parma_GroupCode
     if (group == 0) {
       mesh = apf::loadMdsMesh(model, meshFile);
       mesh->verify();
+      testIndexing(mesh);
       fusionAdapt(mesh);
     } else {
       mesh = apf::makeEmptyMdsMesh(model, 2, false);
