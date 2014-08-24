@@ -17,14 +17,8 @@ inline void clearTag(apf::Mesh*& m, apf::MeshTag* t) {
    }
 }
 
-inline int getEntDim(apf::Mesh* m, apf::MeshEntity* e) {
-   assert(e);
-   assert(m);
-   return apf::Mesh::typeDimension[m->getType(e)];
-}
-
 inline apf::MeshEntity* getUpEnt(apf::Mesh* m, apf::MeshEntity* e) {
-   const int upDim = getEntDim(m, e) + 1;
+   const int upDim = apf::getDimension(m, e) + 1;
    dynEntArr adjEnt;
    m->getAdjacent(e, upDim, adjEnt);
    assert( NULL != adjEnt[0] );
@@ -33,7 +27,7 @@ inline apf::MeshEntity* getUpEnt(apf::Mesh* m, apf::MeshEntity* e) {
 
 inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* vtx,
     dynEntArr& adjVtx) {
-   assert( 0 == getEntDim(m, vtx) );   
+   assert( 0 == apf::getDimension(m, vtx) );   
    dynEntArr adjE;
    apf::Downward adjDown;
   
@@ -48,7 +42,7 @@ inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* vtx,
 }
 
 inline void getDwn2ndAdj(apf::Mesh* m, apf::MeshEntity* ent, dynEntArr& adj) {
-   const int dim = getEntDim(m, ent);
+   const int dim = apf::getDimension(m, ent);
    assert(dim >= 1);
    apf::Downward adjDown;
    const int na = m->getDownward(ent, dim-1, adjDown);
@@ -83,9 +77,8 @@ inline int getNumFaceOnPb(apf::Mesh* m, const int destPid, apf::Downward& adjF,
    pbPid.insert(m->getId());
    pbPid.insert(destPid);
 
-   //APF_ITERATE(dynEntArr, adjF, fIt) {
    for(int i=0; i<numFaces; i++) {
-      assert(m->getDimension()-1 == getEntDim(m, adjF[i]));
+      assert(m->getDimension()-1 == apf::getDimension(m, adjF[i]));
       apf::Parts resPid; 
       m->getResidence(adjF[i], resPid);
       if ( resPid == pbPid ) 

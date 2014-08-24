@@ -46,7 +46,7 @@ dcPart::~dcPart() {
 }
 
 inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
-   const int upDim = getEntDim(m, e) + 1;
+   const int upDim = apf::getDimension(m, e) + 1;
    eArr adjEnt;
    m->getAdjacent(e, upDim, adjEnt);
    assert( NULL != adjEnt[0] );
@@ -203,7 +203,7 @@ void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
  
 
 inline bool isShared(Mesh* m, MeshEntity* elm) {
-   const int dim = getEntDim(m, elm);
+   const int dim = apf::getDimension(m, elm);
    assert( dim == m->getDimension() );
    eArr adjEnt;
    m->getAdjacent(elm, dim-1, adjEnt);
