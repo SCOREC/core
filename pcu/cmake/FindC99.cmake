@@ -83,7 +83,7 @@ return 0;
 }
  
 // Check varargs and va_copy.
-static void
+static _Bool
 test_varargs (const char *format, ...)
 {
 va_list args;
@@ -115,7 +115,7 @@ break;
 va_end (args_copy);
 va_end (args);
  
-number = (number != 0) && (str != NULL) && (fnumber != 0.0);
+return (number != 0) && (str != NULL) && (fnumber != 0.0);
 }
  
 int
@@ -131,7 +131,8 @@ success = true;
 char *restrict newvar = \"Another string\";
  
 // Check varargs.
-test_varargs (\"s, d' f .\", \"string\", 65, 34.234);
+if (!test_varargs (\"s, d' f .\", \"string\", 65, 34.234))
+  success = false;
 test_varargs_macros ();
  
 // Check flexible array members.
