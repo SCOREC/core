@@ -10,6 +10,31 @@
 #include <apfConvert.h>
 #include <apfMesh2.h>
 
+static void fixMatches(apf::Mesh2* m)
+{
+  if (m->hasMatching()) {
+    if (apf::alignMdsMatches(m))
+      printf("fixed misaligned matches\n");
+    else
+      printf("matches were aligned\n");
+    assert( ! apf::alignMdsMatches(m));
+  }
+}
+
+static void fixPyramids(apf::Mesh2* m)
+{
+  ma::Input* in = ma::configureIdentity(m);
+  in->shouldCleanupLayer = true;
+  ma::adapt(in);
+}
+
+static void postConvert(apf::Mesh2* m)
+{
+  fixMatches(m);
+  fixPyramids(m);
+  m->verify();
+}
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
@@ -17,7 +42,7 @@ int main(int argc, char** argv)
   if (argc != 4) {
     if(0==PCU_Comm_Self())
       std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <scorec mesh>\n";
-    return 0;
+    return EXIT_FAILURE;
   }
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
@@ -36,14 +61,7 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  if (mesh->hasMatching()) {
-    if (apf::alignMdsMatches(mesh))
-      printf("fixed misaligned matches\n");
-    else
-      printf("matches were aligned\n");
-    assert( ! apf::alignMdsMatches(mesh));
-  }
-  mesh->verify();
+  postConvert(mesh);
   mesh->writeNative(argv[3]);
 
   mesh->destroyNative();
