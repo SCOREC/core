@@ -1,5 +1,6 @@
 #include "parma_dcpart.h"
 #include "parma_commons.h"
+#include "parma_meshaux.h"
 #include "PCU.h"
 #include <stdio.h>
 #include <vector>
@@ -39,45 +40,17 @@ void dcPart::init(Mesh*& mesh) {
    vtag = mesh->createIntTag("dcVisited",1);
 }
 
-inline void clearTag(Mesh*& m, MeshTag* t) {
-   MeshEntity* e;
-   MeshIterator* itr = m->begin(m->getDimension());
-   while( (e = m->iterate(itr)) ) {
-      if( m->hasTag(e, t) ) 
-         m->removeTag(e, t);
-   }
-   m->end(itr);
-}
-
 dcPart::~dcPart() {
    clearTag(m, vtag);
    m->destroyTag(vtag); 
 }
 
-inline int getEntDim(Mesh* m, MeshEntity* e) {
-   const int t = m->getType(e);
-   return apf::Mesh::getEntityDimension(t);
-}
-
 inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
-   const int upDim = getEntDim(m, e) + 1;
+   const int upDim = apf::getDimension(m, e) + 1;
    eArr adjEnt;
    m->getAdjacent(e, upDim, adjEnt);
    assert( NULL != adjEnt[0] );
    return adjEnt[0];
-}
-
-inline void getDwn2ndAdj(Mesh* m, MeshEntity* elm, eArr& adj) {
-   const int dim = getEntDim(m, elm);
-   eArr adjF;  
-   m->getAdjacent(elm, dim-1, adjF);
-   APF_ITERATE(eArr, adjF, fit) {
-      eArr adjElms;  
-      m->getAdjacent(*fit, dim, adjElms);
-      APF_ITERATE(eArr, adjElms, eit) 
-         if ( *eit != elm ) 
-            adj.append(*eit);
-   }
 }
 
 int dcPart::numDisconnectedComps() {
@@ -132,10 +105,10 @@ int dcPart::walkPart(int visited) {
 
 /**
  * @brief remove the disconnected set(s) of elements from the part
- * @remark migrate the disconnected set(s) of elements into the adjacent part that
- *         shares the most faces with the disconnected set of elements
- *         requires that the sets of elements forming disconnected components are 
- *         tagged
+ * @remark migrate the disconnected set(s) of elements into the adjacent part
+ *         that shares the most faces with the disconnected set of elements
+ *         requires that the sets of elements forming disconnected components
+ *         are tagged
  */
 void dcPart::fix() {
    double t1 = MPI_Wtime();
@@ -230,7 +203,7 @@ void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
  
 
 inline bool isShared(Mesh* m, MeshEntity* elm) {
-   const int dim = getEntDim(m, elm);
+   const int dim = apf::getDimension(m, elm);
    assert( dim == m->getDimension() );
    eArr adjEnt;
    m->getAdjacent(elm, dim-1, adjEnt);

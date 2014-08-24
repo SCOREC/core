@@ -171,11 +171,6 @@ bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
   return gmi_periodic(getModel(), e, axis);
 }
 
-int Mesh::getEntityDimension(int type)
-{
-  return Mesh::typeDimension[type];
-}
-
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
 {
   getVector(coordinateField,e,node,p);
@@ -720,24 +715,49 @@ Sharing* getSharing(Mesh* m)
   return new NormalSharing(m);
 }
 
-void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
-    int bridgeDimension, int targetDimension, Adjacent& result)
+static void getUpBridgeAdjacent(Mesh* m, MeshEntity* origin,
+    int bridgeDimension, int targetDimension,
+    std::set<MeshEntity*>& result)
 {
   assert(targetDimension < bridgeDimension);
-  std::set<MeshEntity*> s;
   Adjacent bridges;
   m->getAdjacent(origin, bridgeDimension, bridges);
   for (size_t i = 0; i < bridges.getSize(); ++i) {
     Downward targets;
     int nt = m->getDownward(bridges[i], targetDimension, targets);
     for (int j = 0; j < nt; ++j)
-      s.insert(targets[j]);
+      result.insert(targets[j]);
   }
+}
+
+static void getDownBridgeAdjacent(Mesh* m, MeshEntity* origin,
+    int bridgeDimension, int targetDimension,
+    std::set<MeshEntity*>& result)
+{
+  assert(targetDimension > bridgeDimension);
+  std::set<MeshEntity*> s;
+  Downward bridges;
+  int nbridges = m->getDownward(origin, bridgeDimension, bridges);
+  for (int i = 0; i < nbridges; ++i) {
+    Adjacent targets;
+    m->getAdjacent(bridges[i], targetDimension, targets);
+    for (size_t j = 0; j < targets.getSize(); ++j)
+      result.insert(targets[j]);
+  }
+}
+
+void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
+    int bridgeDimension, int targetDimension, Adjacent& result)
+{
+  assert(targetDimension != bridgeDimension);
+  std::set<MeshEntity*> s;
+  if (targetDimension < bridgeDimension)
+    getUpBridgeAdjacent(m, origin, bridgeDimension, targetDimension, s);
+  else
+    getDownBridgeAdjacent(m, origin, bridgeDimension, targetDimension, s);
   s.erase(origin);
   result.setSize(s.size());
-  size_t i = 0;
-  APF_ITERATE(std::set<MeshEntity*>, s, it)
-    result[i++] = *it;
+  std::copy(s.begin(), s.end(), result.begin());
 }
 
 int getFirstType(Mesh* m, int dim)

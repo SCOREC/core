@@ -360,7 +360,7 @@ double Parma::improveEntBalance(const priorityList &pl, const int plIdx,
    clearTag(mesh, vtag);
 
    for(int i=0; i<plan->count(); i++)
-     assert( 3 == getEntDim(mesh, plan->get(i)) );
+     assert( 3 == apf::getDimension(mesh, plan->get(i)) );
    mesh->migrate(plan); //plan deleted here
    return totW;
 }
