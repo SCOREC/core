@@ -156,8 +156,13 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::createMdsMesh(model, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  if (alignMdsMatches(mesh))
-    printf("fixed misaligned matches\n");
+  if (mesh->hasMatching()) {
+    if (apf::alignMdsMatches(mesh))
+      printf("fixed misaligned matches\n");
+    else
+      printf("matches were aligned\n");
+    assert( ! apf::alignMdsMatches(mesh));
+  }
   mesh->verify();
   int elms = mesh->count(mesh->getDimension());
   PCU_Add_Ints(&elms, 1);
