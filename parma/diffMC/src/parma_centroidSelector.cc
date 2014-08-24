@@ -143,7 +143,7 @@ namespace parma {
           distQ->push(it->second.second,it->first);
       }
       int getPeer(apf::MeshEntity* e) {
-        return apf::getOtherCopy(mesh,e).first;
+        return apf::getOtherCopy(mesh,e).peer;
       }
       bool isSide(apf::MeshEntity* e) {
         apf::Parts p;

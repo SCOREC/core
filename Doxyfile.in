@@ -460,7 +460,7 @@ EXTRACT_ANON_NSPACES   = NO
 # section is generated. This option has no effect if EXTRACT_ALL is enabled.
 # The default value is: NO.
 
-HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_MEMBERS     = YES
 
 # If the HIDE_UNDOC_CLASSES tag is set to YES, doxygen will hide all
 # undocumented classes that are normally visible in the class hierarchy. If set
@@ -468,7 +468,7 @@ HIDE_UNDOC_MEMBERS     = NO
 # no effect if EXTRACT_ALL is enabled.
 # The default value is: NO.
 
-HIDE_UNDOC_CLASSES     = NO
+HIDE_UNDOC_CLASSES     = YES
 
 # If the HIDE_FRIEND_COMPOUNDS tag is set to YES, doxygen will hide all friend
 # (class|struct|union) declarations. If set to NO these declarations will be
@@ -591,7 +591,7 @@ STRICT_PROTO_MATCHING  = NO
 # documentation.
 # The default value is: YES.
 
-GENERATE_TODOLIST      = NO
+GENERATE_TODOLIST      = YES
 
 # The GENERATE_TESTLIST tag can be used to enable ( YES) or disable ( NO) the
 # test list. This list is created by putting \test commands in the
@@ -758,17 +758,35 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/scorec.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfMesh.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfMesh2.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfNumbering.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfShape.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfConvert.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfVector.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfMatrix.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicVector.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicMatrix.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfNew.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfCavityOp.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/apfPartition.h \
+@CMAKE_CURRENT_SOURCE_DIR@/mds/apfMDS.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/ma.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maInput.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maMesh.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maSolutionTransfer.h \
+@CMAKE_CURRENT_SOURCE_DIR@/ma/maSize.h \
+@CMAKE_CURRENT_SOURCE_DIR@/zoltan/apfZoltan.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.h \
+@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
+@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
+@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \
+@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_null.h \
 @CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu.c
 
 # This tag can be used to specify the character encoding of the source files

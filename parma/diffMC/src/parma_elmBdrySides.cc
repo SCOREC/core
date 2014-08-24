@@ -14,7 +14,7 @@ namespace parma {
         totalSides = 0;
         while ((s = m->iterate(it)))
           if (m->countUpward(s)==1 && m->isShared(s)) {
-            const int peerId = apf::getOtherCopy(m,s).first;
+            const int peerId = apf::getOtherCopy(m,s).peer;
             set(peerId, get(peerId)+1);
             ++totalSides;
           }

@@ -8,65 +8,87 @@
 #ifndef APFDYNAMICMATRIX_H
 #define APFDYNAMICMATRIX_H
 
+/** \file apfDynamicMatrix.h
+  \brief Small runtime-sized matrices */
+
 #include "apfDynamicVector.h"
 #include "apfMatrix.h"
 #include "iostream"
 
 namespace apf {
 
+/** \brief A runtime-sized dense matrix
+  \details see apf::DynamicVector for some general
+  guidance on apf::DynamicMatrix as opposed to apf::Matrix.
+  This class is meant to be used for small matrices whose
+  size is not known at compile time.
+  For big, sparse, or parallel matrices, look outside of APF. */
 class DynamicMatrix
 {
   public:
+    /** \brief defautl constructor, no allocation */
     DynamicMatrix() {}
+    /** \brief construct with size m by n */
     DynamicMatrix(std::size_t m, std::size_t n):
       columns(n),
       values(m*n)
     {}
+    /** \brief get the number of rows (first index) */
     std::size_t getRows() const {return values.getSize()/columns;}
+    /** \brief get the number of columns (second index) */
     std::size_t getColumns() const {return columns;}
+    /** \brief resize to m by n */
     void setSize(std::size_t m, std::size_t n)
     {
       columns = n;
       values.setSize(m*n);
     }
+    /** \brief immutable index operator */
     double operator()(std::size_t i, std::size_t j) const
     {
       return values[i*columns + j];
     }
+    /** \brief mutable index operator */
     double& operator()(std::size_t i, std::size_t j)
     {
       return values[i*columns + j];
     }
+    /** \brief add a matrix to this matrix */
     DynamicMatrix& operator+=(DynamicMatrix const& b)
     {
       for (std::size_t i=0; i < this->values.getSize(); ++i)
         this->values[i] += b.values[i];
       return *this;
     }
+    /** \brief subtract a matrix from this matrix */
     DynamicMatrix& operator-=(DynamicMatrix const& b)
     {
       for (std::size_t i=0; i < this->values.getSize(); ++i)
         this->values[i] += b.values[i];
       return *this;
     }
+    /** \brief multiply this matrix by a scalar */
     DynamicMatrix& operator*=(double s)
     {
       for (std::size_t i=0; i < this->values.getSize(); ++i)
         this->values[i] *= s;
       return *this;
     }
+    /** \brief divide this matrix by a scalar */
     DynamicMatrix& operator/=(double s)
     {
       for (std::size_t i=0; i < this->values.getSize(); ++i)
         this->values[i] *= s;
       return *this;
     }
+    /** \brief copy row data into a DynamicVector */
     void getRow(std::size_t i, DynamicVector& r) const
     {
       r.setSize(columns);
       for (std::size_t j=0; j < columns; ++j)
         r(j) = (*this)(i,j);
     }
+    /** \brief copy column data into a DynamicVector */
     void getColumn(std::size_t j, DynamicVector& r) const
     {
       std::size_t rows = getRows();
@@ -74,11 +96,13 @@ class DynamicMatrix
       for (std::size_t i=0; i < rows; ++i)
         r(i) = (*this)(i,j);
     }
+    /** \brief copy row data from a DynamicVector */
     void setRow(std::size_t i, DynamicVector const& r)
     {
       for (std::size_t j=0; j < columns; ++j)
         (*this)(i,j) = r(j);
     }
+    /** \brief copy column data from a DynamicVector */
     void setColumn(std::size_t j, DynamicVector const& r)
     {
       std::size_t rows = getRows();
@@ -90,6 +114,7 @@ class DynamicMatrix
     DynamicArray<double> values;
 };
 
+/** \brief multiply a DynamicMatrix by a DynamicVector */
 inline void multiply(DynamicMatrix const& a,
                      DynamicVector const& b,
                      DynamicVector& r)
@@ -105,6 +130,7 @@ inline void multiply(DynamicMatrix const& a,
   }
 }
 
+/** \brief multiply a DynamicVector by a DynamicMatrix */
 inline void multiply(DynamicVector const& b,
                      DynamicMatrix const& a,
                      DynamicVector& r)
@@ -120,6 +146,7 @@ inline void multiply(DynamicVector const& b,
   }
 }
 
+/** \brief multiply two DynamicMatrix objects */
 inline void multiply(DynamicMatrix const& a,
                      DynamicMatrix const& b,
                      DynamicMatrix& r)
@@ -137,6 +164,7 @@ inline void multiply(DynamicMatrix const& a,
   }
 }
 
+/** \brief get the transpose of a DynamicMatrix */
 inline void transpose(DynamicMatrix const& a,
                       DynamicMatrix& r)
 {
@@ -148,6 +176,7 @@ inline void transpose(DynamicMatrix const& a,
     r(j,i) = a(i,j);
 }
 
+/** \brief convert an apf::Matrix into an apf::DynamicMatrix */
 template <std::size_t N, std::size_t M>
 inline DynamicMatrix fromMatrix(Matrix<N,M> other)
 {
@@ -160,6 +189,7 @@ inline DynamicMatrix fromMatrix(Matrix<N,M> other)
 
 }//namespace apf
 
+/** \brief write an apf::DynamicMatrix to a C++ stream */
 std::ostream& operator<<(std::ostream& s, apf::DynamicMatrix const& A);
 
 #endif

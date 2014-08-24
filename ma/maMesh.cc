@@ -23,14 +23,6 @@ Vector getPosition(Mesh* m, Entity* vertex)
   return r;
 }
 
-void addRemote(Mesh* m, Entity* e, int p, Entity* r)
-{
-  Remotes remotes;
-  m->getRemotes(e,remotes);
-  remotes[p]=r;
-  m->setRemotes(e,remotes);
-}
-
 /* returns true if the arrays are equal */
 static bool same(int n, Entity** a, Entity** b)
 {
@@ -143,15 +135,6 @@ void rotateOct(Entity** iv, int n, Entity** ov)
 {
   for (int i=0; i < 6; ++i)
     ov[i] = iv[oct_rotation[n][i]];
-}
-
-Vector averagePositions(Mesh* m, Entity** v, int n)
-{
-  Vector result = getPosition(m,v[0]);
-  for (int i=1; i < n; ++i)
-    result = result + getPosition(m,v[i]);
-  result = result / n;
-  return result;
 }
 
 int getDownIndex(Mesh* m, Entity* e, Entity* de)

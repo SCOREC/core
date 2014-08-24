@@ -73,6 +73,10 @@ struct Up
   */
 struct Copy
 {
+  /** \brief required */
+  Copy() {}
+  /** \brief build from contents */
+  Copy(int p, MeshEntity* e):peer(p),entity(e) {}
   /** \brief resident part of the copy object */
   int peer;
   /** \brief on-part pointer to the copy object */
@@ -276,7 +280,7 @@ class Mesh
     void changeCoordinateField(Field* f);
     /** \brief Migrate elements.
        \param plan a mapping from local elements
-                   to process IDs, which will be deleted during migration */
+                   to part IDs, which will be deleted during migration */
     virtual void migrate(Migration* plan) = 0;
     /** \brief Get the part ID */
     virtual int getId() = 0;
@@ -380,6 +384,8 @@ Vector3 getLinearCentroid(Mesh* m, MeshEntity* e);
 class Migration
 {
   public:
+/** \brief must be constructed with a mesh
+  \details use (new apf::Migration(mesh)) to make these objects */
     Migration(Mesh* m);
     ~Migration();
 /** \brief return the number of elements with assigned destinations */
@@ -475,7 +481,7 @@ void printStats(Mesh* m);
 void warnAboutEmptyParts(Mesh* m);
 
 /** \brief given a mesh face, return its remote copy */
-std::pair<int,MeshEntity*> getOtherCopy(Mesh* m, MeshEntity* s);
+Copy getOtherCopy(Mesh* m, MeshEntity* s);
 
 class ElementVertOp
 {
@@ -484,6 +490,9 @@ class ElementVertOp
     MeshEntity* run(int type, MeshEntity** verts);
     void runDown(int type, MeshEntity** verts, MeshEntity** down);
 };
+
+/** \brief get the type of the first entity in this dimension */
+int getFirstType(Mesh* m, int dim);
 
 } //namespace apf
 

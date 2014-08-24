@@ -33,7 +33,7 @@ apf::Field* getGradIPField(apf::Field* f,
                            int order);
 
 /** @brief recover a nodal field using patch recovery
-  * @param f (In) integration point field
+  * @param ip_field (In) integration point field
   */
 apf::Field* recoverField(apf::Field* ip_field);
 

@@ -3,10 +3,18 @@
 APF (Attached Parallel Fields) is a library of finite element simulation
 abstractions, including Fields and Meshes.
 
-- The API for meshes is here: apfMesh.h
-- The API for fields is here: apf.h
-- The API for small linear algebra is in apfVector.h and apfMatrix.h
-- Basic data structures can be found in
+- The API for mesh queries is in apfMesh.h, especially apf::Mesh
+- The API for mesh modification is in apfMesh2.h, especially apf::Mesh2
+- The API for fields is in apf.h
+- Field types and shape functions are in apfShape.h
+- The API for fixed-size linear algebra is in apfVector.h and apfMatrix.h
+- The API for runtime-sized linear algebra is in apfDynamicVector.h and
+  apfDynamicMatrix.h
+- The API for partitioning is in apfPartition.h, see also parma.h
+- Useful data structures can be found in
   apfArray.h, apfNew.h, and apfDynamicArray.h
+- When coding operations on groups of elements in parallel,
+  consider using the \subpage cavity.
+- The API for mesh conversion is in apfConvert.h
 
 */

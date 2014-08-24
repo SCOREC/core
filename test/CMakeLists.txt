@@ -56,7 +56,7 @@ if(ENABLE_MPAS)
   setup_exe(mpas_write ../mpas/mpas_write.cc)
 endif()
 setup_exe(hps hps.cc)
-setup_exe(fan fan.cc)
+setup_exe(fusion fusion.cc)
 setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 
