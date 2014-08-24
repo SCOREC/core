@@ -270,8 +270,6 @@ class Mesh
       \returns true if (g) is periodic along this axis */
     bool getPeriodicRange(ModelEntity* g, int axis,
         double range[2]);
-    /** \brief helper for looking up in apf::Mesh::typeDimension */
-    static int getEntityDimension(int type);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */

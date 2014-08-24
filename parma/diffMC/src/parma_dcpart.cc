@@ -1,5 +1,6 @@
 #include "parma_dcpart.h"
 #include "parma_commons.h"
+#include "parma_meshaux.h"
 #include "PCU.h"
 #include <stdio.h>
 #include <vector>
@@ -39,24 +40,9 @@ void dcPart::init(Mesh*& mesh) {
    vtag = mesh->createIntTag("dcVisited",1);
 }
 
-inline void clearTag(Mesh*& m, MeshTag* t) {
-   MeshEntity* e;
-   MeshIterator* itr = m->begin(m->getDimension());
-   while( (e = m->iterate(itr)) ) {
-      if( m->hasTag(e, t) ) 
-         m->removeTag(e, t);
-   }
-   m->end(itr);
-}
-
 dcPart::~dcPart() {
    clearTag(m, vtag);
    m->destroyTag(vtag); 
-}
-
-inline int getEntDim(Mesh* m, MeshEntity* e) {
-   const int t = m->getType(e);
-   return apf::Mesh::getEntityDimension(t);
 }
 
 inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
@@ -65,19 +51,6 @@ inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
    m->getAdjacent(e, upDim, adjEnt);
    assert( NULL != adjEnt[0] );
    return adjEnt[0];
-}
-
-inline void getDwn2ndAdj(Mesh* m, MeshEntity* elm, eArr& adj) {
-   const int dim = getEntDim(m, elm);
-   eArr adjF;  
-   m->getAdjacent(elm, dim-1, adjF);
-   APF_ITERATE(eArr, adjF, fit) {
-      eArr adjElms;  
-      m->getAdjacent(*fit, dim, adjElms);
-      APF_ITERATE(eArr, adjElms, eit) 
-         if ( *eit != elm ) 
-            adj.append(*eit);
-   }
 }
 
 int dcPart::numDisconnectedComps() {

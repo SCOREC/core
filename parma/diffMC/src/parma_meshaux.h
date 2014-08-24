@@ -20,8 +20,7 @@ inline void clearTag(apf::Mesh*& m, apf::MeshTag* t) {
 inline int getEntDim(apf::Mesh* m, apf::MeshEntity* e) {
    assert(e);
    assert(m);
-   const int t = m->getType(e);
-   return apf::Mesh::getEntityDimension(t);
+   return apf::Mesh::typeDimension[m->getType(e)];
 }
 
 inline apf::MeshEntity* getUpEnt(apf::Mesh* m, apf::MeshEntity* e) {

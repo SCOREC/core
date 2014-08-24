@@ -171,11 +171,6 @@ bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
   return gmi_periodic(getModel(), e, axis);
 }
 
-int Mesh::getEntityDimension(int type)
-{
-  return Mesh::typeDimension[type];
-}
-
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
 {
   getVector(coordinateField,e,node,p);
