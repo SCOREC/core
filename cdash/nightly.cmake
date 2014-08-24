@@ -151,10 +151,8 @@ SET(CONFIGURE_OPTIONS
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
   "-DPCU_COMPRESS=ON"
-  "-DCMAKE_MAKE_PROGRAM:FILEPATH=/lore/dibanez/danmake.sh"
+  "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_CURRENT_SOURCE_DIR}/clangmake.sh"
 )
-# danmake.sh is just a shell script that calls clang's scan-build
-# in front of gmake
 SET(REPO https://github.com/SCOREC/core.git)
 
 build_subproject("core-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
@@ -168,7 +166,7 @@ SET(CONFIGURE_OPTIONS
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
   "-DPCU_COMPRESS=ON"
-  "-DCMAKE_MAKE_PROGRAM:FILEPATH=/lore/dibanez/danmake.sh"
+  "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_CURRENT_SOURCE_DIR}/clangmake.sh"
   "-DSIM_MPI=openmpi16"
 )
 SET(REPO git@bitbucket.org:ibaned/scorec.git)
