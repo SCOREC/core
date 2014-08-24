@@ -161,7 +161,7 @@ void MeshSIM::getAdjacent(MeshEntity* e,
 {
   pEntity entity = reinterpret_cast<pEntity>(e);
   eType ent_type = EN_type(entity);
-  if (Mesh::getEntityDimension(getType(e)) == dimension)
+  if (apf::getDimension(this, e) == dimension)
   {
     adjacent.setSize(1);
     adjacent[0] = e;
@@ -244,7 +244,7 @@ int MeshSIM::getDownward(MeshEntity* e,
 {
   pEntity entity = reinterpret_cast<pEntity>(e);
   eType ent_type = EN_type(entity);
-  if (Mesh::getEntityDimension(getType(e)) == dimension)
+  if (apf::getDimension(this, e) == dimension)
   {
     down[0] = e;
   }
