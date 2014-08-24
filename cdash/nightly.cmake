@@ -136,7 +136,7 @@ SET(CONFIGURE_OPTIONS
   "-DIS_TESTING=True"
   "-DSIM_MPI=openmpi16"
 )
-SET(REPO git@bitbucket.org:ibaned/scorec.git)
+SET(REPO git@github.com:SCOREC/core-sim.git)
 
 run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
 
@@ -169,7 +169,7 @@ SET(CONFIGURE_OPTIONS
   "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_CURRENT_SOURCE_DIR}/clangmake.sh"
   "-DSIM_MPI=openmpi16"
 )
-SET(REPO git@bitbucket.org:ibaned/scorec.git)
+SET(REPO git@github.com:SCOREC/core-sim.git)
 
 build_subproject("core-sim-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
 
