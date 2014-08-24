@@ -8,6 +8,7 @@
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMesh2.h>
+#include <ma.h>
 
 #ifndef AdvMeshing_EXPORT
 #define AdvMeshing_EXPORT
@@ -127,6 +128,31 @@ void getConfig(int argc, char** argv)
     printf("Inputs: model %s case %s\n", modelFile.c_str(), caseName.c_str());
 }
 
+void fixMatches(apf::Mesh2* m)
+{
+  if (m->hasMatching()) {
+    if (apf::alignMdsMatches(m))
+      printf("fixed misaligned matches\n");
+    else
+      printf("matches were aligned\n");
+    assert( ! apf::alignMdsMatches(m));
+  }
+}
+
+void fixPyramids(apf::Mesh2* m)
+{
+  ma::Input* in = ma::configureIdentity(m);
+  in->shouldCleanupLayer = true;
+  ma::adapt(in);
+}
+
+void postConvert(apf::Mesh2* m)
+{
+  fixMatches(m);
+  fixPyramids(m);
+  m->verify();
+}
+
 } //end unnamed namespace
 
 int main(int argc, char** argv)
@@ -156,18 +182,7 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::createMdsMesh(model, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  if (mesh->hasMatching()) {
-    if (apf::alignMdsMatches(mesh))
-      printf("fixed misaligned matches\n");
-    else
-      printf("matches were aligned\n");
-    assert( ! apf::alignMdsMatches(mesh));
-  }
-  mesh->verify();
-  int elms = mesh->count(mesh->getDimension());
-  PCU_Add_Ints(&elms, 1);
-  if(0==PCU_Comm_Self())
-    printf("Mesh elements: %d \n", elms);
+  postConvert(mesh);
   mesh->writeNative(outMeshFile.c_str());
 
   mesh->destroyNative();
