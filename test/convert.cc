@@ -9,6 +9,7 @@
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMesh2.h>
+#include <ma.h>
 
 static void fixMatches(apf::Mesh2* m)
 {
