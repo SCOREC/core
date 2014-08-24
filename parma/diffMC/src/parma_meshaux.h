@@ -31,7 +31,8 @@ inline apf::MeshEntity* getUpEnt(apf::Mesh* m, apf::MeshEntity* e) {
    return adjEnt[0];
 }
 
-inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* vtx, dynEntArr& adjVtx) {
+inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* vtx,
+    dynEntArr& adjVtx) {
    assert( 0 == getEntDim(m, vtx) );   
    dynEntArr adjE;
    apf::Downward adjDown;
@@ -60,7 +61,8 @@ inline void getDwn2ndAdj(apf::Mesh* m, apf::MeshEntity* ent, dynEntArr& adj) {
    }
 }
 
-inline int getNumTaggedEnts(apf::Mesh* m, apf::MeshTag* vtag, int visited, apf::Downward& ents, const int numEnts) {
+inline int getNumTaggedEnts(apf::Mesh* m, apf::MeshTag* vtag, int visited,
+    apf::Downward& ents, const int numEnts) {
    int taggedEnts = 0;
    int tval = -1;
    for(int i=0; i<numEnts; i++) {
@@ -73,7 +75,8 @@ inline int getNumTaggedEnts(apf::Mesh* m, apf::MeshTag* vtag, int visited, apf::
    return taggedEnts;
 }
 
-inline int getNumFaceOnPb(apf::Mesh* m, const int destPid, apf::Downward& adjF, const int numFaces) {
+inline int getNumFaceOnPb(apf::Mesh* m, const int destPid, apf::Downward& adjF,
+    const int numFaces) {
    int numPbFaces = 0;
  
    apf::Parts pbPid; 

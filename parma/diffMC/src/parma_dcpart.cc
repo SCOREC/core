@@ -105,10 +105,10 @@ int dcPart::walkPart(int visited) {
 
 /**
  * @brief remove the disconnected set(s) of elements from the part
- * @remark migrate the disconnected set(s) of elements into the adjacent part that
- *         shares the most faces with the disconnected set of elements
- *         requires that the sets of elements forming disconnected components are 
- *         tagged
+ * @remark migrate the disconnected set(s) of elements into the adjacent part
+ *         that shares the most faces with the disconnected set of elements
+ *         requires that the sets of elements forming disconnected components
+ *         are tagged
  */
 void dcPart::fix() {
    double t1 = MPI_Wtime();
