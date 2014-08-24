@@ -2,14 +2,19 @@ set(MESHES "/lore/dibanez/meshes"
     CACHE string 
     "path to the meshes svn repo")
 set(MDIR ${MESHES}/pipe)
+add_test(convert
+  convert
+  "${MDIR}/pipe.smd"
+  "${MDIR}/pipe.sms"
+  "pipe.smb")
 add_test(verify_serial
   verify
   "${MDIR}/pipe.smd"
-  "${MDIR}/pipe.smb")
+  "pipe.smb")
 add_test(uniform_serial
   uniform
   "${MDIR}/pipe.smd"
-  "${MDIR}/pipe.smb"
+  "pipe.smb"
   "pipe_unif.smb")
 add_test(snap_serial
   snap
