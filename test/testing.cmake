@@ -61,6 +61,13 @@ add_test(balance
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusBal4p/")
+set(MDIR ${MESHES}/airFoilAfosr)
+add_test(vtxBalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./vtxBalance
+  "${MDIR}/afosr.dmg"
+  "${MDIR}/4imb/"
+  "afosrBal4p/")
 set(MDIR ${MESHES}/cube)
 add_test(construct
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
