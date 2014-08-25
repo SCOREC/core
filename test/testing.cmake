@@ -68,6 +68,12 @@ add_test(vtxBalance
   "${MDIR}/afosr.dmg"
   "${MDIR}/4imb/"
   "afosrBal4p/")
+add_test(vtxElmBalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./vtxElmBalance
+  "${MDIR}/afosr.dmg"
+  "${MDIR}/4imb/"
+  "afosrBal4p/")
 set(MDIR ${MESHES}/cube)
 add_test(construct
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
