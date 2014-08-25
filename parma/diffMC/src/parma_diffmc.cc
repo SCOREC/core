@@ -344,10 +344,8 @@ double Parma::improveEntBalance(const priorityList &pl, const int plIdx,
    double maxImbW[4];
    for (int i=0;i<4;i++) maxImbW[i] = avgW[i]*maxImb;
    partInfo part(mesh, wtag, pl, plIdx, maxImbW);
-   if( entDim != 0 ) {
+   if( entDim != 0 ) 
      part.getGreedyMigrationSchedule2(pl, plIdx, maxImbW);
-     part.print(itr);
-   }
 
    const double maxWeight = part.weight[entDim] - avgW[entDim];
    Migration* plan = new Migration(mesh);
