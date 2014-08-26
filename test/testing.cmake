@@ -155,4 +155,5 @@ add_test(change_dim
   ./newdim)
 add_test(ma_insphere
   ma_insphere)
+add_test(shapefun shapefun)
 #todo - ph_test on crossflow ?
