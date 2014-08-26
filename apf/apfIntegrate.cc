@@ -314,8 +314,33 @@ class PrismIntegration : public EntityIntegration
         virtual int countPoints() const {return 1;}
         virtual IntegrationPoint const* getPoint(int) const
         {
+          static IntegrationPoint point(Vector3(1.0/3.0,1.0/3.0,0),1);
+          return &point;
+        }
+        virtual int getAccuracy() const {return 1;} //sort of
+    };
+    virtual int countIntegrations() const {return 1;}
+    virtual Integration const* getIntegration(int i) const
+    {
+      static N1 i1;
+      return &i1;
+    }
+};
+
+class PyramidIntegration : public EntityIntegration
+{
+  public:
+    class N1 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 1;}
+        virtual IntegrationPoint const* getPoint(int) const
+        {
+          /* one-point rule from
+colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch12.d/AFEM.Ch12.pdf */
           static IntegrationPoint point(
-              Vector3(1.0/3.0,1.0/3.0,0),1);
+              Vector3(0,0,-1.0/2.0),
+              128.0 / 27.0);
           return &point;
         }
         virtual int getAccuracy() const {return 1;} //sort of
@@ -334,6 +359,7 @@ EntityIntegration const* getIntegration(int meshEntityType)
   static TriangleIntegration triangle;
   static TetrahedronIntegration tet;
   static PrismIntegration prism;
+  static PyramidIntegration pyramid;
   EntityIntegration* integrations[Mesh::TYPES] =
   {NULL,      //vertex
    &edge,     //edge
@@ -342,7 +368,7 @@ EntityIntegration const* getIntegration(int meshEntityType)
    &tet,      //tet
    NULL,      //hex
    &prism,    //prism
-   NULL};     //pyramid
+   &pyramid}; //pyramid
   return integrations[meshEntityType];
 }
 

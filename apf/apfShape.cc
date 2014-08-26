@@ -175,17 +175,36 @@ class Linear : public FieldShape
     };
     class Pyramid : public EntityShape
     {
-      public:
-        void getValues(Vector3 const&, NewArray<double>& values) const
-        {/* hack warning: this just averages values, it is meant
-          to hold up the interpolation system in meshadapt for
-          splitting pyramid in the worst case */
-          values.allocate(5);
-          for (int i = 0; i < 5; ++i)
-            values[i] = 1.0/5.0;
-        }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>& ) const
+      public: /* degenerate hexahedron */
+        void getValues(Vector3 const& xi, NewArray<double>& values) const
         {
+          values.allocate(5);
+          double l0x = (1 - xi[0]);
+          double l1x = (1 + xi[0]);
+          double l0y = (1 - xi[1]);
+          double l1y = (1 + xi[1]);
+          double l0z = (1 - xi[2]);
+          double l1z = (1 + xi[2]);
+          values[0] = l0x * l0y * l0z / 8;
+          values[1] = l1x * l0y * l0z / 8;
+          values[2] = l1x * l1y * l0z / 8;
+          values[3] = l0x * l1y * l0z / 8;
+          values[4] = l1z / 2;
+        }
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
+        {
+          double l0x = (1 - xi[0]);
+          double l1x = (1 + xi[0]);
+          double l0y = (1 - xi[1]);
+          double l1y = (1 + xi[1]);
+          double l0z = (1 - xi[2]);
+          grads.allocate(5);
+          grads[0] = Vector3(-l0y * l0z, -l0x * l0z, -l0x * l0y) / 8;
+          grads[1] = Vector3( l0y * l0z, -l1x * l0z, -l1x * l0y) / 8;
+          grads[2] = Vector3( l1y * l0z,  l1x * l0z, -l1x * l1y) / 8;
+          grads[3] = Vector3(-l1y * l0z,  l0x * l0z, -l0x * l1y) / 8;
+          grads[4] = Vector3(0,0,0.5);
         }
         int countNodes() const {return 5;}
     };

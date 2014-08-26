@@ -76,7 +76,7 @@ MeshEntity* buildOneElement(
     Mesh2* m,
     ModelEntity* c,
     int type,
-    Vector3* points)
+    Vector3 const* points)
 {
   int nv = Mesh::adjacentCount[type][0];
   Downward v;
