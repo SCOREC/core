@@ -168,7 +168,7 @@ MeshEntity* buildOneElement(
     Mesh2* m,
     ModelEntity* c,
     int type,
-    Vector3* points);
+    Vector3 const* points);
 
 /** \brief Set entity residence based on remote copies
   \details this function acts on all entities of one dimension */

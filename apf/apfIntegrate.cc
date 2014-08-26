@@ -302,11 +302,64 @@ class TetrahedronIntegration : public EntityIntegration
     }
 };
 
+class PrismIntegration : public EntityIntegration
+{
+  public: /* a cheap one-point prism integration rule, not
+             really legitimately 1st-order accurate but
+             should be all right for our current purposes
+           \todo revise this with some proper mathematics */
+    class N1 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 1;}
+        virtual IntegrationPoint const* getPoint(int) const
+        {
+          static IntegrationPoint point(Vector3(1.0/3.0,1.0/3.0,0),1);
+          return &point;
+        }
+        virtual int getAccuracy() const {return 1;} //sort of
+    };
+    virtual int countIntegrations() const {return 1;}
+    virtual Integration const* getIntegration(int i) const
+    {
+      static N1 i1;
+      return &i1;
+    }
+};
+
+class PyramidIntegration : public EntityIntegration
+{
+  public:
+    class N1 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 1;}
+        virtual IntegrationPoint const* getPoint(int) const
+        {
+          /* one-point rule from
+colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch12.d/AFEM.Ch12.pdf */
+          static IntegrationPoint point(
+              Vector3(0,0,-1.0/2.0),
+              128.0 / 27.0);
+          return &point;
+        }
+        virtual int getAccuracy() const {return 1;} //sort of
+    };
+    virtual int countIntegrations() const {return 1;}
+    virtual Integration const* getIntegration(int i) const
+    {
+      static N1 i1;
+      return &i1;
+    }
+};
+
 EntityIntegration const* getIntegration(int meshEntityType)
 {
   static EdgeIntegration edge;
   static TriangleIntegration triangle;
   static TetrahedronIntegration tet;
+  static PrismIntegration prism;
+  static PyramidIntegration pyramid;
   EntityIntegration* integrations[Mesh::TYPES] =
   {NULL,      //vertex
    &edge,     //edge
@@ -314,8 +367,8 @@ EntityIntegration const* getIntegration(int meshEntityType)
    NULL,      //quad
    &tet,      //tet
    NULL,      //hex
-   NULL,      //prism
-   NULL};     //pyramid
+   &prism,    //prism
+   &pyramid}; //pyramid
   return integrations[meshEntityType];
 }
 

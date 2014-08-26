@@ -72,6 +72,7 @@ setup_exe(hps hps.cc)
 setup_exe(fusion fusion.cc)
 setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
+setup_exe(shapefun shapefun.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
