@@ -133,23 +133,23 @@ class Mesh
     /** \brief Entity topological types */
     enum Type {
       /** \brief vertex */
-      VERTEX,
+      VERTEX,   //0
       /** \brief edge */
-      EDGE,
+      EDGE,     //1
       /** \brief triangle */
-      TRIANGLE,
+      TRIANGLE, //2
       /** \brief quadrilateral (square) */
-      QUAD,
+      QUAD,     //3
       /** \brief tetrahedron */
-      TET,
+      TET,      //4
       /** \brief hexahedron (cube, brick) */
-      HEX,
+      HEX,      //5
       /** \brief triangular prism (wedge) */
-      PRISM,
+      PRISM,    //6
       /** \brief quadrilateral pyramid */
-      PYRAMID,
+      PYRAMID,  //7
       /** \brief placeholder to set array sizes */
-      TYPES };
+      TYPES };  //8
     /** \brief for a given entity type,
                number of adjacent entities of a given dimension */
     static int const adjacentCount[TYPES][4];

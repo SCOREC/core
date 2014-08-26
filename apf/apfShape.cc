@@ -130,12 +130,46 @@ class Linear : public FieldShape
     };
     class Prism : public EntityShape
     {
-      public:
-        void getValues(Vector3 const&, NewArray<double>& ) const
+      public: //tensor product of triangle and edge
+        void getValues(Vector3 const& xi, NewArray<double>& values) const
         {
+          values.allocate(6);
+          double nt[3];
+          nt[0] = 1-xi[0]-xi[1];
+          nt[1] = xi[0];
+          nt[2] = xi[1];
+          double down = (1 - xi[2]) / 2.0;
+          double up   = (1 + xi[2]) / 2.0;
+          values[0] = nt[0] * down;
+          values[1] = nt[1] * down;
+          values[2] = nt[2] * down;
+          values[3] = nt[0] * up  ;
+          values[4] = nt[1] * up  ;
+          values[5] = nt[2] * up  ;
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>& ) const
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
+          grads.allocate(6);
+          double nt[3];
+          nt[0] = 1-xi[0]-xi[1];
+          nt[1] = xi[0];
+          nt[2] = xi[1];
+          double const down = (1 - xi[2]) / 2.0;
+          double const up   = (1 + xi[2]) / 2.0;
+          static Vector3 const tg[3] =
+          {Vector3(-1,-1,0),
+           Vector3( 1, 0,0),
+           Vector3( 0, 1,0)};
+          static Vector3 const eg[2] =
+          {Vector3(0,0,-0.5),
+           Vector3(0,0, 0.5)};
+          grads[0] = tg[0] * down + eg[0] * nt[0];
+          grads[1] = tg[1] * down + eg[0] * nt[1];
+          grads[2] = tg[2] * down + eg[0] * nt[2];
+          grads[3] = tg[0] * up   + eg[1] * nt[0];
+          grads[4] = tg[1] * up   + eg[1] * nt[1];
+          grads[5] = tg[2] * up   + eg[1] * nt[2];
         }
         int countNodes() const {return 6;}
     };
@@ -423,13 +457,16 @@ class IPShape : public FieldShape
     }
     int countNodesOn(int type)
     {
-      if (Mesh::typeDimension[type]==dimension)
-      {
-        EntityIntegration const* ei = getIntegration(type);
-        if (!ei) return 0; //currently some types don't exist, such as hex/prism
-        return ei->getAccurate(order)->countPoints();
-      }
-      return 0;
+      if (Mesh::typeDimension[type]!=dimension)
+        return 0; //non-elements have no integration points
+      EntityIntegration const* ei = getIntegration(type);
+      if (!ei)
+        return 0; //some types have no integrations at all
+      Integration const* i = ei->getAccurate(order);
+      if (!i)
+        return 0; //some types exist but don't support this order
+      int n = i->countPoints();
+      return n;
     }
     /* this field can integrate a polynomial of
        this order exactly */
