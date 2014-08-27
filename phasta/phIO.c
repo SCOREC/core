@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <pcu_io.h>
 #include <phIO.h>
+#include <PCU.h>
 
 #define PH_LINE 1024
 #define MAGIC 362436
