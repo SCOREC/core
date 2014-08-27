@@ -360,12 +360,13 @@ static void splitPyramid_4_b0(Refine* r, Entity* p, Entity** v)
 static Entity* makePyramidCentroid(Adapt* a, Entity* p)
 {
   Mesh* m = a->mesh;
-  Vector point = apf::getLinearCentroid(m, p);
-  Vector param(0,0,0);
+  Vector param(0,0,0); //will be in geometric region
   Model* c = m->toModel(p);
-  Entity* v = buildVertex(a, c, point, param);
   apf::MeshElement* me = apf::createMeshElement(m, p);
-  Vector xi(0,0,0); //pyramid shape function is fake right now
+  Vector xi(0,0,-3./5.); //parametric centroid for degenerate hex pyramid
+  Vector point;
+  apf::mapLocalToGlobal(me, xi, point);
+  Entity* v = buildVertex(a, c, point, param);
   a->solutionTransfer->onVertex(me, xi, v);
   a->sizeField->interpolate(me, xi, v);
   apf::destroyMeshElement(me);
