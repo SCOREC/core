@@ -93,10 +93,11 @@ static void write_magic_number(FILE* f)
   fprintf(f,"\n");
 }
 
-static void seek_after_header(FILE* f, const char* name)
+static int seek_after_header(FILE* f, const char* name)
 {
   char dummy[PH_LINE];
   find_header(f, name, dummy);
+  return dummy[0] != '\0';
 }
 
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
@@ -107,7 +108,11 @@ static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 
 static int read_magic_number(FILE* f)
 {
-  seek_after_header(f, magic_name);
+  if (!seek_after_header(f, magic_name)) {
+    if (!PCU_Comm_Self())
+      fprintf(stderr,"warning: no byteorder magic number. not swapping\n");
+    return 0;
+  }
   int magic;
   my_fread(&magic, sizeof(int), 1, f);
   return magic != MAGIC;
@@ -163,6 +168,10 @@ void ph_read_field(const char* file, const char* field, double** data,
   }
   should_swap = read_magic_number(f);
   find_header(f, field, header);
+  if (header[0] == '\0') {
+    fprintf(stderr,"could not find field \"%s\"\n",field);
+    abort();
+  }
   parse_params(header, &bytes, nodes, vars, step);
   assert(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
