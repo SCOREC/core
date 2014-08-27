@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <assert.h>
-#include<locale>
+#include <locale>
 
 #include <map>
 #include <list>

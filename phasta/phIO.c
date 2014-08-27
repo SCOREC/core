@@ -112,6 +112,7 @@ static int read_magic_number(FILE* f)
   if (!seek_after_header(f, magic_name)) {
     if (!PCU_Comm_Self())
       fprintf(stderr,"warning: no byteorder magic number. not swapping\n");
+    rewind(f);
     return 0;
   }
   int magic;
