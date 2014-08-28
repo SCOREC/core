@@ -22,3 +22,7 @@ cp -r doc/html /net/web/public/dibanez/core
 
 cd /lore/dibanez/cdash
 rm -rf build/
+
+cd /lore/dibanez
+find meshes/phasta -name "*procs_case" | xargs rm -rf
+find meshes/phasta -name "out_mesh" | xargs rm -rf
