@@ -34,8 +34,12 @@ void goToStepDir(int step)
   std::stringstream ss;
   ss << step;
   std::string s = ss.str();
-  int err = mkdir(s.c_str(), DIR_MODE);
-  assert(!err);
+  int err;
+  if (!PCU_Comm_Self()) {
+    err = mkdir(s.c_str(), DIR_MODE);
+    assert(!err);
+  }
+  PCU_Barrier();
   err = chdir(s.c_str());
   assert(!err);
 }
