@@ -29,6 +29,11 @@ void ph_write_header(FILE* f, const char* name, size_t bytes,
   fprintf(f, "\n");
 }
 
+static void skip_leading_spaces(char** s)
+{
+  while (**s == ' ') ++(*s);
+}
+
 static void cut_trailing_spaces(char* s)
 {
   char* e = s + strlen(s);
@@ -47,6 +52,7 @@ static void parse_header(char* header, char** name, size_t* bytes,
   header = strtok_r(header, ":", &saveptr);
   if (name) {
     *name = header;
+    skip_leading_spaces(name);
     cut_trailing_spaces(*name);
   }
   strtok_r(NULL, "<", &saveptr);
@@ -59,7 +65,7 @@ static void parse_header(char* header, char** name, size_t* bytes,
   }
 }
 
-static void find_header(FILE* f, const char* name, char header[PH_LINE])
+static int find_header(FILE* f, const char* name, char header[PH_LINE])
 {
   char* hname;
   size_t bytes;
@@ -70,10 +76,12 @@ static void find_header(FILE* f, const char* name, char header[PH_LINE])
     strcpy(tmp, header);
     parse_header(tmp, &hname, &bytes, 0, NULL);
     if (!strcmp(name, hname))
-      return;
+      return 1;
     fseek(f, bytes, SEEK_CUR);
   }
-  header[0] = '\0';
+  if (!PCU_Comm_Self())
+    fprintf(stderr,"warning: phIO could not find \"%s\"\n",name);
+  return 0;
 }
 
 static void get_now_string(char s[PH_LINE])
@@ -97,8 +105,7 @@ static void write_magic_number(FILE* f)
 static int seek_after_header(FILE* f, const char* name)
 {
   char dummy[PH_LINE];
-  find_header(f, name, dummy);
-  return dummy[0] != '\0';
+  return find_header(f, name, dummy);
 }
 
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
@@ -111,7 +118,7 @@ static int read_magic_number(FILE* f)
 {
   if (!seek_after_header(f, magic_name)) {
     if (!PCU_Comm_Self())
-      fprintf(stderr,"warning: no byteorder magic number. not swapping\n");
+      fprintf(stderr,"warning: not swapping bytes\n");
     rewind(f);
     return 0;
   }
@@ -163,17 +170,15 @@ void ph_read_field(const char* file, const char* field, double** data,
   size_t bytes, n;
   char header[PH_LINE];
   int should_swap;
+  int ok;
   FILE* f = fopen(file, "r");
   if (!f) {
     fprintf(stderr,"could not open \"%s\"\n", file);
     abort();
   }
   should_swap = read_magic_number(f);
-  find_header(f, field, header);
-  if (header[0] == '\0') {
-    fprintf(stderr,"could not find field \"%s\"\n",field);
-    abort();
-  }
+  ok = find_header(f, field, header);
+  assert(ok);
   parse_params(header, &bytes, nodes, vars, step);
   assert(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
