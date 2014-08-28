@@ -42,7 +42,7 @@ static void my_mkdir(const char* name)
 
 static void my_chdir(const char* name)
 {
-  int err = chdir(s.c_str());
+  int err = chdir(name);
   assert(!err);
 }
 
@@ -51,7 +51,6 @@ void goToStepDir(int step)
   std::stringstream ss;
   ss << step;
   std::string s = ss.str();
-  int err;
   if (!PCU_Comm_Self())
     my_mkdir(s.c_str());
   PCU_Barrier();
