@@ -55,6 +55,8 @@ int main(int argc, char** argv)
     ph::readAndAttachSolution(in, m);
   else
     ph::attachZeroSolution(in, m);
+  if (in.buildMapping)
+    ph::buildMapping(m);
   if (in.adaptFlag) {
     ph::adapt(in, m);
     ph::goToStepDir(in.timeStepNumber);
