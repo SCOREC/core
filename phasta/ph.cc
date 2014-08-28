@@ -30,7 +30,7 @@ enum {
   DIR_MODE = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH
 };
 
-static my_mkdir(const char* name)
+static void my_mkdir(const char* name)
 {
   int err = mkdir(name, DIR_MODE);
   if ((err == -1) && (errno == EEXIST)) {
@@ -40,7 +40,7 @@ static my_mkdir(const char* name)
   assert(!err);
 }
 
-static my_chdir(const char* name)
+static void my_chdir(const char* name)
 {
   int err = chdir(s.c_str());
   assert(!err);
