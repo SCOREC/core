@@ -56,15 +56,15 @@ class Migration;
     \details see apf::Downward for static size rationale.
     Although our algorithmic complexity proofs rely on upward
     adjacencies being bound by a constant, this constant has yet
-    to be pinpointed. Some (bad) Simmetrix meshes have exceeded 256
-    edges per vertex, so we are now at 300.
+    to be pinpointed. Some (bad) Simmetrix meshes have around 300
+    edges per vertex, so we are now at 400.
   */
 struct Up
 {
   /** \brief actual number of adjacent entities */
   int n;
   /** \brief array containing pointers to adjacent entities */
-  MeshEntity* e[300];
+  MeshEntity* e[400];
 };
 
 /** \brief a reference to an object representing the same entity
