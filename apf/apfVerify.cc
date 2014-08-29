@@ -4,6 +4,8 @@
 #include <gmi.h>
 #include <sstream>
 
+#include <sstream>
+
 namespace apf {
 
 static void intersect(
@@ -292,8 +294,15 @@ static long verifyVolumes(Mesh* m)
     if (!isSimplex(m->getType(e)))
       continue;
     MeshElement* me = createMeshElement(m, e);
-    if (measure(me) < 0)
+    double v = measure(me);
+    if (v < 0) {
+      std::stringstream ss;
+      ss << "warning: element volume " << v
+        << " at " << getLinearCentroid(m, e) << '\n';
+      std::string s = ss.str();
+      fprintf(stderr, "%s", s.c_str());
       ++n;
+    }
     destroyMeshElement(me);
   }
   m->end(it);
