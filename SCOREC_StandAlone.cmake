@@ -2,7 +2,7 @@
 
 #Setting Version Number, Project Name
 cmake_minimum_required (VERSION 2.8)
-project (SCOREC) 
+project (SCOREC)
 
 #unless building shared libs, then select static libs 
 # if both static and shared libs are available 
@@ -75,3 +75,8 @@ add_subdirectory(phasta)
 add_subdirectory(mpas)
 
 add_subdirectory(test)
+
+#binary distribution package
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+include(CPack)
