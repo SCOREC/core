@@ -35,7 +35,7 @@ class Input
     bool ownsSizeField;
     SolutionTransfer* solutionTransfer;
     bool ownsSolutionTransfer;
-/** \brief number of refine/coarsen iterations to run */
+/** \brief number of refine/coarsen iterations to run (default 3) */
     int maximumIterations;
 /** \brief whether to snap new vertices to the model surface
     \details requires modeler support, see gmi_can_eval */
@@ -45,47 +45,47 @@ class Input
     bool shouldTransferParametric;
 /** \brief whether to update matched entity info (limited support) */
     bool shouldHandleMatching;
-/** \brief whether to run shape correction */
+/** \brief whether to run shape correction (default true) */
     bool shouldFixShape;
 /** \brief minimum desired mean ratio cubed for simplex elements
    \details a different measure is used for curved elements */
     double goodQuality;
-/** \brief minimum valid mean ratio cubed for simplex elements
+/** \brief minimum valid mean ratio cubed for simplex elements (default 1e-10)
    \details used to define inside-out tetrahedra.
    a different measure is used for curved elements */
     double validQuality;
-/** \brief imbalance target for all load balancing tools */
+/** \brief imbalance target for all load balancing tools (default 1.10) */
     double maximumImbalance;
-/** \brief whether to run zoltan predictive load balancing */
+/** \brief whether to run zoltan predictive load balancing (default false) */
     bool shouldRunPreZoltan;
-/** \brief whether to run parma predictive load balancing */
+/** \brief whether to run parma predictive load balancing (default false) */
     bool shouldRunPreParma;
-/** \brief whether to run centroid predictive load balancing */
+/** \brief whether to run centroid predictive load balancing (default false) */
     bool shouldRunPreDiffusion;
-/** \brief whether to run zoltan load balancing during adaptation */
+/** \brief whether to run zoltan during adaptation (default false) */
     bool shouldRunMidZoltan;
-/** \brief whether to run parma iterative load balancing during adaptation */
+/** \brief whether to run parma iterative during adaptation (default false)*/
     bool shouldRunMidParma;
-/** \brief whether to run parma centroid load balancing during adaptation */
+/** \brief whether to run parma centroid during adaptation (default false) */
     bool shouldRunMidDiffusion;
-/** \brief whether to run zoltan load balancing after adapting */
+/** \brief whether to run zoltan after adapting (default false) */
     bool shouldRunPostZoltan;
-/** \brief whether to run parma cleanup load balancing after adapting */
+/** \brief whether to run parma cleanup after adapting (default false) */
     bool shouldRunPostParma;
-/** \brief whether to run parma centroid load balancing after adapting */
+/** \brief whether to run parma centroid after adapting (default false) */
     bool shouldRunPostDiffusion;
-/** \brief maximum iterations for parma's diffuser */
+/** \brief maximum iterations for parma's diffuser (default 30) */
     int diffuseIterations;
 /** \brief the ratio between longest and shortest edges that differentiates a
    "short edge" element from a "large angle" element. */
     double maximumEdgeRatio;
-/** \brief whether to tetrahedronize the boundary layer */
+/** \brief whether to tetrahedronize the boundary layer (default false)  */
     bool shouldTurnLayerToTets;
-/** \brief whether to tetrahedronize abnormal pyramids */
+/** \brief whether to tetrahedronize abnormal pyramids (default false) */
     bool shouldCleanupLayer;
-/** \brief whether to allow layer refinement */
+/** \brief whether to allow layer refinement (default false) */
     bool shouldRefineLayer;
-/** \brief hack to enable boundary layer uniform refinement. do not touch */
+/** \brief hack to enable boundary layer uniform refinement (do not touch!) */
     bool isUniform;
 };
 

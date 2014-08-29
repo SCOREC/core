@@ -248,28 +248,25 @@ static void markGoodQuads(Adapt* a)
 {
   QuadMarker op(a);
   crawlLayers(&op);
+  syncFlag(a, 2, CHECKED);
 }
 
 static void markBadQuads(Adapt* a)
 {
   Mesh* m = a->mesh;
-  PCU_Comm_Begin();
   Entity* e;
   Iterator* it = m->begin(2);
   while ((e = m->iterate(it)))
-    if (m->getType(e) == QUAD && (!getFlag(a, e, CHECKED))) {
-      apf::Copies remotes;
-      m->getRemotes(e, remotes);
-      APF_ITERATE(apf::Copies, remotes, rit)
-        PCU_COMM_PACK(rit->first, rit->second);
+    if (m->getType(e) == QUAD) {
+      if ( ! getFlag(a, e, CHECKED)) {
+        setFlag(a, e, SPLIT);
+        setFlag(a, e, DIAGONAL_1);
+      }
     }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(e);
-    setFlag(a, e, SPLIT);
-  }
   clearFlagFromDimension(a, CHECKED, 2);
+  assert(checkFlagConsistency(a, 2, SPLIT));
+  assert(checkFlagConsistency(a, 2, DIAGONAL_1));
 }
 
 static long markBadPyramids(Adapt* a)
@@ -327,6 +324,7 @@ static void addBadPyramids(Refine* r)
 
 static long prepareLayerCleanup(Adapt* a)
 {
+  findLayerBase(a);
   markGoodQuads(a);
   markBadQuads(a);
   return markBadPyramids(a);
