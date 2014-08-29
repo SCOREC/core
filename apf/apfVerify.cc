@@ -2,6 +2,7 @@
 #include "apf.h"
 #include <PCU.h>
 #include <gmi.h>
+#include <sstream>
 
 namespace apf {
 
@@ -108,9 +109,13 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     assert(upwardCount == expected);
   /* this is here for some spiderwebby simmetrix meshes */
   if (upwardCount >= 200) {
-    std::cerr << "warning: entity of type " << m->getType(e)
+    std::stringstream ss;
+    ss << "warning: entity of type " << m->getType(e)
       << " at " << getLinearCentroid(m, e) << " has "
       << upwardCount << " upward adjacencies\n";
+    // use a stringstream to prevent output from different procs mixing
+    std::string s = ss.str();
+    fprintf(stderr,"%s",s.c_str());
   }
 }
 
