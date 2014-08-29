@@ -30,14 +30,16 @@ enum {
   DIR_MODE = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH
 };
 
-static void my_mkdir(const char* name)
+static bool my_mkdir(const char* name)
 {
   int err = mkdir(name, DIR_MODE);
   if ((err == -1) && (errno == EEXIST)) {
     errno = 0;
     err = 0;
+    return false;
   }
   assert(!err);
+  return true;
 }
 
 static void my_chdir(const char* name)
@@ -82,10 +84,9 @@ void setupOutputSubdir(std::string& path)
   ss << subSelf << '/';
   path = ss.str();
   if (!subSelf) {
-    if (mkdir(path.c_str(), DIR_MODE)) {
+    if ( ! my_mkdir(path.c_str()))
       std::cerr << "overwriting directory " << path
           << " -Rank " << PCU_Comm_Self() << '\n';
-    }
   }
   PCU_Barrier();
 }
