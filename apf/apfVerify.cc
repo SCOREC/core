@@ -4,8 +4,6 @@
 #include <gmi.h>
 #include <sstream>
 
-#include <sstream>
-
 namespace apf {
 
 static void intersect(
