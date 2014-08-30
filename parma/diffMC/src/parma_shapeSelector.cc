@@ -209,7 +209,7 @@ namespace parma {
       bool hasTargets(apf::MeshEntity* e, parma::Targets* tgts) {
         apf::Parts res;
         mesh->getResidence(e, res);
-        int found = 0;
+        size_t found = 0;
         tgts->begin();
         const parma::Targets::Item* tgt;
         while( (tgt = tgts->iterate()) )
