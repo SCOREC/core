@@ -84,7 +84,7 @@ void getVertexLinks(apf::Mesh* m, Links& links)
   apf::MeshEntity* v;
   PhastaSharing shr(m);
   while ((v = m->iterate(it))) {
-/* the alignement is such that the owner part's
+/* the alignment is such that the owner part's
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
    other part by sending remote copies */
