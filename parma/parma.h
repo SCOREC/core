@@ -149,10 +149,12 @@ apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1,
 /**
  * @brief create an APF Balancer to optimize part shape
  * @param mesh (In) partitioned mesh
- * @param stepFactor (In) amount of weight to migrate between parts during diffusion, lower values migrate fewer elements per iteration
+ * @param stepFactor (In) amount of weight to migrate between parts during
+               diffusion, lower values migrate fewer elements per iteration
  * @return apf balancer instance
  */
-apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1, int verbose=0);
+apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
+    int verbose=0);
 
 
 /**
@@ -184,8 +186,8 @@ apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity=0);
  * @param verbosity (In) output control, higher values output more
  * @return apf balancer instance
  */
-apf::Balancer* Parma_MakeVtxBalancer(apf::Mesh* m, double stepFactor=0.1, int verbosity=0);
-
+apf::Balancer* Parma_MakeVtxBalancer(apf::Mesh* m, double stepFactor=0.1,
+    int verbosity=0);
 
 /**
  * @brief create an APF Splitter using recursive inertial bisection
