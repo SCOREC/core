@@ -37,10 +37,15 @@ struct PhastaSharing : public apf::Sharing {
     if ( ! mesh->hasMatching())
       return;
     /* filter out matches which are on the same part,
-       choose from each part the one with the smallest pointer */
+       choose from each part the one with the smallest pointer.
+       also filter out all local matches, the on-part master
+       will go in IPER, not ILWORK. */
+    int self = PCU_Comm_Self();
     size_t i = 0;
     for (size_t j = 0; j < copies.getSize(); ++j) {
-      if (!i)
+      if (copies[j].peer == self)
+        continue;
+      else if (!i)
         copies[i++] = copies[j];
       else if ((copies[j].peer == copies[i - 1].peer) &&
                (copies[j].entity < copies[i - 1].entity))
