@@ -15,6 +15,7 @@ void tetrahedronize(Input& in, apf::Mesh2* m)
 {
   ma::Input* ma_in = ma::configureIdentity(m);
   ma_in->shouldRunPreZoltan = true;
+  ma_in->shouldCleanupLayer = true;
   ma_in->shouldTurnLayerToTets = true;
   ma::adapt(ma_in);
   m->verify();

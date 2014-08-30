@@ -2,7 +2,7 @@
 
 #Setting Version Number, Project Name
 cmake_minimum_required (VERSION 2.8)
-project (SCOREC) 
+project (SCOREC)
 
 #unless building shared libs, then select static libs 
 # if both static and shared libs are available 
@@ -14,12 +14,6 @@ endif()
 set(CMAKE_MODULE_PATH 
    ${CMAKE_MODULE_PATH} 
    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
-
-#control embedding of shared lib paths into targets
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_SKIP_BUILD_RPATH false)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH false)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH true)
 
 #Settings options for testing
 enable_testing()
@@ -85,3 +79,8 @@ add_subdirectory(phasta)
 add_subdirectory(mpas)
 
 add_subdirectory(test)
+
+#binary distribution package
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+include(CPack)
