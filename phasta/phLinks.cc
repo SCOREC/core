@@ -40,15 +40,15 @@ struct PhastaSharing : public apf::Sharing {
        choose from each part the one with the smallest pointer */
     size_t i = 0;
     for (size_t j = 0; j < copies.getSize(); ++j) {
-      if (copies[j].peer == copies[i].peer) {
-        if (copies[j].entity < copies[i].entity)
-          copies[i].entity = copies[j].entity;
-      } else {
-        ++i;
-        copies[i] = copies[j];
-      }
+      if (!i)
+        copies[i++] = copies[j];
+      else if ((copies[j].peer == copies[i - 1].peer) &&
+               (copies[j].entity < copies[i - 1].entity))
+        copies[i].entity = copies[j].entity;
+      else
+        copies[i++] = copies[j];
     }
-    copies.setSize(i + 1);
+    copies.setSize(i);
   }
   apf::Mesh* mesh;
   apf::Sharing* helper;
