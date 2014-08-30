@@ -14,14 +14,11 @@ namespace parma {
           (void) verbose; // silence!
         }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        parma::Balancer parmaVtx(mesh, wtag, factor);
         Sides* s = makeElmBdrySides(mesh);
-        parmaVtx.setSides(s);
         Weights* w = makeEntWeights(mesh, wtag, s, 0);
-        parmaVtx.setWeights(w);
         Targets* t = makeTargets(s, w, factor);
-        parmaVtx.setTargets(t);
-        parmaVtx.setSelector(makeVtxSelector(mesh, wtag));
+        Selector* sel = makeVtxSelector(mesh, wtag);
+        parma::Balancer parmaVtx(mesh, wtag, factor, s, w, t, sel);
         return parmaVtx.run(tolerance);
       }
       virtual void balance(apf::MeshTag* wtag, double tolerance) {
