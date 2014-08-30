@@ -30,6 +30,7 @@ void adapt(Input* in)
   {
     print("iteration %d",i);
     coarsen(a);
+    coarsenLayer(a);
     midBalance(a);
     refine(a);
   }

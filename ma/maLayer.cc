@@ -1,7 +1,9 @@
 #include "maLayer.h"
 #include "maAdapt.h"
 #include "maRefine.h"
+#include "maShape.h"
 #include <PCU.h>
+#include <sstream>
 
 namespace ma {
 
@@ -142,6 +144,26 @@ void collectForLayerRefine(Refine* r)
    at quad centers, that mapping is needed
    to refine layer elements */
   r->shouldCollect[2] = true;
+}
+
+void checkLayerShape(Mesh* m)
+{
+  double t0 = MPI_Wtime();
+  Iterator* it = m->begin(m->getDimension());
+  Entity* e;
+  while ((e = m->iterate(it)))
+    if ( ! apf::isSimplex(m->getType(e)))
+      if ( ! isLayerElementOk(m, e)) {
+        std::stringstream ss;
+        ss << "warning: layer element at "
+          << apf::getLinearCentroid(m, e)
+          << " is unsafe to tetrahedronize\n";
+        std::string s = ss.str();
+        fprintf(stderr,"%s",s.c_str());
+      }
+  m->end(it);
+  double t1 = MPI_Wtime();
+  print("checked layer quality in %f seconds",t1 - t0);
 }
 
 }

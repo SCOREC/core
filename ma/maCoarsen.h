@@ -15,6 +15,10 @@ namespace ma {
 class Adapt;
 
 bool coarsen(Adapt* a);
+bool coarsenLayer(Adapt* a);
+
+void checkAllEdgeCollapses(Adapt* a, int modelDimension);
+void findIndependentSet(Adapt* a);
 
 }
 

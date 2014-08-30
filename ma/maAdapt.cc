@@ -36,6 +36,8 @@ Adapt::Adapt(Input* in)
   coarsensLeft = in->maximumIterations;
   refinesLeft = in->maximumIterations;
   resetLayer(this);
+  if (hasLayer)
+    checkLayerShape(mesh);
 }
 
 Adapt::~Adapt()
