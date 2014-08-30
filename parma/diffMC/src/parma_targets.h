@@ -16,6 +16,7 @@ namespace parma {
       Targets();
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
+  Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha);
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
 }
 #endif

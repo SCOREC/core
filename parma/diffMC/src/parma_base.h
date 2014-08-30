@@ -10,13 +10,9 @@ namespace parma {
   class Selector;
   class Balancer {
     public:
-      Balancer(apf::Mesh* m, apf::MeshTag* w, double alpha);
       Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
-        Sides* s, Weights* w, Targets* t, Selector* sel);
-      void setSides(Sides* s) {sides = s;}
-      void setWeights(Weights* w) {weights = w;}
-      void setTargets(Targets* t) {targets = t;}
-      void setSelector(Selector* s) {selects = s;}
+        Sides* s, Weights* w, Targets* t, Selector* sel, 
+        bool (*stop)(double imb, double maxImb)=less);
       ~Balancer();
       bool run(double maxImb, int verbosity=0);
     private:
@@ -31,6 +27,10 @@ namespace parma {
       Weights* weights;
       Targets* targets;
       Selector* selects;
+      bool (*stop)(double imb, double maxImb);
+      static bool less(double imb, double maxImb) {
+        return imb < maxImb;
+      }
   };
 };
 #endif

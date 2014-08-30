@@ -6,12 +6,12 @@
 #include "parma_selector.h"
 
 namespace parma {
-  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn) 
-    : m(mIn), w(wIn), alpha(alphaIn) {}
   Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
-     Sides* s, Weights* w, Targets* t, Selector* sel) 
+     Sides* s, Weights* w, Targets* t, Selector* sel,
+     bool (*fn)(double imb, double maxImb))
     : m(mIn), w(wIn), alpha(alphaIn), 
-      sides(s), weights(w), targets(t), selects(sel) {}
+      sides(s), weights(w), targets(t), selects(sel), stop(fn) {}
+
   Balancer::~Balancer() {
     delete sides;
     delete weights;
@@ -23,9 +23,10 @@ namespace parma {
     const double imb = imbalance();
     if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "imbalance %.3f\n", imb);
-    if ( imb < maxImb ) 
+    if ( stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);
+    PCU_Debug_Print("plan size %d\n", plan->count());
     m->migrate(plan);
     return true;
   }

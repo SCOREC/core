@@ -61,6 +61,12 @@ add_test(balance
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusBal4p/")
+add_test(gap
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./gap
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusOpt4p/")
 set(MDIR ${MESHES}/airFoilAfosr)
 add_test(vtxBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
@@ -156,4 +162,3 @@ add_test(change_dim
 add_test(ma_insphere
   ma_insphere)
 add_test(shapefun shapefun)
-#todo - ph_test on crossflow ?

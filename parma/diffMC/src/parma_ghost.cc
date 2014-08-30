@@ -23,15 +23,12 @@ namespace parma {
           fprintf(stdout, "Max weight %.3f Avg weight %.3f\n", max, avg/PCU_Comm_Peers());
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        parma::Balancer ghost(mesh, wtag, factor);
         Sides* s = makeElmBdrySides(mesh);
-        ghost.setSides(s);
         Weights* w = makeGhostWeights(mesh, wtag, s, layers, bridge);
         printStats(w);
-        ghost.setWeights(w);
         Targets* t = makeTargets(s, w, factor);
-        ghost.setTargets(t);
-        ghost.setSelector(makeVtxSelector(mesh, wtag));
+        Selector* sel = makeVtxSelector(mesh, wtag);
+        parma::Balancer ghost(mesh, wtag, factor, s, w, t, sel);
         bool ret = ghost.run(tolerance);
         return ret;
       }

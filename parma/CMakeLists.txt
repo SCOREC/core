@@ -44,6 +44,9 @@ SET(DIFFMC_SOURCES
   diffMC/src/parma_imbinfo.cc
   diffMC/src/parma_partinfo.cc
   diffMC/src/parma_priority.cc
+  diffMC/src/parma_shapeOptimizer.cc
+  diffMC/src/parma_shapeTargets.cc
+  diffMC/src/parma_shapeSelector.cc
   diffMC/src/parma_vtxBalancer.cc
   diffMC/src/parma_vtxSelector.cc
   diffMC/src/parma_weightTargets.cc
