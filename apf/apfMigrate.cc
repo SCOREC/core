@@ -12,7 +12,6 @@
 
 namespace apf {
 
-typedef std::map<MeshEntity*,int> Plan;
 typedef std::vector<MeshEntity*> EntityVector;
 
 /* Starting from the elements in the plan,

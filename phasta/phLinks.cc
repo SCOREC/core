@@ -37,18 +37,23 @@ struct PhastaSharing : public apf::Sharing {
     if ( ! mesh->hasMatching())
       return;
     /* filter out matches which are on the same part,
-       choose from each part the one with the smallest pointer */
+       choose from each part the one with the smallest pointer.
+       also filter out all local matches, the on-part master
+       will go in IPER, not ILWORK. */
+    int self = PCU_Comm_Self();
     size_t i = 0;
     for (size_t j = 0; j < copies.getSize(); ++j) {
-      if (copies[j].peer == copies[i].peer) {
-        if (copies[j].entity < copies[i].entity)
-          copies[i].entity = copies[j].entity;
-      } else {
-        ++i;
-        copies[i] = copies[j];
-      }
+      if (copies[j].peer == self)
+        continue;
+      else if (!i)
+        copies[i++] = copies[j];
+      else if ((copies[j].peer == copies[i - 1].peer) &&
+               (copies[j].entity < copies[i - 1].entity))
+        copies[i].entity = copies[j].entity;
+      else
+        copies[i++] = copies[j];
     }
-    copies.setSize(i + 1);
+    copies.setSize(i);
   }
   apf::Mesh* mesh;
   apf::Sharing* helper;
@@ -84,7 +89,7 @@ void getVertexLinks(apf::Mesh* m, Links& links)
   apf::MeshEntity* v;
   PhastaSharing shr(m);
   while ((v = m->iterate(it))) {
-/* the alignement is such that the owner part's
+/* the alignment is such that the owner part's
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
    other part by sending remote copies */

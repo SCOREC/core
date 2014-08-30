@@ -140,17 +140,19 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)
     readAndAttachField(in, m, filename.c_str(), "dwal");
-  if (in.buildMapping) {
-    double* mapping = buildMappingPartId(m);
-    attachField(m, "mapping_partid", mapping, 1);
-    free(mapping);
-    mapping = buildMappingVtxId(m);
-    attachField(m, "mapping_vtxid", mapping, 1);
-    free(mapping);
-  }
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("solution read and attached in %f seconds\n", t1 - t0);
+}
+
+void buildMapping(apf::Mesh* m)
+{
+  double* mapping = buildMappingPartId(m);
+  attachField(m, "mapping_partid", mapping, 1);
+  free(mapping);
+  mapping = buildMappingVtxId(m);
+  attachField(m, "mapping_vtxid", mapping, 1);
+  free(mapping);
 }
 
 void attachZeroSolution(Input& in, apf::Mesh* m)
