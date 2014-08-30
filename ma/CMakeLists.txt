@@ -29,6 +29,7 @@ set(SOURCES
   maMesh.cc
   maRefine.cc
   maLayerRefine.cc
+  maLayerCoarsen.cc
   maTables.cc
   maLayerTables.cc
   maTemplates.cc
@@ -37,6 +38,7 @@ set(SOURCES
   maSize.cc
   maOperator.cc
   maCollapse.cc
+  maLayerCollapse.cc
   maMatch.cc
   maSolutionTransfer.cc
   maSnap.cc

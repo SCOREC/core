@@ -57,6 +57,7 @@ void setDefaultValues(Input* in)
   in->shouldTurnLayerToTets = false;
   in->shouldCleanupLayer = false;
   in->shouldRefineLayer = false;
+  in->shouldCoarsenLayer = false;
   in->isUniform = false;
 }
 

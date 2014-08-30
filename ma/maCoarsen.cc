@@ -53,7 +53,7 @@ class CollapseChecker : public apf::CavityOp
     int modelDimension;
 };
 
-static void checkAllEdgeCollapses(Adapt* a, int modelDimension)
+void checkAllEdgeCollapses(Adapt* a, int modelDimension)
 {
   CollapseChecker checker(a,modelDimension);
   checker.applyToDimension(1);
@@ -89,7 +89,7 @@ class IndependentSetFinder : public apf::CavityOp
     Entity* vertex;
 };
 
-static void findIndependentSet(Adapt* a)
+void findIndependentSet(Adapt* a)
 {
   IndependentSetFinder finder(a);
   finder.applyToDimension(0);

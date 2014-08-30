@@ -85,6 +85,8 @@ class Input
     bool shouldCleanupLayer;
 /** \brief whether to allow layer refinement (default false) */
     bool shouldRefineLayer;
+/** \brief whether to allow layer coarsening (default false) */
+    bool shouldCoarsenLayer;
 /** \brief hack to enable boundary layer uniform refinement (do not touch!) */
     bool isUniform;
 };

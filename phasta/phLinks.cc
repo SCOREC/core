@@ -49,7 +49,7 @@ struct PhastaSharing : public apf::Sharing {
         copies[i++] = copies[j];
       else if ((copies[j].peer == copies[i - 1].peer) &&
                (copies[j].entity < copies[i - 1].entity))
-        copies[i].entity = copies[j].entity;
+        copies[i - 1].entity = copies[j].entity;
       else
         copies[i++] = copies[j];
     }

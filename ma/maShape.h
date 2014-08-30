@@ -27,10 +27,7 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
 
-void printQualityHistogram(
-    Adapt* a,
-    const char* file,
-    int binCount = 10);
+bool isLayerElementOk(Mesh* m, Entity* e);
 
 CodeMatch matchSliver(
     Mesh* m,
