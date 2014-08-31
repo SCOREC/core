@@ -198,8 +198,10 @@ void LayerCollapse::unmark()
     clearFlag(a, edges[i], COLLAPSE);
   for (size_t i = 1; i < edges.size(); ++i)
     clearFlag(a, curves[0][i], COLLAPSE);
-  collapse.setEdge(edges[0]);
-  collapse.unmark();
+  if (edges.size()) {
+    collapse.setEdge(edges[0]);
+    collapse.unmark();
+  }
 }
 
 void LayerCollapse::cancel()
