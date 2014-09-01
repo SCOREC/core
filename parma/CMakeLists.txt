@@ -21,37 +21,37 @@ set(PARMADIFFMC_MAJOR_VERSION 1)
 set(PARMADIFFMC_MINOR_VERSION 0)
 set(PARMADIFFMC_PATCH_VERSION 0)
 configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/src/parma_diffmcversion.h.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/src/parma_diffmcversion.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/parma_diffmcversion.h.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/parma_diffmcversion.h"
   @ONLY
   )
 
 SET(DIFFMC_SOURCES  
-  diffMC/src/parma_base.cc
-  diffMC/src/parma_centroidDiffuser.cc
-  diffMC/src/parma_centroids.cc
-  diffMC/src/parma_centroidSelector.cc
-  diffMC/src/parma_commons.cc
-  diffMC/src/parma_dcpart.cc
-  diffMC/src/parma_diffmc.cc
-  diffMC/src/parma_elmBdrySides.cc
-  diffMC/src/parma_entWeights.cc
-  diffMC/src/parma_ghost.cc
-  diffMC/src/parma_ghostOwner.cc
-  diffMC/src/parma_ghostWeights.cc
-  diffMC/src/parma_hist.cc
-  diffMC/src/parma_hpsBalancer.cc
-  diffMC/src/parma_imbinfo.cc
-  diffMC/src/parma_partinfo.cc
-  diffMC/src/parma_priority.cc
-  diffMC/src/parma_shapeOptimizer.cc
-  diffMC/src/parma_shapeTargets.cc
-  diffMC/src/parma_shapeSelector.cc
-  diffMC/src/parma_vtxBalancer.cc
-  diffMC/src/parma_vtxSelector.cc
-  diffMC/src/parma_weightTargets.cc
-  diffMC/src/zeroOneKnapsack.cc
-  diffMC/src/maximalIndependentSet/misLuby.cc
+  diffMC/parma_base.cc
+  diffMC/parma_centroidDiffuser.cc
+  diffMC/parma_centroids.cc
+  diffMC/parma_centroidSelector.cc
+  diffMC/parma_commons.cc
+  diffMC/parma_dcpart.cc
+  diffMC/parma_diffmc.cc
+  diffMC/parma_elmBdrySides.cc
+  diffMC/parma_entWeights.cc
+  diffMC/parma_ghost.cc
+  diffMC/parma_ghostOwner.cc
+  diffMC/parma_ghostWeights.cc
+  diffMC/parma_hist.cc
+  diffMC/parma_hpsBalancer.cc
+  diffMC/parma_imbinfo.cc
+  diffMC/parma_partinfo.cc
+  diffMC/parma_priority.cc
+  diffMC/parma_shapeOptimizer.cc
+  diffMC/parma_shapeTargets.cc
+  diffMC/parma_shapeSelector.cc
+  diffMC/parma_vtxBalancer.cc
+  diffMC/parma_vtxSelector.cc
+  diffMC/parma_weightTargets.cc
+  diffMC/zeroOneKnapsack.cc
+  diffMC/maximalIndependentSet/misLuby.cc
   )
 
 SET(RIB_SOURCES  
@@ -66,7 +66,7 @@ SET(GROUP_SOURCES
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(diffMC/src)
+INCLUDE_DIRECTORIES(diffMC)
 
 if(NOT BUILD_IN_TRILINOS) 
   set(parmaIncDirs 

@@ -328,22 +328,12 @@ bool isPyramidOk(Mesh* m, Entity* e)
     m->getPoint(v[i], 0, p[i]);
   for (int i = 0; i < 2; ++i) {
     int const* new_to_old = pyramid_rotation[i];
-    HalfSpace hs1(p[new_to_old[0]],
+    HalfSpace hs(p[new_to_old[0]],
                   p[new_to_old[2]],
                   p[new_to_old[4]]);
-    if ( ! hs1.isIn(p[new_to_old[1]]))
+    if ( ! hs.isIn(p[new_to_old[1]]))
       return false;
-    if (hs1.isIn(p[new_to_old[3]]))
-      return false;
-    HalfSpace hs2(p[new_to_old[0]],
-                  p[new_to_old[1]],
-                  p[new_to_old[2]]);
-    if ( ! hs2.isIn(p[new_to_old[4]]))
-      return false;
-    HalfSpace hs3(p[new_to_old[0]],
-                  p[new_to_old[2]],
-                  p[new_to_old[3]]);
-    if ( ! hs3.isIn(p[new_to_old[4]]))
+    if (hs.isIn(p[new_to_old[3]]))
       return false;
   }
   return true;

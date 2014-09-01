@@ -158,20 +158,26 @@ static void addAllLayerElements(Refine* r)
   r->toSplit[3].setSize(prismCount + pyramidCount);
   Entity* e;
   Iterator* it = m->begin(2);
-  size_t nf = 0;
+  int nf = 0;
   while ((e = m->iterate(it)))
-    if (m->getType(e)==QUAD)
-      r->toSplit[2][nf++] = e;
+    if (m->getType(e)==QUAD) {
+      m->setIntTag(e, r->numberTag, &nf);
+      r->toSplit[2][nf] = e;
+      ++nf;
+    }
   m->end(it);
-  assert(nf == r->toSplit[2].getSize());
+  assert(static_cast<size_t>(nf) == r->toSplit[2].getSize());
   it = m->begin(3);
-  size_t nr = 0;
+  int nr = 0;
   while ((e = m->iterate(it)))
     if ((m->getType(e)==PRISM)||
-        (m->getType(e)==PYRAMID))
-      r->toSplit[3][nr++] = e;
+        (m->getType(e)==PYRAMID)) {
+      m->setIntTag(e, r->numberTag, &nr);
+      r->toSplit[3][nr] = e;
+      ++nr;
+    }
   m->end(it);
-  assert(nr == r->toSplit[3].getSize());
+  assert(static_cast<size_t>(nr) == r->toSplit[3].getSize());
 }
 
 void tetrahedronizeCommon(Refine* r)

@@ -46,41 +46,27 @@ static long markBaseEdgesToCollapse(Adapt* a)
 
 struct CurveLocalizer : public Crawler
 {
-  CurveLocalizer(Adapt* a_):
+  CurveLocalizer(Adapt* a_, int r):
     Crawler(a_)
   {
     a = a_;
     m = a->mesh;
     plan = new apf::Migration(m);
     tag = m->createIntTag("ma_curve_dest", 1);
+    round = r;
   }
-  void handle(Entity* v, bool inCurve, int dest)
+  int fight(int a, int b)
   {
-    if (inCurve) {
-      m->setIntTag(v, tag, &dest);
-      EntityArray elements;
-      m->getAdjacent(v, m->getDimension(), elements);
-      for (size_t i = 0; i < elements.getSize(); ++i) {
-        int elemDest = dest;
-        if (plan->has(elements[i]))
-          elemDest = std::max(elemDest, plan->sending(elements[i]));
-        plan->send(elements[i], elemDest);
-      }
-    }
-    setFlag(a, v, CHECKED);
+    if (a == -1)
+      return b;
+    if (b == -1)
+      return a;
+    if (round % 2)
+      return std::max(a,b);
+    else
+      return std::min(a,b);
   }
-  void begin(Layer& first)
-  {
-    getDimensionBase(a, 0, first);
-    for (size_t i = 0; i < first.size(); ++i)
-      setFlag(a, first[i], CHECKED);
-  }
-  void end()
-  {
-    clearFlagFromDimension(a, CHECKED, 0);
-    m->destroyTag(tag);
-  }
-  int getDest(Entity* v)
+  int getVertDest(Entity* v)
   {
     if (!m->hasTag(v, tag))
       return -1;
@@ -88,49 +74,95 @@ struct CurveLocalizer : public Crawler
     m->getIntTag(v, tag, &dest);
     return dest;
   }
+  void setVertDest(Entity* v, int dest)
+  {
+    if (dest != -1)
+      m->setIntTag(v, tag, &dest);
+  }
+  int getElemDest(Entity* e)
+  {
+    if (!plan->has(e))
+      return -1;
+    return plan->sending(e);
+  }
+  void setElemDest(Entity* e, int to)
+  {
+    if (to != -1)
+      plan->send(e, to);
+  }
+  bool handleCheck(Entity* v)
+  {
+    if (getFlag(a, v, CHECKED))
+      return false;
+    setFlag(a, v, CHECKED);
+    return true;
+  }
+  bool handle(Entity* v, int dest)
+  {
+    dest = fight(getVertDest(v), dest);
+    setVertDest(v, dest);
+    EntityArray elements;
+    m->getAdjacent(v, m->getDimension(), elements);
+    for (size_t i = 0; i < elements.getSize(); ++i) {
+      int elemDest = fight(getElemDest(elements[i]), dest);
+      setElemDest(elements[i], elemDest);
+    }
+    return handleCheck(v);
+  }
+  void begin(Layer& first)
+  {
+    getDimensionBase(a, 0, first);
+    for (size_t i = 0; i < first.size(); ++i)
+      setFlag(a, first[i], CHECKED);
+    syncLayer(this, first);
+  }
+  void end()
+  {
+    clearFlagFromDimension(a, CHECKED, 0);
+    m->destroyTag(tag);
+  }
   Entity* crawl(Entity* v)
   {
     HasFlag p(a, CHECKED);
     Entity* ov = getOtherVert(m, v, p);
     if (!ov)
       return ov;
-    int dest = getDest(v);
-    handle(ov, dest != -1, dest);
+    bool ok = handle(ov, getVertDest(v));
+    assert(ok);
     return ov;
   }
-  void send(Entity* e, int to)
+  void send(Entity* v, int to)
   {
-    int dest = getDest(e);
+    int dest = getVertDest(v);
     PCU_COMM_PACK(to, dest);
   }
-  bool recv(Entity* e, int from)
+  bool recv(Entity* v, int from)
   {
     int dest;
     PCU_COMM_UNPACK(dest);
-    if (m->hasTag(e, tag))
-      return false;
-    handle(e, dest != -1, dest);
-    return true;
+    return handle(v, dest);
   }
   Adapt* a;
   Mesh* m;
   int flag;
   apf::Migration* plan;
   Tag* tag;
+  int round;
 };
 
-static apf::Migration* planLayerCollapseMigration(Adapt* a, int d)
+static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
 {
-  CurveLocalizer cl(a);
+  CurveLocalizer cl(a, round);
   Mesh* m = a->mesh;
   Iterator* it = m->begin(1);
   Entity* e;
   while ((e = m->iterate(it)))
-    if (m->getModelType(m->toModel(e)) == d) {
+    if (getFlag(a, e, COLLAPSE) &&
+        (m->getModelType(m->toModel(e)) == d)) {
       Entity* v[2];
       m->getDownward(e, 0, v);
-      cl.handle(v[0], true, PCU_Comm_Self());
-      cl.handle(v[1], true, PCU_Comm_Self());
+      cl.handle(v[0], PCU_Comm_Self());
+      cl.handle(v[1], PCU_Comm_Self());
     }
   crawlLayers(&cl);
   return cl.plan;
@@ -148,12 +180,12 @@ static bool wouldEmptyParts(apf::Migration* plan)
   return PCU_Or(wouldEmptyThisPart);
 }
 
-static apf::Migration* migrateForLayerCollapse(Adapt* a, int d)
+static void migrateForLayerCollapse(Adapt* a, int d, int round)
 {
-  apf::Migration* plan = planLayerCollapseMigration(a, d);
+  apf::Migration* plan = planLayerCollapseMigration(a, d, round);
   /* before looking for a fix, lets just detect if this ever happens */
   assert( ! wouldEmptyParts(plan));
-  return plan;
+  a->mesh->migrate(plan);
 }
 
 static void collapseLocalStacks(Adapt* a,
@@ -191,13 +223,15 @@ static long collapseAllStacks(Adapt* a, int d)
 {
   long allSuccesses = 0;
   int skipCount;
+  int round = 0;
   do {
-    migrateForLayerCollapse(a, d);
+    migrateForLayerCollapse(a, d, round);
     skipCount = 0;
     int successCount = 0;
     int failureCount = 0;
     collapseLocalStacks(a, skipCount, successCount, failureCount, d);
     allSuccesses += successCount;
+    ++round;
   } while (PCU_Or(skipCount));
   PCU_Add_Longs(&allSuccesses, 1);
   return allSuccesses;
