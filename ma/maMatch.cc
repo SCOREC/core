@@ -42,7 +42,8 @@ void matchNewElements(Refine* r)
       Entity* e = r->toSplit[d][i];
       apf::Matches matches;
       m->getMatches(e,matches);
-      if ( ! matches.getSize()) continue;
+      if ( ! matches.getSize())
+        continue;
       EntityArray& splits = r->newEntities[d][i];
       for (size_t i=0; i < matches.getSize(); ++i)
       {
