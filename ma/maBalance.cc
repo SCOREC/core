@@ -108,33 +108,9 @@ void runZoltan(Adapt* a)
         /* debug = */ false));
 }
 
-void runDiffusion(Adapt* a)
-{
-  runBalancer(a, Parma_MakeCentroidDiffuser(a->mesh));
-}
-
 void runParma(Adapt* a)
 {
-  double t0 = MPI_Wtime();
-  Mesh* m = a->mesh;
-  Input* in = a->input;
-  Tag* weights = getElementWeights(a);
-  double entityImbalance[4];
-  Parma_GetWeightedEntImbalance(m,weights,&entityImbalance);
-  double& elementImbalance = entityImbalance[m->getDimension()];
-  print("element imbalance before parma %f",elementImbalance);
-  int priorities[4] = {0,0,0,1};
-  Parma_RunWeightedPtnImprovement(
-      m,
-      weights,
-      &priorities,
-      in->maximumImbalance,
-      0,
-      in->diffuseIterations);
-  removeTagFromDimension(m,weights,m->getDimension());
-  m->destroyTag(weights);
-  double t1 = MPI_Wtime();
-  print("parma run took %f seconds",t1-t0);
+  runBalancer(a, Parma_MakeCentroidDiffuser(a->mesh));
 }
 
 void printEntityImbalance(Mesh* m)
@@ -152,10 +128,8 @@ void preBalance(Adapt* a)
   Input* in = a->input;
   if (in->shouldRunPreZoltan)
     runZoltan(a);
-  else if (in->shouldRunPreParma)
+  if (in->shouldRunPreParma)
     runParma(a);
-  else if (in->shouldRunPreDiffusion)
-    runDiffusion(a);
 }
 
 void midBalance(Adapt* a)
@@ -167,8 +141,6 @@ void midBalance(Adapt* a)
     runZoltan(a);
   if (in->shouldRunMidParma)
     runParma(a);
-  else if (in->shouldRunMidDiffusion)
-    runDiffusion(a);
 }
 
 void postBalance(Adapt* a)
@@ -178,9 +150,7 @@ void postBalance(Adapt* a)
   Input* in = a->input;
   if (in->shouldRunPostZoltan)
     runZoltan(a);
-  if (in->shouldRunPostDiffusion)
-    runDiffusion(a);
-  else if (in->shouldRunPostParma)
+  if (in->shouldRunPostParma)
     runParma(a);
   printEntityImbalance(a->mesh);
 }

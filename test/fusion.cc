@@ -114,8 +114,8 @@ static void fusionAdapt(apf::Mesh2* m)
   ma::Input* in = ma::configure(m, &sf);
   in->maximumIterations = 9;
   in->shouldRunPreZoltan = true;
-  in->shouldRunMidDiffusion = true;
-  in->shouldRunPostDiffusion = true;
+  in->shouldRunMidParma = true;
+  in->shouldRunPostParma = true;
   ma::adapt(in);
   m->verify();
 }

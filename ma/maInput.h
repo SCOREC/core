@@ -60,22 +60,14 @@ class Input
     bool shouldRunPreZoltan;
 /** \brief whether to run parma predictive load balancing (default false) */
     bool shouldRunPreParma;
-/** \brief whether to run centroid predictive load balancing (default false) */
-    bool shouldRunPreDiffusion;
 /** \brief whether to run zoltan during adaptation (default false) */
     bool shouldRunMidZoltan;
-/** \brief whether to run parma iterative during adaptation (default false)*/
+/** \brief whether to run parma during adaptation (default false)*/
     bool shouldRunMidParma;
-/** \brief whether to run parma centroid during adaptation (default false) */
-    bool shouldRunMidDiffusion;
 /** \brief whether to run zoltan after adapting (default false) */
     bool shouldRunPostZoltan;
-/** \brief whether to run parma cleanup after adapting (default false) */
+/** \brief whether to run parma after adapting (default false) */
     bool shouldRunPostParma;
-/** \brief whether to run parma centroid after adapting (default false) */
-    bool shouldRunPostDiffusion;
-/** \brief maximum iterations for parma's diffuser (default 30) */
-    int diffuseIterations;
 /** \brief the ratio between longest and shortest edges that differentiates a
    "short edge" element from a "large angle" element. */
     double maximumEdgeRatio;
