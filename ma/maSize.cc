@@ -149,13 +149,13 @@ class SizeFieldIntegrator : public apf::Integrator
    entity type */
 static double parentMeasure[TYPES] =
 {0.0     //vert
-,2.0     //edge - not sure
+,2.0     //edge
 ,1.0/2.0 //tri
-,4.0     //quad - not sure
+,4.0     //quad
 ,1.0/6.0 //tet
 ,-42.0   //hex - definitely not sure
 ,-42.0   //prism - definitely not sure
-,-42.0   //pyramid - definitely not sure
+,8.0/3.0 //pyramid
 };
 
 struct MetricSizeField : public SizeField

@@ -6,55 +6,73 @@
 
 namespace ma {
 
-double clamp(double x, double max, double min)
+static double clamp(double x, double max, double min)
 {
   if (x > max) return max;
   if (x < min) return min;
   return x;
 }
 
-double getSimplexWeight(Adapt* a, Entity* e)
+static double getSizeWeight(Adapt* a, Entity* e, int type)
+{
+/* until we have a size field that matches the
+   anisotropy of the layer itself, we have to
+   hack around to prevent prisms from getting
+   very small weights due to their very small thickness.
+   the current hack will be to measure their
+   triangular bases instead.
+   pyramids will get very small weights, but
+   they are supposed to be fairly sparse so
+   that should not ruin things. */
+  if (type == PRISM) {
+    Entity* f[5];
+    a->mesh->getDownward(e, 2, f);
+    return a->sizeField->getWeight(f[0]);
+  }
+  return a->sizeField->getWeight(e);
+}
+
+static double clampForIterations(Adapt* a, double weight)
 {
   Mesh* m = a->mesh;
-  SizeField* sf = a->sizeField;
   int dimension = m->getDimension();
   double max = pow(2.0, dimension*(a->refinesLeft));
 /* coarsening performance is more empirical: 3x decrease in tet
    count when uniformly refining a 58k element cube, 4x decrease
-   on some 2D meshes which were more structured. we will be conservative
-   towards more elements
-   since light parts are better than heavy parts */
-  double min = pow(3.0, -(a->coarsensLeft));
-/* get the measurement in metric space - best estimate of how many tets
-   this tet would turn into after infinite iterations */
-  double weight = sf->getWeight(e);
-/* and clamp it based on how much we could actually refine or coarsen
-   this tet in the remaining iterations */
-  return clamp(weight,max,min);
+   on some 2D meshes which were more structured. */
+  double min = pow(4.0, -(a->coarsensLeft));
+  return clamp(weight, max, min);
 }
 
-double getLayerWeight(Adapt* a, Entity* e)
+static double clampForLayerPermissions(Adapt* a, int type, double weight)
 {
-  if (a->input->shouldTurnLayerToTets)
-  {
-    Mesh* m = a->mesh;
-    int type = m->getType(e);
-    if (type==PRISM)
-      return 3.0;
-    else
-    { assert(type==PYRAMID);
-      return 2.0;
-    }
+  if (apf::isSimplex(type))
+    return weight;
+  if ( ! a->input->shouldRefineLayer)
+    weight = std::max(1.0, weight);
+  if ( ! a->input->shouldCoarsenLayer)
+    weight = std::min(1.0, weight);
+  return weight;
+}
+
+static double accountForTets(Adapt* a, int type, double weight)
+{
+  if (a->input->shouldTurnLayerToTets) {
+    if (type == PRISM)
+      return weight * 3;
+    if (type == PYRAMID)
+      return weight * 2;
   }
-  return 1.0;
+  return weight;
 }
 
 double getElementWeight(Adapt* a, Entity* e)
 {
-  if (apf::isSimplex(a->mesh->getType(e)))
-    return getSimplexWeight(a,e);
-  else
-    return getLayerWeight(a,e);
+  int type = a->mesh->getType(e);
+  double weight = getSizeWeight(a, e, type);
+  weight = clampForIterations(a, weight);
+  weight = clampForLayerPermissions(a, type, weight);
+  return accountForTets(a, type, weight);
 }
 
 Tag* getElementWeights(Adapt* a)
