@@ -147,38 +147,43 @@ static mds_id lookup(struct mds_tag* tag, mds_id old)
   return mds_identify(mds_type(old),*ip);
 }
 
-static void update_remotes(struct mds_apf* m, struct mds_tag* new_of)
+/* see apf/apfConvert.cc apf::Converter::createRemotes */
+static void rebuild_net(struct mds_net* net,
+    struct mds* m,
+    struct mds_net* net2,
+    struct mds* m2,
+    struct mds_tag* new_of)
 {
   int d;
   mds_id e;
   mds_id ne;
+  mds_id ce;
+  mds_id nce;
   struct mds_copies* cs;
+  struct mds_copy c;
   int i;
-  int from;
   PCU_Comm_Begin();
-  for (d = 0; d <= m->mds.d; ++d)
-    for (e = mds_begin(&m->mds, d);
-         e != MDS_NONE;
-         e = mds_next(&m->mds, e)) {
-      cs = mds_get_copies(&m->remotes, e);
+  for (d = 0; d <= m->d; ++d)
+    for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
+      cs = mds_get_copies(net, e);
       if (!cs)
         continue;
       ne = lookup(new_of, e);
       for (i = 0; i < cs->n; ++i) {
-        PCU_COMM_PACK(cs->c[i].p, cs->c[i].e);
+        ce = cs->c[i].e;
+        PCU_COMM_PACK(cs->c[i].p, ce);
         PCU_COMM_PACK(cs->c[i].p, ne);
       }
     }
   PCU_Comm_Send();
   while (PCU_Comm_Listen()) {
-    from = PCU_Comm_Sender();
+    c.p = PCU_Comm_Sender();
     while (!PCU_Comm_Unpacked()) {
-      PCU_COMM_UNPACK(e);
+      PCU_COMM_UNPACK(ce);
       PCU_COMM_UNPACK(ne);
-      cs = mds_get_copies(&m->remotes, e);
-      for (i = 0; i < cs->n; ++i)
-        if (cs->c[i].p == from)
-          cs->c[i].e = ne;
+      c.e = ne;
+      nce = lookup(new_of, ce);
+      mds_add_copy(net2, m2, nce, c);
     }
   }
 }
@@ -342,38 +347,12 @@ static void rebuild_parts(
     }
 }
 
-static void rebuild_remotes(
-    struct mds_apf* m,
-    struct mds_apf* m2,
-    struct mds_tag* old_of,
-    struct mds_tag* new_of)
-{
-  int d;
-  mds_id ne;
-  mds_id e;
-  int t;
-  for (d = 0; d < m->mds.d; ++d)
-    for (ne = mds_begin(&m2->mds, d);
-         ne != MDS_NONE;
-         ne = mds_next(&m2->mds, ne)) {
-      e = lookup(old_of, ne);
-      mds_set_copies(&m2->remotes, &m2->mds,
-                     ne,
-                     mds_get_copies(&m->remotes, e));
-    }
-  for (t = 0; t < MDS_TYPES; ++t) {
-    free(m->remotes.data[t]);
-    m->remotes.data[t] = NULL;
-  }
-}
-
 static struct mds_apf* rebuild(
     struct mds_apf* m,
     struct mds_tag* new_of)
 {
   struct mds_apf* m2;
   struct mds_tag* old_of;
-  update_remotes(m, new_of);
   m2 = mds_apf_create(m->user_model, m->mds.d, m->mds.n);
   old_of = invert(&m->mds, m2, new_of);
   rebuild_verts(m, m2, old_of);
@@ -381,7 +360,12 @@ static struct mds_apf* rebuild(
   rebuild_tags(m, m2, old_of, new_of);
   rebuild_coords(m, m2, old_of, new_of);
   rebuild_parts(m, m2, old_of, new_of);
-  rebuild_remotes(m, m2, old_of, new_of);
+  rebuild_net(&m->remotes, &m->mds,
+              &m2->remotes, &m2->mds,
+              new_of);
+  rebuild_net(&m->matches, &m->mds,
+              &m2->matches, &m2->mds,
+              new_of);
   mds_destroy_tag(&m2->tags, old_of);
   return m2;
 }
