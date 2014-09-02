@@ -297,8 +297,8 @@ static void note_local_link(mds_id i, struct mds_copy c, void* u)
 static void take_local_link(mds_id i, struct mds_copy c, void* u)
 {
   struct mds_links* ln = u;
-  int self = PCU_Comm_Self();
-  int other = PCU_Comm_Peers();
+  int self = find_peer(ln, PCU_Comm_Self());
+  int other = find_peer(ln, PCU_Comm_Peers());
   mds_id j = mds_index(c.e);
   if ((PCU_Comm_Self() == c.p) && (i < j)) {
     ln->l[self][ln->n[self]] = i;
@@ -318,6 +318,7 @@ void mds_get_local_matches(struct mds_net* net, struct mds* m,
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
+  assert(ln->n[self] == ln->n[other]);
   ln->l[self] = malloc(ln->n[self] * sizeof(unsigned));
   ln->l[other] = malloc(ln->n[other] * sizeof(unsigned));
   ln->n[self] = 0;
@@ -337,6 +338,7 @@ void mds_set_local_matches(struct mds_net* net, struct mds* m,
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
+  assert(ln->n[self] = ln->n[other]);
   for (i = 0; i < ln->n[self]; ++i) {
     a = mds_identify(t, ln->l[self][i]);
     b = mds_identify(t, ln->l[other][i]);
