@@ -4,7 +4,7 @@
 #include <phRestart.h>
 #include <phAdapt.h>
 #include <phOutput.h>
-#include <phSplit.h>
+#include <phPartition.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
@@ -21,18 +21,21 @@ static void afterSplit(apf::Mesh2* m)
   ph::BCs& bcs = *globalBCs;
   std::string path = ph::setupOutputDir();
   ph::setupOutputSubdir(path);
-  if (in.phastaIO) {
-    if ((PCU_Comm_Peers()!=globalPeers) ||
-        in.adaptFlag ||
-        in.tetrahedronize)
-      apf::reorderMdsMesh(m);
-    ph::Output o;
-    ph::generateOutput(in, bcs, m, o);
-    ph::detachAndWriteSolution(in, m, path);
-    ph::writeGeomBC(o, path);
-    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-    m->writeNative(in.outMeshFileName.c_str());
+  /* check if the mesh changed at all */
+  if ((PCU_Comm_Peers()!=globalPeers) ||
+      in.adaptFlag ||
+      in.tetrahedronize) {
+    if (in.parmaPtn)
+      ph::balance(m);
+    apf::reorderMdsMesh(m);
   }
+  assert(in.phastaIO);
+  ph::Output o;
+  ph::generateOutput(in, bcs, m, o);
+  ph::detachAndWriteSolution(in, m, path);
+  ph::writeGeomBC(o, path);
+  ph::writeAuxiliaryFiles(path, in.timeStepNumber);
+  m->writeNative(in.outMeshFileName.c_str());
   m->destroyNative();
   apf::destroyMesh(m);
 }
