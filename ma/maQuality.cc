@@ -282,16 +282,16 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet)
 /* note that there is a somewhat duplicate class
    in phasta/phConstraint.cc.
    consider unifying plane code in the future */
-struct HalfSpace
+struct Plane
 {
-  HalfSpace(Vector const& a, Vector const& b, Vector const& c)
+  Plane(Vector const& a, Vector const& b, Vector const& c)
   {
     normal = apf::cross(a - c, b - c);
     radius = b * normal;
   }
-  bool isIn(Vector const& p)
+  double distance(Vector const& p)
   {
-    return (p * normal) > radius;
+    return (p * normal) - radius;
   }
   Vector normal;
   double radius;
@@ -306,14 +306,14 @@ bool isPrismOk(Mesh* m, Entity* e)
     m->getPoint(v[i], 0, p[i]);
   for (int i = 0; i < 6; ++i) {
     int const* new_to_old = prism_rotation[i];
-    HalfSpace hs(p[new_to_old[0]],
-                 p[new_to_old[1]],
-                 p[new_to_old[5]]);
-    if ( ! hs.isIn(p[new_to_old[3]]))
+    Plane pl(p[new_to_old[0]],
+             p[new_to_old[1]],
+             p[new_to_old[5]]);
+    if (pl.distance(p[new_to_old[3]]) <= 0)
       return false;
-    if ( ! hs.isIn(p[new_to_old[4]]))
+    if (pl.distance(p[new_to_old[4]]) <= 0)
       return false;
-    if (hs.isIn(p[new_to_old[2]]))
+    if (pl.distance(p[new_to_old[2]]) >= 0)
       return false;
   }
   return true;
@@ -328,12 +328,12 @@ bool isPyramidOk(Mesh* m, Entity* e)
     m->getPoint(v[i], 0, p[i]);
   for (int i = 0; i < 2; ++i) {
     int const* new_to_old = pyramid_rotation[i];
-    HalfSpace hs(p[new_to_old[0]],
-                  p[new_to_old[2]],
-                  p[new_to_old[4]]);
-    if ( ! hs.isIn(p[new_to_old[1]]))
+    Plane pl(p[new_to_old[0]],
+             p[new_to_old[2]],
+             p[new_to_old[4]]);
+    if (pl.distance(p[new_to_old[1]]) <= 0)
       return false;
-    if (hs.isIn(p[new_to_old[3]]))
+    if (pl.distance(p[new_to_old[3]]) >= 0)
       return false;
   }
   return true;
