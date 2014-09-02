@@ -1,4 +1,4 @@
-#include "phSplit.h"
+#include "phPartition.h"
 #include "phInput.h"
 #include <PCU.h>
 #include <parma.h>
@@ -25,6 +25,23 @@ void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
   m->destroyTag(weights);
   delete splitter;
   apf::splitMdsMesh(m, plan, factor, runAfter);
+}
+
+void balance(apf::Mesh2* m)
+{
+  Parma_PrintPtnStats(m, "preRefine");
+  apf::MeshTag* weights = Parma_WeighByMemory(m);
+  int priority[4] = {2,0,0,1};
+  double tolerance = 1.05;
+  int debugLevel = 0;
+  int iterations = 20;
+  int (*thisShouldReallyNotBeNecessary)[4] = &priority;
+  Parma_RunWeightedPtnImprovement(m, weights,
+      thisShouldReallyNotBeNecessary,
+      tolerance, debugLevel, iterations);
+  apf::removeTagFromDimension(m, weights, m->getDimension());
+  m->destroyTag(weights);
+  Parma_PrintPtnStats(m, "postRefine");
 }
 
 }

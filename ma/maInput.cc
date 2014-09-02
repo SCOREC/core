@@ -46,14 +46,10 @@ void setDefaultValues(Input* in)
   in->maximumImbalance = 1.10;
   in->shouldRunPreZoltan = false;
   in->shouldRunPreParma = false;
-  in->shouldRunPreDiffusion = false;
   in->shouldRunMidZoltan = false;
   in->shouldRunMidParma = false;
-  in->shouldRunMidDiffusion = false;
   in->shouldRunPostZoltan = false;
   in->shouldRunPostParma = false;
-  in->shouldRunPostDiffusion = false;
-  in->diffuseIterations = 30;
   in->shouldTurnLayerToTets = false;
   in->shouldCleanupLayer = false;
   in->shouldRefineLayer = false;
@@ -103,10 +99,6 @@ void validateInput(Input* in)
     rejectInput("negative minimum element quality");
   if (in->maximumImbalance < 1.0)
     rejectInput("maximum imbalance less than 1.0");
-  if (in->shouldRunPreZoltan && in->shouldRunPreParma)
-    rejectInput("should not run both parma and zoltan before adapting");
-  if (in->diffuseIterations < 0)
-    rejectInput("negative parma diffuse iterations");
   if (in->maximumEdgeRatio < 1.0)
     rejectInput("maximum tet edge ratio less than one");
 }

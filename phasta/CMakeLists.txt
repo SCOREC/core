@@ -19,7 +19,7 @@ set(SOURCES
   phAdapt.cc
   phRestart.cc
   phInput.cc
-  phSplit.cc
+  phPartition.cc
   phIO.c
   phBC.cc
   phConstraint.cc)

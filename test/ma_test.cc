@@ -46,8 +46,8 @@ int main(int argc, char** argv)
   Linear sf(m);
   ma::Input* in = ma::configure(m, &sf);
   in->shouldRunPreZoltan = true;
-  in->shouldRunMidDiffusion = true;
-  in->shouldRunPostDiffusion = true;
+  in->shouldRunMidParma = true;
+  in->shouldRunPostParma = true;
   in->shouldRefineLayer = true;
   ma::adapt(in);
   m->verify();
