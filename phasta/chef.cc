@@ -60,6 +60,7 @@ int main(int argc, char** argv)
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)
     ph::buildMapping(m);
+  apf::setMigrationLimit(in.elementsPerMigration);
   if (in.adaptFlag) {
     ph::adapt(in, m);
     ph::goToStepDir(in.timeStepNumber);
