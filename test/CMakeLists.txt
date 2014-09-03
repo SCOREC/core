@@ -33,7 +33,6 @@ endmacro(setup_exe)
 
 setup_exe(mdlConvert mdlConvert.c)
 setup_exe(mkmodel mkmodel.cc)
-setup_exe(mds_test mds_test.cc)
 setup_exe(ma_insphere ma_insphere.cc)
 setup_exe(ma_test ma_test.cc)
 setup_exe(chef ../phasta/chef.cc)
