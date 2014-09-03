@@ -44,7 +44,9 @@ set(SIM_LIB_NAMES
 set(SIM_OPT_LIB_NAMES
   SimAdvMeshing
   SimParasolid260
-  pskernel)
+  pskernel
+  SimAcis240
+  SpaACIS)
 
 simLibCheck("${SIM_LIB_NAMES}" TRUE)
 simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
