@@ -14,6 +14,16 @@
 #include <SimModel.h>
 #include <PCU.h>
 
+#include "gmi_sim_config.h"
+
+#ifdef SIM_PARASOLID
+#include "SimParasolidKrnl.h"
+#endif
+
+#ifdef SIM_ACIS
+#include "SimAcisKrnl.h"
+#endif
+
 struct sim_model {
   struct gmi_model model;
   SGModel* sim;
@@ -31,6 +41,7 @@ struct sim_iter {
 };
 
 extern "C" {
+
 
 /* apparently much of what Simmetrix does
    uses a custom memory allocator which is not
@@ -234,6 +245,66 @@ static gmi_model* create(const char* filename)
   return m;
 }
 
+#ifdef SIM_PARASOLID
+static gmi_model* create_parasolid(const char* filename)
+{
+  enum { TEXT_FORMAT = 0 };
+  pParasolidNativeModel nm =
+    ParasolidNM_createFromFile(filename, TEXT_FORMAT);
+  pGModel sm = GM_createFromNativeModel(nm, NULL);
+  NM_release(nm);
+  gmi_model* m = gmi_import_sim(sm);
+  ((sim_model*)m)->owned = true;
+  return m;
+}
+#else
+static gmi_model* create_parasolid(const char* filename)
+{
+  gmi_fail("gmi_sim not compiled with Parasolid support");
+}
+#endif
+
+#ifdef SIM_ACIS
+static gmi_model* create_acis(const char* filename)
+{
+  enum { TEXT_FORMAT = 0 };
+  pAcisNativeModel nm =
+    AcisNM_createFromFile(filename, TEXT_FORMAT);
+  pGModel sm = GM_createFromNativeModel(nm, NULL);
+  NM_release(nm);
+  gmi_model* m = gmi_import_sim(sm);
+  ((sim_model*)m)->owned = true;
+  return m;
+}
+#else
+static gmi_model* create_acis(const char* filename)
+{
+  gmi_fail("gmi_sim not compiled with Acis support");
+}
+#endif
+
+} //extern "C"
+
+void gmi_sim_start(void)
+{
+  SimModel_start();
+#ifdef SIM_PARASOLID
+  SimParasolid_start(1);
+#endif
+#ifdef SIM_ACIS
+  SimAcis_start(1);
+#endif
+}
+
+void gmi_sim_stop(void)
+{
+#ifdef SIM_ACIS
+  SimAcis_stop(1);
+#endif
+#ifdef SIM_PARASOLID
+  SimParasolid_stop(1);
+#endif
+  SimModel_stop();
 }
 
 void gmi_register_sim(void)
@@ -251,6 +322,8 @@ void gmi_register_sim(void)
   ops.range = range;
   ops.destroy = destroy;
   gmi_register(create, "smd");
+  gmi_register(create_parasolid, "xmt_txt");
+  gmi_register(create_acis, "sat");
 }
 
 gmi_model* gmi_import_sim(SGModel* sm)
