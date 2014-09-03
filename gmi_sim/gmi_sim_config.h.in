@@ -1,0 +1,2 @@
+#cmakedefine SIM_PARASOLID
+#cmakedefine SIM_ACIS
