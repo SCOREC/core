@@ -2,9 +2,9 @@
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
 #include <SimUtil.h>
-#include <SimParasolidKrnl.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
+#include <gmi.h>
 #include <gmi_sim.h>
 #include <apf.h>
 #include <apfConvert.h>
@@ -47,18 +47,16 @@ int main(int argc, char** argv)
   }
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
-  SimModel_start();
+  gmi_sim_start();
+  gmi_register_sim();
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
-  pGModel simModel;
-  simModel = GM_load(argv[1], NULL, progress);
-
-  pParMesh sim_mesh = PM_load(argv[2],sthreadNone,0,progress);
+  gmi_model* mdl = gmi_load(argv[1]);
+  pGModel simModel = gmi_export_sim(mdl);
+  pParMesh sim_mesh = PM_load(argv[2], sthreadNone, simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
-  gmi_register_sim();
-  gmi_model* mdl = gmi_import_sim(simModel);
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
@@ -67,10 +65,9 @@ int main(int argc, char** argv)
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  GM_release(simModel);
 
   Progress_delete(progress);
-  SimModel_stop();
+  gmi_sim_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
   PCU_Comm_Free();

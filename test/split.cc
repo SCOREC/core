@@ -6,7 +6,6 @@
 #include <PCU.h>
 #include <parma.h>
 #include <SimUtil.h>
-#include <SimModel.h>
 
 namespace {
 
@@ -61,14 +60,14 @@ int main(int argc, char** argv)
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
   Sim_readLicenseFile(0);
-  SimModel_start();
+  gmi_sim_start();
   gmi_register_mesh();
   gmi_register_sim();
   PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);
-  SimModel_stop();
+  gmi_sim_stop();
   Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();

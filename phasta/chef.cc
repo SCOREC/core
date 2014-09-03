@@ -12,7 +12,6 @@
 #include <gmi_sim.h>
 #include <PCU.h>
 #include <SimUtil.h>
-#include <SimModel.h>
 
 ph::Input* globalInput;
 ph::BCs* globalBCs;
@@ -51,7 +50,7 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   PCU_Protect();
   Sim_readLicenseFile(0);
-  SimModel_start();
+  gmi_sim_start();
   gmi_register_mesh();
   gmi_register_sim();
   globalPeers = PCU_Comm_Peers();
@@ -76,7 +75,7 @@ int main(int argc, char** argv)
   globalInput = &in;
   globalBCs = &bcs;
   ph::split(in, m, afterSplit);
-  SimModel_stop();
+  gmi_sim_stop();
   Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
