@@ -20,11 +20,16 @@ macro(simLibCheck libs isRequired)
   foreach(lib ${libs}) 
     unset(simlib CACHE)
     find_library(simlib "${lib}" PATHS ${SIMMETRIX_LIB_DIR})
-    if(${isRequired} AND simlib MATCHES "^simlib-NOTFOUND$")
-      message(FATAL_ERROR "simmetrix library ${lib} not found in ${SIMMETRIX_LIB_DIR}")
+    if(simlib MATCHES "^simlib-NOTFOUND$")
+      if(${isRequired})
+        message(FATAL_ERROR "simmetrix library ${lib} not found in ${SIMMETRIX_LIB_DIR}")
+      else()
+        message("simmetrix library ${lib} not found in ${SIMMETRIX_LIB_DIR}")
+      endif()
+    else()
+      set("SIMMODSUITE_${lib}_FOUND" TRUE CACHE INTERNAL "SimModSuite library present")
+      set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${simlib})
     endif()
-    set("SIMMODSUITE_${lib}_FOUND" TRUE CACHE INTERNAL "SimModSuite library present")
-    set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${simlib})
   endforeach()
 endmacro(simLibCheck)
 
@@ -37,7 +42,9 @@ set(SIM_LIB_NAMES
   SimMeshTools
   SimPartitionWrapper-${SIM_MPI})
 set(SIM_OPT_LIB_NAMES
-  SimAdvMeshing)
+  SimAdvMeshing
+  SimParasolid260
+  pskernel)
 
 simLibCheck("${SIM_LIB_NAMES}" TRUE)
 simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
