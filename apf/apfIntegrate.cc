@@ -381,6 +381,18 @@ Integrator::~Integrator()
 {
 }
 
+void Integrator::inElement(MeshElement*)
+{
+}
+
+void Integrator::outElement()
+{
+}
+
+void Integrator::parallelReduce()
+{
+}
+
 void Integrator::process(Mesh* m)
 {
   int d = m->getDimension();

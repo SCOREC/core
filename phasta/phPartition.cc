@@ -13,12 +13,16 @@ void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
   assert(in.recursivePtn <= 1);
   int factor = in.numTotParts / PCU_Comm_Peers();
   assert(in.numTotParts % PCU_Comm_Peers() == 0);
-  std::map<std::string, int> methodMap;
-  methodMap["rib"] = apf::RIB;
-  methodMap["graph"] = apf::GRAPH;
-  methodMap["hypergraph"] = apf::HYPERGRAPH;
-  int method = methodMap[in.partitionMethod];
-  apf::Splitter* splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
+  apf::Splitter* splitter;
+  if (in.partitionMethod == "rib") { //prefer SCOREC RIB over Zoltan RIB
+    splitter = Parma_MakeRibSplitter(m);
+  } else {
+    std::map<std::string, int> methodMap;
+    methodMap["graph"] = apf::GRAPH;
+    methodMap["hypergraph"] = apf::HYPERGRAPH;
+    int method = methodMap[in.partitionMethod];
+    splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
+  }
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   apf::Migration* plan = splitter->split(weights, 1.03, factor);
   apf::removeTagFromDimension(m, weights, m->getDimension());
