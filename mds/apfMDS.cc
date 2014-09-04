@@ -486,6 +486,13 @@ class MeshMDS : public Mesh2
                                       MeshEntity** down)
     {
       int t = apf2mds(type);
+      int dim = mds_dim[t];
+      if (dim > mesh->mds.d) {
+        fprintf(stderr,"error: creating entity of dimension %d "
+                       "in mesh of dimension %d\n", dim, mesh->mds.d);
+        fprintf(stderr,"please use apf::changeMdsDimension\n");
+        abort();
+      }
       mds_set s;
       if (type != VERTEX) {
         s.n = mds_degree[t][mds_dim[t]-1];
