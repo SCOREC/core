@@ -172,7 +172,7 @@ add_test(change_dim
 set(MDIR ${MESHES}/upright)
 add_test(parallel_meshgen
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  generate
+  ./generate
   "${MDIR}/upright.smd"
   "67k")
 add_test(adapt_meshgen
