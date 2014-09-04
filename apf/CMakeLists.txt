@@ -26,6 +26,7 @@ set(APF_SOURCES
   apfElement.cc
   apfField.cc
   apfFieldOf.cc
+  apfGradientByVolume.cc
   apfIntegrate.cc
   apfMatrix.cc
   apfMatrixField.cc
@@ -50,8 +51,7 @@ set(APF_SOURCES
   apfPartition.cc
   apfConvert.cc
   apfConstruct.cc
-  apfVerify.cc
-  apfGradientByVolume.cc)
+  apfVerify.cc)
 
 set(APF_HEADERS
   apf.h
