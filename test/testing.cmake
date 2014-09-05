@@ -177,7 +177,7 @@ add_test(parallel_meshgen
   "67k")
 add_test(adapt_meshgen
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ma_test
+  ./ma_test
   "${MDIR}/upright.smd"
   "67k/")
 add_test(ma_insphere
