@@ -3,9 +3,9 @@
 # load environment variables
 source /usr/local/etc/bash_profile
 module load cmake/latest
-module load openmpi/1.6.5-ib
-module load parmetis/OpenMPI-1.6.5/4.0.2
-module load zoltan/OpenMPI-1.6.5/3.8
+module load mpich3/3.1.2-thread-multiple
+module load parmetis/mpich3.1.2/4.0.3
+module load zoltan/mpich3.1.2/3.8
 module load simmetrix/simModSuite
 module load netcdf
 module load llvm/latest
