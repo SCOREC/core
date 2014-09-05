@@ -41,12 +41,24 @@ set(SIM_LIB_NAMES
   SimModel 
   SimMeshTools
   SimPartitionWrapper-${SIM_MPI})
+
+option(SIM_PARASOLID "Use Parasolid through Simmetrix" ON)
+if (SIM_PARASOLID)
+  set(SIM_LIB_NAMES
+      ${SIM_LIB_NAMES} 
+      SimParasolid260
+      pskernel)
+endif()
+option(SIM_ACIS "Use Acis through Simmetrix" ON)
+if (SIM_ACIS)
+  set(SIM_LIB_NAMES
+      ${SIM_LIB_NAMES} 
+      SimAcis240
+      SpaACIS)
+endif()
+
 set(SIM_OPT_LIB_NAMES
-  SimAdvMeshing
-  SimParasolid260
-  pskernel
-  SimAcis240
-  SpaACIS)
+  SimAdvMeshing)
 
 simLibCheck("${SIM_LIB_NAMES}" TRUE)
 simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
