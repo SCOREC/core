@@ -58,6 +58,7 @@ int main(int argc, char** argv)
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
+  apf::printStats(mesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
   postConvert(mesh);
