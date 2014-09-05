@@ -134,7 +134,7 @@ SET(CONFIGURE_OPTIONS
   "-DENABLE_MPAS=ON"
   "-DPCU_COMPRESS=ON"
   "-DIS_TESTING=True"
-  "-DSIM_MPI=openmpi16"
+  "-DSIM_MPI=mpich3.1.2"
 )
 SET(REPO git@github.com:SCOREC/core-sim.git)
 
@@ -145,8 +145,8 @@ run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
 SET(CONFIGURE_OPTIONS
   "-DCMAKE_C_COMPILER=ccc-analyzer"
   "-DCMAKE_CXX_COMPILER=c++-analyzer"
-  "-DCMAKE_C_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
-  "-DCMAKE_CXX_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
+  "-DCMAKE_C_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
   "-DENABLE_THREADS=ON"
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
@@ -160,14 +160,14 @@ build_subproject("core-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
 SET(CONFIGURE_OPTIONS
   "-DCMAKE_C_COMPILER=ccc-analyzer"
   "-DCMAKE_CXX_COMPILER=c++-analyzer"
-  "-DCMAKE_C_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
-  "-DCMAKE_CXX_FLAGS=-I/usr/local/openmpi/1.6.5-ib/include -O2 -g -Wall"
+  "-DCMAKE_C_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
+  "-DCMAKE_CXX_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
   "-DENABLE_THREADS=ON"
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
   "-DPCU_COMPRESS=ON"
   "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/clangmake.sh"
-  "-DSIM_MPI=openmpi16"
+  "-DSIM_MPI=mpich3.1.2"
 )
 SET(REPO git@github.com:SCOREC/core-sim.git)
 
