@@ -60,8 +60,8 @@ endif()
 set(SIM_OPT_LIB_NAMES
   SimAdvMeshing)
 
-simLibCheck("${SIM_LIB_NAMES}" TRUE)
 simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
+simLibCheck("${SIM_LIB_NAMES}" TRUE)
 
 string(FIND "${SIMMODSUITE_LIBS}" "/lib/" archStart)
 string(FIND "${SIMMODSUITE_LIBS}" "/libSim" archEnd)
