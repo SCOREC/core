@@ -19,7 +19,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <PCU.h>
-#include <malloc.h>
+#include <cstdlib>
 
 namespace ma {
 
