@@ -1,5 +1,7 @@
+#include <stdio.h>
+
+#ifdef __linux__
 #include <execinfo.h> /* backtrace for pcu_trace */
-#include <stdio.h> /* stderr for pcu_trace */
 #include <signal.h> /* signal for pcu_protect */
 
 void PCU_Trace(void)
@@ -28,4 +30,10 @@ void PCU_Protect(void)
   signal(SIGSEGV, catch);
   signal(SIGINT, catch);
 }
+#else
+void PCU_Protect(void)
+{
+  fprintf(stderr,"PCU_Protect only supported on Linux\n");
+}
+#endif
 

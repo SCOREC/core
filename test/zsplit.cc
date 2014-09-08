@@ -60,7 +60,6 @@ int main(int argc, char** argv)
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
   gmi_register_mesh();
-  PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);

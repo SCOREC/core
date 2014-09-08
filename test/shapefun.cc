@@ -89,7 +89,6 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Protect();
   gmi_register_null();
   testPrismNodeValues();
   testPyramidNodeValues();
