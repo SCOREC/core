@@ -220,12 +220,12 @@ class MeshMDS : public Mesh2
     {
       return mds_has_up(&(mesh->mds),fromEnt(e));
     }
-    void getPoint_(MeshEntity* e, int node, Vector3& point)
+    void getPoint_(MeshEntity* e, int, Vector3& point)
     {
       mds_id id = fromEnt(e);
       point = Vector3(mds_apf_point(mesh,id));
     }
-    void setPoint_(MeshEntity* e, int node, Vector3 const& p)
+    void setPoint_(MeshEntity* e, int, Vector3 const& p)
     {
       mds_id id = fromEnt(e);
       p.toArray(mds_apf_point(mesh,id));
@@ -267,7 +267,7 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       assert(!mds_find_tag(&mesh->tags, name));
-      tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
+      tag = mds_create_tag(&(mesh->tags),name,
           sizeof(double)*size, Mesh::DOUBLE);
       return reinterpret_cast<MeshTag*>(tag);
     }
@@ -275,7 +275,7 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       assert(!mds_find_tag(&mesh->tags, name));
-      tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
+      tag = mds_create_tag(&(mesh->tags),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
     }
@@ -283,7 +283,7 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       assert(!mds_find_tag(&mesh->tags, name));
-      tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
+      tag = mds_create_tag(&(mesh->tags),name,
           sizeof(long)*size, Mesh::LONG);
       return reinterpret_cast<MeshTag*>(tag);
     }

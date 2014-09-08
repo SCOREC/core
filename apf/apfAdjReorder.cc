@@ -23,7 +23,7 @@ namespace apf {
     int components = countComponents(field);
     int dim = mesh->getDimension();
     
-    long long dof = 0;
+    long dof = 0;
 
     MeshIterator * it;
     MeshEntity * ent = NULL;
@@ -107,7 +107,7 @@ int AdjReorder(Numbering * num)
 
   // on the off chance there are multiple nodes per vertex...
   int vert_nodes = shape->countNodesOn(Mesh::VERTEX);
-  long long dof_index = dofs-1;
+  long dof_index = dofs-1;
 
   while(dof_index >= 0)
   {

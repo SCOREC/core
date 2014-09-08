@@ -87,8 +87,8 @@ static int find_header(FILE* f, const char* name, char header[PH_LINE])
 static void write_magic_number(FILE* f)
 {
   int why = 1;
-  ph_write_header(f, magic_name, sizeof(int) + 1, 1, &why);
   int magic = MAGIC;
+  ph_write_header(f, magic_name, sizeof(int) + 1, 1, &why);
   fwrite(&magic, sizeof(int), 1, f);
   fprintf(f,"\n");
 }
@@ -107,13 +107,13 @@ static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 
 static int read_magic_number(FILE* f)
 {
+  int magic;
   if (!seek_after_header(f, magic_name)) {
     if (!PCU_Comm_Self())
       fprintf(stderr,"warning: not swapping bytes\n");
     rewind(f);
     return 0;
   }
-  int magic;
   my_fread(&magic, sizeof(int), 1, f);
   return magic != MAGIC;
 }
@@ -170,7 +170,7 @@ void ph_read_field(const char* file, const char* field, double** data,
   parse_params(header, &bytes, nodes, vars, step);
   assert(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
-  assert(n == (*nodes) * (*vars));
+  assert((int)n == (*nodes) * (*vars));
   *data = malloc(bytes);
   my_fread(*data, sizeof(double), n, f);
   if (should_swap)

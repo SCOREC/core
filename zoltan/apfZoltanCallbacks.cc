@@ -121,8 +121,8 @@ void zoltanGetNodes(void* data, int ngid, int nlid,
 }
 
 //ZOLTAN_NUM_EDGES_FN_TYPE
-int zoltanCountEdges(void* data, int ngid, int nlid,
-    ZOLTAN_ID_PTR gid, ZOLTAN_ID_PTR lid, int* ierr)
+int zoltanCountEdges(void* data, int, int,
+    ZOLTAN_ID_PTR, ZOLTAN_ID_PTR lid, int* ierr)
 {
   ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
   int edges = 0;
@@ -146,8 +146,8 @@ int zoltanCountEdges(void* data, int ngid, int nlid,
 }
 
 //ZOLTAN_EDGE_LIST_FN_TYPE
-void zoltanGetEdges(void* data, int ngid, int nlid,
-    ZOLTAN_ID_PTR gid, ZOLTAN_ID_PTR lid,
+void zoltanGetEdges(void* data, int ngid, int,
+    ZOLTAN_ID_PTR, ZOLTAN_ID_PTR lid,
     ZOLTAN_ID_PTR gids, int* pids,
     int nweights, float* weights, int* ierr)
 {
@@ -185,8 +185,8 @@ void zoltanGetEdges(void* data, int ngid, int nlid,
 }
 
 // ZOLTAN_GEOM_FN
-void getCentroid(void *data, int ngid, int nlid,
-    ZOLTAN_ID_PTR gid, ZOLTAN_ID_PTR lid, double *coords,
+void getCentroid(void *data, int, int,
+    ZOLTAN_ID_PTR, ZOLTAN_ID_PTR lid, double *coords,
     int *ierr)
 {
   ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
@@ -274,7 +274,7 @@ void ZoltanData::setup()
   Zoltan_Set_Param(ztn, "CHECK_GRAPH", "0");
 
   //tolerance
-  sprintf(paramStr, "%lf", zb->tolerance);
+  sprintf(paramStr, "%f", zb->tolerance);
   Zoltan_Set_Param(ztn, "imbalance_tol", paramStr);
 
   Zoltan_Set_Param(ztn, "RETURN_LISTS", "EXPORT");

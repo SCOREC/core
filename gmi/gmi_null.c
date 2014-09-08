@@ -38,6 +38,7 @@ static struct gmi_model_ops ops = {
 
 static struct gmi_model* create(const char* filename)
 {
+  (void)filename;
   struct gmi_base* m;
   m = calloc(1, sizeof(*m));
   m->model.ops = &ops;

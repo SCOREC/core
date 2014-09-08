@@ -95,8 +95,8 @@ static bool applyBit2(int* bits, int bit)
   return true;
 }
 
-static void applyBit(double* outval, int* bits,
-    KnownBC const& bc, double* inval)
+static void applyBit(double*, int* bits,
+    KnownBC const& bc, double*)
 {
   applyBit2(bits, bc.bit);
 }
@@ -134,8 +134,8 @@ static void applyVector(double* outval, int* bits,
   applyVector2(outval, bits, inval, bc.offset, bc.bit);
 }
 
-static void applySurfID(double* values, int* bits,
-    KnownBC const& bc, double* inval)
+static void applySurfID(double*, int* bits,
+    KnownBC const&, double* inval)
 {
   bits[1] = *inval;
 }

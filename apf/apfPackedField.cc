@@ -15,12 +15,12 @@ Element* PackedField::getElement(VectorElement* e)
   return new Element(this,e);
 }
 
-void PackedField::project(Field* from)
+void PackedField::project(Field*)
 {
   fail("PackedField::project unimplemented");
 }
 
-void PackedField::axpy(double a, Field* x)
+void PackedField::axpy(double, Field*)
 {
   fail("PackedField::axpy unimplemented");
 }

@@ -5,7 +5,7 @@
 #include <limits>
 #include <PCU.h>
 
-int Parma_Run(apf::Mesh* mesh, apf::MeshTag* weight, const double maxImb) {
+int Parma_Run(apf::Mesh* mesh, apf::MeshTag* weight, const double) {
   double entImb[4];
   Parma_GetWeightedEntImbalance(mesh, weight, &entImb);
   int priority[4] = {0, 0, 0, 1};

@@ -6,13 +6,13 @@
 namespace parma {
   class Sides : public Associative<int> {
     public:
-      Sides(apf::Mesh* m) {}
+      Sides(apf::Mesh*) {}
       virtual ~Sides() {}
       virtual int total() { return totalSides;}
     protected:
       int totalSides;
   };
   Sides* makeElmBdrySides(apf::Mesh* m);
-};
+}
 
 #endif

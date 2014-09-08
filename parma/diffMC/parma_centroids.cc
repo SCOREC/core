@@ -43,7 +43,7 @@ namespace parma {
     return x / weight;
   }
 
-  void Centroids::init(apf::Mesh* m, Sides* s) {
+  void Centroids::init(apf::Mesh*, Sides* s) {
     PCU_Comm_Begin();
     const Sides::Item* side;
     s->begin();

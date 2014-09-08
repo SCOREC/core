@@ -218,7 +218,7 @@ static int getEdgeSplitCode(Adapt* a, Entity* e)
    the entity to the standard orientation for its template,
    returning the code index for the template and the
    rotated vertices. */
-int matchToTemplate(Adapt* a, int type, Entity** vi, int code, Entity** vo)
+int matchToTemplate(int type, Entity** vi, int code, Entity** vo)
 {
   CodeMatch const* table = code_match[type];
   assert(table[code].code_index != -1);
@@ -234,7 +234,7 @@ int matchEntityToTemplate(Adapt* a, Entity* e, Entity** vo)
   int type = m->getType(e);
   Downward vi;
   m->getDownward(e, 0, vi);
-  return matchToTemplate(a, type, vi, code, vo);
+  return matchToTemplate(type, vi, code, vo);
 }
 
 static SplitFunction* all_templates[TYPES] =

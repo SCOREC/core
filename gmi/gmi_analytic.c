@@ -78,6 +78,10 @@ static void eval(struct gmi_model* m, struct gmi_ent* e,
 static void reparam(struct gmi_model* m, struct gmi_ent* from,
       double const from_p[2], struct gmi_ent* to, double to_p[2])
 {
+  (void)m;
+  (void)from;
+  (void)from_p;
+  (void)to;
   to_p[0] = 0;
   to_p[1] = 0;
 }

@@ -123,7 +123,7 @@ struct QuadFlagger : public Crawler
     int diagonal = getDiagonalFromFlag(adapter, e);
     PCU_COMM_PACK(to, diagonal);
   }
-  bool recv(Entity* e, int from)
+  bool recv(Entity* e, int)
   {
     int diagonal;
     PCU_COMM_UNPACK(diagonal);
@@ -236,10 +236,10 @@ struct QuadMarker : public Crawler
     setFlag(a, oe, CHECKED);
     return oe;
   }
-  void send(Entity* e, int to)
+  void send(Entity*, int)
   {
   }
-  bool recv(Entity* e, int from)
+  bool recv(Entity* e, int)
   {
     if (getFlag(a, e, CHECKED))
       return false;

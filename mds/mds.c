@@ -215,7 +215,7 @@ static void resize_adjacencies(struct mds* m, mds_id old_cap[MDS_TYPES])
       resize_adjacency(m,i,j,old_cap,m->cap);
 }
 
-static void resize_free(struct mds* m, mds_id old_cap[MDS_TYPES])
+static void resize_free(struct mds* m)
 {
   int t;
   for (t = 0; t < MDS_TYPES; ++t)
@@ -225,7 +225,7 @@ static void resize_free(struct mds* m, mds_id old_cap[MDS_TYPES])
 static void resize(struct mds* m, mds_id old_cap[MDS_TYPES])
 {
   resize_adjacencies(m,old_cap);
-  resize_free(m,old_cap);
+  resize_free(m);
 }
 
 void mds_create(struct mds* m, int d, mds_id cap[MDS_TYPES])
@@ -657,7 +657,9 @@ static void convert_up(struct mds* m,
     int t, int make)
 {
   struct mds_set sets[2];
-  struct mds_set* s[2] = {sets,sets+1};
+  struct mds_set* s[2];
+  s[0] = sets;
+  s[1] = sets + 1;
   struct mds_set* tmp;
   copy_set(s[0],from_s);
   for (; from_dim != to_dim; ++from_dim) {
@@ -675,7 +677,9 @@ static void convert_down(struct mds* m,
     int t)
 {
   struct mds_set sets[2];
-  struct mds_set* s[2] = {sets,sets+1};
+  struct mds_set* s[2];
+  s[0] = sets;
+  s[1] = sets + 1;
   struct mds_set* tmp;
   copy_set(s[0],from_s);
   for (; from_dim != to_dim; --from_dim) {
@@ -745,8 +749,8 @@ static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
 {
   int i;
   int dim;
-  to->n = 0;
   struct mds_set up;
+  to->n = 0;
   assert(from->n);
   dim = mds_dim[TYPE(from->e[0])];
   for (i = 0; i < from->n; ++i) {
@@ -758,7 +762,9 @@ static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
 static void get_up(struct mds* m, mds_id e, int d, struct mds_set* out)
 {
   struct mds_set sets[2];
-  struct mds_set* s[2] = {sets, sets+1};
+  struct mds_set* s[2];
+  s[0] = sets;
+  s[1] = sets + 1;
   struct mds_set* tmp;
   int dim;
   s[0]->n = 1;
@@ -793,11 +799,14 @@ void mds_get_adjacent(struct mds* m, mds_id e, int d, struct mds_set* s)
   }
   check_ent(m,e);
   e_dim = mds_dim[TYPE(e)];
-  if ((e_dim == d) || m->mrm[e_dim][d])
-    return look(m,e,d,s);
-  if (d < e_dim)
-    return get_down(m,e,d,s);
-  return get_up(m,e,d,s);
+  if ((e_dim == d) || m->mrm[e_dim][d]) {
+    look(m,e,d,s);
+    return;
+  } if (d < e_dim) {
+    get_down(m,e,d,s);
+    return;
+  }
+  get_up(m,e,d,s);
 }
 
 static mds_id skip(struct mds* m, mds_id e)

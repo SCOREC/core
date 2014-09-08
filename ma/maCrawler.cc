@@ -159,7 +159,7 @@ struct LayerNumberer : public Crawler
     int n = t.getNumber(v);
     PCU_COMM_PACK(to, n);
   }
-  bool recv(Entity* v, int from)
+  bool recv(Entity* v, int)
   {
     int n;
     PCU_COMM_UNPACK(n);
