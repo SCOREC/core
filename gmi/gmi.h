@@ -38,8 +38,10 @@ struct gmi_model;
 struct gmi_set {
   /** \brief number of model entities */
   int n;
-  /** \brief array of model entity pointers */
-  struct gmi_ent* e[];
+  /** \brief array of model entity pointers
+   \details vlas at the end of structs are ok by C99, but C++ still hates them.
+   trick it with a 1, like the good old days of the linux kernel */
+  struct gmi_ent* e[1];
 };
 
 /** \brief model interface definition

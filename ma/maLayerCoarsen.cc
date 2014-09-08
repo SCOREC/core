@@ -136,7 +136,7 @@ struct CurveLocalizer : public Crawler
     int dest = getVertDest(v);
     PCU_COMM_PACK(to, dest);
   }
-  bool recv(Entity* v, int from)
+  bool recv(Entity* v, int)
   {
     int dest;
     PCU_COMM_UNPACK(dest);

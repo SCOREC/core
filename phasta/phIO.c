@@ -23,7 +23,7 @@ void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params)
 {
   int i;
-  fprintf(f,"%s : < %zu > ", name, bytes);
+  fprintf(f,"%s : < %lu > ", name, bytes);
   for (i = 0; i < nparam; ++i)
     fprintf(f, "%d ", params[i]);
   fprintf(f, "\n");
@@ -58,7 +58,7 @@ static void parse_header(char* header, char** name, size_t* bytes,
   strtok_r(NULL, "<", &saveptr);
   header = strtok_r(NULL, ">", &saveptr);
   if (bytes)
-    sscanf(header, "%zu", bytes);
+    sscanf(header, "%lu", bytes);
   for (i = 0; i < nparam; ++i) {
     header = strtok_r(NULL, " \n", &saveptr);
     sscanf(header, "%d", &params[i]);

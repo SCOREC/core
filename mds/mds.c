@@ -658,9 +658,9 @@ static void convert_up(struct mds* m,
 {
   struct mds_set sets[2];
   struct mds_set* s[2];
+  struct mds_set* tmp;
   s[0] = sets;
   s[1] = sets + 1;
-  struct mds_set* tmp;
   copy_set(s[0],from_s);
   for (; from_dim != to_dim; ++from_dim) {
     step_up(m,s[0],from_dim,s[1],from_dim + 1,t,make);
@@ -678,9 +678,9 @@ static void convert_down(struct mds* m,
 {
   struct mds_set sets[2];
   struct mds_set* s[2];
+  struct mds_set* tmp;
   s[0] = sets;
   s[1] = sets + 1;
-  struct mds_set* tmp;
   copy_set(s[0],from_s);
   for (; from_dim != to_dim; --from_dim) {
     step_down(m,s[0],from_dim,s[1],from_dim - 1,t);
@@ -763,10 +763,10 @@ static void get_up(struct mds* m, mds_id e, int d, struct mds_set* out)
 {
   struct mds_set sets[2];
   struct mds_set* s[2];
-  s[0] = sets;
-  s[1] = sets + 1;
   struct mds_set* tmp;
   int dim;
+  s[0] = sets;
+  s[1] = sets + 1;
   s[0]->n = 1;
   s[0]->e[0] = e;
   dim = mds_dim[TYPE(e)];

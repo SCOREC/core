@@ -149,15 +149,15 @@ class MergeTargets {
         part.adjPartIds.push_back(partId->first);
       s->end();
 
-      PCU_Debug_Print("adjpartIds size = %zu\n", part.adjPartIds.size()); //rating 2
+      PCU_Debug_Print("adjpartIds size = %lu\n", part.adjPartIds.size()); //rating 2
 
-      PCU_Debug_Print("Part %d mergeNet size %zu\n", PCU_Comm_Self(),
+      PCU_Debug_Print("Part %d mergeNet size %lu\n", PCU_Comm_Self(),
         tgts.total()); //rating 0
 
       //Passing in the mergingNet
       for(size_t i = 0; i < tgts.total(); ++i){
         part.net.push_back(tgts.mergeTargetIndex(i));
-        PCU_Debug_Print("\t%zu mergingNet %d\n",i , part.net[i]);//rating 1 (CHI 2)
+        PCU_Debug_Print("\t%lu mergingNet %d\n",i , part.net[i]);//rating 1 (CHI 2)
       }
       part.net.push_back(part.id);
 

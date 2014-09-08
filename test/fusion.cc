@@ -23,6 +23,8 @@ void edgeFunction(double const p[2], double x[3])
 
 void faceFunction(double const p[2], double x[3])
 {
+  (void)p;
+  (void)x;
 }
 
 gmi_model* makeModel()

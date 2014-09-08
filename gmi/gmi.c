@@ -21,14 +21,14 @@ struct creator {
 
 struct creators {
   int n;
-  struct creator c[];
+  struct creator c[1];
 };
 
 static struct creators* ctors = NULL;
 
 struct gmi_set* gmi_make_set(int n)
 {
-  struct gmi_set* s = malloc(sizeof(*s) + n * sizeof(struct gmi_ent*));
+  struct gmi_set* s = malloc(sizeof(*s) + (n - 1) * sizeof(struct gmi_ent*));
   s->n = n;
   return s;
 }
@@ -127,7 +127,7 @@ static char* copy_string(const char* a)
 void gmi_register(gmi_creator f, const char* ext)
 {
   if (!ctors) {
-    ctors = malloc(sizeof(struct creators) + sizeof(struct creator));
+    ctors = malloc(sizeof(struct creators));
     ctors->n = 1;
     ctors->c[0].f = f;
     ctors->c[0].ext = copy_string(ext);
@@ -135,7 +135,7 @@ void gmi_register(gmi_creator f, const char* ext)
   } else {
     ++ctors->n;
     ctors = realloc(ctors, sizeof(struct creators) +
-        ctors->n * sizeof(struct creator));
+        (ctors->n - 1) * sizeof(struct creator));
     ctors->c[ctors->n - 1].f = f;
     ctors->c[ctors->n - 1].ext = copy_string(ext);
   }

@@ -104,7 +104,7 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim)
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1)
-    assert(np == PCU_Comm_Peers());
+    assert(np == (unsigned)PCU_Comm_Peers());
 }
 
 static void write_header(struct pcu_file* f, unsigned dim)
@@ -188,7 +188,7 @@ static void write_conn(struct pcu_file* f, struct mds_apf* m)
 
 static void read_remotes(struct pcu_file* f, struct mds_apf* m)
 {
-  struct mds_links ln = {};
+  struct mds_links ln = MDS_LINKS_INIT;
   read_links(f, &ln);
   mds_set_type_links(&m->remotes, &m->mds, MDS_VERTEX, &ln);
   mds_free_links(&ln);
@@ -196,7 +196,7 @@ static void read_remotes(struct pcu_file* f, struct mds_apf* m)
 
 static void write_remotes(struct pcu_file* f, struct mds_apf* m)
 {
-  struct mds_links ln = {};
+  struct mds_links ln = MDS_LINKS_INIT;
   mds_get_type_links(&m->remotes, &m->mds, MDS_VERTEX, &ln);
   write_links(f, &ln);
   mds_free_links(&ln);
@@ -492,7 +492,7 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
 
 static void read_type_matches(struct pcu_file* f, struct mds_apf* m, int t)
 {
-  struct mds_links ln = {};
+  struct mds_links ln = MDS_LINKS_INIT;
   read_links(f, &ln);
   mds_set_local_matches(&m->matches, &m->mds, t, &ln);
   mds_free_local_links(&ln);
@@ -502,7 +502,7 @@ static void read_type_matches(struct pcu_file* f, struct mds_apf* m, int t)
 
 static void write_type_matches(struct pcu_file* f, struct mds_apf* m, int t)
 {
-  struct mds_links ln = {};
+  struct mds_links ln = MDS_LINKS_INIT;
   mds_get_type_links(&m->matches, &m->mds, t, &ln);
   mds_get_local_matches(&m->matches, &m->mds, t, &ln);
   write_links(f, &ln);
@@ -566,7 +566,7 @@ static void write_smb(struct mds_apf* m, const char* filename,
                       int zip)
 {
   struct pcu_file* f;
-  unsigned n[SMB_TYPES] = {};
+  unsigned n[SMB_TYPES] = {0};
   int i;
   f = pcu_fopen(filename, 1, zip);
   assert(f);

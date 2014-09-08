@@ -99,8 +99,9 @@ static void number_connected_graph(struct mds* m, mds_id v,
     struct mds_tag* tag, mds_id label[MDS_TYPES])
 {
   struct queue q;
-  struct mds_set adj[4] = {};
+  struct mds_set adj[4];
   int i,j;
+  adj[0].n = adj[1].n = adj[2].n = adj[3].n = 0;
   if (!visit(m, tag, label, v))
     return;
   make_queue(&q, m->n[MDS_VERTEX]);
