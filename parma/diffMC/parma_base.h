@@ -32,5 +32,5 @@ namespace parma {
         return imb < maxImb;
       }
   };
-};
+}
 #endif

@@ -99,7 +99,7 @@ static void number_connected_graph(struct mds* m, mds_id v,
     struct mds_tag* tag, mds_id label[MDS_TYPES])
 {
   struct queue q;
-  struct mds_set adj[4] = {};
+  struct mds_set adj[4] = {{0},{0},{0},{0}};
   int i,j;
   if (!visit(m, tag, label, v))
     return;

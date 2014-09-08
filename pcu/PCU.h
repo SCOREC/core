@@ -109,7 +109,7 @@ void PCU_Trace(void);
 void PCU_Protect(void);
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif
 
 #endif

@@ -801,7 +801,7 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
         debugPrint(msg);
         if (-1 != neighborsInMIS.at(partIdx)) {
           if (neighborsInMIS.at(partIdx) != srcPartId) {
-            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%zu) = %d\n", 
+            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%lu) = %d\n", 
                 rank, srcPartId, partIdx, val);
           }
         }
@@ -815,7 +815,7 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
   }
 }
 
-void getMergeTargets(const int, const int totNumParts, 
+void getMergeTargets(const int, const int, 
     vector<partInfo>& parts, vector<int>&, map<int, int>& mergeTargets) {
   if(!PCU_Comm_Initialized()) PCU_Comm_Init();
   MPI_Barrier(MPI_COMM_WORLD);

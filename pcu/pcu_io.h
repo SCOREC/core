@@ -39,7 +39,7 @@ FILE* pcu_open_parallel(const char* prefix, const char* ext);
 void pcu_swap_doubles(double* p, size_t n);
 
 #ifdef __cplusplus
-} //extern "C"
+} /* extern "C" */
 #endif
 
 #endif

@@ -49,7 +49,7 @@ namespace {
       }
       Closest closest(apf::MeshEntity* elm) {
         if( !t->size() )
-          PCU_Debug_Print("t->size() %zu\n", t->size());
+          PCU_Debug_Print("t->size() %lu\n", t->size());
         assert(t->size());
         Closest c = {-1, DBL_MAX};
         const parma::Targets::Item* tgt;

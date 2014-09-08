@@ -126,7 +126,7 @@ void mds_add_copy(struct mds_net* net, struct mds* m, mds_id e,
   }
 }
 
-static int find_peer(struct mds_links* ln, int p)
+static int find_peer(struct mds_links* ln, unsigned p)
 {
   unsigned i;
   for (i = 0; i < ln->np; ++i)
@@ -184,7 +184,7 @@ static void note_remote_link(mds_id i, struct mds_copy c, void* u)
 /* allocate the link arrays based on np and n */
 static void alloc_links(struct mds_links* ln)
 {
-  int i;
+  unsigned i;
   for (i = 0; i < ln->np; ++i)
     ln->l[i] = malloc(ln->n[i] * sizeof(unsigned));
 }
