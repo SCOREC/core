@@ -24,6 +24,11 @@ configure_file(
     @ONLY)
 #pkgconfig }
 
+#Gets C99 support
+find_package(C99 REQUIRED)
+set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
+message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
+
 #directory containing gmi header files
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
