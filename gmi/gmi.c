@@ -100,7 +100,7 @@ int gmi_periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
 void gmi_range(struct gmi_model* m, struct gmi_ent* e, int dim,
     double r[2])
 {
-  return m->ops->range(m, e, dim, r);
+  m->ops->range(m, e, dim, r);
 }
 
 void gmi_destroy(struct gmi_model* m)
