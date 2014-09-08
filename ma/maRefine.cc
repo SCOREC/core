@@ -19,7 +19,6 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <PCU.h>
-#include <cstdlib>
 
 namespace ma {
 
