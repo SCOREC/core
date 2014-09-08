@@ -34,7 +34,7 @@ void mds_destroy_net(struct mds_net* net, struct mds* m)
 struct mds_copies* mds_make_copies(int n)
 {
   struct mds_copies* c;
-  c = malloc(sizeof(struct mds_copies) + n * sizeof(struct mds_copy));
+  c = malloc(sizeof(struct mds_copies) + (n - 1) * sizeof(struct mds_copy));
   c->n = n;
   return c;
 }
@@ -113,7 +113,7 @@ void mds_add_copy(struct mds_net* net, struct mds* m, mds_id e,
   if (cs) {
     p = find_place(cs, c.p);
     cs = realloc(cs, sizeof(struct mds_copies) +
-        (cs->n + 1) * sizeof(struct mds_copy));
+        (cs->n) * sizeof(struct mds_copy));
 /* insert sorted by moving greater items up by one */
     memmove(&cs->c[p + 1], &cs->c[p], (cs->n - p) * sizeof(struct mds_copy));
     cs->c[p] = c;

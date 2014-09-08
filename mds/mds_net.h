@@ -20,7 +20,7 @@ struct mds_copy {
 
 struct mds_copies {
   int n;
-  struct mds_copy c[];
+  struct mds_copy c[1];
 };
 
 struct mds_net {
