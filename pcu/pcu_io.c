@@ -78,11 +78,13 @@ static void close_compressed(pcu_file* pf)
 #else
 static void open_compressed(pcu_file* pf)
 {
+  (void)pf;
   pcu_fail("recompile with bzip2 support");
 }
 
 static void close_compressed(pcu_file* pf)
 {
+  (void)pf;
   pcu_fail("recompile with bzip2 support");
 }
 #endif

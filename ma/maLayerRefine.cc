@@ -74,7 +74,7 @@ struct SplitTagger : public Crawler
     bool has = getFlag(a, e, SPLIT);
     PCU_COMM_PACK(to, has);
   }
-  bool recv(Entity* e, int from)
+  bool recv(Entity* e, int)
   {
     bool has;
     PCU_COMM_UNPACK(has);
@@ -210,7 +210,7 @@ struct Disambiguator : public Crawler
     int diag = getDiagonalFromFlag(a, t);
     PCU_COMM_PACK(to, diag);
   }
-  bool recv(Entity* t, int from)
+  bool recv(Entity* t, int)
   {
     int diag;
     PCU_COMM_UNPACK(diag);

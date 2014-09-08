@@ -210,8 +210,7 @@ void synchronize(Numbering * n, Sharing* shr)
 struct NoSharing : public Sharing
 {
   bool isOwned(MeshEntity*) {return true;}
-  virtual void getCopies(MeshEntity* e,
-      CopyArray& copies) {}
+  virtual void getCopies(MeshEntity*, CopyArray&) {}
 };
 
 Numbering* numberNodes(

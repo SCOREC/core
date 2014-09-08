@@ -29,13 +29,13 @@ class ArrayDataOf : public FieldDataOf<T>
       /* this has to destroy the array */
       delete [] dataArray;
     }
-    virtual bool hasEntity(MeshEntity* e)
+    virtual bool hasEntity(MeshEntity*)
     {
       /* this should get a bit more complex:
          return true if the field has nodes on (e) */
       return true;
     }
-    virtual void removeEntity(MeshEntity* e)
+    virtual void removeEntity(MeshEntity*)
     {
       /* this will remain an empty function...
          I don't think  we want to remove entities from frozen fields */

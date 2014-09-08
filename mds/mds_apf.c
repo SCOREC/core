@@ -135,7 +135,7 @@ int mds_model_id(struct mds_apf* m, struct gmi_ent* model)
   return gmi_tag(m->user_model, model);
 }
 
-static void downs_to_copy(struct mds_net* net, struct mds_set* s,
+static void downs_to_copy(struct mds_set* s,
     struct mds_copy c)
 {
   int i;
@@ -144,18 +144,17 @@ static void downs_to_copy(struct mds_net* net, struct mds_set* s,
     PCU_COMM_PACK(c.p, s->e[i]);
 }
 
-static void downs_to_copies(struct mds_net* net,
+static void downs_to_copies(
     struct mds* m, mds_id e, struct mds_copies* c)
 {
   int i;
   struct mds_set s;
   mds_get_adjacent(m, e, mds_dim[mds_type(e)] - 1, &s);
   for (i = 0; i < c->n; ++i)
-    downs_to_copy(net, &s, c->c[i]);
+    downs_to_copy(&s, c->c[i]);
 }
 
-static void change_down(struct mds* m, mds_id e, struct mds_set* s,
-    struct mds_set* old_s)
+static void change_down(struct mds* m, mds_id e, struct mds_set* s)
 {
   mds_id e2;
   /* note: this sortof hack relies on the LIFO property
@@ -225,7 +224,7 @@ static int recv_down_copies(struct mds_net* net, struct mds* m)
   for (i = -s.n; i < s.n; ++i) {
     rotate_set(&s, i, &s2);
     if (compare_copy_sets(net, &s2, from, &rs)) {
-      change_down(m, e, &s2, &s);
+      change_down(m, e, &s2);
       return 1;
     }
   }
@@ -242,7 +241,9 @@ static int copy_less(struct mds_copy a, struct mds_copy b)
 static int owns_copies(mds_id e, struct mds_copies* c)
 {
   int i;
-  struct mds_copy mc = { e, PCU_Comm_Self() };
+  struct mds_copy mc;
+  mc.e = e;
+  mc.p = PCU_Comm_Self();
   for (i = 0; i < c->n; ++i)
     if (copy_less(c->c[i], mc))
       return 0;
@@ -254,6 +255,7 @@ static int align_copies(struct mds_net* net, struct mds* m)
   int d;
   mds_id e;
   struct mds_copies* c;
+  int did_change = 0;
   PCU_Comm_Begin();
   for (d = 1; d < m->d; ++d)
     for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
@@ -261,10 +263,9 @@ static int align_copies(struct mds_net* net, struct mds* m)
       if (!c)
         continue;
       if (owns_copies(e, c))
-        downs_to_copies(net, m, e, c);
+        downs_to_copies(m, e, c);
     }
   PCU_Comm_Send();
-  int did_change = 0;
   while (PCU_Comm_Receive())
     if (recv_down_copies(net, m))
       did_change = 1;

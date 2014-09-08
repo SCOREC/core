@@ -19,12 +19,12 @@ void UserData::init(FieldBase* f)
   field = f;
 }
 
-bool UserData::hasEntity(MeshEntity* e)
+bool UserData::hasEntity(MeshEntity*)
 {
   return true;
 }
 
-void UserData::removeEntity(MeshEntity* e)
+void UserData::removeEntity(MeshEntity*)
 {
 }
 
@@ -33,7 +33,7 @@ void UserData::get(MeshEntity* e, double* data)
   function->eval(e, data);
 }
 
-void UserData::set(MeshEntity* e, double const* data)
+void UserData::set(MeshEntity*, double const*)
 {
 }
 

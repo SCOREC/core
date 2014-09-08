@@ -40,7 +40,7 @@ enum
   quad_edge_code_count = 3,
   tet_edge_code_count = 12,
   prism_edge_code_count = 5,
-  pyramid_edge_code_count = 17,
+  pyramid_edge_code_count = 17
 };
 
 extern int const edge_edge_codes[edge_edge_code_count];

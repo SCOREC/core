@@ -11,7 +11,6 @@ int main(int argc, char** argv)
   assert(argc==3);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Protect();
   gmi_register_mesh();
   gmi_register_null();
   int* conn;

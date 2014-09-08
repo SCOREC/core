@@ -34,7 +34,6 @@ void mds_grow_tags(
     mds_id old_cap[MDS_TYPES]);
 struct mds_tag* mds_create_tag(
     struct mds_tags* ts,
-    struct mds* m,
     const char* name,
     int bytes,
     int user_type);

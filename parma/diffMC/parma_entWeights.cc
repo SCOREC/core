@@ -29,7 +29,7 @@ namespace parma {
     m->end(it);
     return sum;
   }
-  void EntWeights::init(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
+  void EntWeights::init(apf::Mesh*, apf::MeshTag*, Sides* s) {
     PCU_Comm_Begin();
     const Sides::Item* side;
     s->begin();

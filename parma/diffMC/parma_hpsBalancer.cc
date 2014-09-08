@@ -13,20 +13,12 @@ using std::set;
 
 namespace parma {
 
-void print(int level, char* printStr,...) {
-  if (level == 2) {
-    // PCU_Debug_Print(printStr, ...);
-  }
-  else if (!PCU_Comm_Self()){}
-    // printf(printStr, ...);
-}
-
 class MergeTargets {
   public:
     //maxW == HeavyImb
     //Produces the optimal merging combination of the part's neighbors into
     // itself for a given maxW
-    MergeTargets(Sides* s, Weights* w, double maxW, bool chi) {
+    MergeTargets(Sides* s, Weights* w, double maxW, bool) {
       //If part is heavy or empty, exit function
       if (w->self() >= maxW || w->self() == 0) {
         //PCU_Debug_Print("Part %d of weight %f is heavy\n", PCU_Comm_Self(),
@@ -240,7 +232,7 @@ class MergeTargets {
     m->end(it);
 
     return plan;
-  };
+  }
 
   int splits(Weights* w, double tgtWeight) {
     return static_cast<int>(ceil(w->self()/tgtWeight))-1;
@@ -301,7 +293,7 @@ class MergeTargets {
     return imb;
   }
   //Function used to find the optimal heavy imbalance for executing HPS
-  double chi(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w) {
+  double chi(apf::Mesh* m, apf::MeshTag*, Sides* s, Weights* w) {
     double testW = maxWeight(w);
     //Step size can change arbitrarily as needed
     double step = 0.1 * avgWeight(w);
@@ -371,7 +363,7 @@ class MergeTargets {
     //TODO add element empty assignments to plan
   }
 
-  void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
+  void hps(apf::Mesh* m, apf::MeshTag*, Sides* s, Weights* w, double tgt) {
     MergeTargets mergeTargets(s, w, tgt, true);
     apf::Migration* plan = selectMerges(m, s, mergeTargets);
     split(m, w, tgt, plan);
@@ -409,7 +401,7 @@ class MergeTargets {
       apf::Mesh* mesh;
       int verbose;
   };
-}; //end parma namespace
+} //end parma namespace
 
 apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity) {
   return new parma::HpsBalancer(m, verbosity);

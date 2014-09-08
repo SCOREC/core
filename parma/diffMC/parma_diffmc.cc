@@ -336,7 +336,7 @@ double Parma::tagSmallCavitiesForMigr(partInfo& part, const double maxW,
  * @return weight of elements migrated on this process
  */
 double Parma::improveEntBalance(const priorityList &pl, const int plIdx, 
-      Array<double,4> avgW, const int itr) {
+      Array<double,4> avgW, const int) {
    if ( pl.priority[plIdx] <= 0 ) return 0;
 
    const int entDim = pl.entDim[plIdx];

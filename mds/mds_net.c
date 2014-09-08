@@ -128,7 +128,7 @@ void mds_add_copy(struct mds_net* net, struct mds* m, mds_id e,
 
 static int find_peer(struct mds_links* ln, int p)
 {
-  int i;
+  unsigned i;
   for (i = 0; i < ln->np; ++i)
     if (ln->p[i] == p)
       return i;
@@ -176,6 +176,7 @@ static void for_type_net(struct mds_net* net, struct mds* m,
 
 static void note_remote_link(mds_id i, struct mds_copy c, void* u)
 {
+  (void)i;
   if (c.p != PCU_Comm_Self())
     note_peer(u, c.p);
 }
@@ -202,6 +203,8 @@ static void take_remote_link(mds_id i, struct mds_copy c, void* u)
 
 static void send_remote_link(mds_id i, struct mds_copy c, void* u)
 {
+  (void)i;
+  (void)u;
   if (PCU_Comm_Self() < c.p)
     PCU_COMM_PACK(c.p, c.e);
 }
@@ -222,12 +225,12 @@ static void recv_links(struct mds_links* ln)
 void mds_get_type_links(struct mds_net* net, struct mds* m,
     int t, struct mds_links* ln)
 {
-  int i;
+  unsigned i;
   /* count remote links in np, p and n */
   for_type_net(net, m, t, note_remote_link, ln);
   alloc_links(ln);
   for (i = 0; i < ln->np; ++i)
-    if (PCU_Comm_Self() < ln->p[i])
+    if (((unsigned)PCU_Comm_Self()) < ln->p[i])
       /* zero n's for behavior in take_copy */
       ln->n[i] = 0;
   /* record indices in local order for owned boundaries */
@@ -244,7 +247,7 @@ void mds_get_type_links(struct mds_net* net, struct mds* m,
 void mds_set_type_links(struct mds_net* net, struct mds* m,
     int t, struct mds_links* ln)
 {
-  int i;
+  unsigned i;
   unsigned j;
   unsigned* in;
   struct mds_copy c;
@@ -267,7 +270,7 @@ void mds_set_type_links(struct mds_net* net, struct mds* m,
 
 void mds_free_links(struct mds_links* ln)
 {
-  int i;
+  unsigned i;
   free(ln->n);
   free(ln->p);
   for (i = 0; i < ln->np; ++i)

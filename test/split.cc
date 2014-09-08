@@ -63,7 +63,6 @@ int main(int argc, char** argv)
   gmi_sim_start();
   gmi_register_mesh();
   gmi_register_sim();
-  PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);

@@ -10,7 +10,6 @@ int main(int argc, char** argv)
   assert(argc == 4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Protect();
   PCU_Debug_Open();
   gmi_register_mesh();
   //load model and mesh

@@ -57,7 +57,6 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   PCU_Debug_Open();
   gmi_register_mesh();
-  PCU_Protect();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   apf::writeVtkFiles("before", m);

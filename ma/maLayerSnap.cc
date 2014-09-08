@@ -51,7 +51,7 @@ struct SnapTagger : public Crawler
       PCU_COMM_PACK(to, s);
     }
   }
-  bool recv(Entity* v, int from)
+  bool recv(Entity* v, int)
   {
     bool has;
     PCU_COMM_UNPACK(has);
@@ -139,7 +139,7 @@ struct BaseTopLinker : public Crawler
     m->getIntTag(v, linkTag, link);
     PCU_COMM_PACK(to, link);
   }
-  bool recv(Entity* v, int from)
+  bool recv(Entity* v, int)
   {
     int link[2];
     PCU_COMM_UNPACK(link);
@@ -244,7 +244,7 @@ struct LayerSnapper : public Crawler
     bool has = m->hasTag(v, snapTag);
     PCU_COMM_PACK(to, has);
   }
-  bool recv(Entity* v, int from)
+  bool recv(Entity* v, int)
   {
     bool has;
     PCU_COMM_UNPACK(has);

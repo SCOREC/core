@@ -33,7 +33,7 @@ namespace parma {
       double factor;
       int verbose;
   };
-}; //end parma namespace
+} //end parma namespace
 
 apf::Balancer* Parma_MakeVtxBalancer(apf::Mesh* m, 
     double stepFactor, int verbosity) {

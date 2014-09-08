@@ -47,7 +47,7 @@ class RibSplitter : public apf::Splitter
       sync = s;
     }
     virtual ~RibSplitter() {}
-    virtual apf::Migration* split(apf::MeshTag* weights, double tolerance,
+    virtual apf::Migration* split(apf::MeshTag* weights, double,
         int multiple)
     {
       double t0 = MPI_Wtime();
