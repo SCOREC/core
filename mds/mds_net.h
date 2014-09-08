@@ -34,6 +34,7 @@ struct mds_links {
   unsigned* p;
   unsigned** l;
 };
+#define MDS_LINKS_INIT {0,0,0,0}
 
 void mds_create_net(struct mds_net* net);
 void mds_destroy_net(struct mds_net* net, struct mds* m);
