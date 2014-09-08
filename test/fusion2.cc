@@ -75,6 +75,16 @@ static void connectPlanes(apf::Mesh2* m)
   m->acceptChanges();
 }
 
+static void checkValues(apf::Mesh2* m)
+{
+  apf::Field* f = m->findField("fusion");
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* v;
+  while ((v = m->iterate(it)))
+    assert( apf::hasEntity(f, v) );
+  m->end(it);
+}
+
 struct GroupCode : public Parma_GroupCode
 {
   apf::Mesh2* mesh;
@@ -84,9 +94,11 @@ struct GroupCode : public Parma_GroupCode
     if (group == 0) {
       addOneTri(mesh);
       setValues(mesh);
+      checkValues(mesh);
       storeInArray(mesh);
 /* this is where m3dc1 would run the 2D solver */
       backToTags(mesh);
+      checkValues(mesh);
     }
   }
 };
@@ -113,9 +125,12 @@ static void globalCode(apf::Mesh2* m)
 {
   copyPlane(m);
   syncValues(m);
+  checkValues(m);
   storeInArray(m);
+  checkValues(m);
   /* run the 3D solve... */
   backToTags(m);
+  checkValues(m);
   m->destroyNative();
   apf::destroyMesh(m);
 }
