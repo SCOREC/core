@@ -105,8 +105,8 @@ struct Cubic
       r.n = 1;
     std::complex<double> u[3];
     u[0] = 1;
-    u[1] = std::complex<double>(-1,  sqrt(3)) / 2.;
-    u[2] = std::complex<double>(-1, -sqrt(3)) / 2.;
+    u[1] = std::complex<double>(-1,  sqrt(3.0l)) / 2.;
+    u[2] = std::complex<double>(-1, -sqrt(3.0l)) / 2.;
     double d0 = b * b - 3 * a * c;
     double d1 = 2 * b * b * b
              -  9 * a * b * c
