@@ -157,6 +157,9 @@ add_test(adapt_fusion
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fusion
   "fusion_2_.smb")
+add_test(fusion_field
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 2
+  ./fusion2)
 add_test(change_dim
   ./newdim)
 add_test(ma_insphere
