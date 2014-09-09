@@ -512,14 +512,14 @@ static void write_type_matches(struct pcu_file* f, struct mds_apf* m, int t)
 static void read_matches(struct pcu_file* f, struct mds_apf* m)
 {
   int t;
-  for (t = 0; t < SMB_TYPES; ++t)
+  for (t = 0; t < MDS_TYPES; ++t)
     read_type_matches(f, m, t);
 }
 
 static void write_matches(struct pcu_file* f, struct mds_apf* m)
 {
   int t;
-  for (t = 0; t < SMB_TYPES; ++t)
+  for (t = 0; t < MDS_TYPES; ++t)
     write_type_matches(f, m, t);
 }
 
