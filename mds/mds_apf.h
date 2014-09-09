@@ -37,7 +37,7 @@ struct mds_apf {
 };
 
 struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
-    int cap[MDS_TYPES]);
+    mds_id cap[MDS_TYPES]);
 void mds_apf_destroy(struct mds_apf* m);
 double* mds_apf_point(struct mds_apf* m, mds_id e);
 double* mds_apf_param(struct mds_apf* m, mds_id e);

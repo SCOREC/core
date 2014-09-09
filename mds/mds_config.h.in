@@ -1,0 +1,7 @@
+#ifndef MDS_CONFIG_H
+#define MDS_CONFIG_H
+
+#define MDS_SET_MAX @MDS_SET_MAX@
+#define MDS_ID_TYPE @MDS_ID_TYPE@
+
+#endif
