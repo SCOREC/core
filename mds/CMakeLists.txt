@@ -17,6 +17,13 @@ if(NOT BUILD_IN_TRILINOS)
   set(MDS_LIBS mds ${DEP_LIBS})
 endif()
 
+set(MDS_SET_MAX 256 CACHE STRING "Buffer size for adjacency computation")
+set(MDS_ID_TYPE "int" CACHE STRING "Interal identifier integer type")
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mds_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/mds_config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 #Sources & Headers
 set(MDS_SOURCES
   mds.c
