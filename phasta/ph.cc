@@ -83,8 +83,8 @@ void setupOutputSubdir(std::string& path)
   int self = PCU_Comm_Self();
   int subSelf = self % DIR_FANOUT;
   int subGroup = self / DIR_FANOUT;
-  std::stringstream ss(path);
-  ss << subGroup << '/';
+  std::stringstream ss;
+  ss << path << subGroup << '/';
   path = ss.str();
   if (!subSelf) {
     if ( ! my_mkdir(path.c_str()))
