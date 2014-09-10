@@ -19,6 +19,7 @@ int globalPeers;
 
 static void afterSplit(apf::Mesh2* m)
 {
+  ph::checkErrno("afterSplit");
   ph::Input& in = *globalInput;
   ph::BCs& bcs = *globalBCs;
   std::string path = ph::setupOutputDir();
@@ -57,6 +58,7 @@ int main(int argc, char** argv)
   ph::Input in("adapt.inp");
   apf::Mesh2* m = apf::loadMdsMesh(
       in.modelFileName.c_str(), in.meshFileName.c_str());
+  ph::checkErrno("after loadMdsMesh");
   ph::BCs bcs;
   ph::readBCs(in.attributeFileName.c_str(), bcs);
   if (in.solutionMigration)
@@ -65,6 +67,7 @@ int main(int argc, char** argv)
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)
     ph::buildMapping(m);
+  ph::checkErrno("after phasta input");
   apf::setMigrationLimit(in.elementsPerMigration);
   if (in.adaptFlag) {
     ph::adapt(in, m);
@@ -72,6 +75,7 @@ int main(int argc, char** argv)
   }
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
+  ph::checkErrno("after MA");
   globalInput = &in;
   globalBCs = &bcs;
   ph::split(in, m, afterSplit);
