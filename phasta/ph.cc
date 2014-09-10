@@ -30,14 +30,6 @@ enum {
   DIR_MODE = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH
 };
 
-void checkErrno(const char* where)
-{
-  if (errno) {
-    fprintf(stderr,"errno = %d on rank %d at %s\n",
-        errno, PCU_Comm_Self(), where);
-  }
-}
-
 static bool my_mkdir(const char* name)
 {
   fprintf(stderr,"rank %d making directory \"%s\"\n",
@@ -78,7 +70,6 @@ enum {
 
 std::string setupOutputDir()
 {
-  checkErrno("setupOutputDir");
   std::stringstream ss;
   ss << PCU_Comm_Peers() << "-procs_case/";
   std::string s = ss.str();
@@ -90,7 +81,6 @@ std::string setupOutputDir()
 
 void setupOutputSubdir(std::string& path)
 {
-  checkErrno("setupOutputSubdir");
   if (PCU_Comm_Peers() <= DIR_FANOUT)
     return;
   int self = PCU_Comm_Self();

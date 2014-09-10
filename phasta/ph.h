@@ -11,7 +11,6 @@ void goToStepDir(int step);
 std::string setupOutputDir();
 void setupOutputSubdir(std::string& path);
 void writeAuxiliaryFiles(std::string path, int timestep);
-void checkErrno(const char* where);
 
 }
 
