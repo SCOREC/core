@@ -32,6 +32,8 @@ enum {
 
 static bool my_mkdir(const char* name)
 {
+  fprintf(stderr,"rank %d making directory \"%s\"\n",
+      PCU_Comm_Self(), name);
   int err = mkdir(name, DIR_MODE);
   if ((err == -1) && (errno == EEXIST)) {
     errno = 0;
