@@ -48,14 +48,18 @@ int main(int argc, char** argv)
   int provided;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
   assert(provided == MPI_THREAD_MULTIPLE);
+  ph::checkErrno("after MPI_Init");
   PCU_Comm_Init();
   PCU_Protect();
+  ph::checkErrno("after PCU_Protect");
   Sim_readLicenseFile(0);
   gmi_sim_start();
-  gmi_register_mesh();
   gmi_register_sim();
+  ph::checkErrno("after Sim stuff");
+  gmi_register_mesh();
   globalPeers = PCU_Comm_Peers();
   ph::Input in("adapt.inp");
+  ph::checkErrno("after adapt.inp");
   apf::Mesh2* m = apf::loadMdsMesh(
       in.modelFileName.c_str(), in.meshFileName.c_str());
   ph::checkErrno("after loadMdsMesh");
