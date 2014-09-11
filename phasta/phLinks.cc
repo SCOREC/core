@@ -30,29 +30,19 @@ struct PhastaSharing : public apf::Sharing {
   {
     return helper->isOwned(e);
   }
+  /* this will only be called for global masters */
   void getCopies(apf::MeshEntity* e,
       apf::CopyArray& copies)
   {
     helper->getCopies(e, copies);
     if ( ! mesh->hasMatching())
       return;
-    /* filter out matches which are on the same part,
-       choose from each part the one with the smallest pointer.
-       also filter out all local matches, the on-part master
-       will go in IPER, not ILWORK. */
+    /* filter out matches which are on the same part as the global master */
     int self = PCU_Comm_Self();
     size_t i = 0;
-    for (size_t j = 0; j < copies.getSize(); ++j) {
-      if (copies[j].peer == self)
-        continue;
-      else if (!i)
+    for (size_t j = 0; j < copies.getSize(); ++j)
+      if (copies[j].peer != self)
         copies[i++] = copies[j];
-      else if ((copies[j].peer == copies[i - 1].peer) &&
-               (copies[j].entity < copies[i - 1].entity))
-        copies[i - 1].entity = copies[j].entity;
-      else
-        copies[i++] = copies[j];
-    }
     copies.setSize(i);
   }
   apf::Mesh* mesh;
@@ -98,6 +88,9 @@ void getVertexLinks(apf::Mesh* m, Links& links)
     apf::CopyArray remotes;
     shr.getCopies(v, remotes);
     for (size_t i = 0; i < remotes.getSize(); ++i) {
+      /* in matching we may accumulate multiple occurrences
+         of the same master in the outgoing links array
+         to a part that contains multiple copies of it. */
       links[LinkKey(1, remotes[i].peer)].push_back(v);
       PCU_COMM_PACK(remotes[i].peer, remotes[i].entity);
     }

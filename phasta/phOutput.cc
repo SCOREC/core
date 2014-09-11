@@ -172,6 +172,15 @@ static void getMaxElementNodes(Output& o)
   o.nMaxElementNodes = n;
 }
 
+static bool matchLess(apf::Copy& a, apf::Copy& b)
+{
+  if (a.peer != b.peer)
+    return a.peer < b.peer;
+  return a.entity < b.entity;
+}
+
+/* returns the global periodic master iff it is on this
+   part, otherwise returns e */
 static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
 {
   if ( ! m->hasMatching())
@@ -180,12 +189,13 @@ static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
   m->getMatches(e, matches);
   if (!matches.getSize())
     return e;
-  apf::MeshEntity* master = e;
-  int self = PCU_Comm_Self();
-  for (size_t i = 0; i < matches.getSize(); ++i)
-    if ((matches[i].peer == self)&&(matches[i].entity < master))
-      master = matches[i].entity;
-  return master;
+  apf::Copy master = matches[0];
+  for (size_t i = 1; i < matches.getSize(); ++i)
+    if (matchLess(matches[i], master))
+      master = matches[i];
+  if (master.peer == PCU_Comm_Self())
+    return master.entity;
+  return e;
 }
 
 static void getPeriodicMasters(Output& o, apf::Numbering* n)
