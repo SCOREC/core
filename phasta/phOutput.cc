@@ -189,11 +189,12 @@ static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
   m->getMatches(e, matches);
   if (!matches.getSize())
     return e;
-  apf::Copy master = matches[0];
-  for (size_t i = 1; i < matches.getSize(); ++i)
+  int self = PCU_Comm_Self();
+  apf::Copy master(self, e);
+  for (size_t i = 0; i < matches.getSize(); ++i)
     if (matchLess(matches[i], master))
       master = matches[i];
-  if (master.peer == PCU_Comm_Self())
+  if (master.peer == self)
     return master.entity;
   return e;
 }
