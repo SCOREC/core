@@ -35,7 +35,8 @@ static void afterSplit(apf::Mesh2* m)
   ph::detachAndWriteSolution(in, m, path);
   ph::writeGeomBC(o, path);
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-  m->writeNative(in.outMeshFileName.c_str());
+  if ( ! in.outMeshFileName.empty() )
+    m->writeNative(in.outMeshFileName.c_str());
   m->destroyNative();
   apf::destroyMesh(m);
 }
