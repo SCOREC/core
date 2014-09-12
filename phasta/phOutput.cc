@@ -239,17 +239,17 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
     while ((v = m->iterate(it))) {
       if (m->toModel(v) == (apf::ModelEntity*)ge) {
         apf::MeshEntity* master = getPeriodicMaster(m, v);
-        if ((!did) && (master == v))
-          continue;
-        o.arrays.nbc[i] = ei + 1;
-        o.arrays.ibc[ei] = ibcMaster;
-        if (master != v)
-          o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
-        double* bc_ei = new double[nec]();
-        for (int j = 0; j < nec; ++j)
-          bc_ei[j] = bcMaster[j];
-        o.arrays.bc[ei] = bc_ei;
-        ++ei;
+        if (did || (master != v)) {
+          o.arrays.nbc[i] = ei + 1;
+          o.arrays.ibc[ei] = ibcMaster;
+          if (master != v)
+            o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
+          double* bc_ei = new double[nec]();
+          for (int j = 0; j < nec; ++j)
+            bc_ei[j] = bcMaster[j];
+          o.arrays.bc[ei] = bc_ei;
+          ++ei;
+        }
       }
       ++i;
     }
