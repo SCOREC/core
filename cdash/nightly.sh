@@ -9,10 +9,7 @@ module load zoltan/mpich3.1.2/3.8
 module load simmetrix/simModSuite
 module load netcdf
 module load llvm/latest
-
-#add my custom Git install to the PATH
-#since the version on avatar is very old
-export PATH=/lore/dibanez/bin:$PATH
+module load git
 
 #cdash output root
 cd /lore/dibanez/cdash
