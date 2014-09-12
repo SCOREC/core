@@ -483,6 +483,12 @@ static void globalize(GlobalNumbering* n)
   g.run(n);
 }
 
+void globalize(Numbering* n)
+{
+  Globalizer<int> g;
+  g.run(n);
+}
+
 GlobalNumbering* makeGlobal(Numbering* n)
 {
   std::string name = n->getName();
