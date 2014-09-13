@@ -660,8 +660,10 @@ static void* splitThrdMain(void*)
     m = clone(globalMesh);
     plan = new apf::Migration(m);
   }
-  apf::Multiply remap(globalFactor);
-  apf::remapPartition(m, remap);
+  if (globalFactor != 1) {
+    apf::Multiply remap(globalFactor);
+    apf::remapPartition(m, remap);
+  }
   m->migrate(plan);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
