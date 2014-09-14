@@ -9,6 +9,7 @@ namespace ph {
 class Input
 {
   public:
+    Input() {};
     Input(const char* filename);
     int globalP;
     int timeStepNumber;
