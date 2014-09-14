@@ -26,6 +26,7 @@ class Converter
         for (int i = 0; i <= inMesh->getDimension(); ++i)
           createMatches(i);
       convertQuadratic();
+      convertFields();
       outMesh->acceptChanges();
     }
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
@@ -137,36 +138,44 @@ class Converter
         outMesh->setResidence(newE, parts);
       }
     }
-    void convertField(apf::Field* in, apf::Field* out)
+    void convertField(Field* in, Field* out)
     {
-      apf::FieldShape* s = apf::getShape(in);
-      apf::NewArray<double> data(apf::countComponents(in));
+      FieldShape* s = getShape(in);
+      NewArray<double> data(countComponents(in));
       for (int d = 0; d <= 3; ++d)
       {
         if (s->hasNodesIn(d))
         {
-          apf::MeshIterator* it = inMesh->begin(d);
-          apf::MeshEntity* e;
+          MeshIterator* it = inMesh->begin(d);
+          MeshEntity* e;
           while ((e = inMesh->iterate(it)))
           {
             int n = s->countNodesOn(inMesh->getType(e));
             for (int i = 0; i < n; ++i)
             {
-              apf::getComponents(in,e,i,&(data[0]));
-              apf::setComponents(out,newFromOld[e],i,&(data[0]));
+              getComponents(in,e,i,&(data[0]));
+              setComponents(out,newFromOld[e],i,&(data[0]));
             }
           }
           inMesh->end(it);
         }
       }
     }
+    void convertFields()
+    {
+      for (int i = 0; i < inMesh->countFields(); ++i) {
+        Field* in = inMesh->getField(i);
+        Field* out = cloneField(in, outMesh);
+        convertField(in, out);
+      }
+    }
     void convertQuadratic()
     {
-      if (inMesh->getShape() != apf::getLagrange(2))
+      if (inMesh->getShape() != getLagrange(2))
         return;
       if ( ! PCU_Comm_Self())
         fprintf(stderr,"transferring quadratic mesh\n");
-      apf::changeMeshShape(outMesh,getLagrange(2),/*project=*/false);
+      changeMeshShape(outMesh,getLagrange(2),/*project=*/false);
       convertField(inMesh->getCoordinateField(),outMesh->getCoordinateField());
     }
     void createMatches(int dim)
