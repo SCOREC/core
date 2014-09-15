@@ -11,6 +11,8 @@
 #ifndef MDS_H
 #define MDS_H
 
+#include "mds_config.h"
+
 enum {
   MDS_VERTEX,
   MDS_EDGE,
@@ -22,10 +24,9 @@ enum {
   MDS_TYPES
 };
 
-typedef int mds_id;
+typedef MDS_ID_TYPE mds_id;
 
 #define MDS_NONE -1
-#define MDS_SET_MAX 1024
 
 struct mds {
   int d;

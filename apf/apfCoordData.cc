@@ -23,7 +23,7 @@ bool CoordData::hasEntity(MeshEntity* e)
   return FieldData::field->countNodesOn(e) != 0;
 }
 
-void CoordData::removeEntity(MeshEntity* e)
+void CoordData::removeEntity(MeshEntity*)
 {
   fail("apf::CoordData::removeEntity should not be called");
 }

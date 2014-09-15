@@ -32,6 +32,7 @@ enum {
 
 static bool my_mkdir(const char* name)
 {
+  errno = 0;
   int err = mkdir(name, DIR_MODE);
   if ((err == -1) && (errno == EEXIST)) {
     errno = 0;
@@ -80,14 +81,12 @@ void setupOutputSubdir(std::string& path)
     return;
   int self = PCU_Comm_Self();
   int subSelf = self % DIR_FANOUT;
-  std::stringstream ss(path);
-  ss << subSelf << '/';
+  int subGroup = self / DIR_FANOUT;
+  std::stringstream ss;
+  ss << path << subGroup << '/';
   path = ss.str();
-  if (!subSelf) {
-    if ( ! my_mkdir(path.c_str()))
-      std::cerr << "overwriting directory " << path
-          << " -Rank " << PCU_Comm_Self() << '\n';
-  }
+  if (!subSelf)
+    my_mkdir(path.c_str());
   PCU_Barrier();
 }
 

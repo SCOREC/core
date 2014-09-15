@@ -172,6 +172,15 @@ static void getMaxElementNodes(Output& o)
   o.nMaxElementNodes = n;
 }
 
+static bool matchLess(apf::Copy& a, apf::Copy& b)
+{
+  if (a.peer != b.peer)
+    return a.peer < b.peer;
+  return a.entity < b.entity;
+}
+
+/* returns the global periodic master iff it is on this
+   part, otherwise returns e */
 static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
 {
   if ( ! m->hasMatching())
@@ -180,12 +189,14 @@ static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
   m->getMatches(e, matches);
   if (!matches.getSize())
     return e;
-  apf::MeshEntity* master = e;
   int self = PCU_Comm_Self();
+  apf::Copy master(self, e);
   for (size_t i = 0; i < matches.getSize(); ++i)
-    if ((matches[i].peer == self)&&(matches[i].entity < master))
-      master = matches[i].entity;
-  return master;
+    if (matchLess(matches[i], master))
+      master = matches[i];
+  if (master.peer == self)
+    return master.entity;
+  return e;
 }
 
 static void getPeriodicMasters(Output& o, apf::Numbering* n)
@@ -216,20 +227,29 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
   double* bcMaster = new double[nec]();
   gmi_model* gm = m->getModel();
   bool did = applyEssentialBCs(gm, ge, bcs, bcMaster, &ibcMaster);
-  if (did) {
+  /* matching introduces an iper bit which in our system
+     is really a per-entity thing, not specifically dictated
+     by classification, so in that case we have to look
+     at all the vertices anyway to see if they are periodic slaves */
+  if (did || m->hasMatching()) {
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
     int i = 0;
     int& ei = o.nEssentialBCNodes;
     while ((v = m->iterate(it))) {
       if (m->toModel(v) == (apf::ModelEntity*)ge) {
-        o.arrays.nbc[i] = ei + 1;
-        o.arrays.ibc[ei] = ibcMaster;
-        double* bc_ei = new double[nec]();
-        for (int j = 0; j < nec; ++j)
-          bc_ei[j] = bcMaster[j];
-        o.arrays.bc[ei] = bc_ei;
-        ++ei;
+        apf::MeshEntity* master = getPeriodicMaster(m, v);
+        if (did || (master != v)) {
+          o.arrays.nbc[i] = ei + 1;
+          o.arrays.ibc[ei] = ibcMaster;
+          if (master != v)
+            o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
+          double* bc_ei = new double[nec]();
+          for (int j = 0; j < nec; ++j)
+            bc_ei[j] = bcMaster[j];
+          o.arrays.bc[ei] = bc_ei;
+          ++ei;
+        }
       }
       ++i;
     }

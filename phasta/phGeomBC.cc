@@ -5,7 +5,7 @@
 
 namespace ph {
 
-static std::string buildGeomBCFileName(Input& in)
+static std::string buildGeomBCFileName()
 {
   std::stringstream ss;
   int rank = PCU_Comm_Self() + 1;
@@ -146,7 +146,7 @@ void writeGeomBC(Output& o, std::string path)
 {
   double t0 = MPI_Wtime();
   apf::Mesh* m = o.mesh;
-  path += buildGeomBCFileName(*o.in);
+  path += buildGeomBCFileName();
   FILE* f = fopen(path.c_str(), "w");
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());

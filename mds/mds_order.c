@@ -99,8 +99,9 @@ static void number_connected_graph(struct mds* m, mds_id v,
     struct mds_tag* tag, mds_id label[MDS_TYPES])
 {
   struct queue q;
-  struct mds_set adj[4] = {};
+  struct mds_set adj[4];
   int i,j;
+  adj[0].n = adj[1].n = adj[2].n = adj[3].n = 0;
   if (!visit(m, tag, label, v))
     return;
   make_queue(&q, m->n[MDS_VERTEX]);
@@ -128,7 +129,7 @@ static struct mds_tag* number_graph(struct mds_apf* m)
   mds_id label[MDS_TYPES];
   mds_id v;
   int i;
-  tag = mds_create_tag(&m->tags, &m->mds, "mds_number", sizeof(mds_id), 1);
+  tag = mds_create_tag(&m->tags, "mds_number", sizeof(mds_id), 1);
   for (i = 0; i < MDS_TYPES; ++i)
     label[i] = m->mds.n[i] - 1;
   v = find_seed(m);
@@ -198,7 +199,7 @@ static struct mds_tag* invert(
   mds_id e;
   mds_id ne;
   mds_id* ip;
-  old_of = mds_create_tag(&(m2->tags),&(m2->mds),
+  old_of = mds_create_tag(&(m2->tags),
       "mds_inverse",sizeof(mds_id),1);
   for (d = 0; d <= m->d; ++d) {
     for (e = mds_begin(m,d);
@@ -289,7 +290,7 @@ static void rebuild_tags(
   for (t = m->tags.first; t; t = t->next) {
     if (t == new_of)
       continue;
-    nt = mds_create_tag(&(m2->tags),&(m2->mds),
+    nt = mds_create_tag(&(m2->tags),
         t->name,t->bytes,t->user_type);
     mds_swap_tag_structs(&m->tags, &t, &m2->tags, &nt);
     for (d = 0; d <= m2->mds.d; ++d) {
@@ -311,8 +312,7 @@ static void rebuild_tags(
 static void rebuild_coords(
     struct mds_apf* m,
     struct mds_apf* m2,
-    struct mds_tag* old_of,
-    struct mds_tag* new_of)
+    struct mds_tag* old_of)
 {
   mds_id ne;
   mds_id e;
@@ -332,8 +332,7 @@ static void rebuild_coords(
 static void rebuild_parts(
     struct mds_apf* m,
     struct mds_apf* m2,
-    struct mds_tag* old_of,
-    struct mds_tag* new_of)
+    struct mds_tag* old_of)
 {
   int d;
   mds_id ne;
@@ -358,8 +357,8 @@ static struct mds_apf* rebuild(
   rebuild_verts(m, m2, old_of);
   rebuild_ents(m, m2, old_of, new_of);
   rebuild_tags(m, m2, old_of, new_of);
-  rebuild_coords(m, m2, old_of, new_of);
-  rebuild_parts(m, m2, old_of, new_of);
+  rebuild_coords(m, m2, old_of);
+  rebuild_parts(m, m2, old_of);
   rebuild_net(&m->remotes, &m->mds,
               &m2->remotes, &m2->mds,
               new_of);

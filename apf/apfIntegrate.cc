@@ -320,7 +320,7 @@ class PrismIntegration : public EntityIntegration
         virtual int getAccuracy() const {return 1;} //sort of
     };
     virtual int countIntegrations() const {return 1;}
-    virtual Integration const* getIntegration(int i) const
+    virtual Integration const* getIntegration(int) const
     {
       static N1 i1;
       return &i1;
@@ -346,7 +346,7 @@ colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch12.d/AFEM.Ch12.pdf */
         virtual int getAccuracy() const {return 1;} //sort of
     };
     virtual int countIntegrations() const {return 1;}
-    virtual Integration const* getIntegration(int i) const
+    virtual Integration const* getIntegration(int) const
     {
       static N1 i1;
       return &i1;
@@ -378,6 +378,18 @@ Integrator::Integrator(int o):
 }
 
 Integrator::~Integrator()
+{
+}
+
+void Integrator::inElement(MeshElement*)
+{
+}
+
+void Integrator::outElement()
+{
+}
+
+void Integrator::parallelReduce()
 {
 }
 

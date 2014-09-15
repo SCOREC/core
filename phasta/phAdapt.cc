@@ -11,7 +11,7 @@ static void runUniformRefinement(Input& in, apf::Mesh2* m)
   ma::adapt(ma_in);
 }
 
-void tetrahedronize(Input& in, apf::Mesh2* m)
+void tetrahedronize(Input&, apf::Mesh2* m)
 {
   ma::Input* ma_in = ma::configureIdentity(m);
   ma_in->shouldRunPreZoltan = true;

@@ -31,7 +31,7 @@ class Linear : public FieldShape
     class Vertex : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Vector3 const&, NewArray<double>& values) const
         {
           values.allocate(1);
           values[0] = 1.0;
@@ -574,8 +574,8 @@ class VoronoiShape : public IPShape
           values[getClosestPtIdx(xi,points)] = 1.0;
         }
         void getLocalGradients(
-            Vector3 const& xi, 
-            NewArray<Vector3>& grads) const
+            Vector3 const&,
+            NewArray<Vector3>&) const
         {
           fail("gradients not defined for Voronoi shapes");
         }

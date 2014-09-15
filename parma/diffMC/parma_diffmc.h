@@ -45,9 +45,6 @@ class Parma {
       double tagPtnMdlEdgeCavities(partInfo& part, const double maxW, 
           const size_t maxAdjElm, apf::Migration* plan);
 
-      bool inputsValid(int (*priority)[4], int dbgLvl, int maxIter, 
-          double maxImb);
-
       apf::MeshTag* wtag;
       apf::MeshTag* vtag;
       bool userWeights;

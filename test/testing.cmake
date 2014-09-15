@@ -167,17 +167,20 @@ add_test(adapt_fusion
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fusion
   "fusion_2_.smb")
+add_test(fusion_field
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 2
+  ./fusion2)
 add_test(change_dim
   ./newdim)
 set(MDIR ${MESHES}/upright)
 add_test(parallel_meshgen
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  generate
+  ./generate
   "${MDIR}/upright.smd"
   "67k")
 add_test(adapt_meshgen
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ma_test
+  ./ma_test
   "${MDIR}/upright.smd"
   "67k/")
 add_test(ma_insphere

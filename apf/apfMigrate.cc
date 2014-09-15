@@ -800,7 +800,7 @@ static void migrate1(Mesh2* m, Migration* plan)
   m->acceptChanges();
 }
 
-static size_t migrationLimit = 1000*1000;
+static size_t migrationLimit = 1000*1000*1000;
 
 void setMigrationLimit(size_t maxElements)
 {

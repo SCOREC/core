@@ -81,7 +81,7 @@ inline int GetOwningProcessRank(int globalPartId, int numParts) {
   return globalPartId / numParts;
 }
 
-void seedRandomNumberGenerator(int seed, int debug) {
+void seedRandomNumberGenerator(int seed, int) {
   char msg[256];
   sprintf(msg, "Seeding Random Number Generator with %d\n", seed);
   debugPrint(msg);
@@ -266,7 +266,7 @@ void unpackInts(vector<partInfo>& parts, vector<int>*& msg,
 }
 
 void recvIntsFromNeighbors(vector<partInfo>& parts, 
-    vector<int>*& msg, set<int>& srcRanks, int loop, int tag) { 
+    vector<int>*& msg, set<int>& srcRanks, int, int tag) { 
   while(PCU_Comm_Listen()) {
     size_t msgSz;
     PCU_Comm_Received(&msgSz);
@@ -344,7 +344,7 @@ void unpackNet(vector<partInfo>& parts, vector<adjPart>*& msg) {
         rank, __FUNCTION__, destPartId, srcPartId, randNum);
     exit(1);
   }
-  assert(partIdx >= 0 && partIdx < parts.size());
+  assert(partIdx < parts.size());
 
   adjPart ap;
   ap.partId = srcPartId;
@@ -406,7 +406,7 @@ void unpackAdjPart(vector<partInfo>& parts,
       break;
     }
   }
-  assert(partIdx >= 0 && partIdx < parts.size());
+  assert(partIdx < parts.size());
 
   adjPart ap;
   ap.partId = adjPartId;
@@ -556,7 +556,7 @@ int constructNetGraph(vector<partInfo>& parts) {
   return 0;
 }
 
-void setRandomNums(int rank, vector<partInfo>& parts) {
+void setRandomNums(int, vector<partInfo>& parts) {
   const int numParts = parts.size();
   int* localRandNums = new int[numParts];
   vector<int> randNums(parts.size());
@@ -597,7 +597,7 @@ bool doSetsMatch(set<int> a, set<int> b) {
 }
 
 
-int mis(const int rank, const int totNumParts, vector<partInfo>& parts, 
+int mis(const int rank, const int, vector<partInfo>& parts, 
     vector<int>& mis, bool randNumsPredefined) {
   if(!PCU_Comm_Initialized()) PCU_Comm_Init();
   MPI_Barrier(MPI_COMM_WORLD);
@@ -801,7 +801,7 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
         debugPrint(msg);
         if (-1 != neighborsInMIS.at(partIdx)) {
           if (neighborsInMIS.at(partIdx) != srcPartId) {
-            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%zu) = %d\n", 
+            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%lu) = %d\n", 
                 rank, srcPartId, partIdx, val);
           }
         }
@@ -815,8 +815,8 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
   }
 }
 
-void getMergeTargets(const int rank, const int totNumParts, 
-    vector<partInfo>& parts, vector<int>& mis, map<int, int>& mergeTargets) {
+void getMergeTargets(const int, const int, 
+    vector<partInfo>& parts, vector<int>&, map<int, int>& mergeTargets) {
   if(!PCU_Comm_Initialized()) PCU_Comm_Init();
   MPI_Barrier(MPI_COMM_WORLD);
 

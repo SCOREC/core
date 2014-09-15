@@ -6,7 +6,6 @@
 #include <apfShape.h>
 #include <PCU.h>
 #include <SimUtil.h>
-#include <SimModel.h>
 
 class Linear : public ma::IsotropicFunction
 {
@@ -38,7 +37,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   Sim_readLicenseFile(0);
-  SimModel_start();
+  gmi_sim_start();
   gmi_register_mesh();
   gmi_register_sim();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
@@ -55,7 +54,7 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
-  SimModel_stop();
+  gmi_sim_stop();
   Sim_unregisterAllKeys();
   MPI_Finalize();
 }

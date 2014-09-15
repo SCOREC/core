@@ -195,6 +195,8 @@ void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes);
   number the vertices and elements of a mesh */
 MeshTag* reorder(Mesh* mesh, const char* name);
 
+void globalize(Numbering* n);
+
 /** \brief number all components by simple iteration
  \todo name should be lower-case */
 int NaiveOrder(Numbering * num);

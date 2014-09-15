@@ -47,9 +47,9 @@ double IdentitySizeField::placeSplit(Entity*)
 }
 
 void IdentitySizeField::interpolate(
-    apf::MeshElement* parent,
-    Vector const& xi,
-    Entity* newVert)
+    apf::MeshElement*,
+    Vector const&,
+    Entity*)
 {
 }
 

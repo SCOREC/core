@@ -348,14 +348,14 @@ class Integrator
       * Integrator begins operating over a new element.
       * Users can then construct Field Elements, for example.
       */
-    virtual void inElement(MeshElement*) {}
+    virtual void inElement(MeshElement*);
     /** \brief User callback: element exit.
       *
       * \details APF will call this function once an Integrator
       * is done operating over an element. This can be used
       * to destroy Field Elements, for example.
       */
-    virtual void outElement() {}
+    virtual void outElement();
     /** \brief User callback: accumulation.
       *
       * \details APF will call this function at each integration
@@ -373,7 +373,7 @@ class Integrator
       * process-local integrations into a global mesh integration,
       * if that is the user's goal.
       */
-    virtual void parallelReduce() {}
+    virtual void parallelReduce();
   protected:
     int order;
 };

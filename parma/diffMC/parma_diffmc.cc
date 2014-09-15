@@ -167,17 +167,6 @@ inline bool isDone(imbInfo& imb, const int itr, const int entDim,
 
 } //end unnamed namespace
 
-/**
- * @brief check that input args are valid
- *
- * @param priority
- * @param dbgLvl
- * @param maxIter
- */
-bool Parma::inputsValid(int (*priority)[4], int dbgLvl, int maxIter, double maxImb) {
-   return true;
-}
-
 double Parma::tagPtnMdlEdgeCavities(partInfo& part, const double maxW, 
     const size_t maxAdjElm, Migration* plan) {
   MeshEntity* vtx;
@@ -336,7 +325,7 @@ double Parma::tagSmallCavitiesForMigr(partInfo& part, const double maxW,
  * @return weight of elements migrated on this process
  */
 double Parma::improveEntBalance(const priorityList &pl, const int plIdx, 
-      Array<double,4> avgW, const int itr) {
+      Array<double,4> avgW, const int) {
    if ( pl.priority[plIdx] <= 0 ) return 0;
 
    const int entDim = pl.entDim[plIdx];
@@ -406,10 +395,6 @@ int Parma::run(int (*priority)[4], const int dbgLvl,
      ParMA_Print_Version();
 
    if( PCU_Comm_Peers() == 1 ) return 0; // can't do much with a serial mesh
-
-   if ( ! inputsValid(priority, dbgLvl, maxIter, maxImb) ) 
-     if ( 0 == PCU_Comm_Self() ) 
-       error("%s invalid inputs\n", __func__);
 
    this->dbgLvl = dbgLvl;
    this->maxIter = maxIter;

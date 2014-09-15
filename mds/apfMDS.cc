@@ -220,12 +220,12 @@ class MeshMDS : public Mesh2
     {
       return mds_has_up(&(mesh->mds),fromEnt(e));
     }
-    void getPoint_(MeshEntity* e, int node, Vector3& point)
+    void getPoint_(MeshEntity* e, int, Vector3& point)
     {
       mds_id id = fromEnt(e);
       point = Vector3(mds_apf_point(mesh,id));
     }
-    void setPoint_(MeshEntity* e, int node, Vector3 const& p)
+    void setPoint_(MeshEntity* e, int, Vector3 const& p)
     {
       mds_id id = fromEnt(e);
       p.toArray(mds_apf_point(mesh,id));
@@ -267,7 +267,7 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       assert(!mds_find_tag(&mesh->tags, name));
-      tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
+      tag = mds_create_tag(&(mesh->tags),name,
           sizeof(double)*size, Mesh::DOUBLE);
       return reinterpret_cast<MeshTag*>(tag);
     }
@@ -275,7 +275,7 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       assert(!mds_find_tag(&mesh->tags, name));
-      tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
+      tag = mds_create_tag(&(mesh->tags),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
     }
@@ -283,7 +283,7 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       assert(!mds_find_tag(&mesh->tags, name));
-      tag = mds_create_tag(&(mesh->tags),&(mesh->mds),name,
+      tag = mds_create_tag(&(mesh->tags),name,
           sizeof(long)*size, Mesh::LONG);
       return reinterpret_cast<MeshTag*>(tag);
     }
@@ -486,6 +486,13 @@ class MeshMDS : public Mesh2
                                       MeshEntity** down)
     {
       int t = apf2mds(type);
+      int dim = mds_dim[t];
+      if (dim > mesh->mds.d) {
+        fprintf(stderr,"error: creating entity of dimension %d "
+                       "in mesh of dimension %d\n", dim, mesh->mds.d);
+        fprintf(stderr,"please use apf::changeMdsDimension\n");
+        abort();
+      }
       mds_set s;
       if (type != VERTEX) {
         s.n = mds_degree[t][mds_dim[t]-1];
@@ -653,8 +660,10 @@ static void* splitThrdMain(void*)
     m = clone(globalMesh);
     plan = new apf::Migration(m);
   }
-  apf::Multiply remap(globalFactor);
-  apf::remapPartition(m, remap);
+  if (globalFactor != 1) {
+    apf::Multiply remap(globalFactor);
+    apf::remapPartition(m, remap);
+  }
   m->migrate(plan);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())

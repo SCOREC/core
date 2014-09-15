@@ -77,11 +77,13 @@ struct gmi_ent* gmi_base_next(struct gmi_model* m, struct gmi_iter* it)
 
 void gmi_base_end(struct gmi_model* m, struct gmi_iter* i)
 {
+  (void)m;
   free(i);
 }
 
 int gmi_base_dim(struct gmi_model* m, struct gmi_ent* e)
 {
+  (void)m;
   return DIM(from_ptr(e));
 }
 

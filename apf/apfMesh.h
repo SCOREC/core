@@ -298,7 +298,7 @@ class Mesh
       \param type a value from apf::Mesh::Type
       \returns an estimate of how many bytes are needed
       to store an entity of (type) */
-    virtual double getElementBytes(int type) {return 1.0;}
+    virtual double getElementBytes(int) {return 1.0;}
     /** \brief associate a field with this mesh
       \details most users don't need this, functions in apf.h
                automatically call it */

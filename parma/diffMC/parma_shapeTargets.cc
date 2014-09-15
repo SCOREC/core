@@ -37,7 +37,7 @@ namespace parma {
           else 
             PCU_Debug_Print("target conflict res has %d\n", PCU_Comm_Sender());
       }
-      void getOtherRes(apf::Mesh* m, Sides* s, int peer, apf::Parts& res) {
+      void getOtherRes(apf::Mesh* m, Sides*, int peer, apf::Parts& res) {
         const int self = PCU_Comm_Self();
         apf::MeshEntity* e;
         apf::MeshIterator* itr = m->begin(m->getDimension()-2);

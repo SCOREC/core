@@ -10,6 +10,9 @@
 #include <apfConvert.h>
 #include <apfMesh2.h>
 #include <ma.h>
+#include <ph.h>
+#include <phRestart.h>
+#include <phInput.h>
 
 static void fixMatches(apf::Mesh2* m)
 {
@@ -49,6 +52,7 @@ int main(int argc, char** argv)
   SimPartitionedMesh_start(&argc,&argv);
   gmi_sim_start();
   gmi_register_sim();
+  PCU_Protect();
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
@@ -56,6 +60,7 @@ int main(int argc, char** argv)
   pGModel simModel = gmi_export_sim(mdl);
   pParMesh sim_mesh = PM_load(argv[2], sthreadNone, simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  ph::buildMapping(simApfMesh);
   
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::printStats(mesh);
@@ -63,6 +68,14 @@ int main(int argc, char** argv)
   M_release(sim_mesh);
   postConvert(mesh);
   mesh->writeNative(argv[3]);
+  std::string restartPath = ph::setupOutputDir();
+  ph::Input phIn;
+  phIn.ensa_dof = 5;
+  phIn.timeStepNumber = 0;
+  phIn.displacementMigration = false;
+  phIn.dwalMigration = false;
+  phIn.buildMapping = true;
+  ph::detachAndWriteSolution(phIn, mesh, restartPath);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
@@ -74,3 +87,4 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
+

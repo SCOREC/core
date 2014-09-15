@@ -252,7 +252,7 @@ static void splitSubTet(Refine* r, Entity* p, Entity** v, int code)
     return;
   }
   Entity* v2[4];
-  int tmpl_id = matchToTemplate(r->adapt, TET, v, code, v2);
+  int tmpl_id = matchToTemplate(TET, v, code, v2);
   tet_templates[tmpl_id](r, p, v2);
 }
 

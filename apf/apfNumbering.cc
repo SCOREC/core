@@ -210,8 +210,7 @@ void synchronize(Numbering * n, Sharing* shr)
 struct NoSharing : public Sharing
 {
   bool isOwned(MeshEntity*) {return true;}
-  virtual void getCopies(MeshEntity* e,
-      CopyArray& copies) {}
+  virtual void getCopies(MeshEntity*, CopyArray&) {}
 };
 
 Numbering* numberNodes(
@@ -481,6 +480,12 @@ class Globalizer : public FieldOp
 static void globalize(GlobalNumbering* n)
 {
   Globalizer<long> g;
+  g.run(n);
+}
+
+void globalize(Numbering* n)
+{
+  Globalizer<int> g;
   g.run(n);
 }
 

@@ -25,6 +25,10 @@ else()
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_sim_config.h.in"
+               "${PROJECT_BINARY_DIR}/gmi_sim_config.h")
+include_directories(${PROJECT_BINARY_DIR})
+
 #Sources & Headers
 set(SOURCES gmi_sim.cc)
 set(HEADERS gmi_sim.h)
