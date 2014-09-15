@@ -243,7 +243,6 @@ double getDeterminant(Matrix<M,N> const& A)
   return d;
 }
 
-template <>
 double getDeterminant(Matrix<1,1> const& A)
 {
   return A[0][0];
