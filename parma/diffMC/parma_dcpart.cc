@@ -95,8 +95,8 @@ int dcPart::walkPart(int visited) {
             elms.push_back(*eit);
       }
       if ( count > m->count(dim) ) { 
-	 error("[%d] count > part size %d > %lu\n", 
-	       m->getId(), count, m->count(dim));
+	 error("[%d] count > part size %d > %ld\n", 
+	       m->getId(), count, (long)(m->count(dim)));
          exit(EXIT_FAILURE);
       }
    }

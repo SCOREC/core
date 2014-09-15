@@ -801,8 +801,8 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
         debugPrint(msg);
         if (-1 != neighborsInMIS.at(partIdx)) {
           if (neighborsInMIS.at(partIdx) != srcPartId) {
-            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%lu) = %d\n", 
-                rank, srcPartId, partIdx, val);
+            printf("[%d] srcPartId=%d does not match neighborsInMIS.at(%ld) = %d\n", 
+                rank, srcPartId, (long)partIdx, val);
           }
         }
         assert(-1 == neighborsInMIS.at(partIdx));
