@@ -158,7 +158,7 @@ void construct(Mesh2* m, int* conn, int nelem, int etype,
 }
 
 void setCoords(Mesh2* m, const double* coords, int nverts,
-    const GlobalToVert& globalToVert)
+    GlobalToVert& globalToVert)
 {
   Gid max = getMax(globalToVert);
   Gid total = max + 1;

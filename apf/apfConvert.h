@@ -56,7 +56,7 @@ void construct(Mesh2* m, int* conn, int nelem, int etype,
   * coordinates assigned.
   */
 void setCoords(Mesh2* m, const double* coords, int nverts,
-    const GlobalToVert& globalToVert);
+    GlobalToVert& globalToVert);
 
 /** \brief convert an apf::Mesh2 object into a connectivity array
   \details this is useful for debugging the apf::convert function */
