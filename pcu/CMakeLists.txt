@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.6)
+set(PACKAGE_VERSION "3.1")
 
 if(BUILD_IN_TRILINOS)
    include(TribitsSubPackageMacros) 
@@ -47,12 +48,17 @@ set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
 set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
 set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "3.1")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/libpcu.pc.in"
     "${PROJECT_BINARY_DIR}/libpcu.pc"
     @ONLY)
 #pkgconfig }
+
+#modulefile {
+string(TOUPPER ${PROJECT_NAME} PACKAGE_NAME)
+set(MODULEFILE ${PROJECT_NAME}_${PACKAGE_VERSION})
+configure_file(moduletemplate ${MODULEFILE} @ONLY)
+#modulefile }
 
 #directory containing pcu header files
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
@@ -102,6 +108,7 @@ endif (PCU_COMPRESS)
 if(NOT BUILD_IN_TRILINOS)
    INSTALL(FILES ${HEADERS} DESTINATION include)
    INSTALL(FILES "${PROJECT_BINARY_DIR}/libpcu.pc" DESTINATION lib/pkgconfig)
+   INSTALL(FILES ${MODULEFILE} DESTINATION lib/module)
    INSTALL(TARGETS  
       pcu
       LIBRARY DESTINATION lib
