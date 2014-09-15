@@ -106,7 +106,7 @@ configure_file(
 
 #modulefile {
 string(TOUPPER ${PROJECT_NAME} PACKAGE_NAME)
-set(MODULEFILE ${PROJECT_NAME}_${PACKAGE_VERSION})
+set(MODULEFILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_${PACKAGE_VERSION}")
 configure_file(moduletemplate ${MODULEFILE} @ONLY)
 #modulefile }
 
