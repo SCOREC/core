@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.6)
+set(PACKAGE_VERSION "1.0")
 
 if(BUILD_IN_TRILINOS)
   include(TribitsSubPackageMacros) 
@@ -39,17 +40,6 @@ else()
   target_link_libraries(apf_sim ${DEP_LIBS})
 endif()
 
-if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES ${HEADERS} DESTINATION include)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_sim.pc" DESTINATION lib/pkgconfig)
-  INSTALL(TARGETS 
-    apf_sim 
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    )
-endif()
-
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.cmake.in"
   "${CMAKE_BINARY_DIR}/apf_simConfig.cmake")
@@ -59,12 +49,29 @@ set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
 set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
 set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/libapf_sim.pc.in"
   "${PROJECT_BINARY_DIR}/libapf_sim.pc"
   @ONLY)
 #pkgconfig }
+
+#modulefile {
+string(TOUPPER ${PROJECT_NAME} PACKAGE_NAME)
+set(MODULEFILE ${PROJECT_NAME}_${PACKAGE_VERSION})
+configure_file(moduletemplate ${MODULEFILE} @ONLY)
+#modulefile }
+
+if(NOT BUILD_IN_TRILINOS)
+  INSTALL(FILES ${HEADERS} DESTINATION include)
+  INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_sim.pc" DESTINATION lib/pkgconfig)
+  INSTALL(FILES ${MODULEFILE} DESTINATION lib/module)
+  INSTALL(TARGETS 
+    apf_sim 
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    )
+endif()
 
 if(BUILD_IN_TRILINOS)
   tribits_subpackage_postprocess()
