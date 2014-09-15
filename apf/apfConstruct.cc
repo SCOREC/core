@@ -234,7 +234,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
     double v[3];
     PCU_Comm_Unpack(v, sizeof(v));
     Vector3 vv(v);
-    m->setPoint(globalToVert.at(gid), 0, vv);
+    m->setPoint(globalToVert[gid], 0, vv);
   }
 
   delete [] c;
