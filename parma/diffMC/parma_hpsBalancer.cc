@@ -188,7 +188,7 @@ class MergeTargets {
 
     generatemMisPart(m,s,tgts,parts);
 
-    int randNumSeed = time(NULL)%(PCU_Comm_Self()+1);
+    int randNumSeed = PCU_Comm_Self()+1;
 
     mis_init(randNumSeed,false);
     vector<int> maximalIndSet;

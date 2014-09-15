@@ -44,7 +44,7 @@ static void cut_trailing_spaces(char* s)
   *e = '\0';
 }
 
-static void parse_header(char* header, char** name, size_t* bytes,
+static void parse_header(char* header, char** name, long* bytes,
     int nparam, int* params)
 {
   char* saveptr;
@@ -58,7 +58,7 @@ static void parse_header(char* header, char** name, size_t* bytes,
   strtok_r(NULL, "<", &saveptr);
   header = strtok_r(NULL, ">", &saveptr);
   if (bytes)
-    sscanf(header, "%lu", (long)bytes);
+    sscanf(header, "%ld", bytes);
   for (i = 0; i < nparam; ++i) {
     header = strtok_r(NULL, " \n", &saveptr);
     sscanf(header, "%d", &params[i]);
@@ -68,7 +68,7 @@ static void parse_header(char* header, char** name, size_t* bytes,
 static int find_header(FILE* f, const char* name, char header[PH_LINE])
 {
   char* hname;
-  size_t bytes;
+  long bytes;
   char tmp[PH_LINE];
   while (fgets(header, PH_LINE, f)) {
     if ((header[0] == '#') || (header[0] == '\n'))
@@ -142,7 +142,7 @@ void ph_write_ints(FILE* f, const char* name, int* data,
   fprintf(f, "\n");
 }
 
-static void parse_params(char* header, size_t* bytes,
+static void parse_params(char* header, long* bytes,
     int* nodes, int* vars, int* step)
 {
   int params[FIELD_PARAMS];
@@ -155,7 +155,7 @@ static void parse_params(char* header, size_t* bytes,
 void ph_read_field(const char* file, const char* field, double** data,
     int* nodes, int* vars, int* step)
 {
-  size_t bytes, n;
+  long bytes, n;
   char header[PH_LINE];
   int should_swap;
   int ok;
