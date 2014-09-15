@@ -54,11 +54,13 @@ configure_file(
     @ONLY)
 #pkgconfig }
 
-#modulefile {
-string(TOUPPER ${PROJECT_NAME} PACKAGE_NAME)
-set(MODULEFILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_${PACKAGE_VERSION}")
-configure_file(moduletemplate ${MODULEFILE} @ONLY)
-#modulefile }
+if(NOT BUILD_IN_TRILINOS)
+  #modulefile {
+  string(TOUPPER ${PROJECT_NAME} PACKAGE_NAME)
+  set(MODULEFILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_${PACKAGE_VERSION}")
+  configure_file(moduletemplate ${MODULEFILE} @ONLY)
+  #modulefile }
+endif()
 
 #directory containing pcu header files
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
