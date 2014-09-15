@@ -79,8 +79,8 @@ bool isFaceConnected(Mesh*& mesh, eArr& rgns) {
             elms.push_back(*eit);
       }
       if ( count > rgns.getSize() ) {
-        error("[%d] count > cavity size %zu > %lu\n", 
-            mesh->getId(), count, rgns.getSize());
+        error("[%d] count > cavity size %zu > %ld\n", 
+            mesh->getId(), count, (long)(rgns.getSize()));
         exit(EXIT_FAILURE);
       }
    }
