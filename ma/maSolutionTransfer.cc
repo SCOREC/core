@@ -257,7 +257,6 @@ SolutionTransfer* createFieldTransfer(apf::Field* f)
   /* turn this back on when IP fields are
      set up with shape functions */
   return new CavityTransfer(f);
-  return 0;
 }
 
 SolutionTransfers::SolutionTransfers()
