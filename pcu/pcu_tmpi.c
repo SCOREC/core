@@ -21,12 +21,12 @@ pcu_mpi pcu_tmpi =
   .done = pcu_tmpi_done,
   .receive = pcu_tmpi_receive };
 
-int pcu_tmpi_size()
+int pcu_tmpi_size(void)
 {
   return pcu_pmpi_size() * pcu_thread_size();
 }
 
-int pcu_tmpi_rank()
+int pcu_tmpi_rank(void)
 {
   return pcu_thread_size() * pcu_pmpi_rank() + pcu_thread_rank();
 }
