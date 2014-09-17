@@ -192,8 +192,7 @@ struct TopFlagger : public apf::CavityOp
   }
   Outcome setEntity(Entity* v_)
   {
-    if ((!getFlag(a, v_, LAYER)) ||
-        getFlag(a, v_, LAYER_BASE) ||
+    if ((!t.hasNumber(v_)) ||
         getFlag(a, v_, CHECKED))
       return SKIP;
     if (!requestLocality(&v_, 1))
