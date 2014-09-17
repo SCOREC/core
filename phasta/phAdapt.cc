@@ -7,7 +7,6 @@ static void runUniformRefinement(Input& in, apf::Mesh2* m)
 {
   ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
   ma_in->shouldRefineLayer = true;
-  ma_in->shouldSnap = false;
   ma::adapt(ma_in);
 }
 
