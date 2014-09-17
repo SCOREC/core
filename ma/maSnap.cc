@@ -12,6 +12,7 @@
 #include "maOperator.h"
 #include "maSnapper.h"
 #include "maLayer.h"
+#include "maMatch.h"
 #include <PCU.h>
 
 namespace ma {
@@ -201,6 +202,10 @@ void snap(Adapt* a)
     return;
   double t0 = MPI_Wtime();
   Tag* tag;
+  /* we are starting to support a few operations on matched
+     meshes, including snapping+UR. this should prevent snapping
+     from modifying any matched entities */
+  preventMatchedCavityMods(a);
   long targets = tagVertsToSnap(a, tag);
   long success = snapTaggedVerts(a, tag);
   snapLayer(a, tag);
