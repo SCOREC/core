@@ -10,14 +10,15 @@
 #ifndef MA_MATCH_H
 #define MA_MATCH_H
 
-#include "maMesh.h"
-
 namespace ma {
 
 class Refine;
+class Adapt;
 
 void matchNewVerts(Refine* r);
 void matchNewElements(Refine* r);
+
+void preventMatchedCavityMods(Adapt* a);
 
 }
 
