@@ -19,7 +19,13 @@
   */
 namespace awr {
 
-void enrichSolution(apf::Field* sol);
+/** \brief p-enrichnment of a finite element solution field
+  * \param sol finite element solution field
+  * \returns an enriched finite element field
+  * \details let p be the order of the original solution field
+  *          the enriched solution field is of order p+1
+  */
+apf::Field* enrichSolution(apf::Field* sol);
 
 }
 
