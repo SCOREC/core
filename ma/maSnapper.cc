@@ -106,7 +106,6 @@ static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements)
   Mesh* m = a->mesh;
   for (int i = 0; i < badElements.n; ++i) {
     Entity* elem = badElements.e[i];
-    Vector center = apf::getLinearCentroid(m, elem);
     Downward edges;
     int nedges = m->getDownward(elem, 1, edges);
     for (int j = 0; j < nedges; ++j)

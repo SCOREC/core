@@ -89,7 +89,7 @@ void preventMatchedCavityMods(Adapt* a)
     if (!matches.getSize())
       continue;
     apf::Up edges;
-    setFlag(a, v, DONT_SNAP | DONT_COLLAPSE);
+    setFlag(a, v, DONT_COLLAPSE);
     m->getUp(v, edges);
     for (int i = 0; i < edges.n; ++i)
       setFlag(a, edges.e[i], DONT_COLLAPSE | DONT_SWAP);

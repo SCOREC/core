@@ -192,8 +192,7 @@ struct TopFlagger : public apf::CavityOp
   }
   Outcome setEntity(Entity* v_)
   {
-    if ((!getFlag(a, v_, LAYER)) ||
-        getFlag(a, v_, LAYER_BASE) ||
+    if ((!t.hasNumber(v_)) ||
         getFlag(a, v_, CHECKED))
       return SKIP;
     if (!requestLocality(&v_, 1))
@@ -202,7 +201,20 @@ struct TopFlagger : public apf::CavityOp
     return OK;
   }
   bool isTop()
-  {
+  { /* at this point all adjacent elements are local
+       and quad-adjacent vertices have layer numbers.
+       a top vertex is one that not adjacent to a quad
+       that has vertices with higher layer numbers.
+
+       here we choose to determine that by first looking
+       across edges to see if any higher-layer vertices
+       are there, and if we do find one, then make sure
+       its across a quad.
+       
+       when stack heights differ, there can be vertices
+       across an edge with higher layer number, but that
+       may be a tet or pyramid edge and if thats all then
+       this vertex is still the top of its curve */
     int n = t.getNumber(v);
     apf::Up es;
     m->getUp(v, es);
@@ -211,8 +223,13 @@ struct TopFlagger : public apf::CavityOp
       if (!t.hasNumber(ov))
         continue;
       int on = t.getNumber(ov);
-      if (on > n)
-        return false;
+      if (on > n) {
+        apf::Up fs;
+        m->getUp(es.e[i], fs);
+        for (int j = 0; j < fs.n; ++j)
+          if (m->getType(fs.e[j]) == QUAD)
+            return false;
+      }
     }
     return true;
   }
