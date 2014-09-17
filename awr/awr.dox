@@ -1,0 +1,6 @@
+/** \page spr AWR
+
+The Adjoint Weighted Residual (AWR) library
+
+The API is found in: awr.h
+*/
