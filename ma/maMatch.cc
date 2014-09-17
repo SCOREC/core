@@ -76,4 +76,25 @@ void matchNewElements(Refine* r)
   print("updated matching for %li faces",face_count);
 }
 
+void preventMatchedCavityMods(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  if (!m->hasMatching())
+    return;
+  Iterator* it = m->begin(0);
+  Entity* v;
+  while ((v = m->iterate(it))) {
+    apf::Matches matches;
+    m->getMatches(v, matches);
+    if (!matches.getSize())
+      continue;
+    apf::Up edges;
+    setFlag(a, v, DONT_SNAP | DONT_COLLAPSE);
+    m->getUp(v, edges);
+    for (int i = 0; i < edges.n; ++i)
+      setFlag(a, edges.e[i], DONT_COLLAPSE | DONT_SWAP);
+  }
+  m->end(it);
+}
+
 }

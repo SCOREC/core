@@ -303,6 +303,9 @@ class EdgeSwap2D : public EdgeSwap
     {
       Entity* ev[2];
       ev[0] = quad[1]; ev[1] = quad[3];
+      /* check whether the "other" edge already exists, which
+         means we are dealing with a single tet with two faces
+         on the model face. we can't swap the edge between those faces. */
       return ! findElement(mesh,EDGE,ev);
     }
     bool setEdge(Entity* e)
