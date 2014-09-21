@@ -13,6 +13,7 @@
  */
 
 #include "apf.h"
+#include "Teuchos_ParameterList.hpp"
 
 /** \namespace awr
   * \brief All AWR error estimation functions
@@ -23,19 +24,14 @@ namespace awr {
   * \param sol finite element solution field
   * \returns an enriched finite element field
   * \details let p be the order of the original solution field.
-  *          the enriched solution field is of order p+1
+  *          the enriched solution field is of order p+1.
+  *          this function currently deletes the old solution
+  *          field and changes the mesh shape to p+1.
+  *          this behavior may not be desirable.
   */
 apf::Field* enrichSolution(apf::Field* sol);
 
-/** \brief solve a linearized adjoint problem
-  * \param enriched_sol p-enriched finite element solution
-  * \param adjoint_name name of adjoint problem to be solved
-  * \param qoi_name name of quantity of interest
-  * \returns the adjoint solution field
-  */
-apf::Field* solveAdjointProblem(apf::Field* enriched_sol,
-                                std::string adjoint_name,
-                                std::string qoi_name);
+apf::Field* solveAdjointProblem(Teuchos::ParameterList& p);
 
 }
 

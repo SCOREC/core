@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8.6)
 
 if(ENABLE_AWR)
 
+  set(CMAKE_MODULE_PATH 
+      ${CMAKE_MODULE_PATH} 
+      "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+
+  find_package(Teuchos REQUIRED)
+
   if(BUILD_IN_TRILINOS)
     include(TribitsSubPackageMacros) 
     include(TribitsLibraryMacros) 
@@ -12,10 +18,12 @@ if(ENABLE_AWR)
 
   if(NOT BUILD_IN_TRILINOS)
     find_package(apf PATHS ${CMAKE_BINARY_DIR})
+    find_package(Teuchos QUIET REQUIRED)
+    include_directories(${TEUCHOS_INCLUDE_DIRS})
     set(AWR_INCLUDE_DIRS
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${APF_INCLUDE_DIRS})
-    set(DEP_LIBS ${APF_LIBS})
+    set(DEP_LIBS ${DEP_LIBS} ${TEUCHOS_LIBRARIES})
     set(AWR_LIBS awr ${DEP_LIBS})
   endif()
 
