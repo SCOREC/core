@@ -27,6 +27,16 @@ namespace awr {
   */
 apf::Field* enrichSolution(apf::Field* sol);
 
+/** \brief solve a linearized adjoint problem
+  * \param enriched_sol p-enriched finite element solution
+  * \param adjoint_name name of adjoint problem to be solved
+  * \param qoi_name name of quantity of interest
+  * \returns the adjoint solution field
+  */
+apf::Field* solveAdjointProblem(apf::Field* enriched_sol,
+                                std::string adjoint_name,
+                                std::string qoi_name);
+
 }
 
 #endif
