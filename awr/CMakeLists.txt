@@ -52,7 +52,10 @@ if(ENABLE_AWR)
 
   #Sources & Headers
   set(SOURCES
-    awr.cc)
+    awr.cc
+    rhs/awrRHS.cc
+    rhs/awrRHSFactory.cc
+    rhs/awrNonlinearPoissonRHS.cc)
 
   set(HEADERS
     awr.h)

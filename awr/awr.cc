@@ -9,6 +9,8 @@
 #include "apfMesh.h"
 #include "apfField.h"
 #include "apfShape.h"
+#include "rhs/awrRHS.h"
+#include "rhs/awrRHSFactory.h"
 
 namespace awr {
 
@@ -32,7 +34,8 @@ apf::Field* enrichSolution(apf::Field* sol, const char* name_e)
 
 apf::Field* solveAdjointProblem(const Teuchos::ParameterList& params)
 {
-  std::cout << "I am in solveAdjointProblem!" << std::endl;
+  RHSFactory rhsFactory(params);
+  Teuchos::RCP<RHS> rhs = rhsFactory.create();
 }
 
 }
