@@ -20,6 +20,8 @@
   */
 namespace awr {
 
+apf::Field* enrichSolution(apf::Field* sol, const char* name_e);
+
 apf::Field* solveAdjointProblem(const Teuchos::ParameterList& params);
 
 }
