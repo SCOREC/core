@@ -52,7 +52,7 @@ if(ENABLE_AWR)
 
   #Sources & Headers
   set(SOURCES
-    awrEnrichSolution.cc)
+    awr.cc)
 
   set(HEADERS
     awr.h)

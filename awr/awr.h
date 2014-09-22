@@ -20,18 +20,7 @@
   */
 namespace awr {
 
-/** \brief p-enrichnment of a finite element solution field
-  * \param sol finite element solution field
-  * \returns an enriched finite element field
-  * \details let p be the order of the original solution field.
-  *          the enriched solution field is of order p+1.
-  *          this function currently deletes the old solution
-  *          field and changes the mesh shape to p+1.
-  *          this behavior may not be desirable.
-  */
-apf::Field* enrichSolution(apf::Field* sol);
-
-apf::Field* solveAdjointProblem(Teuchos::ParameterList& p);
+apf::Field* solveAdjointProblem(const Teuchos::ParameterList& params);
 
 }
 
