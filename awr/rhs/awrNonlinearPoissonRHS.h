@@ -9,6 +9,8 @@
 #define AWRNONLINEARPOISSONRHS_H
 
 #include "awrRHS.h"
+#include "apfMatrix.h"
+#include "apfDynamicVector.h"
 
 namespace awr {
 
@@ -17,7 +19,11 @@ class NonlinearPoissonRHS : public RHS
   public:
     NonlinearPoissonRHS(const Teuchos::ParameterList& p);
     virtual ~NonlinearPoissonRHS() {};
-    virtual void evaluateElementRHS();
+    virtual void
+    evaluateElementRHS(apf::MeshEntity* element,
+                       apf::Field* primal_solution,
+                       int integration_order,
+                       apf::DynamicMatrix& k);
   private:
     NonlinearPoissonRHS(const NonlinearPoissonRHS&);
     NonlinearPoissonRHS& operator=(const NonlinearPoissonRHS&);

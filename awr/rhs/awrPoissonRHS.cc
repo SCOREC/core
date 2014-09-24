@@ -5,20 +5,20 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awrNonlinearPoissonRHS.h"
+#include "awrPoissonRHS.h"
 
 namespace awr {
 
 /*****************************************************************************/
-NonlinearPoissonRHS::
-NonlinearPoissonRHS(const Teuchos::ParameterList& p) :
+PoissonRHS::
+PoissonRHS(const Teuchos::ParameterList& p) :
   RHS(p)
 {
 }
 
 /*****************************************************************************/
 void
-NonlinearPoissonRHS::
+PoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
                    apf::Field* primal_solution,
                    int integration_order,

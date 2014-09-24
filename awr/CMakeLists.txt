@@ -29,6 +29,7 @@ if(BUILD_IN_TRILINOS)
     awr.cc
     rhs/awrRHS.cc
     rhs/awrRHSFactory.cc
+    rhs/awrPoissonRHS.cc
     rhs/awrNonlinearPoissonRHS.cc)
 
   set(HEADERS

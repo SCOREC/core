@@ -8,6 +8,8 @@
 #ifndef AWRRHS_H
 #define AWRRHS_H
 
+#include "apf.h"
+#include "apfDynamicMatrix.h"
 #include "Teuchos_ParameterList.hpp"
 
 namespace awr {
@@ -18,7 +20,11 @@ class RHS
     RHS(const Teuchos::ParameterList& p);
     virtual ~RHS() {};
     void assemble();
-    virtual void evaluateElementRHS() = 0;
+    virtual void 
+    evaluateElementRHS(apf::MeshEntity* e,
+                       apf::Field* primal_solution,
+                       int integration_order,
+                       apf::DynamicMatrix& k) = 0;
   protected:
     Teuchos::ParameterList params_;
   private:
