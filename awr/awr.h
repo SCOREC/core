@@ -13,13 +13,18 @@
  */
 
 #include "apf.h"
+#include "apfMesh.h"
+#include "Teuchos_ParameterList.hpp"
 
 /** \namespace awr
   * \brief All AWR error estimation functions
   */
 namespace awr {
 
-void enrichSolution(apf::Field* sol);
+apf::Field* enrichSolution(apf::Field* sol, const char* name_e);
+
+apf::Field* solveAdjointProblem(
+    apf::Mesh* mesh, const Teuchos::ParameterList& params);
 
 }
 

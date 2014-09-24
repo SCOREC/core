@@ -8,8 +8,8 @@
 
 *******************************************************************************/
 
-#ifndef MDS_PART_H
-#define MDS_PART_H
+#ifndef APF_PM_H
+#define APF_PM_H
 
 #include <apfMesh2.h>
 
