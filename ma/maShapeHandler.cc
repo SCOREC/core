@@ -21,7 +21,11 @@ class LinearHandler : public ShapeHandler
     LinearHandler(Adapt* a)
     {
       mesh = a->mesh;
-      sizeField = a->sizeField;
+      sizeField = new IdentitySizeField(mesh);
+    }
+    ~LinearHandler()
+    {
+      delete sizeField;
     }
     virtual double getQuality(Entity* e)
     {
