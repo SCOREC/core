@@ -5,28 +5,6 @@
 #include <apfShape.h>
 #include <PCU.h>
 
-class Linear : public ma::IsotropicFunction
-{
-  public:
-    Linear(ma::Mesh* m)
-    {
-      mesh = m;
-      average = ma::getAverageEdgeLength(m);
-      ma::getBoundingBox(m,lower,upper);
-    }
-    virtual double getValue(ma::Entity* v)
-    {
-      ma::Vector p = ma::getPosition(mesh,v);
-      double x = (p[0] - lower[0])/(upper[0] - lower[0]);
-      return average*(4*x+2)/3;
-    }
-  private:
-    ma::Mesh* mesh;
-    double average;
-    ma::Vector lower;
-    ma::Vector upper;
-};
-
 int main(int argc, char** argv)
 {
   assert(argc==3);
@@ -37,12 +15,16 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
-  Linear sf(m);
-  ma::Input* in = ma::configure(m, &sf);
-  in->shouldRunPreZoltan = true;
+  apf::Field* scales;
+  scales = apf::createLagrangeField(m, "proteus_size_scale", apf::VECTOR, 1);
+  apf::Field* frames;
+  frames = apf::createLagrangeField(m, "proteus_size_frame", apf::MATRIX, 1);
+  ma::Input* in = ma::configure(m, scales, frames);
+  in->shouldRunPreParma = true;
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;
-  in->shouldRefineLayer = true;
+  in->maximumIterations = 1;
+  in->shouldFixShape = true;
   ma::adapt(in);
   m->verify();
   apf::writeVtkFiles("after",m);
