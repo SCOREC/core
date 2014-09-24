@@ -33,7 +33,10 @@ class EntityShape
               respect to parent element coordinates for one node */
     virtual void getLocalGradients(Vector3 const& xi,
         NewArray<Vector3>& grads) const = 0;
-/** \brief return the number of nodes affecting this element */
+/** \brief return the number of nodes affecting this element
+    \details in a linear mesh, there are two nodes affecting
+             and edge, three nodes affecting a triangle,
+             four for a tet, etc. */
     virtual int countNodes() const = 0;
 };
 
@@ -52,6 +55,8 @@ class FieldShape
     virtual bool hasNodesIn(int dimension) = 0;
 /** \brief Return the number of nodes associated with an entity of
            this type
+    \details in a linear mesh, nodes are associated with vertices
+             but there are no nodes associated with other entities.
     \param type select from apf::Mesh::Type */
     virtual int countNodesOn(int type) = 0;
 /** \brief Return the polynomial order of the shape functions
