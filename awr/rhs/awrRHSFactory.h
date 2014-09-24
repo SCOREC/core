@@ -10,17 +10,17 @@
 
 #include "awrRHS.h"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_TestForException.hpp"
 
 namespace awr {
 
 class RHSFactory
 {
   public:
-    RHSFactory(const Teuchos::ParameterList& p);
+    RHSFactory(apf::Mesh* m, const Teuchos::ParameterList& p);
     virtual ~RHSFactory() {};
     virtual Teuchos::RCP<RHS> create();
   protected:
+    apf::Mesh* mesh_;
     Teuchos::ParameterList params_;
   private:
     RHSFactory(const RHSFactory&);

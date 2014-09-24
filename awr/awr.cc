@@ -32,9 +32,11 @@ apf::Field* enrichSolution(apf::Field* sol, const char* name_e)
   return sol_e;
 }
 
-apf::Field* solveAdjointProblem(const Teuchos::ParameterList& params)
+apf::Field*
+solveAdjointProblem(apf::Mesh* mesh,
+                    const Teuchos::ParameterList& params)
 {
-  RHSFactory rhsFactory(params);
+  RHSFactory rhsFactory(mesh,params);
   Teuchos::RCP<RHS> rhs = rhsFactory.create();
 }
 

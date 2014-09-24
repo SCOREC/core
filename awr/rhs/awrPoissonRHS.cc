@@ -5,24 +5,33 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awrNonlinearPoissonRHS.h"
+#include "awrPoissonRHS.h"
+#include "Teuchos_TestForException.hpp"
 
 namespace awr {
 
 /*****************************************************************************/
-NonlinearPoissonRHS::
-NonlinearPoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
+PoissonRHS::
+PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
   RHS(m,p)
 {
 }
 
 /*****************************************************************************/
 void
-NonlinearPoissonRHS::
+PoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
                    int integration_order,
                    apf::DynamicMatrix& k)
 {
+}
+
+/*****************************************************************************/
+void
+PoissonRHS::
+validateParameters()
+{
+  std::string n = params_.get("Primal Solution Field Name","");
 }
 
 /*****************************************************************************/

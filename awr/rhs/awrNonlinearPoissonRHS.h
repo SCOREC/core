@@ -15,9 +15,12 @@ namespace awr {
 class NonlinearPoissonRHS : public RHS
 {
   public:
-    NonlinearPoissonRHS(const Teuchos::ParameterList& p);
+    NonlinearPoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p);
     virtual ~NonlinearPoissonRHS() {};
-    virtual void evaluateElementRHS();
+    virtual void
+    evaluateElementRHS(apf::MeshEntity* element,
+                       int integration_order,
+                       apf::DynamicMatrix& k);
   private:
     NonlinearPoissonRHS(const NonlinearPoissonRHS&);
     NonlinearPoissonRHS& operator=(const NonlinearPoissonRHS&);
