@@ -11,8 +11,8 @@ namespace awr {
 
 /*****************************************************************************/
 NonlinearPoissonRHS::
-NonlinearPoissonRHS(const Teuchos::ParameterList& p) :
-  RHS(p)
+NonlinearPoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
+  RHS(m,p)
 {
 }
 
@@ -20,7 +20,6 @@ NonlinearPoissonRHS(const Teuchos::ParameterList& p) :
 void
 NonlinearPoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
-                   apf::Field* primal_solution,
                    int integration_order,
                    apf::DynamicMatrix& k)
 {

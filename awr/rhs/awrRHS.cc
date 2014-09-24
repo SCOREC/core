@@ -9,7 +9,8 @@
 
 namespace awr {
 
-RHS::RHS(const Teuchos::ParameterList& p) :
+RHS::RHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
+  mesh_(m),
   params_(p)
 {
 }

@@ -18,13 +18,12 @@ class PoissonRHS : public RHS
 {
   public:
     /** constructor */
-    PoissonRHS(const Teuchos::ParameterList& p);
+    PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p);
     /** destructor */
     virtual ~PoissonRHS() {};
     /** evaluate element level stiffness matrix */
     virtual void
     evaluateElementRHS(apf::MeshEntity* element,
-                       apf::Field* primal_solution,
                        int integration_order,
                        apf::DynamicMatrix& k);
   protected:
@@ -35,11 +34,13 @@ class PoissonRHS : public RHS
     /** number of element quadrature points */
     int num_qp_;
     /** shape functions */
-    apf::DynamicVector N;
+    apf::DynamicVector N_;
     /** shape function derivatives */
-    apf::DynamicMatrix dN;
+    apf::DynamicMatrix dN_;
     /** element Jacobian transformation */
-    apf::Matrix3x3 jac;
+    apf::Matrix3x3 jac_;
+    /** validate parameters */
+    void validateParameters();
   private:
     PoissonRHS(const PoissonRHS&);
     PoissonRHS& operator=(const PoissonRHS&);

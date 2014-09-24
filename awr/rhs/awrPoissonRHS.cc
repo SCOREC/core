@@ -6,13 +6,14 @@
  */
 
 #include "awrPoissonRHS.h"
+#include "Teuchos_TestForException.hpp"
 
 namespace awr {
 
 /*****************************************************************************/
 PoissonRHS::
-PoissonRHS(const Teuchos::ParameterList& p) :
-  RHS(p)
+PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
+  RHS(m,p)
 {
 }
 
@@ -20,10 +21,17 @@ PoissonRHS(const Teuchos::ParameterList& p) :
 void
 PoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
-                   apf::Field* primal_solution,
                    int integration_order,
                    apf::DynamicMatrix& k)
 {
+}
+
+/*****************************************************************************/
+void
+PoissonRHS::
+validateParameters()
+{
+  std::string n = params_.get("Primal Solution Field Name","");
 }
 
 /*****************************************************************************/
