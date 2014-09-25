@@ -82,12 +82,30 @@ static void interpolateR(
     Matrix& R)
 {
   apf::getMatrix(rElement,xi,R);
+  /* by the way, the principal direction vectors
+     are in the columns, so lets do our cleanup
+     work on the transpose */
   Matrix RT = transpose(R);
-  /* we store R and h separately because the interpolation
-     is not simple: we re-normalize the rotation matrix R
-     after interpolating its components. */
-  for (int i=0; i < 3; ++i)
-    RT[i] = RT[i].normalize();
+  /* we have to make sure this remains a rotation matrix.
+     lets assume that component-wise interpolation gave
+     a somewhat decent answer.
+     (if not, the truly proper solution is to interpolate
+      quaternion components, see also Lie groups)
+     R[0] should be the interpolated main principal direction
+     vector. lets first normalize it. */
+  RT[0] = RT[0].normalize();
+  /* now the next principal direction should roughly align
+     with R[1], but first it must be orthogonal to R[0].
+     so, remove its component along R[0] (remember R[0] is unit length)*/
+  RT[1] = RT[1] - RT[0]*(RT[0]*RT[1]);
+  /* and normalize it too */
+  RT[1] = RT[1].normalize();
+  /* finally, forget what was in R[2] and just make it the cross
+     product of R[0] and R[1] to make a nice frame */
+  RT[2] = apf::cross(RT[0],RT[1]);
+  /* and back out of the transpose */
+  /* if you're wondering, this is why R and h are stored separately:
+     so we can do this interpolation dance on the rotation matrix */
   R = transpose(RT);
 }
 
