@@ -7,12 +7,12 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "maMesh.h"
 #include "maTables.h"
 #include <algorithm>
 #include <cfloat>
 #include <apf.h>
-#include <PCU.h>
 
 namespace ma {
 

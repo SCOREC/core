@@ -1,9 +1,9 @@
+#include <PCU.h>
 #include "phBC.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <fstream>
 #include <sstream>
-#include <PCU.h>
 #include <gmi.h>
 
 namespace ph {

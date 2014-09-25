@@ -5,13 +5,13 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include <PCU.h>
 #include "apfCoordData.h"
 #include "apfVectorField.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
 #include "apfTagData.h"
 #include <gmi.h>
-#include <PCU.h>
 
 namespace apf {
 

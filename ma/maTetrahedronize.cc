@@ -1,3 +1,4 @@
+#include <PCU.h>
 #include "maTetrahedronize.h"
 #include "maCrawler.h"
 #include "maAdapt.h"
@@ -5,7 +6,6 @@
 #include "maLayer.h"
 #include <apfNumbering.h>
 #include <apfShape.h>
-#include <PCU.h>
 
 namespace ma {
 

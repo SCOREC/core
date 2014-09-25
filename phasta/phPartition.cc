@@ -1,6 +1,6 @@
+#include <PCU.h>
 #include "phPartition.h"
 #include "phInput.h"
-#include <PCU.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <apfMDS.h>

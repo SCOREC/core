@@ -1,9 +1,9 @@
+#include "PCU.h"
 #include "parma_selector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
 #include "parma_centroids.h"
 #include "apf.h"
-#include "PCU.h"
 
 namespace {
   apf::MeshEntity* getOtherElement(apf::Mesh* m, 

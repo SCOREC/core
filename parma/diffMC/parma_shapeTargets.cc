@@ -1,8 +1,8 @@
+#include <PCU.h>
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include <apf.h>
-#include <PCU.h>
 #include <limits.h>
 namespace parma {
   class ShapeTargets : public Targets {
