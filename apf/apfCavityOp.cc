@@ -5,10 +5,10 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include <PCU.h>
 #include "apfCavityOp.h"
 #include "apf.h"
 #include "apfMesh2.h"
-#include <PCU.h>
 
 namespace apf {
 

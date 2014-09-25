@@ -7,6 +7,7 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "maShape.h"
 #include "maSize.h"
 #include "maAdapt.h"
@@ -15,7 +16,6 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
-#include <PCU.h>
 
 namespace ma {
 

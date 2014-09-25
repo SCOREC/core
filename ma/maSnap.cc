@@ -7,13 +7,13 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "maSnap.h"
 #include "maAdapt.h"
 #include "maOperator.h"
 #include "maSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
-#include <PCU.h>
 
 namespace ma {
 

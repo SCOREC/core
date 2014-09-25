@@ -1,8 +1,8 @@
+#include <PCU.h>
 #include "maBalance.h"
 #include "maAdapt.h"
 #include <parma.h>
 #include <apfZoltan.h>
-#include <PCU.h>
 
 namespace ma {
 

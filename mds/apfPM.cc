@@ -8,9 +8,9 @@
 
 *******************************************************************************/
 
+#include <PCU.h>
 #include "apfPM.h"
 #include <apf.h>
-#include <PCU.h>
 
 namespace apf {
 

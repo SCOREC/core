@@ -8,6 +8,7 @@
 
 *******************************************************************************/
 
+#include <PCU.h>
 #include "apfMDS.h"
 #include "mds_apf.h"
 #include "apfPM.h"
@@ -16,7 +17,6 @@
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include <apfPartition.h>
-#include <PCU.h>
 #include <cstring>
 
 extern "C" {

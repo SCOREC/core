@@ -7,11 +7,11 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "maMatch.h"
 #include "maMesh.h"
 #include "maAdapt.h"
 #include "maRefine.h"
-#include <PCU.h>
 
 namespace ma {
 

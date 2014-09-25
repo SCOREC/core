@@ -7,6 +7,7 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "maAdapt.h"
 #include "maTables.h"
 #include "maCoarsen.h"
@@ -16,7 +17,6 @@
 #include "maShapeHandler.h"
 #include "maLayer.h"
 #include <apf.h>
-#include <PCU.h>
 #include <cfloat>
 #include <stdarg.h>
 

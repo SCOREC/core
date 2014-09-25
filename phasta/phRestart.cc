@@ -1,7 +1,7 @@
+#include <PCU.h>
 #include "phRestart.h"
 #include <apf.h>
 #include "phIO.h"
-#include <PCU.h>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>

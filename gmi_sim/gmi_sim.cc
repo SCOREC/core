@@ -7,12 +7,12 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
+#include <PCU.h>
 #include "gmi_sim.h"
 #include <gmi.h>
 #include <stdlib.h>
 #include <gmi.h>
 #include <SimModel.h>
-#include <PCU.h>
 
 #include "gmi_sim_config.h"
 
