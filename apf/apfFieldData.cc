@@ -1,6 +1,6 @@
+#include <PCU.h>
 #include "apfFieldData.h"
 #include "apfShape.h"
-#include <PCU.h>
 
 namespace apf {
 

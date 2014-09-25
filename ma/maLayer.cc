@@ -1,8 +1,8 @@
+#include <PCU.h>
 #include "maLayer.h"
 #include "maAdapt.h"
 #include "maRefine.h"
 #include "maShape.h"
-#include <PCU.h>
 #include <sstream>
 
 namespace ma {

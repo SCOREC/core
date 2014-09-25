@@ -1,7 +1,7 @@
+#include <PCU.h>
 #include "phOutput.h"
 #include "phLinks.h"
 #include "phAdjacent.h"
-#include <PCU.h>
 
 namespace ph {
 

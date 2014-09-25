@@ -1,8 +1,8 @@
+#include <PCU.h>
 #include "apfConvert.h"
 #include "apfMesh2.h"
 #include "apf.h"
 #include "apfNumbering.h"
-#include <PCU.h>
 #include <map>
 
 namespace apf {

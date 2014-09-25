@@ -1,9 +1,9 @@
+#include <PCU.h>
 #include "parma.h"
 #include <parma_diffmc.h>
 #include <parma_dcpart.h>
 #include <parma_imbinfo.h>
 #include <limits>
-#include <PCU.h>
 
 int Parma_Run(apf::Mesh* mesh, apf::MeshTag* weight, const double) {
   double entImb[4];

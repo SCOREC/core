@@ -1,10 +1,10 @@
+#include <PCU.h>
 #include "maMesh.h"
 #include "maAdapt.h"
 #include "maLayer.h"
 #include "maCoarsen.h"
 #include "maCrawler.h"
 #include "maLayerCollapse.h"
-#include <PCU.h>
 
 /* see maCoarsen.cc for the unstructured equivalent. */
 namespace ma {

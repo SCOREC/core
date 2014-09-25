@@ -1,10 +1,10 @@
+#include <mpi.h>
 #include <algorithm>
 #include <limits>
 #include <iostream>
 #include <iterator>
 #include <time.h>
 #include <stdlib.h>
-#include <mpi.h>
 #include <assert.h>
 #include <locale>
 

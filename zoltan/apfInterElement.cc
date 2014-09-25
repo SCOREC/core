@@ -1,6 +1,6 @@
+#include <PCU.h>
 #include "apfZoltan.h"
 #include <apfMesh.h>
-#include <PCU.h>
 
 namespace apf {
 

@@ -7,6 +7,7 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "ma.h"
 #include "maAdapt.h"
 #include "maCoarsen.h"
@@ -15,7 +16,6 @@
 #include "maShape.h"
 #include "maBalance.h"
 #include "maLayer.h"
-#include <PCU.h>
 
 namespace ma {
 

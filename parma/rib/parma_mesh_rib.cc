@@ -1,6 +1,6 @@
+#include <PCU.h>
 #include "parma_rib.h"
 #include <apfPartition.h>
-#include <PCU.h>
 
 namespace parma {
 

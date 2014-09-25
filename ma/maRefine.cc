@@ -7,6 +7,7 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+#include <PCU.h>
 #include "maRefine.h"
 #include "maTemplates.h"
 #include "maAdapt.h"
@@ -18,7 +19,6 @@
 #include "maSnap.h"
 #include "maLayer.h"
 #include <apf.h>
-#include <PCU.h>
 
 namespace ma {
 

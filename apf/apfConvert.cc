@@ -1,9 +1,9 @@
+#include <PCU.h>
 #include "apf.h"
 #include "apfConvert.h"
 #include "apfMesh.h"
 #include "apfMesh2.h"
 #include "apfShape.h"
-#include <PCU.h>
 #include <map>
 
 namespace apf {

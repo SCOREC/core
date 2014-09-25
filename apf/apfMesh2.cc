@@ -1,7 +1,7 @@
+#include <PCU.h>
 #include "apfMesh2.h"
 #include "apfField.h"
 #include "apf.h"
-#include <PCU.h>
 
 namespace apf
 {
