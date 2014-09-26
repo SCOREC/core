@@ -386,8 +386,10 @@ void verify(Mesh* m)
   verifyConnectivity(m);
   verifyOrder(m);
   long n = verifyCoords(m);
-  if (n && (!PCU_Comm_Self()))
-    fprintf(stderr,"apf::verify warning: %ld coordinate mismatches\n", n);
+  if (n && (!PCU_Comm_Self())) {
+    fprintf(stderr,"apf::verify fail: %ld coordinate mismatches\n", n);
+    abort();
+  }
   n = verifyVolumes(m);
   if (n && (!PCU_Comm_Self()))
     fprintf(stderr,"apf::verify warning: %ld negative simplex elements\n", n);
