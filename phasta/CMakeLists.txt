@@ -22,6 +22,7 @@ set(SOURCES
   phPartition.cc
   phIO.c
   phBC.cc
+  phBubble.cc
   phConstraint.cc)
 
 include_directories(${PH_INCLUDE_DIRS})
