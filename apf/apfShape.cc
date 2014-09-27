@@ -208,6 +208,48 @@ class Linear : public FieldShape
         }
         int countNodes() const {return 5;}
     };
+    class Hexahedron : public EntityShape
+    {
+      public: /* degenerate hexahedron */
+        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        {
+          values.allocate(5);
+          double l0x = (1 - xi[0]);
+          double l1x = (1 + xi[0]);
+          double l0y = (1 - xi[1]);
+          double l1y = (1 + xi[1]);
+          double l0z = (1 - xi[2]);
+          double l1z = (1 + xi[2]);
+          values[0] = l0x * l0y * l0z / 8;
+          values[1] = l1x * l0y * l0z / 8;
+          values[2] = l1x * l1y * l0z / 8;
+          values[3] = l0x * l1y * l0z / 8;
+          values[4] = l0x * l0y * l1z / 8;
+          values[5] = l1x * l0y * l1z / 8;
+          values[6] = l1x * l1y * l1z / 8;
+          values[7] = l0x * l1y * l1z / 8;
+        }
+        void getLocalGradients(Vector3 const& xi,
+            NewArray<Vector3>& grads) const
+        {
+          double l0x = (1 - xi[0]);
+          double l1x = (1 + xi[0]);
+          double l0y = (1 - xi[1]);
+          double l1y = (1 + xi[1]);
+          double l0z = (1 - xi[2]);
+          double l1z = (1 + xi[2]);
+          grads.allocate(5);
+          grads[0] = Vector3(-l0y * l0z, -l0x * l0z, -l0x * l0y) / 8;
+          grads[1] = Vector3( l0y * l0z, -l1x * l0z, -l1x * l0y) / 8;
+          grads[2] = Vector3( l1y * l0z,  l1x * l0z, -l1x * l1y) / 8;
+          grads[3] = Vector3(-l1y * l0z,  l0x * l0z, -l0x * l1y) / 8;
+          grads[4] = Vector3(-l0y * l1z, -l0x * l1z,  l0x * l0y) / 8;
+          grads[5] = Vector3( l0y * l1z, -l1x * l1z,  l1x * l0y) / 8;
+          grads[6] = Vector3( l1y * l1z,  l1x * l1z,  l1x * l1y) / 8;
+          grads[7] = Vector3(-l1y * l1z,  l0x * l1z,  l0x * l1y) / 8;
+        }
+        int countNodes() const {return 8;}
+    };
     EntityShape* getEntityShape(int type)
     {
       static Vertex vertex;
@@ -217,13 +259,14 @@ class Linear : public FieldShape
       static Tetrahedron tet;
       static Prism prism;
       static Pyramid pyramid;
+      static Hexahedron hex;
       static EntityShape* shapes[Mesh::TYPES] =
-      {&vertex,      //vertex
+      {&vertex,
        &edge,
        &triangle,
        &quad,
        &tet,
-       NULL,      //hex
+       &hex,
        &prism,
        &pyramid};
       return shapes[type];
