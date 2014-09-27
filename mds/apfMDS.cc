@@ -71,7 +71,8 @@ static int mds2apf(int t_mds)
   ,Mesh::QUAD
   ,Mesh::PRISM
   ,Mesh::PYRAMID
-  ,Mesh::TET};
+  ,Mesh::TET
+  ,Mesh::HEX};
   return table[t_mds];
 
 }
@@ -84,7 +85,7 @@ static int apf2mds(int t_apf)
   ,MDS_TRIANGLE
   ,MDS_QUADRILATERAL
   ,MDS_TETRAHEDRON
-  ,-1
+  ,MDS_HEXAHEDRON
   ,MDS_WEDGE
   ,MDS_PYRAMID
   };

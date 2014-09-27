@@ -40,16 +40,18 @@ int const mds_dim[MDS_TYPES] =
 ,3 /* MDS_WEDGE */
 ,3 /* MDS_PYRAMID */
 ,3 /* MDS_TETRAHEDRON */
+,3 /* MDS_HEXAHEDRON */
 };
 
 int const mds_degree[MDS_TYPES][4] =
-{{1,0,0,0} /* MDS_VERTEX */
-,{2,1,0,0} /* MDS_EDGE */
-,{3,3,1,0} /* MDS_TRIANGLE */
-,{4,4,1,0} /* MDS_QUADRILATERAL */
-,{6,9,5,1} /* MDS_WEDGE */
-,{5,8,5,1} /* MDS_PYRAMID */
-,{4,6,4,1} /* MDS_TETRAHEDRON */
+{{1, 0,0,0} /* MDS_VERTEX */
+,{2, 1,0,0} /* MDS_EDGE */
+,{3, 3,1,0} /* MDS_TRIANGLE */
+,{4, 4,1,0} /* MDS_QUADRILATERAL */
+,{6, 9,5,1} /* MDS_WEDGE */
+,{5, 8,5,1} /* MDS_PYRAMID */
+,{4, 6,4,1} /* MDS_TETRAHEDRON */
+,{8,12,6,1} /* MDS_HEXAHEDRON */
 };
 
 static int const e0[] = {MDS_VERTEX,MDS_VERTEX};
@@ -131,6 +133,29 @@ static int const P21[] = {0,1,0,2,0,3
                          ,0,4,1,4,1,2
                          ,2,3,3,4};
 
+static int const H0[] = {MDS_VERTEX,MDS_VERTEX,MDS_VERTEX,MDS_VERTEX
+                        ,MDS_VERTEX,MDS_VERTEX,MDS_VERTEX,MDS_VERTEX};
+static int const H1[] = {MDS_EDGE,MDS_EDGE,MDS_EDGE,MDS_EDGE
+                        ,MDS_EDGE,MDS_EDGE,MDS_EDGE,MDS_EDGE
+                        ,MDS_EDGE,MDS_EDGE,MDS_EDGE,MDS_EDGE};
+static int const H2[] = {MDS_QUADRILATERAL,MDS_QUADRILATERAL,MDS_QUADRILATERAL
+                        ,MDS_QUADRILATERAL,MDS_QUADRILATERAL,MDS_QUADRILATERAL};
+
+static int const H01[] = {0,1,1,2,2,3,3,0
+                         ,0,4,1,5,2,6,3,7
+                         ,4,5,5,6,6,7,7,4};
+static int const H10[] = {0,3,0,1,1, 2,2, 3
+                         ,4,8,5,9,6,10,7,11};
+static int const H12[] = {3,2, 1, 0
+                         ,0,5, 8, 4
+                         ,1,6, 9, 5
+                         ,2,7,10, 6
+                         ,3,4,11, 7
+                         ,8,9,10,11};
+static int const H21[] = {0,1,0,2,0,3,0,4
+                         ,1,4,1,2,2,3,3,4
+                         ,1,5,2,5,3,5,4,5};
+
 int const* mds_types[MDS_TYPES][4] =
 {{0 ,0 ,0 ,0}
 ,{e0,0 ,0 ,0}
@@ -139,6 +164,7 @@ int const* mds_types[MDS_TYPES][4] =
 ,{W0,W1,W2,0}
 ,{P0,P1,P2,0}
 ,{T0,T1,T2,0}
+,{H0,H1,H2,0}
 };
 static int const* convs[MDS_TYPES][4][4] =
 {{{0,0  ,0,0},{0  ,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
@@ -148,6 +174,7 @@ static int const* convs[MDS_TYPES][4][4] =
 ,{{0,W01,0,0},{W10,0,W12,0},{0,W21,0,0},{0,0,0,0}}
 ,{{0,P01,0,0},{P10,0,P12,0},{0,P21,0,0},{0,0,0,0}}
 ,{{0,T01,0,0},{T10,0,T12,0},{0,T21,0,0},{0,0,0,0}}
+,{{0,H01,0,0},{H10,0,H12,0},{0,H21,0,0},{0,0,0,0}}
 };
 
 static void resize_down(struct mds* m, int from, int to,

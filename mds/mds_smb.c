@@ -41,7 +41,7 @@ static int smb2mds(int smb_type)
   ,MDS_EDGE
   ,MDS_TRIANGLE
   ,MDS_QUADRILATERAL
-  ,-1
+  ,MDS_HEXAHEDRON
   ,MDS_WEDGE
   ,MDS_PYRAMID
   ,MDS_TETRAHEDRON};
@@ -50,14 +50,15 @@ static int smb2mds(int smb_type)
 
 static int mds2smb(int mds_type)
 {
-  int const table[SMB_TYPES] =
+  int const table[MDS_TYPES] =
   {SMB_VERT
   ,SMB_EDGE
   ,SMB_TRI
   ,SMB_QUAD
   ,SMB_PRIS
   ,SMB_PYR
-  ,SMB_TET};
+  ,SMB_TET
+  ,SMB_HEX};
   return table[mds_type];
 }
 
@@ -139,8 +140,6 @@ static void read_conn(struct pcu_file* f, struct mds_apf* m)
   int k;
   for (i = 1; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     down.n = down_degree(type_mds);
     cap = m->mds.cap[type_mds];
     dt = mds_types[type_mds][mds_dim[type_mds] - 1];
@@ -169,8 +168,6 @@ static void write_conn(struct pcu_file* f, struct mds_apf* m)
   int k;
   for (i = 1; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     down.n = down_degree(type_mds);
     end = m->mds.end[type_mds];
     size = down.n * end;
@@ -211,8 +208,6 @@ static void read_class(struct pcu_file* f, struct mds_apf* m)
   int i,j;
   for (i = 0; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     cap = m->mds.cap[type_mds];
     size = 2 * cap;
     class = malloc(size * sizeof(*class));
@@ -236,8 +231,6 @@ static void write_class(struct pcu_file* f, struct mds_apf* m)
   int i,j;
   for (i = 0; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     end = m->mds.end[type_mds];
     size = 2 * end;
     class = malloc(size * sizeof(*class));
@@ -435,10 +428,6 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
-      if (type_mds == -1) {
-        assert(sizes[j] == 0);
-        continue;
-      }
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
@@ -471,14 +460,9 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
     for (t = m->tags.first; t; t = t->next) {
       if (t->user_type == mds_apf_long)
         continue;
-      if (type_mds != -1)
-        sizes[j++] = count_tagged(m, t, type_mds);
-      else
-        sizes[j++] = 0;
+      sizes[j++] = count_tagged(m, t, type_mds);
     }
     pcu_write_unsigneds(f, sizes, n);
-    if (type_mds == -1)
-      continue;
     j = 0;
     for (t = m->tags.first; t; t = t->next) {
       if (t->user_type == mds_apf_int)
