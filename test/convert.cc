@@ -24,6 +24,8 @@ static void fixMatches(apf::Mesh2* m)
 
 static void fixPyramids(apf::Mesh2* m)
 {
+  if (apf::countEntitiesOfType(m, apf::Mesh::HEX))
+    return; /* meshadapt can't even look at hexes */
   ma::Input* in = ma::configureIdentity(m);
   in->shouldCleanupLayer = true;
   ma::adapt(in);
