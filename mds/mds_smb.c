@@ -17,6 +17,8 @@
 #include <pcu_io.h>
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 
+enum { SMB_VERSION = 4 };
+
 enum {
   SMB_VERT,
   SMB_EDGE,
@@ -41,7 +43,7 @@ static int smb2mds(int smb_type)
   ,MDS_EDGE
   ,MDS_TRIANGLE
   ,MDS_QUADRILATERAL
-  ,-1
+  ,MDS_HEXAHEDRON
   ,MDS_WEDGE
   ,MDS_PYRAMID
   ,MDS_TETRAHEDRON};
@@ -50,14 +52,15 @@ static int smb2mds(int smb_type)
 
 static int mds2smb(int mds_type)
 {
-  int const table[SMB_TYPES] =
+  int const table[MDS_TYPES] =
   {SMB_VERT
   ,SMB_EDGE
   ,SMB_TRI
   ,SMB_QUAD
   ,SMB_PRIS
   ,SMB_PYR
-  ,SMB_TET};
+  ,SMB_TET
+  ,SMB_HEX};
   return table[mds_type];
 }
 
@@ -100,7 +103,7 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim)
   unsigned magic, np;
   PCU_READ_UNSIGNED(f, magic);
   PCU_READ_UNSIGNED(f, *version);
-  assert(*version <= 3);
+  assert(*version <= SMB_VERSION);
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1)
@@ -110,7 +113,7 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim)
 static void write_header(struct pcu_file* f, unsigned dim)
 {
   unsigned magic = 0;
-  unsigned version = 3;
+  unsigned version = SMB_VERSION;
   unsigned np;
   PCU_WRITE_UNSIGNED(f, magic);
   PCU_WRITE_UNSIGNED(f, version);
@@ -139,8 +142,6 @@ static void read_conn(struct pcu_file* f, struct mds_apf* m)
   int k;
   for (i = 1; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     down.n = down_degree(type_mds);
     cap = m->mds.cap[type_mds];
     dt = mds_types[type_mds][mds_dim[type_mds] - 1];
@@ -169,8 +170,6 @@ static void write_conn(struct pcu_file* f, struct mds_apf* m)
   int k;
   for (i = 1; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     down.n = down_degree(type_mds);
     end = m->mds.end[type_mds];
     size = down.n * end;
@@ -211,8 +210,6 @@ static void read_class(struct pcu_file* f, struct mds_apf* m)
   int i,j;
   for (i = 0; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     cap = m->mds.cap[type_mds];
     size = 2 * cap;
     class = malloc(size * sizeof(*class));
@@ -236,8 +233,6 @@ static void write_class(struct pcu_file* f, struct mds_apf* m)
   int i,j;
   for (i = 0; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
-    if (type_mds == -1)
-      continue;
     end = m->mds.end[type_mds];
     size = 2 * end;
     class = malloc(size * sizeof(*class));
@@ -435,10 +430,6 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
-      if (type_mds == -1) {
-        assert(sizes[j] == 0);
-        continue;
-      }
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
@@ -471,14 +462,9 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
     for (t = m->tags.first; t; t = t->next) {
       if (t->user_type == mds_apf_long)
         continue;
-      if (type_mds != -1)
-        sizes[j++] = count_tagged(m, t, type_mds);
-      else
-        sizes[j++] = 0;
+      sizes[j++] = count_tagged(m, t, type_mds);
     }
     pcu_write_unsigneds(f, sizes, n);
-    if (type_mds == -1)
-      continue;
     j = 0;
     for (t = m->tags.first; t; t = t->next) {
       if (t->user_type == mds_apf_int)
@@ -509,18 +495,25 @@ static void write_type_matches(struct pcu_file* f, struct mds_apf* m, int t)
   mds_free_links(&ln);
 }
 
-static void read_matches(struct pcu_file* f, struct mds_apf* m)
+static void read_matches_old(struct pcu_file* f, struct mds_apf* m)
 {
   int t;
-  for (t = 0; t < MDS_TYPES; ++t)
+  for (t = 0; t < MDS_HEXAHEDRON; ++t)
     read_type_matches(f, m, t);
+}
+
+static void read_matches_new(struct pcu_file* f, struct mds_apf* m)
+{
+  int t;
+  for (t = 0; t < SMB_TYPES; ++t)
+    read_type_matches(f, m, smb2mds(t));
 }
 
 static void write_matches(struct pcu_file* f, struct mds_apf* m)
 {
   int t;
-  for (t = 0; t < MDS_TYPES; ++t)
-    write_type_matches(f, m, t);
+  for (t = 0; t < SMB_TYPES; ++t)
+    write_type_matches(f, m, smb2mds(t));
 }
 
 static struct mds_apf* read_smb(struct gmi_model* model, const char* filename, int zip)
@@ -547,8 +540,10 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename, i
   read_remotes(f, m);
   read_class(f, m);
   read_tags(f, m);
-  if (version >= 3)
-    read_matches(f, m);
+  if (version >= 4)
+    read_matches_new(f, m);
+  else if (version >= 3)
+    read_matches_old(f, m);
   pcu_fclose(f);
   return m;
 }
