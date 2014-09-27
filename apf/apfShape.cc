@@ -503,6 +503,14 @@ FieldShape* getConstant(int dimension)
   return table[dimension];
 }
 
+static Integration const* tryToGetIntegration(int type, int order)
+{
+  EntityIntegration const* ei = getIntegration(type);
+  if (!ei)
+    return 0;
+  return ei->getAccurate(order);
+}
+
 class IPShape : public FieldShape
 {
   public:
@@ -521,14 +529,10 @@ class IPShape : public FieldShape
     {
       if (Mesh::typeDimension[type]!=dimension)
         return 0; //non-elements have no integration points
-      EntityIntegration const* ei = getIntegration(type);
-      if (!ei)
-        return 0; //some types have no integrations at all
-      Integration const* i = ei->getAccurate(order);
+      Integration const* i = tryToGetIntegration(type,order);
       if (!i)
-        return 0; //some types exist but don't support this order
-      int n = i->countPoints();
-      return n;
+        return 0; //some types have no integrations of this order
+      return i->countPoints();
     }
     /* this field can integrate a polynomial of
        this order exactly */
@@ -561,34 +565,32 @@ class VoronoiShape : public IPShape
 {
   public:
     const char* getName() const {return name.c_str();}
-    VoronoiShape(int d, int o) :
-      IPShape(d,o)
+    VoronoiShape(int d, int order) :
+      IPShape(d,order)
     {
       std::stringstream ss;
-      ss << "IPShape_" << d << "_" << o;
+      ss << "VoronoiShape_" << d << "_" << order;
       name = ss.str();
-      elem.init(d,o);
+      for (int type = 0; type < Mesh::TYPES; ++type)
+        if (Mesh::typeDimension[type] == d)
+          elem[type].init(type,order);
     }
     EntityShape* getEntityShape(int type)
     {
-      if (type == Mesh::TET)
-        return &elem;
-      return 0;
+      return &elem[type];
     }
     class Element : public EntityShape
     {
       public:
-        void init(int d, int o)
+        void init(int type, int order)
         {
-          dimension = d;
-          order = o;
-          /* BNG: Mesh:TET here and in CountNodes() should probably
-             be generalized */
-          EntityIntegration const* ei = getIntegration(Mesh::TET);
-          int np = ei->getAccurate(order)->countPoints();
+          Integration const* in = tryToGetIntegration(type,order);
+          if (!in)
+            return;
+          int np = in->countPoints();
           points.setSize(np);
           for (int i = 0; i < np; ++i)
-            points[i] = ei->getAccurate(order)->getPoint(i)->param;
+            points[i] = in->getPoint(i)->param;
         }
         int getClosestPtIdx(
             Vector3 const& p,
@@ -626,18 +628,14 @@ class VoronoiShape : public IPShape
         {
           return points.getSize();
         }
-        int dimension;
-        int order;
-        std::string name;
         DynamicArray<Vector3> points;
     };
     void getNodeXi(int type, int node, Vector3& xi)
     {
-      assert(type == Mesh::TET);
-      xi = elem.points[node];
+      xi = elem[type].points[node];
     }
   private:
-    Element elem;
+    Element elem[Mesh::TYPES];
 };
  
 FieldShape* getVoronoiShape(int dimension, int order)
