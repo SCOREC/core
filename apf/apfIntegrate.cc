@@ -353,6 +353,51 @@ colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch12.d/AFEM.Ch12.pdf */
     }
 };
 
+class HexahedronIntegration : public EntityIntegration
+{
+  public:
+    class N1 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 1;}
+        virtual IntegrationPoint const* getPoint(int) const
+        {
+          static IntegrationPoint point(Vector3(0,0,0),8);
+          return &point;
+        }
+        virtual int getAccuracy() const {return 1;}
+    };
+    class N2 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 8;}
+        virtual IntegrationPoint const* getPoint(int i) const
+        {
+          static double const x = 0.577350269189626;
+          static IntegrationPoint points[8]=
+          { IntegrationPoint(Vector3( x, x, x),1),
+            IntegrationPoint(Vector3(-x, x, x),1),
+            IntegrationPoint(Vector3( x,-x, x),1),
+            IntegrationPoint(Vector3(-x,-x, x),1),
+            IntegrationPoint(Vector3( x, x,-x),1),
+            IntegrationPoint(Vector3(-x, x,-x),1),
+            IntegrationPoint(Vector3( x,-x,-x),1),
+            IntegrationPoint(Vector3(-x,-x,-x),1) };
+          return points + i;
+        }
+        virtual int getAccuracy() const {return 3;}
+    };
+    virtual int countIntegrations() const {return 2;}
+    virtual Integration const* getIntegration(int i) const
+    {
+      static N1 i1;
+      static N2 i2;
+      static Integration* integrations[2] = 
+      {&i1,&i2};
+      return integrations[i];
+    }
+};
+
 EntityIntegration const* getIntegration(int meshEntityType)
 {
   static EdgeIntegration edge;
@@ -360,13 +405,14 @@ EntityIntegration const* getIntegration(int meshEntityType)
   static TetrahedronIntegration tet;
   static PrismIntegration prism;
   static PyramidIntegration pyramid;
+  static HexahedronIntegration hex;
   EntityIntegration* integrations[Mesh::TYPES] =
   {NULL,      //vertex
    &edge,     //edge
    &triangle, //triangle
    NULL,      //quad
    &tet,      //tet
-   NULL,      //hex
+   &hex,      //hex
    &prism,    //prism
    &pyramid}; //pyramid
   return integrations[meshEntityType];
