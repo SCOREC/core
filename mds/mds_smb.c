@@ -17,6 +17,8 @@
 #include <pcu_io.h>
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 
+enum { SMB_VERSION = 4 };
+
 enum {
   SMB_VERT,
   SMB_EDGE,
@@ -101,7 +103,7 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim)
   unsigned magic, np;
   PCU_READ_UNSIGNED(f, magic);
   PCU_READ_UNSIGNED(f, *version);
-  assert(*version <= 3);
+  assert(*version <= SMB_VERSION);
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1)
@@ -111,7 +113,7 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim)
 static void write_header(struct pcu_file* f, unsigned dim)
 {
   unsigned magic = 0;
-  unsigned version = 3;
+  unsigned version = SMB_VERSION;
   unsigned np;
   PCU_WRITE_UNSIGNED(f, magic);
   PCU_WRITE_UNSIGNED(f, version);
@@ -493,18 +495,25 @@ static void write_type_matches(struct pcu_file* f, struct mds_apf* m, int t)
   mds_free_links(&ln);
 }
 
-static void read_matches(struct pcu_file* f, struct mds_apf* m)
+static void read_matches_old(struct pcu_file* f, struct mds_apf* m)
 {
   int t;
-  for (t = 0; t < MDS_TYPES; ++t)
+  for (t = 0; t < MDS_HEXAHEDRON; ++t)
     read_type_matches(f, m, t);
+}
+
+static void read_matches_new(struct pcu_file* f, struct mds_apf* m)
+{
+  int t;
+  for (t = 0; t < SMB_TYPES; ++t)
+    read_type_matches(f, m, smb2mds(t));
 }
 
 static void write_matches(struct pcu_file* f, struct mds_apf* m)
 {
   int t;
-  for (t = 0; t < MDS_TYPES; ++t)
-    write_type_matches(f, m, t);
+  for (t = 0; t < SMB_TYPES; ++t)
+    write_type_matches(f, m, smb2mds(t));
 }
 
 static struct mds_apf* read_smb(struct gmi_model* model, const char* filename, int zip)
@@ -531,8 +540,10 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename, i
   read_remotes(f, m);
   read_class(f, m);
   read_tags(f, m);
-  if (version >= 3)
-    read_matches(f, m);
+  if (version >= 4)
+    read_matches_new(f, m);
+  else if (version >= 3)
+    read_matches_old(f, m);
   pcu_fclose(f);
   return m;
 }
