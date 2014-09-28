@@ -15,6 +15,7 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles)
 {
+  (void)bubbles; //silence clang warning while development is done
   /* open file, read content, etc... */
 }
 
