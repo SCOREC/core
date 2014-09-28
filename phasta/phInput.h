@@ -46,6 +46,7 @@ class Input
     int buildMapping;
     int elementsPerMigration;
     int threaded;
+    int initBubbles;
 };
 
 int countNaturalBCs(Input& in);
