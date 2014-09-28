@@ -19,6 +19,7 @@ static void setDefaults(Input& in)
   in.buildMapping = 0; // Do not build the mapping field by default
   in.elementsPerMigration = 1000*1000; // 100k elms per round
   in.threaded = 1;
+  in.initBubbles = 0;
   in.restartFileName = "restart";
 }
 
@@ -61,6 +62,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["buildMapping"] = &in.buildMapping;
   intMap["elementsPerMigration"] = &in.elementsPerMigration;
   intMap["threaded"] = &in.threaded;
+  intMap["initBubbles"] = &in.initBubbles;
 }
 
 template <class T>

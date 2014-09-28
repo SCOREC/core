@@ -2,6 +2,7 @@
 #include "phOutput.h"
 #include "phLinks.h"
 #include "phAdjacent.h"
+#include "phBubble.h"
 
 namespace ph {
 
@@ -354,6 +355,8 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);
+  if (in.initBubbles)
+    initBubbles(o.mesh, in);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     printf("generated output structs in %f seconds\n",t1 - t0);
