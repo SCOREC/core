@@ -28,12 +28,14 @@ class BasisUtils
   public:
     BasisUtils(apf::Mesh* m);
     int getNumDims();
-    int getNumNodes(apf::Field* f);
-    int getNumQP();
+    int getNumQP(apf::MeshElement* elem, int order);
+    int getNumNodes(apf::Field* f, apf::MeshEntity* elem);
     void getBF(apf::Element* elem, NodeQPScalar& bf);
     void getWBF(apf::Element* elem, NodeQPScalar& w_bf);
     void getGradBF(apf::Element* elem, NodeQPVector& grad_bf);
     void getWGradBF(apf::Element* elem, NodeQPVector& w_grad_bf);
+    void getFirstElem(apf::Field* f, apf::MeshEntity* elem,
+                      apf::MeshElement* me, apf::Element* fe);
   private:
     apf::Mesh* mesh_;
 };

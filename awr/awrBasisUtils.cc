@@ -6,6 +6,8 @@
  */
 
 #include "awrBasisUtils.h"
+#include "apfField.h"
+#include "apfShape.h"
 
 namespace awr {
 
@@ -16,14 +18,19 @@ BasisUtils::BasisUtils(apf::Mesh* m) :
 
 int BasisUtils::getNumDims()
 {
+  return mesh_->getDimension();
 }
 
-int BasisUtils::getNumNodes(apf::Field* f)
+int BasisUtils::getNumQP(apf::MeshElement* elem, int order)
 {
+  return apf::countIntPoints(elem,order);
 }
 
-int BasisUtils::getNumQP()
+int BasisUtils::getNumNodes(apf::Field* f, apf::MeshEntity* elem)
 {
+  int type = mesh_->getType(elem);
+  int num_nodes = f->getShape()->getEntityShape(type)->countNodes();
+  return num_nodes;
 }
 
 void BasisUtils::getBF(apf::Element* elem, NodeQPScalar& bf)
@@ -40,6 +47,20 @@ void BasisUtils::getGradBF(apf::Element* elem, NodeQPVector& grad_bf)
 
 void BasisUtils::getWGradBF(apf::Element* elem, NodeQPVector& w_grad_bf)
 {
+}
+
+
+void BasisUtils::
+getFirstElem(apf::Field* f,
+             apf::MeshEntity* elem,
+             apf::MeshElement* me,
+             apf::Element* fe)
+{
+  apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
+  elem = mesh_->iterate(elems);
+  mesh_->end(elems);
+  me = apf::createMeshElement(mesh_,elem);
+  fe = apf::createElement(f,me);
 }
 
 }
