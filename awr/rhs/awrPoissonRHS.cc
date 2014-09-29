@@ -16,6 +16,8 @@ PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
   RHS(m,p)
 {
   validateParameters();
+  /* assumes uniform mesh */
+  init();
 }
 
 /*****************************************************************************/
@@ -24,6 +26,26 @@ PoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
                    apf::DynamicMatrix& k)
 {
+}
+
+/*****************************************************************************/
+void
+PoissonRHS::
+init()
+{
+  BasisUtils util(mesh_);
+  num_dims_ = util.getNumDims();
+  apf::MeshIterator* elems = mesh_->begin(num_dims_);
+  apf::MeshEntity* e = mesh_->iterate(elems);
+  mesh_->end(elems);
+  num_nodes_ = util.getNumNodes(sol_,e);
+  apf::MeshElement* me = apf::createMeshElement(mesh_,e);
+  num_qp_ = util.getNumQP(me,integration_order_);
+  apf::Element* fe = createElement(sol_,me);
+  util.getGradBF(fe,grad_bf_);
+  util.getWGradBF(fe,w_grad_bf_);
+  apf::destroyMeshElement(me);
+  apf::destroyElement(fe);
 }
 
 /*****************************************************************************/

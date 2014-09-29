@@ -9,6 +9,7 @@
 #define AWRPOISSONRHS_H
 
 #include "awrRHS.h"
+#include "../awrBasisUtils.h"
 #include "apfMatrix.h"
 #include "apfDynamicVector.h"
 
@@ -36,6 +37,12 @@ class PoissonRHS : public RHS
     int integration_order_;
     /** primal solution field */
     apf::Field* sol_;
+    /** gradient of basis functions */
+    NodeQPVector grad_bf_;
+    /** weighted gradient of basis functions */
+    NodeQPVector w_grad_bf_;
+    /** initialize basis stuff */
+    void init();
     /** validate parameters */
     void validateParameters();
   private:

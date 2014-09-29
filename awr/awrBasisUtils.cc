@@ -49,18 +49,4 @@ void BasisUtils::getWGradBF(apf::Element* elem, NodeQPVector& w_grad_bf)
 {
 }
 
-
-void BasisUtils::
-getFirstElem(apf::Field* f,
-             apf::MeshEntity* elem,
-             apf::MeshElement* me,
-             apf::Element* fe)
-{
-  apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
-  elem = mesh_->iterate(elems);
-  mesh_->end(elems);
-  me = apf::createMeshElement(mesh_,elem);
-  fe = apf::createElement(f,me);
-}
-
 }
