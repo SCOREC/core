@@ -53,9 +53,39 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
 {
   apf::Vector3 v_center;
   m->getPoint(v, 0, v_center);
-  /* search through bubbles, etc... */
-  sol[5] = 42;
-  sol[6] = 42;
+
+  int bubbleid = 0;
+  double distx;
+  double disty;
+  double distz;
+  double tmpdist;
+  double distance = 1e99;
+
+  /* search through bubbles, 
+     find the distance to the nearet bubble membrane (sphere) */
+  for(unsigned long i=0; i<bubbles.size(); i++) 
+  {
+    distx = (v_center[0]-bubbles[i].center[0]);
+    disty = (v_center[1]-bubbles[i].center[1]);
+    distz = (v_center[2]-bubbles[i].center[2]);
+    tmpdist = sqrt(distx*distx + disty*disty + distz*distz) - bubbles[i].radius;
+    if(tmpdist < distance)
+    {
+      distance = tmpdist;
+      if (distance < 0) 
+      {
+        bubbleid = bubbles[i].id;
+        break; //if v is inside a bubble, stop searching since bubbles should not intersect each other
+      }
+    }
+  }
+
+//  debug
+//   printf("coord: %lf %lf %lf - Dist: %lf - Bubble id: %d\n", coord[0], coord[1], coord[2], distance, bubbleid);
+
+  sol[5] = distance;
+  sol[6] = static_cast<double>(bubbleid);
+
 }
 
 void initBubbles(apf::Mesh* m, Input& in)
