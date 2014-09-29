@@ -23,7 +23,6 @@ class RHS
     void assemble();
     virtual void 
     evaluateElementRHS(apf::MeshEntity* e,
-                       int integration_order,
                        apf::DynamicMatrix& k) = 0;
   protected:
     apf::Mesh* mesh_;

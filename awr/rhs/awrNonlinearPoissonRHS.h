@@ -19,7 +19,6 @@ class NonlinearPoissonRHS : public RHS
     virtual ~NonlinearPoissonRHS() {};
     virtual void
     evaluateElementRHS(apf::MeshEntity* element,
-                       int integration_order,
                        apf::DynamicMatrix& k);
   private:
     NonlinearPoissonRHS(const NonlinearPoissonRHS&);

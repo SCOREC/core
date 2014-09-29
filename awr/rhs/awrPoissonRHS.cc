@@ -21,7 +21,6 @@ PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
 void
 PoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
-                   int integration_order,
                    apf::DynamicMatrix& k)
 {
 }

@@ -24,7 +24,6 @@ class PoissonRHS : public RHS
     /** evaluate element level stiffness matrix */
     virtual void
     evaluateElementRHS(apf::MeshEntity* element,
-                       int integration_order,
                        apf::DynamicMatrix& k);
   protected:
     /** number of spatial dimensions */
