@@ -26,16 +26,22 @@ apf::DynamicArray<double> > > NodeQPVector;
 class BasisUtils
 {
   public:
-    BasisUtils(apf::Mesh* m);
+    BasisUtils(apf::Mesh* m, apf::Field* f, apf::MeshEntity* e, int o);
+    ~BasisUtils();
     int getNumDims();
-    int getNumQP(apf::MeshElement* elem, int order);
-    int getNumNodes(apf::Field* f, apf::MeshEntity* elem);
-    void getBF(apf::Element* elem, NodeQPScalar& bf);
-    void getWBF(apf::Element* elem, NodeQPScalar& w_bf);
-    void getGradBF(apf::Element* elem, NodeQPVector& grad_bf);
-    void getWGradBF(apf::Element* elem, NodeQPVector& w_grad_bf);
+    int getNumQP();
+    int getNumNodes();
+    void getBF(NodeQPScalar& bf);
+    void getWBF(NodeQPScalar& w_bf);
+    void getGradBF(NodeQPVector& grad_bf);
+    void getWGradBF(NodeQPVector& w_grad_bf);
   private:
     apf::Mesh* mesh_;
+    apf::Field* sol_;
+    apf::MeshEntity* elem_;
+    apf::MeshElement* mesh_elem_;
+    apf::Element* field_elem_;
+    int order_;
 };
 
 }

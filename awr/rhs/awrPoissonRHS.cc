@@ -33,19 +33,15 @@ void
 PoissonRHS::
 init()
 {
-  BasisUtils util(mesh_);
-  num_dims_ = util.getNumDims();
-  apf::MeshIterator* elems = mesh_->begin(num_dims_);
+  apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
   apf::MeshEntity* e = mesh_->iterate(elems);
   mesh_->end(elems);
-  num_nodes_ = util.getNumNodes(sol_,e);
-  apf::MeshElement* me = apf::createMeshElement(mesh_,e);
-  num_qp_ = util.getNumQP(me,integration_order_);
-  apf::Element* fe = createElement(sol_,me);
-  util.getGradBF(fe,grad_bf_);
-  util.getWGradBF(fe,w_grad_bf_);
-  apf::destroyMeshElement(me);
-  apf::destroyElement(fe);
+  BasisUtils util(mesh_,sol_,e,integration_order_);
+  num_dims_ = util.getNumDims();
+  num_nodes_ = util.getNumNodes();
+  num_qp_ = util.getNumQP();
+  util.getGradBF(grad_bf_);
+  util.getWGradBF(w_grad_bf_);
 }
 
 /*****************************************************************************/
@@ -61,7 +57,6 @@ validateParameters()
         true, Teuchos::Exceptions::InvalidParameter,
         "AWR: Poisson RHS: solution field with name \""
         << name << "\" does not exist\n");
-                             
 }
 
 /*****************************************************************************/

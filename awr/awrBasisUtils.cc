@@ -11,9 +11,21 @@
 
 namespace awr {
 
-BasisUtils::BasisUtils(apf::Mesh* m) :
-  mesh_(m)
+BasisUtils::BasisUtils(apf::Mesh* m, apf::Field* f,
+                       apf::MeshEntity* e, int o) :
+  mesh_(m),
+  sol_(f),
+  elem_(e),
+  order_(o)
 {
+  mesh_elem_ = apf::createMeshElement(mesh_,elem_);
+  field_elem_ = apf::createElement(sol_,mesh_elem_);
+}
+
+BasisUtils::~BasisUtils()
+{
+  apf::destroyMeshElement(mesh_elem_);
+  apf::destroyElement(field_elem_);
 }
 
 int BasisUtils::getNumDims()
@@ -21,31 +33,31 @@ int BasisUtils::getNumDims()
   return mesh_->getDimension();
 }
 
-int BasisUtils::getNumQP(apf::MeshElement* elem, int order)
+int BasisUtils::getNumQP()
 {
-  return apf::countIntPoints(elem,order);
+  return apf::countIntPoints(mesh_elem_,order_);
 }
 
-int BasisUtils::getNumNodes(apf::Field* f, apf::MeshEntity* elem)
+int BasisUtils::getNumNodes()
 {
-  int type = mesh_->getType(elem);
-  int num_nodes = f->getShape()->getEntityShape(type)->countNodes();
+  int type = mesh_->getType(elem_);
+  int num_nodes = sol_->getShape()->getEntityShape(type)->countNodes();
   return num_nodes;
 }
 
-void BasisUtils::getBF(apf::Element* elem, NodeQPScalar& bf)
+void BasisUtils::getBF(NodeQPScalar& bf)
 {
 }
 
-void BasisUtils::getWBF(apf::Element* elem, NodeQPScalar& w_bf)
+void BasisUtils::getWBF(NodeQPScalar& w_bf)
 {
 }
 
-void BasisUtils::getGradBF(apf::Element* elem, NodeQPVector& grad_bf)
+void BasisUtils::getGradBF(NodeQPVector& grad_bf)
 {
 }
 
-void BasisUtils::getWGradBF(apf::Element* elem, NodeQPVector& w_grad_bf)
+void BasisUtils::getWGradBF(NodeQPVector& w_grad_bf)
 {
 }
 
