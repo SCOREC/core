@@ -33,12 +33,6 @@ class PoissonRHS : public RHS
     int num_nodes_;
     /** number of element quadrature points */
     int num_qp_;
-    /** shape functions */
-    apf::DynamicVector N_;
-    /** shape function derivatives */
-    apf::DynamicMatrix dN_;
-    /** element Jacobian transformation */
-    apf::Matrix3x3 jac_;
     /** validate parameters */
     void validateParameters();
   private:
