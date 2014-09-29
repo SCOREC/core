@@ -15,6 +15,7 @@ PoissonRHS::
 PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
   RHS(m,p)
 {
+  validateParameters();
 }
 
 /*****************************************************************************/
@@ -30,7 +31,15 @@ void
 PoissonRHS::
 validateParameters()
 {
-  std::string n = params_.get("Primal Solution Field Name","");
+  integration_order_ = params_.get("Integration Order",2); 
+  std::string name = params_.get("Primal Solution Field Name","");
+  sol_ = mesh_->findField(name.c_str());
+  if (sol_ == NULL)
+    TEUCHOS_TEST_FOR_EXCEPTION(
+        true, Teuchos::Exceptions::InvalidParameter,
+        "AWR: Poisson RHS: solution field with name \""
+        << name << "\" does not exist\n");
+                             
 }
 
 /*****************************************************************************/

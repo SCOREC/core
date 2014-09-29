@@ -32,6 +32,10 @@ class PoissonRHS : public RHS
     int num_nodes_;
     /** number of element quadrature points */
     int num_qp_;
+    /** integration order */
+    int integration_order_;
+    /** primal solution field */
+    apf::Field* sol_;
     /** validate parameters */
     void validateParameters();
   private:
