@@ -1,7 +1,9 @@
+#include <PCU.h>
 #include "phBubble.h"
 #include "phInput.h"
 #include <apfMesh.h>
 #include <apf.h>
+#include <stdio.h>
 
 namespace ph {
 
@@ -15,8 +17,35 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles)
 {
-  (void)bubbles; //silence clang warning while development is done
-  /* open file, read content, etc... */
+  char bubblefname[256];
+  FILE *filebubble;
+  Bubble readbubble;
+
+  sprintf(bubblefname,"bubbles.inp");
+  if (!PCU_Comm_Self())
+    printf("reading bubbles info from %s\n",bubblefname);
+
+  filebubble = fopen(bubblefname, "r");
+  assert(filebubble != NULL); 
+  while(1)
+  {
+    fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id, &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
+    if(feof(filebubble)) break;
+    bubbles.push_back(readbubble);
+  }
+  fclose(filebubble);
+
+  if (!PCU_Comm_Self())
+    printf("%lu bubbles found in %s\n", bubbles.size(), bubblefname);
+
+// Debug
+/*
+  for(unsigned long i=0; i<bubbles.size(); i++)
+  {
+    printf("%d %lf %lf %lf %lf\n", bubbles[i].id, bubbles[i].center[0], bubbles[i].center[1], bubbles[i].center[2], bubbles[i].radius);
+  }
+*/
+
 }
 
 void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
