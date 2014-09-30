@@ -81,6 +81,8 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
         bubbleid = bubbles[i].id;
         break; //if v is inside a bubble, stop searching since bubbles should not intersect each other
       }
+      else
+        bubbleid = -bubbles[i].id; // a negative value still give the id of the nearest bubble
     }
   }
 
