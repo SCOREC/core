@@ -1,7 +1,9 @@
+#include <PCU.h>
 #include "phBubble.h"
 #include "phInput.h"
 #include <apfMesh.h>
 #include <apf.h>
+#include <stdio.h>
 
 namespace ph {
 
@@ -15,8 +17,39 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles)
 {
-  (void)bubbles; //silence clang warning while development is done
-  /* open file, read content, etc... */
+  unsigned long bubblecount = 0;
+  char bubblefname[256];
+  FILE *filebubble;
+  Bubble readbubble;
+
+  sprintf(bubblefname,"bubbles.inp");
+  if (!PCU_Comm_Self())
+    printf("reading bubbles info from %s\n",bubblefname);
+
+  filebubble = fopen(bubblefname, "r");
+  assert(filebubble != NULL); 
+  while(1)
+  {
+    // File format (each line represents a bubble): x_center y_center z_center radius
+    fscanf(filebubble, "%lf %lf %lf %lf", &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
+    if(feof(filebubble)) break;
+    bubblecount++;
+    readbubble.id = bubblecount;
+    bubbles.push_back(readbubble);
+  }
+  fclose(filebubble);
+
+  if (!PCU_Comm_Self())
+    printf("%lu bubbles found in %s\n", bubbles.size(), bubblefname);
+
+// Debug
+/*
+  for(unsigned long i=0; i<bubbles.size(); i++)
+  {
+    printf("%d %lf %lf %lf %lf\n", bubbles[i].id, bubbles[i].center[0], bubbles[i].center[1], bubbles[i].center[2], bubbles[i].radius);
+  }
+*/
+
 }
 
 void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
@@ -24,9 +57,41 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
 {
   apf::Vector3 v_center;
   m->getPoint(v, 0, v_center);
-  /* search through bubbles, etc... */
-  sol[5] = 42;
-  sol[6] = 42;
+
+  int bubbleid = 0;
+  double distx;
+  double disty;
+  double distz;
+  double tmpdist;
+  double distance = 1e99;
+
+  /* search through bubbles, 
+     find the distance to the nearet bubble membrane (sphere) */
+  for(unsigned long i=0; i<bubbles.size(); i++) 
+  {
+    distx = (v_center[0]-bubbles[i].center[0]);
+    disty = (v_center[1]-bubbles[i].center[1]);
+    distz = (v_center[2]-bubbles[i].center[2]);
+    tmpdist = sqrt(distx*distx + disty*disty + distz*distz) - bubbles[i].radius;
+    if(tmpdist < distance)
+    {
+      distance = tmpdist;
+      if (distance < 0) 
+      {
+        bubbleid = bubbles[i].id;
+        break; //if v is inside a bubble, stop searching since bubbles should not intersect each other
+      }
+      else
+        bubbleid = -bubbles[i].id; // a negative value still give the id of the nearest bubble
+    }
+  }
+
+//  debug
+//   printf("coord: %lf %lf %lf - Dist: %lf - Bubble id: %d\n", coord[0], coord[1], coord[2], distance, bubbleid);
+
+  sol[5] = distance;
+  sol[6] = static_cast<double>(bubbleid);
+
 }
 
 void initBubbles(apf::Mesh* m, Input& in)
