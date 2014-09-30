@@ -17,6 +17,7 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles)
 {
+  unsigned long bubblecount = 0;
   char bubblefname[256];
   FILE *filebubble;
   Bubble readbubble;
@@ -29,8 +30,11 @@ void readBubbles(Bubbles& bubbles)
   assert(filebubble != NULL); 
   while(1)
   {
-    fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id, &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
+    // File format (each line represents a bubble): x_center y_center z_center radius
+    fscanf(filebubble, "%lf %lf %lf %lf", &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
     if(feof(filebubble)) break;
+    bubblecount++;
+    readbubble.id = bubblecount;
     bubbles.push_back(readbubble);
   }
   fclose(filebubble);
