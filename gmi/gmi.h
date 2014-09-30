@@ -92,6 +92,7 @@ struct gmi_model_ops {
 struct gmi_model {
   /** \brief pointer to interface definition */
   struct gmi_model_ops const* ops;
+  /** \brief number of model entities per dimension */
   int n[4];
 };
 
