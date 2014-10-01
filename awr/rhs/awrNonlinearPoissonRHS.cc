@@ -20,7 +20,6 @@ NonlinearPoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
 void
 NonlinearPoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
-                   int integration_order,
                    apf::DynamicMatrix& k)
 {
 }

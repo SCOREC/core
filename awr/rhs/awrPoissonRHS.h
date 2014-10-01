@@ -9,6 +9,7 @@
 #define AWRPOISSONRHS_H
 
 #include "awrRHS.h"
+#include "../awrBasisUtils.h"
 #include "apfMatrix.h"
 #include "apfDynamicVector.h"
 
@@ -24,7 +25,6 @@ class PoissonRHS : public RHS
     /** evaluate element level stiffness matrix */
     virtual void
     evaluateElementRHS(apf::MeshEntity* element,
-                       int integration_order,
                        apf::DynamicMatrix& k);
   protected:
     /** number of spatial dimensions */
@@ -33,12 +33,16 @@ class PoissonRHS : public RHS
     int num_nodes_;
     /** number of element quadrature points */
     int num_qp_;
-    /** shape functions */
-    apf::DynamicVector N_;
-    /** shape function derivatives */
-    apf::DynamicMatrix dN_;
-    /** element Jacobian transformation */
-    apf::Matrix3x3 jac_;
+    /** integration order */
+    int integration_order_;
+    /** primal solution field */
+    apf::Field* sol_;
+    /** gradient of basis functions */
+    NodeQPVector grad_bf_;
+    /** weighted gradient of basis functions */
+    NodeQPVector w_grad_bf_;
+    /** initialize basis stuff */
+    void init();
     /** validate parameters */
     void validateParameters();
   private:

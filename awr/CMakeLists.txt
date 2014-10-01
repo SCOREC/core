@@ -27,6 +27,7 @@ if(BUILD_IN_TRILINOS)
   #Sources & Headers
   set(SOURCES
     awr.cc
+    awrBasisUtils.cc
     rhs/awrRHS.cc
     rhs/awrRHSFactory.cc
     rhs/awrPoissonRHS.cc
