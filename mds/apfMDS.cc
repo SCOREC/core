@@ -113,6 +113,7 @@ class MeshMDS : public Mesh2
       cap[MDS_WEDGE] = countEntitiesOfType(from,PRISM);
       cap[MDS_PYRAMID] = countEntitiesOfType(from,PYRAMID);
       cap[MDS_TETRAHEDRON] = countEntitiesOfType(from,TET);
+      cap[MDS_HEXAHEDRON] = countEntitiesOfType(from,HEX);
       int d = from->getDimension();
       mesh = mds_apf_create(m,d,cap);
       isMatched = from->hasMatching();
