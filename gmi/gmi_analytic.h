@@ -39,6 +39,7 @@ struct gmi_model* gmi_make_analytic(void);
                 gmi_range will return ranges[d] */
 void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
     gmi_analytic_fun f, int* periodic, double (*ranges)[2]);
+void gmi_add_analytic_region(struct gmi_model* m, int tag);
 
 #ifdef __cplusplus
 }

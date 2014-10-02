@@ -57,6 +57,11 @@ void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
   }
 }
 
+void gmi_add_analytic_region(struct gmi_model* m, int tag)
+{
+  gmi_null_find(m, 3, tag);
+}
+
 static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
   int i;
