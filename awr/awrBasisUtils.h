@@ -28,9 +28,9 @@ class BasisUtils
   public:
     BasisUtils(apf::Mesh* m, apf::Field* f, apf::MeshEntity* e, int o);
     ~BasisUtils();
-    int getNumDims();
-    int getNumQP();
-    int getNumNodes();
+    int getNumDims(){return num_dims_;};
+    int getNumQP(){return num_qp_;};
+    int getNumNodes(){return num_nodes_;};
     void getBF(NodeQPScalar& bf);
     void getWBF(NodeQPScalar& w_bf);
     void getGradBF(NodeQPVector& grad_bf);
@@ -42,6 +42,9 @@ class BasisUtils
     apf::MeshElement* mesh_elem_;
     apf::Element* field_elem_;
     int order_;
+    int num_dims_;
+    int num_qp_;
+    int num_nodes_;
 };
 
 }
