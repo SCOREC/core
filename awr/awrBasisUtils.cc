@@ -52,6 +52,15 @@ void BasisUtils::getBF(NodeQPScalar& bf)
 void BasisUtils::getWBF(NodeQPScalar& w_bf)
 {
   this->getBF(w_bf);
+  apf::Vector3 param;
+  for (int qp=0; qp < num_qp_; ++qp)
+  {
+    apf::getIntPoint(mesh_elem_,order_,qp,param);
+    double w = apf::getIntWeight(mesh_elem_,order_,qp);
+    double j = apf::getDV(mesh_elem_,param);
+    for (int n=0; n < num_qp_; ++n)
+      w_bf[n][qp] *= w*j;
+  }
 }
 
 void BasisUtils::getGradBF(NodeQPVector& grad_bf)
@@ -62,18 +71,6 @@ void BasisUtils::getGradBF(NodeQPVector& grad_bf)
   for (int n=0; n < num_nodes_; ++n)
   for (int qp=0; qp < num_qp_; ++qp)
     grad_bf[n][qp].setSize(num_dims_);
-  apf::NewArray<apf::Vector3> grads;
-  apf::Vector3 param;
-  for (int qp=0; qp < num_qp_; ++qp)
-  {
-    apf::getIntPoint(mesh_elem_,order_,qp,param);
-    int type = mesh_->getType(elem_);
-    sol_->getShape()->getEntityShape(type)->
-      getLocalGradients(param,grads);
-    for (int n=0; n < num_nodes_; ++n)
-    for (int i=0; i < num_dims_; ++i)
-      grad_bf[n][qp][i] = grads[n][i];
-  }
 }
 
 void BasisUtils::getWGradBF(NodeQPVector& w_grad_bf)
