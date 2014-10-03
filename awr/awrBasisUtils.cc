@@ -8,6 +8,7 @@
 #include "awrBasisUtils.h"
 #include "apfField.h"
 #include "apfShape.h"
+#include "apfVectorElement.h"
 
 namespace awr {
 
@@ -23,7 +24,7 @@ BasisUtils::BasisUtils(apf::Mesh* m, apf::Field* f,
   int type = mesh_->getType(elem_);
   num_nodes_ = sol_->getShape()->getEntityShape(type)->countNodes();
   num_dims_ = mesh_->getDimension();
-  num_qp_ = apf::countIntPoints(mesh_elem_,order_); 
+  num_qp_ = apf::countIntPoints(mesh_elem_,order_);
 }
 
 BasisUtils::~BasisUtils()
@@ -71,6 +72,26 @@ void BasisUtils::getGradBF(NodeQPVector& grad_bf)
   for (int n=0; n < num_nodes_; ++n)
   for (int qp=0; qp < num_qp_; ++qp)
     grad_bf[n][qp].setSize(num_dims_);
+  apf::Vector3 param;
+  apf::Matrix3x3 j;
+  apf::Matrix3x3 j_inv;
+  apf::NewArray<apf::Vector3> grads;
+  apf::Vector3 global_grad;
+  for (int qp=0; qp < num_qp_; ++qp)
+  {
+    apf::getIntPoint(mesh_elem_,order_,qp,param);
+    mesh_elem_->getJacobian(param,j);
+    j_inv = invert(j);
+    int type = mesh_->getType(elem_);
+    sol_->getShape()->getEntityShape(type)->
+      getLocalGradients(param,grads);
+    for (int n=0; n < num_nodes_; ++n)
+    {
+      global_grad = j_inv*grads[n];
+      for (int i=0; i < num_dims_; ++i)
+        grad_bf[n][qp][i] = global_grad[i];
+    }
+  }
 }
 
 void BasisUtils::getWGradBF(NodeQPVector& w_grad_bf)
