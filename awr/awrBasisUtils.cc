@@ -6,6 +6,7 @@
  */
 
 #include "awrBasisUtils.h"
+#include "apfField.h"
 #include "apfShape.h"
 #include "apfVectorElement.h"
 
