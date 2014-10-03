@@ -95,6 +95,16 @@ void BasisUtils::getGradBF(NodeQPVector& grad_bf)
 void BasisUtils::getWGradBF(NodeQPVector& w_grad_bf)
 {
   this->getGradBF(w_grad_bf);
+  for (int qp=0; qp < num_qp_; ++qp)
+  {
+    apf::Vector3 param;
+    apf::getIntPoint(mesh_elem_,order_,qp,param);
+    double w = apf::getIntWeight(mesh_elem_,order_,qp);
+    double j = apf::getDV(mesh_elem_,param);
+    for (int n=0; n < num_qp_; ++n)
+    for (int i=0; i < num_dims_; ++i)
+      w_grad_bf[n][qp][i] *= w*j;
+  }
 }
 
 }
