@@ -17,7 +17,7 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles)
 {
-  unsigned long bubblecount = 0;
+//  unsigned long bubblecount = 0; //May be used later but the bubble id has to be read for now from the input file
   char bubblefname[256];
   FILE *filebubble;
   Bubble readbubble;
@@ -31,10 +31,10 @@ void readBubbles(Bubbles& bubbles)
   while(1)
   {
     // File format (each line represents a bubble): x_center y_center z_center radius
-    fscanf(filebubble, "%lf %lf %lf %lf", &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
+    fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id, &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
     if(feof(filebubble)) break;
-    bubblecount++;
-    readbubble.id = bubblecount;
+//    bubblecount++;
+//    readbubble.id = bubblecount;
     bubbles.push_back(readbubble);
   }
   fclose(filebubble);
@@ -58,12 +58,12 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
   apf::Vector3 v_center;
   m->getPoint(v, 0, v_center);
 
-  int bubbleid = 0;
+  int bubbleid = 0; // Initialization critical here
   double distx;
   double disty;
   double distz;
   double tmpdist;
-  double distance = 1e99;
+  double distance = 1e99; // Initialization critical here
 
   /* search through bubbles, 
      find the distance to the nearet bubble membrane (sphere) */
@@ -81,8 +81,11 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
         bubbleid = bubbles[i].id;
         break; //if v is inside a bubble, stop searching since bubbles should not intersect each other
       }
-      else
-        bubbleid = -bubbles[i].id; // a negative value still give the id of the nearest bubble
+      // A negative bubble id could be useful to know the nearest bubble of a point in the liquid phase.
+      // However, phasta is not ready to handle this and the feature is not critical so ignore for now.
+      // Ths can be pratical for debug purpose though.
+//      else
+//        bubbleid = -bubbles[i].id;    
     }
   }
 
