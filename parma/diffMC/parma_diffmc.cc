@@ -388,17 +388,17 @@ void Parma::improveBalance(const priorityList& pl, const int plIdx) {
  *
  * @return zero on success, non-zero otherwise
  */ 
-int Parma::run(int (*priority)[4], const int dbgLvl, 
-    const int maxIter, const double maxImb) { 
+int Parma::run(int (*priority)[4], const int dbgLvl_, 
+    const int maxIter_, const double maxImb_) { 
    //ParMA_Embed_Version();
    if ( 0 == PCU_Comm_Self() )
      ParMA_Print_Version();
 
    if( PCU_Comm_Peers() == 1 ) return 0; // can't do much with a serial mesh
 
-   this->dbgLvl = dbgLvl;
-   this->maxIter = maxIter;
-   this->maxImb = maxImb;
+   this->dbgLvl = dbgLvl_;
+   this->maxIter = maxIter_;
+   this->maxImb = maxImb_;
 
    double t1 = MPI_Wtime();
    priorityList pl;

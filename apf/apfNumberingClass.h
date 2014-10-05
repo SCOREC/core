@@ -26,7 +26,7 @@ class NumberingOf : public FieldBase
     void init(Field* f);
     Field* getField();
     FieldDataOf<T>* getData();
-    void getAll(MeshEntity* e, T* data);
+    void getAll(MeshEntity* e, T* dat);
     T get(MeshEntity* e, int node, int component);
     void set(MeshEntity* e, int node, int component, T value);
   private:

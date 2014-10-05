@@ -81,7 +81,12 @@ bool PCU_Comm_Read(int* from_rank, void** data, size_t* size);
 
 /*Debug file I/O API*/
 void PCU_Debug_Open(void);
-void PCU_Debug_Print(const char* format, ...) __attribute__((format(printf,1,2)));
+#ifdef __GNUC__
+void PCU_Debug_Print(const char* format, ...)
+  __attribute__((format(printf,1,2)));
+#else
+void PCU_Debug_Print(const char* format, ...);
+#endif
 
 /*lesser-used APIs*/
 bool PCU_Comm_Initialized(void);
