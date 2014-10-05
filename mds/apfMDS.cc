@@ -650,7 +650,7 @@ static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
 
-static void* splitThrdMain(void*)
+extern "C" void* splitThrdMain(void*)
 {
   Mesh2* m;
   Migration* plan;

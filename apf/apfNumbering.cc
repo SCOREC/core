@@ -46,9 +46,9 @@ template <class T>
 void NumberingOf<T>::init(Field* f)
 {
   field = f;
-  std::string name = f->getName();
-  name += "_num";
-  init(name.c_str(),
+  std::string nm = f->getName();
+  nm += "_num";
+  init(nm.c_str(),
       f->getMesh(),
       f->getShape(),
       f->countComponents());
@@ -64,16 +64,16 @@ FieldDataOf<T>* NumberingOf<T>::getData()
 }
 
 template <class T>
-void NumberingOf<T>::getAll(MeshEntity* e, T* data)
+void NumberingOf<T>::getAll(MeshEntity* e, T* dat)
 {
   int n = countValuesOn(e);
   FieldDataOf<T>* fieldData = getData();
   if (fieldData->hasEntity(e))
-    fieldData->get(e,data);
+    fieldData->get(e,dat);
   else
   { //default initialization to free and not numbered
     for (int i=0; i < n; ++i)
-      data[i] = FREE_BUT_NOT_NUMBERED;
+      dat[i] = FREE_BUT_NOT_NUMBERED;
   }
 }
 

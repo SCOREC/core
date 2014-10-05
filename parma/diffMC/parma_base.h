@@ -18,7 +18,6 @@ namespace parma {
     private:
       Balancer();
       apf::Mesh* m;
-      double maxImb;
       apf::MeshTag* w;
       double alpha;
       int verbose;
