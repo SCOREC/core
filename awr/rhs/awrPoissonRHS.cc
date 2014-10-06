@@ -26,6 +26,17 @@ PoissonRHS::
 evaluateElementRHS(apf::MeshEntity* element,
                    apf::DynamicMatrix& k)
 {
+  k.setSize(num_nodes_,num_nodes_);
+  for (int a=0; a < k.getRows(); ++a)
+  {
+    for (int b=0; b < k.getColumns(); ++b)
+    {
+      k(a,b) = 0.0;
+      for (int qp=0; qp < num_qp_; ++qp)
+      for (int i=0; i < num_dims_; ++i)
+        k(a,b) += grad_bf_[a][qp][i] * w_grad_bf_[b][qp][i];
+    }
+  }
 }
 
 /*****************************************************************************/
