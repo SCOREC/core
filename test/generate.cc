@@ -17,20 +17,25 @@
 #include "SimAttribute.h"
 #include "ModelTypes.h"
 
-/* The fields in this sturcture are set mainly based on the "Surface Meshing" and "Volume Meshing"
-   attributes in the meshing case. */
+/* The fields in this structure are set mainly based on the "Surface Meshing" 
+   and "Volume Meshing" attributes in the meshing case. */
 struct AdvMeshing_EXPORT MeshingOptions {
   bool surfaceRun;                // whether to run surface meshing
   bool surfaceDoFixIntersections; // whether to run fix self intersections
   bool surfaceDoCurve;            // whether to curve surface mesh
+  double proximityMeshSize;
 
-  // These correspond as indicated to the fields in the "Surface Meshing" attribute
+  int maxFaces, maxRegions; // abort surf/vol meshing if these max numbers 
+                            //  are exceeded
+
+  // These correspond as indicated to the fields in the 
+  //  "Surface Meshing" attribute
   int surfaceSmoothingLevel;      // "Smoothing Level"
   int surfaceSmoothingType;       // "Smoothing Type"
   int surfaceFixIntersections;    // "Fix Intersections"
   int surfaceOptimization;        // "Optimization"
   int surfaceEnforceGradation;    // "Enforce Spatial Gradation"
-  double surfaceFaceRotationLimit;// "Discrete Face Rotation Limit"
+  double surfaceFaceRotationLimit;// "Discrete Face Rotation Limit" 
   int surfaceCurveType;           // ignore
 
   bool volumeRun;                 // whether to run volume meshing
@@ -38,7 +43,8 @@ struct AdvMeshing_EXPORT MeshingOptions {
   bool volumeDoUnstructured;      // always true
   bool volumeDoCurve;             // whether to run mesh curving
 
-  // These correspond as indicated to the fields in the "Volume Meshing" attribute
+  // These correspond as indicated to the fields in the 
+  //  "Volume Meshing" attribute
   int volumeEnforceSize;          // "Enforce Size"
   int volumeSmoothingLevel;       // "Smoothing Level"
   int volumeSmoothingType;        // "Smoothing Type"
@@ -46,7 +52,9 @@ struct AdvMeshing_EXPORT MeshingOptions {
   int volumeCurveType;            // ignore
 };
 
-AdvMeshing_EXPORT void MS_setupSimModelerMeshCase(pACase sourceCase, pACase meshCase, MeshingOptions *options);
+void MS_setupSimModelerMeshCase(pACase sourceCase, pACase meshCase, 
+MeshingOptions *options);
+
 pAManager SModel_attManager(pModel model);
 
 namespace {
