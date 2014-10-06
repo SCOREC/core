@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <gmi.h>
 #include <SimModel.h>
+#include <vector>
 
 #include "gmi_sim_config.h"
 
@@ -139,6 +140,59 @@ static gmi_set* plist_to_set(pPList l)
   return s;
 }
 
+/* GF_regions removes duplicates (in some versions of the code)
+   which destroys valuable non-manifold information for us.
+   So, custom code here */
+static int face_regions2(pGFace face, pGRegion regions[2])
+{
+  int nregions = 0;
+  for (int i = 0; i < 2; ++i) {
+    pGFaceUse use = GF_use(face, i);
+    if (use) {
+      pGRegion region = GFU_region(use);
+      if (region)
+        regions[nregions++] = region;
+    }
+  }
+  return nregions;
+}
+
+static gmi_set* face_regions(pGFace face)
+{
+  pGRegion regions[2];
+  int nregions = face_regions2(face, regions);
+  gmi_set* s = gmi_make_set(nregions);
+  for (int i = 0; i < nregions; ++i)
+    s->e[i] = (gmi_ent*)regions[i];
+  return s;
+}
+
+/* same story as above, want to preserve duplicates
+   for non-manifold faces.
+ unfortunately, simmetrix doesn't expose a shell api,
+ so we have to do this horrible "check whether each
+ face should actually have shown up twice" thing. */
+static gmi_set* region_faces(pGRegion region)
+{
+  pPList unique_faces;
+  std::vector<pGFace> faces;
+  unique_faces = GR_faces(region);
+  faces.reserve(PList_size(unique_faces));
+  for (int i = 0; i < PList_size(unique_faces); ++i) {
+    pGFace face = (pGFace)PList_item(unique_faces, i);
+    faces.push_back(face);
+    pGRegion regions[2];
+    int nregions = face_regions2(face, regions);
+    if ((nregions == 2) && (regions[0] == regions[1]))
+      faces.push_back(face);
+  }
+  PList_delete(unique_faces);
+  gmi_set* s = gmi_make_set(faces.size());
+  for (int i = 0; i < s->n; ++i)
+    s->e[i] = (gmi_ent*)faces[i];
+  return s;
+}
+
 static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
 {
   int edim = gmi_dim(m, e);
@@ -147,13 +201,13 @@ static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
   if (edim == 2 && dim == 1)
     return plist_to_set(GF_edges((pGFace)e));
   if (edim == 3 && dim == 2)
-    return plist_to_set(GR_faces((pGRegion)e));
+    return region_faces((pGRegion)e);
   if (edim == 0 && dim == 1)
     return plist_to_set(GV_edges((pGVertex)e));
   if (edim == 1 && dim == 2)
     return plist_to_set(GE_faces((pGEdge)e));
   if (edim == 2 && dim == 3)
-    return plist_to_set(GF_regions((pGFace)e));
+    return face_regions((pGFace)e);
   if (edim == 3 && dim == 4) /* sometimes people just keep looking up */
     return gmi_make_set(0);
   gmi_fail("requested adjacency is not one-level");
