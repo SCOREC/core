@@ -38,6 +38,8 @@ solveAdjointProblem(apf::Mesh* mesh,
 {
   RHSFactory rhsFactory(mesh,params);
   Teuchos::RCP<RHS> rhs = rhsFactory.create();
+  apf::Field* f = NULL;
+  return f;
 }
 
 }

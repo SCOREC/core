@@ -565,15 +565,15 @@ class VoronoiShape : public IPShape
 {
   public:
     const char* getName() const {return name.c_str();}
-    VoronoiShape(int d, int order) :
-      IPShape(d,order)
+    VoronoiShape(int d, int o) :
+      IPShape(d,o)
     {
       std::stringstream ss;
-      ss << "VoronoiShape_" << d << "_" << order;
+      ss << "VoronoiShape_" << d << "_" << o;
       name = ss.str();
       for (int type = 0; type < Mesh::TYPES; ++type)
         if (Mesh::typeDimension[type] == d)
-          elem[type].init(type,order);
+          elem[type].init(type,o);
     }
     EntityShape* getEntityShape(int type)
     {
@@ -592,9 +592,7 @@ class VoronoiShape : public IPShape
           for (int i = 0; i < np; ++i)
             points[i] = in->getPoint(i)->param;
         }
-        int getClosestPtIdx(
-            Vector3 const& p,
-            DynamicArray<Vector3> const& points) const
+        int getClosestPtIdx(Vector3 const& p) const
         {
           int idx = 0;
           double leastDistance = (p - points[0]).getLength();
@@ -609,14 +607,12 @@ class VoronoiShape : public IPShape
           }
           return idx;
         }
-        void getValues(
-            Vector3 const& xi, 
-            NewArray<double>& values) const
+        void getValues(Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(points.getSize());
           for (size_t i = 0; i < points.getSize(); ++i)
             values[i] = 0.0;
-          values[getClosestPtIdx(xi,points)] = 1.0;
+          values[getClosestPtIdx(xi)] = 1.0;
         }
         void getLocalGradients(
             Vector3 const&,

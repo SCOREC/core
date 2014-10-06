@@ -24,8 +24,8 @@ class Parma {
       Parma(apf::Mesh*& m);
       Parma(apf::Mesh*& m, apf::MeshTag* tag);
       ~Parma();
-      int run(int (*priority)[4], const int dbgLvl, 
-          const int maxIter, const double maxImb);
+      int run(int (*priority)[4], const int dbgLvl_,
+          const int maxIter_, const double maxImb_);
    protected: 
       apf::Mesh* mesh;
    private:
