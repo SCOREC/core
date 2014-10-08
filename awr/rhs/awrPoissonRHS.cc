@@ -47,7 +47,7 @@ init()
   apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
   apf::MeshEntity* e = mesh_->iterate(elems);
   mesh_->end(elems);
-  BasisUtils util(mesh_,sol_,e,integration_order_);
+  BasisUtils util(sol_,e,integration_order_);
   num_dims_ = util.getNumDims();
   num_nodes_ = util.getNumNodes();
   num_qp_ = util.getNumQP();

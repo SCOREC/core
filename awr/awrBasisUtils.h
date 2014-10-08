@@ -26,7 +26,7 @@ apf::DynamicArray<double> > > NodeQPVector;
 class BasisUtils
 {
   public:
-    BasisUtils(apf::Mesh* m, apf::Field* f, apf::MeshEntity* e, int o);
+    BasisUtils(apf::Field* f, apf::MeshEntity* e, int o);
     ~BasisUtils();
     int getNumDims(){return num_dims_;};
     int getNumQP(){return num_qp_;};
