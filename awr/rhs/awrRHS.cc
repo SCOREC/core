@@ -6,6 +6,7 @@
  */
 
 #include "awrRHS.h"
+#include <apfMesh.h>
 
 namespace awr {
 
@@ -17,6 +18,17 @@ RHS::RHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
 
 void RHS::assemble()
 {
+  apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
+  apf::MeshEntity* e = mesh_->iterate(elems);
+  mesh_->end(elems);
+  apf::DynamicMatrix k;
+  evaluateElementRHS(e,k);
+  for (int i=0; i < k.getRows(); ++i)
+  {
+    for (int j=0; j < k.getColumns(); ++j)
+      std::cout << k(i,j) << " ";
+    std::cout << std::endl;
+  }
 }
 
 }

@@ -9,7 +9,7 @@
 #define AWRRHSFACTORY_H
 
 #include "awrRHS.h"
-#include "Teuchos_RCP.hpp"
+#include <Teuchos_RCP.hpp>
 
 namespace awr {
 

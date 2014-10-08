@@ -9,9 +9,8 @@
 #define AWRRHS_H
 
 #include "apf.h"
-#include "apfMesh.h"
-#include "apfDynamicMatrix.h"
-#include "Teuchos_ParameterList.hpp"
+#include <apfDynamicMatrix.h>
+#include <Teuchos_ParameterList.hpp>
 
 namespace awr {
 

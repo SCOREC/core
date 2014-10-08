@@ -8,8 +8,8 @@
 #ifndef AWRBASISUTILS_H
 #define AWRBASISUTILS_H
 
-#include "apf.h"
-#include "apfDynamicArray.h"
+#include <apf.h>
+#include <apfDynamicArray.h>
 
 namespace awr {
 

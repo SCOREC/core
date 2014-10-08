@@ -6,7 +6,8 @@
  */
 
 #include "awrPoissonRHS.h"
-#include "Teuchos_TestForException.hpp"
+#include <apfMesh.h>
+#include <Teuchos_TestForException.hpp>
 
 namespace awr {
 
