@@ -85,6 +85,7 @@ namespace {
     apf::MeshIterator* it = m->begin(m->getDimension());
     while( (e = m->iterate(it)) ) 
       setNumber(n,e,negOne);
+    m->end(it);
     return n;
   }
 

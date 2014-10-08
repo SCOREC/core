@@ -6,11 +6,10 @@
  */
 
 #include "awr.h"
-#include "apfMesh.h"
-#include "apfField.h"
-#include "apfShape.h"
 #include "rhs/awrRHS.h"
 #include "rhs/awrRHSFactory.h"
+#include <apfField.h>
+#include <apfShape.h>
 
 namespace awr {
 
@@ -38,6 +37,7 @@ solveAdjointProblem(apf::Mesh* mesh,
 {
   RHSFactory rhsFactory(mesh,params);
   Teuchos::RCP<RHS> rhs = rhsFactory.create();
+  rhs->assemble();
   apf::Field* f = NULL;
   return f;
 }

@@ -10,8 +10,6 @@
 
 #include "awrRHS.h"
 #include "../awrBasisUtils.h"
-#include "apfMatrix.h"
-#include "apfDynamicVector.h"
 
 namespace awr {
 

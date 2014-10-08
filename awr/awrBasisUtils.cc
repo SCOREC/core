@@ -6,19 +6,16 @@
  */
 
 #include "awrBasisUtils.h"
-#include "apfField.h"
-#include "apfShape.h"
-#include "apfVectorElement.h"
+#include <apfVectorElement.h>
 
 namespace awr {
 
-BasisUtils::BasisUtils(apf::Mesh* m, apf::Field* f,
-                       apf::MeshEntity* e, int o) :
-  mesh_(m),
+BasisUtils::BasisUtils(apf::Field* f, apf::MeshEntity* e, int o) :
   sol_(f),
   elem_(e),
   order_(o)
 {
+  mesh_ = getMesh(sol_);
   mesh_elem_ = apf::createMeshElement(mesh_,elem_);
   field_elem_ = apf::createElement(sol_,mesh_elem_);
   int type = mesh_->getType(elem_);

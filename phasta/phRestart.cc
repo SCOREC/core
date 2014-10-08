@@ -8,26 +8,43 @@
 
 namespace ph {
 
+/* in_size is the number of dofs for the data array
+   and out_size is the number of dofs in the field.
+   they are unequal when we read a restart file
+   and want to add more dofs for the next restart files */
+
 void attachField(
     apf::Mesh* m,
     const char* fieldname,
     double* data,
-    int size)
+    int in_size,
+    int out_size)
 {
-  apf::Field* f = apf::createPackedField(m, fieldname, size);
+  assert(in_size <= out_size);
+  apf::Field* f = apf::createPackedField(m, fieldname, out_size);
   size_t n = m->count(0);
-  apf::NewArray<double> c(size);
+  apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
   size_t i = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((e = m->iterate(it))) {
-    for (int j = 0; j < size; ++j)
+    for (int j = 0; j < in_size; ++j)
       c[j] = data[j * n + i];
     apf::setComponents(f, e, 0, &c[0]);
     ++i;
   }
   m->end(it);
   assert(i == n);
+}
+
+/* convenience wrapper, in most cases in_size=out_size */
+void attachField(
+    apf::Mesh* m,
+    const char* fieldname,
+    double* data,
+    int size)
+{
+  attachField(m, fieldname, data, size, size);
 }
 
 void detachField(
@@ -68,7 +85,8 @@ void readAndAttachField(
     Input& in,
     apf::Mesh* m,
     const char* filename,
-    const char* fieldname)
+    const char* fieldname,
+    int out_size = -1)
 {
   double* data;
   int nodes, vars, step;
@@ -76,7 +94,9 @@ void readAndAttachField(
       &nodes, &vars, &step);
   assert(nodes == static_cast<int>(m->count(0)));
   assert(step == in.timeStepNumber);
-  attachField(m, fieldname, data, vars);
+  if (out_size == -1)
+    out_size = vars;
+  attachField(m, fieldname, data, vars, out_size);
   free(data);
 }
 
@@ -135,7 +155,7 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
   double t0 = MPI_Wtime();
   readStepNum(in);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  readAndAttachField(in, m, filename.c_str(), "solution");
+  readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
   if (in.displacementMigration)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)
