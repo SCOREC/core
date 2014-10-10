@@ -64,6 +64,7 @@ void readBCs(const char* filename, BCs& bcs)
 {
   double t0 = MPI_Wtime();
   std::ifstream file(filename);
+  assert(file.is_open()); //check if the spj file could be opened successfully
   std::string line;
   while (std::getline(file, line, '\n')) {
     if (line[0] == '#')
