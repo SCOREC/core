@@ -50,6 +50,8 @@ int main(int argc, char** argv)
   assert(provided == MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
   PCU_Protect();
+  if (!PCU_Comm_Self()) printf("Reading Sim license file\n");
+  PCU_Barrier();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
