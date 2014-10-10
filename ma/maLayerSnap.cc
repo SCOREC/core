@@ -38,6 +38,12 @@ struct SnapTagger : public Crawler
       m->getDoubleTag(v, snapTag, &s[0]);
       Vector os = ox + (s - x);
       m->setDoubleTag(ov, snapTag, &os[0]);
+    } else {
+      /* tagVertsToSnap can leave a tag on the
+         side of a boundary layer along a model face,
+         we have to clear those away if the base vertex
+         is not snapping */
+      m->removeTag(ov, snapTag);
     }
     return ov;
   }

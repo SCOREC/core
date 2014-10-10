@@ -1,6 +1,7 @@
 #include "maTemplates.h"
 #include "maAdapt.h"
 #include "maLayer.h"
+#include "maSnap.h"
 
 #include <cstdio>
 
@@ -46,11 +47,10 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
   apf::MeshElement* me = apf::createMeshElement(m,q);
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
-/* TODO: in truth, we could be transferring parametric
-   coordinates here. since we don't support layer side snapping
-   and the transfer logic is non-trivial,
-   this is left alone for now */
-  Entity* cv = buildVertex(a,m->toModel(q),point,Vector(0,0,0));
+  Vector param(0,0,0); //prevents uninitialized values
+  if (a->input->shouldTransferParametric)
+    transferParametricOnQuadSplit(m, q, sv[0] ,sv[2], y, param);
+  Entity* cv = buildVertex(a, m->toModel(q), point, param);
   a->solutionTransfer->onVertex(me,xi,cv);
   a->sizeField->interpolate(me,xi,cv);
   apf::destroyMeshElement(me);
