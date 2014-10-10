@@ -2,6 +2,7 @@
 #include "phRestart.h"
 #include <apf.h>
 #include "phIO.h"
+#include "ph.h"
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -154,6 +155,7 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
 {
   double t0 = MPI_Wtime();
   readStepNum(in);
+  setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
   readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
   if (in.displacementMigration)
