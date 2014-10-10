@@ -90,6 +90,32 @@ void setupOutputSubdir(std::string& path)
   PCU_Barrier();
 }
 
+void setupInputSubdir(std::string& path)
+{
+  if (PCU_Comm_Peers() <= DIR_FANOUT)
+    return;
+  int self = PCU_Comm_Self();
+  int subGroup = self / DIR_FANOUT;
+  std::string newpath;
+  std::stringstream ss;
+
+  std::size_t found = path.find_last_of("/");
+  if(found == std::string::npos) { 
+    //no "/" character was found in path
+    //this means no directory specified in path, only filename such as restart 
+    //should not really happen since phasta files usually located in #-procs_case directories
+    ss << "./" << subGroup << "/" << path;
+  }
+  else {
+    //insert before the last "/" character the subgroup id 0, 1, 2 etc
+    ss << path.substr(0,found) << "/" << subGroup << "/" << path.substr(found+1);
+  }
+
+//  printf("Rank: %d - Path in setupInputSubdir: %s\n", self, ss.str().c_str());
+  path = ss.str();
+  PCU_Barrier();
+}
+
 void writeAuxiliaryFiles(std::string path, int timestep)
 {
   std::string numpePath = path;
