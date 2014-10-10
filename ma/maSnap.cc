@@ -70,6 +70,19 @@ static void interpolateParametricCoordinates(
   }
 }
 
+void transferParametricBetween(
+    Mesh* m,
+    Model* g,
+    Entity* v[2],
+    double t,
+    Vector& p)
+{
+  Vector ep[2];
+  for (int i=0; i < 2; ++i)
+    m->getParamOn(g,v[i],ep[i]);
+  interpolateParametricCoordinates(m,g,t,ep[0],ep[1],p);
+}
+
 void transferParametricOnEdgeSplit(
     Mesh* m,
     Entity* e,
@@ -81,10 +94,23 @@ void transferParametricOnEdgeSplit(
   if (modelDimension==m->getDimension()) return;
   Entity* ev[2];
   m->getDownward(e,0,ev);
-  Vector ep[2];
-  for (int i=0; i < 2; ++i)
-    m->getParamOn(g,ev[i],ep[i]);
-  interpolateParametricCoordinates(m,g,t,ep[0],ep[1],p);
+  transferParametricBetween(m, g, ev, t, p);
+}
+
+void transferParametricOnQuadSplit(
+    Mesh* m,
+    Entity* quad,
+    Entity* v01,
+    Entity* v32,
+    double y,
+    Vector& p)
+{
+  Model* g = m->toModel(quad);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+  Entity* v[2];
+  v[0] = v01; v[1] = v32;
+  transferParametricBetween(m, g, v, y, p);
 }
 
 static void getSnapPoint(Mesh* m, Entity* v, Vector& x)

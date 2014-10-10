@@ -16,15 +16,23 @@ namespace ma {
 
 class Adapt;
 
+void snap(Adapt* a);
+void visualizeGeometricInfo(Mesh* m, const char* name);
+
+long snapTaggedVerts(Adapt* a, Tag* snapTag);
+
 void transferParametricOnEdgeSplit(
     Mesh* m,
     Entity* e,
     double t,
     Vector& p);
-void snap(Adapt* a);
-void visualizeGeometricInfo(Mesh* m, const char* name);
-
-long snapTaggedVerts(Adapt* a, Tag* snapTag);
+void transferParametricOnQuadSplit(
+    Mesh* m,
+    Entity* quad,
+    Entity* v01,
+    Entity* v32,
+    double y,
+    Vector& p);
 
 }
 
