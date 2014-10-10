@@ -1,10 +1,12 @@
 #include <ma.h>
 #include <apf.h>
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <apfMDS.h>
 #include <PCU.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
+#include <SimUtil.h>
 
 class AnisotropicX: public ma::AnisotropicFunction {
   public:
@@ -82,7 +84,10 @@ int main(int argc, char** argv)
         << " <model file> <in mesh> <split direction=[0-2] <out mesh> > \n";
     return EXIT_FAILURE;
   }
+  Sim_readLicenseFile(NULL);
+  gmi_sim_start();
   gmi_register_mesh();
+  gmi_register_sim();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
   ma::Input* in = ma::configure(m, ansx);
@@ -98,6 +103,8 @@ int main(int argc, char** argv)
   delete ansx;
   m->destroyNative();
   apf::destroyMesh(m);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }

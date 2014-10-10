@@ -41,6 +41,13 @@ add_test(split_2
   "pipe.smb"
   ${MESHFILE}
   2)
+add_test(refineX
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 2
+  ./refine2x
+  "${MDIR}/pipe.smd"
+  ${MESHFILE}
+  0
+  "refXpipe/")
 add_test(split_4
   ${MPIRUN} ${MPIRUN_PROCFLAG} 2
   ./zsplit
