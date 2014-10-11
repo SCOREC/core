@@ -32,10 +32,82 @@ static void fixPyramids(apf::Mesh2* m)
   ma::adapt(in);
 }
 
+static void fixCoords(apf::Mesh2* m)
+{
+  PCU_Comm_Begin();
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* e;
+  apf::Vector3 x;
+  apf::Vector3 p;
+  while ((e = m->iterate(it)))
+    if (m->isShared(e) && m->isOwned(e)) {
+      apf::Copies remotes;
+      m->getRemotes(e, remotes);
+      m->getPoint(e, 0, x);
+      m->getParam(e, p);
+      APF_ITERATE(apf::Copies, remotes, rit) {
+        PCU_COMM_PACK(rit->first, rit->second);
+        PCU_COMM_PACK(rit->first, x);
+        PCU_COMM_PACK(rit->first, p);
+      }
+    }
+  m->end(it);
+  PCU_Comm_Send();
+  double max_x_diff = 0;
+  double max_p_diff = 0;
+  apf::Vector3 max_x_diff_point;
+  apf::Vector3 max_p_diff_point;
+  int x_diffs = 0;
+  int p_diffs = 0;
+  while (PCU_Comm_Receive()) {
+    apf::Vector3 ox, op;
+    PCU_COMM_UNPACK(e);
+    PCU_COMM_UNPACK(ox);
+    PCU_COMM_UNPACK(op);
+    m->getPoint(e, 0, x);
+    m->getParam(e, p);
+    if (!(p == op)) {
+      ++p_diffs;
+      double p_diff = (op - p).getLength();
+      if (p_diff > max_p_diff) {
+        max_p_diff = p_diff;
+        max_p_diff_point = x;
+      }
+      m->setParam(e, op);
+    }
+    if (!(x == ox)) {
+      ++x_diffs;
+      double x_diff = (ox - x).getLength();
+      if (x_diff > max_x_diff) {
+        max_x_diff = x_diff;
+        max_x_diff_point = x;
+      }
+      m->setPoint(e, 0, ox);
+    }
+  }
+  double global_max[2];
+  global_max[0] = max_x_diff;
+  global_max[1] = max_p_diff;
+  PCU_Max_Doubles(global_max, 2);
+  long global_diffs[2];
+  global_diffs[0] = x_diffs;
+  global_diffs[1] = p_diffs;
+  PCU_Add_Longs(global_diffs, 2);
+  /* admittedly not the best way of checking
+     which processor had the max */
+  if (global_diffs[0] && (global_max[0] == max_x_diff))
+    fprintf(stderr, "%ld spatial mismatches corrected, max distance %e\n",
+        global_diffs[0], global_max[0]);
+  if (global_diffs[1] && (global_max[1] == max_p_diff))
+    fprintf(stderr, "%ld parametric mismatches corrected, max distance %e\n",
+        global_diffs[1], global_max[1]);
+}
+
 static void postConvert(apf::Mesh2* m)
 {
   fixMatches(m);
   fixPyramids(m);
+  fixCoords(m);
   m->verify();
 }
 
