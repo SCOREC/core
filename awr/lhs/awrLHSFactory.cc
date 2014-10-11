@@ -5,30 +5,30 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awrRHSFactory.h"
-#include "awrPoissonRHS.h"
-#include "awrNonlinearPoissonRHS.h"
+#include "awrLHSFactory.h"
+#include "awrPoissonLHS.h"
+#include "awrNonlinearPoissonLHS.h"
 
 namespace awr {
 
-RHSFactory::RHSFactory(apf::Mesh* m, const Teuchos::ParameterList& p) :
+LHSFactory::LHSFactory(apf::Mesh* m, const Teuchos::ParameterList& p) :
   mesh_(m),
   params_(p)
 {
 }
 
-Teuchos::RCP<RHS> RHSFactory::create()
+Teuchos::RCP<LHS> LHSFactory::create()
 {
-  Teuchos::RCP<RHS> strategy;
+  Teuchos::RCP<LHS> strategy;
   std::string method = params_.get("Adjoint Problem Name","");
   if (method == "Poisson")
-    strategy = Teuchos::rcp(new PoissonRHS(mesh_,params_));
+    strategy = Teuchos::rcp(new PoissonLHS(mesh_,params_));
   else if (method == "Nonlinear Poisson")
-    strategy = Teuchos::rcp(new NonlinearPoissonRHS(mesh_,params_));
+    strategy = Teuchos::rcp(new NonlinearPoissonLHS(mesh_,params_));
   else
     TEUCHOS_TEST_FOR_EXCEPTION(
         true, Teuchos::Exceptions::InvalidParameter,
-        "AWR: RHS Factory: Adjoint Problem Name "
+        "AWR: LHS Factory: Adjoint Problem Name "
         << method << " does not exist");
   return strategy;
 }

@@ -28,10 +28,10 @@ if(BUILD_IN_TRILINOS)
   set(SOURCES
     awr.cc
     awrBasisUtils.cc
-    rhs/awrRHS.cc
-    rhs/awrRHSFactory.cc
-    rhs/awrPoissonRHS.cc
-    rhs/awrNonlinearPoissonRHS.cc)
+    lhs/awrLHS.cc
+    lhs/awrLHSFactory.cc
+    lhs/awrPoissonLHS.cc
+    lhs/awrNonlinearPoissonLHS.cc)
 
   set(HEADERS
     awr.h)

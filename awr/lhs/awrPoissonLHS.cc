@@ -5,16 +5,16 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awrPoissonRHS.h"
+#include "awrPoissonLHS.h"
 #include <apfMesh.h>
 #include <Teuchos_TestForException.hpp>
 
 namespace awr {
 
 /*****************************************************************************/
-PoissonRHS::
-PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
-  RHS(m,p)
+PoissonLHS::
+PoissonLHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
+  LHS(m,p)
 {
   validateParameters();
   /* assumes uniform mesh */
@@ -23,8 +23,8 @@ PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
 
 /*****************************************************************************/
 void
-PoissonRHS::
-evaluateElementRHS(apf::MeshEntity* element,
+PoissonLHS::
+evaluateElementLHS(apf::MeshEntity* element,
                    apf::DynamicMatrix& k)
 {
   k.setSize(num_nodes_,num_nodes_);
@@ -42,7 +42,7 @@ evaluateElementRHS(apf::MeshEntity* element,
 
 /*****************************************************************************/
 void
-PoissonRHS::
+PoissonLHS::
 init()
 {
   apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
@@ -58,7 +58,7 @@ init()
 
 /*****************************************************************************/
 void
-PoissonRHS::
+PoissonLHS::
 validateParameters()
 {
   integration_order_ = params_.get("Integration Order",2); 
@@ -67,7 +67,7 @@ validateParameters()
   if (sol_ == NULL)
     TEUCHOS_TEST_FOR_EXCEPTION(
         true, Teuchos::Exceptions::InvalidParameter,
-        "AWR: Poisson RHS: solution field with name \""
+        "AWR: Poisson LHS: solution field with name \""
         << name << "\" does not exist\n");
 }
 

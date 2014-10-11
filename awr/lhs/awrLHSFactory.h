@@ -5,26 +5,26 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef AWRRHSFACTORY_H
-#define AWRRHSFACTORY_H
+#ifndef AWRLHSFACTORY_H
+#define AWRLHSFACTORY_H
 
-#include "awrRHS.h"
+#include "awrLHS.h"
 #include <Teuchos_RCP.hpp>
 
 namespace awr {
 
-class RHSFactory
+class LHSFactory
 {
   public:
-    RHSFactory(apf::Mesh* m, const Teuchos::ParameterList& p);
-    virtual ~RHSFactory() {};
-    virtual Teuchos::RCP<RHS> create();
+    LHSFactory(apf::Mesh* m, const Teuchos::ParameterList& p);
+    virtual ~LHSFactory() {};
+    virtual Teuchos::RCP<LHS> create();
   protected:
     apf::Mesh* mesh_;
     Teuchos::ParameterList params_;
   private:
-    RHSFactory(const RHSFactory&);
-    RHSFactory& operator=(const RHSFactory&);
+    LHSFactory(const LHSFactory&);
+    LHSFactory& operator=(const LHSFactory&);
 };
 
 }

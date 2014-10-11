@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef AWRRHS_H
-#define AWRRHS_H
+#ifndef AWRLHS_H
+#define AWRLHS_H
 
 #include "apf.h"
 #include <apfDynamicMatrix.h>
@@ -14,21 +14,21 @@
 
 namespace awr {
 
-class RHS
+class LHS
 {
   public:
-    RHS(apf::Mesh* m, const Teuchos::ParameterList& p);
-    virtual ~RHS() {};
+    LHS(apf::Mesh* m, const Teuchos::ParameterList& p);
+    virtual ~LHS() {};
     void assemble();
     virtual void 
-    evaluateElementRHS(apf::MeshEntity* e,
+    evaluateElementLHS(apf::MeshEntity* e,
                        apf::DynamicMatrix& k) = 0;
   protected:
     apf::Mesh* mesh_;
     Teuchos::ParameterList params_;
   private:
-    RHS(const RHS&);
-    RHS& operator=(const RHS&);
+    LHS(const LHS&);
+    LHS& operator=(const LHS&);
 };
 
 }
