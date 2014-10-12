@@ -38,8 +38,8 @@ set(SIMMODSUITE_LIBS "")
 set(SIM_LIB_NAMES
   SimPartitionedMesh-mpi
   SimMeshing 
-  SimModel 
   SimMeshTools
+  SimModel 
   SimPartitionWrapper-${SIM_MPI})
 
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
