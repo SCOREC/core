@@ -33,17 +33,17 @@ struct QPDimTag : public shards::ArrayDimTag {
 };
 
 typedef
-stk_classic::mesh::Field<double, stk_classic::mesh::Cartesian, stk_classic::mesh::Cartesian>
+stk::mesh::Field<double, stk::mesh::Cartesian, stk::mesh::Cartesian>
 StkTensorField;
-typedef stk_classic::mesh::Field<double, stk_classic::mesh::Cartesian> StkVectorField;
-typedef stk_classic::mesh::Field<double> StkScalarField;
+typedef stk::mesh::Field<double, stk::mesh::Cartesian> StkVectorField;
+typedef stk::mesh::Field<double> StkScalarField;
 typedef
-stk_classic::mesh::Field<double, QPDimTag, stk_classic::mesh::Cartesian, stk_classic::mesh::Cartesian>
+stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian, stk::mesh::Cartesian>
 StkQPTensorField;
 typedef
-stk_classic::mesh::Field<double, QPDimTag, stk_classic::mesh::Cartesian >
+stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian >
 StkQPVectorField;
-typedef stk_classic::mesh::Field<double, QPDimTag> StkQPScalarField;
+typedef stk::mesh::Field<double, QPDimTag> StkQPScalarField;
 
 typedef std::map<long,Node> GlobalMap;
 
@@ -65,11 +65,11 @@ StkScalarField* makeStkField<StkScalarField>(
 {
   StkScalarField* result;
   result = &(metaData->declare_field<StkScalarField>(name));
-  stk_classic::mesh::put_field(
+  stk::mesh::put_field(
       *result,
       metaData->node_rank(),
       metaData->universal_part());
-  stk_classic::io::set_field_role(*result,Ioss::Field::TRANSIENT);
+  stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
 
@@ -80,12 +80,12 @@ StkVectorField* makeStkField<StkVectorField>(
 {
   StkVectorField* result;
   result = &(metaData->declare_field<StkVectorField>(name));
-  stk_classic::mesh::put_field(
+  stk::mesh::put_field(
       *result,
       metaData->node_rank(),
       metaData->universal_part(),
       3);
-  stk_classic::io::set_field_role(*result,Ioss::Field::TRANSIENT);
+  stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
 
@@ -96,12 +96,12 @@ StkTensorField* makeStkField<StkTensorField>(
 {
   StkTensorField* result;
   result = &(metaData->declare_field<StkTensorField>(name));
-  stk_classic::mesh::put_field(
+  stk::mesh::put_field(
       *result,
       metaData->node_rank(),
       metaData->universal_part(),
       3,3);
-  stk_classic::io::set_field_role(*result,Ioss::Field::TRANSIENT);
+  stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
 
@@ -113,12 +113,12 @@ StkQPScalarField* makeStkQPField<StkQPScalarField>(
 {
   StkQPScalarField* result;
   result = &(metaData->declare_field<StkQPScalarField>(name));
-  stk_classic::mesh::put_field(
+  stk::mesh::put_field(
       *result,
       metaData->element_rank(),
       metaData->universal_part(),
       nqp);
-  stk_classic::io::set_field_role(*result,Ioss::Field::TRANSIENT);
+  stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
 
@@ -130,12 +130,12 @@ StkQPVectorField* makeStkQPField<StkQPVectorField>(
 {
   StkQPVectorField* result;
   result = &(metaData->declare_field<StkQPVectorField>(name));
-  stk_classic::mesh::put_field(
+  stk::mesh::put_field(
       *result,
       metaData->element_rank(),
       metaData->universal_part(),
       3,nqp);
-  stk_classic::io::set_field_role(*result,Ioss::Field::TRANSIENT);
+  stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
 
@@ -147,12 +147,12 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
 {
   StkQPTensorField* result;
   result = &(metaData->declare_field<StkQPTensorField>(name));
-  stk_classic::mesh::put_field(
+  stk::mesh::put_field(
       *result,
       metaData->element_rank(),
       metaData->universal_part(),
       3,3,nqp);
-  stk_classic::io::set_field_role(*result,Ioss::Field::TRANSIENT);
+  stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
 
@@ -168,7 +168,7 @@ void writeStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToNodes)
 {
-  stk_classic::mesh::BucketArray<StkScalarField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkScalarField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(0);
   for (int i=0; i < nodesInBucket; ++i)
   {
@@ -186,7 +186,7 @@ void writeStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToNodes)
 {
-  stk_classic::mesh::BucketArray<StkVectorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkVectorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(1);
   for (int i=0; i < nodesInBucket; ++i)
   {
@@ -205,7 +205,7 @@ void writeStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToNodes)
 {
-  stk_classic::mesh::BucketArray<StkTensorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkTensorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(2);
   for (int i=0; i < nodesInBucket; ++i)
   {
@@ -225,7 +225,7 @@ void writeStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToElems)
 {
-  stk_classic::mesh::BucketArray<StkQPScalarField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkQPScalarField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(0);
   int elemsInBucket = stkArray.dimension(1);
   for (int i=0; i < elemsInBucket; ++i)
@@ -243,7 +243,7 @@ void writeStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToElems)
 {
-  stk_classic::mesh::BucketArray<StkQPVectorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkQPVectorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(1);
   int elemsInBucket = stkArray.dimension(2);
   for (int i=0; i < elemsInBucket; ++i)
@@ -266,7 +266,7 @@ void writeStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToElems)
 {
-  stk_classic::mesh::BucketArray<StkQPTensorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkQPTensorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(2);
   int elemsInBucket = stkArray.dimension(3);
   for (int i=0; i < elemsInBucket; ++i)
@@ -290,7 +290,7 @@ void readStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToNodes)
 {
-  stk_classic::mesh::BucketArray<StkScalarField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkScalarField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(0);
   for (int i=0; i < nodesInBucket; ++i)
   {
@@ -308,7 +308,7 @@ void readStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToNodes)
 {
-  stk_classic::mesh::BucketArray<StkVectorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkVectorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(1);
   for (int i=0; i < nodesInBucket; ++i)
   {
@@ -327,7 +327,7 @@ void readStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToNodes)
 {
-  stk_classic::mesh::BucketArray<StkTensorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkTensorField> stkArray(*stkField,*bucket);
   int nodesInBucket = stkArray.dimension(2);
   for (int i=0; i < nodesInBucket; ++i)
   {
@@ -347,7 +347,7 @@ void readStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToElems)
 {
-  stk_classic::mesh::BucketArray<StkQPScalarField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkQPScalarField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(0);
   int elemsInBucket = stkArray.dimension(1);
   for (int i=0; i < elemsInBucket; ++i)
@@ -365,7 +365,7 @@ void readStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToElems)
 {
-  stk_classic::mesh::BucketArray<StkQPVectorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkQPVectorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(1);
   int elemsInBucket = stkArray.dimension(2);
   for (int i=0; i < elemsInBucket; ++i)
@@ -388,7 +388,7 @@ void readStkField(
     StkBucket* bucket,
     GlobalMap& globalIdsToElems)
 {
-  stk_classic::mesh::BucketArray<StkQPTensorField> stkArray(*stkField,*bucket);
+  stk::mesh::BucketArray<StkQPTensorField> stkArray(*stkField,*bucket);
   int nqp = stkArray.dimension(2);
   int elemsInBucket = stkArray.dimension(3);
   for (int i=0; i < elemsInBucket; ++i)
@@ -421,19 +421,19 @@ class StkBridge
         GlobalMap& globalIdsToElems,
         bool toStk)
     {
-      stk_classic::mesh::Selector overlapSelector =
+      stk::mesh::Selector overlapSelector =
         metaData->locally_owned_part() |
         metaData->globally_shared_part();
-      stk_classic::mesh::BucketVector buckets;
-      stk_classic::mesh::EntityRank rank = metaData->node_rank();
+      stk::mesh::BucketVector buckets;
+      stk::mesh::EntityRank rank = metaData->node_rank();
       if (isQP) rank = metaData->element_rank();
-      stk_classic::mesh::get_buckets(
+      stk::mesh::get_buckets(
           overlapSelector,
           bulkData->buckets(rank),
           buckets);
       GlobalMap* globalIdsToEnts = &globalIdsToVerts;
       if (isQP) globalIdsToEnts = &globalIdsToElems;
-      APF_ITERATE(stk_classic::mesh::BucketVector,buckets,it)
+      APF_ITERATE(stk::mesh::BucketVector,buckets,it)
       {
         if (toStk)
           write(*it,*globalIdsToEnts);
