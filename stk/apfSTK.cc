@@ -64,10 +64,10 @@ StkScalarField* makeStkField<StkScalarField>(
     StkMetaData* metaData)
 {
   StkScalarField* result;
-  result = &(metaData->declare_field<StkScalarField>(name));
+  result = &(metaData->declare_field<StkScalarField>(
+        stk::topology::NODE_RANK, name));
   stk::mesh::put_field(
       *result,
-      metaData->node_rank(),
       metaData->universal_part());
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
@@ -79,10 +79,10 @@ StkVectorField* makeStkField<StkVectorField>(
     StkMetaData* metaData)
 {
   StkVectorField* result;
-  result = &(metaData->declare_field<StkVectorField>(name));
+  result = &(metaData->declare_field<StkVectorField>(
+        stk::topology::NODE_RANK, name));
   stk::mesh::put_field(
       *result,
-      metaData->node_rank(),
       metaData->universal_part(),
       3);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
@@ -95,10 +95,10 @@ StkTensorField* makeStkField<StkTensorField>(
     StkMetaData* metaData)
 {
   StkTensorField* result;
-  result = &(metaData->declare_field<StkTensorField>(name));
+  result = &(metaData->declare_field<StkTensorField>(
+        stk::topology::NODE_RANK, name));
   stk::mesh::put_field(
       *result,
-      metaData->node_rank(),
       metaData->universal_part(),
       3,3);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
@@ -112,10 +112,10 @@ StkQPScalarField* makeStkQPField<StkQPScalarField>(
     StkMetaData* metaData)
 {
   StkQPScalarField* result;
-  result = &(metaData->declare_field<StkQPScalarField>(name));
+  result = &(metaData->declare_field<StkQPScalarField>(
+        stk::topology::ELEMENT_RANK, name));
   stk::mesh::put_field(
       *result,
-      metaData->element_rank(),
       metaData->universal_part(),
       nqp);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
@@ -129,10 +129,10 @@ StkQPVectorField* makeStkQPField<StkQPVectorField>(
     StkMetaData* metaData)
 {
   StkQPVectorField* result;
-  result = &(metaData->declare_field<StkQPVectorField>(name));
+  result = &(metaData->declare_field<StkQPVectorField>(
+        stk::topology::ELEMENT_RANK, name));
   stk::mesh::put_field(
       *result,
-      metaData->element_rank(),
       metaData->universal_part(),
       3,nqp);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
@@ -146,10 +146,10 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
     StkMetaData* metaData)
 {
   StkQPTensorField* result;
-  result = &(metaData->declare_field<StkQPTensorField>(name));
+  result = &(metaData->declare_field<StkQPTensorField>(
+        stk::topology::ELEMENT_RANK, name));
   stk::mesh::put_field(
       *result,
-      metaData->element_rank(),
       metaData->universal_part(),
       3,3,nqp);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
