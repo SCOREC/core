@@ -8,6 +8,8 @@
 #include "awr.h"
 #include "lhs/awrLHS.h"
 #include "lhs/awrLHSFactory.h"
+#include "qoi/awrQOI.h"
+#include "qoi/awrQOIFactory.h"
 #include <apfField.h>
 #include <apfShape.h>
 
@@ -37,7 +39,10 @@ solveAdjointProblem(apf::Mesh* mesh,
 {
   LHSFactory lhsFactory(mesh,params);
   Teuchos::RCP<LHS> lhs = lhsFactory.create();
+  QOIFactory qoiFactory(mesh,params);
+  Teuchos::RCP<QOI> qoi = qoiFactory.create();
   lhs->assemble();
+  qoi->assemble();
   apf::Field* f = NULL;
   return f;
 }

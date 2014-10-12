@@ -31,7 +31,10 @@ if(BUILD_IN_TRILINOS)
     lhs/awrLHS.cc
     lhs/awrLHSFactory.cc
     lhs/awrPoissonLHS.cc
-    lhs/awrNonlinearPoissonLHS.cc)
+    lhs/awrNonlinearPoissonLHS.cc
+    qoi/awrQOI.cc
+    qoi/awrQOIFactory.cc
+    qoi/awrSolutionSquaredQOI.cc)
 
   set(HEADERS
     awr.h)
