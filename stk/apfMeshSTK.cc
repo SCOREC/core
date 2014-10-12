@@ -9,7 +9,7 @@
 #include <apfNumbering.h>
 
 #include <stk_io/IossBridge.hpp>
-#include <stk_io/MeshReadWriteUtils.hpp>
+#include <stk_mesh/base/FEMHelpers.hpp>
 
 namespace apf {
 
@@ -66,24 +66,23 @@ int getLocalSideId(Mesh* m, MeshEntity* e,
 static void special_declare_element_side(
   GlobalNumbering* nn,
   StkBulkData* bulk,
-  stk::mesh::Entity& elem,
+  stk::mesh::Entity elem,
   MeshEntity* face,
   stk::mesh::EntityId global_side_id,
   unsigned local_side_id,
-  stk::mesh::PartVector& parts)
+  stk::mesh::Part& part)
 {
-  const CellTopologyData* elem_top =
-    stk::mesh::get_cell_topology(elem).getCellTopologyData();
-  const CellTopologyData* side_top =
-    elem_top->side[local_side_id].topology;
-  stk::mesh::Entity& side =
-    bulk->declare_entity(side_top->dimension, global_side_id, parts);
+  StkMetaData const& meta = bulk->mesh_meta_data();
+  stk::topology elem_topo = meta.get_topology(part);
+  stk::topology side_topo = elem_topo.sub_topology(meta.side_rank(), local_side_id);
+  stk::mesh::Entity side =
+    bulk->declare_entity(meta.side_rank(), global_side_id, part);
   bulk->declare_relation(elem, side, local_side_id);
   NewArray<long> node_ids;
   int node_count = getElementNumbers(nn, face, node_ids);
   for (int i = 0; i < node_count; ++i) {
-    stk::mesh::Entity* node = bulk->get_entity(0, node_ids[i] + 1);
-    bulk->declare_relation(side, *node, i);
+    stk::mesh::Entity node = bulk->get_entity(stk::topology::NODE_RANK, node_ids[i] + 1);
+    bulk->declare_relation(side, node, i);
   }
 }
 
@@ -107,9 +106,7 @@ static void buildSides(
   int d = m->getDimension() - 1;
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
-    stk::mesh::Part* part = meta->get_part(model.stkName, required_by);
-    stk::mesh::PartVector parts;
-    parts.push_back(part);
+    stk::mesh::Part& part = *(meta->get_part(model.stkName, required_by));
     MeshIterator* it = m->begin(d);
     MeshEntity* s;
     while ((s = m->iterate(it))) {
@@ -119,8 +116,8 @@ static void buildSides(
       stk::mesh::EntityId e_id;
       unsigned local_id;
       get_stk_side(n[d + 1], s, e_id, local_id);
-      stk::mesh::Entity* e = bulk->get_entity(d + 1, e_id);
-      special_declare_element_side(n[0], bulk, *e, s, s_id, local_id, parts);
+      stk::mesh::Entity e = bulk->get_entity(stk::topology::ELEMENT_RANK, e_id);
+      special_declare_element_side(n[0], bulk, e, s, s_id, local_id, part);
     }
     m->end(it);
   }
@@ -181,7 +178,7 @@ static void buildNodes(
     getNodesOnClosure(m, me, nodes);
     for (size_t j = 0; j < nodes.getSize(); ++j) {
       stk::mesh::EntityId e_id = getStkId(nn, nodes[j]);
-      bulk->declare_entity(meta->node_rank(), e_id, parts);
+      bulk->declare_entity(stk::topology::NODE_RANK, e_id, parts);
     }
   }
 }
