@@ -39,6 +39,7 @@ static void afterSplit(apf::Mesh2* m)
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);
   if ( ! in.outMeshFileName.empty() )
     m->writeNative(in.outMeshFileName.c_str());
+  m->verify();
   m->destroyNative();
   apf::destroyMesh(m);
 }
@@ -60,6 +61,7 @@ int main(int argc, char** argv)
   ph::Input in("adapt.inp");
   apf::Mesh2* m = apf::loadMdsMesh(
       in.modelFileName.c_str(), in.meshFileName.c_str());
+  m->verify();
   ph::BCs bcs;
   ph::readBCs(in.attributeFileName.c_str(), bcs);
   if (in.solutionMigration)
