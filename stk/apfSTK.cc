@@ -442,8 +442,9 @@ class StkBridge
         metaData->locally_owned_part() |
         metaData->globally_shared_part();
       stk::mesh::BucketVector buckets;
-      stk::mesh::EntityRank rank = metaData->node_rank();
-      if (isQP) rank = metaData->element_rank();
+      stk::mesh::EntityRank rank = stk::topology::NODE_RANK;
+      if (isQP)
+        rank = stk::topology::ELEMENT_RANK;
       stk::mesh::get_buckets(
           overlapSelector,
           bulkData->buckets(rank),
