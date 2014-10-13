@@ -5,24 +5,24 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef AWRPOISSONRHS_H
-#define AWRPOISSONRHS_H
+#ifndef AWRPOISSONLHS_H
+#define AWRPOISSONLHS_H
 
-#include "awrRHS.h"
+#include "awrLHS.h"
 #include "../awrBasisUtils.h"
 
 namespace awr {
 
-class PoissonRHS : public RHS
+class PoissonLHS : public LHS
 {
   public:
     /** constructor */
-    PoissonRHS(apf::Mesh* m, const Teuchos::ParameterList& p);
+    PoissonLHS(apf::Mesh* m, const Teuchos::ParameterList& p);
     /** destructor */
-    virtual ~PoissonRHS() {};
+    virtual ~PoissonLHS() {};
     /** evaluate element level stiffness matrix */
     virtual void
-    evaluateElementRHS(apf::MeshEntity* element,
+    evaluateElementLHS(apf::MeshEntity* element,
                        apf::DynamicMatrix& k);
   protected:
     /** number of spatial dimensions */
@@ -44,8 +44,8 @@ class PoissonRHS : public RHS
     /** validate parameters */
     void validateParameters();
   private:
-    PoissonRHS(const PoissonRHS&);
-    PoissonRHS& operator=(const PoissonRHS&);
+    PoissonLHS(const PoissonLHS&);
+    PoissonLHS& operator=(const PoissonLHS&);
 };
 
 }

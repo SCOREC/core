@@ -17,7 +17,7 @@ for (t::iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 #define MIS_FAIL(message)\
-{fprintf(stderr,"MIS ERROR: %s: "message"\n",__func__);\
+{fprintf(stderr,"MIS ERROR: %s: " message "\n", __func__);\
 abort();}
 #define MIS_FAIL_IF(condition,message)\
 if (condition)\
