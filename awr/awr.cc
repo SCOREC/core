@@ -33,6 +33,12 @@ apf::Field* enrichSolution(apf::Field* sol, const char* name_e)
   return sol_e;
 }
 
+void
+assemble(Teuchos::RCP<LHS> lhs,
+         Teuchos::RCP<QOI> qoi)
+{
+}
+
 apf::Field*
 solveAdjointProblem(apf::Mesh* mesh,
                     const Teuchos::ParameterList& params)
@@ -41,8 +47,7 @@ solveAdjointProblem(apf::Mesh* mesh,
   Teuchos::RCP<LHS> lhs = lhsFactory.create();
   QOIFactory qoiFactory(mesh,params);
   Teuchos::RCP<QOI> qoi = qoiFactory.create();
-  lhs->assemble();
-  qoi->assemble();
+  assemble(lhs,qoi);
   apf::Field* f = NULL;
   return f;
 }
