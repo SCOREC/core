@@ -438,20 +438,15 @@ class StkBridge
         GlobalMap& globalIdsToElems,
         bool toStk)
     {
-      stk::mesh::Selector overlapSelector =
-        metaData->locally_owned_part() |
-        metaData->globally_shared_part();
-      stk::mesh::BucketVector buckets;
       stk::mesh::EntityRank rank = stk::topology::NODE_RANK;
       if (isQP)
         rank = stk::topology::ELEMENT_RANK;
-      stk::mesh::get_buckets(
-          overlapSelector,
-          bulkData->buckets(rank),
-          buckets);
+      stk::mesh::BucketVector const& buckets =
+        bulkData->buckets(rank);
       GlobalMap* globalIdsToEnts = &globalIdsToVerts;
-      if (isQP) globalIdsToEnts = &globalIdsToElems;
-      APF_ITERATE(stk::mesh::BucketVector,buckets,it)
+      if (isQP)
+        globalIdsToEnts = &globalIdsToElems;
+      APF_CONST_ITERATE(stk::mesh::BucketVector, buckets, it)
       {
         if (toStk)
           write(*it,*globalIdsToEnts);
@@ -479,7 +474,7 @@ class NodalBridge : public StkBridge
     {
       apfField = f;
       if (exists)
-        stkField = metaData->get_field<T>(getName(f));
+        stkField = metaData->get_field<T>(stk::topology::NODE_RANK, getName(f));
       else
         stkField = makeStkField<T>(getName(f),metaData);
       isQP = false;
@@ -511,7 +506,7 @@ class QPBridge : public StkBridge
     {
       apfField = f;
       if (exists)
-        stkField = metaData->get_field<T>(getName(f));
+        stkField = metaData->get_field<T>(stk::topology::ELEMENT_RANK, getName(f));
       else
       {
         FieldShape* shape = getShape(f);

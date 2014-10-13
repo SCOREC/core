@@ -196,17 +196,16 @@ static void declarePart(StkModel& model,
 void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
 {
   int d = m->getDimension();
-  meta->FEM_initialize(d);
   const CellTopologyData* topo[4];
   stk::mesh::EntityRank ranks[4];
   for (int i = 0; i <= d; ++i)
     topo[i] = getDimTopology(m, i);
-  for (int i = 0; i <= d; ++i)
-    meta->register_cell_topology(topo[i], i);
   ranks[0] = stk::topology::NODE_RANK;
   ranks[1] = stk::topology::EDGE_RANK;
   ranks[2] = stk::topology::FACE_RANK;
   ranks[d] = stk::topology::ELEMENT_RANK;
+  for (int i = 0; i <= d; ++i)
+    meta->register_cell_topology(topo[i], ranks[i]);
   for (int i = 0; i <= d; ++i)
     for (size_t j = 0; j < models[i].getSize(); ++j)
       declarePart(models[i][j], ranks[i], topo[i], meta);
