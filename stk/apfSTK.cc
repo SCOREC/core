@@ -484,13 +484,13 @@ class NodalBridge : public StkBridge
         StkBucket* bucket,
         GlobalMap& globalIdsToEnts)
     {
-      readStkField(apfField,stkField,bucket,globalIdsToEnts);
+      readStkField(apfField,*stkField,*bucket,globalIdsToEnts);
     }
     virtual void write(
         StkBucket* bucket,
         GlobalMap& globalIdsToEnts)
     {
-      writeStkField(apfField,stkField,bucket,globalIdsToEnts);
+      writeStkField(apfField,*stkField,*bucket,globalIdsToEnts);
     }
   private:
     T* stkField;
@@ -524,13 +524,13 @@ class QPBridge : public StkBridge
         StkBucket* bucket,
         GlobalMap& globalIdsToEnts)
     {
-      readStkField(apfField,stkField,bucket,globalIdsToEnts);
+      readStkField(apfField,*stkField,*bucket,globalIdsToEnts);
     }
     virtual void write(
         StkBucket* bucket,
         GlobalMap& globalIdsToEnts)
     {
-      writeStkField(apfField,stkField,bucket,globalIdsToEnts);
+      writeStkField(apfField,*stkField,*bucket,globalIdsToEnts);
     }
   private:
     T* stkField;
