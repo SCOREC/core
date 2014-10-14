@@ -22,6 +22,7 @@ class QOI
     virtual void 
     evaluateElementQOI(apf::MeshEntity* e,
                        apf::DynamicVector& f) = 0;
+    apf::Mesh* getMesh() { return mesh_; };
   protected:
     apf::Mesh* mesh_;
     Teuchos::ParameterList params_;

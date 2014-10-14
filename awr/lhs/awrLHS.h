@@ -22,6 +22,7 @@ class LHS
     virtual void 
     evaluateElementLHS(apf::MeshEntity* e,
                        apf::DynamicMatrix& k) = 0;
+    apf::Mesh* getMesh() { return mesh_; };
   protected:
     apf::Mesh* mesh_;
     Teuchos::ParameterList params_;

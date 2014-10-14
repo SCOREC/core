@@ -37,6 +37,18 @@ void
 assemble(Teuchos::RCP<LHS> lhs,
          Teuchos::RCP<QOI> qoi)
 {
+  apf::Mesh* m = lhs->getMesh();
+
+  /* loop over elements in mesh */
+  int num_dims = m->getDimension();
+  apf::MeshEntity* elem;
+  apf::MeshIterator* elems = m->begin(num_dims);
+  while((elem = m->iterate(elems)))
+  {
+    apf::DynamicMatrix k;
+    lhs->evaluateElementLHS(elem,k);
+  }
+  m->end(elems);
 }
 
 apf::Field*
