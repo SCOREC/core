@@ -5,30 +5,30 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef AWRRHS_H
-#define AWRRHS_H
+#ifndef AWRQOI_H
+#define AWRQOI_H
 
 #include "apf.h"
-#include <apfDynamicMatrix.h>
+#include <apfDynamicVector.h>
 #include <Teuchos_ParameterList.hpp>
 
 namespace awr {
 
-class RHS
+class QOI
 {
   public:
-    RHS(apf::Mesh* m, const Teuchos::ParameterList& p);
-    virtual ~RHS() {};
-    void assemble();
+    QOI(apf::Mesh* m, const Teuchos::ParameterList& p);
+    virtual ~QOI() {};
     virtual void 
-    evaluateElementRHS(apf::MeshEntity* e,
-                       apf::DynamicMatrix& k) = 0;
+    evaluateElementQOI(apf::MeshEntity* e,
+                       apf::DynamicVector& f) = 0;
+    apf::Mesh* getMesh() { return mesh_; };
   protected:
     apf::Mesh* mesh_;
     Teuchos::ParameterList params_;
   private:
-    RHS(const RHS&);
-    RHS& operator=(const RHS&);
+    QOI(const QOI&);
+    QOI& operator=(const QOI&);
 };
 
 }

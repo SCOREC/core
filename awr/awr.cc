@@ -6,8 +6,10 @@
  */
 
 #include "awr.h"
-#include "rhs/awrRHS.h"
-#include "rhs/awrRHSFactory.h"
+#include "lhs/awrLHS.h"
+#include "lhs/awrLHSFactory.h"
+#include "qoi/awrQOI.h"
+#include "qoi/awrQOIFactory.h"
 #include <apfField.h>
 #include <apfShape.h>
 
@@ -31,13 +33,33 @@ apf::Field* enrichSolution(apf::Field* sol, const char* name_e)
   return sol_e;
 }
 
+void
+assemble(Teuchos::RCP<LHS> lhs,
+         Teuchos::RCP<QOI> qoi)
+{
+  apf::Mesh* m = lhs->getMesh();
+
+  /* loop over elements in mesh */
+  int num_dims = m->getDimension();
+  apf::MeshEntity* elem;
+  apf::MeshIterator* elems = m->begin(num_dims);
+  while((elem = m->iterate(elems)))
+  {
+    apf::DynamicMatrix k;
+    lhs->evaluateElementLHS(elem,k);
+  }
+  m->end(elems);
+}
+
 apf::Field*
 solveAdjointProblem(apf::Mesh* mesh,
                     const Teuchos::ParameterList& params)
 {
-  RHSFactory rhsFactory(mesh,params);
-  Teuchos::RCP<RHS> rhs = rhsFactory.create();
-  rhs->assemble();
+  LHSFactory lhsFactory(mesh,params);
+  Teuchos::RCP<LHS> lhs = lhsFactory.create();
+  QOIFactory qoiFactory(mesh,params);
+  Teuchos::RCP<QOI> qoi = qoiFactory.create();
+  assemble(lhs,qoi);
   apf::Field* f = NULL;
   return f;
 }
