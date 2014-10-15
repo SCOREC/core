@@ -19,6 +19,7 @@ namespace parma {
         mesh->destroyTag(vtag);
         return plan;
       }
+    protected:
       virtual double getWeight(apf::MeshEntity* vtx) {
         return getEntWeight(mesh,vtx,wtag);
       }
