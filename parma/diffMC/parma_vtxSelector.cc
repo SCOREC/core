@@ -19,6 +19,10 @@ namespace parma {
         mesh->destroyTag(vtag);
         return plan;
       }
+    protected:
+      virtual double getWeight(apf::MeshEntity* vtx) {
+        return getEntWeight(mesh,vtx,wtag);
+      }
     private:
       apf::MeshTag* vtag;
       VtxSelector();
@@ -34,7 +38,7 @@ namespace parma {
           mesh->setIntTag(elm, vtag, &destPid); 
           plan->send(elm, destPid);
         }
-        return getEntWeight(mesh,vtx,wtag);
+        return getWeight(vtx);
       }
       double select(Targets* tgts, const double planW, 
           const size_t maxAdjElm, 
@@ -59,4 +63,24 @@ namespace parma {
   Selector* makeVtxSelector(apf::Mesh* m, apf::MeshTag* w) {
     return new VtxSelector(m, w);
   }
+
+  class EdgeSelector : public VtxSelector {
+    public:
+      EdgeSelector(apf::Mesh* m, apf::MeshTag* w)
+        : VtxSelector(m, w) {}
+    protected:
+      double getWeight(apf::MeshEntity* vtx) {
+        apf::Up edges;
+        mesh->getUp(vtx, edges);
+        double w = 0;
+        for(int i=0; i<edges.n; i++) 
+          if( mesh->isShared(edges.e[i]) )
+            w += getEntWeight(mesh, edges.e[i], wtag);
+        return w;
+      }
+  };
+  Selector* makeEdgeSelector(apf::Mesh* m, apf::MeshTag* w) {
+    return new EdgeSelector(m, w);
+  }
+
 } //end namespace parma

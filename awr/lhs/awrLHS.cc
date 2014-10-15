@@ -16,8 +16,4 @@ LHS::LHS(apf::Mesh* m, const Teuchos::ParameterList& p) :
 {
 }
 
-void LHS::assemble()
-{
-}
-
 }

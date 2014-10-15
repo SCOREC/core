@@ -6,10 +6,16 @@
 #include <PCU.h>
 
 apf::MeshTag* setVtxWeights(apf::Mesh* m) {
-  apf::MeshIterator* it = m->begin(0);
-  apf::MeshEntity* e;
-  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
   double w = 1.0;
+  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+  //set edge weights
+  apf::MeshIterator* it = m->begin(1);
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it))) 
+    m->setDoubleTag(e, tag, &w);
+  m->end(it);
+  //set vtx weights
+  it = m->begin(0);
   while ((e = m->iterate(it))) 
     m->setDoubleTag(e, tag, &w);
   m->end(it);
@@ -31,10 +37,11 @@ int main(int argc, char** argv)
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = setVtxWeights(m);
-  apf::Balancer* balancer = Parma_MakeVtxBalancer(m);
+  apf::Balancer* balancer = Parma_MakeEdgeBalancer(m);
   balancer->balance(weights, 1.05);
   delete balancer;
-  apf::removeTagFromDimension(m, weights, m->getDimension());
+  apf::removeTagFromDimension(m, weights, 0);
+  apf::removeTagFromDimension(m, weights, 1);
   m->destroyTag(weights);
   m->writeNative(argv[3]);
   // destroy mds
