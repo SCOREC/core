@@ -34,6 +34,8 @@ SET(DIFFMC_SOURCES
   diffMC/parma_commons.cc
   diffMC/parma_dcpart.cc
   diffMC/parma_diffmc.cc
+  diffMC/parma_edgeBalancer.cc
+  diffMC/parma_edgeSelector.cc
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_entWeights.cc
   diffMC/parma_ghost.cc
