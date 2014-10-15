@@ -9,13 +9,11 @@ namespace parma {
   class Ghosts;
   class Targets : public Associative<double> {
     public:
-      Targets(Sides*, Weights*, double) {}
       virtual ~Targets() {}
       virtual double total()=0;
-    private:
-      Targets();
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
+  Targets* makeVtxEdgeElmTargets(Sides* s, Weights* w[3], double alpha);
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha);
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
 }

@@ -7,9 +7,7 @@
 namespace parma {
   class ShapeTargets : public Targets {
     public:
-      ShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha) 
-        : Targets(s,w,alpha)
-      {
+      ShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha) {
         init(m,s,w,alpha);
       }
       double total() {
