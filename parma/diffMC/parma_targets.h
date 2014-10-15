@@ -13,6 +13,7 @@ namespace parma {
       virtual double total()=0;
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
+  Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], double alpha);
   Targets* makeVtxEdgeElmTargets(Sides* s, Weights* w[3], double alpha);
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha);
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
