@@ -600,7 +600,6 @@ bool doSetsMatch(set<int> a, set<int> b) {
 int mis(const int rank, const int, vector<partInfo>& parts, 
     vector<int>& mis, bool randNumsPredefined) {
   if(!PCU_Comm_Initialized()) PCU_Comm_Init();
-  MPI_Barrier(MPI_COMM_WORLD);
 
   if (false == randNumsPredefined) 
     setRandomNums(rank, parts);
@@ -696,8 +695,8 @@ int mis(const int rank, const int, vector<partInfo>& parts,
       partIdx++;
     }
 
-    MPI_Allreduce(&numNodesAdded, &totalNodesAdded, 1, MPI_INT, MPI_SUM, 
-        MPI_COMM_WORLD);
+    totalNodesAdded+=numNodesAdded;
+    PCU_Add_Ints(&totalNodesAdded, 1);
     loopCount++;
 
     sprintf(dbgMsg, "loopCount = %d\n", loopCount);
@@ -818,7 +817,6 @@ void recvMisStatusFromNeighbors(vector<partInfo>& parts,
 void getMergeTargets(const int, const int, 
     vector<partInfo>& parts, vector<int>&, map<int, int>& mergeTargets) {
   if(!PCU_Comm_Initialized()) PCU_Comm_Init();
-  MPI_Barrier(MPI_COMM_WORLD);
 
   sendMisStatusToNeighbors(parts);
   PCU_Comm_Send();
