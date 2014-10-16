@@ -1,6 +1,6 @@
 #include <PCU.h>
 #include <stdio.h>
-#include "parma.h"
+#include <apfPartition.h>
 #include "parma_base.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -22,7 +22,7 @@ namespace parma {
         Centroids c(mesh, wtag, s);
         Selector* sel = makeCentroidSelector(mesh, wtag, &c);
         parma::Balancer b(mesh, wtag, factor, s, w, t, sel); 
-        return b.run(tolerance);
+        return b.run(tolerance, verbose);
       }
       void balance(apf::MeshTag* weights, double tolerance) {
         double t0 = MPI_Wtime(); 

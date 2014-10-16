@@ -19,7 +19,7 @@ namespace parma {
         Targets* t = makeTargets(s, w, factor);
         Selector* sel = makeEdgeSelector(mesh, wtag);
         parma::Balancer parmaEdge(mesh, wtag, factor, s, w, t, sel);
-        return parmaEdge.run(tolerance, 1);
+        return parmaEdge.run(tolerance, verbose);
       }
       virtual void balance(apf::MeshTag* wtag, double tolerance) {
         double t0 = MPI_Wtime();
