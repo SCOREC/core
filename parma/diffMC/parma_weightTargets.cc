@@ -4,9 +4,7 @@
 namespace parma {
   class WeightTargets : public Targets {
     public:
-      WeightTargets(Sides* s, Weights* w, double alpha) 
-        : Targets(s, w, alpha)
-      {
+      WeightTargets(Sides* s, Weights* w, double alpha) {
         init(s, w, alpha);
       }
       double total() {

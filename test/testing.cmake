@@ -97,6 +97,12 @@ add_test(edgeBalance
   "${MDIR}/afosr.smd"
   "${MDIR}/4imb/"
   "afosrBal4p/")
+add_test(vtxEdgeElmBalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./vtxEdgeElmBalance
+  "${MDIR}/afosr.dmg"
+  "${MDIR}/4imb/"
+  "afosrBal4p/")
 add_test(vtxElmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxElmBalance

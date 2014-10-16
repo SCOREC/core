@@ -19,7 +19,7 @@ namespace parma {
         Targets* t = makeTargets(s, w, factor);
         Selector* sel = makeVtxSelector(mesh, wtag);
         parma::Balancer parmaVtx(mesh, wtag, factor, s, w, t, sel);
-        return parmaVtx.run(tolerance);
+        return parmaVtx.run(tolerance, verbose);
       }
       virtual void balance(apf::MeshTag* wtag, double tolerance) {
         double t0 = MPI_Wtime();
