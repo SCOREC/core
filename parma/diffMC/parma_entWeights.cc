@@ -14,7 +14,8 @@ namespace parma {
   double EntWeights::self() {
     return weight;
   }
-  double EntWeights::getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
+  double EntWeights::getEntWeight(apf::Mesh* m, apf::MeshEntity* e, 
+      apf::MeshTag* w) {
     assert(m->hasTag(e,w));
     double entW = 0;
     m->getDoubleTag(e,w,&entW);
