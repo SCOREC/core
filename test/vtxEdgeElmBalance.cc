@@ -5,26 +5,20 @@
 #include <parma.h>
 #include <PCU.h>
 
-apf::MeshTag* setWeights(apf::Mesh* m) {
-  apf::MeshEntity* e;
-  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
   double w = 1.0;
-
-  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(dim);
   while ((e = m->iterate(it))) 
     m->setDoubleTag(e, tag, &w);
   m->end(it);
+}
 
-  it = m->begin(1);
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-
-  it = m->begin(m->getDimension());
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-
+apf::MeshTag* setWeights(apf::Mesh* m) {
+  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+  setWeight(m, tag, 0);
+  setWeight(m, tag, 1);
+  setWeight(m, tag, m->getDimension());
   return tag;
 }
 
