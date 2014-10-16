@@ -20,7 +20,7 @@ namespace parma {
         Targets* t = makeTargets(s, w, factor);
         Selector* sel = makeVtxSelector(mesh, wtag);
         parma::Balancer parmaVtx(mesh, wtag, factor, s, w, t, sel);
-        return parmaVtx.run(tolerance);
+        return parmaVtx.run(tolerance, verbose);
       }
       bool runEdgeStep(apf::MeshTag* wtag, double tolerance) {
         Sides* s = makeElmBdrySides(mesh);
@@ -30,7 +30,7 @@ namespace parma {
         Targets* t = makeVtxEdgeTargets(s, w, factor);
         Selector* sel = makeEdgeSelector(mesh, wtag);
         parma::Balancer parmaVtx(mesh, wtag, factor, s, w[0], t, sel);
-        return parmaVtx.run(tolerance);
+        return parmaVtx.run(tolerance, verbose);
       }
       bool runElmStep(apf::MeshTag* wtag, double tolerance) {
         Sides* s = makeElmBdrySides(mesh);
@@ -42,7 +42,7 @@ namespace parma {
         Centroids c(mesh, wtag, s);
         Selector* sel = makeCentroidSelector(mesh, wtag, &c);
         parma::Balancer b(mesh, wtag, factor, s, w[2], t, sel); 
-        return b.run(tolerance);
+        return b.run(tolerance, verbose);
       }
       virtual void balance(apf::MeshTag* wtag, double tolerance) {
         int step=0;

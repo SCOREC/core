@@ -18,19 +18,19 @@ namespace parma {
         const Sides::Item* side;
         s->begin();
         while( (side = s->iterate()) ) {
-          /*
           const int peer = side->first;
-          const double selfW = w->self();
-          const double peerW = w->get(peer);
-          if ( selfW > peerW ) {
-            const double difference = selfW - peerW;
+          const double selfVtxW = w[0]->self();
+          const double selfEdgeW = w[1]->self();
+          const double peerVtxW = w[0]->get(peer);
+          const double peerEdgeW = w[1]->get(peer);
+          if( selfVtxW > peerVtxW && selfEdgeW > peerEdgeW ) {
+            const double difference = selfEdgeW - peerEdgeW;
             double sideFraction = side->second;
             sideFraction /= s->total();
             double scaledW = difference * sideFraction * alpha;
             set(peer, scaledW);
             totW+=scaledW;
           }
-          */
         }
         s->end();
       }
@@ -55,19 +55,23 @@ namespace parma {
         const Sides::Item* side;
         s->begin();
         while( (side = s->iterate()) ) {
-          /*
           const int peer = side->first;
-          const double selfW = w->self();
-          const double peerW = w->get(peer);
-          if ( selfW > peerW ) {
-            const double difference = selfW - peerW;
+          const double selfVtxW = w[0]->self();
+          const double selfEdgeW = w[1]->self();
+          const double selfElmW = w[2]->self();
+          const double peerVtxW = w[0]->get(peer);
+          const double peerEdgeW = w[1]->get(peer);
+          const double peerElmW = w[2]->get(peer);
+          if( selfVtxW > peerVtxW && 
+              selfEdgeW > peerEdgeW &&
+              selfElmW > peerElmW ) {
+            const double difference = selfElmW - peerElmW;
             double sideFraction = side->second;
             sideFraction /= s->total();
             double scaledW = difference * sideFraction * alpha;
             set(peer, scaledW);
             totW+=scaledW;
           }
-          */
         }
         s->end();
       }
@@ -77,4 +81,3 @@ namespace parma {
   }
 
 } //end namespace
-
