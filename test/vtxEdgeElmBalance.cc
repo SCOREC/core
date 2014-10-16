@@ -2,29 +2,25 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <parma.h>
 #include <PCU.h>
+#include <SimUtil.h>
+
+void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
+  double w = 1.0;
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(dim);
+  while ((e = m->iterate(it))) 
+    m->setDoubleTag(e, tag, &w);
+  m->end(it);
+}
 
 apf::MeshTag* setWeights(apf::Mesh* m) {
-  apf::MeshEntity* e;
   apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
-  double w = 1.0;
-
-  apf::MeshIterator* it = m->begin(0);
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-
-  it = m->begin(1);
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-
-  it = m->begin(m->getDimension());
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-
+  setWeight(m, tag, 0);
+  setWeight(m, tag, 1);
+  setWeight(m, tag, m->getDimension());
   return tag;
 }
 
@@ -33,6 +29,8 @@ int main(int argc, char** argv)
   assert(argc == 4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  Sim_readLicenseFile(NULL);
+  gmi_sim_start();
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);
@@ -40,6 +38,7 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
+  gmi_register_sim();
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = setWeights(m);
@@ -53,6 +52,8 @@ int main(int argc, char** argv)
   // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
