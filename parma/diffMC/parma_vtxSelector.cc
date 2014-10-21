@@ -28,12 +28,12 @@ namespace parma {
           const int destPid, apf::Migration* plan) {
         apf::DynamicArray<apf::MeshEntity*> adjElms;
         mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
-        if( adjElms.getSize() > maxAdjElm ) 
+        if( adjElms.getSize() > maxAdjElm )
           return 0;
         for(size_t i=0; i<adjElms.getSize(); i++) {
           apf::MeshEntity* elm = adjElms[i];
           if ( mesh->hasTag(elm, vtag) ) continue;
-          mesh->setIntTag(elm, vtag, &destPid); 
+          mesh->setIntTag(elm, vtag, &destPid);
           plan->send(elm, destPid);
         }
         return getWeight(vtx);
@@ -73,7 +73,7 @@ namespace parma {
         apf::Up edges;
         mesh->getUp(vtx, edges);
         double w = 0;
-        for(int i=0; i<edges.n; i++) 
+        for(int i=0; i<edges.n; i++)
           if( mesh->isShared(edges.e[i]) )
             w += getEntWeight(mesh, edges.e[i], wtag);
         return w;
@@ -93,12 +93,12 @@ namespace parma {
         double w = 0;
         apf::DynamicArray<apf::MeshEntity*> adjElms;
         mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
-        if( adjElms.getSize() > maxAdjElm ) 
+        if( adjElms.getSize() > maxAdjElm )
           return w;
         for(size_t i=0; i<adjElms.getSize(); i++) {
           apf::MeshEntity* elm = adjElms[i];
           if ( mesh->hasTag(elm, vtag) ) continue;
-          mesh->setIntTag(elm, vtag, &(destPid)); 
+          mesh->setIntTag(elm, vtag, &(destPid));
           plan->send(elm, destPid);
           w += getEntWeight(mesh,elm,wtag);
         }
