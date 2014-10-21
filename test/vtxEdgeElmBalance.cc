@@ -22,6 +22,12 @@ apf::MeshTag* setWeights(apf::Mesh* m) {
   return tag;
 }
 
+void clearTags(apf::Mesh* m, apf::MeshTag* t) {
+  apf::removeTagFromDimension(m, t, 0);
+  apf::removeTagFromDimension(m, t, 1);
+  apf::removeTagFromDimension(m, t, m->getDimension());
+}
+
 int main(int argc, char** argv)
 {
   assert(argc == 4);
@@ -41,7 +47,7 @@ int main(int argc, char** argv)
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
   balancer->balance(weights, 1.05);
   delete balancer;
-  apf::removeTagFromDimension(m, weights, m->getDimension());
+  clearTags(m, weights);
   m->destroyTag(weights);
   m->writeNative(argv[3]);
   // destroy mds
