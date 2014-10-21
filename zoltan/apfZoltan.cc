@@ -32,11 +32,11 @@ class ZoltanSplitter : public Splitter
           p += PCU_Proc_Self() * multiple;
           plan->send(e, p);
         }
-        double t1 = MPI_Wtime();
-        if (!PCU_Comm_Self())
-          printf("planned Zoltan split factor %d in %f seconds\n",
-              multiple, t1 - t0);
       }
+      double t1 = MPI_Wtime();
+      if (!PCU_Comm_Self())
+        fprintf(stdout, "planned Zoltan split factor %d to target"
+            " imbalance %f in %f seconds\n", multiple, tolerance, t1 - t0);
       return plan;
     }
   private:

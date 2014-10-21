@@ -333,6 +333,7 @@ class LargeAngleTriFixer : public Operator
     }
     virtual ~LargeAngleTriFixer()
     {
+      delete edgeSwap;
     }
     virtual int getTargetDimension() {return 2;}
     virtual bool shouldApply(Entity* e)

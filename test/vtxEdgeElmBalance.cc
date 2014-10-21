@@ -42,7 +42,7 @@ int main(int argc, char** argv)
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = setWeights(m);
-  const double step = 0.1; const int verbose = 1;
+  const double step = 0.7; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
   balancer->balance(weights, 1.05);
   delete balancer;
