@@ -30,6 +30,7 @@ set(APF_SOURCES
   apfGradientByVolume.cc
   apfIntegrate.cc
   apfMatrix.cc
+  apfDynamicMatrix.cc
   apfMatrixField.cc
   apfMesh.cc
   apfMesh2.cc
