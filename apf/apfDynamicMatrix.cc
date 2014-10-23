@@ -7,4 +7,5 @@ std::ostream& operator<<(std::ostream& s, apf::DynamicMatrix const& A)
       s << A(i,j) << ' ';
     s << '\n';
   }
+  return s;
 }
