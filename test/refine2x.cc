@@ -94,8 +94,8 @@ int main(int argc, char** argv)
   in->shouldFixShape = false;
   ma::adapt(in);
   m->verify();
-  m->writeNative(argv[4]);
   delete ansx;
+  m->writeNative(argv[4]);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
