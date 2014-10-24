@@ -75,6 +75,7 @@ void evalPolynomialCoeffs(int order,
 {
   int m = num_points;
   int n = (order+1)*(order+2)*(order+3)/6;
+  assert(m >= n);
   apf::DynamicMatrix P(m,n);
   apf::DynamicVector p;
   for (int i = 0; i < m; ++i)
