@@ -11,7 +11,6 @@
 
 #include <apfMesh.h>
 #include <apfShape.h>
-#include <apfField.h>
 #include <apfCavityOp.h>
 
 #include <set>
@@ -210,7 +209,7 @@ void getSamples(Patch* p, Samples* s)
 {
   Recovery* r = p->recovery;
   int np = countPatchPoints(p);
-  int nc = r->f->countComponents();
+  int nc = apf::countComponents(r->f);
   s->allocate(np,nc);
   std::size_t i = 0;
   APF_ITERATE(EntitySet, p->elements, it) {
@@ -311,7 +310,7 @@ void runSpr(Patch* p)
   Samples samples;
   getSamples(p, &samples);
   int num_components = apf::countComponents(r->f_star);
-  int num_nodes = r->f_star->countNodesOn(p->entity);
+  int num_nodes = r->mesh->getShape()->countNodesOn(r->mesh->getType(p->entity));
   apf::NewArray<double> values(samples.num_points);
   apf::NewArray<apf::Vector3> nodal_points(num_nodes);
   apf::NewArray<apf::NewArray<double> > recovered_values(num_nodes);
@@ -361,9 +360,9 @@ apf::Field* recoverField(apf::Field* f)
   Recovery recovery;
   setupRecovery(&recovery, f);
   PatchOp op(&recovery);
-  for (int i=0; i <= 3; ++i)
-    if (recovery.mesh->getShape()->countNodesOn(i) != 0)
-      op.applyToDimension(i);
+  for (int d = 0; d <= 3; ++d)
+    if (recovery.mesh->getShape()->hasNodesIn(d))
+      op.applyToDimension(d);
   return recovery.f_star;
 }
 

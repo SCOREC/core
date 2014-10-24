@@ -5,32 +5,17 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "PCU.h"
 #include "spr.h"
-#include "apfMesh.h"
-#include "apfShape.h"
-#include "apfField.h"
-#include "apfCavityOp.h"
-#include <mpi.h>
-#include <algorithm>
+
+#include <apfMesh.h>
+#include <apfShape.h>
+#include <apfCavityOp.h>
+
+#include <PCU.h>
+
+#include <limits>
 
 namespace spr {
-
-double getSelfInnerProduct(apf::DynamicVector const& a)
-{
-  double r = a(0)*a(0);
-  for (std::size_t i=0; i < a.getSize(); ++i)
-    r += a(i)*a(i);
-  return r;
-}
-
-void subtract(apf::DynamicVector const& a,
-              apf::DynamicVector const& b,
-              apf::DynamicVector& c)
-{
-  for (std::size_t i=0; i < a.getSize(); ++i)
-    c(i) = a(i) - b(i);
-}
 
 /* common base for Scalar Integrator. */
 class SInt : public apf::Integrator
@@ -47,131 +32,190 @@ class SInt : public apf::Integrator
     double r;
 };
 
-/* computes \|f\|^2 */
+struct Estimation {
+  apf::Mesh* mesh;
+  /* the maximum polynomial order that can be
+     integrated exactly using the input integration points.
+     not necessarily equal to recovered_order, sometimes
+     users give more points than strictly necessary */
+  int integration_order;
+  /* the polynomial order of the recovered field */
+  int recovered_order;
+  /* the input field consisting of values of a key
+     quantity at integration points (stress or strain, for example).
+     this field is related to integration_order */
+  apf::Field* eps;
+  /* the recovered field, consisting of nodal values
+     of the quantity of interest.
+     this uses a Lagrange basis of recovered_order */
+  apf::Field* eps_star;
+  /* the acceptable margin of error, expressed as a factor
+     greater than zero.
+     setting this equal to zero would request zero element
+     size everywhere, i.e. infinite refinement.
+     increasing it scales up the desired element size
+     throughout.
+     basically, this is a (nonlinear) scaling factor on the resulting
+     size field */
+  double tolerance;
+  /* the uniform linear scaling factor derived from the tolerance
+     and integrals of the recovered field over the mesh.
+     desired element size = current size * current error * size_factor */
+  double size_factor;
+  /* a temporary field storing desired sizes at elements */
+  apf::Field* element_size;
+  /* the resulting size field, recovered from the element_size field
+     (using a local average recovery method much weaker than SPR) */
+  apf::Field* size;
+};
+
+/* useful for initializing values to quickly
+   detect "uninitialized" value bugs */
+static double getNaN()
+{
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
+static void setupEstimation(Estimation* e, apf::Field* eps, double tolerance)
+{
+  /* note that getOrder being used to convey this meaning
+     is a bit of a hack, but looks decent if you don't
+     try to define the FieldShape API too rigorously */
+  e->integration_order = apf::getShape(eps)->getOrder();
+  e->mesh = apf::getMesh(eps);
+  /* so far recovery order is directly tied to the
+     mesh's coordinate field order, coordinate this
+     with field recovery code */
+  e->recovered_order = e->mesh->getShape()->getOrder();
+  e->eps = eps;
+  e->tolerance = tolerance;
+  e->size_factor = getNaN();
+  e->element_size = 0;
+  e->size = 0;
+}
+
+/* computes $\|f\|^2$ */
 class SelfProduct : public SInt
 {
   public:
-    SelfProduct(apf::Field* f_i,int order):
-      SInt(order),f(f_i),e(0) {}
+    SelfProduct(Estimation* e):
+      SInt(e->integration_order), estimation(e)
+    {
+      v.setSize(apf::countComponents(e->eps_star));
+    }
     void inElement(apf::MeshElement* meshElement)
     {
-      e = apf::createElement(f,meshElement);
+      element = apf::createElement(estimation->eps_star, meshElement);
     }
     void outElement()
     {
-      apf::destroyElement(e);
+      apf::destroyElement(element);
     }
     void atPoint(apf::Vector3 const& p, double w, double dV)
     {
-      int nc = f->countComponents();
-      apf::DynamicVector v(nc);
-      apf::getComponents(e,p,&v[0]);
-      r += getSelfInnerProduct(v)*w*dV;
+      apf::getComponents(element, p, &v[0]);
+      r += (v * v) * w * dV;
     }
   private:
-    apf::Field* f;
-    apf::Element* e;
+    Estimation* estimation;
+    apf::Element* element;
+    apf::DynamicVector v;
 };
 
-/* computes the $\sum_{i=1}^n \|e_\epsilon\|^{\frac{2d}{2p+d}}$ term. */
-class Error : public SInt
+/* computes the integral over the element of the
+   sum of the squared differences between the
+   original and recovered fields */
+class ElementError : public SInt
 {
   public:
-    Error(apf::Field* e, apf::Field* es, int order):
-      SInt(order),eps(e),eps_star(es),e(0),p(order)
+    ElementError(Estimation* e):
+      SInt(e->integration_order)
     {
-      apf::Mesh* m = apf::getMesh(eps);
-      d = m->getDimension();
+      estimation = e;
+      v1.setSize(apf::countComponents(e->eps));
+      v2.setSize(apf::countComponents(e->eps_star));
     }
     void inElement(apf::MeshElement* meshElement)
     {
-      e = apf::createElement(eps_star,meshElement);
-      er = 0;
+      element = apf::createElement(estimation->eps_star, meshElement);
+      entity = apf::getMeshEntity(meshElement);
+      sum = 0;
       ip = 0;
     }
     void outElement()
     {
-      r += pow(sqrt(er),((2*d)/(2*p + d)));
-      apf::destroyElement(e);
+      apf::destroyElement(element);
     }
     void atPoint(apf::Vector3 const& xi, double w, double dV)
     {
-      int nc = eps->countComponents();
-      apf::DynamicVector v1(nc),v2(nc),diff(nc);
-      apf::getComponents(
-          eps,apf::getMeshEntity(apf::getMeshElement(e)),ip,&v1[0]);
-      apf::getComponents(e,xi,&v2[0]);
-      subtract(v1,v2,diff);
-      er += getSelfInnerProduct(diff)*w*dV;
+      apf::getComponents(estimation->eps, entity, ip, &v1[0]);
+      apf::getComponents(element, xi, &v2[0]);
+      apf::DynamicVector& diff = v1;
+      diff -= v2;
+      sum += (diff * diff) * w * dV;
       ++ip;
     }
-  private:
-    apf::Field* eps; //IP sampled gradient
-    apf::Field* eps_star; //recovered gradient
-    apf::Element* e; //recovered gradient element
-    double er; //element result
-    double p,d; //polynomial order and element dimension
+    Estimation* estimation;
+    apf::Element* element;
+    apf::MeshEntity* entity;
+    double sum; //element result
     int ip; //integration point counter
+    apf::DynamicVector v1, v2;
 };
 
-/* computes the $\|e_\epsilon\|^{-\frac{2}{2p+d}}_e$ term
-   (over elements only) */
-class Error2 : public SInt
+/* computes the $\sum_{i=1}^n \|e_\epsilon\|^{\frac{2d}{2p+d}}$ term. */
+class Error : public ElementError
 {
   public:
-    Error2(apf::Field* e, apf::Field* es, int order):
-      SInt(order),eps(e),eps_star(es),e(0),p(order)
+    Error(Estimation* e):
+      ElementError(e)
     {
-      apf::Mesh* m = apf::getMesh(eps);
-      d = m->getDimension();
-    }
-    void inElement(apf::MeshElement* meshElement)
-    {
-      e = apf::createElement(eps_star,meshElement);
-      ip = 0;
     }
     void outElement()
     {
-      r = pow(sqrt(r),-(2/(2*p + d)));
-      apf::destroyElement(e);
+      ElementError::outElement();
+      double d = estimation->mesh->getDimension();
+      double p = estimation->recovered_order;
+      r += pow(sqrt(sum), ((2 * d) / (2 * p + d)));
     }
-    void atPoint(apf::Vector3 const& p, double w, double dV)
-    {
-      int nc = eps->countComponents();
-      apf::DynamicVector v1(nc),v2(nc),diff(nc);
-      apf::getComponents(
-          eps,apf::getMeshEntity(apf::getMeshElement(e)),ip,&v1[0]);
-      apf::getComponents(e,p,&v2[0]);
-      subtract(v1,v2,diff);
-      r += getSelfInnerProduct(diff)*w*dV;
-      ++ip;
-    }
-  private:
-    apf::Field* eps; //IP sampled gradient
-    apf::Field* eps_star; //recovered gradient
-    apf::Element* e; //recovered gradient element
-    double p,d; //polynomial order and element dimension
-    int ip; //integration point counter
 };
 
-double computeSizeFactor(apf::Field* eps,
-                         apf::Field* eps_star,
-                         double adaptRatio)
+/* computes the $\|e_\epsilon\|^{-\frac{2}{2p+d}}_e$ term
+   (over one element only) */
+class Error2 : public ElementError
 {
-  apf::Mesh* mesh = apf::getMesh(eps);
-  double p = mesh->getShape()->getOrder();
-  SelfProduct epsStarNormIntegrator(eps_star,p);
-  epsStarNormIntegrator.process(mesh);
+  public:
+    Error2(Estimation* e):
+      ElementError(e)
+    {
+    }
+    void inElement(apf::MeshElement* meshElement)
+    {
+    }
+    void outElement()
+    {
+      ElementError::outElement();
+      double p = estimation->recovered_order;
+      double d = estimation->mesh->getDimension();
+      r = pow(sqrt(sum), -(2 / (2 * p + d)));
+    }
+};
+
+static void computeSizeFactor(Estimation* e)
+{
+  SelfProduct epsStarNormIntegrator(e);
+  epsStarNormIntegrator.process(e->mesh);
   double epsStarNorm = sqrt(epsStarNormIntegrator.r);
-  Error errorIntegrator(eps,eps_star,p);
-  errorIntegrator.process(mesh);
-  return pow((((adaptRatio*adaptRatio)*
-               (epsStarNorm*epsStarNorm))/
-              errorIntegrator.r),
-             1.0/(2.0*p));
+  Error errorIntegrator(e);
+  errorIntegrator.process(e->mesh);
+  double a = e->tolerance * e->tolerance *
+             epsStarNorm * epsStarNorm;
+  double b = a / errorIntegrator.r;
+  double p = e->recovered_order;
+  e->size_factor = pow(b, 1.0 / (2.0 * p));
 }
 
-double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e)
+static double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e)
 {
   apf::MeshElement* element = apf::createMeshElement(m,e);
   double h = measure(element);
@@ -179,130 +223,111 @@ double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e)
   return h;
 }
 
-double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
+static double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
 {
   /* right now maximum edge length is the formula... */
   double h = 0;
   apf::Downward edges;
   int ne = m->getDownward(e,1,edges);
   for (int i=0; i < ne; ++i)
-    h = std::max(h,getEdgeLength(m,edges[i]));
+    h = std::max(h, getEdgeLength(m, edges[i]));
   return h;
 }
 
-double getDesiredSize(apf::Mesh* m,
-                      apf::MeshEntity* e,
-                      apf::Field* eps, apf::Field* eps_star,
-                      double sizeFactor)
+static double getDesiredSize(Estimation* e, apf::MeshEntity* entity)
 {
-  int p = m->getShape()->getOrder();
-  Error2 errorNormIntegrator(eps,eps_star,p);
-  apf::MeshElement* element = apf::createMeshElement(m,e);
+  Error2 errorNormIntegrator(e);
+  apf::MeshElement* element = apf::createMeshElement(e->mesh, entity);
   errorNormIntegrator.process(element);
   double errorNorm = errorNormIntegrator.r;
   apf::destroyMeshElement(element);
-  double h = getCurrentSize(m,e);
-  return h*errorNorm*sizeFactor;
+  double h = getCurrentSize(e->mesh, entity);
+  return h * errorNorm * e->size_factor;
 }
 
-apf::Field* getElementSizeField(apf::Field* eps,
-                           apf::Field* eps_star,
-                           double sizeFactor)
+static void getElementSizeField(Estimation* e)
 {
-  apf::Mesh* mesh = apf::getMesh(eps);
-  apf::Field* eSize = apf::createStepField(mesh,"esize",apf::SCALAR);
-  int d = mesh->getDimension();
+  apf::Field* eSize = apf::createStepField(e->mesh, "esize", apf::SCALAR);
+  int d = e->mesh->getDimension();
   apf::MeshEntity* entity;
-  apf::MeshIterator* elements = mesh->begin(d);
-  while ((entity = mesh->iterate(elements)))
-  {
-    double h = getDesiredSize(mesh,entity,eps,eps_star,sizeFactor);
-    apf::setScalar(eSize,entity,0,h);
+  apf::MeshIterator* elements = e->mesh->begin(d);
+  while ((entity = e->mesh->iterate(elements))) {
+    double h = getDesiredSize(e, entity);
+    apf::setScalar(eSize, entity, 0, h);
   }
-  mesh->end(elements);
-  return eSize;
+  e->mesh->end(elements);
+  e->element_size = eSize;
 }
 
-void averageToVertices(apf::Field* ef, apf::Field* vf, apf::MeshEntity* v)
+/* note that this only works when there is
+   one node per entity at most. */
+void averageToEntity(apf::Field* ef, apf::Field* vf, apf::MeshEntity* ent)
 {
   apf::Mesh* m = apf::getMesh(ef);
   apf::Adjacent elements;
-  m->getAdjacent(v,m->getDimension(),elements);
+  m->getAdjacent(ent, m->getDimension(), elements);
   double s=0;
   for (std::size_t i=0; i < elements.getSize(); ++i)
-    s += apf::getScalar(ef,elements[i],0);
+    s += apf::getScalar(ef, elements[i], 0);
   s /= elements.getSize();
-  apf::setScalar(vf,v,0,s);
+  apf::setScalar(vf, ent, 0, s);
 }
 
-class ElementsToVertex : public apf::CavityOp
+class AverageOp : public apf::CavityOp
 {
   public:
-    ElementsToVertex(apf::Field* e, apf::Field* v):
-      apf::CavityOp(apf::getMesh(e)),
-      elementField(e),
-      vertexField(v)
-    {}
+    AverageOp(Estimation* e):
+      apf::CavityOp(e->mesh)
+    {
+      estimation = e;
+    }
     virtual Outcome setEntity(apf::MeshEntity* e)
     {
-      vertex = e;
-      if (hasEntity(vertexField,vertex))
+      entity = e;
+      if (apf::hasEntity(estimation->size, entity))
         return SKIP;
-      if ( ! requestLocality(&vertex,1))
+      if ( ! requestLocality(&entity, 1))
         return REQUEST;
       return OK;
     }
     virtual void apply()
     {
-      averageToVertices(elementField,vertexField,vertex);
+      averageToEntity(estimation->element_size,
+          estimation->size, entity);
     }
-    apf::Field* elementField;
-    apf::Field* vertexField;
-    apf::MeshEntity* vertex;
+    Estimation* estimation;
+    apf::MeshEntity* entity;
 };
 
-apf::Field* elementToVertexField(apf::Field* eSize)
+void averageSizeField(Estimation* e)
 {
-  apf::Mesh* m = apf::getMesh(eSize);
-  apf::Field* sizeField = apf::createFieldOn(m,"size",apf::SCALAR);
-  ElementsToVertex op(eSize,sizeField);
-  op.applyToDimension(0);
-  /* averaging vtx size field to edge node for now
-     ElementsToVertex should really probably be
-     extended to ElementsToNode */
-  if (m->getShape()->countNodesOn(1) != 0)
-  {
-    apf::MeshIterator* edges = m->begin(1);
-    apf::MeshEntity* edge;
-    while ((edge = m->iterate(edges)))
-    {
-      apf::MeshEntity* v[2];
-      m->getDownward(edge,0,v);
-      double s[2];
-      s[0] = apf::getScalar(sizeField,v[0],0);
-      s[1] = apf::getScalar(sizeField,v[1],0);
-      double nodeSize = 0.5*(s[0]+s[1]);
-      apf::setScalar(sizeField,edge,0,nodeSize);
-    }
-    m->end(edges);
-  }
-  return sizeField;
+  e->size = apf::createFieldOn(e->mesh, "size", apf::SCALAR);
+  AverageOp op(e);
+  for (int d = 0; d <= e->mesh->getDimension(); ++d)
+    if (e->mesh->getShape()->hasNodesIn(d))
+      op.applyToDimension(d);
+}
+
+static void estimateError(Estimation* e)
+{
+  e->eps_star = recoverField(e->eps);
+  computeSizeFactor(e);
+  getElementSizeField(e);
+  apf::destroyField(e->eps_star);
+  averageSizeField(e);
+  apf::destroyField(e->element_size);
 }
 
 apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio)
 {
   double t0 = MPI_Wtime();
-  apf::Field* eps_star = recoverField(eps);
-  double sizeFactor = computeSizeFactor(eps,eps_star,adaptRatio);
-  apf::Field* eSize = getElementSizeField(eps,eps_star,sizeFactor);
-  apf::destroyField(eps_star);
-  apf::Field* sizeField;
-  sizeField = elementToVertexField(eSize);
-  apf::destroyField(eSize);
+  Estimation e;
+  setupEstimation(&e, eps, adaptRatio);
+  estimateError(&e);
   double t1 = MPI_Wtime();
   if (!PCU_Comm_Self())
     fprintf(stderr,"SPR: error estimated in %f seconds\n",t1-t0);
-  return sizeField;
+  return e.size;
 }
 
 }
