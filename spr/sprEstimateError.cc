@@ -189,9 +189,6 @@ class Error2 : public ElementError
       ElementError(e)
     {
     }
-    void inElement(apf::MeshElement* meshElement)
-    {
-    }
     void outElement()
     {
       ElementError::outElement();
