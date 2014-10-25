@@ -167,7 +167,7 @@ static bool expandAsNecessary(Patch* p, apf::CavityOp* o)
   {
     if (!addElementsThatShare(p, shared_dim, old_set, o))
       return false;
-    if (hasEnoughPoints(p));
+    if (hasEnoughPoints(p))
       return true;
   }
   bool hope = p->elements.size() > old_set.size();
