@@ -11,7 +11,7 @@ namespace parma {
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
         vtag = mesh->createIntTag("selector_visited",1);
-        const size_t maxBoundedElm = 6;
+        const size_t maxBoundedElm = 12;
         double planW=0;
         for( size_t maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
           planW += select(tgts, planW, maxAdjElm, plan);
@@ -19,25 +19,29 @@ namespace parma {
         mesh->destroyTag(vtag);
         return plan;
       }
-    private:
+    protected:
       apf::MeshTag* vtag;
-      VtxSelector();
-      double add(apf::MeshEntity* vtx, const size_t maxAdjElm, 
+      virtual double getWeight(apf::MeshEntity* vtx) {
+        return getEntWeight(mesh,vtx,wtag);
+      }
+      virtual double add(apf::MeshEntity* vtx, const size_t maxAdjElm,
           const int destPid, apf::Migration* plan) {
         apf::DynamicArray<apf::MeshEntity*> adjElms;
         mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
-        if( adjElms.getSize() > maxAdjElm ) 
+        if( adjElms.getSize() > maxAdjElm )
           return 0;
         for(size_t i=0; i<adjElms.getSize(); i++) {
           apf::MeshEntity* elm = adjElms[i];
           if ( mesh->hasTag(elm, vtag) ) continue;
-          mesh->setIntTag(elm, vtag, &destPid); 
+          mesh->setIntTag(elm, vtag, &destPid);
           plan->send(elm, destPid);
         }
-        return getEntWeight(mesh,vtx,wtag);
+        return getWeight(vtx);
       }
-      double select(Targets* tgts, const double planW, 
-          const size_t maxAdjElm, 
+    private:
+      VtxSelector();
+      double select(Targets* tgts, const double planW,
+          const size_t maxAdjElm,
           apf::Migration* plan) {
         double planWeight = 0;
         apf::MeshEntity* vtx;
@@ -58,5 +62,50 @@ namespace parma {
   };
   Selector* makeVtxSelector(apf::Mesh* m, apf::MeshTag* w) {
     return new VtxSelector(m, w);
+  }
+
+  class EdgeSelector : public VtxSelector {
+    public:
+      EdgeSelector(apf::Mesh* m, apf::MeshTag* w)
+        : VtxSelector(m, w) {}
+    protected:
+      double getWeight(apf::MeshEntity* vtx) {
+        apf::Up edges;
+        mesh->getUp(vtx, edges);
+        double w = 0;
+        for(int i=0; i<edges.n; i++)
+          if( mesh->isShared(edges.e[i]) )
+            w += getEntWeight(mesh, edges.e[i], wtag);
+        return w;
+      }
+  };
+  Selector* makeEdgeSelector(apf::Mesh* m, apf::MeshTag* w) {
+    return new EdgeSelector(m, w);
+  }
+
+  class ElmSelector : public VtxSelector {
+    public:
+      ElmSelector(apf::Mesh* m, apf::MeshTag* w)
+        : VtxSelector(m, w) {}
+    protected:
+      virtual double add(apf::MeshEntity* vtx, const size_t maxAdjElm,
+          const int destPid, apf::Migration* plan) {
+        double w = 0;
+        apf::DynamicArray<apf::MeshEntity*> adjElms;
+        mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
+        if( adjElms.getSize() > maxAdjElm )
+          return w;
+        for(size_t i=0; i<adjElms.getSize(); i++) {
+          apf::MeshEntity* elm = adjElms[i];
+          if ( mesh->hasTag(elm, vtag) ) continue;
+          mesh->setIntTag(elm, vtag, &(destPid));
+          plan->send(elm, destPid);
+          w += getEntWeight(mesh,elm,wtag);
+        }
+        return w;
+      }
+  };
+  Selector* makeElmSelector(apf::Mesh* m, apf::MeshTag* w) {
+    return new ElmSelector(m, w);
   }
 } //end namespace parma

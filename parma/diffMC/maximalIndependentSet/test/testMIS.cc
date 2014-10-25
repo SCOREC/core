@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <string>
 #include "PCU.h"
-#include "parmaIO.h"
+#include "parma_commons.h"
 
 using std::set;
 using std::vector;
@@ -17,7 +17,9 @@ using std::find;
 using std::cout;
 
 using namespace misLuby;
-using namespace ParMA_IO;
+using parmaCommons::debug;
+using parmaCommons::status;
+using parmaCommons::error;
 
 void getRandomNums(int totRandNums, vector<int>& localRandNums, bool debug = false) {
     int rank;
@@ -243,16 +245,15 @@ int test_2dStencil(const int rank, const int totNumParts,
         const int numParts, bool randNumsPredefined = false) {
     char outMsg[256];
 
-    sprintf(outMsg, "test_2dStencil - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
-    statusPrint(outMsg);
+    status("test_2dStencil - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
 
     const int sqrtTotNumParts = floor(sqrt(totNumParts));
     if (totNumParts != sqrtTotNumParts * sqrtTotNumParts) {
-        errorPrint("totNumParts must be a perfect square\n");
+        MIS_FAIL("totNumParts must be a perfect square\n");
         return 1;
     }
     if (totNumParts < 9) {
-        errorPrint("totNumParts must be at least 9\n");
+        MIS_FAIL("totNumParts must be at least 9\n");
         return 1;
     }
 
@@ -306,8 +307,7 @@ int test_2dStencil(const int rank, const int totNumParts,
     double elapsedTime = t2 - t1;
     double maxElapsedTime = 0.0;
     MPI_Reduce(&elapsedTime, &maxElapsedTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    sprintf(outMsg, "elapsed time (seconds) = %f \n", maxElapsedTime);
-    statusPrint(outMsg);
+    status("elapsed time (seconds) = %f \n", maxElapsedTime);
 
     vector<int> isInMIS(numParts, 0);
     vector<int>::iterator misItr;
@@ -333,19 +333,17 @@ int test_2dStencil(const int rank, const int totNumParts,
                 ++sizeIS;
             }
         }
-        sprintf(&(statusMsg[pos]), "\n");
-        statusPrint(statusMsg);
-
-        sprintf(statusMsg, "|independent set| = %d\n", sizeIS);
-        statusPrint(statusMsg);
+        status("%s\n", statusMsg);
         delete [] statusMsg;
 
+        status("|independent set| = %d\n", sizeIS);
+
         if (false == isValidIndependentSet(globalIsInMIS, sqrtTotNumParts, totNumParts)) {
-            errorPrint("Not a valid independent set!\n");
+            MIS_FAIL("Not a valid independent set!\n");
         }
 
         if (false == isMaximalIndependentSet(globalIsInMIS, sqrtTotNumParts, totNumParts)) {
-            errorPrint("Not a maximal independent set!\n");
+            MIS_FAIL("Not a maximal independent set!\n");
         }
 
         delete [] globalIsInMIS;
@@ -383,13 +381,9 @@ int test_StarA(const int rank, const int totNumParts,
         const int numParts, bool randNumsPredefined = false) {
     char dbgMsg[256];
 
-    sprintf(dbgMsg, "test_StarA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
-    statusPrint(dbgMsg);
-
+    status("test_StarA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
 
     vector<partInfo> parts;
-
-
 
     for (int partIdx = 0; partIdx < numParts; partIdx++) {
         partInfo p;   
@@ -468,12 +462,10 @@ int test_StarA(const int rank, const int totNumParts,
                 ++sizeIS;
             }
         }
-        sprintf(&(statusMsg[pos]), "\n");
-        statusPrint(statusMsg);
+        status("%s\n", statusMsg);
         delete [] globalIsInMIS;
 
-        sprintf(statusMsg, "|independent set| = %d\n", sizeIS);
-        statusPrint(statusMsg);
+        status("|independent set| = %d\n", sizeIS);
         delete [] statusMsg;
 
 
@@ -489,13 +481,12 @@ int test_StarA(const int rank, const int totNumParts,
 
 int test_4partsA(const int rank, const int totNumParts, const int numParts, bool predefinedRandNums) {
     if (4 != totNumParts) {
-        errorPrint("totNumParts must be 4\n");
+        MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
     char dbgMsg[256];
-    sprintf(dbgMsg, "test_4partsA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
-    statusPrint(dbgMsg);
+    status("test_4partsA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
 
     partInfo part;
     part.id = rank;
@@ -565,13 +556,12 @@ int test_4partsA(const int rank, const int totNumParts, const int numParts, bool
 
 int test_4partsB(const int rank, const int totNumParts, const int numParts, bool predefinedRandNums) {
     if (4 != totNumParts) {
-        errorPrint("totNumParts must be 4\n");
+        MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
     char dbgMsg[256];
-    sprintf(dbgMsg, "test_4partsAndNums - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
-    statusPrint(dbgMsg);
+    status("test_4partsAndNums - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
 
     partInfo part;
     part.id = rank;
@@ -639,13 +629,12 @@ int test_4partsB(const int rank, const int totNumParts, const int numParts, bool
 
 int test_4partsC(const int rank, const int totNumParts, const int numParts, bool predefinedRandNums) {
     if (4 != totNumParts) {
-        errorPrint("totNumParts must be 4\n");
+        MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
     char dbgMsg[256];
-    sprintf(dbgMsg, "test_4partsA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
-    statusPrint(dbgMsg);
+    status("test_4partsA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
 
     partInfo part;
     part.id = rank;
@@ -779,7 +768,7 @@ int main(int argc, char** argv) {
     randNumSeed = broadcastInt(randNumSeed);
     bool predefinedRandNums = getBool(iPredefinedRandNums);
 
-    misInit(randNumSeed, getBool(debugMode));
+    mis_init(randNumSeed, getBool(debugMode));
 
     int ierr;
     switch (testNum) {

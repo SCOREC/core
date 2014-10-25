@@ -7,6 +7,6 @@ Name: ParMA
 URL: http://redmine.scorec.rpi.edu/projects/parma/wiki/
 Description: Partitioning using Mesh Adjacencies
 Version: @PACKAGE_VERSION@
-Requires: libapf_pumi
+Requires: libapf
 Libs: -L${libdir} -lparma
 Cflags: -I${includedir} 

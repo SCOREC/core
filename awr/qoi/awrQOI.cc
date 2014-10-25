@@ -16,13 +16,4 @@ QOI::QOI(apf::Mesh* m, const Teuchos::ParameterList& p) :
 {
 }
 
-void QOI::assemble()
-{
-  apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
-  apf::MeshEntity* e = mesh_->iterate(elems);
-  mesh_->end(elems);
-  apf::DynamicVector k;
-  evaluateElementQOI(e,k);
-}
-
 }

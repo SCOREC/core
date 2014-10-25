@@ -19,10 +19,10 @@ class QOI
   public:
     QOI(apf::Mesh* m, const Teuchos::ParameterList& p);
     virtual ~QOI() {};
-    void assemble();
     virtual void 
     evaluateElementQOI(apf::MeshEntity* e,
                        apf::DynamicVector& f) = 0;
+    apf::Mesh* getMesh() { return mesh_; };
   protected:
     apf::Mesh* mesh_;
     Teuchos::ParameterList params_;

@@ -34,6 +34,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_commons.cc
   diffMC/parma_dcpart.cc
   diffMC/parma_diffmc.cc
+  diffMC/parma_edgeBalancer.cc
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_entWeights.cc
   diffMC/parma_ghost.cc
@@ -50,6 +51,8 @@ SET(DIFFMC_SOURCES
   diffMC/parma_vtxBalancer.cc
   diffMC/parma_vtxSelector.cc
   diffMC/parma_weightTargets.cc
+  diffMC/parma_vtxEdgeElmTargets.cc
+  diffMC/parma_vtxEdgeElmBalancer.cc
   diffMC/zeroOneKnapsack.cc
   diffMC/maximalIndependentSet/misLuby.cc
   )
