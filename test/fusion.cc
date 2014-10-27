@@ -13,7 +13,7 @@ double const c_param = 0.2;
 double const d_param = 0.0;
 double const e_param = 1.3;
 
-void edgeFunction(double const p[2], double x[3])
+void edgeFunction(double const p[2], double x[3], void*)
 {
   double phi = p[0];
   x[0] = a_param + b_param*(cos(phi + c_param*sin(phi)));
@@ -21,7 +21,7 @@ void edgeFunction(double const p[2], double x[3])
   x[2] = 0;
 }
 
-void faceFunction(double const p[2], double x[3])
+void faceFunction(double const p[2], double x[3], void*)
 {
   (void)p;
   (void)x;
@@ -32,10 +32,10 @@ gmi_model* makeModel()
   gmi_model* model = gmi_make_analytic();
   int edgePeriodic = 1;
   double edgeRange[2] = {0, 2 * apf::pi};
-  gmi_add_analytic(model, 1, 1, edgeFunction, &edgePeriodic, &edgeRange);
+  gmi_add_analytic(model, 1, 1, edgeFunction, &edgePeriodic, &edgeRange, 0);
   int facePeriodic[2] = {0, 0};
   double faceRanges[2][2] = {{0,0},{0,0}};
-  gmi_add_analytic(model, 2, 1, faceFunction, facePeriodic, faceRanges);
+  gmi_add_analytic(model, 2, 1, faceFunction, facePeriodic, faceRanges, 0);
   return model;
 }
 
