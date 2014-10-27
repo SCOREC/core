@@ -8,6 +8,14 @@
 #include "parma_selector.h"
 #include "parma_centroids.h"
 
+namespace {
+  void printTiming(const char* type, int steps, double tol, double time) {
+    if (!PCU_Comm_Self())
+      printf("%s balanced in %d steps to %f in %f seconds\n",
+          type, steps, tol, time);
+  }
+}
+
 namespace parma {
   class VtxEdgeElmBalancer : public apf::Balancer {
     public:
@@ -33,73 +41,32 @@ namespace parma {
         parma::Balancer parmaEdge(mesh, wtag, factor, s, w[1], t, sel);
         return parmaEdge.run(tolerance, verbose);
       }
-      bool runElmCentroidStep(apf::MeshTag* wtag, double tolerance) {
-        Sides* s = makeElmBdrySides(mesh);
-        Weights* w = makeEntWeights(mesh, wtag, s, mesh->getDimension());
-        Targets* t = makeTargets(s, w, factor);
-        Centroids c(mesh, wtag, s);
-        Selector* sel = makeCentroidSelector(mesh, wtag, &c);
-        parma::Balancer b(mesh, wtag, factor, s, w, t, sel);
-        return b.run(tolerance, verbose);
-      }
-      bool runElmOnlyStep(apf::MeshTag* wtag, double tolerance) {
-        Sides* s = makeElmBdrySides(mesh);
-        Weights* w = makeEntWeights(mesh, wtag, s, mesh->getDimension());
-        Targets* t = makeTargets(s, w, factor);
-        Selector* sel = makeElmSelector(mesh, wtag);
-        parma::Balancer b(mesh, wtag, factor, s, w, t, sel);
-        return b.run(tolerance, verbose);
-      }
       bool runElmStep(apf::MeshTag* wtag, double tolerance) {
         Sides* s = makeElmBdrySides(mesh);
-        /*
         Weights* w = makeEntWeights(mesh, wtag, s, mesh->getDimension());
         Targets* t = makeTargets(s, w, factor);
-        */
-        Weights* w[3] =
-          {makeEntWeights(mesh, wtag, s, 0),
-           makeEntWeights(mesh, wtag, s, 1),
-           makeEntWeights(mesh, wtag, s, mesh->getDimension())};
-        Targets* t = makeVtxEdgeElmTargets(s, w, factor);
-        //Centroids c(mesh, wtag, s);
-        //Selector* sel = makeCentroidSelector(mesh, wtag, &c);
         Selector* sel = makeElmSelector(mesh, wtag);
-        parma::Balancer b(mesh, wtag, factor, s, w[2], t, sel);
-        //parma::Balancer b(mesh, wtag, factor, s, w, t, sel);
+        parma::Balancer b(mesh, wtag, factor, s, w, t, sel);
         return b.run(tolerance, verbose);
       }
-      virtual void balance(apf::MeshTag* wtag, double tolerance) {
+      void balance(apf::MeshTag* wtag, double tolerance) {
         int step=0;
         double t0 = MPI_Wtime();
-        while (runElmOnlyStep(wtag,1.10) && step++ < 50);
-        double t1 = MPI_Wtime();
-        if (!PCU_Comm_Self())
-          printf("elements balanced to %f in %f seconds\n", 1.10, t1-t0);
+        while (runElmStep(wtag,tolerance) && step++ < 50);
+        printTiming("elements", step, tolerance, MPI_Wtime()-t0);
         Parma_PrintPtnStats(mesh, "post elements");
 
         step=0;
         t0 = MPI_Wtime();
         while (runVtxStep(wtag,tolerance) && step++ < 50);
-        t1 = MPI_Wtime();
-        if (!PCU_Comm_Self())
-          printf("vertices balanced to %f in %f seconds\n", tolerance, t1-t0);
+        printTiming("vertices", step, tolerance, MPI_Wtime()-t0);
         Parma_PrintPtnStats(mesh, "post vertices");
 
         step=0;
         t0 = MPI_Wtime();
         while (runEdgeStep(wtag,tolerance) && step++ < 50);
-        t1 = MPI_Wtime();
-        if (!PCU_Comm_Self())
-          printf("edges balanced to %f in %f seconds\n", tolerance, t1-t0);
+        printTiming("edges", step, tolerance, MPI_Wtime()-t0);
         Parma_PrintPtnStats(mesh, "post edges");
-
-        step=0;
-        t0 = MPI_Wtime();
-        while (runElmStep(wtag,tolerance) && step++ < 50);
-        t1 = MPI_Wtime();
-        if (!PCU_Comm_Self())
-          printf("elements balanced to %f in %f seconds\n", tolerance, t1-t0);
-        Parma_PrintPtnStats(mesh, "post elements");
       }
     private:
       apf::Mesh* mesh;
@@ -108,7 +75,7 @@ namespace parma {
   };
 } //end parma namespace
 
-apf::Balancer* Parma_MakeVtxEdgeElmBalancer(apf::Mesh* m, 
+apf::Balancer* Parma_MakeVtxEdgeElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
   return new parma::VtxEdgeElmBalancer(m, stepFactor, verbosity);
 }
