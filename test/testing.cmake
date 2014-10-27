@@ -75,6 +75,12 @@ add_test(gap
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
 set(MDIR ${MESHES}/airFoilAfosr)
+add_test(elmBalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./elmBalance
+  "${MDIR}/afosr.dmg"
+  "${MDIR}/4imb/"
+  "afosrBal4p/")
 add_test(vtxBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxBalance
