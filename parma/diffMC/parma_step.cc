@@ -1,25 +1,25 @@
 #include <PCU.h>
-#include "parma_base.h"
+#include "parma_step.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
 
 namespace parma {
-  Balancer::Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
+  Stepper::Stepper(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
      bool (*fn)(double imb, double maxImb))
     : m(mIn), w(wIn), alpha(alphaIn), 
       sides(s), weights(w), targets(t), selects(sel), stop(fn) {}
 
-  Balancer::~Balancer() {
+  Stepper::~Stepper() {
     delete sides;
     delete weights;
     delete targets;
     delete selects;
   }
 
-  bool Balancer::run(double maxImb, int verbosity) {
+  bool Stepper::step(double maxImb, int verbosity) {
     const double imb = imbalance();
     if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "imbalance %.3f\n", imb);
@@ -31,7 +31,7 @@ namespace parma {
     return true;
   }
 
-  double Balancer::imbalance() { 
+  double Stepper::imbalance() { 
     double maxWeight = 0, totalWeight = 0;
     maxWeight = totalWeight = weights->self();
     PCU_Add_Doubles(&totalWeight,1);
