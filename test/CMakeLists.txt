@@ -70,6 +70,11 @@ setup_exe(fusion2 fusion2.cc)
 setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
+#setup_exe(viz viz.cc)
+
+include_directories("/lore/diamog/core/prefix/include")
+setup_exe(viz viz.cc)
+target_link_libraries(viz "/lore/diamog/core/prefix/lib/libmilo.a")
 
 if(IS_TESTING)
   include(testing.cmake)
