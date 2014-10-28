@@ -155,6 +155,16 @@ Input* configure(
 
 Input* configure(
     Mesh* m,
+    apf::Field* f,
+    SolutionTransfer* s)
+{
+  Input* in = configure(m,s);
+  in->sizeField = makeSizeField(m, f);
+  return in;
+}
+
+Input* configure(
+    Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
     SolutionTransfer* s)
@@ -163,23 +173,6 @@ Input* configure(
   in->sizeField = makeSizeField(m, sizes, frames);
   return in;
 }
-
-class FieldReader : public IsotropicFunction
-{
-  public:
-    FieldReader(apf::Field* f)
-    {
-      field = f;
-      assert(apf::getValueType(field)==apf::SCALAR);
-      assert(apf::getShape(field)==apf::getLagrange(1));
-    }
-    virtual ~FieldReader() {}
-    virtual double getValue(Entity* vert)
-    {
-      return apf::getScalar(field,vert,0);
-    }
-    apf::Field* field;
-};
 
 Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {

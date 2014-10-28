@@ -92,6 +92,7 @@ class IsotropicFunction
 };
 
 SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames);
+SizeField* makeSizeField(Mesh* m, apf::Field* size);
 SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f);
 SizeField* makeSizeField(Mesh* m, IsotropicFunction* f);
 

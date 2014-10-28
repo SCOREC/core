@@ -24,18 +24,17 @@ if(BUILD_IN_TRILINOS)
     @ONLY)
   #pkgconfig }
 
-  #Sources & Headers
+  #Base Sources
   set(SOURCES
     awr.cc
-    awrBasisUtils.cc
-    lhs/awrLHS.cc
-    lhs/awrLHSFactory.cc
-    lhs/awrPoissonLHS.cc
-    lhs/awrNonlinearPoissonLHS.cc
-    qoi/awrQOI.cc
-    qoi/awrQOIFactory.cc
-    qoi/awrSolutionSquaredQOI.cc)
-
+    awrUtils.cc
+    evaluators/awrPoissonIntegrator.cc
+    linear_system/awrLinearSystem.cc
+    problems/awrProblem.cc
+    problems/awrProblemFactory.cc
+    problems/awrPoissonProblem.cc)
+  
+  #Header
   set(HEADERS
     awr.h)
 

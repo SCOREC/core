@@ -23,12 +23,13 @@ struct gmi_analytic
   gmi_analytic_fun* f[4];
   ptr_to_2_u8s periodic[4];
   ptr_to_2x2_doubles ranges[4];
+  void** user_data[4];
 };
 
 #define REALLOC(a,n) ((a)=realloc((a),(n)*sizeof(*(a))))
 
 void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
-    gmi_analytic_fun f, int* periodic, double (*ranges)[2])
+    gmi_analytic_fun f, int* periodic, double (*ranges)[2], void* user_data)
 {
   struct gmi_analytic* m2;
   struct gmi_ent* e;
@@ -42,6 +43,7 @@ void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
     REALLOC(m2->f[dim], m->n[dim]);
     REALLOC(m2->periodic[dim], m->n[dim]);
     REALLOC(m2->ranges[dim], m->n[dim]);
+    REALLOC(m2->user_data[dim], m->n[dim]);
   }
   i = gmi_base_index(e);
   m2->f[dim][i] = f;
@@ -55,6 +57,7 @@ void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
     m2->ranges[dim][i][j][0] = 0;
     m2->ranges[dim][i][j][1] = 0;
   }
+  m2->user_data[dim][i] = user_data;
 }
 
 void gmi_add_analytic_region(struct gmi_model* m, int tag)
@@ -76,8 +79,13 @@ static void eval(struct gmi_model* m, struct gmi_ent* e,
       double const p[2], double x[3])
 {
   struct gmi_analytic* m2;
+  int dim, i;
+  void* u;
   m2 = (struct gmi_analytic*)m;
-  m2->f[gmi_dim(m, e)][gmi_base_index(e)](p, x);
+  dim = gmi_dim(m, e);
+  i = gmi_base_index(e);
+  u = m2->user_data[dim][i];
+  m2->f[dim][i](p, x, u);
 }
 
 static void reparam(struct gmi_model* m, struct gmi_ent* from,
@@ -112,6 +120,7 @@ static void destroy(struct gmi_model* m)
     free(m2->f[i]);
     free(m2->periodic[i]);
     free(m2->ranges[i]);
+    free(m2->user_data[i]);
   }
   gmi_base_destroy(m);
 }
@@ -136,4 +145,10 @@ struct gmi_model* gmi_make_analytic(void)
   m = calloc(1, sizeof(*m));
   m->base.model.ops = &ops;
   return &m->base.model;
+}
+
+void* gmi_analytic_data(struct gmi_model* m, struct gmi_ent* e)
+{
+  struct gmi_analytic* m2 = (struct gmi_analytic*)m;
+  return m2->user_data[gmi_dim(m, e)][gmi_base_index(e)];
 }

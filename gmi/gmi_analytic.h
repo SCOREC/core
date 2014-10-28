@@ -22,8 +22,9 @@ extern "C" {
 /** \brief the analytic parameterization of a model boundary
   \param p the input parametric coordinates. see gmi_eval for the
            format of this array
-  \param x the resuting 3D point in space */
-typedef void (*gmi_analytic_fun)(double const p[2], double x[3]);
+  \param x the resuting 3D point in space
+  \param u pointer to user data */
+typedef void (*gmi_analytic_fun)(double const p[2], double x[3], void* u);
 
 /** \brief make an empty analytic model */
 struct gmi_model* gmi_make_analytic(void);
@@ -36,10 +37,13 @@ struct gmi_model* gmi_make_analytic(void);
   \param periodic for each dimension (d) of the entity,
                   gmi_periodic will return periodic[d]
   \param ranges for each dimension (d) of the entity,
-                gmi_range will return ranges[d] */
+                gmi_range will return ranges[d]
+  \param user_data pointer that will be passed to analytic
+                   function for this entity */
 void gmi_add_analytic(struct gmi_model* m, int dim, int tag,
-    gmi_analytic_fun f, int* periodic, double (*ranges)[2]);
+    gmi_analytic_fun f, int* periodic, double (*ranges)[2], void* user_data);
 void gmi_add_analytic_region(struct gmi_model* m, int tag);
+void* gmi_analytic_data(struct gmi_model* m, struct gmi_ent* e);
 
 #ifdef __cplusplus
 }
