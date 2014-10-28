@@ -399,6 +399,33 @@ struct IsoSizeField : public AnisoSizeField
   IsoWrapper wrapper;
 };
 
+class FieldReader : public IsotropicFunction
+{
+  public:
+    FieldReader(apf::Field* f)
+    {
+      field = f;
+      assert(apf::getValueType(field)==apf::SCALAR);
+      assert(apf::getShape(field)==apf::getMesh(field)->getShape());
+    }
+    virtual ~FieldReader() {}
+    virtual double getValue(Entity* vert)
+    {
+      return apf::getScalar(field,vert,0);
+    }
+    apf::Field* field;
+};
+
+struct IsoUserField : public IsoSizeField
+{
+  IsoUserField(Mesh* m, apf::Field* f):
+    IsoSizeField(m, &reader),
+    reader(f)
+  {
+  }
+  FieldReader reader;
+};
+
 SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames)
 {
   MetricSizeField* f = new MetricSizeField();
@@ -414,6 +441,11 @@ SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f)
 SizeField* makeSizeField(Mesh* m, IsotropicFunction* f)
 {
   return new IsoSizeField(m, f);
+}
+
+SizeField* makeSizeField(Mesh* m, apf::Field* size)
+{
+  return new IsoUserField(m, size);
 }
 
 double getAverageEdgeLength(Mesh* m)

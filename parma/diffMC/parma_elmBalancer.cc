@@ -1,4 +1,5 @@
-#include "parma_balancer.h"
+#include <PCU.h>
+#include <parma_balancer.h>
 #include "parma_step.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -6,22 +7,23 @@
 #include "parma_selector.h"
 
 namespace {
-  class EdgeBalancer : public parma::Balancer {
+  class ElmBalancer : public parma::Balancer {
     public:
-      EdgeBalancer(apf::Mesh* m, double f, int v)
-        : Balancer(m, f, v, "edges") { }
+      ElmBalancer(apf::Mesh* m, double f, int v)
+        : Balancer(m, f, v, "elements") { }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
-        parma::Weights* w = parma::makeEntWeights(mesh, wtag, s, 1);
+        parma::Weights* w =
+          parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t = parma::makeTargets(s, w, factor);
-        parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
+        parma::Selector* sel = parma::makeElmSelector(mesh, wtag);
         parma::Stepper b(mesh, wtag, factor, s, w, t, sel);
         return b.step(tolerance, verbose);
       }
   };
 }
 
-apf::Balancer* Parma_MakeEdgeBalancer(apf::Mesh* m, 
+apf::Balancer* Parma_MakeElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
-  return new EdgeBalancer(m, stepFactor, verbosity);
+  return new ElmBalancer(m, stepFactor, verbosity);
 }

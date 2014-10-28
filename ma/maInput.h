@@ -109,6 +109,15 @@ Input* configure(
     apf::Field* sizes,
     apf::Field* frames,
     SolutionTransfer* s=0);
+/** \brief generate a configuration based on an isotropic field
+ \param size a scalar field of desired element size
+ \param s if non-zero, use that to transfer all fields. otherwise,
+          transfer any associated fields with default algorithms */
+Input* configure(
+    Mesh* m,
+    apf::Field* size,
+    SolutionTransfer* s=0);
+
 /** \brief generate a uniform refinement configuration */
 Input* configureUniformRefine(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief generate a matched uniform refinement configuration */

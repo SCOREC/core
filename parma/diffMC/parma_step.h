@@ -8,15 +8,15 @@ namespace parma {
   class Weights;
   class Targets;
   class Selector;
-  class Balancer {
+  class Stepper {
     public:
-      Balancer(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
+      Stepper(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
         Sides* s, Weights* w, Targets* t, Selector* sel, 
         bool (*stop)(double imb, double maxImb)=less);
-      ~Balancer();
-      bool run(double maxImb, int verbosity=0);
+      ~Stepper();
+      bool step(double maxImb, int verbosity=0);
     private:
-      Balancer();
+      Stepper();
       apf::Mesh* m;
       apf::MeshTag* w;
       double alpha;

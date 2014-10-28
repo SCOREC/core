@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   if (argc != 5) {
     if(0==PCU_Comm_Self())
       std::cerr << "usage: " << argv[0] 
-        << " <model file> <in mesh> <split direction=[0-2] <out mesh> > \n";
+        << " <model file> <in mesh> <split direction=[0-2]> <out mesh> \n";
     return EXIT_FAILURE;
   }
   Sim_readLicenseFile(NULL);
@@ -91,6 +91,9 @@ int main(int argc, char** argv)
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
   ma::Input* in = ma::configure(m, ansx);
+  in->shouldRunPreParma = true;
+  in->shouldRunMidParma = true;
+  in->shouldRunPostParma = true;
   in->maximumIterations = 10;
   if (in->shouldSnap) {
     in->shouldSnap = false;
