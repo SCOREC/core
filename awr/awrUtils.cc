@@ -5,15 +5,17 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awrQOI.h"
-#include <apfMesh.h>
+#include "awrUtils.h"
+#include <PCU.h>
+#include <stdlib.h>
 
 namespace awr {
 
-QOI::QOI(apf::Mesh* m, const Teuchos::ParameterList& p) :
-  mesh_(m),
-  params_(p)
+void fail(const char* why)
 {
+  if (!PCU_Comm_Self())
+    fprintf(stderr,"AWR FAILED: %s\n",why);
+  abort();
 }
 
 }
