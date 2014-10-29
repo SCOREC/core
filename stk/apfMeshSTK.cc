@@ -159,7 +159,7 @@ static void buildNodes(
     StkBulkData* bulk)
 {
   Mesh* m = getMesh(nn);
-  static const char* required_by = "buildElements";
+  static const char* required_by = "buildNodes";
   int d = 0;
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
