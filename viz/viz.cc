@@ -87,6 +87,7 @@ bool Visualization::watchDimension(apf::Mesh* m, int d) {
   while ((ent = m->iterate(itr))!=0) {
     watchEntity(m,ent);
   }
+  return true;
 }
 
 bool Visualization::watchMesh(apf::Mesh* m) {
