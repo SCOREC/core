@@ -32,18 +32,16 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
-  
-  apf::MeshIterator* itr = m->begin(0);
-  apf::MeshEntity* ent;
-
+ 
   Visualization v;
   v.new_viz();
-  std::cout<<"watching now"<<std::endl;
-  while ((ent = m->iterate(itr))!=0) {
-    v.watchEntity(m,ent);
-    std::cout<<"watched entity"<<std::endl;
-  }
-  std::cout<<"breaking now"<<std::endl;
+
+  
+ 
+  v.watchDimension(m,0);
+  v.watchDimension(m,1);
+  v.watchDimension(m,2);
+
   v.breakpoint();
   v.end_viz();
 
