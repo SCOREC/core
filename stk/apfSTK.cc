@@ -438,11 +438,14 @@ class StkBridge
         GlobalMap& globalIdsToElems,
         bool toStk)
     {
+      stk::mesh::Selector overlapSelector =
+        metaData->locally_owned_part() |
+        metaData->globally_shared_part();
+      stk::mesh::BucketVector buckets;
       stk::mesh::EntityRank rank = stk::topology::NODE_RANK;
       if (isQP)
         rank = stk::topology::ELEMENT_RANK;
-      stk::mesh::BucketVector const& buckets =
-        bulkData->buckets(rank);
+      bulkData->get_buckets(rank, overlapSelector, buckets);
       GlobalMap* globalIdsToEnts = &globalIdsToVerts;
       if (isQP)
         globalIdsToEnts = &globalIdsToElems;
