@@ -4,6 +4,7 @@ find_package(spr REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(parma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -11,14 +12,16 @@ include_directories(
   ${SPR_INCLUDE_DIRS}
   ${PARMA_INCLUDE_DIRS}
   ${PH_INCLUDE_DIRS}
-  ${APF_MPAS_INCLUDE_DIRS})
+  ${APF_MPAS_INCLUDE_DIRS}
+  ${VIZ_INCLUDE_DIRS})
 set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
   ${SPR_LIBS}
   ${PARMA_LIBS}
   ${PH_LIBS}
-  ${APF_MPAS_LIBS})
+  ${APF_MPAS_LIBS}
+  ${VIZ_LIBS})
 
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)
@@ -70,11 +73,9 @@ setup_exe(fusion2 fusion2.cc)
 setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
-#setup_exe(viz viz.cc)
-
-include_directories("/lore/diamog/core/prefix/include")
-setup_exe(viz viz.cc)
-target_link_libraries(viz "/lore/diamog/core/prefix/lib/libmilo.a")
+if (ENABLE_VIZ)
+  setup_exe(viz_test viz.cc)
+endif()
 
 if(IS_TESTING)
   include(testing.cmake)
