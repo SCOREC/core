@@ -24,6 +24,8 @@ static void fixMatches(apf::Mesh2* m)
 
 static void fixPyramids(apf::Mesh2* m)
 {
+  if (m->getDimension() != 3)
+    return; /* no pyramids exist in 2D */
   if (apf::countEntitiesOfType(m, apf::Mesh::HEX))
     return; /* meshadapt can't even look at hexes */
   ma::Input* in = ma::configureIdentity(m);
