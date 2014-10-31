@@ -3,7 +3,7 @@
 #include <apfMesh.h>
 
 void Visualization::new_viz() {
-  mil = milo_new(200, 200, "localhost", 4242);
+  mil = milo_new("localhost", 4242);
   double black[3] = {0,0,0};
   milo_clear(mil, black);
   milo_zoom(mil,80);
