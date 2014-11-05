@@ -29,7 +29,7 @@ namespace {
     public:
       VtxEdgeElmBalancer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "cake") { }
-      bool runStep(apf::MeshTag* wtag, double tolerance) { return true; }
+      bool runStep(apf::MeshTag*, double) { return true; }
       void balance(apf::MeshTag* wtag, double tolerance) {
         apf::Balancer* b = Parma_MakeElmBalancer(mesh, factor, verbose);
         b->balance(wtag, tolerance);
