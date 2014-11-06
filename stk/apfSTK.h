@@ -14,16 +14,16 @@
 
 #include <stk_mesh/base/Field.hpp>
 #include <stk_mesh/base/FieldTraits.hpp>
-#include <stk_mesh/fem/CoordinateSystems.hpp>
-#include <stk_mesh/base/FieldData.hpp>
-#include <stk_mesh/fem/FEMMetaData.hpp>
+#include <stk_mesh/base/CoordinateSystems.hpp>
+#include <stk_mesh/base/FieldBase.hpp>
+#include <stk_mesh/base/MetaData.hpp>
 #include <Shards_BasicTopologies.hpp>
 
 namespace apf {
 
-typedef stk_classic::mesh::fem::FEMMetaData StkMetaData;
-typedef stk_classic::mesh::BulkData StkBulkData;
-typedef stk_classic::mesh::Bucket StkBucket;
+typedef stk::mesh::MetaData StkMetaData;
+typedef stk::mesh::BulkData StkBulkData;
+typedef stk::mesh::Bucket StkBucket;
 
 struct StkModel
 {
