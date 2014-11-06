@@ -27,12 +27,12 @@ if(BUILD_IN_TRILINOS)
   #Base Sources
   set(SOURCES
     awr.cc
-    awrUtils.cc
-    evaluators/awrPoissonIntegrator.cc
-    linear_system/awrLinearSystem.cc
-    problems/awrProblem.cc
-    problems/awrProblemFactory.cc
-    problems/awrPoissonProblem.cc)
+    awrProblem.cc
+    awrProblemSetup.cc
+    awrProblemAssemble.cc
+    awrProblemSolve.cc
+    awrPoisson.cc
+    awrLinearSystem.cc)
   
   #Header
   set(HEADERS

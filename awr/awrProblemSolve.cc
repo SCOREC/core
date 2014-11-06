@@ -5,17 +5,13 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awrUtils.h"
-#include <PCU.h>
-#include <stdlib.h>
+#include "awrProblem.h"
+#include "awrLinearSystem.h"
 
 namespace awr {
 
-void fail(const char* why)
+void Problem::solve()
 {
-  if (!PCU_Comm_Self())
-    fprintf(stderr,"AWR FAILED: %s\n",why);
-  abort();
 }
 
 }
