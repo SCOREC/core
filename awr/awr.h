@@ -8,14 +8,30 @@
 #ifndef AWR_H
 #define AWR_H
 
-/** \file awr.h
- *  \brief The AWR error estimation interface
- */
-
-/** \namespace awr
-  * \brief All AWR error estimation functions
+/** \page awr Adjoint Weighted Residuals
+  * This is the main API for SCOREC's AWR library
+  *
+  * These functions provide capabilities to solve adjoint
+  * boundary value problems using a specified functional
+  * quantity of interest.
   */
+
+/** \file awr.h
+  * \brief All AWR symbols */
+
+namespace Teuchos { class ParameterList; }
+namespace apf { class Mesh; }
+
+/** \namespace awr.h
+  * \brief All AWR symbols */
+
 namespace awr {
+
+/** \brief solve an adjoint boundary value problem
+  * \details The parameter list must contain the sublists
+  * 'Adjoint Problem', 'Quantity of Interest', and
+  * 'Boundary Conditions' to completely define a problem */
+void solveAdjoint(Teuchos::ParameterList& p, apf::Mesh* m);
 
 }
 

@@ -10,17 +10,13 @@ namespace parma {
         : Selector(m, w) {}
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
-        vtag = mesh->createIntTag("selector_visited",1);
         const size_t maxBoundedElm = 12;
         double planW=0;
         for( size_t maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
           planW += select(tgts, planW, maxAdjElm, plan);
-        apf::removeTagFromDimension(mesh,vtag,mesh->getDimension());
-        mesh->destroyTag(vtag);
         return plan;
       }
     protected:
-      apf::MeshTag* vtag;
       virtual double getWeight(apf::MeshEntity* vtx) {
         return getEntWeight(mesh,vtx,wtag);
       }
@@ -32,8 +28,7 @@ namespace parma {
           return 0;
         for(size_t i=0; i<adjElms.getSize(); i++) {
           apf::MeshEntity* elm = adjElms[i];
-          if ( mesh->hasTag(elm, vtag) ) continue;
-          mesh->setIntTag(elm, vtag, &destPid);
+          if( plan->has(elm) ) continue;
           plan->send(elm, destPid);
         }
         return getWeight(vtx);
@@ -97,8 +92,7 @@ namespace parma {
           return w;
         for(size_t i=0; i<adjElms.getSize(); i++) {
           apf::MeshEntity* elm = adjElms[i];
-          if ( mesh->hasTag(elm, vtag) ) continue;
-          mesh->setIntTag(elm, vtag, &(destPid));
+          if( plan->has(elm) ) continue;
           plan->send(elm, destPid);
           w += getEntWeight(mesh,elm,wtag);
         }
