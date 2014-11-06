@@ -15,7 +15,7 @@ namespace parma {
         double planW=0;
         for( size_t maxAdjElm=2; maxAdjElm<=maxBoundedElm; maxAdjElm+=2)
           planW += select(tgts, planW, maxAdjElm, plan);
-        apf::removeTagFromDimension(mesh,vtag,0);
+        apf::removeTagFromDimension(mesh,vtag,mesh->getDimension());
         mesh->destroyTag(vtag);
         return plan;
       }
