@@ -151,11 +151,11 @@ static double tr(Matrix3x3 const& m)
   return m[0][0] + m[1][1] + m[2][2];
 }
 
-/* wikipedia.org/wiki/Characteristic_polynomial#Characteristic_equation */
+/* http://mathworld.wolfram.com/CharacteristicPolynomial.html */
 static void getCharacteristicPolynomial(Matrix3x3 const& A, Cubic& p)
 {
   double tA = tr(A);
-  double c2 = (1. / 2.) * (tA * tA + tr(A * A));
+  double c2 = (1. / 2.) * (tA * tA - tr(A * A));
   p.a = -1;
   p.b = tA;
   p.c = -c2;
