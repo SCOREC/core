@@ -13,6 +13,7 @@
 
 #include "apfDynamicArray.h"
 #include <math.h>
+#include <iostream>
 
 namespace apf {
 
@@ -95,5 +96,7 @@ class DynamicVector : public DynamicArray<double>
 };
 
 } //namespace apf
+
+std::ostream& operator<<(std::ostream& s, apf::DynamicVector const& x);
 
 #endif
