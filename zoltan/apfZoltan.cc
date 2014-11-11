@@ -58,7 +58,7 @@ class ZoltanBalancer : public Balancer
       if (!PCU_Comm_Self())
         fprintf(stdout, "planned Zoltan balance to target "
             "imbalance %f in %f seconds\n",
-            multiple, tolerance, MPI_Wtime() - t0);
+            tolerance, MPI_Wtime() - t0);
       bridge.mesh->migrate(plan);
       double t1 = MPI_Wtime();
       if (!PCU_Comm_Self())
