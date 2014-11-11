@@ -40,9 +40,10 @@ int main(int argc, char** argv)
   apf::Balancer* balancer = Parma_MakeVtxBalancer(m, step, verbose);
   balancer->balance(weights, 1.05);
   delete balancer;
+  Parma_PrintPtnStats(m, "");
   apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
-  m->writeNative(argv[3]);
+  //m->writeNative(argv[3]);
   // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);
