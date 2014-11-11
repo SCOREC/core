@@ -9,7 +9,7 @@
 #include <apfNumbering.h>
 
 #include <stk_io/IossBridge.hpp>
-#include <stk_io/MeshReadWriteUtils.hpp>
+#include <stk_mesh/base/FEMHelpers.hpp>
 
 namespace apf {
 
@@ -66,29 +66,28 @@ int getLocalSideId(Mesh* m, MeshEntity* e,
 static void special_declare_element_side(
   GlobalNumbering* nn,
   StkBulkData* bulk,
-  stk_classic::mesh::Entity& elem,
+  stk::mesh::Entity elem,
   MeshEntity* face,
-  stk_classic::mesh::EntityId global_side_id,
+  stk::mesh::EntityId global_side_id,
   unsigned local_side_id,
-  stk_classic::mesh::PartVector& parts)
+  stk::mesh::Part& part)
 {
-  const CellTopologyData* elem_top =
-    stk_classic::mesh::fem::get_cell_topology(elem).getCellTopologyData();
-  const CellTopologyData* side_top =
-    elem_top->side[local_side_id].topology;
-  stk_classic::mesh::Entity& side =
-    bulk->declare_entity(side_top->dimension, global_side_id, parts);
+  StkMetaData const& meta = bulk->mesh_meta_data();
+  stk::topology elem_topo = meta.get_topology(part);
+  stk::topology side_topo = elem_topo.sub_topology(meta.side_rank(), local_side_id);
+  stk::mesh::Entity side =
+    bulk->declare_entity(meta.side_rank(), global_side_id, part);
   bulk->declare_relation(elem, side, local_side_id);
   NewArray<long> node_ids;
   int node_count = getElementNumbers(nn, face, node_ids);
   for (int i = 0; i < node_count; ++i) {
-    stk_classic::mesh::Entity* node = bulk->get_entity(0, node_ids[i] + 1);
-    bulk->declare_relation(side, *node, i);
+    stk::mesh::Entity node = bulk->get_entity(stk::topology::NODE_RANK, node_ids[i] + 1);
+    bulk->declare_relation(side, node, i);
   }
 }
 
 static void get_stk_side(GlobalNumbering* en, MeshEntity* side,
-    stk_classic::mesh::EntityId& id, unsigned& local_id)
+    stk::mesh::EntityId& id, unsigned& local_id)
 {
   Mesh* m = getMesh(en);
   MeshEntity* e = m->getUpward(side, 0);
@@ -107,20 +106,18 @@ static void buildSides(
   int d = m->getDimension() - 1;
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
-    stk_classic::mesh::Part* part = meta->get_part(model.stkName, required_by);
-    stk_classic::mesh::PartVector parts;
-    parts.push_back(part);
+    stk::mesh::Part& part = *(meta->get_part(model.stkName, required_by));
     MeshIterator* it = m->begin(d);
     MeshEntity* s;
     while ((s = m->iterate(it))) {
       if (m->getModelTag(m->toModel(s)) != model.apfTag)
         continue;
-      stk_classic::mesh::EntityId s_id = getStkId(n[d], Node(s, 0));
-      stk_classic::mesh::EntityId e_id;
+      stk::mesh::EntityId s_id = getStkId(n[d], Node(s, 0));
+      stk::mesh::EntityId e_id;
       unsigned local_id;
       get_stk_side(n[d + 1], s, e_id, local_id);
-      stk_classic::mesh::Entity* e = bulk->get_entity(d + 1, e_id);
-      special_declare_element_side(n[0], bulk, *e, s, s_id, local_id, parts);
+      stk::mesh::Entity e = bulk->get_entity(stk::topology::ELEMENT_RANK, e_id);
+      special_declare_element_side(n[0], bulk, e, s, s_id, local_id, part);
     }
     m->end(it);
   }
@@ -137,19 +134,19 @@ static void buildElements(
   int d = m->getDimension();
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
-    stk_classic::mesh::Part* part = meta->get_part(model.stkName, required_by);
+    stk::mesh::Part* part = meta->get_part(model.stkName, required_by);
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
     while ((e = m->iterate(it))) {
       if (m->getModelTag(m->toModel(e)) != model.apfTag)
         continue;
-      stk_classic::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
+      stk::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
       NewArray<long> node_ids;
       int nodes = getElementNumbers(n[0], e, node_ids);
-      NewArray<stk_classic::mesh::EntityId> stk_node_ids(nodes);
+      NewArray<stk::mesh::EntityId> stk_node_ids(nodes);
       for (int j = 0; j < nodes; ++j)
         stk_node_ids[j] = node_ids[j] + 1;
-      stk_classic::mesh::fem::declare_element(*bulk, *part, e_id, &stk_node_ids[0]);
+      stk::mesh::declare_element(*bulk, *part, e_id, &stk_node_ids[0]);
     }
     m->end(it);
   }
@@ -162,12 +159,12 @@ static void buildNodes(
     StkBulkData* bulk)
 {
   Mesh* m = getMesh(nn);
-  static const char* required_by = "buildElements";
+  static const char* required_by = "buildNodes";
   int d = 0;
   for (size_t i = 0; i < models[d].getSize(); ++i) {
     StkModel& model = models[d][i];
-    stk_classic::mesh::Part* part = meta->get_part(model.stkName, required_by);
-    stk_classic::mesh::PartVector parts;
+    stk::mesh::Part* part = meta->get_part(model.stkName, required_by);
+    stk::mesh::PartVector parts;
     parts.push_back(part);
 /* node sets are geometric entities of any dimension containing mesh nodes,
    unlike sidesets and element blocks whose geometric and mesh
@@ -180,34 +177,38 @@ static void buildNodes(
         model.dim, model.apfTag);
     getNodesOnClosure(m, me, nodes);
     for (size_t j = 0; j < nodes.getSize(); ++j) {
-      stk_classic::mesh::EntityId e_id = getStkId(nn, nodes[j]);
-      bulk->declare_entity(meta->node_rank(), e_id, parts);
+      stk::mesh::EntityId e_id = getStkId(nn, nodes[j]);
+      bulk->declare_entity(stk::topology::NODE_RANK, e_id, parts);
     }
   }
 }
 
 static void declarePart(StkModel& model,
-    int dim,
+    stk::mesh::EntityRank rank,
     const CellTopologyData* topo,
     StkMetaData* meta)
 {
-  stk_classic::mesh::Part& part = meta->declare_part(model.stkName, dim);
-  stk_classic::mesh::fem::set_cell_topology(part, topo);
-  stk_classic::io::put_io_part_attribute(part);
+  stk::mesh::Part& part = meta->declare_part(model.stkName, rank);
+  stk::mesh::set_cell_topology(part, topo);
+  stk::io::put_io_part_attribute(part);
 }
 
 void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
 {
   int d = m->getDimension();
-  meta->FEM_initialize(d);
   const CellTopologyData* topo[4];
+  stk::mesh::EntityRank ranks[4];
   for (int i = 0; i <= d; ++i)
     topo[i] = getDimTopology(m, i);
+  ranks[0] = stk::topology::NODE_RANK;
+  ranks[1] = stk::topology::EDGE_RANK;
+  ranks[2] = stk::topology::FACE_RANK;
+  ranks[d] = stk::topology::ELEMENT_RANK;
   for (int i = 0; i <= d; ++i)
-    meta->register_cell_topology(topo[i], i);
+    meta->register_cell_topology(topo[i], ranks[i]);
   for (int i = 0; i <= d; ++i)
     for (size_t j = 0; j < models[i].getSize(); ++j)
-      declarePart(models[i][j], i, topo[i], meta);
+      declarePart(models[i][j], ranks[i], topo[i], meta);
 }
 
 void copyMeshToBulk(

@@ -33,7 +33,6 @@ SET(DIFFMC_SOURCES
   diffMC/parma_centroidSelector.cc
   diffMC/parma_commons.cc
   diffMC/parma_dcpart.cc
-  diffMC/parma_diffmc.cc
   diffMC/parma_edgeBalancer.cc
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc
@@ -43,9 +42,6 @@ SET(DIFFMC_SOURCES
   diffMC/parma_ghostWeights.cc
   diffMC/parma_hist.cc
   diffMC/parma_hpsBalancer.cc
-  diffMC/parma_imbinfo.cc
-  diffMC/parma_partinfo.cc
-  diffMC/parma_priority.cc
   diffMC/parma_shapeOptimizer.cc
   diffMC/parma_shapeTargets.cc
   diffMC/parma_shapeSelector.cc
@@ -54,6 +50,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_weightTargets.cc
   diffMC/parma_vtxEdgeElmTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc
+  diffMC/parma_vtxElmBalancer.cc
   diffMC/zeroOneKnapsack.cc
   diffMC/maximalIndependentSet/misLuby.cc
   )

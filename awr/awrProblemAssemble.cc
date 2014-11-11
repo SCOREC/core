@@ -5,18 +5,25 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "awr.h"
 #include "awrProblem.h"
+#include "awrLinearSystem.h"
+#include <apf.h>
+#include <apfMesh.h>
+#include <apfNumbering.h>
+#include <apfDynamicMatrix.h>
 #include <Teuchos_ParameterList.hpp>
 
 namespace awr {
 
-void solveAdjoint(ParameterList& p, apf::Mesh* m)
+void Problem::processBC()
 {
-  Problem* problem = createProblem(p,m);
-  problem->setup();
-  problem->assemble();
-  delete problem;
+}
+
+void Problem::assemble()
+{
+  /* pure virtual method */
+  createIntegrator();
+  processBC();
 }
 
 }

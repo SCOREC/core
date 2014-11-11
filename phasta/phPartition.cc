@@ -35,14 +35,12 @@ void balance(apf::Mesh2* m)
 {
   Parma_PrintPtnStats(m, "preRefine");
   apf::MeshTag* weights = Parma_WeighByMemory(m);
-  int priority[4] = {2,0,0,1};
   double tolerance = 1.05;
-  int debugLevel = 0;
-  int iterations = 20;
-  int (*thisShouldReallyNotBeNecessary)[4] = &priority;
-  Parma_RunWeightedPtnImprovement(m, weights,
-      thisShouldReallyNotBeNecessary,
-      tolerance, debugLevel, iterations);
+  const double step = 0.2;
+  const int verbose = 0;
+  apf::Balancer* balancer = Parma_MakeElmBalancer(m, step, verbose);
+  balancer->balance(weights, tolerance);
+  delete balancer;
   apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
   Parma_PrintPtnStats(m, "postRefine");

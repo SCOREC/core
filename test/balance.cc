@@ -14,7 +14,8 @@ int main(int argc, char** argv)
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
-  apf::Balancer* balancer = Parma_MakeCentroidDiffuser(m, 0.1);
+  double step = 0.1; int verbose=1;
+  apf::Balancer* balancer = Parma_MakeCentroidDiffuser(m, step, verbose);
   balancer->balance(weights, 1.10);
   delete balancer;
   apf::removeTagFromDimension(m, weights, m->getDimension());
