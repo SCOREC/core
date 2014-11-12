@@ -55,6 +55,10 @@ void solveSVD(apf::DynamicMatrix& A,
               apf::DynamicVector& x,
               apf::DynamicVector& b);
 
+void solveQR(apf::DynamicMatrix& A,
+              apf::DynamicVector& x,
+              apf::DynamicVector& b);
+
 }
 
 #endif
