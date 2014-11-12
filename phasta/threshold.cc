@@ -4,6 +4,8 @@
 #include <apfMesh2.h>
 #include <phRestart.h>
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
+#include <SimUtil.h>
 
 static double process_element(apf::Vector3 x[4], double sol[4][9])
 {
@@ -15,6 +17,9 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  Sim_readLicenseFile(0);
+  gmi_sim_start();
+  gmi_register_sim();
   gmi_register_mesh();
   ph::Input in;
   apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
@@ -42,6 +47,8 @@ int main(int argc, char** argv)
   printf("volume %f\n", total_volume);
   m->destroyNative();
   apf::destroyMesh(m);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
