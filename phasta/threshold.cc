@@ -21,6 +21,7 @@ int main(int argc, char** argv)
   m->verify();
   in.restartFileName = argv[3];
   in.timeStepNumber = 0;
+  in.ensa_dof = 9;
   ph::readAndAttachSolution(in, m);
   apf::Field* solf = m->findField("solution");
   double total_volume = 0;
