@@ -34,15 +34,36 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
  
   Visualization v;
-  v.new_viz();
+  v.new_viz(PCU_Comm_Peers());
 
-  
- 
-  v.watchDimension(m,0);
+  v.watchMesh(m);
+  v.breakpoint();
+
   v.watchDimension(m,1);
-  v.watchDimension(m,2);
+  v.breakpoint();
+
+  apf::MeshIterator* itr = m->begin(2);
+  apf::MeshEntity* ent;
+  int i=0;
+  while((ent=m->iterate(itr))!=0) {
+    if (i==0)
+      v.watchEntity(m,ent);
+    i++;
+    i%=3;
+  }
 
   v.breakpoint();
+
+  itr = m->begin(0);
+  i=0;
+  while((ent=m->iterate(itr))!=0) {
+    if (i==0)
+      v.watchEntity(m,ent);
+    i++;
+    i%=2;
+  }
+  v.breakpoint();
+
   v.end_viz();
 
   freeMesh(m);

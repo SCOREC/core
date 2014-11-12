@@ -10,9 +10,8 @@ struct milo;
 
 class Visualization {
 public:
-  void new_viz();
+  void new_viz(int num_parts);
   void breakpoint();
-  bool getPoint(apf::Mesh* m, apf::MeshEntity* ent, double* point);
   bool drawPoint(apf::Mesh* m, apf::MeshEntity* ent);
   bool drawLine(apf::Mesh* m, apf::MeshEntity* ent);
   bool drawTriangle(apf::Mesh* m, apf::MeshEntity* ent);
@@ -22,6 +21,12 @@ public:
   void end_viz();
 private:
   milo* mil;
+  int max_parts;
+  int color_mode;
+
+  bool getPoint(apf::Mesh* m, apf::MeshEntity* ent, double* point);
+  void getPartColor(double* color, int parts);
+
 };
 
 #endif
