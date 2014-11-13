@@ -115,6 +115,7 @@ Numbering* numberOwnedNodes(
     Sharing* shr = 0);
 /** \brief count the number of nodes that have been numbered */
 int countNodes(Numbering* n);
+int countNodes(GlobalNumbering* n);
 
 /** \brief Node identifier */
 struct Node
