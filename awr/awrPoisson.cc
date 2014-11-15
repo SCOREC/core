@@ -102,13 +102,13 @@ void PoissonProblem::createIntegrator()
 }
 
 void PoissonProblem::processKe(
-    apf::MeshElement* me,
-    int& numNodes,
+    apf::MeshEntity* e,
     apf::DynamicMatrix& Ke)
 {
+  apf::MeshElement* me = apf::createMeshElement(mesh_,e);
   integrator_->process(me);
-  numNodes = integrator_->numNodes;
   Ke = integrator_->Ke;
+  apf::destroyMeshElement(me);
 }
 
 }

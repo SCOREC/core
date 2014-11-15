@@ -25,8 +25,7 @@ class PoissonProblem : public Problem
     void validateProblemList();
     void setPrimalField();
     void createIntegrator();
-    void processKe(apf::MeshElement* me,
-                   int& numNodes,
+    void processKe(apf::MeshEntity* e,
                    apf::DynamicMatrix& Ke);
 };
 

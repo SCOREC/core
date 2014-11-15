@@ -70,9 +70,9 @@ class Problem
     /* assemble methods */
     void processBC();
     virtual void createIntegrator() = 0;
-    virtual void processKe(apf::MeshElement* me,
-                           int& numNodes,
+    virtual void processKe(apf::MeshEntity* e,
                            apf::DynamicMatrix& Ke) = 0;
+
 };
 
 Problem* createProblem(ParameterList& p, apf::Mesh* m);
