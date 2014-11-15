@@ -8,12 +8,10 @@
 #ifndef AWR_PROBLEM_H
 #define AWR_PROBLEM_H
 
-/* Teuchos forward declarations */
 namespace Teuchos { 
 class ParameterList;
 }
 
-/* apf forward declarations */
 namespace apf {
 class Mesh;
 class Field;
@@ -28,30 +26,19 @@ class DynamicMatrix;
 
 namespace awr {
 
-/* save some typing */
 using Teuchos::ParameterList;
 
-/* awr forward declarations */
 class LinearSystem;
 
-/* main problem interface */
 class Problem
 {
   public:
-
     Problem(ParameterList& p, apf::Mesh* m);
-
     virtual ~Problem() = 0;
-
     void setup();
-
     void assemble();
-
     void solve();
-
   protected:
-
-    /* specific parameter sublists */
     ParameterList& problemList_;
     ParameterList& qoiList_;
     ParameterList& bcList_;

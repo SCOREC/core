@@ -10,6 +10,8 @@
 #include <PCU.h>
 #include <apf.h>
 #include <apfNumbering.h>
+#include <Epetra_MpiComm.h>
+#include <Epetra_Map.h>
 
 namespace awr {
 
@@ -21,6 +23,8 @@ void Problem::createAdjointField()
   apf::FieldShape* fs = apf::getShape(primal_);
   adjoint_ = apf::createField(mesh_,name.c_str(),vt,fs);
   numComponents_ = apf::countComponents(adjoint_);
+  /* this is just so apf::writeVTKFiles doesn't blow
+   * up for now */
   /*********************************************/
   apf::MeshEntity* v;
   apf::MeshIterator* vertices = mesh_->begin(0);
@@ -35,7 +39,7 @@ void Problem::createAdjointField()
 void Problem::createNumbering()
 {
   apf::FieldShape* fs = apf::getShape(primal_);
-  numbering_ = apf::numberOwnedNodes(mesh_,"dof",fs);
+  numbering_ = apf::numberOwnedNodes(mesh_,"node",fs);
 }
 
 void Problem::computeNumGlobalEqs()
@@ -51,17 +55,32 @@ void Problem::globalizeNumbering()
   apf::synchronize(globalNumbering_);
 }
 
+Epetra_Map* createMap(int nc, apf::GlobalNumbering* numbering)
+{
+  apf::DynamicArray<apf::Node> nodes;
+  apf::getNodes(numbering,nodes);
+  int numOverlapNodes = nodes.getSize();
+  apf::DynamicArray<long long> dofIndices(numOverlapNodes*nc);
+  for (int i=0; i < numOverlapNodes; ++i)
+  {
+    long global = apf::getNumber(numbering,nodes[i]);
+    for (int j=0; j < nc; ++j)
+      dofIndices[i*nc + j] = global*nc + j;
+  }
+  Epetra_MpiComm comm(MPI_COMM_WORLD);
+  return new Epetra_Map(-1,dofIndices.getSize(),&dofIndices[0],0,comm);
+}
+
 void Problem::setup()
 {
-  /* pure virtual method */
-  validateProblemList();
-  /* pure virtual method */
-  setPrimalField();
+  validateProblemList(); /* pure virtual method */
+  setPrimalField(); /* pure virtual method */
   createAdjointField();
   createNumbering();
   computeNumGlobalEqs();
   globalizeNumbering();
-  ls_ = new LinearSystem(numGlobalEqs_);
+  ls_ = new LinearSystem(numGlobalEqs_,
+      createMap(numComponents_,globalNumbering_));
 }
 
 }

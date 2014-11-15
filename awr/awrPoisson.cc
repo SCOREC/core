@@ -41,7 +41,6 @@ class PoissonIntegrator : public apf::Integrator
     void outElement()
     {
       apf::destroyElement(e_);
-      apf::destroyMeshElement(me_);
     }
     void atPoint(apf::Vector3 const& p, double w, double dv)
     {
