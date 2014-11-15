@@ -156,62 +156,55 @@ int sendAdjNetsToNeighbors(partInfo& part,
   return 0;
 }
 
+int sendIntsToNeighbors(partInfo& part, vector<int>& msg, 
+    set<int>& destRanks, int tag) {
 
+  PCU_Comm_Begin();
+  MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
+    const int destRank = *adjPartIdItr;
+    destRanks.insert(destRank);
 
-int sendIntsToNeighbors(vector<partInfo>& parts,
-    vector<int>*& msg, set<int>& destRanks, int tag) {
-  const int rank = PCU_Comm_Self();
-  PCU_Comm_Start(PCU_GLOBAL_METHOD);
+    const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
 
-  int partIdx = 0;
-  MIS_ITERATE(vector<partInfo>, parts, partItr) {
-    MIS_ITERATE(vector<int>, partItr->adjPartIds, adjPartIdItr) {
-      const int destRank = *adjPartIdItr;
-      destRanks.insert(destRank);
+    //number of bytes in message
+    int numIntsInMsg = 4 + msg.size();
+    PCU_COMM_PACK( destRank, numIntsInMsg);
 
-      const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
+    //pack msg tag
+    PCU_COMM_PACK( destRank, tag);
 
-      //number of bytes in message
-      int numIntsInMsg = 4 + msg[partIdx].size();
-      PCU_COMM_PACK( destRank, numIntsInMsg);
+    //pack source part Id
+    PCU_COMM_PACK( destRank, part.id);
 
-      //pack msg tag
-      PCU_COMM_PACK( destRank, tag);
+    //pack destination part Id
+    PCU_COMM_PACK( destRank, *adjPartIdItr);
 
-      //pack source part Id
-      PCU_COMM_PACK( destRank, partItr->id);
-
-      //pack destination part Id
-      PCU_COMM_PACK( destRank, *adjPartIdItr);
-
-      //pack int array
-      if (msg[partIdx].size() == 0) {
-        char dbgMsg[256];
-        sprintf(dbgMsg,
-            "[%d] (%d) %s packing empty integer array\n",
-            rank, partItr->id, __FUNCTION__);
-        debugPrint(dbgMsg);
-      }
-      for ( vector<int>::iterator pItr = msg[partIdx].begin();
-          pItr != msg[partIdx].end();
-          pItr++ ) {
-        PCU_COMM_PACK( destRank, *pItr);
-      }
-
-      //sanity check
-      size_t buffSizeFinal;
-      PCU_Comm_Packed(destRank, &buffSizeFinal);
-      const size_t numIntsPacked =
-        (buffSizeFinal - buffSizeInitial) / sizeof (int);
-      MIS_FAIL_IF((size_t)numIntsInMsg != numIntsPacked,
-          "number of ints packed does not match msg header");
+    //pack int array
+    if (msg.size() == 0) {
+      char dbgMsg[256];
+      sprintf(dbgMsg,
+          "[%d] (%d) %s packing empty integer array\n",
+          PCU_Comm_Self(), part.id, __FUNCTION__);
+      debugPrint(dbgMsg);
     }
-    partIdx++;
+    for ( vector<int>::iterator pItr = msg.begin();
+        pItr != msg.end();
+        pItr++ ) {
+      PCU_COMM_PACK( destRank, *pItr);
+    }
+
+    //sanity check
+    size_t buffSizeFinal;
+    PCU_Comm_Packed(destRank, &buffSizeFinal);
+    const size_t numIntsPacked =
+      (buffSizeFinal - buffSizeInitial) / sizeof (int);
+    MIS_FAIL_IF((size_t)numIntsInMsg != numIntsPacked,
+        "number of ints packed does not match msg header");
   }
   return 0;
 }
 
-void unpackInts(vector<partInfo>& parts, vector<int>*& msg,
+void unpackInts(vector<int>& msg,
     const size_t numIntsInMsg, int tag) {
   const int rank = PCU_Comm_Self();
   int srcRank;
@@ -236,15 +229,6 @@ void unpackInts(vector<partInfo>& parts, vector<int>*& msg,
   assert(rank == destPartId);
   numIntsUnpacked++;
 
-  //find index to store message
-  size_t partIdx = 0;
-  for (; partIdx < parts.size(); partIdx++) {
-    if (parts[partIdx].id == destPartId) {
-      break;
-    }
-  }
-  assert(partIdx < parts.size());
-
   //unpack int array
   const size_t buffSize = (numIntsInMsg - numIntsUnpacked) * sizeof (int);
   if (buffSize == 0) {
@@ -257,12 +241,12 @@ void unpackInts(vector<partInfo>& parts, vector<int>*& msg,
   int buff;
   for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
     PCU_COMM_UNPACK(buff);
-    msg[partIdx].push_back(buff);
+    msg.push_back(buff);
   }
 }
 
-void recvIntsFromNeighbors(vector<partInfo>& parts,
-    vector<int>*& msg, set<int>& srcRanks, int, int tag) {
+void recvIntsFromNeighbors(partInfo& part,
+    vector<int>& msg, set<int>& srcRanks, int, int tag) {
   while(PCU_Comm_Listen()) {
     size_t msgSz;
     PCU_Comm_Received(&msgSz);
@@ -277,7 +261,7 @@ void recvIntsFromNeighbors(vector<partInfo>& parts,
       int numIntsPacked;
       PCU_COMM_UNPACK(numIntsPacked);
       numIntsProcessed += numIntsPacked;
-      unpackInts(parts, msg, numIntsPacked - 1, tag);
+      unpackInts(msg, numIntsPacked - 1, tag);
     } while (numIntsProcessed != numIntsInBuff);
   }
 }
@@ -331,8 +315,8 @@ void recvNetsFromNeighbors(partInfo& part, vector<adjPart>& msg) {
     unpackNet(part, msg);
 }
 
-void unpackAdjPart(vector<partInfo>& parts,
-    vector<adjPart>*& msg, const size_t numIntsInMsg) {
+void unpackAdjPart(partInfo& part,
+    vector<adjPart>& msg, const size_t numIntsInMsg) {
   const int rank = PCU_Comm_Self();
   int srcRank;
   PCU_Comm_From(&srcRank);
@@ -360,15 +344,6 @@ void unpackAdjPart(vector<partInfo>& parts,
   PCU_COMM_UNPACK(randNum);
   numIntsUnpacked++;
 
-  //find index to store message
-  size_t partIdx = 0;
-  for (; partIdx < parts.size(); partIdx++) {
-    if (parts[partIdx].id == destPartId) {
-      break;
-    }
-  }
-  assert(partIdx < parts.size());
-
   adjPart ap;
   ap.partId = adjPartId;
   ap.randNum = randNum;
@@ -383,12 +358,10 @@ void unpackAdjPart(vector<partInfo>& parts,
     ap.net.push_back(buff);
   }
 
-  msg[partIdx].push_back(ap);
+  msg.push_back(ap);
 }
 
-void recvAdjNetsFromNeighbors(vector<partInfo>& parts,
-    vector<adjPart>*& msg) {
-
+void recvAdjNetsFromNeighbors(partInfo& part, vector<adjPart>& msg) {
   while( PCU_Comm_Listen() ) {
     size_t msgSz;
     PCU_Comm_Received(&msgSz);
@@ -399,7 +372,7 @@ void recvAdjNetsFromNeighbors(vector<partInfo>& parts,
       int numIntsPacked;
       PCU_COMM_UNPACK(numIntsPacked);
       numIntsProcessed += numIntsPacked;
-      unpackAdjPart(parts, msg, numIntsPacked - 1);
+      unpackAdjPart(part, msg, numIntsPacked - 1);
     } while (numIntsProcessed != numIntsInBuff);
   }
 }
@@ -534,17 +507,14 @@ int constructNetGraph(partInfo& part) {
   ierr = sendAdjNetsToNeighbors(part, nbNet);
   if (ierr != 0) return ierr;
   PCU_Comm_Send();
-  vector<adjPart>* nbAdjNets = new vector<adjPart>[1]; //FIXME
-  vector<PartInfo> parts; parts.push_back(part); //FIXME
-  recvAdjNetsFromNeighbors(parts, nbAdjNets); //FIXME
+  vector<adjPart> nbAdjNets;
+  recvAdjNetsFromNeighbors(part, nbAdjNets);
 
   // get the random num associated with adjacent nets
-  part.addNetNeighbors(nbAdjNets[0]); //FIXME
-  delete [] nbAdjNets;
+  part.addNetNeighbors(nbAdjNets);
 
   //add new neighbors based on changes to net-graph neighbors
-  MIS_ITERATE(vector<partInfo>, parts, partItr)
-    partItr->updateNeighbors();
+  part.updateNeighbors();
 
   return 0;
 }
@@ -588,12 +558,9 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined) {
   int ierr = constructNetGraph(part);
   if (ierr != 0) return ierr;
 
-  vector<partInfo> parts; parts.push_back(part); //FIXME
-
-  const int numParts = 1;
-  vector<int>* nodesRemoved = new vector<int>[numParts];
-  vector<int>* nodesToRemove = new vector<int>[numParts];
-  vector<int>* rmtNodesToRemove = new vector<int>[numParts];
+  vector<int> nodesRemoved;
+  vector<int> nodesToRemove;
+  vector<int> rmtNodesToRemove;
 
   int totalNodesAdded = 0;
   int loopCount = 0;
@@ -610,59 +577,58 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined) {
       ++numNodesAdded;
     }
 
-    const int partIdx = 0;
     if (true == part.isInMIS) {
-      nodesToRemove[partIdx].reserve(part.netAdjParts.size() + 1);
-      getNetAdjPartIds(part.netAdjParts.begin(),
-          part.netAdjParts.end(), nodesToRemove[partIdx]);
-      nodesToRemove[partIdx].push_back(part.id);
+      nodesToRemove.reserve(part.netAdjParts.size() + 1);
+      getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(), 
+          nodesToRemove);
+      nodesToRemove.push_back(part.id);
     }
 
     set<int> destRanks;
     tag++;
-    ierr = sendIntsToNeighbors(parts, nodesToRemove, destRanks, tag);
+    ierr = sendIntsToNeighbors(part, nodesToRemove, destRanks, tag);
     MIS_FAIL_IF(ierr != 0, "sendIntsToNeighbors failed");
     PCU_Comm_Send();
 
     set<int> srcRanks;
-    recvIntsFromNeighbors(parts, rmtNodesToRemove, srcRanks, loopCount, tag);
+    recvIntsFromNeighbors(part, rmtNodesToRemove, srcRanks, loopCount, tag);
     MIS_FAIL_IF(destRanks.size() != srcRanks.size(),
         "recvIntsFromNeighbors failed");
     MIS_FAIL_IF(!doSetsMatch(srcRanks, destRanks), "ranks do not match");
 
     if (true == part.isInNetGraph) {
       if (true == part.isInMIS ||
-          find(rmtNodesToRemove[partIdx].begin(),
-            rmtNodesToRemove[partIdx].end(),
-            part.id) != rmtNodesToRemove[partIdx].end()) {
+          find(rmtNodesToRemove.begin(),
+            rmtNodesToRemove.end(),
+            part.id) != rmtNodesToRemove.end()) {
         part.netAdjParts.clear();
         part.isInNetGraph = false;
-        nodesRemoved[partIdx].push_back(part.id);
+        nodesRemoved.push_back(part.id);
       } else {
-        MIS_ITERATE(vector<int>, rmtNodesToRemove[partIdx], rmvNodeItr)
+        MIS_ITERATE(vector<int>, rmtNodesToRemove, rmvNodeItr)
           part.netAdjParts.erase(*rmvNodeItr);
       }
     }
-    nodesToRemove[partIdx].clear();
-    rmtNodesToRemove[partIdx].clear();
+    nodesToRemove.clear();
+    rmtNodesToRemove.clear();
 
     destRanks.clear();
     tag++;
-    ierr = sendIntsToNeighbors(parts, nodesRemoved, destRanks, tag);
+    ierr = sendIntsToNeighbors(part, nodesRemoved, destRanks, tag);
     MIS_FAIL_IF(ierr != 0, "sendIntsToNeighbors failed");
     PCU_Comm_Send();
 
     srcRanks.clear();
-    recvIntsFromNeighbors(parts, rmtNodesToRemove, srcRanks, loopCount, tag);
+    recvIntsFromNeighbors(part, rmtNodesToRemove, srcRanks, loopCount, tag);
     MIS_FAIL_IF(destRanks.size() != srcRanks.size(),
         "recvIntsFromNeighbors failed");
     MIS_FAIL_IF(!doSetsMatch(srcRanks, destRanks), "ranks do not match");
 
     if (true == part.isInNetGraph)
-      MIS_ITERATE(vector<int>, rmtNodesToRemove[partIdx], rmvNodeItr)
+      MIS_ITERATE(vector<int>, rmtNodesToRemove, rmvNodeItr)
         part.netAdjParts.erase(*rmvNodeItr);
-    nodesRemoved[partIdx].clear();
-    rmtNodesToRemove[partIdx].clear();
+    nodesRemoved.clear();
+    rmtNodesToRemove.clear();
 
     totalNodesAdded+=numNodesAdded;
     PCU_Add_Ints(&totalNodesAdded, 1);
@@ -673,18 +639,12 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined) {
   sprintf(dbgMsg, "Number of mis loops: %d\n", loopCount);
   debugPrint(dbgMsg);
 
-  delete [] nodesRemoved;
-  delete [] nodesToRemove;
-  delete [] rmtNodesToRemove;
-
   return 0;
 }
 
 void sendMisStatusToNeighbors(vector<partInfo>& parts) {
+  PCU_Comm_Begin();
 
-  PCU_Comm_Start(PCU_GLOBAL_METHOD);
-
-  //pack
   int partIdx = 0;
   MIS_ITERATE(vector<partInfo>, parts, partItr) {
     MIS_ITERATE(vector<int>, partItr->adjPartIds, adjPartIdItr) {
