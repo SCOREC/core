@@ -137,9 +137,8 @@ class MergeTargets {
 };
 
   void generatemMisPart(apf::Mesh* m, Sides* s, MergeTargets& tgts,
-    vector<misLuby::partInfo>& parts){
+    misLuby::partInfo& part){
       //Generating misLuby part info for current part
-      misLuby::partInfo part;
       part.id = m->getId();
 
       //Passing in the adjPartIds
@@ -173,27 +172,22 @@ class MergeTargets {
     else if (part.id == 5) part.randNum = 2;
     else if (part.id == 6) part.randNum = 1;
     else if (part.id == 7) part.randNum = 2;
-
-      parts.push_back(part);
-      //End creating misLuby part
+    //End creating misLuby part
   }
 
   //Using MIS Luby, selects the merges to be executed based on the merging nets
   // and returns it in the plan
   apf::Migration* selectMerges(apf::Mesh* m, Sides* s, MergeTargets& tgts) {
-    //TODO Vector to be passed into misLuby (later to be changed to just
-    //a single part info since vector is from multi parts per process)
-    vector<misLuby::partInfo> parts;
-    parts.reserve(1);
+    misLuby::partInfo part;
 
-    generatemMisPart(m,s,tgts,parts);
+    generatemMisPart(m,s,tgts,part);
 
     int randNumSeed = PCU_Comm_Self()+1;
 
     mis_init(randNumSeed,false);
     vector<int> maximalIndSet;
     //Maximal Independent Set Call
-    int ierr = mis(PCU_Comm_Self(), s->total()+1, parts, maximalIndSet, true);
+    int ierr = mis(part, maximalIndSet, true);
     //Assert will fail if MIS fails
     assert(!ierr);
 
