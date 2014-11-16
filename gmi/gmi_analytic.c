@@ -50,12 +50,12 @@ static void** data_of(struct gmi_analytic* m, struct agm_ent e)
 
 static gmi_reparam_fun* reparam_of(struct gmi_analytic* m, struct agm_use u)
 {
-  return agm_tag_at(m->data, AGM_USE, u.type, u.id);
+  return agm_tag_at(m->reparam, AGM_USE, u.type, u.id);
 }
 
 static void** reparam_data_of(struct gmi_analytic* m, struct agm_use u)
 {
-  return agm_tag_at(m->data, AGM_USE, u.type, u.id);
+  return agm_tag_at(m->reparam_data, AGM_USE, u.type, u.id);
 }
 
 static struct gmi_analytic* to_model(struct gmi_model* m)
@@ -121,6 +121,7 @@ static void reparam_path(struct gmi_analytic* m, struct agm_use* path,
   if (!pathlen) {
     to_p[0] = from_p[0];
     to_p[1] = from_p[1];
+    return;
   }
   reparam_across(m, *path, from_p, tmp);
   reparam_path(m, path + 1, pathlen - 1, tmp, to_p);
@@ -165,6 +166,7 @@ static struct gmi_model_ops ops = {
   .dim      = gmi_base_dim,
   .tag      = gmi_base_tag,
   .find     = gmi_base_find,
+  .adjacent = gmi_base_adjacent,
   .eval     = eval,
   .reparam  = reparam,
   .periodic = periodic,
