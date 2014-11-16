@@ -15,12 +15,10 @@
 namespace awr
 {
 
-LinearSystem::LinearSystem(GO n) :
-  numGlobalEqs_(n)
+LinearSystem::LinearSystem(GO n, Epetra_Map* map) :
+  numGlobalEqs_(n),
+  map_(map)
 {
-  Epetra_MpiComm comm(MPI_COMM_WORLD);
-  const GO indexBase = 0;
-  map_ = new Epetra_Map(n,indexBase,comm);
   numLocalEqs_ = map_->NumMyElements();
   A_ = new Epetra_CrsMatrix(Copy,*map_,n);
   x_ = new Epetra_MultiVector(*map_,/*num vectors=*/1);

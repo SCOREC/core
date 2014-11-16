@@ -20,7 +20,7 @@ typedef long long GO;
 class LinearSystem
 {
   public:
-    LinearSystem(GO n);
+    LinearSystem(GO n, Epetra_Map* map);
     ~LinearSystem();
     LO getNumLocalEqs() { return numLocalEqs_; }
     GO getNumGlobalEqs() { return numGlobalEqs_; }

@@ -9,7 +9,6 @@
 #include "awrPoisson.h"
 #include <apf.h>
 #include <apfMesh.h>
-#include <apfNumbering.h>
 #include <apfDynamicMatrix.h>
 #include <Teuchos_ParameterList.hpp>
 
@@ -41,7 +40,6 @@ class PoissonIntegrator : public apf::Integrator
     void outElement()
     {
       apf::destroyElement(e_);
-      apf::destroyMeshElement(me_);
     }
     void atPoint(apf::Vector3 const& p, double w, double dv)
     {
@@ -103,13 +101,13 @@ void PoissonProblem::createIntegrator()
 }
 
 void PoissonProblem::processKe(
-    apf::MeshElement* me,
-    int& numNodes,
+    apf::MeshEntity* e,
     apf::DynamicMatrix& Ke)
 {
+  apf::MeshElement* me = apf::createMeshElement(mesh_,e);
   integrator_->process(me);
-  numNodes = integrator_->numNodes;
   Ke = integrator_->Ke;
+  apf::destroyMeshElement(me);
 }
 
 }
