@@ -62,16 +62,10 @@ class Problem
     /* setup methods */
     virtual void validateProblemList() = 0;
     virtual void setPrimalField() = 0;
-    void createAdjointField();
-    void createNumbering();
-    void computeNumGlobalEqs();
-    void globalizeNumbering();
 
     /* assemble methods */
-    void processBC();
     virtual void createIntegrator() = 0;
-    virtual void processKe(apf::MeshEntity* e,
-                           apf::DynamicMatrix& Ke) = 0;
+    virtual void processKe(apf::MeshEntity* e, apf::DynamicMatrix& Ke) = 0;
 
 };
 

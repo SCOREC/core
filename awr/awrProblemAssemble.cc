@@ -15,10 +15,6 @@
 
 namespace awr {
 
-void Problem::processBC()
-{
-}
-
 void addKeToGlobalMatrix(
     LinearSystem* ls,
     apf::DynamicMatrix Ke,
@@ -42,7 +38,6 @@ void addKeToGlobalMatrix(
 void Problem::assemble()
 {
   createIntegrator(); /* pure virtual method */
-  processBC();
   apf::MeshEntity* elem;
   apf::DynamicMatrix Ke;
   apf::MeshIterator* elements =

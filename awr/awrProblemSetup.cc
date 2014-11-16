@@ -15,44 +15,44 @@
 
 namespace awr {
 
-void Problem::createAdjointField()
+apf::Field* createAdjointField(apf::Mesh* m, apf::Field* p)
 {
-  const char* n = apf::getName(primal_);
+  const char* n = apf::getName(p);
   std::string name = std::string(n) + "_adj";
-  int vt = apf::getValueType(primal_);
-  apf::FieldShape* fs = apf::getShape(primal_);
-  adjoint_ = apf::createField(mesh_,name.c_str(),vt,fs);
-  numComponents_ = apf::countComponents(adjoint_);
-  /* this is just so apf::writeVTKFiles doesn't blow
-   * up for now */
-  /*********************************************/
+  int vt = apf::getValueType(p);
+  apf::FieldShape* fs = apf::getShape(p);
+  apf::Field* a = apf::createField(m,name.c_str(),vt,fs);
+  /** temporary below so vtk doesn't die **/
   apf::MeshEntity* v;
-  apf::MeshIterator* vertices = mesh_->begin(0);
-  while ((v = mesh_->iterate(vertices)))
+  apf::MeshIterator* vertices = m->begin(0);
+  while ((v = m->iterate(vertices)))
   {
-    apf::setScalar(adjoint_,v,0,1.0);
+    apf::setScalar(a,v,0,1.0);
   }
-  mesh_->end(vertices);
-  /*********************************************/
+  m->end(vertices);
+  /** end temporary **/
+  return a;
 }
 
-void Problem::createNumbering()
+apf::Numbering* createNumbering(apf::Mesh* m, apf::Field* a)
 {
-  apf::FieldShape* fs = apf::getShape(primal_);
-  numbering_ = apf::numberOwnedNodes(mesh_,"node",fs);
+  apf::FieldShape* fs = apf::getShape(a);
+  return apf::numberOwnedNodes(m,"node",fs);
 }
 
-void Problem::computeNumGlobalEqs()
+long computeNumGlobalEqs(int nc, apf::Numbering* n)
 {
-  numGlobalEqs_ = static_cast<long>(apf::countNodes(numbering_));
-  numGlobalEqs_ *= static_cast<long>(numComponents_);
-  PCU_Add_Longs(&numGlobalEqs_,1);
+  long nge = static_cast<long>(apf::countNodes(n));
+  nge *= static_cast<long>(nc);
+  PCU_Add_Longs(&nge,1);
+  return nge;
 }
 
-void Problem::globalizeNumbering()
+apf::GlobalNumbering* globalizeNumbering(apf::Numbering* n)
 {
-  globalNumbering_ = apf::makeGlobal(numbering_);
-  apf::synchronize(globalNumbering_);
+  apf::GlobalNumbering* gn = apf::makeGlobal(n);
+  apf::synchronize(gn);
+  return gn;
 }
 
 Epetra_Map* createMap(int nc, apf::GlobalNumbering* numbering)
@@ -75,10 +75,11 @@ void Problem::setup()
 {
   validateProblemList(); /* pure virtual method */
   setPrimalField(); /* pure virtual method */
-  createAdjointField();
-  createNumbering();
-  computeNumGlobalEqs();
-  globalizeNumbering();
+  adjoint_ = createAdjointField(mesh_,primal_);
+  numComponents_ = apf::countComponents(adjoint_);
+  numbering_ = createNumbering(mesh_,adjoint_);
+  numGlobalEqs_ = computeNumGlobalEqs(numComponents_,numbering_);
+  globalNumbering_ = globalizeNumbering(numbering_);
   ls_ = new LinearSystem(numGlobalEqs_,
       createMap(numComponents_,globalNumbering_));
 }
