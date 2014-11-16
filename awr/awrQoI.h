@@ -28,15 +28,14 @@ class QoI
   public:
     QoI(ParameterList& p, apf::Mesh* m, apf::Field* f);
     virtual ~QoI() = 0;
-    void setup();
+    virtual void createIntegrator() = 0;
+    virtual void processFe(apf::MeshEntity* e, apf::DynamicVector& Fe) = 0;
   protected:
     ParameterList& qoiList_;
     apf::Mesh* mesh_;
     int integrationOrder_;
     apf::Field* primal_;
     virtual void validateQoIList() = 0;
-    virtual void createIntegrator() = 0;
-    virtual void processFe(apf::MeshEntity* e, apf::DynamicVector& Fe) = 0;
 };
 
 QoI* createQoI(ParameterList& p, apf::Mesh* m, apf::Field* f);

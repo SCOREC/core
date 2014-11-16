@@ -7,6 +7,7 @@
 
 #include "awrProblem.h"
 #include "awrPoisson.h"
+#include "awrQoI.h"
 #include "awrLinearSystem.h"
 #include <apfNumbering.h>
 #include <Teuchos_ParameterList.hpp>
@@ -25,6 +26,7 @@ Problem::Problem(ParameterList& p, apf::Mesh* m) :
 Problem::~Problem()
 {
   delete ls_;
+  delete qoi_;
   apf::destroyGlobalNumbering(globalNumbering_);
 }
 

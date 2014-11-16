@@ -70,7 +70,6 @@ class Problem
     /* assemble methods */
     virtual void createIntegrator() = 0;
     virtual void processKe(apf::MeshEntity* e, apf::DynamicMatrix& Ke) = 0;
-
 };
 
 Problem* createProblem(ParameterList& p, apf::Mesh* m);
