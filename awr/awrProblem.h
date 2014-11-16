@@ -29,6 +29,7 @@ namespace awr {
 using Teuchos::ParameterList;
 
 class LinearSystem;
+class QoI;
 
 class Problem
 {
@@ -58,6 +59,9 @@ class Problem
     /* numbering for dof holders */
     apf::Numbering* numbering_;
     apf::GlobalNumbering* globalNumbering_;
+
+    /* quantity of interest */
+    QoI* qoi_;
 
     /* setup methods */
     virtual void validateProblemList() = 0;

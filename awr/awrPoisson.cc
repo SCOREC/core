@@ -9,7 +9,6 @@
 #include "awrPoisson.h"
 #include <apf.h>
 #include <apfMesh.h>
-#include <apfNumbering.h>
 #include <apfDynamicMatrix.h>
 #include <Teuchos_ParameterList.hpp>
 

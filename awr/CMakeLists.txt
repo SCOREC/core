@@ -32,6 +32,8 @@ if(BUILD_IN_TRILINOS)
     awrProblemAssemble.cc
     awrProblemSolve.cc
     awrPoisson.cc
+    awrQoI.cc
+    awrDomainIntegral.cc
     awrLinearSystem.cc)
   
   #Header

@@ -7,6 +7,7 @@
 
 #include "awrProblem.h"
 #include "awrLinearSystem.h"
+#include "awrQoI.h"
 #include <PCU.h>
 #include <apf.h>
 #include <apfNumbering.h>
@@ -80,6 +81,7 @@ void Problem::setup()
   numbering_ = createNumbering(mesh_,adjoint_);
   numGlobalEqs_ = computeNumGlobalEqs(numComponents_,numbering_);
   globalNumbering_ = globalizeNumbering(numbering_);
+  qoi_ = createQoI(qoiList_,mesh_,primal_);
   ls_ = new LinearSystem(numGlobalEqs_,
       createMap(numComponents_,globalNumbering_));
 }
