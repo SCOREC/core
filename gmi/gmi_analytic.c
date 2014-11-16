@@ -82,9 +82,9 @@ struct gmi_ent* gmi_add_analytic(struct gmi_model* m, int dim, int tag,
     (*rp)[i][1] = ranges[i][1];
   }
   for (; i < 2; ++i) {
-    (*pp)[i] = periodic[i];
-    (*rp)[i][0] = ranges[i][0];
-    (*rp)[i][1] = ranges[i][1];
+    (*pp)[i] = 0;
+    (*rp)[i][0] = 0;
+    (*rp)[i][1] = 0;
   }
   *(data_of(m2, e)) = user_data;
   return gmi_from_agm(e);
