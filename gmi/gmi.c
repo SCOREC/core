@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include <assert.h>
 
 struct creator {
@@ -162,16 +161,6 @@ void gmi_fail(const char* why)
 {
   fprintf(stderr,"gmi failed: %s\n",why);
   abort();
-}
-
-void gmi_fscanf(FILE* f, int n, const char* format, ...)
-{
-  va_list ap;
-  int r;
-  va_start(ap, format);
-  r = vfscanf(f, format, ap);
-  va_end(ap);
-  assert(r == n);
 }
 
 void gmi_write_dmg(struct gmi_model* m, const char* filename)

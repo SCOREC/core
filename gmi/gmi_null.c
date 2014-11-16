@@ -9,21 +9,23 @@
 *******************************************************************************/
 #include "gmi_null.h"
 #include "gmi_base.h"
+#include "gmi_lookup.h"
 #include <stdlib.h>
 
 struct gmi_ent* gmi_null_find(struct gmi_model* m, int dim, int tag)
 {
-  int i;
-  struct gmi_base* m2 = (struct gmi_base*)m;
-  for (i = 0; i < m->n[dim]; ++i)
-    if (m2->tags[dim][i] == tag)
-      break;
-  if (i == m->n[dim]) {
+  struct gmi_base* b;
+  struct agm_ent e;
+  enum agm_ent_type t;
+  b = (struct gmi_base*)m;
+  t = agm_type_from_dim(dim);
+  e = gmi_look_up(b->lookup, t, tag);
+  if (agm_ent_null(e)) {
+    e = agm_add_ent(b->topo, t);
+    gmi_set_lookup(b->lookup, e, tag);
     ++(m->n[dim]);
-    m2->tags[dim] = realloc(m2->tags[dim], m->n[dim] * sizeof(int));
-    m2->tags[dim][i] = tag;
   }
-  return gmi_base_identify(dim, i);
+  return gmi_from_agm(e);
 }
 
 static struct gmi_model_ops ops = {
@@ -42,6 +44,7 @@ static struct gmi_model* create(const char* filename)
   struct gmi_base* m;
   m = calloc(1, sizeof(*m));
   m->model.ops = &ops;
+  gmi_base_init(m);
   return &m->model;
 }
 

@@ -183,13 +183,6 @@ void gmi_write_dmg(struct gmi_model* m, const char* filename);
   \details this is for GMI internal use, not public users */
 void gmi_fail(const char* why) __attribute__((noreturn));
 
-/** \brief fscanf wrapper that checks return values
-  \details programmers often fail to check the return
-  value of fscanf, and some compiler configurations will
-  complain about that. this function calls fscanf(f,format,...)
-  and then requires that the return value is equal to n. */
-void gmi_fscanf(FILE* f, int n, const char* format, ...);
-
 #ifdef __cplusplus
 }
 #endif
