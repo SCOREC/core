@@ -72,15 +72,6 @@ void gmi_add_analytic_reparam(struct gmi_model* m, struct agm_use u,
   to gmi_add_analytic_reparam when creating entity (e) */
 void* gmi_analytic_reparam_data(struct gmi_model* m, struct agm_use u);
 
-/** \brief convenience function for reparam from vertex to edge
-  \details this function finds or creates a use from (vertex)
-  to (edge) and then attaches a simple reparam function to that use
-  which just returns (*param). (param) is given as the user data pointer.
-  \param param a pointer to the parametric coordinate of the vertex
-               in the parametric space of the edge */
-struct agm_use gmi_add_analytic_edge_reparam(struct gmi_model* m,
-    struct gmi_ent* edge, struct gmi_ent* vertex, double* param);
-
 /** \brief create a non-parametric model entity
   \details this creates a highest-dimensional model entity.
            typically users do not create a parametric definition

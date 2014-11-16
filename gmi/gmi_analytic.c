@@ -209,32 +209,6 @@ void* gmi_analytic_reparam_data(struct gmi_model* m, struct agm_use u)
   return *(reparam_data_of(m2, u));
 }
 
-static void reparam_edge(double const from[2], double to[2], void* u)
-{
-  double* param = u;
-  to[0] = *param;
-  to[1] = 0;
-}
-
-struct agm_use gmi_add_analytic_edge_reparam(struct gmi_model* m,
-    struct gmi_ent* edge, struct gmi_ent* vertex, double* param)
-{
-  struct gmi_analytic* m2 = to_model(m);
-  struct agm_bdry b;
-  struct agm_use u;
-  struct agm_ent e;
-  struct agm_ent v;
-  e = agm_from_gmi(edge);
-  b = agm_first_bdry_of(m2->base.topo, e);
-  if (agm_bdry_null(b))
-    b = agm_add_bdry(m2->base.topo, e);
-  u = agm_find_use_by_bdry(m2->base.topo, v, b);
-  if (agm_use_null(u))
-    u = agm_add_use(m2->base.topo, b, v);
-  gmi_add_analytic_reparam(m, u, reparam_edge, param);
-  return u;
-}
-
 void gmi_add_analytic_cell(struct gmi_model* m, int dim, int tag)
 {
   gmi_null_find(m, dim, tag);
