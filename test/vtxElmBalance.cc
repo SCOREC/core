@@ -40,6 +40,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  Parma_PrintPtnStats(m, "initial");
   apf::MeshTag* weights = setWeights(m);
   const double step = 0.7; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxElmBalancer(m, step, verbose);
@@ -47,6 +48,7 @@ int main(int argc, char** argv)
   delete balancer;
   clearTags(m, weights);
   m->destroyTag(weights);
+  Parma_PrintPtnStats(m, "final");
   m->writeNative(argv[3]);
   // destroy mds
   m->destroyNative();
