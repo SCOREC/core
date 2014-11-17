@@ -7,61 +7,83 @@
 
 #include "awrProblem.h"
 #include "awrLinearSystem.h"
+#include "awrQoI.h"
 #include <PCU.h>
 #include <apf.h>
 #include <apfNumbering.h>
+#include <Epetra_MpiComm.h>
+#include <Epetra_Map.h>
 
 namespace awr {
 
-void Problem::createAdjointField()
+apf::Field* createAdjointField(apf::Mesh* m, apf::Field* p)
 {
-  const char* n = apf::getName(primal_);
+  const char* n = apf::getName(p);
   std::string name = std::string(n) + "_adj";
-  int vt = apf::getValueType(primal_);
-  apf::FieldShape* fs = apf::getShape(primal_);
-  adjoint_ = apf::createField(mesh_,name.c_str(),vt,fs);
-  numComponents_ = apf::countComponents(adjoint_);
-  /*********************************************/
+  int vt = apf::getValueType(p);
+  apf::FieldShape* fs = apf::getShape(p);
+  apf::Field* a = apf::createField(m,name.c_str(),vt,fs);
+  /** temporary below so vtk doesn't die **/
   apf::MeshEntity* v;
-  apf::MeshIterator* vertices = mesh_->begin(0);
-  while ((v = mesh_->iterate(vertices)))
+  apf::MeshIterator* vertices = m->begin(0);
+  while ((v = m->iterate(vertices)))
   {
-    apf::setScalar(adjoint_,v,0,1.0);
+    apf::setScalar(a,v,0,1.0);
   }
-  mesh_->end(vertices);
-  /*********************************************/
+  m->end(vertices);
+  /** end temporary **/
+  return a;
 }
 
-void Problem::createNumbering()
+apf::Numbering* createNumbering(apf::Mesh* m, apf::Field* a)
 {
-  apf::FieldShape* fs = apf::getShape(primal_);
-  numbering_ = apf::numberOwnedNodes(mesh_,"dof",fs);
+  apf::FieldShape* fs = apf::getShape(a);
+  return apf::numberOwnedNodes(m,"node",fs);
 }
 
-void Problem::computeNumGlobalEqs()
+long computeNumGlobalEqs(int nc, apf::Numbering* n)
 {
-  numGlobalEqs_ = static_cast<long>(apf::countNodes(numbering_));
-  numGlobalEqs_ *= static_cast<long>(numComponents_);
-  PCU_Add_Longs(&numGlobalEqs_,1);
+  long nge = static_cast<long>(apf::countNodes(n));
+  nge *= static_cast<long>(nc);
+  PCU_Add_Longs(&nge,1);
+  return nge;
 }
 
-void Problem::globalizeNumbering()
+apf::GlobalNumbering* globalizeNumbering(apf::Numbering* n)
 {
-  globalNumbering_ = apf::makeGlobal(numbering_);
-  apf::synchronize(globalNumbering_);
+  apf::GlobalNumbering* gn = apf::makeGlobal(n);
+  apf::synchronize(gn);
+  return gn;
+}
+
+Epetra_Map* createMap(int nc, apf::GlobalNumbering* numbering)
+{
+  apf::DynamicArray<apf::Node> nodes;
+  apf::getNodes(numbering,nodes);
+  int numOverlapNodes = nodes.getSize();
+  apf::DynamicArray<long long> dofIndices(numOverlapNodes*nc);
+  for (int i=0; i < numOverlapNodes; ++i)
+  {
+    long global = apf::getNumber(numbering,nodes[i]);
+    for (int j=0; j < nc; ++j)
+      dofIndices[i*nc + j] = global*nc + j;
+  }
+  Epetra_MpiComm comm(MPI_COMM_WORLD);
+  return new Epetra_Map(-1,dofIndices.getSize(),&dofIndices[0],0,comm);
 }
 
 void Problem::setup()
 {
-  /* pure virtual method */
-  validateProblemList();
-  /* pure virtual method */
-  setPrimalField();
-  createAdjointField();
-  createNumbering();
-  computeNumGlobalEqs();
-  globalizeNumbering();
-  ls_ = new LinearSystem(numGlobalEqs_);
+  validateProblemList(); /* pure virtual method */
+  setPrimalField(); /* pure virtual method */
+  adjoint_ = createAdjointField(mesh_,primal_);
+  numComponents_ = apf::countComponents(adjoint_);
+  numbering_ = createNumbering(mesh_,adjoint_);
+  numGlobalEqs_ = computeNumGlobalEqs(numComponents_,numbering_);
+  globalNumbering_ = globalizeNumbering(numbering_);
+  qoi_ = createQoI(qoiList_,mesh_,primal_);
+  ls_ = new LinearSystem(numGlobalEqs_,
+      createMap(numComponents_,globalNumbering_));
 }
 
 }

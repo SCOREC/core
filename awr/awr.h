@@ -24,7 +24,6 @@ namespace apf { class Mesh; }
 
 /** \namespace awr.h
   * \brief All AWR symbols */
-
 namespace awr {
 
 /** \brief solve an adjoint boundary value problem

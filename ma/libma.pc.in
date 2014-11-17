@@ -7,6 +7,6 @@ Name: MeshAdapt
 URL: http://redmine.scorec.rpi.edu/projects/meshadapt
 Description: Parallel unstructured anisotropic mixed mesh adaptation
 Version: @PACKAGE_VERSION@
-Requires: libapf
+Requires: libparma libapf_zoltan
 Libs: -L${libdir} -lma
 Cflags: -I${includedir} 

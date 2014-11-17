@@ -8,8 +8,6 @@
 #ifndef AWR_POISSON_H
 #define AWR_POISSON_H
 
-namespace apf { class Integrator; }
-
 namespace awr {
 
 class Problem;
@@ -25,9 +23,7 @@ class PoissonProblem : public Problem
     void validateProblemList();
     void setPrimalField();
     void createIntegrator();
-    void processKe(apf::MeshElement* me,
-                   int& numNodes,
-                   apf::DynamicMatrix& Ke);
+    void processKe(apf::MeshEntity* e, apf::DynamicMatrix& Ke);
 };
 
 }

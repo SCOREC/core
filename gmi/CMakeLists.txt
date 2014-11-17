@@ -34,13 +34,16 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(SOURCES
    gmi.c
+   agm.c
    gmi_base.c
+   gmi_lookup.c
    gmi_mesh.c
    gmi_null.c
    gmi_analytic.c)
 
 set(HEADERS
    gmi.h
+   agm.h
    gmi_base.h
    gmi_mesh.h
    gmi_null.h
