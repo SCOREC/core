@@ -45,13 +45,10 @@ class PoissonIntegrator : public apf::Integrator
     {
       apf::NewArray<apf::Vector3> gradBF;
       apf::getShapeGrads(e_,p,gradBF);
-      apf::Matrix3x3 J;
-      apf::getJacobian(me_,p,J);
-      double j = apf::getJacobianDeterminant(J,numDims_);
       for (int a=0; a < numNodes_; ++a)
       for (int b=0; b < numNodes_; ++b)
       for (int i=0; i < numDims_; ++i)
-        Ke(a,b) += gradBF[a][i] * gradBF[b][i] * w * j;
+        Ke(a,b) += gradBF[a][i] * gradBF[b][i] * w * dv;
     }
     apf::DynamicMatrix Ke;
   private:

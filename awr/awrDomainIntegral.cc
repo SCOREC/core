@@ -43,13 +43,9 @@ class DomainIntegrator : public apf::Integrator
     {
       apf::NewArray<double> bf;
       apf::getShapeValues(e_,p,bf);
-      apf::Matrix3x3 J;
-      apf::getJacobian(me_,p,J);
-      int numDims = apf::getMesh(f_)->getDimension();
       double val = getScalar(e_,p);
-      double j = apf::getJacobianDeterminant(J,numDims);
       for (int a=0; a < numDofs_; ++a)
-        Fe(a) += bf[a] * val * w * j;
+        Fe(a) += bf[a] * val * w * dv;
     }
     apf::DynamicVector Fe;
   private:
