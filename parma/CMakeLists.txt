@@ -48,6 +48,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_vtxBalancer.cc
   diffMC/parma_vtxSelector.cc
   diffMC/parma_weightTargets.cc
+  diffMC/parma_vtxElmTargets.cc
   diffMC/parma_vtxEdgeElmTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc
   diffMC/parma_vtxElmBalancer.cc
