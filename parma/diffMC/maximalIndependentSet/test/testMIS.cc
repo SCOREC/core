@@ -21,63 +21,6 @@ using parmaCommons::debug;
 using parmaCommons::status;
 using parmaCommons::error;
 
-void getRandomNums(int totRandNums, vector<int>& localRandNums, bool debug = false) {
-    int rank;
-    PCU_Comm_Rank(&rank);
-    if (0 == rank) {
-        vector<int> randNums(totRandNums);
-        generateRandomNumbers(randNums);
-
-        if (debug) {
-            char dbgMsg[32];
-            sprintf(dbgMsg, "getRandomNums=");
-            Print <int, vector<int>::iterator > (cout, dbgMsg, randNums.begin(), randNums.end(), std::string(", "));
-        }
-
-        MPI_Scatter(&(randNums[0]), localRandNums.size(), MPI_INT, &(localRandNums[0]), localRandNums.size(), MPI_INT, 0, MPI_COMM_WORLD);
-    } else {
-        MPI_Scatter(NULL, localRandNums.size(), MPI_INT, &(localRandNums[0]), localRandNums.size(), MPI_INT, 0, MPI_COMM_WORLD);
-    }
-}
-
-void createRandomAdjacencies(const int totNumParts, const int numParts, bool debugMode, vector<partInfo>& parts) {
-    int rank;
-    PCU_Comm_Rank(&rank);
-    // random number of adjacencies per part between 0 and totNumParts/4
-    vector<int> localRandAdjs(numParts);
-    getRandomNums(totNumParts, localRandAdjs, debugMode);
-
-    int maxNumAdj = totNumParts / 4;
-    vector<int>::iterator itr;
-    for (itr = localRandAdjs.begin();
-            itr != localRandAdjs.end();
-            itr++) {
-        *itr %= maxNumAdj;
-    }
-
-    const int totNumRandNeeded = totNumParts*maxNumAdj;
-    vector<int> localRandRanks(numParts * maxNumAdj);
-    getRandomNums(totNumRandNeeded, localRandRanks, debugMode);
-
-    for (int partIdx = 0; partIdx < numParts; partIdx++) {
-        partInfo part;
-        part.id = rank * numParts + partIdx;
-        for (int adjPartIdx = 0; adjPartIdx < localRandAdjs[partIdx]; adjPartIdx++) {
-            assert(partIdx + adjPartIdx < localRandRanks.size());
-            int adjRank = localRandRanks[adjPartIdx + partIdx] % totNumParts;
-            if (adjRank == rank) {
-                adjRank = (adjRank + 1) % totNumParts;
-            }
-            if (adjRank < 0 || adjRank >= totNumParts) {
-                printf("ERROR [%d] adjRank=%d\n", rank, adjRank);
-            }
-            assert(adjRank >= 0 && adjRank < totNumParts);
-            part.adjPartIds.push_back(adjRank);
-        }
-        parts.push_back(part);
-    }
-}
-
 int getPartIdFromIdx(int row, int col, const int sqrtTotNumParts) {
     if (row < 0) {
         row = sqrtTotNumParts + (row % sqrtTotNumParts);
@@ -92,7 +35,8 @@ int getPartIdFromIdx(int row, int col, const int sqrtTotNumParts) {
     return row * sqrtTotNumParts + col;
 }
 
-void set2dStencilNets(vector<int>& nets, const int r, const int c, const int sqrtTotNumParts) {
+void set2dStencilNets(vector<int>& nets, const int r, const int c, 
+    const int sqrtTotNumParts) {
     int id = 0;
     id = getPartIdFromIdx(r, c, sqrtTotNumParts); //self
     nets.push_back(id);
@@ -114,7 +58,8 @@ void set2dStencilNets(vector<int>& nets, const int r, const int c, const int sqr
  * @param sqrtTotNumParts (In) floor(sqrt(totNumParts))
  * @return true if the net of part (r,c) is in the IS, false o.w.
  */
-bool is2dStencilNetInIS(vector<int>& isInMIS, const int r, const int c, const int sqrtTotNumParts) {
+bool is2dStencilNetInIS(vector<int>& isInMIS, const int r, const int c, 
+    const int sqrtTotNumParts) {
     int id = 0;
     id = getPartIdFromIdx(r, c - 1, sqrtTotNumParts); //W
     if (find(isInMIS.begin(), isInMIS.end(), id) != isInMIS.end()) {
@@ -136,7 +81,8 @@ bool is2dStencilNetInIS(vector<int>& isInMIS, const int r, const int c, const in
     return false;
 }
 
-void set2dStencilNeighbors(vector<int>& adjPartIds, const int r, const int c, const int sqrtTotNumParts) {
+void set2dStencilNeighbors(vector<int>& adjPartIds, const int r, const int c, 
+    const int sqrtTotNumParts) {
     int id = 0;
     id = getPartIdFromIdx(r, c - 1, sqrtTotNumParts); //W
     adjPartIds.push_back(id);
@@ -156,7 +102,8 @@ void set2dStencilNeighbors(vector<int>& adjPartIds, const int r, const int c, co
     adjPartIds.push_back(id);
 }
 
-bool isValidIndependentSet(int* isInMIS, const int sqrtTotNumParts, const int totNumParts) {
+bool isValidIndependentSet(int* isInMIS, const int sqrtTotNumParts, 
+    const int totNumParts) {
     vector<int> mis;
     for (int partId = 0; partId < totNumParts; partId++) {
         if (1 == isInMIS[partId]) {
@@ -183,7 +130,8 @@ bool isValidIndependentSet(int* isInMIS, const int sqrtTotNumParts, const int to
  * @param sqrtTotNumParts (In) floor(sqrt(totNumParts))
  * @return true if the net of part (r,c) is available, false o.w.
  */
-bool is2dStencilNetAvailable(vector<int>& isInMIS, const int r, const int c, const int sqrtTotNumParts) {
+bool is2dStencilNetAvailable(vector<int>& isInMIS, const int r, const int c, 
+    const int sqrtTotNumParts) {
     int id = 0;
     int nb_r, nb_c;
 
@@ -191,175 +139,231 @@ bool is2dStencilNetAvailable(vector<int>& isInMIS, const int r, const int c, con
     nb_c = c - 1;
     id = getPartIdFromIdx(nb_r, nb_c, sqrtTotNumParts); //W
     if (find(isInMIS.begin(), isInMIS.end(), id) != isInMIS.end() ||
-            true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
-        return false;
+        true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
+      return false;
     }
 
     nb_r = r - 1;
     nb_c = c;
     id = getPartIdFromIdx(r - 1, c, sqrtTotNumParts); //N
     if (find(isInMIS.begin(), isInMIS.end(), id) != isInMIS.end() ||
-            true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
-        return false;
+        true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
+      return false;
     }
 
     nb_r = r;
     nb_c = c + 1;
     id = getPartIdFromIdx(r, c + 1, sqrtTotNumParts); //E
     if (find(isInMIS.begin(), isInMIS.end(), id) != isInMIS.end() ||
-            true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
-        return false;
+        true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
+      return false;
     }
 
     nb_r = r + 1;
     nb_c = c;
     id = getPartIdFromIdx(r + 1, c, sqrtTotNumParts); //S
     if (find(isInMIS.begin(), isInMIS.end(), id) != isInMIS.end() ||
-            true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
+        true == is2dStencilNetInIS(isInMIS, nb_r, nb_c, sqrtTotNumParts)) {
+      return false;
+    }
+
+    return true;
+}
+
+bool isMaximalIndependentSet(int* isInMIS, const int sqrtTotNumParts, 
+    const int totNumParts) {
+  vector<int> mis;
+  for (int partId = 0; partId < totNumParts; partId++) {
+    if (1 == isInMIS[partId]) {
+      mis.push_back(partId);
+    }
+  }
+  for (int partId = 0; partId < totNumParts; partId++) {
+    if (0 == isInMIS[partId]) {
+      const int row = partId / sqrtTotNumParts;
+      const int col = partId % sqrtTotNumParts;
+      if (true == is2dStencilNetAvailable(mis, row, col, sqrtTotNumParts)) {
         return false;
+      }
     }
-
-    return true;
+  }
+  return true;
 }
 
-bool isMaximalIndependentSet(int* isInMIS, const int sqrtTotNumParts, const int totNumParts) {
-    vector<int> mis;
-    for (int partId = 0; partId < totNumParts; partId++) {
-        if (1 == isInMIS[partId]) {
-            mis.push_back(partId);
-        }
-    }
-    for (int partId = 0; partId < totNumParts; partId++) {
-        if (0 == isInMIS[partId]) {
-            const int row = partId / sqrtTotNumParts;
-            const int col = partId % sqrtTotNumParts;
-            if (true == is2dStencilNetAvailable(mis, row, col, sqrtTotNumParts)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
+/* 
+---3x3---
+ 
+  6 7 8   
+8 _____ 6
+2|0 1 2|0
+5|3 4 5|3
+8|6 7 8|6
+2 ----- 0
+  0 1 2
 
+If any part is selected then the remaining parts are removed.
+|MIS| = 1.
+
+---4x4---
+
+   12 13 14 15
+15 ___________ 12
+3 |0  1  2  3 |0
+7 |4  5  6  7 |4
+11|8  9  10 11|8
+15|12 13 14 15|12
+3  -----------
+   0  1  2  3 
+
+If part 5 is selected then first remove first adjacent neighbors in the 
+netgraph:
+
+   12 13 14 15
+15 ___________ 12
+3 |0     2  3 |0
+7 |   5     7 | 
+11|8     10 11|8
+15|12 13 14 15|12
+3  -----------
+   0     2  3 
+
+Now remove second adjacent neighbors of part 5:
+
+   12    14 15
+15 ___________ 12
+3 |         3 | 
+  |   5       | 
+11|         11| 
+15|12    14 15|12
+3  -----------
+            3 
+
+Then suppose part 11 was selected and its first and second adjacent neighbors 
+are removed:
+              
+   ___________   
+  |           | 
+  |   5       | 
+11|         11| 
+  |           |  
+   -----------
+              
+|MIS| = 2
+
+*/
 int test_2dStencil(const int rank, const int totNumParts,
-        const int numParts, bool randNumsPredefined = false) {
-    char outMsg[256];
+    const int numParts, bool randNumsPredefined = false) {
+  assert(numParts==1);
+  char outMsg[256];
 
-    status("test_2dStencil - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
+  if( !PCU_Comm_Self() )
+    status("test_2dStencil - totNumParts: %d  numParts: %d\n", 
+        totNumParts, numParts);
 
-    const int sqrtTotNumParts = floor(sqrt(totNumParts));
-    if (totNumParts != sqrtTotNumParts * sqrtTotNumParts) {
-        MIS_FAIL("totNumParts must be a perfect square\n");
-        return 1;
-    }
-    if (totNumParts < 9) {
-        MIS_FAIL("totNumParts must be at least 9\n");
-        return 1;
-    }
-
-    //set neighbors and nets
-    vector<partInfo> parts(numParts);
-    partInfoVecItrType partItr;
-    int partId = rank*numParts;
-    for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
-        const int row = partId / sqrtTotNumParts;
-        const int col = partId % sqrtTotNumParts;
-        partItr->id = partId;
-        set2dStencilNeighbors(partItr->adjPartIds, row, col, sqrtTotNumParts);
-        set2dStencilNets(partItr->net, row, col, sqrtTotNumParts);
-
-        sprintf(outMsg, "[%d] (%d) test_2dStencil adjPartIds=", rank, partId);
-        Print <int, vector<int>::iterator > (cout, outMsg, partItr->adjPartIds.begin(), partItr->adjPartIds.end(), std::string(", "));
-
-        sprintf(outMsg, "[%d] (%d) test_2dStencil net=", rank, partId);
-        Print <int, vector<int>::iterator > (cout, outMsg, partItr->net.begin(), partItr->net.end(), std::string(", "));
-
-        partId++;
-    }
-
-    //sanity check
-    for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
-        vector<int>::iterator adjPIDItr;
-        for (adjPIDItr = partItr->adjPartIds.begin();
-                adjPIDItr != partItr->adjPartIds.end();
-                adjPIDItr++) {
-            if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
-                printf("ERROR [%d] (%d) adjPartId=%d\n", rank, partItr->id, *adjPIDItr);
-                return 1;
-            }
-        }
-        vector<int>::iterator netItr;
-        for (netItr = partItr->net.begin();
-                netItr != partItr->net.end();
-                netItr++) {
-            if (*netItr < 0 || *netItr >= totNumParts) {
-                printf("ERROR [%d] (%d) net=%d\n", rank, partItr->id, *netItr);
-                return 1;
-            }
-        }
-    }
-
-    vector<int> maximalIndSet;
-    const double t1 = MPI_Wtime();
-    int ierr = mis(rank, totNumParts, parts, maximalIndSet, randNumsPredefined);
-    const double t2 = MPI_Wtime();
-
-    double elapsedTime = t2 - t1;
-    double maxElapsedTime = 0.0;
-    MPI_Reduce(&elapsedTime, &maxElapsedTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    status("elapsed time (seconds) = %f \n", maxElapsedTime);
-
-    vector<int> isInMIS(numParts, 0);
-    vector<int>::iterator misItr;
-    for (misItr = maximalIndSet.begin();
-            misItr != maximalIndSet.end();
-            misItr++) {
-        const int partIdx = *misItr % numParts;
-        isInMIS[partIdx] = 1;
-    }
-
-    int* globalIsInMIS = NULL;
-    if (rank == 0) {
-        globalIsInMIS = new int[totNumParts];
-    }
-    MPI_Gather(&(isInMIS[0]), numParts, MPI_INT, globalIsInMIS, numParts, MPI_INT, 0, MPI_COMM_WORLD);
-    int sizeIS = 0;
-    if (rank == 0) {
-        char* statusMsg = new char[totNumParts * 4];
-        int pos = sprintf(statusMsg, "MIS: ");
-        for (int i = 0; i < totNumParts; ++i) {
-            if (globalIsInMIS[i]) {
-                pos += sprintf(&(statusMsg[pos]), " %d ", i);
-                ++sizeIS;
-            }
-        }
-        status("%s\n", statusMsg);
-        delete [] statusMsg;
-
-        status("|independent set| = %d\n", sizeIS);
-
-        if (false == isValidIndependentSet(globalIsInMIS, sqrtTotNumParts, totNumParts)) {
-            MIS_FAIL("Not a valid independent set!\n");
-        }
-
-        if (false == isMaximalIndependentSet(globalIsInMIS, sqrtTotNumParts, totNumParts)) {
-            MIS_FAIL("Not a maximal independent set!\n");
-        }
-
-        delete [] globalIsInMIS;
-
-
-        if (sizeIS <= 2) {
-            return 1;
-        } else {
-            return 0;
-        }
-        return 0;
-    } else {
-        return 0;
-    }
-
+  const int sqrtTotNumParts = floor(sqrt(totNumParts));
+  if (totNumParts != sqrtTotNumParts * sqrtTotNumParts) {
+    MIS_FAIL("totNumParts must be a perfect square\n");
     return 1;
+  }
+  if (totNumParts < 9) {
+    MIS_FAIL("totNumParts must be at least 9\n");
+    return 1;
+  }
+
+  //set neighbors and nets
+  vector<partInfo> parts(numParts);
+  partInfoVecItrType partItr;
+  int partId = rank*numParts;
+  for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
+    const int row = partId / sqrtTotNumParts;
+    const int col = partId % sqrtTotNumParts;
+    partItr->id = partId;
+    set2dStencilNeighbors(partItr->adjPartIds, row, col, sqrtTotNumParts);
+    set2dStencilNets(partItr->net, row, col, sqrtTotNumParts);
+    partId++;
+  }
+
+  //sanity check
+  for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
+    vector<int>::iterator adjPIDItr;
+    for (adjPIDItr = partItr->adjPartIds.begin();
+        adjPIDItr != partItr->adjPartIds.end();
+        adjPIDItr++) {
+      if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
+        printf("ERROR [%d] (%d) adjPartId=%d\n", 
+            rank, partItr->id, *adjPIDItr);
+        return 1;
+      }
+    }
+    vector<int>::iterator netItr;
+    for (netItr = partItr->net.begin();
+        netItr != partItr->net.end();
+        netItr++) {
+      if (*netItr < 0 || *netItr >= totNumParts) {
+        printf("ERROR [%d] (%d) net=%d\n", rank, partItr->id, *netItr);
+        return 1;
+      }
+    }
+  }
+
+  vector<int> maximalIndSet;
+  const double t1 = MPI_Wtime();
+  int ierr = mis(parts[0], maximalIndSet, randNumsPredefined);
+  double elapsedTime = MPI_Wtime() - t1;
+  PCU_Max_Doubles(&elapsedTime, 1);
+
+  if( !PCU_Comm_Self() )
+    status("elapsed time (seconds) = %f \n", elapsedTime);
+
+  vector<int> isInMIS(numParts, 0);
+  vector<int>::iterator misItr;
+  for (misItr = maximalIndSet.begin();
+      misItr != maximalIndSet.end();
+      misItr++) {
+    const int partIdx = *misItr % numParts;
+    isInMIS[partIdx] = 1;
+  }
+
+  int* globalIsInMIS = NULL;
+  if (rank == 0) {
+    globalIsInMIS = new int[totNumParts];
+  }
+  MPI_Gather(&(isInMIS[0]), numParts, MPI_INT, globalIsInMIS, numParts, 
+      MPI_INT, 0, MPI_COMM_WORLD);
+  int sizeIS = 0;
+
+  if (rank != 0) 
+    return 0;
+
+  char* statusMsg = new char[totNumParts * 4];
+  int pos = sprintf(statusMsg, "MIS: ");
+  for (int i = 0; i < totNumParts; ++i) {
+    if (globalIsInMIS[i]) {
+      pos += sprintf(&(statusMsg[pos]), " %d ", i);
+      ++sizeIS;
+    }
+  }
+  status("%s\n", statusMsg);
+  delete [] statusMsg;
+
+  status("|independent set| = %d\n", sizeIS);
+
+  if (!isValidIndependentSet(globalIsInMIS, sqrtTotNumParts, totNumParts))
+    MIS_FAIL("Not a valid independent set!\n");
+  if (!isMaximalIndependentSet(globalIsInMIS, sqrtTotNumParts, totNumParts))
+    MIS_FAIL("Not a maximal independent set!\n");
+
+  delete [] globalIsInMIS;
+
+  int error = 1;
+  if ( totNumParts == 9 && sizeIS == 1 )
+    return !error;
+  else if ( totNumParts == 16 && sizeIS == 2 )
+    return !error;
+  else if ( totNumParts > 16 && sizeIS > 2 )
+    return !error;
+  else 
+    return error;
 }
 
 /**
@@ -380,8 +384,11 @@ int test_2dStencil(const int rank, const int totNumParts,
 int test_StarA(const int rank, const int totNumParts,
         const int numParts, bool randNumsPredefined = false) {
     char dbgMsg[256];
+    assert(numParts == 1);
 
-    status("test_StarA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
+    if( !PCU_Comm_Self() )
+      status("test_StarA - totNumParts: %d  numParts: %d\n", totNumParts, 
+          numParts);
 
     vector<partInfo> parts;
 
@@ -428,15 +435,20 @@ int test_StarA(const int rank, const int totNumParts,
                 return 1;
             }
         }
-        sprintf(dbgMsg, " [%d] (%d) %s - adjPartIds=", rank, partItr->id, __FUNCTION__);
-        Print <int, vector<int>::iterator > (cout, dbgMsg, partItr->adjPartIds.begin(), partItr->adjPartIds.end(), std::string(", "));
+        sprintf(dbgMsg, " [%d] (%d) %s - adjPartIds=", 
+            rank, partItr->id, __FUNCTION__);
+        Print <int, vector<int>::iterator > (cout, dbgMsg, 
+            partItr->adjPartIds.begin(), partItr->adjPartIds.end(), 
+            std::string(", "));
 
-        sprintf(dbgMsg, " [%d] (%d) %s - net=", rank, partItr->id, __FUNCTION__);
-        Print <int, vector<int>::iterator > (cout, dbgMsg, partItr->net.begin(), partItr->net.end(), std::string(", "));
+        sprintf(dbgMsg, " [%d] (%d) %s - net=", 
+            rank, partItr->id, __FUNCTION__);
+        Print <int, vector<int>::iterator > (cout, dbgMsg, 
+            partItr->net.begin(), partItr->net.end(), std::string(", "));
     }
 
     vector<int> maximalIndSet;
-    int ierr = mis(rank, totNumParts, parts, maximalIndSet, randNumsPredefined);
+    int ierr = mis(parts[0], maximalIndSet, randNumsPredefined);
 
     vector<int> isInMIS(numParts, 0);
     vector<int>::iterator misItr;
@@ -451,7 +463,8 @@ int test_StarA(const int rank, const int totNumParts,
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&(isInMIS[0]), numParts, MPI_INT, globalIsInMIS, numParts, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&(isInMIS[0]), numParts, MPI_INT, globalIsInMIS, numParts, 
+        MPI_INT, 0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
         char* statusMsg = new char[totNumParts * 4];
@@ -479,14 +492,34 @@ int test_StarA(const int rank, const int totNumParts,
     }
 }
 
-int test_4partsA(const int rank, const int totNumParts, const int numParts, bool predefinedRandNums) {
+/*
+
+part and net graph
+    0 1 2 3 
+  0   x x x
+  1 x     x
+  2 x     x
+  3 x x x
+
+part      0  1  2  3
+randNums  5  1  13 6
+
+  0 1 2 3
+  -------
+    
+ */
+int test_4partsA(const int rank, const int totNumParts, const int numParts, 
+    bool predefinedRandNums) {
+    assert(numParts == 1);
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
     char dbgMsg[256];
-    status("test_4partsA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
+    if( !PCU_Comm_Self() )
+      status("test_4partsA - totNumParts: %d  numParts: %d\n", 
+          totNumParts, numParts);
 
     partInfo part;
     part.id = rank;
@@ -520,17 +553,20 @@ int test_4partsA(const int rank, const int totNumParts, const int numParts, bool
         part.adjPartIds.push_back(2);
     }
 
+    part.print();
+
     vector<partInfo> parts;
     parts.push_back(part);
     vector<int> maximalIndSet;
-    int ierr = mis(rank, totNumParts, parts, maximalIndSet, predefinedRandNums);
+    int ierr = mis(parts[0], maximalIndSet, predefinedRandNums);
 
     int misLocalSize = maximalIndSet.size();
     int* globalIsInMIS = NULL;
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
+        0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
         printf("MIS: ");
@@ -554,14 +590,18 @@ int test_4partsA(const int rank, const int totNumParts, const int numParts, bool
     }
 }
 
-int test_4partsB(const int rank, const int totNumParts, const int numParts, bool predefinedRandNums) {
+int test_4partsB(const int rank, const int totNumParts, const int numParts, 
+    bool predefinedRandNums) {
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
+    assert(numParts==1);
 
     char dbgMsg[256];
-    status("test_4partsAndNums - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
+    if( !PCU_Comm_Self() )
+      status("test_4partsAndNums - totNumParts: %d  numParts: %d\n", 
+          totNumParts, numParts);
 
     partInfo part;
     part.id = rank;
@@ -596,14 +636,15 @@ int test_4partsB(const int rank, const int totNumParts, const int numParts, bool
     vector<partInfo> parts;
     parts.push_back(part);
     vector<int> maximalIndSet;
-    int ierr = mis(rank, totNumParts, parts, maximalIndSet, predefinedRandNums);
+    int ierr = mis(parts[0], maximalIndSet, predefinedRandNums);
 
     int misLocalSize = maximalIndSet.size();
     int* globalIsInMIS = NULL;
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
+        0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
         printf("MIS: ");
@@ -627,14 +668,18 @@ int test_4partsB(const int rank, const int totNumParts, const int numParts, bool
     }
 }
 
-int test_4partsC(const int rank, const int totNumParts, const int numParts, bool predefinedRandNums) {
+int test_4partsC(const int rank, const int totNumParts, const int numParts, 
+    bool predefinedRandNums) {
+    assert(numParts==1);
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
     char dbgMsg[256];
-    status("test_4partsA - totNumParts: %d  numParts: %d\n", totNumParts, numParts);
+    if( !PCU_Comm_Self() )
+      status("test_4partsA - totNumParts: %d  numParts: %d\n", 
+          totNumParts, numParts);
 
     partInfo part;
     part.id = rank;
@@ -664,14 +709,15 @@ int test_4partsC(const int rank, const int totNumParts, const int numParts, bool
     vector<partInfo> parts;
     parts.push_back(part);
     vector<int> maximalIndSet;
-    int ierr = mis(rank, totNumParts, parts, maximalIndSet, predefinedRandNums);
+    int ierr = mis(parts[0], maximalIndSet, predefinedRandNums);
 
     int misLocalSize = maximalIndSet.size();
     int* globalIsInMIS = NULL;
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
+        0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
         printf("MIS: ");
@@ -725,6 +771,7 @@ bool getBool(int& isDebug) {
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     PCU_Comm_Init();
+    PCU_Protect();
     int rank;
     PCU_Comm_Rank(&rank);
     int commSize;
@@ -765,37 +812,40 @@ int main(int argc, char** argv) {
 
     numParts = broadcastInt(numParts);
     testNum = broadcastInt(testNum);
-    randNumSeed = broadcastInt(randNumSeed);
+    randNumSeed = broadcastInt(randNumSeed) + PCU_Comm_Self();
     bool predefinedRandNums = getBool(iPredefinedRandNums);
 
     mis_init(randNumSeed, getBool(debugMode));
 
     int ierr;
     switch (testNum) {
-        default:
-        case -1:
-            if (0 == rank) {
-                printf("Test number not recognized\n");
-                printUsage(argv[0]);
-            }
-            MPI_Finalize();
-            return 0;
-            break;
-        case 0:
-            ierr = test_4partsA(rank, commSize*numParts, numParts, predefinedRandNums);
-            break;
-        case 1:
-            ierr = test_4partsB(rank, commSize*numParts, numParts, predefinedRandNums);
-            break;
-        case 2:
-            ierr = test_4partsC(rank, commSize*numParts, numParts, predefinedRandNums);
-            break;
-        case 3:
-            ierr = test_StarA(rank, commSize*numParts, numParts);
-            break;
-        case 4:
-            ierr = test_2dStencil(rank, commSize*numParts, numParts);
-            break;
+      default:
+      case -1:
+        if (0 == rank) {
+          printf("Test number not recognized\n");
+          printUsage(argv[0]);
+        }
+        MPI_Finalize();
+        return 0;
+        break;
+      case 0:
+        ierr = test_4partsA(rank, commSize*numParts, numParts, 
+            predefinedRandNums);
+        break;
+      case 1:
+        ierr = test_4partsB(rank, commSize*numParts, numParts, 
+            predefinedRandNums);
+        break;
+      case 2:
+        ierr = test_4partsC(rank, commSize*numParts, numParts, 
+            predefinedRandNums);
+        break;
+      case 3:
+        ierr = test_StarA(rank, commSize*numParts, numParts);
+        break;
+      case 4:
+        ierr = test_2dStencil(rank, commSize*numParts, numParts);
+        break;
     }
 
     if (0 == rank) {

@@ -34,7 +34,6 @@ void rejectQoIName(const char* name)
 QoI* createQoI(ParameterList& p, apf::Mesh* m, apf::Field* f)
 {
   std::string name = p.get<std::string>("Name","");
-  std::cout << name << std::endl;
   QoI* qoi;
   if (name == "Domain Integral")
     qoi = new DomainIntegral(p,m,f);

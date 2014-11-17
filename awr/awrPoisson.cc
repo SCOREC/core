@@ -31,10 +31,10 @@ class PoissonIntegrator : public apf::Integrator
     {
       me_ = me;
       e_ = apf::createElement(f_,me_);
-      numNodes = apf::countNodes(e_);
-      Ke.setSize(numNodes,numNodes);
-      for (int a=0; a < numNodes; ++a)
-      for (int b=0; b < numNodes; ++b)
+      numNodes_ = apf::countNodes(e_);
+      Ke.setSize(numNodes_,numNodes_);
+      for (int a=0; a < numNodes_; ++a)
+      for (int b=0; b < numNodes_; ++b)
         Ke(a,b) = 0.0;
     }
     void outElement()
@@ -45,21 +45,18 @@ class PoissonIntegrator : public apf::Integrator
     {
       apf::NewArray<apf::Vector3> gradBF;
       apf::getShapeGrads(e_,p,gradBF);
-      apf::Matrix3x3 J;
-      apf::getJacobian(me_,p,J);
-      double j = apf::getJacobianDeterminant(J,numDims_);
-      for (int a=0; a < numNodes; ++a)
-      for (int b=0; b < numNodes; ++b)
+      for (int a=0; a < numNodes_; ++a)
+      for (int b=0; b < numNodes_; ++b)
       for (int i=0; i < numDims_; ++i)
-        Ke(a,b) += gradBF[a][i] * gradBF[b][i] * w * j;
+        Ke(a,b) += gradBF[a][i] * gradBF[b][i] * w * dv;
     }
     apf::DynamicMatrix Ke;
-    int numNodes;
   private:
     apf::Field* f_;
     apf::Element* e_;
     apf::MeshElement* me_;
     int numDims_;
+    int numNodes_;
 };
 
 /** problem **/
