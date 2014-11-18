@@ -285,3 +285,17 @@ void gmi_base_freeze(struct gmi_model* m)
   for (i = 0; i <= 3; ++i)
     gmi_freeze_lookup(b->lookup, i);
 }
+
+void gmi_base_unfreeze(struct gmi_model* m)
+{
+  struct gmi_base* b;
+  b = to_base(m);
+  gmi_unfreeze_lookups(b->lookup);
+}
+
+void gmi_base_set_tag(struct gmi_model* m, struct gmi_ent* e, int tag)
+{
+  struct gmi_base* b;
+  b = to_base(m);
+  gmi_set_lookup(b->lookup, agm_from_gmi(e), tag);
+}

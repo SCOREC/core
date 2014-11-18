@@ -45,11 +45,14 @@ struct gmi_set* gmi_base_adjacent(struct gmi_model* m, struct gmi_ent* e,
     int dim);
 
 void gmi_base_freeze(struct gmi_model* m);
+void gmi_base_unfreeze(struct gmi_model* m);
 
 int gmi_base_index(struct gmi_ent* e);
 struct gmi_ent* gmi_base_identify(int dim, int idx);
 
 void gmi_base_read_dmg(struct gmi_base* m, FILE* f);
+
+void gmi_base_set_tag(struct gmi_model* m, struct gmi_ent* e, int tag);
 
 #ifdef __cplusplus
 } /* extern "C" */
