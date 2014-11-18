@@ -64,6 +64,14 @@ int main(int argc, char** argv)
   }
   v.breakpoint();
 
+  v.watchBoundary(m,1);
+  itr = m->begin(2);
+  while ((ent=m->iterate(itr))!=0) {
+    if (m->isShared(ent))
+      v.watchEntity(m,ent);
+  }
+  v.breakpoint();
+
   v.end_viz();
 
   freeMesh(m);
