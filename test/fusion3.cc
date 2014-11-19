@@ -278,6 +278,7 @@ int main(int argc, char * argv[])
   ma::Input* in = ma::configure(mesh,&sfv);
   in->maximumIterations = 9;
   ma::adapt(in);
+  mesh->verify();
   apf::writeVtkFiles("adapted",mesh);
   //clean data
   // to do
