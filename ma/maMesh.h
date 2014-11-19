@@ -108,7 +108,8 @@ double measure(Mesh* m, Entity* e);
 bool isOnModelEdge(Mesh* m, Entity* e);
 bool isOnModelFace(Mesh* m, Entity* e);
 
-Vector getTriNormal(Mesh* m, Vector* x);
+Vector getTriNormal(Mesh* m, Entity** v);
+Vector getTriNormal(Mesh* m, Entity* e);
 bool isTwoTriAngleAcute(Mesh* m, Entity** va, Entity** vb);
 bool isTwoTriAngleAcute(Mesh* m, Entity* a, Entity* b);
 
