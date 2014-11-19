@@ -38,12 +38,46 @@ Element::~Element()
 {
 }
 
+static Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
+{
+  switch (dim) {
+/* this routine computes the Moore-Penrose pseudo-inverse
+   of J. We need it to handle non-square Jacobians that
+   arise from edges embedded in 2D or higher and faces
+   embedded in 3D. The resulting inverse Jacobian should
+   be adequate for computing global shape function
+   and field gradients based on local gradients */
+    case 1: {
+      Matrix3x3 jinvt;
+      jinvt[0] = J[0] / (J[0] * J[0]);
+      jinvt[1] = jinvt[2] = Vector3(0,0,0);
+      return transpose(jinvt);
+    }
+    case 2: {
+      Matrix<2,3> A;
+      A[0] = J[0];
+      A[1] = J[2];
+      Matrix<3,2> At = transpose(A);
+      Matrix<2,3> Ainvt = transpose(At * invert(A * At));
+      Matrix3x3 jinvt;
+      jinvt[0] = Ainvt[0];
+      jinvt[1] = Ainvt[1];
+      jinvt[2] = Vector3(0,0,0);
+      return transpose(jinvt);
+    }
+    case 3:
+      return invert(J);
+    default:
+      fail("getJacobianInverse: bad dimension");
+  }
+}
+
 void Element::getGlobalGradients(Vector3 const& local,
                                  NewArray<Vector3>& globalGradients)
 {
   Matrix3x3 J;
   parent->getJacobian(local,J);
-  Matrix3x3 jinv = invert(J);
+  Matrix3x3 jinv = getJacobianInverse(J, getDimension());
   NewArray<Vector3> localGradients;
   shape->getLocalGradients(local,localGradients);
   globalGradients.allocate(nen);
