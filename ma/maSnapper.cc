@@ -43,9 +43,25 @@ bool Snapper::setVert(Entity* v, apf::CavityOp* o)
   return o->requestLocality(&ovs.e[0], ovs.n);
 }
 
-static void collectBadElements(Adapt* a, Upward& es, apf::Up& bes)
+static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
 {
-  bes.n = 0;
+  if (m->getDimension() != 2)
+    return;
+  normals.allocate(es.getSize());
+  for (size_t i = 0; i < es.getSize(); ++i)
+    normals[i] = getTriNormal(m, es[i]);
+}
+
+static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
+{
+  return (oldNormal * getTriNormal(m, tri)) < 0;
+}
+
+static void collectBadElements(Adapt* a, Upward& es,
+    apf::NewArray<Vector>& normals, apf::Up& bad)
+{
+  Mesh* m = a->mesh;
+  bad.n = 0;
   for (size_t i = 0; i < es.getSize(); ++i) {
 /* for now, when snapping a vertex on the boundary
    layer, ignore the quality of layer elements.
@@ -55,9 +71,14 @@ static void collectBadElements(Adapt* a, Upward& es, apf::Up& bes)
       continue;
     double quality = a->shape->getQuality(es[i]);
     if (quality < a->input->validQuality)
-      bes.e[bes.n++] = es[i];
+      bad.e[bad.n++] = es[i];
+/* check for triangles whose normals have changed by
+   more than 90 degrees when the vertex was snapped */
+    else if ((m->getDimension() == 2) &&
+             didInvert(m, normals[i], es[i]))
+      bad.e[bad.n++] = es[i];
   }
-  assert(bes.n < (int)(sizeof(bes.e) / sizeof(Entity*)));
+  assert(bad.n < (int)(sizeof(bad.e) / sizeof(Entity*)));
 }
 
 static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
@@ -67,12 +88,16 @@ static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
   Vector x = getPosition(mesh, vert);
   Vector s;
   mesh->getDoubleTag(vert, tag, &s[0]);
-/* move the vertex to the desired point */
-  mesh->setPoint(vert, 0, s);
+/* gather the adjacent elements */
   Upward elements;
   mesh->getAdjacent(vert, mesh->getDimension(), elements);
+/* in 2D, get the old triangle normals */
+  apf::NewArray<Vector> normals;
+  computeNormals(mesh, elements, normals);
+/* move the vertex to the desired point */
+  mesh->setPoint(vert, 0, s);
 /* check resulting cavity */
-  collectBadElements(adapter, elements, badElements);
+  collectBadElements(adapter, elements, normals, badElements);
   if (badElements.n) {
     /* not ok, put the vertex back where it was */
     mesh->setPoint(vert, 0, x);

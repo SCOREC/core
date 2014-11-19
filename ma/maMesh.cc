@@ -320,6 +320,13 @@ bool isTwoTriAngleAcute(Mesh* m, Entity** va, Entity** vb)
   return (getTriNormal(m,va)*getTriNormal(m,vb)) > 0;
 }
 
+Vector getTriNormal(Mesh* m, Entity* e)
+{
+  Entity* v[3];
+  m->getDownward(e,0,v);
+  return getTriNormal(m, v);
+}
+
 bool isTwoTriAngleAcute(Mesh* m, Entity* a, Entity* b)
 {
   Entity* va[3];
