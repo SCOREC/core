@@ -552,7 +552,15 @@ void removeNodes(partInfo& p, vector<int>& nodes) {
       p.netAdjParts.erase(*nodeItr);
 }
 
-int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined,bool isNeighbors) {
+/** If isNeighbors is true then the net of a selected part is removed from 
+ * the graph, o.w. the parts that have overlapping nets, as listed in  
+ * netAdjParts, are removed from the graph.
+ *
+ * Setting isNeighbors true supports computing on the partition model graph 
+ * as opposed to the netgraph.
+ */
+int mis(partInfo& part, vector<int>& mis, 
+    bool randNumsPredefined,bool isNeighbors) {
   assert(PCU_Comm_Initialized());
 
   if (false == randNumsPredefined)
