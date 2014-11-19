@@ -243,10 +243,10 @@ class Vortex : public ma::AnisotropicFunction
         dx=1.;
         dy=0;
       }
-      double small=0.2*average;
-      double large=average;
-      h[0]=small+large*modelLen*fabs(r-modelLen/3.);
-      h[1]=large+large*fabs(r-modelLen/3.);
+      double small=0.1*average;
+      double large=0.3*average;
+      h[0]=small+large*modelLen*fabs(r-modelLen/1.8);
+      h[1]=large+large*fabs(r-modelLen/1.8);
       h[2]=1.;
       R[0][0]=dx;
       R[1][0]=dy;
