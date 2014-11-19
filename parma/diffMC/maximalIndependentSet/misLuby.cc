@@ -386,6 +386,10 @@ void getNetAdjPartIds(netAdjItr first, netAdjItr last, vector<int>& ids) {
     ids.push_back(itr->first);
   }
 }
+void getNetPartIds(vector<int>& net, vector<int>&ids) {
+  for (unsigned int i=0;i<net.size();i++)
+    ids.push_back(net[i]);
+}
 
 void setNodeStateInGraph(partInfo& part) {
   part.isInNetGraph = true;
@@ -548,7 +552,7 @@ void removeNodes(partInfo& p, vector<int>& nodes) {
       p.netAdjParts.erase(*nodeItr);
 }
 
-int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined) {
+int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined,bool isNeighbors) {
   assert(PCU_Comm_Initialized());
 
   if (false == randNumsPredefined)
@@ -575,19 +579,25 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined) {
       part.isInMIS = true;
       mis.push_back(part.id);
       ++numNodesAdded;
-      nodesToRemove.reserve(part.netAdjParts.size() + 1);
-      getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(), 
-          nodesToRemove);
-      nodesToRemove.push_back(part.id);
+      if (isNeighbors) {
+	nodesToRemove.reserve(part.net.size()+1);
+	getNetPartIds(part.net,nodesToRemove);
+      }
+      else {
+	nodesToRemove.reserve(part.netAdjParts.size() + 1);
+	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(), 
+            nodesToRemove);
+	nodesToRemove.push_back(part.id);
+      }
     }
 
     //--------------ROUND
-    
     tag++;
     sendIntsToNeighbors(part, nodesToRemove, tag);
     PCU_Comm_Send();
     recvIntsFromNeighbors(part, rmtNodesToRemove, tag);
 
+      
     if (true == part.isInNetGraph && 
         ( true == part.isInMIS || 
           find(rmtNodesToRemove.begin(),
