@@ -36,18 +36,26 @@ int getPartIdFromIdx(int row, int col, const int sqrtTotNumParts) {
 }
 
 void set2dStencilNets(vector<int>& nets, const int r, const int c, 
-    const int sqrtTotNumParts) {
+     const int sqrtTotNumParts, bool isNeighbors) {
     int id = 0;
     id = getPartIdFromIdx(r, c, sqrtTotNumParts); //self
     nets.push_back(id);
-    id = getPartIdFromIdx(r, c - 1, sqrtTotNumParts); //W
-    nets.push_back(id);
-    id = getPartIdFromIdx(r - 1, c, sqrtTotNumParts); //N
-    nets.push_back(id);
-    id = getPartIdFromIdx(r, c + 1, sqrtTotNumParts); //E
-    nets.push_back(id);
-    id = getPartIdFromIdx(r + 1, c, sqrtTotNumParts); //S
-    nets.push_back(id);
+    if (c>0||!isNeighbors) {
+      id = getPartIdFromIdx(r, c - 1, sqrtTotNumParts); //W
+      nets.push_back(id);
+    }
+    if (r>0||!isNeighbors) {
+      id = getPartIdFromIdx(r - 1, c, sqrtTotNumParts); //N
+      nets.push_back(id);
+    }
+    if (c<sqrtTotNumParts-1||!isNeighbors) {
+      id = getPartIdFromIdx(r, c + 1, sqrtTotNumParts); //E
+      nets.push_back(id);
+    }
+    if (r<sqrtTotNumParts-1|| !isNeighbors) {
+      id = getPartIdFromIdx(r + 1, c, sqrtTotNumParts); //S
+      nets.push_back(id);
+    }
 }
 
 /**
@@ -252,7 +260,8 @@ are removed:
 
 */
 int test_2dStencil(const int rank, const int totNumParts,
-    const int numParts, bool randNumsPredefined = false) {
+    const int numParts, bool randNumsPredefined = false, 
+    bool isNeighbors = false) {
   assert(numParts==1);
   char outMsg[256];
 
@@ -279,7 +288,7 @@ int test_2dStencil(const int rank, const int totNumParts,
     const int col = partId % sqrtTotNumParts;
     partItr->id = partId;
     set2dStencilNeighbors(partItr->adjPartIds, row, col, sqrtTotNumParts);
-    set2dStencilNets(partItr->net, row, col, sqrtTotNumParts);
+    set2dStencilNets(partItr->net, row, col, sqrtTotNumParts,isNeighbors);
     partId++;
   }
 
@@ -308,7 +317,7 @@ int test_2dStencil(const int rank, const int totNumParts,
 
   vector<int> maximalIndSet;
   const double t1 = MPI_Wtime();
-  int ierr = mis(parts[0], maximalIndSet, randNumsPredefined);
+  int ierr = mis(parts[0], maximalIndSet, randNumsPredefined,isNeighbors);
   double elapsedTime = MPI_Wtime() - t1;
   PCU_Max_Doubles(&elapsedTime, 1);
 
@@ -846,6 +855,9 @@ int main(int argc, char** argv) {
       case 4:
         ierr = test_2dStencil(rank, commSize*numParts, numParts);
         break;
+      case 5:
+	ierr = test_2dStencil(rank,commSize*numParts,numParts,false,true);
+	break;
     }
 
     if (0 == rank) {

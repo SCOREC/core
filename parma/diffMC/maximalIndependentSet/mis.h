@@ -88,7 +88,8 @@ int generateRandomNumbers(std::vector<int>& randNums);
  */
 int mis(misLuby::partInfo& part,
     std::vector<int>& mis,
-    bool randNumsPredefined = false);
+    bool randNumsPredefined = false,
+    bool isNeighbors = false);
 
 /**
  * @brief for each local part get the partId of the part to which the
