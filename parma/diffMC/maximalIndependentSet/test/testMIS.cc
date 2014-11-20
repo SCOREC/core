@@ -198,6 +198,21 @@ bool isMaximalIndependentSet(int* isInMIS, const int sqrtTotNumParts,
   return true;
 }
 
+void checkAdjPartsandNets(partInfo& part, int totNumParts) {
+  vector<int>::iterator adjPIDItr;
+  for (adjPIDItr = part.adjPartIds.begin();
+      adjPIDItr != part.adjPartIds.end();
+      adjPIDItr++) {
+    MIS_FAIL_IF(*adjPIDItr < 0 || *adjPIDItr >= totNumParts, "adj part id invalid\n");
+  }
+  vector<int>::iterator netItr;
+  for (netItr = part.net.begin();
+      netItr != part.net.end();
+      netItr++) {
+    MIS_FAIL_IF(*netItr < 0 || *netItr >= totNumParts, "net part id invalid\n");
+  }
+}
+
 /* 
 ---3x3---
  
@@ -260,8 +275,7 @@ are removed:
 
 */
 int test_2dStencil(const int rank, const int totNumParts,
-    bool randNumsPredefined = false, 
-    bool isNeighbors = false) {
+    bool randNumsPredefined = false, bool isNeighbors = false) {
   if( !PCU_Comm_Self() )
     status("test_2dStencil - totNumParts: %d\n", totNumParts);
 
@@ -285,26 +299,7 @@ int test_2dStencil(const int rank, const int totNumParts,
   set2dStencilNets(part.net, row, col, sqrtTotNumParts,isNeighbors);
 
   //sanity check
-  vector<int>::iterator adjPIDItr;
-  for (adjPIDItr = part.adjPartIds.begin();
-      adjPIDItr != part.adjPartIds.end();
-      adjPIDItr++) {
-    if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
-      printf("ERROR [%d] (%d) adjPartId=%d\n", 
-          rank, part.id, *adjPIDItr);
-      return 1;
-    }
-  }
-  vector<int>::iterator netItr;
-  for (netItr = part.net.begin();
-      netItr != part.net.end();
-      netItr++) {
-    if (*netItr < 0 || *netItr >= totNumParts) {
-      printf("ERROR [%d] (%d) net=%d\n", rank, part.id, *netItr);
-      return 1;
-    }
-  }
-
+  checkAdjPartsandNets(part, totNumParts);
   const double t1 = MPI_Wtime();
   int isInMis = mis(part, randNumsPredefined,isNeighbors);
   double elapsedTime = MPI_Wtime() - t1;
