@@ -185,20 +185,16 @@ class MergeTargets {
     int randNumSeed = PCU_Comm_Self()+1;
 
     mis_init(randNumSeed,false);
-    vector<int> maximalIndSet;
-    //Maximal Independent Set Call
-    int ierr = mis(part, maximalIndSet, true);
-    //Assert will fail if MIS fails
-    assert(!ierr);
+    const int isInMis = mis(part, true);
 
     // Debug if in MIS rating 0
-    if (maximalIndSet.size() == 1)
+    if (isInMis)
       PCU_Debug_Print("Part %d in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
     else PCU_Debug_Print("Part %d NOT in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
 
     PCU_Comm_Begin();
     //If the current part is in the MIS, send notification to its mergingNet
-    if (maximalIndSet.size() != 0) {
+    if (isInMis) {
       for(size_t i=0; i < tgts.total(); ++i){
         //PCU_Debug_Print("send dest = %d\n", tgts.mergeTargetIndex(i)); rating 1
         PCU_Comm_Pack(tgts.mergeTargetIndex(i), NULL, 0);

@@ -559,8 +559,7 @@ void removeNodes(partInfo& p, vector<int>& nodes) {
  * Setting isNeighbors true supports computing on the partition model graph 
  * as opposed to the netgraph.
  */
-int mis(partInfo& part, vector<int>& mis, 
-    bool randNumsPredefined,bool isNeighbors) {
+int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
   assert(PCU_Comm_Initialized());
 
   if (false == randNumsPredefined)
@@ -573,6 +572,7 @@ int mis(partInfo& part, vector<int>& mis,
   vector<int> nodesToRemove;
   vector<int> rmtNodesToRemove;
 
+  int isInMis = 0;
   int loopCount = 0;
   int tag = 0;
   int numNodesAdded;
@@ -585,7 +585,7 @@ int mis(partInfo& part, vector<int>& mis,
         false == part.isInMIS &&
         part.randNum < minRand) {
       part.isInMIS = true;
-      mis.push_back(part.id);
+      isInMis = 1;
       ++numNodesAdded;
       if (isNeighbors) {
 	nodesToRemove.reserve(part.net.size()+1);
@@ -639,5 +639,5 @@ int mis(partInfo& part, vector<int>& mis,
   sprintf(dbgMsg, "Number of mis loops: %d\n", loopCount);
   debugPrint(dbgMsg);
 
-  return 0;
+  return isInMis;
 }

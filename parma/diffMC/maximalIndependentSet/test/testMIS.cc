@@ -260,14 +260,10 @@ are removed:
 
 */
 int test_2dStencil(const int rank, const int totNumParts,
-    const int numParts, bool randNumsPredefined = false, 
+    bool randNumsPredefined = false, 
     bool isNeighbors = false) {
-  assert(numParts==1);
-  char outMsg[256];
-
   if( !PCU_Comm_Self() )
-    status("test_2dStencil - totNumParts: %d  numParts: %d\n", 
-        totNumParts, numParts);
+    status("test_2dStencil - totNumParts: %d\n", totNumParts);
 
   const int sqrtTotNumParts = floor(sqrt(totNumParts));
   if (totNumParts != sqrtTotNumParts * sqrtTotNumParts) {
@@ -280,70 +276,54 @@ int test_2dStencil(const int rank, const int totNumParts,
   }
 
   //set neighbors and nets
-  vector<partInfo> parts(numParts);
+  partInfo part;
   partInfoVecItrType partItr;
-  int partId = rank*numParts;
-  for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
-    const int row = partId / sqrtTotNumParts;
-    const int col = partId % sqrtTotNumParts;
-    partItr->id = partId;
-    set2dStencilNeighbors(partItr->adjPartIds, row, col, sqrtTotNumParts);
-    set2dStencilNets(partItr->net, row, col, sqrtTotNumParts,isNeighbors);
-    partId++;
-  }
+  part.id = rank;
+  const int row = part.id / sqrtTotNumParts;
+  const int col = part.id % sqrtTotNumParts;
+  set2dStencilNeighbors(part.adjPartIds, row, col, sqrtTotNumParts);
+  set2dStencilNets(part.net, row, col, sqrtTotNumParts,isNeighbors);
 
   //sanity check
-  for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
-    vector<int>::iterator adjPIDItr;
-    for (adjPIDItr = partItr->adjPartIds.begin();
-        adjPIDItr != partItr->adjPartIds.end();
-        adjPIDItr++) {
-      if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
-        printf("ERROR [%d] (%d) adjPartId=%d\n", 
-            rank, partItr->id, *adjPIDItr);
-        return 1;
-      }
+  vector<int>::iterator adjPIDItr;
+  for (adjPIDItr = part.adjPartIds.begin();
+      adjPIDItr != part.adjPartIds.end();
+      adjPIDItr++) {
+    if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
+      printf("ERROR [%d] (%d) adjPartId=%d\n", 
+          rank, part.id, *adjPIDItr);
+      return 1;
     }
-    vector<int>::iterator netItr;
-    for (netItr = partItr->net.begin();
-        netItr != partItr->net.end();
-        netItr++) {
-      if (*netItr < 0 || *netItr >= totNumParts) {
-        printf("ERROR [%d] (%d) net=%d\n", rank, partItr->id, *netItr);
-        return 1;
-      }
+  }
+  vector<int>::iterator netItr;
+  for (netItr = part.net.begin();
+      netItr != part.net.end();
+      netItr++) {
+    if (*netItr < 0 || *netItr >= totNumParts) {
+      printf("ERROR [%d] (%d) net=%d\n", rank, part.id, *netItr);
+      return 1;
     }
   }
 
-  vector<int> maximalIndSet;
   const double t1 = MPI_Wtime();
-  int ierr = mis(parts[0], maximalIndSet, randNumsPredefined,isNeighbors);
+  int isInMis = mis(part, randNumsPredefined,isNeighbors);
   double elapsedTime = MPI_Wtime() - t1;
   PCU_Max_Doubles(&elapsedTime, 1);
 
   if( !PCU_Comm_Self() )
     status("elapsed time (seconds) = %f \n", elapsedTime);
 
-  vector<int> isInMIS(numParts, 0);
-  vector<int>::iterator misItr;
-  for (misItr = maximalIndSet.begin();
-      misItr != maximalIndSet.end();
-      misItr++) {
-    const int partIdx = *misItr % numParts;
-    isInMIS[partIdx] = 1;
-  }
-
   int* globalIsInMIS = NULL;
-  if (rank == 0) {
+  if (!PCU_Comm_Self()) 
     globalIsInMIS = new int[totNumParts];
-  }
-  MPI_Gather(&(isInMIS[0]), numParts, MPI_INT, globalIsInMIS, numParts, 
-      MPI_INT, 0, MPI_COMM_WORLD);
-  int sizeIS = 0;
+  MPI_Gather(&isInMis, 1, MPI_INT, globalIsInMIS, 
+                       1, MPI_INT, 0, MPI_COMM_WORLD);
 
-  if (rank != 0) 
+  if (rank)
     return 0;
 
+  //only rank 0 will check the MIS
+  int sizeIS = 0;
   char* statusMsg = new char[totNumParts * 4];
   int pos = sprintf(statusMsg, "MIS: ");
   for (int i = 0; i < totNumParts; ++i) {
@@ -386,94 +366,68 @@ int test_2dStencil(const int rank, const int totNumParts,
  * 
  * @param rank (In) MPI process rank
  * @param totNumParts (In) total number of parts
- * @param numParts (In) number of local parts
  * @param randNumsPredefined (In) T:rand nums predefined, F:rand nums not predefined
  * @return 0 on success, non-zero otherwise
  */
-int test_StarA(const int rank, const int totNumParts,
-        const int numParts, bool randNumsPredefined = false) {
+int test_StarA(const int rank, const int totNumParts, 
+    bool randNumsPredefined = false) {
     char dbgMsg[256];
-    assert(numParts == 1);
-
     if( !PCU_Comm_Self() )
-      status("test_StarA - totNumParts: %d  numParts: %d\n", totNumParts, 
-          numParts);
+      status("test_StarA - totNumParts: %d\n", totNumParts);
 
-    vector<partInfo> parts;
+    partInfo part;   
+    part.id = rank;
+    if (!rank) {
+      part.net.push_back(0);
+      for (int partId = 1; partId < totNumParts; ++partId) {
+        part.adjPartIds.push_back(partId);
+        part.net.push_back(partId);
+      }
+    } else {
+      part.net.push_back(part.id);
+      part.adjPartIds.push_back(0);
 
-    for (int partIdx = 0; partIdx < numParts; partIdx++) {
-        partInfo p;   
-        if (0 == rank && 0 == partIdx) {
-            p.id = 0;
-            p.net.push_back(0);
-            for (int partId = 1; partId < totNumParts; ++partId) {
-                p.adjPartIds.push_back(partId);
-                p.net.push_back(partId);
-            }
-        } else {
-            p.id = rank * numParts + partIdx;
+      if (1 == part.id) {
+        part.adjPartIds.push_back(totNumParts - 1);
+      } else {
+        part.adjPartIds.push_back(part.id - 1);
+      }
 
-            p.net.push_back(p.id);
-            p.adjPartIds.push_back(0);
-
-            if (1 == p.id) {
-                p.adjPartIds.push_back(totNumParts - 1);
-            } else {
-                p.adjPartIds.push_back(p.id - 1);
-            }
-
-            if (totNumParts - 1 == p.id) {
-                p.adjPartIds.push_back(1);
-            } else {
-                p.adjPartIds.push_back(p.id + 1);
-            }
-        }
-        parts.push_back(p);
-    }
-    
-    assert(parts.size() == numParts);
-
-    partInfoVecItrType partItr;
-    for (partItr = parts.begin(); partItr != parts.end(); partItr++) {
-        vector<int>::iterator adjPIDItr;
-        for (adjPIDItr = partItr->adjPartIds.begin();
-                adjPIDItr != partItr->adjPartIds.end();
-                adjPIDItr++) {
-            if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
-                printf("ERROR [%d] adjPartId=%d\n", rank, *adjPIDItr);
-                return 1;
-            }
-        }
-        sprintf(dbgMsg, " [%d] (%d) %s - adjPartIds=", 
-            rank, partItr->id, __FUNCTION__);
-        Print <int, vector<int>::iterator > (cout, dbgMsg, 
-            partItr->adjPartIds.begin(), partItr->adjPartIds.end(), 
-            std::string(", "));
-
-        sprintf(dbgMsg, " [%d] (%d) %s - net=", 
-            rank, partItr->id, __FUNCTION__);
-        Print <int, vector<int>::iterator > (cout, dbgMsg, 
-            partItr->net.begin(), partItr->net.end(), std::string(", "));
+      if (totNumParts - 1 == part.id) {
+        part.adjPartIds.push_back(1);
+      } else {
+        part.adjPartIds.push_back(part.id + 1);
+      }
     }
 
-    vector<int> maximalIndSet;
-    int ierr = mis(parts[0], maximalIndSet, randNumsPredefined);
-
-    vector<int> isInMIS(numParts, 0);
-    vector<int>::iterator misItr;
-    for (misItr = maximalIndSet.begin();
-            misItr != maximalIndSet.end();
-            misItr++) {
-        const int partIdx = *misItr % numParts;
-        isInMIS[partIdx] = 1;
+    vector<int>::iterator adjPIDItr;
+    for (adjPIDItr = part.adjPartIds.begin();
+        adjPIDItr != part.adjPartIds.end();
+        adjPIDItr++) {
+      if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
+        printf("ERROR [%d] adjPartId=%d\n", rank, *adjPIDItr);
+        return 1;
+      }
     }
+    sprintf(dbgMsg, " [%d] (%d) %s - adjPartIds=", 
+        rank, part.id, __FUNCTION__);
+    Print <int, vector<int>::iterator > (cout, dbgMsg, 
+        part.adjPartIds.begin(), part.adjPartIds.end(), 
+        std::string(", "));
+
+    sprintf(dbgMsg, " [%d] (%d) %s - net=", 
+        rank, part.id, __FUNCTION__);
+    Print <int, vector<int>::iterator > (cout, dbgMsg, 
+        part.net.begin(), part.net.end(), std::string(", "));
+
+    int isInMIS = mis(part, randNumsPredefined);
 
     int* globalIsInMIS = NULL;
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&(isInMIS[0]), numParts, MPI_INT, globalIsInMIS, numParts, 
-        MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&isInMIS, 1, MPI_INT, globalIsInMIS, 
+                         1, MPI_INT, 0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
         char* statusMsg = new char[totNumParts * 4];
@@ -517,18 +471,15 @@ randNums  5  1  13 6
   -------
     
  */
-int test_4partsA(const int rank, const int totNumParts, const int numParts, 
+int test_4partsA(const int rank, const int totNumParts, 
     bool predefinedRandNums) {
-    assert(numParts == 1);
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
-    char dbgMsg[256];
     if( !PCU_Comm_Self() )
-      status("test_4partsA - totNumParts: %d  numParts: %d\n", 
-          totNumParts, numParts);
+      status("test_4partsA - totNumParts: %d\n", totNumParts);
 
     partInfo part;
     part.id = rank;
@@ -566,16 +517,13 @@ int test_4partsA(const int rank, const int totNumParts, const int numParts,
 
     vector<partInfo> parts;
     parts.push_back(part);
-    vector<int> maximalIndSet;
-    int ierr = mis(parts[0], maximalIndSet, predefinedRandNums);
+    int isInMis = mis(parts[0], predefinedRandNums);
 
-    int misLocalSize = maximalIndSet.size();
     int* globalIsInMIS = NULL;
-    if (rank == 0) {
-        globalIsInMIS = new int[totNumParts];
-    }
-    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
-        0, MPI_COMM_WORLD);
+    if (!rank)
+      globalIsInMIS = new int[totNumParts];
+    MPI_Gather(&isInMis, 1, MPI_INT, globalIsInMIS, 
+                         1, MPI_INT, 0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
         printf("MIS: ");
@@ -599,18 +547,15 @@ int test_4partsA(const int rank, const int totNumParts, const int numParts,
     }
 }
 
-int test_4partsB(const int rank, const int totNumParts, const int numParts, 
+int test_4partsB(const int rank, const int totNumParts, 
     bool predefinedRandNums) {
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
-    assert(numParts==1);
 
-    char dbgMsg[256];
     if( !PCU_Comm_Self() )
-      status("test_4partsAndNums - totNumParts: %d  numParts: %d\n", 
-          totNumParts, numParts);
+      status("test_4partsAndNums - totNumParts: %d\n", totNumParts);
 
     partInfo part;
     part.id = rank;
@@ -644,15 +589,13 @@ int test_4partsB(const int rank, const int totNumParts, const int numParts,
 
     vector<partInfo> parts;
     parts.push_back(part);
-    vector<int> maximalIndSet;
-    int ierr = mis(parts[0], maximalIndSet, predefinedRandNums);
+    int isInMis = mis(parts[0], predefinedRandNums);
 
-    int misLocalSize = maximalIndSet.size();
     int* globalIsInMIS = NULL;
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
+    MPI_Gather(&isInMis, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
         0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
@@ -677,18 +620,15 @@ int test_4partsB(const int rank, const int totNumParts, const int numParts,
     }
 }
 
-int test_4partsC(const int rank, const int totNumParts, const int numParts, 
+int test_4partsC(const int rank, const int totNumParts,
     bool predefinedRandNums) {
-    assert(numParts==1);
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
-    char dbgMsg[256];
     if( !PCU_Comm_Self() )
-      status("test_4partsA - totNumParts: %d  numParts: %d\n", 
-          totNumParts, numParts);
+      status("test_4partsA - totNumParts: %d\n", totNumParts);
 
     partInfo part;
     part.id = rank;
@@ -717,15 +657,13 @@ int test_4partsC(const int rank, const int totNumParts, const int numParts,
 
     vector<partInfo> parts;
     parts.push_back(part);
-    vector<int> maximalIndSet;
-    int ierr = mis(parts[0], maximalIndSet, predefinedRandNums);
+    int isInMis = mis(parts[0], predefinedRandNums);
 
-    int misLocalSize = maximalIndSet.size();
     int* globalIsInMIS = NULL;
     if (rank == 0) {
         globalIsInMIS = new int[totNumParts];
     }
-    MPI_Gather(&misLocalSize, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
+    MPI_Gather(&isInMis, 1, MPI_INT, globalIsInMIS, 1, MPI_INT, 
         0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
@@ -790,7 +728,6 @@ int main(int argc, char** argv) {
     int debugMode = 0;
     int randNumSeed = time(NULL);
     int testNum = -1;
-    int numParts = 1;
     int iPredefinedRandNums = 1;
 
     if (0 == rank) {
@@ -808,9 +745,6 @@ int main(int argc, char** argv) {
                  case 'r':
                     iPredefinedRandNums = 0;
                     break;
-                case 'n':
-                    numParts = atoi(optarg);
-                    break;
                 default:
                     printUsage(argv[0]);
                     exit(EXIT_FAILURE);
@@ -819,7 +753,6 @@ int main(int argc, char** argv) {
     }
 
 
-    numParts = broadcastInt(numParts);
     testNum = broadcastInt(testNum);
     randNumSeed = broadcastInt(randNumSeed) + PCU_Comm_Self();
     bool predefinedRandNums = getBool(iPredefinedRandNums);
@@ -838,26 +771,23 @@ int main(int argc, char** argv) {
         return 0;
         break;
       case 0:
-        ierr = test_4partsA(rank, commSize*numParts, numParts, 
-            predefinedRandNums);
+        ierr = test_4partsA(rank, commSize,  predefinedRandNums);
         break;
       case 1:
-        ierr = test_4partsB(rank, commSize*numParts, numParts, 
-            predefinedRandNums);
+        ierr = test_4partsB(rank, commSize,  predefinedRandNums);
         break;
       case 2:
-        ierr = test_4partsC(rank, commSize*numParts, numParts, 
-            predefinedRandNums);
+        ierr = test_4partsC(rank, commSize,  predefinedRandNums);
         break;
       case 3:
-        ierr = test_StarA(rank, commSize*numParts, numParts);
+        ierr = test_StarA(rank, commSize);
         break;
       case 4:
-        ierr = test_2dStencil(rank, commSize*numParts, numParts);
+        ierr = test_2dStencil(rank, commSize);
         break;
       case 5:
-	ierr = test_2dStencil(rank,commSize*numParts,numParts,false,true);
-	break;
+        ierr = test_2dStencil(rank,commSize,false,true);
+        break;
     }
 
     if (0 == rank) {
