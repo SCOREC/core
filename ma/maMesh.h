@@ -135,6 +135,10 @@ int getFaceEdgeDirection(
 Entity* findEdge(Mesh* m, Entity* v0, Entity* v1);
 bool edgeExists(Mesh* m, Entity* v0, Entity* v1);
 
+/* returns true iff the direction of the edge is along
+   the direction of the triangle's vertex (and edge) ordering */
+bool isTriEdgeAligned(Mesh* m, Entity* tri, Entity* edge);
+
 }
 
 #endif

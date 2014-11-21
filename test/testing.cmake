@@ -84,6 +84,12 @@ add_test(gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
+add_test(fixDisconnected
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./fixDisconnected
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusDcFix4p/")
 set(MDIR ${MESHES}/airFoilAfosr)
 add_test(elmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
