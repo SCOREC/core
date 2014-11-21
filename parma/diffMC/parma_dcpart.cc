@@ -145,7 +145,7 @@ int dcPart::checkResidence(const int dcComp) {
 
    const int dim = m->getDimension();
    int tval;
-   eArr adjFaces;
+   apf::Downward sides;
    apf::Parts resPid;
 
    MeshEntity* e;
@@ -153,20 +153,15 @@ int dcPart::checkResidence(const int dcComp) {
    while( (e = m->iterate(itr)) ) {
       if( m->hasTag(e, vtag) ) {
 	 m->getIntTag(e, vtag, &tval);
-	 if( tval == dcComp ) { 
-	    m->getAdjacent(e, dim-1, adjFaces); 
-	    APF_ITERATE(eArr, adjFaces, fit) {
-               if( ! m->isShared(*fit) ) continue;
-	       m->getResidence(*fit, resPid);
-	       APF_ITERATE(apf::Parts, resPid, rp) {
-                  if( bdryFaceCnt.count(*rp) ) {
-		     bdryFaceCnt[*rp] += 1;
-                  } else {
-		     bdryFaceCnt[*rp] = 0;
-                  }
-	       }
-	    }
-	 }
+	 if( tval != dcComp ) continue;
+         int ns = m->getDownward(e, dim-1, sides);
+         for(int sIdx=0; sIdx<ns; sIdx++) {
+           MeshEntity* s = sides[sIdx];
+           if( ! m->isShared(s) ) continue;
+           m->getResidence(s, resPid);
+           APF_ITERATE(apf::Parts, resPid, rp)
+             (bdryFaceCnt[*rp])++;
+         }
       }
    }
    m->end(itr);

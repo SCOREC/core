@@ -552,7 +552,14 @@ void removeNodes(partInfo& p, vector<int>& nodes) {
       p.netAdjParts.erase(*nodeItr);
 }
 
-int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined,bool isNeighbors) {
+/** If isNeighbors is true then the net of a selected part is removed from 
+ * the graph, o.w. the parts that have overlapping nets, as listed in  
+ * netAdjParts, are removed from the graph.
+ *
+ * Setting isNeighbors true supports computing on the partition model graph 
+ * as opposed to the netgraph.
+ */
+int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
   assert(PCU_Comm_Initialized());
 
   if (false == randNumsPredefined)
@@ -565,6 +572,7 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined,bool isNeighbo
   vector<int> nodesToRemove;
   vector<int> rmtNodesToRemove;
 
+  int isInMis = 0;
   int loopCount = 0;
   int tag = 0;
   int numNodesAdded;
@@ -577,7 +585,7 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined,bool isNeighbo
         false == part.isInMIS &&
         part.randNum < minRand) {
       part.isInMIS = true;
-      mis.push_back(part.id);
+      isInMis = 1;
       ++numNodesAdded;
       if (isNeighbors) {
 	nodesToRemove.reserve(part.net.size()+1);
@@ -631,5 +639,5 @@ int mis(partInfo& part, vector<int>& mis, bool randNumsPredefined,bool isNeighbo
   sprintf(dbgMsg, "Number of mis loops: %d\n", loopCount);
   debugPrint(dbgMsg);
 
-  return 0;
+  return isInMis;
 }

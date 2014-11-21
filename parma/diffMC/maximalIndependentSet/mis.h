@@ -82,12 +82,10 @@ int generateRandomNumbers(std::vector<int>& randNums);
 /**
  * @brief compute the maximal independent set
  * @param part (In) info on local part
- * @param mis (InOut) on exit, parts in the MIS
  * @param randNumsPredefined (In) 0: compute random numbers, 1:uses defined random numbers
- * @return 0 on success, non-zero otherwise
+ * @return 1 if local part is in mis, 0 o.w.
  */
 int mis(misLuby::partInfo& part,
-    std::vector<int>& mis,
     bool randNumsPredefined = false,
     bool isNeighbors = false);
 
