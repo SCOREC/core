@@ -44,10 +44,10 @@ namespace {
 void misLuby::PartInfo::print() {
   std::string header="adjPartIds ";
   std::stringstream out;
-  Print <int, vector<int>::iterator > (out, header, adjPartIds.begin(), 
+  Print <int, vector<int>::iterator > (out, header, adjPartIds.begin(),
       adjPartIds.end(), ", ", true);
   header = "net ";
-  Print <int, vector<int>::iterator > (out, header, net.begin(), 
+  Print <int, vector<int>::iterator > (out, header, net.begin(),
       net.end(), ", ", true);
   header = "netAdjParts ";
   Print(out, header, netAdjParts.begin(), netAdjParts.end(), ", ", true);
@@ -552,11 +552,11 @@ void removeNodes(partInfo& p, vector<int>& nodes) {
       p.netAdjParts.erase(*nodeItr);
 }
 
-/** If isNeighbors is true then the net of a selected part is removed from 
- * the graph, o.w. the parts that have overlapping nets, as listed in  
+/** If isNeighbors is true then the net of a selected part is removed from
+ * the graph, o.w. the parts that have overlapping nets, as listed in
  * netAdjParts, are removed from the graph.
  *
- * Setting isNeighbors true supports computing on the partition model graph 
+ * Setting isNeighbors true supports computing on the partition model graph
  * as opposed to the netgraph.
  */
 int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
@@ -578,7 +578,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
   int numNodesAdded;
   do {
     numNodesAdded = 0;
-    const int minRand = 
+    const int minRand =
       minRandNum(part.netAdjParts.begin(), part.netAdjParts.end());
     // add self to MIS
     if (true == part.isInNetGraph &&
@@ -593,7 +593,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
       }
       else {
 	nodesToRemove.reserve(part.netAdjParts.size() + 1);
-	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(), 
+	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(),
             nodesToRemove);
 	nodesToRemove.push_back(part.id);
       }
@@ -605,9 +605,9 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     PCU_Comm_Send();
     recvIntsFromNeighbors(part, rmtNodesToRemove, tag);
 
-      
-    if (true == part.isInNetGraph && 
-        ( true == part.isInMIS || 
+
+    if (true == part.isInNetGraph &&
+        ( true == part.isInMIS ||
           find(rmtNodesToRemove.begin(),
             rmtNodesToRemove.end(),
             part.id) != rmtNodesToRemove.end())
