@@ -379,9 +379,7 @@ class EdgeSwap2D : public EdgeSwap
       Entity* ntv[2][3];
       getNewVerts(ntv);
       newFaces[0] = buildElement(adapter,c,TRI,ntv[0]);
-      checkNormal(mesh, newFaces[0]);
       newFaces[1] = buildElement(adapter,c,TRI,ntv[1]);
-      checkNormal(mesh, newFaces[1]);
     }
     /* this function is only called when swapping
        edges on a surface triangle mesh */
