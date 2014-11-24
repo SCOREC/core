@@ -16,6 +16,7 @@ void solveAdjoint(ParameterList& p, apf::Mesh* m)
   Problem* problem = createProblem(p,m);
   problem->setup();
   problem->assemble();
+  problem->solve();
   delete problem;
 }
 

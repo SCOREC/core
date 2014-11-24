@@ -12,6 +12,7 @@ namespace awr {
 
 void Problem::solve()
 {
+  ls_->solve();
 }
 
 }

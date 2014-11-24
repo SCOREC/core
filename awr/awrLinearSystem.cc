@@ -45,11 +45,27 @@ void LinearSystem::sumToVector(double v, GO i)
   b_->SumIntoGlobalValue(i,/*vec idx=*/0,v);
 }
 
+void LinearSystem::replaceToVector(double v, GO i)
+{
+  b_->ReplaceGlobalValue(i,/*vec idx=*/0,v);
+}
+
 void LinearSystem::sumToMatrix(double v, GO i, GO j)
 {
   double val[1]; val[0] = v;
   GO col[1]; col[0] = j;
   A_->InsertGlobalValues(i,1,val,col);
+}
+
+void LinearSystem::diagonalizeMatrixRow(GO i)
+{
+  int n;
+  double* v;
+  GO* j;
+  A_->ExtractGlobalRowView(i,n,v,j);
+  for (int i=0; i < n; ++i)
+    v[i] = 0.0;
+  this->sumToMatrix(1.0,i,i);
 }
 
 void LinearSystem::completeMatrixFill()
