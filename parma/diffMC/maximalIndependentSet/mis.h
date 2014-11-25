@@ -45,6 +45,7 @@ namespace misLuby {
         std::map<int, int> netAdjParts; // (partId, randNum)
         void addNetNeighbors(std::vector<adjPart>& nbNet);
         void updateNeighbors();
+        void print();
     } partInfo;
 
     typedef std::vector<partInfo>::iterator partInfoVecItrType;
@@ -52,7 +53,7 @@ namespace misLuby {
     //from http://learningcppisfun.blogspot.com/2007/02/
     //    functors-with-state-3-print-contents-of.html
     template<typename T, typename InputIterator>
-    void Print(std::ostream& ostr, char* dbgMsg, InputIterator itbegin, 
+    void Print(std::ostream& ostr, std::string dbgMsg, InputIterator itbegin,
         InputIterator itend, const std::string& delimiter, bool dbg=false) {
         if (dbg) {
             ostr << "DEBUG " << dbgMsg;
@@ -61,13 +62,13 @@ namespace misLuby {
             ostr << "\n";
         }
     }
-    void Print(std::ostream& ostr, char* dbgMsg, 
-        std::vector<misLuby::adjPart>::iterator itbegin, 
-        std::vector<misLuby::adjPart>::iterator itend, 
+    void Print(std::ostream& ostr, char* dbgMsg,
+        std::vector<misLuby::adjPart>::iterator itbegin,
+        std::vector<misLuby::adjPart>::iterator itend,
         const std::string& delimiter, bool dbg=false);
-    void Print(std::ostream& ostr, char* dbgMsg, 
-        std::map<int, int>::iterator itbegin, 
-        std::map<int, int>::iterator itend, 
+    void Print(std::ostream& ostr, std::string dbgMsg,
+        std::map<int, int>::iterator itbegin,
+        std::map<int, int>::iterator itend,
         const std::string& delimiter, bool dbg=false);
 } //end misLuby namespace
 
@@ -80,33 +81,29 @@ int generateRandomNumbers(std::vector<int>& randNums);
 
 /**
  * @brief compute the maximal independent set
- * @param rank (In) MPI process rank
- * @param totNumParts (In) total number of parts in the partition
- * @param parts (In) info on each part 
- * @param mis (InOut) on exit, parts in the MIS
+ * @param part (In) info on local part
  * @param randNumsPredefined (In) 0: compute random numbers, 1:uses defined random numbers
- * @return 0 on success, non-zero otherwise
+ * @return 1 if local part is in mis, 0 o.w.
  */
-int mis(const int rank, const int totNumParts, 
-    std::vector<misLuby::partInfo>& parts, 
-    std::vector<int>& mis, 
-    bool randNumsPredefined = false);
+int mis(misLuby::partInfo& part,
+    bool randNumsPredefined = false,
+    bool isNeighbors = false);
 
 /**
- * @brief for each local part get the partId of the part to which the 
+ * @brief for each local part get the partId of the part to which the
  *        local parts elements will be merged into
  * @param rank (In) MPI process rank
  * @param totNumParts (In) total number of parts in the partition
- * @param parts (In) info on each part 
+ * @param parts (In) info on each part
  * @param mis (In) parts in the MIS
- * @param mergeTargets (InOut) map of partId to the partId to which 
+ * @param mergeTargets (InOut) map of partId to the partId to which
  *        the local parts elements will be merged into
  */
-void getMergeTargets(const int rank, const int totNumParts, 
-    std::vector<misLuby::partInfo>& parts, 
+void getMergeTargets(const int rank, const int totNumParts,
+    std::vector<misLuby::partInfo>& parts,
     std::vector<int>& mis, std::map<int,int>& mergeTargets);
 
-void mis_init(int randNumSeed, int debugMode, const char* maj = "1", 
+void mis_init(int randNumSeed, int debugMode, const char* maj = "1",
     const char* min = "0", const char* patch = "0");
 
 void misFinalize();

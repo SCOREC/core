@@ -15,12 +15,18 @@ static void setDefaults(Input& in)
   in.recursivePtn = -1;
   in.recursiveUR = 1;
   in.parmaPtn = 0; // No Parma by default
+  in.displacementMigration = 0; // Do not migrate displacement field by default
   in.dwalMigration = 0; // Do not migrate dwal field by default
   in.buildMapping = 0; // Do not build the mapping field by default
   in.elementsPerMigration = 1000*1000; // 100k elms per round
   in.threaded = 1;
   in.initBubbles = 0;
   in.restartFileName = "restart";
+}
+
+Input::Input()
+{
+  setDefaults(*this);
 }
 
 typedef std::map<std::string, std::string*> StringMap;

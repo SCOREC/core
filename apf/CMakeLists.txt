@@ -31,6 +31,7 @@ set(APF_SOURCES
   apfIntegrate.cc
   apfMatrix.cc
   apfDynamicMatrix.cc
+  apfDynamicVector.cc
   apfMatrixField.cc
   apfMesh.cc
   apfMesh2.cc

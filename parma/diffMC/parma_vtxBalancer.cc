@@ -10,7 +10,7 @@ namespace {
   class VtxBalancer : public parma::Balancer {
     public:
       VtxBalancer(apf::Mesh* m, double f, int v)
-        : Balancer(m, f, v, "elements") { }
+        : Balancer(m, f, v, "vertices") { }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
         parma::Weights* w = parma::makeEntWeights(mesh, wtag, s, 0);

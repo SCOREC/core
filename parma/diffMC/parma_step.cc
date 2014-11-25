@@ -26,8 +26,10 @@ namespace parma {
     if ( stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);
-    PCU_Debug_Print("plan size %d\n", plan->count());
+    const double t0 = MPI_Wtime();
     m->migrate(plan);
+    if ( !PCU_Comm_Self() && verbosity )
+      fprintf(stdout, "elements migrated in %f seconds\n", MPI_Wtime()-t0);
     return true;
   }
 

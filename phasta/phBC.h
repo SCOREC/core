@@ -15,13 +15,12 @@
    density         D   rho
    temperature     T
    pressure        P
-   comp 1          C1
-   comp 3          C3
+   comp1           C1
+   comp3           C3
    scalar_1        S1  sc1
    scalar_2        S2  sc1
    scalar_3        S3  sc1
    scalar_4        S4  sc1
- * take bc from ic TBI
 
    Natural boundary conditions:
 
@@ -36,21 +35,40 @@
    scalar_4 flux    F4
  * surf ID          SID
 
-   A bit about comp1 and comp3: seems like both affect the
-   first (direction, magnitude pair in the BC array).
-   This is fluid velocity.
-   Either comp1 or comp3 is applied, not both.
-   comp3 implies that all 3 components of the direction are
-   fixed, while comp1 means only one of them is set.
-   The old code chooses the largest absolute value.
+   Initial conditions:
 
-   Although the .spj file has four reals for the comp1/3
-   condition, in practice the last is always zero and the
-   code decomposes the vector into direction and magnitude
-   based on the first three reals.
+   initial pressure
+   initial velocity
+   initial temperature
+   initial scalar_1
+   initial scalar_2
+   initial scalar_3
+   initial scalar_4
 
-   TBI means to inherit the conditions placed on the model
-   region on the model boundary as well.
+   A .spj file is composed of two kinds of lines:
+
+   # comments begin with a pound sign
+   condition_name: model_id model_dim c0 c1 c2 c3
+
+   The model_id and model_dim specify a geometric
+   model entity. Typically model_dim=2 for boundary conditions
+   on model faces, or model_dim=3 for initial conditions
+   on model regions.
+
+   All conditions have one component except for the following:
+   comp1            4
+   comp3            4
+   initial velocity 3
+   traction vector  3
+
+   A bit about comp1 and comp3: both of them are essential
+   boundary conditions affecting velocity.
+   comp3 is a strict constraint, velocity = m*(x,y,z)
+   comp1 is a planar constraint, dot(velocity,(x,y,z)) = m;
+   Both are listed in the spj file as: m x y z
+
+   Inital velocity and traction vector are both listed
+   as: x y z
 
    The scalars 1 through 4 are not always present.
    The number of scalars is computed as (ensa_dof - 5),

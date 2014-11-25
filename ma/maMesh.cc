@@ -320,6 +320,13 @@ bool isTwoTriAngleAcute(Mesh* m, Entity** va, Entity** vb)
   return (getTriNormal(m,va)*getTriNormal(m,vb)) > 0;
 }
 
+Vector getTriNormal(Mesh* m, Entity* e)
+{
+  Entity* v[3];
+  m->getDownward(e,0,v);
+  return getTriNormal(m, v);
+}
+
 bool isTwoTriAngleAcute(Mesh* m, Entity* a, Entity* b)
 {
   Entity* va[3];
@@ -389,6 +396,17 @@ Entity* findEdge(Mesh* m, Entity* v0, Entity* v1)
 bool edgeExists(Mesh* m, Entity* v0, Entity* v1)
 {
   return findEdge(m, v0, v1) != 0;
+}
+
+bool isTriEdgeAligned(Mesh* m, Entity* tri, Entity* edge)
+{
+  Entity* tv[3];
+  Entity* ev[2];
+  m->getDownward(tri, 0, tv);
+  m->getDownward(edge, 0, ev);
+  int a = findIn(tv, 3, ev[0]);
+  int b = findIn(tv, 3, ev[1]);
+  return b == (a+1)%3;
 }
 
 }

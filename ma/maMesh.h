@@ -108,7 +108,8 @@ double measure(Mesh* m, Entity* e);
 bool isOnModelEdge(Mesh* m, Entity* e);
 bool isOnModelFace(Mesh* m, Entity* e);
 
-Vector getTriNormal(Mesh* m, Vector* x);
+Vector getTriNormal(Mesh* m, Entity** v);
+Vector getTriNormal(Mesh* m, Entity* e);
 bool isTwoTriAngleAcute(Mesh* m, Entity** va, Entity** vb);
 bool isTwoTriAngleAcute(Mesh* m, Entity* a, Entity* b);
 
@@ -133,6 +134,10 @@ int getFaceEdgeDirection(
 
 Entity* findEdge(Mesh* m, Entity* v0, Entity* v1);
 bool edgeExists(Mesh* m, Entity* v0, Entity* v1);
+
+/* returns true iff the direction of the edge is along
+   the direction of the triangle's vertex (and edge) ordering */
+bool isTriEdgeAligned(Mesh* m, Entity* tri, Entity* edge);
 
 }
 

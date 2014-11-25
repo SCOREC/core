@@ -136,6 +136,15 @@ inline Matrix<3,3> cofactor(Matrix<3,3> const &m)
   return r;
 }
 
+/** \brief invert a 2 by 2 matrix */
+inline Matrix<2,2> invert(Matrix<2,2> const& m)
+{
+  Matrix<2,2> a;
+  a[0][0] =  m[1][1]; a[0][1] = -m[0][1];
+  a[1][0] = -m[1][0]; a[1][1] =  m[0][0];
+  return a / getDeterminant(m);
+}
+
 /** \brief invert a 3 by 3 matrix */
 inline Matrix<3,3> invert(Matrix<3,3> const& m)
 {

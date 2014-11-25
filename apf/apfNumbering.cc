@@ -305,6 +305,11 @@ int countNodes(Numbering* n)
   return countFieldNodes(n);
 }
 
+int countNodes(GlobalNumbering* n)
+{
+  return countFieldNodes(n);
+}
+
 static void getFieldNodes(FieldBase* f, DynamicArray<Node>& nodes)
 {
   Mesh* mesh = f->getMesh();
