@@ -55,9 +55,14 @@ void solveSVD(apf::DynamicMatrix& A,
               apf::DynamicVector& x,
               apf::DynamicVector& b);
 
+/** @brief solve linear least squares problem Ax=b.
+  * @param A (In) mxn matrix
+  * @param x (Out) nx1 solution vector
+  * @param b (In) mx1 right hand side vector
+  */
 void solveQR(apf::DynamicMatrix& A,
-              apf::DynamicVector& x,
-              apf::DynamicVector& b);
+             apf::DynamicVector& x,
+             apf::DynamicVector& b);
 
 }
 
