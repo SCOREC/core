@@ -14,10 +14,7 @@ void Visualization::new_viz(int num_parts,Color color) {
 }
 
 void Visualization::breakpoint(std::string text) {
-  double color_array[3];
-  getGivenColor(GREY,color_array);
-  double point[3] = {0,0,0};
-  milo_text(mil,point,text.c_str(),color_array);
+  milo_title(mil,text.c_str());
   milo_run(mil);
   milo_clear(mil,background);
 }
