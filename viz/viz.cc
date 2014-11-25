@@ -1,5 +1,5 @@
 #include "viz.h"
-#include "../parma/diffMC/maximalIndependentSet/mis.h"
+#include "diffMC/maximalIndependentSet/mis.h"
 #include <milo.h>
 #include <apfMesh.h>
 
