@@ -1,15 +1,16 @@
 #include "viz.h"
+#include "../parma/diffMC/maximalIndependentSet/mis.h"
 #include <milo.h>
 #include <apfMesh.h>
 
+using namespace misLuby;
 void Visualization::new_viz(int num_parts,Color color) {
   mil = milo_new("localhost", 4242);
 
   getGivenColor(color,background);
-  color_mode=0;
+  mis_color=BLUE;
   max_parts = num_parts;
   milo_clear(mil, background);
-  milo_zoom(mil,80);
 }
 
 void Visualization::breakpoint(std::string text) {
@@ -50,8 +51,8 @@ void Visualization::getPartColor(double* color, int part_num) {
   color[1]=g;
   color[2]=b;
 }
-void Visualization::getMISColor(double* color, int part_num) {
-
+void Visualization::getMISColor(double* color) {
+  getGivenColor(mis_color,color);
 }
 void Visualization::getGivenColor(Color color, double* color_array) {
   int temp = color;
@@ -64,6 +65,9 @@ void Visualization::getGivenColor(Color color, double* color_array) {
 void Visualization::getColor(Color color, double* color_array,int partId) {
   if (color==BYPART) {
     getPartColor(color_array,partId);
+  }
+  else if (color==MISCOLOR) {
+    getMISColor(color_array);
   }
   else 
     getGivenColor(color,color_array);
@@ -164,7 +168,30 @@ bool Visualization::watchMesh(apf::Mesh* m) {
 void Visualization::end_viz() {
   milo_free(mil);
 }
+bool Visualization::setupMISColoring(apf::Mesh* m,int part_num) {
+  mis_color=NOCOLOR;
+  int iter=0;
+  Color color_choices[9] = {RED,BLUE,GREEN,PURPLE,ORANGE,YELLOW,BROWN,PINK,GREY};
+  apf::Parts neighbors;
+  apf::getFacePeers(m,neighbors);
 
+  partInfo part;
+  part.id = part_num;
+  for (apf::Parts::iterator itr = neighbors.begin();
+       itr!=neighbors.end();itr++) {
+    part.adjPartIds.push_back(*itr);
+    part.net.push_back(*itr);
+  }
+
+  int randNumSeed = part_num+1;
+  mis_init(randNumSeed,false);
+  int isInMis = mis(part, true, true);
+  if (isInMis) { 
+    mis_color= color_choices[iter];
+  }
+
+  return true;
+}
 bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   double origin[3] = {0,0,0};
   double x_axis[3] = {1,0,0};
@@ -179,18 +206,5 @@ bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   milo_line(mil,origin,x_axis,x_array,1);
   milo_line(mil,origin,y_axis,y_array,1);
   milo_line(mil,origin,z_axis,z_array,1);
-  return true;
-}
-bool Visualization::markPart(apf::Mesh* m) {
-  /*  int partId = PCU_Comm_Self();
-  char text[10];
-  sprintf(text,"%d",partId);
-  double color_array[3];
-  getColor(GREY,color_array);
-  double point={0,0,0};
-  milo_text(mil,point,text,color_array);*/
-  return true;
-}
-bool Visualization::markPart(apf::Mesh* m, char* text) {
   return true;
 }

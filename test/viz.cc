@@ -39,7 +39,8 @@ int main(int argc, char** argv)
   v.watchMesh(m);
   v.breakpoint("The whole mesh");
 
-  v.watchDimension(m,2);
+  v.setupMISColoring(m,PCU_Comm_Self());
+  v.watchDimension(m,2,MISCOLOR);
   v.watchDimension(m,0);
   v.breakpoint();
 
@@ -74,6 +75,7 @@ int main(int argc, char** argv)
     if (m->isShared(ent))
       v.watchEntity(m,ent);
   }
+  
   v.showAxis();
   v.breakpoint("Part Boundaries");
 
