@@ -26,9 +26,12 @@ class LinearSystem
     GO getNumGlobalEqs() { return numGlobalEqs_; }
     GO mapLIDtoGID(LO lid);
     void sumToVector(double v, GO i);
+    void replaceToVector(double v, GO i);
     void sumToMatrix(double v, GO i, GO j);
+    void diagonalizeMatrixRow(GO i);
     void completeMatrixFill();
     void solve();
+    double* getSolution();
   private:
     LO numLocalEqs_;
     GO numGlobalEqs_;
