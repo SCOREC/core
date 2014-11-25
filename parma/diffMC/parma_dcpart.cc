@@ -24,6 +24,7 @@ using std::vector;
 
 using parmaCommons::printElapsedTime;
 using parmaCommons::debug;
+using parmaCommons::status;
 using parmaCommons::error;
 
 typedef std::list<MeshEntity*> eList;
@@ -69,6 +70,12 @@ int dcPart::numDisconnectedComps() {
    return numDc-1;
 }
 
+int dcPart::totNumDc() {
+  int ndc = numDisconnectedComps();
+  PCU_Add_Ints(&ndc, 1);
+  return ndc;
+}
+
 int dcPart::walkPart(int visited) {
    size_t count = 0;
    const int dim = m->getDimension();
@@ -105,14 +112,21 @@ int dcPart::walkPart(int visited) {
 }
 
 bool isInMis(migrTgt& mt) {
+  mis_init(time(NULL)+PCU_Comm_Self(), true);
   misLuby::partInfo part;
   part.id = PCU_Comm_Self();
+  std::set<int> targets;
   APF_ITERATE(migrTgt, mt, mtItr) {
-    part.adjPartIds.push_back(mtItr->second);
-    part.net.push_back(part.id);
+    if( !targets.count(mtItr->second) ) {
+      part.adjPartIds.push_back(mtItr->second);
+      part.net.push_back(mtItr->second);
+      targets.insert(mtItr->second);
+    }
   }
-  return mis(part);
+  part.net.push_back(part.id);
+  return mis(part,false,true);
 }
+
 
 /**
  * @brief remove the disconnected set(s) of elements from the part
@@ -123,14 +137,11 @@ bool isInMis(migrTgt& mt) {
  */
 void dcPart::fix() {
   double t1 = MPI_Wtime();
-  int totNumDc = 0;
-  do {
-    totNumDc = numDisconnectedComps();
-    PCU_Add_Ints(&totNumDc, 1);
+  int loop = 0;
+  int ndc = 0;
+  while( (ndc = totNumDc()) && loop++ < 10 ) {
     if( 0 == PCU_Comm_Self() )
-      fprintf(stderr, "PARMA_STATUS number of disconnected "
-          "components %d\n", totNumDc);
-    // < dcComId , mergeTgtPid >
+      status("loop %d disconnected components %d\n", loop, ndc);
     migrTgt dcCompTgts;
 
     int maxSz = -1;
@@ -149,11 +160,12 @@ void dcPart::fix() {
       }
     assert( dcCompTgts.size() + isolated == dcCompSz.size()-1 );
     Migration* plan = new Migration(m);
-    if ( !isInMis(dcCompTgts) )
+    if ( isInMis(dcCompTgts) )
       setupPlan(dcCompTgts, plan);
+
     clearTag(m, vtag);
-    m->migrate(plan); // plan deleted here
-  } while( totNumDc );
+    m->migrate(plan);
+  }
   printElapsedTime(__func__, MPI_Wtime() - t1);
 }
 
@@ -212,7 +224,7 @@ void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
       }
    }
    m->end(itr);
-   debug(false, "[%d] fixDcComps migrating %d\n", m->getId(), plan->count());
+   PCU_Debug_Print("fixDcComps migrating %d\n", plan->count());
 }
 
 
@@ -235,7 +247,6 @@ void dcPart::makeDisconnectedComps(const int numDcComps) {
 
    Migration* plan = new Migration(m);
    for(int i=0; i<numDcComps; i++) {
-      eList elms;
       MeshEntity* elm;
       bool found = false;
       // find an untagged element
@@ -258,7 +269,8 @@ void dcPart::makeDisconnectedComps(const int numDcComps) {
       m->end(itr);
    }
 
-   debug(false, "[%d] migrating %d to %d\n",
-	 m->getId(), plan->count(), destPid);
+   PCU_Debug_Print("make migrating %d elements to %d\n", 
+       plan->count(), destPid);
+   clearTag(m, vtag);
    m->migrate(plan); //plan deleted here
 }
