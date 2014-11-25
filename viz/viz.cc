@@ -4,20 +4,22 @@
 
 void Visualization::new_viz(int num_parts,Color color) {
   mil = milo_new("localhost", 4242);
-  double color_array[3];
-  getGivenColor(color_array,color);
+
+  getGivenColor(color,background);
   color_mode=0;
   max_parts = num_parts;
-  milo_clear(mil, color_array);
+  milo_clear(mil, background);
   milo_zoom(mil,80);
 }
 
-void Visualization::breakpoint() {
+void Visualization::breakpoint(std::string text) {
+  double color_array[3];
+  getGivenColor(GREY,color_array);
+  double point[3] = {0,0,0};
+  milo_text(mil,point,text.c_str(),color_array);
   milo_run(mil);
-  double black[3] = {0,0,0};
-  milo_clear(mil,black);
+  milo_clear(mil,background);
 }
-
 bool Visualization::getPoint(apf::Mesh* m, apf::MeshEntity* ent, double* point) {
   if (getDimension(m,ent)!=0) {
     std::cout<<"Cannot get point of this dimension\n";
@@ -48,7 +50,10 @@ void Visualization::getPartColor(double* color, int part_num) {
   color[1]=g;
   color[2]=b;
 }
-void Visualization::getGivenColor(double* color_array, Color color) {
+void Visualization::getMISColor(double* color, int part_num) {
+
+}
+void Visualization::getGivenColor(Color color, double* color_array) {
   int temp = color;
   for (int i=2;i>=0;i--) {
     color_array[i]=(temp%256)/255.0;
@@ -56,23 +61,38 @@ void Visualization::getGivenColor(double* color_array, Color color) {
     
   }
 }
-bool Visualization::drawPoint(apf::Mesh* m, apf::MeshEntity* ent) {
+void Visualization::getColor(Color color, double* color_array,int partId) {
+  if (color==BYPART) {
+    getPartColor(color_array,partId);
+  }
+  else 
+    getGivenColor(color,color_array);
+}
+bool Visualization::drawPoint(apf::Mesh* m, apf::MeshEntity* ent,Color color) {
   double point[3];
   getPoint(m,ent,point);
-  double color[3] = {1,1,1};
-  milo_dot(mil,point,color);
+  double color_array[3];
+  if (color==NOCOLOR)
+    color=WHITE;
+  int partId = m->getOwner(ent);
+  getColor(color,color_array,partId);
+  milo_dot(mil,point,color_array);
   return true;
 }
 
-bool Visualization::drawLine(apf::Mesh* m, apf::MeshEntity* ent) {
+bool Visualization::drawLine(apf::Mesh* m, apf::MeshEntity* ent,Color color) {
   double point[6];
   apf::Downward dwnVtx;
   int nDwnVtx = m->getDownward(ent,0,dwnVtx);
   for (int i=0;i<nDwnVtx;i++) {
     getPoint(m,dwnVtx[i],point+i*3);
   }
-  double color[3]= {1,1,1};
-  milo_line(mil,point,point+3,color);
+  double color_array[3];
+  if (color==NOCOLOR)
+    color=WHITE;
+  int partId = m->getOwner(ent);
+  getColor(color,color_array,partId);
+  milo_line(mil,point,point+3,color_array);
   return true;
 }
 
@@ -85,18 +105,11 @@ bool Visualization::drawTriangle(apf::Mesh* m, apf::MeshEntity* ent,Color color)
     getPoint(m,dwnVtx[i],point+i*3);
   
   double color_array[3];
-  if (color==BYPART) {
-    int part = m->getOwner(ent);
-    getPartColor(color_array,part);
+  if (color==NOCOLOR) {
+    color=BYPART;
   }
-  else 
-    getGivenColor(color_array,color);
-  /*int part = m->getOwner(ent);
-  if (part==0) {
-    for (int i=0;i<3;i++)
-      std::cout<<color_array[i]<<" ";
-    std::cout<<std::endl;
-    }*/
+  int partId = m->getOwner(ent);
+  getColor(color,color_array,partId);
   milo_triangle(mil,point,point+3,point+6,color_array);
   return true;
 }
@@ -104,41 +117,42 @@ bool Visualization::drawTriangle(apf::Mesh* m, apf::MeshEntity* ent,Color color)
 bool Visualization::watchEntity(apf::Mesh* m, apf::MeshEntity* ent,Color color) {
   int d = getDimension(m,ent);
   if (d==0)
-    return drawPoint(m,ent);
+    return drawPoint(m,ent,color);
   else if (d==1)
-    return drawLine(m,ent);
+    return drawLine(m,ent,color);
   else if (d==2)
     return drawTriangle(m,ent,color);
   else
     std::cout<<"Cannot support this entity yet\n";
   return false;
 }
-bool Visualization::watchDownwardEntity(apf::Mesh* m,apf::MeshEntity*ent) {
+bool Visualization::watchDownwardEntity(apf::Mesh* m,apf::MeshEntity*ent,Color color) {
   int dim = getDimension(m,ent);
   apf::Downward dwn;
   int nDwn = m->getDownward(ent,dim-1,dwn);
   for (int i=0;i<nDwn;i++)
-    watchEntity(m,dwn[i]);
+    watchEntity(m,dwn[i],color);
   return true;
 }
-bool Visualization::watchDimension(apf::Mesh* m, int d) {
+bool Visualization::watchDimension(apf::Mesh* m, int d,Color color) {
   apf::MeshIterator* itr = m->begin(d);
   apf::MeshEntity* ent;
   while ((ent = m->iterate(itr))!=0) {
-    watchEntity(m,ent);
+    watchEntity(m,ent,color);
   }
   return true;
 }
 
-bool Visualization::watchBoundary(apf::Mesh* m,int d) {
+bool Visualization::watchBoundary(apf::Mesh* m,int d,Color color) {
   int mesh_dim = m->getDimension();
   apf::MeshIterator* itr = m->begin(d);
   apf::MeshEntity* ent;
   while ((ent= m->iterate(itr))!=0) {
     apf::ModelEntity* model_ent = m->toModel(ent);
     if (m->getModelType(model_ent)<mesh_dim)
-      watchEntity(m,ent);
+      watchEntity(m,ent,color);
   }
+  return true;
 }
 bool Visualization::watchMesh(apf::Mesh* m) {
   for (int i=0;i<3;i++) {
@@ -149,4 +163,34 @@ bool Visualization::watchMesh(apf::Mesh* m) {
 
 void Visualization::end_viz() {
   milo_free(mil);
+}
+
+bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
+  double origin[3] = {0,0,0};
+  double x_axis[3] = {1,0,0};
+  double y_axis[3] = {0,1,0};
+  double z_axis[3] = {0,0,1};
+  double x_array[3];
+  double y_array[3];
+  double z_array[3];
+  getGivenColor(x_color,x_array);
+  getGivenColor(y_color,y_array);
+  getGivenColor(z_color,z_array);
+  milo_line(mil,origin,x_axis,x_array);
+  milo_line(mil,origin,y_axis,y_array);
+  milo_line(mil,origin,z_axis,z_array);
+  return true;
+}
+bool Visualization::markPart(apf::Mesh* m) {
+  /*  int partId = PCU_Comm_Self();
+  char text[10];
+  sprintf(text,"%d",partId);
+  double color_array[3];
+  getColor(GREY,color_array);
+  double point={0,0,0};
+  milo_text(mil,point,text,color_array);*/
+  return true;
+}
+bool Visualization::markPart(apf::Mesh* m, char* text) {
+  return true;
 }

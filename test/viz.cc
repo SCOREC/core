@@ -34,12 +34,16 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
  
   Visualization v;
-  v.new_viz(PCU_Comm_Peers());
+  v.new_viz(PCU_Comm_Peers(),WHITE);
 
   v.watchMesh(m);
+  v.breakpoint("The whole mesh");
+
+  v.watchDimension(m,2);
+  v.watchDimension(m,0);
   v.breakpoint();
 
-  v.watchDimension(m,1);
+  v.watchDimension(m,1,BYPART);
   v.breakpoint();
 
   apf::MeshIterator* itr = m->begin(2);
@@ -52,25 +56,26 @@ int main(int argc, char** argv)
     i%=3;
   }
 
-  v.breakpoint();
+  v.breakpoint("Every third face");
 
   itr = m->begin(0);
   i=0;
   while((ent=m->iterate(itr))!=0) {
     if (i==0)
-      v.watchEntity(m,ent);
+      v.watchEntity(m,ent,BYPART);
     i++;
     i%=2;
   }
   v.breakpoint();
 
-  v.watchBoundary(m,1);
+  v.watchBoundary(m,1,BLACK);
   itr = m->begin(2);
   while ((ent=m->iterate(itr))!=0) {
     if (m->isShared(ent))
       v.watchEntity(m,ent);
   }
-  v.breakpoint();
+  v.showAxis();
+  v.breakpoint("Part Boundaries");
 
   v.end_viz();
 
