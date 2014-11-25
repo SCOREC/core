@@ -92,7 +92,7 @@ bool Visualization::drawLine(apf::Mesh* m, apf::MeshEntity* ent,Color color) {
     color=WHITE;
   int partId = m->getOwner(ent);
   getColor(color,color_array,partId);
-  milo_line(mil,point,point+3,color_array);
+  milo_line(mil,point,point+3,color_array,0);
   return true;
 }
 
@@ -176,9 +176,9 @@ bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   getGivenColor(x_color,x_array);
   getGivenColor(y_color,y_array);
   getGivenColor(z_color,z_array);
-  milo_line(mil,origin,x_axis,x_array);
-  milo_line(mil,origin,y_axis,y_array);
-  milo_line(mil,origin,z_axis,z_array);
+  milo_line(mil,origin,x_axis,x_array,1);
+  milo_line(mil,origin,y_axis,y_array,1);
+  milo_line(mil,origin,z_axis,z_array,1);
   return true;
 }
 bool Visualization::markPart(apf::Mesh* m) {
