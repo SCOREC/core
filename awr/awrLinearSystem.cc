@@ -73,6 +73,13 @@ void LinearSystem::completeMatrixFill()
   A_->FillComplete();
 }
 
+double* LinearSystem::getSolution()
+{
+  double** sol;
+  x_->ExtractView(&sol);
+  return sol[0];
+}
+
 void LinearSystem::solve()
 {
   Epetra_LinearProblem problem(A_,x_,b_);

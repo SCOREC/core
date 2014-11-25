@@ -23,15 +23,6 @@ apf::Field* createAdjointField(apf::Mesh* m, apf::Field* p)
   int vt = apf::getValueType(p);
   apf::FieldShape* fs = apf::getShape(p);
   apf::Field* a = apf::createField(m,name.c_str(),vt,fs);
-  /** temporary below so vtk doesn't die **/
-  apf::MeshEntity* v;
-  apf::MeshIterator* vertices = m->begin(0);
-  while ((v = m->iterate(vertices)))
-  {
-    apf::setScalar(a,v,0,1.0);
-  }
-  m->end(vertices);
-  /** end temporary **/
   return a;
 }
 

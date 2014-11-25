@@ -31,6 +31,7 @@ class LinearSystem
     void diagonalizeMatrixRow(GO i);
     void completeMatrixFill();
     void solve();
+    double* getSolution();
   private:
     LO numLocalEqs_;
     GO numGlobalEqs_;
