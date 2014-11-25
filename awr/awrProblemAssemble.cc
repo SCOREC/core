@@ -8,6 +8,7 @@
 #include "awrProblem.h"
 #include "awrQoI.h"
 #include "awrLinearSystem.h"
+#include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
 #include <apfNumbering.h>
@@ -109,6 +110,7 @@ void applyBC(
 
 void Problem::assemble()
 {
+  double t0 = MPI_Wtime();
   createIntegrator();
   qoi_->createIntegrator();
   apf::MeshEntity* elem;
@@ -126,6 +128,8 @@ void Problem::assemble()
   mesh_->end(elements);
   applyBC(mesh_,bcList_,globalNumbering_,ls_);
   ls_->completeMatrixFill();
+  double t1 = MPI_Wtime();
+  print("problem assembled in %f seconds",t1-t0);
 }
 
 }

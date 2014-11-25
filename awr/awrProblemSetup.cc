@@ -65,6 +65,7 @@ Epetra_Map* createMap(int nc, apf::GlobalNumbering* numbering)
 
 void Problem::setup()
 {
+  double t0 = MPI_Wtime();
   validateProblemList(); /* pure virtual method */
   setPrimalField(); /* pure virtual method */
   adjoint_ = createAdjointField(mesh_,primal_);
@@ -75,6 +76,8 @@ void Problem::setup()
   qoi_ = createQoI(qoiList_,mesh_,primal_);
   ls_ = new LinearSystem(numGlobalEqs_,
       createMap(numComponents_,globalNumbering_));
+  double t1 = MPI_Wtime();
+  print("set up in %f seconds",t1-t0);
 }
 
 }

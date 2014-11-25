@@ -85,6 +85,7 @@ void LinearSystem::solve()
   Epetra_LinearProblem problem(A_,x_,b_);
   AztecOO solver(problem);
   solver.SetAztecOption(AZ_precond,AZ_Jacobi);
+  solver.SetAztecOption(AZ_output,AZ_none);
   solver.Iterate(1000,1.0e-8);
 }
 

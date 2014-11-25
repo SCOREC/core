@@ -70,7 +70,7 @@ Problem* createProblem(ParameterList& p, apf::Mesh* m)
   validateSublists(p);
   ParameterList& pp = p.sublist("Adjoint Problem");
   std::string name = pp.get<std::string>("Name","");
-  print("solving %s adjoint problem\n",name.c_str());
+  print("solving %s adjoint problem",name.c_str());
   Problem* problem;
   if (name == "Poisson")
     problem = new PoissonProblem(p,m); 
