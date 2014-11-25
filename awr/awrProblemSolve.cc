@@ -8,7 +8,6 @@
 #include "awrProblem.h"
 #include "awrLinearSystem.h"
 #include <apfNumbering.h>
-#include <iostream>
 
 namespace awr {
 
@@ -25,9 +24,7 @@ void attachSolution(
   for (int i=0; i < nodes.getSize(); ++i)
   {
     for (int c=0; c < nc; ++c)
-    {
       v[c] = sol[i+c];
-    }
     apf::setComponents(f,nodes[i].entity,nodes[i].node,v);
   }
 }

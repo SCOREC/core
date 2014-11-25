@@ -58,8 +58,7 @@ void addFeToGlobalVector(
 
 void rejectBCList(const char* msg)
 {
-  fprintf(stderr,"AWR bc list error\n");
-  fprintf(stderr,"%s\n",msg);
+  print("bc parameter %s\n",msg);
   abort();
 }
 
@@ -106,7 +105,6 @@ void applyBC(
   parseBCList(p,tags,dims);
   for (int i=0; i < tags.size(); ++i)
     addBCToLinearSystem(m,ls,gn,dims[i],tags[i]);
-
 }
 
 void Problem::assemble()

@@ -9,10 +9,23 @@
 #include "awrPoisson.h"
 #include "awrQoI.h"
 #include "awrLinearSystem.h"
+#include <PCU.h>
 #include <apfNumbering.h>
 #include <Teuchos_ParameterList.hpp>
 
 namespace awr {
+
+void print(const char* format, ...)
+{
+  if (PCU_Comm_Self())
+    return;
+  printf("\nAWR: ");
+  va_list ap;
+  va_start(ap,format);
+  vfprintf(stdout,format,ap);
+  va_end(ap);
+  printf("\n");
+}
 
 Problem::Problem(ParameterList& p, apf::Mesh* m) :
   problemList_(p.sublist("Adjoint Problem")),
@@ -32,15 +45,13 @@ Problem::~Problem()
 
 void rejectProblemName(const char* name)
 {
-  fprintf(stderr,"AWR problem error\n");
-  fprintf(stderr,"Unknown problem name *%s*\n",name);
+  print("Unknown problem name *%s*\n",name);
   abort();
 }
 
 void rejectSublists(const char* msg)
 {
-  fprintf(stderr,"AWR sublist error\n");
-  fprintf(stderr,"sublist *%s* is not defined\n",msg);
+  print("sublist *%s* is not defined\n",msg);
   abort();
 }
 
@@ -59,6 +70,7 @@ Problem* createProblem(ParameterList& p, apf::Mesh* m)
   validateSublists(p);
   ParameterList& pp = p.sublist("Adjoint Problem");
   std::string name = pp.get<std::string>("Name","");
+  print("solving %s adjoint problem\n",name.c_str());
   Problem* problem;
   if (name == "Poisson")
     problem = new PoissonProblem(p,m); 

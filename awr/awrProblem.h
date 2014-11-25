@@ -31,6 +31,8 @@ using Teuchos::ParameterList;
 class LinearSystem;
 class QoI;
 
+void print(const char* format, ...) __attribute__((format(printf,1,2)));
+
 class Problem
 {
   public:
