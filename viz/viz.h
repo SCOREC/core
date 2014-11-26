@@ -47,7 +47,7 @@ public:
   //Other Methods
   bool setupMISColoring(apf::Mesh* m,int part_num);
   bool showAxis(Color x_color=RED,Color y_color=GREEN,Color z_color=BLUE);
-  
+  void markPart(apf::Mesh* m,std::string text, Color color=BLACK);
 private:
   milo* mil;
   int max_parts;
@@ -58,7 +58,7 @@ private:
   void getPartColor(double* color, int part_num);
   void getMISColor(double* color);
   void getGivenColor(Color color, double* color_array);
-  void getColor(Color color, double* color_array,int partId);
+  void getColor(Color color, double* color_array,int partId=0);
   bool drawPoint(apf::Mesh* m, apf::MeshEntity* ent,Color color);
   bool drawLine(apf::Mesh* m, apf::MeshEntity* ent,Color color);
   bool drawTriangle(apf::Mesh* m, apf::MeshEntity* ent, Color color);

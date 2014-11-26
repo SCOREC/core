@@ -7,7 +7,7 @@ using namespace misLuby;
 void Visualization::new_viz(int num_parts,Color color) {
   mil = milo_new("localhost", 4242);
 
-  getGivenColor(color,background);
+  getColor(color,background);
   mis_color=BLUE;
   max_parts = num_parts;
   milo_clear(mil, background);
@@ -49,7 +49,7 @@ void Visualization::getPartColor(double* color, int part_num) {
   color[2]=b;
 }
 void Visualization::getMISColor(double* color) {
-  getGivenColor(mis_color,color);
+  getColor(mis_color,color);
 }
 void Visualization::getGivenColor(Color color, double* color_array) {
   int temp = color;
@@ -166,6 +166,7 @@ void Visualization::end_viz() {
   milo_free(mil);
 }
 bool Visualization::setupMISColoring(apf::Mesh* m,int part_num) {
+
   mis_color=NOCOLOR;
   int iter=0;
   Color color_choices[9] = {RED,BLUE,GREEN,PURPLE,ORANGE,YELLOW,BROWN,PINK,GREY};
@@ -174,15 +175,18 @@ bool Visualization::setupMISColoring(apf::Mesh* m,int part_num) {
 
   partInfo part;
   part.id = part_num;
+  part.net.push_back(part_num);
   for (apf::Parts::iterator itr = neighbors.begin();
        itr!=neighbors.end();itr++) {
     part.adjPartIds.push_back(*itr);
+    std::cout<<part_num<<" is neighbored with " << *itr << std::endl;
     part.net.push_back(*itr);
   }
 
-  int randNumSeed = part_num+1;
-  mis_init(randNumSeed,false);
-  int isInMis = mis(part, true, true);
+  int randNumSeed = time(NULL)+part_num+1;
+  mis_init(randNumSeed,true);
+  int isInMis = mis(part, false, true);
+  std::cout<<part_num <<" isInMIS "<<isInMis<<std::endl;
   if (isInMis) { 
     mis_color= color_choices[iter];
   }
@@ -197,11 +201,29 @@ bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   double x_array[3];
   double y_array[3];
   double z_array[3];
-  getGivenColor(x_color,x_array);
-  getGivenColor(y_color,y_array);
-  getGivenColor(z_color,z_array);
+  getColor(x_color,x_array);
+  getColor(y_color,y_array);
+  getColor(z_color,z_array);
   milo_line(mil,origin,x_axis,x_array,1);
   milo_line(mil,origin,y_axis,y_array,1);
   milo_line(mil,origin,z_axis,z_array,1);
   return true;
+}
+void Visualization::markPart(apf::Mesh* m,std::string text,Color color) {
+  int numPoints=0;
+  double centroid[3]={0,0,0};
+  apf::MeshIterator* itr = m->begin(0);
+  apf::MeshEntity* ent;
+  while((ent=m->iterate(itr))!=0) {
+    double point[3];
+    getPoint(m,ent,point);
+    for (int i=0;i<3;i++)
+      centroid[i]+=point[i];
+    numPoints++;
+  }
+  for (int i=0;i<3;i++)
+    centroid[i]/=numPoints;
+  double color_array[3];
+  getColor(color,color_array);
+  milo_text(mil,centroid,text.c_str(),color_array);
 }

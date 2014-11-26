@@ -33,22 +33,35 @@ int main(int argc, char** argv)
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
  
+  
   Visualization v;
   v.new_viz(PCU_Comm_Peers(),WHITE);
+  
+  char output[10];
+  sprintf(output,"%d",PCU_Comm_Self());
+  std::string part_num(output);
 
+  apf::MeshIterator* itr;
+  apf::MeshEntity* ent;
   v.watchMesh(m);
   v.breakpoint("The whole mesh");
 
-  v.setupMISColoring(m,PCU_Comm_Self());
-  v.watchDimension(m,2,MISCOLOR);
-  v.watchDimension(m,0);
-  v.breakpoint();
-
+  for (int i=0;i<10;i++) {
+    v.setupMISColoring(m,PCU_Comm_Self());
+    v.watchDimension(m,2,MISCOLOR);
+    v.watchDimension(m,0);
+    itr = m->begin(1);
+    while ((ent=m->iterate(itr))!=0) {
+      if (m->isShared(ent))
+        v.watchEntity(m,ent);
+    }
+    v.markPart(m,part_num);
+    sprintf(output,"Testing MIS %d",i);
+    v.breakpoint(std::string(output));
+  }
   v.watchDimension(m,1,BYPART);
   v.breakpoint();
-
-  apf::MeshIterator* itr = m->begin(2);
-  apf::MeshEntity* ent;
+  itr=m->begin(2);
   int i=0;
   while((ent=m->iterate(itr))!=0) {
     if (i==0)
