@@ -3,6 +3,29 @@
 #include <parma_dcpart.h>
 #include <limits>
 
+namespace {
+  int numSharedFaces(apf::Mesh* m) {
+    apf::MeshIterator *it = m->begin(m->getDimension()-1);
+    apf::MeshEntity* e;
+    int cnt = 0;
+    while( (e = m->iterate(it)) )
+      if( m->isShared(e) )
+        cnt++;
+    m->end(it);
+    return cnt;
+  }
+  int numOwnedVtx(apf::Mesh* m) {
+    apf::MeshIterator *it = m->begin(0);
+    apf::MeshEntity* e;
+    int cnt = 0;
+    while( (e = m->iterate(it)) )
+      if( m->isShared(e) && m->isOwned(e) )
+        cnt++;
+    m->end(it);
+    return cnt;
+  }
+}
+
 void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
    double tot[4];
    for(int i=0; i<= mesh->getDimension(); i++)
@@ -34,21 +57,15 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
 }
 
 long Parma_GetNumBdryVtx(apf::Mesh* m) {
-  apf::MeshIterator *it = m->begin(0);
-  apf::MeshEntity* e;
-  long cnt = 0;
-  while ((e = m->iterate(it)))
-    if (m->isShared(e) && m->isOwned(e))
-      cnt++;
-  m->end(it);
+  long cnt = numOwnedVtx(m);
   PCU_Add_Longs(&cnt, 1);
   return cnt;
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
-  loc = dc.numDisconnectedComps();
-  int tot = max = loc;
+  int tot = max = loc = dc.numDisconnectedComps();
+  PCU_Debug_Print("getDisStats dc parts %d\n", loc);
   PCU_Max_Ints(&max, 1);
   PCU_Add_Ints(&tot, 1);
   avg = static_cast<double>(tot)/PCU_Comm_Peers();
@@ -56,19 +73,7 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
   dcPart dc(m);
-  int numTotDc = dc.numDisconnectedComps();
-  PCU_Add_Ints(&numTotDc, 1);
-  if ( numTotDc > 0 ) {
-    if( 0 == PCU_Comm_Self() )
-      fprintf(stderr, "PARMA_STATUS initial number of disconnected "
-          "components %d\n", numTotDc);
-    dc.fix();
-    numTotDc = dc.numDisconnectedComps();
-    PCU_Add_Ints(&numTotDc, 1);
-    if( 0 == PCU_Comm_Self() )
-      fprintf(stderr, "PARMA_STATUS after fix() number of disconnected "
-          "components %d\n", numTotDc);
-  }
+  dc.fix();
 }
 
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
@@ -83,6 +88,15 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
   Parma_GetNeighborStats(m, maxNb, avgNb, locNb);
 
   const long bdryVtx = Parma_GetNumBdryVtx(m);
+
+  int surf = numSharedFaces(m);
+  int vol = m->count(m->getDimension());
+  double minSurfToVol, maxSurfToVol, avgSurfToVol;
+  minSurfToVol =  maxSurfToVol =  avgSurfToVol = surf/(double)vol;
+  PCU_Min_Doubles(&minSurfToVol, 1);
+  PCU_Max_Doubles(&maxSurfToVol, 1);
+  PCU_Add_Doubles(&avgSurfToVol, 1);
+  avgSurfToVol /= PCU_Comm_Peers();
 
   int empty = (m->count(m->getDimension()) == 0 ) ? 1 : 0;
   PCU_Add_Ints(&empty, 1);
@@ -99,6 +113,9 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
         key.c_str(), empty);
     fprintf(stdout, "STATUS %s number of shared vtx %ld\n",
         key.c_str(), bdryVtx);
+    fprintf(stdout, "STATUS %s sharedFacesToElements <max min avg> "
+        "%.3f %.3f %.3f\n",
+        key.c_str(), maxSurfToVol, minSurfToVol, avgSurfToVol);
     fprintf(stdout, "STATUS %s entity imbalance <v e f r>: "
         "%.2f %.2f %.2f %.2f\n", key.c_str(), imb[0], imb[1], imb[2], imb[3]);
   }

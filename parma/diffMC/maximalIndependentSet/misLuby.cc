@@ -32,26 +32,18 @@ using std::set;
 
 using namespace misLuby;
 
-namespace {
-  void debugPrint(const char* msg, bool dbgOverride = false){
-    if (dbgOverride) {
-      printf("MIS_DEBUG %s", msg);
-      fflush(stdout);
-    }
-  }
-}
-
 void misLuby::PartInfo::print() {
   std::string header="adjPartIds ";
   std::stringstream out;
-  Print <int, vector<int>::iterator > (out, header, adjPartIds.begin(), 
+  Print <int, vector<int>::iterator > (out, header, adjPartIds.begin(),
       adjPartIds.end(), ", ", true);
   header = "net ";
-  Print <int, vector<int>::iterator > (out, header, net.begin(), 
+  Print <int, vector<int>::iterator > (out, header, net.begin(),
       net.end(), ", ", true);
   header = "netAdjParts ";
   Print(out, header, netAdjParts.begin(), netAdjParts.end(), ", ", true);
-  out << "randNum " << randNum << "\n";
+  out << "randNum " << randNum << " isInNetGraph " << isInNetGraph
+      << " isInMIS " << isInMIS << "\n";
   std::string msg = out.str();
   PCU_Debug_Print("%s", msg.c_str());
 }
@@ -87,9 +79,6 @@ void misLuby::Print(std::ostream& ostr, std::string dbgMsg,
 }
 
 void seedRandomNumberGenerator(int seed, int) {
-  char msg[256];
-  sprintf(msg, "Seeding Random Number Generator with %d\n", seed);
-  debugPrint(msg);
   srand(seed);
 }
 
@@ -177,13 +166,6 @@ void sendIntsToNeighbors(partInfo& part, vector<int>& msg, int tag) {
     PCU_COMM_PACK( destRank, *adjPartIdItr);
 
     //pack int array
-    if (msg.size() == 0) {
-      char dbgMsg[256];
-      sprintf(dbgMsg,
-          "[%d] (%d) %s packing empty integer array\n",
-          PCU_Comm_Self(), part.id, __FUNCTION__);
-      debugPrint(dbgMsg);
-    }
     for ( vector<int>::iterator pItr = msg.begin();
         pItr != msg.end();
         pItr++ ) {
@@ -226,14 +208,6 @@ void unpackInts(vector<int>& msg,
   numIntsUnpacked++;
 
   //unpack int array
-  const size_t buffSize = (numIntsInMsg - numIntsUnpacked) * sizeof (int);
-  if (buffSize == 0) {
-    char dbgMsg[256];
-    sprintf(dbgMsg, "[%d] (%d) %s unpacking empty integer array\n",
-        rank, destPartId, __FUNCTION__);
-    debugPrint(dbgMsg);
-  }
-
   int buff;
   for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
     PCU_COMM_UNPACK(buff);
@@ -392,8 +366,13 @@ void getNetPartIds(vector<int>& net, vector<int>&ids) {
 }
 
 void setNodeStateInGraph(partInfo& part) {
-  part.isInNetGraph = true;
-  part.isInMIS = false;
+  if( part.adjPartIds.size() ) {
+    part.isInNetGraph = true;
+    part.isInMIS = false;
+  } else {
+    part.isInNetGraph = false;
+    part.isInMIS = false;
+  }
 }
 
 /**
@@ -524,11 +503,8 @@ void setRandomNum(partInfo& part) {
     part.randNum = std::numeric_limits<int>::max();
 }
 
-void mis_init(int randNumSeed, int debugMode, const char* maj,
-    const char* min, const char* patch) {
-  char msg[256];
-  sprintf(msg, "MIS version %s.%s.%s\n", maj, min, patch);
-  debugPrint(msg);
+void mis_init(int randNumSeed, int debugMode, const char*,
+    const char*, const char*) {
   seedRandomNumberGenerator(randNumSeed, debugMode);
 }
 
@@ -552,11 +528,11 @@ void removeNodes(partInfo& p, vector<int>& nodes) {
       p.netAdjParts.erase(*nodeItr);
 }
 
-/** If isNeighbors is true then the net of a selected part is removed from 
- * the graph, o.w. the parts that have overlapping nets, as listed in  
+/** If isNeighbors is true then the net of a selected part is removed from
+ * the graph, o.w. the parts that have overlapping nets, as listed in
  * netAdjParts, are removed from the graph.
  *
- * Setting isNeighbors true supports computing on the partition model graph 
+ * Setting isNeighbors true supports computing on the partition model graph
  * as opposed to the netgraph.
  */
 int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
@@ -578,7 +554,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
   int numNodesAdded;
   do {
     numNodesAdded = 0;
-    const int minRand = 
+    const int minRand =
       minRandNum(part.netAdjParts.begin(), part.netAdjParts.end());
     // add self to MIS
     if (true == part.isInNetGraph &&
@@ -593,7 +569,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
       }
       else {
 	nodesToRemove.reserve(part.netAdjParts.size() + 1);
-	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(), 
+	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(),
             nodesToRemove);
 	nodesToRemove.push_back(part.id);
       }
@@ -605,9 +581,9 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     PCU_Comm_Send();
     recvIntsFromNeighbors(part, rmtNodesToRemove, tag);
 
-      
-    if (true == part.isInNetGraph && 
-        ( true == part.isInMIS || 
+
+    if (true == part.isInNetGraph &&
+        ( true == part.isInMIS ||
           find(rmtNodesToRemove.begin(),
             rmtNodesToRemove.end(),
             part.id) != rmtNodesToRemove.end())
@@ -634,10 +610,6 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     PCU_Add_Ints(&numNodesAdded, 1);
     loopCount++;
   } while (numNodesAdded > 0);
-
-  char dbgMsg[512];
-  sprintf(dbgMsg, "Number of mis loops: %d\n", loopCount);
-  debugPrint(dbgMsg);
 
   return isInMis;
 }

@@ -7,6 +7,7 @@
 #include <set>
 #include <map>
 
+// < componentIdx, mergeTgtPartId >
 typedef std::map<int,int> migrTgt;
 
 class dcPart {
@@ -22,6 +23,7 @@ class dcPart {
       int walkPart(int visited);
       int checkResidence(const int dcComp);
       void setupPlan(migrTgt& dcCompTgts, apf::Migration* plan);
+      int totNumDc();
 
       std::vector<int> dcCompSz;
       apf::MeshTag* vtag;
