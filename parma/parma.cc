@@ -47,8 +47,8 @@ long Parma_GetNumBdryVtx(apf::Mesh* m) {
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
-  loc = dc.numDisconnectedComps();
-  int tot = max = loc;
+  int tot = max = loc = dc.numDisconnectedComps();
+  PCU_Debug_Print("getDisStats dc parts %d\n", loc);
   PCU_Max_Ints(&max, 1);
   PCU_Add_Ints(&tot, 1);
   avg = static_cast<double>(tot)/PCU_Comm_Peers();
@@ -56,19 +56,7 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
   dcPart dc(m);
-  int numTotDc = dc.numDisconnectedComps();
-  PCU_Add_Ints(&numTotDc, 1);
-  if ( numTotDc > 0 ) {
-    if( 0 == PCU_Comm_Self() )
-      fprintf(stderr, "PARMA_STATUS initial number of disconnected "
-          "components %d\n", numTotDc);
-    dc.fix();
-    numTotDc = dc.numDisconnectedComps();
-    PCU_Add_Ints(&numTotDc, 1);
-    if( 0 == PCU_Comm_Self() )
-      fprintf(stderr, "PARMA_STATUS after fix() number of disconnected "
-          "components %d\n", numTotDc);
-  }
+  dc.fix();
 }
 
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {

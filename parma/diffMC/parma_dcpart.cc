@@ -2,6 +2,7 @@
 #include "parma_dcpart.h"
 #include "parma_commons.h"
 #include "parma_meshaux.h"
+#include <maximalIndependentSet/mis.h>
 #include <stdio.h>
 #include <vector>
 #include <set>
@@ -23,6 +24,7 @@ using std::vector;
 
 using parmaCommons::printElapsedTime;
 using parmaCommons::debug;
+using parmaCommons::status;
 using parmaCommons::error;
 
 typedef std::list<MeshEntity*> eList;
@@ -42,7 +44,7 @@ void dcPart::init(Mesh*& mesh) {
 
 dcPart::~dcPart() {
    clearTag(m, vtag);
-   m->destroyTag(vtag); 
+   m->destroyTag(vtag);
 }
 
 inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
@@ -68,6 +70,12 @@ int dcPart::numDisconnectedComps() {
    return numDc-1;
 }
 
+int dcPart::totNumDc() {
+  int ndc = numDisconnectedComps();
+  PCU_Add_Ints(&ndc, 1);
+  return ndc;
+}
+
 int dcPart::walkPart(int visited) {
    size_t count = 0;
    const int dim = m->getDimension();
@@ -80,28 +88,45 @@ int dcPart::walkPart(int visited) {
    m->end(itr);
    // start the walk
    assert(elm);
-   elms.push_back(elm); 
+   elms.push_back(elm);
    while( ! elms.empty() ) {
       elm = elms.front();
       elms.pop_front();
       assert( elm != NULL );
       if ( m->hasTag(elm, vtag) ) continue;
-      m->setIntTag(elm, vtag, &visited); 
+      m->setIntTag(elm, vtag, &visited);
       count++;
       eArr adjElms;
       getDwn2ndAdj(m, elm, adjElms);
       APF_ITERATE(eArr, adjElms, eit) {
-         if ( ! m->hasTag(*eit, vtag) ) 
+         if ( ! m->hasTag(*eit, vtag) )
             elms.push_back(*eit);
       }
-      if ( count > m->count(dim) ) { 
-	 error("[%d] count > part size %d > %ld\n", 
+      if ( count > m->count(dim) ) {
+	 error("[%d] count > part size %d > %ld\n",
 	       m->getId(), count, (long)(m->count(dim)));
          exit(EXIT_FAILURE);
       }
    }
    return count;
 }
+
+bool isInMis(migrTgt& mt) {
+  mis_init(time(NULL)+PCU_Comm_Self(), true);
+  misLuby::partInfo part;
+  part.id = PCU_Comm_Self();
+  std::set<int> targets;
+  APF_ITERATE(migrTgt, mt, mtItr) {
+    if( !targets.count(mtItr->second) ) {
+      part.adjPartIds.push_back(mtItr->second);
+      part.net.push_back(mtItr->second);
+      targets.insert(mtItr->second);
+    }
+  }
+  part.net.push_back(part.id);
+  return mis(part,false,true);
+}
+
 
 /**
  * @brief remove the disconnected set(s) of elements from the part
@@ -111,37 +136,43 @@ int dcPart::walkPart(int visited) {
  *         are tagged
  */
 void dcPart::fix() {
-   double t1 = MPI_Wtime();
+  double t1 = MPI_Wtime();
+  int loop = 0;
+  int ndc = 0;
+  while( (ndc = totNumDc()) && loop++ < 50 ) {
+    if( 0 == PCU_Comm_Self() )
+      status("loop %d disconnected components %d\n", loop, ndc);
+    migrTgt dcCompTgts;
 
-   // < dcComId , mergeTgtPid >
-   migrTgt dcCompTgts; 
+    int maxSz = -1;
+    APF_ITERATE(vector<int>, dcCompSz, dc)
+      if( *dc > maxSz )
+        maxSz = *dc;
 
-   int maxSz = -1;
-   APF_ITERATE(vector<int>, dcCompSz, dc) 
-      if( *dc > maxSz ) 
-         maxSz = *dc; 
-  
-   int isolated = 0; 
-   for(size_t i=0; i<dcCompSz.size(); i++)
+    int isolated = 0;
+    for(size_t i=0; i<dcCompSz.size(); i++)
       if( dcCompSz[i] != maxSz ) {
-         int res = checkResidence(i);
-         if ( res != -1 )
-           dcCompTgts[i] = res;
-         else 
-           isolated++;
-      } 
-   assert( dcCompTgts.size() + isolated == dcCompSz.size()-1 );
-   Migration* plan = new Migration(m);
-   setupPlan(dcCompTgts, plan);
-   clearTag(m, vtag);
-   m->migrate(plan); // plan deleted here
-   printElapsedTime(__func__, MPI_Wtime() - t1);
+        int res = checkResidence(i);
+        if ( res != -1 )
+          dcCompTgts[i] = res;
+        else
+          isolated++;
+      }
+    assert( dcCompTgts.size() + isolated == dcCompSz.size()-1 );
+    Migration* plan = new Migration(m);
+    if ( isInMis(dcCompTgts) )
+      setupPlan(dcCompTgts, plan);
+
+    clearTag(m, vtag);
+    m->migrate(plan);
+  }
+  printElapsedTime(__func__, MPI_Wtime() - t1);
 }
 
 int dcPart::checkResidence(const int dcComp) {
    // < dcComId, maxFace >
-   typedef map<int, int> mii; 
-   mii bdryFaceCnt; 
+   typedef map<int, int> mii;
+   mii bdryFaceCnt;
 
    const int dim = m->getDimension();
    int tval;
@@ -172,10 +203,10 @@ int dcPart::checkResidence(const int dcComp) {
          max = bf->second;
          maxId = bf->first;
       }
-      debug(false, "[%d] bdryFaceCnt dcComp %d ap %d faces %d\n", 
+      debug(false, "[%d] bdryFaceCnt dcComp %d ap %d faces %d\n",
 	    PCU_Comm_Self(), dcComp, bf->first, bf->second);
    }
-   debug(false, "[%d] %s dcComp %d maxId %d max %d\n", 
+   debug(false, "[%d] %s dcComp %d maxId %d max %d\n",
 	 PCU_Comm_Self(), __func__, dcComp, maxId, max);
    return maxId;
 }
@@ -193,9 +224,9 @@ void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
       }
    }
    m->end(itr);
-   debug(false, "[%d] fixDcComps migrating %d\n", m->getId(), plan->count());
+   PCU_Debug_Print("fixDcComps migrating %d\n", plan->count());
 }
- 
+
 
 inline bool isShared(Mesh* m, MeshEntity* elm) {
    const int dim = apf::getDimension(m, elm);
@@ -203,7 +234,7 @@ inline bool isShared(Mesh* m, MeshEntity* elm) {
    eArr adjEnt;
    m->getAdjacent(elm, dim-1, adjEnt);
    APF_ITERATE(eArr, adjEnt, it) {
-      if( m->isShared(*it) ) 
+      if( m->isShared(*it) )
          return true;
    }
    return false;
@@ -216,7 +247,6 @@ void dcPart::makeDisconnectedComps(const int numDcComps) {
 
    Migration* plan = new Migration(m);
    for(int i=0; i<numDcComps; i++) {
-      eList elms;
       MeshEntity* elm;
       bool found = false;
       // find an untagged element
@@ -227,19 +257,20 @@ void dcPart::makeDisconnectedComps(const int numDcComps) {
          // check if face adj elms are tagged
 	 getDwn2ndAdj(m, elm, adjElms);
          int numDirtyElms = 0;
-	 APF_ITERATE(eArr, adjElms, eit) 
-	    if( m->hasTag(*eit, vtag) || isShared(m, *eit) )  
+	 APF_ITERATE(eArr, adjElms, eit)
+	    if( m->hasTag(*eit, vtag) || isShared(m, *eit) )
                numDirtyElms++;
          if ( numDirtyElms == 0 ) {
             plan->send(elm, destPid);
-	    m->setIntTag(elm, vtag, &i); 
+	    m->setIntTag(elm, vtag, &i);
             found = true;
 	 }
       }
       m->end(itr);
    }
-   
-   debug(false, "[%d] migrating %d to %d\n", 
-	 m->getId(), plan->count(), destPid);
+
+   PCU_Debug_Print("make migrating %d elements to %d\n", 
+       plan->count(), destPid);
+   clearTag(m, vtag);
    m->migrate(plan); //plan deleted here
 }

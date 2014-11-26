@@ -45,6 +45,11 @@ void LinearSystem::sumToVector(double v, GO i)
   b_->SumIntoGlobalValue(i,/*vec idx=*/0,v);
 }
 
+void LinearSystem::replaceToVector(double v, GO i)
+{
+  b_->ReplaceGlobalValue(i,/*vec idx=*/0,v);
+}
+
 void LinearSystem::sumToMatrix(double v, GO i, GO j)
 {
   double val[1]; val[0] = v;
@@ -52,9 +57,27 @@ void LinearSystem::sumToMatrix(double v, GO i, GO j)
   A_->InsertGlobalValues(i,1,val,col);
 }
 
+void LinearSystem::diagonalizeMatrixRow(GO i)
+{
+  int n;
+  double* v;
+  GO* j;
+  A_->ExtractGlobalRowView(i,n,v,j);
+  for (int i=0; i < n; ++i)
+    v[i] = 0.0;
+  this->sumToMatrix(1.0,i,i);
+}
+
 void LinearSystem::completeMatrixFill()
 {
   A_->FillComplete();
+}
+
+double* LinearSystem::getSolution()
+{
+  double** sol;
+  x_->ExtractView(&sol);
+  return sol[0];
 }
 
 void LinearSystem::solve()
@@ -62,6 +85,7 @@ void LinearSystem::solve()
   Epetra_LinearProblem problem(A_,x_,b_);
   AztecOO solver(problem);
   solver.SetAztecOption(AZ_precond,AZ_Jacobi);
+  solver.SetAztecOption(AZ_output,AZ_none);
   solver.Iterate(1000,1.0e-8);
 }
 

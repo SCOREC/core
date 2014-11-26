@@ -78,6 +78,12 @@ add_test(balance
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusBal4p/")
+add_test(zbalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./zbalance
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusZbal4p/")
 add_test(gap
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./gap
