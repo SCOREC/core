@@ -332,7 +332,6 @@ class EdgeSwap2D : public EdgeSwap
       getNewVerts(ntv);
       Vector on[2];
       on[0] = getTriNormal(mesh, otv[0]); on[1] = getTriNormal(mesh, otv[1]);
-      std::cerr << "on " << on[0] << ' ' << on[1] << '\n';
       Vector nn[2];
       nn[0] = getTriNormal(mesh, ntv[0]); nn[1] = getTriNormal(mesh, ntv[1]);
       if ((on[0] * nn[0] > 0) &&
