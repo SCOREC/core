@@ -17,13 +17,11 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
-  //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   Parma_PrintPtnStats(m, "initial");
   Parma_ProcessDisconnectedParts(m);
   Parma_PrintPtnStats(m, "final");
   m->writeNative(argv[3]);
-  // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
