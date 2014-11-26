@@ -185,12 +185,7 @@ void gmi_base_reserve(struct gmi_base* m, int dim, int n)
   m->model.n[dim] = n;
 }
 
-/** \brief fscanf wrapper that checks return values
-  \details programmers often fail to check the return
-  value of fscanf, and some compiler configurations will
-  complain about that. this function calls fscanf(f,format,...)
-  and then requires that the return value is equal to n. */
-static void gmi_fscanf(FILE* f, int n, const char* format, ...)
+void gmi_fscanf(FILE* f, int n, const char* format, ...)
 {
   va_list ap;
   int r;
