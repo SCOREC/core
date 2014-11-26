@@ -4,7 +4,7 @@
 #include <limits>
 
 namespace {
-  int numSharedFaces(apf::Mesh* m) {
+  int numSharedSides(apf::Mesh* m) {
     apf::MeshIterator *it = m->begin(m->getDimension()-1);
     apf::MeshEntity* e;
     int cnt = 0;
@@ -89,7 +89,7 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
 
   const long bdryVtx = Parma_GetNumBdryVtx(m);
 
-  int surf = numSharedFaces(m);
+  int surf = numSharedSides(m);
   int vol = m->count(m->getDimension());
   double minSurfToVol, maxSurfToVol, avgSurfToVol;
   minSurfToVol =  maxSurfToVol =  avgSurfToVol = surf/(double)vol;
@@ -113,7 +113,7 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
         key.c_str(), empty);
     fprintf(stdout, "STATUS %s number of shared vtx %ld\n",
         key.c_str(), bdryVtx);
-    fprintf(stdout, "STATUS %s sharedFacesToElements <max min avg> "
+    fprintf(stdout, "STATUS %s sharedSidesToElements <max min avg> "
         "%.3f %.3f %.3f\n",
         key.c_str(), maxSurfToVol, minSurfToVol, avgSurfToVol);
     fprintf(stdout, "STATUS %s entity imbalance <v e f r>: "
