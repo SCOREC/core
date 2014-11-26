@@ -139,7 +139,7 @@ void dcPart::fix() {
   double t1 = MPI_Wtime();
   int loop = 0;
   int ndc = 0;
-  while( (ndc = totNumDc()) && loop++ < 10 ) {
+  while( (ndc = totNumDc()) && loop++ < 50 ) {
     if( 0 == PCU_Comm_Self() )
       status("loop %d disconnected components %d\n", loop, ndc);
     migrTgt dcCompTgts;
