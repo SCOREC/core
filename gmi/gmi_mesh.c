@@ -21,7 +21,8 @@ static struct gmi_model_ops ops = {
   .destroy  = gmi_base_destroy
 };
 
-static struct gmi_model* create(const char* filename)
+static struct gmi_model* create(const char* filename,
+    void (*readfp)(struct gmi_base*, FILE*))
 {
   struct gmi_base* m;
   FILE* f;
@@ -30,12 +31,23 @@ static struct gmi_model* create(const char* filename)
     gmi_fail("could not open model file");
   m = malloc(sizeof(*m));
   m->model.ops = &ops;
-  gmi_base_read_dmg(m, f);
+  (*readfp)(m, f);
   fclose(f);
   return &m->model;
 }
 
+static struct gmi_model* from_dmg(const char* filename)
+{
+  return create(filename, gmi_base_read_dmg);
+}
+
+static struct gmi_model* from_tess(const char* filename)
+{
+  return create(filename, gmi_base_read_tess);
+}
+
 void gmi_register_mesh(void)
 {
-  gmi_register(create, "dmg");
+  gmi_register(from_dmg, "dmg");
+  gmi_register(from_tess, "tess");
 }
