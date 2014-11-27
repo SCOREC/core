@@ -124,6 +124,8 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
   so call apf::reorderMdsMesh after any mesh modification. */
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
+Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
+
 }
 
 #endif

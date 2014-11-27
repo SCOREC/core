@@ -11,11 +11,34 @@
 #include "pcu_thread.h"
 #include "pcu_common.h"
 
+/* OS X does not implement pthread_barrier,
+   so if we are on such a machine we'll use
+   our own implementation based on other pthread features.
+   performance is even less critical than usual,
+   Apple's computers tend not to have hundreds of cores */
+#ifdef __APPLE__
+#include <pthread.h>
+#include <errno.h>
+
+typedef int pthread_barrierattr_t;
+typedef struct
+{
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int count;
+    int tripCount;
+} pthread_barrier_t;
+
+int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count);
+int pthread_barrier_destroy(pthread_barrier_t *barrier);
+int pthread_barrier_wait(pthread_barrier_t *barrier);
+#endif
+
 static pthread_t* global_threads = NULL;
 static int global_nthreads = 0;
 static pthread_key_t global_key;
 static pthread_barrier_t global_barrier;
-static pthread_spinlock_t global_lock;
+static pthread_mutex_t global_lock;
 
 void pcu_run_threads(int count, pcu_thread* function)
 {
@@ -24,7 +47,7 @@ void pcu_run_threads(int count, pcu_thread* function)
   PCU_MALLOC(global_threads,(size_t)count);
   *global_threads = pthread_self();
   pthread_barrier_init(&global_barrier, NULL, count);
-  pthread_spin_init(&global_lock, PTHREAD_PROCESS_PRIVATE);
+  pthread_mutex_init(&global_lock, NULL);
 
   int err;
   err = pthread_key_create(&global_key,NULL);
@@ -43,7 +66,7 @@ void pcu_run_threads(int count, pcu_thread* function)
     err = pthread_join(global_threads[i],NULL);
     if (err) pcu_fail("pthread_join failed");
   }
-  pthread_spin_destroy(&global_lock);
+  pthread_mutex_destroy(&global_lock);
   pthread_barrier_destroy(&global_barrier);
 
   err = pthread_key_delete(global_key);
@@ -84,10 +107,60 @@ void pcu_thread_barrier(void)
 
 void pcu_thread_lock(void)
 {
-  pthread_spin_lock(&global_lock);
+  pthread_mutex_lock(&global_lock);
 }
 
 void pcu_thread_unlock(void)
 {
-  pthread_spin_unlock(&global_lock);
+  pthread_mutex_unlock(&global_lock);
 }
+
+#ifdef __APPLE__
+int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
+{
+    if(count == 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    if(pthread_mutex_init(&barrier->mutex, 0) < 0)
+    {
+        return -1;
+    }
+    if(pthread_cond_init(&barrier->cond, 0) < 0)
+    {
+        pthread_mutex_destroy(&barrier->mutex);
+        return -1;
+    }
+    barrier->tripCount = count;
+    barrier->count = 0;
+
+    return 0;
+}
+
+int pthread_barrier_destroy(pthread_barrier_t *barrier)
+{
+    pthread_cond_destroy(&barrier->cond);
+    pthread_mutex_destroy(&barrier->mutex);
+    return 0;
+}
+
+int pthread_barrier_wait(pthread_barrier_t *barrier)
+{
+    pthread_mutex_lock(&barrier->mutex);
+    ++(barrier->count);
+    if(barrier->count >= barrier->tripCount)
+    {
+        barrier->count = 0;
+        pthread_cond_broadcast(&barrier->cond);
+        pthread_mutex_unlock(&barrier->mutex);
+        return 1;
+    }
+    else
+    {
+        pthread_cond_wait(&barrier->cond, &(barrier->mutex));
+        pthread_mutex_unlock(&barrier->mutex);
+        return 0;
+    }
+}
+#endif /* defined(__APPLE__) */

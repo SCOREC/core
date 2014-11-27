@@ -33,7 +33,8 @@ set(MDS_SOURCES
   mds_smb.c
   mds_tag.c
   apfMDS.cc
-  apfPM.cc)
+  apfPM.cc
+  mdsGmsh.cc)
 
 set(MDS_HEADERS
   apfMDS.h)

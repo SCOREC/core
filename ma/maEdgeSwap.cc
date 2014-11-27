@@ -414,8 +414,6 @@ class EdgeSwap2D : public EdgeSwap
     Entity* quad[4];
     EntityArray oldFaces;
     Entity* newFaces[2];
-    Entity* otv[2][3];
-    Entity* ntv[2][3];
     Cavity cavity;
 };
 
