@@ -166,7 +166,7 @@ void gmi_base_read_tess(struct gmi_base* m, FILE* f)
       agm_add_use(m->topo, b, d);
     }
     gmi_fscanf(f, 0, "%*f %*f %*f %*f"); /* face plane equation */
-    gmi_fscanf(f, 0, "%*d %*d %*f %*f %*f %*f"); /* regularization */
+    gmi_fscanf(f, 0, "%*d %*d %*f %*f %*f"); /* regularization */
   }
   gmi_freeze_lookup(m->lookup, 2);
   seek_marker(f, " **polyhedron");
