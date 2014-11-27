@@ -80,6 +80,12 @@ add_test(gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
+add_test(hps
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./hps
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusHps4p/")
 add_test(fixDisconnected
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fixDisconnected
