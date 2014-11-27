@@ -2,6 +2,7 @@
 #include "diffMC/maximalIndependentSet/mis.h"
 #include <milo.h>
 #include <apfMesh.h>
+#include <PCU.h>
 
 using namespace misLuby;
 void Visualization::new_viz(int num_parts,Color color) {
@@ -14,6 +15,9 @@ void Visualization::new_viz(int num_parts,Color color) {
 }
 
 void Visualization::breakpoint(std::string text) {
+  if (!PCU_Comm_Self()) {
+    fprintf(stdout,"Breakpoint %s\n",text.c_str());
+  }
   milo_title(mil,text.c_str());
   milo_run(mil);
   milo_clear(mil,background);
@@ -179,18 +183,39 @@ bool Visualization::setupMISColoring(apf::Mesh* m,int part_num) {
   for (apf::Parts::iterator itr = neighbors.begin();
        itr!=neighbors.end();itr++) {
     part.adjPartIds.push_back(*itr);
-    std::cout<<part_num<<" is neighbored with " << *itr << std::endl;
     part.net.push_back(*itr);
   }
+  
+  int isInMis=0;
+  int* globalIsInMIS = new int[max_parts];
+  int num_in_MIS=1;
+  while (num_in_MIS!=0) {
+    int randNumSeed = time(NULL)+part_num+1;
+    mis_init(randNumSeed,true);
+    isInMis = mis(part, false, true);
 
-  int randNumSeed = time(NULL)+part_num+1;
-  mis_init(randNumSeed,true);
-  int isInMis = mis(part, false, true);
-  std::cout<<part_num <<" isInMIS "<<isInMis<<std::endl;
-  if (isInMis) { 
-    mis_color= color_choices[iter];
+    if (mis_color==NOCOLOR&&(isInMis||part.net.size()==1)) { 
+      mis_color= color_choices[iter];
+      part.net.clear();
+      part.net.push_back(part_num);
+    }
+    iter++;
+    MPI_Allgather(&isInMis, 1, MPI_INT, globalIsInMIS, 
+                       1, MPI_INT,  MPI_COMM_WORLD);
+    num_in_MIS=0;
+    for (int j=0;j<max_parts;j++) {
+      num_in_MIS+=globalIsInMIS[j];
+      if (globalIsInMIS[j]&&j!=part_num) {
+        for (unsigned int i=0;i<part.net.size();i++){
+          if (j==part.net[i]) {
+	    part.net[i] = part.net[part.net.size()-1];
+            part.net.pop_back();
+	    break;
+          }
+	}
+      }
+    }
   }
-
   return true;
 }
 bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {

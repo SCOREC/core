@@ -46,7 +46,7 @@ int main(int argc, char** argv)
   v.watchMesh(m);
   v.breakpoint("The whole mesh");
 
-  for (int i=0;i<10;i++) {
+  for (int i=0;i<3;i++) {
     v.setupMISColoring(m,PCU_Comm_Self());
     v.watchDimension(m,2,MISCOLOR);
     v.watchDimension(m,0);
@@ -59,13 +59,15 @@ int main(int argc, char** argv)
     sprintf(output,"Testing MIS %d",i);
     v.breakpoint(std::string(output));
   }
+
   v.watchDimension(m,1,BYPART);
   v.breakpoint();
+
   itr=m->begin(2);
   int i=0;
   while((ent=m->iterate(itr))!=0) {
     if (i==0)
-      v.watchEntity(m,ent);
+      v.watchEntity(m,ent,MISCOLOR);
     i++;
     i%=3;
   }

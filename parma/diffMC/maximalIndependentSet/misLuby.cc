@@ -562,17 +562,16 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
         part.randNum < minRand) {
       part.isInMIS = true;
       isInMis = 1;
-      fprintf(stdout,"Adding %d in round %d with random number %d\n",PCU_Comm_Self(),loopCount,minRand);
       ++numNodesAdded;
       if (isNeighbors) {
-	nodesToRemove.reserve(part.net.size()+1);
-	getNetPartIds(part.net,nodesToRemove);
+        nodesToRemove.reserve(part.net.size()+1);
+        getNetPartIds(part.net,nodesToRemove);
       }
       else {
-	nodesToRemove.reserve(part.netAdjParts.size() + 1);
-	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(),
+        nodesToRemove.reserve(part.netAdjParts.size() + 1);
+        getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(),
             nodesToRemove);
-	nodesToRemove.push_back(part.id);
+        nodesToRemove.push_back(part.id);
       }
     }
 
