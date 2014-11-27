@@ -12,8 +12,6 @@
 #include "agm.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include <assert.h>
 
 struct gmi_ent* gmi_from_agm(struct agm_ent e)
 {
@@ -183,93 +181,6 @@ void gmi_base_reserve(struct gmi_base* m, int dim, int n)
 {
   agm_reserve(m->topo, agm_type_from_dim(dim), n);
   m->model.n[dim] = n;
-}
-
-void gmi_fscanf(FILE* f, int n, const char* format, ...)
-{
-  va_list ap;
-  int r;
-  va_start(ap, format);
-  r = vfscanf(f, format, ap);
-  va_end(ap);
-  assert(r == n);
-}
-
-void gmi_base_read_dmg(struct gmi_base* m, FILE* f)
-{
-  int n[4];
-  int i,j,k;
-  int loops, shells;
-  int faces, edges;
-  struct agm_ent e;
-  struct agm_bdry b;
-  int used[2];
-  struct agm_ent d;
-  int tag;
-  /* read entity counts */
-  gmi_fscanf(f, 4, "%d %d %d %d", &n[3], &n[2], &n[1], &n[0]);
-  gmi_base_init(m);
-  /* bounding box */
-  gmi_fscanf(f, 0, "%*f %*f %*f");
-  gmi_fscanf(f, 0, "%*f %*f %*f");
-  /* vertices */
-  gmi_base_reserve(m, AGM_VERTEX, n[0]);
-  for (i = 0; i < n[0]; ++i) {
-    gmi_fscanf(f, 1, "%d %*f %*f %*f", &tag);
-    e = agm_add_ent(m->topo, AGM_VERTEX);
-    gmi_set_lookup(m->lookup, e, tag);
-  }
-  gmi_freeze_lookup(m->lookup, 0);
-  /* edges */
-  gmi_base_reserve(m, AGM_EDGE, n[1]);
-  for (i = 0; i < n[1]; ++i) {
-    gmi_fscanf(f, 3, "%d %d %d", &tag, &used[0], &used[1]);
-    e = agm_add_ent(m->topo, AGM_EDGE);
-    gmi_set_lookup(m->lookup, e, tag);
-    b = agm_add_bdry(m->topo, e);
-    for (j = 0; j < 2; ++j) {
-      d = gmi_look_up(m->lookup, AGM_VERTEX, used[j]);
-      if (!agm_ent_null(d))
-        agm_add_use(m->topo, b, d);
-    }
-  }
-  gmi_freeze_lookup(m->lookup, 1);
-  /* faces */
-  gmi_base_reserve(m, AGM_FACE, n[2]);
-  for (i = 0; i < n[2]; ++i) {
-    gmi_fscanf(f, 2, "%d %d", &tag, &loops);
-    e = agm_add_ent(m->topo, AGM_FACE);
-    gmi_set_lookup(m->lookup, e, tag);
-    for (j = 0; j < loops; ++j) {
-      gmi_fscanf(f, 1, "%d", &edges);
-      b = agm_add_bdry(m->topo, e);
-      for (k = 0; k < edges; ++k) {
-        /* tag, direction */
-        gmi_fscanf(f, 1, "%d %*d", &tag);
-        d = gmi_look_up(m->lookup, AGM_EDGE, tag);
-        agm_add_use(m->topo, b, d);
-      }
-    }
-  }
-  gmi_freeze_lookup(m->lookup, 2);
-  /* regions */
-  gmi_base_reserve(m, AGM_REGION, n[3]);
-  for (i = 0; i < n[3]; ++i) {
-    gmi_fscanf(f, 2, "%d %d", &tag, &shells);
-    e = agm_add_ent(m->topo, AGM_REGION);
-    gmi_set_lookup(m->lookup, e, tag);
-    for (j = 0; j < shells; ++j) {
-      gmi_fscanf(f, 1, "%d", &faces);
-      b = agm_add_bdry(m->topo, e);
-      for (k = 0; k < faces; ++k) {
-        /* tag, direction */
-        gmi_fscanf(f, 1, "%d %*d", &tag);
-        d = gmi_look_up(m->lookup, AGM_FACE, tag);
-        agm_add_use(m->topo, b, d);
-      }
-    }
-  }
-  gmi_freeze_lookup(m->lookup, 3);
 }
 
 void gmi_base_freeze(struct gmi_model* m)

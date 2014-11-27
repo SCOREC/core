@@ -33,7 +33,7 @@ struct agm_ent agm_from_gmi(struct gmi_ent* e);
 struct agm* gmi_base_topo(struct gmi_model* m);
 
 void gmi_base_init(struct gmi_base* m);
-
+void gmi_base_reserve(struct gmi_base* m, int dim, int n);
 void gmi_base_destroy(struct gmi_model* m);
 struct gmi_iter* gmi_base_begin(struct gmi_model* m, int dim);
 struct gmi_ent* gmi_base_next(struct gmi_model* m, struct gmi_iter* it);
@@ -51,6 +51,7 @@ int gmi_base_index(struct gmi_ent* e);
 struct gmi_ent* gmi_base_identify(int dim, int idx);
 
 void gmi_base_read_dmg(struct gmi_base* m, FILE* f);
+void gmi_base_read_tess(struct gmi_base* m, FILE* f);
 
 void gmi_base_set_tag(struct gmi_model* m, struct gmi_ent* e, int tag);
 
