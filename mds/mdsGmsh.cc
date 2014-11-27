@@ -85,6 +85,7 @@ void seekMarker(Reader* r, char const* marker)
 {
   while (!startsWith(marker, r->line))
     getLine(r);
+  getLine(r);
 }
 
 void checkMarker(Reader* r, char const* marker)
@@ -105,8 +106,7 @@ void readNode(Reader* r)
 void readNodes(Reader* r)
 {
   seekMarker(r, "$Nodes");
-  long n;
-  sscanf(r->line, "%ld", &n);
+  long n = getLong(r);
   getLine(r);
   for (long i = 0; i < n; ++i)
     readNode(r);
@@ -140,21 +140,22 @@ void readElement(Reader* r)
   }
   apf::ModelEntity* g = r->mesh->findModelEntity(dim, gtag);
   apf::Downward verts;
-  for (int i = 0; i < nverts; ++i)
-    verts[i] = lookupVert(r, getLong(r), g);
-  if (dim == 0)
-    return;
-  if (dim > r->mesh->getDimension())
-    apf::changeMdsDimension(r->mesh, dim); 
-  apf::buildElement(r->mesh, g, apfType, verts);
+  for (int i = 0; i < nverts; ++i) {
+    long nid = getLong(r);
+    verts[i] = lookupVert(r, nid, g);
+  }
+  if (dim != 0) {
+    if (dim > r->mesh->getDimension())
+      apf::changeMdsDimension(r->mesh, dim); 
+    apf::buildElement(r->mesh, g, apfType, verts);
+  }
   getLine(r);
 }
 
 void readElements(Reader* r)
 {
   seekMarker(r, "$Elements");
-  long n;
-  sscanf(r->line, "%ld", &n);
+  long n = getLong(r);
   getLine(r);
   for (long i = 0; i < n; ++i)
     readElement(r);
@@ -168,6 +169,7 @@ void readGmsh(apf::Mesh2* m, const char* filename)
   readNodes(&r);
   readElements(&r);
   freeReader(&r);
+  m->acceptChanges();
 }
 
 }

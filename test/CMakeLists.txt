@@ -75,6 +75,7 @@ setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
 setup_exe(qr_test qr_test.cc)
+setup_exe(from_neper neper.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
