@@ -1,5 +1,6 @@
 #include "apfMDS.h"
 #include "apfMesh2.h"
+#include "gmi.h" /* this is for gmi_getline... */
 
 #include <cstdio>
 #include <cstring>
@@ -57,7 +58,7 @@ void freeReader(Reader* r)
 
 void getLine(Reader* r)
 {
-  ssize_t ret = getline(&r->line, &r->linecap, r->file);
+  ssize_t ret = gmi_getline(&r->line, &r->linecap, r->file);
   assert(ret != -1);
   r->word = r->line;
 }
