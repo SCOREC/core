@@ -15,14 +15,14 @@ void gmi_fscanf(FILE* f, int n, const char* format, ...)
   assert(r == n);
 }
 
-ssize_t gmi_getline(char** line, size_t* cap, FILE* f)
+int gmi_getline(char** line, size_t* cap, FILE* f)
 {
 #ifdef __SUNPRO_C
   /* Oracle Solaris Studio doesn't come with getline, so
      we can instead use this completely non-standard-conformant
      version that works well enough for our purposes */
   int c;
-  ssize_t i = 0;
+  int i = 0;
   while (1) {
     c = fgetc(f);
     if (c == EOF)
@@ -42,7 +42,7 @@ ssize_t gmi_getline(char** line, size_t* cap, FILE* f)
   (*line)[i++] = '\0';
   return i;
 #else
-  return getline(line, cap, f);
+  return (int) getline(line, cap, f);
 #endif
 }
 

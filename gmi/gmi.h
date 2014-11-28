@@ -190,7 +190,7 @@ void gmi_fail(const char* why) __attribute__((noreturn));
   and then requires that the return value is equal to n. */
 void gmi_fscanf(FILE* f, int n, const char* format, ...);
 
-ssize_t gmi_getline(char** line, size_t* cap, FILE* f);
+int gmi_getline(char** line, size_t* cap, FILE* f);
 
 #ifdef __cplusplus
 }
