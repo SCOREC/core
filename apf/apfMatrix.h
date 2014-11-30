@@ -180,7 +180,7 @@ class Matrix3x3 : public Matrix<3,3>
     {}
     /** \brief construct from an array
       \todo this could be templated */
-    Matrix3x3(double (*array)[3])
+    Matrix3x3(double const (*array)[3])
     {
       for (std::size_t i=0; i < 3; ++i)
       for (std::size_t j=0; j < 3; ++j)
@@ -226,7 +226,7 @@ Matrix3x3 getFrame(Vector3 const& v);
 
 /** \brief get the eigenvectors and eigenvalues of a 3 by 3 matrix */
 int eigen(Matrix3x3 const& A,
-          Vector3* eigenVectors,
+          Vector<3>* eigenVectors,
           double* eigenValues);
 
 }//namespace apf

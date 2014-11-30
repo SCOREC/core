@@ -15,6 +15,37 @@ void gmi_fscanf(FILE* f, int n, const char* format, ...)
   assert(r == n);
 }
 
+int gmi_getline(char** line, size_t* cap, FILE* f)
+{
+#ifdef __SUNPRO_C
+  /* Oracle Solaris Studio doesn't come with getline, so
+     we can instead use this completely non-standard-conformant
+     version that works well enough for our purposes */
+  int c;
+  int i = 0;
+  while (1) {
+    c = fgetc(f);
+    if (c == EOF)
+      return -1;
+    if (i == *cap) {
+      *cap = ((*cap + 1) * 3) / 2;
+      *line = realloc(*line, *cap);
+    }
+    (*line)[i++] = c;
+    if (c == '\n')
+      break;
+  }
+  if (i == *cap) {
+    *cap = ((*cap + 1) * 3) / 2;
+    *line = realloc(*line, *cap);
+  }
+  (*line)[i++] = '\0';
+  return i;
+#else
+  return (int) getline(line, cap, f);
+#endif
+}
+
 void gmi_base_read_dmg(struct gmi_base* m, FILE* f)
 {
   int n[4];
@@ -107,7 +138,7 @@ static void seek_marker(FILE* f, char const* marker)
 {
   char* line = 0;
   size_t linecap = 0;
-  while (-1 != getline(&line, &linecap, f))
+  while (-1 != gmi_getline(&line, &linecap, f))
     if (starts_with(marker, line))
       return;
 }

@@ -147,7 +147,7 @@ class Vector3 : public Vector<3>
     }
     /** \brief construct from array
      \todo this could maybe be templated */
-    Vector3(double* abc)
+    Vector3(double const* abc)
     {
       this->elements[0] = abc[0];
       this->elements[1] = abc[1];

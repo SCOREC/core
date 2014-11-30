@@ -88,6 +88,7 @@ setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
 setup_exe(qr_test qr_test.cc)
 setup_exe(from_neper neper.cc)
+setup_exe(eigen_test eigen_test.cc)
 
 if(IS_TESTING)
   include(testing.cmake)

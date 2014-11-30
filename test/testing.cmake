@@ -247,3 +247,4 @@ add_test(NAME chef5
 add_test(NAME chef6
   COMMAND diff -r -x .svn out_mesh/ good_mesh/
   WORKING_DIRECTORY ${MDIR})
+add_test(eigen_test eigen_test)
