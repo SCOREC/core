@@ -180,7 +180,7 @@ class Matrix3x3 : public Matrix<3,3>
     {}
     /** \brief construct from an array
       \todo this could be templated */
-    Matrix3x3(double (*array)[3])
+    Matrix3x3(double const (*array)[3])
     {
       for (std::size_t i=0; i < 3; ++i)
       for (std::size_t j=0; j < 3; ++j)
