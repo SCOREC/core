@@ -226,7 +226,7 @@ Matrix3x3 getFrame(Vector3 const& v);
 
 /** \brief get the eigenvectors and eigenvalues of a 3 by 3 matrix */
 int eigen(Matrix3x3 const& A,
-          Vector3* eigenVectors,
+          Vector<3>* eigenVectors,
           double* eigenValues);
 
 }//namespace apf
