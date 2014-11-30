@@ -75,7 +75,7 @@ static void fromVectors(apf::Matrix3x3 & ev, apf::Vector3 & ew,
 }
 
 struct VectorLess {
-  bool operator()(apf::Vector<4>& a, apf::Vector<4>& b)
+  bool operator()(apf::Vector<4> const& a, apf::Vector<4> const& b)
   {
     return a[0] < b[0];
   }
