@@ -660,7 +660,7 @@ extern "C" void* splitThrdMain(void*)
     plan = globalPlan;
   } else {
     m = clone(globalMesh);
-    plan = new apf::Migration(m);
+    plan = new apf::Migration(m, m->findTag("apf_migrate"));
   }
   if (globalFactor != 1) {
     apf::Multiply remap(globalFactor);
