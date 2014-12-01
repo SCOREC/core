@@ -245,6 +245,28 @@ Numbering* Mesh::getNumbering(int i)
   return numberings[i];
 }
 
+void Mesh::addGlobalNumbering(GlobalNumbering* n)
+{
+  globalNumberings.push_back(n);
+}
+
+void Mesh::removeGlobalNumbering(GlobalNumbering* n)
+{
+  globalNumberings.erase(std::find(
+        globalNumberings.begin(), globalNumberings.end(), n));
+}
+
+int Mesh::countGlobalNumberings()
+{
+  return static_cast<int>(globalNumberings.size());
+}
+
+GlobalNumbering* Mesh::getGlobalNumbering(int i)
+{
+  return globalNumberings[i];
+}
+
+
 void unite(Parts& into, Parts const& from)
 {
   into.insert(from.begin(),from.end());
