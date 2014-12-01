@@ -121,15 +121,16 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
     PCU_Comm_Begin();
     while ((e = m->iterate(it)))
     {
-      if ( ! data->hasEntity(e))
-        continue;
+      if (( ! data->hasEntity(e)) ||
+          (shr->isOwned(e)))
+        continue; /* non-owners send to owners */
       CopyArray copies;
       shr->getCopies(e, copies);
-      if (!copies.getSize())
-        continue;
       int n = f->countValuesOn(e);
       NewArray<double> values(n);
       data->get(e,&(values[0]));
+      /* actually, non-owners send to all others,
+         since apf::Sharing doesn't identify the owner */
       for (size_t i = 0; i < copies.getSize(); ++i)
       {
         PCU_COMM_PACK(copies[i].peer, copies[i].entity);
@@ -140,7 +141,8 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
     PCU_Comm_Send();
     while (PCU_Comm_Listen())
       while ( ! PCU_Comm_Unpacked())
-      {
+      { /* receive and add. we only care about correctness
+           on the owners */
         MeshEntity* e;
         PCU_COMM_UNPACK(e);
         int n = f->countValuesOn(e);
@@ -152,8 +154,8 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
           values[i] += inValues[i];
         data->set(e,&(values[0]));
       }
-  }
-  delete shr;
+  } /* broadcast back out to non-owners */
+  synchronizeFieldData(data, shr);
 }
 
 }
