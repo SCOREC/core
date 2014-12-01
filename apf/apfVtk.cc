@@ -23,7 +23,7 @@ static void describeArray(
     int size)
 {
   file << "type=\"";
-  const char* typeNames[2] = {"Float64","Int32"};
+  const char* typeNames[3] = {"Float64","Int32","Int64"};
   file << typeNames[type];
   file << "\" Name=\"" << name;
   file << "\" NumberOfComponents=\"" << size;
@@ -72,6 +72,12 @@ static void writePPointData(std::ostream& file, Mesh* m)
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
+    if (n->getShape() == m->getShape())
+      writePDataArray(file,n);
+  }
+  for (int i=0; i < m->countGlobalNumberings(); ++i)
+  {
+    GlobalNumbering* n = m->getGlobalNumbering(i);
     if (n->getShape() == m->getShape())
       writePDataArray(file,n);
   }
@@ -136,6 +142,12 @@ static void writePCellData(std::ostream& file, Mesh* m)
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
+    if (isIPField(n))
+      writeIP_PCellData(file,n);
+  }
+  for (int i=0; i < m->countGlobalNumberings(); ++i)
+  {
+    GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isIPField(n))
       writeIP_PCellData(file,n);
   }
@@ -304,6 +316,12 @@ static void writePointData(std::ostream& file, Mesh* m,
     if (getShape(n)== m->getShape())
       writeNodalField<int>(file,n,nodes);
   }
+  for (int i=0; i < m->countGlobalNumberings(); ++i)
+  {
+    GlobalNumbering* n = m->getGlobalNumbering(i);
+    if (getShape(n)== m->getShape())
+      writeNodalField<long>(file,n,nodes);
+  }
   file << "</PointData>\n";
 }
 
@@ -376,6 +394,13 @@ static void writeCellData(std::ostream& file, Mesh* m)
     Numbering* n = m->getNumbering(i);
     if (isIPField(n))
       wi.run(file,n);
+  }
+  WriteIPField<long> wl;
+  for (int i=0; i < m->countGlobalNumberings(); ++i)
+  {
+    GlobalNumbering* n = m->getGlobalNumbering(i);
+    if (isIPField(n))
+      wl.run(file,n);
   }
   writeCellParts(file, m);
   file << "</CellData>\n";
