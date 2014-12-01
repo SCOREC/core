@@ -426,6 +426,16 @@ GlobalNumbering* createGlobalNumbering(
   return n;
 }
 
+FieldShape* getShape(GlobalNumbering* n)
+{
+  return n->getShape();
+}
+
+const char* getName(GlobalNumbering* n)
+{
+  return n->getName();
+}
+
 Mesh* getMesh(GlobalNumbering* n)
 {
   return n->getMesh();
