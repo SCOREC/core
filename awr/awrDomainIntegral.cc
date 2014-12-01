@@ -45,7 +45,7 @@ class DomainIntegrator : public apf::Integrator
       apf::getShapeValues(e_,p,bf);
       double val = getScalar(e_,p);
       for (int a=0; a < numDofs_; ++a)
-        Fe(a) += bf[a] * val * w * dv;
+        Fe(a) += 2.0 * bf[a] * val * w * dv;
     }
     apf::DynamicVector Fe;
   private:
