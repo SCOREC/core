@@ -281,9 +281,13 @@ MeshEntity* iterateBoundary(Mesh* m, MeshIterator* it, int part)
 Migration::Migration(Mesh* m)
 {
   mesh = m;
-  tag = m->findTag("apf_migrate");
-  if (!tag)
-    tag = m->createIntTag("apf_migrate",1);
+  tag = m->createIntTag("apf_migrate",1);
+}
+
+Migration::Migration(Mesh* m, MeshTag* existingTag)
+{
+  mesh = m;
+  tag = existingTag;
 }
 
 Migration::~Migration()

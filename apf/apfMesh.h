@@ -385,6 +385,7 @@ class Migration
 /** \brief must be constructed with a mesh
   \details use (new apf::Migration(mesh)) to make these objects */
     Migration(Mesh* m);
+    Migration(Mesh* m, MeshTag* existingTag);
     ~Migration();
 /** \brief return the number of elements with assigned destinations */
     int count();

@@ -394,4 +394,9 @@ Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
   return makeField(m, name, valueType, 0, s, new UserData(f));
 }
 
+void copyData(Field* to, Field* from)
+{
+  copyFieldData(to->getData(), from->getData());
+}
+
 }//namespace apf
