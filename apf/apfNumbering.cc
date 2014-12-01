@@ -422,6 +422,7 @@ GlobalNumbering* createGlobalNumbering(
 {
   GlobalNumbering* n = new GlobalNumbering();
   n->init(name,mesh,shape,1);
+  mesh->addGlobalNumbering(n);
   return n;
 }
 
@@ -531,6 +532,7 @@ void synchronize(GlobalNumbering* n, Sharing* shr)
 
 void destroyGlobalNumbering(GlobalNumbering* n)
 {
+  n->getMesh()->removeGlobalNumbering(n);
   delete n;
 }
 
