@@ -95,12 +95,11 @@ int findSortedMedian(Bodies const* b)
   double total = getTotalMass(b);
   double half = 0;
   for (int i = 0; i < b->n; ++i) {
-    half += b->body[i]->mass;
     if (half >= total / 2)
       return i;
+    half += b->body[i]->mass;
   }
-  abort();
-  return -1;
+  return b->n;
 }
 
 void bisect(Bodies* all, Bodies* left, Bodies* right)
