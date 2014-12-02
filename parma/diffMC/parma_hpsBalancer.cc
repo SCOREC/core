@@ -263,7 +263,6 @@ class MergeTargets {
     double testW = maxWeight(w);
     double step = 0.05 * avgWeight(w);
     bool splits = false;
-    int extraEmpties = 0;
     do {
       testW -= step;
       MergeTargets mergeTgts(s, w, testW);
@@ -298,7 +297,7 @@ class MergeTargets {
     for (int i = 0; i < plan->count(); ++i) {
       apf::MeshEntity* e = plan->get(i);
       int p = plan->sending(e);
-      assert(p <= tgts.size());
+      assert((size_t)p <= tgts.size());
       plan->send(e, tgts[p-1]);
     }
   }
