@@ -6,6 +6,7 @@
 #include "parma_selector.h"
 #include "zeroOneKnapsack.h"
 #include "maximalIndependentSet/mis.h"
+#include "../zoltan/apfZoltan.h"
 #include <limits>
 
 using std::vector;
@@ -18,28 +19,18 @@ class MergeTargets {
     //maxW == HeavyImb
     //Produces the optimal merging combination of the part's neighbors into
     // itself for a given maxW
-    MergeTargets(Sides* s, Weights* w, double maxW, bool) {
+    MergeTargets(Sides* s, Weights* w, double maxW) {
       //If part is heavy or empty, exit function
       if (w->self() >= maxW || w->self() == 0) {
-        //PCU_Debug_Print("Part %d of weight %f is heavy\n", PCU_Comm_Self(),
-            // w->self()); rating 0 (only in HPS, not CHI)
         return;
       }
-      /*PCU_Debug_Print("Part %d of weight %f is light"
-          "and not empty with imb of %f, %zu neighbors--\n",
-          PCU_Comm_Self(), w->self(), maxW, w->size());
-      rating 0 (only in HPS, not CHI)*/
-
       //Create array of neighbor partId's for assignment in mergingNet
-      // PCU_Debug_Print("Neighbor part Ids \n"); //rating 1
       int* nborPartIds = new int[w->size()];
       const Weights::Item* weight;
       unsigned int weightIdx = 0;
       w->begin();
       while( (weight = w->iterate()) )
         nborPartIds[weightIdx++] = weight->first;
-        // PCU_Debug_Print("\tNeighbor %d = %d\n", weightIdx-1,
-        //   nborPartIds[weightIdx-1]); //rating 1
       w->end();
 
       double minWeight = std::numeric_limits<double>::max();
@@ -48,12 +39,12 @@ class MergeTargets {
       //How much weight can be added on to the current part before it
       // reaches the HeavyImb
       const double weightCapacity = (maxW - w->self());
+
+      PCU_Debug_Print("maxW %.3f selfW %.3f weightCapacity %.3f\n",
+          maxW, w->self(), weightCapacity);
       //total weight that can be added to self, normalized to min
       const int knapsackCapacity = floor(scale(weightCapacity/minWeight));
 
-      /*PCU_Debug_Print("Weight Capcity = %f \nknapsackCapacity = %d \n",
-          weightCapacity, knapsackCapacity);
-      rating 1*/
       //Knapsack execution
       //Declared for knapsack class
       int* value = new int[s->total()];
@@ -64,8 +55,6 @@ class MergeTargets {
       const int solnVal = ks->solve();
       mergeTargetsResults.reserve(solnVal);
       ks->getSolution(mergeTargetsResults);
-
-      //PCU_Debug_Print("mergetargets size = %zu\n", mergeTargetsResults.size()); rating 0 (1 if in chi)
 
       //Converting mergeTargetsResults to partId's
       vector<int> partIdMergeTargets;
@@ -78,14 +67,13 @@ class MergeTargets {
 
       //Debug to see which parts contained in the results
       for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-        PCU_Debug_Print("\tmerge Target result %d\n", mergeTargetsResults[i]); //rating 1 (2 if in chi)
+        PCU_Debug_Print("merge Target result %d\n", mergeTargetsResults[i]);
       }
 
       delete [] nborPartIds;
       delete [] value;
       delete [] normalizedIntWeights;
       delete ks;
-
     }
 
     size_t total() {
@@ -150,29 +138,14 @@ class MergeTargets {
 
       PCU_Debug_Print("adjpartIds size = %ld\n", (long)(part.adjPartIds.size())); //rating 2
 
-      PCU_Debug_Print("Part %d mergeNet size %ld\n", PCU_Comm_Self(),
-        (long)(tgts.total())); //rating 0
+      PCU_Debug_Print("mergeNet size %ld\n", (long)(tgts.total()));
 
       //Passing in the mergingNet
       for(size_t i = 0; i < tgts.total(); ++i){
         part.net.push_back(tgts.mergeTargetIndex(i));
-        PCU_Debug_Print("\t%ld mergingNet %d\n", (long)i , part.net[i]);//rating 1 (CHI 2)
+        PCU_Debug_Print("mergeTarget[%lu] %d\n", i , part.net[i]);//rating 1 (CHI 2)
       }
       part.net.push_back(part.id);
-
-    //Testing for examples, additionally add paramter [4]
-    //in mis as true if testing random numbers
-    //Change random numbers as you please, MIS selects lowest numbers (only ints)
-    //Additionally, more can be added for more parts
-    if(part.id == 0) part.randNum = 1;
-    else if (part.id == 1) part.randNum = 2;
-    else if (part.id == 2) part.randNum = 3;
-    else if (part.id == 3) part.randNum = 1;
-    else if (part.id == 4) part.randNum = 2;
-    else if (part.id == 5) part.randNum = 2;
-    else if (part.id == 6) part.randNum = 1;
-    else if (part.id == 7) part.randNum = 2;
-    //End creating misLuby part
   }
 
   //Using MIS Luby, selects the merges to be executed based on the merging nets
@@ -185,12 +158,11 @@ class MergeTargets {
     int randNumSeed = PCU_Comm_Self()+1;
 
     mis_init(randNumSeed,false);
-    const int isInMis = mis(part, true);
+    const int isInMis = mis(part);
 
     // Debug if in MIS rating 0
-    if (isInMis)
+    if (isInMis && tgts.total())
       PCU_Debug_Print("Part %d in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
-    else PCU_Debug_Print("Part %d NOT in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
 
     PCU_Comm_Begin();
     //If the current part is in the MIS, send notification to its mergingNet
@@ -210,8 +182,8 @@ class MergeTargets {
       assert(!received);
       destination = PCU_Comm_Sender();
       received = true;
+      PCU_Debug_Print("destination = %d\n", destination);
     }
-    PCU_Debug_Print("destination = %d\n", destination); //rating 0 (1 if CHI)
 
     //Migration of part entities to its destination part if received one
     apf::MeshIterator* it = m->begin(m->getDimension());
@@ -224,6 +196,7 @@ class MergeTargets {
     return plan;
   }
 
+
   int splits(Weights* w, double tgtWeight) {
     return static_cast<int>(ceil(w->self()/tgtWeight))-1;
   }
@@ -232,10 +205,10 @@ class MergeTargets {
     return (m->count(m->getDimension()) - plan->count() == 0) ? 1 : 0;
   }
 
-  int totSplits(Weights* w, double tgtWeight) {
-    int numSplits = splits(w, tgtWeight);
-    PCU_Add_Ints(&numSplits, 1);
-    return numSplits;
+  int numSplits(Weights* w, double tgtWeight) {
+    int ns = splits(w, tgtWeight);
+    PCU_Add_Ints(&ns, 1);
+    return ns;
   }
 
   int numEmpty(apf::Mesh* m, apf::Migration* plan) {
@@ -245,17 +218,18 @@ class MergeTargets {
     return empty;
   }
 
-  bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt,
-      int& extra)
-  {
-    extra = numEmpty(m, plan) - totSplits(w, tgt);
-    //PCU_Debug_Print("Empty parts = %d - total Splits = %d = Extra %d ",
-    // numEmpty(m,plan),totSplits(w,tgt), extra); rating 2
-    if ( extra < 0 ){
-      return false;  }
-    else {
+  bool canSplit(apf::Mesh* m, Weights* w, apf::Migration* plan, double tgt) {
+    int verbose = 1;
+    const int empties = numEmpty(m, plan);
+    const int splits = numSplits(w, tgt);
+    const int extra = empties - splits;
+    if( !PCU_Comm_Self() && verbose )
+      fprintf(stdout, "HPS_STATUS chi <imb empties splits> %.3f %6d %6d\n",
+        tgt, empties, splits);
+    if ( extra < 0 )
+      return false;
+    else
       return true;
-     }
   }
 
   double avgWeight(Weights* w) {
@@ -284,79 +258,152 @@ class MergeTargets {
   }
   //Function used to find the optimal heavy imbalance for executing HPS
   double chi(apf::Mesh* m, apf::MeshTag*, Sides* s, Weights* w) {
+    double t0 = MPI_Wtime();
+    int verbose = 1;
     double testW = maxWeight(w);
-    //Step size can change arbitrarily as needed
-    double step = 0.1 * avgWeight(w);
+    double step = 0.05 * avgWeight(w);
     bool splits = false;
-    int extraEmpties = 0;
     do {
       testW -= step;
-      //**IDEA** Add sizes of mergeNets across processes and subtract
-      // from totSplits and if postitve, fail
-      MergeTargets mergeTgts(s, w, testW, false);
+      MergeTargets mergeTgts(s, w, testW);
       apf::Migration* plan = selectMerges(m, s, mergeTgts);
-      splits = canSplit(m, w, plan, testW, extraEmpties);
-      PCU_Debug_Print("Test imb %f, result %d\n", testW, splits); //rating 0
+      splits = canSplit(m, w, plan, testW);
       delete plan; // not migrating
-   }
-   while ( splits );
-    testW += step;
+   } while ( splits );
+   testW += step;
+   if( !PCU_Comm_Self() && verbose )
+     fprintf(stdout, "HPS_STATUS chi ran in seconds %.3f\n", MPI_Wtime()-t0);
    return testW;
   }
 
-  void split(apf::Mesh* m, Weights* w, double tgt, apf::Migration* plan) {
-    const int partId = PCU_Comm_Self();
-    int numSplit = splits(w, tgt);
+  apf::Migration* splitPart(apf::Mesh* m, apf::MeshTag* w, int factor) {
+    apf::Migration* splitPlan = NULL;
+    if( !factor ) return splitPlan;
+    bool isSync = false; bool isDebug = false;
+    apf::Splitter* s =
+      makeZoltanSplitter(m, apf::GRAPH, apf::PARTITION, isDebug, isSync);
+    double imb = 1.05;
+    splitPlan = s->split(w, imb, factor+1);
+    delete s;
+    return splitPlan;
+  }
+
+
+  void assignSplits(apf::Mesh* m, std::vector<int>& tgts,
+      apf::Migration* plan) {
+    assert( plan->count() );
+    PCU_Debug_Print("plan->count() %d\n", plan->count());
+    PCU_Debug_Print("tgts.size() %lu\n", tgts.size());
+    for (int i = 0; i < plan->count(); ++i) {
+      apf::MeshEntity* e = plan->get(i);
+      int p = plan->sending(e);
+      assert((size_t)p <= tgts.size());
+      plan->send(e, tgts[p-1]);
+    }
+  }
+
+  int splits(apf::Mesh* m, Weights* w, double tgtWeight, apf::Migration* plan) {
+    int extra = numEmpty(m, plan) - numSplits(w, tgtWeight);
+    int numSplits = splits(w, tgtWeight);
     int empty = isEmpty(m, plan);
+    PCU_Debug_Print("extra %d\n", extra);
+    while (extra != 0) {
+      int maxW = w->self();
+      if( numSplits || empty )
+        maxW = 0;
+      PCU_Max_Ints(&maxW, 1);
+      if( maxW == w->self() )
+        numSplits = 1;
+      extra--;
+    }
+    return numSplits;
+  }
+
+  void writePlan(apf::Migration* plan) {
+    typedef std::map<int,int> mii;
+    mii dest;
+    for (int i = 0; i < plan->count(); ++i) {
+      apf::MeshEntity* e = plan->get(i);
+      dest[plan->sending(e)]++;
+    }
+    PCU_Debug_Print("plan->count() %d\n", plan->count());
+    APF_ITERATE(mii, dest, dItr)
+      PCU_Debug_Print("p %d c %d\n", dItr->first, dItr->second);
+  }
+
+  void split(apf::Mesh* m, apf::MeshTag* wtag, Weights* w, double tgt,
+      apf::Migration** plan) {
+    int verbose = 1;
+    assert(*plan);
+    const int partId = m->getId();
+    int numSplit = splits(m, w, tgt, *plan);
+    int empty = isEmpty(m, *plan);
+    int tot[2] = {numSplits(w,tgt), numEmpty(m,*plan)};
+    if( !PCU_Comm_Self() && verbose )
+      fprintf(stdout, "HPS_STATUS numSplits %d numEmpty %d\n", tot[0], tot[1]);
+    PCU_Debug_Print("numSplit %d empty %d\n", numSplit, empty);
     assert(!(numSplit && empty));
     int hl[2] = {numSplit, empty};
     //number the heavies and empties
     PCU_Exscan_Ints(hl, 2);
+    PCU_Debug_Print("hl[0] %d hl[1] %d\n", hl[0], hl[1]);
     //send heavy part ids to brokers
     PCU_Comm_Begin();
-    for(int i=0; i<numSplit; i++)
+    for(int i=0; i<numSplit; i++) {
+      PCU_Debug_Print("sending to %d\n", hl[0]+i);
       PCU_COMM_PACK(hl[0]+i, partId);
+    }
     PCU_Comm_Send();
     int heavyPartId = 0;
     int count = 0;
     while(PCU_Comm_Listen()) {
       count++;
       PCU_COMM_UNPACK(heavyPartId);
+      PCU_Debug_Print("%d heavyPartId %d\n", PCU_Comm_Sender(), heavyPartId);
     }
-    assert(count==1);
     //send empty part ids to brokers
     PCU_Comm_Begin();
-    if ( empty )
+    if( empty ) {
+      PCU_Debug_Print("sendingB to %d\n", hl[1]);
       PCU_COMM_PACK(hl[1], partId);
+    }
     PCU_Comm_Send();
     int emptyPartId = -1;
     count = 0;
     while(PCU_Comm_Listen()) {
       count++;
       PCU_COMM_UNPACK(emptyPartId);
+      PCU_Debug_Print("%d emptyPartId %d\n", PCU_Comm_Sender(), emptyPartId);
     }
-    assert(count==1);
     //brokers send empty part assignment to heavies
     PCU_Comm_Begin();
-    if ( emptyPartId != -1 )
+    if ( emptyPartId != -1 ) {
+      PCU_Debug_Print("sendingC %d to %d\n", emptyPartId, heavyPartId);
       PCU_COMM_PACK(heavyPartId, emptyPartId);
+    }
     PCU_Comm_Send();
     std::vector<int> tgtEmpties;
     while(PCU_Comm_Listen()) {
       int tgtPartId = 0;
-      PCU_COMM_UNPACK(emptyPartId);
+      PCU_COMM_UNPACK(tgtPartId);
       tgtEmpties.push_back(tgtPartId);
+      PCU_Debug_Print("target empty %d\n", tgtPartId);
     }
-    assert( numSplit && tgtEmpties.size() );
-    //TODO run async rib
-    //TODO assign rib blocks/sub-parts to tgtEmpties
-    //TODO add element empty assignments to plan
+    if( numSplit ) {
+      delete *plan;
+      *plan = splitPart(m, wtag, numSplit);
+      assignSplits(m, tgtEmpties, *plan);
+    }
+    writePlan(*plan);
+    PCU_Debug_Print("elms %lu plan->count() %d\n",
+        m->count(m->getDimension()), (*plan)->count());
   }
 
-  void hps(apf::Mesh* m, apf::MeshTag*, Sides* s, Weights* w, double tgt) {
-    MergeTargets mergeTargets(s, w, tgt, true);
+  void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
+    PCU_Debug_Print("---hps---\n");
+    MergeTargets mergeTargets(s, w, tgt);
     apf::Migration* plan = selectMerges(m, s, mergeTargets);
-    split(m, w, tgt, plan);
+    split(m, wtag, w, tgt, &plan);
     m->migrate(plan);
   }
 
@@ -370,22 +417,24 @@ class MergeTargets {
       void run(apf::MeshTag* wtag) {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
-        // double tgt = chi(mesh, wtag, sides, w);
-        // PCU_Debug_Print("Final Chi = %f",tgt); rating 0
-        //hps(mesh, wtag, sides, w, tgt); **Uncomment when done with testing
+        double tgt = chi(mesh, wtag, sides, w);
+        PCU_Debug_Print("Final Chi = %.3f\n",tgt); //rating 0
+        hps(mesh, wtag, sides, w, tgt); //**Uncomment when done with testing
         delete sides;
         delete w;
         return;
       }
       virtual void balance(apf::MeshTag* weights, double tolerance) {
         (void) tolerance; // shhh
+        double initImb = imbalance(mesh, weights);
         double t0 = MPI_Wtime();
         run(weights);
         double elapsed = MPI_Wtime()-t0;
         PCU_Max_Doubles(&elapsed, 1);
-        double maxImb = imbalance(mesh, weights);
+        double finalImb = imbalance(mesh, weights);
         if (!PCU_Comm_Self())
-          printf("elements balanced to %f in %f seconds\n", maxImb, elapsed);
+          printf("elements balanced from %f to %f in %f seconds\n",
+              initImb, finalImb, elapsed);
       }
     private:
       apf::Mesh* mesh;
