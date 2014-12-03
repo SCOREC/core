@@ -63,8 +63,8 @@ void LinearSystem::diagonalizeMatrixRow(GO i)
   double* v;
   GO* j;
   A_->ExtractGlobalRowView(i,n,v,j);
-  for (int i=0; i < n; ++i)
-    v[i] = 0.0;
+  for (int k=0; k < n; ++k)
+    v[k] = 0.0;
   this->sumToMatrix(1.0,i,i);
 }
 
