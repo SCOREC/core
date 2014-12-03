@@ -338,9 +338,9 @@ class MergeTargets {
     const int partId = m->getId();
     int numSplit = splits(m, w, tgt, *plan);
     int empty = isEmpty(m, *plan);
-    int tot[2] = {numSplits(w,tgt), numEmpty(m,*plan)};
+    int tot[2] = {numEmpty(m,*plan), numSplits(w,tgt)};
     if( !PCU_Comm_Self() && verbose )
-      fprintf(stdout, "HPS_STATUS numSplits %d numEmpty %d\n", tot[0], tot[1]);
+      fprintf(stdout, "HPS_STATUS numEmpty %d numSplits %d\n", tot[0], tot[1]);
     PCU_Debug_Print("numSplit %d empty %d\n", numSplit, empty);
     assert(!(numSplit && empty));
     int hl[2] = {numSplit, empty};
