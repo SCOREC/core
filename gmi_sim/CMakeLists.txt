@@ -22,11 +22,20 @@ if(NOT BUILD_IN_TRILINOS)
   set(DEP_LIBS ${GMI_LIBS} ${PCU_LIBS} ${SIMMODSUITE_LIBS})
   set(GMI_SIM_LIBS gmi_sim ${DEP_LIBS})
 else()
+# these ENABLE vars are made by tribits based on ./cmake/Dependencies.cmake
+  if (SCORECgmi_sim_ENABLE_SimParasolid)
+    set(SIM_PARASOLID ON)
+  endif()
+  if (SCORECgmi_sim_ENABLE_SimAcis)
+    set(SIM_ACIS ON)
+  endif()
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
+# this file brings SIM_PARASOLID and SIM_ACIS from CMake to C++
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_sim_config.h.in"
                "${PROJECT_BINARY_DIR}/gmi_sim_config.h")
+# make sure the compiler can find the above header
 include_directories(${PROJECT_BINARY_DIR})
 
 #Sources & Headers

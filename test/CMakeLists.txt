@@ -1,3 +1,8 @@
+if(BUILD_IN_TRILINOS)
+  include(SCOREC_tribits_exes.cmake)
+  return()
+endif()
+
 find_package(mds REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(ma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(gmi_sim REQUIRED PATHS ${CMAKE_BINARY_DIR})

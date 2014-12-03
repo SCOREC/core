@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.6)
-set(PACKAGE_VERSION "1.0")
 
 if(BUILD_IN_TRILINOS)
   include(TribitsSubPackageMacros) 
   include(TribitsLibraryMacros) 
   tribits_subpackage(apf_sim) 
 else()
+  set(PACKAGE_VERSION "1.0")
   project(apf_sim)
 endif()
 
@@ -55,13 +55,13 @@ configure_file(
   @ONLY)
 #pkgconfig }
 
+if(NOT BUILD_IN_TRILINOS)
 #modulefile {
 string(TOUPPER ${PROJECT_NAME} PACKAGE_NAME)
 set(MODULEFILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}_${PACKAGE_VERSION}")
 configure_file(moduletemplate ${MODULEFILE} @ONLY)
 #modulefile }
 
-if(NOT BUILD_IN_TRILINOS)
   INSTALL(FILES ${HEADERS} DESTINATION include)
   INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_sim.pc" DESTINATION lib/pkgconfig)
   INSTALL(FILES ${MODULEFILE} DESTINATION lib/module)
