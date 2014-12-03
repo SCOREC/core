@@ -1,9 +1,11 @@
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
+#include <SimUtil.h>
 
 namespace {
   apf::MeshTag* applyUnitWeight(apf::Mesh* m) {
@@ -28,6 +30,7 @@ int main(int argc, char** argv) {
   PCU_Comm_Init();
   PCU_Protect();
   gmi_register_mesh();
+  gmi_register_sim();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = applyUnitWeight(m);
   apf::Balancer* hps = Parma_MakeHpsBalancer(m);
@@ -40,6 +43,8 @@ int main(int argc, char** argv) {
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
