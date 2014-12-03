@@ -313,7 +313,11 @@ class MeshMDS : public Mesh2
     }
     void getTag(MeshEntity* e, MeshTag* t, void* data)
     {
-      assert(hasTag(e,t));
+      if (!hasTag(e,t)) {
+        fprintf(stderr, "expected tag \"%s\" on entity type %d\n",
+            getTagName(t), getType(e));
+        abort();
+      }
       mds_tag* tag;
       tag = reinterpret_cast<mds_tag*>(t);
       mds_id id = fromEnt(e);
