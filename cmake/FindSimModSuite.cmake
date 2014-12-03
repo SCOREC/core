@@ -33,7 +33,6 @@ macro(simLibCheck libs isRequired)
   endforeach()
 endmacro(simLibCheck)
 
-# not sure how simmodsuite will work within tribits - ignore for now
 set(SIMMODSUITE_LIBS "")
 set(SIM_LIB_NAMES
   SimPartitionedMesh-mpi
