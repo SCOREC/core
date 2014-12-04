@@ -292,6 +292,7 @@ class MergeTargets {
   void assignSplits(apf::Mesh* m, std::vector<int>& tgts,
       apf::Migration* plan) {
     assert( plan->count() );
+    PCU_Debug_Print("elms %d\n", m->count(m->getDimension()));
     PCU_Debug_Print("plan->count() %d\n", plan->count());
     PCU_Debug_Print("tgts.size() %lu\n", tgts.size());
     for (int i = 0; i < plan->count(); ++i) {
@@ -304,19 +305,26 @@ class MergeTargets {
 
   int splits(apf::Mesh* m, Weights* w, double tgtWeight, apf::Migration* plan) {
     int extra = numEmpty(m, plan) - numSplits(w, tgtWeight);
-    int numSplits = splits(w, tgtWeight);
+    int split = splits(w, tgtWeight);
     int empty = isEmpty(m, plan);
     PCU_Debug_Print("extra %d\n", extra);
     while (extra != 0) {
-      int maxW = w->self();
-      if( numSplits || empty )
+      double maxW = w->self();
+      if( split || empty )
         maxW = 0;
-      PCU_Max_Ints(&maxW, 1);
-      if( maxW == w->self() )
-        numSplits = 1;
+      PCU_Max_Doubles(&maxW, 1);
+      int id = m->getId();
+      if( split || empty || maxW != w->self() )
+        id = -1;
+      PCU_Max_Ints(&id, 1);
+      if( m->getId() == id ) {
+        split = 1;
+        PCU_Debug_Print("part %d w %f assigned to extra %d\n", 
+                        m->getId(), w->self(), extra);
+      }
       extra--;
     }
-    return numSplits;
+    return split;
   }
 
   void writePlan(apf::Migration* plan) {
@@ -336,22 +344,26 @@ class MergeTargets {
     int verbose = 1;
     assert(*plan);
     const int partId = m->getId();
-    int numSplit = splits(m, w, tgt, *plan);
+    int split = splits(m, w, tgt, *plan);
+    assert(split == 0 || split == 1);
+    int totSplit = split;
+    PCU_Add_Ints(&totSplit, 1);
     int empty = isEmpty(m, *plan);
-    int tot[2] = {numSplits(w,tgt), numEmpty(m,*plan)};
+    int totEmpty = numEmpty(m,*plan);
     if( !PCU_Comm_Self() && verbose )
-      fprintf(stdout, "HPS_STATUS numSplits %d numEmpty %d\n", tot[0], tot[1]);
-    PCU_Debug_Print("numSplit %d empty %d\n", numSplit, empty);
-    assert(!(numSplit && empty));
-    int hl[2] = {numSplit, empty};
+      fprintf(stdout, "HPS_STATUS numEmpty %d numSplits %d\n", totEmpty, totSplit);
+    PCU_Debug_Print("split %d empty %d\n", split, empty);
+    assert( totSplit == totEmpty );
+    assert(!(split && empty));
+    int hl[2] = {split, empty};
     //number the heavies and empties
     PCU_Exscan_Ints(hl, 2);
     PCU_Debug_Print("hl[0] %d hl[1] %d\n", hl[0], hl[1]);
     //send heavy part ids to brokers
     PCU_Comm_Begin();
-    for(int i=0; i<numSplit; i++) {
-      PCU_Debug_Print("sending to %d\n", hl[0]+i);
-      PCU_COMM_PACK(hl[0]+i, partId);
+    if( split ) {
+      PCU_Debug_Print("sending to %d\n", hl[0]);
+      PCU_COMM_PACK(hl[0], partId);
     }
     PCU_Comm_Send();
     int heavyPartId = 0;
@@ -389,9 +401,9 @@ class MergeTargets {
       tgtEmpties.push_back(tgtPartId);
       PCU_Debug_Print("target empty %d\n", tgtPartId);
     }
-    if( numSplit ) {
+    if( split ) {
       delete *plan;
-      *plan = splitPart(m, wtag, numSplit);
+      *plan = splitPart(m, wtag, split);
       assignSplits(m, tgtEmpties, *plan);
     }
     writePlan(*plan);
