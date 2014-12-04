@@ -292,9 +292,6 @@ class MergeTargets {
   void assignSplits(apf::Mesh* m, std::vector<int>& tgts,
       apf::Migration* plan) {
     assert( plan->count() );
-    PCU_Debug_Print("elms %d\n", m->count(m->getDimension()));
-    PCU_Debug_Print("plan->count() %d\n", plan->count());
-    PCU_Debug_Print("tgts.size() %lu\n", tgts.size());
     for (int i = 0; i < plan->count(); ++i) {
       apf::MeshEntity* e = plan->get(i);
       int p = plan->sending(e);
