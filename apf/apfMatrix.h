@@ -31,6 +31,15 @@ template <std::size_t M, std::size_t N>
 class Matrix : public Array<Vector<N>,M>
 {
   public:
+    /** \brief mandatory */
+    Matrix() {}
+    /** \brief construct from an array */
+    Matrix(double const (*array)[N])
+    {
+      for (std::size_t i=0; i < M; ++i)
+      for (std::size_t j=0; j < N; ++j)
+        this->elements[i][j] = array[i][j];
+    }
     /** \brief add two matrices */
     Matrix<M,N> operator+(Matrix<M,N> const& b) const
     {
@@ -174,18 +183,10 @@ class Matrix3x3 : public Matrix<3,3>
       this->elements[1] = Vector3(a21,a22,a23);
       this->elements[2] = Vector3(a31,a32,a33);
     }
-    /** \brief copy constructor */
+    /** \brief constructor from base type */
     Matrix3x3(Matrix<3,3> const& other):
       Matrix<3,3>(other)
     {}
-    /** \brief construct from an array
-      \todo this could be templated */
-    Matrix3x3(double const (*array)[3])
-    {
-      for (std::size_t i=0; i < 3; ++i)
-      for (std::size_t j=0; j < 3; ++j)
-        this->elements[i][j] = array[i][j];
-    }
     /** \brief write matrix to an array
       \todo this could be templated */
     void toArray(double (*array)[3]) const
