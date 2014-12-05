@@ -74,6 +74,26 @@ static void setupRecovery(Recovery* r, apf::Field* f)
   r->f_star = makeRecoveredField(r);
 }
 
+struct Samples {
+  Samples():num_points(0) {}
+  void allocate(int np, int nc)
+  {
+    num_points = np;
+    points.allocate(np);
+    values.allocate(np);
+    for (int i=0; i < np; ++i)
+      values[i].allocate(nc);
+  }
+  int num_points;
+  apf::NewArray<apf::Vector3> points;
+  apf::NewArray<apf::NewArray<double> > values;
+};
+
+struct QRDecomp {
+  apf::DynamicMatrix V;
+  apf::DynamicMatrix R;
+};
+
 typedef std::set<apf::MeshEntity*> EntitySet;
 
 struct Patch {
@@ -86,6 +106,8 @@ struct Patch {
      all nodes on this entity */
   apf::MeshEntity* entity;
   EntitySet elements;
+  Samples samples;
+  QRDecomp qr;
 };
 
 static void setupPatch(Patch* p, Recovery* r)
@@ -106,17 +128,12 @@ static int countPatchPoints(Patch* p)
   return p->recovery->points_per_element * p->elements.size();
 }
 
-static bool hasEnoughPoints(Patch* p)
-{
-  return countPatchPoints(p) >= p->recovery->polynomial_terms;
-}
-
-void addElementToPatch(Patch* p, apf::MeshEntity* e)
+static void addElementToPatch(Patch* p, apf::MeshEntity* e)
 {
   p->elements.insert(e);
 }
 
-void addElementsToPatch(Patch* p, apf::DynamicArray<apf::MeshEntity*>& es)
+static void addElementsToPatch(Patch* p, apf::DynamicArray<apf::MeshEntity*>& es)
 {
   for (std::size_t i=0; i < es.getSize(); ++i)
     addElementToPatch(p, es[i]);
@@ -157,57 +174,13 @@ static bool addElementsThatShare(Patch* p, int dim,
   return true;
 }
 
-static bool expandAsNecessary(Patch* p, apf::CavityOp* o)
-{
-  if (hasEnoughPoints(p))
-    return true;
-  EntitySet old_set = p->elements;
-  int d = p->mesh->getDimension();
-  for (int shared_dim = d-1; shared_dim >= 0; --shared_dim)
-  {
-    if (!addElementsThatShare(p, shared_dim, old_set, o))
-      return false;
-    if (hasEnoughPoints(p))
-      return true;
-  }
-  bool hope = p->elements.size() > old_set.size();
-  if (hope)
-    return expandAsNecessary(p, o);
-  else
-  {
-    apf::fail("SPR: patch construction: all hope is lost.");
-    return false;
-  }
-}
-
-static bool buildPatch(Patch* p, apf::CavityOp* o)
-{
-  if (!getInitialPatch(p, o)) return false;
-  if (!expandAsNecessary(p, o)) return false;
-  return true;
-}
-
-struct Samples {
-  Samples():num_points(0) {}
-  void allocate(int np, int nc)
-  {
-    num_points = np;
-    points.allocate(np);
-    values.allocate(np);
-    for (int i=0; i < np; ++i)
-      values[i].allocate(nc);
-  }
-  int num_points;
-  apf::NewArray<apf::Vector3> points;
-  apf::NewArray<apf::NewArray<double> > values;
-};
-
 /** @brief get spr point data from element patch
   * @details assumes constant #IP/element
   */
-void getSamples(Patch* p, Samples* s)
+static void getSamplePoints(Patch* p)
 {
   Recovery* r = p->recovery;
+  Samples* s = &p->samples;
   int np = countPatchPoints(p);
   int nc = apf::countComponents(r->f);
   s->allocate(np,nc);
@@ -218,14 +191,26 @@ void getSamples(Patch* p, Samples* s)
       apf::Vector3 param;
       apf::getIntPoint(me, r->order, l, param);
       apf::mapLocalToGlobal(me, param, s->points[i]);
-      apf::getComponents(r->f, *it, l, &(s->values[i][0]));
       ++i;
     }
     apf::destroyMeshElement(me);
   }
 }
 
-void evalPolynomialTerms(int order,
+static void getSampleValues(Patch* p)
+{
+  Recovery* r = p->recovery;
+  Samples* s = &p->samples;
+  std::size_t i = 0;
+  APF_ITERATE(EntitySet, p->elements, it) {
+    for (int l = 0; l < r->points_per_element; ++l) {
+      apf::getComponents(r->f, *it, l, &(s->values[i][0]));
+      ++i;
+    }
+  }
+}
+
+static void evalPolynomialTerms(int order,
                          apf::Vector3 const& point,
                          apf::DynamicVector& terms)
 {
@@ -256,79 +241,112 @@ void evalPolynomialTerms(int order,
     apf::fail("SPR: invalid polynomial order");
 }
 
-/** @brief least squares solution of polynomial coefficients
-  * @param order (In) order of polynomial to be fit to data
-  * @param num_points (In) number of integration points in patch
-  * @param points (In) coordinates of integration points in patch
-  * @param values (In) data value associated with integration points
-  * @param coeffs (Out) coefficients of fit polynomial
-  */
-void fitPolynomial(int order,
-                   int num_points,
-                   apf::NewArray<apf::Vector3> const& points,
-                   apf::NewArray<double> const& values,
-                   apf::DynamicVector& coeffs)
+static bool preparePolynomialFit(int order,
+                                 int num_points,
+                                 apf::NewArray<apf::Vector3> const& points,
+                                 QRDecomp& qr)
 {
   int m = num_points;
   int n = countPolynomialTerms(order);
   assert(m >= n);
-  apf::DynamicMatrix P(m,n);
+  apf::DynamicMatrix A(m,n);
   apf::DynamicVector p;
-  for (int i = 0; i < m; ++i)
-  {
-    evalPolynomialTerms(order,points[i],p);
-    P.setRow(i,p);
+  for (int i = 0; i < m; ++i) {
+    evalPolynomialTerms(order, points[i], p);
+    A.setRow(i, p);
   }
-  apf::DynamicMatrix PT;
-  apf::transpose(P,PT);
-  apf::DynamicMatrix A;
-  apf::multiply(PT,P,A);
-  apf::DynamicVector v(m);
-  for (int i=0; i < m; ++i)
-    v(i) = values[i];
-  apf::DynamicVector b;
-  apf::multiply(PT,v,b);
-  apf::DynamicVector a;
-  solveSVD(A,a,b);
-  coeffs.setSize(n);
-  for (int i=0; i < n; ++i)
-    coeffs[i] = a[i];
+  return decompQR(A, qr.V, qr.R);
 }
 
-double evalPolynomial(int order, apf::Vector3& point, apf::DynamicVector& coeffs)
+static void runPolynomialFit(QRDecomp& qr,
+                             apf::DynamicVector& values,
+                             apf::DynamicVector& coeffs)
+{
+  solveFromQR(qr.V, qr.R, values, coeffs);
+}
+
+static double evalPolynomial(int order, apf::Vector3& point,
+    apf::DynamicVector& coeffs)
 {
   apf::DynamicVector terms;
   evalPolynomialTerms(order, point, terms);
   return coeffs * terms;
 }
 
-/** @brief run patch recovery
-  */
-void runSpr(Patch* p)
+static bool prepareSpr(Patch* p)
 {
   Recovery* r = p->recovery;
-  Samples samples;
-  getSamples(p, &samples);
+  getSamplePoints(p);
+  return preparePolynomialFit(r->order, p->samples.num_points,
+      p->samples.points, p->qr);
+}
+
+static void runSpr(Patch* p)
+{
+  Recovery* r = p->recovery;
+  apf::Mesh* m = r->mesh;
+  Samples* s = &p->samples;
+  getSampleValues(p);
   int num_components = apf::countComponents(r->f_star);
-  int num_nodes = r->mesh->getShape()->countNodesOn(r->mesh->getType(p->entity));
-  apf::NewArray<double> values(samples.num_points);
+  int num_nodes = m->getShape()->countNodesOn(m->getType(p->entity));
+  apf::DynamicVector values(s->num_points);
   apf::NewArray<apf::Vector3> nodal_points(num_nodes);
   apf::NewArray<apf::NewArray<double> > recovered_values(num_nodes);
-  for (int n = 0; n < num_nodes; ++n) {
-    recovered_values[n].allocate(num_components);
-    p->mesh->getPoint(p->entity, n, nodal_points[n]);
+  for (int i = 0; i < num_nodes; ++i) {
+    recovered_values[i].allocate(num_components);
+    m->getPoint(p->entity, i, nodal_points[i]);
   }
   for (int i = 0; i < num_components; ++i) {
-    for (int p = 0; p < samples.num_points; ++p)
-      values[p] = samples.values[p][i];
+    for (int j = 0; j < s->num_points; ++j)
+      values[j] = s->values[j][i];
     apf::DynamicVector coeffs;
-    fitPolynomial(r->order, samples.num_points,
-        samples.points, values, coeffs);
-    for (int n = 0; n < num_nodes; ++n)
-      recovered_values[n][i] = evalPolynomial(r->order, nodal_points[n], coeffs);
+    runPolynomialFit(p->qr, values, coeffs);
+    for (int j = 0; j < num_nodes; ++j)
+      recovered_values[j][i] = evalPolynomial(
+          r->order, nodal_points[j], coeffs);
   }
-  for (int n = 0; n < num_nodes; ++n)
-    setComponents(r->f_star, p->entity, n, &(recovered_values[n][0]));
+  for (int i = 0; i < num_nodes; ++i)
+    apf::setComponents(r->f_star, p->entity, i, &(recovered_values[i][0]));
+}
+
+static bool hasEnoughPoints(Patch* p)
+{
+  if (countPatchPoints(p) < p->recovery->polynomial_terms)
+    return false;
+/* run the QR decomposition as part of the check for
+   patch completeness, and continue gathering elements
+   if we find that our matrix is rank-deficient */
+  return prepareSpr(p);
+}
+
+static bool expandAsNecessary(Patch* p, apf::CavityOp* o)
+{
+  if (hasEnoughPoints(p))
+    return true;
+  EntitySet old_set = p->elements;
+  int d = p->mesh->getDimension();
+  for (int shared_dim = d-1; shared_dim >= 0; --shared_dim)
+  {
+    if (!addElementsThatShare(p, shared_dim, old_set, o))
+      return false;
+    if (hasEnoughPoints(p))
+      return true;
+  }
+  bool hope = p->elements.size() > old_set.size();
+  if (hope)
+    return expandAsNecessary(p, o);
+  else
+  {
+    apf::fail("SPR: patch construction: all hope is lost.");
+    return false;
+  }
+}
+
+static bool buildPatch(Patch* p, apf::CavityOp* o)
+{
+  if (!getInitialPatch(p, o)) return false;
+  if (!expandAsNecessary(p, o)) return false;
+  return true;
 }
 
 class PatchOp : public apf::CavityOp
