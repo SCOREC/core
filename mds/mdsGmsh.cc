@@ -133,12 +133,11 @@ void readElement(Reader* r)
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
   long ntags = getLong(r);
-  long gtag;
-  for (long i = 0; i < ntags; ++i) {
-    long tag = getLong(r);
-    if (i == 1)
-      gtag = tag;
-  }
+  assert(ntags >= 2);
+  getLong(r); /* discard physical type */
+  long gtag = getLong(r);
+  for (long i = 2; i < ntags; ++i)
+    getLong(r); /* discard all other element tags */
   apf::ModelEntity* g = r->mesh->findModelEntity(dim, gtag);
   apf::Downward verts;
   for (int i = 0; i < nverts; ++i) {

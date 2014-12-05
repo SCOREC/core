@@ -31,41 +31,82 @@ double sign(double x) {
   return r;
 }
 
-void solveQR(apf::DynamicMatrix& A,
-             apf::DynamicVector& x,
-             apf::DynamicVector& b)
+/* V gets the Householder vectors as
+   its rows upon return.
+   this enables getImplicitB later on */
+bool decompQR(apf::DynamicMatrix& A,
+              apf::DynamicMatrix& V,
+              apf::DynamicMatrix& R)
 {
   int m = A.getRows();
   int n = A.getColumns();
+  R = A;
   apf::DynamicVector vk;
   apf::DynamicMatrix T;
-  double Tb;
+  V.setSize(n, m);
+  T.setSize(m, n);
+  vk.setSize(m);
   for (int k=0; k<n; k++) {
-    vk.setSize(m-k);
-    for (int j=0; j<(m-k); j++) {
-      vk(j) = A(k+j,k);
+    for (int j=0; j < (m-k); j++) {
+      vk(j) = R(k+j,k);
     }
-    double v = sign(vk(0))*vk.getLength();
+    for (int j=(m-k); j < m; j++) {
+      vk(j) = 0;
+    }
+    double lvk = vk.getLength();
+    if (fabs(lvk) < 1e-10) /* tolerance check */
+      return false;
+    double v = sign(vk(0))*lvk;
     vk(0) += v;
     vk /= vk.getLength();
-    T.setSize(m-k,n-k);
-    Tb = 0;
     for (int i=0; i<m-k; i++) {
-      Tb += vk(i)*b(i+k);
       for (int j=0; j<n-k; j++) {
         T(i,j) = 0.0;
         for (int l=0; l<m-k; l++) {
-          T(i,j) += 2.0 * vk(i) * vk(l) * A(l+k,j+k);
+          T(i,j) += 2.0 * vk(i) * vk(l) * R(l+k,j+k);
         }
       }
     }
     for (int i=0; i<m-k; i++) {
-      b(i+k) -= 2*vk(i)*Tb;
       for (int j=0; j<n-k; j++) {
-        A(i+k,j+k) -= T(i,j);
+        R(i+k,j+k) -= T(i,j);
       }
     }
+    for (int j=0; j < m; j++) {
+      V(k,j) = vk(j);
+    }
   }
-  backSub(A,b,x);
+  return true;
 }
+
+/* computes Q'*b using the Householder
+   vectors V(k,:) */
+void getImplicitB(apf::DynamicMatrix& V,
+                  apf::DynamicVector& b,
+                  apf::DynamicVector& Qtb)
+{
+  int n = V.getRows();
+  int m = V.getColumns();
+  Qtb = b;
+  for (int k=0; k<n; k++) {
+    double Tb = 0;
+    for (int i=0; i<m-k; i++) {
+      Tb += V(k,i) * Qtb(i+k);
+    }
+    for (int i=0; i<m-k; i++) {
+      Qtb(i+k) -= 2 * V(k,i) * Tb;
+    }
+  }
+}
+
+void solveFromQR(apf::DynamicMatrix& V,
+                 apf::DynamicMatrix& R,
+                 apf::DynamicVector& b,
+                 apf::DynamicVector& x)
+{
+  apf::DynamicVector Qtb;
+  getImplicitB(V, b, Qtb);
+  backSub(R, Qtb, x);
+}
+
 }

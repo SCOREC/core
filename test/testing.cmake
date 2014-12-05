@@ -1,6 +1,9 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string 
     "path to the meshes svn repo")
+add_test(shapefun shapefun)
+add_test(eigen_test eigen_test)
+add_test(qr_test qr_test)
 set(MDIR ${MESHES}/pipe)
 add_test(convert
   convert

@@ -89,20 +89,6 @@ int mis(misLuby::partInfo& part,
     bool randNumsPredefined = false,
     bool isNeighbors = false);
 
-/**
- * @brief for each local part get the partId of the part to which the
- *        local parts elements will be merged into
- * @param rank (In) MPI process rank
- * @param totNumParts (In) total number of parts in the partition
- * @param parts (In) info on each part
- * @param mis (In) parts in the MIS
- * @param mergeTargets (InOut) map of partId to the partId to which
- *        the local parts elements will be merged into
- */
-void getMergeTargets(const int rank, const int totNumParts,
-    std::vector<misLuby::partInfo>& parts,
-    std::vector<int>& mis, std::map<int,int>& mergeTargets);
-
 void mis_init(int randNumSeed, int debugMode, const char* maj = "1",
     const char* min = "0", const char* patch = "0");
 
