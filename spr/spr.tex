@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage{amsmath}
 \usepackage{algpseudocode}
+\usepackage{algorithm}
 \usepackage[margin=1.0in]{geometry}
 \title{SPR-based Error Estimation}
 \author{Dan Ibanez}
@@ -11,66 +12,145 @@
 \section{Overview}
 An SPR-based error estimation procedure is defined in detail
 in Jie Wan's thesis.
-A similar implementation exists in old code which is currently
-supporting both the SLAC electromagnetic simulation as well
-as the Albany elastic simulation.
-This document exists to specify precisely what this error
-estimator is doing for the purposes of reimplementing it
-with new libraries and identifying areas that need refinement.
+We have reimplemented this system using the latest APF
+libraries and it supports the Albany adaptive cycle.
+This document details the inner workings of this estimator.
 
-From a high level, the SPR-based error estimator goes through
-the following steps given a $p$-order Lagrangian field $f$:
-\begin{enumerate}
-\item Compute the $(p-1)$-order gradient field $\epsilon = \nabla f$
-\item Recover a $p$-order gradient field $\epsilon^*$ using SPR
-\item Integrate norms of the $p$-order error field
-$e_\epsilon = \epsilon - \epsilon^*$
-over elements and the whole mesh
-\item Compute a linear isotropic (scalar) size field
-based on the size factor formula for elements
-\end{enumerate}
-For various reasons, this method is only clear
-when applied to simplex meshes.
-We can describe each step in detail: (1) gradient computation,
-(2) gradient recovery, (3) error estimation, (4) size field
-computation.
-In current uses, the field $f$ is a vector field in 3-space.
+From a high level, the SPR-based error estimator works by
+recovering a $p$-order field from what is essentially
+a $(p-1)$-order input field, then it computes the
+error at each element as a function of the difference
+between the input (less accurate) and output
+(hopefully more accurate) fields. 
 
-\section{Gradient Computation}
-Wan uses a linear strain tensor as the field to be recovered.
-The current implementation just uses the 3x3 derivative
-of the input vector field $\nabla f$.
-This field can be computed and stored using shape functions
-of one lower polynomial order than those used for the input field.
-Current users give only linear input fields, so the gradient
-is a step-wise field.
+The input to SPR is actually a ``field" $\epsilon$ that contains values
+at integration points rather than nodes.
+This is typically the result of some kind of gradient computation
+$\epsilon = \nabla f$ from a $p$-order field $f$.
+In mechanics applications, $\epsilon$ is a strain or stress quantity
+evaluated at integration points.
+Note that the choice of integration points is independent of
+anything else, although typically they should be chosen such
+that they can integrate a field of order $p$.
 
-\section{Gradient Recovery}
-A closer approximation to the true gradient field is found by applying
-superconvergent patch recovery to the direct gradient field.
-Essentially, the recovered value at a node is found by fitting
-a polynomial to the direct values at integration points around
-that node.
+\section{Field Recovery}
+The SPR recovery process generates a $p$-order field $\epsilon^*$ which
+has values at the nodes for the same quantity that the
+input $\epsilon$ provides at integration points.
 
-The main item of concern is that SPR requires information from
-an unpredictable number of elements adjacent to the target node.
-Nodes near or on a boundary may require second or higher
-order adjacencies to find enough elements.
-For geometric boundaries this is natural and inevitable.
-However, we would want parallel part boundaries to not affect the
-numerical results.
+This recovery is done node-by-node, and the value at each
+node is recovered by fitting an ordinary $p$-order polynomial
+$q (x, y, z) = v$ using input data $v_i = \epsilon(x_i, y_i, z_i)$
+at integration points $(x_i,y_i,z_i)$ around the node.
+The collection of integration points is done by building
+a ``patch" of mesh elements around the node.
 
-Ghosting would provide the needed information in \emph{most} cases,
-but the thesis makes it clear that SPR is not always bounded
-to 1 layer of adjacent elements, so some thought is still required here.
-The current code just queries adjacencies and receives what is available
-from the interior mesh plus ghosted elements.
+Fitting a polynomial from data is done by solving a least-squares linear
+system $Ac \approx b$.
+The solution $c$ should minimize $\|Ac - b\|$, and represents
+the coefficients of the polynomial $q$.
+For example, if $p=1$:
+\[q(x,y,z) = c_0 + c_1 x + c_2 y + c_3 z \]
 
-SPR is mainly a technique for recovering a value at a single node point.
-The recovered field $\epsilon^*$ takes as its
-nodal values the results of applying SPR around each node.
+Each data point becomes a row of the linear system:
+
+\[q(x_i,y_i,z_i) = c_0 + c_1 x_i + c_2 y_i + c_3 z_i \approx v_i \]
+
+Which can be expressed as a dot product:
+
+\[q(x_i,y_i,z_i) = (1,x_i,y_i,z_i)(c_0,c_1,c_2,c_3)^T \approx v_i \]
+
+Which yields the matrix equation:
+
+\[\begin{bmatrix}
+1 & x_0 & y_0 & z_0 \\
+1 & x_1 & y_1 & z_1 \\
+1 & x_2 & y_2 & z_2 \\
+\text{...}
+\end{bmatrix}
+\begin{bmatrix} c_0 \\ c_1 \\ c_2 \\ c_3 \end{bmatrix}
+\approx
+\begin{bmatrix} v_0 \\ v_1 \\ v_2 \\ ... \end{bmatrix}
+\]
+
+The matrix $A$ on the left is then $m\times n$ where $m$
+is the number of sample points and $n$ is the number of
+polynomial coefficients.
+We would rather have an over-determined answer than
+an under-determined one, so we require $m \geq n$.
+Typically, we get $m > n$, in which case the solution
+is not exact and we must choose coefficients to minimize
+
+\[ \left( \sum_{i=0}^{m-1} (q(x_i,y_i,z_i) - v_i)^2 \right)^\frac12 \]
+
+To solve the least squares problem $Ac \approx v$, we
+use a QR factorization approach.
+We use Householder reflectors to obtain a decomposition
+
+\[QR = A, QQ^T = I, QRc \approx v, Rc = Q^Tv\]
+
+Where R is upper triangular and Q is stored implicitly
+as a set of Householder vectors.
+This allows us to compute $y = Q^Tv$ implicitly
+(which is more accurate)
+and then solve $Rc = y$, which is an $n\times n$ problem,
+with back substitution.
+
+However, the solution $c$ can only be accurately found
+if the matrix $A$ is well-conditioned, i.e. rank$(A) = n$.
+We must be concerned with this because least-squares polynomial
+fitting is well-known for producing ill-conditioned matrices.
+The QR solver provides a single point of inspection where
+a division by zero will occur if $A$ is ill-conditioned,
+so it will signal a failure in this case.
+
+During recovery, the sample points consist of all
+integration points in the elements of the patch.
+Therefore, we must increase the number of elements
+in the patch so long as the resulting $A$ does
+not satisfy the conditions $m \geq n$ and rank$(A) = n$.
+
+The elements $S$ in the patch are collected as follows
+until those conditions are met:
+
+\begin{algorithm}
+\caption{Patch building algorithm}
+\begin{algorithmic}
+\State let $o$ be the mesh entity to which the node is associated.
+\State set $S$ to be the elements adjacent to $o$ $(S \gets o\{M^3\})$.
+\Loop
+\For{$d$ from 2 down to 0}
+\State add the elements adjacent by $d$-dimension entities to $S$
+$(S \gets S\{M^d\}\{M^3\})$.
+\If{$S$ has enough elements}
+\State \Return $S$
+\EndIf
+\EndFor
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+Finally, once the patch is obtained, the integration points
+$(x_i,y_i,z_i)$ and the field values $\epsilon(x_i,y_i,z_i) = v_i$
+from the input are used to build $A$ and $v$.
+Note that the field values $v_i$ may be tensors instead of scalars,
+in which case the analysis is solved one component at a time.
+Each component $j$ forms a set of scalar values $v^{(j)} = (v_0^{(j)},...,v_m^{(j)})^T$
+and results in a set of polynomial coefficients $c^{(j)}$
+that minimize $\|Ac^{(j)} - v^{(j)}\|$ and define a polynomial $q^{(j)}(x,y,z)$.
+We then evaluate this polynomial at the location $(x_a,y_a,z_a)$
+of the node to obtain the field component value at
+that node: $\epsilon^*(x_a,y_a,z_a)^{(j)} = \rho^{(j)}(x_a,y_a,z_a)$.
+One can also think of the coefficients $c$ being
+tensors.
+Note that the matrix $A$ remains the same for each component,
+only the right hand side $v^{(j)}$ changes to give a different
+$c^{(j)}$. This allows us to only compute the QR decomposition
+of A once and only repeat the computations of $y=Q^Tv^{(j)}$
+and $Rc^{(j)}=y$.
 
 \section{Error Estimation}
+
 A per-element scalar error estimate
 $\|e_\epsilon\|_e$ is computed using the
 norm of the integrated difference between
@@ -80,6 +160,7 @@ The current implementation uses entry-wise L2 norms on
 3x3 matrices, which seems to agree with Wan's thesis.
 The following notations describe the L2 norm integration
 over an element and over the whole mesh:
+
 \[\|A\|_e=
 \left(
 \int_{\Omega^e} A : A d\Omega
@@ -89,14 +170,17 @@ over an element and over the whole mesh:
 \sum_{e=1}^{n_e}
 \int_{\Omega^e} A : A d\Omega
 \right)^\frac12\]
+
 Where $A:A$ is the Frobenius inner product.
 If $\|A\|$ or $\|A\|_e$ will be computed for
 some matrix field $A$, it may be advantageous
 to store the field $A:A$.
 
 \section{Size Field Computation}
+
 A per-element scalar size factor is computed based on
 the per-element error following this formula:
+
 \[h^\text{new}_e = h^\text{current}_e
 \|e_\epsilon\|^{-\frac{2}{2p+d}}_e
 \left(
@@ -105,6 +189,7 @@ the per-element error following this formula:
 {\sum_{i=1}^n\|e_\epsilon\|^\frac{2d}{2p+d}_i}
 \right)^\frac{1}{2p}
 \]
+
 To which the following definitions apply:
 
 \begin{center}
@@ -119,70 +204,10 @@ $h_e^\text{new}$ & the desired element size for adaptivity \\
 \end{tabular}
 \end{center}
 
-MeshAdapt expects a linear size field, which in this
-case is isotropic, so the desired element size values
-must be converted into vertex size field values.
-The current code simply averages the desired sizes
-of elements adjacent to a vertex.
-
-Interestingly, the desired element sizes can be seen
-as a step-wise field, and vertex value computation
-is then a recovery procedure.
-It is worth considering whether a simple average
-is a sufficient recovery procedure for this step.
-
-\appendix
-\section{Singular Value Decomposition}
-\[A=UWV^T\]
-\[\text{find}\ a\ \text{that minimizes}\ \chi^2=|A\cdot a-b|^2\]
-\[a = \sum_{i=0}^{M-1}\left(\frac{U_{(i)}\cdot b}{w_i}\right)V_{(i)}\]
-$U_{(i)}$ are columns of $U$, $w_i=W_{ii}$.
-
-\section{SPR}
-
-To recover the nodal value of a C-1 field, the first
-step is to obtain field values at key points.
-The points chosen are the gaussian quadrature integration
-points of surrounding regions.
-
-For each component of the tensor, that component is looked
-at as a scalar field and a polynomial approximation is
-fitted to the known point values.
-Let $n$ be the number of points, $\epsilon_i^h$ be the
-original component value at point $i$, $(x_i,y_i,z_i)$
-are the coordinates of point $i$.
-\[P(x,y,z)=
-\begin{bmatrix}
-1 & x & y & z
-\end{bmatrix}
-\]
-Fitting the polynomial requires solving $Aa=b$ where $a$
-is the vector of polynomial coefficients and:
-\[A=\sum_{i=1}^nP^T(x_i,y_i,z_i)P(x_i,y_i,z_i)\]
-\[b=\sum_{i=1}^nP^T(x_i,y_i,z_i)\epsilon_i^h(x_i,y_i,z_i)\]
-
-In order to have enough points for the solution to be
-well-defined, we need at least as many points as
-polynomial coefficients.
-
-To collect those points, we start with all the elements
-adjacent to the node.
-If those elements don't have enough integration points,
-we expand the patch to include adjacent elements, using
-the following adjacencies in order:
-\begin{enumerate}
-\item add elements adjacent to faces of the patch
-\item add elements adjacent to edges of the patch
-\item add elements adjacent to vertices of the patch
-\end{enumerate}
-These additions are tried in order repeatedly until
-enough points are collected.
-There is the possibility of insufficient elements
-in the contiguous mesh, in which case the whole program fails.
-
-The patch is first collected and expanded, then the points
-are used to fit polynomials for each component.
-To get the nodal value, the polynomials are evaluated
-at the nodal coordinates.
+Finally, a linear isotropic size field at
+the vertices is recovered from the per-element
+size factors $h_e^\text{new}$ by a simple
+process of averaging the values from elements
+adjacent to a vertex.
 
 \end{document}
