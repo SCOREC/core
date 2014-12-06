@@ -10,14 +10,14 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
+      printf("Usage: %s <model> <in .msh> <out .smb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsFromGmsh(gmi_load(argv[1]), argv[2]);
   m->verify();
-  apf::writeVtkFiles(argv[3], m);
+  m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
