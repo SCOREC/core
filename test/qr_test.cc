@@ -80,7 +80,7 @@ int main() {
   spr::decompQR(A, V, R2);
   spr::solveFromQR(V, R2, b, x2);
   double maxErr = 0;
-  for (int i = 0; i < x.getSize(); ++i)
+  for (std::size_t i = 0; i < x.getSize(); ++i)
     maxErr = std::max(maxErr, fabs(x[i] - x2[i]));
   assert(maxErr < 1e-7);
   return 0;
