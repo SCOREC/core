@@ -465,7 +465,7 @@ class SwapLoop
       }
       return 0;
     }
-    void findFromFace(Entity* const startFace)
+    void findFromFace(Entity* startFace)
     {
       Entity* face = startFace;
       Entity* tet = 0;
@@ -490,6 +490,9 @@ class SwapLoop
    record it for classifying new ones */
         if ( ! model)
           model = mesh->toModel(tet);
+        else if (model != mesh->toModel(tet))
+          break; /* this is analogous to (!tet) when
+                    we cross a non-manifold face */
         face = getOtherFace(face,tet);
         assert(face);
         if (face == startFace)

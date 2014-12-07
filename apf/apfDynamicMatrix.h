@@ -181,8 +181,8 @@ template <std::size_t N, std::size_t M>
 inline DynamicMatrix fromMatrix(Matrix<N,M> other)
 {
   DynamicMatrix result(N,M);
-  for(int ii = 0; ii < N; ii++)
-    for(int jj = 0; jj < M; jj++)
+  for(std::size_t ii = 0; ii < N; ii++)
+    for(std::size_t jj = 0; jj < M; jj++)
       result(ii,jj) = other[ii][jj];
   return result;
 }

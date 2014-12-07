@@ -101,7 +101,7 @@ template <std::size_t N>
 inline DynamicVector fromVector(Vector<N> other)
 {
   DynamicVector result(N);
-  for(int ii = 0; ii < N; ii++)
+  for(std::size_t ii = 0; ii < N; ii++)
     result[ii] = other[ii];
   return result;
 }
