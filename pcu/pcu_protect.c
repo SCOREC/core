@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "pcu_io.h" 
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <execinfo.h> /* backtrace for pcu_trace */
@@ -6,10 +7,13 @@
 
 void PCU_Trace(void)
 {
+  FILE* fp = pcu_open_parallel("trace","txt");
+  int fd = fileno(fp);
   static void* buf[64];
   int n;
   n = backtrace(buf, 64);
-  backtrace_symbols_fd(buf, n, 2);
+  backtrace_symbols_fd(buf, n, fd);
+  fclose(fp);
 }
 
 static void catch(int s)
