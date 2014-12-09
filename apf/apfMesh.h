@@ -27,6 +27,7 @@ template <class T>
 class NumberingOf;
 /** \brief Numbering is meant to be a 32-bit local numbering */
 typedef NumberingOf<int> Numbering;
+typedef NumberingOf<long> GlobalNumbering;
 
 class MeshEntity;
 class MeshIterator;
@@ -327,12 +328,17 @@ class Mesh
     int countNumberings();
     /** \brief get the i'th associated numbering */
     Numbering* getNumbering(int i);
+    void addGlobalNumbering(GlobalNumbering* f);
+    void removeGlobalNumbering(GlobalNumbering* f);
+    int countGlobalNumberings();
+    GlobalNumbering* getGlobalNumbering(int i);
     /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
   protected:
     Field* coordinateField;
     std::vector<Field*> fields;
     std::vector<Numbering*> numberings;
+    std::vector<GlobalNumbering*> globalNumberings;
 };
 
 /** \brief run consistency checks on an apf::Mesh structure
@@ -385,6 +391,7 @@ class Migration
 /** \brief must be constructed with a mesh
   \details use (new apf::Migration(mesh)) to make these objects */
     Migration(Mesh* m);
+    Migration(Mesh* m, MeshTag* existingTag);
     ~Migration();
 /** \brief return the number of elements with assigned destinations */
     int count();

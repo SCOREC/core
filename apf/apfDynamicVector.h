@@ -12,6 +12,7 @@
   \brief Small runtime-sized vectors */
 
 #include "apfDynamicArray.h"
+#include "apfVector.h"
 #include <math.h>
 #include <iostream>
 
@@ -94,6 +95,16 @@ class DynamicVector : public DynamicArray<double>
         (*this)[i] = 0;
     }
 };
+
+/** \brief convert an apf::Matrix into an apf::DynamicMatrix */
+template <std::size_t N>
+inline DynamicVector fromVector(Vector<N> other)
+{
+  DynamicVector result(N);
+  for(std::size_t ii = 0; ii < N; ii++)
+    result[ii] = other[ii];
+  return result;
+}
 
 } //namespace apf
 

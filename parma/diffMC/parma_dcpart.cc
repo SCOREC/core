@@ -139,9 +139,8 @@ void dcPart::fix() {
   double t1 = MPI_Wtime();
   int loop = 0;
   int ndc = 0;
-  while( (ndc = totNumDc()) && loop++ < 10 ) {
-    if( 0 == PCU_Comm_Self() )
-      status("loop %d disconnected components %d\n", loop, ndc);
+  while( (ndc = totNumDc()) && loop++ < 50 ) {
+    double t2 = MPI_Wtime();
     migrTgt dcCompTgts;
 
     int maxSz = -1;
@@ -164,7 +163,11 @@ void dcPart::fix() {
       setupPlan(dcCompTgts, plan);
 
     clearTag(m, vtag);
+    double t3 = MPI_Wtime();
     m->migrate(plan);
+    if( 0 == PCU_Comm_Self() )
+      status("loop %d components %d seconds <fix migrate> %.3f %.3f\n",
+          loop, ndc, t3-t2, MPI_Wtime()-t3);
   }
   printElapsedTime(__func__, MPI_Wtime() - t1);
 }
@@ -269,7 +272,7 @@ void dcPart::makeDisconnectedComps(const int numDcComps) {
       m->end(itr);
    }
 
-   PCU_Debug_Print("make migrating %d elements to %d\n", 
+   PCU_Debug_Print("make migrating %d elements to %d\n",
        plan->count(), destPid);
    clearTag(m, vtag);
    m->migrate(plan); //plan deleted here

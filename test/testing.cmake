@@ -1,6 +1,9 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string 
     "path to the meshes svn repo")
+add_test(shapefun shapefun)
+add_test(eigen_test eigen_test)
+add_test(qr_test qr_test)
 set(MDIR ${MESHES}/pipe)
 add_test(verify_serial
   verify
@@ -68,12 +71,24 @@ add_test(balance
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusBal4p/")
+add_test(zbalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./zbalance
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusZbal4p/")
 add_test(gap
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
+add_test(hps
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./hps
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusHps4p/")
 add_test(fixDisconnected
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fixDisconnected
@@ -195,4 +210,3 @@ add_test(change_dim
   ./newdim)
 add_test(ma_insphere
   ma_insphere)
-add_test(shapefun shapefun)

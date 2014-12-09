@@ -313,7 +313,11 @@ class MeshMDS : public Mesh2
     }
     void getTag(MeshEntity* e, MeshTag* t, void* data)
     {
-      assert(hasTag(e,t));
+      if (!hasTag(e,t)) {
+        fprintf(stderr, "expected tag \"%s\" on entity type %d\n",
+            getTagName(t), getType(e));
+        abort();
+      }
       mds_tag* tag;
       tag = reinterpret_cast<mds_tag*>(t);
       mds_id id = fromEnt(e);
@@ -660,7 +664,7 @@ extern "C" void* splitThrdMain(void*)
     plan = globalPlan;
   } else {
     m = clone(globalMesh);
-    plan = new apf::Migration(m);
+    plan = new apf::Migration(m, m->findTag("apf_migrate"));
   }
   if (globalFactor != 1) {
     apf::Multiply remap(globalFactor);

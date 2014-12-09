@@ -332,7 +332,6 @@ class EdgeSwap2D : public EdgeSwap
       getNewVerts(ntv);
       Vector on[2];
       on[0] = getTriNormal(mesh, otv[0]); on[1] = getTriNormal(mesh, otv[1]);
-      std::cerr << "on " << on[0] << ' ' << on[1] << '\n';
       Vector nn[2];
       nn[0] = getTriNormal(mesh, ntv[0]); nn[1] = getTriNormal(mesh, ntv[1]);
       if ((on[0] * nn[0] > 0) &&
@@ -415,8 +414,6 @@ class EdgeSwap2D : public EdgeSwap
     Entity* quad[4];
     EntityArray oldFaces;
     Entity* newFaces[2];
-    Entity* otv[2][3];
-    Entity* ntv[2][3];
     Cavity cavity;
 };
 
@@ -468,7 +465,7 @@ class SwapLoop
       }
       return 0;
     }
-    void findFromFace(Entity* const startFace)
+    void findFromFace(Entity* startFace)
     {
       Entity* face = startFace;
       Entity* tet = 0;
@@ -493,6 +490,9 @@ class SwapLoop
    record it for classifying new ones */
         if ( ! model)
           model = mesh->toModel(tet);
+        else if (model != mesh->toModel(tet))
+          break; /* this is analogous to (!tet) when
+                    we cross a non-manifold face */
         face = getOtherFace(face,tet);
         assert(face);
         if (face == startFace)

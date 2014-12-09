@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <execinfo.h> /* backtrace for pcu_trace */
 #include <signal.h> /* signal for pcu_protect */
 
@@ -33,7 +33,7 @@ void PCU_Protect(void)
 #else
 void PCU_Protect(void)
 {
-  fprintf(stderr,"PCU_Protect only supported on Linux\n");
+  fprintf(stderr,"PCU_Protect only supported on Linux and OS X\n");
 }
 #endif
 

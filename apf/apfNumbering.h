@@ -153,6 +153,8 @@ GlobalNumbering* createGlobalNumbering(
     Mesh* mesh,
     const char* name,
     FieldShape* shape);
+FieldShape* getShape(GlobalNumbering* n);
+const char* getName(GlobalNumbering* n);
 /** \brief get the mesh associated with a global numbering */
 Mesh* getMesh(GlobalNumbering* n);
 /** \brief assign a global number */

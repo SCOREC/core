@@ -173,7 +173,7 @@ static int getEigenvalues(Matrix3x3 const& A, double* v)
   return l.n;
 }
 
-static void getEigenvector(Matrix3x3 const& A, double l, Vector3& v)
+static void getEigenvector(Matrix3x3 const& A, double l, Vector<3>& v)
 {
   Matrix3x3 eye(1,0,0,
                 0,1,0,
@@ -197,7 +197,7 @@ static void getEigenvector(Matrix3x3 const& A, double l, Vector3& v)
 }
 
 int eigen(Matrix3x3 const& A,
-          Vector3* eigenVectors,
+          Vector<3>* eigenVectors,
           double* eigenValues)
 {
   int n = getEigenvalues(A, eigenValues);

@@ -1,7 +1,7 @@
 #include "parma_rib.h"
-#include "parma_rib_math.h"
 #include <apfNew.h>
 #include <algorithm>
+#include <apfMatrix.h>
 
 namespace parma {
 
@@ -44,11 +44,23 @@ static apf::Matrix3x3 getInertiaMatrix(Bodies const* b)
   return m * -1;
 }
 
+void getWeakestEigenvector(apf::Matrix3x3 const& A, apf::Vector3& v)
+{
+  apf::Vector3 vs[3];
+  double ls[3];
+  int n = apf::eigen(A, vs, ls);
+  int best = 0;
+  for (int i = 1; i < n; ++i)
+    if (fabs(ls[i]) < fabs(ls[best]))
+      best = i;
+  v = vs[best];
+}
+
 static apf::Vector3 getBisectionNormal(Bodies const* b)
 {
   apf::Matrix3x3 im = getInertiaMatrix(b);
   apf::Vector3 v;
-  getPrincipalEigenvector(im, v);
+  getWeakestEigenvector(im, v);
   return v;
 }
 
@@ -83,12 +95,11 @@ int findSortedMedian(Bodies const* b)
   double total = getTotalMass(b);
   double half = 0;
   for (int i = 0; i < b->n; ++i) {
-    half += b->body[i]->mass;
     if (half >= total / 2)
       return i;
+    half += b->body[i]->mass;
   }
-  abort();
-  return -1;
+  return b->n;
 }
 
 void bisect(Bodies* all, Bodies* left, Bodies* right)

@@ -36,6 +36,7 @@ set(SOURCES
    gmi.c
    agm.c
    gmi_base.c
+   gmi_file.c
    gmi_lookup.c
    gmi_mesh.c
    gmi_null.c

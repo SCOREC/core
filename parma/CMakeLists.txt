@@ -57,7 +57,6 @@ SET(DIFFMC_SOURCES
   )
 
 SET(RIB_SOURCES  
-  rib/parma_rib_math.cc 
   rib/parma_rib.cc 
   rib/parma_mesh_rib.cc 
   )

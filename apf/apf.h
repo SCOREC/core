@@ -553,6 +553,8 @@ Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
   gradients computed at each element around it. */
 Field* recoverGradientByVolume(Field* f);
 
+void copyData(Field* to, Field* from);
+
 }
 
 #endif

@@ -245,6 +245,28 @@ Numbering* Mesh::getNumbering(int i)
   return numberings[i];
 }
 
+void Mesh::addGlobalNumbering(GlobalNumbering* n)
+{
+  globalNumberings.push_back(n);
+}
+
+void Mesh::removeGlobalNumbering(GlobalNumbering* n)
+{
+  globalNumberings.erase(std::find(
+        globalNumberings.begin(), globalNumberings.end(), n));
+}
+
+int Mesh::countGlobalNumberings()
+{
+  return static_cast<int>(globalNumberings.size());
+}
+
+GlobalNumbering* Mesh::getGlobalNumbering(int i)
+{
+  return globalNumberings[i];
+}
+
+
 void unite(Parts& into, Parts const& from)
 {
   into.insert(from.begin(),from.end());
@@ -282,9 +304,13 @@ MeshEntity* iterateBoundary(Mesh* m, MeshIterator* it, int part)
 Migration::Migration(Mesh* m)
 {
   mesh = m;
-  tag = m->findTag("apf_migrate");
-  if (!tag)
-    tag = m->createIntTag("apf_migrate",1);
+  tag = m->createIntTag("apf_migrate",1);
+}
+
+Migration::Migration(Mesh* m, MeshTag* existingTag)
+{
+  mesh = m;
+  tag = existingTag;
 }
 
 Migration::~Migration()

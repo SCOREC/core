@@ -46,6 +46,14 @@ template <std::size_t N>
 class Vector : public Array<double,N>
 {
   public:
+    /** \brief mandatory */
+    Vector() {}
+    /** \brief construct from array */
+    Vector(double const* v)
+    {
+      for (std::size_t i=0; i < N; ++i)
+        this->elements[i] = v[i];
+    }
     /** \brief add two vectors */
     Vector<N> operator+(Vector<N> const& b) const
     {
@@ -147,7 +155,7 @@ class Vector3 : public Vector<3>
     }
     /** \brief construct from array
      \todo this could maybe be templated */
-    Vector3(double* abc)
+    Vector3(double const* abc)
     {
       this->elements[0] = abc[0];
       this->elements[1] = abc[1];
