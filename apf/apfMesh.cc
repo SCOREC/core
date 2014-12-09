@@ -275,7 +275,8 @@ void unite(Parts& into, Parts const& from)
 void getFacePeers(Mesh* m, Parts& peers)
 {
   MeshEntity* face;
-  MeshIterator* faces = m->begin(2);
+  int d = m->getDimension();
+  MeshIterator* faces = m->begin(d-1);
   while ((face = m->iterate(faces)))
   {
     Parts residence;

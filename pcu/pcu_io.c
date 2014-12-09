@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/types.h>
 
 typedef struct pcu_file {
   FILE * f;

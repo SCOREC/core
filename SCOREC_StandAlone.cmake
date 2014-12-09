@@ -80,6 +80,8 @@ add_subdirectory(phasta)
 
 add_subdirectory(mpas)
 
+add_subdirectory(viz)
+
 add_subdirectory(test)
 
 #binary distribution package

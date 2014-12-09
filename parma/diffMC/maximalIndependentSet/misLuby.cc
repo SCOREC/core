@@ -564,14 +564,14 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
       isInMis = 1;
       ++numNodesAdded;
       if (isNeighbors) {
-	nodesToRemove.reserve(part.net.size()+1);
-	getNetPartIds(part.net,nodesToRemove);
+        nodesToRemove.reserve(part.net.size()+1);
+        getNetPartIds(part.net,nodesToRemove);
       }
       else {
-	nodesToRemove.reserve(part.netAdjParts.size() + 1);
-	getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(),
+        nodesToRemove.reserve(part.netAdjParts.size() + 1);
+        getNetAdjPartIds(part.netAdjParts.begin(), part.netAdjParts.end(),
             nodesToRemove);
-	nodesToRemove.push_back(part.id);
+        nodesToRemove.push_back(part.id);
       }
     }
 

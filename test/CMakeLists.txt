@@ -11,6 +11,7 @@ find_package(spr REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(parma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -20,13 +21,15 @@ include_directories(
   ${SPR_INCLUDE_DIRS}
   ${PARMA_INCLUDE_DIRS}
   ${PH_INCLUDE_DIRS}
-  ${APF_MPAS_INCLUDE_DIRS})
+  ${APF_MPAS_INCLUDE_DIRS}
+  ${VIZ_INCLUDE_DIRS})
 set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
   ${GMI_SIM_LIBS}
   ${APF_SIM_LIBS}
   ${SPR_LIBS}
+  ${VIZ_LIBS}
   ${PARMA_LIBS}
   ${PH_LIBS}
   ${APF_MPAS_LIBS})
@@ -93,6 +96,9 @@ setup_exe(fusion3 fusion3.cc)
 setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
+if (ENABLE_VIZ)
+  setup_exe(viz_test viz.cc)
+endif()
 setup_exe(qr_test qr_test.cc)
 setup_exe(from_neper neper.cc)
 setup_exe(eigen_test eigen_test.cc)
