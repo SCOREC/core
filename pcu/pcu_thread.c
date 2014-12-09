@@ -56,7 +56,7 @@ void pcu_run_threads(int count, pcu_thread* function)
 
   for (int i=1; i < count; ++i)
   {
-    err = pthread_create(global_threads+i,NULL,function,NULL);
+    err = pthread_create(global_threads+i,NULL,function,(void*)(ptrdiff_t)i);
     if (err) pcu_fail("pthread_create failed");
   }
 
@@ -85,19 +85,9 @@ int pcu_thread_rank(void)
   return (int)(ptrdiff_t)(pthread_getspecific(global_key));
 }
 
-void pcu_thread_init(void)
+void pcu_thread_init(void* in)
 {
-  int size = pcu_thread_size();
-  pthread_t self = pthread_self();
-  for (int id=0; id < size; ++id)
-  {
-    if (pthread_equal(global_threads[id],self))
-    {
-      pthread_setspecific(global_key,(void*)(ptrdiff_t)id);
-      return;
-    }
-  }
-  pcu_fail("could not find thread");
+  pthread_setspecific(global_key,in);
 }
 
 void pcu_thread_barrier(void)

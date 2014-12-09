@@ -17,7 +17,8 @@ typedef void* pcu_thread(void*);
 void pcu_run_threads(int count, pcu_thread* function);
 int pcu_thread_size(void);
 int pcu_thread_rank(void);
-void pcu_thread_init(void);
+/* give this the pointer passed into your pcu_thread function */
+void pcu_thread_init(void* in);
 void pcu_thread_barrier(void);
 void pcu_thread_lock(void);
 void pcu_thread_unlock(void);
