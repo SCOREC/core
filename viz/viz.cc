@@ -1,15 +1,12 @@
 #include "viz.h"
-#include "diffMC/maximalIndependentSet/mis.h"
 #include <milo.h>
 #include <apfMesh.h>
 #include <PCU.h>
 
-using namespace misLuby;
 void Visualization::new_viz(int num_parts,Color color) {
   mil = milo_new("localhost", 4242);
 
   getColor(color,background);
-  mis_color=BLUE;
   max_parts = num_parts;
   milo_clear(mil, background);
 }
@@ -52,9 +49,6 @@ void Visualization::getPartColor(double* color, int part_num) {
   color[1]=g;
   color[2]=b;
 }
-void Visualization::getMISColor(double* color) {
-  getColor(mis_color,color);
-}
 void Visualization::getGivenColor(Color color, double* color_array) {
   int temp = color;
   for (int i=2;i>=0;i--) {
@@ -66,9 +60,6 @@ void Visualization::getGivenColor(Color color, double* color_array) {
 void Visualization::getColor(Color color, double* color_array,int partId) {
   if (color==BYPART) {
     getPartColor(color_array,partId);
-  }
-  else if (color==MISCOLOR) {
-    getMISColor(color_array);
   }
   else 
     getGivenColor(color,color_array);
@@ -169,55 +160,7 @@ bool Visualization::watchMesh(apf::Mesh* m) {
 void Visualization::end_viz() {
   milo_free(mil);
 }
-bool Visualization::setupMISColoring(apf::Mesh* m,int part_num) {
 
-  mis_color=NOCOLOR;
-  int iter=0;
-  Color color_choices[9] = {RED,BLUE,GREEN,PURPLE,ORANGE,YELLOW,BROWN,PINK,GREY};
-  apf::Parts neighbors;
-  apf::getFacePeers(m,neighbors);
-
-  partInfo part;
-  part.id = part_num;
-  part.net.push_back(part_num);
-  for (apf::Parts::iterator itr = neighbors.begin();
-       itr!=neighbors.end();itr++) {
-    part.adjPartIds.push_back(*itr);
-    part.net.push_back(*itr);
-  }
-  
-  int isInMis=0;
-  int* globalIsInMIS = new int[max_parts];
-  int num_in_MIS=1;
-  while (num_in_MIS!=0) {
-    int randNumSeed = time(NULL)+part_num+1;
-    mis_init(randNumSeed,true);
-    isInMis = mis(part, false, true);
-
-    if (mis_color==NOCOLOR&&(isInMis||part.net.size()==1)) { 
-      mis_color= color_choices[iter];
-      part.net.clear();
-      part.net.push_back(part_num);
-    }
-    iter++;
-    MPI_Allgather(&isInMis, 1, MPI_INT, globalIsInMIS, 
-                       1, MPI_INT,  MPI_COMM_WORLD);
-    num_in_MIS=0;
-    for (int j=0;j<max_parts;j++) {
-      num_in_MIS+=globalIsInMIS[j];
-      if (globalIsInMIS[j]&&j!=part_num) {
-        for (unsigned int i=0;i<part.net.size();i++){
-          if (j==part.net[i]) {
-	    part.net[i] = part.net[part.net.size()-1];
-            part.net.pop_back();
-	    break;
-          }
-	}
-      }
-    }
-  }
-  return true;
-}
 bool Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   double origin[3] = {0,0,0};
   double x_axis[3] = {1,0,0};

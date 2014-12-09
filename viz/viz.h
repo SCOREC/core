@@ -21,7 +21,6 @@ enum Color {
   BLACK=0,
   WHITE=255*256*256+255*256+255,
   BYPART=-1,
-  MISCOLOR=-2,
   NOCOLOR=-3
   
 };
@@ -45,18 +44,15 @@ public:
   
 
   //Other Methods
-  bool setupMISColoring(apf::Mesh* m,int part_num);
   bool showAxis(Color x_color=RED,Color y_color=GREEN,Color z_color=BLUE);
   void markPart(apf::Mesh* m,std::string text, Color color=BLACK);
 private:
   milo* mil;
   int max_parts;
-  Color mis_color;
   double background[3];
 
   bool getPoint(apf::Mesh* m, apf::MeshEntity* ent, double* point);
   void getPartColor(double* color, int part_num);
-  void getMISColor(double* color);
   void getGivenColor(Color color, double* color_array);
   void getColor(Color color, double* color_array,int partId=0);
   bool drawPoint(apf::Mesh* m, apf::MeshEntity* ent,Color color);
