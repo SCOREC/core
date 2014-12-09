@@ -37,7 +37,7 @@ int main(int argc, char** argv)
   Visualization v;
   v.new_viz(PCU_Comm_Peers(),WHITE);
   
-  char output[10];
+  char output[128];
   sprintf(output,"%d",PCU_Comm_Self());
   std::string part_num(output);
 
