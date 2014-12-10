@@ -147,7 +147,7 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
     part.net.push_back(*nItr);
   }
 
-  int randNumSeed = time(NULL)+part.id+1;
+  int randNumSeed = part.id+1;
   mis_init(randNumSeed,true);
   int misNumber=-1;
   int iter=0;

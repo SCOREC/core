@@ -289,7 +289,7 @@ class MergeTargets {
   }
 
 
-  void assignSplits(apf::Mesh* m, std::vector<int>& tgts,
+  void assignSplits(std::vector<int>& tgts,
       apf::Migration* plan) {
     assert( plan->count() );
     for (int i = 0; i < plan->count(); ++i) {
@@ -401,7 +401,7 @@ class MergeTargets {
     if( split ) {
       delete *plan;
       *plan = splitPart(m, wtag, split);
-      assignSplits(m, tgtEmpties, *plan);
+      assignSplits(tgtEmpties, *plan);
     }
     writePlan(*plan);
     PCU_Debug_Print("elms %lu plan->count() %d\n",

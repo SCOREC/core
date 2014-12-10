@@ -215,7 +215,7 @@ void unpackInts(vector<int>& msg,
   }
 }
 
-void recvIntsFromNeighbors(partInfo& part, vector<int>& msg, int tag) {
+void recvIntsFromNeighbors(vector<int>& msg, int tag) {
   while(PCU_Comm_Listen()) {
     size_t msgSz;
     PCU_Comm_Received(&msgSz);
@@ -249,7 +249,7 @@ int sendNetToNeighbors(partInfo& part) {
   return 0;
 }
 
-void unpackNet(partInfo& part, vector<adjPart>& msg) {
+void unpackNet(vector<adjPart>& msg) {
   int srcPartId;
   PCU_COMM_UNPACK(srcPartId);
   assert(PCU_Comm_Sender() == srcPartId);
@@ -278,13 +278,12 @@ void unpackNet(partInfo& part, vector<adjPart>& msg) {
   msg.push_back(ap);
 }
 
-void recvNetsFromNeighbors(partInfo& part, vector<adjPart>& msg) {
+void recvNetsFromNeighbors(vector<adjPart>& msg) {
   while( PCU_Comm_Listen() )
-    unpackNet(part, msg);
+    unpackNet(msg);
 }
 
-void unpackAdjPart(partInfo& part,
-    vector<adjPart>& msg, const size_t numIntsInMsg) {
+void unpackAdjPart(vector<adjPart>& msg, const size_t numIntsInMsg) {
   const int rank = PCU_Comm_Self();
   int srcRank;
   PCU_Comm_From(&srcRank);
@@ -329,7 +328,7 @@ void unpackAdjPart(partInfo& part,
   msg.push_back(ap);
 }
 
-void recvAdjNetsFromNeighbors(partInfo& part, vector<adjPart>& msg) {
+void recvAdjNetsFromNeighbors(vector<adjPart>& msg) {
   while( PCU_Comm_Listen() ) {
     size_t msgSz;
     PCU_Comm_Received(&msgSz);
@@ -340,7 +339,7 @@ void recvAdjNetsFromNeighbors(partInfo& part, vector<adjPart>& msg) {
       int numIntsPacked;
       PCU_COMM_UNPACK(numIntsPacked);
       numIntsProcessed += numIntsPacked;
-      unpackAdjPart(part, msg, numIntsPacked - 1);
+      unpackAdjPart(msg, numIntsPacked - 1);
     } while (numIntsProcessed != numIntsInBuff);
   }
 }
@@ -476,7 +475,7 @@ int constructNetGraph(partInfo& part) {
   if (ierr != 0) return ierr;
   PCU_Comm_Send();
   vector<adjPart> nbNet;
-  recvNetsFromNeighbors(part, nbNet);
+  recvNetsFromNeighbors(nbNet);
 
   // get the random num associated with adjacent nets
   part.addNetNeighbors(nbNet);
@@ -485,7 +484,7 @@ int constructNetGraph(partInfo& part) {
   if (ierr != 0) return ierr;
   PCU_Comm_Send();
   vector<adjPart> nbAdjNets;
-  recvAdjNetsFromNeighbors(part, nbAdjNets);
+  recvAdjNetsFromNeighbors(nbAdjNets);
 
   // get the random num associated with adjacent nets
   part.addNetNeighbors(nbAdjNets);
@@ -579,7 +578,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     tag++;
     sendIntsToNeighbors(part, nodesToRemove, tag);
     PCU_Comm_Send();
-    recvIntsFromNeighbors(part, rmtNodesToRemove, tag);
+    recvIntsFromNeighbors(rmtNodesToRemove, tag);
 
 
     if (true == part.isInNetGraph &&
@@ -601,7 +600,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     tag++;
     sendIntsToNeighbors(part, nodesRemoved, tag);
     PCU_Comm_Send();
-    recvIntsFromNeighbors(part, rmtNodesToRemove, tag);
+    recvIntsFromNeighbors(rmtNodesToRemove, tag);
 
     removeNodes(part, rmtNodesToRemove);
     nodesRemoved.clear();
