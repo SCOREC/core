@@ -832,12 +832,17 @@ static void migrate2(Mesh2* m, Migration* plan)
   }
 }
 
-void migrate(Mesh2* m, Migration* plan)
+void migrateSilent(Mesh2* m, Migration* plan)
 {
   if (PCU_Or(static_cast<size_t>(plan->count()) > migrationLimit))
     migrate2(m, plan);
   else
     migrate1(m, plan);
+}
+
+void migrate(Mesh2* m, Migration* plan)
+{
+  migrateSilent(m, plan);
   warnAboutEmptyParts(m);
 }
 

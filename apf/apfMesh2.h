@@ -116,6 +116,8 @@ class Mesh2 : public Mesh
  of calling this directly */
 void migrate(Mesh2* m, Migration* plan);
 
+void migrateSilent(Mesh2* m, Migration* plan);
+
 /** \brief set the maximum elements that apf::migrate moves at once
   \details apf::migrate implements gradual limited migration
   in an effort to help applications keep memory use to a minimum.
