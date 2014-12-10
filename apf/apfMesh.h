@@ -453,8 +453,8 @@ extern int const prism_quad_verts[3][4];
 /** \brief map from pyramid triangle order to pyramid vertex order */
 extern int const pyramid_tri_verts[4][3];
 
-/** \brief scan the part for face-adjacent part ids */
-void getFacePeers(Mesh* m, Parts& peers);
+/** \brief scan the part for [vtx|edge|face]-adjacent part ids */
+void getPeers(Mesh* m, int d, Parts& peers);
 
 /** \brief find pointer (e) in array (a) of length (n)
   \returns -1 if not found, otherwise i such that a[i] = e */

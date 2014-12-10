@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include "parma.h"
+#include "diffMC/maximalIndependentSet/mis.h"
 #include <parma_dcpart.h>
 #include <limits>
 
@@ -133,3 +134,33 @@ apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m) {
   return tag;
 }
 
+
+int Parma_MisNumbering(apf::Mesh* m, int d) {
+  apf::Parts neighbors;
+  apf::getPeers(m,d,neighbors);
+
+  misLuby::partInfo part;
+  part.id = m->getId();
+  part.net.push_back(m->getId());
+  APF_ITERATE(apf::Parts, neighbors, nItr) {
+    part.adjPartIds.push_back(*nItr);
+    part.net.push_back(*nItr);
+  }
+
+  int randNumSeed = time(NULL)+part.id+1;
+  mis_init(randNumSeed,true);
+  int misNumber=-1;
+  int iter=0;
+  int misSize=0;
+  while( misSize != PCU_Comm_Peers() ) {
+    if( mis(part, false, true) || 1 == part.net.size() ) {
+      misNumber = iter;
+      part.net.clear();
+      part.adjPartIds.clear();
+    }
+    iter++;
+    misSize = (misNumber != -1);
+    PCU_Add_Ints(&misSize,1);
+  }
+  return misNumber;
+}
