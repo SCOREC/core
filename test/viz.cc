@@ -24,7 +24,7 @@ namespace {
     meshFile = argv[2];
   }
   Color misColor(apf::Mesh* m) {
-    int neighborDim = 2;
+    int neighborDim = m->getDimension()-1;
     int misNumber = Parma_MisNumbering(m,neighborDim);
     Color colors[9] = 
       {RED,BLUE,GREEN,PURPLE,ORANGE,YELLOW,BROWN,PINK,GREY};

@@ -272,18 +272,18 @@ void unite(Parts& into, Parts const& from)
   into.insert(from.begin(),from.end());
 }
 
-void getFacePeers(Mesh* m, Parts& peers)
+void getPeers(Mesh* m, int d, Parts& peers)
 {
-  MeshEntity* face;
-  int d = m->getDimension();
-  MeshIterator* faces = m->begin(d-1);
-  while ((face = m->iterate(faces)))
+  assert(d < m->getDimension());
+  MeshEntity* e;
+  MeshIterator* ents = m->begin(d);
+  while ((e = m->iterate(ents)))
   {
     Parts residence;
-    m->getResidence(face,residence);
+    m->getResidence(e,residence);
     unite(peers,residence);
   }
-  m->end(faces);
+  m->end(ents);
   peers.erase(m->getId());
 }
 

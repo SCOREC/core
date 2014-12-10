@@ -137,7 +137,7 @@ apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m) {
 
 int Parma_MisNumbering(apf::Mesh* m, int d) {
   apf::Parts neighbors;
-  apf::getFacePeers(m,neighbors);
+  apf::getPeers(m,d,neighbors);
 
   misLuby::partInfo part;
   part.id = m->getId();
