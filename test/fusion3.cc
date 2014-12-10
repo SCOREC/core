@@ -115,17 +115,26 @@ void edgeFunction(double const p[2], double *xyz, void*  data)
   xyz[2]=0.;
 }
 
-void faceFunction(double const p[2], double x[3], void * data) {}
-void vertexFunction(double const p[2], double x[3], void * data) {}
+void faceFunction(double const p[2], double x[3], void * data)
+{
+  (void)p;(void)x;(void)data;
+}
+
+void vertexFunction(double const p[2], double x[3], void * data)
+{
+  (void)p;(void)x;(void)data;
+}
 
 void reparam_zero(double const from[2], double to[2], void*)
 {
+  (void)from;
   to[0] = 0;
   to[1] = 0;
 }
 
 void reparam_one(double const from[2], double to[2], void*)
 {
+  (void)from;
   to[0] = 1;
   to[1] = 0;
 }
