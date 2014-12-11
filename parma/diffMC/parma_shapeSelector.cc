@@ -151,7 +151,7 @@ namespace parma {
         while ( !distQ.empty() ) 
           trySending(tgts, &distQ, plan);
         clearSendTag();
-        writeVtk(mesh, "pop");
+	//        writeVtk(mesh, "pop");
         apf::destroyNumbering(popNum);
         return plan;
       }
