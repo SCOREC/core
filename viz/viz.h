@@ -18,7 +18,6 @@ namespace apf {
  * \brief Predefined Colors
  * 
  * BYPART uses linear color scale from red to blue
- * MISCOLOR colors such that neighboring parts are colored differently
  */
 enum Color {
   RED=228*256*256+26*255+28, 
@@ -33,7 +32,6 @@ enum Color {
   BLACK=0,
   WHITE=255*256*256+255*256+255,
   BYPART=-1,
-  MISCOLOR=-2,
   NOCOLOR=-3
 };
 
@@ -65,7 +63,7 @@ public:
   ~Visualization();
 
   /**
-   * @brief marks an entity to be visualized at next breakpoint
+   * @brief marks an entity to be visualized at the next breakpoint
    * @param m (In) the mesh
    * @param ent (In) the entity to be viewed
    * @param color (In) the color that the entity will be in the viewer
@@ -73,15 +71,15 @@ public:
   void watchEntity(apf::Mesh* m, apf::MeshEntity* ent, Color color = NOCOLOR);
 
   /**
-   * @brief marks the downward of an entity to be visualized at next breakpoint
+   * @brief marks the downward adjancencies of an entity to be visualized at the next breakpoint
    * @param m (In) the mesh
-   * @param ent (In) the entity whose downward entities will be viewed
+   * @param ent (In) the entity whose downward adjancent entities will be viewed
    * @param color (In) the color that the entities will be in the viewer
    */
   void watchDownwardEntity(apf::Mesh* m, apf::MeshEntity* ent,Color color=NOCOLOR);
 
   /**
-   * @brief marks every entity of a dimension to be visualized at next breakpoint
+   * @brief marks every entity of a dimension to be visualized at the next breakpoint
    * @param m (In) the mesh
    * @param d (In) the dimension to be visualized 
    * @param color (In) the color that the entities will be in the viewer
@@ -89,7 +87,7 @@ public:
   void watchDimension(apf::Mesh* m, int d,Color color=NOCOLOR);
 
   /**
-   * @brief marks the model boundary of a given dimension to be visualized at next breakpoint
+   * @brief marks the model boundary of a given dimension to be visualized at the next breakpoint
    * @param m (In) the mesh
    * @param d (In) the dimension to be visualized
    * @param color (In) the color that the entities will be in viewer
