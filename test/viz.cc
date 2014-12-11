@@ -43,7 +43,6 @@ int main(int argc, char** argv)
  
   
   Visualization v;
-  v.new_viz(PCU_Comm_Peers(),WHITE);
   
   char output[128];
   sprintf(output,"%d",PCU_Comm_Self());
@@ -102,8 +101,6 @@ int main(int argc, char** argv)
   
   v.showAxis();
   v.breakpoint("Part Boundaries");
-
-  v.end_viz();
 
   freeMesh(m);
   PCU_Comm_Free();
