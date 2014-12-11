@@ -7,7 +7,7 @@ struct GroupCode : public Parma_GroupCode
 {
   apf::Mesh2* mesh;
   const char* meshFile;
-  void run(int group)
+  void run(int)
   {
     mesh->writeNative(meshFile);
   }

@@ -9,6 +9,7 @@
 
 static double process_element(apf::Vector3 x[4], double sol[4][9])
 {
+  (void)sol;
   double volume = (apf::cross((x[1]-x[0]),(x[2]-x[0]))*(x[3]-x[0]))/6;
   return volume;
 }

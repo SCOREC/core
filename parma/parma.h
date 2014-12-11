@@ -253,4 +253,15 @@ void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
  */
 void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
 
+/**
+ * @brief Compute maximal independent set numbering
+ * @remark This function will compute the maximal independent set numbering
+ *         for the partition such that no two part neighbors that share
+ *         dimension d mesh entities will be assigned the same number.
+ * @param m (In) partitioned mesh
+ * @param d (In) adjacency dimension
+ */
+int Parma_MisNumbering(apf::Mesh* m, int d);
+
+
 #endif

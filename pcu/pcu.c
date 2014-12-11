@@ -366,8 +366,7 @@ static void* run(void* in)
   /* this wrapper around the user thread function
      sets up the PCU thread environment, including
      thread rank and thread-local messenger */
-  (void)in;
-  pcu_thread_init();
+  pcu_thread_init(in);
   int rank = pcu_thread_rank();
   pcu_make_msg(global_tmsg + rank);
   if (global_args)

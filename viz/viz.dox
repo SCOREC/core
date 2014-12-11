@@ -1,0 +1,14 @@
+/** \page viz VIZ
+
+@section Overview
+A tool to visualize distributed unstrutured meshes at runtime. Using a 
+client-server model, one can run a viewer (server) on a graphical 
+enviornment while running the application (client) on any architecture 
+using this API to communicate between the application and viewer. 
+
+
+VIZ API: viz.h
+
+
+@author Gerrett Diamond</a>
+*/

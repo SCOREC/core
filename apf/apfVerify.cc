@@ -282,7 +282,7 @@ static long verifyCoords(Mesh* m)
   return n;
 }
 
-static long verifyVolumes(Mesh* m)
+long verifyVolumes(Mesh* m)
 {
   MeshIterator* it = m->begin(m->getDimension());
   MeshEntity* e;

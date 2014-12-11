@@ -112,7 +112,8 @@ int dcPart::walkPart(int visited) {
 }
 
 bool isInMis(migrTgt& mt) {
-  mis_init(time(NULL)+PCU_Comm_Self(), true);
+  int seed = PCU_Comm_Self()+1;
+  mis_init(seed, true);
   misLuby::partInfo part;
   part.id = PCU_Comm_Self();
   std::set<int> targets;

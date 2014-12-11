@@ -1,6 +1,11 @@
 #ifndef VIZ_H
 #define VIZ_H
 
+/** \file viz.h
+ * \brief Visualization tool interface
+ *
+ */
+
 #include <string>
 
 namespace apf {
@@ -8,6 +13,12 @@ namespace apf {
   class MeshEntity;
 };
 
+/**
+ * \enum Color
+ * \brief Predefined Colors
+ * 
+ * BYPART uses linear color scale from red to blue
+ */
 enum Color {
   RED=228*256*256+26*255+28, 
   BLUE=55*256*256+126*256+184, 
@@ -21,47 +32,104 @@ enum Color {
   BLACK=0,
   WHITE=255*256*256+255*256+255,
   BYPART=-1,
-  MISCOLOR=-2,
   NOCOLOR=-3
-  
 };
 
 struct milo;
 
+/** 
+ * \class Visualization 
+ * \brief API between the application and viewer
+ */
 class Visualization {
 public:
 
-  //Usage of Visualization
-  void new_viz(int num_parts,Color color = BLACK);
-  void breakpoint(std::string text ="");
-  void end_viz();
+  /**
+   * @brief constructs the visualization and connects to viewer
+   * @param port (In) port id of viewer
+   * @param color (In) background color
+   */ 
+  Visualization(unsigned int port = 4242, Color color = BLACK);
 
-  //Display entities
-  bool watchEntity(apf::Mesh* m, apf::MeshEntity* ent, Color color = NOCOLOR);
-  bool watchDownwardEntity(apf::Mesh* m, apf::MeshEntity* ent,Color color=NOCOLOR);
-  bool watchDimension(apf::Mesh* m, int d,Color color=NOCOLOR);
-  bool watchBoundary(apf::Mesh* m,int d,Color color=NOCOLOR);
-  bool watchMesh(apf::Mesh* m);
+  /**
+   * @brief suspends application and sends rendering to viewer
+   * @param text (In) title of breakpoint
+   */
+  void breakpoint(std::string text ="");
+
+  /**
+   * @brief ends the visualization and cleans up memory
+   */
+  ~Visualization();
+
+  /**
+   * @brief marks an entity to be visualized at the next breakpoint
+   * @param m (In) the mesh
+   * @param ent (In) the entity to be viewed
+   * @param color (In) the color that the entity will be in the viewer
+   */
+  void watchEntity(apf::Mesh* m, apf::MeshEntity* ent, Color color = NOCOLOR);
+
+  /**
+   * @brief marks the downward adjancencies of an entity to be visualized at the next breakpoint
+   * @param m (In) the mesh
+   * @param ent (In) the entity whose downward adjancent entities will be viewed
+   * @param color (In) the color that the entities will be in the viewer
+   */
+  void watchDownwardEntity(apf::Mesh* m, apf::MeshEntity* ent,Color color=NOCOLOR);
+
+  /**
+   * @brief marks every entity of a dimension to be visualized at the next breakpoint
+   * @param m (In) the mesh
+   * @param d (In) the dimension to be visualized 
+   * @param color (In) the color that the entities will be in the viewer
+   */
+  void watchDimension(apf::Mesh* m, int d,Color color=NOCOLOR);
+
+  /**
+   * @brief marks the model boundary of a given dimension to be visualized at the next breakpoint
+   * @param m (In) the mesh
+   * @param d (In) the dimension to be visualized
+   * @param color (In) the color that the entities will be in viewer
+   */
+  void watchBoundary(apf::Mesh* m,int d,Color color=NOCOLOR);
+
+  /**
+   * @brief marks all vertices, edges, and faces of the mesh to be visualized
+   * @param m (In) the mesh
+   */
+  void watchMesh(apf::Mesh* m);
   
 
   //Other Methods
-  bool setupMISColoring(apf::Mesh* m,int part_num);
-  bool showAxis(Color x_color=RED,Color y_color=GREEN,Color z_color=BLUE);
+  /**
+   * @brief creates axis from the origin
+   * @param x_color (In) the color of the x axis 
+   * @param y_color (In) the color of the y axis
+   * @param z_color (In) the color of the z axis
+   */
+  void showAxis(Color x_color=RED,Color y_color=GREEN,Color z_color=BLUE);
+
+  /** 
+   * @brief writes text at the centroid of the part
+   * @param m (In) the mesh
+   * @param text (In) the string of text
+   * @param color (In) the color of the text
+   */
   void markPart(apf::Mesh* m,std::string text, Color color=BLACK);
+
 private:
   milo* mil;
   int max_parts;
-  Color mis_color;
   double background[3];
 
-  bool getPoint(apf::Mesh* m, apf::MeshEntity* ent, double* point);
-  void getPartColor(double* color, int part_num);
-  void getMISColor(double* color);
+  void getPoint(apf::Mesh* m, apf::MeshEntity* ent, double* point);
+  void getPartColor(double* color);
   void getGivenColor(Color color, double* color_array);
-  void getColor(Color color, double* color_array,int partId=0);
-  bool drawPoint(apf::Mesh* m, apf::MeshEntity* ent,Color color);
-  bool drawLine(apf::Mesh* m, apf::MeshEntity* ent,Color color);
-  bool drawTriangle(apf::Mesh* m, apf::MeshEntity* ent, Color color);
+  void getColor(Color color, double* color_array);
+  void drawPoint(apf::Mesh* m, apf::MeshEntity* ent,Color color);
+  void drawLine(apf::Mesh* m, apf::MeshEntity* ent,Color color);
+  void drawTriangle(apf::Mesh* m, apf::MeshEntity* ent, Color color);
 };
 
 #endif

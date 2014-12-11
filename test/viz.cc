@@ -4,6 +4,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <parma.h>
 #include "../viz/viz.h"
 
 namespace {
@@ -22,6 +23,13 @@ namespace {
     modelFile = argv[1];
     meshFile = argv[2];
   }
+  Color misColor(apf::Mesh* m) {
+    int neighborDim = m->getDimension()-1;
+    int misNumber = Parma_MisNumbering(m,neighborDim);
+    Color colors[9] = 
+      {RED,BLUE,GREEN,PURPLE,ORANGE,YELLOW,BROWN,PINK,GREY};
+    return colors[misNumber%9];
+  }
 }
 int main(int argc, char** argv)
 {
@@ -35,7 +43,6 @@ int main(int argc, char** argv)
  
   
   Visualization v;
-  v.new_viz(PCU_Comm_Peers(),WHITE);
   
   char output[128];
   sprintf(output,"%d",PCU_Comm_Self());
@@ -47,13 +54,13 @@ int main(int argc, char** argv)
   v.breakpoint("The whole mesh");
 
   for (int i=0;i<3;i++) {
-    v.setupMISColoring(m,PCU_Comm_Self());
-    v.watchDimension(m,2,MISCOLOR);
+    v.watchDimension(m,2,misColor(m));
     v.watchDimension(m,0);
     itr = m->begin(1);
     while ((ent=m->iterate(itr))!=0) {
       if (m->isShared(ent))
         v.watchEntity(m,ent);
+
     }
     v.markPart(m,part_num);
     sprintf(output,"Testing MIS %d",i);
@@ -63,11 +70,12 @@ int main(int argc, char** argv)
   v.watchDimension(m,1,BYPART);
   v.breakpoint();
 
+  Color c = misColor(m);
   itr=m->begin(2);
   int i=0;
   while((ent=m->iterate(itr))!=0) {
     if (i==0)
-      v.watchEntity(m,ent,MISCOLOR);
+      v.watchEntity(m,ent,c);
     i++;
     i%=3;
   }
@@ -93,8 +101,6 @@ int main(int argc, char** argv)
   
   v.showAxis();
   v.breakpoint("Part Boundaries");
-
-  v.end_viz();
 
   freeMesh(m);
   PCU_Comm_Free();
