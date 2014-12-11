@@ -4,10 +4,9 @@
 #include "parma_targets.h"
 #include <apf.h>
 #include <limits.h>
-#include "../../viz/viz.h"
 #include "maximalIndependentSet/mis.h"
 
-Visualization v;
+
 namespace parma {
   class ShapeTargets : public Targets {
     public:
@@ -30,30 +29,19 @@ namespace parma {
         PCU_Max_Doubles(&elapsedTime, 1);
         if( !PCU_Comm_Self() )
           fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
-	bool isColored=false;
-	
-	
         
         int side = 0;
         PCU_Comm_Begin();
         if(getSmallSide(s, 0.5*getAvgSides(s), side) && isMis) {
-	  v.watchDimension(m,m->getDimension()-1,RED);
-	  isColored=true;
           PCU_Comm_Pack(side,NULL,0);
           getOtherRes(m, s, side, res);
         }
-	if (isMis&&!isColored) {
-	  v.watchDimension(m,m->getDimension()-1,GREEN);
-	  isColored=true;
-	}
+
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
           side = PCU_Comm_Sender();
-	  v.watchDimension(m,m->getDimension()-1,PURPLE);
-	  isColored=true;
           getOtherRes(m, s, side, res);
         }
-
         PCU_Comm_Begin();
         PCU_Debug_Print("res ");
         APF_ITERATE(apf::Parts, res, r) {
@@ -62,14 +50,8 @@ namespace parma {
         }
         PCU_Debug_Print("\n");
         PCU_Comm_Send();
-        while (PCU_Comm_Listen()) { 
-	  setTarget(PCU_Comm_Sender(), s, w, alpha);
-	  v.watchDimension(m,m->getDimension()-1,ORANGE);
-	  isColored=true;
-	}
-	if (!isColored)
-	  v.watchDimension(m,m->getDimension()-1,BLUE);
-	v.breakpoint();
+        while (PCU_Comm_Listen())
+          setTarget(PCU_Comm_Sender(), s, w, alpha);
       }
       void getOtherRes(apf::Mesh* m, Sides*, int peer, apf::Parts& res) {
         const int self = PCU_Comm_Self();
