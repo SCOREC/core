@@ -87,7 +87,7 @@ void LinearSystem::solve()
   Epetra_MultiVector b(*ownedMap_,/*num vectors=*/1);
   assert(A.Export(*A_,exporter,Add) == 0);
   assert(b.Export(*b_,exporter,Add) == 0);
-
+  A.FillComplete();
   Epetra_LinearProblem problem(&A,x_,&b);
   AztecOO solver(problem);
   solver.SetAztecOption(AZ_precond,AZ_Jacobi);
