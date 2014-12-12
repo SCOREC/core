@@ -9,35 +9,30 @@
 #include <AztecOO.h>
 #include <Epetra_MpiComm.h>
 #include <Epetra_Map.h>
+#include <Epetra_Import.h>
 #include <Epetra_MultiVector.h>
 #include <Epetra_CrsMatrix.h>
 
 namespace awr
 {
 
-LinearSystem::LinearSystem(GO n, Epetra_Map* map) :
+LinearSystem::LinearSystem(GO n, Epetra_Map* owned, Epetra_Map* overlap) :
   numGlobalEqs_(n),
-  map_(map)
+  ownedMap_(owned),
+  overlapMap_(overlap)
 {
-  numLocalEqs_ = map_->NumMyElements();
-  A_ = new Epetra_CrsMatrix(Copy,*map_,n);
-  x_ = new Epetra_MultiVector(*map_,/*num vectors=*/1);
-  b_ = new Epetra_MultiVector(*map_,/*num vectors=*/1);
+  A_ = new Epetra_CrsMatrix(Copy,*overlapMap_,n);
+  x_ = new Epetra_MultiVector(*ownedMap_,/*num vectors=*/1);
+  b_ = new Epetra_MultiVector(*overlapMap_,/*num vectors=*/1);
 }
 
 LinearSystem::~LinearSystem()
 {
-  delete map_;
   delete A_;
   delete x_;
   delete b_;
-}
-
-GO LinearSystem::mapLIDtoGID(LO lid)
-{
-  GO* myGlobalElements = NULL;
-  myGlobalElements = map_->MyGlobalElements64();
-  return myGlobalElements[lid];
+  delete ownedMap_;
+  delete overlapMap_;
 }
 
 void LinearSystem::sumToVector(double v, GO i)
@@ -54,7 +49,9 @@ void LinearSystem::sumToMatrix(double v, GO i, GO j)
 {
   double val[1]; val[0] = v;
   GO col[1]; col[0] = j;
-  A_->InsertGlobalValues(i,1,val,col);
+  int err = A_->SumIntoGlobalValues(i,1,val,col);
+  if (err != 0)
+    A_->InsertGlobalValues(i,1,val,col);
 }
 
 void LinearSystem::diagonalizeMatrixRow(GO i)
@@ -82,7 +79,18 @@ double* LinearSystem::getSolution()
 
 void LinearSystem::solve()
 {
-  Epetra_LinearProblem problem(A_,x_,b_);
+  Epetra_Import importer(*ownedMap_,*overlapMap_);
+  Epetra_CrsMatrix A(Copy,*ownedMap_,numGlobalEqs_);
+  Epetra_MultiVector b(*ownedMap_,/*num vectors=*/1);
+  assert(A.Import(*A_,importer,Add) == 0);
+  assert(b.Import(*b_,importer,Add) == 0);
+
+  /* why isn't import add working?
+     incorrect owned map? */
+  b_->Print(std::cout);
+  b.Print(std::cout);
+
+  Epetra_LinearProblem problem(&A,x_,&b);
   AztecOO solver(problem);
   solver.SetAztecOption(AZ_precond,AZ_Jacobi);
   solver.SetAztecOption(AZ_output,AZ_none);

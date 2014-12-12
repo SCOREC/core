@@ -43,19 +43,18 @@ long computeNumGlobalEqs(int nc, apf::Numbering* n)
 apf::GlobalNumbering* globalizeNumbering(apf::Numbering* n)
 {
   apf::GlobalNumbering* gn = apf::makeGlobal(n);
-  apf::synchronize(gn);
   return gn;
 }
 
-Epetra_Map* createMap(int nc, apf::GlobalNumbering* numbering)
+Epetra_Map* createMap(int nc, apf::GlobalNumbering* n)
 {
   apf::DynamicArray<apf::Node> nodes;
-  apf::getNodes(numbering,nodes);
-  int numOverlapNodes = nodes.getSize();
-  apf::DynamicArray<long long> dofIndices(numOverlapNodes*nc);
-  for (int i=0; i < numOverlapNodes; ++i)
+  apf::getNodes(n,nodes);
+  int numNodes = nodes.getSize();
+  apf::DynamicArray<long long> dofIndices(numNodes*nc);
+  for (int i=0; i < numNodes; ++i)
   {
-    long global = apf::getNumber(numbering,nodes[i]);
+    long global = apf::getNumber(n,nodes[i]);
     for (int j=0; j < nc; ++j)
       dofIndices[i*nc + j] = global*nc + j;
   }
@@ -73,9 +72,11 @@ void Problem::setup()
   numbering_ = createNumbering(mesh_,adjoint_);
   numGlobalEqs_ = computeNumGlobalEqs(numComponents_,numbering_);
   globalNumbering_ = globalizeNumbering(numbering_);
+  Epetra_Map* owned = createMap(numComponents_,globalNumbering_);
+  apf::synchronize(globalNumbering_);
+  Epetra_Map* overlap = createMap(numComponents_,globalNumbering_);
   qoi_ = createQoI(qoiList_,mesh_,primal_);
-  ls_ = new LinearSystem(numGlobalEqs_,
-      createMap(numComponents_,globalNumbering_));
+  ls_ = new LinearSystem(numGlobalEqs_,owned,overlap);
   double t1 = MPI_Wtime();
   print("set up in %f seconds",t1-t0);
 }

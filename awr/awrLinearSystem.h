@@ -20,11 +20,8 @@ typedef long long GO;
 class LinearSystem
 {
   public:
-    LinearSystem(GO n, Epetra_Map* map);
+    LinearSystem(GO n, Epetra_Map* map, Epetra_Map* overlap);
     ~LinearSystem();
-    LO getNumLocalEqs() { return numLocalEqs_; }
-    GO getNumGlobalEqs() { return numGlobalEqs_; }
-    GO mapLIDtoGID(LO lid);
     void sumToVector(double v, GO i);
     void replaceToVector(double v, GO i);
     void sumToMatrix(double v, GO i, GO j);
@@ -33,9 +30,9 @@ class LinearSystem
     void solve();
     double* getSolution();
   private:
-    LO numLocalEqs_;
     GO numGlobalEqs_;
-    Epetra_Map* map_;
+    Epetra_Map* ownedMap_;
+    Epetra_Map* overlapMap_;
     Epetra_CrsMatrix* A_;
     Epetra_MultiVector* x_;
     Epetra_MultiVector* b_;

@@ -28,6 +28,7 @@ void attachSolution(
       v[c] = sol[i+c];
     apf::setComponents(f,nodes[i].entity,nodes[i].node,v);
   }
+  apf::synchronize(f);
 }
 
 void Problem::solve()
