@@ -82,8 +82,8 @@ void LinearSystem::solve()
   Epetra_Import importer(*ownedMap_,*overlapMap_);
   Epetra_CrsMatrix A(Copy,*ownedMap_,numGlobalEqs_);
   Epetra_MultiVector b(*ownedMap_,/*num vectors=*/1);
-  assert(A.Import(*A_,importer,Insert) == 0);
-  assert(b.Import(*b_,importer,Insert) == 0);
+  assert(A.Import(*A_,importer,Add) == 0);
+  assert(b.Import(*b_,importer,Add) == 0);
 
   /* why isn't import add working?
      incorrect owned map? */

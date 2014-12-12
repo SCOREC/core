@@ -55,7 +55,6 @@ Epetra_Map* createMap(int nc, apf::GlobalNumbering* n)
   for (int i=0; i < numNodes; ++i)
   {
     long global = apf::getNumber(n,nodes[i]);
-    std::cout << global << std::endl;
     for (int j=0; j < nc; ++j)
       dofIndices[i*nc + j] = global*nc + j;
   }
