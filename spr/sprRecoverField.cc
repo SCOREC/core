@@ -20,13 +20,15 @@ namespace spr {
 /* overall information useful during recovery */
 struct Recovery {
   apf::Mesh* mesh;
+  /* mesh dimension, so far handling 2 and 3 */
+  int dim;
   /* order of output field and fit polynomial.
      so far limited to 1 or 2,
      and determined by the order of the mesh's
      coordinate field. */
   int order;
   /* the number of terms in a polynomial of the above order
-     defined over 3D space: f(x,y,z) */
+     defined over ND space: f(x,y,z) in 3D */
   int polynomial_terms;
   /* the number of integration points per element.
      this immediately assumes the mesh has one element type.
@@ -59,16 +61,25 @@ static apf::Field* makeRecoveredField(Recovery* r)
         r->mesh, name.c_str(), apf::getValueType(r->f), r->order);
 }
 
-static int countPolynomialTerms(int order)
+static int countPolynomialTerms(int dim, int order)
 {
-  return ((order + 1) * (order + 2) * (order + 3)) / 6;
+  switch (dim) {
+    case 2:
+      return ((order + 1) * (order + 2)) / 2;
+    case 3:
+      return ((order + 1) * (order + 2) * (order + 3)) / 6;
+    default:
+      apf::fail("bad dim in countPolynomialTerms");
+      return -1;
+  }
 }
 
 static void setupRecovery(Recovery* r, apf::Field* f)
 {
   r->mesh = apf::getMesh(f);
+  r->dim = r->mesh->getDimension();
   r->order = r->mesh->getShape()->getOrder();
-  r->polynomial_terms = countPolynomialTerms(r->order);
+  r->polynomial_terms = countPolynomialTerms(r->dim, r->order);
   r->points_per_element = determinePointsPerElement(f);
   r->f = f;
   r->f_star = makeRecoveredField(r);
@@ -144,7 +155,7 @@ static bool getInitialPatch(Patch* p, apf::CavityOp* o)
   if ( ! o->requestLocality(&p->entity,1))
     return false;
   apf::DynamicArray<apf::MeshEntity*> adjacent;
-  p->mesh->getAdjacent(p->entity, p->mesh->getDimension(), adjacent);
+  p->mesh->getAdjacent(p->entity, p->recovery->dim, adjacent);
   addElementsToPatch(p, adjacent);
   return true;
 }
@@ -168,7 +179,7 @@ static bool addElementsThatShare(Patch* p, int dim,
   for (size_t i=0; i < bridge_array.size(); ++i)
   {
     apf::Adjacent candidates;
-    p->mesh->getAdjacent(bridge_array[i], p->mesh->getDimension(), candidates);
+    p->mesh->getAdjacent(bridge_array[i], p->recovery->dim, candidates);
     addElementsToPatch(p, candidates);
   }
   return true;
@@ -210,49 +221,77 @@ static void getSampleValues(Patch* p)
   }
 }
 
-static void evalPolynomialTerms(int order,
-                         apf::Vector3 const& point,
-                         apf::DynamicVector& terms)
+static void evalPolynomialTerms(
+    int dim, int order,
+    apf::Vector3 const& point,
+    apf::DynamicVector& terms)
 {
   apf::Vector3 const& x = point;
-  if (order == 1)
-  {
-    terms.setSize(4);
-    terms(0) = 1.0;
-    terms(1) = x[0];
-    terms(2) = x[1];
-    terms(3) = x[2];
-  }
-  else if (order == 2)
-  {
-    terms.setSize(10);
-    terms(0) = 1.0;
-    terms(1) = x[0];
-    terms(2) = x[1];
-    terms(3) = x[2];
-    terms(4) = x[0]*x[1];
-    terms(5) = x[1]*x[2];
-    terms(6) = x[2]*x[0];
-    terms(7) = x[0]*x[0];
-    terms(8) = x[1]*x[1];
-    terms(9) = x[2]*x[2];
-  }
-  else
+  switch (dim) {
+  case 2:
+    switch (order) {
+    case 1:
+      terms.setSize(3);
+      terms(0) = 1.0;
+      terms(1) = x[0];
+      terms(2) = x[1];
+      return;
+    case 2:
+      terms.setSize(6);
+      terms(0) = 1.0;
+      terms(1) = x[0];
+      terms(2) = x[1];
+      terms(3) = x[0]*x[1];
+      terms(4) = x[0]*x[0];
+      terms(5) = x[1]*x[1];
+      return;
+    default:
+      apf::fail("SPR: invalid 2D polynomial order");
+    }
+  case 3:
+    switch (order) {
+    case 1:
+      terms.setSize(4);
+      terms(0) = 1.0;
+      terms(1) = x[0];
+      terms(2) = x[1];
+      terms(3) = x[2];
+      return;
+    case 2:
+      terms.setSize(10);
+      terms(0) = 1.0;
+      terms(1) = x[0];
+      terms(2) = x[1];
+      terms(3) = x[2];
+      terms(4) = x[0]*x[1];
+      terms(5) = x[1]*x[2];
+      terms(6) = x[2]*x[0];
+      terms(7) = x[0]*x[0];
+      terms(8) = x[1]*x[1];
+      terms(9) = x[2]*x[2];
+      return;
+    default:
+      apf::fail("SPR: invalid 3D polynomial order");
+    }
+  default:
     apf::fail("SPR: invalid polynomial order");
+  }
 }
 
-static bool preparePolynomialFit(int order,
-                                 int num_points,
-                                 apf::NewArray<apf::Vector3> const& points,
-                                 QRDecomp& qr)
+static bool preparePolynomialFit(
+    int dim,
+    int order,
+    int num_points,
+    apf::NewArray<apf::Vector3> const& points,
+    QRDecomp& qr)
 {
   int m = num_points;
-  int n = countPolynomialTerms(order);
+  int n = countPolynomialTerms(dim, order);
   assert(m >= n);
   apf::DynamicMatrix A(m,n);
   apf::DynamicVector p;
   for (int i = 0; i < m; ++i) {
-    evalPolynomialTerms(order, points[i], p);
+    evalPolynomialTerms(dim, order, points[i], p);
     A.setRow(i, p);
   }
   return decompQR(A, qr.V, qr.R);
@@ -265,11 +304,11 @@ static void runPolynomialFit(QRDecomp& qr,
   solveFromQR(qr.V, qr.R, values, coeffs);
 }
 
-static double evalPolynomial(int order, apf::Vector3& point,
+static double evalPolynomial(int dim, int order, apf::Vector3& point,
     apf::DynamicVector& coeffs)
 {
   apf::DynamicVector terms;
-  evalPolynomialTerms(order, point, terms);
+  evalPolynomialTerms(dim, order, point, terms);
   return coeffs * terms;
 }
 
@@ -277,7 +316,7 @@ static bool prepareSpr(Patch* p)
 {
   Recovery* r = p->recovery;
   getSamplePoints(p);
-  return preparePolynomialFit(r->order, p->samples.num_points,
+  return preparePolynomialFit(r->dim, r->order, p->samples.num_points,
       p->samples.points, p->qr);
 }
 
@@ -303,7 +342,7 @@ static void runSpr(Patch* p)
     runPolynomialFit(p->qr, values, coeffs);
     for (int j = 0; j < num_nodes; ++j)
       recovered_values[j][i] = evalPolynomial(
-          r->order, nodal_points[j], coeffs);
+          r->dim, r->order, nodal_points[j], coeffs);
   }
   for (int i = 0; i < num_nodes; ++i)
     apf::setComponents(r->f_star, p->entity, i, &(recovered_values[i][0]));
@@ -324,7 +363,7 @@ static bool expandAsNecessary(Patch* p, apf::CavityOp* o)
   if (hasEnoughPoints(p))
     return true;
   EntitySet old_set = p->elements;
-  int d = p->mesh->getDimension();
+  int d = p->recovery->dim;
   for (int shared_dim = d-1; shared_dim >= 0; --shared_dim)
   {
     if (!addElementsThatShare(p, shared_dim, old_set, o))
