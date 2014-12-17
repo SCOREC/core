@@ -9,7 +9,7 @@
 #include <AztecOO.h>
 #include <Epetra_MpiComm.h>
 #include <Epetra_Map.h>
-#include <Epetra_Import.h>
+#include <Epetra_Export.h>
 #include <Epetra_MultiVector.h>
 #include <Epetra_CrsMatrix.h>
 
@@ -37,7 +37,8 @@ LinearSystem::~LinearSystem()
 
 void LinearSystem::sumToVector(double v, GO i)
 {
-  b_->SumIntoGlobalValue(i,/*vec idx=*/0,v);
+  int err = b_->SumIntoGlobalValue(i,/*vec idx=*/0,v);
+  assert(err == 0);
 }
 
 void LinearSystem::replaceToVector(double v, GO i)
@@ -50,8 +51,10 @@ void LinearSystem::sumToMatrix(double v, GO i, GO j)
   double val[1]; val[0] = v;
   GO col[1]; col[0] = j;
   int err = A_->SumIntoGlobalValues(i,1,val,col);
-  if (err != 0)
-    A_->InsertGlobalValues(i,1,val,col);
+  if (err != 0) {
+    err = A_->InsertGlobalValues(i,1,val,col);
+    assert(err == 0);
+  }
 }
 
 void LinearSystem::diagonalizeMatrixRow(GO i)
@@ -79,17 +82,12 @@ double* LinearSystem::getSolution()
 
 void LinearSystem::solve()
 {
-  Epetra_Import importer(*ownedMap_,*overlapMap_);
+  Epetra_Export exporter(*overlapMap_,*ownedMap_);
   Epetra_CrsMatrix A(Copy,*ownedMap_,numGlobalEqs_);
   Epetra_MultiVector b(*ownedMap_,/*num vectors=*/1);
-  assert(A.Import(*A_,importer,Add) == 0);
-  assert(b.Import(*b_,importer,Add) == 0);
-
-  /* why isn't import add working?
-     incorrect owned map? */
-  b_->Print(std::cout);
-  b.Print(std::cout);
-
+  assert(A.Export(*A_,exporter,Add) == 0);
+  assert(b.Export(*b_,exporter,Add) == 0);
+  A.FillComplete();
   Epetra_LinearProblem problem(&A,x_,&b);
   AztecOO solver(problem);
   solver.SetAztecOption(AZ_precond,AZ_Jacobi);
