@@ -84,7 +84,7 @@ FieldShape* getConstant(int dimension);
   \details 
   This allows users to create a field which has values at the integration
   points of elements.
-  Orders 1 to 3 for dimension 3 are available */
+  Orders 1 to 3 for dimension 2 or 3 are available */
 FieldShape* getIPShape(int dimension, int order);
 /** \brief Get the Voronoi shape function
   \details the Voronoi FieldShape is equivalent to the IPShape except
