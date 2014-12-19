@@ -3,6 +3,14 @@
 #include <apfMesh.h>
 #include <PCU.h>
 
+Visualization::Visualization(const char* server, unsigned int port,
+    Color color) {
+  mil = milo_new(server, port);
+  getColor(color,background);
+  max_parts = PCU_Comm_Peers();
+  milo_clear(mil, background);
+}
+
 Visualization::Visualization(unsigned int port,Color color) {
   mil = milo_new("localhost", port);
   getColor(color,background);

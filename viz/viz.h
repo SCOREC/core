@@ -52,6 +52,15 @@ public:
   Visualization(unsigned int port = 4242, Color color = BLACK);
 
   /**
+   * @brief constructs the visualization and connects to viewer
+   * @param server (In) server name of viewer
+   * @param port (In) port id of viewer
+   * @param color (In) background color
+   */ 
+  Visualization(const char* server, unsigned int port = 4242, 
+      Color color = BLACK);
+
+  /**
    * @brief suspends application and sends rendering to viewer
    * @param text (In) title of breakpoint
    */
