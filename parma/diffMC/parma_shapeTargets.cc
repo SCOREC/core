@@ -1,3 +1,4 @@
+#include <time.h>
 #include <PCU.h>
 #include "parma_sides.h"
 #include "parma_weights.h"
