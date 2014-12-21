@@ -12,6 +12,8 @@ class Epetra_Map;
 class Epetra_CrsMatrix;
 class Epetra_MultiVector;
 
+namespace apf { class DynamicVector; }
+
 namespace awr {
 
 typedef int LO;
@@ -28,7 +30,7 @@ class LinearSystem
     void diagonalizeMatrixRow(GO i);
     void completeMatrixFill();
     void solve();
-    double* getSolution();
+    void getSolution(apf::DynamicVector& sol);
   private:
     GO numGlobalEqs_;
     Epetra_Map* ownedMap_;

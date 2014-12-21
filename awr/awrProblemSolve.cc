@@ -9,6 +9,7 @@
 #include "awrLinearSystem.h"
 #include <PCU.h>
 #include <apfNumbering.h>
+#include <apfDynamicVector.h>
 
 namespace awr {
 
@@ -16,7 +17,7 @@ void attachSolution(
     apf::Mesh* m,
     apf::GlobalNumbering* gn,
     apf::Field* f,
-    double* sol)
+    const apf::DynamicVector& sol)
 {
   apf::DynamicArray<apf::Node> nodes;
   getNodes(gn,nodes);
@@ -35,7 +36,8 @@ void Problem::solve()
 {
   double t0 = PCU_Time();
   ls_->solve();
-  double* sol = ls_->getSolution();
+  apf::DynamicVector sol;
+  ls_->getSolution(sol);
   attachSolution(mesh_,globalNumbering_,adjoint_,sol);
   double t1 = PCU_Time();
   print("solved in %f seconds",t1-t0);

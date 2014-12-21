@@ -9,9 +9,11 @@
 #include <AztecOO.h>
 #include <Epetra_MpiComm.h>
 #include <Epetra_Map.h>
+#include <Epetra_Import.h>
 #include <Epetra_Export.h>
 #include <Epetra_MultiVector.h>
 #include <Epetra_CrsMatrix.h>
+#include <apfDynamicVector.h>
 
 namespace awr
 {
@@ -73,11 +75,16 @@ void LinearSystem::completeMatrixFill()
   A_->FillComplete();
 }
 
-double* LinearSystem::getSolution()
+void LinearSystem::getSolution(apf::DynamicVector& sol)
 {
-  double** sol;
-  x_->ExtractView(&sol);
-  return sol[0];
+  Epetra_Import importer(*overlapMap_,*ownedMap_);
+  Epetra_MultiVector x(*overlapMap_,/*num vectors=*/1);
+  assert(x.Import(*x_,importer,Add) == 0);
+  double** s;
+  x.ExtractView(&s);
+  sol.setSize(x.MyLength());
+  for (int i=0; i < x.MyLength(); ++i)
+    sol[i] = s[0][i];
 }
 
 void LinearSystem::solve()
