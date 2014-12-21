@@ -110,7 +110,7 @@ void applyBC(
 
 void Problem::assemble()
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   createIntegrator();
   qoi_->createIntegrator();
   apf::MeshEntity* elem;
@@ -128,7 +128,7 @@ void Problem::assemble()
   mesh_->end(elements);
   applyBC(mesh_,bcList_,globalNumbering_,ls_);
   ls_->completeMatrixFill();
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("problem assembled in %f seconds",t1-t0);
 }
 

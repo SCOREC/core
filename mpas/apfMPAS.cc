@@ -213,7 +213,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
   if ( !PCU_Comm_Self() )
     fprintf(stdout,"missing vertices found %d\n", count);
   
-  double startTime=MPI_Wtime();
+  double startTime=PCU_Time();
   MPI_File file;
   char name[1024];
   int const numPerFile = 16;
@@ -241,7 +241,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
   delete [] str;
   //fclose(file);                                                                                                   
   MPI_File_close(&file);
-  double totalTime= MPI_Wtime()-startTime;
+  double totalTime= PCU_Time()-startTime;
   PCU_Max_Doubles(&totalTime,1);
   if (!PCU_Comm_Self())
     fprintf(stdout,"File writing time: %f seconds\n", totalTime);

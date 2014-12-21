@@ -19,9 +19,9 @@ namespace parma {
       virtual bool runStep(apf::MeshTag* wtag, double tolerance)=0;
       virtual void balance(apf::MeshTag* wtag, double tolerance) {
         int step = 0;
-        double t0 = MPI_Wtime();
+        double t0 = PCU_Time();
         while (runStep(wtag,tolerance) && step++ < maxStep);
-        printTiming(name, step, tolerance, MPI_Wtime()-t0);
+        printTiming(name, step, tolerance, PCU_Time()-t0);
       }
       apf::Mesh* mesh;
       double factor;

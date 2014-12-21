@@ -23,7 +23,7 @@ class ZoltanSplitter : public Splitter
     virtual ~ZoltanSplitter() {}
     virtual Migration* split(MeshTag* weights, double tolerance, int multiple)
     {
-      double t0 = MPI_Wtime();
+      double t0 = PCU_Time();
       Migration* plan = bridge.run(weights, tolerance, multiple);
       if (isSynchronous) {
         for (int i = 0; i < plan->count(); ++i) {
@@ -33,7 +33,7 @@ class ZoltanSplitter : public Splitter
           plan->send(e, p);
         }
       }
-      double t1 = MPI_Wtime();
+      double t1 = PCU_Time();
       if (!PCU_Comm_Self())
         fprintf(stdout, "planned Zoltan split factor %d to target"
             " imbalance %f in %f seconds\n", multiple, tolerance, t1 - t0);
@@ -53,14 +53,14 @@ class ZoltanBalancer : public Balancer
     virtual ~ZoltanBalancer() {}
     virtual void balance(MeshTag* weights, double tolerance)
     {
-      double t0 = MPI_Wtime();
+      double t0 = PCU_Time();
       Migration* plan = bridge.run(weights, tolerance, 1);
       if (!PCU_Comm_Self())
         fprintf(stdout, "planned Zoltan balance to target "
             "imbalance %f in %f seconds\n",
-            tolerance, MPI_Wtime() - t0);
+            tolerance, PCU_Time() - t0);
       bridge.mesh->migrate(plan);
-      double t1 = MPI_Wtime();
+      double t1 = PCU_Time();
       if (!PCU_Comm_Self())
         printf("Zoltan balanced to %f in %f seconds\n",
             tolerance, t1-t0);

@@ -33,11 +33,11 @@ void attachSolution(
 
 void Problem::solve()
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   ls_->solve();
   double* sol = ls_->getSolution();
   attachSolution(mesh_,globalNumbering_,adjoint_,sol);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("solved in %f seconds",t1-t0);
 }
 

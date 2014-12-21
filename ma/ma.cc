@@ -22,7 +22,7 @@ namespace ma {
 void adapt(Input* in)
 {
   print("version 2.0 !");
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
@@ -43,7 +43,7 @@ void adapt(Input* in)
   Mesh* m = a->mesh;
   delete a;
   delete in;
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(m);
 }

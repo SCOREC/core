@@ -243,7 +243,7 @@ bool coarsenLayer(Adapt* a)
     return false;
   if ( ! a->input->shouldCoarsenLayer)
     return false;
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   allowLayerToCollapse(a);
   findLayerBase(a);
   long count = markBaseEdgesToCollapse(a);
@@ -258,7 +258,7 @@ bool coarsenLayer(Adapt* a)
     findIndependentSet(a);
     successCount += collapseAllStacks(a, d);
   }
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("coarsened %li layer edges in %f seconds",successCount,t1-t0);
   resetLayer(a);
   return true;
