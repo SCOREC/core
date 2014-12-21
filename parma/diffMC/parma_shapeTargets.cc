@@ -116,7 +116,7 @@ namespace parma {
           part.adjPartIds.push_back(*itr);
           part.net.push_back(*itr);
         }
-        const int t = static_cast<int>(MPI_Wtime());
+        const int t = static_cast<int>(PCU_Time());
         int randNumSeed = t+PCU_Comm_Self()+1;
         mis_init(randNumSeed,true);
         bool isIn =mis(part, false, true);
