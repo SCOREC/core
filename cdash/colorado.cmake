@@ -54,9 +54,6 @@ macro(build_subproject subproject_name config_opts)
   set_property(GLOBAL PROPERTY SubProject ${subproject_name})
   set_property(GLOBAL PROPERTY Label ${subproject_name})
 
-  ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}" RETURN_VALUE count)
-  message("Found ${count} changed files")
-
   submit_part(${subproject_name} "Update")
 
   ctest_configure(
