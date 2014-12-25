@@ -108,7 +108,8 @@ void makeBSpline(BSpline** splines, int  order, int numPts, double* ctrlPts, dou
 
   splines[0] = new BSpline(order,X_p,knots_p);
   splines[1] = new BSpline(order,Y_p,knots_p);
-};
+}
+
 void edgeFunction(double const p[2], double *xyz, void*  data)
 {
   evalCoord(p[0], xyz, data);
