@@ -300,9 +300,9 @@ int test_2dStencil(const int rank, const int totNumParts,
 
   //sanity check
   checkAdjPartsandNets(part, totNumParts);
-  const double t1 = MPI_Wtime();
+  const double t1 = PCU_Time();
   int isInMis = mis(part, randNumsPredefined,isNeighbors);
-  double elapsedTime = MPI_Wtime() - t1;
+  double elapsedTime = PCU_Time() - t1;
   PCU_Max_Doubles(&elapsedTime, 1);
 
   if( !PCU_Comm_Self() )

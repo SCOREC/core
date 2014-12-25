@@ -48,7 +48,7 @@ void test(apf::Mesh2* m)
   apf::ModelEntity* v = m->findModelEntity(dim,tag);
   apf::DynamicArray<apf::Node> nodes;
   apf::getNodesOnClosure(m,v,nodes);
-  printf("%zu nodes on geometric entity with dim: "
+  printf("%lu nodes on geometric entity with dim: "
          "%d and tag: %d\n",nodes.getSize(),dim,tag);
   /*
   for (std::size_t i=0; i < nodes.getSize(); ++i)

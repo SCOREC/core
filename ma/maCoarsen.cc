@@ -165,7 +165,7 @@ long markEdgesToCollapse(Adapt* a)
 
 bool coarsen(Adapt* a)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   --(a->coarsensLeft);
   long count = markEdgesToCollapse(a);
   if ( ! count)
@@ -181,7 +181,7 @@ bool coarsen(Adapt* a)
     successCount += collapseAllEdges(a,modelDimension);
   }
   PCU_Add_Longs(&successCount,1);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("coarsened %li edges in %f seconds",successCount,t1-t0);
   return true;
 }

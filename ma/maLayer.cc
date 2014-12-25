@@ -76,12 +76,12 @@ void unfreezeLayer(Adapt* a)
 
 void resetLayer(Adapt* a)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   long n = markLayerElements(a);
   if (!n)
     return;
   freezeLayer(a);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("marked %ld layer elements in %f seconds", n, t1 - t0);
 }
 
@@ -148,7 +148,7 @@ void collectForLayerRefine(Refine* r)
 
 void checkLayerShape(Mesh* m)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   Iterator* it = m->begin(m->getDimension());
   Entity* e;
   while ((e = m->iterate(it)))
@@ -162,7 +162,7 @@ void checkLayerShape(Mesh* m)
         fprintf(stderr,"%s",s.c_str());
       }
   m->end(it);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("checked layer quality in %f seconds",t1 - t0);
 }
 

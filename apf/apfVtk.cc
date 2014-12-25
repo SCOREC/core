@@ -430,12 +430,12 @@ static void writeVtuFile(const char* prefix, Numbering* n)
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   writePvtuFile(prefix, m);
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("vtk files %s written in %f seconds\n",
         prefix, t1 - t0);

@@ -89,14 +89,6 @@ namespace {
     return n;
   }
 
-  void writeVtk(apf::Mesh* m, const char* prefix) {
-    static int cnt = 0;
-    std::stringstream s;
-    s << prefix << cnt++ << "p";
-    std::string str = s.str();
-    apf::writeVtkFiles(str.c_str(), m);
-  }
-
   class DistanceQueue {
     typedef std::multimap< double, 
       apf::MeshEntity*, 

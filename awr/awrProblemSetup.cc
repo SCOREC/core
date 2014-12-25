@@ -64,7 +64,7 @@ Epetra_Map* createMap(int nc, apf::GlobalNumbering* n)
 
 void Problem::setup()
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   validateProblemList(); /* pure virtual method */
   setPrimalField(); /* pure virtual method */
   adjoint_ = createAdjointField(mesh_,primal_);
@@ -77,7 +77,7 @@ void Problem::setup()
   Epetra_Map* overlap = createMap(numComponents_,globalNumbering_);
   qoi_ = createQoI(qoiList_,mesh_,primal_);
   ls_ = new LinearSystem(numGlobalEqs_,owned,overlap);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("set up in %f seconds",t1-t0);
 }
 

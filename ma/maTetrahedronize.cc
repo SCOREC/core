@@ -196,12 +196,12 @@ void tetrahedronize(Adapt* a)
   if ( ! a->input->shouldTurnLayerToTets)
     return;
   assert(a->hasLayer);
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   prepareLayerToTets(a);
   Refine* r = a->refine;
   addAllLayerElements(r);
   tetrahedronizeCommon(r);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("boundary layer converted to tets in %f seconds",t1-t0);
 }
 
@@ -342,7 +342,7 @@ void cleanupLayer(Adapt* a)
     return;
   if (!a->input->shouldCleanupLayer)
     return;
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   long n = prepareLayerCleanup(a);
   if (!n) {
     print("no bad pyramids found");
@@ -351,7 +351,7 @@ void cleanupLayer(Adapt* a)
   Refine* r = a->refine;
   addBadPyramids(r);
   tetrahedronizeCommon(r);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("tetrahedronized %ld bad pyramids in %f seconds", n, t1-t0);
 }
 

@@ -62,7 +62,7 @@ static void readBC(std::string const& line, BCs& bcs)
 
 void readBCs(const char* filename, BCs& bcs)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   std::ifstream file(filename);
   assert(file.is_open()); //check if the spj file could be opened successfully
   std::string line;
@@ -71,7 +71,7 @@ void readBCs(const char* filename, BCs& bcs)
       continue;
     readBC(line, bcs);
   }
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("\"%s\" loaded in %f seconds\n", filename, t1 - t0);
 }

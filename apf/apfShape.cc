@@ -545,13 +545,16 @@ class IPShape : public FieldShape
 
 FieldShape* getIPShape(int dimension, int order)
 {
+  static IPShape d2o1(2,1);
+  static IPShape d2o2(2,2);
+  static IPShape d2o3(2,3);
   static IPShape d3o1(3,1);
   static IPShape d3o2(3,2);
   static IPShape d3o3(3,3);
   static IPShape* table[4][4] =
   {{0,0,0,0}//vertex
   ,{0,0,0,0}//edge
-  ,{0,0,0,0}//face
+  ,{0,&d2o1,&d2o2,&d2o3}//face
   ,{0,&d3o1,&d3o2,&d3o3}//region
   };
   assert(dimension >= 0);

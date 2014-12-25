@@ -412,9 +412,9 @@ class MeshMDS : public Mesh2
     }
     void writeNative(const char* fileName)
     {
-      double t0 = MPI_Wtime();
+      double t0 = PCU_Time();
       mesh = mds_write_smb(mesh, fileName);
-      double t1 = MPI_Wtime();
+      double t1 = PCU_Time();
       if (!PCU_Comm_Self())
         printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
     }
@@ -580,7 +580,7 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
 
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   Mesh2* m = new MeshMDS(model, meshfile);
   initResidence(m, m->getDimension());
   stitchMesh(m);
@@ -591,7 +591,7 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
      the files */
   if (m->findTag("coordinates_edg"))
     changeMeshShape(m,getLagrange(2),/*project=*/false);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
   printStats(m);
@@ -601,13 +601,13 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
 
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   PCU_Thrd_Barrier();
   static gmi_model* model;
   if (!PCU_Thrd_Self())
     model = gmi_load(modelfile);
   PCU_Thrd_Barrier();
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
   return loadMdsMesh(model, meshfile);
@@ -658,7 +658,7 @@ extern "C" void* splitThrdMain(void*)
 {
   Mesh2* m;
   Migration* plan;
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   if (!PCU_Thrd_Self()) {
     m = globalMesh;
     plan = globalPlan;
@@ -671,7 +671,7 @@ extern "C" void* splitThrdMain(void*)
     apf::remapPartition(m, remap);
   }
   m->migrate(plan);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("mesh split in %f seconds\n", t1 - t0);
   globalThrdCall(m);

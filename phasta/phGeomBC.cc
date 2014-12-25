@@ -144,7 +144,7 @@ static void writeDoubles(FILE* f, const char* name, double* d, int n)
 
 void writeGeomBC(Output& o, std::string path)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
   path += buildGeomBCFileName();
   FILE* f = fopen(path.c_str(), "w");
@@ -189,7 +189,7 @@ void writeGeomBC(Output& o, std::string path)
   writeDoubles(f, "boundary condition array", &bc[0], bc.getSize());
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   fclose(f);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("geombc file written in %f seconds\n", t1 - t0);
 }

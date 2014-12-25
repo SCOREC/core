@@ -431,7 +431,7 @@ void cleanupAfter(Refine* r)
 
 bool refine(Adapt* a)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   --(a->refinesLeft);
   setupLayerForSplit(a);
   long count = markEdgesToSplit(a);
@@ -451,7 +451,7 @@ bool refine(Adapt* a)
   destroySplitElements(r);
   cleanSplitVerts(r);
   forgetNewEntities(r);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("refined %li edges in %f seconds",count,t1-t0);
   resetLayer(a);
   return true;

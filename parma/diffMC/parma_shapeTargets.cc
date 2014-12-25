@@ -23,9 +23,9 @@ namespace parma {
       void init(apf::Mesh* m, Sides* s, Weights* w, double alpha) {
         PCU_Debug_Open();
         apf::Parts res;
-        const double t1 = MPI_Wtime();
+        const double t1 = PCU_Time();
         bool isMis = isInMIS(m);
-        double elapsedTime = MPI_Wtime() - t1;
+        double elapsedTime = PCU_Time() - t1;
         PCU_Max_Doubles(&elapsedTime, 1);
         if( !PCU_Comm_Self() )
           fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
@@ -116,7 +116,8 @@ namespace parma {
           part.adjPartIds.push_back(*itr);
           part.net.push_back(*itr);
         }
-        int randNumSeed = time(NULL)+PCU_Comm_Self()+1;
+        const int t = static_cast<int>(PCU_Time());
+        int randNumSeed = t+PCU_Comm_Self()+1;
         mis_init(randNumSeed,true);
         bool isIn =mis(part, false, true);
         return isIn;

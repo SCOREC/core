@@ -338,7 +338,7 @@ Output::~Output()
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   o.in = &in;
   o.mesh = mesh;
   getCounts(o);
@@ -357,7 +357,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getInitialConditions(bcs, o);
   if (in.initBubbles)
     initBubbles(o.mesh, in);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("generated output structs in %f seconds\n",t1 - t0);
 }

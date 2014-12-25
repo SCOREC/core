@@ -153,7 +153,7 @@ static std::string buildRestartFileName(std::string prefix, int step)
 
 void readAndAttachSolution(Input& in, apf::Mesh* m)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   readStepNum(in);
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
@@ -162,7 +162,7 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)
     readAndAttachField(in, m, filename.c_str(), "dwal");
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("solution read and attached in %f seconds\n", t1 - t0);
 }
@@ -188,7 +188,7 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
 
 void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   path += buildRestartFileName("restart", in.timeStepNumber);
   FILE* f = fopen(path.c_str(), "w");
   if (!f) {
@@ -210,7 +210,7 @@ void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
   fclose(f);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("solution written in %f seconds\n", t1 - t0);
 }

@@ -226,7 +226,7 @@ void snap(Adapt* a)
 {
   if ( ! a->input->shouldSnap)
     return;
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   Tag* tag;
   /* we are starting to support a few operations on matched
      meshes, including snapping+UR. this should prevent snapping
@@ -237,7 +237,7 @@ void snap(Adapt* a)
   snapLayer(a, tag);
   apf::removeTagFromDimension(a->mesh, tag, 0);
   a->mesh->destroyTag(tag);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
     t1 - t0, targets, success);
 }

@@ -362,7 +362,7 @@ static void verifyOrder(Mesh* m)
 
 void verify(Mesh* m)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   UpwardCounts guc;
   getUpwardCounts(m->getModel(), m->getDimension(), guc);
   /* got to 3 on purpose, so we can verify if
@@ -391,7 +391,7 @@ void verify(Mesh* m)
   n = verifyVolumes(m);
   if (n && (!PCU_Comm_Self()))
     fprintf(stderr,"apf::verify warning: %ld negative simplex elements\n", n);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("mesh verified in %f seconds\n", t1 - t0);
 }

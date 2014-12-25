@@ -50,7 +50,7 @@ class RibSplitter : public apf::Splitter
     virtual apf::Migration* split(apf::MeshTag* weights, double,
         int multiple)
     {
-      double t0 = MPI_Wtime();
+      double t0 = PCU_Time();
       int depth;
       for (depth = 0; (1 << depth) < multiple; ++depth);
       assert((1 << depth) == multiple);
@@ -62,7 +62,7 @@ class RibSplitter : public apf::Splitter
           int p = plan->sending(e);
           plan->send(e, p + offset);
         }
-        double t1 = MPI_Wtime();
+        double t1 = PCU_Time();
         if (!PCU_Comm_Self())
           printf("planned RIB factor %d in %f seconds\n",
               multiple, t1 - t0);

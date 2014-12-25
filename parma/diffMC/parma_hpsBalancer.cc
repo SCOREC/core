@@ -258,7 +258,7 @@ class MergeTargets {
   }
   //Function used to find the optimal heavy imbalance for executing HPS
   double chi(apf::Mesh* m, apf::MeshTag*, Sides* s, Weights* w) {
-    double t0 = MPI_Wtime();
+    double t0 = PCU_Time();
     int verbose = 1;
     double testW = maxWeight(w);
     double step = 0.05 * avgWeight(w);
@@ -272,7 +272,7 @@ class MergeTargets {
    } while ( splits );
    testW += step;
    if( !PCU_Comm_Self() && verbose )
-     fprintf(stdout, "HPS_STATUS chi ran in seconds %.3f\n", MPI_Wtime()-t0);
+     fprintf(stdout, "HPS_STATUS chi ran in seconds %.3f\n", PCU_Time()-t0);
    return testW;
   }
 
@@ -436,9 +436,9 @@ class MergeTargets {
       virtual void balance(apf::MeshTag* weights, double tolerance) {
         (void) tolerance; // shhh
         double initImb = imbalance(mesh, weights);
-        double t0 = MPI_Wtime();
+        double t0 = PCU_Time();
         run(weights);
-        double elapsed = MPI_Wtime()-t0;
+        double elapsed = PCU_Time()-t0;
         PCU_Max_Doubles(&elapsed, 1);
         double finalImb = imbalance(mesh, weights);
         if (!PCU_Comm_Self())

@@ -14,13 +14,13 @@ namespace awr {
 
 void solveAdjoint(ParameterList& p, apf::Mesh* m)
 {
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   Problem* problem = createProblem(p,m);
   problem->setup();
   problem->assemble();
   problem->solve();
   delete problem;
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("solveAdjoint took %f seconds total\n",t1-t0);
 }
 

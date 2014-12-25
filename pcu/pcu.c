@@ -700,3 +700,8 @@ MPI_Comm PCU_Get_Comm(void)
   return pcu_pmpi_comm();
 }
 
+double PCU_Time(void)
+{
+  return MPI_Wtime();
+}
+

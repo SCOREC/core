@@ -56,7 +56,7 @@ static Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
     case 2: {
       Matrix<2,3> A;
       A[0] = J[0];
-      A[1] = J[2];
+      A[1] = J[1];
       Matrix<3,2> At = transpose(A);
       Matrix<2,3> Ainvt = transpose(At * invert(A * At));
       Matrix3x3 jinvt;

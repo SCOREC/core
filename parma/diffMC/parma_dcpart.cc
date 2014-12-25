@@ -56,7 +56,7 @@ inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
 }
 
 int dcPart::numDisconnectedComps() {
-   double t1 = MPI_Wtime();
+   double t1 = PCU_Time();
    dcCompSz.clear();
    clearTag(m, vtag);
    int numDc = 0;
@@ -66,7 +66,7 @@ int dcPart::numDisconnectedComps() {
       count += dcCompSz[numDc];
       numDc++;
    }
-   printElapsedTime(__func__, MPI_Wtime() - t1);
+   printElapsedTime(__func__, PCU_Time() - t1);
    return numDc-1;
 }
 
@@ -137,11 +137,11 @@ bool isInMis(migrTgt& mt) {
  *         are tagged
  */
 void dcPart::fix() {
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   int loop = 0;
   int ndc = 0;
   while( (ndc = totNumDc()) && loop++ < 50 ) {
-    double t2 = MPI_Wtime();
+    double t2 = PCU_Time();
     migrTgt dcCompTgts;
 
     int maxSz = -1;
@@ -164,13 +164,13 @@ void dcPart::fix() {
       setupPlan(dcCompTgts, plan);
 
     clearTag(m, vtag);
-    double t3 = MPI_Wtime();
+    double t3 = PCU_Time();
     m->migrate(plan);
     if( 0 == PCU_Comm_Self() )
       status("loop %d components %d seconds <fix migrate> %.3f %.3f\n",
-          loop, ndc, t3-t2, MPI_Wtime()-t3);
+          loop, ndc, t3-t2, PCU_Time()-t3);
   }
-  printElapsedTime(__func__, MPI_Wtime() - t1);
+  printElapsedTime(__func__, PCU_Time() - t1);
 }
 
 int dcPart::checkResidence(const int dcComp) {

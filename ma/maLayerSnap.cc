@@ -303,7 +303,7 @@ void snapLayer(Adapt* a, Tag* snapTag)
 {
   if ( ! a->hasLayer)
     return;
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   findLayerBase(a);
   tagLayerForSnap(a, snapTag);
   flagLayerTop(a);
@@ -312,7 +312,7 @@ void snapLayer(Adapt* a, Tag* snapTag)
   freezeTop(a);
   feedbackTopSnap(a, snapTag);
   snapLowerLayer(a, snapTag);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("snapped %ld of %ld layer curves in %f seconds",
       success, targets, t1 - t0);
 }

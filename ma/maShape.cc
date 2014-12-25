@@ -399,7 +399,7 @@ void fixElementShapes(Adapt* a)
 {
   if ( ! a->input->shouldFixShape)
     return;
-  double t0 = MPI_Wtime();
+  double t0 = PCU_Time();
   int count = markBadQuality(a);
   int originalCount = count;
   int prev_count;
@@ -412,7 +412,7 @@ void fixElementShapes(Adapt* a)
     fixShortEdgeElements(a);
     count = markBadQuality(a);
   } while(count < prev_count);
-  double t1 = MPI_Wtime();
+  double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
 }

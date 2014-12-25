@@ -113,6 +113,9 @@ MPI_Comm PCU_Get_Comm(void);
 void PCU_Trace(void);
 void PCU_Protect(void);
 
+/*MPI_Wtime() equivalent*/
+double PCU_Time(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
