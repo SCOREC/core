@@ -14,7 +14,7 @@ namespace parma {
     public:
       Balancer(apf::Mesh* m, double f, int v, const char* n)
         : mesh(m), factor(f), verbose(v), name(n) {
-        maxStep = 50;
+        maxStep = 300;
       }
       virtual bool runStep(apf::MeshTag* wtag, double tolerance)=0;
       virtual void balance(apf::MeshTag* wtag, double tolerance) {

@@ -18,10 +18,10 @@ set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
   ${SPR_LIBS}
-  ${VIZ_LIBS}
   ${PARMA_LIBS}
   ${PH_LIBS}
-  ${APF_MPAS_LIBS})
+  ${APF_MPAS_LIBS}
+  ${VIZ_LIBS})
 
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)
@@ -58,6 +58,7 @@ setup_exe(describe describe.cc)
 setup_exe(balance balance.cc)
 setup_exe(zbalance zbalance.cc)
 setup_exe(gap gap.cc)
+setup_exe(weld weld.cc)
 setup_exe(elmBalance elmBalance.cc)
 setup_exe(vtxBalance vtxBalance.cc)
 setup_exe(edgeBalance edgeBalance.cc)

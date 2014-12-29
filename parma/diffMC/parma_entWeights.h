@@ -11,7 +11,6 @@ namespace parma {
       int entDim;
       double weight;
       virtual double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w);
-      double selfWeight(apf::Mesh* m, apf::MeshTag* w);
       void init(apf::Mesh* m, apf::MeshTag* w, Sides* s);
   };
 }

@@ -5,6 +5,7 @@
 
 namespace parma {
   class Sides;
+  class SurfToVol;
   class Weights;
   class Ghosts;
   class Targets : public Associative<double> {
@@ -13,7 +14,12 @@ namespace parma {
       virtual double total()=0;
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
-  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], double alpha);
+  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int aspectTol, 
+      double vtxTol, double alpha);
+  Targets* makeWeightSvTargets(Sides* s, Weights* w, SurfToVol* sv, 
+      double aspectTol, double alpha);
+  Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol, 
+      double alpha);
   Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], double alpha);
   Targets* makeVtxEdgeElmTargets(Sides* s, Weights* w[3], double alpha);
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha);

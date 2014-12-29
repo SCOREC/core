@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <parma.h>
 #include "parma_step.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -30,6 +31,8 @@ namespace parma {
     m->migrate(plan);
     if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "elements migrated in %f seconds\n", PCU_Time()-t0);
+    if( verbosity > 1 ) 
+      Parma_PrintPtnStats(m, "endStep");
     return true;
   }
 

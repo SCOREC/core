@@ -58,6 +58,17 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
     double (*entImb)[4]);
 
 /**
+ * @brief see Parma_GetEntImbalance(...)
+ * @param mesh (InOut) partitioned mesh
+ * @param weight (In) element weight used for computing imbalance
+ * @param dim (In) entity dimension [vtx|edge|face|rgn]
+ * @return entity imbalance
+ */
+double Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight, 
+    int dim);
+
+
+/**
  * @brief get the maximum and average number of vtx-connected neighboring parts
  * @remark for each part count the number of parts it shares mesh
  *         vertices with
@@ -65,16 +76,44 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
  * @param max (InOut) max neighbors
  * @param avg (InOut) average neighbors
  * @param loc (InOut) local neighbors
- * count
  */
 void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc);
 
 /**
- * @brief get the number of vertices on inter-part boundaries
+ * @brief get the number of owned vertices on inter-part boundaries
  * @param m (In) partitioned mesh
- * @return number of vertices
+ * @param loc (InOut) local number of vertices
+ * @param tot (InOut) total number of vertices
+ * @param min (InOut) min number of vertices on a single part
+ * @param max (InOut) max number of vertices on a single part
+ * @param avg (InOut) average number of vertices per part
  */
-long Parma_GetNumBdryVtx(apf::Mesh* m);
+void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+    int& max, double& avg);
+
+/**
+ * @brief get the number of shared vertices on inter-part boundaries
+ * @param m (In) partitioned mesh
+ * @param loc (InOut) local number of vertices
+ * @param tot (InOut) total number of vertices
+ * @param min (InOut) min number of vertices on a single part
+ * @param max (InOut) max number of vertices on a single part
+ * @param avg (InOut) average number of vertices per part
+ */
+void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+    int& max, double& avg);
+
+/**
+ * @brief get the number of vertices classified on the model boundary
+ * @param m (In) partitioned mesh
+ * @param loc (InOut) local number of vertices
+ * @param tot (InOut) total number of vertices
+ * @param min (InOut) min number of vertices on a single part
+ * @param max (InOut) max number of vertices on a single part
+ * @param avg (InOut) average number of vertices per part
+ */
+void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+    int& max, double& avg);
 
 /**
  * @brief get the maximum, average and local number of face-disconnected
@@ -123,6 +162,15 @@ apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1,
 apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
     int verbose=0);
 
+/**
+ * @brief create an APF Balancer to weld small part boundaries together
+ * @param mesh (In) partitioned mesh
+ * @param stepFactor (In) amount of weight to migrate between parts during
+               diffusion, lower values migrate fewer elements per iteration
+ * @return apf balancer instance
+ */
+apf::Balancer* Parma_MakeWelder(apf::Mesh* m, double stepFactor = 0.1,
+    int verbose=0);
 
 /**
  * @brief create an APF Balancer using ghost element aware diffusion

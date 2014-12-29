@@ -36,18 +36,25 @@ SET(DIFFMC_SOURCES
   diffMC/parma_edgeBalancer.cc
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc
+  diffMC/parma_elmSideSides.cc
+  diffMC/parma_vtxSides.cc
   diffMC/parma_entWeights.cc
   diffMC/parma_ghost.cc
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
   diffMC/parma_hist.cc
   diffMC/parma_hpsBalancer.cc
+  diffMC/parma_sidesToElements.cc
   diffMC/parma_shapeOptimizer.cc
   diffMC/parma_shapeTargets.cc
   diffMC/parma_shapeSelector.cc
   diffMC/parma_vtxBalancer.cc
   diffMC/parma_vtxSelector.cc
   diffMC/parma_weightTargets.cc
+  diffMC/parma_weightSvTargets.cc
+  diffMC/parma_weightSideTargets.cc
+  diffMC/parma_welder.cc
+  diffMC/parma_weldSelector.cc
   diffMC/parma_vtxElmTargets.cc
   diffMC/parma_vtxEdgeElmTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc

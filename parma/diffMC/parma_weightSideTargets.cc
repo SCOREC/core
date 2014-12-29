@@ -4,33 +4,29 @@
 #include "parma_targets.h"
 #include "parma_surfToVol.h"
 namespace parma {
-  class VtxElmTargets : public Targets {
+  class WeightSideTargets : public Targets {
     public:
-      VtxElmTargets(Sides* s, Weights* w[2], int sideTol, double vtxTol, 
-          double alpha) {
-        init(s, w, sideTol, vtxTol, alpha);
+      WeightSideTargets(Sides* s, Weights* w, int sideTol, double alpha) {
+        init(s, w, sideTol, alpha);
       }
       double total() {
         return totW;
       }
     private:
-      VtxElmTargets();
+      WeightSideTargets();
       double totW;
-      void init(Sides* s, Weights* w[2], int sideTol, double vtxTol, 
-          double alpha) {
+      void init(Sides* s, Weights* w, int sideTol, double alpha) {
+        const double selfW = w->self();
         totW = 0;
         const Sides::Item* side;
         s->begin();
         while( (side = s->iterate()) ) {
           const int peer = side->first;
-          const double peerVtxW = w[0]->get(peer);
-          const double selfElmW = w[1]->self();
-          const double peerElmW = w[1]->get(peer);
+          const double peerW = w->get(peer);
           const int peerSides = s->get(peer);
-          if( selfElmW > peerElmW  && 
-              peerVtxW < vtxTol && 
+          if( selfW > peerW && 
               peerSides < sideTol ) {
-            const double difference = selfElmW - peerElmW;
+            const double difference = selfW - peerW;
             double sideFraction = side->second;
             sideFraction /= s->total();
             double scaledW = difference * sideFraction * alpha;
@@ -41,8 +37,8 @@ namespace parma {
         s->end();
       }
   };
-  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int sideTol, 
-      double vtxTol, double alpha) {
-    return new VtxElmTargets(s, w, sideTol, vtxTol, alpha);
+  Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol, 
+      double alpha) {
+    return new WeightSideTargets(s, w, sideTol, alpha);
   }
 }
