@@ -23,122 +23,23 @@ static int vtxSelectorCalls = 0;
 Visualization* viz;
 
 namespace {
-  typedef std::pair<int,double> Migr;
-  struct CompareMigr {
-    bool operator()(const Migr& a, const Migr& b) {
-      if( a.second < b.second )
-        return true;
-      else
-        return false;
-    }
-  };
-  typedef std::set<Migr,CompareMigr> MigrComm;
-  void print(const char* key, MigrComm& d) {
-    std::stringstream ss;
-    ss << key << " ";
-    APF_ITERATE(MigrComm, d, sItr)
-      ss << "(" << sItr->first << "," << sItr->second << ") ";
-    ss << '\n';
-    std::string s = ss.str();
-    PCU_Debug_Print(s.c_str());
-  }
 
   typedef std::set<apf::MeshEntity*> SetEnt;
-  typedef std::map<int,SetEnt > MiSetEnt;
-  void print(const char* key, MiSetEnt& d) {
-    std::stringstream ss;
-    ss << key << " ";
-    APF_ITERATE(MiSetEnt, d, sItr)
-      ss << "(" << sItr->first << "," << sItr->second.size() << ") ";
-    ss << '\n';
-    std::string s = ss.str();
-    PCU_Debug_Print(s.c_str());
-  }
-
   typedef std::vector<int> VecInt;
-  void print(const char* key, VecInt& d) {
-    std::stringstream ss;
-    ss << key << " ";
-    APF_ITERATE(VecInt, d, sItr)
-      ss << *sItr << " ";
-    ss << '\n';
-    std::string s = ss.str();
-    PCU_Debug_Print(s.c_str());
-  }
-
   typedef std::map<int,double> Mid;
-  void print(const char* key, Mid& d) {
-    std::stringstream ss;
-    ss << key << " ";
-    APF_ITERATE(Mid, d, sItr)
-      ss << "(" << sItr->first << "," << sItr->second << ") ";
-    ss << '\n';
-    std::string s = ss.str();
-    PCU_Debug_Print(s.c_str());
-  }
-
   typedef std::map<int,int> Mii;
-  void printMii(const char* key, Mii& d) {
-    std::stringstream ss;
-    ss << key << " ";
-    APF_ITERATE(Mii, d, sItr)
-      ss << "(" << sItr->first << "," << sItr->second << ") ";
-    ss << '\n';
-    std::string s = ss.str();
-    PCU_Debug_Print(s.c_str());
-  }
-
   typedef std::set<apf::MeshEntity*> Level;
 
-  void writeVtk(apf::Mesh* m, const char* pre, int n=0) {
-    std::stringstream ss;
-    ss << pre << std::setfill('0') << std::setw(4) << vtxSelectorCalls << "_";
-    if(n)
-      ss << n << "_";
-    std::string s = ss.str();
-    apf::writeVtkFiles(s.c_str(), m);
-  }
-
-  inline void setNumber(apf::Numbering* n, apf::MeshEntity* e, int val) {
-    int node = 0; int comp = 0;
-    apf::number(n,e,node,comp,val);
-  }
-  inline int getNumber(apf::Numbering* n, apf::MeshEntity* e) {
-    int node = 0; int comp = 0;
-    return apf::getNumber(n,e,node,comp);
-  }
-  inline bool numbered(apf::Numbering* n, apf::MeshEntity* e) {
-    int node = 0; int comp = 0;
-    if ( 0 == apf::getNumber(n,e,node,comp) )
-      return false;
-    else
-      return true;
-  }
-
-  apf::Numbering* initNumbering(apf::Mesh* m, const char* name, int initVal=0) {
-    apf::FieldShape* s = m->getShape();
-    apf::Numbering* n = apf::createNumbering(m,name,s,1);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(0);
-    while( (e = m->iterate(it)) )
-      setNumber(n,e,initVal);
-    m->end(it);
-    return n;
-  }
-
-  apf::Numbering* initElmNumbering(apf::Mesh* m, const char* name, 
-      int initVal=0) {
-    const int dim = m->getDimension();
-    apf::FieldShape* s = apf::getConstant(dim);
-    apf::Numbering* n = apf::createNumbering(m,name,s,1);
+  apf::MeshTag* initTag(apf::Mesh* m, const char* name, 
+      int initVal=0, int dim=0) {
+    apf::MeshTag* t = m->createIntTag(name,1);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m->begin(dim);
     while( (e = m->iterate(it)) )
-      setNumber(n,e,initVal);
+      m->setIntTag(e,t,&initVal);
     m->end(it);
-    return n;
+    return t;
   }
-
 
   inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* v,
       apf::Adjacent& adj) {
@@ -159,7 +60,7 @@ namespace {
      return shared || (!shared && gd < md);
   }
 
-  int walkInward(apf::Numbering* n, apf::Mesh* m) {
+  int walkInward(apf::MeshTag* n, apf::Mesh* m) {
     Level cur;
     Level next;
     apf::MeshEntity* v;
@@ -174,14 +75,16 @@ namespace {
     while( count != m->count(0) ) {
       APF_ITERATE(Level, cur, vtxItr) {
         v = *vtxItr;
-        if( numbered(n, v) ) continue;
-        setNumber(n,v,depth);
+        int lvl; m->getIntTag(v,n,&lvl);
+        if( lvl ) continue;
+        m->setIntTag(v,n,&depth);
         count++;
         assert(count <= m->count(0));
         apf::Adjacent adjVtx;
         getEdgeAdjVtx(m,v,adjVtx);
         APF_ITERATE(apf::Adjacent, adjVtx, vItr) {
-          if( !numbered(n, *vItr) )
+          m->getIntTag(*vItr,n,&lvl);
+          if( !lvl )
             next.insert(*vItr);
         }
       }
@@ -193,7 +96,7 @@ namespace {
     return depth-1;
   }
   
-  Level* reduce(apf::Numbering* n, apf::Mesh* m, Level* l, int depth) {
+  Level* reduce(apf::MeshTag* n, apf::Mesh* m, Level* l, int depth) {
     Level* g = new Level;
     while( !l->empty() ) {
       apf::MeshEntity* v = *(l->begin()); l->erase(v);
@@ -204,23 +107,25 @@ namespace {
         v = *(q.begin()); q.erase(v);
         apf::Adjacent adjVtx;
         getEdgeAdjVtx(m,v,adjVtx);
-        APF_ITERATE(apf::Adjacent, adjVtx, u)
-          if( getNumber(n,*u) == depth && l->count(*u) ) {
+        APF_ITERATE(apf::Adjacent, adjVtx, u) {
+          int d; m->getIntTag(*u,n,&d);
+          if( d == depth && l->count(*u) ) {
             l->erase(*u);
             q.insert(*u);
           }
+        }
       }
     }
     delete l;
     return g;
   }
 
-  Level* getVerts(apf::Numbering* n, apf::Mesh* m, int depth) {
+  Level* getVerts(apf::MeshTag* n, apf::Mesh* m, int depth) {
     Level* l = new Level;
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
     while( (v = m->iterate(it)) ) {
-      int d = getNumber(n,v);
+      int d; m->getIntTag(v,n,&d);
       if( d == depth )
         l->insert(v);
     }
@@ -231,10 +136,12 @@ namespace {
 
   Level* getCentralVerts(apf::Mesh* m) {
     double t0 = PCU_Time();
-    apf::Numbering* lvls = initNumbering(m, "parmaSelectorLevels");
-    int depth = walkInward(lvls, m);
-    Level* deepest = getVerts(lvls,m,depth);
-    apf::destroyNumbering(lvls);
+    apf::MeshTag* lvlsT = initTag(m, "parmaSelectorLevels");
+    int depth = walkInward(lvlsT, m);
+    Level* deepest = getVerts(lvlsT,m,depth);
+    //apf::destroyNumbering(lvls);
+    apf::removeTagFromDimension(m,lvlsT,0);
+    m->destroyTag(lvlsT);
     parmaCommons::printElapsedTime("getCentralVerts", PCU_Time()-t0);
     return deepest;
   }
@@ -250,139 +157,162 @@ namespace {
     return elms;
   }
 
-  struct CompareByDist {
-    apf::Numbering* dist;
-    bool isMore;
-    bool operator()(apf::MeshEntity* u, apf::MeshEntity* v) {
-      const int ud = getNumber(dist,u);
-      const int vd = getNumber(dist,v);
-      if( (isMore && ud > vd) || (!isMore && ud < vd) ) 
-        return true;
-      else
-        return false;
+  struct Greater {
+    bool operator() (const int& l, const int& r) const {
+      return (l > r);
+    }
+  };
+  struct Less {
+    bool operator() (const int& l, const int& r) const {
+      return (l < r);
     }
   };
 
-  class Heap {
-    apf::Mesh* m;
-    CompareByDist cmp;
-    apf::MeshTag* t;
-    std::vector<apf::MeshEntity*> pq;
+  template <class Compare> class DistanceQueue {
+    typedef typename std::multimap<int, apf::MeshEntity*, Compare> DistanceQ;
+    typedef typename DistanceQ::iterator DistanceQIter;
     public:
-    Heap(apf::Mesh* mesh, CompareByDist c) : m(mesh), cmp(c) {
-      t = m->createIntTag("parmaHeap", 1);
-    }
-    ~Heap() {
-      apf::removeTagFromDimension(m, t, 0);
-      m->destroyTag(t);
-    }
-    inline apf::MeshEntity* pop() {
-      pop_heap(pq.begin(), pq.end(), cmp);
-      apf::MeshEntity* v = pq.back();
-      pq.pop_back();
-      m->removeTag(v,t);
-      return v;
-    }
-    inline void push(apf::MeshEntity* v) {
-      pq.push_back(v);
-      push_heap(pq.begin(), pq.end(), cmp);
-      int one = 1;
-      m->setIntTag(v,t,&one);
-    }
-    inline void heapify() {
-      make_heap(pq.begin(), pq.end(), cmp);
-    }
-    inline bool has(apf::MeshEntity* v) {
-      return m->hasTag(v,t);
-    }
-    inline bool empty() {
-      return 0 == pq.size();
-    }
+      DistanceQueue(apf::Mesh* mesh) : m(mesh) {
+        t = m->createIntTag("parmaDistanceQueue",1);
+      }
+      ~DistanceQueue() {
+        apf::removeTagFromDimension(m,t,0);
+        m->destroyTag(t);
+      }
+      void push(apf::MeshEntity* e, int dist) {
+        DistanceQIter it = q.begin();
+        if ( m->hasTag(e, t) ) {
+          it = erase(dist, e);
+        }
+        int one = 1;
+        m->setIntTag(e, t, &one);
+        q.insert(it, std::make_pair(dist, e));
+      }
+      apf::MeshEntity* pop() {
+        DistanceQIter it;
+        it = q.begin();
+        apf::MeshEntity* e = it->second;
+        q.erase(it);
+        return e;
+      }
+      bool empty() {
+        return q.empty();
+      }
+    private:
+      DistanceQIter erase(int dist, apf::MeshEntity* e) {
+        assert( m->hasTag(e, t) );
+        DistanceQIter it = q.find(dist);
+        DistanceQIter rit = ( it != q.begin() ) ? it-- : q.end();
+        while( it != q.end() ) {
+          if( it->second == e ) {
+            q.erase(it);
+            break;
+          }
+          rit = it;
+          it++;
+        }
+        return rit;
+      }
+      apf::Mesh* m;
+      apf::MeshTag* t;
+      DistanceQ q;
   };
 
-  void walkElms(apf::Mesh* m, apf::Numbering* d, apf::MeshEntity* src) {
+  void walkElms(apf::Mesh* m, apf::MeshTag* conn, apf::MeshEntity* src) {
+    int one = 1;
     int count = 0;
     std::list<apf::MeshEntity*> elms;
     elms.push_back(src);
     while( !elms.empty() ) {
       apf::MeshEntity* e = elms.front();
       elms.pop_front();
-      if( numbered(d,e) ) continue;
-      setNumber(d,e,1);
+      int c; m->getIntTag(e,conn,&c);
+      if( c ) continue;
+      m->setIntTag(e,conn,&one);
       count++;
       apf::Adjacent adjElms;
       getFaceAdjElms(m,e,adjElms);
-      APF_ITERATE(apf::Adjacent, adjElms, eItr)
-        if( !numbered(d,*eItr) )
+      APF_ITERATE(apf::Adjacent, adjElms, eItr) {
+        m->getIntTag(*eItr,conn,&c);
+        if( !c )
           elms.push_back(*eItr);
+      }
     }
   }
 
-  bool disconnected(apf::Mesh*m, apf::Numbering* c, apf::MeshEntity* e) {
+  bool disconnected(apf::Mesh*m, apf::MeshTag* conn, apf::MeshEntity* e) {
+    int c;
     apf::Adjacent adjElms;
     m->getAdjacent(e, m->getDimension(), adjElms);
-    APF_ITERATE(apf::Adjacent, adjElms, adjItr) 
-      if( getNumber(c,*adjItr) )
-        return false;
+    APF_ITERATE(apf::Adjacent, adjElms, adjItr) {
+      m->getIntTag(*adjItr,conn,&c);
+      if( c ) return false;
+    }
     return true;
   }
 
-  void dijkstra(apf::Mesh* m, apf::Numbering* c, apf::Numbering* d, 
+  void dijkstra(apf::Mesh* m, apf::MeshTag* c, apf::MeshTag* d, 
       apf::MeshEntity* src) {
-    CompareByDist compare = {d,true};
-    Heap pq(m,compare);
-    setNumber(d, src, 0);
-    pq.push(src);
+    DistanceQueue<Less> pq(m);
+    int zero = 0;
+    m->setIntTag(src, d, &zero);
+    pq.push(src,0);
 
     while( !pq.empty() ) {
       apf::MeshEntity* v = pq.pop();
-      int vd = getNumber(d, v);
+      int vd; m->getIntTag(v, d, &vd);
       if( vd == INT_MAX) continue;
       apf::Adjacent adjVtx;
       getEdgeAdjVtx(m,v,adjVtx);
       APF_ITERATE(apf::Adjacent, adjVtx, eItr) {
         apf::MeshEntity* u = *eItr;
-        int ud = getNumber(d,u);
+        int ud; m->getIntTag(u,d,&ud);
         if( vd+1 < ud ) {
           int l = disconnected(m,c,u) ? INT_MAX : vd+1;
-          setNumber(d,u,l);
-          if( pq.has(u) )
-            pq.heapify();
-          else
-            pq.push(u);
+          m->setIntTag(u,d,&l);
+          pq.push(u,l);
         }
       }
     }
   }
 
-  apf::Numbering* computeDistance(apf::Mesh* m, Level& verts) {
+  apf::MeshTag* computeDistance(apf::Mesh* m, Level& verts) {
     double t0 = PCU_Time();
     Level* centralElms = getCentralElms(m, verts);
-    apf::Numbering* conn = initElmNumbering(m, "parmaElmConnectivity");
+    int initVal = 0;
+    apf::MeshTag* connT = initTag(m, "parmaElmConnectivity", initVal, m->getDimension());
     APF_ITERATE(Level, *centralElms, itr)
-      walkElms(m,conn,*itr);
+      walkElms(m,connT,*itr);
     delete centralElms;
     parmaCommons::printElapsedTime("computeConnectivity", PCU_Time()-t0);
 
     t0 = PCU_Time();
-    apf::Numbering* dist = initNumbering(m, "parmaDistance", INT_MAX);
+    initVal = INT_MAX;
+    apf::MeshTag* distT = initTag(m, "parmaDistance", initVal);
+ 
     APF_ITERATE(Level, verts, itr)
-      dijkstra(m,conn,dist,*itr);
-    apf::destroyNumbering(conn);
+      dijkstra(m,connT,distT,*itr);
+
+    //apf::destroyNumbering(conn);
+    apf::removeTagFromDimension(m,connT,m->getDimension());
+    m->destroyTag(connT);
+
     parmaCommons::printElapsedTime("computeDistance", PCU_Time()-t0);
-    return dist;
+    return distT;
   }
 
-  Heap* BoundaryVertices(apf::Mesh* m, apf::Numbering* d) {
-    CompareByDist compare = {d,false};
-    Heap* dh = new Heap(m, compare);
+  DistanceQueue<Greater> * BoundaryVertices(apf::Mesh* m, apf::MeshTag* d) {
+    DistanceQueue<Greater> * dq = new DistanceQueue<Greater>(m);
 
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
     while( (v = m->iterate(it)) )
-      if( m->isShared(v) )
-        dh->push(v);
-    return dh;
+      if( m->isShared(v) ) {
+        int dist; m->getIntTag(v,d,&dist);
+        dq->push(v, dist);
+      }
+    m->end(it);
+    return dq;
   }
 
   int getCavityPeer(apf::Mesh* m, apf::MeshEntity* v) {
@@ -423,7 +353,8 @@ namespace parma {
         delete centralVerts;
       }
       ~VtxSelector() {
-        apf::destroyNumbering(dist);
+        apf::removeTagFromDimension(mesh,dist,0);
+        mesh->destroyTag(dist);
       }
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
@@ -446,25 +377,26 @@ namespace parma {
       void select(Targets* tgts, apf::Migration* plan) {
         double t0 = PCU_Time();
         double planW = 0;
-        Heap* bdryVerts = BoundaryVertices(mesh, dist);
+        DistanceQueue<Greater>* bdryVerts = BoundaryVertices(mesh, dist);
         apf::Parts peers;
         while( !bdryVerts->empty() ) {
           if( planW > tgts->total() ) break;
           apf::MeshEntity* e = bdryVerts->pop();
           int destPid = getCavityPeer(mesh,e);
+          int d; mesh->getIntTag(e,dist,&d);
+          PCU_Debug_Print("select dist %d\n", d);
           if( (tgts->has(destPid) && sending[destPid] < tgts->get(destPid)) ||
-              INT_MAX == getNumber(dist,e) ) {
+              INT_MAX == d ) {
             double ew = add(e, destPid, plan);
             sending[destPid] += ew;
             planW += ew;
           }
         }
-        print("Sending", sending);
         parmaCommons::printElapsedTime("select", PCU_Time()-t0);
         delete bdryVerts;
       }
     private:
-      apf::Numbering* dist;
+      apf::MeshTag* dist;
       VtxSelector();
       Mid sending;
   };
@@ -556,24 +488,24 @@ namespace parma {
       }
 
       void cancel(apf::Migration** plan, Mid* order) {
+
         apf::Migration* planA = *plan;
-        print("order", *order);
         PCU_Debug_Print("plan count %d\n", planA->count());
         typedef std::pair<apf::MeshEntity*, int> PairEntInt;
         std::vector<PairEntInt > keep;
         keep.reserve(planA->count());
-        MiSetEnt sendingVtx;
+
+        std::map<int,SetEnt > peerSelections;
         for(int i=0; i < planA->count(); i++) {
            apf::MeshEntity* e = planA->get(i);
            int dest = planA->sending(e);
-           SetEnt vset = sendingVtx[dest];
+           SetEnt vset = peerSelections[dest];
            addCavityVtx(e, vset);
            if( cavityWeight(vset) <= (*order)[dest] ) {
              keep.push_back(PairEntInt(e,dest));
-             sendingVtx[dest] = vset;
+             peerSelections[dest] = vset;
            }
         }
-        print("sendingVtx", sendingVtx);
         delete order;
         delete planA;
         *plan = new apf::Migration(mesh);
@@ -582,9 +514,19 @@ namespace parma {
         PCU_Debug_Print("plan count %d\n", (*plan)->count());
       }
 
+      typedef std::pair<int,double> Migr;
+      struct CompareMigr {
+        bool operator()(const Migr& a, const Migr& b) const {
+          if( a.second < b.second )
+            return true;
+          else
+            return false;
+        }
+      };
 
       Mid* trim(Targets* t) {
-        print("sendingVtx", sendingVtx);
+        typedef std::set<Migr,CompareMigr> MigrComm;
+
         PCU_Comm_Begin();
         APF_ITERATE(Mid, sendingVtx, s) {
           PCU_COMM_PACK(s->first, s->second);
@@ -600,7 +542,6 @@ namespace parma {
           PCU_Debug_Print("trim recv from %d weight %.3f\n", PCU_Comm_Sender(), w);
           incoming.insert(Migr(PCU_Comm_Sender(),w));
         }
-        print("incoming", incoming);
 
         double selfW = parma::getWeight(mesh,wtag,0);
         Mid accept;
@@ -617,7 +558,6 @@ namespace parma {
           totW += accept[in->first];
         }
         PCU_Debug_Print("trim selfW %.3f\n", selfW);
-        print("accept", accept);
 
         PCU_Comm_Begin();
         APF_ITERATE(Mid, accept, a)
@@ -650,7 +590,6 @@ namespace parma {
     private:
       Mid sendingVtx;
       int maxVtx;
-      apf::MeshTag* migrTag;
   };
   Selector* makeElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxVtx) {
     return new ElmLtVtxSelector(m, w, maxVtx);

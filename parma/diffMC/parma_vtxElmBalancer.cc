@@ -43,6 +43,7 @@ namespace {
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension())};
         parma::Targets* t =
           parma::makeVtxElmTargets(s, w, sideTol, maxVtx, factor);
+        delete w[0];
         PCU_Debug_Print("%s\n", t->print("targets").c_str());
         parma::Selector* sel = parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
         parma::Stepper b(mesh, wtag, factor, s, w[1], t, sel);
