@@ -24,7 +24,7 @@ namespace {
   typedef std::map<int,int> Mii;
   typedef std::set<apf::MeshEntity*> Level;
 
-  apf::MeshTag* initTag(apf::Mesh* m, const char* name, 
+  apf::MeshTag* initTag(apf::Mesh* m, const char* name,
       int initVal=0, int dim=0) {
     apf::MeshTag* t = m->createIntTag(name,1);
     apf::MeshEntity* e;
@@ -89,7 +89,7 @@ namespace {
     }
     return depth-1;
   }
-  
+
   Level* reduce(apf::MeshTag* n, apf::Mesh* m, Level* l, int depth) {
     Level* g = new Level;
     while( !l->empty() ) {
@@ -245,7 +245,7 @@ namespace {
     return true;
   }
 
-  void dijkstra(apf::Mesh* m, apf::MeshTag* c, apf::MeshTag* d, 
+  void dijkstra(apf::Mesh* m, apf::MeshTag* c, apf::MeshTag* d,
       apf::MeshEntity* src) {
     DistanceQueue<Less> pq(m);
     int zero = 0;
@@ -284,7 +284,7 @@ namespace {
     t0 = PCU_Time();
     initVal = INT_MAX;
     apf::MeshTag* distT = initTag(m, "parmaDistance", initVal);
- 
+
     APF_ITERATE(Level, verts, itr)
       dijkstra(m,connT,distT,*itr);
 
@@ -316,7 +316,7 @@ namespace {
     APF_ITERATE(apf::Adjacent, sideSides, ss) {
       apf::Copies rmts;
       m->getRemotes(*ss,rmts);
-      APF_ITERATE(apf::Copies, rmts, r) 
+      APF_ITERATE(apf::Copies, rmts, r)
          pc[r->first]++;
     }
     int max = -1;
@@ -328,6 +328,12 @@ namespace {
       }
     assert(peer>=0);
     return peer;
+  }
+
+  size_t cavitySize(apf::Mesh* m, apf::MeshEntity* v) {
+    apf::Adjacent elms;
+    m->getAdjacent(v, m->getDimension(), elms);
+    return elms.getSize();
   }
 }
 
@@ -347,7 +353,9 @@ namespace parma {
       }
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
-        select(tgts, plan);
+        double planW = 0;
+        for(size_t max=2; max <= 12; max+=2)
+          planW += select(tgts, plan, planW, max);
         return plan;
       }
     protected:
@@ -363,9 +371,9 @@ namespace parma {
             plan->send(*adjItr, destPid);
         return getWeight(v);
       }
-      void select(Targets* tgts, apf::Migration* plan) {
+      double select(Targets* tgts, apf::Migration* plan, double planW,
+          size_t maxSize) {
         double t0 = PCU_Time();
-        double planW = 0;
         DistanceQueue<Greater>* bdryVerts = BoundaryVertices(mesh, dist);
         apf::Parts peers;
         while( !bdryVerts->empty() ) {
@@ -373,8 +381,9 @@ namespace parma {
           apf::MeshEntity* e = bdryVerts->pop();
           int destPid = getCavityPeer(mesh,e);
           int d; mesh->getIntTag(e,dist,&d);
-          PCU_Debug_Print("select dist %d\n", d);
-          if( (tgts->has(destPid) && sending[destPid] < tgts->get(destPid)) ||
+          if( (tgts->has(destPid) &&
+               sending[destPid] < tgts->get(destPid) &&
+               cavitySize(mesh, e) <= maxSize ) ||
               INT_MAX == d ) {
             double ew = add(e, destPid, plan);
             sending[destPid] += ew;
@@ -383,6 +392,7 @@ namespace parma {
         }
         parmaCommons::printElapsedTime("select", PCU_Time()-t0);
         delete bdryVerts;
+        return planW;
       }
     private:
       apf::MeshTag* dist;
@@ -417,7 +427,7 @@ namespace parma {
       ElmSelector(apf::Mesh* m, apf::MeshTag* w)
         : VtxSelector(m, w) {}
     protected:
-      virtual double add(apf::MeshEntity* vtx, const int destPid, 
+      virtual double add(apf::MeshEntity* vtx, const int destPid,
           apf::Migration* plan) {
         double w = 0;
         apf::DynamicArray<apf::MeshEntity*> adjElms;
@@ -440,7 +450,9 @@ namespace parma {
         : VtxSelector(m, w), maxVtx(maxV) {}
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
-        select(tgts, plan);
+        double planW = 0;
+        for(size_t max=2; max <= 12; max+=2)
+          planW += select(tgts, plan, planW, max);
         cancel(&plan, trim(tgts));
         return plan;
       }
@@ -465,9 +477,9 @@ namespace parma {
           apf::Copies rmts;
           mesh->getRemotes(*sItr,rmts);
           bool shared = false;
-          APF_ITERATE(apf::Copies, rmts, r) 
+          APF_ITERATE(apf::Copies, rmts, r)
             if( r->first == dest ) {
-              shared = true; 
+              shared = true;
               break;
             }
           if( !shared )
@@ -519,11 +531,11 @@ namespace parma {
         PCU_Comm_Begin();
         APF_ITERATE(Mid, sendingVtx, s) {
           PCU_COMM_PACK(s->first, s->second);
-          PCU_Debug_Print("trim sending to %d weight %.3f\n", 
+          PCU_Debug_Print("trim sending to %d weight %.3f\n",
               s->first, s->second);
         }
         PCU_Comm_Send();
-        
+
         MigrComm incoming;
         double w;
         while (PCU_Comm_Listen()) {
@@ -540,9 +552,9 @@ namespace parma {
           if( avail > 0 )
             if( in->second <= avail )
               accept[in->first] = in->second;
-            else 
+            else
               accept[in->first] = avail;
-          else 
+          else
             accept[in->first] = 0;
           totW += accept[in->first];
         }
@@ -553,7 +565,7 @@ namespace parma {
           PCU_COMM_PACK(a->first, a->second);
         PCU_Comm_Send();
         Mid* order = new Mid;
-        double outw; 
+        double outw;
         while (PCU_Comm_Listen()) {
           PCU_COMM_UNPACK(outw);
           (*order)[PCU_Comm_Sender()] = outw;
