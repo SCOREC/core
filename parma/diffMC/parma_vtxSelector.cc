@@ -6,9 +6,6 @@
 #include <apfNumbering.h>
 #include <apfShape.h>
 #include <PCU.h>
-#include "../viz/viz.h"
-#include "maximalIndependentSet/mis.h"
-
 #include <set>
 #include <list>
 #include <stdio.h>
@@ -18,9 +15,6 @@
 #include <string>
 #include <iomanip>
 #include <vector>
-
-static int vtxSelectorCalls = 0;
-Visualization* viz;
 
 namespace {
 
@@ -280,7 +274,8 @@ namespace {
     double t0 = PCU_Time();
     Level* centralElms = getCentralElms(m, verts);
     int initVal = 0;
-    apf::MeshTag* connT = initTag(m, "parmaElmConnectivity", initVal, m->getDimension());
+    apf::MeshTag* connT =
+      initTag(m, "parmaElmConnectivity", initVal, m->getDimension());
     APF_ITERATE(Level, *centralElms, itr)
       walkElms(m,connT,*itr);
     delete centralElms;
@@ -293,7 +288,6 @@ namespace {
     APF_ITERATE(Level, verts, itr)
       dijkstra(m,connT,distT,*itr);
 
-    //apf::destroyNumbering(conn);
     apf::removeTagFromDimension(m,connT,m->getDimension());
     m->destroyTag(connT);
 
@@ -345,11 +339,6 @@ namespace parma {
       {
         Level* centralVerts = getCentralVerts(m);
         dist = computeDistance(m, *centralVerts);
-/*
-        if(!vtxSelectorCalls)
-          viz = new Visualization(4242); //FIXME no dtor call
-*/
-        vtxSelectorCalls++;
         delete centralVerts;
       }
       ~VtxSelector() {
