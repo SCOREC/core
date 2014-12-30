@@ -330,10 +330,14 @@ namespace {
     return peer;
   }
 
-  size_t cavitySize(apf::Mesh* m, apf::MeshEntity* v) {
+  size_t cavitySize(apf::Mesh* m, apf::MeshEntity* v, apf::Migration* plan) {
+    size_t sz = 0;
     apf::Adjacent elms;
     m->getAdjacent(v, m->getDimension(), elms);
-    return elms.getSize();
+    APF_ITERATE(apf::Adjacent, elms, adjItr)
+      if( !plan->has(*adjItr) )
+        sz++; 
+    return sz;
   }
 }
 
@@ -383,7 +387,7 @@ namespace parma {
           int d; mesh->getIntTag(e,dist,&d);
           if( (tgts->has(destPid) &&
                sending[destPid] < tgts->get(destPid) &&
-               cavitySize(mesh, e) <= maxSize ) ||
+               cavitySize(mesh, e, plan) <= maxSize ) ||
               INT_MAX == d ) {
             double ew = add(e, destPid, plan);
             sending[destPid] += ew;
