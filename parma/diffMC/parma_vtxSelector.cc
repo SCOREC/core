@@ -373,7 +373,7 @@ namespace parma {
         return getWeight(v);
       }
       double select(Targets* tgts, apf::Migration* plan, double planW,
-          size_t maxSize) {
+          int maxSize) {
         double t0 = PCU_Time();
         DistanceQueue<Greater>* bdryVerts = BoundaryVertices(mesh, dist);
         apf::Parts peers;
@@ -451,7 +451,7 @@ namespace parma {
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
         double planW = 0;
-        for(size_t max=2; max <= 12; max+=2)
+        for(int max=2; max <= 12; max+=2)
           planW += select(tgts, plan, planW, max);
         cancel(&plan, trim(tgts));
         return plan;
