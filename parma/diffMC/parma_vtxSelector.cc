@@ -330,14 +330,14 @@ namespace {
     return peer;
   }
 
-  size_t cavitySize(apf::Mesh* m, apf::MeshEntity* v, apf::Migration* plan) {
-    size_t sz = 0;
+  void getCavity(apf::Mesh* m, apf::MeshEntity* v, apf::Migration* plan, 
+      apf::Up& cavity) {
+    cavity.n = 0;
     apf::Adjacent elms;
     m->getAdjacent(v, m->getDimension(), elms);
     APF_ITERATE(apf::Adjacent, elms, adjItr)
       if( !plan->has(*adjItr) )
-        sz++; 
-    return sz;
+        cavity.e[(cavity.n)++] = *adjItr; 
   }
 }
 
@@ -366,13 +366,10 @@ namespace parma {
       virtual double getWeight(apf::MeshEntity* e) {
         return getEntWeight(mesh,e,wtag);
       }
-      virtual double add(apf::MeshEntity* v, const int destPid,
+      virtual double add(apf::MeshEntity* v, apf::Up& cavity, const int destPid,
           apf::Migration* plan) {
-        apf::Adjacent adjElms;
-        mesh->getAdjacent(v, mesh->getDimension(), adjElms);
-        APF_ITERATE(apf::Adjacent, adjElms, adjItr)
-          if( !plan->has(*adjItr) )
-            plan->send(*adjItr, destPid);
+        for(int i=0; i < cavity.n; i++)
+           plan->send(cavity.e[i], destPid);
         return getWeight(v);
       }
       double select(Targets* tgts, apf::Migration* plan, double planW,
@@ -380,16 +377,18 @@ namespace parma {
         double t0 = PCU_Time();
         DistanceQueue<Greater>* bdryVerts = BoundaryVertices(mesh, dist);
         apf::Parts peers;
+        apf::Up cavity;
         while( !bdryVerts->empty() ) {
           if( planW > tgts->total() ) break;
           apf::MeshEntity* e = bdryVerts->pop();
+          getCavity(mesh, e, plan, cavity);
           int destPid = getCavityPeer(mesh,e);
           int d; mesh->getIntTag(e,dist,&d);
           if( (tgts->has(destPid) &&
                sending[destPid] < tgts->get(destPid) &&
-               cavitySize(mesh, e, plan) <= maxSize ) ||
+               cavity.n <= maxSize ) ||
               INT_MAX == d ) {
-            double ew = add(e, destPid, plan);
+            double ew = add(e, cavity, destPid, plan);
             sending[destPid] += ew;
             planW += ew;
           }
@@ -431,16 +430,13 @@ namespace parma {
       ElmSelector(apf::Mesh* m, apf::MeshTag* w)
         : VtxSelector(m, w) {}
     protected:
-      virtual double add(apf::MeshEntity* vtx, const int destPid,
+      virtual double add(apf::MeshEntity* vtx, apf::Up& cavity, const int destPid,
           apf::Migration* plan) {
         double w = 0;
-        apf::DynamicArray<apf::MeshEntity*> adjElms;
-        mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
-        APF_ITERATE(apf::Adjacent, adjElms, adjItr)
-          if( !plan->has(*adjItr) ) {
-            plan->send(*adjItr, destPid);
-            w += getWeight(*adjItr);
-          }
+        for(int i=0; i < cavity.n; i++) {
+           plan->send(cavity.e[i], destPid);
+           w += getWeight(cavity.e[i]);
+        }
         return w;
       }
   };
@@ -577,18 +573,15 @@ namespace parma {
         return order;
       }
 
-      virtual double add(apf::MeshEntity* vtx,
+      virtual double add(apf::MeshEntity* vtx, apf::Up& cavity,
           const int destPid, apf::Migration* plan) {
         SetEnt cav;
         double w = 0;
-        apf::DynamicArray<apf::MeshEntity*> adjElms;
-        mesh->getAdjacent(vtx, mesh->getDimension(), adjElms);
-        APF_ITERATE(apf::Adjacent, adjElms, adjItr)
-          if( !plan->has(*adjItr) ) {
-            addCavityVtx(*adjItr, cav);
-            plan->send(*adjItr, destPid);
-            w += getWeight(*adjItr);
-          }
+        for(int i=0; i < cavity.n; i++) {
+          addCavityVtx(cavity.e[i], cav);
+          plan->send(cavity.e[i], destPid);
+          w += getWeight(cavity.e[i]);
+        }
         sendingVtx[destPid] += cavityWeight(cav);
         return w;
       }
