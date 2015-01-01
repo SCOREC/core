@@ -53,8 +53,6 @@ SET(DIFFMC_SOURCES
   diffMC/parma_weightTargets.cc
   diffMC/parma_weightSvTargets.cc
   diffMC/parma_weightSideTargets.cc
-  diffMC/parma_welder.cc
-  diffMC/parma_weldSelector.cc
   diffMC/parma_vtxElmTargets.cc
   diffMC/parma_vtxEdgeElmTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc
