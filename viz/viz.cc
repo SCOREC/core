@@ -189,7 +189,7 @@ void Visualization::markPart(apf::Mesh* m,std::string text,Color color) {
   apf::MeshIterator* itr = m->begin(0);
   apf::MeshEntity* ent;
   while((ent=m->iterate(itr))!=0) {
-    double point[3];
+    double point[3] = {0,0,0};
     getPoint(m,ent,point);
     for (int i=0;i<3;i++)
       centroid[i]+=point[i];
