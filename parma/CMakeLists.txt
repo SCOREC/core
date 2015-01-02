@@ -54,7 +54,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_vtxEdgeElmTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc
   diffMC/parma_vtxElmBalancer.cc
-  diffMC/zeroOneKnapsack.cc
+  diffMC/zeroOneKnapsack.c
   diffMC/maximalIndependentSet/misLuby.cc
   )
 
