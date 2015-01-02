@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <apfPartition.h>
+#include "parma.h"
 #include "parma_sides.h"
 #include "parma_entWeights.h"
 #include "parma_targets.h"
@@ -11,8 +12,10 @@
 
 using std::vector;
 using std::set;
+using parma::Weights;
+using parma::Sides;
 
-namespace parma {
+namespace {
 
 class MergeTargets {
   public:
@@ -43,7 +46,8 @@ class MergeTargets {
       PCU_Debug_Print("maxW %.3f selfW %.3f weightCapacity %.3f\n",
           maxW, w->self(), weightCapacity);
       //total weight that can be added to self, normalized to min
-      const int knapsackCapacity = floor(scale(weightCapacity/minWeight));
+      const double kcap = floor(scale(weightCapacity/minWeight));
+      const int knapsackCapacity = static_cast<int>(kcap);
 
       //Knapsack execution
       //Declared for knapsack class
@@ -52,7 +56,7 @@ class MergeTargets {
 
       knapsack* ks = new knapsack(knapsackCapacity, w->size(),
           normalizedIntWeights, value);
-      const int solnVal = ks->solve();
+      const size_t solnVal = static_cast<size_t>(ks->solve());
       mergeTargetsResults.reserve(solnVal);
       ks->getSolution(mergeTargetsResults);
 
@@ -80,12 +84,11 @@ class MergeTargets {
       return mergeTargetsResults.size();
     }
 
-    int mergeTargetIndex(int index) {
+    int mergeTargetIndex(size_t index) {
       return mergeTargetsResults.at(index);
     }
 
   private:
-    MergeTargets();
     vector<int> mergeTargetsResults;
 
     double scale(double v) {
@@ -112,8 +115,8 @@ class MergeTargets {
       while( (weight = w->iterate()) ){
         //Divide Factor normalizing weight code
         double normalizedWeight = weight->second / minWeight;
-        normalizedWeight = scale(normalizedWeight);
-        normalizedIntWeights[weightIdx++] = (int) ceil(normalizedWeight);
+        normalizedWeight = ceil(scale(normalizedWeight));
+        normalizedIntWeights[weightIdx++] = static_cast<int>(normalizedWeight);
 
         // PCU_Debug_Print("weight %d, normalized to %d from %f\n",
         // weight->first, normalizedIntWeights[(weightIdx-1)], weight->second); //rating 1, 2 if CHI
@@ -136,15 +139,9 @@ class MergeTargets {
         part.adjPartIds.push_back(partId->first);
       s->end();
 
-      PCU_Debug_Print("adjpartIds size = %ld\n", (long)(part.adjPartIds.size())); //rating 2
-
-      PCU_Debug_Print("mergeNet size %ld\n", (long)(tgts.total()));
-
       //Passing in the mergingNet
-      for(size_t i = 0; i < tgts.total(); ++i){
+      for(size_t i = 0; i < tgts.total(); ++i)
         part.net.push_back(tgts.mergeTargetIndex(i));
-        PCU_Debug_Print("mergeTarget[%lu] %d\n", i , part.net[i]);//rating 1 (CHI 2)
-      }
       part.net.push_back(part.id);
   }
 
@@ -202,7 +199,9 @@ class MergeTargets {
   }
 
   int isEmpty(apf::Mesh* m, apf::Migration* plan) {
-    return (m->count(m->getDimension()) - plan->count() == 0) ? 1 : 0;
+    const size_t numElms = m->count(m->getDimension());
+    const size_t planElms = static_cast<size_t>(plan->count());
+    return ((numElms - planElms) == 0) ? 1 : 0;
   }
 
   int numSplits(Weights* w, double tgtWeight) {
@@ -249,8 +248,8 @@ class MergeTargets {
   }
 
   double imbalance(apf::Mesh* m, apf::MeshTag* wtag) {
-    Sides* s = makeElmBdrySides(m);
-    Weights* w = makeEntWeights(m, wtag, s, m->getDimension());
+    Sides* s = parma::makeElmBdrySides(m);
+    Weights* w = parma::makeEntWeights(m, wtag, s, m->getDimension());
     double imb = imbalance(w);
     delete w;
     delete s;
@@ -294,8 +293,8 @@ class MergeTargets {
     assert( plan->count() );
     for (int i = 0; i < plan->count(); ++i) {
       apf::MeshEntity* e = plan->get(i);
-      int p = plan->sending(e);
-      assert((size_t)p <= tgts.size());
+      size_t p = static_cast<size_t>(plan->sending(e));
+      assert(p <= tgts.size());
       plan->send(e, tgts[p-1]);
     }
   }
@@ -415,7 +414,9 @@ class MergeTargets {
     split(m, wtag, w, tgt, &plan);
     m->migrate(plan);
   }
+}
 
+namespace parma {
   class HpsBalancer : public apf::Balancer {
     public:
       HpsBalancer(apf::Mesh* m, int v)

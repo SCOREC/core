@@ -2,7 +2,6 @@
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
-#include "parma_surfToVol.h"
 namespace parma {
   class WeightSideTargets : public Targets {
     public:

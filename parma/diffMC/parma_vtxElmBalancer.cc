@@ -2,7 +2,6 @@
 #include <parma.h>
 #include "parma_balancer.h"
 #include "parma_sides.h"
-#include "parma_surfToVol.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
@@ -46,7 +45,7 @@ namespace {
         delete w[0];
         PCU_Debug_Print("%s\n", t->print("targets").c_str());
         parma::Selector* sel = parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
-        parma::Stepper b(mesh, wtag, factor, s, w[1], t, sel);
+        parma::Stepper b(mesh, factor, s, w[1], t, sel);
         return b.step(tolerance, verbose);
       }
   };

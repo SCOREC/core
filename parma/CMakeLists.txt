@@ -42,16 +42,13 @@ SET(DIFFMC_SOURCES
   diffMC/parma_ghost.cc
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
-  diffMC/parma_hist.cc
   diffMC/parma_hpsBalancer.cc
-  diffMC/parma_sidesToElements.cc
   diffMC/parma_shapeOptimizer.cc
   diffMC/parma_shapeTargets.cc
   diffMC/parma_shapeSelector.cc
   diffMC/parma_vtxBalancer.cc
   diffMC/parma_vtxSelector.cc
   diffMC/parma_weightTargets.cc
-  diffMC/parma_weightSvTargets.cc
   diffMC/parma_weightSideTargets.cc
   diffMC/parma_vtxElmTargets.cc
   diffMC/parma_vtxEdgeElmTargets.cc

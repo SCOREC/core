@@ -85,7 +85,7 @@ namespace parma {
       double getAvgSides(Sides* s) {
         double tot = s->total();
         PCU_Add_Doubles(&tot, 1);
-        int cnt = s->size();
+        int cnt = static_cast<int>(s->size());
         PCU_Add_Ints(&cnt, 1);
         return tot/cnt;
       }
@@ -104,7 +104,8 @@ namespace parma {
       }
       void setTarget(const int peer, Sides* s, Weights* w, double alpha) {
         assert(s->has(peer));
-        double sideFactor = (double)s->get(peer) / s->total();
+        const double totSides = static_cast<double>(s->total());
+        const double sideFactor = s->get(peer) / totSides;
         double scaledW = alpha * sideFactor * w->self();
         set(peer, scaledW);
         totW+=scaledW;

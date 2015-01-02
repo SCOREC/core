@@ -14,20 +14,21 @@ using std::endl;
 using std::max;
 using std::vector;
 
-knapsack::knapsack(int MaxWeight, int NumItems, int* itemWeight, int* itemValue) {
+knapsack::knapsack(int MaxWeight, size_t NumItems, 
+    int* itemWeight, int* itemValue) {
     numItems = NumItems;
     maxWeight = MaxWeight;
     weight = itemWeight;
     value = itemValue;
     
     M = (int**) calloc(numItems,sizeof(int*));
-    for(int i=0; i<numItems; i++) {
+    for(size_t i=0; i<numItems; i++) {
         M[i] = (int*) calloc(maxWeight+1,sizeof(int));
     }
 }
 
 knapsack::~knapsack() {
-    for (int i = 0; i < numItems; i++) {
+    for (size_t i = 0; i < numItems; i++) {
         free(M[i]);
     }
     free(M);
@@ -36,18 +37,18 @@ knapsack::~knapsack() {
 int knapsack::printTable() {
   printf("===== Table =====\n");
   printf("%3s | ", "");
-  for(int j = 0; j <numItems; j++){
+  for(size_t j = 0; j <numItems; j++){
     printf("%3d", weight[j]);
   }
   printf("\n");
   printf("%3s  ","---");
-  for(int j = 0; j <numItems; j++){
+  for(size_t j = 0; j <numItems; j++){
     printf("%3s","---");
   }
   printf("\n");
   for(int i = 1; i <= maxWeight; i++){
     printf("%3d | ", i);
-    for(int j = 0; j <numItems; j++){
+    for(size_t j = 0; j <numItems; j++){
       printf("%3d", M[j][i]);
     }
     printf("\n");
@@ -58,7 +59,7 @@ int knapsack::printTable() {
 
 int knapsack::getSolution(vector<int>& solnIdx) {
     int i = maxWeight;
-    int j = numItems - 1;
+    size_t j = numItems - 1;
     while (j >= 0 && M[j][i] != 0) {
         // item 0 was taken
         if (j == 0 && weight[j] <= i && M[j][i] == value[j]) {
@@ -82,7 +83,7 @@ int knapsack::getSolution(vector<int>& solnIdx) {
 
 int knapsack::solve() {
   for(int i = 1; i <= maxWeight; i++){
-    for(int j = 0; j <numItems; j++){
+    for(size_t j = 0; j <numItems; j++){
       if(j > 0){
         M[j][i] = M[j-1][i];
         if (weight[j] <= i)

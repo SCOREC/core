@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <stdio.h>
+#include "parma.h"
 #include "parma_balancer.h"
 #include "parma_step.h"
 #include "parma_sides.h"
@@ -24,7 +25,7 @@ namespace {
         PCU_Debug_Print("%s\n", t->print("targets").c_str());
         parma::Centroids c(mesh, wtag, s);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag, &c);
-        parma::Stepper b(mesh, wtag, factor, s, w, t, sel, greater);
+        parma::Stepper b(mesh, factor, s, w, t, sel, greater);
         return b.step(tolerance, verbose);
       }
   };

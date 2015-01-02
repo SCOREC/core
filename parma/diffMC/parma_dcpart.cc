@@ -30,8 +30,23 @@ using parmaCommons::error;
 typedef std::list<MeshEntity*> eList;
 typedef DynamicArray<MeshEntity*> eArr;
 
-dcPart::dcPart() {
-   exit(EXIT_FAILURE);
+namespace {
+  bool isInMis(migrTgt& mt) {
+    int seed = PCU_Comm_Self()+1;
+    mis_init(seed, true);
+    misLuby::partInfo part;
+    part.id = PCU_Comm_Self();
+    std::set<int> targets;
+    APF_ITERATE(migrTgt, mt, mtItr) {
+      if( !targets.count(mtItr->second) ) {
+        part.adjPartIds.push_back(mtItr->second);
+        part.net.push_back(mtItr->second);
+        targets.insert(mtItr->second);
+      }
+    }
+    part.net.push_back(part.id);
+    return mis(part,false,true);
+  }
 }
 
 dcPart::dcPart(Mesh*& mesh) : m(mesh) {
@@ -59,15 +74,17 @@ int dcPart::numDisconnectedComps() {
    double t1 = PCU_Time();
    dcCompSz.clear();
    clearTag(m, vtag);
-   int numDc = 0;
-   size_t count = 0;
-   while( count != m->count(m->getDimension()) ) {
+   size_t numDc = 0;
+   int count = 0;
+   const int dim = m->getDimension();
+   const int numElms = static_cast<int>(m->count(dim));
+   while( count != numElms ) {
       dcCompSz.push_back( walkPart(numDc) );
       count += dcCompSz[numDc];
       numDc++;
    }
    printElapsedTime(__func__, PCU_Time() - t1);
-   return numDc-1;
+   return static_cast<int>(numDc-1);
 }
 
 int dcPart::totNumDc() {
@@ -76,7 +93,7 @@ int dcPart::totNumDc() {
   return ndc;
 }
 
-int dcPart::walkPart(int visited) {
+size_t dcPart::walkPart(size_t visited) {
    size_t count = 0;
    const int dim = m->getDimension();
 
@@ -94,7 +111,8 @@ int dcPart::walkPart(int visited) {
       elms.pop_front();
       assert( elm != NULL );
       if ( m->hasTag(elm, vtag) ) continue;
-      m->setIntTag(elm, vtag, &visited);
+      int dcId = static_cast<int>(visited);
+      m->setIntTag(elm, vtag, &dcId);
       count++;
       eArr adjElms;
       getDwn2ndAdj(m, elm, adjElms);
@@ -104,30 +122,12 @@ int dcPart::walkPart(int visited) {
       }
       if ( count > m->count(dim) ) {
 	 error("[%d] count > part size %d > %ld\n",
-	       m->getId(), count, (long)(m->count(dim)));
+	       m->getId(), count, static_cast<long>(m->count(dim)));
          exit(EXIT_FAILURE);
       }
    }
    return count;
 }
-
-bool isInMis(migrTgt& mt) {
-  int seed = PCU_Comm_Self()+1;
-  mis_init(seed, true);
-  misLuby::partInfo part;
-  part.id = PCU_Comm_Self();
-  std::set<int> targets;
-  APF_ITERATE(migrTgt, mt, mtItr) {
-    if( !targets.count(mtItr->second) ) {
-      part.adjPartIds.push_back(mtItr->second);
-      part.net.push_back(mtItr->second);
-      targets.insert(mtItr->second);
-    }
-  }
-  part.net.push_back(part.id);
-  return mis(part,false,true);
-}
-
 
 /**
  * @brief remove the disconnected set(s) of elements from the part
@@ -144,12 +144,12 @@ void dcPart::fix() {
     double t2 = PCU_Time();
     migrTgt dcCompTgts;
 
-    int maxSz = -1;
-    APF_ITERATE(vector<int>, dcCompSz, dc)
+    size_t maxSz = 0;
+    APF_ITERATE(vector<size_t>, dcCompSz, dc)
       if( *dc > maxSz )
         maxSz = *dc;
 
-    int isolated = 0;
+    size_t isolated = 0;
     for(size_t i=0; i<dcCompSz.size(); i++)
       if( dcCompSz[i] != maxSz ) {
         int res = checkResidence(i);
@@ -173,7 +173,7 @@ void dcPart::fix() {
   printElapsedTime(__func__, PCU_Time() - t1);
 }
 
-int dcPart::checkResidence(const int dcComp) {
+int dcPart::checkResidence(const size_t dcComp) {
    // < dcComId, maxFace >
    typedef map<int, int> mii;
    mii bdryFaceCnt;
@@ -188,7 +188,7 @@ int dcPart::checkResidence(const int dcComp) {
    while( (e = m->iterate(itr)) ) {
       if( m->hasTag(e, vtag) ) {
 	 m->getIntTag(e, vtag, &tval);
-	 if( tval != dcComp ) continue;
+	 if( tval != static_cast<int>(dcComp) ) continue;
          int ns = m->getDownward(e, dim-1, sides);
          for(int sIdx=0; sIdx<ns; sIdx++) {
            MeshEntity* s = sides[sIdx];
@@ -207,11 +207,7 @@ int dcPart::checkResidence(const int dcComp) {
          max = bf->second;
          maxId = bf->first;
       }
-      debug(false, "[%d] bdryFaceCnt dcComp %d ap %d faces %d\n",
-	    PCU_Comm_Self(), dcComp, bf->first, bf->second);
    }
-   debug(false, "[%d] %s dcComp %d maxId %d max %d\n",
-	 PCU_Comm_Self(), __func__, dcComp, maxId, max);
    return maxId;
 }
 
@@ -222,8 +218,9 @@ void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
       if( m->hasTag(e, vtag) ) {
 	 int tval = -1;
 	 m->getIntTag(e, vtag, &tval);
-	 if ( dcCompTgts.count(tval) ) {
-            plan->send(e, dcCompTgts[tval]);
+         const size_t dcId = static_cast<size_t>(tval);
+	 if ( dcCompTgts.count(dcId) ) {
+            plan->send(e, dcCompTgts[dcId]);
 	 }
       }
    }

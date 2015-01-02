@@ -8,7 +8,7 @@
 #include <map>
 
 // < componentIdx, mergeTgtPartId >
-typedef std::map<int,int> migrTgt;
+typedef std::map<size_t,int> migrTgt;
 
 class dcPart {
    public:
@@ -18,14 +18,14 @@ class dcPart {
       void makeDisconnectedComps(const int numDcComps);
       void fix();
    private:
-      dcPart();
+      dcPart() {}
       void init(apf::Mesh*& mesh);
-      int walkPart(int visited);
-      int checkResidence(const int dcComp);
+      size_t walkPart(size_t visited);
+      int checkResidence(const size_t dcComp);
       void setupPlan(migrTgt& dcCompTgts, apf::Migration* plan);
       int totNumDc();
 
-      std::vector<int> dcCompSz;
+      std::vector<size_t> dcCompSz;
       apf::MeshTag* vtag;
       apf::Mesh* m;
 };

@@ -20,7 +20,7 @@ namespace {
             parma::makeEntWeights(mesh, wtag, s, 1)};
         parma::Targets* t = parma::makeVtxEdgeTargets(s, w, factor);
         parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
-        parma::Stepper b(mesh, wtag, factor, s, w[1], t, sel);
+        parma::Stepper b(mesh, factor, s, w[1], t, sel);
         return b.step(tolerance, verbose);
       }
   };

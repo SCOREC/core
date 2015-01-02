@@ -22,7 +22,7 @@ public:
      * @param weight (in) pointer to integer array of size NumItems with the weight of each item
      * @param value (in) pointer to integer array of size NumItems with the value of each item
      */
-    knapsack(int MaxWeight, int NumItems, int* weight, int* value);
+    knapsack(int MaxWeight, size_t NumItems, int* weight, int* value);
 
     ~knapsack();
 
@@ -51,7 +51,7 @@ private:
     int *weight;
     int *value;
     int maxWeight;
-    int numItems;
+    size_t numItems;
 };
 
 #endif

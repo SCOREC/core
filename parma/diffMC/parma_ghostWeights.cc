@@ -7,10 +7,7 @@
 #include "parma_sides.h"
 #include "parma_ghostOwner.h"
 
-int ghostIteration = 0;
-
-namespace parma {
-
+namespace {
   apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
       apf::MeshEntity* edge, apf::MeshEntity* vtx) {
     apf::Downward dwnVtx;
@@ -38,7 +35,7 @@ namespace parma {
     apf::MeshEntity* checkVertex=NULL;
     for (unsigned int i=0;i<next.size();i++) {
       checkVertex=next[0];
-      weight += getEntWeight(m,next[i],wtag);
+      weight += parma::getEntWeight(m,next[i],wtag);
       m->setIntTag(next[i],visited,&yes);
     }
     for (int i=1;i<=layers;i++) {
@@ -48,14 +45,14 @@ namespace parma {
         m->getUp(vertex,edges);
         for (int k=0;k<edges.n;k++) {
           apf::MeshEntity* v = getOtherVtx(m,edges.e[k],vertex);
-          if (!isOwned(m, v))
+          if (!parma::isOwned(m, v))
             continue;
           if (m->hasTag(v,visited))
             continue;
           assert(v!=checkVertex);
           next.push_back(v);
           m->setIntTag(v,visited,&i);
-          weight += getEntWeight(m,v,wtag);
+          weight += parma::getEntWeight(m,v,wtag);
         } 
       }
       current=next;
@@ -64,6 +61,24 @@ namespace parma {
     return weight;
   }
 
+  double ownedVtxWeight(apf::Mesh* m, apf::MeshTag* w) {
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    double entW = 0;
+    double sum = 0;
+    while ((e = m->iterate(it))) {
+      assert(m->hasTag(e,w));
+      if (parma::isOwned(m,e)) {
+        m->getDoubleTag(e,w,&entW);
+        sum += entW;
+      }
+    }
+    m->end(it);
+    return sum;
+  }
+}
+
+namespace parma {
   class GhostFinder {
     public:
       GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b) 
@@ -100,24 +115,8 @@ namespace parma {
       apf::MeshTag* depth;
   };
 
-  double ownedVtxWeight(apf::Mesh* m, apf::MeshTag* w) {
-    apf::MeshIterator* it = m->begin(0);
-    apf::MeshEntity* e;
-    double entW = 0;
-    double sum = 0;
-    while ((e = m->iterate(it))) {
-      assert(m->hasTag(e,w));
-      if (isOwned(m,e)) {
-        m->getDoubleTag(e,w,&entW);
-        sum += entW;
-      }
-    }
-    m->end(it);
-    return sum;
-  }
-}
 
-namespace parma {  
+
   class GhostWeights : public Weights {
     public:
       GhostWeights(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, int layers, int bridge) 
@@ -128,9 +127,8 @@ namespace parma {
         exchangeGhostsFrom();
         weight += ownedVtxWeight(m, wtag);
         exchange();
-        ghostIteration++;
       }
-      ~GhostWeights() {};
+      ~GhostWeights() {}
       double self() {
         return weight;
       }

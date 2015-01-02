@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <stdio.h>
+#include "parma.h"
 #include "parma_step.h"
 #include "parma_balancer.h"
 #include "parma_sides.h"
@@ -20,7 +21,7 @@ namespace {
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Centroids c(mesh, wtag, s);
         parma::Selector* sel = parma::makeCentroidSelector(mesh, wtag, &c);
-        parma::Stepper b(mesh, wtag, factor, s, w, t, sel);
+        parma::Stepper b(mesh, factor, s, w, t, sel);
         return b.step(tolerance, verbose);
       }
   };

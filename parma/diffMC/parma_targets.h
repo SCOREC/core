@@ -16,8 +16,6 @@ namespace parma {
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
   Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int aspectTol, 
       double vtxTol, double alpha);
-  Targets* makeWeightSvTargets(Sides* s, Weights* w, SurfToVol* sv, 
-      double aspectTol, double alpha);
   Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol, 
       double alpha);
   Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], double alpha);

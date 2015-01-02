@@ -1,11 +1,11 @@
 #include <PCU.h>
+#include "parma.h"
 #include "parma_step.h"
 #include "parma_balancer.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
-#include "parma_surfToVol.h"
 
 namespace {
   class VtxBalancer : public parma::Balancer {
@@ -29,7 +29,7 @@ namespace {
         parma::Targets* t = 
           parma::makeWeightSideTargets(s, w, sideTol, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
-        parma::Stepper b(mesh, wtag, factor, s, w, t, sel);
+        parma::Stepper b(mesh, factor, s, w, t, sel);
         return b.step(tolerance, verbose);
       }
   };

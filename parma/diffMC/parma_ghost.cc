@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "parma.h"
 #include "parma_balancer.h"
 #include "parma_step.h"
 #include "parma_sides.h"
@@ -17,7 +18,7 @@ namespace {
           parma::makeGhostWeights(mesh, wtag, s, layers, bridge);
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
-        parma::Stepper b(mesh, wtag, factor, s, w, t, sel);
+        parma::Stepper b(mesh, factor, s, w, t, sel);
         bool ret = b.step(tolerance, verbose);
         return ret;
       }

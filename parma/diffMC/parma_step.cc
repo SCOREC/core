@@ -7,11 +7,11 @@
 #include "parma_selector.h"
 
 namespace parma {
-  Stepper::Stepper(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
+  Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
      bool (*fn)(double imb, double maxImb))
-    : m(mIn), w(wIn), alpha(alphaIn), 
-      sides(s), weights(w), targets(t), selects(sel), stop(fn) {}
+    : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t), 
+    selects(sel), stop(fn) {}
 
   Stepper::~Stepper() {
     delete sides;

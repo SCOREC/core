@@ -358,7 +358,7 @@ namespace parma {
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
         double planW = 0;
-        for(size_t max=2; max <= 12; max+=2)
+        for(int max=2; max <= 12; max+=2)
           planW += select(tgts, plan, planW, max);
         return plan;
       }
@@ -494,7 +494,8 @@ namespace parma {
         PCU_Debug_Print("plan count %d\n", planA->count());
         typedef std::pair<apf::MeshEntity*, int> PairEntInt;
         std::vector<PairEntInt > keep;
-        keep.reserve(planA->count());
+        const size_t planSz = static_cast<size_t>(planA->count());
+        keep.reserve(planSz);
 
         std::map<int,SetEnt > peerSelections;
         for(int i=0; i < planA->count(); i++) {
@@ -587,7 +588,7 @@ namespace parma {
       }
     private:
       Mid sendingVtx;
-      int maxVtx;
+      double maxVtx;
   };
   Selector* makeElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxVtx) {
     return new ElmLtVtxSelector(m, w, maxVtx);
