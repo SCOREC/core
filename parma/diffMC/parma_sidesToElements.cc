@@ -17,7 +17,7 @@ namespace parma {
       }
     private:
       double avgSurfToVol;
-      void init(apf::Mesh* m, Sides* s) {
+      void init(apf::Mesh*, Sides* s) {
         PCU_Comm_Begin();
         const Sides::Item* side;
         s->begin();

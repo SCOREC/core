@@ -430,7 +430,7 @@ namespace parma {
       ElmSelector(apf::Mesh* m, apf::MeshTag* w)
         : VtxSelector(m, w) {}
     protected:
-      virtual double add(apf::MeshEntity* vtx, apf::Up& cavity, const int destPid,
+      virtual double add(apf::MeshEntity*, apf::Up& cavity, const int destPid,
           apf::Migration* plan) {
         double w = 0;
         for(int i=0; i < cavity.n; i++) {
@@ -525,7 +525,7 @@ namespace parma {
         }
       };
 
-      Mid* trim(Targets* t) {
+      Mid* trim(Targets*) {
         typedef std::set<Migr,CompareMigr> MigrComm;
 
         PCU_Comm_Begin();
@@ -573,7 +573,7 @@ namespace parma {
         return order;
       }
 
-      virtual double add(apf::MeshEntity* vtx, apf::Up& cavity,
+      virtual double add(apf::MeshEntity*, apf::Up& cavity,
           const int destPid, apf::Migration* plan) {
         SetEnt cav;
         double w = 0;
