@@ -5,25 +5,27 @@
 #include <parma.h>
 #include <PCU.h>
 
-void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
-  double w = 1.0;
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m->begin(dim);
-  while ((e = m->iterate(it)))
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-}
+namespace {
+  void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
+    double w = 1.0;
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(dim);
+    while ((e = m->iterate(it)))
+      m->setDoubleTag(e, tag, &w);
+    m->end(it);
+  }
 
-apf::MeshTag* setWeights(apf::Mesh* m) {
-  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
-  setWeight(m, tag, 0);
-  setWeight(m, tag, m->getDimension());
-  return tag;
-}
+  apf::MeshTag* setWeights(apf::Mesh* m) {
+    apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+    setWeight(m, tag, 0);
+    setWeight(m, tag, m->getDimension());
+    return tag;
+  }
 
-void clearTags(apf::Mesh* m, apf::MeshTag* t) {
-  apf::removeTagFromDimension(m, t, 0);
-  apf::removeTagFromDimension(m, t, m->getDimension());
+  void clearTags(apf::Mesh* m, apf::MeshTag* t) {
+    apf::removeTagFromDimension(m, t, 0);
+    apf::removeTagFromDimension(m, t, m->getDimension());
+  }
 }
 
 int main(int argc, char** argv)

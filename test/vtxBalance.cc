@@ -5,15 +5,17 @@
 #include <parma.h>
 #include <PCU.h>
 
-apf::MeshTag* setVtxWeights(apf::Mesh* m) {
-  apf::MeshIterator* it = m->begin(0);
-  apf::MeshEntity* e;
-  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
-  double w = 1.0;
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-  return tag;
+namespace {
+  apf::MeshTag* setVtxWeights(apf::Mesh* m) {
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+    double w = 1.0;
+    while ((e = m->iterate(it))) 
+      m->setDoubleTag(e, tag, &w);
+    m->end(it);
+    return tag;
+  }
 }
 
 int main(int argc, char** argv)
