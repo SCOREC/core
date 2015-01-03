@@ -13,6 +13,7 @@ typedef struct zeroOneKnapsack* zoks;
 
 size_t max(const size_t a, const size_t b);
 size_t solnSz(zoks k);
+size_t solnValue(zoks k);
 
 size_t max(const size_t a, const size_t b) {
   if( a > b )

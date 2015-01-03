@@ -89,7 +89,7 @@ int mis(misLuby::partInfo& part,
     bool randNumsPredefined = false,
     bool isNeighbors = false);
 
-void mis_init(int randNumSeed, int debugMode, const char* maj = "1",
+void mis_init(unsigned int randNumSeed, int debugMode = 0, const char* maj = "1",
     const char* min = "0", const char* patch = "0");
 
 void misFinalize();

@@ -32,8 +32,8 @@ typedef DynamicArray<MeshEntity*> eArr;
 
 namespace {
   bool isInMis(migrTgt& mt) {
-    int seed = PCU_Comm_Self()+1;
-    mis_init(seed, true);
+    unsigned int seed = static_cast<unsigned int>(PCU_Comm_Self()+1);
+    mis_init(seed);
     misLuby::partInfo part;
     part.id = PCU_Comm_Self();
     std::set<int> targets;

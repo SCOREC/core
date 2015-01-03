@@ -152,9 +152,8 @@ class MergeTargets {
 
     generatemMisPart(m,s,tgts,part);
 
-    int randNumSeed = PCU_Comm_Self()+1;
-
-    mis_init(randNumSeed,false);
+    unsigned int seed = static_cast<unsigned int>(PCU_Comm_Self()+1);
+    mis_init(seed);
     const int isInMis = mis(part);
 
     // Debug if in MIS rating 0

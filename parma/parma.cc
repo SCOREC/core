@@ -92,7 +92,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
     neighbors.insert(sharers.begin(),sharers.end());
   }
   m->end(it);
-  loc = neighbors.size();
+  loc = static_cast<int>(neighbors.size());
   max = loc;
   PCU_Max_Ints(&max,1);
   double total = loc;
@@ -162,9 +162,9 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
   PCU_Debug_Print("%s mdlBdryVtx %d\n", key.c_str(), locV[2]);
 
   int surf = numSharedSides(m);
-  int vol = m->count(m->getDimension());
+  double vol = static_cast<double>( m->count(m->getDimension()) );
   double minSurfToVol, maxSurfToVol, avgSurfToVol, surfToVol;
-  minSurfToVol =  maxSurfToVol =  avgSurfToVol = surfToVol = surf/(double)vol;
+  minSurfToVol =  maxSurfToVol =  avgSurfToVol = surfToVol = surf/vol;
   PCU_Min_Doubles(&minSurfToVol, 1);
   PCU_Max_Doubles(&maxSurfToVol, 1);
   PCU_Add_Doubles(&avgSurfToVol, 1);
@@ -233,8 +233,8 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
     part.net.push_back(*nItr);
   }
 
-  int randNumSeed = part.id+1;
-  mis_init(randNumSeed,true);
+  unsigned int seed = static_cast<unsigned int>(part.id+1);
+  mis_init(seed);
   int misNumber=-1;
   int iter=0;
   int misSize=0;
