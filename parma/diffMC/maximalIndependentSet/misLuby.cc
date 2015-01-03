@@ -50,55 +50,32 @@ namespace {
         p.netAdjParts.erase(*nodeItr);
   }
 
-  size_t createNeighborAndGetBufSize(const int destRank) {
-    int empty;
-    PCU_Comm_Pack(destRank, &empty, 0); // make sure the peer exists
-    size_t buffSizeInitial;
-    PCU_Comm_Packed(destRank, &buffSizeInitial);
-    return buffSizeInitial;
-  }
-
-  int sendAdjNetsToNeighbors(partInfo& part,
-      vector<adjPart>& nbNet) {
+  int sendAdjNetsToNeighbors(partInfo& part, vector<adjPart>& nbNet) {
     PCU_Comm_Begin();
 
     MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
       const int destRank = *adjPartIdItr;
       MIS_ITERATE(vector<adjPart>, nbNet, nbItr) {
         if (nbItr->partId != *adjPartIdItr) {
-          const size_t buffSizeInitial =
-            createNeighborAndGetBufSize(destRank);
-
-          //number of bytes in message
-          size_t numIntsInMsg = 5 + nbItr->net.size();
-          PCU_COMM_PACK(destRank,numIntsInMsg);
-
-          //pack source part Id
-          PCU_COMM_PACK(destRank, part.id);
-
           //pack destination part Id
-          PCU_COMM_PACK( destRank, *adjPartIdItr);
+          PCU_COMM_PACK(destRank, *adjPartIdItr);
 
           //adjacent part Id
-          PCU_COMM_PACK( destRank, nbItr->partId);
+          PCU_COMM_PACK(destRank, nbItr->partId);
 
           //adjacent part's random number
-          PCU_COMM_PACK( destRank, nbItr->randNum);
+          PCU_COMM_PACK(destRank, nbItr->randNum);
 
-          //pack int array
+          //net size
+          size_t n = nbItr->net.size();
+          PCU_COMM_PACK(destRank, n);
+
+          //net
           for (vector<int>::iterator pItr = nbItr->net.begin();
               pItr != nbItr->net.end();
               pItr++) {
             PCU_COMM_PACK( destRank, *pItr);
           }
-
-          //sanity check
-          size_t buffSizeFinal;
-          PCU_Comm_Packed(destRank, &buffSizeFinal);
-          const size_t numIntsPacked =
-            (buffSizeFinal - buffSizeInitial) / sizeof (int);
-          MIS_FAIL_IF(numIntsInMsg != numIntsPacked,
-              "number of ints packed does not match msg header");
         }
       }
     }
@@ -110,20 +87,15 @@ namespace {
     MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
       const int destRank = *adjPartIdItr;
 
-      const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
-
-      //number of bytes in message
-      size_t numIntsInMsg = 4 + msg.size();
-      PCU_COMM_PACK(destRank, numIntsInMsg);
-
       //pack msg tag
       PCU_COMM_PACK(destRank, tag);
 
-      //pack source part Id
-      PCU_COMM_PACK(destRank, part.id);
-
       //pack destination part Id
       PCU_COMM_PACK(destRank, *adjPartIdItr);
+
+      //pack array length
+      size_t n = msg.size();
+      PCU_COMM_PACK(destRank, n);
 
       //pack int array
       for ( vector<int>::iterator pItr = msg.begin();
@@ -131,67 +103,37 @@ namespace {
           pItr++ ) {
         PCU_COMM_PACK(destRank, *pItr);
       }
-
-      //sanity check
-      size_t buffSizeFinal;
-      PCU_Comm_Packed(destRank, &buffSizeFinal);
-      const size_t numIntsPacked =
-        (buffSizeFinal - buffSizeInitial) / sizeof (int);
-      MIS_FAIL_IF(numIntsInMsg != numIntsPacked,
-          "number of ints packed does not match msg header");
     }
   }
 
-  void unpackInts(vector<int>& msg,
-      const size_t numIntsInMsg, int tag) {
+  void unpackInts(vector<int>& msg, int tag) {
     const int rank = PCU_Comm_Self();
-    int srcRank;
-    PCU_Comm_From(&srcRank);
 
-    size_t numIntsUnpacked = 0;
     //unpack msg tag
     int inTag;
     PCU_COMM_UNPACK(inTag);
     MIS_FAIL_IF(tag != inTag, "tags do not match");
-    numIntsUnpacked++;
-
-    //unpack source part Id
-    int srcPartId;
-    PCU_COMM_UNPACK(srcPartId);
-    assert(srcRank == srcPartId);
-    numIntsUnpacked++;
 
     //unpack destination part Id
     int destPartId;
     PCU_COMM_UNPACK(destPartId);
     assert(rank == destPartId);
-    numIntsUnpacked++;
+
+    //unpack array length
+    size_t n;
+    PCU_COMM_UNPACK(n);
 
     //unpack int array
     int buff;
-    for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
+    for(size_t i=0; i < n; i++) {
       PCU_COMM_UNPACK(buff);
       msg.push_back(buff);
     }
   }
 
   void recvIntsFromNeighbors(vector<int>& msg, int tag) {
-    while(PCU_Comm_Listen()) {
-      size_t msgSz;
-      PCU_Comm_Received(&msgSz);
-      const size_t numIntsInBuff =  msgSz / sizeof (int);
-      size_t numIntsProcessed = 0;
-
-      int srcRank;
-      PCU_Comm_From(&srcRank);
-
-      do {
-        size_t numIntsPacked;
-        PCU_COMM_UNPACK(numIntsPacked);
-        numIntsProcessed += numIntsPacked;
-        unpackInts(msg, numIntsPacked - 1, tag);
-      } while (numIntsProcessed != numIntsInBuff);
-    }
+    while(PCU_Comm_Listen())
+      unpackInts(msg, tag);
   }
 
   int sendNetToNeighbors(partInfo& part) {
@@ -243,65 +185,43 @@ namespace {
       unpackNet(msg);
   }
 
-  void unpackAdjPart(vector<adjPart>& msg, const size_t numIntsInMsg) {
+  void unpackAdjPart(vector<adjPart>& msg) {
     const int rank = PCU_Comm_Self();
-    int srcRank;
-    PCU_Comm_From(&srcRank);
-
-    size_t numIntsUnpacked = 0;
-    //unpack source part Id
-    int srcPartId;
-    PCU_COMM_UNPACK(srcPartId);
-    assert(srcRank == srcPartId);
-    numIntsUnpacked++;
 
     //unpack destination part Id
     int destPartId;
     PCU_COMM_UNPACK(destPartId);
     assert(rank == destPartId);
-    numIntsUnpacked++;
 
     //unpack adjacent part Id
     int adjPartId;
     PCU_COMM_UNPACK(adjPartId);
-    numIntsUnpacked++;
 
     //unpack random number
     int randNum;
     PCU_COMM_UNPACK(randNum);
-    numIntsUnpacked++;
 
     adjPart ap;
     ap.partId = adjPartId;
     ap.randNum = randNum;
 
-    //unpack int array
-    const size_t buffSize = (numIntsInMsg - numIntsUnpacked) * sizeof (int);
-    assert(buffSize > 0);
+    //unpack net size
+    size_t n;
+    PCU_COMM_UNPACK(n);
 
-    int buff;
-    for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
-      PCU_COMM_UNPACK(buff);
-      ap.net.push_back(buff);
+    //unpack net
+    int pid;
+    for(size_t i=0; i < n; i++) {
+      PCU_COMM_UNPACK(pid);
+      ap.net.push_back(pid);
     }
 
     msg.push_back(ap);
   }
 
   void recvAdjNetsFromNeighbors(vector<adjPart>& msg) {
-    while( PCU_Comm_Listen() ) {
-      size_t msgSz;
-      PCU_Comm_Received(&msgSz);
-      const size_t numIntsInBuff = msgSz / sizeof (int);
-      size_t numIntsProcessed = 0;
-
-      do {
-        size_t numIntsPacked;
-        PCU_COMM_UNPACK(numIntsPacked);
-        numIntsProcessed += numIntsPacked;
-        unpackAdjPart(msg, numIntsPacked - 1);
-      } while (numIntsProcessed != numIntsInBuff);
-    }
+    while( PCU_Comm_Receive() )
+      unpackAdjPart(msg);
   }
 
   int minRandNum(netAdjItr first, netAdjItr last) {
