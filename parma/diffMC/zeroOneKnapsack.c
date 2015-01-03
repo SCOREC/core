@@ -41,6 +41,7 @@ void destroyKnapsack(Knapsack knapsack) {
   for(i=0; i<k->numItems; i++)
     free(k->M[i]);
   free(k->M);
+  free(k);
 }
 
 void printTable(Knapsack knapsack) {
