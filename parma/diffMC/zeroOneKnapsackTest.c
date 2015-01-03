@@ -10,10 +10,11 @@ int test1() {
   size_t v[4] = {0,1,4,2};
   Knapsack k = makeKnapsack(maxw, n, w, v);
   size_t val = solve(k);
+  size_t size;
+  size_t* soln;
   printf("val %lu\n", val);
   assert(val == 4);
-  size_t size;
-  size_t* soln = getSolution(k, &size);
+  soln = getSolution(k, &size);
   printf("size %lu soln[0] %lu\n", size, soln[0]);
   assert(size == 1);
   assert(soln[0] == 2);
@@ -23,18 +24,19 @@ int test1() {
 }
 
 int test2() {
-  //http://cse.unl.edu/~goddard/Courses/CSCE310J/Lectures/Lecture8-DynamicProgramming.pdf
+  /* http://cse.unl.edu/~goddard/Courses/CSCE310J/Lectures/Lecture8-DynamicProgramming.pdf */
   size_t maxw = 5;
   size_t n = 4;
   size_t w[4] = {2,3,4,5};
   size_t v[4] = {3,4,5,6};
   Knapsack k = makeKnapsack(maxw, n, w, v);
   size_t val = solve(k);
+  size_t size;
+  size_t* soln;
   printTable(k);
   printf("val %lu\n", val);
   assert(val == 7);
-  size_t size;
-  size_t* soln = getSolution(k, &size);
+  soln = getSolution(k, &size);
   printf("size %lu soln[0] %lu soln[1] %lu\n", size, soln[0], soln[1]);
   assert(size == 2);
   assert(soln[0] == 1 && soln[1] == 0);
