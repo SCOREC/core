@@ -62,6 +62,7 @@ class MergeTargets {
       for(size_t i=0; i<solnSz; i++)
         mergeTargetsResults.push_back(nborPartIds[soln[i]]);
 
+      free(soln);
       delete [] nborPartIds;
       delete [] value;
       delete [] normWeights;
