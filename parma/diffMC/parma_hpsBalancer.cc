@@ -23,10 +23,10 @@ class MergeTargets {
     //Produces the optimal merging combination of the part's neighbors into
     // itself for a given maxW
     MergeTargets(Sides* s, Weights* w, double maxW) {
-      //If part is heavy or empty, exit function
-      if (w->self() >= maxW || w->self() == 0) {
+      if (w->self() >= maxW || w->self() == 0)
         return;
-      }
+
+      //FIXME move this and soln conversion to function {
       //Create array of neighbor partId's for assignment in mergingNet
       int* nborPartIds = new int[w->size()];
       const Weights::Item* weight;
@@ -35,49 +35,36 @@ class MergeTargets {
       while( (weight = w->iterate()) )
         nborPartIds[weightIdx++] = weight->first;
       w->end();
+      // end FIXME }
 
-      double minWeight = std::numeric_limits<double>::max();
-      int* normalizedIntWeights = normalizeWeights(w, minWeight);
+      double minWeight;
+      size_t* normWeights = normalizeWeights(w, minWeight);
 
-      //How much weight can be added on to the current part before it
-      // reaches the HeavyImb
-      const double weightCapacity = (maxW - w->self());
+      const double wcap = (maxW - w->self());
+      const double kdcap = floor(scale(wcap/minWeight));
+      const size_t kcap = static_cast<size_t>(kdcap);
 
       PCU_Debug_Print("maxW %.3f selfW %.3f weightCapacity %.3f\n",
-          maxW, w->self(), weightCapacity);
-      //total weight that can be added to self, normalized to min
-      const double kcap = floor(scale(weightCapacity/minWeight));
-      const int knapsackCapacity = static_cast<int>(kcap);
+          maxW, w->self(), wcap);
 
-      //Knapsack execution
-      //Declared for knapsack class
-      int* value = new int[s->total()];
-      std::fill (value, value + s->total(),1);
+      size_t* value = new size_t[s->total()];
+      std::fill(value, value + s->total(),1);
 
-      knapsack* ks = new knapsack(knapsackCapacity, w->size(),
-          normalizedIntWeights, value);
-      const size_t solnVal = static_cast<size_t>(ks->solve());
-      mergeTargetsResults.reserve(solnVal);
-      ks->getSolution(mergeTargetsResults);
+      Knapsack k = makeKnapsack(kcap, w->size(), normWeights, value);
+      size_t solnVal = solve(k);
+      size_t solnSz;
+      size_t* soln = getSolution(k, &solnSz);
+      assert(solnVal == solnSz);
+      destroyKnapsack(k);
 
-      //Converting mergeTargetsResults to partId's
-      vector<int> partIdMergeTargets;
-      partIdMergeTargets.reserve(mergeTargetsResults.size());
-      for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-        partIdMergeTargets.push_back(nborPartIds[mergeTargetsResults[i]]);
-      }
-      //Constant function to change vectors
-      mergeTargetsResults.swap(partIdMergeTargets);
-
-      //Debug to see which parts contained in the results
-      for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-        PCU_Debug_Print("merge Target result %d\n", mergeTargetsResults[i]);
-      }
+      //FIXME name too long
+      mergeTargetsResults.reserve(solnSz);
+      for(size_t i=0; i<solnSz; i++)
+        mergeTargetsResults.push_back(nborPartIds[soln[i]]);
 
       delete [] nborPartIds;
       delete [] value;
-      delete [] normalizedIntWeights;
-      delete ks;
+      delete [] normWeights;
     }
 
     size_t total() {
@@ -96,8 +83,8 @@ class MergeTargets {
       return v/divideFactor;
     }
 
-    int* normalizeWeights(Weights* w, double& minWeight){
-      //iterating through the neighbor weights to determine the minimum weight
+    size_t* normalizeWeights(Weights* w, double& minWeight){
+      minWeight = std::numeric_limits<double>::max();
       const Weights::Item* weight;
       w->begin();
       while( (weight = w->iterate()) )
@@ -105,25 +92,20 @@ class MergeTargets {
           minWeight = weight->second;
       w->end();
 
-      // PCU_Debug_Print("min weight == %f\n", minWeight); rating 2
-
-      //normalizing the neighbor weights to the minimum neighbor weight with a
+      //normalizing the neighbor weights to the 
+      // minimum neighbor weight with a
       // dividing factor to increase the accuracy of knapsack
-      int* normalizedIntWeights = new int[w->size()];
+      size_t* normWeights = new size_t[w->size()];
       int weightIdx = 0;
       w->begin();
       while( (weight = w->iterate()) ){
-        //Divide Factor normalizing weight code
-        double normalizedWeight = weight->second / minWeight;
-        normalizedWeight = ceil(scale(normalizedWeight));
-        normalizedIntWeights[weightIdx++] = static_cast<int>(normalizedWeight);
-
-        // PCU_Debug_Print("weight %d, normalized to %d from %f\n",
-        // weight->first, normalizedIntWeights[(weightIdx-1)], weight->second); //rating 1, 2 if CHI
+        double normW = weight->second / minWeight;
+        normW = ceil(scale(normW));
+        normWeights[weightIdx++] = static_cast<size_t>(normW);
       }
       w->end();
 
-      return normalizedIntWeights;
+      return normWeights;
     }
 };
 
