@@ -653,7 +653,7 @@ class SwapCavity
       triangleOk.setSize(unique_count);
       triangleChecked.setSize(unique_count);
       for (int i=0; i < unique_count; ++i)
-        triangleChecked[i]=false;
+        triangleChecked[i] = false;
       triangulation.setSize(triangulation_size[loop.getSize()]);
       for (int i=0; i < triangulation_count[loop.getSize()]; ++i)
         if (tryTriangulation(i))
@@ -672,8 +672,8 @@ class SwapCavity
     ShapeHandler* shape;
     Mesh* mesh;
     SwapLoop loop;
-    apf::DynamicArray<bool> triangleOk;
-    apf::DynamicArray<bool> triangleChecked;
+    apf::DynamicArray<int> triangleOk;
+    apf::DynamicArray<int> triangleChecked;
     apf::DynamicArray<int> triangulation;
     EntityArray tets;
     double qualityToBeat;
