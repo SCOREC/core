@@ -116,10 +116,11 @@ size_t dcPart::walkPart(size_t visited) {
       count++;
       eArr adjElms;
       getDwn2ndAdj(m, elm, adjElms);
-      APF_ITERATE(eArr, adjElms, eit) {
-         if ( ! m->hasTag(*eit, vtag) )
-            elms.push_back(*eit);
-      }
+      if (adjElms.getSize())
+        APF_ITERATE(eArr, adjElms, eit) {
+           if ( ! m->hasTag(*eit, vtag) )
+              elms.push_back(*eit);
+        }
       if ( count > m->count(dim) ) {
 	 error("[%d] count > part size %d > %ld\n",
 	       m->getId(), count, static_cast<long>(m->count(dim)));
