@@ -7,15 +7,17 @@
 #include <PCU.h>
 #include <SimUtil.h>
 
-apf::MeshTag* setVtxWeights(apf::Mesh* m) {
-  apf::MeshIterator* it = m->begin(0);
-  apf::MeshEntity* e;
-  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
-  double w = 1.0;
-  while ((e = m->iterate(it))) 
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-  return tag;
+namespace {
+  apf::MeshTag* setVtxWeights(apf::Mesh* m) {
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+    double w = 1.0;
+    while ((e = m->iterate(it))) 
+      m->setDoubleTag(e, tag, &w);
+    m->end(it);
+    return tag;
+  }
 }
 
 int main(int argc, char** argv)
@@ -36,14 +38,14 @@ int main(int argc, char** argv)
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = setVtxWeights(m);
-  const double step = 0.1; const int verbose = 1;
+  const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxBalancer(m, step, verbose);
   balancer->balance(weights, 1.05);
   delete balancer;
   Parma_PrintPtnStats(m, "");
   apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
-  //m->writeNative(argv[3]);
+  m->writeNative(argv[3]);
   // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);

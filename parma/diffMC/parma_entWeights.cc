@@ -4,11 +4,35 @@
 #include "parma_sides.h"
 
 namespace parma {  
+  double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
+    double maxW = getWeight(m,w,entDim);
+    PCU_Max_Doubles(&maxW, 1);
+    return maxW;
+  }
+
+  double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
+    assert(entDim >= 0 && entDim <= 3);
+    apf::MeshIterator* it = m->begin(entDim);
+    apf::MeshEntity* e;
+    double sum = 0;
+    while ((e = m->iterate(it)))
+      sum += parma::getEntWeight(m, e, w);
+    m->end(it);
+    return sum;
+  }
+
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
+    assert(m->hasTag(e,w));
+    double weight;
+    m->getDoubleTag(e,w,&weight);
+    return weight;
+  }
+
   EntWeights::EntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int d) 
     : Weights(m, w, s), entDim(d) 
   {
     assert(entDim >= 0 && entDim <= 3);
-    weight = selfWeight(m, w);
+    weight = getWeight(m, w, entDim);
     init(m, w, s);
   }
   double EntWeights::self() {
@@ -21,15 +45,7 @@ namespace parma {
     m->getDoubleTag(e,w,&entW);
     return entW;
   }
-  double EntWeights::selfWeight(apf::Mesh* m, apf::MeshTag* w) {
-    apf::MeshIterator* it = m->begin(entDim);
-    apf::MeshEntity* e;
-    double sum = 0;
-    while ((e = m->iterate(it)))
-      sum += getEntWeight(m, e, w);
-    m->end(it);
-    return sum;
-  }
+
   void EntWeights::init(apf::Mesh*, apf::MeshTag*, Sides* s) {
     PCU_Comm_Begin();
     const Sides::Item* side;
@@ -48,10 +64,5 @@ namespace parma {
     return new EntWeights(m, w, s, dim);
   }
 
-  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
-    double weight;
-    m->getDoubleTag(e,w,&weight);
-    return weight;
-  }
+
 } //end namespace

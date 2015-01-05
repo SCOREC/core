@@ -1,10 +1,12 @@
 #include <PCU.h>
+#include <parma.h>
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include <apf.h>
 #include <limits.h>
 #include "maximalIndependentSet/mis.h"
+
 
 
 namespace parma {
@@ -19,20 +21,28 @@ namespace parma {
     private:
       ShapeTargets();
       double totW;
-
+      
       void init(apf::Mesh* m, Sides* s, Weights* w, double alpha) {
         PCU_Debug_Open();
         apf::Parts res;
-        const double t1 = PCU_Time();
-        bool isMis = isInMIS(m);
-        double elapsedTime = PCU_Time() - t1;
-        PCU_Max_Doubles(&elapsedTime, 1);
-        if( !PCU_Comm_Self() )
-          fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
-        
+	static int iter=0;
+	static int misNumber;
+	static int maxMis;
+
+	if (iter==0) {
+	  const double t1 = PCU_Time();
+	  misNumber = Parma_MisNumbering(m,0);
+	  double elapsedTime = PCU_Time() - t1;
+	  PCU_Max_Doubles(&elapsedTime, 1);
+	  if( !PCU_Comm_Self() )
+	    fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
+	  maxMis = misNumber;
+          PCU_Max_Ints(&maxMis,1);
+        }
+
         int side = 0;
         PCU_Comm_Begin();
-        if(getSmallSide(s, 0.5*getAvgSides(s), side) && isMis) {
+        if(getSmallSide(s, 0.5*getAvgSides(s), side) && misNumber==iter) {
           PCU_Comm_Pack(side,NULL,0);
           getOtherRes(m, s, side, res);
         }
@@ -50,8 +60,12 @@ namespace parma {
         }
         PCU_Debug_Print("\n");
         PCU_Comm_Send();
-        while (PCU_Comm_Listen())
-          setTarget(PCU_Comm_Sender(), s, w, alpha);
+	while (PCU_Comm_Listen()) { 
+	  setTarget(PCU_Comm_Sender(), s, w, alpha);
+	}
+	iter++;
+	if (iter>maxMis)
+	  iter=0;
       }
       void getOtherRes(apf::Mesh* m, Sides*, int peer, apf::Parts& res) {
         const int self = PCU_Comm_Self();
@@ -71,7 +85,7 @@ namespace parma {
       double getAvgSides(Sides* s) {
         double tot = s->total();
         PCU_Add_Doubles(&tot, 1);
-        int cnt = s->size();
+        int cnt = static_cast<int>(s->size());
         PCU_Add_Ints(&cnt, 1);
         return tot/cnt;
       }
@@ -90,7 +104,8 @@ namespace parma {
       }
       void setTarget(const int peer, Sides* s, Weights* w, double alpha) {
         assert(s->has(peer));
-        double sideFactor = (double)s->get(peer) / s->total();
+        const double totSides = static_cast<double>(s->total());
+        const double sideFactor = s->get(peer) / totSides;
         double scaledW = alpha * sideFactor * w->self();
         set(peer, scaledW);
         totW+=scaledW;

@@ -419,7 +419,7 @@ class Migration
   that uses a different ownership rule. */
 struct Sharing
 {
-  virtual ~Sharing() {};
+  virtual ~Sharing() {}
 /** \brief return true if the entity is owned */
   virtual bool isOwned(MeshEntity* e) = 0;
 /** \brief get the copies of the entity */

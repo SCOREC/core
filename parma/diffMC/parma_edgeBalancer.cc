@@ -1,3 +1,4 @@
+#include "parma.h"
 #include "parma_balancer.h"
 #include "parma_step.h"
 #include "parma_sides.h"
@@ -15,7 +16,7 @@ namespace {
         parma::Weights* w = parma::makeEntWeights(mesh, wtag, s, 1);
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
-        parma::Stepper b(mesh, wtag, factor, s, w, t, sel);
+        parma::Stepper b(mesh, factor, s, w, t, sel);
         return b.step(tolerance, verbose);
       }
   };

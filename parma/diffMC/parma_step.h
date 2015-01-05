@@ -10,7 +10,7 @@ namespace parma {
   class Selector;
   class Stepper {
     public:
-      Stepper(apf::Mesh* mIn, apf::MeshTag* wIn, double alphaIn,
+      Stepper(apf::Mesh* mIn, double alphaIn,
         Sides* s, Weights* w, Targets* t, Selector* sel, 
         bool (*stop)(double imb, double maxImb)=less);
       ~Stepper();
@@ -18,7 +18,6 @@ namespace parma {
     private:
       Stepper();
       apf::Mesh* m;
-      apf::MeshTag* w;
       double alpha;
       int verbose;
       virtual double imbalance();

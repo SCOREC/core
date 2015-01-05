@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <parma_balancer.h>
+#include "parma.h"
 #include "parma_step.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -17,7 +18,7 @@ namespace {
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeElmSelector(mesh, wtag);
-        parma::Stepper b(mesh, wtag, factor, s, w, t, sel);
+        parma::Stepper b(mesh, factor, s, w, t, sel);
         return b.step(tolerance, verbose);
       }
   };
@@ -25,5 +26,7 @@ namespace {
 
 apf::Balancer* Parma_MakeElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
+  if( !PCU_Comm_Self() && verbosity ) 
+    fprintf(stdout,"PARMA_STATUS stepFactor %.3f\n", stepFactor);
   return new ElmBalancer(m, stepFactor, verbosity);
 }

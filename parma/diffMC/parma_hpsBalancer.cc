@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <apfPartition.h>
+#include "parma.h"
 #include "parma_sides.h"
 #include "parma_entWeights.h"
 #include "parma_targets.h"
@@ -11,8 +12,10 @@
 
 using std::vector;
 using std::set;
+using parma::Weights;
+using parma::Sides;
 
-namespace parma {
+namespace {
 
 class MergeTargets {
   public:
@@ -20,10 +23,10 @@ class MergeTargets {
     //Produces the optimal merging combination of the part's neighbors into
     // itself for a given maxW
     MergeTargets(Sides* s, Weights* w, double maxW) {
-      //If part is heavy or empty, exit function
-      if (w->self() >= maxW || w->self() == 0) {
+      if (w->self() >= maxW || w->self() == 0)
         return;
-      }
+
+      //FIXME move this and soln conversion to function {
       //Create array of neighbor partId's for assignment in mergingNet
       int* nborPartIds = new int[w->size()];
       const Weights::Item* weight;
@@ -32,60 +35,48 @@ class MergeTargets {
       while( (weight = w->iterate()) )
         nborPartIds[weightIdx++] = weight->first;
       w->end();
+      // end FIXME }
 
-      double minWeight = std::numeric_limits<double>::max();
-      int* normalizedIntWeights = normalizeWeights(w, minWeight);
+      double minWeight;
+      size_t* normWeights = normalizeWeights(w, minWeight);
 
-      //How much weight can be added on to the current part before it
-      // reaches the HeavyImb
-      const double weightCapacity = (maxW - w->self());
+      const double wcap = (maxW - w->self());
+      const double kdcap = floor(scale(wcap/minWeight));
+      const size_t kcap = static_cast<size_t>(kdcap);
 
       PCU_Debug_Print("maxW %.3f selfW %.3f weightCapacity %.3f\n",
-          maxW, w->self(), weightCapacity);
-      //total weight that can be added to self, normalized to min
-      const int knapsackCapacity = floor(scale(weightCapacity/minWeight));
+          maxW, w->self(), wcap);
 
-      //Knapsack execution
-      //Declared for knapsack class
-      int* value = new int[s->total()];
-      std::fill (value, value + s->total(),1);
+      size_t* value = new size_t[s->total()];
+      std::fill(value, value + s->total(),1);
 
-      knapsack* ks = new knapsack(knapsackCapacity, w->size(),
-          normalizedIntWeights, value);
-      const int solnVal = ks->solve();
-      mergeTargetsResults.reserve(solnVal);
-      ks->getSolution(mergeTargetsResults);
+      Knapsack k = makeKnapsack(kcap, w->size(), normWeights, value);
+      size_t solnVal = solve(k);
+      size_t solnSz;
+      size_t* soln = getSolution(k, &solnSz);
+      assert(solnVal == solnSz);
+      destroyKnapsack(k);
 
-      //Converting mergeTargetsResults to partId's
-      vector<int> partIdMergeTargets;
-      partIdMergeTargets.reserve(mergeTargetsResults.size());
-      for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-        partIdMergeTargets.push_back(nborPartIds[mergeTargetsResults[i]]);
-      }
-      //Constant function to change vectors
-      mergeTargetsResults.swap(partIdMergeTargets);
+      //FIXME name too long
+      mergeTargetsResults.reserve(solnSz);
+      for(size_t i=0; i<solnSz; i++)
+        mergeTargetsResults.push_back(nborPartIds[soln[i]]);
 
-      //Debug to see which parts contained in the results
-      for(size_t i=0; i<mergeTargetsResults.size(); i++)  {
-        PCU_Debug_Print("merge Target result %d\n", mergeTargetsResults[i]);
-      }
-
+      free(soln);
       delete [] nborPartIds;
       delete [] value;
-      delete [] normalizedIntWeights;
-      delete ks;
+      delete [] normWeights;
     }
 
     size_t total() {
       return mergeTargetsResults.size();
     }
 
-    int mergeTargetIndex(int index) {
+    int mergeTargetIndex(size_t index) {
       return mergeTargetsResults.at(index);
     }
 
   private:
-    MergeTargets();
     vector<int> mergeTargetsResults;
 
     double scale(double v) {
@@ -93,8 +84,8 @@ class MergeTargets {
       return v/divideFactor;
     }
 
-    int* normalizeWeights(Weights* w, double& minWeight){
-      //iterating through the neighbor weights to determine the minimum weight
+    size_t* normalizeWeights(Weights* w, double& minWeight){
+      minWeight = std::numeric_limits<double>::max();
       const Weights::Item* weight;
       w->begin();
       while( (weight = w->iterate()) )
@@ -102,25 +93,20 @@ class MergeTargets {
           minWeight = weight->second;
       w->end();
 
-      // PCU_Debug_Print("min weight == %f\n", minWeight); rating 2
-
-      //normalizing the neighbor weights to the minimum neighbor weight with a
+      //normalizing the neighbor weights to the 
+      // minimum neighbor weight with a
       // dividing factor to increase the accuracy of knapsack
-      int* normalizedIntWeights = new int[w->size()];
+      size_t* normWeights = new size_t[w->size()];
       int weightIdx = 0;
       w->begin();
       while( (weight = w->iterate()) ){
-        //Divide Factor normalizing weight code
-        double normalizedWeight = weight->second / minWeight;
-        normalizedWeight = scale(normalizedWeight);
-        normalizedIntWeights[weightIdx++] = (int) ceil(normalizedWeight);
-
-        // PCU_Debug_Print("weight %d, normalized to %d from %f\n",
-        // weight->first, normalizedIntWeights[(weightIdx-1)], weight->second); //rating 1, 2 if CHI
+        double normW = weight->second / minWeight;
+        normW = ceil(scale(normW));
+        normWeights[weightIdx++] = static_cast<size_t>(normW);
       }
       w->end();
 
-      return normalizedIntWeights;
+      return normWeights;
     }
 };
 
@@ -136,15 +122,9 @@ class MergeTargets {
         part.adjPartIds.push_back(partId->first);
       s->end();
 
-      PCU_Debug_Print("adjpartIds size = %ld\n", (long)(part.adjPartIds.size())); //rating 2
-
-      PCU_Debug_Print("mergeNet size %ld\n", (long)(tgts.total()));
-
       //Passing in the mergingNet
-      for(size_t i = 0; i < tgts.total(); ++i){
+      for(size_t i = 0; i < tgts.total(); ++i)
         part.net.push_back(tgts.mergeTargetIndex(i));
-        PCU_Debug_Print("mergeTarget[%lu] %d\n", i , part.net[i]);//rating 1 (CHI 2)
-      }
       part.net.push_back(part.id);
   }
 
@@ -155,9 +135,8 @@ class MergeTargets {
 
     generatemMisPart(m,s,tgts,part);
 
-    int randNumSeed = PCU_Comm_Self()+1;
-
-    mis_init(randNumSeed,false);
+    unsigned int seed = static_cast<unsigned int>(PCU_Comm_Self()+1);
+    mis_init(seed);
     const int isInMis = mis(part);
 
     // Debug if in MIS rating 0
@@ -202,7 +181,9 @@ class MergeTargets {
   }
 
   int isEmpty(apf::Mesh* m, apf::Migration* plan) {
-    return (m->count(m->getDimension()) - plan->count() == 0) ? 1 : 0;
+    const size_t numElms = m->count(m->getDimension());
+    const size_t planElms = static_cast<size_t>(plan->count());
+    return ((numElms - planElms) == 0) ? 1 : 0;
   }
 
   int numSplits(Weights* w, double tgtWeight) {
@@ -249,8 +230,8 @@ class MergeTargets {
   }
 
   double imbalance(apf::Mesh* m, apf::MeshTag* wtag) {
-    Sides* s = makeElmBdrySides(m);
-    Weights* w = makeEntWeights(m, wtag, s, m->getDimension());
+    Sides* s = parma::makeElmBdrySides(m);
+    Weights* w = parma::makeEntWeights(m, wtag, s, m->getDimension());
     double imb = imbalance(w);
     delete w;
     delete s;
@@ -294,8 +275,8 @@ class MergeTargets {
     assert( plan->count() );
     for (int i = 0; i < plan->count(); ++i) {
       apf::MeshEntity* e = plan->get(i);
-      int p = plan->sending(e);
-      assert((size_t)p <= tgts.size());
+      size_t p = static_cast<size_t>(plan->sending(e));
+      assert(p <= tgts.size());
       plan->send(e, tgts[p-1]);
     }
   }
@@ -415,7 +396,9 @@ class MergeTargets {
     split(m, wtag, w, tgt, &plan);
     m->migrate(plan);
   }
+}
 
+namespace parma {
   class HpsBalancer : public apf::Balancer {
     public:
       HpsBalancer(apf::Mesh* m, int v)

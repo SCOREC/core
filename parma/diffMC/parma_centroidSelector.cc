@@ -139,8 +139,8 @@ namespace parma {
           }
         }
         mesh->end(it);
-        APF_ITERATE(ClosestMap,closest,it)
-          distQ->push(it->second.second,it->first);
+        APF_ITERATE(ClosestMap,closest,itr)
+          distQ->push(itr->second.second,itr->first);
       }
       int getPeer(apf::MeshEntity* e) {
         return apf::getOtherCopy(mesh,e).peer;

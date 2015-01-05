@@ -15,15 +15,41 @@ namespace {
     m->end(it);
     return cnt;
   }
-  int numOwnedVtx(apf::Mesh* m) {
+  int numBdryVtx(apf::Mesh* m, bool onlyShared=false) {
     apf::MeshIterator *it = m->begin(0);
     apf::MeshEntity* e;
     int cnt = 0;
     while( (e = m->iterate(it)) )
-      if( m->isShared(e) && m->isOwned(e) )
-        cnt++;
+      if( m->isShared(e) && (onlyShared || m->isOwned(e)) ) 
+          cnt++;
     m->end(it);
     return cnt;
+  }
+  int numMdlBdryVtx(apf::Mesh* m) {
+    const int dim = m->getDimension();
+    apf::MeshIterator *it = m->begin(0);
+    apf::MeshEntity* e;
+    int cnt = 0;
+    while( (e = m->iterate(it)) )
+      if( m->getModelType(m->toModel(e)) < dim )
+          cnt++;
+    m->end(it);
+    return cnt;
+  }
+  double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
+    assert(m->hasTag(e,w));
+    double weight;
+    m->getDoubleTag(e,w,&weight);
+    return weight;
+  }
+  void getStats(int& loc, long& tot, int& min, int& max, double& avg) {
+    min = max = loc;
+    tot = static_cast<long>(loc);
+    PCU_Min_Ints(&min, 1);
+    PCU_Max_Ints(&max, 1);
+    PCU_Add_Longs(&tot, 1);
+    avg = static_cast<double>(tot);
+    avg /= PCU_Comm_Peers();
   }
 }
 
@@ -39,6 +65,23 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
       (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
 }
 
+double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
+    int dim) {
+    assert(dim >= 0 && dim <= 3);
+    apf::MeshIterator* it = m->begin(dim);
+    apf::MeshEntity* e;
+    double sum = 0;
+    while ((e = m->iterate(it)))
+      sum += getEntWeight(m, e, w);
+    m->end(it);
+   double max, tot;
+   max = tot = sum;
+   PCU_Add_Doubles(&tot, 1);
+   PCU_Max_Doubles(&max, 1);
+   return max/(tot/PCU_Comm_Peers());
+}
+
+
 void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   apf::MeshIterator *it = m->begin(0);
   apf::Parts neighbors;
@@ -49,7 +92,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
     neighbors.insert(sharers.begin(),sharers.end());
   }
   m->end(it);
-  loc = neighbors.size();
+  loc = static_cast<int>(neighbors.size());
   max = loc;
   PCU_Max_Ints(&max,1);
   double total = loc;
@@ -57,16 +100,28 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   avg = total / PCU_Comm_Peers();
 }
 
-long Parma_GetNumBdryVtx(apf::Mesh* m) {
-  long cnt = numOwnedVtx(m);
-  PCU_Add_Longs(&cnt, 1);
-  return cnt;
+void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+    int& max, double& avg) {
+  loc = numBdryVtx(m);
+  getStats(loc, tot, min, max, avg);
+}
+
+void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+    int& max, double& avg) {
+  bool onlyShared = true;
+  loc = numBdryVtx(m,onlyShared);
+  getStats(loc, tot, min, max, avg);
+}
+
+void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+    int& max, double& avg) {
+  loc = numMdlBdryVtx(m);
+  getStats(loc, tot, min, max, avg);
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
   int tot = max = loc = dc.numDisconnectedComps();
-  PCU_Debug_Print("getDisStats dc parts %d\n", loc);
   PCU_Max_Ints(&max, 1);
   PCU_Add_Ints(&tot, 1);
   avg = static_cast<double>(tot)/PCU_Comm_Peers();
@@ -78,32 +133,56 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
 }
 
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
+  PCU_Debug_Print("%s vtx %lu\n", key.c_str(), m->count(0));
+  PCU_Debug_Print("%s edge %lu\n", key.c_str(), m->count(1));
+  PCU_Debug_Print("%s face %lu\n", key.c_str(), m->count(2));
+  if( m->getDimension() == 3 )
+    PCU_Debug_Print("%s rgn %lu\n", key.c_str(), m->count(3));
+
   int maxDc = 0;
   double avgDc = 0;
   int locDc = 0;
   Parma_GetDisconnectedStats(m, maxDc, avgDc, locDc);
+  PCU_Debug_Print("%s dc %d\n", key.c_str(), locDc);
 
   int maxNb = 0;
   double avgNb = 0;
   int locNb = 0;
   Parma_GetNeighborStats(m, maxNb, avgNb, locNb);
+  PCU_Debug_Print("%s neighbors %d\n", key.c_str(), locNb);
 
-  const long bdryVtx = Parma_GetNumBdryVtx(m);
+  int locV[3], minV[3], maxV[3];
+  long totV[3];
+  double avgV[3];
+  Parma_GetOwnedBdryVtxStats(m, locV[0], totV[0], minV[0], maxV[0], avgV[0]);
+  Parma_GetSharedBdryVtxStats(m, locV[1], totV[1], minV[1], maxV[1], avgV[1]);
+  Parma_GetMdlBdryVtxStats(m, locV[2], totV[2], minV[2], maxV[2], avgV[2]);
+  PCU_Debug_Print("%s ownedBdryVtx %d\n", key.c_str(), locV[0]);
+  PCU_Debug_Print("%s sharedBdryVtx %d\n", key.c_str(), locV[1]);
+  PCU_Debug_Print("%s mdlBdryVtx %d\n", key.c_str(), locV[2]);
 
   int surf = numSharedSides(m);
-  int vol = m->count(m->getDimension());
-  double minSurfToVol, maxSurfToVol, avgSurfToVol;
-  minSurfToVol =  maxSurfToVol =  avgSurfToVol = surf/(double)vol;
+  double vol = static_cast<double>( m->count(m->getDimension()) );
+  double minSurfToVol, maxSurfToVol, avgSurfToVol, surfToVol;
+  minSurfToVol =  maxSurfToVol =  avgSurfToVol = surfToVol = surf/vol;
   PCU_Min_Doubles(&minSurfToVol, 1);
   PCU_Max_Doubles(&maxSurfToVol, 1);
   PCU_Add_Doubles(&avgSurfToVol, 1);
   avgSurfToVol /= PCU_Comm_Peers();
+  PCU_Debug_Print("%s sharedSidesToElements %.3f\n", key.c_str(), surfToVol);
 
   int empty = (m->count(m->getDimension()) == 0 ) ? 1 : 0;
   PCU_Add_Ints(&empty, 1);
 
   double imb[4] = {0, 0, 0, 0};
   Parma_GetEntImbalance(m, &imb);
+
+  PCU_Debug_Print("%s vtxAdjacentNeighbors ", key.c_str());
+  apf::Parts peers;
+  apf::getPeers(m,0,peers);
+  APF_ITERATE(apf::Parts,peers,p)
+    PCU_Debug_Print("%d ", *p);
+  PCU_Debug_Print("\n");
 
   if( 0 == PCU_Comm_Self() ) {
     fprintf(stdout, "STATUS %s disconnected <max avg> %d %.3f\n",
@@ -112,8 +191,15 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
         key.c_str(), maxNb, avgNb);
     fprintf(stdout, "STATUS %s empty parts %d\n",
         key.c_str(), empty);
-    fprintf(stdout, "STATUS %s number of shared vtx %ld\n",
-        key.c_str(), bdryVtx);
+    fprintf(stdout, "STATUS %s owned bdry vtx <tot max min avg> "
+        "%ld %d %d %.3f\n",
+        key.c_str(), totV[0], maxV[0], minV[0], avgV[0]);
+    fprintf(stdout, "STATUS %s shared bdry vtx <tot max min avg> "
+        "%ld %d %d %.3f\n",
+        key.c_str(), totV[1], maxV[1], minV[1], avgV[1]);
+    fprintf(stdout, "STATUS %s model bdry vtx <tot max min avg> "
+        "%ld %d %d %.3f\n",
+        key.c_str(), totV[2], maxV[2], minV[2], avgV[2]);
     fprintf(stdout, "STATUS %s sharedSidesToElements <max min avg> "
         "%.3f %.3f %.3f\n",
         key.c_str(), maxSurfToVol, minSurfToVol, avgSurfToVol);
@@ -147,8 +233,8 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
     part.net.push_back(*nItr);
   }
 
-  int randNumSeed = part.id+1;
-  mis_init(randNumSeed,true);
+  unsigned int seed = static_cast<unsigned int>(part.id+1);
+  mis_init(seed);
   int misNumber=-1;
   int iter=0;
   int misSize=0;

@@ -13,6 +13,8 @@ namespace parma {
       int totalSides;
   };
   Sides* makeElmBdrySides(apf::Mesh* m);
+  Sides* makeElmSideSides(apf::Mesh* m);
+  Sides* makeVtxSides(apf::Mesh* m);
 }
 
 #endif

@@ -784,7 +784,8 @@ void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
     getDownBridgeAdjacent(m, origin, bridgeDimension, targetDimension, s);
   s.erase(origin);
   result.setSize(s.size());
-  std::copy(s.begin(), s.end(), result.begin());
+  if (s.size())
+    std::copy(s.begin(), s.end(), result.begin());
 }
 
 int getFirstType(Mesh* m, int dim)

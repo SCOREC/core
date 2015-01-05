@@ -32,6 +32,304 @@ using std::set;
 
 using namespace misLuby;
 
+namespace {
+  int generateRandomNumber() {
+    return rand();
+  }
+
+  void setRandomNum(partInfo& part) {
+    part.randNum = generateRandomNumber();
+    // don't select self nets until all other nets are selected
+    if ( 1 == part.net.size() )
+      part.randNum = std::numeric_limits<int>::max();
+  }
+
+  void removeNodes(partInfo& p, vector<int>& nodes) {
+    if (true == p.isInNetGraph)
+      MIS_ITERATE(vector<int>, nodes, nodeItr)
+        p.netAdjParts.erase(*nodeItr);
+  }
+
+  int sendAdjNetsToNeighbors(partInfo& part, vector<adjPart>& nbNet) {
+    PCU_Comm_Begin();
+
+    MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
+      const int destRank = *adjPartIdItr;
+      MIS_ITERATE(vector<adjPart>, nbNet, nbItr) {
+        if (nbItr->partId != *adjPartIdItr) {
+          //pack destination part Id
+          PCU_COMM_PACK(destRank, *adjPartIdItr);
+
+          //adjacent part Id
+          PCU_COMM_PACK(destRank, nbItr->partId);
+
+          //adjacent part's random number
+          PCU_COMM_PACK(destRank, nbItr->randNum);
+
+          //net size
+          size_t n = nbItr->net.size();
+          PCU_COMM_PACK(destRank, n);
+
+          //net
+          for (vector<int>::iterator pItr = nbItr->net.begin();
+              pItr != nbItr->net.end();
+              pItr++) {
+            PCU_COMM_PACK( destRank, *pItr);
+          }
+        }
+      }
+    }
+    return 0;
+  }
+
+  void sendIntsToNeighbors(partInfo& part, vector<int>& msg, int tag) {
+    PCU_Comm_Begin();
+    MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
+      const int destRank = *adjPartIdItr;
+
+      //pack msg tag
+      PCU_COMM_PACK(destRank, tag);
+
+      //pack destination part Id
+      PCU_COMM_PACK(destRank, *adjPartIdItr);
+
+      //pack array length
+      size_t n = msg.size();
+      PCU_COMM_PACK(destRank, n);
+
+      //pack int array
+      for ( vector<int>::iterator pItr = msg.begin();
+          pItr != msg.end();
+          pItr++ ) {
+        PCU_COMM_PACK(destRank, *pItr);
+      }
+    }
+  }
+
+  void unpackInts(vector<int>& msg, int tag) {
+    const int rank = PCU_Comm_Self();
+
+    //unpack msg tag
+    int inTag;
+    PCU_COMM_UNPACK(inTag);
+    MIS_FAIL_IF(tag != inTag, "tags do not match");
+
+    //unpack destination part Id
+    int destPartId;
+    PCU_COMM_UNPACK(destPartId);
+    assert(rank == destPartId);
+
+    //unpack array length
+    size_t n;
+    PCU_COMM_UNPACK(n);
+
+    //unpack int array
+    int buff;
+    for(size_t i=0; i < n; i++) {
+      PCU_COMM_UNPACK(buff);
+      msg.push_back(buff);
+    }
+  }
+
+  void recvIntsFromNeighbors(vector<int>& msg, int tag) {
+    while(PCU_Comm_Listen())
+      unpackInts(msg, tag);
+  }
+
+  int sendNetToNeighbors(partInfo& part) {
+    PCU_Comm_Begin();
+    MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
+      const int destRank = *adjPartIdItr;
+      PCU_COMM_PACK(destRank, part.id); //FIXME redundant
+      PCU_COMM_PACK(destRank, *adjPartIdItr); //FIXME redundant
+      PCU_COMM_PACK(destRank, part.randNum);
+      size_t netSz = part.net.size();
+      PCU_COMM_PACK(destRank, netSz);
+      MIS_ITERATE(vector<int>, part.net, pItr)
+        PCU_COMM_PACK(destRank, *pItr);
+    }
+    return 0;
+  }
+
+  void unpackNet(vector<adjPart>& msg) {
+    int srcPartId;
+    PCU_COMM_UNPACK(srcPartId);
+    assert(PCU_Comm_Sender() == srcPartId);
+
+    int destPartId;
+    PCU_COMM_UNPACK(destPartId);
+    assert(PCU_Comm_Self() == destPartId);
+
+    int randNum;
+    PCU_COMM_UNPACK(randNum);
+
+    adjPart ap;
+    ap.partId = srcPartId;
+    ap.randNum = randNum;
+
+    size_t arrayLen;
+    PCU_COMM_UNPACK(arrayLen);
+    assert(arrayLen > 0);
+
+    int buff;
+    for(size_t i=0; i < arrayLen; i++) {
+      PCU_COMM_UNPACK(buff);
+      ap.net.push_back(buff);
+    }
+
+    msg.push_back(ap);
+  }
+
+  void recvNetsFromNeighbors(vector<adjPart>& msg) {
+    while( PCU_Comm_Listen() )
+      unpackNet(msg);
+  }
+
+  void unpackAdjPart(vector<adjPart>& msg) {
+    const int rank = PCU_Comm_Self();
+
+    //unpack destination part Id
+    int destPartId;
+    PCU_COMM_UNPACK(destPartId);
+    assert(rank == destPartId);
+
+    //unpack adjacent part Id
+    int adjPartId;
+    PCU_COMM_UNPACK(adjPartId);
+
+    //unpack random number
+    int randNum;
+    PCU_COMM_UNPACK(randNum);
+
+    adjPart ap;
+    ap.partId = adjPartId;
+    ap.randNum = randNum;
+
+    //unpack net size
+    size_t n;
+    PCU_COMM_UNPACK(n);
+
+    //unpack net
+    int pid;
+    for(size_t i=0; i < n; i++) {
+      PCU_COMM_UNPACK(pid);
+      ap.net.push_back(pid);
+    }
+
+    msg.push_back(ap);
+  }
+
+  void recvAdjNetsFromNeighbors(vector<adjPart>& msg) {
+    while( PCU_Comm_Receive() )
+      unpackAdjPart(msg);
+  }
+
+  int minRandNum(netAdjItr first, netAdjItr last) {
+    int min = INT_MAX;
+    for (netAdjItr itr = first; itr != last; itr++) {
+      if (itr->second < min) {
+        min = itr->second;
+      }
+    }
+    return min;
+  }
+
+  void getNetAdjPartIds(netAdjItr first, netAdjItr last, vector<int>& ids) {
+    for (netAdjItr itr = first; itr != last; itr++) {
+      ids.push_back(itr->first);
+    }
+  }
+  void getNetPartIds(vector<int>& net, vector<int>&ids) {
+    for (unsigned int i=0;i<net.size();i++)
+      ids.push_back(net[i]);
+  }
+
+  void setNodeStateInGraph(partInfo& part) {
+    if( part.adjPartIds.size() ) {
+      part.isInNetGraph = true;
+      part.isInMIS = false;
+    } else {
+      part.isInNetGraph = false;
+      part.isInMIS = false;
+    }
+  }
+
+  /**
+   * @brief for each part determine with other parts are net-graph neighbors
+   * @remark 2nd-adjacent net neighbors are found with the second round of
+   *         communications
+   *
+   * The netgraph is constructed with one node for each part and one edge between
+   * two parts if the intersection of their nets is not empty.  For example,
+   * consider three parts:
+   *
+   *  a  b  c
+   *
+   * where a's net is b, b's net is a, and c's net is a.  In the figure below the
+   * net for each node is noted with dashes:
+   *
+   *  a b c
+   * a---
+   * b---
+   * c  ---
+   *
+   * The netgraph is then:
+   *  a-b-c
+   *  \___/
+   *
+   * With nets defined as N,S,E,W neighbors each node in the netgraph has an edge
+   * to its W,N,E,S neighbors through a first adjacency; i.e. an edge between
+   * node u and v is created as node u has v in it's net and visa versa.  Each
+   * node also has an edge to it's NW, NE, SE, NE, WW, NN, EE, and SS neighbors
+   * through second adjacenies; i.e. node u and v both have node w!=u,v, in
+   * their nets.
+   *
+   * The figure below depicts these adjacencies with a 0 indicating the given
+   * node, a 1 indicating a first-adjacency, and a 2 indicating a second
+   * adjacency.
+   *
+   *     2
+   *   2 1 2
+   * 2 1 0 1 2
+   *   2 1 2
+   *     2
+   *
+   * The second-adjacent neighbors are defined by two parts that don't contain
+   * each other in their nets, but do have intersecting nets.
+   *
+   * @param parts (InOut) vector of local parts
+   * @return 0 on success, non-zero otherwise
+   */
+  int constructNetGraph(partInfo& part) {
+    stable_sort(part.adjPartIds.begin(), part.adjPartIds.end());
+    setNodeStateInGraph(part);
+
+    // send net to each neighbor
+    int ierr = sendNetToNeighbors(part);
+    if (ierr != 0) return ierr;
+    PCU_Comm_Send();
+    vector<adjPart> nbNet;
+    recvNetsFromNeighbors(nbNet);
+
+    // get the random num associated with adjacent nets
+    part.addNetNeighbors(nbNet);
+
+    ierr = sendAdjNetsToNeighbors(part, nbNet);
+    if (ierr != 0) return ierr;
+    PCU_Comm_Send();
+    vector<adjPart> nbAdjNets;
+    recvAdjNetsFromNeighbors(nbAdjNets);
+
+    // get the random num associated with adjacent nets
+    part.addNetNeighbors(nbAdjNets);
+
+    //add new neighbors based on changes to net-graph neighbors
+    part.updateNeighbors();
+
+    return 0;
+  }
+}//end namespace
+
 void misLuby::PartInfo::print() {
   std::string header="adjPartIds ";
   std::stringstream out;
@@ -76,303 +374,7 @@ void misLuby::Print(std::ostream& ostr, std::string dbgMsg,
     }
     ostr << "\n";
   }
-}
-
-void seedRandomNumberGenerator(int seed, int) {
-  srand(seed);
-}
-
-/**
- * @brief generate random number
- * @return 0 on success, non-zero otherwise
- */
-int generateRandomNumber() {
-  return rand();
-}
-
-size_t createNeighborAndGetBufSize(const int destRank) {
-  int empty;
-  PCU_Comm_Pack(destRank, &empty, 0); // make sure the peer exists
-  size_t buffSizeInitial;
-  PCU_Comm_Packed(destRank, &buffSizeInitial);
-  return buffSizeInitial;
-}
-
-int sendAdjNetsToNeighbors(partInfo& part,
-    vector<adjPart>& nbNet) {
-  PCU_Comm_Begin();
-
-  MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
-    const int destRank = *adjPartIdItr;
-    MIS_ITERATE(vector<adjPart>, nbNet, nbItr) {
-      if (nbItr->partId != *adjPartIdItr) {
-        const size_t buffSizeInitial =
-          createNeighborAndGetBufSize(destRank);
-
-        //number of bytes in message
-        int numIntsInMsg = 5 + nbItr->net.size();
-        PCU_COMM_PACK(destRank,numIntsInMsg);
-
-        //pack source part Id
-        PCU_COMM_PACK(destRank, part.id);
-
-        //pack destination part Id
-        PCU_COMM_PACK( destRank, *adjPartIdItr);
-
-        //adjacent part Id
-        PCU_COMM_PACK( destRank, nbItr->partId);
-
-        //adjacent part's random number
-        PCU_COMM_PACK( destRank, nbItr->randNum);
-
-        //pack int array
-        for (vector<int>::iterator pItr = nbItr->net.begin();
-            pItr != nbItr->net.end();
-            pItr++) {
-          PCU_COMM_PACK( destRank, *pItr);
-        }
-
-        //sanity check
-        size_t buffSizeFinal;
-        PCU_Comm_Packed(destRank, &buffSizeFinal);
-        const size_t numIntsPacked =
-          (buffSizeFinal - buffSizeInitial) / sizeof (int);
-        MIS_FAIL_IF((size_t)numIntsInMsg != numIntsPacked,
-            "number of ints packed does not match msg header");
-      }
-    }
-  }
-  return 0;
-}
-
-void sendIntsToNeighbors(partInfo& part, vector<int>& msg, int tag) {
-  PCU_Comm_Begin();
-  MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
-    const int destRank = *adjPartIdItr;
-
-    const size_t buffSizeInitial = createNeighborAndGetBufSize(destRank);
-
-    //number of bytes in message
-    int numIntsInMsg = 4 + msg.size();
-    PCU_COMM_PACK( destRank, numIntsInMsg);
-
-    //pack msg tag
-    PCU_COMM_PACK( destRank, tag);
-
-    //pack source part Id
-    PCU_COMM_PACK( destRank, part.id);
-
-    //pack destination part Id
-    PCU_COMM_PACK( destRank, *adjPartIdItr);
-
-    //pack int array
-    for ( vector<int>::iterator pItr = msg.begin();
-        pItr != msg.end();
-        pItr++ ) {
-      PCU_COMM_PACK( destRank, *pItr);
-    }
-
-    //sanity check
-    size_t buffSizeFinal;
-    PCU_Comm_Packed(destRank, &buffSizeFinal);
-    const size_t numIntsPacked =
-      (buffSizeFinal - buffSizeInitial) / sizeof (int);
-    MIS_FAIL_IF((size_t)numIntsInMsg != numIntsPacked,
-        "number of ints packed does not match msg header");
-  }
-}
-
-void unpackInts(vector<int>& msg,
-    const size_t numIntsInMsg, int tag) {
-  const int rank = PCU_Comm_Self();
-  int srcRank;
-  PCU_Comm_From(&srcRank);
-
-  size_t numIntsUnpacked = 0;
-  //unpack msg tag
-  int inTag;
-  PCU_COMM_UNPACK(inTag);
-  MIS_FAIL_IF(tag != inTag, "tags do not match");
-  numIntsUnpacked++;
-
-  //unpack source part Id
-  int srcPartId;
-  PCU_COMM_UNPACK(srcPartId);
-  assert(srcRank == srcPartId);
-  numIntsUnpacked++;
-
-  //unpack destination part Id
-  int destPartId;
-  PCU_COMM_UNPACK(destPartId);
-  assert(rank == destPartId);
-  numIntsUnpacked++;
-
-  //unpack int array
-  int buff;
-  for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
-    PCU_COMM_UNPACK(buff);
-    msg.push_back(buff);
-  }
-}
-
-void recvIntsFromNeighbors(vector<int>& msg, int tag) {
-  while(PCU_Comm_Listen()) {
-    size_t msgSz;
-    PCU_Comm_Received(&msgSz);
-    const size_t numIntsInBuff =  msgSz / sizeof (int);
-    size_t numIntsProcessed = 0;
-
-    int srcRank;
-    PCU_Comm_From(&srcRank);
-
-    do {
-      int numIntsPacked;
-      PCU_COMM_UNPACK(numIntsPacked);
-      numIntsProcessed += numIntsPacked;
-      unpackInts(msg, numIntsPacked - 1, tag);
-    } while (numIntsProcessed != numIntsInBuff);
-  }
-}
-
-int sendNetToNeighbors(partInfo& part) {
-  PCU_Comm_Begin();
-  MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
-    const int destRank = *adjPartIdItr;
-    PCU_COMM_PACK(destRank, part.id); //FIXME redundant
-    PCU_COMM_PACK(destRank, *adjPartIdItr); //FIXME redundant
-    PCU_COMM_PACK(destRank, part.randNum);
-    size_t netSz = part.net.size();
-    PCU_COMM_PACK(destRank, netSz);
-    MIS_ITERATE(vector<int>, part.net, pItr)
-      PCU_COMM_PACK(destRank, *pItr);
-  }
-  return 0;
-}
-
-void unpackNet(vector<adjPart>& msg) {
-  int srcPartId;
-  PCU_COMM_UNPACK(srcPartId);
-  assert(PCU_Comm_Sender() == srcPartId);
-
-  int destPartId;
-  PCU_COMM_UNPACK(destPartId);
-  assert(PCU_Comm_Self() == destPartId);
-
-  int randNum;
-  PCU_COMM_UNPACK(randNum);
-
-  adjPart ap;
-  ap.partId = srcPartId;
-  ap.randNum = randNum;
-
-  size_t arrayLen;
-  PCU_COMM_UNPACK(arrayLen);
-  assert(arrayLen > 0);
-
-  int buff;
-  for(size_t i=0; i < arrayLen; i++) {
-    PCU_COMM_UNPACK(buff);
-    ap.net.push_back(buff);
-  }
-
-  msg.push_back(ap);
-}
-
-void recvNetsFromNeighbors(vector<adjPart>& msg) {
-  while( PCU_Comm_Listen() )
-    unpackNet(msg);
-}
-
-void unpackAdjPart(vector<adjPart>& msg, const size_t numIntsInMsg) {
-  const int rank = PCU_Comm_Self();
-  int srcRank;
-  PCU_Comm_From(&srcRank);
-
-  size_t numIntsUnpacked = 0;
-  //unpack source part Id
-  int srcPartId;
-  PCU_COMM_UNPACK(srcPartId);
-  assert(srcRank == srcPartId);
-  numIntsUnpacked++;
-
-  //unpack destination part Id
-  int destPartId;
-  PCU_COMM_UNPACK(destPartId);
-  assert(rank == destPartId);
-  numIntsUnpacked++;
-
-  //unpack adjacent part Id
-  int adjPartId;
-  PCU_COMM_UNPACK(adjPartId);
-  numIntsUnpacked++;
-
-  //unpack random number
-  int randNum;
-  PCU_COMM_UNPACK(randNum);
-  numIntsUnpacked++;
-
-  adjPart ap;
-  ap.partId = adjPartId;
-  ap.randNum = randNum;
-
-  //unpack int array
-  const size_t buffSize = (numIntsInMsg - numIntsUnpacked) * sizeof (int);
-  assert(buffSize > 0);
-
-  int buff;
-  for(size_t i=0; i < numIntsInMsg - numIntsUnpacked; i++) {
-    PCU_COMM_UNPACK(buff);
-    ap.net.push_back(buff);
-  }
-
-  msg.push_back(ap);
-}
-
-void recvAdjNetsFromNeighbors(vector<adjPart>& msg) {
-  while( PCU_Comm_Listen() ) {
-    size_t msgSz;
-    PCU_Comm_Received(&msgSz);
-    const size_t numIntsInBuff = msgSz / sizeof (int);
-    size_t numIntsProcessed = 0;
-
-    do {
-      int numIntsPacked;
-      PCU_COMM_UNPACK(numIntsPacked);
-      numIntsProcessed += numIntsPacked;
-      unpackAdjPart(msg, numIntsPacked - 1);
-    } while (numIntsProcessed != numIntsInBuff);
-  }
-}
-
-int minRandNum(netAdjItr first, netAdjItr last) {
-  int min = INT_MAX;
-  for (netAdjItr itr = first; itr != last; itr++) {
-    if (itr->second < min) {
-      min = itr->second;
-    }
-  }
-  return min;
-}
-
-void getNetAdjPartIds(netAdjItr first, netAdjItr last, vector<int>& ids) {
-  for (netAdjItr itr = first; itr != last; itr++) {
-    ids.push_back(itr->first);
-  }
-}
-void getNetPartIds(vector<int>& net, vector<int>&ids) {
-  for (unsigned int i=0;i<net.size();i++)
-    ids.push_back(net[i]);
-}
-
-void setNodeStateInGraph(partInfo& part) {
-  if( part.adjPartIds.size() ) {
-    part.isInNetGraph = true;
-    part.isInMIS = false;
-  } else {
-    part.isInNetGraph = false;
-    part.isInMIS = false;
-  }
-}
+} 
 
 /**
  * @brief add parts as neighbors in the net-graph
@@ -416,116 +418,12 @@ void partInfo::updateNeighbors(){
   stable_sort(adjPartIds.begin(), adjPartIds.end());
 }
 
-/**
- * @brief for each part determine with other parts are net-graph neighbors
- * @remark 2nd-adjacent net neighbors are found with the second round of
- *         communications
- *
- * The netgraph is constructed with one node for each part and one edge between
- * two parts if the intersection of their nets is not empty.  For example,
- * consider three parts:
- *
- *  a  b  c
- *
- * where a's net is b, b's net is a, and c's net is a.  In the figure below the
- * net for each node is noted with dashes:
- *
- *  a b c
- * a---
- * b---
- * c  ---
- *
- * The netgraph is then:
- *  a-b-c
- *  \___/
- *
- * With nets defined as N,S,E,W neighbors each node in the netgraph has an edge
- * to its W,N,E,S neighbors through a first adjacency; i.e. an edge between
- * node u and v is created as node u has v in it's net and visa versa.  Each
- * node also has an edge to it's NW, NE, SE, NE, WW, NN, EE, and SS neighbors
- * through second adjacenies; i.e. node u and v both have node w!=u,v, in
- * their nets.
- *
- * The figure below depicts these adjacencies with a 0 indicating the given
- * node, a 1 indicating a first-adjacency, and a 2 indicating a second
- * adjacency.
- *
- *     2
- *   2 1 2
- * 2 1 0 1 2
- *   2 1 2
- *     2
- *
- * The second-adjacent neighbors are defined by two parts that don't contain
- * each other in their nets, but do have intersecting nets.
- *
- * @param parts (InOut) vector of local parts
- * @return 0 on success, non-zero otherwise
- */
-int constructNetGraph(partInfo& part) {
-
-  int rank;
-  PCU_Comm_Rank(&rank);
-
-  stable_sort(part.adjPartIds.begin(), part.adjPartIds.end());
-  setNodeStateInGraph(part);
-
-  // send net to each neighbor
-  int ierr = sendNetToNeighbors(part);
-  if (ierr != 0) return ierr;
-  PCU_Comm_Send();
-  vector<adjPart> nbNet;
-  recvNetsFromNeighbors(nbNet);
-
-  // get the random num associated with adjacent nets
-  part.addNetNeighbors(nbNet);
-
-  ierr = sendAdjNetsToNeighbors(part, nbNet);
-  if (ierr != 0) return ierr;
-  PCU_Comm_Send();
-  vector<adjPart> nbAdjNets;
-  recvAdjNetsFromNeighbors(nbAdjNets);
-
-  // get the random num associated with adjacent nets
-  part.addNetNeighbors(nbAdjNets);
-
-  //add new neighbors based on changes to net-graph neighbors
-  part.updateNeighbors();
-
-  return 0;
-}
-
-void setRandomNum(partInfo& part) {
-  part.randNum = generateRandomNumber();
-  // don't select self nets until all other nets are selected
-  if ( 1 == part.net.size() )
-    part.randNum = std::numeric_limits<int>::max();
-}
-
-void mis_init(int randNumSeed, int debugMode, const char*,
+void mis_init(unsigned int randNumSeed, int, const char*,
     const char*, const char*) {
-  seedRandomNumberGenerator(randNumSeed, debugMode);
+  srand(randNumSeed);
 }
 
-void misFinalize() {
-}
-
-bool doSetsMatch(set<int> a, set<int> b) {
-  set<int>::iterator aItr = a.begin();
-  set<int>::iterator bItr = b.begin();
-  while (aItr != a.end() && bItr != b.end()) {
-    if(*aItr != *bItr) return false;
-    aItr++;
-    bItr++;
-  }
-  return true;
-}
-
-void removeNodes(partInfo& p, vector<int>& nodes) {
-  if (true == p.isInNetGraph)
-    MIS_ITERATE(vector<int>, nodes, nodeItr)
-      p.netAdjParts.erase(*nodeItr);
-}
+void misFinalize() {}
 
 /** If isNeighbors is true then the net of a selected part is removed from
  * the graph, o.w. the parts that have overlapping nets, as listed in
