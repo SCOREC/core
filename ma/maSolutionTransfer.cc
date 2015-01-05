@@ -100,6 +100,7 @@ class LinearTransfer : public FieldTransfer
       apf::Element* e = apf::createElement(field,parent);
       apf::getComponents(e,xi,&(value[0]));
       apf::setComponents(field,vert,0,&(value[0]));
+      apf::destroyElement(e);
     }
 };
 
