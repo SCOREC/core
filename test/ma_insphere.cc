@@ -1,7 +1,8 @@
-#include "apfMDS.h"
-#include "maMesh.h"
-#include "gmi_null.h"
-#include "PCU.h"
+#include <apfMDS.h>
+#include <maMesh.h>
+#include <gmi_null.h>
+#include <PCU.h>
+#include <apf.h>
 
 int main(int argc, char** argv)
 {
@@ -49,6 +50,9 @@ int main(int argc, char** argv)
 	apf::MeshEntity* e = apf::buildElement(mesh, m, apf::Mesh::TET, v);
 
 	assert(ma::getInsphere(mesh, e) == 1.5);
+
+  mesh->destroyNative();
+  apf::destroyMesh(mesh);
 
 	PCU_Comm_Free();
 	MPI_Finalize();
