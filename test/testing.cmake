@@ -135,11 +135,20 @@ add_test(construct
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
 set(MDIR ${MESHES}/spr)
-add_test(spr
+add_test(spr_3D
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./spr_test
   "${MDIR}/spr.dmg"
-  "${MDIR}/quadspr.smb")
+  "${MDIR}/quadspr.smb"
+  spr3D
+  2)
+add_test(spr_2D
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./spr_test
+  "${MDIR}/square.dmg"
+  "${MDIR}/square.smb"
+  spr2D
+  1)
 set(MDIR ${MESHES}/nonmanifold)
 add_test(nonmanif_verify
   ./verify
