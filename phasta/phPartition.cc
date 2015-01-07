@@ -68,7 +68,7 @@ void clearTags(apf::Mesh* m, apf::MeshTag* t) {
 
 void balance(apf::Mesh2* m)
 {
-  bool fineStats=true;
+  bool fineStats=false; // set to true for per part stats
   Parma_PrintPtnStats(m, "preRefine", fineStats);
   if ( isMixed(m) ) {
 
@@ -89,7 +89,7 @@ void balance(apf::Mesh2* m)
     apf::MeshTag* weights = setWeights(m);
     const double vtxImbTol = 1.03;
     const double step = 0.3;
-    const int verbose = 2;
+    const int verbose = 1;  // set to 2 for per iteration stats
     const double ignored = 42.42;
 
     Parma_ProcessDisconnectedParts(m);
@@ -116,7 +116,6 @@ void balance(apf::Mesh2* m)
     clearTags(m, weights);
     m->destroyTag(weights);
   }
-//  Parma_PrintPtnStats(m, "postRefine");
 }
 
 }
