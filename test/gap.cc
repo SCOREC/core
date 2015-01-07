@@ -16,10 +16,13 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   int verbose = 1;
+  apf::writeVtkFiles("before",m);
   apf::Balancer* balancer = Parma_MakeShapeOptimizer(m, 0.1, verbose);
-  balancer->balance(weights, 1.10);
+  balancer->balance(weights, 1.20);
   delete balancer;
   apf::removeTagFromDimension(m, weights, m->getDimension());
+  apf::writeVtkFiles("after",m);
+
   m->destroyTag(weights);
   m->writeNative(argv[3]);
   // destroy mds
