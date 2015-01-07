@@ -1,10 +1,12 @@
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
 #include <apfZoltan.h>
+#include <SimUtil.h>
 
 namespace {
 
@@ -113,12 +115,17 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   assert(partitionFactor <= PCU_Comm_Peers());
+  Sim_readLicenseFile(0);
+  gmi_sim_start();
   gmi_register_mesh();
+  gmi_register_sim();
   getConfig(argc,argv);
   if (PCU_Comm_Self() % partitionFactor)
     mymain(false);
   else
     mymain(true);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
