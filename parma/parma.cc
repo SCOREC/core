@@ -54,15 +54,17 @@ namespace {
 }
 
 void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
+   int dims;
    double tot[4];
-   for(int i=0; i<= mesh->getDimension(); i++)
+   dims = mesh->getDimension() + 1;
+   for(int i=0; i < dims; i++)
       tot[i] = (*entImb)[i] = mesh->count(i);
-   if( mesh->getDimension() != 3 )
-      tot[3] = (*entImb)[3] = 0;
-   PCU_Add_Doubles(tot, 4);
-   PCU_Max_Doubles(*entImb, 4);
-   for(int i=0; i<4; i++)
+   PCU_Add_Doubles(tot, dims);
+   PCU_Max_Doubles(*entImb, dims);
+   for(int i=0; i < dims; i++)
       (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
+   for(int i=dims; i < 4; i++)
+      (*entImb)[i] = 1.0;
 }
 
 double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,

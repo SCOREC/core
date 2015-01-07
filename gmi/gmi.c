@@ -27,7 +27,14 @@ static struct creators* ctors = NULL;
 
 struct gmi_set* gmi_make_set(int n)
 {
-  struct gmi_set* s = malloc(sizeof(*s) + (n - 1) * sizeof(struct gmi_ent*));
+  int extra;
+  struct gmi_set* s;
+  extra = n - 1;
+  /* undefined behavior sanitizer complains if we cut
+     below the size in the struct definition */
+  if (extra < 1)
+    extra = 1;
+  s = malloc(sizeof(*s) + extra * sizeof(struct gmi_ent*));
   s->n = n;
   return s;
 }
