@@ -282,7 +282,7 @@ static long verifyCoords(Mesh* m)
   return n;
 }
 
-long verifyVolumes(Mesh* m)
+long verifyVolumes(Mesh* m, bool printVolumes)
 {
   MeshIterator* it = m->begin(m->getDimension());
   MeshEntity* e;
@@ -294,11 +294,13 @@ long verifyVolumes(Mesh* m)
     MeshElement* me = createMeshElement(m, e);
     double v = measure(me);
     if (v < 0) {
-      std::stringstream ss;
-      ss << "warning: element volume " << v
-        << " at " << getLinearCentroid(m, e) << '\n';
-      std::string s = ss.str();
-      fprintf(stderr, "%s", s.c_str());
+      if (printVolumes) {
+        std::stringstream ss;
+        ss << "warning: element volume " << v
+          << " at " << getLinearCentroid(m, e) << '\n';
+        std::string s = ss.str();
+        fprintf(stderr, "%s", s.c_str());
+      }
       ++n;
     }
     destroyMeshElement(me);
