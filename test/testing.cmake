@@ -192,7 +192,7 @@ if (ENABLE_MPAS)
     "mpas.dmg"
     "mpas.smb")
   splitfun(split_mpas
-    split
+    ./split
     "mpas.dmg"
     "mpas.smb"
     "mpas_4_.smb"
