@@ -180,8 +180,11 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   Parma_GetEntImbalance(m, &imb);
 
   if (fine) {
-    fprintf(stdout, "FINE STATUS %s <Partid vtx rgn dc nb owned_bdry shared_bdry model_bdry shSidesToElm > %d %d %d %d %d %d %d %d %.3f\n",
-      key.c_str(), PCU_Comm_Self()+1, m->count(0), m->count(m->getDimension()), locDc, locNb, locV[0], locV[1], locV[2], surf/(double)vol); 
+    fprintf(stdout, "FINE STATUS %s <Partid vtx rgn dc nb "
+                    "owned_bdry shared_bdry model_bdry shSidesToElm > "
+                    " %d %lu %lu %d %d %d %d %d %.3f\n",
+      key.c_str(), PCU_Comm_Self()+1, m->count(0), m->count(m->getDimension()),
+      locDc, locNb, locV[0], locV[1], locV[2], surf/(double)vol);
     PCU_Barrier();
   }
 
