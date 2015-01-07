@@ -84,7 +84,6 @@ void balance(apf::Mesh2* m)
 
   } else {
     Parma_PrintPtnStats(m, "postSplit", fineStats);
-    m->writeNative("bz2:postSplit/");
 
     apf::MeshTag* weights = setWeights(m);
     const double vtxImbTol = 1.03;
