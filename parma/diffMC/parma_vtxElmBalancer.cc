@@ -60,7 +60,7 @@ class VtxElmBalancer : public parma::Balancer {
       apf::Balancer* b = Parma_MakeVtxBalancer(mesh, factor, verbose);
       b->balance(wtag, tolerance);
       delete b;
-      Parma_PrintPtnStats(mesh, "post vertices");
+      Parma_PrintPtnStats(mesh, "post vertices", (verbose>2));
       double maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
       b = new ElmLtVtx(mesh, factor, maxVtxW, verbose);
       b->balance(wtag, tolerance);

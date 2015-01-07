@@ -99,6 +99,7 @@ static void runBalancer(Adapt* a, apf::Balancer* b)
   delete b;
   removeTagFromDimension(m,weights,m->getDimension());
   m->destroyTag(weights);
+  Parma_PrintPtnStats(m, "postBalancer");
 }
 
 void runZoltan(Adapt* a)

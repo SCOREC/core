@@ -133,7 +133,7 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc);
  * @param m (In) partitioned mesh
  * @param key (In) identifying string to write with stat output
  */
-void Parma_PrintPtnStats(apf::Mesh* m, std::string key);
+void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine=false);
 
 /**
  * @brief re-connect disconnected parts

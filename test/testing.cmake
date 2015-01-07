@@ -1,6 +1,28 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string 
     "path to the meshes svn repo")
+if(ENABLE_THREADS)
+  macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
+    add_test("${TESTNAME}"
+      ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS}
+      "${PROG}"
+      "${MODEL}"
+      "${IN}"
+      "${OUT}"
+      ${FACTOR})
+  endmacro()
+else()
+  macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
+    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}") 
+    add_test("${TESTNAME}"
+      ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS}
+      "${PROG}"
+      "${MODEL}"
+      "${IN}"
+      "${OUT}"
+      ${FACTOR})
+  endmacro()
+endif()
 add_test(shapefun shapefun)
 add_test(eigen_test eigen_test)
 add_test(qr_test qr_test)
@@ -28,44 +50,41 @@ if (PCU_COMPRESS)
 else()
   set(MESHFILE "pipe_2_.smb")
 endif()
-if (ENABLE_THREADS)
-  add_test(split_2
-    split
-    "${MDIR}/pipe.dmg"
-    "pipe.smb"
-    ${MESHFILE}
-    2)
-  add_test(refineX
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 2
-    ./refine2x
-    "${MDIR}/pipe.dmg"
-    ${MESHFILE}
-    0
-    "refXpipe/")
-  add_test(split_4
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 2
-    ./zsplit
-    "${MDIR}/pipe.dmg"
-    ${MESHFILE}
-    "pipe_4_.smb"
-    2)
-  add_test(verify_parallel
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./verify
-    "${MDIR}/pipe.dmg"
-    "pipe_4_.smb")
-  add_test(ma_parallel
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./ma_test
-    "${MDIR}/pipe.dmg"
-    "pipe_4_.smb")
-  add_test(tet_parallel
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./tetrahedronize
-    "${MDIR}/pipe.dmg"
-    "pipe_4_.smb"
-    "tet.smb")
-endif()
+splitfun(split_2
+  ./split
+  "${MDIR}/pipe.dmg"
+  "pipe.smb"
+  ${MESHFILE}
+  1 2)
+add_test(refineX
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 2
+  ./refine2x
+  "${MDIR}/pipe.dmg"
+  ${MESHFILE}
+  0
+  "refXpipe/")
+splitfun(split_4
+  ./zsplit
+  "${MDIR}/pipe.dmg"
+  ${MESHFILE}
+  "pipe_4_.smb"
+  2 2)
+add_test(verify_parallel
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./verify
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb")
+add_test(ma_parallel
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./ma_test
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb")
+add_test(tet_parallel
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./tetrahedronize
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb"
+  "tet.smb")
 set(MDIR ${MESHES}/torus)
 add_test(balance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
@@ -154,19 +173,17 @@ add_test(nonmanif_verify
   ./verify
   "${MDIR}/nonmanifold.dmg"
   "${MDIR}/nonmanifold.smb")
-if (ENABLE_THREADS)
-  add_test(nonmanif_split
-    ./split
-    "${MDIR}/nonmanifold.dmg"
-    "${MDIR}/nonmanifold.smb"
-    "nonmanifold_2_.smb"
-    2)
-  add_test(nonmanif_verify2
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 2
-    ./verify
-    "${MDIR}/nonmanifold.dmg"
-    "nonmanifold_2_.smb")
-endif()
+splitfun(nonmanif_split
+  ./split
+  "${MDIR}/nonmanifold.dmg"
+  "${MDIR}/nonmanifold.smb"
+  "nonmanifold_2_.smb"
+  1 2)
+add_test(nonmanif_verify2
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 2
+  ./verify
+  "${MDIR}/nonmanifold.dmg"
+  "nonmanifold_2_.smb")
 if (ENABLE_MPAS)
   set(MDIR ${MESHES}/mpas)
   add_test(read_mpas
@@ -174,52 +191,48 @@ if (ENABLE_MPAS)
     "${MDIR}/ocean_QU_240km.nc"
     "mpas.dmg"
     "mpas.smb")
-  if (ENABLE_THREADS)
-    add_test(split_mpas
-      split
-      "mpas.dmg"
-      "mpas.smb"
-      "mpas_4_.smb"
-      4)
-    add_test(verify_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./verify
-      "mpas.dmg"
-      "mpas_4_.smb")
-    add_test(ghost_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./ghost
-      "mpas.dmg"
-      "mpas_4_.smb"
-      "ghost_4_.smb")
-    add_test(write_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./mpas_write
-      "mpas.dmg"
-      "ghost_4_.smb"
-      "${MDIR}/ocean_QU_240km.nc"
-      "mpas_part_")
-  endif()
+  splitfun(split_mpas
+    ./split
+    "mpas.dmg"
+    "mpas.smb"
+    "mpas_4_.smb"
+    1 4)
+  add_test(verify_mpas
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./verify
+    "mpas.dmg"
+    "mpas_4_.smb")
+  add_test(ghost_mpas
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./ghost
+    "mpas.dmg"
+    "mpas_4_.smb"
+    "ghost_4_.smb")
+  add_test(write_mpas
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./mpas_write
+    "mpas.dmg"
+    "ghost_4_.smb"
+    "${MDIR}/ocean_QU_240km.nc"
+    "mpas_part_")
 endif()
 set(MDIR ${MESHES}/fusion)
 add_test(mkmodel_fusion
   mkmodel
   "${MDIR}/fusion.smb"
   "fusion.dmg")
-if (ENABLE_THREADS)
-  add_test(split_fusion
-    split
-    "fusion.dmg"
-    "${MDIR}/fusion.smb"
-    "fusion_2_.smb"
-    2)
-  # the part count mismatch is intentional,
-  # this test runs on half its procs
-  add_test(adapt_fusion
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./fusion
-    "fusion_2_.smb")
-endif()
+splitfun(split_fusion
+  ./split
+  "fusion.dmg"
+  "${MDIR}/fusion.smb"
+  "fusion_2_.smb"
+  1 2)
+# the part count mismatch is intentional,
+# this test runs on half its procs
+add_test(adapt_fusion
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./fusion
+  "fusion_2_.smb")
 add_test(fusion_field
   ${MPIRUN} ${MPIRUN_PROCFLAG} 2
   ./fusion2)

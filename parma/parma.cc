@@ -134,7 +134,7 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
   dc.fix();
 }
 
-void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
+void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   PCU_Debug_Print("%s vtx %lu\n", key.c_str(), m->count(0));
   PCU_Debug_Print("%s edge %lu\n", key.c_str(), m->count(1));
   PCU_Debug_Print("%s face %lu\n", key.c_str(), m->count(2));
@@ -178,6 +178,15 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key) {
 
   double imb[4] = {0, 0, 0, 0};
   Parma_GetEntImbalance(m, &imb);
+
+  if (fine) {
+    fprintf(stdout, "FINE STATUS %s <Partid vtx rgn dc nb "
+                    "owned_bdry shared_bdry model_bdry shSidesToElm > "
+                    " %d %lu %lu %d %d %d %d %d %.3f\n",
+      key.c_str(), PCU_Comm_Self()+1, m->count(0), m->count(m->getDimension()),
+      locDc, locNb, locV[0], locV[1], locV[2], surf/(double)vol);
+    PCU_Barrier();
+  }
 
   PCU_Debug_Print("%s vtxAdjacentNeighbors ", key.c_str());
   apf::Parts peers;
