@@ -83,8 +83,6 @@ void balance(apf::Mesh2* m)
     m->destroyTag(weights);
 
   } else {
-    Parma_PrintPtnStats(m, "postSplit", fineStats);
-
     apf::MeshTag* weights = setWeights(m);
     const double vtxImbTol = 1.03;
     const double step = 0.3;
