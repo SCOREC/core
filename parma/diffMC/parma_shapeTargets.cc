@@ -28,8 +28,11 @@ namespace parma {
 	static int iter=0;
 	static int misNumber;
 	static int maxMis;
+	static double avgSide = getAvgSides(s);
+	static float avgSideMult=0.4;
 
 	if (iter==0) {
+	  Parma_ProcessDisconnectedParts(m);
 	  const double t1 = PCU_Time();
 	  misNumber = Parma_MisNumbering(m,0);
 	  double elapsedTime = PCU_Time() - t1;
@@ -38,11 +41,12 @@ namespace parma {
 	    fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
 	  maxMis = misNumber;
           PCU_Max_Ints(&maxMis,1);
+	  avgSideMult+=.1;
         }
 
         int side = 0;
         PCU_Comm_Begin();
-        if(getSmallSide(s, 0.5*getAvgSides(s), side) && misNumber==iter) {
+        if(getSmallSide(s, avgSideMult*avgSide, side) && misNumber==iter) {
           PCU_Comm_Pack(side,NULL,0);
           getOtherRes(m, s, side, res);
         }

@@ -9,14 +9,15 @@
 
 namespace {
   class ElmLtVtx : public parma::Balancer {
-    private: 
+    private:
+      int sideTol;
       double maxVtx;
       int getSideTol(parma::Sides* s) {
         double avg = static_cast<double>(s->total());
         PCU_Add_Doubles(&avg, 1);
         avg /= PCU_Comm_Peers();
         int tol = static_cast<int>(avg);
-        if( !PCU_Comm_Self() ) 
+        if( !PCU_Comm_Self() )
           fprintf(stdout, "sideTol %d\n", tol);
         return tol;
       }
@@ -28,6 +29,8 @@ namespace {
             fprintf(stdout, "PARMA_STATUS stepFactor %.3f\n", f);
             fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
           }
+          parma::Sides* s = parma::makeVtxSides(mesh);
+          sideTol = getSideTol(s);
         }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxVtxImb =
@@ -35,7 +38,6 @@ namespace {
         if( !PCU_Comm_Self() )
           fprintf(stdout, "vtx imbalance %.3f\n", maxVtxImb);
         parma::Sides* s = parma::makeVtxSides(mesh);
-        static int sideTol = getSideTol(s);
         PCU_Debug_Print("%s\n", s->print("sides").c_str());
         parma::Weights* w[2] =
         {parma::makeEntWeights(mesh, wtag, s, 0),
@@ -60,7 +62,7 @@ class VtxElmBalancer : public parma::Balancer {
       apf::Balancer* b = Parma_MakeVtxBalancer(mesh, factor, verbose);
       b->balance(wtag, tolerance);
       delete b;
-      Parma_PrintPtnStats(mesh, "post vertices");
+      Parma_PrintPtnStats(mesh, "post vertices", (verbose>2));
       double maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
       b = new ElmLtVtx(mesh, factor, maxVtxW, verbose);
       b->balance(wtag, tolerance);

@@ -346,7 +346,7 @@ class Mesh
   Other implementations may define their own. */
 void verify(Mesh* m);
 
-long verifyVolumes(Mesh* m);
+long verifyVolumes(Mesh* m, bool printVolumes = true);
 
 /** \brief get the dimension of a mesh entity */
 int getDimension(Mesh* m, MeshEntity* e);
