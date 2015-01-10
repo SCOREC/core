@@ -1,7 +1,8 @@
-#ifndef PARMA_BASE_H
-#define PARMA_BASE_H
+#ifndef PARMA_STEP_H
+#define PARMA_STEP_H
 #include <apfMesh.h>
 #include "parma_associative.h"
+#include "parma_stop.h"
 
 namespace parma {
   class Sides;
@@ -12,7 +13,7 @@ namespace parma {
     public:
       Stepper(apf::Mesh* mIn, double alphaIn,
         Sides* s, Weights* w, Targets* t, Selector* sel, 
-        bool (*stop)(double imb, double maxImb)=less);
+        Stop* stopper = new Less);
       ~Stepper();
       bool step(double maxImb, int verbosity=0);
     private:
@@ -25,10 +26,7 @@ namespace parma {
       Weights* weights;
       Targets* targets;
       Selector* selects;
-      bool (*stop)(double imb, double maxImb);
-      static bool less(double imb, double maxImb) {
-        return imb < maxImb;
-      }
+      Stop* stop;
   };
 }
 #endif
