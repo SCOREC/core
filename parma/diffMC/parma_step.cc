@@ -5,26 +5,29 @@
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
+#include "parma_stop.h"
 
 namespace parma {
   Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
-     bool (*fn)(double imb, double maxImb))
+     Stop* stopper) 
     : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t), 
-    selects(sel), stop(fn) {}
+    selects(sel), stop(stopper) {
+  }
 
   Stepper::~Stepper() {
     delete sides;
     delete weights;
     delete targets;
     delete selects;
+    delete stop;
   }
 
   bool Stepper::step(double maxImb, int verbosity) {
     const double imb = imbalance();
     if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "imbalance %.3f\n", imb);
-    if ( stop(imb,maxImb) )
+    if ( stop->stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);
     const double t0 = PCU_Time();
