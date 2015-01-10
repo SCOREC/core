@@ -12,8 +12,9 @@
 namespace parma {
   class ShapeTargets : public Targets {
     public:
-      ShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha) {
-        init(m,s,w,alpha);
+      ShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
+		   double avgSideMult, bool isInMIS) {
+        init(m,s,w,alpha,avgSideMult,isInMIS);
       }
       double total() {
         return totW;
@@ -21,32 +22,14 @@ namespace parma {
     private:
       ShapeTargets();
       double totW;
-      
-      void init(apf::Mesh* m, Sides* s, Weights* w, double alpha) {
+      void init(apf::Mesh* m, Sides* s, Weights* w, double alpha,
+		double avgSideMult, bool isInMIS) {
         PCU_Debug_Open();
         apf::Parts res;
-	static int iter=0;
-	static int misNumber;
-	static int maxMis;
-	static double avgSide = getAvgSides(s);
-	static float avgSideMult=0.4;
-
-	if (iter==0) {
-	  Parma_ProcessDisconnectedParts(m);
-	  const double t1 = PCU_Time();
-	  misNumber = Parma_MisNumbering(m,0);
-	  double elapsedTime = PCU_Time() - t1;
-	  PCU_Max_Doubles(&elapsedTime, 1);
-	  if( !PCU_Comm_Self() )
-	    fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
-	  maxMis = misNumber;
-          PCU_Max_Ints(&maxMis,1);
-	  avgSideMult+=.1;
-        }
-
+	double avgSide=getAvgSides(s);
         int side = 0;
         PCU_Comm_Begin();
-        if(getSmallSide(s, avgSideMult*avgSide, side) && misNumber==iter) {
+        if(getSmallSide(s, avgSideMult*avgSide, side) && isInMIS) {
           PCU_Comm_Pack(side,NULL,0);
           getOtherRes(m, s, side, res);
         }
@@ -67,9 +50,6 @@ namespace parma {
 	while (PCU_Comm_Listen()) { 
 	  setTarget(PCU_Comm_Sender(), s, w, alpha);
 	}
-	iter++;
-	if (iter>maxMis)
-	  iter=0;
       }
       void getOtherRes(apf::Mesh* m, Sides*, int peer, apf::Parts& res) {
         const int self = PCU_Comm_Self();
@@ -114,35 +94,9 @@ namespace parma {
         set(peer, scaledW);
         totW+=scaledW;
       }
-      bool isInMIS(apf::Mesh* m) {
-        misLuby::partInfo part;
-        part.id = PCU_Comm_Self();
-        part.net.push_back(PCU_Comm_Self());
-  
-        apf::Parts neighbors;
-        apf::MeshEntity* vtx;
-        apf::MeshIterator* vtxs = m->begin(0);
-        while ((vtx = m->iterate(vtxs))) {
-          apf::Parts residence;
-          m->getResidence(vtx,residence);
-          apf::unite(neighbors,residence);
-        }
-        m->end(vtxs);
-        neighbors.erase(m->getId());
-
-        for (apf::Parts::iterator itr = neighbors.begin();
-             itr!=neighbors.end();itr++) {
-          part.adjPartIds.push_back(*itr);
-          part.net.push_back(*itr);
-        }
-        const int t = static_cast<int>(PCU_Time());
-        int randNumSeed = t+PCU_Comm_Self()+1;
-        mis_init(randNumSeed,true);
-        bool isIn =mis(part, false, true);
-        return isIn;
-      }
   };
-  Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha) {
-    return new ShapeTargets(m,s,w,alpha);
+  Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
+			    double avgSideMult, bool isInMIS) {
+    return new ShapeTargets(m,s,w,alpha,avgSideMult,isInMIS);
   }
 } //end namespace
