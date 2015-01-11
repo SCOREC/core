@@ -491,7 +491,6 @@ namespace parma {
       void cancel(apf::Migration** plan, Mid* order) {
 
         apf::Migration* planA = *plan;
-        PCU_Debug_Print("plan count %d\n", planA->count());
         typedef std::pair<apf::MeshEntity*, int> PairEntInt;
         std::vector<PairEntInt > keep;
         const size_t planSz = static_cast<size_t>(planA->count());
@@ -513,7 +512,6 @@ namespace parma {
         *plan = new apf::Migration(mesh);
         for(size_t i=0; i < keep.size(); i++)
           (*plan)->send(keep[i].first, keep[i].second);
-        PCU_Debug_Print("plan count %d\n", (*plan)->count());
       }
 
       typedef std::pair<int,double> Migr;
@@ -532,8 +530,6 @@ namespace parma {
         PCU_Comm_Begin();
         APF_ITERATE(Mid, sendingVtx, s) {
           PCU_COMM_PACK(s->first, s->second);
-          PCU_Debug_Print("trim sending to %d weight %.3f\n",
-              s->first, s->second);
         }
         PCU_Comm_Send();
 
@@ -541,7 +537,6 @@ namespace parma {
         double w;
         while (PCU_Comm_Listen()) {
           PCU_COMM_UNPACK(w);
-          PCU_Debug_Print("trim recv from %d weight %.3f\n", PCU_Comm_Sender(), w);
           incoming.insert(Migr(PCU_Comm_Sender(),w));
         }
 
@@ -559,7 +554,6 @@ namespace parma {
             accept[in->first] = 0;
           totW += accept[in->first];
         }
-        PCU_Debug_Print("trim selfW %.3f\n", selfW);
 
         PCU_Comm_Begin();
         APF_ITERATE(Mid, accept, a)
