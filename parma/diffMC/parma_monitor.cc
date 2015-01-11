@@ -29,7 +29,7 @@ namespace parma {
     next = (next+1)%len;
     if( sz != len ) sz++;
   }
-  Slope::Slope() : CircBuffer(order+1) {};
+  Slope::Slope() : CircBuffer(order+1) {}
   double Slope::slope() {
     assert( full() );
     double s = 0;
@@ -37,7 +37,7 @@ namespace parma {
       s += c[i]*get(i);
     return s;
   }
-  Average::Average(unsigned int l) : CircBuffer(l) {};
+  Average::Average(unsigned int l) : CircBuffer(l) {}
   double Average::avg() {
     double a = 0;
     for(unsigned int i=0; i<size(); i++)
