@@ -47,6 +47,7 @@
 #include "pcu_common.h"
 #include "pcu_msg.h"
 #include "pcu_pmpi.h"
+#include "pcu_order.h"
 
 #if ENABLE_THREADS
 #include "pcu_thread.h"
@@ -199,7 +200,10 @@ bool PCU_Comm_Listen(void)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Listen called before Comm_Init");
-  return pcu_msg_receive(get_msg());
+  pcu_msg* m = get_msg();
+  if (m->order)
+    return pcu_order_receive(m->order, m);
+  return pcu_msg_receive(m);
 }
 
 /** \brief Returns in * \a from_rank the sender of the current received buffer.
@@ -209,7 +213,10 @@ int PCU_Comm_Sender(void)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Sender called before Comm_Init");
-  return pcu_msg_received_from(get_msg());
+  pcu_msg* m = get_msg();
+  if (m->order)
+    return pcu_order_received_from(m->order);
+  return pcu_msg_received_from(m);
 }
 
 /** \brief Returns true if the current received buffer has been unpacked.
@@ -219,7 +226,10 @@ bool PCU_Comm_Unpacked(void)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Unpacked called before Comm_Init");
-  return pcu_msg_unpacked(get_msg());
+  pcu_msg* m = get_msg();
+  if (m->order)
+    return pcu_order_unpacked(m->order);
+  return pcu_msg_unpacked(m);
 }
 
 /** \brief Unpacks a block of data from the current received buffer.
@@ -236,8 +246,25 @@ int PCU_Comm_Unpack(void* data, size_t size)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Unpack called before Comm_Init");
-  memcpy(data,pcu_msg_unpack(get_msg(),size),size);
+  pcu_msg* m = get_msg();
+  if (m->order)
+    memcpy(data,pcu_order_unpack(m->order,size),size);
+  else
+    memcpy(data,pcu_msg_unpack(m,size),size);
   return PCU_SUCCESS;
+}
+
+void PCU_Comm_Order(bool on)
+{
+  if (global_state == uninit)
+    pcu_fail("Comm_Order called before Comm_Init");
+  pcu_msg* m = get_msg();
+  if (on && (!m->order))
+    m->order = pcu_order_new();
+  if ((!on) && m->order) {
+    pcu_order_free(m->order);
+    m->order = NULL;
+  }
 }
 
 /** \brief Blocking barrier over all threads. */
@@ -603,13 +630,11 @@ bool PCU_Comm_Read(int* from_rank, void** data, size_t* size)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Read called before Comm_Init");
-  pcu_msg* msg = get_msg();
-  if (pcu_msg_unpacked(msg))
-    if ( ! pcu_msg_receive(msg))
-      return false;
-  PCU_MSG_UNPACK(msg,*size);
-  *data = pcu_msg_unpack(msg,*size);
-  *from_rank = pcu_msg_received_from(msg);
+  if (!PCU_Comm_Receive())
+    return false;
+  *from_rank = PCU_Comm_Sender();
+  PCU_COMM_UNPACK(*size);
+  *data = PCU_Comm_Extract(*size);
   return true;
 }
 
@@ -643,7 +668,11 @@ int PCU_Comm_From(int* from_rank)
 {
   if (global_state == uninit)
     pcu_fail("Comm_From called before Comm_Init");
-  *from_rank = pcu_msg_received_from(get_msg());
+  pcu_msg* m = get_msg();
+  if (m->order)
+    *from_rank = pcu_order_received_from(m->order);
+  else
+    *from_rank = pcu_msg_received_from(m);
   return PCU_SUCCESS;
 }
 
@@ -656,7 +685,11 @@ int PCU_Comm_Received(size_t* size)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Received called before Comm_Init");
-  *size = pcu_msg_received_size(get_msg());
+  pcu_msg* m = get_msg();
+  if (m->order)
+    *size = pcu_order_received_size(m->order);
+  else
+    *size = pcu_msg_received_size(m);
   return PCU_SUCCESS;
 }
 
@@ -670,7 +703,10 @@ void* PCU_Comm_Extract(size_t size)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Extract called before Comm_Init");
-  return pcu_msg_unpack(get_msg(),size);
+  pcu_msg* m = get_msg();
+  if (m->order)
+    return pcu_order_unpack(m->order,size);
+  return pcu_msg_unpack(m,size);
 }
 
 /** \brief Reinitializes PCU with a new MPI communicator.
