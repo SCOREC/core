@@ -218,7 +218,6 @@ void copyMeshToBulk(
     StkBulkData* bulk)
 {
   Mesh* m = getMesh(n[0]);
-  int d = m->getDimension();
   bulk->modification_begin();
   buildElements(n, models, meta, bulk);
   buildSides(n, models, meta, bulk);
