@@ -51,33 +51,32 @@ namespace {
     public:
       ShapeOptimizer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "gap") {
-          parma::Sides* s = parma::makeVtxSides(mesh);
-          avgSide=getAvgSides(s);
-	  avgSideMult=0.4;
-	  iter=0;
-	  
+        parma::Sides* s = parma::makeVtxSides(mesh);
+        avgSide=getAvgSides(s);
+        avgSideMult=0.4;
+        iter=0;
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
-	if (iter==0) {
-	  Parma_ProcessDisconnectedParts(mesh);
-	  const double t1 = PCU_Time();
-	  misNumber = Parma_MisNumbering(mesh,0);
-	  double elapsedTime = PCU_Time() - t1;
-	  PCU_Max_Doubles(&elapsedTime, 1);
-	  if( !PCU_Comm_Self() )
-	    fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
-	  maxMis = misNumber;
+        if (iter==0) {
+          Parma_ProcessDisconnectedParts(mesh);
+          const double t1 = PCU_Time();
+          misNumber = Parma_MisNumbering(mesh,0);
+          double elapsedTime = PCU_Time() - t1;
+          PCU_Max_Doubles(&elapsedTime, 1);
+          if( !PCU_Comm_Self() )
+            fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
+          maxMis = misNumber;
           PCU_Max_Ints(&maxMis,1);
-	  avgSideMult+=.1;
+          avgSideMult+=.1;
         }
         parma::Targets* t = 
           parma::makeShapeTargets(mesh, s, w, factor, avgSideMult, misNumber==iter);
-	iter++;
-	if (iter>maxMis)
-	  iter=0;
+        iter++;
+        if (iter>maxMis)
+          iter=0;
         PCU_Debug_Print("%s\n", t->print("targets").c_str());
         parma::Centroids c(mesh, wtag, s);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag, &c);
@@ -91,7 +90,7 @@ namespace {
       int iter;
       int misNumber;
       int maxMis;
-    
+
   };
 }
 
