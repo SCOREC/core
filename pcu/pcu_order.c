@@ -10,6 +10,7 @@
 #include "pcu_order.h"
 #include "pcu_aa.h"
 #include "pcu_msg.h"
+#include <assert.h>
 
 struct message {
   pcu_aa_node node;
@@ -136,6 +137,9 @@ void* pcu_order_unpack(pcu_order o, size_t size)
 
 bool pcu_order_unpacked(pcu_order o)
 {
+/* compatibility with pcu_msg_unpacked before pcu_msg_receive */
+  if (!o->ready)
+    return true;
   return pcu_buffer_walked(&o->array[o->at]->buf);
 }
 
