@@ -21,7 +21,9 @@ namespace {
         parma::Targets* t = parma::makeVtxEdgeTargets(s, w, factor);
         parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
         parma::Stepper b(mesh, factor, s, w[1], t, sel);
-        return b.step(tolerance, verbose);
+        bool ok = b.step(tolerance, verbose);
+        delete w[0];
+        return ok;
       }
   };
 

@@ -53,6 +53,7 @@ namespace {
         : Balancer(m, f, v, "gap") {
         parma::Sides* s = parma::makeVtxSides(mesh);
         avgSide=getAvgSides(s);
+        delete s;
         avgSideMult=0.4;
         iter=0;
       }
