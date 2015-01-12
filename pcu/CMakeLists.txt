@@ -77,6 +77,7 @@ set(SOURCES
    pcu_memory.c
    pcu_mpi.c
    pcu_msg.c
+   pcu_order.c
    pcu_pmpi.c
    pcu_protect.c)
 
