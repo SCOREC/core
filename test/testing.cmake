@@ -191,30 +191,32 @@ if (ENABLE_MPAS)
     "${MDIR}/ocean_QU_240km.nc"
     "mpas.dmg"
     "mpas.smb")
-  splitfun(split_mpas
-    ./split
-    "mpas.dmg"
-    "mpas.smb"
-    "mpas_4_.smb"
-    1 4)
-  add_test(verify_mpas
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./verify
-    "mpas.dmg"
-    "mpas_4_.smb")
-  add_test(ghost_mpas
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./ghost
-    "mpas.dmg"
-    "mpas_4_.smb"
-    "ghost_4_.smb")
-  add_test(write_mpas
-    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ./mpas_write
-    "mpas.dmg"
-    "ghost_4_.smb"
-    "${MDIR}/ocean_QU_240km.nc"
-    "mpas_part_")
+  if(ENABLE_THREADS)
+    splitfun(split_mpas
+      ./split
+      "mpas.dmg"
+      "mpas.smb"
+      "mpas_4_.smb"
+      1 4)
+    add_test(verify_mpas
+      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+      ./verify
+      "mpas.dmg"
+      "mpas_4_.smb")
+    add_test(ghost_mpas
+      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+      ./ghost
+      "mpas.dmg"
+      "mpas_4_.smb"
+      "ghost_4_.smb")
+    add_test(write_mpas
+      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+      ./mpas_write
+      "mpas.dmg"
+      "ghost_4_.smb"
+      "${MDIR}/ocean_QU_240km.nc"
+      "mpas_part_")
+  endif()
 endif()
 set(MDIR ${MESHES}/fusion)
 add_test(mkmodel_fusion

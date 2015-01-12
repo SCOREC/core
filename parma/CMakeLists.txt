@@ -27,7 +27,7 @@ configure_file(
   )
 
 SET(DIFFMC_SOURCES  
-  diffMC/parma_step.cc
+  diffMC/parma_balancer.cc
   diffMC/parma_centroidDiffuser.cc
   diffMC/parma_centroids.cc
   diffMC/parma_centroidSelector.cc
@@ -43,6 +43,10 @@ SET(DIFFMC_SOURCES
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
   diffMC/parma_hpsBalancer.cc
+  diffMC/parma_monitor.cc
+  diffMC/parma_sides.cc
+  diffMC/parma_step.cc
+  diffMC/parma_stop.cc
   diffMC/parma_shapeOptimizer.cc
   diffMC/parma_shapeTargets.cc
   diffMC/parma_shapeSelector.cc

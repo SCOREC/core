@@ -51,6 +51,10 @@ namespace {
     avg = static_cast<double>(tot);
     avg /= PCU_Comm_Peers();
   }
+  void vtxStats(apf::Mesh* m, long& tot, int& min, int& max, double& avg) {
+    int loc = m->count(0);
+    getStats(loc, tot, min, max, avg);
+  }
 }
 
 void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
@@ -153,6 +157,11 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   Parma_GetNeighborStats(m, maxNb, avgNb, locNb);
   PCU_Debug_Print("%s neighbors %d\n", key.c_str(), locNb);
 
+  long totVtx = 0;
+  int minVtx = 0, maxVtx = 0;
+  double avgVtx = 0;
+  vtxStats(m, totVtx, minVtx, maxVtx, avgVtx);
+
   int locV[3], minV[3], maxV[3];
   long totV[3];
   double avgV[3];
@@ -202,6 +211,9 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
         key.c_str(), maxNb, avgNb);
     fprintf(stdout, "STATUS %s empty parts %d\n",
         key.c_str(), empty);
+    fprintf(stdout, "STATUS %s vtx <tot max min avg> "
+        "%ld %d %d %.3f\n",
+        key.c_str(), totVtx, maxVtx, minVtx, avgVtx);
     fprintf(stdout, "STATUS %s owned bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[0], maxV[0], minV[0], avgV[0]);
