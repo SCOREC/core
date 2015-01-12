@@ -16,12 +16,36 @@
 #include <iomanip>
 #include <vector>
 
+typedef unsigned int apfUint;
+
 namespace {
+  struct UintArr {
+    apfUint s; //size of d array
+    apfUint l; //used entries in d
+    apfUint d[];
+  };
+  UintArr* makeUintArr(apfUint n) {
+    UintArr* a = (UintArr*) malloc(sizeof(UintArr) + sizeof(UintArr)*n);
+    a->s = n;
+    a->l = 0;
+    return a;
+  }
+  void destroyUintArr(UintArr* u) {
+    free(u);
+  }
+  void print(UintArr* a, const char* pre) {
+    std::stringstream ss;
+    ss << pre << " ";
+    for(apfUint i=0; i<a->l; i++) 
+      ss << a->d[i] << " ";
+    ss << '\n';
+    std::string s = ss.str();
+    PCU_Debug_Print(s.c_str());
+  }
 
   typedef std::set<apf::MeshEntity*> SetEnt;
   typedef std::vector<int> VecInt;
   typedef std::map<int,double> Mid;
-  typedef std::map<int,int> Mii;
   typedef std::set<apf::MeshEntity*> Level;
 
   apf::MeshTag* initTag(apf::Mesh* m, const char* name,
@@ -309,25 +333,26 @@ namespace {
     return dq;
   }
 
-  int getCavityPeer(apf::Mesh* m, apf::MeshEntity* v) {
-    Mii pc;
+  UintArr* getCavityPeers(apf::Mesh* m, apf::MeshEntity* v) {
+    typedef std::map<apfUint,apfUint> MUiUi;
+    MUiUi pc;
     apf::Adjacent sideSides;
     m->getAdjacent(v, m->getDimension()-2, sideSides);
     APF_ITERATE(apf::Adjacent, sideSides, ss) {
       apf::Copies rmts;
       m->getRemotes(*ss,rmts);
       APF_ITERATE(apf::Copies, rmts, r)
-         pc[r->first]++;
+         pc[static_cast<apfUint>(r->first)]++;
     }
-    int max = -1;
-    int peer = -1;
-    APF_ITERATE(Mii, pc, p)
-      if( p->second > max ) {
-         peer = p->first;
+    apfUint max = 0;
+    APF_ITERATE(MUiUi, pc, p)
+      if( p->second > max )
          max = p->second;
-      }
-    assert(peer>=0);
-    return peer;
+    UintArr* peers = makeUintArr(pc.size());
+    APF_ITERATE(MUiUi, pc, p)
+      if( p->second == max )
+        peers->d[peers->l++] = p->first;
+    return peers;
   }
 
   void getCavity(apf::Mesh* m, apf::MeshEntity* v, apf::Migration* plan, 
@@ -376,22 +401,27 @@ namespace parma {
           int maxSize) {
         double t0 = PCU_Time();
         DistanceQueue<Greater>* bdryVerts = BoundaryVertices(mesh, dist);
-        apf::Parts peers;
         apf::Up cavity;
         while( !bdryVerts->empty() ) {
           if( planW > tgts->total() ) break;
           apf::MeshEntity* e = bdryVerts->pop();
           getCavity(mesh, e, plan, cavity);
-          int destPid = getCavityPeer(mesh,e);
+          UintArr* peers = getCavityPeers(mesh,e);
+          print(peers, "peers ");
           int d; mesh->getIntTag(e,dist,&d);
-          if( (tgts->has(destPid) &&
-               sending[destPid] < tgts->get(destPid) &&
-               cavity.n <= maxSize ) ||
-              INT_MAX == d ) {
-            double ew = add(e, cavity, destPid, plan);
-            sending[destPid] += ew;
-            planW += ew;
+          for( apfUint i=0; i<peers->l; i++ ) {
+            apfUint destPid = peers->d[i];
+            if( (tgts->has(destPid) &&
+                  sending[destPid] < tgts->get(destPid) &&
+                  cavity.n <= maxSize ) ||
+                INT_MAX == d ) {
+              PCU_Debug_Print("destPid %u\n", destPid);
+              double ew = add(e, cavity, destPid, plan);
+              sending[destPid] += ew;
+              planW += ew;
+            }
           }
+          destroyUintArr(peers);
         }
         parmaCommons::printElapsedTime("select", PCU_Time()-t0);
         delete bdryVerts;
