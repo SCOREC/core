@@ -64,6 +64,7 @@ enum state { uninit, init };
 static enum state global_state = uninit;
 static pcu_msg global_pmsg;
 #if ENABLE_THREADS
+bool global_ordered = false;
 static pcu_msg* global_tmsg = NULL;
 static PCU_Thrd_Func global_function = NULL;
 static void** global_args = NULL;
@@ -398,12 +399,14 @@ static void* run(void* in)
   pcu_thread_init(in);
   int rank = pcu_thread_rank();
   pcu_make_msg(global_tmsg + rank);
+  PCU_Comm_Order(global_ordered);
   if (global_args)
     global_args[rank] = global_function(global_args[rank]);
   else
     global_function(NULL);
-  if (global_tmsg[rank].order)
-    pcu_order_free(global_tmsg[rank].order);
+  if (!rank)
+    global_ordered = global_tmsg[rank].order != NULL;
+  PCU_Comm_Order(false);
   pcu_free_msg(global_tmsg + rank);
   return NULL;
 }
@@ -436,8 +439,8 @@ int PCU_Thrd_Run(int nthreads, PCU_Thrd_Func function, void** in_out)
   if (pcu_get_mpi() == &pcu_tmpi)
     pcu_fail("nested calls to Thrd_Run");
   pcu_tmpi_check_support();
-  if (global_pmsg.order)
-    pcu_order_free(global_pmsg.order);
+  global_ordered = global_pmsg.order != NULL;
+  PCU_Comm_Order(false);
   pcu_free_msg(&global_pmsg);
   pcu_set_mpi(&pcu_tmpi);
   PCU_MALLOC(global_tmsg,(size_t)nthreads);
@@ -447,6 +450,7 @@ int PCU_Thrd_Run(int nthreads, PCU_Thrd_Func function, void** in_out)
   pcu_free(global_tmsg);
   pcu_set_mpi(&pcu_pmpi);
   pcu_make_msg(&global_pmsg);
+  PCU_Comm_Order(global_ordered);
 #else
   (void)nthreads;//unused parameter warning silencer
   (void)function;
