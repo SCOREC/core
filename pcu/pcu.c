@@ -102,6 +102,8 @@ int PCU_Comm_Free(void)
 {
   if (global_state == uninit)
     pcu_fail("Comm_Free called before Comm_Init");
+  if (global_pmsg.order)
+    pcu_order_free(global_pmsg.order);
   pcu_free_msg(&global_pmsg);
   pcu_pmpi_finalize();
   global_state = uninit;
@@ -400,6 +402,8 @@ static void* run(void* in)
     global_args[rank] = global_function(global_args[rank]);
   else
     global_function(NULL);
+  if (global_tmsg[rank].order)
+    pcu_order_free(global_tmsg[rank].order);
   pcu_free_msg(global_tmsg + rank);
   return NULL;
 }
@@ -432,6 +436,8 @@ int PCU_Thrd_Run(int nthreads, PCU_Thrd_Func function, void** in_out)
   if (pcu_get_mpi() == &pcu_tmpi)
     pcu_fail("nested calls to Thrd_Run");
   pcu_tmpi_check_support();
+  if (global_pmsg.order)
+    pcu_order_free(global_pmsg.order);
   pcu_free_msg(&global_pmsg);
   pcu_set_mpi(&pcu_tmpi);
   PCU_MALLOC(global_tmsg,(size_t)nthreads);
