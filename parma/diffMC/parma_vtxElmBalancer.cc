@@ -1,4 +1,5 @@
 #include <apfPartition.h>
+#include <PCU.h>
 #include <parma.h>
 #include "parma_balancer.h"
 #include "parma_sides.h"
@@ -6,21 +7,13 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 #include "parma_step.h"
+#include "parma_monitor.h"
 
 namespace {
   class ElmLtVtx : public parma::Balancer {
     private:
       int sideTol;
       double maxVtx;
-      int getSideTol(parma::Sides* s) {
-        double avg = static_cast<double>(s->total());
-        PCU_Add_Doubles(&avg, 1);
-        avg /= PCU_Comm_Peers();
-        int tol = static_cast<int>(avg);
-        if( !PCU_Comm_Self() )
-          fprintf(stdout, "sideTol %d\n", tol);
-        return tol;
-      }
     public:
       ElmLtVtx(apf::Mesh* m, double f, double maxV, int v)
         : Balancer(m, f, v, "elements") {
@@ -30,24 +23,36 @@ namespace {
             fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = getSideTol(s);
-        }
+          sideTol = static_cast<int>(parma::avgSharedSides(s));
+          if( !PCU_Comm_Self() )
+            fprintf(stdout, "sideTol %d\n", sideTol);
+      }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxVtxImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 0);
+        const double maxElmImb =
+          Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
         if( !PCU_Comm_Self() )
           fprintf(stdout, "vtx imbalance %.3f\n", maxVtxImb);
         parma::Sides* s = parma::makeVtxSides(mesh);
-        PCU_Debug_Print("%s\n", s->print("sides").c_str());
         parma::Weights* w[2] =
-        {parma::makeEntWeights(mesh, wtag, s, 0),
-          parma::makeEntWeights(mesh, wtag, s, mesh->getDimension())};
+          {parma::makeEntWeights(mesh, wtag, s, 0),
+           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension())};
         parma::Targets* t =
           parma::makeVtxElmTargets(s, w, sideTol, maxVtx, factor);
         delete w[0];
-        PCU_Debug_Print("%s\n", t->print("targets").c_str());
-        parma::Selector* sel = parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
-        parma::Stepper b(mesh, factor, s, w[1], t, sel);
+        parma::Selector* sel = 
+          parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
+
+        double avgSides = parma::avgSharedSides(s);
+        monitorUpdate(maxElmImb, iS, iA);
+        monitorUpdate(avgSides, sS, sA);
+        if( !PCU_Comm_Self() )
+          fprintf(stdout, "elmImb %f avgSides %f\n", maxElmImb, avgSides);
+        parma::BalOrStall* stopper = 
+          new parma::BalOrStall(iA, sA, sideTol*.001);
+
+        parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
         return b.step(tolerance, verbose);
       }
   };
