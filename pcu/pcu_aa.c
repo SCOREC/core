@@ -178,3 +178,10 @@ pcu_aa_node* pcu_aa_find(pcu_aa_node* x, pcu_aa_tree t, pcu_aa_less* less)
     return t;
 }
 
+int pcu_aa_count(pcu_aa_tree t)
+{
+  if (pcu_aa_empty(t))
+    return 0;
+  return pcu_aa_count(t->left) + pcu_aa_count(t->right) + 1;
+}
+

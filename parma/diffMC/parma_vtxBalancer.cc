@@ -18,6 +18,7 @@ namespace {
         : Balancer(m, f, v, "vertices") {
           parma::Sides* s = parma::makeVtxSides(mesh);
           sideTol = static_cast<int>(parma::avgSharedSides(s));
+          delete s;
           if( !PCU_Comm_Self() )
             fprintf(stdout, "sideTol %d\n", sideTol);
       }

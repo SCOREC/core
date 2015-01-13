@@ -27,13 +27,20 @@ typedef struct
   pcu_message message; //send buffer and peer id
 } pcu_msg_peer;
 
+struct pcu_order_struct;
+
 struct pcu_msg_struct
 {
   pcu_aa_tree peers; //binary tree of send buffers
   pcu_message received; //current received buffer
   pcu_coll coll; //collective operation object
   int state; //state within a communication phase
+  /* below this point are variables that just need
+     to be thread-specific but have been tacked onto
+     pcu_msg. if this gets out of hand, create a
+     pcu_thread struct to or something */
   FILE* file; //messenger-unique input or output file
+  struct pcu_order_struct* order;
 };
 typedef struct pcu_msg_struct pcu_msg;
 
