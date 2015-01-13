@@ -47,6 +47,10 @@ int PCU_Comm_Unpack(void* data, size_t size);
 #define PCU_COMM_UNPACK(object)\
 PCU_Comm_Unpack(&(object),sizeof(object))
 
+/*turns deterministic ordering for the
+  above API on/off*/
+void PCU_Comm_Order(bool on);
+
 /*collective operations*/
 void PCU_Barrier(void);
 void PCU_Add_Doubles(double* p, size_t n);

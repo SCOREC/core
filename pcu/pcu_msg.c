@@ -70,6 +70,7 @@ void pcu_make_msg(pcu_msg* m)
 {
   make_comm(m);
   m->file = NULL;
+  m->order = NULL;
 }
 
 static void free_peers(pcu_aa_tree* t)
