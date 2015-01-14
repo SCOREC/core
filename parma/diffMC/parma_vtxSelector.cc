@@ -16,35 +16,25 @@
 #include <iomanip>
 #include <vector>
 
-typedef unsigned int apfUint;
+typedef unsigned int uint;
 
 namespace {
   struct UintArr {
-    apfUint s; //size of d array
-    apfUint l; //used entries in d
-    apfUint d[];
+    uint s; //size of d array
+    uint l; //used entries in d
+    uint d[];
   };
-  UintArr* makeUintArr(apfUint n) {
+  UintArr* makeUintArr(uint n) {
     UintArr* a = (UintArr*) malloc(sizeof(UintArr) + sizeof(UintArr)*n);
     a->s = n;
     a->l = 0;
     return a;
   }
-  void destroyUintArr(UintArr* u) {
+  void destroy(UintArr* u) {
     free(u);
-  }
-  void print(UintArr* a, const char* pre) {
-    std::stringstream ss;
-    ss << pre << " ";
-    for(apfUint i=0; i<a->l; i++) 
-      ss << a->d[i] << " ";
-    ss << '\n';
-    std::string s = ss.str();
-    PCU_Debug_Print(s.c_str());
   }
 
   typedef std::set<apf::MeshEntity*> SetEnt;
-  typedef std::vector<int> VecInt;
   typedef std::map<int,double> Mid;
   typedef std::set<apf::MeshEntity*> Level;
 
@@ -157,7 +147,6 @@ namespace {
     apf::MeshTag* lvlsT = initTag(m, "parmaSelectorLevels");
     int depth = walkInward(lvlsT, m);
     Level* deepest = getVerts(lvlsT,m,depth);
-    //apf::destroyNumbering(lvls);
     apf::removeTagFromDimension(m,lvlsT,0);
     m->destroyTag(lvlsT);
     parmaCommons::printElapsedTime("getCentralVerts", PCU_Time()-t0);
@@ -334,7 +323,7 @@ namespace {
   }
 
   UintArr* getCavityPeers(apf::Mesh* m, apf::MeshEntity* v) {
-    typedef std::map<apfUint,apfUint> MUiUi;
+    typedef std::map<uint,uint> MUiUi;
     MUiUi pc;
     apf::Adjacent sideSides;
     m->getAdjacent(v, m->getDimension()-2, sideSides);
@@ -342,9 +331,9 @@ namespace {
       apf::Copies rmts;
       m->getRemotes(*ss,rmts);
       APF_ITERATE(apf::Copies, rmts, r)
-         pc[static_cast<apfUint>(r->first)]++;
+         pc[static_cast<uint>(r->first)]++;
     }
-    apfUint max = 0;
+    uint max = 0;
     APF_ITERATE(MUiUi, pc, p)
       if( p->second > max )
          max = p->second;
@@ -407,21 +396,20 @@ namespace parma {
           apf::MeshEntity* e = bdryVerts->pop();
           getCavity(mesh, e, plan, cavity);
           UintArr* peers = getCavityPeers(mesh,e);
-          print(peers, "peers ");
           int d; mesh->getIntTag(e,dist,&d);
-          for( apfUint i=0; i<peers->l; i++ ) {
-            apfUint destPid = peers->d[i];
+          for( uint i=0; i<peers->l; i++ ) {
+            uint destPid = peers->d[i];
             if( (tgts->has(destPid) &&
                   sending[destPid] < tgts->get(destPid) &&
                   cavity.n <= maxSize ) ||
                 INT_MAX == d ) {
-              PCU_Debug_Print("destPid %u\n", destPid);
               double ew = add(e, cavity, destPid, plan);
               sending[destPid] += ew;
               planW += ew;
+              break;
             }
           }
-          destroyUintArr(peers);
+          destroy(peers);
         }
         parmaCommons::printElapsedTime("select", PCU_Time()-t0);
         delete bdryVerts;
@@ -441,14 +429,41 @@ namespace parma {
       EdgeSelector(apf::Mesh* m, apf::MeshTag* w)
         : VtxSelector(m, w) {}
     protected:
-      double getWeight(apf::MeshEntity* vtx) {
-        apf::Up edges;
-        mesh->getUp(vtx, edges);
+      // if all the elements bounded by an edge are in the plan then it is being
+      // sent and its weight is counted
+      bool sent(apf::Migration* plan, apf::MeshEntity* e) {
+        apf::Adjacent elms;
+        mesh->getAdjacent(e, mesh->getDimension(), elms);
+        APF_ITERATE(apf::Adjacent, elms, elm)
+          if( ! plan->has(*elm) ) 
+            return false;
+        return true;
+      }
+
+      double cavityWeight(apf::Migration* plan, SetEnt& s) {
         double w = 0;
-        for(int i=0; i<edges.n; i++)
-          if( mesh->isShared(edges.e[i]) )
-            w += getWeight(edges.e[i]);
+        APF_ITERATE(SetEnt, s, sItr)
+          if( sent(plan,*sItr) )
+            w += getWeight(*sItr);
         return w;
+      }
+
+      void addCavityEdge(apf::MeshEntity* e, SetEnt& s) {
+        apf::Adjacent adjEdge;
+        mesh->getAdjacent(e, 1, adjEdge);
+        APF_ITERATE(apf::Adjacent, adjEdge, adjItr)
+          s.insert(*adjItr);
+      }
+
+      virtual double add(apf::MeshEntity* e, apf::Up& cavity, const int destPid,
+          apf::Migration* plan) {
+        SetEnt s;
+        double w = 0;
+        for(int i=0; i < cavity.n; i++) {
+           addCavityEdge(cavity.e[i], s); 
+           plan->send(cavity.e[i], destPid);
+        }
+        return cavityWeight(plan, s);
       }
   };
   Selector* makeEdgeSelector(apf::Mesh* m, apf::MeshTag* w) {
@@ -488,7 +503,7 @@ namespace parma {
       }
     protected:
       void addCavityVtx(apf::MeshEntity* e, SetEnt& s) {
-        apf::DynamicArray<apf::MeshEntity*> adjVtx;
+        apf::Adjacent adjVtx;
         mesh->getAdjacent(e, 0, adjVtx);
         APF_ITERATE(apf::Adjacent, adjVtx, adjItr)
           s.insert(*adjItr);

@@ -12,7 +12,7 @@ namespace {
       EdgeBalancer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "edges") { }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        parma::Sides* s = parma::makeElmBdrySides(mesh);
+        parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w = parma::makeEntWeights(mesh, wtag, s, 1);
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);

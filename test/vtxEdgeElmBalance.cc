@@ -44,11 +44,13 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  Parma_PrintPtnStats(m, "initial");
   apf::MeshTag* weights = setWeights(m);
-  const double step = 0.7; const int verbose = 1;
+  const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
-  balancer->balance(weights, 1.05);
+  balancer->balance(weights, 1.03);
   delete balancer;
+  Parma_PrintPtnStats(m, "final");
   clearTags(m, weights);
   m->destroyTag(weights);
   m->writeNative(argv[3]);
