@@ -1,5 +1,6 @@
 #include <apfPartition.h>
 #include <parma.h>
+#include <PCU.h>
 #include "parma_balancer.h"
 #include "parma_step.h"
 #include "parma_sides.h"
@@ -10,15 +11,30 @@
 
 namespace {
   class VtxEdgeBalancer : public parma::Balancer {
+    private:
+      int sideTol;
+      double maxVtx;
     public:
-      VtxEdgeBalancer(apf::Mesh* m, double f, int v)
-        : Balancer(m, f, v, "edges") { }
+      VtxEdgeBalancer(apf::Mesh* m, double f, double maxV, int v)
+        : Balancer(m, f, v, "edges") {
+          maxVtx = maxV;
+          if( !PCU_Comm_Self() ) {
+            fprintf(stdout, "PARMA_STATUS stepFactor %.3f\n", f);
+            fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
+          }
+          parma::Sides* s = parma::makeVtxSides(mesh);
+          sideTol = static_cast<int>(parma::avgSharedSides(s));
+          delete s;
+          if( !PCU_Comm_Self() )
+            fprintf(stdout, "sideTol %d\n", sideTol);
+      }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        parma::Sides* s = parma::makeElmBdrySides(mesh);
+        parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w[2] =
           {parma::makeEntWeights(mesh, wtag, s, 0),
             parma::makeEntWeights(mesh, wtag, s, 1)};
-        parma::Targets* t = parma::makeVtxEdgeTargets(s, w, factor);
+        parma::Targets* t =
+          parma::makeVtxEdgeTargets(s, w, sideTol, maxVtx, factor);
         parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
         parma::Stepper b(mesh, factor, s, w[1], t, sel);
         bool ok = b.step(tolerance, verbose);
@@ -43,7 +59,8 @@ namespace {
         Parma_PrintPtnStats(mesh, "post vertices");
         delete b;
 
-        b = new VtxEdgeBalancer(mesh, factor, verbose);
+        double maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
+        b = new VtxEdgeBalancer(mesh, factor, maxVtxW, verbose);
         b->balance(wtag, tolerance);
         Parma_PrintPtnStats(mesh, "post edges");
         delete b;

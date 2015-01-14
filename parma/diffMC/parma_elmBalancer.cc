@@ -13,7 +13,7 @@ namespace {
       ElmBalancer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "elements") { }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        parma::Sides* s = parma::makeElmBdrySides(mesh);
+        parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t = parma::makeTargets(s, w, factor);

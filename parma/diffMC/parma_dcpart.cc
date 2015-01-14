@@ -226,7 +226,6 @@ void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
       }
    }
    m->end(itr);
-   PCU_Debug_Print("fixDcComps migrating %d\n", plan->count());
 }
 
 
@@ -271,8 +270,6 @@ void dcPart::makeDisconnectedComps(const int numDcComps) {
       m->end(itr);
    }
 
-   PCU_Debug_Print("make migrating %d elements to %d\n",
-       plan->count(), destPid);
    clearTag(m, vtag);
    m->migrate(plan); //plan deleted here
 }

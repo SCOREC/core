@@ -11,7 +11,7 @@
 namespace apf {
   class Mesh;
   class MeshEntity;
-};
+}
 
 /**
  * \enum Color

@@ -14,11 +14,12 @@ namespace parma {
       virtual double total()=0;
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
-  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int aspectTol, 
+  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int aspectTol,
       double vtxTol, double alpha);
-  Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol, 
+  Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol,
       double alpha);
-  Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], double alpha);
+  Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], int sideTol,
+      double vtxTol, double alpha);
   Targets* makeVtxEdgeElmTargets(Sides* s, Weights* w[3], double alpha);
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
 			    double avgSideMult, bool isInMIS);

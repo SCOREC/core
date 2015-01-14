@@ -44,8 +44,6 @@ class MergeTargets {
       const double kdcap = floor(scale(wcap/minWeight));
       const size_t kcap = static_cast<size_t>(kdcap);
 
-      PCU_Debug_Print("maxW %.3f selfW %.3f weightCapacity %.3f\n",
-          maxW, w->self(), wcap);
 
       size_t* value = new size_t[s->total()];
       std::fill(value, value + s->total(),1);
@@ -139,15 +137,11 @@ class MergeTargets {
     mis_init(seed);
     const int isInMis = mis(part);
 
-    // Debug if in MIS rating 0
-    if (isInMis && tgts.total())
-      PCU_Debug_Print("Part %d in MIS\n", PCU_Comm_Self()); //rank 0 (1 if CHI)
 
     PCU_Comm_Begin();
     //If the current part is in the MIS, send notification to its mergingNet
     if (isInMis) {
       for(size_t i=0; i < tgts.total(); ++i){
-        //PCU_Debug_Print("send dest = %d\n", tgts.mergeTargetIndex(i)); rating 1
         PCU_Comm_Pack(tgts.mergeTargetIndex(i), NULL, 0);
       }
     }
@@ -161,7 +155,6 @@ class MergeTargets {
       assert(!received);
       destination = PCU_Comm_Sender();
       received = true;
-      PCU_Debug_Print("destination = %d\n", destination);
     }
 
     //Migration of part entities to its destination part if received one
@@ -285,7 +278,6 @@ class MergeTargets {
     int extra = numEmpty(m, plan) - numSplits(w, tgtWeight);
     int split = splits(w, tgtWeight);
     int empty = isEmpty(m, plan);
-    PCU_Debug_Print("extra %d\n", extra);
     while (extra != 0) {
       double maxW = w->self();
       if( split || empty )
@@ -297,8 +289,6 @@ class MergeTargets {
       PCU_Max_Ints(&id, 1);
       if( m->getId() == id ) {
         split = 1;
-        PCU_Debug_Print("part %d w %f assigned to extra %d\n", 
-                        m->getId(), w->self(), extra);
       }
       extra--;
     }
@@ -312,9 +302,6 @@ class MergeTargets {
       apf::MeshEntity* e = plan->get(i);
       dest[plan->sending(e)]++;
     }
-    PCU_Debug_Print("plan->count() %d\n", plan->count());
-    APF_ITERATE(mii, dest, dItr)
-      PCU_Debug_Print("p %d c %d\n", dItr->first, dItr->second);
   }
 
   void split(apf::Mesh* m, apf::MeshTag* wtag, Weights* w, double tgt,
@@ -330,17 +317,14 @@ class MergeTargets {
     int totEmpty = numEmpty(m,*plan);
     if( !PCU_Comm_Self() && verbose )
       fprintf(stdout, "HPS_STATUS numEmpty %d numSplits %d\n", totEmpty, totSplit);
-    PCU_Debug_Print("split %d empty %d\n", split, empty);
     assert( totSplit == totEmpty );
     assert(!(split && empty));
     int hl[2] = {split, empty};
     //number the heavies and empties
     PCU_Exscan_Ints(hl, 2);
-    PCU_Debug_Print("hl[0] %d hl[1] %d\n", hl[0], hl[1]);
     //send heavy part ids to brokers
     PCU_Comm_Begin();
     if( split ) {
-      PCU_Debug_Print("sending to %d\n", hl[0]);
       PCU_COMM_PACK(hl[0], partId);
     }
     PCU_Comm_Send();
@@ -349,12 +333,10 @@ class MergeTargets {
     while(PCU_Comm_Listen()) {
       count++;
       PCU_COMM_UNPACK(heavyPartId);
-      PCU_Debug_Print("%d heavyPartId %d\n", PCU_Comm_Sender(), heavyPartId);
     }
     //send empty part ids to brokers
     PCU_Comm_Begin();
     if( empty ) {
-      PCU_Debug_Print("sendingB to %d\n", hl[1]);
       PCU_COMM_PACK(hl[1], partId);
     }
     PCU_Comm_Send();
@@ -363,12 +345,10 @@ class MergeTargets {
     while(PCU_Comm_Listen()) {
       count++;
       PCU_COMM_UNPACK(emptyPartId);
-      PCU_Debug_Print("%d emptyPartId %d\n", PCU_Comm_Sender(), emptyPartId);
     }
     //brokers send empty part assignment to heavies
     PCU_Comm_Begin();
     if ( emptyPartId != -1 ) {
-      PCU_Debug_Print("sendingC %d to %d\n", emptyPartId, heavyPartId);
       PCU_COMM_PACK(heavyPartId, emptyPartId);
     }
     PCU_Comm_Send();
@@ -377,7 +357,6 @@ class MergeTargets {
       int tgtPartId = 0;
       PCU_COMM_UNPACK(tgtPartId);
       tgtEmpties.push_back(tgtPartId);
-      PCU_Debug_Print("target empty %d\n", tgtPartId);
     }
     if( split ) {
       delete *plan;
@@ -385,12 +364,9 @@ class MergeTargets {
       assignSplits(tgtEmpties, *plan);
     }
     writePlan(*plan);
-    PCU_Debug_Print("elms %lu plan->count() %d\n",
-        m->count(m->getDimension()), (*plan)->count());
   }
 
   void hps(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, Weights* w, double tgt) {
-    PCU_Debug_Print("---hps---\n");
     MergeTargets mergeTargets(s, w, tgt);
     apf::Migration* plan = selectMerges(m, s, mergeTargets);
     split(m, wtag, w, tgt, &plan);
@@ -410,7 +386,6 @@ namespace parma {
         Sides* sides = makeElmBdrySides(mesh);
         Weights* w = makeEntWeights(mesh, wtag, sides, mesh->getDimension());
         double tgt = chi(mesh, wtag, sides, w);
-        PCU_Debug_Print("Final Chi = %.3f\n",tgt); //rating 0
         hps(mesh, wtag, sides, w, tgt); //**Uncomment when done with testing
         delete sides;
         delete w;
