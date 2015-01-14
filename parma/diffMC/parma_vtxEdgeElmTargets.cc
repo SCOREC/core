@@ -18,7 +18,6 @@ namespace parma {
       void init(Sides* s, Weights* w[2], int sideTol, double vtxTol,
           double alpha) {
         totW = 0;
-        const double selfVtxW = w[0]->self();
         const double selfEdgeW = w[1]->self();
         const Sides::Item* side;
         s->begin();

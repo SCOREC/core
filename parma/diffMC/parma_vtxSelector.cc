@@ -455,10 +455,9 @@ namespace parma {
           s.insert(*adjItr);
       }
 
-      virtual double add(apf::MeshEntity* e, apf::Up& cavity, const int destPid,
+      virtual double add(apf::MeshEntity*, apf::Up& cavity, const int destPid,
           apf::Migration* plan) {
         SetEnt s;
-        double w = 0;
         for(int i=0; i < cavity.n; i++) {
            addCavityEdge(cavity.e[i], s); 
            plan->send(cavity.e[i], destPid);
