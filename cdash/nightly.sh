@@ -21,13 +21,13 @@ cd /lore/dibanez/cdash
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> log
 
 #core repository checked out by nightly.cmake
-#cd /lore/dibanez/cdash/build/core
+cd /lore/dibanez/cdash/build/core
 #build the Doxygen html documentation
-#make doc
+make doc
 #remove the old web documentation
-#rm -rf /net/web/public/dibanez/core
+rm -rf /net/web/public/dibanez/core
 #replace it with the generated one
-#cp -r doc/html /net/web/public/dibanez/core
+cp -r doc/html /net/web/public/dibanez/core
 
 #remove compilation directories created by nightly.cmake
 cd /lore/dibanez/cdash
