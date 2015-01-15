@@ -22,10 +22,11 @@ namespace {
   struct UintArr {
     uint s; //size of d array
     uint l; //used entries in d
-    uint d[];
+    uint d[1];
   };
+
   UintArr* makeUintArr(uint n) {
-    UintArr* a = (UintArr*) malloc(sizeof(UintArr) + sizeof(UintArr)*n);
+    UintArr* a = (UintArr*) malloc(sizeof(UintArr) + sizeof(uint)*(n-1));
     a->s = n;
     a->l = 0;
     return a;
