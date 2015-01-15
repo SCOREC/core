@@ -32,6 +32,7 @@ if(BUILD_IN_TRILINOS)
     awrProblemAssemble.cc
     awrProblemSolve.cc
     awrPoisson.cc
+    awrNonlinearPoisson.cc
     awrQoI.cc
     awrDomainIntegral.cc
     awrLinearSystem.cc)
