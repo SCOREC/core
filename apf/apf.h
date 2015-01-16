@@ -556,7 +556,7 @@ Field* recoverGradientByVolume(Field* f);
 void copyData(Field* to, Field* from);
 
 /** \brief Project a field from an existing field */
-Field* project(Field* from);
+void projectField(Field* to, Field* from);
 
 }
 

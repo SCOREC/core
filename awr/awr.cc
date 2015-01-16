@@ -11,7 +11,6 @@
 #include <apf.h>
 #include <apfMesh.h>
 #include <apfShape.h>
-#include <apfField.h>
 #include <Teuchos_ParameterList.hpp>
 
 namespace awr {
@@ -29,9 +28,7 @@ apf::Field* enrichSolution(apf::Field* sol, const char* name_e)
   apf::FieldShape* shape_e = apf::getLagrange(order_e);
   apf::Field* sol_e =
     apf::createField(m,name_e,type,shape_e);
-  /* should not directly access apf::Field, but no
-     API currently exists for filed projection */
-  sol_e->project(sol);
+  apf::projectField(sol_e,sol);
   apf::destroyField(sol);
   apf::changeMeshShape(m,shape_e,/*project=*/true);
   return sol_e;
