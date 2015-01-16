@@ -399,4 +399,9 @@ void copyData(Field* to, Field* from)
   copyFieldData(to->getData(), from->getData());
 }
 
+void project(Field* to, Field* from)
+{
+  to->project(from);
+}
+
 }//namespace apf
