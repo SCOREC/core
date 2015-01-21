@@ -16,11 +16,12 @@ class dcPart {
       ~dcPart();
       int numDisconnectedComps();
       void makeDisconnectedComps(const int numDcComps);
+      bool isIsolated(apf::MeshEntity* e);
       void fix();
    private:
       dcPart() {}
-      void init(apf::Mesh*& mesh);
       size_t walkPart(size_t visited);
+      void markIsolated(const size_t dcComp);
       unsigned maxContactNeighbor(const size_t dcComp);
       void setupPlan(migrTgt& dcCompTgts, apf::Migration* plan);
       int totNumDc();
@@ -28,6 +29,7 @@ class dcPart {
       std::vector<size_t> dcCompSz;
       std::vector<unsigned> dcCompNbor;
       apf::MeshTag* vtag;
+      apf::MeshTag* isotag;
       apf::Mesh* m;
       unsigned verbose;
 };

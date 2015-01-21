@@ -47,20 +47,27 @@ namespace {
     part.net.push_back(part.id);
     return mis(part,false,true);
   }
+
+  inline void getDwn2ndAdj(apf::Mesh* m, apf::MeshEntity* ent, eArr& adj) {
+    const int dim = apf::getDimension(m, ent);
+    apf::getBridgeAdjacent(m, ent, dim - 1, dim, adj);
+  }
+
 }
 
-dcPart::dcPart(Mesh*& mesh, unsigned v) 
+dcPart::dcPart(Mesh*& mesh, unsigned v)
   : m(mesh), verbose(v) {
-   init(m);
-}
-
-void dcPart::init(Mesh*& mesh) {
    vtag = mesh->createIntTag("dcVisited",1);
+   isotag = mesh->createIntTag("dcIsolated",1);
+   numDisconnectedComps();
 }
 
 dcPart::~dcPart() {
    clearTag(m, vtag);
    m->destroyTag(vtag);
+
+   clearTag(m, isotag);
+   m->destroyTag(isotag);
 }
 
 inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
@@ -71,12 +78,32 @@ inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
    return adjEnt[0];
 }
 
+bool dcPart::isIsolated(apf::MeshEntity* e) {
+  return m->hasTag(e, isotag);
+}
+
+void dcPart::markIsolated(const size_t dcComp) {
+  int one = 1;
+  int tval = -1;
+  MeshEntity* elm;
+  MeshIterator* itr = m->begin(m->getDimension());
+  while( (elm = m->iterate(itr)) ) {
+    if( m->hasTag(elm, vtag) ) {
+      m->getIntTag(elm, vtag, &tval);
+      if( tval == static_cast<int>(dcComp) )
+        m->setIntTag(elm, isotag, &one);
+    }
+  }
+  m->end(itr);
+}
+
 int dcPart::numDisconnectedComps() {
    double t1 = PCU_Time();
    dcCompSz.clear();
    dcCompNbor.clear();
    clearTag(m, vtag);
-   size_t numDc = 0;
+   clearTag(m, isotag);
+   size_t numDc = 0; //TODO use unsigned
    int count = 0;
    unsigned self = static_cast<unsigned>(m->getId());
    const int dim = m->getDimension();
@@ -88,6 +115,8 @@ int dcPart::numDisconnectedComps() {
         dcCompSz.push_back(sz);
         dcCompNbor.push_back(nbor);
         numDc++;
+      } else {
+        markIsolated(numDc);
       }
       count += sz;
    }
