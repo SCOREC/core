@@ -49,7 +49,8 @@ namespace {
   }
 }
 
-dcPart::dcPart(Mesh*& mesh) : m(mesh) {
+dcPart::dcPart(Mesh*& mesh, unsigned v) 
+  : m(mesh), verbose(v) {
    init(m);
 }
 
@@ -73,17 +74,25 @@ inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
 int dcPart::numDisconnectedComps() {
    double t1 = PCU_Time();
    dcCompSz.clear();
+   dcCompNbor.clear();
    clearTag(m, vtag);
    size_t numDc = 0;
    int count = 0;
+   unsigned self = static_cast<unsigned>(m->getId());
    const int dim = m->getDimension();
    const int numElms = static_cast<int>(m->count(dim));
    while( count != numElms ) {
-      dcCompSz.push_back( walkPart(numDc) );
-      count += dcCompSz[numDc];
-      numDc++;
+      size_t sz = walkPart(numDc);
+      unsigned nbor = maxContactNeighbor(numDc);
+      if( nbor != self ) {
+        dcCompSz.push_back(sz);
+        dcCompNbor.push_back(nbor);
+        numDc++;
+      }
+      count += sz;
    }
-   printElapsedTime(__func__, PCU_Time() - t1);
+   if( verbose )
+     printElapsedTime(__func__, PCU_Time() - t1);
    return static_cast<int>(numDc-1);
 }
 
@@ -150,16 +159,10 @@ void dcPart::fix() {
       if( *dc > maxSz )
         maxSz = *dc;
 
-    size_t isolated = 0;
     for(size_t i=0; i<dcCompSz.size(); i++)
-      if( dcCompSz[i] != maxSz ) {
-        int res = checkResidence(i);
-        if ( res != -1 )
-          dcCompTgts[i] = res;
-        else
-          isolated++;
-      }
-    assert( dcCompTgts.size() + isolated == dcCompSz.size()-1 );
+      if( dcCompSz[i] != maxSz )
+        dcCompTgts[i] = dcCompNbor[i];
+    assert( dcCompTgts.size() == dcCompSz.size()-1 );
     Migration* plan = new Migration(m);
     if ( isInMis(dcCompTgts) )
       setupPlan(dcCompTgts, plan);
@@ -167,17 +170,17 @@ void dcPart::fix() {
     clearTag(m, vtag);
     double t3 = PCU_Time();
     m->migrate(plan);
-    if( 0 == PCU_Comm_Self() )
+    if( 0 == PCU_Comm_Self() && verbose)
       status("loop %d components %d seconds <fix migrate> %.3f %.3f\n",
           loop, ndc, t3-t2, PCU_Time()-t3);
   }
   printElapsedTime(__func__, PCU_Time() - t1);
 }
 
-int dcPart::checkResidence(const size_t dcComp) {
+unsigned dcPart::maxContactNeighbor(const size_t dcComp) {
    // < dcComId, maxFace >
-   typedef map<int, int> mii;
-   mii bdryFaceCnt;
+   typedef map<unsigned, unsigned> muu;
+   muu bdryFaceCnt;
 
    const int dim = m->getDimension();
    int tval;
@@ -201,10 +204,11 @@ int dcPart::checkResidence(const size_t dcComp) {
       }
    }
    m->end(itr);
-   int max = -1;
-   int maxId = -1;
-   APF_ITERATE(mii , bdryFaceCnt, bf) {
-      if( bf->first != m->getId() && bf->second > max ) {
+   unsigned max = 0;
+   unsigned maxId = m->getId();
+   unsigned self = static_cast<unsigned>(m->getId());
+   APF_ITERATE(muu , bdryFaceCnt, bf) {
+      if( bf->first != self && bf->second > max ) {
          max = bf->second;
          maxId = bf->first;
       }
