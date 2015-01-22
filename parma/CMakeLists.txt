@@ -36,9 +36,12 @@ SET(DIFFMC_SOURCES
   diffMC/parma_dcpart.cc
   diffMC/parma_dijkstra.cc
   diffMC/parma_edgeBalancer.cc
+  diffMC/parma_edgeSelector.cc
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_elmSideSides.cc
+  diffMC/parma_elmLtVtxSelector.cc
+  diffMC/parma_elmSelector.cc
   diffMC/parma_vtxSides.cc
   diffMC/parma_entWeights.cc
   diffMC/parma_ghost.cc
