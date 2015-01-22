@@ -12,6 +12,7 @@ class dcPart {
       ~dcPart();
       unsigned numDisconnectedComps();
       bool isIsolated(apf::MeshEntity* e);
+      apf::MeshEntity* getSeedElm(unsigned comp);
       void fix();
    private:
       dcPart() {}

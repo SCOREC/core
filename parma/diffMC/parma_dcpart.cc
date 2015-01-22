@@ -70,6 +70,22 @@ dcPart::~dcPart() {
    m->destroyTag(isotag);
 }
 
+// this function is sensitive to iterator order
+apf::MeshEntity* dcPart::getSeedElm(unsigned comp) {
+  assert( comp < dcCompSz.size() );
+  int tval = -1;
+  MeshEntity* elm;
+  MeshIterator* itr = m->begin(m->getDimension());
+  while( (elm = m->iterate(itr)) ) {
+    if( m->hasTag(elm, vtag) ) {
+      m->getIntTag(elm, vtag, &tval);
+      if( tval == static_cast<int>(comp) )
+        break;
+    }
+  }
+  return elm;
+}
+
 bool dcPart::isIsolated(apf::MeshEntity* e) {
   return m->hasTag(e, isotag);
 }
