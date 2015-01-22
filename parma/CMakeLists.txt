@@ -17,15 +17,6 @@ SET(PARMA_EXTERNAL_HEADERS parma.h)
 SET(API_SOURCE parma.cc)
 
 ######################################################################
-set(PARMADIFFMC_MAJOR_VERSION 1)
-set(PARMADIFFMC_MINOR_VERSION 0)
-set(PARMADIFFMC_PATCH_VERSION 0)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/parma_diffmcversion.h.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/parma_diffmcversion.h"
-  @ONLY
-  )
-
 SET(DIFFMC_SOURCES  
   diffMC/parma_balancer.cc
   diffMC/parma_bdryVtx.cc
