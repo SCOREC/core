@@ -28,11 +28,13 @@ configure_file(
 
 SET(DIFFMC_SOURCES  
   diffMC/parma_balancer.cc
+  diffMC/parma_bdryVtx.cc
   diffMC/parma_centroidDiffuser.cc
   diffMC/parma_centroids.cc
   diffMC/parma_centroidSelector.cc
   diffMC/parma_commons.cc
   diffMC/parma_dcpart.cc
+  diffMC/parma_dijkstra.cc
   diffMC/parma_edgeBalancer.cc
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc

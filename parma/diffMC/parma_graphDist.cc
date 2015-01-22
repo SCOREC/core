@@ -4,6 +4,8 @@
 #include <set>
 #include <limits.h>
 #include "parma_graphDist.h"
+#include "parma_dijkstra.h"
+#include "parma_meshaux.h"
 #include "parma_commons.h"
 
 namespace {
@@ -25,12 +27,6 @@ namespace {
     int md = m->getDimension();
     bool shared = m->isShared(e);
     return shared || (!shared && gd < md);
-  }
-
-  inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* v,
-      apf::Adjacent& adj) {
-    int bridge = 1; int tgt = 0;
-    getBridgeAdjacent(m, v, bridge, tgt, adj);
   }
 
   int walkInward(apf::MeshTag* n, apf::Mesh* m) {
@@ -157,42 +153,6 @@ namespace {
     }
   }
 
-  bool disconnected(apf::Mesh*m, apf::MeshTag* conn, apf::MeshEntity* e) {
-    int c;
-    apf::Adjacent adjElms;
-    m->getAdjacent(e, m->getDimension(), adjElms);
-    APF_ITERATE(apf::Adjacent, adjElms, adjItr) {
-      m->getIntTag(*adjItr,conn,&c);
-      if( c ) return false;
-    }
-    return true;
-  }
-
-  void dijkstra(apf::Mesh* m, apf::MeshTag* c, apf::MeshTag* d,
-      apf::MeshEntity* src) {
-    parma::DistanceQueue<parma::Less> pq(m);
-    int zero = 0;
-    m->setIntTag(src, d, &zero);
-    pq.push(src,0);
-
-    while( !pq.empty() ) {
-      apf::MeshEntity* v = pq.pop();
-      int vd; m->getIntTag(v, d, &vd);
-      if( vd == INT_MAX) continue;
-      apf::Adjacent adjVtx;
-      getEdgeAdjVtx(m,v,adjVtx);
-      APF_ITERATE(apf::Adjacent, adjVtx, eItr) {
-        apf::MeshEntity* u = *eItr;
-        int ud; m->getIntTag(u,d,&ud);
-        if( vd+1 < ud ) {
-          int l = disconnected(m,c,u) ? INT_MAX : vd+1;
-          m->setIntTag(u,d,&l);
-          pq.push(u,l);
-        }
-      }
-    }
-  }
-
   apf::MeshTag* computeDistance(apf::Mesh* m, Level& verts) {
     double t0 = PCU_Time();
     Level* centralElms = getCentralElms(m, verts);
@@ -209,7 +169,7 @@ namespace {
     apf::MeshTag* distT = initTag(m, "parmaDistance", initVal);
 
     APF_ITERATE(Level, verts, itr)
-      dijkstra(m,connT,distT,*itr);
+      parma::dijkstra(m,connT,distT,*itr);
 
     apf::removeTagFromDimension(m,connT,m->getDimension());
     m->destroyTag(connT);
@@ -221,20 +181,6 @@ namespace {
 } //end namespace
 
 namespace parma {
-  DistanceQueue<Greater> * BoundaryVertices(apf::Mesh* m, apf::MeshTag* d) {
-    DistanceQueue<Greater> * dq = new DistanceQueue<Greater>(m);
-
-    apf::MeshEntity* v;
-    apf::MeshIterator* it = m->begin(0);
-    while( (v = m->iterate(it)) )
-      if( m->isShared(v) ) {
-        int dist; m->getIntTag(v,d,&dist);
-        dq->push(v, dist);
-      }
-    m->end(it);
-    return dq;
-  }
-
   apf::MeshTag* measureGraphDist(apf::Mesh* m) {
     Level* centralVerts = getCentralVerts(m);
     apf::MeshTag* t = computeDistance(m, *centralVerts);

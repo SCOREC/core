@@ -2,6 +2,7 @@
 #include "parma_targets.h"
 #include "parma_weights.h"
 #include "parma_graphDist.h"
+#include "parma_bdryVtx.h"
 #include "parma_commons.h"
 #include <apf.h>
 #include <PCU.h>
@@ -97,11 +98,11 @@ namespace parma {
       double select(Targets* tgts, apf::Migration* plan, double planW,
           int maxSize) {
         double t0 = PCU_Time();
-        DistanceQueue<Greater>* bdryVerts = BoundaryVertices(mesh, dist);
+        BdryVtxItr* bdryVerts = makeBdryVtxDistItr(mesh, dist);
         apf::Up cavity;
-        while( !bdryVerts->empty() ) {
+        apf::MeshEntity* e;
+        while( (e = bdryVerts->next()) ) {
           if( planW > tgts->total() ) break;
-          apf::MeshEntity* e = bdryVerts->pop();
           getCavity(mesh, e, plan, cavity);
           UintArr* peers = getCavityPeers(mesh,e);
           int d; mesh->getIntTag(e,dist,&d);

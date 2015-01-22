@@ -13,5 +13,12 @@ inline apf::MeshEntity* getUpEnt(apf::Mesh* m, apf::MeshEntity* e) {
   return m->getUpward(e, 0);
 }
 
+inline void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* v,
+    apf::Adjacent& adj) {
+  int bridge = 1; int tgt = 0;
+  getBridgeAdjacent(m, v, bridge, tgt, adj);
+}
+
+
 
 #endif
