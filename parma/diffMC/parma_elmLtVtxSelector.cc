@@ -41,25 +41,7 @@ namespace {
         return w;
       }
 
-      double cavityWeight(SetEnt& s, int dest) {
-        double w = 0;
-        APF_ITERATE(SetEnt, s, sItr) {
-          apf::Copies rmts;
-          mesh->getRemotes(*sItr,rmts);
-          bool shared = false;
-          APF_ITERATE(apf::Copies, rmts, r)
-            if( r->first == dest ) {
-              shared = true;
-              break;
-            }
-          if( !shared )
-            w += getWeight(*sItr);
-        }
-        return w;
-      }
-
       void cancel(apf::Migration** plan, parma::Mid* order) {
-
         apf::Migration* planA = *plan;
         typedef std::pair<apf::MeshEntity*, int> PairEntInt;
         std::vector<PairEntInt > keep;
