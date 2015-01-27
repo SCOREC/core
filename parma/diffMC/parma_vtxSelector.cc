@@ -1,3 +1,4 @@
+#include <PCU.h>
 #include "parma_selector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
@@ -5,7 +6,6 @@
 #include <apf.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <set>
 #include <list>
 #include <stdio.h>
