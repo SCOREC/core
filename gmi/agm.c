@@ -144,6 +144,8 @@ static int get_cap(struct agm* m, enum agm_obj_type o, int subtype)
     default:
       assert(!"bad obj type");
   }
+
+  return 0; // Should never be reached (but stops compilers from complaining)
 }
 
 static void grow_tag(struct agm_tag* t, enum agm_obj_type o, int subtype)

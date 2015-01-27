@@ -5,13 +5,13 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include <PCU.h>
+
 #include "spr.h"
 
 #include <apfMesh.h>
 #include <apfShape.h>
 #include <apfCavityOp.h>
-
-#include <PCU.h>
 
 #include <limits>
 

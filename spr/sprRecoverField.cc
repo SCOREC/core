@@ -5,9 +5,9 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "spr.h"
-
 #include <PCU.h>
+
+#include "spr.h"
 
 #include <apfMesh.h>
 #include <apfShape.h>
