@@ -1,3 +1,4 @@
+#include <PCU.h>
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
@@ -5,7 +6,6 @@
 #include "parma_bdryVtx.h"
 #include "parma_commons.h"
 #include <apf.h>
-#include <PCU.h>
 #include <limits.h>
 
 typedef unsigned int uint;

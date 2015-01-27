@@ -1,6 +1,6 @@
+#include <PCU.h>
 #include "parma_balancer.h"
 #include "parma_monitor.h"
-#include <PCU.h>
 
 namespace {
   void printTiming(const char* type, int steps, double tol, double time) {

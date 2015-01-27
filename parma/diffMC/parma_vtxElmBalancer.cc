@@ -1,5 +1,5 @@
-#include <apfPartition.h>
 #include <PCU.h>
+#include <apfPartition.h>
 #include <parma.h>
 #include "parma_balancer.h"
 #include "parma_sides.h"
