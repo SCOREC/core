@@ -17,31 +17,28 @@ SET(PARMA_EXTERNAL_HEADERS parma.h)
 SET(API_SOURCE parma.cc)
 
 ######################################################################
-set(PARMADIFFMC_MAJOR_VERSION 1)
-set(PARMADIFFMC_MINOR_VERSION 0)
-set(PARMADIFFMC_PATCH_VERSION 0)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/parma_diffmcversion.h.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/diffMC/parma_diffmcversion.h"
-  @ONLY
-  )
-
 SET(DIFFMC_SOURCES  
   diffMC/parma_balancer.cc
+  diffMC/parma_bdryVtx.cc
   diffMC/parma_centroidDiffuser.cc
   diffMC/parma_centroids.cc
   diffMC/parma_centroidSelector.cc
   diffMC/parma_commons.cc
   diffMC/parma_dcpart.cc
+  diffMC/parma_dijkstra.cc
   diffMC/parma_edgeBalancer.cc
+  diffMC/parma_edgeSelector.cc
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_elmSideSides.cc
+  diffMC/parma_elmLtVtxSelector.cc
+  diffMC/parma_elmSelector.cc
   diffMC/parma_vtxSides.cc
   diffMC/parma_entWeights.cc
   diffMC/parma_ghost.cc
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
+  diffMC/parma_graphDist.cc
   diffMC/parma_hpsBalancer.cc
   diffMC/parma_monitor.cc
   diffMC/parma_sides.cc

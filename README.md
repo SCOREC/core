@@ -43,5 +43,7 @@ For more information, start at our
 
 ### Who do I talk to? ###
 
+* mailing list <scorec-pumi@lists.rpi.edu>
+  (subscribe at https://lists.sympa.rpi.edu/wws/subscribe/scorec-pumi)
 * Dan Ibanez <ibaned@rpi.edu>
 * Cameron Smith <smithc11@rpi.edu>

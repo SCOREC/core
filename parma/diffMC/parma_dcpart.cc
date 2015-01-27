@@ -29,15 +29,16 @@ using parmaCommons::error;
 
 typedef std::list<MeshEntity*> eList;
 typedef DynamicArray<MeshEntity*> eArr;
+typedef map<unsigned, unsigned> muu;
 
 namespace {
-  bool isInMis(migrTgt& mt) {
-    unsigned int seed = static_cast<unsigned int>(PCU_Comm_Self()+1);
+  bool isInMis(muu& mt) {
+    unsigned seed = PCU_Comm_Self()+1;
     mis_init(seed);
     misLuby::partInfo part;
     part.id = PCU_Comm_Self();
     std::set<int> targets;
-    APF_ITERATE(migrTgt, mt, mtItr) {
+    APF_ITERATE(muu, mt, mtItr) {
       if( !targets.count(mtItr->second) ) {
         part.adjPartIds.push_back(mtItr->second);
         part.net.push_back(mtItr->second);
@@ -47,44 +48,90 @@ namespace {
     part.net.push_back(part.id);
     return mis(part,false,true);
   }
+
+  inline void getDwn2ndAdj(apf::Mesh* m, apf::MeshEntity* ent, eArr& adj) {
+    const int dim = apf::getDimension(m, ent);
+    apf::getBridgeAdjacent(m, ent, dim - 1, dim, adj);
+  }
 }
 
-dcPart::dcPart(Mesh*& mesh) : m(mesh) {
-   init(m);
-}
-
-void dcPart::init(Mesh*& mesh) {
+dcPart::dcPart(Mesh*& mesh, unsigned v)
+  : m(mesh), verbose(v) {
    vtag = mesh->createIntTag("dcVisited",1);
+   isotag = mesh->createIntTag("dcIsolated",1);
+   numDisconnectedComps();
 }
 
 dcPart::~dcPart() {
    clearTag(m, vtag);
    m->destroyTag(vtag);
+
+   clearTag(m, isotag);
+   m->destroyTag(isotag);
 }
 
-inline MeshEntity* getUpElm(Mesh* m, MeshEntity* e) {
-   const int upDim = apf::getDimension(m, e) + 1;
-   eArr adjEnt;
-   m->getAdjacent(e, upDim, adjEnt);
-   assert( NULL != adjEnt[0] );
-   return adjEnt[0];
+// this function is sensitive to iterator order
+apf::MeshEntity* dcPart::getSeedElm(unsigned comp) {
+  assert( comp < dcCompSz.size() );
+  int tval = -1;
+  MeshEntity* elm;
+  MeshIterator* itr = m->begin(m->getDimension());
+  while( (elm = m->iterate(itr)) ) {
+    if( m->hasTag(elm, vtag) ) {
+      m->getIntTag(elm, vtag, &tval);
+      if( tval == static_cast<int>(comp) )
+        break;
+    }
+  }
+  return elm;
 }
 
-int dcPart::numDisconnectedComps() {
+bool dcPart::isIsolated(apf::MeshEntity* e) {
+  return m->hasTag(e, isotag);
+}
+
+void dcPart::markIsolated(const unsigned dcComp) {
+  int one = 1;
+  int tval = -1;
+  MeshEntity* elm;
+  MeshIterator* itr = m->begin(m->getDimension());
+  while( (elm = m->iterate(itr)) ) {
+    if( m->hasTag(elm, vtag) ) {
+      m->getIntTag(elm, vtag, &tval);
+      if( tval == static_cast<int>(dcComp) )
+        m->setIntTag(elm, isotag, &one);
+    }
+  }
+  m->end(itr);
+}
+
+unsigned dcPart::numDisconnectedComps() {
    double t1 = PCU_Time();
    dcCompSz.clear();
+   dcCompNbor.clear();
    clearTag(m, vtag);
-   size_t numDc = 0;
-   int count = 0;
+   clearTag(m, isotag);
+   unsigned numDc = 0;
+   unsigned count = 0;
+   unsigned self = m->getId();
    const int dim = m->getDimension();
-   const int numElms = static_cast<int>(m->count(dim));
+   const unsigned numElms = m->count(dim);
    while( count != numElms ) {
-      dcCompSz.push_back( walkPart(numDc) );
-      count += dcCompSz[numDc];
-      numDc++;
+      unsigned sz = walkPart(numDc);
+      unsigned nbor = maxContactNeighbor(numDc);
+      if( nbor != self ) {
+        dcCompSz.push_back(sz);
+        dcCompNbor.push_back(nbor);
+        numDc++;
+      } else {
+        markIsolated(numDc);
+      }
+      count += sz;
    }
-   printElapsedTime(__func__, PCU_Time() - t1);
-   return static_cast<int>(numDc-1);
+   if( verbose )
+     printElapsedTime(__func__, PCU_Time() - t1);
+   assert(numDc >= 1);
+   return numDc-1;
 }
 
 int dcPart::totNumDc() {
@@ -93,7 +140,7 @@ int dcPart::totNumDc() {
   return ndc;
 }
 
-size_t dcPart::walkPart(size_t visited) {
+unsigned dcPart::walkPart(unsigned visited) {
    size_t count = 0;
    const int dim = m->getDimension();
 
@@ -111,7 +158,7 @@ size_t dcPart::walkPart(size_t visited) {
       elms.pop_front();
       assert( elm != NULL );
       if ( m->hasTag(elm, vtag) ) continue;
-      int dcId = static_cast<int>(visited);
+      const int dcId = visited;
       m->setIntTag(elm, vtag, &dcId);
       count++;
       eArr adjElms;
@@ -143,23 +190,17 @@ void dcPart::fix() {
   int ndc = 0;
   while( (ndc = totNumDc()) && loop++ < 50 ) {
     double t2 = PCU_Time();
-    migrTgt dcCompTgts;
+    muu dcCompTgts;
 
-    size_t maxSz = 0;
-    APF_ITERATE(vector<size_t>, dcCompSz, dc)
+    unsigned maxSz = 0;
+    APF_ITERATE(vector<unsigned>, dcCompSz, dc)
       if( *dc > maxSz )
         maxSz = *dc;
 
-    size_t isolated = 0;
     for(size_t i=0; i<dcCompSz.size(); i++)
-      if( dcCompSz[i] != maxSz ) {
-        int res = checkResidence(i);
-        if ( res != -1 )
-          dcCompTgts[i] = res;
-        else
-          isolated++;
-      }
-    assert( dcCompTgts.size() + isolated == dcCompSz.size()-1 );
+      if( dcCompSz[i] != maxSz )
+        dcCompTgts[i] = dcCompNbor[i];
+    assert( dcCompTgts.size() == dcCompSz.size()-1 );
     Migration* plan = new Migration(m);
     if ( isInMis(dcCompTgts) )
       setupPlan(dcCompTgts, plan);
@@ -167,17 +208,16 @@ void dcPart::fix() {
     clearTag(m, vtag);
     double t3 = PCU_Time();
     m->migrate(plan);
-    if( 0 == PCU_Comm_Self() )
+    if( 0 == PCU_Comm_Self() && verbose)
       status("loop %d components %d seconds <fix migrate> %.3f %.3f\n",
           loop, ndc, t3-t2, PCU_Time()-t3);
   }
   printElapsedTime(__func__, PCU_Time() - t1);
 }
 
-int dcPart::checkResidence(const size_t dcComp) {
+unsigned dcPart::maxContactNeighbor(const unsigned dcComp) {
    // < dcComId, maxFace >
-   typedef map<int, int> mii;
-   mii bdryFaceCnt;
+   muu bdryFaceCnt;
 
    const int dim = m->getDimension();
    int tval;
@@ -201,10 +241,11 @@ int dcPart::checkResidence(const size_t dcComp) {
       }
    }
    m->end(itr);
-   int max = -1;
-   int maxId = -1;
-   APF_ITERATE(mii , bdryFaceCnt, bf) {
-      if( bf->first != m->getId() && bf->second > max ) {
+   unsigned max = 0;
+   unsigned maxId = m->getId();
+   unsigned self = m->getId();
+   APF_ITERATE(muu , bdryFaceCnt, bf) {
+      if( bf->first != self && bf->second > max ) {
          max = bf->second;
          maxId = bf->first;
       }
@@ -212,64 +253,20 @@ int dcPart::checkResidence(const size_t dcComp) {
    return maxId;
 }
 
-void dcPart::setupPlan(migrTgt& dcCompTgts, Migration* plan) {
+void dcPart::setupPlan(muu& dcCompTgts, Migration* plan) {
    MeshEntity* e;
    MeshIterator* itr = m->begin(m->getDimension());
    while( (e = m->iterate(itr)) ) {
       if( m->hasTag(e, vtag) ) {
 	 int tval = -1;
 	 m->getIntTag(e, vtag, &tval);
-         const size_t dcId = static_cast<size_t>(tval);
-	 if ( dcCompTgts.count(dcId) ) {
+         const unsigned dcId = tval;
+	 if ( dcCompTgts.count(dcId) )
             plan->send(e, dcCompTgts[dcId]);
-	 }
       }
    }
    m->end(itr);
 }
 
 
-inline bool isShared(Mesh* m, MeshEntity* elm) {
-   const int dim = apf::getDimension(m, elm);
-   assert( dim == m->getDimension() );
-   eArr adjEnt;
-   m->getAdjacent(elm, dim-1, adjEnt);
-   APF_ITERATE(eArr, adjEnt, it) {
-      if( m->isShared(*it) )
-         return true;
-   }
-   return false;
-}
 
-void dcPart::makeDisconnectedComps(const int numDcComps) {
-   clearTag(m, vtag);
-
-   const int destPid = (m->getId() + 1) % PCU_Comm_Peers();
-
-   Migration* plan = new Migration(m);
-   for(int i=0; i<numDcComps; i++) {
-      MeshEntity* elm;
-      bool found = false;
-      // find an untagged element
-      MeshIterator* itr = m->begin(m->getDimension());
-      while( (elm = m->iterate(itr)) && !found ) {
-         if ( m->hasTag(elm, vtag) ) continue;
-	 eArr adjElms;
-         // check if face adj elms are tagged
-	 getDwn2ndAdj(m, elm, adjElms);
-         int numDirtyElms = 0;
-	 APF_ITERATE(eArr, adjElms, eit)
-	    if( m->hasTag(*eit, vtag) || isShared(m, *eit) )
-               numDirtyElms++;
-         if ( numDirtyElms == 0 ) {
-            plan->send(elm, destPid);
-	    m->setIntTag(elm, vtag, &i);
-            found = true;
-	 }
-      }
-      m->end(itr);
-   }
-
-   clearTag(m, vtag);
-   m->migrate(plan); //plan deleted here
-}

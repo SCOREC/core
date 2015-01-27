@@ -45,31 +45,18 @@ class Problem
     ParameterList& problemList_;
     ParameterList& qoiList_;
     ParameterList& bcList_;
-
     apf::Mesh* mesh_;
     int integrationOrder_;
-
-    /* linear algebra system */
     long numGlobalEqs_;
     LinearSystem* ls_;
-
-    /* primal and adjoint fields */
     apf::Field* primal_;
     apf::Field* adjoint_;
     int numComponents_;
-
-    /* numbering for dof holders */
     apf::Numbering* numbering_;
     apf::GlobalNumbering* globalNumbering_;
-
-    /* quantity of interest */
     QoI* qoi_;
-
-    /* setup methods */
     virtual void validateProblemList() = 0;
     virtual void setPrimalField() = 0;
-
-    /* assemble methods */
     virtual void createIntegrator() = 0;
     virtual void processKe(apf::MeshEntity* e, apf::DynamicMatrix& Ke) = 0;
 };

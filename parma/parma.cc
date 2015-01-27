@@ -98,7 +98,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
     neighbors.insert(sharers.begin(),sharers.end());
   }
   m->end(it);
-  loc = static_cast<int>(neighbors.size());
+  loc = static_cast<int>(neighbors.size())-1;
   max = loc;
   PCU_Max_Ints(&max,1);
   double total = loc;

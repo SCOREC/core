@@ -7,6 +7,7 @@
 
 #include "awrProblem.h"
 #include "awrPoisson.h"
+#include "awrNonlinearPoisson.h"
 #include "awrQoI.h"
 #include "awrLinearSystem.h"
 #include <PCU.h>
@@ -74,6 +75,8 @@ Problem* createProblem(ParameterList& p, apf::Mesh* m)
   Problem* problem;
   if (name == "Poisson")
     problem = new PoissonProblem(p,m); 
+  else if (name == "Nonlinear Poisson")
+    problem = new NonlinearPoissonProblem(p,m);
   else
     rejectProblemName(name.c_str());
   return problem;
