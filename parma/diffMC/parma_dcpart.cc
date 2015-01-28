@@ -111,7 +111,7 @@ unsigned dcPart::numDisconnectedComps() {
    dcCompNbor.clear();
    clearTag(m, vtag);
    clearTag(m, isotag);
-   unsigned numDc = 0;
+   unsigned numDc = 0, numIso = 0;
    unsigned count = 0;
    unsigned self = m->getId();
    const int dim = m->getDimension();
@@ -124,14 +124,15 @@ unsigned dcPart::numDisconnectedComps() {
         dcCompNbor.push_back(nbor);
         numDc++;
       } else {
+        numIso++;
         markIsolated(numDc);
       }
       count += sz;
    }
    if( verbose )
      printElapsedTime(__func__, PCU_Time() - t1);
-   assert(numDc >= 1);
-   return numDc-1;
+   assert(numDc+numIso >= 1);
+   return (numDc+numIso)-1;
 }
 
 int dcPart::totNumDc() {
