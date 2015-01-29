@@ -108,7 +108,7 @@ unsigned dcPart::numDisconnectedComps() {
       count += sz;
    }
    if( verbose )
-     printElapsedTime(__func__, PCU_Time() - t1);
+     parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
    assert(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }
