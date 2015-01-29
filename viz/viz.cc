@@ -1,5 +1,6 @@
 #include "viz.h"
 #include <milo.h>
+#include <apf.h>
 #include <apfMesh.h>
 #include <PCU.h>
 
@@ -81,14 +82,41 @@ void Visualization::getColor(Color color, double* color_array) {
 }
 
 void Visualization::drawPoint(apf::Mesh* m, apf::MeshEntity* ent,Color color) {
-  double point[3];
-  getPoint(m,ent,point);
+  apf::Vector3 u;
+  m->getPoint_(ent,0,u);
+
+  int d = getDimension(m,ent);
+  assert(d==0);
+  int bridgeDim = 1, tgtDim = d;
+  apf::Adjacent adjVtx;
+  getBridgeAdjacent(m,ent,bridgeDim,tgtDim,adjVtx);
+  apf::Vector3 v;
+  double maxLen = 0;
+  APF_ITERATE(apf::Adjacent, adjVtx, vtx) {
+    m->getPoint_(*vtx,0,v);
+    double len = (u-v).getLength();
+    if( len > maxLen )
+      maxLen = len;
+  }
+  double delta = maxLen*.05;
+
   double color_array[3];
   if (color==NOCOLOR)
     color=WHITE;
   getColor(color,color_array);
-  milo_dot(mil,point,color_array);
-
+  apf::Vector3 e[3] = 
+    {apf::Vector3(1,0,0),apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
+  double sign[2] = {-1,1};
+  double p[3];
+  for(int s=1; s<4; s++) {
+    for(int i=0; i<3; i++) {
+      for(int j=0; j<2; j++) {
+        apf::Vector3 pt = u+(e[i]*sign[j]*delta*s);
+        pt.toArray(p);
+        milo_dot(mil,p,color_array);
+      }
+    }
+  }
 }
 
 void Visualization::drawLine(apf::Mesh* m, apf::MeshEntity* ent,Color color) {
@@ -181,6 +209,15 @@ void Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   milo_line(mil,origin,x_axis,x_array,1);
   milo_line(mil,origin,y_axis,y_array,1);
   milo_line(mil,origin,z_axis,z_array,1);
+}
+
+void Visualization::markEnt(apf::Mesh* m, apf::MeshEntity* e, 
+    std::string text,Color color) {
+  double point[3] = {0,0,0};
+  getPoint(m,e,point);
+  double color_array[3];
+  getColor(color,color_array);
+  milo_text(mil,point,text.c_str(),color_array);
 }
 
 void Visualization::markPart(apf::Mesh* m,std::string text,Color color) {

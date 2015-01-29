@@ -24,7 +24,9 @@ SET(DIFFMC_SOURCES
   diffMC/parma_centroids.cc
   diffMC/parma_centroidSelector.cc
   diffMC/parma_commons.cc
+  diffMC/parma_components.cc
   diffMC/parma_dcpart.cc
+  diffMC/parma_dcpartFixer.cc
   diffMC/parma_dijkstra.cc
   diffMC/parma_edgeBalancer.cc
   diffMC/parma_edgeSelector.cc

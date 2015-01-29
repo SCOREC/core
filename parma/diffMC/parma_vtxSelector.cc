@@ -6,7 +6,6 @@
 #include "parma_bdryVtx.h"
 #include "parma_commons.h"
 #include <apf.h>
-#include <limits.h>
 
 typedef unsigned int uint;
 
@@ -104,10 +103,9 @@ namespace parma {
       int d; mesh->getIntTag(e,dist,&d);
       for( uint i=0; i<peers->l; i++ ) {
         uint destPid = peers->d[i];
-        if( (tgts->has(destPid) &&
-              sending[destPid] < tgts->get(destPid) &&
-              cavity.n <= maxSize ) ||
-            INT_MAX == d ) {
+        if( tgts->has(destPid) &&
+            sending[destPid] < tgts->get(destPid) &&
+            cavity.n <= maxSize ) {
           double ew = add(e, cavity, destPid, plan);
           sending[destPid] += ew;
           planW += ew;
