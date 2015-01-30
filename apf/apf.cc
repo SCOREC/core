@@ -129,6 +129,8 @@ int getValueType(Field* f)
 
 void destroyField(Field* f)
 {
+  if (!f)
+    return;
   getMesh(f)->removeField(f);
   delete f;
 }
