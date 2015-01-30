@@ -18,6 +18,7 @@ namespace {
   }
 
   void reduce(apf::Mesh* m, parma::Level* core) {
+    assert( core->size() );
     double max = 0;
     apf::MeshEntity* maxVtx = NULL;
     APF_ITERATE(parma::Level, *core, e) {
@@ -47,7 +48,6 @@ namespace parma {
     for(unsigned i=0; i<n; i++) depth[i] = 0;
     idT = m->createIntTag("parmaVtxCompId",1);
     markVertices();
-    getBdryVerts();
     getCoreVerts();
     getCoreVtx();
     sortByDepth();
@@ -138,21 +138,20 @@ namespace parma {
     m->setIntTag(e, idT, &cid);
   }
 
-  void DCC::getBdryVerts() {
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(0);
-    while( (e = m->iterate(it)) )
-      if( onBoundary(m,e) && has(e) ) {
-        unsigned cid = getId(e);
-        parma::Level* b = getBdry(cid);
-        b->insert(e);
-      }
-    m->end(it);
-  }
-
+  /**
+   * brief get the core vertices in the component
+   * remark if a component has no vertices assigned to it
+   then it must has only boundary vertices
+   set the core vertices to the bdry vertices in that case
+   */
   void DCC::getCoreVerts() {
-    for(unsigned i=0; i<size(); i++)
+    for(unsigned i=0; i<size(); i++) {
       walkInward(i);
+      if( !core[i].size() ) {
+        PCU_Debug_Print("core %u is empty... assigning core to bdry\n", i);
+        core[i] = bdry[i]; 
+      }
+    }
   }
 
   /**
@@ -218,7 +217,10 @@ namespace parma {
       elms.pop_front();
       if( m->hasTag(elm, vtag) ) continue;
       m->setIntTag(elm, vtag, &one);
-      setElmVtxIds(elm, comp);
+      apf::Downward verts;
+      const int nv = m->getDownward(elm, 0, verts);
+      setElmVtxIds(verts, nv, comp);
+      addElmVtxToBdry(verts, nv, comp);
       apf::Adjacent adjElms;
       getDwn2ndAdj(m, elm, adjElms);
       APF_ITERATE(apf::Adjacent, adjElms, eit)
@@ -236,15 +238,19 @@ namespace parma {
    * brief set vtx component ids
    * remark vertices shared by multiple components are assigned to the 
    *        component with the lowest id
-   * param elm (In) elm with vertices to assign
+   * param verts (In) vertices to assign
    * param compId (In) id to assign to the vertices
    */
-  void DCC::setElmVtxIds(apf::MeshEntity* elm, unsigned compId) {
-    apf::Downward vtx;
-    int nv = m->getDownward(elm, 0, vtx);
+  void DCC::setElmVtxIds(apf::Downward& verts, const int nv, unsigned compId) {
     for(int i=0; i<nv; i++)
-      if( !has(vtx[i]) || (compId < getId(vtx[i])) )
-        setId(vtx[i], compId);
+      if( !has(verts[i]) || (compId < getId(verts[i])) )
+        setId(verts[i], compId);
+  }
+
+  void DCC::addElmVtxToBdry(apf::Downward& verts, const int nv, unsigned compId) {
+    for(int i=0; i<nv; i++)
+      if( onBoundary(m,verts[i]) )
+        bdry[compId].insert(verts[i]);
   }
 
   class dcComponents::BdryItr {

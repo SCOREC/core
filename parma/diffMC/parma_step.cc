@@ -35,7 +35,7 @@ namespace parma {
     if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "elements migrated in %f seconds\n", PCU_Time()-t0);
     if( verbosity > 1 ) 
-      Parma_PrintPtnStats(m, "endStep");
+      Parma_PrintPtnStats(m, "endStep", (verbosity>2));
     return true;
   }
 

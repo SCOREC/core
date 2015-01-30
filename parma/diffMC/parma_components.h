@@ -25,9 +25,9 @@ namespace parma {
       Components();
       void markVertices();
       void walkComp(apf::MeshEntity* src, unsigned comp);
-      void setElmVtxIds(apf::MeshEntity* elm, unsigned comp);
+      void setElmVtxIds(apf::Downward& verts, const int nv, unsigned comp);
+      void addElmVtxToBdry(apf::Downward& verts, const int nv, unsigned comp);
       void setId(apf::MeshEntity* e, unsigned id);
-      void getBdryVerts();
       void walkInward(unsigned compId);
       void getCoreVerts();
       void getCoreVtx();
