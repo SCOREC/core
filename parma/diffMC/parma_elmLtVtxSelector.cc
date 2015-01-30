@@ -133,10 +133,10 @@ namespace {
         return w;
       }
   };
-}//end namespace 
+}//end namespace
 
 namespace parma {
   Selector* makeElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxVtx) {
     return new ElmLtVtxSelector(m, w, maxVtx);
   }
-} 
+}
