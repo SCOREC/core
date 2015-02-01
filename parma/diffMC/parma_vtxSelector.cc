@@ -8,6 +8,8 @@
 #include <apf.h>
 
 typedef unsigned int uint;
+#define TO_UINT(a) static_cast<unsigned>(a)
+typedef std::map<uint,uint> muu;
 
 namespace {
   struct UintArr {
@@ -27,35 +29,66 @@ namespace {
   }
 
   UintArr* getCavityPeers(apf::Mesh* m, apf::MeshEntity* v) {
-    typedef std::map<uint,uint> MUiUi;
-    MUiUi pc;
+    muu pc;
     apf::Adjacent sideSides;
     m->getAdjacent(v, m->getDimension()-2, sideSides);
     APF_ITERATE(apf::Adjacent, sideSides, ss) {
       apf::Copies rmts;
       m->getRemotes(*ss,rmts);
       APF_ITERATE(apf::Copies, rmts, r)
-         pc[static_cast<uint>(r->first)]++;
+         pc[TO_UINT(r->first)]++;
     }
     uint max = 0;
-    APF_ITERATE(MUiUi, pc, p)
+    APF_ITERATE(muu, pc, p)
       if( p->second > max )
          max = p->second;
     UintArr* peers = makeUintArr(pc.size());
-    APF_ITERATE(MUiUi, pc, p)
+    APF_ITERATE(muu, pc, p)
       if( p->second == max )
         peers->d[peers->l++] = p->first;
     return peers;
   }
 
-  void getCavity(apf::Mesh* m, apf::MeshEntity* v, apf::Migration* plan, 
+  typedef std::map<apf::MeshEntity*,unsigned> meu;
+  // construct a map of <faces, occurances in cavity>
+  meu* getCavityFaces(apf::Mesh* m, apf::Up& cavity) {
+    const int dim = m->getDimension();
+    meu* cf = new meu;
+    for(int i=0; i<cavity.n; i++) {
+      apf::Downward faces;
+      int nf = m->getDownward(cavity.e[i], dim-1, faces);
+      for(int j=0; j<nf; j++)
+        (*cf)[faces[j]]++;
+    }
+    return cf;
+  }
+
+  // return true if face-connected to the part
+  bool disconnected(apf::Mesh* m, apf::Migration* plan, apf::Up& cavity) {
+    meu* faces = getCavityFaces(m, cavity);
+    bool dc = true;
+    APF_ITERATE(meu, *faces, f) {
+      if( 2 == f->second ) continue; //cavity interior
+      apf::Up elms;
+      m->getUp(f->first, elms);
+      if( elms.n == 2 &&
+          !plan->has(elms.e[0]) &&
+          !plan->has(elms.e[1]) ) {
+        dc = false;
+        break;
+      }
+    }
+    return dc;
+  }
+
+  void getCavity(apf::Mesh* m, apf::MeshEntity* v, apf::Migration* plan,
       apf::Up& cavity) {
     cavity.n = 0;
     apf::Adjacent elms;
     m->getAdjacent(v, m->getDimension(), elms);
     APF_ITERATE(apf::Adjacent, elms, adjItr)
       if( !plan->has(*adjItr) )
-        cavity.e[(cavity.n)++] = *adjItr; 
+        cavity.e[(cavity.n)++] = *adjItr;
   }
 }
 
@@ -96,11 +129,12 @@ namespace parma {
     BdryVtxItr* bdryVerts = makeBdryVtxDistItr(mesh, dist);
     apf::Up cavity;
     apf::MeshEntity* e;
+    unsigned dcCnt = 0;
     while( (e = bdryVerts->next()) ) {
       if( planW > tgts->total() ) break;
       getCavity(mesh, e, plan, cavity);
       UintArr* peers = getCavityPeers(mesh,e);
-      int d; mesh->getIntTag(e,dist,&d);
+      bool sent = false;
       for( uint i=0; i<peers->l; i++ ) {
         uint destPid = peers->d[i];
         if( tgts->has(destPid) &&
@@ -109,11 +143,21 @@ namespace parma {
           double ew = add(e, cavity, destPid, plan);
           sending[destPid] += ew;
           planW += ew;
+          sent = true;
           break;
         }
       }
+      if( !sent && disconnected(mesh, plan, cavity) ) {
+        assert(peers->l);
+        unsigned destPid = peers->d[0];
+        dcCnt++;
+        double ew = add(e, cavity, destPid, plan);
+        sending[destPid] += ew;
+        planW += ew;
+      }
       destroy(peers);
     }
+    PCU_Debug_Print("sent %u disconnected cavities\n", dcCnt);
     parmaCommons::printElapsedTime("select", PCU_Time()-t0);
     delete bdryVerts;
     return planW;
