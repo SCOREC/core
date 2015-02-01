@@ -41,6 +41,8 @@ namespace {
 
   void offset(apf::Mesh* m, parma::dcComponents& c, 
       apf::MeshTag* dt, unsigned* rmax) {
+    if (!c.size())
+      return;
     unsigned* rsum = new unsigned[c.size()];
     rsum[0] = 0;
     for(unsigned i=1; i<c.size(); i++)
@@ -56,6 +58,7 @@ namespace {
         m->setIntTag(v,dt,&d);
       }
     m->end(it);
+    delete [] rsum;
   }
 
 

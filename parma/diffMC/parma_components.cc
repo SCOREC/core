@@ -91,6 +91,7 @@ namespace parma {
         setId(v,oldToNew[cid]);
       }
     m->end(it);
+    delete [] oldToNew;
   }
 
   void DCC::sortByDepth() {
@@ -104,6 +105,8 @@ namespace parma {
     for(unsigned i=0; i<n; i++) 
       order[i] = comp[i].i;
     reorder(order);
+    delete [] order;
+    delete [] comp;
   }
 
   unsigned DCC::size() { return n; }
