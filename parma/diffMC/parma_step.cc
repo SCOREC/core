@@ -7,6 +7,31 @@
 #include "parma_selector.h"
 #include "parma_stop.h"
 
+#include <sstream>
+#include <string>
+
+namespace {
+  void writeVtk(apf::Mesh* m, const char* key, int step) {
+    std::stringstream ss;
+    ss << key << '.' << step << '.';
+    std::string pre = ss.str();
+    apf::writeOneVtkFile(pre.c_str(), m);
+  }
+  void writeMaxParts(apf::Mesh* m) {
+    static int stepCnt = 0;
+    long tot;
+    int min, max, loc; 
+    double avg;
+    Parma_GetDisconnectedStats(m, max, avg, loc);
+    if( loc == max )
+      writeVtk(m, "maxDc", stepCnt);
+    Parma_GetEntStats(m,0,tot,min,max,avg,loc);
+    if( loc == max )
+      writeVtk(m, "maxVtxImb", stepCnt);
+    stepCnt++;
+  }
+}
+
 namespace parma {
   Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
@@ -36,6 +61,7 @@ namespace parma {
       fprintf(stdout, "elements migrated in %f seconds\n", PCU_Time()-t0);
     if( verbosity > 1 ) 
       Parma_PrintPtnStats(m, "endStep", (verbosity>2));
+    writeMaxParts(m);
     return true;
   }
 
