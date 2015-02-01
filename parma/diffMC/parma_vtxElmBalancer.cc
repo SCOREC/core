@@ -42,7 +42,7 @@ namespace {
         parma::Targets* t =
           parma::makeVtxElmTargets(s, w, sideTol, maxVtx, factor);
         delete w[0];
-        parma::Selector* sel = 
+        parma::Selector* sel =
           parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
 
         double avgSides = parma::avgSharedSides(s);
@@ -50,7 +50,7 @@ namespace {
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() )
           fprintf(stdout, "elmImb %f avgSides %f\n", maxElmImb, avgSides);
-        parma::BalOrStall* stopper = 
+        parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001);
 
         parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
@@ -79,4 +79,9 @@ class VtxElmBalancer : public parma::Balancer {
 apf::Balancer* Parma_MakeVtxElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
   return new VtxElmBalancer(m, stepFactor, verbosity);
+}
+
+apf::Balancer* Parma_MakeElmLtVtxBalancer(apf::Mesh* m, double maxVtx,
+    double stepFactor, int verbosity) {
+  return new ElmLtVtx(m, stepFactor, maxVtx, verbosity);
 }

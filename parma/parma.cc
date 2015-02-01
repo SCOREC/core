@@ -4,6 +4,10 @@
 #include <parma_dcpart.h>
 #include <limits>
 
+#define TO_SIZET(a) static_cast<size_t>(a)
+#define TO_INT(a) static_cast<int>(a)
+#define TO_DBL(a) static_cast<double>(a)
+
 namespace {
   int numSharedSides(apf::Mesh* m) {
     apf::MeshIterator *it = m->begin(m->getDimension()-1);
@@ -49,25 +53,25 @@ namespace {
     PCU_Max_Ints(&max, 1);
     PCU_Add_Longs(&tot, 1);
     avg = static_cast<double>(tot);
-    avg /= PCU_Comm_Peers();
+    avg /= TO_DBL(PCU_Comm_Peers());
   }
   void vtxStats(apf::Mesh* m, long& tot, int& min, int& max, double& avg) {
-    int loc = m->count(0);
+    int loc = TO_INT(m->count(0));
     getStats(loc, tot, min, max, avg);
   }
 }
 
 void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
-   int dims;
+   size_t dims;
    double tot[4];
-   dims = mesh->getDimension() + 1;
-   for(int i=0; i < dims; i++)
-      tot[i] = (*entImb)[i] = mesh->count(i);
+   dims = TO_SIZET(mesh->getDimension()) + 1;
+   for(size_t i=0; i < dims; i++)
+      tot[i] = (*entImb)[i] = mesh->count(TO_INT(i));
    PCU_Add_Doubles(tot, dims);
    PCU_Max_Doubles(*entImb, dims);
-   for(int i=0; i < dims; i++)
+   for(size_t i=0; i < dims; i++)
       (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
-   for(int i=dims; i < 4; i++)
+   for(size_t i=dims; i < 4; i++)
       (*entImb)[i] = 1.0;
 }
 
@@ -127,15 +131,14 @@ void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
-  int tot = max = loc = dc.numDisconnectedComps();
+  int tot = max = loc = TO_INT(dc.getNumComps())-1;
   PCU_Max_Ints(&max, 1);
   PCU_Add_Ints(&tot, 1);
   avg = static_cast<double>(tot)/PCU_Comm_Peers();
 }
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
-  dcPart dc(m);
-  dc.fix();
+  dcPartFixer dcf(m);
 }
 
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
@@ -193,7 +196,7 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
                     "owned_bdry shared_bdry model_bdry shSidesToElm > "
                     " %d %lu %lu %d %d %d %d %d %.3f\n",
       key.c_str(), PCU_Comm_Self()+1, m->count(0), m->count(m->getDimension()),
-      locDc, locNb, locV[0], locV[1], locV[2], surf/(double)vol);
+      locDc, locNb, locV[0], locV[1], locV[2], surf/TO_DBL(vol));
     PCU_Barrier();
   }
 

@@ -125,6 +125,15 @@ public:
    * @param text (In) the string of text
    * @param color (In) the color of the text
    */
+  void markEnt(apf::Mesh* m, apf::MeshEntity* e, std::string text,
+      Color color=BLACK);
+
+  /** 
+   * @brief writes text at the centroid of the part
+   * @param m (In) the mesh
+   * @param text (In) the string of text
+   * @param color (In) the color of the text
+   */
   void markPart(apf::Mesh* m,std::string text, Color color=BLACK);
 
 private:

@@ -64,7 +64,7 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
  * @param dim (In) entity dimension [vtx|edge|face|rgn]
  * @return entity imbalance
  */
-double Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight, 
+double Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
     int dim);
 
 
@@ -88,7 +88,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc);
  * @param max (InOut) max number of vertices on a single part
  * @param avg (InOut) average number of vertices per part
  */
-void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg);
 
 /**
@@ -100,7 +100,7 @@ void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
  * @param max (InOut) max number of vertices on a single part
  * @param avg (InOut) average number of vertices per part
  */
-void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg);
 
 /**
@@ -112,7 +112,7 @@ void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
  * @param max (InOut) max number of vertices on a single part
  * @param avg (InOut) average number of vertices per part
  */
-void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg);
 
 /**
@@ -212,6 +212,16 @@ apf::Balancer* Parma_MakeVtxBalancer(apf::Mesh* m, double stepFactor=0.1,
  */
 apf::Balancer* Parma_MakeElmBalancer(apf::Mesh* m, double stepFactor=0.1,
     int verbosity=0);
+
+/**
+ * @brief create an APF Balancer targeting element imbalance while preserving
+ *        vertex balance
+ * @param m (In) partitioned mesh
+ * @param verbosity (In) output control, higher values output more
+ * @return apf balancer instance
+ */
+apf::Balancer* Parma_MakeElmLtVtxBalancer(apf::Mesh* m, double maxVtx,
+    double stepFactor=0.1, int verbosity=0);
 
 /**
  * @brief create an APF Balancer targeting vertex, edge, and elm imbalance

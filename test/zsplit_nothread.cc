@@ -106,6 +106,7 @@ void getConfig(int argc, char** argv)
   meshFile = argv[2];
   outFile = argv[3];
   partitionFactor = atoi(argv[4]);
+  assert(partitionFactor <= PCU_Comm_Peers());
 }
 
 }
@@ -114,7 +115,6 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  assert(partitionFactor <= PCU_Comm_Peers());
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_mesh();
