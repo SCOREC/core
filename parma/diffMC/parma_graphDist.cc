@@ -56,6 +56,7 @@ namespace {
         m->setIntTag(v,dt,&d);
       }
     m->end(it);
+    delete [] rsum;
   }
 
 
