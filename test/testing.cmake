@@ -242,3 +242,25 @@ add_test(change_dim
   ./newdim)
 add_test(ma_insphere
   ma_insphere)
+if(ENABLE_THREADS)
+  set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run)
+  add_test(NAME chef0
+    COMMAND chef
+    WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
+  add_test(NAME chef2
+    COMMAND diff -r -x .svn out_mesh/ good_mesh/
+    WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/run)
+  add_test(NAME chef3
+    COMMAND chef
+    WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
+  add_test(NAME chef4
+    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
+  add_test(NAME chef6
+    COMMAND diff -r -x .svn out_mesh/ good_mesh/
+    WORKING_DIRECTORY ${MDIR})
+endif()
