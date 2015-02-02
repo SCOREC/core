@@ -263,7 +263,6 @@ add_test(adapt_meshgen
   "67k/")
 add_test(ma_insphere
   ma_insphere)
-add_test(shapefun shapefun)
 if(ENABLE_THREADS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
   add_test(NAME chef0
@@ -292,4 +291,3 @@ if(ENABLE_THREADS)
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
 endif()
-add_test(eigen_test eigen_test)
