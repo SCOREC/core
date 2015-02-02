@@ -8,7 +8,7 @@
 #include "parma_ghostOwner.h"
 
 namespace {
-  apf::MeshEntity* getOtherVtx(apf::Mesh* m, 
+  apf::MeshEntity* getOtherVtx(apf::Mesh* m,
       apf::MeshEntity* edge, apf::MeshEntity* vtx) {
     apf::Downward dwnVtx;
     int nDwnVtx = m->getDownward(edge,getDimension(m,edge)-1,dwnVtx);
@@ -20,8 +20,8 @@ namespace {
     if( ! m->isShared(v) ) return false;
     apf::Copies rmts;
     m->getRemotes(v,rmts);
-    APF_ITERATE(apf::Copies, rmts, itr) 
-      if (itr->first==target) 
+    APF_ITERATE(apf::Copies, rmts, itr)
+      if (itr->first==target)
         return true;
     return false;
   }
@@ -53,7 +53,7 @@ namespace {
           next.push_back(v);
           m->setIntTag(v,visited,&i);
           weight += parma::getEntWeight(m,v,wtag);
-        } 
+        }
       }
       current=next;
       next.clear();
@@ -81,7 +81,7 @@ namespace {
 namespace parma {
   class GhostFinder {
     public:
-      GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b) 
+      GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b)
         : mesh(m), wtag(w), layers(l), bridge(b) {
       }
       /**
@@ -119,8 +119,8 @@ namespace parma {
 
   class GhostWeights : public Weights {
     public:
-      GhostWeights(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, int layers, int bridge) 
-        : Weights(m, wtag, s), entDim(0), weight(0) 
+      GhostWeights(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, int layers, int bridge)
+        : Weights(m, wtag, s), entDim(0), weight(0)
       {
         GhostFinder finder(m, wtag, layers, bridge);
         findGhosts(&finder, s);
@@ -141,13 +141,13 @@ namespace parma {
         sides->begin();
         while( (side = sides->iterate()) )
           set(side->first, finder->weight(side->first));
-        sides->end(); 
+        sides->end();
       }
       void exchangeGhostsFrom() {
         PCU_Comm_Begin();
         const GhostWeights::Item* ghost;
         begin();
-        while( (ghost = iterate()) ) 
+        while( (ghost = iterate()) )
           PCU_COMM_PACK(ghost->first, ghost->second);
         end();
         PCU_Comm_Send();
@@ -161,7 +161,7 @@ namespace parma {
         PCU_Comm_Begin();
         const GhostWeights::Item* ghost;
         begin();
-        while( (ghost = iterate()) ) 
+        while( (ghost = iterate()) )
           PCU_COMM_PACK(ghost->first, weight);
         end();
         PCU_Comm_Send();
@@ -173,7 +173,7 @@ namespace parma {
         }
       }
   };
-  Weights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, 
+  Weights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
       int layers, int bridge) {
     return new GhostWeights(m, w, s, layers, bridge);
   }
