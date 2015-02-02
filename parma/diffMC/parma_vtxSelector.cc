@@ -1,4 +1,6 @@
 #include <PCU.h>
+#include <apfNumbering.h>
+#include "parma.h"
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
@@ -6,6 +8,9 @@
 #include "parma_bdryVtx.h"
 #include "parma_commons.h"
 #include <apf.h>
+
+#include <sstream>
+#include <string>
 
 typedef unsigned int uint;
 #define TO_UINT(a) static_cast<unsigned>(a)
@@ -90,6 +95,42 @@ namespace {
       if( !plan->has(*adjItr) )
         cavity.e[(cavity.n)++] = *adjItr;
   }
+
+  apf::Numbering* initNumbering(apf::Mesh* m, apf::MeshTag* t) {
+    apf::FieldShape* s = m->getShape();
+    apf::Numbering* n = apf::createNumbering(m,"parmaDistNumbering",s,1);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(0);
+    const int node = 0, comp = 0;
+    int dist;
+    while( (e = m->iterate(it)) ) {
+      m->getIntTag(e,t,&dist);
+      apf::number(n,e,node,comp,dist);
+    }
+    m->end(it);
+    return n;
+  }
+
+  void writeVtk(apf::Mesh* m, const char* key, int step) {
+    std::stringstream ss;
+    ss << key << '.' << step << '.';
+    std::string pre = ss.str();
+    apf::writeOneVtkFile(pre.c_str(), m);
+  }
+  void writeMaxParts(apf::Mesh* m) {
+    static int stepCnt = 0;
+    long tot;
+    int min, max, loc; 
+    double avg;
+    Parma_GetDisconnectedStats(m, max, avg, loc);
+    if( loc == max )
+      writeVtk(m, "maxDc", stepCnt);
+    Parma_GetEntStats(m,0,tot,min,max,avg,loc);
+    if( loc == max )
+      writeVtk(m, "maxVtxImb", stepCnt);
+    stepCnt++;
+  }
+
 }
 
 namespace parma {
@@ -97,6 +138,9 @@ namespace parma {
     : Selector(m, w)
   {
     dist = measureGraphDist(m);
+    apf::Numbering* distN = initNumbering(m, dist);
+    writeMaxParts(m);
+    apf::destroyNumbering(distN);
   }
 
   VtxSelector::~VtxSelector() {
@@ -106,9 +150,11 @@ namespace parma {
 
   apf::Migration* VtxSelector::run(Targets* tgts) {
     apf::Migration* plan = new apf::Migration(mesh);
+    double t0 = PCU_Time();
     double planW = 0;
     for(int max=2; max <= 12; max+=2)
       planW += select(tgts, plan, planW, max);
+    parmaCommons::printElapsedTime("select", PCU_Time()-t0);
     return plan;
   }
 
@@ -125,7 +171,6 @@ namespace parma {
 
   double VtxSelector::select(Targets* tgts, apf::Migration* plan, double planW,
       int maxSize) {
-    double t0 = PCU_Time();
     BdryVtxItr* bdryVerts = makeBdryVtxDistItr(mesh, dist);
     apf::Up cavity;
     apf::MeshEntity* e;
@@ -158,7 +203,6 @@ namespace parma {
       destroy(peers);
     }
     PCU_Debug_Print("sent %u disconnected cavities\n", dcCnt);
-    parmaCommons::printElapsedTime("select", PCU_Time()-t0);
     delete bdryVerts;
     return planW;
   }

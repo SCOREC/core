@@ -87,12 +87,38 @@ namespace {
     return distT;
   }
 
+  bool hasUniqueCores(apf::Mesh* m, parma::dcComponents& c) {
+    std::set<apf::MeshEntity*> cc;
+    for(unsigned i=0; i<c.size(); i++) {
+      apf::MeshEntity* src = c.getCore(i);
+      if( ! cc.count(src) )
+        cc.insert(src);
+      else
+        return false;
+    }
+    return true;
+  }
+  
+  bool hasDistance(apf::Mesh* m, apf::MeshTag* dist) {
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(0);
+    while( (e = m->iterate(it)) ) {
+      int d;
+      m->getIntTag(e,dist,&d);
+      if( d == INT_MAX )
+        return false;
+    }
+    m->end(it);
+    return true;
+  }
+
 } //end namespace
 
 namespace parma {
   apf::MeshTag* measureGraphDist(apf::Mesh* m) {
     dcComponents c = dcComponents(m);
     apf::MeshTag* t = computeDistance(m,c);
+    assert( hasDistance(m,t) );
     unsigned* rmax = getMaxDist(m,c,t);
     offset(m,c,t,rmax);
     delete [] rmax;

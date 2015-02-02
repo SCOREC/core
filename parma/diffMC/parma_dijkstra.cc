@@ -19,31 +19,6 @@ namespace {
 }
 
 namespace parma {
-  void dijkstra(apf::Mesh* m, apf::MeshTag* c, apf::MeshTag* d,
-      apf::MeshEntity* src) {
-    parma::DistanceQueue<parma::Less> pq(m);
-    int zero = 0;
-    m->setIntTag(src, d, &zero);
-    pq.push(src,0);
-
-    while( !pq.empty() ) {
-      apf::MeshEntity* v = pq.pop();
-      int vd; m->getIntTag(v, d, &vd);
-      if( vd == INT_MAX) continue;
-      apf::Adjacent adjVtx;
-      getEdgeAdjVtx(m,v,adjVtx);
-      APF_ITERATE(apf::Adjacent, adjVtx, eItr) {
-        apf::MeshEntity* u = *eItr;
-        int ud; m->getIntTag(u,d,&ud);
-        if( vd+1 < ud ) {
-          int l = disconnected(m,c,u) ? INT_MAX : vd+1;
-          m->setIntTag(u,d,&l);
-          pq.push(u,l);
-        }
-      }
-    }
-  }
-
   void dijkstra(apf::Mesh* m, DijkstraContains* c,
       apf::MeshEntity* src, apf::MeshTag* d) {
     parma::DistanceQueue<parma::Less> pq(m);
@@ -57,6 +32,7 @@ namespace parma {
       apf::MeshEntity* v = pq.pop();
       if( ! c->has(v) ) continue;
       int vd; m->getIntTag(v, d, &vd);
+      assert( vd >= 0 && vd != INT_MAX );
       apf::Adjacent adjVtx;
       getEdgeAdjVtx(m,v,adjVtx);
       APF_ITERATE(apf::Adjacent, adjVtx, eItr) {

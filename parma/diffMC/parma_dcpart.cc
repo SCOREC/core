@@ -109,6 +109,10 @@ unsigned dcPart::numDisconnectedComps() {
    }
    if( verbose )
      parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
+   int cnts[2] = {TO_INT(numDc), TO_INT(numIso)};
+   PCU_Add_Ints(cnts, 2); 
+   if( !PCU_Comm_Self() )
+     fprintf(stderr, "NumDc %d NumIso %d\n", cnts[0], cnts[1]);
    assert(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }
