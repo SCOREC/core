@@ -139,7 +139,7 @@ void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max,
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
-  int tot = max = loc = TO_INT(dc.getNumComps())-1;
+  int tot = max = loc = TO_INT(dc.getNumComps());
   PCU_Max_Ints(&max, 1);
   PCU_Add_Ints(&tot, 1);
   avg = static_cast<double>(tot)/PCU_Comm_Peers();
