@@ -5,19 +5,6 @@
 #include "parma_meshaux.h" 
 #include "parma_distQ.h"
 
-namespace {
-  bool disconnected(apf::Mesh*m, apf::MeshTag* conn, apf::MeshEntity* e) {
-    int c;
-    apf::Adjacent adjElms;
-    m->getAdjacent(e, m->getDimension(), adjElms);
-    APF_ITERATE(apf::Adjacent, adjElms, adjItr) {
-      m->getIntTag(*adjItr,conn,&c);
-      if( c ) return false;
-    }
-    return true;
-  }
-}
-
 namespace parma {
   void dijkstra(apf::Mesh* m, DijkstraContains* c,
       apf::MeshEntity* src, apf::MeshTag* d) {
