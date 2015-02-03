@@ -118,7 +118,8 @@ namespace parma {
   apf::MeshTag* measureGraphDist(apf::Mesh* m) {
     dcComponents c = dcComponents(m);
     apf::MeshTag* t = computeDistance(m,c);
-    assert( hasDistance(m,t) );
+    if( PCU_Comm_Peers() > 1 )
+      assert( hasDistance(m,t) );
     unsigned* rmax = getMaxDist(m,c,t);
     offset(m,c,t,rmax);
     delete [] rmax;

@@ -110,6 +110,14 @@ namespace {
     m->end(it);
     return n;
   }
+  void writeAllVtk(apf::Mesh* m) {
+    static int stepCnt = 0;
+    std::stringstream ss;
+    ss << "vtxSel" << '.' << stepCnt << '.';
+    std::string pre = ss.str();
+    apf::writeVtkFiles(pre.c_str(), m);
+    stepCnt++;
+  }
 
   void writeVtk(apf::Mesh* m, const char* key, int step) {
     std::stringstream ss;
@@ -120,7 +128,7 @@ namespace {
   void writeMaxParts(apf::Mesh* m) {
     static int stepCnt = 0;
     long tot;
-    int min, max, loc; 
+    int min, max, loc;
     double avg;
     Parma_GetDisconnectedStats(m, max, avg, loc);
     if( loc == max )
@@ -139,7 +147,8 @@ namespace parma {
   {
     dist = measureGraphDist(m);
     apf::Numbering* distN = initNumbering(m, dist);
-    writeMaxParts(m);
+    //writeMaxParts(m);
+    writeAllVtk(m);
     apf::destroyNumbering(distN);
   }
 
