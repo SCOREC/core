@@ -11,9 +11,6 @@ module load netcdf
 module load llvm/latest
 module load git
 
-# pull changes to test meshes
-svn up /lore/dibanez/meshes
-
 #cdash output root
 cd /lore/dibanez/cdash
 
