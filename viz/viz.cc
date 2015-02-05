@@ -183,6 +183,16 @@ void Visualization::showAxis(Color x_color,Color y_color,Color z_color) {
   milo_line(mil,origin,z_axis,z_array,1);
 }
 
+void Visualization::markEnt(apf::Mesh* m, apf::MeshEntity* e,
+    std::string text,Color color) {
+  apf::Vector3 cen = getLinearCentroid(m,e);
+  double point[3] = {0,0,0};
+  cen.toArray(point);
+  double color_array[3];
+  getColor(color,color_array);
+  milo_text(mil,point,text.c_str(),color_array);
+}
+
 void Visualization::markPart(apf::Mesh* m,std::string text,Color color) {
   int numPoints=0;
   double centroid[3]={0,0,0};

@@ -120,8 +120,9 @@ public:
   void showAxis(Color x_color=RED,Color y_color=GREEN,Color z_color=BLUE);
 
   /** 
-   * @brief writes text at the centroid of the part
+   * @brief writes text at the centroid of the entity
    * @param m (In) the mesh
+   * @param e (In) the mesh entity
    * @param text (In) the string of text
    * @param color (In) the color of the text
    */
