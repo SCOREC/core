@@ -4,15 +4,15 @@
 #include <PCU.h>
 
 Visualization::Visualization(const char* server, unsigned int port,
-    Color color) {
-  mil = milo_new(server, port);
+    Color color, bool local) {
+  mil = milo_new(server, port, local);
   getColor(color,background);
   max_parts = PCU_Comm_Peers();
   milo_clear(mil, background);
 }
 
-Visualization::Visualization(unsigned int port,Color color) {
-  mil = milo_new("localhost", port);
+Visualization::Visualization(unsigned int port, Color color, bool local) {
+  mil = milo_new("localhost", port, local);
   getColor(color,background);
   max_parts = PCU_Comm_Peers();
   milo_clear(mil, background);

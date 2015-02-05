@@ -48,17 +48,19 @@ public:
    * @brief constructs the visualization and connects to viewer
    * @param port (In) port id of viewer
    * @param color (In) background color
+   * @param local (In) use COMM_SELF
    */ 
-  Visualization(unsigned int port = 4242, Color color = BLACK);
+  Visualization(unsigned int port = 4242, Color color = BLACK, bool local = false);
 
   /**
    * @brief constructs the visualization and connects to viewer
    * @param server (In) server name of viewer
    * @param port (In) port id of viewer
    * @param color (In) background color
+   * @param local (In) use COMM_SELF
    */ 
   Visualization(const char* server, unsigned int port = 4242, 
-      Color color = BLACK);
+      Color color = BLACK, bool local = false);
 
   /**
    * @brief suspends application and sends rendering to viewer
