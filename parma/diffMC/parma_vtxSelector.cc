@@ -110,36 +110,6 @@ namespace {
     m->end(it);
     return n;
   }
-
-  void writeAllVtk(apf::Mesh* m) {
-    static int stepCnt = 0;
-    std::stringstream ss;
-    ss << "vtxSel" << '.' << stepCnt << '.';
-    std::string pre = ss.str();
-    apf::writeVtkFiles(pre.c_str(), m);
-    stepCnt++;
-  }
-
-  void writeVtk(apf::Mesh* m, const char* key, int step) {
-    std::stringstream ss;
-    ss << key << '.' << step << '.';
-    std::string pre = ss.str();
-    apf::writeOneVtkFile(pre.c_str(), m);
-  }
-  void writeMaxParts(apf::Mesh* m) {
-    static int stepCnt = 0;
-    long tot;
-    int min, max, loc;
-    double avg;
-    Parma_GetDisconnectedStats(m, max, avg, loc);
-    if( loc == max )
-      writeVtk(m, "maxDc", stepCnt);
-    Parma_GetEntStats(m,0,tot,min,max,avg,loc);
-    if( loc == max )
-      writeVtk(m, "maxVtxImb", stepCnt);
-    stepCnt++;
-  }
-
 }
 
 namespace parma {
@@ -148,7 +118,6 @@ namespace parma {
   {
     dist = measureGraphDist(m);
     apf::Numbering* distN = initNumbering(m, dist);
-    writeMaxParts(m);
     apf::destroyNumbering(distN);
   }
 
