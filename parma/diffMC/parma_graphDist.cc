@@ -67,8 +67,15 @@ namespace {
       CompContains(parma::dcComponents& comps, unsigned compid) 
         : c(comps), id(compid) {}
       ~CompContains() {}
+      // Without the onBdry check some boundary vertices would be excluded from
+      // distancing.  When there are multiple boundary and interior vertices
+      // this is generally not a problem, but for cases where the component is a
+      // single element the core vertex could be a boundary vertex that is not
+      // assiged to the component as queried by getId(e).
       bool has(apf::MeshEntity* e) {
-        return (c.has(e) && (c.getId(e) == id));
+        bool onBdry = c.bdryHas(id,e);
+        bool inComp = (c.has(e) && c.getId(e) == id);
+        return ( inComp || onBdry );
       }
     private:
       parma::dcComponents& c;
@@ -87,18 +94,6 @@ namespace {
     return distT;
   }
 
-  bool hasUniqueCores(apf::Mesh* m, parma::dcComponents& c) {
-    std::set<apf::MeshEntity*> cc;
-    for(unsigned i=0; i<c.size(); i++) {
-      apf::MeshEntity* src = c.getCore(i);
-      if( ! cc.count(src) )
-        cc.insert(src);
-      else
-        return false;
-    }
-    return true;
-  }
-  
   bool hasDistance(apf::Mesh* m, apf::MeshTag* dist) {
     apf::MeshEntity* e;
     apf::MeshIterator* it = m->begin(0);
@@ -111,15 +106,19 @@ namespace {
     m->end(it);
     return true;
   }
-
 } //end namespace
 
 namespace parma {
   apf::MeshTag* measureGraphDist(apf::Mesh* m) {
     dcComponents c = dcComponents(m);
     apf::MeshTag* t = computeDistance(m,c);
-    if( PCU_Comm_Peers() > 1 )
-      assert( hasDistance(m,t) );
+    if( PCU_Comm_Peers() > 1 && !c.numIso() )
+      if( !hasDistance(m,t) ) {
+        fprintf(stderr, "CAKE rank %d comp %u iso %u ... "
+            "some vertices don't have distance computed\n", 
+            PCU_Comm_Self(), c.size(), c.numIso());
+        assert(false);
+      }
     unsigned* rmax = getMaxDist(m,c,t);
     offset(m,c,t,rmax);
     delete [] rmax;

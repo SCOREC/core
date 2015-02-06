@@ -13,8 +13,6 @@ namespace parma {
     m->setIntTag(src, d, &zero);
     pq.push(src,0);
 
-    unsigned count=0;
-
     while( !pq.empty() ) {
       apf::MeshEntity* v = pq.pop();
       if( ! c->has(v) ) continue;
@@ -29,10 +27,8 @@ namespace parma {
           int l = vd+1;
           m->setIntTag(u,d,&l);
           pq.push(u,l);
-          count++;
         }
       }
     }
-    PCU_Debug_Print("count %u\n", count);
   }
 }

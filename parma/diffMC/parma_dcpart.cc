@@ -7,7 +7,6 @@
 #include <set>
 #include <list>
 #include <map>
-#include "mpi.h"
 
 #define TO_UINT(a) static_cast<unsigned>(a)
 #define TO_INT(a) static_cast<int>(a)
@@ -70,6 +69,10 @@ unsigned dcPart::getNumComps() {
   return static_cast<unsigned>(dcCompSz.size());
 }
 
+unsigned dcPart::getNumIso() {
+  return numIso;
+}
+
 unsigned dcPart::getCompSize(unsigned i) {
   assert( i < dcCompSz.size());
   return dcCompSz[i];
@@ -85,12 +88,13 @@ void dcPart::reset() {
    dcCompNbor.clear();
    clearTag(m, vtag);
    clearTag(m, isotag);
+   numIso = 0;
 }
 
 unsigned dcPart::numDisconnectedComps() {
    double t1 = PCU_Time();
    reset();
-   unsigned numDc = 0, numIso = 0;
+   unsigned numDc = 0;
    size_t count = 0;
    unsigned self = TO_UINT(m->getId());
    const size_t numElms = m->count(m->getDimension());
@@ -109,10 +113,6 @@ unsigned dcPart::numDisconnectedComps() {
    }
    if( verbose )
      parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
-   int cnts[2] = {TO_INT(numDc), TO_INT(numIso)};
-   PCU_Add_Ints(cnts, 2); 
-   if( !PCU_Comm_Self() )
-     fprintf(stderr, "NumDc %d NumIso %d\n", cnts[0], cnts[1]);
    assert(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }
@@ -125,7 +125,7 @@ unsigned dcPart::walkPart(unsigned visited) {
    apf::MeshEntity* elm;
    // find an untagged element
    apf::MeshIterator* itr = m->begin(dim);
-   while( (elm = m->iterate(itr)) && 
+   while( (elm = m->iterate(itr)) &&
           ( m->hasTag(elm, vtag) || m->hasTag(elm, isotag) ) );
    m->end(itr);
    // start the walk

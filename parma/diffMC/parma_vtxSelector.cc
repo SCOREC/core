@@ -110,6 +110,7 @@ namespace {
     m->end(it);
     return n;
   }
+
   void writeAllVtk(apf::Mesh* m) {
     static int stepCnt = 0;
     std::stringstream ss;
@@ -147,8 +148,7 @@ namespace parma {
   {
     dist = measureGraphDist(m);
     apf::Numbering* distN = initNumbering(m, dist);
-    //writeMaxParts(m);
-    writeAllVtk(m);
+    writeMaxParts(m);
     apf::destroyNumbering(distN);
   }
 

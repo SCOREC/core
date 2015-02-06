@@ -11,6 +11,7 @@ namespace parma {
       ~Components();
 
       unsigned size();
+      unsigned iso();
 
       unsigned getDepth(unsigned i);
       void setDepth(unsigned i, unsigned d);
