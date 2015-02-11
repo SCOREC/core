@@ -47,17 +47,21 @@ namespace {
     rsum[0] = 0;
     for(unsigned i=1; i<c.size(); i++)
       rsum[i] = rsum[i-1] + rmax[i-1] + 1;
-
-    apf::MeshEntity* v;
-    apf::MeshIterator* it = m->begin(0);
-    while( (v = m->iterate(it)) )
-      if( c.has(v) ) {
-        unsigned id = c.getId(v);
+    // Go backwards so that the largest bdry vtx changes are made first
+    //  and won't be augmented in subsequent bdry traversals.
+    for(unsigned i=c.size()-1; i>0; i--) {
+      apf::MeshEntity* v;
+      c.beginBdry(i);
+      while( (v = c.iterateBdry()) ) {
         int d; m->getIntTag(v,dt,&d);
-        d+=TO_INT(rsum[id]);
-        m->setIntTag(v,dt,&d);
+        int rsi = TO_INT(rsum[i]);
+        if(d < rsi) { //not visited
+          d+=rsi;
+          m->setIntTag(v,dt,&d);
+        }
       }
-    m->end(it);
+      c.endBdry();
+    }
     delete [] rsum;
   }
 
@@ -76,6 +80,9 @@ namespace {
         bool onBdry = c.bdryHas(id,e);
         bool inComp = (c.has(e) && c.getId(e) == id);
         return ( inComp || onBdry );
+      }
+      bool bdryHas(apf::MeshEntity* e) {
+        return c.bdryHas(id,e);
       }
     private:
       parma::dcComponents& c;
