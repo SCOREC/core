@@ -14,6 +14,7 @@
 
 typedef unsigned int uint;
 #define TO_UINT(a) static_cast<unsigned>(a)
+#define TO_INT(a) static_cast<int>(a)
 typedef std::map<uint,uint> muu;
 
 namespace {
@@ -24,7 +25,8 @@ namespace {
   };
 
   UintArr* makeUintArr(uint n) {
-    UintArr* a = (UintArr*) malloc(sizeof(UintArr) + sizeof(uint)*(n-1));
+    UintArr* a = 
+      static_cast<UintArr*>(malloc(sizeof(UintArr) + sizeof(uint)*(n-1)));
     a->s = n;
     a->l = 0;
     return a;
@@ -47,7 +49,7 @@ namespace {
     APF_ITERATE(muu, pc, p)
       if( p->second > max )
          max = p->second;
-    UintArr* peers = makeUintArr(pc.size());
+    UintArr* peers = makeUintArr(TO_UINT(pc.size()));
     APF_ITERATE(muu, pc, p)
       if( p->second == max )
         peers->d[peers->l++] = p->first;
@@ -159,7 +161,7 @@ namespace parma {
       UintArr* peers = getCavityPeers(mesh,e);
       bool sent = false;
       for( uint i=0; i<peers->l; i++ ) {
-        uint destPid = peers->d[i];
+        int destPid = TO_INT(peers->d[i]);
         if( tgts->has(destPid) &&
             sending[destPid] < tgts->get(destPid) &&
             cavity.n <= maxSize ) {
@@ -172,7 +174,7 @@ namespace parma {
       }
       if( !sent && disconnected(mesh, plan, cavity) ) {
         assert(peers->l);
-        unsigned destPid = peers->d[0];
+        int destPid = TO_INT(peers->d[0]);
         dcCnt++;
         double ew = add(e, cavity, destPid, plan);
         sending[destPid] += ew;

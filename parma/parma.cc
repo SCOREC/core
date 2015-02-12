@@ -134,7 +134,7 @@ void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max,
     double& avg, int& loc) {
   assert(!dim);
   vtxStats(m, tot, min, max, avg);
-  loc = m->count(0);
+  loc = TO_INT(m->count(0));
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
