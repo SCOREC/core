@@ -112,6 +112,7 @@ namespace {
       getCavity(m,u,cav);
       CavEnts* ce = getCavityEdges(m,c,cav);
       walkCavEdges(m,ce,p,u,adjVtx);
+      delete ce;
     } 
   }
 }

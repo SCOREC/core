@@ -85,6 +85,7 @@ namespace {
         break;
       }
     }
+    delete faces;
     return dc;
   }
 
