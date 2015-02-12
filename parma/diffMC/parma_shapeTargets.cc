@@ -27,17 +27,21 @@ namespace parma {
         PCU_Debug_Open();
         apf::Parts res;
 	double avgSide=getAvgSides(s);
-        int side = 0;
+        int side = -1;
         PCU_Comm_Begin();
         if(getSmallSide(s, avgSideMult*avgSide, side) && isInMIS) {
           PCU_Comm_Pack(side,NULL,0);
           getOtherRes(m, s, side, res);
+	  PCU_Debug_Print("small side with %d\n",side);
         }
 
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
-          side = PCU_Comm_Sender();
-          getOtherRes(m, s, side, res);
+	  if (side==-1) {
+            side = PCU_Comm_Sender();
+            getOtherRes(m, s, side, res);
+	    PCU_Debug_Print("recv small side from %d\n",side);
+	  }
         }
         PCU_Comm_Begin();
         PCU_Debug_Print("res ");
@@ -48,7 +52,7 @@ namespace parma {
         PCU_Debug_Print("\n");
         PCU_Comm_Send();
 	while (PCU_Comm_Listen()) { 
-	  setTarget(PCU_Comm_Sender(), s, w, alpha);
+	  setTarget(PCU_Comm_Sender(), s, w, alpha,m);
 	}
       }
       void getOtherRes(apf::Mesh* m, Sides*, int peer, apf::Parts& res) {
@@ -59,8 +63,10 @@ namespace parma {
           apf::Parts eRes;
           m->getResidence(e, eRes);
           if( eRes.count(self) && eRes.count(peer) ) 
-            APF_ITERATE(apf::Parts, eRes, r)
+            APF_ITERATE(apf::Parts, eRes, r) {
+	      PCU_Debug_Print("other res includes %d\n",*r);
               res.insert(*r);
+	    }
         }
         m->end(itr);
         res.erase(peer);
@@ -79,21 +85,24 @@ namespace parma {
         s->begin();
         const Sides::Item* side;
         while( (side = s->iterate()) ) 
-          if( side->second < small && side->second < minSides ) {
+          if( side->second > 0 &&side->second < small && side->second < minSides ) {
             peer = side->first;
             minSides = side->second;
           }
         s->end();
         return (peer != -1);
       }
-      void setTarget(const int peer, Sides* s, Weights* w, double alpha) {
-        assert(s->has(peer));
-        const double totSides = static_cast<double>(s->total());
-        const double sideFactor = s->get(peer) / totSides;
-        double scaledW = alpha * sideFactor * w->self();
-        set(peer, scaledW);
-        totW+=scaledW;
+    void setTarget(const int peer, Sides* s, Weights* w, double alpha,apf::Mesh* m) {
+      if (!s->has(peer)){
+	fprintf(stdout,"Failure by %d with %d\n",PCU_Comm_Self(),peer);
       }
+      assert(s->has(peer));
+      const double totSides = static_cast<double>(s->total());
+      const double sideFactor = s->get(peer) / totSides;
+      double scaledW = alpha * sideFactor * w->self();
+      set(peer, scaledW);
+      totW+=scaledW;
+    }
   };
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
 			    double avgSideMult, bool isInMIS) {

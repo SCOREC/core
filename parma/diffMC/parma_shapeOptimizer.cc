@@ -16,7 +16,9 @@ namespace {
     s->begin();
     const parma::Sides::Item* side;
     while( (side = s->iterate()) ) 
-      if(side->second < minSides ) {
+      if(side->second < minSides &&side->second>0) {
+	if (side->second==1)
+	  fprintf(stdout,"1 vertex side from %d to %d",PCU_Comm_Self(),side->first);
 	minSides = side->second;
       }
     s->end();
@@ -31,16 +33,19 @@ namespace {
     PCU_Add_Ints(&cnt, 1);
     return tot/cnt;
   }
-
+  int si;
   class ImbOrLong : public parma::Stop {
     public:
       ImbOrLong(parma::Sides* s, double tol)
         : sides(s), sideTol(tol) {}
       bool stop(double imb, double maxImb) {
         const double small = static_cast<double>(getSmallestSide(sides));
+	
         if (!PCU_Comm_Self())
           fprintf(stdout,"Smallest Side: %f, endPoint: %f\n", small, sideTol);
-        return imb > maxImb || small > sideTol;
+	si++;
+	
+        return imb > maxImb || small > sideTol||si>49;
       }
     private:
       parma::Sides* sides;
@@ -55,9 +60,11 @@ namespace {
         avgSide=getAvgSides(s);
         delete s;
         avgSideMult=0.4;
+	si = 0;
         iter=0;
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
+	//apf::writeVtkFiles("pastiter",mesh);
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
@@ -71,7 +78,7 @@ namespace {
             fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
           maxMis = misNumber;
           PCU_Max_Ints(&maxMis,1);
-          avgSideMult+=.1;
+          avgSideMult+=(1-avgSideMult)/10;
         }
         parma::Targets* t = 
           parma::makeShapeTargets(mesh, s, w, factor, avgSideMult, misNumber==iter);
@@ -91,7 +98,6 @@ namespace {
       int iter;
       int misNumber;
       int maxMis;
-
   };
 }
 
