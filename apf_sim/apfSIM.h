@@ -83,6 +83,6 @@ class MeshSIM : public Mesh
     gmi_model* model;
 };
 
-};//namespace apf
+}//namespace apf
 
 #endif

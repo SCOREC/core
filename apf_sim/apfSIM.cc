@@ -477,11 +477,11 @@ class TagSIM
 };
 
 static int deleteDoubleCB(
-    void* entity,
-    pAttachDataId id,
-    int event,
+    void*,
+    pAttachDataId,
+    int,
     void** data,
-    void* dontUse)
+    void*)
 {
   double** p = (double**)data;
   delete [] *p;
@@ -524,11 +524,11 @@ class DoubleTagSIM : public TagSIM
 };
 
 static int deleteIntCB(
-    void* entity,
-    pAttachDataId id,
-    int event,
+    void*,
+    pAttachDataId,
+    int,
     void** data,
-    void* dontUse)
+    void*)
 {
   int** p = (int**)data;
   delete [] *p;
@@ -571,11 +571,11 @@ class IntTagSIM : public TagSIM
 };
 
 static int deleteLongCB(
-    void* entity,
-    pAttachDataId id,
-    int event,
+    void*,
+    pAttachDataId,
+    int,
     void** data,
-    void* dontUse)
+    void*)
 {
   long** p = (long**)data;
   delete [] *p;
@@ -859,4 +859,4 @@ MeshEntity* castEntity(pEntity entity)
   return reinterpret_cast<MeshEntity*>(entity);
 }
 
-};//namespace apf
+}//namespace apf

@@ -78,7 +78,7 @@ static gmi_iter* begin(gmi_model* m, int dim)
   return i;
 }
 
-static gmi_ent* next(gmi_model* m, gmi_iter* i)
+static gmi_ent* next(gmi_model*, gmi_iter* i)
 {
   sim_iter* si;
   si = (sim_iter*)i;
@@ -93,7 +93,7 @@ static gmi_ent* next(gmi_model* m, gmi_iter* i)
   return 0;
 }
 
-static void end_nolock(gmi_model* m, gmi_iter* i)
+static void end_nolock(gmi_model*, gmi_iter* i)
 {
   sim_iter* si;
   si = (sim_iter*)i;
@@ -115,12 +115,12 @@ static void end(gmi_model* m, gmi_iter* i)
   PCU_Thrd_Unlock();
 }
 
-static int get_dim(gmi_model* m, gmi_ent* e)
+static int get_dim(gmi_model*, gmi_ent* e)
 {
   return GEN_type((pGEntity)e);
 }
 
-static int get_tag(gmi_model* m, gmi_ent* e)
+static int get_tag(gmi_model*, gmi_ent* e)
 {
   return GEN_tag((pGEntity)e);
 }
@@ -331,7 +331,7 @@ static gmi_model* create_acis(const char* filename)
   return m;
 }
 #else
-static gmi_model* create_acis(const char* filename)
+static gmi_model* create_acis(const char*)
 {
   gmi_fail("gmi_sim not compiled with Acis support");
 }
