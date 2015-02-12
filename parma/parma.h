@@ -126,6 +126,20 @@ void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc);
 
 /**
+ * @brief get the maximum, average and local number of entities of the 
+ *        specified order/dim
+ * @param m (In) partitioned mesh
+ * @param dim (In) entity order/dimension of interest
+ * @param tot (InOut) total ents
+ * @param min (InOut) min ents
+ * @param max (InOut) max ents
+ * @param avg (InOut) average ents
+ * @param loc (InOut) local ents
+ */
+void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max, 
+    double& avg, int& loc);
+
+/**
  * @brief prints partition stats
  * @remark includes face-disconnected components, number of vertices on
  *         inter-part boundaries, number of vtx-connected neighboring parts,
@@ -154,7 +168,7 @@ apf::Balancer* Parma_MakeCentroidDiffuser(apf::Mesh* m, double stepFactor = 0.1,
 
 /**
  * @brief create an APF Balancer to optimize part shape
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param stepFactor (In) amount of weight to migrate between parts during
                diffusion, lower values migrate fewer elements per iteration
  * @return apf balancer instance
@@ -164,7 +178,7 @@ apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
 
 /**
  * @brief create an APF Balancer to weld small part boundaries together
- * @param mesh (In) partitioned mesh
+ * @param m (In) partitioned mesh
  * @param stepFactor (In) amount of weight to migrate between parts during
                diffusion, lower values migrate fewer elements per iteration
  * @return apf balancer instance

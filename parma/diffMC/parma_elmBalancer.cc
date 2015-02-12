@@ -16,6 +16,7 @@ namespace {
         : Balancer(m, f, v, "elements") {
           parma::Sides* s = parma::makeVtxSides(mesh);
           sideTol = parma::avgSharedSides(s);
+          delete s;
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxElmImb =

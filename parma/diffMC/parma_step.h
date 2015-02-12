@@ -14,7 +14,7 @@ namespace parma {
       Stepper(apf::Mesh* mIn, double alphaIn,
         Sides* s, Weights* w, Targets* t, Selector* sel, 
         Stop* stopper = new Less);
-      ~Stepper();
+      virtual ~Stepper();
       bool step(double maxImb, int verbosity=0);
     private:
       Stepper();

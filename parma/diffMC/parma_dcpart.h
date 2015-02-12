@@ -10,6 +10,7 @@ class dcPart {
       dcPart(apf::Mesh*& mesh, unsigned verbose=0);
       ~dcPart();
       unsigned getNumComps();
+      unsigned getNumIso();
       unsigned getCompSize(unsigned i);
       unsigned getCompPeer(unsigned i);
       unsigned numDisconnectedComps();
@@ -25,6 +26,7 @@ class dcPart {
       void markIsolated(const unsigned dcComp);
       unsigned maxContactNeighbor(const unsigned dcComp);
 
+      unsigned numIso;
       std::vector<unsigned> dcCompSz;
       std::vector<unsigned> dcCompNbor;
       apf::MeshTag* vtag;
@@ -50,12 +52,14 @@ namespace parma {
       ~dcComponents();
 
       unsigned size();
+      unsigned numIso();
 
       bool has(apf::MeshEntity* e);
       unsigned getId(apf::MeshEntity* e);
 
       apf::MeshEntity* getCore(unsigned i);
 
+      bool bdryHas(unsigned i, apf::MeshEntity* e);
       void beginBdry(unsigned i);
       apf::MeshEntity* iterateBdry();
       void endBdry();

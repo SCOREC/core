@@ -9,7 +9,7 @@ namespace {
 namespace parma {
   CircBuffer::CircBuffer(unsigned int l) {
     len = l;
-    q = (double*) calloc(len, sizeof(double));
+    q = static_cast<double*>(calloc(len, sizeof(double)));
     sz = next = 0;
   }
   CircBuffer::~CircBuffer() { free(q); }

@@ -11,6 +11,7 @@ namespace parma {
       ~Components();
 
       unsigned size();
+      unsigned iso();
 
       unsigned getDepth(unsigned i);
       void setDepth(unsigned i, unsigned d);
@@ -39,6 +40,7 @@ namespace parma {
       unsigned n;
       unsigned* id;
       unsigned* depth;
+      unsigned* numElms;
       Level* bdry;
       Level* core;
   };

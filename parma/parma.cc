@@ -3,6 +3,7 @@
 #include "diffMC/maximalIndependentSet/mis.h"
 #include <parma_dcpart.h>
 #include <limits>
+#include <assert.h>
 
 #define TO_SIZET(a) static_cast<size_t>(a)
 #define TO_INT(a) static_cast<int>(a)
@@ -127,6 +128,13 @@ void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   loc = numMdlBdryVtx(m);
   getStats(loc, tot, min, max, avg);
+}
+
+void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max, 
+    double& avg, int& loc) {
+  assert(!dim);
+  vtxStats(m, tot, min, max, avg);
+  loc = TO_INT(m->count(0));
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {

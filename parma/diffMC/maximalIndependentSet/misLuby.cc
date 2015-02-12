@@ -297,7 +297,7 @@ namespace {
    * The second-adjacent neighbors are defined by two parts that don't contain
    * each other in their nets, but do have intersecting nets.
    *
-   * @param parts (InOut) vector of local parts
+   * @param part (InOut) local part
    * @return 0 on success, non-zero otherwise
    */
   int constructNetGraph(partInfo& part) {

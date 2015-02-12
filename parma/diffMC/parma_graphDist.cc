@@ -47,17 +47,21 @@ namespace {
     rsum[0] = 0;
     for(unsigned i=1; i<c.size(); i++)
       rsum[i] = rsum[i-1] + rmax[i-1] + 1;
-
-    apf::MeshEntity* v;
-    apf::MeshIterator* it = m->begin(0);
-    while( (v = m->iterate(it)) )
-      if( c.has(v) ) {
-        unsigned id = c.getId(v);
+    // Go backwards so that the largest bdry vtx changes are made first
+    //  and won't be augmented in subsequent bdry traversals.
+    for(unsigned i=c.size()-1; i>0; i--) {
+      apf::MeshEntity* v;
+      c.beginBdry(i);
+      while( (v = c.iterateBdry()) ) {
         int d; m->getIntTag(v,dt,&d);
-        d+=TO_INT(rsum[id]);
-        m->setIntTag(v,dt,&d);
+        int rsi = TO_INT(rsum[i]);
+        if(d < rsi) { //not visited
+          d+=rsi;
+          m->setIntTag(v,dt,&d);
+        }
       }
-    m->end(it);
+      c.endBdry();
+    }
     delete [] rsum;
   }
 
@@ -67,8 +71,18 @@ namespace {
       CompContains(parma::dcComponents& comps, unsigned compid) 
         : c(comps), id(compid) {}
       ~CompContains() {}
+      // Without the onBdry check some boundary vertices would be excluded from
+      // distancing.  When there are multiple boundary and interior vertices
+      // this is generally not a problem, but for cases where the component is a
+      // single element the core vertex could be a boundary vertex that is not
+      // assiged to the component as queried by getId(e).
       bool has(apf::MeshEntity* e) {
-        return (c.has(e) && (c.getId(e) == id));
+        bool onBdry = c.bdryHas(id,e);
+        bool inComp = (c.has(e) && c.getId(e) == id);
+        return ( inComp || onBdry );
+      }
+      bool bdryHas(apf::MeshEntity* e) {
+        return c.bdryHas(id,e);
       }
     private:
       parma::dcComponents& c;
@@ -87,12 +101,31 @@ namespace {
     return distT;
   }
 
+  bool hasDistance(apf::Mesh* m, apf::MeshTag* dist) {
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(0);
+    while( (e = m->iterate(it)) ) {
+      int d;
+      m->getIntTag(e,dist,&d);
+      if( d == INT_MAX )
+        return false;
+    }
+    m->end(it);
+    return true;
+  }
 } //end namespace
 
 namespace parma {
   apf::MeshTag* measureGraphDist(apf::Mesh* m) {
     dcComponents c = dcComponents(m);
     apf::MeshTag* t = computeDistance(m,c);
+    if( PCU_Comm_Peers() > 1 && !c.numIso() )
+      if( !hasDistance(m,t) ) {
+        fprintf(stderr, "CAKE rank %d comp %u iso %u ... "
+            "some vertices don't have distance computed\n", 
+            PCU_Comm_Self(), c.size(), c.numIso());
+        assert(false);
+      }
     unsigned* rmax = getMaxDist(m,c,t);
     offset(m,c,t,rmax);
     delete [] rmax;
