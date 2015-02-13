@@ -69,6 +69,13 @@ class FieldOp
     void apply(FieldBase* f);
 };
 
+Field * makeField(Mesh* m,
+		  const char* name,
+		  int valueType,
+		  int components,
+		  FieldShape* shape,
+		  FieldData* data);
+
 } //namespace apf
 
 #endif
