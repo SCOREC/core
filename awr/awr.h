@@ -18,27 +18,9 @@
 
 /** \file awr.h */
 
-namespace Teuchos { class ParameterList; }
-
-namespace apf {
-class Mesh;
-class Field;
-}
-
 /** \namespace awr
   * \brief All AWR symbols */
 namespace awr {
-
-/** \brief increase polynomial order of field by one
-  * \details only supported for linear solution 
-  * fields at the moment */
-apf::Field* enrichSolution(apf::Field* sol, const char* name);
-
-/** \brief solve an adjoint boundary value problem
-  * \details The parameter list must contain the sublists
-  * 'Adjoint Problem', 'Quantity of Interest', and
-  * 'Boundary Conditions' to completely define a problem */
-void solveAdjoint(Teuchos::ParameterList& p, apf::Mesh* m);
 
 }
 

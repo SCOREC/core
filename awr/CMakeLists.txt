@@ -26,17 +26,8 @@ if(BUILD_IN_TRILINOS)
 
   #Base Sources
   set(SOURCES
-    awr.cc
-    awrProblem.cc
-    awrProblemSetup.cc
-    awrProblemAssemble.cc
-    awrProblemSolve.cc
-    awrPoisson.cc
-    awrNonlinearPoisson.cc
-    awrQoI.cc
-    awrDomainIntegral.cc
-    awrLinearSystem.cc)
-  
+    awr.cc)
+
   #Header
   set(HEADERS
     awr.h)
