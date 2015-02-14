@@ -29,7 +29,7 @@ namespace parma {
 	double avgSide=getAvgSides(s);
         int side = -1;
         PCU_Comm_Begin();
-        if(getSmallSide(s, avgSideMult*avgSide, side) && isInMIS) {
+        if(isInMIS && getSmallSide(s, avgSideMult*avgSide, side)) {
           PCU_Comm_Pack(side,NULL,0);
           getOtherRes(m, s, side, res);
 	  PCU_Debug_Print("small side with %d\n",side);

@@ -10,6 +10,9 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 
+#include <sstream>
+#include <string.h>
+
 namespace {
   int getSmallestSide(parma::Sides* s) {
     int minSides = INT_MAX;
@@ -17,8 +20,8 @@ namespace {
     const parma::Sides::Item* side;
     while( (side = s->iterate()) ) 
       if(side->second < minSides &&side->second>0) {
-	if (side->second==1)
-	  fprintf(stdout,"1 vertex side from %d to %d",PCU_Comm_Self(),side->first);
+	if (side->second==1) 
+	  PCU_Debug_Print("1 vertex side to %d\n",side->first);
 	minSides = side->second;
       }
     s->end();
@@ -33,7 +36,7 @@ namespace {
     PCU_Add_Ints(&cnt, 1);
     return tot/cnt;
   }
-  int si;
+ 
   class ImbOrLong : public parma::Stop {
     public:
       ImbOrLong(parma::Sides* s, double tol)
@@ -43,9 +46,9 @@ namespace {
 	
         if (!PCU_Comm_Self())
           fprintf(stdout,"Smallest Side: %f, endPoint: %f\n", small, sideTol);
-	si++;
 	
-        return imb > maxImb || small > sideTol||si>49;
+	
+        return imb > maxImb || small > sideTol;
       }
     private:
       parma::Sides* sides;
@@ -53,6 +56,7 @@ namespace {
   };
   
   class ShapeOptimizer : public parma::Balancer {
+
     public:
       ShapeOptimizer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "gap") {
@@ -62,9 +66,9 @@ namespace {
         avgSideMult=0.4;
 	si = 0;
         iter=0;
+
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-	//apf::writeVtkFiles("pastiter",mesh);
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
@@ -85,7 +89,7 @@ namespace {
         iter++;
         if (iter>maxMis)
           iter=0;
-        PCU_Debug_Print("%s\n", t->print("targets").c_str());
+
         parma::Centroids c(mesh, wtag, s);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag, &c);
         ImbOrLong* stopper = new ImbOrLong(s, avgSide*0.7);
