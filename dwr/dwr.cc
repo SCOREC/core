@@ -5,6 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-namespace awr {
+namespace dwr {
 
 }

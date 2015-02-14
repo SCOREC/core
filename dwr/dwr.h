@@ -5,22 +5,22 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef AWR_H
-#define AWR_H
+#ifndef DWR_H
+#define DWR_H
 
-/** \page awr Adjoint Weighted Residuals
-  * This is the main API for SCOREC's AWR library
+/** \page dwr Dual Weighted Residuals
+  * This is the main API for SCOREC's DWR library
   *
   * These functions provide capabilities to solve adjoint
   * boundary value problems using a specified functional
   * quantity of interest.
   */
 
-/** \file awr.h */
+/** \file dwr.h */
 
-/** \namespace awr
-  * \brief All AWR symbols */
-namespace awr {
+/** \namespace dwr
+  * \brief All DWR symbols */
+namespace dwr {
 
 }
 
