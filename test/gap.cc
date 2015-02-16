@@ -14,15 +14,15 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  Parma_PrintPtnStats(m, "initial");
   apf::MeshTag* weights = Parma_WeighByMemory(m);
-  int verbose = 1;
-  //apf::writeVtkFiles("before",m);
-  apf::Balancer* balancer = Parma_MakeShapeOptimizer(m, 0.1, verbose);
+  int verbose = 2; // set to 1 to silence the 'endStep' stats
+  double stepFactor = 0.05;
+  apf::Balancer* balancer = Parma_MakeShapeOptimizer(m, stepFactor, verbose);
   balancer->balance(weights, 1.20);
   delete balancer;
   apf::removeTagFromDimension(m, weights, m->getDimension());
-  //apf::writeVtkFiles("after",m);
-
+  Parma_PrintPtnStats(m, "final");
   m->destroyTag(weights);
   m->writeNative(argv[3]);
   // destroy mds

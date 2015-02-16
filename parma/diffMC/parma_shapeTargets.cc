@@ -25,14 +25,12 @@ namespace parma {
       void init(apf::Mesh* m, Sides* s, Weights* w, double alpha,
 		double avgSideMult, bool isInMIS) {
         PCU_Debug_Open();
-        apf::Parts res;
 	double avgSide=getAvgSides(s);
         int side = -1;
 	int side_length=INT_MAX;
         PCU_Comm_Begin();
         if(isInMIS && getSmallSide(s, avgSideMult*avgSide, side,side_length)) {
           PCU_COMM_PACK(side,side_length);
-          //getOtherRes(m, s, side, res);
 	  PCU_Debug_Print("small side with %d\n",side);
         }
 	side=-1;
@@ -43,12 +41,15 @@ namespace parma {
 	  if (temp_length<side_length) {
             side = PCU_Comm_Sender();
 	    side_length=temp_length;
-            //getOtherRes(m, s, side, res);
-	    PCU_Debug_Print("recv small side from %d with length %d\n",side,side_length);
+	    PCU_Debug_Print("recv small side from %d with length %d\n",
+                side,side_length);
 	  }
         }
+
+        apf::Parts res;
 	if (side!=-1)
 	  getOtherRes(m,s,side,res);
+
         PCU_Comm_Begin();
         PCU_Debug_Print("res ");
         APF_ITERATE(apf::Parts, res, r) {
@@ -57,7 +58,6 @@ namespace parma {
           PCU_Debug_Print(" %d ", *r);
         }
         PCU_Debug_Print("\n");
-	apf::writeVtkFiles("before_error",m);
 	PCU_Comm_Send();
         int min=INT_MAX; std::pair<int,int> minSide;
 	while (PCU_Comm_Listen()) {
@@ -79,15 +79,18 @@ namespace parma {
       void getOtherRes(apf::Mesh* m, Sides*, int peer, apf::Parts& res) {
         const int self = PCU_Comm_Self();
         apf::MeshEntity* e;
-        apf::MeshIterator* itr = m->begin(0);//m->getDimension()-2);
+        apf::MeshIterator* itr = m->begin(0);
         while( (e = m->iterate(itr)) ) {
           apf::Parts eRes;
           m->getResidence(e, eRes);
-          if( eRes.count(self) && eRes.count(peer) ) 
+          if( eRes.count(self) && eRes.count(peer) ) {
+            //PCU_Debug_Print("other res: ");
             APF_ITERATE(apf::Parts, eRes, r) {
-	      //PCU_Debug_Print("other res includes %d\n",*r);
+	      //PCU_Debug_Print(" %d ",*r);
               res.insert(*r);
 	    }
+            //PCU_Debug_Print("\n");
+          }
         }
         m->end(itr);
         res.erase(peer);
