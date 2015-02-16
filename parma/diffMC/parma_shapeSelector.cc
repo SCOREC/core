@@ -8,6 +8,9 @@
 #include <apfShape.h>
 #include <float.h>
 
+#include <sstream>
+#include <string.h>
+
 namespace {
   apf::MeshEntity* getOtherElement(apf::Mesh* m, 
       apf::MeshEntity* e, apf::MeshEntity* s) {
@@ -145,9 +148,20 @@ namespace parma {
         clearSendTag();
 	//        writeVtk(mesh, "pop");
         apf::destroyNumbering(popNum);
+        writeSending();
         return plan;
       }
     private:
+      void writeSending() {
+        std::stringstream ss;
+        typedef std::map<int,double> mid;
+        ss << "sending: ";
+        APF_ITERATE(mid, sending, send) 
+          ss << send->first << ',' << send->second << " ";
+        ss << '\n';
+        std::string s = ss.str();
+        PCU_Debug_Print(s.c_str());
+      }
       Centroids* centroids;
       std::map<int,double> sending;
       apf::MeshTag* sendTag;
