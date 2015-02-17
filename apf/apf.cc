@@ -45,7 +45,7 @@ void destroyMeshElement(MeshElement* e)
   delete e;
 }
 
-static Field* makeField(
+Field* makeField(
     Mesh* m,
     const char* name,
     int valueType,

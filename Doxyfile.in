@@ -781,8 +781,8 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/zoltan/apfZoltan.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
-@CMAKE_CURRENT_SOURCE_DIR@/awr/awr.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/awr/awr.h \
+@CMAKE_CURRENT_SOURCE_DIR@/dwr/dwr.dox \
+@CMAKE_CURRENT_SOURCE_DIR@/dwr/dwr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
