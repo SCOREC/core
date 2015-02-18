@@ -436,6 +436,12 @@ void fixElementShapes(Adapt* a)
   double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
+}
+
+void printQuality(Adapt* a)
+{
+  if ( ! a->input->shouldPrintQuality)
+    return;
   double minqual = getMinQuality(a);
   print("worst element quality is %e", minqual);
 }

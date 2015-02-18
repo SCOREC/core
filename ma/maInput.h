@@ -47,6 +47,8 @@ class Input
     bool shouldHandleMatching;
 /** \brief whether to run shape correction (default true) */
     bool shouldFixShape;
+/** \brief whether to print the worst shape quality */
+    bool shouldPrintQuality;
 /** \brief minimum desired mean ratio cubed for simplex elements
    \details a different measure is used for curved elements */
     double goodQuality;
