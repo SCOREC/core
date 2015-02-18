@@ -85,7 +85,7 @@ enum ValueType {
   *
   * \param m the mesh over which the field is defined
   * \param name a unique name for this field
-  * \param value the type of field data
+  * \param valueType the type of field data
   * \param order the polynomial order of the shape functions (so far 1 or 2)
   */
 Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order);
@@ -98,7 +98,7 @@ Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order);
   *
   * \param m the mesh over which the field is defined
   * \param name a unique name for this field
-  * \param value the type of field data
+  * \param valueType the type of field data
   */
 Field* createStepField(Mesh* m, const char* name, int valueType);
 
@@ -106,7 +106,7 @@ Field* createStepField(Mesh* m, const char* name, int valueType);
   *
   * \param m the mesh over which the field is defined
   * \param name a unique name for this field
-  * \param value the type of field data
+  * \param valueType the type of field data
   * \param order polynomial order of accuracy
   */
 Field* createIPField(Mesh* m, const char* name, int valueType, int order);

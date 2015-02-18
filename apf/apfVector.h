@@ -169,7 +169,7 @@ class Vector3 : public Vector<3>
       abc[1] = this->elements[1];
       abc[2] = this->elements[2];
     }
-    /** \brief read vector to array
+    /** \brief read vector from array
      \todo this could be templated */
     void fromArray(const double* abc)
     {

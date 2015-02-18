@@ -340,6 +340,20 @@ class Quadratic : public FieldShape
         }
         int countNodes() const {return 6;}
     };
+    class Quad : public EntityShape
+    {
+      public:
+        void getValues(Vector3 const&, NewArray<double>&) const
+        {
+          fail("quadratic Serendipity quadrilateral shape values not implemented\n");
+        }
+        void getLocalGradients(Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("quadratic Serendipity quadrilateral shape grads not implemented\n");
+        }
+        int countNodes() const {return 8;}
+    };
     class Tetrahedron : public EntityShape
     {
       public:
@@ -382,12 +396,13 @@ class Quadratic : public FieldShape
       static Linear::Vertex vertex;
       static Edge edge;
       static Triangle triangle;
+      static Quad quad;
       static Tetrahedron tet;
       static EntityShape* shapes[Mesh::TYPES] =
-      {&vertex,      //vertex
+      {&vertex,   //vertex
        &edge,     //edge
        &triangle, //triangle
-       NULL,      //quad
+       &quad,     //quad
        &tet,      //tet
        NULL,      //hex
        NULL,      //prism
