@@ -74,7 +74,7 @@ add_subdirectory(ma)
 
 add_subdirectory(spr)
 
-add_subdirectory(awr)
+add_subdirectory(dwr)
 
 add_subdirectory(phasta)
 

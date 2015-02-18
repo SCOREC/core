@@ -3,10 +3,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: AWR
+Name: DWR
 URL:
-Description: Adjoint Weighted Residual Error Estimation
+Description: Dual Weighted Residual Error Estimation
 Version: @PACKAGE_VERSION@
 Requires: libapf_pumi
-Libs: -L${libdir} -lawr
+Libs: -L${libdir} -ldwr
 Cflags: -I${includedir} 
