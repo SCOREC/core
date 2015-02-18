@@ -12,12 +12,12 @@ namespace {
   struct Comp {
     unsigned i;
     unsigned depth;
-    unsigned numElms;
+    double coreLen;
   };
   bool compareComp(Comp a, Comp b) {
     if(a.depth > b.depth)
       return true;
-    else if(a.depth == b.depth && a.numElms > b.numElms )
+    else if(a.depth == b.depth && a.coreLen < b.coreLen )
       return true;
     else 
       return false;
@@ -49,13 +49,10 @@ namespace parma {
   {
     n = getNumComps();
     depth = new unsigned[n];
-    numElms = new unsigned[n];
     bdry = new Level[n];
     core = new Level[n];
-    for(unsigned i=0; i<n; i++) {
+    for(unsigned i=0; i<n; i++) 
       depth[i] = 0;
-      numElms[i] = getCompSize(i);
-    }
     idT = m->createIntTag("parmaVtxCompId",1);
     markVertices();
     getCoreVerts();
@@ -65,7 +62,6 @@ namespace parma {
 
   DCC::~Components() {
     delete [] depth;
-    delete [] numElms;
     delete [] bdry;
     delete [] core;
     apf::removeTagFromDimension(m,idT,0);
@@ -75,26 +71,22 @@ namespace parma {
   void DCC::reorder(unsigned* order) {
     unsigned* oldToNew = new unsigned[n];
     unsigned* dtmp = new unsigned[n];
-    unsigned* stmp = new unsigned[n];
     Level* btmp = new Level[n];
     apf::MeshEntity** ctmp = new apf::MeshEntity*[n];
     for(unsigned i=0; i<n; i++) {
       oldToNew[order[i]] = i;
       dtmp[i] = depth[i];
-      stmp[i] = numElms[i];
       btmp[i] = bdry[i];
       assert(1 == core[i].size());
       ctmp[i] = *(core[i].begin());
     }
     for(unsigned i=0; i<n; i++) {
       depth[i] = dtmp[order[i]];
-      numElms[i] = stmp[order[i]];
       bdry[i] = btmp[order[i]];
       core[i].clear();
       core[i].insert(ctmp[order[i]]);
     }
     delete [] dtmp;
-    delete [] stmp;
     delete [] btmp;
     delete [] ctmp;
 
@@ -114,7 +106,9 @@ namespace parma {
     for(unsigned i=0; i<n; i++) {
       comp[i].i = i;
       comp[i].depth = depth[i];
-      comp[i].numElms = numElms[i];
+      apf::Vector3 u;
+      m->getPoint(getCoreVtx(i), 0, u);
+      comp[i].coreLen = u.getLength();
     }
     std::sort(comp, comp+n, compareComp);
     unsigned* order = new unsigned[n];
