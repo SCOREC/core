@@ -5,6 +5,7 @@
 #include <PartitionedMeshTypes.h>
 
 namespace apf {
+
 /** \brief Creates an apf::Mesh from a Simmetrix mesh.
   *
   * \details This object should be destroyed by apf::destroyMesh.
@@ -21,6 +22,7 @@ class TagSIM;
 
 class MeshSIM : public Mesh
 {
+  template <class T> friend class SIMDataOf;
   public:
     MeshSIM(pParMesh m);
     virtual ~MeshSIM();
@@ -82,6 +84,10 @@ class MeshSIM : public Mesh
     std::vector<TagSIM*> tags;
     gmi_model* model;
 };
+
+Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape);
+Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order);
+Field * createSIMFieldOn(Mesh * m, const char * name, int valueType);
 
 }//namespace apf
 
