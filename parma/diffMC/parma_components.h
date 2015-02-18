@@ -40,7 +40,7 @@ namespace parma {
       unsigned n;
       unsigned* id;
       unsigned* depth;
-      unsigned* numElms;
+      double* minLen;
       Level* bdry;
       Level* core;
   };
