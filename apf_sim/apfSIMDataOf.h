@@ -54,7 +54,7 @@ public:
     {
       int dofs_per_node = DofGroup_numComp(dof);
       for(int ii = 0; ii < dofs_per_node; ii++)
-	DofGroup_setValue(dof,ii,0,data[num_wrote+ii]);
+        DofGroup_setValue(dof,ii,0,data[num_wrote+ii]);
       num_wrote += dofs_per_node;
     }
   }

@@ -10,21 +10,21 @@
 
 namespace apf {
 
-  Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape)
-  {
-    return makeField(m,name,valueType,0,shape,new SIMDataOf<double>);
-  }
-  
-  Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order)
-  {
-    return createSIMField(m,name,valueType,getLagrange(order));
-  }
+Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape)
+{
+  return makeField(m,name,valueType,0,shape,new SIMDataOf<double>);
+}
 
-  Field * createSIMFieldOn(Mesh * m, const char * name, int valueType)
-  {
-    return createField(m,name,valueType,m->getShape());
-  }
-  
+Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order)
+{
+  return createSIMField(m,name,valueType,getLagrange(order));
+}
+
+Field * createSIMFieldOn(Mesh * m, const char * name, int valueType)
+{
+  return createField(m,name,valueType,m->getShape());
+}
+
 MeshSIM::MeshSIM(pParMesh m):
   mesh(m)
 {
