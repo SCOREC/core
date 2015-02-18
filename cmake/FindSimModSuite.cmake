@@ -35,6 +35,7 @@ endmacro(simLibCheck)
 
 set(SIMMODSUITE_LIBS "")
 set(SIM_LIB_NAMES
+  SimField
   SimPartitionedMesh-mpi
   SimMeshing 
   SimMeshTools
