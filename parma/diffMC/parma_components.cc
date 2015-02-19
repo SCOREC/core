@@ -17,8 +17,6 @@ namespace {
   bool compareComp(Comp a, Comp b) {
     if(a.depth > b.depth)
       return true;
-    else if(a.depth == b.depth && a.len < b.len )
-      return true;
     else 
       return false;
   }
@@ -49,7 +47,6 @@ namespace parma {
   {
     n = getNumComps();
     depth = new unsigned[n];
-    minLen = new double[n];
     bdry = new Level[n];
     core = new Level[n];
     for(unsigned i=0; i<n; i++) 
@@ -62,7 +59,6 @@ namespace parma {
   }
 
   DCC::~Components() {
-    delete [] minLen;
     delete [] depth;
     delete [] bdry;
     delete [] core;
@@ -73,25 +69,21 @@ namespace parma {
   void DCC::reorder(unsigned* order) {
     unsigned* oldToNew = new unsigned[n];
     unsigned* dtmp = new unsigned[n];
-    double* ltmp = new double[n];
     Level* btmp = new Level[n];
     apf::MeshEntity** ctmp = new apf::MeshEntity*[n];
     for(unsigned i=0; i<n; i++) {
       oldToNew[order[i]] = i;
-      ltmp[i] = minLen[i];
       dtmp[i] = depth[i];
       btmp[i] = bdry[i];
       assert(1 == core[i].size());
       ctmp[i] = *(core[i].begin());
     }
     for(unsigned i=0; i<n; i++) {
-      minLen[i] = ltmp[order[i]];
       depth[i] = dtmp[order[i]];
       bdry[i] = btmp[order[i]];
       core[i].clear();
       core[i].insert(ctmp[order[i]]);
     }
-    delete [] ltmp;
     delete [] dtmp;
     delete [] btmp;
     delete [] ctmp;
@@ -112,9 +104,8 @@ namespace parma {
     for(unsigned i=0; i<n; i++) {
       comp[i].i = i;
       comp[i].depth = depth[i];
-      comp[i].len = minLen[i];
     }
-    std::sort(comp, comp+n, compareComp);
+    std::stable_sort(comp, comp+n, compareComp);
     unsigned* order = new unsigned[n];
     for(unsigned i=0; i<n; i++)
       order[i] = comp[i].i;
@@ -237,8 +228,6 @@ namespace parma {
     int one = 1;
     apf::MeshTag* vtag = m->createIntTag("walkCompVisited",1);
 
-    minLen[comp] = getLinearCentroid(m,src).getLength();
-
     std::list<apf::MeshEntity*> elms;
     elms.push_back(src);
     while( ! elms.empty() ) {
@@ -246,9 +235,6 @@ namespace parma {
       elms.pop_front();
       if( m->hasTag(elm, vtag) ) continue;
       m->setIntTag(elm, vtag, &one);
-      const double len = getLinearCentroid(m,src).getLength();
-      if( len < minLen[comp] )
-        minLen[comp] = len;
       apf::Downward verts;
       const int nv = m->getDownward(elm, 0, verts);
       setElmVtxIds(verts, nv, comp);
