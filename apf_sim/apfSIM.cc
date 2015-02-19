@@ -234,7 +234,11 @@ void MeshSIM::getAdjacent(MeshEntity* e,
       adjacent.setSize(countUpward(e));
       int a=0;
       for (int i=0; i < 2; ++i)
-        adjacent[a++] = reinterpret_cast<MeshEntity*>(F_region(face,i));
+      {
+	MeshEntity * me =  reinterpret_cast<MeshEntity*>(F_region(face,i));
+	if(me != NULL)
+	  adjacent[a++] = me;
+      }
     }
   }
   if (ent_type == Tregion)
