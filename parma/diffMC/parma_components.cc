@@ -20,24 +20,6 @@ namespace {
     else 
       return false;
   }
-
-  void reduce(apf::Mesh* m, parma::Level* core) {
-    assert( core->size() );
-    double max = 0;
-    apf::MeshEntity* maxVtx = NULL;
-    APF_ITERATE(parma::Level, *core, e) {
-      apf::Vector3 u;
-      m->getPoint(*e, 0, u);
-      double len = u.getLength();
-      if( len > max ) {
-        max = len;
-        maxVtx = *e;
-      }
-    }
-    assert(maxVtx);
-    core->clear();
-    core->insert(maxVtx);
-  }
 }
 
 #define DCC dcComponents::Components
@@ -205,8 +187,12 @@ namespace parma {
   }
 
   void DCC::getCoreVtx() {
-    for(unsigned i=0; i<size(); i++)
-      reduce(m,getCore(i));
+    for(unsigned i=0; i<size(); i++) {
+      assert( core[i].size() );
+      apf::MeshEntity* e = *(core[i].begin());
+      core[i].clear();
+      core[i].insert(e);
+    }
   }
 
   void DCC::markVertices() {
