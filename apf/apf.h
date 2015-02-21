@@ -207,11 +207,15 @@ void getComponents(Field* f, MeshEntity* e, int node, double* components);
   * use destroyElement to free this data.
   *
   * \param f The field which the Element will represent
+  * \param e An existing MeshElement for the desired entity
   * \returns The new field Element
   */
 Element* createElement(Field* f, MeshElement* e);
 
-/** \brief Create an apf::Element. */
+/** \brief Create a Field Element without a parent Mesh Element
+    \details Warning: most users should call the version
+    which takes a MeshElement as input. Only call this
+    function if you know the other one isn't right for you. */
 Element* createElement(Field* f, MeshEntity* e);
 
 /** \brief Destroy a Field Element.
