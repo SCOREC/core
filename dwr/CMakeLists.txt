@@ -26,7 +26,8 @@ if(BUILD_IN_TRILINOS)
 
   #Base Sources
   set(SOURCES
-    dwr.cc)
+    dwr.cc
+    dwrHTet.cc)
 
   #Header
   set(HEADERS
