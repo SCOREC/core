@@ -64,6 +64,17 @@ static double dphi(int o, double x)
   return v;
 }
 
+class Mode
+{
+  public:
+    virtual ~Mode();
+    virtual void
+      getValues(Vector3 const& xi, std::vector<double>& N) const = 0;
+    virtual void
+      getGradients(Vector3 const& xi, std::vector<Vector3>& dN) const = 0;
+    virtual int countNodes() const = 0;
+};
+
 static void getTetCoord(Vector3 const& xi, NewArray<double>& l)
 {
   l.allocate(4);
@@ -193,13 +204,32 @@ class RegionMode : public EntityShape
     int p;
 };
 
-class HLinear : public FieldShape
+class Hierarchic : public FieldShape
 {
   public:
-    const char* getName() const { return "HLinear"; }
+    Hierarchic(int order) : p(order)
+    {
+      assert (p >=1 );
+      assert (p <= 2);
+    }
+    const char* getName() const { return "Hierarchic"; }
+    class Vertex : public EntityShape
+    {
+      public:
+        void getValues(Vector3 const&, NewArray<double>& values) const
+        {
+          values.allocate(1);
+          values[0] = 1.0;
+        }
+        void getLocalGradients(Vector3 const&, NewArray<Vector3>&) const
+        {
+        }
+        int countNodes() const {return 1;}
+    };
     class Tetrahedron : public EntityShape
     {
       public:
+        Tetrahedron(int o) : p(o) {}
         void getValues(Vector3 const& xi, NewArray<double>& N) const
         {
           VertexMode v;
@@ -213,14 +243,33 @@ class HLinear : public FieldShape
         int countNodes() const
         {
           VertexMode v;
-          return v.countNodes();
+          int n = v.countNodes();
+          for (int o=2; o <= p; ++o)
+          {
+            EdgeMode e(o);
+            n += e.countNodes();
+            if (p >=3)
+            {
+              FaceMode f(o);
+              n += f.countNodes();
+            }
+            if (p >= 4)
+            {
+              RegionMode r(o);
+              n += r.countNodes();
+            }
+          }
+          return n;
         }
+      private:
+        int p;
     };
     EntityShape* getEntityShape(int type)
     {
-      static Tetrahedron tet;
+      static Vertex vtx;
+      static Tetrahedron tet(p);
       static EntityShape* shapes[Mesh::TYPES] =
-      {NULL,  //vertex
+      {&vtx,  //vertex
        NULL,  //edge
        NULL,  //triangle
        NULL,  //quad
@@ -241,23 +290,29 @@ class HLinear : public FieldShape
     {
       if (type == Mesh::VERTEX)
         return 1;
+      else if (type == Mesh::EDGE)
+        return p-1;
+      else if (type == Mesh::TRIANGLE)
+        return (p-1) * (p-2) / 2;
+      else if (type == Mesh::TET)
+        return (p-1) * (p-2) * (p-3) / 6;
       else
         return 0;
     }
-    int getOrder() { return 2; }
-    /* find out what this means and why it exists*/
+    int getOrder() { return p; }
     void getNodeXi(int, int, Vector3& xi)
     {
       xi = Vector3(0,0,0);
     }
+  private:
+    int p;
 };
 
 FieldShape* getHierarchic(int order)
 {
-  static HLinear linear;
-  if (order == 1)
-    return &linear;
-  return NULL;
+  assert( (order == 1) || (order == 2) );
+  static Hierarchic hierarchic(order);
+  return &hierarchic;
 }
 
 }
