@@ -267,7 +267,6 @@ class Hierarchic : public FieldShape
           N.allocate(n);
           for (int i=0; i < n; ++i)
             N[i] = NN[i];
-              
         }
         void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
         {
@@ -337,6 +336,12 @@ class Hierarchic : public FieldShape
     bool hasNodesIn(int dimension)
     {
       if ( dimension == 0 )
+        return true;
+      else if ( (dimension == 1) && (p >= 2) )
+        return true;
+      else if ( (dimension == 2) && (p >= 3) )
+        return true;
+      else if ( (dimension == 3) && (p >= 4) )
         return true;
       else
         return false;
