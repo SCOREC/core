@@ -112,6 +112,17 @@ int const Mesh::typeDimension[TYPES] =
   3 //pyramid
 };
 
+char const* const Mesh::typeName[TYPES] =
+{"vertex",
+ "edge",
+ "triangle",
+ "quad",
+ "tet",
+ "hex",
+ "prism",
+ "pyramid"
+};
+
 void Mesh::init(FieldShape* s)
 {
   coordinateField = new VectorField();
