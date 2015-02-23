@@ -64,17 +64,6 @@ static double dphi(int o, double x)
   return v;
 }
 
-class Mode
-{
-  public:
-    virtual ~Mode();
-    virtual void
-      getValues(Vector3 const& xi, std::vector<double>& N) const = 0;
-    virtual void
-      getGradients(Vector3 const& xi, std::vector<Vector3>& dN) const = 0;
-    virtual int countNodes() const = 0;
-};
-
 static void getTetCoord(Vector3 const& xi, NewArray<double>& l)
 {
   l.allocate(4);
@@ -93,16 +82,39 @@ static void getTetCoordGrad(NewArray<Vector3>& dl)
   dl[3] = Vector3( 0.0,  0.0,  0.5);
 }
 
-class VertexMode : public EntityShape
+class Mode
 {
   public:
-    void getValues(Vector3 const& xi, NewArray<double>& N) const
+    virtual ~Mode() {};
+    virtual void getVals(Vector3 const& xi, NewArray<double>& N) const = 0;
+    virtual void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const = 0;
+    virtual int countNodes() const = 0;
+    void pushVals(Vector3 const& xi, std::vector<double>& N)
     {
-      getTetCoord(xi,N);
+      NewArray<double> NN;
+      this->getVals(xi,NN);
+      for (int i=0; i < this->countNodes(); ++i)
+        N.push_back(NN[i]);
     }
-    void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+    void pushGrads(Vector3 const& xi, std::vector<Vector3>& dN)
     {
-      getTetCoordGrad(dN);
+      NewArray<Vector3> dNN;
+      this->getGrads(xi,dNN);
+      for (int i=0; i < this->countNodes(); ++i)
+        dN.push_back(dNN[i]);
+    }
+};
+
+class VertexMode : public Mode
+{
+  public:
+    void getVals(Vector3 const& xi, NewArray<double>& N) const
+    {
+      return getTetCoord(xi,N);
+    }
+    void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
+    {
+      return getTetCoordGrad(dN);
     }
     int countNodes() const
     {
@@ -110,14 +122,14 @@ class VertexMode : public EntityShape
     }
 };
 
-class EdgeMode : public EntityShape
+class EdgeMode : public Mode
 {
   public:
     EdgeMode(int o) : p(o)
     {
       assert( p>=2 );
     }
-    void getValues(Vector3 const& xi, NewArray<double>& N) const
+    void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
       NewArray<double> l;
       getTetCoord(xi,l);
@@ -129,7 +141,7 @@ class EdgeMode : public EntityShape
       N[4] = l[1] * l[3] * phi(p-2, l[1] - l[3]);
       N[5] = l[2] * l[3] * phi(p-2, l[2] - l[3]);
     }
-    void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+    void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
     {
       NewArray<double> l;
       getTetCoord(xi,l);
@@ -138,18 +150,18 @@ class EdgeMode : public EntityShape
       dN.allocate(6);
       for (int i=0; i < 3; ++i)
       {
-        dN[0][i] = phi(p-2, l[0] -l[1])  * (l[0] * dl[1][i] + dl[0][i] * l[1]) +
-          dphi(p-2, l[0] - l[1]) * (dl[0][i] - dl[1][i]);
-        dN[1][i] = phi(p-2, l[1] -l[2])  * (l[1] * dl[2][i] + dl[1][i] * l[2]) +
-          dphi(p-2, l[1] - l[2]) * (dl[1][i] - dl[2][i]);
-        dN[2][i] = phi(p-2, l[2] -l[0])  * (l[2] * dl[0][i] + dl[2][i] * l[0]) +
-          dphi(p-2, l[2] - l[0]) * (dl[2][i] - dl[0][i]);
-        dN[3][i] = phi(p-2, l[0] -l[3])  * (l[0] * dl[3][i] + dl[0][i] * l[3]) +
-          dphi(p-2, l[0] - l[3]) * (dl[0][i] - dl[3][i]);
-        dN[4][i] = phi(p-2, l[1] -l[3])  * (l[1] * dl[3][i] + dl[1][i] * l[3]) +
-          dphi(p-2, l[1] - l[3]) * (dl[1][i] - dl[3][i]);
-        dN[5][i] = phi(p-2, l[2] -l[3])  * (l[2] * dl[3][i] + dl[2][i] * l[3]) +
-          dphi(p-2, l[2] - l[3]) * (dl[2][i] - dl[3][i]);
+        dN[0][i] = phi(p-2,l[0] -l[1])  * (l[0] * dl[1][i] + dl[0][i] * l[1]) +
+          dphi(p-2,l[0] - l[1]) * (dl[0][i] - dl[1][i]);
+        dN[1][i] = phi(p-2,l[1] -l[2])  * (l[1] * dl[2][i] + dl[1][i] * l[2]) +
+          dphi(p-2,l[1] - l[2]) * (dl[1][i] - dl[2][i]);
+        dN[2][i] = phi(p-2,l[2] -l[0])  * (l[2] * dl[0][i] + dl[2][i] * l[0]) +
+          dphi(p-2,l[2] - l[0]) * (dl[2][i] - dl[0][i]);
+        dN[3][i] = phi(p-2,l[0] -l[3])  * (l[0] * dl[3][i] + dl[0][i] * l[3]) +
+          dphi(p-2,l[0] - l[3]) * (dl[0][i] - dl[3][i]);
+        dN[4][i] = phi(p-2,l[1] -l[3])  * (l[1] * dl[3][i] + dl[1][i] * l[3]) +
+          dphi(p-2,l[1] - l[3]) * (dl[1][i] - dl[3][i]);
+        dN[5][i] = phi(p-2,l[2] -l[3])  * (l[2] * dl[3][i] + dl[2][i] * l[3]) +
+          dphi(p-2,l[2] - l[3]) * (dl[2][i] - dl[3][i]);
       }
     }
     int countNodes() const
@@ -160,7 +172,7 @@ class EdgeMode : public EntityShape
     int p;
 };
 
-class FaceMode : public EntityShape
+class FaceMode : public Mode
 {
   public:
     FaceMode(int o) : p(o)
@@ -168,10 +180,10 @@ class FaceMode : public EntityShape
       assert (p >= 3);
       fprintf(stderr,"unimplemented face mode");
     }
-    void getValues(Vector3 const& xi, NewArray<double>& N) const
+    void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
     }
-    void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+    void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
     {
     }
     int countNodes() const
@@ -182,7 +194,7 @@ class FaceMode : public EntityShape
     int p;
 };
 
-class RegionMode : public EntityShape
+class RegionMode : public Mode
 {
   public:
     RegionMode(int o) : p(o)
@@ -190,10 +202,10 @@ class RegionMode : public EntityShape
       assert (p >= 4);
       fprintf(stderr,"unimplemented region mode");
     }
-    void getValues(Vector3 const& xi, NewArray<double>& N) const
+    void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
     }
-    void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+    void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
     {
     }
     int countNodes() const
@@ -232,13 +244,56 @@ class Hierarchic : public FieldShape
         Tetrahedron(int o) : p(o) {}
         void getValues(Vector3 const& xi, NewArray<double>& N) const
         {
+          std::vector<double> NN;
           VertexMode v;
-          v.getValues(xi,N);
+          v.pushVals(xi,NN);
+          for (int o=2; o <= p; ++o)
+          {
+            EdgeMode e(o);
+            e.pushVals(xi,NN);
+            if (o >= 3)
+            {
+              FaceMode f(o);
+              f.pushVals(xi,NN);
+            }
+            if (o >= 4)
+            {
+              RegionMode r(o);
+              r.pushVals(xi,NN);
+            }
+          }
+          int n = this->countNodes();
+          assert(NN.size() == n);
+          N.allocate(n);
+          for (int i=0; i < n; ++i)
+            N[i] = NN[i];
+              
         }
         void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
         {
+          std::vector<Vector3> dNN;
           VertexMode v;
-          v.getLocalGradients(xi,dN);
+          v.pushGrads(xi,dNN);
+          for (int o=2; o <= p; ++o)
+          {
+            EdgeMode e(o);
+            e.pushGrads(xi,dNN);
+            if (o >= 3)
+            {
+              FaceMode f(o);
+              f.pushGrads(xi,dNN);
+            }
+            if (o >= 4)
+            {
+              RegionMode r(o);
+              r.pushGrads(xi,dNN);
+            }
+          }
+          int n = this->countNodes();
+          assert(dNN.size() == n);
+          dN.allocate(n);
+          for (int i=0; i < n; ++i)
+            dN[i] = dNN[i];
         }
         int countNodes() const
         {
@@ -248,12 +303,12 @@ class Hierarchic : public FieldShape
           {
             EdgeMode e(o);
             n += e.countNodes();
-            if (p >=3)
+            if (o >=3)
             {
               FaceMode f(o);
               n += f.countNodes();
             }
-            if (p >= 4)
+            if (o >= 4)
             {
               RegionMode r(o);
               n += r.countNodes();
