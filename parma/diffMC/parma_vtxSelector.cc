@@ -1,5 +1,4 @@
 #include <PCU.h>
-#include <apfNumbering.h>
 #include "parma.h"
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
@@ -8,9 +7,6 @@
 #include "parma_bdryVtx.h"
 #include "parma_commons.h"
 #include <apf.h>
-
-#include <sstream>
-#include <string>
 
 typedef unsigned int uint;
 #define TO_UINT(a) static_cast<unsigned>(a)
@@ -107,10 +103,7 @@ namespace parma {
     dist = measureGraphDist(m);
   }
 
-  VtxSelector::~VtxSelector() {
-    apf::removeTagFromDimension(mesh,dist,0);
-    mesh->destroyTag(dist);
-  }
+  VtxSelector::~VtxSelector() { }
 
   apf::Migration* VtxSelector::run(Targets* tgts) {
     apf::Migration* plan = new apf::Migration(mesh);
@@ -119,6 +112,7 @@ namespace parma {
     for(int max=2; max <= 12; max+=2)
       planW += select(tgts, plan, planW, max);
     parmaCommons::printElapsedTime("select", PCU_Time()-t0);
+    clearDistTag(mesh, dist, plan);
     return plan;
   }
 
