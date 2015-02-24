@@ -98,21 +98,6 @@ namespace {
       if( !plan->has(*adjItr) )
         cavity.e[(cavity.n)++] = *adjItr;
   }
-
-  apf::Numbering* initNumbering(apf::Mesh* m, apf::MeshTag* t) {
-    apf::FieldShape* s = m->getShape();
-    apf::Numbering* n = apf::createNumbering(m,"parmaDistNumbering",s,1);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(0);
-    const int node = 0, comp = 0;
-    int dist;
-    while( (e = m->iterate(it)) ) {
-      m->getIntTag(e,t,&dist);
-      apf::number(n,e,node,comp,dist);
-    }
-    m->end(it);
-    return n;
-  }
 }
 
 namespace parma {
@@ -120,8 +105,6 @@ namespace parma {
     : Selector(m, w)
   {
     dist = measureGraphDist(m);
-    apf::Numbering* distN = initNumbering(m, dist);
-    apf::destroyNumbering(distN);
   }
 
   VtxSelector::~VtxSelector() {
