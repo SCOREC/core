@@ -204,9 +204,6 @@ namespace parma {
 
   /**
    * brief assign vertices to the component 
-   * remark While walking the elements to assign the vertices this procedure
-   *        also records the min element centroid length.  The centroid is 
-   *        later used to stabilize the component depth sorting.
    * param src (In) element in the component
    * param comp (In) component id
    */
