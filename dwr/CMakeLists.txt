@@ -26,11 +26,13 @@ if(BUILD_IN_TRILINOS)
 
   #Base Sources
   set(SOURCES
-    dwr.cc)
+    dwr.cc
+    dwrHierarchic.cc)
 
   #Header
   set(HEADERS
-    dwr.h)
+    dwr.h
+    dwrHierarchic.h)
 
   #Library
   tribits_add_library(

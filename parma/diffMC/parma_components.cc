@@ -12,33 +12,13 @@ namespace {
   struct Comp {
     unsigned i;
     unsigned depth;
-    double coreLen;
+    double len;
   };
   bool compareComp(Comp a, Comp b) {
     if(a.depth > b.depth)
       return true;
-    else if(a.depth == b.depth && a.coreLen < b.coreLen )
-      return true;
     else 
       return false;
-  }
-
-  void reduce(apf::Mesh* m, parma::Level* core) {
-    assert( core->size() );
-    double max = 0;
-    apf::MeshEntity* maxVtx = NULL;
-    APF_ITERATE(parma::Level, *core, e) {
-      apf::Vector3 u;
-      m->getPoint(*e, 0, u);
-      double len = u.getLength();
-      if( len > max ) {
-        max = len;
-        maxVtx = *e;
-      }
-    }
-    assert(maxVtx);
-    core->clear();
-    core->insert(maxVtx);
   }
 }
 
@@ -106,11 +86,8 @@ namespace parma {
     for(unsigned i=0; i<n; i++) {
       comp[i].i = i;
       comp[i].depth = depth[i];
-      apf::Vector3 u;
-      m->getPoint(getCoreVtx(i), 0, u);
-      comp[i].coreLen = u.getLength();
     }
-    std::sort(comp, comp+n, compareComp);
+    std::stable_sort(comp, comp+n, compareComp);
     unsigned* order = new unsigned[n];
     for(unsigned i=0; i<n; i++)
       order[i] = comp[i].i;
@@ -210,8 +187,12 @@ namespace parma {
   }
 
   void DCC::getCoreVtx() {
-    for(unsigned i=0; i<size(); i++)
-      reduce(m,getCore(i));
+    for(unsigned i=0; i<size(); i++) {
+      assert( core[i].size() );
+      apf::MeshEntity* e = *(core[i].begin());
+      core[i].clear();
+      core[i].insert(e);
+    }
   }
 
   void DCC::markVertices() {
@@ -221,6 +202,11 @@ namespace parma {
     }
   }
 
+  /**
+   * brief assign vertices to the component 
+   * param src (In) element in the component
+   * param comp (In) component id
+   */
   void DCC::walkComp(apf::MeshEntity* src, unsigned comp) {
     int one = 1;
     apf::MeshTag* vtag = m->createIntTag("walkCompVisited",1);
