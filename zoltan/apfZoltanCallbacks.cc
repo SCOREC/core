@@ -169,7 +169,7 @@ void zoltanGetEdges(void* data, int ngid, int,
         ent=elements.e[1];
       gids[ngid*ind] = get(ent,zb);
       weights[nweights*ind]=1.0;
-      pids[ind] = mesh->getId();
+      pids[ind] = zb->isLocal ? 0 : mesh->getId();
       ind++;
     }
     else if (elements.n==1&&!zb->isLocal&&mesh->hasTag(face,zb->opposite)) {
@@ -195,11 +195,9 @@ void getCentroid(void *data, int, int,
 }
 
 // ZOLTAN_NUM_GEOM_FN_TYPE
-int getGeomDim(void *data, int *ierr)
+int getGeomDim(void *, int *)
 {
-  ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
-  *ierr=ZOLTAN_OK;
-  return zb->mesh->getDimension();
+  return 3; //always 3D!!
 }
 
 ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
@@ -272,6 +270,7 @@ void ZoltanData::setup()
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
   Zoltan_Set_Param(ztn, "CHECK_GRAPH", "0");
+  Zoltan_Set_Param(ztn, "CHECK_HYPERGRAPH", "0");
 
   //tolerance
   sprintf(paramStr, "%f", zb->tolerance);
