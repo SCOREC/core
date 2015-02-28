@@ -27,7 +27,8 @@ if(BUILD_IN_TRILINOS)
   #Base Sources
   set(SOURCES
     dwr.cc
-    dwrHierarchic.cc)
+    dwrHierarchic.cc
+    dwrLinearSystem.cc)
 
   #Header
   set(HEADERS
