@@ -186,6 +186,7 @@ namespace {
       if( d < minDist )
         minDist = d;
     }
+    minDist++;
     m->setIntTag(v,dt,&minDist);
   }
 
