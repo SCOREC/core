@@ -375,4 +375,10 @@ FieldShape* getHierarchic(int order)
   return &hierarchic;
 }
 
+apf::Field* createHierarchicField(apf::Mesh* m, const char* name,
+    int valueType, int order)
+{
+  return createField(m,name,valueType,getHierarchic(order));
+}
+
 }

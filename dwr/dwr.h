@@ -27,15 +27,6 @@ class Field;
   * \brief All DWR symbols */
 namespace dwr {
 
-/** \brief create an apf::Field using hierarchic shape functions
-  * \param m the mesh over which the field is defined
-  * \param name a unique name for this field
-  * \param valueType the type of field data
-  * \param order the polynomial order of the shape functions
-  */
-apf::Field* createHierarchicField(apf::Mesh* m, const char* name,
-    int valueType, int order);
-
 }
 
 #endif
