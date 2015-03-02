@@ -25,7 +25,7 @@ namespace {
     apf::MeshEntity* e;
     int cnt = 0;
     while( (e = m->iterate(it)) )
-      if( m->isShared(e) && (onlyShared || m->isOwned(e)) ) 
+      if( m->isShared(e) && (onlyShared || m->isOwned(e)) )
           cnt++;
     m->end(it);
     return cnt;
@@ -56,8 +56,8 @@ namespace {
     avg = static_cast<double>(tot);
     avg /= TO_DBL(PCU_Comm_Peers());
   }
-  void vtxStats(apf::Mesh* m, long& tot, int& min, int& max, double& avg) {
-    int loc = TO_INT(m->count(0));
+  void entStats(apf::Mesh* m, int dim, long& tot, int& min, int& max, double& avg) {
+    int loc = TO_INT(m->count(dim));
     getStats(loc, tot, min, max, avg);
   }
 }
@@ -111,29 +111,29 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   avg = total / PCU_Comm_Peers();
 }
 
-void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   loc = numBdryVtx(m);
   getStats(loc, tot, min, max, avg);
 }
 
-void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   bool onlyShared = true;
   loc = numBdryVtx(m,onlyShared);
   getStats(loc, tot, min, max, avg);
 }
 
-void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min, 
+void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   loc = numMdlBdryVtx(m);
   getStats(loc, tot, min, max, avg);
 }
 
-void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max, 
+void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max,
     double& avg, int& loc) {
-  assert(!dim);
-  vtxStats(m, tot, min, max, avg);
+  assert( dim>=0 && dim<=m->getDimension() );
+  entStats(m, dim, tot, min, max, avg);
   loc = TO_INT(m->count(0));
 }
 
@@ -168,10 +168,11 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   Parma_GetNeighborStats(m, maxNb, avgNb, locNb);
   PCU_Debug_Print("%s neighbors %d\n", key.c_str(), locNb);
 
-  long totVtx = 0;
-  int minVtx = 0, maxVtx = 0;
-  double avgVtx = 0;
-  vtxStats(m, totVtx, minVtx, maxVtx, avgVtx);
+  long totEnt[4] = {0,0,0,0};
+  int minEnt[4] = {0,0,0,0}, maxEnt[4] = {0,0,0,0};
+  double avgEnt[4] = {0,0,0,0};
+  for( int d=0; d<=m->getDimension(); d++)
+    entStats(m, d, totEnt[d], minEnt[d], maxEnt[d], avgEnt[d]);
 
   int locV[3], minV[3], maxV[3];
   long totV[3];
@@ -222,9 +223,12 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
         key.c_str(), maxNb, avgNb);
     fprintf(stdout, "STATUS %s empty parts %d\n",
         key.c_str(), empty);
-    fprintf(stdout, "STATUS %s vtx <tot max min avg> "
-        "%ld %d %d %.3f\n",
-        key.c_str(), totVtx, maxVtx, minVtx, avgVtx);
+
+    const char* orders[4] = {"vtx","edge","face","rgn"};
+    for( int d=0; d<=m->getDimension(); d++)
+      fprintf(stdout, "STATUS %s %s <tot max min avg> "
+          "%ld %d %d %.3f\n",
+          key.c_str(), orders[d], totEnt[d], maxEnt[d], minEnt[d], avgEnt[d]);
     fprintf(stdout, "STATUS %s owned bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[0], maxV[0], minV[0], avgV[0]);
