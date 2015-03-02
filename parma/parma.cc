@@ -56,7 +56,8 @@ namespace {
     avg = static_cast<double>(tot);
     avg /= TO_DBL(PCU_Comm_Peers());
   }
-  void entStats(apf::Mesh* m, int dim, long& tot, int& min, int& max, double& avg) {
+  void entStats(apf::Mesh* m, int dim, 
+      long& tot, int& min, int& max, double& avg) {
     int loc = TO_INT(m->count(dim));
     getStats(loc, tot, min, max, avg);
   }
@@ -134,7 +135,7 @@ void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max,
     double& avg, int& loc) {
   assert( dim>=0 && dim<=m->getDimension() );
   entStats(m, dim, tot, min, max, avg);
-  loc = TO_INT(m->count(0));
+  loc = TO_INT(m->count(dim));
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
