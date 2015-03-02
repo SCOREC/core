@@ -145,6 +145,7 @@ bool isNumbered(Numbering* n, MeshEntity* e, int node, int component)
 void number(Numbering* n, MeshEntity* e, int node, int component, int number)
 {
   assert( ! isFixed(n,e,node,component));
+  assert(number >= 0);
   n->set(e,node,component,number);
 }
 
