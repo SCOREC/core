@@ -59,7 +59,7 @@ void mymain(bool ismaster)
 {
   gmi_model* g = 0;
   apf::Mesh2* m;
-  apf::Migration* plan;
+  apf::Migration* plan = 0;
   int dim, matched;
   switchToMasters();
   if (ismaster) {
