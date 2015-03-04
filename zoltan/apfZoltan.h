@@ -55,7 +55,7 @@ enum ZoltanApproach {
   /** \brief (HYPER)Graph - targets partitions needing only small changes */
   REFINE,
   /** \brief Graph - multilevel */
-  PART_KWAY, 
+  PART_KWAY,
   /** \brief Graph - space filling curves */
   PART_GEOM,
   /** \brief Graph - hybrid method combining PART_KWAY and PART_GEOM */
@@ -82,6 +82,16 @@ class MeshTag;
               accordingly */
 Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
     bool debug = true, bool sync = true);
+
+/** \brief Make a Zoltan Splitter object
+  \details the resulting splitter will apply Zoltan
+  to the global mesh part to break it into several new parts.
+  \param method select from apf::ZoltanMethod
+  \param approach select from apf::ZoltanApproach
+  \param debug print the full Zoltan configuration when splitting
+  */
+Splitter* makeZoltanGlobalSplitter(Mesh* mesh, int method, int approach,
+    bool debug = true);
 
 /** \brief Make a Zoltan Balancer object
   \details this Balancer will apply Zoltan to the global mesh

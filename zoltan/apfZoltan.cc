@@ -15,8 +15,9 @@ namespace apf {
 class ZoltanSplitter : public Splitter
 {
   public:
-    ZoltanSplitter(Mesh* m, int method, int approach, bool debug, bool sync):
-      bridge(m, true, method, approach, debug)
+    ZoltanSplitter(Mesh* m, int method, int approach,
+        bool debug, bool sync, bool local=true):
+      bridge(m, local, method, approach, debug)
     {
       isSynchronous = sync;
     }
@@ -73,6 +74,13 @@ Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
     bool debug, bool sync)
 {
   return new ZoltanSplitter(mesh, method, approach, debug, sync);
+}
+
+Splitter* makeZoltanGlobalSplitter(Mesh* mesh, int method, int approach,
+    bool debug) {
+  bool sync = false; //don't alter the plan
+  bool local = false;
+  return new ZoltanSplitter(mesh, method, approach, debug, sync, local);
 }
 
 Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach,
