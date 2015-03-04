@@ -5,9 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <apf.h>
-#include <dwrHierarchic.h>
-
 namespace dwr {
 
 }
