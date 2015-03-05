@@ -9,16 +9,11 @@
 #define DWR_ELASTICITY_H
 
 #include <apf.h>
-#include <apfArray.h>
 #include <apfDynamicArray.h>
 #include <apfDynamicMatrix.h>
-#include <Sacado.hpp>
+#include "dwrTypes.h"
 
 namespace dwr {
-
-typedef Sacado::Fad::DFad<double> AD;
-typedef apf::Array<AD,3> AD_Vector3;
-typedef apf::Array<AD_Vector3,3> AD_Matrix3x3;
 
 class LinElastInt : public apf::Integrator
 {
