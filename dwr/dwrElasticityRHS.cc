@@ -6,7 +6,7 @@
  */
 
 #include <apfMesh.h>
-#include "dwrElasticity.h"
+#include "dwrElasticityRHS.h"
 
 namespace dwr {
 
@@ -61,18 +61,18 @@ static void computeStress(AD_Matrix3x3 strain,
   stress[0][2] = stress[2][0];
 }
 
-LinElastInt::LinElastInt(int o, apf::Field* u) : 
+ElasticityRHS::ElasticityRHS(int o, apf::Field* u) : 
   apf::Integrator(o),
   primal_(u)
 {
   numDims_ = apf::getMesh(primal_)->getDimension();
 }
 
-LinElastInt::~LinElastInt()
+ElasticityRHS::~ElasticityRHS()
 {
 }
 
-void LinElastInt::inElement(apf::MeshElement* me)
+void ElasticityRHS::inElement(apf::MeshElement* me)
 {
   e_ = apf::createElement(primal_,me);
   numNodes_ = apf::countNodes(e_);
@@ -94,12 +94,12 @@ void LinElastInt::inElement(apf::MeshElement* me)
     Ke(i,j) = 0.0;
 }
 
-void LinElastInt::outElement()
+void ElasticityRHS::outElement()
 {
   apf::destroyElement(e_);
 }
 
-void LinElastInt::atPoint(apf::Vector3 const& p, double w, double dv)
+void ElasticityRHS::atPoint(apf::Vector3 const& p, double w, double dv)
 {
   apf::NewArray<apf::Vector3> gradBF;
   apf::getShapeGrads(e_,p,gradBF);

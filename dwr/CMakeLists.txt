@@ -29,7 +29,7 @@ if(BUILD_IN_TRILINOS)
     dwr.cc
     dwrHierarchic.cc
     dwrLinearSystem.cc
-    dwrElasticity.cc)
+    dwrElasticityRHS.cc)
 
   #Header
   set(HEADERS
