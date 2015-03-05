@@ -6,7 +6,6 @@
  */
 
 #include <apfMesh.h>
-#include <cstring>
 #include "dwrElasticity.h"
 
 namespace dwr {
