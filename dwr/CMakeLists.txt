@@ -29,7 +29,8 @@ if(BUILD_IN_TRILINOS)
     dwr.cc
     dwrHierarchic.cc
     dwrLinearSystem.cc
-    dwrElasticityRHS.cc)
+    dwrElasticityRHS.cc
+    dwrVectorL2QOI.cc)
 
   #Header
   set(HEADERS
