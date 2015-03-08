@@ -142,9 +142,9 @@ static void applyBC(
     apf::ModelEntity* e = m->findModelEntity(dbc[i].dim,dbc[i].tag);
     apf::DynamicArray<apf::Node> nodes;
     apf::getNodesOnClosure(m,e,nodes);
-    for (int i=0; i < nodes.getSize(); ++i)
+    for (int n=0; n < nodes.getSize(); ++n)
     {
-      long gid = apf::getNumber(gn,nodes[i])*nc + c;
+      long gid = apf::getNumber(gn,nodes[n])*nc + c;
       ls->diagonalizeMatrixRow(gid);
       ls->replaceToVector(0.0,gid);
     }
