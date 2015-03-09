@@ -29,12 +29,15 @@ if(BUILD_IN_TRILINOS)
     dwr.cc
     dwrHierarchic.cc
     dwrLinearSystem.cc
-    dwrElasticity.cc)
+    dwrElasticityRHS.cc
+    dwrElasticityProblem.cc
+    dwrVectorL2QOI.cc)
 
   #Header
   set(HEADERS
     dwr.h
-    dwrHierarchic.h)
+    dwrHierarchic.h
+    dwrElasticityProblem.h)
 
   #Library
   tribits_add_library(
