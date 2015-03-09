@@ -807,4 +807,54 @@ int getFirstType(Mesh* m, int dim)
   return m->getType(e);
 }
 
+static int const* getVertIndices(int type, int subtype, int which)
+{
+  switch (subtype) {
+    case Mesh::EDGE:
+    switch (type) {
+      case Mesh::TRIANGLE:
+        return tri_edge_verts[which];
+      case Mesh::QUAD:
+        return quad_edge_verts[which];
+      case Mesh::TET:
+        return tet_edge_verts[which];
+    };
+    case Mesh::TRIANGLE:
+    switch (type) {
+      case Mesh::TET:
+        return tet_tri_verts[which];
+    };
+  };
+  fail("getVertIndices: types not supported\n");
+}
+
+void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
+    int& which, bool& flip, int& rotate)
+{
+  Downward ev;
+  m->getDownward(elem, 0, ev);
+  Downward eb;
+  int neb = m->getDownward(elem, getDimension(m, boundary), eb);
+  which = findIn(eb, neb, boundary);
+  Downward bv;
+  int nbv = m->getDownward(boundary, 0, bv);
+  int const* vi = getVertIndices(m->getType(elem), m->getType(boundary), which);
+  Downward ebv;
+  for (int i = 0; i < nbv; ++i)
+    ebv[i] = ev[vi[i]];
+  int a = findIn(bv, nbv, ebv[0]);
+  int b = findIn(bv, nbv, ebv[1]);
+  if (b == (a + 1) % nbv)
+    flip = false;
+  else {
+    flip = true;
+    Downward tmp;
+    for (int i = 0; i < nbv; ++i)
+      tmp[nbv - i - 1] = bv[i];
+    for (int i = 0; i < nbv; ++i)
+      bv[i] = tmp[i];
+  }
+  rotate = findIn(bv, nbv, ebv[0]);
+}
+
 } //namespace apf
