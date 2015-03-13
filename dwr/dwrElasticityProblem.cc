@@ -212,12 +212,28 @@ void ElasticityProblem::solve()
   attachSolution(mesh_,gn_,dual_,sol);
 }
 
+void print(const char* format, ...)
+{
+  if (PCU_Comm_Self())
+    return;
+  printf("DWR: ");
+  va_list ap;
+  va_start(ap,format);
+  vfprintf(stdout,format,ap);
+  va_end(ap);
+  printf("\n");
+}
+
 apf::Field* ElasticityProblem::computeDual()
 {
+  print("Solving linear elasticity dual problem");
+  double t0 = PCU_Time();
   validate();
   setup();
   assemble();
   solve();
+  double t1 = PCU_Time();
+  print("dual problem solved in %f seconds",t1-t0);
   return dual_;
 }
 
