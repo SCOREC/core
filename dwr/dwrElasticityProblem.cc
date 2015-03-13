@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <PCU.h>
 #include <apfMesh.h>
+#include <apfShape.h>
 #include <apfNumbering.h>
 #include <Epetra_Map.h>
 #include <Epetra_MpiComm.h>
@@ -34,6 +35,7 @@ ElasticityProblem::~ElasticityProblem()
   delete owned_;
   delete overlap_;
   delete ls_;
+  apf::destroyGlobalNumbering(gn_);
 }
 
 void ElasticityProblem::validate()
@@ -42,6 +44,7 @@ void ElasticityProblem::validate()
   assert(nu);
   assert(quadratureDegree);
   assert(primal);
+  assert(apf::getShape(primal)->getOrder() == 1);
   assert(dbc.getSize() > 0);
 }
 
