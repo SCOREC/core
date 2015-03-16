@@ -857,4 +857,41 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   rotate = findIn(bv, nbv, ebv[0]);
 }
 
+void packString(std::string s, int to)
+{
+  size_t len = s.length();
+  PCU_COMM_PACK(to, len);
+  PCU_Comm_Pack(to, s.c_str(), len);
+}
+
+std::string unpackString()
+{
+  std::string s;
+  size_t len;
+  PCU_COMM_UNPACK(len);
+  s.resize(len);
+  PCU_Comm_Unpack((void*)s.c_str(), len);
+  return s;
+}
+
+void packTagInfo(Mesh* m, MeshTag* t, int to)
+{
+  std::string name;
+  name = m->getTagName(t);
+  packString(name, to);
+  int type;
+  type = m->getTagType(t);
+  PCU_COMM_PACK(to, type);
+  int size;
+  size = m->getTagSize(t);
+  PCU_COMM_PACK(to, size);
+}
+
+void unpackTagInfo(std::string& name, int& type, int& size)
+{
+  name = unpackString();
+  PCU_COMM_UNPACK(type);
+  PCU_COMM_UNPACK(size);
+}
+
 } //namespace apf

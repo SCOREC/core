@@ -3,6 +3,9 @@
 #include "apfField.h"
 #include "apf.h"
 
+#include "apfShape.h"
+#include "apfTagData.h"
+
 namespace apf
 {
 
