@@ -378,7 +378,7 @@ static void verifyTags(Mesh* m)
   while (PCU_Comm_Receive()) {
     int n;
     PCU_COMM_UNPACK(n);
-    assert(tags.getSize() == n);
+    assert(tags.getSize() == (size_t)n);
     for (int i = 0; i < n; ++i) {
       std::string name;
       int type;
