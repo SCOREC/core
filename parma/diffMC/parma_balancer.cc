@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include "parma_balancer.h"
 #include "parma_monitor.h"
+#include "parma_graphDist.h"
 
 namespace {
   void printTiming(const char* type, int steps, double tol, double time) {
@@ -24,6 +25,11 @@ namespace parma {
     delete iS;
     delete sA;
     delete sS;
+    apf::MeshTag* dist = parma::getDistTag(mesh);
+    if(dist) {
+      apf::removeTagFromDimension(mesh,dist,0);
+      mesh->destroyTag(dist);
+    }
   }
   void Balancer::balance(apf::MeshTag* wtag, double tolerance) {
     int step = 0;

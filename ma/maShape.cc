@@ -89,6 +89,27 @@ int markBadQuality(Adapt* a)
   return markEntities(a, a->mesh->getDimension(), p, BAD_QUALITY, OK_QUALITY);
 }
 
+double getMinQuality(Adapt* a)
+{
+  assert(a);
+  Mesh* m;
+  m = a->mesh;
+  assert(m);
+  Iterator* it = m->begin(m->getDimension());
+  Entity* e;
+  double minqual = 1;
+  while ((e = m->iterate(it))) {
+    if (!apf::isSimplex(m->getType(e)))
+      continue;
+    double qual = a->shape->getQuality(e);
+    if (qual < minqual)
+      minqual = qual;
+  }
+  m->end(it);
+  PCU_Min_Doubles(&minqual, 1);
+  return minqual;
+}
+
 class ShortEdgeFixer : public Operator
 {
   public:
@@ -415,6 +436,14 @@ void fixElementShapes(Adapt* a)
   double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
+}
+
+void printQuality(Adapt* a)
+{
+  if ( ! a->input->shouldPrintQuality)
+    return;
+  double minqual = getMinQuality(a);
+  print("worst element quality is %e", minqual);
 }
 
 }

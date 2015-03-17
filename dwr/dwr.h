@@ -18,9 +18,25 @@
 
 /** \file dwr.h */
 
+#include "dwrElasticityProblem.h"
+
+namespace apf {
+class Mesh;
+class Field;
+}
+
 /** \namespace dwr
   * \brief All DWR symbols */
 namespace dwr {
+
+/** \brief create a new elasticity problem
+  * \details see dwrElasticityProblem.h */
+ElasticityProblem* createElasticityProblem();
+
+/** \brief destroy an elasticity problem
+  * \details users should call this once solve has
+  * been run for the elasticity problem */
+void destroyElasticityProblem(ElasticityProblem* p);
 
 }
 

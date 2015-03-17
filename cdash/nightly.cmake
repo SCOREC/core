@@ -83,17 +83,11 @@ macro(build_subproject subproject_name repo_url config_opts)
     SOURCE "${CTEST_SOURCE_DIRECTORY}/${subproject_name}"
     OPTIONS "${config_opts}"
     RETURN_VALUE HAD_ERROR)
-  if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot configure ${subproject_name}!")
-  endif()
  
   submit_part(${subproject_name} Configure)
 
   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}/${subproject_name}"
       RETURN_VALUE HAD_ERROR)
-  if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot build ${subproject_name}!")
-  endif()
 
   submit_part(${subproject_name} Build)
 endmacro()

@@ -34,6 +34,7 @@ CodeMatch matchSliver(
     Entity* tet);
 
 void fixElementShapes(Adapt* a);
+void printQuality(Adapt* a);
 
 }
 

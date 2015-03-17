@@ -5,6 +5,8 @@
 
 namespace parma {
   apf::MeshTag* measureGraphDist(apf::Mesh* m);
+  apf::MeshTag* getDistTag(apf::Mesh* m);
+  void clearDistTag(apf::Mesh* m, apf::MeshTag* dist, apf::Migration* plan);
 }
 
 #endif

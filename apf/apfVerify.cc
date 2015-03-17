@@ -362,9 +362,39 @@ static void verifyOrder(Mesh* m)
     receiveOrder(m);
 }
 
+static void verifyTags(Mesh* m)
+{
+  PCU_Comm_Begin();
+  DynamicArray<MeshTag*> tags;
+  m->getTags(tags);
+  int self = PCU_Comm_Self();
+  if (self) {
+    int n = tags.getSize();
+    PCU_COMM_PACK(self - 1, n);
+    for (int i = 0; i < n; ++i)
+      packTagInfo(m, tags[i], self - 1);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int n;
+    PCU_COMM_UNPACK(n);
+    assert(tags.getSize() == (size_t)n);
+    for (int i = 0; i < n; ++i) {
+      std::string name;
+      int type;
+      int size;
+      unpackTagInfo(name, type, size);
+      assert(name == m->getTagName(tags[i]));
+      assert(type == m->getTagType(tags[i]));
+      assert(size == m->getTagSize(tags[i]));
+    }
+  }
+}
+
 void verify(Mesh* m)
 {
   double t0 = PCU_Time();
+  verifyTags(m);
   UpwardCounts guc;
   getUpwardCounts(m->getModel(), m->getDimension(), guc);
   /* got to 3 on purpose, so we can verify if

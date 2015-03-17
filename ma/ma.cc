@@ -39,6 +39,7 @@ void adapt(Input* in)
   fixElementShapes(a);
   cleanupLayer(a);
   tetrahedronize(a);
+  printQuality(a);
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;

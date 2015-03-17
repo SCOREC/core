@@ -8,6 +8,7 @@
 #include "parma_selector.h"
 #include "parma_monitor.h"
 #include "parma_stop.h"
+#include "parma_graphDist.h"
 
 namespace {
   class VtxBalancer : public parma::Balancer {
@@ -22,6 +23,7 @@ namespace {
           if( !PCU_Comm_Self() )
             fprintf(stdout, "sideTol %d\n", sideTol);
       }
+
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxVtxImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 0);

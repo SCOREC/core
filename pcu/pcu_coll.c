@@ -152,7 +152,7 @@ void pcu_begin_coll(pcu_coll* c, void* data, size_t size)
 
 /* makes progress on a collective operation
    started by pcu_begin_coll.
-   returns true if its done. */
+   returns false if its done. */
 bool pcu_progress_coll(pcu_coll* c)
 {
   if (c->pattern->end_bit(c->bit))

@@ -343,12 +343,12 @@ class Quadratic : public FieldShape
     class Quad : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Vector3 const&, NewArray<double>&) const
         {
           fail("quadratic Serendipity quadrilateral shape values not implemented\n");
         }
-        void getLocalGradients(Vector3 const& xi,
-            NewArray<Vector3>& grads) const
+        void getLocalGradients(Vector3 const&,
+            NewArray<Vector3>&) const
         {
           fail("quadratic Serendipity quadrilateral shape grads not implemented\n");
         }

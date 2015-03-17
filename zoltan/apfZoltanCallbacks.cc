@@ -8,6 +8,7 @@
 #include "apfZoltanCallbacks.h"
 #include "apfZoltanMesh.h"
 #include "apfZoltan.h"
+#include "apfShape.h"
 #include <PCU.h>
 #include <metis.h>
 
@@ -149,7 +150,7 @@ int zoltanCountEdges(void* data, int, int,
 void zoltanGetEdges(void* data, int ngid, int,
     ZOLTAN_ID_PTR, ZOLTAN_ID_PTR lid,
     ZOLTAN_ID_PTR gids, int* pids,
-    int nweights, float* weights, int* ierr)
+    int, float*, int* ierr)
 {
   ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
   MeshEntity* element=zb->elements[*lid];
@@ -168,15 +169,13 @@ void zoltanGetEdges(void* data, int ngid, int,
       if (element==ent)
         ent=elements.e[1];
       gids[ngid*ind] = get(ent,zb);
-      weights[nweights*ind]=1.0;
-      pids[ind] = mesh->getId();
+      pids[ind] = zb->isLocal ? 0 : mesh->getId();
       ind++;
     }
     else if (elements.n==1&&!zb->isLocal&&mesh->hasTag(face,zb->opposite)) {
       long value;
       mesh->getLongTag(face,zb->opposite,&value);
       gids[ngid*ind]=value;
-      weights[nweights*ind]=1.0;
       pids[ind]=getPartId(mesh,face);
       ind++;
     }
@@ -195,11 +194,68 @@ void getCentroid(void *data, int, int,
 }
 
 // ZOLTAN_NUM_GEOM_FN_TYPE
-int getGeomDim(void *data, int *ierr)
+int getGeomDim(void *, int *)
+{
+  return 3; //always 3D!!
+}
+
+// ZOLTAN_HG_CS_FN
+void getHg(void* data, int ngid, int, int totAdjVtx, int,
+    ZOLTAN_ID_PTR elmIds, int* adjVtxIdx, ZOLTAN_ID_PTR adjVtx,
+    int *ierr)
 {
   ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
+  Numbering* ln = NULL;
+  GlobalNumbering* gn = NULL;
+  if( zb->isLocal ) {
+    ln = numberOverlapNodes(zb->mesh, "zoltan_vtx");
+  } else {
+    gn = makeGlobal(numberOwnedNodes(zb->mesh, "zoltan_vtx"));
+    synchronize(gn);
+  }
+  Downward verts;
+  int prevCnt = adjVtxIdx[0] = 0;
+  for (size_t ind=0;ind<zb->elements.getSize();ind++) {
+    MeshEntity* elm = zb->elements[ind];
+    elmIds[ind*ngid]= get(elm, zb);
+    adjVtxIdx[ind] = prevCnt;
+    int nv = prevCnt = zb->mesh->getDownward(elm, 0, verts);
+    prevCnt += adjVtxIdx[ind];
+    for(int i=0; i<nv; i++) {
+      //add get(...) support for vertices???
+      const int avIdx = (adjVtxIdx[ind]+i)*ngid;
+      assert(totAdjVtx > avIdx);
+      long gid = zb->isLocal ?
+        getNumber(ln,verts[i],0,0) : getNumber(gn,Node(verts[i],0));
+      adjVtx[avIdx] = gid;
+    }
+  }
+  if( zb->isLocal )
+    destroyNumbering(ln);
+  else
+    destroyGlobalNumbering(gn);
   *ierr=ZOLTAN_OK;
-  return zb->mesh->getDimension();
+}
+
+// ZOLTAN_HG_SIZE_CS_FN
+void getHgSize(void* data,
+    int* numElms, //out
+    int* numAdjVtx, //out - sum(getNumVtx(elm[i]))
+    int* format, //out - hardcoded to compressed vtx
+    int* ierr) {
+  ZoltanMesh* zb = static_cast<ZoltanMesh*>(data);
+
+  *format = ZOLTAN_COMPRESSED_VERTEX;
+  *numElms = zb->elements.getSize();
+
+  *numAdjVtx = 0;
+  for (size_t i=0;i<zb->elements.getSize();i++) {
+    MeshEntity* elm = zb->elements[i];
+    const int type = zb->mesh->getType(elm);
+    const int nsides = apf::Mesh::adjacentCount[type][0];
+    *numAdjVtx += nsides;
+  }
+  *ierr=ZOLTAN_OK;
 }
 
 ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
@@ -263,7 +319,7 @@ void ZoltanData::setup()
   //weights
   sprintf(paramStr, "%d", zb->mesh->getTagSize(zb->weights));
   Zoltan_Set_Param(ztn, "obj_weight_dim", paramStr);
-  Zoltan_Set_Param(ztn, "edge_weight_dim", "1");
+  Zoltan_Set_Param(ztn, "edge_weight_dim", "0");
 
   //Debug
   sprintf(paramStr, "%d", dbgLvl);
@@ -272,6 +328,7 @@ void ZoltanData::setup()
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
   Zoltan_Set_Param(ztn, "CHECK_GRAPH", "0");
+  Zoltan_Set_Param(ztn, "CHECK_HYPERGRAPH", "0");
 
   //tolerance
   sprintf(paramStr, "%f", zb->tolerance);
@@ -301,6 +358,8 @@ void ZoltanData::setup()
   Zoltan_Set_Fn(ztn, ZOLTAN_EDGE_LIST_FN_TYPE, (void (*)())zoltanGetEdges, (void*) (zb));
   Zoltan_Set_Fn(ztn, ZOLTAN_NUM_GEOM_FN_TYPE, (void (*)()) getGeomDim, (void*) (zb));
   Zoltan_Set_Fn(ztn, ZOLTAN_GEOM_FN_TYPE, (void (*)()) getCentroid, (void*) (zb));
+  Zoltan_Set_Fn(ztn, ZOLTAN_HG_SIZE_CS_FN_TYPE, (void (*)()) getHgSize, (void*) (zb));
+  Zoltan_Set_Fn(ztn, ZOLTAN_HG_CS_FN_TYPE, (void (*)()) getHg, (void*) (zb));
 }
 
 void ZoltanData::ptn()

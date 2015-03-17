@@ -2,5 +2,7 @@
 
 The Dual Weighted Residual (DWR) library
 
-The API is found in: dwr.h
+The main API is found in: dwr.h
+The API for defining and solving linear elasticity dual problems is
+found in: dwrElasticityProblem.h
 */

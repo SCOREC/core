@@ -5,61 +5,72 @@
 #include "parma_targets.h"
 #include "parma_weights.h"
 
+#define TO_SIZET(a) static_cast<size_t>(a)
+
 namespace {
   typedef std::set<apf::MeshEntity*> SetEnt;
 
   class ElmLtVtxSelector : public parma::VtxSelector {
     private:
-      parma::Mid sendingVtx;
       double maxVtx;
 
     public:
       ElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxV)
-        : VtxSelector(m, w), maxVtx(maxV) {}
+        : VtxSelector(m, w), maxVtx(maxV) { }
 
       apf::Migration* run(parma::Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
         double planW = 0;
         for(int max=2; max <= 12; max+=2)
           planW += select(tgts, plan, planW, max);
-        cancel(&plan, trim(tgts));
+        parma::Mid* capacity = trim(tgts,plan);
+        cancel(&plan, capacity);
         return plan;
       }
 
     protected:
-      void addCavityVtx(apf::MeshEntity* e, SetEnt& s) {
+      void insertInteriorVerts(apf::MeshEntity* e, int dest, SetEnt& s) {
         apf::Adjacent adjVtx;
         mesh->getAdjacent(e, 0, adjVtx);
-        APF_ITERATE(apf::Adjacent, adjVtx, adjItr)
-          s.insert(*adjItr);
+        APF_ITERATE(apf::Adjacent, adjVtx, v) {
+          apf::Parts res;
+         mesh->getResidence(*v,res);
+          if( !res.count(dest) ) //not on the boundary with dest
+            s.insert(*v);
+        }
       }
 
-      double cavityWeight(SetEnt& s) {
+      double weight(SetEnt& s) {
         double w = 0;
         APF_ITERATE(SetEnt, s, sItr)
           w += getWeight(*sItr);
         return w;
       }
 
-      void cancel(apf::Migration** plan, parma::Mid* order) {
-        apf::Migration* planA = *plan;
+      void cancel(apf::Migration** plan, parma::Mid* capacity) {
         typedef std::pair<apf::MeshEntity*, int> PairEntInt;
-        std::vector<PairEntInt > keep;
-        const size_t planSz = static_cast<size_t>(planA->count());
+        apf::Migration* planA = *plan;
+        std::vector<PairEntInt > keep; //temporary plan container
+        const size_t planSz = TO_SIZET(planA->count());
         keep.reserve(planSz);
 
-        std::map<int,SetEnt > peerSelections;
+        //The plan is a vector so this loop will visit the plan's elements in
+        //the same order that they were selected in, which, with graph distance
+        //sorting, is from far to near.  An element is kept in the plan if
+        //adding its vertices to the weight does not exceed the peer's vtx
+        //weight capacity, capacity[dest].
+        std::map<int,SetEnt > peerVerts;
         for(int i=0; i < planA->count(); i++) {
            apf::MeshEntity* e = planA->get(i);
            int dest = planA->sending(e);
-           SetEnt vset = peerSelections[dest];
-           addCavityVtx(e, vset);
-           if( cavityWeight(vset) <= (*order)[dest] ) {
+           SetEnt vset = peerVerts[dest];
+           insertInteriorVerts(e, dest, vset);
+           if( weight(vset) <= (*capacity)[dest] ) {
              keep.push_back(PairEntInt(e,dest));
-             peerSelections[dest] = vset;
+             peerVerts[dest] = vset;
            }
         }
-        delete order;
+        delete capacity;
         delete planA;
         *plan = new apf::Migration(mesh);
         for(size_t i=0; i < keep.size(); i++)
@@ -76,16 +87,28 @@ namespace {
         }
       };
 
-      parma::Mid* trim(parma::Targets*) {
+      parma::Mid* trim(parma::Targets*, apf::Migration* plan) {
+        //compute the weight of the vertices being sent to each peer
+        typedef std::map<int,SetEnt > PeerEntSet;
+        PeerEntSet peerVerts;
+        for(int i=0; i < plan->count(); i++) {
+          apf::MeshEntity* elm = plan->get(i);
+          const int dest = plan->sending(elm);
+          insertInteriorVerts(elm, dest, peerVerts[dest]);
+        }
+
+        parma::Mid sendingVtx;
+        APF_ITERATE(PeerEntSet, peerVerts, pv)
+          sendingVtx[pv->first] = weight(pv->second);
+
         typedef std::set<Migr,CompareMigr> MigrComm;
 
         PCU_Comm_Begin();
-        APF_ITERATE(parma::Mid, sendingVtx, s) {
+        APF_ITERATE(parma::Mid, sendingVtx, s)
           PCU_COMM_PACK(s->first, s->second);
-        }
         PCU_Comm_Send();
 
-        MigrComm incoming;
+        MigrComm incoming; //map<sender,weight sending>
         double w;
         while (PCU_Comm_Listen()) {
           PCU_COMM_UNPACK(w);
@@ -111,13 +134,13 @@ namespace {
         APF_ITERATE(parma::Mid, accept, a)
           PCU_COMM_PACK(a->first, a->second);
         PCU_Comm_Send();
-        parma::Mid* order = new parma::Mid;
+        parma::Mid* capacity = new parma::Mid;
         double outw;
         while (PCU_Comm_Listen()) {
           PCU_COMM_UNPACK(outw);
-          (*order)[PCU_Comm_Sender()] = outw;
+          (*capacity)[PCU_Comm_Sender()] = outw;
         }
-        return order;
+        return capacity;
       }
 
       virtual double add(apf::MeshEntity*, apf::Up& cavity,
@@ -125,11 +148,9 @@ namespace {
         SetEnt cav;
         double w = 0;
         for(int i=0; i < cavity.n; i++) {
-          addCavityVtx(cavity.e[i], cav);
           plan->send(cavity.e[i], destPid);
           w += getWeight(cavity.e[i]);
         }
-        sendingVtx[destPid] += cavityWeight(cav);
         return w;
       }
   };

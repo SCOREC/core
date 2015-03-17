@@ -26,11 +26,18 @@ if(BUILD_IN_TRILINOS)
 
   #Base Sources
   set(SOURCES
-    dwr.cc)
+    dwr.cc
+    dwrHierarchic.cc
+    dwrLinearSystem.cc
+    dwrElasticityRHS.cc
+    dwrElasticityProblem.cc
+    dwrVectorL2QOI.cc)
 
   #Header
   set(HEADERS
-    dwr.h)
+    dwr.h
+    dwrHierarchic.h
+    dwrElasticityProblem.h)
 
   #Library
   tribits_add_library(
