@@ -237,7 +237,7 @@ void ElasticityProblem::solve()
 
 apf::Field* ElasticityProblem::computeDual()
 {
-  print("Solving linear elasticity dual problem");
+  print("solving linear elasticity dual problem");
   validate();
   setup();
   assemble();
