@@ -514,6 +514,11 @@ int getFirstType(Mesh* m, int dim);
 void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
     int& which, bool& flip, int& rotate);
 
+void packString(std::string s, int to);
+std::string unpackString();
+void packTagInfo(Mesh* m, MeshTag* t, int to);
+void unpackTagInfo(std::string& name, int& type, int& size);
+
 } //namespace apf
 
 #endif
