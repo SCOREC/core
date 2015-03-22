@@ -25,6 +25,8 @@ void zeroMatrix3x3(Matrix3x3T& m)
     m[i][j] = 0.0;
 }
 
+void print(const char* format, ...) __attribute__((format(printf,1,2)));
+
 }
 
 #endif

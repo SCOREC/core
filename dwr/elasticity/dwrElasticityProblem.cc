@@ -12,24 +12,13 @@
 #include <apfNumbering.h>
 #include <Epetra_Map.h>
 #include <Epetra_MpiComm.h>
+#include "dwrUtils.h"
 #include "dwrLinearSystem.h"
 #include "dwrVectorL2QOI.h"
 #include "dwrElasticityRHS.h"
 #include "dwrElasticityProblem.h"
 
 namespace dwr {
-
-void print(const char* format, ...)
-{
-  if (PCU_Comm_Self())
-    return;
-  printf("DWR: ");
-  va_list ap;
-  va_start(ap,format);
-  vfprintf(stdout,format,ap);
-  va_end(ap);
-  printf("\n");
-}
 
 ElasticityProblem::ElasticityProblem()
 {
