@@ -7,7 +7,7 @@
 
 #include <apfMesh.h>
 #include "dwrUtils.h"
-#include "dwrGradU.h"
+#include "dwrGrad.h"
 #include "dwrStrain.h"
 #include "dwrStress.h"
 #include "dwrElasticityRHS.h"
@@ -58,7 +58,7 @@ void ElasticityRHS::atPoint(apf::Vector3 const& p, double w, double dv)
   apf::getShapeGrads(e_,p,gradBF);
 
   AD_Matrix3x3 gradU;
-  computeGradU(numDims_,numNodes_,u_,gradBF,gradU);
+  computeVectorGrad(numDims_,numNodes_,u_,gradBF,gradU);
 
   AD_Matrix3x3 strain;
   computeStrain(gradU,strain);

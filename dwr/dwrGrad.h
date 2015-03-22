@@ -5,13 +5,13 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef DWR_GRADU_H
-#define DWR_GRADU_H
+#ifndef DWR_GRAD_H
+#define DWR_GRAD_H
 
 namespace dwr {
 
 template<class Matrix3x3T, class Vector3T>
-void computeGradU(
+void computeVectorGrad(
     int numDims,
     int numNodes,
     apf::DynamicArray<Vector3T> const& u,
