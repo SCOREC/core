@@ -30,7 +30,7 @@ void zeroMatrix3x3(Matrix3x3T& m)
     m[i][j] = 0.0;
 }
 
-double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e);
+double getMeshSize(apf::Mesh* m, apf::MeshEntity* e);
 
 void print(const char* format, ...) __attribute__((format(printf,1,2)));
 

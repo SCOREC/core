@@ -21,7 +21,7 @@ static double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e)
   return h;
 }
 
-double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
+double getMeshSize(apf::Mesh* m, apf::MeshEntity* e)
 {
   /* right now the maximum edge length */
   double h = 0.0;
