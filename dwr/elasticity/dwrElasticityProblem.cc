@@ -218,8 +218,8 @@ void ElasticityProblem::solve()
   ls_->solve();
   apf::DynamicVector sol;
   ls_->getSolution(sol);
-  dual_ = createDualField(primal);
-  attachSolution(mesh_,gn_,dual_,sol);
+  dual = createDualField(primal);
+  attachSolution(mesh_,gn_,dual,sol);
   double t1 = PCU_Time();
   print("solved in %f seconds",t1-t0);
 }
@@ -231,7 +231,7 @@ apf::Field* ElasticityProblem::computeDual()
   setup();
   assemble();
   solve();
-  return dual_;
+  return dual;
 }
 
 }
