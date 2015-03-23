@@ -18,14 +18,6 @@ namespace parma {
         while ((s = m->iterate(it))) {
 	  apf::Adjacent adj;
           m->getAdjacent(s,m->getDimension(),adj);
-          bool isIsolated = true;
-          for (unsigned int i=0;i<adj.getSize();i++) {
-            if (!dc.isIsolated(adj[i])) {
-              isIsolated=false;
-
-	    }
-	  }
-	  
           if (m->isShared(s)&&!dc.isIsolated(s)) {
             apf::Copies rmts;
             m->getRemotes(s, rmts);
@@ -35,7 +27,6 @@ namespace parma {
           }
 	}
         m->end(it);
-	
       }
   };
 
