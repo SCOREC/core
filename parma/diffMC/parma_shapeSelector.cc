@@ -83,7 +83,7 @@ namespace {
     apf::FieldShape* s = apf::getConstant(m->getDimension());
     apf::Numbering* n = apf::createNumbering(m,name,s,1);
 
-    int negOne = -1;
+    int negOne = 42;
     apf::MeshEntity* e;
     apf::MeshIterator* it = m->begin(m->getDimension());
     while( (e = m->iterate(it)) ) 

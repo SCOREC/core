@@ -19,7 +19,7 @@ namespace parma {
 	  apf::Adjacent adj;
           m->getAdjacent(s,m->getDimension(),adj);
           bool isIsolated = true;
-          for (int i=0;i<adj.getSize();i++) {
+          for (unsigned int i=0;i<adj.getSize();i++) {
             if (!dc.isIsolated(adj[i])) {
               isIsolated=false;
 
