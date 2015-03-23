@@ -120,7 +120,7 @@ namespace parma {
         s->end();
         return (peer != -1);
       }
-    void setTarget(const int peer, Sides* s, Weights* w, double alpha,
+    void setTarget(const int peer, Sides* s, Weights* , double alpha,
                    double sideFactor) {
       PCU_Debug_Print("Sending to %d\n",peer);
       assert(s->has(peer));
@@ -128,10 +128,9 @@ namespace parma {
       //const double sideFactor = s->get(peer) / totSides;
       assert(sideFactor>=0);
       double scaledW = alpha * sideFactor;
-      double warning_preventer = w->self();
 
       set(peer, scaledW);
-      totW+=scaledW*warning_preventer*0;
+      totW+=scaledW;
     }
   };
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
