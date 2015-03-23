@@ -8,9 +8,11 @@
 #include <assert.h>
 #include <PCU.h>
 #include <apfMesh.h>
+#include <apfShape.h>
 #include <apfNumbering.h>
 #include <Epetra_Map.h>
 #include <Epetra_MpiComm.h>
+#include "dwrUtils.h"
 #include "dwrLinearSystem.h"
 #include "dwrVectorL2QOI.h"
 #include "dwrElasticityRHS.h"
@@ -34,6 +36,7 @@ ElasticityProblem::~ElasticityProblem()
   delete owned_;
   delete overlap_;
   delete ls_;
+  apf::destroyGlobalNumbering(gn_);
 }
 
 void ElasticityProblem::validate()
@@ -83,9 +86,12 @@ static void number(
 
 void ElasticityProblem::setup()
 {
+  double t0 = PCU_Time();
   mesh_ = apf::getMesh(primal);
   number(primal,nge_,&owned_,&overlap_,&gn_);
   ls_ = new LinearSystem(nge_,owned_,overlap_);
+  double t1 = PCU_Time();
+  print("setup in %f seconds",t1-t0);
 }
 
 static void addKeToGlobalMatrix(
@@ -153,6 +159,7 @@ static void applyBC(
 
 void ElasticityProblem::assemble()
 {
+  double t0 = PCU_Time();
   VectorL2QOI qoi(quadratureDegree,primal);
   ElasticityRHS rhs(quadratureDegree,primal);
   rhs.setElasticModulus(E);
@@ -171,6 +178,8 @@ void ElasticityProblem::assemble()
   mesh_->end(elems);
   applyBC(primal,dbc,gn_,ls_);
   ls_->completeMatrixFill();
+  double t1 = PCU_Time();
+  print("assembled in %f seconds",t1-t0);
 }
 
 static apf::Field* createDualField(apf::Field* p)
@@ -205,15 +214,19 @@ static void attachSolution(
 
 void ElasticityProblem::solve()
 {
+  double t0 = PCU_Time();
   ls_->solve();
   apf::DynamicVector sol;
   ls_->getSolution(sol);
   dual_ = createDualField(primal);
   attachSolution(mesh_,gn_,dual_,sol);
+  double t1 = PCU_Time();
+  print("solved in %f seconds",t1-t0);
 }
 
 apf::Field* ElasticityProblem::computeDual()
 {
+  print("solving linear elasticity dual problem");
   validate();
   setup();
   assemble();
