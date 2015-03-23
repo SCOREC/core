@@ -38,6 +38,12 @@ ElasticityProblem* createElasticityProblem();
   * been run for the elasticity problem */
 void destroyElasticityProblem(ElasticityProblem* p);
 
+/** \brief estimate error
+  * \brief details estimate the error for an
+  * elasticity problem
+  * \param p elasticity problem object */
+void estimateError(ElasticityProblem* p);
+
 }
 
 #endif
