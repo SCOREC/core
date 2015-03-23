@@ -5,26 +5,21 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef DWR_ELASTICITY_H
-#define DWR_ELASTICITY_H
+#ifndef DWR_ELASTICITYRHS_H
+#define DWR_ELASTICITYRHS_H
 
 #include <apf.h>
-#include <apfArray.h>
 #include <apfDynamicArray.h>
 #include <apfDynamicMatrix.h>
-#include <Sacado.hpp>
+#include "dwrTypes.h"
 
 namespace dwr {
 
-typedef Sacado::Fad::DFad<double> AD;
-typedef apf::Array<AD,3> AD_Vector3;
-typedef apf::Array<AD_Vector3,3> AD_Matrix3x3;
-
-class LinElastInt : public apf::Integrator
+class ElasticityRHS : public apf::Integrator
 {
   public:
-    LinElastInt(int o, apf::Field* u);
-    ~LinElastInt();
+    ElasticityRHS(int o, apf::Field* u);
+    ~ElasticityRHS();
     void inElement(apf::MeshElement* me);
     void outElement();
     void atPoint(apf::Vector3 const& p, double w, double dv);

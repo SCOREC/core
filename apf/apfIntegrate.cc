@@ -244,6 +244,71 @@ class TriangleIntegration : public EntityIntegration
     }
 };
 
+class QuadIntegration : public EntityIntegration
+{
+  public:
+    class N1 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 1;}
+        virtual IntegrationPoint const* getPoint(int) const
+        {
+          static IntegrationPoint point(Vector3(0,0,0),2);
+          return &point;
+        }
+        virtual int getAccuracy() const {return 1;}
+    };
+    class N2 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 4;}
+        virtual IntegrationPoint const* getPoint(int i) const
+        {
+          static double const a =  0.577350269189626;
+          static IntegrationPoint points[4]=
+          { IntegrationPoint(Vector3(-a,-a,0),1),
+            IntegrationPoint(Vector3( a,-a,0),1),
+            IntegrationPoint(Vector3( a, a,0),1),
+            IntegrationPoint(Vector3(-a, a,0),1) };
+          return points + i;
+        }
+        virtual int getAccuracy() const {return 3;}
+    };
+    class N3 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 9;}
+        virtual IntegrationPoint const* getPoint(int i) const
+        {
+          static double const a = 0.774596669241483;
+          static double const b = 0.888888888888889;
+          static double const c = 0.555555555555556;
+          static IntegrationPoint points[9]=
+          { IntegrationPoint(Vector3(-a,-a,0), c * c),
+            IntegrationPoint(Vector3( 0,-a,0), b * c),
+            IntegrationPoint(Vector3( a,-a,0), c * c),
+            IntegrationPoint(Vector3(-a, 0,0), c * b),
+            IntegrationPoint(Vector3( 0, 0,0), b * b),
+            IntegrationPoint(Vector3( a, 0,0), c * b),
+            IntegrationPoint(Vector3(-a, a,0), c * c),
+            IntegrationPoint(Vector3( 0, a,0), b * c),
+            IntegrationPoint(Vector3( a, a,0), c * c) };
+          return points + i;
+        }
+        virtual int getAccuracy() const {return 5;}
+    };
+    virtual int countIntegrations() const {return 3;}
+    virtual Integration const* getIntegration(int i) const
+    {
+      static N1 i1;
+      static N2 i2;
+      static N3 i3;
+      static Integration* integrations[3] = 
+      {&i1,&i2,&i3};
+      return integrations[i];
+    }
+};
+
 class TetrahedronIntegration : public EntityIntegration
 {
   public:
@@ -402,6 +467,7 @@ EntityIntegration const* getIntegration(int meshEntityType)
 {
   static EdgeIntegration edge;
   static TriangleIntegration triangle;
+  static QuadIntegration quad;
   static TetrahedronIntegration tet;
   static PrismIntegration prism;
   static PyramidIntegration pyramid;
@@ -410,7 +476,7 @@ EntityIntegration const* getIntegration(int meshEntityType)
   {NULL,      //vertex
    &edge,     //edge
    &triangle, //triangle
-   NULL,      //quad
+   &quad,     //quad
    &tet,      //tet
    &hex,      //hex
    &prism,    //prism

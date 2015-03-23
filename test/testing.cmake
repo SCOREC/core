@@ -263,7 +263,7 @@ add_test(adapt_meshgen
   "67k/")
 add_test(ma_insphere
   ma_insphere)
-if(ENABLE_THREADS)
+if(ENABLE_THREADS AND PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
   add_test(NAME chef0
     COMMAND chef

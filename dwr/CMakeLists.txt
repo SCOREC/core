@@ -5,8 +5,18 @@ if(BUILD_IN_TRILINOS)
   include(TribitsLibraryMacros) 
   tribits_subpackage(dwr) 
 
-  # THIS IS WHERE TRIBITS GETS HEADERS
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  SET(SOURCES )
+  SET(HEADERS )
+
+  # dwr dirctory
+  SET(DWR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+  # include directories
+  SET(INCLUDE_DIRS
+    ${DWR_DIR}
+    ${DWR_DIR}/qoi
+    ${DWR_DIR}/elasticity)
+  include_directories(${INCLUDE_DIRS})
 
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/dwrConfig.cmake.in"
@@ -24,17 +34,27 @@ if(BUILD_IN_TRILINOS)
     @ONLY)
   #pkgconfig }
 
-  #Base Sources
-  set(SOURCES
+  SET(BASE_SOURCES
     dwr.cc
     dwrHierarchic.cc
-    dwrLinearSystem.cc
-    dwrElasticity.cc)
+    dwrLinearSystem.cc)
 
-  #Header
+  SET(QOI_SOURCES
+    qoi/dwrVectorL2QOI.cc)
+
+  SET(ELASTICITY_SOURCES
+    elasticity/dwrElasticityRHS.cc
+    elasticity/dwrElasticityProblem.cc)
+    
+  set(SOURCES
+    ${BASE_SOURCES}
+    ${QOI_SOURCES}
+    ${ELASTICITY_SOURCES})
+    
   set(HEADERS
     dwr.h
-    dwrHierarchic.h)
+    dwrHierarchic.h
+    elasticity/dwrElasticityProblem.h)
 
   #Library
   tribits_add_library(

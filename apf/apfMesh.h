@@ -503,6 +503,22 @@ class ElementVertOp
 /** \brief get the type of the first entity in this dimension */
 int getFirstType(Mesh* m, int dim);
 
+/** \brief boundary entity alignment to an element
+  \param m the mesh
+  \param elem the element
+  \param boundary an entity on the boundary of elem
+  \param which index of (boundary) in getDownward((elem)...)
+  \param flip true iff orientation of (boundary) is opposite canonical
+  \param rotate position of canonical vertex 0 in boundary vertices,
+                or in boundary vertices reversed if (flip)==true */
+void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
+    int& which, bool& flip, int& rotate);
+
+void packString(std::string s, int to);
+std::string unpackString();
+void packTagInfo(Mesh* m, MeshTag* t, int to);
+void unpackTagInfo(std::string& name, int& type, int& size);
+
 } //namespace apf
 
 #endif
