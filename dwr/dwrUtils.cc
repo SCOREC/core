@@ -5,7 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <iostream>
+#include <cstdarg>
 #include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
