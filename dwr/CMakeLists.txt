@@ -44,7 +44,7 @@ if(BUILD_IN_TRILINOS)
     qoi/dwrVectorL2QOI.cc)
 
   SET(ELASTICITY_SOURCES
-    elasticity/dwrElasticityRHS.cc
+    elasticity/dwrElasticityLHS.cc
     elasticity/dwrElasticityErr.cc
     elasticity/dwrElasticityProblem.cc)
     

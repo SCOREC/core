@@ -15,7 +15,7 @@
 #include "dwrUtils.h"
 #include "dwrLinearSystem.h"
 #include "dwrVectorL2QOI.h"
-#include "dwrElasticityRHS.h"
+#include "dwrElasticityLHS.h"
 #include "dwrElasticityProblem.h"
 
 namespace dwr {
@@ -161,17 +161,17 @@ void ElasticityProblem::assemble()
 {
   double t0 = PCU_Time();
   VectorL2QOI qoi(quadratureDegree,primal);
-  ElasticityRHS rhs(quadratureDegree,primal);
-  rhs.setElasticModulus(E);
-  rhs.setPoissonsRatio(nu);
+  ElasticityLHS lhs(quadratureDegree,primal);
+  lhs.setElasticModulus(E);
+  lhs.setPoissonsRatio(nu);
   apf::MeshEntity* elem;
   apf::MeshIterator* elems = mesh_->begin(mesh_->getDimension());
   while ((elem = mesh_->iterate(elems)))
   {
     apf::MeshElement* me = apf::createMeshElement(mesh_,elem);
-    rhs.process(me);
+    lhs.process(me);
     qoi.process(me);
-    addKeToGlobalMatrix(ls_,rhs.Ke,elem,primal,gn_);
+    addKeToGlobalMatrix(ls_,lhs.Ke,elem,primal,gn_);
     addFeToGlobalVector(ls_,qoi.Fe,elem,primal,gn_);
     apf::destroyMeshElement(me);
   }
