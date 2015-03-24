@@ -44,12 +44,7 @@ namespace {
     PCU_Add_Ints(&cnt, 1);
     return tot/cnt;
   }
-  double getAvgMinSides(parma::Sides* s) {
-    double minSide=static_cast<double>(getMinSide(s));
-    PCU_Add_Doubles(&minSide, 1);
-    return minSide/PCU_Comm_Peers();
-    
-  }
+
   int si;
   class ImbOrLong : public parma::Stop {
     public:
