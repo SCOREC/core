@@ -36,6 +36,7 @@ if(BUILD_IN_TRILINOS)
 
   SET(BASE_SOURCES
     dwr.cc
+    dwrUtils.cc
     dwrHierarchic.cc
     dwrLinearSystem.cc)
 
@@ -43,7 +44,8 @@ if(BUILD_IN_TRILINOS)
     qoi/dwrVectorL2QOI.cc)
 
   SET(ELASTICITY_SOURCES
-    elasticity/dwrElasticityRHS.cc
+    elasticity/dwrElasticityLHS.cc
+    elasticity/dwrElasticityErr.cc
     elasticity/dwrElasticityProblem.cc)
     
   set(SOURCES

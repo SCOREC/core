@@ -7,9 +7,30 @@
 
 #include <iostream>
 #include <PCU.h>
+#include <apf.h>
+#include <apfMesh.h>
 #include "dwrUtils.h"
 
 namespace dwr {
+
+static double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e)
+{
+  apf::MeshElement* element = apf::createMeshElement(m,e);
+  double h = apf::measure(element);
+  apf::destroyMeshElement(element);
+  return h;
+}
+
+double getMeshSize(apf::Mesh* m, apf::MeshEntity* e)
+{
+  /* right now the maximum edge length */
+  double h = 0.0;
+  apf::Downward edges;
+  int ne = m->getDownward(e,1,edges);
+  for (int i=0; i < ne; ++i)
+    h = std::max(h, getEdgeLength(m,edges[i]));
+  return h;
+}
 
 void print(const char* format, ...)
 {

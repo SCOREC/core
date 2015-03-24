@@ -57,6 +57,9 @@ class ElasticityProblem
     int quadratureDegree;
     /** \brief primal displacement field */
     apf::Field* primal;
+    /** \brief dual displacement field
+      * \details the elasticity problem will create this */
+    apf::Field* dual;
     /** \brief boundary condition information */
     apf::DynamicArray<ElasticityDBC> dbc;
     /** \brief solve the dual problem */
@@ -64,7 +67,6 @@ class ElasticityProblem
 
   private:
     apf::Mesh* mesh_;
-    apf::Field* dual_;
     long nge_;
     apf::GlobalNumbering* gn_;
     Epetra_Map* owned_;
