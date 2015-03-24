@@ -1,5 +1,5 @@
-#ifndef _KNAPSACK_H_
-#define _KNAPSACK_H_
+#ifndef KNAPSACK_H_
+#define KNAPSACK_H_
 
 #ifdef __cplusplus
 #include <cstddef>

@@ -52,21 +52,21 @@ namespace {
       }
       Closest closest(apf::MeshEntity* elm) {
         if( !t->size() )
-          PCU_Debug_Print("t->size() %ld\n", (long)(t->size()));
+          PCU_Debug_Print("t->size() %lu\n", t->size());
         assert(t->size());
-        Closest c = {-1, DBL_MAX};
+        Closest cl = {-1, DBL_MAX};
         const parma::Targets::Item* tgt;
         t->begin();
         while( (tgt = t->iterate()) ) {
           double d = get(elm, tgt->first);
-          if( d < c.dist ) {
-            c.peer = tgt->first;
-            c.dist = d;
+          if( d < cl.dist ) {
+            cl.peer = tgt->first;
+            cl.dist = d;
           }
         }
         t->end();
-        assert(c.peer != -1);
-        return c;
+        assert(cl.peer != -1);
+        return cl;
       }
     private:
       apf::Mesh* m;
@@ -160,7 +160,7 @@ namespace parma {
           ss << send->first << ',' << send->second << " ";
         ss << '\n';
         std::string s = ss.str();
-        PCU_Debug_Print(s.c_str());
+        PCU_Debug_Print("%s",s.c_str());
       }
       Centroids* centroids;
       std::map<int,double> sending;

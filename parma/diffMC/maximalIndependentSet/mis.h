@@ -1,5 +1,5 @@
-#ifndef _MIS_H_
-#define _MIS_H_
+#ifndef MIS_H_
+#define MIS_H_
 
 #include <map>
 #include <vector>
