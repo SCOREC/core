@@ -1,5 +1,5 @@
 set(MESHES "/lore/dibanez/meshes"
-    CACHE string 
+    CACHE string
     "path to the meshes svn repo")
 if(ENABLE_THREADS)
   macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
@@ -11,9 +11,14 @@ if(ENABLE_THREADS)
       "${OUT}"
       ${FACTOR})
   endmacro()
+  macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
+    add_test(NAME "${TESTNAME}"
+      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "${PROG}"
+      WORKING_DIRECTORY "${WORKDIR}")
+  endmacro()
 else()
   macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
-    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}") 
+    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
     add_test("${TESTNAME}"
       ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS}
       "${PROG}"
@@ -21,6 +26,12 @@ else()
       "${IN}"
       "${OUT}"
       ${FACTOR})
+  endmacro()
+  macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
+    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
+    add_test(NAME "${TESTNAME}"
+      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "${PROG}"
+      WORKING_DIRECTORY "${WORKDIR}")
   endmacro()
 endif()
 add_test(shapefun shapefun)
@@ -263,11 +274,9 @@ add_test(adapt_meshgen
   "67k/")
 add_test(ma_insphere
   ma_insphere)
-if(ENABLE_THREADS AND PCU_COMPRESS)
+if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
-  add_test(NAME chef0
-    COMMAND chef
-    WORKING_DIRECTORY ${MDIR})
+  cook(chef0 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 1 ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
   add_test(NAME chef1
     COMMAND diff -r -x .svn run_sim/1-procs_case/ good_phasta/
@@ -275,19 +284,19 @@ if(ENABLE_THREADS AND PCU_COMPRESS)
   add_test(NAME chef2
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/run_sim)
+  cook(chef3 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 2 ${MDIR})
+  set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/run_sim)
+  cook(chef4 ${CMAKE_CURRENT_BINARY_DIR}/chef 2 2 ${MDIR})
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/run_sim)
-  add_test(NAME chef3
-    COMMAND chef
-    WORKING_DIRECTORY ${MDIR})
+  cook(chef5 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 4 ${MDIR})
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run_sim)
-  add_test(NAME chef4
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
-    WORKING_DIRECTORY ${MDIR})
+  cook(chef6 ${CMAKE_CURRENT_BINARY_DIR}/chef 4 1 ${MDIR})
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
-  add_test(NAME chef5
+  add_test(NAME chef7
     COMMAND diff -r -x .svn run_sim/4-procs_case/ good_phasta/
     WORKING_DIRECTORY ${MDIR})
-  add_test(NAME chef6
+  add_test(NAME chef8
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
 endif()

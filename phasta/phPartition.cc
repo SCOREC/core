@@ -8,13 +8,12 @@
 
 namespace ph {
 
-void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
+apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
 {
   assert(in.recursivePtn <= 1);
-  int factor = in.numTotParts / PCU_Comm_Peers();
-  assert(in.numTotParts % PCU_Comm_Peers() == 0);
+  assert(in.splitFactor >= 1);
   apf::Migration* plan;
-  if (factor != 1) {
+  if (in.splitFactor != 1) {
     apf::Splitter* splitter;
     if (in.partitionMethod == "rib") { //prefer SCOREC RIB over Zoltan RIB
       splitter = Parma_MakeRibSplitter(m);
@@ -26,14 +25,24 @@ void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
       splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
     }
     apf::MeshTag* weights = Parma_WeighByMemory(m);
-    plan = splitter->split(weights, 1.03, factor);
+    plan = splitter->split(weights, 1.03, in.splitFactor);
     apf::removeTagFromDimension(m, weights, m->getDimension());
     m->destroyTag(weights);
     delete splitter;
   } else {
     plan = new apf::Migration(m);
   }
-  apf::splitMdsMesh(m, plan, factor, runAfter);
+  return plan;
+}
+
+void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
+{
+  apf::splitMdsMesh(m, getSplitPlan(in, m), in.splitFactor, runAfter);
+}
+
+apf::Migration* split(Input& in, apf::Mesh2* m)
+{
+  return getSplitPlan(in,m);
 }
 
 bool isMixed(apf::Mesh2* m) {

@@ -10,7 +10,7 @@ class Input
 {
   public:
     Input();
-    Input(const char* filename);
+    void load(const char* filename);
     int globalP;
     int timeStepNumber;
     int ensa_dof;
@@ -31,7 +31,7 @@ class Input
     int internalBCNodes;
     int writeDebugFiles;
     int phastaIO;
-    int numTotParts;
+    int splitFactor;
     int solutionMigration;
     int displacementMigration;
     int isReorder;

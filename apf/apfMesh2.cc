@@ -198,4 +198,108 @@ void stitchMesh(Mesh2* m)
   }
 }
 
+static void packTagClone(Mesh2* m, MeshTag* t, int to)
+{
+  std::string name;
+  name = m->getTagName(t);
+  packString(name, to);
+  int type;
+  type = m->getTagType(t);
+  PCU_COMM_PACK(to, type);
+  int size;
+  size = m->getTagSize(t);
+  PCU_COMM_PACK(to, size);
+}
+
+static MeshTag* unpackTagClone(Mesh2* m)
+{
+  std::string name = unpackString();
+  int type;
+  PCU_COMM_UNPACK(type);
+  int size;
+  PCU_COMM_UNPACK(size);
+  if (type == apf::Mesh::DOUBLE)
+    return m->createDoubleTag(name.c_str(), size);
+  if (type == apf::Mesh::INT)
+    return m->createIntTag(name.c_str(), size);
+  if (type == apf::Mesh::LONG)
+    return m->createLongTag(name.c_str(), size);
+  return 0;
+}
+
+static void packTagClones(Mesh2* m, int to)
+{
+  DynamicArray<MeshTag*> tags;
+  m->getTags(tags);
+  int n = tags.getSize();
+  PCU_COMM_PACK(to, n);
+  /* warning! this loop goes backward to cater to MDS
+     implementation-specific behavior.
+     please forgive me. */
+  for (int i = n - 1; i >= 0; --i)
+    packTagClone(m, tags[i], to);
+}
+
+static void unpackTagClones(Mesh2* m)
+{
+  int n;
+  PCU_COMM_UNPACK(n);
+  for (int i = 0; i < n; ++i)
+    unpackTagClone(m);
+}
+
+static void packFieldClone(Field* f, int to)
+{
+  std::string name = f->getName();
+  packString(name, to);
+  int valueType = f->getValueType();
+  PCU_COMM_PACK(to, valueType);
+  int components = f->countComponents();
+  PCU_COMM_PACK(to, components);
+  std::string shapeName = f->getShape()->getName();
+  packString(shapeName, to);
+  /* warning! this only supports tag-stored fields */
+}
+
+static Field* unpackFieldClone(Mesh2* m)
+{
+  std::string name = unpackString();
+  int valueType;
+  PCU_COMM_UNPACK(valueType);
+  int components;
+  PCU_COMM_UNPACK(components);
+  std::string shapeName = unpackString();
+  FieldShape* shape = getShapeByName(shapeName.c_str());
+  /* warning! this only supports tag-stored fields */
+  return makeField(m, name.c_str(), valueType, components, shape, new TagDataOf<double>);
+}
+
+static void packFieldClones(Mesh2* m, int to)
+{
+  int n = m->countFields();
+  PCU_COMM_PACK(to, n);
+  for (int i = 0; i < n; ++i)
+    packFieldClone(m->getField(i), to);
+}
+
+static void unpackFieldClones(Mesh2* m)
+{
+  int n;
+  PCU_COMM_UNPACK(n);
+  for (int i = 0; i < n; ++i)
+    unpackFieldClone(m);
+}
+
+void packDataClone(Mesh2* m, int to)
+{
+  packTagClones(m, to);
+  packFieldClones(m, to);
+}
+
+void unpackDataClone(Mesh2* m)
+{
+  unpackTagClones(m);
+  unpackFieldClones(m);
+}
+
 }

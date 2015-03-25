@@ -90,6 +90,7 @@ void reorderMdsMesh(Mesh2* mesh);
                   called by n threads, each with a unique MDS split part.
   */
 void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
 
 /** \brief align the downward adjacencies of matched entities */
 bool alignMdsMatches(Mesh2* in);

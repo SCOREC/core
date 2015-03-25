@@ -183,6 +183,9 @@ void initResidence(Mesh2* m, int dim);
   other entities correctly. */
 void stitchMesh(Mesh2* m);
 
+void packDataClone(Mesh2* m, int to);
+void unpackDataClone(Mesh2* m);
+
 }//namespace apf
 
 #endif

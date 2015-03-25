@@ -11,6 +11,8 @@
 
 namespace apf {
 
+static std::map<std::string, FieldShape*> registry;
+
 EntityShape::~EntityShape()
 {
 }
@@ -24,9 +26,25 @@ void FieldShape::getNodeXi(int, int, Vector3&)
   fail("unimplemented getNodeXi called");
 }
 
+void FieldShape::registerSelf(const char* name_)
+{
+  std::string name = name_;
+  assert(registry.count(name) == 0);
+  registry[name] = this;
+}
+
+FieldShape* getShapeByName(const char* name)
+{
+  std::string s(name);
+  if (registry.count(s))
+    return registry[s];
+  return 0;
+}
+
 class Linear : public FieldShape
 {
   public:
+    Linear() { registerSelf(apf::Linear::getName()); }
     const char* getName() const { return "Linear"; }
     class Vertex : public EntityShape
     {
@@ -291,6 +309,7 @@ class Linear : public FieldShape
 class Quadratic : public FieldShape
 {
   public:
+    Quadratic() { registerSelf(apf::Quadratic::getName()); }
     const char* getName() const {return "Quadratic";}
     class Edge : public EntityShape
     {
@@ -459,6 +478,7 @@ class Constant : public FieldShape
       std::stringstream ss;
       ss << "Constant_" << D;
       name = ss.str();
+      registerSelf(name.c_str());
     }
     const char* getName() const
     {
@@ -526,14 +546,10 @@ static Integration const* tryToGetIntegration(int type, int order)
   return ei->getAccurate(order);
 }
 
-class IPShape : public FieldShape
+class IPBase : public FieldShape
 {
   public:
-    const char* getName() const {return name.c_str();}
-    IPShape(int d, int o):dimension(d),order(o) {
-      std::stringstream ss;
-      ss << "IPShape_" << d << "_" << o;
-      name = ss.str();
+    IPBase(int d, int o):dimension(d),order(o) {
     }
     EntityShape* getEntityShape(int) {return 0;}
     bool hasNodesIn(int d)
@@ -555,6 +571,21 @@ class IPShape : public FieldShape
   protected:
     int dimension;
     int order;
+};
+
+class IPShape : public IPBase
+{
+  public:
+    IPShape(int d, int o):
+      IPBase(d, o)
+    {
+      std::stringstream ss;
+      ss << "IPShape_" << d << "_" << o;
+      name = ss.str();
+      registerSelf(name.c_str());
+    }
+    const char* getName() const {return name.c_str();}
+  private:
     std::string name;
 };
 
@@ -579,20 +610,21 @@ FieldShape* getIPShape(int dimension, int order)
   return table[dimension][order];
 }
 
-class VoronoiShape : public IPShape
+class VoronoiShape : public IPBase
 {
   public:
-    const char* getName() const {return name.c_str();}
     VoronoiShape(int d, int o) :
-      IPShape(d,o)
+      IPBase(d,o)
     {
       std::stringstream ss;
       ss << "VoronoiShape_" << d << "_" << o;
       name = ss.str();
+      registerSelf(name.c_str());
       for (int type = 0; type < Mesh::TYPES; ++type)
         if (Mesh::typeDimension[type] == d)
           elem[type].init(type,o);
     }
+    const char* getName() const {return name.c_str();}
     EntityShape* getEntityShape(int type)
     {
       return &elem[type];
@@ -650,6 +682,7 @@ class VoronoiShape : public IPShape
     }
   private:
     Element elem[Mesh::TYPES];
+    std::string name;
 };
  
 FieldShape* getVoronoiShape(int dimension, int order)
