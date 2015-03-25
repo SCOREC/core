@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef DWR_ELASTICITYRHS_H
-#define DWR_ELASTICITYRHS_H
+#ifndef DWR_ELASTICITYLHS_H
+#define DWR_ELASTICITYLHS_H
 
 #include <apf.h>
 #include <apfDynamicArray.h>
@@ -15,11 +15,11 @@
 
 namespace dwr {
 
-class ElasticityRHS : public apf::Integrator
+class ElasticityLHS : public apf::Integrator
 {
   public:
-    ElasticityRHS(int o, apf::Field* u);
-    ~ElasticityRHS();
+    ElasticityLHS(int o, apf::Field* u);
+    ~ElasticityLHS();
     void inElement(apf::MeshElement* me);
     void outElement();
     void atPoint(apf::Vector3 const& p, double w, double dv);

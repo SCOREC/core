@@ -8,6 +8,11 @@
 #ifndef DWR_UTILS_H
 #define DWR_UTILS_H
 
+namespace apf {
+class Mesh;
+class MeshEntity;
+}
+
 namespace dwr {
 
 template<class VectorT>
@@ -24,6 +29,8 @@ void zeroMatrix3x3(Matrix3x3T& m)
   for (int j=0; j < 3; ++j)
     m[i][j] = 0.0;
 }
+
+double getMeshSize(apf::Mesh* m, apf::MeshEntity* e);
 
 void print(const char* format, ...) __attribute__((format(printf,1,2)));
 

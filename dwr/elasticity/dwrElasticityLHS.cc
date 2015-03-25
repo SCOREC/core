@@ -10,22 +10,22 @@
 #include "dwrGrad.h"
 #include "dwrStrain.h"
 #include "dwrStress.h"
-#include "dwrElasticityRHS.h"
+#include "dwrElasticityLHS.h"
 
 namespace dwr {
 
-ElasticityRHS::ElasticityRHS(int o, apf::Field* u) : 
+ElasticityLHS::ElasticityLHS(int o, apf::Field* u) : 
   apf::Integrator(o),
   primal_(u)
 {
   numDims_ = apf::getMesh(primal_)->getDimension();
 }
 
-ElasticityRHS::~ElasticityRHS()
+ElasticityLHS::~ElasticityLHS()
 {
 }
 
-void ElasticityRHS::inElement(apf::MeshElement* me)
+void ElasticityLHS::inElement(apf::MeshElement* me)
 {
   e_ = apf::createElement(primal_,me);
   numNodes_ = apf::countNodes(e_);
@@ -47,12 +47,12 @@ void ElasticityRHS::inElement(apf::MeshElement* me)
     Ke(i,j) = 0.0;
 }
 
-void ElasticityRHS::outElement()
+void ElasticityLHS::outElement()
 {
   apf::destroyElement(e_);
 }
 
-void ElasticityRHS::atPoint(apf::Vector3 const& p, double w, double dv)
+void ElasticityLHS::atPoint(apf::Vector3 const& p, double w, double dv)
 {
   apf::NewArray<apf::Vector3> gradBF;
   apf::getShapeGrads(e_,p,gradBF);
