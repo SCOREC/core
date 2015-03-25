@@ -69,6 +69,7 @@ class FieldShape
     virtual void getNodeXi(int type, int node, Vector3& xi);
 /** \brief Get a unique string for this shape function scheme */
     virtual const char* getName() const = 0;
+    void registerSelf(const char* name);
 };
 
 /** \brief Get the Lagrangian shape function of some polynomial order
@@ -92,6 +93,8 @@ FieldShape* getIPShape(int dimension, int order);
            value at any point in the element is the value of the closest
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
+
+FieldShape* getShapeByName(const char* name);
 
 /** \brief count the number of nodes affecting an element type
   \param type select from apf::Mesh::Type */

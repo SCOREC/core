@@ -55,7 +55,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["internalBCNodes"] = &in.internalBCNodes;
   intMap["WRITEASC"] = &in.writeDebugFiles;
   intMap["phastaIO"] = &in.phastaIO;
-  intMap["numTotParts"] = &in.numTotParts;
+  intMap["splitFactor"] = &in.splitFactor;
   intMap["SolutionMigration"] = &in.solutionMigration;
   intMap["DisplacementMigration"] = &in.displacementMigration;
   intMap["isReorder"] = &in.isReorder;
@@ -129,7 +129,7 @@ static void validate(Input& in)
   assert( ! (in.buildMapping && in.adaptFlag));
 }
 
-Input::Input(const char* filename)
+void Input::load(const char* filename)
 {
   setDefaults(*this);
   std::map<std::string, std::string*> stringMap;

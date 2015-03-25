@@ -29,7 +29,7 @@ apf::Migration* getPlan(apf::Mesh* m)
   return plan;
 }
 
-void switchToMasters()
+void switchToOriginals()
 {
   int self = PCU_Comm_Self();
   int groupRank = self / partitionFactor;
@@ -45,49 +45,6 @@ void switchToAll()
   PCU_Switch_Comm(MPI_COMM_WORLD);
   MPI_Comm_free(&prevComm);
   PCU_Barrier();
-}
-
-void remapMesh(apf::Mesh2* m)
-{
-  apf::Multiply remap(partitionFactor);
-  apf::remapPartition(m, remap);
-}
-
-void mymain(bool ismaster)
-{
-  gmi_model* g = 0;
-  apf::Mesh2* m = 0;
-  apf::Migration* plan = 0;
-  int dim, matched;
-  switchToMasters();
-  if (ismaster) {
-    m = apf::loadMdsMesh(modelFile,meshFile);
-    dim = m->getDimension();
-    matched = m->hasMatching();
-    plan = getPlan(m);
-  } else {
-    g = gmi_load(modelFile);
-  }
-  switchToAll();
-  PCU_Comm_Begin();
-  if (ismaster)
-    for (int i = 1; i < partitionFactor; ++i) {
-      PCU_COMM_PACK(PCU_Comm_Self() + i, dim);
-      PCU_COMM_PACK(PCU_Comm_Self() + i, matched);
-    }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(dim);
-    PCU_COMM_UNPACK(matched);
-  }
-  if (!ismaster) {
-    m = apf::makeEmptyMdsMesh(g, dim, matched);
-    plan = new apf::Migration(m);
-  }
-  remapMesh(m);
-  m->migrate(plan);
-  m->writeNative(outFile);
-  freeMesh(m);
 }
 
 void getConfig(int argc, char** argv)
@@ -113,10 +70,20 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   gmi_register_mesh();
   getConfig(argc,argv);
-  if (PCU_Comm_Self() % partitionFactor)
-    mymain(false);
-  else
-    mymain(true);
+  bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
+  gmi_model* g = 0;
+  g = gmi_load(modelFile);
+  apf::Mesh2* m = 0;
+  apf::Migration* plan = 0;
+  switchToOriginals();
+  if (isOriginal) {
+    m = apf::loadMdsMesh(g, meshFile);
+    plan = getPlan(m);
+  }
+  switchToAll();
+  m = repeatMdsMesh(m, g, plan, partitionFactor);
+  m->writeNative(outFile);
+  freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();
 }
