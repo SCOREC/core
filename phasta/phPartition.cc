@@ -8,27 +8,41 @@
 
 namespace ph {
 
-void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
+apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
 {
   assert(in.recursivePtn <= 1);
-  int factor = in.numTotParts / PCU_Comm_Peers();
-  assert(in.numTotParts % PCU_Comm_Peers() == 0);
-  apf::Splitter* splitter;
-  if (in.partitionMethod == "rib") { //prefer SCOREC RIB over Zoltan RIB
-    splitter = Parma_MakeRibSplitter(m);
+  assert(in.splitFactor >= 1);
+  apf::Migration* plan;
+  if (in.splitFactor != 1) {
+    apf::Splitter* splitter;
+    if (in.partitionMethod == "rib") { //prefer SCOREC RIB over Zoltan RIB
+      splitter = Parma_MakeRibSplitter(m);
+    } else {
+      std::map<std::string, int> methodMap;
+      methodMap["graph"] = apf::GRAPH;
+      methodMap["hypergraph"] = apf::HYPERGRAPH;
+      int method = methodMap[in.partitionMethod];
+      splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
+    }
+    apf::MeshTag* weights = Parma_WeighByMemory(m);
+    plan = splitter->split(weights, 1.03, in.splitFactor);
+    apf::removeTagFromDimension(m, weights, m->getDimension());
+    m->destroyTag(weights);
+    delete splitter;
   } else {
-    std::map<std::string, int> methodMap;
-    methodMap["graph"] = apf::GRAPH;
-    methodMap["hypergraph"] = apf::HYPERGRAPH;
-    int method = methodMap[in.partitionMethod];
-    splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
+    plan = new apf::Migration(m);
   }
-  apf::MeshTag* weights = Parma_WeighByMemory(m);
-  apf::Migration* plan = splitter->split(weights, 1.03, factor);
-  apf::removeTagFromDimension(m, weights, m->getDimension());
-  m->destroyTag(weights);
-  delete splitter;
-  apf::splitMdsMesh(m, plan, factor, runAfter);
+  return plan;
+}
+
+void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
+{
+  apf::splitMdsMesh(m, getSplitPlan(in, m), in.splitFactor, runAfter);
+}
+
+apf::Migration* split(Input& in, apf::Mesh2* m)
+{
+  return getSplitPlan(in,m);
 }
 
 bool isMixed(apf::Mesh2* m) {

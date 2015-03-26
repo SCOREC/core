@@ -619,61 +619,54 @@ void reorderMdsMesh(Mesh2* mesh)
   m->mesh = mds_reorder(m->mesh);
 }
 
-static MeshTag* cloneTag(Mesh2* from, MeshTag* t, Mesh2* onto)
-{
-  int type = from->getTagType(t);
-  const char* name = from->getTagName(t);
-  int size = from->getTagSize(t);
-  if (type == Mesh::INT)
-    return onto->createIntTag(name, size);
-  if (type == Mesh::DOUBLE)
-    return onto->createDoubleTag(name, size);
-  if (type == Mesh::LONG)
-    return onto->createLongTag(name, size);
-  return 0;
-}
-
-static Mesh2* clone(Mesh2* from)
-{
-  Mesh2* m = makeEmptyMdsMesh(from->getModel(),
-        from->getDimension(), from->hasMatching());
-  DynamicArray<MeshTag*> tags;
-  from->getTags(tags);
-/* yea, we have to do this backwards since it uses
-   stack-like semantics and migration expects the
-   ordering to be the same... */
-  for (int i = tags.getSize() - 1; i >= 0; --i)
-    cloneTag(from, tags[i], m);
-  for (int i = 0; i < from->countFields(); ++i)
-    apf::cloneField(from->getField(i), m);
-  return m;
-}
-
 static int globalFactor;
 static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
 
-extern "C" void* splitThrdMain(void*)
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
 {
-  Mesh2* m;
-  Migration* plan;
   double t0 = PCU_Time();
-  if (!PCU_Thrd_Self()) {
-    m = globalMesh;
-    plan = globalPlan;
-  } else {
-    m = clone(globalMesh);
+  int self = PCU_Comm_Self();
+  bool isOriginal = ((PCU_Comm_Self() % factor) == 0);
+  int dim;
+  bool isMatched;
+  PCU_Comm_Begin();
+  if (isOriginal) {
+    dim = m->getDimension();
+    isMatched = m->hasMatching();
+    for (int i = 1; i < factor; ++i) {
+      int clone = self + i;
+      PCU_COMM_PACK(clone, dim);
+      PCU_COMM_PACK(clone, isMatched);
+      packDataClone(m, clone);
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    PCU_COMM_UNPACK(dim);
+    PCU_COMM_UNPACK(isMatched);
+    m = makeEmptyMdsMesh(g, dim, isMatched);
+    unpackDataClone(m);
+  }
+  apf::Multiply remap(factor);
+  apf::remapPartition(m, remap);
+  if (!isOriginal)
     plan = new apf::Migration(m, m->findTag("apf_migrate"));
-  }
-  if (globalFactor != 1) {
-    apf::Multiply remap(globalFactor);
-    apf::remapPartition(m, remap);
-  }
   m->migrate(plan);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("mesh split in %f seconds\n", t1 - t0);
+    printf("mesh repartitioned from %d to %d in %f seconds\n",
+        PCU_Comm_Peers() / factor,
+        PCU_Comm_Peers(),
+        t1 - t0);
+  return m;
+}
+
+extern "C" void* splitThrdMain(void*)
+{
+  Mesh2* m;
+  m = repeatMdsMesh(globalMesh, globalMesh->getModel(), globalPlan, globalFactor);
   globalThrdCall(m);
   return NULL;
 }
