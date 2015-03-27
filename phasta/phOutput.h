@@ -15,8 +15,11 @@ struct EnsaArrays
 {
   double* coordinates;
 /* describes inter-part connectivity,
-   see ph::encodeLinks */
+   see ph::encodeILWORK */
   int* ilwork;
+/* describes inter-part element connectivity,
+   see ph::encodeILWORKF */
+  int* ilworkf;
 /* periodic masters array, one per node... */  
   int* iper;
 /* note: int will overflow at about 2 billion total nodes */
@@ -67,6 +70,8 @@ bit:  0  1 2 3 4 5  6   7   8   9    10    11 */
 var:  rho t p c11 c12 c13 m1 c21 c22 c23 m2 theta sc1 sc2 sc3 sc4
 idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15  */
   double** bc;
+/* encodes part-local element to element connectivity */
+  int* ienneigh;
 };
 
 struct Output
@@ -82,7 +87,8 @@ struct Output
   int nBoundaryElements;
   int nMaxElementNodes;
   int nEssentialBCNodes;
-  int nlwork; /* see ph::encodeLinks */
+  int nlwork; /* size of arrays.ilwork */
+  int nlworkf; /* size of arrays.ilworkf */
   AllBlocks blocks;
   EnsaArrays arrays;
 };

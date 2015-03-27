@@ -58,10 +58,8 @@ static void getGlobal(Output& o)
 static void getLinks(Output& o, apf::Numbering* n)
 {
   Links links;
-  getVertexLinks(o.mesh, links);
-  size_t size;
-  encodeLinks(n, links, size, o.arrays.ilwork);
-  o.nlwork = size;
+  getVertexLinks(n, links);
+  encodeILWORK(links, o.nlwork, o.arrays.ilwork);
 }
 
 static void getInterior(Output& o, apf::Numbering* n)
@@ -302,10 +300,25 @@ static void getInitialConditions(BCs& bcs, Output& o)
   m->end(it);
 }
 
+static void getElementGraph(Output& o)
+{
+  if (o.in->formElementGraph) {
+    apf::LocalCopy* e2e = apf::getLocalElementToElement(o.mesh);
+    Links links;
+    separateElementGraph(o.mesh, e2e, links, o.arrays.ienneigh);
+    encodeILWORKF(links, o.nlworkf, o.arrays.ilworkf);
+    delete [] e2e;
+  } else {
+    o.arrays.ilworkf = 0;
+    o.arrays.ienneigh = 0;
+  }
+}
+
 Output::~Output()
 {
   delete [] arrays.coordinates;
   delete [] arrays.ilwork;
+  delete [] arrays.ilworkf;
   delete [] arrays.iper;
   delete [] arrays.globalNodeNumbers;
   Blocks& ibs = blocks.interior;
@@ -334,6 +347,7 @@ Output::~Output()
   for (int i = 0; i < nEssentialBCNodes; ++i)
     delete [] arrays.bc[i];
   delete [] arrays.bc;
+  delete [] arrays.ienneigh;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -355,6 +369,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);
+  getElementGraph(o);
   if (in.initBubbles)
     initBubbles(o.mesh, in);
   double t1 = PCU_Time();

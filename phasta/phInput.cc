@@ -21,6 +21,7 @@ static void setDefaults(Input& in)
   in.elementsPerMigration = 1000*1000; // 100k elms per round
   in.threaded = 1;
   in.initBubbles = 0;
+  in.formElementGraph = 0;
   in.restartFileName = "restart";
 }
 
@@ -69,6 +70,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["elementsPerMigration"] = &in.elementsPerMigration;
   intMap["threaded"] = &in.threaded;
   intMap["initBubbles"] = &in.initBubbles;
+  intMap["formElementGraph"] = &in.formElementGraph;
 }
 
 template <class T>

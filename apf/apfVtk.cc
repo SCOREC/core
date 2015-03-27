@@ -463,7 +463,8 @@ static void writeVtuFile(const char* prefix, Numbering* n)
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
   double t0 = PCU_Time();
-  writePvtuFile(prefix, m);
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix, m);
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n);
