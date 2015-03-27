@@ -194,7 +194,7 @@ void separateElementGraph(apf::Mesh* m, apf::LocalCopy* e2e,
       if (lc.isNull())
         ienneigh[j * nelem + i] = 0;
       else if (lc.peer == self)
-        ienneigh[j * nelem + i] = lc.localNumber;
+        ienneigh[j * nelem + i] = lc.localNumber + 1;
       else {
         ienneigh[j * nelem + i] = 0;
         LinkKey k(0, lc.peer);
