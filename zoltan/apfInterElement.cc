@@ -71,6 +71,67 @@ MeshTag* tagOpposites(GlobalNumbering* gn, const char* name)
   return t;
 }
 
+static void packOtherLid(Numbering* n, MeshEntity* s, int i)
+{
+  Mesh* m = getMesh(n);
+  Copy other = getOtherSide(m, s);
+  PCU_COMM_PACK(other.peer, other.entity);
+  PCU_COMM_PACK(other.peer, i);
+}
+
+static void unpackOtherLid(Mesh* m, Numbering* n, LocalCopy* e2e, int nsides)
+{
+  MeshEntity* s;
+  PCU_COMM_UNPACK(s);
+  int lid;
+  PCU_COMM_UNPACK(lid);
+  MeshEntity* e = getSideElement(m, s);
+  int i = getNumber(n, e, 0, 0);
+  int which; bool flip; int rotate;
+  getAlignment(m, e, s, which, flip, rotate);
+  e2e[i * nsides + which] = LocalCopy(PCU_Comm_Sender(), lid);
+}
+
+LocalCopy* getLocalElementToElement(apf::Mesh* m)
+{
+  int dim = m->getDimension();
+  int sideDim = dim - 1;
+  int type = getFirstType(m, dim);
+  int nsides = apf::Mesh::adjacentCount[type][dim - 1];
+  LocalCopy* e2e = new LocalCopy[m->count(dim) * nsides];
+  Numbering* n = numberElements(m, "getLocalElementToElement");
+  PCU_Comm_Begin();
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  int i = 0;
+  while ((e = m->iterate(it))) {
+    Downward sides;
+    m->getDownward(e, sideDim, sides);
+    for (int j = 0; j < nsides; ++j) {
+      Up up;
+      m->getUp(sides[j], up);
+      if (up.n == 1) {
+        if (hasOtherSide(m, sides[j]))
+          packOtherLid(n, sides[j], i);
+        else
+          e2e[i * nsides + j] = LocalCopy();
+      } else {
+        MeshEntity* oe = up.e[1 - findIn(up.e, 2, e)];
+        int which; bool flip; int rotate;
+        getAlignment(m, e, sides[j], which, flip, rotate);
+        int oi = getNumber(n, oe, 0, 0);
+        e2e[i * nsides + j] = LocalCopy(PCU_Comm_Self(), oi);
+      }
+    }
+    ++i;
+  }
+  m->end(it);
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive())
+    unpackOtherLid(m, n, e2e, nsides);
+  return e2e;
+}
+
 static long getOpposite(GlobalNumbering* gn, MeshTag* opposites,
     MeshEntity* element, int side_i)
 {

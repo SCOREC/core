@@ -13,16 +13,6 @@ static std::string buildGeomBCFileName()
   return ss.str();
 }
 
-/* note: doing this as an "int" will almost certainly
-   overflow for billion-element meshes.
-   but, thats the format used in previous geombc. */
-int getTotalNodes(apf::Mesh* m)
-{
-  int n = apf::countOwned(m, 0);
-  PCU_Add_Ints(&n, 1);
-  return n;
-}
-
 enum {
   MAX_PARAMS = 8
 };
@@ -142,6 +132,20 @@ static void writeDoubles(FILE* f, const char* name, double* d, int n)
   ph_write_doubles(f, name, d, n, 1, &n);
 }
 
+static void writeElementGraph(Output& o, FILE* f)
+{
+  if (o.in->formElementGraph) {
+    apf::Mesh* m = o.mesh;
+    int dim = m->getDimension();
+    int type = getFirstType(m, dim);
+    int nsides = apf::Mesh::adjacentCount[type][dim - 1];
+    size_t nelem = m->count(dim);
+    writeInt(f, "size of ilworkf array", o.nlworkf);
+    writeInts(f, "ilworkf", o.arrays.ilworkf, o.nlworkf);
+    writeInts(f, "ienneigh", o.arrays.ienneigh, nelem * nsides);
+  }
+}
+
 void writeGeomBC(Output& o, std::string path)
 {
   double t0 = PCU_Time();
@@ -188,6 +192,7 @@ void writeGeomBC(Output& o, std::string path)
   getEssentialBCValues(o, bc);
   writeDoubles(f, "boundary condition array", &bc[0], bc.getSize());
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
+  writeElementGraph(o, f);
   fclose(f);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

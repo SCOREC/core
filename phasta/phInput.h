@@ -47,6 +47,7 @@ class Input
     int elementsPerMigration;
     int threaded;
     int initBubbles;
+    int formElementGraph;
 };
 
 int countNaturalBCs(Input& in);
