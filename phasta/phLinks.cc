@@ -54,7 +54,7 @@ struct PhastaSharing : public apf::Sharing {
    communication arrays describing shared entities.
 
    for every partition model face, each part
-   will store an array of all vertices it has
+   will store an array of all entities it has
    classified on that partition model face.
    the two arrays are aligned such that
    the same index in both arrays denotes the same vertex.
@@ -72,11 +72,10 @@ struct PhastaSharing : public apf::Sharing {
    of this code.
 */
 
-void getVertexLinks(apf::Numbering* n, Links& links)
+void getLinks(apf::Mesh* m, int dim, Links& links)
 {
-  apf::Mesh* m = apf::getMesh(n);
   PCU_Comm_Begin();
-  apf::MeshIterator* it = m->begin(0);
+  apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* v;
   PhastaSharing shr(m);
   while ((v = m->iterate(it))) {
@@ -89,12 +88,10 @@ void getVertexLinks(apf::Numbering* n, Links& links)
     apf::CopyArray remotes;
     shr.getCopies(v, remotes);
     for (size_t i = 0; i < remotes.getSize(); ++i) {
-      LinkPair p;
-      p.local = apf::getNumber(n, v, 0, 0);
       /* in matching we may accumulate multiple occurrences
          of the same master in the outgoing links array
          to a part that contains multiple copies of it. */
-      links[LinkKey(1, remotes[i].peer)].push_back(p);
+      links[LinkKey(1, remotes[i].peer)].push_back(v);
       PCU_COMM_PACK(remotes[i].peer, remotes[i].entity);
     }
   }
@@ -105,9 +102,7 @@ void getVertexLinks(apf::Numbering* n, Links& links)
     while (!PCU_Comm_Unpacked()) {
       apf::MeshEntity* v;
       PCU_COMM_UNPACK(v);
-      LinkPair p;
-      p.local = apf::getNumber(n, v, 0, 0);
-      links[LinkKey(0, peer)].push_back(p);
+      links[LinkKey(0, peer)].push_back(v);
     }
   }
 }
@@ -129,7 +124,7 @@ void getVertexLinks(apf::Numbering* n, Links& links)
    #dofs on entity
 */
 
-void encodeILWORK(Links& links, int& size, int*& a)
+void encodeILWORK(apf::Numbering* n, Links& links, int& size, int*& a)
 {
   size = 1; // total links
   APF_ITERATE(Links, links, it) {
@@ -148,19 +143,25 @@ void encodeILWORK(Links& links, int& size, int*& a)
     a[i++] = l.size();
     APF_ITERATE(Link, l, lit) {
       /* entities also numbered from 1 */
-      a[i++] = lit->local + 1;
+      a[i++] = apf::getNumber(n, *lit, 0, 0) + 1;
       a[i++] = 1;
     }
   }
   assert(i == size);
 }
 
-void encodeILWORKF(Links& links, int& size, int*& a)
+static apf::MeshEntity* getSideElement(apf::Mesh* m, apf::MeshEntity* s)
 {
+  return m->getUpward(s, 0);
+}
+
+void encodeILWORKF(apf::Numbering* n, Links& links, int& size, int*& a)
+{
+  apf::Mesh* m = apf::getMesh(n);
   size = 1; // total links
   APF_ITERATE(Links, links, it) {
     size += 2; //link header
-    size += it->second.size() * 2; //entity entries
+    size += it->second.size(); //entity entries
   }
   a = new int[size];
   a[0] = links.size();
@@ -172,41 +173,42 @@ void encodeILWORKF(Links& links, int& size, int*& a)
     a[i++] = l.size();
     APF_ITERATE(Link, l, lit) {
       /* entities also numbered from 1 */
-      a[i++] = lit->local + 1;
-      a[i++] = lit->remote + 1;
+      apf::MeshEntity* e = getSideElement(m, *lit);
+      a[i++] = apf::getNumber(n, e, 0, 0) + 1;
     }
   }
   assert(i == size);
 }
 
-void separateElementGraph(apf::Mesh* m, apf::LocalCopy* e2e,
-    Links& links, int*& ienneigh)
+int* formIENNEIGH(apf::Numbering* ln)
 {
+  apf::Mesh* m = getMesh(ln);
   int dim = m->getDimension();
+  int sideDim = dim - 1;
   int type = getFirstType(m, dim);
-  int nsides = apf::Mesh::adjacentCount[type][dim - 1];
+  int nsides = apf::Mesh::adjacentCount[type][sideDim];
   size_t nelem = m->count(dim);
-  int self = PCU_Comm_Self();
-  ienneigh = new int[nelem * nsides];
-  for (size_t i = 0; i < nelem; ++i)
+  int* ienneigh = new int[nelem * nsides];
+  apf::MeshIterator* it = m->begin(dim);
+  apf::MeshEntity* e;
+  int i = 0;
+  while ((e = m->iterate(it))) {
+    apf::Downward sides;
+    m->getDownward(e, sideDim, sides);
     for (int j = 0; j < nsides; ++j) {
-      apf::LocalCopy& lc = e2e[i * nsides + j];
-      if (lc.isNull())
-        ienneigh[j * nelem + i] = 0;
-      else if (lc.peer == self)
-        ienneigh[j * nelem + i] = lc.localNumber + 1;
-      else {
-        ienneigh[j * nelem + i] = 0;
-        LinkKey k(0, lc.peer);
-        LinkPair p;
-        p.local = i;
-        p.remote = lc.localNumber;
-        /* note: this does not match the order of the
-           tasks on the two ranks the way we did for
-           the nodes... */
-        links[k].push_back(p);
-      }
+      apf::Up up;
+      m->getUp(sides[j], up);
+      if (up.n == 2) {
+        apf::MeshEntity* oe = up.e[1 - apf::findIn(up.e, 2, e)];
+        int oi = getNumber(ln, oe, 0, 0);
+        ienneigh[j * nelem + i] = oi;
+      } else
+        ienneigh[j * nelem + i] = -1;
     }
+    ++i;
+  }
+  m->end(it);
+  return ienneigh;
 }
 
 }

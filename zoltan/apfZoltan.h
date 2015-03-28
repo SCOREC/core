@@ -122,23 +122,6 @@ MeshTag* tagOpposites(GlobalNumbering* gn, const char* name);
   boundary. */
 int* getElementToElement(apf::Mesh* m);
 
-struct LocalCopy {
-  LocalCopy():peer(-1),localNumber(-1) {}
-  LocalCopy(int a, int b):peer(a),localNumber(b) {}
-  bool isNull() const {return peer == -1;}
-  int peer;
-  int localNumber;
-};
-
-/** \brief Get an element-to-element local connectivity array
-  \details this function assumes the mesh has one element type.
-  the resulting array is created with new Copy[nelements * nsides].
-  nsides is the number of faces of an element.
-  entry [i * nsides + j] is the apf::LocalCopy of the j'th adjacent
-  element to local element i, which can be checked with isNull for a
-  geometric boundary. */
-LocalCopy* getLocalElementToElement(apf::Mesh* m);
-
 }
 
 #endif

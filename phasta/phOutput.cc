@@ -40,7 +40,11 @@ static void getCoordinates(Output& o)
    and the id generator from pumi would do things
    like this. I guess PHASTA is ok with a unique
    number for each copy, regardless of part boundary
-   sharing... */
+   sharing...
+ 
+update: Michel says these global numbers are ignored
+        by phasta. get rid of them when you can.
+ */
 static void getGlobal(Output& o)
 {
   apf::Mesh* m = o.mesh;
@@ -55,11 +59,11 @@ static void getGlobal(Output& o)
   }
 }
 
-static void getLinks(Output& o, apf::Numbering* n)
+static void getVertexLinks(Output& o, apf::Numbering* n)
 {
   Links links;
-  getVertexLinks(n, links);
-  encodeILWORK(links, o.nlwork, o.arrays.ilwork);
+  getLinks(o.mesh, 0, links);
+  encodeILWORK(n, links, o.nlwork, o.arrays.ilwork);
 }
 
 static void getInterior(Output& o, apf::Numbering* n)
@@ -303,11 +307,11 @@ static void getInitialConditions(BCs& bcs, Output& o)
 static void getElementGraph(Output& o)
 {
   if (o.in->formElementGraph) {
-    apf::LocalCopy* e2e = apf::getLocalElementToElement(o.mesh);
+    apf::Numbering* n = apf::numberElements(o.mesh, "ph::getElementGraph");
+    o.arrays.ienneigh = formIENNEIGH(n);
     Links links;
-    separateElementGraph(o.mesh, e2e, links, o.arrays.ienneigh);
-    encodeILWORKF(links, o.nlworkf, o.arrays.ilworkf);
-    delete [] e2e;
+    getLinks(o.mesh, o.mesh->getDimension() - 1, links);
+    encodeILWORKF(n, links, o.nlworkf, o.arrays.ilworkf);
   } else {
     o.arrays.ilworkf = 0;
     o.arrays.ienneigh = 0;
@@ -360,7 +364,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getGlobal(o);
   getAllBlocks(o.mesh, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
-  getLinks(o, n);
+  getVertexLinks(o, n);
   getInterior(o, n);
   getBoundary(o, bcs, n);
   getPeriodicMasters(o, n);
