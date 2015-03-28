@@ -201,9 +201,9 @@ int* formIENNEIGH(apf::Numbering* ln)
       if (up.n == 2) {
         apf::MeshEntity* oe = up.e[1 - apf::findIn(up.e, 2, e)];
         int oi = getNumber(ln, oe, 0, 0);
-        ienneigh[j * nelem + i] = oi;
+        ienneigh[j * nelem + i] = oi + 1;
       } else
-        ienneigh[j * nelem + i] = -1;
+        ienneigh[j * nelem + i] = 0;
     }
     ++i;
   }
