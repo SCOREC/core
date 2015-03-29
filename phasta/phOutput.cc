@@ -114,9 +114,6 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
   while ((gf = gmi_next(gm, git))) {
     apf::ModelEntity* mf = (apf::ModelEntity*)gf;
-    int* ibcbMaster = new int[2]();
-    double* bcbMaster = new double[nbc]();
-    applyNaturalBCs(gm, gf, bcs, bcbMaster, ibcbMaster);
     apf::MeshEntity* f;
     apf::MeshIterator* it = m->begin(m->getDimension() - 1);
     /* this brute force reverse classification can cost some time.
@@ -138,15 +135,10 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
       for (int k = 0; k < nv; ++k)
         ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
       bcb[i][j] = new double[nbc]();
-      for (int k = 0; k < nbc; ++k)
-        bcb[i][j][k] = bcbMaster[k];
       ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
-      for (int k = 0; k < 2; ++k)
-        ibcb[i][j][k] = ibcbMaster[k];
+      applyNaturalBCs(gm, gf, bcs, bcb[i][j], ibcb[i][j]);
       ++js[i];
     }
-    delete [] ibcbMaster;
-    delete [] bcbMaster;
     m->end(it);
   }
   gmi_end(gm, git);
