@@ -71,25 +71,30 @@ static void getInterior(Output& o, apf::Numbering* n)
   apf::Mesh* m = o.mesh;
   Blocks& bs = o.blocks.interior;
   int*** ien = new int**[bs.getSize()];
+  apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ien[i] = new int*[bs.nElements[i]];
-    int t = bs.keys[i].elementType;
-    int nv = bs.keys[i].nElementVertices;
-    apf::MeshEntity* e;
-    int j = 0;
-    apf::MeshIterator* it = m->begin(m->getDimension());
-    while ((e = m->iterate(it))) {
-      if (getPhastaType(m, e) != t)
-        continue;
-      ien[i][j] = new int[nv];
-      apf::Downward v;
-      getVertices(m, e, v);
-      for (int k = 0; k < nv; ++k)
-        ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
-      ++j;
-    }
-    m->end(it);
+    js[i] = 0;
   }
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+    BlockKey k;
+    getInteriorBlockKey(m, e, k);
+    int nv = k.nElementVertices;
+    assert(bs.keyToIndex.count(k));
+    int i = bs.keyToIndex[k];
+    int j = js[i];
+    ien[i][j] = new int[nv];
+    apf::Downward v;
+    getVertices(m, e, v);
+    for (int k = 0; k < nv; ++k)
+      ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
+    ++js[i];
+  }
+  m->end(it);
+  for (int i = 0; i < bs.getSize(); ++i)
+    assert(js[i] == bs.nElements[i]);
   o.arrays.ien = ien;
 }
 

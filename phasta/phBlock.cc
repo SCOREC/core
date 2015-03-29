@@ -15,7 +15,7 @@ bool BlockKey::operator<(BlockKey const& other) const
   return polynomialOrder < other.polynomialOrder;
 }
 
-int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
+static int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
 {
   static int const table[apf::Mesh::TYPES] = 
   {-1  //vertex
@@ -26,20 +26,6 @@ int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
   ,HEXAHEDRON
   ,WEDGE
   ,PYRAMID};
-  return table[m->getType(e)];
-}
-
-int getBoundaryFaceEdges(apf::Mesh* m, apf::MeshEntity* e)
-{
-  static int const table[apf::Mesh::TYPES] = 
-  {-1  //vertex
-  ,-1  //edge
-  ,-1  //triangle
-  ,-1  //quad
-  ,3 //tet
-  ,4 //hex
-  ,3 //wedge
-  ,3}; //pyramid
   return table[m->getType(e)];
 }
 
@@ -57,23 +43,34 @@ static void insertKey(Blocks& b, BlockKey const& k)
   }
 }
 
+static void getBlockKeyCommon(apf::Mesh* m, apf::MeshEntity* e, BlockKey& k)
+{
+  k.elementType = getPhastaType(m, e);
+  k.nElementVertices =
+    apf::Mesh::adjacentCount[m->getType(e)][0];
+  k.polynomialOrder = 1;
+}
+
+void getInteriorBlockKey(apf::Mesh* m, apf::MeshEntity* e, BlockKey& k)
+{
+  getBlockKeyCommon(m, e, k);
+  /* what this value is should not matter much for interior elements */
+  k.nBoundaryFaceEdges = k.elementType == HEXAHEDRON ? 4 : 3;
+}
+
 static void getInteriorBlocks(apf::Mesh* m, Blocks& b)
 {
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
   while ((e = m->iterate(it))) {
     BlockKey k;
-    k.nElementVertices =
-      apf::Mesh::adjacentCount[m->getType(e)][0];
-    k.polynomialOrder = 1;
-    k.nBoundaryFaceEdges = getBoundaryFaceEdges(m, e);
-    k.elementType = getPhastaType(m, e);
+    getInteriorBlockKey(m, e, k);
     insertKey(b, k);
   }
   m->end(it);
 }
 
-void applyTriQuadHack(BlockKey& k)
+static void applyTriQuadHack(BlockKey& k)
 {
   /* distinguish between WEDGE_TRI (wedge with triangle on boundary)
      and WEDGE_QUAD (wedge with quad on boundary) */
@@ -88,12 +85,9 @@ void applyTriQuadHack(BlockKey& k)
 void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
     apf::MeshEntity* f, BlockKey& k)
 {
-  k.nElementVertices =
-    apf::Mesh::adjacentCount[m->getType(e)][0];
-  k.polynomialOrder = 1;
+  getBlockKeyCommon(m, e, k);
   k.nBoundaryFaceEdges =
     apf::Mesh::adjacentCount[m->getType(f)][1];
-  k.elementType = getPhastaType(m, e);
   applyTriQuadHack(k);
 }
 
