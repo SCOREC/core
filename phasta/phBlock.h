@@ -29,8 +29,6 @@ struct BlockKey
   bool operator<(BlockKey const& other) const;
 };
 
-int getPhastaType(apf::Mesh* m, apf::MeshEntity* e);
-
 enum {
   MAX_BLOCK_KEYS = 12
 };
@@ -58,10 +56,9 @@ void getAllBlocks(apf::Mesh* m, AllBlocks& b);
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
 
+void getInteriorBlockKey(apf::Mesh* m, apf::MeshEntity* e, BlockKey& k);
 void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
     apf::MeshEntity* f, BlockKey& k);
-
-int getPhastaType(apf::Mesh* m, apf::MeshEntity* e);
 
 }
 
