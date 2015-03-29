@@ -96,6 +96,7 @@ static void getInterior(Output& o, apf::Numbering* n)
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
@@ -108,39 +109,35 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     bcb[i] = new double*[bs.nElements[i]];
     js[i] = 0;
   }
-  gmi_model* gm = m->getModel();
-  gmi_ent* gf;
-  gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
-  while ((gf = gmi_next(gm, git))) {
-    apf::ModelEntity* mf = (apf::ModelEntity*)gf;
-    apf::MeshEntity* f;
-    apf::MeshIterator* it = m->begin(m->getDimension() - 1);
-    /* this brute force reverse classification can cost some time.
-       consider building a reverse classification structure for
-       faces */
-    while ((f = m->iterate(it))) {
-      if (m->toModel(f) != mf)
-        continue;
-      BlockKey k;
-      apf::MeshEntity* e = m->getUpward(f, 0);
-      getBoundaryBlockKey(m, e, f, k);
-      assert(bs.keyToIndex.count(k));
-      int i = bs.keyToIndex[k];
-      int j = js[i];
-      int nv = k.nElementVertices;
-      apf::Downward v;
-      getBoundaryVertices(m, e, f, v);
-      ienb[i][j] = new int[nv];
-      for (int k = 0; k < nv; ++k)
-        ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
-      bcb[i][j] = new double[nbc]();
-      ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
-      applyNaturalBCs(gm, gf, bcs, bcb[i][j], ibcb[i][j]);
-      ++js[i];
-    }
-    m->end(it);
+  int boundaryDim = m->getDimension() - 1;
+  apf::MeshEntity* f;
+  apf::MeshIterator* it = m->begin(boundaryDim);
+  /* this brute force reverse classification can cost some time.
+     consider building a reverse classification structure for
+     faces */
+  while ((f = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(f);
+    if (m->getModelType(me) != boundaryDim)
+      continue;
+    gmi_ent* gf = (gmi_ent*)me;
+    BlockKey k;
+    apf::MeshEntity* e = m->getUpward(f, 0);
+    getBoundaryBlockKey(m, e, f, k);
+    assert(bs.keyToIndex.count(k));
+    int i = bs.keyToIndex[k];
+    int j = js[i];
+    int nv = k.nElementVertices;
+    apf::Downward v;
+    getBoundaryVertices(m, e, f, v);
+    ienb[i][j] = new int[nv];
+    for (int k = 0; k < nv; ++k)
+      ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
+    bcb[i][j] = new double[nbc]();
+    ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
+    applyNaturalBCs(gm, gf, bcs, bcb[i][j], ibcb[i][j]);
+    ++js[i];
   }
-  gmi_end(gm, git);
+  m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
