@@ -229,35 +229,37 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
   int nec = countEssentialBCs(in);
   double* bcMaster = new double[nec]();
   gmi_model* gm = m->getModel();
-  bool did = applyEssentialBCs(gm, ge, bcs, bcMaster, &ibcMaster);
-  /* matching introduces an iper bit which in our system
-     is really a per-entity thing, not specifically dictated
-     by classification, so in that case we have to look
-     at all the vertices anyway to see if they are periodic slaves */
-  if (did || m->hasMatching()) {
-    apf::MeshEntity* v;
-    apf::MeshIterator* it = m->begin(0);
-    int i = 0;
-    int& ei = o.nEssentialBCNodes;
-    while ((v = m->iterate(it))) {
-      if (m->toModel(v) == (apf::ModelEntity*)ge) {
-        apf::MeshEntity* master = getPeriodicMaster(m, v);
-        if (did || (master != v)) {
-          o.arrays.nbc[i] = ei + 1;
-          o.arrays.ibc[ei] = ibcMaster;
-          if (master != v)
-            o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
-          double* bc_ei = new double[nec]();
-          for (int j = 0; j < nec; ++j)
-            bc_ei[j] = bcMaster[j];
-          o.arrays.bc[ei] = bc_ei;
-          ++ei;
-        }
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = m->begin(0);
+  int i = 0;
+  int& ei = o.nEssentialBCNodes;
+  /* this brute force reverse classification loop costs some time.
+     its only here to get the same ordering as phParAdapt,
+     but in theory we can do this whole thing through
+     forward classification only. */
+  while ((v = m->iterate(it))) {
+    if (m->toModel(v) == (apf::ModelEntity*)ge) {
+      apf::MeshEntity* master = getPeriodicMaster(m, v);
+      bool did = applyEssentialBCs(gm, ge, bcs, bcMaster, &ibcMaster);
+      /* matching introduces an iper bit which in our system
+         is really a per-entity thing, not specifically dictated
+         by classification, so in that case we have to look
+         at all the vertices anyway to see if they are periodic slaves */
+      if (did || (master != v)) {
+        o.arrays.nbc[i] = ei + 1;
+        o.arrays.ibc[ei] = ibcMaster;
+        if (master != v)
+          o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
+        double* bc_ei = new double[nec]();
+        for (int j = 0; j < nec; ++j)
+          bc_ei[j] = bcMaster[j];
+        o.arrays.bc[ei] = bc_ei;
+        ++ei;
       }
-      ++i;
     }
-    m->end(it);
+    ++i;
   }
+  m->end(it);
   delete [] bcMaster;
 }
 
