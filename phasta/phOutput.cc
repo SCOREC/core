@@ -119,6 +119,9 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     applyNaturalBCs(gm, gf, bcs, bcbMaster, ibcbMaster);
     apf::MeshEntity* f;
     apf::MeshIterator* it = m->begin(m->getDimension() - 1);
+    /* this brute force reverse classification can cost some time.
+       consider building a reverse classification structure for
+       faces */
     while ((f = m->iterate(it))) {
       if (m->toModel(f) != mf)
         continue;
@@ -225,9 +228,9 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
-  int ibcMaster = 0;
+  int ibc = 0;
   int nec = countEssentialBCs(in);
-  double* bcMaster = new double[nec]();
+  double* bc = new double[nec]();
   gmi_model* gm = m->getModel();
   apf::MeshEntity* v;
   apf::MeshIterator* it = m->begin(0);
@@ -240,19 +243,18 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
   while ((v = m->iterate(it))) {
     if (m->toModel(v) == (apf::ModelEntity*)ge) {
       apf::MeshEntity* master = getPeriodicMaster(m, v);
-      bool did = applyEssentialBCs(gm, ge, bcs, bcMaster, &ibcMaster);
-      /* matching introduces an iper bit which in our system
-         is really a per-entity thing, not specifically dictated
-         by classification, so in that case we have to look
-         at all the vertices anyway to see if they are periodic slaves */
-      if (did || (master != v)) {
+      bool hasBC = applyEssentialBCs(gm, ge, bcs, bc, &ibc);
+      /* matching introduces an iper bit */
+      if (master != v) {
+        ibc |= (1<<10); //yes, hard coded...
+        hasBC = true;
+      }
+      if (hasBC) {
         o.arrays.nbc[i] = ei + 1;
-        o.arrays.ibc[ei] = ibcMaster;
-        if (master != v)
-          o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
+        o.arrays.ibc[ei] = ibc;
         double* bc_ei = new double[nec]();
         for (int j = 0; j < nec; ++j)
-          bc_ei[j] = bcMaster[j];
+          bc_ei[j] = bc[j];
         o.arrays.bc[ei] = bc_ei;
         ++ei;
       }
@@ -260,7 +262,7 @@ static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
     ++i;
   }
   m->end(it);
-  delete [] bcMaster;
+  delete [] bc;
 }
 
 static void getEssentialBCs(BCs& bcs, Output& o)
