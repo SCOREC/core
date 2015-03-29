@@ -96,7 +96,6 @@ static void getInterior(Output& o, apf::Numbering* n)
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
-  ModelBounds modelFaces;
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
