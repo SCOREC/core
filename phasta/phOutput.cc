@@ -112,16 +112,13 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   int boundaryDim = m->getDimension() - 1;
   apf::MeshEntity* f;
   apf::MeshIterator* it = m->begin(boundaryDim);
-  /* this brute force reverse classification can cost some time.
-     consider building a reverse classification structure for
-     faces */
   while ((f = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
     gmi_ent* gf = (gmi_ent*)me;
-    BlockKey k;
     apf::MeshEntity* e = m->getUpward(f, 0);
+    BlockKey k;
     getBoundaryBlockKey(m, e, f, k);
     assert(bs.keyToIndex.count(k));
     int i = bs.keyToIndex[k];
