@@ -99,24 +99,19 @@ void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
 
 void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
 {
-  gmi_model* gm = m->getModel();
-  gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
-  gmi_ent* gf;
-  while ((gf = gmi_next(gm, git))) {
-    apf::ModelEntity* modelFace = (apf::ModelEntity*)gf;
-    apf::MeshIterator* it = m->begin(m->getDimension() - 1);
-    apf::MeshEntity* f;
-    while ((f = m->iterate(it))) {
-      if (m->toModel(f) != modelFace)
-        continue;
-      apf::MeshEntity* e = m->getUpward(f, 0);
-      BlockKey k;
-      getBoundaryBlockKey(m, e, f, k);
-      insertKey(b, k);
-    }
-    m->end(it);
+  int boundaryDim = m->getDimension() - 1;
+  apf::MeshIterator* it = m->begin(boundaryDim);
+  apf::MeshEntity* f;
+  while ((f = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(f);
+    if (m->getModelType(me) != boundaryDim)
+      continue;
+    apf::MeshEntity* e = m->getUpward(f, 0);
+    BlockKey k;
+    getBoundaryBlockKey(m, e, f, k);
+    insertKey(b, k);
   }
-  gmi_end(gm, git);
+  m->end(it);
 }
 
 void getAllBlocks(apf::Mesh* m, AllBlocks& b)
