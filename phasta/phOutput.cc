@@ -214,49 +214,9 @@ static void getPeriodicMasters(Output& o, apf::Numbering* n)
   o.arrays.iper = iper;
 }
 
-static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
-{
-  Input& in = *o.in;
-  apf::Mesh* m = o.mesh;
-  int ibc = 0;
-  int nec = countEssentialBCs(in);
-  double* bc = new double[nec]();
-  gmi_model* gm = m->getModel();
-  apf::MeshEntity* v;
-  apf::MeshIterator* it = m->begin(0);
-  int i = 0;
-  int& ei = o.nEssentialBCNodes;
-  /* this brute force reverse classification loop costs some time.
-     its only here to get the same ordering as phParAdapt,
-     but in theory we can do this whole thing through
-     forward classification only. */
-  while ((v = m->iterate(it))) {
-    if (m->toModel(v) == (apf::ModelEntity*)ge) {
-      apf::MeshEntity* master = getPeriodicMaster(m, v);
-      bool hasBC = applyEssentialBCs(gm, ge, bcs, bc, &ibc);
-      /* matching introduces an iper bit */
-      if (master != v) {
-        ibc |= (1<<10); //yes, hard coded...
-        hasBC = true;
-      }
-      if (hasBC) {
-        o.arrays.nbc[i] = ei + 1;
-        o.arrays.ibc[ei] = ibc;
-        double* bc_ei = new double[nec]();
-        for (int j = 0; j < nec; ++j)
-          bc_ei[j] = bc[j];
-        o.arrays.bc[ei] = bc_ei;
-        ++ei;
-      }
-    }
-    ++i;
-  }
-  m->end(it);
-  delete [] bc;
-}
-
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
+  Input& in = *o.in;
   apf::Mesh* m = o.mesh;
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
@@ -265,14 +225,36 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   o.arrays.ibc = new int[nv]();
   o.arrays.bc = new double*[nv];
   o.nEssentialBCNodes = 0;
+  int ibc = 0;
+  int nec = countEssentialBCs(in);
+  double* bc = new double[nec]();
   gmi_model* gm = m->getModel();
-  for (int d = 3; d >= 0; --d) {
-    gmi_iter* it = gmi_begin(gm, d);
-    gmi_ent* ge;
-    while ((ge = gmi_next(gm, it)))
-      getEssentialBCsOn(bcs, o, ge);
-    gmi_end(gm, it);
+  int i = 0;
+  int& ei = o.nEssentialBCNodes;
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*) m->toModel(v);
+    bool hasBC = applyEssentialBCs(gm, ge, bcs, bc, &ibc);
+    /* matching introduces an iper bit */
+    apf::MeshEntity* master = getPeriodicMaster(m, v);
+    if (master != v) {
+      ibc |= (1<<10); //yes, hard coded...
+      hasBC = true;
+    }
+    if (hasBC) {
+      o.arrays.nbc[i] = ei + 1;
+      o.arrays.ibc[ei] = ibc;
+      double* bc_ei = new double[nec];
+      for (int j = 0; j < nec; ++j)
+        bc_ei[j] = bc[j];
+      o.arrays.bc[ei] = bc_ei;
+      ++ei;
+    }
+    ++i;
   }
+  m->end(it);
+  delete [] bc;
 }
 
 static void getInitialConditions(BCs& bcs, Output& o)
