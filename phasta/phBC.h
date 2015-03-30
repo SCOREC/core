@@ -1,4 +1,3 @@
-
 #ifndef PH_BC_H
 #define PH_BC_H
 
@@ -6,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include <apfVector.h>
 #include <gmi.h>
 
 /* full names and abbreviations for boundary conditions:
@@ -87,18 +87,31 @@ namespace ph {
 
 struct BC
 {
-  BC();
-  ~BC();
+  virtual ~BC() {}
   int tag;
   int dim;
-  double* values;
+  virtual double* eval(apf::Vector3 const& x) = 0;
   bool operator<(const BC& other) const;
+};
+
+struct ConstantBC : public BC
+{
+  ConstantBC();
+  ~ConstantBC();
+  virtual double* eval(apf::Vector3 const& x);
+  double* value;
+};
+
+struct BCPointerLess
+{
+  bool operator()(BC const* a, BC const* b) { return *a < *b; };
 };
 
 struct FieldBCs
 {
+  ~FieldBCs();
   int size;
-  typedef std::set<BC> Set;
+  typedef std::set<BC*, BCPointerLess> Set;
   Set bcs;
 };
 

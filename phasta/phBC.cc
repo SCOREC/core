@@ -8,21 +8,36 @@
 
 namespace ph {
 
-BC::BC()
-{
-  values = 0;
-}
-
-BC::~BC()
-{
-  delete [] values;
-}
-
 bool BC::operator<(const BC& other) const
 {
   if (dim != other.dim)
     return dim < other.dim;
   return tag < other.tag;
+}
+
+ConstantBC::ConstantBC()
+{
+  value = 0;
+}
+
+ConstantBC::~ConstantBC()
+{
+  delete [] value;
+}
+
+double* ConstantBC::eval(apf::Vector3 const& x)
+{
+  return value;
+}
+
+FieldBCs::~FieldBCs()
+{
+  while (!bcs.empty()) {
+    Set::iterator it = bcs.begin();
+    BC* bc = *it;
+    bcs.erase(it);
+    delete bc;
+  }
 }
 
 static struct { const char* name; int size; } const knownSizes[4] =
@@ -51,13 +66,12 @@ static void readBC(std::string const& line, BCs& bcs)
     bcs.fields[name] = fbcs;
   }
   FieldBCs& fbcs = bcs.fields[name];
-  BC bc;
-  ss >> bc.tag >> bc.dim;
-  bc.values = new double[fbcs.size];
+  ConstantBC* bc = new ConstantBC();
+  ss >> bc->tag >> bc->dim;
+  bc->value = new double[fbcs.size];
   for (int i = 0; i < fbcs.size; ++i)
-    ss >> bc.values[i];
+    ss >> bc->value[i];
   fbcs.bcs.insert(bc);
-  bc.values = 0; //ownership of pointer transferred, prevent delete from here
 }
 
 void readBCs(const char* filename, BCs& bcs)
@@ -185,14 +199,14 @@ bool hasBC(BCs& bcs, std::string const& name)
 
 double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge)
 {
-  BC key;
+  ConstantBC key;
   key.tag = gmi_tag(gm, ge);
   key.dim = gmi_dim(gm, ge);
-  FieldBCs::Set::iterator it = bcs.bcs.find(key);
+  FieldBCs::Set::iterator it = bcs.bcs.find(&key);
   if (it == bcs.bcs.end())
     return 0;
-  BC& bc = const_cast<BC&>(*it);
-  return bc.values;
+  BC* bc = *it;
+  return bc->eval(apf::Vector3(0,0,0));
 }
 
 /* starting from the current geometric entity,
