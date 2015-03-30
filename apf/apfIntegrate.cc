@@ -163,10 +163,10 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int i) const
         {
           static IntegrationPoint points[4]=
-{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),-0.5625),
-  IntegrationPoint(Vector3(0.600000000000000,0.200000000000000,0),0.520833333333333/2.0),
-  IntegrationPoint(Vector3(0.200000000000000,0.600000000000000,0),0.520833333333333/2.0),
-  IntegrationPoint(Vector3(0.200000000000000,0.200000000000000,0),0.520833333333333/2.0) };
+{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),-0.562500000000000/2.0),
+  IntegrationPoint(Vector3(0.600000000000000,0.200000000000000,0), 0.520833333333333/2.0),
+  IntegrationPoint(Vector3(0.200000000000000,0.600000000000000,0), 0.520833333333333/2.0),
+  IntegrationPoint(Vector3(0.200000000000000,0.200000000000000,0), 0.520833333333333/2.0) };
           return points+i;
         }
         virtual int getAccuracy() const {return 3;}
