@@ -253,7 +253,7 @@ class QuadIntegration : public EntityIntegration
         virtual int countPoints() const {return 1;}
         virtual IntegrationPoint const* getPoint(int) const
         {
-          static IntegrationPoint point(Vector3(0,0,0),2);
+          static IntegrationPoint point(Vector3(0,0,0),4);
           return &point;
         }
         virtual int getAccuracy() const {return 1;}
