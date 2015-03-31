@@ -25,7 +25,7 @@ static void afterSplit(apf::Mesh2* m)
   if ((PCU_Comm_Peers()!=globalPeers) ||
       in.adaptFlag ||
       in.tetrahedronize) {
-    if (in.parmaPtn)
+    if (in.parmaPtn && PCU_Comm_Peers() > 1)
       ph::balance(m);
     apf::reorderMdsMesh(m);
   }
