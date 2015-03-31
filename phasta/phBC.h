@@ -110,7 +110,6 @@ struct BCPointerLess
 struct FieldBCs
 {
   ~FieldBCs();
-  int size;
   typedef std::set<BC*, BCPointerLess> Set;
   Set bcs;
 };
