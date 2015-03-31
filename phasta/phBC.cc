@@ -62,14 +62,14 @@ static void readBC(std::string const& line, BCs& bcs)
   std::getline(ss, name, ':');
   if (!bcs.fields.count(name)) {
     FieldBCs fbcs;
-    fbcs.size = getSize(name);
     bcs.fields[name] = fbcs;
   }
   FieldBCs& fbcs = bcs.fields[name];
   ConstantBC* bc = new ConstantBC();
   ss >> bc->tag >> bc->dim;
-  bc->value = new double[fbcs.size];
-  for (int i = 0; i < fbcs.size; ++i)
+  int size = getSize(name);
+  bc->value = new double[size];
+  for (int i = 0; i < size; ++i)
     ss >> bc->value[i];
   fbcs.bcs.insert(bc);
 }
