@@ -108,6 +108,7 @@ endif()
 setup_exe(qr_test qr_test.cc)
 setup_exe(from_neper neper.cc)
 setup_exe(eigen_test eigen_test.cc)
+setup_exe(integrate integrate.cc)
 
 if(IS_TESTING)
   include(testing.cmake)

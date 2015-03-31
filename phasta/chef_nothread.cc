@@ -33,11 +33,10 @@ void afterSplit(apf::Mesh2* m, ph::Input& in, ph::BCs& bcs,
   if ((PCU_Comm_Peers()!=numMasters) ||
       in.adaptFlag ||
       in.tetrahedronize) {
-    if (in.parmaPtn)
+    if (in.parmaPtn && PCU_Comm_Peers() > 1)
       ph::balance(m);
     apf::reorderMdsMesh(m);
   }
-  assert(in.phastaIO);
   ph::Output o;
   ph::generateOutput(in, bcs, m, o);
   ph::detachAndWriteSolution(in, m, path);

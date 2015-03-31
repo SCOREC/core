@@ -163,10 +163,10 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int i) const
         {
           static IntegrationPoint points[4]=
-{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),-0.5625),
-  IntegrationPoint(Vector3(0.600000000000000,0.200000000000000,0),0.520833333333333/2.0),
-  IntegrationPoint(Vector3(0.200000000000000,0.600000000000000,0),0.520833333333333/2.0),
-  IntegrationPoint(Vector3(0.200000000000000,0.200000000000000,0),0.520833333333333/2.0) };
+{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),-0.562500000000000/2.0),
+  IntegrationPoint(Vector3(0.600000000000000,0.200000000000000,0), 0.520833333333333/2.0),
+  IntegrationPoint(Vector3(0.200000000000000,0.600000000000000,0), 0.520833333333333/2.0),
+  IntegrationPoint(Vector3(0.200000000000000,0.200000000000000,0), 0.520833333333333/2.0) };
           return points+i;
         }
         virtual int getAccuracy() const {return 3;}
@@ -195,7 +195,7 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int i) const
         {
           static IntegrationPoint points[7]=
-{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),0.050844906370207/2.0),
+{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),0.225000000000000/2.0),
   IntegrationPoint(Vector3(0.797426985353087,0.101286507323456,0),0.125939180544827/2.0),
   IntegrationPoint(Vector3(0.101286507323456,0.797426985353087,0),0.125939180544827/2.0),
   IntegrationPoint(Vector3(0.101286507323456,0.101286507323456,0),0.125939180544827/2.0),
@@ -253,7 +253,7 @@ class QuadIntegration : public EntityIntegration
         virtual int countPoints() const {return 1;}
         virtual IntegrationPoint const* getPoint(int) const
         {
-          static IntegrationPoint point(Vector3(0,0,0),2);
+          static IntegrationPoint point(Vector3(0,0,0),4);
           return &point;
         }
         virtual int getAccuracy() const {return 1;}
