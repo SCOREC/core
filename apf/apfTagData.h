@@ -105,7 +105,7 @@ class TagDataOf : public FieldDataOf<T>
   public:
     virtual void init(FieldBase* f)
     {
-      FieldData::field = f;
+      this->FieldData::field = f;
       mesh = f->getMesh();
       tagData.init(
                 f->getName(),
