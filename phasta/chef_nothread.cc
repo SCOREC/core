@@ -35,7 +35,6 @@ void afterSplit(apf::Mesh2* m, ph::Input& in, ph::BCs& bcs,
       ph::balance(m);
     apf::reorderMdsMesh(m);
   }
-  assert(in.phastaIO);
   ph::Output o;
   ph::generateOutput(in, bcs, m, o);
   ph::detachAndWriteSolution(in, m, path);

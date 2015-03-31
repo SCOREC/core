@@ -23,6 +23,7 @@ static void setDefaults(Input& in)
   in.initBubbles = 0;
   in.formElementGraph = 0;
   in.restartFileName = "restart";
+  in.phastaIO = 1;
 }
 
 Input::Input()
