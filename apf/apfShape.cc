@@ -306,11 +306,9 @@ class Linear : public FieldShape
     int getOrder() {return 1;}
 };
 
-class Quadratic : public FieldShape
+class QuadraticBase : public FieldShape
 {
   public:
-    Quadratic() { registerSelf(apf::Quadratic::getName()); }
-    const char* getName() const {return "Quadratic";}
     class Edge : public EntityShape
     {
       public:
@@ -359,20 +357,6 @@ class Quadratic : public FieldShape
         }
         int countNodes() const {return 6;}
     };
-    class Quad : public EntityShape
-    { /* TODO: implement this and then update hasNodesIn, countNodesOn */
-      public:
-        void getValues(Vector3 const&, NewArray<double>&) const
-        {
-          fail("quadratic Lagrange quadrilateral shape values not implemented\n");
-        }
-        void getLocalGradients(Vector3 const&,
-            NewArray<Vector3>&) const
-        {
-          fail("quadratic Lagrange quadrilateral shape grads not implemented\n");
-        }
-        int countNodes() const {return 8;}
-    };
     class Tetrahedron : public EntityShape
     {
       public:
@@ -415,18 +399,53 @@ class Quadratic : public FieldShape
       static Linear::Vertex vertex;
       static Edge edge;
       static Triangle triangle;
-      static Quad quad;
       static Tetrahedron tet;
       static EntityShape* shapes[Mesh::TYPES] =
       {&vertex,   //vertex
        &edge,     //edge
        &triangle, //triangle
-       &quad,     //quad
+       NULL,     //quad
        &tet,      //tet
        NULL,      //hex
        NULL,      //prism
        NULL};     //pyramid
       return shapes[type];
+    }
+    int getOrder() {return 2;}
+    void getNodeXi(int, int, Vector3& xi)
+    {
+      /* for vertex nodes, mid-edge nodes,
+         and mid-quad nodes, the xi
+         coordinate is zero */
+      xi = Vector3(0,0,0);
+    }
+};
+
+class LagrangeQuadratic : public QuadraticBase
+{
+  public:
+    LagrangeQuadratic() { registerSelf(apf::LagrangeQuadratic::getName()); }
+    const char* getName() const {return "Lagrange Quadratic";}
+    class Quad : public EntityShape
+    { /* TODO: implement this and then update hasNodesIn, countNodesOn */
+      public:
+        void getValues(Vector3 const&, NewArray<double>&) const
+        {
+          fail("quadratic Lagrange quadrilateral shape values not implemented\n");
+        }
+        void getLocalGradients(Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("quadratic Lagrange quadrilateral shape grads not implemented\n");
+        }
+        int countNodes() const {return 8;}
+    };
+    EntityShape* getEntityShape(int type)
+    {
+      static Quad quad;
+      if (type == Mesh::QUAD)
+        return &quad;
+      return this->QuadraticBase::getEntityShape(type);
     }
     bool hasNodesIn(int dimension)
     {
@@ -444,16 +463,9 @@ class Quadratic : public FieldShape
       else
         return 0;
     }
-    int getOrder() {return 2;}
-    void getNodeXi(int, int, Vector3& xi)
-    {
-      /* both for vertex nodes and mid-edge nodes, the xi
-         coordinate is zero */
-      xi = Vector3(0,0,0);
-    }
 };
 
-class SerendipityQuadratic : public Quadratic
+class SerendipityQuadratic : public QuadraticBase
 {
   public:
     SerendipityQuadratic() { registerSelf(apf::SerendipityQuadratic::getName()); }
@@ -501,7 +513,7 @@ class SerendipityQuadratic : public Quadratic
       static Quad quad;
       if (type == Mesh::QUAD)
         return &quad;
-      return this->Quadratic::getEntityShape(type);
+      return this->QuadraticBase::getEntityShape(type);
     }
     bool hasNodesIn(int dimension)
     {
@@ -524,7 +536,7 @@ class SerendipityQuadratic : public Quadratic
 FieldShape* getLagrange(int order)
 {
   static Linear linear;
-  static Quadratic quadratic;
+  static LagrangeQuadratic quadratic;
   if (order == 1)
     return &linear;
   if (order == 2)
