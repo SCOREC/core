@@ -123,20 +123,17 @@ struct BCs
 void readBCs(const char* filename, BCs& bcs);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs,
-    double* values, int* bits);
+    BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
 bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs,
-    double* values, int* bits);
+    BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
 bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs, double* values);
-
-void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces);
+    BCs& appliedBCs, apf::Vector3 const& x, double* values);
 
 bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
-    double* BC, int* iBC);
+    apf::Vector3 const& x, double* BC, int* iBC);
 
-double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge);
+double* getBCValue(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge,
+    apf::Vector3 const& x);
 
 bool hasBC(BCs& bcs, std::string const& name);
 
