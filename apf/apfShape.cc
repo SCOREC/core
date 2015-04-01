@@ -360,16 +360,16 @@ class Quadratic : public FieldShape
         int countNodes() const {return 6;}
     };
     class Quad : public EntityShape
-    {
+    { /* TODO: implement this and then update hasNodesIn, countNodesOn */
       public:
         void getValues(Vector3 const&, NewArray<double>&) const
         {
-          fail("quadratic Serendipity quadrilateral shape values not implemented\n");
+          fail("quadratic Lagrange quadrilateral shape values not implemented\n");
         }
         void getLocalGradients(Vector3 const&,
             NewArray<Vector3>&) const
         {
-          fail("quadratic Serendipity quadrilateral shape grads not implemented\n");
+          fail("quadratic Lagrange quadrilateral shape grads not implemented\n");
         }
         int countNodes() const {return 8;}
     };
@@ -453,6 +453,74 @@ class Quadratic : public FieldShape
     }
 };
 
+class SerendipityQuadratic : public Quadratic
+{
+  public:
+    SerendipityQuadratic() { registerSelf(apf::SerendipityQuadratic::getName()); }
+    const char* getName() const {return "Serendipity Quadratic";}
+    class Quad : public EntityShape
+    {
+    public:
+      void getValues(Vector3 const& xi, NewArray<double>& values) const
+      {
+        values.allocate(8);
+        values[0] = (1-xi[0])*(1-xi[1])*(-xi[0] - xi[1] -1)/4.0;
+        values[1] = (1+xi[0])*(1-xi[1])*(xi[0] - xi[1] -1)/4.0;
+        values[2] = (1+xi[0])*(1+xi[1])*(xi[0] + xi[1] -1)/4.0;
+        values[3] = (1-xi[0])*(1+xi[1])*(-xi[0] + xi[1] - 1)/4.0;
+        values[4] = (1-xi[0]*xi[0])*(1-xi[1])/2.0;
+        values[5] = (1+xi[0])*(1-xi[1]*xi[1])/2.0;
+        values[6] = (1-xi[0]*xi[0])*(1+xi[1])/2.0;
+        values[7] = (1-xi[0])*(1-xi[1]*xi[1])/2.0;
+      }
+      void getLocalGradients(Vector3 const& xi,
+          NewArray<Vector3>& grads) const
+      {
+        grads.allocate(8);
+        grads[0] = Vector3(
+            xi[0]/2.0 + xi[1]/4.0 - (xi[0]*xi[1])/2.0 - xi[1]*xi[1]/4.0,
+            xi[0]/4.0 + xi[1]/2.0 - (xi[0]*xi[1])/2.0 - xi[0]*xi[0]/4.0, 0.0);
+        grads[1] = Vector3(
+            xi[0]/2.0 - xi[1]/4.0 - (xi[0]*xi[1])/2.0 + xi[1]*xi[1]/4.0,
+            xi[1]/2.0 - xi[0]/4.0 + (xi[0]*xi[1])/2.0 - xi[0]*xi[0]/4.0, 0.0);
+        grads[2] = Vector3(
+            xi[0]/2.0 + xi[1]/4.0 + (xi[0]*xi[1])/2.0 + xi[1]*xi[1]/4.0,
+            xi[0]/4.0 + xi[1]/2.0 + (xi[0]*xi[1])/2.0 + xi[0]*xi[0]/4.0, 0.0);
+        grads[3] = Vector3(
+            xi[0]/2.0 - xi[1]/4.0 + (xi[0]*xi[1])/2.0 - xi[1]*xi[1]/4.0,
+            xi[1]/2.0 - xi[0]/4.0 - (xi[0]*xi[1])/2.0 + xi[0]*xi[0]/4.0, 0.0);
+        grads[4] = Vector3(xi[0]*xi[1] - xi[0],   xi[0]*xi[0]/2.0 - 0.5, 0.0);
+        grads[5] = Vector3(0.5 - xi[1]*xi[1]/2.0,  -xi[1] - xi[0]*xi[1], 0.0);
+        grads[6] = Vector3(-xi[0] - xi[0]*xi[1],  0.5 - xi[0]*xi[0]/2.0, 0.0);
+        grads[7] = Vector3(xi[1]*xi[1]/2.0 - 0.5,   xi[0]*xi[1] - xi[1], 0.0);
+      }
+      int countNodes() const {return 8;}
+    };
+    EntityShape* getEntityShape(int type)
+    {
+      static Quad quad;
+      if (type == Mesh::QUAD)
+        return &quad;
+      return this->Quadratic::getEntityShape(type);
+    }
+    bool hasNodesIn(int dimension)
+    {
+      if ((dimension == 0)||
+          (dimension == 1))
+        return true;
+      else
+        return false;
+    }
+    int countNodesOn(int type)
+    {
+      if ((type == Mesh::VERTEX)||
+          (type == Mesh::EDGE))
+        return 1;
+      else
+        return 0;
+    }
+};
+
 FieldShape* getLagrange(int order)
 {
   static Linear linear;
@@ -462,6 +530,12 @@ FieldShape* getLagrange(int order)
   if (order == 2)
     return &quadratic;
   return NULL;
+}
+
+FieldShape* getSerendipity()
+{
+  static SerendipityQuadratic s;
+  return &s;
 }
 
 /* these are step-wise fields which are defined by nodes
