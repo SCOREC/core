@@ -1,9 +1,11 @@
 #include <PCU.h>
 #include "phBC.h"
+#include "phAttrib.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <fstream>
 #include <sstream>
+#include <cstring>
 #include <gmi.h>
 
 namespace ph {
@@ -74,7 +76,7 @@ static void readBC(std::string const& line, BCs& bcs)
   fbcs.bcs.insert(bc);
 }
 
-void readBCs(const char* filename, BCs& bcs)
+static void readBCsFromSPJ(const char* filename, BCs& bcs)
 {
   double t0 = PCU_Time();
   std::ifstream file(filename);
@@ -88,6 +90,29 @@ void readBCs(const char* filename, BCs& bcs)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("\"%s\" loaded in %f seconds\n", filename, t1 - t0);
+}
+
+static bool endsWith(char const* with, char const* s)
+{
+  int lw;
+  int ls;
+  lw = strlen(with);
+  ls = strlen(s);
+  if (ls < lw)
+    return 0;
+  return strncmp(with, s + ls - lw, lw) == 0;
+}
+
+void readBCs(gmi_model* m, const char* filename, BCs& bcs)
+{
+  if (endsWith(".spj", filename))
+    readBCsFromSPJ(filename, bcs);
+  else if (endsWith(".smd", filename))
+    getSimmetrixAttributes(m, bcs);
+  else {
+    fprintf(stderr, "bad attribute filename \"%s\"\n", filename);
+    abort();
+  }
 }
 
 struct KnownBC

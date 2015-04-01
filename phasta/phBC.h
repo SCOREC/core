@@ -120,7 +120,7 @@ struct BCs
   Map fields;
 };
 
-void readBCs(const char* filename, BCs& bcs);
+void readBCs(gmi_model* m, const char* filename, BCs& bcs);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
