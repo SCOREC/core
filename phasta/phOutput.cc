@@ -136,7 +136,8 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
       ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
     bcb[i][j] = new double[nbc]();
     ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
-    applyNaturalBCs(gm, gf, bcs, bcb[i][j], ibcb[i][j]);
+    apf::Vector3 x = apf::getLinearCentroid(m, f);
+    applyNaturalBCs(gm, gf, bcs, x, bcb[i][j], ibcb[i][j]);
     ++js[i];
   }
   m->end(it);
@@ -235,7 +236,9 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
     gmi_ent* ge = (gmi_ent*) m->toModel(v);
-    bool hasBC = applyEssentialBCs(gm, ge, bcs, bc, &ibc);
+    apf::Vector3 x;
+    m->getPoint(v, 0, x);
+    bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
     apf::MeshEntity* master = getPeriodicMaster(m, v);
     if (master != v) {
@@ -269,12 +272,9 @@ static void getInitialConditions(BCs& bcs, Output& o)
   while ((v = m->iterate(it))) {
     gmi_ent* ge = (gmi_ent*)m->toModel(v);
     apf::getComponents(f, v, 0, &s[0]);
-/* unfortunately, there is no way to know which
-   components this overwrites without creating
-   bad coupling between pieces of code, so we
-   call this for every vertex even though it
-   only depends on classification */
-    applySolutionBCs(gm, ge, bcs, &s[0]);
+    apf::Vector3 x;
+    m->getPoint(v, 0, x);
+    applySolutionBCs(gm, ge, bcs, x, &s[0]);
     apf::setComponents(f, v, 0, &s[0]);
   }
   m->end(it);

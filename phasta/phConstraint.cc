@@ -292,9 +292,9 @@ typedef Constraint* (*Make)(double* values);
    have to account for all first-reachable BCs, not just
    the first one we see. */
 Constraint* combineAll(gmi_model* gm, FieldBCs& bcs, Make make,
-    gmi_ent* ge, Constraint* a)
+    gmi_ent* ge, apf::Vector3 const& x, Constraint* a)
 {
-  double* v = getValuesOn(gm, bcs, ge);
+  double* v = getBCValue(gm, bcs, ge, x);
   if (v) {
     DebugConstraint dbg;
     dbg.modelTag = gmi_tag(gm, ge);
@@ -304,24 +304,24 @@ Constraint* combineAll(gmi_model* gm, FieldBCs& bcs, Make make,
   }
   gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
   for (int i = 0; i < up->n; ++i)
-    a = combineAll(gm, bcs, make, up->e[i], a);
+    a = combineAll(gm, bcs, make, up->e[i], x, a);
   gmi_free_set(up);
   return a;
 }
 
 bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
-    double* BC, int* iBC)
+    apf::Vector3 const& x, double* BC, int* iBC)
 {
   Constraint* c = 0;
   std::string name = "comp3";
   if (hasBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
-    c = combineAll(gm, fbcs, makePointConstraint, e, c);
+    c = combineAll(gm, fbcs, makePointConstraint, e, x, c);
   }
   name = "comp1";
   if (hasBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
-    c = combineAll(gm, fbcs, makePlaneConstraint, e, c);
+    c = combineAll(gm, fbcs, makePlaneConstraint, e, x, c);
   }
   if (!c)
     return false;
