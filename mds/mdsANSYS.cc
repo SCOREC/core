@@ -24,7 +24,7 @@ static void ansys2apf(int ansysType, int& apfType, apf::FieldShape*& shape)
 
 static void parseElemInt(std::string const& line, int at, int& out)
 {
-  assert(line.length() >= (at + 1) * 6);
+  assert(line.length() >= ((size_t)at + 1) * 6);
   std::string field = line.substr(at * 6, 6);
   if (field != "      ") {
     std::stringstream ss(field);
@@ -98,7 +98,7 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
   int en[MAX_ELEM_NODES];
   int type;
   int id;
-  apf::FieldShape* shape;
+  apf::FieldShape* shape = 0;
   apf::FieldShape* prevShape = 0;
   while (parseElem(f, en, type, id, shape)) {
     if (!m) {
