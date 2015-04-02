@@ -75,6 +75,10 @@ class FieldShape
 /** \brief Get the Lagrangian shape function of some polynomial order
  \details we have only first and second order so far */
 FieldShape* getLagrange(int order);
+
+/** \brief Get the Serendipity shape functions of second order */
+FieldShape* getSerendipity();
+
 /** \brief Get the Constant shape function over some dimension
  \details this pseudo-shape function places a node on every element
           of the given dimension. Dimensions up to 3 are available */

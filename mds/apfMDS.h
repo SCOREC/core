@@ -127,6 +127,19 @@ MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
 
+/** \brief load an MDS mesh from ANSYS .node and .elem files
+  \details this call takes two filenames, one
+  for a .node and another for a .elem file.
+
+  the resulting MDS mesh will be constructed with a null
+  geometric model via gmi_load(".null"), so be sure to
+  call gmi_register_null before this function.
+
+  currently, ANSYS element types SOLID72 and SOLID92 are
+  supported, which become linear and quadratic tetrahedra,
+  respectively. */
+Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
+
 }
 
 #endif

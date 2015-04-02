@@ -34,6 +34,7 @@ set(MDS_SOURCES
   mds_tag.c
   apfMDS.cc
   apfPM.cc
+  mdsANSYS.cc
   mdsGmsh.cc)
 
 set(MDS_HEADERS
