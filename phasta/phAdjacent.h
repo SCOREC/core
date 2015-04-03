@@ -13,6 +13,8 @@ void getVertices(apf::Mesh* m, apf::MeshEntity* e, apf::MeshEntity** v);
 void getBoundaryVertices(apf::Mesh* m, apf::MeshEntity* e, apf::MeshEntity* f,
     apf::MeshEntity** v);
 
+extern int const* const face_apf2ph[apf::Mesh::TYPES];
+
 }
 
 #endif
