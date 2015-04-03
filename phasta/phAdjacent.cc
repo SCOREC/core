@@ -31,6 +31,23 @@ void orderForPhasta(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
     vout[i] = vin[ph2apf[t][i]];
 }
 
+/* phasta defines its faces with the same local vertex indices as
+   we define our faces, but their local vertex indices differ
+   as seen above. this results in the following table of
+   element face positions from apf to phasta */
+
+static int const tet_face_apf2ph[4] = {0,3,2,1};
+int const* const face_apf2ph[apf::Mesh::TYPES] = {
+  0,   //vertex
+  0,   //edge
+  0,   //triangle
+  0,   //quad
+  tet_face_apf2ph,
+  0,   //hex
+  0,   //prism
+  0,   //pyramid
+};
+
 void getVertices(apf::Mesh* m, apf::MeshEntity* e, apf::MeshEntity** v)
 {
   apf::Downward v0;
