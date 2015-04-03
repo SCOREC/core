@@ -217,7 +217,7 @@ int* formIENNEIGH(apf::Numbering* ln)
     apf::Downward sides;
     m->getDownward(e, sideDim, sides);
     for (int j = 0; j < nsides; ++j) {
-      apf::MeshEntity* oe = getOtherElem(m, e, sides[i]);
+      apf::MeshEntity* oe = getOtherElem(m, e, sides[j]);
       int oj = face_apf2ph[type][j];
       int oi = oe ? (getNumber(ln, oe, 0, 0) + 1) : 0;
       ienneigh[oj * nelem + i] = oi;
