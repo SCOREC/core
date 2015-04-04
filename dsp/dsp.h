@@ -2,7 +2,6 @@
 #define DSP_H
 
 #include <apfMesh2.h>
-#include <set>
 
 namespace dsp {
 

@@ -19,9 +19,13 @@ endif()
 
 #Sources & Headers
 set(SOURCES
+  dspAdapters.cc
+  dspSmoothers.cc
   dsp.cc)
 
 set(HEADERS
+  dspAdapters.h
+  dspSmoothers.h
   dsp.h)
 
 if(BUILD_IN_TRILINOS)
