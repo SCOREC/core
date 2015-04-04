@@ -406,4 +406,9 @@ void projectField(Field* to, Field* from)
   to->project(from);
 }
 
+void axpy(double a, Field* x, Field* y)
+{
+  y->axpy(a, x);
+}
+
 }//namespace apf
