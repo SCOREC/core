@@ -17,4 +17,13 @@ bool tryToDisplace(apf::Mesh2* m, apf::Field* df)
   return false;
 }
 
+void displace(apf::Mesh2* m, apf::Field* df,
+    Smoother* smoother, Adapter* adapter,
+    Boundary& fixed, Boundary& moving)
+{
+  smoother->smooth(df, fixed, moving);
+  while (!tryToDisplace(m, df))
+    adapter->adapt(m);
+}
+
 }
