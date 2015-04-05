@@ -715,25 +715,49 @@ struct NormalSharing : public Sharing
   Mesh* mesh;
 };
 
+/* okay... so previously this used a min-rank rule
+   for matched copies, but thats inconsistent with
+   the min-count rule in MDS for regular copies,
+   and the usual partition model ignores matched
+   copies.
+   for now, we'll build a full neighbor count
+   system into this object just to implement
+   the min-count rule for matched neighbors */
 struct MatchedSharing : public Sharing
 {
-  MatchedSharing(Mesh* m):helper(m),mesh(m) {}
+  MatchedSharing(Mesh* m):helper(m),mesh(m)
+  {
+    formCountMap();
+  }
+  size_t getNeighborCount(int peer)
+  {
+    assert(countMap.count(peer));
+    return countMap[peer];
+  }
+  bool isLess(Copy const& a, Copy const& b)
+  {
+    size_t ca = this->getNeighborCount(a.peer);
+    size_t cb = this->getNeighborCount(b.peer);
+    if (ca != cb)
+      return ca < cb;
+    if (a.peer != b.peer)
+      return a.peer < b.peer;
+    return a.entity < b.entity;
+  }
+  Copy getOwner(MeshEntity* e)
+  {
+    Copy owner(PCU_Comm_Self(), e);
+    CopyArray copies;
+    this->getCopies(e, copies);
+    APF_ITERATE(CopyArray, copies, cit)
+      if (this->isLess(*cit, owner))
+        owner = *cit;
+    return owner;
+  }
   bool isOwned(MeshEntity* e)
   {
-    Matches ms;
-    mesh->getMatches(e,ms);
-    if (!ms.getSize())
-      return helper.isOwned(e);
-    int self = mesh->getId();
-    for (size_t i = 0; i < ms.getSize(); ++i)
-    {
-      if (ms[i].peer < self)
-        return false;
-      if ((ms[i].peer == self) &&
-          (ms[i].entity < e))
-        return false;
-    }
-    return true;
+    Copy owner = this->getOwner(e);
+    return owner.peer == PCU_Comm_Self() && owner.entity == e;
   }
   void getCopies(MeshEntity* e,
       CopyArray& copies)
@@ -742,8 +766,38 @@ struct MatchedSharing : public Sharing
     if (!copies.getSize())
       helper.getCopies(e, copies);
   }
+  void getNeighbors(Parts& neighbors)
+  {
+    MeshIterator* it = mesh->begin(0);
+    MeshEntity* v;
+    while ((v = mesh->iterate(it))) {
+      CopyArray copies;
+      this->getCopies(v, copies);
+      APF_ITERATE(CopyArray, copies, cit)
+        neighbors.insert(cit->peer);
+    }
+    mesh->end(it);
+    neighbors.erase(PCU_Comm_Self());
+  }
+  void formCountMap()
+  {
+    size_t count = mesh->count(mesh->getDimension());
+    countMap[PCU_Comm_Self()] = count;
+    PCU_Comm_Begin();
+    Parts neighbors;
+    getNeighbors(neighbors);
+    APF_ITERATE(Parts, neighbors, nit)
+      PCU_COMM_PACK(*nit, count);
+    PCU_Comm_Send();
+    while (PCU_Comm_Receive()) {
+      size_t oc;
+      PCU_COMM_UNPACK(oc);
+      countMap[PCU_Comm_Sender()] = oc;
+    }
+  }
   NormalSharing helper;
   Mesh* mesh;
+  std::map<int, size_t> countMap;
 };
 
 Sharing* getSharing(Mesh* m)

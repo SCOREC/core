@@ -75,10 +75,10 @@ struct PhastaSharing : public apf::Sharing {
 
 void getLinks(apf::Mesh* m, int dim, Links& links)
 {
+  PhastaSharing shr(m);
   PCU_Comm_Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* v;
-  PhastaSharing shr(m);
   while ((v = m->iterate(it))) {
 /* the alignment is such that the owner part's
    array follows the order of its vertex iterator

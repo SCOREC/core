@@ -82,6 +82,8 @@ add_subdirectory(mpas)
 
 add_subdirectory(viz)
 
+add_subdirectory(dsp)
+
 add_subdirectory(test)
 
 #binary distribution package
