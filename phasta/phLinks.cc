@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include "phLinks.h"
+#include "phAdjacent.h"
 #include <apf.h>
 
 namespace ph {
@@ -74,10 +75,10 @@ struct PhastaSharing : public apf::Sharing {
 
 void getLinks(apf::Mesh* m, int dim, Links& links)
 {
+  PhastaSharing shr(m);
   PCU_Comm_Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* v;
-  PhastaSharing shr(m);
   while ((v = m->iterate(it))) {
 /* the alignment is such that the owner part's
    array follows the order of its vertex iterator
@@ -180,6 +181,24 @@ void encodeILWORKF(apf::Numbering* n, Links& links, int& size, int*& a)
   assert(i == size);
 }
 
+static apf::MeshEntity* getOtherElem(apf::Mesh* m, apf::MeshEntity* elem,
+    apf::MeshEntity* face)
+{
+  apf::Up up;
+  m->getUp(face, up);
+  if (up.n == 2)
+    return up.e[1 - apf::findIn(up.e, 2, elem)];
+  if (!m->hasMatching())
+    return 0;
+  apf::Matches matches;
+  m->getMatches(face, matches);
+  int self = PCU_Comm_Self();
+  for (size_t i = 0; i < matches.getSize(); ++i)
+    if (matches[i].peer == self)
+      return m->getUpward(matches[i].entity, 0);
+  return 0;
+}
+
 int* formIENNEIGH(apf::Numbering* ln)
 {
   apf::Mesh* m = getMesh(ln);
@@ -193,17 +212,15 @@ int* formIENNEIGH(apf::Numbering* ln)
   apf::MeshEntity* e;
   int i = 0;
   while ((e = m->iterate(it))) {
+    assert(m->getType(e) == type);
+    assert(face_apf2ph[type]);
     apf::Downward sides;
     m->getDownward(e, sideDim, sides);
     for (int j = 0; j < nsides; ++j) {
-      apf::Up up;
-      m->getUp(sides[j], up);
-      if (up.n == 2) {
-        apf::MeshEntity* oe = up.e[1 - apf::findIn(up.e, 2, e)];
-        int oi = getNumber(ln, oe, 0, 0);
-        ienneigh[j * nelem + i] = oi + 1;
-      } else
-        ienneigh[j * nelem + i] = 0;
+      apf::MeshEntity* oe = getOtherElem(m, e, sides[j]);
+      int oj = face_apf2ph[type][j];
+      int oi = oe ? (getNumber(ln, oe, 0, 0) + 1) : 0;
+      ienneigh[oj * nelem + i] = oi;
     }
     ++i;
   }

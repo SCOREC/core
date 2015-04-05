@@ -562,6 +562,8 @@ void copyData(Field* to, Field* from);
 /** \brief Project a field from an existing field */
 void projectField(Field* to, Field* from);
 
+void axpy(double a, Field* x, Field* y);
+
 }
 
 #endif
