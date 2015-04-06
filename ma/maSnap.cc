@@ -45,7 +45,7 @@ static double interpolateParametricCoordinate(
   if (span < (period/2))
     return (1-t)*a + t*b;
   a += period;
-  double result = (1-t)*b + t*a;
+  double result = (1-t)*a + t*b;
   if (result > range[1])
     result -= period;
   assert(result > range[0]);
