@@ -356,7 +356,7 @@ int getDimension(MeshElement* me)
 
 void synchronize(Field* f, Sharing* shr)
 {
-  f->getData()->synchronize(shr);
+  synchronizeFieldData<double>(f->getData(), shr);
 }
 
 void accumulate(Field* f, Sharing* shr)
