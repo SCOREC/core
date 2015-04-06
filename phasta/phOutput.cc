@@ -169,42 +169,30 @@ static void getMaxElementNodes(Output& o)
   o.nMaxElementNodes = n;
 }
 
-static bool matchLess(apf::Copy& a, apf::Copy& b)
-{
-  if (a.peer != b.peer)
-    return a.peer < b.peer;
-  return a.entity < b.entity;
-}
-
 /* returns the global periodic master iff it is on this
    part, otherwise returns e */
-static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
+static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
+    apf::MeshEntity* e)
 {
-  if ( ! m->hasMatching())
+  if ( ! sh)
     return e;
-  apf::Matches matches;
-  m->getMatches(e, matches);
-  if (!matches.getSize())
+  apf::Copy globalMaster = sh->getOwner(e);
+  if (globalMaster.peer == PCU_Comm_Self())
+    return globalMaster.entity;
+  else
     return e;
-  int self = PCU_Comm_Self();
-  apf::Copy master(self, e);
-  for (size_t i = 0; i < matches.getSize(); ++i)
-    if (matchLess(matches[i], master))
-      master = matches[i];
-  if (master.peer == self)
-    return master.entity;
-  return e;
 }
 
-static void getPeriodicMasters(Output& o, apf::Numbering* n)
+static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   int* iper = new int[m->count(0)];
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* e;
+  apf::MatchedSharing* sh = m->hasMatching() ? new apf::MatchedSharing(m) : 0;
   int i = 0;
   while ((e = m->iterate(it))) {
-    apf::MeshEntity* master = getPeriodicMaster(m, e);
+    apf::MeshEntity* master = getLocalPeriodicMaster(sh, e);
     if (master == e)
       iper[i] = 0;
     else
@@ -213,6 +201,16 @@ static void getPeriodicMasters(Output& o, apf::Numbering* n)
   }
   m->end(it);
   o.arrays.iper = iper;
+  delete sh;
+}
+
+static bool isMatched(apf::Mesh* m, apf::MeshEntity* e)
+{
+  if ( ! m->hasMatching())
+    return false;
+  apf::Matches ms;
+  m->getMatches(e, ms);
+  return ms.getSize() != 0;
 }
 
 static void getEssentialBCs(BCs& bcs, Output& o)
@@ -240,8 +238,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     m->getPoint(v, 0, x);
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
-    apf::MeshEntity* master = getPeriodicMaster(m, v);
-    if (master != v) {
+    if (isMatched(m, v)) {
       ibc |= (1<<10); //yes, hard coded...
       hasBC = true;
     }
@@ -343,7 +340,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getVertexLinks(o, n);
   getInterior(o, n);
   getBoundary(o, bcs, n);
-  getPeriodicMasters(o, n);
+  getLocalPeriodicMasters(o, n);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getMaxElementNodes(o);
