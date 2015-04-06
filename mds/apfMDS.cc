@@ -585,12 +585,6 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
   initResidence(m, m->getDimension());
   stitchMesh(m);
   m->acceptChanges();
-  /* This is a hack to detect a mesh written to file
-     with a quadratic coordinate field stored in tags.
-     the proper solution is to work APF information into
-     the files */
-  if (m->findTag("coordinates_edg"))
-    changeMeshShape(m,getLagrange(2),/*project=*/false);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
