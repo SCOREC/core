@@ -63,7 +63,7 @@ int main(int argc, char** argv)
       in.modelFileName.c_str(), in.meshFileName.c_str());
   m->verify();
   ph::BCs bcs;
-  ph::readBCs(in.attributeFileName.c_str(), bcs);
+  ph::readBCs(m->getModel(), in.attributeFileName.c_str(), bcs);
   if (in.solutionMigration)
     ph::readAndAttachSolution(in, m);
   else

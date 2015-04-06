@@ -69,8 +69,8 @@ void loadCommon(ph::Input& in, ph::BCs& bcs,
     gmi_model*& g)
 {
   in.load("adapt.inp");
-  ph::readBCs(in.attributeFileName.c_str(), bcs);
   g = gmi_load(in.modelFileName.c_str());
+  ph::readBCs(g, in.attributeFileName.c_str(), bcs);
 }
 
 void originalMain(apf::Mesh2*& m, ph::Input& in,
