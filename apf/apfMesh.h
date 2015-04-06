@@ -429,6 +429,33 @@ struct Sharing
       CopyArray& copies) = 0;
 };
 
+struct NormalSharing : public Sharing
+{
+  NormalSharing(Mesh* m);
+  virtual bool isOwned(MeshEntity* e);
+  virtual void getCopies(MeshEntity* e,
+      CopyArray& copies);
+private:
+  Mesh* mesh;
+};
+
+struct MatchedSharing : public Sharing
+{
+  MatchedSharing(Mesh* m);
+  Copy getOwner(MeshEntity* e);
+  virtual bool isOwned(MeshEntity* e);
+  virtual void getCopies(MeshEntity* e,
+      CopyArray& copies);
+private:
+  size_t getNeighborCount(int peer);
+  bool isLess(Copy const& a, Copy const& b);
+  void getNeighbors(Parts& neighbors);
+  void formCountMap();
+  NormalSharing helper;
+  Mesh* mesh;
+  std::map<int, size_t> countMap;
+};
+
 /** \brief create a default sharing object for this mesh
   \details for normal meshes, the sharing object just
   describes remote copies. For matched meshes, the

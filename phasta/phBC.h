@@ -1,4 +1,3 @@
-
 #ifndef PH_BC_H
 #define PH_BC_H
 
@@ -6,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include <apfVector.h>
 #include <gmi.h>
 
 /* full names and abbreviations for boundary conditions:
@@ -87,18 +87,30 @@ namespace ph {
 
 struct BC
 {
-  BC();
-  ~BC();
+  virtual ~BC() {}
   int tag;
   int dim;
-  double* values;
+  virtual double* eval(apf::Vector3 const& x) = 0;
   bool operator<(const BC& other) const;
+};
+
+struct ConstantBC : public BC
+{
+  ConstantBC();
+  ~ConstantBC();
+  virtual double* eval(apf::Vector3 const& x);
+  double* value;
+};
+
+struct BCPointerLess
+{
+  bool operator()(BC const* a, BC const* b) { return *a < *b; };
 };
 
 struct FieldBCs
 {
-  int size;
-  typedef std::set<BC> Set;
+  ~FieldBCs();
+  typedef std::set<BC*, BCPointerLess> Set;
   Set bcs;
 };
 
@@ -111,22 +123,19 @@ struct BCs
 void readBCs(const char* filename, BCs& bcs);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs,
-    double* values, int* bits);
+    BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
 bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs,
-    double* values, int* bits);
+    BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
 bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs, double* values);
-
-void getBCFaces(apf::Mesh* m, BCs& bcs, std::set<apf::ModelEntity*>& faces);
+    BCs& appliedBCs, apf::Vector3 const& x, double* values);
 
 bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
-    double* BC, int* iBC);
+    apf::Vector3 const& x, double* BC, int* iBC);
 
-double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge);
+double* getBCValue(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge,
+    apf::Vector3 const& x);
 
-bool hasBC(BCs& bcs, std::string const& name);
+bool haveBC(BCs& bcs, std::string const& name);
 
 }
 
