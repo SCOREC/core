@@ -205,7 +205,7 @@ int countFixed(Numbering* n)
 
 void synchronize(Numbering * n, Sharing* shr)
 {
-  n->getData()->synchronize(shr);
+  synchronizeFieldData<int>(n->getData(), shr);
 }
 
 struct NoSharing : public Sharing
@@ -538,7 +538,7 @@ GlobalNumbering* makeGlobal(Numbering* n)
 
 void synchronize(GlobalNumbering* n, Sharing* shr)
 {
-  n->getData()->synchronize(shr);
+  synchronizeFieldData<long>(n->getData(), shr);
 }
 
 void destroyGlobalNumbering(GlobalNumbering* n)

@@ -17,6 +17,16 @@ EntityShape::~EntityShape()
 {
 }
 
+void EntityShape::alignSharedNodes(Mesh* m,
+    MeshEntity* elem, MeshEntity* shared, int order[])
+{
+  (void)m;
+  (void)elem;
+  (void)shared;
+  (void)order;
+  fail("unimplemented alignSharedNodes\n");
+}
+
 FieldShape::~FieldShape()
 {
 }

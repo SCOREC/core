@@ -158,4 +158,91 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
   synchronizeFieldData(data, shr);
 }
 
+template <class T>
+void FieldDataOf<T>::setNodeComponents(MeshEntity* e, int node,
+    T const* components)
+{
+  int n = field->countNodesOn(e);
+  if (n==1)
+    return set(e,components);
+  int nc = field->countComponents();
+  NewArray<T> allComponents(nc*n);
+  if (this->hasEntity(e))
+    get(e,&(allComponents[0]));
+  for (int i=0; i < nc; ++i)
+    allComponents[node*nc+i] = components[i];
+  set(e,&(allComponents[0]));
+}
+
+template <class T>
+void FieldDataOf<T>::getNodeComponents(MeshEntity* e, int node, T* components)
+{
+  int n = field->countNodesOn(e);
+  if (n==1)
+    return get(e,components);
+  int nc = field->countComponents();
+  NewArray<T> allComponents(nc*n);
+  get(e,&(allComponents[0]));
+  for (int i=0; i < nc; ++i)
+    components[i] = allComponents[node*nc+i];
+}
+
+template <class T>
+void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int nn)
+{
+  for (int i = 0; i < nn; ++i) {
+    int oi = order[i];
+    for (int j = 0; j < nc; ++j)
+      dataOut[oi * nc + j] = dataIn[i * nc + j];
+  }
+}
+
+template <class T>
+int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
+{
+  Mesh* mesh = field->getMesh();
+  int t = mesh->getType(entity);
+  int ed = Mesh::typeDimension[t];
+  FieldShape* fs = field->getShape();
+  EntityShape* es = fs->getEntityShape(t);
+  int nc = field->countComponents();
+  int nen = es->countNodes();
+  data.allocate(nc * nen);
+  /* try to minimize the amount of
+     reallocation of these two.
+     when there is no reordering, they
+     shouln't allocate at all */
+  apf::DynamicArray<int> order;
+  apf::DynamicArray<T> adata;
+  int n = 0;
+  for (int d = 0; d <= ed; ++d)
+  {
+    if (fs->hasNodesIn(d))
+    {
+      Downward a;
+      int na = mesh->getDownward(entity,d,a);
+      for (int i = 0; i < na; ++i)
+      {
+        int nan = fs->countNodesOn(mesh->getType(a[i]));
+        if (nan > 1 && ed != d) {
+          order.setSize(nen); /* nen >= nan */
+          adata.setSize(nen); /* setSize is no-op for the same size */
+          es->alignSharedNodes(mesh, entity, a[i], &order[0]);
+          get(a[i], &adata[0]);
+          reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
+        } else {
+          get(a[i], &data[n]);
+        }
+        n += nc * nan;
+      }
+    }
+  }
+  assert(n == nc * nen);
+  return n;
+}
+
+template class FieldDataOf<double>;
+template class FieldDataOf<int>;
+template class FieldDataOf<long>;
+
 }

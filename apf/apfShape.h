@@ -17,6 +17,9 @@
 
 namespace apf {
 
+class Mesh;
+class MeshEntity;
+
 /** \brief Shape functions over this element */
 class EntityShape
 {
@@ -38,6 +41,24 @@ class EntityShape
              and edge, three nodes affecting a triangle,
              four for a tet, etc. */
     virtual int countNodes() const = 0;
+/** \brief convert from shared node order to local element order
+    \details
+    when two elements share nodes on a common entity,
+    that entity will have its own unique orientation.
+    when there is more than one node on that entity,
+    this function will be queried to determine in what order
+    the shared nodes go in the list of all element nodes.
+
+    the order array should contain numbers 0 through n-1,
+    where n is the number of nodes in the shared entity only.
+    the shared nodes will be reordered such that node i
+    moves to position order[i], and then they will be
+    added to the list of element nodes as a group.
+
+    users are encouraged to implement this with the
+    help of apf::getAlignment */
+    virtual void alignSharedNodes(Mesh* m,
+        MeshEntity* elem, MeshEntity* shared, int order[]);
 };
 
 /** \brief Describes field distribution and shape functions
