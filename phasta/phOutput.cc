@@ -71,32 +71,37 @@ static void getInterior(Output& o, apf::Numbering* n)
   apf::Mesh* m = o.mesh;
   Blocks& bs = o.blocks.interior;
   int*** ien = new int**[bs.getSize()];
+  apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ien[i] = new int*[bs.nElements[i]];
-    int t = bs.keys[i].elementType;
-    int nv = bs.keys[i].nElementVertices;
-    apf::MeshEntity* e;
-    int j = 0;
-    apf::MeshIterator* it = m->begin(m->getDimension());
-    while ((e = m->iterate(it))) {
-      if (getPhastaType(m, e) != t)
-        continue;
-      ien[i][j] = new int[nv];
-      apf::Downward v;
-      getVertices(m, e, v);
-      for (int k = 0; k < nv; ++k)
-        ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
-      ++j;
-    }
-    m->end(it);
+    js[i] = 0;
   }
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+    BlockKey k;
+    getInteriorBlockKey(m, e, k);
+    int nv = k.nElementVertices;
+    assert(bs.keyToIndex.count(k));
+    int i = bs.keyToIndex[k];
+    int j = js[i];
+    ien[i][j] = new int[nv];
+    apf::Downward v;
+    getVertices(m, e, v);
+    for (int k = 0; k < nv; ++k)
+      ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
+    ++js[i];
+  }
+  m->end(it);
+  for (int i = 0; i < bs.getSize(); ++i)
+    assert(js[i] == bs.nElements[i]);
   o.arrays.ien = ien;
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
-  ModelBounds modelFaces;
+  gmi_model* gm = m->getModel();
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
@@ -109,44 +114,33 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     bcb[i] = new double*[bs.nElements[i]];
     js[i] = 0;
   }
-  gmi_model* gm = m->getModel();
-  gmi_ent* gf;
-  gmi_iter* git = gmi_begin(gm, m->getDimension() - 1);
-  while ((gf = gmi_next(gm, git))) {
-    apf::ModelEntity* mf = (apf::ModelEntity*)gf;
-    int* ibcbMaster = new int[2]();
-    double* bcbMaster = new double[nbc]();
-    applyNaturalBCs(gm, gf, bcs, bcbMaster, ibcbMaster);
-    apf::MeshEntity* f;
-    apf::MeshIterator* it = m->begin(m->getDimension() - 1);
-    while ((f = m->iterate(it))) {
-      if (m->toModel(f) != mf)
-        continue;
-      BlockKey k;
-      apf::MeshEntity* e = m->getUpward(f, 0);
-      getBoundaryBlockKey(m, e, f, k);
-      assert(bs.keyToIndex.count(k));
-      int i = bs.keyToIndex[k];
-      int j = js[i];
-      int nv = k.nElementVertices;
-      apf::Downward v;
-      getBoundaryVertices(m, e, f, v);
-      ienb[i][j] = new int[nv];
-      for (int k = 0; k < nv; ++k)
-        ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
-      bcb[i][j] = new double[nbc]();
-      for (int k = 0; k < nbc; ++k)
-        bcb[i][j][k] = bcbMaster[k];
-      ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
-      for (int k = 0; k < 2; ++k)
-        ibcb[i][j][k] = ibcbMaster[k];
-      ++js[i];
-    }
-    delete [] ibcbMaster;
-    delete [] bcbMaster;
-    m->end(it);
+  int boundaryDim = m->getDimension() - 1;
+  apf::MeshEntity* f;
+  apf::MeshIterator* it = m->begin(boundaryDim);
+  while ((f = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(f);
+    if (m->getModelType(me) != boundaryDim)
+      continue;
+    gmi_ent* gf = (gmi_ent*)me;
+    apf::MeshEntity* e = m->getUpward(f, 0);
+    BlockKey k;
+    getBoundaryBlockKey(m, e, f, k);
+    assert(bs.keyToIndex.count(k));
+    int i = bs.keyToIndex[k];
+    int j = js[i];
+    int nv = k.nElementVertices;
+    apf::Downward v;
+    getBoundaryVertices(m, e, f, v);
+    ienb[i][j] = new int[nv];
+    for (int k = 0; k < nv; ++k)
+      ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
+    bcb[i][j] = new double[nbc]();
+    ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
+    apf::Vector3 x = apf::getLinearCentroid(m, f);
+    applyNaturalBCs(gm, gf, bcs, x, bcb[i][j], ibcb[i][j]);
+    ++js[i];
   }
-  gmi_end(gm, git);
+  m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
@@ -175,42 +169,30 @@ static void getMaxElementNodes(Output& o)
   o.nMaxElementNodes = n;
 }
 
-static bool matchLess(apf::Copy& a, apf::Copy& b)
-{
-  if (a.peer != b.peer)
-    return a.peer < b.peer;
-  return a.entity < b.entity;
-}
-
 /* returns the global periodic master iff it is on this
    part, otherwise returns e */
-static apf::MeshEntity* getPeriodicMaster(apf::Mesh* m, apf::MeshEntity* e)
+static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
+    apf::MeshEntity* e)
 {
-  if ( ! m->hasMatching())
+  if ( ! sh)
     return e;
-  apf::Matches matches;
-  m->getMatches(e, matches);
-  if (!matches.getSize())
+  apf::Copy globalMaster = sh->getOwner(e);
+  if (globalMaster.peer == PCU_Comm_Self())
+    return globalMaster.entity;
+  else
     return e;
-  int self = PCU_Comm_Self();
-  apf::Copy master(self, e);
-  for (size_t i = 0; i < matches.getSize(); ++i)
-    if (matchLess(matches[i], master))
-      master = matches[i];
-  if (master.peer == self)
-    return master.entity;
-  return e;
 }
 
-static void getPeriodicMasters(Output& o, apf::Numbering* n)
+static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   int* iper = new int[m->count(0)];
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* e;
+  apf::MatchedSharing* sh = m->hasMatching() ? new apf::MatchedSharing(m) : 0;
   int i = 0;
   while ((e = m->iterate(it))) {
-    apf::MeshEntity* master = getPeriodicMaster(m, e);
+    apf::MeshEntity* master = getLocalPeriodicMaster(sh, e);
     if (master == e)
       iper[i] = 0;
     else
@@ -219,50 +201,21 @@ static void getPeriodicMasters(Output& o, apf::Numbering* n)
   }
   m->end(it);
   o.arrays.iper = iper;
+  delete sh;
 }
 
-static void getEssentialBCsOn(BCs& bcs, Output& o, gmi_ent* ge)
+static bool isMatched(apf::Mesh* m, apf::MeshEntity* e)
 {
-  Input& in = *o.in;
-  apf::Mesh* m = o.mesh;
-  int ibcMaster = 0;
-  int nec = countEssentialBCs(in);
-  double* bcMaster = new double[nec]();
-  gmi_model* gm = m->getModel();
-  bool did = applyEssentialBCs(gm, ge, bcs, bcMaster, &ibcMaster);
-  /* matching introduces an iper bit which in our system
-     is really a per-entity thing, not specifically dictated
-     by classification, so in that case we have to look
-     at all the vertices anyway to see if they are periodic slaves */
-  if (did || m->hasMatching()) {
-    apf::MeshEntity* v;
-    apf::MeshIterator* it = m->begin(0);
-    int i = 0;
-    int& ei = o.nEssentialBCNodes;
-    while ((v = m->iterate(it))) {
-      if (m->toModel(v) == (apf::ModelEntity*)ge) {
-        apf::MeshEntity* master = getPeriodicMaster(m, v);
-        if (did || (master != v)) {
-          o.arrays.nbc[i] = ei + 1;
-          o.arrays.ibc[ei] = ibcMaster;
-          if (master != v)
-            o.arrays.ibc[ei] |= (1<<10); //yes, hard coded...
-          double* bc_ei = new double[nec]();
-          for (int j = 0; j < nec; ++j)
-            bc_ei[j] = bcMaster[j];
-          o.arrays.bc[ei] = bc_ei;
-          ++ei;
-        }
-      }
-      ++i;
-    }
-    m->end(it);
-  }
-  delete [] bcMaster;
+  if ( ! m->hasMatching())
+    return false;
+  apf::Matches ms;
+  m->getMatches(e, ms);
+  return ms.getSize() != 0;
 }
 
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
+  Input& in = *o.in;
   apf::Mesh* m = o.mesh;
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
@@ -271,14 +224,37 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   o.arrays.ibc = new int[nv]();
   o.arrays.bc = new double*[nv];
   o.nEssentialBCNodes = 0;
+  int ibc = 0;
+  int nec = countEssentialBCs(in);
+  double* bc = new double[nec]();
   gmi_model* gm = m->getModel();
-  for (int d = 3; d >= 0; --d) {
-    gmi_iter* it = gmi_begin(gm, d);
-    gmi_ent* ge;
-    while ((ge = gmi_next(gm, it)))
-      getEssentialBCsOn(bcs, o, ge);
-    gmi_end(gm, it);
+  int i = 0;
+  int& ei = o.nEssentialBCNodes;
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*) m->toModel(v);
+    apf::Vector3 x;
+    m->getPoint(v, 0, x);
+    bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
+    /* matching introduces an iper bit */
+    if (isMatched(m, v)) {
+      ibc |= (1<<10); //yes, hard coded...
+      hasBC = true;
+    }
+    if (hasBC) {
+      o.arrays.nbc[i] = ei + 1;
+      o.arrays.ibc[ei] = ibc;
+      double* bc_ei = new double[nec];
+      for (int j = 0; j < nec; ++j)
+        bc_ei[j] = bc[j];
+      o.arrays.bc[ei] = bc_ei;
+      ++ei;
+    }
+    ++i;
   }
+  m->end(it);
+  delete [] bc;
 }
 
 static void getInitialConditions(BCs& bcs, Output& o)
@@ -293,12 +269,9 @@ static void getInitialConditions(BCs& bcs, Output& o)
   while ((v = m->iterate(it))) {
     gmi_ent* ge = (gmi_ent*)m->toModel(v);
     apf::getComponents(f, v, 0, &s[0]);
-/* unfortunately, there is no way to know which
-   components this overwrites without creating
-   bad coupling between pieces of code, so we
-   call this for every vertex even though it
-   only depends on classification */
-    applySolutionBCs(gm, ge, bcs, &s[0]);
+    apf::Vector3 x;
+    m->getPoint(v, 0, x);
+    applySolutionBCs(gm, ge, bcs, x, &s[0]);
     apf::setComponents(f, v, 0, &s[0]);
   }
   m->end(it);
@@ -367,7 +340,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getVertexLinks(o, n);
   getInterior(o, n);
   getBoundary(o, bcs, n);
-  getPeriodicMasters(o, n);
+  getLocalPeriodicMasters(o, n);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getMaxElementNodes(o);

@@ -8,21 +8,36 @@
 
 namespace ph {
 
-BC::BC()
-{
-  values = 0;
-}
-
-BC::~BC()
-{
-  delete [] values;
-}
-
 bool BC::operator<(const BC& other) const
 {
   if (dim != other.dim)
     return dim < other.dim;
   return tag < other.tag;
+}
+
+ConstantBC::ConstantBC()
+{
+  value = 0;
+}
+
+ConstantBC::~ConstantBC()
+{
+  delete [] value;
+}
+
+double* ConstantBC::eval(apf::Vector3 const& x)
+{
+  return value;
+}
+
+FieldBCs::~FieldBCs()
+{
+  while (!bcs.empty()) {
+    Set::iterator it = bcs.begin();
+    BC* bc = *it;
+    bcs.erase(it);
+    delete bc;
+  }
 }
 
 static struct { const char* name; int size; } const knownSizes[4] =
@@ -47,17 +62,16 @@ static void readBC(std::string const& line, BCs& bcs)
   std::getline(ss, name, ':');
   if (!bcs.fields.count(name)) {
     FieldBCs fbcs;
-    fbcs.size = getSize(name);
     bcs.fields[name] = fbcs;
   }
   FieldBCs& fbcs = bcs.fields[name];
-  BC bc;
-  ss >> bc.tag >> bc.dim;
-  bc.values = new double[fbcs.size];
-  for (int i = 0; i < fbcs.size; ++i)
-    ss >> bc.values[i];
+  ConstantBC* bc = new ConstantBC();
+  ss >> bc->tag >> bc->dim;
+  int size = getSize(name);
+  bc->value = new double[size];
+  for (int i = 0; i < size; ++i)
+    ss >> bc->value[i];
   fbcs.bcs.insert(bc);
-  bc.values = 0; //ownership of pointer transferred, prevent delete from here
 }
 
 void readBCs(const char* filename, BCs& bcs)
@@ -178,21 +192,22 @@ static KnownBC const solutionBCs[7] = {
   {"initial scalar_4",         8,-1, applyScalar},
 };
 
-bool hasBC(BCs& bcs, std::string const& name)
+bool haveBC(BCs& bcs, std::string const& name)
 {
   return bcs.fields.count(name);
 }
 
-double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge)
+double* getBCValue(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge,
+    apf::Vector3 const& x)
 {
-  BC key;
+  ConstantBC key;
   key.tag = gmi_tag(gm, ge);
   key.dim = gmi_dim(gm, ge);
-  FieldBCs::Set::iterator it = bcs.bcs.find(key);
+  FieldBCs::Set::iterator it = bcs.bcs.find(&key);
   if (it == bcs.bcs.end())
     return 0;
-  BC& bc = const_cast<BC&>(*it);
-  return bc.values;
+  BC* bc = *it;
+  return bc->eval(x);
 }
 
 /* starting from the current geometric entity,
@@ -207,10 +222,11 @@ double* getValuesOn(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge)
    at its upward adjacencies */
 static bool applyBC(gmi_model* gm, gmi_ent* ge,
     FieldBCs& bcs,
+    apf::Vector3 const& x,
     KnownBC const& kbc,
     double* values, int* bits)
 {
-  double* v = getValuesOn(gm, bcs, ge);
+  double* v = getBCValue(gm, bcs, ge, x);
   if (v) {
     kbc.apply(values, bits, kbc, v);
     return true;
@@ -218,7 +234,7 @@ static bool applyBC(gmi_model* gm, gmi_ent* ge,
   bool appliedAny = false;
   gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
   for (int i = 0; i < up->n; ++i)
-    if ( applyBC(gm, up->e[i], bcs, kbc, values, bits) )
+    if ( applyBC(gm, up->e[i], bcs, x, kbc, values, bits) )
       appliedAny = true;
   gmi_free_set(up);
   return appliedAny;
@@ -226,6 +242,7 @@ static bool applyBC(gmi_model* gm, gmi_ent* ge,
 
 static bool applyBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs,
+    apf::Vector3 const& x,
     KnownBC const* knownBCs,
     int nKnownBCs,
     double* values, int* bits)
@@ -233,38 +250,38 @@ static bool applyBCs(gmi_model* gm, gmi_ent* ge,
   bool appliedAny = false;
   for (int i = 0; i < nKnownBCs; ++i) {
     std::string s(knownBCs[i].name);
-    if ( ! hasBC(appliedBCs, s))
+    if ( ! haveBC(appliedBCs, s))
       continue;
     FieldBCs& fbcs = appliedBCs.fields[s];
-    if ( applyBC(gm, ge, fbcs, knownBCs[i], values, bits) )
+    if ( applyBC(gm, ge, fbcs, x, knownBCs[i], values, bits) )
       appliedAny = true;
   }
   return appliedAny;
 }
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs, double* values, int* bits)
+    BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits)
 {
-  return applyBCs(gm, ge, appliedBCs, naturalBCs,
+  return applyBCs(gm, ge, appliedBCs, x, naturalBCs,
       sizeof(naturalBCs) / sizeof(KnownBC), values, bits);
 }
 
 bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs, double* values, int* bits)
+    BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits)
 {
-  bool didSimple = applyBCs(gm, ge, appliedBCs, essentialBCs,
+  bool didSimple = applyBCs(gm, ge, appliedBCs, x, essentialBCs,
       sizeof(essentialBCs) / sizeof(KnownBC), values, bits);
   /* the complexity of velocity constraints is delegated to
      the code in phConstraint.cc */
   bool didVelocity = applyVelocityConstaints(gm, appliedBCs,
-      ge, values, bits);
+      ge, x, values, bits);
   return didSimple || didVelocity;
 }
 
 bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
-    BCs& appliedBCs, double* values)
+    BCs& appliedBCs, apf::Vector3 const& x, double* values)
 {
-  return applyBCs(gm, ge, appliedBCs, solutionBCs,
+  return applyBCs(gm, ge, appliedBCs, x, solutionBCs,
       sizeof(solutionBCs) / sizeof(KnownBC), values, 0);
 }
 
