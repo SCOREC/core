@@ -217,7 +217,7 @@ static KnownBC const solutionBCs[7] = {
   {"initial scalar_4",         8,-1, applyScalar},
 };
 
-bool hasBC(BCs& bcs, std::string const& name)
+bool haveBC(BCs& bcs, std::string const& name)
 {
   return bcs.fields.count(name);
 }
@@ -275,7 +275,7 @@ static bool applyBCs(gmi_model* gm, gmi_ent* ge,
   bool appliedAny = false;
   for (int i = 0; i < nKnownBCs; ++i) {
     std::string s(knownBCs[i].name);
-    if ( ! hasBC(appliedBCs, s))
+    if ( ! haveBC(appliedBCs, s))
       continue;
     FieldBCs& fbcs = appliedBCs.fields[s];
     if ( applyBC(gm, ge, fbcs, x, knownBCs[i], values, bits) )

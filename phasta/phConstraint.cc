@@ -314,12 +314,12 @@ bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
 {
   Constraint* c = 0;
   std::string name = "comp3";
-  if (hasBC(bcs, name)) {
+  if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
     c = combineAll(gm, fbcs, makePointConstraint, e, x, c);
   }
   name = "comp1";
-  if (hasBC(bcs, name)) {
+  if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
     c = combineAll(gm, fbcs, makePlaneConstraint, e, x, c);
   }
