@@ -17,6 +17,9 @@
 
 namespace apf {
 
+class Mesh;
+class MeshEntity;
+
 /** \brief Shape functions over this element */
 class EntityShape
 {
@@ -38,6 +41,8 @@ class EntityShape
              and edge, three nodes affecting a triangle,
              four for a tet, etc. */
     virtual int countNodes() const = 0;
+    virtual void alignSharedNodes(Mesh* m,
+        MeshEntity* elem, MeshEntity* shared, int order[]);
 };
 
 /** \brief Describes field distribution and shape functions
