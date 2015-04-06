@@ -188,6 +188,16 @@ void FieldDataOf<T>::getNodeComponents(MeshEntity* e, int node, T* components)
 }
 
 template <class T>
+void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int nn)
+{
+  for (int i = 0; i < nn; ++i) {
+    int oi = order[i];
+    for (int j = 0; j < nc; ++j)
+      dataOut[oi * nc + j] = dataIn[i * nc + j];
+  }
+}
+
+template <class T>
 int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 {
   Mesh* mesh = field->getMesh();
@@ -198,6 +208,12 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
   int nc = field->countComponents();
   int nen = es->countNodes();
   data.allocate(nc * nen);
+  /* try to minimize the amount of
+     reallocation of these two.
+     when there is no reordering, they
+     shouln't allocate at all */
+  apf::DynamicArray<int> order;
+  apf::DynamicArray<T> adata;
   int n = 0;
   for (int d = 0; d <= ed; ++d)
   {
@@ -207,8 +223,17 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
       int na = mesh->getDownward(entity,d,a);
       for (int i = 0; i < na; ++i)
       {
-        get(a[i],&(data[n]));
-        n += nc * (fs->countNodesOn(mesh->getType(a[i])));
+        int nan = fs->countNodesOn(mesh->getType(a[i]));
+        if (nan > 1 && ed != d) {
+          order.setSize(nen); /* nen >= nan */
+          adata.setSize(nen); /* setSize is no-op for the same size */
+          es->alignSharedNodes(mesh, entity, a[i], &order[0]);
+          get(a[i], &adata[0]);
+          reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
+        } else {
+          get(a[i], &data[n]);
+        }
+        n += nc * nan;
       }
     }
   }
