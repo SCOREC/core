@@ -27,6 +27,7 @@ ConstantBC::~ConstantBC()
 
 double* ConstantBC::eval(apf::Vector3 const& x)
 {
+  (void)x;
   return value;
 }
 
