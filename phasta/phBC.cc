@@ -201,10 +201,11 @@ bool haveBC(BCs& bcs, std::string const& name)
 double* getBCValue(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge,
     apf::Vector3 const& x)
 {
-  ConstantBC key;
-  key.tag = gmi_tag(gm, ge);
-  key.dim = gmi_dim(gm, ge);
-  FieldBCs::Set::iterator it = bcs.bcs.find(&key);
+  ConstantBC keyObj;
+  keyObj.tag = gmi_tag(gm, ge);
+  keyObj.dim = gmi_dim(gm, ge);
+  BC* key = &keyObj; /* holding the PGI compiler's hand */
+  FieldBCs::Set::iterator it = bcs.bcs.find(key);
   if (it == bcs.bcs.end())
     return 0;
   BC* bc = *it;
