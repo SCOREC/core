@@ -104,7 +104,7 @@ struct ConstantBC : public BC
 
 struct BCPointerLess
 {
-  bool operator()(BC const* a, BC const* b) { return *a < *b; };
+  bool operator()(BC const* a, BC const* b) const { return *a < *b; };
 };
 
 struct FieldBCs
