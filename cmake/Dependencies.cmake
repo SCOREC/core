@@ -8,7 +8,6 @@ SET(SUBPACKAGES_DIRS_CLASSIFICATIONS_OPTREQS
     ma                  ma              SS  REQUIRED
     spr                 spr             SS  REQUIRED
     apf_stk             stk             SS  REQUIRED
-    dwr                 dwr             SS  REQUIRED
 )
 
 SET(LIB_REQUIRED_DEP_PACKAGES)
