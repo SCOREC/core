@@ -118,6 +118,9 @@ FieldShape* getIPShape(int dimension, int order);
            value at any point in the element is the value of the closest
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
+/** \brief Get the hierarchic shape function of some polynomial order
+  \details only first and second order so far */
+FieldShape* getHierarchic(int order);
 
 FieldShape* getShapeByName(const char* name);
 
