@@ -202,7 +202,7 @@ class Hierarchic : public FieldShape
   public:
     Hierarchic(int order) : p(order)
     {
-      assert (p >=1 );
+      assert (p >= 1);
       assert (p <= 2);
     }
     const char* getName() const { return "Hierarchic"; }
@@ -244,7 +244,7 @@ class Hierarchic : public FieldShape
             }
           }
           int n = this->countNodes();
-          assert(NN.size() == n);
+          assert(int(NN.size()) == n);
           N.allocate(n);
           for (int i=0; i < n; ++i)
             N[i] = NN[i];
@@ -270,7 +270,7 @@ class Hierarchic : public FieldShape
             }
           }
           int n = this->countNodes();
-          assert(dNN.size() == n);
+          assert(int(dNN.size()) == n);
           dN.allocate(n);
           for (int i=0; i < n; ++i)
             dN[i] = dNN[i];
