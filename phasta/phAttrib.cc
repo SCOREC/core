@@ -147,17 +147,17 @@ static void formFactories(BCFactories& fs)
 static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
     ph::BCs& bcs)
 {
-  char* c_name = Attribute_name(a);
-  std::string name(c_name);
-  if (!fs.count(name)) {
-    fprintf(stderr,"unknown attribute \"%s\"\n", c_name);
-    abort();
+  char* c_infoType = Attribute_infoType(a);
+  std::string infoType(c_infoType);
+  if (!fs.count(infoType)) {
+    fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", c_infoType);
+    return;
   }
-  if (!bcs.fields.count(name))
-    bcs.fields[name] = ph::FieldBCs();
-  ph::FieldBCs& fbcs = bcs.fields[name];
-  Sim_deleteString(c_name);
-  BCFactory f = fs[name];
+  if (!bcs.fields.count(infoType))
+    bcs.fields[infoType] = ph::FieldBCs();
+  ph::FieldBCs& fbcs = bcs.fields[infoType];
+  Sim_deleteString(c_infoType);
+  BCFactory f = fs[infoType];
   fbcs.bcs.insert( f(a, ge) );
 }
 
