@@ -292,50 +292,15 @@ static void destroy(gmi_model* m)
 
 static struct gmi_model_ops ops;
 
-static gmi_model* create(const char* filename)
+static gmi_model* create_smd(const char* filename)
 {
-  gmi_model* m = gmi_import_sim(GM_load(filename, NULL, NULL));
-  ((sim_model*)m)->owned = true;
-  return m;
+  return gmi_sim_load(NULL, filename);
 }
 
-#ifdef SIM_PARASOLID
-static gmi_model* create_parasolid(const char* filename)
+static gmi_model* create_native(const char* filename)
 {
-  enum { TEXT_FORMAT = 0 };
-  pParasolidNativeModel nm =
-    ParasolidNM_createFromFile(filename, TEXT_FORMAT);
-  pGModel sm = GM_createFromNativeModel(nm, NULL);
-  NM_release(nm);
-  gmi_model* m = gmi_import_sim(sm);
-  ((sim_model*)m)->owned = true;
-  return m;
+  return gmi_sim_load(filename, NULL);
 }
-#else
-static gmi_model* create_parasolid(const char* filename)
-{
-  gmi_fail("gmi_sim not compiled with Parasolid support");
-}
-#endif
-
-#ifdef SIM_ACIS
-static gmi_model* create_acis(const char* filename)
-{
-  enum { TEXT_FORMAT = 0 };
-  pAcisNativeModel nm =
-    AcisNM_createFromFile(filename, TEXT_FORMAT);
-  pGModel sm = GM_createFromNativeModel(nm, NULL);
-  NM_release(nm);
-  gmi_model* m = gmi_import_sim(sm);
-  ((sim_model*)m)->owned = true;
-  return m;
-}
-#else
-static gmi_model* create_acis(const char*)
-{
-  gmi_fail("gmi_sim not compiled with Acis support");
-}
-#endif
 
 } //extern "C"
 
@@ -375,9 +340,65 @@ void gmi_register_sim(void)
   ops.periodic = periodic;
   ops.range = range;
   ops.destroy = destroy;
-  gmi_register(create, "smd");
-  gmi_register(create_parasolid, "xmt_txt");
-  gmi_register(create_acis, "sat");
+  gmi_register(create_smd, "smd");
+  gmi_register(create_native, "xmt_txt");
+  gmi_register(create_native, "sat");
+}
+
+static gmi_model* owned_import(pGModel sm)
+{
+  gmi_model* m = gmi_import_sim(sm);
+  ((sim_model*)m)->owned = true;
+  return m;
+}
+
+#ifdef SIM_PARASOLID
+static pNativeModel load_parasolid(const char* filename)
+{
+  enum { TEXT_FORMAT = 0 };
+  return ParasolidNM_createFromFile(filename, TEXT_FORMAT);
+}
+#else
+static pNativeModel load_parasolid(const char* filename)
+{
+  gmi_fail("gmi_sim not compiled with Parasolid support");
+}
+#endif
+
+#ifdef SIM_ACIS
+static pNativeModel load_acis(const char* filename)
+{
+  enum { TEXT_FORMAT = 0 };
+  return AcisNM_createFromFile(filename, TEXT_FORMAT);
+}
+#else
+static pNativeModel load_acis(const char* filename)
+{
+  gmi_fail("gmi_sim not compiled with Acis support");
+}
+#endif
+
+struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
+{
+  pNativeModel nm;
+  if (!nativefile)
+    nm = 0;
+  else if (gmi_has_ext(nativefile, "sat"))
+    nm = load_acis(nativefile);
+  else if (gmi_has_ext(nativefile, "xmt_txt"))
+    nm = load_parasolid(nativefile);
+  else
+    gmi_fail("gmi_sim_load: nativefile has bad extension");
+  pGModel sm;
+  if (!smdfile)
+    sm = GM_createFromNativeModel(nm, NULL);
+  else if (gmi_has_ext(smdfile, "smd"))
+    sm = GM_load(smdfile, nm, NULL);
+  else
+    gmi_fail("gmi_sim_load: smdfile has bad extension");
+  if (nm)
+    NM_release(nm);
+  return owned_import(sm);
 }
 
 gmi_model* gmi_import_sim(SGModel* sm)
