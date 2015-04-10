@@ -1,0 +1,147 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\title{Hierarchic Shape Functions}
+\author{Brian Granzow, SCOREC}
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This document serves to provide an overview of the hierarchic shape functions
+provided in apf. Hierarchic shape functions are constructed in a manner so that
+the basis $\mathcal{B}^{p+1}$ for the polynomial space $P^{p+1}(\Omega^e)$
+over an element $\Omega^e$ is obtained by solely by the addition of new shape
+functions to the basis $\mathcal{B}^p$ for the polynomial space
+$P^p(\Omega^e)$. The hierarchic shape functions $N$ can be written in terms
+of kernel functions $\phi_i$ and barycentric coordinates $A_i$ for elements.
+
+\section{Legendre polynomials}
+
+Legendre polynomials are typically derived over the interval $[-1,1]$. The
+Legendre polynomials presented here are derived over the interval $[0,1]$
+as it suits the parametric space for our reference tetrahedron and triangle,
+as described later. These are commonly referred to as shifted Legendre
+polynomials, which can be obtained by using the substitution $x \to 2x - 1$ for
+standard Legendre polynomials. The first two shifted Legendre polynomials are
+defined as: $L_0 = 1$ and $L_1 = 2x - 1$. The shifted Legendre polynomials
+satisfy the recursion relation:
+\[
+\left\{ \frac{2i-1}{i} (2x-1)\right \} L_{i-1}(x) -
+\left\{ \frac{i-1}{i} \right \} L_{i-2}(x) \quad i \geq 2
+\]
+The first few Legendre polynomials are listed below
+\begin{align*}
+L_0(x) &= 1 \\
+L_1(x) &= 2x - 1 \\
+L_2(x) &= 6x^2 - 6x + 1 \\
+L_3(x) &= 20x^3 - 30x^2 + 12x - 1 \\
+L_4(x) & = 70x^4 - 140x^3 + 90x^2 - 20x + 1
+\end{align*}
+The Legendre polynomials satisfy are orthogonal on $[0,1]$
+\[
+\int _0 ^1 L_i(x) L_j(x) \; \text{d}x \; =
+\begin{cases}
+0 &\quad i \neq j \\
+1/(2i+1) &\quad i = j
+\end{cases}
+\]
+
+\section{Lobatto functions}
+
+The Lobatto functions on $[0,1]$ are integrated Legendre polynomials, and
+are defined as
+\begin{align*}
+l_0(x) &= 1-x \\
+l_1(x) &= x \\
+l_i(x) & = \frac{1}{ \| L_{i-1} \|_2}
+\int _0 ^x L_{i-1}(t) \; \text{d}t \quad i \geq 2
+\end{align*}
+From the orthogonal property of the Legendre polynomials, it is clear that
+\[
+\frac{1}{ \| L_{i-1} \|_2} = \sqrt{2i - 1}
+\]
+The first few Lobatto functions are listed below
+\begin{align*}
+l_0(x) &= 1-x \\
+l_1(x) &= x \\
+l_2(x) &= \sqrt{3} (x^2 - x) \\
+l_3(x) &= \sqrt{5} (2x^3 - 3x^2 + x) \\
+l_4(x) &= \sqrt{7} (5x^4 - 10x^3 + 6x^2 - x)
+\end{align*}
+
+\section{Kernel functions}
+
+To define shape functions, it will be useful to define kernel functions
+$\phi_i$ by decomposing the Lobatto functions as follows:
+\[
+l_i(x) = l_0(x) l_1(x) \phi_{i-2}(x) \quad i \geq 2
+\]
+The first few kernel functions are listed below
+\begin{align*}
+\phi_0(x) &= -\sqrt{3} \\
+\phi_1(x) &= -\sqrt{5} (2x - 1) \\
+\phi_2(x) &= -\sqrt{7} (5x^2 - 5x + 1)
+\end{align*}
+
+\section{Reference Tetrahedron}
+
+We define our reference tetrahedron $\Omega^e_t$ in a parametric space
+such that
+\[
+\Omega^e_t = \left\{ \xi \in \mathbb{R}^3 \; : \;
+0 < \xi_1, \xi_2, xi_3 < 1; \; \xi_1 + \xi_1 \xi_3 < 1 \right\}
+\]
+The area coordinates for the reference tetrahedron can be defined in terms of
+the $\xi$ coordinates as
+\begin{align*}
+A_1 &= 1 - \xi_1 - \xi_2 \\
+A_2 &= \xi_1 \\
+A_3 &= \xi_2 \\
+A_3 &= \xi_3 \\
+\end{align*}
+There are 3 vertices associated with our parent tetrahedron. These can be
+expressed in parametric space as
+\begin{align*}
+v_1(\xi) &= (0,0,0) \\
+v_2(\xi) &= (1,0,0) \\
+v_3(\xi) &= (0,1,0) \\
+v_4(\xi) &= (0,0,1)
+\end{align*}
+They can similarly be expressed in area coordinates as
+\begin{align*}
+v_1(A) &= (1,0,0,0) \\
+v_2(A) &= (0,1,0,0) \\
+v_3(A) &= (0,0,1,0) \\
+v_4(A) &= (0,0,0,1)
+\end{align*}
+
+\subsection{Vertex shape functions}
+
+There are always only 4 shape functions associated with tetrahedral vertices, 
+$v_1, v_2$, and $v_3$.
+These are
+\begin{align*}
+N^{v_1}(A) &= A_1 \\
+N^{v_2}(A) &= A_2 \\
+N^{v_2}(A) &= A_3
+\end{align*}
+These by themselves would coincide exactly with linear lagrange shape
+functions and are of polynomial order $p=1$.
+
+\subsection{Edge shape functions}
+Edge shape functions will be defined in terms of the shape functions
+associated with the two vertices $v_i,$ and $v_j$ that bound the edge and the
+kernel functions defined previously. Edge shape functions of polyonmial order
+$p$ are defined by
+\[
+N^{e_{ij}}_p = N^{v_i} N^{v_j} \phi_{p-2}(N^{v_j} - N^{v_i})
+\quad p \geq 2
+\]
+
+\section{Future work}
+Currently only linear and quadratic hierarchic shape functions are
+implemented for tetrahedra. This document will be updated to explain face
+and region bubble modes when they are implemented for various element types.
+
+\end{document}
