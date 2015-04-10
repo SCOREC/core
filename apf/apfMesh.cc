@@ -895,9 +895,11 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   Downward ebv;
   for (int i = 0; i < nbv; ++i)
     ebv[i] = ev[vi[i]];
-  int a = findIn(bv, nbv, ebv[0]);
-  int b = findIn(bv, nbv, ebv[1]);
-  if (b == (a + 1) % nbv)
+  int a = findIn(ebv, nbv, bv[0]);
+  int b = findIn(ebv, nbv, bv[1]);
+  /* when nbv <= 2, a flip is also a rotation,
+     but we would prefer to treat it as a flip */
+  if (((nbv > 2) && (b == (a + 1) % nbv)) || (a == 0))
     flip = false;
   else {
     flip = true;
