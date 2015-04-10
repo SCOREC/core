@@ -32,6 +32,7 @@ static double phi(int o, double x)
 
 static double dphi(int o, double x)
 {
+  (void)x;
   double v = 0.0;
   switch (o)
   {
@@ -95,6 +96,7 @@ class TetVertexMode : public Mode
     }
     void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
     {
+      (void)xi;
       return getTetCoordGrad(dN);
     }
     int countNodes() const
@@ -163,9 +165,13 @@ class TetFaceMode : public Mode
     }
     void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
+      (void)xi;
+      (void)N;
     }
     void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
     {
+      (void)xi;
+      (void)dN;
     }
     int countNodes() const
     {
@@ -185,9 +191,13 @@ class TetRegionMode : public Mode
     }
     void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
+      (void)xi;
+      (void)N;
     }
     void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
     {
+      (void)xi;
+      (void)dN;
     }
     int countNodes() const
     {
