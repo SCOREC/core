@@ -191,6 +191,7 @@ void gmi_fail(const char* why) __attribute__((noreturn));
 void gmi_fscanf(FILE* f, int n, const char* format, ...);
 
 int gmi_getline(char** line, size_t* cap, FILE* f);
+int gmi_has_ext(const char* filename, const char* ext);
 
 #ifdef __cplusplus
 }
