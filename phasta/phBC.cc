@@ -7,6 +7,7 @@
 #include <sstream>
 #include <cstring>
 #include <gmi.h>
+#include <gmi_sim.h>
 
 namespace ph {
 
@@ -79,7 +80,6 @@ static void readBC(std::string const& line, BCs& bcs)
 
 static void readBCsFromSPJ(const char* filename, BCs& bcs)
 {
-  double t0 = PCU_Time();
   std::ifstream file(filename);
   assert(file.is_open()); //check if the spj file could be opened successfully
   std::string line;
@@ -88,32 +88,39 @@ static void readBCsFromSPJ(const char* filename, BCs& bcs)
       continue;
     readBC(line, bcs);
   }
+}
+
+void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
+{
+  double t0 = PCU_Time();
+  const char* modelfile = in.modelFileName.c_str();
+  const char* attribfile = in.attributeFileName.c_str();
+  /* loading the model */
+  /* case 1: meshmodel */
+  if (gmi_has_ext(modelfile, "dmg"))
+    m = gmi_load(modelfile);
+  /* cases 2: Simmetrix model (and possibly attributes) file */
+  else if (gmi_has_ext(modelfile, "smd"))
+    m = gmi_sim_load(0, modelfile);
+  /* cases 3&4: assuming native model file */
+  else {
+    /* case 3: native model and Simmetrix attributes file */
+    if (gmi_has_ext(attribfile, "smd"))
+      m = gmi_sim_load(modelfile, attribfile);
+    /* case 4: just a native model */
+    else
+      m = gmi_sim_load(modelfile, 0);
+  }
+  /* now load attributes.
+     only two cases:
+     either its an SPJ file or they came in with the model */
+  if (gmi_has_ext(attribfile, "spj"))
+    readBCsFromSPJ(attribfile, bcs);
+  else
+    getSimmetrixAttributes(m, bcs);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("\"%s\" loaded in %f seconds\n", filename, t1 - t0);
-}
-
-static bool endsWith(char const* with, char const* s)
-{
-  int lw;
-  int ls;
-  lw = strlen(with);
-  ls = strlen(s);
-  if (ls < lw)
-    return 0;
-  return strncmp(with, s + ls - lw, lw) == 0;
-}
-
-void readBCs(gmi_model* m, const char* filename, BCs& bcs)
-{
-  if (endsWith(".spj", filename))
-    readBCsFromSPJ(filename, bcs);
-  else if (endsWith(".smd", filename))
-    getSimmetrixAttributes(m, bcs);
-  else {
-    fprintf(stderr, "bad attribute filename \"%s\"\n", filename);
-    abort();
-  }
+    printf("\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);
 }
 
 struct KnownBC

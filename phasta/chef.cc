@@ -56,11 +56,11 @@ int main(int argc, char** argv)
   globalPeers = PCU_Comm_Peers();
   ph::Input in;
   in.load("adapt.inp");
-  apf::Mesh2* m = apf::loadMdsMesh(
-      in.modelFileName.c_str(), in.meshFileName.c_str());
-  m->verify();
   ph::BCs bcs;
-  ph::readBCs(m->getModel(), in.attributeFileName.c_str(), bcs);
+  gmi_model* g;
+  ph::loadModelAndBCs(in, g, bcs);
+  apf::Mesh2* m = apf::loadMdsMesh(g, in.meshFileName.c_str());
+  m->verify();
   if (in.solutionMigration)
     ph::readAndAttachSolution(in, m);
   else

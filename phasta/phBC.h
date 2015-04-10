@@ -7,6 +7,7 @@
 
 #include <apfVector.h>
 #include <gmi.h>
+#include "phInput.h"
 
 /* full names and abbreviations for boundary conditions:
 
@@ -120,7 +121,7 @@ struct BCs
   Map fields;
 };
 
-void readBCs(gmi_model* m, const char* filename, BCs& bcs);
+void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
