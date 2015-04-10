@@ -101,6 +101,7 @@ class MeshMDS : public Mesh2
       mds_id cap[MDS_TYPES] = {};
       mesh = mds_apf_create(m, d, cap);
       isMatched = isMatched_;
+      ownsModel = true;
     }
     MeshMDS(gmi_model* m, Mesh* from)
     {
@@ -117,6 +118,7 @@ class MeshMDS : public Mesh2
       int d = from->getDimension();
       mesh = mds_apf_create(m,d,cap);
       isMatched = from->hasMatching();
+      ownsModel = true;
       apf::convert(from,this);
     }
     MeshMDS(gmi_model* m, const char* pathname)
@@ -124,6 +126,7 @@ class MeshMDS : public Mesh2
       init(apf::getLagrange(1));
       mesh = mds_read_smb(m, pathname);
       isMatched = PCU_Or(!mds_net_empty(&mesh->matches));
+      ownsModel = true;
     }
     ~MeshMDS()
     {
@@ -427,7 +430,7 @@ class MeshMDS : public Mesh2
       changeCoordinateField(0);
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);
       PCU_Thrd_Barrier();
-      if (!PCU_Thrd_Self())
+      if (!PCU_Thrd_Self() && ownsModel)
         gmi_destroy(model);
       PCU_Thrd_Barrier();
       mds_apf_destroy(mesh);
@@ -564,6 +567,7 @@ class MeshMDS : public Mesh2
     mds_apf* mesh;
     PM parts;
     bool isMatched;
+    bool ownsModel;
 };
 
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched)
@@ -726,6 +730,12 @@ MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index)
         index -= mds->n[t];
     }
   return 0;
+}
+
+void disownMdsModel(Mesh2* in)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  m->ownsModel = false;
 }
 
 }

@@ -140,6 +140,8 @@ Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
   respectively. */
 Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
 
+void disownMdsModel(Mesh2* in);
+
 }
 
 #endif
