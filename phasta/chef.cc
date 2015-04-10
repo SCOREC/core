@@ -49,9 +49,6 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
   assert(provided == MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
-  PCU_Protect();
-  if (!PCU_Comm_Self()) printf("Reading Sim license file\n");
-  PCU_Barrier();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
