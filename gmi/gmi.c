@@ -147,19 +147,25 @@ void gmi_register(gmi_creator f, const char* ext)
   }
 }
 
+int gmi_has_ext(const char* filename, const char* ext)
+{
+  const char* c = strrchr(filename, '.');
+  if (!c)
+    gmi_fail("model file name with no extension");
+  ++c; /* exclude the dot itself */
+  if (!strcmp(c, ext))
+    return 1;
+  return 0;
+}
+
 struct gmi_model* gmi_load(const char* filename)
 {
   int i;
-  const char* ext = strrchr(filename, '.');
-  if (!ext)
-    gmi_fail("model file name with no extension");
-  ++ext; /* exclude the dot itself */
   if (!ctors)
     gmi_fail("no models registered before gmi_load");
-  for (i = 0; i < ctors->n; ++i) {
-    if (!strcmp(ext, ctors->c[i].ext))
+  for (i = 0; i < ctors->n; ++i)
+    if (gmi_has_ext(filename, ctors->c[i].ext))
       return ctors->c[i].f(filename);
-  }
   gmi_fail("model file extension not registered");
   return NULL;
 }

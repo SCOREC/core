@@ -5,18 +5,14 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <apf.h>
-#include <apfMesh.h>
-#include <apfShape.h>
+#include "apfShape.h"
+#include "apfMesh.h"
+#include <vector>
 
-namespace dwr {
+namespace apf {
 
-using namespace apf;
-
-static const double c0 = -2.44948974278318;  /* -2 sqrt(3/2) */
-static const double c1 = -3.16227766016838;  /* -2 sqrt(5/2) */
-static const double c2 = -0.935414346693485; /* -1/2 sqrt(7/2) */
-static const double c3 = -1.06066017177982;  /* -1/2 sqrt(9/2) */
+static const double c0 = -1.73205080756888; /* -sqrt(3) */
+static const double c1 = -2.23606797749979; /* -sqrt(5) */
 
 static double phi(int o, double x)
 {
@@ -27,16 +23,9 @@ static double phi(int o, double x)
       v = c0;
       break;
     case 1:
-      v = c1 * x;
-      break;
-    case 2:
-      v = c2 * (5.0*x*x - 1.0);
-      break;
-    case 3:
-      v = c3 * (7.0*x*x - 3.0) * x;
-      break;
+      v = c1 * (2.0*x - 1.0);
     default:
-      fprintf(stderr,"unsupported order");
+      fail("unsupported order");
   }
   return v;
 }
@@ -47,19 +36,11 @@ static double dphi(int o, double x)
   switch (o)
   {
     case 0:
-      v = 0.0;
       break;
     case 1:
-      v = c1;
-      break;
-    case 2:
-      v = c2 * 10.0 * x;
-      break;
-    case 3:
-      v = c3 * (21.0*x*x - 3.0);
-      break;
+      v = 2.0*c1;
     default:
-      fprintf(stderr,"unsupoorted order");
+      fail("unsupported order");
   }
   return v;
 }
@@ -67,19 +48,19 @@ static double dphi(int o, double x)
 static void getTetCoord(Vector3 const& xi, NewArray<double>& l)
 {
   l.allocate(4);
-  l[0] = -0.5 * (xi[0] + xi[1] + xi[2] + 1.0);
-  l[1] = 0.5 * (xi[0] + 1.0);
-  l[2] = 0.5 * (xi[1] + 1.0);
-  l[3] = 0.5 * (xi[2] + 1.0);
+  l[0] = 1.0-xi[0]-xi[1]-xi[2];
+  l[1] = xi[0];
+  l[2] = xi[1];
+  l[3] = xi[2];
 }
 
 static void getTetCoordGrad(NewArray<Vector3>& dl)
 {
   dl.allocate(4);
-  dl[0] = Vector3(-0.5, -0.5, -0.5);
-  dl[1] = Vector3( 0.5,  0.0,  0.0);
-  dl[2] = Vector3( 0.0,  0.5,  0.0);
-  dl[3] = Vector3( 0.0,  0.0,  0.5);
+  dl[0] = Vector3(-1.0, -1.0, -1.0);
+  dl[1] = Vector3( 1.0,  0.0,  0.0);
+  dl[2] = Vector3( 0.0,  1.0,  0.0);
+  dl[3] = Vector3( 0.0,  0.0,  1.0);
 }
 
 class Mode
@@ -105,7 +86,7 @@ class Mode
     }
 };
 
-class VertexMode : public Mode
+class TetVertexMode : public Mode
 {
   public:
     void getVals(Vector3 const& xi, NewArray<double>& N) const
@@ -122,12 +103,12 @@ class VertexMode : public Mode
     }
 };
 
-class EdgeMode : public Mode
+class TetEdgeMode : public Mode
 {
   public:
-    EdgeMode(int o) : p(o)
+    TetEdgeMode(int o)  : p(o)
     {
-      assert( p>=2 );
+      assert (p >= 2);
     }
     void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
@@ -172,13 +153,13 @@ class EdgeMode : public Mode
     int p;
 };
 
-class FaceMode : public Mode
+class TetFaceMode : public Mode
 {
   public:
-    FaceMode(int o) : p(o)
+    TetFaceMode(int o) : p(o)
     {
       assert (p >= 3);
-      fprintf(stderr,"unimplemented face mode");
+      fail("unimplemented face mode");
     }
     void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
@@ -194,13 +175,13 @@ class FaceMode : public Mode
     int p;
 };
 
-class RegionMode : public Mode
+class TetRegionMode : public Mode
 {
   public:
-    RegionMode(int o) : p(o)
+    TetRegionMode(int o) : p(o)
     {
       assert (p >= 4);
-      fprintf(stderr,"unimplemented region mode");
+      fail("unimplemented region mode");
     }
     void getVals(Vector3 const& xi, NewArray<double>& N) const
     {
@@ -221,7 +202,7 @@ class Hierarchic : public FieldShape
   public:
     Hierarchic(int order) : p(order)
     {
-      assert (p >=1 );
+      assert (p >= 1);
       assert (p <= 2);
     }
     const char* getName() const { return "Hierarchic"; }
@@ -245,25 +226,25 @@ class Hierarchic : public FieldShape
         void getValues(Vector3 const& xi, NewArray<double>& N) const
         {
           std::vector<double> NN;
-          VertexMode v;
+          TetVertexMode v;
           v.pushVals(xi,NN);
           for (int o=2; o <= p; ++o)
           {
-            EdgeMode e(o);
+            TetEdgeMode e(o);
             e.pushVals(xi,NN);
             if (o >= 3)
             {
-              FaceMode f(o);
+              TetFaceMode f(o);
               f.pushVals(xi,NN);
             }
             if (o >= 4)
             {
-              RegionMode r(o);
+              TetRegionMode r(o);
               r.pushVals(xi,NN);
             }
           }
           int n = this->countNodes();
-          assert(NN.size() == n);
+          assert(int(NN.size()) == n);
           N.allocate(n);
           for (int i=0; i < n; ++i)
             N[i] = NN[i];
@@ -271,45 +252,45 @@ class Hierarchic : public FieldShape
         void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
         {
           std::vector<Vector3> dNN;
-          VertexMode v;
+          TetVertexMode v;
           v.pushGrads(xi,dNN);
           for (int o=2; o <= p; ++o)
           {
-            EdgeMode e(o);
+            TetEdgeMode e(o);
             e.pushGrads(xi,dNN);
             if (o >= 3)
             {
-              FaceMode f(o);
+              TetFaceMode f(o);
               f.pushGrads(xi,dNN);
             }
             if (o >= 4)
             {
-              RegionMode r(o);
+              TetRegionMode r(o);
               r.pushGrads(xi,dNN);
             }
           }
           int n = this->countNodes();
-          assert(dNN.size() == n);
+          assert(int(dNN.size()) == n);
           dN.allocate(n);
           for (int i=0; i < n; ++i)
             dN[i] = dNN[i];
         }
         int countNodes() const
         {
-          VertexMode v;
+          TetVertexMode v;
           int n = v.countNodes();
           for (int o=2; o <= p; ++o)
           {
-            EdgeMode e(o);
+            TetEdgeMode e(o);
             n += e.countNodes();
             if (o >=3)
             {
-              FaceMode f(o);
+              TetFaceMode f(o);
               n += f.countNodes();
             }
             if (o >= 4)
             {
-              RegionMode r(o);
+              TetRegionMode r(o);
               n += r.countNodes();
             }
           }
@@ -373,12 +354,6 @@ FieldShape* getHierarchic(int order)
   assert( (order == 1) || (order == 2) );
   static Hierarchic hierarchic(order);
   return &hierarchic;
-}
-
-apf::Field* createHierarchicField(apf::Mesh* m, const char* name,
-    int valueType, int order)
-{
-  return createField(m,name,valueType,getHierarchic(order));
 }
 
 }
