@@ -16,6 +16,7 @@ void gmi_sim_start(void);
 void gmi_sim_stop(void);
 void gmi_register_sim(void);
 
+struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile);
 struct gmi_model* gmi_import_sim(SGModel* sim_model);
 SGModel* gmi_export_sim(struct gmi_model* m);
 
