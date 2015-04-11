@@ -24,6 +24,8 @@ static void setDefaults(Input& in)
   in.formElementGraph = 0;
   in.restartFileName = "restart";
   in.phastaIO = 1;
+  in.snap = 0;
+  in.splitAllLayerEdges = 0;
 }
 
 Input::Input()
@@ -72,6 +74,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["threaded"] = &in.threaded;
   intMap["initBubbles"] = &in.initBubbles;
   intMap["formElementGraph"] = &in.formElementGraph;
+  intMap["snap"] = &in.snap;
+  intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
 }
 
 template <class T>
