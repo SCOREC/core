@@ -118,6 +118,7 @@ if(IS_TESTING)
 endif()
 
 #executables which call only Simmetrix functions
+include_directories(${PROJECT_BINARY_DIR}/gmi_sim)
 setup_exe(simTranslate simTranslate.cc)
 if(SIM_PARASOLID)
 setup_exe(simSpjToSmd simSpjToSmd.cc)

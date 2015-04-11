@@ -22,7 +22,7 @@
 #include <string>
 
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
-#include "../build/gmi_sim/gmi_sim_config.h"
+#include "gmi_sim_config.h"
 #include <gmi_sim.h>
 
 #ifdef SIM_PARASOLID
