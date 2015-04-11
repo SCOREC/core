@@ -48,6 +48,8 @@ class Input
     int threaded;
     int initBubbles;
     int formElementGraph;
+    int snap;
+    int splitAllLayerEdges;
 };
 
 int countNaturalBCs(Input& in);

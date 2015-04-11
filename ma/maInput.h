@@ -81,8 +81,8 @@ class Input
     bool shouldRefineLayer;
 /** \brief whether to allow layer coarsening (default false) */
     bool shouldCoarsenLayer;
-/** \brief hack to enable boundary layer uniform refinement (do not touch!) */
-    bool isUniform;
+/** \brief set to true during UR to get splits in the normal direction */
+    bool splitAllLayerEdges;
 };
 
 /** \brief generate a configuration based on an anisotropic function.
