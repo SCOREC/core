@@ -116,3 +116,9 @@ setup_exe(align align.cc)
 if(IS_TESTING)
   include(testing.cmake)
 endif()
+
+#executables which call only Simmetrix functions
+setup_exe(simTranslate simTranslate.cc)
+if(SIM_PARASOLID)
+setup_exe(simSpjToSmd simSpjToSmd.cc)
+endif()
