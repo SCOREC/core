@@ -90,17 +90,17 @@ We define our reference tetrahedron $\Omega^e_t$ in a parametric space
 such that
 \[
 \Omega^e_t = \left\{ \xi \in \mathbb{R}^3 \; : \;
-0 < \xi_1, \xi_2, xi_3 < 1; \; \xi_1 + \xi_1 \xi_3 < 1 \right\}
+0 < \xi_1, \xi_2, \xi_3 < 1; \; \xi_1 + \xi_1 + \xi_3 < 1 \right\}
 \]
 The area coordinates for the reference tetrahedron can be defined in terms of
 the $\xi$ coordinates as
 \begin{align*}
-A_1 &= 1 - \xi_1 - \xi_2 \\
+A_1 &= 1 - \xi_1 - \xi_2 - \xi_3 \\
 A_2 &= \xi_1 \\
 A_3 &= \xi_2 \\
-A_3 &= \xi_3 \\
+A_4 &= \xi_3 \\
 \end{align*}
-There are 3 vertices associated with our parent tetrahedron. These can be
+There are 4 vertices associated with our parent tetrahedron. These can be
 expressed in parametric space as
 \begin{align*}
 v_1(\xi) &= (0,0,0) \\
@@ -119,14 +119,15 @@ v_4(A) &= (0,0,0,1)
 \subsection{Vertex shape functions}
 
 There are always only 4 shape functions associated with tetrahedral vertices, 
-$v_1, v_2$, and $v_3$.
+$v_1, v_2$, $v_3$, and $v_4$.
 These are
 \begin{align*}
 N^{v_1}(A) &= A_1 \\
 N^{v_2}(A) &= A_2 \\
-N^{v_2}(A) &= A_3
+N^{v_3}(A) &= A_3 \\
+N^{v_4}(A) &= A_4
 \end{align*}
-These by themselves would coincide exactly with linear lagrange shape
+These by themselves would coincide exactly with linear Lagrange shape
 functions and are of polynomial order $p=1$.
 
 \subsection{Edge shape functions}
