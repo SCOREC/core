@@ -46,6 +46,24 @@ static double dphi(int o, double x)
   return v;
 }
 
+static void getTriCoord(Vector3 const& xi, NewArray<double>& l)
+{
+  l.allocate(3);
+  l[0] = 1.0-xi[0]-xi[1];
+  l[1] = xi[0];
+  l[2] = xi[1];
+}
+
+static void getTriCoordGrad(NewArray<Vector3>& dl)
+{
+  dl.allocate(3);
+  dl[0] = Vector3(-1.0, -1.0, 0.0);
+  dl[1] = Vector3( 1.0,  0.0, 0.0);
+  dl[2] = Vector3( 0.0,  1.0, 0.0);
+
+
+}
+
 static void getTetCoord(Vector3 const& xi, NewArray<double>& l)
 {
   l.allocate(4);
@@ -87,6 +105,63 @@ class Mode
     }
 };
 
+class TriVertexMode : public Mode
+{
+  void getVals(Vector3 const& xi, NewArray<double>& N) const
+  {
+    return getTriCoord(xi,N);
+  }
+  void getGrads(Vector3 const&, NewArray<Vector3>& dN) const
+  {
+    return getTetCoordGrad(dN);
+  }
+  int countNodes() const
+  {
+    return 4;
+  }
+};
+
+class TriEdgeMode : public Mode
+{
+  public:
+    TriEdgeMode(int o)  : p(o)
+    {
+      assert (p >= 2);
+    }
+    void getVals(Vector3 const& xi, NewArray<double>& N) const
+    {
+      NewArray<double> l;
+      getTriCoord(xi,l);
+      N.allocate(3);
+      N[0] = l[0] * l[1] * phi(p-2, l[0] - l[1]);
+      N[1] = l[1] * l[2] * phi(p-2, l[1] - l[2]);
+      N[2] = l[2] * l[0] * phi(p-2, l[2] - l[0]);
+    }
+    void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
+    {
+      NewArray<double> l;
+      getTriCoord(xi,l);
+      NewArray<Vector3> dl;
+      getTriCoordGrad(dl);
+      dN.allocate(3);
+      for (int i=0; i < 3; ++i)
+      {
+        dN[0][i] = phi(p-2,l[0] -l[1])  * (l[0] * dl[1][i] + dl[0][i] * l[1]) +
+          dphi(p-2,l[0] - l[1]) * (dl[0][i] - dl[1][i]);
+        dN[1][i] = phi(p-2,l[1] -l[2])  * (l[1] * dl[2][i] + dl[1][i] * l[2]) +
+          dphi(p-2,l[1] - l[2]) * (dl[1][i] - dl[2][i]);
+        dN[2][i] = phi(p-2,l[2] -l[0])  * (l[2] * dl[0][i] + dl[2][i] * l[0]) +
+          dphi(p-2,l[2] - l[0]) * (dl[2][i] - dl[0][i]);
+      }
+    }
+    int countNodes() const
+    {
+      return 3;
+    }
+  private:
+    int p;
+};
+
 class TetVertexMode : public Mode
 {
   public:
@@ -94,9 +169,8 @@ class TetVertexMode : public Mode
     {
       return getTetCoord(xi,N);
     }
-    void getGrads(Vector3 const& xi, NewArray<Vector3>& dN) const
+    void getGrads(Vector3 const&, NewArray<Vector3>& dN) const
     {
-      (void)xi;
       return getTetCoordGrad(dN);
     }
     int countNodes() const
