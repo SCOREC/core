@@ -5,6 +5,7 @@ find_package(parma REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(dsp REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -13,7 +14,8 @@ include_directories(
   ${PARMA_INCLUDE_DIRS}
   ${PH_INCLUDE_DIRS}
   ${APF_MPAS_INCLUDE_DIRS}
-  ${VIZ_INCLUDE_DIRS})
+  ${VIZ_INCLUDE_DIRS}
+  ${DSP_INCLUDE_DIRS})
 set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
@@ -21,7 +23,8 @@ set(ALL_LIBS
   ${PARMA_LIBS}
   ${PH_LIBS}
   ${APF_MPAS_LIBS}
-  ${VIZ_LIBS})
+  ${VIZ_LIBS}
+  ${DSP_LIBS})
 
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)
@@ -95,6 +98,7 @@ setup_exe(eigen_test eigen_test.cc)
 setup_exe(integrate integrate.cc)
 setup_exe(hierarchic hierarchic.cc)
 setup_exe(align align.cc)
+setup_exe(moving moving.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
