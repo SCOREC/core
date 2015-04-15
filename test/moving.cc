@@ -37,8 +37,8 @@ int main(int argc, char** argv)
                    0,0,1);
   /* number of displacement steps */
   for (int i = 0; i < 1; ++i) {
-    apf::Field* dsp = dsp::applyRigidMotion(m, fixed, r, t);
-    dsp::displace(m, dsp, smoother, adapter, fixed, moving);
+    apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
+    dsp::tryToDisplace(m, dsp);
     apf::destroyField(dsp);
   }
   delete smoother;
