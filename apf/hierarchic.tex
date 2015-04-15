@@ -38,7 +38,7 @@ L_2(x) &= 6x^2 - 6x + 1 \\
 L_3(x) &= 20x^3 - 30x^2 + 12x - 1 \\
 L_4(x) & = 70x^4 - 140x^3 + 90x^2 - 20x + 1
 \end{align*}
-The Legendre polynomials satisfy are orthogonal on $[0,1]$
+The Legendre polynomials are orthogonal on $[0,1]$
 \[
 \int _0 ^1 L_i(x) L_j(x) \; \text{d}x \; =
 \begin{cases}
@@ -84,16 +84,66 @@ The first few kernel functions are listed below
 \phi_2(x) &= -\sqrt{7} (5x^2 - 5x + 1)
 \end{align*}
 
-\section{Reference Tetrahedron}
-
-We define our reference tetrahedron $\Omega^e_t$ in a parametric space
-such that
+\section{Reference Triangle}
+We define our reference triangle $\Omega^e_t$ in a parametric space such that
 \[
 \Omega^e_t = \left\{ \xi \in \mathbb{R}^3 \; : \;
+0 < \xi_1, \xi_2 < 1; \; \xi_1 + \xi_2 < 1 \right\}
+\]
+The barycentric coordinates for the reference triangle can be defined in
+terms of the $\xi$ coordinates as
+\begin{align*}
+A_1 &= 1 - \xi_1 - \xi_2 \\
+A_2 &= \xi_1 \\
+A_3 &= \xi_2
+\end{align*}
+There are 3 vertices associated with our parent triangle. These can be
+expressed in parametric space as
+\begin{align*}
+v_1(\xi) &= (0,0) \\
+v_2(\xi) &= (1,0) \\
+v_3(\xi) &= (0,1)
+\end{align*}
+They can similarly be expressed in barycentric coordinates as
+\begin{align*}
+v_1(A) &= (1,0,0) \\
+v_2(A) &= (0,1,0) \\
+v_3(A) &= (0,0,1)
+\end{align*}
+
+\subsection{Vertex shape functions}
+
+There are always only 3 shape functions associated with triangular vertices, 
+$v_1, v_2$, and $v_3$.
+These are
+\begin{align*}
+N^{v_1}(A) &= A_1 \\
+N^{v_2}(A) &= A_2 \\
+N^{v_3}(A) &= A_3
+\end{align*}
+These by themselves would coincide exactly with linear Lagrange shape
+functions and are of polynomial order $p=1$.
+
+\subsection{Edge shape functions}
+Edge shape functions will be defined in terms of the shape functions
+associated with the two vertices $v_i,$ and $v_j$ that bound the edge and the
+kernel functions defined previously. Edge shape functions of polyonmial order
+$p$ are defined by
+\[
+N^{e_{ij}}_p = N^{v_i} N^{v_j} \phi_{p-2}(N^{v_j} - N^{v_i})
+\quad p \geq 2
+\]
+
+\section{Reference Tetrahedron}
+
+We define our reference tetrahedron $\Omega^e_T$ in a parametric space
+such that
+\[
+\Omega^e_T = \left\{ \xi \in \mathbb{R}^3 \; : \;
 0 < \xi_1, \xi_2, \xi_3 < 1; \; \xi_1 + \xi_1 + \xi_3 < 1 \right\}
 \]
-The area coordinates for the reference tetrahedron can be defined in terms of
-the $\xi$ coordinates as
+The barycentric coordinates for the reference tetrahedron can be defined in
+terms of the $\xi$ coordinates as
 \begin{align*}
 A_1 &= 1 - \xi_1 - \xi_2 - \xi_3 \\
 A_2 &= \xi_1 \\
@@ -108,7 +158,7 @@ v_2(\xi) &= (1,0,0) \\
 v_3(\xi) &= (0,1,0) \\
 v_4(\xi) &= (0,0,1)
 \end{align*}
-They can similarly be expressed in area coordinates as
+They can similarly be expressed in barycentric coordinates as
 \begin{align*}
 v_1(A) &= (1,0,0,0) \\
 v_2(A) &= (0,1,0,0) \\
