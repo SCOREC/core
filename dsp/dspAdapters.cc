@@ -27,9 +27,22 @@ class UniformAdapter : public Adapter {
   MyFunction myFunction;
 };
 
+class EmptyAdapter : public Adapter {
+  public:
+  virtual void adapt(apf::Mesh2* m)
+  {
+    (void)m;
+  }
+};
+
 Adapter* Adapter::makeUniform(double size)
 {
   return new UniformAdapter(size);
+}
+
+Adapter* Adapter::makeEmpty()
+{
+  return new EmptyAdapter();
 }
 
 }

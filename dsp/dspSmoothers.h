@@ -13,6 +13,7 @@ class Smoother {
     virtual ~Smoother();
     virtual void smooth(apf::Field* df, Boundary& fixed, Boundary& moving) = 0;
     static Smoother* makeLaplacian();
+    static Smoother* makeEmpty();
 };
 
 }

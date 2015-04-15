@@ -10,6 +10,7 @@ class Adapter {
     virtual ~Adapter();
     virtual void adapt(apf::Mesh2* m) = 0;
     static Adapter* makeUniform(double size);
+    static Adapter* makeEmpty();
 };
 
 }
