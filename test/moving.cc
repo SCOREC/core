@@ -6,6 +6,15 @@
 #include <maSize.h>
 #include <maMesh.h>
 #include <PCU.h>
+#include <sstream>
+
+static void writeStep(apf::Mesh* m, int i)
+{
+  std::stringstream ss;
+  ss << "step_" << i << "_";
+  std::string s = ss.str();
+  apf::writeVtkFiles(s.c_str(), m);
+}
 
 int main(int argc, char** argv)
 {
@@ -21,9 +30,9 @@ int main(int argc, char** argv)
   moving.insert(m->findModelEntity(2, 57));
   moving.insert(m->findModelEntity(2, 62));
   moving.insert(m->findModelEntity(2, 66));
+  dsp::closeBoundary(m, moving);
   dsp::Boundary fixed;
-//dsp::Smoother* smoother = dsp::Smoother::makeLagrangian();
-  dsp::Smoother* smoother = dsp::Smoother::makeEmpty();
+  dsp::Smoother* smoother = dsp::Smoother::makeLaplacian();
 //double avgEdgeLen = ma::getAverageEdgeLength(m);
 //dsp::Adapter* adapter = dsp::Adapter::makeUniform(avgEdgeLen);
   dsp::Adapter* adapter = dsp::Adapter::makeEmpty();
@@ -31,19 +40,22 @@ int main(int argc, char** argv)
   apf::Vector3 b;
   ma::getBoundingBox(m, a, b);
   double zDist = b.z() - a.z();
-  apf::Vector3 t(0,0, zDist / 10);
+  apf::Vector3 t(0,0, zDist / 30);
   apf::Matrix3x3 r(1,0,0,
                    0,1,0,
                    0,0,1);
+  writeStep(m, 0);
   /* number of displacement steps */
   for (int i = 0; i < 1; ++i) {
     apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
-    dsp::tryToDisplace(m, dsp);
+    smoother->smooth(dsp, fixed, moving);
+  //dsp::tryToDisplace(m, dsp);
+    apf::axpy(1, dsp, m->getCoordinateField());
     apf::destroyField(dsp);
+    writeStep(m, i + 1);
   }
   delete smoother;
   delete adapter;
-  apf::writeVtkFiles("after", m);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
