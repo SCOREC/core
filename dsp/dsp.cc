@@ -1,7 +1,29 @@
 #include "dsp.h"
 #include <apf.h>
+#include <gmi.h>
 
 namespace dsp {
+
+static void closeBoundaryRec(gmi_model* gm, gmi_ent* e, Boundary& b)
+{
+  b.insert((apf::ModelEntity*)e);
+  int dim = gmi_dim(gm, e);
+  if (!dim)
+    return;
+  gmi_set* s = gmi_adjacent(gm, e, gmi_dim(gm, e) - 1);
+  for (int i = 0; i < s->n; ++i)
+    closeBoundaryRec(gm, s->e[i], b);
+  gmi_free_set(s);
+}
+
+void closeBoundary(apf::Mesh* m, Boundary& b)
+{
+  gmi_model* gm = m->getModel();
+  Boundary nb;
+  APF_ITERATE(Boundary, b, it)
+    closeBoundaryRec(gm, (gmi_ent*) *it, nb);
+  b = nb;
+}
 
 bool tryToDisplace(apf::Mesh2* m, apf::Field* df)
 {

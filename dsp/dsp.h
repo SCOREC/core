@@ -8,6 +8,8 @@
 
 namespace dsp {
 
+void closeBoundary(apf::Mesh* m, Boundary& b);
+
 bool tryToDisplace(apf::Mesh2* m, apf::Field* df);
 
 void displace(apf::Mesh2* m, apf::Field* df,
