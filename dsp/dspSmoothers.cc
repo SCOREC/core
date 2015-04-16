@@ -1,4 +1,5 @@
 #include "dspSmoothers.h"
+#include <math.h>
 #include <apf.h>
 
 namespace dsp {
@@ -135,9 +136,9 @@ class LaplacianSmoother : public Smoother {
             int adj_V_id = apf::getNumber(v_n, adj_V, 0, 0);
             P_sum = P_sum + P_total[adj_V_id];
           }
-          delta_P_sum[0] = delta_P_sum[0]/num_adj;
-          delta_P_sum[1] = delta_P_sum[1]/num_adj;
-          delta_P_sum[2] = delta_P_sum[2]/num_adj;
+          P_sum[0] = P_sum[0]/num_adj;
+          P_sum[1] = P_sum[1]/num_adj;
+          P_sum[2] = P_sum[2]/num_adj;
           delta_P[i] = delta_P_sum;
           
           double temp_max = sqrt(pow(delta_P_sum[0], 2) + pow(delta_P_sum[1], 2) + pow(delta_P_sum[2], 2));
