@@ -142,13 +142,13 @@ class LaplacianSmoother : public Smoother {
           delta_P[i] = delta_P_sum;
           
           double temp_max = sqrt(pow(delta_P_sum[0], 2) + pow(delta_P_sum[1], 2) + pow(delta_P_sum[2], 2));
-                if (max < temp_max) {
-                    max = temp_max;
-                }
-                //update IN
-                P_total[i] = P_total[i] + delta_P[i];
-                calc_times++;
-            }
+          if (max < temp_max) {
+          max = temp_max;
+        }
+        //update IN
+        P_total[i] = P_total[i] + delta_P[i];
+        calc_times++;
+      }
             if (notZero_check) {
                 for (int i = MB_start ; i < MB_end + 1 ; i++) {
                     delta_P[i] = apf::Vector3(0, 0, 0);
