@@ -122,20 +122,18 @@ class LaplacianSmoother : public Smoother {
         delta_P[i] = apf::Vector3(0, 0, 0);
       }
       
-      
       // average nodal position = sum(all adj_V's position)/num of adj_V
       // check max, stop until it is less the tolerance
       double max = 1.0; 
       while (max > tol) {
         max = 0.0;
         for (int i = IN_begin ; i < IN_end + 1 ; i++) {
-          
           m->getAdjacent(V_total[i], 1, adj);
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
             apf::MeshEntity* adj_V = apf::getEdgeVertOppositeVert(m, adj[j], V_total[i]);
             int adj_V_id = apf::getNumber(v_n, adj_V, 0, 0);
-            P_sum = delta_P_sum + delta_P[adj_V_id];
+            P_sum = P_sum + P_total[adj_V_id];
           }
           delta_P_sum[0] = delta_P_sum[0]/num_adj;
           delta_P_sum[1] = delta_P_sum[1]/num_adj;
