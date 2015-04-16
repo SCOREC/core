@@ -95,19 +95,19 @@ namespace dsp {
         int num_adj = adj.getSize();
         for (int i = 0 ; i < num_adj ; i++) {
           apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[i], v);
-          apf::ModelEntity* adj_me = m->toModel(adj_v);
-          if ((!moving.count(adj_me)) & (!fixed.count(adj_me))) {
+          apf::ModelEntity* adj_v_me = m->toModel(adj_v);
+          if ((!moving.count(adj_v_me)) & (!fixed.count(adj_v_me))) {
             int tag;
             m->getIntTag(adj_v, in_queue_tag, tag);
-            if (tag = 0) {
+            if (tag == 0) {
               q.push(adj_v);
               m->setIntTag(adj_v, in_queue_tag, 1);
             }
           }
         }
         if ((!moving.count(me)) & (!fixed.count(me))) {
-          V_total[IN_start + ithIN] = v;
-          P_total[IN_start + ithIN] = p;
+          V_total[IN_begin + ithIN] = v;
+          P_total[IN_begin + ithIN] = p;
           apf::number(numbers, v, 0, 0, IN_begin + ithIN);
           ithIN++;
         }
@@ -117,7 +117,7 @@ namespace dsp {
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       vector < apf::Vector3 > delta_P(n_mb + n_in + n_fb);
-      apf::Vector3 P_sum = apf::Vector3(0, 0, 0);
+      apf::Vector3 P_temp = apf::Vector3(0, 0, 0);
       
       for (int i = 0 ; i < n_mb + n_in + n_fb ; i++) {
         delta_P[i] = apf::Vector3(0, 0, 0);
@@ -132,27 +132,23 @@ namespace dsp {
           m->getAdjacent(V_total[i], 1, adj);
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
-            apf::MeshEntity* adj_V = apf::getEdgeVertOppositeVert(m, adj[j], V_total[i]);
-            int adj_V_id = apf::getNumber(v_n, adj_V, 0, 0);
-            P_sum = P_sum + P_total[adj_V_id];
+            apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[j], V_total[i]);
+            int adj_v_id = apf::getNumber(numbers, adj_v, 0, 0);
+            P_temp = P_temp + P_total[adj_v_id];
           }
-          P_sum[0] = P_sum[0]/num_adj;
-          P_sum[1] = P_sum[1]/num_adj;
-          P_sum[2] = P_sum[2]/num_adj;
-          delta_P[i] = P_sum - P_total[i];
+          P_temp[0] = P_temp[0]/num_adj;
+          P_temp[1] = P_temp[1]/num_adj;
+          P_temp[2] = P_temp[2]/num_adj;
+          delta_P[i] = P_temp - P_total[i];
           
           double temp_max = sqrt(pow(delta_P[i][0], 2) + pow(delta_P[i][1], 2) + pow(delta_P[i][2], 2));
           if (max < temp_max) {
             max = temp_max;
           }
           //update IN
-          P_total[i] = P_sum;
+          P_total[i] = P_temp;
+          mesh->setPoint(V_total[i], 0, P_total[i]);
         }
-      }
-      
-      //----------------------------------------------------------
-      for (int i = IN_begin ; i < IN_end + 1 ; i++) {
-        mesh->setPoint(V_total[i], 0, P_total[i]);
       }
       
       /* end Fan's code */
