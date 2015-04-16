@@ -3,20 +3,20 @@
 #include <apf.h>
 
 namespace dsp {
-
-Smoother::~Smoother()
-{
-}
-
-class LaplacianSmoother : public Smoother {
+  
+  Smoother::~Smoother()
+  {
+  }
+  
+  class LaplacianSmoother : public Smoother {
   public:
     void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
-      apf::MeshIterator* it; 
-      apf::MeshEntity* v; 
-      apf::ModelEntity* me; 
+      apf::MeshIterator* it;
+      apf::MeshEntity* v;
+      apf::ModelEntity* me;
       apf::Vector3 p;
       
       //---------------------------------------------------------
@@ -26,9 +26,9 @@ class LaplacianSmoother : public Smoother {
       it = m->begin(0);
       while ((v = m->iterate(it))) {
         me = m->toModel(v);
-        if (moving.count(me)) n_mb++; 
+        if (moving.count(me)) n_mb++;
         else if (fixed.count(me)) n_fb++;
-        else n_in++; 
+        else n_in++;
       }
       m->end(it);
       
@@ -95,9 +95,9 @@ class LaplacianSmoother : public Smoother {
         int num_adj = adj.getSize();
         for (int i = 0 ; i < num_adj ; i++) {
           apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[i], v);
-          apf::ModelEntity* adj_me = m->toModel(adj_v); 
+          apf::ModelEntity* adj_me = m->toModel(adj_v);
           if ((!moving.count(adj_me)) & (!fixed.count(adj_me))) {
-            int tag; 
+            int tag;
             m->getIntTag(adj_v, in_queue_tag, tag);
             if (tag = 0) {
               q.push(adj_v);
@@ -125,7 +125,7 @@ class LaplacianSmoother : public Smoother {
       
       // average nodal position = sum(all adj_V's position)/num of adj_V
       // check max, stop until it is less the tolerance
-      double max = 1.0; 
+      double max = 1.0;
       while (max > tol) {
         max = 0.0;
         for (int i = IN_begin ; i < IN_end + 1 ; i++) {
@@ -139,35 +139,21 @@ class LaplacianSmoother : public Smoother {
           P_sum[0] = P_sum[0]/num_adj;
           P_sum[1] = P_sum[1]/num_adj;
           P_sum[2] = P_sum[2]/num_adj;
-          delta_P[i] = delta_P_sum;
+          delta_P[i] = P_sum - P_total[i];
           
-          double temp_max = sqrt(pow(delta_P_sum[0], 2) + pow(delta_P_sum[1], 2) + pow(delta_P_sum[2], 2));
+          double temp_max = sqrt(pow(delta_P[i][0], 2) + pow(delta_P[i][1], 2) + pow(delta_P[i][2], 2));
           if (max < temp_max) {
-          max = temp_max;
+            max = temp_max;
+          }
+          //update IN
+          P_total[i] = P_sum;
         }
-        //update IN
-        P_total[i] = P_total[i] + delta_P[i];
-        calc_times++;
       }
-            if (notZero_check) {
-                for (int i = MB_start ; i < MB_end + 1 ; i++) {
-                    delta_P[i] = apf::Vector3(0, 0, 0);
-                    notZero_check = 0;
-                }
-            }
-        }
-         
-        /*------------------ update and print mesh -----------------*/
-        for (int i = 0 ; i < n_mb + n_in + n_fb ; i++) {
-            mesh->setPoint(V_total[i], 0, P_total[i]);
-        }
       
-      
-      
-      
-      
-      
-      
+      //----------------------------------------------------------
+      for (int i = IN_begin ; i < IN_end + 1 ; i++) {
+        mesh->setPoint(V_total[i], 0, P_total[i]);
+      }
       
       /* end Fan's code */
       (void)m;
@@ -175,9 +161,9 @@ class LaplacianSmoother : public Smoother {
       (void)fixed;
       (void)moving;
     }
-};
-
-class EmptySmoother : public Smoother {
+  };
+  
+  class EmptySmoother : public Smoother {
   public:
     void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
     {
@@ -185,16 +171,16 @@ class EmptySmoother : public Smoother {
       (void)fixed;
       (void)moving;
     }
-};
-
-Smoother* Smoother::makeLaplacian()
-{
-  return new LaplacianSmoother();
-}
-
-Smoother* Smoother::makeEmpty()
-{
-  return new EmptySmoother();
-}
-
+  };
+  
+  Smoother* Smoother::makeLaplacian()
+  {
+    return new LaplacianSmoother();
+  }
+  
+  Smoother* Smoother::makeEmpty()
+  {
+    return new EmptySmoother();
+  }
+  
 }
