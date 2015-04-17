@@ -9,7 +9,7 @@
 #include "apfShape.h"
 #include "apfMesh.h"
 #include "apfVectorElement.h"
-#include <stdio.h>
+
 namespace apf {
 
 void Element::init(Field* f, MeshEntity* e, VectorElement* p)
@@ -91,10 +91,9 @@ void Element::getComponents(Vector3 const& xi, double* c)
   shape->getValues(xi,shapeValues);
   for (int ci = 0; ci < nc; ++ci)
     c[ci] = 0;
-  for (int ni = 0; ni < nen; ++ni){
+  for (int ni = 0; ni < nen; ++ni)
     for (int ci = 0; ci < nc; ++ci)
       c[ci] += nodeData[ni * nc + ci] * shapeValues[ni];
-  }
 }
 
 void Element::getNodeData()

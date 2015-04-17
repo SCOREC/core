@@ -198,14 +198,13 @@ class Vector3 : public Vector<3>
     double& z() {return this->elements[2];}
 };
 
-}
 /** \brief factorial function */
 int factorial(int num);
-
 /** \brief binomial coefficient function for n < 7
     \detail factorial(n)/factorial(n-i)/factorial(i)) */
-
 int binomial(int i, int n);
+
+}
 
 /** \brief write apf::Vector3 to a C++ stream */
 std::ostream& operator<<(std::ostream& s, apf::Vector3 const& v);
