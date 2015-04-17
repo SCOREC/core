@@ -96,7 +96,6 @@ setup_exe(from_neper neper.cc)
 setup_exe(from_ansys ansys.cc)
 setup_exe(eigen_test eigen_test.cc)
 setup_exe(integrate integrate.cc)
-setup_exe(hierarchic hierarchic.cc)
 setup_exe(align align.cc)
 setup_exe(moving moving.cc)
 
