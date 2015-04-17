@@ -108,11 +108,13 @@ void gmi_range(struct gmi_model* m, struct gmi_ent* e, int dim,
 {
   m->ops->range(m, e, dim, r);
 }
+
 void gmi_closest_point(struct gmi_model* m, struct gmi_ent* e,
     double const from[3], double to[3], double to_p[2])
 {
   m->ops->closest_point(m, e, from, to, to_p);
 }
+
 void gmi_destroy(struct gmi_model* m)
 {
   m->ops->destroy(m);

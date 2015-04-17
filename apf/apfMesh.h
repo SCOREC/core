@@ -273,14 +273,11 @@ class Mesh
       \returns true if (g) is periodic along this axis */
     bool getPeriodicRange(ModelEntity* g, int axis,
         double range[2]);
-
     void getClosestPoint(ModelEntity* g, Vector3 const& from,
         Vector3& to, Vector3& p);
-
     /** \brief returns true if there is a geometric
           degeneracy in that direction at that parameter
-          \param p is the parameters of the original coordinate
-
+         \param p is the parameters of the original coordinate
          \details degeneracy is when at a point, changing
          one parameter does not change the point location.
          This is tested numerically, by moving a point along
@@ -288,8 +285,7 @@ class Mesh
          changed. If a surface has degenerate coordinates,
          every point on it needs to be checked for degeneracy
          for edge splitting, or similar processes. This is called
-         in interpolateParametricCoordinates in maSnap.cc
-         */
+         in interpolateParametricCoordinates in maSnap.cc */
     bool isDegenerate(ModelEntity* g, Vector3 const& p, int axis);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;

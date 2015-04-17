@@ -14,7 +14,6 @@
 #include "maSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
-#include <stdio.h> // TODO: remove
 
 namespace ma {
 
@@ -131,6 +130,7 @@ void transferParametricOnQuadSplit(
   v[0] = v01; v[1] = v32;
   transferParametricBetween(m, g, v, y, p);
 }
+
 void transferParametricOnTriSplit(
     Mesh* m,
     Entity* e,
@@ -144,12 +144,11 @@ void transferParametricOnTriSplit(
   m->getDownward(e,0,ev); // pick two points, split on edge
   Vector pa1,pa2;
   m->getParamOn(g,ev[2],pa2);
-
   // two splits to do barycentric
   transferParametricBetween(m, g, ev, t[1]/(t[0]+t[1]), pa1);
   interpolateParametricCoordinates(m,g,1.-t[0]-t[1],pa1,pa2,p);
-
 }
+
 void transferParametricOnGeometricEdgeSplit(
     Mesh* m,
     Entity* e,
@@ -167,6 +166,7 @@ void transferParametricOnGeometricEdgeSplit(
   Vector pt = p0*t+p1*(1.-t);
   m->getClosestPoint(g,pt,cpt,p);
 }
+
 void transferParametricOnGeometricTriSplit(
     Mesh* m,
     Entity* e,
@@ -176,7 +176,6 @@ void transferParametricOnGeometricTriSplit(
   Model* g = m->toModel(e);
   int modelDimension = m->getModelType(g);
   if (modelDimension==m->getDimension()) return;
-
   Entity* ev[3];
   m->getDownward(e,0,ev);
   // split in physical space, project

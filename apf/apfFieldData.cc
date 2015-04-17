@@ -200,7 +200,6 @@ void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int n
 template <class T>
 int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 {
-
   Mesh* mesh = field->getMesh();
   int t = mesh->getType(entity);
   int ed = Mesh::typeDimension[t];
@@ -209,7 +208,6 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
   int nc = field->countComponents();
   int nen = es->countNodes();
   data.allocate(nc * nen);
-
   /* try to minimize the amount of
      reallocation of these two.
      when there is no reordering, they
