@@ -203,9 +203,10 @@ bool Mesh::isDegenerate(ModelEntity* g, Vector3 const& p, int axis)
   if (range[0] > range[1])
     std::swap(range[0],range[1]);
   // this just guarantees we are checking a point sufficiently far
-  q[other] = (range[1] - p[other] > p[other]-range[0]) ?
-      0.25*(range[1]-range[0])+p[other] :
-      q[other] = p[other]-0.25*(range[1]-range[0]);
+  if (range[1] - p[other] > p[other]-range[0])
+    q[other] = 0.25*(range[1]-range[0])+p[other];
+  else
+    q[other] = p[other]-0.25*(range[1]-range[0]);
   q[axis] = p[axis];
   gmi_eval(getModel(), e, &q[0], &y[0]); // point along that axis
   return ((x-y).getLength() < 1e-13);
