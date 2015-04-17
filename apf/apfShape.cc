@@ -8,6 +8,8 @@
 #include "apfShape.h"
 #include "apfMesh.h"
 #include "apfIntegrate.h"
+#include "apfVector.h"
+#include "apfMatrix.h"
 
 namespace apf {
 
@@ -314,6 +316,10 @@ class Linear : public FieldShape
         return 0;
     }
     int getOrder() {return 1;}
+    void getNodeXi(int, int, Vector3& xi)
+    {
+      xi = Vector3(0,0,0);
+    }
 };
 
 class QuadraticBase : public FieldShape
@@ -780,7 +786,7 @@ class VoronoiShape : public IPBase
     Element elem[Mesh::TYPES];
     std::string name;
 };
- 
+
 FieldShape* getVoronoiShape(int dimension, int order)
 {
   static VoronoiShape d3o1(3,1);

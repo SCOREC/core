@@ -4,6 +4,7 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
+#include "apfVectorElement.h"
 
 #include "apfIntegrate.h"
 #include "apfMesh.h"
@@ -355,14 +356,94 @@ class TetrahedronIntegration : public EntityIntegration
         }
         virtual int getAccuracy() const {return 3;}
     };
-    virtual int countIntegrations() const {return 3;}
+    class N5 : public Integration
+    {
+    public:
+      virtual int countPoints() const {return 15;}
+      virtual IntegrationPoint const* getPoint(int i) const
+      {
+        double w1 = 16./315.;
+        double w2 = -27./280.;
+        static IntegrationPoint points[15]=
+        { IntegrationPoint(Vector3(1./8., 1./8., 1./8.),w1),
+            IntegrationPoint(Vector3(3./8., 1./8., 1./8.),w1),
+            IntegrationPoint(Vector3(5./8., 1./8., 1./8.),w1),
+            IntegrationPoint(Vector3(1./8., 3./8., 1./8.),w1),
+            IntegrationPoint(Vector3(1./8., 1./8., 3./8.),w1), //5
+            IntegrationPoint(Vector3(1./8., 5./8., 1./8.),w1),
+            IntegrationPoint(Vector3(1./8., 1./8., 3./8.),w1),
+            IntegrationPoint(Vector3(3./8., 1./8., 3./8.),w1),
+            IntegrationPoint(Vector3(1./8., 3./8., 3./8.),w1),
+            IntegrationPoint(Vector3(1./8., 1./8., 5./8.),w1), //10
+            IntegrationPoint(Vector3(1./6., 1./6., 1./6.),w2),
+            IntegrationPoint(Vector3(1./6., 1./6., 1./2.),w2),
+            IntegrationPoint(Vector3(1./6., 1./2., 1./6.),w2),
+            IntegrationPoint(Vector3(1./2., 1./6., 1./6.),w2),
+            IntegrationPoint(Vector3(1./4., 1./4., 1./4.),2./45.)};
+        return points+i;
+      }
+      virtual int getAccuracy() const {return 5;}
+    };
+    class N7 : public Integration
+     {
+       public:
+         virtual int countPoints() const {return 35;}
+         virtual IntegrationPoint const* getPoint(int i) const
+         {
+           double w1 =  0.0430583112874780;
+           double w2 = -0.0902998236331570;
+           double w3 =  0.0542410714285710;
+           double w4 = -0.0084656084656080;
+           static IntegrationPoint points[35]=
+ { IntegrationPoint(Vector3(0.1, 0.1, 0.1),w1),
+ IntegrationPoint(Vector3(0.3, 0.1, 0.1),w1),
+ IntegrationPoint(Vector3(0.5, 0.1, 0.1),w1),
+ IntegrationPoint(Vector3(0.7, 0.1, 0.1),w1),
+ IntegrationPoint(Vector3(0.1, 0.3, 0.1),w1),
+ IntegrationPoint(Vector3(0.3, 0.3, 0.1),w1),
+ IntegrationPoint(Vector3(0.5, 0.3, 0.1),w1),
+ IntegrationPoint(Vector3(0.1, 0.5, 0.1),w1),
+ IntegrationPoint(Vector3(0.3, 0.5, 0.1),w1),
+ IntegrationPoint(Vector3(0.1, 0.7, 0.1),w1),
+ IntegrationPoint(Vector3(0.1, 0.1, 0.3),w1),
+ IntegrationPoint(Vector3(0.3, 0.1, 0.3),w1),
+ IntegrationPoint(Vector3(0.5, 0.1, 0.3),w1),
+ IntegrationPoint(Vector3(0.1, 0.3, 0.3),w1),
+ IntegrationPoint(Vector3(0.3, 0.3, 0.3),w1),
+ IntegrationPoint(Vector3(0.1, 0.5, 0.3),w1),
+ IntegrationPoint(Vector3(0.1, 0.1, 0.5),w1),
+ IntegrationPoint(Vector3(0.3, 0.1, 0.5),w1),
+ IntegrationPoint(Vector3(0.1, 0.3, 0.5),w1),
+ IntegrationPoint(Vector3(0.1, 0.1, 0.7),w1),
+ IntegrationPoint(Vector3(0.125, 0.125, 0.125),w2),
+ IntegrationPoint(Vector3(0.375, 0.125, 0.125),w2),
+ IntegrationPoint(Vector3(0.625, 0.125, 0.125),w2),
+ IntegrationPoint(Vector3(0.125, 0.375, 0.125),w2),
+ IntegrationPoint(Vector3(0.375, 0.375, 0.125),w2),
+ IntegrationPoint(Vector3(0.125, 0.625, 0.125),w2),
+ IntegrationPoint(Vector3(0.125, 0.125, 0.375),w2),
+ IntegrationPoint(Vector3(0.375, 0.125, 0.375),w2),
+ IntegrationPoint(Vector3(0.125, 0.375, 0.375),w2),
+ IntegrationPoint(Vector3(0.125, 0.125, 0.625),w2),
+ IntegrationPoint(Vector3(1./6., 1./6., 1./6.),w3),
+ IntegrationPoint(Vector3(0.5, 1./6., 1./6.),w3),
+ IntegrationPoint(Vector3(1./6., 0.5, 1./6.),w3),
+ IntegrationPoint(Vector3(1./6., 1./6., 0.5),w3),
+ IntegrationPoint(Vector3(0.25, 0.25, 0.25),w4)};
+          return points+i;
+        }
+        virtual int getAccuracy() const {return 7;}
+     };
+    virtual int countIntegrations() const {return 5;}
     virtual Integration const* getIntegration(int i) const
     {
       static N1 i1;
       static N2 i2;
       static N3 i3;
-      static Integration* integrations[3] = 
-      {&i1,&i2,&i3};
+      static N5 i5;
+      static N7 i7;
+      static Integration* integrations[5] =
+      {&i1,&i2,&i3,&i5,&i7};
       return integrations[i];
     }
 };

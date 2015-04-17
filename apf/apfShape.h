@@ -118,8 +118,16 @@ FieldShape* getIPShape(int dimension, int order);
            value at any point in the element is the value of the closest
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
+/** \brief Get the Bezier Curve or Shape of some order
+ \details goes from second to sixth order */
+FieldShape* getBezier(int dimension, int order);
+/** \brief get coefficients for interpolating points to control points
+ \details works only for prescribed optimal point locations */
+void getTransformationCoefficients(int order, int dim, int type,
+    NewArray<double>& c);
 /** \brief Get the quadratic hierarchic shape function */
 FieldShape* getHierarchic();
+
 
 FieldShape* getShapeByName(const char* name);
 

@@ -14,6 +14,7 @@
 #include "maSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
+#include <stdio.h> // TODO: remove
 
 namespace ma {
 
@@ -66,7 +67,25 @@ static void interpolateParametricCoordinates(
   for (int d=0; d < dim; ++d)
   {
     bool isPeriodic = m->getPeriodicRange(g,d,range);
+
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic);
+  }
+  if(dim == 2){
+    bool isDegenerate[4];
+
+    for (int d=0; d < 2; ++d){
+      isDegenerate[2*d] = m->isDegenerate(g,a,d);
+      isDegenerate[2*d+1] = isDegenerate[2*d] ? false :
+          m->isDegenerate(g,b,d);
+    }
+    for (int d=0; d < 2; ++d){
+      int other = d ? 0 : 1;
+      if (isDegenerate[2*other]) {
+        p[d] = b[d];
+      } else if (isDegenerate[2*other+1]) {
+        p[d] = a[d];
+      }
+    }
   }
 }
 
@@ -111,6 +130,62 @@ void transferParametricOnQuadSplit(
   Entity* v[2];
   v[0] = v01; v[1] = v32;
   transferParametricBetween(m, g, v, y, p);
+}
+void transferParametricOnTriSplit(
+    Mesh* m,
+    Entity* e,
+    Vector& t,
+    Vector& p)
+{
+  Model* g = m->toModel(e);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+  Entity* ev[3];
+  m->getDownward(e,0,ev); // pick two points, split on edge
+  Vector pa1,pa2;
+  m->getParamOn(g,ev[2],pa2);
+
+  // two splits to do barycentric
+  transferParametricBetween(m, g, ev, t[1]/(t[0]+t[1]), pa1);
+  interpolateParametricCoordinates(m,g,1.-t[0]-t[1],pa1,pa2,p);
+
+}
+void transferParametricOnGeometricEdgeSplit(
+    Mesh* m,
+    Entity* e,
+    double t,
+    Vector& p)
+{
+  Model* g = m->toModel(e);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+  Entity* ev[2];
+  m->getDownward(e,0,ev);
+  Vector p0,p1,cpt;
+  m->getPoint(ev[0],0,p0);
+  m->getPoint(ev[1],0,p1);
+  Vector pt = p0*t+p1*(1.-t);
+  m->getClosestPoint(g,pt,cpt,p);
+}
+void transferParametricOnGeometricTriSplit(
+    Mesh* m,
+    Entity* e,
+    Vector& t,
+    Vector& p)
+{
+  Model* g = m->toModel(e);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+
+  Entity* ev[3];
+  m->getDownward(e,0,ev);
+  // split in physical space, project
+  Vector p0,p1,p2,cpt;
+  m->getPoint(ev[0],0,p0);
+  m->getPoint(ev[1],0,p1);
+  m->getPoint(ev[2],0,p2);
+  Vector pt = p0*t[0]+p1*t[1]+p2*(1.-t[0]-t[1]);
+  m->getClosestPoint(g,pt,cpt,p);
 }
 
 static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
