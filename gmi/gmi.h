@@ -84,6 +84,9 @@ struct gmi_model_ops {
   /** \brief implement gmi_range */
   void (*range)(struct gmi_model* m, struct gmi_ent* e, int dim,
       double r[2]);
+  /** \brief implement gmi_closest_point */
+  void (*closest_point)(struct gmi_model* m, struct gmi_ent* e,
+      double const from[3], double to[3], double to_p[2]);
   /** \brief implement gmi_destroy */
   void (*destroy)(struct gmi_model* m);
 };
@@ -149,6 +152,9 @@ int gmi_periodic(struct gmi_model* m, struct gmi_ent* e, int dim);
 /** \brief return the range of parametric coordinates along this dimension */
 void gmi_range(struct gmi_model* m, struct gmi_ent* e, int dim,
     double r[2]);
+/** \brief return closest point and its parameter*/
+void gmi_closest_point(struct gmi_model* m, struct gmi_ent* e,
+    double const from[3], double to[3], double to_p[2]);
 /** \brief destroy a geometric model */
 void gmi_destroy(struct gmi_model* m);
 

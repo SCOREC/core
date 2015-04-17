@@ -181,7 +181,32 @@ bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
   gmi_range(getModel(), e, axis, range);
   return gmi_periodic(getModel(), e, axis);
 }
+void Mesh::getClosestPoint(ModelEntity* g, Vector3 const& from,
+    Vector3& to, Vector3& p){
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_closest_point(getModel(),e,&from[0],&to[0],&p[0]);
+}
+bool Mesh::isDegenerate(ModelEntity* g, Vector3 const& p, int axis)
+{
+  gmi_ent* e = (gmi_ent*)g;
+  int md = gmi_dim(getModel(), e);
+  if (md != 2) return 0;
+  Vector3 x,y,q;
+  gmi_eval(getModel(), e, &p[0], &x[0]); // original point
+  int other = axis ? 0 : 1; // move along other direction
+  double range[2]; // compute the range to determine how to perturb
+  gmi_range(getModel(), e, other, range);
+  if (range[0] > range[1])
+    std::swap(range[0],range[1]);
+  // this just guarantees we are checking a point sufficiently far
+  q[other] = (range[1] - p[other] > p[other]-range[0]) ?
+      0.25*(range[1]-range[0])+p[other] :
+      q[other] = p[other]-0.25*(range[1]-range[0]);
+  q[axis] = p[axis];
+  gmi_eval(getModel(), e, &q[0], &y[0]); // point along that axis
+  return ((x-y).getLength() < 1e-13);
 
+}
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
 {
   getVector(coordinateField,e,node,p);

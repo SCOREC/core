@@ -62,6 +62,13 @@ class Vector : public Array<double,N>
         c.elements[i] = this->elements[i] + b.elements[i];
       return c;
     }
+    /** \brief add a vector to this vector */
+    Vector<N>& operator+=(Vector<N> const& b)
+    {
+      for (std::size_t i=0; i < N; ++i)
+        this->elements[i] += b.elements[i];
+      return (*this);
+    }
     /** \brief subtract two vectors */
     Vector<N> operator-(Vector<N> const& b) const
     {
@@ -192,6 +199,13 @@ class Vector3 : public Vector<3>
 };
 
 }
+/** \brief factorial function */
+int factorial(int num);
+
+/** \brief binomial coefficient function for n < 7
+    \detail factorial(n)/factorial(n-i)/factorial(i)) */
+
+int binomial(int i, int n);
 
 /** \brief write apf::Vector3 to a C++ stream */
 std::ostream& operator<<(std::ostream& s, apf::Vector3 const& v);

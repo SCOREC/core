@@ -1,0 +1,119 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{algpseudocode}
+\title{Bezier Shape Functions}
+\author{Dan Zaide}
+\begin{document}
+\maketitle
+\section
+
+\section{Bezier Curves}
+The Bezier curve, $\mathbf{B}(t)$ of order $P$ is polynomial defined by the set of control points $\mathbf{C}_i$ for $i = 0,\ldots,P$ as 
+\[
+\mathbf{B}(t) = \displaystyle \sum_{i=0}^P {P \choose i}t^i(1-t)^{P-i}\mathbf{C}_i
+\]
+where ${P \choose i}= \frac{P!}{I!(P-i)!}$ is the binomial coefficient and $ t \in [0,1]. The derivatives are
+\[
+\mathbf{B}'(t) = \displaystyle \sum_{i=0}^P {P \choose i}(i-P*t)t^{i-1}(1-t)^{P-i-1}\mathbf{C}_i
+\]
+In the current implementation in \texttt{BezierShape} in \texttt{apfShape.cc}, the edge shape functions are ordered with the vertices first, as $v_0,v_1,e_0,\ldots,e_{p-1}$, which is not geometric order.
+\subsection{Interpolating Bezier Curves}
+To fit a bezier curve to a known geometry, interpolating points, $\mathbf{P}_j = \mathbf{P}(t_j)$, are first needed at $t_0,\ldots, t_{P+1}$ before the control points can be solved for. This requires solving
+
+\[
+\mathbf{B}(t_j) = \displaystyle \sum_{i=0}^P {P \choose i}t_j^i(1-t_j)^{P-i}\mathbf{C}_i = \mathbf{P}_i
+\]
+at each interpolating point, resulting in a linear system of equations for $\mathbf{C}_i$. The following matlab code solves for these coefficients, which each row of $\mathbf{A}^{-1}$ corresponding to coefficients for the interpolating points. The first six orders are implemented in \texttt{convertEdgeLocations2D} and \texttt{convertEdgeLocations3D}.
+
+\begin{verbatim}
+switch (n)
+    case 2
+        t = [-1,0,1];
+    case 3
+        %         t = [-1,-0.4306648,0.4306648,1];
+        t = [0,0.2748043,0.7251957,1];
+    case 4
+        %         t = [-1,-0.6546,0.0,0.6546,1];
+        t = [0,0.1693976,0.5,0.8306024,1];
+    case 5
+        %         t = [-1,-0.7485748,-0.2765187,0.2765187,0.7485748,1];
+        t = [0, 0.1257126, 0.36174065, 0.63825935,0.8742874,1];
+    case 6
+        %         t = [-1,-0.8161268,-0.4568660,0.0, 0.4568660,0.8161268,1];
+        t = [   0, 0.0919366, 0.271567, 0.5, 0.728433, 0.9080634,1];
+end
+t(end) = [];
+t = [t(1),1,t(2:end)];
+% t = (t+1)/2;
+
+A = zeros(n,n);
+for i=0:n
+    bi = factorial(n)/factorial(n-i)/factorial(i);
+    for j=0:n
+        A(j+1,i+1) = bi*t(j+1)^i*(1-t(j+1))^(n-i);
+    end
+end
+Ai = inv(A);
+
+for i = 1:n+1
+    fprintf('{')
+    for j = 1:n+1
+        fprintf(num2str(Ai(i,j),9))
+        if (j ~= n+1)
+            fprintf(',')
+        end
+    end
+    fprintf('},\n')
+    
+end
+\end{verbatim}
+Several choices of $t_j$ exist. Using equally spaced $t$'s works fairly well, but closer to optimal points are in \textit{Approximate optimal points for polynomial interpolation of real functions in an interval and in a triangle}, Chen and Babuska, 1995.
+\section{Bezier Triangles}
+The Bezier triangle is similar, with each edge its own Bezier curve. For an order $P$ triangle, there are $(P+1)(P+2)/2$ control points, with $(P-1)(P-2)/2$ points on the interior. Using barycentric coordinates $u,v,w = 1-u-v$ we can define the Bezier triangle as 
+\[
+\mathbf{B}(u,v) = \displaystyle\sum_{i,j,k\geq 0}^{i+j+k=P} \frac{P!}{i!j!k!}u^iv^jw^k \alpha^i\beta^j\gamma^k 
+\]
+where $\alpha^i\beta^j\gamma^k$ correspond to the control points. This is implemented in a single array with size $(P+1)(P+2)/2$. The summation is then rewritten as
+\[
+\mathbf{B}(u,v) = \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}u^iv^j(1-u-v)^{P-i-j}\mathbf{P}_{(P+1)j+i-j(j-1)/2}
+\]
+which is equivalent to a $[P\times P]$ triangular matrix with entries at $(i,j)$ and $k$ as follows, shown for $P = 3$
+\begin{verbatim}
+ j 0 1 2 3
+i_________ 
+0 |3 2 1 0
+1 |2 1 0   
+2 |1 0 
+3 |0 
+\end{verbatim}
+The array indices are $(P+1)j+i-j(j-1)/2$ and are columnwise,
+\begin{verbatim}
+ j 0 1 2 3
+i_________ 
+0 |0 4 7 9
+1 |1 5 8   
+2 |2 6 
+3 |3 
+\end{verbatim}
+In each case, the control points attached to each entity are as follows.
+\begin{verbatim}
+ j 0 1 2 3
+i_________ 
+0 |v e e v
+1 |e f e   
+2 |e e 
+3 |v 
+\end{verbatim}
+In the actual implementation, vertices are the first three points, edges are the next $3(P-1)$ and faces are the rest. So our list of points is actually $v_0,v_1,v_2,e_{0,0},\ldots,e_{0,P-1},e_{1,0},\ldots,e_{1,P-1},e_{2,0},\ldots,e_{2,P-1},f_0,\ldots,f_{(P-1)(P-2)/2}$. This is much harder to write in index form, so in the implementation.
+\begin{verbatim}
+ j 0 1 2 3
+i_________ 
+0 |v2  e10 e10 v1
+1 |e20 f0  e01   
+2 |e21 e00 
+3 |v0 
+\end{verbatim}
+The actual implementation stores a map of this ordering, and all the ordering is handled this way.
+\subsection{Interpolation on Triangles}
+Given barycentric coordinates $u,v,w=1-u-v$ such that on a triangle in parameter space, $\mathbf{p} = u\mathbf{p}_0 + v\mathbf{p}_1 + w\mathbf{p}_2$ we are interested in splitting it at a given $(u,v,w)$. Due to denegeracy and periodicity, lets define this as a pair of linear splits, such that $ \mathbf{q} = a\mathbf{p}_0 + (1-a)\mathbf{p}_1 $ and $\mathbf{p} = b\mathbf{p}_2 + (1-b)\mathbf{q}$. Solving for $(a,b)$ gives $ a = v/(u+v), b = 1-u-v$.
+\end{document}

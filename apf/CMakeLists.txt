@@ -40,6 +40,7 @@ set(APF_SOURCES
   apfScalarField.cc
   apfShape.cc
   apfHierarchic.cc
+  apfBezier.cc
   apfVector.cc
   apfVectorElement.cc
   apfVectorField.cc
