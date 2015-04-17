@@ -65,7 +65,7 @@ class Hierarchic : public FieldShape
         }
         void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
         {
-          dN.allocate(3);
+          dN.allocate(6);
           dN[0] = Vector3(-1.0, -1.0, 0.0);
           dN[1] = Vector3( 1.0,  0.0, 0.0);
           dN[2] = Vector3( 0.0,  1.0, 0.0);
@@ -94,7 +94,7 @@ class Hierarchic : public FieldShape
         }
         void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
         {
-          dN.allocate(3);
+          dN.allocate(10);
           dN[0] = Vector3(-1.0, -1.0, -1.0);
           dN[1] = Vector3( 1.0,  0.0,  0.0);
           dN[2] = Vector3( 0.0,  1.0,  0.0);
