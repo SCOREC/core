@@ -1,6 +1,13 @@
 #include "dspSmoothers.h"
 #include <math.h>
 #include <apf.h>
+#include <apfMesh2.h>
+#include <apfNumbering.h>
+#include <cmath>
+#include <vector>
+#include <queue>
+
+using namespace std;
 
 namespace dsp {
   
@@ -35,7 +42,7 @@ namespace dsp {
       //----------------------------------------------------------
       int MB_begin = 0;            int MB_end = n_mb - 1;
       int IN_begin = n_mb;         int IN_end = n_mb + n_in - 1;
-      int FB_begin = n_mb + n_in;  int FB_end = n_mb + n_in + n_fb - 1;
+      int FB_begin = n_mb + n_in;  //int FB_end = n_mb + n_in + n_fb - 1;
       int ithMB = 0; int ithIN =0; int ithFB = 0;
       
       vector < apf::MeshEntity* > V_total(n_mb + n_in + n_fb);
@@ -69,11 +76,11 @@ namespace dsp {
       m->end(it);
       
       //----------------------------------------------------------
-      ithIN = 0;
+      ithIN = 0; int zero = 0; int one = 1;
       apf::Adjacent adj;
       
       //make a queue and put all MB vertex in it
-      std::queue < apf::MeshEntity* > q;
+      queue < apf::MeshEntity* > q;
       for (int i = MB_begin ; i < MB_end + 1 ; i++) {
         q.push(V_total[i]);
       }
@@ -82,7 +89,7 @@ namespace dsp {
       apf::MeshTag* in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
       it = m->begin(0);
       while ((v = m->iterate(it))) {
-        m->setIntTag(v, in_queue_tag, 0);
+        m->setIntTag(v, in_queue_tag, &zero);
       }
       m->end(it);
       
@@ -98,10 +105,10 @@ namespace dsp {
           apf::ModelEntity* adj_v_me = m->toModel(adj_v);
           if ((!moving.count(adj_v_me)) & (!fixed.count(adj_v_me))) {
             int tag;
-            m->getIntTag(adj_v, in_queue_tag, tag);
+            m->getIntTag(adj_v, in_queue_tag, &tag);
             if (tag == 0) {
               q.push(adj_v);
-              m->setIntTag(adj_v, in_queue_tag, 1);
+              m->setIntTag(adj_v, in_queue_tag, &one);
             }
           }
         }
@@ -147,7 +154,7 @@ namespace dsp {
           }
           //update IN
           P_total[i] = P_temp;
-          mesh->setPoint(V_total[i], 0, P_total[i]);
+          m->setPoint(V_total[i], 0, P_total[i]);
         }
       }
       
