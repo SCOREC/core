@@ -52,7 +52,7 @@ namespace dsp {
       //iterate to store vertices and points
       it = m->begin(0);
       while ((v = m->iterate(it))) {
-        m->getPoint(v, 0, p);
+        apf::getVector(df, v, 0, p);
         me = m->toModel(v);
         if (moving.count(me)) {
           V_total[MB_begin + ithMB] = v;
@@ -97,7 +97,7 @@ namespace dsp {
       while (!q.empty()) {
         v = q.front();
         me = m->toModel(v);
-        m->getPoint(v, 0, p);
+        apf::getVector(df, v, 0, p);
         m->getAdjacent(v, 1, adj);
         int num_adj = adj.getSize();
         for (int i = 0 ; i < num_adj ; i++) {
@@ -154,7 +154,7 @@ namespace dsp {
           }
           //update IN
           P_total[i] = P_temp;
-          m->setPoint(V_total[i], 0, P_total[i]);
+          apf::setVector(df, V_total[i], 0, P_total[i]);
         }
       }
       
