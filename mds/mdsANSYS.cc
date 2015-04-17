@@ -1,6 +1,7 @@
-#include <apfMDS.h>
+#include "apfMDS.h"
 #include <apfMesh2.h>
 #include <apfShape.h>
+#include <apfNumbering.h>
 #include <fstream>
 #include <gmi.h>
 
@@ -100,11 +101,13 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
   int id;
   apf::FieldShape* shape = 0;
   apf::FieldShape* prevShape = 0;
+  apf::Numbering* enumbers = 0;
   while (parseElem(f, en, type, id, shape)) {
     if (!m) {
       m = makeEmptyMdsMesh(gmi_load(".null"), Mesh::typeDimension[type], false);
       if (shape != m->getShape())
         changeMeshShape(m, shape, false);
+      enumbers = createNumbering(m, "ansys_element", getConstant(m->getDimension()), 1);
     }
     if (prevShape)
       assert(prevShape == shape);
@@ -138,6 +141,7 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
         ++i;
       }
     }
+    number(enumbers, e, 0, 0, id);
     assert(i == nen);
     prevShape = shape;
   }

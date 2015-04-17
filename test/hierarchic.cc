@@ -37,7 +37,7 @@ void setFieldValues(apf::Field* f, int dim, double v)
 
 apf::Field* createTestField(apf::Mesh2* m)
 {
-  apf::Field* f = apf::createHierarchicField(m,"test",apf::SCALAR,2);
+  apf::Field* f = apf::createHierarchicField(m,"test",apf::SCALAR);
   for (int d=0; d < 2; ++d)
     setFieldValues(f,d,1.0);
   return f;

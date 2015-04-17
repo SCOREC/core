@@ -80,9 +80,9 @@ Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order)
   return createField(m,name,valueType,getLagrange(order));
 }
 
-Field* createHierarchicField(Mesh* m, const char* name, int valueType, int order)
+Field* createHierarchicField(Mesh* m, const char* name, int valueType)
 {
-  return createField(m,name,valueType,getHierarchic(order));
+  return createField(m,name,valueType,getHierarchic());
 }
 
 Field* createStepField(Mesh* m, const char* name, int valueType)

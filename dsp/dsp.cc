@@ -1,7 +1,29 @@
 #include "dsp.h"
 #include <apf.h>
+#include <gmi.h>
 
 namespace dsp {
+
+static void closeBoundaryRec(gmi_model* gm, gmi_ent* e, Boundary& b)
+{
+  b.insert((apf::ModelEntity*)e);
+  int dim = gmi_dim(gm, e);
+  if (!dim)
+    return;
+  gmi_set* s = gmi_adjacent(gm, e, gmi_dim(gm, e) - 1);
+  for (int i = 0; i < s->n; ++i)
+    closeBoundaryRec(gm, s->e[i], b);
+  gmi_free_set(s);
+}
+
+void closeBoundary(apf::Mesh* m, Boundary& b)
+{
+  gmi_model* gm = m->getModel();
+  Boundary nb;
+  APF_ITERATE(Boundary, b, it)
+    closeBoundaryRec(gm, (gmi_ent*) *it, nb);
+  b = nb;
+}
 
 bool tryToDisplace(apf::Mesh2* m, apf::Field* df)
 {
@@ -24,6 +46,27 @@ void displace(apf::Mesh2* m, apf::Field* df,
   smoother->smooth(df, fixed, moving);
   while (!tryToDisplace(m, df))
     adapter->adapt(m);
+}
+
+apf::Field* applyRigidMotion(apf::Mesh* m, Boundary& moving,
+    apf::Matrix3x3 const& r, apf::Vector3 const& t)
+{
+  apf::Field* dsp = apf::createFieldOn(m, "dsp", apf::VECTOR);
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* v;
+  while ((v = m->iterate(it))) {
+    if (moving.count(m->toModel(v))) {
+      apf::Vector3 x;
+      m->getPoint(v, 0, x);
+      apf::Vector3 nx;
+      nx = (r * x) + t;
+      apf::setVector(dsp, v, 0, nx - x);
+    } else {
+      apf::setVector(dsp, v, 0, apf::Vector3(0,0,0));
+    }
+  }
+  m->end(it);
+  return dsp;
 }
 
 }
