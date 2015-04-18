@@ -59,9 +59,10 @@ public:
       grads[1] = Vector3(P*pow(t, P-1),0,0);
     }
     int countNodes() const {return P+1;}
-    void alignSharedNodes(Mesh* m,
-        MeshEntity* elem, MeshEntity* shared, int order[])
+    void alignSharedNodes(Mesh*,
+        MeshEntity*, MeshEntity*, int order[])
     {
+      (void)order;
     }
   };
   class Triangle : public EntityShape
@@ -172,13 +173,8 @@ public:
         getBezier(3,P)->getEntityShape(Mesh::EDGE)
             ->getValues(eXi[i],eValues[i]);
       }
-//      for(int i = 0; i < 2*P*P+2; ++i){
-//      values[i] = (1-xi2)*tValues[0][i]+(1-xi3)*tValues[1][i]
-//                + (1-xi1)*tValues[2][i]+(1-xi0)*tValues[3][i]
-//                                                           - (1-xi1-xi2)*eValues[]
-//      }
     }
-    void getLocalGradients(Vector3 const& xi,
+    void getLocalGradients(Vector3 const&,
         NewArray<Vector3>& grads) const
     {
       grads.allocate(2*P*P+2);
@@ -189,7 +185,7 @@ public:
     }
     int countNodes() const {return 2*P*P+2;}
     void alignSharedNodes(Mesh* m,
-        MeshEntity* elem, MeshEntity* shared, int order[])
+        MeshEntity*, MeshEntity* shared, int order[])
     {
       int n = (m->getType(shared) == Mesh::EDGE) ?
           P-1 : (P-1)*(P-2)/2;
@@ -205,13 +201,13 @@ public:
     static Tetrahedron tet;
     static EntityShape* shapes[Mesh::TYPES] =
     {&vertex,   //vertex
-        &edge,     //edge
-        &triangle, //triangle
-        NULL,      //quad
-        &tet,      //tet
-        NULL,      //hex
-        NULL,      //prism
-        NULL};     //pyramid
+     &edge,     //edge
+     &triangle, //triangle
+     NULL,      //quad
+     &tet,      //tet
+     NULL,      //hex
+     NULL,      //prism
+     NULL};     //pyramid
     return shapes[type];
   }
   bool hasNodesIn(int dimension)
@@ -227,13 +223,13 @@ public:
   {
     static int nodes[Mesh::TYPES] =
     {1,                 //vertex
-        P-1,               //edge
-        (P-1)*(P-2)/2,     //triangle
-        0,      //quad
-        0,      //tet
-        0,      //hex
-        0,      //prism
-        0};     //pyramid
+     P-1,               //edge
+     (P-1)*(P-2)/2,     //triangle
+     0,                 //quad
+     0,                 //tet
+     0,                 //hex
+     0,                 //prism
+     0};                //pyramid
     return nodes[type];
   }
   int getOrder() {return P;}
@@ -244,58 +240,57 @@ public:
     static double eP4[3] = {-0.6612048,0.0,0.6612048};
     static double eP5[4] = {-0.7732854,-0.2863522,0.2863522,0.7732854};
     static double eP6[5] = {-0.8388042,-0.469821,0.0,
-        0.469821,0.8388042};
-
+      0.469821,0.8388042};
     static double* edgePoints[5] =
     {eP2, eP3, eP4, eP5, eP6 };
-    if(type == Mesh::EDGE && P > 1){
+    if (type == Mesh::EDGE && P > 1) {
       xi = Vector3(edgePoints[P-2][node],0,0);
-    } else if(type == Mesh::TRIANGLE){
+    } else if (type == Mesh::TRIANGLE) {
       xi = Vector3(1./3.,1./3.,1./3.);
       if(node == (P-1)*(P-2)/2-1 && P % 3 == 0){
         return;
-      } else // technically only two of these numbers are needed
-        switch (P){
-        case 4 :
-        {
-          xi[node % 3] = 0.5582239;
-          xi[(node+1) % 3] = 0.220880;
-          xi[(node+2) % 3] = 0.220880;
-          break;
+      } else { // technically only two of these numbers are needed
+        switch (P) {
+          case 1:
+          case 2:
+          case 3:
+            fail("expected P >= 4");
+          case 4:
+            xi[node % 3] = 0.5582239;
+            xi[(node+1) % 3] = 0.220880;
+            xi[(node+2) % 3] = 0.220880;
+            break;
+          case 5:
+            if(node % 2 == 0) {
+              xi[node/2 % 3] = 0.6949657;
+              xi[(node/2+1) % 3] = 0.1525171;
+              xi[(node/2+2) % 3] = 0.1525171;
+            } else {
+              xi[(node-1)/2 % 3] = 0.4168658;
+              xi[((node-1)/2+1) % 3] = 0.4168658;
+              xi[((node-1)/2+2) % 3] = 0.1662683;
+            }
+            break;
+          case 6:
+            if (node % 3 == 0) {
+              xi[node/3 % 3] = 0.7805723;
+              xi[(node/3+1) % 3] = 0.1097139;
+              xi[(node/3+2) % 3] = 0.1097139;
+            } else if ((node-1) % 3 == 0) {
+              xi[(node-1)/3 % 3] = 0.5586077;
+              xi[((node-1)/3+1) % 3] = 0.3157892;
+              xi[((node-1)/3+2) % 3] = 0.1256031;
+            } else if ((node-2) % 3 == 0) {
+              xi[(node-2)/3 % 3] = 0.3157892;
+              xi[((node-2)/3+1) % 3] = 0.5586077;
+              xi[((node-2)/3+2) % 3] = 0.1256031;
+            }
+            break;
         }
-        case 5 :
-        {
-          if(node % 2 == 0){
-            xi[node/2 % 3] = 0.6949657;
-            xi[(node/2+1) % 3] = 0.1525171;
-            xi[(node/2+2) % 3] = 0.1525171;
-          } else {
-            xi[(node-1)/2 % 3] = 0.4168658;
-            xi[((node-1)/2+1) % 3] = 0.4168658;
-            xi[((node-1)/2+2) % 3] = 0.1662683;
-          }
-          break;
-        }
-        case 6 :
-        {
-          if(node % 3 == 0){
-            xi[node/3 % 3] = 0.7805723;
-            xi[(node/3+1) % 3] = 0.1097139;
-            xi[(node/3+2) % 3] = 0.1097139;
-          } else if((node-1) % 3 == 0){
-            xi[(node-1)/3 % 3] = 0.5586077;
-            xi[((node-1)/3+1) % 3] = 0.3157892;
-            xi[((node-1)/3+2) % 3] = 0.1256031;
-          } else if((node-2) % 3 == 0){
-            xi[(node-2)/3 % 3] = 0.3157892;
-            xi[((node-2)/3+1) % 3] = 0.5586077;
-            xi[((node-2)/3+2) % 3] = 0.1256031;
-          }
-        }
-        break;
-        }
-    } else
+      }
+    } else {
       xi = Vector3(0,0,0);
+    }
   }
   protected:
   std::string name;
@@ -325,7 +320,8 @@ public:
     }
   }
 };
-static void getBezierCurveInterPtsToCtrlPts(int order, int type,
+
+static void getBezierCurveInterPtsToCtrlPts(int order,
     NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
@@ -502,12 +498,12 @@ void getBezierShapeInterPtsToCtrlPts(int order, int type,
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
       c[i*ni+j] = table[5*(type-1)+(order-2)][i*ni+j];
-
 }
+
 void getTransformationCoefficients(int order, int dim, int type,
     NewArray<double>& c){
   if(dim == 2)
-    getBezierCurveInterPtsToCtrlPts(order,type,c);
+    getBezierCurveInterPtsToCtrlPts(order,c);
   else
     getBezierShapeInterPtsToCtrlPts(order,type,c);
 
