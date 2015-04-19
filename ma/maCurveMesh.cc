@@ -49,7 +49,7 @@ double interpolationError(Mesh* m, Entity* e, int n,
   return max;
 }
 
-double interpolationErrorAtNodeXi(Mesh* m, Entity* e, int n,
+double interpolationErrorAtNodeXi(Mesh* m, Entity* e, 
     Vector &samplept, Vector &maxpt)
 {
   (void)n;
