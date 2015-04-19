@@ -9,10 +9,6 @@ namespace ma {
   \details this computes the Hausdorff distance by sampling n points. */
 double interpolationError(Mesh* m, Entity* e, int n,
     Vector &samplept, Vector &maxpt);
-/** \brief computes interpolation error at nodeXi. Should always be small
-  \details this computes the Hausdorff distance by sampling n points. */
-double interpolationErrorAtNodeXi(Mesh* m, Entity* e, int n,
-    Vector &samplept, Vector &maxpt);
 
 /** \brief curves a mesh using bezier curves of chosen order
   \details finds interpolating points, then converts to control points

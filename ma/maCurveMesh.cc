@@ -23,7 +23,8 @@ namespace ma {
 double interpolationError(Mesh* m, Entity* e, int n,
     Vector &samplept, Vector &maxpt){
   Model* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension()) return 0.;
+  if (m->getModelType(g) == m->getDimension())
+	  return 0.;
   int d = apf::getDimension(m,e);
   int nj = (d == 2) ? n : 1;
   Vector pt,pa(0.,0.,0.),cpt,cpa;
@@ -44,34 +45,6 @@ double interpolationError(Mesh* m, Entity* e, int n,
       }
     }
   }
-
-  apf::destroyElement(elem);
-  return max;
-}
-
-double interpolationErrorAtNodeXi(Mesh* m, Entity* e, 
-    Vector &samplept, Vector &maxpt)
-{
-  Model* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension())
-    return 0.;
-  int d = apf::getDimension(m,e);
-  Vector pt,pa(0.,0.,0.),cpt,cpa;
-  double max = -1.0;
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),e);
-  apf::FieldShape * fs = m->getCoordinateField()->getShape();
-  for (int i = 0; i < fs->countNodesOn(d); ++i){
-    fs->getNodeXi(d,i,pa);
-    apf::getVector(elem,pa,pt);
-    m->getClosestPoint(g,pt,cpt,cpa);
-    if((cpt-pt).getLength() > max){
-      max = (cpt-pt).getLength();
-      maxpt = cpt;
-      samplept = pt;
-    }
-  }
-
   apf::destroyElement(elem);
   return max;
 }
