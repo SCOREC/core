@@ -244,7 +244,7 @@ public:
     static double* edgePoints[6] =
     {eP2, eP2, eP3, eP4, eP5, eP6 };
     if (type == Mesh::EDGE) {
-      xi = Vector3(edgePoints[P-2][node],0,0);
+      xi = Vector3(edgePoints[P-1][node],0,0);
     } else if (type == Mesh::TRIANGLE) {
       xi = Vector3(1./3.,1./3.,1./3.);
       if(node == (P-1)*(P-2)/2-1 && P % 3 == 0){
@@ -314,7 +314,7 @@ public:
     {eP2, eP2, eP3, eP4, eP5, eP6 };
 
     if(type == Mesh::EDGE && P > 1){
-      xi = Vector3(edgePoints[P-2][node],0,0);
+      xi = Vector3(edgePoints[P-1][node],0,0);
     } else {
       xi = Vector3(0,0,0);
     }
