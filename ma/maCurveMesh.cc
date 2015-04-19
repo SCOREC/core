@@ -50,15 +50,17 @@ double interpolationError(Mesh* m, Entity* e, int n,
 }
 
 double interpolationErrorAtNodeXi(Mesh* m, Entity* e, int n,
-    Vector &samplept, Vector &maxpt){
+    Vector &samplept, Vector &maxpt)
+{
+  (void)n;
   Model* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension()) return 0.;
+  if (m->getModelType(g) == m->getDimension())
+    return 0.;
   int d = apf::getDimension(m,e);
   Vector pt,pa(0.,0.,0.),cpt,cpa;
   double max = -1.0;
   apf::Element* elem =
       apf::createElement(m->getCoordinateField(),e);
-
   apf::FieldShape * fs = m->getCoordinateField()->getShape();
   for (int i = 0; i < fs->countNodesOn(d); ++i){
     fs->getNodeXi(d,i,pa);
@@ -98,6 +100,7 @@ static void snapToInterpolate(Mesh* m, int d){
   }
   m->end(it);
 }
+
 void convertInterpToBezier(Mesh* m, Entity* e, int n, int ne,
     apf::NewArray<double>& c){
 
