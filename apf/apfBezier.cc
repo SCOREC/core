@@ -241,9 +241,9 @@ public:
     static double eP5[4] = {-0.7732854,-0.2863522,0.2863522,0.7732854};
     static double eP6[5] = {-0.8388042,-0.469821,0.0,
       0.469821,0.8388042};
-    static double* edgePoints[5] =
-    {eP2, eP3, eP4, eP5, eP6 };
-    if (type == Mesh::EDGE && P > 1) {
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
+    if (type == Mesh::EDGE) {
       xi = Vector3(edgePoints[P-2][node],0,0);
     } else if (type == Mesh::TRIANGLE) {
       xi = Vector3(1./3.,1./3.,1./3.);
@@ -256,32 +256,32 @@ public:
           case 3:
             fail("expected P >= 4");
           case 4:
-            xi[node % 3] = 0.5582239;
+            xi[(node  )% 3] = 0.5582239;
             xi[(node+1) % 3] = 0.220880;
             xi[(node+2) % 3] = 0.220880;
             break;
           case 5:
             if(node % 2 == 0) {
-              xi[node/2 % 3] = 0.6949657;
+              xi[(node/2  ) % 3] = 0.6949657;
               xi[(node/2+1) % 3] = 0.1525171;
               xi[(node/2+2) % 3] = 0.1525171;
             } else {
-              xi[(node-1)/2 % 3] = 0.4168658;
+              xi[((node-1)/2  ) % 3] = 0.4168658;
               xi[((node-1)/2+1) % 3] = 0.4168658;
               xi[((node-1)/2+2) % 3] = 0.1662683;
             }
             break;
           case 6:
             if (node % 3 == 0) {
-              xi[node/3 % 3] = 0.7805723;
+              xi[(node/3  ) % 3] = 0.7805723;
               xi[(node/3+1) % 3] = 0.1097139;
               xi[(node/3+2) % 3] = 0.1097139;
             } else if ((node-1) % 3 == 0) {
-              xi[(node-1)/3 % 3] = 0.5586077;
+              xi[((node-1)/3  ) % 3] = 0.5586077;
               xi[((node-1)/3+1) % 3] = 0.3157892;
               xi[((node-1)/3+2) % 3] = 0.1256031;
             } else if ((node-2) % 3 == 0) {
-              xi[(node-2)/3 % 3] = 0.3157892;
+              xi[((node-2)/3  ) % 3] = 0.3157892;
               xi[((node-2)/3+1) % 3] = 0.5586077;
               xi[((node-2)/3+2) % 3] = 0.1256031;
             }
@@ -310,8 +310,8 @@ public:
     static double eP6[5] = {-0.8161268,-0.4568660,0.0,
         0.4568660,0.8161268};
 
-    static double* edgePoints[5] =
-    {eP2, eP3, eP4, eP5, eP6 };
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
 
     if(type == Mesh::EDGE && P > 1){
       xi = Vector3(edgePoints[P-2][node],0,0);
