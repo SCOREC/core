@@ -52,7 +52,6 @@ double interpolationError(Mesh* m, Entity* e, int n,
 double interpolationErrorAtNodeXi(Mesh* m, Entity* e, 
     Vector &samplept, Vector &maxpt)
 {
-  (void)n;
   Model* g = m->toModel(e);
   if (m->getModelType(g) == m->getDimension())
     return 0.;
