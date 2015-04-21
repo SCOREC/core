@@ -61,12 +61,14 @@ class Linear : public FieldShape
     class Vertex : public EntityShape
     {
       public:
-        void getValues(Vector3 const&, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<double>& values) const
         {
           values.allocate(1);
           values[0] = 1.0;
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>&) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
         {
         }
         int countNodes() const {return 1;}
@@ -74,13 +76,15 @@ class Linear : public FieldShape
     class Edge : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(2);
           values[0] = (1.0-xi[0])/2.0;
           values[1] = (1.0+xi[0])/2.0;
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>& grads) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>& grads) const
         {
           grads.allocate(2);
           grads[0] = Vector3(-0.5,0,0);
@@ -91,14 +95,16 @@ class Linear : public FieldShape
     class Triangle : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(3);
           values[0] = 1-xi[0]-xi[1];
           values[1] = xi[0];
           values[2] = xi[1];
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>& grads) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>& grads) const
         {
           grads.allocate(3);
           grads[0] = Vector3(-1,-1,0);
@@ -110,7 +116,8 @@ class Linear : public FieldShape
     class Quad : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(4);
           double l0x = (1-xi[0]);
@@ -122,7 +129,8 @@ class Linear : public FieldShape
           values[2] = l1x*l1y/4;
           values[3] = l0x*l1y/4;
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           grads.allocate(4);
@@ -140,7 +148,8 @@ class Linear : public FieldShape
     class Tetrahedron : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(4);
           values[0] = 1-xi[0]-xi[1]-xi[2];
@@ -148,7 +157,8 @@ class Linear : public FieldShape
           values[2] = xi[1];
           values[3] = xi[2];
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>& grads) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>& grads) const
         {
           grads.allocate(4);
           grads[0] = Vector3(-1,-1,-1);
@@ -161,7 +171,8 @@ class Linear : public FieldShape
     class Prism : public EntityShape
     {
       public: //tensor product of triangle and edge
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(6);
           double nt[3];
@@ -177,7 +188,8 @@ class Linear : public FieldShape
           values[4] = nt[1] * up  ;
           values[5] = nt[2] * up  ;
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           grads.allocate(6);
@@ -206,7 +218,8 @@ class Linear : public FieldShape
     class Pyramid : public EntityShape
     {
       public: /* degenerate hexahedron */
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(5);
           double l0x = (1 - xi[0]);
@@ -221,7 +234,8 @@ class Linear : public FieldShape
           values[3] = l0x * l1y * l0z / 8;
           values[4] = l1z / 2;
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           double l0x = (1 - xi[0]);
@@ -241,7 +255,8 @@ class Linear : public FieldShape
     class Hexahedron : public EntityShape
     {
       public: /* degenerate hexahedron */
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(5);
           double l0x = (1 - xi[0]);
@@ -259,7 +274,8 @@ class Linear : public FieldShape
           values[6] = l1x * l1y * l1z / 8;
           values[7] = l0x * l1y * l1z / 8;
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           double l0x = (1 - xi[0]);
@@ -328,14 +344,16 @@ class QuadraticBase : public FieldShape
     class Edge : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(3);
           values[0] = -xi[0]*(1-xi[0])/2.0;
           values[1] =  xi[0]*(1+xi[0])/2.0;
           values[2] = 1-xi[0]*xi[0];
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           grads.allocate(3);
@@ -348,7 +366,8 @@ class QuadraticBase : public FieldShape
     class Triangle : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           double xi2 = 1-xi[0]-xi[1];
           values.allocate(6);
@@ -359,7 +378,8 @@ class QuadraticBase : public FieldShape
           values[4] = 4*xi[0]*xi[1];
           values[5] = 4*xi[1]*xi2;
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           double xi2 = 1-xi[0]-xi[1];
@@ -376,7 +396,8 @@ class QuadraticBase : public FieldShape
     class Tetrahedron : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           double xi3 = 1-xi[0]-xi[1]-xi[2];
           values.allocate(10);
@@ -391,7 +412,8 @@ class QuadraticBase : public FieldShape
           values[8] = 4*xi[2]*xi[0];
           values[9] = 4*xi[1]*xi[2];
         }
-        void getLocalGradients(Vector3 const& xi,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi,
             NewArray<Vector3>& grads) const
         {
           double xi3 = 1-xi[0]-xi[1]-xi[2];
@@ -445,11 +467,13 @@ class LagrangeQuadratic : public QuadraticBase
     class Quad : public EntityShape
     { /* TODO: implement this and then update hasNodesIn, countNodesOn */
       public:
-        void getValues(Vector3 const&, NewArray<double>&) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<double>&) const
         {
           fail("quadratic Lagrange quadrilateral shape values not implemented\n");
         }
-        void getLocalGradients(Vector3 const&,
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&,
             NewArray<Vector3>&) const
         {
           fail("quadratic Lagrange quadrilateral shape grads not implemented\n");
@@ -489,7 +513,8 @@ class SerendipityQuadratic : public QuadraticBase
     class Quad : public EntityShape
     {
     public:
-      void getValues(Vector3 const& xi, NewArray<double>& values) const
+      void getValues(Mesh*, MeshEntity*,
+          Vector3 const& xi, NewArray<double>& values) const
       {
         values.allocate(8);
         values[0] = (1-xi[0])*(1-xi[1])*(-xi[0] - xi[1] -1)/4.0;
@@ -501,7 +526,8 @@ class SerendipityQuadratic : public QuadraticBase
         values[6] = (1-xi[0]*xi[0])*(1+xi[1])/2.0;
         values[7] = (1-xi[0])*(1-xi[1]*xi[1])/2.0;
       }
-      void getLocalGradients(Vector3 const& xi,
+      void getLocalGradients(Mesh*, MeshEntity*,
+          Vector3 const& xi,
           NewArray<Vector3>& grads) const
       {
         grads.allocate(8);
@@ -589,12 +615,14 @@ class Constant : public FieldShape
     class Element : public EntityShape
     {
       public:
-        void getValues(Vector3 const&, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<double>& values) const
         {
           values.allocate(1);
           values[0] = 1;
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>& grads) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>& grads) const
         {
           grads.allocate(1);
           grads[0] = Vector3( 0, 0, 0);
@@ -759,14 +787,15 @@ class VoronoiShape : public IPBase
           }
           return idx;
         }
-        void getValues(Vector3 const& xi, NewArray<double>& values) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
         {
           values.allocate(points.getSize());
           for (size_t i = 0; i < points.getSize(); ++i)
             values[i] = 0.0;
           values[getClosestPtIdx(xi)] = 1.0;
         }
-        void getLocalGradients(
+        void getLocalGradients(Mesh*, MeshEntity*,
             Vector3 const&,
             NewArray<Vector3>&) const
         {

@@ -325,7 +325,7 @@ void getMatrixNodes(Element* e, NewArray<Matrix3x3>& values)
 void getShapeValues(Element* e, Vector3 const& local,
     NewArray<double>& values)
 {
-  e->getShape()->getValues(local,values);
+  e->getShape()->getValues(e->getMesh(), e->getEntity(), local,values);
 }
 
 void getShapeGrads(Element* e, Vector3 const& local,

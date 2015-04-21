@@ -12,7 +12,7 @@ void testNodeValues(int type, apf::Vector3 const* nodes, int nnodes)
   assert( shp->countNodes() == nnodes );
   for (int i = 0; i < nnodes; ++i) {
     apf::NewArray<double> values;
-    shp->getValues(nodes[i], values);
+    shp->getValues(0, 0, nodes[i], values);
     for (int j = 0; j < nnodes; ++j) {
       if (j == i)
         assert(values[j] == 1);

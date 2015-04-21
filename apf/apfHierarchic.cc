@@ -21,12 +21,14 @@ class Hierarchic : public FieldShape
     class Vertex : public EntityShape
     {
       public:
-        void getValues(Vector3 const&, NewArray<double>& N) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<double>& N) const
         {
           N.allocate(1);
           N[0] = 1.0;
         }
-        void getLocalGradients(Vector3 const&, NewArray<Vector3>&) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
         {
         }
         int countNodes() const {return 1;}
@@ -34,14 +36,16 @@ class Hierarchic : public FieldShape
     class Edge : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& N) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& N) const
         {
           N.allocate(3);
           N[0] = (1.0-xi[0])/2.0;
           N[1] = (1.0+xi[0])/2.0;
           N[2] = c*N[0]*N[1];
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& dN) const
         {
           dN.allocate(3);
           dN[0] = Vector3(-0.5, 0.0, 0.0);
@@ -53,7 +57,8 @@ class Hierarchic : public FieldShape
     class Triangle : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& N) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& N) const
         {
           N.allocate(6);
           N[0] = 1.0-xi[0]-xi[1];
@@ -63,7 +68,8 @@ class Hierarchic : public FieldShape
           N[4] = c*N[1]*N[2];
           N[5] = c*N[2]*N[0];
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& dN) const
         {
           dN.allocate(6);
           dN[0] = Vector3(-1.0, -1.0, 0.0);
@@ -78,7 +84,8 @@ class Hierarchic : public FieldShape
     class Tetrahedron : public EntityShape
     {
       public:
-        void getValues(Vector3 const& xi, NewArray<double>& N) const
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& N) const
         {
           N.allocate(10);
           N[0] = 1.0-xi[0]-xi[1]-xi[2];
@@ -92,7 +99,8 @@ class Hierarchic : public FieldShape
           N[8] = c*N[1]*N[3];
           N[9] = c*N[2]*N[3];
         }
-        void getLocalGradients(Vector3 const& xi, NewArray<Vector3>& dN) const
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& dN) const
         {
           dN.allocate(10);
           dN[0] = Vector3(-1.0, -1.0, -1.0);

@@ -24,12 +24,14 @@ public:
   class Vertex : public EntityShape
   {
   public:
-    void getValues(Vector3 const&, NewArray<double>& values) const
+    void getValues(Mesh*, MeshEntity*,
+        Vector3 const&, NewArray<double>& values) const
     {
       values.allocate(1);
       values[0] = 1.0;
     }
-    void getLocalGradients(Vector3 const&, NewArray<Vector3>&) const
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const&, NewArray<Vector3>&) const
     {
     }
     int countNodes() const {return 1;}
@@ -37,7 +39,8 @@ public:
   class Edge : public EntityShape
   {
   public:
-    void getValues(Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh*, MeshEntity*,
+        Vector3 const& xi, NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
@@ -47,7 +50,8 @@ public:
       values[0] = pow(1-t, P);
       values[1] = pow(t, P);
     }
-    void getLocalGradients(Vector3 const& xi,
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
@@ -82,7 +86,8 @@ public:
         map[i] = maps[P-1][i];
       }
     }
-    void getValues(Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh*, MeshEntity*,
+        Vector3 const& xi, NewArray<double>& values) const
     {
       values.allocate((P+1)*(P+2)/2);
       for(int i = 0; i < P+1; ++i){
@@ -93,7 +98,8 @@ public:
         }
       }
     }
-    void getLocalGradients(Vector3 const& xi,
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       grads.allocate((P+1)*(P+2)/2);
@@ -131,7 +137,8 @@ public:
   class Tetrahedron : public EntityShape
   {
   public:
-    void getValues(Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh* m, MeshEntity* e,
+        Vector3 const& xi, NewArray<double>& values) const
     {
       values.allocate(2*P*P+2);
       values[0] = 1-xi[0]-xi[1]-xi[2];
@@ -166,15 +173,18 @@ public:
 
       for(int i = 0; i < 4; ++i){
         getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
-            ->getValues(tXi[i],tValues[i]);
+          /* fixme      V  V */
+            ->getValues(m, e, tXi[i],tValues[i]);
       }
 
       for(int i = 0; i < 6; ++i){
         getBezier(3,P)->getEntityShape(Mesh::EDGE)
-            ->getValues(eXi[i],eValues[i]);
+          /* fixme      V  V */
+            ->getValues(m, e, eXi[i],eValues[i]);
       }
     }
-    void getLocalGradients(Vector3 const&,
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const&,
         NewArray<Vector3>& grads) const
     {
       grads.allocate(2*P*P+2);
