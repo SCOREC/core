@@ -79,7 +79,7 @@ void Element::getGlobalGradients(Vector3 const& local,
   parent->getJacobian(local,J);
   Matrix3x3 jinv = getJacobianInverse(J, getDimension());
   NewArray<Vector3> localGradients;
-  shape->getLocalGradients(local,localGradients);
+  shape->getLocalGradients(mesh, entity, local,localGradients);
   globalGradients.allocate(nen);
   for (int i=0; i < nen; ++i)
     globalGradients[i] = jinv * localGradients[i];
@@ -88,7 +88,7 @@ void Element::getGlobalGradients(Vector3 const& local,
 void Element::getComponents(Vector3 const& xi, double* c)
 {
   NewArray<double> shapeValues;
-  shape->getValues(xi,shapeValues);
+  shape->getValues(mesh, entity, xi, shapeValues);
   for (int ci = 0; ci < nc; ++ci)
     c[ci] = 0;
   for (int ni = 0; ni < nen; ++ni)

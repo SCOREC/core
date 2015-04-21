@@ -30,6 +30,7 @@ class Element
     int getOrder() {return field->getShape()->getOrder();}
     VectorElement* getParent() {return parent;}
     MeshEntity* getEntity() {return entity;}
+    Mesh* getMesh() {return mesh;}
     EntityShape* getShape() {return shape;}
     void getComponents(Vector3 const& xi, double* c);
   protected:

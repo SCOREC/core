@@ -61,7 +61,7 @@ void VectorElement::grad(Vector3 const& xi, Matrix3x3& g)
 void VectorElement::getJacobian(Vector3 const& xi, Matrix3x3& J)
 {
   NewArray<Vector3> localGradients;
-  this->shape->getLocalGradients(xi,localGradients);
+  this->shape->getLocalGradients(mesh, entity, xi, localGradients);
   gradHelper(localGradients,J);
 }
 

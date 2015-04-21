@@ -24,12 +24,14 @@ public:
   class Vertex : public EntityShape
   {
   public:
-    void getValues(Vector3 const&, NewArray<double>& values) const
+    void getValues(Mesh*, MeshEntity*,
+        Vector3 const&, NewArray<double>& values) const
     {
       values.allocate(1);
       values[0] = 1.0;
     }
-    void getLocalGradients(Vector3 const&, NewArray<Vector3>&) const
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const&, NewArray<Vector3>&) const
     {
     }
     int countNodes() const {return 1;}
@@ -37,7 +39,8 @@ public:
   class Edge : public EntityShape
   {
   public:
-    void getValues(Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh*, MeshEntity*,
+        Vector3 const& xi, NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
@@ -47,7 +50,8 @@ public:
       values[0] = pow(1-t, P);
       values[1] = pow(t, P);
     }
-    void getLocalGradients(Vector3 const& xi,
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
@@ -82,7 +86,8 @@ public:
         map[i] = maps[P-1][i];
       }
     }
-    void getValues(Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh*, MeshEntity*,
+        Vector3 const& xi, NewArray<double>& values) const
     {
       values.allocate((P+1)*(P+2)/2);
       for(int i = 0; i < P+1; ++i){
@@ -93,7 +98,8 @@ public:
         }
       }
     }
-    void getLocalGradients(Vector3 const& xi,
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       grads.allocate((P+1)*(P+2)/2);
@@ -131,7 +137,8 @@ public:
   class Tetrahedron : public EntityShape
   {
   public:
-    void getValues(Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh* m, MeshEntity* e,
+        Vector3 const& xi, NewArray<double>& values) const
     {
       values.allocate(2*P*P+2);
       values[0] = 1-xi[0]-xi[1]-xi[2];
@@ -166,15 +173,18 @@ public:
 
       for(int i = 0; i < 4; ++i){
         getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
-            ->getValues(tXi[i],tValues[i]);
+          /* fixme      V  V */
+            ->getValues(m, e, tXi[i],tValues[i]);
       }
 
       for(int i = 0; i < 6; ++i){
         getBezier(3,P)->getEntityShape(Mesh::EDGE)
-            ->getValues(eXi[i],eValues[i]);
+          /* fixme      V  V */
+            ->getValues(m, e, eXi[i],eValues[i]);
       }
     }
-    void getLocalGradients(Vector3 const&,
+    void getLocalGradients(Mesh*, MeshEntity*,
+        Vector3 const&,
         NewArray<Vector3>& grads) const
     {
       grads.allocate(2*P*P+2);
@@ -241,10 +251,10 @@ public:
     static double eP5[4] = {-0.7732854,-0.2863522,0.2863522,0.7732854};
     static double eP6[5] = {-0.8388042,-0.469821,0.0,
       0.469821,0.8388042};
-    static double* edgePoints[5] =
-    {eP2, eP3, eP4, eP5, eP6 };
-    if (type == Mesh::EDGE && P > 1) {
-      xi = Vector3(edgePoints[P-2][node],0,0);
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
+    if (type == Mesh::EDGE) {
+      xi = Vector3(edgePoints[P-1][node],0,0);
     } else if (type == Mesh::TRIANGLE) {
       xi = Vector3(1./3.,1./3.,1./3.);
       if(node == (P-1)*(P-2)/2-1 && P % 3 == 0){
@@ -256,32 +266,32 @@ public:
           case 3:
             fail("expected P >= 4");
           case 4:
-            xi[node % 3] = 0.5582239;
+            xi[(node  )% 3] = 0.5582239;
             xi[(node+1) % 3] = 0.220880;
             xi[(node+2) % 3] = 0.220880;
             break;
           case 5:
             if(node % 2 == 0) {
-              xi[node/2 % 3] = 0.6949657;
+              xi[(node/2  ) % 3] = 0.6949657;
               xi[(node/2+1) % 3] = 0.1525171;
               xi[(node/2+2) % 3] = 0.1525171;
             } else {
-              xi[(node-1)/2 % 3] = 0.4168658;
+              xi[((node-1)/2  ) % 3] = 0.4168658;
               xi[((node-1)/2+1) % 3] = 0.4168658;
               xi[((node-1)/2+2) % 3] = 0.1662683;
             }
             break;
           case 6:
             if (node % 3 == 0) {
-              xi[node/3 % 3] = 0.7805723;
+              xi[(node/3  ) % 3] = 0.7805723;
               xi[(node/3+1) % 3] = 0.1097139;
               xi[(node/3+2) % 3] = 0.1097139;
             } else if ((node-1) % 3 == 0) {
-              xi[(node-1)/3 % 3] = 0.5586077;
+              xi[((node-1)/3  ) % 3] = 0.5586077;
               xi[((node-1)/3+1) % 3] = 0.3157892;
               xi[((node-1)/3+2) % 3] = 0.1256031;
             } else if ((node-2) % 3 == 0) {
-              xi[(node-2)/3 % 3] = 0.3157892;
+              xi[((node-2)/3  ) % 3] = 0.3157892;
               xi[((node-2)/3+1) % 3] = 0.5586077;
               xi[((node-2)/3+2) % 3] = 0.1256031;
             }
@@ -310,11 +320,11 @@ public:
     static double eP6[5] = {-0.8161268,-0.4568660,0.0,
         0.4568660,0.8161268};
 
-    static double* edgePoints[5] =
-    {eP2, eP3, eP4, eP5, eP6 };
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
 
     if(type == Mesh::EDGE && P > 1){
-      xi = Vector3(edgePoints[P-2][node],0,0);
+      xi = Vector3(edgePoints[P-1][node],0,0);
     } else {
       xi = Vector3(0,0,0);
     }

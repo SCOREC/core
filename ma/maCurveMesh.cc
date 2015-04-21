@@ -15,7 +15,6 @@
 #include <gmi.h>
 
 #include <string.h>
-#include <stdio.h> //TODO: dont need this normally
 #include <sstream>
 
 namespace ma {
@@ -23,18 +22,21 @@ namespace ma {
 double interpolationError(Mesh* m, Entity* e, int n,
     Vector &samplept, Vector &maxpt){
   Model* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension()) return 0.;
+  if (m->getModelType(g) == m->getDimension())
+	  return 0.;
   int d = apf::getDimension(m,e);
   int nj = (d == 2) ? n : 1;
   Vector pt,pa(0.,0.,0.),cpt,cpa;
-  double max = -1.0;
+  double max = 0.0;
   apf::Element* elem =
       apf::createElement(m->getCoordinateField(),e);
   for (int j = 0; j < nj; ++j){
     pa[1] = 1.*j/(nj-1.);
     for (int i = 0; i < n-j; ++i){
-      if(d == 1) pa[0] = 2.*i/(n-1)-1.0;
-      else pa[0] = 1.*i/(nj-1.);
+      if(d == 1)
+    	  pa[0] = 2.*i/(n-1)-1.0;
+      else
+    	  pa[0] = 1.*i/(nj-1.);
       apf::getVector(elem,pa,pt);
       m->getClosestPoint(g,pt,cpt,cpa);
       if((cpt-pt).getLength() > max){
@@ -44,33 +46,6 @@ double interpolationError(Mesh* m, Entity* e, int n,
       }
     }
   }
-
-  apf::destroyElement(elem);
-  return max;
-}
-
-double interpolationErrorAtNodeXi(Mesh* m, Entity* e, int n,
-    Vector &samplept, Vector &maxpt){
-  Model* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension()) return 0.;
-  int d = apf::getDimension(m,e);
-  Vector pt,pa(0.,0.,0.),cpt,cpa;
-  double max = -1.0;
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),e);
-
-  apf::FieldShape * fs = m->getCoordinateField()->getShape();
-  for (int i = 0; i < fs->countNodesOn(d); ++i){
-    fs->getNodeXi(d,i,pa);
-    apf::getVector(elem,pa,pt);
-    m->getClosestPoint(g,pt,cpt,cpa);
-    if((cpt-pt).getLength() > max){
-      max = (cpt-pt).getLength();
-      maxpt = cpt;
-      samplept = pt;
-    }
-  }
-
   apf::destroyElement(elem);
   return max;
 }
@@ -98,6 +73,7 @@ static void snapToInterpolate(Mesh* m, int d){
   }
   m->end(it);
 }
+
 void convertInterpToBezier(Mesh* m, Entity* e, int n, int ne,
     apf::NewArray<double>& c){
 
@@ -128,8 +104,6 @@ void curveMeshToBezier(Mesh* m, int order){
   apf::changeMeshShape(m, apf::getBezier(md,order),true);
 
   apf::FieldShape * fs = m->getCoordinateField()->getShape();
-  printf("Changing Mesh Shape to %s\n", fs->getName());
-  if(order == 1) return;
 
   Entity* e;
 
@@ -156,7 +130,6 @@ void curveMeshToBezier(Mesh* m, int order){
     m->end(it);
   }
 
-  printf("Done Changing Mesh Shape\n");
   m->acceptChanges();
   m->verify();
 }

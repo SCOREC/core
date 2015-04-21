@@ -28,13 +28,19 @@ class EntityShape
 /** \brief evaluate element shape functions
  \param xi the parent element coordinates
  \param values each entry is the shape function value for one node */
-    virtual void getValues(Vector3 const& xi,
+    virtual void getValues(
+        Mesh* m,
+        MeshEntity* e,
+        Vector3 const& xi,
         NewArray<double>& values) const = 0;
 /** \brief evaluate element shape function gradients
  \param xi parent element coordinates
  \param grads each entry is the shape function gradient with
               respect to parent element coordinates for one node */
-    virtual void getLocalGradients(Vector3 const& xi,
+    virtual void getLocalGradients(
+        Mesh* m,
+        MeshEntity* e,
+        Vector3 const& xi,
         NewArray<Vector3>& grads) const = 0;
 /** \brief return the number of nodes affecting this element
     \details in a linear mesh, there are two nodes affecting
