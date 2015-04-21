@@ -10,25 +10,6 @@
 #include <apfShape.h>
 #include <apfDynamicMatrix.h>
 
-void testInterpolatedPoints(ma::Mesh* m){
-
-  int dim = m->getDimension();
-  for( int d = 1; d < dim; ++d){
-    ma::Iterator* it = m->begin(d);
-    ma::Entity* e;
-    while ((e = m->iterate(it))) {
-      ma::Vector samplePt, maxPt;
-      double error = ma::interpolationErrorAtNodeXi(m,e,0,samplePt,maxPt);
-      if (error > 1.e-7) {
-        std::cerr << apf::Mesh::typeName[m->getType(e)] <<
-            " is not being interpolated correctly by " <<
-            m->getCoordinateField()->getShape()->getName() << "\n";
-        abort();
-      }
-    }
-    m->end(it);
-  }
-}
 void testInterpolationError(ma::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
   ma::Iterator* it = m->begin(entityDim);
@@ -90,7 +71,6 @@ int main(int argc, char** argv)
   for(int order = 1; order < 7; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
     ma::curveMeshToBezier(m2,order);
-    testInterpolatedPoints(m2);
     testElementSize(m2);
     apf::DynamicVector ee(ne);
     apf::DynamicVector fe(nf);
