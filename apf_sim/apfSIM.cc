@@ -568,7 +568,7 @@ class IntTagSIM : public TagSIM
     }
     virtual void* allocate()
     {
-      return new int[count];
+      return new int[count]();
     }
     virtual void deallocate(void* p)
     {
@@ -617,7 +617,7 @@ class LongTagSIM : public TagSIM
     }
     virtual void* allocate()
     {
-      return new long[count];
+      return new long[count]();
     }
     virtual void deallocate(void* p)
     {
