@@ -521,7 +521,7 @@ class DoubleTagSIM : public TagSIM
     }
     virtual void* allocate()
     {
-      return new double[count];
+      return new double[count]();
     }
     virtual void deallocate(void* p)
     {
