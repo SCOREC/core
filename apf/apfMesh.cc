@@ -914,11 +914,16 @@ static int const* getVertIndices(int type, int subtype, int which)
 void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
     int& which, bool& flip, int& rotate)
 {
-  Downward ev;
-  m->getDownward(elem, 0, ev);
   Downward eb;
   int neb = m->getDownward(elem, getDimension(m, boundary), eb);
   which = findIn(eb, neb, boundary);
+  if (m->getType(boundary) == Mesh::VERTEX) {
+    flip = false;
+    rotate = 0;
+    return;
+  }
+  Downward ev;
+  m->getDownward(elem, 0, ev);
   Downward bv;
   int nbv = m->getDownward(boundary, 0, bv);
   int const* vi = getVertIndices(m->getType(elem), m->getType(boundary), which);
@@ -927,12 +932,17 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
     ebv[i] = ev[vi[i]];
   int a = findIn(ebv, nbv, bv[0]);
   int b = findIn(ebv, nbv, bv[1]);
-  /* when nbv <= 2, a flip is also a rotation,
-     but we would prefer to treat it as a flip */
-  if (((nbv > 2) && (b == (a + 1) % nbv)) || (a == 0))
-    flip = false;
-  else {
-    flip = true;
+  if (m->getType(boundary) == Mesh::EDGE) {
+    /* for edges, rotate and flip are the
+       same, but calling it a flip makes more sense */
+    flip = (a != 0);
+    rotate = 0;
+    return;
+  }
+  /* for other entities, we need to see if
+     the vertices go around in the same direction */
+  flip = (b != (a + 1) % nbv);
+  if (flip) { /* flip the vertices before computing rotation */
     Downward tmp;
     for (int i = 0; i < nbv; ++i)
       tmp[nbv - i - 1] = bv[i];
