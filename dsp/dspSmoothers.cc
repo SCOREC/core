@@ -158,7 +158,7 @@ namespace dsp {
       (void)moving;
     }
   };
-
+  
   class SemiSpringSmoother : public Smoother {
   public:
     void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
@@ -287,118 +287,55 @@ namespace dsp {
             int num_down; //num_down is sopposed to be 4
             num_down = m->getDownward(adj[j], 0, down);
             int tet_id = 0;
-            for (int k = 0 ; k < num_down ; k++)
+            for (int k = 0 ; k < num_down ; k++) {
               if (down[k] != V_total[i]) {
                 m->getPoint(down[k], 0, tet_OP[tet_id]);
                 apf::getVector(df, down[k], 0, tet_DP[tet_id]);
                 tet_id++;
               }
+            }
             //----------------------------------------------------
             apf::Vector3 n_1; apf::Vector3 n_2;
-            // j = 0; k = 1; l = 2; i = V_total[i]
-            n_1[0] = (tet_OP[2][1] - tet_OP[0][1]) * (tet_OP[1][2] - tet_OP[0][2])
-            - (tet_OP[2][2] - tet_OP[0][2]) * (tet_OP[1][1] - tet_OP[0][1]);
-            
-            n_1[1] = (tet_OP[2][2] - tet_OP[0][2]) * (tet_OP[1][0] - tet_OP[0][0])
-            - (tet_OP[2][0] - tet_OP[0][0]) * (tet_OP[1][2] - tet_OP[0][2]);
-            
-            n_1[2] = (tet_OP[2][0] - tet_OP[0][0]) * (tet_OP[1][1] - tet_OP[0][1])
-            - (tet_OP[2][1] - tet_OP[0][1]) * (tet_OP[1][0] - tet_OP[0][0]);
-            
-            n_2[0] = (tet_OP[2][1] - D_total[i][1]) * (tet_OP[1][2] - D_total[i][2])
-            - (tet_OP[2][2] - D_total[i][2]) * (tet_OP[1][1] - D_total[i][1]);
-            
-            n_2[1] = (tet_OP[2][2] - D_total[i][2]) * (tet_OP[1][0] - D_total[i][0])
-            - (tet_OP[2][0] - D_total[i][0]) * (tet_OP[1][2] - D_total[i][2]);
-            
-            n_2[2] = (tet_OP[2][0] - D_total[i][0]) * (tet_OP[1][1] - D_total[i][1])
-            - (tet_OP[2][1] - D_total[i][1]) * (tet_OP[1][0] - D_total[i][0]);
-            
-            cos_squ = pow(n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2], 2)
-            /(pow(n_1[0], 2) + pow(n_1[1], 2) + pow(n_1[2], 2))
-            /(pow(n_2[0], 2) + pow(n_2[1], 2) + pow(n_2[2], 2));
-            
-            length_squ = pow(tet_OP[0][0] - D_total[i][0], 2)
-            + pow(tet_OP[0][1] - D_total[i][1], 2)
-            + pow(tet_OP[0][2] - D_total[i][2], 2);
-            
-            stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
-            force_temp[0] = stiffness_temp * tet_DP[0][0];
-            force_temp[1] = stiffness_temp * tet_DP[0][1];
-            force_temp[2] = stiffness_temp * tet_DP[0][2];
-            
-            stiffness_sum = stiffness_sum + stiffness_temp;
-            force_sum = force_sum + force_temp;
-            
-            // l = 0; j = 1; k = 2; i = V_total[i]
-            n_1[0] = (tet_OP[0][1] - tet_OP[1][1]) * (tet_OP[2][2] - tet_OP[1][2])
-            - (tet_OP[0][2] - tet_OP[1][2]) * (tet_OP[2][1] - tet_OP[1][1]);
-            
-            n_1[1] = (tet_OP[0][2] - tet_OP[1][2]) * (tet_OP[2][0] - tet_OP[1][0])
-            - (tet_OP[0][0] - tet_OP[1][0]) * (tet_OP[2][2] - tet_OP[1][2]);
-            
-            n_1[2] = (tet_OP[0][0] - tet_OP[1][0]) * (tet_OP[2][1] - tet_OP[1][1])
-            - (tet_OP[0][1] - tet_OP[1][1]) * (tet_OP[2][0] - tet_OP[1][0]);
-            
-            n_2[0] = (tet_OP[0][1] - D_total[i][1]) * (tet_OP[2][2] - D_total[i][2])
-            - (tet_OP[0][2] - D_total[i][2]) * (tet_OP[2][1] - D_total[i][1]);
-            
-            n_2[1] = (tet_OP[0][2] - D_total[i][2]) * (tet_OP[2][0] - D_total[i][0])
-            - (tet_OP[0][0] - D_total[i][0]) * (tet_OP[2][2] - D_total[i][2]);
-            
-            n_2[2] = (tet_OP[0][0] - D_total[i][0]) * (tet_OP[2][1] - D_total[i][1])
-            - (tet_OP[0][1] - D_total[i][1]) * (tet_OP[2][0] - D_total[i][0]);
-            
-            cos_squ = pow(n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2], 2)
-            /(pow(n_1[0], 2) + pow(n_1[1], 2) + pow(n_1[2], 2))
-            /(pow(n_2[0], 2) + pow(n_2[1], 2) + pow(n_2[2], 2));
-            
-            length_squ = pow(tet_OP[1][0] - D_total[i][0], 2)
-            + pow(tet_OP[1][1] - D_total[i][1], 2)
-            + pow(tet_OP[1][2] - D_total[i][2], 2);
-            
-            stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
-            force_temp[0] = stiffness_temp * tet_DP[1][0];
-            force_temp[1] = stiffness_temp * tet_DP[1][1];
-            force_temp[2] = stiffness_temp * tet_DP[1][2];
-            
-            stiffness_sum = stiffness_sum + stiffness_temp;
-            force_sum = force_sum + force_temp;
-            
-            // k = 0; l = 1; j = 2; i = V_total[i]
-            n_1[0] = (tet_OP[1][1] - tet_OP[2][1]) * (tet_OP[0][2] - tet_OP[2][2])
-            - (tet_OP[1][2] - tet_OP[2][2]) * (tet_OP[0][1] - tet_OP[2][1]);
-            
-            n_1[1] = (tet_OP[1][2] - tet_OP[2][2]) * (tet_OP[0][0] - tet_OP[2][0])
-            - (tet_OP[1][0] - tet_OP[2][0]) * (tet_OP[0][2] - tet_OP[2][2]);
-            
-            n_1[2] = (tet_OP[1][0] - tet_OP[2][0]) * (tet_OP[0][1] - tet_OP[2][1])
-            - (tet_OP[1][1] - tet_OP[2][1]) * (tet_OP[0][0] - tet_OP[2][0]);
-            
-            n_2[0] = (tet_OP[1][1] - D_total[i][1]) * (tet_OP[0][2] - D_total[i][2])
-            - (tet_OP[1][2] - D_total[i][2]) * (tet_OP[0][1] - D_total[i][1]);
-            
-            n_2[1] = (tet_OP[1][2] - D_total[i][2]) * (tet_OP[0][0] - D_total[i][0])
-            - (tet_OP[1][0] - D_total[i][0]) * (tet_OP[0][2] - D_total[i][2]);
-            
-            n_2[2] = (tet_OP[1][0] - D_total[i][0]) * (tet_OP[0][1] - D_total[i][1])
-            - (tet_OP[1][1] - D_total[i][1]) * (tet_OP[0][0] - D_total[i][0]);
-            
-            cos_squ = pow(n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2], 2)
-            /(pow(n_1[0], 2) + pow(n_1[1], 2) + pow(n_1[2], 2))
-            /(pow(n_2[0], 2) + pow(n_2[1], 2) + pow(n_2[2], 2));
-            
-            length_squ = pow(tet_OP[2][0] - D_total[i][0], 2)
-            + pow(tet_OP[2][1] - D_total[i][1], 2)
-            + pow(tet_OP[2][2] - D_total[i][2], 2);
-            
-            stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
-            force_temp[0] = stiffness_temp * tet_DP[2][0];
-            force_temp[1] = stiffness_temp * tet_DP[2][1];
-            force_temp[2] = stiffness_temp * tet_DP[2][2];
-            
-            stiffness_sum = stiffness_sum + stiffness_temp;
-            force_sum = force_sum + force_temp;
+            for (int K = 0 ; K < 3 ; K++) {
+              int A; int B;
+              if (K = 0)      { A = 1; B = 2; }
+              else if (K = 1) { A = 2; B = 0; }
+              else if (K = 2) { A = 0; B = 1; }
+
+              n_1[0] = (tet_OP[B][1] - tet_OP[K][1]) * (tet_OP[A][2] - tet_OP[K][2])
+                     - (tet_OP[B][2] - tet_OP[K][2]) * (tet_OP[A][1] - tet_OP[K][1]);
+              
+              n_1[1] = (tet_OP[B][2] - tet_OP[K][2]) * (tet_OP[A][0] - tet_OP[K][0])
+                     - (tet_OP[B][0] - tet_OP[K][0]) * (tet_OP[A][2] - tet_OP[K][2]);
+              
+              n_1[2] = (tet_OP[B][0] - tet_OP[K][0]) * (tet_OP[A][1] - tet_OP[K][1])
+                     - (tet_OP[B][1] - tet_OP[K][1]) * (tet_OP[A][0] - tet_OP[K][0]);
+              
+              n_2[0] = (tet_OP[B][1] - D_total[i][1]) * (tet_OP[A][2] - D_total[i][2])
+                     - (tet_OP[B][2] - D_total[i][2]) * (tet_OP[A][1] - D_total[i][1]);
+              
+              n_2[1] = (tet_OP[B][2] - D_total[i][2]) * (tet_OP[A][0] - D_total[i][0])
+                     - (tet_OP[B][0] - D_total[i][0]) * (tet_OP[A][2] - D_total[i][2]);
+              
+              n_2[2] = (tet_OP[B][0] - D_total[i][0]) * (tet_OP[A][1] - D_total[i][1])
+                     - (tet_OP[B][1] - D_total[i][1]) * (tet_OP[A][0] - D_total[i][0]);
+              
+              cos_squ = pow((n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2]), 2)
+              /(pow(n_1[0], 2) + pow(n_1[1], 2) + pow(n_1[2], 2))
+              /(pow(n_2[0], 2) + pow(n_2[1], 2) + pow(n_2[2], 2));
+              
+              length_squ = pow((tet_OP[K][0] - D_total[i][0]), 2)
+                         + pow((tet_OP[K][1] - D_total[i][1]), 2)
+                         + pow((tet_OP[K][2] - D_total[i][2]), 2);
+              
+              stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
+              force_temp[0] = stiffness_temp * tet_DP[K][0];
+              force_temp[1] = stiffness_temp * tet_DP[K][1];
+              force_temp[2] = stiffness_temp * tet_DP[K][2];
+              
+              stiffness_sum = stiffness_sum + stiffness_temp;
+              force_sum = force_sum + force_temp;
+            }
             //----------------------------------------------------
           }
           D_total[i][0] = force_sum[0]/stiffness_sum;
@@ -410,6 +347,7 @@ namespace dsp {
           }
           //update IN
           apf::setVector(df, V_total[i], 0, D_total[i]);
+          std::cout << "Current Max is " << max << '\n';
         }
       }
       
