@@ -1,8 +1,10 @@
 #ifndef APFSIM_H
 #define APFSIM_H
 
-#include <apfMesh.h>
+#include <apfMesh2.h>
 #include <PartitionedMeshTypes.h>
+
+void P_setPos(pPoint,double,double,double);
 
 namespace apf {
 
@@ -20,12 +22,13 @@ MeshEntity* castEntity(pEntity entity);
 
 class TagSIM;
 
-class MeshSIM : public Mesh
+class MeshSIM : public Mesh2
 {
   template <class T> friend class SIMDataOf;
   public:
     MeshSIM(pParMesh m);
     virtual ~MeshSIM();
+    // Mesh interface =======================
     int getDimension();
     std::size_t count(int dimension);
     MeshIterator* begin(int dimension);
@@ -72,6 +75,21 @@ class MeshSIM : public Mesh
     bool hasMatching() {return hasMatches;}
     void getMatches(MeshEntity* e, Matches& m);
     bool hasMatches;
+    // Mesh2 interface ==============================
+    void setRemotes(MeshEntity * e, Copies& remotes) {};
+    void addRemote(MeshEntity * e, int p, MeshEntity * r) {};
+    void setResidence(MeshEntity * e, Parts& residence) {};
+    void setParam(MeshEntity * e, Vector3 const & p) {};
+    void increment(MeshIterator * it) {};
+    bool isDone(MeshIterator * it) { return true; }
+    MeshEntity * deref(MeshIterator * it) { return NULL; }
+    void setPoint_(MeshEntity * me, int node, Vector3 const & p);
+    MeshEntity * createVert_(ModelEntity* c) { return NULL; }
+    MeshEntity * createEntity_(int type,ModelEntity* c,MeshEntity** down) { return NULL; }
+    void destroy_(MeshEntity * e) {};
+    void addMatch(MeshEntity * e, int peer, MeshEntity * match) {};
+    void clearMatches(MeshEntity * e) {};
+    void acceptChanges() {};
   protected:
     pParMesh mesh;
     pMesh part;

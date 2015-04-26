@@ -818,6 +818,18 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
   PList_delete(l);
 }
 
+void MeshSIM::setPoint_(MeshEntity * me, int node, Vector3 const & p)
+{
+  pEntity entity = reinterpret_cast<pEntity>(me);
+  eType type = EN_type(entity);
+  pPoint pt = 0;
+  if (type == Tvertex)
+    pt = V_point(static_cast<pVertex>(entity));
+  if (type == Tedge)
+    pt = E_point(static_cast<pEdge>(entity),node);
+  P_setPos(pt,p[0],p[1],p[2]);
+}
+
 static bool isQuadratic(pParMesh mesh)
 {
   pMesh part = PM_mesh(mesh,0);
