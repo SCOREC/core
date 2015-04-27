@@ -112,7 +112,6 @@ namespace parma {
     for(int max=2; max <= 12; max+=2)
       planW += select(tgts, plan, planW, max);
     parmaCommons::printElapsedTime("select", PCU_Time()-t0);
-    clearDistTag(mesh, dist, plan);
     return plan;
   }
 

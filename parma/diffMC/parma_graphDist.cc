@@ -160,65 +160,67 @@ namespace {
       return false;
   }
 
-  inline void reset(apf::Mesh* m, apf::MeshTag* t, apf::MeshEntity* v) {
-    m->removeTag(v,t);
+  inline bool onMdlBdry(apf::Mesh* m, apf::MeshEntity* v) {
+    const int dim = m->getDimension();
+    apf::ModelEntity* g = m->toModel(v);
+    const int gdim = m->getModelType(g);
+    return gdim < dim;
   }
 
-  inline bool set(apf::Mesh* m, apf::MeshTag* t, apf::MeshEntity* v) {
-    return (m->hasTag(v,t));
-  }
-
-  inline void updateDist(apf::Mesh* m, apf::MeshTag* dt, apf::MeshTag* up,
-      apf::MeshEntity* v) {
-    int one = 1;
-    m->setIntTag(v,up,&one); //mark as visited
-
-    apf::Adjacent verts;
-    getEdgeAdjVtx(m,v,verts);
-    int minDist = INT_MAX;
-    APF_ITERATE(apf::Adjacent, verts, vtx) {
-      int d;
-      //There must be a distanced vertex adjacent to a vertex
-      //that needs a distance update since migration can only
-      //select elements bounded by vertices on the part boundary.
-      if( !m->hasTag(*vtx,dt) || m->hasTag(*vtx,up) ) continue;
-      m->getIntTag(*vtx,dt,&d);
-      if( d < minDist )
-        minDist = d;
+  /**
+   * @brief construct list of part boundary and geometric boundary
+   *   vertices to have their distance updated
+   * @remark There are two side effects. Each vertex in the list:
+   *   (1) has the distance set to INT_MAX.  Any vertices that are not visited
+   *   during the walks will have a INT_MAX distance which will bias diffusion
+   *   to migrate the bounded cavities before other cavities.
+   */
+  void getBdryVtx(apf::Mesh* m, apf::MeshTag* dist, 
+      parma::DistanceQueue<parma::Less>& pq) {
+    int dmax = INT_MAX;
+    apf::MeshEntity* u;
+    apf::MeshIterator* it = m->begin(0);
+    while( (u = m->iterate(it)) ) {
+      if( !m->isShared(u) && !onMdlBdry(m,u) ) continue;
+      m->setIntTag(u,dist,&dmax); // (1)
+      apf::Adjacent verts;
+      getEdgeAdjVtx(m,u,verts);
+      APF_ITERATE(apf::Adjacent, verts, v) {
+        if( !m->isShared(*v) && !onMdlBdry(m,*v) ) {
+          int vd; m->getIntTag(*v,dist,&vd);
+          if( vd == INT_MAX ) continue;
+          pq.push(*v,vd);
+        }
+      }
     }
-    minDist++;
-    m->setIntTag(v,dt,&minDist);
+    m->end(it);
   }
+
+  class CompUpdateContains : public parma::DijkstraContains {
+    public:
+      CompUpdateContains() {}
+      ~CompUpdateContains() {}
+      bool has(apf::MeshEntity*) {
+        return true;
+      }
+      //disable the non-manifold boundary detection mechanism
+      bool bdryHas(apf::MeshEntity*) {
+        return false;
+      }
+  };
 
   apf::MeshTag* updateDistance(apf::Mesh* m) {
     PCU_Debug_Print("updateDistance\n");
-    apf::MeshTag* up = m->createIntTag("parmaUndistancedVtx",1);
     apf::MeshTag* dist = parma::getDistTag(m);
-    assert(dist);
-    apf::MeshEntity* v;
-    apf::MeshIterator* it = m->begin(0);
-    while( (v = m->iterate(it)) ) {
-      if( !set(m,dist,v) )
-        updateDist(m,dist,up,v);
-    }
-    m->end(it);
-    apf::removeTagFromDimension(m,up,0);
-    m->destroyTag(up);
+    parma::DistanceQueue<parma::Less> pq(m);
+    getBdryVtx(m,dist,pq);
+    CompUpdateContains c;
+    parma::dijkstra(m,&c,pq,dist);
     return dist;
   }
 } //end namespace
 
 namespace parma {
-  void clearDistTag(apf::Mesh* m, apf::MeshTag* dist, apf::Migration* plan) {
-    for(int i=0; i < plan->count(); i++) {
-      apf::MeshEntity* e = plan->get(i);
-      apf::Adjacent verts;
-      m->getAdjacent(e, 0, verts);
-      APF_ITERATE(apf::Adjacent, verts, v)
-        reset(m,dist,*v);
-    }
-  }
-
   apf::MeshTag* getDistTag(apf::Mesh* m) {
     return m->findTag(distanceTagName());
   }

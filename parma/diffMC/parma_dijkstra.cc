@@ -57,7 +57,7 @@ namespace {
     getEdgeAdjVtx(m,u,adjVtx);
     APF_ITERATE(apf::Adjacent, adjVtx, v) {
       int vd; m->getIntTag(*v,d,&vd);
-      if( vd+1 == ud && c->has(*v) ) {
+      if( vd == ud-1 && c->has(*v) ) {
         parent = *v;
         break;
       }
@@ -104,28 +104,22 @@ namespace {
 
   void getConnectedVtx(apf::Mesh* m, parma::DijkstraContains* c, 
       apf::MeshTag* d, apf::MeshEntity* u, apf::Adjacent& adjVtx) {
-    apf::MeshEntity* p = parentVtx(m,c,d,u);
-    if( ! c->bdryHas(u) || ! p )
+    if( c->bdryHas(u) ) {
+      apf::MeshEntity* p = parentVtx(m,c,d,u);
+      if( p ) {
+        apf::Up cav;
+        getCavity(m,u,cav);
+        CavEnts* ce = getCavityEdges(m,c,cav);
+        walkCavEdges(m,ce,p,u,adjVtx);
+        delete ce;
+      }
+    }
+    if( !adjVtx.getSize() )
       getEdgeAdjVtx(m,u,adjVtx); 
-    else { // on the component boundary
-      apf::Up cav;
-      getCavity(m,u,cav);
-      CavEnts* ce = getCavityEdges(m,c,cav);
-      walkCavEdges(m,ce,p,u,adjVtx);
-      delete ce;
-    } 
   }
-}
 
-namespace parma {
-  void dijkstra(apf::Mesh* m, DijkstraContains* c,
-      apf::MeshEntity* src, apf::MeshTag* d) {
-    resetDist(m,c,d);
-    parma::DistanceQueue<parma::Less> pq(m);
-    int zero = 0;
-    m->setIntTag(src, d, &zero);
-    pq.push(src,0);
-
+  void dijkstra_(apf::Mesh* m, parma::DijkstraContains* c,
+      parma::DistanceQueue<parma::Less>& pq, apf::MeshTag* d) {
     while( !pq.empty() ) {
       apf::MeshEntity* v = pq.pop();
       if( ! c->has(v) ) continue;
@@ -143,5 +137,21 @@ namespace parma {
         }
       }
     }
+  }
+}
+
+namespace parma {
+  void dijkstra(apf::Mesh* m, DijkstraContains* c,
+      apf::MeshEntity* src, apf::MeshTag* d) {
+    resetDist(m,c,d);
+    parma::DistanceQueue<parma::Less> pq(m);
+    int zero = 0;
+    m->setIntTag(src, d, &zero);
+    pq.push(src,0);
+    dijkstra_(m,c,pq,d);
+  }
+  void dijkstra(apf::Mesh* m, DijkstraContains* c,
+      DistanceQueue<Less>& pq, apf::MeshTag* d) {
+    dijkstra_(m,c,pq,d);
   }
 }
