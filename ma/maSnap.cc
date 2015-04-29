@@ -163,7 +163,7 @@ void transferParametricOnGeometricEdgeSplit(
   Vector p0,p1,cpt;
   m->getPoint(ev[0],0,p0);
   m->getPoint(ev[1],0,p1);
-  Vector pt = p0*t+p1*(1.-t);
+  Vector pt = p0*(1.-t)+p1*t;
   m->getClosestPoint(g,pt,cpt,p);
 }
 
