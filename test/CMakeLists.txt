@@ -98,6 +98,7 @@ setup_exe(eigen_test eigen_test.cc)
 setup_exe(integrate integrate.cc)
 setup_exe(align align.cc)
 setup_exe(moving moving.cc)
+setup_exe(graphdist graphdist.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
