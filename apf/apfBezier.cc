@@ -140,54 +140,46 @@ public:
     void getValues(Mesh* m, MeshEntity* e,
         Vector3 const& xi, NewArray<double>& values) const
     {
-      values.allocate(2*P*P+2);
-      values[0] = 1-xi[0]-xi[1]-xi[2];
-      values[1] = xi[0];
-      values[2] = xi[1];
-      values[3] = xi[2];
-      /* BaryCentrics
-       * [3,0,1,2] = 0 ->Faces[2,3,1,0]
-       * [(3,0),(0,1),(1,3)] = 0 -> Edges[5,3,4]
-       * [(3,2),(0,2),(1,2)] = 0 -> Edges[1,2,0]
-       */
-      double xi0 = 1-xi[0]-xi[1]-xi[2];
-      double xi1 = xi[0];
-      double xi2 = xi[1];
-      double xi3 = xi[2];
-      NewArray<Vector3> tXi(4);
-      tXi[0] = Vector3(xi0,xi1,xi3)/(xi0+xi1+xi3);
-      tXi[1] = Vector3(xi0,xi1,xi2)/(xi0+xi1+xi2);
-      tXi[2] = Vector3(xi0,xi2,xi3)/(xi0+xi2+xi3);
-      tXi[3] = Vector3(xi1,xi2,xi3)/(xi1+xi2+xi3);
+      double x;
+      Vector3 xv;
+      NewArray<double> v;
 
-      NewArray<Vector3> eXi(6);
-      eXi[0] = Vector3(2.0*xi0/(xi0+xi3)-1,0,0);
-      eXi[1] = Vector3(2.0*xi0/(xi0+xi1)-1,0,0);
-      eXi[2] = Vector3(2.0*xi1/(xi1+xi3)-1,0,0);
-      eXi[3] = Vector3(2.0*xi2/(xi2+xi3)-1,0,0);
-      eXi[4] = Vector3(2.0*xi0/(xi0+xi2)-1,0,0);
-      eXi[5] = Vector3(2.0*xi1/(xi1+xi2)-1,0,0);
+      int const (*tev)[2] = tet_edge_verts;
+      int const (*ttv)[3] = tet_tri_verts;
 
-      NewArray<double> tValues[4];
-      NewArray<double> eValues[6];
+      double xii[4] = {1-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
+      for(int i = 0; i < 4; ++i)
+        values[i] = xii[i];
+      for(int i = 4; i < 2*P*P+2; ++i)
+        values[i] = 0.0;
 
       for(int i = 0; i < 4; ++i){
-        getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
-          /* fixme      V  V */
-            ->getValues(m, e, tXi[i],tValues[i]);
-      }
+        x = 0.;
+        for(int j = 0; j < 3; ++j){
+          xv[j] = xii[ttv[i][j]];
+          x += xv[j];
+        }
+        if(x < 1e-10) continue;
+        xv = xv/x;
+        getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)->getValues(0,0,xv,v);
+        for(int j = 0; j < 3; ++j)
+          values[ttv[i][j]] = values[ttv[i][j]] + v[j]*x;
 
+      }
       for(int i = 0; i < 6; ++i){
-        getBezier(3,P)->getEntityShape(Mesh::EDGE)
-          /* fixme      V  V */
-            ->getValues(m, e, eXi[i],eValues[i]);
+        x = xii[tev[i][0]]+xii[tev[i][1]];
+        if(x < 1e-10) continue;
+        xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+        getBezier(3,P)->getEntityShape(Mesh::EDGE)->getValues(0,0,xv,v);
+        for(int j = 0; j < 2; ++j)
+          values[tev[i][j]] = values[tev[i][j]] - v[j]*x;
       }
     }
     void getLocalGradients(Mesh*, MeshEntity*,
         Vector3 const&,
         NewArray<Vector3>& grads) const
     {
-      grads.allocate(2*P*P+2);
+      grads.allocate(2*P*P+2); // returns the 1st order behavior for now
       grads[0] = Vector3(-1,-1,-1);
       grads[1] = Vector3( 1, 0, 0);
       grads[2] = Vector3( 0, 1, 0);
