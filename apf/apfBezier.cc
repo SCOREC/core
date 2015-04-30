@@ -137,7 +137,7 @@ public:
   class Tetrahedron : public EntityShape
   {
   public:
-    void getValues(Mesh* m, MeshEntity* e,
+    void getValues(Mesh*, MeshEntity*,
         Vector3 const& xi, NewArray<double>& values) const
     {
       double x;
