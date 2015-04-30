@@ -81,4 +81,4 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
   return dst;
 }
 
-};
+}

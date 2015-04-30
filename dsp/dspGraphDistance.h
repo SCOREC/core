@@ -10,6 +10,6 @@ namespace dsp {
 apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
     std::vector<apf::MeshEntity*>& vs);
 
-};
+}
 
 #endif
