@@ -39,28 +39,48 @@ public:
   class Edge : public EntityShape
   {
   public:
-    void getValues(Mesh*, MeshEntity*,
+    void getValues(Mesh* m, MeshEntity* e,
         Vector3 const& xi, NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
-      for(int i = 1; i < P; ++i)
-        values[i+1] = binomial(P,i)
-        * pow(1.0-t,P-i)*pow(t, i);
-      values[0] = pow(1-t, P);
-      values[1] = pow(t, P);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        // straight line interpolation based on this framework
+        values[0] = 1.0-t;
+        values[1] = t;
+        for(int i = 2; i < P+1; ++i){
+          values[i] = 0.;
+        }
+      } else {
+        for(int i = 1; i < P; ++i)
+          values[i+1] = binomial(P,i)
+          * pow(1.0-t,P-i)*pow(t, i);
+        values[0] = pow(1-t, P);
+        values[1] = pow(t, P);
+      }
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
+    void getLocalGradients(Mesh* m, MeshEntity* e,
         Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
       grads.allocate(P+1);
-      for(int i = 1; i < P; ++i)
-        grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
-            * pow(1.0-t,P-1-i)*pow(t, i-1),0,0);
-      grads[0] = Vector3(-P*pow(1-t, P-1),0,0);
-      grads[1] = Vector3(P*pow(t, P-1),0,0);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        // straight line interpolation based on this framework
+        grads[0] = Vector3(-0.5,0,0);
+        grads[1] = Vector3(0.5,0,0);;
+        for(int i = 2; i < P+1; ++i){
+          grads[i] = Vector3(0,0,0);
+        }
+      } else {
+        for(int i = 1; i < P; ++i)
+          grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
+              * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
+        grads[0] = Vector3(-P*pow(1-t, P-1)/2.,0,0);
+        grads[1] = Vector3(P*pow(t, P-1)/2.,0,0);
+      }
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(Mesh*,
@@ -74,7 +94,7 @@ public:
   public:
     Triangle()
     {
-      int m1[] = {1,2,0};
+      int m1[] = {2,0,1};
       int m2[] = {2,5,0,4,3,1};
       int m3[] = {2,7,8,0,6,9,3,5,4,1};
       int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
@@ -86,34 +106,118 @@ public:
         map[i] = maps[P-1][i];
       }
     }
-    void getValues(Mesh*, MeshEntity*,
-        Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
+        NewArray<double>& values) const
     {
+
       values.allocate((P+1)*(P+2)/2);
-      for(int i = 0; i < P+1; ++i){
-        for(int j = 0; j < P+1-i; ++j){
-          values[map[j*(P+1)+i-j*(j-1)/2]] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        double xii[3] = {xi[0],xi[1],1.-xi[0]-xi[1]};
+
+        for(int i = 0; i < 3; ++i)
+          values[i] = -xii[i];
+        // zero the rest, the face node weight is always zero
+        for(int i = 3; i < (P+1)*(P+2)/2; ++i)
+          values[i] = 0.0;
+        // TriBlending
+        double x;
+        Vector3 xv;
+        NewArray<double> v;
+        Downward d;
+        m->getDownward(e,1,d);
+        int const (*tev)[2] = tri_edge_verts;
+        for(int i = 0; i < 3; ++i){
+          x = xii[tev[i][0]]+xii[tev[i][1]];
+          if(x < 1e-10) continue;
+          xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+          getBezier(3,P)->getEntityShape(Mesh::EDGE)
+            ->getValues(m,d[i],xv,v);
+          for(int j = 0; j < 2; ++j)
+            values[tev[i][j]] = values[tev[i][j]] + v[j]*x;
+          for(int j = 0; j < (P-1); ++j)
+            values[3+i*(P-1)+j] = values[3+i*(P-1)+j] + v[2+j]*x;
+        }
+      } else {
+        for(int i = 0; i < P+1; ++i){
+          for(int j = 0; j < P+1-i; ++j){
+            values[map[j*(P+1)+i-j*(j-1)/2]] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xi[0],i)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j);
+          }
         }
       }
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
-        Vector3 const& xi,
+    void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       grads.allocate((P+1)*(P+2)/2);
-      NewArray<Vector3> canonicalGrads(countNodes());
-      for(int i = 0; i < P+1; ++i){
-        for(int j = 0; j < P+1-i; ++j){
-          grads[map[j*(P+1)+i-j*(j-1)/2]][0] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i-1)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j-1)
-              *(i*(1.-xi[1])-(P-j)*xi[0]);
-          grads[map[j*(P+1)+i-j*(j-1)/2]][1] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i)*pow(xi[1],j-1)*pow(1.-xi[0]-xi[1],P-i-j-1)
-              *(j*(1.-xi[0])-(P-i)*xi[1]);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        double xii[3] = {xi[0],xi[1],1.-xi[0]-xi[1]};
+        Vector3 gii[3] = {Vector3(1,0,0),Vector3(0,1,0),Vector3(-1,-1,0)};
+        grads[0] = gii[0]*-1;
+        grads[1] = gii[1]*-1;
+        grads[2] = gii[2]*-1;
+        // zero the rest for now
+        for(int i = 3; i < (P+1)*(P+2)/2; ++i)
+          grads[i] = Vector3(0,0,0);
+
+        // TriBlending
+        double x;
+        Vector3 gx(0,0,0);
+        Vector3 xv(0,0,0);
+        Vector3 gxv[2] = {Vector3(0,0,0),Vector3(0,0,0)};
+
+        // chain rule dictates we need both
+        NewArray<double> v;
+        NewArray<Vector3> gr;
+        Downward d;
+        m->getDownward(e,1,d);
+        int const (*tev)[2] = tri_edge_verts;
+        for(int i = 0; i < 3; ++i){
+          x = xii[tev[i][0]]+xii[tev[i][1]];
+          if(x < 1e-10) continue;
+          gx = gii[tev[i][0]]+gii[tev[i][1]];
+
+          xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+          xv[1] = 2.0*(xii[tev[i][0]]/x)-1.0;
+          // Quotient rule on xv
+          for(int k = 0; k < 2; ++k){
+            //xv,0
+            gxv[k][0] = 2.*(gii[tev[i][1]][k]*x -
+                xii[tev[i][1]]*(gii[tev[i][0]][k]+gii[tev[i][1]][k]))/x/x;
+            //xv,1
+            gxv[k][1] = 2.*(gii[tev[i][0]][k]*x -
+                xii[tev[i][0]]*(gii[tev[i][0]][k]+gii[tev[i][1]][k]))/x/x;
+          }
+          getBezier(3,P)->getEntityShape(Mesh::EDGE)
+            ->getValues(m,d[i],xv,v);
+
+          getBezier(3,P)->getEntityShape(Mesh::EDGE)
+            ->getLocalGradients(m,d[i],xv,gr);
+
+          for(int j = 0; j < 2; ++j)
+            for(int k = 0; k < 2; ++k)
+              grads[tev[i][j]][k] = grads[tev[i][j]][k]
+                + gr[j]*gxv[k]*x + gx[k]*v[j];
+          for(int j = 0; j < (P-1); ++j)
+            for(int k = 0; k < 2; ++k)
+              grads[3+i*(P-1)+j][k] = grads[3+i*(P-1)+j][k]
+                + gr[j+2]*gxv[k]*x + gx[k]*v[j+2];
+        }
+      } else {
+        for(int i = 0; i < P+1; ++i){
+          for(int j = 0; j < P+1-i; ++j){
+            grads[map[j*(P+1)+i-j*(j-1)/2]][0] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xi[0],i-1)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j-1)
+                *(i*(1.-xi[1])-(P-j)*xi[0]);
+            grads[map[j*(P+1)+i-j*(j-1)/2]][1] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xi[0],i)*pow(xi[1],j-1)*pow(1.-xi[0]-xi[1],P-i-j-1)
+                *(j*(1.-xi[0])-(P-i)*xi[1]);
+          }
         }
       }
     }
