@@ -1,7 +1,5 @@
 #include "parma_sides.h"
-#include "parma_dcpart.h"
 #include <apf.h>
-
 
 namespace parma {  
   class VtxSides : public Sides {
