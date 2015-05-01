@@ -88,6 +88,8 @@ setup_exe(fusion3 fusion3.cc)
 setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
+setup_exe(bezier bezier.cc)
+
 if (ENABLE_VIZ)
   setup_exe(viz_test viz.cc)
 endif()

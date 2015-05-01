@@ -14,13 +14,6 @@ template <int P>
 class BezierShape : public FieldShape
 {
 public:
-  const char* getName() const {return name.c_str();}
-  BezierShape() {
-    std::stringstream ss;
-    ss << "Bezier_" << P;
-    name = ss.str();
-    registerSelf(name.c_str());
-  }
   class Vertex : public EntityShape
   {
   public:
@@ -339,6 +332,52 @@ public:
     return nodes[type];
   }
   int getOrder() {return P;}
+
+};
+
+template <int P>
+class BezierCurve : public BezierShape<P>
+{
+public:
+  const char* getName() const {return name.c_str();}
+  BezierCurve<P>() {
+    std::stringstream ss;
+    ss << "BezierCurve_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
+  void getNodeXi(int type, int node, Vector3& xi)
+  {
+    static double eP2[1] = {0.0};
+    static double eP3[2] = {-0.4306648,0.4306648};
+    static double eP4[3] = {-0.6363260,0.0,0.6363260};
+    static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
+    static double eP6[5] = {-0.8161268,-0.4568660,0.0,
+        0.4568660,0.8161268};
+
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
+
+    if(type == Mesh::EDGE && P > 1){
+      xi = Vector3(edgePoints[P-1][node],0,0);
+    } else {
+      xi = Vector3(0,0,0);
+    }
+  }
+protected:
+  std::string name;
+};
+template <int P>
+class BezierSurface : public BezierShape<P>
+{
+public:
+  const char* getName() const {return name.c_str();}
+  BezierSurface() {
+    std::stringstream ss;
+    ss << "BezierSurface_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
   void getNodeXi(int type, int node, Vector3& xi)
   {
     static double eP2[1] = {0.0};
@@ -398,35 +437,9 @@ public:
       xi = Vector3(0,0,0);
     }
   }
-  protected:
+protected:
   std::string name;
 };
-
-template <int P>
-class BezierCurve : public BezierShape<P>
-{
-public:
-  BezierCurve() {};
-  void getNodeXi(int type, int node, Vector3& xi)
-  {
-    static double eP2[1] = {0.0};
-    static double eP3[2] = {-0.4306648,0.4306648};
-    static double eP4[3] = {-0.6363260,0.0,0.6363260};
-    static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
-    static double eP6[5] = {-0.8161268,-0.4568660,0.0,
-        0.4568660,0.8161268};
-
-    static double* edgePoints[6] =
-    {eP2, eP2, eP3, eP4, eP5, eP6 };
-
-    if(type == Mesh::EDGE && P > 1){
-      xi = Vector3(edgePoints[P-1][node],0,0);
-    } else {
-      xi = Vector3(0,0,0);
-    }
-  }
-};
-
 static void getBezierCurveInterPtsToCtrlPts(int order,
     NewArray<double> & c)
 {
@@ -435,9 +448,9 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       -0.970273514,0.333333333,2.71895067,-1.08201049,
       0.333333333,-0.970273514,-1.08201049,2.71895067};
   double e4[15] = {
-      -1.49978483,-0.25,3.37828021,-1.33371597,0.705220588,
-      0.999856553,0.999856553,-2.72233387,4.44495463,-2.72233387,
-      -0.25,-1.49978483,0.705220588,-1.33371597,3.37828021};
+      -1.43042029,-0.25,3.3954584,-1.46967987,0.754641763,
+      0.953613524,0.953613524,-2.76673344,4.62623983,-2.76673344,
+      -0.25,-1.43042029,0.754641763,-1.46967987,3.3954584};
   double e5[24] = {
       -1.88592269,0.2,4.05614416,-1.81653638,1.02954238,-0.58322747,
       1.85476912,-0.942961345,-5.01939998,6.96205914,-4.562341,2.70787405,
@@ -635,16 +648,16 @@ static FieldShape* getBezierSurface(int order)
 {
   assert(order > 0 && order < 7);
 
-  static BezierShape<1> bezierShape1;
-  static BezierShape<2> bezierShape2;
-  static BezierShape<3> bezierShape3;
-  static BezierShape<4> bezierShape4;
-  static BezierShape<5> bezierShape5;
-  static BezierShape<6> bezierShape6;
+  static BezierSurface<1> bezierSurface1;
+  static BezierSurface<2> bezierSurface2;
+  static BezierSurface<3> bezierSurface3;
+  static BezierSurface<4> bezierSurface4;
+  static BezierSurface<5> bezierSurface5;
+  static BezierSurface<6> bezierSurface6;
 
-  FieldShape* shapeTable[6] = {&bezierShape1,&bezierShape2,
-      &bezierShape3,&bezierShape4,&bezierShape5,&bezierShape6};
-  return shapeTable[order-1];
+  FieldShape* surfaceTable[6] = {&bezierSurface1,&bezierSurface2,
+      &bezierSurface3,&bezierSurface4,&bezierSurface5,&bezierSurface6};
+  return surfaceTable[order-1];
 }
 FieldShape* getBezier(int dimension, int order)
 {
