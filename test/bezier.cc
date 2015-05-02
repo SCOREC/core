@@ -225,7 +225,8 @@ void testSize2D(apf::Mesh2* m)
         assert(fabs(v-1.0 )< 1e-10);
       } else if(order == 1 && d == 2){
         assert(fabs(v-0.5)< 1e-10);
-      } else if(fabs(v-sizes[d-1])/sizes[d-1] > (1.-0.5*exp(-(double)order))){
+      } else if(fabs(v-sizes[d-1])/sizes[d-1] 
+          > (1.-0.5*exp(-(double)order))){ // lazy convergence check
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
            << " size " << v
@@ -252,16 +253,12 @@ void test2D()
 }
 void testSize3D(apf::Mesh2* m)
 {
-  int order = m->getCoordinateField()->getShape()->getOrder();
-  printf("order %d\n",order);
   for(int d = 1; d <= 2; ++d){
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
-//      printf("element type %s has size %f\n",
-//          apf::Mesh::typeName[m->getType(e)],v);
       if((d == 1 && !(fabs(v-1.) < 1e-8 || fabs(v-1.414213562373) < 1e-8 ))
           || (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.86602540378) < 1e-8))){
         std::stringstream ss;
@@ -270,7 +267,7 @@ void testSize3D(apf::Mesh2* m)
            << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
         fprintf(stderr, "%s", s.c_str());
-//        abort();
+        abort();
       }
       apf::destroyMeshElement(me);
     }
@@ -289,7 +286,32 @@ void test3D()
     apf::FieldShape * fs = m->getCoordinateField()->getShape();
 
     apf::MeshEntity* e;
-
+    // need to fake snap to interpolate due to ordering issue
+    for(int d = 2; d >= 1; --d){
+      int t = (d == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
+      int non = fs->countNodesOn(t);
+      apf::Vector3 xi, pt, points[3];
+      apf::MeshEntity* v[3];
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))) {
+        for(int i = 0; i < non; ++i){
+          fs->getNodeXi(t,i,xi);
+          int nv = m->getDownward(e,0,v);
+          for(int iv = 0; iv < nv; ++iv)
+            m->getPoint(v[iv],0,points[iv]);
+          if(d == 1){
+            double u = 0.5*(xi[0]+1.);
+            pt = points[0]*(1.-u) + points[1]*u;
+          } else {
+            double w = 1.-xi[0]-xi[1];
+            pt = points[0]*xi[0]+points[1]*xi[1]+points[2]*w;
+          }
+          m->setPoint(e,i,pt);
+        }
+      }
+      m->end(it);
+    }
+    
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
@@ -306,10 +328,9 @@ void test3D()
       }
       m->end(it);
     }
-
     m->acceptChanges();
     m->verify();
-//    testSize3D(m);
+    testSize3D(m);
     m->destroyNative();
     apf::destroyMesh(m);
   }
