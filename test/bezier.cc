@@ -220,12 +220,12 @@ void testSize2D(apf::Mesh2* m)
       double v = apf::measure(me);
       // these are checks for the middle edge and first order
       if (m->getModelType(g) == 2 && d == 1){
-        assert(fabs(v-sqrt(2))< 1e-10);
+        assert(fabs(v-1.414213562373)< 1e-10);
       } else if(order == 1 && d == 1){
         assert(fabs(v-1.0 )< 1e-10);
       } else if(order == 1 && d == 2){
         assert(fabs(v-0.5)< 1e-10);
-      } else if(fabs(v-sizes[d-1])/sizes[d-1] > (1.-0.5*exp(-order))){
+      } else if(fabs(v-sizes[d-1])/sizes[d-1] > (1.-0.5*exp(-(double)order))){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
            << " size " << v
@@ -258,13 +258,12 @@ void testSize3D(apf::Mesh2* m)
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
-//      apf::ModelEntity* g = m->toModel(e);
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
 //      printf("element type %s has size %f\n",
 //          apf::Mesh::typeName[m->getType(e)],v);
-      if((d == 1 && !(fabs(v-1.) < 1e-8 || fabs(v-sqrt(2)) < 1e-8 ))
-          || (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-sqrt(3)/2.) < 1e-8))){
+      if((d == 1 && !(fabs(v-1.) < 1e-8 || fabs(v-1.414213562373) < 1e-8 ))
+          || (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.86602540378) < 1e-8))){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
            << " size " << v
