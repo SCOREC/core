@@ -14,13 +14,6 @@ template <int P>
 class BezierShape : public FieldShape
 {
 public:
-  const char* getName() const {return name.c_str();}
-  BezierShape() {
-    std::stringstream ss;
-    ss << "Bezier_" << P;
-    name = ss.str();
-    registerSelf(name.c_str());
-  }
   class Vertex : public EntityShape
   {
   public:
@@ -39,28 +32,48 @@ public:
   class Edge : public EntityShape
   {
   public:
-    void getValues(Mesh*, MeshEntity*,
+    void getValues(Mesh* m, MeshEntity* e,
         Vector3 const& xi, NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
-      for(int i = 1; i < P; ++i)
-        values[i+1] = binomial(P,i)
-        * pow(1.0-t,P-i)*pow(t, i);
-      values[0] = pow(1-t, P);
-      values[1] = pow(t, P);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        // straight line interpolation based on this framework
+        values[0] = 1.0-t;
+        values[1] = t;
+        for(int i = 2; i < P+1; ++i){
+          values[i] = 0.;
+        }
+      } else {
+        for(int i = 1; i < P; ++i)
+          values[i+1] = binomial(P,i)
+          * pow(1.0-t,P-i)*pow(t, i);
+        values[0] = pow(1-t, P);
+        values[1] = pow(t, P);
+      }
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
+    void getLocalGradients(Mesh* m, MeshEntity* e,
         Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
       grads.allocate(P+1);
-      for(int i = 1; i < P; ++i)
-        grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
-            * pow(1.0-t,P-1-i)*pow(t, i-1),0,0);
-      grads[0] = Vector3(-P*pow(1-t, P-1),0,0);
-      grads[1] = Vector3(P*pow(t, P-1),0,0);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        // straight line interpolation based on this framework
+        grads[0] = Vector3(-0.5,0,0);
+        grads[1] = Vector3(0.5,0,0);;
+        for(int i = 2; i < P+1; ++i){
+          grads[i] = Vector3(0,0,0);
+        }
+      } else {
+        for(int i = 1; i < P; ++i)
+          grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
+              * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
+        grads[0] = Vector3(-P*pow(1-t, P-1)/2.,0,0);
+        grads[1] = Vector3(P*pow(t, P-1)/2.,0,0);
+      }
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(Mesh*,
@@ -74,7 +87,7 @@ public:
   public:
     Triangle()
     {
-      int m1[] = {1,2,0};
+      int m1[] = {2,0,1};
       int m2[] = {2,5,0,4,3,1};
       int m3[] = {2,7,8,0,6,9,3,5,4,1};
       int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
@@ -86,34 +99,118 @@ public:
         map[i] = maps[P-1][i];
       }
     }
-    void getValues(Mesh*, MeshEntity*,
-        Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
+        NewArray<double>& values) const
     {
+
       values.allocate((P+1)*(P+2)/2);
-      for(int i = 0; i < P+1; ++i){
-        for(int j = 0; j < P+1-i; ++j){
-          values[map[j*(P+1)+i-j*(j-1)/2]] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        double xii[3] = {xi[0],xi[1],1.-xi[0]-xi[1]};
+
+        for(int i = 0; i < 3; ++i)
+          values[i] = -xii[i];
+        // zero the rest, the face node weight is always zero
+        for(int i = 3; i < (P+1)*(P+2)/2; ++i)
+          values[i] = 0.0;
+        // TriBlending
+        double x;
+        Vector3 xv;
+        NewArray<double> v;
+        Downward d;
+        m->getDownward(e,1,d);
+        int const (*tev)[2] = tri_edge_verts;
+        for(int i = 0; i < 3; ++i){
+          x = xii[tev[i][0]]+xii[tev[i][1]];
+          if(x < 1e-10) continue;
+          xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+          getBezier(3,P)->getEntityShape(Mesh::EDGE)
+            ->getValues(m,d[i],xv,v);
+          for(int j = 0; j < 2; ++j)
+            values[tev[i][j]] = values[tev[i][j]] + v[j]*x;
+          for(int j = 0; j < (P-1); ++j)
+            values[3+i*(P-1)+j] = values[3+i*(P-1)+j] + v[2+j]*x;
+        }
+      } else {
+        for(int i = 0; i < P+1; ++i){
+          for(int j = 0; j < P+1-i; ++j){
+            values[map[j*(P+1)+i-j*(j-1)/2]] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xi[0],i)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j);
+          }
         }
       }
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
-        Vector3 const& xi,
+    void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       grads.allocate((P+1)*(P+2)/2);
-      NewArray<Vector3> canonicalGrads(countNodes());
-      for(int i = 0; i < P+1; ++i){
-        for(int j = 0; j < P+1-i; ++j){
-          grads[map[j*(P+1)+i-j*(j-1)/2]][0] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i-1)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j-1)
-              *(i*(1.-xi[1])-(P-j)*xi[0]);
-          grads[map[j*(P+1)+i-j*(j-1)/2]][1] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i)*pow(xi[1],j-1)*pow(1.-xi[0]-xi[1],P-i-j-1)
-              *(j*(1.-xi[0])-(P-i)*xi[1]);
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) == m->getDimension()) {
+        double xii[3] = {xi[0],xi[1],1.-xi[0]-xi[1]};
+        Vector3 gii[3] = {Vector3(1,0,0),Vector3(0,1,0),Vector3(-1,-1,0)};
+        grads[0] = gii[0]*-1;
+        grads[1] = gii[1]*-1;
+        grads[2] = gii[2]*-1;
+        // zero the rest for now
+        for(int i = 3; i < (P+1)*(P+2)/2; ++i)
+          grads[i] = Vector3(0,0,0);
+
+        // TriBlending
+        double x;
+        Vector3 gx(0,0,0);
+        Vector3 xv(0,0,0);
+        Vector3 gxv[2] = {Vector3(0,0,0),Vector3(0,0,0)};
+
+        // chain rule dictates we need both
+        NewArray<double> v;
+        NewArray<Vector3> gr;
+        Downward d;
+        m->getDownward(e,1,d);
+        int const (*tev)[2] = tri_edge_verts;
+        for(int i = 0; i < 3; ++i){
+          x = xii[tev[i][0]]+xii[tev[i][1]];
+          if(x < 1e-10) continue;
+          gx = gii[tev[i][0]]+gii[tev[i][1]];
+
+          xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+          xv[1] = 2.0*(xii[tev[i][0]]/x)-1.0;
+          // Quotient rule on xv
+          for(int k = 0; k < 2; ++k){
+            //xv,0
+            gxv[k][0] = 2.*(gii[tev[i][1]][k]*x -
+                xii[tev[i][1]]*(gii[tev[i][0]][k]+gii[tev[i][1]][k]))/x/x;
+            //xv,1
+            gxv[k][1] = 2.*(gii[tev[i][0]][k]*x -
+                xii[tev[i][0]]*(gii[tev[i][0]][k]+gii[tev[i][1]][k]))/x/x;
+          }
+          getBezier(3,P)->getEntityShape(Mesh::EDGE)
+            ->getValues(m,d[i],xv,v);
+
+          getBezier(3,P)->getEntityShape(Mesh::EDGE)
+            ->getLocalGradients(m,d[i],xv,gr);
+
+          for(int j = 0; j < 2; ++j)
+            for(int k = 0; k < 2; ++k)
+              grads[tev[i][j]][k] = grads[tev[i][j]][k]
+                + gr[j]*gxv[k]*x + gx[k]*v[j];
+          for(int j = 0; j < (P-1); ++j)
+            for(int k = 0; k < 2; ++k)
+              grads[3+i*(P-1)+j][k] = grads[3+i*(P-1)+j][k]
+                + gr[j+2]*gxv[k]*x + gx[k]*v[j+2];
+        }
+      } else {
+        for(int i = 0; i < P+1; ++i){
+          for(int j = 0; j < P+1-i; ++j){
+            grads[map[j*(P+1)+i-j*(j-1)/2]][0] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xi[0],i-1)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j-1)
+                *(i*(1.-xi[1])-(P-j)*xi[0]);
+            grads[map[j*(P+1)+i-j*(j-1)/2]][1] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xi[0],i)*pow(xi[1],j-1)*pow(1.-xi[0]-xi[1],P-i-j-1)
+                *(j*(1.-xi[0])-(P-i)*xi[1]);
+          }
         }
       }
     }
@@ -137,57 +234,49 @@ public:
   class Tetrahedron : public EntityShape
   {
   public:
-    void getValues(Mesh* m, MeshEntity* e,
+    void getValues(Mesh*, MeshEntity*,
         Vector3 const& xi, NewArray<double>& values) const
     {
-      values.allocate(2*P*P+2);
-      values[0] = 1-xi[0]-xi[1]-xi[2];
-      values[1] = xi[0];
-      values[2] = xi[1];
-      values[3] = xi[2];
-      /* BaryCentrics
-       * [3,0,1,2] = 0 ->Faces[2,3,1,0]
-       * [(3,0),(0,1),(1,3)] = 0 -> Edges[5,3,4]
-       * [(3,2),(0,2),(1,2)] = 0 -> Edges[1,2,0]
-       */
-      double xi0 = 1-xi[0]-xi[1]-xi[2];
-      double xi1 = xi[0];
-      double xi2 = xi[1];
-      double xi3 = xi[2];
-      NewArray<Vector3> tXi(4);
-      tXi[0] = Vector3(xi0,xi1,xi3)/(xi0+xi1+xi3);
-      tXi[1] = Vector3(xi0,xi1,xi2)/(xi0+xi1+xi2);
-      tXi[2] = Vector3(xi0,xi2,xi3)/(xi0+xi2+xi3);
-      tXi[3] = Vector3(xi1,xi2,xi3)/(xi1+xi2+xi3);
+      double x;
+      Vector3 xv;
+      NewArray<double> v;
 
-      NewArray<Vector3> eXi(6);
-      eXi[0] = Vector3(2.0*xi0/(xi0+xi3)-1,0,0);
-      eXi[1] = Vector3(2.0*xi0/(xi0+xi1)-1,0,0);
-      eXi[2] = Vector3(2.0*xi1/(xi1+xi3)-1,0,0);
-      eXi[3] = Vector3(2.0*xi2/(xi2+xi3)-1,0,0);
-      eXi[4] = Vector3(2.0*xi0/(xi0+xi2)-1,0,0);
-      eXi[5] = Vector3(2.0*xi1/(xi1+xi2)-1,0,0);
+      int const (*tev)[2] = tet_edge_verts;
+      int const (*ttv)[3] = tet_tri_verts;
 
-      NewArray<double> tValues[4];
-      NewArray<double> eValues[6];
+      double xii[4] = {1-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
+      for(int i = 0; i < 4; ++i)
+        values[i] = xii[i];
+      for(int i = 4; i < 2*P*P+2; ++i)
+        values[i] = 0.0;
 
       for(int i = 0; i < 4; ++i){
-        getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
-          /* fixme      V  V */
-            ->getValues(m, e, tXi[i],tValues[i]);
-      }
+        x = 0.;
+        for(int j = 0; j < 3; ++j){
+          xv[j] = xii[ttv[i][j]];
+          x += xv[j];
+        }
+        if(x < 1e-10) continue;
+        xv = xv/x;
+        getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)->getValues(0,0,xv,v);
+        for(int j = 0; j < 3; ++j)
+          values[ttv[i][j]] = values[ttv[i][j]] + v[j]*x;
 
+      }
       for(int i = 0; i < 6; ++i){
-        getBezier(3,P)->getEntityShape(Mesh::EDGE)
-          /* fixme      V  V */
-            ->getValues(m, e, eXi[i],eValues[i]);
+        x = xii[tev[i][0]]+xii[tev[i][1]];
+        if(x < 1e-10) continue;
+        xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+        getBezier(3,P)->getEntityShape(Mesh::EDGE)->getValues(0,0,xv,v);
+        for(int j = 0; j < 2; ++j)
+          values[tev[i][j]] = values[tev[i][j]] - v[j]*x;
       }
     }
     void getLocalGradients(Mesh*, MeshEntity*,
         Vector3 const&,
         NewArray<Vector3>& grads) const
     {
-      grads.allocate(2*P*P+2);
+      grads.allocate(2*P*P+2); // returns the 1st order behavior for now
       grads[0] = Vector3(-1,-1,-1);
       grads[1] = Vector3( 1, 0, 0);
       grads[2] = Vector3( 0, 1, 0);
@@ -243,6 +332,52 @@ public:
     return nodes[type];
   }
   int getOrder() {return P;}
+
+};
+
+template <int P>
+class BezierCurve : public BezierShape<P>
+{
+public:
+  const char* getName() const {return name.c_str();}
+  BezierCurve<P>() {
+    std::stringstream ss;
+    ss << "BezierCurve_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
+  void getNodeXi(int type, int node, Vector3& xi)
+  {
+    static double eP2[1] = {0.0};
+    static double eP3[2] = {-0.4306648,0.4306648};
+    static double eP4[3] = {-0.6363260,0.0,0.6363260};
+    static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
+    static double eP6[5] = {-0.8161268,-0.4568660,0.0,
+        0.4568660,0.8161268};
+
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
+
+    if(type == Mesh::EDGE && P > 1){
+      xi = Vector3(edgePoints[P-1][node],0,0);
+    } else {
+      xi = Vector3(0,0,0);
+    }
+  }
+protected:
+  std::string name;
+};
+template <int P>
+class BezierSurface : public BezierShape<P>
+{
+public:
+  const char* getName() const {return name.c_str();}
+  BezierSurface() {
+    std::stringstream ss;
+    ss << "BezierSurface_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
   void getNodeXi(int type, int node, Vector3& xi)
   {
     static double eP2[1] = {0.0};
@@ -302,35 +437,9 @@ public:
       xi = Vector3(0,0,0);
     }
   }
-  protected:
+protected:
   std::string name;
 };
-
-template <int P>
-class BezierCurve : public BezierShape<P>
-{
-public:
-  BezierCurve() {};
-  void getNodeXi(int type, int node, Vector3& xi)
-  {
-    static double eP2[1] = {0.0};
-    static double eP3[2] = {-0.4306648,0.4306648};
-    static double eP4[3] = {-0.6363260,0.0,0.6363260};
-    static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
-    static double eP6[5] = {-0.8161268,-0.4568660,0.0,
-        0.4568660,0.8161268};
-
-    static double* edgePoints[6] =
-    {eP2, eP2, eP3, eP4, eP5, eP6 };
-
-    if(type == Mesh::EDGE && P > 1){
-      xi = Vector3(edgePoints[P-1][node],0,0);
-    } else {
-      xi = Vector3(0,0,0);
-    }
-  }
-};
-
 static void getBezierCurveInterPtsToCtrlPts(int order,
     NewArray<double> & c)
 {
@@ -339,9 +448,9 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       -0.970273514,0.333333333,2.71895067,-1.08201049,
       0.333333333,-0.970273514,-1.08201049,2.71895067};
   double e4[15] = {
-      -1.49978483,-0.25,3.37828021,-1.33371597,0.705220588,
-      0.999856553,0.999856553,-2.72233387,4.44495463,-2.72233387,
-      -0.25,-1.49978483,0.705220588,-1.33371597,3.37828021};
+      -1.43042029,-0.25,3.3954584,-1.46967987,0.754641763,
+      0.953613524,0.953613524,-2.76673344,4.62623983,-2.76673344,
+      -0.25,-1.43042029,0.754641763,-1.46967987,3.3954584};
   double e5[24] = {
       -1.88592269,0.2,4.05614416,-1.81653638,1.02954238,-0.58322747,
       1.85476912,-0.942961345,-5.01939998,6.96205914,-4.562341,2.70787405,
@@ -539,16 +648,16 @@ static FieldShape* getBezierSurface(int order)
 {
   assert(order > 0 && order < 7);
 
-  static BezierShape<1> bezierShape1;
-  static BezierShape<2> bezierShape2;
-  static BezierShape<3> bezierShape3;
-  static BezierShape<4> bezierShape4;
-  static BezierShape<5> bezierShape5;
-  static BezierShape<6> bezierShape6;
+  static BezierSurface<1> bezierSurface1;
+  static BezierSurface<2> bezierSurface2;
+  static BezierSurface<3> bezierSurface3;
+  static BezierSurface<4> bezierSurface4;
+  static BezierSurface<5> bezierSurface5;
+  static BezierSurface<6> bezierSurface6;
 
-  FieldShape* shapeTable[6] = {&bezierShape1,&bezierShape2,
-      &bezierShape3,&bezierShape4,&bezierShape5,&bezierShape6};
-  return shapeTable[order-1];
+  FieldShape* surfaceTable[6] = {&bezierSurface1,&bezierSurface2,
+      &bezierSurface3,&bezierSurface4,&bezierSurface5,&bezierSurface6};
+  return surfaceTable[order-1];
 }
 FieldShape* getBezier(int dimension, int order)
 {

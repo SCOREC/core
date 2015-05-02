@@ -5,14 +5,13 @@
 \author{Dan Zaide}
 \begin{document}
 \maketitle
-\section
 
 \section{Bezier Curves}
 The Bezier curve, $\mathbf{B}(t)$ of order $P$ is polynomial defined by the set of control points $\mathbf{C}_i$ for $i = 0,\ldots,P$ as 
 \[
 \mathbf{B}(t) = \displaystyle \sum_{i=0}^P {P \choose i}t^i(1-t)^{P-i}\mathbf{C}_i
 \]
-where ${P \choose i}= \frac{P!}{I!(P-i)!}$ is the binomial coefficient and $ t \in [0,1]. The derivatives are
+where ${P \choose i}= \frac{P!}{I!(P-i)!}$ is the binomial coefficient and $ t \in [0,1]$. The derivatives are
 \[
 \mathbf{B}'(t) = \displaystyle \sum_{i=0}^P {P \choose i}(i-P*t)t^{i-1}(1-t)^{P-i-1}\mathbf{C}_i
 \]
@@ -116,4 +115,14 @@ i_________
 The actual implementation stores a map of this ordering, and all the ordering is handled this way.
 \subsection{Interpolation on Triangles}
 Given barycentric coordinates $u,v,w=1-u-v$ such that on a triangle in parameter space, $\mathbf{p} = u\mathbf{p}_0 + v\mathbf{p}_1 + w\mathbf{p}_2$ we are interested in splitting it at a given $(u,v,w)$. Due to denegeracy and periodicity, lets define this as a pair of linear splits, such that $ \mathbf{q} = a\mathbf{p}_0 + (1-a)\mathbf{p}_1 $ and $\mathbf{p} = b\mathbf{p}_2 + (1-b)\mathbf{q}$. Solving for $(a,b)$ gives $ a = v/(u+v), b = 1-u-v$.
+\subsection{Tetrahedral Blending}
+See papers by Dey and Shephard for more details. For a given entity on the mesh, we have a coordinate field such that 
+\[ \mathbf{x}(\xi) = \sum_i w_i(\xi) \cdot \mathbf{x}_i \]
+For tetrahedral blending, we then have that
+\[\mathbf{x}(\xi) = \sum_{i=0}^{4}w_{f_i}(\xi)\mathbf{x}(\xi'_{f_i}) - \sum_{i=0}^{6}w_{e_i}(\xi)\mathbf{x}(\xi'_{e_i}) + \sum_{i=0}^{4}w_{v_i}(\xi)\mathbf{x}_{v_i}\]
+To write the above in the standard form for a tetrahedral entity, we need to set 
+\[ \sum_{i=0}^{4}w_{f_i}(\xi)\mathbf{x}(\xi'_{f_i}) - \sum_{i=0}^{6}w_{e_i}(\xi)\mathbf{x}(\xi'_{e_i}) + \sum_{i=0}^{4}w_{v_i}(\xi)\mathbf{x}_{v_i} = \sum_{i=0}^N w_i(\xi) \cdot \mathbf{x}_i \]
+where $N$ is the total number of points.  Expand into vector form as 
+\[ \sum_{i=0}^{4}w_{f_i}(\xi)\left[ \begin{array}{c}\mathbf{x}_{f_1} \\ \vdots \\ \mathbf{x}_{f_{4}} \end{array}\right] - \sum_{i=0}^{6}w_{e_i}(\xi)\left[ \begin{array}{c}\mathbf{x}_{e_1} \\ \vdots \\ \mathbf{x}_{e_{6}} \end{array}\right] + \left[ \begin{array}{c}\xi_1\mathbf{x}_{v_1} \\ \vdots \\ \xi_4\mathbf{x}_{v_4} \end{array}\right]  = \sum_{i=0}^{N}w_i(\xi)\left[ \begin{array}{c}\mathbf{x}_{1} \\ \vdots \\ \mathbf{x}_{N} \end{array}\right] \]
+This comes down to correct indexing for each face, edge, and vertex into the tetrahedral space, determining $i$ for $\mathbf{x}_i = \mathbf{x}_{j}$ for all face and edge points $j$. The weights are just the sum of the weights of the corresponding entries.
 \end{document}

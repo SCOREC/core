@@ -21,7 +21,7 @@ namespace parma {
     typedef typename DistanceQ::iterator DistanceQIter;
 
     public:
-    DistanceQueue(apf::Mesh* mesh) : m(mesh) 
+    DistanceQueue(apf::Mesh* mesh) : m(mesh)
     {
       t = m->createIntTag("parmaDistanceQueue",1);
     }
@@ -52,9 +52,14 @@ namespace parma {
       return e;
     }
 
-    bool empty() 
+    bool empty()
     {
       return q.empty();
+    }
+
+    size_t size()
+    {
+      return q.size();
     }
 
     private:
@@ -62,7 +67,7 @@ namespace parma {
     apf::MeshTag* t;
     DistanceQ q;
 
-    DistanceQIter erase(int dist, apf::MeshEntity* e) 
+    DistanceQIter erase(int dist, apf::MeshEntity* e)
     {
       assert( m->hasTag(e, t) );
       DistanceQIter it = q.find(dist);
@@ -83,11 +88,11 @@ namespace parma {
 #endif
 
 /*  Angry Programmer:
-    ~~  ~~ 
+    ~~  ~~
     {. {.      ____________________________
       /       /                            |
     ======   /  Arghhh... why templates!?  |
     |WWWW|  <______________________________|
     ======
-*/  
+*/
 

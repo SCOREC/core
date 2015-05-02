@@ -123,13 +123,10 @@ void curveMeshToBezier(Mesh* m, int order){
     while ((e = m->iterate(it))) {
       Model* g = m->toModel(e);
       if(m->getModelType(g) == m->getDimension()) continue;
-
       convertInterpToBezier(m,e,n,ne,c);
-
     }
     m->end(it);
   }
-
   m->acceptChanges();
   m->verify();
 }

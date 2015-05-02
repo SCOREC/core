@@ -10,6 +10,10 @@ namespace ma {
 double interpolationError(Mesh* m, Entity* e, int n,
     Vector &samplept, Vector &maxpt);
 
+/** \brief converts interpolating points to bezier points */
+void convertInterpToBezier(Mesh* m, Entity* e, int n, int ne,
+    apf::NewArray<double>& c);
+
 /** \brief curves a mesh using bezier curves of chosen order
   \details finds interpolating points, then converts to control points
   see apfBezier.cc */
