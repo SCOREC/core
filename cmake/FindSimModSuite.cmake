@@ -44,9 +44,10 @@ set(SIM_LIB_NAMES
 
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
+  set(SIM_PARASOLID_VERSION "270" CACHE STRING "Simmetrix Parasolid version number")
   set(SIM_LIB_NAMES
       ${SIM_LIB_NAMES} 
-      SimParasolid260
+      SimParasolid${SIM_PARASOLID_VERSION}
       pskernel)
 endif()
 option(SIM_ACIS "Use Acis through Simmetrix" OFF)
