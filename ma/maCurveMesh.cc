@@ -133,23 +133,26 @@ void curveMeshToBezier(Mesh* m, int order){
 
 
 void writePointSet(Mesh* m, int d, int n, const char* prefix){
-  int nj = (d == 2) ? n : 1;
+  int nj = (d > 1) ? n : 1;
+  int nk = (d == 3) ? n : 1;
   apf::DynamicArray<apf::Vector3> pts(0);
+
   Iterator* it = m->begin(d);
   Entity* e;
   Vector pa(0.,0.,0.),pt(0.,0.,0.);
   while ((e = m->iterate(it))) {
-
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
-
-    for (int j = 0; j < nj+1; ++j){
-      pa[1] = 1.*j/nj;
-      for (int i = 0; i < n+1-j; ++i){
-        if(d == 1) pa[0] = 2.*i/n-1.;
-        else pa[0] = 1.*i/nj;
-        apf::getVector(elem,pa,pt);
-        pts.append(pt);
+    for (int k = 0; k < nk+1; ++k){
+      pa[2] = 1.*k/nk;
+      for (int j = 0; j < nj+1; ++j){
+        pa[1] = 1.*j/nj;
+        for (int i = 0; i < n+1-j-k; ++i){
+          if(d == 1) pa[0] = 2.*i/n-1.;
+          else pa[0] = 1.*i/nj;
+          apf::getVector(elem,pa,pt);
+          pts.append(pt);
+        }
       }
     }
     apf::destroyElement(elem);
