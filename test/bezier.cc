@@ -146,38 +146,15 @@ apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
   apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
-  apf::MeshEntity* v[4];
+
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
    apf::Vector3(1,0,0),
    apf::Vector3(0,1,0),
    apf::Vector3(0,0,1)};
 
-  int const (*ttv)[3] = apf::tet_tri_verts;
-  int const (*tev)[2] = apf::tet_edge_verts;
+  apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
 
-  for (int i = 0; i < 4; ++i){
-    v[i] = m->createVertex(0,points3D[i],points3D[i]);
-  }
-  for (int i = 0; i < 6; ++i){
-    apf::MeshEntity* ved[2] = {v[tev[i][0]],v[tev[i][1]]};
-    apf::buildElement(m, 0, apf::Mesh::EDGE, ved);
-  }
-  apf::MeshEntity* ved0[2] = {v[1],v[3]};
-  apf::buildElement(m, 0, apf::Mesh::EDGE, ved0);
-  apf::MeshEntity* ved1[2] = {v[0],v[2]};
-  apf::buildElement(m, 0, apf::Mesh::EDGE, ved1);
-
-  for(int i = 0; i < 4; ++i){
-    // 0,1,3 and 1,2,3
-    apf::MeshEntity* vf[3] = {v[ttv[i][0]],v[ttv[i][1]],v[ttv[i][2]]};
-    if(i == 1 || i == 2)
-      apf::buildElement(m, 0, apf::Mesh::TRIANGLE, vf);
-    else
-      apf::buildElement(m, 0, apf::Mesh::TRIANGLE, vf);
-
-  }
-  apf::buildElement(m,0,apf::Mesh::TET,v);
   apf::deriveMdsModel(m);
   m->acceptChanges();
   m->verify();
@@ -267,7 +244,7 @@ void test2D()
 
 void testSize3D(apf::Mesh2* m)
 {
-  for(int d = 1; d <= 3; ++d){
+  for(int d = 3; d <= 3; ++d){
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
@@ -275,7 +252,7 @@ void testSize3D(apf::Mesh2* m)
       double v = apf::measure(me);
       if((d == 1 && !(fabs(v-1.) < 1e-8  || fabs(v-1.414213562373) < 1e-8)) ||
          (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.866025403780) < 1e-8)) ||
-         (d == 3 && !(fabs(fabs(v)-1./6) < 1e-8)))
+         (d == 3 && !(fabs(v-1./6) < 1e-8)))
       {
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
@@ -304,30 +281,30 @@ void test3D()
 
     apf::MeshEntity* e;
     // need to fake snap to interpolate due to ordering issue
-    for(int d = 2; d >= 1; --d){
-      int t = (d == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
-      int non = fs->countNodesOn(t);
-      apf::Vector3 xi, pt, points[3];
-      apf::MeshEntity* v[3];
-      apf::MeshIterator* it = m->begin(d);
-      while ((e = m->iterate(it))) {
-        for(int i = 0; i < non; ++i){
-          fs->getNodeXi(t,i,xi);
-          int nv = m->getDownward(e,0,v);
-          for(int iv = 0; iv < nv; ++iv)
-            m->getPoint(v[iv],0,points[iv]);
-          if(d == 1){
-            double u = 0.5*(xi[0]+1.);
-            pt = points[0]*(1.-u) + points[1]*u;
-          } else {
-            double w = 1.-xi[0]-xi[1];
-            pt = points[0]*xi[0]+points[1]*xi[1]+points[2]*w;
-          }
-          m->setPoint(e,i,pt);
-        }
-      }
-      m->end(it);
-    }
+//    for(int d = 2; d >= 1; --d){
+//      int t = (d == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
+//      int non = fs->countNodesOn(t);
+//      apf::Vector3 xi, pt, points[3];
+//      apf::MeshEntity* v[3];
+//      apf::MeshIterator* it = m->begin(d);
+//      while ((e = m->iterate(it))) {
+//        for(int i = 0; i < non; ++i){
+//          fs->getNodeXi(t,i,xi);
+//          int nv = m->getDownward(e,0,v);
+//          for(int iv = 0; iv < nv; ++iv)
+//            m->getPoint(v[iv],0,points[iv]);
+//          if(d == 1){
+//            double u = 0.5*(xi[0]+1.);
+//            pt = points[0]*(1.-u) + points[1]*u;
+//          } else {
+//            double w = 1.-xi[0]-xi[1];
+//            pt = points[0]*xi[0]+points[1]*xi[1]+points[2]*w;
+//          }
+//          m->setPoint(e,i,pt);
+//        }
+//      }
+//      m->end(it);
+//    }
     
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
@@ -347,6 +324,10 @@ void test3D()
     }
     m->acceptChanges();
     testSize3D(m);
+    ma::writePointSet(m,1,11,"test");
+    ma::writePointSet(m,2,11,"test");
+    ma::writePointSet(m,3,11,"test");
+
     m->destroyNative();
     apf::destroyMesh(m);
   }
@@ -355,7 +336,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  test2D();
+//  test2D();
   test3D();
   PCU_Comm_Free();
   MPI_Finalize();
