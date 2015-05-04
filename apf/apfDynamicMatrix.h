@@ -109,6 +109,14 @@ class DynamicMatrix
       for (std::size_t i=0; i < rows; ++i)
         (*this)(i,j) = r(i);
     }
+    void zero()
+    {
+      std::size_t rows = getRows();
+      std::size_t columns = getColumns();
+      for(std::size_t ii = 0; ii < rows; ii++)
+	for(std::size_t jj = 0; jj < columns; jj++)
+	  (*this)(ii,jj) = 0.0;
+    }
   protected:
     std::size_t columns;
     DynamicArray<double> values;
@@ -185,15 +193,6 @@ inline DynamicMatrix fromMatrix(Matrix<N,M> other)
     for(std::size_t jj = 0; jj < M; jj++)
       result(ii,jj) = other[ii][jj];
   return result;
-}
-
-inline void zero(DynamicMatrix & a)
-{
-  std::size_t rows = a.getRows();
-  std::size_t columns = a.getColumns();
-  for(std::size_t ii = 0; ii < rows; ii++)
-    for(std::size_t jj = 0; jj < columns; jj++)
-      a(ii,jj) = 0.0;
 }
 
 }//namespace apf
