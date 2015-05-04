@@ -8,7 +8,11 @@
 #include <ma.h>
 #include <maCurveMesh.h>
 #include <apfField.h>
-
+/*
+ * This analytic function is a "pringle",
+ * defined on [0,1] in R^2 as z = ((2x-1)^2-(2y-1)^2)*exp(xy)
+ * matlab >> ezsurf('((2*x-1)^2-(2*y-1)^2)*exp(x*y)',[0,1],[0,1])
+ */
 void vert0(double const p[2], double x[3], void*)
 {
   (void)p;
@@ -25,14 +29,14 @@ void edge1(double const p[2], double x[3], void*)
 {
   x[0] = 1;
   x[1] = p[0];
-  x[2] = 1.-(2.*p[0]-1.)*(2.*p[0]-1.);
+  x[2] = (1.-(2.*p[0]-1.)*(2.*p[0]-1.))*std::exp(p[0]);
 }
 void edge2(double const p[2], double x[3], void*)
 {
   double u = 1.-p[0];
   x[0] = u;
   x[1] = 1.;
-  x[2] = (2.*u-1.)*(2.*u-1.)-1.;
+  x[2] = ((2.*u-1.)*(2.*u-1.)-1.)*std::exp(u);
 }
 void edge3(double const p[2], double x[3], void*)
 {
@@ -45,7 +49,9 @@ void face0(double const p[2], double x[3], void*)
 {
   x[0] = p[0];
   x[1] = p[1];
-  x[2] = (2.*p[0]-1.)*(2.*p[0]-1.)-(2.*p[1]-1.)*(2.*p[1]-1.);
+  x[2] = ((2.*p[0]-1.)*(2.*p[0]-1.)
+      -(2.*p[1]-1.)*(2.*p[1]-1.))
+      *std::exp(p[0]*p[1]);
 }
 void reparam_zero(double const from[2], double to[2], void*)
 {
@@ -195,7 +201,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
       pa[0] = 0.5*(pa[0]+1.);
       m->snapToModel(g,pa,cpt);
       double error = (cpt-pt).getLength();
-      if (error > 1.e-8) {
+      if (error > 1.e-7) {
         std::cout << apf::Mesh::typeName[m->getType(e)] <<
           " is not being interpolated correctly by " <<
           m->getCoordinateField()->getShape()->getName() <<
@@ -209,7 +215,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
 }
 void testSize2D(apf::Mesh2* m)
 {
-  double sizes[2] = {2.323391881216468,1.625569984255547};
+  double sizes[3] = {3.721402252672,2.323391881216468,2.133984157270};
   int order = m->getCoordinateField()->getShape()->getOrder();
   for(int d = 1; d <= 2; ++d){
     apf::MeshIterator* it = m->begin(d);
@@ -218,15 +224,22 @@ void testSize2D(apf::Mesh2* m)
       apf::ModelEntity* g = m->toModel(e);
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
+//      printf("%s has size %.16f\n",apf::Mesh::typeName[m->getType(e)],v);
       // these are checks for the middle edge and first order
+      bool correct = true;
       if (m->getModelType(g) == 2 && d == 1){
-        assert(fabs(v-1.414213562373)< 1e-10);
+        correct = (fabs(v-1.414213562373)< 1e-10);
       } else if(order == 1 && d == 1){
-        assert(fabs(v-1.0 )< 1e-10);
+        correct = (fabs(v-1.0 )< 1e-10);
       } else if(order == 1 && d == 2){
-        assert(fabs(v-0.5)< 1e-10);
-      } else if(fabs(v-sizes[d-1])/sizes[d-1] 
-          > (1.-0.5*exp(-(double)order))){ // lazy convergence check
+        correct = (fabs(v-0.5)< 1e-10);
+      } else if(d == 1){        // lazy convergence check
+        correct = ((fabs(v-sizes[0])/sizes[0] < (1.-0.5*exp(-(double)order)))
+          || (fabs(v-sizes[1])/sizes[1] < (1.-0.5*exp(-(double)order))));
+      } else if(d == 2){
+        correct = (fabs(v-sizes[2])/sizes[2] < (1.-0.5*exp(-(double)order)));
+      }
+      if(!correct){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
            << " size " << v
@@ -251,16 +264,19 @@ void test2D()
     apf::destroyMesh(m);
   }
 }
+
 void testSize3D(apf::Mesh2* m)
 {
-  for(int d = 1; d <= 2; ++d){
+  for(int d = 1; d <= 3; ++d){
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
-      if((d == 1 && !(fabs(v-1.) < 1e-8 || fabs(v-1.414213562373) < 1e-8 ))
-          || (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.86602540378) < 1e-8))){
+      if((d == 1 && !(fabs(v-1.) < 1e-8  || fabs(v-1.414213562373) < 1e-8)) ||
+         (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.866025403780) < 1e-8)) ||
+         (d == 3 && !(fabs(fabs(v)-1./6) < 1e-8)))
+      {
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
            << " size " << v
@@ -281,6 +297,7 @@ void test3D()
     gmi_register_null();
 
     apf::Mesh2* m = createMesh3D();
+
     apf::changeMeshShape(m, apf::getBezier(3,order),true);
 
     apf::FieldShape * fs = m->getCoordinateField()->getShape();
@@ -329,7 +346,6 @@ void test3D()
       m->end(it);
     }
     m->acceptChanges();
-    m->verify();
     testSize3D(m);
     m->destroyNative();
     apf::destroyMesh(m);
