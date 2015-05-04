@@ -187,6 +187,15 @@ inline DynamicMatrix fromMatrix(Matrix<N,M> other)
   return result;
 }
 
+inline void zero(DynamicMatrix & a)
+{
+  std::size_t rows = a.getRows();
+  std::size_t columns = a.getColumns();
+  for(std::size_t ii = 0; ii < rows; ii++)
+    for(std::size_t jj = 0; jj < columns; jj++)
+      a(ii,jj) = 0.0;
+}
+
 }//namespace apf
 
 /** \brief write an apf::DynamicMatrix to a C++ stream */
