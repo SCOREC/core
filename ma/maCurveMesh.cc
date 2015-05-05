@@ -131,7 +131,6 @@ void curveMeshToBezier(Mesh* m, int order){
   m->verify();
 }
 
-
 void writePointSet(Mesh* m, int d, int n, const char* prefix){
   int nj = (d > 1) ? n : 1;
   int nk = (d == 3) ? n : 1;

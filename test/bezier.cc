@@ -244,7 +244,7 @@ void test2D()
 
 void testSize3D(apf::Mesh2* m)
 {
-  for(int d = 3; d <= 3; ++d){
+  for(int d = 1; d <= 3; ++d){
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
@@ -272,48 +272,17 @@ void test3D()
   for(int order = 1; order < 7; ++order){
 
     gmi_register_null();
-
     apf::Mesh2* m = createMesh3D();
-
     apf::changeMeshShape(m, apf::getBezier(3,order),true);
-
     apf::FieldShape * fs = m->getCoordinateField()->getShape();
 
-    apf::MeshEntity* e;
-    // need to fake snap to interpolate due to ordering issue
-//    for(int d = 2; d >= 1; --d){
-//      int t = (d == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
-//      int non = fs->countNodesOn(t);
-//      apf::Vector3 xi, pt, points[3];
-//      apf::MeshEntity* v[3];
-//      apf::MeshIterator* it = m->begin(d);
-//      while ((e = m->iterate(it))) {
-//        for(int i = 0; i < non; ++i){
-//          fs->getNodeXi(t,i,xi);
-//          int nv = m->getDownward(e,0,v);
-//          for(int iv = 0; iv < nv; ++iv)
-//            m->getPoint(v[iv],0,points[iv]);
-//          if(d == 1){
-//            double u = 0.5*(xi[0]+1.);
-//            pt = points[0]*(1.-u) + points[1]*u;
-//          } else {
-//            double w = 1.-xi[0]-xi[1];
-//            pt = points[0]*xi[0]+points[1]*xi[1]+points[2]*w;
-//          }
-//          m->setPoint(e,i,pt);
-//        }
-//      }
-//      m->end(it);
-//    }
-    
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
       int ne = fs->countNodesOn(d);
-
       apf::NewArray<double> c;
       apf::getTransformationCoefficients(order,3,d,c);
-
+      apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         apf::ModelEntity* g = m->toModel(e);
@@ -324,10 +293,6 @@ void test3D()
     }
     m->acceptChanges();
     testSize3D(m);
-    ma::writePointSet(m,1,11,"test");
-    ma::writePointSet(m,2,11,"test");
-    ma::writePointSet(m,3,11,"test");
-
     m->destroyNative();
     apf::destroyMesh(m);
   }
@@ -336,7 +301,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-//  test2D();
+  test2D();
   test3D();
   PCU_Comm_Free();
   MPI_Finalize();
