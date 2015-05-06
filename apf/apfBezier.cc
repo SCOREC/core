@@ -234,6 +234,8 @@ public:
       }
     }
     int map[(P+1)*(P+2)/2];
+    int map2[(P-1)*(P-2)/2];
+
   };
   class Tetrahedron : public EntityShape
   {
@@ -419,26 +421,30 @@ public:
     void alignSharedNodes(Mesh* m,
         MeshEntity* elem, MeshEntity* shared, int order[])
     {
-      int n = (m->getType(shared) == Mesh::EDGE) ?
-          P-1 : (P-1)*(P-2)/2;
       int which,rotate;
       bool flip;
-    	getAlignment(m,elem,shared,which,flip,rotate);
-    	if(flip){
-    		for(int i = 0; i < n; ++i)
-    			order[i] = n-1-i;
-    	} else {
-    		for(int i = 0; i < n; ++i)
-    			order[i] = i;
-    	}
-      if(rotate > 0){
-        // we need to rotate shared nodes.
-        // we have floor(n/3) "edges" to rotate
-        printf("need to rotate\n");
-        int e = n/3;
-        for(int i = 0; i < n; ++i)
-          order[i] = order[(i-rotate*e)/3 % e*3];
+      getAlignment(m,elem,shared,which,flip,rotate);
+      if(m->getType(shared) == Mesh::EDGE){
+        if(!flip)
+          for(int i = 0; i < P-1; ++i)
+            order[i] = i;
+        else
+          for(int i = 0; i < P-1 ; ++i)
+            order[i] = P-2-i;
+        return;
       }
+      // must be a triangle
+      int n = (P-1)*(P-2)/2;
+      int l = n/3; //loops
+      if(!flip)
+        for(int i = 0; i < n; ++i)
+          order[i] = (i+l*(3-rotate)) % (3*l);
+      else {
+        int shift[4] = {0,0,1,4};
+        for(int i = 0; i < n; ++i)
+          order[i] = (n-1-i+(n-shift[l])-l*rotate) % (3*l);
+      }
+      if(n % l) order[3*l] = 3*l;
     }
   };
   EntityShape* getEntityShape(int type)
