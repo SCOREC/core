@@ -145,8 +145,8 @@ void transferParametricOnTriSplit(
   Vector pa1,pa2;
   m->getParamOn(g,ev[2],pa2);
   // two splits to do barycentric
-  transferParametricBetween(m, g, ev, t[1]/(t[0]+t[1]), pa1);
-  interpolateParametricCoordinates(m,g,1.-t[0]-t[1],pa1,pa2,p);
+  transferParametricBetween(m, g, ev, t[0]/(1.-t[1]), pa1);
+  interpolateParametricCoordinates(m,g,t[1],pa1,pa2,p);
 }
 
 void transferParametricOnGeometricEdgeSplit(
@@ -183,7 +183,7 @@ void transferParametricOnGeometricTriSplit(
   m->getPoint(ev[0],0,p0);
   m->getPoint(ev[1],0,p1);
   m->getPoint(ev[2],0,p2);
-  Vector pt = p0*t[0]+p1*t[1]+p2*(1.-t[0]-t[1]);
+  Vector pt = p0*(1.-t[0]-t[1])+p1*t[0]+p2*t[1];
   m->getClosestPoint(g,pt,cpt,p);
 }
 
