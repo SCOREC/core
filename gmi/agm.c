@@ -245,7 +245,6 @@ static enum agm_ent_type const use_ent_types[AGM_USE_TYPES] = {
 
 static void check_ent(struct agm* m, struct agm_ent e)
 {
-  assert(e.type >= 0);
   assert(e.type < AGM_ENT_TYPES);
   assert(e.id >= 0);
   assert(e.id < m->ents.n[e.type]);

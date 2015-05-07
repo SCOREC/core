@@ -189,6 +189,12 @@ void Mesh::getClosestPoint(ModelEntity* g, Vector3 const& from,
   gmi_closest_point(getModel(),e,&from[0],&to[0],&p[0]);
 }
 
+void Mesh::getNormal(ModelEntity* g, Vector3 const& p, Vector3& n)
+{
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_normal(getModel(),e,&p[0],&n[0]);
+}
+
 bool Mesh::isDegenerate(ModelEntity* g, Vector3 const& p, int axis)
 {
   gmi_ent* e = (gmi_ent*)g;

@@ -273,8 +273,11 @@ class Mesh
       \returns true if (g) is periodic along this axis */
     bool getPeriodicRange(ModelEntity* g, int axis,
         double range[2]);
+    /** \brief get closest point on geometry */
     void getClosestPoint(ModelEntity* g, Vector3 const& from,
         Vector3& to, Vector3& p);
+    /** \brief get normal vector at a point */
+    void getNormal(ModelEntity* g, Vector3 const& p, Vector3& n);
     /** \brief returns true if there is a geometric
           degeneracy in that direction at that parameter
          \param p is the parameters of the original coordinate

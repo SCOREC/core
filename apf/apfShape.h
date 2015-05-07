@@ -125,8 +125,11 @@ FieldShape* getIPShape(int dimension, int order);
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
 /** \brief Get the Bezier Curve or Shape of some order
- \details goes from second to sixth order */
+ \details goes from first to sixth order */
 FieldShape* getBezier(int dimension, int order);
+/** \brief Get the Gregory Surface of some order
+ \details goes from fourthto sixth order */
+FieldShape* getGregory(int order);
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
 void getTransformationCoefficients(int order, int dim, int type,

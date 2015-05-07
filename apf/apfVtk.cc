@@ -486,18 +486,4 @@ void writeOneVtkFile(const char* prefix, Mesh* m)
   delete n;
 }
 
-void writeCSVPointSet(const char* prefix, DynamicArray<Vector3>& pts)
-{
-  std::stringstream ss;
-  ss << prefix << ".csv";
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  printf("Writing %s written\n",fileName.c_str());
-  assert(file.is_open());
-  int n = pts.getSize();
-  file << "x,y,z\n";
-  for(int p = 0; p < n; ++p)
-    file << pts[p][0] << ","<< pts[p][1]<< "," << pts[p][2] << "\n";
-}
-
 }
