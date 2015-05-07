@@ -281,6 +281,7 @@ static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
   if (md == 1)
     return GE_parRange((pGEdge)e, &r[0], &r[1]);
 }
+
 static void closest_point(struct gmi_model* m, struct gmi_ent* e,
     double const from[3], double to[3], double to_p[2])
 {
@@ -289,6 +290,15 @@ static void closest_point(struct gmi_model* m, struct gmi_ent* e,
     GF_closestPoint((pGFace)e,&from[0],&to[0],&to_p[0]);
   else if (md == 1)
     GE_closestPoint((pGEdge)e,&from[0],&to[0],&to_p[0]);
+}
+
+static void normal(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double n[3])
+{
+  int md = gmi_dim(m, e);
+  if (md == 2)
+    GF_normal((pGFace)e,&p[0],&n[0]);
+
 }
 
 static void destroy(gmi_model* m)
@@ -349,6 +359,7 @@ void gmi_register_sim(void)
   ops.periodic = periodic;
   ops.range = range;
   ops.closest_point = closest_point;
+  ops.normal = normal;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");

@@ -24,6 +24,7 @@ void testInterpolationError(ma::Mesh* m, int entityDim,
   }
   m->end(it);
 }
+
 void testElementSize(ma::Mesh* m)
 {
   int dim = m->getDimension();
@@ -34,7 +35,7 @@ void testElementSize(ma::Mesh* m)
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
-      if(v < 0 && d < 3){
+      if(v < 0){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
            << " size " << v
