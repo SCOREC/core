@@ -579,6 +579,160 @@ protected:
   std::string name;
 };
 
+template <int P>
+class GregorySurface : public FieldShape
+{
+public:
+  const char* getName() const {return name.c_str();}
+  GregorySurface() {
+    std::stringstream ss;
+    ss << "GregorySurface_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
+  class Triangle : public EntityShape
+  {
+  public:
+    Triangle()
+    {
+      int m1[] = {1,2,0};
+      int m2[] = {1,4,2,3,5,0};
+      int m3[] = {1,5,6,2,4,9,7,3,8,0};
+      int m4[] = {1,6,7,8,2,5,13,14,9,4,12,10,3,11,0};
+      int m5[] = {1,7,8,9,10,2,6,17,18,19,11,5,16,20,12,4,15,13,3,14,0};
+      int m6[] = {1,8,9,10,11,12,2,7,21,22,23,24,13,6,20,27,25,14,5,19,
+          26,15,4,18,16,3,17,0};
+      int* maps[6] = {m1,m2,m3,m4,m5,m6};
+      for(int i = 0; i < (P+1)*(P+2)/2; ++i)
+        map[i] = maps[P-1][i];
+    }
+    void getValues(Mesh* /*m*/, MeshEntity* /*e*/, Vector3 const& /*xi*/,
+        NewArray<double>& values) const
+    {
+      values.allocate((P+1)*(P+2)/2);
+
+    }
+    void getLocalGradients(Mesh* /*m*/, MeshEntity* /*e*/, Vector3 const& /*xi*/,
+        NewArray<Vector3>& grads) const
+    {
+      grads.allocate((P+1)*(P+2)/2);
+
+    }
+    int countNodes() const {return (P+1)*(P+2)/2;}
+    void alignSharedNodes(Mesh* m,
+        MeshEntity* elem, MeshEntity* shared, int order[])
+    {
+      int which,rotate;
+      bool flip;
+      getAlignment(m,elem,shared,which,flip,rotate);
+      if(flip){
+        for(int i = 0; i < P-1; ++i)
+          order[i] = P-2-i;
+      } else {
+        for(int i = 0; i < P-1; ++i)
+          order[i] = i;
+      }
+    }
+  private:
+    int map[(P+1)*(P+2)/2];
+  };
+  class Tetrahedron : public EntityShape
+  {
+  public:
+
+    void getValues(Mesh* /*m*/, MeshEntity* /*e*/,
+        Vector3 const& /*xi*/, NewArray<double>& values) const
+    {
+      values.allocate(2*P*P+2);
+    }
+    void getLocalGradients(Mesh* /*m*/, MeshEntity* /*e*/,
+        Vector3 const& /*xi*/,
+        NewArray<Vector3>& grads) const
+    {
+      grads.allocate(2*P*P+2);
+
+    }
+    int countNodes() const {return 2*P*P+2;}
+    void alignSharedNodes(Mesh* m,
+        MeshEntity* elem, MeshEntity* shared, int order[])
+    {
+      int which,rotate;
+      bool flip;
+      getAlignment(m,elem,shared,which,flip,rotate);
+      if(m->getType(shared) == Mesh::EDGE){
+        if(!flip)
+          for(int i = 0; i < P-1; ++i)
+            order[i] = i;
+        else
+          for(int i = 0; i < P-1 ; ++i)
+            order[i] = P-2-i;
+        return;
+      }
+      // must be a triangle
+      int n = (P-1)*(P-2)/2;
+      int l = n/3; //loops
+      if(!flip)
+        for(int i = 0; i < n; ++i)
+          order[i] = (i+l*(3-rotate)) % (3*l);
+      else {
+        int shift[4] = {0,0,1,4};
+        for(int i = 0; i < n; ++i)
+          order[i] = (n-1-i+(n-shift[l])-l*rotate) % (3*l);
+      }
+      if(n % l) order[3*l] = 3*l;
+    }
+  };
+  EntityShape* getEntityShape(int type)
+  {
+    static BezierShape<1>::Vertex vertex;
+    static BezierShape<4>::Edge edge4;
+    static BezierShape<5>::Edge edge5;
+    static BezierShape<6>::Edge edge6;
+
+    static Triangle triangle;
+    static Tetrahedron tet;
+    static EntityShape* shapes[Mesh::TYPES] =
+    {&vertex,   //vertex
+     NULL,      //edge
+     &triangle, //triangle
+     NULL,      //quad
+     &tet,      //tet
+     NULL,      //hex
+     NULL,      //prism
+     NULL};     //pyramid
+    static EntityShape* edges[3] = {&edge4,&edge5,&edge6};
+
+    if(type == Mesh::EDGE)
+      return edges[P-4];
+    return shapes[type];
+  }
+  bool hasNodesIn(int dimension)
+  {
+    if ((dimension == 0)||
+        ((dimension == 1) && P > 1)||
+        ((dimension == 2) && P > 2))
+      return true;
+    else
+      return false;
+  }
+  int countNodesOn(int type)
+  {
+    static int nodes[Mesh::TYPES] =
+    {1,                 //vertex
+     P-1,               //edge
+     (P-1)*(P-2)/2,     //triangle
+     0,                 //quad
+     0,                 //tet
+     0,                 //hex
+     0,                 //prism
+     0};                //pyramid
+    return nodes[type];
+  }
+  int getOrder() {return P;}
+protected:
+  std::string name;
+};
+
 static void getBezierCurveInterPtsToCtrlPts(int order,
     NewArray<double> & c)
 {
@@ -763,8 +917,6 @@ void getTransformationCoefficients(int order, int dim, int type,
 
 static FieldShape* getBezierCurve(int order)
 {
-  assert(order > 0 && order < 7);
-
   static BezierCurve<1> bezierCurve1;
   static BezierCurve<2> bezierCurve2;
   static BezierCurve<3> bezierCurve3;
@@ -779,8 +931,6 @@ static FieldShape* getBezierCurve(int order)
 
 static FieldShape* getBezierSurface(int order)
 {
-  assert(order > 0 && order < 7);
-
   static BezierSurface<1> bezierSurface1;
   static BezierSurface<2> bezierSurface2;
   static BezierSurface<3> bezierSurface3;
@@ -792,9 +942,20 @@ static FieldShape* getBezierSurface(int order)
       &bezierSurface3,&bezierSurface4,&bezierSurface5,&bezierSurface6};
   return surfaceTable[order-1];
 }
+
 FieldShape* getBezier(int dimension, int order)
 {
   return (dimension == 2) ? getBezierCurve(order) : getBezierSurface(order);
 }
 
+FieldShape* getGregory(int order)
+{
+  static GregorySurface<4> gregorySurface4;
+  static GregorySurface<5> gregorySurface5;
+  static GregorySurface<6> gregorySurface6;
+
+  FieldShape* surfaceTable[3] = {&gregorySurface4, &gregorySurface5,
+      &gregorySurface6};
+  return surfaceTable[order-4];
+}
 }//namespace apf

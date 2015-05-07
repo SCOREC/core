@@ -50,10 +50,34 @@ void MeshCurver::snapToInterpolate(int dim)
   m->end(it);
 }
 
+void MeshCurver::convertInterpolationPoints(Entity* e,
+    int n, int ne, apf::NewArray<double>& c){
+
+  Mesh* m = adapt->mesh;
+  apf::NewArray<Vector> l(n), b(ne);
+  apf::Element* elem =
+      apf::createElement(m->getCoordinateField(),e);
+  apf::getVectorNodes(elem,l);
+
+  for(int i = 0; i < ne; ++i)
+    b[i] = Vector(0,0,0);
+
+  for( int i = 0; i < ne; ++i)
+    for( int j = 0; j < n; ++j)
+      b[i] += l[j]*c[i*n+j];
+
+  for(int i = 0; i < ne; ++i)
+    m->setPoint(e,i,b[i]);
+
+  apf::destroyElement(elem);
+}
+
 bool BezierCurver::run()
 {
-  assert(order >= 1);
-  assert(order <= 6);
+  if(order < 1 || order > 6){
+    fprintf(stderr,"Warning: cannot convert to Bezier of order %d\n",order);
+    return false;
+  }
   Mesh* m = adapt->mesh;
   int md = m->getDimension();
   apf::changeMeshShape(m, apf::getBezier(md,order),true);
@@ -85,27 +109,45 @@ bool BezierCurver::run()
   return true;
 }
 
-
-void BezierCurver::convertInterpolationPoints(Entity* e,
-    int n, int ne, apf::NewArray<double>& c){
-
+bool GregoryCurver::run()
+{
   Mesh* m = adapt->mesh;
-  apf::NewArray<Vector> l(n), b(ne);
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),e);
-  apf::getVectorNodes(elem,l);
+  if(order < 4|| order > 6){
+    fprintf(stderr,"Warning: cannot convert to Gregory of order %d\n",order);
+    return false;
+  }
+  if(m->getDimension() != 3){
+    fprintf(stderr,"Warning: can only convert 3D Mesh to Gregory\n");
+    return false;
+  }
+  int md = m->getDimension();
+  apf::changeMeshShape(m, apf::getGregory(order),true);
+  apf::FieldShape * fs = m->getCoordinateField()->getShape();
 
-  for(int i = 0; i < ne; ++i)
-    b[i] = Vector(0,0,0);
+  // interpolate points in each dimension
+  for(int d = 1; d < md; ++d)
+    snapToInterpolate(d);
 
-  for( int i = 0; i < ne; ++i)
-    for( int j = 0; j < n; ++j)
-      b[i] += l[j]*c[i*n+j];
+  // go downward, and convert interpolating to control points
+  for(int d = md-1; d >= 1; --d){
+    int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
+    int ne = fs->countNodesOn(d);
 
-  for(int i = 0; i < ne; ++i)
-    m->setPoint(e,i,b[i]);
+    apf::NewArray<double> c;
+    apf::getTransformationCoefficients(order,md,d,c);
+    Entity* e;
+    Iterator* it = m->begin(d);
+    while ((e = m->iterate(it))) {
+      Model* g = m->toModel(e);
+      if(m->getModelType(g) == m->getDimension()) continue;
+      convertInterpolationPoints(e,n,ne,c);
+    }
+    m->end(it);
+  }
+  m->acceptChanges();
+  m->verify();
 
-  apf::destroyElement(elem);
+  return true;
 }
 
 double interpolationError(Mesh* m, Entity* e, int n){
