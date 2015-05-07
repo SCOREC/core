@@ -5,9 +5,10 @@
 #include <apf.h>
 #include <apfShape.h>
 #include <PCU.h>
-#include <ma.h>
 #include <maCurveMesh.h>
 #include <apfField.h>
+#include <maAdapt.h>
+
 /*
  * This analytic function is a "pringle",
  * defined on [0,1] in R^2 as z = ((2x-1)^2-(2y-1)^2)*exp(xy)
@@ -59,13 +60,13 @@ void reparam_zero(double const from[2], double to[2], void*)
   to[0] = 0;
   to[1] = 0;
 }
-
 void reparam_one(double const from[2], double to[2], void*)
 {
   (void)from;
   to[0] = 1;
   to[1] = 0;
 }
+
 agm_bdry add_bdry(gmi_model* m, gmi_ent* e)
 {
   return agm_add_bdry(gmi_analytic_topo(m), agm_from_gmi(e));
@@ -88,7 +89,6 @@ void make_edge_topo(gmi_model* m, gmi_ent* e, int v0tag, int v1tag)
   gmi_add_analytic_reparam(m, u1, reparam_one, 0);
 }
 
-
 gmi_model* makeModel()
 {
   gmi_model* model = gmi_make_analytic();
@@ -109,7 +109,6 @@ gmi_model* makeModel()
 
   return model;
 }
-
 
 apf::Mesh2* createMesh2D()
 {
@@ -142,6 +141,7 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
+
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
@@ -160,6 +160,7 @@ apf::Mesh2* createMesh3D()
   m->verify();
   return m;
 }
+
 void testInterpolatedPoints2D(apf::Mesh2* m){
   apf::FieldShape * fs = m->getCoordinateField()->getShape();
   apf::MeshIterator* it = m->begin(1);
@@ -190,6 +191,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
   }
   m->end(it);
 }
+
 void testSize2D(apf::Mesh2* m)
 {
   double sizes[3] = {3.721402252672,2.323391881216468,2.133984157270};
@@ -230,11 +232,15 @@ void testSize2D(apf::Mesh2* m)
     m->end(it);
   }
 }
+
 void test2D()
 {
   for(int order = 1; order < 7; ++order){
     apf::Mesh2* m = createMesh2D();
-    ma::curveMeshToBezier(m,order);
+    ma::Input* in = ma::configureIdentity(m);
+    ma::Adapt* adapt = new ma::Adapt(in);
+    ma::BezierCurver bc(adapt,order);
+    bc.run();
     testInterpolatedPoints2D(m);
     testSize2D(m);
     m->destroyNative();
@@ -267,15 +273,17 @@ void testSize3D(apf::Mesh2* m)
     m->end(it);
   }
 }
+
 void test3D()
 {
-  for(int order = 1; order < 7; ++order){
-
+  for(int order = 1; order <= 6; ++order){
     gmi_register_null();
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, apf::getBezier(3,order),true);
     apf::FieldShape * fs = m->getCoordinateField()->getShape();
-
+    ma::Input* in = ma::configureIdentity(m);
+    ma::Adapt* adapt = new ma::Adapt(in);
+    ma::BezierCurver bc(adapt,order);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
@@ -285,9 +293,8 @@ void test3D()
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
-        apf::ModelEntity* g = m->toModel(e);
-        if(m->getModelType(g) == m->getDimension()) continue;
-        ma::convertInterpToBezier(m,e,n,ne,c);
+        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+        bc.convertInterpolationPoints(e,n,ne,c);
       }
       m->end(it);
     }
@@ -297,6 +304,7 @@ void test3D()
     apf::destroyMesh(m);
   }
 }
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);

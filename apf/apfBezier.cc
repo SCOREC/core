@@ -5,9 +5,17 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfShape.h"
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <sstream>
+#include <string>
+
+#include "apf.h"
 #include "apfMesh.h"
-#include <stdio.h>
+#include "apfNew.h"
+#include "apfShape.h"
+
 namespace apf {
 
 // negative -> flipped relative to canonical
@@ -39,48 +47,28 @@ public:
   class Edge : public EntityShape
   {
   public:
-    void getValues(Mesh* m, MeshEntity* e,
+    void getValues(Mesh* /*m*/, MeshEntity* /*e*/,
         Vector3 const& xi, NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
+      for(int i = 1; i < P; ++i)
+        values[i+1] = binomial(P,i)
+        * pow(1.0-t,P-i)*pow(t, i);
+      values[0] = pow(1-t, P);
+      values[1] = pow(t, P);
 
-      if (m->getModelType(m->toModel(e)) == m->getDimension()) {
-        // straight line interpolation based on this framework
-        values[0] = 1.0-t;
-        values[1] = t;
-        for(int i = 2; i < P+1; ++i){
-          values[i] = 0.;
-        }
-      } else {
-        for(int i = 1; i < P; ++i)
-          values[i+1] = binomial(P,i)
-          * pow(1.0-t,P-i)*pow(t, i);
-        values[0] = pow(1-t, P);
-        values[1] = pow(t, P);
-      }
     }
-    void getLocalGradients(Mesh* m, MeshEntity* e,
-        Vector3 const& xi,
-        NewArray<Vector3>& grads) const
+    void getLocalGradients(Mesh* /*m*/, MeshEntity* /*e*/,
+        Vector3 const& xi, NewArray<Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
       grads.allocate(P+1);
-
-      if (m->getModelType(m->toModel(e)) == m->getDimension()) {
-        // straight line interpolation based on this framework
-        grads[0] = Vector3(-0.5,0,0);
-        grads[1] = Vector3(0.5,0,0);;
-        for(int i = 2; i < P+1; ++i){
-          grads[i] = Vector3(0,0,0);
-        }
-      } else {
-        for(int i = 1; i < P; ++i)
-          grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
-              * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
-        grads[0] = Vector3(-P*pow(1-t, P-1)/2.,0,0);
-        grads[1] = Vector3(P*pow(t, P-1)/2.,0,0);
-      }
+      for(int i = 1; i < P; ++i)
+        grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
+            * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
+      grads[0] = Vector3(-P*pow(1-t, P-1)/2.,0,0);
+      grads[1] = Vector3(P*pow(t, P-1)/2.,0,0);
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(Mesh*,
@@ -94,13 +82,6 @@ public:
   public:
     Triangle()
     {
-//      int m1[] = {2,0,1};
-//      int m2[] = {2,5,0,4,3,1};
-//      int m3[] = {2,7,8,0,6,9,3,5,4,1};
-//      int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-//      int m5[] = {2,11,12,13,14,0,10,19,20,15,3,9,18,16,4,8,17,5,7,6,1};
-//      int m6[] = {2,13,14,15,16,17,0,12,24,25,26,18,3,11,23,27,19,4,10,
-//          22,20,5,9,21,6,8,7,1};
       int m1[] = {1,2,0};
       int m2[] = {1,4,2,3,5,0};
       int m3[] = {1,5,6,2,4,9,7,3,8,0};
@@ -109,9 +90,8 @@ public:
       int m6[] = {1,8,9,10,11,12,2,7,21,22,23,24,13,6,20,27,25,14,5,19,
           26,15,4,18,16,3,17,0};
       int* maps[6] = {m1,m2,m3,m4,m5,m6};
-      for(int i = 0; i < (P+1)*(P+2)/2; ++i){
+      for(int i = 0; i < (P+1)*(P+2)/2; ++i)
         map[i] = maps[P-1][i];
-      }
     }
     void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
         NewArray<double>& values) const
@@ -120,7 +100,16 @@ public:
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
-      if (m->getModelType(m->toModel(e)) == m->getDimension()) {
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) != m->getDimension()){
+
+        for(int i = 0; i < P+1; ++i)
+          for(int j = 0; j < P+1-i; ++j)
+            values[map[j*(P+1)+i-j*(j-1)/2]] =
+                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+                *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],P-i-j);
+
+      } else {
         // Triangular Blending
 
         for(int i = 0; i < 3; ++i)
@@ -132,31 +121,22 @@ public:
         double x;
         Vector3 xv;
         NewArray<double> v;
-        MeshEntity * edges[3];
 
         int const (*tev)[2] = tri_edge_verts;
 
-        m->getDownward(e,1,edges);
         for(int i = 0; i < 3; ++i){
           x = xii[tev[i][0]]+xii[tev[i][1]];
           if(x < 1e-13) continue;
           xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
           getBezier(3,P)->getEntityShape(Mesh::EDGE)
-            ->getValues(m,edges[i],xv,v);
+                ->getValues(0,0,xv,v);
 
           for(int j = 0; j < 2; ++j)
             values[tev[i][j]]   += v[j]*x;
           for(int j = 0; j < (P-1); ++j)
             values[3+i*(P-1)+j] += v[2+j]*x;
         }
-      } else {
-        for(int i = 0; i < P+1; ++i)
-          for(int j = 0; j < P+1-i; ++j)
-            values[map[j*(P+1)+i-j*(j-1)/2]] =
-                factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-                *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],P-i-j);
-
       }
     }
     void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
@@ -167,11 +147,21 @@ public:
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
       Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
 
-      if (m->getModelType(m->toModel(e)) == m->getDimension()) {
-        // Triangle Blending
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) != m->getDimension()){
+        for(int i = 0; i < P+1; ++i)
+          for(int j = 0; j < P+1-i; ++j)
+            grads[map[j*(P+1)+i-j*(j-1)/2]] =
+              gxii[0]*factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+              *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
+              *(i*(1.-xii[1])-(P-j)*xii[0]) +
+              gxii[1]*factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
+              *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
+              *(j*(1.-xii[0])-(P-i)*xii[1]);
 
+      } else {
         for(int i = 0; i < 3; ++i)
-        	grads[i] = gxii[i]*-1;
+          grads[i] = gxii[i]*-1;
 
         for(int i = 3; i < (P+1)*(P+2)/2; ++i)
           grads[i] = Vector3(0,0,0);
@@ -194,10 +184,10 @@ public:
           xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
           getBezier(3,P)->getEntityShape(Mesh::EDGE)
-            ->getValues(m,edges[i],xv,v);
+                    ->getValues(m,edges[i],xv,v);
 
           getBezier(3,P)->getEntityShape(Mesh::EDGE)
-            ->getLocalGradients(m,edges[i],xv,gv);
+                    ->getLocalGradients(m,edges[i],xv,gv);
 
           for(int j = 0; j < 2; ++j)
             grads[tev[i][j]]   += gx*v[j]
@@ -206,16 +196,6 @@ public:
             grads[3+i*(P-1)+j] += gx*v[j+2]
               + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.;
         }
-      } else {
-        for(int i = 0; i < P+1; ++i)
-          for(int j = 0; j < P+1-i; ++j)
-            grads[map[j*(P+1)+i-j*(j-1)/2]] =
-              gxii[0]*factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
-              *(i*(1.-xii[1])-(P-j)*xii[0]) +
-              gxii[1]*factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
-              *(j*(1.-xii[0])-(P-i)*xii[1]);
       }
     }
     int countNodes() const {return (P+1)*(P+2)/2;}
@@ -233,19 +213,19 @@ public:
           order[i] = i;
       }
     }
+  private:
     int map[(P+1)*(P+2)/2];
-    int map2[(P-1)*(P-2)/2];
-
   };
   class Tetrahedron : public EntityShape
   {
   public:
+
     void getValues(Mesh* m, MeshEntity* e,
         Vector3 const& xi, NewArray<double>& values) const
     {
     	values.allocate(2*P*P+2);
 
-      double xii[4] = {1-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
+      double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
 
       for(int i = 0; i < 4; ++i)
         values[i] = xii[i];
@@ -256,7 +236,6 @@ public:
       Vector3 xv;
       NewArray<double> v;
 
-      MeshEntity* edges[6];
       MeshEntity* faces[4];
 
       int nE = P-1;
@@ -265,13 +244,14 @@ public:
       int const (*tev)[2] = tet_edge_verts;
       int const (*ttv)[3] = tet_tri_verts;
 
-      m->getDownward(e,1,edges);
       for(int i = 0; i < 6; ++i){
         x = xii[tev[i][0]]+xii[tev[i][1]];
         if(x < 1e-13) continue;
+
         xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+
         getBezier(3,P)->getEntityShape(Mesh::EDGE)
-        	->getValues(m,edges[i],xv,v);
+        	->getValues(0,0,xv,v);
 
         for(int j = 0; j < 2; ++j) // vertices
           values[tev[i][j]] += -v[j]*x;
@@ -282,13 +262,16 @@ public:
 
       m->getDownward(e,2,faces);
       for(int i = 0; i < 4; ++i){
+
         x = 0.;
         for(int j = 0; j < 3; ++j)
           x += xii[ttv[i][j]];
         if(x < 1e-13) continue;
 
+        int shift = (m->getModelType(m->toModel(faces[i]))
+            == m->getDimension());
         for(int j = 0; j < 3; ++j)
-          xv[j] = xii[ttv[i][j]];
+          xv[j] = xii[ttv[i][(j+shift) % 3]];
 
         xv = xv/x;
 
@@ -321,7 +304,7 @@ public:
     {
       grads.allocate(2*P*P+2);
 
-      double xii[4] = {1-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
+      double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
       Vector3 gxii[4] = {Vector3(-1,-1,-1),Vector3(1,0,0),
         Vector3(0,1,0),Vector3(0,0,1)};
 
@@ -336,7 +319,6 @@ public:
       NewArray<double> v;
       NewArray<Vector3> gv;
 
-      MeshEntity* edges[6];
       MeshEntity* faces[4];
 
       int nE = P-1;
@@ -345,7 +327,6 @@ public:
       int const (*tev)[2] = tet_edge_verts;
       int const (*ttv)[3] = tet_tri_verts;
 
-      m->getDownward(e,1,edges);
       for(int i = 0; i < 6; ++i){
         x = xii[tev[i][0]]+xii[tev[i][1]];
         if(x < 1e-13) continue;
@@ -355,10 +336,10 @@ public:
         xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
         getBezier(3,P)->getEntityShape(Mesh::EDGE)
-          ->getValues(m,edges[i],xv,v);
+          ->getValues(0,0,xv,v);
 
         getBezier(3,P)->getEntityShape(Mesh::EDGE)
-          ->getLocalGradients(m,edges[i],xv,gv);
+          ->getLocalGradients(0,0,xv,gv);
 
         for(int j = 0; j < 2; ++j) // vertices
           grads[tev[i][j]] += gx*(-v[j])
@@ -377,27 +358,30 @@ public:
 
         if(x < 1e-13) continue;
 
+        int shift =
+            (m->getModelType(m->toModel(faces[i])) == m->getDimension());
         for(int j = 0; j < 3; ++j)
-          xv[j] = xii[ttv[i][j]];
+          xv[j] = xii[ttv[i][(j+shift) % 3]];
 
         gx = gxii[ttv[i][0]] + gxii[ttv[i][1]] + gxii[ttv[i][2]];
 
         xv = xv/x;
         // actually x*gxv
-        gxv[0] = gxii[ttv[i][0]]-gx*xv[0];
-        gxv[1] = gxii[ttv[i][1]]-gx*xv[1];
+        gxv[0] = gxii[ttv[i][(0+shift) % 3]]-gx*xv[0];
+        gxv[1] = gxii[ttv[i][(1+shift) % 3]]-gx*xv[1];
+
         getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
 
         getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
           ->getLocalGradients(m,faces[i],xv,gv);
-       
+
         for(int j = 0; j < 3; ++j) // vertices
           grads[ttv[i][j]] += gx*v[j]
             + gxv[0]*gv[j][0] + gxv[1]*gv[j][1];
 
         for(int k = 0; k < 3; ++k){
-          unsigned int l = tet_tri_edges[i][k];
+          int l = tet_tri_edges[i][k];
           if(flip_tet_tri_edges[i][k] == false){
             for(int j = 0; j < nE; ++j)
               grads[4+l*nE+j] += gx*v[3+k*nE+j]
@@ -423,7 +407,7 @@ public:
     {
       int which,rotate;
       bool flip;
-      getAlignment(m,elem,shared,which,flip,rotate);
+    	getAlignment(m,elem,shared,which,flip,rotate);
       if(m->getType(shared) == Mesh::EDGE){
         if(!flip)
           for(int i = 0; i < P-1; ++i)
@@ -487,7 +471,6 @@ public:
     return nodes[type];
   }
   int getOrder() {return P;}
-
 };
 
 template <int P>
@@ -595,6 +578,7 @@ public:
 protected:
   std::string name;
 };
+
 static void getBezierCurveInterPtsToCtrlPts(int order,
     NewArray<double> & c)
 {
@@ -632,7 +616,7 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       c[i*ni+j] = table[order-2][i*ni+j];
 
 }
-void getBezierShapeInterPtsToCtrlPts(int order, int type,
+static void getBezierShapeInterPtsToCtrlPts(int order, int type,
     NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};

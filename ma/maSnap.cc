@@ -144,7 +144,7 @@ void transferParametricOnTriSplit(
   m->getDownward(e,0,ev); // pick two points, split on edge
   Vector pa1,pa2;
   m->getParamOn(g,ev[2],pa2);
-  // two splits to do barycentric
+  // two linear splits
   transferParametricBetween(m, g, ev, t[0]/(1.-t[1]), pa1);
   interpolateParametricCoordinates(m,g,t[1],pa1,pa2,p);
 }
