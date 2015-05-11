@@ -14,6 +14,7 @@
 #include "maSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
+#include <apfGeometry.h>
 
 namespace ma {
 
@@ -251,7 +252,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
     Vector s;
     getSnapPoint(m, v, s);
     Vector x = getPosition(m, v);
-    if (s == x)
+    if (apf::areClose(s, x, 0.0))
       continue;
     m->setDoubleTag(v, t, &s[0]);
     if (m->isOwned(v))

@@ -1,5 +1,5 @@
 #include "phBC.h"
-#include <apfMatrix.h>
+#include <apfGeometry.h>
 #include <cstdlib>
 
 namespace ph {
@@ -48,31 +48,31 @@ static int maxComponent(apf::Vector3 const& v)
 
 struct PlaneConstraint : public Constraint
 {
-  PlaneConstraint():Constraint(2) {}
-  apf::Vector3 normal;
-  double radius;
+  PlaneConstraint(apf::Plane const& a):
+    Constraint(2),
+  plane(a)
+  {
+  }
+  apf::Plane plane;
   bool operator==(PlaneConstraint const& other) const
   {
-    return normal == other.normal && radius == other.radius;
+    return apf::areClose(plane, other.plane, 0.0);
   }
   virtual void write(int* iBC, double* BC)
   {
-    int bit = maxComponent(normal) + 3;
+    int bit = maxComponent(plane.normal) + 3;
     *iBC |= (1<<bit);
-    normal.toArray(BC + 3);
-    BC[6] = radius;
+    plane.normal.toArray(BC + 3);
+    BC[6] = plane.radius;
   }
 };
 
 static Constraint* makePlaneConstraint(double* values)
 {
-  PlaneConstraint* c = new PlaneConstraint();
-  c->radius = values[0];
-  c->normal.fromArray(values + 1);
-/* plane normal must absolutely be a unit vector */
-  c->radius *= c->normal.getLength();
-  c->normal = c->normal.normalize();
-  return c;
+  apf::Vector3 normal;
+  normal.fromArray(values + 1);
+  return new PlaneConstraint(
+      apf::Plane(normal, values[0]));
 }
 
 /* due to the way constraints are written to file,
@@ -80,11 +80,11 @@ static Constraint* makePlaneConstraint(double* values)
 struct LineConstraint : public Constraint
 {
   LineConstraint():Constraint(1) {}
-  PlaneConstraint* planes[2];
+  PlaneConstraint* pcs[2];
   ~LineConstraint()
   {
-    delete planes[0];
-    delete planes[1];
+    delete pcs[0];
+    delete pcs[1];
   }
   virtual void write(int* iBC, double* BC)
   {
@@ -93,12 +93,12 @@ struct LineConstraint : public Constraint
        we can with the two normals.
        there isn't really a good answer to this. */
     /* try max components */
-    int comp0 = maxComponent(planes[0]->normal);
-    int comp1 = maxComponent(planes[1]->normal);
+    int comp0 = maxComponent(pcs[0]->plane.normal);
+    int comp1 = maxComponent(pcs[1]->plane.normal);
     if (comp0 == comp1) {
       /* try to resolve a conflict in max components */
-      apf::Vector3 a = planes[0]->normal;
-      apf::Vector3 b = planes[1]->normal;
+      apf::Vector3 a = pcs[0]->plane.normal;
+      apf::Vector3 b = pcs[0]->plane.normal;
       if (b[comp0] > a[comp0])
         std::swap(a,b);
       b[comp0] = 0;
@@ -109,10 +109,10 @@ struct LineConstraint : public Constraint
     int bit1 = comp1 + 3;
     *iBC |= (1<<bit0);
     *iBC |= (1<<bit1);
-    planes[0]->normal.toArray(BC + 3);
-    BC[6] = planes[0]->radius;
-    planes[1]->normal.toArray(BC + 7);
-    BC[10] = planes[1]->radius;
+    pcs[0]->plane.normal.toArray(BC + 3);
+    BC[6] = pcs[0]->plane.radius;
+    pcs[1]->plane.normal.toArray(BC + 7);
+    BC[10] = pcs[1]->plane.radius;
   }
 };
 
@@ -148,10 +148,8 @@ static Constraint* makePointConstraint(double* values)
   return c;
 }
 
-static Constraint* takeOne(Constraint* a, Constraint* b, bool takeFirst = true)
+static Constraint* takeFirst(Constraint* a, Constraint* b)
 {
-  if ( ! takeFirst)
-    std::swap(a, b);
   delete b;
   return a;
 }
@@ -163,15 +161,15 @@ static Constraint* combinePoints(Constraint* a, Constraint* b,
   PointConstraint* pa = static_cast<PointConstraint*>(a);
   PointConstraint* pb = static_cast<PointConstraint*>(b);
   /* same points, arbitrary victory */
-  if (pa->point == pb->point)
-    return takeOne(a, b);
+  if (apf::areClose(pa->point, pb->point, 0.0))
+    return takeFirst(a, b);
   double ma = pa->point.getLength();
   double mb = pb->point.getLength();
   /* any zero magnitude wins (no-slip wins over weaker constraints) */
   if (ma == 0)
-    return takeOne(a, b, true);
+    return takeFirst(a, b);
   if (mb == 0)
-    return takeOne(a, b, false);
+    return takeFirst(b, a);
   /* multiple non-zero point constraints ? we got a problem. */
   std::cerr << "ph error: point overconstrain: ";
   std::cerr << pa->point << " and " << pb->point << dbg;
@@ -184,17 +182,18 @@ static Constraint* combinePlanes(Constraint* a, Constraint* b,
 {
   PlaneConstraint* pa = static_cast<PlaneConstraint*>(a);
   PlaneConstraint* pb = static_cast<PlaneConstraint*>(b);
-  if (*pa == *pb) /* same plane, arbitrary winner */
-    return takeOne(a, b);
+  if (apf::areClose(pa->plane, pb->plane, 0.0))
+    /* same plane, arbitrary winner */
+    return takeFirst(a, b);
   /* the planes are different, so make sure they're not parallel */
-  if (pa->normal == pb->normal) {
+  if (apf::areParallel(pa->plane, pb->plane, 0.0)) {
     std::cerr << "ph error: different parallel planes" << dbg;
     abort();
   }
   /* different intersecting planes, combine into a line constraint */
   LineConstraint* c = new LineConstraint();
-  c->planes[0] = pa;
-  c->planes[1] = pb;
+  c->pcs[0] = pa;
+  c->pcs[1] = pb;
   return c;
 }
 
@@ -206,50 +205,24 @@ static Constraint* combineLinePlane(Constraint* a, Constraint* b,
   /* first off, if the plane is the same as one of
      the two that formed the line, we can leave early. */
   for (int i = 0; i < 2; ++i)
-    if (*(pa->planes[i]) == *pb)
-      return takeOne(a, b, true); /* just keep the line */
-  /* okay, we really have 3 distinct planes. lets combine them. */
-  /* first, we have to actually compute the line
-       x = (origin) + (lambda)(direction)
-     as an origin,direction pair by combining the first two planes.
-     The direction is straightforward: */
-  apf::Vector3 direction = apf::cross(pa->planes[0]->normal,
-                                      pa->planes[1]->normal);
-  /* the origin can be computed by noting that we want
-     to satisfy these two equations:
-       normal_0 . x = radius_0
-       normal_1 . x = radius_1
-     and add this arbitrary but stable equation:
-       direction . x = 0
-     This gives us an AX=B problem. The normals are required
-     to be unit vectors, and combinePlanes ensures they
-     are not equal, so A should be invertible */
-  apf::Matrix3x3 A;
-  A[0] = pa->planes[0]->normal;
-  A[1] = pa->planes[1]->normal;
-  A[2] = direction;
-  apf::Vector3 B(pa->planes[0]->radius,
-                 pa->planes[1]->radius,
-                 0);
-  apf::Vector3 origin = apf::invert(A) * B;
-  /* now we just need to satisfy two equations:
-       x = (origin) + (lambda)(direction)     line equation
-       (normal).(x) = radius                  plane equation
-     this gives us:
-       (normal).((origin) + (lambda)(direction)) = radius
-       (normal).(origin) + (lambda)((normal).(direction)) = radius
-       lambda = (radius - (normal).(origin)) / ((normal).(direction))
-     this will only fail if normal.direction=0, which is
-     a line parallel to a plane. */
-  double denominator = pb->normal * direction;
-  if (denominator == 0) {
-    std::cerr << "ph error: 3 non-intersecting planes" << dbg;
+    if (apf::areClose(pa->pcs[i]->plane, pb->plane, 0.0))
+      return takeFirst(a, b); /* just keep the line */
+  /* okay, we really have 3 distinct planes. lets combine them.
+     first, we actually compute the line that has been waiting
+     to be evaluated until now */
+  apf::Line line = apf::intersect(pa->pcs[0]->plane, pa->pcs[1]->plane);
+  /* the line may be on the third plane */
+  if (apf::areClose(line, pb->plane, 0.0))
+    return takeFirst(a, b); /* keep the line */
+  /* it may never intersect */
+  if (apf::areParallel(line, pb->plane, 0.0)) {
+    std::cerr << "line doesn't intersect plane " << dbg;
     abort();
   }
-  double numerator = pb->radius - (pb->normal * origin);
-  double lambda = numerator / denominator;
+  /* okay, there is a legit intersection point. find it. */
+  apf::Vector3 point = apf::intersect(line, pb->plane);
   PointConstraint* result = new PointConstraint();
-  result->point = origin + (direction * lambda);
+  result->point = point;
   result->originalDirection_ = apf::Vector3(1,0,0);
   delete pa;
   delete pb;
@@ -271,7 +244,7 @@ static Constraint* combine(Constraint* a, Constraint* b,
   if (a->degreesOfFreedom == 0) {
     /* Rule #1: a point constraint beats anything else */
     if (b->degreesOfFreedom != 0)
-      return takeOne(a, b, true);
+      return takeFirst(a, b);
     /* otherwise, compare the two points */
     if (b->degreesOfFreedom == 0)
       return combinePoints(a, b, dbg);

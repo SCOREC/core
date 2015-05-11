@@ -56,7 +56,8 @@ set(APF_SOURCES
   apfPartition.cc
   apfConvert.cc
   apfConstruct.cc
-  apfVerify.cc)
+  apfVerify.cc
+  apfGeometry.cc)
 
 set(APF_HEADERS
   apf.h
@@ -73,7 +74,8 @@ set(APF_HEADERS
   apfShape.h
   apfNumbering.h
   apfPartition.h
-  apfConvert.h)
+  apfConvert.h
+  apfGeometry.h)
 
 if(BUILD_IN_TRILINOS)
 # THIS IS WHERE TRIBITS GETS HEADERS

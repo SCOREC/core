@@ -3,6 +3,7 @@
 #include "apf.h"
 #include <gmi.h>
 #include <sstream>
+#include <apfGeometry.h>
 
 namespace apf {
 
@@ -261,7 +262,8 @@ static bool receiveCoords(Mesh* m)
   Vector3 p(0,0,0);
   m->getPoint(e, 0, x);
   m->getParam(e, p);
-  return (x == ox) && (p == op);
+  return areClose(x, ox, 0.0) &&
+         areClose(p, op, 0.0);
 }
 
 static long verifyCoords(Mesh* m)
