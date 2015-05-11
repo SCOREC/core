@@ -15,6 +15,12 @@ bool BlockKey::operator<(BlockKey const& other) const
   return polynomialOrder < other.polynomialOrder;
 }
 
+bool InterfaceBlockKey::operator<(InterfaceBlockKey const& other) const
+{
+  if (elementTypeOther != other.elementTypeOther)
+    return elementTypeOther < other.elementTypeOther;
+}
+
 static int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
 {
   static int const table[apf::Mesh::TYPES] = 

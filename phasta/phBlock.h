@@ -29,6 +29,12 @@ struct BlockKey
   bool operator<(BlockKey const& other) const;
 };
 
+struct InterfaceBlockKey : public BlockKey
+{
+  int elementTypeOther;
+  bool operator<(InterfaceBlockKey const& other) const;
+};
+
 enum {
   MAX_BLOCK_KEYS = 12
 };

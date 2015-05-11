@@ -98,6 +98,18 @@ struct CompBC : public SimBC {
   double buf[4];
 };
 
+struct DGInterfaceBC : public SimBC
+{
+  DGInterfaceBC(pAttribute a, pGEntity ge):SimBC(ge)
+  {
+    /* ...... */
+  }
+  virtual double* eval(apf::Vector3 const& x)
+  {
+    return 0;
+  }
+};
+
 static ph::BC* tensor0Factory(pAttribute a, pGEntity ge)
 {
   return new Tensor0BC(a, ge);
@@ -111,6 +123,11 @@ static ph::BC* tensor1Factory(pAttribute a, pGEntity ge)
 static ph::BC* compFactory(pAttribute a, pGEntity ge)
 {
   return new CompBC(a, ge);
+}
+
+static ph::BC* interfaceFactory(pAttribute a, pGEntity ge)
+{
+  return new DGInterfaceBC(a, ge);
 }
 
 /* this should follow the KnownBC tables in phBC.cc */
@@ -142,6 +159,7 @@ static void formFactories(BCFactories& fs)
   fs["initial scalar_2"]     = tensor0Factory;
   fs["initial scalar_3"]     = tensor0Factory;
   fs["initial scalar_4"]     = tensor0Factory;
+  fs["DG interface"]         = interfaceFactory;
 }
 
 static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
