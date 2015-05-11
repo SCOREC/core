@@ -13,6 +13,7 @@
 #include <ph.h>
 #include <phRestart.h>
 #include <phInput.h>
+#include <apfGeometry.h>
 
 static void fixMatches(apf::Mesh2* m)
 {
@@ -66,7 +67,7 @@ static void fixCoords(apf::Mesh2* m)
     PCU_COMM_UNPACK(op);
     m->getPoint(e, 0, x);
     m->getParam(e, p);
-    if (!(p == op)) {
+    if (!(apf::areClose(p, op, 0.0))) {
       ++p_diffs;
       double p_diff = (op - p).getLength();
       if (p_diff > max_p_diff) {
@@ -75,7 +76,7 @@ static void fixCoords(apf::Mesh2* m)
       }
       m->setParam(e, op);
     }
-    if (!(x == ox)) {
+    if (!(apf::areClose(x, ox, 0.0))) {
       ++x_diffs;
       double x_diff = (ox - x).getLength();
       if (x_diff > max_x_diff) {
