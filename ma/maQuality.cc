@@ -14,6 +14,7 @@
 #include "maAdapt.h"
 #include "maShapeHandler.h"
 #include "maShape.h"
+#include <apfGeometry.h>
 
 namespace ma {
 
@@ -279,24 +280,6 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet)
   return measureQuadraticTetQuality(xyz);
 }
 
-/* note that there is a somewhat duplicate class
-   in phasta/phConstraint.cc.
-   consider unifying plane code in the future */
-struct Plane
-{
-  Plane(Vector const& a, Vector const& b, Vector const& c)
-  {
-    normal = apf::cross(a - c, b - c);
-    radius = b * normal;
-  }
-  double distance(Vector const& p)
-  {
-    return (p * normal) - radius;
-  }
-  Vector normal;
-  double radius;
-};
-
 bool isPrismOk(Mesh* m, Entity* e)
 {
   Entity* v[6];
@@ -306,9 +289,10 @@ bool isPrismOk(Mesh* m, Entity* e)
     m->getPoint(v[i], 0, p[i]);
   for (int i = 0; i < 6; ++i) {
     int const* new_to_old = prism_rotation[i];
-    Plane pl(p[new_to_old[0]],
-             p[new_to_old[1]],
-             p[new_to_old[5]]);
+    apf::Plane pl = apf::Plane::fromPoints(
+        p[new_to_old[0]],
+        p[new_to_old[1]],
+        p[new_to_old[5]]);
     if (pl.distance(p[new_to_old[3]]) <= 0)
       return false;
     if (pl.distance(p[new_to_old[4]]) <= 0)
@@ -328,9 +312,10 @@ bool isPyramidOk(Mesh* m, Entity* e)
     m->getPoint(v[i], 0, p[i]);
   for (int i = 0; i < 2; ++i) {
     int const* new_to_old = pyramid_rotation[i];
-    Plane pl(p[new_to_old[0]],
-             p[new_to_old[2]],
-             p[new_to_old[4]]);
+    apf::Plane pl = apf::Plane::fromPoints(
+        p[new_to_old[0]],
+        p[new_to_old[2]],
+        p[new_to_old[4]]);
     if (pl.distance(p[new_to_old[1]]) <= 0)
       return false;
     if (pl.distance(p[new_to_old[3]]) >= 0)
