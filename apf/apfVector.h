@@ -130,6 +130,13 @@ Vector<N> project(Vector<N> const& a, Vector<N> const& b)
   return b*((a*b)/(b*b));
 }
 
+/** \brief vector rejection */
+template<std::size_t N>
+Vector<N> reject(Vector<N> const& a, Vector<N> const& b)
+{
+  return a - project(a, b);
+}
+
 /** \brief convenience wrapper over apf::Vector<3>
  \details this class adds some functions that could
  not be filled in by templates, mainly
