@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 2.8.6)
 
 if(BUILD_IN_TRILINOS)
+   # determine if Trilinos has been configured with stk
+   SET(HAS_STK OFF)
+   if(Trilinos_ENABLE_STKIO AND
+      Trilinos_ENABLE_STKMesh AND
+      Trilinos_ENABLE_SEACASIoss)
+     SET(HAS_STK ON)
+   endif()
+
    include(TribitsSubPackageMacros) 
    include(TribitsLibraryMacros) 
    tribits_subpackage(apf_stk) 
@@ -24,6 +32,10 @@ else(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.h.in"
+    "${PROJECT_BINARY_DIR}/apf_stkConfig.h")
+include_directories("${PROJECT_BINARY_DIR}")
+configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.cmake.in"
     "${CMAKE_BINARY_DIR}/apf_stkConfig.cmake")
 
@@ -44,8 +56,11 @@ set(SOURCES
   apfMeshSTK.cc
   apfSTK.cc)
 
-set(HEADERS
-  apfSTK.h)
+set(HEADERS apfAlbany.h)
+if(HAS_STK)
+  set(HEADERS ${HEADERS}
+      apfSTK.h)
+endif()
 
 #Library
 if(BUILD_IN_TRILINOS)

@@ -5,12 +5,17 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfSTK.h"
+#include <apf_stkConfig.h>
+#include "apfAlbany.h"
 #include <apfMesh.h>
 #include <apfShape.h>
+
+#if HAS_STK
+#include "apfSTK.h"
 #include <stk_io/IossBridge.hpp>
 #include <stk_mesh/base/GetBuckets.hpp>
 #include <stk_mesh/base/FindRestriction.hpp>
+#endif
 
 namespace apf {
 
@@ -20,6 +25,7 @@ namespace apf {
  *   Note that QPDimTag::Size does not dictate the size of that dimension,
  *   put_field does.
  */
+#if HAS_STK
 struct QPDimTag : public shards::ArrayDimTag {
   enum { Size = 1 };                    ///< default size
   const char * name() const
@@ -45,9 +51,11 @@ typedef
 stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian >
 StkQPVectorField;
 typedef stk::mesh::Field<double, QPDimTag> StkQPScalarField;
+#endif
 
 typedef std::map<long,Node> GlobalMap;
 
+#if HAS_STK
 template <class T>
 T* makeStkField(
     const char* name,
@@ -156,6 +164,7 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
+#endif
 
 static Node lookup(long id, GlobalMap& map)
 {
@@ -163,6 +172,7 @@ static Node lookup(long id, GlobalMap& map)
   return map[id];
 }
 
+#if HAS_STK
 void writeStkField(
     Field* field,
     StkScalarField& stkField,
@@ -571,6 +581,7 @@ StkBridge* StkBridge::get(
     }
   }
 }
+#endif
 
 void generateGlobalIdsToEnts(
     GlobalNumbering* n,
@@ -584,6 +595,7 @@ void generateGlobalIdsToEnts(
   }
 }
 
+#if HAS_STK
 void declareField(Field* f, StkMetaData* md)
 {
   delete StkBridge::get(f, md, false);
@@ -642,6 +654,7 @@ void copyFieldsFromBulk(
 {
   transferFields(n, meta, bulk, false);
 }
+#endif
 
 const CellTopologyData* getTopology(Mesh* m, int t)
 {

@@ -48,7 +48,9 @@ bool areClose(Vector3 const& a, Vector3 const& b,
 
 bool areClose(Plane const& a, Plane const& b, double tol)
 {
-  return areClose(a.normal * a.radius, b.normal * b.radius, tol);
+  /* radius can be zero, hence the parallel check */
+  return areParallel(a.normal, b.normal, tol) &&
+         areClose(a.normal * a.radius, b.normal * b.radius, tol);
 }
 
 bool areClose(Vector3 const& a, Plane const& b, double tol)

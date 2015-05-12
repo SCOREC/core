@@ -5,11 +5,14 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfSTK.h"
+#include <apf_stkConfig.h>
 #include <apfNumbering.h>
 
+#if HAS_STK
+#include "apfSTK.h"
 #include <stk_io/IossBridge.hpp>
 #include <stk_mesh/base/FEMHelpers.hpp>
+#endif
 
 namespace apf {
 
@@ -63,6 +66,7 @@ int getLocalSideId(Mesh* m, MeshEntity* e,
    We use the face->vertex ordering of our mesh database, which is consistent.
  */
 
+#if HAS_STK
 static void special_declare_element_side(
   GlobalNumbering* nn,
   StkBulkData* bulk,
@@ -224,6 +228,7 @@ void copyMeshToBulk(
   buildNodes(n[0], models, meta, bulk);
   bulk->modification_end();
 }
+#endif
 
 void makeStkNumberings(Mesh* m, GlobalNumbering* n[4])
 {
