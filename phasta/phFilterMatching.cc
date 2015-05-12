@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <apf.h>
+#include <PCU.h>
 
 namespace ph {
 
@@ -14,7 +15,7 @@ void saveMatches(apf::Mesh* m, int dim, SavedMatches& sm)
   apf::MeshEntity* e;
   unsigned i = 0;
   while ((e = m->iterate(it))) {
-    m->getMatches(m, e, sm[i]);
+    m->getMatches(e, sm[i]);
     ++i;
   }
   m->end(it);
@@ -37,9 +38,6 @@ void restoreMatches(apf::Mesh2* m, int dim, SavedMatches& sm)
 }
 
 static double const tolerance = 1e-9;
-
-typedef std::set<gmi_ent*> ModelSet;
-typedef std::map<gmi_ent*, ModelSet> ModelMatching;
 
 static void completeEntMatching(gmi_ent* e, ModelMatching& mm, ModelSet& visited)
 {
@@ -238,20 +236,53 @@ static void closeAttributeMatching(gmi_model* m, ModelMatching& mm)
   }
 }
 
-static void getFullAttributeMatching(gmi_model* m, BCs& bcs, ModelMatching& mm)
+void getFullAttributeMatching(gmi_model* m, BCs& bcs, ModelMatching& mm)
 {
   getAttributeMatching(m, bcs, mm);
   closeAttributeMatching(m, mm);
   completeMatching(mm);
 }
 
-void filterMatching(apf::Mesh2* m, BCs& bcs, int dim)
+void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
 {
-  ModelMatching mm;
-  getFullAttributeMatching(m->getModel(), bcs, mm);
+  gmi_model* gm;
+  gm = m->getModel();
+  PCU_Comm_Begin();
   apf::MeshIterator* it = m->begin(dim);
+  apf::MeshEntity* e;
+  int gd, gt;
+  while ((e = m->iterate(it))) {
+    apf::Matches matches;
+    m->getMatches(e, matches);
+    if (!matches.getSize())
+      continue;
+    gmi_ent* ge = (gmi_ent*) m->toModel(e);
+    gd = gmi_dim(gm, ge);
+    gt = gmi_tag(gm, ge);
+    APF_ITERATE(apf::Matches, matches, mit) {
+      PCU_COMM_PACK(mit->peer, mit->entity);
+      PCU_COMM_PACK(mit->peer, e);
+      PCU_COMM_PACK(mit->peer, gd);
+      PCU_COMM_PACK(mit->peer, gt);
+    }
+    m->clearMatches(e);
+  }
   m->end(it);
-  /* todo */
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    PCU_COMM_UNPACK(e);
+    apf::MeshEntity* oe;
+    PCU_COMM_UNPACK(oe);
+    PCU_COMM_UNPACK(gd);
+    PCU_COMM_UNPACK(gt);
+    gmi_ent* ge = (gmi_ent*) m->toModel(e);
+    if (!mm.count(ge))
+      continue;
+    ModelSet& ms = mm[ge];
+    gmi_ent* oge = gmi_find(gm, gd, gt);
+    if (oge == ge || ms.count(oge))
+      m->addMatch(e, PCU_Comm_Sender(), oe);
+  }
 }
 
 }

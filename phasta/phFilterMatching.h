@@ -8,10 +8,13 @@
 namespace ph {
 
 typedef std::vector<apf::Matches> SavedMatches;
+typedef std::set<gmi_ent*> ModelSet;
+typedef std::map<gmi_ent*, ModelSet> ModelMatching;
 
 void saveMatches(apf::Mesh* m, int dim, SavedMatches& sm);
 void restoreMatches(apf::Mesh2* m, int dim, SavedMatches& sm);
-void filterMatches(apf::Mesh2* m, BCs& bcs);
+void getFullAttributeMatching(gmi_model* m, BCs& bcs, ModelMatching& mm);
+void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim);
 
 }
 
