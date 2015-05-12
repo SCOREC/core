@@ -166,7 +166,7 @@ namespace dsp {
       apf::Mesh* m = apf::getMesh(df);
       cout << "Start Mission! " << endl;
       /* start Fan's code */
-      apf::MeshIterator* it
+      apf::MeshIterator* it;
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
