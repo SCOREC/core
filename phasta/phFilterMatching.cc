@@ -67,6 +67,7 @@ static void completeMatching(ModelMatching& mm)
   APF_ITERATE(ModelMatching, mm, it) {
     ModelSet reachable;
     completeEntMatching(it->first, mm, reachable);
+    reachable.erase(it->first);
     mm2[it->first] = reachable;
   }
   mm = mm2;
