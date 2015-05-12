@@ -253,6 +253,28 @@ void getFullAttributeMatching(gmi_model* m, BCs& bcs, ModelMatching& mm)
   completeMatching(mm);
 }
 
+static void checkFilteredMatching(apf::Mesh* m, ModelMatching& mm, int dim)
+{
+  apf::MeshIterator* it = m->begin(dim);
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it))) {
+    apf::Matches matches;
+    m->getMatches(e, matches);
+    gmi_ent* ge = (gmi_ent*) m->toModel(e);
+    if (!mm.count(ge)) {
+      assert(matches.getSize() == 0);
+      continue;
+    }
+    if (matches.getSize() < mm[ge].size()) {
+      std::cerr << "solution periodicity requested "
+                << "where mesh periodicity does not exist.\n"
+                << "rebuild mesh to match solution request\n";
+      abort();
+    }
+  }
+  m->end(it);
+}
+
 void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
 {
   gmi_model* gm;
@@ -293,6 +315,7 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
     if (oge == ge || ms.count(oge))
       m->addMatch(e, PCU_Comm_Sender(), oe);
   }
+  checkFilteredMatching(m, mm, dim);
 }
 
 static SavedMatches* savedVertexMatches = 0;
