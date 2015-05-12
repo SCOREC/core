@@ -204,15 +204,6 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
   delete sh;
 }
 
-static bool isMatched(apf::Mesh* m, apf::MeshEntity* e)
-{
-  if ( ! m->hasMatching())
-    return false;
-  apf::Matches ms;
-  m->getMatches(e, ms);
-  return ms.getSize() != 0;
-}
-
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
@@ -238,7 +229,8 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     m->getPoint(v, 0, x);
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
-    if (isMatched(m, v)) {
+    /* which is set only for local slaves */
+    if (o.arrays.iper[i] != 0) {
       ibc |= (1<<10); //yes, hard coded...
       hasBC = true;
     }
