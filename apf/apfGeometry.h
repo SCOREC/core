@@ -33,6 +33,6 @@ bool areClose(Line const& a, Plane const& b, double tol);
 Line intersect(Plane const& a, Plane const& b);
 Vector3 intersect(Line const& a, Plane const& b);
 
-};
+}
 
 #endif
