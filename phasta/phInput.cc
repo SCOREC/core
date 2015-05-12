@@ -26,6 +26,7 @@ static void setDefaults(Input& in)
   in.phastaIO = 1;
   in.snap = 0;
   in.splitAllLayerEdges = 0;
+  in.filterMatches = 0;
 }
 
 Input::Input()
@@ -76,6 +77,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["formElementGraph"] = &in.formElementGraph;
   intMap["snap"] = &in.snap;
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
+  intMap["filterMatches"] = &in.filterMatches;
 }
 
 template <class T>
