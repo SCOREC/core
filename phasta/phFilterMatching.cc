@@ -7,6 +7,35 @@
 
 namespace ph {
 
+void saveMatches(apf::Mesh* m, int dim, SavedMatches& sm)
+{
+  sm.resize(m->count(dim));
+  apf::MeshIterator* it = m->begin(dim);
+  apf::MeshEntity* e;
+  unsigned i = 0;
+  while ((e = m->iterate(it))) {
+    m->getMatches(m, e, sm[i]);
+    ++i;
+  }
+  m->end(it);
+}
+
+void restoreMatches(apf::Mesh2* m, int dim, SavedMatches& sm)
+{
+  apf::MeshIterator* it = m->begin(dim);
+  apf::MeshEntity* e;
+  unsigned i = 0;
+  while ((e = m->iterate(it))) {
+    if (sm[i].getSize()) {
+      m->clearMatches(e);
+      APF_ITERATE(apf::Matches, sm[i], mit)
+        m->addMatch(e, mit->peer, mit->entity);
+    }
+    ++i;
+  }
+  m->end(it);
+}
+
 static double const tolerance = 1e-9;
 
 typedef std::set<gmi_ent*> ModelSet;
@@ -58,7 +87,6 @@ static void getAttributeMatching(gmi_model* gm, BCs& bcs, ModelMatching& mm)
     gmi_ent* oe = gmi_find(gm, bc->dim, otherTag);
     addMatch(e, oe, mm);
   }
-  completeMatching(mm);
 }
 
 static apf::Plane getFacePlane(gmi_model* gm, gmi_ent* f)
@@ -208,6 +236,22 @@ static void closeAttributeMatching(gmi_model* m, ModelMatching& mm)
     if (gmi_dim(m, it->first) == 2)
       closeFaceMatching(m, it->first, mm);
   }
+}
+
+static void getFullAttributeMatching(gmi_model* m, BCs& bcs, ModelMatching& mm)
+{
+  getAttributeMatching(m, bcs, mm);
+  closeAttributeMatching(m, mm);
+  completeMatching(mm);
+}
+
+void filterMatching(apf::Mesh2* m, BCs& bcs, int dim)
+{
+  ModelMatching mm;
+  getFullAttributeMatching(m->getModel(), bcs, mm);
+  apf::MeshIterator* it = m->begin(dim);
+  m->end(it);
+  /* todo */
 }
 
 }
