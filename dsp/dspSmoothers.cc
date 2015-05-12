@@ -164,8 +164,9 @@ namespace dsp {
     void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
     {
       apf::Mesh* m = apf::getMesh(df);
+      cout << "Start Mission! " << endl;
       /* start Fan's code */
-      apf::MeshIterator* it;
+      apf::MeshIterator* it
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
@@ -182,7 +183,7 @@ namespace dsp {
         else n_in++;
       }
       m->end(it);
-      
+      cout << "Number of vertices of each type (mb,fb,in): " << n_mb << ' ' << n_fb << ' ' << n_in << ' ' << endl;
       //----------------------------------------------------------
       int MB_begin = 0;            int MB_end = n_mb - 1;
       int IN_begin = n_mb;         int IN_end = n_mb + n_in - 1;
