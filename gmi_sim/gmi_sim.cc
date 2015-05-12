@@ -196,21 +196,23 @@ static gmi_set* region_faces(pGRegion region)
 static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
 {
   int edim = gmi_dim(m, e);
-  if (edim == 1 && dim == 0)
-    return plist_to_set(GE_vertices((pGEdge)e));
-  if (edim == 2 && dim == 1)
-    return plist_to_set(GF_edges((pGFace)e));
-  if (edim == 3 && dim == 2)
-    return region_faces((pGRegion)e);
   if (edim == 0 && dim == 1)
     return plist_to_set(GV_edges((pGVertex)e));
+  if (edim == 1 && dim == 0)
+    return plist_to_set(GE_vertices((pGEdge)e));
   if (edim == 1 && dim == 2)
     return plist_to_set(GE_faces((pGEdge)e));
+  if (edim == 2 && dim == 0)
+    return plist_to_set(GF_vertices((pGFace)e));
+  if (edim == 2 && dim == 1)
+    return plist_to_set(GF_edges((pGFace)e));
   if (edim == 2 && dim == 3)
     return face_regions((pGFace)e);
+  if (edim == 3 && dim == 2)
+    return region_faces((pGRegion)e);
   if (edim == 3 && dim == 4) /* sometimes people just keep looking up */
     return gmi_make_set(0);
-  gmi_fail("requested adjacency is not one-level");
+  gmi_fail("requested adjacency not available\n");
   return 0;
 }
 
