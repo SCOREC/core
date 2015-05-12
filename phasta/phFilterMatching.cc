@@ -1,4 +1,5 @@
 #include "phFilterMatching.h"
+#include <vector>
 #include <apfGeometry.h>
 #include <gmi.h>
 #include <map>
@@ -7,6 +8,15 @@
 #include <PCU.h>
 
 namespace ph {
+
+typedef std::vector<apf::Matches> SavedMatches;
+typedef std::set<gmi_ent*> ModelSet;
+typedef std::map<gmi_ent*, ModelSet> ModelMatching;
+
+void saveMatches(apf::Mesh* m, int dim, SavedMatches& sm);
+void restoreMatches(apf::Mesh2* m, int dim, SavedMatches& sm);
+void getFullAttributeMatching(gmi_model* m, BCs& bcs, ModelMatching& mm);
+void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim);
 
 void saveMatches(apf::Mesh* m, int dim, SavedMatches& sm)
 {
@@ -283,6 +293,39 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
     if (oge == ge || ms.count(oge))
       m->addMatch(e, PCU_Comm_Sender(), oe);
   }
+}
+
+static SavedMatches* savedVertexMatches = 0;
+static SavedMatches* savedFaceMatches = 0;
+
+void enterFilteredMatching(apf::Mesh2* m, Input& in, BCs& bcs)
+{
+  if (!in.filterMatches)
+    return;
+  assert(PCU_Thrd_Peers() == 1);
+  savedVertexMatches = new SavedMatches();
+  saveMatches(m, 0, *savedVertexMatches);
+  if (in.formElementGraph) {
+    savedFaceMatches = new SavedMatches();
+    saveMatches(m, 2, *savedFaceMatches);
+  }
+  ModelMatching mm;
+  getFullAttributeMatching(m->getModel(), bcs, mm);
+  filterMatching(m, mm, 0);
+  if (in.formElementGraph)
+    filterMatching(m, mm, 2);
+}
+
+void exitFilteredMatching(apf::Mesh2* m)
+{
+  if (savedVertexMatches)
+    restoreMatches(m, 0, *savedVertexMatches);
+  if (savedFaceMatches)
+    restoreMatches(m, 2, *savedFaceMatches);
+  delete savedVertexMatches;
+  delete savedFaceMatches;
+  savedVertexMatches = 0;
+  savedFaceMatches = 0;
 }
 
 }
