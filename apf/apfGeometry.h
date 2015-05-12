@@ -23,6 +23,7 @@ struct Plane {
 struct Frame {
   Matrix3x3 linear;
   Vector3 trans;
+  Frame();
   Frame(Matrix3x3 const& l, Vector3 const& t);
   static Frame forRotation(Vector3 const& u, double a);
   static Frame forTranslation(Vector3 const& t);
@@ -43,6 +44,8 @@ Vector3 intersect(Line const& a, Plane const& b);
 
 Frame operator*(Frame const& a, Frame const& b);
 Vector3 operator*(Frame const& a, Vector3 const& b);
+
+double getAngle(Vector3 const& a, Vector3 const& b);
 
 }
 

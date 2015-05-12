@@ -29,6 +29,10 @@ double Plane::distance(Vector3 const& a) const
   return normal * a - radius;
 }
 
+Frame::Frame()
+{
+}
+
 Frame::Frame(Matrix3x3 const& l, Vector3 const& t):
   linear(l),
   trans(t)
@@ -152,6 +156,11 @@ Frame operator*(Frame const& a, Frame const& b)
 Vector3 operator*(Frame const& a, Vector3 const& b)
 {
   return a.linear * b + a.trans;
+}
+
+double getAngle(Vector3 const& a, Vector3 const& b)
+{
+  return std::acos((a * b) / (a.getLength() * b.getLength()));
 }
 
 }
