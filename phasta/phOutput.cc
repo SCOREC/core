@@ -215,7 +215,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   o.arrays.ibc = new int[nv]();
   o.arrays.bc = new double*[nv];
   o.nEssentialBCNodes = 0;
-  int ibc = 0;
+  int ibc;
   int nec = countEssentialBCs(in);
   double* bc = new double[nec]();
   gmi_model* gm = m->getModel();
@@ -227,6 +227,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     gmi_ent* ge = (gmi_ent*) m->toModel(v);
     apf::Vector3 x;
     m->getPoint(v, 0, x);
+    ibc = 0;
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
     /* which is set only for local slaves */
