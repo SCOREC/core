@@ -26,7 +26,8 @@ set(SOURCES
   phBC.cc
   phAttrib.cc
   phBubble.cc
-  phConstraint.cc)
+  phConstraint.cc
+  phFilterMatching.cc)
 
 include_directories(${PH_INCLUDE_DIRS})
 

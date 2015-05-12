@@ -29,6 +29,29 @@ double Plane::distance(Vector3 const& a) const
   return normal * a - radius;
 }
 
+Frame::Frame()
+{
+}
+
+Frame::Frame(Matrix3x3 const& l, Vector3 const& t):
+  linear(l),
+  trans(t)
+{
+}
+
+Frame Frame::forRotation(Vector3 const& u, double a)
+{
+  return Frame(rotate(u, a), Vector3(0,0,0));
+}
+
+Frame Frame::forTranslation(Vector3 const& t)
+{
+  return Frame(Matrix3x3(1,0,0,
+                         0,1,0,
+                         0,0,1),
+               t);
+}
+
 bool areClose(double a, double b, double tol)
 {
   /* there are more advanced and accurate floating
@@ -123,6 +146,21 @@ Vector3 intersect(Line const& a, Plane const& b)
   double numerator = b.radius - (b.normal * a.origin);
   double lambda = numerator / denominator;
   return a.origin + (a.direction * lambda);
+}
+
+Frame operator*(Frame const& a, Frame const& b)
+{
+  return Frame(a.linear * b.linear, a.linear * b.trans + a.trans);
+}
+
+Vector3 operator*(Frame const& a, Vector3 const& b)
+{
+  return a.linear * b + a.trans;
+}
+
+double getAngle(Vector3 const& a, Vector3 const& b)
+{
+  return std::acos((a * b) / (a.getLength() * b.getLength()));
 }
 
 }

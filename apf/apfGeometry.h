@@ -1,7 +1,7 @@
 #ifndef APF_GEOMETRY_H
 #define APF_GEOMETRY_H
 
-#include "apfVector.h"
+#include "apfMatrix.h"
 
 namespace apf {
 
@@ -20,6 +20,15 @@ struct Plane {
   double distance(Vector3 const& a) const;
 };
 
+struct Frame {
+  Matrix3x3 linear;
+  Vector3 trans;
+  Frame();
+  Frame(Matrix3x3 const& l, Vector3 const& t);
+  static Frame forRotation(Vector3 const& u, double a);
+  static Frame forTranslation(Vector3 const& t);
+};
+
 bool areClose(double a, double b, double tol);
 bool areClose(Vector3 const& a, Vector3 const& b, double tol);
 bool areParallel(Vector3 const& a, Vector3 const& b, double tol);
@@ -32,6 +41,11 @@ bool areClose(Line const& a, Plane const& b, double tol);
 
 Line intersect(Plane const& a, Plane const& b);
 Vector3 intersect(Line const& a, Plane const& b);
+
+Frame operator*(Frame const& a, Frame const& b);
+Vector3 operator*(Frame const& a, Vector3 const& b);
+
+double getAngle(Vector3 const& a, Vector3 const& b);
 
 }
 
