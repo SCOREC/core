@@ -265,6 +265,7 @@ namespace dsp {
         q.pop();
       }
       
+      cout << "Reordering part is done! " << endl;
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       apf::Downward down;
@@ -298,9 +299,9 @@ namespace dsp {
             apf::Vector3 n_1; apf::Vector3 n_2;
             for (int K = 0 ; K < 3 ; K++) {
               int A; int B;
-              if (K = 0)      { A = 1; B = 2; }
-              else if (K = 1) { A = 2; B = 0; }
-              else if (K = 2) { A = 0; B = 1; }
+              if (K == 0)      { A = 1; B = 2; }
+              else if (K == 1) { A = 2; B = 0; }
+              else if (K == 2) { A = 0; B = 1; }
 
               n_1[0] = (tet_OP[B][1] - tet_OP[K][1]) * (tet_OP[A][2] - tet_OP[K][2])
                      - (tet_OP[B][2] - tet_OP[K][2]) * (tet_OP[A][1] - tet_OP[K][1]);
