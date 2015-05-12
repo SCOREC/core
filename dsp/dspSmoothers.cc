@@ -276,7 +276,7 @@ namespace dsp {
       
       // semi-torsional spring: stiffness = 1/length^2 + sum(1/sin(theta)^2)
       // check max, stop until it is less the tolerance
-      double max = 1.0;
+      double max = 1.0; int loop_times = 0;
       while (max > tol) {
         max = 0.0;
         for (int i = IN_begin ; i < IN_end + 1 ; i++) {
@@ -350,8 +350,9 @@ namespace dsp {
           apf::setVector(df, V_total[i], 0, D_total[i]);
           std::cout << "Current Max is " << max << '\n';
         }
+        loop_times++;
       }
-      
+      cout << "Loop times = " << loop_times << endl;
       /* end Fan's code */
       (void)m;
       (void)df;
