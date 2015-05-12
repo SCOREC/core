@@ -29,6 +29,7 @@ static void afterSplit(apf::Mesh2* m)
       ph::balance(m);
     apf::reorderMdsMesh(m);
   }
+  assert(!in.filterMatches);
   ph::Output o;
   ph::generateOutput(in, bcs, m, o);
   ph::detachAndWriteSolution(in, m, path);
