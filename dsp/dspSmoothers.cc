@@ -87,7 +87,6 @@ namespace dsp {
       apf::Adjacent adj;
       
       id = in_0;
-      cout << "id = " << id << endl;
       
       //make a queue and put all MB vertex in it
       queue < apf::MeshEntity* > q;
@@ -128,21 +127,16 @@ namespace dsp {
         q.pop();
       }
       
-      cout << "id = " << id << endl;
-
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       apf::Vector3 D_temp = apf::Vector3(0.0, 0.0, 0.0);
       
       // average nodal displacement = sum(all adj_V's displacement)/num of adj_V
       // check max, stop until it is less the tolerance
-      double max = 1.0;
+      double max = 1.0; int loop_times = 0;
       while (max > tol) {
         max = 0.0;
         for (int i = in_0 ; i < fb_0 ; i++) {
-          if (i == 3000) {
-            cout << "i = " << i << endl;
-          }
           m->getAdjacent(V_total[i], 1, adj);
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
@@ -165,8 +159,10 @@ namespace dsp {
             max = temp_max;
           }
         }
+        loop_times++;
       }
       
+      cout << "Loop times = " << loop_times << endl;
       /* end Fan's code */
       (void)m;
       (void)df;
