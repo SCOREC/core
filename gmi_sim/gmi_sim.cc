@@ -395,7 +395,7 @@ static pNativeModel load_acis(const char* filename)
   return AcisNM_createFromFile(filename, TEXT_FORMAT);
 }
 #else
-static pNativeModel load_acis(const char* filename)
+static pNativeModel load_acis(const char* /*filename*/)
 {
   gmi_fail("gmi_sim not compiled with Acis support");
 }
