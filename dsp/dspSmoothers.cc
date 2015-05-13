@@ -87,6 +87,7 @@ namespace dsp {
       apf::Adjacent adj;
       
       id = in_0;
+      cout << "id = " << id << endl;
       
       //make a queue and put all MB vertex in it
       queue < apf::MeshEntity* > q;
@@ -118,7 +119,7 @@ namespace dsp {
             }
           }
         }
-        if (int flag = (!moving.count(me)) & (!fixed.count(me))) {
+        if ((!moving.count(me)) & (!fixed.count(me))) {
           V_total[id] = v;
           D_total[id] = d;
           apf::number(numbers, v, 0, 0, id);
@@ -127,6 +128,8 @@ namespace dsp {
         q.pop();
       }
       
+      cout << "id = " << id << endl;
+
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       apf::Vector3 D_temp = apf::Vector3(0.0, 0.0, 0.0);
