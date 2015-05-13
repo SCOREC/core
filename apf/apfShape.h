@@ -128,7 +128,7 @@ FieldShape* getVoronoiShape(int dimension, int order);
  \details goes from first to sixth order */
 FieldShape* getBezier(int dimension, int order);
 /** \brief Get the Gregory Surface of some order
- \details goes from fourthto sixth order */
+ \details only fourth order right now*/
 FieldShape* getGregory(int order);
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */

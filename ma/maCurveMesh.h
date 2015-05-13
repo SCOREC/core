@@ -1,3 +1,13 @@
+/******************************************************************************
+
+  Copyright 2013 Scientific Computation Research Center,
+      Rensselaer Polytechnic Institute. All rights reserved.
+
+  The LICENSE file included with this distribution describes the terms
+  of the SCOREC Non-Commercial License this program is distributed under.
+
+*******************************************************************************/
+
 #ifndef MACURVEMESH_H
 #define MACURVEMESH_H
 
@@ -13,7 +23,13 @@ class MeshCurver
     MeshCurver(Adapt* a, int order);
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
+
+    /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
+
+    /** \brief these two are a per entity version of above */
+    void snapToInterpolateEdge(Entity* e);
+    void snapToInterpolateTri(Entity* e);
 
     /** \brief converts interpolating points to control points */
     void convertInterpolationPoints(Entity* e, int n, int ne,
@@ -39,10 +55,20 @@ class GregoryCurver : public MeshCurver
 {
   public:
     GregoryCurver(Adapt* a, int o) : MeshCurver(a, o) {};
+    /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
     virtual bool run();
+    /** \brief sets cubic edge points using normals */
+    void setCubicEdgePointsUsingNormals();
+    /** \brief sets internal points using neighbors (See Notes)
+      \details NOT CURRENTLY FULLY IMPLEMENTED */
+    void setInternalPointsUsingNeighbors();
+    /** \brief sets internal points locally (4th order only) */
+    void setInternalPointsLocally();
 };
 /** \brief computes interpolation error of a curved entity on a mesh
-  \details this computes the Hausdorff distance by sampling n points. */
+  \details this computes the Hausdorff distance by sampling
+   n points per dimension of the entity through uniform
+   sampling locations in parameter space */
 double interpolationError(Mesh* m, Entity* e, int n);
 
 /** \brief Mostly a debugging function, writes csv file of n points per dim */
