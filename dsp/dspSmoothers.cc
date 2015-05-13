@@ -154,9 +154,13 @@ namespace dsp {
           D_temp[1] = D_temp[1]/num_adj;
           D_temp[2] = D_temp[2]/num_adj;
           D_total[i] = D_temp;
+          apf::getVector(df, V_total[i], 0, D_temp);
+          double d1 = D_total[i][0] - D_temp[0];
+          double d2 = D_total[i][1] - D_temp[1];
+          double d3 = D_total[i][2] - D_temp[2];
           apf::setVector(df, V_total[i], 0, D_total[i]);
-          
-          double temp_max = sqrt(D_temp[0] * D_temp[0] + D_temp[1] * D_temp[1] + D_temp[2] * D_temp[2]);
+
+          double temp_max = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
           if (max < temp_max) {
             max = temp_max;
           }
