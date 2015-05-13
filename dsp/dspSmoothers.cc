@@ -140,7 +140,9 @@ namespace dsp {
       while (max > tol) {
         max = 0.0;
         for (int i = in_0 ; i < fb_0 ; i++) {
-          cout << "i = " << i << endl;
+          if (i == 3000) {
+            cout << "i = " << i << endl;
+          }
           m->getAdjacent(V_total[i], 1, adj);
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
