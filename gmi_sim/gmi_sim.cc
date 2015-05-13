@@ -303,6 +303,16 @@ static void normal(struct gmi_model* m, struct gmi_ent* e,
 
 }
 
+static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double t0[3], double t1[3])
+{
+  int md = gmi_dim(m, e);
+  if (md == 2)
+    GF_firstDerivative((pGFace)e,&p[0],&t0[0],&t1[0]);
+  else if (md == 1)
+    GE_firstDerivative((pGEdge)e,p[0],&t0[0]);
+}
+
 static void destroy(gmi_model* m)
 {
   sim_model* mm = (sim_model*)m;
@@ -362,6 +372,7 @@ void gmi_register_sim(void)
   ops.range = range;
   ops.closest_point = closest_point;
   ops.normal = normal;
+  ops.first_derivative = first_derivative;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");
