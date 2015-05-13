@@ -42,11 +42,11 @@ namespace dsp {
       //----------------------------------------------------------
       int MB_begin = 0;            int MB_end = n_mb - 1;
       int IN_begin = n_mb;         int IN_end = n_mb + n_in - 1;
-      int FB_begin = n_mb + n_in;  //int FB_end = n_mb + n_in + n_fb - 1;
+      int FB_begin = n_mb + n_in;  int FB_end = n_mb + n_in + n_fb - 1;
       int ithMB = 0; int ithIN =0; int ithFB = 0;
       
-      vector < apf::MeshEntity* > V_total(n_mb + n_in + n_fb);
-      vector < apf::Vector3 > D_total(n_mb + n_in + n_fb);
+      vector < apf::MeshEntity* > V_total(FB_end + 1);
+      vector < apf::Vector3 > D_total(FB_end + 1);
       apf::Numbering* numbers = numberOwnedDimension(m, "my_numbering", 0);
       
       //iterate to store vertices and points
