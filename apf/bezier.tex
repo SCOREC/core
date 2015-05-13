@@ -16,7 +16,13 @@ where ${P \choose i}= \frac{P!}{i!(P-i)!}$ is the binomial coefficient and $ t \
 \[
 \frac{\mathrm{d} \mathbf{B}(t)}{\mathrm{d} t} = \displaystyle \sum_{i=0}^P {P \choose i}(i-Pt)t^{i-1}(1-t)^{P-i-1}\mathbf{C}_i
 \]
-In the current implementation in \texttt{BezierShape} in \texttt{apfShape.cc}, the edge shape functions are ordered with the vertices first, as $v_0,v_1,e_0,\ldots,e_{p-1}$, which is not geometric order.
+and
+\[
+\frac{\mathrm{d}^2 \mathbf{B}(t)}{\mathrm{d} t^2} = \displaystyle \sum_{i=0}^P {P \choose i}((P-1)Pt^2-2i(P-1)t+i(i-1))t^{i-2}(1-t)^{P-i-2}\mathbf{C}_i
+\]
+where
+\[\left.\frac{\mathrm{d}^2 \mathbf{B}(t)}{\mathrm{d} t^2}\right|_t=0 = P(P-1)(\mathbf{C}_0-2\mathbf{C}_1+\mathbf{C}_2)\]
+In the current implementation in \texttt{BezierShape} in \texttt{apfBezier.cc}, the edge shape functions are ordered with the vertices first, as $v_0,v_1,e_0,\ldots,e_{p-1}$, which is not geometric order.
 \subsection{Interpolating Bezier Curves}
 To fit a bezier curve to a known geometry, interpolating points, $\mathbf{P}_j = \mathbf{P}(t_j)$, are first needed at $t_0,\ldots, t_{P+1}$ before the control points can be solved for. This requires solving
 
