@@ -111,6 +111,12 @@ class Vector : public Array<double,N>
     double getLength() const {return sqrt((*this)*(*this));}
     /** \brief divide the vector by its magnitude */
     Vector<N> normalize() const {return (*this) / getLength();}
+    /** \brief zero the vector */
+    void zero()
+    {
+      for (std::size_t i=0; i < N; ++i)
+        this->elements[i] = 0.0;
+    }
 };
 
 /** \brief 3D vector cross product */
