@@ -31,7 +31,7 @@ namespace dsp {
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
       vector < apf::MeshEntity* > V_total;
       vector < apf::Vector3 > D_total;
-      apf::Numbering* numbers = apf::createNumbering(mesh, "my_numbers", m->getShape(), 1);
+      apf::Numbering* numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
       
       //iterate vertex to count the number of each type of vertex
       int id = 0;
