@@ -1,10 +1,16 @@
 # - Try to find Simmetrix SimModSuite
 # Once done this will define
 #  SIMMODSUITE_FOUND - System has SimModSuite
-#  SIMMODSUITE_INCLUDE_DIRS - The SimModSuite include directories
-#  SIMMODSUITE_LIBRARIES - The libraries needed to use SimModSuite
-#  SIMMODSUITE_DEFINITIONS - Compiler switches required for using SimModSuite
+#  SIMMODSUITE_INCLUDE_DIR - The SimModSuite include directories
+#  SIMMODSUITE_LIBS - The libraries needed to use SimModSuite
 #  SIMMODSUITE_<library>_FOUND - System has <library>
+#
+# Based on input variables:
+#  SIM_MPI
+#  SIMMETRIX_LIB_DIR
+#  SIMMETRIX_INCLUDE_DIR
+# And environment variable:
+#  CMAKE_PREFIX_PATH
 #
 # This implementation assumes a simmetrix install has the following structure
 # VERSION/
