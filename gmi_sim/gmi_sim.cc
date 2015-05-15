@@ -424,9 +424,16 @@ struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
   else
     gmi_fail("gmi_sim_load: nativefile has bad extension");
   pGModel sm;
-  if (!smdfile)
-    sm = GM_createFromNativeModel(nm, NULL);
-  else if (gmi_has_ext(smdfile, "smd"))
+  if (!smdfile) {
+    if (NM_isAssemblyModel(nm)) {
+      pGAModel am = GAM_createFromNativeModel(nm, NULL);
+      NM_release(nm);
+      sm = GM_createFromAssemblyModel(am, NULL, NULL);
+      GM_release(am);
+      nm = GM_nativeModel(sm);
+    } else
+      sm = GM_createFromNativeModel(nm, NULL);
+  } else if (gmi_has_ext(smdfile, "smd"))
     sm = GM_load(smdfile, nm, NULL);
   else
     gmi_fail("gmi_sim_load: smdfile has bad extension");
