@@ -278,6 +278,9 @@ class Mesh
         Vector3& to, Vector3& p);
     /** \brief get normal vector at a point */
     void getNormal(ModelEntity* g, Vector3 const& p, Vector3& n);
+    /** \brief get first derivative at a point */
+      void getFirstDerivative(ModelEntity* g, Vector3 const& p,
+          Vector3& t0, Vector3& t1);
     /** \brief returns true if there is a geometric
           degeneracy in that direction at that parameter
          \param p is the parameters of the original coordinate

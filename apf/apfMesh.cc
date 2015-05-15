@@ -203,6 +203,14 @@ void Mesh::getNormal(ModelEntity* g, Vector3 const& p, Vector3& n)
   gmi_normal(getModel(),e,&p[0],&n[0]);
 }
 
+void Mesh::getFirstDerivative(ModelEntity* g, Vector3 const& p,
+  Vector3& t0, Vector3& t1)
+{
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_first_derivative(getModel(),e,&p[0], &t0[0], &t1[0]);
+}
+
+
 bool Mesh::isDegenerate(ModelEntity* g, Vector3 const& p, int axis)
 {
   gmi_ent* e = (gmi_ent*)g;

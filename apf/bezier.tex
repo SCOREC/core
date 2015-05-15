@@ -16,7 +16,13 @@ where ${P \choose i}= \frac{P!}{i!(P-i)!}$ is the binomial coefficient and $ t \
 \[
 \frac{\mathrm{d} \mathbf{B}(t)}{\mathrm{d} t} = \displaystyle \sum_{i=0}^P {P \choose i}(i-Pt)t^{i-1}(1-t)^{P-i-1}\mathbf{C}_i
 \]
-In the current implementation in \texttt{BezierShape} in \texttt{apfShape.cc}, the edge shape functions are ordered with the vertices first, as $v_0,v_1,e_0,\ldots,e_{p-1}$, which is not geometric order.
+and
+\[
+\frac{\mathrm{d}^2 \mathbf{B}(t)}{\mathrm{d} t^2} = \displaystyle \sum_{i=0}^P {P \choose i}((P-1)Pt^2-2i(P-1)t+i(i-1))t^{i-2}(1-t)^{P-i-2}\mathbf{C}_i
+\]
+where
+\[\left.\frac{\mathrm{d}^2 \mathbf{B}(t)}{\mathrm{d} t^2}\right|_t=0 = P(P-1)(\mathbf{C}_0-2\mathbf{C}_1+\mathbf{C}_2)\]
+In the current implementation in \texttt{BezierShape} in \texttt{apfBezier.cc}, the edge shape functions are ordered with the vertices first, as $v_0,v_1,e_0,\ldots,e_{p-1}$, which is not geometric order.
 \subsection{Interpolating Bezier Curves}
 To fit a bezier curve to a known geometry, interpolating points, $\mathbf{P}_j = \mathbf{P}(t_j)$, are first needed at $t_0,\ldots, t_{P+1}$ before the control points can be solved for. This requires solving
 
@@ -73,11 +79,13 @@ The Bezier triangle is similar, with each edge its own Bezier curve. For an orde
 \[
 \mathbf{B}(u,v) = \displaystyle\sum_{i,j,k\geq 0}^{i+j+k=P} \frac{P!}{i!j!k!}u^iv^jw^k \alpha^i\beta^j\gamma^k 
 \]
-where $\alpha^i\beta^j\gamma^k$ correspond to the control points. This is implemented in a single array with size $(P+1)(P+2)/2$. The summation is then rewritten as
+where $\alpha^i\beta^j\gamma^k$ correspond to the control points. In our implementation, we use a finite element coordinate system where our parameters are $\xi_0,\xi_1$ and our triangle has vertex 0 at $1-\xi_0-\xi_1$, vertex 1 at $\xi_0$ and vertex 2 at $\xi_1$.
+
+This is implemented in a single array with size $(P+1)(P+2)/2$. The summation is then rewritten as
 \[
 \mathbf{B}(u,v) = \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}u^iv^j(1-u-v)^{P-i-j}\mathbf{P}_\ell, \quad \ell = (P+1)j+i-j(j-1)/2
 \]
-which is equivalent to a $[P\times P]$ triangular matrix with entries at $(i,j)$ and $k$ as follows, shown for $P = 3$
+which is equivalent to the top left of $[P+1\times P+1]$ matrix with entries at $(i,j)$ and $k$ as follows, shown for $P = 3$
 \begin{verbatim}
  j 0 1 2 3
 ik________
@@ -104,11 +112,112 @@ i _______________
 2 |e21 e00 
 3 |v0 
 \end{verbatim}
-In the actual implementation, vertices are the first three points, edges are the next $3(P-1)$ and faces are the rest. So our list of points is actually $v_0,v_1,v_2,e_{0,0},\ldots,e_{0,P-1},e_{1,0},\ldots,e_{1,P-1},e_{2,0},\ldots,e_{2,P-1},f_0,\ldots,f_{(P-1)(P-2)/2}$. This is much harder to write in index form, so in the implementation. this ordering is stored as a map, and called upon when getting values or local gradients. The gradients are easily computed as 
+In the actual implementation, vertices are the first three points, edges are the next $3(P-1)$ and faces are the rest. So our list of points is actually $v_0,v_1,v_2,e_{0,0},\ldots,e_{0,P-1},e_{1,0},\ldots,e_{1,P-1},e_{2,0},\ldots,e_{2,P-1},f_0,\ldots,f_{(P-1)(P-2)/2}$. 
+\begin{figure}
+\begin{tikzpicture}[scale=1]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=1pt, minimum width=5pt]
+\path (0,0) node {$0$}
+(1,0) node [label={[label distance=0.1cm]-60:Edge 0}] {$3$}
+(2,0) node {$4$}
+(3,0) node {$1$}
+(2,1) node {$5$}
+(1,2) node [label={[label distance=0.1cm,rotate=-45]10:Edge 1}] {$6$}
+(0,3) node {$2$}
+(0,2) node [label={[label distance=0.2cm,rotate=90]-200:Edge 2}] {$7$}
+(0,1) node {$8$}
+(1,1) node {$9$};
+
+\end{tikzpicture} \hspace{1cm}
+\begin{tikzpicture}[scale=1]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+(1,0) node {$3$}
+(2,0) node {$4$}
+(3,0) node {$5$}
+(4,0) node {$1$}
+(3,1) node {$6$}
+(2,2) node {$7$}
+(1,3) node {$8$}
+(0,4) node {$2$}
+(0,3) node {$9$}
+(0,2) node {$10$}
+(0,1) node {$11$}
+(1,1) node {$12$}
+(2,1) node {$13$}
+(1,2) node {$14$};
+
+\end{tikzpicture} \\
+\begin{tikzpicture}[scale=1]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+(1,0) node {$3$}
+(2,0) node {$4$}
+(3,0) node {$5$}
+(4,0) node {$6$}
+(5,0) node {$1$}
+(4,1) node {$6$}
+(3,2) node {$7$}
+(2,3) node {$8$}
+(1,4) node {$9$}
+(0,5) node {$2$}
+(0,4) node {$10$}
+(0,3) node {$11$}
+(0,2) node {$12$}
+(0,1) node {$13$}
+(1,1) node {$14$}
+(2,1) node {$15$}
+(3,1) node {$16$}
+(2,2) node {$17$}
+(1,3) node {$18$}
+(1,2) node {$19$};
+
+\end{tikzpicture}\hspace{1cm}
+\begin{tikzpicture}[scale=1]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+(1,0) node {$3$}
+(2,0) node {$4$}
+(3,0) node {$5$}
+(4,0) node {$6$}
+(5,0) node {$7$}
+(6,0) node {$1$}
+(5,1) node {$8$}
+(4,2) node {$9$}
+(3,3) node {$10$}
+(2,4) node {$11$}
+(1,5) node {$12$}
+(0,6) node {$2$}
+(0,5) node {$13$}
+(0,4) node {$14$}
+(0,3) node {$15$}
+(0,2) node {$16$}
+(0,1) node {$17$}
+(1,1) node {$18$}
+(2,1) node {$19$}
+(3,1) node {$20$}
+(4,1) node {$21$}
+(3,2) node {$22$}
+(2,3) node {$23$}
+(1,4) node {$24$}
+(1,3) node {$25$}
+(1,2) node {$26$}
+(2,2) node {$27$};
+
+\end{tikzpicture}
+\caption{Node ordering for 3-6 order bezier}
+\end{figure}
+
+
+This is much harder to write in index form, so in the implementation. this ordering is stored as a map, and called upon when getting values or local gradients. The gradients are easily computed as 
 \begin{eqnarray*}
 \frac{\partial \mathbf{B}(u,v)}{\partial u} &=& \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}((1-v)i-(P-j)u)u^{i-1}v^j(1-u-v)^{P-i-j-1}\mathbf{P}_\ell \\
 \frac{\partial \mathbf{B}(u,v)}{\partial v} &=& \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}((1-u)j-(P-i)v)u^{i}v^{j-1}(1-u-v)^{P-i-j-1}\mathbf{P}_\ell
 \end{eqnarray*}
+which, in their current implementation are not valid when any $u,v,w = 0$, since this leads to $0^{-1}$.
 \subsection{Triangular Blending}
 For faces not on a boundary, triangular blending of shape functions is needed. This occurs for all 2D triangles and 3D interior triangles with an edge or more on the boundary. For a given entity on the mesh, we have a coordinate field such that 
 \[ \mathbf{x}(\xi) = \sum_{i=0}^N w_i(\xi) \cdot \mathbf{x}_i \]
@@ -120,10 +229,10 @@ Where the edge parameters are
 \xi_{e_1} & = & \frac{\xi_2}{\xi_1+\xi_2},\quad ||\xi_{e_1}|| = \xi_1+\xi_2 \\
 \xi_{e_2} & = & \frac{\xi_0}{\xi_2+\xi_0},\quad ||\xi_{e_2}|| = \xi_2+\xi_0 
 \end{eqnarray*}
-Based on the canonical ordering of edges and faces. When any of $||\xi_{e_i}|| = 0$, we are either on a vertex opposite that edge, or on a different edge, and do not consider the contribution of those edges.
+Based on the canonical ordering of edges and faces. When any of $||\xi_{e_i}|| = 0$, we are either on a vertex opposite that edge, or on a different edge, and do not consider the contribution of those edges (avoiding dividing by zero).
 
 The goal is then to find face weights such that \[\mathbf{x}_{face}(\xi) = \sum_{i=0}^{N_{face}} w_i(\xi) \cdot \mathbf{x}_i = \sum_{i=0}^{3}||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i} \] 
-This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point on the face, in $x_i$. Consider the third-order triangle, and its edges.
+This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point on the face, in $x_i$. Consider the third-order triangle, and its edges. The middle point is present, but excluded in the blending.
 \begin{figure}
 \begin{tikzpicture}[scale=1]
 \tikzstyle{every node}=[circle, draw, fill=white,
@@ -137,7 +246,7 @@ This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point o
 (0,3) node (p6) {$2$}
 (0,2) node [label={[label distance=0.2cm,rotate=90]-200:Edge 2}] (p7) {$7$}
 (0,1) node (p8) {$8$}
-% (1,1) node (p9) {$9$}
+(1,1) node (p9) {$9$}
 (0,-1.5) node (p10) {$0$}
 (1,-1.5) node (p11) {$2$}
 (2,-1.5) node (p12) {$3$}
@@ -180,10 +289,10 @@ w_4 & = & ||\xi_{e_0}||w_{e_0,3}(\xi_{e_0}) \\
 w_5 & = & ||\xi_{e_1}||w_{e_1,2}(\xi_{e_1}) \\
 w_6 & = & ||\xi_{e_1}||w_{e_1,3}(\xi_{e_1}) \\
 w_7 & = & ||\xi_{e_2}||w_{e_2,2}(\xi_{e_2}) \\
-w_8 & = & ||\xi_{e_2}||w_{e_2,3}(\xi_{e_2}) 
-
+w_8 & = & ||\xi_{e_2}||w_{e_2,3}(\xi_{e_2}) \\
+w_9 & = & 0
 \end{eqnarray*}
-This is implemented in a much more generic form, using the triangle-edge ordering in \texttt{apfMesh.cc}. The local gradients are then
+The local gradients are then
 \begin{eqnarray*}\frac{\partial \mathbf{x}(\xi)}{\partial \xi_k}& = & \sum_{i=0}^N \frac{\partial w_i(\xi)}{\partial \xi_k} \cdot \mathbf{x}_i \\
 \frac{\partial \mathbf{x}(\xi)}{\partial \xi_k}& = & \frac{\partial}{\partial \xi_k}\left[\sum_{i=0}^{3}||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i}\right] \\ & & 
 \sum_{i=0}^{3}\frac{\partial}{\partial \xi_k}\left[||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\right]\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3} \frac{\partial \xi_i}{\partial \xi_k}\mathbf{x}_{v_i}\end{eqnarray*}
@@ -200,20 +309,137 @@ where the first term is straight forward, and the second term,
 ||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\xi_{e_i}}\left[\frac{\partial \xi_{e_i}'}{\partial \xi_k}||\xi_{e_i}||-\xi_{e_i}'\frac{\partial ||\xi_{e_i}||}{\partial \xi_k} \right]
 
 \end{eqnarray*}
-This can all be put together to form the derivative of the triangle blending.
+This can all be put together to form the derivative of the triangle blending. Both values and gradients are implemented in a generic form, using the triangle-edge ordering in \texttt{apfMesh.cc} to determine weights and coefficients on the weight terms. 
 
-
+\subsection{Align Shared Nodes}
+When obtaining the nodes for a particular triangle, specific ordering must be considered. This is due to edges not necessarily being oriented with the face. In \texttt{alignSharedNodes}, this problem is addressed by using \texttt{getAlignment} and specifying the order. If an edge is flipped with respect to the triangle, the ordering of the edge nodes is reversed and the correct ordering of nodes for the triangle is obtained.
 
 \subsection{Interpolation on Triangles}
 Given barycentric coordinates $u,v,w=1-u-v$ such that on a triangle in parameter space, $\mathbf{p} = u\mathbf{p}_0 + v\mathbf{p}_1 + w\mathbf{p}_2$ we are interested in splitting it at a given $(u,v,w)$. Due to denegeracy and periodicity, lets define this as a pair of linear splits, such that $ \mathbf{q} = a\mathbf{p}_0 + (1-a)\mathbf{p}_1 $ and $\mathbf{p} = b\mathbf{p}_2 + (1-b)\mathbf{q}$. Solving for $(a,b)$ gives $ a = v/(u+v), b = 1-u-v$. This is implemented in \texttt{maSnap.cc}.
-\subsection{Tetrahedral Blending}
-See papers by Dey and Shephard for more details. For a given entity on the mesh, we have a coordinate field such that 
+\section{Tetrahedral Blending}
+See papers by Dey and Shephard for more details. This is an extension of triangular blending. We use the finite element notation of $\xi = (1-\xi_0-\xi_1-\xi_2,\xi_0,\xi_1,\xi_2)$ rather than strict barycentrics. For a given entity on the mesh, we have a coordinate field such that 
 \[ \mathbf{x}(\xi) = \sum_i w_i(\xi) \cdot \mathbf{x}_i \]
 For tetrahedral blending, we then have that
-\[\mathbf{x}(\xi) = \sum_{i=0}^{4}w_{f_i}(\xi)\mathbf{x}(\xi'_{f_i}) - \sum_{i=0}^{6}w_{e_i}(\xi)\mathbf{x}(\xi'_{e_i}) + \sum_{i=0}^{4}w_{v_i}(\xi)\mathbf{x}_{v_i}\]
-To write the above in the standard form for a tetrahedral entity, we need to set 
-\[ \sum_{i=0}^{4}w_{f_i}(\xi)\mathbf{x}(\xi'_{f_i}) - \sum_{i=0}^{6}w_{e_i}(\xi)\mathbf{x}(\xi'_{e_i}) + \sum_{i=0}^{4}w_{v_i}(\xi)\mathbf{x}_{v_i} = \sum_{i=0}^N w_i(\xi) \cdot \mathbf{x}_i \]
-where $N$ is the total number of points.  Expand into vector form as 
-\[ \sum_{i=0}^{4}w_{f_i}(\xi)\left[ \begin{array}{c}\mathbf{x}_{f_1} \\ \vdots \\ \mathbf{x}_{f_{4}} \end{array}\right] - \sum_{i=0}^{6}w_{e_i}(\xi)\left[ \begin{array}{c}\mathbf{x}_{e_1} \\ \vdots \\ \mathbf{x}_{e_{6}} \end{array}\right] + \left[ \begin{array}{c}\xi_1\mathbf{x}_{v_1} \\ \vdots \\ \xi_4\mathbf{x}_{v_4} \end{array}\right]  = \sum_{i=0}^{N}w_i(\xi)\left[ \begin{array}{c}\mathbf{x}_{1} \\ \vdots \\ \mathbf{x}_{N} \end{array}\right] \]
-This comes down to correct indexing for each face, edge, and vertex into the tetrahedral space, determining $i$ for $\mathbf{x}_i = \mathbf{x}_{j}$ for all face and edge points $j$. The weights are just the sum of the weights of the corresponding entries.
+\[\mathbf{x}(\xi) = \sum_{i=0}^{4}||\xi_{f_i}||w_{f_i}(\xi_{f_i})\mathbf{x}(\xi_{f_i}) - \sum_{i=0}^{6}||\xi_{e_i}||w_{e_i}(\xi_{e_i})\mathbf{x}(\xi_{e_i}) + \sum_{i=0}^{4}\xi_i\mathbf{x}_{v_i}\]
+The weights for the tetrahedron are then obtained by summing corresponding weights from the faces, edges, and vertices. Similar to the triangle, we have the ordering of nodes on the tetrahedron as $v_0,v_1,v_2,v_3,[e_0],\ldots,[e_5],[f_0],\ldots,[f_3]$. Each edge and face is then called for its weights, and they are added into into the weights of the tetrahedron. For edges, this is straight-forward and identical to triangle blending. For triangles, the weights obtained also contain weights for the edges which must be added in, as well as the vertex weights. This is identified in the 
+\texttt{tet\_tri\_edges}, containing the edges of the tetrahedron for each face. For example, face 2 is formed from vertices 1,2,3. On the tetrahedron, that corresponds to edges 1,5,4, with 4 in reverse order. Thus when adding to the weights of the edge nodes, if the edge is reversed, the weights are added in reverse order to the tetrahedron weight array, adding them to the correct index in the weight array.
+
+Derivatives are computed identically to triangular blending, with multiple uses of the chain rule. Once again, when any of $||\xi_{e_i}||,||\xi_{f_i}|| = 0$, we do not consider the contribution of that entity.
+\subsection{Align Shared Nodes}
+Ordering of edge nodes is the same as for a triangle, reversing them if they are flipped relative to the tetrahedron. For the face nodes in the tetrahedron, these can be flipped and rotated. The correct re-ordering is implemented in a more general form, but uses the fact the interior nodes form loops around the vertices, and rotation is just a shift by the number of nodes per edge. Flipped faces are less obvious, but the correct ordering is obtained by simply examining the flipped triangle's nodes, and matching the ordering (in the example below, node 6 is where node 0 is in the canonical triangle, so the ordering starts with 6). Examples are shown below.
+\begin{figure}[!ht]
+\begin{tikzpicture}[scale=0.5]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+
+(6,0) node {$1$}
+(0,6) node {$2$}
+(1,1) node {$0$}
+(2,1) node {$1$}
+(3,1) node {$2$}
+(4,1) node {$3$}
+(3,2) node {$4$}
+(2,3) node {$5$}
+(1,4) node {$6$}
+(1,3) node {$7$}
+(1,2) node {$8$}
+(2,2) node {$9$};
+
+\end{tikzpicture}\hspace{0.5cm}
+\begin{tikzpicture}[scale=0.5]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$2$}
+
+(6,0) node {$1$}
+(0,6) node {$0$}
+(1,1) node {$6$}
+(2,1) node {$5$}
+(3,1) node {$4$}
+(4,1) node {$3$}
+(3,2) node {$2$}
+(2,3) node {$1$}
+(1,4) node {$0$}
+(1,3) node {$8$}
+(1,2) node {$7$}
+(2,2) node {$9$};
+\end{tikzpicture}\hspace{0.5cm}
+\begin{tikzpicture}[scale=0.5]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$1$}
+(6,0) node {$2$}
+(0,6) node {$0$}
+(1,1) node {$3$}
+(2,1) node {$4$}
+(3,1) node {$5$}
+(4,1) node {$6$}
+(3,2) node {$7$}
+(2,3) node {$8$}
+(1,4) node {$0$}
+(1,3) node {$1$}
+(1,2) node {$2$}
+(2,2) node {$9$};
+\end{tikzpicture}
+\caption{Shared nodes for 6th order Bezier triangle. Original Ordering (left) (0,...,9). Flipped ordering (middle) (6,5,4,3,2,1,0,8,7,9). Rotated ordering by 2 (right) (3,4,5,6,7,8,0,1,2,9).}
+\end{figure}
+
+\section{G1 Gregory Patches}
+G1 continuous patches are implemented following Walton and Meek, \textit{A triangular G1 patch from boundary curves}. The mesh is initially set to 4th order, with 6 face nodes for the G1 patch. First, all edges on a geometric surface have control points set (the first two nodes of the three) using surface normals and the vertex locations. Edges on geometric edges have their control points set using the tangents at their endpoints. These edge control points use the algorithm of Walton and Meek to set the six face nodes. Once the internal points are determined, the edges are formally elevated, by resetting all of the points to the elevated control points.
+
+The weights on these nodes are similar to the triangular Bezier, with the evaluation done as if it is a Bezier triangle with internal Bezier points, $\mathbf{B}$, and Gregory points, $\mathbf{G}$.
+\begin{equation}
+\mathbf{B}_{12} = \frac{1}{\xi_1+\xi_2}(\xi_2\mathbf{G}_{12}+\xi_1\mathbf{G}_{17})
+\end{equation}
+\begin{equation}
+\mathbf{B}_{13} = \frac{1}{\xi_0+\xi_2}(\xi_0\mathbf{G}_{13}+\xi_2\mathbf{G}_{15})
+\end{equation}
+\begin{equation}
+\mathbf{B}_{14} = \frac{1}{\xi_0+\xi_1}(\xi_1\mathbf{G}_{14}+\xi_0\mathbf{G}_{16})
+\end{equation}
+The remainder of the mathematics is the same as the Bezier triangle, with tetrahedral blending, and other aspects maintaining the same form. We should note that choosing $\mathbf{G}_{12} = \mathbf{G}_{17}, \mathbf{G}_{13} = \mathbf{G}_{15}, \mathbf{G}_{14} = \mathbf{G}_{16}$ results in the original Bezier triangle, albeit with three additional nodes stored per triangle.
+\begin{figure}
+\begin{tikzpicture}[scale=1]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+(1,0) node {$3$}
+(2,0) node {$4$}
+(3,0) node {$5$}
+(4,0) node {$1$}
+(3,1) node {$6$}
+(2,2) node {$7$}
+(1,3) node {$8$}
+(0,4) node {$2$}
+(0,3) node {$9$}
+(0,2) node {$10$}
+(0,1) node {$11$}
+(1.0,0.5) node {$12$}
+(2.5,1.25) node {$13$}
+(0.5,2.25) node {$14$}
+(2.5,0.5) node {$15$}
+(1.5,2.25) node {$16$}
+(0.5,1.0) node {$17$};
+
+\end{tikzpicture} \hspace{2cm}
+\begin{tikzpicture}[scale=1]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+
+(4,0) node {$1$}
+
+(0,4) node {$2$}
+
+(1.0,0.5) node {$0$}
+(2.5,1.25) node {$1$}
+(0.5,2.25) node {$2$}
+(2.5,0.5) node {$3$}
+(1.5,2.25) node {$4$}
+(0.5,1.0) node {$5$};
+
+\end{tikzpicture}
+\caption{Global and local node ordering for the 4th order G1 triangle. The ordering is chosen as these points are set based on edges, so node 0 and node 3 correspond to edge 0 and so forth.}
+\end{figure}
 \end{document}
