@@ -492,6 +492,8 @@ extern int const prism_edge_verts[9][2];
 extern int const pyramid_edge_verts[8][2];
 /** \brief map from tet triangle order to tet vertex order */
 extern int const tet_tri_verts[4][3];
+/** \brief map from hex quad order to hex vertex order */
+extern int const hex_quad_verts[6][4];
 /** \brief map from prism triangle order to prism vertex order */
 extern int const prism_tri_verts[2][3];
 /** \brief map from prism quad order to prism vertex order */
