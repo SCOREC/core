@@ -70,6 +70,14 @@ int const tet_tri_verts[4][3] =
 ,{1,2,3}
 ,{0,2,3}};
 
+int const hex_quad_verts[6][4] =
+{{0,1,2,3}
+,{0,1,5,4}
+,{1,2,6,5}
+,{2,3,7,6}
+,{3,0,4,7}
+,{4,5,6,7}};
+
 int const prism_tri_verts[2][3] =
 {{0,1,2}
 ,{3,4,5}};
@@ -497,6 +505,20 @@ static void runTetDown(
     for (int j=0; j < 3; ++j)
       fv[j] = verts[tet_tri_verts[i][j]];
     down[i] = o->run(Mesh::TRIANGLE,fv);
+  }
+}
+
+static void runHexDown(
+    ElementVertOp* o,
+    MeshEntity** verts,
+    MeshEntity** down)
+{
+  Downward fv;
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 4; ++j)
+      fv[j] = verts[hex_quad_verts[i][j]];
+    down[i] = o->run(Mesh::QUAD,fv);
   }
 }
 

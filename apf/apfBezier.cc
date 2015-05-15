@@ -11,6 +11,8 @@
 #include "apfMesh.h"
 #include "apfShape.h"
 
+/* see bezier.tex */
+
 namespace apf {
 
 // negative -> flipped relative to canonical
@@ -669,6 +671,7 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       -6.60581336,9.74813268,-7.82909978,
       -0.166666667,-2.338908,0.476769119,-0.800405899,
       1.2670886,-2.14695479,4.70907763};
+
   double* table[5] = {
       e2,e3,e4,e5,e6};
   int nb = order-1;
@@ -806,6 +809,7 @@ static void getBezierShapeInterPtsToCtrlPts(int order, int type,
       2.62919661,0.852569479,-3.89671807,9.21852962,-7.99944935,
       -7.99944935,9.21852962,-7.99944374,-7.99945144,9.21853253,
       -7.99945144,-7.99944374,23.4971758};
+
   double* table[10] = {
       e2,e3,e4,e5,e6,NULL,f3,f4,f5,f6};
   int nb = (type == Mesh::TRIANGLE) ?
@@ -910,7 +914,6 @@ public:
 
           values[12+pairs[i][0]] = bernstein*xii[index[i][0]]/x;
           values[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x;
-
         }
 
       } else {
@@ -951,15 +954,11 @@ public:
 
           if(x < 1e-10) continue;
 
-
           grads[12+pairs[i][0]] = bernstein*xii[index[i][0]]/x
             + (gxii[index[i][0]]/x-gx*xii[index[i][0]]/x/x)*v[12+pairs[i][0]];
 
           grads[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x
             + (gxii[index[i][1]]/x-gx*xii[index[i][1]]/x/x)*v[12+pairs[i][1]];
-
-
-
         }
       } else {
         BlendedTriangleGetLocalGradients(4,CURVED_GREGORY,m,e,xi,grads);
@@ -1020,6 +1019,7 @@ public:
             order[i] = 2-i;
         return;
       }
+      // first three are no flip, second three are flip for rotations 0,1,2
       int orients[6][6] =
       {{0,1,2,3,4,5},{2,0,1,5,3,4},{1,2,0,4,5,3},
        {4,3,5,1,0,2},{3,5,4,0,2,1},{5,4,3,2,1,0}};
@@ -1027,6 +1027,7 @@ public:
         order[i] = orients[flip*3+rotate][i];
     }
   };
+
   EntityShape* getEntityShape(int type)
   {
     static BezierShape<1>::Vertex vertex;
@@ -1066,7 +1067,7 @@ public:
      0};                //pyramid
     return nodes[type];
   }
-  /* These don't make sense for gregory patches */
+  /* These are set up so the points are the triangular bezier points */
   void getNodeXi(int type, int node, Vector3& xi)
    {
     static double edgePoints[3] = {-0.6612048,0.0,0.6612048};
