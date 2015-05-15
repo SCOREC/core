@@ -148,6 +148,56 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.bcb = bcb;
 }
 
+static void getInterface
+(
+  Output&         o,
+  apf::Numbering* n
+)
+{
+  apf::Mesh*        m  = o.mesh;
+  BlocksInterface&  bs = o.blocks.interface;
+  int***            ienif = new int**[bs.getSize()];
+  apf::NewArray<int> js(bs.getSize());
+  for (int i = 0; i < bs.getSize(); ++i) {
+    ienif[i] = new int*[bs.nElements[i]];
+    js[i] = 0;
+  }
+  int interfaceDim = m->getDimension() - 1;
+  apf::MeshEntity*   f;
+  apf::MeshIterator* it = m->begin(interfaceDim);
+  while ((f = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(f);
+    if (m->getModelType(me) != interfaceDim)
+      continue;
+    /* interface has two inner elements */
+    if (m->countUpward(f) != 2)
+      continue;
+    apf::MeshEntity* e0 = m->getUpward(f, 0);
+    apf::MeshEntity* e1 = m->getUpward(f, 1);
+    BlockKeyInterface k;
+    getInterfaceBlockKey(m, e0, e1, f, k);
+    assert(bs.keyToIndex.count(k));
+    int i = bs.keyToIndex[k];
+    int j = js[i];
+    int nv0 = k.nElementVertices;
+    int nv1 = k.nElementVertices1;
+    int nv  = nv0 + nv1;
+    apf::Downward v0, v1;
+    getBoundaryVertices(m, e0, f, v0);
+    getBoundaryVertices(m, e1, f, v1);
+    ienif[i][j] = new int[nv];
+    for (int k = 0; k < nv0; ++k)
+      ienif[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
+    for (int k = 0; k < nv1; ++k)
+      ienif[i][j][nv0 + k] = apf::getNumber(n, v1[k], 0, 0);
+    ++js[i];
+  }
+  m->end(it);
+  for (int i = 0; i < bs.getSize(); ++i)
+    assert(js[i] == bs.nElements[i]);
+  o.arrays.ienif = ienif;
+}  
+
 static void getBoundaryElements(Output& o)
 {
   Blocks& bs = o.blocks.boundary;
@@ -155,6 +205,15 @@ static void getBoundaryElements(Output& o)
   for (int i = 0; i < bs.getSize(); ++i)
     n += bs.nElements[i];
   o.nBoundaryElements = n;
+}
+
+static void getInterfaceElements(Output& o)
+{
+  BlocksInterface& bs = o.blocks.interface;
+  int n = 0;
+  for (int i = 0; i < bs.getSize(); ++i)
+    n += bs.nElements[i]; /* need to add nElementsOther as well ??? */
+  o.nInterfaceElements = n;
 }
 
 static void getMaxElementNodes(Output& o)
@@ -166,6 +225,9 @@ static void getMaxElementNodes(Output& o)
   Blocks& bbs = o.blocks.boundary;
   for (int i = 0; i < bbs.getSize(); ++i)
     n = std::max(n, bbs.keys[i].nElementVertices);
+  BlocksInterface ifbs = o.blocks.interface;
+  for (int i = 0; i < ifbs.getSize(); ++i)
+    n = std::max(n, ifbs.keys[i].nElementVertices);
   o.nMaxElementNodes = n;
 }
 
@@ -340,9 +402,11 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getVertexLinks(o, n);
   getInterior(o, n);
   getBoundary(o, bcs, n);
+  getInterface(o, n);
   getLocalPeriodicMasters(o, n);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
+  getInterfaceElements(o);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);

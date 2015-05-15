@@ -34,6 +34,11 @@ struct EnsaArrays
    element j of
    boundary block i */
   int*** ienb;
+/* ienif[i][j][k] is the local vertex id of
+   vertex k of
+   element j of
+   boundary block i */
+  int*** ienif;
 /* ibcb[i][j][k] is the natural boundary condition
    status code
    number k in [0,1] of
@@ -85,6 +90,7 @@ struct Output
   int nOwnedNodes;
   int nGlobalNodes;
   int nBoundaryElements;
+  int nInterfaceElements;
   int nMaxElementNodes;
   int nEssentialBCNodes;
   int nlwork; /* size of arrays.ilwork */

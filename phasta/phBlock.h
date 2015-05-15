@@ -76,7 +76,14 @@ std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
 void getInteriorBlockKey(apf::Mesh* m, apf::MeshEntity* e, BlockKey& k);
 void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
     apf::MeshEntity* f, BlockKey& k);
-void getInterfaceBlockKey(apf::Mesh*, apf::MeshEntity*, BlockKeyInterface&);
+void getInterfaceBlockKey
+(
+  apf::Mesh*         m, 
+  apf::MeshEntity*   e0, 
+  apf::MeshEntity*   e1, 
+  apf::MeshEntity*   f, 
+  BlockKeyInterface& k
+);
 
 }
 
