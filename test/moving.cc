@@ -36,8 +36,8 @@ int main(int argc, char** argv)
   fixed.insert(m->findModelEntity(2, 6));
   fixed.insert(m->findModelEntity(2, 17));
   dsp::closeBoundary(m, fixed);
-  dsp::Smoother* smoother = dsp::Smoother::makeSemiSpring();
-//dsp::Smoother* smoother = dsp::Smoother::makeLaplacian();
+//  dsp::Smoother* smoother = dsp::Smoother::makeSemiSpring();
+  dsp::Smoother* smoother = dsp::Smoother::makeLaplacian();
 //double avgEdgeLen = ma::getAverageEdgeLength(m);
 //dsp::Adapter* adapter = dsp::Adapter::makeUniform(avgEdgeLen);
   dsp::Adapter* adapter = dsp::Adapter::makeEmpty();
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
                    0,0,1);
   writeStep(m, 0);
   /* number of displacement steps */
-  for (int i = 0; i < 1; ++i) {
+  for (int i = 0; i < 10; ++i) {
     apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
     smoother->smooth(dsp, fixed, moving);
   //dsp::tryToDisplace(m, dsp);
