@@ -163,6 +163,10 @@ namespace dsp {
       }
       
       cout << "Loop times = " << loop_times << endl;
+      
+      //erase numbering and tag
+      apf::destroyNumbering();
+      m->destroyTag();
       /* end Fan's code */
       (void)m;
       (void)df;
@@ -376,6 +380,10 @@ namespace dsp {
         loop_times++;
       }
       cout << "Loop times = " << loop_times << endl;
+      
+      //erase numbering and tag
+      apf::destroyNumbering();
+      m->destroyTag();
       /* end Fan's code */
       (void)m;
       (void)df;
