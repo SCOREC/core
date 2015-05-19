@@ -153,7 +153,7 @@ namespace dsp {
           double d2 = D_total[i][1] - D_temp[1];
           double d3 = D_total[i][2] - D_temp[2];
           apf::setVector(df, V_total[i], 0, D_total[i]);
-
+          
           double temp_max = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
           if (max < temp_max) {
             max = temp_max;
@@ -191,7 +191,6 @@ namespace dsp {
       //data structure
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
       vector < apf::MeshEntity* > V_total;
-      vector < apf::Vector3 > D_total;
       apf::Numbering* numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
       
       //iterate vertex to count the number of each type of vertex
@@ -201,8 +200,6 @@ namespace dsp {
         me = m->toModel(v);
         if (moving.count(me)) {
           V_total.push_back(v);
-          apf::getVector(df, v, 0, d);
-          D_total.push_back(d);
           apf::number(numbers, v, 0, 0, id);
           id++;
         }
@@ -216,8 +213,6 @@ namespace dsp {
         me = m->toModel(v);
         if ((!fixed.count(me))&(!moving.count(me))) {
           V_total.push_back(v);
-          apf::getVector(df, v, 0, d);
-          D_total.push_back(d);
           apf::number(numbers, v, 0, 0, id);
           id++;
         }
@@ -231,8 +226,6 @@ namespace dsp {
         me = m->toModel(v);
         if (fixed.count(me)) {
           V_total.push_back(v);
-          apf::getVector(df, v, 0, d);
-          D_total.push_back(d);
           apf::number(numbers, v, 0, 0, id);
           id++;
         }
@@ -265,7 +258,6 @@ namespace dsp {
       while (!q.empty()) {
         v = q.front();
         me = m->toModel(v);
-        apf::getVector(df, v, 0, d);
         m->getAdjacent(v, 1, adj);
         int num_adj = adj.getSize();
         for (int i = 0 ; i < num_adj ; i++) {
@@ -281,21 +273,22 @@ namespace dsp {
         }
         if ((!moving.count(me)) & (!fixed.count(me))) {
           V_total[id] = v;
-          D_total[id] = d;
           apf::number(numbers, v, 0, 0, id);
           id++;
         }
         q.pop();
       }
-
+      
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       apf::Downward down;
       double stiffness_temp; apf::Vector3 force_temp;
-      double cos_squ; double length_squ;
       vector < apf::Vector3 > tet_OP(3);
       vector < apf::Vector3 > tet_DP(3);
-      apf::Vector3 D_temp;
+      apf::Vector3 P_temp; //coordinate
+      apf::Vector3 D_temp; //displcament
+      apf::Vector3 D_new; //displcament
+      double d1, d2, d3;
       
       // semi-torsional spring: stiffness = 1/length^2 + sum(1/sin(theta)^2)
       // check max, stop until it is less the tolerance
@@ -303,12 +296,14 @@ namespace dsp {
       while (max > tol) {
         max = 0.0;
         for (int i = in_0 ; i < fb_0 ; i++) {
-          apf::Vector3 force_sum = apf::Vector3(0, 0, 0);
           double stiffness_sum = 0.0;
+          apf::Vector3 force_sum = apf::Vector3(0.0, 0.0, 0.0);
+          m->getPoint(V_total[i], 0, P_temp);
+          apf::getVector(df, V_total[i], 0, D_temp);
           m->getAdjacent(V_total[i], 3, adj);
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
-            int num_down; //num_down is sopposed to be 4
+            int num_down; //num_down is supposed to be 4
             num_down = m->getDownward(adj[j], 0, down);
             int tet_id = 0;
             for (int k = 0 ; k < num_down ; k++) {
@@ -318,6 +313,8 @@ namespace dsp {
                 tet_id++;
               }
             }
+            if (tet_id != 3)
+              cout << "Find more than 3 adjacnet vertices in one tet!" << endl;
             //----------------------------------------------------
             apf::Vector3 n_1; apf::Vector3 n_2;
             for (int K = 0 ; K < 3 ; K++) {
@@ -335,22 +332,28 @@ namespace dsp {
               n_1[2] = (tet_OP[B][0] - tet_OP[K][0]) * (tet_OP[A][1] - tet_OP[K][1])
               - (tet_OP[B][1] - tet_OP[K][1]) * (tet_OP[A][0] - tet_OP[K][0]);
               
-              n_2[0] = (tet_OP[B][1] - D_total[i][1]) * (tet_OP[A][2] - D_total[i][2])
-              - (tet_OP[B][2] - D_total[i][2]) * (tet_OP[A][1] - D_total[i][1]);
+              n_2[0] = (tet_OP[B][1] - P_temp[1]) * (tet_OP[A][2] - P_temp[2])
+              - (tet_OP[B][2] - P_temp[2]) * (tet_OP[A][1] - P_temp[1]);
               
-              n_2[1] = (tet_OP[B][2] - D_total[i][2]) * (tet_OP[A][0] - D_total[i][0])
-              - (tet_OP[B][0] - D_total[i][0]) * (tet_OP[A][2] - D_total[i][2]);
+              n_2[1] = (tet_OP[B][2] - P_temp[2]) * (tet_OP[A][0] - P_temp[0])
+              - (tet_OP[B][0] - P_temp[0]) * (tet_OP[A][2] - P_temp[2]);
               
-              n_2[2] = (tet_OP[B][0] - D_total[i][0]) * (tet_OP[A][1] - D_total[i][1])
-              - (tet_OP[B][1] - D_total[i][1]) * (tet_OP[A][0] - D_total[i][0]);
+              n_2[2] = (tet_OP[B][0] - P_temp[0]) * (tet_OP[A][1] - P_temp[1])
+              - (tet_OP[B][1] - P_temp[1]) * (tet_OP[A][0] - P_temp[0]);
               
-              cos_squ = pow((n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2]), 2)
-              /(pow(n_1[0], 2) + pow(n_1[1], 2) + pow(n_1[2], 2))
-              /(pow(n_2[0], 2) + pow(n_2[1], 2) + pow(n_2[2], 2));
+              double cos_squ_up = (n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2])
+              * (n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2]);
               
-              length_squ = pow((tet_OP[K][0] - D_total[i][0]), 2)
-              + pow((tet_OP[K][1] - D_total[i][1]), 2)
-              + pow((tet_OP[K][2] - D_total[i][2]), 2);
+              double cos_squ_dw = (n_1[0] * n_1[0] + n_1[1] * n_1[1] + n_1[2] * n_1[2])
+              * (n_2[0] * n_2[0] + n_2[1] * n_2[1] + n_2[2] * n_2[2]);
+              
+              cos_squ = cos_squ_up / cos_squ_dw;
+              
+              d1 = tet_OP[K][0] - P_total[i][0];
+              d2 = tet_OP[K][1] - P_total[i][1];
+              d3 = tet_OP[K][2] - P_total[i][2];
+              
+              length_squ = d1 * d1 + d2 * d2 + d3 * d3;
               
               stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
               force_temp[0] = stiffness_temp * tet_DP[K][0];
@@ -362,15 +365,14 @@ namespace dsp {
             }
             //----------------------------------------------------
           }
-          D_total[i][0] = force_sum[0]/stiffness_sum;
-          D_total[i][1] = force_sum[1]/stiffness_sum;
-          D_total[i][2] = force_sum[2]/stiffness_sum;
+          D_new[0] = force_sum[0]/stiffness_sum;
+          D_new[1] = force_sum[1]/stiffness_sum;
+          D_new[2] = force_sum[2]/stiffness_sum;
           
-          apf::getVector(df, V_total[i], 0, D_temp);
-          double d1 = D_total[i][0] - D_temp[0];
-          double d2 = D_total[i][1] - D_temp[1];
-          double d3 = D_total[i][2] - D_temp[2];
-          apf::setVector(df, V_total[i], 0, D_total[i]);
+          d1 = D_new[0] - D_temp[0];
+          d2 = D_new[1] - D_temp[1];
+          d3 = D_new[2] - D_temp[2];
+          apf::setVector(df, V_total[i], 0, D_new);
           
           double temp_max = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
           if (max < temp_max) {
