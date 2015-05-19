@@ -347,13 +347,13 @@ namespace dsp {
               double cos_squ_dw = (n_1[0] * n_1[0] + n_1[1] * n_1[1] + n_1[2] * n_1[2])
               * (n_2[0] * n_2[0] + n_2[1] * n_2[1] + n_2[2] * n_2[2]);
               
-              cos_squ = cos_squ_up / cos_squ_dw;
+              double cos_squ = cos_squ_up / cos_squ_dw;
               
-              d1 = tet_OP[K][0] - P_total[i][0];
-              d2 = tet_OP[K][1] - P_total[i][1];
-              d3 = tet_OP[K][2] - P_total[i][2];
+              d1 = tet_OP[K][0] - P_temp[0];
+              d2 = tet_OP[K][1] - P_temp[1];
+              d3 = tet_OP[K][2] - P_temp[2];
               
-              length_squ = d1 * d1 + d2 * d2 + d3 * d3;
+              double length_squ = d1 * d1 + d2 * d2 + d3 * d3;
               
               stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
               force_temp[0] = stiffness_temp * tet_DP[K][0];
