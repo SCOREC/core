@@ -69,7 +69,6 @@ string(REGEX MATCH
 
 set(SIMMODSUITE_LIBS "")
 set(SIM_LIB_NAMES
-  SimField
   SimPartitionedMesh-mpi
   SimMeshing
   SimMeshTools
@@ -106,6 +105,7 @@ if (SIM_ACIS)
 endif()
 
 set(SIM_OPT_LIB_NAMES
+  SimField
   SimAdvMeshing)
 
 simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)

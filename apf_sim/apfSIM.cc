@@ -1,5 +1,4 @@
 #include "apfSIM.h"
-#include "apfSIMDataOf.h"
 #include <apf.h>
 #include <apfShape.h>
 #include <SimModel.h>
@@ -7,22 +6,37 @@
 #include <SimPartitionedMesh.h>
 #include <gmi.h>
 #include <gmi_sim.h>
+#include <apf_simConfig.h>
+
+#ifdef SIMMODSUITE_SimField_FOUND
+#include "apfSIMDataOf.h"
+apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
+    FieldShape* shape)
+{
+  return makeField(m, name, valueType, 0,shape, new SIMDataOf<double>);
+}
+#else
+apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
+    FieldShape* shape)
+{
+  (void)m;
+  (void)name;
+  (void)valueType;
+  (void)shape;
+  apf::fail("SimField not found when APF_SIM compiled");
+}
+#endif
 
 namespace apf {
 
-Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape)
+Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order)
 {
-  return makeField(m,name,valueType,0,shape,new SIMDataOf<double>);
-}
-
-Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order)
-{
-  return createSIMField(m,name,valueType,getLagrange(order));
+  return createSIMField(m, name, valueType, getLagrange(order));
 }
 
 Field * createSIMFieldOn(Mesh * m, const char * name, int valueType)
 {
-  return createField(m,name,valueType,m->getShape());
+  return createSIMField(m, name, valueType, m->getShape());
 }
 
 MeshSIM::MeshSIM(pParMesh m):
