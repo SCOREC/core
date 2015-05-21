@@ -51,6 +51,7 @@ class Input
     int snap;
     int splitAllLayerEdges;
     int filterMatches;
+    int axisymmetry;
 };
 
 int countNaturalBCs(Input& in);

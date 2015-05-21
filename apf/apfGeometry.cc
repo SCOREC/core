@@ -4,6 +4,10 @@
 
 namespace apf {
 
+Line::Line()
+{
+}
+
 Line::Line(Vector3 const& o, Vector3 const& d):
   origin(o),
   direction(d.normalize())

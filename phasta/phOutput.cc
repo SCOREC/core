@@ -3,6 +3,7 @@
 #include "phLinks.h"
 #include "phAdjacent.h"
 #include "phBubble.h"
+#include "phAxisymmetry.h"
 
 namespace ph {
 
@@ -208,6 +209,9 @@ static void getEssentialBCs(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
+  apf::MeshTag* angles = 0;
+  if (in.axisymmetry)
+    angles = tagAngles(m, bcs);
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
   for (int i = 0; i < nv; ++i)
@@ -228,12 +232,18 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     apf::Vector3 x;
     m->getPoint(v, 0, x);
     ibc = 0;
+    for (int j = 0; j < nec; ++j)
+      bc[j] = 0;
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
     /* which is set only for local slaves */
     if (o.arrays.iper[i] != 0) {
-      ibc |= (1<<10); //yes, hard coded...
+      ibc |= (1<<10);
       hasBC = true;
+      if (in.axisymmetry && m->hasTag(v, angles)) {
+        ibc |= (1<<11);
+        m->getDoubleTag(v, angles, &bc[11]);
+      }
     }
     if (hasBC) {
       o.arrays.nbc[i] = ei + 1;
@@ -248,6 +258,8 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   }
   m->end(it);
   delete [] bc;
+  if (in.axisymmetry)
+    m->destroyTag(angles);
 }
 
 static void getInitialConditions(BCs& bcs, Output& o)

@@ -134,9 +134,12 @@ bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
     apf::Vector3 const& x, double* BC, int* iBC);
 
 double* getBCValue(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge,
-    apf::Vector3 const& x);
+    apf::Vector3 const& x = apf::Vector3(0,0,0));
 
 bool haveBC(BCs& bcs, std::string const& name);
+
+ConstantBC* makeConstantBC(BCs& bcs, std::string const& name, int dim, int tag,
+    int nvals);
 
 }
 
