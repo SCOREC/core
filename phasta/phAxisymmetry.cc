@@ -75,7 +75,7 @@ static double* getAngleBC(gmi_model* gm, BCs& bcs, gmi_ent* e)
   if (d == 2)
     return getBCValue(gm, bcs.fields["ph::angle"], e);
   gmi_set* s = gmi_adjacent(gm, e, d + 1);
-  double* angle;
+  double* angle = 0;
   for (int i = 0; i < s->n; ++i) {
     angle = getAngleBC(gm, bcs, s->e[i]);
     if (angle)
