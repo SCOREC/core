@@ -13,9 +13,7 @@ bool LinkKey::operator<(LinkKey const& other) const
 }
 
 /* the PhastaSharing class is responsible for ensuring that
-   ILWORK links matched entities correctly.
-   Only on-part owners are treated as remotes of one another,
-   where on-part ownership is defined by smallest entity pointer */
+   ILWORK links matched entities correctly. */
 
 struct PhastaSharing : public apf::Sharing {
   PhastaSharing(apf::Mesh* m)

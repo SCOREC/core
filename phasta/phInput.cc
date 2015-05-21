@@ -27,6 +27,7 @@ static void setDefaults(Input& in)
   in.snap = 0;
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
+  in.axisymmetry = 0;
 }
 
 Input::Input()
@@ -78,6 +79,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["snap"] = &in.snap;
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
   intMap["filterMatches"] = &in.filterMatches;
+  intMap["axisymmetry"] = &in.axisymmetry;
 }
 
 template <class T>

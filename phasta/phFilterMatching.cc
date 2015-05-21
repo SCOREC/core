@@ -1,7 +1,7 @@
 #include "phFilterMatching.h"
+#include "phModelGeometry.h"
+#include "phAxisymmetry.h"
 #include <vector>
-#include <apfGeometry.h>
-#include <gmi.h>
 #include <map>
 #include <set>
 #include <apf.h>
@@ -46,8 +46,6 @@ void restoreMatches(apf::Mesh2* m, int dim, SavedMatches& sm)
   }
   m->end(it);
 }
-
-static double const tolerance = 1e-9;
 
 static void completeEntMatching(gmi_ent* e, ModelMatching& mm, ModelSet& visited)
 {
@@ -98,51 +96,6 @@ static void getAttributeMatching(gmi_model* gm, BCs& bcs, ModelMatching& mm)
   }
 }
 
-static apf::Plane getFacePlane(gmi_model* gm, gmi_ent* f)
-{
-  double r[2];
-  double p[2];
-  gmi_range(gm, f, 0, r);
-  p[0] = r[0];
-  gmi_range(gm, f, 1, r);
-  p[1] = r[0];
-  apf::Vector3 origin;
-  gmi_eval(gm, f, p, &origin[0]);
-  apf::Vector3 normal;
-  gmi_normal(gm, f, p, &normal[0]);
-  return apf::Plane(normal, normal * origin);
-}
-
-static apf::Vector3 getVertexCenter(gmi_model* gm, gmi_ent* v)
-{
-  double p[2] = {0,0};
-  apf::Vector3 center;
-  gmi_eval(gm, v, p, &center[0]);
-  return center;
-}
-
-static apf::Vector3 getEdgeCenter(gmi_model* gm, gmi_ent* e)
-{
-  double r[2];
-  gmi_range(gm, e, 0, r);
-  double p[2];
-  p[0] = (r[1] + r[0]) / 2;
-  apf::Vector3 center;
-  gmi_eval(gm, e, p, &center[0]);
-  return center;
-}
-
-static apf::Vector3 getCenter(gmi_model* gm, gmi_ent* e)
-{
-  switch (gmi_dim(gm, e)) {
-    case 0:
-      return getVertexCenter(gm, e);
-    case 1:
-      return getEdgeCenter(gm, e);
-  };
-  abort();
-}
-
 static double getDistanceWithFrame(gmi_model* gm, gmi_ent* e, gmi_ent* oe,
     apf::Frame const& frame)
 {
@@ -184,16 +137,6 @@ static void closeFaceMatchingWithFrame(gmi_model* gm, gmi_ent* f, gmi_ent* of,
   }
 }
 
-static apf::Vector3 getAnyPointOnFace(gmi_model* gm, gmi_ent* f)
-{
-  gmi_set* s = gmi_adjacent(gm, f, 1);
-  assert(s);
-  assert(s->n >= 1);
-  apf::Vector3 p = getEdgeCenter(gm, s->e[0]);
-  gmi_free_set(s);
-  return p;
-}
-
 static void closeFaceMatching(gmi_model* gm, gmi_ent* f, ModelMatching& mm)
 {
   assert(mm[f].size() == 1);
@@ -212,29 +155,21 @@ static void closeFaceMatching(gmi_model* gm, gmi_ent* f, ModelMatching& mm)
         at the center of their parametric range
      note that these are quite restrictive and hard to
      check for violations, so use this code with great care. */
-  apf::Plane p = getFacePlane(gm, f);
-  apf::Plane op = getFacePlane(gm, of);
-  assert( ! apf::areClose(p, op, tolerance));
   apf::Frame frame;
-  if (apf::areParallel(p, op, tolerance)) {
+  apf::Line axis;
+  double angle;
+  if (getAxisymmetry(gm, f, of, axis, angle)) {
+    apf::Frame toline = apf::Frame::forTranslation(axis.origin * -1);
+    apf::Frame rotation = apf::Frame::forRotation(axis.direction, angle);
+    apf::Frame fromline = apf::Frame::forTranslation(axis.origin);
+    frame = fromline * rotation * toline;
+  } else {
+    apf::Plane p = getFacePlane(gm, f);
+    apf::Plane op = getFacePlane(gm, of);
+    assert( ! apf::areClose(p, op, ph::tolerance));
     apf::Vector3 o = p.normal * p.radius;
     apf::Vector3 oo = op.normal * op.radius;
     frame = apf::Frame::forTranslation(oo - o);
-  } else {
-    apf::Line line = apf::intersect(p, op);
-    /* we need a couple points to know which of the four
-       quadrants between the planes we are dealing with */
-    apf::Vector3 pt = getAnyPointOnFace(gm, f);
-    apf::Vector3 opt = getAnyPointOnFace(gm, of);
-    apf::Vector3 v = apf::reject(pt - line.origin, line.direction);
-    apf::Vector3 ov = apf::reject(opt - line.origin, line.direction);
-    double angle = apf::getAngle(v, ov);
-    if (apf::cross(v, ov) * line.direction < 0)
-      angle = -angle;
-    apf::Frame toline = apf::Frame::forTranslation(line.origin * -1);
-    apf::Frame rotation = apf::Frame::forRotation(line.direction, angle);
-    apf::Frame fromline = apf::Frame::forTranslation(line.origin);
-    frame = fromline * rotation * toline;
   }
   closeFaceMatchingWithFrame(gm, f, of, mm, frame);
 }

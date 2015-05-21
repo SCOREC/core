@@ -8,6 +8,7 @@ namespace apf {
 struct Line {
   Vector3 origin;
   Vector3 direction;
+  Line();
   Line(Vector3 const& o, Vector3 const& d);
 };
 
