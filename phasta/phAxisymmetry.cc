@@ -38,7 +38,7 @@ static void tryAttachingAngleBCs(BCs& bcs, gmi_model* gm, gmi_ent* f, gmi_ent* o
   if (!getAxisymmetry(gm, f, of, axis, angle))
     return;
   /* PHASTA is constrained to axisymmetry around the Z axis */
-  assert(apf::areParallel(axis.origin, axis.direction, ph::tolerance));
+  assert(apf::areClose(axis.origin, apf::Vector3(0,0,0), ph::tolerance));
   assert(apf::areParallel(axis.direction, apf::Vector3(0,0,1), ph::tolerance));
   if (axis.direction.z() < 0)
     angle = -angle;
@@ -70,12 +70,14 @@ void attachAllAngleBCs(gmi_model* gm, BCs& bcs)
 static double* getAngleBC(gmi_model* gm, BCs& bcs, gmi_ent* e)
 {
   int d = gmi_dim(gm, e);
+  if (d > 2)
+    return 0;
   if (d == 2)
     return getBCValue(gm, bcs.fields["ph::angle"], e);
   gmi_set* s = gmi_adjacent(gm, e, d + 1);
   double* angle;
   for (int i = 0; i < s->n; ++i) {
-    angle = getAngleBC(gm, bcs, e);
+    angle = getAngleBC(gm, bcs, s->e[i]);
     if (angle)
       break;
   }
@@ -93,7 +95,7 @@ static bool requiresRotation(gmi_model* gm, BCs& bcs, gmi_ent* e, gmi_ent* oe,
   if (!ap)
     return false;
   a = *ap;
-  ap = getAngleBC(gm, bcs, e);
+  ap = getAngleBC(gm, bcs, oe);
   if (!ap)
     return false;
   oa = *ap;
@@ -138,9 +140,8 @@ apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs)
     gmi_ent* oge = gmi_find(gm, mdim, mtag);
     gmi_ent* ge = (gmi_ent*) m->toModel(v);
     double angle;
-    if (!requiresRotation(gm, bcs, ge, oge, angle))
-      continue;
-    m->setDoubleTag(v, tag, &angle);
+    if (requiresRotation(gm, bcs, ge, oge, angle))
+      m->setDoubleTag(v, tag, &angle);
   }
   return tag;
 }
