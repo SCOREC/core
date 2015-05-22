@@ -171,7 +171,7 @@ namespace dsp {
       
       apf::Downward down;
       double quality;
-      int badTetNum = v
+      int badTetNum = v;
       
       it = m->begin(3);
       while ((v = m->iterate(it))) {
