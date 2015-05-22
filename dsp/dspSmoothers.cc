@@ -315,6 +315,8 @@ namespace dsp {
         q.pop();
       }
       
+      clock_t t;
+      t = clock();
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       apf::Downward down;
@@ -417,8 +419,41 @@ namespace dsp {
         }
         loop_times++;
       }
-      cout << "Loop times = " << loop_times << endl;
       
+      t = clock() - t;
+      cout << "Loop times = " << loop_times << endl;
+      cout << "CPU time = " << ((float)t)/CLOCKS_PER_SEC << endl;
+      
+      apf::Downward down;
+      double quality;
+      int badTetNum = 0;
+      
+      it = m->begin(3);
+      while ((v = m->iterate(it))) {
+        int num_down = m->getDownward(v,1,down);
+        if (num_down != 6)
+          cout << "WARNING! NOT A TET!" << endl;
+        double l[6];
+        for (int i=0; i < 6; ++i) {
+          apf::MeshElement* melm = apf::createMeshElement(m,down[i]);
+          l[i] = apf::measure(melm);
+          apf::destroyMeshElement(melm);
+        }
+        apf::MeshElement* melm = apf::createMeshElement(m,v);
+        double V = apf::measure(melm);
+        apf::destroyMeshElement(melm);
+        double s=0;
+        for (int i=0; i < 6; ++i)
+          s += l[i]*l[i];
+        if (V < 0)
+          quality = -15552.0*(V*V)/(s*s*s);
+        quality = 15552.0*(V*V)/(s*s*s);
+        if (quality <= 0.027)
+          badTetNum++;
+      }
+      m->end(it);
+      
+      cout << "Number of bad tets = " << badTetNum << endl;
       //erase numbering and tag
       apf::destroyNumbering(numbers);
       m->destroyTag(in_queue_tag);
