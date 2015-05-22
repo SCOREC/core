@@ -172,13 +172,16 @@ namespace dsp {
       apf::Downward down;
       double quality;
       int badTetNum = 0;
+      MeshEntity* tet;
       
       it = m->begin(3);
-      while ((v = m->iterate(it))) {
-        m->getDownward(tet,1,down);
+      while ((tet = m->iterate(it))) {
+        int num_down = m->getDownward(tet,1,down);
+        if (num_down != 6)
+          cout << "WARNING! NOT A TET!" << endl;
         double l[6];
         for (int i=0; i < 6; ++i)
-          l[i] = apf::measure(e[i]);
+          l[i] = apf::measure(down[i]);
         double V = apf::measure(tet);
         double s=0;
         for (int i=0; i < 6; ++i)
