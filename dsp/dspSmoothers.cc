@@ -424,7 +424,7 @@ namespace dsp {
       cout << "Loop times = " << loop_times << endl;
       cout << "CPU time = " << ((float)t)/CLOCKS_PER_SEC << endl;
       
-      apf::Downward down;
+      //apf::Downward down;
       double quality;
       int badTetNum = 0;
       
