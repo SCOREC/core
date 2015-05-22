@@ -6,6 +6,7 @@
 #include <cmath>
 #include <vector>
 #include <queue>
+#include <time.h>
 
 using namespace std;
 
@@ -127,6 +128,8 @@ namespace dsp {
         q.pop();
       }
       
+      clock_t t;
+      t = clock();
       //----------------------------------------------------------
       double tol = 1.0E-5; //tolerance
       apf::Vector3 D_temp = apf::Vector3(0.0, 0.0, 0.0);
@@ -162,7 +165,33 @@ namespace dsp {
         loop_times++;
       }
       
+      t = clock() - t;
       cout << "Loop times = " << loop_times << endl;
+      cout << "CPU time = " << ((float)t)/CLOCKS_PER_SEC << endl;
+      
+      apf::Downward down;
+      double quality;
+      int badTetNum = 0;
+      
+      it = m->begin(3);
+      while ((v = m->iterate(it))) {
+        m->getDownward(tet,1,down);
+        double l[6];
+        for (int i=0; i < 6; ++i)
+          l[i] = apf::measure(e[i]);
+        double V = apf::measure(tet);
+        double s=0;
+        for (int i=0; i < 6; ++i)
+          s += l[i]*l[i];
+        if (V < 0)
+          quality = -15552.0*(V*V)/(s*s*s);
+        quality = 15552.0*(V*V)/(s*s*s);
+        if (quality <= 0.027)
+          badTetNum++;
+      }
+      m->end(it);
+      
+      cout << "Number of bad tets = " << badTetNum << endl;
       
       //erase numbering and tag
       apf::destroyNumbering(numbers);
