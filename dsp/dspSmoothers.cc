@@ -26,6 +26,10 @@ namespace dsp {
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
+      //erase numbering and tag
+      apf::destroyNumbering(numbers);
+      m->destroyTag(in_queue_tag);
+      apf::destroyField(qfield);
       
       //---------------------------------------------------------
       //data structure
@@ -80,6 +84,8 @@ namespace dsp {
       m->end(it);
       
       //----------------------------------------------------------
+      clock_t t;
+      t = clock();
       //reordering
       //data structure
       //tag = 1, indicates this is in queue before AND this is a interior vertex
@@ -127,10 +133,11 @@ namespace dsp {
         }
         q.pop();
       }
+      t = clock() - t;
+      cout << "Reordering time = " << ((float)t)/CLOCKS_PER_SEC << endl;
       
-      clock_t t;
-      t = clock();
       //----------------------------------------------------------
+      t = clock();
       double tol = 1.0E-5; //tolerance
       apf::Vector3 D_temp = apf::Vector3(0.0, 0.0, 0.0);
       
@@ -172,6 +179,7 @@ namespace dsp {
       apf::Downward down;
       double quality;
       int badTetNum = 0;
+      apf::Field* qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
       
       it = m->begin(3);
       while ((v = m->iterate(it))) {
@@ -195,14 +203,12 @@ namespace dsp {
         quality = 15552.0*(V*V)/(s*s*s);
         if (quality <= 0.027)
           badTetNum++;
+        apf::setScalar(qfield, v, 0, quality);
       }
       m->end(it);
       
       cout << "Number of bad tets = " << badTetNum << endl;
       
-      //erase numbering and tag
-      apf::destroyNumbering(numbers);
-      m->destroyTag(in_queue_tag);
       /* end Fan's code */
       (void)m;
       (void)df;
@@ -222,7 +228,11 @@ namespace dsp {
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
-      
+      //erase numbering and tag
+      apf::destroyNumbering(numbers);
+      m->destroyTag(in_queue_tag);
+      apf::destroyField(qfield);
+
       //---------------------------------------------------------
       //data structure
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
@@ -269,6 +279,8 @@ namespace dsp {
       m->end(it);
       
       //----------------------------------------------------------
+      clock_t t;
+      t = clock();
       //reordering
       //data structure
       //tag = 1, indicates this is in queue before AND this is a interior vertex
@@ -314,10 +326,11 @@ namespace dsp {
         }
         q.pop();
       }
+      t = clock() - t;
+      cout << "Reordering time = " << ((float)t)/CLOCKS_PER_SEC << endl;
       
-      clock_t t;
-      t = clock();
       //----------------------------------------------------------
+      t = clock();
       double tol = 1.0E-5; //tolerance
       apf::Downward down;
       double stiffness_temp; apf::Vector3 force_temp;
@@ -427,7 +440,8 @@ namespace dsp {
       //apf::Downward down;
       double quality;
       int badTetNum = 0;
-      
+      apf::Field* qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
+
       it = m->begin(3);
       while ((v = m->iterate(it))) {
         int num_down = m->getDownward(v,1,down);
@@ -450,13 +464,12 @@ namespace dsp {
         quality = 15552.0*(V*V)/(s*s*s);
         if (quality <= 0.027)
           badTetNum++;
+        apf::setScalar(qfield, v, 0, quality);
       }
       m->end(it);
       
       cout << "Number of bad tets = " << badTetNum << endl;
-      //erase numbering and tag
-      apf::destroyNumbering(numbers);
-      m->destroyTag(in_queue_tag);
+      
       /* end Fan's code */
       (void)m;
       (void)df;
