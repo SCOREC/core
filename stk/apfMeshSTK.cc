@@ -108,23 +108,27 @@ static void buildSides(
   Mesh* m = getMesh(n[0]);
   static const char* required_by = "buildSides";
   int d = m->getDimension() - 1;
-  for (size_t i = 0; i < models[d].getSize(); ++i) {
-    StkModel& model = models[d][i];
-    stk::mesh::Part& part = *(meta->get_part(model.stkName, required_by));
-    MeshIterator* it = m->begin(d);
-    MeshEntity* s;
-    while ((s = m->iterate(it))) {
-      if (m->getModelTag(m->toModel(s)) != model.apfTag)
-        continue;
-      stk::mesh::EntityId s_id = getStkId(n[d], Node(s, 0));
-      stk::mesh::EntityId e_id;
-      unsigned local_id;
-      get_stk_side(n[d + 1], s, e_id, local_id);
-      stk::mesh::Entity e = bulk->get_entity(stk::topology::ELEMENT_RANK, e_id);
-      special_declare_element_side(n[0], bulk, e, s, s_id, local_id, part);
-    }
-    m->end(it);
+  std::map<StkModel*, stk::mesh::Part*> tmpMap;
+  APF_ITERATE(StkModels::Vector, models.models[d], mit) {
+    StkModel* model = *mit;
+    tmpMap[model] = meta->get_part(model->stkName, required_by);
   }
+  MeshIterator* it = m->begin(d);
+  MeshEntity* s;
+  while ((s = m->iterate(it))) {
+    ModelEntity* me = m->toModel(s);
+    if (!models.invMaps[d].count(me))
+      continue;
+    StkModel* model = models.invMaps[d][me];
+    stk::mesh::Part* part = tmpMap[model];
+    stk::mesh::EntityId s_id = getStkId(n[d], Node(s, 0));
+    stk::mesh::EntityId e_id;
+    unsigned local_id;
+    get_stk_side(n[d + 1], s, e_id, local_id);
+    stk::mesh::Entity e = bulk->get_entity(stk::topology::ELEMENT_RANK, e_id);
+    special_declare_element_side(n[0], bulk, e, s, s_id, local_id, *part);
+  }
+  m->end(it);
 }
 
 static void buildElements(
@@ -136,24 +140,28 @@ static void buildElements(
   Mesh* m = getMesh(n[0]);
   static const char* required_by = "buildElements";
   int d = m->getDimension();
-  for (size_t i = 0; i < models[d].getSize(); ++i) {
-    StkModel& model = models[d][i];
-    stk::mesh::Part* part = meta->get_part(model.stkName, required_by);
-    MeshIterator* it = m->begin(d);
-    MeshEntity* e;
-    while ((e = m->iterate(it))) {
-      if (m->getModelTag(m->toModel(e)) != model.apfTag)
-        continue;
-      stk::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
-      NewArray<long> node_ids;
-      int nodes = getElementNumbers(n[0], e, node_ids);
-      NewArray<stk::mesh::EntityId> stk_node_ids(nodes);
-      for (int j = 0; j < nodes; ++j)
-        stk_node_ids[j] = node_ids[j] + 1;
-      stk::mesh::declare_element(*bulk, *part, e_id, &stk_node_ids[0]);
-    }
-    m->end(it);
+  std::map<StkModel*, stk::mesh::Part*> tmpMap;
+  APF_ITERATE(StkModels::Vector, models.models[d], mit) {
+    StkModel* model = *mit;
+    tmpMap[model] = meta->get_part(model->stkName, required_by);
   }
+  MeshIterator* it = m->begin(d);
+  MeshEntity* e;
+  while ((e = m->iterate(it))) {
+    ModelEntity* me = m->toModel(e);
+    if (!models.invMaps[d].count(me))
+      continue;
+    StkModel* model = models.invMaps[d][me];
+    stk::mesh::Part* part = tmpMap[model];
+    stk::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
+    NewArray<long> node_ids;
+    int nodes = getElementNumbers(n[0], e, node_ids);
+    NewArray<stk::mesh::EntityId> stk_node_ids(nodes);
+    for (int j = 0; j < nodes; ++j)
+      stk_node_ids[j] = node_ids[j] + 1;
+    stk::mesh::declare_element(*bulk, *part, e_id, &stk_node_ids[0]);
+  }
+  m->end(it);
 }
 
 static void buildNodes(
@@ -165,34 +173,34 @@ static void buildNodes(
   Mesh* m = getMesh(nn);
   static const char* required_by = "buildNodes";
   int d = 0;
-  for (size_t i = 0; i < models[d].getSize(); ++i) {
-    StkModel& model = models[d][i];
-    stk::mesh::Part* part = meta->get_part(model.stkName, required_by);
+  std::map<StkModel*, stk::mesh::Part*> tmpMap;
+  APF_ITERATE(StkModels::Vector, models.models[d], mit) {
+    StkModel* model = *mit;
+    tmpMap[model] = meta->get_part(model->stkName, required_by);
+  }
+  DynamicArray<Node> nodes;
+  apf::getNodes(nn, nodes);
+  APF_ITERATE(DynamicArray<Node>, nodes, nit) {
+    Node n = *nit;
+    MeshEntity* e = n.entity;
+    ModelEntity* me = m->toModel(e);
+    std::set<StkModel*> mset;
+    collectEntityModels(m, models.invMaps[d], me, mset);
     stk::mesh::PartVector parts;
-    parts.push_back(part);
-/* node sets are geometric entities of any dimension containing mesh nodes,
-   unlike sidesets and element blocks whose geometric and mesh
-   dimensions match.
-   As such, we need to use an apf helper to get local nodes on the
-   closure of a geometric face, accounting for parallel issues.
-   this is a collective call */
-    DynamicArray<Node> nodes;
-    ModelEntity* me = m->findModelEntity(
-        model.dim, model.apfTag);
-    getNodesOnClosure(m, me, nodes);
-    for (size_t j = 0; j < nodes.getSize(); ++j) {
-      stk::mesh::EntityId e_id = getStkId(nn, nodes[j]);
-      bulk->declare_entity(stk::topology::NODE_RANK, e_id, parts);
-    }
+    parts.reserve(mset.size());
+    APF_ITERATE(std::set<StkModel*>, mset, mit)
+      parts.push_back(tmpMap[*mit]);
+    stk::mesh::EntityId e_id = getStkId(nn, n);
+    bulk->declare_entity(stk::topology::NODE_RANK, e_id, parts);
   }
 }
 
-static void declarePart(StkModel& model,
+static void declarePart(StkModel* model,
     stk::mesh::EntityRank rank,
     const CellTopologyData* topo,
     StkMetaData* meta)
 {
-  stk::mesh::Part& part = meta->declare_part(model.stkName, rank);
+  stk::mesh::Part& part = meta->declare_part(model->stkName, rank);
   stk::mesh::set_cell_topology(part, topo);
   stk::io::put_io_part_attribute(part);
 }
@@ -211,8 +219,8 @@ void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
   for (int i = 0; i <= d; ++i)
     meta->register_cell_topology(topo[i], ranks[i]);
   for (int i = 0; i <= d; ++i)
-    for (size_t j = 0; j < models[i].getSize(); ++j)
-      declarePart(models[i][j], ranks[i], topo[i], meta);
+    for (size_t j = 0; j < models.models[i].size(); ++j)
+      declarePart(models.models[i][j], ranks[i], topo[i], meta);
 }
 
 void copyMeshToBulk(
