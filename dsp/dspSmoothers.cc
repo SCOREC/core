@@ -27,6 +27,9 @@ namespace dsp {
       apf::ModelEntity* me;
       apf::Vector3 d;
       //erase numbering and tag
+      apf::Numbering* numbers;
+      apf::MeshTag* in_queue_tag;
+      apf::Field* qfield;
       apf::destroyNumbering(numbers);
       m->destroyTag(in_queue_tag);
       apf::destroyField(qfield);
@@ -36,7 +39,7 @@ namespace dsp {
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
       vector < apf::MeshEntity* > V_total;
       vector < apf::Vector3 > D_total;
-      apf::Numbering* numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
+      numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
       
       //iterate vertex to count the number of each type of vertex
       int id = 0;
@@ -89,7 +92,7 @@ namespace dsp {
       //reordering
       //data structure
       //tag = 1, indicates this is in queue before AND this is a interior vertex
-      apf::MeshTag* in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
+      in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
       int zero = 0; int one = 1; int tag;
       apf::Adjacent adj;
       
@@ -179,7 +182,7 @@ namespace dsp {
       apf::Downward down;
       double quality;
       int badTetNum = 0;
-      apf::Field* qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
+      qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
       
       it = m->begin(3);
       while ((v = m->iterate(it))) {
@@ -229,6 +232,9 @@ namespace dsp {
       apf::ModelEntity* me;
       apf::Vector3 d;
       //erase numbering and tag
+      apf::Numbering* numbers;
+      apf::MeshTag* in_queue_tag;
+      apf::Field* qfield;
       apf::destroyNumbering(numbers);
       m->destroyTag(in_queue_tag);
       apf::destroyField(qfield);
@@ -237,7 +243,7 @@ namespace dsp {
       //data structure
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
       vector < apf::MeshEntity* > V_total;
-      apf::Numbering* numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
+      numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
       
       //iterate vertex to count the number of each type of vertex
       int id = 0;
@@ -284,7 +290,7 @@ namespace dsp {
       //reordering
       //data structure
       //tag = 1, indicates this is in queue before AND this is a interior vertex
-      apf::MeshTag* in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
+      in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
       int zero = 0; int one = 1; int tag;
       apf::Adjacent adj;
       
@@ -440,7 +446,7 @@ namespace dsp {
       //apf::Downward down;
       double quality;
       int badTetNum = 0;
-      apf::Field* qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
+      qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
 
       it = m->begin(3);
       while ((v = m->iterate(it))) {
