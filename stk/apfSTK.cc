@@ -9,6 +9,7 @@
 #include "apfAlbany.h"
 #include <apfMesh.h>
 #include <apfShape.h>
+#include <gmi.h>
 
 #if HAS_STK
 #include "apfSTK.h"
@@ -18,6 +19,51 @@
 #endif
 
 namespace apf {
+
+StkModels::StkModels()
+{
+}
+
+StkModels::~StkModels()
+{
+  for (int i = 0; i < 4; ++i)
+    APF_ITERATE(StkModels::Vector, models[i], mit)
+      delete *mit;
+}
+
+void StkModels::computeInverse()
+{
+  for (int i = 0; i < 4; ++i) {
+    assert(invMaps[i].empty());
+    APF_ITERATE(StkModels::Vector, models[i], mit) {
+      StkModel* model = *mit;
+      APF_ITERATE(StkModel::Vector, model->ents, eit) {
+        apf::ModelEntity* e = *eit;
+        assert( ! invMaps[i].count(e));
+        invMaps[i][e] = model;
+      }
+    }
+  }
+}
+
+void collectEntityModels(
+    Mesh* m,
+    StkModels::Map& from,
+    ModelEntity* e,
+    std::set<StkModel*>& models)
+{
+  gmi_model* gm = m->getModel();
+  gmi_ent* ge = (gmi_ent*)e;
+  if (from.count(e))
+    models.insert(from[e]);
+  int gd = gmi_dim(gm, ge);
+  if (gd == 3)
+    return;
+  gmi_set* s = gmi_adjacent(gm, ge, gd + 1);
+  for (int i = 0; i < s->n; ++i)
+    collectEntityModels(m, from, (ModelEntity*) s->e[i], models);
+  gmi_free_set(s);
+}
 
 /**
  *   \brief Implement an shards::ArrayDimTag for Quadrature points

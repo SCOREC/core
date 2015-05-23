@@ -13,6 +13,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct gmi_model_ops gmi_base_ops = {
+  .begin    = gmi_base_begin,
+  .next     = gmi_base_next,
+  .end      = gmi_base_end,
+  .dim      = gmi_base_dim,
+  .tag      = gmi_base_tag,
+  .find     = gmi_base_find,
+  .adjacent = gmi_base_adjacent,
+  .destroy  = gmi_base_destroy
+};
+
 struct gmi_ent* gmi_from_agm(struct agm_ent e)
 {
   char* p = 0;
