@@ -47,12 +47,6 @@ namespace dsp {
       it = m->begin(0);
       while ((v = m->iterate(it))) {
         me = m->toModel(v);
-        if (id == 0)
-          if (apf::isNumbered(numbers, v, 0, 0)) {
-            apf::destroyNumbering(numbers);
-            m->destroyTag(in_queue_tag);
-            apf::destroyField(qfield);
-          }
         if (moving.count(me)) {
           V_total.push_back(v);
           apf::getVector(df, v, 0, d);
@@ -219,6 +213,9 @@ namespace dsp {
       
       cout << "Number of bad tets = " << badTetNum << endl;
       
+      apf::destroyNumbering(numbers);
+      m->destroyTag(in_queue_tag);
+      apf::destroyField(qfield);
       /* end Fan's code */
       (void)m;
       (void)df;
@@ -254,12 +251,6 @@ namespace dsp {
       it = m->begin(0);
       while ((v = m->iterate(it))) {
         me = m->toModel(v);
-        if (id == 0)
-          if (apf::isNumbered(numbers, v, 0, 0)) {
-            apf::destroyNumbering(numbers);
-            m->destroyTag(in_queue_tag);
-            apf::destroyField(qfield);
-          }
         if (moving.count(me)) {
           V_total.push_back(v);
           apf::number(numbers, v, 0, 0, id);
@@ -486,6 +477,10 @@ namespace dsp {
       
       cout << "Number of bad tets = " << badTetNum << endl;
       
+      apf::destroyNumbering(numbers);
+      m->destroyTag(in_queue_tag);
+      apf::destroyField(qfield);
+
       /* end Fan's code */
       (void)m;
       (void)df;
