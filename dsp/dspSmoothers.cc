@@ -29,7 +29,7 @@ namespace dsp {
       apf::Vector3 d;
       //erase numbering and tag
       apf::Numbering* numbers;
-      apf::MeshTag* in_queue_tag;
+      //apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
       //apf::destroyNumbering(numbers);
       //m->destroyTag(in_queue_tag);
@@ -164,7 +164,7 @@ namespace dsp {
       cout << "Number of bad tets = " << badTetNum << endl;
       
       apf::destroyNumbering(numbers);
-      m->destroyTag(in_queue_tag);
+      //m->destroyTag(in_queue_tag);
       apf::destroyField(qfield);
       /* end Fan's code */
       (void)m;
@@ -186,10 +186,9 @@ namespace dsp {
       apf::Vector3 d;
       //erase numbering and tag
       apf::Numbering* numbers;
-      apf::MeshTag* in_queue_tag;
+      //apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
       
-
       //---------------------------------------------------------
       //data structure
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
@@ -380,7 +379,7 @@ namespace dsp {
       cout << "Number of bad tets = " << badTetNum << endl;
       
       apf::destroyNumbering(numbers);
-      m->destroyTag(in_queue_tag);
+      //m->destroyTag(in_queue_tag);
       apf::destroyField(qfield);
 
       /* end Fan's code */
