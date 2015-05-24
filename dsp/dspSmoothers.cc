@@ -137,7 +137,6 @@ namespace dsp {
       //data structure
       apf::MeshIterator* it;
       apf::MeshEntity* v;
-      apf::ModelEntity* me;
       apf::Vector3 d;
       apf::Field* qfield;
       apf::Adjacent adj;
@@ -162,7 +161,7 @@ namespace dsp {
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
             apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[j], V_total[i]);
-            apf::getVector(df, V_total[i], 0, D_adj);
+            apf::getVector(df, adj_v, 0, D_adj);
             D_temp = D_temp + D_adj;
           }
           D_temp[0] = D_temp[0]/num_adj;
@@ -225,8 +224,6 @@ namespace dsp {
       /* end Fan's code */
       (void)m;
       (void)df;
-      (void)fixed;
-      (void)moving;
     }
   };
   
@@ -240,7 +237,6 @@ namespace dsp {
       //data structure
       apf::MeshIterator* it;
       apf::MeshEntity* v;
-      apf::ModelEntity* me;
       apf::Vector3 d;
       apf::Field* qfield;
       apf::Adjacent adj;
@@ -392,18 +388,14 @@ namespace dsp {
       /* end Fan's code */
       (void)m;
       (void)df;
-      (void)fixed;
-      (void)moving;
     }
   };
   
   class EmptySmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, int in_0, int fb_0)
     {
       (void)df;
-      (void)fixed;
-      (void)moving;
     }
   };
   

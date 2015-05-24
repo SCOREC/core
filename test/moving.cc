@@ -7,6 +7,7 @@
 #include <maMesh.h>
 #include <PCU.h>
 #include <sstream>
+#include <vector>
 
 static void writeStep(apf::Mesh* m, int i)
 {

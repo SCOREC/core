@@ -1,6 +1,7 @@
 #include "dsp.h"
 #include <apf.h>
 #include <gmi.h>
+#include <vector>
 
 namespace dsp {
   

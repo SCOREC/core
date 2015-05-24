@@ -5,6 +5,7 @@
 #include <apfMatrix.h>
 #include "dspSmoothers.h"
 #include "dspAdapters.h"
+#include <vector>
 
 namespace dsp {
 

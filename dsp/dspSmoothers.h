@@ -3,6 +3,7 @@
 
 #include <apfMesh.h>
 #include <set>
+#include <vector>
 
 namespace dsp {
   
