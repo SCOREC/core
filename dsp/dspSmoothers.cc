@@ -17,6 +17,14 @@ namespace dsp {
   {
   }
   
+  void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving)
+  {
+  }
+  
+  void Smoother::cleanup()
+  {
+  }
+  
   class LaplacianSmoother : public Smoother {
   public:
     void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
