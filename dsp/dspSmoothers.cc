@@ -31,9 +31,9 @@ namespace dsp {
       apf::Numbering* numbers;
       apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
-      apf::destroyNumbering(numbers);
-      m->destroyTag(in_queue_tag);
-      apf::destroyField(qfield);
+      //apf::destroyNumbering(numbers);
+      //m->destroyTag(in_queue_tag);
+      //apf::destroyField(qfield);
       
       //---------------------------------------------------------
       //data structure
@@ -287,55 +287,6 @@ namespace dsp {
       
       //----------------------------------------------------------
       clock_t t;
-      t = clock();
-      //reordering
-      //data structure
-      //tag = 1, indicates this is in queue before AND this is a interior vertex
-      in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
-      int zero = 0; int one = 1; int tag;
-      apf::Adjacent adj;
-      
-      id = in_0;
-      
-      //make a queue and put all MB vertex in it
-      queue < apf::MeshEntity* > q;
-      for (int i = mb_0 ; i < in_0 ; i++) {
-        q.push(V_total[i]);
-      }
-      
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        m->setIntTag(v, in_queue_tag, &zero);
-      }
-      m->end(it);
-      
-      //find its adj, if it is never in queue, put it in queue
-      while (!q.empty()) {
-        v = q.front();
-        me = m->toModel(v);
-        m->getAdjacent(v, 1, adj);
-        int num_adj = adj.getSize();
-        for (int i = 0 ; i < num_adj ; i++) {
-          apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[i], v);
-          apf::ModelEntity* adj_v_me = m->toModel(adj_v);
-          if ((!moving.count(adj_v_me)) & (!fixed.count(adj_v_me))) {
-            m->getIntTag(adj_v, in_queue_tag, &tag);
-            if (tag == 0) {
-              q.push(adj_v);
-              m->setIntTag(adj_v, in_queue_tag, &one);
-            }
-          }
-        }
-        if ((!moving.count(me)) & (!fixed.count(me))) {
-          V_total[id] = v;
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-        q.pop();
-      }
-      t = clock() - t;
-      cout << "Reordering time = " << ((float)t)/CLOCKS_PER_SEC << endl;
-      
       //----------------------------------------------------------
       t = clock();
       double tol = 1.0E-5; //tolerance
