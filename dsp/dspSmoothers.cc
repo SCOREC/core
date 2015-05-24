@@ -226,7 +226,6 @@ namespace dsp {
     void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
     {
       apf::Mesh* m = apf::getMesh(df);
-      cout << "Start Mission! " << endl;
       /* start Fan's code */
       apf::MeshIterator* it;
       apf::MeshEntity* v;
