@@ -17,26 +17,18 @@ namespace dsp {
   {
   }
   
-  void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving, vector < apf::MeshEntity* >& V_total, vector < apf::Vector3 >& D_total, int& in_0, int& fb_0)
+  void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving, vector < apf::MeshEntity* >& V_total, int& in_0, int& fb_0)
   {
     apf::Mesh* m = apf::getMesh(df);
     /* start Fan's code */
+    //data structure
     apf::MeshIterator* it;
     apf::MeshEntity* v;
     apf::ModelEntity* me;
     apf::Vector3 d;
     apf::Numbering* numbers;
     apf::MeshTag* in_queue_tag;
-    //apf::Field* qfield;
-    //apf::destroyNumbering(numbers);
-    //m->destroyTag(in_queue_tag);
-    //apf::destroyField(qfield);
-    
-    //---------------------------------------------------------
-    //data structure
     int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
-    //vector < apf::MeshEntity* > V_total;
-    //vector < apf::Vector3 > D_total;
     numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
     
     //iterate vertex to count the number of each type of vertex
@@ -145,28 +137,23 @@ namespace dsp {
   
   class LaplacianSmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, vector < apf::Vector3 > D_total, int in_0, int fb_0)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, int in_0, int fb_0)
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
+      //----------------------------------------------------------
+      //data structure
       apf::MeshIterator* it;
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
       apf::Field* qfield;
-
-      apf::Numbering* numbers = m->findNumbering("my_numbers");
-      
-      //---------------------------------------------------------
-      //data structure
-      int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
-      //vector < apf::MeshEntity* > V_total;
-      //vector < apf::Vector3 > D_total;
-      
-      //----------------------------------------------------------
       apf::Adjacent adj;
       clock_t t;
+      apf::Numbering* numbers = m->findNumbering("my_numbers");
+      
       //----------------------------------------------------------
+      //update the mesh
       t = clock();
       double tol = 1.0E-5; //tolerance
       apf::Vector3 D_temp = apf::Vector3(0.0, 0.0, 0.0);
@@ -206,6 +193,8 @@ namespace dsp {
       cout << "Loop times = " << loop_times << endl;
       cout << "CPU time = " << ((float)t)/CLOCKS_PER_SEC << endl;
       
+      //----------------------------------------------------------
+      //print out quality of elements
       apf::Downward down;
       double quality;
       int badTetNum = 0;
@@ -238,10 +227,7 @@ namespace dsp {
       m->end(it);
       
       cout << "Number of bad tets = " << badTetNum << endl;
-      
-      apf::destroyNumbering(numbers);
-      //m->destroyTag(in_queue_tag);
-      apf::destroyField(qfield);
+      //----------------------------------------------------------
       /* end Fan's code */
       (void)m;
       (void)df;
@@ -252,7 +238,7 @@ namespace dsp {
   
   class SemiSpringSmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, int in_0, int fb_0)
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
@@ -260,7 +246,6 @@ namespace dsp {
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
-      //erase numbering and tag
       apf::Numbering* numbers;
       //apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
