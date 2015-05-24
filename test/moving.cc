@@ -50,6 +50,7 @@ int main(int argc, char** argv)
                    0,1,0,
                    0,0,1);
   writeStep(m, 0);
+  smoother->preprocess(m, fixed, moving);
   /* number of displacement steps */
   for (int i = 0; i < 10; ++i) {
     apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
@@ -58,6 +59,7 @@ int main(int argc, char** argv)
     apf::axpy(1, dsp, m->getCoordinateField());
     apf::destroyField(dsp);
     writeStep(m, i + 1);
+    smoother->cleanup();
   }
   delete smoother;
   delete adapter;

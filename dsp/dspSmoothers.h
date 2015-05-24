@@ -11,7 +11,9 @@ namespace dsp {
   class Smoother {
   public:
     virtual ~Smoother();
+    virtual void preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving);
     virtual void smooth(apf::Field* df, Boundary& fixed, Boundary& moving) = 0;
+    virtual void cleanup();
     static Smoother* makeLaplacian();
     static Smoother* makeSemiSpring();
     static Smoother* makeEmpty();
