@@ -43,11 +43,10 @@ namespace dsp {
                 Smoother* smoother, Adapter* adapter,
                 Boundary& fixed, Boundary& moving,
                 vector < apf::MeshEntity* >& V_total,
-                vector < apf::Vector3 >& D_total,
                 int& in_0, int& fb_0)
   {
-    smoother->preprocess(m, fixed, moving, V_total, D_total, in_0, fb_0);
-    smoother->smooth(df, V_total, D_total, in_0, fb_0);
+    smoother->preprocess(m, fixed, moving, V_total, in_0, fb_0);
+    smoother->smooth(df, V_total, in_0, fb_0);
     smoother->cleanup();
     while (!tryToDisplace(m, df))
       adapter->adapt(m);

@@ -16,7 +16,6 @@ void displace(apf::Mesh2* m, apf::Field* df,
     Smoother* smoother, Adapter* adapter,
     Boundary& fixed, Boundary& moving,
     vector < apf::MeshEntity* >& V_total,
-    vector < apf::Vector3 >& D_total,
     int& in_0, int& fb_0);
 
 apf::Field* applyRigidMotion(apf::Mesh* m, Boundary& moving,
