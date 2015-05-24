@@ -38,8 +38,6 @@ namespace dsp {
       me = m->toModel(v);
       if (moving.count(me)) {
         V_total.push_back(v);
-        apf::getVector(df, v, 0, d);
-        D_total.push_back(d);
         apf::number(numbers, v, 0, 0, id);
         id++;
       }
@@ -53,8 +51,6 @@ namespace dsp {
       me = m->toModel(v);
       if ((!fixed.count(me))&(!moving.count(me))) {
         V_total.push_back(v);
-        apf::getVector(df, v, 0, d);
-        D_total.push_back(d);
         apf::number(numbers, v, 0, 0, id);
         id++;
       }
@@ -68,8 +64,6 @@ namespace dsp {
       me = m->toModel(v);
       if (fixed.count(me)) {
         V_total.push_back(v);
-        apf::getVector(df, v, 0, d);
-        D_total.push_back(d);
         apf::number(numbers, v, 0, 0, id);
         id++;
       }
@@ -100,7 +94,6 @@ namespace dsp {
     while (!q.empty()) {
       v = q.front();
       me = m->toModel(v);
-      apf::getVector(df, v, 0, d);
       m->getAdjacent(v, 1, adj);
       int num_adj = adj.getSize();
       for (int i = 0 ; i < num_adj ; i++) {
@@ -116,7 +109,6 @@ namespace dsp {
       }
       if ((!moving.count(me)) & (!fixed.count(me))) {
         V_total[id] = v;
-        D_total[id] = d;
         apf::number(numbers, v, 0, 0, id);
         id++;
       }
@@ -153,10 +145,12 @@ namespace dsp {
       apf::Numbering* numbers = m->findNumbering("my_numbers");
       
       //----------------------------------------------------------
-      //update the mesh
+      //update mesh
       t = clock();
       double tol = 1.0E-5; //tolerance
       apf::Vector3 D_temp = apf::Vector3(0.0, 0.0, 0.0);
+      apf::Vector3 D_adj;
+      apf::Vector3 D_new;
       
       // average nodal displacement = sum(all adj_V's displacement)/num of adj_V
       // check max, stop until it is less the tolerance
@@ -168,18 +162,18 @@ namespace dsp {
           int num_adj = adj.getSize();
           for (int j = 0 ; j < num_adj ; j++) {
             apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[j], V_total[i]);
-            int adj_v_id = apf::getNumber(numbers, adj_v, 0, 0);
-            D_temp = D_temp + D_total[adj_v_id];
+            apf::getVector(df, V_total[i], 0, D_adj);
+            D_temp = D_temp + D_adj;
           }
           D_temp[0] = D_temp[0]/num_adj;
           D_temp[1] = D_temp[1]/num_adj;
           D_temp[2] = D_temp[2]/num_adj;
-          D_total[i] = D_temp;
+          D_new = D_temp;
           apf::getVector(df, V_total[i], 0, D_temp);
-          double d1 = D_total[i][0] - D_temp[0];
-          double d2 = D_total[i][1] - D_temp[1];
-          double d3 = D_total[i][2] - D_temp[2];
-          apf::setVector(df, V_total[i], 0, D_total[i]);
+          double d1 = D_new[0] - D_temp[0];
+          double d2 = D_new[1] - D_temp[1];
+          double d3 = D_new[2] - D_temp[2];
+          apf::setVector(df, V_total[i], 0, D_new);
           
           double temp_max = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
           if (max < temp_max) {
@@ -242,63 +236,19 @@ namespace dsp {
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
+      //---------------------------------------------------------
+      //data structure
       apf::MeshIterator* it;
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
-      apf::Numbering* numbers;
-      //apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
-      
-      //---------------------------------------------------------
-      //data structure
-      int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
-      vector < apf::MeshEntity* > V_total;
-      numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
-      
-      //iterate vertex to count the number of each type of vertex
-      int id = 0;
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        me = m->toModel(v);
-        if (moving.count(me)) {
-          V_total.push_back(v);
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-      }
-      m->end(it);
-      
-      in_0 = id;
-      
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        me = m->toModel(v);
-        if ((!fixed.count(me))&(!moving.count(me))) {
-          V_total.push_back(v);
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-      }
-      m->end(it);
-      
-      fb_0 = id;
-      
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        me = m->toModel(v);
-        if (fixed.count(me)) {
-          V_total.push_back(v);
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-      }
-      m->end(it);
-      
-      //----------------------------------------------------------
       apf::Adjacent adj;
       clock_t t;
+      apf::Numbering* numbers = m->findNumbering("my_numbers");
+      
       //----------------------------------------------------------
+      //update mesh
       t = clock();
       double tol = 1.0E-5; //tolerance
       apf::Downward down;
@@ -401,12 +351,12 @@ namespace dsp {
         }
         loop_times++;
       }
-      
       t = clock() - t;
       cout << "Loop times = " << loop_times << endl;
       cout << "CPU time = " << ((float)t)/CLOCKS_PER_SEC << endl;
       
-      //apf::Downward down;
+      //----------------------------------------------------------
+      //print out quality
       double quality;
       int badTetNum = 0;
       qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
@@ -438,11 +388,7 @@ namespace dsp {
       m->end(it);
       
       cout << "Number of bad tets = " << badTetNum << endl;
-      
-      apf::destroyNumbering(numbers);
-      //m->destroyTag(in_queue_tag);
-      apf::destroyField(qfield);
-
+      //----------------------------------------------------------
       /* end Fan's code */
       (void)m;
       (void)df;
