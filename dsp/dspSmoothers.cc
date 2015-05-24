@@ -47,6 +47,12 @@ namespace dsp {
       it = m->begin(0);
       while ((v = m->iterate(it))) {
         me = m->toModel(v);
+        if (id == 0)
+          if (apf::isNumbered(numbers, v, 0, 0)) {
+            apf::destroyNumbering(numbers);
+            m->destroyTag(in_queue_tag);
+            apf::destroyField(qfield);
+          }
         if (moving.count(me)) {
           V_total.push_back(v);
           apf::getVector(df, v, 0, d);
@@ -235,9 +241,7 @@ namespace dsp {
       apf::Numbering* numbers;
       apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
-      apf::destroyNumbering(numbers);
-      m->destroyTag(in_queue_tag);
-      apf::destroyField(qfield);
+      
 
       //---------------------------------------------------------
       //data structure
@@ -250,6 +254,12 @@ namespace dsp {
       it = m->begin(0);
       while ((v = m->iterate(it))) {
         me = m->toModel(v);
+        if (id == 0)
+          if (apf::isNumbered(numbers, v, 0, 0)) {
+            apf::destroyNumbering(numbers);
+            m->destroyTag(in_queue_tag);
+            apf::destroyField(qfield);
+          }
         if (moving.count(me)) {
           V_total.push_back(v);
           apf::number(numbers, v, 0, 0, id);
