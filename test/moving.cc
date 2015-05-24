@@ -50,11 +50,14 @@ int main(int argc, char** argv)
                    0,1,0,
                    0,0,1);
   writeStep(m, 0);
-  smoother->preprocess(m, fixed, moving);
+  vector < apf::MeshEntity* > V_total;
+  vector < apf::Vector3 > D_total;
+  int in_0; int fb_0;
+  smoother->preprocess(m, fixed, moving, V_total, D_total, in_0, fb_0);
   /* number of displacement steps */
   for (int i = 0; i < 10; ++i) {
     apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
-    smoother->smooth(dsp, fixed, moving);
+    smoother->smooth(dsp, V_total, D_total, in_0, fb_0);
   //dsp::tryToDisplace(m, dsp);
     apf::axpy(1, dsp, m->getCoordinateField());
     apf::destroyField(dsp);
