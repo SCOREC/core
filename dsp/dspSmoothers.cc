@@ -17,17 +17,135 @@ namespace dsp {
   {
   }
   
-  void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving)
+  void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving, vector < apf::MeshEntity* >& V_total, vector < apf::Vector3 >& D_total, int& in_0, int& fb_0)
   {
+    apf::Mesh* m = apf::getMesh(df);
+    /* start Fan's code */
+    apf::MeshIterator* it;
+    apf::MeshEntity* v;
+    apf::ModelEntity* me;
+    apf::Vector3 d;
+    apf::Numbering* numbers;
+    apf::MeshTag* in_queue_tag;
+    //apf::Field* qfield;
+    //apf::destroyNumbering(numbers);
+    //m->destroyTag(in_queue_tag);
+    //apf::destroyField(qfield);
+    
+    //---------------------------------------------------------
+    //data structure
+    int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
+    //vector < apf::MeshEntity* > V_total;
+    //vector < apf::Vector3 > D_total;
+    numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
+    
+    //iterate vertex to count the number of each type of vertex
+    int id = 0;
+    it = m->begin(0);
+    while ((v = m->iterate(it))) {
+      me = m->toModel(v);
+      if (moving.count(me)) {
+        V_total.push_back(v);
+        apf::getVector(df, v, 0, d);
+        D_total.push_back(d);
+        apf::number(numbers, v, 0, 0, id);
+        id++;
+      }
+    }
+    m->end(it);
+    
+    in_0 = id;
+    
+    it = m->begin(0);
+    while ((v = m->iterate(it))) {
+      me = m->toModel(v);
+      if ((!fixed.count(me))&(!moving.count(me))) {
+        V_total.push_back(v);
+        apf::getVector(df, v, 0, d);
+        D_total.push_back(d);
+        apf::number(numbers, v, 0, 0, id);
+        id++;
+      }
+    }
+    m->end(it);
+    
+    fb_0 = id;
+    
+    it = m->begin(0);
+    while ((v = m->iterate(it))) {
+      me = m->toModel(v);
+      if (fixed.count(me)) {
+        V_total.push_back(v);
+        apf::getVector(df, v, 0, d);
+        D_total.push_back(d);
+        apf::number(numbers, v, 0, 0, id);
+        id++;
+      }
+    }
+    m->end(it);
+    
+    //reordering
+    //data structure
+    //tag = 1, indicates this is in queue before AND this is a interior vertex
+    in_queue_tag = m->createIntTag("In_Queue_Tag", 1);
+    int zero = 0; int one = 1; int tag;
+    
+    id = in_0;
+    
+    //make a queue and put all MB vertex in it
+    queue < apf::MeshEntity* > q;
+    for (int i = mb_0 ; i < in_0 ; i++) {
+      q.push(V_total[i]);
+    }
+    
+    it = m->begin(0);
+    while ((v = m->iterate(it))) {
+      m->setIntTag(v, in_queue_tag, &zero);
+    }
+    m->end(it);
+    
+    //find its adj, if it is never in queue, put it in queue
+    while (!q.empty()) {
+      v = q.front();
+      me = m->toModel(v);
+      apf::getVector(df, v, 0, d);
+      m->getAdjacent(v, 1, adj);
+      int num_adj = adj.getSize();
+      for (int i = 0 ; i < num_adj ; i++) {
+        apf::MeshEntity* adj_v = apf::getEdgeVertOppositeVert(m, adj[i], v);
+        apf::ModelEntity* adj_v_me = m->toModel(adj_v);
+        if ((!moving.count(adj_v_me)) & (!fixed.count(adj_v_me))) {
+          m->getIntTag(adj_v, in_queue_tag, &tag);
+          if (tag == 0) {
+            q.push(adj_v);
+            m->setIntTag(adj_v, in_queue_tag, &one);
+          }
+        }
+      }
+      if ((!moving.count(me)) & (!fixed.count(me))) {
+        V_total[id] = v;
+        D_total[id] = d;
+        apf::number(numbers, v, 0, 0, id);
+        id++;
+      }
+      q.pop();
+    }
+    m->destroyTag(in_queue_tag);
   }
   
   void Smoother::cleanup()
   {
+    //apf::Numbering* numbers;
+    apf::Field* qfield;
+    //m->findNumbering("my_numbers");
+    //m->findTag("In_Queue_Tag");
+    //apf::destroyNumbering(numbers);
+    apf::destroyField(qfield);
   }
   
   class LaplacianSmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, Boundary& fixed, Boundary& moving)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, vector < apf::Vector3 > D_total, int in_0, int fb_0)
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
@@ -35,65 +153,15 @@ namespace dsp {
       apf::MeshEntity* v;
       apf::ModelEntity* me;
       apf::Vector3 d;
-      //erase numbering and tag
-      apf::Numbering* numbers;
-      //apf::MeshTag* in_queue_tag;
       apf::Field* qfield;
-      //apf::destroyNumbering(numbers);
-      //m->destroyTag(in_queue_tag);
-      //apf::destroyField(qfield);
+
+      apf::Numbering* numbers = m->findNumbering("my_numbers");
       
       //---------------------------------------------------------
       //data structure
       int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
-      vector < apf::MeshEntity* > V_total;
-      vector < apf::Vector3 > D_total;
-      numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
-      
-      //iterate vertex to count the number of each type of vertex
-      int id = 0;
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        me = m->toModel(v);
-        if (moving.count(me)) {
-          V_total.push_back(v);
-          apf::getVector(df, v, 0, d);
-          D_total.push_back(d);
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-      }
-      m->end(it);
-      
-      in_0 = id;
-      
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        me = m->toModel(v);
-        if ((!fixed.count(me))&(!moving.count(me))) {
-          V_total.push_back(v);
-          apf::getVector(df, v, 0, d);
-          D_total.push_back(d);
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-      }
-      m->end(it);
-      
-      fb_0 = id;
-      
-      it = m->begin(0);
-      while ((v = m->iterate(it))) {
-        me = m->toModel(v);
-        if (fixed.count(me)) {
-          V_total.push_back(v);
-          apf::getVector(df, v, 0, d);
-          D_total.push_back(d);
-          apf::number(numbers, v, 0, 0, id);
-          id++;
-        }
-      }
-      m->end(it);
+      //vector < apf::MeshEntity* > V_total;
+      //vector < apf::Vector3 > D_total;
       
       //----------------------------------------------------------
       apf::Adjacent adj;
