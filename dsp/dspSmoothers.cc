@@ -7,6 +7,7 @@
 #include <vector>
 #include <queue>
 #include <time.h>
+#include <apfShape.h>
 
 using namespace std;
 
