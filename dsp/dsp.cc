@@ -3,6 +3,8 @@
 #include <gmi.h>
 #include <vector>
 
+using namespace std;
+
 namespace dsp {
   
   static void closeBoundaryRec(gmi_model* gm, gmi_ent* e, Boundary& b)

@@ -7,6 +7,8 @@
 #include "dspAdapters.h"
 #include <vector>
 
+using namespace std;
+
 namespace dsp {
 
 void closeBoundary(apf::Mesh* m, Boundary& b);

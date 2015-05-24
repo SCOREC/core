@@ -9,6 +9,8 @@
 #include <sstream>
 #include <vector>
 
+using namespace std;
+
 static void writeStep(apf::Mesh* m, int i)
 {
   std::stringstream ss;

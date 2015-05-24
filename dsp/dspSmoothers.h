@@ -5,6 +5,8 @@
 #include <set>
 #include <vector>
 
+using namespace std;
+
 namespace dsp {
   
   typedef std::set<apf::ModelEntity*> Boundary;
