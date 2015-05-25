@@ -390,6 +390,171 @@ namespace dsp {
     }
   };
   
+  class ElasticSmoother : public Smoother {
+  public:
+    void smooth(apf::Field* df, vector < apf::MeshEntity* >& V_total, int in_0, int fb_0)
+    {
+      cout << "Elastic" << endl;
+      apf::Mesh* m = apf::getMesh(df);
+      /* start Fan's code */
+      //---------------------------------------------------------
+      //data structure
+      apf::MeshIterator* it;
+      apf::MeshEntity* v;
+      apf::Vector3 d;
+      apf::Field* qfield;
+      apf::Adjacent adj;
+      clock_t t;
+      apf::Numbering* numbers = m->findNumbering("my_numbers");
+      
+      //----------------------------------------------------------
+      //update mesh
+      t = clock();
+      double tol = 1.0E-5; //tolerance
+      apf::Downward down;
+      double stiffness_temp; apf::Vector3 force_temp;
+      vector < apf::Vector3 > tet_OP(3);
+      vector < apf::Vector3 > tet_DP(3);
+      apf::Vector3 P_temp; //coordinate
+      apf::Vector3 D_temp; //displcament
+      apf::Vector3 D_new; //displcament
+      double d1, d2, d3;
+      
+      // semi-torsional spring: stiffness = 1/length^2 + sum(1/sin(theta)^2)
+      // check max, stop until it is less the tolerance
+      double max = 1.0; int loop_times = 0;
+      while (max > tol) {
+        max = 0.0;
+        for (int i = in_0 ; i < fb_0 ; i++) {
+          double stiffness_sum = 0.0;
+          apf::Vector3 force_sum = apf::Vector3(0.0, 0.0, 0.0);
+          m->getPoint(V_total[i], 0, P_temp);
+          apf::getVector(df, V_total[i], 0, D_temp);
+          m->getAdjacent(V_total[i], 3, adj);
+          int num_adj = adj.getSize();
+          for (int j = 0 ; j < num_adj ; j++) {
+            int num_down; //num_down is supposed to be 4
+            num_down = m->getDownward(adj[j], 0, down);
+            int tet_id = 0;
+            for (int k = 0 ; k < num_down ; k++) {
+              if (down[k] != V_total[i]) {
+                m->getPoint(down[k], 0, tet_OP[tet_id]);
+                apf::getVector(df, down[k], 0, tet_DP[tet_id]);
+                tet_id++;
+              }
+            }
+            if (tet_id != 3)
+              cout << "Find more than 3 adjacnet vertices in one tet!" << endl;
+            //----------------------------------------------------
+            apf::Vector3 n_1; apf::Vector3 n_2;
+            for (int K = 0 ; K < 3 ; K++) {
+              int A; int B;
+              if (K == 0)      { A = 1; B = 2; }
+              else if (K == 1) { A = 2; B = 0; }
+              else if (K == 2) { A = 0; B = 1; }
+              
+              n_1[0] = (tet_OP[B][1] - tet_OP[K][1]) * (tet_OP[A][2] - tet_OP[K][2])
+              - (tet_OP[B][2] - tet_OP[K][2]) * (tet_OP[A][1] - tet_OP[K][1]);
+              
+              n_1[1] = (tet_OP[B][2] - tet_OP[K][2]) * (tet_OP[A][0] - tet_OP[K][0])
+              - (tet_OP[B][0] - tet_OP[K][0]) * (tet_OP[A][2] - tet_OP[K][2]);
+              
+              n_1[2] = (tet_OP[B][0] - tet_OP[K][0]) * (tet_OP[A][1] - tet_OP[K][1])
+              - (tet_OP[B][1] - tet_OP[K][1]) * (tet_OP[A][0] - tet_OP[K][0]);
+              
+              n_2[0] = (tet_OP[B][1] - P_temp[1]) * (tet_OP[A][2] - P_temp[2])
+              - (tet_OP[B][2] - P_temp[2]) * (tet_OP[A][1] - P_temp[1]);
+              
+              n_2[1] = (tet_OP[B][2] - P_temp[2]) * (tet_OP[A][0] - P_temp[0])
+              - (tet_OP[B][0] - P_temp[0]) * (tet_OP[A][2] - P_temp[2]);
+              
+              n_2[2] = (tet_OP[B][0] - P_temp[0]) * (tet_OP[A][1] - P_temp[1])
+              - (tet_OP[B][1] - P_temp[1]) * (tet_OP[A][0] - P_temp[0]);
+              
+              double cos_squ_up = (n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2])
+              * (n_1[0] * n_2[0] + n_1[1] * n_2[1] + n_1[2] * n_2[2]);
+              
+              double cos_squ_dw = (n_1[0] * n_1[0] + n_1[1] * n_1[1] + n_1[2] * n_1[2])
+              * (n_2[0] * n_2[0] + n_2[1] * n_2[1] + n_2[2] * n_2[2]);
+              
+              double cos_squ = cos_squ_up / cos_squ_dw;
+              
+              d1 = tet_OP[K][0] - P_temp[0];
+              d2 = tet_OP[K][1] - P_temp[1];
+              d3 = tet_OP[K][2] - P_temp[2];
+              
+              double length_squ = d1 * d1 + d2 * d2 + d3 * d3;
+              
+              stiffness_temp = 1/(1 - cos_squ) + 1/8/length_squ;
+              force_temp[0] = stiffness_temp * tet_DP[K][0];
+              force_temp[1] = stiffness_temp * tet_DP[K][1];
+              force_temp[2] = stiffness_temp * tet_DP[K][2];
+              
+              stiffness_sum = stiffness_sum + stiffness_temp;
+              force_sum = force_sum + force_temp;
+            }
+            //----------------------------------------------------
+          }
+          D_new[0] = force_sum[0]/stiffness_sum;
+          D_new[1] = force_sum[1]/stiffness_sum;
+          D_new[2] = force_sum[2]/stiffness_sum;
+          
+          d1 = D_new[0] - D_temp[0];
+          d2 = D_new[1] - D_temp[1];
+          d3 = D_new[2] - D_temp[2];
+          apf::setVector(df, V_total[i], 0, D_new);
+          
+          double temp_max = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
+          if (max < temp_max) {
+            max = temp_max;
+          }
+        }
+        loop_times++;
+      }
+      t = clock() - t;
+      cout << "Loop times = " << loop_times << endl;
+      cout << "CPU time = " << ((float)t)/CLOCKS_PER_SEC << endl;
+      
+      //----------------------------------------------------------
+      //print out quality
+      double quality;
+      int badTetNum = 0;
+      qfield = apf::createField(m, "quality", apf::SCALAR, apf::getConstant(3));
+      
+      it = m->begin(3);
+      while ((v = m->iterate(it))) {
+        int num_down = m->getDownward(v,1,down);
+        if (num_down != 6)
+          cout << "WARNING! NOT A TET!" << endl;
+        double l[6];
+        for (int i=0; i < 6; ++i) {
+          apf::MeshElement* melm = apf::createMeshElement(m,down[i]);
+          l[i] = apf::measure(melm);
+          apf::destroyMeshElement(melm);
+        }
+        apf::MeshElement* melm = apf::createMeshElement(m,v);
+        double V = apf::measure(melm);
+        apf::destroyMeshElement(melm);
+        double s=0;
+        for (int i=0; i < 6; ++i)
+          s += l[i]*l[i];
+        if (V < 0)
+          quality = -15552.0*(V*V)/(s*s*s);
+        quality = 15552.0*(V*V)/(s*s*s);
+        if (quality <= 0.027)
+          badTetNum++;
+        apf::setScalar(qfield, v, 0, quality);
+      }
+      m->end(it);
+      
+      cout << "Number of bad tets = " << badTetNum << endl;
+      //----------------------------------------------------------
+      /* end Fan's code */
+      (void)m;
+      (void)df;
+    }
+  };
+
   class EmptySmoother : public Smoother {
   public:
     void smooth(apf::Field* df, vector < apf::MeshEntity* >& V_total, int in_0, int fb_0)
@@ -406,6 +571,11 @@ namespace dsp {
   Smoother* Smoother::makeSemiSpring()
   {
     return new SemiSpringSmoother();
+  }
+  
+  Smoother* Smoother::makeElastic()
+  {
+    return new ElasticSmoother();
   }
   
   Smoother* Smoother::makeEmpty()

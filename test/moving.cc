@@ -39,7 +39,8 @@ int main(int argc, char** argv)
   fixed.insert(m->findModelEntity(2, 6));
   fixed.insert(m->findModelEntity(2, 17));
   dsp::closeBoundary(m, fixed);
-  dsp::Smoother* smoother = dsp::Smoother::makeSemiSpring();
+  dsp::Smoother* smoother = dsp::Smoother::makeElastic();
+//  dsp::Smoother* smoother = dsp::Smoother::makeSemiSpring();
 //  dsp::Smoother* smoother = dsp::Smoother::makeLaplacian();
 //double avgEdgeLen = ma::getAverageEdgeLength(m);
 //dsp::Adapter* adapter = dsp::Adapter::makeUniform(avgEdgeLen);

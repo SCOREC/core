@@ -20,6 +20,7 @@ namespace dsp {
     virtual void cleanup(apf::Mesh* m);
     static Smoother* makeLaplacian();
     static Smoother* makeSemiSpring();
+    static Smoother* makeElastic();
     static Smoother* makeEmpty();
   };
   
