@@ -466,13 +466,13 @@ struct MatchedSharing : public Sharing
   virtual bool isOwned(MeshEntity* e);
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies);
+  Mesh* mesh;
 private:
   size_t getNeighborCount(int peer);
   bool isLess(Copy const& a, Copy const& b);
   void getNeighbors(Parts& neighbors);
   void formCountMap();
   NormalSharing helper;
-  Mesh* mesh;
   std::map<int, size_t> countMap;
 };
 

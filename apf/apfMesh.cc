@@ -787,7 +787,9 @@ void NormalSharing::getCopies(MeshEntity* e,
    for now, we'll build a full neighbor count
    system into this object just to implement
    the min-count rule for matched neighbors */
-MatchedSharing::MatchedSharing(Mesh* m):helper(m),mesh(m)
+MatchedSharing::MatchedSharing(Mesh* m):
+  mesh(m),
+  helper(m)
 {
   formCountMap();
 }
