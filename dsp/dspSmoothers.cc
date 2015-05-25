@@ -19,7 +19,6 @@ namespace dsp {
   
   void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving, vector < apf::MeshEntity* >& V_total, int& in_0, int& fb_0)
   {
-    apf::Mesh* m = apf::getMesh(df);
     /* start Fan's code */
     //data structure
     apf::MeshIterator* it;
