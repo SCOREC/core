@@ -218,6 +218,9 @@ namespace dsp {
       }
       m->end(it);
       
+      if (m->findField("quality"))
+        cout << "we have qfield" << endl;
+      
       cout << "Number of bad tets = " << badTetNum << endl;
       //----------------------------------------------------------
       /* end Fan's code */
