@@ -43,7 +43,9 @@ void displace(apf::Mesh2* m, apf::Field* df,
     Smoother* smoother, Adapter* adapter,
     Boundary& fixed, Boundary& moving)
 {
+  smoother->preprocess(m, fixed, moving);
   smoother->smooth(df, fixed, moving);
+  smoother->cleanup();
   while (!tryToDisplace(m, df))
     adapter->adapt(m);
 }
