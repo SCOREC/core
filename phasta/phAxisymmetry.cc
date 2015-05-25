@@ -105,11 +105,10 @@ static bool requiresRotation(gmi_model* gm, BCs& bcs, gmi_ent* e, gmi_ent* oe,
   return true;
 }
 
-apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs)
+apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs, apf::MatchedSharing* ms)
 {
   apf::MeshTag* tag = m->createDoubleTag("ph_angle", 1);
   gmi_model* gm = m->getModel();
-  apf::MatchedSharing* ms = new apf::MatchedSharing(m);
   PCU_Comm_Begin();
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;

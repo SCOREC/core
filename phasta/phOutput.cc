@@ -205,13 +205,27 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
   delete sh;
 }
 
+static bool isMatchingSlave(apf::MatchedSharing* ms, apf::MeshEntity* v)
+{
+  if (!ms)
+    return false;
+  apf::Matches matches;
+  ms->mesh->getMatches(v, matches);
+  if (!matches.getSize())
+    return false;
+  return !ms->isOwned(v);
+}
+
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
   apf::MeshTag* angles = 0;
+  apf::MatchedSharing* ms = 0;
+  if (m->hasMatching())
+    ms = new apf::MatchedSharing(m);
   if (in.axisymmetry)
-    angles = tagAngles(m, bcs);
+    angles = tagAngles(m, bcs, ms);
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
   for (int i = 0; i < nv; ++i)
@@ -236,16 +250,13 @@ static void getEssentialBCs(BCs& bcs, Output& o)
       bc[j] = 0;
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
-    /* which is set only for local slaves */
-    if (o.arrays.iper[i] != 0) {
+    /* which is set for all slaves */
+    if (isMatchingSlave(ms, v)) {
+      hasBC = true;
       ibc |= (1<<10);
-      hasBC = true;
-    }
-    /* axisymmetric theta for all global non-owners */
-    if (in.axisymmetry && m->hasTag(v, angles)) {
-      ibc |= (1<<11);
-      m->getDoubleTag(v, angles, &bc[11]);
-      hasBC = true;
+      /* axisymmetric theta for some slaves */
+      if (in.axisymmetry && m->hasTag(v, angles))
+        m->getDoubleTag(v, angles, &bc[11]);
     }
     if (hasBC) {
       o.arrays.nbc[i] = ei + 1;
@@ -262,6 +273,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   delete [] bc;
   if (in.axisymmetry)
     m->destroyTag(angles);
+  delete ms;
 }
 
 static void getInitialConditions(BCs& bcs, Output& o)
