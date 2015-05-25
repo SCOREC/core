@@ -25,9 +25,10 @@ namespace dsp {
     apf::MeshEntity* v;
     apf::ModelEntity* me;
     apf::Vector3 d;
+    apf::Adjacent adj;
     apf::Numbering* numbers;
     apf::MeshTag* in_queue_tag;
-    int mb_0 = 0; int in_0 = 0; int fb_0 = 0;
+    int mb_0 = 0; in_0 = 0; fb_0 = 0;
     numbers = apf::createNumbering(m, "my_numbers", m->getShape(), 1);
     
     //iterate vertex to count the number of each type of vertex
