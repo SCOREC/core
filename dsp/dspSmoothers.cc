@@ -119,11 +119,10 @@ namespace dsp {
   
   void Smoother::cleanup()
   {
-    //apf::Numbering* numbers;
-    apf::Field* qfield;
-    //m->findNumbering("my_numbers");
-    //m->findTag("In_Queue_Tag");
+    //apf::Numbering* numbers = m->findNumbering("my_numbers");
     //apf::destroyNumbering(numbers);
+
+    apf::Field* qfield = apf::findField("quality");
     apf::destroyField(qfield);
   }
   
