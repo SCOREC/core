@@ -240,10 +240,12 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     if (o.arrays.iper[i] != 0) {
       ibc |= (1<<10);
       hasBC = true;
-      if (in.axisymmetry && m->hasTag(v, angles)) {
-        ibc |= (1<<11);
-        m->getDoubleTag(v, angles, &bc[11]);
-      }
+    }
+    /* axisymmetric theta for all global non-owners */
+    if (in.axisymmetry && m->hasTag(v, angles)) {
+      ibc |= (1<<11);
+      m->getDoubleTag(v, angles, &bc[11]);
+      hasBC = true;
     }
     if (hasBC) {
       o.arrays.nbc[i] = ei + 1;
