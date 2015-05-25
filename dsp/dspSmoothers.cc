@@ -129,7 +129,7 @@ namespace dsp {
   
   class LaplacianSmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, int in_0, int fb_0)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* >& V_total, int in_0, int fb_0)
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
@@ -229,7 +229,7 @@ namespace dsp {
   
   class SemiSpringSmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, int in_0, int fb_0)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* >& V_total, int in_0, int fb_0)
     {
       apf::Mesh* m = apf::getMesh(df);
       /* start Fan's code */
@@ -393,7 +393,7 @@ namespace dsp {
   
   class EmptySmoother : public Smoother {
   public:
-    void smooth(apf::Field* df, vector < apf::MeshEntity* > V_total, int in_0, int fb_0)
+    void smooth(apf::Field* df, vector < apf::MeshEntity* >& V_total, int in_0, int fb_0)
     {
       (void)df;
     }
