@@ -117,12 +117,12 @@ namespace dsp {
     m->destroyTag(in_queue_tag);
   }
   
-  void Smoother::cleanup()
+  void Smoother::cleanup(apf::Mesh* m)
   {
     //apf::Numbering* numbers = m->findNumbering("my_numbers");
     //apf::destroyNumbering(numbers);
 
-    apf::Field* qfield = apf::findField("quality");
+    apf::Field* qfield = m->findField("quality");
     apf::destroyField(qfield);
   }
   

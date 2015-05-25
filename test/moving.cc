@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     apf::axpy(1, dsp, m->getCoordinateField());
     apf::destroyField(dsp);
     writeStep(m, i + 1);
-    smoother->cleanup();
+    smoother->cleanup(m);
   }
   delete smoother;
   delete adapter;

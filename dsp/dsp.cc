@@ -50,7 +50,7 @@ namespace dsp {
   {
     smoother->preprocess(m, fixed, moving, V_total, in_0, fb_0);
     smoother->smooth(df, V_total, in_0, fb_0);
-    smoother->cleanup();
+    smoother->cleanup(m);
     while (!tryToDisplace(m, df))
       adapter->adapt(m);
   }
