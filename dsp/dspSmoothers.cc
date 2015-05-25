@@ -17,6 +17,9 @@ Smoother::~Smoother()
 
 void Smoother::preprocess(apf::Mesh* m, Boundary& fixed, Boundary& moving)
 {
+  (void)m;
+  (void)fixed;
+  (void)moving;
 }
 
 void Smoother::cleanup()
