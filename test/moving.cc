@@ -62,8 +62,8 @@ int main(int argc, char** argv)
     smoother->smooth(dsp, V_total, in_0, fb_0);
   //dsp::tryToDisplace(m, dsp);
     apf::axpy(1, dsp, m->getCoordinateField());
-    apf::destroyField(dsp);
     writeStep(m, i + 1);
+    apf::destroyField(dsp);
     smoother->cleanup(m);
   }
   delete smoother;
