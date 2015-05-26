@@ -19,9 +19,9 @@ void UserData::init(FieldBase* f)
   field = f;
 }
 
-bool UserData::hasEntity(MeshEntity*)
+bool UserData::hasEntity(MeshEntity* e)
 {
-  return true;
+  return field->getShape()->countNodesOn(field->getMesh()->getType(e)) > 0;
 }
 
 void UserData::removeEntity(MeshEntity*)
