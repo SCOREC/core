@@ -33,6 +33,7 @@ void PCU_Protect(void)
   signal(SIGABRT, catch);
   signal(SIGSEGV, catch);
   signal(SIGINT, catch);
+  signal(SIGFPE, catch);
 }
 #else
 void PCU_Protect(void)
