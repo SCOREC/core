@@ -101,18 +101,9 @@ void balance(apf::Mesh2* m)
     const double vtxImbTol = 1.03;
     const double step = 0.3;
     const int verbose = 1;  // set to 2 for per iteration stats
-    const double ignored = 42.42;
-
-    Parma_ProcessDisconnectedParts(m);
-    Parma_PrintPtnStats(m, "post ProcessDisconnectedParts", fineStats);
-
-    apf::Balancer* balancer = Parma_MakeHpsBalancer(m,verbose);
-    balancer->balance(weights, ignored);
-    delete balancer;
-    Parma_PrintPtnStats(m, "post HPS", fineStats);
 
     for(int i=0; i<3; i++) {
-      balancer = Parma_MakeVtxElmBalancer(m, step, verbose);
+      apf::Balancer* balancer = Parma_MakeVtxElmBalancer(m, step, verbose);
       balancer->balance(weights, vtxImbTol);
       Parma_PrintPtnStats(m, "post Parma_MakeVtxElmBalancer", fineStats);
       delete balancer;
