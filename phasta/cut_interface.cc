@@ -21,13 +21,15 @@ int main(int argc, char** argv)
   char const* modelfile = argv[1];
   char const* attribfile = argv[2];
   char const* meshfile = argv[3];
-  char const* outfile = argv[3];
+  char const* outfile = argv[4];
   gmi_model* gm;
   gm = gmi_sim_load(modelfile, attribfile);
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
   apf::Mesh2* m = apf::loadMdsMesh(gm, meshfile);
+  m->verify();
   ph::cutInterface(m, bcs);
+  m->verify();
   m->writeNative(outfile);
   m->destroyNative();
   apf::destroyMesh(m);
