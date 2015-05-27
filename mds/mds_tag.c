@@ -154,6 +154,15 @@ void mds_take_tag(struct mds_tag* tag, mds_id e)
   *has &= ~(1 << b);
 }
 
+void mds_rename_tag(struct mds_tag* tag, const char* newName)
+{
+  int l;
+  l = strlen(newName);
+  free(tag->name);
+  tag->name = malloc(l + 1);
+  strcpy(tag->name,newName);
+}
+
 static struct mds_tag** find_prev(struct mds_tags* ts, struct mds_tag* t)
 {
   struct mds_tag* p;

@@ -37,6 +37,7 @@ class FieldBase
     int countNodesOn(MeshEntity* e);
     int countValuesOn(MeshEntity* e);
     void changeData(FieldData* d);
+    void rename(const char* newName);
   protected:
     std::string name;
     Mesh* mesh;

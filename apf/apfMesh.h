@@ -235,6 +235,8 @@ class Mesh
     virtual void removeTag(MeshEntity* e, MeshTag* tag) = 0;
     /** \brief Returns true if there is data for this tag attached */
     virtual bool hasTag(MeshEntity* e, MeshTag* tag) = 0;
+    /** \brief renames a tag */
+    virtual void renameTag(MeshTag* tag, const char* newName) = 0;
     /** \brief Tag data type enumeration */
     enum TagType {
       /** \brief 64-bit IEE754 floating-point number */
@@ -297,8 +299,9 @@ class Mesh
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */
     Field* getCoordinateField() {return coordinateField;}
-    /** \brief replace the mesh's coordinate field */
-    void changeCoordinateField(Field* f);
+    /** \brief make a new coordinate field.
+        \param project whether to project coordinate values from the old field */
+    void changeShape(FieldShape* newShape, bool project = true);
     /** \brief Migrate elements.
        \param plan a mapping from local elements
                    to part IDs, which will be deleted during migration */
@@ -518,8 +521,7 @@ void findTriDown(
     MeshEntity** verts,
     MeshEntity** down);
 
-/** \brief change the distribution of the mesh coordinate nodes
-    \param project whether to project coordinate values from the old field */
+/** \brief deprecated wrapper for apf::Mesh::changeShape */
 void changeMeshShape(Mesh* m, FieldShape* newShape, bool project = true);
 
 /** \brief unfreeze all associated fields

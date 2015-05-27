@@ -244,12 +244,6 @@ FieldShape* Mesh::getShape() const
   return coordinateField->getShape();
 }
 
-void Mesh::changeCoordinateField(Field* f)
-{
-  delete coordinateField;
-  coordinateField = f;
-}
-
 void Mesh::addField(Field* f)
 {
   fields.push_back(f);
@@ -257,7 +251,9 @@ void Mesh::addField(Field* f)
 
 void Mesh::removeField(Field* f)
 {
-  fields.erase(std::find(fields.begin(),fields.end(),f));
+  std::vector<Field*>::iterator it = std::find(fields.begin(),fields.end(),f);
+  if (it != fields.end())
+    fields.erase(it);
 }
 
 Field* Mesh::findField(const char* name)
@@ -642,15 +638,37 @@ int countEntitiesOfType(Mesh* m, int type)
   return count;
 }
 
+void Mesh::changeShape(FieldShape* newShape, bool project)
+{
+  Field* oldCoordinateField = coordinateField;
+  std::string name = oldCoordinateField->getName();
+  VectorField* newCoordinateField = new VectorField();
+  if (project) {
+    /* if we're projecting, we need both fields around
+       at once and in case they are both tag-based we
+       should use a different name for the new one
+       until the old one is to gone. */
+    newCoordinateField->init("__new_coordinates",
+        this, newShape, new TagDataOf<double>());
+    newCoordinateField->project(oldCoordinateField);
+    delete coordinateField;
+    newCoordinateField->rename(name.c_str());
+  } else {
+    /* if we're not projecting, we're either picking up
+       tags from a high-order SCOREC file or building
+       tags for conversion from Simmetrix.
+       In either case, destroy the old (CoordData) field
+       and just make a fresh new field */
+    delete coordinateField;
+    newCoordinateField->init(name.c_str(),
+        this, newShape, new TagDataOf<double>());
+  }
+  coordinateField = newCoordinateField;
+}
+
 void changeMeshShape(Mesh* m, FieldShape* newShape, bool project)
 {
-  Field* oldCoordinateField = m->getCoordinateField();
-  VectorField* newCoordinateField = new VectorField();
-  newCoordinateField->init(oldCoordinateField->getName(), m, newShape,
-      new TagDataOf<double>());
-  if (project)
-    newCoordinateField->project(oldCoordinateField);
-  m->changeCoordinateField(newCoordinateField);
+  m->changeShape(newShape, project);
 }
 
 void unfreezeFields(Mesh* m) {
