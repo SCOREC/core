@@ -475,16 +475,6 @@ static int contains(struct mds_set* s, mds_id id)
   return 0;
 }
 
-static void intersect(struct mds_set* s, struct mds_set* with)
-{
-  int i;
-  int j = 0;
-  for (i = 0; i < s->n; ++i)
-    if (contains(with,s->e[i]))
-      s->e[j++] = s->e[i];
-  s->n = j;
-}
-
 static void unite(struct mds_set* s, struct mds_set* with)
 {
   int i;
@@ -508,26 +498,6 @@ static mds_id common_down(struct mds* m, mds_id a, mds_id b, int d)
   for (j = 0; j < db.n; ++j)
     if (da.e[i] == db.e[j])
       return da.e[i];
-  return MDS_NONE;
-}
-
-static mds_id common_up(struct mds* m, struct mds_set* s, int d)
-{
-  struct mds_set found;
-  struct mds_set adjacent;
-  int i;
-  assert(0 < s->n);
-  for (i = 0; i < s->n; ++i)
-    if (s->e[i] == MDS_NONE)
-      return MDS_NONE;
-  look_up(m,s->e[0],d,&found);
-  for (i = 1; i < s->n; ++i) {
-    look_up(m,s->e[i],d,&adjacent);
-    intersect(&found,&adjacent);
-  }
-  assert(found.n <= 1);
-  if (found.n)
-    return found.e[0];
   return MDS_NONE;
 }
 
@@ -595,18 +565,6 @@ static mds_id add_ent(struct mds* m, int t, mds_id* from)
   return id;
 }
 
-static mds_id add_or_find_ent(struct mds* m, int t, struct mds_set* from,
-    int can_add)
-{
-  mds_id id;
-  id = common_up(m,from,mds_dim[t]);
-  if (id != MDS_NONE)
-    return id;
-  if (can_add)
-    return add_ent(m,t,from->e);
-  return MDS_NONE;
-}
-
 static void check_ent(struct mds* m, mds_id e)
 {
   int t;
@@ -655,32 +613,6 @@ void mds_hack_adjacent(struct mds* m, mds_id up, int i, mds_id down)
   relate_up(m, down, x);
 }
 
-static void step_up(struct mds* m,
-    struct mds_set* from_s, int from_dim,
-    struct mds_set* to_s, int to_dim,
-    int t, int make)
-{
-  struct mds_set s;
-  int i;
-  int j;
-  int const* ct;
-  int const* ci;
-  int tt;
-  ct = mds_types[t][to_dim];
-  ci = convs[t][from_dim][to_dim];
-  to_s->n = mds_degree[t][to_dim];
-  for (i = 0; i < to_s->n; ++i) {
-    tt = *ct;
-    s.n = mds_degree[tt][from_dim];
-    for (j = 0; j < s.n; ++j) {
-      s.e[j] = from_s->e[*ci];
-      ++ci;
-    }
-    to_s->e[i] = add_or_find_ent(m,tt,&s,make);
-    ++ct;
-  }
-}
-
 static void step_down(struct mds* m,
     struct mds_set* from_s, int from_dim,
     struct mds_set* to_s, int to_dim,
@@ -697,26 +629,6 @@ static void step_down(struct mds* m,
     b = from_s->e[ci[2*i + 1]];
     to_s->e[i] = common_down(m,a,b,to_dim);
   }
-}
-
-static void convert_up(struct mds* m,
-    struct mds_set* from_s, int from_dim,
-    struct mds_set* to_s, int to_dim,
-    int t, int make)
-{
-  struct mds_set sets[2];
-  struct mds_set* s[2];
-  struct mds_set* tmp;
-  s[0] = sets;
-  s[1] = sets + 1;
-  copy_set(s[0],from_s);
-  for (; from_dim != to_dim; ++from_dim) {
-    step_up(m,s[0],from_dim,s[1],from_dim + 1,t,make);
-    tmp = s[0];
-    s[0] = s[1];
-    s[1] = tmp;
-  }
-  copy_set(to_s,s[0]);
 }
 
 static void convert_down(struct mds* m,
@@ -739,58 +651,11 @@ static void convert_down(struct mds* m,
   copy_set(to_s,s[0]);
 }
 
-static void check_set(struct mds* m, struct mds_set* s)
-{
-  int i;
-  int dim;
-  assert(0 < s->n);
-  for (i = 0; i < s->n; ++i)
-    check_ent(m,s->e[i]);
-  dim = mds_dim[TYPE(s->e[0])];
-  for (i = 1; i < s->n; ++i)
-    assert(dim == mds_dim[TYPE(s->e[i])]);
-}
-
-static mds_id get_ent_far(struct mds* m, int t, struct mds_set* in, int make)
-{
-  int from_dim;
-  int to_dim;
-  struct mds_set down;
-  from_dim = mds_dim[TYPE(in->e[0])];
-  to_dim = mds_dim[t];
-  convert_up(m,in,from_dim,&down,to_dim - 1,t,make);
-  return add_or_find_ent(m,t,&down,make);
-}
-
-static mds_id get_ent(struct mds* m, int t, mds_id* from, int make)
-{
-  int from_dim;
-  int to_dim;
-  struct mds_set in;
-  int i;
-  check_ent(m,from[0]);
-  from_dim = mds_dim[TYPE(from[0])];
-  in.n = mds_degree[t][from_dim];
-  for (i = 0; i < in.n; ++i)
-    in.e[i] = from[i];
-  check_set(m,&in);
-  to_dim = mds_dim[t];
-  assert(from_dim < to_dim);
-  if (from_dim + 1 == to_dim)
-    return add_or_find_ent(m,t,&in,make);
-  return get_ent_far(m,t,&in,make);
-}
-
 mds_id mds_create_entity(struct mds* m, int t, mds_id* from)
 {
   if (t == MDS_VERTEX)
-    return alloc_ent(m,t);
-  return get_ent(m,t,from,1);
-}
-
-mds_id mds_find_entity(struct mds* m, int t, mds_id* from)
-{
-  return get_ent(m,t,from,0);
+    return alloc_ent(m, t);
+  return add_ent(m, t, from);
 }
 
 static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
