@@ -393,6 +393,12 @@ class MeshMDS : public Mesh2
       tag = reinterpret_cast<mds_tag*>(t);
       return tag->name;
     }
+    void renameTag(MeshTag* t, const char* newName)
+    {
+      mds_tag* tag;
+      tag = reinterpret_cast<mds_tag*>(t);
+      mds_rename_tag(tag,newName);
+    }
     ModelEntity* toModel(MeshEntity* e)
     {
       return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh, fromEnt(e)));
