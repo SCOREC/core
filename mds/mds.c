@@ -788,11 +788,6 @@ mds_id mds_create_entity(struct mds* m, int t, mds_id* from)
   return get_ent(m,t,from,1);
 }
 
-mds_id mds_find_entity(struct mds* m, int t, mds_id* from)
-{
-  return get_ent(m,t,from,0);
-}
-
 static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
 {
   int i;

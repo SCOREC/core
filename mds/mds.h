@@ -55,7 +55,6 @@ void mds_create(struct mds* m, int d, mds_id cap[MDS_TYPES]);
 void mds_destroy(struct mds* m);
 mds_id mds_create_entity(struct mds* m, int type, mds_id *from);
 void mds_destroy_entity(struct mds* m, mds_id e);
-mds_id mds_find_entity(struct mds* m, int type, mds_id *from);
 int mds_type(mds_id e);
 mds_id mds_index(mds_id e);
 mds_id mds_identify(int type, mds_id idx);
