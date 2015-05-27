@@ -117,14 +117,22 @@ static void cutEntity(apf::Mesh2* m, MaterialMap& mm, apf::MeshEntity* e)
   MaterialSet ms;
   APF_ITERATE(apf::Adjacent, elements, it)
     ms.insert(mm[ (gmi_ent*) (m->toModel(*it)) ]);
+  std::vector<apf::MeshEntity*> ents;
+  ents.reserve(ms.size());
   ms.erase(ms.begin());
   assert(ms.size());
+  ents.push_back(e);
   APF_ITERATE(MaterialSet, ms, it) {
     apf::MeshEntity* ne = cloneEntity(m, e);
     APF_ITERATE(apf::Adjacent, elements, eit)
       if (mm[ (gmi_ent*) (m->toModel(*eit))] == *it)
         replaceAdjacencies(m, *eit, e, ne);
+    ents.push_back(ne);
   }
+  APF_ITERATE(std::vector<apf::MeshEntity*>, ents, ait)
+    APF_ITERATE(std::vector<apf::MeshEntity*>, ents, bit)
+      if (*ait != *bit)
+        m->addMatch(*ait, m->getId(), *bit);
 }
 
 static void cutEntities(apf::Mesh2* m, FieldBCs& fbcs, MaterialMap& mm)
