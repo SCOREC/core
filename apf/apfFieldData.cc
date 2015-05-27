@@ -13,6 +13,11 @@ FieldData* FieldData::clone()
   abort();
 }
 
+void FieldData::rename(const char* newName)
+{
+  abort();
+}
+
 template <class T>
 void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr)
 {
