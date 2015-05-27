@@ -7,9 +7,7 @@
 #include "parma_dijkstra.h"
 #include "parma_dcpart.h"
 #include "parma_meshaux.h"
-
-#define TO_UINT(a) static_cast<unsigned>(a)
-#define TO_INT(a) static_cast<int>(a)
+#include "parma_convert.h"
 
 namespace {
   apf::MeshTag* initTag(apf::Mesh* m, const char* name,

@@ -4,6 +4,7 @@
 #include "parma_dijkstra.h" 
 #include "parma_meshaux.h" 
 #include "parma_distQ.h"
+#include "parma_convert.h"
 
 /*
  * Components can have a seperator that may already be distanced.  If the
@@ -68,8 +69,13 @@ namespace {
   typedef std::set<apf::MeshEntity*> Level;
   void walkCavEdges(apf::Mesh* m, CavEnts* ce, apf::MeshEntity* p,
       apf::MeshEntity* s, apf::Adjacent& adjVtx) {
-    adjVtx.setSize(ce->size()*2); //should be an upper bound
-    size_t numAdj=0; 
+    typedef apf::DynamicArray<apf::MeshEntity*> entArr;
+    //should be an upper bound
+    const unsigned maxVisited = TO_UINT(ce->size()*2);
+    entArr visited(maxVisited);
+    adjVtx.setSize(maxVisited);
+    unsigned visCnt=0;
+    size_t numAdj=0;
     apf::MeshTag* lvlT = m->createIntTag("parmaCavWalk",1);
     Level cur;
     Level next; 
@@ -83,6 +89,8 @@ namespace {
         apf::MeshEntity* u = *vtxItr;
         if( m->hasTag(u,lvlT) ) continue;
         m->setIntTag(u,lvlT,&treeDepth);
+        visited[visCnt++] = u;
+        assert(visCnt < maxVisited);
         apf::Up edges;
         m->getUp(u,edges);
         for(int i=0; i<edges.n; i++) {
@@ -98,7 +106,10 @@ namespace {
       }
     }
     adjVtx.setSize(numAdj);
-    apf::removeTagFromDimension(m,lvlT,0);
+    for(std::size_t i = 0; i<visCnt; i++) {
+      assert(m->hasTag(visited[i],lvlT));
+      m->removeTag(visited[i],lvlT);
+    }
     m->destroyTag(lvlT);
   }
 
