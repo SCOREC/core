@@ -738,4 +738,16 @@ void disownMdsModel(Mesh2* in)
   m->ownsModel = false;
 }
 
+void setMdsMatching(Mesh2* in, bool has)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  m->isMatched = has;
+}
+
+void hackMdsAdjacency(Mesh2* in, MeshEntity* up, int i, MeshEntity* down)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  mds_hack_adjacent(&m->mesh->mds, fromEnt(up), i, fromEnt(down));
+}
+
 }

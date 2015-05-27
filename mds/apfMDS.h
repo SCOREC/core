@@ -142,6 +142,8 @@ Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
 
 void disownMdsModel(Mesh2* in);
 
+void setMdsMatching(Mesh2* in, bool has);
+
 }
 
 #endif

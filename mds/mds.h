@@ -70,4 +70,6 @@ int mds_has_up(struct mds* m, mds_id e);
 
 void mds_change_dimension(struct mds* m, int d);
 
+void mds_hack_adjacent(struct mds* m, mds_id up, int i, mds_id down);
+
 #endif
