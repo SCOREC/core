@@ -170,6 +170,7 @@ static void formFactories(BCFactories& fs)
   fs["initial scalar_3"]     = tensor0Factory;
   fs["initial scalar_4"]     = tensor0Factory;
   fs["periodic slave"]       = intFactory;
+  fs["DG interface"]         = intFactory;
 }
 
 static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
