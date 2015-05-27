@@ -257,7 +257,9 @@ void Mesh::addField(Field* f)
 
 void Mesh::removeField(Field* f)
 {
-  fields.erase(std::find(fields.begin(),fields.end(),f));
+  std::vector<Field*>::iterator it = std::find(fields.begin(),fields.end(),f);
+  if (it != fields.end())
+    fields.erase(it);
 }
 
 Field* Mesh::findField(const char* name)
