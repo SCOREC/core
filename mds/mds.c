@@ -634,6 +634,27 @@ void mds_destroy_entity(struct mds* m, mds_id e)
   free_ent(m,e);
 }
 
+void mds_hack_adjacent(struct mds* m, mds_id up, int i, mds_id down)
+{
+  int ut;
+  int ui;
+  int dd;
+  int deg;
+  mds_id x;
+  mds_id od;
+  check_ent(m, up);
+  check_ent(m, down);
+  ut = TYPE(up);
+  ui = INDEX(up);
+  dd = mds_dim[ut] - 1;
+  deg = mds_degree[ut][dd];
+  x = ID(ut, ui * deg + i);
+  od = *at_id(m->down[dd], x);
+  unrelate_up(m, od, x);
+  *at_id(m->down[dd], x) = down;
+  relate_up(m, down, x);
+}
+
 static void step_up(struct mds* m,
     struct mds_set* from_s, int from_dim,
     struct mds_set* to_s, int to_dim,
