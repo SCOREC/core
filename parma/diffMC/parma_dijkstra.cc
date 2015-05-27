@@ -4,8 +4,7 @@
 #include "parma_dijkstra.h" 
 #include "parma_meshaux.h" 
 #include "parma_distQ.h"
-
-#define TO_UINT(a) static_cast<unsigned>(a)
+#include "parma_convert.h"
 
 /*
  * Components can have a seperator that may already be distanced.  If the
