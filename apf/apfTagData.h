@@ -89,6 +89,7 @@ class TagData
     void removeEntity(MeshEntity* e);
     MeshTag* getTag(MeshEntity* e);
     MeshTag* makeOrFindTag(const char* name, int size);
+    void rename(const char* newName);
   private:
     void createTags(const char* name, int components);
     void detachTags();
@@ -131,6 +132,10 @@ class TagDataOf : public FieldDataOf<T>
     virtual FieldData* clone()
     {
       return new TagDataOf<T>();
+    }
+    virtual void rename(const char* newName)
+    {
+      tagData.rename(newName);
     }
   private:
     Mesh* mesh;
