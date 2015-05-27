@@ -5,6 +5,8 @@
 #include "parma_meshaux.h" 
 #include "parma_distQ.h"
 
+#define TO_UINT(a) static_cast<unsigned>(a)
+
 /*
  * Components can have a seperator that may already be distanced.  If the
  * seperator vertex distances are lower than the distance the current component
@@ -70,7 +72,7 @@ namespace {
       apf::MeshEntity* s, apf::Adjacent& adjVtx) {
     typedef apf::DynamicArray<apf::MeshEntity*> entArr;
     //should be an upper bound
-    const unsigned maxVisited = ce->size()*2;
+    const unsigned maxVisited = TO_UINT(ce->size()*2);
     entArr visited(maxVisited);
     adjVtx.setSize(maxVisited);
     unsigned visCnt=0;
