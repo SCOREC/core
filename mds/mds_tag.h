@@ -43,6 +43,7 @@ struct mds_tag* mds_find_tag(struct mds_tags* ts, const char* name);
 int mds_has_tag(struct mds_tag* tag, mds_id e);
 void mds_give_tag(struct mds_tag* tag, struct mds* m, mds_id e);
 void mds_take_tag(struct mds_tag* tag, mds_id e);
+void mds_rename_tag(struct mds_tag* tag, const char* newName);
 
 void mds_swap_tag_structs(struct mds_tags* as, struct mds_tag** a,
     struct mds_tags* bs, struct mds_tag** b);
