@@ -689,6 +689,11 @@ void MeshSIM::destroyTag(MeshTag* tag)
   delete tagSim;
 }
 
+void MeshSIM::renameTag(MeshTag*, const char*)
+{
+  apf::fail("MeshSIM::renameTag called!\n");
+}
+
 void MeshSIM::getTags(DynamicArray<MeshTag*>& ts)
 {
   ts.setSize(tags.size());
