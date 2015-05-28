@@ -627,7 +627,7 @@ namespace dsp {
         r[i] = d[i];
       }
       
-      int flag = 1; double r_max;
+      int flag = 1; double r_max; int diverge_flag = 0;
       for (int i = 0 ; i < id_max ; i++) {
         double r_max_new = *max_element(r,r+id_max);
         if (flag) {
@@ -635,6 +635,10 @@ namespace dsp {
           flag = 0;
         }
         if (r_max_new > r_max)
+          diverge_flag++;
+        else
+          diverge_flag = 0;
+        if (diverge_flag == 10) 
           cout << "Not Converge! " << endl;
         r_max = r_max_new;
         if (r_max <= 1e-16)
