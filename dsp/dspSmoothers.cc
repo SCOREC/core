@@ -490,7 +490,7 @@ namespace dsp {
       double Na1,Na2,Na3,Nb1,Nb2,Nb3;
       apf::Vector3 preDisp;
       
-      double shapeFunction[4][3] = {0.0};
+      double shapeFunction[4][3] = {};
       shapeFunction[0][0] = -1; shapeFunction[0][1] = -1; shapeFunction[0][2] = -1;
       shapeFunction[1][0] =  1; shapeFunction[2][1] =  1; shapeFunction[3][2] =  1;
 
