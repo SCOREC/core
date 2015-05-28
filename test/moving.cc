@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   int in_0; int fb_0;
   smoother->preprocess(m, fixed, moving, V_total, in_0, fb_0);
   /* number of displacement steps */
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 3; ++i) {
     apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
     smoother->smooth(dsp, V_total, in_0, fb_0);
   //dsp::tryToDisplace(m, dsp);
