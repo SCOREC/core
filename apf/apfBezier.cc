@@ -328,8 +328,8 @@ public:
     void getValues(Mesh*, MeshEntity*,
         Vector3 const&, NewArray<double>& values) const
     {
-    	values.allocate(1);
-    	values[0] = 1.0;
+      values.allocate(1);
+      values[0] = 1.0;
     }
     void getLocalGradients(Mesh*, MeshEntity*,
         Vector3 const&, NewArray<Vector3>&) const
@@ -417,16 +417,59 @@ public:
 
       ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
-        for(int i = 0; i < P+1; ++i)
-          for(int j = 0; j < P+1-i; ++j)
+        for(int i = 1; i < P+1; ++i)
+          for(int j = 1; j < P-i; ++j)
             grads[map[j*(P+1)+i-j*(j-1)/2]] =
-              gxii[0]*binomial(P,i)*binomial(P-i,j)
-              *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
-              *(i*(1.-xii[1])-(P-j)*xii[0]) +
-              gxii[1]*binomial(P,i)*binomial(P-i,j)
-              *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
-              *(j*(1.-xii[0])-(P-i)*xii[1]);
+                gxii[0]*binomial(P,i)*binomial(P-i,j)
+                *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
+                *(i*(1.-xii[1])-(P-j)*xii[0]) +
+                gxii[1]*binomial(P,i)*binomial(P-i,j)
+                *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
+                *(j*(1.-xii[0])-(P-i)*xii[1]);
 
+
+        // i = 0
+        for(int j = 1; j < P; ++j)
+          grads[map[j*(P+1)-j*(j-1)/2]] =
+            (gxii[0]*(j-P)*xii[1] +
+            gxii[1]*(j*(1.-xii[0])-P*xii[1]))
+            *binomial(P,j)
+            *pow(xii[1],j-1)*pow(xii[2],P-j-1);
+
+        // j = 0
+        for(int i = 1; i < P; ++i)
+          grads[map[i]] =
+              (gxii[0]*(i*(1.-xii[1])-P*xii[0]) +
+               gxii[1]*(i-P)*xii[0])
+              *binomial(P,i)
+              *pow(xii[0],i-1)*pow(xii[2],P-i-1);
+
+        // k = 0
+        for(int i = 1, j = P-1; i < P; ++i, --j)
+          grads[map[j*(P+1)+i-j*(j-1)/2]] =
+              (gxii[0]*i*xii[1] + gxii[1]*j*xii[0])
+              *binomial(P,i)*binomial(P-i,j)
+              *pow(xii[0],i-1)*pow(xii[1],j-1);
+
+        // i = j = 0
+        grads[map[0]] = (gxii[0]+gxii[1])*(-P)*pow(xii[2],P-1);
+        // i = k = 0
+        grads[map[((P+1)*(P+2))/2-1]] = gxii[1]*P*pow(xii[1],P-1);
+        // j = k = 0
+        grads[map[P]] = gxii[0]*P*pow(xii[0],P-1);
+
+//        for(int i = 0; i < P+1; ++i)
+//          for(int j = 0; j < P+1-i; ++j){
+//
+//        grads[map[j*(P+1)+i-j*(j-1)/2]] =
+//          gxii[0]*binomial(P,i)*binomial(P-i,j)
+//          *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
+//          *(i*(1.-xii[1])-(P-j)*xii[0]) +
+//          gxii[1]*binomial(P,i)*binomial(P-i,j)
+//          *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
+//          *(j*(1.-xii[0])-(P-i)*xii[1]);
+//
+//          }
       } else
         BlendedTriangleGetLocalGradients(P,CURVED_BEZIER,m,e,xi,grads);
 
@@ -455,8 +498,8 @@ public:
     void getValues(Mesh* m, MeshEntity* e,
         Vector3 const& xi, NewArray<double>& values) const
     {
-    	values.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
-    	BlendedTetrahedronGetValues(P,CURVED_BEZIER,m,e,xi,values);
+      values.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
+      BlendedTetrahedronGetValues(P,CURVED_BEZIER,m,e,xi,values);
     }
     void getLocalGradients(Mesh* m, MeshEntity* e,
         Vector3 const& xi,
@@ -471,7 +514,7 @@ public:
     {
       int which,rotate;
       bool flip;
-    	getAlignment(m,elem,shared,which,flip,rotate);
+      getAlignment(m,elem,shared,which,flip,rotate);
       if(m->getType(shared) == Mesh::EDGE){
         if(!flip)
           for(int i = 0; i < P-1; ++i)
@@ -671,7 +714,6 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       -6.60581336,9.74813268,-7.82909978,
       -0.166666667,-2.338908,0.476769119,-0.800405899,
       1.2670886,-2.14695479,4.70907763};
-
   double* table[5] = {
       e2,e3,e4,e5,e6};
   int nb = order-1;
@@ -809,7 +851,6 @@ static void getBezierShapeInterPtsToCtrlPts(int order, int type,
       2.62919661,0.852569479,-3.89671807,9.21852962,-7.99944935,
       -7.99944935,9.21852962,-7.99944374,-7.99945144,9.21853253,
       -7.99945144,-7.99944374,23.4971758};
-
   double* table[10] = {
       e2,e3,e4,e5,e6,NULL,f3,f4,f5,f6};
   int nb = (type == Mesh::TRIANGLE) ?
@@ -914,6 +955,7 @@ public:
 
           values[12+pairs[i][0]] = bernstein*xii[index[i][0]]/x;
           values[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x;
+
         }
 
       } else {
@@ -929,16 +971,46 @@ public:
 
       ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
-        for(int i = 0; i < 5; ++i)
-          for(int j = 0; j < 5-i; ++j)
+        for(int i = 1; i < 5; ++i)
+          for(int j = 1; j < 5-i; ++j)
             grads[map[j*5+i-j*(j-1)/2]] =
-              gxii[0]*binomial(4,i)*binomial(4-i,j)
-              *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],4-i-j-1)
-              *(i*(1.-xii[1])-(4-j)*xii[0]) +
-              gxii[1]*binomial(4,i)*binomial(4-i,j)
-              *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],4-i-j-1)
-              *(j*(1.-xii[0])-(4-i)*xii[1]);
+                gxii[0]*binomial(4,i)*binomial(4-i,j)
+                *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],4-i-j-1)
+                *(i*(1.-xii[1])-(4-j)*xii[0]) +
+                gxii[1]*binomial(4,i)*binomial(4-i,j)
+                *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],4-i-j-1)
+                *(j*(1.-xii[0])-(4-i)*xii[1]);
 
+
+        // i = 0
+        for(int j = 1; j < 4; ++j)
+          grads[map[j*(4+1)-j*(j-1)/2]] =
+            (gxii[0]*(j-4.)*xii[1] +
+            gxii[1]*(j*(1.-xii[0])-4.*xii[1]))
+            *binomial(4,j)
+            *pow(xii[1],j-1)*pow(xii[2],4-j-1);
+
+        // j = 0
+        for(int i = 1; i < 4; ++i)
+          grads[map[i]] =
+              (gxii[0]*(i*(1.-xii[1])-4.*xii[0]) +
+               gxii[1]*(i-4.)*xii[0])
+              *binomial(4,i)
+              *pow(xii[0],i-1)*pow(xii[2],4-i-1);
+
+        // k = 0
+        for(int i = 1, j = 3; i < 4; ++i, --j)
+          grads[map[j*5+i-j*(j-1)/2]] =
+              (gxii[0]*i*xii[1] + gxii[1]*j*xii[0])
+              *binomial(4,i)*binomial(4-i,j)
+              *pow(xii[0],i-1)*pow(xii[1],j-1);
+
+        // i = j = 0
+        grads[map[0]] = (gxii[0]+gxii[1])*(-4.)*pow(xii[2],3);
+        // i = k = 0
+        grads[map[((4+1)*(4+2))/2-1]] = gxii[1]*4.*pow(xii[1],3);
+        // j = k = 0
+        grads[map[4]] = gxii[0]*4.*pow(xii[0],3);
         double x;
         Vector3 xv, gx;
         NewArray<double> v;
@@ -954,11 +1026,15 @@ public:
 
           if(x < 1e-10) continue;
 
+
           grads[12+pairs[i][0]] = bernstein*xii[index[i][0]]/x
             + (gxii[index[i][0]]/x-gx*xii[index[i][0]]/x/x)*v[12+pairs[i][0]];
 
           grads[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x
             + (gxii[index[i][1]]/x-gx*xii[index[i][1]]/x/x)*v[12+pairs[i][1]];
+
+
+
         }
       } else {
         BlendedTriangleGetLocalGradients(4,CURVED_GREGORY,m,e,xi,grads);
@@ -1019,7 +1095,6 @@ public:
             order[i] = 2-i;
         return;
       }
-      // first three are no flip, second three are flip for rotations 0,1,2
       int orients[6][6] =
       {{0,1,2,3,4,5},{2,0,1,5,3,4},{1,2,0,4,5,3},
        {4,3,5,1,0,2},{3,5,4,0,2,1},{5,4,3,2,1,0}};
@@ -1027,7 +1102,6 @@ public:
         order[i] = orients[flip*3+rotate][i];
     }
   };
-
   EntityShape* getEntityShape(int type)
   {
     static BezierShape<1>::Vertex vertex;
@@ -1067,7 +1141,7 @@ public:
      0};                //pyramid
     return nodes[type];
   }
-  /* These are set up so the points are the triangular bezier points */
+  /* These don't make sense for gregory patches */
   void getNodeXi(int type, int node, Vector3& xi)
    {
     static double edgePoints[3] = {-0.6612048,0.0,0.6612048};

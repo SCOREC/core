@@ -7,7 +7,7 @@
 #include <PCU.h>
 #include <maCurveMesh.h>
 #include <apfField.h>
-#include <maAdapt.h>
+
 
 /*
  * This analytic function is a "pringle",
@@ -237,9 +237,7 @@ void test2D()
 {
   for(int order = 1; order < 7; ++order){
     apf::Mesh2* m = createMesh2D();
-    ma::Input* in = ma::configureIdentity(m);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::BezierCurver bc(adapt,order);
+    ma::BezierCurver bc(m,order);
     bc.run();
     testInterpolatedPoints2D(m);
     testSize2D(m);
@@ -281,9 +279,7 @@ void test3D()
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, apf::getBezier(3,order),true);
     apf::FieldShape * fs = m->getCoordinateField()->getShape();
-    ma::Input* in = ma::configureIdentity(m);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::BezierCurver bc(adapt,order);
+    ma::BezierCurver bc(m,order);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;

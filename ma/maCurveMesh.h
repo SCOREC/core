@@ -20,7 +20,7 @@ class Adapt;
 class MeshCurver
 {
   public:
-    MeshCurver(Adapt* a, int order);
+    MeshCurver(Mesh* m, int order);
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
@@ -35,14 +35,14 @@ class MeshCurver
     void convertInterpolationPoints(Entity* e, int n, int ne,
       apf::NewArray<double>& c);
 
-    Adapt* adapt;
-    int order;
+    Mesh* m_mesh;
+    int m_order;
 };
 
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(Adapt* a, int o) : MeshCurver(a, o) {};
+    BezierCurver(Mesh* m, int o) : MeshCurver(m, o) {};
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
@@ -54,7 +54,7 @@ class BezierCurver : public MeshCurver
 class GregoryCurver : public MeshCurver
 {
   public:
-    GregoryCurver(Adapt* a, int o) : MeshCurver(a, o) {};
+    GregoryCurver(Mesh* m, int o) : MeshCurver(m, o) {};
     /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */

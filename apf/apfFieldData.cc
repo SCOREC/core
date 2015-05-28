@@ -13,7 +13,7 @@ FieldData* FieldData::clone()
   abort();
 }
 
-void FieldData::rename(const char* newName)
+void FieldData::rename(const char*)
 {
   abort();
 }
