@@ -401,7 +401,7 @@ namespace dsp {
       //data structure
       apf::MeshIterator* it;
       apf::MeshEntity* v;
-      apf::Vector3 d;
+      //apf::Vector3 d;
       apf::Field* qfield;
       apf::Adjacent adj;
       apf::Downward down;
@@ -410,7 +410,6 @@ namespace dsp {
       //----------------------------------------------------------
       //update mesh
       t = clock();
-      double tol = 1.0E-5; //tolerance
       //----------------------------------------------------------
       //start elastic
       int num_elm = 0;
@@ -629,16 +628,17 @@ namespace dsp {
       }
       
       for (int i = 0 ; i < id_max ; i++) {
-        double r_max = *max_element(r,r+id_max)
+        double r_max = *max_element(r,r+id_max);
         if (r_max <= 1e-16)
           break;
         rTr = 0.0; dTAd = 0.0; rTr_new = 0.0;
         for (int j = 0 ; j < id_max ; j++)
           rTr += r[j] * r[j];
-        for (int j = 0 ; j < id_max ; j++)
+        for (int j = 0 ; j < id_max ; j++) {
           Ad[j] = 0.0;
           for (int k = 0 ; k < id_max ; k++)
             Ad[j] += K_global[j][k] * d[k];
+        }
         for (int j = 0 ; j < id_max ; j++)
           dTAd += d[j] * Ad[j];
         alpha = rTr / dTAd;
