@@ -101,6 +101,7 @@ setup_exe(integrate integrate.cc)
 setup_exe(align align.cc)
 setup_exe(moving moving.cc)
 setup_exe(graphdist graphdist.cc)
+setup_exe(nektar_align nektar_align.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
