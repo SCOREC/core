@@ -61,6 +61,7 @@ set(SOURCES
 
 set(HEADERS
   ma.h
+  maCurveMesh.h
   maInput.h
   maMesh.h
   maSize.h
