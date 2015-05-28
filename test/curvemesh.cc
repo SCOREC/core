@@ -9,7 +9,6 @@
 #include <apfShape.h>
 #include <apfDynamicMatrix.h>
 #include <apfField.h>
-#include <maAdapt.h>
 
 static void testInterpolationError(ma::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
@@ -37,6 +36,7 @@ static void testElementSize(ma::Mesh* m)
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
+      if(d == 3) printf("Tet volume is %f\n",v);
       if(v < 0){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
@@ -65,13 +65,10 @@ static void testBezier(const char* modelFile, const char* meshFile,
 
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    ma::Input* in = ma::configureIdentity(m2);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::BezierCurver bc(adapt,order);
+    ma::BezierCurver bc(m2,order);
     bc.run();
     ma::writePointSet(m2,1,21,outFile);
     ma::writePointSet(m2,2,21,outFile);
-
     testElementSize(m2);
     apf::DynamicVector ee(ne);
     apf::DynamicVector fe(nf);
@@ -102,12 +99,9 @@ static void testGregory(const char* modelFile, const char* meshFile,
 {
 
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    ma::Input* in = ma::configureIdentity(m2);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::GregoryCurver gc(adapt,4);
+    ma::GregoryCurver gc(m2,4);
     gc.run();
     testElementSize(m2);
-
     apf::DynamicVector ee(ne);
     apf::DynamicVector fe(nf);
     testInterpolationError(m2,1,ee);
@@ -129,7 +123,7 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   Sim_readLicenseFile(0);
   gmi_sim_start();
-  gmi_register_mesh();
+//  gmi_register_mesh();
   gmi_register_sim();
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   int ne = m->count(1);
