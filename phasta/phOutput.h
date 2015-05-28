@@ -34,11 +34,14 @@ struct EnsaArrays
    element j of
    boundary block i */
   int*** ienb;
-/* ienif[i][j][k] is the local vertex id of
+/* ienif0,1[i][j][k] are the local vertex id of
    vertex k of
    element j of
-   boundary block i */
-  int*** ienif;
+   interface block i
+   ienif0 and ienif1 correspond to the two elements on the interface
+ */
+  int*** ienif0;
+  int*** ienif1;
 /* ibcb[i][j][k] is the natural boundary condition
    status code
    number k in [0,1] of

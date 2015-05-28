@@ -203,16 +203,25 @@ void getAllBlocks(apf::Mesh* m, AllBlocks& b)
   getInterfaceBlocks(m, b.interface);
 }
 
-std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)
+std::string getPolyOrder
+(
+  int polyOrder
+)
 {
-  std::string s = prefix;
   static const char* const polyTable[5] =
   {NULL
   ,"linear "
   ,"quadratic "
   ,"cubic "
   ,"quartic "};
-  s += polyTable[b.polynomialOrder];
+  return polyTable[polyOrder];
+}
+
+std::string getElementType
+(
+  int elementType
+)
+{
   static const char* typeTable[TYPES] =
   {NULL
   ,"tetrahedron "
@@ -221,7 +230,31 @@ std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)
   ,"wedge quadface "
   ,"pyramid "
   ,"pyramid triface "};
-  s += typeTable[b.elementType];
+  return typeTable[elementType];
+}
+
+std::string getBlockKeyPhrase
+(
+  BlockKey& b, 
+  const char* prefix
+)
+{
+  std::string s = prefix;
+  s += getPolyOrder(b.polynomialOrder); 
+  s += getElementType(b.elementType);
+  return s;
+}
+
+std::string getBlockKeyPhraseInterface
+(
+  BlockKeyInterface& b, 
+  const char* prefix
+)
+{
+  std::string s = prefix;
+  s += getPolyOrder(b.polynomialOrder); 
+  s += getElementType(b.elementType);
+  s += getElementType(b.elementType1);
   return s;
 }
 

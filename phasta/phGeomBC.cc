@@ -41,6 +41,26 @@ void getBoundaryConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   assert(i == c.getSize());
 }
 
+void getInterfaceConnectivity
+(
+  Output& o,
+  int block,
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.interface.nElements[block];
+  int nvert0 = o.blocks.interface.keys[block].nElementVertices;
+  int nvert1 = o.blocks.interface.keys[block].nElementVertices1;
+  c.setSize(nelem * (nvert0 + nvert1));
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem) {
+    for (int vert = 0; vert < nvert0; ++vert)
+      c[i++] = o.arrays.ienif0[block][elem][vert] + 1;
+    for (int vert = 0; vert < nvert1; ++vert)
+      c[i++] = o.arrays.ienif1[block][elem][vert] + 1;}
+  assert(i == c.getSize());
+}
+
 void getNaturalBCCodes(Output& o, int block, apf::DynamicArray<int>& codes)
 {
   int nelem = o.blocks.boundary.nElements[block];
@@ -86,6 +106,20 @@ void fillBlockKeyParams(int* params, BlockKey& k)
   params[6] = k.elementType;
 }
 
+void fillBlockKeyInterfaceParams
+(
+  int* params,
+  BlockKeyInterface& k
+)
+{
+  params[1] = k.nElementVertices;
+  params[2] = k.nElementVertices1;
+  params[3] = k.polynomialOrder;
+  params[4] = k.nBoundaryFaceEdges; /* num boundary nodes */
+  params[5] = k.elementType;
+  params[6] = k.elementType1;
+}
+
 void writeBlocks(FILE* f, Output& o)
 {
   apf::DynamicArray<int> c;
@@ -114,6 +148,14 @@ void writeBlocks(FILE* f, Output& o)
     apf::DynamicArray<double> values;
     getNaturalBCValues(o, i, values);
     ph_write_doubles(f, phrase.c_str(), &values[0], values.getSize(), 8, params);
+  }
+  for (int i = 0; i < o.blocks.interface.getSize(); ++i) {
+    BlockKeyInterface& k = o.blocks.interface.keys[i];
+    std::string phrase = getBlockKeyPhraseInterface(k, "connectivity interface ");
+    params[0] = o.blocks.interface.nElements[i];
+    fillBlockKeyInterfaceParams(params, k);
+    getInterfaceConnectivity(o, i, c);
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 7, params);
   }
 }
 
@@ -170,9 +212,11 @@ void writeGeomBC(Output& o, std::string path)
   writeInt(f, "number of global modes", 0);
   writeInt(f, "number of interior elements", m->count(m->getDimension()));
   writeInt(f, "number of boundary elements", o.nBoundaryElements);
+  writeInt(f, "number of interface elements", o.nInterfaceElements);
   writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
   writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
   writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
+  writeInt(f, "number of interface tpblocks", o.blocks.interface.getSize());
   writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
   params[0] = m->count(0);
   params[1] = 3;

@@ -156,10 +156,12 @@ static void getInterface
 {
   apf::Mesh*        m  = o.mesh;
   BlocksInterface&  bs = o.blocks.interface;
-  int***            ienif = new int**[bs.getSize()];
+  int***            ienif0 = new int**[bs.getSize()];
+  int***            ienif1 = new int**[bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
-    ienif[i] = new int*[bs.nElements[i]];
+    ienif0[i] = new int*[bs.nElements[i]];
+    ienif1[i] = new int*[bs.nElements[i]];
     js[i] = 0;
   }
   int interfaceDim = m->getDimension() - 1;
@@ -181,21 +183,22 @@ static void getInterface
     int j = js[i];
     int nv0 = k.nElementVertices;
     int nv1 = k.nElementVertices1;
-    int nv  = nv0 + nv1;
     apf::Downward v0, v1;
     getBoundaryVertices(m, e0, f, v0);
     getBoundaryVertices(m, e1, f, v1);
-    ienif[i][j] = new int[nv];
+    ienif0[i][j] = new int[nv0];
+    ienif1[i][j] = new int[nv1];
     for (int k = 0; k < nv0; ++k)
-      ienif[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
+      ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)
-      ienif[i][j][nv0 + k] = apf::getNumber(n, v1[k], 0, 0);
+      ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
     ++js[i];
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
-  o.arrays.ienif = ienif;
+  o.arrays.ienif0 = ienif0;
+  o.arrays.ienif1 = ienif1;
 }  
 
 static void getBoundaryElements(Output& o)

@@ -72,6 +72,11 @@ struct AllBlocks
 void getAllBlocks(apf::Mesh* m, AllBlocks& b);
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
+std::string getBlockKeyPhraseInterface
+(
+  BlockKeyInterface& b, 
+  const char* prefix
+);
 
 void getInteriorBlockKey(apf::Mesh* m, apf::MeshEntity* e, BlockKey& k);
 void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
