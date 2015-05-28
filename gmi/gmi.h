@@ -87,6 +87,12 @@ struct gmi_model_ops {
   /** \brief implement gmi_closest_point */
   void (*closest_point)(struct gmi_model* m, struct gmi_ent* e,
       double const from[3], double to[3], double to_p[2]);
+  /** \brief implement gmi_normal */
+  void (*normal)(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double n[3]);
+  /** \brief implement gmi_first_derivative */
+  void (*first_derivative)(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double t0[3], double t1[3]);
   /** \brief implement gmi_destroy */
   void (*destroy)(struct gmi_model* m);
 };
@@ -155,6 +161,12 @@ void gmi_range(struct gmi_model* m, struct gmi_ent* e, int dim,
 /** \brief return closest point and its parameter*/
 void gmi_closest_point(struct gmi_model* m, struct gmi_ent* e,
     double const from[3], double to[3], double to_p[2]);
+/** \brief return normal vector at a parameter*/
+void gmi_normal(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double n[3]);
+/** \brief return first derivative */
+void gmi_first_derivative(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double t0[3], double t1[3]);
 /** \brief destroy a geometric model */
 void gmi_destroy(struct gmi_model* m);
 

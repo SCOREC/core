@@ -67,8 +67,8 @@ struct EnsaArrays
 /* ibc[i] is the essential boundary condition
    status code of essential BC node i */
 /* ibc bits are as follows:
-var: rho t p u v w sc1 sc2 sc3 sc4 perio spebc
-bit:  0  1 2 3 4 5  6   7   8   9    10    11 */
+var: rho t p u v w sc1 sc2 sc3 sc4 perio
+bit:  0  1 2 3 4 5  6   7   8   9    10 */
   int* ibc;
 /* bc[i][j] is the essential boundary condition
    value of 

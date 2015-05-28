@@ -1,7 +1,5 @@
 #include "parma_sides.h"
-#include "parma_dcpart.h"
 #include <apf.h>
-
 
 namespace parma {  
   class VtxSides : public Sides {
@@ -14,11 +12,10 @@ namespace parma {
         apf::MeshEntity* s;
         apf::MeshIterator* it = m->begin(0);
         totalSides = 0;
-	dcPart dc(m);
         while ((s = m->iterate(it))) {
 	  apf::Adjacent adj;
           m->getAdjacent(s,m->getDimension(),adj);
-          if (m->isShared(s)&&!dc.isIsolated(s)) {
+          if ( m->isShared(s) ) {
             apf::Copies rmts;
             m->getRemotes(s, rmts);
             APF_ITERATE(apf::Copies, rmts, r)

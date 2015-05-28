@@ -473,12 +473,6 @@ void writeVtkFiles(const char* prefix, Mesh* m);
   */
 void writeOneVtkFile(const char* prefix, Mesh* m);
 
-/** \brief Output a .csv file of a set of points
-  \details this function is useful for sampling curved entities.
-  */
-void writeCSVPointSet(const char* prefix, DynamicArray<Vector3>& pts);
-
-
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType
   \param order the order of the integration rule

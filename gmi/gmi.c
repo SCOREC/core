@@ -115,6 +115,18 @@ void gmi_closest_point(struct gmi_model* m, struct gmi_ent* e,
   m->ops->closest_point(m, e, from, to, to_p);
 }
 
+void gmi_normal(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double n[3])
+{
+  m->ops->normal(m, e, p, n);
+}
+
+void gmi_first_derivative(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double t0[3], double t1[3])
+{
+  m->ops->first_derivative(m, e, p, t0, t1);
+}
+
 void gmi_destroy(struct gmi_model* m)
 {
   m->ops->destroy(m);

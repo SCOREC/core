@@ -5,30 +5,331 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfShape.h"
+#include <math.h>
+
+#include "apf.h"
 #include "apfMesh.h"
+#include "apfShape.h"
+
+/* see bezier.tex */
 
 namespace apf {
 
+// negative -> flipped relative to canonical
+// relies on e0 being always ordered correctly
+static int const tet_tri_edges[4][3] =
+{{0,1,2},{0,4,3},{1,5,4},{2,5,3}};
+static bool const flip_tet_tri_edges[4][3] =
+{{0,0,0},{0,0,1},{0,0,1},{1,0,1}};
+
+enum {
+  CURVED_BEZIER,
+  CURVED_GREGORY,
+  CURVED_TYPES
+};
+
+// numbers of nodes on
+static int const curved_face_internal[2][6] =
+{{0,0,1,3,6,10},{0,0,0,6,0,0}};
+
+// total numbers of nodes
+static int const curved_face_total[2][6] =
+{{3,6,10,15,21,28},{0,0,0,18,0,0}};
+
+static int const blended_tet_total[2][6] =
+{{4,10,20,34,52,74},{0,0,0,46,0,0}};
+
+static void BlendedTriangleGetValues(const int P, const int type,
+    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& values)
+{
+  // Triangular Blending
+  double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
+
+  for(int i = 0; i < 3; ++i)
+    values[i] = -xii[i];
+  // zero the rest, the face node weight is always zero
+
+  for(int i = 3; i < curved_face_total[type][P-1]; ++i)
+    values[i] = 0.0;
+
+  double x;
+  Vector3 xv;
+  NewArray<double> v;
+
+  int const (*tev)[2] = tri_edge_verts;
+
+  MeshEntity* edges[3];
+  m->getDownward(e,1,edges);
+  for(int i = 0; i < 3; ++i){
+    x = xii[tev[i][0]]+xii[tev[i][1]];
+    if(x < 1e-13) continue;
+    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+
+    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+          ->getValues(m,edges[i],xv,v);
+
+    for(int j = 0; j < 2; ++j)
+      values[tev[i][j]]   += v[j]*x;
+    for(int j = 0; j < (P-1); ++j)
+      values[3+i*(P-1)+j] = v[2+j]*x;
+  }
+}
+
+static void BlendedTriangleGetLocalGradients(const int P, const int type,
+    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& grads)
+{
+
+  double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
+  Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
+
+  for(int i = 0; i < 3; ++i)
+    grads[i] = gxii[i]*-1;
+
+  for(int i = 3; i < curved_face_total[type][P-1]; ++i)
+    grads[i] = Vector3(0,0,0);
+
+  double x;
+  Vector3 xv, gx;
+
+  NewArray<double> v;
+  NewArray<Vector3> gv;
+  MeshEntity * edges[3];
+
+  int const (*tev)[2] = tri_edge_verts;
+
+  m->getDownward(e,1,edges);
+  for(int i = 0; i < 3; ++i){
+    x = xii[tev[i][0]]+xii[tev[i][1]];
+    if(x < 1e-13) continue;
+    gx = gxii[tev[i][0]]+gxii[tev[i][1]];
+
+    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+
+    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+      ->getValues(m,edges[i],xv,v);
+
+    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+      ->getLocalGradients(m,edges[i],xv,gv);
+
+    for(int j = 0; j < 2; ++j)
+      grads[tev[i][j]]   += gx*v[j]
+        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.;
+    for(int j = 0; j < (P-1); ++j)
+      grads[3+i*(P-1)+j] = gx*v[j+2]
+        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.;
+  }
+}
+
+static void BlendedTetrahedronGetValues(const int P, const int type,
+    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& values)
+{
+
+  double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
+
+  for(int i = 0; i < 4; ++i)
+    values[i] = xii[i];
+
+  for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
+    values[i] = 0.0;
+
+  double x;
+  Vector3 xv;
+  NewArray<double> v;
+
+  MeshEntity* faces[4];
+
+  int nE = P-1;
+  int nF = curved_face_internal[type][P-1];
+
+  int const (*tev)[2] = tet_edge_verts;
+  int const (*ttv)[3] = tet_tri_verts;
+
+  MeshEntity* edges[6];
+  m->getDownward(e,1,edges);
+  for(int i = 0; i < 6; ++i){
+    x = xii[tev[i][0]]+xii[tev[i][1]];
+    if(x < 1e-13) continue;
+
+    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+
+    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+          ->getValues(m,edges[i],xv,v);
+
+    for(int j = 0; j < 2; ++j) // vertices
+      values[tev[i][j]] += -v[j]*x;
+    for(int j = 0; j < nE; ++j)// edge nodes
+      values[4+i*nE+j]  += -v[2+j]*x;
+
+  }
+
+  m->getDownward(e,2,faces);
+  for(int i = 0; i < 4; ++i){
+
+    x = 0.;
+    for(int j = 0; j < 3; ++j)
+      x += xii[ttv[i][j]];
+    if(x < 1e-13) continue;
+
+    int shift = (m->getModelType(m->toModel(faces[i]))
+        == m->getDimension());
+    for(int j = 0; j < 3; ++j)
+      xv[j] = xii[ttv[i][(j+shift) % 3]];
+
+    xv = xv/x;
+
+    if(type == CURVED_BEZIER)
+      getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
+          ->getValues(m,faces[i],xv,v);
+    else if(type == CURVED_GREGORY)
+      getGregory(P)->getEntityShape(Mesh::TRIANGLE)
+          ->getValues(m,faces[i],xv,v);
+
+    for(int j = 0; j < 3; ++j) // vertices
+      values[ttv[i][j]] += v[j]*x;
+
+    // Edge contributions from faces
+    // Edges are the first 3*nE entries per face
+    // also not necessarily aligned, canonically
+    for(int k = 0; k < 3; ++k){
+      int l = tet_tri_edges[i][k];
+      if(flip_tet_tri_edges[i][k] == false){
+        for(int j = 0; j < nE; ++j)
+          values[4+l*nE+j] += v[3+k*nE+j]*x;
+      } else { // we need to flip
+        for(int j = 0; j < nE; ++j)
+          values[4+l*nE+j] += v[3+k*nE+nE-1-j]*x;
+      }
+    }
+    for(int j = 0; j < nF; ++j) // face nodes
+      values[4+6*nE+i*nF+j] +=  v[3+3*nE+j]*x;
+  } // done faces
+}
+
+static void BlendedTetrahedronGetLocalGradients(const int P, const int type,
+    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& grads)
+{
+
+  double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
+  Vector3 gxii[4] = {Vector3(-1,-1,-1),Vector3(1,0,0),
+      Vector3(0,1,0),Vector3(0,0,1)};
+
+  for(int i = 0; i < 4; ++i)
+    grads[i] = gxii[i];
+  for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
+    grads[i] = Vector3(0,0,0);
+
+  double x;
+  Vector3 xv, gx;
+  Vector3 gxv[2];
+  NewArray<double> v;
+  NewArray<Vector3> gv;
+
+  MeshEntity* faces[4];
+
+  int nE = P-1;
+  int nF = curved_face_internal[type][P-1];
+
+  int const (*tev)[2] = tet_edge_verts;
+  int const (*ttv)[3] = tet_tri_verts;
+
+  MeshEntity* edges[6];
+  m->getDownward(e,1,edges);
+  for(int i = 0; i < 6; ++i){
+    x = xii[tev[i][0]]+xii[tev[i][1]];
+    if(x < 1e-13) continue;
+
+    gx = gxii[tev[i][0]]+gxii[tev[i][1]];
+
+    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+
+    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+        ->getValues(m,edges[i],xv,v);
+
+    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+        ->getLocalGradients(m,edges[i],xv,gv);
+
+    for(int j = 0; j < 2; ++j) // vertices
+      grads[tev[i][j]] += gx*(-v[j])
+      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.;
+
+    for(int j = 0; j < nE; ++j)// edge nodes
+      grads[4+i*nE+j]  += gx*(-v[j+2])
+      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.;
+  }
+
+  m->getDownward(e,2,faces);
+  for(int i = 0; i < 4; ++i){
+    x = 0.;
+    for(int j = 0; j < 3; ++j)
+      x += xii[ttv[i][j]];
+
+    if(x < 1e-13) continue;
+
+    int shift = (m->getModelType(m->toModel(faces[i]))
+        == m->getDimension());
+    for(int j = 0; j < 3; ++j)
+      xv[j] = xii[ttv[i][(j+shift) % 3]];
+
+    gx = gxii[ttv[i][0]] + gxii[ttv[i][1]] + gxii[ttv[i][2]];
+
+    xv = xv/x;
+    // actually x*gxv
+    gxv[0] = gxii[ttv[i][(0+shift) % 3]]-gx*xv[0];
+    gxv[1] = gxii[ttv[i][(1+shift) % 3]]-gx*xv[1];
+
+    if(type == CURVED_BEZIER)
+      getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
+          ->getValues(m,faces[i],xv,v);
+
+    else if(type == CURVED_GREGORY)
+      getGregory(P)->getEntityShape(Mesh::TRIANGLE)
+          ->getValues(m,faces[i],xv,v);
+
+    if(type == CURVED_BEZIER)
+      getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
+          ->getLocalGradients(m,faces[i],xv,gv);
+
+    else if(type == CURVED_GREGORY)
+      getGregory(P)->getEntityShape(Mesh::TRIANGLE)
+          ->getLocalGradients(m,faces[i],xv,gv);
+
+    for(int j = 0; j < 3; ++j) // vertices
+      grads[ttv[i][j]] += gx*v[j]
+        + gxv[0]*gv[j][0] + gxv[1]*gv[j][1];
+
+    for(int k = 0; k < 3; ++k){
+      int l = tet_tri_edges[i][k];
+      if(flip_tet_tri_edges[i][k] == false){
+        for(int j = 0; j < nE; ++j)
+          grads[4+l*nE+j] += gx*v[3+k*nE+j]
+            + gxv[0]*gv[3+k*nE+j][0]
+            + gxv[1]*gv[3+k*nE+j][1];
+
+      } else { // we need to flip
+        for(int j = 0; j < nE; ++j)
+          grads[4+l*nE+j] += gx*v[3+k*nE+nE-1-j]
+            + gxv[0]*gv[3+k*nE+nE-1-j][0]
+            + gxv[1]*gv[3+k*nE+nE-1-j][1];
+      }
+    }
+    for(int j = 0; j < nF; ++j) // face nodes
+      grads[4+6*nE+i*nF+j] += gx*v[3+3*nE+j]
+        + gxv[0]*gv[3+3*nE+j][0]
+        + gxv[1]*gv[3+3*nE+j][1];
+  } // done faces
+}
 template <int P>
 class BezierShape : public FieldShape
 {
 public:
-  const char* getName() const {return name.c_str();}
-  BezierShape() {
-    std::stringstream ss;
-    ss << "Bezier_" << P;
-    name = ss.str();
-    registerSelf(name.c_str());
-  }
   class Vertex : public EntityShape
   {
   public:
     void getValues(Mesh*, MeshEntity*,
         Vector3 const&, NewArray<double>& values) const
     {
-      values.allocate(1);
-      values[0] = 1.0;
+    	values.allocate(1);
+    	values[0] = 1.0;
     }
     void getLocalGradients(Mesh*, MeshEntity*,
         Vector3 const&, NewArray<Vector3>&) const
@@ -39,7 +340,7 @@ public:
   class Edge : public EntityShape
   {
   public:
-    void getValues(Mesh*, MeshEntity*,
+    void getValues(Mesh* /*m*/, MeshEntity* /*e*/,
         Vector3 const& xi, NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
@@ -49,18 +350,18 @@ public:
         * pow(1.0-t,P-i)*pow(t, i);
       values[0] = pow(1-t, P);
       values[1] = pow(t, P);
+
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
-        Vector3 const& xi,
-        NewArray<Vector3>& grads) const
+    void getLocalGradients(Mesh* /*m*/, MeshEntity* /*e*/,
+        Vector3 const& xi, NewArray<Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
       grads.allocate(P+1);
       for(int i = 1; i < P; ++i)
         grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
-            * pow(1.0-t,P-1-i)*pow(t, i-1),0,0);
-      grads[0] = Vector3(-P*pow(1-t, P-1),0,0);
-      grads[1] = Vector3(P*pow(t, P-1),0,0);
+            * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
+      grads[0] = Vector3(-P*pow(1-t, P-1)/2.,0,0);
+      grads[1] = Vector3(P*pow(t, P-1)/2.,0,0);
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(Mesh*,
@@ -75,49 +376,62 @@ public:
     Triangle()
     {
       int m1[] = {1,2,0};
-      int m2[] = {2,5,0,4,3,1};
-      int m3[] = {2,7,8,0,6,9,3,5,4,1};
-      int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-      int m5[] = {2,11,12,13,14,0,10,19,20,15,3,9,18,16,4,8,17,5,7,6,1};
-      int m6[] = {2,13,14,15,16,17,0,12,24,25,26,18,3,11,23,27,19,4,10,
-          22,20,5,9,21,6,8,7,1};
+      int m2[] = {1,4,2,3,5,0};
+      int m3[] = {1,5,6,2,4,9,7,3,8,0};
+      int m4[] = {1,6,7,8,2,5,13,14,9,4,12,10,3,11,0};
+      int m5[] = {1,7,8,9,10,2,6,17,18,19,11,5,16,20,12,4,15,13,3,14,0};
+      int m6[] = {1,8,9,10,11,12,2,7,21,22,23,24,13,6,20,27,25,14,5,19,
+          26,15,4,18,16,3,17,0};
       int* maps[6] = {m1,m2,m3,m4,m5,m6};
-      for(int i = 0; i < (P+1)*(P+2)/2; ++i){
+      map.allocate(curved_face_total[CURVED_BEZIER][P-1]);
+      for(int i = 0; i < curved_face_total[CURVED_BEZIER][P-1]; ++i)
         map[i] = maps[P-1][i];
-      }
     }
-    void getValues(Mesh*, MeshEntity*,
-        Vector3 const& xi, NewArray<double>& values) const
+    void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
+        NewArray<double>& values) const
     {
-      values.allocate((P+1)*(P+2)/2);
-      for(int i = 0; i < P+1; ++i){
-        for(int j = 0; j < P+1-i; ++j){
-          values[map[j*(P+1)+i-j*(j-1)/2]] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j);
-        }
-      }
+      values.allocate(curved_face_total[CURVED_BEZIER][P-1]);
+
+      double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
+
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) != m->getDimension()){
+
+        for(int i = 0; i < P+1; ++i)
+          for(int j = 0; j < P+1-i; ++j)
+            values[map[j*(P+1)+i-j*(j-1)/2]] =
+                binomial(P,i)*binomial(P-i,j)
+                *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],P-i-j);
+
+      } else
+        BlendedTriangleGetValues(P,CURVED_BEZIER,m,e,xi,values);
+
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
-        Vector3 const& xi,
+    void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
-      grads.allocate((P+1)*(P+2)/2);
-      NewArray<Vector3> canonicalGrads(countNodes());
-      for(int i = 0; i < P+1; ++i){
-        for(int j = 0; j < P+1-i; ++j){
-          grads[map[j*(P+1)+i-j*(j-1)/2]][0] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i-1)*pow(xi[1],j)*pow(1.-xi[0]-xi[1],P-i-j-1)
-              *(i*(1.-xi[1])-(P-j)*xi[0]);
-          grads[map[j*(P+1)+i-j*(j-1)/2]][1] =
-              factorial(P)/factorial(i)/factorial(j)/factorial(P-i-j)
-              *pow(xi[0],i)*pow(xi[1],j-1)*pow(1.-xi[0]-xi[1],P-i-j-1)
-              *(j*(1.-xi[0])-(P-i)*xi[1]);
-        }
-      }
+      grads.allocate(curved_face_total[CURVED_BEZIER][P-1]);
+
+      double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
+      Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
+
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) != m->getDimension()){
+        for(int i = 0; i < P+1; ++i)
+          for(int j = 0; j < P+1-i; ++j)
+            grads[map[j*(P+1)+i-j*(j-1)/2]] =
+              gxii[0]*binomial(P,i)*binomial(P-i,j)
+              *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
+              *(i*(1.-xii[1])-(P-j)*xii[0]) +
+              gxii[1]*binomial(P,i)*binomial(P-i,j)
+              *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
+              *(j*(1.-xii[0])-(P-i)*xii[1]);
+
+      } else
+        BlendedTriangleGetLocalGradients(P,CURVED_BEZIER,m,e,xi,grads);
+
     }
-    int countNodes() const {return (P+1)*(P+2)/2;}
+    int countNodes() const {return curved_face_total[CURVED_BEZIER][P-1];}
     void alignSharedNodes(Mesh* m,
         MeshEntity* elem, MeshEntity* shared, int order[])
     {
@@ -132,7 +446,8 @@ public:
           order[i] = i;
       }
     }
-    int map[(P+1)*(P+2)/2];
+  private:
+    NewArray<int> map;
   };
   class Tetrahedron : public EntityShape
   {
@@ -140,68 +455,46 @@ public:
     void getValues(Mesh* m, MeshEntity* e,
         Vector3 const& xi, NewArray<double>& values) const
     {
-      values.allocate(2*P*P+2);
-      values[0] = 1-xi[0]-xi[1]-xi[2];
-      values[1] = xi[0];
-      values[2] = xi[1];
-      values[3] = xi[2];
-      /* BaryCentrics
-       * [3,0,1,2] = 0 ->Faces[2,3,1,0]
-       * [(3,0),(0,1),(1,3)] = 0 -> Edges[5,3,4]
-       * [(3,2),(0,2),(1,2)] = 0 -> Edges[1,2,0]
-       */
-      double xi0 = 1-xi[0]-xi[1]-xi[2];
-      double xi1 = xi[0];
-      double xi2 = xi[1];
-      double xi3 = xi[2];
-      NewArray<Vector3> tXi(4);
-      tXi[0] = Vector3(xi0,xi1,xi3)/(xi0+xi1+xi3);
-      tXi[1] = Vector3(xi0,xi1,xi2)/(xi0+xi1+xi2);
-      tXi[2] = Vector3(xi0,xi2,xi3)/(xi0+xi2+xi3);
-      tXi[3] = Vector3(xi1,xi2,xi3)/(xi1+xi2+xi3);
-
-      NewArray<Vector3> eXi(6);
-      eXi[0] = Vector3(2.0*xi0/(xi0+xi3)-1,0,0);
-      eXi[1] = Vector3(2.0*xi0/(xi0+xi1)-1,0,0);
-      eXi[2] = Vector3(2.0*xi1/(xi1+xi3)-1,0,0);
-      eXi[3] = Vector3(2.0*xi2/(xi2+xi3)-1,0,0);
-      eXi[4] = Vector3(2.0*xi0/(xi0+xi2)-1,0,0);
-      eXi[5] = Vector3(2.0*xi1/(xi1+xi2)-1,0,0);
-
-      NewArray<double> tValues[4];
-      NewArray<double> eValues[6];
-
-      for(int i = 0; i < 4; ++i){
-        getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
-          /* fixme      V  V */
-            ->getValues(m, e, tXi[i],tValues[i]);
-      }
-
-      for(int i = 0; i < 6; ++i){
-        getBezier(3,P)->getEntityShape(Mesh::EDGE)
-          /* fixme      V  V */
-            ->getValues(m, e, eXi[i],eValues[i]);
-      }
+    	values.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
+    	BlendedTetrahedronGetValues(P,CURVED_BEZIER,m,e,xi,values);
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
-        Vector3 const&,
+    void getLocalGradients(Mesh* m, MeshEntity* e,
+        Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
-      grads.allocate(2*P*P+2);
-      grads[0] = Vector3(-1,-1,-1);
-      grads[1] = Vector3( 1, 0, 0);
-      grads[2] = Vector3( 0, 1, 0);
-      grads[3] = Vector3( 0, 0, 1);
+      grads.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
+      BlendedTetrahedronGetLocalGradients(P,CURVED_BEZIER,m,e,xi,grads);
     }
-    int countNodes() const {return 2*P*P+2;}
+    int countNodes() const {return blended_tet_total[CURVED_BEZIER][P-1];}
     void alignSharedNodes(Mesh* m,
-        MeshEntity*, MeshEntity* shared, int order[])
+        MeshEntity* elem, MeshEntity* shared, int order[])
     {
-      int n = (m->getType(shared) == Mesh::EDGE) ?
-          P-1 : (P-1)*(P-2)/2;
-      for(int i = 0; i < n; ++i)
-        order[i] = i;
-    }
+      int which,rotate;
+      bool flip;
+    	getAlignment(m,elem,shared,which,flip,rotate);
+      if(m->getType(shared) == Mesh::EDGE){
+        if(!flip)
+          for(int i = 0; i < P-1; ++i)
+            order[i] = i;
+        else
+          for(int i = 0; i < P-1 ; ++i)
+            order[i] = P-2-i;
+        return;
+      }
+      // must be a triangle
+      int n = curved_face_internal[CURVED_BEZIER][P-1];
+      int l = n/3; //loops
+
+      if(!flip)
+        for(int i = 0; i < n; ++i)
+          order[i] = (i+l*(3-rotate)) % (3*l);
+      else {
+        int shift[4] = {0,0,1,4};
+        for(int i = 0; i < n; ++i)
+          order[i] = (n-1-i+(n-shift[l])-l*rotate) % (3*l);
+      }
+      if(n % l) order[3*l] = 3*l;
+     }
   };
   EntityShape* getEntityShape(int type)
   {
@@ -232,85 +525,30 @@ public:
   int countNodesOn(int type)
   {
     static int nodes[Mesh::TYPES] =
-    {1,                 //vertex
-     P-1,               //edge
-     (P-1)*(P-2)/2,     //triangle
-     0,                 //quad
-     0,                 //tet
-     0,                 //hex
-     0,                 //prism
-     0};                //pyramid
+    {1,                                           //vertex
+     P-1,                                         //edge
+     curved_face_internal[CURVED_BEZIER][P-1],    //triangle
+     0,                                           //quad
+     0,                                           //tet
+     0,                                           //hex
+     0,                                           //prism
+     0};                                          //pyramid
     return nodes[type];
   }
   int getOrder() {return P;}
-  void getNodeXi(int type, int node, Vector3& xi)
-  {
-    static double eP2[1] = {0.0};
-    static double eP3[2] = {-0.4503914,0.4503914};
-    static double eP4[3] = {-0.6612048,0.0,0.6612048};
-    static double eP5[4] = {-0.7732854,-0.2863522,0.2863522,0.7732854};
-    static double eP6[5] = {-0.8388042,-0.469821,0.0,
-      0.469821,0.8388042};
-    static double* edgePoints[6] =
-    {eP2, eP2, eP3, eP4, eP5, eP6 };
-    if (type == Mesh::EDGE) {
-      xi = Vector3(edgePoints[P-1][node],0,0);
-    } else if (type == Mesh::TRIANGLE) {
-      xi = Vector3(1./3.,1./3.,1./3.);
-      if(node == (P-1)*(P-2)/2-1 && P % 3 == 0){
-        return;
-      } else { // technically only two of these numbers are needed
-        switch (P) {
-          case 1:
-          case 2:
-          case 3:
-            fail("expected P >= 4");
-          case 4:
-            xi[(node  )% 3] = 0.5582239;
-            xi[(node+1) % 3] = 0.220880;
-            xi[(node+2) % 3] = 0.220880;
-            break;
-          case 5:
-            if(node % 2 == 0) {
-              xi[(node/2  ) % 3] = 0.6949657;
-              xi[(node/2+1) % 3] = 0.1525171;
-              xi[(node/2+2) % 3] = 0.1525171;
-            } else {
-              xi[((node-1)/2  ) % 3] = 0.4168658;
-              xi[((node-1)/2+1) % 3] = 0.4168658;
-              xi[((node-1)/2+2) % 3] = 0.1662683;
-            }
-            break;
-          case 6:
-            if (node % 3 == 0) {
-              xi[(node/3  ) % 3] = 0.7805723;
-              xi[(node/3+1) % 3] = 0.1097139;
-              xi[(node/3+2) % 3] = 0.1097139;
-            } else if ((node-1) % 3 == 0) {
-              xi[((node-1)/3  ) % 3] = 0.5586077;
-              xi[((node-1)/3+1) % 3] = 0.3157892;
-              xi[((node-1)/3+2) % 3] = 0.1256031;
-            } else if ((node-2) % 3 == 0) {
-              xi[((node-2)/3  ) % 3] = 0.3157892;
-              xi[((node-2)/3+1) % 3] = 0.5586077;
-              xi[((node-2)/3+2) % 3] = 0.1256031;
-            }
-            break;
-        }
-      }
-    } else {
-      xi = Vector3(0,0,0);
-    }
-  }
-  protected:
-  std::string name;
 };
 
 template <int P>
 class BezierCurve : public BezierShape<P>
 {
 public:
-  BezierCurve() {};
+  const char* getName() const {return name.c_str();}
+  BezierCurve<P>() {
+    std::stringstream ss;
+    ss << "BezierCurve_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
   void getNodeXi(int type, int node, Vector3& xi)
   {
     static double eP2[1] = {0.0};
@@ -329,6 +567,81 @@ public:
       xi = Vector3(0,0,0);
     }
   }
+protected:
+  std::string name;
+};
+template <int P>
+class BezierSurface : public BezierShape<P>
+{
+public:
+  const char* getName() const {return name.c_str();}
+  BezierSurface() {
+    std::stringstream ss;
+    ss << "BezierSurface_" << P;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
+  void getNodeXi(int type, int node, Vector3& xi)
+  {
+    static double eP2[1] = {0.0};
+    static double eP3[2] = {-0.4503914,0.4503914};
+    static double eP4[3] = {-0.6612048,0.0,0.6612048};
+    static double eP5[4] = {-0.7732854,-0.2863522,0.2863522,0.7732854};
+    static double eP6[5] = {-0.8388042,-0.469821,0.0,
+      0.469821,0.8388042};
+    static double* edgePoints[6] =
+    {eP2, eP2, eP3, eP4, eP5, eP6 };
+    if (type == Mesh::EDGE) {
+      xi = Vector3(edgePoints[P-1][node],0,0);
+    } else if (type == Mesh::TRIANGLE) {
+      xi = Vector3(1./3.,1./3.,1./3.);
+      if(node == curved_face_internal[CURVED_BEZIER][P-1]-1 && P % 3 == 0){
+        return;
+      } else { // technically only two of these numbers are needed
+        switch (P) {
+          case 1:
+          case 2:
+          case 3:
+            fail("expected P >= 4");
+          case 4:
+            xi[(node+2) % 3] = 0.5582239;
+            xi[(node+0) % 3] = 0.220880;
+            xi[(node+1) % 3] = 0.220880;
+            break;
+          case 5:
+            if(node % 2 == 0) {
+              xi[(node/2+2) % 3] = 0.6949657;
+              xi[(node/2+0) % 3] = 0.1525171;
+              xi[(node/2+1) % 3] = 0.1525171;
+            } else {
+              xi[((node-1)/2+2) % 3] = 0.4168658;
+              xi[((node-1)/2+0) % 3] = 0.4168658;
+              xi[((node-1)/2+1) % 3] = 0.1662683;
+            }
+            break;
+          case 6:
+            if (node % 3 == 0) {
+              xi[(node/3+2) % 3] = 0.7805723;
+              xi[(node/3+0) % 3] = 0.1097139;
+              xi[(node/3+1) % 3] = 0.1097139;
+            } else if ((node-1) % 3 == 0) {
+              xi[((node-1)/3+2) % 3] = 0.5586077;
+              xi[((node-1)/3+0) % 3] = 0.3157892;
+              xi[((node-1)/3+1) % 3] = 0.1256031;
+            } else if ((node-2) % 3 == 0) {
+              xi[((node-2)/3+2) % 3] = 0.3157892;
+              xi[((node-2)/3+0) % 3] = 0.5586077;
+              xi[((node-2)/3+1) % 3] = 0.1256031;
+            }
+            break;
+        }
+      }
+    } else {
+      xi = Vector3(0,0,0);
+    }
+  }
+protected:
+  std::string name;
 };
 
 static void getBezierCurveInterPtsToCtrlPts(int order,
@@ -339,9 +652,9 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       -0.970273514,0.333333333,2.71895067,-1.08201049,
       0.333333333,-0.970273514,-1.08201049,2.71895067};
   double e4[15] = {
-      -1.49978483,-0.25,3.37828021,-1.33371597,0.705220588,
-      0.999856553,0.999856553,-2.72233387,4.44495463,-2.72233387,
-      -0.25,-1.49978483,0.705220588,-1.33371597,3.37828021};
+      -1.43042029,-0.25,3.3954584,-1.46967987,0.754641763,
+      0.953613524,0.953613524,-2.76673344,4.62623983,-2.76673344,
+      -0.25,-1.43042029,0.754641763,-1.46967987,3.3954584};
   double e5[24] = {
       -1.88592269,0.2,4.05614416,-1.81653638,1.02954238,-0.58322747,
       1.85476912,-0.942961345,-5.01939998,6.96205914,-4.562341,2.70787405,
@@ -358,6 +671,7 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       -6.60581336,9.74813268,-7.82909978,
       -0.166666667,-2.338908,0.476769119,-0.800405899,
       1.2670886,-2.14695479,4.70907763};
+
   double* table[5] = {
       e2,e3,e4,e5,e6};
   int nb = order-1;
@@ -368,7 +682,7 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       c[i*ni+j] = table[order-2][i*ni+j];
 
 }
-void getBezierShapeInterPtsToCtrlPts(int order, int type,
+static void getBezierShapeInterPtsToCtrlPts(int order, int type,
     NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
@@ -413,28 +727,23 @@ void getBezierShapeInterPtsToCtrlPts(int order, int type,
       1.14097233,-1.04127809,-0.319296612,-0.217804382,-0.217804388,
       -0.319297318,-1.04128021,1.14097477,-0.633919719,-4.01515431,
       10.1689603,-3.08692404,1.17750746,0.897196394,1.17750932,
-      -3.08692737,
-      -1.87982915,-1.87982915,0.569548438,3.55892311,-2.43777981,
+      -3.08692737,-1.87982915,-1.87982915,0.569548438,3.55892311,-2.43777981,
       -2.43777981,3.55892311,1.77258998,0.975113153,0.114906986,
       -0.833742192,-0.833742192,0.114906986,0.975113153,1.77258998,
       -6.13761798,12.4785213,-6.13761798,-2.28036489,2.24753181,
-      -2.28036489,
-      0.485063144,2.95550925,0.485064069,-1.04127809,1.14097233,
+      -2.28036489,0.485063144,2.95550925,0.485064069,-1.04127809,1.14097233,
       -0.633917331,-4.01515326,-4.01515431,-0.633919719,1.14097477,
-      -1.04128021,-0.319297318,-0.217804388,-0.217804382,
-      -0.319296612,1.17750746,-3.08692404,10.1689603,-3.08692737,
-      1.17750932,0.897196394,
-      0.569547683,-1.87982942,-1.87983114,-0.833740807,0.114906984,
+      -1.04128021,-0.319297318,-0.217804388,-0.217804382,-0.319296612,
+      1.17750746,-3.08692404,10.1689603,-3.08692737,1.17750932,
+      0.897196394,0.569547683,-1.87982942,-1.87983114,-0.833740807,0.114906984,
       0.975110986,1.77258965,3.55892419,-2.43777941,-2.43778357,
       3.55892769,1.77259212,0.975112397,0.114906311,-0.833740942,
       2.24752905,-2.28036294,-6.13761791,12.4785246,-6.13762225,
-      -2.28036323,
-      0.485063281,0.485063281,2.95551097,-0.319296574,-0.217803972,
+      -2.28036323,0.485063281,0.485063281,2.95551097,-0.319296574,-0.217803972,
       -0.217803972,-0.319296574,-1.04127851,1.14097258,-0.633917018,
       -4.015157,-4.015157,-0.633917018,1.14097258,-1.04127851,
       1.17750756,0.897195548,1.17750756,-3.08692488,10.1689625,
-      -3.08692488,
-      -1.87982942,0.569547683,-1.87983114,1.77258965,0.975110986,
+      -3.08692488,-1.87982942,0.569547683,-1.87983114,1.77258965,0.975110986,
       0.114906984,-0.833740807,-0.833740942,0.114906311,0.975112397,
       1.77259212,3.55892769,-2.43778357,-2.43777941,3.55892419,
       -6.13761791,-2.28036294,2.24752905,-2.28036323,-6.13762225,
@@ -500,10 +809,13 @@ void getBezierShapeInterPtsToCtrlPts(int order, int type,
       2.62919661,0.852569479,-3.89671807,9.21852962,-7.99944935,
       -7.99944935,9.21852962,-7.99944374,-7.99945144,9.21853253,
       -7.99945144,-7.99944374,23.4971758};
+
   double* table[10] = {
       e2,e3,e4,e5,e6,NULL,f3,f4,f5,f6};
-  int nb = (type == Mesh::TRIANGLE) ? (order-1)*(order-2)/2 : order-1;
-  int ni = (type == Mesh::TRIANGLE) ? (order+1)*(order+2)/2 : order+1;
+  int nb = (type == Mesh::TRIANGLE) ?
+      curved_face_internal[CURVED_BEZIER][order-1] : order-1;
+  int ni = (type == Mesh::TRIANGLE) ?
+      curved_face_total[CURVED_BEZIER][order-1] : order+1;
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
@@ -516,13 +828,10 @@ void getTransformationCoefficients(int order, int dim, int type,
     getBezierCurveInterPtsToCtrlPts(order,c);
   else
     getBezierShapeInterPtsToCtrlPts(order,type,c);
-
 }
 
 static FieldShape* getBezierCurve(int order)
 {
-  assert(order > 0 && order < 7);
-
   static BezierCurve<1> bezierCurve1;
   static BezierCurve<2> bezierCurve2;
   static BezierCurve<3> bezierCurve3;
@@ -537,22 +846,257 @@ static FieldShape* getBezierCurve(int order)
 
 static FieldShape* getBezierSurface(int order)
 {
-  assert(order > 0 && order < 7);
+  static BezierSurface<1> bezierSurface1;
+  static BezierSurface<2> bezierSurface2;
+  static BezierSurface<3> bezierSurface3;
+  static BezierSurface<4> bezierSurface4;
+  static BezierSurface<5> bezierSurface5;
+  static BezierSurface<6> bezierSurface6;
 
-  static BezierShape<1> bezierShape1;
-  static BezierShape<2> bezierShape2;
-  static BezierShape<3> bezierShape3;
-  static BezierShape<4> bezierShape4;
-  static BezierShape<5> bezierShape5;
-  static BezierShape<6> bezierShape6;
-
-  FieldShape* shapeTable[6] = {&bezierShape1,&bezierShape2,
-      &bezierShape3,&bezierShape4,&bezierShape5,&bezierShape6};
-  return shapeTable[order-1];
+  FieldShape* surfaceTable[6] = {&bezierSurface1,&bezierSurface2,
+      &bezierSurface3,&bezierSurface4,&bezierSurface5,&bezierSurface6};
+  return surfaceTable[order-1];
 }
+
 FieldShape* getBezier(int dimension, int order)
 {
   return (dimension == 2) ? getBezierCurve(order) : getBezierSurface(order);
+}
+/* end of Bezier, begining of Gregory Surface */
+
+class GregorySurface4 : public FieldShape
+{
+public:
+  const char* getName() const {return name.c_str();}
+  GregorySurface4() {
+    std::stringstream ss;
+    ss << "GregorySurface_4";
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
+  class Triangle : public EntityShape
+  {
+  public:
+    Triangle()
+    {
+      int m[] = {1,6,7,8,2,5,13,14,9,4,12,10,3,11,0};
+      for(int i = 0; i < 15; ++i)
+        map[i] = m[i];
+
+      index[0][0] = 2; index[1][0] = 0; index[2][0] = 1;
+      index[0][1] = 1; index[1][1] = 2; index[2][1] = 0;
+
+      pairs[0][0] = 0; pairs[1][0] = 1; pairs[2][0] = 2;
+      pairs[0][1] = 5; pairs[1][1] = 3; pairs[2][1] = 4;
+
+    }
+    void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
+        NewArray<double>& values) const
+    {
+      values.allocate(curved_face_total[CURVED_GREGORY][3]);
+
+      double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
+
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) != m->getDimension()){
+        for(int i = 0; i < 5; ++i)
+          for(int j = 0; j < 5-i; ++j)
+            values[map[j*5+i-j*(j-1)/2]] =
+                binomial(4,i)*binomial(4-i,j)
+                *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],4-i-j);
+
+        for(int i = 0; i < 3; ++i){
+          double x = xii[index[i][0]] + xii[index[i][1]];
+          double bernstein = values[12+pairs[i][0]];
+          values[12+pairs[i][1]] = 0.;
+
+          if(x < 1e-10) continue;
+
+          values[12+pairs[i][0]] = bernstein*xii[index[i][0]]/x;
+          values[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x;
+        }
+
+      } else {
+        BlendedTriangleGetValues(4,CURVED_GREGORY,m,e,xi,values);
+      }
+    }
+    void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
+        NewArray<Vector3>& grads) const
+    {
+      grads.allocate(curved_face_total[CURVED_GREGORY][3]);
+      double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
+      Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
+
+      ModelEntity* g = m->toModel(e);
+      if (m->getModelType(g) != m->getDimension()){
+        for(int i = 0; i < 5; ++i)
+          for(int j = 0; j < 5-i; ++j)
+            grads[map[j*5+i-j*(j-1)/2]] =
+              gxii[0]*binomial(4,i)*binomial(4-i,j)
+              *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],4-i-j-1)
+              *(i*(1.-xii[1])-(4-j)*xii[0]) +
+              gxii[1]*binomial(4,i)*binomial(4-i,j)
+              *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],4-i-j-1)
+              *(j*(1.-xii[0])-(4-i)*xii[1]);
+
+        double x;
+        Vector3 xv, gx;
+        NewArray<double> v;
+
+        getValues(m,e,xi,v);
+
+        for(int i = 0; i < 3; ++i){
+          x  = xii[index[i][0]] + xii[index[i][1]];
+          gx = gxii[index[i][0]] + gxii[index[i][1]];
+
+          Vector3 bernstein = grads[12+pairs[i][0]];
+          grads[12+pairs[i][1]].zero();
+
+          if(x < 1e-10) continue;
+
+          grads[12+pairs[i][0]] = bernstein*xii[index[i][0]]/x
+            + (gxii[index[i][0]]/x-gx*xii[index[i][0]]/x/x)*v[12+pairs[i][0]];
+
+          grads[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x
+            + (gxii[index[i][1]]/x-gx*xii[index[i][1]]/x/x)*v[12+pairs[i][1]];
+        }
+      } else {
+        BlendedTriangleGetLocalGradients(4,CURVED_GREGORY,m,e,xi,grads);
+      }
+    }
+    int countNodes() const
+    {
+      return curved_face_total[CURVED_GREGORY][3];
+    }
+    void alignSharedNodes(Mesh* m,
+        MeshEntity* elem, MeshEntity* shared, int order[])
+    {
+      int which,rotate;
+      bool flip;
+      getAlignment(m,elem,shared,which,flip,rotate);
+      if(flip){
+        for(int i = 0; i < 3; ++i)
+          order[i] = 2-i;
+      } else {
+        for(int i = 0; i < 3; ++i)
+          order[i] = i;
+      }
+    }
+  private:
+    int map[15];
+    int index[3][2];
+    int pairs[3][2];
+  };
+  class Tetrahedron : public EntityShape
+  {
+  public:
+    void getValues(Mesh* m, MeshEntity* e,
+        Vector3 const& xi, NewArray<double>& values) const
+    {
+      values.allocate(blended_tet_total[CURVED_GREGORY][3]);
+      BlendedTetrahedronGetValues(4,CURVED_GREGORY,m,e,xi,values);
+    }
+    void getLocalGradients(Mesh* m, MeshEntity* e,
+        Vector3 const& xi,
+        NewArray<Vector3>& grads) const
+    {
+      grads.allocate(blended_tet_total[CURVED_GREGORY][3]);
+      BlendedTetrahedronGetLocalGradients(4,CURVED_GREGORY,m,e,xi,grads);
+    }
+    int countNodes() const {return blended_tet_total[CURVED_GREGORY][3];}
+    void alignSharedNodes(Mesh* m,
+        MeshEntity* elem, MeshEntity* shared, int order[])
+    {
+      int which,rotate;
+      bool flip;
+      getAlignment(m,elem,shared,which,flip,rotate);
+      if(m->getType(shared) == Mesh::EDGE){
+        if(!flip)
+          for(int i = 0; i < 3; ++i)
+            order[i] = i;
+        else
+          for(int i = 0; i < 3; ++i)
+            order[i] = 2-i;
+        return;
+      }
+      // first three are no flip, second three are flip for rotations 0,1,2
+      int orients[6][6] =
+      {{0,1,2,3,4,5},{2,0,1,5,3,4},{1,2,0,4,5,3},
+       {4,3,5,1,0,2},{3,5,4,0,2,1},{5,4,3,2,1,0}};
+      for(int i = 0; i < 6; ++i)
+        order[i] = orients[flip*3+rotate][i];
+    }
+  };
+
+  EntityShape* getEntityShape(int type)
+  {
+    static BezierShape<1>::Vertex vertex;
+    static BezierShape<4>::Edge edge4;
+
+    static Triangle triangle;
+    static Tetrahedron tet;
+    static EntityShape* shapes[Mesh::TYPES] =
+    {&vertex,   //vertex
+     &edge4,    //edge
+     &triangle, //triangle
+     NULL,      //quad
+     &tet,      //tet
+     NULL,      //hex
+     NULL,      //prism
+     NULL};     //pyramid
+
+    return shapes[type];
+  }
+  bool hasNodesIn(int dimension)
+  {
+    if (dimension == 3)
+      return false;
+    else
+      return true;
+  }
+  int countNodesOn(int type)
+  {
+    static int nodes[Mesh::TYPES] =
+    {1,                 //vertex
+     3,                 //edge
+     6,                 //triangle
+     0,                 //quad
+     0,                 //tet
+     0,                 //hex
+     0,                 //prism
+     0};                //pyramid
+    return nodes[type];
+  }
+  /* These are set up so the points are the triangular bezier points */
+  void getNodeXi(int type, int node, Vector3& xi)
+   {
+    static double edgePoints[3] = {-0.6612048,0.0,0.6612048};
+    if (type == Mesh::EDGE) {
+      xi = Vector3(edgePoints[node],0,0);
+    } else if (type == Mesh::TRIANGLE) {
+      if (node < 3){
+        xi[(node+2) % 3] = 0.5582239;
+        xi[(node+0) % 3] = 0.220880;
+        xi[(node+1) % 3] = 0.220880;
+      } else {
+        xi[(node+1) % 3] = 0.5582239;
+        xi[(node+2) % 3] = 0.220880;
+        xi[(node+0) % 3] = 0.220880;
+      }
+    } else
+      xi = Vector3(0,0,0);
+   }
+  int getOrder() {return 4;}
+protected:
+  std::string name;
+};
+
+FieldShape* getGregory(int order)
+{
+  assert(order == 4);
+  static GregorySurface4 gregorySurface4;
+  return &gregorySurface4;
+
 }
 
 }//namespace apf

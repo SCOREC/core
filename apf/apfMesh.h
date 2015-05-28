@@ -235,6 +235,8 @@ class Mesh
     virtual void removeTag(MeshEntity* e, MeshTag* tag) = 0;
     /** \brief Returns true if there is data for this tag attached */
     virtual bool hasTag(MeshEntity* e, MeshTag* tag) = 0;
+    /** \brief renames a tag */
+    virtual void renameTag(MeshTag* tag, const char* newName) = 0;
     /** \brief Tag data type enumeration */
     enum TagType {
       /** \brief 64-bit IEE754 floating-point number */
@@ -273,8 +275,14 @@ class Mesh
       \returns true if (g) is periodic along this axis */
     bool getPeriodicRange(ModelEntity* g, int axis,
         double range[2]);
+    /** \brief get closest point on geometry */
     void getClosestPoint(ModelEntity* g, Vector3 const& from,
         Vector3& to, Vector3& p);
+    /** \brief get normal vector at a point */
+    void getNormal(ModelEntity* g, Vector3 const& p, Vector3& n);
+    /** \brief get first derivative at a point */
+      void getFirstDerivative(ModelEntity* g, Vector3 const& p,
+          Vector3& t0, Vector3& t1);
     /** \brief returns true if there is a geometric
           degeneracy in that direction at that parameter
          \param p is the parameters of the original coordinate
@@ -291,8 +299,9 @@ class Mesh
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */
     Field* getCoordinateField() {return coordinateField;}
-    /** \brief replace the mesh's coordinate field */
-    void changeCoordinateField(Field* f);
+    /** \brief make a new coordinate field.
+        \param project whether to project coordinate values from the old field */
+    void changeShape(FieldShape* newShape, bool project = true);
     /** \brief Migrate elements.
        \param plan a mapping from local elements
                    to part IDs, which will be deleted during migration */
@@ -460,13 +469,13 @@ struct MatchedSharing : public Sharing
   virtual bool isOwned(MeshEntity* e);
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies);
+  Mesh* mesh;
 private:
   size_t getNeighborCount(int peer);
   bool isLess(Copy const& a, Copy const& b);
   void getNeighbors(Parts& neighbors);
   void formCountMap();
   NormalSharing helper;
-  Mesh* mesh;
   std::map<int, size_t> countMap;
 };
 
@@ -489,6 +498,8 @@ extern int const prism_edge_verts[9][2];
 extern int const pyramid_edge_verts[8][2];
 /** \brief map from tet triangle order to tet vertex order */
 extern int const tet_tri_verts[4][3];
+/** \brief map from hex quad order to hex vertex order */
+extern int const hex_quad_verts[6][4];
 /** \brief map from prism triangle order to prism vertex order */
 extern int const prism_tri_verts[2][3];
 /** \brief map from prism quad order to prism vertex order */
@@ -510,8 +521,7 @@ void findTriDown(
     MeshEntity** verts,
     MeshEntity** down);
 
-/** \brief change the distribution of the mesh coordinate nodes
-    \param project whether to project coordinate values from the old field */
+/** \brief deprecated wrapper for apf::Mesh::changeShape */
 void changeMeshShape(Mesh* m, FieldShape* newShape, bool project = true);
 
 /** \brief unfreeze all associated fields

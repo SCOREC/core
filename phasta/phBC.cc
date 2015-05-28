@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include "phBC.h"
 #include "phAttrib.h"
+#include "phAxisymmetry.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <fstream>
@@ -59,23 +60,33 @@ static int getSize(std::string const& name)
   return 1;
 }
 
-static void readBC(std::string const& line, BCs& bcs)
+ConstantBC* makeConstantBC(BCs& bcs, std::string const& name, int dim, int tag,
+    int nvals)
 {
-  std::stringstream ss(line);
-  std::string name;
-  std::getline(ss, name, ':');
   if (!bcs.fields.count(name)) {
     FieldBCs fbcs;
     bcs.fields[name] = fbcs;
   }
   FieldBCs& fbcs = bcs.fields[name];
   ConstantBC* bc = new ConstantBC();
-  ss >> bc->tag >> bc->dim;
-  int size = getSize(name);
-  bc->value = new double[size];
-  for (int i = 0; i < size; ++i)
-    ss >> bc->value[i];
+  bc->dim = dim;
+  bc->tag = tag;
+  bc->value = new double[nvals];
   fbcs.bcs.insert(bc);
+  return bc;
+}
+
+static void readBC(std::string const& line, BCs& bcs)
+{
+  std::stringstream ss(line);
+  std::string name;
+  std::getline(ss, name, ':');
+  int dim, tag;
+  ss >> tag >> dim;
+  int nvals = getSize(name);
+  ConstantBC* bc = makeConstantBC(bcs, name, dim, tag, nvals);
+  for (int i = 0; i < nvals; ++i)
+    ss >> bc->value[i];
 }
 
 static void readBCsFromSPJ(const char* filename, BCs& bcs)
@@ -118,6 +129,8 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
     readBCsFromSPJ(attribfile, bcs);
   else
     getSimmetrixAttributes(m, bcs);
+  if (in.axisymmetry)
+    attachAllAngleBCs(m, bcs);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);

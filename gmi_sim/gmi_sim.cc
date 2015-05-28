@@ -196,21 +196,23 @@ static gmi_set* region_faces(pGRegion region)
 static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
 {
   int edim = gmi_dim(m, e);
-  if (edim == 1 && dim == 0)
-    return plist_to_set(GE_vertices((pGEdge)e));
-  if (edim == 2 && dim == 1)
-    return plist_to_set(GF_edges((pGFace)e));
-  if (edim == 3 && dim == 2)
-    return region_faces((pGRegion)e);
   if (edim == 0 && dim == 1)
     return plist_to_set(GV_edges((pGVertex)e));
+  if (edim == 1 && dim == 0)
+    return plist_to_set(GE_vertices((pGEdge)e));
   if (edim == 1 && dim == 2)
     return plist_to_set(GE_faces((pGEdge)e));
+  if (edim == 2 && dim == 0)
+    return plist_to_set(GF_vertices((pGFace)e));
+  if (edim == 2 && dim == 1)
+    return plist_to_set(GF_edges((pGFace)e));
   if (edim == 2 && dim == 3)
     return face_regions((pGFace)e);
+  if (edim == 3 && dim == 2)
+    return region_faces((pGRegion)e);
   if (edim == 3 && dim == 4) /* sometimes people just keep looking up */
     return gmi_make_set(0);
-  gmi_fail("requested adjacency is not one-level");
+  gmi_fail("requested adjacency not available\n");
   return 0;
 }
 
@@ -281,6 +283,7 @@ static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
   if (md == 1)
     return GE_parRange((pGEdge)e, &r[0], &r[1]);
 }
+
 static void closest_point(struct gmi_model* m, struct gmi_ent* e,
     double const from[3], double to[3], double to_p[2])
 {
@@ -289,6 +292,25 @@ static void closest_point(struct gmi_model* m, struct gmi_ent* e,
     GF_closestPoint((pGFace)e,&from[0],&to[0],&to_p[0]);
   else if (md == 1)
     GE_closestPoint((pGEdge)e,&from[0],&to[0],&to_p[0]);
+}
+
+static void normal(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double n[3])
+{
+  int md = gmi_dim(m, e);
+  if (md == 2)
+    GF_normal((pGFace)e,&p[0],&n[0]);
+
+}
+
+static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double t0[3], double t1[3])
+{
+  int md = gmi_dim(m, e);
+  if (md == 2)
+    GF_firstDerivative((pGFace)e,&p[0],&t0[0],&t1[0]);
+  else if (md == 1)
+    GE_firstDerivative((pGEdge)e,p[0],&t0[0]);
 }
 
 static void destroy(gmi_model* m)
@@ -349,6 +371,8 @@ void gmi_register_sim(void)
   ops.periodic = periodic;
   ops.range = range;
   ops.closest_point = closest_point;
+  ops.normal = normal;
+  ops.first_derivative = first_derivative;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");
@@ -382,7 +406,7 @@ static pNativeModel load_acis(const char* filename)
   return AcisNM_createFromFile(filename, TEXT_FORMAT);
 }
 #else
-static pNativeModel load_acis(const char* filename)
+static pNativeModel load_acis(const char* /*filename*/)
 {
   gmi_fail("gmi_sim not compiled with Acis support");
 }
@@ -400,9 +424,16 @@ struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
   else
     gmi_fail("gmi_sim_load: nativefile has bad extension");
   pGModel sm;
-  if (!smdfile)
-    sm = GM_createFromNativeModel(nm, NULL);
-  else if (gmi_has_ext(smdfile, "smd"))
+  if (!smdfile) {
+    if (NM_isAssemblyModel(nm)) {
+      pGAModel am = GAM_createFromNativeModel(nm, NULL);
+      NM_release(nm);
+      sm = GM_createFromAssemblyModel(am, NULL, NULL);
+      GM_release(am);
+      nm = GM_nativeModel(sm);
+    } else
+      sm = GM_createFromNativeModel(nm, NULL);
+  } else if (gmi_has_ext(smdfile, "smd"))
     sm = GM_load(smdfile, nm, NULL);
   else
     gmi_fail("gmi_sim_load: smdfile has bad extension");

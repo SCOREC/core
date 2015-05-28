@@ -21,6 +21,7 @@ endif()
 set(SOURCES
   dspAdapters.cc
   dspSmoothers.cc
+  dspGraphDistance.cc
   dsp.cc)
 
 set(HEADERS

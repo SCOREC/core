@@ -5,14 +5,65 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "apfSTK.h"
+#include <apf_stkConfig.h>
+#include "apfAlbany.h"
 #include <apfMesh.h>
 #include <apfShape.h>
+#include <gmi.h>
+
+#if HAS_STK
+#include "apfSTK.h"
 #include <stk_io/IossBridge.hpp>
 #include <stk_mesh/base/GetBuckets.hpp>
 #include <stk_mesh/base/FindRestriction.hpp>
+#endif
 
 namespace apf {
+
+StkModels::StkModels()
+{
+}
+
+StkModels::~StkModels()
+{
+  for (int i = 0; i < 4; ++i)
+    APF_ITERATE(StkModels::Vector, models[i], mit)
+      delete *mit;
+}
+
+void StkModels::computeInverse()
+{
+  for (int i = 0; i < 4; ++i) {
+    assert(invMaps[i].empty());
+    APF_ITERATE(StkModels::Vector, models[i], mit) {
+      StkModel* model = *mit;
+      APF_ITERATE(StkModel::Vector, model->ents, eit) {
+        apf::ModelEntity* e = *eit;
+        assert( ! invMaps[i].count(e));
+        invMaps[i][e] = model;
+      }
+    }
+  }
+}
+
+void collectEntityModels(
+    Mesh* m,
+    StkModels::Map& from,
+    ModelEntity* e,
+    std::set<StkModel*>& models)
+{
+  gmi_model* gm = m->getModel();
+  gmi_ent* ge = (gmi_ent*)e;
+  if (from.count(e))
+    models.insert(from[e]);
+  int gd = gmi_dim(gm, ge);
+  if (gd == 3)
+    return;
+  gmi_set* s = gmi_adjacent(gm, ge, gd + 1);
+  for (int i = 0; i < s->n; ++i)
+    collectEntityModels(m, from, (ModelEntity*) s->e[i], models);
+  gmi_free_set(s);
+}
 
 /**
  *   \brief Implement an shards::ArrayDimTag for Quadrature points
@@ -20,6 +71,7 @@ namespace apf {
  *   Note that QPDimTag::Size does not dictate the size of that dimension,
  *   put_field does.
  */
+#if HAS_STK
 struct QPDimTag : public shards::ArrayDimTag {
   enum { Size = 1 };                    ///< default size
   const char * name() const
@@ -45,9 +97,11 @@ typedef
 stk::mesh::Field<double, QPDimTag, stk::mesh::Cartesian >
 StkQPVectorField;
 typedef stk::mesh::Field<double, QPDimTag> StkQPScalarField;
+#endif
 
 typedef std::map<long,Node> GlobalMap;
 
+#if HAS_STK
 template <class T>
 T* makeStkField(
     const char* name,
@@ -156,6 +210,7 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
+#endif
 
 static Node lookup(long id, GlobalMap& map)
 {
@@ -163,6 +218,7 @@ static Node lookup(long id, GlobalMap& map)
   return map[id];
 }
 
+#if HAS_STK
 void writeStkField(
     Field* field,
     StkScalarField& stkField,
@@ -571,6 +627,7 @@ StkBridge* StkBridge::get(
     }
   }
 }
+#endif
 
 void generateGlobalIdsToEnts(
     GlobalNumbering* n,
@@ -584,6 +641,7 @@ void generateGlobalIdsToEnts(
   }
 }
 
+#if HAS_STK
 void declareField(Field* f, StkMetaData* md)
 {
   delete StkBridge::get(f, md, false);
@@ -642,6 +700,7 @@ void copyFieldsFromBulk(
 {
   transferFields(n, meta, bulk, false);
 }
+#endif
 
 const CellTopologyData* getTopology(Mesh* m, int t)
 {

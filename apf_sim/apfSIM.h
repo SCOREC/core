@@ -53,6 +53,7 @@ class MeshSIM : public Mesh2
     MeshTag* createLongTag(const char* name, int size);
     MeshTag* findTag(const char* name);
     void destroyTag(MeshTag* tag);
+    void renameTag(MeshTag*, const char*);
     void getTags(DynamicArray<MeshTag*>& ts);
     void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data);
     void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data);
@@ -76,19 +77,19 @@ class MeshSIM : public Mesh2
     void getMatches(MeshEntity* e, Matches& m);
     bool hasMatches;
     // Mesh2 interface ==============================
-    void setRemotes(MeshEntity * e, Copies& remotes) {};
-    void addRemote(MeshEntity * e, int p, MeshEntity * r) {};
-    void setResidence(MeshEntity * e, Parts& residence) {};
-    void setParam(MeshEntity * e, Vector3 const & p) {};
-    void increment(MeshIterator * it) {};
-    bool isDone(MeshIterator * it) { return true; }
-    MeshEntity * deref(MeshIterator * it) { return NULL; }
-    void setPoint_(MeshEntity * me, int node, Vector3 const & p);
-    MeshEntity * createVert_(ModelEntity* c) { return NULL; }
-    MeshEntity * createEntity_(int type,ModelEntity* c,MeshEntity** down) { return NULL; }
-    void destroy_(MeshEntity * e) {};
-    void addMatch(MeshEntity * e, int peer, MeshEntity * match) {};
-    void clearMatches(MeshEntity * e) {};
+    void setRemotes(MeshEntity*, Copies&) {};
+    void addRemote(MeshEntity*, int, MeshEntity*) {};
+    void setResidence(MeshEntity*, Parts&) {};
+    void setParam(MeshEntity*, Vector3 const &) {};
+    void increment(MeshIterator*) {};
+    bool isDone(MeshIterator*) { return true; }
+    MeshEntity * deref(MeshIterator*) { return NULL; }
+    void setPoint_(MeshEntity* me, int node, Vector3 const & p);
+    MeshEntity * createVert_(ModelEntity*) { return NULL; }
+    MeshEntity * createEntity_(int, ModelEntity*, MeshEntity**) { return NULL; }
+    void destroy_(MeshEntity* ) {};
+    void addMatch(MeshEntity*, int, MeshEntity* ) {};
+    void clearMatches(MeshEntity*) {};
     void acceptChanges() {};
   protected:
     pParMesh mesh;

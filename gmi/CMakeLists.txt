@@ -46,6 +46,7 @@ set(HEADERS
    gmi.h
    agm.h
    gmi_base.h
+   gmi_lookup.h
    gmi_mesh.h
    gmi_null.h
    gmi_analytic.h)

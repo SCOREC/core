@@ -55,7 +55,6 @@ void mds_create(struct mds* m, int d, mds_id cap[MDS_TYPES]);
 void mds_destroy(struct mds* m);
 mds_id mds_create_entity(struct mds* m, int type, mds_id *from);
 void mds_destroy_entity(struct mds* m, mds_id e);
-mds_id mds_find_entity(struct mds* m, int type, mds_id *from);
 int mds_type(mds_id e);
 mds_id mds_index(mds_id e);
 mds_id mds_identify(int type, mds_id idx);
@@ -69,5 +68,7 @@ void mds_remove_adjacency(struct mds* m, int from_dim, int to_dim);
 int mds_has_up(struct mds* m, mds_id e);
 
 void mds_change_dimension(struct mds* m, int d);
+
+void mds_hack_adjacent(struct mds* m, mds_id up, int i, mds_id down);
 
 #endif

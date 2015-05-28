@@ -393,6 +393,12 @@ class MeshMDS : public Mesh2
       tag = reinterpret_cast<mds_tag*>(t);
       return tag->name;
     }
+    void renameTag(MeshTag* t, const char* newName)
+    {
+      mds_tag* tag;
+      tag = reinterpret_cast<mds_tag*>(t);
+      mds_rename_tag(tag,newName);
+    }
     ModelEntity* toModel(MeshEntity* e)
     {
       return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh, fromEnt(e)));
@@ -427,7 +433,8 @@ class MeshMDS : public Mesh2
         apf::destroyField(this->getField(0));
       while (this->countNumberings())
         apf::destroyNumbering(this->getNumbering(0));
-      changeCoordinateField(0);
+      apf::destroyField(coordinateField);
+      coordinateField = 0;
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);
       PCU_Thrd_Barrier();
       if (!PCU_Thrd_Self() && ownsModel)
@@ -736,6 +743,18 @@ void disownMdsModel(Mesh2* in)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   m->ownsModel = false;
+}
+
+void setMdsMatching(Mesh2* in, bool has)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  m->isMatched = has;
+}
+
+void hackMdsAdjacency(Mesh2* in, MeshEntity* up, int i, MeshEntity* down)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  mds_hack_adjacent(&m->mesh->mds, fromEnt(up), i, fromEnt(down));
 }
 
 }

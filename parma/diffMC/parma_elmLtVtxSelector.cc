@@ -4,8 +4,7 @@
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
-
-#define TO_SIZET(a) static_cast<size_t>(a)
+#include "parma_convert.h"
 
 namespace {
   typedef std::set<apf::MeshEntity*> SetEnt;

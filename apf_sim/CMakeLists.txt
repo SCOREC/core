@@ -24,6 +24,8 @@ if(NOT BUILD_IN_TRILINOS)
 else()
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 endif()
+#directory containing apf_simConfig.h
+include_directories("${PROJECT_BINARY_DIR}")
 
 #Sources & Headers
 set(SOURCES apfSIM.cc)
@@ -40,6 +42,9 @@ else()
   target_link_libraries(apf_sim ${DEP_LIBS})
 endif()
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.h.in"
+    "${PROJECT_BINARY_DIR}/apf_simConfig.h")
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.cmake.in"
   "${CMAKE_BINARY_DIR}/apf_simConfig.cmake")

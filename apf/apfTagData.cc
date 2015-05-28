@@ -55,10 +55,11 @@ MeshTag* TagData::makeOrFindTag(const char* name, int size)
   return maker->make(mesh,name,size);
 }
 
+static const char* typePostfix[Mesh::TYPES] =
+{"ver","edg","tri","qua","tet","hex","pri","pyr"};
+
 void TagData::createTags(const char* name, int components)
 {
-  static const char* typePostfix[Mesh::TYPES] =
-  {"ver","edg","tri","qua","tet","hex","pri","pyr"};
   for (int type=Mesh::VERTEX; type < Mesh::TYPES; ++type)
   {
     int n = shape->countNodesOn(type);
@@ -92,6 +93,17 @@ void TagData::destroyTags()
   for (int type=Mesh::VERTEX; type < Mesh::TYPES; ++type)
     if (tags[type])
       mesh->destroyTag(tags[type]);
+}
+
+void TagData::rename(const char* newName)
+{
+  for (int type=Mesh::VERTEX; type < Mesh::TYPES; ++type)
+    if (tags[type]) {
+      std::string newTagName(newName);
+      newTagName += '_';
+      newTagName += typePostfix[type];
+      mesh->renameTag(tags[type], newTagName.c_str());
+    }
 }
 
 }

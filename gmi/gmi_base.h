@@ -55,6 +55,8 @@ void gmi_base_read_tess(struct gmi_base* m, FILE* f);
 
 void gmi_base_set_tag(struct gmi_model* m, struct gmi_ent* e, int tag);
 
+extern struct gmi_model_ops gmi_base_ops;
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -3,6 +3,7 @@
 
 #include <apfMesh.h>
 #include <set>
+#include "parma_distQ.h"
 
 namespace parma {
   class DijkstraContains {
@@ -14,6 +15,8 @@ namespace parma {
 
   void dijkstra(apf::Mesh* m, DijkstraContains* c,
       apf::MeshEntity* src, apf::MeshTag* d);
+  void dijkstra(apf::Mesh* m, DijkstraContains* c,
+      parma::DistanceQueue<parma::Less>& pq, apf::MeshTag* d);
 }
 
 #endif

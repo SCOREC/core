@@ -23,6 +23,7 @@ class FieldData
     virtual void removeEntity(MeshEntity* e) = 0;
     virtual bool isFrozen() = 0;
     virtual FieldData* clone();
+    virtual void rename(const char* newName);
     FieldBase* getField() {return field;}
   protected:
     FieldBase* field;

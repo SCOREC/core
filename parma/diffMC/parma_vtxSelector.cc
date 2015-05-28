@@ -6,11 +6,10 @@
 #include "parma_graphDist.h"
 #include "parma_bdryVtx.h"
 #include "parma_commons.h"
+#include "parma_convert.h"
 #include <apf.h>
 
 typedef unsigned int uint;
-#define TO_UINT(a) static_cast<unsigned>(a)
-#define TO_INT(a) static_cast<int>(a)
 typedef std::map<uint,uint> muu;
 
 namespace {
@@ -112,7 +111,6 @@ namespace parma {
     for(int max=2; max <= 12; max+=2)
       planW += select(tgts, plan, planW, max);
     parmaCommons::printElapsedTime("select", PCU_Time()-t0);
-    clearDistTag(mesh, dist, plan);
     return plan;
   }
 

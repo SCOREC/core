@@ -3,6 +3,7 @@
 #include "apf.h"
 #include <gmi.h>
 #include <sstream>
+#include <apfGeometry.h>
 
 namespace apf {
 
@@ -83,10 +84,7 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   int meshDimension = m->getDimension();
   int entityDimension = getDimension(m, e);
   int difference = meshDimension - entityDimension;
-  if (!difference) { //element
-    assert(upwardCount == 0);
-    return;
-  }
+  assert(difference);
   ModelEntity* ge = m->toModel(e);
   int modelDimension = m->getModelType(ge);
   int modelUpwardCount = guc[ge];
@@ -95,14 +93,22 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   bool isOnManifoldBoundary = ( ! isOnNonManifoldFace) &&
                               (modelDimension < meshDimension);
   bool isShared = m->isShared(e);
-  bool isExposed = isShared || isOnManifoldBoundary;
+  bool isMatched = false;
+  if (m->hasMatching()) {
+    apf::Matches matches;
+    m->getMatches(e, matches);
+    isMatched = (matches.getSize() > 0);
+  }
+  bool isExposedByModel = isOnManifoldBoundary;
+  bool isExposedByMesh = isShared || isMatched;
+  bool isExposed = isExposedByModel || isExposedByMesh;
   bool isOnEqualOrder = (modelDimension == entityDimension);
   int expected;
   if (isExposed)
     expected = difference;
   else
     expected = difference + 1;
-  if (( ! isShared) && isOnEqualOrder)
+  if (!isExposedByMesh && isOnEqualOrder)
     expected = std::max(expected, modelUpwardCount);
   assert(upwardCount >= expected);
   if (difference == 1)
@@ -261,7 +267,8 @@ static bool receiveCoords(Mesh* m)
   Vector3 p(0,0,0);
   m->getPoint(e, 0, x);
   m->getParam(e, p);
-  return (x == ox) && (p == op);
+  return areClose(x, ox, 0.0) &&
+         areClose(p, op, 0.0);
 }
 
 static long verifyCoords(Mesh* m)

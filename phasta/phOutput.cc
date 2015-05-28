@@ -3,6 +3,7 @@
 #include "phLinks.h"
 #include "phAdjacent.h"
 #include "phBubble.h"
+#include "phAxisymmetry.h"
 
 namespace ph {
 
@@ -269,19 +270,27 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
   delete sh;
 }
 
-static bool isMatched(apf::Mesh* m, apf::MeshEntity* e)
+static bool isMatchingSlave(apf::MatchedSharing* ms, apf::MeshEntity* v)
 {
-  if ( ! m->hasMatching())
+  if (!ms)
     return false;
-  apf::Matches ms;
-  m->getMatches(e, ms);
-  return ms.getSize() != 0;
+  apf::Matches matches;
+  ms->mesh->getMatches(v, matches);
+  if (!matches.getSize())
+    return false;
+  return !ms->isOwned(v);
 }
 
 static void getEssentialBCs(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
+  apf::MeshTag* angles = 0;
+  apf::MatchedSharing* ms = 0;
+  if (m->hasMatching())
+    ms = new apf::MatchedSharing(m);
+  if (in.axisymmetry)
+    angles = tagAngles(m, bcs, ms);
   int nv = m->count(0);
   o.arrays.nbc = new int[nv];
   for (int i = 0; i < nv; ++i)
@@ -289,7 +298,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   o.arrays.ibc = new int[nv]();
   o.arrays.bc = new double*[nv];
   o.nEssentialBCNodes = 0;
-  int ibc = 0;
+  int ibc;
   int nec = countEssentialBCs(in);
   double* bc = new double[nec]();
   gmi_model* gm = m->getModel();
@@ -301,11 +310,18 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     gmi_ent* ge = (gmi_ent*) m->toModel(v);
     apf::Vector3 x;
     m->getPoint(v, 0, x);
+    ibc = 0;
+    for (int j = 0; j < nec; ++j)
+      bc[j] = 0;
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
-    if (isMatched(m, v)) {
-      ibc |= (1<<10); //yes, hard coded...
+    /* which is set for all slaves */
+    if (isMatchingSlave(ms, v)) {
       hasBC = true;
+      ibc |= (1<<10);
+      /* axisymmetric theta for some slaves */
+      if (in.axisymmetry && m->hasTag(v, angles))
+        m->getDoubleTag(v, angles, &bc[11]);
     }
     if (hasBC) {
       o.arrays.nbc[i] = ei + 1;
@@ -320,6 +336,9 @@ static void getEssentialBCs(BCs& bcs, Output& o)
   }
   m->end(it);
   delete [] bc;
+  if (in.axisymmetry)
+    m->destroyTag(angles);
+  delete ms;
 }
 
 static void getInitialConditions(BCs& bcs, Output& o)

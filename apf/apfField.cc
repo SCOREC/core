@@ -45,6 +45,12 @@ void FieldBase::changeData(FieldData* d)
   data = d;
 }
 
+void FieldBase::rename(const char* newName)
+{
+  data->rename(newName);
+  name = newName;
+}
+
 FieldDataOf<double>* Field::getData()
 {
   return static_cast<FieldDataOf<double>*>(data);

@@ -4,6 +4,7 @@
 #include "parma_dijkstra.h" 
 #include "parma_meshaux.h" 
 #include "parma_distQ.h"
+#include "parma_convert.h"
 
 /*
  * Components can have a seperator that may already be distanced.  If the
@@ -57,7 +58,7 @@ namespace {
     getEdgeAdjVtx(m,u,adjVtx);
     APF_ITERATE(apf::Adjacent, adjVtx, v) {
       int vd; m->getIntTag(*v,d,&vd);
-      if( vd+1 == ud && c->has(*v) ) {
+      if( vd == ud-1 && c->has(*v) ) {
         parent = *v;
         break;
       }
@@ -68,8 +69,13 @@ namespace {
   typedef std::set<apf::MeshEntity*> Level;
   void walkCavEdges(apf::Mesh* m, CavEnts* ce, apf::MeshEntity* p,
       apf::MeshEntity* s, apf::Adjacent& adjVtx) {
-    adjVtx.setSize(ce->size()*2); //should be an upper bound
-    size_t numAdj=0; 
+    typedef apf::DynamicArray<apf::MeshEntity*> entArr;
+    //should be an upper bound
+    const unsigned maxVisited = TO_UINT(ce->size()*2);
+    entArr visited(maxVisited);
+    adjVtx.setSize(maxVisited);
+    unsigned visCnt=0;
+    size_t numAdj=0;
     apf::MeshTag* lvlT = m->createIntTag("parmaCavWalk",1);
     Level cur;
     Level next; 
@@ -83,6 +89,8 @@ namespace {
         apf::MeshEntity* u = *vtxItr;
         if( m->hasTag(u,lvlT) ) continue;
         m->setIntTag(u,lvlT,&treeDepth);
+        visited[visCnt++] = u;
+        assert(visCnt < maxVisited);
         apf::Up edges;
         m->getUp(u,edges);
         for(int i=0; i<edges.n; i++) {
@@ -98,34 +106,31 @@ namespace {
       }
     }
     adjVtx.setSize(numAdj);
-    apf::removeTagFromDimension(m,lvlT,0);
+    for(std::size_t i = 0; i<visCnt; i++) {
+      assert(m->hasTag(visited[i],lvlT));
+      m->removeTag(visited[i],lvlT);
+    }
     m->destroyTag(lvlT);
   }
 
   void getConnectedVtx(apf::Mesh* m, parma::DijkstraContains* c, 
       apf::MeshTag* d, apf::MeshEntity* u, apf::Adjacent& adjVtx) {
-    apf::MeshEntity* p = parentVtx(m,c,d,u);
-    if( ! c->bdryHas(u) || ! p )
+    if( c->bdryHas(u) ) {
+      apf::MeshEntity* p = parentVtx(m,c,d,u);
+      if( p ) {
+        apf::Up cav;
+        getCavity(m,u,cav);
+        CavEnts* ce = getCavityEdges(m,c,cav);
+        walkCavEdges(m,ce,p,u,adjVtx);
+        delete ce;
+      }
+    }
+    if( !adjVtx.getSize() )
       getEdgeAdjVtx(m,u,adjVtx); 
-    else { // on the component boundary
-      apf::Up cav;
-      getCavity(m,u,cav);
-      CavEnts* ce = getCavityEdges(m,c,cav);
-      walkCavEdges(m,ce,p,u,adjVtx);
-      delete ce;
-    } 
   }
-}
 
-namespace parma {
-  void dijkstra(apf::Mesh* m, DijkstraContains* c,
-      apf::MeshEntity* src, apf::MeshTag* d) {
-    resetDist(m,c,d);
-    parma::DistanceQueue<parma::Less> pq(m);
-    int zero = 0;
-    m->setIntTag(src, d, &zero);
-    pq.push(src,0);
-
+  void dijkstra_(apf::Mesh* m, parma::DijkstraContains* c,
+      parma::DistanceQueue<parma::Less>& pq, apf::MeshTag* d) {
     while( !pq.empty() ) {
       apf::MeshEntity* v = pq.pop();
       if( ! c->has(v) ) continue;
@@ -143,5 +148,21 @@ namespace parma {
         }
       }
     }
+  }
+}
+
+namespace parma {
+  void dijkstra(apf::Mesh* m, DijkstraContains* c,
+      apf::MeshEntity* src, apf::MeshTag* d) {
+    resetDist(m,c,d);
+    parma::DistanceQueue<parma::Less> pq(m);
+    int zero = 0;
+    m->setIntTag(src, d, &zero);
+    pq.push(src,0);
+    dijkstra_(m,c,pq,d);
+  }
+  void dijkstra(apf::Mesh* m, DijkstraContains* c,
+      DistanceQueue<Less>& pq, apf::MeshTag* d) {
+    dijkstra_(m,c,pq,d);
   }
 }

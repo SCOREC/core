@@ -27,11 +27,11 @@ public:
 		   pf);
     Field_apply(fd,mesh->getDimension(),NULL);
   }
-  virtual bool hasEntity(MeshEntity * e)
+  virtual bool hasEntity(MeshEntity *)
   {
     return true;
   }
-  virtual void removeEntity(MeshEntity * e)
+  virtual void removeEntity(MeshEntity *)
   {}
   virtual void get(MeshEntity * e, T * data)
   {

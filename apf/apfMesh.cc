@@ -70,6 +70,14 @@ int const tet_tri_verts[4][3] =
 ,{1,2,3}
 ,{0,2,3}};
 
+int const hex_quad_verts[6][4] =
+{{0,1,2,3}
+,{0,1,5,4}
+,{1,2,6,5}
+,{2,3,7,6}
+,{3,0,4,7}
+,{4,5,6,7}};
+
 int const prism_tri_verts[2][3] =
 {{0,1,2}
 ,{3,4,5}};
@@ -189,6 +197,20 @@ void Mesh::getClosestPoint(ModelEntity* g, Vector3 const& from,
   gmi_closest_point(getModel(),e,&from[0],&to[0],&p[0]);
 }
 
+void Mesh::getNormal(ModelEntity* g, Vector3 const& p, Vector3& n)
+{
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_normal(getModel(),e,&p[0],&n[0]);
+}
+
+void Mesh::getFirstDerivative(ModelEntity* g, Vector3 const& p,
+  Vector3& t0, Vector3& t1)
+{
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_first_derivative(getModel(),e,&p[0], &t0[0], &t1[0]);
+}
+
+
 bool Mesh::isDegenerate(ModelEntity* g, Vector3 const& p, int axis)
 {
   gmi_ent* e = (gmi_ent*)g;
@@ -222,12 +244,6 @@ FieldShape* Mesh::getShape() const
   return coordinateField->getShape();
 }
 
-void Mesh::changeCoordinateField(Field* f)
-{
-  delete coordinateField;
-  coordinateField = f;
-}
-
 void Mesh::addField(Field* f)
 {
   fields.push_back(f);
@@ -235,7 +251,9 @@ void Mesh::addField(Field* f)
 
 void Mesh::removeField(Field* f)
 {
-  fields.erase(std::find(fields.begin(),fields.end(),f));
+  std::vector<Field*>::iterator it = std::find(fields.begin(),fields.end(),f);
+  if (it != fields.end())
+    fields.erase(it);
 }
 
 Field* Mesh::findField(const char* name)
@@ -486,6 +504,20 @@ static void runTetDown(
   }
 }
 
+static void runHexDown(
+    ElementVertOp* o,
+    MeshEntity** verts,
+    MeshEntity** down)
+{
+  Downward fv;
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 4; ++j)
+      fv[j] = verts[hex_quad_verts[i][j]];
+    down[i] = o->run(Mesh::QUAD,fv);
+  }
+}
+
 static void runPrismDown(
     ElementVertOp* o,
     MeshEntity** verts,
@@ -537,7 +569,7 @@ void ElementVertOp::runDown(
    runTriDown,
    runQuadDown,
    runTetDown,
-   0,//hex
+   runHexDown,//hex
    runPrismDown,
    runPyramidDown
   };
@@ -606,15 +638,37 @@ int countEntitiesOfType(Mesh* m, int type)
   return count;
 }
 
+void Mesh::changeShape(FieldShape* newShape, bool project)
+{
+  Field* oldCoordinateField = coordinateField;
+  std::string name = oldCoordinateField->getName();
+  VectorField* newCoordinateField = new VectorField();
+  if (project) {
+    /* if we're projecting, we need both fields around
+       at once and in case they are both tag-based we
+       should use a different name for the new one
+       until the old one is to gone. */
+    newCoordinateField->init("__new_coordinates",
+        this, newShape, new TagDataOf<double>());
+    newCoordinateField->project(oldCoordinateField);
+    delete coordinateField;
+    newCoordinateField->rename(name.c_str());
+  } else {
+    /* if we're not projecting, we're either picking up
+       tags from a high-order SCOREC file or building
+       tags for conversion from Simmetrix.
+       In either case, destroy the old (CoordData) field
+       and just make a fresh new field */
+    delete coordinateField;
+    newCoordinateField->init(name.c_str(),
+        this, newShape, new TagDataOf<double>());
+  }
+  coordinateField = newCoordinateField;
+}
+
 void changeMeshShape(Mesh* m, FieldShape* newShape, bool project)
 {
-  Field* oldCoordinateField = m->getCoordinateField();
-  VectorField* newCoordinateField = new VectorField();
-  newCoordinateField->init(oldCoordinateField->getName(), m, newShape,
-      new TagDataOf<double>());
-  if (project)
-    newCoordinateField->project(oldCoordinateField);
-  m->changeCoordinateField(newCoordinateField);
+  m->changeShape(newShape, project);
 }
 
 void unfreezeFields(Mesh* m) {
@@ -751,7 +805,9 @@ void NormalSharing::getCopies(MeshEntity* e,
    for now, we'll build a full neighbor count
    system into this object just to implement
    the min-count rule for matched neighbors */
-MatchedSharing::MatchedSharing(Mesh* m):helper(m),mesh(m)
+MatchedSharing::MatchedSharing(Mesh* m):
+  mesh(m),
+  helper(m)
 {
   formCountMap();
 }

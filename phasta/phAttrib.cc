@@ -98,16 +98,26 @@ struct CompBC : public SimBC {
   double buf[4];
 };
 
-struct DGInterfaceBC : public SimBC
+struct IntBC : public SimBC
 {
-  DGInterfaceBC(pAttribute a, pGEntity ge):SimBC(ge)
+  IntBC(pAttribute a, pGEntity ge):SimBC(ge)
   {
-    /* ...... */
+    if (Attribute_repType(a) != Att_int) {
+      fprintf(stderr, "int attribute does not match type\n");
+      abort();
+    }
+    attribute = (pAttributeInt)a;
   }
-  virtual double* eval(apf::Vector3 const& x)
+  virtual double* eval(apf::Vector3 const&)
   {
-    return 0;
+    /* forgive me for I am storing an int in a double.
+       let there be more than 32 mantissa bits such that
+       this conversion is lossless. */
+    buf = AttributeInt_value(attribute);
+    return &buf;
   }
+  pAttributeInt attribute;
+  double buf;
 };
 
 static ph::BC* tensor0Factory(pAttribute a, pGEntity ge)
@@ -125,9 +135,9 @@ static ph::BC* compFactory(pAttribute a, pGEntity ge)
   return new CompBC(a, ge);
 }
 
-static ph::BC* interfaceFactory(pAttribute a, pGEntity ge)
+static ph::BC* intFactory(pAttribute a, pGEntity ge)
 {
-  return new DGInterfaceBC(a, ge);
+  return new IntBC(a, ge);
 }
 
 /* this should follow the KnownBC tables in phBC.cc */
@@ -159,7 +169,8 @@ static void formFactories(BCFactories& fs)
   fs["initial scalar_2"]     = tensor0Factory;
   fs["initial scalar_3"]     = tensor0Factory;
   fs["initial scalar_4"]     = tensor0Factory;
-  fs["DG interface"]         = interfaceFactory;
+  fs["periodic slave"]       = intFactory;
+  fs["DG interface"]         = intFactory;
 }
 
 static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
@@ -169,6 +180,8 @@ static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
   std::string infoType(c_infoType);
   if (!fs.count(infoType)) {
     fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", c_infoType);
+    fprintf(stderr,"it had repType %d\n",
+        Attribute_repType(a));
     return;
   }
   if (!bcs.fields.count(infoType))

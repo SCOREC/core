@@ -5,6 +5,7 @@
 #include <phAdapt.h>
 #include <phOutput.h>
 #include <phPartition.h>
+#include <phFilterMatching.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfPartition.h>
@@ -37,8 +38,10 @@ void afterSplit(apf::Mesh2* m, ph::Input& in, ph::BCs& bcs,
       ph::balance(m);
     apf::reorderMdsMesh(m);
   }
+  ph::enterFilteredMatching(m, in, bcs);
   ph::Output o;
   ph::generateOutput(in, bcs, m, o);
+  ph::exitFilteredMatching(m);
   ph::detachAndWriteSolution(in, m, path);
   ph::writeGeomBC(o, path);
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);

@@ -26,7 +26,11 @@ set(SOURCES
   phBC.cc
   phAttrib.cc
   phBubble.cc
-  phConstraint.cc)
+  phConstraint.cc
+  phModelGeometry.cc
+  phFilterMatching.cc
+  phAxisymmetry.cc
+  phInterfaceCutter.cc)
 
 include_directories(${PH_INCLUDE_DIRS})
 
