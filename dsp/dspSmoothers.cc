@@ -488,8 +488,8 @@ namespace dsp {
         for (int j = 0 ; j < 3 ; j++)
           K[i][j] = 0.0;
       }
-      double Na1,Na2,Na3,Nb1,Nb1,Nb1;
-      double preDisp;
+      double Na1,Na2,Na3,Nb1,Nb2,Nb3;
+      apf::Vector3 preDisp;
       
       double shapeFunction[4][3] = {0.0};
       shapeFunction[0][0] = -1; shapeFunction[0][1] = -1; shapeFunction[0][2] = -1;
@@ -509,12 +509,11 @@ namespace dsp {
         m->getPoint(V_total[ien[elm_id][2]], 0, p2);
         m->getPoint(V_total[ien[elm_id][3]], 0, p3);
         
-        double J11, J12, J13, J21, J22, J23, J31, J32, J33,
-        double JacoDeter;
+        double J11, J12, J13, J21, J22, J23, J31, J32, J33;
         J11 = p1[0] - p0[0]; J12 = p1[1] - p0[1]; J13 = p1[2] - p0[2];
         J21 = p2[0] - p0[0]; J22 = p2[1] - p0[1]; J23 = p2[2] - p0[2];
         J31 = p3[0] - p0[0]; J32 = p3[1] - p0[1]; J33 = p3[2] - p0[2];
-        JacoDeter = 1.0/24.0 * J11 * (J22 * J33 - J23 * J32) - J12 * (J21 * J33 - J23 * J31) + J13 * (J21 * J32 - J22 * J31);
+        double JacoDeter = 1.0/24.0 * (J11 * (J22 * J33 - J23 * J32) - J12 * (J21 * J33 - J23 * J31) + J13 * (J21 * J32 - J22 * J31));
 
         //loop over Gaussian Quadrature points
         for (int GqPtId = 0 ; GqPtId < 4 ; GqPtId++) {
