@@ -11,54 +11,6 @@
 
 using namespace std;
 
-double shapeFuncTet(int a, int xyz)
-{
-  if (a < 0 || a > 3 || xyz < 0 || xyz > 2)
-    cout << "Shape function input error! " << endl;
-  //compute Shape Function N
-  double N;
-  switch (a) {
-    case 0:
-        N = -1;
-      break;
-    case 1:
-      if (xyz == 0)
-        N = 1;
-      else
-        N = 0;
-      break;
-    case 2:
-      if (xyz == 1)
-        N = 1;
-      else
-        N = 0;
-      break;
-    case 3:
-      if (xyz == 2)
-        N = 1;
-      else
-        N = 0;
-      break;
-      
-    default:
-      break;
-  }
-  return N;
-}
-
-double JacoDeterTet(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2, apf::Vector3 p2)
-{
-  double J11, J12, J13, J21, J22, J23, J31, J32, J33,
-  double J;
-  
-  J11 = p1[0] - p0[0]; J12 = p1[1] - p0[1]; J13 = p1[2] - p0[2];
-  J21 = p2[0] - p0[0]; J22 = p2[1] - p0[1]; J23 = p2[2] - p0[2];
-  J31 = p3[0] - p0[0]; J32 = p3[1] - p0[1]; J33 = p3[2] - p0[2];
-  
-  J = J11 * (J22 * J33 - J23 * J32) - J12 * (J21 * J33 - J23 * J31) + J13 * (J21 * J32 - J22 * J31);
-  return J;
-}
-
 namespace dsp {
   
   Smoother::~Smoother()
@@ -539,6 +491,10 @@ namespace dsp {
       double Na1,Na2,Na3,Nb1,Nb1,Nb1;
       double preDisp;
       
+      double shapeFunction[4][3] = {0.0};
+      shapeFunction[0][0] = -1; shapeFunction[0][1] = -1; shapeFunction[0][2] = -1;
+      shapeFunction[1][0] =  1; shapeFunction[2][1] =  1; shapeFunction[3][2] =  1;
+
       //define physics parameter
       double E = 4.0E8;
       double nu = 0.3;
@@ -546,27 +502,28 @@ namespace dsp {
       double mu = E/(2*(1.0 + nu));
       //----------------------------------------------------------
       //assembly
-      //double xi[4]  = {0.1381966011250105, 0.5854101966249685, 0.1381966011250105, 0.1381966011250105};
-      //double eta[4] = {0.1381966011250105, 0.1381966011250105, 0.5854101966249685, 0.1381966011250105};
-      //double zeta[4]= {0.1381966011250105, 0.1381966011250105, 0.1381966011250105, 0.5854101966249685};
-      
       for (int elm_id = 0 ; elm_id < num_elm; elm_id++) {
-        
         apf::Vector3 p0, p1, p2, p3;
         m->getPoint(V_total[ien[elm_id][0]], 0, p0);
         m->getPoint(V_total[ien[elm_id][1]], 0, p1);
         m->getPoint(V_total[ien[elm_id][2]], 0, p2);
         m->getPoint(V_total[ien[elm_id][3]], 0, p3);
         
+        double J11, J12, J13, J21, J22, J23, J31, J32, J33,
+        double JacoDeter;
+        J11 = p1[0] - p0[0]; J12 = p1[1] - p0[1]; J13 = p1[2] - p0[2];
+        J21 = p2[0] - p0[0]; J22 = p2[1] - p0[1]; J23 = p2[2] - p0[2];
+        J31 = p3[0] - p0[0]; J32 = p3[1] - p0[1]; J33 = p3[2] - p0[2];
+        JacoDeter = 1.0/24.0 * J11 * (J22 * J33 - J23 * J32) - J12 * (J21 * J33 - J23 * J31) + J13 * (J21 * J32 - J22 * J31);
+
         //loop over Gaussian Quadrature points
         for (int GqPtId = 0 ; GqPtId < 4 ; GqPtId++) {
-          double JacoDeter = 1.0/24.0 * JacoDeterTet(p0, p1, p2, p3);
           //loop over nodes
           for (int i = 0 ; i < 3 ; i++) {
             for (int j = 0 ; j < 3 ; j++) {
-              //cout << "i = " << i << "; j = " << j << endl;
-              Nb1 = shapeFuncTri(i, 0); Nb2 = shapeFuncTri(i, 1); Nb3 = shapeFuncTri(i, 2);
-              Na1 = shapeFuncTri(j, 0); Na2 = shapeFuncTri(j, 1); Na3 = shapeFuncTri(j, 2);
+              
+              Nb1 = shapeFunction[i][0]; Nb2 = shapeFunction[i][1]; Nb3 = shapeFunction[i][2];
+              Na1 = shapeFunction[j][0]; Na2 = shapeFunction[j][1]; Na3 = shapeFunction[j][2];
               
               K[0][0] = JacoDeter * (Na2*Nb2*mu + Na3*Nb3*mu + Na1*Nb1*(lamda + 2*mu));
               K[0][1] = JacoDeter * (Na2*Nb1*lamda + Na1*Nb2*mu);
@@ -715,7 +672,7 @@ namespace dsp {
           D_new[2] = d_global[id[i][2] - 1];
           apf::setVector(df, V_total[i], 0, D_new);
         }
-      }      
+      }
       //end elastic
       //----------------------------------------------------------
       t = clock() - t;
