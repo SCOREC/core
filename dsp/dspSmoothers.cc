@@ -627,8 +627,16 @@ namespace dsp {
         r[i] = d[i];
       }
       
+      int flag = 1; double r_max;
       for (int i = 0 ; i < id_max ; i++) {
-        double r_max = *max_element(r,r+id_max);
+        double r_max_new = *max_element(r,r+id_max);
+        if (flag) {
+          r_max = r_max_new;
+          flag = 0;
+        }
+        if (r_max_new > r_max)
+          cout << "Not Converge! " << endl;
+        r_max = r_max_new;
         if (r_max <= 1e-16)
           break;
         rTr = 0.0; dTAd = 0.0; rTr_new = 0.0;
