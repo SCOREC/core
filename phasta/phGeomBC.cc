@@ -14,7 +14,7 @@ static std::string buildGeomBCFileName()
 }
 
 enum {
-  MAX_PARAMS = 8
+  MAX_PARAMS = 12
 };
 
 void getInteriorConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
@@ -53,11 +53,12 @@ void getInterfaceConnectivity
   int nvert1 = o.blocks.interface.keys[block].nElementVertices1;
   c.setSize(nelem * (nvert0 + nvert1));
   size_t i = 0;
-  for (int elem = 0; elem < nelem; ++elem) {
-    for (int vert = 0; vert < nvert0; ++vert)
+  for (int vert = 0; vert < nvert0; ++vert)
+    for (int elem = 0; elem < nelem; ++elem)
       c[i++] = o.arrays.ienif0[block][elem][vert] + 1;
-    for (int vert = 0; vert < nvert1; ++vert)
-      c[i++] = o.arrays.ienif1[block][elem][vert] + 1;}
+  for (int vert = 0; vert < nvert1; ++vert)
+    for (int elem = 0; elem < nelem; ++elem)
+      c[i++] = o.arrays.ienif1[block][elem][vert] + 1;
   assert(i == c.getSize());
 }
 
@@ -115,9 +116,11 @@ void fillBlockKeyInterfaceParams
   params[1] = k.nElementVertices;
   params[2] = k.nElementVertices1;
   params[3] = k.polynomialOrder;
-  params[4] = k.nBoundaryFaceEdges; /* num boundary nodes */
-  params[5] = k.elementType;
-  params[6] = k.elementType1;
+  params[4] = k.nElementVertices;
+  params[5] = k.nElementVertices1;
+  params[6] = k.nBoundaryFaceEdges; /* num boundary nodes */
+  params[7] = k.elementType;
+  params[8] = k.elementType1;
 }
 
 void writeBlocks(FILE* f, Output& o)
@@ -155,7 +158,7 @@ void writeBlocks(FILE* f, Output& o)
     params[0] = o.blocks.interface.nElements[i];
     fillBlockKeyInterfaceParams(params, k);
     getInterfaceConnectivity(o, i, c);
-    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 7, params);
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 9, params);
   }
 }
 

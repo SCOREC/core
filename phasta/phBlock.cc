@@ -179,18 +179,24 @@ void getInterfaceBlocks(apf::Mesh* m, BlocksInterface& b)
 {
   int interfaceDim = m->getDimension() - 1;
   apf::MeshIterator* it = m->begin(interfaceDim);
-  apf::MeshEntity* f;
-  while ((f = m->iterate(it))) {
-    apf::ModelEntity* me = m->toModel(f);
+  apf::MeshEntity* face;
+
+  while ((face = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(face);
     if (m->getModelType(me) != interfaceDim)
       continue;
-    /* interface has two inner elements */
-    if (m->countUpward(f) != 2)
+    apf::Matches matches;
+    m->getMatches(face, matches);
+    if (matches.getSize() != 1)
       continue;
-    apf::MeshEntity* e0 = m->getUpward(f, 0);
-    apf::MeshEntity* e1 = m->getUpward(f, 1);
+    apf::MeshEntity* e0 = m->getUpward(face, 0);
+    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    /* in order to avoid repeatation of elements */
+    if (e0 > e1)
+      continue;
+
     BlockKeyInterface k;
-    getInterfaceBlockKey(m, e0, e1, f, k);
+    getInterfaceBlockKey(m, e0, e1, face, k);
     insertKeyInterface(b, k);
   }
   m->end(it);

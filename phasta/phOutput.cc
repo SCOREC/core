@@ -166,27 +166,33 @@ static void getInterface
     js[i] = 0;
   }
   int interfaceDim = m->getDimension() - 1;
-  apf::MeshEntity*   f;
+  apf::MeshEntity*   face;
   apf::MeshIterator* it = m->begin(interfaceDim);
-  while ((f = m->iterate(it))) {
-    apf::ModelEntity* me = m->toModel(f);
+
+  while ((face = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(face);
     if (m->getModelType(me) != interfaceDim)
       continue;
-    /* interface has two inner elements */
-    if (m->countUpward(f) != 2)
+    apf::Matches matches;
+    m->getMatches(face, matches);
+    if (matches.getSize() != 1)
       continue;
-    apf::MeshEntity* e0 = m->getUpward(f, 0);
-    apf::MeshEntity* e1 = m->getUpward(f, 1);
+    apf::MeshEntity* e0 = m->getUpward(face, 0);
+    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    /* in order to avoid repeatation of elements */
+    if (e0 > e1)
+      continue;
+
     BlockKeyInterface k;
-    getInterfaceBlockKey(m, e0, e1, f, k);
+    getInterfaceBlockKey(m, e0, e1, face, k);
     assert(bs.keyToIndex.count(k));
     int i = bs.keyToIndex[k];
     int j = js[i];
     int nv0 = k.nElementVertices;
     int nv1 = k.nElementVertices1;
     apf::Downward v0, v1;
-    getBoundaryVertices(m, e0, f, v0);
-    getBoundaryVertices(m, e1, f, v1);
+    getBoundaryVertices(m, e0, face, v0);
+    getBoundaryVertices(m, e1, face, v1);
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
     for (int k = 0; k < nv0; ++k)
