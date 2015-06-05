@@ -11,10 +11,12 @@
 #include "mds_apf.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 #include <PCU.h>
 #include <pcu_io.h>
+#include <pcu_common.h>
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 
 enum { SMB_VERSION = 4 };
@@ -596,48 +598,65 @@ static int starts_with(const char* s, const char* w)
   return !strncmp(s, w, lw);
 }
 
+static void remove_prefix(char* s, const char* prefix)
+{
+  int ls = strlen(s);
+  int lp = strlen(prefix);
+  memmove(s, s + lp, ls + 1 - lp);
+}
+
+static void remove_ext(char* s, const char* ext)
+{
+  int ls = strlen(s);
+  int le = strlen(ext);
+  s[ls - le] = '\0';
+}
+
+static void append(char* s, size_t size, const char* format, ...)
+{
+  int len = strlen(s);
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(s + len, size - len, format, ap);
+  va_end(ap);
+}
+
 #define SMB_FANOUT 2048
 
 static char* handle_path(const char* in, int is_write, int* zip)
 {
-  size_t n;
-  char* tmp;
-  char* out;
-  int li = strlen(in);
+  static const char* zippre = "bz2:";
+  static const char* smbext = ".smb";
+  size_t bufsize;
+  char* path;
   mode_t const dir_perm = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
-  int subdir;
   int self = PCU_Comm_Self();
-  n = li + 256;
-  tmp = malloc(n);
-  out = malloc(n);
-  strcpy(tmp,in);
-  if (starts_with(tmp, "bz2:")) {
+  bufsize = strlen(in) + 256;
+  path = malloc(bufsize);
+  strcpy(path, in);
+  if (starts_with(path, zippre)) {
     *zip = 1;
-    memmove(tmp, tmp + 4, li - 3);
+    remove_prefix(path, zippre);
   } else {
     *zip = 0;
   }
-  if (ends_with(tmp, "/")) {
+  if (ends_with(path, "/")) {
     if (is_write && (!self))
-      mkdir(tmp, dir_perm);
+      mkdir(path, dir_perm);
     PCU_Barrier();
     if (PCU_Comm_Peers() > SMB_FANOUT) {
-      subdir = self / SMB_FANOUT;
-      snprintf(out, n, "%s%d/", tmp, subdir);
+      append(path, bufsize, "%d/", self / SMB_FANOUT);
       if (is_write && (self % SMB_FANOUT == 0))
-        mkdir(out, dir_perm);
+        mkdir(path, dir_perm);
       PCU_Barrier();
-      strcpy(tmp, out);
     }
-  } else if (ends_with(tmp, ".smb")) {
-    tmp[li - 4] = '\0';
+  } else if (ends_with(path, smbext)) {
+    remove_ext(path, smbext);
   } else {
-    fprintf(stderr,"invalid smb path %s\n",tmp);
-    abort();
+    pcu_fail("invalid smb path %s\n", path);
   }
-  snprintf(out, n, "%s%d.smb", tmp, self);
-  free(tmp);
-  return out;
+  append(path, bufsize, "%d.smb", self);
+  return path;
 }
 
 struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname)
