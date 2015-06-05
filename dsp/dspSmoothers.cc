@@ -251,8 +251,8 @@ namespace dsp {
       vector < apf::Vector3 > tet_OP(3);
       vector < apf::Vector3 > tet_DP(3);
       apf::Vector3 P_temp; //coordinate
-      apf::Vector3 D_temp; //displcament
-      apf::Vector3 D_new; //displcament
+      apf::Vector3 D_temp; //displacement
+      apf::Vector3 D_new;  //displacement
       double d1, d2, d3;
       
       // semi-torsional spring: stiffness = 1/length^2 + sum(1/sin(theta)^2)
