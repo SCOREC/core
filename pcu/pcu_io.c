@@ -160,7 +160,7 @@ pcu_file* pcu_fopen(const char* name, bool write, bool compress)
     pf->f = fopen(name,"r");
   if (!pf->f) {
     perror("pcu_fopen");
-    pcu_fail("fopen failed");
+    pcu_fail("couldn't open %s", name);
   }
   if(compress)
     open_compressed(pf);
