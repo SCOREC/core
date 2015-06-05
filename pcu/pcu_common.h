@@ -10,7 +10,7 @@
 #ifndef PCU_COMMON_H
 #define PCU_COMMON_H
 
-void pcu_fail(const char* message) __attribute__((noreturn));
+void pcu_fail(const char* format, ...) __attribute__((noreturn));
 int pcu_floor_log2(int n);
 int pcu_ceil_log2(int n);
 
