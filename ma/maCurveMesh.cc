@@ -115,16 +115,13 @@ bool BezierCurver::run()
     apf::getTransformationCoefficients(m_order,md,d,c);
     Entity* e;
     Iterator* it = m_mesh->begin(d);
-    while ((e = m_mesh->iterate(it))) {
-      Model* g = m_mesh->toModel(e);
-      if(m_mesh->getModelType(g) == m_mesh->getDimension()) continue;
+    while ((e = m_mesh->iterate(it))){
       convertInterpolationPoints(e,n,ne,c);
     }
     m_mesh->end(it);
   }
   m_mesh->acceptChanges();
   m_mesh->verify();
-
   return true;
 }
 
@@ -133,7 +130,7 @@ static void elevateBezierCurve(Mesh* m, Entity* edge, int n, int r)
 {
 
   apf::Element* elem =
-       apf::createElement(m->getCoordinateField(),edge);
+      apf::createElement(m->getCoordinateField(),edge);
 
   Vector pt;
   apf::NewArray<Vector> p;
@@ -151,8 +148,8 @@ static void elevateBezierCurve(Mesh* m, Entity* edge, int n, int r)
     pt.zero();
     for(int j = std::max(0,i-r); j <= std::min(i,n); ++j)
       pt += p[map[j]]*apf::binomial(n,j)*
-          apf::binomial(r,i-j)/
-          apf::binomial(n+r,i);
+      apf::binomial(r,i-j)/
+      apf::binomial(n+r,i);
     m->setPoint(edge,i-1,pt);
   }
 
@@ -167,13 +164,13 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
 
   Iterator* it = m_mesh->begin(1);
 
-  apf::NewArray<double> c;
-  apf::getTransformationCoefficients(4,3,1,c);
-
   while ((e = m_mesh->iterate(it))) {
     Model* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == m_mesh->getDimension()) continue;
+
+    if(m_mesh->getModelType(g) == 3) continue;
+    // set edges using normals
     if(m_mesh->getModelType(g) == 1) {
+
       Vector t[2];
       Entity* v[2];
       m_mesh->getDownward(e,0,v);
@@ -183,13 +180,15 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
         m_mesh->getFirstDerivative(g,p,t[i],t[i]);
         t[i] = t[i].normalize();
       }
-        double d = (points[3]-points[0]).getLength();
-        Vector l = (points[3]-points[0])/d;
-        points[1] = points[0] + t[0]*(l*t[0])/fabs(l*t[0])*d/3.;
-        points[2] = points[3] - t[1]*(l*t[1])/fabs(l*t[1])*d/3.;
-        for(int i = 0; i < 2; ++i)
-          m_mesh->setPoint(e,i,points[i+1]);
+      double d = (points[3]-points[0]).getLength();
+      Vector l = (points[3]-points[0])/d;
+      points[1] = points[0] + t[0]*(l*t[0])/fabs(l*t[0])*d/3.;
+      points[2] = points[3] - t[1]*(l*t[1])/fabs(l*t[1])*d/3.;
+      for(int i = 0; i < 2; ++i)
+        m_mesh->setPoint(e,i,points[i+1]);
+
     } else {
+      // set edges using tangents
       Vector n[2];
       Entity* v[2];
       m_mesh->getDownward(e,0,v);
@@ -208,6 +207,7 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
       points[2] = points[3] - (l*6. + n[0]*r   - n[1]*2.*s)*d/18.;
       for(int i = 0; i < 2; ++i)
         m_mesh->setPoint(e,i,points[i+1]);
+
     }
   }
   m_mesh->end(it);
@@ -244,7 +244,7 @@ void GregoryCurver::setInternalPointsUsingNeighbors()
 
     }
     assert(m_mesh->getModelType(m_mesh->toModel(faces[0])) ==
-           m_mesh->getModelType(m_mesh->toModel(faces[1])) );
+        m_mesh->getModelType(m_mesh->toModel(faces[1])) );
     // now we have the faces
     int which[2], rotate[2];
     bool flip[2];
@@ -299,19 +299,19 @@ void GregoryCurver::setInternalPointsLocally()
       apf::getAlignment(m_mesh,e,edges[i],which,flip,rotate);
 
       if(flip){
-          W[i][0] = ep[3]-ep[1];
-          W[i][1] = ep[2]-ep[3];
-          W[i][2] = ep[0]-ep[2];
-          q[i*3+3] = ep[1]*0.25+ep[3]*0.75;
-          q[i*3+4] = ep[3]*0.5+ep[2]*0.5;
-          q[i*3+5] = ep[2]*0.75+ep[0]*0.25;
+        W[i][0] = ep[3]-ep[1];
+        W[i][1] = ep[2]-ep[3];
+        W[i][2] = ep[0]-ep[2];
+        q[i*3+3] = ep[1]*0.25+ep[3]*0.75;
+        q[i*3+4] = ep[3]*0.5+ep[2]*0.5;
+        q[i*3+5] = ep[2]*0.75+ep[0]*0.25;
       } else {
-          W[i][0] = ep[2]-ep[0];
-          W[i][1] = ep[3]-ep[2];
-          W[i][2] = ep[1]-ep[3];
-          q[i*3+3] = ep[0]*0.25+ep[2]*0.75;
-          q[i*3+4] = ep[2]*0.5+ep[3]*0.5;
-          q[i*3+5] = ep[3]*0.75+ep[1]*0.25;
+        W[i][0] = ep[2]-ep[0];
+        W[i][1] = ep[3]-ep[2];
+        W[i][2] = ep[1]-ep[3];
+        q[i*3+3] = ep[0]*0.25+ep[2]*0.75;
+        q[i*3+4] = ep[2]*0.5+ep[3]*0.5;
+        q[i*3+5] = ep[3]*0.75+ep[1]*0.25;
       }
 
       apf::destroyElement(edge);
@@ -358,7 +358,8 @@ void GregoryCurver::setInternalPointsLocally()
 
 bool GregoryCurver::run()
 {
-  if(m_order != 4){
+
+  if(m_order < 3 || m_order > 4){
     fprintf(stderr,"Warning: cannot convert to Gregory of order %d\n",m_order);
     return false;
   }
@@ -369,17 +370,78 @@ bool GregoryCurver::run()
 
   apf::changeMeshShape(m_mesh, apf::getGregory(m_order),true);
 
-  setCubicEdgePointsUsingNormals();
-  setInternalPointsLocally();
-  elevateBezierCurves(m_mesh);
+  int md = m_mesh->getDimension();
 
+  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+
+  // interpolate points in each dimension
+  for(int d = 1; d < md; ++d)
+    snapToInterpolate(d);
+
+  // go downward, and convert interpolating to control points
+  for(int d = md-1; d >= 1; --d){
+
+    int n = (d == 2)? (m_order+1)*(m_order+2)/2 : m_order+1;
+    int ne = fs->countNodesOn(d);
+    apf::NewArray<Vector> l, b(ne);
+
+    apf::NewArray<double> c;
+    apf::getTransformationCoefficients(m_order,md,d,c);
+
+    Entity* e;
+    Iterator* it = m_mesh->begin(d);
+
+    while ((e = m_mesh->iterate(it))) {
+      Model* g = m_mesh->toModel(e);
+      // we'll set the points to be G1 continuous later on
+      if (m_mesh->getModelType(g) < md) continue;
+
+      // set extra internal points
+      if(d == 2 && m_order == 4){
+
+        apf::Element* elem =
+            apf::createElement(m_mesh->getCoordinateField(),e);
+        apf::getVectorNodes(elem,l);
+
+        for(int i = 0; i < ne; ++i)
+          b[i].zero();
+
+        for( int i = 0; i < 3; ++i)
+          for( int j = 0; j < n; ++j)
+            b[i] += l[j]*c[i*n+j];
+
+        int map[3] = {1,2,0};
+        for( int i = 3; i < 6; ++i)
+          for( int j = 0; j < n; ++j)
+            b[i] += l[j]*c[map[i-3]*n+j];
+
+        for(int i = 0; i < ne; ++i)
+          m_mesh->setPoint(e,i,b[i]);
+
+        apf::destroyElement(elem);
+      } else
+        convertInterpolationPoints(e,n,ne,c);
+
+    }
+    m_mesh->end(it);
+  }
+
+  if(m_order == 4){
+    setCubicEdgePointsUsingNormals();
+    setInternalPointsLocally();
+    elevateBezierCurves(m_mesh);
+  } else
+    setCubicEdgePointsUsingNormals();
+
+  m_mesh->acceptChanges();
+  m_mesh->verify();
   return true;
 }
 
 double interpolationError(Mesh* m, Entity* e, int n){
   Model* g = m->toModel(e);
   if (m->getModelType(g) == m->getDimension())
-	  return 0.;
+    return 0.;
   int d = apf::getDimension(m,e);
   int nj = (d == 2) ? n : 1;
   Vector pt,pa(0.,0.,0.),cpt,cpa;
@@ -390,9 +452,9 @@ double interpolationError(Mesh* m, Entity* e, int n){
     pa[1] = 1.*j/(nj-1.);
     for (int i = 0; i < n-j; ++i){
       if(d == 1)
-    	  pa[0] = 2.*i/(n-1)-1.0;
+        pa[0] = 2.*i/(n-1)-1.0;
       else
-    	  pa[0] = 1.*i/(nj-1.);
+        pa[0] = 1.*i/(nj-1.);
       apf::getVector(elem,pa,pt);
       m->getClosestPoint(g,pt,cpt,cpa);
       max = std::max((cpt-pt).getLength(),max);
@@ -414,8 +476,11 @@ void writePointSet(Mesh* m, int d, int n, const char* prefix)
   Vector pa,pt;
 
   while ((e = m->iterate(it))) {
+    Model* g = m->toModel(e);
+    if (m->getModelType(g) == m->getDimension() && d < 3) continue;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
+
     for (int k = 0; k < nk; ++k){
       pa[2] = 1.*k/nk;
       for (int j = 0; j < nj; ++j){
