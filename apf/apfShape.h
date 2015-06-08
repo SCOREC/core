@@ -130,6 +130,10 @@ FieldShape* getBezier(int dimension, int order);
 /** \brief Get the Gregory Surface of some order
  \details only fourth order right now*/
 FieldShape* getGregory(int order);
+
+/** \brief Sets the order of continuity for blending
+ \details kind of hacked, but easiest way*/
+void setCurvedBlendingOrder(double order);
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
 void getTransformationCoefficients(int order, int dim, int type,
