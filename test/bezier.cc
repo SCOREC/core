@@ -235,13 +235,13 @@ void testSize2D(apf::Mesh2* m)
 
 void test2D()
 {
-	for(int order = 1; order < 7; ++order){
+	for(int order = 1; order <= 6; ++order){
 		apf::Mesh2* m = createMesh2D();
 		ma::BezierCurver bc(m,order);
 		bc.run();
 
 		testInterpolatedPoints2D(m);
-		for(int blendOrder = 2; blendOrder <= 3; ++blendOrder){
+		for(int blendOrder = 2; blendOrder <= 6; ++blendOrder){
 			apf::setCurvedBlendingOrder(blendOrder);
 			testSize2D(m);
 		}
@@ -409,12 +409,14 @@ void test3D()
 			m->end(it);
 		}
 		m->acceptChanges();
-		for(int blendOrder = 2; blendOrder <= 3; ++blendOrder){
+		for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
 			apf::setCurvedBlendingOrder(blendOrder);
 
 			testSize3D(m);
-			test3DJacobian(m);
-			test3DJacobianTri(m);
+			if(blendOrder < 4){
+			  test3DJacobian(m);
+			  test3DJacobianTri(m);
+			}
 		}
 		m->destroyNative();
 		apf::destroyMesh(m);

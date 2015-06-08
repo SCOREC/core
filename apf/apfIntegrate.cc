@@ -442,7 +442,7 @@ class TetrahedronIntegration : public EntityIntegration
       static N5 i5;
       static N7 i7;
       static Integration* integrations[5] =
-      {&i1,&i2,&i3,&i5,&i7};
+      {&i1,&i2,&i3,&i7,&i7};
       return integrations[i];
     }
 };

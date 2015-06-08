@@ -10,7 +10,7 @@
 #include "apf.h"
 #include "apfMesh.h"
 #include "apfShape.h"
-#include <stdio.h>
+
 /* see bezier.tex */
 
 namespace apf {
@@ -52,7 +52,6 @@ static void BlendedTriangleGetValues(const int P, const int type,
   for(int i = 0; i < 3; ++i)
     values[i] = -pow(xii[i],curvedBlend);
   // zero the rest, the face node weight is always zero
-
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
     values[i] = 0.0;
 
@@ -128,6 +127,7 @@ static void BlendedTriangleGetLocalGradients(const int P, const int type,
         + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,curvedBlend-1.);
 
   }
+
 }
 
 static void BlendedTetrahedronGetValues(const int P, const int type,
@@ -575,7 +575,7 @@ public:
      0};                                          //pyramid
     return nodes[type];
   }
-  int getOrder() {return P;}
+  int getOrder() {return std::max(P,(int)curvedBlend);}
 };
 
 template <int P>
@@ -1173,7 +1173,7 @@ public:
     } else
       xi = Vector3(0,0,0);
    }
-  int getOrder() {return 4;}
+  int getOrder() {return std::max(4,(int)curvedBlend);}
 protected:
   std::string name;
 };
