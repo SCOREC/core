@@ -137,7 +137,7 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int) const
         {
           static IntegrationPoint point(
-              Vector3(0.333333333333333,0.333333333333333,0),1.0/2.0);
+              Vector3(1./3.,1./3.,0),1.0/2.0);
           return &point;
         }
         virtual int getAccuracy() const {return 1;}
@@ -149,9 +149,9 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int i) const
         {
           static IntegrationPoint points[3]=
-{ IntegrationPoint(Vector3(0.666666666666667,0.166666666666667,0),0.333333333333333/2.0),
-  IntegrationPoint(Vector3(0.166666666666667,0.666666666666667,0),0.333333333333333/2.0),
-  IntegrationPoint(Vector3(0.166666666666667,0.166666666666667,0),0.333333333333333/2.0), };
+{ IntegrationPoint(Vector3(0.666666666666667,0.166666666666667,0),1./3./2.0),
+  IntegrationPoint(Vector3(0.166666666666667,0.666666666666667,0),1./3./2.0),
+  IntegrationPoint(Vector3(0.166666666666667,0.166666666666667,0),1./3./2.0), };
           return points+i;
         }
         virtual int getAccuracy() const {return 2;}
@@ -163,7 +163,7 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int i) const
         {
           static IntegrationPoint points[4]=
-{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),-0.562500000000000/2.0),
+{ IntegrationPoint(Vector3(1./3.,1./3.,0),-0.562500000000000/2.0),
   IntegrationPoint(Vector3(0.600000000000000,0.200000000000000,0), 0.520833333333333/2.0),
   IntegrationPoint(Vector3(0.200000000000000,0.600000000000000,0), 0.520833333333333/2.0),
   IntegrationPoint(Vector3(0.200000000000000,0.200000000000000,0), 0.520833333333333/2.0) };
@@ -195,7 +195,7 @@ class TriangleIntegration : public EntityIntegration
         virtual IntegrationPoint const* getPoint(int i) const
         {
           static IntegrationPoint points[7]=
-{ IntegrationPoint(Vector3(0.333333333333333,0.333333333333333,0),0.225000000000000/2.0),
+{ IntegrationPoint(Vector3(1./3.,1./3.,0),0.225000000000000/2.0),
   IntegrationPoint(Vector3(0.797426985353087,0.101286507323456,0),0.125939180544827/2.0),
   IntegrationPoint(Vector3(0.101286507323456,0.797426985353087,0),0.125939180544827/2.0),
   IntegrationPoint(Vector3(0.101286507323456,0.101286507323456,0),0.125939180544827/2.0),
@@ -334,7 +334,7 @@ class TetrahedronIntegration : public EntityIntegration
 { IntegrationPoint(Vector3(0.138196601125011,0.138196601125011,0.138196601125011),0.25/6.0), 
   IntegrationPoint(Vector3(0.585410196624969,0.138196601125011,0.138196601125011),0.25/6.0),
   IntegrationPoint(Vector3(0.138196601125011,0.585410196624969,0.138196601125011),0.25/6.0),
-  IntegrationPoint(Vector3(0.138196601125011,0.138196601125011,0.585410196624969),0.25/6.0) };
+  IntegrationPoint(Vector3(0.138196601125011,0.138196601125011,0.585410196624969),0.25/6.0)};
           return points+i;
         }
         virtual int getAccuracy() const {return 2;}
@@ -355,33 +355,88 @@ class TetrahedronIntegration : public EntityIntegration
         }
         virtual int getAccuracy() const {return 3;}
     };
+    class N4 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 11;}
+        virtual IntegrationPoint const* getPoint(int i) const
+        {
+          static IntegrationPoint points[11]=
+{ IntegrationPoint(Vector3(0.25,0.25,0.25),-0.0131555555555556),
+  IntegrationPoint(Vector3(0.785714285714286,0.0714285714285714,0.0714285714285714),0.00762222222222222),
+  IntegrationPoint(Vector3(0.0714285714285714,0.0714285714285714,0.0714285714285714),0.00762222222222222),
+  IntegrationPoint(Vector3(0.0714285714285714,0.0714285714285714,0.785714285714286),0.00762222222222222),
+  IntegrationPoint(Vector3(0.0714285714285714,0.785714285714286,0.0714285714285714),0.00762222222222222),
+  IntegrationPoint(Vector3(0.100596423833201,0.399403576166799,0.399403576166799),0.0248888888888889),
+  IntegrationPoint(Vector3(0.399403576166799,0.100596423833201,0.399403576166799),0.0248888888888889),
+  IntegrationPoint(Vector3(0.399403576166799,0.399403576166799,0.100596423833201),0.0248888888888889),
+  IntegrationPoint(Vector3(0.399403576166799,0.100596423833201,0.100596423833201),0.0248888888888889),
+  IntegrationPoint(Vector3(0.100596423833201,0.399403576166799,0.100596423833201),0.0248888888888889),
+  IntegrationPoint(Vector3(0.100596423833201,0.100596423833201,0.399403576166799),0.0248888888888889)};
+          return points+i;
+        }
+        virtual int getAccuracy() const {return 4;}
+    };
     class N5 : public Integration
     {
       public:
         virtual int countPoints() const {return 15;}
         virtual IntegrationPoint const* getPoint(int i) const
         {
-          double w1 = 16./315.;
-          double w2 = -27./280.;
           static IntegrationPoint points[15]=
-{ IntegrationPoint(Vector3(1./8., 1./8., 1./8.),w1),
-  IntegrationPoint(Vector3(3./8., 1./8., 1./8.),w1),
-  IntegrationPoint(Vector3(5./8., 1./8., 1./8.),w1),
-  IntegrationPoint(Vector3(1./8., 3./8., 1./8.),w1),
-  IntegrationPoint(Vector3(1./8., 1./8., 3./8.),w1), //5
-  IntegrationPoint(Vector3(1./8., 5./8., 1./8.),w1),
-  IntegrationPoint(Vector3(1./8., 1./8., 3./8.),w1),
-  IntegrationPoint(Vector3(3./8., 1./8., 3./8.),w1),
-  IntegrationPoint(Vector3(1./8., 3./8., 3./8.),w1),
-  IntegrationPoint(Vector3(1./8., 1./8., 5./8.),w1), //10
-  IntegrationPoint(Vector3(1./6., 1./6., 1./6.),w2),
-  IntegrationPoint(Vector3(1./6., 1./6., 1./2.),w2),
-  IntegrationPoint(Vector3(1./6., 1./2., 1./6.),w2),
-  IntegrationPoint(Vector3(1./2., 1./6., 1./6.),w2),
-  IntegrationPoint(Vector3(1./4., 1./4., 1./4.),2./45.) };
+{ IntegrationPoint(Vector3(0.25,0.25,0.25),0.0302836780970892),
+  IntegrationPoint(Vector3(0,1./3.,1./3.),0.00602678571428572),
+  IntegrationPoint(Vector3(1./3.,1./3.,1./3.),0.00602678571428572),
+  IntegrationPoint(Vector3(1./3.,1./3.,0),0.00602678571428572),
+  IntegrationPoint(Vector3(1./3.,0,1./3.),0.00602678571428572),
+  IntegrationPoint(Vector3(8./11.,1./11.,1./11.),0.011645249086029),
+  IntegrationPoint(Vector3(1./11.,1./11.,1./11.),0.011645249086029),
+  IntegrationPoint(Vector3(1./11.,1./11.,8./11.),0.011645249086029),
+  IntegrationPoint(Vector3(1./11.,8./11.,1./11.),0.011645249086029),
+  IntegrationPoint(Vector3(0.433449846426336,0.0665501535736643,0.0665501535736643),0.0109491415613865),
+  IntegrationPoint(Vector3(0.0665501535736643,0.433449846426336,0.0665501535736643),0.0109491415613865),
+  IntegrationPoint(Vector3(0.0665501535736643,0.0665501535736643,0.433449846426336),0.0109491415613865),
+  IntegrationPoint(Vector3(0.0665501535736643,0.433449846426336,0.433449846426336),0.0109491415613865),
+  IntegrationPoint(Vector3(0.433449846426336,0.0665501535736643,0.433449846426336),0.0109491415613865),
+  IntegrationPoint(Vector3(0.433449846426336,0.433449846426336,0.0665501535736643),0.0109491415613865)};
           return points+i;
         }
         virtual int getAccuracy() const {return 5;}
+    };
+    class N6 : public Integration
+    {
+      public:
+        virtual int countPoints() const {return 24;}
+        virtual IntegrationPoint const* getPoint(int i) const
+        {
+          static IntegrationPoint points[24]=
+{IntegrationPoint(Vector3(0.356191386222545,0.214602871259152,0.214602871259152),0.00665379170969465),
+  IntegrationPoint(Vector3(0.214602871259152,0.214602871259152,0.214602871259152),0.00665379170969465),
+  IntegrationPoint(Vector3(0.214602871259152,0.214602871259152,0.356191386222545),0.00665379170969465),
+  IntegrationPoint(Vector3(0.214602871259152,0.356191386222545,0.214602871259152),0.00665379170969465),
+  IntegrationPoint(Vector3(0.877978124396166,0.0406739585346113,0.0406739585346113),0.00167953517588678),
+  IntegrationPoint(Vector3(0.0406739585346113,0.0406739585346113,0.0406739585346113),0.00167953517588678),
+  IntegrationPoint(Vector3(0.0406739585346113,0.0406739585346113,0.877978124396166),0.00167953517588678),
+  IntegrationPoint(Vector3(0.0406739585346113,0.877978124396166,0.0406739585346113),0.00167953517588678),
+  IntegrationPoint(Vector3(0.0329863295731731,0.322337890142276,0.322337890142276),0.0092261969239424),
+  IntegrationPoint(Vector3(0.322337890142276,0.322337890142276,0.322337890142276),0.0092261969239424),
+  IntegrationPoint(Vector3(0.322337890142276,0.322337890142276,0.0329863295731731),0.0092261969239424),
+  IntegrationPoint(Vector3(0.322337890142276,0.0329863295731731,0.322337890142276),0.0092261969239424),
+  IntegrationPoint(Vector3(0.269672331458316,0.0636610018750175,0.0636610018750175),0.00803571428571428),
+  IntegrationPoint(Vector3(0.0636610018750175,0.269672331458316,0.0636610018750175),0.00803571428571428),
+  IntegrationPoint(Vector3(0.0636610018750175,0.0636610018750175,0.269672331458316),0.00803571428571428),
+  IntegrationPoint(Vector3(0.603005664791649,0.0636610018750175,0.0636610018750175),0.00803571428571428),
+  IntegrationPoint(Vector3(0.0636610018750175,0.603005664791649,0.0636610018750175),0.00803571428571428),
+  IntegrationPoint(Vector3(0.0636610018750175,0.0636610018750175,0.603005664791649),0.00803571428571428),
+  IntegrationPoint(Vector3(0.0636610018750175,0.269672331458316,0.603005664791649),0.00803571428571428),
+  IntegrationPoint(Vector3(0.269672331458316,0.603005664791649,0.0636610018750175),0.00803571428571428),
+  IntegrationPoint(Vector3(0.603005664791649,0.0636610018750175,0.269672331458316),0.00803571428571428),
+  IntegrationPoint(Vector3(0.0636610018750175,0.603005664791649,0.269672331458316),0.00803571428571428),
+  IntegrationPoint(Vector3(0.269672331458316,0.0636610018750175,0.603005664791649),0.00803571428571428),
+  IntegrationPoint(Vector3(0.603005664791649,0.269672331458316,0.0636610018750175),0.00803571428571428)};
+          return points+i;
+        }
+        virtual int getAccuracy() const {return 6;}
     };
     class N7 : public Integration
     {
@@ -433,16 +488,18 @@ class TetrahedronIntegration : public EntityIntegration
         }
         virtual int getAccuracy() const {return 7;}
     };
-    virtual int countIntegrations() const {return 5;}
+    virtual int countIntegrations() const {return 7;}
     virtual Integration const* getIntegration(int i) const
     {
       static N1 i1;
       static N2 i2;
       static N3 i3;
+      static N4 i4;
       static N5 i5;
+      static N6 i6;
       static N7 i7;
-      static Integration* integrations[5] =
-      {&i1,&i2,&i3,&i7,&i7};
+      static Integration* integrations[7] =
+      {&i1,&i2,&i3,&i4,&i5,&i6,&i7};
       return integrations[i];
     }
 };
