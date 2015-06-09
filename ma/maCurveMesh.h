@@ -12,6 +12,7 @@
 #define MACURVEMESH_H
 
 #include "maMesh.h"
+#include "apfShape.h"
 
 namespace ma {
 
@@ -34,6 +35,9 @@ class MeshCurver
     /** \brief converts interpolating points to control points */
     void convertInterpolationPoints(Entity* e, int n, int ne,
       apf::NewArray<double>& c);
+
+    /** \brief sets blending order */
+    void setBlendingOrder(double order){ apf::setCurvedBlendingOrder(order); }
 
     Mesh* m_mesh;
     int m_order;
