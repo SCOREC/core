@@ -22,12 +22,48 @@ namespace {
         double planW = 0;
         for(int max=2; max <= 12; max+=2)
           planW += select(tgts, plan, planW, max);
-        parma::Mid* capacity = trim(tgts,plan);
-        cancel(&plan, capacity);
+        //parma::Mid* capacity = trim(tgts,plan);
+        //cancel(&plan, capacity);
         return plan;
       }
 
     protected:
+      // if all the elements bounded by an edge are in the plan then it is being
+      // sent and its weight is counted
+      bool sent(apf::Migration* plan, apf::MeshEntity* e) {
+        apf::Adjacent elms;
+        mesh->getAdjacent(e, mesh->getDimension(), elms);
+        APF_ITERATE(apf::Adjacent, elms, elm)
+          if( ! plan->has(*elm) )
+            return false;
+        return true;
+      }
+
+      double cavityWeight(apf::Migration* plan, SetEnt& s) {
+        double w = 0;
+        APF_ITERATE(SetEnt, s, sItr)
+          if( sent(plan,*sItr) )
+            w += getWeight(*sItr);
+        return w;
+      }
+
+      void addCavityEdge(apf::MeshEntity* e, SetEnt& s) {
+        apf::Adjacent adjEdge;
+        mesh->getAdjacent(e, 1, adjEdge);
+        APF_ITERATE(apf::Adjacent, adjEdge, adjItr)
+          s.insert(*adjItr);
+      }
+
+      virtual double add(apf::MeshEntity*, apf::Up& cavity, const int destPid,
+          apf::Migration* plan) {
+        SetEnt s;
+        for(int i=0; i < cavity.n; i++) {
+          addCavityEdge(cavity.e[i], s);
+          plan->send(cavity.e[i], destPid);
+        }
+        return cavityWeight(plan, s);
+      }
+
       void insertInteriorVerts(apf::MeshEntity* e, int dest, SetEnt& s) {
         apf::Adjacent adjVtx;
         mesh->getAdjacent(e, 0, adjVtx);
@@ -140,17 +176,6 @@ namespace {
           (*capacity)[PCU_Comm_Sender()] = outw;
         }
         return capacity;
-      }
-
-      virtual double add(apf::MeshEntity*, apf::Up& cavity,
-          const int destPid, apf::Migration* plan) {
-        SetEnt cav;
-        double w = 0;
-        for(int i=0; i < cavity.n; i++) {
-          plan->send(cavity.e[i], destPid);
-          w += getWeight(cavity.e[i]);
-        }
-        return w;
       }
   };
 }//end namespace
