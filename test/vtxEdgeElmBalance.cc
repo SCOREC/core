@@ -15,6 +15,8 @@ namespace {
   }
 
   apf::MeshTag* setWeights(apf::Mesh* m, double edgeWeight) {
+    edgeWeight = (!PCU_Comm_Self()) ? edgeWeight : 1.0;
+    fprintf(stderr, "STATUS %d edgeWeight %.3f\n", PCU_Comm_Self(), edgeWeight);
     apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
     setWeight(m, tag, 0);
     setWeight(m, tag, 1, edgeWeight);
