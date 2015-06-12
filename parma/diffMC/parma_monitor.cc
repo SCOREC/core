@@ -1,6 +1,7 @@
 #include "parma_monitor.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <PCU.h>
 namespace {
   const unsigned int order = 2;
   const double c[]={-3./2, 2., -1./2}; // 2nd order
@@ -34,7 +35,10 @@ namespace parma {
     assert( full() );
     double s = 0;
     for(unsigned int i=0; i<length(); i++)
+      PCU_Debug_Print("Slope i %d get %f c %f\n", s);
+    for(unsigned int i=0; i<length(); i++)
       s += c[i]*get(i);
+    PCU_Debug_Print("Slope s %f\n", s);
     return s;
   }
   Average::Average(unsigned int l) : CircBuffer(l) {}
@@ -42,6 +46,7 @@ namespace parma {
     double a = 0;
     for(unsigned int i=0; i<size(); i++)
       a += get(i);
+    PCU_Debug_Print("Average a %f size %d\n", a, size());
     return a /= size();
   }
 }
