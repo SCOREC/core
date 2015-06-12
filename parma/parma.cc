@@ -4,6 +4,8 @@
 #include <parma_dcpart.h>
 #include <limits>
 #include <assert.h>
+#include <sstream>
+#include <string>
 
 #define TO_SIZET(a) static_cast<size_t>(a)
 #define TO_INT(a) static_cast<int>(a)
@@ -56,10 +58,31 @@ namespace {
     avg = static_cast<double>(tot);
     avg /= TO_DBL(PCU_Comm_Peers());
   }
-  void entStats(apf::Mesh* m, int dim, 
+  void entStats(apf::Mesh* m, int dim,
       long& tot, int& min, int& max, double& avg) {
     int loc = TO_INT(m->count(dim));
     getStats(loc, tot, min, max, avg);
+  }
+  void writeFineStats(apf::Mesh* m, std::string key,
+      int locDc, int locNb, int* locV, int surf, double vol) {
+    const char* entNames[4] = {"vtx", "edge", "face", "rgn"};
+    const int dim = m->getDimension();
+    std::stringstream ss;
+    ss << "FINE STATUS " << key << "<Partid ";
+    for(int d=0; d<=dim; d++)
+      ss << entNames[d] << ' ';
+    ss << "dc nb owned_bdry shared_bdry model_bdry shSidesToElm > "
+       << PCU_Comm_Self()+1  << ' ';
+    for(int d=0; d<=dim; d++)
+      ss << m->count(d) << ' ';
+    ss << m->count(m->getDimension())  << ' '
+       << locDc  << ' '
+       << locNb  << ' '
+       << locV[0]  << ' ' <<  locV[1]  << ' ' <<  locV[2]  << ' '
+       << surf/TO_DBL(vol);
+    std::string s = ss.str();
+    fprintf(stderr, "%s\n", s.c_str());
+    PCU_Barrier();
   }
 }
 
@@ -201,14 +224,8 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   double imb[4] = {0, 0, 0, 0};
   Parma_GetEntImbalance(m, &imb);
 
-  if (fine) {
-    fprintf(stdout, "FINE STATUS %s <Partid vtx rgn dc nb "
-                    "owned_bdry shared_bdry model_bdry shSidesToElm > "
-                    " %d %lu %lu %d %d %d %d %d %.3f\n",
-      key.c_str(), PCU_Comm_Self()+1, m->count(0), m->count(m->getDimension()),
-      locDc, locNb, locV[0], locV[1], locV[2], surf/TO_DBL(vol));
-    PCU_Barrier();
-  }
+  if (fine)
+    writeFineStats(m, key, locDc, locNb, locV, surf, vol);
 
   PCU_Debug_Print("%s vtxAdjacentNeighbors ", key.c_str());
   apf::Parts peers;
