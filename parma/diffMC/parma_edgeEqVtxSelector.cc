@@ -22,8 +22,8 @@ namespace {
         double planW = 0;
         for(int max=2; max <= 12; max+=2)
           planW += select(tgts, plan, planW, max);
-        //parma::Mid* capacity = trim(tgts,plan);
-        //cancel(&plan, capacity);
+        parma::Mid* capacity = trim(tgts,plan);
+        cancel(&plan, capacity);
         return plan;
       }
 

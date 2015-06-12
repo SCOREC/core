@@ -71,6 +71,10 @@ namespace {
         delete b;
 
         double maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
+        // try the following - how to get tgtVtxImb into this fn???
+        //double tgtMaxVtxW = parma::getAvgWeight*TgtVtxImb
+        //if ( maxVtxW < tgtMaxVtxW ) 
+        //  maxVtxW = tgtMaxVtxW;
         b = new VtxEdgeBalancer(mesh, factor, maxVtxW, verbose);
         b->balance(wtag, tolerance);
         Parma_PrintPtnStats(mesh, "post edges");
