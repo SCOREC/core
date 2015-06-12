@@ -42,7 +42,7 @@ namespace {
             parma::makeEntWeights(mesh, wtag, s, 1)};
         parma::Targets* t =
           parma::makeVtxEdgeTargets(s, w, sideTol, maxVtx, factor);
-        parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
+        parma::Selector* sel = parma::makeEdgeEqVtxSelector(mesh, wtag, maxVtx);
 
         monitorUpdate(maxEdgeImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);

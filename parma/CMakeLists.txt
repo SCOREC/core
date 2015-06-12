@@ -33,6 +33,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_elmSideSides.cc
+  diffMC/parma_edgeEqVtxSelector.cc
   diffMC/parma_elmLtVtxSelector.cc
   diffMC/parma_elmLtVtxEdgeSelector.cc
   diffMC/parma_elmSelector.cc
