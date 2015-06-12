@@ -67,18 +67,21 @@ namespace {
         apf::Balancer* b = Parma_MakeVtxBalancer(mesh, factor, verbose);
         b->balance(wtag, tolerance);
         Parma_PrintPtnStats(mesh, "post vertices");
+        Parma_PrintWeightedPtnStats(mesh, wtag, "post vertices");
         delete b;
 
         double maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
         b = new VtxEdgeBalancer(mesh, factor, maxVtxW, verbose);
         b->balance(wtag, tolerance);
         Parma_PrintPtnStats(mesh, "post edges");
+        Parma_PrintWeightedPtnStats(mesh, wtag, "post edges");
         delete b;
 
         maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
         b = Parma_MakeElmLtVtxBalancer(mesh, maxVtxW, factor, verbose);
         b->balance(wtag, tolerance);
         Parma_PrintPtnStats(mesh, "post elements");
+        Parma_PrintWeightedPtnStats(mesh, wtag, "post elements");
         delete b;
       }
   };
