@@ -100,6 +100,26 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
       (*entImb)[i] = 1.0;
 }
 
+void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
+    double (*entImb)[4]) {
+   double tot[4] = {0,0,0,0};
+   size_t dims = TO_SIZET(mesh->getDimension()) + 1;
+   for(size_t i=0; i < dims; i++) {
+     apf::MeshIterator* it = mesh->begin(i);
+     apf::MeshEntity* e;
+     while ((e = mesh->iterate(it)))
+       tot[i] += getEntWeight(mesh, e, w);
+     (*entImb)[i] = tot[i];
+     mesh->end(it);
+   }
+   PCU_Add_Doubles(tot, dims);
+   PCU_Max_Doubles(*entImb, dims);
+   for(size_t i=0; i < dims; i++)
+      (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
+   for(size_t i=dims; i < 4; i++)
+      (*entImb)[i] = 1.0;
+}
+
 double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
     int dim) {
     assert(dim >= 0 && dim <= 3);
@@ -171,6 +191,14 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
   dcPartFixer dcf(m);
+}
+
+void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key) {
+  double imb[4];
+  Parma_GetWeightedEntImbalance(m,w,&imb);
+  if( !PCU_Comm_Self() )
+    fprintf(stdout, "STATUS %s weighted entity imbalance <v e f r>: "
+        "%.2f %.2f %.2f %.2f\n", key.c_str(), imb[0], imb[1], imb[2], imb[3]);
 }
 
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
