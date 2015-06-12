@@ -78,7 +78,8 @@ namespace {
         delete b;
 
         maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
-        b = Parma_MakeElmLtVtxBalancer(mesh, maxVtxW, factor, verbose);
+        double maxEdgeW = parma::getMaxWeight(mesh, wtag, 1);
+        b = parma::makeElmLtVtxEdgeBalancer(mesh, maxVtxW, maxEdgeW, factor, verbose);
         b->balance(wtag, tolerance);
         Parma_PrintPtnStats(mesh, "post elements");
         Parma_PrintWeightedPtnStats(mesh, wtag, "post elements");

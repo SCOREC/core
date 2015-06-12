@@ -20,6 +20,7 @@ namespace parma {
   Selector* makeEdgeSelector(apf::Mesh* m, apf::MeshTag* w);
   Selector* makeElmSelector(apf::Mesh* m, apf::MeshTag* w);
   Selector* makeElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxVtx);
+  Selector* makeElmLtVtxEdgeSelector(apf::Mesh* m, apf::MeshTag* w, double maxVtx, double maxEdge);
   class Centroids;
   Selector* makeCentroidSelector(apf::Mesh* m, apf::MeshTag* w, Centroids* c);
   Selector* makeShapeSelector(apf::Mesh* m, apf::MeshTag* w, Centroids* c);
