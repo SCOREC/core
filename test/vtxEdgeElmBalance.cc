@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   Parma_PrintWeightedPtnStats(m, weights, "initial");
   const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
-  balancer->balance(weights, 1.03);
+  balancer->balance(weights, 1.10);
   delete balancer;
   Parma_PrintPtnStats(m, "final", true);
   Parma_PrintWeightedPtnStats(m, weights, "final");
