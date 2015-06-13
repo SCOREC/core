@@ -18,6 +18,7 @@ namespace parma {
       int layers, int bridge);
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w);
   double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
+  double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
 }
 
