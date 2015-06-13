@@ -9,7 +9,7 @@ namespace {
   void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim, double w=1.0) {
     apf::MeshEntity* e;
     apf::MeshIterator* it = m->begin(dim);
-    while ((e = m->iterate(it))) 
+    while ((e = m->iterate(it)))
       m->setDoubleTag(e, tag, &w);
     m->end(it);
   }
@@ -33,25 +33,28 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  assert(argc == 5);
+  assert(argc == 6);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   PCU_Debug_Open();
-  if ( argc != 5 ) {
+  if ( argc != 6 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <out mesh> <edge weight>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <out mesh> <edge weight> <tgt imb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
   //load model and mesh
+  double targetImb = atof(argv[5]);
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   Parma_PrintPtnStats(m, "initial", true);
   apf::MeshTag* weights = setWeights(m,atof(argv[4]));
   Parma_PrintWeightedPtnStats(m, weights, "initial");
   const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
-  balancer->balance(weights, 1.10);
+  if( !PCU_Comm_Self() )
+    fprintf(stderr, "STATUS target imbalance %.2f\n", targetImb);
+  balancer->balance(weights, targetImb);
   delete balancer;
   Parma_PrintPtnStats(m, "final", true);
   Parma_PrintWeightedPtnStats(m, weights, "final");
