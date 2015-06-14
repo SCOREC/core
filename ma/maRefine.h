@@ -24,7 +24,6 @@ class Refine
     ~Refine();
     Adapt* adapt;
     Tag* numberTag;
-    Tag* vertPlaceTag;
     EntityArray toSplit[4];
     apf::DynamicArray<EntityArray> newEntities[4];
     bool shouldCollect[4];
@@ -41,7 +40,6 @@ void collectForMatching(Refine* r);
 void transferElements(Refine* r);
 void forgetNewEntities(Refine* r);
 void destroySplitElements(Refine* r);
-void cleanSplitVerts(Refine* r);
 
 void splitElements(Refine* r);
 void processNewElements(Refine* r);

@@ -117,14 +117,12 @@ Refine::Refine(Adapt* a)
   adapt = a;
   Mesh* m = a->mesh;
   numberTag = m->createIntTag("ma_refine_number",1);
-  vertPlaceTag = m->createDoubleTag("ma_refine_xi",1);
 }
 
 Refine::~Refine()
 {
   Mesh* m = adapt->mesh;
   m->destroyTag(numberTag);
-  m->destroyTag(vertPlaceTag);
 }
 
 Entity* makeSplitVert(Refine* r, Entity* edge)
@@ -134,17 +132,15 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   Model* c = m->toModel(edge);
   SizeField* sf = a->sizeField;
   SolutionTransfer* st = a->solutionTransfer;
-  double place = sf->placeSplit(edge);
-/* placeSplit is [0,1], edge xi is [-1,1] */
-  Vector xi(place*2-1,0,0);
+/* midpoint of [-1,1] */
+  Vector xi(0,0,0);
   apf::MeshElement* me = apf::createMeshElement(m,edge);
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
-    transferParametricOnEdgeSplit(m,edge,place,param);
+    transferParametricOnEdgeSplit(m,edge,0.5,param);
   Entity* vert = buildVertex(a,c,point,param);
-  m->setDoubleTag(vert,r->vertPlaceTag,&(place));
   st->onVertex(me,xi,vert);
   sf->interpolate(me,xi,vert);
   apf::destroyMeshElement(me);
@@ -187,20 +183,6 @@ Entity* findSplitVert(Refine* r, Entity* v0, Entity* v1)
   v[0] = v0; v[1] = v1;
   Entity* edge = findUpward(r->adapt->mesh,EDGE,v);
   return findSplitVert(r,edge);
-}
-
-Entity* findPlacedSplitVert(Refine* r, Entity* v0, Entity* v1, double& place)
-{
-  Entity* v[2];
-  v[0] = v0; v[1] = v1;
-  Mesh* m = r->adapt->mesh;
-  Entity* edge = findUpward(m,EDGE,v);
-  Entity* vert = findSplitVert(r,edge);
-  m->getDoubleTag(vert,r->vertPlaceTag,&place);
-  int i = getDownIndex(m,edge,v0);
-/* flip xi so it goes v0 -> v1 */
-  if (i!=0) place = 1-place;
-  return vert;
 }
 
 static int getEdgeSplitCode(Adapt* a, Entity* e)
@@ -386,15 +368,6 @@ void destroySplitElements(Refine* r)
     r->toSplit[d].setSize(0);
 }
 
-void cleanSplitVerts(Refine* r)
-{
-  Mesh* m = r->adapt->mesh;
-  Tag* tag = r->vertPlaceTag;
-/* only new mid-edge vertices have the placement tag */
-  for (size_t i=0; i < r->newEntities[1].getSize(); ++i)
-    m->removeTag(findSplitVert(r,1,i),tag);
-}
-
 struct ShouldSplit : public Predicate
 {
   ShouldSplit(Adapt* a_):a(a_) {}
@@ -425,7 +398,6 @@ void processNewElements(Refine* r)
 
 void cleanupAfter(Refine* r)
 {
-  cleanSplitVerts(r);
   forgetNewEntities(r);
 }
 
@@ -449,7 +421,6 @@ bool refine(Adapt* a)
   splitElements(r);
   processNewElements(r);
   destroySplitElements(r);
-  cleanSplitVerts(r);
   forgetNewEntities(r);
   double t1 = PCU_Time();
   print("refined %li edges in %f seconds",count,t1-t0);

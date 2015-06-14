@@ -80,7 +80,6 @@ void Splits::transfer()
 void Splits::destroyOldElements()
 {
   destroySplitElements(refiner);
-  cleanSplitVerts(refiner);
   forgetNewEntities(refiner);
 }
 

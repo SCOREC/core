@@ -34,14 +34,11 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
   Entity* sv[4];
-  double places[4];
-  sv[0] = findPlacedSplitVert(r,v[0],v[1],places[0]);
-  sv[1] = findPlacedSplitVert(r,v[1],v[2],places[1]);
-  sv[2] = findPlacedSplitVert(r,v[3],v[2],places[2]);
-  sv[3] = findPlacedSplitVert(r,v[0],v[3],places[3]);
-  double x = (places[0] + places[2])/2;
-  double y = (places[1] + places[3])/2;
-  Vector xi(x*2-1,y*2-1,0);
+  sv[0] = findSplitVert(r,v[0],v[1]);
+  sv[1] = findSplitVert(r,v[1],v[2]);
+  sv[2] = findSplitVert(r,v[3],v[2]);
+  sv[3] = findSplitVert(r,v[0],v[3]);
+  Vector xi(0,0,0);
 /* since no rotation should have been applied, we actually don't
    need to unrotate xi */
   apf::MeshElement* me = apf::createMeshElement(m,q);
@@ -49,7 +46,7 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
   apf::mapLocalToGlobal(me,xi,point);
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
-    transferParametricOnQuadSplit(m, q, sv[0] ,sv[2], y, param);
+    transferParametricOnQuadSplit(m, q, sv[0] ,sv[2], 0.5, param);
   Entity* cv = buildVertex(a, m->toModel(q), point, param);
   a->solutionTransfer->onVertex(me,xi,cv);
   a->sizeField->interpolate(me,xi,cv);
