@@ -369,29 +369,18 @@ Vector getSplitXi(double place, int v0, int v1)
 }
 
 Vector splitTet_3_4_getCentroidXi(
-    Mesh* m,
-    Entity* tet,
-    Entity** tv,
-    double* places,
+    Mesh*,
+    Entity*,
+    Entity**,
     Entity**)
 {
-  Vector xi(0,0,0);
-  for (int i=0; i < 3; ++i)
-    xi = xi + getSplitXi(places[i],3,i);
-  xi = xi + Vector(0,0,0); //vertex 0
-  xi = xi + Vector(1,0,0); //vertex 1
-  xi = xi + Vector(0,1,0); //vertex 2
-  xi = xi/6; //average the 6 xi coordinates of prism vertices
-  int rotation = findTetRotation(m,tet,tv);
-  unrotateTetXi(xi,rotation);
-  return xi;
+  return Vector(1./4.,1./4.,1./4.); // happens to be overall tet centroid
 }
 
 typedef Vector (*GetCentroidFunction)(
     Mesh* m,
     Entity* tet,
     Entity** tv,
-    double* places,
     Entity** pv);
 
 /* This functions takes care of the extra work needed to handle
@@ -403,7 +392,6 @@ bool splitTet_prismToTets(
     Refine* r,
     Entity* tet,
     Entity** tv,
-    double* places,
     Entity** pv,
     GetCentroidFunction getCentroidXi)
 {
@@ -415,7 +403,7 @@ bool splitTet_prismToTets(
     prismToTetsGoodCase(r,tet,pv,code);
     return true;
   }
-  Vector xi = getCentroidXi(m,tet,tv,places,pv);
+  Vector xi = getCentroidXi(m, tet, tv, pv);
   apf::MeshElement* me = apf::createMeshElement(m,tet);
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
@@ -432,9 +420,8 @@ bool splitTet_prismToTets(
 void splitTet_3_4(Refine* r, Entity* tet, Entity** v)
 {
   Entity* sv[3];
-  double places[3];
   for (int i=0; i < 3; ++i)
-    sv[i] = findPlacedSplitVert(r,v[3],v[i],places[i]);
+    sv[i] = findSplitVert(r,v[3],v[i]);
   Entity* tv[4];
   tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = sv[2]; tv[3] = v[3];
   buildSplitElement(r,tet,TET,tv);
@@ -444,8 +431,7 @@ void splitTet_3_4(Refine* r, Entity* tet, Entity** v)
     pv[i+3] = sv[i];
     pv[i]   =  v[i];
   }
-  splitTet_prismToTets(r,tet,v,places,pv,
-      splitTet_3_4_getCentroidXi);
+  splitTet_prismToTets(r,tet,v,pv,splitTet_3_4_getCentroidXi);
 }
 
 /* four split edges, three on one face.
@@ -477,15 +463,13 @@ Vector splitTet_4_2_getCentroidXi(
     Mesh* m,
     Entity* tet,
     Entity** tv,
-    double* places,
     Entity** pv)
 {
-  Vector xi(0,0,0);
+  /* the sum of the four mid-quad vertex coordinates.
+     their average is the center and there are 4 of them */
+  Vector xi(1./4.,1./4.,1./4.); /* center of a tet */
+  xi = xi * 4.;
 /* make sure all this matches what is in splitTet_4_2 */
-  xi = xi + getSplitXi(places[0],0,2);
-  xi = xi + getSplitXi(places[1],1,2);
-  xi = xi + getSplitXi(places[2],1,3);
-  xi = xi + getSplitXi(places[3],0,3);
   int whichPrism = (pv[2]==tv[2]) ? (0) : (1);
   if (whichPrism == 0)
   {
@@ -530,11 +514,10 @@ int getPrismDiagonalChoices(Mesh* m, Entity** v)
 void splitTet_4_2(Refine* r, Entity* tet, Entity** v)
 {
   Entity* sv[4];
-  double places[4];
-  sv[0] = findPlacedSplitVert(r,v[0],v[2],places[0]);
-  sv[1] = findPlacedSplitVert(r,v[1],v[2],places[1]);
-  sv[2] = findPlacedSplitVert(r,v[1],v[3],places[2]);
-  sv[3] = findPlacedSplitVert(r,v[0],v[3],places[3]);
+  sv[0] = findSplitVert(r,v[0],v[2]);
+  sv[1] = findSplitVert(r,v[1],v[2]);
+  sv[2] = findSplitVert(r,v[1],v[3]);
+  sv[3] = findSplitVert(r,v[0],v[3]);
   Entity* p0[6];
   p0[0] = sv[0]; p0[1] = sv[1]; p0[2] = v[2];
   p0[3] = sv[3]; p0[4] = sv[2]; p0[5] = v[3];
@@ -550,11 +533,9 @@ void splitTet_4_2(Refine* r, Entity* tet, Entity** v)
 // if no diagonals are ok, someone will lose
   int diag = quadToTrisRestricted(r,tet,sv,ok);
   bool wasOk;
-  wasOk = splitTet_prismToTets(r,tet,v,places,p0,
-      splitTet_4_2_getCentroidXi);
+  wasOk = splitTet_prismToTets(r,tet,v,p0,splitTet_4_2_getCentroidXi);
   assert(wasOk == static_cast<bool>(ok0 & (1<<diag)));
-  wasOk = splitTet_prismToTets(r,tet,v,places,p1,
-      splitTet_4_2_getCentroidXi);
+  wasOk = splitTet_prismToTets(r,tet,v,p1,splitTet_4_2_getCentroidXi);
   assert(wasOk == static_cast<bool>(ok1 & (1<<diag)));
 }
 
