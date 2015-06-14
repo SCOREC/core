@@ -37,6 +37,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   PCU_Debug_Open();
+  PCU_Comm_Order(true);
   if ( argc != 6 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <out mesh> <edge weight> <tgt imb>\n", argv[0]);
