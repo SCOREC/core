@@ -20,10 +20,11 @@
 
 namespace ma {
 
-MeshCurver::MeshCurver(Mesh* m, int o)
+MeshCurver::MeshCurver(Mesh* m, int o, int b)
 {
   m_mesh = m;
   m_order = o;
+  m_blendOrder = b;
 }
 
 void MeshCurver::snapToInterpolateEdge(Entity* e)
@@ -99,7 +100,7 @@ bool BezierCurver::run()
     return false;
   }
   int md = m_mesh->getDimension();
-  apf::changeMeshShape(m_mesh, apf::getBezier(md,m_order),true);
+  apf::changeMeshShape(m_mesh, apf::getBezier(md,m_order,m_blendOrder),true);
   apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
 
   // interpolate points in each dimension
@@ -112,7 +113,7 @@ bool BezierCurver::run()
     int ne = fs->countNodesOn(d);
 
     apf::NewArray<double> c;
-    apf::getTransformationCoefficients(m_order,md,d,c);
+    apf::getTransformationCoefficients(md,d,c);
     Entity* e;
     Iterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -368,7 +369,7 @@ bool GregoryCurver::run()
     return false;
   }
 
-  apf::changeMeshShape(m_mesh, apf::getGregory(m_order),true);
+  apf::changeMeshShape(m_mesh, apf::getGregory(m_order,m_blendOrder),true);
 
   int md = m_mesh->getDimension();
 
@@ -386,7 +387,7 @@ bool GregoryCurver::run()
     apf::NewArray<Vector> l, b(ne);
 
     apf::NewArray<double> c;
-    apf::getTransformationCoefficients(m_order,md,d,c);
+    apf::getTransformationCoefficients(md,d,c);
 
     Entity* e;
     Iterator* it = m_mesh->begin(d);

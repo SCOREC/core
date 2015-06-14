@@ -126,17 +126,14 @@ FieldShape* getIPShape(int dimension, int order);
 FieldShape* getVoronoiShape(int dimension, int order);
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
-FieldShape* getBezier(int dimension, int order);
+FieldShape* getBezier(int dimension, int order, int blendOrder);
 /** \brief Get the Gregory Surface of some order
  \details only fourth order right now*/
-FieldShape* getGregory(int order);
+FieldShape* getGregory(int order, int blendOrder);
 
-/** \brief Sets the order of continuity for blending
- \details kind of hacked, but easiest way*/
-void setCurvedBlendingOrder(double order);
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int order, int dim, int type,
+void getTransformationCoefficients(int dim, int type,
     NewArray<double>& c);
 /** \brief Get the quadratic hierarchic shape function */
 FieldShape* getHierarchic();
