@@ -65,7 +65,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
 
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    ma::BezierCurver bc(m2,order);
+    ma::BezierCurver bc(m2,order,2);
     bc.run();
     ma::writePointSet(m2,1,21,outFile);
     ma::writePointSet(m2,2,21,outFile);
@@ -97,9 +97,9 @@ static void testBezier(const char* modelFile, const char* meshFile,
 static void testGregory(const char* modelFile, const char* meshFile,
     const char* outFile, const int ne, const int nf)
 {
-
+  for(int order = 3; order <= 4; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    ma::GregoryCurver gc(m2,4);
+    ma::GregoryCurver gc(m2,order,2);
     gc.run();
     testElementSize(m2);
     apf::DynamicVector ee(ne);
@@ -111,6 +111,7 @@ static void testGregory(const char* modelFile, const char* meshFile,
 
     m2->destroyNative();
     apf::destroyMesh(m2);
+  }
 }
 
 int main(int argc, char** argv)
