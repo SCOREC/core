@@ -15,6 +15,7 @@
 
 namespace apf {
 
+namespace bezier {
 // negative -> flipped relative to canonical
 // relies on e0 being always ordered correctly
 static int const tet_tri_edges[4][3] =
@@ -41,16 +42,18 @@ static int const blended_tet_total[2][6] =
 
 static double const blendingTol = 1.e-12;
 
-static double curvedBlend = 2.;
+static double B = 2.;
 
-static void BlendedTriangleGetValues(const int P, const int type,
+static int P = 0;
+
+static void BlendedTriangleGetValues(const int type,
     Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& values)
 {
   // Triangular Blending
   double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
   for(int i = 0; i < 3; ++i)
-    values[i] = -pow(xii[i],curvedBlend);
+    values[i] = -pow(xii[i],B);
   // zero the rest, the face node weight is always zero
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
     values[i] = 0.0;
@@ -70,17 +73,17 @@ static void BlendedTriangleGetValues(const int P, const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
           ->getValues(m,edges[i],xv,v);
 
     for(int j = 0; j < 2; ++j)
-      values[tev[i][j]]   += v[j]*pow(x,curvedBlend);
+      values[tev[i][j]]   += v[j]*pow(x,B);
     for(int j = 0; j < (P-1); ++j)
-      values[3+i*(P-1)+j] = v[2+j]*pow(x,curvedBlend);
+      values[3+i*(P-1)+j] = v[2+j]*pow(x,B);
   }
 }
 
-static void BlendedTriangleGetLocalGradients(const int P, const int type,
+static void BlendedTriangleGetLocalGradients(const int type,
     Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& grads)
 {
 
@@ -88,7 +91,7 @@ static void BlendedTriangleGetLocalGradients(const int P, const int type,
   Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
 
   for(int i = 0; i < 3; ++i)
-    grads[i] = gxii[i]*-pow(xii[i],curvedBlend-1.)*curvedBlend;
+    grads[i] = gxii[i]*-pow(xii[i],B-1.)*B;
 
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
     grads[i] = Vector3(0,0,0);
@@ -112,32 +115,32 @@ static void BlendedTriangleGetLocalGradients(const int P, const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
       ->getValues(m,edges[i],xv,v);
 
-    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
       ->getLocalGradients(m,edges[i],xv,gv);
 
     for(int j = 0; j < 2; ++j)
-      grads[tev[i][j]]   += gx*curvedBlend*pow(x,curvedBlend-1.)*v[j]
-        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.*pow(x,curvedBlend-1.);
+      grads[tev[i][j]]   += gx*B*pow(x,B-1.)*v[j]
+        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.*pow(x,B-1.);
 
     for(int j = 0; j < (P-1); ++j)
-      grads[3+i*(P-1)+j] = gx*curvedBlend*pow(x,curvedBlend-1.)*v[j+2]
-        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,curvedBlend-1.);
+      grads[3+i*(P-1)+j] = gx*B*pow(x,B-1.)*v[j+2]
+        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,B-1.);
 
   }
 
 }
 
-static void BlendedTetrahedronGetValues(const int P, const int type,
+static void BlendedTetrahedronGetValues(const int type,
     Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& values)
 {
 
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
 
   for(int i = 0; i < 4; ++i)
-    values[i] = pow(xii[i],curvedBlend);
+    values[i] = pow(xii[i],B);
 
   for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
     values[i] = 0.0;
@@ -162,13 +165,13 @@ static void BlendedTetrahedronGetValues(const int P, const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P)->getEntityShape(Mesh::EDGE)
-          ->getValues(m,edges[i],xv,v);
+    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+      ->getValues(m,edges[i],xv,v);
 
     for(int j = 0; j < 2; ++j) // vertices
-      values[tev[i][j]] += -v[j]*pow(x,curvedBlend);
+      values[tev[i][j]] += -v[j]*pow(x,B);
     for(int j = 0; j < nE; ++j)// edge nodes
-      values[4+i*nE+j]  += -v[2+j]*pow(x,curvedBlend);
+      values[4+i*nE+j]  += -v[2+j]*pow(x,B);
 
   }
 
@@ -186,14 +189,14 @@ static void BlendedTetrahedronGetValues(const int P, const int type,
     xv = xv/x;
 
     if(type == CURVED_BEZIER)
-      getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
+      getBezier(3,P,B)->getEntityShape(Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
     else if(type == CURVED_GREGORY)
-      getGregory(P)->getEntityShape(Mesh::TRIANGLE)
+      getGregory(P,B)->getEntityShape(Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
 
     for(int j = 0; j < 3; ++j) // vertices
-      values[ttv[i][j]] += v[j]*pow(x,curvedBlend);
+      values[ttv[i][j]] += v[j]*pow(x,B);
 
     // Edge contributions from faces
     // Edges are the first 3*nE entries per face
@@ -202,18 +205,18 @@ static void BlendedTetrahedronGetValues(const int P, const int type,
       int l = tet_tri_edges[i][k];
       if(flip_tet_tri_edges[i][k] == false){
         for(int j = 0; j < nE; ++j)
-          values[4+l*nE+j] += v[3+k*nE+j]*pow(x,curvedBlend);
+          values[4+l*nE+j] += v[3+k*nE+j]*pow(x,B);
       } else { // we need to flip
         for(int j = 0; j < nE; ++j)
-          values[4+l*nE+j] += v[3+k*nE+nE-1-j]*pow(x,curvedBlend);
+          values[4+l*nE+j] += v[3+k*nE+nE-1-j]*pow(x,B);
       }
     }
     for(int j = 0; j < nF; ++j) // face nodes
-      values[4+6*nE+i*nF+j] +=  v[3+3*nE+j]*pow(x,curvedBlend);
+      values[4+6*nE+i*nF+j] +=  v[3+3*nE+j]*pow(x,B);
   } // done faces
 }
 
-static void BlendedTetrahedronGetLocalGradients(const int P, const int type,
+static void BlendedTetrahedronGetLocalGradients(const int type,
     Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& grads)
 {
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
@@ -221,7 +224,7 @@ static void BlendedTetrahedronGetLocalGradients(const int P, const int type,
       Vector3(0,1,0),Vector3(0,0,1)};
 
   for(int i = 0; i < 4; ++i)
-      grads[i] = gxii[i]*pow(xii[i],curvedBlend-1.)*curvedBlend;
+      grads[i] = gxii[i]*pow(xii[i],B-1.)*B;
 
   for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
     grads[i] = Vector3(0,0,0);
@@ -249,19 +252,19 @@ static void BlendedTetrahedronGetLocalGradients(const int P, const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
         ->getValues(m,edges[i],xv,v);
 
-    getBezier(3,P)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
         ->getLocalGradients(m,edges[i],xv,gv);
 
     for(int j = 0; j < 2; ++j) // vertices
-      grads[tev[i][j]] += gx*curvedBlend*pow(x,curvedBlend-1.)*(-v[j])
-      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.*pow(x,curvedBlend-1.);
+      grads[tev[i][j]] += gx*B*pow(x,B-1.)*(-v[j])
+      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.*pow(x,B-1.);
 
     for(int j = 0; j < nE; ++j)// edge nodes
-      grads[4+i*nE+j]  += gx*curvedBlend*pow(x,curvedBlend-1.)*(-v[j+2])
-      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,curvedBlend-1.);
+      grads[4+i*nE+j]  += gx*B*pow(x,B-1.)*(-v[j+2])
+      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,B-1.);
   }
 
   m->getDownward(e,2,faces);
@@ -280,52 +283,49 @@ static void BlendedTetrahedronGetLocalGradients(const int P, const int type,
     xv = xv/x;
 
     // actually x*gxv
-    gxv[0] = (gxii[ttv[i][1]]-gx*xv[0])*pow(x,curvedBlend-1.);
-    gxv[1] = (gxii[ttv[i][2]]-gx*xv[1])*pow(x,curvedBlend-1.);
+    gxv[0] = (gxii[ttv[i][1]]-gx*xv[0])*pow(x,B-1.);
+    gxv[1] = (gxii[ttv[i][2]]-gx*xv[1])*pow(x,B-1.);
 
-    if(type == CURVED_BEZIER)
-      getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
+    if(type == CURVED_BEZIER){
+      getBezier(3,P,B)->getEntityShape(Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
-
-    else if(type == CURVED_GREGORY)
-      getGregory(4)->getEntityShape(Mesh::TRIANGLE)
+      getBezier(3,P,B)->getEntityShape(Mesh::TRIANGLE)
+          ->getLocalGradients(m,faces[i],xv,gv);
+    }
+    else if(type == CURVED_GREGORY){
+      getGregory(P,B)->getEntityShape(Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
-
-    if(type == CURVED_BEZIER)
-      getBezier(3,P)->getEntityShape(Mesh::TRIANGLE)
+      getGregory(P,B)->getEntityShape(Mesh::TRIANGLE)
           ->getLocalGradients(m,faces[i],xv,gv);
-
-    else if(type == CURVED_GREGORY)
-      getGregory(4)->getEntityShape(Mesh::TRIANGLE)
-          ->getLocalGradients(m,faces[i],xv,gv);
+    }
 
     for(int j = 0; j < 3; ++j) // vertices
-      grads[ttv[i][j]] += gx*curvedBlend*pow(x,curvedBlend-1.)*v[j]
+      grads[ttv[i][j]] += gx*B*pow(x,B-1.)*v[j]
         + gxv[0]*gv[j][0] + gxv[1]*gv[j][1];
 
     for(int k = 0; k < 3; ++k){
       int l = tet_tri_edges[i][k];
       if(flip_tet_tri_edges[i][k] == false){
         for(int j = 0; j < nE; ++j)
-          grads[4+l*nE+j] += gx*curvedBlend*pow(x,curvedBlend-1.)*v[3+k*nE+j]
+          grads[4+l*nE+j] += gx*B*pow(x,B-1.)*v[3+k*nE+j]
             + gxv[0]*gv[3+k*nE+j][0]
             + gxv[1]*gv[3+k*nE+j][1];
 
       } else { // we need to flip
         for(int j = 0; j < nE; ++j)
-          grads[4+l*nE+j] += gx*curvedBlend*pow(x,curvedBlend-1.)*v[3+k*nE+nE-1-j]
+          grads[4+l*nE+j] += gx*B*pow(x,B-1.)*v[3+k*nE+nE-1-j]
             + gxv[0]*gv[3+k*nE+nE-1-j][0]
             + gxv[1]*gv[3+k*nE+nE-1-j][1];
       }
     }
     for(int j = 0; j < nF; ++j) // face nodes
-      grads[4+6*nE+i*nF+j] += gx*curvedBlend*pow(x,curvedBlend-1.)*v[3+3*nE+j]
+      grads[4+6*nE+i*nF+j] += gx*B*pow(x,B-1.)*v[3+3*nE+j]
         + gxv[0]*gv[3+3*nE+j][0]
         + gxv[1]*gv[3+3*nE+j][1];
   } // done faces
 
 }
-template <int P>
+
 class BezierShape : public FieldShape
 {
 public:
@@ -391,9 +391,11 @@ public:
           22,20,5,9,21,6,8,7,1};
 
       int* maps[6] = {m1,m2,m3,m4,m5,m6};
-      map.allocate(curved_face_total[CURVED_BEZIER][P-1]);
-      for(int i = 0; i < curved_face_total[CURVED_BEZIER][P-1]; ++i)
-        map[i] = maps[P-1][i];
+      for(int j = 1; j <= 6; ++j){
+        map[j-1].allocate(curved_face_total[CURVED_BEZIER][j-1]);             
+        for(int i = 0; i < curved_face_total[CURVED_BEZIER][j-1]; ++i)
+          map[j-1][i] = maps[j-1][i];
+      }
     }
     void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
         NewArray<double>& values) const
@@ -407,12 +409,12 @@ public:
 
         for(int i = 0; i < P+1; ++i)
           for(int j = 0; j < P+1-i; ++j)
-            values[map[j*(P+1)+i-j*(j-1)/2]] =
+            values[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
                 binomial(P,i)*binomial(P-i,j)
                 *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],P-i-j);
 
       } else
-        BlendedTriangleGetValues(P,CURVED_BEZIER,m,e,xi,values);
+        BlendedTriangleGetValues(CURVED_BEZIER,m,e,xi,values);
 
     }
     void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
@@ -428,7 +430,7 @@ public:
       if (m->getModelType(g) != m->getDimension()){
         for(int i = 1; i < P+1; ++i)
           for(int j = 1; j < P-i; ++j)
-            grads[map[j*(P+1)+i-j*(j-1)/2]] =
+            grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
                 gxii[0]*binomial(P,i)*binomial(P-i,j)
                 *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
                 *(i*(1.-xii[1])-(P-j)*xii[0]) +
@@ -436,10 +438,9 @@ public:
                 *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
                 *(j*(1.-xii[0])-(P-i)*xii[1]);
 
-
         // i = 0
         for(int j = 1; j < P; ++j)
-          grads[map[j*(P+1)-j*(j-1)/2]] =
+          grads[map[P-1][j*(P+1)-j*(j-1)/2]] =
             (gxii[0]*(j-P)*xii[1] +
             gxii[1]*(j*(1.-xii[0])-P*xii[1]))
             *binomial(P,j)
@@ -447,7 +448,7 @@ public:
 
         // j = 0
         for(int i = 1; i < P; ++i)
-          grads[map[i]] =
+          grads[map[P-1][i]] =
               (gxii[0]*(i*(1.-xii[1])-P*xii[0]) +
                gxii[1]*(i-P)*xii[0])
               *binomial(P,i)
@@ -455,20 +456,20 @@ public:
 
         // k = 0
         for(int i = 1, j = P-1; i < P; ++i, --j)
-          grads[map[j*(P+1)+i-j*(j-1)/2]] =
+          grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
               (gxii[0]*i*xii[1] + gxii[1]*j*xii[0])
               *binomial(P,i)*binomial(P-i,j)
               *pow(xii[0],i-1)*pow(xii[1],j-1);
 
         // i = j = 0
-        grads[map[0]] = (gxii[0]+gxii[1])*(-P)*pow(xii[2],P-1);
+        grads[map[P-1][0]] = (gxii[0]+gxii[1])*(-P)*pow(xii[2],P-1);
         // i = k = 0
-        grads[map[((P+1)*(P+2))/2-1]] = gxii[1]*P*pow(xii[1],P-1);
+        grads[map[P-1][((P+1)*(P+2))/2-1]] = gxii[1]*P*pow(xii[1],P-1);
         // j = k = 0
-        grads[map[P]] = gxii[0]*P*pow(xii[0],P-1);
+        grads[map[P-1][P]] = gxii[0]*P*pow(xii[0],P-1);
 
       } else
-        BlendedTriangleGetLocalGradients(P,CURVED_BEZIER,m,e,xi,grads);
+        BlendedTriangleGetLocalGradients(CURVED_BEZIER,m,e,xi,grads);
 
     }
     int countNodes() const {return curved_face_total[CURVED_BEZIER][P-1];}
@@ -487,7 +488,7 @@ public:
       }
     }
   private:
-    NewArray<int> map;
+    NewArray<int> map[6];
   };
   class Tetrahedron : public EntityShape
   {
@@ -496,14 +497,14 @@ public:
         Vector3 const& xi, NewArray<double>& values) const
     {
       values.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
-      BlendedTetrahedronGetValues(P,CURVED_BEZIER,m,e,xi,values);
+      BlendedTetrahedronGetValues(CURVED_BEZIER,m,e,xi,values);
     }
     void getLocalGradients(Mesh* m, MeshEntity* e,
         Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       grads.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
-      BlendedTetrahedronGetLocalGradients(P,CURVED_BEZIER,m,e,xi,grads);
+      BlendedTetrahedronGetLocalGradients(CURVED_BEZIER,m,e,xi,grads);
     }
     int countNodes() const {return blended_tet_total[CURVED_BEZIER][P-1];}
     void alignSharedNodes(Mesh* m,
@@ -564,26 +565,25 @@ public:
   }
   int countNodesOn(int type)
   {
-    static int nodes[Mesh::TYPES] =
-    {1,                                           //vertex
-     P-1,                                         //edge
-     curved_face_internal[CURVED_BEZIER][P-1],    //triangle
-     0,                                           //quad
-     0,                                           //tet
-     0,                                           //hex
-     0,                                           //prism
-     0};                                          //pyramid
-    return nodes[type];
+    switch (type) {
+      case 0:
+        return 1;
+      case 1:
+        return P-1;
+      case 2:
+        return curved_face_internal[CURVED_BEZIER][P-1];
+      default:
+        return 0;
+    }
   }
-  int getOrder() {return std::max(P,(int)curvedBlend);}
+  int getOrder() {return std::max(P,(int)B);}
 };
 
-template <int P>
-class BezierCurve : public BezierShape<P>
+class BezierCurve : public BezierShape
 {
 public:
   const char* getName() const {return name.c_str();}
-  BezierCurve<P>() {
+  BezierCurve() {
     std::stringstream ss;
     ss << "BezierCurve_" << P;
     name = ss.str();
@@ -610,8 +610,8 @@ public:
 protected:
   std::string name;
 };
-template <int P>
-class BezierSurface : public BezierShape<P>
+
+class BezierSurface : public BezierShape
 {
 public:
   const char* getName() const {return name.c_str();}
@@ -684,8 +684,7 @@ protected:
   std::string name;
 };
 
-static void getBezierCurveInterPtsToCtrlPts(int order,
-    NewArray<double> & c)
+static void getBezierCurveInterPtsToCtrlPts(NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
   double e3[8] = {
@@ -711,15 +710,15 @@ static void getBezierCurveInterPtsToCtrlPts(int order,
       1.2670886004356,-2.14695478588352,4.70907763497668};
   double* table[5] = {
       e2,e3,e4,e5,e6};
-  int nb = order-1;
-  int ni = order+1;
+  int nb = P-1;
+  int ni = P+1;
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = table[order-2][i*ni+j];
+      c[i*ni+j] = table[P-2][i*ni+j];
 
 }
-static void getBezierShapeInterPtsToCtrlPts(int order, int type,
+static void getBezierShapeInterPtsToCtrlPts(int type,
     NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
@@ -875,55 +874,15 @@ static void getBezierShapeInterPtsToCtrlPts(int order, int type,
   double* table[10] = {
       e2,e3,e4,e5,e6,NULL,f3,f4,f5,f6};
   int nb = (type == Mesh::TRIANGLE) ?
-      curved_face_internal[CURVED_BEZIER][order-1] : order-1;
+      curved_face_internal[CURVED_BEZIER][P-1] : P-1;
   int ni = (type == Mesh::TRIANGLE) ?
-      curved_face_total[CURVED_BEZIER][order-1] : order+1;
+      curved_face_total[CURVED_BEZIER][P-1] : P+1;
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = table[5*(type-1)+(order-2)][i*ni+j];
+      c[i*ni+j] = table[5*(type-1)+(P-2)][i*ni+j];
 }
 
-void getTransformationCoefficients(int order, int dim, int type,
-    NewArray<double>& c){
-  if(dim == 2)
-    getBezierCurveInterPtsToCtrlPts(order,c);
-  else
-    getBezierShapeInterPtsToCtrlPts(order,type,c);
-}
-
-static FieldShape* getBezierCurve(int order)
-{
-  static BezierCurve<1> bezierCurve1;
-  static BezierCurve<2> bezierCurve2;
-  static BezierCurve<3> bezierCurve3;
-  static BezierCurve<4> bezierCurve4;
-  static BezierCurve<5> bezierCurve5;
-  static BezierCurve<6> bezierCurve6;
-
-  FieldShape* curveTable[6] = {&bezierCurve1,&bezierCurve2,
-      &bezierCurve3,&bezierCurve4,&bezierCurve5,&bezierCurve6};
-  return curveTable[order-1];
-}
-
-static FieldShape* getBezierSurface(int order)
-{
-  static BezierSurface<1> bezierSurface1;
-  static BezierSurface<2> bezierSurface2;
-  static BezierSurface<3> bezierSurface3;
-  static BezierSurface<4> bezierSurface4;
-  static BezierSurface<5> bezierSurface5;
-  static BezierSurface<6> bezierSurface6;
-
-  FieldShape* surfaceTable[6] = {&bezierSurface1,&bezierSurface2,
-      &bezierSurface3,&bezierSurface4,&bezierSurface5,&bezierSurface6};
-  return surfaceTable[order-1];
-}
-
-FieldShape* getBezier(int dimension, int order)
-{
-  return (dimension == 2) ? getBezierCurve(order) : getBezierSurface(order);
-}
 /* end of Bezier, begining of Gregory Surface */
 
 class GregorySurface4 : public FieldShape
@@ -957,7 +916,6 @@ public:
         NewArray<double>& values) const
     {
       values.allocate(curved_face_total[CURVED_GREGORY][3]);
-
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
       ModelEntity* g = m->toModel(e);
@@ -978,7 +936,7 @@ public:
           values[12+pairs[i][1]] = bernstein*xii[index[i][1]]/x;
         }
       } else
-        BlendedTriangleGetValues(4,CURVED_GREGORY,m,e,xi,values);
+        BlendedTriangleGetValues(CURVED_GREGORY,m,e,xi,values);
 
     }
     void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
@@ -1050,7 +1008,7 @@ public:
 
         }
       } else
-        BlendedTriangleGetLocalGradients(4,CURVED_GREGORY,m,e,xi,grads);
+        BlendedTriangleGetLocalGradients(CURVED_GREGORY,m,e,xi,grads);
 
     }
     int countNodes() const
@@ -1083,14 +1041,14 @@ public:
         Vector3 const& xi, NewArray<double>& values) const
     {
       values.allocate(blended_tet_total[CURVED_GREGORY][3]);
-      BlendedTetrahedronGetValues(4,CURVED_GREGORY,m,e,xi,values);
+      BlendedTetrahedronGetValues(CURVED_GREGORY,m,e,xi,values);
     }
     void getLocalGradients(Mesh* m, MeshEntity* e,
         Vector3 const& xi,
         NewArray<Vector3>& grads) const
     {
       grads.allocate(blended_tet_total[CURVED_GREGORY][3]);
-      BlendedTetrahedronGetLocalGradients(4,CURVED_GREGORY,m,e,xi,grads);
+      BlendedTetrahedronGetLocalGradients(CURVED_GREGORY,m,e,xi,grads);
     }
     int countNodes() const {return blended_tet_total[CURVED_GREGORY][3];}
     void alignSharedNodes(Mesh* m,
@@ -1117,14 +1075,13 @@ public:
   };
   EntityShape* getEntityShape(int type)
   {
-    static BezierShape<1>::Vertex vertex;
-    static BezierShape<4>::Edge edge4;
-
+    static BezierShape::Vertex vertex;
+    static BezierShape::Edge edge;
     static Triangle triangle;
     static Tetrahedron tet;
     static EntityShape* shapes[Mesh::TYPES] =
     {&vertex,   //vertex
-     &edge4,    //edge
+     &edge,    //edge
      &triangle, //triangle
      NULL,      //quad
      &tet,      //tet
@@ -1173,24 +1130,57 @@ public:
     } else
       xi = Vector3(0,0,0);
    }
-  int getOrder() {return std::max(4,(int)curvedBlend);}
+  int getOrder() {return std::max(4,(int)B);}
 protected:
   std::string name;
 };
 
-FieldShape* getGregory(int order)
+static void setOrder(const int order, const int blendOrder)
 {
-  static GregorySurface4 gregorySurface4;
-  if(order == 4)
-    return &gregorySurface4;
-  if(order == 3)
-    return getBezierSurface(3);
+  P = order;
+  B = blendOrder;
+}
+
+}//namespace bezier
+
+FieldShape* getBezier(int dimension, int order, int blendOrder)
+{
+  bezier::setOrder(order,blendOrder);
+
+  static bezier::BezierCurve bezierCurve;
+  static bezier::BezierSurface bezierSurface;
+
+  //  bezier::setOrder(order,blendOrder);
+
+  if(dimension == 2)
+    return &bezierCurve;
+  else
+    return &bezierSurface;
+
+}
+// Third order is a modified bezier.
+// Technically a Bezier but points set using
+// maCurveMesh G1 methodology
+// Exists for debugging purposes
+
+FieldShape* getGregory(int order, int blendOrder)
+{
+  static bezier::GregorySurface4 gregorySurface;
+
+  if(order == 4){
+    bezier::setOrder(order, blendOrder);
+  } if(order == 3)
+    return getBezier(3,order,blendOrder);
+
   return NULL;
 }
 
-void setCurvedBlendingOrder(double order)
-{
-	curvedBlend = order;
+void getTransformationCoefficients(int dim, int type,
+    NewArray<double>& c){
+  if(dim == 2)
+    bezier::getBezierCurveInterPtsToCtrlPts(c);
+  else
+    bezier::getBezierShapeInterPtsToCtrlPts(type,c);
 }
 
 }//namespace apf

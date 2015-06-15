@@ -12,6 +12,7 @@
 #define MACURVEMESH_H
 
 #include "maMesh.h"
+#include "apfShape.h"
 
 namespace ma {
 
@@ -20,7 +21,7 @@ class Adapt;
 class MeshCurver
 {
   public:
-    MeshCurver(Mesh* m, int order);
+    MeshCurver(Mesh* m, int P, int B);
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
@@ -35,14 +36,16 @@ class MeshCurver
     void convertInterpolationPoints(Entity* e, int n, int ne,
       apf::NewArray<double>& c);
 
+  protected:
     Mesh* m_mesh;
     int m_order;
+    int m_blendOrder;
 };
 
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(Mesh* m, int o) : MeshCurver(m, o) {};
+    BezierCurver(Mesh* m, int P, int B) : MeshCurver(m, P, B) {};
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
@@ -54,7 +57,7 @@ class BezierCurver : public MeshCurver
 class GregoryCurver : public MeshCurver
 {
   public:
-    GregoryCurver(Mesh* m, int o) : MeshCurver(m, o) {};
+    GregoryCurver(Mesh* m, int P, int B) : MeshCurver(m, P, B) {};
     /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */

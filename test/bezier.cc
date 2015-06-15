@@ -221,8 +221,8 @@ void testSize2D(apf::Mesh2* m)
       if(!correct){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
-                                               << " size " << v
-                                               << " at " << getLinearCentroid(m, e) << '\n';
+           << " size " << v
+           << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
         fprintf(stderr, "%s", s.c_str());
         abort();
@@ -236,17 +236,17 @@ void testSize2D(apf::Mesh2* m)
 void test2D()
 {
   for(int order = 1; order <= 6; ++order){
-    apf::Mesh2* m = createMesh2D();
-    ma::BezierCurver bc(m,order);
-    bc.run();
-
-    testInterpolatedPoints2D(m);
     for(int blendOrder = 2; blendOrder <= 6; ++blendOrder){
-      apf::setCurvedBlendingOrder(blendOrder);
+      apf::Mesh2* m = createMesh2D();
+      ma::BezierCurver bc(m,order,blendOrder);
+      bc.run();
+
+      testInterpolatedPoints2D(m);
       testSize2D(m);
+
+      m->destroyNative();
+      apf::destroyMesh(m);
     }
-    m->destroyNative();
-    apf::destroyMesh(m);
   }
 }
 
@@ -389,37 +389,36 @@ void test3D()
   mbase->destroyNative();
   apf::destroyMesh(mbase);
 
-  for(int order = 1; order <= 6; ++order){
-    apf::Mesh2* m = createMesh3D();
-    apf::changeMeshShape(m, apf::getBezier(3,order),true);
-    apf::FieldShape * fs = m->getCoordinateField()->getShape();
-    ma::BezierCurver bc(m,order);
-    // go downward, and convert interpolating to control points
-    for(int d = 2; d >= 1; --d){
-      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
-      int ne = fs->countNodesOn(d);
-      apf::NewArray<double> c;
-      apf::getTransformationCoefficients(order,3,d,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(d);
-      while ((e = m->iterate(it))) {
-        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ne,c);
-      }
-      m->end(it);
-    }
-    m->acceptChanges();
+  for(int order = 2; order <= 6; ++order){
     for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
-      apf::setCurvedBlendingOrder(blendOrder);
+      apf::Mesh2* m = createMesh3D();
+      apf::changeMeshShape(m, apf::getBezier(3,order,blendOrder),true);
+      apf::FieldShape * fs = m->getCoordinateField()->getShape();
+      ma::BezierCurver bc(m,order,blendOrder);
+      // go downward, and convert interpolating to control points
+      for(int d = 2; d >= 1; --d){
+        int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
+        int ne = fs->countNodesOn(d);
+        apf::NewArray<double> c;
+        apf::getTransformationCoefficients(3,d,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(d);
+        while ((e = m->iterate(it))) {
+          if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+          bc.convertInterpolationPoints(e,n,ne,c);
+        }
+        m->end(it);
+      }
+      m->acceptChanges();
 
       testSize3D(m);
       if(blendOrder < 4){
         test3DJacobian(m);
         test3DJacobianTri(m);
       }
+      m->destroyNative();
+      apf::destroyMesh(m);
     }
-    m->destroyNative();
-    apf::destroyMesh(m);
   }
 }
 
