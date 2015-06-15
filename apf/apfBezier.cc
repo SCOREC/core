@@ -1169,6 +1169,7 @@ FieldShape* getGregory(int order, int blendOrder)
 
   if(order == 4){
     bezier::setOrder(order, blendOrder);
+    return &gregorySurface;
   } if(order == 3)
     return getBezier(3,order,blendOrder);
 
