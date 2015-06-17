@@ -517,8 +517,8 @@ namespace dsp {
         //loop over Gaussian Quadrature points
         for (int GqPtId = 0 ; GqPtId < 4 ; GqPtId++) {
           //loop over nodes
-          for (int i = 0 ; i < 3 ; i++) {
-            for (int j = 0 ; j < 3 ; j++) {
+          for (int i = 0 ; i < 4 ; i++) {
+            for (int j = 0 ; j < 4 ; j++) {
               
               Nb1 = shapeFunction[i][0]; Nb2 = shapeFunction[i][1]; Nb3 = shapeFunction[i][2];
               Na1 = shapeFunction[j][0]; Na2 = shapeFunction[j][1]; Na3 = shapeFunction[j][2];
