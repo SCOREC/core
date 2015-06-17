@@ -17,6 +17,7 @@
 #include <PCU.h>
 #include <pcu_io.h>
 #include <pcu_common.h>
+#include <sys/types.h> /*required for mode_t for mkdir on some systems*/
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 
 enum { SMB_VERSION = 4 };
