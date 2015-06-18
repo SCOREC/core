@@ -148,7 +148,7 @@ void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max,
  * @param key (In) identifying string to write with stat output
  */
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine=false);
-void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key);
+void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key, bool fine=false);
 
 /**
  * @brief re-connect disconnected parts
