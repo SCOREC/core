@@ -36,7 +36,6 @@ int main(int argc, char** argv)
   assert(argc == 6);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Debug_Open();
   PCU_Comm_Order(true);
   if ( argc != 6 ) {
     if ( !PCU_Comm_Self() )
