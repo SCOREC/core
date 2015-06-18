@@ -253,14 +253,6 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
   dcPartFixer dcf(m);
 }
 
-void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key) {
-  double imb[4];
-  Parma_GetWeightedEntImbalance(m,w,&imb);
-  if( !PCU_Comm_Self() )
-    fprintf(stdout, "STATUS %s weighted entity imbalance <v e f r>: "
-        "%.2f %.2f %.2f %.2f\n", key.c_str(), imb[0], imb[1], imb[2], imb[3]);
-}
-
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   apf::MeshTag* w = m->createDoubleTag("parma_ent_weights", 1);
   size_t dims = TO_SIZET(m->getDimension()) + 1;
@@ -321,7 +313,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   PCU_Add_Ints(&empty, 1);
 
   double imb[4] = {0, 0, 0, 0};
-  Parma_GetEntImbalance(m, &imb);
+  Parma_GetWeightedEntImbalance(m,w,&imb);
 
   if (fine)
     writeFineStats(m, key, locDc, locNb, locV, surf, vol);
