@@ -66,7 +66,6 @@ namespace {
       void balance(apf::MeshTag* wtag, double tolerance) {
         apf::Balancer* b = Parma_MakeVtxBalancer(mesh, factor, verbose);
         b->balance(wtag, tolerance);
-        Parma_PrintPtnStats(mesh, "post vertices");
         Parma_PrintWeightedPtnStats(mesh, wtag, "post vertices");
         delete b;
 
@@ -76,7 +75,6 @@ namespace {
         maxVtxW = ( maxVtxW < tgtMaxVtxW ) ? tgtMaxVtxW : maxVtxW;
         b = new VtxEdgeBalancer(mesh, factor, maxVtxW, verbose);
         b->balance(wtag, tolerance);
-        Parma_PrintPtnStats(mesh, "post edges");
         Parma_PrintWeightedPtnStats(mesh, wtag, "post edges");
         delete b;
 
@@ -89,7 +87,6 @@ namespace {
         maxEdgeW = ( maxEdgeW < tgtMaxEdgeW ) ? tgtMaxEdgeW : maxEdgeW;
         b = parma::makeElmLtVtxEdgeBalancer(mesh, maxVtxW, maxEdgeW, factor, verbose);
         b->balance(wtag, tolerance);
-        Parma_PrintPtnStats(mesh, "post elements");
         Parma_PrintWeightedPtnStats(mesh, wtag, "post elements");
         delete b;
       }
