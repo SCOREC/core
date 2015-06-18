@@ -48,17 +48,15 @@ int main(int argc, char** argv)
   //load model and mesh
   double targetImb = atof(argv[5]);
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
-  Parma_PrintPtnStats(m, "initial", true);
   apf::MeshTag* weights = setWeights(m,atof(argv[4]));
-  Parma_PrintWeightedPtnStats(m, weights, "initial");
+  Parma_PrintWeightedPtnStats(m, weights, "initial",true);
   const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
   if( !PCU_Comm_Self() )
     fprintf(stderr, "STATUS target imbalance %.2f\n", targetImb);
   balancer->balance(weights, targetImb);
   delete balancer;
-  Parma_PrintPtnStats(m, "final", true);
-  Parma_PrintWeightedPtnStats(m, weights, "final");
+  Parma_PrintWeightedPtnStats(m, weights, "final",true);
   clearTags(m, weights);
   m->destroyTag(weights);
   m->writeNative(argv[3]);
