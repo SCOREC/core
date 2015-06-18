@@ -325,7 +325,6 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
     PCU_Debug_Print("%d ", *p);
   PCU_Debug_Print("\n");
 
-  Parma_PrintWeightedEntStats(m,w,key);
   if( 0 == PCU_Comm_Self() ) {
     fprintf(stdout, "STATUS %s disconnected <max avg> %d %.3f\n",
         key.c_str(), maxDc, avgDc);
@@ -333,6 +332,9 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
         key.c_str(), maxNb, avgNb);
     fprintf(stdout, "STATUS %s empty parts %d\n",
         key.c_str(), empty);
+  }
+  Parma_PrintWeightedEntStats(m,w,key);
+  if( 0 == PCU_Comm_Self() ) {
     fprintf(stdout, "STATUS %s owned bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[0], maxV[0], minV[0], avgV[0]);
