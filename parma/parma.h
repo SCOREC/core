@@ -40,7 +40,6 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
 double Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
     int dim);
 
-
 /**
  * @brief get the maximum and average number of vtx-connected neighboring parts
  * @remark for each part count the number of parts it shares mesh
@@ -105,8 +104,20 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc);
  *         entity imbalance, and number of empty parts
  * @param m (In) partitioned mesh
  * @param key (In) identifying string to write with stat output
+ * @param fine (In) enable per part stat output
  */
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine=false);
+
+/**
+ * @brief prints partition stats using entity weights
+ * @remark includes face-disconnected components, number of vertices on
+ *         inter-part boundaries, number of vtx-connected neighboring parts,
+ *         entity imbalance, and number of empty parts
+ * @param m (In) partitioned mesh
+ * @param w (In) tag with entity weights
+ * @param key (In) identifying string to write with stat output
+ * @param fine (In) enable per part stat output
+ */
 void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key, bool fine=false);
 
 /**
