@@ -15,21 +15,6 @@
 #include "apfPartition.h"
 
 /**
- * @brief run ghost partition improvement
- * @param mesh (InOut) partitioned mesh
- * @param weight (In) element weight used for computing imbalance
- * @param maxImb (In) maximum imbalance tolerance
- * @param numlayers (In) number of ghost layers
- * @param bridgeDim (In) dimension of bridge entity
- * @param verbosity (In) 0: minimal output, >0 increasing amounts
- *                       runtime information
- * @return zero on success, non-zero otherwise
- */
-int Parma_RunGhostPtnImprovement(apf::Mesh* mesh, apf::MeshTag* weight,
-    const double maxImb, const int numlayers, const int bridgeDim,
-    const int verbosity=0);
-
-/**
  * @brief get entity imbalance
  * @param mesh (InOut) partitioned mesh
  * @param entImb (InOut) entity imbalance [vtx, edge, face, rgn]
