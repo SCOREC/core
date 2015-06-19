@@ -110,12 +110,6 @@ namespace {
     avg /= TO_DBL(PCU_Comm_Peers());
   }
 
-  void entStats(apf::Mesh* m, int dim,
-      long& tot, int& min, int& max, double& avg) {
-    int loc = TO_INT(m->count(dim));
-    getStats(loc, tot, min, max, avg);
-  }
-
   void writeFineStats(apf::Mesh* m, std::string key,
       int locDc, int locNb, int* locV, int surf, double vol) {
     const char* entNames[4] = {"vtx", "edge", "face", "rgn"};
@@ -240,13 +234,6 @@ void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   loc = numMdlBdryVtx(m);
   getStats(loc, tot, min, max, avg);
-}
-
-void Parma_GetEntStats(apf::Mesh* m, int dim, long& tot, int& min, int& max,
-    double& avg, int& loc) {
-  assert( dim>=0 && dim<=m->getDimension() );
-  entStats(m, dim, tot, min, max, avg);
-  loc = TO_INT(m->count(dim));
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
