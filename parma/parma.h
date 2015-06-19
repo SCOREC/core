@@ -196,15 +196,6 @@ apf::Balancer* Parma_MakeVtxElmBalancer(apf::Mesh* m,
     double stepFactor=0.1, int verbosity=0);
 
 /**
- * @brief create an APF Balancer targeting edge imbalance
- * @param m (In) partitioned mesh
- * @param verbosity (In) output control, higher values output more
- * @return apf balancer instance
- */
-apf::Balancer* Parma_MakeEdgeBalancer(apf::Mesh* m, double stepFactor=0.1,
-    int verbosity=0);
-
-/**
  * @brief create an APF Splitter using recursive inertial bisection
  * @param m (In) partitioned mesh
  * @param sync (In) true if all parts will be split, false o.w.

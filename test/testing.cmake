@@ -143,12 +143,6 @@ add_test(vtxBalance
   "${MDIR}/afosr.dmg"
   "${MDIR}/4imb/"
   "afosrBal4p/")
-add_test(edgeBalance
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./edgeBalance
-  "${MDIR}/afosr.dmg"
-  "${MDIR}/4imb/"
-  "afosrBal4p/")
 add_test(vtxEdgeElmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxEdgeElmBalance
