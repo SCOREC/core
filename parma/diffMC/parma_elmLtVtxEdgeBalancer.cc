@@ -42,6 +42,7 @@ namespace {
         parma::Targets* t =
           parma::makeElmLtVtxEdgeTargets(s, w, sideTol, maxVtx, maxEdge, factor);
         delete w[0];
+        delete w[1];
         parma::Selector* sel =
           parma::makeElmLtVtxEdgeSelector(mesh, wtag, maxVtx, maxEdge);
 
@@ -53,7 +54,7 @@ namespace {
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001);
 
-        parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, w[2], t, sel, stopper);
         return b.step(tolerance, verbose);
       }
   };
