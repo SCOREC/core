@@ -22,6 +22,7 @@ namespace {
     m->end(it);
     return cnt;
   }
+
   int numBdryVtx(apf::Mesh* m, bool onlyShared=false) {
     apf::MeshIterator *it = m->begin(0);
     apf::MeshEntity* e;
@@ -32,6 +33,7 @@ namespace {
     m->end(it);
     return cnt;
   }
+
   int numMdlBdryVtx(apf::Mesh* m) {
     const int dim = m->getDimension();
     apf::MeshIterator *it = m->begin(0);
@@ -43,6 +45,7 @@ namespace {
     m->end(it);
     return cnt;
   }
+
   void hasEntWeight(apf::Mesh* m, apf::MeshTag* w, int (*hasWeight)[4]) {
     for(size_t i=0; i < 4; i++)
       (*hasWeight)[i] = 1;
@@ -58,12 +61,14 @@ namespace {
       m->end(it);
     }
   }
+
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
     assert(m->hasTag(e,w));
     double weight;
     m->getDoubleTag(e,w,&weight);
     return weight;
   }
+
   void getPartWeights(apf::Mesh* m, apf::MeshTag* w, double (*weight)[4]) {
     int hasWeight[4];
     hasEntWeight(m,w,&hasWeight);
@@ -81,6 +86,7 @@ namespace {
       }
     }
   }
+
   void getWeightedStats(double (*loc)[4], double (*tot)[4],
       double (*min)[4], double (*max)[4], double (*avg)[4]) {
     for(int d=0; d<4; d++)
@@ -93,6 +99,7 @@ namespace {
       (*avg)[d] /= TO_DBL(PCU_Comm_Peers());
     }
   }
+
   void getStats(int& loc, long& tot, int& min, int& max, double& avg) {
     min = max = loc;
     tot = static_cast<long>(loc);
@@ -102,11 +109,13 @@ namespace {
     avg = static_cast<double>(tot);
     avg /= TO_DBL(PCU_Comm_Peers());
   }
+
   void entStats(apf::Mesh* m, int dim,
       long& tot, int& min, int& max, double& avg) {
     int loc = TO_INT(m->count(dim));
     getStats(loc, tot, min, max, avg);
   }
+
   void writeFineStats(apf::Mesh* m, std::string key,
       int locDc, int locNb, int* locV, int surf, double vol) {
     const char* entNames[4] = {"vtx", "edge", "face", "rgn"};
@@ -128,6 +137,7 @@ namespace {
     fprintf(stderr, "%s\n", s.c_str());
     PCU_Barrier();
   }
+
   void writeWeightedEntStats(apf::Mesh* m, apf::MeshTag* w, std::string key) {
     double weight[4];
     getPartWeights(m, w, &weight);
@@ -158,8 +168,6 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
    for(size_t i=dims; i < 4; i++)
       (*entImb)[i] = 1.0;
 }
-
-
 
 void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
     double (*entImb)[4]) {
@@ -196,7 +204,6 @@ double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
    PCU_Max_Doubles(&max, 1);
    return max/(tot/PCU_Comm_Peers());
 }
-
 
 void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   apf::MeshIterator *it = m->begin(0);
@@ -364,7 +371,6 @@ apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m) {
   m->end(it);
   return tag;
 }
-
 
 int Parma_MisNumbering(apf::Mesh* m, int d) {
   apf::Parts neighbors;
