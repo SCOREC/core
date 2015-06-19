@@ -727,16 +727,17 @@ FieldShape* getIPShape(int dimension, int order)
   static IPShape d3o1(3,1);
   static IPShape d3o2(3,2);
   static IPShape d3o3(3,3);
-  static IPShape* table[4][4] =
-  {{0,0,0,0}//vertex
-  ,{0,0,0,0}//edge
-  ,{0,&d2o1,&d2o2,&d2o3}//face
-  ,{0,&d3o1,&d3o2,&d3o3}//region
+  static IPShape d3o4(3,4);
+  static IPShape* table[4][5] =
+  {{0,0,0,0,0}//vertex
+  ,{0,0,0,0,0}//edge
+  ,{0,&d2o1,&d2o2,&d2o3,0}//face
+  ,{0,&d3o1,&d3o2,&d3o3,&d3o4}//region
   };
   assert(dimension >= 0);
   assert(dimension <= 3);
   assert(order >= 0);
-  assert(order <= 3);
+  assert(order <= 4);
   return table[dimension][order];
 }
 
