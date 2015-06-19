@@ -46,8 +46,8 @@ namespace {
   void hasEntWeight(apf::Mesh* m, apf::MeshTag* w, int (*hasWeight)[4]) {
     for(size_t i=0; i < 4; i++)
       (*hasWeight)[i] = 1;
-    size_t dims = TO_SIZET(m->getDimension()) + 1;
-    for(size_t i=0; i < dims; i++) {
+    int dims = m->getDimension() + 1;
+    for(int i=0; i < dims; i++) {
       apf::MeshIterator* it = m->begin(i);
       apf::MeshEntity* e;
       while ((e = m->iterate(it)))
@@ -67,8 +67,8 @@ namespace {
   void getPartWeights(apf::Mesh* m, apf::MeshTag* w, double (*weight)[4]) {
     int hasWeight[4];
     hasEntWeight(m,w,&hasWeight);
-    size_t dims = TO_SIZET(m->getDimension()) + 1;
-    for(size_t i=0; i < dims; i++) {
+    int dims = m->getDimension() + 1;
+    for(int i=0; i < dims; i++) {
       (*weight)[i] = 0;
       if(hasWeight[i]) {
         apf::MeshIterator* it = m->begin(i);
@@ -128,6 +128,21 @@ namespace {
     fprintf(stderr, "%s\n", s.c_str());
     PCU_Barrier();
   }
+  void writeWeightedEntStats(apf::Mesh* m, apf::MeshTag* w, std::string key) {
+    double weight[4];
+    getPartWeights(m, w, &weight);
+    double minEnt[4] = {0,0,0,0}, maxEnt[4] = {0,0,0,0};
+    double totEnt[4] = {0,0,0,0}, avgEnt[4] = {0,0,0,0};
+    getWeightedStats(&weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
+    const char* orders[4] = {"vtx","edge","face","rgn"};
+    if(!PCU_Comm_Self()) {
+      for( int d=0; d<=m->getDimension(); d++)
+        fprintf(stdout, "STATUS %s weighted %s <tot max min avg> "
+            "%.1f %.1f %.1f %.3f\n",
+            key.c_str(), orders[d],
+            totEnt[d], maxEnt[d], minEnt[d], avgEnt[d]);
+    }
+  }
 }
 
 void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
@@ -144,27 +159,13 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
       (*entImb)[i] = 1.0;
 }
 
-void Parma_PrintWeightedEntStats(apf::Mesh* m, apf::MeshTag* w, std::string key) {
-  double weight[4];
-  getPartWeights(m, w, &weight);
-  double minEnt[4] = {0,0,0,0}, maxEnt[4] = {0,0,0,0};
-  double totEnt[4] = {0,0,0,0}, avgEnt[4] = {0,0,0,0};
-  getWeightedStats(&weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
-  const char* orders[4] = {"vtx","edge","face","rgn"};
-  if(!PCU_Comm_Self()) {
-    for( int d=0; d<=m->getDimension(); d++)
-      fprintf(stdout, "STATUS %s weighted %s <tot max min avg> "
-          "%.1f %.1f %.1f %.3f\n",
-          key.c_str(), orders[d],
-          totEnt[d], maxEnt[d], minEnt[d], avgEnt[d]);
-  }
-}
+
 
 void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
     double (*entImb)[4]) {
    double tot[4] = {0,0,0,0};
-   size_t dims = TO_SIZET(mesh->getDimension()) + 1;
-   for(size_t i=0; i < dims; i++) {
+   int dims = mesh->getDimension() + 1;
+   for(int i=0; i < dims; i++) {
      apf::MeshIterator* it = mesh->begin(i);
      apf::MeshEntity* e;
      while ((e = mesh->iterate(it)))
@@ -172,11 +173,11 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
      (*entImb)[i] = tot[i];
      mesh->end(it);
    }
-   PCU_Add_Doubles(tot, dims);
-   PCU_Max_Doubles(*entImb, dims);
-   for(size_t i=0; i < dims; i++)
+   PCU_Add_Doubles(tot, TO_SIZET(dims));
+   PCU_Max_Doubles(*entImb, TO_SIZET(dims));
+   for(int i=0; i < dims; i++)
       (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
-   for(size_t i=dims; i < 4; i++)
+   for(int i=dims; i < 4; i++)
       (*entImb)[i] = 1.0;
 }
 
@@ -255,9 +256,9 @@ void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
 
 void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
   apf::MeshTag* w = m->createDoubleTag("parma_ent_weights", 1);
-  size_t dims = TO_SIZET(m->getDimension()) + 1;
+  int dims = m->getDimension() + 1;
   double entWeight=1;
-  for(size_t i=0; i < dims; i++) {
+  for(int i=0; i < dims; i++) {
     apf::MeshIterator* it = m->begin(i);
     apf::MeshEntity* e;
     while ((e = m->iterate(it)))
@@ -265,7 +266,7 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
     m->end(it);
   }
   Parma_PrintWeightedPtnStats(m,w,key,fine);
-  for(size_t i=0; i < dims; i++)
+  for(int i=0; i < dims; i++)
     apf::removeTagFromDimension(m,w,i);
   m->destroyTag(w);
 }
@@ -333,7 +334,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
     fprintf(stdout, "STATUS %s empty parts %d\n",
         key.c_str(), empty);
   }
-  Parma_PrintWeightedEntStats(m,w,key);
+  writeWeightedEntStats(m,w,key);
   if( 0 == PCU_Comm_Self() ) {
     fprintf(stdout, "STATUS %s owned bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
