@@ -30,18 +30,6 @@ int Parma_RunGhostPtnImprovement(apf::Mesh* mesh, apf::MeshTag* weight,
     const int verbosity=0);
 
 /**
- * @brief run selp to create a partition with kN parts where k is the
- *        partition factor, and N is the number of parts in the input mesh
- * @param mesh (InOut) partitioned mesh with N parts
- * @param weight (In) element weight used for computing imbalance
- * @param factor (In) partition factor > 1
- * @param verbosity (In) 0: minimal output, >0 increasing amounts
- * @return zero on success, non-zero otherwise
- */
-int Parma_RunSelp(apf::Mesh* mesh, apf::MeshTag* weight, const int factor,
-    const int verbosity=0);
-
-/**
  * @brief get entity imbalance
  * @param mesh (InOut) partitioned mesh
  * @param entImb (InOut) entity imbalance [vtx, edge, face, rgn]
