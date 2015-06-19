@@ -152,16 +152,6 @@ apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
     int verbose=0);
 
 /**
- * @brief create an APF Balancer to weld small part boundaries together
- * @param m (In) partitioned mesh
- * @param stepFactor (In) amount of weight to migrate between parts during
-               diffusion, lower values migrate fewer elements per iteration
- * @return apf balancer instance
- */
-apf::Balancer* Parma_MakeWelder(apf::Mesh* m, double stepFactor = 0.1,
-    int verbose=0);
-
-/**
  * @brief create an APF Balancer using ghost element aware diffusion
  * @param m (In) partitioned mesh
  * @param layers (In) depth of ghosting
