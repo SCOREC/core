@@ -41,7 +41,6 @@ SET(DIFFMC_SOURCES
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
   diffMC/parma_graphDist.cc
-  diffMC/parma_hpsBalancer.cc
   diffMC/parma_monitor.cc
   diffMC/parma_sides.cc
   diffMC/parma_step.cc

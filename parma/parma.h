@@ -152,14 +152,6 @@ apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
     double stepFactor = 0.1, int verbosity=0);
 
 /**
- * @brief create an APF Balancer using heavy part splitting
- * @param m (In) partitioned mesh
- * @param verbosity (In) output control, higher values output more
- * @return apf balancer instance
- */
-apf::Balancer* Parma_MakeHpsBalancer(apf::Mesh* m, int verbosity=0);
-
-/**
  * @brief create an APF Balancer targeting vertex imbalance
  * @param m (In) partitioned mesh
  * @param verbosity (In) output control, higher values output more
