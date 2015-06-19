@@ -178,16 +178,6 @@ apf::Balancer* Parma_MakeElmBalancer(apf::Mesh* m, double stepFactor=0.1,
     int verbosity=0);
 
 /**
- * @brief create an APF Balancer targeting element imbalance while preserving
- *        vertex balance
- * @param m (In) partitioned mesh
- * @param verbosity (In) output control, higher values output more
- * @return apf balancer instance
- */
-apf::Balancer* Parma_MakeElmLtVtxBalancer(apf::Mesh* m, double maxVtx,
-    double stepFactor=0.1, int verbosity=0);
-
-/**
  * @brief create an APF Balancer targeting vertex, edge, and elm imbalance
  * @param m (In) partitioned mesh
  * @param verbosity (In) output control, higher values output more

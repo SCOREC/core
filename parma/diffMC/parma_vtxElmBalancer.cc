@@ -80,8 +80,3 @@ apf::Balancer* Parma_MakeVtxElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
   return new VtxElmBalancer(m, stepFactor, verbosity);
 }
-
-apf::Balancer* Parma_MakeElmLtVtxBalancer(apf::Mesh* m, double maxVtx,
-    double stepFactor, int verbosity) {
-  return new ElmLtVtx(m, stepFactor, maxVtx, verbosity);
-}
