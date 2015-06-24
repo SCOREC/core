@@ -248,6 +248,19 @@ void test2D()
       apf::destroyMesh(m);
     }
   }
+  // test the pure interpolation side of things
+  {
+    apf::Mesh2* m = createMesh2D();
+    apf::changeMeshShape(m,apf::getLagrange(2),true);
+    ma::InterpolatingCurver ic(m,2);
+    ic.run();
+    testInterpolatedPoints2D(m);
+    testSize2D(m);
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+
 }
 
 void testSize3D(apf::Mesh2* m)

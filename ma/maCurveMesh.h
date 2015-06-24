@@ -16,12 +16,10 @@
 
 namespace ma {
 
-class Adapt;
-
 class MeshCurver
 {
   public:
-    MeshCurver(Mesh* m, int P, int B);
+    MeshCurver(Mesh* m, int P) : m_mesh(m), m_order(P) {};
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
@@ -39,25 +37,35 @@ class MeshCurver
   protected:
     Mesh* m_mesh;
     int m_order;
-    int m_blendOrder;
+};
+
+/** \brief curves an already changed mesh */
+class InterpolatingCurver : public MeshCurver
+{
+  public:
+    InterpolatingCurver(Mesh* m, int P) : MeshCurver(m,P) {};
+    virtual ~InterpolatingCurver() {};
+    virtual bool run();
+
 };
 
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(Mesh* m, int P, int B) : MeshCurver(m, P, B) {};
+    BezierCurver(Mesh* m, int P, int B) : MeshCurver(m, P), m_blendOrder(B) {};
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
       see apfBezier.cc */
     virtual bool run();
-
+  protected:
+    int m_blendOrder;
 };
 
-class GregoryCurver : public MeshCurver
+class GregoryCurver : public BezierCurver
 {
   public:
-    GregoryCurver(Mesh* m, int P, int B) : MeshCurver(m, P, B) {};
+    GregoryCurver(Mesh* m, int P, int B) : BezierCurver(m, P, B) {};
     /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */
