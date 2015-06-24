@@ -56,6 +56,24 @@ static void testElementSize(ma::Mesh* m)
     sizes[0],sizes[1],sizes[2]);
 }
 
+static void testInterpolating(const char* modelFile, const char* meshFile,
+    const int ne, const int nf)
+{
+  for(int order = 1; order <= 2; ++order){
+    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
+    apf::changeMeshShape(m2,apf::getLagrange(order),true);
+    ma::InterpolatingCurver ic(m2,order);
+    ic.run();
+    testElementSize(m2);
+    apf::DynamicVector ee(ne);
+    apf::DynamicVector fe(nf);
+    testInterpolationError(m2,1,ee);
+    testInterpolationError(m2,2,fe);
+    m2->destroyNative();
+    apf::destroyMesh(m2);
+  }
+}
+
 static void testBezier(const char* modelFile, const char* meshFile,
     const char* outFile, const int ne, const int nf)
 {
@@ -132,6 +150,7 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
 
+  testInterpolating(modelFile,meshFile,ne,nf);
   testBezier(modelFile,meshFile,outFile,ne,nf);
   testGregory(modelFile,meshFile,outFile,ne,nf);
 
