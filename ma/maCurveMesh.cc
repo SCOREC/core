@@ -20,13 +20,6 @@
 
 namespace ma {
 
-MeshCurver::MeshCurver(Mesh* m, int o, int b)
-{
-  m_mesh = m;
-  m_order = o;
-  m_blendOrder = b;
-}
-
 void MeshCurver::snapToInterpolateEdge(Entity* e)
 {
   apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
@@ -91,6 +84,17 @@ void MeshCurver::convertInterpolationPoints(Entity* e,
     m_mesh->setPoint(e,i,b[i]);
 
   apf::destroyElement(elem);
+}
+
+bool InterpolatingCurver::run()
+{
+  // interpolate points in each dimension
+  for(int d = 1; d < m_mesh->getDimension(); ++d)
+    snapToInterpolate(d);
+
+  m_mesh->acceptChanges();
+  m_mesh->verify();
+  return true;
 }
 
 bool BezierCurver::run()
