@@ -1,16 +1,16 @@
 SET(SUBPACKAGES_DIRS_CLASSIFICATIONS_OPTREQS
-    pcu                 pcu             SS  REQUIRED
-    gmi                 gmi             SS  REQUIRED
-    gmi_sim             gmi_sim         SS  REQUIRED
-    apf                 apf             SS  REQUIRED
-    apf_sim             apf_sim         SS  OPTIONAL
-    mds                 mds             SS  REQUIRED
-    parma               parma           SS  REQUIRED
-    apf_zoltan          zoltan          SS  REQUIRED
-    ma                  ma              SS  REQUIRED
-    spr                 spr             SS  REQUIRED
-    apf_stk             stk             SS  REQUIRED
-    exe                 test            SS  OPTIONAL
+    pcu                 pcu             PT  REQUIRED
+    gmi                 gmi             PT  REQUIRED
+    gmi_sim             gmi_sim         PT  REQUIRED
+    apf                 apf             PT  REQUIRED
+    apf_sim             apf_sim         PT  OPTIONAL
+    mds                 mds             PT  REQUIRED
+    parma               parma           PT  REQUIRED
+    apf_zoltan          zoltan          PT  OPTIONAL
+    ma                  ma              PT  OPTIONAL
+    spr                 spr             PT  REQUIRED
+    apf_stk             stk             PT  OPTIONAL
+    exe                 test            PT  OPTIONAL
 )
 
 SET(LIB_REQUIRED_DEP_PACKAGES)

@@ -377,7 +377,7 @@ class FieldReader : public IsotropicFunction
     {
       field = f;
       assert(apf::getValueType(field)==apf::SCALAR);
-      assert(apf::getShape(field)==apf::getMesh(field)->getShape());
+      assert(apf::getShape(field)==apf::getLagrange(1));
     }
     virtual ~FieldReader() {}
     virtual double getValue(Entity* vert)

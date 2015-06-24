@@ -746,6 +746,8 @@ MPI_Comm PCU_Get_Comm(void)
   return pcu_pmpi_comm();
 }
 
+/** \brief Return the time in seconds since some time in the past
+ */
 double PCU_Time(void)
 {
   return MPI_Wtime();

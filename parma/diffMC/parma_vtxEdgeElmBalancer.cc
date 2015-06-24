@@ -42,7 +42,7 @@ namespace {
             parma::makeEntWeights(mesh, wtag, s, 1)};
         parma::Targets* t =
           parma::makeVtxEdgeTargets(s, w, sideTol, maxVtx, factor);
-        parma::Selector* sel = parma::makeEdgeSelector(mesh, wtag);
+        parma::Selector* sel = parma::makeEdgeEqVtxSelector(mesh, wtag, maxVtx);
 
         monitorUpdate(maxEdgeImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
@@ -66,19 +66,28 @@ namespace {
       void balance(apf::MeshTag* wtag, double tolerance) {
         apf::Balancer* b = Parma_MakeVtxBalancer(mesh, factor, verbose);
         b->balance(wtag, tolerance);
-        Parma_PrintPtnStats(mesh, "post vertices");
+        Parma_PrintWeightedPtnStats(mesh, wtag, "post vertices");
         delete b;
 
-        double maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
+        double maxVtxW = parma::getMaxWeight(mesh,wtag,0);
+        double tgtMaxVtxW =
+          parma::getAvgWeight(mesh,wtag,0)*tolerance;
+        maxVtxW = ( maxVtxW < tgtMaxVtxW ) ? tgtMaxVtxW : maxVtxW;
         b = new VtxEdgeBalancer(mesh, factor, maxVtxW, verbose);
         b->balance(wtag, tolerance);
-        Parma_PrintPtnStats(mesh, "post edges");
+        Parma_PrintWeightedPtnStats(mesh, wtag, "post edges");
         delete b;
 
         maxVtxW = parma::getMaxWeight(mesh, wtag, 0);
-        b = Parma_MakeElmLtVtxBalancer(mesh, maxVtxW, factor, verbose);
+        tgtMaxVtxW = parma::getAvgWeight(mesh,wtag,0)*tolerance;
+        maxVtxW = ( maxVtxW < tgtMaxVtxW ) ? tgtMaxVtxW : maxVtxW;
+        double maxEdgeW = parma::getMaxWeight(mesh, wtag, 1);
+        double tgtMaxEdgeW =
+          parma::getAvgWeight(mesh,wtag,1)*tolerance;
+        maxEdgeW = ( maxEdgeW < tgtMaxEdgeW ) ? tgtMaxEdgeW : maxEdgeW;
+        b = parma::makeElmLtVtxEdgeBalancer(mesh, maxVtxW, maxEdgeW, factor, verbose);
         b->balance(wtag, tolerance);
-        Parma_PrintPtnStats(mesh, "post elements");
+        Parma_PrintWeightedPtnStats(mesh, wtag, "post elements");
         delete b;
       }
   };

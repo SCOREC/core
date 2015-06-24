@@ -8,54 +8,59 @@
 #include <SimUtil.h>
 
 namespace {
-  void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
-    double w = 1.0;
+  void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim, double w=1.0) {
     apf::MeshEntity* e;
     apf::MeshIterator* it = m->begin(dim);
-    while ((e = m->iterate(it))) 
+    while ((e = m->iterate(it)))
       m->setDoubleTag(e, tag, &w);
     m->end(it);
   }
 
-  apf::MeshTag* setWeights(apf::Mesh* m) {
+  apf::MeshTag* setWeights(apf::Mesh* m, double edgeWeight) {
+    double weights[4] = {1.,edgeWeight,1.,1.};
+    weights[1] = (!PCU_Comm_Self()) ? edgeWeight : 1.0;
+    fprintf(stderr, "STATUS %d entity weights %.2f %.2f %.2f %.2f\n",
+        PCU_Comm_Self(), weights[0], weights[1], weights[2], weights[3]);
     apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
-    setWeight(m, tag, 0);
-    setWeight(m, tag, 1);
-    setWeight(m, tag, m->getDimension());
+    for(int i=0; i<=m->getDimension(); i++)
+      setWeight(m, tag, i, weights[i]);
     return tag;
   }
 
   void clearTags(apf::Mesh* m, apf::MeshTag* t) {
-    apf::removeTagFromDimension(m, t, 0);
-    apf::removeTagFromDimension(m, t, 1);
-    apf::removeTagFromDimension(m, t, m->getDimension());
+    for(int i=0; i<=m->getDimension(); i++)
+      apf::removeTagFromDimension(m, t, i);
   }
 }
 
 int main(int argc, char** argv)
 {
-  assert(argc == 4);
+  assert(argc == 6);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
-  if ( argc != 4 ) {
+  PCU_Comm_Order(true);
+  if ( argc != 6 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <out mesh> <edge weight> <tgt imb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
   gmi_register_sim();
   //load model and mesh
+  double targetImb = atof(argv[5]);
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
-  Parma_PrintPtnStats(m, "initial");
-  apf::MeshTag* weights = setWeights(m);
+  apf::MeshTag* weights = setWeights(m,atof(argv[4]));
+  Parma_PrintWeightedPtnStats(m, weights, "initial",true);
   const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
-  balancer->balance(weights, 1.03);
+  if( !PCU_Comm_Self() )
+    fprintf(stderr, "STATUS target imbalance %.2f\n", targetImb);
+  balancer->balance(weights, targetImb);
   delete balancer;
-  Parma_PrintPtnStats(m, "final");
+  Parma_PrintWeightedPtnStats(m, weights, "final",true);
   clearTags(m, weights);
   m->destroyTag(weights);
   m->writeNative(argv[3]);

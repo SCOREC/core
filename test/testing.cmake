@@ -128,12 +128,6 @@ add_test(gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
-add_test(hps
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./hps
-  "${MDIR}/torus.dmg"
-  "${MDIR}/4imb/torus.smb"
-  "torusHps4p/")
 add_test(fixDisconnected
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fixDisconnected
@@ -153,18 +147,14 @@ add_test(vtxBalance
   "${MDIR}/afosr.smd"
   "${MDIR}/4imb/"
   "afosrBal4p/")
-add_test(edgeBalance
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./edgeBalance
-  "${MDIR}/afosr.smd"
-  "${MDIR}/4imb/"
-  "afosrBal4p/")
 add_test(vtxEdgeElmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxEdgeElmBalance
   "${MDIR}/afosr.smd"
   "${MDIR}/4imb/"
-  "afosrBal4p/")
+  "afosrBal4p/"
+  "2"
+  "1.10")
 add_test(vtxElmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxElmBalance

@@ -1,8 +1,11 @@
+/* gets getline() to show up */
+#define _POSIX_C_SOURCE 200809L
 #include "gmi_base.h"
 #include "gmi_lookup.h"
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 
 void gmi_fscanf(FILE* f, int n, const char* format, ...)

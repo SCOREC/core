@@ -44,7 +44,7 @@ typedef std::map<int, MeshEntity*> GlobalToVert;
 
   Note that all vertices will have zero coordinates, so
   it is often good to use apf::setCoords after this. */
-void construct(Mesh2* m, int* conn, int nelem, int etype,
+void construct(Mesh2* m, const int* conn, int nelem, int etype,
     GlobalToVert& globalToVert);
 
 /** \brief Assign coordinates to the mesh

@@ -10,6 +10,12 @@ namespace parma {
     return maxW;
   }
 
+  double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
+    double maxW = getWeight(m,w,entDim);
+    PCU_Add_Doubles(&maxW, 1);
+    return maxW/PCU_Comm_Peers();
+  }
+
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
     assert(entDim >= 0 && entDim <= 3);
     apf::MeshIterator* it = m->begin(entDim);
