@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  Copyright 2013 Scientific Computation Research Center,
+  Copyright 2015 Scientific Computation Research Center,
       Rensselaer Polytechnic Institute. All rights reserved.
 
   The LICENSE file included with this distribution describes the terms
@@ -90,15 +90,17 @@ apf::FieldShape* getGregory(int order, int blendOrder);
 void getTransformationCoefficients(int dim, int type,
     apf::NewArray<double>& c);
 
+/** \brief binomial function */
+int binomial(int n, int i);
+
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
    n points per dimension of the entity through uniform
    sampling locations in parameter space */
 double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n);
-/** \brief binomial function */
-int binomial(int n, int i);
-/** \brief Mostly a debugging function, writes csv file of n points per dim */
-void writePointSet(apf::Mesh2* m, int d, int n, const char* prefix);
+
+/** \brief Visualization, writes two files for edges and faces */
+void writeCurvedVtuFiles(apf::Mesh* m, int n, const char* prefix);
 
 }
 

@@ -46,7 +46,8 @@ static double B = 2.;
 static int P = 0;
 
 static void BlendedTriangleGetValues(const int type,
-    apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<double>& values)
+    apf::Mesh* m, apf::MeshEntity* e,
+    apf::Vector3 const& xi, apf::NewArray<double>& values)
 {
   // Triangular Blending
   double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
@@ -83,7 +84,8 @@ static void BlendedTriangleGetValues(const int type,
 }
 
 static void BlendedTriangleGetLocalGradients(const int type,
-    apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads)
+    apf::Mesh* m, apf::MeshEntity* e,
+    apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads)
 {
 
   double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
@@ -133,7 +135,8 @@ static void BlendedTriangleGetLocalGradients(const int type,
 }
 
 static void BlendedTetrahedronGetValues(const int type,
-    apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<double>& values)
+    apf::Mesh* m, apf::MeshEntity* e,
+    apf::Vector3 const& xi, apf::NewArray<double>& values)
 {
 
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
@@ -216,7 +219,8 @@ static void BlendedTetrahedronGetValues(const int type,
 }
 
 static void BlendedTetrahedronGetLocalGradients(const int type,
-    apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads)
+    apf::Mesh* m, apf::MeshEntity* e,
+    apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads)
 {
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
   apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
@@ -427,7 +431,8 @@ public:
       grads.allocate(curved_face_total[CURVED_BEZIER][P-1]);
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-      apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
+      apf::Vector3 gxii[3] =
+        {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
 
       apf::ModelEntity* g = m->toModel(e);
 
@@ -943,12 +948,13 @@ public:
         BlendedTriangleGetValues(CURVED_GREGORY,m,e,xi,values);
 
     }
-    void getLocalGradients(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
-        apf::NewArray<apf::Vector3>& grads) const
+    void getLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
+        apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
     {
       grads.allocate(curved_face_total[CURVED_GREGORY][3]);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-      apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
+      apf::Vector3 gxii[3] =
+        {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
       apf::ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
         for(int i = 1; i < 5; ++i)
