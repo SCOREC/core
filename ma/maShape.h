@@ -27,6 +27,14 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
 
+/* checks whether a pyramid is safe to tetrahedronize.
+   good_rotation gives additional information if the pyramid
+   is unsafe:
+     -1  there is no safe way to tetrahedronize it
+     0   the 0--2 diagonal is safe
+     1   the 1--3 diagonal is safe  */
+bool isPyramidOk(Mesh* m, Entity* e,
+    int* good_rotation = 0);
 bool isLayerElementOk(Mesh* m, Entity* e);
 
 CodeMatch matchSliver(
