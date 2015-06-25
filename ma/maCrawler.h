@@ -9,6 +9,7 @@ namespace ma {
 struct Crawler
 {
   Crawler(Adapt* a):adapter(a) {}
+  virtual ~Crawler() {}
   typedef std::vector<Entity*> Layer;
   virtual void begin(Layer& first) = 0;
   virtual void end() {}
@@ -19,6 +20,7 @@ struct Crawler
 };
 
 void crawlLayers(Crawler* c);
+void crawlLayer(Crawler* c, Crawler::Layer& layer);
 void syncLayer(Crawler* c, Crawler::Layer& layer);
 void getDimensionBase(Adapt* a, int d, Crawler::Layer& base);
 Entity* getOtherVert(Mesh* m, Entity* v, Predicate& visited);

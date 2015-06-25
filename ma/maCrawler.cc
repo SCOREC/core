@@ -33,7 +33,7 @@ void syncLayer(Crawler* c, Crawler::Layer& layer)
   }
 }
 
-static void crawlLayer(Crawler* c, Crawler::Layer& layer)
+void crawlLayer(Crawler* c, Crawler::Layer& layer)
 {
   Crawler::Layer nextLayer;
   for (size_t i = 0; i < layer.size(); ++i) {
