@@ -159,9 +159,15 @@ void checkLayerShape(Mesh* m, const char* key)
         ss.precision(15);
         ss << std::scientific;
         ss << key << ": ";
-        ss << "layer " << apf::Mesh::typeName[m->getType(e)]
+        int type = m->getType(e);
+        ss << "layer " << apf::Mesh::typeName[type]
            << " at " << apf::getLinearCentroid(m, e)
            << " is unsafe to tetrahedronize\n";
+        if (type == PRISM) {
+          ss << "there is currently no code to help with such prisms,\n";
+          ss << "but there is a chance it will tetrahedronize OK.\n";
+          ss << "you feeling lucky ?\n";
+        }
         std::string s = ss.str();
         fprintf(stderr,"%s",s.c_str());
         ++n;
