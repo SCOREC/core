@@ -153,13 +153,20 @@ void checkLayerShape(Mesh* m)
   Entity* e;
   while ((e = m->iterate(it)))
     if ( ! apf::isSimplex(m->getType(e)))
-      if ( ! isLayerElementOk(m, e)) {
+      if (!isLayerElementOk(m, e)) {
         std::stringstream ss;
-        ss << "warning: layer element at "
-          << apf::getLinearCentroid(m, e)
-          << " is unsafe to tetrahedronize\n";
+        ss.precision(15);
+        ss << std::scientific;
+        ss << "warning: layer " << apf::Mesh::typeName[m->getType(e)]
+           << " at " << apf::getLinearCentroid(m, e)
+           << " is unsafe to tetrahedronize\n";
+        ss << "vertices:\n";
+        Downward v;
+        int nv = m->getDownward(e, 0, v);
+        for (int i = 0; i < nv; ++i)
+          ss << getPosition(m, v[i]) << '\n';
         std::string s = ss.str();
-        fprintf(stderr,"%s",s.c_str());
+        printf("%s",s.c_str());
       }
   m->end(it);
   double t1 = PCU_Time();

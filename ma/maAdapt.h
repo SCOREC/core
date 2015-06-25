@@ -29,7 +29,8 @@ enum {
   LAYER_BASE    = (1<<11),
   LAYER_TOP     = (1<<12),
   DIAGONAL_1    = (1<<13),
-  DIAGONAL_2    = (1<<14)
+  DIAGONAL_2    = (1<<14),
+  LAYER_UNSNAP  = (1<<15)
 };
 
 class DeleteCallback;

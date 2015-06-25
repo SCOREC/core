@@ -2,8 +2,10 @@
 #include "maAdapt.h"
 #include "maLayer.h"
 #include "maSnap.h"
+#include "maShape.h"
 
 #include <cstdio>
+#include <sstream>
 
 namespace ma {
 
@@ -154,8 +156,9 @@ void splitPrism_4(Refine* r, Entity* p, Entity** v)
    it is called from splitPrism_9 which has to deal
    with quad-associated vertices
  */
-void splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
+bool splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
 {
+  Mesh* m = r->adapt->mesh;
 /* make center prism */
   buildSplitElement(r,p,PRISM,sv);
 /* make the three corner prisms through rotation */
@@ -168,8 +171,20 @@ void splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
     Entity* pv[6];
     pv[3] = sv2[3]; pv[4] = v2[4]; pv[5] = sv2[4];
     pv[0] = sv2[0]; pv[1] = v2[1]; pv[2] = sv2[1];
-    buildSplitElement(r,p,PRISM,pv);
+    Entity* be = buildSplitElement(r,p,PRISM,pv);
+    if (!isLayerElementOk(m, be)) {
+      std::stringstream ss;
+      ss.precision(15);
+      ss << std::scientific;
+      ss << "bad prism (#" << i << "):\n";
+      for (int j = 0; j < 6; ++j)
+        ss << getPosition(m, pv[j]) << '\n';
+      std::string s = ss.str();
+      printf("%s", s.c_str());
+      return false;
+    }
   }
+  return true;
 }
 
 void splitPrism_6(Refine* r, Entity* p, Entity** v)
@@ -221,16 +236,36 @@ void splitPrism_9(Refine* r, Entity* p, Entity** v)
   cenv[2] = findSplitVert(r,quads[2]);
   Entity* pv[6];
   Entity* sv[6];
+  int bad_i = 0;
   pv[3] =    v[3]; pv[4] =    v[4]; pv[5] =    v[5];
   pv[0] = midv[0]; pv[1] = midv[1]; pv[2] = midv[2];
   sv[3] = topv[0]; sv[4] = topv[1]; sv[5] = topv[2];
   sv[0] = cenv[0]; sv[1] = cenv[1]; sv[2] = cenv[2];
-  splitPrism_6_sv(r,p,pv,sv);
+  if (!splitPrism_6_sv(r,p,pv,sv))
+    goto bad_prism;
   pv[3] = midv[0]; pv[4] = midv[1]; pv[5] = midv[2];
   pv[0] =    v[0]; pv[1] =    v[1]; pv[2] =    v[2];
   sv[3] = cenv[0]; sv[4] = cenv[1]; sv[5] = cenv[2];
   sv[0] = botv[0]; sv[1] = botv[1]; sv[2] = botv[2];
-  splitPrism_6_sv(r,p,pv,sv);
+  if (!splitPrism_6_sv(r,p,pv,sv)) {
+    bad_i = 1;
+    goto bad_prism;
+  }
+  return;
+bad_prism:
+  std::stringstream ss;
+  ss.precision(15);
+  ss << std::scientific;
+  ss << "while splitting (";
+  if (bad_i)
+    ss << "bot";
+  else
+    ss << "top";
+  ss << "):\n";
+  for (int j = 0; j < 6; ++j)
+    ss << getPosition(m, v[j]) << '\n';
+  std::string s = ss.str();
+  printf("%s", s.c_str());
 }
 
 SplitFunction prism_templates[prism_edge_code_count] = 
@@ -812,7 +847,20 @@ static void splitPyramidUniform(Refine* r, Entity* p, Entity** v)
     pv[3] = cv;       pv[2] = botv2[1];
     pv[0] = botv2[0]; pv[1] = v2[1];
     pv[4] = midv2[1];
-    buildSplitElement(r,p,PYRAMID,pv);
+    Entity* pyr = buildSplitElement(r,p,PYRAMID,pv);
+    if (!isLayerElementOk(m, pyr)) {
+      std::stringstream ss;
+      ss.precision(15);
+      ss << std::scientific;
+      ss << "refining pyramid:\n";
+      for (int j = 0; j < 5; ++j)
+        ss << getPosition(m, v[j]) << '\n';
+      ss << "produced bad pyramid (#" << i << "):\n";
+      for (int j = 0; j < 5; ++j)
+        ss << getPosition(m, pv[j]) << '\n';
+      std::string s = ss.str();
+      printf("%s", s.c_str());
+    }
     Entity* tv[4];
     tv[0] = midv2[0]; tv[1] = midv2[1];
     tv[2] = botv2[0]; tv[3] = cv;
