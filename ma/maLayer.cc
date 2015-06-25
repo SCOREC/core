@@ -175,7 +175,7 @@ void checkLayerShape(Mesh* m, const char* key)
   m->end(it);
   PCU_Add_Longs(&n, 1);
   double t1 = PCU_Time();
-  print("checked layer quality in %f seconds: %ld unsafe elements", t1 - t0, n);
+  print("%s: checked layer quality in %f seconds: %ld unsafe elements", key, t1 - t0, n);
 }
 
 }
