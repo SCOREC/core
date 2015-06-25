@@ -12,17 +12,17 @@ if(NOT BUILD_IN_TRILINOS)
 endif()
 
 #Sources & Headers
-set(SOURCES)
+set(CRV_SOURCES)
 
-set(HEADERS)
+set(CRV_HEADERS)
 
 include_directories(${CRV_INCLUDE_DIRS})
 
 #Library
-add_library(crv ${SOURCES})
+add_library(crv ${CRV_SOURCES})
 target_link_libraries(crv ${DEP_LIBS})
 
-INSTALL(FILES ${HEADERS} DESTINATION include)
+INSTALL(FILES ${CRV_HEADERS} DESTINATION include)
 INSTALL(TARGETS 
   crv
   RUNTIME DESTINATION bin
