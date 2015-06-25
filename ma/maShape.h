@@ -33,7 +33,7 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n);
      -1  there is no safe way to tetrahedronize it
      0   the 0--2 diagonal is safe
      1   the 1--3 diagonal is safe  */
-bool isPyramidOk(Mesh* m, Entity* e,
+bool isPyramidOk(apf::Mesh* m, Entity* e,
     int* good_rotation = 0);
 bool isLayerElementOk(Mesh* m, Entity* e);
 

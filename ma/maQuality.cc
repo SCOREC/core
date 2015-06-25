@@ -303,7 +303,7 @@ bool isPrismOk(Mesh* m, Entity* e)
   return true;
 }
 
-bool isPyramidOk(Mesh* m, Entity* e,
+bool isPyramidOk(apf::Mesh* m, Entity* e,
     int* good_rotation)
 {
   Entity* v[5];
