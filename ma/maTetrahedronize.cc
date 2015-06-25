@@ -249,7 +249,10 @@ void tetrahedronize(Adapt* a)
 /* start of the island pyramid cleanup system,
    the goal of which is to remove pyramids which are
    adjacent to one another via their quadrilateral faces
-   and which do not cap prismatic layer stacks */
+   and which do not cap prismatic layer stacks.
+   this allows us to later assume no such things
+   exist, which simplifies the definition of LAYER.
+*/
 
 /* this Crawler sets the CHECKED flag on all layer quads
    which are reachable by crawling up from the base edges.
