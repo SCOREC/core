@@ -7,15 +7,14 @@
 
 #include <math.h>
 
+#include "crv.h"
 #include "apf.h"
 #include "apfMesh.h"
 #include "apfShape.h"
 
 /* see bezier.tex */
 
-namespace apf {
-
-namespace bezier {
+namespace crv {
 // negative -> flipped relative to canonical
 // relies on e0 being always ordered correctly
 static int const tet_tri_edges[4][3] =
@@ -47,7 +46,7 @@ static double B = 2.;
 static int P = 0;
 
 static void BlendedTriangleGetValues(const int type,
-    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& values)
+    apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<double>& values)
 {
   // Triangular Blending
   double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
@@ -59,12 +58,12 @@ static void BlendedTriangleGetValues(const int type,
     values[i] = 0.0;
 
   double x;
-  Vector3 xv;
-  NewArray<double> v;
+  apf::Vector3 xv;
+  apf::NewArray<double> v;
 
-  int const (*tev)[2] = tri_edge_verts;
+  int const (*tev)[2] = apf::tri_edge_verts;
 
-  MeshEntity* edges[3];
+  apf::MeshEntity* edges[3];
   m->getDownward(e,1,edges);
   for(int i = 0; i < 3; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
@@ -73,7 +72,7 @@ static void BlendedTriangleGetValues(const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
           ->getValues(m,edges[i],xv,v);
 
     for(int j = 0; j < 2; ++j)
@@ -84,26 +83,26 @@ static void BlendedTriangleGetValues(const int type,
 }
 
 static void BlendedTriangleGetLocalGradients(const int type,
-    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& grads)
+    apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads)
 {
 
   double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-  Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
+  apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
 
   for(int i = 0; i < 3; ++i)
     grads[i] = gxii[i]*-pow(xii[i],B-1.)*B;
 
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
-    grads[i] = Vector3(0,0,0);
+    grads[i] = apf::Vector3(0,0,0);
 
   double x;
-  Vector3 xv, gx;
+  apf::Vector3 xv, gx;
 
-  NewArray<double> v;
-  NewArray<Vector3> gv;
-  MeshEntity * edges[3];
+  apf::NewArray<double> v;
+  apf::NewArray<apf::Vector3> gv;
+  apf::MeshEntity* edges[3];
 
-  int const (*tev)[2] = tri_edge_verts;
+  int const (*tev)[2] = apf::tri_edge_verts;
 
   m->getDownward(e,1,edges);
   for(int i = 0; i < 3; ++i){
@@ -115,10 +114,10 @@ static void BlendedTriangleGetLocalGradients(const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
       ->getValues(m,edges[i],xv,v);
 
-    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
       ->getLocalGradients(m,edges[i],xv,gv);
 
     for(int j = 0; j < 2; ++j)
@@ -134,7 +133,7 @@ static void BlendedTriangleGetLocalGradients(const int type,
 }
 
 static void BlendedTetrahedronGetValues(const int type,
-    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& values)
+    apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<double>& values)
 {
 
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
@@ -146,18 +145,18 @@ static void BlendedTetrahedronGetValues(const int type,
     values[i] = 0.0;
 
   double x;
-  Vector3 xv;
-  NewArray<double> v;
+  apf::Vector3 xv;
+  apf::NewArray<double> v;
 
-  MeshEntity* faces[4];
+  apf::MeshEntity* faces[4];
 
   int nE = P-1;
   int nF = curved_face_internal[type][P-1];
 
-  int const (*tev)[2] = tet_edge_verts;
-  int const (*ttv)[3] = tet_tri_verts;
+  int const (*tev)[2] = apf::tet_edge_verts;
+  int const (*ttv)[3] = apf::tet_tri_verts;
 
-  MeshEntity* edges[6];
+  apf::MeshEntity* edges[6];
   m->getDownward(e,1,edges);
   for(int i = 0; i < 6; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
@@ -165,7 +164,7 @@ static void BlendedTetrahedronGetValues(const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
       ->getValues(m,edges[i],xv,v);
 
     for(int j = 0; j < 2; ++j) // vertices
@@ -189,10 +188,10 @@ static void BlendedTetrahedronGetValues(const int type,
     xv = xv/x;
 
     if(type == CURVED_BEZIER)
-      getBezier(3,P,B)->getEntityShape(Mesh::TRIANGLE)
+      getBezier(3,P,B)->getEntityShape(apf::Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
     else if(type == CURVED_GREGORY)
-      getGregory(P,B)->getEntityShape(Mesh::TRIANGLE)
+      getGregory(P,B)->getEntityShape(apf::Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
 
     for(int j = 0; j < 3; ++j) // vertices
@@ -217,33 +216,33 @@ static void BlendedTetrahedronGetValues(const int type,
 }
 
 static void BlendedTetrahedronGetLocalGradients(const int type,
-    Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& grads)
+    apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads)
 {
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
-  Vector3 gxii[4] = {Vector3(-1,-1,-1),Vector3(1,0,0),
-      Vector3(0,1,0),Vector3(0,0,1)};
+  apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
 
   for(int i = 0; i < 4; ++i)
       grads[i] = gxii[i]*pow(xii[i],B-1.)*B;
 
   for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
-    grads[i] = Vector3(0,0,0);
+    grads[i] = apf::Vector3(0,0,0);
 
   double x;
-  Vector3 xv, gx;
-  Vector3 gxv[2];
-  NewArray<double> v;
-  NewArray<Vector3> gv;
+  apf::Vector3 xv, gx;
+  apf::Vector3 gxv[2];
+  apf::NewArray<double> v;
+  apf::NewArray<apf::Vector3> gv;
 
-  MeshEntity* faces[4];
+  apf::MeshEntity* faces[4];
 
   int nE = P-1;
   int nF = curved_face_internal[type][P-1];
 
-  int const (*tev)[2] = tet_edge_verts;
-  int const (*ttv)[3] = tet_tri_verts;
+  int const (*tev)[2] = apf::tet_edge_verts;
+  int const (*ttv)[3] = apf::tet_tri_verts;
 
-  MeshEntity* edges[6];
+  apf::MeshEntity* edges[6];
   m->getDownward(e,1,edges);
   for(int i = 0; i < 6; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
@@ -252,10 +251,10 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
 
     xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
-    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
         ->getValues(m,edges[i],xv,v);
 
-    getBezier(3,P,B)->getEntityShape(Mesh::EDGE)
+    getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
         ->getLocalGradients(m,edges[i],xv,gv);
 
     for(int j = 0; j < 2; ++j) // vertices
@@ -287,15 +286,15 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
     gxv[1] = (gxii[ttv[i][2]]-gx*xv[1])*pow(x,B-1.);
 
     if(type == CURVED_BEZIER){
-      getBezier(3,P,B)->getEntityShape(Mesh::TRIANGLE)
+      getBezier(3,P,B)->getEntityShape(apf::Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
-      getBezier(3,P,B)->getEntityShape(Mesh::TRIANGLE)
+      getBezier(3,P,B)->getEntityShape(apf::Mesh::TRIANGLE)
           ->getLocalGradients(m,faces[i],xv,gv);
     }
     else if(type == CURVED_GREGORY){
-      getGregory(P,B)->getEntityShape(Mesh::TRIANGLE)
+      getGregory(P,B)->getEntityShape(apf::Mesh::TRIANGLE)
           ->getValues(m,faces[i],xv,v);
-      getGregory(P,B)->getEntityShape(Mesh::TRIANGLE)
+      getGregory(P,B)->getEntityShape(apf::Mesh::TRIANGLE)
           ->getLocalGradients(m,faces[i],xv,gv);
     }
 
@@ -326,29 +325,29 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
 
 }
 
-class BezierShape : public FieldShape
+class BezierShape : public apf::FieldShape
 {
 public:
-  class Vertex : public EntityShape
+  class Vertex : public apf::EntityShape
   {
   public:
-    void getValues(Mesh*, MeshEntity*,
-        Vector3 const&, NewArray<double>& values) const
+    void getValues(apf::Mesh2*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<double>& values) const
     {
       values.allocate(1);
       values[0] = 1.0;
     }
-    void getLocalGradients(Mesh*, MeshEntity*,
-        Vector3 const&, NewArray<Vector3>&) const
+    void getLocalGradients(apf::Mesh2*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
     {
     }
     int countNodes() const {return 1;}
   };
-  class Edge : public EntityShape
+  class Edge : public apf::EntityShape
   {
   public:
-    void getValues(Mesh* /*m*/, MeshEntity* /*e*/,
-        Vector3 const& xi, NewArray<double>& values) const
+    void getValues(apf::Mesh2* /*m*/, apf::MeshEntity* /*e*/,
+        apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
@@ -359,25 +358,25 @@ public:
       values[1] = pow(t, P);
 
     }
-    void getLocalGradients(Mesh* /*m*/, MeshEntity* /*e*/,
-        Vector3 const& xi, NewArray<Vector3>& grads) const
+    void getLocalGradients(apf::Mesh2* /*m*/, apf::MeshEntity* /*e*/,
+        apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
     {
       double t = 0.5*(xi[0]+1.);
       grads.allocate(P+1);
       for(int i = 1; i < P; ++i)
-        grads[i+1] = Vector3(binomial(P,i) * (i-P*t)
+        grads[i+1] = apf::Vector3(binomial(P,i) * (i-P*t)
             * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
-      grads[0] = Vector3(-P*pow(1-t, P-1)/2.,0,0);
-      grads[1] = Vector3(P*pow(t, P-1)/2.,0,0);
+      grads[0] = apf::Vector3(-P*pow(1-t, P-1)/2.,0,0);
+      grads[1] = apf::Vector3(P*pow(t, P-1)/2.,0,0);
     }
     int countNodes() const {return P+1;}
-    void alignSharedNodes(Mesh*,
-        MeshEntity*, MeshEntity*, int order[])
+    void alignSharedNodes(apf::Mesh2*,
+        apf::MeshEntity*, apf::MeshEntity*, int order[])
     {
       (void)order;
     }
   };
-  class Triangle : public EntityShape
+  class Triangle : public apf::EntityShape
   {
   public:
     Triangle()
@@ -397,14 +396,14 @@ public:
           map[j-1][i] = maps[j-1][i];
       }
     }
-    void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
-        NewArray<double>& values) const
+    void getValues(apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi,
+        apf::NewArray<double>& values) const
     {
       values.allocate(curved_face_total[CURVED_BEZIER][P-1]);
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
-      ModelEntity* g = m->toModel(e);
+      apf::ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
 
         for(int i = 0; i < P+1; ++i)
@@ -417,15 +416,15 @@ public:
         BlendedTriangleGetValues(CURVED_BEZIER,m,e,xi,values);
 
     }
-    void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
-        NewArray<Vector3>& grads) const
+    void getLocalGradients(apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi,
+        apf::NewArray<apf::Vector3>& grads) const
     {
       grads.allocate(curved_face_total[CURVED_BEZIER][P-1]);
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-      Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
+      apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
 
-      ModelEntity* g = m->toModel(e);
+      apf::ModelEntity* g = m->toModel(e);
 
       if (m->getModelType(g) != m->getDimension()){
         for(int i = 1; i < P+1; ++i)
@@ -473,8 +472,8 @@ public:
 
     }
     int countNodes() const {return curved_face_total[CURVED_BEZIER][P-1];}
-    void alignSharedNodes(Mesh* m,
-        MeshEntity* elem, MeshEntity* shared, int order[])
+    void alignSharedNodes(apf::Mesh2* m,
+        apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
       int which,rotate;
       bool flip;
@@ -488,32 +487,32 @@ public:
       }
     }
   private:
-    NewArray<int> map[6];
+    apf::NewArray<int> map[6];
   };
-  class Tetrahedron : public EntityShape
+  class Tetrahedron : public apf::EntityShape
   {
   public:
-    void getValues(Mesh* m, MeshEntity* e,
-        Vector3 const& xi, NewArray<double>& values) const
+    void getValues(apf::Mesh2* m, apf::MeshEntity* e,
+        apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
       values.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
       BlendedTetrahedronGetValues(CURVED_BEZIER,m,e,xi,values);
     }
-    void getLocalGradients(Mesh* m, MeshEntity* e,
-        Vector3 const& xi,
-        NewArray<Vector3>& grads) const
+    void getLocalGradients(apf::Mesh2* m, apf::MeshEntity* e,
+        apf::Vector3 const& xi,
+        apf::NewArray<apf::Vector3>& grads) const
     {
       grads.allocate(blended_tet_total[CURVED_BEZIER][P-1]);
       BlendedTetrahedronGetLocalGradients(CURVED_BEZIER,m,e,xi,grads);
     }
     int countNodes() const {return blended_tet_total[CURVED_BEZIER][P-1];}
-    void alignSharedNodes(Mesh* m,
-        MeshEntity* elem, MeshEntity* shared, int order[])
+    void alignSharedNodes(apf::Mesh2* m,
+        apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
       int which,rotate;
       bool flip;
       getAlignment(m,elem,shared,which,flip,rotate);
-      if(m->getType(shared) == Mesh::EDGE){
+      if(m->getType(shared) == apf::Mesh::EDGE){
         if(!flip)
           for(int i = 0; i < P-1; ++i)
             order[i] = i;
@@ -537,13 +536,13 @@ public:
       if(n % l) order[3*l] = 3*l;
      }
   };
-  EntityShape* getEntityShape(int type)
+  apf::EntityShape* getEntityShape(int type)
   {
     static Vertex vertex;
     static Edge edge;
     static Triangle triangle;
     static Tetrahedron tet;
-    static EntityShape* shapes[Mesh::TYPES] =
+    static apf::EntityShape* shapes[apf::Mesh::TYPES] =
     {&vertex,   //vertex
      &edge,     //edge
      &triangle, //triangle
@@ -589,7 +588,7 @@ public:
     name = ss.str();
     this->registerSelf(name.c_str());
   }
-  void getNodeXi(int type, int node, Vector3& xi)
+  void getNodeXi(int type, int node, apf::Vector3& xi)
   {
     static double eP2[1] = {0.0};
     static double eP3[2] = {-0.4306648,0.4306648};
@@ -601,10 +600,10 @@ public:
     static double* edgePoints[6] =
     {eP2, eP2, eP3, eP4, eP5, eP6 };
 
-    if(type == Mesh::EDGE && P > 1){
-      xi = Vector3(edgePoints[P-1][node],0,0);
+    if(type == apf::Mesh::EDGE && P > 1){
+      xi = apf::Vector3(edgePoints[P-1][node],0,0);
     } else {
-      xi = Vector3(0,0,0);
+      xi = apf::Vector3(0,0,0);
     }
   }
 protected:
@@ -621,7 +620,7 @@ public:
     name = ss.str();
     this->registerSelf(name.c_str());
   }
-  void getNodeXi(int type, int node, Vector3& xi)
+  void getNodeXi(int type, int node, apf::Vector3& xi)
   {
     static double eP2[1] = {0.0};
     static double eP3[2] = {-0.4503914,0.4503914};
@@ -631,10 +630,10 @@ public:
       0.469821,0.8388042};
     static double* edgePoints[6] =
     {eP2, eP2, eP3, eP4, eP5, eP6 };
-    if (type == Mesh::EDGE) {
-      xi = Vector3(edgePoints[P-1][node],0,0);
-    } else if (type == Mesh::TRIANGLE) {
-      xi = Vector3(1./3.,1./3.,1./3.);
+    if (type == apf::Mesh::EDGE) {
+      xi = apf::Vector3(edgePoints[P-1][node],0,0);
+    } else if (type == apf::Mesh::TRIANGLE) {
+      xi = apf::Vector3(1./3.,1./3.,1./3.);
       if(node == curved_face_internal[CURVED_BEZIER][P-1]-1 && P % 3 == 0){
         return;
       } else { // technically only two of these numbers are needed
@@ -642,7 +641,7 @@ public:
           case 1:
           case 2:
           case 3:
-            fail("expected P >= 4");
+            apf::fail("expected P >= 4");
           case 4:
             xi[(node+2) % 3] = 0.5582239;
             xi[(node+0) % 3] = 0.22088805;
@@ -677,14 +676,14 @@ public:
         }
       }
     } else {
-      xi = Vector3(0,0,0);
+      xi = apf::Vector3(0,0,0);
     }
   }
 protected:
   std::string name;
 };
 
-static void getBezierCurveInterPtsToCtrlPts(NewArray<double> & c)
+static void getBezierCurveInterPtsToCtrlPts(apf::NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
   double e3[8] = {
@@ -719,7 +718,7 @@ static void getBezierCurveInterPtsToCtrlPts(NewArray<double> & c)
 
 }
 static void getBezierShapeInterPtsToCtrlPts(int type,
-    NewArray<double> & c)
+    apf::NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
   double e3[8] = {
@@ -873,9 +872,9 @@ static void getBezierShapeInterPtsToCtrlPts(int type,
 
   double* table[10] = {
       e2,e3,e4,e5,e6,NULL,f3,f4,f5,f6};
-  int nb = (type == Mesh::TRIANGLE) ?
+  int nb = (type == apf::Mesh::TRIANGLE) ?
       curved_face_internal[CURVED_BEZIER][P-1] : P-1;
-  int ni = (type == Mesh::TRIANGLE) ?
+  int ni = (type == apf::Mesh::TRIANGLE) ?
       curved_face_total[CURVED_BEZIER][P-1] : P+1;
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
@@ -885,7 +884,7 @@ static void getBezierShapeInterPtsToCtrlPts(int type,
 
 /* end of Bezier, begining of Gregory Surface */
 
-class GregorySurface4 : public FieldShape
+class GregorySurface4 : public apf::FieldShape
 {
 public:
   const char* getName() const {return name.c_str();}
@@ -895,7 +894,7 @@ public:
     name = ss.str();
     this->registerSelf(name.c_str());
   }
-  class Triangle : public EntityShape
+  class Triangle : public apf::EntityShape
   {
   public:
     Triangle()
@@ -912,13 +911,13 @@ public:
       pairs[0][1] = 5; pairs[1][1] = 3; pairs[2][1] = 4;
 
     }
-    void getValues(Mesh* m, MeshEntity* e, Vector3 const& xi,
-        NewArray<double>& values) const
+    void getValues(apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi,
+        apf::NewArray<double>& values) const
     {
       values.allocate(curved_face_total[CURVED_GREGORY][3]);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
-      ModelEntity* g = m->toModel(e);
+      apf::ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
         for(int i = 0; i < 5; ++i)
           for(int j = 0; j < 5-i; ++j)
@@ -939,13 +938,13 @@ public:
         BlendedTriangleGetValues(CURVED_GREGORY,m,e,xi,values);
 
     }
-    void getLocalGradients(Mesh* m, MeshEntity* e, Vector3 const& xi,
-        NewArray<Vector3>& grads) const
+    void getLocalGradients(apf::Mesh2* m, apf::MeshEntity* e, apf::Vector3 const& xi,
+        apf::NewArray<apf::Vector3>& grads) const
     {
       grads.allocate(curved_face_total[CURVED_GREGORY][3]);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-      Vector3 gxii[3] = {Vector3(-1,-1,0),Vector3(1,0,0),Vector3(0,1,0)};
-      ModelEntity* g = m->toModel(e);
+      apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
+      apf::ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
         for(int i = 1; i < 5; ++i)
           for(int j = 1; j < 5-i; ++j)
@@ -989,8 +988,8 @@ public:
         grads[map[4]] = gxii[0]*4.*pow(xii[0],3);
 
         double x;
-        Vector3 xv, gx;
-        NewArray<double> v;
+        apf::Vector3 xv, gx;
+        apf::NewArray<double> v;
 
         getValues(m,e,xi,v);
 
@@ -998,7 +997,7 @@ public:
           x  = xii[index[i][0]] + xii[index[i][1]];
           gx = gxii[index[i][0]] + gxii[index[i][1]];
 
-          Vector3 bernstein = grads[12+pairs[i][0]];
+          apf::Vector3 bernstein = grads[12+pairs[i][0]];
           grads[12+pairs[i][1]].zero();
 
           if(x < blendingTol) continue;
@@ -1015,8 +1014,8 @@ public:
     {
       return curved_face_total[CURVED_GREGORY][3];
     }
-    void alignSharedNodes(Mesh* m,
-        MeshEntity* elem, MeshEntity* shared, int order[])
+    void alignSharedNodes(apf::Mesh2* m,
+        apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
       int which,rotate;
       bool flip;
@@ -1034,30 +1033,30 @@ public:
     int index[3][2];
     int pairs[3][2];
   };
-  class Tetrahedron : public EntityShape
+  class Tetrahedron : public apf::EntityShape
   {
   public:
-    void getValues(Mesh* m, MeshEntity* e,
-        Vector3 const& xi, NewArray<double>& values) const
+    void getValues(apf::Mesh2* m, apf::MeshEntity* e,
+        apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
       values.allocate(blended_tet_total[CURVED_GREGORY][3]);
       BlendedTetrahedronGetValues(CURVED_GREGORY,m,e,xi,values);
     }
-    void getLocalGradients(Mesh* m, MeshEntity* e,
-        Vector3 const& xi,
-        NewArray<Vector3>& grads) const
+    void getLocalGradients(apf::Mesh2* m, apf::MeshEntity* e,
+        apf::Vector3 const& xi,
+        apf::NewArray<apf::Vector3>& grads) const
     {
       grads.allocate(blended_tet_total[CURVED_GREGORY][3]);
       BlendedTetrahedronGetLocalGradients(CURVED_GREGORY,m,e,xi,grads);
     }
     int countNodes() const {return blended_tet_total[CURVED_GREGORY][3];}
-    void alignSharedNodes(Mesh* m,
-        MeshEntity* elem, MeshEntity* shared, int order[])
+    void alignSharedNodes(apf::Mesh2* m,
+        apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
       int which,rotate;
       bool flip;
       getAlignment(m,elem,shared,which,flip,rotate);
-      if(m->getType(shared) == Mesh::EDGE){
+      if(m->getType(shared) == apf::Mesh::EDGE){
         if(!flip)
           for(int i = 0; i < 3; ++i)
             order[i] = i;
@@ -1073,7 +1072,7 @@ public:
         order[i] = orients[flip*3+rotate][i];
     }
   };
-  EntityShape* getEntityShape(int type)
+  apf::EntityShape* getEntityShape(int type)
   {
     static BezierShape::Vertex vertex;
     static BezierShape::Edge edge;
@@ -1100,7 +1099,7 @@ public:
   }
   int countNodesOn(int type)
   {
-    static int nodes[Mesh::TYPES] =
+    static int nodes[apf::Mesh::TYPES] =
     {1,                 //vertex
      3,                 //edge
      6,                 //triangle
@@ -1112,12 +1111,12 @@ public:
     return nodes[type];
   }
   /* These don't make sense for gregory patches */
-  void getNodeXi(int type, int node, Vector3& xi)
+  void getNodeXi(int type, int node, apf::Vector3& xi)
    {
     static double edgePoints[3] = {-0.6612048,0.0,0.6612048};
-    if (type == Mesh::EDGE) {
-      xi = Vector3(edgePoints[node],0,0);
-    } else if (type == Mesh::TRIANGLE) {
+    if (type == apf::Mesh::EDGE) {
+      xi = apf::Vector3(edgePoints[node],0,0);
+    } else if (type == apf::Mesh::TRIANGLE) {
       if (node < 3){
         xi[(node+2) % 3] = 0.5582239;
         xi[(node+0) % 3] = 0.22088805;
@@ -1128,7 +1127,7 @@ public:
         xi[(node+0) % 3] = 0.22088805;
       }
     } else
-      xi = Vector3(0,0,0);
+      xi = apf::Vector3(0,0,0);
    }
   int getOrder() {return std::max(4,(int)B);}
 protected:
@@ -1141,14 +1140,12 @@ static void setOrder(const int order, const int blendOrder)
   B = blendOrder;
 }
 
-}//namespace bezier
-
-FieldShape* getBezier(int dimension, int order, int blendOrder)
+apf::FieldShape* getBezier(int dimension, int order, int blendOrder)
 {
-  bezier::setOrder(order,blendOrder);
+  crv::setOrder(order,blendOrder);
 
-  static bezier::BezierCurve bezierCurve;
-  static bezier::BezierSurface bezierSurface;
+  static crv::BezierCurve bezierCurve;
+  static crv::BezierSurface bezierSurface;
 
   //  bezier::setOrder(order,blendOrder);
 
@@ -1156,19 +1153,19 @@ FieldShape* getBezier(int dimension, int order, int blendOrder)
     return &bezierCurve;
   else
     return &bezierSurface;
-
 }
+
 // Third order is a modified bezier.
 // Technically a Bezier but points set using
 // maCurveMesh G1 methodology
 // Exists for debugging purposes
 
-FieldShape* getGregory(int order, int blendOrder)
+apf::FieldShape* getGregory(int order, int blendOrder)
 {
-  static bezier::GregorySurface4 gregorySurface;
+  static GregorySurface4 gregorySurface;
 
   if(order == 4){
-    bezier::setOrder(order, blendOrder);
+    setOrder(order, blendOrder);
     return &gregorySurface;
   } if(order == 3)
     return getBezier(3,order,blendOrder);
@@ -1177,11 +1174,11 @@ FieldShape* getGregory(int order, int blendOrder)
 }
 
 void getTransformationCoefficients(int dim, int type,
-    NewArray<double>& c){
+    apf::NewArray<double>& c){
   if(dim == 2)
-    bezier::getBezierCurveInterPtsToCtrlPts(c);
+    getBezierCurveInterPtsToCtrlPts(c);
   else
-    bezier::getBezierShapeInterPtsToCtrlPts(type,c);
+    getBezierShapeInterPtsToCtrlPts(type,c);
 }
 
-}//namespace apf
+} // namespace crv

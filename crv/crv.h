@@ -8,18 +8,17 @@
 
 *******************************************************************************/
 
-#ifndef MACURVEMESH_H
-#define MACURVEMESH_H
+#ifndef CRV_H
+#define CRV_H
 
-#include "maMesh.h"
 #include "apfShape.h"
 
-namespace ma {
+namespace crv {
 
 class MeshCurver
 {
   public:
-    MeshCurver(Mesh* m, int P) : m_mesh(m), m_order(P) {};
+    MeshCurver(apf::Mesh2* m, int P) : m_mesh(m), m_order(P) {};
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
@@ -27,15 +26,15 @@ class MeshCurver
     void snapToInterpolate(int dim);
 
     /** \brief these two are a per entity version of above */
-    void snapToInterpolateEdge(Entity* e);
-    void snapToInterpolateTri(Entity* e);
+    void snapToInterpolateEdge(apf::MeshEntity* e);
+    void snapToInterpolateTri(apf::MeshEntity* e);
 
     /** \brief converts interpolating points to control points */
-    void convertInterpolationPoints(Entity* e, int n, int ne,
+    void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
       apf::NewArray<double>& c);
 
   protected:
-    Mesh* m_mesh;
+    apf::Mesh2* m_mesh;
     int m_order;
 };
 
@@ -43,7 +42,7 @@ class MeshCurver
 class InterpolatingCurver : public MeshCurver
 {
   public:
-    InterpolatingCurver(Mesh* m, int P) : MeshCurver(m,P) {};
+    InterpolatingCurver(apf::Mesh2* m, int P) : MeshCurver(m,P) {};
     virtual ~InterpolatingCurver() {};
     virtual bool run();
 
@@ -52,7 +51,7 @@ class InterpolatingCurver : public MeshCurver
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(Mesh* m, int P, int B) : MeshCurver(m, P), m_blendOrder(B) {};
+    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P), m_blendOrder(B) {};
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
@@ -65,7 +64,7 @@ class BezierCurver : public MeshCurver
 class GregoryCurver : public BezierCurver
 {
   public:
-    GregoryCurver(Mesh* m, int P, int B) : BezierCurver(m, P, B) {};
+    GregoryCurver(apf::Mesh2* m, int P, int B) : BezierCurver(m, P, B) {};
     /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */
@@ -76,14 +75,28 @@ class GregoryCurver : public BezierCurver
     /** \brief sets internal points locally (4th order only) */
     void setInternalPointsLocally();
 };
+
+/** \brief Get the Bezier Curve or Shape of some order
+ \details goes from first to sixth order */
+apf::FieldShape* getBezier(int dimension, int order, int blendOrder);
+/** \brief Get the Gregory Surface of some order
+ \details only fourth order right now*/
+apf::FieldShape* getGregory(int order, int blendOrder);
+
+/** \brief get coefficients for interpolating points to control points
+ \details works only for prescribed optimal point locations */
+void getTransformationCoefficients(int dim, int type,
+    apf::NewArray<double>& c);
+
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
    n points per dimension of the entity through uniform
    sampling locations in parameter space */
-double interpolationError(Mesh* m, Entity* e, int n);
-
+double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n);
+/** \brief binomial function */
+int binomial(int n, int i);
 /** \brief Mostly a debugging function, writes csv file of n points per dim */
-void writePointSet(Mesh* m, int d, int n, const char* prefix);
+void writePointSet(apf::Mesh2* m, int d, int n, const char* prefix);
 
 }
 

@@ -12,9 +12,13 @@ if(NOT BUILD_IN_TRILINOS)
 endif()
 
 #Sources & Headers
-set(CRV_SOURCES)
+set(CRV_SOURCES
+  crv.cc
+  crvBezier.cc
+  crvCurveMesh.cc)
 
-set(CRV_HEADERS)
+set(CRV_HEADERS
+  crv.h)
 
 include_directories(${CRV_INCLUDE_DIRS})
 

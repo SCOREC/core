@@ -7,9 +7,8 @@
   of the SCOREC Non-Commercial License this program is distributed under.
 
  *******************************************************************************/
-#include "maCurveMesh.h"
+#include "crv.h"
 #include "maSnap.h"
-#include "maAdapt.h"
 #include <apfField.h>
 #include <apfShape.h>
 #include <apfMesh.h>
@@ -18,31 +17,31 @@
 #include <fstream>
 #include <sstream>
 
-namespace ma {
+namespace crv {
 
-void MeshCurver::snapToInterpolateEdge(Entity* e)
+void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 {
   apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
-  int non = fs->countNodesOn(Mesh::EDGE);
-  Vector p, xi, pt;
+  int non = fs->countNodesOn(apf::Mesh::EDGE);
+  apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
-    Model* g = m_mesh->toModel(e);
-    fs->getNodeXi(Mesh::EDGE,i,xi);
-    transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+    apf::ModelEntity* g = m_mesh->toModel(e);
+    fs->getNodeXi(apf::Mesh::EDGE,i,xi);
+    ma::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
 }
 
-void MeshCurver::snapToInterpolateTri(Entity* e)
+void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
 {
   apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
-  int non = fs->countNodesOn(Mesh::TRIANGLE);
-  Vector p, xi, pt;
+  int non = fs->countNodesOn(apf::Mesh::TRIANGLE);
+  apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
-    Model* g = m_mesh->toModel(e);
-    fs->getNodeXi(Mesh::TRIANGLE,i,xi);
-    transferParametricOnTriSplit(m_mesh,e,xi,p);
+    apf::ModelEntity* g = m_mesh->toModel(e);
+    fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
+    ma::transferParametricOnTriSplit(m_mesh,e,xi,p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -50,14 +49,14 @@ void MeshCurver::snapToInterpolateTri(Entity* e)
 
 void MeshCurver::snapToInterpolate(int dim)
 {
-  int t = (dim == 1) ? Mesh::EDGE : Mesh::TRIANGLE;
-  Entity* e;
-  Vector p, xi, pt;
-  Iterator* it = m_mesh->begin(dim);
+  int t = (dim == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
+  apf::MeshEntity* e;
+  apf::Vector3 p, xi, pt;
+  apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
-    Model* g = m_mesh->toModel(e);
+    apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) == m_mesh->getDimension()) continue;
-    if(t == Mesh::EDGE)
+    if(t == apf::Mesh::EDGE)
       snapToInterpolateEdge(e);
     else
       snapToInterpolateTri(e);
@@ -65,10 +64,10 @@ void MeshCurver::snapToInterpolate(int dim)
   m_mesh->end(it);
 }
 
-void MeshCurver::convertInterpolationPoints(Entity* e,
+void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
     int n, int ne, apf::NewArray<double>& c){
 
-  apf::NewArray<Vector> l, b(ne);
+  apf::NewArray<apf::Vector3> l, b(ne);
   apf::Element* elem =
       apf::createElement(m_mesh->getCoordinateField(),e);
   apf::getVectorNodes(elem,l);
@@ -118,8 +117,8 @@ bool BezierCurver::run()
 
     apf::NewArray<double> c;
     apf::getTransformationCoefficients(md,d,c);
-    Entity* e;
-    Iterator* it = m_mesh->begin(d);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
       convertInterpolationPoints(e,n,ne,c);
     }
@@ -131,14 +130,14 @@ bool BezierCurver::run()
 }
 
 /* Elevates a bezier curve from order n to order n+r */
-static void elevateBezierCurve(Mesh* m, Entity* edge, int n, int r)
+static void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
 {
 
   apf::Element* elem =
       apf::createElement(m->getCoordinateField(),edge);
 
-  Vector pt;
-  apf::NewArray<Vector> p;
+  apf::Vector3 pt;
+  apf::NewArray<apf::Vector3> p;
   apf::getVectorNodes(elem,p);
 
   assert(m->getType(edge) == apf::Mesh::EDGE);
@@ -163,21 +162,21 @@ static void elevateBezierCurve(Mesh* m, Entity* edge, int n, int r)
 
 void GregoryCurver::setCubicEdgePointsUsingNormals()
 {
-  Entity* e;
-  Vector p, xi, pt;
-  Vector points[4];
+  apf::MeshEntity* e;
+  apf::Vector3 p, xi, pt;
+  apf::Vector3 points[4];
 
-  Iterator* it = m_mesh->begin(1);
+  apf::MeshIterator* it = m_mesh->begin(1);
 
   while ((e = m_mesh->iterate(it))) {
-    Model* g = m_mesh->toModel(e);
+    apf::ModelEntity* g = m_mesh->toModel(e);
 
     if(m_mesh->getModelType(g) == 3) continue;
     // set edges using normals
     if(m_mesh->getModelType(g) == 1) {
 
-      Vector t[2];
-      Entity* v[2];
+      apf::Vector3 t[2];
+      apf::MeshEntity* v[2];
       m_mesh->getDownward(e,0,v);
       for(int i = 0; i < 2; ++i){
         m_mesh->getPoint(v[i],0,points[i*3]);
@@ -186,7 +185,7 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
         t[i] = t[i].normalize();
       }
       double d = (points[3]-points[0]).getLength();
-      Vector l = (points[3]-points[0])/d;
+      apf::Vector3 l = (points[3]-points[0])/d;
       points[1] = points[0] + t[0]*(l*t[0])/fabs(l*t[0])*d/3.;
       points[2] = points[3] - t[1]*(l*t[1])/fabs(l*t[1])*d/3.;
       for(int i = 0; i < 2; ++i)
@@ -194,8 +193,8 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
 
     } else {
       // set edges using tangents
-      Vector n[2];
-      Entity* v[2];
+      apf::Vector3 n[2];
+      apf::MeshEntity* v[2];
       m_mesh->getDownward(e,0,v);
       for(int i = 0; i < 2; ++i){
         m_mesh->getPoint(v[i],0,points[i*3]);
@@ -203,7 +202,7 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
         m_mesh->getNormal(g,p,n[i]);
       }
       double d = (points[3]-points[0]).getLength();
-      Vector l = (points[3]-points[0])/d;
+      apf::Vector3 l = (points[3]-points[0])/d;
       double a[3] = {n[0]*l,n[1]*l,n[0]*n[1]};
 
       double r = 6.*(2.*a[0]+a[2]*a[1])/(4.-a[2]*a[2]);
@@ -218,13 +217,13 @@ void GregoryCurver::setCubicEdgePointsUsingNormals()
   m_mesh->end(it);
 }
 
-static void elevateBezierCurves(Mesh* m)
+static void elevateBezierCurves(apf::Mesh2* m)
 {
 
-  Entity* e;
-  Iterator* it = m->begin(1);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(1);
   while ((e = m->iterate(it))) {
-    Model* g = m->toModel(e);
+    apf::ModelEntity* g = m->toModel(e);
     if(m->getModelType(g) == 3) continue;
     elevateBezierCurve(m,e,3,1);
   }
@@ -233,15 +232,15 @@ static void elevateBezierCurves(Mesh* m)
 
 void GregoryCurver::setInternalPointsUsingNeighbors()
 {
-  Entity* e;
-  Iterator* it = m_mesh->begin(1);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m_mesh->begin(1);
   while ((e = m_mesh->iterate(it))) {
-    Model* g = m_mesh->toModel(e);
+    apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) != 2) continue;
     int tag = m_mesh->getModelTag(g);
     apf::Up up;
     m_mesh->getUp(e,up);
-    Entity* faces[2];
+    apf::MeshEntity* faces[2];
     int iF = 0;
     for(int i = 0; i < up.n; ++i){
       if(m_mesh->getModelTag(m_mesh->toModel(up.e[i])) == tag)
@@ -261,31 +260,31 @@ void GregoryCurver::setInternalPointsUsingNeighbors()
 
 void GregoryCurver::setInternalPointsLocally()
 {
-  Vector D[3][4];
-  Vector W[3][3];
-  Vector A[3][3];
+  apf::Vector3 D[3][4];
+  apf::Vector3 W[3][3];
+  apf::Vector3 A[3][3];
 
   double lam[3][2];
   double mu[3][2];
-  Vector G[6];
+  apf::Vector3 G[6];
 
-  Entity* e;
-  Iterator* it = m_mesh->begin(2);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m_mesh->begin(2);
   while ((e = m_mesh->iterate(it))) {
-    Model* g = m_mesh->toModel(e);
+    apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) != 2) continue;
 
-    Vector n[3];
-    Entity* verts[3];
-    Entity* edges[3];
+    apf::Vector3 n[3];
+    apf::MeshEntity* verts[3];
+    apf::MeshEntity* edges[3];
     m_mesh->getDownward(e,0,verts);
     m_mesh->getDownward(e,1,edges);
 
     // elevated edges
-    apf::NewArray<Vector> q(12);
+    apf::NewArray<apf::Vector3> q(12);
 
     for(int i = 0; i < 3; ++i){
-      Vector param;
+      apf::Vector3 param;
       m_mesh->getPoint(verts[i],0,q[i]);
       m_mesh->getParamOn(g,verts[i],param);
       m_mesh->getNormal(g,param,n[i]);
@@ -296,7 +295,7 @@ void GregoryCurver::setInternalPointsLocally()
     for(int i = 0; i < 3; ++i){
       apf::Element* edge =
           apf::createElement(m_mesh->getCoordinateField(),edges[i]);
-      apf::NewArray<Vector> ep;
+      apf::NewArray<apf::Vector3> ep;
       apf::getVectorNodes(edge,ep);
 
       bool flip;
@@ -388,16 +387,16 @@ bool GregoryCurver::run()
 
     int n = (d == 2)? (m_order+1)*(m_order+2)/2 : m_order+1;
     int ne = fs->countNodesOn(d);
-    apf::NewArray<Vector> l, b(ne);
+    apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
     apf::getTransformationCoefficients(md,d,c);
 
-    Entity* e;
-    Iterator* it = m_mesh->begin(d);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m_mesh->begin(d);
 
     while ((e = m_mesh->iterate(it))) {
-      Model* g = m_mesh->toModel(e);
+      apf::ModelEntity* g = m_mesh->toModel(e);
       // we'll set the points to be G1 continuous later on
       if (m_mesh->getModelType(g) < md) continue;
 
@@ -443,13 +442,13 @@ bool GregoryCurver::run()
   return true;
 }
 
-double interpolationError(Mesh* m, Entity* e, int n){
-  Model* g = m->toModel(e);
+double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n){
+  apf::ModelEntity* g = m->toModel(e);
   if (m->getModelType(g) == m->getDimension())
     return 0.;
   int d = apf::getDimension(m,e);
   int nj = (d == 2) ? n : 1;
-  Vector pt,pa(0.,0.,0.),cpt,cpa;
+  apf::Vector3 pt,pa(0.,0.,0.),cpt,cpa;
   double max = 0.0;
   apf::Element* elem =
       apf::createElement(m->getCoordinateField(),e);
@@ -469,19 +468,19 @@ double interpolationError(Mesh* m, Entity* e, int n){
   return max;
 }
 
-void writePointSet(Mesh* m, int d, int n, const char* prefix)
+void writePointSet(apf::Mesh2* m, int d, int n, const char* prefix)
 {
   int nj = (d > 1) ? n : 1;
   int nk = (d == 3) ? n : 1;
 
   apf::DynamicArray<apf::Vector3> pts(0);
 
-  Iterator* it = m->begin(d);
-  Entity* e;
-  Vector pa,pt;
+  apf::MeshIterator* it = m->begin(d);
+  apf::MeshEntity* e;
+  apf::Vector3 pa,pt;
 
   while ((e = m->iterate(it))) {
-    Model* g = m->toModel(e);
+    apf::ModelEntity* g = m->toModel(e);
     if (m->getModelType(g) == m->getDimension() && d < 3) continue;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
