@@ -425,10 +425,8 @@ bool refine(Adapt* a)
   double t1 = PCU_Time();
   print("refined %li edges in %f seconds",count,t1-t0);
   resetLayer(a);
-  if (a->hasLayer) {
-    print("checking layer elements after refinement...");
-    checkLayerShape(a->mesh);
-  }
+  if (a->hasLayer)
+    checkLayerShape(a->mesh, "after refinement");
   return true;
 }
 
