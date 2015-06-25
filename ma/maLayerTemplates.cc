@@ -4,6 +4,9 @@
 #include "maSnap.h"
 #include "maShape.h"
 
+#include <cstdio>
+#include <sstream>
+
 namespace ma {
 
 /* this is the template used on quads during tetrahedronization.
@@ -69,15 +72,33 @@ SplitFunction quad_templates[quad_edge_code_count] =
 };
 
 /* this is the template used on prisms during tetrahedronization.
-   the algorithms in maLayer.cc are required to ensure no centroids,
-   so we check that and use the good case template */
+   the algorithms in maTetrahedronize.cc are required to ensure no centroids,
+   so we should be using the good case template.
+   the hack introduced to work around unsafe pyramids can override
+   the guaranteed diagonals, however, so we do allow the bad case here
+   with a stern warning. */
 void splitPrism_0(Refine* r, Entity* p, Entity** v)
 {
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
   int code = getPrismDiagonalCode(m,v);
-  assert(checkPrismDiagonalCode(code));
-  prismToTetsGoodCase(r,p,v,code);
+  if (checkPrismDiagonalCode(code))
+    prismToTetsGoodCase(r,p,v,code);
+  else {
+    Vector point = apf::getLinearCentroid(m, p);
+    std::stringstream ss;
+    ss << "warning: invoking cyclic prism tetrahedronization template";
+    ss << " at " << point << "\n";
+    ss << "this should only be done to accomodate unsafe elements.\n";
+    std::string s = ss.str();
+    fprintf(stderr, "%s", s.c_str());
+    Vector xi(1./3.,1./3.,0);
+    apf::MeshElement* me = apf::createMeshElement(m, p);
+    Entity* vert = prismToTetsBadCase(r, p, v, code, point);
+    a->solutionTransfer->onVertex(me, xi, vert);
+    a->sizeField->interpolate(me, xi, vert);
+    apf::destroyMeshElement(me);
+  }
 }
 
 /* split the prism into two prisms separated by a quad face.
