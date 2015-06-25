@@ -12,6 +12,12 @@ int quadToTrisChoice(Refine* r, Entity* p, Entity** v, int rotation);
 int getPrismDiagonalCode(Mesh* m, Entity** v);
 bool checkPrismDiagonalCode(int code);
 void prismToTetsGoodCase(Refine* r, Entity* parent, Entity** v_in, int code);
+Entity* prismToTetsBadCase(
+    Refine* r,
+    Entity* parent,
+    Entity** v_in,
+    int code,
+    Vector const& point);
 
 void pyramidToTets(Refine* r, Entity* parent, Entity** v);
 void prismAndPyramidToTets(Refine* r, Entity* p, Entity** wv, Entity* v);

@@ -303,13 +303,16 @@ bool isPrismOk(Mesh* m, Entity* e)
   return true;
 }
 
-bool isPyramidOk(Mesh* m, Entity* e)
+bool isPyramidOk(apf::Mesh* m, Entity* e,
+    int* good_rotation)
 {
   Entity* v[5];
   m->getDownward(e, 0, v);
   Vector p[5];
   for (int i = 0; i < 5; ++i)
     m->getPoint(v[i], 0, p[i]);
+  if (good_rotation)
+    *good_rotation = -1;
   for (int i = 0; i < 2; ++i) {
     int const* new_to_old = pyramid_rotation[i];
     apf::Plane pl = apf::Plane::fromPoints(
@@ -320,6 +323,8 @@ bool isPyramidOk(Mesh* m, Entity* e)
       return false;
     if (pl.distance(p[new_to_old[3]]) >= 0)
       return false;
+    if (good_rotation)
+      *good_rotation = i;
   }
   return true;
 }

@@ -146,31 +146,36 @@ void collectForLayerRefine(Refine* r)
   r->shouldCollect[2] = true;
 }
 
-void checkLayerShape(Mesh* m)
+void checkLayerShape(Mesh* m, const char* key)
 {
   double t0 = PCU_Time();
   Iterator* it = m->begin(m->getDimension());
   Entity* e;
+  long n = 0;
   while ((e = m->iterate(it)))
     if ( ! apf::isSimplex(m->getType(e)))
       if (!isLayerElementOk(m, e)) {
         std::stringstream ss;
         ss.precision(15);
         ss << std::scientific;
-        ss << "warning: layer " << apf::Mesh::typeName[m->getType(e)]
+        ss << key << ": ";
+        int type = m->getType(e);
+        ss << "layer " << apf::Mesh::typeName[type]
            << " at " << apf::getLinearCentroid(m, e)
            << " is unsafe to tetrahedronize\n";
-        ss << "vertices:\n";
-        Downward v;
-        int nv = m->getDownward(e, 0, v);
-        for (int i = 0; i < nv; ++i)
-          ss << getPosition(m, v[i]) << '\n';
+        if (type == PRISM) {
+          ss << "there is currently no code to help with such prisms,\n";
+          ss << "but there is a chance it will tetrahedronize OK.\n";
+          ss << "you feeling lucky ?\n";
+        }
         std::string s = ss.str();
-        printf("%s",s.c_str());
+        fprintf(stderr,"%s",s.c_str());
+        ++n;
       }
   m->end(it);
+  PCU_Add_Longs(&n, 1);
   double t1 = PCU_Time();
-  print("checked layer quality in %f seconds",t1 - t0);
+  print("checked layer quality in %f seconds: %ld unsafe elements", t1 - t0, n);
 }
 
 }

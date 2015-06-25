@@ -6,6 +6,8 @@
 #include "maLayer.h"
 #include <apfNumbering.h>
 #include <apfShape.h>
+#include <apfCavityOp.h>
+#include "maShape.h"
 
 namespace ma {
 
@@ -167,11 +169,110 @@ static void flagQuadDiagonals(Adapt* a)
   crawlLayers(&op);
 }
 
+/* as it turns out, the layer refinement templates
+   can create elements which are unsafe to tetrahedronize
+   even if the input elements are safe.
+
+   this seems to be a fundamental geometric property
+   that is hard to prevent, so we'll start cleaning up after it.
+
+   this class identifies pyramids which are unsafe to
+   tetrahedronize and tries to change the diagonal
+   flag on their quad to be the safe one, if there is one.
+
+   it also prints warnings when it identifies cases
+   that it can't help with.
+
+   the CHECKED flag is used both to prevent visiting
+   elements twice in the CavityOp and to mark quads
+   whose diagonals have been overridden, to identify
+   cases of conflicting overrides. */
+struct UnsafePyramidOverride : public apf::CavityOp
+{
+  UnsafePyramidOverride(Adapt* a_):
+    apf::CavityOp(a_->mesh)
+  {
+    a = a_;
+  }
+  Outcome setEntity(Entity* r)
+  {
+    if ((mesh->getType(r) != PYRAMID) ||
+        getFlag(a, r, CHECKED))
+      return SKIP;
+    pyramid = r;
+    bool isOk = isPyramidOk(mesh, pyramid, &good_rotation);
+    if (isOk) {
+      setFlag(a, pyramid, CHECKED);
+      return SKIP;
+    }
+    if (good_rotation == -1) {
+      setFlag(a, pyramid, CHECKED);
+      std::stringstream ss;
+      ss << "pyramid at " << apf::getLinearCentroid(mesh, pyramid)
+         << "WILL produce negative tets!\n";
+      std::string s = ss.str();
+      fprintf(stderr,"%s",s.c_str());
+      return SKIP;
+    }
+    Entity* faces[5];
+    mesh->getDownward(pyramid, 2, faces);
+    quad = faces[0];
+    if (!requestLocality(&quad, 1))
+      return REQUEST;
+    return OK;
+  }
+  void apply()
+  {
+    Entity* pv[5];
+    mesh->getDownward(pyramid, 0, pv);
+    Entity* qv[4];
+    mesh->getDownward(quad, 0, qv);
+    Entity* dv = 0;
+    if (good_rotation == 0)
+      dv = pv[0];
+    else
+      dv = pv[1];
+    int dvi = apf::findIn(qv, 4, dv);
+    int diagonal = dvi % 2;
+    int old_diagonal = getDiagonalFromFlag(a, quad);
+    setFlag(a, pyramid, CHECKED);
+    if ((old_diagonal != diagonal) && getFlag(a, quad, CHECKED)) {
+      std::stringstream ss;
+      ss << "quad at " << apf::getLinearCentroid(mesh, quad)
+         << "has conflicting overrides on its diagonal.\n";
+      ss << "a negative tet WILL get produced here.\n";
+      std::string s = ss.str();
+      fprintf(stderr,"%s",s.c_str());
+      return;
+    } else {
+      std::stringstream ss;
+      ss << "overriding diagonal at " << apf::getLinearCentroid(mesh, quad) << '\n';
+      std::string s = ss.str();
+      fprintf(stderr,"%s",s.c_str());
+      setFlag(a, quad, getFlagFromDiagonal(diagonal));
+      setFlag(a, quad, CHECKED);
+    }
+  }
+  Adapt* a;
+  int good_rotation;
+  Entity* pyramid;
+  Entity* quad;
+};
+
+static void overrideDiagonalsForUnsafePyramids(Adapt* a)
+{
+  UnsafePyramidOverride op(a);
+  op.applyToDimension(3);
+  clearFlagFromDimension(a, CHECKED, 2);
+  clearFlagFromDimension(a, CHECKED, 3);
+}
+
 static void prepareLayerToTets(Adapt* a)
 {
   findLayerBase(a);
   chooseBaseDiagonals(a);
   flagQuadDiagonals(a);
+  overrideDiagonalsForUnsafePyramids(a);
 }
 
 /* a tetrahedronization operation re-uses
@@ -249,7 +350,10 @@ void tetrahedronize(Adapt* a)
 /* start of the island pyramid cleanup system,
    the goal of which is to remove pyramids which are
    adjacent to one another via their quadrilateral faces
-   and which do not cap prismatic layer stacks */
+   and which do not cap prismatic layer stacks.
+   this allows us to later assume no such things
+   exist, which simplifies the definition of LAYER.
+*/
 
 /* this Crawler sets the CHECKED flag on all layer quads
    which are reachable by crawling up from the base edges.

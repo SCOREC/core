@@ -303,8 +303,6 @@ void snap(Adapt* a)
     return;
   double t0 = PCU_Time();
   Tag* tag;
-  print("checking layer elements before all snapping...");
-  checkLayerShape(a->mesh);
   /* we are starting to support a few operations on matched
      meshes, including snapping+UR. this should prevent snapping
      from modifying any matched entities */
@@ -317,6 +315,8 @@ void snap(Adapt* a)
   double t1 = PCU_Time();
   print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
     t1 - t0, targets, success);
+  if (a->hasLayer)
+    checkLayerShape(a->mesh, "after snapping");
 }
 
 void visualizeGeometricInfo(Mesh* m, const char* name)

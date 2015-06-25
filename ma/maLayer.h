@@ -29,7 +29,7 @@ void snapLayer(Adapt* a, Tag* snapTag);
 void setupLayerForSplit(Adapt* a);
 void setupRefineForLayer(Refine* r);
 
-void checkLayerShape(Mesh* m);
+void checkLayerShape(Mesh* m, const char* key);
 
 }
 
