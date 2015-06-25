@@ -26,6 +26,11 @@ int getFlagFromDiagonal(int diagonal)
   return DIAGONAL_2;
 }
 
+/* when triangulating a stack of quads that grows
+   from one surface edge, the direction of all
+   the diagonals for those quads is dictated
+   by the global numbers of the surface edge vertices.
+   this prevents cyclic diagonals around prisms */
 static bool getEdgeDirection(apf::GlobalNumbering* n, Entity* e)
 {
   apf::Mesh* m = getMesh(n);
@@ -36,6 +41,10 @@ static bool getEdgeDirection(apf::GlobalNumbering* n, Entity* e)
          apf::getNumber(n, apf::Node(v[1], 0));
 }
 
+/* globally number the layer base vertices,
+   then choose directions based on the numbering.
+   this prevents cycles around layer base triangles
+   and, by extension, layer prisms */
 static void chooseBaseDiagonals(Adapt* a)
 {
   Mesh* m = a->mesh;
@@ -57,6 +66,8 @@ static void chooseBaseDiagonals(Adapt* a)
   apf::destroyGlobalNumbering(global);
 }
 
+/* Crawler helper: given a layer edge, find the
+   adjacent not-yet-visited quad */
 static Entity* getOtherQuad(Adapt* a, Entity* e, Predicate& visited)
 {
   Mesh* m = a->mesh;
@@ -72,6 +83,15 @@ static Entity* getOtherQuad(Adapt* a, Entity* e, Predicate& visited)
   return 0;
 }
 
+/* retrieve a bit that indicates the
+   relative orientation of a layer
+   edge and its adjacent quad, as it
+   applies to propagating diagonal
+   flags up the stack (either the
+   diagonal direction is negated or not)
+   this function is given the quadEdges
+   and directions directly to avoid
+   re-computing them */
 static int getQuadEdgeDiagonalBit(
     Entity* edge,
     Entity** quadEdges,
@@ -83,6 +103,10 @@ static int getQuadEdgeDiagonalBit(
   return i_bit ^ dir_bit;
 }
 
+/* given a layer edge with a diagonal
+   flag on it and the "previous" quad,
+   propagate the flag onto the next
+   quad and the next edge up the stack */
 static Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
 {
   Mesh* m = a->mesh;
@@ -101,6 +125,9 @@ static Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
   return e;
 }
 
+/* this Crawler propagates diagonal flags
+   from layer base edges onto all horizontal
+   layer edges and all layer quads */
 struct QuadFlagger : public Crawler
 {
   QuadFlagger(Adapt* a):Crawler(a) {}
@@ -147,6 +174,12 @@ static void prepareLayerToTets(Adapt* a)
   flagQuadDiagonals(a);
 }
 
+/* a tetrahedronization operation re-uses
+   the refinement machinery (it is actually
+   refinement if you think about it, parent
+   elements are split into child elements).
+   this function fills the refinement containers
+   will all layer elements */
 static void addAllLayerElements(Refine* r)
 {
   Adapt* a = r->adapt;
@@ -180,6 +213,11 @@ static void addAllLayerElements(Refine* r)
   assert(static_cast<size_t>(nr) == r->toSplit[3].getSize());
 }
 
+/* the commonly reused part of the
+   tetrahedronization driver.
+   as mentioned above, this uses refinement
+   machinery, so these calls are copied
+   from maRefine.cc */
 void tetrahedronizeCommon(Refine* r)
 {
   resetCollection(r);
@@ -191,6 +229,9 @@ void tetrahedronizeCommon(Refine* r)
   cleanupAfter(r);
 }
 
+/* the normal tetrahedronize-the-whole-layer function.
+   this is where shouldTurnLayerToTets takes control
+   and user reports are made */
 void tetrahedronize(Adapt* a)
 {
   if ( ! a->input->shouldTurnLayerToTets)
@@ -205,8 +246,17 @@ void tetrahedronize(Adapt* a)
   print("boundary layer converted to tets in %f seconds",t1-t0);
 }
 
-/* like QuadFlagger, but just sets CHECKED to find the remaining
-   delinquent quads */
+/* start of the island pyramid cleanup system,
+   the goal of which is to remove pyramids which are
+   adjacent to one another via their quadrilateral faces
+   and which do not cap prismatic layer stacks */
+
+/* this Crawler sets the CHECKED flag on all layer quads
+   which are reachable by crawling up from the base edges.
+   this helps identify quads which are not reachable this way.
+   recall from findLayerBase that LAYER_BASE is defined
+   as edges on the closure of prisms, so the edges
+   of quads between island pyramids will not be LAYER_BASE */
 struct QuadMarker : public Crawler
 {
   QuadMarker(Adapt* a_):
@@ -250,14 +300,18 @@ struct QuadMarker : public Crawler
   Mesh* m;
 };
 
-static void markGoodQuads(Adapt* a)
+static void markNonIslandQuads(Adapt* a)
 {
   QuadMarker op(a);
   crawlLayers(&op);
   syncFlag(a, 2, CHECKED);
 }
 
-static void markBadQuads(Adapt* a)
+/* quads which are not CHECKED at this
+   point are between island pyramids,
+   and are marked with SPLIT and DIAGONAL_1
+   to prepare their tetrahedronization */
+static void markIslandQuads(Adapt* a)
 {
   Mesh* m = a->mesh;
   Entity* e;
@@ -275,7 +329,16 @@ static void markBadQuads(Adapt* a)
   assert(checkFlagConsistency(a, 2, DIAGONAL_1));
 }
 
-static long markBadPyramids(Adapt* a)
+/* this function marks pyramids adjacent
+   to island quads with the SPLIT flag
+   to set them up for tetrahedronization.
+   it also checks that only pyramids
+   are adjacent to the identified quads,
+   verifying our assumption about how to
+   identify island pyramids.
+   the global total number of island
+   pyramids is returned */
+static long markIslandPyramids(Adapt* a)
 {
   Mesh* m = a->mesh;
   Entity* e;
@@ -310,7 +373,9 @@ static int countEntitiesWithFlag(Adapt* a, int flag, int dim)
   return n;
 }
 
-static void addBadPyramids(Refine* r)
+/* fills the refinement containers with
+   the identified island quads and pyramids */
+static void addIslandPyramids(Refine* r)
 {
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
@@ -328,14 +393,17 @@ static void addBadPyramids(Refine* r)
   }
 }
 
-static long prepareLayerCleanup(Adapt* a)
+static long prepareIslandCleanup(Adapt* a)
 {
   findLayerBase(a);
-  markGoodQuads(a);
-  markBadQuads(a);
-  return markBadPyramids(a);
+  markNonIslandQuads(a);
+  markIslandQuads(a);
+  return markIslandPyramids(a);
 }
 
+/* the main layer cleanup driver,
+   currently responsible for removing
+   island pyramids via tetrahedronization */
 void cleanupLayer(Adapt* a)
 {
   if (!a->hasLayer)
@@ -343,16 +411,16 @@ void cleanupLayer(Adapt* a)
   if (!a->input->shouldCleanupLayer)
     return;
   double t0 = PCU_Time();
-  long n = prepareLayerCleanup(a);
+  long n = prepareIslandCleanup(a);
   if (!n) {
     print("no bad pyramids found");
     return;
   }
   Refine* r = a->refine;
-  addBadPyramids(r);
+  addIslandPyramids(r);
   tetrahedronizeCommon(r);
   double t1 = PCU_Time();
-  print("tetrahedronized %ld bad pyramids in %f seconds", n, t1-t0);
+  print("tetrahedronized %ld island pyramids in %f seconds", n, t1-t0);
 }
 
 }
