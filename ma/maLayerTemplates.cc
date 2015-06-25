@@ -155,7 +155,6 @@ void splitPrism_4(Refine* r, Entity* p, Entity** v)
  */
 void splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
 {
-  Mesh* m = r->adapt->mesh;
 /* make center prism */
   buildSplitElement(r,p,PRISM,sv);
 /* make the three corner prisms through rotation */
