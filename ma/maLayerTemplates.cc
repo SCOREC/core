@@ -153,7 +153,7 @@ void splitPrism_4(Refine* r, Entity* p, Entity** v)
    it is called from splitPrism_9 which has to deal
    with quad-associated vertices
  */
-bool splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
+void splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
 {
   Mesh* m = r->adapt->mesh;
 /* make center prism */
@@ -170,7 +170,6 @@ bool splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
     pv[0] = sv2[0]; pv[1] = v2[1]; pv[2] = sv2[1];
     buildSplitElement(r,p,PRISM,pv);
   }
-  return true;
 }
 
 void splitPrism_6(Refine* r, Entity* p, Entity** v)
