@@ -1,3 +1,4 @@
+#include <crv.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -5,9 +6,7 @@
 #include <apf.h>
 #include <apfShape.h>
 #include <PCU.h>
-#include <crv.h>
 #include <apfField.h>
-
 
 /*
  * This analytic function is a "pringle",
@@ -405,7 +404,7 @@ void test3D()
   for(int order = 2; order <= 6; ++order){
     for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, apf::getBezier(3,order,blendOrder),true);
+      apf::changeMeshShape(m, crv::getBezier(3,order,blendOrder),true);
       apf::FieldShape * fs = m->getCoordinateField()->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
       // go downward, and convert interpolating to control points

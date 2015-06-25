@@ -150,44 +150,6 @@ void transferParametricOnTriSplit(
   interpolateParametricCoordinates(m,g,t[1],pa1,pa2,p);
 }
 
-void transferParametricOnGeometricEdgeSplit(
-    Mesh* m,
-    Entity* e,
-    double t,
-    Vector& p)
-{
-  Model* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
-  Entity* ev[2];
-  m->getDownward(e,0,ev);
-  Vector p0,p1,cpt;
-  m->getPoint(ev[0],0,p0);
-  m->getPoint(ev[1],0,p1);
-  Vector pt = p0*(1.-t)+p1*t;
-  m->getClosestPoint(g,pt,cpt,p);
-}
-
-void transferParametricOnGeometricTriSplit(
-    Mesh* m,
-    Entity* e,
-    Vector& t,
-    Vector& p)
-{
-  Model* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
-  Entity* ev[3];
-  m->getDownward(e,0,ev);
-  // split in physical space, project
-  Vector p0,p1,p2,cpt;
-  m->getPoint(ev[0],0,p0);
-  m->getPoint(ev[1],0,p1);
-  m->getPoint(ev[2],0,p2);
-  Vector pt = p0*(1.-t[0]-t[1])+p1*t[0]+p2*t[1];
-  m->getClosestPoint(g,pt,cpt,p);
-}
-
 static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
 {
   m->getPoint(v,0,x);

@@ -4,18 +4,22 @@ project(crv)
 
 if(NOT BUILD_IN_TRILINOS)
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
+  find_package(ma PATHS ${CMAKE_BINARY_DIR})
+  
   set(CRV_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${APF_INCLUDE_DIRS})
-  set(DEP_LIBS ${APF_LIBS})
-  set(CRV_LIBS dsp ${DEP_LIBS})
+    ${APF_INCLUDE_DIRS}
+    ${MA_INCLUDE_DIRS})
+  set(DEP_LIBS ${APF_LIBS} ${MA_LIBS})
+  set(CRV_LIBS crv ${DEP_LIBS})
 endif()
 
 #Sources & Headers
 set(CRV_SOURCES
   crv.cc
   crvBezier.cc
-  crvCurveMesh.cc)
+  crvCurveMesh.cc
+  crvSnap.cc)
 
 set(CRV_HEADERS
   crv.h)
@@ -33,7 +37,6 @@ INSTALL(TARGETS
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
-endif(NOT BUILD_IN_TRILINOS)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/crvConfig.cmake.in"

@@ -6,6 +6,7 @@ find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(dsp REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(crv REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -15,7 +16,8 @@ include_directories(
   ${PH_INCLUDE_DIRS}
   ${APF_MPAS_INCLUDE_DIRS}
   ${VIZ_INCLUDE_DIRS}
-  ${DSP_INCLUDE_DIRS})
+  ${DSP_INCLUDE_DIRS}
+  ${CRV_INCLUDE_DIRS})
 set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
@@ -24,7 +26,8 @@ set(ALL_LIBS
   ${PH_LIBS}
   ${APF_MPAS_LIBS}
   ${VIZ_LIBS}
-  ${DSP_LIBS})
+  ${DSP_LIBS}
+  ${CRV_LIBS})
 
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)

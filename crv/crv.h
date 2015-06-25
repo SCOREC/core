@@ -11,6 +11,8 @@
 #ifndef CRV_H
 #define CRV_H
 
+#include "apfMesh.h"
+#include "apfMesh2.h"
 #include "apfShape.h"
 
 namespace crv {

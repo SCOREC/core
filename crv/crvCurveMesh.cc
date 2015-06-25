@@ -8,10 +8,10 @@
 
  *******************************************************************************/
 #include "crv.h"
-#include "maSnap.h"
+#include "crvSnap.h"
+
+#include <maSnap.h>
 #include <apfField.h>
-#include <apfShape.h>
-#include <apfMesh.h>
 #include <gmi.h>
 
 #include <fstream>
@@ -103,7 +103,7 @@ bool BezierCurver::run()
     return false;
   }
   int md = m_mesh->getDimension();
-  apf::changeMeshShape(m_mesh, apf::getBezier(md,m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
   apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
 
   // interpolate points in each dimension
@@ -116,7 +116,7 @@ bool BezierCurver::run()
     int ne = fs->countNodesOn(d);
 
     apf::NewArray<double> c;
-    apf::getTransformationCoefficients(md,d,c);
+    getTransformationCoefficients(md,d,c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -151,9 +151,8 @@ static void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int 
   for(int i = 1; i < n+r; ++i){
     pt.zero();
     for(int j = std::max(0,i-r); j <= std::min(i,n); ++j)
-      pt += p[map[j]]*apf::binomial(n,j)*
-      apf::binomial(r,i-j)/
-      apf::binomial(n+r,i);
+      pt += p[map[j]]*binomial(n,j)*
+      binomial(r,i-j)/binomial(n+r,i);
     m->setPoint(edge,i-1,pt);
   }
 
@@ -372,7 +371,7 @@ bool GregoryCurver::run()
     return false;
   }
 
-  apf::changeMeshShape(m_mesh, apf::getGregory(m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getGregory(m_order,m_blendOrder),true);
 
   int md = m_mesh->getDimension();
 
@@ -390,7 +389,7 @@ bool GregoryCurver::run()
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
-    apf::getTransformationCoefficients(md,d,c);
+    getTransformationCoefficients(md,d,c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
