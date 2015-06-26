@@ -23,8 +23,11 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]);
 
 /**
  * @brief see Parma_GetEntImbalance(...)
+ * @remark On a part, if an entity order (vtx, edge, face, rgn) does not have
+ * weights set on all its entities then a weight of one will be assigned to each
+ * of the entities (of the given order)
  * @param mesh (InOut) partitioned mesh
- * @param weight (In) element weight used for computing imbalance
+ * @param weight (In) entity weights used for computing imbalance
  * @param entImb (InOut) entity imbalance [vtx, edge, face, rgn]
  */
 void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
@@ -110,9 +113,9 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine=false);
 
 /**
  * @brief prints partition stats using entity weights
- * @remark includes face-disconnected components, number of vertices on
- *         inter-part boundaries, number of vtx-connected neighboring parts,
- *         entity imbalance, and number of empty parts
+ * @remark On a part, if an entity order (vtx, edge, face, rgn) does not have
+ * weights set on all its entities then a weight of one will be assigned to each
+ * of the entities (of the given order)
  * @param m (In) partitioned mesh
  * @param w (In) tag with entity weights
  * @param key (In) identifying string to write with stat output

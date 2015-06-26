@@ -165,22 +165,17 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
 
 void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
     double (*entImb)[4]) {
-   double tot[4] = {0,0,0,0};
-   int dims = mesh->getDimension() + 1;
-   for(int i=0; i < dims; i++) {
-     apf::MeshIterator* it = mesh->begin(i);
-     apf::MeshEntity* e;
-     while ((e = mesh->iterate(it)))
-       tot[i] += getEntWeight(mesh, e, w);
-     (*entImb)[i] = tot[i];
-     mesh->end(it);
-   }
-   PCU_Add_Doubles(tot, TO_SIZET(dims));
-   PCU_Max_Doubles(*entImb, TO_SIZET(dims));
-   for(int i=0; i < dims; i++)
-      (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
-   for(int i=dims; i < 4; i++)
-      (*entImb)[i] = 1.0;
+  size_t dims = TO_SIZET(mesh->getDimension()) + 1;
+  getPartWeights(mesh, w, entImb);
+  double tot[4] = {0,0,0,0};
+  for(size_t i=0; i < dims; i++)
+    tot[i] = (*entImb)[i];
+  PCU_Add_Doubles(tot, TO_SIZET(dims));
+  PCU_Max_Doubles(*entImb, TO_SIZET(dims));
+  for(size_t i=0; i < dims; i++)
+    (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
+  for(size_t i=dims; i < 4; i++)
+    (*entImb)[i] = 1.0;
 }
 
 double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
