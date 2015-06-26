@@ -10,20 +10,17 @@
 #include "crv.h"
 #include "crvSnap.h"
 
-#include <maSnap.h>
-#include <apfField.h>
-
 namespace crv {
 
 void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 {
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::EDGE);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::EDGE,i,xi);
-    ma::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+    crv::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -31,13 +28,13 @@ void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 
 void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
 {
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::TRIANGLE);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-    ma::transferParametricOnTriSplit(m_mesh,e,xi,p);
+    crv::transferParametricOnTriSplit(m_mesh,e,xi,p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -100,7 +97,7 @@ bool BezierCurver::run()
 
   int md = m_mesh->getDimension();
   apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
@@ -368,7 +365,7 @@ bool GregoryCurver::run()
 
   int md = m_mesh->getDimension();
 
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
