@@ -8,7 +8,6 @@
 #include <SimUtil.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
-#include <apfField.h>
 
 static void testInterpolationError(apf::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
@@ -52,7 +51,7 @@ static void testElementSize(apf::Mesh* m)
     m->end(it);
   }
   printf("Total sizes for order %d %f %f %f\n",
-    m->getCoordinateField()->getShape()->getOrder(),
+    m->getShape()->getOrder(),
     sizes[0],sizes[1],sizes[2]);
 }
 
