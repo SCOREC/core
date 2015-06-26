@@ -18,7 +18,7 @@ int binomial(int n, int i)
   return table[i*7 - (i-1)*i/2 + n-i];
 }
 
-double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n){
+double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   apf::ModelEntity* g = m->toModel(e);
   if (m->getModelType(g) == m->getDimension())
     return 0.;
