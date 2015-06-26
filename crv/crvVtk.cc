@@ -156,7 +156,7 @@ static void writeEdgeVtuFiles(apf::Mesh* m, int nSplit, const char* prefix)
 {
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
-     << apf::getShape(m->getCoordinateField())->getOrder()
+     << m->getShape()->getOrder()
       << "_edges.vtu";
 
   int nBoundaryEnts = countBoundaryEdges(m);
@@ -219,7 +219,7 @@ static void writeFaceVtuFiles(apf::Mesh* m, int nSplit, const char* prefix)
 {
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
-     << apf::getShape(m->getCoordinateField())->getOrder()
+     << m->getShape()->getOrder()
      << "_faces.vtu";
 
   int nBoundaryEnts = countBoundaryFaces(m);

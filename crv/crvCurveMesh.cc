@@ -10,13 +10,11 @@
 #include "crv.h"
 #include "crvSnap.h"
 
-#include <apfField.h>
-
 namespace crv {
 
 void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 {
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::EDGE);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
@@ -30,7 +28,7 @@ void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 
 void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
 {
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::TRIANGLE);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
@@ -99,7 +97,7 @@ bool BezierCurver::run()
 
   int md = m_mesh->getDimension();
   apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
@@ -367,7 +365,7 @@ bool GregoryCurver::run()
 
   int md = m_mesh->getDimension();
 
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
