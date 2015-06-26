@@ -38,16 +38,7 @@ void transferParametricOnTriSplit(
     Entity* e,
     Vector& t,
     Vector& p);
-void transferParametricOnGeometricEdgeSplit(
-    Mesh* m,
-    Entity* e,
-    double t,
-    Vector& p);
-void transferParametricOnGeometricTriSplit(
-    Mesh* m,
-    Entity* e,
-    Vector& t,
-    Vector& p);
+
 }
 
 #endif

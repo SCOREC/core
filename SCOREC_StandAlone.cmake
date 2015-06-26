@@ -82,6 +82,8 @@ add_subdirectory(viz)
 
 add_subdirectory(dsp)
 
+add_subdirectory(crv)
+
 add_subdirectory(test)
 
 #binary distribution package

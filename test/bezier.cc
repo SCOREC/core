@@ -1,3 +1,4 @@
+#include <crv.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -5,9 +6,7 @@
 #include <apf.h>
 #include <apfShape.h>
 #include <PCU.h>
-#include <maCurveMesh.h>
 #include <apfField.h>
-
 
 /*
  * This analytic function is a "pringle",
@@ -169,7 +168,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
     apf::ModelEntity* g = m->toModel(e);
     if (m->getModelType(g) == m->getDimension())
       continue;
-    ma::Vector pt,pa(0.,0.,0.),cpt,cpa;
+    apf::Vector3 pt,pa(0.,0.,0.),cpt,cpa;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
 
@@ -238,7 +237,7 @@ void test2D()
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 2; blendOrder <= 6; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
-      ma::BezierCurver bc(m,order,blendOrder);
+      crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
 
       testInterpolatedPoints2D(m);
@@ -252,7 +251,7 @@ void test2D()
   {
     apf::Mesh2* m = createMesh2D();
     apf::changeMeshShape(m,apf::getLagrange(2),true);
-    ma::InterpolatingCurver ic(m,2);
+    crv::InterpolatingCurver ic(m,2);
     ic.run();
     testInterpolatedPoints2D(m);
     testSize2D(m);
@@ -294,9 +293,9 @@ void test3DJacobianTri(apf::Mesh2* m)
 {
   int n = 3;
 
-  ma::Iterator* it = m->begin(2);
-  ma::Entity* e;
-  ma::Vector xi,pt;
+  apf::MeshIterator* it = m->begin(2);
+  apf::MeshEntity* e;
+  apf::Vector3 xi,pt;
   apf::Matrix3x3 J;
 
   while ((e = m->iterate(it))) {
@@ -344,9 +343,9 @@ void test3DJacobian(apf::Mesh2* m)
 {
   int n = 11;
 
-  ma::Iterator* it = m->begin(3);
-  ma::Entity* e;
-  ma::Vector xi,pt;
+  apf::MeshIterator* it = m->begin(3);
+  apf::MeshEntity* e;
+  apf::Vector3 xi,pt;
   apf::Matrix3x3 J;
   while ((e = m->iterate(it))) {
     apf::MeshElement* elem =
@@ -405,15 +404,15 @@ void test3D()
   for(int order = 2; order <= 6; ++order){
     for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, apf::getBezier(3,order,blendOrder),true);
+      apf::changeMeshShape(m, crv::getBezier(3,order,blendOrder),true);
       apf::FieldShape * fs = m->getCoordinateField()->getShape();
-      ma::BezierCurver bc(m,order,blendOrder);
+      crv::BezierCurver bc(m,order,blendOrder);
       // go downward, and convert interpolating to control points
       for(int d = 2; d >= 1; --d){
         int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
         int ne = fs->countNodesOn(d);
         apf::NewArray<double> c;
-        apf::getTransformationCoefficients(3,d,c);
+        crv::getTransformationCoefficients(3,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
