@@ -103,6 +103,6 @@ void writeCurvedVtuFiles(apf::Mesh* m, int n, const char* prefix);
 
 void fail(const char* why);
 
-}
+} //namespace crv
 
 #endif

@@ -1,4 +1,5 @@
 #include <crv.h>
+
 #include <apf.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
@@ -7,8 +8,8 @@
 #include <SimUtil.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
-
 #include <apfField.h>
+
 static void testInterpolationError(apf::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
   apf::MeshIterator* it = m->begin(entityDim);
@@ -142,6 +143,9 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   int ne = m->count(1);
   int nf = m->count(2);
+
+  crv::writeCurvedVtuFiles(m,11,"curved");
+
   m->destroyNative();
   apf::destroyMesh(m);
 
