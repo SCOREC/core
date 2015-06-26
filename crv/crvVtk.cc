@@ -9,7 +9,6 @@
 #include "PCU.h"
 #include <sstream>
 #include <fstream>
-#include <apfField.h>
 
 namespace crv {
 
@@ -157,7 +156,7 @@ static void writeEdgeVtuFiles(apf::Mesh* m, int nSplit, const char* prefix)
 {
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
-     << m->getCoordinateField()->getShape()->getOrder()
+     << apf::getShape(m->getCoordinateField())->getOrder()
       << "_edges.vtu";
 
   int nBoundaryEnts = countBoundaryEdges(m);
@@ -220,7 +219,7 @@ static void writeFaceVtuFiles(apf::Mesh* m, int nSplit, const char* prefix)
 {
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
-     << m->getCoordinateField()->getShape()->getOrder()
+     << apf::getShape(m->getCoordinateField())->getOrder()
      << "_faces.vtu";
 
   int nBoundaryEnts = countBoundaryFaces(m);
