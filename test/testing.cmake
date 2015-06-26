@@ -271,13 +271,11 @@ set(MDIR ${MESHES}/curved)
 add_test(curvedSphere
   curvemesh
   "${MDIR}/sphere1.xmt_txt"
-  "${MDIR}/sphere1_4.smb"
-  "${MDIR}/sphere1_4_curved")
+  "${MDIR}/sphere1_4.smb")
  add_test(curvedKova
   curvemesh
   "${MDIR}/Kova.xmt_txt"
-  "${MDIR}/Kova.smb"
-  "${MDIR}/Kova_curved")
+  "${MDIR}/Kova.smb")
 if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
   cook(chef0 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 1 ${MDIR})
