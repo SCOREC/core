@@ -7,6 +7,8 @@
 
 #include "crv.h"
 
+#include <cstdio>
+
 namespace crv {
 
 int binomial(int n, int i)
@@ -29,10 +31,8 @@ double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n){
   for (int j = 0; j < nj; ++j){
     pa[1] = 1.*j/(nj-1.);
     for (int i = 0; i < n-j; ++i){
-      if(d == 1)
-        pa[0] = 2.*i/(n-1)-1.0;
-      else
-        pa[0] = 1.*i/(nj-1.);
+      if(d == 1) pa[0] = 2.*i/(n-1)-1.0;
+      else pa[0] = 1.*i/(nj-1.);
       apf::getVector(elem,pa,pt);
       m->getClosestPoint(g,pt,cpt,cpa);
       max = std::max((cpt-pt).getLength(),max);
@@ -40,6 +40,12 @@ double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n){
   }
   apf::destroyElement(elem);
   return max;
+}
+
+void fail(const char* why)
+{
+  fprintf(stderr,"CRV FAILED: %s\n",why);
+  abort();
 }
 
 

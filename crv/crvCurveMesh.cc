@@ -12,10 +12,6 @@
 
 #include <maSnap.h>
 #include <apfField.h>
-#include <gmi.h>
-
-#include <fstream>
-#include <sstream>
 
 namespace crv {
 
@@ -99,9 +95,9 @@ bool InterpolatingCurver::run()
 bool BezierCurver::run()
 {
   if(m_order < 1 || m_order > 6){
-    fprintf(stderr,"Warning: cannot convert to Bezier of order %d\n",m_order);
-    return false;
+    fail("trying to convert to unimplemented Bezier order\n");
   }
+
   int md = m_mesh->getDimension();
   apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
   apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
@@ -361,14 +357,11 @@ void GregoryCurver::setInternalPointsLocally()
 
 bool GregoryCurver::run()
 {
-
   if(m_order < 3 || m_order > 4){
-    fprintf(stderr,"Warning: cannot convert to Gregory of order %d\n",m_order);
-    return false;
+    fail("cannot convert to G1 of this order\n");
   }
   if(m_mesh->getDimension() != 3){
-    fprintf(stderr,"Warning: can only convert 3D Mesh to Gregory\n");
-    return false;
+    fail("can only convert 3D Mesh to G1 continuous surface\n");
   }
 
   apf::changeMeshShape(m_mesh, getGregory(m_order,m_blendOrder),true);
@@ -442,4 +435,3 @@ bool GregoryCurver::run()
 }
 
 } // namespace ma
-
