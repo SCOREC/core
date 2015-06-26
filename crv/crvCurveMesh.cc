@@ -10,7 +10,6 @@
 #include "crv.h"
 #include "crvSnap.h"
 
-#include <maSnap.h>
 #include <apfField.h>
 
 namespace crv {
@@ -23,7 +22,7 @@ void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::EDGE,i,xi);
-    ma::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+    crv::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -37,7 +36,7 @@ void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-    ma::transferParametricOnTriSplit(m_mesh,e,xi,p);
+    crv::transferParametricOnTriSplit(m_mesh,e,xi,p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }

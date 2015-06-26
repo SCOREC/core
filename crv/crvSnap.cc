@@ -10,7 +10,81 @@
 
 #include "crvSnap.h"
 
+#include <maSnap.h>
+
 namespace crv {
+
+static void interpolateParametricCoordinates(
+    apf::Mesh* m,
+    apf::ModelEntity* g,
+    double t,
+    apf::Vector3 const& a,
+    apf::Vector3 const& b,
+    apf::Vector3& p)
+{
+  ma::interpolateParametricCoordinates(m, g, t, a, b, p);
+  if(m->getModelType(g) == 2) {
+    bool isDegenerate[4];
+    for (int d=0; d < 2; ++d) {
+      isDegenerate[2*d] = m->isDegenerate(g,a,d);
+      isDegenerate[2*d+1] = isDegenerate[2*d] ? false :
+          m->isDegenerate(g,b,d);
+    }
+    for (int d=0; d < 2; ++d) {
+      int other = d ? 0 : 1;
+      if (isDegenerate[2*other]) {
+        p[d] = b[d];
+      } else if (isDegenerate[2*other+1]) {
+        p[d] = a[d];
+      }
+    }
+  }
+}
+
+static void transferParametricBetween(
+    apf::Mesh* m,
+    apf::ModelEntity* g,
+    apf::MeshEntity* v[2],
+    double t,
+    apf::Vector3& p)
+{
+  apf::Vector3 ep[2];
+  for (int i=0; i < 2; ++i)
+    m->getParamOn(g,v[i],ep[i]);
+  crv::interpolateParametricCoordinates(m,g,t,ep[0],ep[1],p);
+}
+
+void transferParametricOnEdgeSplit(
+    apf::Mesh* m,
+    apf::MeshEntity* e,
+    double t,
+    apf::Vector3& p)
+{
+  apf::ModelEntity* g = m->toModel(e);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+  apf::MeshEntity* ev[2];
+  m->getDownward(e,0,ev);
+  crv::transferParametricBetween(m, g, ev, t, p);
+}
+
+void transferParametricOnTriSplit(
+    apf::Mesh2* m,
+    apf::MeshEntity* e,
+    apf::Vector3& t,
+    apf::Vector3& p)
+{
+  apf::ModelEntity* g = m->toModel(e);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+  apf::MeshEntity* ev[3];
+  m->getDownward(e,0,ev); // pick two points, split on edge
+  apf::Vector3 pa1,pa2;
+  m->getParamOn(g,ev[2],pa2);
+  // two linear splits
+  crv::transferParametricBetween(m, g, ev, t[0]/(1.-t[1]), pa1);
+  crv::interpolateParametricCoordinates(m,g,t[1],pa1,pa2,p);
+}
 
 void transferParametricOnGeometricEdgeSplit(
     apf::Mesh2* m,
