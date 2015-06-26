@@ -6,6 +6,10 @@
  */
 
 #include "crv.h"
+#include "PCU.h"
+#include <sstream>
+#include <fstream>
+#include <apfField.h>
 
 namespace crv {
 

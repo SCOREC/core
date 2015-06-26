@@ -19,7 +19,8 @@ set(CRV_SOURCES
   crv.cc
   crvBezier.cc
   crvCurveMesh.cc
-  crvSnap.cc)
+  crvSnap.cc
+  crvVtk.cc)
 
 set(CRV_HEADERS
   crv.h)
