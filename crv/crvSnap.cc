@@ -10,9 +10,45 @@
 
 #include "crvSnap.h"
 
+#include <gmi.h>
 #include <maSnap.h>
 
 namespace crv {
+
+/** \brief returns true if there is a geometric
+      degeneracy in that direction at that parameter
+     \param p is the parameters of the original coordinate
+     \details degeneracy is when at a point, changing
+     one parameter does not change the point location.
+     This is tested numerically, by moving a point along
+     the other parameter and checking if its location has
+     changed. If a surface has degenerate coordinates,
+     every point on it needs to be checked for degeneracy
+     for edge splitting, or similar processes. */
+static bool checkIsDegenerate(apf::Mesh* m, apf::ModelEntity* g,
+    apf::Vector3 const& p, int axis)
+{
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_model* gm = m->getModel();
+  int md = gmi_dim(gm, e);
+  if (md != 2)
+    return 0;
+  apf::Vector3 x,y,q;
+  gmi_eval(gm, e, &p[0], &x[0]); // original point
+  int other = axis ? 0 : 1; // move along other direction
+  double range[2]; // compute the range to determine how to perturb
+  gmi_range(gm, e, other, range);
+  if (range[0] > range[1])
+    std::swap(range[0],range[1]);
+  // this just guarantees we are checking a point sufficiently far
+  if (range[1] - p[other] > p[other]-range[0])
+    q[other] = 0.25*(range[1]-range[0])+p[other];
+  else
+    q[other] = p[other]-0.25*(range[1]-range[0]);
+  q[axis] = p[axis];
+  gmi_eval(gm, e, &q[0], &y[0]); // point along that axis
+  return ((x-y).getLength() < 1e-13);
+}
 
 static void interpolateParametricCoordinates(
     apf::Mesh* m,
@@ -26,9 +62,9 @@ static void interpolateParametricCoordinates(
   if(m->getModelType(g) == 2) {
     bool isDegenerate[4];
     for (int d=0; d < 2; ++d) {
-      isDegenerate[2*d] = m->isDegenerate(g,a,d);
+      isDegenerate[2*d] = checkIsDegenerate(m,g,a,d);
       isDegenerate[2*d+1] = isDegenerate[2*d] ? false :
-          m->isDegenerate(g,b,d);
+          checkIsDegenerate(m,g,b,d);
     }
     for (int d=0; d < 2; ++d) {
       int other = d ? 0 : 1;
