@@ -17,6 +17,11 @@
 
 namespace crv {
 
+void transferParametricOnEdgeSplit(
+    apf::Mesh* m,
+    apf::MeshEntity* e,
+    double t,
+    apf::Vector3& p);
 void transferParametricOnTriSplit(
     apf::Mesh2* m,
     apf::MeshEntity* e,
