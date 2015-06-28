@@ -28,11 +28,11 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   double max = 0.0;
   apf::Element* elem =
       apf::createElement(m->getCoordinateField(),e);
-  for (int j = 0; j < nj; ++j){
-    pa[1] = 1.*j/(nj-1.);
-    for (int i = 0; i < n-j; ++i){
-      if(d == 1) pa[0] = 2.*i/(n-1)-1.0;
-      else pa[0] = 1.*i/(nj-1.);
+  for (int j = 0; j <= nj; ++j){
+    pa[1] = 1.*j/nj;
+    for (int i = 0; i <= n-j; ++i){
+      if(d == 1) pa[0] = 2.*i/n-1.;
+      else pa[0] = 1.*i/n;
       apf::getVector(elem,pa,pt);
       m->getClosestPoint(g,pt,cpt,cpa);
       max = std::max((cpt-pt).getLength(),max);

@@ -209,7 +209,7 @@ struct UnsafePyramidOverride : public apf::CavityOp
       setFlag(a, pyramid, CHECKED);
       std::stringstream ss;
       ss << "pyramid at " << apf::getLinearCentroid(mesh, pyramid)
-         << "WILL produce negative tets!\n";
+         << " has no good rotation!\n";
       std::string s = ss.str();
       fprintf(stderr,"%s",s.c_str());
       return SKIP;

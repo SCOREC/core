@@ -166,7 +166,6 @@ void checkLayerShape(Mesh* m, const char* key)
         if (type == PRISM) {
           ss << "there is currently no code to help with such prisms,\n";
           ss << "but there is a chance it will tetrahedronize OK.\n";
-          ss << "you feeling lucky ?\n";
         }
         std::string s = ss.str();
         fprintf(stderr,"%s",s.c_str());
