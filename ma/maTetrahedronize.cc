@@ -530,7 +530,7 @@ void cleanupLayer(Adapt* a)
   double t0 = PCU_Time();
   long n = prepareIslandCleanup(a);
   if (!n) {
-    print("no bad pyramids found");
+    print("no island pyramids found");
     return;
   }
   Refine* r = a->refine;
