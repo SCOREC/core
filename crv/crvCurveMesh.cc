@@ -10,24 +10,17 @@
 #include "crv.h"
 #include "crvSnap.h"
 
-#include <maSnap.h>
-#include <apfField.h>
-#include <gmi.h>
-
-#include <fstream>
-#include <sstream>
-
 namespace crv {
 
 void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 {
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::EDGE);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::EDGE,i,xi);
-    ma::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+    crv::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -35,13 +28,13 @@ void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 
 void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
 {
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::TRIANGLE);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-    ma::transferParametricOnTriSplit(m_mesh,e,xi,p);
+    crv::transferParametricOnTriSplit(m_mesh,e,xi,p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -99,12 +92,12 @@ bool InterpolatingCurver::run()
 bool BezierCurver::run()
 {
   if(m_order < 1 || m_order > 6){
-    fprintf(stderr,"Warning: cannot convert to Bezier of order %d\n",m_order);
-    return false;
+    fail("trying to convert to unimplemented Bezier order\n");
   }
+
   int md = m_mesh->getDimension();
   apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
@@ -361,21 +354,18 @@ void GregoryCurver::setInternalPointsLocally()
 
 bool GregoryCurver::run()
 {
-
   if(m_order < 3 || m_order > 4){
-    fprintf(stderr,"Warning: cannot convert to Gregory of order %d\n",m_order);
-    return false;
+    fail("cannot convert to G1 of this order\n");
   }
   if(m_mesh->getDimension() != 3){
-    fprintf(stderr,"Warning: can only convert 3D Mesh to Gregory\n");
-    return false;
+    fail("can only convert 3D Mesh to G1 continuous surface\n");
   }
 
   apf::changeMeshShape(m_mesh, getGregory(m_order,m_blendOrder),true);
 
   int md = m_mesh->getDimension();
 
-  apf::FieldShape * fs = m_mesh->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
@@ -442,4 +432,3 @@ bool GregoryCurver::run()
 }
 
 } // namespace ma
-

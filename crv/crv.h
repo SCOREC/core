@@ -11,7 +11,6 @@
 #ifndef CRV_H
 #define CRV_H
 
-#include "apfMesh.h"
 #include "apfMesh2.h"
 #include "apfShape.h"
 
@@ -97,10 +96,12 @@ int binomial(int n, int i);
   \details this computes the Hausdorff distance by sampling
    n points per dimension of the entity through uniform
    sampling locations in parameter space */
-double interpolationError(apf::Mesh2* m, apf::MeshEntity* e, int n);
+double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
 
 /** \brief Visualization, writes two files for edges and faces */
 void writeCurvedVtuFiles(apf::Mesh* m, int n, const char* prefix);
+
+void fail(const char* why);
 
 }
 

@@ -8,9 +8,6 @@
 #include <math.h>
 
 #include "crv.h"
-#include "apf.h"
-#include "apfMesh.h"
-#include "apfShape.h"
 
 /* see bezier.tex */
 
@@ -95,7 +92,7 @@ static void BlendedTriangleGetLocalGradients(const int type,
     grads[i] = gxii[i]*-pow(xii[i],B-1.)*B;
 
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
-    grads[i] = apf::Vector3(0,0,0);
+    grads[i].zero();
 
   double x;
   apf::Vector3 xv, gx;
@@ -230,7 +227,7 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
       grads[i] = gxii[i]*pow(xii[i],B-1.)*B;
 
   for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
-    grads[i] = apf::Vector3(0,0,0);
+    grads[i].zero();
 
   double x;
   apf::Vector3 xv, gx;
@@ -611,9 +608,9 @@ public:
     {eP2, eP2, eP3, eP4, eP5, eP6 };
 
     if(type == apf::Mesh::EDGE && P > 1){
-      xi = apf::Vector3(edgePoints[P-1][node],0,0);
+      xi[0] = edgePoints[P-1][node];
     } else {
-      xi = apf::Vector3(0,0,0);
+      xi.zero();
     }
   }
 protected:
@@ -641,7 +638,7 @@ public:
     static double* edgePoints[6] =
     {eP2, eP2, eP3, eP4, eP5, eP6 };
     if (type == apf::Mesh::EDGE) {
-      xi = apf::Vector3(edgePoints[P-1][node],0,0);
+      xi[0] = edgePoints[P-1][node];
     } else if (type == apf::Mesh::TRIANGLE) {
       xi = apf::Vector3(1./3.,1./3.,1./3.);
       if(node == curved_face_internal[CURVED_BEZIER][P-1]-1 && P % 3 == 0){
@@ -651,7 +648,7 @@ public:
           case 1:
           case 2:
           case 3:
-            apf::fail("expected P >= 4");
+            fail("expected P >= 4");
           case 4:
             xi[(node+2) % 3] = 0.5582239;
             xi[(node+0) % 3] = 0.22088805;
@@ -686,7 +683,7 @@ public:
         }
       }
     } else {
-      xi = apf::Vector3(0,0,0);
+      xi.zero();
     }
   }
 protected:
@@ -1126,7 +1123,7 @@ public:
    {
     static double edgePoints[3] = {-0.6612048,0.0,0.6612048};
     if (type == apf::Mesh::EDGE) {
-      xi = apf::Vector3(edgePoints[node],0,0);
+      xi[0] = edgePoints[node];
     } else if (type == apf::Mesh::TRIANGLE) {
       if (node < 3){
         xi[(node+2) % 3] = 0.5582239;
@@ -1138,7 +1135,7 @@ public:
         xi[(node+0) % 3] = 0.22088805;
       }
     } else
-      xi = apf::Vector3(0,0,0);
+      xi.zero();
    }
   int getOrder() {return std::max(4,(int)B);}
 protected:
