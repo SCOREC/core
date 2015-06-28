@@ -313,20 +313,25 @@ bool isPyramidOk(apf::Mesh* m, Entity* e,
     m->getPoint(v[i], 0, p[i]);
   if (good_rotation)
     *good_rotation = -1;
+  bool all_good = true;
   for (int i = 0; i < 2; ++i) {
     int const* new_to_old = pyramid_rotation[i];
     apf::Plane pl = apf::Plane::fromPoints(
         p[new_to_old[0]],
         p[new_to_old[2]],
         p[new_to_old[4]]);
-    if (pl.distance(p[new_to_old[1]]) <= 0)
-      return false;
-    if (pl.distance(p[new_to_old[3]]) >= 0)
-      return false;
+    if (pl.distance(p[new_to_old[1]]) <= 0) {
+      all_good = false;
+      continue;
+    }
+    if (pl.distance(p[new_to_old[3]]) >= 0) {
+      all_good = false;
+      continue;
+    }
     if (good_rotation)
       *good_rotation = i;
   }
-  return true;
+  return all_good;
 }
 
 bool isLayerElementOk(Mesh* m, Entity* e)
