@@ -381,7 +381,7 @@ struct UnsnapChecker : public Crawler
    if B *is* adjacent to bad elements, it needs
    to return a message to A saying "actually,
    yes you are unsnapping". */
-static void crawlLayers_doubleSync(Adapt* a, Crawler* c)
+static void crawlLayers_doubleSync(Crawler* c)
 {
   Crawler::Layer layer;
   c->begin(layer);
@@ -397,7 +397,7 @@ static bool checkForUnsnap(Adapt* a, Tag* snapTag)
 {
   double t0 = PCU_Time();
   UnsnapChecker op(a, snapTag);
-  crawlLayers_doubleSync(a, &op);
+  crawlLayers_doubleSync(&op);
   bool notOk = PCU_Or(op.foundAnything);
   double t1 = PCU_Time();
   if (notOk)
