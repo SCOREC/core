@@ -210,6 +210,7 @@ struct UnsafePyramidOverride : public apf::CavityOp
       std::stringstream ss;
       ss << "pyramid at " << apf::getLinearCentroid(mesh, pyramid)
          << " has no good rotation!\n";
+      ss << "a negative tet WILL get produced here.\n";
       std::string s = ss.str();
       fprintf(stderr,"%s",s.c_str());
       return SKIP;
@@ -236,21 +237,33 @@ struct UnsafePyramidOverride : public apf::CavityOp
     int diagonal = dvi % 2;
     int old_diagonal = getDiagonalFromFlag(a, quad);
     setFlag(a, pyramid, CHECKED);
-    if ((old_diagonal != diagonal) && getFlag(a, quad, CHECKED)) {
-      std::stringstream ss;
-      ss << "quad at " << apf::getLinearCentroid(mesh, quad)
-         << "has conflicting overrides on its diagonal.\n";
-      ss << "a negative tet WILL get produced here.\n";
-      std::string s = ss.str();
-      fprintf(stderr,"%s",s.c_str());
-      return;
+    if (old_diagonal != diagonal) {
+      if (getFlag(a, quad, CHECKED)) {
+        std::stringstream ss;
+        ss << "quad at " << apf::getLinearCentroid(mesh, quad)
+           << " has conflicting overrides on its diagonal.\n";
+        ss << "a negative tet WILL get produced here.\n";
+        std::string s = ss.str();
+        fprintf(stderr,"%s",s.c_str());
+      } else {
+        std::stringstream ss;
+        ss << "overriding diagonal at " << apf::getLinearCentroid(mesh, quad) << '\n';
+        std::string s = ss.str();
+        fprintf(stderr,"%s",s.c_str());
+        int flag = getFlagFromDiagonal(diagonal);
+        int old_flag = getFlagFromDiagonal(old_diagonal);
+        clearFlag(a, quad, old_flag);
+        setFlag(a, quad, flag);
+        setFlag(a, quad, CHECKED);
+        assert(getFlag(a, quad, flag));
+        assert(!getFlag(a, quad, old_flag));
+      }
     } else {
       std::stringstream ss;
-      ss << "overriding diagonal at " << apf::getLinearCentroid(mesh, quad) << '\n';
+      ss << "diagonal at " << apf::getLinearCentroid(mesh, quad)
+         << " was already good for pyramid\n";
       std::string s = ss.str();
       fprintf(stderr,"%s",s.c_str());
-      setFlag(a, quad, getFlagFromDiagonal(diagonal));
-      setFlag(a, quad, CHECKED);
     }
   }
   Adapt* a;
