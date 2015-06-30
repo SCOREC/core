@@ -65,13 +65,13 @@ void collectEntityModels(
   gmi_free_set(s);
 }
 
+#if HAS_STK
 /**
  *   \brief Implement an shards::ArrayDimTag for Quadrature points
  *
  *   Note that QPDimTag::Size does not dictate the size of that dimension,
  *   put_field does.
  */
-#if HAS_STK
 struct QPDimTag : public shards::ArrayDimTag {
   enum { Size = 1 };                    ///< default size
   const char * name() const
@@ -210,7 +210,6 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
-#endif
 
 static Node lookup(long id, GlobalMap& map)
 {
@@ -218,7 +217,6 @@ static Node lookup(long id, GlobalMap& map)
   return map[id];
 }
 
-#if HAS_STK
 void writeStkField(
     Field* field,
     StkScalarField& stkField,
@@ -627,9 +625,8 @@ StkBridge* StkBridge::get(
     }
   }
 }
-#endif
 
-void generateGlobalIdsToEnts(
+static void generateGlobalIdsToEnts(
     GlobalNumbering* n,
     GlobalMap& globalIdsToEnts)
 {
@@ -641,7 +638,6 @@ void generateGlobalIdsToEnts(
   }
 }
 
-#if HAS_STK
 void declareField(Field* f, StkMetaData* md)
 {
   delete StkBridge::get(f, md, false);
