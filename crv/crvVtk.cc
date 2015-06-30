@@ -295,13 +295,12 @@ static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
      << "_controlPoints.vtu";
 
   int type = m->getDimension() == 2 ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
-  int nBase = m->getDimension() == 2 ? 2 : 3;
   int nNodes = m->getShape()->getEntityShape(type)->countNodes();
 
   int nBoundaryEnts = m->getDimension() == 2 ? countBoundaryEdges(m) :
       countBoundaryFaces(m,false);
-  int nPoints = nBase*m->count(2) + nBoundaryEnts*(nNodes-nBase);
-
+  int nPoints = nBoundaryEnts*nNodes;
+  printf("nBoundaryEnts %d nNodes %d\n",nBoundaryEnts,nNodes);
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
@@ -315,8 +314,6 @@ static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
       "NumberOfComponents=\"3\" format=\"ascii\">\n";
   apf::MeshIterator* it = m->begin(m->getDimension()-1);
   apf::MeshEntity* e;
-  apf::MeshEntity* v[3];
-  apf::Vector3 pa,pt;
   apf::NewArray<apf::Vector3> nodes;
 
   while ((e = m->iterate(it))) {
@@ -326,14 +323,7 @@ static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
       apf::getVectorNodes(elem,nodes);
       for(int i = 0; i < nNodes; ++i)
         writePoint(file,nodes[i]);
-
       apf::destroyElement(elem);
-
-    } else {
-      int nVerts = m->getDownward(e,0,v);
-      for(int i = 0; i < nVerts; ++i)
-        writePoint(file,pt);
-
     }
   }
   m->end(it);
