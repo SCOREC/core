@@ -160,6 +160,5 @@ void transferParametricOnGeometricTriSplit(
   m->getClosestPoint(g,pt,cpt,p);
 }
 
-
 } // namespace crv
 

@@ -44,7 +44,6 @@ static Gid getMax(const GlobalToVert& globalToVert)
   return max;
 }
 
-typedef std::map<Gid, std::vector<int> > GidToParts;
 
 /* algorithm courtesy of Sebastian Rettenberger:
    use brokers/routers for the vertex global ids.
