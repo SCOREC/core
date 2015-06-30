@@ -25,7 +25,7 @@ static int countBoundaryEdges(apf::Mesh* m)
   return n;
 }
 
-static int countBoundaryFaces(apf::Mesh* m)
+static int countBoundaryFaces(apf::Mesh* m, bool countEdges)
 {
   int n = 0;
   apf::MeshIterator* it = m->begin(2);
@@ -33,9 +33,10 @@ static int countBoundaryFaces(apf::Mesh* m)
   apf::MeshEntity* edges[3];
   while ((e = m->iterate(it))) {
     m->getDownward(e,1,edges);
-    if(m->getModelType(m->toModel(edges[0])) != m->getDimension() ||
+    if((countEdges &&
+      (m->getModelType(m->toModel(edges[0])) != m->getDimension() ||
        m->getModelType(m->toModel(edges[1])) != m->getDimension() ||
-       m->getModelType(m->toModel(edges[2])) != m->getDimension() ||
+       m->getModelType(m->toModel(edges[2])) != m->getDimension())) ||
        m->getModelType(m->toModel(e)) != m->getDimension())
       n++;
   }
@@ -102,6 +103,7 @@ static void writeFaceConnectivity(std::ostream& file, apf::Mesh* m, int n)
   m->end(it);
   file << "</DataArray>\n";
 }
+
 static void writeOffsets(std::ostream& file, int d, int nCells)
 {
   file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
@@ -116,9 +118,9 @@ static void writeOffsets(std::ostream& file, int d, int nCells)
 static void writeTypes(std::ostream& file, int d, int nCells)
 {
   file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
-  static int vtkTypes[2] = {3,5};
+  static int vtkTypes[4] = {1,3,5,10};
   for (int i=0; i < nCells; ++i)
-    file << vtkTypes[d-1] << '\n';
+    file << vtkTypes[d] << '\n';
   file << "</DataArray>\n";
 }
 
@@ -222,7 +224,7 @@ static void writeFaceVtuFiles(apf::Mesh* m, int nSplit, const char* prefix)
      << m->getShape()->getOrder()
      << "_faces.vtu";
 
-  int nBoundaryEnts = countBoundaryFaces(m);
+  int nBoundaryEnts = countBoundaryFaces(m,true);
 
   int nPoints = 3*m->count(2) + nBoundaryEnts*((nSplit+1)*(nSplit+2)/2-3);
   int nCells = m->count(2) + nBoundaryEnts*(nSplit*nSplit-1);
@@ -285,11 +287,77 @@ static void writeFaceVtuFiles(apf::Mesh* m, int nSplit, const char* prefix)
   file << "</UnstructuredGrid>\n";
   file << "</VTKFile>\n";
 }
+static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
+{
+  std::stringstream ss;
+  ss << prefix << PCU_Comm_Self() << "_"
+     << m->getShape()->getOrder()
+     << "_controlPoints.vtu";
+
+  int type = m->getDimension() == 2 ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
+  int nBase = m->getDimension() == 2 ? 2 : 3;
+  int nNodes = m->getShape()->getEntityShape(type)->countNodes();
+
+  int nBoundaryEnts = m->getDimension() == 2 ? countBoundaryEdges(m) :
+      countBoundaryFaces(m,false);
+  int nPoints = nBase*m->count(2) + nBoundaryEnts*(nNodes-nBase);
+
+  std::string fileName = ss.str();
+  std::ofstream file(fileName.c_str());
+  assert(file.is_open());
+  file << "<VTKFile type=\"UnstructuredGrid\">\n";
+  file << "<UnstructuredGrid>\n";
+  file << "<Piece NumberOfPoints=\"" << nPoints;
+  file << "\" NumberOfCells=\"" << nPoints;
+  file << "\">\n";
+  file << "<Points>\n";
+  file << "<DataArray type=\"Float64\" Name=\"coordinates\" "
+      "NumberOfComponents=\"3\" format=\"ascii\">\n";
+  apf::MeshIterator* it = m->begin(m->getDimension()-1);
+  apf::MeshEntity* e;
+  apf::MeshEntity* v[3];
+  apf::Vector3 pa,pt;
+  apf::NewArray<apf::Vector3> nodes;
+
+  while ((e = m->iterate(it))) {
+    if(m->getModelType(m->toModel(e)) != m->getDimension()){
+      apf::Element* elem =
+          apf::createElement(m->getCoordinateField(),e);
+      apf::getVectorNodes(elem,nodes);
+      for(int i = 0; i < nNodes; ++i)
+        writePoint(file,nodes[i]);
+
+      apf::destroyElement(elem);
+
+    } else {
+      int nVerts = m->getDownward(e,0,v);
+      for(int i = 0; i < nVerts; ++i)
+        writePoint(file,pt);
+
+    }
+  }
+  m->end(it);
+  file << "</DataArray>\n";
+  file << "</Points>\n";
+  file << "<Cells>\n";
+
+  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+  for(int i = 0; i < nPoints; ++i)
+    file << i << '\n';
+  file << "</DataArray>\n";  writeOffsets(file,0,nPoints);
+  writeTypes(file,0,nPoints);
+
+  file << "</Cells>\n";
+  file << "</Piece>\n";
+  file << "</UnstructuredGrid>\n";
+  file << "</VTKFile>\n";
+}
 
 void writeCurvedVtuFiles(apf::Mesh* m, int n, const char* prefix)
 {
   writeEdgeVtuFiles(m,n,prefix);
   writeFaceVtuFiles(m,n,prefix);
+  writeControlPointVtuFiles(m,prefix);
 }
 
 } //namespace crv
