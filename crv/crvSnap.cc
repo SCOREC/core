@@ -98,7 +98,7 @@ void transferParametricOnEdgeSplit(
 {
   apf::ModelEntity* g = m->toModel(e);
   int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
+  if (modelDimension == m->getDimension()) return;
   apf::MeshEntity* ev[2];
   m->getDownward(e,0,ev);
   crv::transferParametricBetween(m, g, ev, t, p);
@@ -115,11 +115,25 @@ void transferParametricOnTriSplit(
   if (modelDimension==m->getDimension()) return;
   apf::MeshEntity* ev[3];
   m->getDownward(e,0,ev); // pick two points, split on edge
-  apf::Vector3 pa1,pa2;
-  m->getParamOn(g,ev[2],pa2);
+  // adjust so the degenerate point is in ev[2]
+  m->getParamOn(g,ev[0],p);
+  if(checkIsDegenerate(m,g,p,0) || checkIsDegenerate(m,g,p,1)){
+    apf::MeshEntity* v = ev[0];
+    ev[0] = ev[1]; ev[1] = ev[2];ev[2] = v;
+    t[2] = 1-t[0]-t[1]; t[0] = t[1]; t[1] = t[2];
+  } else {
+    m->getParamOn(g,ev[1],p);
+    if(checkIsDegenerate(m,g,p,0) || checkIsDegenerate(m,g,p,1)){
+      apf::MeshEntity* v = ev[1];
+      ev[1] = ev[0]; ev[0] = ev[2]; ev[2] = v;
+      t[2] = 1-t[0]-t[1]; t[1] = t[0];t[0] = t[2];
+    }
+  }
+  apf::Vector3 p1,p2;
+  m->getParamOn(g,ev[2],p2);
   // two linear splits
-  crv::transferParametricBetween(m, g, ev, t[0]/(1.-t[1]), pa1);
-  crv::interpolateParametricCoordinates(m,g,t[1],pa1,pa2,p);
+  crv::transferParametricBetween(m, g, ev, t[0]/(1.-t[1]), p1);
+  crv::interpolateParametricCoordinates(m,g,t[1],p1,p2,p);
 }
 
 void transferParametricOnGeometricEdgeSplit(
@@ -130,7 +144,7 @@ void transferParametricOnGeometricEdgeSplit(
 {
   apf::ModelEntity* g = m->toModel(e);
   int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
+  if (modelDimension == m->getDimension()) return;
   apf::MeshEntity* ev[2];
   m->getDownward(e,0,ev);
   apf::Vector3 p0,p1,cpt;
@@ -148,7 +162,7 @@ void transferParametricOnGeometricTriSplit(
 {
   apf::ModelEntity* g = m->toModel(e);
   int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
+  if (modelDimension == m->getDimension()) return;
   apf::MeshEntity* ev[3];
   m->getDownward(e,0,ev);
   // split in physical space, project
