@@ -98,8 +98,8 @@ int binomial(int n, int i);
    sampling locations in parameter space */
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
 
-/** \brief Visualization, writes two files for edges and faces */
-void writeCurvedVtuFiles(apf::Mesh* m, int n, const char* prefix);
+/** \brief Visualization, writes file for specified type */
+void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
 void fail(const char* why);
 

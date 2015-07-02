@@ -235,14 +235,16 @@ void testSize2D(apf::Mesh2* m)
 void test2D()
 {
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 2; blendOrder <= 6; ++blendOrder){
+    for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
 
       testInterpolatedPoints2D(m);
       testSize2D(m);
-
+      crv::writeCurvedVtuFiles(m,apf::Mesh::VERTEX,order,"curvedBezier2D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier2D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier2D");
       m->destroyNative();
       apf::destroyMesh(m);
     }
@@ -422,7 +424,10 @@ void test3D()
         m->end(it);
       }
       m->acceptChanges();
-
+      crv::writeCurvedVtuFiles(m,apf::Mesh::VERTEX,order,"curvedBezier3D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier3D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier3D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TET,order,"curvedBezier3D");
       testSize3D(m);
       if(blendOrder < 4){
         test3DJacobian(m);
