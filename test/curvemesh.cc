@@ -137,14 +137,10 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   Sim_readLicenseFile(0);
   gmi_sim_start();
-//  gmi_register_mesh();
   gmi_register_sim();
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   int ne = m->count(1);
   int nf = m->count(2);
-
-  crv::writeCurvedVtuFiles(m,11,"curved");
-
   m->destroyNative();
   apf::destroyMesh(m);
 
