@@ -383,19 +383,23 @@ static void synchronizeEntitySet(
 }
 
 static void getNodesOnEntitySet(
-    Mesh*,
+    Mesh* m,
     EntitySet& s,
     DynamicArray<Node>& n,
-    apf::Field* f)
+    FieldShape* sh)
 {
   size_t size = 0;
-  APF_ITERATE(EntitySet,s,it)
-    size += f->countNodesOn(*it);
+  APF_ITERATE(EntitySet,s,it) {
+    int nen = sh->countNodesOn(m->getType(*it));
+    size += nen;
+  }
   n.setSize(size);
   size_t i=0;
-  APF_ITERATE(EntitySet,s,it)
-    for (int j=0; j < f->countNodesOn(*it); ++j)
+  APF_ITERATE(EntitySet,s,it) {
+    int nen = sh->countNodesOn(m->getType(*it));
+    for (int j=0; j < nen; ++j)
       n[i++] = Node(*it,j);
+  }
   assert(i==size);
 }
 
@@ -403,20 +407,20 @@ void getNodesOnClosure(
     Mesh* m,
     ModelEntity* me,
     DynamicArray<Node>& on,
-    apf::Field* f)
+    FieldShape* sh)
 {
-  if (!f)
-    f = m->getCoordinateField();
+  if (!sh)
+    sh = m->getShape();
   int d = m->getModelType(me);
   MeshIterator* it = m->begin(d);
   MeshEntity* e;
   EntitySet s;
   while ((e = m->iterate(it)))
     if (m->toModel(e) == me)
-      getClosureEntitiesWithNodes(m,e,s,f->getShape());
+      getClosureEntitiesWithNodes(m, e, s, sh);
   m->end(it);
-  synchronizeEntitySet(m,s);
-  getNodesOnEntitySet(m,s,on,f);
+  synchronizeEntitySet(m, s);
+  getNodesOnEntitySet(m, s, on, sh);
 }
 
 GlobalNumbering* createGlobalNumbering(
