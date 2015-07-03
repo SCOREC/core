@@ -383,7 +383,7 @@ static void synchronizeEntitySet(
 }
 
 static void getNodesOnEntitySet(
-    Mesh* m,
+    Mesh*,
     EntitySet& s,
     DynamicArray<Node>& n,
     apf::Field* f)

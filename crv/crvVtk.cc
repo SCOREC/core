@@ -26,10 +26,9 @@ static void writePointConnectivity(std::ostream& file, int nPoints)
 static void writeEdgeConnectivity(std::ostream& file, apf::Mesh* m, int n)
 {
   file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(1);
   int num = 0;
-  while ((e = m->iterate(it)))
+  while (m->iterate(it))
   {
     for (int i=0; i < n; ++i)
       file << num+i << ' ' << num+i+1 << '\n';
@@ -65,10 +64,9 @@ followed by the last 3 (n*(n-1)/2)
 static void writeTriangleConnectivity(std::ostream& file, apf::Mesh* m, int n)
 {
   file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(2);
   int num = 0;
-  while ((e = m->iterate(it)))
+  while (m->iterate(it))
   {
     int index = (n+1)*(n+2)/2-1;
     for (int i=0; i < n; ++i){
@@ -99,10 +97,9 @@ static void writeTriangleConnectivity(std::ostream& file, apf::Mesh* m, int n)
 static void writeTetConnectivity(std::ostream& file, apf::Mesh* m, int n)
 {
   file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(3);
   int num = 0;
-  while ((e = m->iterate(it)))
+  while (m->iterate(it))
   {
     for(int h = 0; h < 4; ++h){
       for (int k=0; k < n; ++k){
