@@ -279,8 +279,8 @@ void testSize3D(apf::Mesh2* m)
       {
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
-                                               << " size " << v
-                                               << " at " << getLinearCentroid(m, e) << '\n';
+           << " size " << v
+           << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
         fprintf(stderr, "%s", s.c_str());
         abort();
@@ -312,30 +312,28 @@ void test3DJacobianTri(apf::Mesh2* m)
     apf::Matrix3x3 Je(vpt[1][0]-vpt[0][0],vpt[1][1]-vpt[0][1],vpt[1][2]-vpt[0][2],
         vpt[2][0]-vpt[0][0],vpt[2][1]-vpt[0][1],vpt[2][2]-vpt[0][2],0.,0.,0.);
 
-    for (int k = 0; k < n+1; ++k){
-      xi[2] = 1.*k/n;
-      for (int j = 0; j < n+1; ++j){
-        xi[1] = 1.*j/n;
-        for (int i = 0; i < n+1-j-k; ++i){
-          xi[0] = 1.*i/n;
-          apf::getJacobian(elem,xi,J);
-          for(int a = 0; a < 3; ++a)
-            for(int b = 0; b < 3; ++b)
-              if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
-              {
-                std::cout << "xi " << xi << std::endl;
-                std::cout << J << std::endl;
-                std::cout << Je << std::endl;
-                std::stringstream ss;
-                ss << "2D Jacobian is incorrect for "
-                    << m->getCoordinateField()->getShape()->getName() << "\n";
-                std::string s = ss.str();
-                fprintf(stderr, "%s", s.c_str());
-                abort();
-              }
-        }
+    for (int j = 0; j <= n; ++j){
+      xi[1] = 1.*j/n;
+      for (int i = 0; i <= n-j; ++i){
+        xi[0] = 1.*i/n;
+        apf::getJacobian(elem,xi,J);
+        for(int a = 0; a < 3; ++a)
+          for(int b = 0; b < 3; ++b)
+            if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
+            {
+              std::cout << "xi " << xi << std::endl;
+              std::cout << J << std::endl;
+              std::cout << Je << std::endl;
+              std::stringstream ss;
+              ss << "2D Jacobian is incorrect for "
+                  << m->getCoordinateField()->getShape()->getName() << "\n";
+              std::string s = ss.str();
+              fprintf(stderr, "%s", s.c_str());
+              abort();
+            }
       }
     }
+
     apf::destroyMeshElement(elem);
   }
   m->end(it);
@@ -361,11 +359,11 @@ void test3DJacobian(apf::Mesh2* m)
         vpt[2][0]-vpt[0][0],vpt[2][1]-vpt[0][1],vpt[2][2]-vpt[0][2],
         vpt[3][0]-vpt[0][0],vpt[3][1]-vpt[0][1],vpt[3][2]-vpt[0][2]);
 
-    for (int k = 0; k < n+1; ++k){
+    for (int k = 0; k <= n; ++k){
       xi[2] = 1.*k/n;
-      for (int j = 0; j < n+1; ++j){
+      for (int j = 0; j <= n; ++j){
         xi[1] = 1.*j/n;
-        for (int i = 0; i < n+1-j-k; ++i){
+        for (int i = 0; i <= n-j-k; ++i){
           xi[0] = 1.*i/n;
           apf::getJacobian(elem,xi,J);
 

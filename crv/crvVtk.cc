@@ -12,30 +12,23 @@
 
 namespace crv {
 
-static void writePointConnectivity(std::ostream& file, int nPoints)
+static void writePointConnectivity(std::ostream& file, int n)
 {
-  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  for(int i = 0; i < nPoints; ++i)
+  for(int i = 0; i < n; ++i)
     file << i << '\n';
-  file << "</DataArray>\n";
 }
 
 /*
  * Simple subdivision on an edge into n smaller edges
  */
-static void writeEdgeConnectivity(std::ostream& file, apf::Mesh* m, int n)
+static void writeEdgeConnectivity(std::ostream& file, int c, int n)
 {
-  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  apf::MeshIterator* it = m->begin(1);
   int num = 0;
-  while (m->iterate(it))
-  {
-    for (int i=0; i < n; ++i)
+  for(int j = 0; j < c; ++j){
+    for(int i = 0; i < n; ++i)
       file << num+i << ' ' << num+i+1 << '\n';
     num += n+1;
   }
-  m->end(it);
-  file << "</DataArray>\n";
 }
 
 /*
@@ -61,50 +54,42 @@ followed by the last 3 (n*(n-1)/2)
 2 6 5
 1 5 4
 */
-static void writeTriangleConnectivity(std::ostream& file, apf::Mesh* m, int n)
+static void writeTriangleConnectivity(std::ostream& file, int c, int n)
 {
-  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  apf::MeshIterator* it = m->begin(2);
   int num = 0;
-  while (m->iterate(it))
-  {
+  for(int k = 0; k < c; ++k){
     int index = (n+1)*(n+2)/2-1;
-    for (int i=0; i < n; ++i){
-      for (int j=0; j < i+1; ++j){
+    for(int i = 0; i < n; ++i){
+      for(int j = 0; j < i+1; ++j){
         file << num+index-j << ' ' << num+index-j-(i+1)
-                   << ' ' << num+index-j-(i+2)<< '\n';
+             << ' ' << num+index-j-(i+2)<< '\n';
       }
-      index-=1+i;
+      index -= 1+i;
     }
     index = (n+1)*(n+2)/2-5;
-    for (int i=1; i < n; ++i){
-      for (int j=0; j < i; ++j){
+    for (int i = 1; i < n; ++i){
+      for (int j = 0; j < i; ++j){
         file << num+index-j << ' ' << num+index-j+i+2
-            << ' ' << num+index-j+i+1 << '\n';
+             << ' ' << num+index-j+i+1 << '\n';
       }
-      index-=2+i;
+      index -= 2+i;
     }
     num += (n+1)*(n+2)/2;
   }
-  m->end(it);
-  file << "</DataArray>\n";
 }
 
 /*
  * Tets are subdivided into four hexes, which are then split into more
  * hexes. This gives a more uniform subdivision
  */
-static void writeTetConnectivity(std::ostream& file, apf::Mesh* m, int n)
+static void writeTetConnectivity(std::ostream& file, int c, int n)
 {
-  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-  apf::MeshIterator* it = m->begin(3);
   int num = 0;
-  while (m->iterate(it))
-  {
+  for(int l = 0; l < c; ++l){
     for(int h = 0; h < 4; ++h){
-      for (int k=0; k < n; ++k){
-        for (int j=0; j < n; ++j){
-          for (int i=0; i < n; ++i){
+      for(int k = 0; k < n; ++k){
+        for(int j = 0; j < n; ++j){
+          for(int i = 0; i < n; ++i){
             file << num+i<< ' ' << num+i+1 << ' ' << num+i+1+n+1 << ' '
                  << num+i+n+1 << ' ' << num+i+(n+1)*(n+1)<< ' '
                  << num+i+1+(n+1)*(n+1) << ' ' << num+i+1+n+1+(n+1)*(n+1)
@@ -117,30 +102,30 @@ static void writeTetConnectivity(std::ostream& file, apf::Mesh* m, int n)
       num+=(n+1)*(n+1);
     }
   }
-  m->end(it);
-  file << "</DataArray>\n";
 }
 
-static void writeConnectivity(std::ostream& file, apf::Mesh* m, int type, int n)
+static void writeConnectivity(std::ostream& file, int type, int c, int n)
 {
+  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
   switch (type) {
     case apf::Mesh::VERTEX:
       writePointConnectivity(file,n);
       break;
     case apf::Mesh::EDGE:
-      writeEdgeConnectivity(file,m,n);
+      writeEdgeConnectivity(file,c,n);
       break;
     case apf::Mesh::TRIANGLE:
-      writeTriangleConnectivity(file,m,n);
+      writeTriangleConnectivity(file,c,n);
       break;
-    case apf::Mesh::HEX:
-      writeTetConnectivity(file,m,n);
+    case apf::Mesh::TET:
+      writeTetConnectivity(file,c,n);
       break;
     default:
       fail("can only write curved VTU files for control points, \
            edges, triangles, and tets");
       break;
   }
+  file << "</DataArray>\n";
 }
 
 static void writeOffsets(std::ostream& file, int type, int nCells)
@@ -157,7 +142,7 @@ static void writeOffsets(std::ostream& file, int type, int nCells)
 static void writeTypes(std::ostream& file, int type, int nCells)
 {
   file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
-  static int vtkTypes[6] = {1,3,5,9,10,12};
+  static int vtkTypes[4] = {1,3,5,12};
   for (int i=0; i < nCells; ++i)
     file << vtkTypes[type] << '\n';
   file << "</DataArray>\n";
@@ -179,11 +164,11 @@ static void writeStart(std::ostream& file, int nPoints, int nCells)
   file << "\">\n";
 }
 
-static void writeCells(std::ostream& file, apf::Mesh* m,
-    int type, int n, int nCells)
+static void writeCells(std::ostream& file,
+    int type, int nEntities, int nSplit, int nCells)
 {
   file << "<Cells>\n";
-  writeConnectivity(file,m,type,n);
+  writeConnectivity(file,type,nEntities,nSplit);
   writeOffsets(file,type,nCells);
   writeTypes(file,type,nCells);
   file << "</Cells>\n";
@@ -334,7 +319,7 @@ static void writeEdgeVtuFiles(apf::Mesh* m, int n, const char* prefix)
   m->end(it);
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,m,apf::Mesh::EDGE,n,nCells);
+  writeCells(file,apf::Mesh::EDGE,m->count(1),n,nCells);
   writeEnd(file);
 }
 
@@ -377,7 +362,7 @@ static void writeTriangleVtuFiles(apf::Mesh* m, int n, const char* prefix)
   m->end(it);
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,m,apf::Mesh::TRIANGLE,n,nCells);
+  writeCells(file,apf::Mesh::TRIANGLE,m->count(2),n,nCells);
   if(m->getShape()->getOrder() > 1)
     writeTriJacobianData(file,m,n);
   writeEnd(file);
@@ -463,9 +448,8 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   }
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,m,apf::Mesh::HEX,n,nCells);
-  if(m->getShape()->getOrder() > 1)
-    writeTetJacobianData(file,m,n);
+  writeCells(file,apf::Mesh::TET,m->count(3),n,nCells);
+  writeTetJacobianData(file,m,n);
   writeEnd(file);
   m->end(it);
 }
@@ -476,9 +460,10 @@ static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
      << "_controlPoints.vtu";
+
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
-      nPoints += m->getShape()->countNodesOn(t);
+      nPoints += m->getShape()->countNodesOn(t)*apf::countEntitiesOfType(m,t);
 
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
@@ -503,7 +488,7 @@ static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   }
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,m,apf::Mesh::VERTEX,nPoints,nPoints);
+  writeCells(file,apf::Mesh::VERTEX,nPoints,nPoints,nPoints);
   writeEnd(file);
 }
 
@@ -520,7 +505,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
       writeTriangleVtuFiles(m,n,prefix);
       break;
     case apf::Mesh::TET:
-      writeTetVtuFiles(m,n/2+1,prefix);
+      writeTetVtuFiles(m,n/2,prefix);
       break;
     default:
       break;
