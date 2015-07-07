@@ -142,7 +142,19 @@ static void writeOffsets(std::ostream& file, int type, int nCells)
 static void writeTypes(std::ostream& file, int type, int nCells)
 {
   file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
-  static int vtkTypes[4] = {1,3,5,12};
+  assert(type >= 0);
+  assert(type < apf::Mesh::TYPES);
+  static int vtkTypes[apf::Mesh::TYPES] = {
+    1,  //parent vertex
+    3,  //parent edge
+    5,  //parent triangle
+    -1, //parent quad
+    12, //parent tet, split into hexes, use hex type
+    -1,
+    -1,
+    -1
+  };
+  assert(vtkTypes[type] != -1);
   for (int i=0; i < nCells; ++i)
     file << vtkTypes[type] << '\n';
   file << "</DataArray>\n";
