@@ -9,7 +9,10 @@ set(PH_INCLUDE_DIRS
 set(DEP_LIBS ${MA_LIBS} ${MDS_LIBS})
 set(PH_LIBS ph ${DEP_LIBS})
 
+set(HEADERS chef.h)
+
 set(SOURCES
+  phCook.cc
   ph.cc
   phAdjacent.cc
   phOutput.cc
