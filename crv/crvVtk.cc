@@ -131,9 +131,19 @@ static void writeConnectivity(std::ostream& file, int type, int c, int n)
 static void writeOffsets(std::ostream& file, int type, int nCells)
 {
   file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+  static int vtkOffsets[apf::Mesh::TYPES] = {
+    1,  //parent vertex
+    2,  //parent edge
+    3,  //parent triangle
+    -1, //parent quad
+    8, //parent tet, split into hexes, use hex type
+    -1,
+    -1,
+    -1
+  };
   int o = 0;
   for (int i=0; i < nCells; ++i){
-    o += apf::Mesh::adjacentCount[type][0];
+    o += vtkOffsets[type];
     file << o << '\n';
   }
   file << "</DataArray>\n";
@@ -252,7 +262,7 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
       + params[apf::tet_tri_verts[i][2]]*1./3.;
 
   int hex[4][8] = {{0,4,10,6,7,11,14,13},{1,5,10,4,8,12,14,11},
-      {2,6,10,5,9,13,14,12},{3,7,11,8,9,13,14,12}};
+      {2,6,10,5,9,13,14,12},{9,13,14,12,3,7,11,8}};
 
   while ((e = m->iterate(it))) {
     apf::MeshElement* me = apf::createMeshElement(m,e);
@@ -411,7 +421,7 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
       + params[apf::tet_tri_verts[i][2]]*1./3.;
 
   int hex[4][8] = {{0,4,10,6,7,11,14,13},{1,5,10,4,8,12,14,11},
-      {2,6,10,5,9,13,14,12},{3,7,11,8,9,13,14,12}};
+      {2,6,10,5,9,13,14,12},{9,13,14,12,3,7,11,8}};
 
   writeStart(file,nPoints,nCells);
   file << "<Points>\n";
