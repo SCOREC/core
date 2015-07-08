@@ -6,7 +6,6 @@
 #include <apf.h>
 #include <apfShape.h>
 #include <PCU.h>
-#include <apfField.h>
 
 /*
  * This analytic function is a "pringle",
@@ -161,7 +160,7 @@ apf::Mesh2* createMesh3D()
 }
 
 void testInterpolatedPoints2D(apf::Mesh2* m){
-  apf::FieldShape * fs = m->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m->getShape();
   apf::MeshIterator* it = m->begin(1);
   apf::MeshEntity* e;
   while ((e = m->iterate(it))) {
@@ -181,7 +180,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
       if (error > 1.e-7) {
         std::cout << apf::Mesh::typeName[m->getType(e)] <<
             " is not being interpolated correctly by " <<
-            m->getCoordinateField()->getShape()->getName() <<
+            fs->getName() <<
             " with error " << error << "\n";
         abort();
       }
@@ -194,7 +193,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
 void testSize2D(apf::Mesh2* m)
 {
   double sizes[3] = {3.721402252672,2.323391881216468,2.133984157270};
-  int order = m->getCoordinateField()->getShape()->getOrder();
+  int order = m->getShape()->getOrder();
   for(int d = 1; d <= 2; ++d){
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
@@ -235,7 +234,7 @@ void testSize2D(apf::Mesh2* m)
 void test2D()
 {
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
+    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
@@ -279,8 +278,8 @@ void testSize3D(apf::Mesh2* m)
       {
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
-                                               << " size " << v
-                                               << " at " << getLinearCentroid(m, e) << '\n';
+           << " size " << v
+           << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
         fprintf(stderr, "%s", s.c_str());
         abort();
@@ -312,30 +311,28 @@ void test3DJacobianTri(apf::Mesh2* m)
     apf::Matrix3x3 Je(vpt[1][0]-vpt[0][0],vpt[1][1]-vpt[0][1],vpt[1][2]-vpt[0][2],
         vpt[2][0]-vpt[0][0],vpt[2][1]-vpt[0][1],vpt[2][2]-vpt[0][2],0.,0.,0.);
 
-    for (int k = 0; k < n+1; ++k){
-      xi[2] = 1.*k/n;
-      for (int j = 0; j < n+1; ++j){
-        xi[1] = 1.*j/n;
-        for (int i = 0; i < n+1-j-k; ++i){
-          xi[0] = 1.*i/n;
-          apf::getJacobian(elem,xi,J);
-          for(int a = 0; a < 3; ++a)
-            for(int b = 0; b < 3; ++b)
-              if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
-              {
-                std::cout << "xi " << xi << std::endl;
-                std::cout << J << std::endl;
-                std::cout << Je << std::endl;
-                std::stringstream ss;
-                ss << "2D Jacobian is incorrect for "
-                    << m->getCoordinateField()->getShape()->getName() << "\n";
-                std::string s = ss.str();
-                fprintf(stderr, "%s", s.c_str());
-                abort();
-              }
-        }
+    for (int j = 0; j <= n; ++j){
+      xi[1] = 1.*j/n;
+      for (int i = 0; i <= n-j; ++i){
+        xi[0] = 1.*i/n;
+        apf::getJacobian(elem,xi,J);
+        for(int a = 0; a < 3; ++a)
+          for(int b = 0; b < 3; ++b)
+            if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
+            {
+              std::cout << "xi " << xi << std::endl;
+              std::cout << J << std::endl;
+              std::cout << Je << std::endl;
+              std::stringstream ss;
+              ss << "2D Jacobian is incorrect for "
+                  << m->getShape()->getName() << "\n";
+              std::string s = ss.str();
+              fprintf(stderr, "%s", s.c_str());
+              abort();
+            }
       }
     }
+
     apf::destroyMeshElement(elem);
   }
   m->end(it);
@@ -361,11 +358,11 @@ void test3DJacobian(apf::Mesh2* m)
         vpt[2][0]-vpt[0][0],vpt[2][1]-vpt[0][1],vpt[2][2]-vpt[0][2],
         vpt[3][0]-vpt[0][0],vpt[3][1]-vpt[0][1],vpt[3][2]-vpt[0][2]);
 
-    for (int k = 0; k < n+1; ++k){
+    for (int k = 0; k <= n; ++k){
       xi[2] = 1.*k/n;
-      for (int j = 0; j < n+1; ++j){
+      for (int j = 0; j <= n-k; ++j){
         xi[1] = 1.*j/n;
-        for (int i = 0; i < n+1-j-k; ++i){
+        for (int i = 0; i <= n-j-k; ++i){
           xi[0] = 1.*i/n;
           apf::getJacobian(elem,xi,J);
 
@@ -378,7 +375,7 @@ void test3DJacobian(apf::Mesh2* m)
                 std::cout << Je << std::endl;
                 std::stringstream ss;
                 ss << "3D Jacobian is incorrect for "
-                    << m->getCoordinateField()->getShape()->getName() << "\n";
+                    << m->getShape()->getName() << "\n";
                 std::string s = ss.str();
                 fprintf(stderr, "%s", s.c_str());
                 abort();
@@ -403,11 +400,11 @@ void test3D()
   mbase->destroyNative();
   apf::destroyMesh(mbase);
 
-  for(int order = 2; order <= 6; ++order){
-    for(int blendOrder = 2; blendOrder <= 4; ++blendOrder){
+  for(int order = 1; order <= 6; ++order){
+    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
       apf::changeMeshShape(m, crv::getBezier(3,order,blendOrder),true);
-      apf::FieldShape * fs = m->getCoordinateField()->getShape();
+      apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
       // go downward, and convert interpolating to control points
       for(int d = 2; d >= 1; --d){

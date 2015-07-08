@@ -144,7 +144,8 @@ void getNodes(Numbering* n, DynamicArray<Node>& nodes);
 void getNodesOnClosure(
     Mesh* m,
     ModelEntity* me,
-    DynamicArray<Node>& on);
+    DynamicArray<Node>& on,
+    FieldShape* sh = 0);
 
 /** \brief create global numbering
    \details see apf::createNumbering.
