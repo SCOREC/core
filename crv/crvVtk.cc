@@ -223,7 +223,17 @@ static void writeTriJacobianData(std::ostream& file, apf::Mesh* m, int n)
       for (int i = 0; i <= n-j; ++i){
         p[0] = 1.*i/n;
         apf::getJacobian(me,p,J);
-        file << apf::getJacobianDeterminant(J,2) << '\n';
+        double detJ = apf::getJacobianDeterminant(J,2);
+        file << detJ << '\n';
+        if(detJ < 0.){
+          apf::Vector3 pt;
+          apf::getVector((apf::Element*)me,p,pt);
+          std::stringstream ss;
+          ss << "warning: Tri Jacobian Determinant is negative,  " << detJ
+              << " at " << pt << '\n';
+          std::string s = ss.str();
+          fprintf(stderr, "%s", s.c_str());
+        }
       }
     }
     apf::destroyMeshElement(me);
@@ -292,7 +302,17 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
               p += params[hex[h][l]]*values[l];
 
             apf::getJacobian(me,p,J);
-            file << apf::getDeterminant(J) << '\n';
+            double detJ = apf::getDeterminant(J);
+            if(detJ < 0.){
+              apf::Vector3 pt;
+              apf::getVector((apf::Element*)me,p,pt);
+              std::stringstream ss;
+              ss << "warning: Tet Jacobian Determinant is negative,  " << detJ
+                  << " at " << pt << "for " << m->getShape()->getOrder() << " order method\n";
+              std::string s = ss.str();
+              fprintf(stderr, "%s", s.c_str());
+            }
+            file << detJ << '\n';
           }
         }
       }

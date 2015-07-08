@@ -55,7 +55,7 @@ static void BlendedTriangleGetValues(const int type,
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
     values[i] = 0.0;
 
-  double x;
+  double x, xiix;
   apf::Vector3 xv;
   apf::NewArray<double> v;
 
@@ -66,9 +66,12 @@ static void BlendedTriangleGetValues(const int type,
   for(int i = 0; i < 3; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
 
-    if(x < blendingTol) continue;
+    if(x < blendingTol)
+      xiix = 0.5;
+    else
+      xiix = xii[tev[i][1]]/x;
 
-    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+    xv[0] = 2.0*xiix-1.0;
 
     getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
           ->getValues(m,edges[i],xv,v);
@@ -86,7 +89,8 @@ static void BlendedTriangleGetLocalGradients(const int type,
 {
 
   double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-  apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
+  apf::Vector3 gxii[3] = {apf::Vector3(-1,-1,0),
+      apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
 
   for(int i = 0; i < 3; ++i)
     grads[i] = gxii[i]*-pow(xii[i],B-1.)*B;
@@ -94,7 +98,7 @@ static void BlendedTriangleGetLocalGradients(const int type,
   for(int i = 3; i < curved_face_total[type][P-1]; ++i)
     grads[i].zero();
 
-  double x;
+  double x, xiix;
   apf::Vector3 xv, gx;
 
   apf::NewArray<double> v;
@@ -106,12 +110,14 @@ static void BlendedTriangleGetLocalGradients(const int type,
   m->getDownward(e,1,edges);
   for(int i = 0; i < 3; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
+    if(x < blendingTol)
+      xiix = 0.5;
+    else
+      xiix = xii[tev[i][1]]/x;
 
-    if(x < blendingTol) continue;
+    xv[0] = 2.0*xiix-1.0;
 
     gx = gxii[tev[i][0]]+gxii[tev[i][1]];
-
-    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
 
     getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
       ->getValues(m,edges[i],xv,v);
@@ -121,11 +127,11 @@ static void BlendedTriangleGetLocalGradients(const int type,
 
     for(int j = 0; j < 2; ++j)
       grads[tev[i][j]]   += gx*B*pow(x,B-1.)*v[j]
-        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.*pow(x,B-1.);
+        + (gxii[tev[i][1]]-gx*xiix)*gv[j][0]*2.*pow(x,B-1.);
 
     for(int j = 0; j < (P-1); ++j)
       grads[3+i*(P-1)+j] = gx*B*pow(x,B-1.)*v[j+2]
-        + (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,B-1.);
+        + (gxii[tev[i][1]]-gx*xiix)*gv[j+2][0]*2.*pow(x,B-1.);
 
   }
 
@@ -145,7 +151,7 @@ static void BlendedTetrahedronGetValues(const int type,
     values[i] = 0.0;
 
   double x;
-  apf::Vector3 xv;
+  apf::Vector3 xv, xiix;
   apf::NewArray<double> v;
 
   apf::MeshEntity* faces[4];
@@ -160,9 +166,12 @@ static void BlendedTetrahedronGetValues(const int type,
   m->getDownward(e,1,edges);
   for(int i = 0; i < 6; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
-    if(x < blendingTol) continue;
+    if(x < blendingTol)
+      xiix[0] = 0.5;
+    else
+      xiix[0] = xii[tev[i][1]]/x;
 
-    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+    xv[0] = 2.0*xiix[0]-1.0;
 
     getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
       ->getValues(m,edges[i],xv,v);
@@ -180,12 +189,13 @@ static void BlendedTetrahedronGetValues(const int type,
     x = 0.;
     for(int j = 0; j < 3; ++j)
       x += xii[ttv[i][j]];
-    if(x < blendingTol) continue;
 
-    for(int j = 0; j < 3; ++j)
-      xv[j] = xii[ttv[i][(j+1) % 3]];
-
-    xv = xv/x;
+    if(x < blendingTol)
+      xv = apf::Vector3(1./3.,1./3.,1./3.);
+    else {
+      for(int j = 0; j < 3; ++j)
+        xv[j] = xii[ttv[i][(j+1) % 3]]/x;
+    }
 
     if(type == CURVED_BEZIER)
       getBezier(3,P,B)->getEntityShape(apf::Mesh::TRIANGLE)
@@ -213,6 +223,7 @@ static void BlendedTetrahedronGetValues(const int type,
     for(int j = 0; j < nF; ++j) // face nodes
       values[4+6*nE+i*nF+j] +=  v[3+3*nE+j]*pow(x,B);
   } // done faces
+
 }
 
 static void BlendedTetrahedronGetLocalGradients(const int type,
@@ -224,13 +235,13 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
       apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
 
   for(int i = 0; i < 4; ++i)
-      grads[i] = gxii[i]*pow(xii[i],B-1.)*B;
+    grads[i] = gxii[i]*pow(xii[i],B-1.)*B;
 
   for(int i = 4; i < blended_tet_total[type][P-1]; ++i)
     grads[i].zero();
 
   double x;
-  apf::Vector3 xv, gx;
+  apf::Vector3 xv, xiix, gx;
   apf::Vector3 gxv[2];
   apf::NewArray<double> v;
   apf::NewArray<apf::Vector3> gv;
@@ -247,10 +258,13 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
   m->getDownward(e,1,edges);
   for(int i = 0; i < 6; ++i){
     x = xii[tev[i][0]]+xii[tev[i][1]];
-    if(x < blendingTol) continue;
-    gx = gxii[tev[i][0]]+gxii[tev[i][1]];
+    if(x < blendingTol)
+      xiix[0] = 0.5;
+    else
+      xiix[0] = xii[tev[i][1]]/x;
 
-    xv[0] = 2.0*(xii[tev[i][1]]/x)-1.0;
+    xv[0] = 2.0*xiix[0]-1.0;
+    gx = gxii[tev[i][0]]+gxii[tev[i][1]];
 
     getBezier(3,P,B)->getEntityShape(apf::Mesh::EDGE)
         ->getValues(m,edges[i],xv,v);
@@ -260,11 +274,11 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
 
     for(int j = 0; j < 2; ++j) // vertices
       grads[tev[i][j]] += gx*B*pow(x,B-1.)*(-v[j])
-      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j][0]*2.*pow(x,B-1.);
+      - (gxii[tev[i][1]]-gx*xiix[0])*gv[j][0]*2.*pow(x,B-1.);
 
     for(int j = 0; j < nE; ++j)// edge nodes
       grads[4+i*nE+j]  += gx*B*pow(x,B-1.)*(-v[j+2])
-      - (gxii[tev[i][1]]-gx*xii[tev[i][1]]/x)*gv[j+2][0]*2.*pow(x,B-1.);
+      - (gxii[tev[i][1]]-gx*xiix[0])*gv[j+2][0]*2.*pow(x,B-1.);
   }
 
   m->getDownward(e,2,faces);
@@ -273,16 +287,15 @@ static void BlendedTetrahedronGetLocalGradients(const int type,
     for(int j = 0; j < 3; ++j)
       x += xii[ttv[i][j]];
 
-    if(x < blendingTol) continue;
-
-    for(int j = 0; j < 3; ++j)
-      xv[j] = xii[ttv[i][(j+1) % 3]];
+    if(x < blendingTol)
+      xv = apf::Vector3(1./3.,1./3.,1./3.);
+    else {
+      for(int j = 0; j < 3; ++j)
+        xv[j] = xii[ttv[i][(j+1) % 3]]/x;
+    }
 
     gx = gxii[ttv[i][0]] + gxii[ttv[i][1]] + gxii[ttv[i][2]];
 
-    xv = xv/x;
-
-    // actually x*gxv
     gxv[0] = (gxii[ttv[i][1]]-gx*xv[0])*pow(x,B-1.);
     gxv[1] = (gxii[ttv[i][2]]-gx*xv[1])*pow(x,B-1.);
 
@@ -591,7 +604,7 @@ public:
   const char* getName() const {return name.c_str();}
   BezierCurve() {
     std::stringstream ss;
-    ss << "BezierCurve_" << P;
+    ss << "BezierCurve";
     name = ss.str();
     this->registerSelf(name.c_str());
   }
@@ -623,7 +636,7 @@ public:
   const char* getName() const {return name.c_str();}
   BezierSurface() {
     std::stringstream ss;
-    ss << "BezierSurface_" << P;
+    ss << "BezierSurface";
     name = ss.str();
     this->registerSelf(name.c_str());
   }
@@ -897,7 +910,7 @@ public:
   const char* getName() const {return name.c_str();}
   GregorySurface4() {
     std::stringstream ss;
-    ss << "GregorySurface_4";
+    ss << "GregorySurface";
     name = ss.str();
     this->registerSelf(name.c_str());
   }
