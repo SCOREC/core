@@ -6,12 +6,6 @@
 #include <apfZoltan.h>
 #include <parma.h>
 
-#ifdef __bgq__
-# include <mpix.h>
-#else
-# warning This has BGQ specific code
-#endif
-
 namespace {
 
 const char* modelFile = 0;
@@ -21,30 +15,6 @@ const char* method = 0;
 const char* approach = 0;
 int partitionFactor = 1;
 int isLocal = 0;
-
-void mpiStats() {
-#ifdef __bgq__
-  int rank, size;
-  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-  MPI_Comm_size( MPI_COMM_WORLD, &size );
-
-  MPIX_Hardware_t hw;
-  MPIX_Hardware(&hw);
-  if (rank==0) {
-    printf("%d: MPIX test on %d MPI processes \n", rank, size);
-    printf("%d: clock freq    = %u MHz memory size   = %u MB \n",
-        rank, hw.clockMHz, hw.memSize);
-    printf("%d: torus dim.    = %u sizeOfPset    = %u\n",
-        rank, hw.torus_dimension, hw.sizeOfPset);
-    printf("%d: torus size    = (%u,%u,%u,%u,%u) \n",
-        rank, hw.Size[0], hw.Size[1], hw.Size[2], hw.Size[3], hw.Size[4]);
-    printf("%d: torus wraps?  = (%u,%u,%u,%u,%u) \n",
-        rank, hw.isTorus[0], hw.isTorus[1], hw.isTorus[2], hw.isTorus[3],
-        hw.isTorus[4]);
-  }
-  fflush(stdout);
-#endif
-}
 
 void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
   double w = 1;
@@ -148,7 +118,6 @@ int main(int argc, char** argv)
 {
   int provided;
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
-  mpiStats();
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
   PCU_Comm_Order(true);
