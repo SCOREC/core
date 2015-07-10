@@ -2,7 +2,9 @@
 INCLUDE(TribitsListHelpers)
 
 SET( SCOREC_PACKAGES_AND_DIRS_AND_CLASSIFICATIONS
-  SCOREC         .     PS
+  SCORECCore    TribitsSCORECCore         PS
+  SCORECExtras  TribitsSCORECExtras       PS
+  SCOREC        TribitsSCOREC             PS
   )
 
 TRIBITS_DISABLE_PACKAGE_ON_PLATFORMS(SCOREC Windows)
