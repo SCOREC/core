@@ -48,5 +48,4 @@ void fail(const char* why)
   abort();
 }
 
-
 }
