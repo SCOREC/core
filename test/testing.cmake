@@ -16,6 +16,12 @@ if(ENABLE_THREADS)
       COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "${PROG}"
       WORKING_DIRECTORY "${WORKDIR}")
   endmacro()
+  macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
+    add_test("${TESTNAME}"
+      ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "./ptnParma" 
+      ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
+    )
+  endmacro()
 else()
   macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
     math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
@@ -32,6 +38,13 @@ else()
     add_test(NAME "${TESTNAME}"
       COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "${PROG}"
       WORKING_DIRECTORY "${WORKDIR}")
+  endmacro()
+  macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
+    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
+    add_test("${TESTNAME}"
+      ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "./ptnParma_nothread" 
+      ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
+    )
   endmacro()
 endif()
 add_test(shapefun shapefun)
@@ -162,6 +175,12 @@ add_test(vtxElmBalance
   "${MDIR}/4imb/"
   "afosrBal4p/")
 set(MDIR ${MESHES}/cube)
+parma(ptnParma_cube
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi670/cube.smb"
+  "ptnParmaCube/" 
+  "4" "rib" "reptn" "1"
+  1)
 add_test(construct
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./construct
