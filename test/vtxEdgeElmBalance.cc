@@ -40,6 +40,7 @@ int main(int argc, char** argv)
   assert(argc == 6);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  SimUtil_start();
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
   PCU_Comm_Order(true);
@@ -71,6 +72,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
   gmi_sim_stop();
   Sim_unregisterAllKeys();
+  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }

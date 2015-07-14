@@ -84,6 +84,7 @@ int main(int argc, char** argv)
         << " <model file> <in mesh> <split direction=[0-2]> <out mesh> \n";
     return EXIT_FAILURE;
   }
+  SimUtil_start();
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
   gmi_register_mesh();
@@ -108,6 +109,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
   gmi_sim_stop();
   Sim_unregisterAllKeys();
+  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }

@@ -61,6 +61,7 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  SimUtil_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_mesh();
@@ -70,6 +71,7 @@ int main(int argc, char** argv)
   splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);
   gmi_sim_stop();
   Sim_unregisterAllKeys();
+  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }
