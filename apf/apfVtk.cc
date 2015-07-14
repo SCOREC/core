@@ -440,24 +440,38 @@ static void writeCellData(std::ostream& file, Mesh* m)
 
 static void writeVtuFile(const char* prefix, Numbering* n)
 {
+  PCU_Barrier();
+  double t0 = PCU_Time();
   std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
+  std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
   getNodes(n,nodes);
-  file << "<VTKFile type=\"UnstructuredGrid\">\n";
-  file << "<UnstructuredGrid>\n";
-  file << "<Piece NumberOfPoints=\"" << nodes.getSize();
-  file << "\" NumberOfCells=\"" << m->count(m->getDimension());
-  file << "\">\n";
-  writePoints(file,m,nodes);
-  writeCells(file,n);
-  writePointData(file,m,nodes);
-  writeCellData(file,m);
-  file << "</Piece>\n";
-  file << "</UnstructuredGrid>\n";
-  file << "</VTKFile>\n";
+  buf << "<VTKFile type=\"UnstructuredGrid\">\n";
+  buf << "<UnstructuredGrid>\n";
+  buf << "<Piece NumberOfPoints=\"" << nodes.getSize();
+  buf << "\" NumberOfCells=\"" << m->count(m->getDimension());
+  buf << "\">\n";
+  writePoints(buf,m,nodes);
+  writeCells(buf,n);
+  writePointData(buf,m,nodes);
+  writeCellData(buf,m);
+  buf << "</Piece>\n";
+  buf << "</UnstructuredGrid>\n";
+  buf << "</VTKFile>\n";
+  PCU_Barrier();
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("writeVtuFile into buffers: %f seconds\n", t1 - t0);
+  {
+    std::ofstream file(fileName.c_str());
+    assert(file.is_open());
+    file << buf.rdbuf();
+  }
+  PCU_Barrier();
+  double t2 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("writeVtuFile buffers to disk: %f seconds\n", t2 - t1);
 }
 
 void writeVtkFiles(const char* prefix, Mesh* m)
