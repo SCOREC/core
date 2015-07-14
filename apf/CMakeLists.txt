@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 2.8.6)
 set(PACKAGE_VERSION "1.0")
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(apf) 
+   tribits_package(SCORECapf) 
 else()
    project(apf)
 endif()
@@ -130,5 +132,5 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
+   tribits_package_postprocess()
 endif(BUILD_IN_TRILINOS)

@@ -1,7 +1,9 @@
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(mds) 
+   tribits_package(SCORECmds) 
 else()
    project(mds)
 endif()
@@ -86,6 +88,6 @@ configure_file(
 #pkgconfig }
 
 if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
+   tribits_package_postprocess()
 endif(BUILD_IN_TRILINOS)
 

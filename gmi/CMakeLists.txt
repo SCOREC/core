@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.6)
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(gmi) 
+    TRIBITS_PACKAGE(SCORECgmi)
 else()
    project(gmi)
 endif()
@@ -23,6 +25,11 @@ configure_file(
     "${PROJECT_BINARY_DIR}/libgmi.pc"
     @ONLY)
 #pkgconfig }
+
+
+set(CMAKE_MODULE_PATH 
+   ${CMAKE_MODULE_PATH} 
+   "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
 #Gets C99 support
 find_package(C99 REQUIRED)
@@ -72,5 +79,5 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
+    TRIBITS_PACKAGE_POSTPROCESS()
 endif()
