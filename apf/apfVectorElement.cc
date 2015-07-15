@@ -81,7 +81,7 @@ double getJacobianDeterminant(Matrix3x3 const& J, int dimension)
         \frac{\partial x}{\partial t}|,
         the area spanned by the tangent vectors
         at this point, surface integral. */
-    return cross(J[0],J[1]).getLength();
+    return cross(J[0],J[1])[2];
   }
   // assuming at this point dimension=1
   /* \|\vec{x}_{,\xi}\| the length
