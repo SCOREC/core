@@ -134,15 +134,12 @@ static void BlendedTriangleGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
     for(int j = 0; j < nE; ++j)
       grads[3+i*nE+j] = gx*B*pow(x,B-1.)*v[j+2]
         + (gxii[tev[i][1]]-gx*xiix)*gv[j+2][0]*2.*pow(x,B-1.);
-
   }
-
 }
 
 static void BlendedTetGetValues(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<double>& values)
 {
-
   double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
 
   for(int i = 0; i < 4; ++i)
@@ -220,7 +217,6 @@ static void BlendedTetGetValues(apf::Mesh* m, apf::MeshEntity* e,
     for(int j = 0; j < nF; ++j) // face nodes
       values[4+6*nE+i*nF+j] +=  v[3+3*nE+j]*pow(x,B);
   } // done faces
-
 }
 
 static void BlendedTetGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
@@ -325,7 +321,6 @@ static void BlendedTetGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
         + gxv[0]*gv[3+3*nE+j][0]
         + gxv[1]*gv[3+3*nE+j][1];
   } // done faces
-
 }
 
 class BezierShape : public apf::FieldShape
@@ -412,7 +407,7 @@ public:
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
       apf::ModelEntity* g = m->toModel(e);
-      if (m->getModelType(g) != m->getDimension()){
+      if (m->getModelType(g) != m->getDimension() || B == 0){
 
         for(int i = 0; i < P+1; ++i)
           for(int j = 0; j < P+1-i; ++j)
@@ -435,7 +430,7 @@ public:
 
       apf::ModelEntity* g = m->toModel(e);
 
-      if (m->getModelType(g) != m->getDimension()){
+      if (m->getModelType(g) != m->getDimension() || B == 0){
         for(int i = 1; i < P+1; ++i)
           for(int j = 1; j < P-i; ++j)
             grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
@@ -612,7 +607,7 @@ public:
     if(type == apf::Mesh::EDGE && P > 1){
       xi[0] = edgePoints[P-1][node];
     } else {
-      xi.zero();
+      getBezier(3,P,B)->getNodeXi(type,node,xi);
     }
   }
 protected:

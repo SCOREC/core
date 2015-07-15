@@ -92,6 +92,7 @@ setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
 setup_exe(bezier bezier.cc)
+setup_exe(bezier2 bezier2.cc)
 
 if (ENABLE_VIZ)
   setup_exe(viz_test viz.cc)
