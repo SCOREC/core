@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  Copyright 2013 Scientific Computation Research Center,
+  Copyright 2015 Scientific Computation Research Center,
       Rensselaer Polytechnic Institute. All rights reserved.
 
   The LICENSE file included with this distribution describes the terms
@@ -11,9 +11,10 @@
 #ifndef CRVSNAP_H
 #define CRVSNAP_H
 
-#include "apfMesh.h"
 #include "apfMesh2.h"
 #include "apfShape.h"
+
+/* see maSnap.cc */
 
 namespace crv {
 
