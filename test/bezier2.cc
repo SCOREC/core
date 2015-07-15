@@ -111,6 +111,8 @@ static void testJacobian(apf::Mesh2* m)
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
   apf::Vector3 xi;
+  apf::Matrix3x3 Jac;
+
   while ((e = m->iterate(it))) {
     apf::MeshElement* me =
         apf::createMeshElement(m,e);
@@ -118,7 +120,8 @@ static void testJacobian(apf::Mesh2* m)
       xi[1] = 1.*j/n;
       for (int i = 0; i <= n-j; ++i){
         xi[0] = 1.*i/n;
-        double detJ = apf::getDV(me,xi);
+        apf::getJacobian(me,xi,Jac);
+        double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
         double J = testTriangleJacobian(m,e,xi);
         assert(fabs(detJ-J) < 1e-14);
       }
