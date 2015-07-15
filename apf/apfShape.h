@@ -135,6 +135,18 @@ FieldShape* getShapeByName(const char* name);
   \param type select from apf::Mesh::Type */
 int countElementNodes(FieldShape* s, int type);
 
+/** \brief Reparameterize from boundary entity to element
+  \details This function converts a point in the local
+  parametric space of a boundary mesh entity into the
+  equivalent point in the local parametric space of
+  an adjacent element.
+  */
+Vector3 boundaryToElementXi(
+    Mesh* m,
+    MeshEntity* boundary,
+    MeshEntity* element,
+    Vector3 const& xi);
+
 }
 
 #endif

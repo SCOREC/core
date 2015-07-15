@@ -56,7 +56,9 @@ set(APF_SOURCES
   apfConvert.cc
   apfConstruct.cc
   apfVerify.cc
-  apfGeometry.cc)
+  apfGeometry.cc
+  apfBoundaryToElementXi.cc
+)
 
 set(APF_HEADERS
   apf.h

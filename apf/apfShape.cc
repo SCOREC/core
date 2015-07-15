@@ -258,7 +258,7 @@ class Linear : public FieldShape
         void getValues(Mesh*, MeshEntity*,
             Vector3 const& xi, NewArray<double>& values) const
         {
-          values.allocate(5);
+          values.allocate(8);
           double l0x = (1 - xi[0]);
           double l1x = (1 + xi[0]);
           double l0y = (1 - xi[1]);
@@ -284,7 +284,7 @@ class Linear : public FieldShape
           double l1y = (1 + xi[1]);
           double l0z = (1 - xi[2]);
           double l1z = (1 + xi[2]);
-          grads.allocate(5);
+          grads.allocate(8);
           grads[0] = Vector3(-l0y * l0z, -l0x * l0z, -l0x * l0y) / 8;
           grads[1] = Vector3( l0y * l0z, -l1x * l0z, -l1x * l0y) / 8;
           grads[2] = Vector3( l1y * l0z,  l1x * l0z, -l1x * l1y) / 8;

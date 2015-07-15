@@ -52,7 +52,8 @@ class InterpolatingCurver : public MeshCurver
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P), m_blendOrder(B) {};
+    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P),
+    m_blendOrder(B) {};
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
@@ -77,13 +78,32 @@ class GregoryCurver : public BezierCurver
     void setInternalPointsLocally();
 };
 
+class SphereCurver : public MeshCurver
+{
+  public:
+    SphereCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P),
+    m_blendOrder(B) {};
+
+    /** \brief curves a mesh using bezier curves of chosen order
+      \details finds interpolating points, then converts to control points
+      see apfBezier.cc */
+    virtual bool run();
+  protected:
+    int m_blendOrder;
+};
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
 apf::FieldShape* getBezier(int dimension, int order, int blendOrder);
 /** \brief Get the Gregory Surface of some order
  \details only fourth order right now*/
 apf::FieldShape* getGregory(int order, int blendOrder);
-
+/** \brief Get the NURBS, based off of bezier
+ \details goes from first to sixth order */
+apf::FieldShape* getNurbs(int order, int blendOrder);
+/** \brief set the weights
+ \details used to set these for every curved surface*/
+void setNurbsEdgeWeights(apf::NewArray<double>& weights);
+void setNurbsTriangleWeights(apf::NewArray<double>& weights);
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
 void getTransformationCoefficients(int dim, int type,
@@ -98,8 +118,8 @@ int binomial(int n, int i);
    sampling locations in parameter space */
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
 
-/** \brief Visualization, writes two files for edges and faces */
-void writeCurvedVtuFiles(apf::Mesh* m, int n, const char* prefix);
+/** \brief Visualization, writes file for specified type */
+void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
 void fail(const char* why);
 

@@ -250,7 +250,7 @@ MeshEntity* getMeshEntity(Element* e);
   */
 double getScalar(Element* e, Vector3 const& param);
 
-/** \brief Evaluate the gradient of a scalar field at a point.
+/** \brief Get the gradient of a scalar field w.r.t. global coordinates
   *
   * \param param The local coordinates in the element.
   * \param grad The gradient vector at that point.
@@ -278,7 +278,7 @@ double getDiv(Element* e, Vector3 const& param);
   */
 void getCurl(Element* e, Vector3 const& param, Vector3& curl);
 
-/** \brief Evaluate the gradient of a vector field at a point.
+/** \brief Get the gradient of a vector field w.r.t. global coordinates
   *
   * \param param The local coordinates in the element.
   * \param deriv The gradient matrix at that point.
