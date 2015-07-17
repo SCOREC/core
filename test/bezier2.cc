@@ -50,7 +50,8 @@ static double getJacobianDeterminant(apf::NewArray<apf::Vector3>& nodes,
 
 static int factorial(int i)
 {
-  static int table[11] = {1,1,2,6,24,120,720,5040,40320,362880,3628800};
+  static int table[13] = {1,1,2,6,24,120,720,5040,40320,362880,
+      3628800,39916800,479001600};
   return table[i];
 }
 
@@ -169,8 +170,8 @@ static void testEdgeGradients(apf::Mesh2* m)
       for(int p = 0; p <= d-1; ++p){
         J += (nodes[map[p+1]]-nodes[map[p]])*BIJ(d-1,p,xi)*d;
       }
-      assert(fabs(J[0]-Jac[0][0]*2.0) < 1e-15
-          && fabs(J[1]-Jac[0][1]*2.0) < 1e-15);
+      assert(fabs(J[0]-Jac[0][0]*2.0) < 1e-14
+          && fabs(J[1]-Jac[0][1]*2.0) < 1e-14);
     }
     apf::destroyMeshElement(me);
     apf::destroyElement(elem);
@@ -329,7 +330,7 @@ static void fixMidPoints(apf::Mesh2* m)
 
 void test2D()
 {
-  for(int order = 1; order <= 5; ++order){
+  for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 0; blendOrder <= 0; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
