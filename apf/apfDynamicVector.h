@@ -96,7 +96,7 @@ class DynamicVector : public DynamicArray<double>
     }
 };
 
-/** \brief convert an apf::Matrix into an apf::DynamicMatrix */
+/** \brief convert an apf::Vector into an apf::DynamicVector */
 template <std::size_t N>
 inline DynamicVector fromVector(Vector<N> other)
 {
