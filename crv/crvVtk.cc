@@ -253,7 +253,6 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   apf::Vector3 xi,p,pt;
-  double values[8];
   apf::Matrix3x3 J;
   // first initializing with end points
   apf::Vector3 params[15] = {apf::Vector3(0,0,0),apf::Vector3(1,0,0),
@@ -274,6 +273,9 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
   int hex[4][8] = {{0,4,10,6,7,11,14,13},{1,5,10,4,8,12,14,11},
       {2,6,10,5,9,13,14,12},{9,13,14,12,3,7,11,8}};
 
+  apf::NewArray<double> values;
+  apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
+
   while ((e = m->iterate(it))) {
     apf::MeshElement* me = apf::createMeshElement(m,e);
     for(int h = 0; h < 4; ++h){
@@ -283,20 +285,7 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
           xi[1] = 2.*j/n - 1.;
           for (int i = 0; i <= n; ++i){
             xi[0] = 2.*i/n - 1.;
-            double l0x = (1 - xi[0]);
-            double l1x = (1 + xi[0]);
-            double l0y = (1 - xi[1]);
-            double l1y = (1 + xi[1]);
-            double l0z = (1 - xi[2]);
-            double l1z = (1 + xi[2]);
-            values[0] = l0x * l0y * l0z / 8;
-            values[1] = l1x * l0y * l0z / 8;
-            values[2] = l1x * l1y * l0z / 8;
-            values[3] = l0x * l1y * l0z / 8;
-            values[4] = l0x * l0y * l1z / 8;
-            values[5] = l1x * l0y * l1z / 8;
-            values[6] = l1x * l1y * l1z / 8;
-            values[7] = l0x * l1y * l1z / 8;
+            shape->getValues(0, 0, xi, values);
             p.zero();
             for(int l = 0; l < 8; ++l)
               p += params[hex[h][l]]*values[l];
@@ -308,7 +297,8 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
               apf::getVector((apf::Element*)me,p,pt);
               std::stringstream ss;
               ss << "warning: Tet Jacobian Determinant is negative,  " << detJ
-                  << " at " << pt << "for " << m->getShape()->getOrder() << " order method\n";
+                 << " at " << pt << "for " << m->getShape()->getOrder()
+                 << " order method\n";
               std::string s = ss.str();
               fprintf(stderr, "%s", s.c_str());
             }
@@ -416,7 +406,6 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
      << "_tet.vtu";
-
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
@@ -444,6 +433,7 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
       {2,6,10,5,9,13,14,12},{9,13,14,12,3,7,11,8}};
 
   writeStart(file,nPoints,nCells);
+
   file << "<Points>\n";
   file << "<DataArray type=\"Float64\" Name=\"coordinates\" "
       "NumberOfComponents=\"3\" format=\"ascii\">\n";
@@ -451,7 +441,9 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   apf::Vector3 xi,p,pt;
-  double values[8];
+  apf::NewArray<double> values;
+  apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
+
   while ((e = m->iterate(it))) {
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
@@ -462,24 +454,10 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
           xi[1] = 2.*j/n - 1.;
           for (int i = 0; i <= n; ++i){
             xi[0] = 2.*i/n - 1.;
-            double l0x = (1 - xi[0]);
-            double l1x = (1 + xi[0]);
-            double l0y = (1 - xi[1]);
-            double l1y = (1 + xi[1]);
-            double l0z = (1 - xi[2]);
-            double l1z = (1 + xi[2]);
-            values[0] = l0x * l0y * l0z / 8;
-            values[1] = l1x * l0y * l0z / 8;
-            values[2] = l1x * l1y * l0z / 8;
-            values[3] = l0x * l1y * l0z / 8;
-            values[4] = l0x * l0y * l1z / 8;
-            values[5] = l1x * l0y * l1z / 8;
-            values[6] = l1x * l1y * l1z / 8;
-            values[7] = l0x * l1y * l1z / 8;
+            shape->getValues(0, 0, xi, values);
             p.zero();
             for(int l = 0; l < 8; ++l)
               p += params[hex[h][l]]*values[l];
-
             apf::getVector(elem,p,pt);
             writePoint(file,pt);
           }
@@ -488,6 +466,7 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
     }
     apf::destroyElement(elem);
   }
+
   file << "</DataArray>\n";
   file << "</Points>\n";
   writeCells(file,apf::Mesh::TET,m->count(3),n,nCells);
@@ -496,7 +475,7 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   m->end(it);
 }
 
-static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
+void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
@@ -537,9 +516,6 @@ static void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
   switch (type) {
-    case apf::Mesh::VERTEX:
-      writeControlPointVtuFiles(m,prefix);
-      break;
     case apf::Mesh::EDGE:
       writeEdgeVtuFiles(m,n,prefix);
       break;
@@ -547,7 +523,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
       writeTriangleVtuFiles(m,n,prefix);
       break;
     case apf::Mesh::TET:
-      writeTetVtuFiles(m,n/2,prefix);
+      writeTetVtuFiles(m,n/2+1,prefix);
       break;
     default:
       break;

@@ -16,6 +16,11 @@
 
 namespace crv {
 
+/** \brief sets the blending order, if shape blending is used */
+void setBlendingOrder(const int b);
+/** \brief gets the blending order */
+int getBlendingOrder();
+
 class MeshCurver
 {
   public:
@@ -52,15 +57,13 @@ class InterpolatingCurver : public MeshCurver
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P),
-    m_blendOrder(B) {};
+    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P)
+    { setBlendingOrder(B); };
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
       see apfBezier.cc */
     virtual bool run();
-  protected:
-    int m_blendOrder;
 };
 
 class GregoryCurver : public BezierCurver
@@ -91,26 +94,30 @@ class SphereCurver : public MeshCurver
   protected:
     int m_blendOrder;
 };
+/** \brief Elevate a bezier curve to a higher order
+ \details This elevates from nth order to n+rth order
+ requires the curve be order n+r in memory already, and
+ that the first n points correspond to the lower order curve */
+void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
+
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
-apf::FieldShape* getBezier(int dimension, int order, int blendOrder);
+apf::FieldShape* getBezier(int dimension, int order);
 /** \brief Get the Gregory Surface of some order
  \details only fourth order right now*/
-apf::FieldShape* getGregory(int order, int blendOrder);
+apf::FieldShape* getGregory(int order);
 /** \brief Get the NURBS, based off of bezier
  \details goes from first to sixth order */
-apf::FieldShape* getNurbs(int order, int blendOrder);
+apf::FieldShape* getNurbs(int orde);
 /** \brief set the weights
  \details used to set these for every curved surface*/
 void setNurbsEdgeWeights(apf::NewArray<double>& weights);
 void setNurbsTriangleWeights(apf::NewArray<double>& weights);
+
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int dim, int type,
+void getTransformationCoefficients(int P, int dim, int type,
     apf::NewArray<double>& c);
-
-/** \brief binomial function */
-int binomial(int n, int i);
 
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
@@ -121,7 +128,16 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
 /** \brief Visualization, writes file for specified type */
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
-void fail(const char* why);
+/** \brief Visualization, writes file of control nodes for each entity */
+void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
+
+/** \brief binomial functions */
+int binomial(int n, int i);
+int trinomial(int n, int i, int j);
+int quadnomial(int n, int i, int j, int k);
+
+/** \brief crv fail function */
+void fail(const char* why) __attribute__((noreturn));
 
 } //namespace crv
 

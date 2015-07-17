@@ -1,12 +1,11 @@
 #include <crv.h>
+#include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
-#include <apfMesh2.h>
 #include <apf.h>
-#include <apfShape.h>
 #include <PCU.h>
-
+#include <apfDynamicMatrix.h>
 /*
  * This analytic function is a "pringle",
  * defined on [0,1] in R^2 as z = ((2x-1)^2-(2y-1)^2)*exp(xy)
@@ -388,7 +387,7 @@ void test3DJacobian(apf::Mesh2* m)
   m->end(it);
 }
 
-void test3D()
+void test3DBlended()
 {
   gmi_register_null();
   apf::Mesh2* mbase = createMesh3D();
@@ -403,7 +402,8 @@ void test3D()
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, crv::getBezier(3,order,blendOrder),true);
+      apf::changeMeshShape(m, crv::getBezier(3,order),true);
+      crv::setBlendingOrder(blendOrder);
       apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
       // go downward, and convert interpolating to control points
@@ -411,7 +411,7 @@ void test3D()
         int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
         int ne = fs->countNodesOn(d);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(3,d,c);
+        crv::getTransformationCoefficients(3,order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
@@ -436,12 +436,67 @@ void test3D()
   }
 }
 
+void test3DFull()
+{
+  gmi_register_null();
+
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    apf::changeMeshShape(m, crv::getBezier(3,order),true);
+    crv::setBlendingOrder(0);
+    apf::FieldShape* fs = m->getShape();
+    crv::BezierCurver bc(m,4,0);
+    // go downward, and convert interpolating to control points
+    for(int d = 2; d >= 1; --d){
+      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
+      int ne = fs->countNodesOn(d);
+      apf::NewArray<double> c;
+      crv::getTransformationCoefficients(3,order,d,c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))) {
+        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+        bc.convertInterpolationPoints(e,n,ne,c);
+      }
+      m->end(it);
+    }
+    if(order == 4){
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(3);
+      while ((e = m->iterate(it))) {
+        apf::NewArray<double> c;
+        crv::getTransformationCoefficients(3,4,apf::Mesh::TET,c);
+        bc.convertInterpolationPoints(e,35,1,c);
+      }
+      m->end(it);
+    }
+    m->acceptChanges();
+    testSize3D(m);
+    test3DJacobian(m);
+    test3DJacobianTri(m);
+    // check values sum to 1.0 in the tet fieldshape
+    apf::DynamicMatrix A;
+    crv::getTransformationMatrix(m,apf::Mesh::TET,A);
+    apf::EntityShape* es = fs->getEntityShape(apf::Mesh::TET);
+    int n = es->countNodes();
+    for(int i = 0; i < n; ++i){
+      double sum = 0.;
+      for(int j = 0; j < n; ++j)
+        sum += A(i,j);
+      assert(abs(sum - 1.0) < 1e-15);
+    }
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+}
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
-  test3D();
+  test3DBlended();
+  test3DFull();
   PCU_Comm_Free();
   MPI_Finalize();
 }

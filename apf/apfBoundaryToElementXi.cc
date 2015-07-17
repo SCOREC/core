@@ -8,6 +8,15 @@ namespace apf {
  * into a more central place along with the
  * shape functions...
  */
+static Vector3 const edge_vert_xi[2] = {
+  Vector3(-1,0,0),
+  Vector3(1,0,0),
+};
+static Vector3 const tri_vert_xi[3] = {
+  Vector3(0,0,0),
+  Vector3(1,0,0),
+  Vector3(0,1,0),
+};
 static Vector3 const tet_vert_xi[4] = {
   Vector3(0,0,0),
   Vector3(1,0,0),
@@ -16,8 +25,8 @@ static Vector3 const tet_vert_xi[4] = {
 };
 static Vector3 const* const elem_vert_xi[Mesh::TYPES] = {
   0, /* vertex */
-  0, /* edge */
-  0, /* triangle */
+  edge_vert_xi,
+  tri_vert_xi,
   0, /* quad */
   tet_vert_xi,
   0, /* hex */

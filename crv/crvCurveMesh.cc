@@ -96,7 +96,8 @@ bool BezierCurver::run()
   }
 
   int md = m_mesh->getDimension();
-  apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getBezier(md,m_order),true);
+
   apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
@@ -109,7 +110,7 @@ bool BezierCurver::run()
     int ne = fs->countNodesOn(d);
 
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,d,c);
+    getTransformationCoefficients(md,m_order,d,c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -120,36 +121,6 @@ bool BezierCurver::run()
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
-}
-
-/* Elevates a bezier curve from order n to order n+r */
-static void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
-{
-
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),edge);
-
-  apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> p;
-  apf::getVectorNodes(elem,p);
-
-  assert(m->getType(edge) == apf::Mesh::EDGE);
-
-  // reorder p into geometric ordering
-  apf::NewArray<int> map(n+1);
-  map[0] = 0; map[n] = 1;
-
-  for(int i = 1; i < n; ++i)
-    map[i] = i+1;
-  for(int i = 1; i < n+r; ++i){
-    pt.zero();
-    for(int j = std::max(0,i-r); j <= std::min(i,n); ++j)
-      pt += p[map[j]]*binomial(n,j)*
-      binomial(r,i-j)/binomial(n+r,i);
-    m->setPoint(edge,i-1,pt);
-  }
-
-  apf::destroyElement(elem);
 }
 
 void GregoryCurver::setCubicEdgePointsUsingNormals()
@@ -361,7 +332,7 @@ bool GregoryCurver::run()
     fail("can only convert 3D Mesh to G1 continuous surface\n");
   }
 
-  apf::changeMeshShape(m_mesh, getGregory(m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getGregory(m_order),true);
 
   int md = m_mesh->getDimension();
 
@@ -379,7 +350,7 @@ bool GregoryCurver::run()
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,d,c);
+    getTransformationCoefficients(md,m_order,d,c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
@@ -437,7 +408,7 @@ bool SphereCurver::run()
     fail("can only curve to spheres for 4th order\n");
   }
 
-  apf::changeMeshShape(m_mesh, getNurbs(m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getNurbs(m_order),true);
 
   double a0 = 0.422649730810374;
   double a1 = 0.788675134594813;
