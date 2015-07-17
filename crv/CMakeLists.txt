@@ -18,6 +18,8 @@ endif()
 set(CRV_SOURCES
   crv.cc
   crvBezier.cc
+  crvBezierPoints.cc
+  crvBlended.cc
   crvCurveMesh.cc
   crvSnap.cc
   crvVtk.cc)

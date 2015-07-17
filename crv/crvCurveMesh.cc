@@ -96,7 +96,8 @@ bool BezierCurver::run()
   }
 
   int md = m_mesh->getDimension();
-  apf::changeMeshShape(m_mesh, getBezier(md,m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getBezier(md,m_order),true);
+
   apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
@@ -109,7 +110,7 @@ bool BezierCurver::run()
     int ne = fs->countNodesOn(d);
 
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,d,c);
+    getTransformationCoefficients(md,m_order,d,c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -361,7 +362,7 @@ bool GregoryCurver::run()
     fail("can only convert 3D Mesh to G1 continuous surface\n");
   }
 
-  apf::changeMeshShape(m_mesh, getGregory(m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getGregory(m_order),true);
 
   int md = m_mesh->getDimension();
 
@@ -379,7 +380,7 @@ bool GregoryCurver::run()
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,d,c);
+    getTransformationCoefficients(md,m_order,d,c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
@@ -437,7 +438,7 @@ bool SphereCurver::run()
     fail("can only curve to spheres for 4th order\n");
   }
 
-  apf::changeMeshShape(m_mesh, getNurbs(m_order,m_blendOrder),true);
+  apf::changeMeshShape(m_mesh, getNurbs(m_order),true);
 
   double a0 = 0.422649730810374;
   double a1 = 0.788675134594813;
