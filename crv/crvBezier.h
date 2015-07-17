@@ -46,6 +46,16 @@ static int const blended_tet_total[2][6] =
 static int const curved_tet_total[2][6] =
 {{4,10,20,35,56,84},{0,0,0,47,0,0}};
 
+/** \brief polynomial part of bernstein polynomial */
+double Bij(int i, int j,double u, double v);
+double Bijk(int i, int j, int k, double u, double v, double w);
+double Bijkl(int i, int j, int k, int l,double u,
+    double v, double w, double t);
+
+double Bij(int ij[], double xi[]);
+double Bijk(int ijk[], double xi[]);
+double Bijkl(int ijkl[], double xi[]);
+
 /** \brief shape blending functions */
 void BlendedTriangleGetValues(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<double>& values);
@@ -61,6 +71,8 @@ void BlendedTetGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
 
 /** \brief get bezier node locations in parameter space */
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi);
+/** \brief This is the 2D version. */
+void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi);
 
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
  *

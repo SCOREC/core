@@ -123,36 +123,6 @@ bool BezierCurver::run()
   return true;
 }
 
-/* Elevates a bezier curve from order n to order n+r */
-static void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
-{
-
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),edge);
-
-  apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> p;
-  apf::getVectorNodes(elem,p);
-
-  assert(m->getType(edge) == apf::Mesh::EDGE);
-
-  // reorder p into geometric ordering
-  apf::NewArray<int> map(n+1);
-  map[0] = 0; map[n] = 1;
-
-  for(int i = 1; i < n; ++i)
-    map[i] = i+1;
-  for(int i = 1; i < n+r; ++i){
-    pt.zero();
-    for(int j = std::max(0,i-r); j <= std::min(i,n); ++j)
-      pt += p[map[j]]*binomial(n,j)*
-      binomial(r,i-j)/binomial(n+r,i);
-    m->setPoint(edge,i-1,pt);
-  }
-
-  apf::destroyElement(elem);
-}
-
 void GregoryCurver::setCubicEdgePointsUsingNormals()
 {
   apf::MeshEntity* e;

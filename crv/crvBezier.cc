@@ -19,34 +19,19 @@ static bool useBlend()
   return (getBlendingOrder() != 0);
 }
 
-/* Elevates a bezier curve from order n to order n+r */
-void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
+static void alignEdgeWithTri(apf::Mesh* m, apf::MeshEntity* elem,
+    apf::MeshEntity* shared, int order[])
 {
-
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),edge);
-
-  apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> p;
-  apf::getVectorNodes(elem,p);
-
-  assert(m->getType(edge) == apf::Mesh::EDGE);
-
-  // reorder p into geometric ordering
-  apf::NewArray<int> map(n+1);
-  map[0] = 0; map[n] = 1;
-
-  for(int i = 1; i < n; ++i)
-    map[i] = i+1;
-  for(int i = 1; i < n+r; ++i){
-    pt.zero();
-    for(int j = std::max(0,i-r); j <= std::min(i,n); ++j)
-      pt += p[map[j]]*binomial(n,j)*
-      binomial(r,i-j)/binomial(n+r,i);
-    m->setPoint(edge,i-1,pt);
-  }
-
-  apf::destroyElement(elem);
+  int which,rotate;
+  bool flip;
+  getAlignment(m,elem,shared,which,flip,rotate);
+  if(!flip)
+    for(int i = 0; i < P-1; ++i)
+      order[i] = i;
+  else
+    for(int i = 0; i < P-1; ++i)
+      order[i] = P-2-i;
+  return;
 }
 
 class BezierShape : public apf::FieldShape
@@ -81,8 +66,7 @@ public:
       double t = 0.5*(xi[0]+1.);
       values.allocate(P+1);
       for(int i = 1; i < P; ++i)
-        values[i+1] = binomial(P,i)
-        * pow(1.0-t,P-i)*pow(t, i);
+        values[i+1] = binomial(P,i)*Bij(P-i,i,1.-t,t);
       values[0] = pow(1-t, P);
       values[1] = pow(t, P);
 
@@ -93,8 +77,8 @@ public:
       double t = 0.5*(xi[0]+1.);
       grads.allocate(P+1);
       for(int i = 1; i < P; ++i)
-        grads[i+1] = apf::Vector3(binomial(P,i) * (i-P*t)
-            * pow(1.0-t,P-1-i)*pow(t, i-1)/2.,0,0);
+        grads[i+1] = apf::Vector3(binomial(P,i)*(i-P*t)
+            *Bij(P-1-i,i-1,1.-t,t)/2.,0,0);
       grads[0] = apf::Vector3(-P*pow(1-t, P-1)/2.,0,0);
       grads[1] = apf::Vector3(P*pow(t, P-1)/2.,0,0);
     }
@@ -137,8 +121,7 @@ public:
         for(int i = 0; i < P+1; ++i)
           for(int j = 0; j < P+1-i; ++j)
             values[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
-                binomial(P,i)*binomial(P-i,j)
-                *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],P-i-j);
+                trinomial(P,i,j)*Bijk(i,j,P-i-j,xii[0],xii[1],xii[2]);
 
       } else
         BlendedTriangleGetValues(m,e,xi,values);
@@ -157,35 +140,31 @@ public:
         for(int i = 1; i < P+1; ++i)
           for(int j = 1; j < P-i; ++j)
             grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
-                gxii[0]*binomial(P,i)*binomial(P-i,j)
-                *pow(xii[0],i-1)*pow(xii[1],j)*pow(xii[2],P-i-j-1)
-                *(i*(1.-xii[1])-(P-j)*xii[0]) +
-                gxii[1]*binomial(P,i)*binomial(P-i,j)
-                *pow(xii[0],i)*pow(xii[1],j-1)*pow(xii[2],P-i-j-1)
-                *(j*(1.-xii[0])-(P-i)*xii[1]);
+                gxii[0]*trinomial(P,i,j)*(i*(1.-xii[1])-(P-j)*xii[0])
+                *Bijk(i-1,j,P-i-j-1,xii[0],xii[1],xii[2]) +
+                gxii[1]*trinomial(P,i,j)*(j*(1.-xii[0])-(P-i)*xii[1])
+                *Bijk(i,j-1,P-i-j-1,xii[0],xii[1],xii[2]);
 
         // i = 0
         for(int j = 1; j < P; ++j)
           grads[map[P-1][j*(P+1)-j*(j-1)/2]] =
             (gxii[0]*(j-P)*xii[1] +
             gxii[1]*(j*(1.-xii[0])-P*xii[1]))
-            *binomial(P,j)
-            *pow(xii[1],j-1)*pow(xii[2],P-j-1);
+            *binomial(P,j)*Bij(j-1,P-j-1,xii[1],xii[2]);
 
         // j = 0
         for(int i = 1; i < P; ++i)
           grads[map[P-1][i]] =
               (gxii[0]*(i*(1.-xii[1])-P*xii[0]) +
                gxii[1]*(i-P)*xii[0])
-              *binomial(P,i)
-              *pow(xii[0],i-1)*pow(xii[2],P-i-1);
+              *binomial(P,i)*Bij(i-1,P-i-1,xii[0],xii[2]);
 
         // k = 0
         for(int i = 1, j = P-1; i < P; ++i, --j)
           grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
               (gxii[0]*i*xii[1] + gxii[1]*j*xii[0])
-              *binomial(P,i)*binomial(P-i,j)
-              *pow(xii[0],i-1)*pow(xii[1],j-1);
+              *trinomial(P,i,j)*Bij(i-1,j-1,xii[0],xii[1]);
+
 
         // i = j = 0
         grads[map[P-1][0]] = gxii[2]*P*pow(xii[2],P-1);
@@ -202,16 +181,7 @@ public:
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
-      int which,rotate;
-      bool flip;
-      getAlignment(m,elem,shared,which,flip,rotate);
-      if(flip){
-        for(int i = 0; i < P-1; ++i)
-          order[i] = P-2-i;
-      } else {
-        for(int i = 0; i < P-1; ++i)
-          order[i] = i;
-      }
+      alignEdgeWithTri(m,elem,shared,order);
     }
   private:
     apf::NewArray<int> map[6];
@@ -231,44 +201,26 @@ public:
         int nE = P-1;
         int nF = curved_face_internal[BEZIER][P-1];
         int nT = curved_tet_internal[BEZIER][P-1];
+
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
 
-        for(int i = 0; i < 6; ++i){
-          for(int j = 0; j < nE; ++j){// edge nodes
-            int ijkl[4] = {0,0,0,0};
-            ijkl[tev[i][0]] = P-j-1;
-            ijkl[tev[i][1]] = j+1;
-            values[4+i*nE+j] = binomial(P,ijkl[0])*binomial(P-ijkl[0],ijkl[1])
-                *binomial(P-ijkl[0]-ijkl[1],ijkl[2])
-                *pow(xii[0],ijkl[0])*pow(xii[1],ijkl[1])
-                *pow(xii[2],ijkl[2])*pow(xii[3],ijkl[3]);
-          }
-        }
+        for(int a = 0; a < 6; ++a)
+          for(int b = 0; b < nE; ++b) // edge nodes
+            values[4+a*nE+b] = binomial(P,b+1)
+              *Bij(P-b-1,b+1,xii[tev[a][0]],xii[tev[a][1]]);
 
-        for(int i = 0; i < 4; ++i){
-          for(int j = 0; j < nF; ++j){ // face nodes
-            int ijkl[4] = {0,0,0,0};
-            ijkl[ttv[i][0]] = 1;
-            ijkl[ttv[i][1]] = 1;
-            ijkl[ttv[i][2]] = 1;
-            if(P == 4)
-              ijkl[ttv[i][j]] += 1;
-            values[4+6*nE+i*nF+j] = binomial(P,ijkl[0])
-                *binomial(P-ijkl[0],ijkl[1])
-                *binomial(P-ijkl[0]-ijkl[1],ijkl[2])
-                *pow(xii[0],ijkl[0])*pow(xii[1],ijkl[1])
-                *pow(xii[2],ijkl[2])*pow(xii[3],ijkl[3]);
-          }
-        } // done faces
+        for(int a = 0; a < 4; ++a)
+          for(int b = 0; b < nF; ++b) // face nodes
+            values[4+6*nE+a*nF+b] = trinomial(P,P-2,1)
+              *Bijk(P-2,1,1,xii[ttv[a][b]],xii[ttv[a][(b+1) % 3]],
+                  xii[ttv[a][(b+2) % 3]]);
 
-        for(int j = 0; j < nT; ++j){
+        for(int a = 0; a < nT; ++a){ // internal nodes
           int ijkl[4] = {1,1,1,1};
-          values[4+6*nE+4*nF+j] = binomial(P,ijkl[0])
-              *binomial(P-ijkl[0],ijkl[1])
-              *binomial(P-ijkl[0]-ijkl[1],ijkl[2])
-              *pow(xii[0],ijkl[0])*pow(xii[1],ijkl[1])
-              *pow(xii[2],ijkl[2])*pow(xii[3],ijkl[3]);
+          ijkl[a] += P-4;
+          values[4+6*nE+4*nF+a] = quadnomial(P,P-3,1,1)
+              *Bijkl(ijkl,xii);
         }
       } else {
         values.allocate(blended_tet_total[BEZIER][P-1]);
@@ -282,17 +234,47 @@ public:
       if(!useBlend() && P <= 4){
         grads.allocate(curved_tet_total[BEZIER][P-1]);
 
-
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
             apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
 
         for(int i = 0; i < 4; ++i)
-          grads[i] = gxii[i]*P*pow(xii[i],P);
+          grads[i] = gxii[i]*P*pow(xii[i],P-1);
 
-        for(int i = 4; i < curved_tet_total[BEZIER][P-1]; ++i)
-          grads[i].zero();
+        int nE = P-1;
+        int nF = curved_face_internal[BEZIER][P-1];
+        int nT = curved_tet_internal[BEZIER][P-1];
 
+        int const (*tev)[2] = apf::tet_edge_verts;
+        int const (*ttv)[3] = apf::tet_tri_verts;
+
+        for(int a = 0; a < 6; ++a)
+          for(int b = 0; b < nE; ++b) // edge nodes
+            grads[4+a*nE+b] = gxii[tev[a][0]]*binomial(P,b+1)*(P-b-1)
+                              *Bij(P-b-2,b+1,xii[tev[a][0]],xii[tev[a][1]])
+                            + gxii[tev[a][1]]*binomial(P,b+1)*(b+1)
+                              *Bij(P-b-1,b,xii[tev[a][0]],xii[tev[a][1]]);
+
+        for(int a = 0; a < 4; ++a){
+          for(int b = 0; b < nF; ++b){ // face nodes
+            double xi[3] = {xii[ttv[a][0]],xii[ttv[a][1]],xii[ttv[a][2]]};
+            grads[4+6*nE+a*nF+b].zero();
+            for(int c = 0; c < 3; ++c){
+              int ijk[3] = {1,1,1};
+              ijk[b] += P-3; ijk[c] -= 1;
+              grads[4+6*nE+a*nF+b] += gxii[ttv[a][c]]*trinomial(P,P-2,1)
+                  *(ijk[c]+1)*Bijk(ijk,xi);
+            }
+          }
+        } // done faces
+
+        for(int a = 0; a < nT; ++a){
+          grads[4+6*nE+4*nF+a].zero();
+          for(int b = 0; b < 4; ++b)
+            grads[4+6*nE+4*nF+a] += gxii[b]*quadnomial(P,P-3,1,1)*(P-3)
+                *Bijkl(P-4,1,1,1,xii[b],xii[(b+1) % 4],
+                xii[(b+2) % 4],xii[(b+3) % 4]);
+        }
       } else {
         grads.allocate(blended_tet_total[BEZIER][P-1]);
         BlendedTetGetLocalGradients(m,e,xi,grads);
@@ -353,11 +335,7 @@ public:
   }
   bool hasNodesIn(int dimension)
   {
-    if ((dimension == 0)||
-        ((dimension == 1) && P > 1)||
-        ((dimension == 2) && P > 2)||
-        ((dimension == 3) && P > 3
-            && !useBlend()))
+    if ((dimension < P && dimension < 3) || (P > 3 && !useBlend()))
       return true;
     else
       return false;
@@ -395,21 +373,7 @@ public:
   }
   void getNodeXi(int type, int node, apf::Vector3& xi)
   {
-    static double eP2[1] = {0.0};
-    static double eP3[2] = {-0.4306648,0.4306648};
-    static double eP4[3] = {-0.6363260,0.0,0.6363260};
-    static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
-    static double eP6[5] = {-0.8161268,-0.4568660,0.0,
-        0.4568660,0.8161268};
-
-    static double* edgePoints[6] =
-    {eP2, eP2, eP3, eP4, eP5, eP6 };
-
-    if(type == apf::Mesh::EDGE && P > 1){
-      xi[0] = edgePoints[P-1][node];
-    } else {
-      getBezierNodeXi(type,P,node,xi);
-    }
+    getBezierCurveNodeXi(type,P,node,xi);
   }
 protected:
   std::string name;
@@ -522,8 +486,7 @@ public:
           grads[map[i]] =
               (gxii[0]*(i*(1.-xii[1])-4.*xii[0]) +
                gxii[1]*(i-4.)*xii[0])
-              *binomial(4,i)
-              *pow(xii[0],i-1)*pow(xii[2],4-i-1);
+              *binomial(4,i)*pow(xii[0],i-1)*pow(xii[2],4-i-1);
 
         // k = 0
         for(int i = 1, j = 3; i < 4; ++i, --j)
@@ -572,16 +535,7 @@ public:
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
-      int which,rotate;
-      bool flip;
-      getAlignment(m,elem,shared,which,flip,rotate);
-      if(flip){
-        for(int i = 0; i < 3; ++i)
-          order[i] = 2-i;
-      } else {
-        for(int i = 0; i < 3; ++i)
-          order[i] = i;
-      }
+      alignEdgeWithTri(m,elem,shared,order);
     }
   private:
     int map[15];
@@ -718,9 +672,8 @@ public:
         values[i] *= weights[i];
         sum += values[i];
       }
-      for(int i = 0; i < P+1; ++i){
+      for(int i = 0; i < P+1; ++i)
         values[i] /= sum;
-      }
     }
     void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
         apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
@@ -741,9 +694,8 @@ public:
         grads[i] = grads[i]*weights[i];
         gsum += grads[i];
       }
-      for(int i = 0; i < P+1; ++i){
+      for(int i = 0; i < P+1; ++i)
         grads[i] = (grads[i]*sum-gsum*values[i])/sum/sum;
-      }
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(apf::Mesh*,
@@ -836,16 +788,7 @@ public:
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
-      int which,rotate;
-      bool flip;
-      getAlignment(m,elem,shared,which,flip,rotate);
-      if(flip){
-        for(int i = 0; i < P-1; ++i)
-          order[i] = P-2-i;
-      } else {
-        for(int i = 0; i < P-1; ++i)
-          order[i] = i;
-      }
+      alignEdgeWithTri(m,elem,shared,order);
     }
     void setWeights(apf::NewArray<double>& w)
     {

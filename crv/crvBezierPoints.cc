@@ -6,9 +6,27 @@
  */
 
 #include "crvBezier.h"
-#include <stdio.h>
 
 namespace crv {
+
+void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi)
+{
+  static double eP2[1] = {0.0};
+  static double eP3[2] = {-0.4306648,0.4306648};
+  static double eP4[3] = {-0.6363260,0.0,0.6363260};
+  static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
+  static double eP6[5] = {-0.8161268,-0.4568660,0.0,
+      0.4568660,0.8161268};
+
+  static double* edgePoints[6] =
+  {eP2, eP2, eP3, eP4, eP5, eP6 };
+
+  if(type == apf::Mesh::EDGE && P > 1){
+    xi[0] = edgePoints[P-1][node];
+  } else {
+    getBezierNodeXi(type,P,node,xi);
+  }
+}
 
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
 {

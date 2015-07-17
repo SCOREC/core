@@ -94,6 +94,12 @@ class SphereCurver : public MeshCurver
   protected:
     int m_blendOrder;
 };
+/** \brief Elevate a bezier curve to a higher order
+ \details This elevates from nth order to n+rth order
+ requires the curve be order n+r in memory already, and
+ that the first n points correspond to the lower order curve */
+void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
+
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
 apf::FieldShape* getBezier(int dimension, int order);
@@ -125,11 +131,13 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 
+/** \brief binomial functions */
+int binomial(int n, int i);
+int trinomial(int n, int i, int j);
+int quadnomial(int n, int i, int j, int k);
+
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
-
-/** \brief binomial function */
-int binomial(int n, int i);
 
 }
 
