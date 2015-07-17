@@ -483,7 +483,7 @@ void test3DFull()
       double sum = 0.;
       for(int j = 0; j < n; ++j)
         sum += A(i,j);
-      assert(abs(sum - 1.0) < 1e-15);
+      assert(std::abs(sum - 1.0) < 1e-15);
     }
     m->destroyNative();
     apf::destroyMesh(m);
