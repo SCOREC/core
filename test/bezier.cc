@@ -2,9 +2,7 @@
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
-#include <apfMesh2.h>
 #include <apf.h>
-#include <apfShape.h>
 #include <PCU.h>
 
 /*
@@ -403,7 +401,8 @@ void test3D()
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, crv::getBezier(3,order,blendOrder),true);
+      apf::changeMeshShape(m, crv::getBezier(3,order),true);
+      crv::setBlendingOrder(blendOrder);
       apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
       // go downward, and convert interpolating to control points
@@ -411,7 +410,7 @@ void test3D()
         int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
         int ne = fs->countNodesOn(d);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(3,d,c);
+        crv::getTransformationCoefficients(3,order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
