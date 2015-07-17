@@ -129,7 +129,7 @@ inline Vector<3> cross(Vector<3> const& a, Vector<3> const& b)
   return r;
 }
 
-/** \brief vector projection */
+/** \brief Returns vector (a) projected onto vector (b) */
 template<std::size_t N>
 Vector<N> project(Vector<N> const& a, Vector<N> const& b)
 {
