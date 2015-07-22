@@ -96,6 +96,40 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace chef {
+  struct IStream{
+    FILE* restart;
+  };
+  struct OStream{
+    FILE* geom;
+    FILE* restart;
+  };
+
+  OStream* makeOStream() {
+    OStream* os = (OStream*) malloc(sizeof(OStream));
+    os->geom = NULL;
+    os->restart = NULL;
+  }
+  
+  void destroyOStream(OStream* os) {
+    if(os->geom)
+      fclose(os->geom);
+    if(os->restart)
+      fclose(os->restart);
+    free(os);
+  }
+
+  IStream* makeIStream(OStream* os) {
+    IStream* is = (IStream*) malloc(sizeof(IStream));
+    is->restart = os->restart;
+    return is;
+  }
+
+  void destroyIStream(IStream* is) {
+    if(is->restart)
+      fclose(is->restart);
+    free(is);
+  }
+
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     apf::Migration* plan = 0;
     ph::Input in;
@@ -112,6 +146,13 @@ namespace chef {
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
     afterSplit(m, in, bcs, numMasters);
   }
+  void cook(gmi_model*& g, apf::Mesh2*& m, OStream* os) {
+    char* bp;
+    size_t size;
+    os->geom = open_memstream(&bp, &size);
+    return;
+  }
+  void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
+    return;
+  }
 }
-
-
