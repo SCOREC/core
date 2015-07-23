@@ -12,6 +12,7 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <string>
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -23,8 +24,8 @@ void freeMesh(apf::Mesh* m)
   apf::destroyMesh(m);
 }
 
-void afterSplit(apf::Mesh2* m, ph::Input& in, ph::BCs& bcs,
-    int numMasters)
+void afterSplit(apf::Mesh2* m, ph::Input& in, ph::Output& out, 
+    ph::BCs& bcs, int numMasters)
 {
   std::string path = ph::setupOutputDir();
   ph::setupOutputSubdir(path);
@@ -37,12 +38,11 @@ void afterSplit(apf::Mesh2* m, ph::Input& in, ph::BCs& bcs,
     apf::reorderMdsMesh(m);
   }
   ph::enterFilteredMatching(m, in, bcs);
-  ph::Output o;
-  ph::generateOutput(in, bcs, m, o);
+  ph::generateOutput(in, bcs, m, out);
   ph::exitFilteredMatching(m);
   // a path is not needed for inmem
-  ph::detachAndWriteSolution(in, m, path); //write restart
-  ph::writeGeomBC(o, path); //write geombc
+  ph::detachAndWriteSolution(in,out,m,path); //write restart
+  ph::writeGeomBC(out, path); //write geombc
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);
   if ( ! in.outMeshFileName.empty() )
     m->writeNative(in.outMeshFileName.c_str());
@@ -101,10 +101,34 @@ namespace chef {
     void* restart;
     size_t rSz;
   };
+
   struct OStream{
     char *geom, *restart;
     size_t gSz, rSz;
   };
+
+  static FILE* openfile_write(ph::Output&, const char* path) {
+    fprintf(stderr, "------entering %s-------\n", __func__);
+    return fopen(path, "w");
+  }
+
+  static FILE* openstream_write(ph::Output& out, const char* path) {
+    fprintf(stderr, "------entering %s-------\n", __func__);
+    std::string fname(path);
+    std::string restartStr("restart");
+    std::string geombcStr("geombc");
+    FILE* f = NULL;
+    if( fname.find(restartStr) != std::string::npos ) 
+      f = open_memstream(&(out.os->restart), &(out.os->rSz));
+    else if( fname.find(geombcStr) != std::string::npos ) 
+      f = open_memstream(&(out.os->geom), &(out.os->gSz));
+    else {
+      fprintf(stderr,
+        "type of file %s is unknown... exiting\n", fname.c_str());
+      exit(1);
+    }
+    return f;
+  }
 
   OStream* makeOStream() {
     OStream* os = (OStream*) malloc(sizeof(OStream));
@@ -115,46 +139,57 @@ namespace chef {
   
   void destroyOStream(OStream* os) {
     if(os->geom)
-      fclose(os->geom);
+      free(os->geom);
     if(os->restart)
-      fclose(os->restart);
+      free(os->restart);
     free(os);
   }
 
   IStream* makeIStream(OStream* os) {
     IStream* is = (IStream*) malloc(sizeof(IStream));
     is->restart = os->restart;
+    is->rSz = os->rSz;
     return is;
   }
 
   void destroyIStream(IStream* is) {
     if(is->restart)
-      fclose(is->restart);
+      free(is->restart);
     free(is);
   }
 
-  void cook(gmi_model*& g, apf::Mesh2*& m) {
+  void bake(gmi_model*& g, apf::Mesh2*& m, 
+      ph::Input& in, ph::BCs bcs, int& numMasters) {
     apf::Migration* plan = 0;
-    ph::Input in;
-    ph::BCs bcs;
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
     switchToMasters(in.splitFactor);
-    const int numMasters = PCU_Comm_Peers();
+    numMasters = PCU_Comm_Peers();
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber);
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    afterSplit(m, in, bcs, numMasters);
+  }
+  void cook(gmi_model*& g, apf::Mesh2*& m) {
+    ph::Input in;
+    ph::BCs bcs;
+    int numMasters;
+    bake(g,m,in,bcs,numMasters);
+    ph::Output out;
+    out.openfile_write = openfile_write;
+    afterSplit(m,in,out,bcs,numMasters);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, OStream* os) {
-    char* bp;
-    size_t size;
-    os->geom = open_memstream(&bp, &size);
-    cook(g,m);
-    return;
+    ph::Input in;
+    ph::BCs bcs;
+    int numMasters;
+    bake(g,m,in,bcs,numMasters);
+    ph::Output out;
+    out.openfile_write = openstream_write;
+    out.os = os;
+    afterSplit(m,in,out,bcs,numMasters);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
     return;

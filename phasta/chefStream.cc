@@ -19,10 +19,10 @@ int main(int argc, char** argv) {
   apf::Mesh2* m = 0;
   chef::OStream* os = chef::makeOStream();
   chef::cook(g,m,os);
-  chef::IStream* is = chef::makeIStream(os);
+  //chef::IStream* is = chef::makeIStream(os);
   chef::destroyOStream(os);
-  chef::cook(g,m,is);
-  chef::destroyIStream(is);
+  //chef::cook(g,m,is);
+  //chef::destroyIStream(is);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();

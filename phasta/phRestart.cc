@@ -186,11 +186,11 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
   delete [] data;
 }
 
-void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
+void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string path)
 {
   double t0 = PCU_Time();
   path += buildRestartFileName("restart", in.timeStepNumber);
-  FILE* f = fopen(path.c_str(), "w");
+  FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
     abort();
