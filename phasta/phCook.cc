@@ -40,8 +40,9 @@ void afterSplit(apf::Mesh2* m, ph::Input& in, ph::BCs& bcs,
   ph::Output o;
   ph::generateOutput(in, bcs, m, o);
   ph::exitFilteredMatching(m);
-  ph::detachAndWriteSolution(in, m, path);
-  ph::writeGeomBC(o, path);
+  // a path is not needed for inmem
+  ph::detachAndWriteSolution(in, m, path); //write restart
+  ph::writeGeomBC(o, path); //write geombc
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);
   if ( ! in.outMeshFileName.empty() )
     m->writeNative(in.outMeshFileName.c_str());
@@ -97,17 +98,19 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 namespace chef {
   struct IStream{
-    FILE* restart;
+    void* restart;
+    size_t rSz;
   };
   struct OStream{
-    FILE* geom;
-    FILE* restart;
+    char *geom, *restart;
+    size_t gSz, rSz;
   };
 
   OStream* makeOStream() {
     OStream* os = (OStream*) malloc(sizeof(OStream));
     os->geom = NULL;
     os->restart = NULL;
+    return os;
   }
   
   void destroyOStream(OStream* os) {
@@ -150,6 +153,7 @@ namespace chef {
     char* bp;
     size_t size;
     os->geom = open_memstream(&bp, &size);
+    cook(g,m);
     return;
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
