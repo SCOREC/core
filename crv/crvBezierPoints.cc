@@ -347,7 +347,7 @@ static void getBezierTetTransform(int P, apf::NewArray<double> & c)
 }
 void getTransformationCoefficients(int dim, int P, int type,
     apf::NewArray<double>& c){
-  if(dim == 2)
+  if(dim == 2 && getBlendingOrder() > 0)
     getBezierCurveTransform(P,c);
   else if(type == apf::Mesh::EDGE)
     getBezierEdgeTransform(P,c);

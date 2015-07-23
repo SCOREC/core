@@ -927,7 +927,7 @@ apf::FieldShape* getBezier(int dimension, int order)
   static crv::BezierCurve bezierCurve;
   static crv::BezierSurface bezierSurface;
 
-  if(dimension == 2)
+  if(dimension == 2 && useBlend())
     return &bezierCurve;
   else
     return &bezierSurface;
