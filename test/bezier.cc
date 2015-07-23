@@ -237,12 +237,8 @@ void test2D()
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
-
       testInterpolatedPoints2D(m);
       testSize2D(m);
-      crv::writeCurvedVtuFiles(m,apf::Mesh::VERTEX,order,"curvedBezier2D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier2D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier2D");
       m->destroyNative();
       apf::destroyMesh(m);
     }
@@ -421,7 +417,7 @@ void test3DBlended()
         m->end(it);
       }
       m->acceptChanges();
-      crv::writeCurvedVtuFiles(m,apf::Mesh::VERTEX,order,"curvedBezier3D");
+      crv::writeControlPointVtuFiles(m,"curvedBezier3D");
       crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier3D");
       crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier3D");
       crv::writeCurvedVtuFiles(m,apf::Mesh::TET,order,"curvedBezier3D");
@@ -457,16 +453,6 @@ void test3DFull()
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
         bc.convertInterpolationPoints(e,n,ne,c);
-      }
-      m->end(it);
-    }
-    if(order == 4){
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(3);
-      while ((e = m->iterate(it))) {
-        apf::NewArray<double> c;
-        crv::getTransformationCoefficients(3,4,apf::Mesh::TET,c);
-        bc.convertInterpolationPoints(e,35,1,c);
       }
       m->end(it);
     }

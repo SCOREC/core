@@ -357,6 +357,72 @@ void getTransformationCoefficients(int dim, int P, int type,
     getBezierTetTransform(P,c);
 }
 
+static void getGregoryTriangleTransform(int P, apf::NewArray<double> & c)
+{
+  apf::NewArray<double> d;
+  getBezierTriangleTransform(P,d);
+
+  int nbBezier = curved_face_internal[BEZIER][P-1];
+  int niBezier = curved_face_total[BEZIER][P-1];
+
+  int nb = curved_face_internal[GREGORY][3];
+  int ni = curved_face_total[GREGORY][3];
+  c.allocate(ni*nb);
+
+  int map[3] = {1,2,0};
+  // copy the bezier point locations
+  for(int i = 0; i < nbBezier; ++i){
+    for(int j = 0; j < niBezier; ++j)
+      c[i*ni+j] = d[i*niBezier+j];
+    for(int j = niBezier; j < ni; ++j)
+      c[i*ni+j] = 0.;
+  }
+
+  for(int i = nbBezier; i < nb; ++i){
+    for(int j = 0; j < niBezier; ++j)
+      c[i*ni+j] = d[map[i-nbBezier]*niBezier+j];
+    for(int j = niBezier; j < ni; ++j)
+      c[i*ni+j] = 0.;
+  }
+}
+
+static void getGregoryTetTransform(int P, apf::NewArray<double> & c)
+{
+  assert(P == 4 && getBlendingOrder() == 0);
+  double t4[47] = {
+      -0.665492638178598,-0.665492638178598,-0.665492638178598,-0.665492638178598,
+      0.697909481209196,0.496340368840329,0.697909481209197,0.697909481209196,
+      0.496340368840329,0.697909481209196,0.697909481209196,0.49634036884033,
+      0.697909481209196,0.697909481209196,0.496340368840329,0.697909481209196,
+      0.697909481209196,0.496340368840329,0.697909481209196,0.697909481209196,
+      0.496340368840329,0.697909481209196,
+      -1.52980434179205,-1.52980434179205,-1.52980434179205,0.,0.,0.,
+      -1.52980434179205,-1.52980434179205,-1.52980434179205,0.,0.,0.,
+      -1.52980434179205,-1.52980434179205,-1.52980434179205,0.,0.,0.,
+      -1.52980434179205,-1.52980434179205,-1.52980434179205,0.,0.,0.,
+      10.6666666666667,
+  };
+
+  int nb = curved_tet_internal[GREGORY][P-1];
+  int ni = curved_tet_total[GREGORY][P-1];
+
+  c.allocate(ni*nb);
+  for( int i = 0; i < nb; ++i)
+    for( int j = 0; j < ni; ++j)
+      c[i*ni+j] = t4[i*ni+j];
+}
+
+void getGregoryTransformationCoefficients(int /*dim*/, int P, int type,
+    apf::NewArray<double>& c){
+  assert(P == 4);
+  if(type == apf::Mesh::EDGE)
+    getBezierEdgeTransform(P,c);
+  else if(type == apf::Mesh::TRIANGLE)
+    getGregoryTriangleTransform(P,c);
+  else if(type == apf::Mesh::TET)
+    getGregoryTetTransform(P,c);
+}
+
 void getTransformationMatrix(apf::Mesh* m, int type, apf::DynamicMatrix& A)
 {
   setBlendingOrder(0); // makes sure blending is turned off.

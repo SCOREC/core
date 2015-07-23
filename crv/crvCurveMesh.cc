@@ -97,20 +97,21 @@ bool BezierCurver::run()
 
   int md = m_mesh->getDimension();
   apf::changeMeshShape(m_mesh, getBezier(md,m_order),true);
-
   apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
-  for(int d = 1; d < md; ++d)
+  for(int d = 1; d <= md; ++d)
     snapToInterpolate(d);
 
-  // go downward, and convert interpolating to control points
-  for(int d = md-1; d >= 1; --d){
-    int n = (d == 2)? (m_order+1)*(m_order+2)/2 : m_order+1;
-    int ne = fs->countNodesOn(d);
+  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
 
+  // go downward, and convert interpolating to control points
+  for(int d = md - (getBlendingOrder() > 0); d >= 1; --d){
+    if(!fs->hasNodesIn(d)) continue;
+    int n = fs->getEntityShape(types[d-1])->countNodes();
+    int ne = fs->countNodesOn(types[d-1]);
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,m_order,d,c);
+    getTransformationCoefficients(md,m_order,types[d-1],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -333,59 +334,31 @@ bool GregoryCurver::run()
   }
 
   apf::changeMeshShape(m_mesh, getGregory(m_order),true);
-
   int md = m_mesh->getDimension();
-
   apf::FieldShape * fs = m_mesh->getShape();
+
+  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
 
   // interpolate points in each dimension
   for(int d = 1; d < md; ++d)
     snapToInterpolate(d);
 
   // go downward, and convert interpolating to control points
-  for(int d = md-1; d >= 1; --d){
+  for(int d = md; d >= 1; --d){
+    if(!fs->hasNodesIn(d)) continue;
 
-    int n = (d == 2)? (m_order+1)*(m_order+2)/2 : m_order+1;
-    int ne = fs->countNodesOn(d);
+    int n = fs->getEntityShape(types[d-1])->countNodes();
+    int ne = fs->countNodesOn(types[d-1]);
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,m_order,d,c);
+    getGregoryTransformationCoefficients(m_order,md,types[d-1],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
 
     while ((e = m_mesh->iterate(it))) {
-      apf::ModelEntity* g = m_mesh->toModel(e);
-      // we'll set the points to be G1 continuous later on
-      if (m_mesh->getModelType(g) < md) continue;
-
-      // set extra internal points
-      if(d == 2 && m_order == 4){
-
-        apf::Element* elem =
-            apf::createElement(m_mesh->getCoordinateField(),e);
-        apf::getVectorNodes(elem,l);
-
-        for(int i = 0; i < ne; ++i)
-          b[i].zero();
-
-        for( int i = 0; i < 3; ++i)
-          for( int j = 0; j < n; ++j)
-            b[i] += l[j]*c[i*n+j];
-
-        int map[3] = {1,2,0};
-        for( int i = 3; i < 6; ++i)
-          for( int j = 0; j < n; ++j)
-            b[i] += l[j]*c[map[i-3]*n+j];
-
-        for(int i = 0; i < ne; ++i)
-          m_mesh->setPoint(e,i,b[i]);
-
-        apf::destroyElement(elem);
-      } else
-        convertInterpolationPoints(e,n,ne,c);
-
+      convertInterpolationPoints(e,n,ne,c);
     }
     m_mesh->end(it);
   }

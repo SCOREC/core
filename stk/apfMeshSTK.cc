@@ -156,10 +156,10 @@ static void buildElements(
     stk::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
     NewArray<long> node_ids;
     int nodes = getElementNumbers(n[0], e, node_ids);
-    NewArray<stk::mesh::EntityId> stk_node_ids(nodes);
+    std::vector<stk::mesh::EntityId> stk_node_ids(nodes);
     for (int j = 0; j < nodes; ++j)
       stk_node_ids[j] = node_ids[j] + 1;
-    stk::mesh::declare_element(*bulk, *part, e_id, &stk_node_ids[0]);
+    stk::mesh::declare_element(*bulk, *part, e_id, stk_node_ids);
   }
   m->end(it);
 }

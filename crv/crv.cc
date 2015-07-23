@@ -7,8 +7,6 @@
 
 #include "crv.h"
 
-#include <cstdio>
-
 namespace crv {
 
 int factorial(int i)
