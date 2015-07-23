@@ -45,7 +45,7 @@ class MeshSIM : public Mesh2
     virtual bool hasUp(MeshEntity* e);
     void getPoint_(MeshEntity* e, int node, Vector3& point);
     void getParam(MeshEntity* e, Vector3& point);
-    int getType(MeshEntity* e);
+    Type getType(MeshEntity* e);
     void getRemotes(MeshEntity* e, Copies& remotes);
     void getResidence(MeshEntity* e, Parts& residence);
     MeshTag* createDoubleTag(const char* name, int size);

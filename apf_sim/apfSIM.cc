@@ -397,7 +397,7 @@ void MeshSIM::getParam(MeshEntity* e, Vector3& point)
   }
 }
 
-int MeshSIM::getType(MeshEntity* e)
+Mesh::Type MeshSIM::getType(MeshEntity* e)
 {
   pEntity entity = reinterpret_cast<pEntity>(e);
   eType ent_type = EN_type(entity);
@@ -412,8 +412,6 @@ int MeshSIM::getType(MeshEntity* e)
       return Mesh::TRIANGLE;
     else if(num_edges == 4)
       return Mesh::QUAD;
-    else
-      return -1;
   }
   else
   {
@@ -426,9 +424,8 @@ int MeshSIM::getType(MeshEntity* e)
       return Mesh::PYRAMID;
     else if(reg_type == Rhex)
       return Mesh::HEX;
-    else
-      return -1;
   }
+  abort();
 }
 
 void MeshSIM::getRemotes(MeshEntity* e, Copies& remotes)
