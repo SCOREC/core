@@ -16,7 +16,7 @@ void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 {
   apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(apf::Mesh::EDGE);
-  apf::Vector3 p, xi, pt;
+  apf::Vector3 p, xi, pt(0,0,0);
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(apf::Mesh::EDGE,i,xi);
