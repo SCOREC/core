@@ -337,9 +337,6 @@ void test2D()
       bc.run();
       if(order > 2)
         fixMidPoints(m);
-      crv::writeCurvedVtuFiles(m,apf::Mesh::VERTEX,order,"curvedBezier2D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier2D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier2D");
       testJacobian(m);
       testEdgeGradients(m);
       m->destroyNative();

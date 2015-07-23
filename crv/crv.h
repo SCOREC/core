@@ -13,6 +13,7 @@
 
 #include "apfMesh2.h"
 #include "apfShape.h"
+#include <stdio.h>
 
 namespace crv {
 
@@ -116,7 +117,9 @@ void setNurbsTriangleWeights(apf::NewArray<double>& weights);
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int P, int dim, int type,
+void getTransformationCoefficients(int dim, int P, int type,
+    apf::NewArray<double>& c);
+void getGregoryTransformationCoefficients(int dim, int P, int type,
     apf::NewArray<double>& c);
 
 /** \brief computes interpolation error of a curved entity on a mesh
