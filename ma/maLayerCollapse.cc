@@ -40,10 +40,10 @@ bool LayerCollapse::setup_(Entity* edge)
     setFlag(a, edge, COLLAPSE);
     m->getDownward(edge, 0, v);
     Entity* av[2] = {v[0], curves[0].back()};
-    if ( ! findUpward(m, EDGE, av)) {
+    if ( ! findUpward(m, apf::Mesh::EDGE, av)) {
       std::swap(v[0], v[1]);
       av[0] = v[0];
-      assert(findUpward(m, EDGE, av));
+      assert(findUpward(m, apf::Mesh::EDGE, av));
     }
     setFlag(a, v[0], COLLAPSE);
   }
@@ -80,10 +80,10 @@ void LayerCollapse::computeElementSets()
 bool LayerCollapse::involvesPyramids()
 {
   APF_ITERATE(EntitySet, elementsToCollapse, it)
-    if (m->getType(*it) == PYRAMID)
+    if (m->getType(*it) == apf::Mesh::PYRAMID)
       return true;
   APF_ITERATE(EntitySet, elementsToKeep, it)
-    if (m->getType(*it) == PYRAMID)
+    if (m->getType(*it) == apf::Mesh::PYRAMID)
       return true;
   return false;
 }
@@ -114,7 +114,7 @@ static Entity* rebuildLayerElement(
     apf::BuildCallback* cb)
 {
   int type = m->getType(original);
-  if (type==VERT)
+  if (type == apf::Mesh::VERTEX)
   {
     for (size_t i = 0; i < oldVerts.size(); ++i)
       if (oldVerts[i] == original)

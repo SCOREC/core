@@ -78,7 +78,7 @@ static Entity* getOtherQuad(Adapt* a, Entity* e, Predicate& visited)
   for (int i=0; i < up.n; ++i)
   {
     Entity* of = up.e[i];
-    if ((m->getType(of)==QUAD)&&
+    if ((m->getType(of) == apf::Mesh::QUAD)&&
         ( ! visited(of)))
       return of;
   }
@@ -196,7 +196,7 @@ struct UnsafePyramidOverride : public apf::CavityOp
   }
   Outcome setEntity(Entity* r)
   {
-    if ((mesh->getType(r) != PYRAMID) ||
+    if ((mesh->getType(r) != apf::Mesh::PYRAMID) ||
         getFlag(a, r, CHECKED))
       return SKIP;
     pyramid = r;
@@ -298,16 +298,16 @@ static void addAllLayerElements(Refine* r)
 {
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
-  int quadCount = apf::countEntitiesOfType(m,QUAD);
-  int prismCount = apf::countEntitiesOfType(m,PRISM);
-  int pyramidCount = apf::countEntitiesOfType(m,PYRAMID);
+  int quadCount = apf::countEntitiesOfType(m, apf::Mesh::QUAD);
+  int prismCount = apf::countEntitiesOfType(m, apf::Mesh::PRISM);
+  int pyramidCount = apf::countEntitiesOfType(m, apf::Mesh::PYRAMID);
   r->toSplit[2].setSize(quadCount);
   r->toSplit[3].setSize(prismCount + pyramidCount);
   Entity* e;
   Iterator* it = m->begin(2);
   int nf = 0;
   while ((e = m->iterate(it)))
-    if (m->getType(e)==QUAD) {
+    if (m->getType(e) == apf::Mesh::QUAD) {
       m->setIntTag(e, r->numberTag, &nf);
       r->toSplit[2][nf] = e;
       ++nf;
@@ -317,8 +317,8 @@ static void addAllLayerElements(Refine* r)
   it = m->begin(3);
   int nr = 0;
   while ((e = m->iterate(it)))
-    if ((m->getType(e)==PRISM)||
-        (m->getType(e)==PYRAMID)) {
+    if ((m->getType(e) == apf::Mesh::PRISM)||
+        (m->getType(e) == apf::Mesh::PYRAMID)) {
       m->setIntTag(e, r->numberTag, &nr);
       r->toSplit[3][nr] = e;
       ++nr;
@@ -434,7 +434,7 @@ static void markIslandQuads(Adapt* a)
   Entity* e;
   Iterator* it = m->begin(2);
   while ((e = m->iterate(it)))
-    if (m->getType(e) == QUAD) {
+    if (m->getType(e) == apf::Mesh::QUAD) {
       if ( ! getFlag(a, e, CHECKED)) {
         setFlag(a, e, SPLIT);
         setFlag(a, e, DIAGONAL_1);
@@ -467,7 +467,7 @@ static long markIslandPyramids(Adapt* a)
       m->getUp(e, up);
       for (int i = 0; i < up.n; ++i) {
         Entity* elem = up.e[i];
-        assert(m->getType(elem) == PYRAMID);
+        assert(m->getType(elem) == apf::Mesh::PYRAMID);
         setFlag(a, elem, SPLIT);
         ++n;
       }

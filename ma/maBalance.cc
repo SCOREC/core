@@ -24,7 +24,7 @@ static double getSizeWeight(Adapt* a, Entity* e, int type)
    pyramids will get very small weights, but
    they are supposed to be fairly sparse so
    that should not ruin things. */
-  if (type == PRISM) {
+  if (type == apf::Mesh::PRISM) {
     Entity* f[5];
     a->mesh->getDownward(e, 2, f);
     return a->sizeField->getWeight(f[0]);
@@ -58,9 +58,9 @@ static double clampForLayerPermissions(Adapt* a, int type, double weight)
 static double accountForTets(Adapt* a, int type, double weight)
 {
   if (a->input->shouldTurnLayerToTets) {
-    if (type == PRISM)
+    if (type == apf::Mesh::PRISM)
       return weight * 3;
-    if (type == PYRAMID)
+    if (type == apf::Mesh::PYRAMID)
       return weight * 2;
   }
   return weight;

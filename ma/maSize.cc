@@ -160,7 +160,7 @@ class SizeFieldIntegrator : public apf::Integrator
 /* the length, area, or volume of
    the parent element for this
    entity type */
-static double parentMeasure[TYPES] =
+static double parentMeasure[apf::Mesh::TYPES] =
 {0.0     //vert
 ,2.0     //edge
 ,1.0/2.0 //tri

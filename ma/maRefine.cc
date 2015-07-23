@@ -163,7 +163,7 @@ Entity* findSplitVert(Refine* r, int dimension, int id)
   Mesh* m = r->adapt->mesh;
   EntityArray& a = r->newEntities[dimension][id];
   for (size_t i=0; i < a.getSize(); ++i)
-    if (m->getType(a[i])==VERT)
+    if (m->getType(a[i]) == apf::Mesh::VERTEX)
       return a[i];
   return 0;
 }
@@ -181,7 +181,7 @@ Entity* findSplitVert(Refine* r, Entity* v0, Entity* v1)
 {
   Entity* v[2];
   v[0] = v0; v[1] = v1;
-  Entity* edge = findUpward(r->adapt->mesh,EDGE,v);
+  Entity* edge = findUpward(r->adapt->mesh, apf::Mesh::EDGE, v);
   return findSplitVert(r,edge);
 }
 
@@ -219,7 +219,7 @@ int matchEntityToTemplate(Adapt* a, Entity* e, Entity** vo)
   return matchToTemplate(type, vi, code, vo);
 }
 
-static SplitFunction* all_templates[TYPES] =
+static SplitFunction* all_templates[apf::Mesh::TYPES] =
 {0,//vert
  edge_templates,
  tri_templates,

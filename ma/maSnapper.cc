@@ -112,7 +112,7 @@ static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
 static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
 {
   Mesh* mesh = adapter->mesh;
-  assert(mesh->getType(e) == EDGE);
+  assert(mesh->getType(e) == apf::Mesh::EDGE);
   if ( ! collapse.setEdge(e))
     return false;
   if ( ! collapse.checkClass())
