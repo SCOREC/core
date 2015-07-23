@@ -332,7 +332,7 @@ bool GregoryCurver::run()
   if(m_mesh->getDimension() != 3){
     fail("can only convert 3D Mesh to G1 continuous surface\n");
   }
-
+  printf("m order %d",m_order);
   apf::changeMeshShape(m_mesh, getGregory(m_order),true);
   int md = m_mesh->getDimension();
   apf::FieldShape * fs = m_mesh->getShape();
@@ -352,7 +352,8 @@ bool GregoryCurver::run()
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
-    getGregoryTransformationCoefficients(m_order,md,types[d-1],c);
+
+    getGregoryTransformationCoefficients(md,m_order,types[d-1],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);

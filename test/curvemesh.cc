@@ -35,7 +35,7 @@ static void testElementSize(apf::Mesh* m)
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
-      if(d == 3) printf("Tet volume is %f\n",v);
+//      if(d == 3) printf("Tet volume is %f\n",v);
       if(v < 0){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
@@ -113,9 +113,9 @@ static void testBezier(const char* modelFile, const char* meshFile,
 static void testGregory(const char* modelFile, const char* meshFile,
     const int ne, const int nf)
 {
-  for(int order = 3; order <= 4; ++order){
+  for(int order = 0; order <= 2; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    crv::GregoryCurver gc(m2,order,2);
+    crv::GregoryCurver gc(m2,4,order);
     gc.run();
     testElementSize(m2);
     apf::DynamicVector ee(ne);
