@@ -62,9 +62,9 @@ static mds_id fromIter(MeshIterator* it)
   return *(reinterpret_cast<mds_id*>(it));
 }
 
-static int mds2apf(int t_mds)
+static Mesh::Type mds2apf(int t_mds)
 {
-  static int const table[MDS_TYPES] =
+  static Mesh::Type const table[MDS_TYPES] =
   {Mesh::VERTEX
   ,Mesh::EDGE
   ,Mesh::TRIANGLE
@@ -249,7 +249,7 @@ class MeshMDS : public Mesh2
       p2[0] = p[0];
       p2[1] = p[1];
     }
-    int getType(MeshEntity* e)
+    Type getType(MeshEntity* e)
     {
       return mds2apf(mds_type(fromEnt(e)));
     }

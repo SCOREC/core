@@ -92,10 +92,10 @@ void findLayerBase(Adapt* a)
   Entity* f;
   while ((f = m->iterate(it)))
   {
-    if (( m->getType(f)==TRI )
-      &&( isOnModelFace(m, f) )
-      &&( m->countUpward(f)==1 )
-      &&( m->getType(m->getUpward(f,0))==PRISM ))
+    if ((m->getType(f) == apf::Mesh::TRIANGLE) &&
+        (isOnModelFace(m, f)) &&
+        (m->countUpward(f) == 1) &&
+        (m->getType(m->getUpward(f, 0)) == apf::Mesh::PRISM))
       setFlagOnClosure(a,f,LAYER_BASE);
   }
   m->end(it);
@@ -163,7 +163,7 @@ void checkLayerShape(Mesh* m, const char* key)
         ss << "layer " << apf::Mesh::typeName[type]
            << " at " << apf::getLinearCentroid(m, e)
            << " is unsafe to tetrahedronize\n";
-        if (type == PRISM) {
+        if (type == apf::Mesh::PRISM) {
           ss << "there is currently no code to help with such prisms,\n";
           ss << "but there is a chance it will tetrahedronize OK.\n";
         }

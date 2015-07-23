@@ -172,7 +172,7 @@ class CavityTransfer : public FieldTransfer
       for (size_t i = 0; i < newEntities.getSize(); ++i)
       {
         int type = mesh->getType(newEntities[i]);
-        if (type == VERT)
+        if (type == apf::Mesh::VERTEX)
           continue; //vertices will have been handled specially beforehand
         int nnodes = shape->countNodesOn(type);
         for (int j = 0; j < nnodes; ++j)

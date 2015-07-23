@@ -42,19 +42,6 @@ typedef apf::Downward Downward;
 /** \brief convenient geometric model entity name */
 typedef apf::ModelEntity Model;
 
-enum MeshEntityType
-{
-  VERT = apf::Mesh::VERTEX,      //0
-  EDGE = apf::Mesh::EDGE,        //1
-  TRI = apf::Mesh::TRIANGLE,     //2
-  QUAD = apf::Mesh::QUAD,        //3
-  TET = apf::Mesh::TET,          //4
-  HEX = apf::Mesh::HEX,          //5
-  PRISM = apf::Mesh::PRISM,      //6
-  PYRAMID = apf::Mesh::PYRAMID,  //7
-  TYPES = apf::Mesh::TYPES       //8
-};
-
 /** \brief get vertex spatial coordinates */
 Vector getPosition(Mesh* m, Entity* vertex);
 

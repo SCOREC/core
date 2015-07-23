@@ -75,7 +75,7 @@ void rotatePyramid(Entity** iv, int n, Entity** ov)
 void rotateEntity(int type, Entity** iv, int n, Entity** ov)
 {
   typedef void (*RotateFunction)(Entity** iv, int n, Entity** ov);
-  static RotateFunction table[TYPES] =
+  static RotateFunction table[apf::Mesh::TYPES] =
   {0//vertex
   ,rotateEdge
   ,rotateTri
@@ -196,7 +196,7 @@ Entity* findTetByTwoTris(Mesh* m, Entity** tris)
   for (int i=0; i < rs.n; ++i)
   {
     Entity* r = rs.e[i];
-    if (m->getType(r) != TET)
+    if (m->getType(r) != apf::Mesh::TET)
       continue;
     Downward rf;
     m->getDownward(r,2,rf);
@@ -214,7 +214,7 @@ Entity* rebuildElement(
     apf::BuildCallback* cb)
 {
   int type = m->getType(original);
-  if (type==VERT)
+  if (type == apf::Mesh::VERTEX)
   {
     assert(original != newVert);
     if (original==oldVert)
@@ -284,9 +284,9 @@ Entity* findTriFromVerts(Mesh* m, Entity** v)
   {
     Entity* ev[2] =
     { v[apf::tri_edge_verts[i][0]], v[apf::tri_edge_verts[i][1]] };
-    e[i] = findUpward(m,EDGE,ev);
+    e[i] = findUpward(m, apf::Mesh::EDGE, ev);
   }
-  return findUpward(m,TRI,e);
+  return findUpward(m, apf::Mesh::TRIANGLE, e);
 }
 
 double measure(Mesh* m, Entity* e)
@@ -390,7 +390,7 @@ void getFaceEdgesAndDirections(
 Entity* findEdge(Mesh* m, Entity* v0, Entity* v1)
 {
   Entity* ev[2] = {v0,v1};
-  return findUpward(m, EDGE, ev);
+  return findUpward(m, apf::Mesh::EDGE, ev);
 }
 
 bool edgeExists(Mesh* m, Entity* v0, Entity* v1)

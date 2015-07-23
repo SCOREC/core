@@ -163,7 +163,7 @@ CodeMatch const tet_code_match[(1<<6)] =
 ,{ 0,11}
 };
 
-CodeMatch const* code_match[TYPES] =
+CodeMatch const* code_match[apf::Mesh::TYPES] =
 {0,//vertex
  edge_code_match,
  tri_code_match,

@@ -52,7 +52,7 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
 double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
 {
   typedef double (*MeasureQualityFunction)(Mesh*,SizeField*,Entity*);
-  static MeasureQualityFunction table[TYPES] =
+  static MeasureQualityFunction table[apf::Mesh::TYPES] =
   {0
   ,0
   ,measureTriQuality
@@ -337,9 +337,9 @@ bool isPyramidOk(apf::Mesh* m, Entity* e,
 bool isLayerElementOk(Mesh* m, Entity* e)
 {
   int type = m->getType(e);
-  if (type == PYRAMID)
+  if (type == apf::Mesh::PYRAMID)
     return isPyramidOk(m, e);
-  if (type == PRISM)
+  if (type == apf::Mesh::PRISM)
     return isPrismOk(m, e);
   abort();
   return false;
@@ -347,7 +347,7 @@ bool isLayerElementOk(Mesh* m, Entity* e)
 
 double getInsphere(Mesh* m, Entity* e)
 {
-  assert(m->getType(e) == TET);
+  assert(m->getType(e) == apf::Mesh::TET);
 
   // Insphere r of a tet computed by the forumla at
   // http://maths.ac-noumea.nc/polyhedr/stuff/tetra_sf_.htm
