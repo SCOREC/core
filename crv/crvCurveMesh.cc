@@ -352,7 +352,7 @@ bool GregoryCurver::run()
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
-    getGregoryTransformationCoefficients(m_order,md,types[d-1],c);
+    getGregoryTransformationCoefficients(md,m_order,types[d-1],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
