@@ -4,6 +4,10 @@
 #include <apfNew.h>
 #include <string>
 
+namespace chef {
+struct IStream;
+}
+
 namespace ph {
 
 class Input
@@ -52,6 +56,8 @@ class Input
     int splitAllLayerEdges;
     int filterMatches;
     int axisymmetry;
+    FILE* (*openfile_read)(Input& in, const char* path);
+    chef::IStream* is;
 };
 
 int countNaturalBCs(Input& in);

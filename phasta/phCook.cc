@@ -24,7 +24,7 @@ void freeMesh(apf::Mesh* m)
   apf::destroyMesh(m);
 }
 
-void afterSplit(apf::Mesh2* m, ph::Input& in, ph::Output& out, 
+void afterSplit(apf::Mesh2* m, ph::Input& in, ph::Output& out,
     ph::BCs& bcs, int numMasters)
 {
   std::string path = ph::setupOutputDir();
@@ -107,9 +107,30 @@ namespace chef {
     size_t gSz, rSz;
   };
 
+  static FILE* openfile_read(ph::Input&, const char* path) {
+    fprintf(stderr, "------entering %s-------\n", __func__);
+    return fopen(path, "r");
+  }
+
   static FILE* openfile_write(ph::Output&, const char* path) {
     fprintf(stderr, "------entering %s-------\n", __func__);
     return fopen(path, "w");
+  }
+
+  static FILE* openstream_read(ph::Input& in, const char* path) {
+    fprintf(stderr, "------entering %s-------\n", __func__);
+    std::string fname(path);
+    std::string restartStr("restart");
+    FILE* f = NULL;
+    if( fname.find(restartStr) != std::string::npos )
+      f = fmemopen(in.is->restart, in.is->rSz, "r");
+    else {
+      fprintf(stderr,
+        "ERROR %s type of stream %s is unknown... exiting\n",
+        __func__, fname.c_str());
+      exit(1);
+    }
+    return f;
   }
 
   static FILE* openstream_write(ph::Output& out, const char* path) {
@@ -118,13 +139,13 @@ namespace chef {
     std::string restartStr("restart");
     std::string geombcStr("geombc");
     FILE* f = NULL;
-    if( fname.find(restartStr) != std::string::npos ) 
+    if( fname.find(restartStr) != std::string::npos )
       f = open_memstream(&(out.os->restart), &(out.os->rSz));
-    else if( fname.find(geombcStr) != std::string::npos ) 
+    else if( fname.find(geombcStr) != std::string::npos )
       f = open_memstream(&(out.os->geom), &(out.os->gSz));
     else {
       fprintf(stderr,
-        "ERROR %s type of stream %s is unknown... exiting\n", 
+        "ERROR %s type of stream %s is unknown... exiting\n",
         __func__, fname.c_str());
       exit(1);
     }
@@ -144,7 +165,7 @@ namespace chef {
     os->restart = NULL;
     os->rSz = 0;
   }
-  
+
   void destroyOStream(OStream* os) {
     if(os->geom)
       free(os->geom);
@@ -166,7 +187,7 @@ namespace chef {
     free(is);
   }
 
-  void bake(gmi_model*& g, apf::Mesh2*& m, 
+  void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::BCs bcs, int& numMasters) {
     apf::Migration* plan = 0;
     loadCommon(in, bcs, g);
@@ -182,6 +203,7 @@ namespace chef {
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
+    in.openfile_read = openfile_read;
     ph::BCs bcs;
     int numMasters;
     bake(g,m,in,bcs,numMasters);
@@ -200,6 +222,14 @@ namespace chef {
     afterSplit(m,in,out,bcs,numMasters);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
+    ph::Input in;
+    in.openfile_read = openstream_read;
+    in.is = is;
+    ph::BCs bcs;
+    int numMasters;
+    bake(g,m,in,bcs,numMasters);
+    ph::Output out;
+    afterSplit(m,in,out,bcs,numMasters);
     return;
   }
 }
