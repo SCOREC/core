@@ -188,28 +188,27 @@ namespace chef {
   }
 
   void bake(gmi_model*& g, apf::Mesh2*& m,
-      ph::Input& in, ph::BCs bcs, int& numMasters) {
+      ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;
+    ph::BCs bcs;
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
     switchToMasters(in.splitFactor);
-    numMasters = PCU_Comm_Peers();
+    const int numMasters = PCU_Comm_Peers();
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber);
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
+    afterSplit(m,in,out,bcs,numMasters);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openfile_write;
-    ph::BCs bcs;
-    int numMasters;
-    bake(g,m,in,bcs,numMasters);
-    afterSplit(m,in,out,bcs,numMasters);
+    bake(g,m,in,out);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, OStream* os) {
     ph::Input in;
@@ -217,10 +216,7 @@ namespace chef {
     ph::Output out;
     out.openfile_write = openstream_write;
     out.os = os;
-    ph::BCs bcs;
-    int numMasters;
-    bake(g,m,in,bcs,numMasters);
-    afterSplit(m,in,out,bcs,numMasters);
+    bake(g,m,in,out);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
     ph::Input in;
@@ -228,10 +224,7 @@ namespace chef {
     in.is = is;
     ph::Output out;
     out.openfile_write = openfile_write;
-    ph::BCs bcs;
-    int numMasters;
-    bake(g,m,in,bcs,numMasters);
-    afterSplit(m,in,out,bcs,numMasters);
+    bake(g,m,in,out);
     return;
   }
 }
