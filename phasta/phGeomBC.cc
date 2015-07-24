@@ -151,7 +151,7 @@ void writeGeomBC(Output& o, std::string path)
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
   path += buildGeomBCFileName();
-  FILE* f = fopen(path.c_str(), "w");
+  FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
     abort();
