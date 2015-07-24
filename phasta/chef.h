@@ -16,14 +16,16 @@ namespace chef {
   void cook(gmi_model*& g, apf::Mesh2*& m, OStream* out);
   /** @brief read and write to and from streams */
   //void cook(gmi_model*& g, apf::Mesh2*& m, IStream* in, OStream* out);
-  /** @brief create an input stream from an output stream */
-  IStream* makeIStream(OStream* ostream);
+  /** @brief attach an input stream to an output stream */
+  IStream* attachIStream(OStream* ostream);
   /** @brief destroy input stream */
   void destroyIStream(IStream* is);
   /** @brief make output stream */
   OStream* makeOStream();
   /** @brief destroy output stream */
   void destroyOStream(OStream* os);
+  /** @brief detach output stream */
+  void detachOStream(OStream* os);
 }
 
 #endif

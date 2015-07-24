@@ -124,7 +124,8 @@ namespace chef {
       f = open_memstream(&(out.os->geom), &(out.os->gSz));
     else {
       fprintf(stderr,
-        "type of file %s is unknown... exiting\n", fname.c_str());
+        "ERROR %s type of stream %s is unknown... exiting\n", 
+        __func__, fname.c_str());
       exit(1);
     }
     return f;
@@ -136,6 +137,13 @@ namespace chef {
     os->restart = NULL;
     return os;
   }
+
+  void detachOStream(OStream* os) {
+    os->geom = NULL;
+    os->gSz = 0;
+    os->restart = NULL;
+    os->rSz = 0;
+  }
   
   void destroyOStream(OStream* os) {
     if(os->geom)
@@ -145,7 +153,7 @@ namespace chef {
     free(os);
   }
 
-  IStream* makeIStream(OStream* os) {
+  IStream* attachIStream(OStream* os) {
     IStream* is = (IStream*) malloc(sizeof(IStream));
     is->restart = os->restart;
     is->rSz = os->rSz;
