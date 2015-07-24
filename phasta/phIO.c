@@ -152,18 +152,13 @@ static void parse_params(char* header, long* bytes,
   *step = params[STEP_PARAM];
 }
 
-void ph_read_field(const char* file, const char* field, double** data,
+void ph_read_field(FILE* f, const char* field, double** data,
     int* nodes, int* vars, int* step)
 {
   long bytes, n;
   char header[PH_LINE];
   int should_swap;
   int ok;
-  FILE* f = fopen(file, "r");
-  if (!f) {
-    fprintf(stderr,"could not open \"%s\"\n", file);
-    abort();
-  }
   should_swap = read_magic_number(f);
   ok = find_header(f, field, header);
   assert(ok);
@@ -175,7 +170,6 @@ void ph_read_field(const char* file, const char* field, double** data,
   my_fread(*data, sizeof(double), n, f);
   if (should_swap)
     pcu_swap_doubles(*data, n);
-  fclose(f);
 }
 
 void ph_write_field(FILE* f, const char* field, double* data,

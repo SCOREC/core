@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
   chef::cook(g,m,os);
   chef::IStream* is = chef::attachIStream(os);
   chef::detachOStream(os);
-  //chef::cook(g,m,is);
+  chef::cook(g,m,is);
   chef::destroyOStream(os);
   chef::destroyIStream(is);
   freeMesh(m);

@@ -89,10 +89,16 @@ void readAndAttachField(
     const char* fieldname,
     int out_size = -1)
 {
+  FILE* f = in.openfile_read(in, filename);
+  if (!f) {
+    fprintf(stderr,"failed to open \"%s\"!\n", filename);
+    abort();
+  }
   double* data;
   int nodes, vars, step;
-  ph_read_field(filename, fieldname, &data,
+  ph_read_field(f, fieldname, &data,
       &nodes, &vars, &step);
+  fclose(f);
   assert(nodes == static_cast<int>(m->count(0)));
   assert(step == in.timeStepNumber);
   if (out_size == -1)

@@ -204,31 +204,33 @@ namespace chef {
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
     in.openfile_read = openfile_read;
+    ph::Output out;
+    out.openfile_write = openfile_write;
     ph::BCs bcs;
     int numMasters;
     bake(g,m,in,bcs,numMasters);
-    ph::Output out;
-    out.openfile_write = openfile_write;
     afterSplit(m,in,out,bcs,numMasters);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, OStream* os) {
     ph::Input in;
-    ph::BCs bcs;
-    int numMasters;
-    bake(g,m,in,bcs,numMasters);
+    in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openstream_write;
     out.os = os;
+    ph::BCs bcs;
+    int numMasters;
+    bake(g,m,in,bcs,numMasters);
     afterSplit(m,in,out,bcs,numMasters);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
     ph::Input in;
     in.openfile_read = openstream_read;
     in.is = is;
+    ph::Output out;
+    out.openfile_write = openfile_write;
     ph::BCs bcs;
     int numMasters;
     bake(g,m,in,bcs,numMasters);
-    ph::Output out;
     afterSplit(m,in,out,bcs,numMasters);
     return;
   }
