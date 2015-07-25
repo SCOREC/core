@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.6)
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(ma) 
+   tribits_package(SCORECma) 
 else()
    project(ma)
 endif()
@@ -111,5 +113,5 @@ configure_file(
 #pkgconfig }
 
 if(BUILD_IN_TRILINOS)
-   TRIBITS_SUBPACKAGE_POSTPROCESS()
+   TRIBITS_PACKAGE_POSTPROCESS()
 endif()
