@@ -5,27 +5,17 @@
 #include <apfMesh2.h>
 #include <gmi.h>
 
+struct RStream;
+struct GRStream;
 namespace chef {
-  struct IStream;
-  struct OStream;
   /** @brief read and write to and from files */
   void cook(gmi_model*& g, apf::Mesh2*& m);
   /** @brief read from stream and write to files */
-  void cook(gmi_model*& g, apf::Mesh2*& m, IStream* in);
+  void cook(gmi_model*& g, apf::Mesh2*& m, RStream* in);
   /** @brief read from files and write to stream */
-  void cook(gmi_model*& g, apf::Mesh2*& m, OStream* out);
+  void cook(gmi_model*& g, apf::Mesh2*& m, GRStream* out);
   /** @brief read and write to and from streams */
-  //void cook(gmi_model*& g, apf::Mesh2*& m, IStream* in, OStream* out);
-  /** @brief attach an input stream to an output stream */
-  IStream* attachIStream(OStream* ostream);
-  /** @brief destroy input stream */
-  void destroyIStream(IStream* is);
-  /** @brief make output stream */
-  OStream* makeOStream();
-  /** @brief destroy output stream */
-  void destroyOStream(OStream* os);
-  /** @brief detach output stream */
-  void detachOStream(OStream* os);
+  //void cook(gmi_model*& g, apf::Mesh2*& m, RStream* in, GRStream* out);
 }
 
 #endif

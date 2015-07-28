@@ -32,6 +32,13 @@ set(SOURCES
   phAxisymmetry.cc
   phInterfaceCutter.cc)
 
+if(PHASTA_CHEF_ENABLED)
+  add_library(phstream)
+else()
+  set(SOURCES ${SOURCES} phstreamEmpty/phsEmpty.cc)
+  include_directories(phstreamEmpty)
+endif()
+
 include_directories(${PH_INCLUDE_DIRS})
 
 add_library(ph ${SOURCES})

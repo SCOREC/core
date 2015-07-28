@@ -1,4 +1,5 @@
 #include <ph.h>
+#include <phstream.h>
 #include <phInput.h>
 #include <phBC.h>
 #include <phRestart.h>
@@ -97,16 +98,6 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace chef {
-  struct IStream{
-    void* restart;
-    size_t rSz;
-  };
-
-  struct OStream{
-    char *geom, *restart;
-    size_t gSz, rSz;
-  };
-
   static FILE* openfile_read(ph::Input&, const char* path) {
     fprintf(stderr, "------entering %s-------\n", __func__);
     return fopen(path, "r");
@@ -117,13 +108,18 @@ namespace chef {
     return fopen(path, "w");
   }
 
+  static FILE* openstream_write(ph::Output& out, const char* path) {
+    fprintf(stderr, "------entering %s-------\n", __func__);
+    return openGRStreamWrite(out.grs, path);
+  }
+
   static FILE* openstream_read(ph::Input& in, const char* path) {
     fprintf(stderr, "------entering %s-------\n", __func__);
     std::string fname(path);
     std::string restartStr("restart");
     FILE* f = NULL;
     if( fname.find(restartStr) != std::string::npos )
-      f = fmemopen(in.is->restart, in.is->rSz, "r");
+      f = openRStreamRead(in.rs);
     else {
       fprintf(stderr,
         "ERROR %s type of stream %s is unknown... exiting\n",
@@ -132,61 +128,6 @@ namespace chef {
     }
     return f;
   }
-
-  static FILE* openstream_write(ph::Output& out, const char* path) {
-    fprintf(stderr, "------entering %s-------\n", __func__);
-    std::string fname(path);
-    std::string restartStr("restart");
-    std::string geombcStr("geombc");
-    FILE* f = NULL;
-    if( fname.find(restartStr) != std::string::npos )
-      f = open_memstream(&(out.os->restart), &(out.os->rSz));
-    else if( fname.find(geombcStr) != std::string::npos )
-      f = open_memstream(&(out.os->geom), &(out.os->gSz));
-    else {
-      fprintf(stderr,
-        "ERROR %s type of stream %s is unknown... exiting\n",
-        __func__, fname.c_str());
-      exit(1);
-    }
-    return f;
-  }
-
-  OStream* makeOStream() {
-    OStream* os = (OStream*) malloc(sizeof(OStream));
-    os->geom = NULL;
-    os->restart = NULL;
-    return os;
-  }
-
-  void detachOStream(OStream* os) {
-    os->geom = NULL;
-    os->gSz = 0;
-    os->restart = NULL;
-    os->rSz = 0;
-  }
-
-  void destroyOStream(OStream* os) {
-    if(os->geom)
-      free(os->geom);
-    if(os->restart)
-      free(os->restart);
-    free(os);
-  }
-
-  IStream* attachIStream(OStream* os) {
-    IStream* is = (IStream*) malloc(sizeof(IStream));
-    is->restart = os->restart;
-    is->rSz = os->rSz;
-    return is;
-  }
-
-  void destroyIStream(IStream* is) {
-    if(is->restart)
-      free(is->restart);
-    free(is);
-  }
-
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;
@@ -210,18 +151,18 @@ namespace chef {
     out.openfile_write = openfile_write;
     bake(g,m,in,out);
   }
-  void cook(gmi_model*& g, apf::Mesh2*& m, OStream* os) {
+  void cook(gmi_model*& g, apf::Mesh2*& m, GRStream* grs) {
     ph::Input in;
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openstream_write;
-    out.os = os;
+    out.grs = grs;
     bake(g,m,in,out);
   }
-  void cook(gmi_model*& g, apf::Mesh2*& m, IStream* is) {
+  void cook(gmi_model*& g, apf::Mesh2*& m, RStream* rs) {
     ph::Input in;
     in.openfile_read = openstream_read;
-    in.is = is;
+    in.rs = rs;
     ph::Output out;
     out.openfile_write = openfile_write;
     bake(g,m,in,out);

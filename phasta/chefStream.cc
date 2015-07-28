@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <chef.h>
+#include <phstream.h>
 #include <gmi_mesh.h>
 #include <stdio.h>
 
@@ -17,13 +18,13 @@ int main(int argc, char** argv) {
   gmi_register_mesh();
   gmi_model* g = 0;
   apf::Mesh2* m = 0;
-  chef::OStream* os = chef::makeOStream();
-  chef::cook(g,m,os);
-  chef::IStream* is = chef::attachIStream(os);
-  chef::detachOStream(os);
-  chef::cook(g,m,is);
-  chef::destroyOStream(os);
-  chef::destroyIStream(is);
+  GRStream* grs = makeGRStream();
+  chef::cook(g,m,grs);
+  RStream* rs = makeRStream();
+  attachRStream(grs,rs);
+  chef::cook(g,m,rs); // this should not re-read the mesh and model
+  destroyGRStream(grs);
+  destroyRStream(rs);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();

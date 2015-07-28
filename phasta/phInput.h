@@ -4,9 +4,7 @@
 #include <apfNew.h>
 #include <string>
 
-namespace chef {
-struct IStream;
-}
+struct RStream;
 
 namespace ph {
 
@@ -57,7 +55,7 @@ class Input
     int filterMatches;
     int axisymmetry;
     FILE* (*openfile_read)(Input& in, const char* path);
-    chef::IStream* is;
+    RStream* rs;
 };
 
 int countNaturalBCs(Input& in);

@@ -9,9 +9,7 @@ namespace apf {
 class Mesh;
 }
 
-namespace chef {
-struct OStream;
-}
+struct GRStream;
 
 namespace ph {
 
@@ -95,7 +93,7 @@ struct Output
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
   FILE* (*openfile_write)(Output& out, const char* path);
-  chef::OStream* os;
+  GRStream* grs;
   AllBlocks blocks;
   EnsaArrays arrays;
 };
