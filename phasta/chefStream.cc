@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
   chef::cook(g,m,grs);
   RStream* rs = makeRStream();
   attachRStream(grs,rs);
-  chef::cook(g,m,rs); // this should not re-read the mesh and model
+  chef::cook(g,m,rs); //TODO don't re-read the mesh and model
   destroyGRStream(grs);
   destroyRStream(rs);
   freeMesh(m);
