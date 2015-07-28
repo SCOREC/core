@@ -248,7 +248,9 @@ add_test(ma_insphere
   ma_insphere)
 if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run)
-  cook(chefStream ${CMAKE_CURRENT_BINARY_DIR}/chefStream 1 1 ${MDIR})
+  if (PHASTA_CHEF_ENABLED)
+    cook(chefStream ${CMAKE_CURRENT_BINARY_DIR}/chefStream 1 1 ${MDIR})
+  endif()
   cook(chef0 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 1 ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
   add_test(NAME chef1
