@@ -33,7 +33,7 @@ set(SOURCES
   phInterfaceCutter.cc)
 
 if(PHASTA_CHEF_ENABLED)
-  add_library(phstream)
+  set(DEP_LIBS $DEP_LIBS phstream)
 else()
   set(SOURCES ${SOURCES} phstreamEmpty/phsEmpty.cc)
   include_directories(phstreamEmpty)
