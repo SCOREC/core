@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
   apf::Mesh2* m = 0;
   GRStream* grs = makeGRStream();
   chef::cook(g,m,grs);
+  freeMesh(m);
   RStream* rs = makeRStream();
   attachRStream(grs,rs);
   chef::cook(g,m,rs); //TODO don't re-read the mesh and model
