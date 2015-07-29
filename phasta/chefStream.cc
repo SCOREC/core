@@ -16,14 +16,13 @@ int main(int argc, char** argv) {
   PCU_Comm_Init();
   PCU_Protect();
   gmi_register_mesh();
-  gmi_model* g = 0;
-  apf::Mesh2* m = 0;
+  gmi_model* g = NULL;
+  apf::Mesh2* m = NULL;
   GRStream* grs = makeGRStream();
-  chef::cook(g,m,grs);
-  freeMesh(m);
+  chef::cook(g,m,"adapt.inp",grs);
   RStream* rs = makeRStream();
   attachRStream(grs,rs);
-  chef::cook(g,m,rs); //TODO don't re-read the mesh and model
+  chef::cook(g,m,"adaptNoTet.inp",rs);
   destroyGRStream(grs);
   destroyRStream(rs);
   freeMesh(m);

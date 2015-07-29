@@ -68,18 +68,22 @@ void switchToAll()
   PCU_Barrier();
 }
 
-void loadCommon(ph::Input& in, ph::BCs& bcs,
-    gmi_model*& g)
+void loadCommon(ph::Input& in, const char* ctrlFileName, 
+    ph::BCs& bcs, gmi_model*& g)
 {
-  in.load("adapt.inp");
+  in.load(ctrlFileName);
   ph::readBCs(in.attributeFileName.c_str(), bcs);
-  g = gmi_load(in.modelFileName.c_str());
+  if(!g)
+    g = gmi_load(in.modelFileName.c_str());
 }
 
 void originalMain(apf::Mesh2*& m, ph::Input& in,
     gmi_model* g, apf::Migration*& plan)
 {
-  m = apf::loadMdsMesh(g, in.meshFileName.c_str());
+  if(!m)
+    m = apf::loadMdsMesh(g, in.meshFileName.c_str());
+  else
+    apf::printStats(m);
   m->verify();
   if (in.solutionMigration)
     ph::readAndAttachSolution(in, m);
@@ -129,10 +133,11 @@ namespace chef {
     return f;
   }
   void bake(gmi_model*& g, apf::Mesh2*& m,
+      const char* ctrlFileName,
       ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;
     ph::BCs bcs;
-    loadCommon(in, bcs, g);
+    loadCommon(in, ctrlFileName, bcs, g);
     const int worldRank = PCU_Comm_Self();
     switchToMasters(in.splitFactor);
     const int numMasters = PCU_Comm_Peers();
@@ -149,23 +154,25 @@ namespace chef {
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openfile_write;
-    bake(g,m,in,out);
+    bake(g,m,"adapt.inp",in,out);
   }
-  void cook(gmi_model*& g, apf::Mesh2*& m, GRStream* grs) {
+  void cook(gmi_model*& g, apf::Mesh2*& m, 
+      const char* ctrlFileName, GRStream* grs) {
     ph::Input in;
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openstream_write;
     out.grs = grs;
-    bake(g,m,in,out);
+    bake(g,m,ctrlFileName,in,out);
   }
-  void cook(gmi_model*& g, apf::Mesh2*& m, RStream* rs) {
+  void cook(gmi_model*& g, apf::Mesh2*& m, 
+      const char* ctrlFileName, RStream* rs) {
     ph::Input in;
     in.openfile_read = openstream_read;
     in.rs = rs;
     ph::Output out;
     out.openfile_write = openfile_write;
-    bake(g,m,in,out);
+    bake(g,m,ctrlFileName,in,out);
     return;
   }
 }
