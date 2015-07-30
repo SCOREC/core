@@ -250,6 +250,16 @@ if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run)
   if (PHASTA_CHEF_ENABLED)
     cook(chefStream ${CMAKE_CURRENT_BINARY_DIR}/chefStream 1 1 ${MDIR})
+    set(cmd 
+      ${PHASTA_BINARY_DIR}/bin/checkphasta 
+      ${MDIR}/1-procs_case/ 
+      ${MESHES}/phasta/1-1-Chef-Tet-Part/good_phasta/
+      0 1e-6)
+    add_test(
+      NAME compareChefStream
+      COMMAND ${cmd}
+      WORKING_DIRECTORY ${MDIR}
+    )
   endif()
   cook(chef0 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 1 ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
