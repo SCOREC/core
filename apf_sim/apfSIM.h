@@ -1,6 +1,8 @@
 #ifndef APFSIM_H
 #define APFSIM_H
 
+#include <MeshSim.h>
+
 #include <apfMesh2.h>
 #include <PartitionedMeshTypes.h>
 
@@ -107,6 +109,27 @@ class MeshSIM : public Mesh2
 Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape);
 Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order);
 Field * createSIMFieldOn(Mesh * m, const char * name, int valueType);
+
+template <typename T>
+static void pListToDynamicArray(pPList list, DynamicArray<T>& array)
+{
+  int n = PList_size(list);
+  array.setSize(n);
+  for (int i=0; i < n; ++i)
+    array[i] = reinterpret_cast<T>(PList_item(list,i));
+  PList_delete(list);
+}
+
+template<typename T>
+static void DynamicArrayTopList(const DynamicArray<T> & array, pPList & list)
+{
+  int n = array.getSize();
+  PList_clear(list);
+  for(int ii = 0; ii < n; ii++)
+    list = PList_append(list,reinterpret_cast<void*>(array(ii)));
+}
+
+
 
 }//namespace apf
 

@@ -167,16 +167,6 @@ int MeshSIM::getOwner(MeshEntity* e)
   return EN_ownerProc(reinterpret_cast<pEntity>(e));
 }
 
-template <typename T>
-static void pListToDynamicArray(pPList list, DynamicArray<T>& array)
-{
-  int n = PList_size(list);
-  array.setSize(n);
-  for (int i=0; i < n; ++i)
-    array[i] = reinterpret_cast<T>(PList_item(list,i));
-  PList_delete(list);
-}
-
 static int pListToArray(pPList list, MeshEntity** array)
 {
   int n = PList_size(list);
