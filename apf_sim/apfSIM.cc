@@ -167,12 +167,13 @@ int MeshSIM::getOwner(MeshEntity* e)
   return EN_ownerProc(reinterpret_cast<pEntity>(e));
 }
 
-static void pListToDynamicArray(pPList list, DynamicArray<MeshEntity*>& array)
+template <typename T>
+static void pListToDynamicArray(pPList list, DynamicArray<T>& array)
 {
   int n = PList_size(list);
   array.setSize(n);
   for (int i=0; i < n; ++i)
-    array[i] = reinterpret_cast<MeshEntity*>(PList_item(list,i));
+    array[i] = reinterpret_cast<T>(PList_item(list,i));
   PList_delete(list);
 }
 
@@ -208,9 +209,9 @@ void MeshSIM::getAdjacent(MeshEntity* e,
         adjacent[i] = reinterpret_cast<MeshEntity*>(V_edge(vertex,i));
     }
     if (dimension == 2)
-      pListToDynamicArray(V_faces(vertex),adjacent);
+      pListToDynamicArray<MeshEntity*>(V_faces(vertex),adjacent);
     if (dimension == 3)
-      pListToDynamicArray(V_regions(vertex),adjacent);
+      pListToDynamicArray<MeshEntity*>(V_regions(vertex),adjacent);
   }
   if (ent_type == Tedge)
   {
@@ -229,13 +230,13 @@ void MeshSIM::getAdjacent(MeshEntity* e,
         adjacent[i] = reinterpret_cast<MeshEntity*>(E_face(edge,i));
     }
     if (dimension == 3)
-      pListToDynamicArray(E_regions(edge),adjacent);
+      pListToDynamicArray<MeshEntity*>(E_regions(edge),adjacent);
   }
   if (ent_type == Tface)
   {
     pFace face = static_cast<pFace>(entity);
     if (dimension == 0)
-      pListToDynamicArray(F_vertices(face,1),adjacent);
+      pListToDynamicArray<MeshEntity*>(F_vertices(face,1),adjacent);
     if (dimension == 1)
     {
       int n = F_numEdges(face);
@@ -259,9 +260,9 @@ void MeshSIM::getAdjacent(MeshEntity* e,
   {
     pRegion region = static_cast<pRegion>(entity);
     if (dimension == 0)
-      pListToDynamicArray(R_vertices(region,1),adjacent);
+      pListToDynamicArray<MeshEntity*>(R_vertices(region,1),adjacent);
     if (dimension == 1)
-      pListToDynamicArray(R_edges(region,1),adjacent);
+      pListToDynamicArray<MeshEntity*>(R_edges(region,1),adjacent);
     if (dimension == 2)
     {
       int n = R_numFaces(region);
