@@ -77,8 +77,6 @@ static void special_declare_element_side(
   stk::mesh::Part& part)
 {
   StkMetaData const& meta = bulk->mesh_meta_data();
-  stk::topology elem_topo = meta.get_topology(part);
-  stk::topology side_topo = elem_topo.sub_topology(meta.side_rank(), local_side_id);
   stk::mesh::Entity side =
     bulk->declare_entity(meta.side_rank(), global_side_id, part);
   bulk->declare_relation(elem, side, local_side_id);
@@ -208,6 +206,8 @@ static void declarePart(StkModel* model,
 void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
 {
   int d = m->getDimension();
+  assert(d >= 0);
+  assert(d <= 3);
   const CellTopologyData* topo[4];
   stk::mesh::EntityRank ranks[4];
   for (int i = 0; i <= d; ++i)
@@ -229,7 +229,6 @@ void copyMeshToBulk(
     StkMetaData* meta,
     StkBulkData* bulk)
 {
-  Mesh* m = getMesh(n[0]);
   bulk->modification_begin();
   buildElements(n, models, meta, bulk);
   buildSides(n, models, meta, bulk);
