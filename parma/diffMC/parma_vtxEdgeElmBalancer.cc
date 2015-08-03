@@ -18,20 +18,20 @@ namespace {
       VtxEdgeBalancer(apf::Mesh* m, double f, double maxV, int v)
         : Balancer(m, f, v, "edges") {
           maxVtx = maxV;
-          if( !PCU_Comm_Self() ) {
+          if( !PCU_Comm_Self() && verbose ) {
             fprintf(stdout, "PARMA_STATUS stepFactor %.3f\n", f);
             fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
           sideTol = static_cast<int>(parma::avgSharedSides(s));
           delete s;
-          if( !PCU_Comm_Self() )
+          if( !PCU_Comm_Self() && verbose )
             fprintf(stdout, "sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxVtxImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 0);
-        if( !PCU_Comm_Self() )
+        if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "vtx imbalance %.3f\n", maxVtxImb);
         const double maxEdgeImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 1);
@@ -46,10 +46,10 @@ namespace {
 
         monitorUpdate(maxEdgeImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
-        if( !PCU_Comm_Self() )
+        if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "edgeImb %f avgSides %f\n", maxEdgeImb, avgSides);
         parma::BalOrStall* stopper =
-          new parma::BalOrStall(iA, sA, sideTol*.001);
+          new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
         parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
         bool ok = b.step(tolerance, verbose);

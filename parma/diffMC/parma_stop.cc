@@ -3,13 +3,13 @@
 #include <math.h>
 
 namespace parma {
-  BalOrStall::BalOrStall(Average* imb, Average* sides, double sidesTol)
-    : i(imb), s(sides), sTol(sidesTol) {}
+  BalOrStall::BalOrStall(Average* imb, Average* sides, double sidesTol, int v)
+    : i(imb), s(sides), sTol(sidesTol), verbose(v) {}
   bool BalOrStall::stop(double imb, double maxImb) {
     const double iTol = (maxImb-1)*.01;
     const double iSlope = i->avg();
     const double sSlope = s->avg();
-    if( !PCU_Comm_Self() )
+    if( !PCU_Comm_Self() && verbose )
       fprintf(stdout, "imbSlope %f sidesSlope %f\n", iSlope, sSlope);
     return imb < maxImb || 
       ( fabs(iSlope) < iTol && fabs(sSlope) < sTol );
