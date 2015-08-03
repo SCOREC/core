@@ -280,18 +280,22 @@ static void getInitialConditions(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
-  apf::MeshEntity* v;
   apf::NewArray<double> s(in.ensa_dof);
   apf::Field* f = m->findField("solution");
-  apf::MeshIterator* it = m->begin(0);
+  apf::MeshIterator* it = m->begin(3);
+  apf::MeshEntity* e;
   gmi_model* gm = m->getModel();
-  while ((v = m->iterate(it))) {
-    gmi_ent* ge = (gmi_ent*)m->toModel(v);
-    apf::getComponents(f, v, 0, &s[0]);
-    apf::Vector3 x;
-    m->getPoint(v, 0, x);
-    applySolutionBCs(gm, ge, bcs, x, &s[0]);
-    apf::setComponents(f, v, 0, &s[0]);
+  while ((e = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*)m->toModel(e);
+    apf::Downward v;
+    int nv = m->getDownward(e, 0, v);
+    for (int i = 0; i < nv; ++i) {
+      apf::getComponents(f, v[i], 0, &s[0]);
+      apf::Vector3 x;
+      m->getPoint(v[i], 0, x);
+      applySolutionBCs(gm, ge, bcs, x, &s[0]);
+      apf::setComponents(f, v[i], 0, &s[0]);
+    }
   }
   m->end(it);
 }
