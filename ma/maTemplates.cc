@@ -21,9 +21,9 @@ void quadToTris(Refine* r, Entity* parent, Entity** v)
 {
   Entity* tv[3];
   tv[0] = v[0]; tv[1] = v[1]; tv[2] = v[2];
-  buildSplitElement(r,parent,TRI,tv);
+  buildSplitElement(r, parent, apf::Mesh::TRIANGLE, tv);
   tv[0] = v[0]; tv[1] = v[2]; tv[2] = v[3];
-  buildSplitElement(r,parent,TRI,tv);
+  buildSplitElement(r, parent, apf::Mesh::TRIANGLE, tv);
 }
 
 int quadToTrisChoice(Refine* r, Entity* p, Entity** v, int rotation)
@@ -80,9 +80,9 @@ static void splitEdge(Refine* r, Entity* edge, Entity** v)
   Entity* sv = makeSplitVert(r,edge);
   Entity* ev[2];
   ev[0] = v[0]; ev[1] = sv;
-  buildSplitElement(r,edge,EDGE,ev);
+  buildSplitElement(r, edge, apf::Mesh::EDGE, ev);
   ev[0] = sv; ev[1] = v[1];
-  buildSplitElement(r,edge,EDGE,ev);
+  buildSplitElement(r, edge, apf::Mesh::EDGE, ev);
 }
 
 static void splitTri1(Refine* r, Entity* face, Entity** v)
@@ -90,9 +90,9 @@ static void splitTri1(Refine* r, Entity* face, Entity** v)
   Entity* sv = findSplitVert(r,v[0],v[1]);
   Entity* tv[3];
   tv[0] = v[0]; tv[1] = sv; tv[2] = v[2];
-  buildSplitElement(r,face,TRI,tv);
+  buildSplitElement(r, face, apf::Mesh::TRIANGLE, tv);
   tv[0] = v[2]; tv[1] = sv; tv[2] = v[1];
-  buildSplitElement(r,face,TRI,tv);
+  buildSplitElement(r, face, apf::Mesh::TRIANGLE, tv);
 }
 
 static void splitTri2(Refine* r, Entity* p, Entity** v)
@@ -102,7 +102,7 @@ static void splitTri2(Refine* r, Entity* p, Entity** v)
   sv[1] = findSplitVert(r,v[1],v[2]);
   Entity* tv[3];
   tv[0] = sv[1]; tv[1] = sv[0]; tv[2] = v[1];
-  buildSplitElement(r, p, TRI, tv);
+  buildSplitElement(r, p, apf::Mesh::TRIANGLE, tv);
   Entity* qv[4];
   qv[0] = v[0]; qv[1] = sv[0]; qv[2] = sv[1]; qv[3] = v[2];
   quadToTrisMixed(r, p, qv, getDiagonalFromFlag(r->adapt, p));
@@ -116,13 +116,13 @@ static void splitTri3(Refine* r, Entity* face, Entity** v)
   sv[2] = findSplitVert(r,v[2],v[0]);
   Entity* tv[3];
   tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = sv[2];
-  buildSplitElement(r,face,TRI,tv);
+  buildSplitElement(r, face, apf::Mesh::TRIANGLE, tv);
   tv[0] = v[0]; tv[1] = sv[0]; tv[2] = sv[2];
-  buildSplitElement(r,face,TRI,tv);
+  buildSplitElement(r, face, apf::Mesh::TRIANGLE, tv);
   tv[0] = v[1]; tv[1] = sv[1]; tv[2] = sv[0];
-  buildSplitElement(r,face,TRI,tv);
+  buildSplitElement(r, face, apf::Mesh::TRIANGLE, tv);
   tv[0] = v[2]; tv[1] = sv[2]; tv[2] = sv[1];
-  buildSplitElement(r,face,TRI,tv);
+  buildSplitElement(r, face, apf::Mesh::TRIANGLE, tv);
 }
 
 SplitFunction edge_templates[edge_edge_code_count] =
@@ -142,9 +142,9 @@ void splitTet_1(Refine* r, Entity* parent, Entity** v)
   Entity* sv = findSplitVert(r,v[0],v[1]);
   Entity* tv[4];
   tv[0] = v[0]; tv[1] = sv; tv[2] = v[2]; tv[3] = v[3];
-  buildSplitElement(r,parent,TET,tv);
+  buildSplitElement(r, parent, apf::Mesh::TET, tv);
   tv[0] = sv; tv[1] = v[1]; tv[2] = v[2]; tv[3] = v[3];
-  buildSplitElement(r,parent,TET,tv);
+  buildSplitElement(r, parent, apf::Mesh::TET, tv);
 }
 
 /* tetrahedronizes a sub-region that is
@@ -162,17 +162,17 @@ void pyramidToTets(Refine* r, Entity* parent, Entity** v)
      does and rotate the pyramid so that it becomes 0<->2 */
   ev[0] = v[0]; ev[1] = v[2];
   int rotation = 0;
-  if ( ! findUpward(m,EDGE,ev))
+  if ( ! findUpward(m, apf::Mesh::EDGE, ev))
     rotation = 1;
   Entity* v2[5];
   rotatePyramid(v,rotation,v2);
   ev[0] = v2[0]; ev[1] = v2[2];
-  assert(findUpward(m,EDGE,ev));
+  assert(findUpward(m, apf::Mesh::EDGE, ev));
   Entity* tv[4];
   tv[0] = v2[0]; tv[1] = v2[1]; tv[2] = v2[2]; tv[3] = v2[4];
-  buildSplitElement(r,parent,TET,tv);
+  buildSplitElement(r, parent, apf::Mesh::TET, tv);
   tv[0] = v2[0]; tv[1] = v2[2]; tv[2] = v2[3]; tv[3] = v2[4];
-  buildSplitElement(r,parent,TET,tv);
+  buildSplitElement(r, parent, apf::Mesh::TET, tv);
 }
 
 /* two edges split, one face has them both */
@@ -184,7 +184,7 @@ void splitTet_2_1(Refine* r, Entity* tet, Entity** v)
   /* a tet splits off a tet leaving a pyramid */
   Entity* tv[4];
   tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = v[2]; tv[3] = v[3];
-  buildSplitElement(r,tet,TET,tv);
+  buildSplitElement(r, tet, apf::Mesh::TET, tv);
   Entity* pv[5];
   pv[0] = v[0]; pv[1] = v[1]; pv[2] = sv[1]; pv[3] = sv[0]; pv[4] = v[3];
   pyramidToTets(r,tet,pv);
@@ -209,10 +209,10 @@ void splitPyramid_1_1(Refine* r, Entity* parent, Entity* v[5])
   /* a tet is split off leaving another pyramid with no splits */
   Entity* tv[4];
   tv[0] = v[0]; tv[1] = sv; tv[2] = v[3]; tv[3] = v[4];
-  buildSplitElement(r,parent,TET,tv);
+  buildSplitElement(r, parent, apf::Mesh::TET, tv);
   Entity* pv[5];
   pv[0] = sv; pv[1] = v[1]; pv[2] = v[2]; pv[3] = v[3]; pv[4] = v[4];
-  pyramidToTets(r,parent,pv);
+  pyramidToTets(r, parent, pv);
 }
 
 /* all three edges of one face are split */
@@ -224,27 +224,27 @@ void splitTet_3_1(Refine* r, Entity* tet, Entity** v)
   Entity* tv[4];
   /* divide into a tet and a pyramid with one split edge */
   tv[0] = v[0]; tv[1] = sv[0]; tv[2] = sv[2]; tv[3] = v[3];
-  buildSplitElement(r,tet,TET,tv);
+  buildSplitElement(r, tet, apf::Mesh::TET, tv);
   Entity* pv[5];
   pv[0] = v[1]; pv[1] = v[2]; pv[2] = sv[2]; pv[3] = sv[0]; pv[4] = v[3];
-  splitPyramid_1_1(r,tet,pv);
+  splitPyramid_1_1(r, tet, pv);
 }
 
 /* three split edges, two faces have two edges, version 1 */
 void splitTet_3_2(Refine* r, Entity* tet, Entity** v)
 {
   Entity* sv[3];
-  sv[0] = findSplitVert(r,v[0],v[1]);
-  sv[1] = findSplitVert(r,v[0],v[2]);
-  sv[2] = findSplitVert(r,v[2],v[3]);
+  sv[0] = findSplitVert(r, v[0], v[1]);
+  sv[1] = findSplitVert(r, v[0], v[2]);
+  sv[2] = findSplitVert(r, v[2], v[3]);
   /* separate into two pyramids with ambiguous quads and one tet */
   Downward dv;
   dv[0] = sv[1]; dv[1] = sv[2]; dv[2] = v[3]; dv[3] = v[0]; dv[4] = sv[0];
-  pyramidToTets(r,tet,dv);
+  pyramidToTets(r, tet, dv);
   dv[0] = sv[1]; dv[1] = sv[0]; dv[2] = v[1]; dv[3] = v[2]; dv[4] = sv[2];
-  pyramidToTets(r,tet,dv);
+  pyramidToTets(r, tet, dv);
   dv[0] = sv[0]; dv[1] = sv[2]; dv[2] = v[3]; dv[3] = v[1];
-  buildSplitElement(r,tet,TET,dv);
+  buildSplitElement(r, tet, apf::Mesh::TET, dv);
 }
 
 /* three split edges, two faces have two edges, version 2 */
@@ -261,7 +261,7 @@ void splitTet_3_3(Refine* r, Entity* tet, Entity** v)
   dv[0] = v[1]; dv[1] = v[3]; dv[2] = sv[2]; dv[3] = sv[1]; dv[4] = sv[0];
   pyramidToTets(r,tet,dv);
   dv[0] = v[0]; dv[1] = sv[0]; dv[2] = sv[2]; dv[3] = v[3];
-  buildSplitElement(r,tet,TET,dv);
+  buildSplitElement(r, tet, apf::Mesh::TET, dv);
 }
 
 /* given a prism-shaped vertex set, returns a
@@ -273,13 +273,13 @@ int getPrismDiagonalCode(Mesh* m, Entity** v)
 {
   int code = 0;
   Entity* ev[2];
-  for (int i=0; i < 3; ++i)
+  for (int i = 0; i < 3; ++i)
   {
     Entity* v2[6];
     rotatePrism(v,i,v2);
     ev[0] = v2[3]; ev[1] = v2[1];
-    if (findUpward(m,EDGE,ev))
-      code |= (1<<i);
+    if (findUpward(m, apf::Mesh::EDGE, ev))
+      code |= (1 << i);
   }
   return code;
 }
@@ -297,7 +297,7 @@ void prismToTetsGoodCase(
   rotatePrism(v_in,prism_diag_match[code],v);
   Downward dv;
   dv[0] = v[3]; dv[1] = v[5]; dv[2] = v[4]; dv[3] = v[0];
-  buildSplitElement(r,parent,TET,dv);
+  buildSplitElement(r, parent, apf::Mesh::TET, dv);
   dv[0] = v[1]; dv[1] = v[4]; dv[2] = v[5]; dv[3] = v[2]; dv[4] = v[0];
   pyramidToTets(r,parent,dv);
 }
@@ -334,7 +334,7 @@ Entity* prismToTetsBadCase(
     rotatePrism(v,i*3,v2);
     Entity* tv[4];
     tv[0] = v2[0]; tv[1] = v2[1]; tv[2] = v2[2]; tv[3] = cv;
-    buildSplitElement(r,parent,TET,tv);
+    buildSplitElement(r, parent, apf::Mesh::TET, tv);
   }
   for (int i=0; i < 3; ++i)
   { /*quad faces into pyramids by doing the first quad
@@ -424,7 +424,7 @@ void splitTet_3_4(Refine* r, Entity* tet, Entity** v)
     sv[i] = findSplitVert(r,v[3],v[i]);
   Entity* tv[4];
   tv[0] = sv[0]; tv[1] = sv[1]; tv[2] = sv[2]; tv[3] = v[3];
-  buildSplitElement(r,tet,TET,tv);
+  buildSplitElement(r, tet, apf::Mesh::TET, tv);
   Entity* pv[6];
   for (int i=0; i < 3; ++i)
   { //vertices defining the prism
@@ -444,10 +444,11 @@ void splitTet_4_1(Refine* r, Entity* tet, Entity** v)
   sv[2] = findSplitVert(r,v[2],v[0]);
   sv[3] = findSplitVert(r,v[3],v[2]);
   Downward dv;
-  for (int i=0; i < 4; ++i) dv[i]=sv[i];
-  buildSplitElement(r,tet,TET,dv);
+  for (int i = 0; i < 4; ++i)
+    dv[i] = sv[i];
+  buildSplitElement(r, tet, apf::Mesh::TET, dv);
   dv[0] = sv[2]; dv[1] = sv[1]; dv[2] = v[2]; dv[3] = sv[3];
-  buildSplitElement(r,tet,TET,dv);
+  buildSplitElement(r, tet, apf::Mesh::TET, dv);
   dv[0] = v[0]; dv[1] = sv[2]; dv[2] = sv[3]; dv[3] = v[3]; dv[4] = sv[0];
   pyramidToTets(r,tet,dv);
   dv[0] = v[1]; dv[1] = v[3]; dv[2] = sv[3]; dv[3] = sv[1]; dv[4] = sv[0];
@@ -575,9 +576,9 @@ void splitTet_5(Refine* r, Entity* tet, Entity** v)
   prismAndPyramidToTets(r, tet, pr, py[4]);
   Entity* t[4]; //tet vertices
   t[0] = v[0]; t[1] = py[4]; t[2] = py[0]; t[3] = py[3];
-  buildSplitElement(r,tet,TET,t);
+  buildSplitElement(r, tet, apf::Mesh::TET, t);
   t[0] = v[1]; t[1] = py[1]; t[2] = py[4]; t[3] = py[2];
-  buildSplitElement(r,tet,TET,t);
+  buildSplitElement(r, tet, apf::Mesh::TET, t);
 }
 
 /* tetrahedronizes an octahedron, using an edge
@@ -590,7 +591,7 @@ void octToTets(Refine* r, Entity* parent, Entity** v)
     rotateOct(v,i,v2);
     Entity* tv[4];
     tv[0] = v2[0]; tv[1] = v2[1]; tv[2] = v2[2]; tv[3] = v2[5];
-    buildSplitElement(r,parent,TET,tv);
+    buildSplitElement(r, parent, apf::Mesh::TET, tv);
   }
 }
 
@@ -633,9 +634,9 @@ void splitTet_6(Refine* r, Entity* tet, Entity** v)
     assert(v2[0]==v[i]);
     Entity* tv[4];
     tv[0] = v2[0];
-    for (int j=1; j < 4; ++j)
+    for (int j = 1; j < 4; ++j)
       tv[j] = findSplitVert(r,v2[0],v2[j]);
-    buildSplitElement(r,tet,TET,tv);
+    buildSplitElement(r, tet, apf::Mesh::TET, tv);
   }
 }
 

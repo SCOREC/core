@@ -25,9 +25,9 @@ void splitQuad_2(Refine* r, Entity* q, Entity** v)
   sv[1] = findSplitVert(r,v[2],v[3]);
   Entity* qv[4];
   qv[0] = v[0]; qv[1] = sv[0]; qv[2] = sv[1]; qv[3] = v[3];
-  buildSplitElement(r,q,QUAD,qv);
+  buildSplitElement(r, q, apf::Mesh::QUAD, qv);
   qv[0] = sv[0]; qv[1] = v[1]; qv[2] = v[2]; qv[3] = sv[1];
-  buildSplitElement(r,q,QUAD,qv);
+  buildSplitElement(r, q, apf::Mesh::QUAD, qv);
 }
 
 /* splits the quad into 4 along all edges */
@@ -61,7 +61,7 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
     rotateQuad(sv,i,sv2);
     Entity* qv[4];
     qv[0] = v2[0]; qv[1] = sv2[0]; qv[2] = cv; qv[3] = sv2[3];
-    buildSplitElement(r,q,QUAD,qv);
+    buildSplitElement(r, q, apf::Mesh::QUAD, qv);
   }
 }
 
@@ -111,10 +111,10 @@ void splitPrism_2(Refine* r, Entity* p, Entity** v)
   Entity* pv[6];
   pv[3] = v[3]; pv[4] = sv[1]; pv[5] = v[5];
   pv[0] = v[0]; pv[1] = sv[0]; pv[2] = v[2];
-  buildSplitElement(r,p,PRISM,pv);
+  buildSplitElement(r, p, apf::Mesh::PRISM, pv);
   pv[3] = sv[1]; pv[4] = v[4]; pv[5] = v[5];
   pv[0] = sv[0]; pv[1] = v[1]; pv[2] = v[2];
-  buildSplitElement(r,p,PRISM,pv);
+  buildSplitElement(r, p, apf::Mesh::PRISM, pv);
 }
 
 /* cuts a hex-shaped area in half along the
@@ -126,10 +126,10 @@ static void hexToPrisms(Refine* r, Entity* p, Entity** v)
   Entity* pv[6];
   pv[3] = v[3]; pv[4] = v[6]; pv[5] = v[2];
   pv[0] = v[0]; pv[1] = v[5]; pv[2] = v[1];
-  buildSplitElement(r,p,PRISM,pv);
+  buildSplitElement(r,p,apf::Mesh::PRISM,pv);
   pv[3] = v[3]; pv[4] = v[7]; pv[5] = v[6];
   pv[0] = v[0]; pv[1] = v[4]; pv[2] = v[5];
-  buildSplitElement(r,p,PRISM,pv);
+  buildSplitElement(r,p,apf::Mesh::PRISM,pv);
 }
 
 static void simpleRotateHex(Entity** v, int n, Entity** v2)
@@ -161,7 +161,7 @@ void splitPrism_4(Refine* r, Entity* p, Entity** v)
   Entity* pv[6];
   pv[0] = sv[0]; pv[1] = v[1]; pv[2] = sv[3];
   pv[3] = sv[1]; pv[4] = v[4]; pv[5] = sv[2];
-  buildSplitElement(r,p,PRISM,pv);
+  buildSplitElement(r,p,apf::Mesh::PRISM,pv);
   Entity* hv[8];
   hv[0] = sv[1]; hv[1] = sv[2]; hv[2] = sv[3]; hv[3] = sv[0];
   hv[4] = v[3];  hv[5] =  v[5]; hv[6] =  v[2]; hv[7] =  v[0];
@@ -177,7 +177,7 @@ void splitPrism_4(Refine* r, Entity* p, Entity** v)
 void splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
 {
 /* make center prism */
-  buildSplitElement(r,p,PRISM,sv);
+  buildSplitElement(r,p,apf::Mesh::PRISM,sv);
 /* make the three corner prisms through rotation */
   for (int i=0; i < 3; ++i)
   {
@@ -188,7 +188,7 @@ void splitPrism_6_sv(Refine* r, Entity* p, Entity** v, Entity** sv)
     Entity* pv[6];
     pv[3] = sv2[3]; pv[4] = v2[4]; pv[5] = sv2[4];
     pv[0] = sv2[0]; pv[1] = v2[1]; pv[2] = sv2[1];
-    buildSplitElement(r,p,PRISM,pv);
+    buildSplitElement(r,p,apf::Mesh::PRISM,pv);
   }
 }
 
@@ -228,13 +228,13 @@ void splitPrism_9(Refine* r, Entity* p, Entity** v)
   Entity* qv[4];
   qv[3] = v[3]; qv[2] = v[4];
   qv[0] = v[0]; qv[1] = v[1];
-  quads[0] = apf::findElement(m,QUAD,qv);
+  quads[0] = apf::findElement(m, apf::Mesh::QUAD, qv);
   qv[3] = v[4]; qv[2] = v[5];
   qv[0] = v[1]; qv[1] = v[2];
-  quads[1] = apf::findElement(m,QUAD,qv);
+  quads[1] = apf::findElement(m, apf::Mesh::QUAD, qv);
   qv[3] = v[5]; qv[2] = v[3];
   qv[0] = v[2]; qv[1] = v[0];
-  quads[2] = apf::findElement(m,QUAD,qv);
+  quads[2] = apf::findElement(m, apf::Mesh::QUAD, qv);
   Entity* cenv[3];
   cenv[0] = findSplitVert(r,quads[0]);
   cenv[1] = findSplitVert(r,quads[1]);
@@ -265,11 +265,11 @@ SplitFunction prism_templates[prism_edge_code_count] =
 static void splitSubTet(Refine* r, Entity* p, Entity** v, int code)
 {
   if (!code) {
-    buildSplitElement(r, p, TET, v);
+    buildSplitElement(r, p, apf::Mesh::TET, v);
     return;
   }
   Entity* v2[4];
-  int tmpl_id = matchToTemplate(TET, v, code, v2);
+  int tmpl_id = matchToTemplate(apf::Mesh::TET, v, code, v2);
   tet_templates[tmpl_id](r, p, v2);
 }
 
@@ -310,7 +310,7 @@ static void splitPyramidCommon(Refine* r, Entity* p, Entity** v)
   Entity* pv[5];
   pv[0] = v[0]; pv[1] = v[1]; pv[2] = v[2]; pv[3] = v[3];
   pv[4] = sv;
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv;
   pv[4] = v[4];
   splitPyramidTop(r, p, pv);
@@ -400,7 +400,7 @@ static void splitPyramid_5_b0_bad(Refine* r, Entity* p, Entity** v)
   for (int i = 0; i < 4; ++i)
     pv[i] = v[i];
   pv[4] = cv;
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   Entity* sv[4];
   for (int i = 0; i < 4; ++i)
     sv[i] = findSplitVert(r, v[i], v[4]);
@@ -451,7 +451,7 @@ static void splitPyramid_b1_gen(Refine* r, Entity* p, Entity** v,
 
 static void buildPyramid(Refine* r, Entity* p, Entity** v)
 {
-  buildSplitElement(r, p, PYRAMID, v);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, v);
 }
 
 /* b1 means the base quad is split along v[0]-v[1] and v[2]-v[3].
@@ -483,7 +483,7 @@ static void splitPyramid_1_b1_b(Refine* r, Entity* p, Entity** v)
   Entity* pv[5];
   pv[0] = v[0]; pv[1] = sv[0]; pv[2] = sv[1]; pv[3] = v[3];
   pv[4] = sv[2];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[0]; pv[1] = v[1]; pv[2] = v[2]; pv[3] = sv[1];
   buildPyramid(r, p, pv);
   pv[0] = sv[2]; pv[1] = v[1]; pv[2] = v[2]; pv[3] = sv[1];
@@ -491,7 +491,7 @@ static void splitPyramid_1_b1_b(Refine* r, Entity* p, Entity** v)
   splitPyramidTop(r, p, pv);
   Entity* tv[4];
   tv[0] = v[3]; tv[1] = sv[2]; tv[2] = sv[1]; tv[3] = v[4];
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 static void splitPyramid_1_b1(Refine* r, Entity* p, Entity** v)
@@ -499,7 +499,7 @@ static void splitPyramid_1_b1(Refine* r, Entity* p, Entity** v)
   Entity* ev[2];
   ev[0] = findSplitVert(r, v[0], v[1]);
   ev[1] = v[4];
-  if (findUpward(r->adapt->mesh, EDGE, ev))
+  if (findUpward(r->adapt->mesh, apf::Mesh::EDGE, ev))
     splitPyramid_1_b1_a(r, p, v);
   else
     splitPyramid_1_b1_b(r, p, v);
@@ -515,18 +515,18 @@ static void splitPyramid_2_b1(Refine* r, Entity* p, Entity** v)
   Entity* pv[5];
   pv[0] = v[0]; pv[1] = sv[0]; pv[2] = sv[1]; pv[3] = v[3];
   pv[4] = sv[2];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[0]; pv[1] = v[1]; pv[2] = v[2]; pv[3] = sv[1];
   pv[4] = sv[3];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   Entity* tv[4];
   tv[0] = sv[1]; tv[1] = sv[2]; tv[2] = sv[3];
   tv[3] = v[4];
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
   tv[0] = v[3]; tv[1] = sv[2]; tv[2] = sv[1];
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
   tv[0] = sv[1]; tv[1] = sv[3]; tv[2] = v[2];
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 static void splitPyramid_3_b1(Refine* r, Entity* p, Entity** v)
@@ -539,11 +539,11 @@ static void splitPyramid_3_b1(Refine* r, Entity* p, Entity** v)
   Entity* pv[5];
   pv[0] = v[0]; pv[1] = sv[0]; pv[2] = sv[1]; pv[3] = v[3];
   pv[4] = sv[2];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[0]; pv[1] = v[1]; pv[2] = v[2]; pv[3] = sv[1];
   pv[4] = sv[3];
-  buildSplitElement(r, p, PYRAMID, pv);
-  buildSplitElement(r, p, TET, sv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::TET, sv);
   pv[0] = sv[0]; pv[1] = sv[2]; pv[2] = v[4]; pv[3] = v[1];
   pv[4] = sv[3];
   pyramidToTets(r, p, pv);
@@ -557,9 +557,9 @@ static void splitPyramid_3_b1(Refine* r, Entity* p, Entity** v)
 static void prismToPyramidAndTet(Refine* r, Entity* p, Entity** v)
 {
   Entity* pv[5] = {v[0],v[3],v[4],v[1],v[2]};
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   Entity* tv[4] = {v[2],v[3],v[4],v[5]};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 /* invokes the above either as-is or upside-down,
@@ -592,9 +592,9 @@ static void splitPyramid_4_b1(Refine* r, Entity* p, Entity** v)
   pv[0] = v[0]; pv[1] = sv[0]; pv[2] = sv[2]; pv[3] = v[4];
   pyramidToTets(r, p, pv);
   pv[0] = v[3]; pv[1] = v[0]; pv[2] = sv[0]; pv[3] = sv[1];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   Entity* tv[4] = {sv[2],sv[3],sv[4],v[4]};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 static void splitPyramid_5_b1(Refine* r, Entity* p, Entity** v)
@@ -626,7 +626,7 @@ static void splitPyramid_1_b2_a(Refine* r, Entity* p, Entity** v)
   pv[0] = v[0]; pv[1] = v[1]; pv[2] = sv[0]; pv[3] = sv[1];
   splitPyramid_1_b0(r, p, pv);
   pv[0] = sv[0]; pv[1] = v[2]; pv[2] = v[3]; pv[4] = sv[1];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
 }
 
 static void splitPyramid_1_b2_b(Refine* r, Entity* p, Entity** v)
@@ -638,14 +638,14 @@ static void splitPyramid_1_b2_b(Refine* r, Entity* p, Entity** v)
   Entity* pv[5];
   pv[0] = v[0]; pv[1] = v[1]; pv[2] = sv[0]; pv[3] = sv[1];
   pv[4] = sv[2];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[1]; pv[1] = sv[0]; pv[2] = v[2]; pv[3] = v[3];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[2]; pv[1] = sv[0]; pv[2] = v[2]; pv[3] = v[3];
   pv[4] = v[4];
   splitPyramidTop(r, p, pv);
   Entity* tv[4] = {sv[2],v[1],sv[0],v[4]};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 static void splitPyramid_1_b2(Refine* r, Entity* p, Entity** v)
@@ -676,7 +676,7 @@ void splitPyramid_2_b2_bad(Refine* r, Entity* p, Entity** v,
   Entity* cv = makePyramidCentroid(r->adapt, p);
   pv[4] = cv;
   pv[0] = sv[0]; pv[1] = v[2]; pv[2] = v[3]; pv[3] = sv[1];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   for (int i = 0; i < 4; ++i)
     pv[i] = sv[i];
   pyramidToTets(r, p, pv);
@@ -685,7 +685,7 @@ void splitPyramid_2_b2_bad(Refine* r, Entity* p, Entity** v,
   pv[0] = sv[0]; pv[1] = sv[3]; pv[2] = v[4]; pv[3] = v[2];
   pyramidToTets(r, p, pv);
   Entity* tv[4] = {v[2],v[4],v[3],cv};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 void splitPyramid_2_b2_sub_1(Refine* r, Entity* p, Entity** v,
@@ -694,11 +694,11 @@ void splitPyramid_2_b2_sub_1(Refine* r, Entity* p, Entity** v,
   Entity* pv[5];
   pv[0] = sv[0]; pv[1] = v[2]; pv[2] = v[3]; pv[3] = sv[1];
   pv[4] = sv[2];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[0]; pv[1] = sv[3]; pv[2] = v[4]; pv[3] = v[2];
   pyramidToTets(r, p, pv);
   Entity* tv[4] = {v[2],v[4],v[3],sv[2]};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 void splitPyramid_2_b2_sub_2(Refine* r, Entity* p, Entity** v,
@@ -707,11 +707,11 @@ void splitPyramid_2_b2_sub_2(Refine* r, Entity* p, Entity** v,
   Entity* pv[5];
   pv[0] = sv[0]; pv[1] = v[2]; pv[2] = v[3]; pv[3] = sv[1];
   pv[4] = sv[3];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[1]; pv[1] = v[3]; pv[2] = v[4]; pv[3] = sv[2];
   pyramidToTets(r, p, pv);
   Entity* tv[4] = {v[2],v[4],v[3],sv[3]};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 void splitPyramid_2_b2_sub_3(Refine* r, Entity* p, Entity** v,
@@ -720,7 +720,7 @@ void splitPyramid_2_b2_sub_3(Refine* r, Entity* p, Entity** v,
   Entity* pv[5];
   pv[0] = sv[0]; pv[1] = v[2]; pv[2] = v[3]; pv[3] = sv[1];
   pv[4] = v[4];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[0]; pv[1] = sv[1]; pv[2] = sv[2]; pv[3] = sv[3];
   pyramidToTets(r, p, pv);
 }
@@ -767,11 +767,11 @@ static void splitPyramid_3_b2(Refine* r, Entity* p, Entity** v)
   Entity* pv[5];
   pv[0] = v[1]; pv[1] = sv[0]; pv[2] = sv[1]; pv[3] = v[0];
   pv[4] = sv[2];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   pv[0] = sv[0]; pv[1] = v[2]; pv[2] = v[3]; pv[3] = sv[1];
   pv[4] = sv[3];
-  buildSplitElement(r, p, PYRAMID, pv);
-  buildSplitElement(r, p, TET, sv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::TET, sv);
   pv[0] = sv[0]; pv[1] = v[1]; pv[2] = v[4]; pv[3] = sv[3];
   pv[4] = sv[2];
   pyramidToTets(r, p, pv);
@@ -797,9 +797,9 @@ static void splitPyramid_4_b2(Refine* r, Entity* p, Entity** v)
   pv[0] = v[0]; pv[1] = sv[1]; pv[2] = sv[4]; pv[3] = v[4];
   pyramidToTets(r, p, pv);
   pv[0] = v[0]; pv[1] = v[1]; pv[2] = sv[0]; pv[3] = sv[1];
-  buildSplitElement(r, p, PYRAMID, pv);
+  buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
   Entity* tv[4] = {sv[2],sv[3],sv[4],v[4]};
-  buildSplitElement(r, p, TET, tv);
+  buildSplitElement(r, p, apf::Mesh::TET, tv);
 }
 
 /* uniform refinement of a pyramid */
@@ -817,7 +817,7 @@ static void splitPyramidUniform(Refine* r, Entity* p, Entity** v)
   midv[2] = findSplitVert(r,v[2],v[4]);
   midv[3] = findSplitVert(r,v[3],v[4]);
 /* the first four entries of v also specify the bottom quad */
-  Entity* quad = apf::findElement(m,QUAD,v);
+  Entity* quad = apf::findElement(m, apf::Mesh::QUAD, v);
   Entity* cv = findSplitVert(r,quad);
 /* make the four new pyramids and four new tets by rotation */
   for (int i=0; i < 4; ++i)
@@ -832,11 +832,11 @@ static void splitPyramidUniform(Refine* r, Entity* p, Entity** v)
     pv[3] = cv;       pv[2] = botv2[1];
     pv[0] = botv2[0]; pv[1] = v2[1];
     pv[4] = midv2[1];
-    buildSplitElement(r,p,PYRAMID,pv);
+    buildSplitElement(r, p, apf::Mesh::PYRAMID, pv);
     Entity* tv[4];
     tv[0] = midv2[0]; tv[1] = midv2[1];
     tv[2] = botv2[0]; tv[3] = cv;
-    buildSplitElement(r,p,TET,tv);
+    buildSplitElement(r, p, apf::Mesh::TET, tv);
   }
 /* tetrahedronize the central octahedron by choosing the
    shortest diagonal */

@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8.6)
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
    # determine if Trilinos has been configured with stk
    SET(HAS_STK OFF)
@@ -9,9 +13,7 @@ if(BUILD_IN_TRILINOS)
      SET(HAS_STK ON)
    endif()
 
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(apf_stk) 
+   tribits_package(SCORECapf_stk) 
 else()
    project(apf_stk)
 endif()
@@ -85,6 +87,6 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
+   tribits_package_postprocess()
 endif()
 

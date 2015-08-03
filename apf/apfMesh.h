@@ -199,7 +199,7 @@ class Mesh
     virtual void getParam(MeshEntity* e, Vector3& p) = 0;
     /** \brief Get the topological type of a mesh entity.
       \returns a value from the apf::Mesh::Type enumeration */
-    virtual int getType(MeshEntity* e) = 0;
+    virtual Type getType(MeshEntity* e) = 0;
     /** \brief Get the remote copies of an entity */
     virtual void getRemotes(MeshEntity* e, Copies& remotes) = 0;
     /** \brief Get the resident parts of an entity

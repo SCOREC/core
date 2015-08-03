@@ -25,7 +25,7 @@ extern CodeMatch const quad_code_match[(1<<4)];
 extern CodeMatch const tet_code_match[(1<<6)];
 extern CodeMatch const prism_code_match[(1<<9)];
 extern CodeMatch const pyramid_code_match[(1<<8)];
-extern CodeMatch const* code_match[TYPES];
+extern CodeMatch const* code_match[apf::Mesh::TYPES];
 
 /* this table defines the mapping from new to old
    vertex indices for one of the 12 rotations. */
