@@ -192,13 +192,21 @@ static void getInterface
     int nv1 = k.nElementVertices1;
     apf::Downward v0, v1;
     getBoundaryVertices(m, e0, face, v0);
-    getBoundaryVertices(m, e1, face, v1);
+//    getBoundaryVertices(m, e1, face, v1);   /*This would cause wrong order of nodes for the element*/
+    getBoundaryVertices(m, e1, matches[0].entity, v1);
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
-    for (int k = 0; k < nv0; ++k)
+    for (int k = 0; k < nv0; ++k) 
+{
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
+//std::cout << ienif0[i][j][k] << " ";
+}
     for (int k = 0; k < nv1; ++k)
+{
       ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
+//std::cout << ienif1[i][j][k] << " ";
+}
+//std::cout << js[i] << std::endl;
     ++js[i];
   }
   m->end(it);

@@ -63,8 +63,9 @@ void detachField(
   apf::MeshIterator* it = m->begin(0);
   while ((e = m->iterate(it))) {
     apf::getComponents(f, e, 0, &c[0]);
-    for (int j = 0; j < size; ++j)
+    for (int j = 0; j < size; ++j) 
       data[j * n + i] = c[j];
+//std::cout << i << " " << data[0*n + i] << "\n"; /* pressure */
     ++i;
   }
   m->end(it);
