@@ -37,6 +37,8 @@ class Input
     bool ownsSolutionTransfer;
 /** \brief number of refine/coarsen iterations to run (default 3) */
     int maximumIterations;
+/** \brief whether to perform the collapse step */
+    bool shouldCoarsen;
 /** \brief whether to snap new vertices to the model surface
     \details requires modeler support, see gmi_can_eval */
     bool shouldSnap;

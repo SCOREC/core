@@ -165,6 +165,8 @@ long markEdgesToCollapse(Adapt* a)
 
 bool coarsen(Adapt* a)
 {
+  if (!a->input->shouldCoarsen)
+    return false;
   double t0 = PCU_Time();
   --(a->coarsensLeft);
   long count = markEdgesToCollapse(a);

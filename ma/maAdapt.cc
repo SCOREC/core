@@ -33,7 +33,10 @@ Adapt::Adapt(Input* in)
   solutionTransfer = in->solutionTransfer;
   refine = new Refine(this);
   shape = getShapeHandler(this);
-  coarsensLeft = in->maximumIterations;
+  if (in->shouldCoarsen)
+    coarsensLeft = in->maximumIterations;
+  else
+    coarsensLeft = 0;
   refinesLeft = in->maximumIterations;
   resetLayer(this);
   if (hasLayer)
