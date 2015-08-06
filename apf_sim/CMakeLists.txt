@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.6)
 
+if(DEFINED TRIBITS_PACKAGE)
+  set(BUILD_IN_TRILINOS ON)
+endif()
+
 if(BUILD_IN_TRILINOS)
-  include(TribitsSubPackageMacros) 
-  include(TribitsLibraryMacros) 
-  tribits_subpackage(apf_sim) 
+  tribits_package(apf_sim)
 else()
   set(PACKAGE_VERSION "1.0")
   project(apf_sim)
@@ -79,5 +81,5 @@ configure_file(moduletemplate ${MODULEFILE} @ONLY)
 endif()
 
 if(BUILD_IN_TRILINOS)
-  tribits_subpackage_postprocess()
+  tribits_package_postprocess()
 endif()

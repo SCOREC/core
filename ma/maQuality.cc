@@ -52,7 +52,7 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
 double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
 {
   typedef double (*MeasureQualityFunction)(Mesh*,SizeField*,Entity*);
-  static MeasureQualityFunction table[TYPES] =
+  static MeasureQualityFunction table[apf::Mesh::TYPES] =
   {0
   ,0
   ,measureTriQuality
@@ -303,33 +303,43 @@ bool isPrismOk(Mesh* m, Entity* e)
   return true;
 }
 
-bool isPyramidOk(Mesh* m, Entity* e)
+bool isPyramidOk(apf::Mesh* m, Entity* e,
+    int* good_rotation)
 {
   Entity* v[5];
   m->getDownward(e, 0, v);
   Vector p[5];
   for (int i = 0; i < 5; ++i)
     m->getPoint(v[i], 0, p[i]);
+  if (good_rotation)
+    *good_rotation = -1;
+  bool all_good = true;
   for (int i = 0; i < 2; ++i) {
     int const* new_to_old = pyramid_rotation[i];
     apf::Plane pl = apf::Plane::fromPoints(
         p[new_to_old[0]],
         p[new_to_old[2]],
         p[new_to_old[4]]);
-    if (pl.distance(p[new_to_old[1]]) <= 0)
-      return false;
-    if (pl.distance(p[new_to_old[3]]) >= 0)
-      return false;
+    if (pl.distance(p[new_to_old[1]]) <= 0) {
+      all_good = false;
+      continue;
+    }
+    if (pl.distance(p[new_to_old[3]]) >= 0) {
+      all_good = false;
+      continue;
+    }
+    if (good_rotation)
+      *good_rotation = i;
   }
-  return true;
+  return all_good;
 }
 
 bool isLayerElementOk(Mesh* m, Entity* e)
 {
   int type = m->getType(e);
-  if (type == PYRAMID)
+  if (type == apf::Mesh::PYRAMID)
     return isPyramidOk(m, e);
-  if (type == PRISM)
+  if (type == apf::Mesh::PRISM)
     return isPrismOk(m, e);
   abort();
   return false;
@@ -337,7 +347,7 @@ bool isLayerElementOk(Mesh* m, Entity* e)
 
 double getInsphere(Mesh* m, Entity* e)
 {
-  assert(m->getType(e) == TET);
+  assert(m->getType(e) == apf::Mesh::TET);
 
   // Insphere r of a tet computed by the forumla at
   // http://maths.ac-noumea.nc/polyhedr/stuff/tetra_sf_.htm

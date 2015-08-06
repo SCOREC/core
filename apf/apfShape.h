@@ -124,16 +124,7 @@ FieldShape* getIPShape(int dimension, int order);
            value at any point in the element is the value of the closest
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
-/** \brief Get the Bezier Curve or Shape of some order
- \details goes from first to sixth order */
-FieldShape* getBezier(int dimension, int order);
-/** \brief Get the Gregory Surface of some order
- \details only fourth order right now*/
-FieldShape* getGregory(int order);
-/** \brief get coefficients for interpolating points to control points
- \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int order, int dim, int type,
-    NewArray<double>& c);
+
 /** \brief Get the quadratic hierarchic shape function */
 FieldShape* getHierarchic();
 
@@ -143,6 +134,18 @@ FieldShape* getShapeByName(const char* name);
 /** \brief count the number of nodes affecting an element type
   \param type select from apf::Mesh::Type */
 int countElementNodes(FieldShape* s, int type);
+
+/** \brief Reparameterize from boundary entity to element
+  \details This function converts a point in the local
+  parametric space of a boundary mesh entity into the
+  equivalent point in the local parametric space of
+  an adjacent element.
+  */
+Vector3 boundaryToElementXi(
+    Mesh* m,
+    MeshEntity* boundary,
+    MeshEntity* element,
+    Vector3 const& xi);
 
 }
 

@@ -258,7 +258,7 @@ class Linear : public FieldShape
         void getValues(Mesh*, MeshEntity*,
             Vector3 const& xi, NewArray<double>& values) const
         {
-          values.allocate(5);
+          values.allocate(8);
           double l0x = (1 - xi[0]);
           double l1x = (1 + xi[0]);
           double l0y = (1 - xi[1]);
@@ -284,7 +284,7 @@ class Linear : public FieldShape
           double l1y = (1 + xi[1]);
           double l0z = (1 - xi[2]);
           double l1z = (1 + xi[2]);
-          grads.allocate(5);
+          grads.allocate(8);
           grads[0] = Vector3(-l0y * l0z, -l0x * l0z, -l0x * l0y) / 8;
           grads[1] = Vector3( l0y * l0z, -l1x * l0z, -l1x * l0y) / 8;
           grads[2] = Vector3( l1y * l0z,  l1x * l0z, -l1x * l1y) / 8;
@@ -727,16 +727,20 @@ FieldShape* getIPShape(int dimension, int order)
   static IPShape d3o1(3,1);
   static IPShape d3o2(3,2);
   static IPShape d3o3(3,3);
-  static IPShape* table[4][4] =
-  {{0,0,0,0}//vertex
-  ,{0,0,0,0}//edge
-  ,{0,&d2o1,&d2o2,&d2o3}//face
-  ,{0,&d3o1,&d3o2,&d3o3}//region
+  static IPShape d3o4(3,4);
+  static IPShape d3o5(3,5);
+  static IPShape d3o6(3,6);
+  static IPShape d3o7(3,7);
+  static IPShape* table[4][8] =
+  {{0,0,0,0,0}//vertex
+  ,{0,0,0,0,0}//edge
+  ,{0,&d2o1,&d2o2,&d2o3,0}//face
+  ,{0,&d3o1,&d3o2,&d3o3,&d3o4,&d3o5,&d3o6,&d3o7}//region
   };
   assert(dimension >= 0);
   assert(dimension <= 3);
   assert(order >= 0);
-  assert(order <= 3);
+  assert(order <= 7);
   return table[dimension][order];
 }
 
@@ -818,13 +822,16 @@ class VoronoiShape : public IPBase
 
 FieldShape* getVoronoiShape(int dimension, int order)
 {
+  static VoronoiShape d2o1(2,1);
+  static VoronoiShape d2o2(2,2);
+  static VoronoiShape d2o3(2,3);
   static VoronoiShape d3o1(3,1);
   static VoronoiShape d3o2(3,2);
   static VoronoiShape d3o3(3,3);
   static VoronoiShape* table[4][4] =
   {{0,0,0,0}//vertex
   ,{0,0,0,0}//edge
-  ,{0,0,0,0}//face
+  ,{0,&d2o1,&d2o2,&d2o3}//face
   ,{0,&d3o1,&d3o2,&d3o3}//region
   };
   assert(dimension >= 0);

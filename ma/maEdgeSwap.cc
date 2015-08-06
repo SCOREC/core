@@ -348,7 +348,7 @@ class EdgeSwap2D : public EdgeSwap
       /* check whether the "other" edge already exists, which
          means we are dealing with a single tet with two faces
          on the model face. we can't swap the edge between those faces. */
-      return ! findElement(mesh,EDGE,ev);
+      return ! findElement(mesh, apf::Mesh::EDGE, ev);
     }
     bool setEdge(Entity* e)
     {
@@ -377,8 +377,8 @@ class EdgeSwap2D : public EdgeSwap
       Model* c = mesh->toModel(edge);
       Entity* ntv[2][3];
       getNewVerts(ntv);
-      newFaces[0] = buildElement(adapter,c,TRI,ntv[0]);
-      newFaces[1] = buildElement(adapter,c,TRI,ntv[1]);
+      newFaces[0] = buildElement(adapter, c, apf::Mesh::TRIANGLE, ntv[0]);
+      newFaces[1] = buildElement(adapter, c, apf::Mesh::TRIANGLE, ntv[1]);
     }
     /* this function is only called when swapping
        edges on a surface triangle mesh */
@@ -578,12 +578,12 @@ class SwapCavity
     Entity* buildTopTet(Entity* triv[3])
     {
       Entity* tv[4] = {triv[0],triv[1],triv[2],loop.getEdgeVert(1)};
-      return buildElement(adapter,loop.getModel(),TET,tv);
+      return buildElement(adapter, loop.getModel(), apf::Mesh::TET, tv);
     }
     Entity* buildBottomTet(Entity* triv[3])
     {
       Entity* tv[4] = {triv[0],triv[2],triv[1],loop.getEdgeVert(0)};
-      return buildElement(adapter,loop.getModel(),TET,tv);
+      return buildElement(adapter, loop.getModel(), apf::Mesh::TET, tv);
     }
     bool checkTet(bool isTop, Entity* tv[3])
     {
@@ -603,7 +603,7 @@ class SwapCavity
     {
       Entity* tv[3];
       getTriVerts(i,tv);
-      if (findElement(mesh,TRI,tv))
+      if (findElement(mesh, apf::Mesh::TRIANGLE, tv))
         return false;
       return checkTet(true,tv) && checkTet(false,tv);
     }

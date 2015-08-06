@@ -37,7 +37,7 @@ Adapt::Adapt(Input* in)
   refinesLeft = in->maximumIterations;
   resetLayer(this);
   if (hasLayer)
-    checkLayerShape(mesh);
+    checkLayerShape(mesh, "input mesh");
 }
 
 Adapt::~Adapt()

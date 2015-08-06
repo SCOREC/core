@@ -64,7 +64,7 @@ Affine getTetMap(apf::Mesh* m, Entity* e)
 Affine getMap(apf::Mesh* m, Entity* e)
 {
   typedef Affine (*GetMapFunction)(apf::Mesh*,Entity*);
-  static GetMapFunction table[TYPES] =
+  static GetMapFunction table[apf::Mesh::TYPES] =
   {0,
    getEdgeMap,
    getTriMap,
@@ -85,14 +85,14 @@ Affine getMap(apf::Mesh* m, Entity* e)
 double getInsideness(apf::Mesh* m, Entity* e, Vector const& xi)
 {
   int type = m->getType(e);
-  if (type == EDGE)
+  if (type == apf::Mesh::EDGE)
     return std::min(xi[0] + 1, 1 - xi[0]);
 /* returns the least barycentric coordinate */
-  if (type == TRI)
+  if (type == apf::Mesh::TRIANGLE)
     return std::min(xi[0],
            std::min(xi[1],
                     1 - xi[0] - xi[1]));
-  if (type == TET)
+  if (type == apf::Mesh::TET)
     return std::min(xi[0],
            std::min(xi[1],
            std::min(xi[2],

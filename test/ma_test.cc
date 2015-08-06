@@ -36,6 +36,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  SimUtil_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_mesh();
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   gmi_sim_stop();
   Sim_unregisterAllKeys();
+  SimUtil_stop();
   MPI_Finalize();
 }
 

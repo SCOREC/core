@@ -1,42 +1,41 @@
-#include <ma.h>
+#include <crv.h>
+
 #include <apf.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <gmi_sim.h>
 #include <PCU.h>
 #include <SimUtil.h>
-#include <maCurveMesh.h>
-#include <apfShape.h>
+#include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
-#include <apfField.h>
-#include <maAdapt.h>
 
-static void testInterpolationError(ma::Mesh* m, int entityDim,
+static void testInterpolationError(apf::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
-  ma::Iterator* it = m->begin(entityDim);
-  ma::Entity* e;
+  apf::MeshIterator* it = m->begin(entityDim);
+  apf::MeshEntity* e;
   int id = 0;
   while ((e = m->iterate(it))) {
-    ma::Model* g = m->toModel(e);
+    apf::ModelEntity* g = m->toModel(e);
     if (m->getModelType(g) == m->getDimension())
       errors[id] = -1.0;
     else
-      errors[id] = ma::interpolationError(m,e,11);
+      errors[id] = crv::interpolationError(m,e,11);
     id++;
   }
   m->end(it);
 }
 
-static void testElementSize(ma::Mesh* m)
+static void testElementSize(apf::Mesh* m)
 {
   int dim = m->getDimension();
   double sizes[3] = {0,0,0};
   for( int d = 1; d <= dim; ++d){
-    ma::Iterator* it = m->begin(d);
-    ma::Entity* e;
+    apf::MeshIterator* it = m->begin(d);
+    apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
+//      if(d == 3) printf("Tet volume is %f\n",v);
       if(v < 0){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
@@ -52,12 +51,30 @@ static void testElementSize(ma::Mesh* m)
     m->end(it);
   }
   printf("Total sizes for order %d %f %f %f\n",
-    m->getCoordinateField()->getShape()->getOrder(),
+    m->getShape()->getOrder(),
     sizes[0],sizes[1],sizes[2]);
 }
 
+static void testInterpolating(const char* modelFile, const char* meshFile,
+    const int ne, const int nf)
+{
+  for(int order = 1; order <= 2; ++order){
+    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
+    apf::changeMeshShape(m2,apf::getLagrange(order),true);
+    crv::InterpolatingCurver ic(m2,order);
+    ic.run();
+    testElementSize(m2);
+    apf::DynamicVector ee(ne);
+    apf::DynamicVector fe(nf);
+    testInterpolationError(m2,1,ee);
+    testInterpolationError(m2,2,fe);
+    m2->destroyNative();
+    apf::destroyMesh(m2);
+  }
+}
+
 static void testBezier(const char* modelFile, const char* meshFile,
-    const char* outFile, const int ne, const int nf)
+    const int ne, const int nf)
 {
 
   apf::DynamicMatrix edgeErrors(ne,6);
@@ -65,12 +82,8 @@ static void testBezier(const char* modelFile, const char* meshFile,
 
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    ma::Input* in = ma::configureIdentity(m2);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::BezierCurver bc(adapt,order);
+    crv::BezierCurver bc(m2,order,2);
     bc.run();
-    ma::writePointSet(m2,1,21,outFile);
-    ma::writePointSet(m2,2,21,outFile);
 
     testElementSize(m2);
     apf::DynamicVector ee(ne);
@@ -98,38 +111,33 @@ static void testBezier(const char* modelFile, const char* meshFile,
 }
 
 static void testGregory(const char* modelFile, const char* meshFile,
-    const char* outFile, const int ne, const int nf)
+    const int ne, const int nf)
 {
-
+  for(int order = 0; order <= 2; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    ma::Input* in = ma::configureIdentity(m2);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::GregoryCurver gc(adapt,4);
+    crv::GregoryCurver gc(m2,4,order);
     gc.run();
     testElementSize(m2);
-
     apf::DynamicVector ee(ne);
     apf::DynamicVector fe(nf);
     testInterpolationError(m2,1,ee);
     testInterpolationError(m2,2,fe);
-    ma::writePointSet(m2,1,21,outFile);
-    ma::writePointSet(m2,2,21,outFile);
 
     m2->destroyNative();
     apf::destroyMesh(m2);
+  }
 }
 
 int main(int argc, char** argv)
 {
-  assert(argc==4);
+  assert(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
-  const char* outFile = argv[3];
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  SimUtil_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
-  gmi_register_mesh();
   gmi_register_sim();
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   int ne = m->count(1);
@@ -137,11 +145,13 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
 
-  testBezier(modelFile,meshFile,outFile,ne,nf);
-  testGregory(modelFile,meshFile,outFile,ne,nf);
+  testInterpolating(modelFile,meshFile,ne,nf);
+  testBezier(modelFile,meshFile,ne,nf);
+  testGregory(modelFile,meshFile,ne,nf);
 
   PCU_Comm_Free();
   gmi_sim_stop();
   Sim_unregisterAllKeys();
+  SimUtil_stop();
   MPI_Finalize();
 }

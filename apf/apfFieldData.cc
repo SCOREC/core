@@ -13,7 +13,7 @@ FieldData* FieldData::clone()
   abort();
 }
 
-void FieldData::rename(const char* newName)
+void FieldData::rename(const char*)
 {
   abort();
 }
@@ -168,8 +168,12 @@ void FieldDataOf<T>::setNodeComponents(MeshEntity* e, int node,
     T const* components)
 {
   int n = field->countNodesOn(e);
-  if (n==1)
+  if (n==1) {
+    assert(node == 0);
     return set(e,components);
+  }
+  assert(node >= 0);
+  assert(node < n);
   int nc = field->countComponents();
   NewArray<T> allComponents(nc*n);
   if (this->hasEntity(e))
@@ -183,8 +187,12 @@ template <class T>
 void FieldDataOf<T>::getNodeComponents(MeshEntity* e, int node, T* components)
 {
   int n = field->countNodesOn(e);
-  if (n==1)
+  if (n==1) {
+    assert(node == 0);
     return get(e,components);
+  }
+  assert(node >= 0);
+  assert(node < n);
   int nc = field->countComponents();
   NewArray<T> allComponents(nc*n);
   get(e,&(allComponents[0]));

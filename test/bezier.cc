@@ -1,14 +1,11 @@
+#include <crv.h>
+#include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
-#include <apfMesh2.h>
 #include <apf.h>
-#include <apfShape.h>
 #include <PCU.h>
-#include <maCurveMesh.h>
-#include <apfField.h>
-#include <maAdapt.h>
-
+#include <apfDynamicMatrix.h>
 /*
  * This analytic function is a "pringle",
  * defined on [0,1] in R^2 as z = ((2x-1)^2-(2y-1)^2)*exp(xy)
@@ -117,9 +114,9 @@ apf::Mesh2* createMesh2D()
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
-   apf::Vector3(1,0,0),
-   apf::Vector3(1,1,0),
-   apf::Vector3(0,1,0)};
+      apf::Vector3(1,0,0),
+      apf::Vector3(1,1,0),
+      apf::Vector3(0,1,0)};
 
   for (int i = 0; i < 4; ++i){
     v[i] = m->createVertex(m->findModelEntity(0,i),points2D[i],points2D[i]);
@@ -149,9 +146,9 @@ apf::Mesh2* createMesh3D()
 
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
-   apf::Vector3(1,0,0),
-   apf::Vector3(0,1,0),
-   apf::Vector3(0,0,1)};
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1)};
 
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
 
@@ -162,14 +159,14 @@ apf::Mesh2* createMesh3D()
 }
 
 void testInterpolatedPoints2D(apf::Mesh2* m){
-  apf::FieldShape * fs = m->getCoordinateField()->getShape();
+  apf::FieldShape * fs = m->getShape();
   apf::MeshIterator* it = m->begin(1);
   apf::MeshEntity* e;
   while ((e = m->iterate(it))) {
     apf::ModelEntity* g = m->toModel(e);
     if (m->getModelType(g) == m->getDimension())
       continue;
-    ma::Vector pt,pa(0.,0.,0.),cpt,cpa;
+    apf::Vector3 pt,pa(0.,0.,0.),cpt,cpa;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
 
@@ -181,9 +178,9 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
       double error = (cpt-pt).getLength();
       if (error > 1.e-7) {
         std::cout << apf::Mesh::typeName[m->getType(e)] <<
-          " is not being interpolated correctly by " <<
-          m->getCoordinateField()->getShape()->getName() <<
-          " with error " << error << "\n";
+            " is not being interpolated correctly by " <<
+            fs->getName() <<
+            " with error " << error << "\n";
         abort();
       }
     }
@@ -195,7 +192,7 @@ void testInterpolatedPoints2D(apf::Mesh2* m){
 void testSize2D(apf::Mesh2* m)
 {
   double sizes[3] = {3.721402252672,2.323391881216468,2.133984157270};
-  int order = m->getCoordinateField()->getShape()->getOrder();
+  int order = m->getShape()->getOrder();
   for(int d = 1; d <= 2; ++d){
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
@@ -203,7 +200,7 @@ void testSize2D(apf::Mesh2* m)
       apf::ModelEntity* g = m->toModel(e);
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
-//      printf("%s has size %.16f\n",apf::Mesh::typeName[m->getType(e)],v);
+      //			      printf("%s has size %.16f\n",apf::Mesh::typeName[m->getType(e)],v);
       // these are checks for the middle edge and first order
       bool correct = true;
       if (m->getModelType(g) == 2 && d == 1){
@@ -214,7 +211,7 @@ void testSize2D(apf::Mesh2* m)
         correct = (fabs(v-0.5)< 1e-10);
       } else if(d == 1){        // lazy convergence check
         correct = ((fabs(v-sizes[0])/sizes[0] < (1.-0.5*exp(-(double)order)))
-          || (fabs(v-sizes[1])/sizes[1] < (1.-0.5*exp(-(double)order))));
+            || (fabs(v-sizes[1])/sizes[1] < (1.-0.5*exp(-(double)order))));
       } else if(d == 2){
         correct = (fabs(v-sizes[2])/sizes[2] < (1.-0.5*exp(-(double)order)));
       }
@@ -235,17 +232,30 @@ void testSize2D(apf::Mesh2* m)
 
 void test2D()
 {
-  for(int order = 1; order < 7; ++order){
+  for(int order = 1; order <= 6; ++order){
+    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
+      apf::Mesh2* m = createMesh2D();
+      crv::BezierCurver bc(m,order,blendOrder);
+      bc.run();
+      testInterpolatedPoints2D(m);
+      testSize2D(m);
+      m->destroyNative();
+      apf::destroyMesh(m);
+    }
+  }
+  // test the pure interpolation side of things
+  {
     apf::Mesh2* m = createMesh2D();
-    ma::Input* in = ma::configureIdentity(m);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::BezierCurver bc(adapt,order);
-    bc.run();
+    apf::changeMeshShape(m,apf::getLagrange(2),true);
+    crv::InterpolatingCurver ic(m,2);
+    ic.run();
     testInterpolatedPoints2D(m);
     testSize2D(m);
+
     m->destroyNative();
     apf::destroyMesh(m);
   }
+
 }
 
 void testSize3D(apf::Mesh2* m)
@@ -256,9 +266,10 @@ void testSize3D(apf::Mesh2* m)
     while ((e = m->iterate(it))) {
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
+      //      printf("%s has size %.16f\n",apf::Mesh::typeName[m->getType(e)],v);
       if((d == 1 && !(fabs(v-1.) < 1e-8  || fabs(v-1.414213562373) < 1e-8)) ||
-         (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.866025403780) < 1e-8)) ||
-         (d == 3 && !(fabs(v-1./6) < 1e-8)))
+          (d == 2 && !(fabs(v-0.5) < 1e-8 || fabs(v-0.866025403780) < 1e-8)) ||
+          (d == 3 && !(fabs(v-1./6) < 1e-8)))
       {
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
@@ -274,22 +285,169 @@ void testSize3D(apf::Mesh2* m)
   }
 }
 
-void test3D()
+void test3DJacobianTri(apf::Mesh2* m)
 {
+  int n = 3;
+
+  apf::MeshIterator* it = m->begin(2);
+  apf::MeshEntity* e;
+  apf::Vector3 xi,pt;
+  apf::Matrix3x3 J;
+
+  while ((e = m->iterate(it))) {
+    apf::MeshElement* elem =
+        apf::createMeshElement(m,e);
+    apf::MeshEntity* v[3];
+    apf::Vector3 vpt[3];
+    m->getDownward(e,0,v);
+    for(int i = 0; i < 3; ++i)
+      m->getPoint(v[i],0,vpt[i]);
+
+    apf::Matrix3x3 Je(vpt[1][0]-vpt[0][0],vpt[1][1]-vpt[0][1],vpt[1][2]-vpt[0][2],
+        vpt[2][0]-vpt[0][0],vpt[2][1]-vpt[0][1],vpt[2][2]-vpt[0][2],0.,0.,0.);
+
+    for (int j = 0; j <= n; ++j){
+      xi[1] = 1.*j/n;
+      for (int i = 0; i <= n-j; ++i){
+        xi[0] = 1.*i/n;
+        apf::getJacobian(elem,xi,J);
+        for(int a = 0; a < 3; ++a)
+          for(int b = 0; b < 3; ++b)
+            if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
+            {
+              std::cout << "xi " << xi << std::endl;
+              std::cout << J << std::endl;
+              std::cout << Je << std::endl;
+              std::stringstream ss;
+              ss << "2D Jacobian is incorrect for "
+                  << m->getShape()->getName() << "\n";
+              std::string s = ss.str();
+              fprintf(stderr, "%s", s.c_str());
+              abort();
+            }
+      }
+    }
+
+    apf::destroyMeshElement(elem);
+  }
+  m->end(it);
+}
+
+void test3DJacobian(apf::Mesh2* m)
+{
+  int n = 11;
+
+  apf::MeshIterator* it = m->begin(3);
+  apf::MeshEntity* e;
+  apf::Vector3 xi,pt;
+  apf::Matrix3x3 J;
+  while ((e = m->iterate(it))) {
+    apf::MeshElement* elem =
+        apf::createMeshElement(m,e);
+    apf::MeshEntity* v[4];
+    apf::Vector3 vpt[4];
+    m->getDownward(e,0,v);
+    for(int i = 0; i < 4; ++i)
+      m->getPoint(v[i],0,vpt[i]);
+    apf::Matrix3x3 Je(vpt[1][0]-vpt[0][0],vpt[1][1]-vpt[0][1],vpt[1][2]-vpt[0][2],
+        vpt[2][0]-vpt[0][0],vpt[2][1]-vpt[0][1],vpt[2][2]-vpt[0][2],
+        vpt[3][0]-vpt[0][0],vpt[3][1]-vpt[0][1],vpt[3][2]-vpt[0][2]);
+
+    for (int k = 0; k <= n; ++k){
+      xi[2] = 1.*k/n;
+      for (int j = 0; j <= n-k; ++j){
+        xi[1] = 1.*j/n;
+        for (int i = 0; i <= n-j-k; ++i){
+          xi[0] = 1.*i/n;
+          apf::getJacobian(elem,xi,J);
+
+          for(int a = 0; a < 3; ++a)
+            for(int b = 0; b < 3; ++b)
+              if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
+              {
+                std::cout << "xi " << xi << std::endl;
+                std::cout << J << std::endl;
+                std::cout << Je << std::endl;
+                std::stringstream ss;
+                ss << "3D Jacobian is incorrect for "
+                    << m->getShape()->getName() << "\n";
+                std::string s = ss.str();
+                fprintf(stderr, "%s", s.c_str());
+                abort();
+              }
+        }
+      }
+    }
+    apf::destroyMeshElement(elem);
+  }
+  m->end(it);
+}
+
+void test3DBlended()
+{
+  gmi_register_null();
+  apf::Mesh2* mbase = createMesh3D();
+
+  testSize3D(mbase);
+  test3DJacobian(mbase);
+  test3DJacobianTri(mbase);
+
+  mbase->destroyNative();
+  apf::destroyMesh(mbase);
+
   for(int order = 1; order <= 6; ++order){
-    gmi_register_null();
+    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
+      apf::Mesh2* m = createMesh3D();
+      apf::changeMeshShape(m, crv::getBezier(3,order),true);
+      crv::setBlendingOrder(blendOrder);
+      apf::FieldShape * fs = m->getShape();
+      crv::BezierCurver bc(m,order,blendOrder);
+      // go downward, and convert interpolating to control points
+      for(int d = 2; d >= 1; --d){
+        int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
+        int ne = fs->countNodesOn(d);
+        apf::NewArray<double> c;
+        crv::getTransformationCoefficients(3,order,d,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(d);
+        while ((e = m->iterate(it))) {
+          if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+          bc.convertInterpolationPoints(e,n,ne,c);
+        }
+        m->end(it);
+      }
+      m->acceptChanges();
+      crv::writeControlPointVtuFiles(m,"curvedBezier3D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier3D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier3D");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TET,order,"curvedBezier3D");
+      testSize3D(m);
+      if(blendOrder < 4){
+        test3DJacobian(m);
+        test3DJacobianTri(m);
+      }
+      m->destroyNative();
+      apf::destroyMesh(m);
+    }
+  }
+}
+
+void test3DFull()
+{
+  gmi_register_null();
+
+  for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
-    apf::changeMeshShape(m, apf::getBezier(3,order),true);
-    apf::FieldShape * fs = m->getCoordinateField()->getShape();
-    ma::Input* in = ma::configureIdentity(m);
-    ma::Adapt* adapt = new ma::Adapt(in);
-    ma::BezierCurver bc(adapt,order);
+    apf::changeMeshShape(m, crv::getBezier(3,order),true);
+    crv::setBlendingOrder(0);
+    apf::FieldShape* fs = m->getShape();
+    crv::BezierCurver bc(m,4,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      apf::getTransformationCoefficients(order,3,d,c);
+      crv::getTransformationCoefficients(3,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
@@ -300,6 +458,19 @@ void test3D()
     }
     m->acceptChanges();
     testSize3D(m);
+    test3DJacobian(m);
+    test3DJacobianTri(m);
+    // check values sum to 1.0 in the tet fieldshape
+    apf::DynamicMatrix A;
+    crv::getTransformationMatrix(m,apf::Mesh::TET,A);
+    apf::EntityShape* es = fs->getEntityShape(apf::Mesh::TET);
+    int n = es->countNodes();
+    for(int i = 0; i < n; ++i){
+      double sum = 0.;
+      for(int j = 0; j < n; ++j)
+        sum += A(i,j);
+      assert(std::abs(sum - 1.0) < 1e-15);
+    }
     m->destroyNative();
     apf::destroyMesh(m);
   }
@@ -310,7 +481,8 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
-  test3D();
+  test3DBlended();
+  test3DFull();
   PCU_Comm_Free();
   MPI_Finalize();
 }

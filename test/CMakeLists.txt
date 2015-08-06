@@ -13,6 +13,7 @@ find_package(ph REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(dsp REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(crv REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -24,7 +25,8 @@ include_directories(
   ${PH_INCLUDE_DIRS}
   ${APF_MPAS_INCLUDE_DIRS}
   ${VIZ_INCLUDE_DIRS}
-  ${DSP_INCLUDE_DIRS})
+  ${DSP_INCLUDE_DIRS}
+  ${CRV_INCLUDE_DIRS})
 set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
@@ -35,7 +37,8 @@ set(ALL_LIBS
   ${PH_LIBS}
   ${APF_MPAS_LIBS}
   ${VIZ_LIBS}
-  ${DSP_LIBS})
+  ${DSP_LIBS}
+  ${CRV_LIBS})
 
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)
@@ -79,17 +82,18 @@ setup_exe(zbalance zbalance.cc)
 setup_exe(gap gap.cc)
 setup_exe(elmBalance elmBalance.cc)
 setup_exe(vtxBalance vtxBalance.cc)
-setup_exe(edgeBalance edgeBalance.cc)
 setup_exe(vtxElmBalance vtxElmBalance.cc)
 setup_exe(vtxEdgeElmBalance vtxEdgeElmBalance.cc)
 if(ENABLE_THREADS)
   setup_exe(split split.cc)
   setup_exe(zsplit zsplit.cc)
   setup_exe(chef ../phasta/chef.cc)
+  setup_exe(ptnParma ptnParma.cc)
 else()
   setup_exe(split split_nothread.cc)
   setup_exe(zsplit zsplit_nothread.cc)
   setup_exe(chef ../phasta/chef_nothread.cc)
+  setup_exe(ptnParma_nothread ptnParma_nothread.cc)
 endif()
 setup_exe(cut_interface ../phasta/cut_interface.cc)
 setup_exe(ghost ghost.cc)
@@ -97,7 +101,6 @@ if(ENABLE_MPAS)
   setup_exe(mpas_read ../mpas/mpas_read.cc)
   setup_exe(mpas_write ../mpas/mpas_write.cc)
 endif()
-setup_exe(hps hps.cc)
 setup_exe(1d 1d.cc)
 setup_exe(serialize serialize.cc)
 setup_exe(fusion fusion.cc)
@@ -107,6 +110,7 @@ setup_exe(newdim newdim.cc)
 setup_exe(construct construct.cc)
 setup_exe(shapefun shapefun.cc)
 setup_exe(bezier bezier.cc)
+setup_exe(bezier2 bezier2.cc)
 
 if (ENABLE_VIZ)
   setup_exe(viz_test viz.cc)
@@ -120,6 +124,7 @@ setup_exe(integrate integrate.cc)
 setup_exe(align align.cc)
 setup_exe(moving moving.cc)
 setup_exe(graphdist graphdist.cc)
+setup_exe(nektar_align nektar_align.cc)
 
 if(IS_TESTING)
   include(testing.cmake)

@@ -9,11 +9,17 @@
 *******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "pcu_common.h"
 
-void pcu_fail(const char* message)
+void pcu_fail(const char* format, ...)
 {
-  fprintf(stderr,"PCU failure: %s\n",message);
+  fprintf(stderr, "PCU error: ");
+  va_list ap;
+  va_start(ap, format);
+  vfprintf(stderr, format, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
   abort();
 }
 

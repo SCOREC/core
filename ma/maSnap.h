@@ -21,6 +21,13 @@ void visualizeGeometricInfo(Mesh* m, const char* name);
 
 long snapTaggedVerts(Adapt* a, Tag* snapTag);
 
+void interpolateParametricCoordinates(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    Vector const& a,
+    Vector const& b,
+    Vector& p);
 void transferParametricOnEdgeSplit(
     Mesh* m,
     Entity* e,
@@ -33,21 +40,7 @@ void transferParametricOnQuadSplit(
     Entity* v32,
     double y,
     Vector& p);
-void transferParametricOnTriSplit(
-    Mesh* m,
-    Entity* e,
-    Vector& t,
-    Vector& p);
-void transferParametricOnGeometricEdgeSplit(
-    Mesh* m,
-    Entity* e,
-    double t,
-    Vector& p);
-void transferParametricOnGeometricTriSplit(
-    Mesh* m,
-    Entity* e,
-    Vector& t,
-    Vector& p);
+
 }
 
 #endif

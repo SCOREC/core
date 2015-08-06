@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.6)
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-  INCLUDE(TribitsSubPackageMacros) 
-  INCLUDE(TribitsLibraryMacros) 
-  TRIBITS_SUBPACKAGE(parma) 
+  TRIBITS_PACKAGE(SCORECparma) 
 else()
   project(parma)
 endif()
@@ -28,12 +30,12 @@ SET(DIFFMC_SOURCES
   diffMC/parma_dcpart.cc
   diffMC/parma_dcpartFixer.cc
   diffMC/parma_dijkstra.cc
-  diffMC/parma_edgeBalancer.cc
-  diffMC/parma_edgeSelector.cc
   diffMC/parma_elmBalancer.cc
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_elmSideSides.cc
+  diffMC/parma_edgeEqVtxSelector.cc
   diffMC/parma_elmLtVtxSelector.cc
+  diffMC/parma_elmLtVtxEdgeSelector.cc
   diffMC/parma_elmSelector.cc
   diffMC/parma_vtxSides.cc
   diffMC/parma_entWeights.cc
@@ -41,7 +43,6 @@ SET(DIFFMC_SOURCES
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
   diffMC/parma_graphDist.cc
-  diffMC/parma_hpsBalancer.cc
   diffMC/parma_monitor.cc
   diffMC/parma_sides.cc
   diffMC/parma_step.cc
@@ -54,9 +55,11 @@ SET(DIFFMC_SOURCES
   diffMC/parma_weightTargets.cc
   diffMC/parma_weightSideTargets.cc
   diffMC/parma_vtxElmTargets.cc
-  diffMC/parma_vtxEdgeElmTargets.cc
+  diffMC/parma_vtxEdgeTargets.cc
+  diffMC/parma_elmLtVtxEdgeTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc
   diffMC/parma_vtxElmBalancer.cc
+  diffMC/parma_elmLtVtxEdgeBalancer.cc
   diffMC/zeroOneKnapsack.c
   diffMC/maximalIndependentSet/misLuby.cc
   )
@@ -130,5 +133,5 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-  TRIBITS_SUBPACKAGE_POSTPROCESS()
+  TRIBITS_PACKAGE_POSTPROCESS()
 endif()

@@ -24,5 +24,8 @@ namespace parma {
       Slope* sS;
       Average* sA;
   };
+
+  apf::Balancer* makeElmLtVtxEdgeBalancer(apf::Mesh* m, double maxVtx,
+      double maxEdge, double stepFactor, int verbosity);
 }
 #endif

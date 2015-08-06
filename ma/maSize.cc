@@ -41,11 +41,6 @@ bool IdentitySizeField::shouldCollapse(Entity*)
   return false;
 }
 
-double IdentitySizeField::placeSplit(Entity*)
-{
-  return 0.5;
-}
-
 void IdentitySizeField::interpolate(
     apf::MeshElement*,
     Vector const&,
@@ -165,7 +160,7 @@ class SizeFieldIntegrator : public apf::Integrator
 /* the length, area, or volume of
    the parent element for this
    entity type */
-static double parentMeasure[TYPES] =
+static double parentMeasure[apf::Mesh::TYPES] =
 {0.0     //vert
 ,2.0     //edge
 ,1.0/2.0 //tri
@@ -202,30 +197,6 @@ struct MetricSizeField : public SizeField
   bool shouldCollapse(Entity* edge)
   {
     return this->measure(edge) < 0.5;
-  }
-  double placeSplit(Entity* edge)
-  {
-    Entity* v[2];
-    mesh->getDownward(edge,0,v);
-    Vector p[2];
-    mesh->getPoint(v[0],0,p[0]);
-    mesh->getPoint(v[1],0,p[1]);
-    Vector e = (p[1]-p[0]).normalize();
-    double h[2];
-    for (int i=0; i < 2; ++i)
-    {
-      Matrix R;
-      apf::getMatrix(rField,v[i],0,R);
-      Vector hv;
-      apf::getVector(hField,v[i],0,hv);
-      Matrix Q;
-      makeQ(R,hv,Q);
-      Vector e2 = transpose(Q)*e;
-      h[i] = 1/(e2.getLength());
-    }
-  /* the approximation given by Li based on the assumption
-     that desired length varies linearly along the edge. */
-    return 1.0/(1.0+sqrt(h[1]/h[0]));
   }
   void interpolate(
       apf::MeshElement* parent,
@@ -406,7 +377,7 @@ class FieldReader : public IsotropicFunction
     {
       field = f;
       assert(apf::getValueType(field)==apf::SCALAR);
-      assert(apf::getShape(field)==apf::getMesh(field)->getShape());
+      assert(apf::getShape(field)==apf::getLagrange(1));
     }
     virtual ~FieldReader() {}
     virtual double getValue(Entity* vert)

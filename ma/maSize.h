@@ -27,7 +27,6 @@ class SizeField
     virtual double measure(Entity* e) = 0;
     virtual bool shouldSplit(Entity* edge) = 0;
     virtual bool shouldCollapse(Entity* edge) = 0;
-    virtual double placeSplit(Entity* edge) = 0;
     virtual void interpolate(
         apf::MeshElement* parent,
         Vector const& xi,
@@ -45,7 +44,6 @@ struct IdentitySizeField : public SizeField
   double measure(Entity* e);
   bool shouldSplit(Entity*);
   bool shouldCollapse(Entity*);
-  double placeSplit(Entity*);
   void interpolate(
       apf::MeshElement* parent,
       Vector const& xi,

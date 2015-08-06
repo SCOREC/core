@@ -100,6 +100,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  PCU_Protect();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();

@@ -395,7 +395,7 @@ static pNativeModel load_parasolid(const char* filename)
 #else
 static pNativeModel load_parasolid(const char* filename)
 {
-  gmi_fail("gmi_sim not compiled with Parasolid support");
+  gmi_fail("recompile with -DSIM_PARASOLID=ON");
 }
 #endif
 
@@ -408,7 +408,7 @@ static pNativeModel load_acis(const char* filename)
 #else
 static pNativeModel load_acis(const char* /*filename*/)
 {
-  gmi_fail("gmi_sim not compiled with Acis support");
+  gmi_fail("recompile with -DSIM_ACIS=ON");
 }
 #endif
 

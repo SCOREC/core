@@ -10,7 +10,7 @@ namespace apf {
 typedef int Gid;
 
 static void constructVerts(
-    Mesh2* m, Gid* conn, int nelem, int etype,
+    Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& result)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
@@ -21,7 +21,7 @@ static void constructVerts(
 }
 
 static void constructElements(
-    Mesh2* m, Gid* conn, int nelem, int etype,
+    Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
@@ -44,7 +44,6 @@ static Gid getMax(const GlobalToVert& globalToVert)
   return max;
 }
 
-typedef std::map<Gid, std::vector<int> > GidToParts;
 
 /* algorithm courtesy of Sebastian Rettenberger:
    use brokers/routers for the vertex global ids.
@@ -146,7 +145,7 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   }
 }
 
-void construct(Mesh2* m, int* conn, int nelem, int etype,
+void construct(Mesh2* m, const int* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   constructVerts(m, conn, nelem, etype, globalToVert);

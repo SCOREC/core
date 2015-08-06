@@ -16,6 +16,12 @@ if(ENABLE_THREADS)
       COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "${PROG}"
       WORKING_DIRECTORY "${WORKDIR}")
   endmacro()
+  macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
+    add_test("${TESTNAME}"
+      ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "./ptnParma" 
+      ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
+    )
+  endmacro()
 else()
   macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
     math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
@@ -33,9 +39,17 @@ else()
       COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "${PROG}"
       WORKING_DIRECTORY "${WORKDIR}")
   endmacro()
+  macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
+    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
+    add_test("${TESTNAME}"
+      ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "./ptnParma_nothread" 
+      ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
+    )
+  endmacro()
 endif()
 add_test(shapefun shapefun)
 add_test(bezier bezier)
+add_test(bezier2 bezier2)
 add_test(align align)
 add_test(eigen_test eigen_test)
 add_test(integrate integrate)
@@ -128,12 +142,6 @@ add_test(gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
-add_test(hps
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./hps
-  "${MDIR}/torus.dmg"
-  "${MDIR}/4imb/torus.smb"
-  "torusHps4p/")
 add_test(fixDisconnected
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fixDisconnected
@@ -153,18 +161,14 @@ add_test(vtxBalance
   "${MDIR}/afosr.smd"
   "${MDIR}/4imb/"
   "afosrBal4p/")
-add_test(edgeBalance
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./edgeBalance
-  "${MDIR}/afosr.smd"
-  "${MDIR}/4imb/"
-  "afosrBal4p/")
 add_test(vtxEdgeElmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxEdgeElmBalance
   "${MDIR}/afosr.smd"
   "${MDIR}/4imb/"
-  "afosrBal4p/")
+  "afosrBal4p/"
+  "2"
+  "1.10")
 add_test(vtxElmBalance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./vtxElmBalance
@@ -172,6 +176,12 @@ add_test(vtxElmBalance
   "${MDIR}/4imb/"
   "afosrBal4p/")
 set(MDIR ${MESHES}/cube)
+parma(ptnParma_cube
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi670/cube.smb"
+  "ptnParmaCube/" 
+  "4" "rib" "reptn" "1"
+  1)
 add_test(construct
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./construct
@@ -281,13 +291,11 @@ set(MDIR ${MESHES}/curved)
 add_test(curvedSphere
   curvemesh
   "${MDIR}/sphere1.xmt_txt"
-  "${MDIR}/sphere1_4.smb"
-  "${MDIR}/sphere1_4_curved")
+  "${MDIR}/sphere1_4.smb")
  add_test(curvedKova
   curvemesh
   "${MDIR}/Kova.xmt_txt"
-  "${MDIR}/Kova.smb"
-  "${MDIR}/Kova_curved")
+  "${MDIR}/Kova.smb")
 if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
   cook(chef0 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 1 ${MDIR})

@@ -54,8 +54,8 @@ static double interpolateParametricCoordinate(
   return result;
 }
 
-static void interpolateParametricCoordinates(
-    Mesh* m,
+void interpolateParametricCoordinates(
+    apf::Mesh* m,
     Model* g,
     double t,
     Vector const& a,
@@ -64,32 +64,13 @@ static void interpolateParametricCoordinates(
 {
   double range[2];
   int dim = m->getModelType(g);
-  for (int d=0; d < dim; ++d)
-  {
+  for (int d=0; d < dim; ++d) {
     bool isPeriodic = m->getPeriodicRange(g,d,range);
-
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic);
-  }
-  if(dim == 2){
-    bool isDegenerate[4];
-
-    for (int d=0; d < 2; ++d){
-      isDegenerate[2*d] = m->isDegenerate(g,a,d);
-      isDegenerate[2*d+1] = isDegenerate[2*d] ? false :
-          m->isDegenerate(g,b,d);
-    }
-    for (int d=0; d < 2; ++d){
-      int other = d ? 0 : 1;
-      if (isDegenerate[2*other]) {
-        p[d] = b[d];
-      } else if (isDegenerate[2*other+1]) {
-        p[d] = a[d];
-      }
-    }
   }
 }
 
-void transferParametricBetween(
+static void transferParametricBetween(
     Mesh* m,
     Model* g,
     Entity* v[2],
@@ -99,7 +80,7 @@ void transferParametricBetween(
   Vector ep[2];
   for (int i=0; i < 2; ++i)
     m->getParamOn(g,v[i],ep[i]);
-  interpolateParametricCoordinates(m,g,t,ep[0],ep[1],p);
+  ma::interpolateParametricCoordinates(m,g,t,ep[0],ep[1],p);
 }
 
 void transferParametricOnEdgeSplit(
@@ -113,7 +94,7 @@ void transferParametricOnEdgeSplit(
   if (modelDimension==m->getDimension()) return;
   Entity* ev[2];
   m->getDownward(e,0,ev);
-  transferParametricBetween(m, g, ev, t, p);
+  ma::transferParametricBetween(m, g, ev, t, p);
 }
 
 void transferParametricOnQuadSplit(
@@ -129,63 +110,7 @@ void transferParametricOnQuadSplit(
   if (modelDimension==m->getDimension()) return;
   Entity* v[2];
   v[0] = v01; v[1] = v32;
-  transferParametricBetween(m, g, v, y, p);
-}
-
-void transferParametricOnTriSplit(
-    Mesh* m,
-    Entity* e,
-    Vector& t,
-    Vector& p)
-{
-  Model* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
-  Entity* ev[3];
-  m->getDownward(e,0,ev); // pick two points, split on edge
-  Vector pa1,pa2;
-  m->getParamOn(g,ev[2],pa2);
-  // two linear splits
-  transferParametricBetween(m, g, ev, t[0]/(1.-t[1]), pa1);
-  interpolateParametricCoordinates(m,g,t[1],pa1,pa2,p);
-}
-
-void transferParametricOnGeometricEdgeSplit(
-    Mesh* m,
-    Entity* e,
-    double t,
-    Vector& p)
-{
-  Model* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
-  Entity* ev[2];
-  m->getDownward(e,0,ev);
-  Vector p0,p1,cpt;
-  m->getPoint(ev[0],0,p0);
-  m->getPoint(ev[1],0,p1);
-  Vector pt = p0*(1.-t)+p1*t;
-  m->getClosestPoint(g,pt,cpt,p);
-}
-
-void transferParametricOnGeometricTriSplit(
-    Mesh* m,
-    Entity* e,
-    Vector& t,
-    Vector& p)
-{
-  Model* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
-  Entity* ev[3];
-  m->getDownward(e,0,ev);
-  // split in physical space, project
-  Vector p0,p1,p2,cpt;
-  m->getPoint(ev[0],0,p0);
-  m->getPoint(ev[1],0,p1);
-  m->getPoint(ev[2],0,p2);
-  Vector pt = p0*(1.-t[0]-t[1])+p1*t[0]+p2*t[1];
-  m->getClosestPoint(g,pt,cpt,p);
+  ma::transferParametricBetween(m, g, v, y, p);
 }
 
 static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
@@ -315,6 +240,8 @@ void snap(Adapt* a)
   double t1 = PCU_Time();
   print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
     t1 - t0, targets, success);
+  if (a->hasLayer)
+    checkLayerShape(a->mesh, "after snapping");
 }
 
 void visualizeGeometricInfo(Mesh* m, const char* name)

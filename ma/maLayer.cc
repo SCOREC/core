@@ -92,10 +92,10 @@ void findLayerBase(Adapt* a)
   Entity* f;
   while ((f = m->iterate(it)))
   {
-    if (( m->getType(f)==TRI )
-      &&( isOnModelFace(m, f) )
-      &&( m->countUpward(f)==1 )
-      &&( m->getType(m->getUpward(f,0))==PRISM ))
+    if ((m->getType(f) == apf::Mesh::TRIANGLE) &&
+        (isOnModelFace(m, f)) &&
+        (m->countUpward(f) == 1) &&
+        (m->getType(m->getUpward(f, 0)) == apf::Mesh::PRISM))
       setFlagOnClosure(a,f,LAYER_BASE);
   }
   m->end(it);
@@ -146,24 +146,35 @@ void collectForLayerRefine(Refine* r)
   r->shouldCollect[2] = true;
 }
 
-void checkLayerShape(Mesh* m)
+void checkLayerShape(Mesh* m, const char* key)
 {
   double t0 = PCU_Time();
   Iterator* it = m->begin(m->getDimension());
   Entity* e;
+  long n = 0;
   while ((e = m->iterate(it)))
     if ( ! apf::isSimplex(m->getType(e)))
-      if ( ! isLayerElementOk(m, e)) {
+      if (!isLayerElementOk(m, e)) {
         std::stringstream ss;
-        ss << "warning: layer element at "
-          << apf::getLinearCentroid(m, e)
-          << " is unsafe to tetrahedronize\n";
+        ss.precision(15);
+        ss << std::scientific;
+        ss << key << ": ";
+        int type = m->getType(e);
+        ss << "layer " << apf::Mesh::typeName[type]
+           << " at " << apf::getLinearCentroid(m, e)
+           << " is unsafe to tetrahedronize\n";
+        if (type == apf::Mesh::PRISM) {
+          ss << "there is currently no code to help with such prisms,\n";
+          ss << "but there is a chance it will tetrahedronize OK.\n";
+        }
         std::string s = ss.str();
         fprintf(stderr,"%s",s.c_str());
+        ++n;
       }
   m->end(it);
+  PCU_Add_Longs(&n, 1);
   double t1 = PCU_Time();
-  print("checked layer quality in %f seconds",t1 - t0);
+  print("%s: checked layer quality in %f seconds: %ld unsafe elements", key, t1 - t0, n);
 }
 
 }

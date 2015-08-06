@@ -299,19 +299,19 @@ void SetNumberingOffset(Numbering * num, int off)
     {
       if(mesh->isOwned(e))
       {
-	int type = mesh->getType(e);
-	int type_nodes = shape->countNodesOn(type);
-	
-	for(int ii = 0; ii < type_nodes; ii++)
-	  for(int jj = 0; jj < components; jj++)
-	  {
-	    if(isNumbered(num,e,ii,jj))
-	    {
-	      int current = getNumber(num,e,ii,jj);
-	      number(num,e,ii,jj,current+off);
-	      //std::cout << current+off << std::endl;
-	    }
-	  }
+        int type = mesh->getType(e);
+        int type_nodes = shape->countNodesOn(type);
+
+        for(int ii = 0; ii < type_nodes; ii++)
+          for(int jj = 0; jj < components; jj++)
+          {
+            if(isNumbered(num,e,ii,jj))
+            {
+              int current = getNumber(num,e,ii,jj);
+              number(num,e,ii,jj,current+off);
+              //std::cout << current+off << std::endl;
+            }
+          }
       }
     }
     mesh->end(iter);

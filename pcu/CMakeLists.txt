@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 2.8.6)
 set(PACKAGE_VERSION "3.1")
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-   include(TribitsSubPackageMacros) 
-   include(TribitsLibraryMacros) 
-   tribits_subpackage(pcu) 
+   tribits_package(SCORECpcu) 
 else()
    project(pcu)
    find_package(Threads)
@@ -19,7 +21,7 @@ endif()
 
 set(CMAKE_MODULE_PATH 
    ${CMAKE_MODULE_PATH} 
-   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+   "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
 #Gets C99 support
 find_package(C99 REQUIRED)
@@ -119,5 +121,5 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
+   tribits_package_postprocess()
 endif()

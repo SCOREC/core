@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8.6)
 
+IF(DEFINED TRIBITS_PACKAGE)
+ SET(BUILD_IN_TRILINOS ON)
+ENDIF()
+
 if(BUILD_IN_TRILINOS)
-  include(TribitsSubPackageMacros) 
-  include(TribitsLibraryMacros) 
-  tribits_subpackage(apf_zoltan) 
+  tribits_package(SCORECapf_zoltan) 
   set(ENABLE_ZOLTAN ON)
 else()
   project(apf_zoltan)
@@ -88,6 +90,6 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
+   tribits_package_postprocess()
 endif()
 

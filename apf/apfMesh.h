@@ -199,7 +199,7 @@ class Mesh
     virtual void getParam(MeshEntity* e, Vector3& p) = 0;
     /** \brief Get the topological type of a mesh entity.
       \returns a value from the apf::Mesh::Type enumeration */
-    virtual int getType(MeshEntity* e) = 0;
+    virtual Type getType(MeshEntity* e) = 0;
     /** \brief Get the remote copies of an entity */
     virtual void getRemotes(MeshEntity* e, Copies& remotes) = 0;
     /** \brief Get the resident parts of an entity
@@ -283,18 +283,6 @@ class Mesh
     /** \brief get first derivative at a point */
       void getFirstDerivative(ModelEntity* g, Vector3 const& p,
           Vector3& t0, Vector3& t1);
-    /** \brief returns true if there is a geometric
-          degeneracy in that direction at that parameter
-         \param p is the parameters of the original coordinate
-         \details degeneracy is when at a point, changing
-         one parameter does not change the point location.
-         This is tested numerically, by moving a point along
-         the other parameter and checking if its location has
-         changed. If a surface has degenerate coordinates,
-         every point on it needs to be checked for degeneracy
-         for edge splitting, or similar processes. This is called
-         in interpolateParametricCoordinates in maSnap.cc */
-    bool isDegenerate(ModelEntity* g, Vector3 const& p, int axis);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */

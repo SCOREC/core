@@ -255,9 +255,9 @@ class EdgeEdgeFixer : public TetFixerBase
    edges are too close. */
       Entity* ev[2];
       ev[0] = v[0]; ev[1] = v[2];
-      edges[0] = findUpward(mesh,EDGE,ev);
+      edges[0] = findUpward(mesh, apf::Mesh::EDGE, ev);
       ev[0] = v[1]; ev[1] = v[3];
-      edges[1] = findUpward(mesh,EDGE,ev);
+      edges[1] = findUpward(mesh, apf::Mesh::EDGE, ev);
     }
     virtual bool requestLocality(apf::CavityOp* o)
     {

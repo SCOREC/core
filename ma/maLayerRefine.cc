@@ -11,7 +11,7 @@ static void preventQuadEdgeSplits(Adapt* a)
   Iterator* it = m->begin(2);
   Entity* e;
   while ((e = m->iterate(it)))
-    if (m->getType(e) == QUAD) {
+    if (m->getType(e) == apf::Mesh::QUAD) {
       Entity* qe[4];
       m->getDownward(e, 1, qe);
       for (int i = 0; i < 4; ++i)
@@ -152,7 +152,7 @@ static Entity* getOtherPrism(Mesh* m, Entity* tri, Predicate& visited)
   apf::Up up;
   m->getUp(tri, up);
   for (int i = 0; i < up.n; ++i)
-    if ((m->getType(up.e[i]) == PRISM) &&
+    if ((m->getType(up.e[i]) == apf::Mesh::PRISM) &&
         (!visited(up.e[i])))
       return up.e[i];
   return 0;

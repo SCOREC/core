@@ -129,7 +129,7 @@ inline Vector<3> cross(Vector<3> const& a, Vector<3> const& b)
   return r;
 }
 
-/** \brief vector projection */
+/** \brief Returns vector (a) projected onto vector (b) */
 template<std::size_t N>
 Vector<N> project(Vector<N> const& a, Vector<N> const& b)
 {
@@ -199,12 +199,6 @@ class Vector3 : public Vector<3>
     /** \brief mutable z component */
     double& z() {return this->elements[2];}
 };
-
-/** \brief factorial function */
-int factorial(int num);
-/** \brief binomial coefficient function for n < 7
-    \detail factorial(n)/factorial(n-i)/factorial(i)) */
-int binomial(int i, int n);
 
 }
 

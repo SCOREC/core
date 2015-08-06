@@ -65,7 +65,7 @@ bool DoubleSplitCollapse::run(Entity** edges)
   Entity* splitVerts[2];
   splitVerts[0] = splits.getSplitVert(0);
   splitVerts[1] = splits.getSplitVert(1);
-  Entity* edge = findUpward(m,EDGE,splitVerts);
+  Entity* edge = findUpward(m, apf::Mesh::EDGE, splitVerts);
   if (tryBothCollapses(edge))
   {
     accept();

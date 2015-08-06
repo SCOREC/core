@@ -33,7 +33,7 @@ void syncLayer(Crawler* c, Crawler::Layer& layer)
   }
 }
 
-static void crawlLayer(Crawler* c, Crawler::Layer& layer)
+void crawlLayer(Crawler* c, Crawler::Layer& layer)
 {
   Crawler::Layer nextLayer;
   for (size_t i = 0; i < layer.size(); ++i) {
@@ -72,7 +72,7 @@ Entity* getOtherVert(Mesh* m, Entity* v, Predicate& visited)
   Upward faces;
   m->getAdjacent(v, 2, faces);
   APF_ITERATE(Upward, faces, it) {
-    if (m->getType(*it) != QUAD)
+    if (m->getType(*it) != apf::Mesh::QUAD)
       continue;
     Entity* vs[4];
     m->getDownward(*it, 0, vs);
@@ -92,7 +92,7 @@ Entity* getOtherEdge(Mesh* m, Entity* e, Predicate& visited)
   Upward faces;
   m->getAdjacent(e, 2, faces);
   APF_ITERATE(Upward, faces, it) {
-    if (m->getType(*it) != QUAD)
+    if (m->getType(*it) != apf::Mesh::QUAD)
       continue;
     Entity* es[4];
     m->getDownward(*it, 1, es);
@@ -227,7 +227,7 @@ struct TopFlagger : public apf::CavityOp
         apf::Up fs;
         m->getUp(es.e[i], fs);
         for (int j = 0; j < fs.n; ++j)
-          if (m->getType(fs.e[j]) == QUAD)
+          if (m->getType(fs.e[j]) == apf::Mesh::QUAD)
             return false;
       }
     }

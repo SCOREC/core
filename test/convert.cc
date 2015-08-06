@@ -49,6 +49,7 @@ int main(int argc, char** argv)
       std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <scorec mesh>\n";
     return EXIT_FAILURE;
   }
+  SimUtil_start();
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
   gmi_sim_start();
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
   gmi_sim_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
+  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }
