@@ -331,9 +331,8 @@ static void fixMidPoints(apf::Mesh2* m)
 void test2D()
 {
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 0; blendOrder <= 0; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
-      crv::BezierCurver bc(m,order,blendOrder);
+      crv::BezierCurver bc(m,order,0);
       bc.run();
       if(order > 2)
         fixMidPoints(m);
@@ -342,7 +341,6 @@ void test2D()
       m->destroyNative();
       apf::destroyMesh(m);
     }
-  }
 }
 
 int main(int argc, char** argv)

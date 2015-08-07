@@ -25,7 +25,12 @@ int getBlendingOrder();
 class MeshCurver
 {
   public:
-    MeshCurver(apf::Mesh2* m, int P) : m_mesh(m), m_order(P) {};
+    MeshCurver(apf::Mesh2* m, int P, int S) : m_mesh(m), m_order(P),
+    m_spaceDim(S)
+    {
+      if (S == 0)
+        m_spaceDim = m->getDimension();
+    };
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
@@ -43,13 +48,14 @@ class MeshCurver
   protected:
     apf::Mesh2* m_mesh;
     int m_order;
+    int m_spaceDim;
 };
 
 /** \brief curves an already changed mesh */
 class InterpolatingCurver : public MeshCurver
 {
   public:
-    InterpolatingCurver(apf::Mesh2* m, int P) : MeshCurver(m,P) {};
+    InterpolatingCurver(apf::Mesh2* m, int P, int S = 0) : MeshCurver(m,P,S) {};
     virtual ~InterpolatingCurver() {};
     virtual bool run();
 
@@ -58,7 +64,7 @@ class InterpolatingCurver : public MeshCurver
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P)
+    BezierCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m,P,S)
     { setBlendingOrder(B); };
 
     /** \brief curves a mesh using bezier curves of chosen order
@@ -70,7 +76,8 @@ class BezierCurver : public MeshCurver
 class GregoryCurver : public BezierCurver
 {
   public:
-    GregoryCurver(apf::Mesh2* m, int P, int B) : BezierCurver(m, P, B) {};
+    GregoryCurver(apf::Mesh2* m, int P, int B, int S = 0)
+    : BezierCurver(m,P,B,S) {};
     /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */
@@ -85,7 +92,7 @@ class GregoryCurver : public BezierCurver
 class SphereCurver : public MeshCurver
 {
   public:
-    SphereCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m, P),
+    SphereCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m, P, S),
     m_blendOrder(B) {};
 
     /** \brief curves a mesh using bezier curves of chosen order

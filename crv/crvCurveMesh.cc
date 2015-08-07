@@ -48,7 +48,7 @@ void MeshCurver::snapToInterpolate(int dim)
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == m_mesh->getDimension()) continue;
+    if(m_mesh->getModelType(g) == m_spaceDim) continue;
     if(t == apf::Mesh::EDGE)
       snapToInterpolateEdge(e);
     else
@@ -328,9 +328,6 @@ bool GregoryCurver::run()
 {
   if(m_order < 3 || m_order > 4){
     fail("cannot convert to G1 of this order\n");
-  }
-  if(m_mesh->getDimension() != 3){
-    fail("can only convert 3D Mesh to G1 continuous surface\n");
   }
 
   apf::changeMeshShape(m_mesh, getGregory(m_order),true);
