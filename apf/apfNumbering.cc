@@ -175,6 +175,11 @@ Mesh* getMesh(Numbering* n)
   return n->getMesh();
 }
 
+int countComponents(Numbering* n)
+{
+  return n->countComponents();
+}
+
 void getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers)
 {
   n->getData()->getElementData(e,numbers);
