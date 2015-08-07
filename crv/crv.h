@@ -112,7 +112,9 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
  \details goes from first to sixth order */
 apf::FieldShape* getBezier(int dimension, int order);
 /** \brief Get the Gregory Surface of some order
- \details only fourth order right now*/
+ \details only fourth order right now,
+ third order is implemented, but doesnt preserve
+ linear tets.*/
 apf::FieldShape* getGregory(int order);
 /** \brief Get the NURBS, based off of bezier
  \details goes from first to sixth order */

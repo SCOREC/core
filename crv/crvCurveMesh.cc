@@ -329,6 +329,8 @@ bool GregoryCurver::run()
   if(m_order < 3 || m_order > 4){
     fail("cannot convert to G1 of this order\n");
   }
+  if(m_spaceDim != 3)
+    fail("can only convert to 3D mesh\n");
 
   apf::changeMeshShape(m_mesh, getGregory(m_order),true);
   int md = m_mesh->getDimension();
@@ -360,12 +362,12 @@ bool GregoryCurver::run()
     m_mesh->end(it);
   }
 
+  setCubicEdgePointsUsingNormals();
+  setInternalPointsLocally();
+
   if(m_order == 4){
-    setCubicEdgePointsUsingNormals();
-    setInternalPointsLocally();
     elevateBezierCurves(m_mesh);
-  } else
-    setCubicEdgePointsUsingNormals();
+  }
 
   m_mesh->acceptChanges();
   m_mesh->verify();
