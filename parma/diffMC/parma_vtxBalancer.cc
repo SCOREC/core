@@ -20,7 +20,7 @@ namespace {
           parma::Sides* s = parma::makeVtxSides(mesh);
           sideTol = static_cast<int>(parma::avgSharedSides(s));
           delete s;
-          if( !PCU_Comm_Self() )
+          if( !PCU_Comm_Self() && verbose )
             fprintf(stdout, "sideTol %d\n", sideTol);
       }
 
@@ -35,10 +35,10 @@ namespace {
         double avgSides = parma::avgSharedSides(s);
         monitorUpdate(maxVtxImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
-        if( !PCU_Comm_Self() )
+        if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "vtxImb %f avgSides %f\n", maxVtxImb, avgSides);
         parma::BalOrStall* stopper = 
-          new parma::BalOrStall(iA, sA, sideTol*.001);
+          new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
         parma::Stepper b(mesh, factor, s, w, t, sel, stopper);
         return b.step(tolerance, verbose);
       }

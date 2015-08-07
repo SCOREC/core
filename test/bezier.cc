@@ -233,7 +233,7 @@ void testSize2D(apf::Mesh2* m)
 void test2D()
 {
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
+    for(int blendOrder = 0; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();

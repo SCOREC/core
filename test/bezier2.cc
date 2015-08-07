@@ -87,7 +87,7 @@ static double BIJK(int d, int i, int j, apf::Vector3& xi)
       *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],d-i-j);
 }
 
-static double testTriangleJacobian(apf::Mesh* m, apf::MeshEntity* e,
+static double computeAlternativeJacobianDet(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3& xi)
 {
   int d = m->getShape()->getOrder();
@@ -123,7 +123,7 @@ static void testJacobian(apf::Mesh2* m)
         xi[0] = 1.*i/n;
         apf::getJacobian(me,xi,Jac);
         double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
-        double J = testTriangleJacobian(m,e,xi);
+        double J = computeAlternativeJacobianDet(m,e,xi);
         assert(fabs(detJ-J) < 1e-14);
       }
     }
@@ -331,9 +331,8 @@ static void fixMidPoints(apf::Mesh2* m)
 void test2D()
 {
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 0; blendOrder <= 0; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
-      crv::BezierCurver bc(m,order,blendOrder);
+      crv::BezierCurver bc(m,order,0);
       bc.run();
       if(order > 2)
         fixMidPoints(m);
@@ -342,7 +341,6 @@ void test2D()
       m->destroyNative();
       apf::destroyMesh(m);
     }
-  }
 }
 
 int main(int argc, char** argv)

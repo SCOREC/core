@@ -365,8 +365,8 @@ static void getGregoryTriangleTransform(int P, apf::NewArray<double> & c)
   int nbBezier = curved_face_internal[BEZIER][P-1];
   int niBezier = curved_face_total[BEZIER][P-1];
 
-  int nb = curved_face_internal[GREGORY][3];
-  int ni = curved_face_total[GREGORY][3];
+  int nb = curved_face_internal[GREGORY][P-1];
+  int ni = curved_face_total[GREGORY][P-1];
   c.allocate(ni*nb);
 
   int map[3] = {1,2,0};
@@ -377,12 +377,21 @@ static void getGregoryTriangleTransform(int P, apf::NewArray<double> & c)
     for(int j = niBezier; j < ni; ++j)
       c[i*ni+j] = 0.;
   }
-
-  for(int i = nbBezier; i < nb; ++i){
-    for(int j = 0; j < niBezier; ++j)
-      c[i*ni+j] = d[map[i-nbBezier]*niBezier+j];
-    for(int j = niBezier; j < ni; ++j)
-      c[i*ni+j] = 0.;
+  if(P == 3){
+    for(int i = nbBezier; i < nb; ++i){
+      for(int j = 0; j < niBezier; ++j)
+        c[i*ni+j] = d[j];
+      for(int j = niBezier; j < ni; ++j)
+        c[i*ni+j] = 0.;
+    }
+  }
+  if(P == 4){
+    for(int i = nbBezier; i < nb; ++i){
+      for(int j = 0; j < niBezier; ++j)
+        c[i*ni+j] = d[map[i-nbBezier]*niBezier+j];
+      for(int j = niBezier; j < ni; ++j)
+        c[i*ni+j] = 0.;
+    }
   }
 }
 
@@ -414,7 +423,7 @@ static void getGregoryTetTransform(int P, apf::NewArray<double> & c)
 
 void getGregoryTransformationCoefficients(int /*dim*/, int P, int type,
     apf::NewArray<double>& c){
-  assert(P == 4);
+  assert(P == 3 || P == 4);
   if(type == apf::Mesh::EDGE)
     getBezierEdgeTransform(P,c);
   else if(type == apf::Mesh::TRIANGLE)

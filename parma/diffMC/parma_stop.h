@@ -18,13 +18,14 @@ namespace parma {
   };
   class BalOrStall : public Stop {
     public:
-      BalOrStall(Average* imb, Average* sides, double sidesTol);
+      BalOrStall(Average* imb, Average* sides, double sidesTol, int verbose=0);
       ~BalOrStall() {}
       bool stop(double imb, double maxImb);
     private:
       Average* i;
       Average* s;
       double sTol;
+      int verbose;
   };
 }
 #endif
