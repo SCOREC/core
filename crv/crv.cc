@@ -62,7 +62,7 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
 
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   apf::ModelEntity* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension())
+  if (m->getModelType(g) == 3)
     return 0.;
   int d = apf::getDimension(m,e);
   int nj = (d == 2) ? n : 1;
