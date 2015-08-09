@@ -76,6 +76,7 @@ FieldShape* getShape(Numbering* n);
 const char* getName(Numbering* n);
 /** \brief get the mesh associated with a Numbering */
 Mesh* getMesh(Numbering* n);
+int countComponents(Numbering* n);
 
 /** \brief returns the node numbers of an element
   \details numbers are returned in the standard

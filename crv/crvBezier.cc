@@ -572,8 +572,6 @@ public:
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
 
-        apf::Vector3 xv;
-
         for(int a = 0; a < 6; ++a)
           for(int b = 0; b < nE; ++b) // edge nodes
             grads[4+a*nE+b] = gxii[tev[a][0]]*binomial(P,b+1)*(P-b-1)
@@ -590,10 +588,6 @@ public:
             double xiix;
             double x = xii[ttv[a][g_index[b][0]]]
                      + xii[ttv[a][g_index[b][1]]];
-
-            double bernstein = trinomial(P,P-2,1)
-              *Bijk(P-2,1,1,xii[ttv[a][b]],xii[ttv[a][(b+1) % 3]],
-                  xii[ttv[a][(b+2) % 3]]);
 
             if(x < 1e-12){
               xiix = 0.5;
