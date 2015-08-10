@@ -23,6 +23,7 @@ set(CRV_SOURCES
   crvBlended.cc
   crvCurveMesh.cc
   crvSnap.cc
+  crvTables.cc
   crvVtk.cc)
 
 set(CRV_HEADERS

@@ -228,22 +228,20 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
   apf::DynamicArray<int> order;
   apf::DynamicArray<T> adata;
   int n = 0;
-  for (int d = 0; d <= ed; ++d)
-  {
-    if (fs->hasNodesIn(d))
-    {
+  for (int d = 0; d <= ed; ++d) {
+    if (fs->hasNodesIn(d)) {
       Downward a;
       int na = mesh->getDownward(entity,d,a);
-      for (int i = 0; i < na; ++i)
-      {
+      for (int i = 0; i < na; ++i) {
         int nan = fs->countNodesOn(mesh->getType(a[i]));
-        if (nan > 1 && ed != d) {
+        if (nan > 1 && ed != d) { /* multiple shared nodes, check alignment */
           order.setSize(nen); /* nen >= nan */
           adata.setSize(nen); /* setSize is no-op for the same size */
           es->alignSharedNodes(mesh, entity, a[i], &order[0]);
           get(a[i], &adata[0]);
           reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
-        } else {
+        } else if (nan) { /* non-zero set of nodes, either one
+                             or not shared */
           get(a[i], &data[n]);
         }
         n += nc * nan;

@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "crvBezier.h"
+#include "crvTables.h"
 /* see bezier.tex */
 
 namespace crv {
@@ -92,23 +93,6 @@ public:
   class Triangle : public apf::EntityShape
   {
   public:
-    Triangle()
-    {
-      int m1[] = {2,0,1};
-      int m2[] = {2,5,0,4,3,1};
-      int m3[] = {2,7,8,0,6,9,3,5,4,1};
-      int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-      int m5[] = {2,11,12,13,14,0,10,19,20,15,3,9,18,16,4,8,17,5,7,6,1};
-      int m6[] = {2,13,14,15,16,17,0,12,24,25,26,18,3,11,23,27,19,4,10,
-          22,20,5,9,21,6,8,7,1};
-
-      int* maps[6] = {m1,m2,m3,m4,m5,m6};
-      for(int j = 1; j <= 6; ++j){
-        map[j-1].allocate(curved_face_total[BEZIER][j-1]);
-        for(int i = 0; i < curved_face_total[BEZIER][j-1]; ++i)
-          map[j-1][i] = maps[j-1][i];
-      }
-    }
     void getValues(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<double>& values) const
     {
@@ -120,7 +104,7 @@ public:
 
         for(int i = 0; i < P+1; ++i)
           for(int j = 0; j < P+1-i; ++j)
-            values[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
+            values[b2[P][j*(P+1)+i-j*(j-1)/2]] =
                 trinomial(P,i,j)*Bijk(i,j,P-i-j,xii[0],xii[1],xii[2]);
 
       } else
@@ -139,7 +123,7 @@ public:
       if(!useBlend() || m->getModelType(m->toModel(e)) != m->getDimension()){
         for(int i = 1; i < P+1; ++i)
           for(int j = 1; j < P-i; ++j)
-            grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
+            grads[b2[P][j*(P+1)+i-j*(j-1)/2]] =
                 gxii[0]*trinomial(P,i,j)*(i*(1.-xii[1])-(P-j)*xii[0])
                 *Bijk(i-1,j,P-i-j-1,xii[0],xii[1],xii[2]) +
                 gxii[1]*trinomial(P,i,j)*(j*(1.-xii[0])-(P-i)*xii[1])
@@ -147,31 +131,31 @@ public:
 
         // i = 0
         for(int j = 1; j < P; ++j)
-          grads[map[P-1][j*(P+1)-j*(j-1)/2]] =
+          grads[b2[P][j*(P+1)-j*(j-1)/2]] =
             (gxii[0]*(j-P)*xii[1] +
             gxii[1]*(j*(1.-xii[0])-P*xii[1]))
             *binomial(P,j)*Bij(j-1,P-j-1,xii[1],xii[2]);
 
         // j = 0
         for(int i = 1; i < P; ++i)
-          grads[map[P-1][i]] =
+          grads[b2[P][i]] =
               (gxii[0]*(i*(1.-xii[1])-P*xii[0]) +
                gxii[1]*(i-P)*xii[0])
               *binomial(P,i)*Bij(i-1,P-i-1,xii[0],xii[2]);
 
         // k = 0
         for(int i = 1, j = P-1; i < P; ++i, --j)
-          grads[map[P-1][j*(P+1)+i-j*(j-1)/2]] =
+          grads[b2[P][j*(P+1)+i-j*(j-1)/2]] =
               (gxii[0]*i*xii[1] + gxii[1]*j*xii[0])
               *trinomial(P,i,j)*Bij(i-1,j-1,xii[0],xii[1]);
 
 
         // i = j = 0
-        grads[map[P-1][0]] = gxii[2]*P*pow(xii[2],P-1);
+        grads[b2[P][0]] = gxii[2]*P*pow(xii[2],P-1);
         // i = k = 0
-        grads[map[P-1][((P+1)*(P+2))/2-1]] = gxii[1]*P*pow(xii[1],P-1);
+        grads[b2[P][((P+1)*(P+2))/2-1]] = gxii[1]*P*pow(xii[1],P-1);
         // j = k = 0
-        grads[map[P-1][P]] = gxii[0]*P*pow(xii[0],P-1);
+        grads[b2[P][P]] = gxii[0]*P*pow(xii[0],P-1);
 
       } else
         BlendedTriangleGetLocalGradients(m,e,xi,grads);
@@ -183,8 +167,6 @@ public:
     {
       alignEdgeWithTri(m,elem,shared,order);
     }
-  private:
-    apf::NewArray<int> map[6];
   };
   class Tetrahedron : public apf::EntityShape
   {
@@ -1091,26 +1073,6 @@ public:
   class Triangle : public apf::EntityShape
   {
   public:
-    Triangle()
-    {
-      int m1[] = {2,0,1};
-      int m2[] = {2,5,0,4,3,1};
-      int m3[] = {2,7,8,0,6,9,3,5,4,1};
-      int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-      int m5[] = {2,11,12,13,14,0,10,19,20,15,3,9,18,16,4,8,17,5,7,6,1};
-      int m6[] = {2,13,14,15,16,17,0,12,24,25,26,18,3,11,23,27,19,4,10,
-          22,20,5,9,21,6,8,7,1};
-
-      int* maps[6] = {m1,m2,m3,m4,m5,m6};
-      for(int j = 1; j <= 6; ++j){
-        map[j-1].allocate(curved_face_total[BEZIER][j-1]);
-        for(int i = 0; i < curved_face_total[BEZIER][j-1]; ++i)
-          map[j-1][i] = maps[j-1][i];
-      weights.allocate(curved_face_total[BEZIER][P-1]);
-      for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i)
-        weights[i] = 1.;
-      }
-    }
     void getValues(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<double>& values) const
     {
@@ -1174,7 +1136,6 @@ public:
     }
   private:
     apf::NewArray<double> weights;
-    apf::NewArray<int> map[6];
   };
   apf::EntityShape* getEntityShape(int type)
   {

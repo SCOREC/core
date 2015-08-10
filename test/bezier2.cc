@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvTables.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -18,22 +19,7 @@
  */
 static int getPointIndex(int P, int I, int J)
 {
-  static apf::NewArray<int> map[6];
-  int m1[] = {2,0,1};
-  int m2[] = {2,5,0,4,3,1};
-  int m3[] = {2,7,8,0,6,9,3,5,4,1};
-  int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-  int m5[] = {2,11,12,13,14,0,10,19,20,15,3,9,18,16,4,8,17,5,7,6,1};
-  int m6[] = {2,13,14,15,16,17,0,12,24,25,26,18,3,11,23,27,19,4,10,
-      22,20,5,9,21,6,8,7,1};
-
-  int* maps[6] = {m1,m2,m3,m4,m5,m6};;
-  for(int j = 1; j <= 6; ++j){
-    map[j-1].allocate((j+1)*(j+2)/2);
-    for(int i = 0; i < (j+1)*(j+2)/2; ++i)
-      map[j-1][i] = maps[j-1][i];
-  }
-  return map[P-1][J*(P+1)+I-J*(J-1)/2];
+  return crv::b2[P][J*(P+1)+I-J*(J-1)/2];
 }
 
 static double getJacobianDeterminant(apf::NewArray<apf::Vector3>& nodes,
