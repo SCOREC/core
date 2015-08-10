@@ -465,20 +465,71 @@ class LagrangeQuadratic : public QuadraticBase
     LagrangeQuadratic() { registerSelf(apf::LagrangeQuadratic::getName()); }
     const char* getName() const {return "Lagrange Quadratic";}
     class Quad : public EntityShape
-    { /* TODO: implement this and then update hasNodesIn, countNodesOn */
+    {
       public:
         void getValues(Mesh*, MeshEntity*,
-            Vector3 const&, NewArray<double>&) const
+            Vector3 const& xi, NewArray<double>& values) const
         {
-          fail("quadratic Lagrange quadrilateral shape values not implemented\n");
+          /*This is ordering of shape functions used below
+          *      ^n
+          *      |
+          *   4--7--3
+          *   |  |  |
+          *   8  9--6--->e
+          *   |     |
+          *   1--5--2
+          *
+          *   indices are just above minus one
+          */
+          double e = xi[0];
+          double n = xi[1];
+          values.allocate(9);
+          values[0] = (e*n)*(e-1)*(n-1)/4.0;
+          values[1] = (e*n)*(e+1)*(n-1)/4.0;
+          values[2] = (e*n)*(e+1)*(n+1)/4.0;
+          values[3] = (e*n)*(e-1)*(n+1)/4.0;
+          values[4] = (1-(e*e))*(n-1)*n/2.0;
+          values[5] = (e+1)*(1-(n*n))*e/2.0;
+          values[6] = (1-(e*e))*(n+1)*n/2.0;
+          values[7] = (e-1)*(1-(n*n))*e/2.0;
+          values[8] = (1-(e*e))*(1-(n*n));
         }
         void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const&,
-            NewArray<Vector3>&) const
+            Vector3 const& xi,
+            NewArray<Vector3>& grads) const
         {
-          fail("quadratic Lagrange quadrilateral shape grads not implemented\n");
+          double e = xi[0];
+          double n = xi[1];
+          grads.allocate(9);
+          grads[0] = Vector3(
+              (e - 0.5)*(n*(n-1))/2.0,
+              (n - 0.5)*(e*(e-1))/2.0, 0.0);
+          grads[1] = Vector3(
+              (e + 0.5)*(n*(n-1))/2.0,
+              (n - 0.5)*(e*(e+1))/2.0, 0.0);
+          grads[2] = Vector3(
+              (e + 0.5)*(n*(n+1))/2.0,
+              (n + 0.5)*(e*(e+1))/2.0, 0.0);
+          grads[3] = Vector3(
+              (e - 0.5)*(n*(n+1))/2.0,
+              (n + 0.5)*(e*(e-1))/2.0, 0.0);
+          grads[4] = Vector3(
+              -e*(n*(n-1)),
+              (n - 0.5)*(1-(e*e)), 0.0);
+          grads[5] = Vector3(
+              (e + 0.5)*(1-(n*n)),
+              -n*(e*(e+1)), 0.0);
+          grads[6] = Vector3(
+              -e*(n*(n+1)),
+              (n + 0.5)*(1-(e*e)), 0.0);
+          grads[7] = Vector3(
+              (e - 0.5)*(1-(n*n)),
+              -n*(e*(e-1)), 0.0);
+          grads[8] = Vector3(
+              -2.0*e*(1-(n*n)),
+              -2.0*n*(1-(e*e)), 0.0);
         }
-        int countNodes() const {return 8;}
+        int countNodes() const {return 9;}
     };
     EntityShape* getEntityShape(int type)
     {
@@ -490,7 +541,8 @@ class LagrangeQuadratic : public QuadraticBase
     bool hasNodesIn(int dimension)
     {
       if ((dimension == 0)||
-          (dimension == 1))
+          (dimension == 1)||
+          (dimension == 2))
         return true;
       else
         return false;
@@ -498,7 +550,8 @@ class LagrangeQuadratic : public QuadraticBase
     int countNodesOn(int type)
     {
       if ((type == Mesh::VERTEX)||
-          (type == Mesh::EDGE))
+          (type == Mesh::EDGE)||
+          (type == Mesh::QUAD))
         return 1;
       else
         return 0;
