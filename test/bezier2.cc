@@ -1,5 +1,6 @@
 #include <crv.h>
 #include <crvTables.h>
+#include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -17,79 +18,6 @@
  * is not possible in our current framework, this method is not implemented in
  * the main code, but serves its use for code validation.
  */
-static int getPointIndex(int P, int I, int J)
-{
-  return crv::b2[P][J*(P+1)+I-J*(J-1)/2];
-}
-
-static double getJacobianDeterminant(apf::NewArray<apf::Vector3>& nodes,
-    int d, int i1, int j1, int i2, int j2)
-{
-  int p00 = getPointIndex(d,i1+1,j1);
-  int p01 = getPointIndex(d,i1,j1+1);
-  int p10 = getPointIndex(d,i2+1,j2);
-  int p11 = getPointIndex(d,i2,j2);
-  apf::Vector3 c0 = nodes[p01]-nodes[p00];
-  apf::Vector3 c1 = nodes[p11]-nodes[p10];
-  return c0[0]*c1[1]-c1[0]*c0[1];
-}
-
-static int factorial(int i)
-{
-  static int table[13] = {1,1,2,6,24,120,720,5040,40320,362880,
-      3628800,39916800,479001600};
-  return table[i];
-}
-
-static int CDIJK(int d, int i, int j, int k)
-{
-  return factorial(d)/factorial(i)/factorial(j)/factorial(k);
-}
-
-static double NIJK(apf::NewArray<apf::Vector3>& nodes,
-    int d, int I, int J, int K)
-{
-  int CD = CDIJK(2*(d-1),I,J,K);
-  double sum = 0.;
-  for(int j1 = 0; j1 <= J; ++j1){
-    for(int i1 = 0; i1 <= I; ++i1){
-      int k1 = d-1 - i1 - j1;
-      if(i1 > d-1 || j1 > d-1 || I-i1 > d-1 || J-j1 > d-1 ||
-         i1+j1 > d-1 || I-i1 + J-j1 > d-1)
-        continue;
-      sum += CDIJK(d-1,i1,j1,k1)
-          *CDIJK(d-1,I-i1,J-j1,K-k1)
-          *getJacobianDeterminant(nodes,d,i1,j1,I-i1,J-j1)/CD;
-    }
-  }
-  return sum*d*d;
-}
-
-static double BIJK(int d, int i, int j, apf::Vector3& xi)
-{
-  double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-
-  return factorial(d)/factorial(i)/factorial(j)/factorial(d-i-j)
-      *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],d-i-j);
-}
-
-static double computeAlternativeJacobianDet(apf::Mesh* m, apf::MeshEntity* e,
-    apf::Vector3& xi)
-{
-  int d = m->getShape()->getOrder();
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
-  apf::NewArray<apf::Vector3> nodes;
-  apf::getVectorNodes(elem,nodes);
-
-  double detJ = 0.;
-  for(int I = 0; I <= 2*(d-1); ++I){
-    for(int J = 0; J <= 2*(d-1)-I; ++J){
-      detJ += BIJK(2*(d-1),I,J,xi)*NIJK(nodes,d,I,J,2*(d-1)-I-J);
-    }
-  }
-  apf::destroyElement(elem);
-  return detJ;
-}
 
 static void testJacobian(apf::Mesh2* m)
 {
@@ -109,19 +37,13 @@ static void testJacobian(apf::Mesh2* m)
         xi[0] = 1.*i/n;
         apf::getJacobian(me,xi,Jac);
         double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
-        double J = computeAlternativeJacobianDet(m,e,xi);
+        double J = crv::computeAlternateTriJacobianDet(m,e,xi);
         assert(fabs(detJ-J) < 1e-14);
       }
     }
     apf::destroyMeshElement(me);
   }
   m->end(it);
-}
-
-static double BIJ(int d, int i, apf::Vector3& xi)
-{
-  return factorial(d)/factorial(i)/factorial(d-i)
-      *pow(xi[0],i)*pow(1.-xi[0],d-i);
 }
 
 static void testEdgeGradients(apf::Mesh2* m)
@@ -154,7 +76,8 @@ static void testEdgeGradients(apf::Mesh2* m)
       apf::Vector3 J(0,0,0);
       xi[0] = (double)i/n;
       for(int p = 0; p <= d-1; ++p){
-        J += (nodes[map[p+1]]-nodes[map[p]])*BIJ(d-1,p,xi)*d;
+        J += (nodes[map[p+1]]-nodes[map[p]])*d
+            *crv::binomial(d-1,p)*crv::Bij(p,d-1-p,xi[0],1.-xi[0]);
       }
       assert(fabs(J[0]-Jac[0][0]*2.0) < 1e-14
           && fabs(J[1]-Jac[0][1]*2.0) < 1e-14);

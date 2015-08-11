@@ -56,6 +56,13 @@ double Bij(int ij[], double xi[]);
 double Bijk(int ijk[], double xi[]);
 double Bijkl(int ijkl[], double xi[]);
 
+int getTriPointIndex(int P, int i, int j);
+int getTetPointIndex(int P, int i, int j, int k);
+
+double computeAlternateTriJacobianDet(apf::Mesh* m,
+    apf::MeshEntity* e, apf::Vector3& xi);
+double computeAlternateTetJacobianDet(apf::Mesh* m,
+    apf::MeshEntity* e, apf::Vector3& xi);
 /** \brief shape blending functions */
 void BlendedTriangleGetValues(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<double>& values);
