@@ -232,13 +232,15 @@ int eigen(Matrix3x3 const& A,
 
 }//namespace apf
 
-/** \brief write a 1 by 1 matrix to a C++ stream */
-std::ostream& operator<<(std::ostream& s, apf::Matrix<1,1> const& A);
-/** \brief write a 2 by 2 matrix to a C++ stream */
-std::ostream& operator<<(std::ostream& s, apf::Matrix<2,2> const& A);
-/** \brief write a 3 by 3 matrix to a C++ stream */
-std::ostream& operator<<(std::ostream& s, apf::Matrix<3,3> const& A);
-/** \brief write a 4 by 4 matrix to a C++ stream */
-std::ostream& operator<<(std::ostream& s, apf::Matrix<4,4> const& A);
+template <std::size_t M, std::size_t N>
+std::ostream& operator<<(std::ostream& s, apf::Matrix<N,M> const& A)
+{
+  for (std::size_t i = 0; i < M; ++i) {
+    for (std::size_t j = 0; j < N; ++j)
+      s << A[i][j] << ' ';
+    s << '\n';
+  }
+  return s;
+}
 
 #endif

@@ -256,35 +256,4 @@ template double getDeterminant(Matrix<2,2> const& A);
 template double getDeterminant(Matrix<3,3> const& A);
 template double getDeterminant(Matrix<4,4> const& A);
 
-template <std::size_t M, std::size_t N>
-std::ostream& print(std::ostream& s, Matrix<N,M> const& A)
-{
-  for (std::size_t i = 0; i < M; ++i) {
-    for (std::size_t j = 0; j < N; ++j)
-      s << A[i][j] << ' ';
-    s << '\n';
-  }
-  return s;
-}
-
-}
-
-std::ostream& operator<<(std::ostream& s, apf::Matrix<1,1> const& A)
-{
-  return apf::print(s, A);
-}
-
-std::ostream& operator<<(std::ostream& s, apf::Matrix<2,2> const& A)
-{
-  return apf::print(s, A);
-}
-
-std::ostream& operator<<(std::ostream& s, apf::Matrix<3,3> const& A)
-{
-  return apf::print(s, A);
-}
-
-std::ostream& operator<<(std::ostream& s, apf::Matrix<4,4> const& A)
-{
-  return apf::print(s, A);
 }
