@@ -11,15 +11,35 @@ namespace crv {
 
 int factorial(int i)
 {
-  static int table[11] = {1,1,2,6,24,120,720,5040,40320,362880,3628800};
+  static int table[13] = {1,1,2,6,24,120,720,5040,40320,362880,
+      3628800,39916800,479001600};
   return table[i];
 }
 
 int binomial(int n, int i)
 {
-  static int const table[28] =
-  {1,1,1,1,1,1,1,1,2,3,4,5,6,1,3,6,10,15,1,4,10,20,1,5,15,1,6,1};
-  return table[i*7 - (i-1)*i/2 + n-i];
+
+  i = std::min(n-i,i);
+
+  if(i == 0)
+    return 1;
+  if(i == 1)
+    return n;
+
+  static int const bn4[1] = {6};
+  static int const bn5[1] = {10};
+  static int const bn6[2] = {15,20};
+  static int const bn7[2] = {21,35};
+  static int const bn8[3] = {28,56,70};
+  static int const bn9[3] = {36,84,126};
+  static int const bn10[4] = {45,120,210,252};
+  static int const bn11[4] = {55,165,330,462};
+  static int const bn12[5] = {66,220,495,792};
+  static int const bn13[5] = {78,286,715,1287,1716};
+  static int const* const bnTable[10] = {bn4,bn5,bn6,bn7,bn8,
+      bn9,bn10,bn11,bn12,bn13};
+
+  return bnTable[n-4][i-2];
 }
 
 int trinomial(int n, int i, int j)

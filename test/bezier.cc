@@ -6,6 +6,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <apfDynamicMatrix.h>
+
 /*
  * This analytic function is a "pringle",
  * defined on [0,1] in R^2 as z = ((2x-1)^2-(2y-1)^2)*exp(xy)
@@ -360,10 +361,15 @@ void test3DJacobian(apf::Mesh2* m)
         for (int i = 0; i <= n-j-k; ++i){
           xi[0] = 1.*i/n;
           apf::getJacobian(elem,xi,J);
-
+//          if(crv::getBlendingOrder() == 0){
+//          printf("%d %f %f\n",m->getShape()->getOrder(),apf::getJacobianDeterminant(J,3),
+//              crv::computeAlternativeTetJacobianDet(m,e,xi));
+//          assert(std::fabs(apf::getJacobianDeterminant(J,3)-
+//              crv::computeAlternativeTetJacobianDet(m,e,xi)) < 1e-13);
+//          }
           for(int a = 0; a < 3; ++a)
             for(int b = 0; b < 3; ++b)
-              if(fabs(Je[a][b]-J[a][b]) > 1.e-13)
+              if(std::fabs(Je[a][b]-J[a][b]) > 1.e-13)
               {
                 std::cout << "xi " << xi << std::endl;
                 std::cout << J << std::endl;
@@ -379,6 +385,36 @@ void test3DJacobian(apf::Mesh2* m)
       }
     }
     apf::destroyMeshElement(elem);
+  }
+  m->end(it);
+}
+
+static void testAlternateTetJacobian(apf::Mesh2* m)
+{
+  int n = 5;
+
+  apf::MeshIterator* it = m->begin(3);
+  apf::MeshEntity* e;
+  apf::Vector3 xi;
+  apf::Matrix3x3 Jac;
+
+  while ((e = m->iterate(it))) {
+    apf::MeshElement* me =
+        apf::createMeshElement(m,e);
+    for (int k = 0; k <= n; ++k){
+      xi[2] = 1.*k/n;
+      for (int j = 0; j <= n-k; ++j){
+        xi[1] = 1.*j/n;
+        for (int i = 0; i <= n-j-k; ++i){
+          xi[0] = 1.*i/n;
+          apf::getJacobian(me,xi,Jac);
+          double detJ = apf::getDeterminant(Jac);
+          double J2 = crv::computeAlternateTetJacobianDet(m,e,xi);
+          assert(std::fabs(detJ-J2) < 1e-13);
+        }
+      }
+    }
+    apf::destroyMeshElement(me);
   }
   m->end(it);
 }
@@ -460,6 +496,8 @@ void test3DFull()
     testSize3D(m);
     test3DJacobian(m);
     test3DJacobianTri(m);
+    testAlternateTetJacobian(m);
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedTest");
     // check values sum to 1.0 in the tet fieldshape
     apf::DynamicMatrix A;
     crv::getTransformationMatrix(m,apf::Mesh::TET,A);
