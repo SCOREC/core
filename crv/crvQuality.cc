@@ -20,6 +20,12 @@ int getTetPointIndex(int P, int i, int j, int k)
   return crv::b3[P][i][j][k];
 }
 
+/* This work is based on the approach of Geometric Validity of high-order
+ * lagrange finite elements, theory and practical guidance,
+ * by George, Borouchaki, and Barral. (2014)
+ *
+ * The notation follows theirs, almost exactly.
+ */
 static double getTriPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
     int P, int i1, int j1, int i2, int j2)
 {
@@ -48,13 +54,12 @@ static double getTetPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
 static double Nijk(apf::NewArray<apf::Vector3>& nodes,
     int d, int I, int J)
 {
-  int CD = trinomial(2*(d-1),I,J);
   double sum = 0.;
+  int CD = trinomial(2*(d-1),I,J);
   for(int j1 = 0; j1 <= J; ++j1){
-    for(int i1 = 0; i1 <= I; ++i1){
-      if(i1 > d-1 || j1 > d-1 || I-i1 > d-1 || J-j1 > d-1 ||
-         i1+j1 > d-1 || I-i1 + J-j1 > d-1)
-        continue;
+    int i1start = std::max(0,I+J-j1-(d-1));
+    int i1end = std::min(I,d-1-j1);
+    for(int i1 = i1start; i1 <= i1end; ++i1){
       sum += trinomial(d-1,i1,j1)*trinomial(d-1,I-i1,J-j1)
           *getTriPartialJacobianDet(nodes,d,i1,j1,I-i1,J-j1);
     }
@@ -69,27 +74,21 @@ static double Nijkl(apf::NewArray<apf::Vector3>& nodes,
   int CD = quadnomial(3*(d-1),I,J,K);
 
   for(int k1 = 0; k1 <= K; ++k1){
-    for(int k2 = 0; k2 <= K-k1; ++k2){
+    int k2start = std::max(0,K-k1-(d-1));
+    for(int k2 = k2start; k2 <= K-k1; ++k2){
       for(int j1 = 0; j1 <= J; ++j1){
-        for(int j2 = 0; j2 <= J-j1; ++j2){
-
-          for(int i1 = 0; i1 <= I; ++i1){
-            for(int i2 = 0; i2 <= I-i1; ++i2){
-              int i3 = I - i1 - i2;
-              int j3 = J - j1 - j2;
-              int k3 = K - k1 - k2;
-
-              int l1 = d-1 - i1 - j1 - k1;
-              int l2 = d-1 - i2 - j2 - k2;
-              int l3 = d-1 - i3 - j3 - k3;
-
-              if(i1 > d-1 || j1 > d-1 || k1 > d-1 ||
-                  i2 > d-1 || j2 > d-1 || k2 > d-1 ||
-                  i3 > d-1 || j3 > d-1 || k3 > d-1 ||
-                  l1 > d-1 || l2 > d-1 || l3 > d-1 ||
-                  l1 < 0 || l2 < 0 || l3 < 0)
-                continue;
-              sum += quadnomial(d-1,i1,j1,k1)*quadnomial(d-1,i2,j2,k2)*quadnomial(d-1,i3,j3,k3)
+        int j2start = std::max(0,J-j1-(d-1));
+        for(int j2 = j2start; j2 <= J-j1; ++j2){
+          int i1end = std::min(I,d-1-j1-k1);
+          for(int i1 = 0; i1 <= i1end; ++i1){
+            int i2start = std::max(0,I+J+K-i1-j1-k1-j2-k2-(d-1));
+            int i2end = std::min(I-i1,d-1-j2-k2);
+            for(int i2 = i2start; i2 <= i2end; ++i2){
+              int i3 = I-i1-i2;
+              int j3 = J-j1-j2;
+              int k3 = K-k1-k2;
+              sum += quadnomial(d-1,i1,j1,k1)*quadnomial(d-1,i2,j2,k2)
+                  *quadnomial(d-1,i3,j3,k3)
                   *getTetPartialJacobianDet(nodes,d,i1,j1,k1,i2,j2,k2,i3,j3,k3);
             }
           }
