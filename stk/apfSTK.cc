@@ -360,7 +360,6 @@ void readStkField(
   {
     long globalId = bulk.identifier(bucket[i]);
     Node node = lookup(globalId,globalIdsToNodes);
-    double value;
     setScalar(field, node.entity, node.node, data[i]);
   }
 }
