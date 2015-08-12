@@ -233,7 +233,7 @@ int eigen(Matrix3x3 const& A,
 }//namespace apf
 
 template <std::size_t M, std::size_t N>
-std::ostream& operator<<(std::ostream& s, apf::Matrix<N,M> const& A)
+std::ostream& operator<<(std::ostream& s, apf::Matrix<M,N> const& A)
 {
   for (std::size_t i = 0; i < M; ++i) {
     for (std::size_t j = 0; j < N; ++j)
