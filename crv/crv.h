@@ -143,6 +143,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 
+int factorial(int i);
 /** \brief binomial functions */
 int binomial(int n, int i);
 int trinomial(int n, int i, int j);

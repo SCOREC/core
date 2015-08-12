@@ -101,28 +101,39 @@ add_test(refineX
   ${MESHFILE}
   0
   "refXpipe/")
-splitfun(split_4
-  ./zsplit
-  "${MDIR}/pipe.smd"
-  ${MESHFILE}
-  "pipe_4_.smb"
-  2 2)
+if(ENABLE_ZOLTAN)
+  splitfun(split_4
+    ./zsplit
+    "${MDIR}/pipe.smd"
+    ${MESHFILE}
+    "pipe_4_.smb"
+    2 2)
+else()
+  splitfun(split_4
+    ./split
+    "${MDIR}/pipe.smd"
+    ${MESHFILE}
+    "pipe_4_.smb"
+    2 2)
+endif()
 add_test(verify_parallel
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./verify
   "${MDIR}/pipe.smd"
   "pipe_4_.smb")
-add_test(ma_parallel
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./ma_test
-  "${MDIR}/pipe.smd"
-  "pipe_4_.smb")
-add_test(tet_parallel
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./tetrahedronize
-  "${MDIR}/pipe.smd"
-  "pipe_4_.smb"
-  "tet.smb")
+if(ENABLE_ZOLTAN)
+  add_test(ma_parallel
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./ma_test
+    "${MDIR}/pipe.smd"
+    "pipe_4_.smb")
+  add_test(tet_parallel
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./tetrahedronize
+    "${MDIR}/pipe.smd"
+    "pipe_4_.smb"
+    "tet.smb")
+endif()
 set(MDIR ${MESHES}/torus)
 add_test(balance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
@@ -130,12 +141,14 @@ add_test(balance
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusBal4p/")
-add_test(zbalance
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./zbalance
-  "${MDIR}/torus.dmg"
-  "${MDIR}/4imb/torus.smb"
-  "torusZbal4p/")
+if(ENABLE_ZOLTAN)
+  add_test(zbalance
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./zbalance
+    "${MDIR}/torus.dmg"
+    "${MDIR}/4imb/torus.smb"
+    "torusZbal4p/")
+endif()
 add_test(gap
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./gap
@@ -176,12 +189,14 @@ add_test(vtxElmBalance
   "${MDIR}/4imb/"
   "afosrBal4p/")
 set(MDIR ${MESHES}/cube)
-parma(ptnParma_cube
-  "${MDIR}/cube.dmg"
-  "${MDIR}/pumi670/cube.smb"
-  "ptnParmaCube/" 
-  "4" "rib" "reptn" "1"
-  1)
+if(ENABLE_ZOLTAN)
+  parma(ptnParma_cube
+    "${MDIR}/cube.dmg"
+    "${MDIR}/pumi670/cube.smb"
+    "ptnParmaCube/" 
+    "4" "rib" "reptn" "1"
+    1)
+endif()
 add_test(construct
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./construct
@@ -265,10 +280,12 @@ splitfun(split_fusion
   1 2)
 # the part count mismatch is intentional,
 # this test runs on half its procs
-add_test(adapt_fusion
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./fusion
-  "fusion_2_.smb")
+if(ENABLE_ZOLTAN)
+  add_test(adapt_fusion
+    ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ./fusion
+    "fusion_2_.smb")
+endif()
 add_test(fusion_field
   ${MPIRUN} ${MPIRUN_PROCFLAG} 2
   ./fusion2)
@@ -307,11 +324,13 @@ if (PCU_COMPRESS)
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/run_sim)
-  cook(chef3 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 2 ${MDIR})
-  set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/run_sim)
-  cook(chef4 ${CMAKE_CURRENT_BINARY_DIR}/chef 2 2 ${MDIR})
-  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/run_sim)
-  cook(chef5 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 4 ${MDIR})
+  if(ENABLE_ZOLTAN)
+    cook(chef3 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 2 ${MDIR})
+    set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/run_sim)
+    cook(chef4 ${CMAKE_CURRENT_BINARY_DIR}/chef 2 2 ${MDIR})
+    set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/run_sim)
+    cook(chef5 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 4 ${MDIR})
+  endif()
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run_sim)
   cook(chef6 ${CMAKE_CURRENT_BINARY_DIR}/chef 4 1 ${MDIR})
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
