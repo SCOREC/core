@@ -279,6 +279,13 @@ static void getEssentialBCs(BCs& bcs, Output& o)
 static void getInitialConditions(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
+  if (in.solutionMigration) {
+    if (!PCU_Comm_Self())
+      printf("All attribute-based initial conditions, "
+             "if any, "
+             "are ignored due to request for SolutionMigration\n");
+    return;
+  }
   apf::Mesh* m = o.mesh;
   apf::NewArray<double> s(in.ensa_dof);
   apf::Field* f = m->findField("solution");
