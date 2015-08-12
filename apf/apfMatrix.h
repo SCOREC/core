@@ -40,6 +40,18 @@ class Matrix : public Array<Vector<N>,M>
       for (std::size_t j=0; j < N; ++j)
         this->elements[i][j] = array[i][j];
     }
+
+    /** \brief immutable index operator */
+    double operator()(std::size_t i, std::size_t j) const
+    {
+      return this->elements[i][j];
+    }
+    /** \brief mutable index operator */
+    double& operator()(std::size_t i, std::size_t j)
+    {
+      return this->elements[i][j];
+    }
+
     /** \brief add two matrices */
     Matrix<M,N> operator+(Matrix<M,N> const& b) const
     {
