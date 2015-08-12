@@ -134,9 +134,6 @@ static bool contains(std::string const& a, std::string const& b)
 static void validate(Input& in)
 {
   assert(in.parmaPtn == 0 || in.parmaPtn == 1);
-  if (in.adaptFlag)
-    assert(contains(in.attributeFileName, "NOIC.spj"));
-  assert(in.threaded);
   assert( ! (in.buildMapping && in.adaptFlag));
 }
 
