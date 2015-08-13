@@ -80,8 +80,9 @@ int countComponents(Numbering* n);
 
 /** \brief returns the node numbers of an element
   \details numbers are returned in the standard
-           element node ordering for its shape functions */
-void getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
+           element node ordering for its shape functions
+  \returns the number of element nodes */
+int getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
 
 /** \brief return the number of fixed degrees of freedom */ 
 int countFixed(Numbering* n);
