@@ -20,6 +20,7 @@ apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
     } else {
       std::map<std::string, int> methodMap;
       methodMap["graph"] = apf::GRAPH;
+      methodMap["zrib"] = apf::RIB;
       methodMap["hypergraph"] = apf::HYPERGRAPH;
       int method = methodMap[in.partitionMethod];
       splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
