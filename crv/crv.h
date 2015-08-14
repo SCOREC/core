@@ -45,6 +45,9 @@ class MeshCurver
     void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
       apf::NewArray<double>& c);
 
+    /** \brief wrapper around synchronizeFieldData */
+    void synchronize();
+
   protected:
     apf::Mesh2* m_mesh;
     int m_order;
