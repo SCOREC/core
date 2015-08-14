@@ -12,6 +12,41 @@
 
 namespace crv {
 
+static int countOwnedEntitiesOfType(apf::Mesh* m, int type)
+{
+  apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
+  apf::MeshEntity* e;
+  int count = 0;
+  while ((e = m->iterate(it)))
+    if (m->getType(e)==type && m->isOwned(e))
+      ++count;
+  m->end(it);
+  return count;
+}
+
+static std::string getSuffix(int type)
+{
+  std::stringstream ss;
+  switch (type) {
+  // control points
+  case apf::Mesh::VERTEX:
+    ss << "_ctrlPts";
+    break;
+  case apf::Mesh::EDGE:
+    ss << "_edge";
+    break;
+  case apf::Mesh::TRIANGLE:
+    ss << "_tri";
+    break;
+  case apf::Mesh::TET:
+    ss << "_tet";
+    break;
+  default:
+    break;
+  }
+  return ss.str();
+}
+
 static void writePointConnectivity(std::ostream& file, int n)
 {
   for(int i = 0; i < n; ++i)
@@ -216,6 +251,7 @@ static void writeTriJacobianData(std::ostream& file, apf::Mesh* m, int n)
   apf::Matrix3x3 J;
 
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e)) continue;
     apf::MeshElement* me =
         apf::createMeshElement(m,e);
     for (int j = 0; j <= n; ++j){
@@ -277,6 +313,7 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
   apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
 
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e)) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
     for(int h = 0; h < 4; ++h){
       for (int k = 0; k <= n; ++k){
@@ -315,15 +352,46 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
   file << "</PointData>\n";
 }
 
+static void writePvtuFile(const char* prefix, apf::Mesh* m, int type)
+{
+  std::stringstream ss;
+  ss << prefix << "_" << m->getShape()->getOrder()
+     << getSuffix(type) << ".pvtu";
+  std::string fileName = ss.str();
+  std::ofstream file(fileName.c_str());
+  assert(file.is_open());
+  file << "<VTKFile type=\"PUnstructuredGrid\">\n";
+  file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
+  file << "<PPoints>\n";
+  file << "<PDataArray type=\"Float64\" Name=\"coordinates\" "
+       << "NumberOfComponents=\"3\" format=\"ascii\"/>\n";
+  file << "</PPoints>\n";
+  file << "<PPointData>\n";
+  file << "<PDataArray type=\"Float64\" Name=\"detJacobian\" "
+       << "NumberOfComponents=\"1\" format=\"ascii\"/>\n";
+  file << "</PPointData>\n";
+  for (int i=0; i < PCU_Comm_Peers(); ++i)
+  {
+    std::stringstream ssPCU;
+    ssPCU << prefix << i << "_"
+       << m->getShape()->getOrder()
+       << getSuffix(type) << ".vtu";
+    file << "<Piece Source=\"" << ssPCU.str() << "\"/>\n";
+  }
+
+  file << "</PUnstructuredGrid>\n";
+  file << "</VTKFile>\n";
+}
+
 static void writeEdgeVtuFiles(apf::Mesh* m, int n, const char* prefix)
 {
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
-      << "_edges.vtu";
-
-  int  nCells = m->count(1)*n;
-  int nPoints = m->count(1)*(n+1);
+     << getSuffix(apf::Mesh::EDGE) << ".vtu";
+  int count = countOwnedEntitiesOfType(m,apf::Mesh::EDGE);
+  int nCells = count*n;
+  int nPoints = count*(n+1);
 
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
@@ -339,6 +407,7 @@ static void writeEdgeVtuFiles(apf::Mesh* m, int n, const char* prefix)
   apf::MeshEntity* e;
   apf::Vector3 p,pt;
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e)) continue;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
     for (int i = 0; i <= n; ++i){
@@ -351,7 +420,7 @@ static void writeEdgeVtuFiles(apf::Mesh* m, int n, const char* prefix)
   m->end(it);
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,apf::Mesh::EDGE,m->count(1),n,nCells);
+  writeCells(file,apf::Mesh::EDGE,count,n,nCells);
   writeEnd(file);
 }
 
@@ -360,10 +429,11 @@ static void writeTriangleVtuFiles(apf::Mesh* m, int n, const char* prefix)
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
-     << "_tri.vtu";
+     << getSuffix(apf::Mesh::TRIANGLE) << ".vtu";
 
-  int nPoints = m->count(2)*(n+1)*(n+2)/2;
-  int nCells = m->count(2)*n*n;
+  int count = countOwnedEntitiesOfType(m,apf::Mesh::TRIANGLE);
+  int nPoints = count*(n+1)*(n+2)/2;
+  int nCells = count*n*n;
 
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
@@ -379,6 +449,7 @@ static void writeTriangleVtuFiles(apf::Mesh* m, int n, const char* prefix)
   apf::MeshEntity* e;
   apf::Vector3 p,pt;
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e)) continue;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
     for (int j = 0; j <= n; ++j){
@@ -394,7 +465,7 @@ static void writeTriangleVtuFiles(apf::Mesh* m, int n, const char* prefix)
   m->end(it);
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,apf::Mesh::TRIANGLE,m->count(2),n,nCells);
+  writeCells(file,apf::Mesh::TRIANGLE,count,n,nCells);
   if(m->getShape()->getOrder() > 1)
     writeTriJacobianData(file,m,n);
   writeEnd(file);
@@ -405,13 +476,14 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
-     << "_tet.vtu";
+     << getSuffix(apf::Mesh::TET) << ".vtu";
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
 
-  int nPoints = m->count(3)*4*(n+1)*(n+1)*(n+1);
-  int nCells = m->count(3)*4*n*n*n;
+  int count = countOwnedEntitiesOfType(m,apf::Mesh::TET);
+  int nPoints = count*4*(n+1)*(n+1)*(n+1);
+  int nCells = count*4*n*n*n;
 
   // first initializing with end points
   apf::Vector3 params[15] = {apf::Vector3(0,0,0),apf::Vector3(1,0,0),
@@ -445,6 +517,7 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
 
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e)) continue;
     apf::Element* elem =
         apf::createElement(m->getCoordinateField(),e);
     for(int h = 0; h < 4; ++h){
@@ -469,7 +542,7 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
 
   file << "</DataArray>\n";
   file << "</Points>\n";
-  writeCells(file,apf::Mesh::TET,m->count(3),n,nCells);
+  writeCells(file,apf::Mesh::TET,count,n,nCells);
   writeTetJacobianData(file,m,n);
   writeEnd(file);
   m->end(it);
@@ -477,14 +550,18 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
 
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix,m,apf::Mesh::VERTEX);
+
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
-     << "_controlPoints.vtu";
+     << getSuffix(apf::Mesh::VERTEX) << ".vtu";
 
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
-      nPoints += m->getShape()->countNodesOn(t)*apf::countEntitiesOfType(m,t);
+      nPoints += m->getShape()->countNodesOn(t)
+      *countOwnedEntitiesOfType(m,t);
 
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
@@ -500,6 +577,7 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
     apf::MeshEntity* e;
     apf::Vector3 pt;
     while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
       for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
         m->getPoint(e,i,pt);
         writePoint(file,pt);
@@ -515,6 +593,10 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix,m,type);
+
+  PCU_Barrier();
   switch (type) {
     case apf::Mesh::EDGE:
       writeEdgeVtuFiles(m,n,prefix);
@@ -528,6 +610,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
     default:
       break;
   }
+  PCU_Barrier();
 }
 
 } //namespace crv

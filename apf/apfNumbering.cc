@@ -180,9 +180,9 @@ int countComponents(Numbering* n)
   return n->countComponents();
 }
 
-void getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers)
+int getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers)
 {
-  n->getData()->getElementData(e,numbers);
+  return n->getData()->getElementData(e,numbers);
 }
 
 int countFixed(Numbering* n)

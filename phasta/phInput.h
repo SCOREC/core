@@ -52,6 +52,8 @@ class Input
     int splitAllLayerEdges;
     int filterMatches;
     int axisymmetry;
+    double elementImbalance;
+    double vertexImbalance;
 };
 
 int countNaturalBCs(Input& in);
