@@ -21,6 +21,8 @@ void attachField(
     int in_size,
     int out_size)
 {
+  if (!(in_size <= out_size))
+    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   assert(in_size <= out_size);
   apf::Field* f = apf::createPackedField(m, fieldname, out_size);
   size_t n = m->count(0);
@@ -138,6 +140,8 @@ static double* buildMappingVtxId(apf::Mesh* m)
 static void readStepNum(Input& in)
 {
   std::ifstream tinyFile("numstart.dat");
+  if (!tinyFile.is_open())
+    return;
   int step;
   tinyFile >> step;
   assert(in.timeStepNumber == step);
@@ -162,6 +166,8 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)
     readAndAttachField(in, m, filename.c_str(), "dwal");
+  if (in.adaptStrategy == 1)
+    readAndAttachField(in, m, filename.c_str(), "errors");
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("solution read and attached in %f seconds\n", t1 - t0);
