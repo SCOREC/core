@@ -152,6 +152,12 @@ int binomial(int n, int i);
 int trinomial(int n, int i, int j);
 int quadnomial(int n, int i, int j, int k);
 
+/** \brief subdivision functions for bezier's */
+void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[2]);
+void subdivideBezierTriangle(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4]);
+
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
 
