@@ -530,7 +530,7 @@ static void writeTetNodalField(std::ostream& file, int n, apf::Field* f)
   file << "</DataArray>\n";
 }
 
-static void writeNodalField(std::ostream& file,int type, int n,
+static void writeNodalField(std::ostream& file, int type, int n,
     apf::Field* f)
 {
   switch (type) {
@@ -610,89 +610,6 @@ static void writePointData(std::ostream& file, apf::Mesh* m,
   }
 }
 
-static void writeEdgeVtuFiles(apf::Mesh* m, int n, const char* prefix)
-{
-  std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(apf::Mesh::EDGE) << ".vtu";
-  int count = countOwnedEntitiesOfType(m,apf::Mesh::EDGE);
-  int nCells = count*n;
-  int nPoints = count*(n+1);
-
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
-
-  writeStart(file,nPoints,nCells);
-
-  file << "<Points>\n";
-  writeEdgeNodalField(file,n,m->getCoordinateField());
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::EDGE,count,n,nCells);
-  file << "<PointData>\n";
-  writeJacobianDet(file,m,apf::Mesh::EDGE,n);
-  writePointData(file,m,apf::Mesh::EDGE,n);
-  file << "</PointData>\n";
-
-  writeEnd(file);
-}
-
-static void writeTriangleVtuFiles(apf::Mesh* m, int n, const char* prefix)
-{
-  std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(apf::Mesh::TRIANGLE) << ".vtu";
-
-  int count = countOwnedEntitiesOfType(m,apf::Mesh::TRIANGLE);
-  int nPoints = count*(n+1)*(n+2)/2;
-  int nCells = count*n*n;
-
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
-
-  writeStart(file,nPoints,nCells);
-
-  file << "<Points>\n";
-  writeTriNodalField(file,n,m->getCoordinateField());
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::TRIANGLE,count,n,nCells);
-  file << "<PointData>\n";
-  writeJacobianDet(file,m,apf::Mesh::TRIANGLE,n);
-  writePointData(file,m,apf::Mesh::TRIANGLE,n);
-  file << "</PointData>\n";
-  writeEnd(file);
-}
-
-static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
-{
-  std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(apf::Mesh::TET) << ".vtu";
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
-
-  int count = countOwnedEntitiesOfType(m,apf::Mesh::TET);
-  int nPoints = count*4*(n+1)*(n+1)*(n+1);
-  int nCells = count*4*n*n*n;
-
-  writeStart(file,nPoints,nCells);
-
-  file << "<Points>\n";
-  writeTetNodalField(file,n,m->getCoordinateField());
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::TET,count,n,nCells);
-  file << "<PointData>\n";
-  writeJacobianDet(file,m,apf::Mesh::TET,n);
-  writePointData(file,m,apf::Mesh::TET,n);
-  file << "</PointData>\n";
-  writeEnd(file);
-}
-
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
   if (!PCU_Comm_Self())
@@ -736,26 +653,67 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   writeEnd(file);
 }
 
+
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
+  double t0 = PCU_Time();
   if (!PCU_Comm_Self())
     writePvtuFile(prefix,m,type);
 
   PCU_Barrier();
+
+  std::stringstream ss;
+  ss << prefix << PCU_Comm_Self() << "_"
+     << m->getShape()->getOrder()
+     << getSuffix(type) << ".vtu";
+  std::string fileName = ss.str();
+  std::stringstream buf;
+
+
+  int nPoints = 0, nCells = 0;
+  int count = countOwnedEntitiesOfType(m,type);
+
   switch (type) {
-    case apf::Mesh::EDGE:
-      writeEdgeVtuFiles(m,n,prefix);
-      break;
-    case apf::Mesh::TRIANGLE:
-      writeTriangleVtuFiles(m,n,prefix);
-      break;
-    case apf::Mesh::TET:
-      writeTetVtuFiles(m,n/2+1,prefix);
-      break;
-    default:
-      break;
+  case apf::Mesh::EDGE:
+    nCells = count*n;
+    nPoints = count*(n+1);
+    break;
+  case apf::Mesh::TRIANGLE:
+    nPoints = count*(n+1)*(n+2)/2;
+    nCells = count*n*n;
+    break;
+  case apf::Mesh::TET:
+    n = n/2+1;
+    nPoints = count*4*(n+1)*(n+1)*(n+1);
+    nCells = count*4*n*n*n;
+    break;
+  default:
+    break;
   }
+
+  writeStart(buf,nPoints,nCells);
+
+  buf << "<Points>\n";
+  writeNodalField(buf,type,n,m->getCoordinateField());
+  buf << "</Points>\n";
+  writeCells(buf,type,count,n,nCells);
+  buf << "<PointData>\n";
+  writeJacobianDet(buf,m,type,n);
+  writePointData(buf,m,type,n);
+  buf << "</PointData>\n";
+  writeEnd(buf);
+
+  {
+    std::ofstream file(fileName.c_str());
+    assert(file.is_open());
+    file << buf.rdbuf();
+  }
+
   PCU_Barrier();
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("%s vtk files %s written in %f seconds\n",
+        apf::Mesh::typeName[type],prefix, t1 - t0);
 }
 
 } //namespace crv
