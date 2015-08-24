@@ -159,6 +159,7 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
   readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
+  readAndAttachField(in, m, filename.c_str(), "material type", 1);
   if (in.displacementMigration)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)

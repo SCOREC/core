@@ -125,6 +125,10 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
+    apf::Matches matches;
+    m->getMatches(f, matches);
+    if (matches.getSize() == 1) // This prevents adding interface elements...
+      continue;
     apf::MeshEntity* e = m->getUpward(f, 0);
     BlockKey k;
     getBoundaryBlockKey(m, e, f, k);

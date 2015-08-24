@@ -42,6 +42,10 @@ struct EnsaArrays
  */
   int*** ienif0;
   int*** ienif1;
+/* mattype[i][j] is the material type of
+   element j of
+   interior block i */
+  int** mattype;
 /* ibcb[i][j][k] is the natural boundary condition
    status code
    number k in [0,1] of

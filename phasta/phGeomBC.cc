@@ -62,6 +62,15 @@ void getInterfaceConnectivity
   assert(i == c.getSize());
 }
 
+void getMaterial
+(
+  Output& o, 
+  int block, 
+  apf::DynamicArray<int>& c
+)
+{
+}
+
 void getNaturalBCCodes(Output& o, int block, apf::DynamicArray<int>& codes)
 {
   int nelem = o.blocks.boundary.nElements[block];
@@ -160,6 +169,14 @@ void writeBlocks(FILE* f, Output& o)
     getInterfaceConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 9, params);
   }
+/*
+  for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
+    std::string phrase = "material type";
+    params[0] = o.blocks.interior.nElements[i];
+    getMaterial(o, i, c);
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+  }
+ */
 }
 
 static void writeInt(FILE* f, const char* name, int i)

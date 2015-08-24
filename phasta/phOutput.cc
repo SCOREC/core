@@ -67,16 +67,19 @@ static void getVertexLinks(Output& o, apf::Numbering* n)
   encodeILWORK(n, links, o.nlwork, o.arrays.ilwork);
 }
 
-static void getInterior(Output& o, apf::Numbering* n)
+static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   Blocks& bs = o.blocks.interior;
-  int*** ien = new int**[bs.getSize()];
+  int*** ien     = new int**[bs.getSize()];
+  int**  mattype = new int* [bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
-    ien[i] = new int*[bs.nElements[i]];
+    ien    [i] = new int*[bs.nElements[i]];
+    mattype[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
+  gmi_model* gm = m->getModel();
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it))) {
@@ -92,11 +95,21 @@ static void getInterior(Output& o, apf::Numbering* n)
     for (int k = 0; k < nv; ++k)
       ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
     ++js[i];
+    /* get material type */
+    gmi_ent* ge = (gmi_ent*)m->toModel(e);
+    apf::Vector3 x;
+    //m->getPoint(e, 0, x);
+    x = apf::getLinearCentroid(m, e);
+    std::string s("material type");
+    FieldBCs& fbcs = bcs.fields[s];
+    double* matval = getBCValue(gm, fbcs, ge, x);
+//std::cout << x << matval << std::endl;
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
-  o.arrays.ien = ien;
+  o.arrays.ien     = ien;
+  o.arrays.mattype = mattype;
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
@@ -105,6 +118,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   gmi_model* gm = m->getModel();
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
+std::cout << "bs.getSize()" << bs.getSize() << std::endl;
   int*** ienb = new int**[bs.getSize()];
   int*** ibcb = new int**[bs.getSize()];
   double*** bcb = new double**[bs.getSize()];
@@ -121,6 +135,10 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   while ((f = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
+      continue;
+    apf::Matches matches;
+    m->getMatches(f, matches);
+    if (matches.getSize() == 1) // This prevents adding interface elements...
       continue;
     gmi_ent* gf = (gmi_ent*)me;
     apf::MeshEntity* e = m->getUpward(f, 0);
@@ -192,21 +210,17 @@ static void getInterface
     int nv1 = k.nElementVertices1;
     apf::Downward v0, v1;
     getBoundaryVertices(m, e0, face, v0);
-//    getBoundaryVertices(m, e1, face, v1);   /*This would cause wrong order of nodes for the element*/
     getBoundaryVertices(m, e1, matches[0].entity, v1);
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
     for (int k = 0; k < nv0; ++k) 
 {
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
-//std::cout << ienif0[i][j][k] << " ";
 }
     for (int k = 0; k < nv1; ++k)
 {
       ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
-//std::cout << ienif1[i][j][k] << " ";
 }
-//std::cout << js[i] << std::endl;
     ++js[i];
   }
   m->end(it);
@@ -357,13 +371,21 @@ static void getEssentialBCs(BCs& bcs, Output& o)
 
 static void getInitialConditions(BCs& bcs, Output& o)
 {
+
+  // read your file from matlab
+  int nxpoints = 29;
+  double sol_table[29][6]; // each row contains 'x', 'p', 'u', 'v', 'w', 'T'
+
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
   apf::NewArray<double> s(in.ensa_dof);
+  apf::NewArray<double> matValue(1);
   apf::Field* f = m->findField("solution");
+  apf::Field* matField= m->findField("material type");
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   gmi_model* gm = m->getModel();
+//std::cout << apf::countComponents(f) << std::endl;
   while ((e = m->iterate(it))) {
     gmi_ent* ge = (gmi_ent*)m->toModel(e);
     apf::Downward v;
@@ -373,8 +395,27 @@ static void getInitialConditions(BCs& bcs, Output& o)
       apf::Vector3 x;
       m->getPoint(v[i], 0, x);
       applySolutionBCs(gm, ge, bcs, x, &s[0]);
+/*
+      ixpoint = -1;
+      for(int ix=0; ix<nxpoints; ix++) {
+        if(fabs(x[0]-sol_table[ix][0])<1e-12) {
+          ixpoint = ix;
+          break;
+        }
+      }
+      if(ixpoint==-1)
+        // print an error message and exit
+      for(int ivar=0; ivar<in.ensa_dof; ivar++)
+        s[ivar] = sol_table[ixpoint][ivar+1];
+ */
       apf::setComponents(f, v[i], 0, &s[0]);
     }
+    /* material type */
+// std::cout << apf::countComponents(matField) << std::endl;
+//    apf::getComponents(matField, e, 0, &matValue[0]);
+//    apf::Vector3 x = apf::getLinearCentroid(m, e);
+//    applySolutionBCs(gm, ge, bcs, x, &matValue[0]);
+//    apf::setComponents(matField, e, 0, &matValue[0]);
   }
   m->end(it);
 }
@@ -403,10 +444,12 @@ Output::~Output()
   Blocks& ibs = blocks.interior;
   for (int i = 0; i < ibs.getSize(); ++i) {
     for (int j = 0; j < ibs.nElements[i]; ++j)
-      delete [] arrays.ien[i][j];
-    delete [] arrays.ien[i];
+      delete [] arrays.ien    [i][j];
+    delete [] arrays.ien    [i];
+    delete [] arrays.mattype[i];
   }
   delete [] arrays.ien;
+  delete [] arrays.mattype;
   Blocks& bbs = blocks.boundary;
   for (int i = 0; i < bbs.getSize(); ++i) {
     for (int j = 0; j < bbs.nElements[i]; ++j) {
@@ -427,6 +470,17 @@ Output::~Output()
     delete [] arrays.bc[i];
   delete [] arrays.bc;
   delete [] arrays.ienneigh;
+  BlocksInterface& ifbs = blocks.interface;
+  for (int i = 0; i < ifbs.getSize(); ++i) {
+    for (int j = 0; j < ifbs.nElements[i]; ++j) {
+      delete [] arrays.ienif0[i][j];
+      delete [] arrays.ienif1[i][j];
+    }
+    delete [] arrays.ienif0[i];
+    delete [] arrays.ienif1[i];
+  }
+  delete [] arrays.ienif0;
+  delete [] arrays.ienif1;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -438,10 +492,14 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getCoordinates(o);
   getGlobal(o);
   getAllBlocks(o.mesh, o.blocks);
+std::cout << "getAllBlocks done! " << std::endl;
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
   getVertexLinks(o, n);
-  getInterior(o, n);
+std::cout << "getVertexLinks done! " << std::endl;
+  getInterior(o, bcs, n);
+std::cout << "getInterior done! " << std::endl;
   getBoundary(o, bcs, n);
+std::cout << "getBoundary done! " << std::endl;
   getInterface(o, n);
   getLocalPeriodicMasters(o, n);
   apf::destroyNumbering(n);
