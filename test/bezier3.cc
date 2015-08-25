@@ -131,11 +131,11 @@ void testEdgeSubdivision()
       apf::getVector(elem0,p1,pt1);
       apf::getVector(elem,p2,pt2);
 
-      assert(std::abs((pt2-pt1).getLength() < 1e-15));
+      assert(std::abs((pt2-pt1).getLength()) < 1e-15);
       p2[0] = 0.015*i-0.5;
       apf::getVector(elem1,p1,pt1);
       apf::getVector(elem,p2,pt2);
-      assert(std::abs((pt2-pt1).getLength() < 1e-15));
+      assert(std::abs((pt2-pt1).getLength()) < 1e-15);
     }
     apf::destroyElement(elem);
     apf::destroyElement(elem0);
