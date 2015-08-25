@@ -12,6 +12,11 @@
 
 namespace crv {
 
+void MeshCurver::synchronize()
+{
+  apf::synchronize(m_mesh->getCoordinateField());
+}
+
 void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
 {
   apf::FieldShape * fs = m_mesh->getShape();
@@ -49,10 +54,12 @@ void MeshCurver::snapToInterpolate(int dim)
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) == m_spaceDim) continue;
-    if(t == apf::Mesh::EDGE)
-      snapToInterpolateEdge(e);
-    else
-      snapToInterpolateTri(e);
+    if(m_mesh->isOwned(e)){
+      if(t == apf::Mesh::EDGE)
+        snapToInterpolateEdge(e);
+      else
+        snapToInterpolateTri(e);
+    }
   }
   m_mesh->end(it);
 }
@@ -84,6 +91,8 @@ bool InterpolatingCurver::run()
   for(int d = 1; d < m_mesh->getDimension(); ++d)
     snapToInterpolate(d);
 
+  synchronize();
+
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
@@ -103,8 +112,9 @@ bool BezierCurver::run()
   for(int d = 1; d <= md; ++d)
     snapToInterpolate(d);
 
-  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
+  synchronize();
 
+  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
   // go downward, and convert interpolating to control points
   for(int d = md - (getBlendingOrder() > 0); d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
@@ -115,10 +125,14 @@ bool BezierCurver::run()
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
-      convertInterpolationPoints(e,n,ne,c);
+      if(m_mesh->isOwned(e))
+        convertInterpolationPoints(e,n,ne,c);
     }
     m_mesh->end(it);
   }
+
+  synchronize();
+
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
@@ -236,7 +250,7 @@ void GregoryCurver::setInternalPointsLocally()
   apf::MeshIterator* it = m_mesh->begin(2);
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) != 2) continue;
+    if(!m_mesh->isOwned(e) || m_mesh->getModelType(g) != 2) continue;
 
     apf::Vector3 n[3];
     apf::MeshEntity* verts[3];
@@ -342,6 +356,8 @@ bool GregoryCurver::run()
   for(int d = 1; d < md; ++d)
     snapToInterpolate(d);
 
+  synchronize();
+
   // go downward, and convert interpolating to control points
   for(int d = md; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
@@ -351,13 +367,15 @@ bool GregoryCurver::run()
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
+
     getGregoryTransformationCoefficients(md,m_order,types[d-1],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
 
     while ((e = m_mesh->iterate(it))) {
-      convertInterpolationPoints(e,n,ne,c);
+      if(m_mesh->isOwned(e))
+        convertInterpolationPoints(e,n,ne,c);
     }
     m_mesh->end(it);
   }
@@ -368,6 +386,8 @@ bool GregoryCurver::run()
   if(m_order == 4){
     elevateBezierCurves(m_mesh);
   }
+
+  synchronize();
 
   m_mesh->acceptChanges();
   m_mesh->verify();
@@ -410,7 +430,8 @@ bool SphereCurver::run()
   apf::MeshIterator* it = m_mesh->begin(1);
   while ((e = m_mesh->iterate(it))){
     apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == 3) continue;
+    if(!m_mesh->isOwned(e) || m_mesh->getModelType(g) == 3) continue;
+
     m_mesh->getDownward(e,0,verts);
     for(int i = 0; i < 2; ++i)
       m_mesh->getPoint(verts[i],0,vpts[i]);
@@ -429,10 +450,12 @@ bool SphereCurver::run()
     m_mesh->setPoint(e,2,pt);
   }
 
+  synchronize();
+
   it = m_mesh->begin(2);
   while ((e = m_mesh->iterate(it))){
     apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == 3) continue;
+    if(!m_mesh->isOwned(e) || m_mesh->getModelType(g) == 3) continue;
     m_mesh->getDownward(e,0,verts);
     for(int i = 0; i < 3; ++i)
       m_mesh->getPoint(verts[i],0,vpts[i]);
@@ -448,6 +471,9 @@ bool SphereCurver::run()
       m_mesh->setPoint(e,i,pt);
     }
   }
+
+  synchronize();
+
   m_mesh->end(it);
   m_mesh->acceptChanges();
   m_mesh->verify();

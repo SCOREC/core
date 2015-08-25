@@ -12,7 +12,7 @@ class Input;
 
 void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*));
 apf::Migration* split(Input& in, apf::Mesh2* m);
-void balance(apf::Mesh2* m);
+void balance(Input& in, apf::Mesh2* m);
 
 }
 

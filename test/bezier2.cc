@@ -1,5 +1,4 @@
 #include <crv.h>
-#include <crvTables.h>
 #include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>

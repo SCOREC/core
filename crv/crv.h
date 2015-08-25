@@ -45,6 +45,9 @@ class MeshCurver
     void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
       apf::NewArray<double>& c);
 
+    /** \brief wrapper around synchronizeFieldData */
+    void synchronize();
+
   protected:
     apf::Mesh2* m_mesh;
     int m_order;
@@ -148,6 +151,12 @@ int factorial(int i);
 int binomial(int n, int i);
 int trinomial(int n, int i, int j);
 int quadnomial(int n, int i, int j, int k);
+
+/** \brief subdivision functions for bezier's */
+void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[2]);
+void subdivideBezierTriangle(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4]);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

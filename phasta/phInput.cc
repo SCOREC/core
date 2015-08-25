@@ -28,6 +28,8 @@ static void setDefaults(Input& in)
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
   in.axisymmetry = 0;
+  in.elementImbalance = 1.03;
+  in.vertexImbalance = 1.05;
 }
 
 Input::Input()
@@ -37,8 +39,9 @@ Input::Input()
 
 typedef std::map<std::string, std::string*> StringMap;
 typedef std::map<std::string, int*> IntMap;
+typedef std::map<std::string, double*> DblMap;
 
-static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
+static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& dblMap)
 {
   intMap["globalP"] = &in.globalP;
   intMap["timeStepNumber"] = &in.timeStepNumber;
@@ -80,6 +83,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
   intMap["filterMatches"] = &in.filterMatches;
   intMap["axisymmetry"] = &in.axisymmetry;
+  dblMap["elementImbalance"] = &in.elementImbalance;
+  dblMap["vertexImbalance"] = &in.vertexImbalance;
 }
 
 template <class T>
@@ -97,8 +102,9 @@ static bool tryReading(std::string const& name,
 static void readInputFile(
     Input& in,
     const char* filename,
-    std::map<std::string, std::string*>& stringMap,
-    std::map<std::string, int*>& intMap)
+    StringMap& stringMap,
+    IntMap& intMap,
+    DblMap& dblMap)
 {
   std::ifstream f(filename);
   if (!f)
@@ -112,6 +118,8 @@ static void readInputFile(
     if (tryReading(name, f, stringMap))
       continue;
     if (tryReading(name, f, intMap))
+      continue;
+    if (tryReading(name, f, dblMap))
       continue;
     /* the WEIRD parameter ! */
     if (name == "RecursivePtnStep") {
@@ -129,16 +137,19 @@ static void readInputFile(
 static void validate(Input& in)
 {
   assert(in.parmaPtn == 0 || in.parmaPtn == 1);
+  assert(in.elementImbalance > 1.0 && in.elementImbalance <= 2.0);
+  assert(in.vertexImbalance > 1.0 && in.vertexImbalance <= 2.0);
   assert( ! (in.buildMapping && in.adaptFlag));
 }
 
 void Input::load(const char* filename)
 {
   setDefaults(*this);
-  std::map<std::string, std::string*> stringMap;
-  std::map<std::string, int*> intMap;
-  formMaps(*this, stringMap, intMap);
-  readInputFile(*this, filename, stringMap, intMap);
+  StringMap stringMap;
+  IntMap intMap;
+  DblMap dblMap;
+  formMaps(*this, stringMap, intMap, dblMap);
+  readInputFile(*this, filename, stringMap, intMap, dblMap);
   validate(*this);
 }
 
