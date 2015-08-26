@@ -21,6 +21,8 @@ namespace crv {
  * and while first order is superfluous, consistency is maintained
  */
 
+// Notes: 0 is a fake point, added for de Casteljau's algorithm
+static unsigned const b2_0[1] = {2};
 static unsigned const b2_1[3] = {2,0,1};
 static unsigned const b2_2[6] = {2,5,0,4,3,1};
 static unsigned const b2_3[10] = {2,7,8,0,6,9,3,5,4,1};
@@ -30,8 +32,11 @@ static unsigned const b2_5[21] = {2,11,12,13,14,0,10,19,20,15,3,9,18,
 static unsigned const b2_6[28] = {2,13,14,15,16,17,0,12,24,25,26,18,3,
   11,23,27,19,4,10,22,20,5,9,21,6,8,7,1};
 unsigned const* const b2[7] =
-{0,b2_1,b2_2,b2_3,b2_4,b2_5,b2_6};
+{b2_0,b2_1,b2_2,b2_3,b2_4,b2_5,b2_6};
 
+static unsigned const b3_0_00[1] = {3};
+static unsigned const* const b3_0_0[1] = {b3_0_00};
+static unsigned const* const* const b3_0[1] = {b3_0_0};
 
 static unsigned const b3_1_00[2] = {3,2};
 static unsigned const b3_1_01[1] = {1};
@@ -93,6 +98,6 @@ static unsigned const* const* const b3_4[5] =
   {b3_4_0,b3_4_1,b3_4_2,b3_4_3,b3_4_4};
 
 unsigned const* const* const* const b3[5] =
-{0,b3_1,b3_2,b3_3,b3_4};
+{b3_0,b3_1,b3_2,b3_3,b3_4};
 
 }

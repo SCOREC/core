@@ -537,6 +537,7 @@ void test3DFull()
       m->end(it);
     }
 
+    // write the field
     crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,5,"curved");
     crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,5,"curved");
     crv::writeCurvedVtuFiles(m,apf::Mesh::TET,5,"curved");
