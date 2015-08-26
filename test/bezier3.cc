@@ -163,7 +163,7 @@ void edge0(double const p[2], double x[3], void*)
 }
 void edge1(double const p[2], double x[3], void*)
 {
-  x[0] = 1.0-2.5*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
+  x[0] = 1.0-p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
   x[1] = p[0];
 }
 void edge2(double const p[2], double x[3], void*)
@@ -243,11 +243,13 @@ void testTriSubdivision()
     crv::BezierCurver bc(m,o,0);
     bc.run();
     apf::MeshIterator* it = m->begin(2);
-    apf::MeshEntity* verts[3],* edges[3];\
     apf::MeshEntity* e = m->iterate(it);
-
     m->end(it);
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedBefore");
+
     apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+
+    apf::MeshEntity* verts[3],* edges[3];
     m->getDownward(e,0,verts);
     m->getDownward(e,1,edges);
 
@@ -257,7 +259,7 @@ void testTriSubdivision()
       subNodes[t].allocate((o+1)*(o+2)/2);
 
     apf::getVectorNodes(elem,nodes);
-    apf::Vector3 splitpt(1./2,1./2,0.);
+    apf::Vector3 splitpt(0,0.5,0.5);
 
     crv::subdivideBezierTriangle(o,splitpt,nodes,subNodes);
 
@@ -306,10 +308,56 @@ void testTriSubdivision()
         }
       }
     }
+    m->destroy(e);
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedAfter");
 
     apf::destroyElement(elem);
     for(int t = 0; t < 3; ++t)
       apf::destroyElement(elems[t]);
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+  for(int o = 1; o <= 6; ++o){
+    apf::Mesh2* m = createMesh2D();
+    crv::BezierCurver bc(m,o,0);
+    bc.run();
+    apf::MeshIterator* it = m->begin(2);
+    apf::MeshEntity* e = m->iterate(it);
+    m->end(it);
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedBefore");
+
+    apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+
+    apf::NewArray<apf::Vector3> nodes;
+    apf::NewArray<apf::Vector3> subNodes[4];
+    for (int t = 0; t < 4; ++t)
+      subNodes[t].allocate((o+1)*(o+2)/2);
+
+    apf::getVectorNodes(elem,nodes);
+    apf::Vector3 splitpt(0,0.5,0.5);
+
+    crv::subdivideBezierTriangle(o,nodes,subNodes);
+    apf::MeshEntity* fourSplit[4];
+
+    for (int t = 0; t < 4; ++t){
+      apf::Vector3 points[3];
+      for (int i = 0; i < 3; ++i)
+        points[i] = subNodes[t][i];
+      fourSplit[t] = apf::buildOneElement(m,m->findModelEntity(2,0),apf::Mesh::TRIANGLE,points);
+      apf::MeshEntity* edges[3];
+      m->getDownward(fourSplit[t],1,edges);
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < o-1; ++j){
+          m->setPoint(edges[i],j,subNodes[t][3+i*(o-1)+j]);
+        }
+      for (int j = 0; j < (o-1)*(o-2)/2; ++j){
+        m->setPoint(fourSplit[t],j,subNodes[t][3+3*(o-1)+j]);
+      }
+    }
+    m->destroy(e);
+    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,25,"curvedAfter");
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedAfter");
 
     m->destroyNative();
     apf::destroyMesh(m);
