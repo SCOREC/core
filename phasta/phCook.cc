@@ -68,10 +68,8 @@ void switchToAll()
   PCU_Barrier();
 }
 
-void loadCommon(ph::Input& in, const char* ctrlFileName, 
-    ph::BCs& bcs, gmi_model*& g)
+void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 {
-  in.load(ctrlFileName);
   ph::readBCs(in.attributeFileName.c_str(), bcs);
   if(!g)
     g = gmi_load(in.modelFileName.c_str());
@@ -133,11 +131,10 @@ namespace chef {
     return f;
   }
   void bake(gmi_model*& g, apf::Mesh2*& m,
-      const char* ctrlFileName,
       ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;
     ph::BCs bcs;
-    loadCommon(in, ctrlFileName, bcs, g);
+    loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
     switchToMasters(in.splitFactor);
     const int numMasters = PCU_Comm_Peers();
@@ -154,25 +151,24 @@ namespace chef {
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openfile_write;
-    bake(g,m,"adapt.inp",in,out);
+    in.load("adapt.inp");
+    bake(g,m,in,out);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, 
-      const char* ctrlFileName, GRStream* grs) {
-    ph::Input in;
-    in.openfile_read = openfile_read;
+      ph::Input& ctrl, GRStream* grs) {
+    ctrl.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openstream_write;
     out.grs = grs;
-    bake(g,m,ctrlFileName,in,out);
+    bake(g,m,ctrl,out);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m, 
-      const char* ctrlFileName, RStream* rs) {
-    ph::Input in;
-    in.openfile_read = openstream_read;
-    in.rs = rs;
+      ph::Input& ctrl, RStream* rs) {
+    ctrl.openfile_read = openstream_read;
+    ctrl.rs = rs;
     ph::Output out;
     out.openfile_write = openfile_write;
-    bake(g,m,ctrlFileName,in,out);
+    bake(g,m,ctrl,out);
     return;
   }
 }
