@@ -141,14 +141,6 @@ static double* buildMappingVtxId(apf::Mesh* m)
   return data;
 }
 
-static void readStepNum(Input& in)
-{
-  std::ifstream tinyFile("numstart.dat");
-  int step;
-  tinyFile >> step;
-  assert(in.timeStepNumber == step);
-}
-
 static std::string buildRestartFileName(std::string prefix, int step)
 {
   std::stringstream ss;
@@ -160,7 +152,6 @@ static std::string buildRestartFileName(std::string prefix, int step)
 void readAndAttachSolution(Input& in, apf::Mesh* m)
 {
   double t0 = PCU_Time();
-  readStepNum(in);
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
   readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
