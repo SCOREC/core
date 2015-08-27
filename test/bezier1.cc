@@ -453,10 +453,6 @@ void test3DBlended()
         m->end(it);
       }
       m->acceptChanges();
-      crv::writeControlPointVtuFiles(m,"curvedBezier3D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,order,"curvedBezier3D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,order,"curvedBezier3D");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TET,order,"curvedBezier3D");
       testSize3D(m);
       if(blendOrder < 4){
         test3DJacobian(m);
@@ -509,6 +505,42 @@ void test3DFull()
         sum += A(i,j);
       assert(std::abs(sum - 1.0) < 1e-15);
     }
+
+    // put a field on the mesh for fun
+    int types[4] = {apf::Mesh::VERTEX, apf::Mesh::EDGE,
+        apf::Mesh::TRIANGLE,apf::Mesh::TET};
+
+    apf::Field* f1 =
+        apf::createField(m,"field1",apf::SCALAR,apf::getLagrange(2));
+    apf::Field* f2 =
+        apf::createField(m,"field2",apf::VECTOR,apf::getLagrange(2));
+    apf::Field* f3 =
+        apf::createField(m,"field3",apf::MATRIX,apf::getLagrange(2));
+
+    for(int d = 0; d <= 3; ++d){
+      int ne = apf::getLagrange(2)->countNodesOn(types[d]);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))) {
+        for(int i = 0; i < ne; ++i){
+          apf::setScalar(f1,e,i,0.1*(rand() % 10));
+          apf::Vector3 V(0.1*(rand() % 10),0.1*(rand() % 10),0.1*(rand() % 10));
+          apf::Matrix3x3 M(0.1*(rand() % 10),0.1*(rand() % 10),
+              0.1*(rand() % 10),0.1*(rand() % 10),0.1*(rand() % 10),
+              0.1*(rand() % 10),0.1*(rand() % 10),0.1*(rand() % 10),
+              0.1*(rand() % 10));
+
+          apf::setVector(f2,e,i,V);
+          apf::setMatrix(f3,e,i,M);
+        }
+      }
+      m->end(it);
+    }
+
+    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,5,"curved");
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,5,"curved");
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,5,"curved");
+
     m->destroyNative();
     apf::destroyMesh(m);
   }
