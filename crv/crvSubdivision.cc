@@ -8,13 +8,15 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvTables.h"
+
 namespace crv {
 
 /* de Casteljau's algorithm on an edge
  * subNodes[i] corresponds to the i'th edge
  */
 template <class T>
-static void copyNodes(int P, apf::NewArray<T>& nodes, apf::NewArray<T>& copy)
+static void copyTriangleNodes(int P, apf::NewArray<T>& nodes,
+    apf::NewArray<T>& copy)
 {
   for (int i = 0; i < (P+1)*(P+2)/2; ++i)
     copy[i] = nodes[i];
@@ -115,15 +117,15 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
   splitTriangle(P,p,nodes,tempSubNodes[0]);
   p = apf::Vector3(0,0.5,0.5);
   splitTriangle(P,p,tempSubNodes[0][0],tempSubNodes[1]);
-  copyNodes(P,tempSubNodes[1][2],subNodes[0]);
+  copyTriangleNodes(P,tempSubNodes[1][2],subNodes[0]);
 
   splitTriangle(P,p,tempSubNodes[0][1],tempSubNodes[2]);
-  copyNodes(P,tempSubNodes[2][1],subNodes[2]);
+  copyTriangleNodes(P,tempSubNodes[2][1],subNodes[2]);
 
   p = apf::Vector3(-1,1,1);
   splitTriangle(P,p,tempSubNodes[1][1],tempSubNodes[2]);
-  copyNodes(P,tempSubNodes[2][2],subNodes[1]);
-  copyNodes(P,tempSubNodes[2][1],subNodes[3]);
+  copyTriangleNodes(P,tempSubNodes[2][2],subNodes[1]);
+  copyTriangleNodes(P,tempSubNodes[2][1],subNodes[3]);
 
 }
 

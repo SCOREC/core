@@ -8,6 +8,7 @@
 #include <math.h>
 
 #include "crvBezier.h"
+#include "crvTables.h"
 /* see bezier.tex */
 namespace crv {
 
