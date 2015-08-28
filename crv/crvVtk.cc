@@ -14,6 +14,33 @@
 
 namespace crv {
 
+class HasAll : public apf::FieldOp
+{
+  public:
+      virtual bool inEntity(apf::MeshEntity* e)
+      {
+        if (!f->getData()->hasEntity(e) && f->countNodesOn(e))
+          ok = false;
+        return false;
+      }
+      bool run(apf::FieldBase* f_)
+      {
+        f = f_;
+        ok = true;
+        this->apply(f);
+        return ok;
+      }
+  private:
+    bool ok;
+    apf::FieldBase* f;
+};
+
+static bool isPrintable(apf::FieldBase* f)
+{
+  HasAll op;
+  return op.run(f);
+}
+
 static void describeArray(
     std::ostream& file,
     const char* name,
@@ -565,7 +592,8 @@ static void writePPointData(std::ostream& file, apf::Mesh* m)
   for (int i=0; i < m->countFields(); ++i)
   {
     apf::Field* f = m->getField(i);
-    writePDataArray(file,f);
+    if(isPrintable(f))
+      writePDataArray(file,f);
   }
 }
 
@@ -606,7 +634,8 @@ static void writePointData(std::ostream& file, apf::Mesh* m,
   for (int i=0; i < m->countFields(); ++i)
   {
     apf::Field* f = m->getField(i);
-    writeNodalField(file,type,n,f);
+    if(isPrintable(f))
+      writeNodalField(file,type,n,f);
   }
 }
 

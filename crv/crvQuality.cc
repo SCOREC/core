@@ -12,16 +12,6 @@ namespace crv {
 
 static int maxAdaptiveIter = 5;
 
-int getTriPointIndex(int P, int i, int j)
-{
-  return crv::b2[P][j*(P+1)+i-j*(j-1)/2];
-}
-
-int getTetPointIndex(int P, int i, int j, int k)
-{
-  return crv::b3[P][i][j][k];
-}
-
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,
  * by George, Borouchaki, and Barral. (2014)
@@ -112,97 +102,6 @@ static double getMinTriJacDet(int P, apf::NewArray<apf::Vector3>& nodes)
   return minJ;
 }
 
-
-template <class T>
-static void splitEdge(int P, double t, apf::NewArray<T>& nodes,
-    apf::NewArray<T> (&subNodes)[2])
-{
-
-  // re-order nodes, makes life easier
-  T temp = nodes[1];
-  for (int i = 1; i < P; ++i)
-    nodes[i] = nodes[i+1];
-  nodes[P] = temp;
-
-  subNodes[0][0] = nodes[0];
-  subNodes[1][P] = nodes[1];
-  // go through and find new points,
-  // the j'th point on the i'th iteration
-  for (int i = 0; i < P; ++i){
-    for (int j = 0; j < P-i; ++j){
-      nodes[j] = nodes[j]*(1.-t)+nodes[j+1]*t;
-    }
-    subNodes[0][i+1] = nodes[0];
-    subNodes[1][P-i-1] = nodes[P-i-1];
-  }
-}
-
-void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3> (&subNodes)[2])
-{
-  splitEdge(P,t,nodes,subNodes);
-}
-
-/* Subdivides a triangle from one triangle into three,
- * labelled as such.
- *           /\
- *  /\  ->  /_2\
- * /_0\    /\ 3/\
- *        /_0\/_1\
- *
- *  points are labelled as
- *    2
- *   5 4
- *  0 3 1
- */
-template <class T>
-static void splitTriangle(int P, apf::NewArray<T>& nodes,
-    apf::NewArray<T> (&subNodes)[4])
-{
-  int n = (P+1)*(P+2)/2;
-
-  apf::EntityShape* es =
-      apf::getLagrange(1)->getEntityShape(apf::Mesh::TRIANGLE);
-  apf::Vector3 p[6] =
-  {apf::Vector3(0,0,0),apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0), apf::Vector3(0.5,0,0),
-      apf::Vector3(0.5,0.5,0),apf::Vector3(0,0.5,0)};
-  int tri[4][3] = {{0,3,5},{1,4,3},{2,5,4},{3,4,5}};
-  apf::NewArray<T> tempnodes(n);
-
-
-  apf::NewArray<double> values;
-  // subdivision at xi = (1/2,1/2,0),(1/2,0,1/2),(0,1/2,1/2),
-  // we have n nodes, laid out in conventional order.
-  for (int t = 0; t < 4; ++t){
-    for (int i = 0; i < n; ++i)
-      tempnodes[i] = nodes[i];
-    for (int k = 0; k < P; ++k){
-      for (int i = 0; i < P; ++i){
-        for (int j = 0; j < P-i; ++j){
-          int i1 = getTriPointIndex(P,i,j);
-          int i2 = getTriPointIndex(P,i+1,j);
-          int i3 = getTriPointIndex(P,i,j+1);
-          int index = getTriPointIndex(P,i,j);
-          apf::Vector3 xi(0.5,0,0);
-          es->getValues(0,0,xi,values);
-          apf::Vector3 split = p[tri[t][0]]*values[0]+p[tri[t][1]]*values[1]+p[tri[t][2]]*values[2];
-          // interpolate coordinates
-
-          tempnodes[index] = tempnodes[i1]*split[0] + tempnodes[i2]*split[1] + tempnodes[i3]*split[2];
-          subNodes[t][index] = tempnodes[index];
-        }
-      }
-    }
-  }
-}
-
-void subdivideTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3> (&subNodes)[4])
-{
-  splitTriangle(P,nodes,subNodes);
-}
-
 static double getMinTriJacDet(int P, apf::NewArray<apf::Vector3>& nodes, int& iter)
 {
   double minJ = getMinTriJacDet(P,nodes);
@@ -220,7 +119,7 @@ static double getMinTriJacDet(int P, apf::NewArray<apf::Vector3>& nodes, int& it
     subNodes[2].allocate(n);
     subNodes[3].allocate(n);
 
-    splitTriangle(P,nodes,subNodes);
+//    subdivideTriangle(P,nodes,subNodes);
     minJ = std::min(getMinTriJacDet(P,subNodes[0],iter),minJ);
     minJ = std::min(getMinTriJacDet(P,subNodes[1],iter),minJ);
     minJ = std::min(getMinTriJacDet(P,subNodes[2],iter),minJ);

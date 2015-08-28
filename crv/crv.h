@@ -155,9 +155,11 @@ int quadnomial(int n, int i, int j, int k);
 /** \brief subdivision functions for bezier's */
 void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[2]);
-void subdivideBezierTriangle(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+void subdivideBezierTriangle(int P, apf::Vector3& p,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[3]);
+void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[4]);
-
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
 

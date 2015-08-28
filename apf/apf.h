@@ -466,6 +466,8 @@ for (t::const_iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * \details Nodal fields whose shape differs from the mesh shape will
+  * not be output. Fields with incomplete data will not be output.
   */
 void writeVtkFiles(const char* prefix, Mesh* m);
 /** \brief Output just the .vtu file for this part.
