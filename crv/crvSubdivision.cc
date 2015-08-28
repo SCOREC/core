@@ -7,7 +7,7 @@
 
 #include "crv.h"
 #include "crvBezier.h"
-
+#include "crvTables.h"
 namespace crv {
 
 /* de Casteljau's algorithm on an edge
@@ -76,8 +76,7 @@ static void splitTriangle(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
     // set up all the nodes for this stage
     for (int i = 0; i < P-m; ++i){
       for (int j = 0; j < P-i-m; ++j){
-        int index[3] = {getTriPointIndex(P,i,j),
-           getTriPointIndex(P,i+1,j),getTriPointIndex(P,i,j+1)};
+        int index[3] = {b2[P][i][j],b2[P][i+1][j],b2[P][i][j+1]};
 
         nodes[index[0]] = nodes[index[0]]*p[0] + nodes[index[1]]*p[1]
                         + nodes[index[2]]*p[2];
@@ -85,8 +84,8 @@ static void splitTriangle(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
     }
     // cycle through the three triangles. each one gets P-m points
     for (int p = 0; p < P-m; ++p){
-      int index[3] = {getTriPointIndex(P,P-m-p-1,p),
-         getTriPointIndex(P,0,P-m-p-1),getTriPointIndex(P,p,0)};
+      int index[3] = {b2[P][P-m-p-1][p],
+         b2[P][0][P-m-p-1],b2[P][p][0]};
       for (int t = 0; t < 3; ++t)
         subNodes[t][index[0]] = nodes[index[t]];
     }

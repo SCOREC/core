@@ -13,7 +13,7 @@
 
 namespace crv {
 
-extern unsigned const* const b2[7];
+extern unsigned const* const* const b2[7];
 extern unsigned const* const* const* const b3[5];
 
 }

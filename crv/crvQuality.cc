@@ -12,16 +12,6 @@ namespace crv {
 
 static int maxAdaptiveIter = 5;
 
-int getTriPointIndex(int P, int i, int j)
-{
-  return crv::b2[P][j*(P+1)+i-j*(j-1)/2];
-}
-
-int getTetPointIndex(int P, int i, int j, int k)
-{
-  return crv::b3[P][i][j][k];
-}
-
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,
  * by George, Borouchaki, and Barral. (2014)

@@ -22,16 +22,44 @@ namespace crv {
  */
 
 // Notes: 0 is a fake point, added for de Casteljau's algorithm
-static unsigned const b2_0[1] = {2};
-static unsigned const b2_1[3] = {2,0,1};
-static unsigned const b2_2[6] = {2,5,0,4,3,1};
-static unsigned const b2_3[10] = {2,7,8,0,6,9,3,5,4,1};
-static unsigned const b2_4[15] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-static unsigned const b2_5[21] = {2,11,12,13,14,0,10,19,20,15,3,9,18,
-  16,4,8,17,5,7,6,1};
-static unsigned const b2_6[28] = {2,13,14,15,16,17,0,12,24,25,26,18,3,
-  11,23,27,19,4,10,22,20,5,9,21,6,8,7,1};
-unsigned const* const b2[7] =
+static unsigned const b2_0_0[1] = {2};
+static unsigned const* const b2_0[1] = {b2_0_0};
+static unsigned const b2_1_0[2] = {2,1};
+static unsigned const b2_1_1[1] = {0};
+static unsigned const* const b2_1[2] = {b2_1_0,b2_1_1};
+static unsigned const b2_2_0[3] = {2,4,1};
+static unsigned const b2_2_1[2] = {5,3};
+static unsigned const b2_2_2[1] = {0};
+static unsigned const* const b2_2[3] = {b2_2_0,b2_2_1,b2_2_2};
+static unsigned const b2_3_0[4] = {2,6,5,1};
+static unsigned const b2_3_1[3] = {7,9,4};
+static unsigned const b2_3_2[2] = {8,3};
+static unsigned const b2_3_3[1] = {0};
+static unsigned const* const b2_3[4] = {b2_3_0,b2_3_1,b2_3_2,b2_3_3};
+static unsigned const b2_4_0[5] = {2,8,7,6,1};
+static unsigned const b2_4_1[4] = {9,14,13,5};
+static unsigned const b2_4_2[3] = {10,12,4};
+static unsigned const b2_4_3[2] = {11,3};
+static unsigned const b2_4_4[1] = {0};
+static unsigned const* const b2_4[5] = {b2_4_0,b2_4_1,b2_4_2,b2_4_3,b2_4_4};
+static unsigned const b2_5_0[6] = {2,10,9,8,7,1};
+static unsigned const b2_5_1[5] = {11,19,18,17,6};
+static unsigned const b2_5_2[4] = {12,20,16,5};
+static unsigned const b2_5_3[3] = {13,15,4};
+static unsigned const b2_5_4[2] = {14,3};
+static unsigned const b2_5_5[1] = {0};
+static unsigned const* const b2_5[6] =
+{b2_5_0,b2_5_1,b2_5_2,b2_5_3,b2_5_4,b2_5_5};
+static unsigned const b2_6_0[7] = {2,12,11,10,9,8,1};
+static unsigned const b2_6_1[6] = {13,24,23,22,21,7};
+static unsigned const b2_6_2[5] = {14,25,27,20,6};
+static unsigned const b2_6_3[4] = {15,26,19,5};
+static unsigned const b2_6_4[3] = {16,18,4};
+static unsigned const b2_6_5[2] = {17,3};
+static unsigned const b2_6_6[1] = {0};
+static unsigned const* const b2_6[7] =
+{b2_6_0,b2_6_1,b2_6_2,b2_6_3,b2_6_4,b2_6_5,b2_6_6};
+unsigned const* const* const b2[7] =
 {b2_0,b2_1,b2_2,b2_3,b2_4,b2_5,b2_6};
 
 static unsigned const b3_0_00[1] = {3};
@@ -99,5 +127,16 @@ static unsigned const* const* const b3_4[5] =
 
 unsigned const* const* const* const b3[5] =
 {b3_0,b3_1,b3_2,b3_3,b3_4};
+
+// publically accessible access
+int getTriPointIndex(int P, int i, int j)
+{
+  return crv::b2[P][i][j];
+}
+
+int getTetPointIndex(int P, int i, int j, int k)
+{
+  return crv::b3[P][i][j][k];
+}
 
 }
