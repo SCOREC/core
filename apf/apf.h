@@ -575,6 +575,8 @@ void projectField(Field* to, Field* from);
 
 void axpy(double a, Field* x, Field* y);
 
+void renameField(Field* f, const char* name);
+
 }
 
 #endif
