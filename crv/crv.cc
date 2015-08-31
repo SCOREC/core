@@ -6,6 +6,7 @@
  */
 
 #include "crv.h"
+#include "crvBezier.h"
 
 namespace crv {
 

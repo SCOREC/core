@@ -8,6 +8,7 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvTables.h"
+#include "crvQuality.h"
 
 namespace crv {
 
@@ -26,14 +27,8 @@ template <class T>
 static void splitEdge(int P, double t, apf::NewArray<T>& nodes,
     apf::NewArray<T> (&subNodes)[2])
 {
-  // re-order nodes, makes life easier
-  T temp = nodes[1];
-  for (int i = 1; i < P; ++i)
-    nodes[i] = nodes[i+1];
-  nodes[P] = temp;
-
   subNodes[0][0] = nodes[0];
-  subNodes[1][P] = nodes[1];
+  subNodes[1][P] = nodes[P];
   // go through and find new points,
   // the j'th point on the i'th iteration
   for (int i = 0; i < P; ++i){
@@ -48,13 +43,23 @@ static void splitEdge(int P, double t, apf::NewArray<T>& nodes,
 void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[2])
 {
+  // re-order nodes, makes life easier
+  apf::Vector3 temp = nodes[1];
+  for (int i = 1; i < P; ++i)
+    nodes[i] = nodes[i+1];
+  nodes[P] = temp;
   splitEdge(P,t,nodes,subNodes);
+}
+
+void subdivideBezierEdgeJacobianDet(int P, apf::NewArray<double>& nodes,
+    apf::NewArray<double> (&subNodes)[2])
+{
+  splitEdge(P,0.5,nodes,subNodes);
 }
 
 /* de Casteljau's algorithm on a triangle
  * subNodes[i] corresponds to the i'th edge
  */
-
 template <class T, int N>
 static void splitTriangle(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
     apf::NewArray<T> (&subNodes)[N], int tri[N])
@@ -106,12 +111,13 @@ void subdivideBezierTriangle(int P, apf::Vector3& p,
  * Uses a non-convex split, which may be unstable, but other work seems
  * to think its okay
  */
-void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3> (&subNodes)[4])
+template <class T>
+static void splitBezierTriangle(int P, apf::NewArray<T>& nodes,
+    apf::NewArray<T> (&subNodes)[4])
 {
   int n = (P+1)*(P+2)/2;
-  apf::NewArray<apf::Vector3> tempSubNodes1[1];
-  apf::NewArray<apf::Vector3> tempSubNodes2[2];
+  apf::NewArray<T> tempSubNodes1[1];
+  apf::NewArray<T> tempSubNodes2[2];
   tempSubNodes1[0].allocate(n);
   tempSubNodes2[0].allocate(n);
   tempSubNodes2[1].allocate(n);
@@ -137,6 +143,18 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
   copyTriangleNodes(P,tempSubNodes2[1],subNodes[1]);
   copyTriangleNodes(P,tempSubNodes2[0],subNodes[3]);
 
+}
+void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4])
+{
+  splitBezierTriangle(P,nodes,subNodes);
+}
+
+void subdivideBezierTriangleJacobianDet(int P,
+    apf::NewArray<double>& nodes,
+    apf::NewArray<double> (&subNodes)[4])
+{
+  splitBezierTriangle(P,nodes,subNodes);
 }
 
 } // namespace crv

@@ -51,6 +51,21 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi);
 /** \brief This is the 2D version. */
 void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi);
 
+/** \brief elevation functions for bezier's */
+void elevateBezierEdge(int P, int r, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes);
+void elevateBezierTriangle(int P, int r, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes);
+
+/** \brief subdivision functions for bezier's */
+void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[2]);
+void subdivideBezierTriangle(int P, apf::Vector3& p,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[3]);
+void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4]);
+
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
  *
  \details this is a support function, not actual ever needed.
