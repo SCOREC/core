@@ -92,9 +92,23 @@ static unsigned const b2_9_8[2] = {26,3};
 static unsigned const b2_9_9[1] = {0};
 static unsigned const* const b2_9[10] =
 {b2_9_0,b2_9_1,b2_9_2,b2_9_3,b2_9_4,b2_9_5,b2_9_6,b2_9_7,b2_9_8,b2_9_9};
+static unsigned const b2_10_0[11] = {2,20,19,18,17,16,15,14,13,12,1};
+static unsigned const b2_10_1[10] = {21,44,43,42,41,40,39,38,37,11};
+static unsigned const b2_10_2[9] = {22,45,59,58,57,56,55,36,10};
+static unsigned const b2_10_3[8] = {23,46,60,65,64,54,35,9};
+static unsigned const b2_10_4[7] = {24,47,61,63,53,34,8};
+static unsigned const b2_10_5[6] = {25,48,62,52,33,7};
+static unsigned const b2_10_6[5] = {26,49,51,32,6};
+static unsigned const b2_10_7[4] = {27,50,31,5};
+static unsigned const b2_10_8[3] = {28,30,4};
+static unsigned const b2_10_9[2] = {29,3};
+static unsigned const b2_10_10[1] = {0};
+static unsigned const* const b2_10[11] =
+{b2_10_0,b2_10_1,b2_10_2,b2_10_3,b2_10_4,b2_10_5,b2_10_6,b2_10_7,b2_10_8,
+    b2_10_9,b2_10_10};
 
-unsigned const* const* const b2[10] =
-{b2_0,b2_1,b2_2,b2_3,b2_4,b2_5,b2_6,b2_7,b2_8,b2_9};
+unsigned const* const* const b2[11] =
+{b2_0,b2_1,b2_2,b2_3,b2_4,b2_5,b2_6,b2_7,b2_8,b2_9,b2_10};
 
 static unsigned const b3_0_00[1] = {3};
 static unsigned const* const b3_0_0[1] = {b3_0_00};
