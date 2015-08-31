@@ -27,6 +27,16 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
 
+
+/* checks what prism is safe to tetrahedronize.
+ * the optional "good_diagonal_codes" integer
+ * is a bit vector containing 8 bits, one
+ * for each of the possible 3-bit diagonal
+ * codes, indicating whether that diagonal
+ * configuration is safe.
+ */
+bool isPrismOk(Mesh* m, Entity* e,
+    int* good_diagonal_codes = 0);
 /* checks whether a pyramid is safe to tetrahedronize.
    good_rotation gives additional information if the pyramid
    is unsafe:
