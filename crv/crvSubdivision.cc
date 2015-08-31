@@ -55,23 +55,23 @@ void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
  * subNodes[i] corresponds to the i'th edge
  */
 
-template <class T>
+template <class T, int N>
 static void splitTriangle(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
-    apf::NewArray<T> (&subNodes)[3])
+    apf::NewArray<T> (&subNodes)[N], int tri[N])
 {
   // set up first two vertices
-  for(int t = 0; t < 3; ++t)
-    subNodes[t][0] = nodes[t];
+  for(int t = 0; t < N; ++t)
+    subNodes[t][0] = nodes[tri[t]];
 
-  for(int t = 0; t < 3; ++t)
-    subNodes[t][1] = nodes[(t+1) % 3];
+  for(int t = 0; t < N; ++t)
+    subNodes[t][1] = nodes[(tri[t]+1) % 3];
   // subNodes[t][2] is the split point
 
   // set up the first edge for all three,
   // using existing edges
-  for(int t = 0; t < 3; ++t)
+  for(int t = 0; t < N; ++t)
     for(int i = 0; i < P-1; ++i)
-      subNodes[t][3+i] = nodes[3+t*(P-1)+i];
+      subNodes[t][3+i] = nodes[3+tri[t]*(P-1)+i];
   // now each subNodes is filled from 0 to 2+3*(P-1)
 
   for (int m = 0; m < P; ++m){
@@ -88,8 +88,8 @@ static void splitTriangle(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
     for (int p = 0; p < P-m; ++p){
       int index[3] = {b2[P][P-m-p-1][p],
          b2[P][0][P-m-p-1],b2[P][p][0]};
-      for (int t = 0; t < 3; ++t)
-        subNodes[t][index[0]] = nodes[index[t]];
+      for (int t = 0; t < N; ++t)
+        subNodes[t][index[0]] = nodes[index[tri[t]]];
     }
   }
 }
@@ -98,7 +98,8 @@ void subdivideBezierTriangle(int P, apf::Vector3& p,
     apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[3])
 {
-  splitTriangle(P,p,nodes,subNodes);
+  int tri[3] = {0,1,2};
+  splitTriangle(P,p,nodes,subNodes,tri);
 }
 
 /* Four calls of de casteljau's algorithm to subdivide into 4 triangles
@@ -108,24 +109,33 @@ void subdivideBezierTriangle(int P, apf::Vector3& p,
 void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[4])
 {
-  apf::NewArray<apf::Vector3> tempSubNodes[3][3];
-  for (int s = 0; s < 3; ++s)
-    for (int t = 0; t < 3; ++t)
-      tempSubNodes[s][t].allocate((P+1)*(P+2)/2);
+  int n = (P+1)*(P+2)/2;
+  apf::NewArray<apf::Vector3> tempSubNodes1[1];
+  apf::NewArray<apf::Vector3> tempSubNodes2[2];
+  tempSubNodes1[0].allocate(n);
+  tempSubNodes2[0].allocate(n);
+  tempSubNodes2[1].allocate(n);
+
+  int tri1[1] = {1};
+  int tri2[2] = {0,1};
 
   apf::Vector3 p(0.5,0.5,0);
-  splitTriangle(P,p,nodes,tempSubNodes[0]);
-  p = apf::Vector3(0,0.5,0.5);
-  splitTriangle(P,p,tempSubNodes[0][0],tempSubNodes[1]);
-  copyTriangleNodes(P,tempSubNodes[1][2],subNodes[0]);
+  splitTriangle(P,p,nodes,tempSubNodes2,tri2);
+  copyTriangleNodes(P,tempSubNodes2[0],nodes);
 
-  splitTriangle(P,p,tempSubNodes[0][1],tempSubNodes[2]);
-  copyTriangleNodes(P,tempSubNodes[2][1],subNodes[2]);
+  p = apf::Vector3(0,0.5,0.5);
+  splitTriangle(P,p,tempSubNodes2[1],tempSubNodes1,tri1);
+  copyTriangleNodes(P,tempSubNodes1[0],subNodes[2]);
+
+  tri2[0] = 1; tri2[1] = 2;
+  splitTriangle(P,p,nodes,tempSubNodes2,tri2);
+  copyTriangleNodes(P,tempSubNodes2[1],subNodes[0]);
+  copyTriangleNodes(P,tempSubNodes2[0],nodes);
 
   p = apf::Vector3(-1,1,1);
-  splitTriangle(P,p,tempSubNodes[1][1],tempSubNodes[2]);
-  copyTriangleNodes(P,tempSubNodes[2][2],subNodes[1]);
-  copyTriangleNodes(P,tempSubNodes[2][1],subNodes[3]);
+  splitTriangle(P,p,nodes,tempSubNodes2,tri2);
+  copyTriangleNodes(P,tempSubNodes2[1],subNodes[1]);
+  copyTriangleNodes(P,tempSubNodes2[0],subNodes[3]);
 
 }
 
