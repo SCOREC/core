@@ -28,7 +28,7 @@ double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
 
 
-/* checks what prism is safe to tetrahedronize.
+/* checks whether a prism is safe to tetrahedronize.
  * the optional "good_diagonal_codes" integer
  * is a bit vector containing 8 bits, one
  * for each of the possible 3-bit diagonal
