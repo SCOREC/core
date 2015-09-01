@@ -198,6 +198,7 @@ static int align_quad(apf::Mesh* mesh, Entity* quad, Entity* canonical_0_vert)
 
 static void overrideQuadDiagonal(Adapt* a, Entity* quad, int diagonal)
 {
+  assert(diagonal == 1 || diagonal == 0);
   Mesh* mesh = a->mesh;
   int old_diagonal = getDiagonalFromFlag(a, quad);
   if (old_diagonal != diagonal) {
@@ -333,16 +334,24 @@ struct UnsafePrismOverride : public apf::CavityOp
       int quad_diagonal = getDiagonalFromFlag(a, quads[i]);
       Entity* dv = pv[i];
       int quad_alignment = align_quad(mesh, quads[i], dv);
-      int diagonal = quad_diagonal & quad_alignment;
+      int diagonal = quad_diagonal ^ quad_alignment;
       allowed_diagonals |= (1 << (2 * i + diagonal));
     }
+    assert(allowed_diagonals > 0);
+    assert(allowed_diagonals <= ((1<<6)-1));
     return allowed_diagonals;
   }
   bool areDiagonalsAllowed(int diagonals, int allowed_diagonals)
   {
-    for (int i = 0; i < 3; ++i)
-      if (!(allowed_diagonals & (1 << (2 * i + (diagonals & i)))))
+    int is_good = 1 & (good_diagonal_codes >> diagonals);
+    if (!is_good)
+      return false;
+    for (int i = 0; i < 3; ++i) {
+      int diagonal = 1 & (diagonals >> i);
+      int allowed = 1 & (allowed_diagonals >> (2 * i + diagonal));
+      if (!allowed)
         return false;
+    }
     return true;
   }
   void enforceDiagonals(int diagonals)
@@ -354,7 +363,7 @@ struct UnsafePrismOverride : public apf::CavityOp
       int quad_diagonal = 1 & (diagonals >> i);
       Entity* quad = quads[i];
       int quad_alignment = align_quad(mesh, quad, dv);
-      int diagonal = quad_diagonal & quad_alignment;
+      int diagonal = quad_diagonal ^ quad_alignment;
       overrideQuadDiagonal(a, quad, diagonal);
     }
   }
@@ -362,8 +371,10 @@ struct UnsafePrismOverride : public apf::CavityOp
   {
     int allowed_diagonals = getAllowedDiagonals();
     for (int diagonals = 1; diagonals < 7; ++diagonals)
-      if (areDiagonalsAllowed(diagonals, allowed_diagonals))
+      if (areDiagonalsAllowed(diagonals, allowed_diagonals)) {
         enforceDiagonals(diagonals);
+        return;
+      }
     { 
       std::stringstream ss;
       ss << "prism at " << apf::getLinearCentroid(mesh, prism)
@@ -372,10 +383,14 @@ struct UnsafePrismOverride : public apf::CavityOp
       std::string s = ss.str();
       fprintf(stderr, "%s", s.c_str());
     }
-    if (areDiagonalsAllowed(0, allowed_diagonals))
+    if (areDiagonalsAllowed(0, allowed_diagonals)) {
       enforceDiagonals(0);
-    if (areDiagonalsAllowed(7, allowed_diagonals))
+      return;
+    }
+    if (areDiagonalsAllowed(7, allowed_diagonals)) {
       enforceDiagonals(7);
+      return;
+    } 
     { 
       std::stringstream ss;
       ss << "prism at " << apf::getLinearCentroid(mesh, prism)
