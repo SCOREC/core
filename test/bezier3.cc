@@ -147,6 +147,62 @@ void testEdgeSubdivision()
   }
 }
 
+void testEdgeElevation()
+{
+  for (int o = 1; o <= 5; ++o){
+
+    gmi_model* model = makeEdgeModel();
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, true);
+
+    apf::Vector3 points[2] = {apf::Vector3(0,0,0),apf::Vector3(1,1,1)};
+    apf::MeshEntity* v[2];
+    for (int i = 0; i < 2; ++i)
+      v[i] = m->createVertex(m->findModelEntity(0,i),points[i],points[i]);
+
+    apf::MeshEntity* edge = m->createEntity(apf::Mesh::EDGE,
+        m->findModelEntity(1,0), v);
+
+    m->acceptChanges();
+    // curve the mesh
+    crv::BezierCurver bc(m,o,0,3);
+    bc.run();
+
+    apf::NewArray<apf::Vector3> pts(101);
+    apf::NewArray<apf::Vector3> nodes;
+
+    apf::Element* elem = apf::createElement(m->getCoordinateField(),edge);
+    apf::getVectorNodes(elem,nodes);
+
+    apf::Vector3 p, pt;
+    for (int i = 0; i <= 100; ++i){
+      p[0] = 0.02*i-1.;
+      apf::getVector(elem,p,pts[i]);
+    }
+    apf::destroyElement(elem);
+
+    // elevate everything to 6th order
+    apf::NewArray<apf::Vector3> elevatedNodes;
+    elevatedNodes.allocate(7);
+    crv::elevateBezierEdge(o,6-o,nodes,elevatedNodes);
+    apf::changeMeshShape(m,crv::getBezier(3,6),false);
+
+    m->setPoint(v[0],0,points[0]);
+    m->setPoint(v[1],0,points[1]);
+    for (int j = 1; j <= 5; ++j)
+      m->setPoint(edge,j-1,elevatedNodes[j]);
+
+    elem = apf::createElement(m->getCoordinateField(),edge);
+    for (int i = 0; i <= 100; ++i){
+      p[0] = 0.02*i-1.;
+      apf::getVector(elem,p,pt);
+      assert(std::abs((pts[i]-pt).getLength()) < 1e-15);
+    }
+    apf::destroyElement(elem);
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+}
 // edges go counter clockwise
 
 // face areas are 1/2 and 19/30
@@ -245,7 +301,6 @@ void testTriSubdivision()
     apf::MeshIterator* it = m->begin(2);
     apf::MeshEntity* e = m->iterate(it);
     m->end(it);
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedBefore");
 
     apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
 
@@ -309,7 +364,6 @@ void testTriSubdivision()
       }
     }
     m->destroy(e);
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedAfter");
 
     apf::destroyElement(elem);
     for(int t = 0; t < 3; ++t)
@@ -318,6 +372,7 @@ void testTriSubdivision()
     m->destroyNative();
     apf::destroyMesh(m);
   }
+
   for(int o = 1; o <= 6; ++o){
     apf::Mesh2* m = createMesh2D();
     crv::BezierCurver bc(m,o,0);
@@ -325,7 +380,6 @@ void testTriSubdivision()
     apf::MeshIterator* it = m->begin(2);
     apf::MeshEntity* e = m->iterate(it);
     m->end(it);
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedBefore");
 
     apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
 
@@ -356,8 +410,77 @@ void testTriSubdivision()
       }
     }
     m->destroy(e);
-    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,25,"curvedAfter");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,25,"curvedAfter");
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+}
+
+void testTriElevation()
+{
+  apf::Vector3 points2D[3] =
+  {apf::Vector3(0,0,0),apf::Vector3(1,0,0),apf::Vector3(1,1,0)};
+
+  for (int o = 1; o <= 5; ++o){
+
+    apf::Mesh2* m = createMesh2D();
+    crv::BezierCurver bc(m,o,0);
+    bc.run();
+    apf::MeshIterator* it = m->begin(2);
+    apf::MeshEntity* tri = m->iterate(it);
+    m->end(it);
+
+    apf::Element* elem = apf::createElement(m->getCoordinateField(),tri);
+
+    apf::MeshEntity* verts[3],* edges[3];
+    m->getDownward(tri,0,verts);
+    m->getDownward(tri,1,edges);
+
+    apf::NewArray<apf::Vector3> pts(66);
+    apf::NewArray<apf::Vector3> nodes;
+
+    apf::getVectorNodes(elem,nodes);
+
+    apf::Vector3 p, pt;
+    int n = 0;
+    for (int j = 0; j <= 10; ++j){
+      p[1] = 1.*j/10;
+      for (int i = 0; i <= 10-j; ++i){
+        p[0] = 1.*i/10;
+        apf::getVector(elem,p,pts[n]);
+        n++;
+      }
+    }
+    apf::destroyElement(elem);
+
+    // elevate everything to 6th order
+    apf::NewArray<apf::Vector3> elevatedNodes;
+    elevatedNodes.allocate(28);
+    crv::elevateBezierTriangle(o,6-o,nodes,elevatedNodes);
+    apf::changeMeshShape(m,crv::getBezier(3,6),false);
+
+    m->setPoint(verts[0],0,points2D[0]);
+    m->setPoint(verts[1],0,points2D[1]);
+    m->setPoint(verts[2],0,points2D[2]);
+
+    for (int i = 0; i < 3; ++i)
+      for (int j = 1; j <= 5; ++j)
+        m->setPoint(edges[i],j-1,elevatedNodes[2+5*i+j]);
+    for (int j = 0; j < 10; ++j)
+      m->setPoint(tri,j,elevatedNodes[18+j]);
+
+    elem = apf::createElement(m->getCoordinateField(),tri);
+    n = 0;
+    for (int j = 0; j <= 10; ++j){
+      p[1] = 1.*j/10;
+      for (int i = 0; i <= 10-j; ++i){
+        p[0] = 1.*i/10;
+        apf::getVector(elem,p,pt);
+        assert(std::abs((pts[n]-pt).getLength()) < 1e-15);
+        n++;
+      }
+    }
+    apf::destroyElement(elem);
 
     m->destroyNative();
     apf::destroyMesh(m);
@@ -369,7 +492,9 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   testEdgeSubdivision();
+  testEdgeElevation();
   testTriSubdivision();
+  testTriElevation();
   PCU_Comm_Free();
   MPI_Finalize();
 }

@@ -16,36 +16,6 @@
 
 namespace crv {
 
-// negative -> flipped relative to canonical
-// relies on e0 being always ordered correctly
-static int const tet_tri_edges[4][3] =
-{{0,1,2},{0,4,3},{1,5,4},{2,5,3}};
-static bool const flip_tet_tri_edges[4][3] =
-{{0,0,0},{0,0,1},{0,0,1},{1,0,1}};
-
-enum {
-  BEZIER,
-  GREGORY,
-  TYPES
-};
-
-// numbers of nodes on
-static int const curved_face_internal[2][6] =
-{{0,0,1,3,6,10},{0,0,6,6,0,0}};
-
-static int const curved_tet_internal[2][6] =
-{{0,0,0,1,4,10},{0,0,0,1,4,10}};
-
-// total numbers of nodes
-static int const curved_face_total[2][6] =
-{{3,6,10,15,21,28},{0,0,15,18,0,0}};
-
-static int const blended_tet_total[2][6] =
-{{4,10,20,34,52,74},{0,0,40,46,0,0}};
-
-static int const curved_tet_total[2][6] =
-{{4,10,20,35,56,84},{0,0,40,47,0,0}};
-
 /** \brief polynomial part of bernstein polynomial */
 double Bij(int i, int j,double u, double v);
 double Bijk(int i, int j, int k, double u, double v, double w);

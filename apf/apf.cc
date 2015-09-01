@@ -416,4 +416,11 @@ void axpy(double a, Field* x, Field* y)
   y->axpy(a, x);
 }
 
+void renameField(Field* f, const char* name)
+{
+  Mesh* m = f->getMesh();
+  assert( ! m->findField(name));
+  f->rename(name);
+}
+
 }//namespace apf
