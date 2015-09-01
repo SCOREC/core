@@ -364,12 +364,26 @@ struct UnsafePrismOverride : public apf::CavityOp
     for (int diagonals = 1; diagonals < 7; ++diagonals)
       if (areDiagonalsAllowed(diagonals, allowed_diagonals))
         enforceDiagonals(diagonals);
-    /* print: bummer. gotta use the cyclic ones */
+    { 
+      std::stringstream ss;
+      ss << "prism at " << apf::getLinearCentroid(mesh, prism)
+         << " has no safe acyclic diagonals\n";
+      ss << "will try cyclic diagonals\n";
+      std::string s = ss.str();
+      fprintf(stderr, "%s", s.c_str());
+    }
     if (areDiagonalsAllowed(0, allowed_diagonals))
       enforceDiagonals(0);
     if (areDiagonalsAllowed(7, allowed_diagonals))
       enforceDiagonals(7);
-    /* game over, man. game over. */
+    { 
+      std::stringstream ss;
+      ss << "prism at " << apf::getLinearCentroid(mesh, prism)
+         << " has no safe diagonals!\n";
+      ss << "A negative tet WILL get made here\n";
+      std::string s = ss.str();
+      fprintf(stderr, "%s", s.c_str());
+    }
   }
   Adapt* a;
   Entity* prism;
@@ -377,10 +391,12 @@ struct UnsafePrismOverride : public apf::CavityOp
   int good_diagonal_codes;
 };
 
-static void overrideDiagonalsForUnsafePyramids(Adapt* a)
+static void overrideDiagonalsForUnsafeElements(Adapt* a)
 {
   UnsafePyramidOverride op(a);
   op.applyToDimension(3);
+  UnsafePrismOverride op2(a);
+  op2.applyToDimension(3);
   clearFlagFromDimension(a, CHECKED, 2);
   clearFlagFromDimension(a, CHECKED, 3);
 }
@@ -390,7 +406,7 @@ static void prepareLayerToTets(Adapt* a)
   findLayerBase(a);
   chooseBaseDiagonals(a);
   flagQuadDiagonals(a);
-  overrideDiagonalsForUnsafePyramids(a);
+  overrideDiagonalsForUnsafeElements(a);
 }
 
 /* a tetrahedronization operation re-uses
