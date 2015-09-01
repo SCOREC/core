@@ -255,7 +255,7 @@ void test2D()
         m->end(it);
       }
 
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,100,"curved");
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,100,"curved");
 
       testJacobian(m);
       testEdgeGradients(m);

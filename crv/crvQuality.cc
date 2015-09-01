@@ -107,17 +107,33 @@ static double Nijkl(apf::NewArray<apf::Vector3>& nodes,
 //  return minJ/maxJ;
 //}
 
-static double calcMinTriJacDet(int P, apf::NewArray<double>& nodes)
+
+struct JacobianData
 {
-  double minJ = 1e10;
-  double maxJ = -1e10;
+  JacobianData(int P) : order(P), I(-1), J(-1), K(-1),
+      minJ(1e10), maxJ(-1e10) {};
+  int order;
+  int I;
+  int J;
+  int K;
+  double minJ;
+  double maxJ;
+};
+
+static double calcMinTriJacDet(int P, apf::NewArray<double>& nodes,
+    JacobianData& data)
+{
   for (int I = 0; I <= P; ++I){
     for (int J = 0; J <= P-I; ++J){
-      minJ = std::min(minJ,nodes[b2[P][I][J]]);
-      maxJ = std::max(maxJ,nodes[b2[P][I][J]]);
+      if(nodes[b2[P][I][J]] < data.minJ){
+        data.minJ = nodes[b2[P][I][J]];
+        data.I = I;
+        data.J = J;
+      }
+      data.maxJ = std::max(data.maxJ,nodes[b2[P][I][J]]);
     }
   }
-  return minJ/maxJ;
+  return data.minJ;
 }
 
 
@@ -135,13 +151,24 @@ static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
   }
 }
 
-static double getMinTriJacDet(int P, apf::NewArray<double>& nodes, int& iter)
+//static int getTriEdge(int P, int I, int J)
+//{
+//  unsigned index = b2[P][I][J];
+//  assert(index > 2); // should never get a negative jacobian at the corners
+//  if (index > 3*P) // interior
+//    return -1;
+//  assert( (index-3)/(P-1) < 3);
+//  return (index-3)/(P-1);
+//}
+
+static double getMinTriJacDet(int P, apf::NewArray<double>& nodes, int& iter,
+    JacobianData& data)
 {
 
-  double minJ = calcMinTriJacDet(P,nodes);
+  double minJ = calcMinTriJacDet(P,nodes,data);
   // stop if this is true
-  if(iter >= maxAdaptiveIter || minJ > minThreshold){
-    return minJ;
+  if(iter >= maxAdaptiveIter || data.minJ > minThreshold){
+    return data.minJ;
   } else {
     iter++;
     // subdivide, and continue trying
@@ -153,10 +180,10 @@ static double getMinTriJacDet(int P, apf::NewArray<double>& nodes, int& iter)
     subNodes[3].allocate(n);
 
     subdivideBezierTriangleJacobianDet(P,nodes,subNodes);
-    minJ = getMinTriJacDet(P,subNodes[0],iter);
-    minJ = std::min(getMinTriJacDet(P,subNodes[1],iter),minJ);
-    minJ = std::min(getMinTriJacDet(P,subNodes[2],iter),minJ);
-    minJ = std::min(getMinTriJacDet(P,subNodes[3],iter),minJ);
+    minJ = getMinTriJacDet(P,subNodes[0],iter,data);
+    minJ = std::min(getMinTriJacDet(P,subNodes[1],iter,data),minJ);
+    minJ = std::min(getMinTriJacDet(P,subNodes[2],iter,data),minJ);
+    minJ = std::min(getMinTriJacDet(P,subNodes[3],iter,data),minJ);
     return minJ;
   }
 }
@@ -202,7 +229,8 @@ static bool checkTriValidity(apf::Mesh* m, apf::MeshEntity* e)
   getTriJacDetNodes(P,elemNodes,nodes);
 
   int iter = 0;
-  double minJ = getMinTriJacDet(2*(P-1),nodes,iter);
+  JacobianData data(P);
+  double minJ = getMinTriJacDet(2*(P-1),nodes,iter,data);
   printf("minj %f %d\n",minJ,iter);
   if(minJ < minThreshold || iter == maxAdaptiveIter)
     return false;

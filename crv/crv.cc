@@ -59,7 +59,7 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
       apf::createElement(m->getCoordinateField(),edge);
 
   apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> nodes, elevatedNodes;
+  apf::NewArray<apf::Vector3> nodes, elevatedNodes(n+r+1);
   apf::getVectorNodes(elem,nodes);
   elevateBezierEdge(n,r,nodes,elevatedNodes);
 
