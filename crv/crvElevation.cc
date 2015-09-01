@@ -21,6 +21,7 @@ static void raiseBezierEdge(int P, int r, apf::NewArray<T>& nodes,
     nodes[i] = nodes[i+1];
   nodes[P] = temp;
 
+  assert(elevatedNodes.allocated());
   elevatedNodes[0] = nodes[0];
   elevatedNodes[P+r] = nodes[P];
   for(int i = 1; i < P+r; ++i){
