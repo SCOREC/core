@@ -35,7 +35,7 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n);
  * codes, indicating whether that diagonal
  * configuration is safe.
  */
-bool isPrismOk(Mesh* m, Entity* e,
+bool isPrismOk(apf::Mesh* m, Entity* e,
     int* good_diagonal_codes = 0);
 /* checks whether a pyramid is safe to tetrahedronize.
    good_rotation gives additional information if the pyramid

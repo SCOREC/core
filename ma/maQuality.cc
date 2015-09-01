@@ -290,7 +290,7 @@ static int unrotate_prism_diagonal_code(int code, int rot)
   return out;
 }
 
-bool isPrismOk(Mesh* m, Entity* e,
+bool isPrismOk(apf::Mesh* m, Entity* e,
     int* good_diagonal_codes)
 {
   Entity* v[6];
