@@ -306,7 +306,8 @@ long verifyVolumes(Mesh* m, bool printVolumes)
         ss << "warning: element volume " << v
           << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
-        fprintf(stderr, "%s", s.c_str());
+        fprintf(stdout, "%s", s.c_str());
+        fflush(stdout);
       }
       ++n;
     }
