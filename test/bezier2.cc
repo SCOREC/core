@@ -16,6 +16,8 @@
  * control point differences. As implementing weights*control point differences
  * is not possible in our current framework, this method is not implemented in
  * the main code, but serves its use for code validation.
+ *
+ * Orders 3-6 provide invalid meshes, just to check validity as well
  */
 
 static void testJacobian(apf::Mesh2* m)
@@ -101,7 +103,7 @@ void edge0(double const p[2], double x[3], void*)
 }
 void edge1(double const p[2], double x[3], void*)
 {
-  x[0] = 1.0-10.0*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
+  x[0] = 1.0-2.5*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
   x[1] = p[0];
 }
 void edge2(double const p[2], double x[3], void*)
@@ -210,28 +212,20 @@ apf::Mesh2* createMesh2D()
   return m;
 }
 
-static void fixMidPoints(apf::Mesh2* m)
+void checkValidity(apf::Mesh* m, int order)
 {
-  apf::FieldShape * fs = m->getShape();
-
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
-  apf::Vector3 xi;
-
+  int iEntity = 0;
   while ((e = m->iterate(it))) {
-    apf::MeshEntity* v[3];
-    m->getDownward(e,0,v);
-    for(int i = 0; i < fs->countNodesOn(2); ++i){
-      apf::Vector3 pt(0,0,0), vertex;
-
-      fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-      xi[2] = 1.-xi[0]-xi[1];
-      for(int j = 0; j < 3; ++j){
-        m->getPoint(v[j],0,vertex);
-        pt += vertex*xi[j];
-      }
-      m->setPoint(e,i,pt);
+    bool valid = crv::checkValidity(m,e);
+    if(iEntity == 0){
+      assert((!valid && order > 3) || (valid && order <= 3));
+    } else {
+      assert(valid);
     }
+    iEntity++;
+
   }
   m->end(it);
 }
@@ -240,12 +234,33 @@ void test2D()
 {
   for(int order = 1; order <= 6; ++order){
       apf::Mesh2* m = createMesh2D();
+      apf::changeMeshShape(m, crv::getBezier(3,order),true);
       crv::BezierCurver bc(m,order,0);
-      bc.run();
-      if(order > 2)
-        fixMidPoints(m);
+      crv::setBlendingOrder(0);
+
+      bc.snapToInterpolate(1);
+      apf::FieldShape* fs = m->getShape();
+
+      // go downward, and convert interpolating to control points
+      for(int d = 2; d >= 1; --d){
+        int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
+        int ne = fs->countNodesOn(d);
+        apf::NewArray<double> c;
+        crv::getTransformationCoefficients(3,order,d,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(d);
+        while ((e = m->iterate(it))) {
+          bc.convertInterpolationPoints(e,n,ne,c);
+        }
+        m->end(it);
+      }
+
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,100,"curved");
+
       testJacobian(m);
       testEdgeGradients(m);
+      checkValidity(m,order);
+
       m->destroyNative();
       apf::destroyMesh(m);
     }

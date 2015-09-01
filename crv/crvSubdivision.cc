@@ -12,9 +12,6 @@
 
 namespace crv {
 
-/* de Casteljau's algorithm on an edge
- * subNodes[i] corresponds to the i'th edge
- */
 template <class T>
 static void copyTriangleNodes(int P, apf::NewArray<T>& nodes,
     apf::NewArray<T>& copy)
@@ -23,6 +20,10 @@ static void copyTriangleNodes(int P, apf::NewArray<T>& nodes,
     copy[i] = nodes[i];
 }
 
+/* de Casteljau's algorithm on an edge
+ * subNodes[i] corresponds to the i'th edge
+ * P(P+1)/2 additions per split
+ */
 template <class T>
 static void splitEdge(int P, double t, apf::NewArray<T>& nodes,
     apf::NewArray<T> (&subNodes)[2])
