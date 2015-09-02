@@ -154,7 +154,14 @@ namespace chef {
     in.load("adapt.inp");
     bake(g,m,in,out);
   }
-  void cook(gmi_model*& g, apf::Mesh2*& m, 
+  void cook(gmi_model*& g, apf::Mesh2*& m,
+      ph::Input& ctrl) {
+    ctrl.openfile_read = openfile_read;
+    ph::Output out;
+    out.openfile_write = openfile_write;
+    bake(g,m,ctrl,out);
+  }
+  void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl, GRStream* grs) {
     ctrl.openfile_read = openfile_read;
     ph::Output out;
@@ -162,12 +169,22 @@ namespace chef {
     out.grs = grs;
     bake(g,m,ctrl,out);
   }
-  void cook(gmi_model*& g, apf::Mesh2*& m, 
+  void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl, RStream* rs) {
     ctrl.openfile_read = openstream_read;
     ctrl.rs = rs;
     ph::Output out;
     out.openfile_write = openfile_write;
+    bake(g,m,ctrl,out);
+    return;
+  }
+  void cook(gmi_model*& g, apf::Mesh2*& m,
+      ph::Input& ctrl, RStream* rs, GRStream* grs) {
+    ctrl.openfile_read = openstream_read;
+    ctrl.rs = rs;
+    ph::Output out;
+    out.openfile_write = openstream_write;
+    out.grs = grs;
     bake(g,m,ctrl,out);
     return;
   }
