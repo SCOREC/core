@@ -3,6 +3,7 @@
 #include "maLayer.h"
 #include "maSnap.h"
 #include "maShape.h"
+#include "maReposition.h"
 
 #include <cstdio>
 #include <sstream>
@@ -90,11 +91,13 @@ void splitPrism_0(Refine* r, Entity* p, Entity** v)
     ss << "warning: invoking cyclic prism tetrahedronization template";
     ss << " at " << point << "\n";
     ss << "this should only be done to accomodate unsafe elements.\n";
+    ss << "the new vertex position will be optimized.\n";
     std::string s = ss.str();
     fprintf(stderr, "%s", s.c_str());
     Vector xi(1./3.,1./3.,0);
     apf::MeshElement* me = apf::createMeshElement(m, p);
     Entity* vert = prismToTetsBadCase(r, p, v, code, point);
+    ma::repositionVertex(m, vert, 0.1);
     a->solutionTransfer->onVertex(me, xi, vert);
     a->sizeField->interpolate(me, xi, vert);
     apf::destroyMeshElement(me);
