@@ -2,6 +2,9 @@
 #include <apfMesh.h>
 #include <cmath>
 
+#include <apf.h>
+#include <sstream>
+
 namespace ma {
 
 /* automatic differentiation infrastructure
@@ -77,7 +80,7 @@ static AD operator*(AD a, AD b)
 static AD operator/(AD a, AD b)
 {
   return AD(
-      a.val() * b.val(),
+      a.val() / b.val(),
       (a.dx(0) * b.val() - a.val() * b.dx(0)) / (b.val() * b.val()),
       (a.dx(1) * b.val() - a.val() * b.dx(1)) / (b.val() * b.val()),
       (a.dx(2) * b.val() - a.val() * b.dx(2)) / (b.val() * b.val()));
@@ -146,10 +149,10 @@ static AD triangle_area(ADVec v[3])
   return norm(cross((v[1] - v[0]), (v[2] - v[0]))) / AD(2.);
 }
 
-#define PERFECT_TRIANGLE_QUALITY (sqrt(3.0) / 4.0)
+#define PERFECT_TRIANGLE_QUALITY (std::sqrt(3.0) / 4.0)
 #define CUBE(x) ((x)*(x)*(x))
 #define PERFECT_TET_QUALITY \
-  ((sqrt(2.0) / 12.0) / CUBE(sqrt(PERFECT_TRIANGLE_QUALITY)))
+  ((std::sqrt(2.0) / 12.0) / CUBE(std::sqrt(PERFECT_TRIANGLE_QUALITY)))
 
 static AD tet_quality(ADVec v[4])
 {
@@ -186,28 +189,47 @@ static AD tet_entity_quality(Mesh* m, Entity* tet, Entity* v)
   return tet_quality(tx);
 }
 
-void repositionVertex(Mesh* m, Entity* v)
+static AD min_cavity_quality(Mesh* m, apf::Adjacent& tets, Entity* v)
 {
-  static double const step_factor = 0.1;
-  static int const max_iters = 10;
+  AD min_qual(1.);
+  for (size_t i = 0; i < tets.getSize(); ++i) {
+    AD tet_qual = tet_entity_quality(m, tets[i], v);
+    if (tet_qual.val() < min_qual.val())
+      min_qual = tet_qual;
+  }
+  return min_qual;
+}
+
+bool repositionVertex(Mesh* m, Entity* v, double qual_target)
+{
+  static int const max_iters = 20;
   apf::Adjacent tets;
   m->getAdjacent(v, 3, tets);
+  double speed = 1.0;
+  double prev_qual = 0;
   for (int iter = 0; iter < max_iters; ++iter) {
-    AD worst_qual(1.);
-    for (size_t i = 0; i < tets.getSize(); ++i) {
-      AD tet_qual = tet_entity_quality(m, tets[i], v);
-      if (tet_qual.val() < worst_qual.val())
-        worst_qual = tet_qual;
-    }
-    Vector motion(
-        worst_qual.dx(0),
-        worst_qual.dx(1),
-        worst_qual.dx(2));
-    motion = motion * (step_factor * worst_qual.val());
+    AD min_qual = min_cavity_quality(m, tets, v);
+    if (min_qual.val() >= qual_target)
+      return true;
+    /* diverging, reduce speed */
+    if (min_qual.val() < prev_qual)
+      speed /= 2;
+    prev_qual = min_qual.val();
+    double step = (1.0 - min_qual.val()) * speed;
+    Vector grad(
+        min_qual.dx(0),
+        min_qual.dx(1),
+        min_qual.dx(2));
+    double grad_mag = grad * grad;
+    if (!grad_mag)
+      break;
+    Vector motion = grad * (step / grad_mag);
     Vector vx;
     m->getPoint(v, 0, vx);
-    m->setPoint(v, 0, vx + motion);
+    vx += motion;
+    m->setPoint(v, 0, vx);
   }
+  return false;
 }
 
 }
