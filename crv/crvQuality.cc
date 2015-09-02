@@ -7,11 +7,13 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvTables.h"
+#include "crvQuality.h"
 
 namespace crv {
 
 static int maxAdaptiveIter = 5;
 
+static double minThreshold = 0.05;
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,
  * by George, Borouchaki, and Barral. (2014)
@@ -91,53 +93,106 @@ static double Nijkl(apf::NewArray<apf::Vector3>& nodes,
   return sum*d*d*d/CD;
 }
 
-static double getMinTriJacDet(int P, apf::NewArray<apf::Vector3>& nodes)
+//static double calcMinTriJacDet(int P, apf::NewArray<apf::Vector3>& nodes)
+//{
+//  double minJ = 1e10;
+//  double maxJ = -1e10;
+//  for (int I = 0; I <= 2*(P-1); ++I){
+//    for (int J = 0; J <= 2*(P-1)-I; ++J){
+//      double nijk = Nijk(nodes,P,I,J);
+//      minJ = std::min(minJ,nijk);
+//      maxJ = std::max(maxJ,nijk);
+//    }
+//  }
+//  return minJ/maxJ;
+//}
+
+
+struct JacobianData
 {
-  double minJ = 1e10;
-  for (int I = 0; I <= 2*(P-1); ++I){
-    for (int J = 0; J <= 2*(P-1)-I; ++J){
-        minJ = std::min(minJ,Nijk(nodes,P,I,J));
+  JacobianData(int P) : order(P), I(-1), J(-1), K(-1),
+      minJ(1e10), maxJ(-1e10) {};
+  int order;
+  int I;
+  int J;
+  int K;
+  double minJ;
+  double maxJ;
+};
+
+static double calcMinTriJacDet(int P, apf::NewArray<double>& nodes,
+    JacobianData& data)
+{
+  for (int I = 0; I <= P; ++I){
+    for (int J = 0; J <= P-I; ++J){
+      if(nodes[b2[P][I][J]] < data.minJ){
+        data.minJ = nodes[b2[P][I][J]];
+        data.I = I;
+        data.J = J;
+      }
+      data.maxJ = std::max(data.maxJ,nodes[b2[P][I][J]]);
     }
   }
-  return minJ;
+  return data.minJ;
 }
 
-static double getMinTriJacDet(int P, apf::NewArray<apf::Vector3>& nodes, int& iter)
+
+/* nodes is (2(P-1)+1)(2(P-1)+2)/2 = P(2P-1)
+ * except for P = 1, which has size 3 due to numbering convention used,
+ * such that i=j=k=0 results in index 2
+ */
+static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
+    apf::NewArray<double>& nodes)
 {
-  double minJ = getMinTriJacDet(P,nodes);
+  for (int I = 0; I <= 2*(P-1); ++I){
+    for (int J = 0; J <= 2*(P-1)-I; ++J){
+      nodes[b2[2*(P-1)][I][J]] = Nijk(elemNodes,P,I,J);
+    }
+  }
+}
+
+//static int getTriEdge(int P, int I, int J)
+//{
+//  unsigned index = b2[P][I][J];
+//  assert(index > 2); // should never get a negative jacobian at the corners
+//  if (index > 3*P) // interior
+//    return -1;
+//  assert( (index-3)/(P-1) < 3);
+//  return (index-3)/(P-1);
+//}
+
+static double getMinTriJacDet(int P, apf::NewArray<double>& nodes, int& iter,
+    JacobianData& data)
+{
+
+  double minJ = calcMinTriJacDet(P,nodes,data);
   // stop if this is true
-  if(iter >= maxAdaptiveIter || minJ > 1. || minJ < -3.){
-    return minJ;
+  if(iter >= maxAdaptiveIter || data.minJ > minThreshold){
+    return data.minJ;
   } else {
     iter++;
     // subdivide, and continue trying
-    apf::NewArray<apf::Vector3> subNodes[4];
+    apf::NewArray<double> subNodes[4];
     int n = (P+1)*(P+2)/2;
-
     subNodes[0].allocate(n);
     subNodes[1].allocate(n);
     subNodes[2].allocate(n);
     subNodes[3].allocate(n);
 
-//    subdivideTriangle(P,nodes,subNodes);
-    minJ = std::min(getMinTriJacDet(P,subNodes[0],iter),minJ);
-    minJ = std::min(getMinTriJacDet(P,subNodes[1],iter),minJ);
-    minJ = std::min(getMinTriJacDet(P,subNodes[2],iter),minJ);
-    minJ = std::min(getMinTriJacDet(P,subNodes[3],iter),minJ);
+    subdivideBezierTriangleJacobianDet(P,nodes,subNodes);
+    minJ = getMinTriJacDet(P,subNodes[0],iter,data);
+    minJ = std::min(getMinTriJacDet(P,subNodes[1],iter,data),minJ);
+    minJ = std::min(getMinTriJacDet(P,subNodes[2],iter,data),minJ);
+    minJ = std::min(getMinTriJacDet(P,subNodes[3],iter,data),minJ);
     return minJ;
   }
 }
 
-bool checkTriValidity(apf::Mesh* m, apf::MeshEntity* e)
+static bool checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
 {
-
-  int P = m->getShape()->getOrder();
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
   apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
-
   apf::Matrix3x3 J;
-
   // First, just check at node xi
   apf::Downward down;
   apf::Vector3 xi, exi;
@@ -154,15 +209,32 @@ bool checkTriValidity(apf::Mesh* m, apf::MeshEntity* e)
     }
   }
   apf::destroyMeshElement(me);
+  return true;
+}
 
+static bool checkTriValidity(apf::Mesh* m, apf::MeshEntity* e)
+{
+
+  int P = m->getShape()->getOrder();
+  bool valid = checkTriValidityAtNodeXi(m,e);
+  if(!valid) return false;
+  if(P == 1) return true;
   // if it is positive, then keep going
-  apf::NewArray<apf::Vector3> nodes;
-  apf::getVectorNodes(elem,nodes);
+  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+
+  apf::NewArray<apf::Vector3> elemNodes;
+  apf::getVectorNodes(elem,elemNodes);
   apf::destroyElement(elem);
+  apf::NewArray<double> nodes(P*(2*P-1));
+  getTriJacDetNodes(P,elemNodes,nodes);
+
   int iter = 0;
-
-
-  return !(getMinTriJacDet(P,nodes,iter) < -3. || iter == maxAdaptiveIter);
+  JacobianData data(P);
+  double minJ = getMinTriJacDet(2*(P-1),nodes,iter,data);
+  printf("minj %f %d\n",minJ,iter);
+  if(minJ < minThreshold || iter == maxAdaptiveIter)
+    return false;
+  return true;
 }
 
 static bool checkTetValidity(apf::Mesh* /* m*/, apf::MeshEntity* /*e*/)

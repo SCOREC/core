@@ -152,19 +152,8 @@ int binomial(int n, int i);
 int trinomial(int n, int i, int j);
 int quadnomial(int n, int i, int j, int k);
 
-void elevateBezierEdge(int P, int r, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3>& elevatedNodes);
-void elevateBezierTriangle(int P, int r, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3>& elevatedNodes);
+bool checkValidity(apf::Mesh* m, apf::MeshEntity* e);
 
-/** \brief subdivision functions for bezier's */
-void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3> (&subNodes)[2]);
-void subdivideBezierTriangle(int P, apf::Vector3& p,
-    apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3> (&subNodes)[3]);
-void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<apf::Vector3> (&subNodes)[4]);
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
 
