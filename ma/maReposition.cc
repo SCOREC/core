@@ -1,5 +1,8 @@
+#include "maReposition.h"
 #include <apfMesh.h>
 #include <cmath>
+
+namespace ma {
 
 /* automatic differentiation infrastructure
  * for getting the derivative of quality
@@ -83,10 +86,10 @@ static AD operator/(AD a, AD b)
 static AD sqrt(AD a)
 {
   return AD(
-      sqrt(a.val()),
-      a.dx(0) / (2. * sqrt(a.val())),
-      a.dx(1) / (2. * sqrt(a.val())),
-      a.dx(2) / (2. * sqrt(a.val())));
+      std::sqrt(a.val()),
+      a.dx(0) / (2. * std::sqrt(a.val())),
+      a.dx(1) / (2. * std::sqrt(a.val())),
+      a.dx(2) / (2. * std::sqrt(a.val())));
 }
 
 class ADVec
@@ -148,7 +151,7 @@ static AD triangle_area(ADVec v[3])
 #define PERFECT_TET_QUALITY \
   ((sqrt(2.0) / 12.0) / CUBE(sqrt(PERFECT_TRIANGLE_QUALITY)))
 
-AD tet_quality(ADVec v[4])
+static AD tet_quality(ADVec v[4])
 {
   AD sum_asq(0);
   for (int i = 0; i < 4; ++i) {
@@ -163,4 +166,48 @@ AD tet_quality(ADVec v[4])
   AD root_arms = sqrt(arms);
   AD quality = vol / CUBE(root_arms);
   return quality / PERFECT_TET_QUALITY;
+}
+
+static AD tet_entity_quality(Mesh* m, Entity* tet, Entity* v)
+{
+  Entity* tv[4];
+  m->getDownward(tet, 0, tv);
+  ADVec tx[4];
+  for (int i = 0; i < 4; ++i) {
+    Vector vx;
+    m->getPoint(tv[i], 0, vx);
+    if (tv[i] == v)
+      tx[i] = ADVec(AD(vx[0], 1, 0, 0),
+                    AD(vx[1], 0, 1, 0),
+                    AD(vx[2], 0, 0, 1));
+    else
+      tx[i] = ADVec(AD(vx[0]), AD(vx[1]), AD(vx[2]));
+  }
+  return tet_quality(tx);
+}
+
+void repositionVertex(Mesh* m, Entity* v)
+{
+  static double const step_factor = 0.1;
+  static int const max_iters = 10;
+  apf::Adjacent tets;
+  m->getAdjacent(v, 3, tets);
+  for (int iter = 0; iter < max_iters; ++iter) {
+    AD worst_qual(1.);
+    for (size_t i = 0; i < tets.getSize(); ++i) {
+      AD tet_qual = tet_entity_quality(m, tets[i], v);
+      if (tet_qual.val() < worst_qual.val())
+        worst_qual = tet_qual;
+    }
+    Vector motion(
+        worst_qual.dx(0),
+        worst_qual.dx(1),
+        worst_qual.dx(2));
+    motion = motion * (step_factor * worst_qual.val());
+    Vector vx;
+    m->getPoint(v, 0, vx);
+    m->setPoint(v, 0, vx + motion);
+  }
+}
+
 }
