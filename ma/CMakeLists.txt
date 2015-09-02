@@ -58,7 +58,9 @@ set(SOURCES
   maCrawler.cc
   maTetrahedronize.cc
   maLayerSnap.cc
-  maMap.cc)
+  maMap.cc
+  maReposition.cc
+)
 
 set(HEADERS
   ma.h
