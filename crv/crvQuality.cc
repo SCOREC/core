@@ -198,7 +198,7 @@ static void getTriJacDet(int P, int iter, apf::NewArray<double>& nodes,
 }
 
 static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[])
+    apf::MeshEntity* entities[3])
 {
   apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
@@ -227,8 +227,8 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
   return numInvalid;
 }
 
-static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[])
+int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
+    apf::MeshEntity* entities[3])
 {
   int P = m->getShape()->getOrder();
   int numInvalid = checkTriValidityAtNodeXi(m,e,entities);
@@ -243,7 +243,6 @@ static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   apf::MeshEntity* edges[3];
 
   m->getDownward(e,1,edges);
-
   // Vertices will already be flagged in the first check
   for (int edge = 0; edge < 3; ++edge){
     double minJ = -1e10;
@@ -282,18 +281,10 @@ static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   return numInvalid;
 }
 
-static bool checkTetValidity(apf::Mesh* /* m*/, apf::MeshEntity* /*e*/,
-    apf::MeshEntity* /*entities*/[])
+int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
+    apf::MeshEntity* entities[6])
 {
  return false;
-}
-
-int checkValidity(apf::Mesh* m, apf::MeshEntity* e, apf::MeshEntity* entities[])
-{
-  if(m->getDimension() == 2)
-    return checkTriValidity(m,e,entities);
-  else
-    return checkTetValidity(m,e,entities);
 }
 
 double computeAlternateTriJacobianDet(apf::Mesh* m,

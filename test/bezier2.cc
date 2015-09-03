@@ -219,7 +219,7 @@ void checkValidity(apf::Mesh* m, int order)
   int iEntity = 0;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[3];
-    int numInvalid = crv::checkValidity(m,e,entities);
+    int numInvalid = crv::checkTriValidity(m,e,entities);
     if(iEntity == 0){
       assert((numInvalid && order > 3) || (!numInvalid && order <= 3));
     } else {
