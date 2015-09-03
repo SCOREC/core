@@ -152,7 +152,7 @@ int binomial(int n, int i);
 int trinomial(int n, int i, int j);
 int quadnomial(int n, int i, int j, int k);
 
-bool checkValidity(apf::Mesh* m, apf::MeshEntity* e);
+int checkValidity(apf::Mesh* m, apf::MeshEntity* e, apf::MeshEntity* entities[]);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
