@@ -220,7 +220,7 @@ void checkValidity(apf::Mesh* m, int order)
   int iEntity = 0;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[3];
-    int numInvalid = crv::checkValidity(m,e,entities);
+    int numInvalid = crv::checkTriValidity(m,e,entities);
     if(iEntity == 0){
       assert((numInvalid && order > 3) || (!numInvalid && order <= 3));
     } else {
@@ -269,11 +269,94 @@ void test2D()
     }
 }
 
+apf::Mesh2* createMesh3D()
+{
+  gmi_model* model = gmi_load(".null");
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+
+  apf::Vector3 points3D[4] =
+  {apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1)};
+
+  apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
+
+  apf::deriveMdsModel(m);
+
+  m->acceptChanges();
+  m->verify();
+  return m;
+}
+
+void test3D()
+{
+  gmi_register_null();
+
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    apf::changeMeshShape(m, crv::getBezier(3,order),true);
+    crv::setBlendingOrder(0);
+    apf::FieldShape* fs = m->getShape();
+    crv::BezierCurver bc(m,order,0);
+    // go downward, and convert interpolating to control points
+    for(int d = 2; d >= 1; --d){
+      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
+      int ne = fs->countNodesOn(d);
+      apf::NewArray<double> c;
+      crv::getTransformationCoefficients(3,order,d,c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))) {
+        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+        bc.convertInterpolationPoints(e,n,ne,c);
+      }
+      m->end(it);
+    }
+    // get face 2
+
+    apf::MeshIterator* it = m->begin(3);
+    apf::MeshEntity* tet = m->iterate(it);
+    m->end(it);
+
+    apf::MeshEntity* faces[4], *edges[3];
+    m->getDownward(tet,2,faces);
+    apf::MeshEntity* face = faces[2];
+    m->getDownward(face,1,edges);
+    for (int edge = 0; edge < 3; ++edge){
+      int non = m->getShape()->countNodesOn(apf::Mesh::EDGE);
+      for (int i = 0; i < non; ++i){
+        apf::Vector3 pt;
+        m->getPoint(edges[edge],i,pt);
+        pt = pt*0.5;
+        m->setPoint(edges[edge],i,pt);
+      }
+    }
+    int non = m->getShape()->countNodesOn(apf::Mesh::TRIANGLE);
+    for (int i = 0; i < non; ++i){
+      apf::Vector3 pt;
+      m->getPoint(face,i,pt);
+      pt = pt*0.5;
+      m->setPoint(face,i,pt);
+    }
+
+    m->acceptChanges();
+    apf::MeshEntity* entities[6];
+//    crv::checkValidity(m,tet,entities);
+    // write the field
+//    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,20,"curved");
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+
+}
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
+  test3D();
   PCU_Comm_Free();
   MPI_Finalize();
 }
