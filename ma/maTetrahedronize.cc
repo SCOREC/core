@@ -8,6 +8,7 @@
 #include <apfShape.h>
 #include <apfCavityOp.h>
 #include "maShape.h"
+#include <cassert>
 
 namespace ma {
 

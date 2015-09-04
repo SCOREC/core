@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maShapeHandler.h"
 #include <apfCavityOp.h>
+#include <cassert>
 
 namespace ma {
 

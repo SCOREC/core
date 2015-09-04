@@ -7,6 +7,7 @@
 
 #include "crv.h"
 #include "crvBezier.h"
+#include <cstdlib>
 
 namespace crv {
 

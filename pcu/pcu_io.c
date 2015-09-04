@@ -8,8 +8,8 @@
 
 *******************************************************************************/
 #include "pcu_io.h"
-#include "pcu_common.h"
-#include "pcu_memory.h"
+#include "noto_malloc.h"
+#include "reel.h"
 #include "pcu_mpi.h"
 #include <stdint.h>
 #include <string.h>
@@ -42,7 +42,7 @@ static void open_compressed_read(pcu_file* pf)
   int nUnused = 0;
   pf->bzf = BZ2_bzReadOpen(&bzerror, pf->f, verbosity, small, unused, nUnused);
   if (bzerror != BZ_OK)
-    pcu_fail("BZ2_bzReadOpen failed");
+    reel_fail("BZ2_bzReadOpen failed with code %d", bzerror);
 }
 
 static void open_compressed_write(pcu_file* pf)
@@ -53,7 +53,7 @@ static void open_compressed_write(pcu_file* pf)
   int workFactor = 30;
   pf->bzf = BZ2_bzWriteOpen(&bzerror, pf->f, blockSize100k, verbosity, workFactor);
   if (bzerror != BZ_OK)
-    pcu_fail("BZ2_bzWriteOpen failed");
+    reel_fail("BZ2_bzWriteOpen failed with code %d", bzerror);
 }
 
 static void open_compressed(pcu_file* pf)
@@ -73,7 +73,7 @@ static void compressed_read(pcu_file* pf, void* data, size_t size)
   len = size;
   rv = BZ2_bzRead(&bzerror, pf->bzf, data, len);
   if (bzerror != BZ_OK && bzerror != BZ_STREAM_END)
-    pcu_fail("BZ2_bzRead failed");
+    reel_fail("BZ2_bzRead failed with code %d", bzerror);
   assert(rv == len);
 }
 
@@ -87,7 +87,7 @@ static void compressed_write(pcu_file* pf, void const* data, size_t size)
   bzip2_is_not_const_correct = (void*)data;
   BZ2_bzWrite(&bzerror, pf->bzf, bzip2_is_not_const_correct, len);
   if (bzerror != BZ_OK)
-    pcu_fail("BZ2_bzWrite failed");
+    reel_fail("BZ2_bzWrite failed with code %d", bzerror);
 }
 
 static void close_compressed_read(pcu_file* pf)
@@ -95,7 +95,7 @@ static void close_compressed_read(pcu_file* pf)
   int bzerror;
   BZ2_bzReadClose(&bzerror, pf->bzf);
   if (bzerror != BZ_OK)
-    pcu_fail("BZ2_readClose failed");
+    reel_fail("BZ2_readClose failed with code %d", bzerror);
 }
 
 static void close_compressed_write(pcu_file* pf)
@@ -106,7 +106,7 @@ static void close_compressed_write(pcu_file* pf)
   unsigned* nbytes_out = NULL;
   BZ2_bzWriteClose(&bzerror, pf->bzf, abandon, nbytes_in, nbytes_out);
   if (bzerror != BZ_OK)
-    pcu_fail("BZ2_writeClose failed");
+    reel_fail("BZ2_writeClose failed with code %d", bzerror);
 }
 
 static void close_compressed(pcu_file* pf)
@@ -122,7 +122,7 @@ static void close_compressed(pcu_file* pf)
 static void open_compressed(pcu_file* pf)
 {
   (void)pf;
-  pcu_fail("recompile with -DPCU_COMPRESS=ON");
+  reel_fail("recompile PCU with -DPCU_COMPRESS=ON");
 }
 
 static void compressed_read(pcu_file* pf, void* data, size_t size)
@@ -130,7 +130,7 @@ static void compressed_read(pcu_file* pf, void* data, size_t size)
   (void)pf;
   (void)data;
   (void)size;
-  pcu_fail("recompile with -DPCU_COMPRESS=ON");
+  reel_fail("recompile PCU with -DPCU_COMPRESS=ON");
 }
 
 static void compressed_write(pcu_file* pf, void const* data, size_t size)
@@ -138,13 +138,13 @@ static void compressed_write(pcu_file* pf, void const* data, size_t size)
   (void)pf;
   (void)data;
   (void)size;
-  pcu_fail("recompile with -DPCU_COMPRESS=ON");
+  reel_fail("recompile PCU with -DPCU_COMPRESS=ON");
 }
 
 static void close_compressed(pcu_file* pf)
 {
   (void)pf;
-  pcu_fail("recompile with -DPCU_COMPRESS=ON");
+  reel_fail("recompile PCU with -DPCU_COMPRESS=ON");
 }
 
 #endif
@@ -160,7 +160,7 @@ pcu_file* pcu_fopen(const char* name, bool write, bool compress)
     pf->f = fopen(name,"r");
   if (!pf->f) {
     perror("pcu_fopen");
-    pcu_fail("couldn't open %s", name);
+    reel_fail("pcu_fopen couldn't open \"%s\"", name);
   }
   if(compress)
     open_compressed(pf);
@@ -178,24 +178,24 @@ void pcu_fclose(pcu_file* pf)
 void pcu_fwrite(void const* p, size_t size, size_t nmemb, pcu_file * f)
 {
   if (!f->write)
-    pcu_fail("file not opened for writing.");
+    reel_fail("pcu_fwrite: file not opened for writing.");
   if (f->compress) {
     compressed_write(f, p, size * nmemb);
   } else {
     if (nmemb != fwrite(p, size, nmemb, f->f))
-      pcu_fail("fwrite failed");
+      reel_fail("fwrite(%p, %lu, %lu, %p) failed", p, size, nmemb, f->f);
   }
 }
 
 void pcu_fread(void* p, size_t size, size_t nmemb, pcu_file * f)
 {
   if (f->write)
-    pcu_fail("file not opened for reading.");
+    reel_fail("pcu_fread: file not opened for reading.");
   if (f->compress) {
     compressed_read(f, p, size * nmemb);
   } else {
-    if (nmemb != fread(p,size,nmemb,f->f))
-      pcu_fail("fread failed");
+    if (nmemb != fread(p, size, nmemb, f->f))
+      reel_fail("fread(%p, %lu, %lu, %p) failed", p, size, nmemb, f->f);
   }
 }
 
@@ -322,10 +322,10 @@ FILE* pcu_open_parallel(const char* prefix, const char* ext)
   //max_rank_chars = strlen("4294967296"), 4294967296 = 2^32 ~= INT_MAX
   static const size_t max_rank_chars = 10;
   size_t path_size = strlen(prefix) + max_rank_chars + strlen(ext) + 1;
-  char* path = pcu_malloc(path_size);
+  char* path = noto_malloc(path_size);
   int rank = pcu_mpi_rank();
   snprintf(path,path_size,"%s%d.%s",prefix,rank,ext);
   FILE* file = fopen(path, "w");
-  pcu_free(path);
+  noto_free(path);
   return file;
 }

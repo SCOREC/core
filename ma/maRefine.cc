@@ -19,6 +19,7 @@
 #include "maSnap.h"
 #include "maLayer.h"
 #include <apf.h>
+#include <cassert>
 
 namespace ma {
 

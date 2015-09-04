@@ -1,5 +1,6 @@
 #include <apfCavityOp.h>
 #include <apf.h>
+#include <cassert>
 
 namespace apf {
 

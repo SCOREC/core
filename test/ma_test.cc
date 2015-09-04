@@ -6,6 +6,7 @@
 #include <apfShape.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <cassert>
 
 class Linear : public ma::IsotropicFunction
 {

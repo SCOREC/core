@@ -2,6 +2,7 @@
 #include <apfMDS.h>
 #include <apf.h>
 #include <ph.h>
+#include <cassert>
 
 namespace apf {
 /* so dangerous is this function that it

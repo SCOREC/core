@@ -1,5 +1,6 @@
 #include "dspGraphDistance.h"
 #include <PCU.h>
+#include <cassert>
 
 namespace dsp {
 

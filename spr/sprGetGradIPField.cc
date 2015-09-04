@@ -7,6 +7,7 @@
 
 #include "spr.h"
 #include "apfMesh.h"
+#include <cassert>
 
 namespace spr {
 

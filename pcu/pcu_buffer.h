@@ -13,12 +13,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-void* pcu_malloc(size_t size);
-#define PCU_MALLOC(p,c) ((p)=pcu_malloc(sizeof(*(p))*(c)))
-void* pcu_realloc(void* p, size_t size);
-void pcu_free(void* p);
-size_t pcu_memory(void);
-
 typedef struct
 {
   char* start;

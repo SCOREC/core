@@ -12,6 +12,7 @@
 #include "maShape.h"
 #include "maShapeHandler.h"
 #include <cstdio>
+#include <cassert>
 
 namespace ma {
 

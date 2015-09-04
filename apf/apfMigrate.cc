@@ -9,6 +9,7 @@
 #include "apfMesh2.h"
 #include "apfCavityOp.h"
 #include "apf.h"
+#include <cassert>
 
 namespace apf {
 

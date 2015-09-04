@@ -3,6 +3,7 @@
 #include <gmi_null.h>
 #include <PCU.h>
 #include <apf.h>
+#include <cassert>
 
 int main(int argc, char** argv)
 {

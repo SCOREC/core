@@ -1,6 +1,7 @@
 #include "phBC.h"
 #include <apfGeometry.h>
 #include <cstdlib>
+#include <cassert>
 
 namespace ph {
 

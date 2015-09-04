@@ -5,6 +5,7 @@
 #include <apfZoltan.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
+#include <cassert>
 
 namespace ph {
 

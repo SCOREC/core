@@ -13,6 +13,7 @@
 #include "apfFieldData.h"
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 namespace apf {
 

@@ -18,6 +18,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <cfloat>
+#include <cassert>
 #include <stdarg.h>
 
 namespace ma {

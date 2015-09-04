@@ -2,6 +2,8 @@
 #include "phOutput.h"
 #include "phIO.h"
 #include <sstream>
+#include <cassert>
+#include <cstdlib>
 
 namespace ph {
 

@@ -2,6 +2,7 @@
 #define PARMA_ASSOCIATIVE_H
 #include <map>
 #include <sstream>
+#include <cassert>
 
 namespace parma {
   template <class T> class Associative {

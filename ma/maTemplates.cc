@@ -12,6 +12,7 @@
 #include "maTables.h"
 #include "maSolutionTransfer.h"
 #include "maLayer.h"
+#include <cassert>
 
 namespace ma {
 

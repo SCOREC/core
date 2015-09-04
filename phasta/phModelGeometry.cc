@@ -1,5 +1,6 @@
 #include "phModelGeometry.h"
 #include <apf.h>
+#include <cassert>
 
 namespace ph {
 

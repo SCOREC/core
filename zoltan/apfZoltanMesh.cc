@@ -9,6 +9,7 @@
 #include "apfZoltanCallbacks.h"
 #include "apfZoltan.h"
 #include <PCU.h>
+#include <cassert>
 
 namespace apf {
 

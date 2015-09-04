@@ -9,6 +9,7 @@
 #include <cstring>
 #include <gmi.h>
 #include <gmi_sim.h>
+#include <cassert>
 
 namespace ph {
 

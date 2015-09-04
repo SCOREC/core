@@ -10,6 +10,7 @@
 #include "apfIntegrate.h"
 #include "apfVector.h"
 #include "apfMatrix.h"
+#include <cassert>
 
 namespace apf {
 

@@ -9,6 +9,7 @@
  *******************************************************************************/
 #include "crv.h"
 #include "crvSnap.h"
+#include <cassert>
 
 namespace crv {
 

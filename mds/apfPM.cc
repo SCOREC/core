@@ -11,6 +11,7 @@
 #include <PCU.h>
 #include "apfPM.h"
 #include <apf.h>
+#include <cassert>
 
 namespace apf {
 

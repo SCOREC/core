@@ -12,6 +12,7 @@
 #include "maAdapt.h"
 #include "maCollapse.h"
 #include "maOperator.h"
+#include <cassert>
 
 namespace ma {
 

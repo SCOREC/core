@@ -38,9 +38,15 @@ set(BZ_LINK "-L${BZ_LIB_DIR} -lbz2")
 endif()
 endif(PCU_COMPRESS)
 
+set(PCU_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/noto
+  ${CMAKE_CURRENT_SOURCE_DIR}/reel
+)
+
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/PCUConfig.h.in"
-    "${PROJECT_BINARY_DIR}/PCUConfig.h")
+    "${CMAKE_CURRENT_SOURCE_DIR}/reel/reel_config.h.in"
+    "${PROJECT_BINARY_DIR}/reel_config.h")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/pcuConfig.cmake.in"
     "${CMAKE_BINARY_DIR}/pcuConfig.cmake")
@@ -65,8 +71,8 @@ if(NOT BUILD_IN_TRILINOS)
 endif()
 
 #directory containing pcu header files
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
-#directory containing PCUConfig.h
+include_directories(${PCU_INCLUDE_DIRS})
+#directory containing reel_config.h
 include_directories("${PROJECT_BINARY_DIR}")
 
 #Sources & Headers
@@ -74,24 +80,22 @@ set(SOURCES
    pcu.c
    pcu_aa.c
    pcu_coll.c
-   pcu_common.c
    pcu_io.c
-   pcu_memory.c
+   pcu_buffer.c
    pcu_mpi.c
    pcu_msg.c
    pcu_order.c
    pcu_pmpi.c
-   pcu_protect.c)
-
-if(ENABLE_THREADS)       
-   set(SOURCES ${SOURCES}
-      pcu_thread.c
-      pcu_tmpi.c)
-endif(ENABLE_THREADS)
+   pcu_tmpi.c
+   noto/noto_malloc.c
+   reel/reel.c
+)
 
 set(HEADERS
    PCU.h
-   pcu_io.h)
+   pcu_io.h
+   noto/noto_malloc.h
+   reel/reel.h)
 
 #Library
 if(BUILD_IN_TRILINOS)

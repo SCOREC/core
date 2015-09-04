@@ -5,6 +5,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <cassert>
 
 int main(int argc, char** argv)
 {

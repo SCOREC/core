@@ -8,6 +8,7 @@
 #include <set>
 #include <list>
 #include <map>
+#include <cassert>
 
 typedef std::map<unsigned, unsigned> muu;
 

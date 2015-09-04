@@ -7,6 +7,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include <cassert>
 
 namespace ma {
 
