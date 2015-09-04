@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFDYNAMICARRAY_H
-#define APFDYNAMICARRAY_H
+#ifndef APF_DYNAMIC_ARRAY_H
+#define APF_DYNAMIC_ARRAY_H
 
 /** \file apfDynamicArray.h
     \brief what most std::vectors should be */
@@ -52,7 +52,9 @@ class DynamicArray
     {
       if (size == newSize) return;
       NewArray<T> newArray2(newSize);
-      std::size_t commonSize = std::min(size,newSize);
+      std::size_t commonSize = size;
+      if (newSize < size)
+        commonSize = newSize;
       for (std::size_t i=0; i < commonSize; ++i)
         newArray2[i] = (*this)[i];
       newArray.swap(newArray2);
