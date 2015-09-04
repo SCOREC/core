@@ -341,7 +341,7 @@ void test3D()
     }
 
     m->acceptChanges();
-    apf::MeshEntity* entities[6];
+//  apf::MeshEntity* entities[6];
 //    crv::checkValidity(m,tet,entities);
     // write the field
 //    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,20,"curved");
