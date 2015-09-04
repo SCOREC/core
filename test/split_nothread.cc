@@ -7,6 +7,7 @@
 #include <parma.h>
 #include <SimUtil.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace {
 

@@ -7,6 +7,7 @@
 #include <PCU.h>
 #include <SimUtil.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace {
   void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim, double w=1.0) {

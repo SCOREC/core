@@ -7,6 +7,7 @@
 #include <PCU.h>
 #include <SimUtil.h>
 #include <cassert>
+#include <cstdlib>
 
 apf::MeshTag* setWeights(apf::Mesh* m) {
   apf::MeshIterator* it = m->begin(m->getDimension());

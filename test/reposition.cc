@@ -4,6 +4,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <maReposition.h>
+#include <cstdlib>
 
 int main(int argc, char** argv)
 {
