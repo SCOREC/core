@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   m->setPoint(v, 0, randx);
 #endif
   apf::writeVtkFiles("before", m);
-  ma::repositionVertex(m, v, 1.0);
+  ma::repositionVertex(m, v, 20, 1.0);
   apf::writeVtkFiles("after", m);
   PCU_Comm_Free();
   MPI_Finalize();
