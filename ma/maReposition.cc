@@ -200,20 +200,15 @@ static AD min_cavity_quality(Mesh* m, apf::Adjacent& tets, Entity* v)
   return min_qual;
 }
 
-bool repositionVertex(Mesh* m, Entity* v, double qual_target)
+bool repositionVertex(Mesh* m, Entity* v,
+    int max_iters, double initial_speed)
 {
-  static int const max_iters = 20;
   apf::Adjacent tets;
   m->getAdjacent(v, 3, tets);
-  double speed = 1.0;
-  double prev_qual = 0;
+  double speed = initial_speed;
+  AD min_qual = min_cavity_quality(m, tets, v);
+  double prev_qual = min_qual.val();
   for (int iter = 0; iter < max_iters; ++iter) {
-    AD min_qual = min_cavity_quality(m, tets, v);
-    if (min_qual.val() >= qual_target)
-      return true;
-    /* diverging, reduce speed */
-    if (min_qual.val() < prev_qual)
-      speed /= 2;
     prev_qual = min_qual.val();
     double step = (1.0 - min_qual.val()) * speed;
     Vector grad(
@@ -228,8 +223,12 @@ bool repositionVertex(Mesh* m, Entity* v, double qual_target)
     m->getPoint(v, 0, vx);
     vx += motion;
     m->setPoint(v, 0, vx);
+    min_qual = min_cavity_quality(m, tets, v);
+    /* diverging, reduce speed */
+    if (min_qual.val() < prev_qual)
+      speed /= 2;
   }
-  return false;
+  return min_qual.val() > 0;
 }
 
 }

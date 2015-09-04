@@ -218,13 +218,15 @@ void checkValidity(apf::Mesh* m, int order)
   apf::MeshEntity* e;
   int iEntity = 0;
   while ((e = m->iterate(it))) {
-    bool valid = crv::checkValidity(m,e);
+    apf::MeshEntity* entities[3];
+    int numInvalid = crv::checkValidity(m,e,entities);
     if(iEntity == 0){
-      assert((!valid && order > 3) || (valid && order <= 3));
+      assert((numInvalid && order > 3) || (!numInvalid && order <= 3));
     } else {
-      assert(valid);
+      assert(!numInvalid);
     }
     iEntity++;
+    break;
 
   }
   m->end(it);
@@ -232,7 +234,7 @@ void checkValidity(apf::Mesh* m, int order)
 
 void test2D()
 {
-  for(int order = 1; order <= 6; ++order){
+  for(int order = 2; order <= 6; ++order){
       apf::Mesh2* m = createMesh2D();
       apf::changeMeshShape(m, crv::getBezier(3,order),true);
       crv::BezierCurver bc(m,order,0);

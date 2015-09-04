@@ -97,7 +97,11 @@ void splitPrism_0(Refine* r, Entity* p, Entity** v)
     Vector xi(1./3.,1./3.,0);
     apf::MeshElement* me = apf::createMeshElement(m, p);
     Entity* vert = prismToTetsBadCase(r, p, v, code, point);
-    ma::repositionVertex(m, vert, 0.1);
+    bool success = ma::repositionVertex(m, vert, 200, 0.05);
+    if (success)
+      fprintf(stderr, "repositioning succeeded\n");
+    else
+      fprintf(stderr, "repositioning failed\n");
     a->solutionTransfer->onVertex(me, xi, vert);
     a->sizeField->interpolate(me, xi, vert);
     apf::destroyMeshElement(me);
