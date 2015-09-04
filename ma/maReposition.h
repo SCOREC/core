@@ -5,7 +5,8 @@
 
 namespace ma {
 
-bool repositionVertex(Mesh* m, Entity* v, double qual_target);
+bool repositionVertex(Mesh* m, Entity* v,
+    int max_iters, double initial_speed);
 
 }
 
