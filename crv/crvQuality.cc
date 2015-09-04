@@ -358,8 +358,6 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
   apf::destroyElement(elem);
   apf::NewArray<double> nodes(9*P*P*(P-1)/2+P);
   getTetJacDetNodes(P,elemNodes,nodes);
-  apf::MeshEntity* edges[3];
-
   return 0;
 }
 
