@@ -12,6 +12,7 @@
 #include "apfNumbering.h"
 #include "apfTagData.h"
 #include <gmi.h>
+#include <cassert>
 
 namespace apf {
 

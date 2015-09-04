@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <cassert>
 
 class Linear : public ma::IsotropicFunction
 {

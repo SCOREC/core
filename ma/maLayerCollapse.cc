@@ -3,6 +3,7 @@
 #include "maShape.h"
 
 #include <cstdio>
+#include <cassert>
 
 namespace ma {
 

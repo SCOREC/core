@@ -19,6 +19,7 @@
 #include "apfUserData.h"
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
 
 namespace apf {
 

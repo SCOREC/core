@@ -1,5 +1,6 @@
 #include <list>
 #include <set>
+#include <cassert>
 #include <apf.h>
 #include <PCU.h>
 #include "parma_components.h"

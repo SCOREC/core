@@ -9,6 +9,7 @@
 #else
 #include <cstdlib>
 #endif
+#include <cassert>
 
 #ifdef __bgq__
 #include <spi/include/kernel/memory.h>

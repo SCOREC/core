@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <parma.h>
 #include <PCU.h>
+#include <cassert>
 
 apf::MeshTag* setWeights(apf::Mesh* m) {
   apf::MeshIterator* it = m->begin(m->getDimension());

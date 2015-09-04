@@ -1,5 +1,6 @@
 #include <apfMatrix.h>
 #include <algorithm>
+#include <cassert>
 
 struct Input {
   double A[3][3];

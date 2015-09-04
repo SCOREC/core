@@ -10,6 +10,7 @@
 #include "pcu_order.h"
 #include "pcu_aa.h"
 #include "pcu_msg.h"
+#include "noto_malloc.h"
 #include <assert.h>
 
 struct message {
@@ -38,7 +39,7 @@ static void init_order(pcu_order o)
 pcu_order pcu_order_new(void)
 {
   pcu_order o;
-  PCU_MALLOC(o,1);
+  NOTO_MALLOC(o,1);
   init_order(o);
   return o;
 }
@@ -46,7 +47,7 @@ pcu_order pcu_order_new(void)
 static void free_message(struct message* m)
 {
   pcu_free_buffer(&m->buf);
-  pcu_free(m);
+  noto_free(m);
 }
 
 static void free_messages(pcu_aa_tree* t)
@@ -64,19 +65,19 @@ static void free_messages(pcu_aa_tree* t)
 static void dtor_order(pcu_order o)
 {
   free_messages(&o->tree);
-  pcu_free(o->array);
+  noto_free(o->array);
 }
 
 void pcu_order_free(pcu_order o)
 {
   dtor_order(o);
-  pcu_free(o);
+  noto_free(o);
 }
 
 static struct message* take_message(pcu_msg* t)
 {
   struct message* m;
-  PCU_MALLOC(m,1);
+  NOTO_MALLOC(m,1);
   m->from = t->received.peer;
   m->buf = t->received.buffer; /* steal the buffer */
   pcu_make_buffer(&t->received.buffer);
@@ -109,7 +110,7 @@ static void prepare(pcu_order o, pcu_msg* t)
     pcu_aa_insert(&m->node, &o->tree, message_less);
   }
   o->count = pcu_aa_count(o->tree);
-  PCU_MALLOC(o->array, o->count);
+  NOTO_MALLOC(o->array, o->count);
   o->at = 0;
   fill(o, o->tree);
   o->at = -1;

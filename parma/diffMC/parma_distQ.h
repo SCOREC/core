@@ -3,6 +3,7 @@
 
 #include <apfMesh.h>
 #include <map>
+#include <cassert>
 
 namespace parma {
   struct Greater {

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <gmi.h>
+#include <cassert>
 
 namespace ph {
 

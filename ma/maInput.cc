@@ -10,6 +10,7 @@
 #include "maInput.h"
 #include <apfShape.h>
 #include <cstdio>
+#include <cassert>
 
 namespace ma {
 

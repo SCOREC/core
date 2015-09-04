@@ -2,6 +2,7 @@
 #include "maCrawler.h"
 #include "maRefine.h"
 #include "maLayer.h"
+#include <cassert>
 
 namespace ma {
 

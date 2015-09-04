@@ -4,6 +4,7 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <cassert>
 
 void createMesh(gmi_model*& g, apf::Mesh2*& m, int n)
 {

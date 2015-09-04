@@ -7,6 +7,8 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <vector>
+#include <cassert>
+
 using std::vector;
 class Expression
 {

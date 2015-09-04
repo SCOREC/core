@@ -6,6 +6,7 @@
 #include <PCU.h>
 #include <parma.h>
 #include <apfZoltan.h>
+#include <cassert>
 
 double const a_param = 0.2;
 double const b_param = 1.0;

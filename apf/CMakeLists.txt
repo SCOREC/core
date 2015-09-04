@@ -16,6 +16,7 @@ if(NOT BUILD_IN_TRILINOS)
   find_package(gmi PATHS ${CMAKE_BINARY_DIR})
   set(APF_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/vas
     ${PCU_INCLUDE_DIRS}
     ${GMI_INCLUDE_DIRS})
   set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS})
@@ -78,7 +79,9 @@ set(APF_HEADERS
   apfNumbering.h
   apfPartition.h
   apfConvert.h
-  apfGeometry.h)
+  apfGeometry.h
+  vas/vasArray.h
+)
 
 if(BUILD_IN_TRILINOS)
 # THIS IS WHERE TRIBITS GETS HEADERS

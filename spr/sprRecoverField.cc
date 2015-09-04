@@ -14,6 +14,7 @@
 #include <apfCavityOp.h>
 
 #include <set>
+#include <cassert>
 
 namespace spr {
 

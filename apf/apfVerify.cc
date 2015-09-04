@@ -4,6 +4,7 @@
 #include <gmi.h>
 #include <sstream>
 #include <apfGeometry.h>
+#include <cassert>
 
 namespace apf {
 

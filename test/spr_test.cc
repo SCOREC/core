@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <cassert>
 
 int main(int argc, char** argv)
 {

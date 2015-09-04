@@ -16,6 +16,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
+#include <cassert>
 
 namespace ma {
 

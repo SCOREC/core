@@ -2,6 +2,7 @@
 #include <apfMesh.h>
 #include <cstdlib>
 #include <cstdio>
+#include <cassert>
 
 int getOldEdge(int newEdge, int rotation)
 {

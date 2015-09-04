@@ -5,6 +5,7 @@
 #include <PCU.h>
 #include <parma.h>
 #include <apfZoltan.h>
+#include <cassert>
 
 namespace {
 

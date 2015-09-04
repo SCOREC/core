@@ -4,6 +4,7 @@
 #include "phAdjacent.h"
 #include "phBubble.h"
 #include "phAxisymmetry.h"
+#include <cassert>
 
 namespace ph {
 

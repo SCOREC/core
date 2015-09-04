@@ -5,6 +5,7 @@
 #include "apfMesh2.h"
 #include "apfShape.h"
 #include <map>
+#include <cassert>
 
 namespace apf {
 

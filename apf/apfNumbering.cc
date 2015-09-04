@@ -12,6 +12,7 @@
 #include "apfMesh.h"
 #include "apfShape.h"
 #include "apfTagData.h"
+#include <cassert>
 
 namespace apf {
 

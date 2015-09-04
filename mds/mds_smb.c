@@ -16,7 +16,7 @@
 #include <assert.h>
 #include <PCU.h>
 #include <pcu_io.h>
-#include <pcu_common.h>
+#include <reel.h>
 #include <sys/types.h> /*required for mode_t for mkdir on some systems*/
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 
@@ -654,7 +654,7 @@ static char* handle_path(const char* in, int is_write, int* zip)
   } else if (ends_with(path, smbext)) {
     remove_ext(path, smbext);
   } else {
-    pcu_fail("invalid smb path %s\n", path);
+    reel_fail("MDS: invalid smb path \"%s\"\n", path);
   }
   append(path, bufsize, "%d.smb", self);
   return path;

@@ -6,6 +6,7 @@
 #include <PCU.h>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
 namespace apf {
 /* the more dangerous a function is,

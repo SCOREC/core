@@ -4,6 +4,7 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include <sstream>
+#include <cassert>
 
 namespace ma {
 

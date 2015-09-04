@@ -5,6 +5,7 @@
 #include <apfMesh2.h>
 #include <crv.h>
 #include <PCU.h>
+#include <cassert>
 
 /* Test all shape functions by comparing them to the base linear,
  * by changing the mesh shape to the new shape functions

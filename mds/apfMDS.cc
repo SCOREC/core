@@ -18,6 +18,7 @@
 #include <apfNumbering.h>
 #include <apfPartition.h>
 #include <cstring>
+#include <cassert>
 
 extern "C" {
 

@@ -1,4 +1,5 @@
 #include <spr.h>
+#include <cassert>
 
 /* here is a test case run with Octave */
 static double const A_data[16][10] = {

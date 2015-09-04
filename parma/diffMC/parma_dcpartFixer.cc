@@ -3,6 +3,7 @@
 #include "parma_commons.h"
 #include "parma_convert.h"
 #include <maximalIndependentSet/mis.h>
+#include <cassert>
 
 typedef std::map<unsigned, unsigned> muu;
 

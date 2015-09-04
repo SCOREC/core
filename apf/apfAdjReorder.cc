@@ -11,6 +11,7 @@
 #include "apfShape.h"
 
 #include <list>
+#include <cassert>
 
 namespace apf {
 

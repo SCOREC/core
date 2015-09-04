@@ -1,6 +1,7 @@
 #include "phAxisymmetry.h"
 #include <apf.h>
 #include <PCU.h>
+#include <cassert>
 
 namespace ph {
 

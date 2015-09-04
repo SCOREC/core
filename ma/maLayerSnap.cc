@@ -3,6 +3,7 @@
 #include "maLayer.h"
 #include "maSnap.h"
 #include "maShape.h"
+#include <cassert>
 
 namespace ma {
 

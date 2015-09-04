@@ -2,6 +2,7 @@
 #include <PCU.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
+#include <cassert>
 
 struct GroupCode : public Parma_GroupCode
 {

@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <cassert>
 
 void testNodeValues(apf::EntityShape* shp, apf::Vector3 const* nodes, int nnodes)
 {

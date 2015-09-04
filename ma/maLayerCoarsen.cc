@@ -5,6 +5,7 @@
 #include "maCoarsen.h"
 #include "maCrawler.h"
 #include "maLayerCollapse.h"
+#include <cassert>
 
 /* see maCoarsen.cc for the unstructured equivalent. */
 namespace ma {

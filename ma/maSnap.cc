@@ -15,6 +15,7 @@
 #include "maLayer.h"
 #include "maMatch.h"
 #include <apfGeometry.h>
+#include <cassert>
 
 namespace ma {
 

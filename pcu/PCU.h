@@ -114,7 +114,6 @@ void PCU_Switch_Comm(MPI_Comm new_comm);
 MPI_Comm PCU_Get_Comm(void);
 
 /*stack trace helpers using GNU/Linux*/
-void PCU_Trace(void);
 void PCU_Protect(void);
 
 /*MPI_Wtime() equivalent*/

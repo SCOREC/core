@@ -4,6 +4,7 @@
 #include <PCU.h>
 
 #include <cstdio>
+#include <cassert>
 
 namespace ph {
 

@@ -9,6 +9,7 @@
 #include <PCU.h>
 
 #include <math.h>
+#include <cassert>
 
 /* This test file uses an alternative and more traditional method to
  * compute Jacobian differences, using the property of Bezier's that

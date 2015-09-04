@@ -5,6 +5,7 @@
 #include <apfConvert.h>
 #include <apf.h>
 #include <PCU.h>
+#include <cassert>
 
 int main(int argc, char** argv)
 {

@@ -9,6 +9,7 @@
 #include <apfShape.h>
 #include <PCU.h>
 #include <ma.h>
+#include <cassert>
 
 /*
  * This analytic function is an edge in 3D

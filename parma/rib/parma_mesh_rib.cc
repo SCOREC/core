@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include "parma_rib.h"
 #include <apfPartition.h>
+#include <cassert>
 
 namespace parma {
 

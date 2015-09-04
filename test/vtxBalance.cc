@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <parma.h>
 #include <PCU.h>
+#include <cassert>
 
 namespace {
   apf::MeshTag* setVtxWeights(apf::Mesh* m) {

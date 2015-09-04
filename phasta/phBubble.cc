@@ -4,6 +4,7 @@
 #include <apfMesh.h>
 #include <apf.h>
 #include <stdio.h>
+#include <cassert>
 
 namespace ph {
 

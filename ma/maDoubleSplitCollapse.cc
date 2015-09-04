@@ -10,6 +10,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maAdapt.h"
 #include "maShape.h"
+#include <cassert>
 
 namespace ma {
 

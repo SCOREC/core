@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include <cfloat>
+#include <cassert>
 #include "maMesh.h"
 #include "maSize.h"
 #include "maAdapt.h"

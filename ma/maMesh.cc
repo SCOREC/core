@@ -12,6 +12,7 @@
 #include "maTables.h"
 #include <algorithm>
 #include <cfloat>
+#include <cassert>
 #include <apf.h>
 
 namespace ma {

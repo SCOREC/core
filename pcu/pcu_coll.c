@@ -9,9 +9,25 @@
 *******************************************************************************/
 #include "pcu_coll.h"
 #include "pcu_pmpi.h"
-#include "pcu_common.h"
-#include <assert.h>
+#include "reel.h"
 #include <string.h>
+
+#define MIN(a,b) (((b)<(a))?(b):(a))
+#define MAX(a,b) (((b)>(a))?(b):(a))
+
+static int floor_log2(int n)
+{
+  int r = 0;
+  while ((n >>= 1)) ++r;
+  return r;
+}
+
+static int ceil_log2(int n)
+{
+  int r = floor_log2(n);
+  if ((1 << r)<n) ++r;
+  return r;
+}
 
 void pcu_merge_assign(void* local, void* incoming, size_t size)
 {
@@ -110,7 +126,8 @@ static bool end_coll_step(pcu_coll* c)
   if ( ! pcu_mpi_receive(&incoming,pcu_coll_comm))
     return false;
   if (c->message.buffer.size != incoming.buffer.size)
-    pcu_fail("collective not called by all ranks or pcu bug");
+    reel_fail("PCU unexpected incoming message.\n"
+              "Most likely a PCU collective was not called by all ranks.");
   c->merge(c->message.buffer.start,incoming.buffer.start,incoming.buffer.size);
   pcu_free_message(&incoming);
   return true;
@@ -220,7 +237,7 @@ static int bcast_begin_bit(void)
 {
   int rank = pcu_mpi_rank();
   if (rank == 0)
-    return 1 << pcu_ceil_log2(pcu_mpi_size());
+    return 1 << ceil_log2(pcu_mpi_size());
   int bit = 1;
   while ( ! (bit & rank)) bit <<= 1;
   return bit;
@@ -273,7 +290,7 @@ static int scan_up_begin_bit(void)
 
 static bool scan_up_end_bit(int bit)
 {
-  return bit == (1 << pcu_floor_log2(pcu_mpi_size()));
+  return bit == (1 << floor_log2(pcu_mpi_size()));
 }
 
 static bool scan_up_could_receive(int rank, int bit)
@@ -335,7 +352,7 @@ static pcu_pattern scan_up =
 
 static int scan_down_begin_bit(void)
 {
-  return 1 << pcu_floor_log2(pcu_mpi_size());
+  return 1 << floor_log2(pcu_mpi_size());
 }
 
 static bool scan_down_end_bit(int bit)

@@ -6,6 +6,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <apfDynamicMatrix.h>
+#include <cassert>
 
 /*
  * This analytic function is a "pringle",
