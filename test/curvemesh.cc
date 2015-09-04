@@ -8,6 +8,7 @@
 #include <SimUtil.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
+#include <cassert>
 
 static void testInterpolationError(apf::Mesh* m, int entityDim,
     apf::DynamicVector & errors){

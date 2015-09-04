@@ -14,6 +14,8 @@
 #include <phRestart.h>
 #include <phInput.h>
 #include <apfGeometry.h>
+#include <cassert>
+#include <cstdlib>
 
 static void fixMatches(apf::Mesh2* m)
 {

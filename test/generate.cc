@@ -9,6 +9,8 @@
 #include <apfConvert.h>
 #include <apfMesh2.h>
 #include <ma.h>
+#include <cassert>
+#include <cstdlib>
 
 #ifndef AdvMeshing_EXPORT
 #define AdvMeshing_EXPORT

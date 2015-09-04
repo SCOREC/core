@@ -10,6 +10,8 @@
 #include <apfConvert.h>
 #include <apfMesh2.h>
 #include <ma.h>
+#include <cassert>
+#include <cstdlib>
 
 static void fixMatches(apf::Mesh2* m)
 {

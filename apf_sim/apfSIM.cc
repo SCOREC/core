@@ -7,6 +7,9 @@
 #include <gmi.h>
 #include <gmi_sim.h>
 #include <apf_simConfig.h>
+#include <cstdlib>
+#include <cassert>
+#include <algorithm>
 
 #ifdef SIMMODSUITE_SimField_FOUND
 #include "apfSIMDataOf.h"
