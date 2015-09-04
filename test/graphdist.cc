@@ -5,6 +5,7 @@
 #include <PCU.h>
 #include <dsp.h>
 #include <dspGraphDistance.h>
+#include <cstdlib>
 
 int main(int argc, char** argv)
 {

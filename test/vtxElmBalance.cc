@@ -5,6 +5,7 @@
 #include <parma.h>
 #include <PCU.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace {
   void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {

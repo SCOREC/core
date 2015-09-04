@@ -6,6 +6,7 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace {
 
