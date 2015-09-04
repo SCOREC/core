@@ -5,8 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef VAS_NEW_H
-#define VAS_NEW_H
+#ifndef VAS_NEW_ARRAY_H
+#define VAS_NEW_ARRAY_H
 
 /** \file vasNew.h
     \brief wrapper for operator new/delete [] */

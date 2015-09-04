@@ -768,7 +768,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicVector.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicMatrix.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/vas/vasArray.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicArray.h \
+@CMAKE_CURRENT_SOURCE_DIR@/apf/vas/vasDynamicArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/vas/vasNewArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfCavityOp.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfPartition.h \

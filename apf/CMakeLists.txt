@@ -82,6 +82,7 @@ set(APF_HEADERS
   apfGeometry.h
   vas/vasArray.h
   vas/vasNewArray.h
+  vas/vasDynamicArray.h
 )
 
 if(BUILD_IN_TRILINOS)
