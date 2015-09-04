@@ -19,6 +19,7 @@
 #include <apfPartition.h>
 #include <cstring>
 #include <cassert>
+#include <cstdlib>
 
 extern "C" {
 

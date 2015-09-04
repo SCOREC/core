@@ -5,6 +5,7 @@
 #include <fstream>
 #include <gmi.h>
 #include <cassert>
+#include <cstdlib>
 
 #define MAX_ELEM_NODES 10
 

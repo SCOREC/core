@@ -12,6 +12,7 @@
 #include <PCU.h>
 #include <metis.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace apf {
 

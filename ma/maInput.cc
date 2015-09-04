@@ -11,6 +11,7 @@
 #include <apfShape.h>
 #include <cstdio>
 #include <cassert>
+#include <cstdlib>
 
 namespace ma {
 

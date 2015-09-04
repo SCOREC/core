@@ -7,6 +7,7 @@
 #include <PCU.h>
 #include <apfDynamicMatrix.h>
 #include <cassert>
+#include <cstdlib>
 
 /*
  * This analytic function is a "pringle",

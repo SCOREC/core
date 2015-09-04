@@ -2,6 +2,7 @@
 #include "apfFieldData.h"
 #include "apfShape.h"
 #include <cassert>
+#include <cstdlib>
 
 namespace apf {
 

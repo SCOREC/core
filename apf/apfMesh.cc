@@ -13,6 +13,7 @@
 #include "apfTagData.h"
 #include <gmi.h>
 #include <cassert>
+#include <algorithm>
 
 namespace apf {
 

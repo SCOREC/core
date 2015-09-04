@@ -8,6 +8,7 @@
 #include "parma_commons.h"
 #include "parma_convert.h"
 #include <apf.h>
+#include <cstdlib>
 
 typedef unsigned int uint;
 typedef std::map<uint,uint> muu;

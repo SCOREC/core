@@ -3,6 +3,7 @@
 #include <apfNumbering.h>
 #include <diffMC/parma_ghostOwner.h>
 #include <netcdf>
+#include <cassert>
 
 namespace apf {
 

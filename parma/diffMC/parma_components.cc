@@ -1,5 +1,6 @@
 #include <list>
 #include <set>
+#include <algorithm>
 #include <cassert>
 #include <apf.h>
 #include <PCU.h>
