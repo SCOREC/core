@@ -12,6 +12,7 @@
 #include <gmi_sim.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <cassert>
 
 ph::Input* globalInput;
 ph::BCs* globalBCs;

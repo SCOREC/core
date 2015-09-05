@@ -10,6 +10,7 @@
 #include <apfMesh.h>
 #include <apfShape.h>
 #include <gmi.h>
+#include <cassert>
 
 #if HAS_STK
 #include "apfSTK.h"
@@ -230,7 +231,6 @@ void writeStkField(
   {
     long globalId = bulk.identifier(bucket[i]);
     Node node = lookup(globalId,globalIdsToNodes);
-    double value;
     data[i] = getScalar(field, node.entity, node.node);
   }
 }
