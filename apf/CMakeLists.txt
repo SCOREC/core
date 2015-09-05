@@ -11,12 +11,15 @@ else()
    project(apf)
 endif()
 
+set(APF_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/vas)
+
 if(NOT BUILD_IN_TRILINOS)
   find_package(pcu PATHS ${CMAKE_BINARY_DIR})
   find_package(gmi PATHS ${CMAKE_BINARY_DIR})
   set(APF_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/vas
+    ${APF_INCLUDE_DIRS}
     ${PCU_INCLUDE_DIRS}
     ${GMI_INCLUDE_DIRS})
   set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS})
@@ -85,12 +88,8 @@ set(APF_HEADERS
   vas/vasDynamicArray.h
 )
 
-if(BUILD_IN_TRILINOS)
 # THIS IS WHERE TRIBITS GETS HEADERS
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-else()
-  include_directories(${APF_INCLUDE_DIRS})
-endif()
+include_directories(${APF_INCLUDE_DIRS})
 
 #Library
 if(BUILD_IN_TRILINOS)
