@@ -10,6 +10,7 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <cassert>
 
 ph::Input* globalInput;
 ph::BCs* globalBCs;
