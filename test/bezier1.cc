@@ -498,7 +498,7 @@ void test3DFull()
     crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedTest");
     // check values sum to 1.0 in the tet fieldshape
     apf::DynamicMatrix A;
-    crv::getTransformationMatrix(m,apf::Mesh::TET,A);
+    crv::getTransformationMatrix(crv::getBezier(3,order),apf::Mesh::TET,A);
     apf::EntityShape* es = fs->getEntityShape(apf::Mesh::TET);
     int n = es->countNodes();
     for(int i = 0; i < n; ++i){

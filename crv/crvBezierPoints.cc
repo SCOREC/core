@@ -240,7 +240,6 @@ static void getBezierTriangleTransform(int P, apf::NewArray<double> & c)
       0.897197582081215,1.177507607441264,-3.086925777444235,-3.086925777444234,
       10.16896081482358};
   double f6[280] = {
-
       4.990795106388402,-0.4798837984147304,-0.4798837984147311,-6.458245423578353,
       -0.3639631629214184,1.223365632584435,-1.237281132017871,1.048637951819914,
       0.2399023612066779,0.1476405704559403,0.09371675625976672,0.1476405704559403,
@@ -431,40 +430,79 @@ void getGregoryTransformationCoefficients(int /*dim*/, int P, int type,
     getGregoryTetTransform(P,c);
 }
 
-void getTransformationMatrix(apf::Mesh* m, int type, apf::DynamicMatrix& A)
+void getTransformationMatrix(apf::FieldShape* fs, int type,
+    apf::DynamicMatrix& A)
 {
+
+  apf::Vector3 const edge_vert_xi[2] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+  };
+  apf::Vector3 const tri_vert_xi[3] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+  };
+  apf::Vector3 const tet_vert_xi[4] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1),
+  };
+  apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+    0, /* vertex */
+    edge_vert_xi,
+    tri_vert_xi,
+    0, /* quad */
+    tet_vert_xi,
+    0, /* hex */
+    0, /* prism */
+    0  /* pyramid */
+  };
+
   setBlendingOrder(0); // makes sure blending is turned off.
-  apf::FieldShape* fs = m->getShape();
   apf::EntityShape* es = fs->getEntityShape(type);
   int n = es->countNodes();
   int typeDim = apf::Mesh::typeDimension[type];
-  apf::Downward down;
-  apf::Vector3 xi, exi;
-  apf::NewArray<double> values;
 
-  apf::MeshIterator* it = m->begin(typeDim);
-  apf::MeshEntity* e = m->iterate(it); // take the first one
-  m->end(it);
+  apf::Vector3 xi, exi;
+  int evi = 0;
+  apf::NewArray<double> values;
 
   A.setSize(n,n);
 
+  int boundaryTypes[4] = {apf::Mesh::VERTEX,apf::Mesh::EDGE,
+      apf::Mesh::TRIANGLE,apf::Mesh::TET};
+
   int row = 0;
   for(int d = 0; d <= typeDim; ++d){
-    int nDown = m->getDownward(e,d,down);
+    int nDown = apf::Mesh::adjacentCount[type][d];
     for(int j = 0; j < nDown; ++j){
-      int bt = m->getType(down[j]);
+      int bt = boundaryTypes[d];
+      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+
       for(int x = 0; x < fs->countNodesOn(bt); ++x){
         fs->getNodeXi(bt,x,xi);
+        apf::NewArray<double> shape_vals;
+        shape->getValues(0, 0, xi, shape_vals);
+
         if(d < typeDim){
-          if(d == 1 && j == 2){
-            xi[0] = -xi[0];
+          exi.zero();
+          evi = j;
+          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
+              evi = apf::tri_edge_verts[j][i];
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
+              evi = apf::tet_edge_verts[j][i];
+            if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
+              evi = apf::tet_tri_verts[j][i];
+            assert(evi >= 0);
+            exi += elem_vert_xi[type][evi] * shape_vals[i];
           }
-          exi = apf::boundaryToElementXi(m,down[j],e,xi);
         } else {
           exi = xi;
         }
-        es->getValues(m,e,exi,values);
-        printf("%f %f %f\n",exi[0],exi[1],exi[2]);
+        es->getValues(0,0,exi,values);
         for(int i = 0; i < n; ++i){
           A(row,i) = values[i];
         }
