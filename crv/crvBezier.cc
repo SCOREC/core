@@ -280,17 +280,19 @@ public:
       }
       // must be a triangle
       int n = curved_face_internal[BEZIER][P-1];
-      int l = n/3; //loops
-
-      if(!flip)
-        for(int i = 0; i < n; ++i)
-          order[i] = (i+l*(3-rotate)) % (3*l);
-      else {
-        int shift[4] = {0,0,1,4};
-        for(int i = 0; i < n; ++i)
-          order[i] = (n-1-i+(n-shift[l])-l*rotate) % (3*l);
-      }
-      if(n % l) order[3*l] = 3*l;
+//      int l = n/3; //loops
+//
+//      if(!flip)
+//        for(int i = 0; i < n; ++i)
+//          order[i] = (i+l*(3-rotate)) % (3*l);
+//      else {
+//        int shift[4] = {0,0,1,4};
+//        for(int i = 0; i < n; ++i)
+//          order[i] = (n-1-i+(n-shift[l])-l*rotate) % (3*l);
+//      }
+//      if(n % l) order[3*l] = 3*l;
+      for(int i = 0; i < n; ++i)
+        order[i] = tet_tri[P][flip][rotate][i];
     }
   };
   apf::EntityShape* getEntityShape(int type)
@@ -610,7 +612,7 @@ public:
             order[i] = 1-i;
         return;
       }
-      int orients[6][6] =
+      static int orients[6][6] =
       {{0,1,2,3,4,5},{2,0,1,5,3,4},{1,2,0,4,5,3},
        {4,3,5,1,0,2},{3,5,4,0,2,1},{5,4,3,2,1,0}};
       for(int i = 0; i < 6; ++i)

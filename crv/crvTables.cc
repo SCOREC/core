@@ -43,63 +43,63 @@ static unsigned const b2_4_3[2] = {11,3};
 static unsigned const b2_4_4[1] = {0};
 static unsigned const* const b2_4[5] = {b2_4_0,b2_4_1,b2_4_2,b2_4_3,b2_4_4};
 static unsigned const b2_5_0[6] = {2,10,9,8,7,1};
-static unsigned const b2_5_1[5] = {11,19,18,17,6};
-static unsigned const b2_5_2[4] = {12,20,16,5};
+static unsigned const b2_5_1[5] = {11,20,19,17,6};
+static unsigned const b2_5_2[4] = {12,18,16,5};
 static unsigned const b2_5_3[3] = {13,15,4};
 static unsigned const b2_5_4[2] = {14,3};
 static unsigned const b2_5_5[1] = {0};
 static unsigned const* const b2_5[6] =
 {b2_5_0,b2_5_1,b2_5_2,b2_5_3,b2_5_4,b2_5_5};
 static unsigned const b2_6_0[7] = {2,12,11,10,9,8,1};
-static unsigned const b2_6_1[6] = {13,24,23,22,21,7};
-static unsigned const b2_6_2[5] = {14,25,27,20,6};
-static unsigned const b2_6_3[4] = {15,26,19,5};
+static unsigned const b2_6_1[6] = {13,27,26,24,21,7};
+static unsigned const b2_6_2[5] = {14,25,23,20,6};
+static unsigned const b2_6_3[4] = {15,22,19,5};
 static unsigned const b2_6_4[3] = {16,18,4};
 static unsigned const b2_6_5[2] = {17,3};
 static unsigned const b2_6_6[1] = {0};
 static unsigned const* const b2_6[7] =
 {b2_6_0,b2_6_1,b2_6_2,b2_6_3,b2_6_4,b2_6_5,b2_6_6};
 static unsigned const b2_7_0[8] = {2,14,13,12,11,10,9,1};
-static unsigned const b2_7_1[7] = {15,29,28,27,26,25,8};
-static unsigned const b2_7_2[6] = {16,30,35,34,24,7};
-static unsigned const b2_7_3[5] = {17,31,33,23,6};
-static unsigned const b2_7_4[4] = {18,32,22,5};
+static unsigned const b2_7_1[7] = {15,35,34,32,29,25,8};
+static unsigned const b2_7_2[6] = {16,33,31,28,24,7};
+static unsigned const b2_7_3[5] = {17,30,27,23,6};
+static unsigned const b2_7_4[4] = {18,26,22,5};
 static unsigned const b2_7_5[3] = {19,21,4};
 static unsigned const b2_7_6[2] = {20,3};
 static unsigned const b2_7_7[1] = {0};
 static unsigned const* const b2_7[8] =
 {b2_7_0,b2_7_1,b2_7_2,b2_7_3,b2_7_4,b2_7_5,b2_7_6,b2_7_7};
 static unsigned const b2_8_0[9] = {2,16,15,14,13,12,11,10,1};
-static unsigned const b2_8_1[8] = {17,34,33,32,31,30,29,9};
-static unsigned const b2_8_2[7] = {18,35,43,42,41,28,8};
-static unsigned const b2_8_3[6] = {19,36,44,40,27,7};
-static unsigned const b2_8_4[5] = {20,37,39,26,6};
-static unsigned const b2_8_5[4] = {21,38,25,5};
+static unsigned const b2_8_1[8] = {17,44,43,41,38,34,29,9};
+static unsigned const b2_8_2[7] = {18,42,40,37,33,28,8};
+static unsigned const b2_8_3[6] = {19,39,36,32,27,7};
+static unsigned const b2_8_4[5] = {20,35,31,26,6};
+static unsigned const b2_8_5[4] = {21,30,25,5};
 static unsigned const b2_8_6[3] = {22,24,4};
 static unsigned const b2_8_7[2] = {23,3};
 static unsigned const b2_8_8[1] = {0};
 static unsigned const* const b2_8[9] =
 {b2_8_0,b2_8_1,b2_8_2,b2_8_3,b2_8_4,b2_8_5,b2_8_6,b2_8_7,b2_8_8};
 static unsigned const b2_9_0[10] = {2,18,17,16,15,14,13,12,11,1};
-static unsigned const b2_9_1[9] = {19,39,38,37,36,35,34,33,10};
-static unsigned const b2_9_2[8] = {20,40,51,50,49,48,32,9};
-static unsigned const b2_9_3[7] = {21,41,52,54,47,31,8};
-static unsigned const b2_9_4[6] = {22,42,53,46,30,7};
-static unsigned const b2_9_5[5] = {23,43,45,29,6};
-static unsigned const b2_9_6[4] = {24,44,28,5};
+static unsigned const b2_9_1[9] = {19,54,53,51,48,44,39,33,10};
+static unsigned const b2_9_2[8] = {20,52,50,47,43,38,32,9};
+static unsigned const b2_9_3[7] = {21,49,46,42,37,31,8};
+static unsigned const b2_9_4[6] = {22,45,41,36,30,7};
+static unsigned const b2_9_5[5] = {23,40,35,29,6};
+static unsigned const b2_9_6[4] = {24,34,28,5};
 static unsigned const b2_9_7[3] = {25,27,4};
 static unsigned const b2_9_8[2] = {26,3};
 static unsigned const b2_9_9[1] = {0};
 static unsigned const* const b2_9[10] =
 {b2_9_0,b2_9_1,b2_9_2,b2_9_3,b2_9_4,b2_9_5,b2_9_6,b2_9_7,b2_9_8,b2_9_9};
 static unsigned const b2_10_0[11] = {2,20,19,18,17,16,15,14,13,12,1};
-static unsigned const b2_10_1[10] = {21,44,43,42,41,40,39,38,37,11};
-static unsigned const b2_10_2[9] = {22,45,59,58,57,56,55,36,10};
-static unsigned const b2_10_3[8] = {23,46,60,65,64,54,35,9};
-static unsigned const b2_10_4[7] = {24,47,61,63,53,34,8};
-static unsigned const b2_10_5[6] = {25,48,62,52,33,7};
-static unsigned const b2_10_6[5] = {26,49,51,32,6};
-static unsigned const b2_10_7[4] = {27,50,31,5};
+static unsigned const b2_10_1[10] = {21,65,64,62,59,55,50,44,37,11};
+static unsigned const b2_10_2[9] = {22,63,61,58,54,49,43,36,10};
+static unsigned const b2_10_3[8] = {23,60,57,53,48,42,35,9};
+static unsigned const b2_10_4[7] = {24,56,52,47,41,34,8};
+static unsigned const b2_10_5[6] = {25,51,46,40,33,7};
+static unsigned const b2_10_6[5] = {26,45,39,32,6};
+static unsigned const b2_10_7[4] = {27,38,31,5};
 static unsigned const b2_10_8[3] = {28,30,4};
 static unsigned const b2_10_9[2] = {29,3};
 static unsigned const b2_10_10[1] = {0};
@@ -186,5 +186,47 @@ int getTetPointIndex(int P, int i, int j, int k)
 {
   return crv::b3[P][i][j][k];
 }
+
+static unsigned const tet_tri4_f0r0[3] = {0,1,2};
+static unsigned const tet_tri4_f0r1[3] = {2,0,1};
+static unsigned const tet_tri4_f0r2[3] = {1,2,0};
+static unsigned const tet_tri4_f1r0[3] = {2,1,0};
+static unsigned const tet_tri4_f1r1[3] = {1,0,2};
+static unsigned const tet_tri4_f1r2[3] = {0,2,1};
+
+static unsigned const* const tet_tri4_f0[3] =
+{tet_tri4_f0r0,tet_tri4_f0r1,tet_tri4_f0r2};
+static unsigned const* const tet_tri4_f1[3] =
+{tet_tri4_f1r0,tet_tri4_f1r1,tet_tri4_f1r2};
+static unsigned const* const* const tet_tri4[2] = {tet_tri4_f0,tet_tri4_f1};
+
+static unsigned const tet_tri5_f0r0[6] = {0,1,2,3,4,5};
+static unsigned const tet_tri5_f0r1[6] = {5,3,0,4,1,2};
+static unsigned const tet_tri5_f0r2[6] = {2,4,5,1,3,0};
+static unsigned const tet_tri5_f1r0[6] = {5,4,2,3,1,0};
+static unsigned const tet_tri5_f1r1[6] = {2,1,0,4,3,5};
+static unsigned const tet_tri5_f1r2[6] = {0,3,5,1,4,2};
+
+static unsigned const* const tet_tri5_f0[3] =
+{tet_tri5_f0r0,tet_tri5_f0r1,tet_tri5_f0r2};
+static unsigned const* const tet_tri5_f1[3] =
+{tet_tri5_f1r0,tet_tri5_f1r1,tet_tri5_f1r2};
+static unsigned const* const* const tet_tri5[2] = {tet_tri5_f0,tet_tri5_f1};
+
+static unsigned const tet_tri6_f0r0[10] = {0,1,2,3,4,5,6,7,8,9};
+static unsigned const tet_tri6_f0r1[10] = {9,7,4,0,8,5,1,6,2,3};
+static unsigned const tet_tri6_f0r2[10] = {3,6,8,9,2,5,7,1,4,0};
+static unsigned const tet_tri6_f1r0[10] = {9,8,6,3,7,5,2,4,1,0};
+static unsigned const tet_tri6_f1r1[10] = {3,2,1,0,6,5,4,8,7,9};
+static unsigned const tet_tri6_f1r2[10] = {0,4,7,9,1,5,8,2,6,3};
+
+static unsigned const* const tet_tri6_f0[3] =
+{tet_tri6_f0r0,tet_tri6_f0r1,tet_tri6_f0r2};
+static unsigned const* const tet_tri6_f1[3] =
+{tet_tri6_f1r0,tet_tri6_f1r1,tet_tri6_f1r2};
+static unsigned const* const* const tet_tri6[2] = {tet_tri6_f0,tet_tri6_f1};
+
+unsigned const* const* const* const tet_tri[7] =
+{0,0,0,0,tet_tri4,tet_tri5,tet_tri6};
 
 }

@@ -16,6 +16,8 @@ namespace crv {
 extern unsigned const* const* const b2[11];
 extern unsigned const* const* const* const b3[5];
 
+extern unsigned const* const* const* const tet_tri[7];
+
 enum {
   BEZIER,
   GREGORY,
