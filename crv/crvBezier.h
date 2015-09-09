@@ -16,6 +16,11 @@
 
 namespace crv {
 
+/** \brief computes node index, use getTriPointIndex
+ * (getTetPointIndex) to leverage tables */
+int computeTriPointIndex(int P, int i, int j);
+int computeTetPointIndex(int P, int i, int j, int k);
+
 /** \brief polynomial part of bernstein polynomial */
 double Bij(int i, int j,double u, double v);
 double Bijk(int i, int j, int k, double u, double v, double w);
@@ -25,9 +30,6 @@ double Bijkl(int i, int j, int k, int l,double u,
 double Bij(int ij[], double xi[]);
 double Bijk(int ijk[], double xi[]);
 double Bijkl(int ijkl[], double xi[]);
-
-int getTriPointIndex(int P, int i, int j);
-int getTetPointIndex(int P, int i, int j, int k);
 
 double computeAlternateTriJacobianDet(apf::Mesh* m,
     apf::MeshEntity* e, apf::Vector3& xi);

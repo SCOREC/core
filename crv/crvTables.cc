@@ -176,15 +176,54 @@ static unsigned const* const* const b3_4[5] =
 unsigned const* const* const* const b3[5] =
 {b3_0,b3_1,b3_2,b3_3,b3_4};
 
+int computeTriPointIndex(int P, int i, int j)
+{
+  int k = P-i-j;
+  if(i == P) return 0;
+  if(j == P) return 1;
+  if(k == P) return 2;
+  if(k == 0) return 2+j; // 0-1
+  if(i == 0) return 2+(P-1)+k; // 1-2
+  if(j == 0) return 2+(P-1)*2+i; // 2-0
+  return k*(P-1)-k*(k-1)/2+j+2*P;
+}
+
+int computeTetPointIndex(int P, int i, int j, int k)
+{
+  int l = P-i-j-k;
+  if(i == P) return 0;
+  if(j == P) return 1;
+  if(k == P) return 2;
+  if(l == P) return 3;
+  if(k == 0 && l == 0) return 3+j; // 0-1
+  if(i == 0 && l == 0) return 3+(P-1)+k; // 1-2
+  if(j == 0 && l == 0) return 3+2*(P-1)+i; // 2-0
+  if(j == 0 && k == 0) return 3+3*(P-1)+l; // 0-3
+  if(i == 0 && k == 0) return 3+4*(P-1)+l; // 1-3
+  if(i == 0 && j == 0) return 3+5*(P-1)+l;// 2-3
+  if(l == 0) return k*(P-1)-k*(k-1)/2+j+5*P-2; // 0-1-2
+  if(k == 0) return l*(P-1)-l*(l-1)/2+j+5*P-2+(P-2)*(P-1)/2; // 0-1-3
+  if(i == 0) return l*(P-1)-l*(l-1)/2+k+5*P-2+(P-2)*(P-1);// 1-2-3
+  if(j == 0) return l*(P-1)-l*(l-1)/2+k+5*P-2+(P-2)*(P-1)*3/2; // 0-2-3
+  return i-P-((i-P+1)*(i-P+2)*(i-P+3))/6+l*(P-1-i)-l*(l-1)/2+k+2*P*P+2;
+}
+
 // publically accessible access
 int getTriPointIndex(int P, int i, int j)
 {
-  return crv::b2[P][i][j];
+  // use a table if its small, otherwise dynamically generate it on the fly
+  if(P <= 10)
+    return crv::b2[P][i][j];
+  else
+    return computeTriPointIndex(P,i,j);
 }
 
 int getTetPointIndex(int P, int i, int j, int k)
 {
-  return crv::b3[P][i][j][k];
+  if(P <= 4)
+    return crv::b3[P][i][j][k];
+  else
+    return computeTetPointIndex(P,i,j,k);
 }
 
 static unsigned const tet_tri4_f0r0[3] = {0,1,2};
