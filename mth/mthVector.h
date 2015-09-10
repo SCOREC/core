@@ -10,10 +10,10 @@
 namespace mth {
 
 /** \brief compile-time (static) vector of size N
-  * \details This class endows Array<T,N> with the standard mathematical
-  * properties of a linear algebra vector. The vector is templated on
-  * scalar type so that math can be performed for a variety of (meaningful)
-  * scalar types. */
+  * \details This class endows Array<T,N> with the standard
+  * mathematical properties of a linear algebra vector. The vector is
+  * templated on scalar type so that math can be performed for a variety
+  * of (meaningful) scalar types. */
 template <class T, unsigned N=0>
 class Vector : public Array<T,N>
 {
@@ -100,7 +100,13 @@ class Vector : public Array<T,N>
 };
 
 /** \brief run-time (dynamic) vector
-  * \details A runtime-sized equivalent of mth::Vector<T,N> */
+  * \details A runtime-sized equivalent of mth::Vector<T,N>.
+  * All values are stored in a single dynamically allocated array.
+  * Due to the use of dynamic allocation, users should avoid copying
+  * class as much as possible. To help with this, we provide things
+  * like operator+= instead of operator+ to discourage users from
+  * creating temporary copies. The code for these methods is inlined
+  * in an effort to keep linear algebra running quickly */
 template <class T>
 class Vector<T,0> : public Array<T,0>
 {
