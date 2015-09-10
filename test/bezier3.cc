@@ -194,7 +194,7 @@ void testEdgeElevation()
     apf::NewArray<apf::Vector3> elevatedNodes;
     elevatedNodes.allocate(7);
     crv::elevateBezierEdge(o,6-o,nodes,elevatedNodes);
-    apf::changeMeshShape(m,crv::getBezier(3,6),false);
+    apf::changeMeshShape(m,crv::getBezier(6),false);
 
     m->setPoint(v[0],0,points[0]);
     m->setPoint(v[1],0,points[1]);
@@ -373,9 +373,10 @@ void testTriSubdivision()
         }
       }
     }
-    m->destroy(e);
 
     apf::destroyElement(elem);
+    m->destroy(e);
+
     for(int t = 0; t < 3; ++t)
       apf::destroyElement(elems[t]);
 
@@ -419,8 +420,7 @@ void testTriSubdivision()
         m->setPoint(fourSplit[t],j,subNodes[t][3+3*(o-1)+j]);
       }
     }
-    m->destroy(e);
-
+    apf::destroyElement(elem);
     m->destroyNative();
     apf::destroyMesh(m);
   }
@@ -469,7 +469,7 @@ void testTriElevation()
     apf::NewArray<apf::Vector3> elevatedNodes;
     elevatedNodes.allocate(28);
     crv::elevateBezierTriangle(o,6-o,nodes,elevatedNodes);
-    apf::changeMeshShape(m,crv::getBezier(3,6),false);
+    apf::changeMeshShape(m,crv::getBezier(6),false);
 
     m->setPoint(verts[0],0,points2D[0]);
     m->setPoint(verts[1],0,points2D[1]);

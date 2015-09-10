@@ -35,9 +35,16 @@ static void alignEdgeWithTri(apf::Mesh* m, apf::MeshEntity* elem,
   return;
 }
 
-class BezierShape : public apf::FieldShape
+class Bezier : public apf::FieldShape
 {
 public:
+  const char* getName() const {return name.c_str();}
+  Bezier() {
+    std::stringstream ss;
+    ss << "Bezier" ;
+    name = ss.str();
+    this->registerSelf(name.c_str());
+  }
   class Vertex : public apf::EntityShape
   {
   public:
@@ -280,17 +287,6 @@ public:
       }
       // must be a triangle
       int n = curved_face_internal[BEZIER][P-1];
-//      int l = n/3; //loops
-//
-//      if(!flip)
-//        for(int i = 0; i < n; ++i)
-//          order[i] = (i+l*(3-rotate)) % (3*l);
-//      else {
-//        int shift[4] = {0,0,1,4};
-//        for(int i = 0; i < n; ++i)
-//          order[i] = (n-1-i+(n-shift[l])-l*rotate) % (3*l);
-//      }
-//      if(n % l) order[3*l] = 3*l;
       for(int i = 0; i < n; ++i)
         order[i] = tet_tri[P][flip][rotate][i];
     }
@@ -338,42 +334,12 @@ public:
     }
   }
   int getOrder() {return std::max(P,getBlendingOrder());}
-};
-
-class BezierCurve : public BezierShape
-{
-public:
-  const char* getName() const {return name.c_str();}
-  BezierCurve() {
-    std::stringstream ss;
-    ss << "BezierCurve";
-    name = ss.str();
-    this->registerSelf(name.c_str());
-  }
-  void getNodeXi(int type, int node, apf::Vector3& xi)
-  {
-    getBezierCurveNodeXi(type,P,node,xi);
-  }
-protected:
-  std::string name;
-};
-
-class BezierSurface : public BezierShape
-{
-public:
-  const char* getName() const {return name.c_str();}
-  BezierSurface() {
-    std::stringstream ss;
-    ss << "BezierSurface";
-    name = ss.str();
-    this->registerSelf(name.c_str());
-  }
   void getNodeXi(int type, int node, apf::Vector3& xi)
   {
     getBezierNodeXi(type,P,node,xi);
   }
-protected:
-  std::string name;
+  protected:
+    std::string name;
 };
 
 static int g_index[3][2] = {{2,1},{0,2},{1,0}};
@@ -401,7 +367,7 @@ public:
       apf::ModelEntity* g = m->toModel(e);
       if (!useBlend() || m->getModelType(g) != m->getDimension()){
         apf::NewArray<double> bvalues;
-        getBezier(3,3)->getEntityShape(apf::Mesh::TRIANGLE)
+        getBezier(3)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,bvalues);
 
         for(int i = 0; i < 9; ++i)
@@ -436,9 +402,9 @@ public:
       if (!useBlend() || m->getModelType(g) != m->getDimension()){
         apf::NewArray<apf::Vector3> bgrads;
         apf::NewArray<double> values;
-        getBezier(3,3)->getEntityShape(apf::Mesh::TRIANGLE)
+        getBezier(3)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getLocalGradients(m,e,xi,bgrads);
-        getBezier(3,3)->getEntityShape(apf::Mesh::TRIANGLE)
+        getBezier(3)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,values);
 
         for(int i = 0; i < 9; ++i)
@@ -621,8 +587,8 @@ public:
   };
   apf::EntityShape* getEntityShape(int type)
   {
-    static BezierShape::Vertex vertex;
-    static BezierShape::Edge edge;
+    static Bezier::Vertex vertex;
+    static Bezier::Edge edge;
     static Triangle triangle;
     static Tetrahedron tet;
     static apf::EntityShape* shapes[apf::Mesh::TYPES] =
@@ -697,7 +663,7 @@ public:
       apf::ModelEntity* g = m->toModel(e);
       if (!useBlend() || m->getModelType(g) != m->getDimension()){
         apf::NewArray<double> bvalues;
-        getBezier(3,4)->getEntityShape(apf::Mesh::TRIANGLE)
+        getBezier(4)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,bvalues);
 
         for(int i = 0; i < 15; ++i)
@@ -731,9 +697,9 @@ public:
         apf::NewArray<apf::Vector3> bgrads;
         apf::NewArray<double> bvalues;
 
-        getBezier(3,4)->getEntityShape(apf::Mesh::TRIANGLE)
+        getBezier(4)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getLocalGradients(m,e,xi,bgrads);
-        getBezier(3,4)->getEntityShape(apf::Mesh::TRIANGLE)
+        getBezier(4)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,bvalues);
 
         for(int i = 0; i < 15; ++i)
@@ -936,8 +902,8 @@ public:
   };
   apf::EntityShape* getEntityShape(int type)
   {
-    static BezierShape::Vertex vertex;
-    static BezierShape::Edge edge;
+    static Bezier::Vertex vertex;
+    static Bezier::Edge edge;
     static Triangle triangle;
     static Tetrahedron tet;
     static apf::EntityShape* shapes[apf::Mesh::TYPES] =
@@ -1020,7 +986,7 @@ public:
     void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      getBezier(3,P)->getEntityShape(apf::Mesh::EDGE)->getValues(0,0,xi,values);
+      getBezier(P)->getEntityShape(apf::Mesh::EDGE)->getValues(0,0,xi,values);
 
       double sum = 0.;
       for(int i = 0; i < P+1; ++i){
@@ -1034,9 +1000,9 @@ public:
         apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
     {
       apf::NewArray<double> values;
-      getBezier(3,P)->
+      getBezier(P)->
           getEntityShape(apf::Mesh::EDGE)->getLocalGradients(0,0,xi,grads);
-      getBezier(3,P)->getEntityShape(apf::Mesh::EDGE)->getValues(0,0,xi,values);
+      getBezier(P)->getEntityShape(apf::Mesh::EDGE)->getValues(0,0,xi,values);
 
       double sum = 0.;
       for(int i = 0; i < P+1; ++i){
@@ -1073,7 +1039,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<double>& values) const
     {
-      getBezier(3,P)->
+      getBezier(P)->
           getEntityShape(apf::Mesh::TRIANGLE)->getValues(m,e,xi,values);
 
       apf::ModelEntity* g = m->toModel(e);
@@ -1092,13 +1058,13 @@ public:
     void getLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
     {
-      getBezier(3,P)->
+      getBezier(P)->
           getEntityShape(apf::Mesh::TRIANGLE)->getLocalGradients(m,e,xi,grads);
 
       apf::ModelEntity* g = m->toModel(e);
       if (m->getModelType(g) != m->getDimension()){
         apf::NewArray<double> values;
-        getBezier(3,P)->
+        getBezier(P)->
             getEntityShape(apf::Mesh::TRIANGLE)->getValues(m,e,xi,values);
 
         for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i){
@@ -1136,10 +1102,10 @@ public:
   };
   apf::EntityShape* getEntityShape(int type)
   {
-    static BezierShape::Vertex vertex;
+    static Bezier::Vertex vertex;
     static Edge edge;
     static Triangle triangle;
-    static BezierShape::Tetrahedron tet;
+    static Bezier::Tetrahedron tet;
     static apf::EntityShape* shapes[apf::Mesh::TYPES] =
     {&vertex,   //vertex
      &edge,    //edge
@@ -1161,7 +1127,7 @@ public:
   }
   int countNodesOn(int type)
   {
-    return getBezier(3,P)->countNodesOn(type);
+    return getBezier(P)->countNodesOn(type);
   }
   void getNodeXi(int type, int node, apf::Vector3& xi)
   {
@@ -1188,17 +1154,11 @@ static void setOrder(const int order)
   P = order;
 }
 
-apf::FieldShape* getBezier(int dimension, int order)
+apf::FieldShape* getBezier(int order)
 {
   crv::setOrder(order);
-
-  static crv::BezierCurve bezierCurve;
-  static crv::BezierSurface bezierSurface;
-
-  if(dimension == 2 && useBlend())
-    return &bezierCurve;
-  else
-    return &bezierSurface;
+  static crv::Bezier bezier;
+  return &bezier;
 }
 
 apf::FieldShape* getGregory(int order)

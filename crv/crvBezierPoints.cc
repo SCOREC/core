@@ -11,25 +11,6 @@
 
 namespace crv {
 
-void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi)
-{
-  static double eP2[1] = {0.0};
-  static double eP3[2] = {-0.4306648,0.4306648};
-  static double eP4[3] = {-0.6363260,0.0,0.6363260};
-  static double eP5[4] = {-0.7485748,-0.2765187,0.2765187,0.7485748};
-  static double eP6[5] = {-0.8161268,-0.4568660,0.0,
-      0.4568660,0.8161268};
-
-  static double* edgePoints[6] =
-  {eP2, eP2, eP3, eP4, eP5, eP6 };
-
-  if(type == apf::Mesh::EDGE && P > 1){
-    xi[0] = edgePoints[P-1][node];
-  } else {
-    getBezierNodeXi(type,P,node,xi);
-  }
-}
-
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
 {
   static double eP2[1] = {0.0};
@@ -104,44 +85,6 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
   }
 }
 
-static void getBezierCurveTransform(int P, apf::NewArray<double> & c)
-{
-  double e2[3] = {-0.5,-0.5,2};
-  double e3[8] = {
-      -0.970273514083553,0.333333333333333,2.71895067382449,-1.08201049307427,
-      0.333333333333333,-0.970273514083553,-1.08201049307427,2.71895067382449};
-  double e4[15] = {
-      -1.4304202857228,-0.25,3.39545839723405,-1.46967987431139,
-      0.754641762800137,0.953613523815196,0.953613523815197,-2.76673344002279,4.62623983241519,
-      -2.76673344002279,-0.25,-1.4304202857228,0.754641762800137,-1.46967987431139,
-      3.39545839723405};
-  double e5[24] = {
-      -1.88592269024942,0.2,4.05614415979432,-1.81653638123435,
-      1.0295423816296,-0.583227469940158,1.85476912333284,-0.942961345124708,-5.01939997635205,6.96205913930752,
-      -4.56234099538677,2.70787405422317,-0.942961345124708,1.85476912333285,2.70787405422317,-4.56234099538677,
-      6.96205913930752,-5.01939997635206,0.2,-1.88592269024942,-0.583227469940158,1.0295423816296,
-      -1.81653638123435,4.05614415979432};
-  double e6[35] = {
-      -2.33890800235808,-0.166666666666667,4.70907763497668,-2.14695478588352,
-      1.2670886004356,-0.80040589915343,0.476769118649422,3.03457283388393,
-      0.935563200943235,-7.82909978199834,9.74813267975089,
-      -6.60581336123903,4.37362214799981,-2.65697771934049,-2.27592962541295,
-      -2.27592962541295,6.3088040999163,-9.70710791530195,
-      12.3484668815972,-9.70710791530194,6.3088040999163,0.935563200943235,
-      3.03457283388393,-2.65697771934049,4.37362214799981,
-      -6.60581336123903,9.74813267975088,-7.82909978199834,-0.166666666666667,
-      -2.33890800235809,0.476769118649422,-0.80040589915343,
-      1.2670886004356,-2.14695478588352,4.70907763497668};
-  double* table[5] = {
-      e2,e3,e4,e5,e6};
-  int nb = P-1;
-  int ni = P+1;
-  c.allocate(ni*nb);
-  for( int i = 0; i < nb; ++i)
-    for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = table[P-2][i*ni+j];
-
-}
 static void getBezierEdgeTransform(int P, apf::NewArray<double> & c)
 {
   double e2[3] = {-0.5,-0.5,2};
@@ -343,11 +286,10 @@ static void getBezierTetTransform(int P, apf::NewArray<double> & c)
     for( int j = 0; j < ni; ++j)
       c[i*ni+j] = t4[i*ni+j];
 }
-void getTransformationCoefficients(int dim, int P, int type,
+void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c){
-  if(dim == 2 && getBlendingOrder() > 0)
-    getBezierCurveTransform(P,c);
-  else if(type == apf::Mesh::EDGE)
+
+  if(type == apf::Mesh::EDGE)
     getBezierEdgeTransform(P,c);
   else if(type == apf::Mesh::TRIANGLE)
     getBezierTriangleTransform(P,c);
@@ -419,7 +361,7 @@ static void getGregoryTetTransform(int P, apf::NewArray<double> & c)
       c[i*ni+j] = t4[i*ni+j];
 }
 
-void getGregoryTransformationCoefficients(int /*dim*/, int P, int type,
+void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c){
   assert(P == 3 || P == 4);
   if(type == apf::Mesh::EDGE)

@@ -123,7 +123,7 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
 
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
-apf::FieldShape* getBezier(int dimension, int order);
+apf::FieldShape* getBezier(int order);
 /** \brief Get the Gregory Surface of some order
  \details only fourth order right now,
  third order is implemented, but doesnt preserve
@@ -140,9 +140,9 @@ void setNurbsTriangleWeights(apf::NewArray<double>& weights);
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int dim, int P, int type,
+void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
-void getGregoryTransformationCoefficients(int dim, int P, int type,
+void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 
 /** \brief computes interpolation error of a curved entity on a mesh

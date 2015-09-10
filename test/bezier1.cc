@@ -474,7 +474,7 @@ void test3DBlended()
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, crv::getBezier(3,order),true);
+      apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::setBlendingOrder(blendOrder);
       apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
@@ -483,7 +483,7 @@ void test3DBlended()
         int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
         int ne = fs->countNodesOn(d);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(3,order,d,c);
+        crv::getTransformationCoefficients(order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
@@ -509,7 +509,7 @@ void test3DFull()
 
   for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
-    apf::changeMeshShape(m, crv::getBezier(3,order),true);
+    apf::changeMeshShape(m, crv::getBezier(order),true);
     crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
     crv::BezierCurver bc(m,4,0);
@@ -518,7 +518,7 @@ void test3DFull()
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(3,order,d,c);
+      crv::getTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
@@ -535,7 +535,7 @@ void test3DFull()
 
     // check values sum to 1.0 in the tet fieldshape
     apf::DynamicMatrix A;
-    crv::getTransformationMatrix(crv::getBezier(3,order),apf::Mesh::TET,A);
+    crv::getTransformationMatrix(crv::getBezier(order),apf::Mesh::TET,A);
     apf::EntityShape* es = fs->getEntityShape(apf::Mesh::TET);
     int n = es->countNodes();
     for(int i = 0; i < n; ++i){
