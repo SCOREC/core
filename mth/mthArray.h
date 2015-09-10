@@ -6,7 +6,7 @@
 
 namespace mth {
 
-/** \brief compile-time (static) array */
+/** \brief compile-time (static) array of size N */
 template <class T, unsigned N=0>
 class Array
 {
