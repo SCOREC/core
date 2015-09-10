@@ -18,7 +18,8 @@
  * is not possible in our current framework, this method is not implemented in
  * the main code, but serves its use for code validation.
  *
- * Orders 3-6 provide invalid meshes, just to check validity as well
+ * This test file also contains validity checks.
+ * In 2D, orders 3-6 provide invalid meshes
  */
 
 static void testJacobian(apf::Mesh2* m)

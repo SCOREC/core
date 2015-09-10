@@ -11,15 +11,23 @@
 #include <ma.h>
 #include <cassert>
 
-/*
- * This analytic function is an edge in 3D
+/* This file contains tests for edge and triangle bezier elevation/subdivision.
+ * For subdivision, the approach is to create an edge/triangle, split it
+ * and then compare the new subdivisions against the original, which should be
+ * exactly identical
+ *
+ * For elevation, an edge/triangle is elevated to order 6, and again,
+ * a check is performed
+ *
+ * There is also a test for the node numbering functions, comparing the tables
+ * against the automatically generated values
  */
 void vertFunction(double const p[2], double x[3], void*)
 {
   (void)p;
   (void)x;
 }
-// edges go counter clockwise
+// simple quartic edge
 void edgeFunction(double const p[2], double x[3], void*)
 {
   x[0] = p[0]*p[0]*p[0]*p[0];
@@ -67,6 +75,7 @@ gmi_model* makeEdgeModel()
   gmi_add_analytic_reparam(model, u1, reparam_one, 0);
   return model;
 }
+
 /*
  * Create a mesh with a single edge,
  * Create two edges as an even subdivision,
@@ -74,7 +83,6 @@ gmi_model* makeEdgeModel()
  * to compare correctness of the split.
  *
  */
-
 void testEdgeSubdivision()
 {
   for (int o = 1; o <= 6; ++o){
@@ -173,7 +181,8 @@ void testEdgeElevation()
 
     apf::Element* elem = apf::createElement(m->getCoordinateField(),edge);
     apf::getVectorNodes(elem,nodes);
-
+    // need to precompute values, since the edge is elevated and the old one
+    // no longer exists
     apf::Vector3 p, pt;
     for (int i = 0; i <= 100; ++i){
       p[0] = 0.02*i-1.;
@@ -181,7 +190,7 @@ void testEdgeElevation()
     }
     apf::destroyElement(elem);
 
-    // elevate everything to 6th order
+    // elevate everything to 10th order
     apf::NewArray<apf::Vector3> elevatedNodes;
     elevatedNodes.allocate(7);
     crv::elevateBezierEdge(o,6-o,nodes,elevatedNodes);
@@ -442,6 +451,8 @@ void testTriElevation()
 
     apf::getVectorNodes(elem,nodes);
 
+    // again, precompute values, since the edge is elevated and the old one
+    // no longer exists
     apf::Vector3 p, pt;
     int n = 0;
     for (int j = 0; j <= 10; ++j){
