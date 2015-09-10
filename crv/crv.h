@@ -150,7 +150,6 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 int getTriPointIndex(int P, int i, int j);
 int getTetPointIndex(int P, int i, int j, int k);
 
-int factorial(int i);
 /** \brief binomial functions */
 int binomial(int n, int i);
 int trinomial(int n, int i, int j);

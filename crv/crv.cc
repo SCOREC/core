@@ -11,13 +11,6 @@
 
 namespace crv {
 
-int factorial(int i)
-{
-  static int table[13] = {1,1,2,6,24,120,720,5040,40320,362880,
-      3628800,39916800,479001600};
-  return table[i];
-}
-
 int binomial(int n, int i)
 {
 
@@ -40,7 +33,6 @@ int binomial(int n, int i)
   static int const bn13[5] = {78,286,715,1287,1716};
   static int const* const bnTable[10] = {bn4,bn5,bn6,bn7,bn8,
       bn9,bn10,bn11,bn12,bn13};
-
   return bnTable[n-4][i-2];
 }
 
