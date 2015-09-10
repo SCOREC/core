@@ -40,7 +40,7 @@ static void testJacobian(apf::Mesh2* m)
         xi[0] = 1.*i/n;
         apf::getJacobian(me,xi,Jac);
         double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
-        double J = crv::computeAlternateTriJacobianDet(m,e,xi);
+        double J = crv::computeTriJacobianDetFromBezierFormulation(m,e,xi);
         assert(fabs(detJ-J) < 1e-14);
       }
     }

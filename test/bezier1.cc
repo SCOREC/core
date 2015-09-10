@@ -445,7 +445,7 @@ static void testAlternateTetJacobian(apf::Mesh2* m)
           xi[0] = 1.*i/n;
           apf::getJacobian(me,xi,Jac);
           double detJ = apf::getDeterminant(Jac);
-          double J2 = crv::computeAlternateTetJacobianDet(m,e,xi);
+          double J2 = crv::computeTetJacobianDetFromBezierFormulation(m,e,xi);
           assert(std::fabs(detJ-J2) < 1e-13);
         }
       }

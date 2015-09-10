@@ -10,7 +10,10 @@
 #include "crvTables.h"
 
 namespace crv {
-
+/*
+ * Templating is used for coordinates (Vector3) and det(Jacobian) (double)
+ * and is only accessible in this file.
+ */
 template <class T>
 static void raiseBezierEdge(int P, int r, apf::NewArray<T>& nodes,
     apf::NewArray<T>& elevatedNodes)

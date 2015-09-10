@@ -14,11 +14,11 @@ namespace crv {
  * learned from the master Programmer,
  * who in His wisdom, laid down this construct for tables,
  * repurposed to encode lookup tables for bezier tris,
- * which are formulated as [P][i+j*(P+1)-j*(j-1)/2],
+ * which are formulated as [P][i][j],
  * with k implied, because I was not yet learned at the time,
  * and a lookup table for bezier tets,
  * as a [P][i][j][k] formulation, with l implied,
- * and while first order is superfluous, consistency is maintained
+ * and while zeroth and first order are superfluous, consistency is maintained
  */
 
 // Notes: 0 is a fake point, added for de Casteljau's algorithm
@@ -209,6 +209,8 @@ int computeTetPointIndex(int P, int i, int j, int k)
 }
 
 // publically accessible access
+// There is likely room for improvement, for example if a dynamic numbering
+// is called on the fly, compute it, store it, and then read it off the table
 int getTriPointIndex(int P, int i, int j)
 {
   // use a table if its small, otherwise dynamically generate it on the fly

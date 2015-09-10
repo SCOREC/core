@@ -433,7 +433,6 @@ void getGregoryTransformationCoefficients(int /*dim*/, int P, int type,
 void getTransformationMatrix(apf::FieldShape* fs, int type,
     apf::DynamicMatrix& A)
 {
-
   apf::Vector3 const edge_vert_xi[2] = {
     apf::Vector3(-1,0,0),
     apf::Vector3(1,0,0),

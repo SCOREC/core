@@ -15,7 +15,7 @@ namespace crv {
  * 18 is the maximum in the table, given that for n > 18,
  * quadnomial(n,i,j,k) can exceed MAX_INT and long's would be needed
  * This is also an upper bound on the order of tets, and implies a max order
- * of 7 to guarantee the full bezier jacobian can work
+ * of 7 to guarantee the full bezier jacobian determinant can work
  */
 int binomial(int n, int i)
 {
