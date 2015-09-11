@@ -45,6 +45,7 @@ class Matrix : public Array<Vector<T,N>,M>
       Matrix<T,M,N> r;
       for (unsigned i=0; i < M; ++i)
         r.elems[i] = this->elems[i] * s;
+      return r;
     }
     /** \brief divide by a scalar */
     Matrix<T,M,N> operator/(T const& s) const
