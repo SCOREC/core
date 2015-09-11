@@ -8,12 +8,12 @@
 #ifndef APF_ARRAY_H
 #define APF_ARRAY_H
 
-#include <vasArray.h>
+#include <canArray.h>
 
 namespace apf {
 
 template <class T, std::size_t N>
-class Array : public vas::Array<T, N> {
+class Array : public can::Array<T, N> {
 };
 
 }
