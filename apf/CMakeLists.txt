@@ -26,6 +26,11 @@ if(NOT BUILD_IN_TRILINOS)
   )
   set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS} ${CAN_LIBS})
   set(APF_LIBS apf ${DEP_LIBS})
+else()
+  #quickfix hack
+  set(APF_INCLUDE_DIRS
+      ${APF_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../can)
 endif()
 
 #Sources & Headers
@@ -87,6 +92,16 @@ set(APF_HEADERS
   apfGeometry.h
 )
 
+#quickfix hack
+if (BUILD_IN_TRILINOS)
+  set(APF_HEADERS
+      ${APF_HEADERS}
+      ../can/canArray.h
+      ../can/canNewArray.h
+      ../can/canDynamicArray.h
+     )
+endif()
+
 # THIS IS WHERE TRIBITS GETS HEADERS
 include_directories(${APF_INCLUDE_DIRS})
 
@@ -137,5 +152,5 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_package_postprocess()
+  tribits_package_postprocess()
 endif(BUILD_IN_TRILINOS)
