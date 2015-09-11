@@ -158,8 +158,8 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 
 /** \brief publically accessible functions */
-int getTriPointIndex(int P, int i, int j);
-int getTetPointIndex(int P, int i, int j, int k);
+int getTriNodeIndex(int P, int i, int j);
+int getTetNodeIndex(int P, int i, int j, int k);
 
 /** \brief binomial function n!/(i!(n-i)!) */
 int binomial(int n, int i);

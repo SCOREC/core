@@ -13,10 +13,19 @@
 
 namespace crv {
 
-/** \brief computes node index, use getTriPointIndex
- * (getTetPointIndex) to leverage tables */
-int computeTriPointIndex(int P, int i, int j);
-int computeTetPointIndex(int P, int i, int j, int k);
+/** \brief computes node index, use getTriNodeIndex
+ * (getTetNodeIndex) to leverage tables */
+int computeTriNodeIndex(int P, int i, int j);
+int computeTetNodeIndex(int P, int i, int j, int k);
+
+/** \brief computes nodes of face f from tet */
+void getTriNodesFromTetNodes(int f, int P,
+    apf::NewArray<apf::Vector3>& tetNodes,
+    apf::NewArray<apf::Vector3>& triNodes);
+/** \brief computes det(Jacobian) nodes of face f from tet */
+void getTriDetJacobianNodesFromTetDetJacobianNodes(int f, int P,
+    apf::NewArray<double>& tetNodes,
+    apf::NewArray<double>& triNodes);
 
 /** \brief polynomial part of bernstein polynomial */
 double Bij(int i, int j,double u, double v);
