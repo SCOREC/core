@@ -20,7 +20,7 @@ class Matrix : public Array<Vector<T,N>,M>
     T& operator()(unsigned i, unsigned j) {return (*this)[i][j];}
     /** \brief immutable index operator
       * \details see the mutable index operator details */
-    T const& opertor()(unsigned i, unsigned j) const {return (*this)[i][j];}
+    T const& operator()(unsigned i, unsigned j) const {return (*this)[i][j];}
     /** \brief default constructor */
     Matrix() {}
     /** \brief add two matrices */
