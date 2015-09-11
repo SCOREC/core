@@ -4,11 +4,11 @@
 #include "mthVector.h"
 
 /** \file mthMatrix.h
-  * \brief Small compile time linear algebra matrices. */
+  * \brief Small compile-time and run-time linear algebra matrices. */
 
 namespace mth {
 
-/** \brief compile time (static) matrix */
+/** \brief compile-time (static) matrix */
 template <class T, unsigned M=0, unsigned N=0>
 class Matrix : public Array<Vector<T,N>,M>
 {
@@ -79,6 +79,77 @@ class Matrix : public Array<Vector<T,N>,M>
       }
       return r;
     }
+};
+
+/** \brief run-time (dynamic) matrix
+  * \details a runtime sized equivalent of mth::Matrix<T,N>.
+  * This class is meant to be used for small dense matrices
+  * whose size is not known at compile time. For large, sparse,
+  * or parallel matrices, look outside of mth.
+  *
+  * Note that the template specialization for M=0, N=0 does not
+  * inherit from an Array of Vectors as the compile-time matrix
+  * does. Rather, a linear access model is used, where matrix
+  * elements are stored in a single dynamic array */
+template <class T>
+class Matrix<T,0,0>
+{
+  public:
+    /** \brief default constructor - no allocation */
+    Matrix() {}
+    /** \brief construct m by n elements */
+    Matrix(unsigned m, unsigned n) : columns(n), elems(m*n) {}
+    /** \brief get the number of rows */
+    unsigned rows() const {return elems.size()/columns;}
+    /** \brief get the number of columns */
+    unsigned cols() const {return columns;}
+    /** \brief resize to m by n elements */
+    void resize(unsigned m, unsigned n)
+    {
+      columns = n;
+      elems.resize(m*n);
+    }
+    /** \brief mutable index operator */
+    T& operator()(unsigned i, unsigned j)
+    {
+      return elems[i*columns + j];
+    }
+    /** \brief immutable index operator */
+    T const& operator()(unsigned i, unsigned j) const
+    {
+      return elems[i*columns + j];
+    }
+    /** \brief add a matrix to this matrix */
+    Matrix<T>& operator+=(Matrix<T> const& b)
+    {
+      for (unsigned i=0; i < this->elems.size(); ++i)
+        this->elems[i] += b.elems[i];
+      return *this;
+    }
+    /** \brief subtract a matrix from this matrix */
+    Matrix<T>& operator-=(Matrix<T> const& b)
+    {
+      for (unsigned i=0; i < this->elems.size(); ++i)
+        this->elems[i] -= b.elems[i];
+      return *this;
+    }
+    /** \brief multiply this matrix by a scalar */
+    Matrix<T>& operator*=(T const& s)
+    {
+      for (unsigned i=0; i < this->elems.size(); ++i)
+        this->elems[i] *= s;
+      return *this;
+    }
+    /** \brief divide this matrix by a scalar */
+    Matrix<T>& operator/=(T const& s)
+    {
+      for (unsigned i=0; i < this->elems.size(); ++i)
+        this->elems[i] /= s;
+      return *this;
+    }
+  protected:
+    unsigned columns;
+    Array<double> elems;
 };
 
 }
