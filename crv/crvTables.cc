@@ -239,7 +239,7 @@ static void getTriFromTet(int f, int P, apf::NewArray<T>& tetNodes,
   for (int i = 0; i <= P; ++i)
     for (int j = 0; j <= P-i; ++j){
       // one of I,J,K,L = 0
-      // one of I,J,K,L = P - the other two
+      // one of I,J,K,L = P-i-j
       IJKL[apf::tet_tri_verts[f][0]] = i;
       IJKL[apf::tet_tri_verts[f][1]] = j;
       IJKL[apf::tet_tri_verts[f][2]] = P-i-j;
@@ -255,7 +255,7 @@ void getTriNodesFromTetNodes(int f, int P,
   getTriFromTet(f,P,tetNodes,triNodes);
 }
 
-void getTriDetJacobianNodesFromTetDetJacobianNodes(int f, int P,
+void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
     apf::NewArray<double>& tetNodes,
     apf::NewArray<double>& triNodes)
 {

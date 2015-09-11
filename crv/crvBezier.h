@@ -23,7 +23,7 @@ void getTriNodesFromTetNodes(int f, int P,
     apf::NewArray<apf::Vector3>& tetNodes,
     apf::NewArray<apf::Vector3>& triNodes);
 /** \brief computes det(Jacobian) nodes of face f from tet */
-void getTriDetJacobianNodesFromTetDetJacobianNodes(int f, int P,
+void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
     apf::NewArray<double>& tetNodes,
     apf::NewArray<double>& triNodes);
 
