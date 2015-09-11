@@ -73,7 +73,7 @@ class Vector : public Array<T,N>
     {
       Vector<T,N> r;
        for (unsigned i=0; i < N; ++i)
-         r[i] = (*this)[i] * s;
+         r[i] = (*this)[i] / s;
        return r;
     }
     /** \brief vector dot product
