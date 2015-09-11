@@ -28,7 +28,7 @@ class Array
     /** \brief immutable index operator */
     T const& operator[](unsigned i) const {return elems[i];}
     /** \brief get the size of this array */
-    unsigned size() {return N;}
+    unsigned size() const {return N;}
   protected:
     T elems[N];
     void copy(Array<T,N> const& other)
@@ -62,7 +62,7 @@ class Array<T,0>
     /** \brief immutable index operator */
     T const& operator[](unsigned i) const {return elems[i];}
     /** \brief get the size of this array */
-    unsigned size() {return sz;}
+    unsigned size() const {return sz;}
     /** \brief resize the array */
     void resize(unsigned n)
     {
