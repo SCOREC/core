@@ -8,14 +8,14 @@
 #ifndef APF_DYNAMIC_ARRAY_H
 #define APF_DYNAMIC_ARRAY_H
 
-#include <vasDynamicArray.h>
+#include <canDynamicArray.h>
 
 namespace apf {
 
 template <class T>
-class DynamicArray : public vas::DynamicArray<T> {
+class DynamicArray : public can::DynamicArray<T> {
   public:
-    typedef vas::DynamicArray<T> Base;
+    typedef can::DynamicArray<T> Base;
     DynamicArray() {}
     DynamicArray(std::size_t n):Base(n) {}
 };

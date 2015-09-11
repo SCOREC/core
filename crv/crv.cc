@@ -11,13 +11,12 @@
 
 namespace crv {
 
-int factorial(int i)
-{
-  static int table[13] = {1,1,2,6,24,120,720,5040,40320,362880,
-      3628800,39916800,479001600};
-  return table[i];
-}
-
+/*
+ * 18 is the maximum in the table, given that for n > 18,
+ * quadnomial(n,i,j,k) can exceed MAX_INT and long's would be needed
+ * This is also an upper bound on the order of tets, and implies a max order
+ * of 7 to guarantee the full bezier jacobian determinant can work
+ */
 int binomial(int n, int i)
 {
 
@@ -38,10 +37,17 @@ int binomial(int n, int i)
   static int const bn11[4] = {55,165,330,462};
   static int const bn12[5] = {66,220,495,792};
   static int const bn13[5] = {78,286,715,1287,1716};
-  static int const* const bnTable[10] = {bn4,bn5,bn6,bn7,bn8,
-      bn9,bn10,bn11,bn12,bn13};
+  static int const bn14[6] = {91,364,1001,2002,3003,3432};
+  static int const bn15[6] = {105,455,1365,3003,5005,6435};
+  static int const bn16[7] = {120,560,1820,4368,8008,11440,12870};
+  static int const bn17[7] = {136,680,2380,6188,12376,19448,24310};
+  static int const bn18[8] = {153,816,3060,8568,18564,31824,43758,48620};
 
-  return bnTable[n-4][i-2];
+  static int const* const bnTable[19] = {0,0,0,0,bn4,bn5,bn6,bn7,bn8,
+      bn9,bn10,bn11,bn12,bn13,bn14,bn15,bn16,bn17,bn18};
+
+  return bnTable[n][i-2];
+
 }
 
 int trinomial(int n, int i, int j)

@@ -18,7 +18,8 @@
  * is not possible in our current framework, this method is not implemented in
  * the main code, but serves its use for code validation.
  *
- * Orders 3-6 provide invalid meshes, just to check validity as well
+ * This test file also contains validity checks.
+ * In 2D, orders 3-6 provide invalid meshes
  */
 
 static void testJacobian(apf::Mesh2* m)
@@ -39,7 +40,7 @@ static void testJacobian(apf::Mesh2* m)
         xi[0] = 1.*i/n;
         apf::getJacobian(me,xi,Jac);
         double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
-        double J = crv::computeAlternateTriJacobianDet(m,e,xi);
+        double J = crv::computeTriJacobianDetFromBezierFormulation(m,e,xi);
         assert(fabs(detJ-J) < 1e-14);
       }
     }
@@ -237,7 +238,7 @@ void test2D()
 {
   for(int order = 2; order <= 6; ++order){
       apf::Mesh2* m = createMesh2D();
-      apf::changeMeshShape(m, crv::getBezier(3,order),true);
+      apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::BezierCurver bc(m,order,0);
       crv::setBlendingOrder(0);
 
@@ -249,7 +250,7 @@ void test2D()
         int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
         int ne = fs->countNodesOn(d);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(3,order,d,c);
+        crv::getTransformationCoefficients(order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
@@ -295,7 +296,7 @@ void test3D()
 
   for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
-    apf::changeMeshShape(m, crv::getBezier(3,order),true);
+    apf::changeMeshShape(m, crv::getBezier(order),true);
     crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
     crv::BezierCurver bc(m,order,0);
@@ -304,7 +305,7 @@ void test3D()
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(3,order,d,c);
+      crv::getTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {

@@ -5,20 +5,20 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef VAS_DYNAMIC_ARRAY_H
-#define VAS_DYNAMIC_ARRAY_H
+#ifndef CAN_DYNAMIC_ARRAY_H
+#define CAN_DYNAMIC_ARRAY_H
 
 /** \file vasDynamicArray.h
     \brief what most std::vectors should be */
 
-#include "vasNewArray.h"
+#include "canNewArray.h"
 
-namespace vas {
+namespace can {
 
 /** \brief a dynamically allocated array with size knowledge.
   \details adding a size variables allowas
    the full range of copying, resizing, etc.
-   over the simple vas::NewArray.
+   over the simple can::NewArray.
    We use composition instead of inheritance
    to prevent exposing things like vas::NewArray::allocate
  */

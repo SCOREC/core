@@ -1,12 +1,9 @@
-/******************************************************************************
-
-  Copyright 2015 Scientific Computation Research Center,
-      Rensselaer Polytechnic Institute. All rights reserved.
-
-  The LICENSE file included with this distribution describes the terms
-  of the SCOREC Non-Commercial License this program is distributed under.
-
-*******************************************************************************/
+/*
+ * Copyright 2015 Scientific Computation Research Center
+ *
+ * This work is open source software, licensed under the terms of the
+ * BSD license as described in the LICENSE file in the top-level directory.
+ */
 
 #ifndef CRV_H
 #define CRV_H
@@ -22,6 +19,10 @@ void setBlendingOrder(const int b);
 /** \brief gets the blending order */
 int getBlendingOrder();
 
+/** \brief Base Mesh curving object
+  \details P is the order, S is the space dimension,
+  different from the mesh dimension, used to distinguish between planar 2D
+  meshes and surface meshes. */
 class MeshCurver
 {
   public:
@@ -54,7 +55,10 @@ class MeshCurver
     int m_spaceDim;
 };
 
-/** \brief curves an already changed mesh */
+/** \brief curves an already changed mesh
+ * \details this is a bit of a hack, meant to work with
+ * all interpolating shape functions
+ */
 class InterpolatingCurver : public MeshCurver
 {
   public:
@@ -64,6 +68,10 @@ class InterpolatingCurver : public MeshCurver
 
 };
 
+/** \brief this curves a mesh with Bezier shapes
+ * \details converts the mesh and snaps boundary entities to geometry
+ * P is the order, B is the blending order (set to 0 to use full shapes)
+ */
 class BezierCurver : public MeshCurver
 {
   public:
@@ -72,39 +80,41 @@ class BezierCurver : public MeshCurver
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
-      see apfBezier.cc */
+      see crvBezier.cc */
     virtual bool run();
 };
 
+/** \brief this curves a mesh with 4th order G1 Patches
+ * \details approach is in crvBezier.cc
+ */
 class GregoryCurver : public BezierCurver
 {
   public:
     GregoryCurver(apf::Mesh2* m, int P, int B, int S = 0)
     : BezierCurver(m,P,B,S) {};
-    /** \brief curves a mesh using G1 gregory surfaces, see apfBezier.cc */
+    /** \brief curves a mesh using G1 gregory surfaces, see crvBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */
     void setCubicEdgePointsUsingNormals();
     /** \brief sets internal points using neighbors (See Notes)
       \details NOT CURRENTLY FULLY IMPLEMENTED */
-    void setInternalPointsUsingNeighbors();
-    /** \brief sets internal points locally (4th order only) */
+//    void setInternalPointsUsingNeighbors();
+    /** \brief sets internal points locally */
     void setInternalPointsLocally();
 };
 
+/** \brief this is a very niche set of shape functions, an experiment
+ * gets the exact representation for a sphere represented by 8 tets
+ */
 class SphereCurver : public MeshCurver
 {
   public:
-    SphereCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m, P, S),
-    m_blendOrder(B) {};
+    SphereCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m, P, S)
+    { setBlendingOrder(B); };
 
-    /** \brief curves a mesh using bezier curves of chosen order
-      \details finds interpolating points, then converts to control points
-      see apfBezier.cc */
     virtual bool run();
-  protected:
-    int m_blendOrder;
 };
+
 /** \brief Elevate a bezier curve to a higher order
  \details This elevates from nth order to n+rth order
  requires the curve be order n+r in memory already, and
@@ -113,15 +123,16 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
 
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
-apf::FieldShape* getBezier(int dimension, int order);
+apf::FieldShape* getBezier(int order);
 /** \brief Get the Gregory Surface of some order
  \details only fourth order right now,
  third order is implemented, but doesnt preserve
  linear tets.*/
 apf::FieldShape* getGregory(int order);
 /** \brief Get the NURBS, based off of bezier
- \details goes from first to sixth order */
-apf::FieldShape* getNurbs(int orde);
+ \details goes from first to sixth order, NURBS are really only
+ used for curving to a sphere, and are a test */
+apf::FieldShape* getNurbs(int order);
 /** \brief set the weights
  \details used to set these for every curved surface*/
 void setNurbsEdgeWeights(apf::NewArray<double>& weights);
@@ -129,9 +140,9 @@ void setNurbsTriangleWeights(apf::NewArray<double>& weights);
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int dim, int P, int type,
+void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
-void getGregoryTransformationCoefficients(int dim, int P, int type,
+void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 
 /** \brief computes interpolation error of a curved entity on a mesh
@@ -146,17 +157,25 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 
-int factorial(int i);
-/** \brief binomial functions */
+/** \brief publically accessible functions */
+int getTriPointIndex(int P, int i, int j);
+int getTetPointIndex(int P, int i, int j, int k);
+
+/** \brief binomial function n!/(i!(n-i)!) */
 int binomial(int n, int i);
+/** \brief trinomial function n!/(i!j!(n-i-j)!) */
 int trinomial(int n, int i, int j);
+/** \brief "quadnomial" function n!/(i!j!k!(n-i-j-k)!) */
 int quadnomial(int n, int i, int j, int k);
 
+/** \brief check the validity (det(Jacobian) > eps) of an element
+ * \details entities is a container of invalid downward entities*/
+
 int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[3]);
+    apf::MeshEntity* entities[6]);
 
 int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6]);
+    apf::MeshEntity* entities[14]);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

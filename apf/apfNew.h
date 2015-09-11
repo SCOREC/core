@@ -8,14 +8,14 @@
 #ifndef APF_NEW_H
 #define APF_NEW_H
 
-#include <vasNewArray.h>
+#include <canNewArray.h>
 
 namespace apf {
 
 template <class T>
-class NewArray : public vas::NewArray<T> {
+class NewArray : public can::NewArray<T> {
   public:
-    typedef vas::NewArray<T> Base;
+    typedef can::NewArray<T> Base;
     NewArray() {}
     NewArray(std::size_t n):Base(n) {}
 };

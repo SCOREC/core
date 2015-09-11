@@ -58,6 +58,8 @@ add_subdirectory(pcu)
 
 add_subdirectory(gmi)
 
+add_subdirectory(can)
+
 add_subdirectory(apf)
 
 add_subdirectory(gmi_sim)

@@ -208,7 +208,7 @@ static void getTriJacDet(int P, int iter, apf::NewArray<double>& nodes,
  * the algorithm used in 3D.
  */
 static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[3])
+    apf::MeshEntity* entities[6])
 {
   apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
@@ -250,7 +250,7 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
 }
 
 int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[3])
+    apf::MeshEntity* entities[6])
 {
   int P = m->getShape()->getOrder();
   int numInvalid = checkTriValidityAtNodeXi(m,e,entities);
@@ -286,7 +286,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
       }
     }
   }
-  // This may be unnecessary
+  // This may be unnecessary, checking the interior of the shape
   if(numInvalid) return numInvalid;
   bool done = false;
   double minJ = -1e10;
@@ -304,7 +304,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
 }
 
 static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6])
+    apf::MeshEntity* entities[14])
 {
   apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
@@ -346,7 +346,7 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
 }
 
 int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6])
+    apf::MeshEntity* entities[14])
 {
   int P = m->getShape()->getOrder();
   int numInvalid = checkTetValidityAtNodeXi(m,e,entities);
@@ -361,7 +361,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
   return 0;
 }
 
-double computeAlternateTriJacobianDet(apf::Mesh* m,
+double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,
     apf::MeshEntity* e, apf::Vector3& xi)
 {
   double detJ = 0.;
@@ -381,7 +381,7 @@ double computeAlternateTriJacobianDet(apf::Mesh* m,
   return detJ;
 }
 
-double computeAlternateTetJacobianDet(apf::Mesh* m,
+double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
     apf::MeshEntity* e, apf::Vector3& xi)
 {
   int P = m->getShape()->getOrder();

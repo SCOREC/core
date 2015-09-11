@@ -25,7 +25,10 @@ if [ -z $(kpsewhich algpseudocode.sty) ];
 then
 	wget http://mirror.unl.edu/ctan/macros/latex/contrib/algorithmicx/algpseudocode.sty
 fi
-
+for f in ../../; do
+	cp $f*.tex .
+	cp $f*.png .
+done
 for f in ../../*/; do
 	cp $f*.tex .
 	cp $f*.png .

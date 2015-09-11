@@ -171,7 +171,7 @@ int main(int argc, char** argv)
 
   // put fieldShapes to test here
   apf::FieldShape* fs[4] = {apf::getLagrange(2),apf::getSerendipity(),
-  crv::getBezier(3,1),crv::getBezier(3,2)};
+  crv::getBezier(1),crv::getBezier(2)};
 
   for (int i = 0; i < 4; ++i)
     checkFieldShape(fs[i]);

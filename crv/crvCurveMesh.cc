@@ -1,12 +1,9 @@
-/******************************************************************************
-
-  Copyright 2015 Scientific Computation Research Center,
-      Rensselaer Polytechnic Institute. All rights reserved.
-
-  The LICENSE file included with this distribution describes the terms
-  of the SCOREC Non-Commercial License this program is distributed under.
-
- *******************************************************************************/
+/*
+ * Copyright 2015 Scientific Computation Research Center
+ *
+ * This work is open source software, licensed under the terms of the
+ * BSD license as described in the LICENSE file in the top-level directory.
+ */
 #include "crv.h"
 #include "crvSnap.h"
 #include <cassert>
@@ -106,7 +103,7 @@ bool BezierCurver::run()
   }
 
   int md = m_mesh->getDimension();
-  apf::changeMeshShape(m_mesh, getBezier(md,m_order),true);
+  apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
@@ -122,7 +119,7 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(types[d-1])->countNodes();
     int ne = fs->countNodesOn(types[d-1]);
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,m_order,types[d-1],c);
+    getTransformationCoefficients(m_order,types[d-1],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -209,33 +206,33 @@ static void elevateBezierCurves(apf::Mesh2* m)
   m->end(it);
 }
 
-void GregoryCurver::setInternalPointsUsingNeighbors()
-{
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m_mesh->begin(1);
-  while ((e = m_mesh->iterate(it))) {
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) != 2) continue;
-    int tag = m_mesh->getModelTag(g);
-    apf::Up up;
-    m_mesh->getUp(e,up);
-    apf::MeshEntity* faces[2];
-    int iF = 0;
-    for(int i = 0; i < up.n; ++i){
-      if(m_mesh->getModelTag(m_mesh->toModel(up.e[i])) == tag)
-        faces[iF++] = up.e[i];
-
-    }
-    assert(m_mesh->getModelType(m_mesh->toModel(faces[0])) ==
-        m_mesh->getModelType(m_mesh->toModel(faces[1])) );
-    // now we have the faces
-    int which[2], rotate[2];
-    bool flip[2];
-    apf::getAlignment(m_mesh,faces[0],e,which[0],flip[0],rotate[0]);
-    apf::getAlignment(m_mesh,faces[1],e,which[1],flip[1],rotate[1]);
-  }
-  m_mesh->end(it);
-}
+//void GregoryCurver::setInternalPointsUsingNeighbors()
+//{
+//  apf::MeshEntity* e;
+//  apf::MeshIterator* it = m_mesh->begin(1);
+//  while ((e = m_mesh->iterate(it))) {
+//    apf::ModelEntity* g = m_mesh->toModel(e);
+//    if(m_mesh->getModelType(g) != 2) continue;
+//    int tag = m_mesh->getModelTag(g);
+//    apf::Up up;
+//    m_mesh->getUp(e,up);
+//    apf::MeshEntity* faces[2];
+//    int iF = 0;
+//    for(int i = 0; i < up.n; ++i){
+//      if(m_mesh->getModelTag(m_mesh->toModel(up.e[i])) == tag)
+//        faces[iF++] = up.e[i];
+//
+//    }
+//    assert(m_mesh->getModelType(m_mesh->toModel(faces[0])) ==
+//        m_mesh->getModelType(m_mesh->toModel(faces[1])) );
+//    // now we have the faces
+//    int which[2], rotate[2];
+//    bool flip[2];
+//    apf::getAlignment(m_mesh,faces[0],e,which[0],flip[0],rotate[0]);
+//    apf::getAlignment(m_mesh,faces[1],e,which[1],flip[1],rotate[1]);
+//  }
+//  m_mesh->end(it);
+//}
 
 void GregoryCurver::setInternalPointsLocally()
 {
@@ -369,7 +366,7 @@ bool GregoryCurver::run()
 
     apf::NewArray<double> c;
 
-    getGregoryTransformationCoefficients(md,m_order,types[d-1],c);
+    getGregoryTransformationCoefficients(m_order,types[d-1],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
