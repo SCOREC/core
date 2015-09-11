@@ -57,7 +57,7 @@ void* noto_realloc(void* p, size_t size)
 #endif
   size_t* ret = realloc(p2, size);
   if ((!ret) && (size))
-    reel_fail("realloc(%p, %lu) failed", p2, size);
+    reel_fail("realloc(%p, %lu) failed", (void*) p2, size);
   p2 = ret;
 #ifdef DEBUG_MEMORY
   if (p2)

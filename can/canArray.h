@@ -5,15 +5,18 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef VAS_ARRAY_H
-#define VAS_ARRAY_H
+#ifndef CAN_ARRAY_H
+#define CAN_ARRAY_H
 
-/** \file vasArray.h
+/** \file canArray.h
     \brief compile-time size array */
 
 #include <cstddef>
 
-namespace vas {
+/** \namespace can
+  * \brief All CAN symbols are contained in this namespace.
+  */
+namespace can {
 
 /** \brief an array of N items of type T */
 template <class T, std::size_t N>
@@ -30,7 +33,7 @@ class Array
     ~Array() {}
     /** \brief copy array contents.
       \details this is one of the advantages
-      of vas::Array over C arrays: they are
+      of can::Array over C arrays: they are
       copy-constructible and assignable */
     Array<T,N>& operator=(Array<T,N> const& other)
     {

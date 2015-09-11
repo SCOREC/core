@@ -183,7 +183,7 @@ void pcu_fwrite(void const* p, size_t size, size_t nmemb, pcu_file * f)
     compressed_write(f, p, size * nmemb);
   } else {
     if (nmemb != fwrite(p, size, nmemb, f->f))
-      reel_fail("fwrite(%p, %lu, %lu, %p) failed", p, size, nmemb, f->f);
+      reel_fail("fwrite(%p, %lu, %lu, %p) failed", p, size, nmemb, (void*) f->f);
   }
 }
 
@@ -195,7 +195,7 @@ void pcu_fread(void* p, size_t size, size_t nmemb, pcu_file * f)
     compressed_read(f, p, size * nmemb);
   } else {
     if (nmemb != fread(p, size, nmemb, f->f))
-      reel_fail("fread(%p, %lu, %lu, %p) failed", p, size, nmemb, f->f);
+      reel_fail("fread(%p, %lu, %lu, %p) failed", p, size, nmemb, (void*) f->f);
   }
 }
 

@@ -5,15 +5,15 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef VAS_NEW_ARRAY_H
-#define VAS_NEW_ARRAY_H
+#ifndef CAN_NEW_ARRAY_H
+#define CAN_NEW_ARRAY_H
 
-/** \file vasNew.h
+/** \file canNewArray.h
     \brief wrapper for operator new/delete [] */
 
 #include <cstddef>
 
-namespace vas {
+namespace can {
 
 /** \brief wrapper over operator new/delete []
   \details this wrapper is used to automatically
