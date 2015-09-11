@@ -20,7 +20,6 @@ set(CAN_LIBS)
 
 set(CAN_HEADERS
   canArray.h
-  canDynamicArray.h
   canNewArray.h
 )
 

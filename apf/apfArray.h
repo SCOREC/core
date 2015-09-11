@@ -12,7 +12,7 @@
 
 namespace apf {
 
-template <class T, std::size_t N>
+template <class T, unsigned N>
 class Array : public can::Array<T, N> {
 };
 

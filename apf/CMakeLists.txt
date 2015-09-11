@@ -98,7 +98,6 @@ if (BUILD_IN_TRILINOS)
       ${APF_HEADERS}
       ../can/canArray.h
       ../can/canNewArray.h
-      ../can/canDynamicArray.h
      )
 endif()
 
