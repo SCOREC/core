@@ -1,7 +1,17 @@
+/******************************************************************************
+
+  Copyright 2015 Scientific Computation Research Center,
+      Rensselaer Polytechnic Institute. All rights reserved.
+
+  This work is open source software, licensed under the terms of the
+  BSD license as described in the LICENSE file in the top-level directory.
+
+*******************************************************************************/
+
 #ifndef MTH_VECTOR_H
 #define MTH_VECTOR_H
 
-#include "mthArray.h"
+#include "canArray.h"
 #include <cmath>
 
 /** \file mthVector.h
@@ -15,11 +25,15 @@ namespace mth {
   * templated on scalar type so that math can be performed for a variety
   * of (meaningful) scalar types. */
 template <class T, unsigned N=0>
-class Vector : public Array<T,N>
+class Vector : public can::Array<T,N>
 {
   public:
-    /** \brief default constructor - no allocation */
+    /** \brief default constructor */
     Vector() {}
+    /** \brief construct with n elems
+      * \details A dummy constructor Vector(n) is provided so that
+      * dynamic and static vectors can be used interchangebly */
+    Vector(unsigned n) {}
     /** \brief construct from an array */
     Vector(T const* v)
     {
@@ -108,13 +122,13 @@ class Vector : public Array<T,N>
   * creating temporary copies. The code for these methods is inlined
   * in an effort to keep linear algebra running quickly */
 template <class T>
-class Vector<T,0> : public Array<T,0>
+class Vector<T,0> : public can::Array<T,0>
 {
   public:
     /** \brief default constructor - no allocation */
     Vector() {}
     /** \brief construct with n elements */
-    Vector(unsigned n) : Array<T>(n) {}
+    Vector(unsigned n) : can::Array<T>(n) {}
     /** \brief add a vector to this vector */
     Vector<T,0>& operator+=(Vector<T,0> const& b)
     {

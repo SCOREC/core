@@ -1,3 +1,13 @@
+/******************************************************************************
+
+  Copyright 2015 Scientific Computation Research Center,
+      Rensselaer Polytechnic Institute. All rights reserved.
+
+  This work is open source software, licensed under the terms of the
+  BSD license as described in the LICENSE file in the top-level directory.
+
+*******************************************************************************/
+
 #ifndef MTH_MATRIX_H
 #define MTH_MATRIX_H
 
@@ -10,19 +20,27 @@ namespace mth {
 
 /** \brief compile-time (static) matrix */
 template <class T, unsigned M=0, unsigned N=0>
-class Matrix : public Array<Vector<T,N>,M>
+class Matrix : public can::Array<Vector<T,N>,M>
 {
   public:
+    /** \brief default constructor */
+    Matrix() {}
+    /** \brief construct with m by n elements
+      * \details A dummy constructor Matrix(m,n) is provided so that
+      * dynamic and static matrices can be used interchangebly */
+    Matrix(unsigned m, unsigned n) {}
+    /** \brief get the number of rows */
+    unsigned rows() const {return M;}
+    /** \brief get the number of columns */
+    unsigned cols() const {return N;}
     /** \brief mutable index operator
-      * \details an index operator (i,j) is provided so that
+      * \details An index operator (i,j) is provided so that
       * compile time matrices and runtime-sized matrices can be used
       * interchangebly, without worrying about changing index syntax */
     T& operator()(unsigned i, unsigned j) {return (*this)[i][j];}
     /** \brief immutable index operator
       * \details see the mutable index operator details */
     T const& operator()(unsigned i, unsigned j) const {return (*this)[i][j];}
-    /** \brief default constructor */
-    Matrix() {}
     /** \brief add two matrices */
     Matrix<T,M,N> operator+(Matrix<T,M,N> const& b) const
     {
@@ -149,7 +167,7 @@ class Matrix<T,0,0>
     }
   protected:
     unsigned columns;
-    Array<double> elems;
+    can::Array<double> elems;
 };
 
 }
