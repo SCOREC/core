@@ -38,9 +38,8 @@ class MeshCurver
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
 
-    /** \brief these two are a per entity version of above */
-    void snapToInterpolateEdge(apf::MeshEntity* e);
-    void snapToInterpolateTri(apf::MeshEntity* e);
+    /** \brief a per entity version of above */
+    void snapToInterpolate(apf::MeshEntity* e);
 
     /** \brief converts interpolating points to control points */
     void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
