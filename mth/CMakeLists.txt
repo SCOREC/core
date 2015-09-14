@@ -20,6 +20,7 @@ set(MTH_LIBS)
 
 set(MTH_HEADERS
   mth.h
+  mth_def.h
   mthVector.h
   mthMatrix.h
 )
