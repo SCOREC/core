@@ -11,7 +11,7 @@
 #ifndef MTH_H
 #define MTH_H
 
-#include "mthTensor.h"
+#include "mthMatrix.h"
 
 /** \file mth.h
   * \brief templated math functinos */
