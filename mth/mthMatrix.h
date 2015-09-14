@@ -97,6 +97,12 @@ class Matrix : public can::Array<Vector<T,N>,M>
       }
       return r;
     }
+    /** \brief zero a matrix */
+    void zero()
+    {
+      for (unsigned i=0; i < M; ++i)
+        this->elems[i].zero();
+    }
 };
 
 /** \brief run-time (dynamic) matrix
@@ -164,6 +170,12 @@ class Matrix<T,0,0>
       for (unsigned i=0; i < this->elems.size(); ++i)
         this->elems[i] /= s;
       return *this;
+    }
+    /** \brief zero a matrix */
+    void zero()
+    {
+      for (unsigned i=0; i < cols() * rows(); ++i)
+        this->elems[i] = (T)0.0;
     }
   protected:
     unsigned columns;
