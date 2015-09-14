@@ -11,7 +11,7 @@
 #ifndef MTH_H
 #define MTH_H
 
-#include "mthMatrix.h"
+#include "mthTensor.h"
 
 /** \file mth.h
   * \brief templated math functinos */
@@ -35,7 +35,7 @@ T trace(Matrix<T,M,M> const& a);
 /** \brief determinant of a square static or dynamic matrix
   * \details Only 2x2 and 3x3 matrices currently supported. */
 template <class T, unsigned M>
-T det(Matrix<T,M,M> const& a);
+T determinant(Matrix<T,M,M> const& a);
 
 /** \brief invert a static or dynamic square matrix
   * \details Only 2x2 currently supported */
@@ -44,7 +44,7 @@ Matrix<T,M,M> inverse(Matrix<T,M,M> const& a);
 
 /** \brief get the deviatoric part of a square static or dynamic matrix */
 template <class T, unsigned M>
-Matrix<T,M,M> dev(Matrix<T,M,M> const& a);
+Matrix<T,M,M> deviatoric(Matrix<T,M,M> const& a);
 
 /** \brief get the Frobenius norm of a static or dynamic matrix */
 template <class T, unsigned M, unsigned N>
