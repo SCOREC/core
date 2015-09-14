@@ -38,7 +38,7 @@ template <class T, unsigned M>
 T det(Matrix<T,M,M> const& a);
 
 /** \brief invert a static or dynamic square matrix
-  * \details Only 2x2 and 3x3 matrices currently supported */
+  * \details Only 2x2 currently supported */
 template <class T, unsigned M>
 Matrix<T,M,M> inverse(Matrix<T,M,M> const& a);
 
