@@ -98,14 +98,13 @@ bool BezierCurver::run()
 
   synchronize();
 
-  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
   // go downward, and convert interpolating to control points
   for(int d = md - (getBlendingOrder() > 0); d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
-    int n = fs->getEntityShape(types[d-1])->countNodes();
-    int ne = fs->countNodesOn(types[d-1]);
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getTransformationCoefficients(m_order,types[d-1],c);
+    getTransformationCoefficients(m_order,apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -334,8 +333,6 @@ bool GregoryCurver::run()
   int md = m_mesh->getDimension();
   apf::FieldShape * fs = m_mesh->getShape();
 
-  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
-
   // interpolate points in each dimension
   for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
@@ -346,13 +343,13 @@ bool GregoryCurver::run()
   for(int d = md; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
 
-    int n = fs->getEntityShape(types[d-1])->countNodes();
-    int ne = fs->countNodesOn(types[d-1]);
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
 
-    getGregoryTransformationCoefficients(m_order,types[d-1],c);
+    getGregoryTransformationCoefficients(m_order,apf::Mesh::simplexTypes[d],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);

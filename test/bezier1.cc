@@ -535,8 +535,6 @@ void test3DFull()
 
     if(order == 4){
       // put a field on the mesh to make sure nothing fails
-      int types[4] = {apf::Mesh::VERTEX, apf::Mesh::EDGE,
-          apf::Mesh::TRIANGLE,apf::Mesh::TET};
 
       apf::Field* f1 =
           apf::createField(m,"field1",apf::SCALAR,apf::getLagrange(2));
@@ -546,7 +544,7 @@ void test3DFull()
           apf::createField(m,"field3",apf::MATRIX,apf::getLagrange(2));
 
       for(int d = 0; d <= 3; ++d){
-        int ne = apf::getLagrange(2)->countNodesOn(types[d]);
+        int ne = apf::getLagrange(2)->countNodesOn(apf::Mesh::simplexTypes[d]);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
