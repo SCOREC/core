@@ -141,6 +141,8 @@ void setNurbsTriangleWeights(apf::NewArray<double>& weights);
  \details works only for prescribed optimal point locations */
 void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
+void getBlendedTransformationCoefficients(int P, int type,
+    apf::NewArray<double>& c);
 void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 
