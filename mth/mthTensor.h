@@ -18,7 +18,11 @@
 
 namespace mth {
 
-/** \brief run-time (dynamic) tensor */
+/** \brief run-time (dynamic) tensor
+  * \details This is a silly wrapper around mth::Matrix<T> for 2x2 and 3x3
+  * matrices that provides operator overloads like tensor * tensor that the
+  * dynamic matrix mth::Matrix<T> does not provide for performance and
+  * user safety reasons */
 template <class T>
 class Tensor : public Matrix<T>
 {
