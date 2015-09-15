@@ -179,7 +179,7 @@ class Matrix<T,0,0>
     }
   protected:
     unsigned columns;
-    can::Array<double> elems;
+    can::Array<T> elems;
 };
 
 }
