@@ -25,7 +25,7 @@ void reel_fail(const char* format, ...)
   abort();
 }
 
-#ifdef ENABLE_THREADS
+#if ENABLE_THREADS == 1
 #include <pthread.h>
 
 /* Some people don't implement pthread_barrier,
