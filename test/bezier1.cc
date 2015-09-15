@@ -533,18 +533,6 @@ void test3DFull()
     testAlternateTetJacobian(m);
     crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedTest");
 
-    // check values sum to 1.0 in the tet fieldshape
-    apf::DynamicMatrix A;
-    crv::getTransformationMatrix(crv::getBezier(order),apf::Mesh::TET,A);
-    apf::EntityShape* es = fs->getEntityShape(apf::Mesh::TET);
-    int n = es->countNodes();
-    for(int i = 0; i < n; ++i){
-      double sum = 0.;
-      for(int j = 0; j < n; ++j)
-        sum += A(i,j);
-      assert(std::abs(sum - 1.0) < 1e-15);
-    }
-
     if(order == 4){
       // put a field on the mesh to make sure nothing fails
       int types[4] = {apf::Mesh::VERTEX, apf::Mesh::EDGE,
