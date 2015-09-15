@@ -158,6 +158,8 @@ class Mesh
     static int const typeDimension[TYPES];
     /** \brief name strings for apf::Mesh::Type */
     static char const* const typeName[TYPES];
+    /** \brief the simplex type for each dimension */
+    static Type const simplexTypes[4];
     /** \brief Returns the set of entities of one dimension adjacent to a
        given entity.
        \details prefer to use apf::Mesh::getDownward and apf::Mesh::getUp

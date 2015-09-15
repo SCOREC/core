@@ -133,6 +133,13 @@ char const* const Mesh::typeName[TYPES] =
  "pyramid"
 };
 
+Mesh::Type const Mesh::simplexTypes[4] =
+{Mesh::VERTEX
+,Mesh::EDGE
+,Mesh::TRIANGLE
+,Mesh::TET
+};
+
 void Mesh::init(FieldShape* s)
 {
   coordinateField = new VectorField();
