@@ -13,10 +13,19 @@
 
 namespace crv {
 
-/** \brief computes node index, use getTriPointIndex
- * (getTetPointIndex) to leverage tables */
-int computeTriPointIndex(int P, int i, int j);
-int computeTetPointIndex(int P, int i, int j, int k);
+/** \brief computes node index, use getTriNodeIndex
+ * (getTetNodeIndex) to leverage tables */
+int computeTriNodeIndex(int P, int i, int j);
+int computeTetNodeIndex(int P, int i, int j, int k);
+
+/** \brief computes nodes of face f from tet */
+void getTriNodesFromTetNodes(int f, int P,
+    apf::NewArray<apf::Vector3>& tetNodes,
+    apf::NewArray<apf::Vector3>& triNodes);
+/** \brief computes det(Jacobian) nodes of face f from tet */
+void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
+    apf::NewArray<double>& tetNodes,
+    apf::NewArray<double>& triNodes);
 
 /** \brief polynomial part of bernstein polynomial */
 double Bij(int i, int j,double u, double v);
@@ -81,7 +90,7 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
  If, in the future, new nodeXi are defined for interpolating Bezier curves,
  this function can be used to generate the A matrix to invert, as apf
  has no functionality for generic matrix inversion.*/
-void getTransformationMatrix(apf::FieldShape* fs, int type,
+void getTransformationMatrix(apf::Mesh2* m, apf::MeshEntity* e,
     apf::DynamicMatrix& A);
 
 }

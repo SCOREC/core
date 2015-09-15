@@ -38,14 +38,14 @@ class Matrix : public Array<Vector<N>,M>
     {
       for (std::size_t i=0; i < M; ++i)
       for (std::size_t j=0; j < N; ++j)
-        this->elements[i][j] = array[i][j];
+        (*this)[i][j] = array[i][j];
     }
     /** \brief add two matrices */
     Matrix<M,N> operator+(Matrix<M,N> const& b) const
     {
       Matrix<M,N> r;
       for (std::size_t i=0; i < M; ++i)
-        r.elements[i] = this->elements[i] + b.elements[i];
+        r[i] = (*this)[i] + b[i];
       return r;
     }
     /** \brief subtract two matrices */
@@ -53,7 +53,7 @@ class Matrix : public Array<Vector<N>,M>
     {
       Matrix<M,N> r;
       for (std::size_t i=0; i < M; ++i)
-        r.elements[i] = this->elements[i] - b.elements[i];
+        r[i] = (*this)[i] - b[i];
       return r;
     }
     /** \brief multiply a matrix by a scalar */
@@ -61,7 +61,7 @@ class Matrix : public Array<Vector<N>,M>
     {
       Matrix<M,N> r;
       for (std::size_t i=0; i < M; ++i)
-        r.elements[i] = this->elements[i] * s;
+        r[i] = (*this)[i] * s;
       return r;
     }
     /** \brief divide a matrix by a scalar */
@@ -69,7 +69,7 @@ class Matrix : public Array<Vector<N>,M>
     {
       Matrix<M,N> r;
       for (std::size_t i=0; i < M; ++i)
-        r.elements[i] = this->elements[i] / s;
+        r[i] = (*this)[i] / s;
       return r;
     }
     /** \brief multiply a matrix by a vector */
@@ -77,7 +77,7 @@ class Matrix : public Array<Vector<N>,M>
     {
       Vector<M> r;
       for (std::size_t i=0; i < M; ++i)
-        r[i] = this->elements[i] * b;
+        r[i] = (*this)[i] * b;
       return r;
     }
     /** \brief multiply two matrices
@@ -91,9 +91,9 @@ class Matrix : public Array<Vector<N>,M>
       for (std::size_t i=0; i < M; ++i)
       for (std::size_t j=0; j < O; ++j)
       {
-        r[i][j] = this->elements[i][0]*b[0][j];
+        r[i][j] = (*this)[i][0]*b[0][j];
         for (std::size_t k=1; k < N; ++k)
-          r[i][j] += this->elements[i][k]*b[k][j];
+          r[i][j] += (*this)[i][k]*b[k][j];
       }
       return r;
     }
@@ -179,9 +179,9 @@ class Matrix3x3 : public Matrix<3,3>
               double a21, double a22, double a23,
               double a31, double a32, double a33)
     {
-      this->elements[0] = Vector3(a11,a12,a13);
-      this->elements[1] = Vector3(a21,a22,a23);
-      this->elements[2] = Vector3(a31,a32,a33);
+      (*this)[0] = Vector3(a11,a12,a13);
+      (*this)[1] = Vector3(a21,a22,a23);
+      (*this)[2] = Vector3(a31,a32,a33);
     }
     /** \brief constructor from base type */
     Matrix3x3(Matrix<3,3> const& other):
@@ -193,7 +193,7 @@ class Matrix3x3 : public Matrix<3,3>
     {
       for (std::size_t i=0; i < 3; ++i)
       for (std::size_t j=0; j < 3; ++j)
-        array[i][j] = this->elements[i][j];
+        array[i][j] = (*this)[i][j];
     }
 };
 

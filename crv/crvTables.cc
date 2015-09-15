@@ -6,6 +6,8 @@
  */
 
 #include "crvTables.h"
+#include "apf.h"
+#include "apfMesh.h"
 
 namespace crv {
 
@@ -176,7 +178,7 @@ static unsigned const* const* const b3_4[5] =
 unsigned const* const* const* const b3[5] =
 {b3_0,b3_1,b3_2,b3_3,b3_4};
 
-int computeTriPointIndex(int P, int i, int j)
+int computeTriNodeIndex(int P, int i, int j)
 {
   int k = P-i-j;
   if(i == P) return 0;
@@ -188,7 +190,7 @@ int computeTriPointIndex(int P, int i, int j)
   return k*(P-1)-k*(k-1)/2+j+2*P;
 }
 
-int computeTetPointIndex(int P, int i, int j, int k)
+int computeTetNodeIndex(int P, int i, int j, int k)
 {
   int l = P-i-j-k;
   if(i == P) return 0;
@@ -211,21 +213,53 @@ int computeTetPointIndex(int P, int i, int j, int k)
 // publically accessible access
 // There is likely room for improvement, for example if a dynamic numbering
 // is called on the fly, compute it, store it, and then read it off the table
-int getTriPointIndex(int P, int i, int j)
+int getTriNodeIndex(int P, int i, int j)
 {
   // use a table if its small, otherwise dynamically generate it on the fly
   if(P <= 10)
     return crv::b2[P][i][j];
   else
-    return computeTriPointIndex(P,i,j);
+    return computeTriNodeIndex(P,i,j);
 }
 
-int getTetPointIndex(int P, int i, int j, int k)
+int getTetNodeIndex(int P, int i, int j, int k)
 {
   if(P <= 4)
     return crv::b3[P][i][j][k];
   else
-    return computeTetPointIndex(P,i,j,k);
+    return computeTetNodeIndex(P,i,j,k);
+}
+
+// f is face number, see apf::tet_tri_verts or other docs
+template <class T>
+static void getTriFromTet(int f, int P, apf::NewArray<T>& tetNodes,
+    apf::NewArray<T>& triNodes)
+{
+  int IJKL[4] = {0,0,0,0};
+  for (int i = 0; i <= P; ++i)
+    for (int j = 0; j <= P-i; ++j){
+      // one of I,J,K,L = 0
+      // one of I,J,K,L = P-i-j
+      IJKL[apf::tet_tri_verts[f][0]] = i;
+      IJKL[apf::tet_tri_verts[f][1]] = j;
+      IJKL[apf::tet_tri_verts[f][2]] = P-i-j;
+      triNodes[getTriNodeIndex(P,i,j)] =
+        tetNodes[getTetNodeIndex(P,IJKL[0],IJKL[1],IJKL[2])];
+    }
+}
+
+void getTriNodesFromTetNodes(int f, int P,
+    apf::NewArray<apf::Vector3>& tetNodes,
+    apf::NewArray<apf::Vector3>& triNodes)
+{
+  getTriFromTet(f,P,tetNodes,triNodes);
+}
+
+void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
+    apf::NewArray<double>& tetNodes,
+    apf::NewArray<double>& triNodes)
+{
+  getTriFromTet(f,P,tetNodes,triNodes);
 }
 
 static unsigned const tet_tri4_f0r0[3] = {0,1,2};

@@ -6,7 +6,6 @@
  */
 
 #include <math.h>
-#include <stdio.h>
 #include "crvBezier.h"
 #include "crvTables.h"
 /* see bezier.tex */

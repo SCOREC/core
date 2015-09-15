@@ -503,15 +503,16 @@ void testNodeIndexing(){
   for(int P = 1; P <= 10; ++P)
     for(int i = 0; i <= P; ++i)
       for(int j = 0; j <= P-i; ++j)
-        assert(crv::computeTriPointIndex(P,i,j)
-          == crv::getTriPointIndex(P,i,j));
+        assert(crv::computeTriNodeIndex(P,i,j)
+          == crv::getTriNodeIndex(P,i,j));
 
   for(int P = 1; P <= 4; ++P)
     for(int i = 0; i <= P; ++i)
       for(int j = 0; j <= P-i; ++j)
         for(int k = 0; k <= P-i-j; ++k)
-          assert(crv::computeTetPointIndex(P,i,j,k)
-            == crv::getTetPointIndex(P,i,j,k));
+          assert(crv::computeTetNodeIndex(P,i,j,k)
+            == crv::getTetNodeIndex(P,i,j,k));
+
 }
 
 int main(int argc, char** argv)

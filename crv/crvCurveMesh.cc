@@ -15,29 +15,19 @@ void MeshCurver::synchronize()
   apf::synchronize(m_mesh->getCoordinateField());
 }
 
-void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
+void MeshCurver::snapToInterpolate(apf::MeshEntity* e)
 {
+  int type = m_mesh->getType(e);
   apf::FieldShape * fs = m_mesh->getShape();
-  int non = fs->countNodesOn(apf::Mesh::EDGE);
-  apf::Vector3 p, xi, pt(0,0,0);
-  for(int i = 0; i < non; ++i){
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    fs->getNodeXi(apf::Mesh::EDGE,i,xi);
-    crv::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
-    m_mesh->snapToModel(g,p,pt);
-    m_mesh->setPoint(e,i,pt);
-  }
-}
-
-void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
-{
-  apf::FieldShape * fs = m_mesh->getShape();
-  int non = fs->countNodesOn(apf::Mesh::TRIANGLE);
+  int non = fs->countNodesOn(type);
   apf::Vector3 p, xi, pt;
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
-    fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-    transferParametricOnTriSplit(m_mesh,e,xi,p);
+    fs->getNodeXi(type,i,xi);
+    if(type == apf::Mesh::EDGE)
+      transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+    else
+      transferParametricOnTriSplit(m_mesh,e,xi,p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -45,19 +35,15 @@ void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
 
 void MeshCurver::snapToInterpolate(int dim)
 {
-  int t = (dim == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
   apf::MeshEntity* e;
   apf::Vector3 p, xi, pt;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) == m_spaceDim) continue;
-    if(m_mesh->isOwned(e)){
-      if(t == apf::Mesh::EDGE)
-        snapToInterpolateEdge(e);
-      else
-        snapToInterpolateTri(e);
-    }
+    if(m_mesh->isOwned(e))
+      snapToInterpolate(e);
+
   }
   m_mesh->end(it);
 }
@@ -86,7 +72,7 @@ void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
 bool InterpolatingCurver::run()
 {
   // interpolate points in each dimension
-  for(int d = 1; d < m_mesh->getDimension(); ++d)
+  for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
 
   synchronize();
@@ -107,7 +93,7 @@ bool BezierCurver::run()
   apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
-  for(int d = 1; d <= md; ++d)
+  for(int d = 1; d <= 2; ++d)
     snapToInterpolate(d);
 
   synchronize();
@@ -351,7 +337,7 @@ bool GregoryCurver::run()
   int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
 
   // interpolate points in each dimension
-  for(int d = 1; d < md; ++d)
+  for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
 
   synchronize();

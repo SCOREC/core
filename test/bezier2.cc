@@ -294,7 +294,7 @@ void test3D()
 {
   gmi_register_null();
 
-  for(int order = 1; order <= 4; ++order){
+  for(int order = 2; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     crv::setBlendingOrder(0);
@@ -342,9 +342,9 @@ void test3D()
     }
 
     m->acceptChanges();
-//  apf::MeshEntity* entities[6];
-//    crv::checkValidity(m,tet,entities);
-    // write the field
+    apf::MeshEntity* entities[14];
+    crv::checkTetValidity(m,tet,entities);
+
 //    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,20,"curved");
 
     m->destroyNative();

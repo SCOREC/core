@@ -10,25 +10,27 @@ if(BUILD_IN_TRILINOS)
   include(TribitsLibraryMacros)
   tribits_subpackage(Can) 
 else()
-   project(can)
+   project(mth)
 endif()
 
-set(CAN_INCLUDE_DIRS
+set(MTH_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CAN_LIBS)
+set(MTH_LIBS)
 
-set(CAN_HEADERS
-  canArray.h
-  canNewArray.h
+set(MTH_HEADERS
+  mth.h
+  mth_def.h
+  mthVector.h
+  mthMatrix.h
 )
 
 # THIS IS WHERE TRIBITS GETS HEADERS
-include_directories(${CAN_INCLUDE_DIRS})
+include_directories(${MTH_INCLUDE_DIRS})
 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/canConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/canConfig.cmake")
+    "${CMAKE_CURRENT_SOURCE_DIR}/mthConfig.cmake.in"
+    "${CMAKE_BINARY_DIR}/mthConfig.cmake")
 
 #pkgconfig {
 set(prefix "${CMAKE_INSTALL_PREFIX}")
@@ -36,14 +38,14 @@ set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
 set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
 set(includedir "${CMAKE_INSTALL_PREFIX}/include")
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libcan.pc.in"
-    "${PROJECT_BINARY_DIR}/libcan.pc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/libmth.pc.in"
+    "${PROJECT_BINARY_DIR}/libmth.pc"
     @ONLY)
 #pkgconfig }
 
 if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES ${CAN_HEADERS} DESTINATION include)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/libcan.pc" DESTINATION lib/pkgconfig)
+  INSTALL(FILES ${MTH_HEADERS} DESTINATION include)
+  INSTALL(FILES "${PROJECT_BINARY_DIR}/libmth.pc" DESTINATION lib/pkgconfig)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)

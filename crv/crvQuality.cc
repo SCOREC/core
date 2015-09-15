@@ -26,10 +26,10 @@ static double minAcceptable = 0.025;
 static double getTriPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
     int P, int i1, int j1, int i2, int j2)
 {
-  int p00 = getTriPointIndex(P,i1+1,j1);
-  int p01 = getTriPointIndex(P,i1,j1+1);
-  int p10 = getTriPointIndex(P,i2+1,j2);
-  int p11 = getTriPointIndex(P,i2,j2);
+  int p00 = getTriNodeIndex(P,i1+1,j1);
+  int p01 = getTriNodeIndex(P,i1,j1+1);
+  int p10 = getTriNodeIndex(P,i2+1,j2);
+  int p11 = getTriNodeIndex(P,i2,j2);
   return apf::cross(nodes[p01]-nodes[p00],
       nodes[p11]-nodes[p10])[2];
 }
@@ -38,12 +38,12 @@ static double getTetPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
     int P, int i1, int j1, int k1, int i2, int j2, int k2,
     int i3, int j3, int k3)
 {
-  int p00 = getTetPointIndex(P,i1+1,j1,k1);
-  int p01 = getTetPointIndex(P,i1,j1+1,k1);
-  int p10 = getTetPointIndex(P,i2+1,j2,k2);
-  int p11 = getTetPointIndex(P,i2,j2,k2+1);
-  int p20 = getTetPointIndex(P,i3+1,j3,k3);
-  int p21 = getTetPointIndex(P,i3,j3,k3);
+  int p00 = getTetNodeIndex(P,i1+1,j1,k1);
+  int p01 = getTetNodeIndex(P,i1,j1+1,k1);
+  int p10 = getTetNodeIndex(P,i2+1,j2,k2);
+  int p11 = getTetNodeIndex(P,i2,j2,k2+1);
+  int p20 = getTetNodeIndex(P,i3+1,j3,k3);
+  int p21 = getTetNodeIndex(P,i3,j3,k3);
   return apf::cross(nodes[p01]-nodes[p00],nodes[p11]-nodes[p10])
     *(nodes[p21]-nodes[p20]);
 }
@@ -142,7 +142,7 @@ static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
 {
   for (int I = 0; I <= 2*(P-1); ++I)
     for (int J = 0; J <= 2*(P-1)-I; ++J)
-      nodes[b2[2*(P-1)][I][J]] = Nijk(elemNodes,P,I,J);
+      nodes[getTriNodeIndex(2*(P-1),I,J)] = Nijk(elemNodes,P,I,J);
 
 }
 static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
@@ -150,7 +150,7 @@ static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
   for (int I = 0; I <= 3*(P-1); ++I)
     for (int J = 0; J <= 3*(P-1)-I; ++J)
       for (int K = 0; K <= 3*(P-1)-I-J; ++K)
-         nodes[b3[P][I][J][K]] = Nijkl(elemNodes,P,I,J,K);
+         nodes[getTetNodeIndex(3*(P-1),I,J,K)] = Nijkl(elemNodes,P,I,J,K);
 
 }
 static void getEdgeJacDet(int P, int iter, apf::NewArray<double>& nodes,
@@ -290,7 +290,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   if(numInvalid) return numInvalid;
   bool done = false;
   double minJ = -1e10;
-  for (int i = 0; i < (2*P-3)*(2*P-4); ++i){
+  for (int i = 0; i < (2*P-3)*(2*P-4)/2; ++i){
     if (nodes[6*(P-1)+i] < minAcceptable){
       getTriJacDet(2*(P-1),0,nodes,minJ,done);
       if(minJ < minAcceptable){
@@ -356,9 +356,71 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
   apf::destroyElement(elem);
+  // 9*P*P*(P-1)/2+P = (3(P-1)+1)(3(P-1)+2)(3(P-1)+3)/6
   apf::NewArray<double> nodes(9*P*P*(P-1)/2+P);
   getTetJacDetNodes(P,elemNodes,nodes);
-  return 0;
+
+  apf::MeshEntity* edges[6];
+  m->getDownward(e,1,edges);
+  // Vertices will already be flagged in the first check
+  for (int edge = 0; edge < 6; ++edge){
+    double minJ = -1e10;
+    for (int i = 0; i < 3*(P-1)-1; ++i){
+      if (nodes[4+edge*(3*(P-1)-1)+i] < minAcceptable){
+        apf::NewArray<double> edgeNodes(3*(P-1)+1);
+        edgeNodes[0] = nodes[apf::tet_edge_verts[edge][0]];
+        edgeNodes[3*(P-1)] = nodes[apf::tet_edge_verts[edge][1]];
+        for (int j = 0; j < 3*(P-1)-1; ++j)
+          edgeNodes[j+1] = nodes[4+edge*(3*(P-1)-1)+j];
+        // allows recursion stop on first "conclusive" invalidity
+        bool done = false;
+        getEdgeJacDet(3*(P-1),0,edgeNodes,minJ,done);
+        if(minJ < minAcceptable){
+          entities[numInvalid] = edges[edge];
+          numInvalid++;
+        }
+        break;
+      }
+    }
+  }
+
+  // This may be unnecessary, checking the interior of the shape
+  if(numInvalid) return numInvalid;
+
+  apf::MeshEntity* faces[4];
+  m->getDownward(e,2,faces);
+  for (int face = 0; face < 4; ++face){
+    double minJ = -1e10;
+    for (int i = 0; i < (2*P-3)*(2*P-4); ++i){
+      if (nodes[4+6*(3*(P-1))+face*(2*P-3)*(2*P-4)+i] < minAcceptable){
+        apf::NewArray<double> triNodes((3*P-2)*(3*P-1)/2);
+        getTriDetJacNodesFromTetDetJacNodes(face,3*(P-1),nodes,triNodes);
+        bool done = false;
+        getTriJacDet(3*(P-1),0,triNodes,minJ,done);
+        if(minJ < minAcceptable){
+          entities[numInvalid] = faces[face];
+          numInvalid++;
+        }
+        break;
+      }
+    }
+  }
+
+  // This may be unnecessary, checking the interior of the shape
+//  if(numInvalid) return numInvalid;
+//  bool done = false;
+//  double minJ = -1e10;
+//  for (int i = 0; i < (2*P-3)*(2*P-4); ++i){
+//    if (nodes[6*(P-1)+i] < minAcceptable){
+//      getTriJacDet(2*(P-1),0,nodes,minJ,done);
+//      if(minJ < minAcceptable){
+//        entities[numInvalid] = e;
+//        numInvalid++;
+//      }
+//      break;
+//    }
+//  }
+  return numInvalid;
 }
 
 double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,

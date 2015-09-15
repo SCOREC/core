@@ -38,9 +38,8 @@ class MeshCurver
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
 
-    /** \brief these two are a per entity version of above */
-    void snapToInterpolateEdge(apf::MeshEntity* e);
-    void snapToInterpolateTri(apf::MeshEntity* e);
+    /** \brief a per entity version of above */
+    void snapToInterpolate(apf::MeshEntity* e);
 
     /** \brief converts interpolating points to control points */
     void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
@@ -142,6 +141,8 @@ void setNurbsTriangleWeights(apf::NewArray<double>& weights);
  \details works only for prescribed optimal point locations */
 void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
+void getBlendedTransformationCoefficients(int P, int type,
+    apf::NewArray<double>& c);
 void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 
@@ -158,8 +159,8 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 
 /** \brief publically accessible functions */
-int getTriPointIndex(int P, int i, int j);
-int getTetPointIndex(int P, int i, int j, int k);
+int getTriNodeIndex(int P, int i, int j);
+int getTetNodeIndex(int P, int i, int j, int k);
 
 /** \brief binomial function n!/(i!(n-i)!) */
 int binomial(int n, int i);

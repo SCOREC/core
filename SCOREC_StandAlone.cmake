@@ -60,6 +60,8 @@ add_subdirectory(gmi)
 
 add_subdirectory(can)
 
+add_subdirectory(mth)
+
 add_subdirectory(apf)
 
 add_subdirectory(gmi_sim)
