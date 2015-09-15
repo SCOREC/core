@@ -90,7 +90,7 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
  If, in the future, new nodeXi are defined for interpolating Bezier curves,
  this function can be used to generate the A matrix to invert, as apf
  has no functionality for generic matrix inversion.*/
-void getTransformationMatrix(apf::FieldShape* fs, int type,
+void getTransformationMatrix(apf::Mesh2* m, apf::MeshEntity* e,
     apf::DynamicMatrix& A);
 
 }

@@ -53,7 +53,7 @@ T trace(Matrix<T,M,M> const& a)
 }
 
 template <class T, unsigned M>
-T det(Matrix<T,M,M> const& a)
+T determinant(Matrix<T,M,M> const& a)
 {
   unsigned m = a.rows();
   unsigned n = a.cols();
@@ -99,7 +99,7 @@ Matrix<T,M,M> inverse(Matrix<T,M,M> const& a)
 }
 
 template <class T, unsigned M>
-Matrix<T,M,M> dev(Matrix<T,M,M> const& a)
+Matrix<T,M,M> deviatoric(Matrix<T,M,M> const& a)
 {
   unsigned m = a.rows();
   unsigned n = a.cols();
