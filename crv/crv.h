@@ -145,6 +145,8 @@ void getBlendedTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
+void getGregoryBlendedTransformationCoefficients(int P, int type,
+    apf::NewArray<double>& c);
 
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
