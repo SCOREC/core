@@ -145,6 +145,8 @@ namespace chef {
       ph::goToStepDir(in.timeStepNumber);
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
     afterSplit(m,in,out,bcs,numMasters);
+    if (in.adaptFlag)
+      ph::goToParentDir();
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
