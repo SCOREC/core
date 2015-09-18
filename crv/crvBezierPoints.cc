@@ -21,6 +21,25 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
       0.469821,0.8388042};
   static double* edgePoints[6] =
   {eP2, eP2, eP3, eP4, eP5, eP6 };
+  static apf::Vector3 nodes5[6] =
+  {apf::Vector3(0.15251715,0.15251715,0.6949657),
+   apf::Vector3(0.4168658,0.1662684,0.4168658),
+   apf::Vector3(0.6949657,0.15251715,0.15251715),
+   apf::Vector3(0.1662684,0.4168658,0.4168658),
+   apf::Vector3(0.4168658,0.4168658,0.1662684),
+   apf::Vector3(0.15251715,0.6949657,0.15251715)};
+  static apf::Vector3 nodes6[10] =
+  {apf::Vector3(0.10971385,0.10971385,0.7805723),
+   apf::Vector3(0.3157892,0.1256031,0.5586077),
+   apf::Vector3(0.5586077,0.1256031,0.3157892),
+   apf::Vector3(0.7805723,0.10971385,0.10971385),
+   apf::Vector3(0.1256031,0.3157892,0.5586077),
+   apf::Vector3(1./3.,1./3.,1./3.),
+   apf::Vector3(0.5586077,0.3157892,0.1256031),
+   apf::Vector3(0.1256031,0.5586077,0.3157892),
+   apf::Vector3(0.3157892,0.5586077,0.1256031),
+   apf::Vector3(0.10971385,0.7805723,0.10971385)};
+
   switch (type) {
   case apf::Mesh::EDGE:
     xi[0] = edgePoints[P-1][node];
@@ -40,27 +59,9 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
       xi[(node+1) % 3] = 0.22088805;
       break;
     case 5:
-      static apf::Vector3 nodes5[6] =
-      {apf::Vector3(0.15251715,0.15251715,0.6949657),
-       apf::Vector3(0.4168658,0.1662684,0.4168658),
-       apf::Vector3(0.6949657,0.15251715,0.15251715),
-       apf::Vector3(0.1662684,0.4168658,0.4168658),
-       apf::Vector3(0.4168658,0.4168658,0.1662684),
-       apf::Vector3(0.15251715,0.6949657,0.15251715)};
       xi = nodes5[node];
       break;
     case 6:
-      static apf::Vector3 nodes6[10] =
-      {apf::Vector3(0.10971385,0.10971385,0.7805723),
-       apf::Vector3(0.3157892,0.1256031,0.5586077),
-       apf::Vector3(0.5586077,0.1256031,0.3157892),
-       apf::Vector3(0.7805723,0.10971385,0.10971385),
-       apf::Vector3(0.1256031,0.3157892,0.5586077),
-       apf::Vector3(1./3.,1./3.,1./3.),
-       apf::Vector3(0.5586077,0.3157892,0.1256031),
-       apf::Vector3(0.1256031,0.5586077,0.3157892),
-       apf::Vector3(0.3157892,0.5586077,0.1256031),
-       apf::Vector3(0.10971385,0.7805723,0.10971385)};
       xi = nodes6[node];
       break;
     }
