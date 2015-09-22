@@ -38,7 +38,7 @@ Element::~Element()
 {
 }
 
-static Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
+Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
 {
   switch (dim) {
 /* this routine computes the Moore-Penrose pseudo-inverse

@@ -409,6 +409,15 @@ int getOrder(MeshElement* e);
   */
 void getJacobian(MeshElement* e, Vector3 const& local, Matrix3x3& j);
 
+/** \brief Returns the Jacobian inverse at a local point
+  *
+  * \details computes the Moore-Penrose psuedo-inverse of J. This is needed
+  * to handle non-square Jacobians that arise from edges embedded in 2D or
+  * higher and faces embeded in 3D. If J is invertible, the Moore-Penrose
+  * inverse equals the inverse.
+  */
+void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv);
+
 /** \brief Returns the number of element nodes.
   *
   * \details This is the number of nodes affecting an
@@ -439,6 +448,7 @@ void getShapeValues(Element* e, Vector3 const& local,
   */
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads);
+
 
 /** \brief Retrieve the apf::FieldShape used by a field
   */
@@ -576,6 +586,23 @@ void projectField(Field* to, Field* from);
 void axpy(double a, Field* x, Field* y);
 
 void renameField(Field* f, const char* name);
+
+/** \brief Get the basis functions over a mesh element
+  * 
+  * \param s the field shape that defines the basis functions
+  * \param e the mesh element over which the basis functions are defined
+  * \param p the local coordinates at which the basis functions are evaluated
+  * \param BF nodal array of basis functions evaluated at p
+  */
+void getBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<double>& BF);
+
+/** \brief Get global gradients of basis functions over a mesh element
+  *
+  * \param gradBF nodal array of gradients of basis functions evaluated at p
+  */
+void getGradBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<Vector3>& gradBF);
 
 }
 
