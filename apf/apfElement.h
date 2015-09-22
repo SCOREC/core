@@ -46,6 +46,8 @@ class Element
     NewArray<double> nodeData;
 };
 
+Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim);
+
 }//namespace apf
 
 #endif
