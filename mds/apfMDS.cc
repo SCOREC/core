@@ -97,6 +97,9 @@ static int apf2mds(int t_apf)
 class MeshMDS : public Mesh2
 {
   public:
+    MeshMDS()
+    {
+    }
     MeshMDS(gmi_model* m, int d, bool isMatched_)
     {
       init(apf::getLagrange(1));
@@ -757,6 +760,23 @@ void hackMdsAdjacency(Mesh2* in, MeshEntity* up, int i, MeshEntity* down)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   mds_hack_adjacent(&m->mesh->mds, fromEnt(up), i, fromEnt(down));
+}
+
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
+{
+  MeshMDS* m = new MeshMDS();
+  m->init(apf::getLagrange(1));
+  m->mesh = mds_read_smb(model, meshfile, 1);
+  m->isMatched = false;
+  m->ownsModel = true;
+  initResidence(m, m->getDimension());
+  return m;
+}
+
+void writeMdsPart(Mesh2* in, const char* meshfile)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  m->mesh = mds_write_smb(m->mesh, meshfile, 1);
 }
 
 }

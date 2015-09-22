@@ -643,7 +643,8 @@ static void append(char* s, size_t size, const char* format, ...)
 
 #define SMB_FANOUT 2048
 
-static char* handle_path(const char* in, int is_write, int* zip)
+static char* handle_path(const char* in, int is_write, int* zip,
+    int ignore_peers)
 {
   static const char* zippre = "bz2:";
   static const char* smbext = ".smb";
@@ -660,6 +661,8 @@ static char* handle_path(const char* in, int is_write, int* zip)
   } else {
     *zip = 0;
   }
+  if (ignore_peers)
+    return path;
   if (ends_with(path, "/")) {
     if (is_write) {
       if (!self)
@@ -689,7 +692,7 @@ struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
   char* filename;
   int zip;
   struct mds_apf* m;
-  filename = handle_path(pathname, 0, &zip);
+  filename = handle_path(pathname, 0, &zip, ignore_peers);
   m = read_smb(model, filename, zip, ignore_peers);
   free(filename);
   return m;
@@ -707,14 +710,13 @@ static int is_compact(struct mds_apf* m)
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
     int ignore_peers)
 {
-  fprintf(stderr, "mds_write_smb\n");
   char* filename;
   int zip;
   if (ignore_peers && (!is_compact(m)))
     m = mds_reorder(m, 1);
   if ((!ignore_peers) && PCU_Or(!is_compact(m)))
     m = mds_reorder(m, 0);
-  filename = handle_path(pathname, 1, &zip);
+  filename = handle_path(pathname, 1, &zip, ignore_peers);
   write_smb(m, filename, zip, ignore_peers);
   free(filename);
   return m;
