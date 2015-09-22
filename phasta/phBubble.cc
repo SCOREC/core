@@ -18,7 +18,6 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles)
 {
-//  unsigned long bubblecount = 0; //May be used later but the bubble id has to be read for now from the input file
   char bubblefname[256];
   FILE *filebubble;
   Bubble readbubble;
@@ -31,25 +30,20 @@ void readBubbles(Bubbles& bubbles)
   assert(filebubble != NULL); 
   while(1)
   {
-    // File format (each line represents a bubble): x_center y_center z_center radius
-    fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id, &readbubble.center[0], &readbubble.center[1], &readbubble.center[2], &readbubble.radius);
-    if(feof(filebubble)) break;
-//    bubblecount++;
-//    readbubble.id = bubblecount;
+    // File format (each line represents a bubble):
+    // x_center y_center z_center radius
+    int ret = fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id,
+        &readbubble.center[0], &readbubble.center[1], &readbubble.center[2],
+        &readbubble.radius);
+    assert(ret == 5);
+    if (feof(filebubble))
+      break;
     bubbles.push_back(readbubble);
   }
   fclose(filebubble);
 
   if (!PCU_Comm_Self())
     printf("%lu bubbles found in %s\n", bubbles.size(), bubblefname);
-
-// Debug
-/*
-  for(unsigned long i=0; i<bubbles.size(); i++)
-  {
-    printf("%d %lf %lf %lf %lf\n", bubbles[i].id, bubbles[i].center[0], bubbles[i].center[1], bubbles[i].center[2], bubbles[i].radius);
-  }
-*/
 
 }
 
@@ -73,25 +67,20 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
     distx = (v_center[0]-bubbles[i].center[0]);
     disty = (v_center[1]-bubbles[i].center[1]);
     distz = (v_center[2]-bubbles[i].center[2]);
-    tmpdist = sqrt(distx*distx + disty*disty + distz*distz) - bubbles[i].radius;
+    tmpdist = sqrt(distx*distx + disty*disty + distz*distz)
+            - bubbles[i].radius;
     if(tmpdist < distance)
     {
       distance = tmpdist;
       if (distance < 0) 
       {
         bubbleid = bubbles[i].id;
-        break; //if v is inside a bubble, stop searching since bubbles should not intersect each other
+        break;
+        //if v is inside a bubble, stop searching since
+        //bubbles should not intersect each other
       }
-      // A negative bubble id could be useful to know the nearest bubble of a point in the liquid phase.
-      // However, phasta is not ready to handle this and the feature is not critical so ignore for now.
-      // Ths can be pratical for debug purpose though.
-//      else
-//        bubbleid = -bubbles[i].id;    
     }
   }
-
-//  debug
-//   printf("coord: %lf %lf %lf - Dist: %lf - Bubble id: %d\n", coord[0], coord[1], coord[2], distance, bubbleid);
 
   sol[5] = distance;
   sol[6] = static_cast<double>(bubbleid);
