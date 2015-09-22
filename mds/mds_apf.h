@@ -49,14 +49,16 @@ void mds_apf_destroy_entity(struct mds_apf* m, mds_id e);
 void* mds_get_part(struct mds_apf* m, mds_id e);
 void mds_set_part(struct mds_apf* m, mds_id e, void* p);
 
-struct mds_apf* mds_reorder(struct mds_apf* m);
+struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers);
 
 struct gmi_ent* mds_find_model(struct mds_apf* m, int dim, int id);
 int mds_model_dim(struct mds_apf* m, struct gmi_ent* model);
 int mds_model_id(struct mds_apf* m, struct gmi_ent* model);
 
-struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname);
-struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname);
+struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
+    int ignore_peers);
+struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
+    int ignore_peers);
 
 void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
