@@ -29,6 +29,7 @@ int main(int argc, char** argv)
     apf::number(cdn, v, 0, 0, m->getModelType(g));
     apf::number(cin, v, 0, 0, m->getModelTag(g));
   }
+  m->end(it);
   apf::writeVtkFiles(argv[3], m);
   m->destroyNative();
   apf::destroyMesh(m);
