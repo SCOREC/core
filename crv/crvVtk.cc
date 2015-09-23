@@ -328,7 +328,7 @@ static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
 
   apf::Matrix3x3 J;
   double detJ;
-
+  bool isValid = true;
   while ((e = m->iterate(it))) {
     if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TRIANGLE) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
@@ -343,14 +343,15 @@ static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
           detJ = J[0][0]*J[1][1]-J[1][0]*J[0][1];
         }
         file << detJ << '\n';
-        if(detJ < 0.){
+        if(isValid && detJ < 0.){
           apf::Vector3 pt;
           apf::getVector((apf::Element*)me,p,pt);
           std::stringstream ss;
           ss << "warning: Tri Jacobian Determinant is negative,  " << detJ
-              << " at " << pt << '\n';
+             << '\n';
           std::string s = ss.str();
           fprintf(stderr, "%s", s.c_str());
+          isValid = false;
         }
       }
     }
@@ -392,6 +393,7 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   apf::NewArray<double> values;
   apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
 
+  bool isValid = true;
   while ((e = m->iterate(it))) {
     if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TET) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
@@ -409,15 +411,15 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
 
             apf::getJacobian(me,p,J);
             double detJ = apf::getDeterminant(J);
-            if(detJ < 0.){
+            if(isValid && detJ < 0.){
               apf::Vector3 pt;
               apf::getVector((apf::Element*)me,p,pt);
               std::stringstream ss;
               ss << "warning: Tet Jacobian Determinant is negative,  " << detJ
-                 << " at " << pt << "for " << m->getShape()->getOrder()
-                 << " order method\n";
+                 << '\n';
               std::string s = ss.str();
               fprintf(stderr, "%s", s.c_str());
+              isValid = false;
             }
             file << detJ << '\n';
           }

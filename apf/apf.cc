@@ -300,6 +300,13 @@ void getJacobian(MeshElement* e, Vector3 const& local, Matrix3x3& j)
   e->getJacobian(local,j);
 }
 
+void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv)
+{
+  Matrix3x3 j;
+  getJacobian(e, local, j);
+  jinv = getJacobianInverse(j, e->getDimension());
+}
+
 int countNodes(Element* e)
 {
   return e->getShape()->countNodes();
@@ -422,6 +429,37 @@ void renameField(Field* f, const char* name)
   Mesh* m = f->getMesh();
   assert( ! m->findField(name));
   f->rename(name);
+}
+
+/* bng: the two functions below are kind of incosistent with
+   the others in this file (too long). can we stick their
+   guts in a better place? */
+void getBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<double>& BF)
+{
+  Mesh* m = e->getMesh();
+  MeshEntity* ent = getMeshEntity(e);
+  Mesh::Type t = m->getType(ent);
+  EntityShape* es = s->getEntityShape(t);
+  es->getValues(m, ent, p, BF);
+}
+
+void getGradBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<Vector3>& gradBF)
+{
+  Mesh* m = e->getMesh();
+  MeshEntity* ent = getMeshEntity(e);
+  Mesh::Type t = m->getType(ent);
+  EntityShape* es = s->getEntityShape(t);
+  Matrix3x3 jinv;
+  getJacobianInv(e, p, jinv);
+  NewArray<Vector3> gbf;
+  es->getLocalGradients(m, ent, p, gbf);
+  int nen = es->countNodes(); 
+  gradBF.allocate(nen);
+  for (int i=0; i < nen; ++i)
+    gradBF[i] = jinv * gbf[i];
+
 }
 
 }//namespace apf

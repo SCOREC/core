@@ -97,6 +97,9 @@ static int apf2mds(int t_apf)
 class MeshMDS : public Mesh2
 {
   public:
+    MeshMDS()
+    {
+    }
     MeshMDS(gmi_model* m, int d, bool isMatched_)
     {
       init(apf::getLagrange(1));
@@ -126,7 +129,7 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, const char* pathname)
     {
       init(apf::getLagrange(1));
-      mesh = mds_read_smb(m, pathname);
+      mesh = mds_read_smb(m, pathname, 0);
       isMatched = PCU_Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
     }
@@ -424,7 +427,7 @@ class MeshMDS : public Mesh2
     void writeNative(const char* fileName)
     {
       double t0 = PCU_Time();
-      mesh = mds_write_smb(mesh, fileName);
+      mesh = mds_write_smb(mesh, fileName, 0);
       double t1 = PCU_Time();
       if (!PCU_Comm_Self())
         printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
@@ -623,7 +626,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 void reorderMdsMesh(Mesh2* mesh)
 {
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  m->mesh = mds_reorder(m->mesh);
+  m->mesh = mds_reorder(m->mesh, 0);
 }
 
 static int globalFactor;
@@ -757,6 +760,23 @@ void hackMdsAdjacency(Mesh2* in, MeshEntity* up, int i, MeshEntity* down)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   mds_hack_adjacent(&m->mesh->mds, fromEnt(up), i, fromEnt(down));
+}
+
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
+{
+  MeshMDS* m = new MeshMDS();
+  m->init(apf::getLagrange(1));
+  m->mesh = mds_read_smb(model, meshfile, 1);
+  m->isMatched = false;
+  m->ownsModel = true;
+  initResidence(m, m->getDimension());
+  return m;
+}
+
+void writeMdsPart(Mesh2* in, const char* meshfile)
+{
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  m->mesh = mds_write_smb(m->mesh, meshfile, 1);
 }
 
 }
