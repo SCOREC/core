@@ -1,5 +1,6 @@
 #ifndef PHSTREAM_EMPTY_H_
 #define PHSTREAM_EMPTY_H_
+#include <stdio.h>
 struct RStream;
 struct GRStream;
 /** @brief open restart stream for reading*/

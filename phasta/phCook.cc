@@ -20,12 +20,6 @@
 
 namespace {
 
-void freeMesh(apf::Mesh* m)
-{
-  m->destroyNative();
-  apf::destroyMesh(m);
-}
-
 void afterSplit(apf::Mesh2* m, ph::Input& in, ph::Output& out,
     ph::BCs& bcs, int numMasters)
 {

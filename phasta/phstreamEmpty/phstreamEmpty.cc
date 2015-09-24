@@ -1,13 +1,16 @@
 #include "phstream.h" 
-void* fail(const char* f) {
+#include <stdlib.h>
+void fail(const char* f) {
   fprintf(stderr, 
     "ERROR: function %s is disabled - compile with chefPhasta\n", f);
-  return NULL;
+  exit(EXIT_FAILURE);
 }
 FILE* openRStreamRead(RStream*) {
-  return fail(__func__);
+  fail(__func__);
+  return NULL;
 }
 FILE* openGRStreamWrite(GRStream*, const char*) {
-  return fail(__func__);
+  fail(__func__);
+  return NULL;
 }
 

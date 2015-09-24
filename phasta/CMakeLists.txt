@@ -36,7 +36,7 @@ if(PHASTA_CHEF_ENABLED)
   set(DEP_LIBS ${DEP_LIBS} phstream)
   set(PH_INCLUDE_DIRS ${PH_INCLUDE_DIRS} ${PHASTACHEF_SOURCE_DIR}/phstream)
 else()
-  set(SOURCES ${SOURCES} phstreamEmpty/phsEmpty.cc)
+  set(SOURCES ${SOURCES} phstreamEmpty/phstreamEmpty.cc)
   set(PH_INCLUDE_DIRS ${PH_INCLUDE_DIRS} phstreamEmpty)
 endif()
 
