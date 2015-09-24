@@ -12,6 +12,8 @@
 #include <PCU.h>
 #include <cassert>
 
+#error "recompile with ENABLE_THREADS=OFF. blame Cameron"
+
 ph::Input* globalInput;
 ph::BCs* globalBCs;
 int globalPeers;
