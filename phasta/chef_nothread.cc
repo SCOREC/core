@@ -111,6 +111,23 @@ int main(int argc, char** argv)
   ph::Input in;
   ph::BCs bcs;
   loadCommon(in, bcs, g);
+
+/*
+ apf::Vector3 x0;
+ apf::Vector3 x1;
+ x0[0] = 0.09; x0[1] = 0.05; x0[2] = 0.0;
+ x1[0] = 0.11; x1[1] = 0.05; x1[2] = 0.0;
+
+ std::cerr << "ph::BCs struct:\n";
+  APF_ITERATE(ph::BCs::Map, bcs.fields, it) {
+    std::cerr << it->first << '\n';
+    APF_ITERATE(ph::FieldBCs::Set, it->second.bcs, it2)
+      std::cerr << (*it2)->dim << ", " << (*it2)->tag << "," << *(*it2)->eval(x0) << "," << *(*it2)->eval(x1) << '\n';
+  }
+ */
+
+
+
   const int worldRank = PCU_Comm_Self();
   switchToMasters(in.splitFactor);
   const int numMasters = PCU_Comm_Peers();

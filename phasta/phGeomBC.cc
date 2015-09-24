@@ -62,13 +62,51 @@ void getInterfaceConnectivity
   assert(i == c.getSize());
 }
 
-void getMaterial
+void getInteriorMaterialType
 (
   Output& o, 
   int block, 
   apf::DynamicArray<int>& c
 )
 {
+  int nelem = o.blocks.interior.nElements[block];
+  c.setSize(nelem);
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem)
+    c[i++] = o.arrays.mattype[block][elem];
+  assert(i == c.getSize());
+}
+
+void getBoundaryMaterialType
+(
+  Output& o, 
+  int block, 
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.boundary.nElements[block];
+  c.setSize(nelem);
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem)
+    c[i++] = o.arrays.mattypeb[block][elem];
+  assert(i == c.getSize());
+}
+
+void getInterfaceMaterialType
+(
+  Output& o, 
+  int block, 
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.interface.nElements[block];
+  c.setSize(2*nelem);
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem) 
+    c[i++] = o.arrays.mattypeif0[block][elem];
+  for (int elem = 0; elem < nelem; ++elem) 
+    c[i++] = o.arrays.mattypeif1[block][elem];
+  assert(i == c.getSize());
 }
 
 void getNaturalBCCodes(Output& o, int block, apf::DynamicArray<int>& codes)
@@ -143,6 +181,9 @@ void writeBlocks(FILE* f, Output& o)
     fillBlockKeyParams(params, k);
     getInteriorConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 7, params);
+    phrase = getBlockKeyPhrase(k, "material type interior ");
+    getInteriorMaterialType(o, i, c);
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
@@ -152,6 +193,9 @@ void writeBlocks(FILE* f, Output& o)
     params[7] = countNaturalBCs(*o.in);
     getBoundaryConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 8, params);
+    phrase = getBlockKeyPhrase(k, "material type boundary ");
+    getBoundaryMaterialType(o, i, c);
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
     phrase = getBlockKeyPhrase(k, "nbc codes ");
     apf::DynamicArray<int> codes;
     getNaturalBCCodes(o, i, codes);
@@ -168,15 +212,12 @@ void writeBlocks(FILE* f, Output& o)
     fillBlockKeyInterfaceParams(params, k);
     getInterfaceConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 9, params);
+    phrase = getBlockKeyPhraseInterface(k, "material type interface ");
+    getInterfaceMaterialType(o, i, c);
+    params[1] = 2; // number of materials
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 2, params); 
   }
-/*
-  for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
-    std::string phrase = "material type";
-    params[0] = o.blocks.interior.nElements[i];
-    getMaterial(o, i, c);
-    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
-  }
- */
+
 }
 
 static void writeInt(FILE* f, const char* name, int i)
