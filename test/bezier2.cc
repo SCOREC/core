@@ -105,7 +105,7 @@ void edge0(double const p[2], double x[3], void*)
 }
 void edge1(double const p[2], double x[3], void*)
 {
-  x[0] = 1.0-2.5*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
+  x[0] = 1.0-5.0*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
   x[1] = p[0];
 }
 void edge2(double const p[2], double x[3], void*)
@@ -223,9 +223,9 @@ void checkValidity(apf::Mesh* m, int order)
     apf::MeshEntity* entities[3];
     int numInvalid = crv::checkTriValidity(m,e,entities);
     if(iEntity == 0){
-      assert((numInvalid && order > 3) || (!numInvalid && order <= 3));
-    } else {
-      assert(!numInvalid);
+      assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+    } else if(iEntity == 1){
+      assert(numInvalid == 0);
     }
     iEntity++;
     break;
@@ -241,25 +241,40 @@ void test2D()
       apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::BezierCurver bc(m,order,0);
       crv::setBlendingOrder(0);
-
+      // creates interpolation points based on the edges of the geometry
       bc.snapToInterpolate(1);
       apf::FieldShape* fs = m->getShape();
 
       // go downward, and convert interpolating to control points
-      for(int d = 2; d >= 1; --d){
-        int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
-        int ne = fs->countNodesOn(d);
+      {
+        int n = order+1;
+        int ne = fs->countNodesOn(apf::Mesh::EDGE);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(order,d,c);
+        crv::getTransformationCoefficients(order,apf::Mesh::EDGE,c);
         apf::MeshEntity* e;
-        apf::MeshIterator* it = m->begin(d);
+        apf::MeshIterator* it = m->begin(1);
         while ((e = m->iterate(it))) {
           bc.convertInterpolationPoints(e,n,ne,c);
         }
         m->end(it);
       }
-
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,100,"curved");
+      if(fs->hasNodesIn(2)) {
+        int n = (order+1)*(order+2)/2;
+        int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
+        apf::NewArray<double> c;
+        crv::getBlendedTransformationCoefficients(order,
+            apf::Mesh::TRIANGLE,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(2);
+        while ((e = m->iterate(it))){
+          bc.convertInterpolationPoints(e,n-ne,ne,c);
+        }
+        m->end(it);
+      }
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
+//
+//      crv::writeControlPointVtuFiles(m,"curved");
 
       testJacobian(m);
       testEdgeGradients(m);
@@ -314,8 +329,9 @@ void test3D()
       }
       m->end(it);
     }
-    // get face 2
 
+
+    // get face 2
     apf::MeshIterator* it = m->begin(3);
     apf::MeshEntity* tet = m->iterate(it);
     m->end(it);
