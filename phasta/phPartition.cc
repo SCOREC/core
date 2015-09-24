@@ -82,8 +82,6 @@ void clearTags(apf::Mesh* m, apf::MeshTag* t) {
   apf::removeTagFromDimension(m, t, m->getDimension());
 }
 
-//TODO pass in the input object so the element and vertex imbalance tolerances
-//can be used
 void balance(Input& in, apf::Mesh2* m)
 {
   bool fineStats=false; // set to true for per part stats
