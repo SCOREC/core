@@ -9,7 +9,10 @@ set(PH_INCLUDE_DIRS
 set(DEP_LIBS ${MA_LIBS} ${MDS_LIBS})
 set(PH_LIBS ph ${DEP_LIBS})
 
+set(HEADERS chef.h)
+
 set(SOURCES
+  phCook.cc
   ph.cc
   phAdjacent.cc
   phOutput.cc
@@ -28,6 +31,14 @@ set(SOURCES
   phFilterMatching.cc
   phAxisymmetry.cc
   phInterfaceCutter.cc)
+
+if(PHASTA_CHEF_ENABLED)
+  set(DEP_LIBS ${DEP_LIBS} phstream)
+  set(PH_INCLUDE_DIRS ${PH_INCLUDE_DIRS} ${PHASTACHEF_SOURCE_DIR}/phstream)
+else()
+  set(SOURCES ${SOURCES} phstreamEmpty/phsEmpty.cc)
+  set(PH_INCLUDE_DIRS ${PH_INCLUDE_DIRS} phstreamEmpty)
+endif()
 
 include_directories(${PH_INCLUDE_DIRS})
 
