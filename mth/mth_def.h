@@ -11,11 +11,31 @@
 #ifndef MTH_DEF_H
 #define MTH_DEF_H
 
-#include <cstdio>
 #include <cassert>
-#include <iostream>
 
 namespace mth {
+
+template <class T>
+Vector3<T> cross(Vector3<T> const& a, Vector3<T> const& b)
+{
+  Vector3<T> r;
+  r[0] = a[1]*b[2] - a[2]*b[1];
+  r[1] = a[2]*b[0] - a[0]*b[2];
+  r[2] = a[0]*b[1] - a[1]*b[0];
+  return r;
+}
+
+template <class T, unsigned N>
+Vector<T,N> project(Vector<T,N> const& a, Vector<T,N> const& b)
+{
+  return b*((a*b)/(b*b));
+}
+
+template <class T, unsigned N>
+Vector<T,N> reject(Vector<T,N> const& a, Vector<T,N> const& b)
+{
+  return a - project(a, b);
+}
 
 template <class T, unsigned M>
 Matrix<T,M,M> eye(unsigned m)
@@ -122,17 +142,6 @@ T norm(Matrix<T,M,N> const& a)
   for (unsigned j=0; j < n; ++j)
     r += a(i,j)*a(i,j);
   return sqrt(r);
-}
-
-template <class T, unsigned M, unsigned N>
-void print(Matrix<T,M,N> const& a)
-{
-  for (unsigned i=0; i < a.rows(); ++i) {
-   for (unsigned j=0; j < a.cols(); ++j)
-     std::cout << a(i,j) << " ";
-   std::cout << std::endl;
-  }
-  std::cout << std::endl;
 }
 
 }

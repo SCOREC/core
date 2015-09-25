@@ -20,6 +20,18 @@
   * \brief All MTH functions are contained in this header */
 namespace mth {
 
+/** \brief returns vector cross product */
+template <class T>
+Vector3<T> cross(Vector3<T> const& a, Vector3<T> const& b);
+
+/** \brief returns vector a projected onto vector b */
+template <class T, unsigned N>
+Vector<T,N> project(Vector<T,N> const& a, Vector<T,N> const& b);
+
+/** \brief vector rejection */
+template <class T, unsigned N>
+Vector<T,N> reject(Vector<T,N> const& a, Vector<T,N> const& b);
+
 /** \brief return an m by m static or dynamic identity matrix */
 template <class T, unsigned M>
 Matrix<T,M,M> eye(unsigned m);
@@ -49,11 +61,6 @@ Matrix<T,M,M> deviatoric(Matrix<T,M,M> const& a);
 /** \brief get the Frobenius norm of a static or dynamic matrix */
 template <class T, unsigned M, unsigned N>
 T norm(Matrix<T,N,N> const& a);
-
-/** \brief print a matrix
-  * \details Use with caution if you've created a huge matrix */
-template <class T, unsigned M, unsigned N>
-void print(Matrix<T,M,N> const& a);
 
 }
 
