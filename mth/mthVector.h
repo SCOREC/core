@@ -13,6 +13,7 @@
 
 #include "canArray.h"
 #include <cmath>
+#include <ostream>
 
 /** \file mthVector.h
   * \brief Small compile-time and run-time linear algebra vectors. */
@@ -40,6 +41,12 @@ class Vector : public can::Array<T,N>
       for (unsigned i=0; i < N; ++i)
         (*this)[i] = v[i];
     }
+    /** \brief mutable index operator
+      * \details An index operator (i) is provided so that
+      * mth::Vector and mth::Matrix share a common index operator */
+    T& operator()(unsigned i) {return (*this[i]);}
+    /** \brief immutable index operator */
+    T const& operator()(unsigned i) const {return (*this[i]);}
     /** \brief add a vector to this vector */
     Vector<T,N>& operator+=(Vector<T,N> const& b)
     {
@@ -129,6 +136,12 @@ class Vector<T,0> : public can::Array<T,0>
     Vector() {}
     /** \brief construct with n elements */
     Vector(unsigned n) : can::Array<T>(n) {}
+    /** \brief mutable index operator
+      * \details An index operator (i) is provided so that
+      *  mth::Vector and mth::Matrix share a common index operator */
+    T& operator()(unsigned i) {return (*this[i]);}
+    /** \brief immutable index operator */
+    T const& operator()(unsigned i) const {return (*this[i]);}
     /** \brief add a vector to this vector */
     Vector<T,0>& operator+=(Vector<T,0> const& b)
     {
@@ -221,6 +234,15 @@ class Vector3 : public Vector<T,3>
     T const& z() const {return (*this)[2];}
 };
 
+}
+
+template <class T, unsigned N>
+std::ostream& operator<<(std::ostream& s, mth::Vector<T,N> const& a)
+{
+  for (unsigned i=0; i < a.size(); ++i)
+    s << a[i] << ' ';
+  s << '\n';
+  return s;
 }
 
 #endif
