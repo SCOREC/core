@@ -44,9 +44,9 @@ class Vector : public can::Array<T,N>
     /** \brief mutable index operator
       * \details An index operator (i) is provided so that
       * mth::Vector and mth::Matrix share a common index operator */
-    T& operator()(unsigned i) {return (*this[i]);}
+    T& operator()(unsigned i) {return (*this)[i];}
     /** \brief immutable index operator */
-    T const& operator()(unsigned i) const {return (*this[i]);}
+    T const& operator()(unsigned i) const {return (*this)[i];}
     /** \brief add a vector to this vector */
     Vector<T,N>& operator+=(Vector<T,N> const& b)
     {
@@ -139,9 +139,9 @@ class Vector<T,0> : public can::Array<T,0>
     /** \brief mutable index operator
       * \details An index operator (i) is provided so that
       *  mth::Vector and mth::Matrix share a common index operator */
-    T& operator()(unsigned i) {return (*this[i]);}
+    T& operator()(unsigned i) {return (*this)[i];}
     /** \brief immutable index operator */
-    T const& operator()(unsigned i) const {return (*this[i]);}
+    T const& operator()(unsigned i) const {return (*this)[i];}
     /** \brief add a vector to this vector */
     Vector<T,0>& operator+=(Vector<T,0> const& b)
     {
