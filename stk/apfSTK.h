@@ -52,6 +52,7 @@ void writeExodus(
     apf::Mesh* mesh,
     apf::StkModels& models,
     const char* filename,
+    std::size_t& output_file_idx,
     const double time_val,
     Teuchos::RCP<stk::mesh::MetaData>& meta,
     Teuchos::RCP<stk::mesh::BulkData>& bulk,
