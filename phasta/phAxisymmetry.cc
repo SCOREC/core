@@ -2,6 +2,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <cassert>
+#include <iostream>
 
 namespace ph {
 

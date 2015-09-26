@@ -8,6 +8,7 @@
 #include <PCU.h>
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 
 namespace ph {
 

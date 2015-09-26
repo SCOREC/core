@@ -2,6 +2,7 @@
 #include <apfGeometry.h>
 #include <cstdlib>
 #include <cassert>
+#include <iostream>
 
 namespace ph {
 
