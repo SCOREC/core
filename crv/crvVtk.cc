@@ -662,6 +662,78 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
+     << "_interPts" << ".vtu";
+
+  int nPoints = 0;
+    for (int t = 0; t < apf::Mesh::TYPES; ++t)
+      nPoints += m->getShape()->countNodesOn(t)
+      *countOwnedEntitiesOfType(m,t);
+
+  std::string fileName = ss.str();
+  std::stringstream buf;
+
+  writeStart(buf,nPoints,nPoints);
+  buf << "<Points>\n";
+  buf << "<DataArray type=\"Float64\" Name=\"coordinates\" "
+      "NumberOfComponents=\"3\" format=\"ascii\">\n";
+
+  for (int t = 0; t < apf::Mesh::TYPES; ++t){
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[t]);
+    apf::MeshEntity* e;
+    apf::Vector3 pt, xi;
+    while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
+      apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+      for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
+        m->getShape()->getNodeXi(t,i,xi);
+        apf::getVector(elem,xi,pt);
+        writePoint(buf,pt);
+      }
+      apf::destroyElement(elem);
+    }
+    m->end(it);
+  }
+  buf << "</DataArray>\n";
+  buf << "</Points>\n";
+  writeCells(buf,apf::Mesh::VERTEX,nPoints,nPoints,nPoints);
+  buf << "<PointData>\n";
+  buf << "<DataArray type=\"UInt8\" Name=\"entityType\" "
+      << "NumberOfComponents=\"1\" format=\"ascii\">\n";
+
+  for (int t = 0; t < apf::Mesh::TYPES; ++t){
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[t]);
+    apf::MeshEntity* e;
+    apf::Vector3 pt;
+    while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
+      for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
+        buf << t << '\n';
+      }
+    }
+    m->end(it);
+  }
+  buf << "</DataArray>\n";
+  buf << "</PointData>\n";
+  writeEnd(buf);
+  {
+    std::ofstream file(fileName.c_str());
+    assert(file.is_open());
+    file << buf.rdbuf();
+  }
+
+  PCU_Barrier();
+}
+
+void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
+{
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix,m,apf::Mesh::VERTEX);
+
+  PCU_Barrier();
+
+  std::stringstream ss;
+  ss << prefix << PCU_Comm_Self() << "_"
+     << m->getShape()->getOrder()
      << getSuffix(apf::Mesh::VERTEX) << ".vtu";
 
   int nPoints = 0;
@@ -720,7 +792,6 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 
   PCU_Barrier();
 }
-
 
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {

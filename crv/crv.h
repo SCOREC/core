@@ -159,7 +159,9 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
-
+/** \brief Visualization, writes file of shapes evaluated at node xi
+ *  for each entity */
+void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief publically accessible functions */
 int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
