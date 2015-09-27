@@ -76,27 +76,27 @@ static int countOwnedEntitiesOfType(apf::Mesh* m, int type)
   return count;
 }
 
-static std::string getSuffix(int type)
+static const char* getSuffix(int type)
 {
   std::stringstream ss;
   switch (type) {
   // control points
   case apf::Mesh::VERTEX:
-    ss << "_ctrlPts";
+    return "_ctrlPts";
     break;
   case apf::Mesh::EDGE:
-    ss << "_edge";
+    return "_edge";
     break;
   case apf::Mesh::TRIANGLE:
-    ss << "_tri";
+    return "_tri";
     break;
   case apf::Mesh::TET:
-    ss << "_tet";
+    return "_tet";
     break;
   default:
     break;
   }
-  return ss.str();
+  return "";
 }
 
 static void writePointConnectivity(std::ostream& file, int n)
@@ -605,11 +605,12 @@ static void writePPointData(std::ostream& file, apf::Mesh* m)
   }
 }
 
-static void writePvtuFile(const char* prefix, apf::Mesh* m, int type)
+static void writePvtuFile(const char* prefix, const char* suffix,
+    apf::Mesh* m, int type)
 {
   std::stringstream ss;
   ss << prefix << "_" << m->getShape()->getOrder()
-     << getSuffix(type) << ".pvtu";
+     << suffix << ".pvtu";
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
@@ -633,7 +634,7 @@ static void writePvtuFile(const char* prefix, apf::Mesh* m, int type)
     std::stringstream ssPCU;
     ssPCU << prefix << i << "_"
        << m->getShape()->getOrder()
-       << getSuffix(type) << ".vtu";
+       << suffix << ".vtu";
     file << "<Piece Source=\"" << ssPCU.str() << "\"/>\n";
   }
 
@@ -655,7 +656,7 @@ static void writePointData(std::ostream& file, apf::Mesh* m,
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
   if (!PCU_Comm_Self())
-    writePvtuFile(prefix,m,apf::Mesh::VERTEX);
+    writePvtuFile(prefix,getSuffix(apf::Mesh::VERTEX),m,apf::Mesh::VERTEX);
 
   PCU_Barrier();
 
@@ -727,7 +728,7 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
   if (!PCU_Comm_Self())
-    writePvtuFile(prefix,m,apf::Mesh::VERTEX);
+    writePvtuFile(prefix,"_interPts",m,apf::Mesh::VERTEX);
 
   PCU_Barrier();
 
@@ -797,7 +798,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
-    writePvtuFile(prefix,m,type);
+    writePvtuFile(prefix,getSuffix(type),m,type);
 
   PCU_Barrier();
 
