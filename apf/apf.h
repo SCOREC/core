@@ -90,15 +90,6 @@ enum ValueType {
   */
 Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order);
 
-/** \brief Create a quadratic apf::Field using hierarchic shape functions
-  *
-  * \param m the mesh over which the field is defined
-  * \param name a unique name for this field
-  * \param valueType the type of field data
-  * \details only quadratic hierarchic fields are supported.
-  */
-Field* createHierarchicField(Mesh* m, const char* name, int valueType);
-
 /** \brief Create an apf::Field using a step distribution.
   *
   * \details A step-wise distribution is a C-1 continuous field
