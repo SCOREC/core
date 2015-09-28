@@ -125,9 +125,10 @@ FieldShape* getIPShape(int dimension, int order);
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
 
-/** \brief Get the quadratic hierarchic shape function */
-FieldShape* getHierarchic();
-
+/** \brief Get the quadratic hierarchic shape function
+  \details only first and second order so far
+ */
+FieldShape* getHierarchic(int order);
 
 FieldShape* getShapeByName(const char* name);
 
