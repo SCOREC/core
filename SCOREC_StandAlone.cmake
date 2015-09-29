@@ -3,6 +3,7 @@
 #Setting Version Number, Project Name
 cmake_minimum_required (VERSION 2.8)
 project (SCOREC)
+set(CORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 #unless building shared libs, then select static libs 
 # if both static and shared libs are available 

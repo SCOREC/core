@@ -128,7 +128,7 @@ endforeach()
 set(prefix "${SIMMODSUITE_INSTALL_DIR}")
 set(includedir "${SIMMODSUITE_INCLUDE_DIR}")
 configure_file(
-  "${CMAKE_HOME_DIRECTORY}/cmake/libSimModSuite.pc.in"
+  "${CORE_SOURCE_DIR}/cmake/libSimModSuite.pc.in"
   "${CMAKE_BINARY_DIR}/libSimModSuite.pc"
   @ONLY)
 
