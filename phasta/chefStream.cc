@@ -2,6 +2,8 @@
 #include <chef.h>
 #include <phstream.h>
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
+#include <SimUtil.h>
 #include <stdio.h>
 
 namespace {
@@ -20,6 +22,9 @@ int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
   PCU_Protect();
+  Sim_readLicenseFile(0);
+  gmi_sim_start();
+  gmi_register_sim();
   gmi_register_mesh();
   gmi_model* g = NULL;
   apf::Mesh2* m = NULL;
@@ -34,6 +39,8 @@ int main(int argc, char** argv) {
   destroyGRStream(grs);
   destroyRStream(rs);
   freeMesh(m);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
