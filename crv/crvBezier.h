@@ -18,6 +18,10 @@ namespace crv {
 int computeTriNodeIndex(int P, int i, int j);
 int computeTetNodeIndex(int P, int i, int j, int k);
 
+/** \brief calculates number of control points, use
+     tables for smaller numbers, this is for quality */
+int getNumControlPoints(int type, int order);
+
 /** \brief computes nodes of face f from tet */
 void getTriNodesFromTetNodes(int f, int P,
     apf::NewArray<apf::Vector3>& tetNodes,

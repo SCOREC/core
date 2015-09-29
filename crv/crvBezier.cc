@@ -12,6 +12,24 @@
 
 namespace crv {
 
+int getNumControlPoints(int type, int order)
+{
+  switch (type) {
+    case apf::Mesh::EDGE:
+      return order+1;
+      break;
+    case apf::Mesh::TRIANGLE:
+      return (order+1)*(order+2)/2;
+      break;
+    case apf::Mesh::TET:
+      return (order+1)*(order+2)*(order+3)/6;
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
 static int P = 1;
 
 static bool useBlend()
