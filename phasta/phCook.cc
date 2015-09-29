@@ -65,9 +65,7 @@ void switchToAll()
 
 void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 {
-  ph::readBCs(in.attributeFileName.c_str(), bcs);
-  if(!g)
-    g = gmi_load(in.modelFileName.c_str());
+  ph::loadModelAndBCs(in, g, bcs);
 }
 
 void originalMain(apf::Mesh2*& m, ph::Input& in,
