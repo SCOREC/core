@@ -49,6 +49,10 @@ static void my_chdir(const char* name)
   assert(!err);
 }
 
+void goToParentDir() {
+  my_chdir("..");
+}
+
 void goToStepDir(int step)
 {
   std::stringstream ss;

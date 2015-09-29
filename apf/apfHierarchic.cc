@@ -157,10 +157,14 @@ class Hierarchic : public FieldShape
     int getOrder() {return 2;}
 };
 
-FieldShape* getHierarchic()
+FieldShape* getHierarchic(int o)
 {
   static Hierarchic q;
-  return &q;
+  if (o == 1)
+    return getLagrange(o);
+  else if (o == 2)
+    return &q;
+  return NULL;
 }
 
 }

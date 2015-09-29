@@ -14,6 +14,16 @@
 #include <SimUtil.h>
 #include <cassert>
 
+namespace {
+  static FILE* openFileRead(ph::Input&, const char* path) {
+    return fopen(path, "r");
+  }
+
+  static FILE* openFileWrite(ph::Output&, const char* path) {
+    return fopen(path, "w");
+  }
+}
+
 ph::Input* globalInput;
 ph::BCs* globalBCs;
 int globalPeers;
@@ -34,8 +44,9 @@ static void afterSplit(apf::Mesh2* m)
   }
   assert(!in.filterMatches);
   ph::Output o;
+  o.openfile_write = openFileWrite;
   ph::generateOutput(in, bcs, m, o);
-  ph::detachAndWriteSolution(in, m, path);
+  ph::detachAndWriteSolution(in, o, m, path);
   ph::writeGeomBC(o, path);
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);
   if ( ! in.outMeshFileName.empty() )
@@ -57,6 +68,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   globalPeers = PCU_Comm_Peers();
   ph::Input in;
+  in.openfile_read = openFileRead;
   in.load("adapt.inp");
   ph::BCs bcs;
   gmi_model* g;

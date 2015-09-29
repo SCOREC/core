@@ -9,6 +9,8 @@ namespace apf {
 class Mesh;
 }
 
+struct GRStream;
+
 namespace ph {
 
 struct EnsaArrays
@@ -74,6 +76,7 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15  */
   int* ienneigh;
 };
 
+
 struct Output
 {
   ~Output();
@@ -89,6 +92,8 @@ struct Output
   int nEssentialBCNodes;
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
+  FILE* (*openfile_write)(Output& out, const char* path);
+  GRStream* grs;
   AllBlocks blocks;
   EnsaArrays arrays;
 };

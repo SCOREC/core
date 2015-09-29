@@ -98,6 +98,11 @@ if (BUILD_IN_TRILINOS)
       ${APF_HEADERS}
       ../can/canArray.h
       ../can/canNewArray.h
+      ../mth/mth.h
+      ../mth/mth_def.h
+      ../mth/mthVector.h
+      ../mth/mthMatrix.h
+      ../mth/mthTensor.h
      )
 endif()
 

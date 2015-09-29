@@ -182,6 +182,47 @@ class Matrix<T,0,0>
     can::Array<T> elems;
 };
 
+/** \brief convenience wrapper over Matrix<T,3,3>
+  * \details like Vector3, this provides component-wise
+  * inititialization */
+template <class T>
+class Matrix3x3 : public Matrix<T,3,3>
+{
+  public:
+    /** \brief default constructor */
+    Matrix3x3() {}
+    /** \brief component-wise constructor */
+    Matrix3x3(
+        T const& a11,T const& a12,T const& a13,
+        T const& a21,T const& a22, T const& a23,
+        T const& a31,T const& a32, T const& a33)
+    {
+      (*this)[0] = Vector3<T>(a11,a12,a13);
+      (*this)[1] = Vector3<T>(a21,a22,a23);
+      (*this)[2] = Vector3<T>(a31,a32,a33);
+    }
+    /** \brief copy constructor */
+    Matrix3x3(Matrix<T,3,3> const& other) : Matrix<T,3,3>(other) {}
+    /** \brief write matrix to an array */
+    void toArray(T (*array)[3]) const
+    {
+      for (unsigned i=0; i < 3; ++i)
+      for (unsigned j=0; j < 3; ++j)
+        array[i][j] = (*this)[i][j];
+    }
+};
+
+template <class T, unsigned M, unsigned N>
+std::ostream& operator<<(std::ostream& s, mth::Matrix<T,M,N> const& a)
+{
+  for (unsigned i=0; i < a.rows(); ++i) {
+    for (unsigned j=0; j < a.cols(); ++j)
+      s << a(i,j) << ' ';
+    s << '\n';
+  }
+  return s;
+}
+
 }
 
 #endif

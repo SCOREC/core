@@ -13,6 +13,7 @@
 
 #include "canArray.h"
 #include <cmath>
+#include <ostream>
 
 /** \file mthVector.h
   * \brief Small compile-time and run-time linear algebra vectors. */
@@ -40,6 +41,12 @@ class Vector : public can::Array<T,N>
       for (unsigned i=0; i < N; ++i)
         (*this)[i] = v[i];
     }
+    /** \brief mutable index operator
+      * \details An index operator (i) is provided so that
+      * mth::Vector and mth::Matrix share a common index operator */
+    T& operator()(unsigned i) {return (*this)[i];}
+    /** \brief immutable index operator */
+    T const& operator()(unsigned i) const {return (*this)[i];}
     /** \brief add a vector to this vector */
     Vector<T,N>& operator+=(Vector<T,N> const& b)
     {
@@ -129,6 +136,12 @@ class Vector<T,0> : public can::Array<T,0>
     Vector() {}
     /** \brief construct with n elements */
     Vector(unsigned n) : can::Array<T>(n) {}
+    /** \brief mutable index operator
+      * \details An index operator (i) is provided so that
+      *  mth::Vector and mth::Matrix share a common index operator */
+    T& operator()(unsigned i) {return (*this)[i];}
+    /** \brief immutable index operator */
+    T const& operator()(unsigned i) const {return (*this)[i];}
     /** \brief add a vector to this vector */
     Vector<T,0>& operator+=(Vector<T,0> const& b)
     {
@@ -167,6 +180,69 @@ class Vector<T,0> : public can::Array<T,0>
     }
 };
 
+/** \brief convenience wrapper over apf::Vector<3>
+  * \details this class add some functions that could not be
+  * filled in by templates, mainly component specific initializaiton
+  * and x/y/z names */
+template <class T>
+class Vector3 : public Vector<T,3>
+{
+  public:
+    /** \brief default constructor */
+    Vector3() {}
+    /** \brief copy constructor */
+    Vector3(Vector<T,3> const& other) : Vector<T,3>(other) {};
+    /** \brief construct from 3 values */
+    Vector3(T const& a, T const& b, T const& c)
+    {
+      (*this)[0] = a;
+      (*this)[1] = b;
+      (*this)[2] = c;
+    }
+    /** \brief construct from an array */
+    Vector3(T const* abc)
+    {
+      (*this)[0] = abc[0];
+      (*this)[1] = abc[1];
+      (*this)[2] = abc[2];
+    }
+    /** \brief write vector to array */
+    void toArray(T* abc) const
+    {
+      abc[0] = (*this)[0];
+      abc[1] = (*this)[1];
+      abc[2] = (*this)[2];
+    }
+    /** \brief read vector from array */
+    void fromArray(T const* abc)
+    {
+      (*this)[0] = abc[0];
+      (*this)[1] = abc[1];
+      (*this)[2] = abc[2];
+    }
+    /** \brief mutable x component */
+    T& x() {return (*this[0]);}
+    /** \brief mutable y component */
+    T& y() {return (*this[1]);}
+    /** \brief mutable z component */
+    T& z() {return (*this[2]);}
+    /** \brief immutable x component */
+    T const& x() const {return (*this)[0];}
+    /** \brief immutable y component */
+    T const& y() const {return (*this)[1];}
+    /** \brief immutable z component */
+    T const& z() const {return (*this)[2];}
+};
+
+}
+
+template <class T, unsigned N>
+std::ostream& operator<<(std::ostream& s, mth::Vector<T,N> const& a)
+{
+  for (unsigned i=0; i < a.size(); ++i)
+    s << a[i] << ' ';
+  s << '\n';
+  return s;
 }
 
 #endif

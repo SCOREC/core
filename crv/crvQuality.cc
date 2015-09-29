@@ -11,11 +11,11 @@
 
 namespace crv {
 
-static int maxAdaptiveIter = 50;
+static int maxAdaptiveIter = 5;
 
 static double convergenceTolerance = 0.01;
 
-static double minAcceptable = 0.025;
+static double minAcceptable = 0.0;
 
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,
