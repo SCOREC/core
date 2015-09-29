@@ -653,10 +653,10 @@ static void writePointData(std::ostream& file, apf::Mesh* m,
   }
 }
 
-void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
+void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
   if (!PCU_Comm_Self())
-    writePvtuFile(prefix,getSuffix(apf::Mesh::VERTEX),m,apf::Mesh::VERTEX);
+    writePvtuFile(prefix,"_interPts",m,apf::Mesh::VERTEX);
 
   PCU_Barrier();
 
@@ -725,10 +725,10 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 }
 
-void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
+void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
   if (!PCU_Comm_Self())
-    writePvtuFile(prefix,"_interPts",m,apf::Mesh::VERTEX);
+    writePvtuFile(prefix,getSuffix(apf::Mesh::VERTEX),m,apf::Mesh::VERTEX);
 
   PCU_Barrier();
 

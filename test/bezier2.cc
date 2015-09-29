@@ -221,12 +221,18 @@ void checkValidity(apf::Mesh* m, int order)
   int iEntity = 0;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[3];
-    int numInvalid = crv::checkTriValidity(m,e,entities);
+    int numInvalid = crv::checkTriValidity(m,e,entities,2);
     if(iEntity == 0){
       assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
     } else if(iEntity == 1){
       assert(numInvalid == 0);
     }
+    numInvalid = crv::checkTriValidity(m,e,entities,3);
+        if(iEntity == 0){
+          assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+        } else if(iEntity == 1){
+          assert(numInvalid == 0);
+        }
     iEntity++;
     break;
 
@@ -359,7 +365,7 @@ void test3D()
 
     m->acceptChanges();
     apf::MeshEntity* entities[14];
-    crv::checkTetValidity(m,tet,entities);
+    crv::checkTetValidity(m,tet,entities,2);
 
 //    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,20,"curved");
 
