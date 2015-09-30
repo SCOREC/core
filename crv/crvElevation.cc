@@ -55,8 +55,8 @@ template <class T>
 static void raiseBezierTriangle(int P, int r, apf::NewArray<T>& nodes,
     apf::NewArray<T>& elevatedNodes)
 {
-  for(int i = 0; i < P+r+1; ++i){
-    for(int j = 0; j < P+r+1-i; ++j){
+  for(int i = 0; i <= P+r; ++i){
+    for(int j = 0; j <= P+r-i; ++j){
       for(int k = std::max(0,i-r); k <= std::min(i,P); ++k){
         for(int l = std::max(0,i-k+j-r); l <= std::min(j,P-k); ++l){
           elevatedNodes[computeTriNodeIndex(P+r,i,j)] +=
@@ -85,12 +85,51 @@ static void elevateBezierTriangleJacobianDet(int P, int r,
   raiseBezierTriangle(P,r,nodes,elevatedNodes);
 }
 
+template <class T>
+static void raiseBezierTet(int P, int r, apf::NewArray<T>& nodes,
+    apf::NewArray<T>& elevatedNodes)
+{
+  for(int i = 0; i <= P+r; ++i){
+    for(int j = 0; j <= P+r-i; ++j){
+      for(int k = 0; k <= P+r-i-j; ++k){
+
+        for(int l = std::max(0,i-r); l <= std::min(i,P); ++l){
+          for(int m = std::max(0,i-l+j-r); m <= std::min(j,P-l); ++m){
+            for(int n = std::max(0,i-l+j-m+k-r); n <= std::min(k,P-l-m); ++n){
+              elevatedNodes[computeTetNodeIndex(P+r,i,j,k)] +=
+                  nodes[computeTetNodeIndex(P,l,m,n)]*quadnomial(P,l,m,n)
+                  *quadnomial(r,i-l,j-m,k-n)/quadnomial(P+r,i,j,k);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void elevateBezierTet(int P, int r, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes)
+{
+  for(int i = 0; i < getNumControlPoints(apf::Mesh::TET,P+r); ++i)
+    elevatedNodes[i].zero();
+  raiseBezierTet(P,r,nodes,elevatedNodes);
+}
+
+static void elevateBezierTetJacobianDet(int P, int r,
+    apf::NewArray<double>& nodes,
+    apf::NewArray<double>& elevatedNodes)
+{
+  for(int i = 0; i < getNumControlPoints(apf::Mesh::TET,P+r); ++i)
+    elevatedNodes[i] = 0.;
+  raiseBezierTet(P,r,nodes,elevatedNodes);
+}
+
 ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES] =
 {
   NULL,   //vertex
   elevateBezierEdgeJacobianDet,     //edge
   elevateBezierTriangleJacobianDet, //triangle
-  NULL,      //quad
+  elevateBezierTetJacobianDet,      //quad
   NULL,      //tet
   NULL,      //hex
   NULL,      //prism
