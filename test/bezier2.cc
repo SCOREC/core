@@ -268,7 +268,7 @@ void test2D()
         int n = (order+1)*(order+2)/2;
         int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
         apf::NewArray<double> c;
-        crv::getBlendedTransformationCoefficients(order,
+        crv::getBlendedTransformationCoefficients(order,1,
             apf::Mesh::TRIANGLE,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(2);
@@ -351,7 +351,7 @@ void test3D()
       for (int i = 0; i < non; ++i){
         apf::Vector3 pt;
         m->getPoint(edges[edge],i,pt);
-        pt = pt*0.5;
+        pt = pt*0.8;
         m->setPoint(edges[edge],i,pt);
       }
     }
@@ -359,10 +359,22 @@ void test3D()
     for (int i = 0; i < non; ++i){
       apf::Vector3 pt;
       m->getPoint(face,i,pt);
-      pt = pt*0.5;
+      pt = pt*0.8;
       m->setPoint(face,i,pt);
     }
-
+    for(int d = 2; d <= 3; ++d){
+      if(!fs->hasNodesIn(d)) continue;
+      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+      int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+      apf::NewArray<double> c;
+      crv::getBlendedTransformationCoefficients(order,1,apf::Mesh::simplexTypes[d],c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))){
+        bc.convertInterpolationPoints(e,n-ne,ne,c);
+      }
+      m->end(it);
+    }
     m->acceptChanges();
     apf::MeshEntity* entities[14];
     crv::checkTetValidity(m,tet,entities,2);
