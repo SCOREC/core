@@ -1,7 +1,6 @@
 #include "mthQR.h"
 #include "mth_def.h"
 #include <cassert>
-#include <iostream>
 
 /* here is a test case run with Octave */
 static double const a_data[16][10] = {
@@ -57,17 +56,17 @@ static double const x_data[10] = {
 
 int main()
 {
-  mth::Matrix<double,0,0> a(16,10);
+  mth::Matrix<double> a(16,10);
   for (unsigned i = 0; i < a.rows(); ++i)
   for (unsigned j = 0; j < a.cols(); ++j)
     a(i,j) = a_data[i][j];
-  mth::Vector<double,0> b(a.rows());
+  mth::Vector<double> b(a.rows());
   for (unsigned i = 0; i < b.size(); ++i)
     b(i) = b_data[i];
-  mth::Vector<double,0> kx(a.cols());
+  mth::Vector<double> kx(a.cols());
   for (unsigned i = 0; i < kx.size(); ++i)
     kx(i) = x_data[i];
-  mth::Vector<double,0> x;
+  mth::Vector<double> x;
   mth::solveQR(a, b, x);
   for (unsigned i = 0; i < kx.size(); ++i)
     assert(fabs(kx(i) - x(i)) < 1e-7);
