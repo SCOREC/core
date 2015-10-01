@@ -659,6 +659,7 @@ class LongTagSIM : public TagSIM
          this is filled in: */
       // MD_setMeshCallback(id,CBmigrateOut,pm_sendIntArray,comm);
       // MD_setMeshCallback(id,CBmigrateIn,pm_recvIntArray,comm);
+      PM_removeMigrId(m, id);
     }
     virtual void* allocate()
     {
