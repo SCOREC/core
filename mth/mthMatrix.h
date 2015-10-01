@@ -217,6 +217,8 @@ class Matrix3x3 : public Matrix<T,3,3>
     }
 };
 
+}
+
 template <class T, unsigned M, unsigned N>
 std::ostream& operator<<(std::ostream& s, mth::Matrix<T,M,N> const& a)
 {
@@ -226,8 +228,6 @@ std::ostream& operator<<(std::ostream& s, mth::Matrix<T,M,N> const& a)
     s << '\n';
   }
   return s;
-}
-
 }
 
 #endif
