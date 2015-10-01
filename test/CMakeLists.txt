@@ -7,6 +7,7 @@ find_package(apf_mpas REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(dsp REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(crv REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(mth REQUIRED PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -17,7 +18,9 @@ include_directories(
   ${APF_MPAS_INCLUDE_DIRS}
   ${VIZ_INCLUDE_DIRS}
   ${DSP_INCLUDE_DIRS}
-  ${CRV_INCLUDE_DIRS})
+  ${CRV_INCLUDE_DIRS}
+  ${MTH_INCLUDE_DIRS}
+)
 set(ALL_LIBS
   ${MA_LIBS}
   ${MDS_LIBS}
@@ -27,7 +30,9 @@ set(ALL_LIBS
   ${APF_MPAS_LIBS}
   ${VIZ_LIBS}
   ${DSP_LIBS}
-  ${CRV_LIBS})
+  ${CRV_LIBS}
+  ${MTH_LIBS}
+)
 
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)
@@ -119,6 +124,7 @@ setup_exe(moving moving.cc)
 setup_exe(graphdist graphdist.cc)
 setup_exe(nektar_align nektar_align.cc)
 setup_exe(reposition reposition.cc)
+setup_exe(qr qr.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
