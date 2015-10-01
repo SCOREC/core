@@ -201,6 +201,9 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   int nodes = m->count(0);
   ph_write_header(f, "number of modes", 0, 1, &nodes);
   ph_write_header(f, "number of variables", 0, 1, &in.ensa_dof);
+  apf::Field* errField = m->findField("errors");
+  if (errField)
+    apf::destroyField(errField);
   if (m->findField("solution"))
     detachAndWriteField(in, m, f, "solution");
   if (in.displacementMigration)

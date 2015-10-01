@@ -124,7 +124,7 @@ static void elevateBezierTetJacobianDet(int P, int r,
   raiseBezierTet(P,r,nodes,elevatedNodes);
 }
 
-ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES] =
+const ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES] =
 {
   NULL,   //vertex
   elevateBezierEdgeJacobianDet,     //edge

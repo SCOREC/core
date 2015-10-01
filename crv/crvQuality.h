@@ -20,9 +20,9 @@ typedef void (*SubdivisionFunction)(int P,
     apf::NewArray<double>& nodes,
     apf::NewArray<double> *subNodes);
 
-extern ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES];
+extern const ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES];
 
-extern SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES];
+extern const SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES];
 
 }
 

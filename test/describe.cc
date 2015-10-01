@@ -91,8 +91,6 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   print_stats("kernel heap", get_peak());
   print_stats("malloc used", get_chunks());
-  print_stats("elements", m->count(m->getDimension()));
-  print_stats("vertices", m->count(0));
   Parma_PrintPtnStats(m, "");
   list_tags(m);
   m->destroyNative();
@@ -100,7 +98,3 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
-
-
-
