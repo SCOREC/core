@@ -158,7 +158,7 @@ static void subdivideBezierTriangleJacobianDet(int P,
   splitBezierTriangle(P,nodes,subNodes);
 }
 
-SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES] =
+const SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES] =
 {
   NULL,   //vertex
   subdivideBezierEdgeJacobianDet,     //edge

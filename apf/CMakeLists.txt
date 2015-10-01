@@ -27,9 +27,10 @@ if(NOT BUILD_IN_TRILINOS)
   set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS} ${CAN_LIBS})
   set(APF_LIBS apf ${DEP_LIBS})
 else()
-  #quickfix hack
+  #quickfix hack which is now semi-permanent
   set(APF_INCLUDE_DIRS
       ${APF_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../mth
       ${CMAKE_CURRENT_SOURCE_DIR}/../can)
 endif()
 
@@ -92,8 +93,12 @@ set(APF_HEADERS
   apfGeometry.h
 )
 
-#quickfix hack
+#quickfix hack which is now semi-permanent
 if (BUILD_IN_TRILINOS)
+  set(APF_SOURCES
+      ${APF_SOURCES}
+      ../mth/mthQR.cc
+     )
   set(APF_HEADERS
       ${APF_HEADERS}
       ../can/canArray.h
@@ -103,6 +108,7 @@ if (BUILD_IN_TRILINOS)
       ../mth/mthVector.h
       ../mth/mthMatrix.h
       ../mth/mthTensor.h
+      ../mth/mthQR.h
      )
 endif()
 

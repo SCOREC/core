@@ -41,6 +41,7 @@ class Array
     T const& operator[](unsigned i) const {return elems[i];}
     /** \brief get the size of this array */
     unsigned size() const {return N;}
+    void resize(unsigned n) { (void) n; }
   protected:
     T elems[N];
     void copy(Array<T,N> const& other)

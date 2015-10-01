@@ -574,31 +574,36 @@ void testTetElevation()
     }
     apf::destroyElement(elem);
 
-    // elevate everything to 4th order
+    // elevate everything to new order
+    int elevatedOrder = 18;
 
     apf::NewArray<apf::Vector3> elevatedNodes;
-    elevatedNodes.allocate(35);
-    crv::elevateBezierTet(order,4-order,nodes,elevatedNodes);
-    apf::changeMeshShape(m,crv::getBezier(4),false);
+    elevatedNodes.allocate(crv::getNumControlPoints(apf::Mesh::TET,elevatedOrder));
+    crv::elevateBezierTet(order,elevatedOrder-order,nodes,elevatedNodes);
+    apf::changeMeshShape(m,crv::getBezier(elevatedOrder),false);
     for (int i = 0; i < 4; ++i)
       m->setPoint(verts[i],0,elevatedNodes[i]);
+
+    int nE = crv::getNumInternalControlPoints(apf::Mesh::EDGE,elevatedOrder);
+    int nF = crv::getNumInternalControlPoints(apf::Mesh::TRIANGLE,elevatedOrder);
+    int nT = crv::getNumInternalControlPoints(apf::Mesh::TET,elevatedOrder);
 
     int which, rotate;
     bool flip;
     for (int i = 0; i < 6; ++i){
       apf::getAlignment(m,tet,edges[i],which,flip,rotate);
       if(!flip)
-        for (int j = 0; j < 3; ++j)
-          m->setPoint(edges[i],j,elevatedNodes[4+3*i+j]);
+        for (int j = 0; j < nE; ++j)
+          m->setPoint(edges[i],j,elevatedNodes[4+nE*i+j]);
       else
-        for (int j = 0; j < 3; ++j)
-          m->setPoint(edges[i],2-j,elevatedNodes[4+3*i+j]);
+        for (int j = 0; j < nE; ++j)
+          m->setPoint(edges[i],nE-1-j,elevatedNodes[4+nE*i+j]);
     }
     for (int i = 0; i < 4; ++i)
-      for (int j = 0; j < 3; ++j)
-        m->setPoint(faces[i],j,elevatedNodes[22+3*i+j]);
-
-    m->setPoint(tet,0,elevatedNodes[34]);
+      for (int j = 0; j < nF; ++j)
+        m->setPoint(faces[i],j,elevatedNodes[4+6*nE+nF*i+j]);
+    for (int i = 0; i < nT; ++i)
+      m->setPoint(tet,i,elevatedNodes[4+6*nE+4*nF+i]);
 
     elem = apf::createElement(m->getCoordinateField(),tet);
     n = 0;
@@ -633,7 +638,6 @@ void testNodeIndexing(){
         for(int k = 0; k <= P-i-j; ++k)
           assert(crv::computeTetNodeIndex(P,i,j,k)
             == crv::getTetNodeIndex(P,i,j,k));
-
 }
 
 int main(int argc, char** argv)

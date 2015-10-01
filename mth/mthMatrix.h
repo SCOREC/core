@@ -28,7 +28,7 @@ class Matrix : public can::Array<Vector<T,N>,M>
     /** \brief construct with m by n elements
       * \details A dummy constructor Matrix(m,n) is provided so that
       * dynamic and static matrices can be used interchangebly */
-    Matrix(unsigned m, unsigned n) {}
+    Matrix(unsigned m, unsigned n) { (void) m; (void) n; }
     /** \brief get the number of rows */
     unsigned rows() const {return M;}
     /** \brief get the number of columns */
@@ -102,6 +102,11 @@ class Matrix : public can::Array<Vector<T,N>,M>
     {
       for (unsigned i=0; i < M; ++i)
         this->elems[i].zero();
+    }
+    void resize(unsigned m, unsigned n)
+    {
+      (void) m;
+      (void) n;
     }
 };
 
@@ -212,6 +217,8 @@ class Matrix3x3 : public Matrix<T,3,3>
     }
 };
 
+}
+
 template <class T, unsigned M, unsigned N>
 std::ostream& operator<<(std::ostream& s, mth::Matrix<T,M,N> const& a)
 {
@@ -221,8 +228,6 @@ std::ostream& operator<<(std::ostream& s, mth::Matrix<T,M,N> const& a)
     s << '\n';
   }
   return s;
-}
-
 }
 
 #endif

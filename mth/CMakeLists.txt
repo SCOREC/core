@@ -1,22 +1,24 @@
 cmake_minimum_required(VERSION 2.8.6)
 set(PACKAGE_VERSION "1.0")
 
-if(DEFINED TRIBITS_PACKAGE)
- set(BUILD_IN_TRILINOS ON)
-endif()
-
-if(BUILD_IN_TRILINOS)
-  include(TribitsSubPackageMacros)
-  include(TribitsLibraryMacros)
-  tribits_subpackage(Can) 
-else()
-   project(mth)
-endif()
+project(mth)
 
 set(MTH_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(MTH_LIBS)
+find_package(can PATHS ${CMAKE_BINARY_DIR})
+set(MTH_INCLUDE_DIRS
+  ${MTH_INCLUDE_DIRS}
+  ${CAN_INCLUDE_DIRS}
+)
+set(DEP_LIBS ${CAN_LIBS})
+set(MTH_LIBS mth ${DEP_LIBS})
+
+set(MTH_LIBS mth)
+
+set(MTH_SOURCES
+  mthQR.cc
+)
 
 set(MTH_HEADERS
   mth.h
@@ -24,10 +26,14 @@ set(MTH_HEADERS
   mthVector.h
   mthMatrix.h
   mthTensor.h
+  mthQR.h
 )
 
 # THIS IS WHERE TRIBITS GETS HEADERS
 include_directories(${MTH_INCLUDE_DIRS})
+
+#Library
+add_library(mth ${MTH_SOURCES})
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/mthConfig.cmake.in"
@@ -44,11 +50,5 @@ configure_file(
     @ONLY)
 #pkgconfig }
 
-if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES ${MTH_HEADERS} DESTINATION include)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/libmth.pc" DESTINATION lib/pkgconfig)
-endif(NOT BUILD_IN_TRILINOS)
-
-if(BUILD_IN_TRILINOS)
-   tribits_subpackage_postprocess()
-endif(BUILD_IN_TRILINOS)
+INSTALL(FILES ${MTH_HEADERS} DESTINATION include)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/libmth.pc" DESTINATION lib/pkgconfig)
