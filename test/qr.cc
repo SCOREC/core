@@ -10,9 +10,9 @@ int main()
     {0,0,1}
   };
   double b_dat[3] = {
-    1,
-    0,
-    0
+    5,
+    6,
+    7
   };
   mth::Matrix<double,0,0> a(3,3);
   for (unsigned i = 0; i < 3; ++i)

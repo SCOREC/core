@@ -41,9 +41,11 @@ template <class T, unsigned M, unsigned N>
 void transpose(Matrix<T,M,N> const& a,
     Matrix<T,N,M>& b)
 {
-  b.resize(a.cols(), a.rows());
-  for (unsigned i=0; i < M; ++i)
-  for (unsigned j=0; j < N; ++j)
+  unsigned m = a.rows();
+  unsigned n = a.rows();
+  b.resize(m, n);
+  for (unsigned i=0; i < m; ++i)
+  for (unsigned j=0; j < n; ++j)
     b(j,i) = a(i,j);
 }
 
