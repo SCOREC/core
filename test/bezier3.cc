@@ -523,13 +523,7 @@ void testTetElevation()
 {
   gmi_register_null();
 
-  apf::Vector3 points3D[4] =
-  {apf::Vector3(0,0,0),
-      apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0),
-      apf::Vector3(0,0,1)};
-
-  for (int order = 1; order <= 1; ++order){
+  for (int order = 1; order <= 4; ++order){
 
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
