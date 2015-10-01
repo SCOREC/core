@@ -21,6 +21,7 @@ int computeTetNodeIndex(int P, int i, int j, int k);
 /** \brief calculates number of control points, use
      tables for smaller numbers, this is for quality */
 int getNumControlPoints(int type, int order);
+int getNumInternalControlPoints(int type, int order);
 
 /** \brief computes nodes of face f from tet */
 void getTriNodesFromTetNodes(int f, int P,
@@ -64,8 +65,6 @@ void BlendedTetGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
 
 /** \brief get bezier node locations in parameter space */
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi);
-/** \brief This is the 2D version, for just curves. */
-void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi);
 
 /** \brief elevation functions for beziers */
 void elevateBezierEdge(int P, int r, apf::NewArray<apf::Vector3>& nodes,

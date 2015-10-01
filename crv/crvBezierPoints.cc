@@ -256,8 +256,8 @@ static void getBezierTriangleTransform(int P, apf::NewArray<double> & c)
       1.808916611395357,-4.276280903149721,-4.276280903149711,13.89283735202937
   };
   double* table[4] = {f3,f4,f5,f6};
-  int nb = curved_face_internal[BEZIER][P-1];
-  int ni = curved_face_total[BEZIER][P-1];
+  int nb = (P-1)*(P-2)/2;
+  int ni = (P+1)*(P+2)/2;
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
@@ -279,8 +279,8 @@ static void getBezierTetTransform(int P, apf::NewArray<double> & c)
       -0.764902170896025,-0.764902170896025,10.6666666666667,
   };
 
-  int nb = curved_tet_internal[BEZIER][P-1];
-  int ni = curved_tet_total[BEZIER][P-1];
+  int nb = (P-1)*(P-2)*(P-3)/6;
+  int ni = (P+1)*(P+2)*(P+3)/6;
 
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
@@ -472,8 +472,8 @@ static void getBlendedBezierTriangleTransform(int P, int blend,
   double* table1[4] = {f3_1,f4_1,f5_1,f6_1};
   double* table2[4] = {f3_2,f4_2,f5_2,f6_2};
   double** table[2] = {table1,table2};
-  int nb = curved_face_internal[BEZIER][P-1];
-  int ni = curved_face_total[BEZIER][P-1]-nb;
+  int nb = (P-1)*(P-2)/2;
+  int ni = (P+1)*(P+2)/2-nb;
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
@@ -505,8 +505,8 @@ static void getBlendedBezierTetTransform(int P, int blend,
       0.3888888888888888,0.3888888888888888,0.3888888888888888,0.3888888888888888,
       0.3888888888888888,0.3888888888888888};
   double* t4[2] = {t4_1,t4_2};
-  int nb = curved_tet_internal[BEZIER][P-1];
-  int ni = curved_tet_total[BEZIER][P-1]-nb;
+  int nb = (P-1)*(P-2)*(P-3)/6;
+  int ni = (P+1)*(P+2)*(P+3)/6 - nb;
 
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
@@ -539,11 +539,11 @@ static void getGregoryTriangleTransform(int P, apf::NewArray<double> & c)
   apf::NewArray<double> d;
   getBezierTriangleTransform(P,d);
 
-  int nbBezier = curved_face_internal[BEZIER][P-1];
-  int niBezier = curved_face_total[BEZIER][P-1];
+  int nbBezier = (P-1)*(P-2)/2;
+  int niBezier = (P+1)*(P+2)/2;
 
-  int nb = curved_face_internal[GREGORY][P-1];
-  int ni = curved_face_total[GREGORY][P-1];
+  int nb = 6;
+  int ni = 6+3*P;
   c.allocate(ni*nb);
 
   int map[3] = {1,2,0};
@@ -593,13 +593,9 @@ static void getGregoryTetTransform(int P, apf::NewArray<double> & c)
       10.6666666666667,
   };
 
-  int nb = curved_tet_internal[GREGORY][P-1];
-  int ni = curved_tet_total[GREGORY][P-1];
-
-  c.allocate(ni*nb);
-  for( int i = 0; i < nb; ++i)
-    for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = t4[i*ni+j];
+  c.allocate(47);
+  for (int j = 0; j < 47; ++j)
+    c[j] = t4[j];
 }
 
 static void getBlendedGregoryTriangleTransform(int P, int blend,
@@ -608,11 +604,11 @@ static void getBlendedGregoryTriangleTransform(int P, int blend,
   apf::NewArray<double> d;
   getBlendedBezierTriangleTransform(P,blend,d);
 
-  int nbBezier = curved_face_internal[BEZIER][P-1];
-  int niBezier = curved_face_total[BEZIER][P-1]-nbBezier;
+  int nbBezier = (P-1)*(P-2)/2;
+  int niBezier = (P+1)*(P+2)/2-nbBezier;
 
-  int nb = curved_face_internal[GREGORY][P-1];
-  int ni = curved_face_total[GREGORY][P-1]-nb;
+  int nb = 6;
+  int ni = 6+3*P;
   c.allocate(ni*nb);
 
   int map[3] = {1,2,0};
@@ -676,12 +672,9 @@ static void getBlendedGregoryTetTransform(int P, int blend,
       0.3888888888888888,0.3888888888888888,0.3888888888888888,0.3888888888888888,
       0.3888888888888888,0.3888888888888888};
   double* t4[2] = {t4_1,t4_2};
-  int nb = curved_tet_internal[GREGORY][P-1];
-  int ni = curved_tet_total[GREGORY][P-1]-nb;
-  c.allocate(ni*nb);
-  for( int i = 0; i < nb; ++i)
-    for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = t4[blend-1][i*ni+j];
+  c.allocate(46);
+  for (int j = 0; j < 46; ++j)
+    c[j] = t4[blend-1][j];
 }
 
 void getGregoryTransformationCoefficients(int P, int type,

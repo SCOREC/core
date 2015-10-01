@@ -11,6 +11,42 @@
 
 namespace crv {
 
+int getNumInternalControlPoints(int type, int order)
+{
+  switch (type) {
+    case apf::Mesh::EDGE:
+      return order-1;
+      break;
+    case apf::Mesh::TRIANGLE:
+      return (order-1)*(order-2)/2;
+      break;
+    case apf::Mesh::TET:
+      return (order-1)*(order-2)*(order-3)/6;
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
+int getNumControlPoints(int type, int order)
+{
+  switch (type) {
+    case apf::Mesh::EDGE:
+      return order+1;
+      break;
+    case apf::Mesh::TRIANGLE:
+      return (order+1)*(order+2)/2;
+      break;
+    case apf::Mesh::TET:
+      return (order+1)*(order+2)*(order+3)/6;
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
 /*
  * 18 is the maximum in the table, given that for n > 18,
  * quadnomial(n,i,j,k) can exceed MAX_INT and long's would be needed
