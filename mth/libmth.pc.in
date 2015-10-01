@@ -8,5 +8,5 @@ URL: http://github.com/SCOREC/core
 Description: Math containers and routines
 Version: @PACKAGE_VERSION@
 Requires:
-Libs:
+Libs: -lmth
 Cflags: -I${includedir} 

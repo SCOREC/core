@@ -103,6 +103,11 @@ class Matrix : public can::Array<Vector<T,N>,M>
       for (unsigned i=0; i < M; ++i)
         this->elems[i].zero();
     }
+    void resize(unsigned m, unsigned n)
+    {
+      (void) m;
+      (void) n;
+    }
 };
 
 /** \brief run-time (dynamic) matrix
