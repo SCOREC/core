@@ -201,7 +201,7 @@ static void getJacDetBySubdivision(int type, int P, int n,
   if(!done && iter < maxAdaptiveIter && minJ < minAcceptable &&
       change > convergenceTolerance){
     iter++;
-    apf::NewArray<double> subNodes[numSplits[type]];
+    apf::NewArray<double> subNodes[4];
     for (int i = 0; i < numSplits[type]; ++i)
       subNodes[i].allocate(n);
 
