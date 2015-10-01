@@ -26,7 +26,7 @@ static bool get_reflector(
   for (unsigned i = k; i < m; ++i)
     cnorm += square(a(i,k));
   cnorm = sqrt(cnorm);
-  if (cnorm < 1e-14)
+  if (cnorm < 1e-10)
     return false;
   for (unsigned i = 0; i < k; ++i)
     v(i) = 0;
@@ -111,11 +111,9 @@ unsigned decomposeQR(
   Vector<T,M> v_scratch;
   v_scratch.resize(m);
   unsigned rank = 0;
-  for (unsigned k = 0; k < m; ++k) {
-    bool did = qr_step(r, q, v_scratch, k);
-    if (did)
+  for (unsigned k = 0; k < m; ++k)
+    if (qr_step(r, q, v_scratch, k))
       ++rank;
-  }
   return rank;
 }
 

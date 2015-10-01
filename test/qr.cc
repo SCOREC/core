@@ -10,7 +10,8 @@ int main()
   std::cout << "A\n" << a;
   mth::Matrix<double,3,3> q;
   mth::Matrix<double,3,3> r;
-  decomposeQR(a, q, r);
+  unsigned rank = decomposeQR(a, q, r);
+  std::cout << "rank " << rank << '\n';
   std::cout << "Q\n" << q;
   std::cout << "R\n" << r;
   std::cout << "Q*R\n" << q * r;
