@@ -1,5 +1,6 @@
 #include "mthQR.h"
 #include "mth_def.h"
+#include <cassert>
 #include <iostream>
 
 /* here is a test case run with Octave */
@@ -60,16 +61,14 @@ int main()
   for (unsigned i = 0; i < a.rows(); ++i)
   for (unsigned j = 0; j < a.cols(); ++j)
     a(i,j) = a_data[i][j];
-  std::cout << "A\n" << a;
   mth::Vector<double,0> b(a.rows());
   for (unsigned i = 0; i < b.size(); ++i)
     b(i) = b_data[i];
-  std::cout << "B\n" << b;
   mth::Vector<double,0> kx(a.cols());
   for (unsigned i = 0; i < kx.size(); ++i)
     kx(i) = x_data[i];
-  std::cout << "known X\n" << kx;
   mth::Vector<double,0> x;
   mth::solveQR(a, b, x);
-  std::cout << "X\n" << x;
+  for (unsigned i = 0; i < kx.size(); ++i)
+    assert(fabs(kx(i) - x(i)) < 1e-7);
 }
