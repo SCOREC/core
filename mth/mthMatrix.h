@@ -28,7 +28,7 @@ class Matrix : public can::Array<Vector<T,N>,M>
     /** \brief construct with m by n elements
       * \details A dummy constructor Matrix(m,n) is provided so that
       * dynamic and static matrices can be used interchangebly */
-    Matrix(unsigned m, unsigned n) {}
+    Matrix(unsigned m, unsigned n) { (void) m; (void) n; }
     /** \brief get the number of rows */
     unsigned rows() const {return M;}
     /** \brief get the number of columns */

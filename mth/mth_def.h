@@ -96,6 +96,22 @@ void multiply(Matrix<T,M,N> const& a, Vector<T,N> const& b,
   }
 }
 
+template <class T, unsigned M, unsigned N, unsigned O>
+void multiply(Matrix<T,M,O> const& a, Matrix<T,O,N> const& b,
+    Matrix<T,M,N>& c)
+{
+  unsigned m = a.rows();
+  unsigned n = b.cols();
+  unsigned o = a.cols();
+  c.resize(m, n);
+  for (unsigned i = 0; i < m; ++i)
+  for (unsigned j = 0; j < n; ++j) {
+    c(i,j) = 0;
+    for (unsigned l = 0; l < o; ++l)
+      c(i,j) += a(i,l) * b(l,j);
+  }
+}
+
 }
 
 #endif
