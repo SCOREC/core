@@ -1,4 +1,5 @@
 #include "mthQR.h"
+#include "mth_def.h"
 #include <cassert>
 
 namespace mth {
@@ -129,6 +130,7 @@ void backsubUT(
     Vector<T,N>& x)
 {
   unsigned n = a.cols();
+  assert(a.rows() >= n);
   x.resize(n);
   for (unsigned ii = 0; ii < n; ++ii) {
     unsigned i = n - ii - 1;
@@ -141,5 +143,23 @@ void backsubUT(
 
 template void backsubUT(Matrix<double,0,0> const& a,
     Vector<double,0> const& b, Vector<double,0>& x);
+
+template <class T, unsigned M, unsigned N>
+void solveQR(Matrix<T,M,N> const& a,
+    Vector<T,M> const& b,
+    Vector<T,N>& x)
+{
+  Matrix<T,M,M> q;
+  Matrix<T,M,N> r;
+  decomposeQR(a, q, r);
+  Matrix<T,M,M> qt;
+  transpose(q, qt);
+  Vector<T,M> y;
+  multiply(qt, b, y);
+  backsubUT(r, y, x);
+}
+
+template void solveQR(Matrix<double,0,0> const& a, Vector<double,0> const& b,
+    Vector<double,0>& x);
 
 }

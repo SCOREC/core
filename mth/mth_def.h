@@ -38,13 +38,13 @@ Vector<T,N> reject(Vector<T,N> const& a, Vector<T,N> const& b)
 }
 
 template <class T, unsigned M, unsigned N>
-Matrix<T,M,N> transpose(Matrix<T,M,N> const& a)
+void transpose(Matrix<T,M,N> const& a,
+    Matrix<T,N,M>& b)
 {
-  Matrix<T,N,M> r;
+  b.resize(a.cols(), a.rows());
   for (unsigned i=0; i < M; ++i)
   for (unsigned j=0; j < N; ++j)
-    r(j,i) = a(i,j);
-  return r;
+    b(j,i) = a(i,j);
 }
 
 template <class T>
@@ -80,6 +80,20 @@ Matrix<T,3,3> inverse(Matrix<T,3,3> const& a)
   r[1] = cross(x[2], x[0]);
   r[2] = cross(x[0], x[1]);
   return r / determinant(a);
+}
+
+template <class T, unsigned M, unsigned N>
+void multiply(Matrix<T,M,N> const& a, Vector<T,N> const& b,
+    Vector<T,M>& c)
+{
+  unsigned m = a.rows();
+  unsigned n = a.cols();
+  c.resize(m);
+  for (unsigned i = 0; i < m; ++i) {
+    c(i) = 0;
+    for (unsigned j = 0; j < n; ++j)
+      c(i) += a(i,j) * b(j);
+  }
 }
 
 }
