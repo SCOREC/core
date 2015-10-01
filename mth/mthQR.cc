@@ -122,4 +122,24 @@ template unsigned decomposeQR(Matrix<double,3,3> const& a,
 template unsigned decomposeQR(Matrix<double,0,0> const& a,
     Matrix<double,0,0>& q, Matrix<double,0,0>& r);
 
+template <class T, unsigned M, unsigned N>
+void backsubUT(
+    Matrix<T,M,N> const& a,
+    Vector<T,M> const& b,
+    Vector<T,N>& x)
+{
+  unsigned n = a.cols();
+  x.resize(n);
+  for (unsigned ii = 0; ii < n; ++ii) {
+    unsigned i = n - ii - 1;
+    x(i) = b(i);
+    for (unsigned j = i + 1; j < n; ++j)
+      x(i) -= a(i,j) * x(j);
+    x(i) /= a(i,i);
+  }
+}
+
+template void backsubUT(Matrix<double,0,0> const& a,
+    Vector<double,0> const& b, Vector<double,0>& x);
+
 }

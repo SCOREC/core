@@ -11,6 +11,12 @@ unsigned decomposeQR(
     Matrix<T,M,M>& q,
     Matrix<T,M,N>& r);
 
+template <class T, unsigned M, unsigned N>
+void backsubUT(
+    Matrix<T,M,N> const& a,
+    Vector<T,M> const& b,
+    Vector<T,N>& x);
+
 }
 
 #endif
