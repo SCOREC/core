@@ -110,7 +110,7 @@ public:
 
         for(int i = 0; i < P+1; ++i)
           for(int j = 0; j < P+1-i; ++j)
-            values[b2[P][i][j]] =
+            values[getTriNodeIndex(P,i,j)] =
                 trinomial(P,i,j)*Bijk(i,j,P-i-j,xii[0],xii[1],xii[2]);
 
       } else
@@ -132,7 +132,7 @@ public:
 
         for(int i = 1; i < P+1; ++i)
           for(int j = 1; j < P-i; ++j)
-            grads[b2[P][i][j]] =
+            grads[getTriNodeIndex(P,i,j)] =
                 gxii[0]*trinomial(P,i,j)*(i*(1.-xii[1])-(P-j)*xii[0])
                 *Bijk(i-1,j,P-i-j-1,xii[0],xii[1],xii[2]) +
                 gxii[1]*trinomial(P,i,j)*(j*(1.-xii[0])-(P-i)*xii[1])
@@ -140,21 +140,21 @@ public:
 
         // i = 0
         for(int j = 1; j < P; ++j)
-          grads[b2[P][0][j]] =
+          grads[3+2*(P-1)-j] =
             (gxii[0]*(j-P)*xii[1] +
             gxii[1]*(j*(1.-xii[0])-P*xii[1]))
             *binomial(P,j)*Bij(j-1,P-j-1,xii[1],xii[2]);
 
         // j = 0
         for(int i = 1; i < P; ++i)
-          grads[b2[P][i][0]] =
+          grads[3+2*(P-1)-1+i] =
               (gxii[0]*(i*(1.-xii[1])-P*xii[0]) +
                gxii[1]*(i-P)*xii[0])
               *binomial(P,i)*Bij(i-1,P-i-1,xii[0],xii[2]);
 
         // k = 0
         for(int i = 1, j = P-1; i < P; ++i, --j)
-          grads[b2[P][i][j]] =
+          grads[3+(P-1)-i] =
               (gxii[0]*i*xii[1] + gxii[1]*j*xii[0])
               *trinomial(P,i,j)*Bij(i-1,j-1,xii[0],xii[1]);
 
@@ -366,8 +366,27 @@ public:
       }
       // must be a triangle
       int n = (P-1)*(P-2)/2;
-      for(int i = 0; i < n; ++i)
-        order[i] = tet_tri[P][flip][rotate][i];
+      if(P <= 6)
+        for(int i = 0; i < n; ++i)
+          order[i] = tet_tri[P][flip][rotate][i];
+      else {
+        int index0, index1;
+        if(!flip){
+          index0 = (3-rotate) % 3;
+          index1 = (4-rotate) % 3;
+        } else {
+          index0 = (rotate+2) % 3;
+          index1 = (rotate+1) % 3;
+        }
+        int index = 0;
+        for(int i = 0; i <= P-3; ++i)
+          for(int j = 0; j <= P-3-i; ++j){
+            int ijk[3] = {i,j,P-3-i-j};
+            order[index] = ijk[index0]*(P-2)-ijk[index0]*(ijk[index0]-1)/2
+              +ijk[index1];
+            index++;
+          }
+      }
     }
   };
   apf::EntityShape* getEntityShape(int type)
