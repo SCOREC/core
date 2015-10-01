@@ -26,7 +26,7 @@ static void copyTriangleNodes(int P, apf::NewArray<T>& nodes,
  */
 template <class T>
 static void splitEdge(int P, double t, apf::NewArray<T>& nodes,
-    apf::NewArray<T> (&subNodes)[2])
+    apf::NewArray<T> *subNodes)
 {
   subNodes[0][0] = nodes[0];
   subNodes[1][P] = nodes[P];
@@ -52,8 +52,8 @@ void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
   splitEdge(P,t,nodes,subNodes);
 }
 
-void subdivideBezierEdgeJacobianDet(int P, apf::NewArray<double>& nodes,
-    apf::NewArray<double> (&subNodes)[2])
+static void subdivideBezierEdgeJacobianDet(int P, apf::NewArray<double>& nodes,
+    apf::NewArray<double> *subNodes)
 {
   splitEdge(P,0.5,nodes,subNodes);
 }
@@ -114,7 +114,7 @@ void subdivideBezierTriangle(int P, apf::Vector3& p,
  */
 template <class T>
 static void splitBezierTriangle(int P, apf::NewArray<T>& nodes,
-    apf::NewArray<T> (&subNodes)[4])
+    apf::NewArray<T> *subNodes)
 {
   int n = (P+1)*(P+2)/2;
   apf::NewArray<T> tempSubNodes1[1];
@@ -151,11 +151,22 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
   splitBezierTriangle(P,nodes,subNodes);
 }
 
-void subdivideBezierTriangleJacobianDet(int P,
+static void subdivideBezierTriangleJacobianDet(int P,
     apf::NewArray<double>& nodes,
-    apf::NewArray<double> (&subNodes)[4])
+    apf::NewArray<double> *subNodes)
 {
   splitBezierTriangle(P,nodes,subNodes);
 }
 
+SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES] =
+{
+  NULL,   //vertex
+  subdivideBezierEdgeJacobianDet,     //edge
+  subdivideBezierTriangleJacobianDet, //triangle
+  NULL,      //quad
+  NULL,      //tet
+  NULL,      //hex
+  NULL,      //prism
+  NULL     //pyramid
+};
 } // namespace crv

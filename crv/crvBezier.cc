@@ -102,7 +102,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<double>& values) const
     {
-      values.allocate(curved_face_total[BEZIER][P-1]);
+      values.allocate((P+1)*(P+2)/2);
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
@@ -120,7 +120,7 @@ public:
     void getLocalGradients(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      grads.allocate(curved_face_total[BEZIER][P-1]);
+      grads.allocate((P+1)*(P+2)/2);
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
       apf::Vector3 gxii[3] =
@@ -162,7 +162,7 @@ public:
         BlendedTriangleGetLocalGradients(m,e,xi,grads);
 
     }
-    int countNodes() const {return curved_face_total[BEZIER][P-1];}
+    int countNodes() const {return getNumControlPoints(apf::Mesh::TRIANGLE,P);}
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
     {
@@ -175,38 +175,52 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      if(!useBlend() && P <= 4){
-        values.allocate(curved_tet_total[BEZIER][P-1]);
+      if(!useBlend()){
+        values.allocate((P+1)*(P+2)*(P+3)/6);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
           values[i] = pow(xii[i],P);
 
         int nE = P-1;
-        int nF = curved_face_internal[BEZIER][P-1];
-        int nT = curved_tet_internal[BEZIER][P-1];
 
         int const (*tev)[2] = apf::tet_edge_verts;
-        int const (*ttv)[3] = apf::tet_tri_verts;
 
         for(int a = 0; a < 6; ++a)
           for(int b = 0; b < nE; ++b) // edge nodes
             values[4+a*nE+b] = binomial(P,b+1)
               *Bij(P-b-1,b+1,xii[tev[a][0]],xii[tev[a][1]]);
 
-        for(int a = 0; a < 4; ++a)
-          for(int b = 0; b < nF; ++b) // face nodes
-            values[4+6*nE+a*nF+b] = trinomial(P,P-2,1)
-              *Bijk(P-2,1,1,xii[ttv[a][b]],xii[ttv[a][(b+1) % 3]],
-                  xii[ttv[a][(b+2) % 3]]);
+        // face 0, l = 0
+        for(int i = 1; i <= P-1; ++i)
+          for(int j = 1; j <= P-1-i; ++j)
+              values[computeTetNodeIndex(P,i,j,P-i-j)] = trinomial(P,i,j)
+                  *Bijk(i,j,P-i-j,xii[0],xii[1],xii[2]);
+        // face 1, k = 0
+        for(int i = 1; i <= P-1; ++i)
+          for(int j = 1; j <= P-1-i; ++j)
+              values[computeTetNodeIndex(P,i,j,0)] = trinomial(P,i,j)
+                  *Bijk(i,j,P-i-j,xii[0],xii[1],xii[3]);
+        // face 2, i = 0
+        for(int j = 1; j <= P-1; ++j)
+          for(int k = 1; k <= P-1-j; ++k)
+              values[computeTetNodeIndex(P,0,j,k)] = trinomial(P,j,k)
+                  *Bijk(j,k,P-j-k,xii[1],xii[2],xii[3]);
+        // face 3, j = 0
+        for(int i = 1; i <= P-1; ++i)
+            for(int k = 1; k <= P-1-i; ++k)
+                values[computeTetNodeIndex(P,i,0,k)] = trinomial(P,i,k)
+                    *Bijk(i,k,P-i-k,xii[0],xii[2],xii[3]);
 
-        for(int a = 0; a < nT; ++a){ // internal nodes
-          int ijkl[4] = {1,1,1,1};
-          ijkl[a] += P-4;
-          values[4+6*nE+4*nF+a] = quadnomial(P,P-3,1,1)
-              *Bijkl(ijkl,xii);
-        }
+        // internal nodes
+        for(int i = 1; i <= P-1; ++i)
+          for(int j = 1; j <= P-1-i; ++j)
+            for(int k = 1; k <= P-1-i-j; ++k)
+              values[computeTetNodeIndex(P,i,j,k)] = quadnomial(P,i,j,k)
+                  *Bijkl(i,j,k,P-i-j-k,xii[0],xii[1],xii[2],xii[3]);
+
+
       } else {
-        values.allocate(blended_tet_total[BEZIER][P-1]);
+        values.allocate(2*P*P+2);
         BlendedTetGetValues(m,e,xi,values);
       }
     }
@@ -214,8 +228,8 @@ public:
         apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      if(!useBlend() && P <= 4){
-        grads.allocate(curved_tet_total[BEZIER][P-1]);
+      if(!useBlend()){
+        grads.allocate((P+1)*(P+2)*(P+3)/6);
 
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
@@ -225,8 +239,7 @@ public:
           grads[i] = gxii[i]*P*pow(xii[i],P-1);
 
         int nE = P-1;
-        int nF = curved_face_internal[BEZIER][P-1];
-        int nT = curved_tet_internal[BEZIER][P-1];
+        int nF = (P-1)*(P-2)/2;
 
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
@@ -250,24 +263,91 @@ public:
             }
           }
         } // done faces
+        // face 0, l = 0
+        for(int i = 1; i <= P-1; ++i)
+          for(int j = 1; j <= P-1-i; ++j){
+            int index = computeTetNodeIndex(P,i,j,P-i-j);
+            grads[index].zero();
+            int ijk[3] = {i,j,P-i-j};
+            for(int b = 0; b < 3; ++b){
+              grads[index] += gxii[ttv[0][b]]*ijk[b]
+                             *Bijk(ijk[b % 3]-1,ijk[(b+1) % 3],ijk[(b+2) % 3],
+                              xii[ttv[0][b % 3]],xii[ttv[0][(b+1) % 3]],
+                              xii[ttv[0][(b+2) % 3]]);
 
-        for(int a = 0; a < nT; ++a){
-          grads[4+6*nE+4*nF+a].zero();
-          for(int b = 0; b < 4; ++b)
-            grads[4+6*nE+4*nF+a] += gxii[b]*quadnomial(P,P-3,1,1)*(P-3)
-                *Bijkl(P-4,1,1,1,xii[b],xii[(b+1) % 4],
-                xii[(b+2) % 4],xii[(b+3) % 4]);
-        }
+            }
+            grads[index] = grads[index]*trinomial(P,i,j);
+          }
+        // face 1, k = 0
+        for(int i = 1; i <= P-1; ++i)
+          for(int j = 1; j <= P-1-i; ++j){
+            int index = computeTetNodeIndex(P,i,j,0);
+            grads[index].zero();
+            int ijk[3] = {i,j,P-i-j};
+            for(int b = 0; b < 3; ++b){
+              grads[index] += gxii[ttv[1][b]]*ijk[b]
+                             *Bijk(ijk[b % 3]-1,ijk[(b+1) % 3],ijk[(b+2) % 3],
+                              xii[ttv[1][b % 3]],xii[ttv[1][(b+1) % 3]],
+                              xii[ttv[1][(b+2) % 3]]);
+
+            }
+            grads[index] = grads[index]*trinomial(P,i,j);
+          }
+        // face 2, i = 0
+        for(int j = 1; j <= P-1; ++j)
+          for(int k = 1; k <= P-1-j; ++k){
+            int index = computeTetNodeIndex(P,0,j,k);
+            grads[index].zero();
+            int jkl[3] = {j,k,P-j-k};
+            for(int b = 0; b < 3; ++b){
+              grads[index] += gxii[ttv[2][b]]*jkl[b]
+                             *Bijk(jkl[b % 3]-1,jkl[(b+1) % 3],jkl[(b+2) % 3],
+                              xii[ttv[2][b % 3]],xii[ttv[2][(b+1) % 3]],
+                              xii[ttv[2][(b+2) % 3]]);
+
+            }
+            grads[index] = grads[index]*trinomial(P,j,k);
+          }
+        // face 3, j = 0
+        for(int i = 1; i <= P-1; ++i)
+            for(int k = 1; k <= P-1-i; ++k){
+              int index = computeTetNodeIndex(P,i,0,k);
+              grads[index].zero();
+              int ikl[3] = {i,k,P-i-k};
+              for(int b = 0; b < 3; ++b){
+                grads[index] += gxii[ttv[3][b]]*ikl[b]
+                               *Bijk(ikl[b % 3]-1,ikl[(b+1) % 3],ikl[(b+2) % 3],
+                                xii[ttv[3][b % 3]],xii[ttv[3][(b+1) % 3]],
+                                xii[ttv[3][(b+2) % 3]]);
+
+              }
+              grads[index] = grads[index]*trinomial(P,i,k);
+            }
+        // internal nodes
+        for(int i = 1; i <= P-1; ++i)
+          for(int j = 1; j <= P-1-i; ++j)
+            for(int k = 1; k <= P-1-i-j; ++k){
+              int index = computeTetNodeIndex(P,i,j,k);
+              grads[index].zero();
+              int ijkl[4] = {i,j,k,P-i-j-k};
+              for(int b = 0; b < 4; ++b){
+                grads[index] += gxii[b]*ijkl[b]
+                   *Bijkl(ijkl[b % 4]-1,ijkl[(b+1) % 4],ijkl[(b+2) % 4],ijkl[(b+3) % 4],
+                       xii[b],xii[(b+1) % 4],xii[(b+2) % 4],xii[(b+3) % 4]);
+
+              }
+              grads[index] = grads[index]*quadnomial(P,i,j,k);
+            }
       } else {
-        grads.allocate(blended_tet_total[BEZIER][P-1]);
+        grads.allocate(2*P*P+2);
         BlendedTetGetLocalGradients(m,e,xi,grads);
       }
     }
     int countNodes() const {
       if(!useBlend())
-        return curved_tet_total[BEZIER][P-1];
+        return (P+1)*(P+2)*(P+3)/6;
       else
-        return blended_tet_total[BEZIER][P-1];
+        return 2*P*P+2;
     }
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -285,7 +365,7 @@ public:
         return;
       }
       // must be a triangle
-      int n = curved_face_internal[BEZIER][P-1];
+      int n = (P-1)*(P-2)/2;
       for(int i = 0; i < n; ++i)
         order[i] = tet_tri[P][flip][rotate][i];
     }
@@ -322,10 +402,10 @@ public:
       case apf::Mesh::EDGE:
         return P-1;
       case apf::Mesh::TRIANGLE:
-        return curved_face_internal[BEZIER][P-1];
+        return (P-1)*(P-2)/2;
       case apf::Mesh::TET:
         if(!useBlend()){
-          return curved_tet_internal[BEZIER][P-1];
+          return (P-1)*(P-2)*(P-3)/6;
         } else
           return 0;
       default:
@@ -360,7 +440,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<double>& values) const
     {
-      values.allocate(curved_face_total[GREGORY][2]);
+      values.allocate(15);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
       apf::ModelEntity* g = m->toModel(e);
@@ -393,7 +473,7 @@ public:
     void getLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
     {
-      grads.allocate(curved_face_total[GREGORY][2]);
+      grads.allocate(15);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
@@ -440,7 +520,7 @@ public:
     }
     int countNodes() const
     {
-      return curved_face_total[GREGORY][2];
+      return 15;
     }
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -455,14 +535,14 @@ public:
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
       if(!useBlend()){
-        values.allocate(curved_tet_total[GREGORY][2]);
+        values.allocate(40);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
           values[i] = pow(xii[i],P);
         for(int i = 4; i < 40; ++i)
           values[i] = 0.;
-        int nE = P-1;
-        int nF = curved_face_internal[GREGORY][2];
+        int nE = 2;
+        int nF = 15;
 
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
@@ -492,7 +572,7 @@ public:
           }
         }
       } else {
-        values.allocate(blended_tet_total[GREGORY][2]);
+        values.allocate(40);
         BlendedTetGetValues(m,e,xi,values);
       }
     }
@@ -501,7 +581,7 @@ public:
         apf::NewArray<apf::Vector3>& grads) const
     {
       if(!useBlend()){
-        grads.allocate(curved_tet_total[GREGORY][2]);
+        grads.allocate(40);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
             apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
@@ -510,8 +590,8 @@ public:
           grads[i] = gxii[i]*P*pow(xii[i],P-1);
         for(int i = 4; i < 40; ++i)
           grads[i].zero();
-        int nE = P-1;
-        int nF = curved_face_internal[GREGORY][2];
+        int nE = 2;
+        int nF = 15;
 
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
@@ -552,15 +632,12 @@ public:
           }
         } // done faces
       } else {
-        grads.allocate(blended_tet_total[GREGORY][2]);
+        grads.allocate(40);
         BlendedTetGetLocalGradients(m,e,xi,grads);
       }
     }
     int countNodes() const {
-      if(!useBlend())
-        return curved_tet_total[GREGORY][2];
-      else
-        return blended_tet_total[GREGORY][2];
+      return 40;
     }
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -656,7 +733,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e, apf::Vector3 const& xi,
         apf::NewArray<double>& values) const
     {
-      values.allocate(curved_face_total[GREGORY][3]);
+      values.allocate(18);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
       apf::ModelEntity* g = m->toModel(e);
@@ -687,7 +764,7 @@ public:
     void getLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads) const
     {
-      grads.allocate(curved_face_total[GREGORY][3]);
+      grads.allocate(18);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
@@ -732,7 +809,7 @@ public:
     }
     int countNodes() const
     {
-      return curved_face_total[GREGORY][3];
+      return 18;
     }
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -747,14 +824,14 @@ public:
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
       if(!useBlend()){
-        values.allocate(curved_tet_total[GREGORY][P-1]);
+        values.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
           values[i] = pow(xii[i],P);
 
-        int nE = P-1;
-        int nF = curved_face_internal[GREGORY][P-1];
-        int nT = curved_tet_internal[GREGORY][P-1];
+        int nE = 3;
+        int nF = 18;
+        int nT = 1;
 
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
@@ -791,7 +868,7 @@ public:
               *Bijkl(ijkl,xii);
         }
       } else {
-        values.allocate(blended_tet_total[GREGORY][3]);
+        values.allocate(46);
         BlendedTetGetValues(m,e,xi,values);
       }
     }
@@ -800,7 +877,7 @@ public:
         apf::NewArray<apf::Vector3>& grads) const
     {
       if(!useBlend()){
-        grads.allocate(curved_tet_total[GREGORY][3]);
+        grads.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
             apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
@@ -808,9 +885,9 @@ public:
         for(int i = 0; i < 4; ++i)
           grads[i] = gxii[i]*P*pow(xii[i],P-1);
 
-        int nE = P-1;
-        int nF = curved_face_internal[GREGORY][P-1];
-        int nT = curved_tet_internal[GREGORY][P-1];
+        int nE = 3;
+        int nF = 18;
+        int nT = 1;
         apf::Vector3 xv;
 
         int const (*tev)[2] = apf::tet_edge_verts;
@@ -867,15 +944,15 @@ public:
                 xii[(b+2) % 4],xii[(b+3) % 4]);
         }
       } else {
-        grads.allocate(blended_tet_total[GREGORY][3]);
+        grads.allocate(46);
         BlendedTetGetLocalGradients(m,e,xi,grads);
       }
     }
     int countNodes() const {
       if(!useBlend())
-        return curved_tet_total[GREGORY][3];
+        return 47;
       else
-        return blended_tet_total[GREGORY][3];
+        return 46;
     }
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -1045,11 +1122,11 @@ public:
       if (m->getModelType(g) != m->getDimension()){
 
         double sum = 0.;
-        for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i){
+        for(int i = 0; i < (P+1)*(P+2)/2; ++i){
           values[i] *= weights[i];
           sum += values[i];
         }
-        for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i){
+        for(int i = 0; i < (P+1)*(P+2)/2; ++i){
           values[i]/=sum;
         }
       }
@@ -1065,25 +1142,25 @@ public:
         apf::NewArray<double> values;
         getBezier(P)->
             getEntityShape(apf::Mesh::TRIANGLE)->getValues(m,e,xi,values);
-
-        for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i){
+        int n = (P+1)*(P+2)/2;
+        for(int i = 0; i < n; ++i){
           values[i] *= weights[i];
           grads[i] = grads[i]*weights[i];
         }
         double sum = 0.;
         apf::Vector3 gsum = apf::Vector3(0,0,0);
-        for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i){
+        for(int i = 0; i < n; ++i){
           gsum += grads[i];
           sum += values[i];
         }
-        for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i){
+        for(int i = 0; i < n; ++i){
           grads[i] = (grads[i]*sum-gsum*values[i])/sum/sum;
         }
       }
     }
     int countNodes() const
     {
-      return curved_face_total[BEZIER][P-1];
+      return (P+1)*(P+2)/2;
     }
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -1092,8 +1169,8 @@ public:
     }
     void setWeights(apf::NewArray<double>& w)
     {
-      weights.allocate(curved_face_total[BEZIER][P-1]);
-      for(int i = 0; i < curved_face_total[BEZIER][P-1]; ++i)
+      weights.allocate((P+1)*(P+2)/2);
+      for(int i = 0; i < (P+1)*(P+2)/2; ++i)
         weights[i] = w[i];
     }
   private:

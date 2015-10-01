@@ -733,12 +733,36 @@ int countOwned(Mesh* m, int dim)
   return n;
 }
 
+void printTypes(Mesh* m)
+{
+  const int dim = m->getDimension();
+  if (dim==1) return;
+  assert(dim==2 || dim==3);
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  long typeCnt[Mesh::TYPES];
+  for (int i=0; i<Mesh::TYPES; i++)
+    typeCnt[i]=0;
+  while ((e = m->iterate(it)))
+    typeCnt[m->getType(e)]++;
+  m->end(it);
+  PCU_Add_Longs(typeCnt,Mesh::TYPES);
+  if (!PCU_Comm_Self()) {
+    printf("number of");
+    for (int i=0; i<Mesh::TYPES; i++)
+      if (dim == Mesh::typeDimension[i])
+        printf(" %s %d", Mesh::typeName[i], typeCnt[i]);
+    printf("\n");
+  }
+}
+
 void printStats(Mesh* m)
 {
   long n[4];
   for (int i = 0; i < 4; ++i)
     n[i] = countOwned(m, i);
   PCU_Add_Longs(n, 4);
+  printTypes(m);
   if (!PCU_Comm_Self())
     printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
         n[0], n[1], n[2], n[3]);

@@ -499,6 +499,127 @@ void testTriElevation()
   }
 }
 
+apf::Mesh2* createMesh3D()
+{
+  gmi_model* model = gmi_load(".null");
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+
+  apf::Vector3 points3D[4] =
+  {apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1)};
+
+  apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
+
+  apf::deriveMdsModel(m);
+
+  m->acceptChanges();
+  m->verify();
+  return m;
+}
+
+void testTetElevation()
+{
+  gmi_register_null();
+
+  for (int order = 1; order <= 4; ++order){
+
+    apf::Mesh2* m = createMesh3D();
+    apf::changeMeshShape(m, crv::getBezier(order),true);
+    crv::setBlendingOrder(0);
+    apf::FieldShape* fs = m->getShape();
+    crv::BezierCurver bc(m,order,0);
+    // go downward, and convert interpolating to control points
+    for(int d = 2; d >= 1; --d){
+      int n = crv::getNumControlPoints(d,order);
+      int ne = fs->countNodesOn(d);
+      apf::NewArray<double> c;
+      crv::getTransformationCoefficients(order,d,c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))) {
+        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+        bc.convertInterpolationPoints(e,n,ne,c);
+      }
+      m->end(it);
+    }
+    apf::MeshIterator* it = m->begin(3);
+    apf::MeshEntity* tet = m->iterate(it);
+    m->end(it);
+
+    apf::Element* elem = apf::createElement(m->getCoordinateField(),tet);
+
+    apf::MeshEntity* verts[4],* edges[6],* faces[4];
+    m->getDownward(tet,0,verts);
+    m->getDownward(tet,1,edges);
+    m->getDownward(tet,2,faces);
+
+    apf::NewArray<apf::Vector3> pts(35);
+    apf::NewArray<apf::Vector3> nodes;
+
+    apf::getVectorNodes(elem,nodes);
+    apf::Vector3 p, pt;
+    int n = 0;
+    for (int k = 0; k <= 4; ++k){
+      p[2] = 0.25*k;
+      for (int j = 0; j <= 4-k; ++j){
+        p[1] = 0.25*j;
+        for (int i = 0; i <= 4-j-k; ++i){
+          p[0] = 0.25*i;
+          apf::getVector(elem,p,pts[n]);
+          n++;
+        }
+      }
+    }
+    apf::destroyElement(elem);
+
+    // elevate everything to 4th order
+
+    apf::NewArray<apf::Vector3> elevatedNodes;
+    elevatedNodes.allocate(35);
+    crv::elevateBezierTet(order,4-order,nodes,elevatedNodes);
+    apf::changeMeshShape(m,crv::getBezier(4),false);
+    for (int i = 0; i < 4; ++i)
+      m->setPoint(verts[i],0,elevatedNodes[i]);
+
+    int which, rotate;
+    bool flip;
+    for (int i = 0; i < 6; ++i){
+      apf::getAlignment(m,tet,edges[i],which,flip,rotate);
+      if(!flip)
+        for (int j = 0; j < 3; ++j)
+          m->setPoint(edges[i],j,elevatedNodes[4+3*i+j]);
+      else
+        for (int j = 0; j < 3; ++j)
+          m->setPoint(edges[i],2-j,elevatedNodes[4+3*i+j]);
+    }
+    for (int i = 0; i < 4; ++i)
+      for (int j = 0; j < 3; ++j)
+        m->setPoint(faces[i],j,elevatedNodes[22+3*i+j]);
+
+    m->setPoint(tet,0,elevatedNodes[34]);
+
+    elem = apf::createElement(m->getCoordinateField(),tet);
+    n = 0;
+    for (int k = 0; k <= 4; ++k){
+      p[2] = 0.25*k;
+      for (int j = 0; j <= 4-k; ++j){
+        p[1] = 0.25*j;
+        for (int i = 0; i <= 4-j-k; ++i){
+          p[0] = 0.25*i;
+          apf::getVector(elem,p,pt);
+          assert(std::abs((pts[n]-pt).getLength()) < 1e-15);
+          n++;
+        }
+      }
+    }
+    apf::destroyElement(elem);
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+}
+
 void testNodeIndexing(){
   for(int P = 1; P <= 10; ++P)
     for(int i = 0; i <= P; ++i)
@@ -523,6 +644,7 @@ int main(int argc, char** argv)
   testEdgeElevation();
   testTriSubdivision();
   testTriElevation();
+  testTetElevation();
   testNodeIndexing();
   PCU_Comm_Free();
   MPI_Finalize();

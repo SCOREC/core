@@ -12,13 +12,17 @@
 
 namespace crv {
 
-void subdivideBezierEdgeJacobianDet(int P,
+typedef void (*ElevateFunction)(int P, int r,
     apf::NewArray<double>& nodes,
-    apf::NewArray<double> (&subNodes)[2]);
+    apf::NewArray<double>& elevatedNodes);
 
-void subdivideBezierTriangleJacobianDet(int P,
+typedef void (*SubdivisionFunction)(int P,
     apf::NewArray<double>& nodes,
-    apf::NewArray<double> (&subNodes)[4]);
+    apf::NewArray<double> *subNodes);
+
+extern ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES];
+
+extern SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES];
 
 }
 

@@ -121,7 +121,7 @@ bool BezierCurver::run()
       int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
       int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
       apf::NewArray<double> c;
-      getBlendedTransformationCoefficients(m_order,apf::Mesh::simplexTypes[d],c);
+      getBlendedTransformationCoefficients(m_order,1,apf::Mesh::simplexTypes[d],c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m_mesh->begin(d);
       while ((e = m_mesh->iterate(it))){
@@ -394,7 +394,7 @@ bool GregoryCurver::run()
       int n = fs->getEntityShape(type)->countNodes();
       int ne = fs->countNodesOn(type);
       apf::NewArray<double> c;
-      getGregoryBlendedTransformationCoefficients(m_order,type,c);
+      getGregoryBlendedTransformationCoefficients(m_order,1,type,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m_mesh->begin(d);
       while ((e = m_mesh->iterate(it))){

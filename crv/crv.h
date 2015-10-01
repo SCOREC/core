@@ -141,11 +141,11 @@ void setNurbsTriangleWeights(apf::NewArray<double>& weights);
  \details works only for prescribed optimal point locations */
 void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
-void getBlendedTransformationCoefficients(int P, int type,
+void getBlendedTransformationCoefficients(int P, int blend, int type,
     apf::NewArray<double>& c);
 void getGregoryTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
-void getGregoryBlendedTransformationCoefficients(int P, int type,
+void getGregoryBlendedTransformationCoefficients(int P, int blend, int type,
     apf::NewArray<double>& c);
 
 /** \brief computes interpolation error of a curved entity on a mesh
@@ -174,13 +174,23 @@ int trinomial(int n, int i, int j);
 int quadnomial(int n, int i, int j, int k);
 
 /** \brief check the validity (det(Jacobian) > eps) of an element
- * \details entities is a container of invalid downward entities*/
+ * \details entities is a container of invalid downward entities
+ * algorithm is an integer corresponding to what method to use
+ * 0 - subdivision
+ * 1 - elevation
+ * 2 - subdivision, without first check
+ * 3 - elevation, without first check
+ *
+ * methods 2 and 3 exist because the first check tends to catch everything
+ * without actually using subdivision and elevation, and giving this option
+ * is easier for debugging and verifying the efficacy of those procedures
+ * */
 
 int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6]);
+    apf::MeshEntity* entities[6], int algorithm);
 
 int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[14]);
+    apf::MeshEntity* entities[14], int algorithm);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

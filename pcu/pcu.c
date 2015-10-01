@@ -78,6 +78,10 @@ int PCU_Comm_Init(void)
   pcu_set_mpi(&pcu_pmpi);
   pcu_make_msg(&global_pmsg);
   global_state = init;
+  /* turn ordering on by default, call
+     PCU_Comm_Order(false) after PCU_Comm_Init
+     to disable this */
+  PCU_Comm_Order(true);
   return PCU_SUCCESS;
 }
 
