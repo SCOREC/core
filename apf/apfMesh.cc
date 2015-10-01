@@ -751,7 +751,7 @@ void printTypes(Mesh* m)
     printf("number of");
     for (int i=0; i<Mesh::TYPES; i++)
       if (dim == Mesh::typeDimension[i])
-        printf(" %s %d", Mesh::typeName[i], typeCnt[i]);
+        printf(" %s %ld", Mesh::typeName[i], typeCnt[i]);
     printf("\n");
   }
 }
