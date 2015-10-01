@@ -5,22 +5,25 @@
 int main()
 {
   double a_dat[3][3] = {
-    {1,1,0},
+    {1,0,0},
     {0,1,0},
-    {0,0,0}
+    {0,0,1}
+  };
+  double b_dat[3] = {
+    1,
+    0,
+    0
   };
   mth::Matrix<double,0,0> a(3,3);
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
     a(i,j) = a_dat[i][j];
   std::cout << "A\n" << a;
-  mth::Matrix<double,0,0> q;
-  mth::Matrix<double,0,0> r;
-  unsigned rank = decomposeQR(a, q, r);
-  std::cout << "rank " << rank << '\n';
-  std::cout << "Q\n" << q;
-  std::cout << "R\n" << r;
-  mth::Matrix<double,0,0> qr;
-  mth::multiply(q, r, qr);
-  std::cout << "Q*R\n" << qr;
+  mth::Vector<double,0> b(3);
+  for (unsigned i = 0; i < 3; ++i)
+    b(i) = b_dat[i];
+  std::cout << "B\n" << b;
+  mth::Vector<double,0> x;
+  mth::solveQR(a, b, x);
+  std::cout << "X\n" << x;
 }
