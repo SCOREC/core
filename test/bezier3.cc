@@ -241,8 +241,8 @@ void edge2(double const p[2], double x[3], void*)
 
 void face0(double const p[2], double x[3], void*)
 {
-  x[0] = p[1]+1.-p[0]-p[1];
-  x[1] = 1.-p[0]-p[1];
+  (void)p;
+  (void)x;
 }
 
 void make_edge_topo(gmi_model* m, gmi_ent* e, int v0tag, int v1tag)
@@ -260,7 +260,7 @@ gmi_model* makeFaceModel()
   int edPer = 0;
   double edRan[2] = {0, 1};
   for(int i = 0; i < 3; ++i)
-    gmi_add_analytic(model, 0, i, vertFunction, NULL,NULL,NULL);
+    gmi_add_analytic(model, 0, i, vertFunction,NULL,NULL,NULL);
   gmi_ent* eds[3];
   eds[0] = gmi_add_analytic(model, 1, 0, edge0, &edPer, &edRan, 0);
   eds[1] = gmi_add_analytic(model, 1, 1, edge1, &edPer, &edRan, 0);
@@ -302,12 +302,14 @@ apf::Mesh2* createMesh2D()
  * exactly replicates its part of the old one
  *
  */
-void testTriSubdivision()
+void testTriSubdivision1()
 {
+
   for(int o = 1; o <= 6; ++o){
     apf::Mesh2* m = createMesh2D();
     crv::BezierCurver bc(m,o,0);
     bc.run();
+
     apf::MeshIterator* it = m->begin(2);
     apf::MeshEntity* e = m->iterate(it);
     m->end(it);
@@ -383,8 +385,14 @@ void testTriSubdivision()
     m->destroyNative();
     apf::destroyMesh(m);
   }
+}
 
-  for(int o = 1; o <= 6; ++o){
+/* Create a single triangle, split it into 4, and try not to crash
+ *
+ */
+void testTriSubdivision4()
+{
+  for(int o = 2; o <= 2; ++o){
     apf::Mesh2* m = createMesh2D();
     crv::BezierCurver bc(m,o,0);
     bc.run();
@@ -403,23 +411,7 @@ void testTriSubdivision()
     apf::Vector3 splitpt(0,0.5,0.5);
 
     crv::subdivideBezierTriangle(o,nodes,subNodes);
-    apf::MeshEntity* fourSplit[4];
 
-    for (int t = 0; t < 4; ++t){
-      apf::Vector3 points[3];
-      for (int i = 0; i < 3; ++i)
-        points[i] = subNodes[t][i];
-      fourSplit[t] = apf::buildOneElement(m,m->findModelEntity(2,0),apf::Mesh::TRIANGLE,points);
-      apf::MeshEntity* edges[3];
-      m->getDownward(fourSplit[t],1,edges);
-      for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < o-1; ++j){
-          m->setPoint(edges[i],j,subNodes[t][3+i*(o-1)+j]);
-        }
-      for (int j = 0; j < (o-1)*(o-2)/2; ++j){
-        m->setPoint(fourSplit[t],j,subNodes[t][3+3*(o-1)+j]);
-      }
-    }
     apf::destroyElement(elem);
     m->destroyNative();
     apf::destroyMesh(m);
@@ -428,8 +420,6 @@ void testTriSubdivision()
 
 void testTriElevation()
 {
-  apf::Vector3 points2D[3] =
-  {apf::Vector3(0,0,0),apf::Vector3(1,0,0),apf::Vector3(1,1,0)};
 
   for (int o = 1; o <= 5; ++o){
 
@@ -471,9 +461,9 @@ void testTriElevation()
     crv::elevateBezierTriangle(o,6-o,nodes,elevatedNodes);
     apf::changeMeshShape(m,crv::getBezier(6),false);
 
-    m->setPoint(verts[0],0,points2D[0]);
-    m->setPoint(verts[1],0,points2D[1]);
-    m->setPoint(verts[2],0,points2D[2]);
+    m->setPoint(verts[0],0,elevatedNodes[0]);
+    m->setPoint(verts[1],0,elevatedNodes[1]);
+    m->setPoint(verts[2],0,elevatedNodes[2]);
 
     for (int i = 0; i < 3; ++i)
       for (int j = 1; j <= 5; ++j)
@@ -646,7 +636,8 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   testEdgeSubdivision();
   testEdgeElevation();
-  testTriSubdivision();
+  testTriSubdivision1();
+  testTriSubdivision4();
   testTriElevation();
   testTetElevation();
   testNodeIndexing();
