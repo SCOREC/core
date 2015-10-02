@@ -48,8 +48,6 @@ configure_file(
 #Sources & Headers
 set(SOURCES
   sprGetGradIPField.cc
-  sprSVD.cc
-  sprQR.cc
   sprRecoverField.cc
   sprEstimateError.cc)
 
