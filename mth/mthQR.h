@@ -3,6 +3,9 @@
 
 #include "mthMatrix.h"
 
+/** @file mthQR.h
+  * @brief routines for the QR factorization of matrices */
+
 namespace mth {
 
 /** @brief finds the QR decomposition of A
