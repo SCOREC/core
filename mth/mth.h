@@ -17,7 +17,7 @@
   * \brief templated math functinos */
 
 /** \namespace mth
-  * \brief All MTH functions are contained in this header */
+  * \brief All MTH functions are contained in this namespace */
 namespace mth {
 
 /** \brief returns vector cross product */
