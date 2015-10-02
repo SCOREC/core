@@ -609,6 +609,9 @@ void testTetElevation()
         }
       }
     }
+
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,1,"curvedTest");
+
     apf::destroyElement(elem);
     m->destroyNative();
     apf::destroyMesh(m);
