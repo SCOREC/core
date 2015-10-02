@@ -106,13 +106,14 @@ unsigned decomposeQR(
     Matrix<T,M,N>& r)
 {
   unsigned m = a.rows();
+  unsigned n = a.cols();
   q.resize(m, m);
   fill_identity(q);
   Vector<T,M> v_scratch;
   v_scratch.resize(m);
   r = a;
   unsigned rank = 0;
-  for (unsigned k = 0; k < m; ++k)
+  for (unsigned k = 0; k < n; ++k)
     if (qr_step(r, q, v_scratch, k))
       ++rank;
   return rank;
