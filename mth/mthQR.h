@@ -35,7 +35,7 @@ void backsubUT(
     Vector<T,N>& x);
 
 /** @brief solves Ax = b given A's QR factorization
-  * @details when M > N, the least squares is solved.
+  * @details when M > N, the least squares problem is solved.
   *          only the dynamic type is explicitly instantiated.
   * @param q the MxM orthogonal input matrix
   * @param r the MxN (M >= N) upper triangular input matrix
@@ -48,7 +48,7 @@ void solveFromQR(Matrix<T,M,M> const& q,
     Vector<T,M> const& b, Vector<T,N>& x);
 
 /** @brief solves Ax = b using A's QR factorization
-  * @details when M > N, the least squares is solved.
+  * @details when M > N, the least squares problem is solved.
   *          only the dynamic type is explicitly instantiated.
   * @param a the MxN (M >= N) input matrix
   * @param b the Mx1 right hand side input vector
