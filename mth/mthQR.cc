@@ -107,6 +107,7 @@ unsigned decomposeQR(
 {
   unsigned m = a.rows();
   unsigned n = a.cols();
+  assert(m >= n);
   q.resize(m, m);
   fill_identity(q);
   Vector<T,M> v_scratch;
@@ -130,8 +131,9 @@ void backsubUT(
     Vector<T,M> const& b,
     Vector<T,N>& x)
 {
+  unsigned m = a.rows();
   unsigned n = a.cols();
-  assert(a.rows() >= n);
+  assert(m >= n);
   x.resize(n);
   for (unsigned ii = 0; ii < n; ++ii) {
     unsigned i = n - ii - 1;
