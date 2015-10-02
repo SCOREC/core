@@ -145,6 +145,22 @@ template void backsubUT(Matrix<double,0,0> const& a,
     Vector<double,0> const& b, Vector<double,0>& x);
 
 template <class T, unsigned M, unsigned N>
+void solveFromQR(Matrix<T,M,M> const& q,
+    Matrix<T,M,N> const& r,
+    Vector<T,M> const& b, Vector<T,N>& x)
+{
+  Matrix<T,M,M> qt;
+  transpose(q, qt);
+  Vector<T,M> y;
+  multiply(qt, b, y);
+  backsubUT(r, y, x);
+}
+
+template void solveFromQR(Matrix<double,0,0> const& q,
+    Matrix<double,0,0> const& r,
+    Vector<double,0> const& b, Vector<double,0>& x);
+
+template <class T, unsigned M, unsigned N>
 bool solveQR(Matrix<T,M,N> const& a,
     Vector<T,M> const& b, Vector<T,N>& x)
 {
@@ -153,11 +169,7 @@ bool solveQR(Matrix<T,M,N> const& a,
   unsigned rank = decomposeQR(a, q, r);
   if (rank != a.cols())
     return false;
-  Matrix<T,M,M> qt;
-  transpose(q, qt);
-  Vector<T,M> y;
-  multiply(qt, b, y);
-  backsubUT(r, y, x);
+  solveFromQR(q, r, b, x);
   return true;
 }
 
