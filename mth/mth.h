@@ -14,7 +14,7 @@
 #include "mthMatrix.h"
 
 /** \file mth.h
-  * \brief templated math functinos */
+  * \brief templated math functions */
 
 /** \namespace mth
   * \brief All MTH functions are contained in this namespace */
