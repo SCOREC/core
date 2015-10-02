@@ -53,6 +53,7 @@ set(APF_SOURCES
   apfScalarElement.cc
   apfScalarField.cc
   apfShape.cc
+  apfIPShape.cc
   apfHierarchic.cc
   apfVector.cc
   apfVectorElement.cc
