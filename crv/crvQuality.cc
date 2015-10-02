@@ -272,7 +272,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
 {
   int P = m->getShape()->getOrder();
   int numInvalid = 0;
-  if (algorithm > 1){
+  if (algorithm < 2){
     numInvalid = checkTriValidityAtNodeXi(m,e,entities);
     if(numInvalid > 0) return numInvalid;
   }

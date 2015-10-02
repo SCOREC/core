@@ -239,7 +239,6 @@ public:
           grads[i] = gxii[i]*P*pow(xii[i],P-1);
 
         int nE = P-1;
-        int nF = (P-1)*(P-2)/2;
 
         int const (*tev)[2] = apf::tet_edge_verts;
         int const (*ttv)[3] = apf::tet_tri_verts;
@@ -251,18 +250,6 @@ public:
                             + gxii[tev[a][1]]*binomial(P,b+1)*(b+1)
                               *Bij(P-b-1,b,xii[tev[a][0]],xii[tev[a][1]]);
 
-        for(int a = 0; a < 4; ++a){
-          for(int b = 0; b < nF; ++b){ // face nodes
-            double xi[3] = {xii[ttv[a][0]],xii[ttv[a][1]],xii[ttv[a][2]]};
-            grads[4+6*nE+a*nF+b].zero();
-            for(int c = 0; c < 3; ++c){
-              int ijk[3] = {1,1,1};
-              ijk[b] += P-3; ijk[c] -= 1;
-              grads[4+6*nE+a*nF+b] += gxii[ttv[a][c]]*trinomial(P,P-2,1)
-                  *(ijk[c]+1)*Bijk(ijk,xi);
-            }
-          }
-        } // done faces
         // face 0, l = 0
         for(int i = 1; i <= P-1; ++i)
           for(int j = 1; j <= P-1-i; ++j){
@@ -849,7 +836,7 @@ public:
           values[i] = pow(xii[i],P);
 
         int nE = 3;
-        int nF = 18;
+        int nF = 6;
         int nT = 1;
 
         int const (*tev)[2] = apf::tet_edge_verts;
@@ -905,7 +892,7 @@ public:
           grads[i] = gxii[i]*P*pow(xii[i],P-1);
 
         int nE = 3;
-        int nF = 18;
+        int nF = 6;
         int nT = 1;
         apf::Vector3 xv;
 
@@ -1251,6 +1238,8 @@ static void setOrder(const int order)
 
 apf::FieldShape* getBezier(int order)
 {
+  if(order < 1 ||order > 19)
+    fail("order must be in [1,19]\n");
   crv::setOrder(order);
   static crv::Bezier bezier;
   return &bezier;

@@ -55,7 +55,7 @@ add_test(bezier3 bezier3)
 add_test(align align)
 add_test(eigen_test eigen_test)
 add_test(integrate integrate)
-add_test(qr_test qr_test)
+add_test(qr_test qr)
 set(MDIR ${MESHES}/pipe)
 add_test(verify_serial
   verify

@@ -106,13 +106,14 @@ unsigned decomposeQR(
     Matrix<T,M,N>& r)
 {
   unsigned m = a.rows();
+  unsigned n = a.cols();
   q.resize(m, m);
   fill_identity(q);
   Vector<T,M> v_scratch;
   v_scratch.resize(m);
   r = a;
   unsigned rank = 0;
-  for (unsigned k = 0; k < m; ++k)
+  for (unsigned k = 0; k < n; ++k)
     if (qr_step(r, q, v_scratch, k))
       ++rank;
   return rank;
@@ -145,6 +146,22 @@ template void backsubUT(Matrix<double,0,0> const& a,
     Vector<double,0> const& b, Vector<double,0>& x);
 
 template <class T, unsigned M, unsigned N>
+void solveFromQR(Matrix<T,M,M> const& q,
+    Matrix<T,M,N> const& r,
+    Vector<T,M> const& b, Vector<T,N>& x)
+{
+  Matrix<T,M,M> qt;
+  transpose(q, qt);
+  Vector<T,M> y;
+  multiply(qt, b, y);
+  backsubUT(r, y, x);
+}
+
+template void solveFromQR(Matrix<double,0,0> const& q,
+    Matrix<double,0,0> const& r,
+    Vector<double,0> const& b, Vector<double,0>& x);
+
+template <class T, unsigned M, unsigned N>
 bool solveQR(Matrix<T,M,N> const& a,
     Vector<T,M> const& b, Vector<T,N>& x)
 {
@@ -153,11 +170,7 @@ bool solveQR(Matrix<T,M,N> const& a,
   unsigned rank = decomposeQR(a, q, r);
   if (rank != a.cols())
     return false;
-  Matrix<T,M,M> qt;
-  transpose(q, qt);
-  Vector<T,M> y;
-  multiply(qt, b, y);
-  backsubUT(r, y, x);
+  solveFromQR(q, r, b, x);
   return true;
 }
 

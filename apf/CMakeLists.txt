@@ -53,6 +53,7 @@ set(APF_SOURCES
   apfScalarElement.cc
   apfScalarField.cc
   apfShape.cc
+  apfIPShape.cc
   apfHierarchic.cc
   apfVector.cc
   apfVectorElement.cc
@@ -109,6 +110,7 @@ if (BUILD_IN_TRILINOS)
       ../mth/mthMatrix.h
       ../mth/mthTensor.h
       ../mth/mthQR.h
+      ../mth/mthAD.h
      )
 endif()
 
