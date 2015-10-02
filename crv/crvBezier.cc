@@ -836,7 +836,7 @@ public:
           values[i] = pow(xii[i],P);
 
         int nE = 3;
-        int nF = 18;
+        int nF = 6;
         int nT = 1;
 
         int const (*tev)[2] = apf::tet_edge_verts;
@@ -892,7 +892,7 @@ public:
           grads[i] = gxii[i]*P*pow(xii[i],P-1);
 
         int nE = 3;
-        int nF = 18;
+        int nF = 6;
         int nT = 1;
         apf::Vector3 xv;
 
