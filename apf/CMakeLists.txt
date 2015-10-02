@@ -110,6 +110,7 @@ if (BUILD_IN_TRILINOS)
       ../mth/mthMatrix.h
       ../mth/mthTensor.h
       ../mth/mthQR.h
+      ../mth/mthAD.h
      )
 endif()
 

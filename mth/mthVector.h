@@ -178,6 +178,13 @@ class Vector<T,0> : public can::Array<T,0>
       for (unsigned i=0; i < this->sz; ++i)
         (*this)[i] = (T)0.0;
     }
+    double operator*(Vector<T,0> const& b)
+    {
+      double s = 0;
+      for (unsigned i=0; i < this->sz; ++i)
+        s += (*this)[i] * b[i];
+      return s;
+    }
 };
 
 /** \brief convenience wrapper over apf::Vector<3>

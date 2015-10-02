@@ -46,37 +46,6 @@ apf::Field* recoverField(apf::Field* ip_field);
   */
 apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
 
-/** @brief solve linear least squares problem Ax=b.
-  * @param A (In) mxn matrix
-  * @param x (Out) nx1 solution vector
-  * @param b (In) mx1 right hand side vector
-  */
-void solveSVD(apf::DynamicMatrix& A,
-              apf::DynamicVector& x,
-              apf::DynamicVector& b);
-
-/** @brief finds the QR factorization of A
-  * @param A the input matrix (rows >= cols)
-  * @param V the output representation of Q
-  *          as the Householder vectors V(k,:)
-  * @param R the output R matrix
-  * @returns true iff the matrix A is full rank
-  */
-bool decompQR(apf::DynamicMatrix& A,
-              apf::DynamicMatrix& V,
-              apf::DynamicMatrix& R);
-
-/** @brief solves A*x = b given A's QR factorization
-  * @param V the Householder vectors from decompQR()
-  * @param R the R matrix from decompQR()
-  * @param b the right hand side
-  * @param x the solution
-  */
-void solveFromQR(apf::DynamicMatrix& V,
-                 apf::DynamicMatrix& R,
-                 apf::DynamicVector& b,
-                 apf::DynamicVector& x);
-
 }
 
 #endif
