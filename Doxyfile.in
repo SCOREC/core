@@ -792,7 +792,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/viz/viz.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mth.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mthVector.h \
-@CMAKE_CURRENT_SOURCE_DIR@/mth/mthMatrix.h \
+@CMAKE_CURRENT_SOURCE_DIR@/mth/mthMatrix.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
