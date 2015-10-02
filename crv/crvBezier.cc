@@ -1238,6 +1238,8 @@ static void setOrder(const int order)
 
 apf::FieldShape* getBezier(int order)
 {
+  if(order < 1 ||order > 19)
+    fail("order must be in [1,19]\n");
   crv::setOrder(order);
   static crv::Bezier bezier;
   return &bezier;
