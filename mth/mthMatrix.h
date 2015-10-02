@@ -111,7 +111,7 @@ class Matrix : public can::Array<Vector<T,N>,M>
 };
 
 /** \brief run-time (dynamic) matrix
-  * \details a runtime sized equivalent of mth::Matrix<T,N>.
+  * \details a runtime sized equivalent of mth::Matrix<T,M,N>.
   * This class is meant to be used for small dense matrices
   * whose size is not known at compile time. For large, sparse,
   * or parallel matrices, look outside of mth.
