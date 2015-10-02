@@ -27,6 +27,7 @@ set(MTH_HEADERS
   mthMatrix.h
   mthTensor.h
   mthQR.h
+  mthAD.h
 )
 
 # THIS IS WHERE TRIBITS GETS HEADERS
