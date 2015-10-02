@@ -148,8 +148,12 @@ static void buildElements(
   MeshEntity* e;
   while ((e = m->iterate(it))) {
     ModelEntity* me = m->toModel(e);
-    if (!models.invMaps[d].count(me))
+    if (!models.invMaps[d].count(me)) {
+      std::cerr << "apf::copyMeshToBulk: element in unknown element block, "
+                << "geometry " << m->getModelType(me)
+                << ", " << m->getModelTag(me) << '\n';
       continue;
+    }
     StkModel* model = models.invMaps[d][me];
     stk::mesh::Part* part = tmpMap[model];
     stk::mesh::EntityId e_id = getStkId(n[d], Node(e, 0));
