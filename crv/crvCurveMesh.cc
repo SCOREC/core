@@ -20,7 +20,7 @@ void MeshCurver::snapToInterpolate(apf::MeshEntity* e)
   int type = m_mesh->getType(e);
   apf::FieldShape * fs = m_mesh->getShape();
   int non = fs->countNodesOn(type);
-  apf::Vector3 p, xi, pt;
+  apf::Vector3 p, xi, pt(0,0,0);
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
     fs->getNodeXi(type,i,xi);
@@ -36,14 +36,12 @@ void MeshCurver::snapToInterpolate(apf::MeshEntity* e)
 void MeshCurver::snapToInterpolate(int dim)
 {
   apf::MeshEntity* e;
-  apf::Vector3 p, xi, pt;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) == m_spaceDim) continue;
     if(m_mesh->isOwned(e))
       snapToInterpolate(e);
-
   }
   m_mesh->end(it);
 }
