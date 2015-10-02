@@ -191,13 +191,17 @@ static void getJacDetByElevation(int type, int P,
 static int numSplits[apf::Mesh::TYPES] =
   {0,2,4,0,0,0,0,0};
 
-static void getJacDetBySubdivision(int type, int P, int n,
+static void getJacDetBySubdivision(int type, int P,
     int iter, apf::NewArray<double>& nodes,
     double& minJ, bool& done)
 {
+  int n = getNumControlPoints(type,P);
   double change = minJ;
-  minJ = calcMinJacDet(n,nodes);
-  change = minJ - change;
+  if(!done){
+    minJ = calcMinJacDet(n,nodes);
+    change = minJ - change;
+  }
+
   if(!done && iter < maxAdaptiveIter && minJ < minAcceptable &&
       change > convergenceTolerance){
     iter++;
@@ -210,7 +214,7 @@ static void getJacDetBySubdivision(int type, int P, int n,
     double newMinJ[4] = {minJ,minJ,minJ,minJ};
 
     for (int i = 0; i < numSplits[type]; ++i)
-      getJacDetBySubdivision(type,P,n,iter,subNodes[i],newMinJ[i],done);
+      getJacDetBySubdivision(type,P,iter,subNodes[i],newMinJ[i],done);
 
     minJ = newMinJ[0];
     for (int i = 1; i < numSplits[type]; ++i)
@@ -301,7 +305,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
         else {
         // allows recursion stop on first "conclusive" invalidity
           bool done = false;
-          getJacDetBySubdivision(apf::Mesh::EDGE,2*(P-1),2*(P-1)+1,
+          getJacDetBySubdivision(apf::Mesh::EDGE,2*(P-1),
               0,edgeNodes,minJ,done);
         }
         if(minJ < minAcceptable){
@@ -314,7 +318,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   }
   // This may be unnecessary, checking the interior of the shape
   if(numInvalid > 0) return numInvalid;
-  numInvalid = 0;
+
   bool done = false;
   double minJ = -1e10;
   for (int i = 0; i < (2*P-3)*(2*P-4)/2; ++i){
@@ -322,7 +326,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
       if(algorithm % 2 == 1)
         getJacDetByElevation(apf::Mesh::TRIANGLE,2*(P-1),nodes,minJ);
       else {
-        getJacDetBySubdivision(apf::Mesh::TRIANGLE,2*(P-1),P*(2*P-1),
+        getJacDetBySubdivision(apf::Mesh::TRIANGLE,2*(P-1),
             0,nodes,minJ,done);
       }
       if(minJ < minAcceptable){
@@ -366,7 +370,7 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
   for (int i = 0; i < fs->countNodesOn(apf::Mesh::TET); ++i){
     fs->getNodeXi(apf::Mesh::TET,i,xi);
     apf::getJacobian(me,xi,J);
-    if(apf::getJacobianDeterminant(J,3)  < minAcceptable){
+    if(apf::getJacobianDeterminant(J,3) < minAcceptable){
       entities[numInvalid] = e;
       numInvalid++;
       break;
@@ -413,7 +417,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
         else {
           bool done = false;
           getJacDetBySubdivision(apf::Mesh::EDGE,3*(P-1),
-              3*(P-1)+1,0,edgeNodes,minJ,done);
+              0,edgeNodes,minJ,done);
         }
         if(minJ < minAcceptable){
           entities[numInvalid] = edges[edge];
@@ -423,16 +427,14 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
       }
     }
   }
-
-  // This may be unnecessary, checking the interior of the shape
   if(numInvalid > 0) return numInvalid;
 
   apf::MeshEntity* faces[4];
   m->getDownward(e,2,faces);
   for (int face = 0; face < 4; ++face){
     double minJ = -1e10;
-    for (int i = 0; i < (2*P-3)*(2*P-4); ++i){
-      if (nodes[4+6*(3*(P-1))+face*(2*P-3)*(2*P-4)+i] < minAcceptable){
+    for (int i = 0; i < (3*P-4)*(3*P-5)/2; ++i){
+      if (nodes[18*P-20+face*(3*P-4)*(3*P-5)/2+i] < minAcceptable){
         apf::NewArray<double> triNodes((3*P-2)*(3*P-1)/2);
         getTriDetJacNodesFromTetDetJacNodes(face,3*(P-1),nodes,triNodes);
         if(algorithm % 2 == 1)
@@ -440,7 +442,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
         else {
           bool done = false;
           getJacDetBySubdivision(apf::Mesh::TRIANGLE,3*(P-1),
-              (3*P-2)*(3*P-1)/2,0,triNodes,minJ,done);
+              0,triNodes,minJ,done);
         }
         if(minJ < minAcceptable){
           entities[numInvalid] = faces[face];
@@ -450,7 +452,20 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
       }
     }
   }
-
+  if(numInvalid > 0) return numInvalid;
+  // only elevate for now if the internal is problematic, as
+  // subdivision of tets is not implemented
+  double minJ = -1e10;
+  for (int i = 0; i < (3*P-4)*(3*P-5)*(3*P-6)/6; ++i){
+    if (nodes[18*P*P-36*P+20+i] < minAcceptable){
+      getJacDetByElevation(apf::Mesh::TET,3*(P-1),nodes,minJ);
+      if(minJ < minAcceptable){
+        entities[numInvalid] = e;
+        numInvalid++;
+      }
+      break;
+    }
+  }
   return numInvalid;
 }
 

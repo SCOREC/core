@@ -129,10 +129,10 @@ const ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES] =
   NULL,   //vertex
   elevateBezierEdgeJacobianDet,     //edge
   elevateBezierTriangleJacobianDet, //triangle
-  elevateBezierTetJacobianDet,      //quad
-  NULL,      //tet
-  NULL,      //hex
-  NULL,      //prism
+  NULL,   //quad
+  elevateBezierTetJacobianDet,      //tet
+  NULL,    //hex
+  NULL,    //prism
   NULL     //pyramid
 };
 
