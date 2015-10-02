@@ -12,6 +12,11 @@
 #include "apfShape.h"
 #include <stdio.h>
 
+/** \file crv.h
+  * \brief main file for curved element support */
+
+/** \namespace crv
+  * \brief All CRV functions are contained in this namespace */
 namespace crv {
 
 /** \brief sets the blending order, if shape blending is used */
