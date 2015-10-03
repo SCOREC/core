@@ -3,6 +3,10 @@
 
 #include <cmath>
 
+/** \file mthAD.h
+  * \brief an automatic differentiation variable via
+  * operator overloading */
+
 namespace mth {
 
 /** \brief forward automatic differentiation variable */

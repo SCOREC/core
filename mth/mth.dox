@@ -1,0 +1,15 @@
+/** \page mth MTH
+
+The mth library is a library to support mathematical
+objects (vectors, matrices, tensors) templated over
+a scalar type and mathematical routines that use these
+objects. The math routines are intended to support
+small, dense linear algebra objects.
+
+- Static and dynamic vectors are in mthVector.h
+- Static and dynamic matrices are in mthMatrix.h
+- Basic linear algebra routines are in mth.h
+- A QR factorization / solver is in mthQR.h
+- An automatic differentiation variable is in mthAD.h
+
+*/

@@ -23,7 +23,8 @@ int computeTetNodeIndex(int P, int i, int j, int k);
 int getNumControlPoints(int type, int order);
 int getNumInternalControlPoints(int type, int order);
 
-/** \brief computes nodes of face f from tet */
+/** \brief computes nodes of face f from tet
+    \details does not consider alignment, extra care needed */
 void getTriNodesFromTetNodes(int f, int P,
     apf::NewArray<apf::Vector3>& tetNodes,
     apf::NewArray<apf::Vector3>& triNodes);

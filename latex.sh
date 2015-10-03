@@ -38,6 +38,6 @@ done
 for tex in *.tex; do
 	pdflatex -interaction=nonstopmode $tex
 done 
-rm *.aux *.log *.png *.tex
+rm *.aux *.log *.png *.tex *.nav *.out *.toc *.snm
 cd ..
 

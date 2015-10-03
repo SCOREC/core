@@ -2,6 +2,9 @@
 #include "mth_def.h"
 #include <cassert>
 
+#include <iostream>
+#include <iomanip>
+
 /* here is a test case run with Octave */
 static double const a_data[16][10] = {
 {  1.0000000e+00, -4.9112749e-02, -1.5629814e+00, -8.2662407e-02,  7.6762316e-02,  1.2919981e-01,  4.0597781e-03,  2.4120621e-03,  2.4429110e+00,  6.8330735e-03},
@@ -22,25 +25,6 @@ static double const a_data[16][10] = {
 {  1.0000000e+00,  5.3974943e-01, -7.7853625e-01, -1.2196455e+00, -4.2021450e-01,  9.4953820e-01, -6.5830294e-01,  2.9132945e-01,  6.0611869e-01,  1.4875350e+00},
 };
 
-static double const b_data[16] = {
-  1.8633928e-02,
-  1.2137582e+00,
-  6.7480008e-01,
- -6.2569362e-01,
- -2.0705180e-01,
- -1.5848017e-01,
- -1.2338155e+00,
-  1.0076051e+00,
- -4.3397381e-01,
- -7.1250087e-01,
-  6.1209592e-01,
- -1.4057588e+00,
- -3.4102620e-01,
-  1.1754080e-01,
-  8.3962300e-01,
- -1.3411208e+00
-};
-
 static double const x_data[10] = {
   4.4283983e-01,
  -2.9416715e-01,
@@ -54,20 +38,80 @@ static double const x_data[10] = {
  -5.2756825e-01
 };
 
-int main()
+static void testSolveQR()
 {
   mth::Matrix<double> a(16,10);
   for (unsigned i = 0; i < a.rows(); ++i)
   for (unsigned j = 0; j < a.cols(); ++j)
     a(i,j) = a_data[i][j];
-  mth::Vector<double> b(a.rows());
-  for (unsigned i = 0; i < b.size(); ++i)
-    b(i) = b_data[i];
   mth::Vector<double> kx(a.cols());
   for (unsigned i = 0; i < kx.size(); ++i)
     kx(i) = x_data[i];
+  mth::Vector<double> b;
+  multiply(a, kx, b);
   mth::Vector<double> x;
   mth::solveQR(a, b, x);
   for (unsigned i = 0; i < kx.size(); ++i)
-    assert(fabs(kx(i) - x(i)) < 1e-7);
+    assert(fabs(kx(i) - x(i)) < 1e-15);
+}
+
+void testHessenberg()
+{
+  mth::Matrix3x3<double> a(
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1
+  );
+  mth::Matrix<double,3,3> q;
+  mth::Matrix<double,3,3> h;
+  mth::reduceToHessenberg(a, q, h);
+  mth::Matrix<double,3,3> qt;
+  transpose(q, qt);
+  mth::Matrix<double,3,3> qqt;
+  multiply(q, qt, qqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
+  mth::Matrix<double,3,3> qh;
+  multiply(q, h, qh);
+  mth::Matrix<double,3,3> qhqt;
+  multiply(qh, qt, qhqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qhqt(i,j) - a(i,j)) < 1e-10);
+}
+
+void testEigenQR()
+{
+  mth::Matrix3x3<double> a(
+      1, 5, 4,
+      5, 6, 3,
+      4, 3, 2
+  );
+  mth::Matrix<double,3,3> l;
+  mth::Matrix<double,3,3> q;
+  bool converged = mth::eigenQR(a, l, q, 20);
+  assert(converged);
+  mth::Matrix<double,3,3> qt;
+  transpose(q, qt);
+  mth::Matrix<double,3,3> qqt;
+  multiply(q, qt, qqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
+  mth::Matrix<double,3,3> ql;
+  multiply(q, l, ql);
+  mth::Matrix<double,3,3> qlqt;
+  multiply(ql, qt, qlqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qlqt(i,j) - a(i,j)) < 1e-10);
+}
+
+int main()
+{
+  testSolveQR();
+  std::cout << std::scientific << std::setprecision(6);
+  testHessenberg();
+  testEigenQR();
 }

@@ -5,15 +5,15 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFVECTOR_H
-#define APFVECTOR_H
+#ifndef APF_VECTOR_H
+#define APF_VECTOR_H
 
 /** \file apfVector.h
     \brief The APF linear algebra vector interface */
 
 #include <cmath>
 #include "apfArray.h"
-#include <iostream>
+#include <ostream>
 
 namespace apf {
 

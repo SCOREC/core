@@ -14,15 +14,19 @@
 #include "mthMatrix.h"
 
 /** \file mth.h
-  * \brief templated math functinos */
+  * \brief templated math functions */
 
 /** \namespace mth
-  * \brief All MTH functions are contained in this header */
+  * \brief All MTH functions are contained in this namespace */
 namespace mth {
 
 /** \brief returns vector cross product */
 template <class T>
 Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b);
+
+/** \brief returns the cross product matrix for the vector */
+template <class T>
+Matrix<T,3,3> cross(Vector<T,3> const& a);
 
 /** \brief returns vector a projected onto vector b */
 template <class T, unsigned N>
@@ -53,7 +57,5 @@ template <class T>
 Matrix<T,3,3> inverse(Matrix<T,3,3> const& a);
 
 }
-
-#include "mth_def.h"
 
 #endif

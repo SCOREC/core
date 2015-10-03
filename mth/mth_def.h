@@ -11,7 +11,7 @@
 #ifndef MTH_DEF_H
 #define MTH_DEF_H
 
-#include <cassert>
+#include "mth.h"
 
 namespace mth {
 
@@ -22,6 +22,16 @@ Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b)
   r(0) = a(1)*b(2) - a(2)*b(1);
   r(1) = a(2)*b(0) - a(0)*b(2);
   r(2) = a(0)*b(1) - a(1)*b(0);
+  return r;
+}
+
+template <class T>
+Matrix<T,3,3> cross(Vector<T,3> const& a)
+{
+  Matrix3x3<T> r(
+      0, -a(2),  a(1),
+   a(2),     0, -a(0),
+  -a(1),  a(0),     0);
   return r;
 }
 
