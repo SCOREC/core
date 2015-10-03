@@ -22,25 +22,6 @@ static double const a_data[16][10] = {
 {  1.0000000e+00,  5.3974943e-01, -7.7853625e-01, -1.2196455e+00, -4.2021450e-01,  9.4953820e-01, -6.5830294e-01,  2.9132945e-01,  6.0611869e-01,  1.4875350e+00},
 };
 
-static double const b_data[16] = {
-  1.8633928e-02,
-  1.2137582e+00,
-  6.7480008e-01,
- -6.2569362e-01,
- -2.0705180e-01,
- -1.5848017e-01,
- -1.2338155e+00,
-  1.0076051e+00,
- -4.3397381e-01,
- -7.1250087e-01,
-  6.1209592e-01,
- -1.4057588e+00,
- -3.4102620e-01,
-  1.1754080e-01,
-  8.3962300e-01,
- -1.3411208e+00
-};
-
 static double const x_data[10] = {
   4.4283983e-01,
  -2.9416715e-01,
@@ -60,14 +41,13 @@ int main()
   for (unsigned i = 0; i < a.rows(); ++i)
   for (unsigned j = 0; j < a.cols(); ++j)
     a(i,j) = a_data[i][j];
-  mth::Vector<double> b(a.rows());
-  for (unsigned i = 0; i < b.size(); ++i)
-    b(i) = b_data[i];
   mth::Vector<double> kx(a.cols());
   for (unsigned i = 0; i < kx.size(); ++i)
     kx(i) = x_data[i];
+  mth::Vector<double> b;
+  multiply(a, kx, b);
   mth::Vector<double> x;
   mth::solveQR(a, b, x);
   for (unsigned i = 0; i < kx.size(); ++i)
-    assert(fabs(kx(i) - x(i)) < 1e-7);
+    assert(fabs(kx(i) - x(i)) < 1e-15);
 }
