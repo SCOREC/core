@@ -58,10 +58,14 @@ template <class T, unsigned M, unsigned N>
 bool solveQR(Matrix<T,M,N> const& a,
     Vector<T,M> const& b, Vector<T,N>& x);
 
+template <class T, unsigned M>
+void reduceToHessenberg(Matrix<T,M,M> const& a, Matrix<T,M,M>& q,
+    Matrix<T,M,M>& h);
+
 /** \brief computes the eigendecomposition of A
-  * \details this function uses the pure, unshifted QR algorithm
-  *          to find eigenvalues.
-  *          only the 3x3 type is explicitly instantiated.
+  * \details this function reduces A to Hessenberg form
+  *          and then uses a Wilkinson-shifted QR algorithm
+  *          to identify the eigenvalues and eigenvectors.
   * \param a the real, square, symmetric input matrix
   * \param l if successful, the diagonal eigenvalue matrix
   * \param q if successful, the orthogonal eigenvector matrix
@@ -69,7 +73,7 @@ bool solveQR(Matrix<T,M,N> const& a,
   * \returns true if converged in less than max_iters
   */
 template <class T, unsigned M>
-bool pureEigenQR(Matrix<T,M,M> const& a,
+bool eigenQR(Matrix<T,M,M> const& a,
     Matrix<T,M,M>& l,
     Matrix<T,M,M>& q,
     unsigned max_iters);

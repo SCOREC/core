@@ -1,13 +1,13 @@
 #ifndef PARMA_RIB_H
 #define PARMA_RIB_H
 
-#include <apfVector.h>
+#include <mthVector.h>
 
 namespace parma {
 
 struct Body
 {
-  apf::Vector3 point;
+  mth::Vector3<double> point;
   double mass;
 };
 
@@ -19,8 +19,6 @@ struct Bodies
   int n;
   Body** body;
 };
-
-void testBisectionPlane(Body* b, int n);
 
 void bisect(Bodies* all, Bodies* left, Bodies* right);
 

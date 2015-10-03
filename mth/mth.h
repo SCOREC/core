@@ -24,6 +24,10 @@ namespace mth {
 template <class T>
 Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b);
 
+/** \brief returns the cross product matrix for the vector */
+template <class T>
+Matrix<T,3,3> cross(Vector<T,3> const& a);
+
 /** \brief returns vector a projected onto vector b */
 template <class T, unsigned N>
 Vector<T,N> project(Vector<T,N> const& a, Vector<T,N> const& b);
@@ -53,7 +57,5 @@ template <class T>
 Matrix<T,3,3> inverse(Matrix<T,3,3> const& a);
 
 }
-
-#include "mth_def.h"
 
 #endif

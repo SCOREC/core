@@ -17,14 +17,14 @@ set(APF_INCLUDE_DIRS
 if(NOT BUILD_IN_TRILINOS)
   find_package(pcu PATHS ${CMAKE_BINARY_DIR})
   find_package(gmi PATHS ${CMAKE_BINARY_DIR})
-  find_package(can PATHS ${CMAKE_BINARY_DIR})
+  find_package(mth PATHS ${CMAKE_BINARY_DIR})
   set(APF_INCLUDE_DIRS
     ${APF_INCLUDE_DIRS}
     ${PCU_INCLUDE_DIRS}
     ${GMI_INCLUDE_DIRS}
-    ${CAN_INCLUDE_DIRS}
+    ${MTH_INCLUDE_DIRS}
   )
-  set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS} ${CAN_LIBS})
+  set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS} ${MTH_LIBS})
   set(APF_LIBS apf ${DEP_LIBS})
 else()
   #quickfix hack which is now semi-permanent
@@ -92,6 +92,7 @@ set(APF_HEADERS
   apfPartition.h
   apfConvert.h
   apfGeometry.h
+  apf2mth.h
 )
 
 #quickfix hack which is now semi-permanent

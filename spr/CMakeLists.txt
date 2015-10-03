@@ -12,13 +12,11 @@ endif()
 
 if(NOT BUILD_IN_TRILINOS)
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  find_package(mth PATHS ${CMAKE_BINARY_DIR})
   set(SPR_INCLUDE_DIRS
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${APF_INCLUDE_DIRS}
-      ${MTH_INCLUDE_DIRS}
       )
-  set(DEP_LIBS ${APF_LIBS} ${MTH_LIBS})
+  set(DEP_LIBS ${APF_LIBS})
   set(SPR_LIBS spr ${DEP_LIBS})
 endif()
 
