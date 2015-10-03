@@ -2,8 +2,6 @@
 #include "mth_def.h"
 #include <cassert>
 
-#include <iostream>
-
 namespace mth {
 
 static double sign(double x)
@@ -205,10 +203,8 @@ bool pureEigenQR(Matrix<T,M,M> const& a,
   Matrix<T,M,M> tmp_q;
   fill_identity(q);
   for (unsigned i = 0; i < max_iters; ++i) {
-    if (is_diagonal(a_k)) {
-      std::cout << i << " iterations\n";
+    if (is_diagonal(a_k))
       return true;
-    }
     decomposeQR(a_k, q_k, r_k);
     multiply(r_k, q_k, a_k);
     multiply(q, q_k, tmp_q);
