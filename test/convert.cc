@@ -12,6 +12,7 @@
 #include <ma.h>
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 
 static void fixMatches(apf::Mesh2* m)
 {

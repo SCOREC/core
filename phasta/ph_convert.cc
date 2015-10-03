@@ -16,6 +16,7 @@
 #include <apfGeometry.h>
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 
 namespace {
   static FILE* openFileRead(ph::Input&, const char* path) {
