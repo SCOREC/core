@@ -58,6 +58,22 @@ template <class T, unsigned M, unsigned N>
 bool solveQR(Matrix<T,M,N> const& a,
     Vector<T,M> const& b, Vector<T,N>& x);
 
+/** \brief computes the eigendecomposition of A
+  * \details this function uses the pure, unshifted QR algorithm
+  *          to find eigenvalues.
+  *          only the 3x3 type is explicitly instantiated.
+  * \param a the real, square, symmetric input matrix
+  * \param l if successful, the diagonal eigenvalue matrix
+  * \param q if successful, the orthogonal eigenvector matrix
+  * \param max_iters the number of iterations after which to give up
+  * \returns true if converged in less than max_iters
+  */
+template <class T, unsigned M>
+bool pureEigenQR(Matrix<T,M,M> const& a,
+    Matrix<T,M,M>& l,
+    Matrix<T,M,M>& q,
+    unsigned max_iters);
+
 }
 
 #endif

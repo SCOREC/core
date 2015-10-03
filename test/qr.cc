@@ -2,6 +2,9 @@
 #include "mth_def.h"
 #include <cassert>
 
+#include <iostream>
+#include <iomanip>
+
 /* here is a test case run with Octave */
 static double const a_data[16][10] = {
 {  1.0000000e+00, -4.9112749e-02, -1.5629814e+00, -8.2662407e-02,  7.6762316e-02,  1.2919981e-01,  4.0597781e-03,  2.4120621e-03,  2.4429110e+00,  6.8330735e-03},
@@ -35,7 +38,7 @@ static double const x_data[10] = {
  -5.2756825e-01
 };
 
-int main()
+static void testSolveQR()
 {
   mth::Matrix<double> a(16,10);
   for (unsigned i = 0; i < a.rows(); ++i)
@@ -50,4 +53,41 @@ int main()
   mth::solveQR(a, b, x);
   for (unsigned i = 0; i < kx.size(); ++i)
     assert(fabs(kx(i) - x(i)) < 1e-15);
+}
+
+static void testPureEigenQR()
+{
+  std::cout << std::scientific << std::setprecision(6);
+  mth::Matrix3x3<double> sqrta(
+      sqrt(1000), 5.5, 0,
+      1.2, sqrt(1000), 0,
+      6.0, 1.8, 1.2
+  );
+  mth::Matrix<double,3,3> sqrtat;
+  transpose(sqrta, sqrtat);
+  mth::Matrix<double,3,3> a;
+  multiply(sqrta, sqrtat, a);
+  std::cout << "A\n" << a;
+  mth::Matrix<double,3,3> l;
+  mth::Matrix<double,3,3> q;
+  bool converged = mth::pureEigenQR(a, l, q, 100);
+  assert(converged);
+  std::cout << "L\n" << l;
+  std::cout << "Q\n" << q;
+  mth::Matrix<double,3,3> qt;
+  transpose(q, qt);
+  mth::Matrix<double,3,3> qqt;
+  multiply(q, qt, qqt);
+  std::cout << "Q * Q^T\n" << qqt;
+  mth::Matrix<double,3,3> ql;
+  multiply(q, l, ql);
+  mth::Matrix<double,3,3> qlqt;
+  multiply(ql, qt, qlqt);
+  std::cout << "Q * L * Q^T\n" << qlqt;
+}
+
+int main()
+{
+  testSolveQR();
+  testPureEigenQR();
 }

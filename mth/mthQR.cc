@@ -2,6 +2,8 @@
 #include "mth_def.h"
 #include <cassert>
 
+#include <iostream>
+
 namespace mth {
 
 static double sign(double x)
@@ -178,5 +180,44 @@ bool solveQR(Matrix<T,M,N> const& a,
 
 template bool solveQR(Matrix<double,0,0> const& a, Vector<double,0> const& b,
     Vector<double,0>& x);
+
+template <class T, unsigned M>
+static bool is_diagonal(Matrix<T,M,M> const& a)
+{
+  unsigned m = a.rows();
+  for (unsigned i = 0; i < m; ++i)
+  for (unsigned j = 0; j < m; ++j)
+    if ((i != j) && (fabs(a[i][j]) > 1e-10))
+      return false;
+  return true;
+}
+
+template <class T, unsigned M>
+bool pureEigenQR(Matrix<T,M,M> const& a,
+    Matrix<T,M,M>& l,
+    Matrix<T,M,M>& q,
+    unsigned max_iters)
+{
+  Matrix<T,M,M>& a_k = l;
+  a_k = a;
+  Matrix<T,M,M> r_k;
+  Matrix<T,M,M> q_k;
+  Matrix<T,M,M> tmp_q;
+  fill_identity(q);
+  for (unsigned i = 0; i < max_iters; ++i) {
+    if (is_diagonal(a_k)) {
+      std::cout << i << " iterations\n";
+      return true;
+    }
+    decomposeQR(a_k, q_k, r_k);
+    multiply(r_k, q_k, a_k);
+    multiply(q, q_k, tmp_q);
+    q = tmp_q;
+  }
+  return false;
+}
+
+template bool pureEigenQR(Matrix<double,3,3> const& a, Matrix<double,3,3>& l,
+    Matrix<double,3,3>& q, unsigned max_iters);
 
 }
