@@ -15,6 +15,12 @@
 
 namespace mth {
 
+template <class T, unsigned M>
+T norm(Vector<T,M> const& a)
+{
+  return sqrt(a * a);
+}
+
 template <class T>
 Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b)
 {

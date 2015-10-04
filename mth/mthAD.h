@@ -281,6 +281,16 @@ AD<N> operator/(AD<N> const& L, AD<N> const& R)
  * FANCY FUNCIONS *
  *********************/
 
+/** \brief square root of an AD variable */
+template <unsigned int N>
+AD<N> sqrt(AD<N> const& A)
+{
+  AD<N> tmp(std::sqrt(A.val()));
+  for (unsigned int i=0; i < N; ++i)
+    tmp.dx(i) = A.dx(i) / (2. * std::sqrt(A.val()));
+  return tmp;
+}
+
 /** \brief exponent of an AD variable */
 template <unsigned int N>
 AD<N> exp(AD<N> const& A)
