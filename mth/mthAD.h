@@ -117,13 +117,13 @@ class AD
   private:
     void zero()
     {
-      for (int i=0; i < N; ++i)
+      for (unsigned int i=0; i < N; ++i)
         dx_[i] = 0.;
     }
     void copy(AD<N> const& other)
     {
       x_ = other.x_;
-      for (int i=0; i < N; ++i)
+      for (unsigned int i=0; i < N; ++i)
         dx_[i] = other.dx_[i];
     }
 };
