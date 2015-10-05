@@ -8,6 +8,7 @@
 #include "apfShape.h"
 #include "apfMesh.h"
 #include "apfIntegrate.h"
+#include <canArray.h>
 #include <cassert>
 
 namespace apf {
@@ -117,7 +118,7 @@ class VoronoiShape : public IPBase
           if (!in)
             return;
           int np = in->countPoints();
-          points.setSize(np);
+          points.resize(np);
           for (int i = 0; i < np; ++i)
             points[i] = in->getPoint(i)->param;
         }
@@ -125,7 +126,7 @@ class VoronoiShape : public IPBase
         {
           int idx = 0;
           double leastDistance = (p - points[0]).getLength();
-          for (size_t i = 1; i < points.getSize(); ++i)
+          for (size_t i = 1; i < points.size(); ++i)
           {
             double distance = (p - points[i]).getLength();
             if (distance < leastDistance)
@@ -139,8 +140,8 @@ class VoronoiShape : public IPBase
         void getValues(Mesh*, MeshEntity*,
             Vector3 const& xi, NewArray<double>& values) const
         {
-          values.allocate(points.getSize());
-          for (size_t i = 0; i < points.getSize(); ++i)
+          values.allocate(points.size());
+          for (size_t i = 0; i < points.size(); ++i)
             values[i] = 0.0;
           values[getClosestPtIdx(xi)] = 1.0;
         }
@@ -152,9 +153,9 @@ class VoronoiShape : public IPBase
         }
         int countNodes() const
         {
-          return points.getSize();
+          return points.size();
         }
-        DynamicArray<Vector3> points;
+        can::Array<Vector3> points;
     };
     void getNodeXi(int type, int node, Vector3& xi)
     {
