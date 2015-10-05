@@ -193,4 +193,91 @@ FieldShape* getVoronoiShape(int dimension, int order)
   return table[dimension][order];
 }
 
+class ConstantIPFit : public IPBase
+{
+  public:
+    ConstantIPFit(int d) : IPBase(d, 1)
+    {
+      std::stringstream ss;
+      ss << "ConstantIPFit_" << d;
+      name = ss.str();
+      registerSelf(name.c_str());
+    }
+    const char* getName() const {return name.c_str();}
+    class Triangle : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
+        {
+          values.allocate(1);
+          values[0] = 1.0;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& grads) const
+        {
+          grads.allocate(1);
+          grads[0] = Vector3(0,0,0);
+        }
+        int countNodes() const {return 1;}
+    };
+    class Tetrahedron : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
+        {
+          values.allocate(1);
+          values[0] = 1.0;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& grads) const
+        {
+          grads.allocate(1);
+          grads[0] = Vector3(0,0,0);
+        }
+        int countNodes() const {return 1;}
+    };
+    EntityShape* getEntityShape(int type)
+    {
+      static Triangle triangle;
+      static Tetrahedron tet;
+      static EntityShape* shapes[Mesh::TYPES] =
+      {0,         // vertex
+       0,         // edge
+       &triangle, // triangle
+       0,         // quad
+       &tet,      // tet
+       0,         // prism
+       0,         // pyramid
+       0};        // hex
+      return shapes[type];
+    }
+    void getNodeXi(int type, int node, Vector3& xi)
+    {
+      can::Array<Vector3> points;
+      getIntegrationPoints(type, 1, points);
+      xi = points[node];
+    }
+  private:
+    std::string name;
+};
+
+FieldShape* getIPFitShape(int dimension, int order)
+{
+  static ConstantIPFit d2o1(2);
+  static ConstantIPFit d3o1(3);
+  FieldShape* table[4][2] =
+  {{0,0}//vertex
+  ,{0,0}//edge
+  ,{0,&d2o1}//face
+  ,{0,&d3o1}//region
+  };
+  assert(dimension >= 0);
+  assert(dimension <= 3);
+  assert(order >= 0);
+  assert(order <= 2);
+  return table[dimension][order];
+}
+
 }
