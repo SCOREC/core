@@ -8,8 +8,10 @@
 #include "apfShape.h"
 #include "apfMesh.h"
 #include "apfIntegrate.h"
-#include <canArray.h>
+#include <mthMatrix.h>
 #include <cassert>
+
+#include <iostream>
 
 namespace apf {
 
@@ -263,16 +265,80 @@ class ConstantIPFit : public IPBase
     std::string name;
 };
 
+class LinearIPFit : public IPBase
+{
+  public:
+    LinearIPFit(int d) : IPBase(d, 2)
+    {
+      std::stringstream ss;
+      ss << "LinearIPFit_" << d;
+      name = ss.str();
+      registerSelf(name.c_str());
+    }
+    const char* getName() const {return name.c_str();}
+    class Triangle : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
+        {
+          values.allocate(3);
+
+          mth::Matrix<double,3,3> c;
+          c(0,0) = -0.333333333333334; c(0,1) = 2.000000000000000; c(0,2) = 0.000000000000000;
+          c(1,0) = -0.333333333333334; c(1,1) = 0.000000000000000; c(1,2) = 2.000000000000000;
+          c(2,0) = 1.666666666666668; c(2,1) = -2.000000000000000; c(2,2) = -2.000000000000000;
+
+          mth::Vector<double,3> p;
+          p(0) = 1.0;
+          p(1) = xi[0];
+          p(2) = xi[1];
+
+          for (int i=0; i < 3; ++i)
+            values[i] = c[i] * p;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& grads) const
+        {
+          fail("grads not implemented yet");
+        }
+        int countNodes() const {return 3;}
+    };
+    EntityShape* getEntityShape(int type)
+    {
+      static Triangle triangle;
+      static EntityShape* shapes[Mesh::TYPES] =
+      {0,         // vertex
+       0,         // edge
+       &triangle, // triangle
+       0,         // quad
+       0,         // tet
+       0,         // prism
+       0,         // pyramid
+       0};        // hex
+      return shapes[type];
+    }
+    void getNodeXi(int type, int node, Vector3& xi)
+    {
+      can::Array<Vector3> points;
+      getIntegrationPoints(type, 2, points);
+      xi = points[node];
+    }
+  private:
+    std::string name;
+};
+
 FieldShape* getIPFitShape(int dimension, int order)
 {
   static ConstantIPFit d2o1(2);
   static ConstantIPFit d3o1(3);
-  FieldShape* table[4][2] =
-  {{0,0}//vertex
-  ,{0,0}//edge
-  ,{0,&d2o1}//face
-  ,{0,&d3o1}//region
-  };
+  static LinearIPFit d2o2(2);
+  static LinearIPFit d3o2(3);
+  FieldShape* table[4][3] =
+  {{0,0,0}//vertex
+  ,{0,0,0}//edge
+  ,{0,&d2o1,&d2o2}//face
+  ,{0,&d3o1,&d3o2}};//region
   assert(dimension >= 0);
   assert(dimension <= 3);
   assert(order >= 0);
