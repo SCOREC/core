@@ -90,6 +90,18 @@ FieldShape* getIPShape(int dimension, int order)
   return table[dimension][order];
 }
 
+static void getIntegrationPoints(
+    int type, int order, can::Array<Vector3>& points)
+{
+  Integration const* in = tryToGetIntegration(type,order);
+  if (!in)
+    return;
+  int np = in->countPoints();
+  points.resize(np);
+  for (int i = 0; i < np; ++i)
+    points[i] = in->getPoint(i)->param;
+}
+
 class VoronoiShape : public IPBase
 {
   public:
@@ -114,13 +126,7 @@ class VoronoiShape : public IPBase
       public:
         void init(int type, int order)
         {
-          Integration const* in = tryToGetIntegration(type,order);
-          if (!in)
-            return;
-          int np = in->countPoints();
-          points.resize(np);
-          for (int i = 0; i < np; ++i)
-            points[i] = in->getPoint(i)->param;
+          getIntegrationPoints(type, order, points);
         }
         int getClosestPtIdx(Vector3 const& p) const
         {
