@@ -159,7 +159,7 @@ static void getJacDetByElevation(int type, int P,
   elevatedNodes[1].allocate(getNumControlPoints(type,maxElevationLevel));
 
   // copy for the start
-  for(int i = 0; i <= n; ++i)
+  for(int i = 0; i < n; ++i)
     elevatedNodes[0][i] = nodes[i];
 
   int i = 0;
