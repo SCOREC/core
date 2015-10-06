@@ -210,13 +210,13 @@ class ConstantIPFit : public IPBase
     {
       public:
         void getValues(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<double>& values) const
+            Vector3 const&, NewArray<double>& values) const
         {
           values.allocate(1);
           values[0] = 1.0;
         }
         void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& grads) const
+            Vector3 const&, NewArray<Vector3>& grads) const
         {
           grads.allocate(1);
           grads[0] = Vector3(0,0,0);
@@ -227,13 +227,13 @@ class ConstantIPFit : public IPBase
     {
       public:
         void getValues(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<double>& values) const
+            Vector3 const&, NewArray<double>& values) const
         {
           values.allocate(1);
           values[0] = 1.0;
         }
         void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& grads) const
+            Vector3 const&, NewArray<Vector3>& grads) const
         {
           grads.allocate(1);
           grads[0] = Vector3(0,0,0);
@@ -298,7 +298,7 @@ class LinearIPFit : public IPBase
             values[i] = c[i] * p;
         }
         void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& grads) const
+            Vector3 const&, NewArray<Vector3>&) const
         {
           fail("grads not implemented yet");
         }
