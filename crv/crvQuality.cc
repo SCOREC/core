@@ -8,6 +8,7 @@
 #include "crvBezier.h"
 #include "crvTables.h"
 #include "crvQuality.h"
+#include "PCU.h"
 
 namespace crv {
 
@@ -120,7 +121,6 @@ static double calcMinJacDet(int n, apf::NewArray<double>& nodes)
   return minJ;
 }
 
-
 /* nodes is (2(P-1)+1)(2(P-1)+2)/2 = P(2P-1)
  * except for P = 1, which has size 3 due to numbering convention used,
  * such that i=j=k=0 results in index 2
@@ -131,15 +131,14 @@ static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
   for (int I = 0; I <= 2*(P-1); ++I)
     for (int J = 0; J <= 2*(P-1)-I; ++J)
       nodes[getTriNodeIndex(2*(P-1),I,J)] = Nijk(elemNodes,P,I,J);
-
 }
 static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
-    apf::NewArray<double>& nodes){
+    apf::NewArray<double>& nodes)
+{
   for (int I = 0; I <= 3*(P-1); ++I)
     for (int J = 0; J <= 3*(P-1)-I; ++J)
       for (int K = 0; K <= 3*(P-1)-I-J; ++K)
          nodes[getTetNodeIndex(3*(P-1),I,J,K)] = Nijkl(elemNodes,P,I,J,K);
-
 }
 
 /*
@@ -300,8 +299,9 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
         edgeNodes[2*(P-1)] = nodes[apf::tri_edge_verts[edge][1]];
         for (int j = 0; j < 2*(P-1)-1; ++j)
           edgeNodes[j+1] = nodes[3+edge*(2*(P-1)-1)+j];
-        if(algorithm % 2 == 1)
+        if(algorithm % 2 == 1){
           getJacDetByElevation(apf::Mesh::EDGE,2*(P-1),edgeNodes,minJ);
+        }
         else {
         // allows recursion stop on first "conclusive" invalidity
           bool done = false;
@@ -386,7 +386,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
 {
   int P = m->getShape()->getOrder();
   int numInvalid = 0;
-  if (algorithm > 1){
+  if (algorithm < 2){
     numInvalid = checkTetValidityAtNodeXi(m,e,entities);
     if(numInvalid > 0) return numInvalid;
     // if it is positive, then keep going
