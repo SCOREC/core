@@ -3,30 +3,26 @@
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
+#include <apfMesh2.h>
 #include <apf.h>
+#include <apfShape.h>
 #include <PCU.h>
-#include <apfDynamicMatrix.h>
+
+#include <math.h>
 #include <cassert>
-#include <cstdlib>
 
-/*
-  * Sam test to see what's going on
-*/
-
-/* this test file contains tests for
- * a curved 2D surface mesh
- * and a 3D Planar tetrahedron
+/* This test file uses an alternative and more traditional method to
+ * compute Jacobian differences, using the property of Bezier's that
+ * derivatives of Bezier's are themselves Bezier's multiplied by
+ * control point differences. As implementing weights*control point differences
+ * is not possible in our current framework, this method is not implemented in
+ * the main code, but serves its use for code validation.
  *
- * The basic idea is generate a mesh,
- * curve it, test it, and destroy it,
- * and do this for all orders
+ * This test file also contains validity checks.
+ * In 2D, orders 3-6 provide invalid meshes
  */
 
-/*
- * This analytic surface is a "pringle",
- * defined on [0,1] in R^2 as z = ((2x-1)^2-(2y-1)^2)*exp(xy)
- * matlab >> ezsurf('((2*x-1)^2-(2*y-1)^2)*exp(x*y)',[0,1],[0,1])
- */
+// face areas are 1/2 and 19/30
 void vert0(double const p[2], double x[3], void*)
 {
   (void)p;
@@ -36,36 +32,30 @@ void vert0(double const p[2], double x[3], void*)
 void edge0(double const p[2], double x[3], void*)
 {
   x[0] = p[0];
-  x[1] = 0.;
-  x[2] = (2.*p[0]-1.)*(2.*p[0]-1.)-1.;
+  x[1] = p[0]*(p[0]-1.0);
 }
 void edge1(double const p[2], double x[3], void*)
 {
-  x[0] = 1;
+  x[0] = 1.0-5.0*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
   x[1] = p[0];
-  x[2] = (1.-(2.*p[0]-1.)*(2.*p[0]-1.))*std::exp(p[0]);
 }
 void edge2(double const p[2], double x[3], void*)
 {
   double u = 1.-p[0];
   x[0] = u;
   x[1] = 1.;
-  x[2] = ((2.*u-1.)*(2.*u-1.)-1.)*std::exp(u);
 }
 void edge3(double const p[2], double x[3], void*)
 {
   double v = 1.-p[0];
   x[0] = 0;
   x[1] = v;
-  x[2] = 1.-(2.*v-1.)*(2.*v-1.);
 }
+
 void face0(double const p[2], double x[3], void*)
 {
   x[0] = p[0];
   x[1] = p[1];
-  x[2] = ((2.*p[0]-1.)*(2.*p[0]-1.)
-      -(2.*p[1]-1.)*(2.*p[1]-1.))
-      *std::exp(p[0]*p[1]);
 }
 void reparam_zero(double const from[2], double to[2], void*)
 {
@@ -155,6 +145,87 @@ apf::Mesh2* createMesh2D()
   return m;
 }
 
+void checkValidity(apf::Mesh* m, int order)
+{
+  apf::MeshIterator* it = m->begin(2);
+  apf::MeshEntity* e;
+  int iEntity = 0;
+  while ((e = m->iterate(it))) {
+    apf::MeshEntity* entities[6];
+    int numInvalidSub = crv::checkTriValidity(m,e,entities,2);
+    int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
+    if(iEntity == 0){
+      printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
+      printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
+      //assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+    } else if(iEntity == 1){
+      printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
+      printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
+      //assert(numInvalid == 0);
+    }
+    iEntity++;
+    break;
+
+  }
+  m->end(it);
+}
+
+void test2D()
+{
+  double timeStartTest2D = PCU_Time();
+  printf("time at begining of test2D: %f", timeStartTest2D);
+  for(int order = 2; order <= 6; ++order){
+    apf::Mesh2* m = createMesh2D();
+    apf::changeMeshShape(m, crv::getBezier(order),true);
+    crv::BezierCurver bc(m,order,0);
+    crv::setBlendingOrder(0);
+    // creates interpolation points based on the edges of the geometry
+    bc.snapToInterpolate(1);
+    apf::FieldShape* fs = m->getShape();
+
+    // go downward, and convert interpolating to control points
+    {
+      int n = order+1;
+      int ne = fs->countNodesOn(apf::Mesh::EDGE);
+      apf::NewArray<double> c;
+      crv::getTransformationCoefficients(order,apf::Mesh::EDGE,c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(1);
+      while ((e = m->iterate(it))) {
+        bc.convertInterpolationPoints(e,n,ne,c);
+      }
+      m->end(it);
+    }
+    if(fs->hasNodesIn(2)) {
+      int n = (order+1)*(order+2)/2;
+      int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
+      apf::NewArray<double> c;
+      crv::getBlendedTransformationCoefficients(order,1,
+          apf::Mesh::TRIANGLE,c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(2);
+      while ((e = m->iterate(it))){
+        bc.convertInterpolationPoints(e,n-ne,ne,c);
+      }
+      m->end(it);
+    }
+
+    printf(" --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n", order);
+    //uncomment this stuff to plot it and see in paraview
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
+    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
+
+    crv::writeControlPointVtuFiles(m,"curved");
+
+    checkValidity(m,order);
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+    double end = PCU_Time();
+    printf("time at end of test2D: %f", end);
+  }
+}
+
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
@@ -169,36 +240,22 @@ apf::Mesh2* createMesh3D()
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
 
   apf::deriveMdsModel(m);
+
   m->acceptChanges();
   m->verify();
   return m;
 }
 
-void test2D()
-{
-  // test all orders for all blending orders
-  for(int order = 1; order <= 6; ++order){
-    apf::Mesh2* m = createMesh2D();
-    crv::BezierCurver bc(m,order,0);
-    bc.run();
-    crv::writeControlPointVtuFiles(m,"curved2D");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10*order,"curved2D");
-    m->destroyNative();
-    apf::destroyMesh(m);
-  }
-}
-
-/* Tests Full Bezier tetrahedra, 4th order has one central node */
 void test3D()
 {
   gmi_register_null();
 
-  for(int order = 1; order <= 4; ++order){
+  for(int order = 2; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
-    crv::BezierCurver bc(m,4,0);
+    crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
@@ -208,44 +265,56 @@ void test3D()
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
+        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
         bc.convertInterpolationPoints(e,n,ne,c);
       }
       m->end(it);
     }
-    m->acceptChanges();
-    apf::MeshIterator* it = m->begin(1);
-    apf::MeshEntity* e;
-    int num = 0;
-    while ((e = m->iterate(it))){
-      // do stuff here
-      for(int i = 0; i < m->getShape()->countNodesOn(apf::Mesh::EDGE); ++i){
-      apf::Vector3 point;
-      
-        m->getPoint(e,i,point);
-        std::cout << "edge " << num << " " << i << " " << point << std::endl;
-        point = point*-1.1;
-      m->setPoint(e,i,point);
-    }
-      num++;
 
-    }
+
+    // get face 2
+    apf::MeshIterator* it = m->begin(3);
+    apf::MeshEntity* tet = m->iterate(it);
     m->end(it);
-    // write the field
-    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,2,"curved");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curved");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,order,"curved");
-    crv::writeControlPointVtuFiles(m,"curved");
+
+    apf::MeshEntity* faces[4], *edges[3];
+    m->getDownward(tet,2,faces);
+    apf::MeshEntity* face = faces[2];
+    m->getDownward(face,1,edges);
+    for (int edge = 0; edge < 3; ++edge){
+      int non = m->getShape()->countNodesOn(apf::Mesh::EDGE);
+      for (int i = 0; i < non; ++i){
+        apf::Vector3 pt;
+        m->getPoint(edges[edge],i,pt);
+        pt = pt*0.5;
+        m->setPoint(edges[edge],i,pt);
+      }
+    }
+    int non = m->getShape()->countNodesOn(apf::Mesh::TRIANGLE);
+    for (int i = 0; i < non; ++i){
+      apf::Vector3 pt;
+      m->getPoint(face,i,pt);
+      pt = pt*0.5;
+      m->setPoint(face,i,pt);
+    }
+
+    m->acceptChanges();
+    apf::MeshEntity* entities[14];
+    crv::checkTetValidity(m,tet,entities,0); //default zero to not break things (since I know 0 works)
+
+//    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,20,"curved");
+
     m->destroyNative();
     apf::destroyMesh(m);
   }
-}
 
+}
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
-  test3D();
+  //test3D();
   PCU_Comm_Free();
   MPI_Finalize();
 }
