@@ -543,7 +543,7 @@ static void getGregoryTriangleTransform(int P, apf::NewArray<double> & c)
   int niBezier = (P+1)*(P+2)/2;
 
   int nb = 6;
-  int ni = 6+3*P;
+  int ni = 3*P;
   c.allocate(ni*nb);
 
   int map[3] = {1,2,0};
