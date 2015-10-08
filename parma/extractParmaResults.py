@@ -2,6 +2,7 @@
 
 import sys
 import re
+import matplotlib.pyplot as plt
 
 if len(sys.argv) is not 2:
   print 'Usage:', sys.argv[0], '<parma log file>'
@@ -23,13 +24,25 @@ class metric():
     metrics.append(self)
     terms.append(name)
 
+def plot(dat, xlabel, ylabel, name, title):
+    for d,s in zip(dat,name):
+      print s
+      plt.plot(d,label=s)
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.legend()
+    plt.savefig(title)
+    plt.close('all')
+
 vtxImb = metric("vertexImbalance")
 vtxImb.has = lambda s: True if s.startswith("vtxImb") or s.startswith("vtx imbalance") else False
 vtxImb.get = lambda s: float(s.split()[1]) if s.startswith("vtxImb") else float(s.split()[2])
+vtxImb.plot = lambda a,suffix: plot([a],"Iteration","Max Vtx/Avg Vtx", ["vtxImb"], vtxImb.name+suffix)
 
 elmImb = metric("elementImbalance")
 elmImb.has = lambda s: True if s.startswith("elmImb") else False
 elmImb.get = lambda s: float(s.split()[1])
+elmImb.plot = lambda a,suffix: plot(a,"Iteration","Max Elm/Avg Elm", "elmImb", elmImb.name+suffix)
 
 elmSel = metric("elementSelection")
 elmSel.has = lambda s: True if s.startswith("elements selected in") else False
@@ -147,6 +160,8 @@ sidesAvg.get = lambda s: float(s.split()[-1])
 bal = metric("balancedIn")
 bal.has = lambda s: True if "balanced in" in s else False
 bal.get = lambda s: float(s.split()[8])
+bal.plot = lambda a: plot([a],"ParMA Run","Time (seconds)", ["balance"], "balanceTime")
+
 metrics.remove(bal)
 
 def makeRunLog():
@@ -168,10 +183,25 @@ for line in infile:
     r.metrics[bal.name].append(bal.get(line))
     r = getNewRunLog(runs)
 
+runCount = 0
+balAll = []
+vtxImbAll = []
+elmImbAll = []
 for run in runs:
-  print '---------'
   for key,value in run.metrics.items():
-    print key,len(value),value
+    if key is vtxImb.name:
+      vtxImbAll.extend(value) 
+    if key is elmImb.name:
+      elmImbAll.extend(value) 
+    if key is bal.name:
+      balAll.extend(value)
+  d = len(vtxImbAll) - len(elmImbAll)
+  if d > 0:
+    elmImbAll.extend([None]*d)
+  runCount = runCount + 1
 
+bal.plot(balAll)
+plot([vtxImbAll, elmImbAll], "Iteration", "Max/Avg", ["vtxImb", "elmImb"], "vtxElmImbalance")
+      
 infile.close()
 outfile.close()
