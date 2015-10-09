@@ -59,6 +59,8 @@ void checkAllEdgeCollapses(Adapt* a, int modelDimension)
   CollapseChecker checker(a,modelDimension);
   checker.applyToDimension(1);
   clearFlagFromDimension(a,CHECKED,1);
+  assert(checkFlagConsistency(a,1,COLLAPSE));
+  assert(checkFlagConsistency(a,0,COLLAPSE));
 }
 
 class IndependentSetFinder : public apf::CavityOp
@@ -85,6 +87,35 @@ class IndependentSetFinder : public apf::CavityOp
       else
         clearFlag(adapt,vertex,COLLAPSE);
     }
+  protected:
+    Adapt* adapt;
+    Entity* vertex;
+};
+
+class MatchedIndependentSetFinder : public IndependentSetFinder
+{
+  public:
+    MatchedIndependentSetFinder(Adapt* a):
+      IndependentSetFinder(a)
+    {}
+    virtual void apply()
+    {
+      apf::CopyArray matches;
+      this->sharing->getCopies(vertex, matches);
+      APF_ITERATE(apf::CopyArray, matches, it) {
+        assert(it->peer == PCU_Comm_Self());
+        assert(getFlag(adapt, it->entity, COLLAPSE));
+      }
+      bool keep = isRequiredForAnEdgeCollapse(adapt, vertex);
+      APF_ITERATE(apf::CopyArray, matches, it)
+        if (isRequiredForAnEdgeCollapse(adapt, it->entity))
+          keep = true;
+      if (!keep) {
+        clearFlag(adapt, vertex, COLLAPSE);
+        APF_ITERATE(apf::CopyArray, matches, it)
+          clearFlag(adapt, it->entity, COLLAPSE);
+      }
+    }
   private:
     Adapt* adapt;
     Entity* vertex;
@@ -92,9 +123,15 @@ class IndependentSetFinder : public apf::CavityOp
 
 void findIndependentSet(Adapt* a)
 {
-  IndependentSetFinder finder(a);
-  finder.applyToDimension(0);
+  if (a->mesh->hasMatching()) {
+    MatchedIndependentSetFinder finder(a);
+    finder.applyToDimension(0, true);
+  } else {
+    IndependentSetFinder finder(a);
+    finder.applyToDimension(0);
+  }
   clearFlagFromDimension(a,CHECKED,0);
+  assert(checkFlagConsistency(a, 0, COLLAPSE));
 }
 
 class AllEdgeCollapser : public Operator

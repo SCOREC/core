@@ -105,6 +105,7 @@ class CavityOp
     bool canModify;
     bool movedByDeletion;
     MeshIterator* iterator;
+  protected:
     Sharing* sharing;
 };
 
