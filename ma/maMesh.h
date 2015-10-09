@@ -71,6 +71,10 @@ Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e);
 
 Entity* findTetByTwoTris(Mesh* m, Entity** tris);
 
+struct RebuildCallback {
+  virtual void rebuilt(Entity* e, Entity* original) = 0;
+};
+
 /** \brief rebuild an element with one vertex being different
   \details uses the original
   to reconstruct geometric classification */
@@ -79,7 +83,8 @@ Entity* rebuildElement(
     Entity* original,
     Entity* oldVert,
     Entity* newVert,
-    apf::BuildCallback* cb);
+    apf::BuildCallback* cb,
+    RebuildCallback* rcb = 0);
 
 bool isInClosure(Mesh* m, Entity* parent, Entity* e);
 
