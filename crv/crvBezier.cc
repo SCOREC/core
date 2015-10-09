@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include "crvBezier.h"
+#include "crvMath.h"
 #include "crvTables.h"
 /* see bezier.tex */
 
@@ -74,8 +75,8 @@ public:
       values.allocate(P+1);
       for(int i = 1; i < P; ++i)
         values[i+1] = binomial(P,i)*Bij(P-i,i,1.-t,t);
-      values[0] = pow(1-t, P);
-      values[1] = pow(t, P);
+      values[0] = intpow(1-t, P);
+      values[1] = intpow(t, P);
 
     }
     void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -86,8 +87,8 @@ public:
       for(int i = 1; i < P; ++i)
         grads[i+1] = apf::Vector3(binomial(P,i)*(i-P*t)
             *Bij(P-1-i,i-1,1.-t,t)/2.,0,0);
-      grads[0] = apf::Vector3(-P*pow(1-t, P-1)/2.,0,0);
-      grads[1] = apf::Vector3(P*pow(t, P-1)/2.,0,0);
+      grads[0] = apf::Vector3(-P*intpow(1-t, P-1)/2.,0,0);
+      grads[1] = apf::Vector3(P*intpow(t, P-1)/2.,0,0);
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(apf::Mesh*,
@@ -128,7 +129,7 @@ public:
 
       if(!useBlend() || m->getModelType(m->toModel(e)) != m->getDimension()){
         for(int i = 0; i < 3; ++i)
-          grads[i] = gxii[i]*P*pow(xii[i],P-1);
+          grads[i] = gxii[i]*P*intpow(xii[i],P-1);
 
         for(int i = 1; i < P+1; ++i)
           for(int j = 1; j < P-i; ++j)
@@ -179,7 +180,7 @@ public:
         values.allocate((P+1)*(P+2)*(P+3)/6);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
-          values[i] = pow(xii[i],P);
+          values[i] = intpow(xii[i],P);
 
         int nE = P-1;
 
@@ -236,7 +237,7 @@ public:
             apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
 
         for(int i = 0; i < 4; ++i)
-          grads[i] = gxii[i]*P*pow(xii[i],P-1);
+          grads[i] = gxii[i]*P*intpow(xii[i],P-1);
 
         int nE = P-1;
 
@@ -544,7 +545,7 @@ public:
         values.allocate(40);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
-          values[i] = pow(xii[i],P);
+          values[i] = intpow(xii[i],P);
         for(int i = 4; i < 40; ++i)
           values[i] = 0.;
         int nE = 2;
@@ -593,7 +594,7 @@ public:
             apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
 
         for(int i = 0; i < 4; ++i)
-          grads[i] = gxii[i]*P*pow(xii[i],P-1);
+          grads[i] = gxii[i]*P*intpow(xii[i],P-1);
         for(int i = 4; i < 40; ++i)
           grads[i].zero();
         int nE = 2;
@@ -833,7 +834,7 @@ public:
         values.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
-          values[i] = pow(xii[i],P);
+          values[i] = intpow(xii[i],P);
 
         int nE = 3;
         int nF = 6;
@@ -889,7 +890,7 @@ public:
             apf::Vector3(0,1,0),apf::Vector3(0,0,1)};
 
         for(int i = 0; i < 4; ++i)
-          grads[i] = gxii[i]*P*pow(xii[i],P-1);
+          grads[i] = gxii[i]*P*intpow(xii[i],P-1);
 
         int nE = 3;
         int nF = 6;
