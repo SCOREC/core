@@ -376,26 +376,23 @@ void test3D()
       m->end(it);
     }
     m->acceptChanges();
-    /*
-     * This is a known example where elevation gets a false negative,
-     * because it converges too slowly, and subdivision does not
-     * for the third order tet.
-     *
-     * This is well worth looking at in more detail
-     */
+
     apf::MeshEntity* entities[14];
     int numInvalid = crv::checkTetValidity(m,tet,entities,2);
+
     if(order == 4){
       assert(numInvalid > 0);
     } else {
       assert(numInvalid == 0);
     }
     numInvalid = crv::checkTetValidity(m,tet,entities,3);
-    if(order > 2){
+    if(order == 4){
       assert(numInvalid > 0);
     } else {
       assert(numInvalid == 0);
     }
+//          crv::writeCurvedVtuFiles(m,apf::Mesh::TET,50,"curved");
+
     m->destroyNative();
     apf::destroyMesh(m);
   }

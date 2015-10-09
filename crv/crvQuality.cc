@@ -14,7 +14,7 @@ namespace crv {
 
 static int maxAdaptiveIter = 5;
 
-static int maxElevationLevel = 18;
+static int maxElevationLevel = 19;
 
 static double convergenceTolerance = 0.01;
 
@@ -149,9 +149,17 @@ static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
 static void getJacDetByElevation(int type, int P,
     apf::NewArray<double>& nodes, double& minJ)
 {
-  double minJacobianDet[2] = {0.,minJ};
+  /*
+   * as a convergence check, use the max dist between points
+   */
+  double maxDist[2] = {0.,1e10};
+
   int n = getNumControlPoints(type,P);
-  minJacobianDet[0] = calcMinJacDet(n,nodes);
+  minJ = calcMinJacDet(n,nodes);
+  maxDist[0] = nodes[1]-nodes[0];
+  for (int j = 1; j < n-1; ++j)
+    maxDist[0] = std::max(maxDist[0],nodes[j+1]-nodes[j]);
+
   // declare these two arrays, never need to reallocate
   apf::NewArray<double> elevatedNodes[2];
   elevatedNodes[0].allocate(getNumControlPoints(type,maxElevationLevel));
@@ -162,9 +170,8 @@ static void getJacDetByElevation(int type, int P,
     elevatedNodes[0][i] = nodes[i];
 
   int i = 0;
-  while(P+i < maxElevationLevel && minJacobianDet[i % 2] < minAcceptable
-      && (minJacobianDet[i % 2] - minJacobianDet[(i+1) % 2])
-      > convergenceTolerance){
+  while(P+i < maxElevationLevel && minJ < minAcceptable
+    && (maxDist[(i+1) % 2] - maxDist[i % 2]) > convergenceTolerance){
     // use the modulus to alternate between them,
     // never needing to increase storage
     // for now, only elevate by 1
@@ -172,15 +179,14 @@ static void getJacDetByElevation(int type, int P,
         elevatedNodes[i % 2],
         elevatedNodes[(i+1) % 2]);
 
-    minJacobianDet[(i+1) % 2] =
-        calcMinJacDet(getNumControlPoints(type,P+i),
-        elevatedNodes[(i+1) % 2]);
+    int ni = getNumControlPoints(type,P+i);
+    maxDist[(i+1) % 2] = elevatedNodes[(i+1) % 2][1]-elevatedNodes[(i+1) % 2][0];
+    for (int j = 1; j < ni-1; ++j)
+      maxDist[(i+1) % 2] = std::max(elevatedNodes[(i+1) % 2][j+1]-elevatedNodes[(i+1) % 2][j],maxDist[(i+1) % 2]);
+
+    minJ = calcMinJacDet(ni,elevatedNodes[(i+1) % 2]);
     ++i;
   }
-
-  // "i" will have been incremented,
-  // so this is the most recent one
-  minJ = minJacobianDet[i % 2];
 }
 
 /*
