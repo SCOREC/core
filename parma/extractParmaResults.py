@@ -11,9 +11,6 @@ if len(sys.argv) is not 2:
 parmaLogName = sys.argv[1]
 infile = open(parmaLogName)
 
-outFileName = parmaLogName + ".csv"
-outfile = open(outFileName, 'w')
-
 class base(): pass #HACCCCCCCKKKKK
 
 metrics = []
@@ -211,4 +208,3 @@ bal.plot(balAll)
 plot([vtxImbAll, elmImbAll], "Iteration", "Max/Avg", ["vtxImb", "elmImb"], "vtxElmImbalance")
       
 infile.close()
-outfile.close()
