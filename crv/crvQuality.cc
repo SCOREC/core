@@ -8,12 +8,13 @@
 #include "crvBezier.h"
 #include "crvTables.h"
 #include "crvQuality.h"
+#include "PCU.h"
 
 namespace crv {
 
 static int maxAdaptiveIter = 5;
 
-static int maxElevationLevel = 18;
+static int maxElevationLevel = 19;
 
 static double convergenceTolerance = 0.01;
 
@@ -120,7 +121,6 @@ static double calcMinJacDet(int n, apf::NewArray<double>& nodes)
   return minJ;
 }
 
-
 /* nodes is (2(P-1)+1)(2(P-1)+2)/2 = P(2P-1)
  * except for P = 1, which has size 3 due to numbering convention used,
  * such that i=j=k=0 results in index 2
@@ -131,15 +131,14 @@ static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
   for (int I = 0; I <= 2*(P-1); ++I)
     for (int J = 0; J <= 2*(P-1)-I; ++J)
       nodes[getTriNodeIndex(2*(P-1),I,J)] = Nijk(elemNodes,P,I,J);
-
 }
 static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
-    apf::NewArray<double>& nodes){
+    apf::NewArray<double>& nodes)
+{
   for (int I = 0; I <= 3*(P-1); ++I)
     for (int J = 0; J <= 3*(P-1)-I; ++J)
       for (int K = 0; K <= 3*(P-1)-I-J; ++K)
          nodes[getTetNodeIndex(3*(P-1),I,J,K)] = Nijkl(elemNodes,P,I,J,K);
-
 }
 
 /*
@@ -150,22 +149,29 @@ static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
 static void getJacDetByElevation(int type, int P,
     apf::NewArray<double>& nodes, double& minJ)
 {
-  double minJacobianDet[2] = {0.,minJ};
+  /*
+   * as a convergence check, use the max dist between points
+   */
+  double maxDist[2] = {0.,1e10};
+
   int n = getNumControlPoints(type,P);
-  minJacobianDet[0] = calcMinJacDet(n,nodes);
+  minJ = calcMinJacDet(n,nodes);
+  maxDist[0] = nodes[1]-nodes[0];
+  for (int j = 1; j < n-1; ++j)
+    maxDist[0] = std::max(maxDist[0],nodes[j+1]-nodes[j]);
+
   // declare these two arrays, never need to reallocate
   apf::NewArray<double> elevatedNodes[2];
   elevatedNodes[0].allocate(getNumControlPoints(type,maxElevationLevel));
   elevatedNodes[1].allocate(getNumControlPoints(type,maxElevationLevel));
 
   // copy for the start
-  for(int i = 0; i <= n; ++i)
+  for(int i = 0; i < n; ++i)
     elevatedNodes[0][i] = nodes[i];
 
   int i = 0;
-  while(P+i < maxElevationLevel && minJacobianDet[i % 2] < minAcceptable
-      && (minJacobianDet[i % 2] - minJacobianDet[(i+1) % 2])
-      > convergenceTolerance){
+  while(P+i < maxElevationLevel && minJ < minAcceptable
+    && (maxDist[(i+1) % 2] - maxDist[i % 2]) > convergenceTolerance){
     // use the modulus to alternate between them,
     // never needing to increase storage
     // for now, only elevate by 1
@@ -173,15 +179,14 @@ static void getJacDetByElevation(int type, int P,
         elevatedNodes[i % 2],
         elevatedNodes[(i+1) % 2]);
 
-    minJacobianDet[(i+1) % 2] =
-        calcMinJacDet(getNumControlPoints(type,P+i),
-        elevatedNodes[(i+1) % 2]);
+    int ni = getNumControlPoints(type,P+i);
+    maxDist[(i+1) % 2] = elevatedNodes[(i+1) % 2][1]-elevatedNodes[(i+1) % 2][0];
+    for (int j = 1; j < ni-1; ++j)
+      maxDist[(i+1) % 2] = std::max(elevatedNodes[(i+1) % 2][j+1]-elevatedNodes[(i+1) % 2][j],maxDist[(i+1) % 2]);
+
+    minJ = calcMinJacDet(ni,elevatedNodes[(i+1) % 2]);
     ++i;
   }
-
-  // "i" will have been incremented,
-  // so this is the most recent one
-  minJ = minJacobianDet[i % 2];
 }
 
 /*
@@ -300,8 +305,9 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
         edgeNodes[2*(P-1)] = nodes[apf::tri_edge_verts[edge][1]];
         for (int j = 0; j < 2*(P-1)-1; ++j)
           edgeNodes[j+1] = nodes[3+edge*(2*(P-1)-1)+j];
-        if(algorithm % 2 == 1)
+        if(algorithm % 2 == 1){
           getJacDetByElevation(apf::Mesh::EDGE,2*(P-1),edgeNodes,minJ);
+        }
         else {
         // allows recursion stop on first "conclusive" invalidity
           bool done = false;
@@ -386,7 +392,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
 {
   int P = m->getShape()->getOrder();
   int numInvalid = 0;
-  if (algorithm > 1){
+  if (algorithm < 2){
     numInvalid = checkTetValidityAtNodeXi(m,e,entities);
     if(numInvalid > 0) return numInvalid;
     // if it is positive, then keep going

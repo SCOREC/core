@@ -128,7 +128,7 @@ setup_exe(shapefun2 shapefun2.cc)
 setup_exe(bezier1 bezier1.cc)
 setup_exe(bezier2 bezier2.cc)
 setup_exe(bezier3 bezier3.cc)
-
+setup_exe(bezier4 bezier4.cc)
 if (ENABLE_VIZ)
   setup_exe(viz_test viz.cc)
 endif()

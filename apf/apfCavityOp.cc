@@ -15,7 +15,8 @@ namespace apf {
 CavityOp::CavityOp(Mesh* m, bool cm):
   mesh(m),
   isRequesting(false),
-  canModify(cm)
+  canModify(cm),
+  sharing(0)
 {
 }
 
@@ -32,7 +33,7 @@ void CavityOp::applyLocallyWithModification(int d)
        ! mesh2->isDone(this->iterator);)
   {
     e = mesh2->deref(this->iterator);
-    if (mesh2->isOwned(e))
+    if (sharing->isOwned(e))
     {
       Outcome o = setEntity(e);
       if (o == OK)
@@ -55,7 +56,7 @@ void CavityOp::applyLocallyWithModification(int d)
   this->iterator = mesh2->begin(d);
   while ((e = mesh2->iterate(this->iterator)))
   {
-    if ( ! mesh2->isOwned(e)) continue;
+    if ( ! sharing->isOwned(e)) continue;
     setEntity(e);
   }
   mesh2->end(this->iterator);
@@ -82,7 +83,7 @@ void CavityOp::applyLocallyWithoutModification(int d)
   isRequesting = true;
   while ((e = mesh->iterate(entities)))
   {
-    if ( ! mesh->isOwned(e))
+    if ( ! sharing->isOwned(e))
       continue;
     Outcome o = setEntity(e);
     if (o == OK)
@@ -91,8 +92,12 @@ void CavityOp::applyLocallyWithoutModification(int d)
   mesh->end(entities);
 }
 
-void CavityOp::applyToDimension(int d)
+void CavityOp::applyToDimension(int d, bool matched)
 {
+  if (matched)
+    sharing = new MatchedSharing(mesh);
+  else
+    sharing = new NormalSharing(mesh);
   /* the iteration count of this loop is hard to predict,
    * but typical cavity definitions should cause a small
    * constant number of iterations that does not grow
@@ -111,6 +116,7 @@ void CavityOp::applyToDimension(int d)
        that all mesh entities that needed to be operated
        on have been. */
   } while (tryToPull());
+  delete sharing;
 }
 
 bool CavityOp::requestLocality(MeshEntity** entities, int count)
@@ -144,12 +150,12 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
   PCU_Comm_Begin();
   APF_ITERATE(Requests,requests,it)
   {
-    Copies remotes;
-    mesh->getRemotes(*it,remotes);
-    APF_ITERATE(Copies,remotes,rit)
+    CopyArray remotes;
+    sharing->getCopies(*it,remotes);
+    APF_ITERATE(CopyArray,remotes,rit)
     {
-      int remotePart = rit->first;
-      MeshEntity* remoteEntity = rit->second;
+      int remotePart = rit->peer;
+      MeshEntity* remoteEntity = rit->entity;
       PCU_COMM_PACK(remotePart,remoteEntity);
     }
   }

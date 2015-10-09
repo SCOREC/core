@@ -554,7 +554,7 @@ void ElementVertOp::runDown(
    runTriDown,
    runQuadDown,
    runTetDown,
-   runHexDown,//hex
+   runHexDown,
    runPrismDown,
    runPyramidDown
   };

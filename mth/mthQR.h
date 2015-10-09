@@ -30,7 +30,7 @@ unsigned decomposeQR(
   */
 template <class T, unsigned M, unsigned N>
 void backsubUT(
-    Matrix<T,M,N> const& a,
+    Matrix<T,M,N> const& r,
     Vector<T,M> const& b,
     Vector<T,N>& x);
 
