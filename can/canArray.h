@@ -85,6 +85,18 @@ class Array<T,0>
       sz = n;
       elems = new T[n];
     }
+    void resize_copy(unsigned n)
+    {
+       if (sz == n)
+        return;
+      T* tmp = new T[n];
+      unsigned min = sz > n ? n : sz; 
+      for(unsigned int x = 0; x < min; x++)
+        tmp[x] = elems[x];
+      delete [] elems;
+      sz = n;
+      elems = tmp;
+    }
     typedef T* iterator;
     typedef T const* const_iterator;
     T const* begin() const {return elems;}
