@@ -4,6 +4,10 @@
 cmake_minimum_required (VERSION 2.8)
 project (SCOREC)
 
+if (APPLE)
+  set(CMAKE_MACOSX_RPATH ON)
+endif()
+
 #unless building shared libs, then select static libs 
 # if both static and shared libs are available 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so") 
