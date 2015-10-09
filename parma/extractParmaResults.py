@@ -200,6 +200,13 @@ for run in runs:
     elmImbAll.extend([None]*d)
   runCount = runCount + 1
 
+vtxImbPtReduction = (vtxImbAll[0]-vtxImbAll[-1])*100
+print 'total number of parma iterations: ' + str(len(vtxImbAll))
+print 'percentage point reduction in vertex imbalance: ' + str(vtxImbPtReduction)
+print 'total time (s) for parma balancing: ' + str(sum(balAll))
+print 'time (s) per parma balance iteration: ' + str(sum(balAll)/len(vtxImbAll))
+print 'time (s) per vertex imbalance percentage point reduction: ' + str(sum(balAll)/vtxImbPtReduction)
+
 bal.plot(balAll)
 plot([vtxImbAll, elmImbAll], "Iteration", "Max/Avg", ["vtxImb", "elmImb"], "vtxElmImbalance")
       
