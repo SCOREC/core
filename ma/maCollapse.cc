@@ -347,6 +347,7 @@ void Collapse::cancel()
 {
   for (size_t i=0; i < newElements.getSize(); ++i)
     destroyElement(adapt,newElements[i]);
+  newElements.setSize(0);
   unmark();
 }
 
