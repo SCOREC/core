@@ -21,6 +21,10 @@ struct MatchedCollapse
   bool requestLocality(apf::CavityOp* o);
   void setEdges();
   bool checkTopo();
+  void unmark();
+  void cancel();
+  bool tryThisDirection(double qualityToBeat);
+  bool tryBothDirections(double qualityToBeat);
   Adapt* adapt;
   Mesh* mesh;
   apf::Sharing* sharing;

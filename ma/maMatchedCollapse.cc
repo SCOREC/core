@@ -60,18 +60,59 @@ bool MatchedCollapse::checkTopo()
 {
   bool ok = true;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
-    if (!collapses[i].checkTopo())
+    if (!checkEdgeCollapseTopology(adapt, collapses[i].edge))
       ok = false;
-  if (!ok)
+  if (ok)
     for (unsigned i = 0; i < collapses.getSize(); ++i)
-      collapses[i].unmark();
+      collapses[i].setVerts();
+  else
+    unmark();
   return ok;
 }
 
-/*
+void MatchedCollapse::unmark()
+{
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    clearFlag(adapt, collapses[i].edge, COLLAPSE);
+  bool required[2] = {false,false};
+  for (unsigned i = 0; i < collapses.getSize(); ++i) {
+    Entity* v[2];
+    mesh->getDownward(collapses[i].edge, 0, v);
+    for (unsigned j = 0; j < 2; ++j)
+      if (isRequiredForAnEdgeCollapse(adapt, v[j]))
+        required[j] = true;
+  }
+  for (unsigned i = 0; i < collapses.getSize(); ++i) {
+    Entity* v[2];
+    mesh->getDownward(collapses[i].edge, 0, v);
+    for (unsigned j = 0; j < 2; ++j)
+      if (required[j])
+        clearFlag(adapt, v[j], COLLAPSE);
+  }
+}
+
+void MatchedCollapse::cancel()
+{
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    collapses[i].destroyNewElements();
+  unmark();
+}
+
+bool MatchedCollapse::tryThisDirection(double qualityToBeat)
+{
+  bool ok = true;
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    if (!collapses[i].tryThisDirectionNoCancel(qualityToBeat))
+      ok = false;
+  if (!ok)
+    cancel();
+  return ok;
+}
+
 bool MatchedCollapse::tryBothDirections(double qualityToBeat)
 {
-  computeElementSets();
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    collapses[i].computeElementSets();
   if (tryThisDirection(qualityToBeat))
     return true;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
@@ -79,9 +120,9 @@ bool MatchedCollapse::tryBothDirections(double qualityToBeat)
       return false;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     std::swap(collapses[i].vertToKeep, collapses[i].vertToCollapse);
-  computeElementSets();
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    collapses[i].computeElementSets();
   return tryThisDirection(qualityToBeat);
 }
-*/
 
 }
