@@ -219,7 +219,6 @@ public:
               values[computeTetNodeIndex(P,i,j,k)] = quadnomial(P,i,j,k)
                   *Bijkl(i,j,k,P-i-j-k,xii[0],xii[1],xii[2],xii[3]);
 
-
       } else {
         values.allocate(2*P*P+2);
         BlendedTetGetValues(m,e,xi,values);

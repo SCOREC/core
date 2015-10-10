@@ -8,12 +8,15 @@
 #ifndef CRVMATH_H
 #define CRVMATH_H
 
+#include "crv.h"
+#include <mthQR.h>
+
 /*
  * Brian won't let me put stuff in his mth,
  * because hes a dictator
  * so this is the next best thing
  */
-#include <math.h>
+
 namespace crv {
 
 /** \brief faster power for integers */
@@ -31,6 +34,9 @@ inline double intpow(const double b, const int e)
     return intpow(b, e-6) * intpow(b, 6);
   }
 }
+
+void invertMatrix(int n, mth::Matrix<double>& A,
+    mth::Matrix<double>& Ai);
 
 }
 
