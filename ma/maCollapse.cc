@@ -19,6 +19,7 @@ void Collapse::Init(Adapt* a)
 {
   adapt = a;
   cavity.init(a);
+  rebuildCallback = 0;
 }
 
 bool Collapse::requestLocality(apf::CavityOp* o)
@@ -318,7 +319,8 @@ void Collapse::rebuildElements()
   size_t ni=0;
   APF_ITERATE(EntitySet,elementsToKeep,it)
     newElements[ni++]=
-        rebuildElement(adapt,*it,vertToCollapse,vertToKeep);
+        rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
+            adapt->buildCallback, rebuildCallback);
   cavity.afterBuilding();
   if (cavity.shouldFit) {
     EntityArray oldElements;

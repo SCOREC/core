@@ -50,6 +50,7 @@ class Collapse
     EntitySet elementsToKeep;
     EntityArray newElements;
     Cavity cavity;
+    RebuildCallback* rebuildCallback;
 };
 
 bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);
