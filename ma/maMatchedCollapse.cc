@@ -14,8 +14,31 @@
 
 namespace ma {
 
+Rebuild::Rebuild(Entity* a, Entity* b):
+  e(a),original(b)
+{
+}
+
+Rebuilds::Rebuilds(Mesh* m):
+  mesh(m)
+{
+}
+
+void Rebuilds::rebuilt(Entity* e, Entity* original)
+{
+  int dim = apf::getDimension(mesh, e);
+  if (0 < dim && dim < mesh->getDimension())
+    v.push_back(Rebuild(e, original));
+}
+
+void Rebuilds::reset()
+{
+  v.clear();
+}
+
 MatchedCollapse::MatchedCollapse(Adapt* a):
-  adapt(a)
+  adapt(a),
+  rebuilds(a->mesh)
 {
   mesh = a->mesh;
   sharing = apf::getSharing(mesh);

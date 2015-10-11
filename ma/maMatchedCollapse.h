@@ -14,6 +14,20 @@
 
 namespace ma {
 
+struct Rebuild {
+  Rebuild(Entity* a, Entity* b);
+  Entity* e;
+  Entity* original;
+};
+
+struct Rebuilds : public RebuildCallback {
+  Rebuilds(Mesh* m);
+  virtual void rebuilt(Entity* e, Entity* original);
+  void reset();
+  Mesh* mesh;
+  std::vector<Rebuild> v;
+};
+
 struct MatchedCollapse
 {
   MatchedCollapse(Adapt* a);
@@ -29,6 +43,7 @@ struct MatchedCollapse
   Mesh* mesh;
   apf::Sharing* sharing;
   apf::DynamicArray<Collapse> collapses;
+  Rebuilds rebuilds;
 };
 
 }
