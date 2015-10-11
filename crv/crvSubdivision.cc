@@ -91,9 +91,9 @@ static void splitTriangle(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
       }
     }
     // cycle through the three triangles. each one gets P-m points
-    for (int p = 0; p < P-m; ++p){
-      unsigned index[3] = {b2[P][P-m-p-1][p],
-         b2[P][0][P-m-p-1],b2[P][p][0]};
+    for (int q = 0; q < P-m; ++q){
+      unsigned index[3] = {b2[P][P-m-q-1][q],
+         b2[P][0][P-m-q-1],b2[P][q][0]};
       for (int t = 0; t < N; ++t)
         subNodes[t][index[0]] = nodes[index[tri[t]]];
     }
@@ -156,6 +156,61 @@ static void subdivideBezierTriangleJacobianDet(int P,
     apf::NewArray<double> *subNodes)
 {
   splitBezierTriangle(P,nodes,subNodes);
+}
+
+template <class T, int N>
+static void splitTet(int P, apf::Vector3& p, apf::NewArray<T>& nodes,
+    apf::NewArray<T> (&subNodes)[N], int tet[N])
+{
+  // set up first three vertices
+  for(int t = 0; t < N; ++t)
+  	for (int i = 0; i < 3; ++i)
+  		subNodes[t][i] = nodes[apf::tet_tri_verts[tet[t]][i]];
+
+  // subNodes[t][3] is the split point
+  // set up edges based on face
+  for(int t = 0; t < N; ++t)
+  	for(int e = 0; e < 3; ++e)
+  		if(!flip_tet_tri_edges[tet[t]][e]) {
+  			for(int i = 0; i < P-1; ++i)
+  				subNodes[t][4+(P-1)*e+i] = nodes[4+tet_tri_edges[tet[t]][e]*(P-1)+i];
+  		} else {
+  			for(int i = 0; i < P-1; ++i)
+  				subNodes[t][4+(P-1)*e+i] = nodes[4+(tet_tri_edges[tet[t]][e]+1)*(P-1)-1-i];
+  		}
+
+  double p3 = 1.-p[0]-p[1]-p[2];
+  for (int m = 0; m < P; ++m){
+    // set up all the nodes for this stage
+    for (int i = 0; i < P-m; ++i){
+      for (int j = 0; j < P-i-m; ++j){
+      	for (int k = 0; k < P-i-j-m; ++k){
+      		unsigned index[4] = {b3[P][i][j][k],b3[P][i+1][j][k],
+      				b3[P][i][j+1][k],b3[P][i][j][k+1]};
+      		nodes[index[0]] = nodes[index[0]]*p[0] + nodes[index[1]]*p[1]
+													+ nodes[index[2]]*p[2] + nodes[index[3]]*p3;
+      	}
+      }
+    }
+    // cycle through the tets. each one gets (P-m)*(P-m+1)/2 points
+    for (int r = 0; r < P-m; ++r){
+    	for (int q = 0; q < P-m-r; ++q){
+    		unsigned index[4] = {b3[P][q][r][P-m-1-r-q],b3[P][0][q][r],
+    				b3[P][P-m-1-r-q][0][q],b3[P][r][P-m-1-r-q][0]};
+    		for (int t = 0; t < N; ++t){
+    			subNodes[t][index[0]] = nodes[index[tet[t]]];
+    		}
+    	}
+    }
+  }
+}
+
+void subdivideBezierTet(int P, apf::Vector3& p,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4])
+{
+  int tet[4] = {0,1,2,3};
+  splitTet(P,p,nodes,subNodes,tet);
 }
 
 const SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES] =

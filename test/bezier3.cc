@@ -1,5 +1,6 @@
 #include <crv.h>
 #include <crvBezier.h>
+#include <crvTables.h>
 #include <crvSnap.h>
 #include <crvMath.h>
 #include <gmi_analytic.h>
@@ -492,24 +493,144 @@ void testTriElevation()
   }
 }
 
+static apf::Vector3 points3D[4] =
+{apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1)};
+
+
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
   apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
 
-  apf::Vector3 points3D[4] =
-  {apf::Vector3(0,0,0),
-      apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0),
-      apf::Vector3(0,0,1)};
-
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
-
   apf::deriveMdsModel(m);
 
   m->acceptChanges();
   m->verify();
   return m;
+}
+
+/* Create a single triangle, split it, and make sure each triangle
+ * exactly replicates its part of the old one
+ *
+ */
+void testTetSubdivision1()
+{
+
+	gmi_register_null();
+
+	for (int order = 1; order <= 4; ++order){
+
+		apf::Mesh2* m = createMesh3D();
+		apf::changeMeshShape(m, crv::getBezier(order),true);
+		crv::setBlendingOrder(0);
+		apf::FieldShape* fs = m->getShape();
+		crv::BezierCurver bc(m,order,0);
+		// go downward, and convert interpolating to control points
+		for(int d = 2; d >= 1; --d){
+			int n = crv::getNumControlPoints(d,order);
+			int ne = fs->countNodesOn(d);
+			apf::NewArray<double> c;
+			crv::getTransformationCoefficients(order,d,c);
+			apf::MeshEntity* e;
+			apf::MeshIterator* it = m->begin(d);
+			while ((e = m->iterate(it))) {
+				if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+				bc.convertInterpolationPoints(e,n,ne,c);
+			}
+			m->end(it);
+		}
+
+		apf::MeshIterator* it = m->begin(3);
+		apf::MeshEntity* tet = m->iterate(it);
+		m->end(it);
+
+    apf::MeshEntity* verts[4],* edges[6],* faces[4];
+    m->getDownward(tet,0,verts);
+    m->getDownward(tet,1,edges);
+    m->getDownward(tet,2,faces);
+    apf::Element* elem = apf::createElement(m->getCoordinateField(),tet);
+
+    apf::NewArray<apf::Vector3> nodes;
+    apf::NewArray<apf::Vector3> subNodes[4];
+    for (int t = 0; t < 4; ++t)
+      subNodes[t].allocate(crv::getNumControlPoints(apf::Mesh::TET,order));
+
+    apf::getVectorNodes(elem,nodes);
+    apf::Vector3 splitpt(0.25,0.35,0.25);
+
+    crv::subdivideBezierTet(order,splitpt,nodes,subNodes);
+
+    apf::MeshEntity* v4 = m->createVertex(m->findModelEntity(2,0),
+        subNodes[0][3],splitpt);
+
+    apf::MeshEntity* newFaces[6],* newEdges[4],* newTets[4];
+    for (int i = 0; i < 4; ++i){
+      apf::MeshEntity* vE[2] = {verts[i],v4};
+      newEdges[i] = m->createEntity(apf::Mesh::EDGE,m->findModelEntity(1,i),
+          vE);
+      for (int j = 0; j < order-1; ++j){
+        m->setPoint(newEdges[i],j,subNodes[i][4+3*(order-1)+j]);
+      }
+    }
+    int const tet_tri[6][2] =
+    {{0,1},{0,2},{2,3},{3,1},{1,3},{2,1}};
+    int nE = (order-1);
+    int nF = (order-1)*(order-2)/2;
+    // this compensates for alignment issues
+    for (int f = 0; f < 6; ++f){
+      apf::MeshEntity* eF[3] = {edges[f],newEdges[apf::tet_edge_verts[f][1]],
+      		newEdges[apf::tet_edge_verts[f][0]]};
+      newFaces[f] = m->createEntity(apf::Mesh::TRIANGLE,m->findModelEntity(2,0),
+          eF);
+      for (int j = 0; j < nF; ++j){
+      	m->setPoint(newFaces[f],j,subNodes[tet_tri[f][0]][4+6*nE+tet_tri[f][1]*nF+j]);
+      	if(f == 3 && order == 4){
+      		int o[3] = {1,0,2};
+      		m->setPoint(newFaces[f],j,subNodes[tet_tri[f][0]][4+6*nE+tet_tri[f][1]*nF+o[j]]);
+      	}
+      }
+    }
+
+    apf::MeshEntity* fT0[4] = {faces[0],newFaces[0],newFaces[1],newFaces[2]};
+    newTets[0] = m->createEntity(apf::Mesh::TET,m->findModelEntity(3,0),fT0);
+    apf::MeshEntity* fT1[4] = {faces[1],newFaces[0],newFaces[3],newFaces[4]};
+    newTets[1] = m->createEntity(apf::Mesh::TET,m->findModelEntity(3,0),fT1);
+    apf::MeshEntity* fT2[4] = {faces[2],newFaces[1],newFaces[4],newFaces[5]};
+    newTets[2] = m->createEntity(apf::Mesh::TET,m->findModelEntity(3,0),fT2);
+    apf::MeshEntity* fT3[4] = {faces[3],newFaces[2],newFaces[5],newFaces[3]};
+    newTets[3] = m->createEntity(apf::Mesh::TET,m->findModelEntity(3,0),fT3);
+    if(order == 4){
+    	for (int t = 0; t < 4; ++t){
+    		apf::Vector3 pt = (points3D[apf::tet_tri_verts[t][0]]
+										+ points3D[apf::tet_tri_verts[t][1]]
+										+ points3D[apf::tet_tri_verts[t][2]] + splitpt)*0.25;
+    		m->setPoint(newTets[t],0,pt);
+    	}
+    }
+    apf::Element* elems[4] =
+      {apf::createElement(m->getCoordinateField(),newTets[0]),
+       apf::createElement(m->getCoordinateField(),newTets[1]),
+       apf::createElement(m->getCoordinateField(),newTets[2]),
+			 apf::createElement(m->getCoordinateField(),newTets[3])};
+    double totalVolume = apf::measure((apf::MeshElement*)elem);
+    double volumeSum = apf::measure((apf::MeshElement*)elems[0]) +
+    		apf::measure((apf::MeshElement*)elems[1]) +
+				apf::measure((apf::MeshElement*)elems[2]) +
+				apf::measure((apf::MeshElement*)elems[3]);
+
+    assert(fabs(totalVolume - volumeSum) < 1e-15);
+    apf::destroyElement(elem);
+    m->destroy(tet);
+    for(int t = 0; t < 4; ++t)
+      apf::destroyElement(elems[t]);
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
 }
 
 void testTetElevation()
@@ -731,6 +852,7 @@ int main(int argc, char** argv)
   testTriSubdivision1();
   testTriSubdivision4();
   testTriElevation();
+  testTetSubdivision1();
   testTetElevation();
   testNodeIndexing();
   testMatrixInverse();
