@@ -36,6 +36,25 @@ void Rebuilds::reset()
   v.clear();
 }
 
+void Rebuilds::match(apf::Sharing* sh)
+{
+  for (unsigned i = 0; i < v.size(); ++i) {
+    Entity* orig = v[i].original;
+    Entity* gen = v[i].e;
+    apf::CopyArray orig_matches;
+    sh->getCopies(orig, orig_matches);
+    for (unsigned j = 0; j < orig_matches.getSize(); ++j) {
+      assert(orig_matches[j].peer == PCU_Comm_Self());
+      Entity* gen_match_j = 0;
+      for (unsigned k = 0; k < v.size(); ++k)
+        if (v[k].original == orig_matches[j].entity)
+          gen_match_j = v[k].e;
+      assert(gen_match_j);
+      mesh->addMatch(gen, PCU_Comm_Self(), gen_match_j);
+    }
+  }
+}
+
 MatchedCollapse::MatchedCollapse(Adapt* a):
   adapt(a),
   rebuilds(a->mesh)
@@ -124,10 +143,15 @@ void MatchedCollapse::cancel()
 bool MatchedCollapse::tryThisDirection(double qualityToBeat)
 {
   bool ok = true;
+  rebuilds.reset();
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    collapses[i].rebuildCallback = &rebuilds;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     if (!collapses[i].tryThisDirectionNoCancel(qualityToBeat))
       ok = false;
-  if (!ok)
+  if (ok)
+    rebuilds.match(sharing);
+  else
     cancel();
   return ok;
 }
