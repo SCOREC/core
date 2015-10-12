@@ -69,6 +69,7 @@ nbAvg = metric("neighborsAvg")
 nbAvg.has = lambda s: True if "neighbors <max avg>" in s else False
 nbAvg.get = lambda s: float(s.split()[-1])
 
+
 getTot = lambda s: int(float(s.split()[-4])) #ehhhhh trim off the decimal
 getMax = lambda s: int(float(s.split()[-3])) #ehhhhh trim off the decimal
 getMin = lambda s: int(float(s.split()[-2])) #ehhhhh trim off the decimal
@@ -180,6 +181,9 @@ for line in infile:
     r.metrics[bal.name].append(bal.get(line))
     r = getNewRunLog(runs)
 
+rgnsPerPart = runs[0].metrics[rgnAvg.name][0]
+print 'average elements per part:', rgnsPerPart
+
 runCount = 0
 balAll = []
 vtxImbAll = []
@@ -197,12 +201,15 @@ for run in runs:
     elmImbAll.extend([None]*d)
   runCount = runCount + 1
 
+
 vtxImbPtReduction = (vtxImbAll[0]-vtxImbAll[-1])*100
+totTime = sum(balAll)
 print 'total number of parma iterations: ' + str(len(vtxImbAll))
 print 'percentage point reduction in vertex imbalance: ' + str(vtxImbPtReduction)
-print 'total time (s) for parma balancing: ' + str(sum(balAll))
-print 'time (s) per parma balance iteration: ' + str(sum(balAll)/len(vtxImbAll))
-print 'time (s) per vertex imbalance percentage point reduction: ' + str(sum(balAll)/vtxImbPtReduction)
+print 'total time (s) for parma balancing: ' + str(totTime)
+print 'time (s) per parma balance iteration: ' + str(totTime/len(vtxImbAll))
+print 'time (s) per vertex imbalance percentage point reduction: ' + str(totTime/vtxImbPtReduction)
+print 'vertex imbalance percentage point reduction per element per second: ' + str(vtxImbPtReduction/totTime/rgnsPerPart)
 
 bal.plot(balAll)
 plot([vtxImbAll, elmImbAll], "Iteration", "Max/Avg", ["vtxImb", "elmImb"], "vtxElmImbalance")
