@@ -212,7 +212,8 @@ Entity* rebuildElement(
     Entity* original,
     Entity* oldVert,
     Entity* newVert,
-    apf::BuildCallback* cb)
+    apf::BuildCallback* cb,
+    RebuildCallback* rcb)
 {
   int type = m->getType(original);
   if (type == apf::Mesh::VERTEX)
@@ -226,8 +227,11 @@ Entity* rebuildElement(
   Downward down;
   int nd = m->getDownward(original,d-1,down);
   for (int i=0; i < nd; ++i)
-    down[i] = rebuildElement(m,down[i],oldVert,newVert,cb);
-  return makeOrFind(m,m->toModel(original),type,down,cb);
+    down[i] = rebuildElement(m, down[i], oldVert, newVert, cb, rcb);
+  Entity* e = makeOrFind(m, m->toModel(original), type, down, cb);
+  if (rcb)
+    rcb->rebuilt(e, original);
+  return e;
 }
 
 bool isInClosure(Mesh* m, Entity* parent, Entity* e)

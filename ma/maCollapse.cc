@@ -19,6 +19,7 @@ void Collapse::Init(Adapt* a)
 {
   adapt = a;
   cavity.init(a);
+  rebuildCallback = 0;
 }
 
 bool Collapse::requestLocality(apf::CavityOp* o)
@@ -31,7 +32,7 @@ bool Collapse::requestLocality(apf::CavityOp* o)
   return o->requestLocality(v,2);
 }
 
-bool Collapse::tryThisDirection(double qualityToBeat)
+bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
 {
   assert( ! adapt->mesh->isShared(vertToCollapse));
   rebuildElements();
@@ -39,7 +40,13 @@ bool Collapse::tryThisDirection(double qualityToBeat)
     return false;
   if ((adapt->mesh->getDimension()==2)
     &&( ! isGood2DMesh()))
-  {
+    return false;
+  return true;
+}
+
+bool Collapse::tryThisDirection(double qualityToBeat)
+{
+  if (!tryThisDirectionNoCancel(qualityToBeat)) {
     cancel();
     return false;
   }
@@ -312,7 +319,8 @@ void Collapse::rebuildElements()
   size_t ni=0;
   APF_ITERATE(EntitySet,elementsToKeep,it)
     newElements[ni++]=
-        rebuildElement(adapt,*it,vertToCollapse,vertToKeep);
+        rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
+            adapt->buildCallback, rebuildCallback);
   cavity.afterBuilding();
   if (cavity.shouldFit) {
     EntityArray oldElements;
@@ -323,11 +331,7 @@ void Collapse::rebuildElements()
 
 bool Collapse::checkValidity(double qualityToBeat)
 {
-  double quality = getWorstQuality(adapt,newElements);
-  if (quality > qualityToBeat)
-    return true;
-  cancel();
-  return false;
+  return getWorstQuality(adapt,newElements) > qualityToBeat;
 }
 
 bool Collapse::isGood2DMesh()
@@ -343,10 +347,16 @@ bool Collapse::isGood2DMesh()
   return true;
 }
 
-void Collapse::cancel()
+void Collapse::destroyNewElements()
 {
   for (size_t i=0; i < newElements.getSize(); ++i)
     destroyElement(adapt,newElements[i]);
+  newElements.setSize(0);
+}
+
+void Collapse::cancel()
+{
+  destroyNewElements();
   unmark();
 }
 

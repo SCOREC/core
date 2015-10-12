@@ -34,15 +34,16 @@ void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
     apf::NewArray<double>& triNodes);
 
 /** \brief polynomial part of bernstein polynomial */
-double Bij(int i, int j,double u, double v);
-double Bijk(int i, int j, int k, double u, double v, double w);
-double Bijkl(int i, int j, int k, int l,double u,
-    double v, double w, double t);
+double Bij(const int i, const int j,const double u, const double v);
+double Bijk(const int i, const int j, const int k, const double u,
+    const double v, const double w);
+double Bijkl(const int i, const int j, const int k, const int l,
+    const double u, const double v, const double w, const double t);
 
 /** \brief a different form of the above */
-double Bij(int ij[], double xi[]);
-double Bijk(int ijk[], double xi[]);
-double Bijkl(int ijkl[], double xi[]);
+double Bij(const int ij[], const double xi[]);
+double Bijk(const int ijk[], const double xi[]);
+double Bijkl(const int ijkl[], const double xi[]);
 
 /** \brief these compute det(Jacobian) from the Bezier conversion
  * \details this evaluates an order d(P-1) bezier to compute it
@@ -83,7 +84,9 @@ void subdivideBezierTriangle(int P, apf::Vector3& p,
     apf::NewArray<apf::Vector3> (&subNodes)[3]);
 void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[4]);
-
+void subdivideBezierTet(int P, apf::Vector3& p,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4]);
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
  *
  \details this is a support function, not actual ever needed.

@@ -26,6 +26,7 @@ class Collapse
     void Init(Adapt* a);
     bool requestLocality(apf::CavityOp* o);
     void destroyOldElements();
+    void destroyNewElements();
     bool setEdge(Entity* e);
     bool checkClass();
     bool checkTopo();
@@ -37,6 +38,7 @@ class Collapse
     bool isGood2DMesh();
     void cancel();
     bool tryThisDirection(double qualityToBeat);
+    bool tryThisDirectionNoCancel(double qualityToBeat);
     bool tryBothDirections(double qualityToBeat);
     void getOldElements(EntityArray& oldElements);
     double getOldQuality();
@@ -48,8 +50,10 @@ class Collapse
     EntitySet elementsToKeep;
     EntityArray newElements;
     Cavity cavity;
+    RebuildCallback* rebuildCallback;
 };
 
+bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);
 bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex);
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert);
 
