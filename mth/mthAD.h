@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-#include "scanArray.h"
+#include "canArray.h"
 namespace mth {
 
 /** \brief forward automatic differentiation variable */
