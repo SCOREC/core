@@ -40,6 +40,7 @@ struct MatchedCollapse
   void cancel();
   bool tryThisDirection(double qualityToBeat);
   bool tryBothDirections(double qualityToBeat);
+  void destroyOldElements();
   Adapt* adapt;
   Mesh* mesh;
   apf::Sharing* sharing;

@@ -172,4 +172,10 @@ bool MatchedCollapse::tryBothDirections(double qualityToBeat)
   return tryThisDirection(qualityToBeat);
 }
 
+void MatchedCollapse::destroyOldElements()
+{
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    collapses[i].destroyOldElements();
+}
+
 }
