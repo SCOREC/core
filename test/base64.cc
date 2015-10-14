@@ -1,9 +1,10 @@
 #include <iostream>
-#include <string>
 #include <cassert>
-#include <stdlib.h>
+#include <cstdlib>
 
-#include "base64.h"
+#include <lionBase64.h>
+
+using namespace lion;
 
 void runEncodeTests () {
 
