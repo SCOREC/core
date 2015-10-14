@@ -1,7 +1,9 @@
+#include "lionBase64.h"
+
 #include <string>
 #include <stdlib.h>
 
-#include "base64.h"
+namespace lion {
 
 // ===========================================================================
 // =========================================================================== 
@@ -62,7 +64,7 @@ char getBase64Char (int index) {
 
 // ===========================================================================
 
-char getDecodedBase64Char (unsigned char c) {
+unsigned char getDecodedBase64Char (unsigned char c) {
 
   return base64DecodeTable[c];
 }
@@ -176,7 +178,7 @@ std::string base64Decode4Bytes (char* bytes){
   std::string decoded;
 
   //get the Base64 codes for the input chars
-  char* base64Chars = (char*)malloc(4*sizeof(char));
+  unsigned char* base64Chars = (unsigned char*)malloc(4*sizeof(char));
   base64Chars[0] = getDecodedBase64Char(bytes[0]);
   base64Chars[1] = getDecodedBase64Char(bytes[1]);
   base64Chars[2] = getDecodedBase64Char(bytes[2]);
@@ -219,5 +221,4 @@ std::string base64Decode (std::string encoded) {
   return decoded;
 }
 
-// ===========================================================================
-// ===========================================================================
+}

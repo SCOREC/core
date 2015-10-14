@@ -1,8 +1,9 @@
-#ifndef BASE64_H
-#define BASE64_H
+#ifndef LION_BASE64_H
+#define LION_BASE64_H
 
-// ===========================================================================
-// ===========================================================================
+#include <string>
+
+namespace lion {
 
 /*
 Function getBase64Char:
@@ -18,7 +19,7 @@ Function getDecodedBase64Char:
   base64DecodeTable. We have to do this because our Base64 string is
   represented as ASCII chars which have different codes than Base64.
 */
-char getDecodedBase64Char (unsigned char c);
+unsigned char getDecodedBase64Char (unsigned char c);
 
 // ===========================================================================
 
@@ -122,7 +123,6 @@ Returns:
 */
 std::string base64Decode (std::string encoded);
 
-// ===========================================================================
-// ===========================================================================
+}
 
 #endif

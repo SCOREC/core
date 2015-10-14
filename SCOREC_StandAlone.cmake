@@ -66,6 +66,8 @@ add_subdirectory(can)
 
 add_subdirectory(mth)
 
+add_subdirectory(lion)
+
 add_subdirectory(apf)
 
 add_subdirectory(mds)

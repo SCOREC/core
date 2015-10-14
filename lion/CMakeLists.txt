@@ -9,9 +9,11 @@ set(LION_INCLUDE_DIRS
 set(LION_LIBS lion)
 
 set(LION_SOURCES
+    lionBase64.cc
 )
 
 set(LION_HEADERS
+    lionBase64.h
 )
 
 # THIS IS WHERE TRIBITS GETS HEADERS
@@ -35,7 +37,7 @@ configure_file(
     @ONLY)
 #pkgconfig }
 
-INSTALL(FILES ${MTH_HEADERS} DESTINATION include)
+INSTALL(FILES ${LION_HEADERS} DESTINATION include)
 INSTALL(FILES "${PROJECT_BINARY_DIR}/liblion.pc" DESTINATION lib/pkgconfig)
 INSTALL(TARGETS
   lion
