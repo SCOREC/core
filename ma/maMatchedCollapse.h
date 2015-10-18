@@ -38,6 +38,7 @@ struct MatchedCollapse
   void setEdge(Entity* e);
   bool requestLocality(apf::CavityOp* o);
   void setEdges();
+  bool checkTopo2();
   bool checkTopo();
   void unmark();
   void cancel();

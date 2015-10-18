@@ -20,6 +20,8 @@ void Collapse::Init(Adapt* a)
   adapt = a;
   cavity.init(a);
   rebuildCallback = 0;
+  vertToCollapse = 0;
+  vertToKeep = 0;
 }
 
 bool Collapse::requestLocality(apf::CavityOp* o)
