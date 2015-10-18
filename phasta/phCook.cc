@@ -96,22 +96,18 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
-    fprintf(stderr, "------entering %s-------\n", __func__);
     return fopen(path, "r");
   }
 
   static FILE* openfile_write(ph::Output&, const char* path) {
-    fprintf(stderr, "------entering %s-------\n", __func__);
     return fopen(path, "w");
   }
 
   static FILE* openstream_write(ph::Output& out, const char* path) {
-    fprintf(stderr, "------entering %s-------\n", __func__);
     return openGRStreamWrite(out.grs, path);
   }
 
   static FILE* openstream_read(ph::Input& in, const char* path) {
-    fprintf(stderr, "------entering %s-------\n", __func__);
     std::string fname(path);
     std::string restartStr("restart");
     FILE* f = NULL;
