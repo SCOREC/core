@@ -992,7 +992,7 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   Downward bv;
   int nbv = m->getDownward(boundary, 0, bv);
   int const* vi = getVertIndices(m->getType(elem), m->getType(boundary), which);
-  Downward ebv;
+  Downward ebv = {0};
   for (int i = 0; i < nbv; ++i)
     ebv[i] = ev[vi[i]];
   int a = findIn(ebv, nbv, bv[0]);
