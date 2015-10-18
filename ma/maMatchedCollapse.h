@@ -18,13 +18,16 @@ struct Rebuild {
   Rebuild(Entity* a, Entity* b);
   Entity* e;
   Entity* original;
+  bool operator<(Rebuild const&other) const;
+  bool operator==(Rebuild const&other) const;
 };
 
 struct Rebuilds : public RebuildCallback {
   Rebuilds(Mesh* m);
   virtual void rebuilt(Entity* e, Entity* original);
   void reset();
-  void match(apf::Sharing* sh);
+  void match(apf::Sharing* sh,
+      apf::DynamicArray<ma::Collapse>& collapses);
   Mesh* mesh;
   std::vector<Rebuild> v;
 };

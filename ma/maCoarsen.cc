@@ -117,9 +117,6 @@ class MatchedIndependentSetFinder : public IndependentSetFinder
           clearFlag(adapt, it->entity, COLLAPSE);
       }
     }
-  private:
-    Adapt* adapt;
-    Entity* vertex;
 };
 
 void findIndependentSet(Adapt* a)
@@ -233,7 +230,7 @@ class MatchedEdgeCollapser : public Operator
 static int collapseMatchedEdges(Adapt* a, int modelDimension)
 {
   MatchedEdgeCollapser collapser(a, modelDimension);
-  applyOperator(a, &collapser);
+  applyOperator(a, &collapser, true);
   return collapser.successCount;
 }
 

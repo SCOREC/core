@@ -12,11 +12,28 @@
 #include <cassert>
 #include <PCU.h>
 
+#include <algorithm>
+
 namespace ma {
 
 Rebuild::Rebuild(Entity* a, Entity* b):
   e(a),original(b)
 {
+}
+
+bool Rebuild::operator<(Rebuild const& other) const
+{
+  if (original != other.original)
+    return original < other.original;
+  if (e != other.e)
+    return e < other.e;
+  return false;
+}
+
+bool Rebuild::operator==(Rebuild const& other) const
+{
+  return original == other.original &&
+         e == other.e;
 }
 
 Rebuilds::Rebuilds(Mesh* m):
@@ -36,8 +53,24 @@ void Rebuilds::reset()
   v.clear();
 }
 
-void Rebuilds::match(apf::Sharing* sh)
+struct IsFalseRebuild {
+  bool operator()(Rebuild const& r) const
+  {
+    return r.original == r.e;
+  }
+};
+
+void Rebuilds::match(apf::Sharing* sh, apf::DynamicArray<ma::Collapse>& collapses)
 {
+  /* the ma::rebuildElement call will produce more logs than we want:
+     1) entities which don't really change show up as rebuilds of themselves,
+        i.e. edges along the boundary of the cavity.
+     2) rebuilds required my multiple elements show up multiple times
+     below we filter out each of these cases to obtain the real rebuilds
+     we're interested in */
+  v.erase(std::remove_if(v.begin(), v.end(), IsFalseRebuild()), v.end());
+  std::sort(v.begin(), v.end());
+  v.erase(std::unique(v.begin(), v.end()), v.end());
   for (unsigned i = 0; i < v.size(); ++i) {
     Entity* orig = v[i].original;
     Entity* gen = v[i].e;
@@ -150,7 +183,7 @@ bool MatchedCollapse::tryThisDirection(double qualityToBeat)
     if (!collapses[i].tryThisDirectionNoCancel(qualityToBeat))
       ok = false;
   if (ok)
-    rebuilds.match(sharing);
+    rebuilds.match(sharing, collapses);
   else
     cancel();
   return ok;
