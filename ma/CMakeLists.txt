@@ -40,6 +40,7 @@ set(SOURCES
   maSize.cc
   maOperator.cc
   maCollapse.cc
+  maMatchedCollapse.cc
   maLayerCollapse.cc
   maMatch.cc
   maSolutionTransfer.cc

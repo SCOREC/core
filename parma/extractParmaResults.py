@@ -25,9 +25,28 @@ def plot(dat, xlabel, ylabel, name, title):
     for d,s in zip(dat,name):
       print s
       plt.plot(d,label=s)
-    plt.ylabel(ylabel)
     plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.legend()
+    plt.savefig(title)
+    plt.close('all')
+
+def plot2(dat, axis, xlabel, ylabel, name, title):
+    color=['b','g','r','c','m','y','b']
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    for d,s,a,c in zip(dat,name,axis,color):
+      print s
+      if a is 'left':
+          ax1.plot(d,color=c,linestyle='--',label=s)
+      if a is 'right':
+          ax2.plot(d,color=c,label=s)
+    ax1.set_xlabel(xlabel)
+    ax1.set_xlim(left=-10)
+    ax1.set_ylabel(ylabel[0])
+    ax1.legend(loc='upper left')
+    ax2.set_ylabel(ylabel[1])
+    ax2.legend(loc='upper right')
     plt.savefig(title)
     plt.close('all')
 
@@ -68,6 +87,7 @@ nbMax.get = lambda s: int(s.split()[-2])
 nbAvg = metric("neighborsAvg")
 nbAvg.has = lambda s: True if "neighbors <max avg>" in s else False
 nbAvg.get = lambda s: float(s.split()[-1])
+
 
 getTot = lambda s: int(float(s.split()[-4])) #ehhhhh trim off the decimal
 getMax = lambda s: int(float(s.split()[-3])) #ehhhhh trim off the decimal
@@ -180,10 +200,17 @@ for line in infile:
     r.metrics[bal.name].append(bal.get(line))
     r = getNewRunLog(runs)
 
+rgnsPerPart = runs[0].metrics[rgnAvg.name][0]
+print 'average elements per part:', rgnsPerPart
+
 runCount = 0
 balAll = []
 vtxImbAll = []
 elmImbAll = []
+iterTimeAll = []
+distUpAll = []
+elmMigrAll = []
+elmSelAll = []
 for run in runs:
   for key,value in run.metrics.items():
     if key is vtxImb.name:
@@ -192,17 +219,43 @@ for run in runs:
       elmImbAll.extend(value) 
     if key is bal.name:
       balAll.extend(value)
+    if key is distUp.name:
+      distUpAll.extend(value)
+    if key is elmMigr.name:
+      elmMigrAll.extend(value)
+    if key is elmSel.name:
+      elmSelAll.extend(value)
+  iterTime = [sum(x) for x in zip(\
+                        run.metrics[elmSel.name], \
+                        run.metrics[distUp.name], \
+                        run.metrics[elmMigr.name])]
+  iterTimeAll.extend(iterTime)
   d = len(vtxImbAll) - len(elmImbAll)
   if d > 0:
     elmImbAll.extend([None]*d)
+  d = len(vtxImbAll) - len(iterTimeAll)
+  if d > 0:
+    iterTimeAll.extend([None]*d)
+    distUpAll.extend([None]*d)
+    elmMigrAll.extend([None]*d)
+    elmSelAll.extend([None]*d)
   runCount = runCount + 1
 
 vtxImbPtReduction = (vtxImbAll[0]-vtxImbAll[-1])*100
+totTime = sum(balAll)
 print 'total number of parma iterations: ' + str(len(vtxImbAll))
 print 'percentage point reduction in vertex imbalance: ' + str(vtxImbPtReduction)
-print 'total time (s) for parma balancing: ' + str(sum(balAll))
-print 'time (s) per parma balance iteration: ' + str(sum(balAll)/len(vtxImbAll))
-print 'time (s) per vertex imbalance percentage point reduction: ' + str(sum(balAll)/vtxImbPtReduction)
+print 'total time (s) for parma balancing: ' + str(totTime)
+print 'time (s) per parma balance iteration: ' + str(totTime/len(vtxImbAll))
+print 'time (s) per vertex imbalance percentage point reduction: ' + str(totTime/vtxImbPtReduction)
+print 'vertex imbalance percentage point reduction per element per second: ' + str(vtxImbPtReduction/totTime/rgnsPerPart)
+
+plot2(dat=[iterTimeAll, vtxImbAll, elmImbAll], \
+     axis=['right', 'left', 'left'], \
+     name=['iterTime', 'vtxImb', 'elmImb'], \
+     xlabel="Iteration", \
+     ylabel=['Max/Avg', 'Time (s)'], \
+     title="vtxElmImbVsIterTime")
 
 bal.plot(balAll)
 plot([vtxImbAll, elmImbAll], "Iteration", "Max/Avg", ["vtxImb", "elmImb"], "vtxElmImbalance")

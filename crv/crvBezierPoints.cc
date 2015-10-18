@@ -11,6 +11,50 @@
 
 namespace crv {
 
+/*
+ * For anything not using optimal points, just allocate as needed
+ */
+static void getHigherBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
+{
+  // 19th order supported
+  static apf::NewArray<double> edgePoints[20];
+  static apf::NewArray<apf::Vector3> triPoints[20];
+  static apf::NewArray<apf::Vector3> tetPoints[20];
+  // if edges are allocated
+  if (!edgePoints[P].allocated()){
+    edgePoints[P].allocate(P-1);
+    double dp = 2./P;
+    for (int i = 1; i <= P-1; ++i)
+      edgePoints[P][i-1] = -1.+dp*i;
+    triPoints[P].allocate((P-1)*(P-2)/2);
+    dp = 1./P;
+    int start = getNumControlPoints(apf::Mesh::TRIANGLE,P)
+        - getNumInternalControlPoints(apf::Mesh::TRIANGLE,P);
+    for(int i = 1; i <= P-2; ++i)
+      for(int j = 1; j <= P-1-i; ++j){
+        int index = getTriNodeIndex(P,i,j) - start;
+        triPoints[P][index][0] = dp*i;
+        triPoints[P][index][1] = dp*j;
+      }
+    start = getNumControlPoints(apf::Mesh::TET,P)
+        - getNumInternalControlPoints(apf::Mesh::TET,P);
+    tetPoints[P].allocate((P-1)*(P-2)*(P-3)/2);
+    for (int k = 1; k <= P-2; ++k)
+      for (int j = 1; j <= P-k-2; ++j)
+        for (int i = 1; i <= P-j-k-1; ++i){
+          int index = getTetNodeIndex(P,i,j,k) - start;
+          tetPoints[P][index] = apf::Vector3(dp*i,dp*j,dp*k);
+        }
+  }
+  if(type == apf::Mesh::EDGE)
+    xi[0] = edgePoints[P][node];
+  if(type == apf::Mesh::TRIANGLE)
+    xi = triPoints[P][node];
+  if(type == apf::Mesh::TET){
+    xi = tetPoints[P][node];
+  }
+}
+
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
 {
   static double eP2[1] = {0.0};
@@ -21,14 +65,14 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
       0.469821,0.8388042};
   static double* edgePoints[6] =
   {eP2, eP2, eP3, eP4, eP5, eP6 };
-  static apf::Vector3 nodes5[6] =
+  static apf::Vector3 triPoints5[6] =
   {apf::Vector3(0.15251715,0.15251715,0.6949657),
    apf::Vector3(0.4168658,0.1662684,0.4168658),
    apf::Vector3(0.6949657,0.15251715,0.15251715),
    apf::Vector3(0.1662684,0.4168658,0.4168658),
    apf::Vector3(0.4168658,0.4168658,0.1662684),
    apf::Vector3(0.15251715,0.6949657,0.15251715)};
-  static apf::Vector3 nodes6[10] =
+  static apf::Vector3 triPoints6[10] =
   {apf::Vector3(0.10971385,0.10971385,0.7805723),
    apf::Vector3(0.3157892,0.1256031,0.5586077),
    apf::Vector3(0.5586077,0.1256031,0.3157892),
@@ -42,7 +86,10 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
 
   switch (type) {
   case apf::Mesh::EDGE:
-    xi[0] = edgePoints[P-1][node];
+    if(P <= 6)
+      xi[0] = edgePoints[P-1][node];
+    else
+      getHigherBezierNodeXi(type,P,node,xi);
     break;
   case apf::Mesh::TRIANGLE:
     // technically only two of these numbers are needed
@@ -59,10 +106,13 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
       xi[(node+1) % 3] = 0.22088805;
       break;
     case 5:
-      xi = nodes5[node];
+      xi = triPoints5[node];
       break;
     case 6:
-      xi = nodes6[node];
+      xi = triPoints6[node];
+      break;
+    default:
+      getHigherBezierNodeXi(type,P,node,xi);
       break;
     }
     break;
@@ -71,13 +121,13 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
     case 1:
     case 2:
     case 3:
-      fail("expected P == 4");
+      fail("expected P > 3");
     case 4:
       xi = apf::Vector3(0.25,0.25,0.25);
       break;
-    case 5:
-    case 6:
-      fail("expected P == 4");
+    default:
+      getHigherBezierNodeXi(type,P,node,xi);
+      break;
     }
     break;
     default:
@@ -608,7 +658,7 @@ static void getBlendedGregoryTriangleTransform(int P, int blend,
   int niBezier = (P+1)*(P+2)/2-nbBezier;
 
   int nb = 6;
-  int ni = 6+3*P;
+  int ni = 3*P;
   c.allocate(ni*nb);
 
   int map[3] = {1,2,0};
