@@ -131,18 +131,48 @@ void MatchedCollapse::setEdges()
   }
 }
 
-bool MatchedCollapse::checkTopo()
+bool MatchedCollapse::checkTopo2()
 {
-  bool ok = true;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     if (!checkEdgeCollapseTopology(adapt, collapses[i].edge))
-      ok = false;
-  if (ok)
-    for (unsigned i = 0; i < collapses.getSize(); ++i)
-      collapses[i].setVerts();
-  else
+      return false;
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+    collapses[i].setVerts();
+  /* assert that the vertices being collapsed are matched copies
+     of one another, and that they have no off-processor
+     copies of any kind */
+  apf::CopyArray copies;
+  sharing->getCopies(collapses[0].vertToCollapse, copies);
+  for (unsigned i = 1; i < collapses.getSize(); ++i) {
+    unsigned j;
+    bool ok = false;
+    for (j = 0; j < copies.getSize(); ++i) {
+      assert(copies[j].peer == PCU_Comm_Self());
+      if (copies[j].entity == collapses[i].vertToCollapse) {
+        ok = true;
+        break;
+      }
+    }
+    assert(ok);
+  }
+  /* things go quite badly if the sub-collapse cavities overlap.
+     one cheap way to check is to see if there exist mesh
+     edges between the vertices to collapse */
+  for (unsigned i = 1; i < collapses.getSize(); ++i)
+    if (findEdge(mesh,
+          collapses[0].vertToCollapse,
+          collapses[i].vertToCollapse))
+      return false;
+  return true;
+}
+
+bool MatchedCollapse::checkTopo()
+{
+  if (!checkTopo2()) {
     unmark();
-  return ok;
+    return false;
+  }
+  return true;
 }
 
 void MatchedCollapse::unmark()
@@ -175,10 +205,25 @@ void MatchedCollapse::cancel()
 
 bool MatchedCollapse::tryThisDirection(double qualityToBeat)
 {
-  bool ok = true;
+  for (unsigned i = 0; i < collapses.getSize(); ++i) {
+    collapses[i].computeElementSets();
+  }
+
+  {
+    EntityArray left_old;
+    collapses[0].getOldElements(left_old);
+    for (unsigned i = 1; i < collapses.getSize(); ++i) {
+      EntityArray right_old;
+      collapses[i].getOldElements(right_old);
+      for (unsigned j = 0; j < left_old.getSize(); ++j)
+      for (unsigned k = 0; k < right_old.getSize(); ++k)
+        assert(left_old[j] != right_old[k]);
+    }
+  }
   rebuilds.reset();
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     collapses[i].rebuildCallback = &rebuilds;
+  bool ok = true;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     if (!collapses[i].tryThisDirectionNoCancel(qualityToBeat))
       ok = false;
@@ -191,8 +236,6 @@ bool MatchedCollapse::tryThisDirection(double qualityToBeat)
 
 bool MatchedCollapse::tryBothDirections(double qualityToBeat)
 {
-  for (unsigned i = 0; i < collapses.getSize(); ++i)
-    collapses[i].computeElementSets();
   if (tryThisDirection(qualityToBeat))
     return true;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
@@ -200,8 +243,6 @@ bool MatchedCollapse::tryBothDirections(double qualityToBeat)
       return false;
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     std::swap(collapses[i].vertToKeep, collapses[i].vertToCollapse);
-  for (unsigned i = 0; i < collapses.getSize(); ++i)
-    collapses[i].computeElementSets();
   return tryThisDirection(qualityToBeat);
 }
 
