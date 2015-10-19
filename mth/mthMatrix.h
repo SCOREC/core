@@ -125,7 +125,7 @@ class Matrix<T,0,0>
 {
   public:
     /** \brief default constructor - no allocation */
-    Matrix() {}
+    Matrix() : columns(0) {}
     /** \brief construct m by n elements */
     Matrix(unsigned m, unsigned n) : columns(n), elems(m*n) {}
     /** \brief get the number of rows */

@@ -9,7 +9,7 @@ using namespace lion;
 void runEncodeTests () {
 
   //test1, encode3({'a','a','a'}) == "YWFh"
-  char* testStr3 = (char*)malloc(3*sizeof(char));
+  char testStr3[3];
   testStr3[0] = 'a';
   testStr3[1] = 'a';
   testStr3[2] = 'a';
@@ -22,7 +22,7 @@ void runEncodeTests () {
   assert(base64Encode3Bytes(testStr3) == "eHl6");
 
   //test3, encode2({'a','a'}) == "YWE="
-  char* testStr2 = (char*)malloc(2*sizeof(char));
+  char testStr2[2];
   testStr2[0] = 'a';
   testStr2[1] = 'a';
   assert(base64Encode2Bytes(testStr2) == "YWE=");
@@ -42,7 +42,7 @@ void runEncodeTests () {
   assert(base64Encode1Byte(testStr) == "eg==");
 
   //test7, encodeStr({'a','b','c','d','e','f'}) == "YWJjZGVm"
-  char* testStr6 = (char*)malloc(6*sizeof(char));
+  char testStr6[6];
   testStr6[0] = 'a';
   testStr6[1] = 'b';
   testStr6[2] = 'c';
@@ -61,7 +61,7 @@ void runEncodeTests () {
   assert(base64Encode(testStr6, 6) == "dXZ3eHl6");
 
   //test9, encodeStr({'a','b','c','d','e','f','g'}) == "YWJjZGVmZw=="
-  char* testStr7 = (char*)malloc(7*sizeof(char));
+  char testStr7[7];
   testStr7[0] = 'a';
   testStr7[1] = 'b';
   testStr7[2] = 'c';
@@ -82,7 +82,7 @@ void runEncodeTests () {
   assert(base64Encode(testStr7, 7) == "dHV2d3h5eg==");
 
   //test11, encodeStr({'a','b','c','d','e','f','g','h'}) == "YWJjZGVmZ2g="
-  char* testStr8 = (char*)malloc(8*sizeof(char));
+  char testStr8[8];
   testStr8[0] = 'a';
   testStr8[1] = 'b';
   testStr8[2] = 'c';
@@ -104,12 +104,6 @@ void runEncodeTests () {
   testStr8[7] = 'z';
   assert(base64Encode(testStr8, 8) == "c3R1dnd4eXo=");
 
-  free(testStr3);
-  free(testStr2);
-  free(testStr6);
-  free(testStr7);
-  free(testStr8);
-
   std::cout << "Encode tests pass!" << std::endl;
 }
 
@@ -125,7 +119,7 @@ void runDecodeTests () {
   }
 
   //test2, decode4({'Y','W','F','h'}) == "aaa"
-  char* testStr4 = (char*)malloc(4*sizeof(char));
+  char testStr4[4];
   testStr4[0] = 'Y';
   testStr4[1] = 'W';
   testStr4[2] = 'F';
@@ -146,12 +140,43 @@ void runDecodeTests () {
   testStr4[3] = '=';
   assert(base64Decode4Bytes(testStr4) == "a");
 
-  free(testStr4);
+  //test5, decode({'e','H','l','6'}) == "xyz"
+  testStr4[0] = 'e';
+  testStr4[1] = 'H';
+  testStr4[2] = 'l';
+  testStr4[3] = '6';
+  assert(base64Decode4Bytes(testStr4) == "xyz");
+
+  //test6, decode({'e','H','l','='}) == "xy"
+  testStr4[0] = 'e';
+  testStr4[1] = 'H';
+  testStr4[2] = 'l';
+  testStr4[3] = '=';
+  assert(base64Decode4Bytes(testStr4) == "xy");
+
+  //test7, decode({'e','H','=','='}) == "x"
+  testStr4[0] = 'e';
+  testStr4[1] = 'H';
+  testStr4[2] = '=';
+  testStr4[3] = '=';
+  assert(base64Decode4Bytes(testStr4) == "x");
+
+  //test8, decode("YWJjZGVm") == "abcdef"
+  assert(base64Decode("YWJjZGVm") == "abcdef");
+
+  //test9, decode("dXZ3eHl6") = "uvwxyz"
+  assert(base64Decode("dXZ3eHl6") == "uvwxyz");
+
+  //test10, decode("dnd4eXo=") == "vwxyz"
+  assert(base64Decode("dnd4eXo=") == "vwxyz");
+
+  //test11, decode("d3h5eg==") = "wxyz"
+  assert(base64Decode("d3h5eg==") == "wxyz");
 
   std::cout << "Decode tests pass!" << std::endl;
 }
 
-int main (int argc, char** argv) {
+int main ( ) {
     
   runEncodeTests();
   runDecodeTests();

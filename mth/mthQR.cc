@@ -173,6 +173,7 @@ bool solveQR(Matrix<T,M,N> const& a,
   Matrix<T,M,M> q;
   Matrix<T,M,N> r;
   unsigned rank = decomposeQR(a, q, r);
+  assert(r.cols() > 0);
   if (rank != a.cols())
     return false;
   solveFromQR(q, r, b, x);

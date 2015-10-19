@@ -135,39 +135,5 @@ SET(REPO git@github.com:SCOREC/core-sim.git)
 
 run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
 
-#after this we do the same thing but this time with the clang
-#static analysis tool
-SET(CONFIGURE_OPTIONS
-  "-DCMAKE_C_COMPILER=ccc-analyzer"
-  "-DCMAKE_CXX_COMPILER=c++-analyzer"
-  "-DCMAKE_C_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
-  "-DCMAKE_CXX_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
-  "-DENABLE_THREADS=ON"
-  "-DENABLE_ZOLTAN=ON"
-  "-DENABLE_MPAS=ON"
-  "-DPCU_COMPRESS=ON"
-  "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/clangmake.sh"
-)
-SET(REPO https://github.com/SCOREC/core.git)
-
-build_subproject("core-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
-
-SET(CONFIGURE_OPTIONS
-  "-DCMAKE_C_COMPILER=ccc-analyzer"
-  "-DCMAKE_CXX_COMPILER=c++-analyzer"
-  "-DCMAKE_C_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
-  "-DCMAKE_CXX_FLAGS=-I/usr/local/mpich3/3.1.2-thread-multiple/include -O2 -g -Wall"
-  "-DENABLE_THREADS=ON"
-  "-DENABLE_ZOLTAN=ON"
-  "-DENABLE_MPAS=ON"
-  "-DPCU_COMPRESS=ON"
-  "-DCMAKE_MAKE_PROGRAM:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/clangmake.sh"
-  "-DSIM_PARASOLID=ON"
-  "-DSIM_MPI=mpich3.1.2"
-)
-SET(REPO git@github.com:SCOREC/core-sim.git)
-
-build_subproject("core-sim-scan" "${REPO}" "${CONFIGURE_OPTIONS}")
-
 message("DONE")
 

@@ -139,39 +139,46 @@ void destroyField(Field* f)
 void setScalar(Field* f, MeshEntity* e, int node, double value)
 {
   ScalarField* field = static_cast<ScalarField*>(f);
-  field->setNodeValue(e,node,value);
+  double tmp[1] = {value};
+  field->setNodeValue(e,node,tmp);
 }
 
 double getScalar(Field* f, MeshEntity* e, int node)
 {
   ScalarField* field = static_cast<ScalarField*>(f);
-  double value;
+  double value[1];
   field->getNodeValue(e,node,value);
-  return value;
+  return value[0];
 }
 
 void setVector(Field* f, MeshEntity* e, int node, Vector3 const& value)
 {
   VectorField* field = static_cast<VectorField*>(f);
-  field->setNodeValue(e,node,value);
+  Vector3 tmp[1] = {value};
+  field->setNodeValue(e,node,tmp);
 }
 
 void getVector(Field* f, MeshEntity* e, int node, Vector3& value)
 {
   VectorField* field = static_cast<VectorField*>(f);
-  field->getNodeValue(e,node,value);
+  Vector3 tmp[1];
+  field->getNodeValue(e,node,tmp);
+  value = tmp[0];
 }
 
 void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value)
 {
   MatrixField* field = static_cast<MatrixField*>(f);
-  field->setNodeValue(e,node,value);
+  Matrix3x3 tmp[1] = {value};
+  field->setNodeValue(e,node,tmp);
 }
 
 void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 {
   MatrixField* field = static_cast<MatrixField*>(f);
-  field->getNodeValue(e,node,value);
+  Matrix3x3 tmp[1];
+  field->getNodeValue(e,node,tmp);
+  value = tmp[0];
 }
 
 void setComponents(Field* f, MeshEntity* e, int node, double const* components)

@@ -1,7 +1,6 @@
 #include "lionBase64.h"
 
 #include <string>
-#include <stdlib.h>
 
 namespace lion {
 
@@ -11,9 +10,8 @@ namespace lion {
 // ===========================================================================
 // ===========================================================================
 
-static const std::string base64EncodeTable =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                              "abcdefghijklmnopqrstuvwxyz"
-                                              "0123456789+/=";
+static const unsigned char base64EncodeTable[65] =  
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 // ===========================================================================
 
@@ -70,7 +68,6 @@ unsigned char getDecodedBase64Char (unsigned char c) {
 }
 
 // ===========================================================================
-
 
 std::string base64Encode3Bytes (char* bytes) {
 
@@ -132,12 +129,11 @@ std::string base64Encode1Byte (char byte) {
 
 // ===========================================================================
 
-
 std::string base64Encode (const char* input,
                           const unsigned long len ) {
 
   std::string encoded;
-  char* inputChars = (char*)malloc(3*sizeof(char));
+  char inputChars[3];
   unsigned int index = 0;
 
   //encode all the string in 3 byte sections, this loop won't encode the last
@@ -166,8 +162,6 @@ std::string base64Encode (const char* input,
     index++;
   }
 
-  free(inputChars);
-
   return encoded;
 }
 
@@ -178,7 +172,7 @@ std::string base64Decode4Bytes (char* bytes){
   std::string decoded;
 
   //get the Base64 codes for the input chars
-  unsigned char* base64Chars = (unsigned char*)malloc(4*sizeof(char));
+  unsigned char base64Chars[4];
   base64Chars[0] = getDecodedBase64Char(bytes[0]);
   base64Chars[1] = getDecodedBase64Char(bytes[1]);
   base64Chars[2] = getDecodedBase64Char(bytes[2]);
@@ -206,17 +200,27 @@ std::string base64Decode4Bytes (char* bytes){
     decoded += (char)(((base64Chars[2] << 6) & 0xC0) | (base64Chars[3] & 0x3F));
   }
 
-  free(base64Chars);
-
   return decoded;
 }
 
 // ===========================================================================
 
-// TODO: PR4: Implement
 std::string base64Decode (std::string encoded) {
 
+  if ( encoded.length() % 4 != 0 ) {
+    return "";
+  }
+
   std::string decoded;
+  char charsToDecode[4];
+
+  for ( unsigned int index = 0; index < encoded.length(); index += 4 ) {
+    charsToDecode[0] = encoded[index];
+    charsToDecode[1] = encoded[index+1];
+    charsToDecode[2] = encoded[index+2];
+    charsToDecode[3] = encoded[index+3];
+    decoded += base64Decode4Bytes(charsToDecode);
+  }
   
   return decoded;
 }
