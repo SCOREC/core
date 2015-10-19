@@ -71,7 +71,6 @@ unsigned char getDecodedBase64Char (unsigned char c) {
 
 // ===========================================================================
 
-
 std::string base64Encode3Bytes (char* bytes) {
 
   std::string encoded;
@@ -131,7 +130,6 @@ std::string base64Encode1Byte (char byte) {
 }
 
 // ===========================================================================
-
 
 std::string base64Encode (const char* input,
                           const unsigned long len ) {
@@ -213,10 +211,24 @@ std::string base64Decode4Bytes (char* bytes){
 
 // ===========================================================================
 
-// TODO: PR4: Implement
 std::string base64Decode (std::string encoded) {
 
+  if ( encoded.length() % 4 != 0 ) {
+    return "";
+  }
+
   std::string decoded;
+  char* charsToDecode = (char*)malloc(4*sizeof(char));
+
+  for ( unsigned int index = 0; index < encoded.length(); index += 4 ) {
+    charsToDecode[0] = encoded[index];
+    charsToDecode[1] = encoded[index+1];
+    charsToDecode[2] = encoded[index+2];
+    charsToDecode[3] = encoded[index+3];
+    decoded += base64Decode4Bytes(charsToDecode);
+  }
+
+  free(charsToDecode);
   
   return decoded;
 }

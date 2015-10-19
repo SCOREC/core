@@ -110,8 +110,6 @@ std::string base64Decode4Bytes (char* bytes);
 // ===========================================================================
 
 /*
-TODO: PR4: Implement
-
 Function base64Decode:
   Decodes a string of Base64 chars to the bytes they represent
 
