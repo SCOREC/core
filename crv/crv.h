@@ -107,18 +107,6 @@ class GregoryCurver : public BezierCurver
     void setInternalPointsLocally();
 };
 
-/** \brief this is a very niche set of shape functions, an experiment
- * gets the exact representation for a sphere represented by 8 tets
- */
-class SphereCurver : public MeshCurver
-{
-  public:
-    SphereCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m, P, S)
-    { setBlendingOrder(B); };
-
-    virtual bool run();
-};
-
 /** \brief Elevate a bezier curve to a higher order
  \details This elevates from nth order to n+rth order
  requires the curve be order n+r in memory already, and
@@ -133,14 +121,6 @@ apf::FieldShape* getBezier(int order);
  third order is implemented, but doesnt preserve
  linear tets.*/
 apf::FieldShape* getGregory(int order);
-/** \brief Get the NURBS, based off of bezier
- \details goes from first to sixth order, NURBS are really only
- used for curving to a sphere, and are a test */
-apf::FieldShape* getNurbs(int order);
-/** \brief set the weights
- \details used to set these for every curved surface*/
-void setNurbsEdgeWeights(apf::NewArray<double>& weights);
-void setNurbsTriangleWeights(apf::NewArray<double>& weights);
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
