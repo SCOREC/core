@@ -30,20 +30,20 @@ static void getHigherBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
     dp = 1./P;
     int start = getNumControlPoints(apf::Mesh::TRIANGLE,P)
         - getNumInternalControlPoints(apf::Mesh::TRIANGLE,P);
-    for(int i = 1; i <= P-2; ++i)
-      for(int j = 1; j <= P-1-i; ++j){
-        int index = getTriNodeIndex(P,i,j) - start;
-        triPoints[P][index][0] = dp*i;
-        triPoints[P][index][1] = dp*j;
+    for(int j = 1; j <= P-2; ++j)
+      for(int i = 1; i <= P-1-j; ++i){
+        int index = computeTriNodeIndex(P,i,j) - start;
+        triPoints[P][index][0] = dp*j;
+        triPoints[P][index][1] = dp*(P-i-j);
       }
     start = getNumControlPoints(apf::Mesh::TET,P)
         - getNumInternalControlPoints(apf::Mesh::TET,P);
-    tetPoints[P].allocate((P-1)*(P-2)*(P-3)/2);
+    tetPoints[P].allocate((P-1)*(P-2)*(P-3)/6);
     for (int k = 1; k <= P-2; ++k)
       for (int j = 1; j <= P-k-2; ++j)
         for (int i = 1; i <= P-j-k-1; ++i){
-          int index = getTetNodeIndex(P,i,j,k) - start;
-          tetPoints[P][index] = apf::Vector3(dp*i,dp*j,dp*k);
+          int index = computeTetNodeIndex(P,i,j,k) - start;
+          tetPoints[P][index] = apf::Vector3(dp*j,dp*k,dp*(P-i-j-k));
         }
   }
   if(type == apf::Mesh::EDGE)
