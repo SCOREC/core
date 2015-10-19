@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # load environment variables
 source /usr/local/etc/bash_profile
@@ -15,7 +15,7 @@ module load git
 cd /lore/dibanez/cdash
 
 #run nightly.cmake script
-ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> log
+ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> cmake_log.txt
 
 #core repository checked out by nightly.cmake
 cd /lore/dibanez/cdash/build/core
