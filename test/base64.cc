@@ -146,6 +146,78 @@ void runDecodeTests () {
   testStr4[3] = '=';
   assert(base64Decode4Bytes(testStr4) == "a");
 
+  //test5, decode({'e','H','l','6'}) == "xyz"
+  testStr4[0] = 'e';
+  testStr4[1] = 'H';
+  testStr4[2] = 'l';
+  testStr4[3] = '6';
+  assert(base64Decode4Bytes(testStr4) == "xyz");
+
+  //test6, decode({'e','H','l','='}) == "xy"
+  testStr4[0] = 'e';
+  testStr4[1] = 'H';
+  testStr4[2] = 'l';
+  testStr4[3] = '=';
+  assert(base64Decode4Bytes(testStr4) == "xy");
+
+  //test7, decode({'e','H','=','='}) == "x"
+  testStr4[0] = 'e';
+  testStr4[1] = 'H';
+  testStr4[2] = '=';
+  testStr4[3] = '=';
+  assert(base64Decode4Bytes(testStr4) == "x");
+
+  //test8, decode({'Y','W','J','j','Z','G','V','m'}) == "abcdef"
+  // *** FUNCTION NOT YET IMPLEMENTED ***
+  char* testStr8 = (char*)malloc(8*sizeof(char));
+  testStr8[0] = 'Y';
+  testStr8[1] = 'W';
+  testStr8[2] = 'J';
+  testStr8[3] = 'j';
+  testStr8[4] = 'Z';
+  testStr8[5] = 'G';
+  testStr8[6] = 'V';
+  testStr8[7] = 'm';
+  // assert(base64Decode(testStr8) == "abcdef");
+
+  //test9, decode({'d','X','Z','3','e','H','l','6'}) = "uvwxyz"
+  // *** FUNCTION NOT YET IMPLEMENTED ***
+  testStr8[0] = 'd';
+  testStr8[1] = 'X';
+  testStr8[2] = 'Z';
+  testStr8[3] = '3';
+  testStr8[4] = 'e';
+  testStr8[5] = 'H';
+  testStr8[6] = 'l';
+  testStr8[7] = '6';
+  // assert(base64Decode(testStr8) == "uvwxyz");
+
+  //test10, decode({'d','n','d','4','e','X','o','='}) == "vwxyz"
+  // *** FUNCTION NOT YET IMPLEMENTED ***
+  testStr8[0] = 'd';
+  testStr8[1] = 'n';
+  testStr8[2] = 'd';
+  testStr8[3] = '4';
+  testStr8[4] = 'e';
+  testStr8[5] = 'X';
+  testStr8[6] = 'o';
+  testStr8[7] = '=';
+  // assert(base64Decode(testStr8) == "vwxyz");
+
+  //test11, decode({'d','3','h','5','e','g','=','='}) = "wxyz"
+  // *** FUNCTION NOT YET IMPLEMENTED ***
+  testStr8[0] = 'd';
+  testStr8[1] = '3';
+  testStr8[2] = 'h';
+  testStr8[3] = '5';
+  testStr8[4] = 'e';
+  testStr8[5] = 'g';
+  testStr8[6] = '=';
+  testStr8[7] = '=';
+  // assert(base64Decode(testStr8) == "wxyz");
+
+
+  free(testStr8);
   free(testStr4);
 
   std::cout << "Decode tests pass!" << std::endl;
