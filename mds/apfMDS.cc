@@ -135,6 +135,7 @@ class MeshMDS : public Mesh2
     }
     ~MeshMDS()
     {
+      assert(mesh == 0);
     }
     int getDimension()
     {
