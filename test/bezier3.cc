@@ -80,6 +80,44 @@ gmi_model* makeEdgeModel()
   return model;
 }
 
+void testEdgeTransforms()
+{
+  for (int o = 2; o <= 6; ++o){
+
+    gmi_model* model = makeEdgeModel();
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, true);
+
+    apf::ModelEntity* edgeModel = m->findModelEntity(1,0);
+
+    apf::Vector3 points[2] = {apf::Vector3(0,0,0),apf::Vector3(1,1,1)};
+    apf::MeshEntity* v[2];
+    for (int i = 0; i < 2; ++i)
+      v[i] = m->createVertex(m->findModelEntity(0,i),points[i],points[i]);
+
+    m->createEntity(apf::Mesh::EDGE,edgeModel, v);
+
+    m->acceptChanges();
+    m->verify();
+
+    apf::changeMeshShape(m, crv::getBezier(o),true);
+    apf::NewArray<double> computed;
+    apf::NewArray<double> stored;
+
+    crv::getHigherOrderTransform(m,o,apf::Mesh::EDGE,computed);
+    crv::getTransformationCoefficients(o,apf::Mesh::EDGE,stored);
+    int nb = crv::getNumControlPoints(apf::Mesh::EDGE,o);
+    int ni = crv::getNumInternalControlPoints(apf::Mesh::EDGE,o);
+
+    for( int j = 0; j < ni; ++j)
+      for( int i = 0; i < nb; ++i){
+        assert(std::fabs(stored[i*ni+j]-computed[i*ni+j]) < 1e-13);
+      }
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+}
+
 /*
  * Create a mesh with a single edge,
  * Create two edges as an even subdivision,
@@ -847,6 +885,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  testEdgeTransforms();
   testEdgeSubdivision();
   testEdgeElevation();
   testTriSubdivision1();

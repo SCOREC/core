@@ -7,6 +7,7 @@
 
 #include "crvBezier.h"
 #include "crvTables.h"
+#include "crvMath.h"
 #include <cassert>
 
 namespace crv {
@@ -134,6 +135,38 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
       xi.zero();
       break;
   }
+}
+
+void getHigherOrderTransform(apf::Mesh* m, int P, int type,
+    apf::NewArray<double> & c)
+{
+//  if (P <= 6) return;
+  int nb = getNumControlPoints(type,P);
+  int ni = getNumInternalControlPoints(type,P);
+  static apf::NewArray<double> transform[apf::Mesh::TYPES][20];
+  if(!transform[type][P].allocated()){
+    transform[type][P].allocate(nb*ni);
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))){
+      if (m->getType(e) == type)
+        break;
+    }
+    m->end(it);
+    mth::Matrix<double> A(nb,nb);
+    getTransformationMatrix(m,e,A);
+    mth::Matrix<double> Ai(nb,nb);
+    invertMatrix(nb,A,Ai);
+
+    for( int i = 0; i < nb; ++i)
+      for( int j = 0; j < ni; ++j)
+        transform[type][P][j*nb+i] = Ai(nb-ni+j,i);
+  }
+  c.allocate(ni*nb);
+  for( int i = 0; i < nb; ++i)
+    for( int j = 0; j < ni; ++j)
+      c[i*ni+j] = transform[type][P][i*ni+j];
+
 }
 
 static void getBezierEdgeTransform(int P, apf::NewArray<double> & c)
