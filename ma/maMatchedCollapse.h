@@ -35,6 +35,7 @@ struct Rebuilds : public RebuildCallback {
 struct MatchedCollapse
 {
   MatchedCollapse(Adapt* a);
+  ~MatchedCollapse();
   void setEdge(Entity* e);
   bool requestLocality(apf::CavityOp* o);
   void setEdges();
