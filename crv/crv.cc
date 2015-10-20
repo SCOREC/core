@@ -87,8 +87,8 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   return max;
 }
 
-void getTransformationMatrix(apf::Mesh2* m, apf::MeshEntity* e,
-    apf::DynamicMatrix& A)
+void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
+    mth::Matrix<double>& A)
 {
 
   apf::Vector3 const edge_vert_xi[2] = {
@@ -127,7 +127,6 @@ void getTransformationMatrix(apf::Mesh2* m, apf::MeshEntity* e,
   int evi = 0;
   apf::NewArray<double> values;
 
-  A.setSize(n,n);
   A.zero();
 
   int boundaryTypes[4] = {apf::Mesh::VERTEX,apf::Mesh::EDGE,

@@ -9,7 +9,7 @@
 #define CRVBEZIER_H
 
 #include "crv.h"
-#include "apfDynamicMatrix.h"
+#include "mth.h"
 
 namespace crv {
 
@@ -99,8 +99,8 @@ void subdivideBezierTet(int P, apf::Vector3& p,
  If, in the future, new nodeXi are defined for interpolating Bezier curves,
  this function can be used to generate the A matrix to invert, as apf
  has no functionality for generic matrix inversion.*/
-void getTransformationMatrix(apf::Mesh2* m, apf::MeshEntity* e,
-    apf::DynamicMatrix& A);
+void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
+    mth::Matrix<double>& A);
 
 }
 
