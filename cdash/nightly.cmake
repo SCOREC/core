@@ -106,8 +106,8 @@ endmacro()
 SET(CONFIGURE_OPTIONS
   "-DCMAKE_C_COMPILER=mpicc"
   "-DCMAKE_CXX_COMPILER=mpicxx"
-  "-DCMAKE_C_FLAGS=-O2 -g -Wall"
-  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
   "-DENABLE_THREADS=ON"
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
@@ -121,8 +121,8 @@ run_subproject("core" "${REPO}" "${CONFIGURE_OPTIONS}")
 SET(CONFIGURE_OPTIONS
   "-DCMAKE_C_COMPILER=mpicc"
   "-DCMAKE_CXX_COMPILER=mpicxx"
-  "-DCMAKE_C_FLAGS=-O2 -g -Wall"
-  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
   "-DENABLE_THREADS=ON"
   "-DENABLE_ZOLTAN=ON"
   "-DENABLE_MPAS=ON"
