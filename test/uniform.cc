@@ -6,6 +6,24 @@
 #include <PCU.h>
 #include <SimUtil.h>
 #include <cassert>
+#include <stdlib.h>
+
+const char* modelFile = 0;
+const char* meshFile = 0;
+const char* outFile = 0;
+
+void getConfig(int argc, char** argv)
+{
+  if ( argc != 4 ) {
+    if ( !PCU_Comm_Self() )
+      printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
+  modelFile = argv[1];
+  meshFile = argv[2];
+  outFile = argv[3];
+}
 
 int main(int argc, char** argv)
 {
@@ -17,7 +35,8 @@ int main(int argc, char** argv)
   gmi_sim_start();
   gmi_register_mesh();
   gmi_register_sim();
-  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
+  getConfig(argc,argv);
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   ma::Input* in = ma::configureUniformRefine(m, 1);
   if (in->shouldSnap) {
     in->shouldSnap = false;
@@ -25,7 +44,7 @@ int main(int argc, char** argv)
   }
   in->shouldFixShape = false;
   ma::adapt(in);
-  m->writeNative(argv[3]);
+  m->writeNative(outFile);
   m->destroyNative();
   apf::destroyMesh(m);
   gmi_sim_stop();
