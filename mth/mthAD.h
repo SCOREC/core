@@ -143,7 +143,7 @@ class AD<0>
     /** \brief constructs from other AD*/
     AD(AD<0> const& other) {copy(other);}
     unsigned size() { return dx_.size();}
-    const unsigned size() const { return dx_.size();}
+    unsigned size() const { return dx_.size();}
     void diff(unsigned int i)
     {
       if(dx_.size() < i + 1)
