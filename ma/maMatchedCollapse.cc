@@ -96,6 +96,11 @@ MatchedCollapse::MatchedCollapse(Adapt* a):
   sharing = apf::getSharing(mesh);
 }
 
+MatchedCollapse::~MatchedCollapse()
+{
+  delete sharing;
+}
+
 void MatchedCollapse::setEdge(Entity* e)
 {
   collapses.setSize(0);
