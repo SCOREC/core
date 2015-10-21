@@ -129,14 +129,11 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
 
   A.zero();
 
-  int boundaryTypes[4] = {apf::Mesh::VERTEX,apf::Mesh::EDGE,
-      apf::Mesh::TRIANGLE,apf::Mesh::TET};
-
   int row = 0;
   for(int d = 0; d <= typeDim; ++d){
     int nDown = apf::Mesh::adjacentCount[type][d];
     for(int j = 0; j < nDown; ++j){
-      int bt = boundaryTypes[d];
+      int bt = apf::Mesh::simplexTypes[d];
       apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
 
       for(int x = 0; x < fs->countNodesOn(bt); ++x){
