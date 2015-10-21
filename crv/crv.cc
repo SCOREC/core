@@ -26,6 +26,7 @@ int getNumInternalControlPoints(int type, int order)
     default:
       break;
   }
+  fail("invalid type/order combination\n");
   return 0;
 }
 
@@ -44,6 +45,7 @@ int getNumControlPoints(int type, int order)
     default:
       break;
   }
+  fail("invalid type/order combination\n");
   return 0;
 }
 
