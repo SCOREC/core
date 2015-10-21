@@ -15,9 +15,9 @@ namespace crv {
 
 static int P = 1;
 
-static bool useBlend()
+static bool useBlend(int type)
 {
-  return (getBlendingOrder() != 0);
+  return (getBlendingOrder(type) != 0);
 }
 
 static void alignEdgeWithTri(apf::Mesh* m, apf::MeshEntity* elem,
@@ -107,7 +107,8 @@ public:
 
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
-      if(!useBlend() || m->getModelType(m->toModel(e)) != m->getDimension()){
+      if(!useBlend(apf::Mesh::TRIANGLE)
+          || m->getModelType(m->toModel(e)) != m->getDimension()){
 
         for(int i = 0; i < P+1; ++i)
           for(int j = 0; j < P+1-i; ++j)
@@ -127,7 +128,8 @@ public:
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
 
-      if(!useBlend() || m->getModelType(m->toModel(e)) != m->getDimension()){
+      if(!useBlend(apf::Mesh::TRIANGLE)
+          || m->getModelType(m->toModel(e)) != m->getDimension()){
         for(int i = 0; i < 3; ++i)
           grads[i] = gxii[i]*P*intpow(xii[i],P-1);
 
@@ -176,7 +178,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      if(!useBlend()){
+      if(!useBlend(apf::Mesh::TET)){
         values.allocate((P+1)*(P+2)*(P+3)/6);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
@@ -228,7 +230,7 @@ public:
         apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      if(!useBlend()){
+      if(!useBlend(apf::Mesh::TET)){
         grads.allocate((P+1)*(P+2)*(P+3)/6);
 
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
@@ -331,7 +333,7 @@ public:
       }
     }
     int countNodes() const {
-      if(!useBlend())
+      if(!useBlend(apf::Mesh::TET))
         return (P+1)*(P+2)*(P+3)/6;
       else
         return 2*P*P+2;
@@ -395,7 +397,8 @@ public:
   }
   bool hasNodesIn(int dimension)
   {
-    if ((dimension < P && dimension < 3) || (P > 3 && !useBlend()))
+    if ((dimension < P && dimension < 3)
+        || (P > 3 && !useBlend(apf::Mesh::TET)))
       return true;
     else
       return false;
@@ -410,7 +413,7 @@ public:
       case apf::Mesh::TRIANGLE:
         return (P-1)*(P-2)/2;
       case apf::Mesh::TET:
-        if(!useBlend()){
+        if(!useBlend(apf::Mesh::TET)){
           return (P-1)*(P-2)*(P-3)/6;
         } else
           return 0;
@@ -418,7 +421,7 @@ public:
         return 0;
     }
   }
-  int getOrder() {return std::max(P,getBlendingOrder());}
+  int getOrder() {return P;}
   void getNodeXi(int type, int node, apf::Vector3& xi)
   {
     getBezierNodeXi(type,P,node,xi);
@@ -450,7 +453,8 @@ public:
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
       apf::ModelEntity* g = m->toModel(e);
-      if (!useBlend() || m->getModelType(g) != m->getDimension()){
+      if (!useBlend(apf::Mesh::TRIANGLE)
+          || m->getModelType(g) != m->getDimension()){
         apf::NewArray<double> bvalues;
         getBezier(3)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,bvalues);
@@ -484,7 +488,8 @@ public:
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
       apf::ModelEntity* g = m->toModel(e);
-      if (!useBlend() || m->getModelType(g) != m->getDimension()){
+      if (!useBlend(apf::Mesh::TRIANGLE)
+          || m->getModelType(g) != m->getDimension()){
         apf::NewArray<apf::Vector3> bgrads;
         apf::NewArray<double> values;
         getBezier(3)->getEntityShape(apf::Mesh::TRIANGLE)
@@ -540,7 +545,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      if(!useBlend()){
+      if(!useBlend(apf::Mesh::TET)){
         values.allocate(40);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
@@ -586,7 +591,7 @@ public:
         apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      if(!useBlend()){
+      if(!useBlend(apf::Mesh::TET)){
         grads.allocate(40);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
@@ -718,7 +723,7 @@ public:
     else
       xi.zero();
   }
-  int getOrder() {return std::max(3,getBlendingOrder());}
+  int getOrder() {return 3;}
 protected:
   std::string name;
 };
@@ -743,7 +748,8 @@ public:
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
       apf::ModelEntity* g = m->toModel(e);
-      if (!useBlend() || m->getModelType(g) != m->getDimension()){
+      if (!useBlend(apf::Mesh::TRIANGLE)
+          || m->getModelType(g) != m->getDimension()){
         apf::NewArray<double> bvalues;
         getBezier(4)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,bvalues);
@@ -775,7 +781,8 @@ public:
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
       apf::ModelEntity* g = m->toModel(e);
-      if (!useBlend() || m->getModelType(g) != m->getDimension()){
+      if (!useBlend(apf::Mesh::TRIANGLE)
+          || m->getModelType(g) != m->getDimension()){
         apf::NewArray<apf::Vector3> bgrads;
         apf::NewArray<double> bvalues;
 
@@ -829,7 +836,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      if(!useBlend()){
+      if(!useBlend(apf::Mesh::TET)){
         values.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
@@ -882,7 +889,7 @@ public:
         apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      if(!useBlend()){
+      if(!useBlend(apf::Mesh::TET)){
         grads.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
@@ -955,7 +962,7 @@ public:
       }
     }
     int countNodes() const {
-      if(!useBlend())
+      if(!useBlend(apf::Mesh::TET))
         return 47;
       else
         return 46;
@@ -1002,7 +1009,7 @@ public:
   }
   bool hasNodesIn(int dimension)
   {
-    if (useBlend() && dimension == 3)
+    if (useBlend(apf::Mesh::TET) && dimension == 3)
       return false;
     else
       return true;
@@ -1014,7 +1021,7 @@ public:
      3,                 //edge
      6,                 //triangle
      0,                 //quad
-     !useBlend(),       //tet
+     !useBlend(4),       //tet
      0,                 //hex
      0,                 //prism
      0};                //pyramid
@@ -1042,7 +1049,7 @@ public:
     else
       xi.zero();
   }
-  int getOrder() {return std::max(4,getBlendingOrder());}
+  int getOrder() {return 4;}
 protected:
   std::string name;
 };

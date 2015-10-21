@@ -246,7 +246,6 @@ void test2D()
       apf::Mesh2* m = createMesh2D();
       apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::BezierCurver bc(m,order,0);
-      crv::setBlendingOrder(0);
       // creates interpolation points based on the edges of the geometry
       bc.snapToInterpolate(1);
       apf::FieldShape* fs = m->getShape();
@@ -318,7 +317,6 @@ void test3D()
   for(int order = 2; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
-    crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
     crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points

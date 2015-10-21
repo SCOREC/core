@@ -475,7 +475,7 @@ void test3DBlended()
     for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
       apf::changeMeshShape(m, crv::getBezier(order),true);
-      crv::setBlendingOrder(blendOrder);
+      crv::setBlendingOrder(apf::Mesh::TYPES,blendOrder);
       apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
       // go downward, and convert interpolating to control points
@@ -510,8 +510,8 @@ void test3DFull()
   for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
-    crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
+    crv::setBlendingOrder(apf::Mesh::TYPES,0);
     crv::BezierCurver bc(m,4,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){

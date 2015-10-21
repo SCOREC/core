@@ -20,9 +20,9 @@
 namespace crv {
 
 /** \brief sets the blending order, if shape blending is used */
-void setBlendingOrder(const int b);
+void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
-int getBlendingOrder();
+int getBlendingOrder(const int type);
 
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
@@ -80,7 +80,12 @@ class BezierCurver : public MeshCurver
 {
   public:
     BezierCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m,P,S)
-    { setBlendingOrder(B); };
+    {
+      if(B > 0){
+        for(int type = 0; type < apf::Mesh::TYPES; ++type)
+        setBlendingOrder(type,B);
+      }
+    };
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points

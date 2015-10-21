@@ -69,7 +69,6 @@ void testTransforms()
   }
 }
 
-
 void testNodeIndexing(){
   for(int P = 1; P <= 10; ++P)
     for(int i = 0; i <= P; ++i)
