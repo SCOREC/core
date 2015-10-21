@@ -142,8 +142,8 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     apf::NewArray<double> & c)
 {
 //  if (P <= 6) return;
-  int nb = getNumInternalControlPoints(type,P);
-  int ni = getNumControlPoints(type,P);
+  int ni = getNumInternalControlPoints(type,P);
+  int n = getNumControlPoints(type,P);
 
   static apf::NewArray<double> transform[apf::Mesh::TYPES][20];
   if(!transform[type][P].allocated()){
@@ -154,7 +154,7 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
 
     setBlendingOrder(apf::Mesh::TYPES,0);
 
-    transform[type][P].allocate(nb*ni);
+    transform[type][P].allocate(ni*n);
     apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))){
@@ -162,23 +162,23 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
         break;
     }
     m->end(it);
-    mth::Matrix<double> A(ni,ni);
-    mth::Matrix<double> Ai(ni,ni);
+    mth::Matrix<double> A(n,n);
+    mth::Matrix<double> Ai(n,n);
     getTransformationMatrix(m,e,A);
-    invertMatrix(ni,A,Ai);
+    invertMatrix(n,A,Ai);
 
-    for( int i = 0; i < nb; ++i)
-      for( int j = 0; j < ni; ++j)
-        transform[type][P][i*ni+j] = Ai(i+ni-nb,j);
+    for( int i = 0; i < ni; ++i)
+      for( int j = 0; j < n; ++j)
+        transform[type][P][i*n+j] = Ai(i+n-ni,j);
 
     for (int i = 0; i < apf::Mesh::TYPES; ++i)
       setBlendingOrder(i,oldB[i]);
   }
 
-  c.allocate(ni*nb);
-  for( int i = 0; i < nb; ++i)
-    for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = transform[type][P][i*ni+j];
+  c.allocate(n*ni);
+  for( int i = 0; i < ni; ++i)
+    for( int j = 0; j < n; ++j)
+      c[i*n+j] = transform[type][P][i*n+j];
 
 }
 
@@ -191,10 +191,9 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
   // A, and the blended matrix B
   // The return is inv(A)*B
 
-  int nb = getNumInternalControlPoints(type,P);
-  int ni = getNumControlPoints(type,P);
+  int ni = getNumInternalControlPoints(type,P);
+  int n = getNumControlPoints(type,P);
   static apf::NewArray<double> transform[2][apf::Mesh::TYPES][20];
-
   if(!transform[blend-1][type][P].allocated()){
 
     int oldB[apf::Mesh::TYPES];
@@ -202,7 +201,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
       oldB[i] = getBlendingOrder(i);
     // get first Matrix
     setBlendingOrder(apf::Mesh::TYPES,0);
-    transform[blend-1][type][P].allocate(nb*(ni-nb));
+    transform[blend-1][type][P].allocate(ni*(n-ni));
 
     apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
     apf::MeshEntity* e;
@@ -213,12 +212,12 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     }
     m->end(it);
 
-    mth::Matrix<double> A(ni,ni);
-    mth::Matrix<double> Ai(ni,ni);
-    mth::Matrix<double> B(ni,ni);
+    mth::Matrix<double> A(n,n);
+    mth::Matrix<double> Ai(n,n);
+    mth::Matrix<double> B(n,n);
 
     getTransformationMatrix(m,e,A);
-    invertMatrix(ni,A,Ai);
+    invertMatrix(n,A,Ai);
 
     // now get second matrix
     setBlendingOrder(type,blend);
@@ -227,26 +226,27 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     // fill in the last few rows of B
     apf::NewArray<double> values;
     apf::Vector3 xi;
-    for (int i = 0; i < nb; ++i){
+    for (int i = 0; i < ni; ++i){
       m->getShape()->getNodeXi(type,i,xi);
-      m->getShape()->getEntityShape(type)->getValues(m,e, xi,values);
-      for (int j = 0; j < ni; ++j)
-        B(i+ni-nb,j) = values[j];
+      m->getShape()->getEntityShape(type)->getValues(m,e,xi,values);
+      for (int j = 0; j < (n-ni); ++j){
+        B(i+n-ni,j) = values[j];
+      }
     }
 
     mth::multiply(Ai,B,A);
 
-    for( int i = 0; i < nb; ++i)
-      for( int j = 0; j < ni-nb; ++j)
-        transform[blend-1][type][P][i*(ni-nb)+j] = A(i+ni-nb,j);
+    for( int i = 0; i < ni; ++i)
+      for( int j = 0; j < n-ni; ++j)
+        transform[blend-1][type][P][i*(n-ni)+j] = A(i+n-ni,j);
 
     for (int i = 0; i < apf::Mesh::TYPES; ++i)
       setBlendingOrder(i,oldB[i]);
   }
-  c.allocate(ni*nb);
-  for( int i = 0; i < nb; ++i)
-    for( int j = 0; j < ni; ++j)
-      c[i*ni+j] = transform[blend-1][type][P][i*ni+j];
+  c.allocate((n-ni)*ni);
+  for( int i = 0; i < ni; ++i)
+    for( int j = 0; j < (n-ni); ++j)
+      c[i*(n-ni)+j] = transform[blend-1][type][P][i*(n-ni)+j];
 
 }
 
