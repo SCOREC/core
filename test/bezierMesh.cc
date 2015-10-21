@@ -483,7 +483,7 @@ void test3DBlended()
         int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
         int ne = fs->countNodesOn(d);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(order,d,c);
+        crv::getBezierTransformationCoefficients(m,order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
@@ -518,7 +518,7 @@ void test3DFull()
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(order,d,c);
+      crv::getBezierTransformationCoefficients(m,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {

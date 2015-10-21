@@ -318,7 +318,7 @@ void testTetElevation()
       int n = crv::getNumControlPoints(d,order);
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(order,d,c);
+      crv::getBezierTransformationCoefficients(m,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {

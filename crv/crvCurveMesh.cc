@@ -104,7 +104,8 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getTransformationCoefficients(m_order,apf::Mesh::simplexTypes[d],c);
+    getBezierTransformationCoefficients(m_mesh,m_order,
+        apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -121,7 +122,8 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getBlendedTransformationCoefficients(m_order,1,apf::Mesh::simplexTypes[d],c);
+    getInternalBezierTransformationCoefficients(m_mesh,m_order,1,
+        apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -133,7 +135,6 @@ bool BezierCurver::run()
   }
 
   synchronize();
-
 
   m_mesh->acceptChanges();
   m_mesh->verify();
