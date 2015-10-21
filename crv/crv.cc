@@ -135,7 +135,6 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
     for(int j = 0; j < nDown; ++j){
       int bt = apf::Mesh::simplexTypes[d];
       apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
-      printf("%s %s %d\n",apf::Mesh::typeName[bt],apf::Mesh::typeName[type],fs->countNodesOn(bt));
       for(int x = 0; x < fs->countNodesOn(bt); ++x){
         fs->getNodeXi(bt,x,xi);
         apf::NewArray<double> shape_vals;

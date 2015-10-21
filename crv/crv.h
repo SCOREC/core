@@ -121,11 +121,8 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
 apf::FieldShape* getBezier(int order);
-/** \brief Get the Gregory Surface of some order
- \details only fourth order right now,
- third order is implemented, but doesnt preserve
- linear tets.*/
-apf::FieldShape* getGregory(int order);
+/** \brief Get the 4th order Gregory Surface*/
+apf::FieldShape* getGregory();
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
@@ -133,9 +130,8 @@ void getTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 void getBlendedTransformationCoefficients(int P, int blend, int type,
     apf::NewArray<double>& c);
-void getGregoryTransformationCoefficients(int P, int type,
-    apf::NewArray<double>& c);
-void getGregoryBlendedTransformationCoefficients(int P, int blend, int type,
+void getGregoryTransformationCoefficients(int type, apf::NewArray<double>& c);
+void getGregoryBlendedTransformationCoefficients(int blend, int type,
     apf::NewArray<double>& c);
 
 void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
