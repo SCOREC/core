@@ -53,7 +53,7 @@ void testTransforms()
         apf::NewArray<double> computed;
         apf::NewArray<double> stored;
 
-        crv::getHigherOrderTransform(m,o,type,computed);
+        crv::getHigherOrderBezierTransform(m,o,type,computed);
         crv::getTransformationCoefficients(o,type,stored);
         int nb = crv::getNumControlPoints(type,o);
         int ni = crv::getNumInternalControlPoints(type,o);

@@ -137,7 +137,7 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
   }
 }
 
-void getHigherOrderTransform(apf::Mesh* m, int P, int type,
+void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
     apf::NewArray<double> & c)
 {
 //  if (P <= 6) return;
