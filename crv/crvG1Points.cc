@@ -170,6 +170,7 @@ static void getBlendedGregoryTetTransform(int blend,
 void getGregoryTransformationCoefficients(int type,
     apf::NewArray<double>& c){
   if(type == apf::Mesh::EDGE){
+    c.allocate(15);
     double e4[15] = {
         -1.52680420766155,-0.25,3.37567603341243,-1.28732567375034,
         0.688453847999458,1.01786947177436,1.01786947177436,-2.70941992094126,4.38310089833379,
