@@ -140,6 +140,9 @@ void getGregoryBlendedTransformationCoefficients(int P, int blend, int type,
 
 void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
     apf::NewArray<double> & c);
+void getHigherOrderInternalBezierTransform(apf::Mesh* m, int P, int blend,
+    int type, apf::NewArray<double> & c);
+
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
    n points per dimension of the entity through uniform

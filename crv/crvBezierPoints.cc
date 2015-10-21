@@ -8,6 +8,7 @@
 #include "crvBezier.h"
 #include "crvTables.h"
 #include "crvMath.h"
+#include <mth_def.h>
 #include <cassert>
 
 namespace crv {
@@ -141,10 +142,18 @@ void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
     apf::NewArray<double> & c)
 {
 //  if (P <= 6) return;
-  int nb = getNumControlPoints(type,P);
-  int ni = getNumInternalControlPoints(type,P);
+  int nb = getNumInternalControlPoints(type,P);
+  int ni = getNumControlPoints(type,P);
+
   static apf::NewArray<double> transform[apf::Mesh::TYPES][20];
   if(!transform[type][P].allocated()){
+
+    int oldB[apf::Mesh::TYPES];
+    for (int i = 0; i < apf::Mesh::TYPES; ++i)
+      oldB[i] = getBlendingOrder(i);
+
+    setBlendingOrder(apf::Mesh::TYPES,0);
+
     transform[type][P].allocate(nb*ni);
     apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
     apf::MeshEntity* e;
@@ -153,19 +162,91 @@ void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
         break;
     }
     m->end(it);
-    mth::Matrix<double> A(nb,nb);
+    mth::Matrix<double> A(ni,ni);
+    mth::Matrix<double> Ai(ni,ni);
     getTransformationMatrix(m,e,A);
-    mth::Matrix<double> Ai(nb,nb);
-    invertMatrix(nb,A,Ai);
+    invertMatrix(ni,A,Ai);
 
     for( int i = 0; i < nb; ++i)
       for( int j = 0; j < ni; ++j)
-        transform[type][P][j*nb+i] = Ai(nb-ni+j,i);
+        transform[type][P][i*ni+j] = Ai(i+ni-nb,j);
+
+    for (int i = 0; i < apf::Mesh::TYPES; ++i)
+      setBlendingOrder(i,oldB[i]);
   }
+
   c.allocate(ni*nb);
   for( int i = 0; i < nb; ++i)
     for( int j = 0; j < ni; ++j)
       c[i*ni+j] = transform[type][P][i*ni+j];
+
+}
+
+void getHigherOrderInternalBezierTransform(apf::Mesh* m, int P, int blend,
+    int type, apf::NewArray<double> & c)
+{
+  // this is fun. To compute this, the actual type must be
+  // blended, but the lower entities must not be.
+  // We also require the full matrix from above, call it
+  // A, and the blended matrix B
+  // The return is inv(A)*B
+
+  int nb = getNumInternalControlPoints(type,P);
+  int ni = getNumControlPoints(type,P);
+  static apf::NewArray<double> transform[2][apf::Mesh::TYPES][20];
+
+  if(!transform[blend-1][type][P].allocated()){
+
+    int oldB[apf::Mesh::TYPES];
+    for (int i = 0; i < apf::Mesh::TYPES; ++i)
+      oldB[i] = getBlendingOrder(i);
+    // get first Matrix
+    setBlendingOrder(apf::Mesh::TYPES,0);
+    transform[blend-1][type][P].allocate(nb*(ni-nb));
+
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))){
+      if (m->getType(e) == type &&
+          m->getModelType(m->toModel(e)) == m->getDimension())
+        break;
+    }
+    m->end(it);
+
+    mth::Matrix<double> A(ni,ni);
+    mth::Matrix<double> Ai(ni,ni);
+    mth::Matrix<double> B(ni,ni);
+
+    getTransformationMatrix(m,e,A);
+    invertMatrix(ni,A,Ai);
+
+    // now get second matrix
+    setBlendingOrder(type,blend);
+    getTransformationMatrix(m,e,B);
+
+    // fill in the last few rows of B
+    apf::NewArray<double> values;
+    apf::Vector3 xi;
+    for (int i = 0; i < nb; ++i){
+      m->getShape()->getNodeXi(type,i,xi);
+      m->getShape()->getEntityShape(type)->getValues(m,e, xi,values);
+      for (int j = 0; j < ni; ++j)
+        B(i+ni-nb,j) = values[j];
+    }
+
+    mth::multiply(Ai,B,A);
+
+    for( int i = 0; i < nb; ++i)
+      for( int j = 0; j < ni-nb; ++j)
+        transform[blend-1][type][P][i*(ni-nb)+j] = A(i+ni-nb,j);
+
+    for (int i = 0; i < apf::Mesh::TYPES; ++i)
+      setBlendingOrder(i,oldB[i]);
+  }
+  c.allocate(ni*nb);
+  for( int i = 0; i < nb; ++i)
+    for( int j = 0; j < ni; ++j)
+      c[i*ni+j] = transform[blend-1][type][P][i*ni+j];
 
 }
 

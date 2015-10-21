@@ -24,6 +24,18 @@ static apf::Vector3 points3D[4] =
     apf::Vector3(0,1,0),
     apf::Vector3(0,0,1)};
 
+apf::Mesh2* createMesh2D()
+{
+  gmi_model* model = gmi_load(".null");
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+
+  apf::buildOneElement(m,0,apf::Mesh::TRIANGLE,points3D);
+  apf::deriveMdsModel(m);
+
+  m->acceptChanges();
+  m->verify();
+  return m;
+}
 
 apf::Mesh2* createMesh3D()
 {
@@ -55,8 +67,9 @@ void testTransforms()
 
         crv::getHigherOrderBezierTransform(m,o,type,computed);
         crv::getTransformationCoefficients(o,type,stored);
-        int nb = crv::getNumControlPoints(type,o);
-        int ni = crv::getNumInternalControlPoints(type,o);
+
+        int nb = crv::getNumInternalControlPoints(type,o);
+        int ni = crv::getNumControlPoints(type,o);
 
         for( int j = 0; j < ni; ++j)
           for( int i = 0; i < nb; ++i){
@@ -66,6 +79,42 @@ void testTransforms()
       m->destroyNative();
       apf::destroyMesh(m);
     }
+  }
+  for (int o = 3; o <= 6; ++o){
+    int type = apf::Mesh::TRIANGLE;
+    apf::Mesh2* m = createMesh2D();
+    apf::changeMeshShape(m, crv::getBezier(o),true);
+    apf::NewArray<double> computed;
+    apf::NewArray<double> stored;
+    crv::getHigherOrderInternalBezierTransform(m,o,1,type,computed);
+    crv::getBlendedTransformationCoefficients(o,1,type,stored);
+    int nb = crv::getNumInternalControlPoints(type,o);
+    int ni = crv::getNumControlPoints(type,o)-nb;
+
+    for( int j = 0; j < ni; ++j)
+      for( int i = 0; i < nb; ++i){
+        assert(std::fabs(stored[i*ni+j]-computed[i*ni+j]) < 1e-13);
+      }
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+  for (int blend = 1; blend <= 2; ++blend){
+    int type = apf::Mesh::TET;
+    apf::Mesh2* m = createMesh3D();
+    apf::changeMeshShape(m, crv::getBezier(4),true);
+    apf::NewArray<double> computed;
+    apf::NewArray<double> stored;
+    crv::getHigherOrderInternalBezierTransform(m,4,blend,type,computed);
+    crv::getBlendedTransformationCoefficients(4,blend,type,stored);
+    int nb = crv::getNumInternalControlPoints(type,4);
+    int ni = crv::getNumControlPoints(type,4)-nb;
+
+    for( int j = 0; j < ni; ++j)
+      for( int i = 0; i < nb; ++i){
+        assert(std::fabs(stored[i*ni+j]-computed[i*ni+j]) < 1e-13);
+      }
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
 }
 
