@@ -178,7 +178,6 @@ void test2D()
     apf::Mesh2* m = createMesh2D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     crv::BezierCurver bc(m,order,0);
-    crv::setBlendingOrder(0);
     // creates interpolation points based on the edges of the geometry
     bc.snapToInterpolate(1);
     apf::FieldShape* fs = m->getShape();
@@ -188,7 +187,7 @@ void test2D()
       int n = order+1;
       int ne = fs->countNodesOn(apf::Mesh::EDGE);
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(order,apf::Mesh::EDGE,c);
+      crv::getBezierTransformationCoefficients(m,order,apf::Mesh::EDGE,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(1);
       while ((e = m->iterate(it))) {
@@ -200,7 +199,7 @@ void test2D()
       int n = (order+1)*(order+2)/2;
       int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
       apf::NewArray<double> c;
-      crv::getBlendedTransformationCoefficients(order,1,
+      crv::getInternalBezierTransformationCoefficients(m,order,1,
           apf::Mesh::TRIANGLE,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(2);
@@ -253,7 +252,6 @@ void test3D()
   for(int order = 2; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
-    crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
     crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
@@ -261,7 +259,7 @@ void test3D()
       int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(order,d,c);
+      crv::getBezierTransformationCoefficients(m,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {

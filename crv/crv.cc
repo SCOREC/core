@@ -87,6 +87,84 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   return max;
 }
 
+void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
+    mth::Matrix<double>& A)
+{
+
+  apf::Vector3 const edge_vert_xi[2] = {
+      apf::Vector3(-1,0,0),
+      apf::Vector3(1,0,0),
+  };
+  apf::Vector3 const tri_vert_xi[3] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+  };
+  apf::Vector3 const tet_vert_xi[4] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1),
+  };
+  apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+      0, /* vertex */
+      edge_vert_xi,
+      tri_vert_xi,
+      0, /* quad */
+      tet_vert_xi,
+      0, /* hex */
+      0, /* prism */
+      0  /* pyramid */
+  };
+
+  int type = m->getType(e);
+  apf::FieldShape* fs = m->getShape();
+  apf::EntityShape* es = fs->getEntityShape(type);
+  int n = es->countNodes();
+  int typeDim = apf::Mesh::typeDimension[type];
+
+  apf::Vector3 xi, exi;
+  int evi = 0;
+  apf::NewArray<double> values;
+
+  A.zero();
+
+  int row = 0;
+  for(int d = 0; d <= typeDim; ++d){
+    int nDown = apf::Mesh::adjacentCount[type][d];
+    for(int j = 0; j < nDown; ++j){
+      int bt = apf::Mesh::simplexTypes[d];
+      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+      for(int x = 0; x < fs->countNodesOn(bt); ++x){
+        fs->getNodeXi(bt,x,xi);
+        apf::NewArray<double> shape_vals;
+        shape->getValues(0, 0, xi, shape_vals);
+
+        if(d < typeDim){
+          exi.zero();
+          evi = j;
+          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
+              evi = apf::tri_edge_verts[j][i];
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
+              evi = apf::tet_edge_verts[j][i];
+            if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
+              evi = apf::tet_tri_verts[j][i];
+            exi += elem_vert_xi[type][evi] * shape_vals[i];
+          }
+        } else {
+          exi = xi;
+        }
+        es->getValues(m,e,exi,values);
+        for(int i = 0; i < n; ++i){
+          A(row,i) = values[i];
+        }
+        ++row;
+      }
+    }
+  }
+}
+
 void fail(const char* why)
 {
   fprintf(stderr,"CRV FAILED: %s\n",why);

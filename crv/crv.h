@@ -20,9 +20,9 @@
 namespace crv {
 
 /** \brief sets the blending order, if shape blending is used */
-void setBlendingOrder(const int b);
+void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
-int getBlendingOrder();
+int getBlendingOrder(const int type);
 
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
@@ -80,7 +80,12 @@ class BezierCurver : public MeshCurver
 {
   public:
     BezierCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m,P,S)
-    { setBlendingOrder(B); };
+    {
+      if(B > 0){
+        for(int type = 0; type < apf::Mesh::TYPES; ++type)
+        setBlendingOrder(type,B);
+      }
+    };
 
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
@@ -116,22 +121,23 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
 apf::FieldShape* getBezier(int order);
-/** \brief Get the Gregory Surface of some order
- \details only fourth order right now,
- third order is implemented, but doesnt preserve
- linear tets.*/
-apf::FieldShape* getGregory(int order);
+/** \brief Get the 4th order Gregory Surface*/
+apf::FieldShape* getGregory();
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getTransformationCoefficients(int P, int type,
+void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     apf::NewArray<double>& c);
-void getBlendedTransformationCoefficients(int P, int blend, int type,
+void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
+    int type, apf::NewArray<double>& c);
+void getGregoryTransformationCoefficients(int type, apf::NewArray<double>& c);
+void getGregoryBlendedTransformationCoefficients(int blend, int type,
     apf::NewArray<double>& c);
-void getGregoryTransformationCoefficients(int P, int type,
-    apf::NewArray<double>& c);
-void getGregoryBlendedTransformationCoefficients(int P, int blend, int type,
-    apf::NewArray<double>& c);
+
+void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
+    apf::NewArray<double> & c);
+void getHigherOrderInternalBezierTransform(apf::Mesh* m, int P, int blend,
+    int type, apf::NewArray<double> & c);
 
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
