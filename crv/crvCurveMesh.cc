@@ -315,7 +315,7 @@ void GregoryCurver::setInternalPointsLocally()
 
 bool GregoryCurver::run()
 {
-  if(m_order == 4){
+  if(m_order != 4){
     fail("cannot convert to G1 of this order\n");
   }
   if(m_spaceDim != 3)
