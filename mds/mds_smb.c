@@ -40,6 +40,9 @@ enum {
   SMB_DBL
 };
 
+#define MAX_ENTITIES (100*1000*1000)
+#define MAX_PEERS (10*1000)
+
 static int smb2mds(int smb_type)
 {
   int const table[SMB_TYPES] =
@@ -79,12 +82,14 @@ static void read_links(struct pcu_file* f, struct mds_links* l)
   PCU_READ_UNSIGNED(f, l->np);
   if (!l->np)
     return;
+  assert(l->np < MAX_PEERS); /* reasonable limit on number of peers */
   l->p = malloc(l->np * sizeof(unsigned));
   pcu_read_unsigneds(f, l->p, l->np);
   l->n = malloc(l->np * sizeof(unsigned));
   l->l = malloc(l->np * sizeof(unsigned*));
   pcu_read_unsigneds(f, l->n, l->np);
   for (i = 0; i < l->np; ++i) {
+    assert(l->n[i] < MAX_ENTITIES);
     l->l[i] = malloc(l->n[i] * sizeof(unsigned));
     pcu_read_unsigneds(f, l->l[i], l->n[i]);
   }
@@ -271,6 +276,7 @@ static struct mds_tag* read_tag_header(struct pcu_file* f, struct mds_apf* m)
   bytes[SMB_INT] = sizeof(int);
   bytes[SMB_DBL] = sizeof(double);
   PCU_READ_UNSIGNED(f, type);
+  assert(SMB_INT == type || SMB_DBL == type);
   PCU_READ_UNSIGNED(f, count);
   pcu_read_string(f, &name);
   t = mds_create_tag(&m->tags, name,
@@ -443,7 +449,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
-      assert(sizes[j] < 100*1000*1000);
+      assert(sizes[j] < MAX_ENTITIES);
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
