@@ -443,6 +443,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
+      assert(sizes[j] < 100*1000*1000);
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
