@@ -316,14 +316,15 @@ void testTetElevation()
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = crv::getNumControlPoints(d,order);
-      int ne = fs->countNodesOn(d);
+      int ni = fs->countNodesOn(d);
+      if(ni <= 0) continue;
       apf::NewArray<double> c;
       crv::getBezierTransformationCoefficients(m,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ne,c);
+        bc.convertInterpolationPoints(e,n,ni,c);
       }
       m->end(it);
     }

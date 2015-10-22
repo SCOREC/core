@@ -141,10 +141,10 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
 void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     apf::NewArray<double> & c)
 {
-//  if (P <= 6) return;
   int ni = getNumInternalControlPoints(type,P);
   int n = getNumControlPoints(type,P);
-
+  assert(n > 0);
+  assert(ni > 0);
   static apf::NewArray<double> transform[apf::Mesh::TYPES][20];
   if(!transform[type][P].allocated()){
 
@@ -165,7 +165,7 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
     getTransformationMatrix(m,e,A);
-    invertMatrix(n,A,Ai);
+    invertMatrixWithPLU(n,A,Ai);
 
     for( int i = 0; i < ni; ++i)
       for( int j = 0; j < n; ++j)
@@ -193,6 +193,8 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
 
   int ni = getNumInternalControlPoints(type,P);
   int n = getNumControlPoints(type,P);
+  assert(n > 0);
+  assert(ni > 0);
   static apf::NewArray<double> transform[2][apf::Mesh::TYPES][20];
   if(!transform[blend-1][type][P].allocated()){
 
@@ -217,7 +219,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     mth::Matrix<double> B(n,n);
 
     getTransformationMatrix(m,e,A);
-    invertMatrix(n,A,Ai);
+    invertMatrixWithQR(n,A,Ai);
 
     // now get second matrix
     setBlendingOrder(type,blend);
