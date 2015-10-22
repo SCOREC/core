@@ -252,9 +252,11 @@ void mds_set_type_links(struct mds_net* net, struct mds* m,
   unsigned* in;
   struct mds_copy c;
   PCU_Comm_Begin();
-  for (i = 0; i < ln->np; ++i)
+  for (i = 0; i < ln->np; ++i) {
+    assert(ln->l);
     for (j = 0; j < ln->n[i]; ++j)
       PCU_COMM_PACK(ln->p[i], ln->l[i][j]);
+  }
   PCU_Comm_Send();
   while (PCU_Comm_Listen()) {
     c.p = PCU_Comm_Sender();
