@@ -264,7 +264,7 @@ void test2D()
         m->end(it);
       }
       if(fs->hasNodesIn(2)) {
-        int n = (order+1)*(order+2)/2;
+        int n = crv::getNumControlPoints(2,order);
         int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
         apf::NewArray<double> c;
         crv::getInternalBezierTransformationCoefficients(m,order,1,
@@ -321,15 +321,16 @@ void test3D()
     crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
-      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
-      int ne = fs->countNodesOn(d);
+      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+      int ni = fs->countNodesOn(d);
+      if(ni <= 0) continue;
       apf::NewArray<double> c;
       crv::getBezierTransformationCoefficients(m,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ne,c);
+        bc.convertInterpolationPoints(e,n,ni,c);
       }
       m->end(it);
     }
