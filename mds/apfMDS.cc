@@ -99,6 +99,9 @@ class MeshMDS : public Mesh2
   public:
     MeshMDS()
     {
+      mesh = 0;
+      isMatched = false;
+      ownsModel = false;
     }
     MeshMDS(gmi_model* m, int d, bool isMatched_)
     {
