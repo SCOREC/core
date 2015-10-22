@@ -35,9 +35,10 @@ inline double intpow(const double b, const int e)
   }
 }
 
-void invertMatrix(int n, mth::Matrix<double>& A,
+void invertMatrixWithQR(int n, mth::Matrix<double>& A,
     mth::Matrix<double>& Ai);
-
+void invertMatrixWithPLU(int n, mth::Matrix<double>& A,
+    mth::Matrix<double>& Ai);
 }
 
 #endif

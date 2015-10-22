@@ -97,12 +97,15 @@ bool BezierCurver::run()
   synchronize();
 
   // go downward, and convert interpolating to control points
-  for(int d = md - (getBlendingOrder() > 0); d >= 1; --d){
+  int startDim =  md - (getBlendingOrder(apf::Mesh::simplexTypes[md]) > 0);
+
+  for(int d = startDim; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getTransformationCoefficients(m_order,apf::Mesh::simplexTypes[d],c);
+    getBezierTransformationCoefficients(m_mesh,m_order,
+        apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
@@ -113,25 +116,25 @@ bool BezierCurver::run()
   }
   // if we have a full representation, we need to place internal nodes on
   // triangles and tetrahedra
-  if(getBlendingOrder() == 0){
-    for(int d = 2; d <= md; ++d){
-      if(!fs->hasNodesIn(d)) continue;
-      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-      int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-      apf::NewArray<double> c;
-      getBlendedTransformationCoefficients(m_order,1,apf::Mesh::simplexTypes[d],c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m_mesh->begin(d);
-      while ((e = m_mesh->iterate(it))){
-        if(m_mesh->isOwned(e) &&
-            m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
-          convertInterpolationPoints(e,n-ne,ne,c);
-      }
-      m_mesh->end(it);
+  for(int d = 2; d <= md; ++d){
+    if(!fs->hasNodesIn(d) ||
+        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+    apf::NewArray<double> c;
+    getInternalBezierTransformationCoefficients(m_mesh,m_order,1,
+        apf::Mesh::simplexTypes[d],c);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m_mesh->begin(d);
+    while ((e = m_mesh->iterate(it))){
+      if(m_mesh->isOwned(e) &&
+          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+        convertInterpolationPoints(e,n-ne,ne,c);
     }
+    m_mesh->end(it);
   }
-  synchronize();
 
+  synchronize();
 
   m_mesh->acceptChanges();
   m_mesh->verify();
@@ -207,34 +210,6 @@ static void elevateBezierCurves(apf::Mesh2* m)
   }
   m->end(it);
 }
-
-//void GregoryCurver::setInternalPointsUsingNeighbors()
-//{
-//  apf::MeshEntity* e;
-//  apf::MeshIterator* it = m_mesh->begin(1);
-//  while ((e = m_mesh->iterate(it))) {
-//    apf::ModelEntity* g = m_mesh->toModel(e);
-//    if(m_mesh->getModelType(g) != 2) continue;
-//    int tag = m_mesh->getModelTag(g);
-//    apf::Up up;
-//    m_mesh->getUp(e,up);
-//    apf::MeshEntity* faces[2];
-//    int iF = 0;
-//    for(int i = 0; i < up.n; ++i){
-//      if(m_mesh->getModelTag(m_mesh->toModel(up.e[i])) == tag)
-//        faces[iF++] = up.e[i];
-//
-//    }
-//    assert(m_mesh->getModelType(m_mesh->toModel(faces[0])) ==
-//        m_mesh->getModelType(m_mesh->toModel(faces[1])) );
-//    // now we have the faces
-//    int which[2], rotate[2];
-//    bool flip[2];
-//    apf::getAlignment(m_mesh,faces[0],e,which[0],flip[0],rotate[0]);
-//    apf::getAlignment(m_mesh,faces[1],e,which[1],flip[1],rotate[1]);
-//  }
-//  m_mesh->end(it);
-//}
 
 void GregoryCurver::setInternalPointsLocally()
 {
@@ -340,13 +315,13 @@ void GregoryCurver::setInternalPointsLocally()
 
 bool GregoryCurver::run()
 {
-  if(m_order < 3 || m_order > 4){
+  if(m_order != 4){
     fail("cannot convert to G1 of this order\n");
   }
   if(m_spaceDim != 3)
     fail("can only convert to 3D mesh\n");
 
-  apf::changeMeshShape(m_mesh, getGregory(m_order),true);
+  apf::changeMeshShape(m_mesh, getGregory(),true);
   int md = m_mesh->getDimension();
   apf::FieldShape * fs = m_mesh->getShape();
 
@@ -366,7 +341,7 @@ bool GregoryCurver::run()
 
     apf::NewArray<double> c;
 
-    getGregoryTransformationCoefficients(m_order,apf::Mesh::simplexTypes[d],c);
+    getGregoryTransformationCoefficients(apf::Mesh::simplexTypes[d],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
@@ -381,27 +356,24 @@ bool GregoryCurver::run()
   setCubicEdgePointsUsingNormals();
   setInternalPointsLocally();
 
-  if(m_order == 4){
-    elevateBezierCurves(m_mesh);
-  }
+  elevateBezierCurves(m_mesh);
 
-  if(getBlendingOrder() == 0){
-    for(int d = 2; d <= md; ++d){
-      if(!fs->hasNodesIn(d)) continue;
-      int type = apf::Mesh::simplexTypes[d];
-      int n = fs->getEntityShape(type)->countNodes();
-      int ne = fs->countNodesOn(type);
-      apf::NewArray<double> c;
-      getGregoryBlendedTransformationCoefficients(m_order,1,type,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m_mesh->begin(d);
-      while ((e = m_mesh->iterate(it))){
-        if(m_mesh->isOwned(e) &&
-            m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
-          convertInterpolationPoints(e,n-ne,ne,c);
-      }
-      m_mesh->end(it);
+  for(int d = 2; d <= md; ++d){
+    if(!fs->hasNodesIn(d) ||
+        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+    int type = apf::Mesh::simplexTypes[d];
+    int n = fs->getEntityShape(type)->countNodes();
+    int ne = fs->countNodesOn(type);
+    apf::NewArray<double> c;
+    getGregoryBlendedTransformationCoefficients(1,type,c);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m_mesh->begin(d);
+    while ((e = m_mesh->iterate(it))){
+      if(m_mesh->isOwned(e) &&
+          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+        convertInterpolationPoints(e,n-ne,ne,c);
     }
+    m_mesh->end(it);
   }
 
   synchronize();

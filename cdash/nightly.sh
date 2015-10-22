@@ -35,6 +35,8 @@ export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0/bin
 cov-build --dir cov-int make -j 4
 #pack up the tarball of results
 tar czvf pumi.tgz cov-int
+#because its 2015 and this is not standard yet
+export PATH=$PATH:/lore/dibanez/curl-7.45.0/install/bin
 #send it to Coverity Scan site using curl
 curl --form token=faMZVmxTjByhNoJyb_4wDw \
   --form email=dan.a.ibanez@gmail.com \

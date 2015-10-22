@@ -26,8 +26,7 @@ struct Rebuilds : public RebuildCallback {
   Rebuilds(Mesh* m);
   virtual void rebuilt(Entity* e, Entity* original);
   void reset();
-  void match(apf::Sharing* sh,
-      apf::DynamicArray<ma::Collapse>& collapses);
+  void match(apf::Sharing* sh);
   Mesh* mesh;
   std::vector<Rebuild> v;
 };
