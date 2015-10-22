@@ -343,7 +343,7 @@ void mds_set_local_matches(struct mds_net* net, struct mds* m,
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
-  assert(ln->n[self] = ln->n[other]);
+  assert(ln->n[self] == ln->n[other]);
   for (i = 0; i < ln->n[self]; ++i) {
     a = mds_identify(t, ln->l[self][i]);
     b = mds_identify(t, ln->l[other][i]);
