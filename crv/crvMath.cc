@@ -10,12 +10,62 @@
 
 namespace crv {
 
+template <class T>
+static void swapRows(mth::Matrix<T>& a, int r1, int r2,
+    int start, int end)
+{
+  for (int i = start; i < end; ++i){
+    T temp = a(r1,i);
+    a(r1,i) = a(r2,i);
+    a(r2,i) = temp;
+  }
+}
+
+static void decomposePLU(int n, mth::Matrix<double> const& a,
+    mth::Matrix<int>& p, mth::Matrix<double>& l,
+    mth::Matrix<double>& u){
+
+
+  l.zero();
+  p.zero();
+  for (int i = 0; i < n; ++i){
+    l(i,i) = 1.;
+    p(i,i) = 1;
+  }
+
+  for (int i = 0; i < n; ++i)
+    for (int j = 0; j < n; ++j)
+      u(i,j) = a(i,j);
+
+  for (int k = 0; k < n; ++k){
+    int pivot = k;
+    double m = std::fabs(u(k,k));
+    for (int i = k+1; i < n; ++i)
+      if(std::fabs(u(i,k)) > m){
+        m = std::fabs(u(i,k));
+        pivot = i;
+      }
+    // swap row i with row k
+    if(pivot > k){
+      swapRows(u,pivot,k,k,n);
+      swapRows(l,pivot,k,0,k);
+      swapRows(p,pivot,k,0,n);
+    }
+    for (int j = k+1; j < n; ++j){
+      l(j,k) = u(j,k)/u(k,k);
+      for (int i = k; i < n; ++i){
+        u(j,i) -= l(j,k)*u(k,i);
+      }
+    }
+
+  }
+
+}
 /*
  * compute inverse of A using QR to solve
  * Ai = Ri*Qt where Ri is obtained by back sub
  */
-
-void invertMatrix(int n, mth::Matrix<double>& A,
+void invertMatrixWithQR(int n, mth::Matrix<double>& A,
     mth::Matrix<double>& Ai)
 {
   mth::Matrix<double> Q(n,n), R(n,n), Ri(n,n);
@@ -36,6 +86,43 @@ void invertMatrix(int n, mth::Matrix<double>& A,
     for (int j = 0; j < n; ++j)
       for (int k = 0; k < n; ++k)
         Ai(i,j) += Ri(i,k)*Q(j,k);
+
+}
+/*
+ * compute inverse of A using PLU to solve
+ * LUAi = P
+ */
+void invertMatrixWithPLU(int n, mth::Matrix<double>& A,
+    mth::Matrix<double>& Ai)
+{
+
+    mth::Matrix<double> l(n,n), u(n,n);
+    mth::Matrix<int> p(n,n);
+
+    decomposePLU(n,A,p,l,u);
+
+    mth::Vector<double> b(n);
+    mth::Vector<double> x(n), y(n);
+    for (int i = 0; i < n; ++i){
+      y.zero();
+      // find the pivot
+      for(int j = 0; j < n; ++j)
+        b[j] = p(j,i);
+
+      for (int k = 0; k < n; ++k) {
+        y(k) = b(k);
+        for (int j = 0; j < k; ++j){
+          y(k) -= l(k,j) * y(j);
+        }
+        y(k) /= l(k,k);
+      }
+
+      x.zero();
+      mth::backsubUT(u,y,x);
+
+      for (int j = 0; j < n; ++j)
+        Ai(j,i) = x[j];
+    }
 }
 
 /*

@@ -3,9 +3,5 @@
   </SubProject>
   <SubProject name="core-sim">
   </SubProject>
-  <SubProject name="core-scan">
-  </SubProject>
-  <SubProject name="core-sim-scan">
-  </SubProject>
 </Project>
 

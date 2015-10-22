@@ -60,7 +60,7 @@ struct IsFalseRebuild {
   }
 };
 
-void Rebuilds::match(apf::Sharing* sh, apf::DynamicArray<ma::Collapse>& collapses)
+void Rebuilds::match(apf::Sharing* sh)
 {
   /* the ma::rebuildElement call will produce more logs than we want:
      1) entities which don't really change show up as rebuilds of themselves,
@@ -94,6 +94,11 @@ MatchedCollapse::MatchedCollapse(Adapt* a):
 {
   mesh = a->mesh;
   sharing = apf::getSharing(mesh);
+}
+
+MatchedCollapse::~MatchedCollapse()
+{
+  delete sharing;
 }
 
 void MatchedCollapse::setEdge(Entity* e)
@@ -228,7 +233,7 @@ bool MatchedCollapse::tryThisDirection(double qualityToBeat)
     if (!collapses[i].tryThisDirectionNoCancel(qualityToBeat))
       ok = false;
   if (ok)
-    rebuilds.match(sharing, collapses);
+    rebuilds.match(sharing);
   else
     cancel();
   return ok;

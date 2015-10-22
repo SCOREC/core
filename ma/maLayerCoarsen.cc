@@ -47,12 +47,12 @@ static long markBaseEdgesToCollapse(Adapt* a)
 
 struct CurveLocalizer : public Crawler
 {
-  CurveLocalizer(Adapt* a_, int r):
+  CurveLocalizer(Adapt* a_, int r, apf::Migration* p):
     Crawler(a_)
   {
     a = a_;
     m = a->mesh;
-    plan = new apf::Migration(m);
+    plan = p;
     tag = m->createIntTag("ma_curve_dest", 1);
     round = r;
   }
@@ -153,8 +153,9 @@ struct CurveLocalizer : public Crawler
 
 static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
 {
-  CurveLocalizer cl(a, round);
   Mesh* m = a->mesh;
+  apf::Migration* plan = new apf::Migration(m);
+  CurveLocalizer cl(a, round, plan);
   Iterator* it = m->begin(1);
   Entity* e;
   while ((e = m->iterate(it)))
@@ -166,7 +167,7 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
       cl.handle(v[1], PCU_Comm_Self());
     }
   crawlLayers(&cl);
-  return cl.plan;
+  return plan;
 }
 
 static bool wouldEmptyParts(apf::Migration* plan)

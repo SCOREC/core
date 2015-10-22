@@ -141,9 +141,9 @@ class AD<0>
     /** \brief constructs from a double*/
     AD(double val):x_(val), dx_() {zero();}
     /** \brief constructs from other AD*/
-    AD(AD<0> const& other) {copy(other);}
+    AD(AD<0> const& other) {zero(); copy(other);}
     unsigned size() { return dx_.size();}
-    const unsigned size() const { return dx_.size();}
+    unsigned size() const { return dx_.size();}
     void diff(unsigned int i)
     {
       if(dx_.size() < i + 1)
@@ -160,8 +160,9 @@ class AD<0>
     {
       if(i >= size())
       {
-        dx_.resize_copy(i);
-        for(unsigned int x = size(); x < i; x++)
+        unsigned int temp_size = size();
+        dx_.resize_copy(i + 1);
+        for(unsigned int x = temp_size; x <= i; x++)
           dx_[x] = 0.;
       }
       return dx_[i];
@@ -573,6 +574,7 @@ AD<N> exp(AD<N> const& A)
     tmp.dx(i) = A.dx(i) * std::exp(A.val());
   return tmp;
 }
+
 /** \brief exponent of a dynamic AD variable */
 AD<0> exp(AD<0> const& A)
 {
@@ -600,7 +602,7 @@ AD<0> log(AD<0> const& A)
 {
   AD<0> tmp;
   tmp.resize(A.size());
-  tmp.val() = std::exp(A.val());
+  tmp.val() = std::log(A.val());
   for (unsigned int i=0; i < N; ++i)
     tmp.dx(i) = A.dx(i) / A.val();
   return tmp;
@@ -608,15 +610,16 @@ AD<0> log(AD<0> const& A)
 
 /** \brief AD variable raised to an integer power */
 template <unsigned int N>
-AD<N> pow(AD<N> const& A, int e)
+AD<N> pow(AD<N> const& A, const int e)
 {
   AD<N> tmp(std::pow(A.val(), (double)e));
   for (unsigned int i=0; i < N; ++i)
     tmp.dx(i) = e*A.dx(i)*std::pow(A.val(), (double)e-1.);
   return tmp;
 }
+
 /** \brief dynamic AD variable raised to a integer power */
-AD<0> pow(AD<0> const& A, int e)
+AD<0> pow(AD<0> const& A, const int e)
 {
   AD<0> tmp;
   tmp.resize(A.size());
@@ -628,7 +631,7 @@ AD<0> pow(AD<0> const& A, int e)
 
 /** \brief AD variable raised to a double power */
 template <unsigned int N>
-AD<N> pow(AD<N> const& A, double e)
+AD<N> pow(AD<N> const& A, const double e)
 {
   AD<N> tmp(std::pow(A.val(), e));
   for (unsigned int i=0; i < N; ++i)
@@ -637,7 +640,7 @@ AD<N> pow(AD<N> const& A, double e)
 }
 
 /** \brief dynamic AD variable raised to a double power */
-AD<0> pow(AD<0> const& A, double e)
+AD<0> pow(AD<0> const& A, const double e)
 {
   AD<0> tmp;
   tmp.resize(A.size());
@@ -646,6 +649,49 @@ AD<0> pow(AD<0> const& A, double e)
     tmp.dx(i) = e*A.dx(i)*std::pow(A.val(), e-1.);
   return tmp;
 }
+
+/** \brief integer raised to an AD power */
+template <unsigned int N>
+AD<N> pow(const int base, AD<N> const& A)
+{
+  AD<N> tmp(std::pow((double)base, A.val()));
+  for (unsigned int i=0; i < N; ++i)
+    tmp.dx(i) = std::log((double)base) * std::pow((double)base, A.val())  * A.dx(i);
+  return tmp;
+}
+
+/** \brief integer raised to a dynamic AD power */
+AD<0> pow(const int base, AD<0> const& A)
+{
+  AD<0> tmp;
+  tmp.resize(A.size());
+  tmp.val() = std::pow((double)base, A.val());
+  for (unsigned int i=0; i < tmp.size(); ++i)
+    tmp.dx(i) = std::log((double)base) * std::pow((double)base, A.val())  * A.dx(i);
+  return tmp;
+}
+
+/** \brief double raised to an AD power */
+template <unsigned int N>
+AD<N> pow(const double base, AD<N> const& A)
+{
+  AD<N> tmp(std::pow((double)base, A.val()));
+  for (unsigned int i=0; i < N; ++i)
+    tmp.dx(i) = std::log(base) * std::pow(base, A.val())  * A.dx(i);
+  return tmp;
+}
+
+/** \brief double raised to a dynamic AD power */
+AD<0> pow(const double base, AD<0> const& A)
+{
+  AD<0> tmp;
+  tmp.resize(A.size());
+  tmp.val() = std::pow((double)base, A.val());
+  for (unsigned int i=0; i < tmp.size(); ++i)
+    tmp.dx(i) = std::log(base) * std::pow(base, A.val())  * A.dx(i);
+  return tmp;
+}
+
 /** \brief AD variable raised to an AD variable power */
 template <unsigned int N>
 AD<N> pow(AD<N> const& A, AD<N> const& e)
@@ -669,6 +715,7 @@ AD<0> pow(AD<0> const& A, AD<0> const& e)
       e.val() * A.dx(i) * std::pow(A.val(), e.val()-1.);
   return tmp;
 }
+
 /** \brief square root of an AD variable */
 template <unsigned int N>
 AD<N> sqrt(AD<N> const& A)
@@ -678,6 +725,7 @@ AD<N> sqrt(AD<N> const& A)
     tmp.dx(i) = A.dx(i) / (2. * std::sqrt(A.val()));
   return tmp;
 }
+
 /** \brief square root of an AD variable */
 AD<0> sqrt(AD<0> const& A)
 {
@@ -689,6 +737,46 @@ AD<0> sqrt(AD<0> const& A)
   return tmp;
 }
 
+/** \brief sin of an AD variable */
+template <unsigned int N>
+AD<N> sin(AD<N> A)
+{
+  AD<N> tmp(std::sin(A.val()));
+  for(unsigned int i = 0; i < N; i++)
+    tmp.dx(i) = std::cos(A.val()) * A.dx(i);
+  return tmp;
+}
+/** \brief sin of a dynamic AD variable */
+AD<0> sin(AD<0> A)
+{
+  AD<0> tmp;
+  tmp.val() = std::sin(A.val());
+  tmp.resize(A.size());
+  for(unsigned int i = 0; i < tmp.size(); i++)
+    tmp.dx(i) = std::cos(A.val()) * A.dx(i);
+  return tmp;
+}
+
+/** \brief cos of an AD variable */
+template <unsigned int N>
+AD<N> cos(AD<N> A)
+{
+  AD<N> tmp(std::cos(A.val()));
+  for(unsigned int i = 0; i < N; i++)
+    tmp.dx(i) = -std::sin(A.val()) * A.dx(i);
+  return tmp;
+}
+
+/** \brief cos of a dynamic Ad variable */
+AD<0> cos(AD<0> A)
+{
+  AD<0> tmp;
+  tmp.val() = std::cos(A.val());
+  tmp.resize(A.size());
+  for(unsigned int i = 0; i < tmp.size(); i++)
+    tmp.dx(i) = -std::sin(A.val()) * A.dx(i);
+  return tmp;
+}
 
 /** \brief absolute value of an AD variable */
 template <unsigned int N>
