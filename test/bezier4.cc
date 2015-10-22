@@ -11,6 +11,17 @@
 #include <math.h>
 #include <cassert>
 
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
+#define RESET "\033[0m"
+
+
 /* This test file uses an alternative and more traditional method to
  * compute Jacobian differences, using the property of Bezier's that
  * derivatives of Bezier's are themselves Bezier's multiplied by
@@ -152,15 +163,17 @@ void checkValidity(apf::Mesh* m, int order)
   int iEntity = 0;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[6];
+    double startSub = PCU_Time();
     int numInvalidSub = crv::checkTriValidity(m,e,entities,2);
+    double endSub = PCU_Time();
+    double startEle = PCU_Time();
     int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
+    double endEle = PCU_Time();
+    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d\n" RESET, endSub - startSub, numInvalidSub, order);
+    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d\n" RESET, endEle - startEle, numInvalidEle, order);
     if(iEntity == 0){
-      printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
-      printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
       //assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
     } else if(iEntity == 1){
-      printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
-      printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
       //assert(numInvalid == 0);
     }
     iEntity++;
@@ -172,9 +185,9 @@ void checkValidity(apf::Mesh* m, int order)
 
 void test2D()
 {
-  double timeStartTest2D = PCU_Time();
-  printf("time at begining of test2D: %f", timeStartTest2D);
   for(int order = 2; order <= 6; ++order){
+    printf(" --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n", order);
+    double start = PCU_Time();
     apf::Mesh2* m = createMesh2D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     crv::BezierCurver bc(m,order,0);
@@ -210,19 +223,21 @@ void test2D()
       m->end(it);
     }
 
-    printf(" --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n", order);
     //uncomment this stuff to plot it and see in paraview
     crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
     crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
 
     crv::writeControlPointVtuFiles(m,"curved");
 
+    double startValidity = PCU_Time();
     checkValidity(m,order);
+    double endValidity = PCU_Time();
+    printf("total time of checkValidity: %f\n", endValidity-startValidity);
 
     m->destroyNative();
     apf::destroyMesh(m);
     double end = PCU_Time();
-    printf("time at end of test2D: %f", end);
+    printf("total time of order %d test2D: %f\n", order, end-start);
   }
 }
 

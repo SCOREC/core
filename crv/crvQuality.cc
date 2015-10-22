@@ -10,6 +10,12 @@
 #include "crvQuality.h"
 #include "PCU.h"
 
+
+#define KRED  "\x1B[31m"
+#define KBLU  "\x1B[34m"
+#define KGRN  "\x1B[32m"
+#define RESET "\033[0m"
+
 namespace crv {
 
 static int maxAdaptiveIter = 5;
@@ -286,6 +292,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
     if(numInvalid > 0) return numInvalid;
   }
   // if it is positive, then keep going
+  double triStart = PCU_Time();
   apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
@@ -306,13 +313,17 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
         for (int j = 0; j < 2*(P-1)-1; ++j)
           edgeNodes[j+1] = nodes[3+edge*(2*(P-1)-1)+j];
         if(algorithm % 2 == 1){
+          double startJDEle = PCU_Time();
           getJacDetByElevation(apf::Mesh::EDGE,2*(P-1),edgeNodes,minJ);
+          printf(KGRN "  time JDEle: %f\t edge: %d\n" RESET, PCU_Time()-startJDEle, edge);
         }
         else {
         // allows recursion stop on first "conclusive" invalidity
           bool done = false;
+          double startJDSub = PCU_Time();
           getJacDetBySubdivision(apf::Mesh::EDGE,2*(P-1),
               0,edgeNodes,minJ,done);
+          printf(KBLU "  time JDSub: %f\t edge: %d\n"RESET, PCU_Time()-startJDSub, edge);
         }
         if(minJ < minAcceptable){
           entities[numInvalid] = edges[edge];
@@ -322,8 +333,13 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
       }
     }
   }
+
   // This may be unnecessary, checking the interior of the shape
-  if(numInvalid > 0) return numInvalid;
+  if(numInvalid > 0) {
+    printf(algorithm%2 == 1 ? KGRN : KBLU);
+    printf("%s tri time: %f \n" RESET, algorithm%2 == 1 ? "ele":"sub", PCU_Time() - triStart);
+    return numInvalid;
+  }
 
   bool done = false;
   double minJ = -1e10;
@@ -342,6 +358,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
       break;
     }
   }
+  printf("%s tri time (0 invalid): %f\n", algorithm%2 == 1 ? "ele":"sub", PCU_Time() - triStart);
   return numInvalid;
 }
 
