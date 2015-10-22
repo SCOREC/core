@@ -213,27 +213,28 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
+void checkEntityValidity(int numInvalid, int entity, int order)
+{
+  if(entity == 1){
+    assert(numInvalid == 0);
+  } else {
+    assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+  }
+}
 
 void checkValidity(apf::Mesh* m, int order)
 {
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
-  int iEntity = 0;
+  int entityNum = 0;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[3];
     int numInvalid = crv::checkTriValidity(m,e,entities,2);
-    if(iEntity == 0){
-      assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-    } else if(iEntity == 1){
-      assert(numInvalid == 0);
-    }
+    checkEntityValidity(numInvalid,entityNum,order);
     numInvalid = crv::checkTriValidity(m,e,entities,3);
-        if(iEntity == 0){
-          assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-        } else if(iEntity == 1){
-          assert(numInvalid == 0);
-        }
-    iEntity++;
+    checkEntityValidity(numInvalid,entityNum,order);
+
+    entityNum++;
     break;
 
   }
