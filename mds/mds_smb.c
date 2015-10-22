@@ -19,6 +19,7 @@
 #include <reel.h>
 #include <sys/types.h> /*required for mode_t for mkdir on some systems*/
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
 
 enum { SMB_VERSION = 4 };
 
@@ -643,6 +644,14 @@ static void append(char* s, size_t size, const char* format, ...)
 
 #define SMB_FANOUT 2048
 
+static void safe_mkdir(const char* path, mode_t mode)
+{
+  errno = 0;
+  int err = mkdir(path, mode);
+  if (err != 0)
+    assert(errno == EEXIST);
+}
+
 static char* handle_path(const char* in, int is_write, int* zip,
     int ignore_peers)
 {
@@ -666,14 +675,14 @@ static char* handle_path(const char* in, int is_write, int* zip,
   if (ends_with(path, "/")) {
     if (is_write) {
       if (!self)
-        mkdir(path, dir_perm);
+        safe_mkdir(path, dir_perm);
       PCU_Barrier();
     }
     if (PCU_Comm_Peers() > SMB_FANOUT) {
       append(path, bufsize, "%d/", self / SMB_FANOUT);
       if (is_write) {
         if (self % SMB_FANOUT == 0)
-          mkdir(path, dir_perm);
+          safe_mkdir(path, dir_perm);
         PCU_Barrier();
       }
     }
