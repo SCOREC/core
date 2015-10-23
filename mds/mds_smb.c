@@ -40,6 +40,12 @@ enum {
   SMB_DBL
 };
 
+/* these limits are just for sanity checking
+   of the input file contents.
+   they do not reflect hard limitations anywhere
+   else in the MDS source code,
+   so feel free to increase them slightly if you
+   have a strange application. */
 #define MAX_ENTITIES (100*1000*1000)
 #define MAX_PEERS (10*1000)
 
