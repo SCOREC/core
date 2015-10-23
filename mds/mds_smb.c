@@ -110,6 +110,7 @@ static void write_links(struct pcu_file* f, struct mds_links* l)
     return;
   pcu_write_unsigneds(f, l->p, l->np);
   pcu_write_unsigneds(f, l->n, l->np);
+  assert(l->l != 0);
   for (i = 0; i < l->np; ++i)
     pcu_write_unsigneds(f, l->l[i], l->n[i]);
 }
