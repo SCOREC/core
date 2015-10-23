@@ -16,6 +16,8 @@ CavityOp::CavityOp(Mesh* m, bool cm):
   mesh(m),
   isRequesting(false),
   canModify(cm),
+  movedByDeletion(false),
+  iterator(0),
   sharing(0)
 {
 }
