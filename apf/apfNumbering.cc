@@ -22,6 +22,7 @@ template <class T>
 NumberingOf<T>::NumberingOf()
 {
   field = 0;
+  components = 0;
 }
 
 template <class T>
