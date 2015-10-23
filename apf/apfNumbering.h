@@ -122,7 +122,7 @@ int countNodes(GlobalNumbering* n);
 /** \brief Node identifier */
 struct Node
 {
-  Node() {}
+  Node():entity(0),node(0) {}
   Node(MeshEntity* e, int n):entity(e),node(n) {}
   /** \brief unique entity to which the node is associated */
   MeshEntity* entity;
