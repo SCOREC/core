@@ -96,6 +96,10 @@ void CavityOp::applyLocallyWithoutModification(int d)
 
 void CavityOp::applyToDimension(int d, bool matched)
 {
+  /* note: in the case of matching, we ought to rebuild
+     this sharing at least after each migration.
+     the matching feature isn't used in any working code
+     yet, so don't worry about this too much... */
   if (matched)
     sharing = new MatchedSharing(mesh);
   else
