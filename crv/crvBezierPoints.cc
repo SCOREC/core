@@ -164,7 +164,8 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     m->end(it);
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
-    getTransformationMatrix(m,e,A);
+    apf::Vector3 range[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
+    getTransformationMatrix(m,e,A,range);
     invertMatrixWithPLU(n,A,Ai);
 
     for( int i = 0; i < ni; ++i)
@@ -217,13 +218,14 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
     mth::Matrix<double> B(n,n);
+    apf::Vector3 range[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
 
-    getTransformationMatrix(m,e,A);
+    getTransformationMatrix(m,e,A,range);
     invertMatrixWithQR(n,A,Ai);
 
     // now get second matrix
     setBlendingOrder(type,blend);
-    getTransformationMatrix(m,e,B);
+    getTransformationMatrix(m,e,B,range);
 
     // fill in the last few rows of B
     apf::NewArray<double> values;

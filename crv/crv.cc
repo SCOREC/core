@@ -89,35 +89,35 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   return max;
 }
 
-void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
-    mth::Matrix<double>& A)
-{
+static apf::Vector3 const edge_vert_xi[2] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+};
+static apf::Vector3 const tri_vert_xi[3] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+};
+static apf::Vector3 const tet_vert_xi[4] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1),
+};
+static apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+    0, /* vertex */
+    edge_vert_xi,
+    tri_vert_xi,
+    0, /* quad */
+    tet_vert_xi,
+    0, /* hex */
+    0, /* prism */
+    0  /* pyramid */
+};
 
-  apf::Vector3 const edge_vert_xi[2] = {
-      apf::Vector3(-1,0,0),
-      apf::Vector3(1,0,0),
-  };
-  apf::Vector3 const tri_vert_xi[3] = {
-      apf::Vector3(0,0,0),
-      apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0),
-  };
-  apf::Vector3 const tet_vert_xi[4] = {
-      apf::Vector3(0,0,0),
-      apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0),
-      apf::Vector3(0,0,1),
-  };
-  apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
-      0, /* vertex */
-      edge_vert_xi,
-      tri_vert_xi,
-      0, /* quad */
-      tet_vert_xi,
-      0, /* hex */
-      0, /* prism */
-      0  /* pyramid */
-  };
+void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
+    mth::Matrix<double>& A, apf::Vector3 range[2])
+{
 
   int type = m->getType(e);
   apf::FieldShape* fs = m->getShape();
@@ -157,6 +157,8 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
         } else {
           exi = xi;
         }
+        for (int i = 0; i < typeDim; ++i)
+          exi[i] = range[0][i] + (range[1][i]-range[0][i])*exi[i];
         es->getValues(m,e,exi,values);
         for(int i = 0; i < n; ++i){
           A(row,i) = values[i];
