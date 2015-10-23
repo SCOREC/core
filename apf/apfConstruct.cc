@@ -40,8 +40,7 @@ static Gid getMax(const GlobalToVert& globalToVert)
   Gid max = -1;
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
-  PCU_Max_Ints(&max, 1); // this is type-dependent
-  return max;
+  return PCU_Max_Int(max); // this is type-dependent
 }
 
 
