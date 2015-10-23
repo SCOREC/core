@@ -48,6 +48,7 @@ enum {
    have a strange application. */
 #define MAX_ENTITIES (100*1000*1000)
 #define MAX_PEERS (10*1000)
+#define MAX_TAGS (100)
 
 static int smb2mds(int smb_type)
 {
@@ -447,6 +448,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
   unsigned i,j;
   int type_mds;
   PCU_READ_UNSIGNED(f,n);
+  assert(n < MAX_TAGS);
   tags = malloc(n * sizeof(*tags));
   sizes = malloc(n * sizeof(*sizes));
   for (i = 0; i < n; ++i)
