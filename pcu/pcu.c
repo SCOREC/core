@@ -338,6 +338,14 @@ void PCU_Exscan_Ints(int* p, size_t n)
   noto_free(originals);
 }
 
+int PCU_Exscan_Int(int x)
+{
+  int a[1];
+  a[0] = x;
+  PCU_Exscan_Ints(a, 1);
+  return a[0];
+}
+
 /** \brief See PCU_Exscan_Ints */
 void PCU_Exscan_Longs(long* p, size_t n)
 {

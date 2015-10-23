@@ -59,6 +59,7 @@ void PCU_Max_Doubles(double* p, size_t n);
 void PCU_Add_Ints(int* p, size_t n);
 void PCU_Add_Longs(long* p, size_t n);
 void PCU_Exscan_Ints(int* p, size_t n);
+int PCU_Exscan_Int(int x);
 void PCU_Exscan_Longs(long* p, size_t n);
 void PCU_Min_Ints(int* p, size_t n);
 void PCU_Max_Ints(int* p, size_t n);

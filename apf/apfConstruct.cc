@@ -174,8 +174,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
      This means we might need to send and recv some coords */
   double* c = new double[mySize*3];
 
-  int start = nverts;
-  PCU_Exscan_Ints(&start, 1);
+  int start = PCU_Exscan_Int(nverts);
 
   PCU_Comm_Begin();
   int to = std::min(peers - 1, start / quotient);
