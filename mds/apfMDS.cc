@@ -268,6 +268,7 @@ class MeshMDS : public Mesh2
       if (!isShared(e))
         return;
       mds_copies* c = mds_get_copies(&mesh->remotes, fromEnt(e));
+      assert(c != NULL);
       for (int i = 0; i < c->n; ++i)
         remotes[c->c[i].p] = toEnt(c->c[i].e);
     }
