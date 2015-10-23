@@ -555,12 +555,16 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   unsigned n[SMB_TYPES];
   mds_id cap[MDS_TYPES];
   int i;
+  unsigned tmp;
   f = pcu_fopen(filename, 0, zip);
   assert(f);
   read_header(f, &version, &dim, ignore_peers);
   pcu_read_unsigneds(f, n, SMB_TYPES);
-  for (i = 0; i < MDS_TYPES; ++i)
-    cap[i] = n[mds2smb(i)];
+  for (i = 0; i < MDS_TYPES; ++i) {
+    tmp = n[mds2smb(i)];
+    assert(tmp < MAX_ENTITIES);
+    cap[i] = tmp;
+  }
   m = mds_apf_create(model, dim, cap);
   make_verts(m);
   read_conn(f, m);
