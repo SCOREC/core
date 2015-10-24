@@ -70,7 +70,9 @@ class IndependentSetFinder : public apf::CavityOp
     IndependentSetFinder(Adapt* a):
       CavityOp(a->mesh),
       adapt(a)
-    {}
+    {
+      vertex = 0;
+    }
     virtual Outcome setEntity(Entity* v)
     {
       if (( ! getFlag(adapt,v,COLLAPSE))||

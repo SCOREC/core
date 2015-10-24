@@ -22,6 +22,7 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is)
   collapse.Init(a);
   isSimple = is;
   dug = false;
+  vert = 0;
 }
 
 bool Snapper::setVert(Entity* v, apf::CavityOp* o)

@@ -272,6 +272,10 @@ void NewEntities::retrieve(EntityArray& a)
 Cavity::Cavity()
 {
   shouldTransfer = false;
+  shouldFit = false;
+  adapter = 0;
+  solutionTransfer = 0;
+  shape = 0;
 }
 
 void Cavity::init(Adapt* a)

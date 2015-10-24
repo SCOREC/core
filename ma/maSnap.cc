@@ -133,6 +133,7 @@ class SnapAll : public Operator
       tag = t;
       successCount = 0;
       didAnything = false;
+      vert = 0;
     }
     int getTargetDimension() {return 0;}
     bool shouldApply(Entity* e)

@@ -238,6 +238,9 @@ struct UnsafePyramidOverride : public apf::CavityOp
     apf::CavityOp(a_->mesh)
   {
     a = a_;
+    good_rotation = -1;
+    pyramid = 0;
+    quad = 0;
   }
   Outcome setEntity(Entity* r)
   {
@@ -292,6 +295,11 @@ struct UnsafePrismOverride : public apf::CavityOp
     apf::CavityOp(a_->mesh)
   {
     a = a_;
+    prism = 0;
+    quads[0] = 0;
+    quads[1] = 0;
+    quads[2] = 0;
+    good_diagonal_codes = 0;
   }
   Outcome setEntity(Entity* r)
   {

@@ -454,6 +454,7 @@ struct Unsnapper : public Crawler
     a = a_;
     m = a->mesh;
     snapTag = t_;
+    ncurves = 0;
   }
   void unsnap(Entity* v)
   {

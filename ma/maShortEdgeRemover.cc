@@ -21,6 +21,7 @@ ShortEdgeRemover::ShortEdgeRemover(Adapt* a)
   mesh = a->mesh;
   for (int i=0; i < 2; ++i)
     vertRemovers[i].Init(a);
+  edge = 0;
 }
 
 void ShortEdgeRemover::setEdge(Entity* e)
