@@ -363,7 +363,9 @@ void mds_free_local_links(struct mds_links* ln)
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
+  assert(ln->n != 0);
   ln->n[self] = ln->n[other] = 0;
+  assert(ln->l != 0);
   free(ln->l[self]);
   free(ln->l[other]);
   ln->l[self] = ln->l[other] = NULL;
