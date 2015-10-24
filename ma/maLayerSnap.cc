@@ -436,7 +436,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
     setFlag(a, v, LAYER_UNSNAP);
     assert(m->hasTag(v, snapTag));
   }
-  PCU_Add_Longs(&n, 1);
+  n = PCU_Add_Long(n);
   print("fed back unsnap flag from %ld tops", n); 
 }
 

@@ -290,6 +290,14 @@ void PCU_Min_Doubles(double* p, size_t n)
   pcu_allreduce(&(get_msg()->coll),pcu_min_doubles,p,n*sizeof(double));
 }
 
+double PCU_Min_Double(double x)
+{
+  double a[1];
+  a[0] = x;
+  PCU_Min_Doubles(a, 1);
+  return a[0];
+}
+
 /** \brief Performs an Allreduce maximum of double arrays.
   */
 void PCU_Max_Doubles(double* p, size_t n)

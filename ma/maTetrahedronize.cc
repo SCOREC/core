@@ -618,8 +618,7 @@ static long markIslandPyramids(Adapt* a)
       }
     }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 static int countEntitiesWithFlag(Adapt* a, int flag, int dim)

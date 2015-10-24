@@ -243,8 +243,7 @@ long markEntities(
       setFlag(a,e,falseFlag);
   }
   m->end(it);
-  PCU_Add_Longs(&count,1);
-  return count;
+  return PCU_Add_Long(count);
 }
 
 void NewEntities::reset()

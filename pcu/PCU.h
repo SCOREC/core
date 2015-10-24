@@ -55,6 +55,7 @@ void PCU_Comm_Order(bool on);
 void PCU_Barrier(void);
 void PCU_Add_Doubles(double* p, size_t n);
 void PCU_Min_Doubles(double* p, size_t n);
+double PCU_Min_Double(double x);
 void PCU_Max_Doubles(double* p, size_t n);
 void PCU_Add_Ints(int* p, size_t n);
 int PCU_Add_Int(int x);
