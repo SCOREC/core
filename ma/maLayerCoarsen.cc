@@ -145,7 +145,6 @@ struct CurveLocalizer : public Crawler
   }
   Adapt* a;
   Mesh* m;
-  int flag;
   apf::Migration* plan;
   Tag* tag;
   int round;
