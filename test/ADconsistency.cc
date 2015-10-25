@@ -7,7 +7,6 @@ using namespace mth;
 template <unsigned int N>
 void printAndCompare(AD<> dyn, AD<N> sta, std::string type)
 {
-  std::cout << std::setprecision(20);
   std::cout << "Testing output values for " << type << '\n';
   std::cout << "Static value is: \t" << sta.val() << '\n';
   std::cout << "Dynamic value is: \t" << dyn.val() << '\n';
@@ -75,6 +74,8 @@ AD<N> complex(AD<N> a, AD<N> b, AD<N> c)
 
 int main()
 {
+  std::ios::fmtflags f( std::cout.flags() );
+  std::cout << std::setprecision(20);
   AD<3> a = 1.0;
   AD<3> b = 3.0;
   AD<3> c = 7.0;
@@ -117,5 +118,6 @@ int main()
   sta = complex(a, b, c);
   dyn = complex(x, y, z);
   printAndCompare(dyn, sta, "complex");
+  std::cout.flags(f);
   return 0;
 }
