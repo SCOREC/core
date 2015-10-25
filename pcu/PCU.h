@@ -54,9 +54,11 @@ void PCU_Comm_Order(bool on);
 /*collective operations*/
 void PCU_Barrier(void);
 void PCU_Add_Doubles(double* p, size_t n);
+double PCU_Add_Double(double x);
 void PCU_Min_Doubles(double* p, size_t n);
 double PCU_Min_Double(double x);
 void PCU_Max_Doubles(double* p, size_t n);
+double PCU_Max_Double(double x);
 void PCU_Add_Ints(int* p, size_t n);
 int PCU_Add_Int(int x);
 void PCU_Add_Longs(long* p, size_t n);

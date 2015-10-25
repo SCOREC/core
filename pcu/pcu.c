@@ -281,6 +281,14 @@ void PCU_Add_Doubles(double* p, size_t n)
   pcu_allreduce(&(get_msg()->coll),pcu_add_doubles,p,n*sizeof(double));
 }
 
+double PCU_Add_Double(double x)
+{
+  double a[1];
+  a[0] = x;
+  PCU_Add_Doubles(a, 1);
+  return a[0];
+}
+
 /** \brief Performs an Allreduce minimum of double arrays.
   */
 void PCU_Min_Doubles(double* p, size_t n)
@@ -305,6 +313,14 @@ void PCU_Max_Doubles(double* p, size_t n)
   if (global_state == uninit)
     reel_fail("Max_Doubles called before Comm_Init");
   pcu_allreduce(&(get_msg()->coll),pcu_max_doubles,p,n*sizeof(double));
+}
+
+double PCU_Max_Double(double x)
+{
+  double a[1];
+  a[0] = x;
+  PCU_Max_Doubles(a, 1);
+  return a[0];
 }
 
 /** \brief Performs an Allreduce sum of integers
