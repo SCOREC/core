@@ -158,11 +158,13 @@ void checkValidity(apf::Mesh* m, int order)
       printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
       printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
       //assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-    } else if(iEntity == 1){
-      printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
-      printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
-      //assert(numInvalid == 0);
     }
+  //Uncomment this when the "break" after it is gone
+  //else if(iEntity == 1){
+  //  printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
+  //  printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
+  //  //assert(numInvalid == 0);
+  //}
     iEntity++;
     break;
 
