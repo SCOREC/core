@@ -257,10 +257,14 @@ void getBoundingBox(Mesh* m, Vector& lower, Vector& upper)
     }
   }
   m->end(it);
-  double* a = &lower[0];
-  double* b = &upper[0];
+  double a[3];
+  lower.toArray(a);
+  double b[3];
+  upper.toArray(b);
   PCU_Min_Doubles(a, 3);
   PCU_Max_Doubles(b, 3);
+  lower.fromArray(a);
+  upper.fromArray(b);
 }
 
 Vector getCentroid(Mesh* m)
