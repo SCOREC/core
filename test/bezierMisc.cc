@@ -13,7 +13,7 @@
 #include <mth.h>
 #include <mth_def.h>
 #include <cassert>
-
+#include <ostream>
 /* This file contains miscellaneous tests relating to ordering, math
  * and transformation matrices
  */
@@ -138,19 +138,29 @@ static double const a_invdata[35][35] = {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     {-0.6654926381785982,-0.6654926381785983,-0.6654926381785977,-0.6654926381785985,0.6979094812091967,0.4963403688403295,0.6979094812091966,0.6979094812091965,0.4963403688403295,0.697909481209196,0.6979094812091964,0.4963403688403295,0.6979094812091965,0.6979094812091965,0.4963403688403297,0.6979094812091967,0.6979094812091963,0.4963403688403293,0.6979094812091965,0.697909481209196,0.4963403688403293,0.6979094812091966,-1.529804341792051,-1.529804341792051,-1.529804341792051,-1.529804341792051,-1.52980434179205,-1.529804341792051,-1.529804341792051,-1.529804341792051,-1.529804341792051,-1.529804341792051,-1.52980434179205,-1.529804341792051,10.66666666666667}};
 
 void testMatrixInverse(){
+
+
   mth::Matrix<double> A(35,35);
   for (int i = 0; i < 35; ++i)
     for (int j = 0; j < 35; ++j)
       A(i,j) = a_data[i][j];
-  mth::Matrix<double> Ai(35,35);
-  crv::invertMatrix(35,A,Ai);
-  mth::Matrix<double> eye(35,35);
-  mth::multiply(A,Ai,eye);
+  mth::Matrix<double> AiQR(35,35), AiPLU(35,35);
+
+  crv::invertMatrixWithPLU(35,A,AiPLU);
+  crv::invertMatrixWithQR(35,A,AiQR);
+
+  mth::Matrix<double> eyeQR(35,35), eyePLU(35,35);
+  mth::multiply(A,AiQR,eyeQR);
+  mth::multiply(A,AiPLU,eyePLU);
+
   for (int i = 0; i < 35; ++i)
     for (int j = 0; j < 35; ++j){
-      assert(fabs(Ai(i,j) - a_invdata[i][j]) < 1e-14);
-      assert(fabs(eye(i,j) - (i == j)) < 1e-14);
+      assert(fabs(AiQR(i,j) - a_invdata[i][j]) < 1e-14);
+      assert(fabs(eyeQR(i,j) - (i == j)) < 1e-14);
+      assert(fabs(AiPLU(i,j) - a_invdata[i][j]) < 1e-14);
+      assert(fabs(eyePLU(i,j) - (i == j)) < 1e-14);
     }
+
 }
 
 int main(int argc, char** argv)

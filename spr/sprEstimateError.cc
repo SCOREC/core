@@ -133,6 +133,7 @@ class ElementError : public SInt
       estimation(e),
       element(0),
       entity(0),
+      sum(0),
       ip(0)
     {
       v1.setSize(apf::countComponents(e->eps));

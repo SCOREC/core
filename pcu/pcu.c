@@ -281,6 +281,14 @@ void PCU_Add_Doubles(double* p, size_t n)
   pcu_allreduce(&(get_msg()->coll),pcu_add_doubles,p,n*sizeof(double));
 }
 
+double PCU_Add_Double(double x)
+{
+  double a[1];
+  a[0] = x;
+  PCU_Add_Doubles(a, 1);
+  return a[0];
+}
+
 /** \brief Performs an Allreduce minimum of double arrays.
   */
 void PCU_Min_Doubles(double* p, size_t n)
@@ -288,6 +296,14 @@ void PCU_Min_Doubles(double* p, size_t n)
   if (global_state == uninit)
     reel_fail("Min_Doubles called before Comm_Init");
   pcu_allreduce(&(get_msg()->coll),pcu_min_doubles,p,n*sizeof(double));
+}
+
+double PCU_Min_Double(double x)
+{
+  double a[1];
+  a[0] = x;
+  PCU_Min_Doubles(a, 1);
+  return a[0];
 }
 
 /** \brief Performs an Allreduce maximum of double arrays.
@@ -299,6 +315,14 @@ void PCU_Max_Doubles(double* p, size_t n)
   pcu_allreduce(&(get_msg()->coll),pcu_max_doubles,p,n*sizeof(double));
 }
 
+double PCU_Max_Double(double x)
+{
+  double a[1];
+  a[0] = x;
+  PCU_Max_Doubles(a, 1);
+  return a[0];
+}
+
 /** \brief Performs an Allreduce sum of integers
   */
 void PCU_Add_Ints(int* p, size_t n)
@@ -308,6 +332,14 @@ void PCU_Add_Ints(int* p, size_t n)
   pcu_allreduce(&(get_msg()->coll),pcu_add_ints,p,n*sizeof(int));
 }
 
+int PCU_Add_Int(int x)
+{
+  int a[1];
+  a[0] = x;
+  PCU_Add_Ints(a, 1);
+  return x;
+}
+
 /** \brief Performs an Allreduce sum of long integers
   */
 void PCU_Add_Longs(long* p, size_t n)
@@ -315,6 +347,14 @@ void PCU_Add_Longs(long* p, size_t n)
   if (global_state == uninit)
     reel_fail("Add_Longs called before Comm_Init");
   pcu_allreduce(&(get_msg()->coll),pcu_add_longs,p,n*sizeof(long));
+}
+
+long PCU_Add_Long(long x)
+{
+  long a[1];
+  a[0] = x;
+  PCU_Add_Longs(a, 1);
+  return a[0];
 }
 
 /** \brief Performs an exclusive prefix sum of integer arrays.
@@ -338,6 +378,14 @@ void PCU_Exscan_Ints(int* p, size_t n)
   noto_free(originals);
 }
 
+int PCU_Exscan_Int(int x)
+{
+  int a[1];
+  a[0] = x;
+  PCU_Exscan_Ints(a, 1);
+  return a[0];
+}
+
 /** \brief See PCU_Exscan_Ints */
 void PCU_Exscan_Longs(long* p, size_t n)
 {
@@ -354,6 +402,14 @@ void PCU_Exscan_Longs(long* p, size_t n)
   noto_free(originals);
 }
 
+long PCU_Exscan_Long(long x)
+{
+  long a[1];
+  a[0] = x;
+  PCU_Exscan_Longs(a, 1);
+  return a[0];
+}
+
 /** \brief Performs an Allreduce minimum of int arrays.
   */
 void PCU_Min_Ints(int* p, size_t n)
@@ -361,6 +417,14 @@ void PCU_Min_Ints(int* p, size_t n)
   if (global_state == uninit)
     reel_fail("Min_Ints called before Comm_Init");
   pcu_allreduce(&(get_msg()->coll),pcu_min_ints,p,n*sizeof(int));
+}
+
+int PCU_Min_Int(int x)
+{
+  int a[1];
+  a[0] = x;
+  PCU_Min_Ints(a, 1);
+  return a[0];
 }
 
 /** \brief Performs an Allreduce maximum of int arrays.
@@ -372,12 +436,19 @@ void PCU_Max_Ints(int* p, size_t n)
   pcu_allreduce(&(get_msg()->coll),pcu_max_ints,p,n*sizeof(int));
 }
 
+int PCU_Max_Int(int x)
+{
+  int a[1];
+  a[0] = x;
+  PCU_Max_Ints(a, 1);
+  return a[0];
+}
+
 /** \brief Performs a parallel logical OR reduction
   */
 int PCU_Or(int c)
 {
-  PCU_Max_Ints(&c, 1);
-  return c;
+  return PCU_Max_Int(c);
 }
 
 /* this wrapper around the user thread function

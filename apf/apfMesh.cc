@@ -773,7 +773,7 @@ void warnAboutEmptyParts(Mesh* m)
   int emptyParts = 0;
   if (!m->count(m->getDimension()))
     ++emptyParts;
-  PCU_Add_Ints(&emptyParts, 1);
+  emptyParts = PCU_Add_Int(emptyParts);
   if (emptyParts && (!PCU_Comm_Self()))
     fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
 }

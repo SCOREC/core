@@ -70,7 +70,9 @@ class IndependentSetFinder : public apf::CavityOp
     IndependentSetFinder(Adapt* a):
       CavityOp(a->mesh),
       adapt(a)
-    {}
+    {
+      vertex = 0;
+    }
     virtual Outcome setEntity(Entity* v)
     {
       if (( ! getFlag(adapt,v,COLLAPSE))||
@@ -272,7 +274,7 @@ bool coarsen(Adapt* a)
     else
       successCount += collapseAllEdges(a, modelDimension);
   }
-  PCU_Add_Longs(&successCount,1);
+  successCount = PCU_Add_Long(successCount);
   double t1 = PCU_Time();
   print("coarsened %li edges in %f seconds",successCount,t1-t0);
   return true;

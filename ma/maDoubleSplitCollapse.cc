@@ -18,6 +18,7 @@ DoubleSplitCollapse::DoubleSplitCollapse(Adapt* a):
   splits(a)
 {
   collapse.Init(a);
+  oldQuality = 2;
 }
 
 void DoubleSplitCollapse::getNewElements(EntityArray& e)

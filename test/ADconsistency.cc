@@ -1,5 +1,6 @@
 #include <mthAD.h>
 #include <iostream>
+#include <iomanip>
 #include <cassert>
 #include <string>
 using namespace mth;
@@ -7,14 +8,14 @@ template <unsigned int N>
 void printAndCompare(AD<> dyn, AD<N> sta, std::string type)
 {
   std::cout << "Testing output values for " << type << '\n';
-  std::cout <<"Static value is:\t" << sta.val() << '\n';
-  std::cout << "Dynamic value is:\t" << dyn.val() << '\n';
-  assert(dyn.val() - sta.val() < .001);
-  for(int i = 0; i < N; i++)
+  std::cout << "Static value is: \t" << sta.val() << '\n';
+  std::cout << "Dynamic value is: \t" << dyn.val() << '\n';
+  assert(dyn.val() - sta.val() < 1e-14);
+  for(unsigned int i = 0; i < N; i++)
   {
-    std::cout << i << " static derivate is:\t" << sta.dx(i) << '\n';
-    std::cout << i << " dyniamic derivate is:\t" << dyn.dx(i) << '\n';
-    assert(dyn.dx(i) - sta.dx(i) < .001);
+    std::cout << i << " static derivative is: \t" << sta.dx(i) << '\n';
+    std::cout << i << " dynamic derivative is:\t" << dyn.dx(i) << '\n';
+    assert(dyn.dx(i) - sta.dx(i) < 1e-14);
   }
 }
 template <unsigned int N>
@@ -71,8 +72,10 @@ AD<N> complex(AD<N> a, AD<N> b, AD<N> c)
   return pow(a, 12) * sqrt(b / c) / sin(c * b) * 37 / c;
 }
 
-int main(int argc, char const *argv[])
+int main()
 {
+  std::ios::fmtflags f( std::cout.flags() );
+  std::cout << std::setprecision(20);
   AD<3> a = 1.0;
   AD<3> b = 3.0;
   AD<3> c = 7.0;
@@ -115,8 +118,6 @@ int main(int argc, char const *argv[])
   sta = complex(a, b, c);
   dyn = complex(x, y, z);
   printAndCompare(dyn, sta, "complex");
-  sta = complex(complex(a, b, c), a, c);
-  dyn = complex(complex(x, y, z), x, z);
-  printAndCompare(dyn, sta, "recursive complex");
+  std::cout.flags(f);
   return 0;
 }

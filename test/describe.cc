@@ -44,12 +44,9 @@ static double get_peak()
 static void print_stats(const char* name, double value)
 {
   double min, max, avg;
-  min = value;
-  PCU_Min_Doubles(&min, 1);
-  max = value;
-  PCU_Max_Doubles(&max, 1);
-  avg = value;
-  PCU_Add_Doubles(&avg, 1);
+  min = PCU_Min_Double(value);
+  max = PCU_Max_Double(value);
+  avg = PCU_Add_Double(value);
   avg /= PCU_Comm_Peers();
   double imb = max / avg;
   if (!PCU_Comm_Self())

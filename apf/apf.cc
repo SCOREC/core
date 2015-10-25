@@ -96,9 +96,12 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType)
   return createField(m,name,valueType,m->getShape());
 }
 
-Field* createPackedField(Mesh* m, const char* name, int components)
+Field* createPackedField(Mesh* m, const char* name, int components,
+    apf::FieldShape* shape)
 {
-  return makeField(m, name, PACKED, components, m->getShape(),
+  if (!shape)
+    shape = m->getShape();
+  return makeField(m, name, PACKED, components, shape,
       new TagDataOf<double>());
 }
 

@@ -116,14 +116,10 @@ static void getBlendedGregoryTriangleTransform(int blend,
   for(int i = 0; i < nbBezier; ++i){
     for(int j = 0; j < niBezier; ++j)
       c[i*ni+j] = f4[blend-1][i*niBezier+j];
-    for(int j = niBezier; j < ni; ++j)
-      c[i*ni+j] = 0.;
   }
   for(int i = nbBezier; i < nb; ++i){
     for(int j = 0; j < niBezier; ++j)
       c[i*ni+j] = f4[blend-1][map[i-nbBezier]*niBezier+j];
-    for(int j = niBezier; j < ni; ++j)
-      c[i*ni+j] = 0.;
   }
 }
 

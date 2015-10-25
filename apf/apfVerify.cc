@@ -286,8 +286,7 @@ static long verifyCoords(Mesh* m)
   while (PCU_Comm_Receive())
     if (!receiveCoords(m))
       ++n;
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 long verifyVolumes(Mesh* m, bool printVolumes)
@@ -315,8 +314,7 @@ long verifyVolumes(Mesh* m, bool printVolumes)
     destroyMeshElement(me);
   }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 static void packOrder(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
