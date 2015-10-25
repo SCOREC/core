@@ -47,7 +47,7 @@ static void cut_trailing_spaces(char* s)
 static void parse_header(char* header, char** name, long* bytes,
     int nparam, int* params)
 {
-  char* saveptr;
+  char* saveptr = NULL;
   int i;
   header = strtok_r(header, ":", &saveptr);
   if (name) {
