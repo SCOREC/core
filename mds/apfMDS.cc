@@ -649,6 +649,7 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
   bool isMatched;
   PCU_Comm_Begin();
   if (isOriginal) {
+    assert(m != 0);
     dim = m->getDimension();
     isMatched = m->hasMatching();
     for (int i = 1; i < factor; ++i) {
