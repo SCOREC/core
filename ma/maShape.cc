@@ -360,6 +360,7 @@ class LargeAngleTriFixer : public Operator
       edgeSwap = makeEdgeSwap(a);
       ns = nf = 0;
       tri = 0;
+      edges[0] = edges[1] = edges[2] = 0;
     }
     virtual ~LargeAngleTriFixer()
     {
