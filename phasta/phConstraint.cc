@@ -81,8 +81,12 @@ static Constraint* makePlaneConstraint(double* values)
    the planes forming this constraint are kept around */
 struct LineConstraint : public Constraint
 {
-  LineConstraint():Constraint(1) {}
   PlaneConstraint* pcs[2];
+  LineConstraint():
+    Constraint(1)
+  {
+    pcs[0] = pcs[1] = 0;
+  }
   ~LineConstraint()
   {
     delete pcs[0];
