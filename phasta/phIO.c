@@ -73,7 +73,8 @@ static int find_header(FILE* f, const char* name, char header[PH_LINE])
   while (fgets(header, PH_LINE, f)) {
     if ((header[0] == '#') || (header[0] == '\n'))
       continue;
-    strncpy(tmp, header, PH_LINE);
+    strncpy(tmp, header, PH_LINE-1);
+    tmp[PH_LINE-1] = '\0';
     parse_header(tmp, &hname, &bytes, 0, NULL);
     if (!strcmp(name, hname))
       return 1;
