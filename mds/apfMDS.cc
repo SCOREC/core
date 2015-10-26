@@ -667,6 +667,7 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
     unpackDataClone(m);
   }
   apf::Multiply remap(factor);
+  assert(m != 0);
   apf::remapPartition(m, remap);
   if (!isOriginal)
     plan = new apf::Migration(m, m->findTag("apf_migrate"));
