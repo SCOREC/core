@@ -759,9 +759,13 @@ protected:
   std::string name;
 };
 
-static void setOrder(const int order)
+void setOrder(const int order)
 {
   P = order;
+}
+int getOrder()
+{
+  return P;
 }
 
 apf::FieldShape* getBezier(int order)

@@ -19,9 +19,9 @@ namespace crv {
 static void getHigherBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
 {
   // 19th order supported
-  static apf::NewArray<double> edgePoints[20];
-  static apf::NewArray<apf::Vector3> triPoints[20];
-  static apf::NewArray<apf::Vector3> tetPoints[20];
+  static apf::NewArray<double> edgePoints[MAX_ORDER];
+  static apf::NewArray<apf::Vector3> triPoints[MAX_ORDER];
+  static apf::NewArray<apf::Vector3> tetPoints[MAX_ORDER];
   // if edges are allocated
   if (!edgePoints[P].allocated()){
     edgePoints[P].allocate(P-1);
@@ -145,9 +145,10 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
   int n = getNumControlPoints(type,P);
   assert(n > 0);
   assert(ni > 0);
-  static apf::NewArray<double> transform[apf::Mesh::TYPES][20];
+  static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
   if(!transform[type][P].allocated()){
-
+    int oldP = getOrder();
+    setOrder(P);
     int oldB[apf::Mesh::TYPES];
     for (int i = 0; i < apf::Mesh::TYPES; ++i)
       oldB[i] = getBlendingOrder(i);
@@ -165,6 +166,7 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
     apf::Vector3 range[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
+
     getTransformationMatrix(m,e,A,range);
     invertMatrixWithPLU(n,A,Ai);
 
@@ -174,10 +176,94 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
 
     for (int i = 0; i < apf::Mesh::TYPES; ++i)
       setBlendingOrder(i,oldB[i]);
+    setOrder(oldP);
   }
 
   c.allocate(n*ni);
   for( int i = 0; i < ni; ++i)
+    for( int j = 0; j < n; ++j)
+      c[i*n+j] = transform[type][P][i*n+j];
+
+}
+
+void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
+    int P, int type, apf::NewArray<double> & c)
+{
+  int n = getNumControlPoints(type,P);
+  assert(n > 0);
+  int typeDim = apf::Mesh::typeDimension[type];
+  int numMatrices = intpow(2.,typeDim);
+  static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
+  if(!transform[type][P].allocated()){
+    int oldP = getOrder();
+    setOrder(P);
+    int oldB[apf::Mesh::TYPES];
+    for (int i = 0; i < apf::Mesh::TYPES; ++i)
+      oldB[i] = getBlendingOrder(i);
+
+    setBlendingOrder(apf::Mesh::TYPES,0);
+
+    transform[type][P].allocate(n*n*numMatrices);
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))){
+      if (m->getType(e) == type)
+        break;
+    }
+    m->end(it);
+    apf::Vector3 range[8][2];
+    mth::Matrix<double> Asub(n,n), A(n,n);
+    mth::Matrix<double> Ai(n,n);
+
+    apf::Vector3 Arange[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
+
+    getTransformationMatrix(m,e,A,Arange);
+    invertMatrixWithPLU(n,A,Ai);
+
+    switch (typeDim) {
+    case 1:
+      for(int i = 0; i < 2; ++i){
+        range[i][0][0] = i*0.5;
+        range[i][1][0] = (i+1.)*0.5;
+      }
+      break;
+    case 2:
+      for(int j = 0; j < 2; ++j)
+        for(int i = 0; i < 2; ++i){
+          range[2*j+i][0] = apf::Vector3(0.5*j,0.5*i,0.);
+          range[2*j+i][1] = range[0][2*j+i]
+                          + apf::Vector3(0.5,0.5,0.);
+        }
+      break;
+    case 3:
+      for(int k = 0; k < 2; ++k)
+        for(int j = 0; j < 2; ++j)
+          for(int i = 0; i < 2; ++i){
+            range[4*k+2*j+i][0] = apf::Vector3(0.5*k,0.5*j,0.5*i);
+            range[4*k+2*j+i][1] = range[0][4*k+2*j+i]
+                                + apf::Vector3(0.5,0.5,0.5);
+          }
+      break;
+    default:
+      break;
+    }
+    for( int k = 0; k < numMatrices; ++k){
+      Asub.zero();
+      getTransformationMatrix(m,e,Asub,range[k]);
+
+      mth::multiply(Ai,Asub,A);
+
+      for( int i = 0; i < n; ++i)
+        for( int j = 0; j < n; ++j)
+          transform[type][P][i*n+j+k*n*n] = A(i,j);
+    }
+    for (int i = 0; i < apf::Mesh::TYPES; ++i)
+      setBlendingOrder(i,oldB[i]);
+    setOrder(oldP);
+  }
+
+  c.allocate(n*n*numMatrices);
+  for( int i = 0; i < n; ++i)
     for( int j = 0; j < n; ++j)
       c[i*n+j] = transform[type][P][i*n+j];
 
@@ -196,7 +282,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
   int n = getNumControlPoints(type,P);
   assert(n > 0);
   assert(ni > 0);
-  static apf::NewArray<double> transform[2][apf::Mesh::TYPES][20];
+  static apf::NewArray<double> transform[2][apf::Mesh::TYPES][MAX_ORDER];
   if(!transform[blend-1][type][P].allocated()){
 
     int oldB[apf::Mesh::TYPES];
@@ -221,7 +307,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     apf::Vector3 range[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
 
     getTransformationMatrix(m,e,A,range);
-    invertMatrixWithQR(n,A,Ai);
+    invertMatrixWithPLU(n,A,Ai);
 
     // now get second matrix
     setBlendingOrder(type,blend);

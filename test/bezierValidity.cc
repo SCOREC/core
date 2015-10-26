@@ -233,10 +233,9 @@ void checkValidity(apf::Mesh* m, int order)
     checkEntityValidity(numInvalid,entityNum,order);
     numInvalid = crv::checkTriValidity(m,e,entities,3);
     checkEntityValidity(numInvalid,entityNum,order);
-
+    numInvalid = crv::checkTriValidity(m,e,entities,4);
+    checkEntityValidity(numInvalid,entityNum,order);
     entityNum++;
-    break;
-
   }
   m->end(it);
 }

@@ -13,6 +13,9 @@
 
 namespace crv {
 
+void setOrder(const int order);
+int getOrder();
+
 /** \brief computes node index, use getTriNodeIndex
  * (getTetNodeIndex) to leverage tables */
 int computeTriNodeIndex(int P, int i, int j);
@@ -87,6 +90,7 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
 void subdivideBezierTet(int P, apf::Vector3& p,
     apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[4]);
+
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
  *
  \details this is a support function, not actual ever needed.

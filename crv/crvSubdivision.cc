@@ -7,6 +7,7 @@
 
 #include "crv.h"
 #include "crvBezier.h"
+#include "crvMath.h"
 #include "crvTables.h"
 #include "crvQuality.h"
 
@@ -211,6 +212,19 @@ void subdivideBezierTet(int P, apf::Vector3& p,
 {
   int tet[4] = {0,1,2,3};
   splitTet(P,p,nodes,subNodes,tet);
+}
+
+void subdivideBezierEntityJacobianDet(int P, int type,
+    apf::NewArray<double>& c, apf::NewArray<double>& nodes,
+    apf::NewArray<double> *subNodes){
+  int typeDim = apf::Mesh::typeDimension[type];
+  int n = getNumControlPoints(type,P);
+  int numSubdivisions = intpow(2,typeDim);
+  for(int k = 0; k < numSubdivisions; ++k){
+    for(int j = 0; j < n; ++j)
+      for(int i = 0; i < n; ++i)
+        subNodes[k][j] = nodes[i]*c[k*n*n+j+i*n];
+  }
 }
 
 const SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES] =

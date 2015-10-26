@@ -19,6 +19,8 @@
   * \brief All CRV functions are contained in this namespace */
 namespace crv {
 
+/** \brief actually 1 greater than max order */
+static unsigned const MAX_ORDER = 20;
 /** \brief sets the blending order, if shape blending is used */
 void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
@@ -171,7 +173,7 @@ int quadnomial(int n, int i, int j, int k);
  * 1 - elevation
  * 2 - subdivision, without first check
  * 3 - elevation, without first check
- *
+ * 4 - subdivision, using matrices
  * methods 2 and 3 exist because the first check tends to catch everything
  * without actually using subdivision and elevation, and giving this option
  * is easier for debugging and verifying the efficacy of those procedures
