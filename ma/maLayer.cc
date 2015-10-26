@@ -21,7 +21,7 @@ static long markLayerElements(Adapt* a)
       ++n;
     }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
+  n = PCU_Add_Long(n);
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
     return 0;
@@ -170,7 +170,7 @@ void checkLayerShape(Mesh* m, const char* key)
         ++n;
       }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
+  n = PCU_Add_Long(n);
   double t1 = PCU_Time();
   print("%s: checked layer quality in %f seconds: %ld unsafe elements", key, t1 - t0, n);
 }

@@ -68,6 +68,8 @@ set(HEADERS
   maInput.h
   maMesh.h
   maSize.h
+  maShape.h
+  maTables.h
   maSolutionTransfer.h)
 
 if(BUILD_IN_TRILINOS)

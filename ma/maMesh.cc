@@ -257,8 +257,14 @@ void getBoundingBox(Mesh* m, Vector& lower, Vector& upper)
     }
   }
   m->end(it);
-  PCU_Min_Doubles(&(lower[0]),3);
-  PCU_Max_Doubles(&(upper[0]),3);
+  double a[3];
+  lower.toArray(a);
+  double b[3];
+  upper.toArray(b);
+  PCU_Min_Doubles(a, 3);
+  PCU_Max_Doubles(b, 3);
+  lower.fromArray(a);
+  upper.fromArray(b);
 }
 
 Vector getCentroid(Mesh* m)
@@ -368,8 +374,7 @@ double getMinimumElementSize(Mesh* m)
     if (size < minimum) minimum=size;
   }
   m->end(it);
-  PCU_Min_Doubles(&minimum,1);
-  return minimum;
+  return PCU_Min_Double(minimum);
 }
 
 void getFaceEdgesAndDirections(

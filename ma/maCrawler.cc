@@ -189,6 +189,7 @@ struct TopFlagger : public apf::CavityOp
     a = a_;
     m = a->mesh;
     t.init(m, t_);
+    v = 0;
   }
   Outcome setEntity(Entity* v_)
   {

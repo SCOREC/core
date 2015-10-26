@@ -141,10 +141,10 @@ namespace chef {
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
+    in.load("adapt.inp");
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openfile_write;
-    in.load("adapt.inp");
     bake(g,m,in,out);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m,

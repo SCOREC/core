@@ -16,6 +16,8 @@ CavityOp::CavityOp(Mesh* m, bool cm):
   mesh(m),
   isRequesting(false),
   canModify(cm),
+  movedByDeletion(false),
+  iterator(0),
   sharing(0)
 {
 }
@@ -94,6 +96,10 @@ void CavityOp::applyLocallyWithoutModification(int d)
 
 void CavityOp::applyToDimension(int d, bool matched)
 {
+  /* note: in the case of matching, we ought to rebuild
+     this sharing at least after each migration.
+     the matching feature isn't used in any working code
+     yet, so don't worry about this too much... */
   if (matched)
     sharing = new MatchedSharing(mesh);
   else
@@ -133,8 +139,7 @@ bool CavityOp::requestLocality(MeshEntity** entities, int count)
 
 bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
 {
-  int done = requests.empty();
-  PCU_Min_Ints(&done,1);
+  int done = PCU_Min_Int(requests.empty());
   if (done) return false;
   /* throw in the local pull requests */
   int self = PCU_Comm_Self();

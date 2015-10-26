@@ -12,6 +12,8 @@ class Project : public FieldOp
       to = a;
       from = b;
       mesh = a->getMesh();
+      meshElement = 0;
+      fromElement = 0;
     }
     bool inEntity(MeshEntity* e)
     {
