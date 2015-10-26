@@ -12,6 +12,8 @@
 
 namespace crv {
 
+double getQuality(apf::Mesh* m,apf::MeshEntity* e);
+
 void subdivideBezierEntityJacobianDet(int P, int type,
     apf::NewArray<double>& c, apf::NewArray<double>& nodes,
     apf::NewArray<double> *subNodes);

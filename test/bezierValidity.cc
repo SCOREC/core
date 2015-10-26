@@ -386,12 +386,13 @@ void test3D()
       assert(numInvalid == 0);
     }
     numInvalid = crv::checkTetValidity(m,tet,entities,3);
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,50,"curvedValidity");
+
     if(order == 4){
       assert(numInvalid > 0);
     } else {
       assert(numInvalid == 0);
     }
-//          crv::writeCurvedVtuFiles(m,apf::Mesh::TET,50,"curved");
 
     m->destroyNative();
     apf::destroyMesh(m);
