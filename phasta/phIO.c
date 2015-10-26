@@ -49,6 +49,7 @@ static void parse_header(char* header, char** name, long* bytes,
 {
   char* saveptr = NULL;
   int i;
+  assert(header != NULL);
   header = strtok_r(header, ":", &saveptr);
   if (name) {
     *name = header;
