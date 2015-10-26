@@ -46,6 +46,7 @@ static void setDefaults(Input& in)
   in.axisymmetry = 0;
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
+  in.rs = 0;
 }
 
 Input::Input()
