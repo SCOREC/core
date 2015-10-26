@@ -169,10 +169,12 @@ void checkValidity(apf::Mesh* m, int order)
     double startEle = PCU_Time();
     int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
     double endEle = PCU_Time();
-    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d\n" RESET,
+    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d" RESET,
         endSub - startSub, numInvalidSub, order);
-    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d\n" RESET,
+    printf("\n");
+    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d" RESET,
         endEle - startEle, numInvalidEle, order);
+    printf("\n");
   //Uncomment this when the "break" after it is gone
   //else if(iEntity == 1){
   //  printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
@@ -228,10 +230,10 @@ void test2D()
     }
 
     //uncomment this stuff to plot it and see in paraview
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
+    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"t_curved");
+    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"t_curved");
 
-    crv::writeControlPointVtuFiles(m,"curved");
+    crv::writeControlPointVtuFiles(m,"t_curved");
 
     double startValidity = PCU_Time();
     checkValidity(m,order);
