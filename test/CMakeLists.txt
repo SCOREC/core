@@ -125,6 +125,7 @@ setup_exe(nektar_align nektar_align.cc)
 setup_exe(reposition reposition.cc)
 setup_exe(qr qr.cc)
 setup_exe(base64 base64.cc)
+setup_exe(test_AD test_AD.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
