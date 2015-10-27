@@ -19,6 +19,7 @@
 #include <reel.h>
 #include <sys/types.h> /*required for mode_t for mkdir on some systems*/
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
 
 enum { SMB_VERSION = 4 };
 
@@ -38,6 +39,16 @@ enum {
   SMB_INT,
   SMB_DBL
 };
+
+/* these limits are just for sanity checking
+   of the input file contents.
+   they do not reflect hard limitations anywhere
+   else in the MDS source code,
+   so feel free to increase them slightly if you
+   have a strange application. */
+#define MAX_ENTITIES (100*1000*1000)
+#define MAX_PEERS (10*1000)
+#define MAX_TAGS (100)
 
 static int smb2mds(int smb_type)
 {
@@ -78,12 +89,14 @@ static void read_links(struct pcu_file* f, struct mds_links* l)
   PCU_READ_UNSIGNED(f, l->np);
   if (!l->np)
     return;
+  assert(l->np < MAX_PEERS); /* reasonable limit on number of peers */
   l->p = malloc(l->np * sizeof(unsigned));
   pcu_read_unsigneds(f, l->p, l->np);
   l->n = malloc(l->np * sizeof(unsigned));
   l->l = malloc(l->np * sizeof(unsigned*));
   pcu_read_unsigneds(f, l->n, l->np);
   for (i = 0; i < l->np; ++i) {
+    assert(l->n[i] < MAX_ENTITIES);
     l->l[i] = malloc(l->n[i] * sizeof(unsigned));
     pcu_read_unsigneds(f, l->l[i], l->n[i]);
   }
@@ -97,6 +110,7 @@ static void write_links(struct pcu_file* f, struct mds_links* l)
     return;
   pcu_write_unsigneds(f, l->p, l->np);
   pcu_write_unsigneds(f, l->n, l->np);
+  assert(l->l != 0);
   for (i = 0; i < l->np; ++i)
     pcu_write_unsigneds(f, l->l[i], l->n[i]);
 }
@@ -270,6 +284,7 @@ static struct mds_tag* read_tag_header(struct pcu_file* f, struct mds_apf* m)
   bytes[SMB_INT] = sizeof(int);
   bytes[SMB_DBL] = sizeof(double);
   PCU_READ_UNSIGNED(f, type);
+  assert(SMB_INT == type || SMB_DBL == type);
   PCU_READ_UNSIGNED(f, count);
   pcu_read_string(f, &name);
   t = mds_create_tag(&m->tags, name,
@@ -434,6 +449,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
   unsigned i,j;
   int type_mds;
   PCU_READ_UNSIGNED(f,n);
+  assert(n < MAX_TAGS);
   tags = malloc(n * sizeof(*tags));
   sizes = malloc(n * sizeof(*sizes));
   for (i = 0; i < n; ++i)
@@ -442,6 +458,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
+      assert(sizes[j] < MAX_ENTITIES);
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
@@ -547,12 +564,16 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   unsigned n[SMB_TYPES];
   mds_id cap[MDS_TYPES];
   int i;
+  unsigned tmp;
   f = pcu_fopen(filename, 0, zip);
   assert(f);
   read_header(f, &version, &dim, ignore_peers);
   pcu_read_unsigneds(f, n, SMB_TYPES);
-  for (i = 0; i < MDS_TYPES; ++i)
-    cap[i] = n[mds2smb(i)];
+  for (i = 0; i < MDS_TYPES; ++i) {
+    tmp = n[mds2smb(i)];
+    assert(tmp < MAX_ENTITIES);
+    cap[i] = tmp;
+  }
   m = mds_apf_create(model, dim, cap);
   make_verts(m);
   read_conn(f, m);
@@ -643,6 +664,14 @@ static void append(char* s, size_t size, const char* format, ...)
 
 #define SMB_FANOUT 2048
 
+static void safe_mkdir(const char* path, mode_t mode)
+{
+  errno = 0;
+  int err = mkdir(path, mode);
+  if (err != 0)
+    assert(errno == EEXIST);
+}
+
 static char* handle_path(const char* in, int is_write, int* zip,
     int ignore_peers)
 {
@@ -666,14 +695,14 @@ static char* handle_path(const char* in, int is_write, int* zip,
   if (ends_with(path, "/")) {
     if (is_write) {
       if (!self)
-        mkdir(path, dir_perm);
+        safe_mkdir(path, dir_perm);
       PCU_Barrier();
     }
     if (PCU_Comm_Peers() > SMB_FANOUT) {
       append(path, bufsize, "%d/", self / SMB_FANOUT);
       if (is_write) {
         if (self % SMB_FANOUT == 0)
-          mkdir(path, dir_perm);
+          safe_mkdir(path, dir_perm);
         PCU_Barrier();
       }
     }

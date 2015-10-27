@@ -99,6 +99,9 @@ class MeshMDS : public Mesh2
   public:
     MeshMDS()
     {
+      mesh = 0;
+      isMatched = false;
+      ownsModel = false;
     }
     MeshMDS(gmi_model* m, int d, bool isMatched_)
     {
@@ -135,6 +138,8 @@ class MeshMDS : public Mesh2
     }
     ~MeshMDS()
     {
+      if (mesh)
+        destroyNative();
     }
     int getDimension()
     {
@@ -263,6 +268,7 @@ class MeshMDS : public Mesh2
       if (!isShared(e))
         return;
       mds_copies* c = mds_get_copies(&mesh->remotes, fromEnt(e));
+      assert(c != NULL);
       for (int i = 0; i < c->n; ++i)
         remotes[c->c[i].p] = toEnt(c->c[i].e);
     }
@@ -643,6 +649,7 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
   bool isMatched;
   PCU_Comm_Begin();
   if (isOriginal) {
+    assert(m != 0);
     dim = m->getDimension();
     isMatched = m->hasMatching();
     for (int i = 1; i < factor; ++i) {
@@ -660,6 +667,7 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
     unpackDataClone(m);
   }
   apf::Multiply remap(factor);
+  assert(m != 0);
   apf::remapPartition(m, remap);
   if (!isOriginal)
     plan = new apf::Migration(m, m->findTag("apf_migrate"));

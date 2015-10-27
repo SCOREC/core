@@ -34,7 +34,7 @@ class Vector : public can::Array<T,N>
     /** \brief construct with n elems
       * \details A dummy constructor Vector(n) is provided so that
       * dynamic and static vectors can be used interchangebly */
-    Vector(unsigned n) {}
+    Vector(unsigned n) {(void)n;}
     /** \brief construct from an array */
     Vector(T const* v)
     {

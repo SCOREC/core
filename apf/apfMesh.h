@@ -75,7 +75,7 @@ struct Up
 struct Copy
 {
   /** \brief required */
-  Copy() {}
+  Copy():peer(0),entity(0) {}
   /** \brief build from contents */
   Copy(int p, MeshEntity* e):peer(p),entity(e) {}
   /** \brief resident part of the copy object */

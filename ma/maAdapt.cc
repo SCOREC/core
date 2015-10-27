@@ -243,8 +243,7 @@ long markEntities(
       setFlag(a,e,falseFlag);
   }
   m->end(it);
-  PCU_Add_Longs(&count,1);
-  return count;
+  return PCU_Add_Long(count);
 }
 
 void NewEntities::reset()
@@ -272,6 +271,10 @@ void NewEntities::retrieve(EntityArray& a)
 Cavity::Cavity()
 {
   shouldTransfer = false;
+  shouldFit = false;
+  adapter = 0;
+  solutionTransfer = 0;
+  shape = 0;
 }
 
 void Cavity::init(Adapt* a)

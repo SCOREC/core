@@ -124,7 +124,8 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType);
   They contain enough information to interpolate values in an
   element and such, but some higher-level functionality is left out.
   */
-Field* createPackedField(Mesh* m, const char* name, int components);
+Field* createPackedField(Mesh* m, const char* name, int components,
+    apf::FieldShape* shape = 0);
 
 /** \brief Declare a copy of a field on another apf::Mesh
    \details This will just make a Field object with the same

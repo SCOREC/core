@@ -99,7 +99,7 @@ class SelfProduct : public SInt
 {
   public:
     SelfProduct(Estimation* e):
-      SInt(e->integration_order), estimation(e)
+      SInt(e->integration_order), estimation(e), element(0)
     {
       v.setSize(apf::countComponents(e->eps_star));
     }
@@ -129,9 +129,13 @@ class ElementError : public SInt
 {
   public:
     ElementError(Estimation* e):
-      SInt(e->integration_order)
+      SInt(e->integration_order),
+      estimation(e),
+      element(0),
+      entity(0),
+      sum(0),
+      ip(0)
     {
-      estimation = e;
       v1.setSize(apf::countComponents(e->eps));
       v2.setSize(apf::countComponents(e->eps_star));
     }
@@ -274,9 +278,10 @@ class AverageOp : public apf::CavityOp
 {
   public:
     AverageOp(Estimation* e):
-      apf::CavityOp(e->mesh)
+      apf::CavityOp(e->mesh),
+      estimation(e),
+      entity(0)
     {
-      estimation = e;
     }
     virtual Outcome setEntity(apf::MeshEntity* e)
     {

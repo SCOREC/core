@@ -213,27 +213,28 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
+void checkEntityValidity(int numInvalid, int entity, int order)
+{
+  if(entity == 1){
+    assert(numInvalid == 0);
+  } else {
+    assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+  }
+}
 
 void checkValidity(apf::Mesh* m, int order)
 {
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
-  int iEntity = 0;
+  int entityNum = 0;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[3];
     int numInvalid = crv::checkTriValidity(m,e,entities,2);
-    if(iEntity == 0){
-      assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-    } else if(iEntity == 1){
-      assert(numInvalid == 0);
-    }
+    checkEntityValidity(numInvalid,entityNum,order);
     numInvalid = crv::checkTriValidity(m,e,entities,3);
-        if(iEntity == 0){
-          assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-        } else if(iEntity == 1){
-          assert(numInvalid == 0);
-        }
-    iEntity++;
+    checkEntityValidity(numInvalid,entityNum,order);
+
+    entityNum++;
     break;
 
   }
@@ -246,7 +247,6 @@ void test2D()
       apf::Mesh2* m = createMesh2D();
       apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::BezierCurver bc(m,order,0);
-      crv::setBlendingOrder(0);
       // creates interpolation points based on the edges of the geometry
       bc.snapToInterpolate(1);
       apf::FieldShape* fs = m->getShape();
@@ -256,7 +256,7 @@ void test2D()
         int n = order+1;
         int ne = fs->countNodesOn(apf::Mesh::EDGE);
         apf::NewArray<double> c;
-        crv::getTransformationCoefficients(order,apf::Mesh::EDGE,c);
+        crv::getBezierTransformationCoefficients(m,order,apf::Mesh::EDGE,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(1);
         while ((e = m->iterate(it))) {
@@ -265,10 +265,10 @@ void test2D()
         m->end(it);
       }
       if(fs->hasNodesIn(2)) {
-        int n = (order+1)*(order+2)/2;
+        int n = crv::getNumControlPoints(2,order);
         int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
         apf::NewArray<double> c;
-        crv::getBlendedTransformationCoefficients(order,1,
+        crv::getInternalBezierTransformationCoefficients(m,order,1,
             apf::Mesh::TRIANGLE,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(2);
@@ -318,20 +318,20 @@ void test3D()
   for(int order = 2; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
-    crv::setBlendingOrder(0);
     apf::FieldShape* fs = m->getShape();
     crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
-      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
-      int ne = fs->countNodesOn(d);
+      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+      int ni = fs->countNodesOn(d);
+      if(ni <= 0) continue;
       apf::NewArray<double> c;
-      crv::getTransformationCoefficients(order,d,c);
+      crv::getBezierTransformationCoefficients(m,order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ne,c);
+        bc.convertInterpolationPoints(e,n,ni,c);
       }
       m->end(it);
     }
@@ -367,7 +367,8 @@ void test3D()
       int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
       int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
       apf::NewArray<double> c;
-      crv::getBlendedTransformationCoefficients(order,1,apf::Mesh::simplexTypes[d],c);
+      crv::getInternalBezierTransformationCoefficients(m,order,1,
+          apf::Mesh::simplexTypes[d],c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))){

@@ -57,8 +57,7 @@ bool isMixed(apf::Mesh2* m) {
       break;
     }
   m->end(it);
-  PCU_Max_Ints(&mixed, 1);
-  return mixed;
+  return PCU_Max_Int(mixed);
 }
 
 void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {

@@ -8,7 +8,23 @@ namespace ph {
 
 static void setDefaults(Input& in)
 {
+  in.globalP = 0;
+  in.timeStepNumber = 0;
+  in.ensa_dof = 0;
   in.outMeshFileName = "";
+  in.adaptFlag = 0;
+  in.rRead = 0;
+  in.rStart = 0;
+  in.adaptStrategy = -1;
+  in.periodic = 0;
+  in.prCD = -1;
+  in.timing = 0;
+  in.internalBCNodes = 0;
+  in.writeDebugFiles = 0;
+  in.splitFactor = 1;
+  in.solutionMigration = 1;
+  in.isReorder = 0;
+  in.openfile_read = 0;
   in.numSplit = 10;
   in.tetrahedronize = 0;
   in.localPtn = true; 
@@ -30,6 +46,7 @@ static void setDefaults(Input& in)
   in.axisymmetry = 0;
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
+  in.rs = 0;
 }
 
 Input::Input()

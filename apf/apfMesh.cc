@@ -773,7 +773,7 @@ void warnAboutEmptyParts(Mesh* m)
   int emptyParts = 0;
   if (!m->count(m->getDimension()))
     ++emptyParts;
-  PCU_Add_Ints(&emptyParts, 1);
+  emptyParts = PCU_Add_Int(emptyParts);
   if (emptyParts && (!PCU_Comm_Self()))
     fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
 }
@@ -962,11 +962,15 @@ static int const* getVertIndices(int type, int subtype, int which)
     switch (type) {
       case Mesh::TRIANGLE:
         return tri_edge_verts[which];
+        break;
       case Mesh::QUAD:
         return quad_edge_verts[which];
+        break;
       case Mesh::TET:
         return tet_edge_verts[which];
+        break;
     };
+    break;
     case Mesh::TRIANGLE:
     switch (type) {
       case Mesh::TET:
@@ -974,6 +978,7 @@ static int const* getVertIndices(int type, int subtype, int which)
     };
   };
   fail("getVertIndices: types not supported\n");
+  return 0;
 }
 
 void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
@@ -982,6 +987,7 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   Downward eb;
   int neb = m->getDownward(elem, getDimension(m, boundary), eb);
   which = findIn(eb, neb, boundary);
+  assert(which >= 0);
   if (m->getType(boundary) == Mesh::VERTEX) {
     flip = false;
     rotate = 0;

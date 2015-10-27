@@ -258,6 +258,8 @@ void pcu_swap_doubles(double* p, size_t n)
 void pcu_write_unsigneds(pcu_file* f, unsigned* p, size_t n)
 {
   unsigned* tmp;
+  if (n)
+    assert(p != 0);
   if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN) {
     tmp = malloc(n * sizeof(unsigned));
     memcpy(tmp, p, n * sizeof(unsigned));
@@ -272,6 +274,8 @@ void pcu_write_unsigneds(pcu_file* f, unsigned* p, size_t n)
 void pcu_write_doubles(pcu_file* f, double* p, size_t n)
 {
   double* tmp;
+  if (n)
+    assert(p != 0);
   if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN) {
     tmp = malloc(n * sizeof(double));
     memcpy(tmp, p, n * sizeof(double));
