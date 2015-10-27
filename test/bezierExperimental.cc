@@ -169,21 +169,19 @@ void checkValidity(apf::Mesh* m, int order)
     double startEle = PCU_Time();
     int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
     double endEle = PCU_Time();
-    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d\n" RESET, endSub - startSub, numInvalidSub, order);
-    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d\n" RESET, endEle - startEle, numInvalidEle, order);
-    if(iEntity == 0){
-      //assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-    } else if(iEntity == 1){
-      //assert(numInvalid == 0);
-    }
+    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d\n" RESET,
+        endSub - startSub, numInvalidSub, order);
+    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d\n" RESET,
+        endEle - startEle, numInvalidEle, order);
   //Uncomment this when the "break" after it is gone
   //else if(iEntity == 1){
   //  printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
   //  printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
   //  //assert(numInvalid == 0);
+  //} else {
+  //    assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
   //}
     iEntity++;
-    break;
 
   }
   m->end(it);
