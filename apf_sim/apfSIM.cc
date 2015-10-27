@@ -283,9 +283,9 @@ void MeshSIM::getAdjacent(MeshEntity* e,
       int a=0;
       for (int i=0; i < 2; ++i)
       {
-	MeshEntity * me =  reinterpret_cast<MeshEntity*>(F_region(face,i));
-	if(me != NULL)
-	  adjacent[a++] = me;
+        MeshEntity * me =  reinterpret_cast<MeshEntity*>(F_region(face,i));
+        if(me != NULL)
+          adjacent[a++] = me;
       }
     }
   }
@@ -541,37 +541,39 @@ class TagSIM
     std::string name; //Simmetrix has no "get tag name" API
 };
 
-static int deleteDoubleCB(
-    void*,
-    pAttachDataId,
-    int,
-    void** data,
-    void*)
-{
-  double** p = (double**)data;
-  delete [] *p;
-  *p = 0;
-  return 1;
-}
-
 class DoubleTagSIM : public TagSIM
 {
   public:
+    static int deleteDoubleCB(
+        void*,
+        pAttachDataId id,
+        int ev,
+        void** data,
+        void*)
+    {
+      static_cast<DoubleTagSIM*>(MD_callbackData(static_cast<pMeshDataId>(id), ev))->deallocate(*data);
+      *data = 0;
+      return 1;
+    }
+
     DoubleTagSIM(pParMesh m, const char* name, int c):
       TagSIM(m,name,sizeof(double),c)
     {
-      MD_setMeshCallback(id,CBdelete,deleteDoubleCB,NULL);
+      MD_setMeshCallback(id,CBdelete,deleteDoubleCB,this);
       MD_setMeshCallback(id,CBmigrateOut,pm_sendDblArray,comm);
       MD_setMeshCallback(id,CBmigrateIn,pm_recvDblArray,comm);
     }
     virtual void* allocate()
     {
-      return new double[count]();
+      return count == 1 ? new double() : new double[count]();
     }
     virtual void deallocate(void* p)
     {
       double* p2 = static_cast<double*>(p);
-      delete [] p2;
+      if (count == 1)
+        delete p2;
+      else
+        delete [] p2;
     }
     virtual int getType() {return Mesh::DOUBLE;}
     void get(MeshEntity* e, double* p)
@@ -588,37 +590,39 @@ class DoubleTagSIM : public TagSIM
     }
 };
 
-static int deleteIntCB(
-    void*,
-    pAttachDataId,
-    int,
-    void** data,
-    void*)
-{
-  int** p = (int**)data;
-  delete [] *p;
-  *p = 0;
-  return 1;
-}
-
 class IntTagSIM : public TagSIM
 {
   public:
+    static int deleteIntCB(
+        void*,
+        pAttachDataId id,
+        int ev,
+        void** data,
+        void*)
+    {
+      static_cast<IntTagSIM*>(MD_callbackData(static_cast<pMeshDataId>(id), ev))->deallocate(*data);
+      *data = 0;
+      return 1;
+    }
+
     IntTagSIM(pParMesh m, const char* name, int c):
       TagSIM(m,name,sizeof(int),c)
     {
-      MD_setMeshCallback(id,CBdelete,deleteIntCB,NULL);
+      MD_setMeshCallback(id,CBdelete,deleteIntCB,this);
       MD_setMeshCallback(id,CBmigrateOut,pm_sendIntArray,comm);
       MD_setMeshCallback(id,CBmigrateIn,pm_recvIntArray,comm);
     }
     virtual void* allocate()
     {
-      return new int[count]();
+      return count == 1 ? new int() : new int[count]();
     }
     virtual void deallocate(void* p)
     {
       int* p2 = static_cast<int*>(p);
-      delete [] p2;
+      if (count == 1)
+        delete p2;
+      else
+        delete [] p2;
     }
     virtual int getType() {return Mesh::INT;}
     void get(MeshEntity* e, int* p)
@@ -635,26 +639,25 @@ class IntTagSIM : public TagSIM
     }
 };
 
-static int deleteLongCB(
-    void*,
-    pAttachDataId,
-    int,
-    void** data,
-    void*)
-{
-  long** p = (long**)data;
-  delete [] *p;
-  *p = 0;
-  return 1;
-}
-
 class LongTagSIM : public TagSIM
 {
   public:
+    static int deleteLongCB(
+        void*,
+        pAttachDataId id,
+        int ev,
+        void** data,
+        void*)
+    {
+      static_cast<LongTagSIM*>(MD_callbackData(static_cast<pMeshDataId>(id), ev))->deallocate(*data);
+      *data = 0;
+      return 1;
+    }
+
     LongTagSIM(pParMesh m, const char* name, int c):
       TagSIM(m,name,sizeof(long),c)
     {
-      MD_setMeshCallback(id,CBdelete,deleteLongCB,NULL);
+      MD_setMeshCallback(id,CBdelete,deleteLongCB,this);
       /* note: long tags won't get auto-migration support until
          this is filled in: */
       // MD_setMeshCallback(id,CBmigrateOut,pm_sendIntArray,comm);
@@ -663,12 +666,15 @@ class LongTagSIM : public TagSIM
     }
     virtual void* allocate()
     {
-      return new long[count]();
+      return count == 1 ? new long() : new long[count]();
     }
     virtual void deallocate(void* p)
     {
       long* p2 = static_cast<long*>(p);
-      delete [] p2;
+      if (count == 1)
+        delete p2;
+      else
+        delete [] p2;
     }
     virtual int getType() {return Mesh::LONG;}
     void get(MeshEntity* e, long* p)
