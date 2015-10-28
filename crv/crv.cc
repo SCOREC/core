@@ -9,6 +9,7 @@
 #include "crvBezier.h"
 #include "crvTables.h"
 #include <cstdlib>
+#include <iostream>
 
 namespace crv {
 
@@ -91,7 +92,7 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
 }
 
 void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
-    mth::Matrix<double>& A, apf::Vector3 range[2])
+    mth::Matrix<double>& A, const apf::Vector3 *range)
 {
 
   int type = m->getType(e);
@@ -105,7 +106,6 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
   apf::NewArray<double> values;
 
   A.zero();
-
 
   int row = 0;
   for(int d = 0; d <= typeDim; ++d){
@@ -135,10 +135,16 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
         }
         // slight change here because edges run [-1,1]
         if(typeDim == 1){
-          exi[0] = 2.*range[0][0]+(range[1][0]-range[0][0])*(exi[0]+1)-1.;
-        } else {
-          for (int i = 0; i < typeDim; ++i)
-            exi[i] = range[0][i] + (range[1][i]-range[0][i])*exi[i];
+          exi[0] = 0.5*(exi[0]+1);
+          exi[0] = range[1][0]*exi[0]+range[0][0]*(1.-exi[0]);
+        }
+        if(typeDim == 2){
+          double p = 1.-exi[0]-exi[1];
+          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1];
+        }
+        if(typeDim == 3){
+          double p = 1.-exi[0]-exi[1]-exi[2];
+          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1]+range[3]*exi[2];
         }
         es->getValues(m,e,exi,values);
         for(int i = 0; i < n; ++i){

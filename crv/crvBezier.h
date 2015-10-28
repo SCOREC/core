@@ -104,7 +104,7 @@ void subdivideBezierTet(int P, apf::Vector3& p,
  this function can be used to generate the A matrix to invert, as apf
  has no functionality for generic matrix inversion.*/
 void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
-    mth::Matrix<double>& A, apf::Vector3 range[2]);
+    mth::Matrix<double>& A, const apf::Vector3 *range);
 
 }
 

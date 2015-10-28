@@ -4,7 +4,7 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-
+#include "crv.h"
 #include "crvBezier.h"
 #include "crvTables.h"
 #include "crvMath.h"
@@ -165,9 +165,8 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
     m->end(it);
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
-    apf::Vector3 range[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
 
-    getTransformationMatrix(m,e,A,range);
+    getTransformationMatrix(m,e,A,elem_vert_xi[type]);
     invertMatrixWithPLU(n,A,Ai);
 
     for( int i = 0; i < ni; ++i)
@@ -211,14 +210,15 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
         break;
     }
     m->end(it);
-    apf::Vector3 range[8][2];
+    apf::Vector3 range[8][4];
     mth::Matrix<double> Asub(n,n), A(n,n);
     mth::Matrix<double> Ai(n,n);
 
-    apf::Vector3 Arange[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
-
-    getTransformationMatrix(m,e,A,Arange);
+    getTransformationMatrix(m,e,A,elem_vert_xi[type]);
     invertMatrixWithPLU(n,A,Ai);
+    apf::Vector3 ring[4] = {apf::Vector3(0.5,0,0.5),
+        apf::Vector3(0,0,0.5),apf::Vector3(0,0.5,0),
+        apf::Vector3(0.5,0.5,0)};
 
     switch (typeDim) {
     case 1:
@@ -228,31 +228,64 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
       }
       break;
     case 2:
-      for(int j = 0; j < 2; ++j)
-        for(int i = 0; i < 2; ++i){
-          range[2*j+i][0] = apf::Vector3(0.5*j,0.5*i,0.);
-          range[2*j+i][1] = range[0][2*j+i]
-                          + apf::Vector3(0.5,0.5,0.);
-        }
+      range[0][0] = apf::Vector3(0,0,0);
+      range[0][1] = apf::Vector3(0.5,0,0);
+      range[0][2] = apf::Vector3(0,0.5,0);
+      range[1][0] = apf::Vector3(0.5,0,0);
+      range[1][1] = apf::Vector3(1,0,0);
+      range[1][2] = apf::Vector3(0.5,0.5,0);
+      range[2][0] = apf::Vector3(0.5,0.5,0);
+      range[2][1] = apf::Vector3(0,1,0);
+      range[2][2] = apf::Vector3(0,0.5,0);
+      range[3][0] = apf::Vector3(0.5,0,0);
+      range[3][1] = apf::Vector3(0.5,0.5,0);
+      range[3][2] = apf::Vector3(0,0.5,0);
       break;
     case 3:
-      for(int k = 0; k < 2; ++k)
-        for(int j = 0; j < 2; ++j)
-          for(int i = 0; i < 2; ++i){
-            range[4*k+2*j+i][0] = apf::Vector3(0.5*k,0.5*j,0.5*i);
-            range[4*k+2*j+i][1] = range[0][4*k+2*j+i]
-                                + apf::Vector3(0.5,0.5,0.5);
-          }
+    {
+      range[0][0] = apf::Vector3(0,0,0); // corner 0
+      range[0][1] = apf::Vector3(0.5,0,0);
+      range[0][2] = apf::Vector3(0,0.5,0);
+      range[0][3] = apf::Vector3(0,0,0.5);
+      range[1][0] = apf::Vector3(1,0,0); // corner 1
+      range[1][1] = apf::Vector3(0.5,0.5,0);
+      range[1][2] = apf::Vector3(0.5,0,0.5);
+      range[1][3] = apf::Vector3(0.5,0,0);
+      range[2][0] = apf::Vector3(0,1,0); // corner 2
+      range[2][1] = apf::Vector3(0,0.5,0);
+      range[2][2] = apf::Vector3(0.5,0.5,0);
+      range[2][3] = apf::Vector3(0,0.5,0.5);
+      range[3][0] = apf::Vector3(0,0,1); // corner 3
+      range[3][1] = apf::Vector3(0,0,0.5);
+      range[3][2] = apf::Vector3(0.5,0,0.5);
+      range[3][3] = apf::Vector3(0,0.5,0.5);
+      // connect from 0.5,0,0 to 0,0.5,0.5 and rotate around
+
+      for(int i = 0; i < 4; ++i){
+        range[i+4][0] = apf::Vector3(0.5,0,0);
+        range[i+4][1] = ring[i];
+        range[i+4][2] = ring[(i+1) % 4];
+        range[i+4][3] = apf::Vector3(0,0.5,0.5);
+      }
       break;
+    }
     default:
       break;
     }
     for( int k = 0; k < numMatrices; ++k){
       Asub.zero();
       getTransformationMatrix(m,e,Asub,range[k]);
-
       mth::multiply(Ai,Asub,A);
-
+//      if(P == 2 && type == apf::Mesh::TRIANGLE){
+//        printf("mmmmm%d = [",k);
+//             for(int j = 0; j < n; ++j){
+//               for(int k = 0; k < n; ++k){
+//                 printf("%.15f ",A(j,k));
+//               }
+//               printf(";\n");
+//             }
+//             printf("]\n");
+//      }
       for( int i = 0; i < n; ++i)
         for( int j = 0; j < n; ++j)
           transform[type][P][i*n+j+k*n*n] = A(i,j);
@@ -263,9 +296,10 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
   }
 
   c.allocate(n*n*numMatrices);
-  for( int i = 0; i < n; ++i)
-    for( int j = 0; j < n; ++j)
-      c[i*n+j] = transform[type][P][i*n+j];
+  for( int k = 0; k < numMatrices; ++k)
+    for( int i = 0; i < n; ++i)
+      for( int j = 0; j < n; ++j)
+        c[i*n+j+k*n*n] = transform[type][P][i*n+j+k*n*n];
 
 }
 
@@ -304,14 +338,13 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
     mth::Matrix<double> B(n,n);
-    apf::Vector3 range[2] = {apf::Vector3(0,0,0), apf::Vector3(1,1,1)};
 
-    getTransformationMatrix(m,e,A,range);
+    getTransformationMatrix(m,e,A,elem_vert_xi[type]);
     invertMatrixWithPLU(n,A,Ai);
 
     // now get second matrix
     setBlendingOrder(type,blend);
-    getTransformationMatrix(m,e,B,range);
+    getTransformationMatrix(m,e,B,elem_vert_xi[type]);
 
     // fill in the last few rows of B
     apf::NewArray<double> values;

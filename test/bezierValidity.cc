@@ -1,5 +1,6 @@
 #include <crv.h>
 #include <crvBezier.h>
+#include <crvQuality.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -235,7 +236,10 @@ void checkValidity(apf::Mesh* m, int order)
     checkEntityValidity(numInvalid,entityNum,order);
     numInvalid = crv::checkTriValidity(m,e,entities,4);
     checkEntityValidity(numInvalid,entityNum,order);
+
     entityNum++;
+
+
   }
   m->end(it);
 }
@@ -276,10 +280,16 @@ void test2D()
         }
         m->end(it);
       }
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
-//
-//      crv::writeControlPointVtuFiles(m,"curved");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curved");
+
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(2);
+      while ((e = m->iterate(it))){
+        crv::getQuality(m,e);
+        break;
+      }
+      m->end(it);
 
       testJacobian(m);
       testEdgeGradients(m);
@@ -393,7 +403,7 @@ void test3D()
     } else {
       assert(numInvalid == 0);
     }
-
+    crv::getQuality(m,tet);
     m->destroyNative();
     apf::destroyMesh(m);
   }

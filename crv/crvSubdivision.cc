@@ -221,9 +221,12 @@ void subdivideBezierEntityJacobianDet(int P, int type,
   int n = getNumControlPoints(type,P);
   int numSubdivisions = intpow(2,typeDim);
   for(int k = 0; k < numSubdivisions; ++k){
-    for(int j = 0; j < n; ++j)
-      for(int i = 0; i < n; ++i)
-        subNodes[k][j] = nodes[i]*c[k*n*n+j+i*n];
+    for(int j = 0; j < n; ++j){
+      subNodes[k][j] = 0.;
+      for(int i = 0; i < n; ++i){
+        subNodes[k][j] += nodes[i]*c[k*n*n+i+j*n];
+      }
+    }
   }
 }
 
