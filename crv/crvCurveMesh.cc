@@ -1,40 +1,33 @@
-/******************************************************************************
-
-  Copyright 2015 Scientific Computation Research Center,
-      Rensselaer Polytechnic Institute. All rights reserved.
-
-  The LICENSE file included with this distribution describes the terms
-  of the SCOREC Non-Commercial License this program is distributed under.
-
- *******************************************************************************/
+/*
+ * Copyright 2015 Scientific Computation Research Center
+ *
+ * This work is open source software, licensed under the terms of the
+ * BSD license as described in the LICENSE file in the top-level directory.
+ */
 #include "crv.h"
 #include "crvSnap.h"
+#include <cassert>
 
 namespace crv {
 
-void MeshCurver::snapToInterpolateEdge(apf::MeshEntity* e)
+void MeshCurver::synchronize()
 {
+  apf::synchronize(m_mesh->getCoordinateField());
+}
+
+void MeshCurver::snapToInterpolate(apf::MeshEntity* e)
+{
+  int type = m_mesh->getType(e);
   apf::FieldShape * fs = m_mesh->getShape();
-  int non = fs->countNodesOn(apf::Mesh::EDGE);
+  int non = fs->countNodesOn(type);
   apf::Vector3 p, xi, pt(0,0,0);
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m_mesh->toModel(e);
-    fs->getNodeXi(apf::Mesh::EDGE,i,xi);
-    crv::transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
-    m_mesh->snapToModel(g,p,pt);
-    m_mesh->setPoint(e,i,pt);
-  }
-}
-
-void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
-{
-  apf::FieldShape * fs = m_mesh->getShape();
-  int non = fs->countNodesOn(apf::Mesh::TRIANGLE);
-  apf::Vector3 p, xi, pt;
-  for(int i = 0; i < non; ++i){
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-    transferParametricOnTriSplit(m_mesh,e,xi,p);
+    fs->getNodeXi(type,i,xi);
+    if(type == apf::Mesh::EDGE)
+      transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+    else
+      transferParametricOnTriSplit(m_mesh,e,xi,p);
     m_mesh->snapToModel(g,p,pt);
     m_mesh->setPoint(e,i,pt);
   }
@@ -42,17 +35,13 @@ void MeshCurver::snapToInterpolateTri(apf::MeshEntity* e)
 
 void MeshCurver::snapToInterpolate(int dim)
 {
-  int t = (dim == 1) ? apf::Mesh::EDGE : apf::Mesh::TRIANGLE;
   apf::MeshEntity* e;
-  apf::Vector3 p, xi, pt;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == m_mesh->getDimension()) continue;
-    if(t == apf::Mesh::EDGE)
-      snapToInterpolateEdge(e);
-    else
-      snapToInterpolateTri(e);
+    if(m_mesh->getModelType(g) == m_spaceDim) continue;
+    if(m_mesh->isOwned(e))
+      snapToInterpolate(e);
   }
   m_mesh->end(it);
 }
@@ -81,8 +70,10 @@ void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
 bool InterpolatingCurver::run()
 {
   // interpolate points in each dimension
-  for(int d = 1; d < m_mesh->getDimension(); ++d)
+  for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
+
+  synchronize();
 
   m_mesh->acceptChanges();
   m_mesh->verify();
@@ -96,29 +87,55 @@ bool BezierCurver::run()
   }
 
   int md = m_mesh->getDimension();
-  apf::changeMeshShape(m_mesh, getBezier(md,m_order),true);
+  apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   apf::FieldShape * fs = m_mesh->getShape();
 
   // interpolate points in each dimension
-  for(int d = 1; d <= md; ++d)
+  for(int d = 1; d <= 2; ++d)
     snapToInterpolate(d);
 
-  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
+  synchronize();
 
   // go downward, and convert interpolating to control points
-  for(int d = md - (getBlendingOrder() > 0); d >= 1; --d){
+  int startDim =  md - (getBlendingOrder(apf::Mesh::simplexTypes[md]) > 0);
+
+  for(int d = startDim; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
-    int n = fs->getEntityShape(types[d-1])->countNodes();
-    int ne = fs->countNodesOn(types[d-1]);
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getTransformationCoefficients(md,m_order,types[d-1],c);
+    getBezierTransformationCoefficients(m_mesh,m_order,
+        apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
-      convertInterpolationPoints(e,n,ne,c);
+      if(m_mesh->isOwned(e))
+        convertInterpolationPoints(e,n,ne,c);
     }
     m_mesh->end(it);
   }
+  // if we have a full representation, we need to place internal nodes on
+  // triangles and tetrahedra
+  for(int d = 2; d <= md; ++d){
+    if(!fs->hasNodesIn(d) ||
+        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+    apf::NewArray<double> c;
+    getInternalBezierTransformationCoefficients(m_mesh,m_order,1,
+        apf::Mesh::simplexTypes[d],c);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m_mesh->begin(d);
+    while ((e = m_mesh->iterate(it))){
+      if(m_mesh->isOwned(e) &&
+          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+        convertInterpolationPoints(e,n-ne,ne,c);
+    }
+    m_mesh->end(it);
+  }
+
+  synchronize();
+
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
@@ -194,34 +211,6 @@ static void elevateBezierCurves(apf::Mesh2* m)
   m->end(it);
 }
 
-void GregoryCurver::setInternalPointsUsingNeighbors()
-{
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m_mesh->begin(1);
-  while ((e = m_mesh->iterate(it))) {
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) != 2) continue;
-    int tag = m_mesh->getModelTag(g);
-    apf::Up up;
-    m_mesh->getUp(e,up);
-    apf::MeshEntity* faces[2];
-    int iF = 0;
-    for(int i = 0; i < up.n; ++i){
-      if(m_mesh->getModelTag(m_mesh->toModel(up.e[i])) == tag)
-        faces[iF++] = up.e[i];
-
-    }
-    assert(m_mesh->getModelType(m_mesh->toModel(faces[0])) ==
-        m_mesh->getModelType(m_mesh->toModel(faces[1])) );
-    // now we have the faces
-    int which[2], rotate[2];
-    bool flip[2];
-    apf::getAlignment(m_mesh,faces[0],e,which[0],flip[0],rotate[0]);
-    apf::getAlignment(m_mesh,faces[1],e,which[1],flip[1],rotate[1]);
-  }
-  m_mesh->end(it);
-}
-
 void GregoryCurver::setInternalPointsLocally()
 {
   apf::Vector3 D[3][4];
@@ -236,7 +225,7 @@ void GregoryCurver::setInternalPointsLocally()
   apf::MeshIterator* it = m_mesh->begin(2);
   while ((e = m_mesh->iterate(it))) {
     apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) != 2) continue;
+    if(!m_mesh->isOwned(e) || m_mesh->getModelType(g) != 2) continue;
 
     apf::Vector3 n[3];
     apf::MeshEntity* verts[3];
@@ -326,134 +315,71 @@ void GregoryCurver::setInternalPointsLocally()
 
 bool GregoryCurver::run()
 {
-  if(m_order < 3 || m_order > 4){
+  if(m_order != 4){
     fail("cannot convert to G1 of this order\n");
   }
-  if(m_mesh->getDimension() != 3){
-    fail("can only convert 3D Mesh to G1 continuous surface\n");
-  }
-  printf("m order %d",m_order);
-  apf::changeMeshShape(m_mesh, getGregory(m_order),true);
+  if(m_spaceDim != 3)
+    fail("can only convert to 3D mesh\n");
+
+  apf::changeMeshShape(m_mesh, getGregory(),true);
   int md = m_mesh->getDimension();
   apf::FieldShape * fs = m_mesh->getShape();
 
-  int types[3] = {apf::Mesh::EDGE,apf::Mesh::TRIANGLE,apf::Mesh::TET};
-
   // interpolate points in each dimension
-  for(int d = 1; d < md; ++d)
+  for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
+
+  synchronize();
 
   // go downward, and convert interpolating to control points
   for(int d = md; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
 
-    int n = fs->getEntityShape(types[d-1])->countNodes();
-    int ne = fs->countNodesOn(types[d-1]);
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<apf::Vector3> l, b(ne);
 
     apf::NewArray<double> c;
 
-    getGregoryTransformationCoefficients(md,m_order,types[d-1],c);
+    getGregoryTransformationCoefficients(apf::Mesh::simplexTypes[d],c);
 
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
 
     while ((e = m_mesh->iterate(it))) {
-      convertInterpolationPoints(e,n,ne,c);
+      if(m_mesh->isOwned(e))
+        convertInterpolationPoints(e,n,ne,c);
     }
     m_mesh->end(it);
   }
 
-  if(m_order == 4){
-    setCubicEdgePointsUsingNormals();
-    setInternalPointsLocally();
-    elevateBezierCurves(m_mesh);
-  } else
-    setCubicEdgePointsUsingNormals();
+  setCubicEdgePointsUsingNormals();
+  setInternalPointsLocally();
 
-  m_mesh->acceptChanges();
-  m_mesh->verify();
-  return true;
-}
+  elevateBezierCurves(m_mesh);
 
-bool SphereCurver::run()
-{
-  if(m_order != 4){
-    fail("can only curve to spheres for 4th order\n");
-  }
-
-  apf::changeMeshShape(m_mesh, getNurbs(m_order),true);
-
-  double a0 = 0.422649730810374;
-  double a1 = 0.788675134594813;
-  double a2 = 0.589353461558106;
-  double b0 = 5.071796769724489;
-  double b1 = 4.242640687119286;
-  double b2 = 4.;
-  double b3 = 3.344677257168587;
-
-  double edgeWeights[5] = {b0,b0,b1,b2,b1};
-  apf::NewArray<double> edgeW(5);
-  for(int i = 0; i < 5; ++i)
-    edgeW[i] = edgeWeights[i];
-  crv::setNurbsEdgeWeights(edgeW);
-
-  double triWeights[15] = {b0,b0,b0,b1,b2,b1,b1,b2,b1,b1,b2,b1,b3,b3,b3};
-  apf::NewArray<double> triW(15);
-  for(int i = 0; i < 15; ++i)
-    triW[i] = triWeights[i];
-  crv::setNurbsTriangleWeights(triW);
-
-  apf::MeshEntity* verts[3];
-  apf::Vector3 t[2], vpts[3],l, pt;
-  double d;
-
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m_mesh->begin(1);
-  while ((e = m_mesh->iterate(it))){
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == 3) continue;
-    m_mesh->getDownward(e,0,verts);
-    for(int i = 0; i < 2; ++i)
-      m_mesh->getPoint(verts[i],0,vpts[i]);
-    d = (vpts[1]-vpts[0]).getLength();
-
-    l = (vpts[1]-vpts[0])/d;
-    for(int i = 0; i < 2; ++i)
-      t[i] = l - vpts[i].normalize()*(l*vpts[i].normalize());
-
-    pt = vpts[0] + t[0]*a0*d;
-    m_mesh->setPoint(e,0,pt);
-    pt = (vpts[0]+vpts[1])*0.5;
-    pt = pt.normalize()*a1*sqrt(2.)*vpts[0].getLength();
-    m_mesh->setPoint(e,1,pt);
-    pt = vpts[1]- t[1]*a0*d;
-    m_mesh->setPoint(e,2,pt);
-  }
-
-  it = m_mesh->begin(2);
-  while ((e = m_mesh->iterate(it))){
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == 3) continue;
-    m_mesh->getDownward(e,0,verts);
-    for(int i = 0; i < 3; ++i)
-      m_mesh->getPoint(verts[i],0,vpts[i]);
-
-    for(int i = 0; i < 3; ++i){
-      pt = vpts[i];
-      for(int j = 0; j < 2; ++j){
-        l = (vpts[(i+j+1) % 3]-vpts[i]);
-        d = l.getLength();
-        t[0] = l/d - vpts[i].normalize()*(l/d*vpts[i].normalize());
-        pt += t[0]*d*a2;
-      }
-      m_mesh->setPoint(e,i,pt);
+  for(int d = 2; d <= md; ++d){
+    if(!fs->hasNodesIn(d) ||
+        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+    int type = apf::Mesh::simplexTypes[d];
+    int n = fs->getEntityShape(type)->countNodes();
+    int ne = fs->countNodesOn(type);
+    apf::NewArray<double> c;
+    getGregoryBlendedTransformationCoefficients(1,type,c);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m_mesh->begin(d);
+    while ((e = m_mesh->iterate(it))){
+      if(m_mesh->isOwned(e) &&
+          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+        convertInterpolationPoints(e,n-ne,ne,c);
     }
+    m_mesh->end(it);
   }
-  m_mesh->end(it);
+
+  synchronize();
+
   m_mesh->acceptChanges();
   m_mesh->verify();
-
   return true;
 }
 

@@ -72,7 +72,7 @@ void matchNewElements(Refine* r)
       }
     }
   }
-  PCU_Add_Longs(&face_count,1);
+  face_count = PCU_Add_Long(face_count);
   print("updated matching for %li faces",face_count);
 }
 

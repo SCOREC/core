@@ -12,6 +12,7 @@
 #include "maTables.h"
 #include <algorithm>
 #include <cfloat>
+#include <cassert>
 #include <apf.h>
 
 namespace ma {
@@ -211,7 +212,8 @@ Entity* rebuildElement(
     Entity* original,
     Entity* oldVert,
     Entity* newVert,
-    apf::BuildCallback* cb)
+    apf::BuildCallback* cb,
+    RebuildCallback* rcb)
 {
   int type = m->getType(original);
   if (type == apf::Mesh::VERTEX)
@@ -225,8 +227,11 @@ Entity* rebuildElement(
   Downward down;
   int nd = m->getDownward(original,d-1,down);
   for (int i=0; i < nd; ++i)
-    down[i] = rebuildElement(m,down[i],oldVert,newVert,cb);
-  return makeOrFind(m,m->toModel(original),type,down,cb);
+    down[i] = rebuildElement(m, down[i], oldVert, newVert, cb, rcb);
+  Entity* e = apf::makeOrFind(m, m->toModel(original), type, down, cb);
+  if (rcb)
+    rcb->rebuilt(e, original);
+  return e;
 }
 
 bool isInClosure(Mesh* m, Entity* parent, Entity* e)
@@ -252,8 +257,14 @@ void getBoundingBox(Mesh* m, Vector& lower, Vector& upper)
     }
   }
   m->end(it);
-  PCU_Min_Doubles(&(lower[0]),3);
-  PCU_Max_Doubles(&(upper[0]),3);
+  double a[3];
+  lower.toArray(a);
+  double b[3];
+  upper.toArray(b);
+  PCU_Min_Doubles(a, 3);
+  PCU_Max_Doubles(b, 3);
+  lower.fromArray(a);
+  upper.fromArray(b);
 }
 
 Vector getCentroid(Mesh* m)
@@ -363,8 +374,7 @@ double getMinimumElementSize(Mesh* m)
     if (size < minimum) minimum=size;
   }
   m->end(it);
-  PCU_Min_Doubles(&minimum,1);
-  return minimum;
+  return PCU_Min_Double(minimum);
 }
 
 void getFaceEdgesAndDirections(

@@ -11,6 +11,7 @@
 #include "maSize.h"
 #include <apfShape.h>
 #include <cstdlib>
+#include <cassert>
 
 namespace ma {
 
@@ -125,7 +126,11 @@ class SizeFieldIntegrator : public apf::Integrator
       measurement(0),
       rField(r),
       hField(h)
-    {}
+    {
+      dimension = 0;
+      rElement = 0;
+      hElement = 0;
+    }
     virtual void inElement(apf::MeshElement* me)
     {
       dimension = apf::getDimension(me);

@@ -8,8 +8,9 @@
 
 *******************************************************************************/
 #include "pcu_msg.h"
-#include "pcu_common.h"
 #include "pcu_pmpi.h"
+#include "noto_malloc.h"
+#include "reel.h"
 #include <string.h>
 
 /* the pcu_msg algorithm for a communication phase
@@ -82,13 +83,14 @@ static void free_peers(pcu_aa_tree* t)
   pcu_msg_peer* peer;
   peer = (pcu_msg_peer*) *t;
   pcu_free_message(&(peer->message));
-  pcu_free(peer);
+  noto_free(peer);
   pcu_make_aa(t);
 }
 
 void pcu_msg_start(pcu_msg* m)
 {
-  if (m->state != idle_state) pcu_fail("Start called at the wrong time");
+  if (m->state != idle_state)
+    reel_fail("PCU_Comm_Begin called at the wrong time");
   /* this barrier ensures no one starts a new superstep
      while others are receiving in the past superstep.
      It is the only blocking call in the pcu_msg system. */
@@ -112,7 +114,7 @@ static pcu_msg_peer* find_peer(pcu_aa_tree t, int id)
 static pcu_msg_peer* make_peer(int id)
 {
   pcu_msg_peer* p;
-  PCU_MALLOC(p,1);
+  NOTO_MALLOC(p,1);
   pcu_make_message(&(p->message));
   p->message.peer = id;
   return p;
@@ -121,7 +123,7 @@ static pcu_msg_peer* make_peer(int id)
 void* pcu_msg_pack(pcu_msg* m, int id, size_t size)
 {
   if (m->state != pack_state)
-    pcu_fail("Pack or Write called at the wrong time");
+    reel_fail("PCU_Comm_Pack called at the wrong time");
   pcu_msg_peer* peer = find_peer(m->peers,id);
   if (!peer)
   {
@@ -133,9 +135,11 @@ void* pcu_msg_pack(pcu_msg* m, int id, size_t size)
 
 size_t pcu_msg_packed(pcu_msg* m, int id)
 {
-  if (m->state != pack_state) pcu_fail("Packed called at the wrong time");
+  if (m->state != pack_state)
+    reel_fail("PCU_Comm_Packed called at the wrong time");
   pcu_msg_peer* peer = find_peer(m->peers,id);
-  if (!peer) pcu_fail("pcu_msg_packed called but nothing was packed");
+  if (!peer)
+    reel_fail("PCU_Comm_Packed called but nothing was packed");
   return peer->message.buffer.size;
 }
 
@@ -153,7 +157,7 @@ static void send_peers(pcu_aa_tree t)
 void pcu_msg_send(pcu_msg* m)
 {
   if (m->state != pack_state)
-    pcu_fail("Send called at the wrong time");
+    reel_fail("PCU_Comm_Send called at the wrong time");
   send_peers(m->peers);
   m->state = send_recv_state;
 }
@@ -197,9 +201,9 @@ bool pcu_msg_receive(pcu_msg* m)
 {
   if ((m->state != send_recv_state)&&
       (m->state != recv_state))
-    pcu_fail("Receive called at the wrong time");
+    reel_fail("PCU_Comm_Receive called at the wrong time");
   if ( ! pcu_msg_unpacked(m))
-    pcu_fail("Receive called before previous message unpacked");
+    reel_fail("PCU_Comm_Receive called before previous message unpacked");
   if (receive_global(m))
   {
     pcu_begin_buffer(&(m->received.buffer));

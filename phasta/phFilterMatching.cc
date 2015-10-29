@@ -6,6 +6,9 @@
 #include <set>
 #include <apf.h>
 #include <PCU.h>
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 
 namespace ph {
 
@@ -113,8 +116,6 @@ static void closeFaceMatchingWithFrame(gmi_model* gm, gmi_ent* f, gmi_ent* of,
     /* these faces are matched, they should have the
        same layout of bounding entities with only geometric differences */
     assert(s->n == os->n);
-    if (!s->n)
-      continue;
     /* warning! this is an O(N^2) comparison.
        if it takes up a large part of your runtime,
        you should rethink your life. */

@@ -3,6 +3,7 @@
 #include <apfNumbering.h>
 #include <diffMC/parma_ghostOwner.h>
 #include <netcdf>
+#include <cassert>
 
 namespace apf {
 
@@ -209,7 +210,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
       vtxs[i] = rand()%PCU_Comm_Peers(); //to be random
       count++;
     }
-  PCU_Add_Ints(&count, 1);
+  count = PCU_Add_Int(count);
   if ( !PCU_Comm_Self() )
     fprintf(stdout,"missing vertices found %d\n", count);
   
@@ -242,7 +243,7 @@ void writeMpasAssignments(apf::Mesh2* m, const char* ncFilename, const char* out
   //fclose(file);                                                                                                   
   MPI_File_close(&file);
   double totalTime= PCU_Time()-startTime;
-  PCU_Max_Doubles(&totalTime,1);
+  totalTime = PCU_Max_Double(totalTime);
   if (!PCU_Comm_Self())
     fprintf(stdout,"File writing time: %f seconds\n", totalTime);
 

@@ -4,6 +4,7 @@
 #include <gmi.h>
 #include <sstream>
 #include <apfGeometry.h>
+#include <cassert>
 
 namespace apf {
 
@@ -285,8 +286,7 @@ static long verifyCoords(Mesh* m)
   while (PCU_Comm_Receive())
     if (!receiveCoords(m))
       ++n;
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 long verifyVolumes(Mesh* m, bool printVolumes)
@@ -306,15 +306,15 @@ long verifyVolumes(Mesh* m, bool printVolumes)
         ss << "warning: element volume " << v
           << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
-        fprintf(stderr, "%s", s.c_str());
+        fprintf(stdout, "%s", s.c_str());
+        fflush(stdout);
       }
       ++n;
     }
     destroyMeshElement(me);
   }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 static void packOrder(Mesh* m, MeshEntity* e, MeshEntity* r, int to)

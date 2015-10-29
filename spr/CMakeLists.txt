@@ -14,7 +14,8 @@ if(NOT BUILD_IN_TRILINOS)
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
   set(SPR_INCLUDE_DIRS
       ${CMAKE_CURRENT_SOURCE_DIR}
-      ${APF_INCLUDE_DIRS})
+      ${APF_INCLUDE_DIRS}
+      )
   set(DEP_LIBS ${APF_LIBS})
   set(SPR_LIBS spr ${DEP_LIBS})
 endif()
@@ -45,8 +46,6 @@ configure_file(
 #Sources & Headers
 set(SOURCES
   sprGetGradIPField.cc
-  sprSVD.cc
-  sprQR.cc
   sprRecoverField.cc
   sprEstimateError.cc)
 

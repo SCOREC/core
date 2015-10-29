@@ -1,6 +1,8 @@
 #include <PCU.h>
 #include "parma_rib.h"
 #include <apfPartition.h>
+#include <cassert>
+#include <apf2mth.h>
 
 namespace parma {
 
@@ -13,7 +15,7 @@ static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
   size_t i = 0;
   apf::MeshIterator* it = m->begin(dim);
   while ((e = m->iterate(it))) {
-    arr[i].point = getLinearCentroid(m, e);
+    arr[i].point = apf::to_mth(getLinearCentroid(m, e));
     if (weights)
       m->getDoubleTag(e, weights, &(arr[i].mass));
     else

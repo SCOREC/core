@@ -144,6 +144,9 @@ void disownMdsModel(Mesh2* in);
 
 void setMdsMatching(Mesh2* in, bool has);
 
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile);
+void writeMdsPart(Mesh2* m, const char* meshfile);
+
 }
 
 #endif

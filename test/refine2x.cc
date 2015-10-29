@@ -7,6 +7,9 @@
 #include <apfNumbering.h>
 #include <apfShape.h>
 #include <SimUtil.h>
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 
 class AnisotropicX: public ma::AnisotropicFunction {
   public:

@@ -19,6 +19,7 @@
 #include "apfUserData.h"
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
 
 namespace apf {
 
@@ -80,11 +81,6 @@ Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order)
   return createField(m,name,valueType,getLagrange(order));
 }
 
-Field* createHierarchicField(Mesh* m, const char* name, int valueType)
-{
-  return createField(m,name,valueType,getHierarchic());
-}
-
 Field* createStepField(Mesh* m, const char* name, int valueType)
 {
   return createField(m,name,valueType,getConstant(m->getDimension()));
@@ -100,9 +96,12 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType)
   return createField(m,name,valueType,m->getShape());
 }
 
-Field* createPackedField(Mesh* m, const char* name, int components)
+Field* createPackedField(Mesh* m, const char* name, int components,
+    apf::FieldShape* shape)
 {
-  return makeField(m, name, PACKED, components, m->getShape(),
+  if (!shape)
+    shape = m->getShape();
+  return makeField(m, name, PACKED, components, shape,
       new TagDataOf<double>());
 }
 
@@ -143,39 +142,46 @@ void destroyField(Field* f)
 void setScalar(Field* f, MeshEntity* e, int node, double value)
 {
   ScalarField* field = static_cast<ScalarField*>(f);
-  field->setNodeValue(e,node,value);
+  double tmp[1] = {value};
+  field->setNodeValue(e,node,tmp);
 }
 
 double getScalar(Field* f, MeshEntity* e, int node)
 {
   ScalarField* field = static_cast<ScalarField*>(f);
-  double value;
+  double value[1];
   field->getNodeValue(e,node,value);
-  return value;
+  return value[0];
 }
 
 void setVector(Field* f, MeshEntity* e, int node, Vector3 const& value)
 {
   VectorField* field = static_cast<VectorField*>(f);
-  field->setNodeValue(e,node,value);
+  Vector3 tmp[1] = {value};
+  field->setNodeValue(e,node,tmp);
 }
 
 void getVector(Field* f, MeshEntity* e, int node, Vector3& value)
 {
   VectorField* field = static_cast<VectorField*>(f);
-  field->getNodeValue(e,node,value);
+  Vector3 tmp[1];
+  field->getNodeValue(e,node,tmp);
+  value = tmp[0];
 }
 
 void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value)
 {
   MatrixField* field = static_cast<MatrixField*>(f);
-  field->setNodeValue(e,node,value);
+  Matrix3x3 tmp[1] = {value};
+  field->setNodeValue(e,node,tmp);
 }
 
 void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 {
   MatrixField* field = static_cast<MatrixField*>(f);
-  field->getNodeValue(e,node,value);
+  Matrix3x3 tmp[1];
+  field->getNodeValue(e,node,tmp);
+  value = tmp[0];
 }
 
 void setComponents(Field* f, MeshEntity* e, int node, double const* components)
@@ -299,6 +305,13 @@ void getJacobian(MeshElement* e, Vector3 const& local, Matrix3x3& j)
   e->getJacobian(local,j);
 }
 
+void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv)
+{
+  Matrix3x3 j;
+  getJacobian(e, local, j);
+  jinv = getJacobianInverse(j, e->getDimension());
+}
+
 int countNodes(Element* e)
 {
   return e->getShape()->countNodes();
@@ -414,6 +427,44 @@ void projectField(Field* to, Field* from)
 void axpy(double a, Field* x, Field* y)
 {
   y->axpy(a, x);
+}
+
+void renameField(Field* f, const char* name)
+{
+  Mesh* m = f->getMesh();
+  assert( ! m->findField(name));
+  f->rename(name);
+}
+
+/* bng: the two functions below are kind of incosistent with
+   the others in this file (too long). can we stick their
+   guts in a better place? */
+void getBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<double>& BF)
+{
+  Mesh* m = e->getMesh();
+  MeshEntity* ent = getMeshEntity(e);
+  Mesh::Type t = m->getType(ent);
+  EntityShape* es = s->getEntityShape(t);
+  es->getValues(m, ent, p, BF);
+}
+
+void getGradBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<Vector3>& gradBF)
+{
+  Mesh* m = e->getMesh();
+  MeshEntity* ent = getMeshEntity(e);
+  Mesh::Type t = m->getType(ent);
+  EntityShape* es = s->getEntityShape(t);
+  Matrix3x3 jinv;
+  getJacobianInv(e, p, jinv);
+  NewArray<Vector3> gbf;
+  es->getLocalGradients(m, ent, p, gbf);
+  int nen = es->countNodes(); 
+  gradBF.allocate(nen);
+  for (int i=0; i < nen; ++i)
+    gradBF[i] = jinv * gbf[i];
+
 }
 
 }//namespace apf

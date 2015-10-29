@@ -40,6 +40,7 @@ set(SOURCES
   maSize.cc
   maOperator.cc
   maCollapse.cc
+  maMatchedCollapse.cc
   maLayerCollapse.cc
   maMatch.cc
   maSolutionTransfer.cc
@@ -58,13 +59,17 @@ set(SOURCES
   maCrawler.cc
   maTetrahedronize.cc
   maLayerSnap.cc
-  maMap.cc)
+  maMap.cc
+  maReposition.cc
+)
 
 set(HEADERS
   ma.h
   maInput.h
   maMesh.h
   maSize.h
+  maShape.h
+  maTables.h
   maSolutionTransfer.h)
 
 if(BUILD_IN_TRILINOS)

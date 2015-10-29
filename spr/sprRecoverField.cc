@@ -13,7 +13,10 @@
 #include <apfShape.h>
 #include <apfCavityOp.h>
 
+#include <mthQR.h>
+
 #include <set>
+#include <cassert>
 
 namespace spr {
 
@@ -101,8 +104,8 @@ struct Samples {
 };
 
 struct QRDecomp {
-  apf::DynamicMatrix V;
-  apf::DynamicMatrix R;
+  mth::Matrix<double> Q;
+  mth::Matrix<double> R;
 };
 
 typedef std::set<apf::MeshEntity*> EntitySet;
@@ -224,20 +227,20 @@ static void getSampleValues(Patch* p)
 static void evalPolynomialTerms(
     int dim, int order,
     apf::Vector3 const& point,
-    apf::DynamicVector& terms)
+    mth::Vector<double>& terms)
 {
   apf::Vector3 const& x = point;
   switch (dim) {
   case 2:
     switch (order) {
     case 1:
-      terms.setSize(3);
+      terms.resize(3);
       terms(0) = 1.0;
       terms(1) = x[0];
       terms(2) = x[1];
       return;
     case 2:
-      terms.setSize(6);
+      terms.resize(6);
       terms(0) = 1.0;
       terms(1) = x[0];
       terms(2) = x[1];
@@ -251,14 +254,14 @@ static void evalPolynomialTerms(
   case 3:
     switch (order) {
     case 1:
-      terms.setSize(4);
+      terms.resize(4);
       terms(0) = 1.0;
       terms(1) = x[0];
       terms(2) = x[1];
       terms(3) = x[2];
       return;
     case 2:
-      terms.setSize(10);
+      terms.resize(10);
       terms(0) = 1.0;
       terms(1) = x[0];
       terms(2) = x[1];
@@ -285,29 +288,31 @@ static bool preparePolynomialFit(
     apf::NewArray<apf::Vector3> const& points,
     QRDecomp& qr)
 {
-  int m = num_points;
-  int n = countPolynomialTerms(dim, order);
+  unsigned m = num_points;
+  unsigned n = countPolynomialTerms(dim, order);
   assert(m >= n);
-  apf::DynamicMatrix A(m,n);
-  apf::DynamicVector p;
-  for (int i = 0; i < m; ++i) {
+  mth::Matrix<double> A(m,n);
+  mth::Vector<double> p;
+  for (unsigned i = 0; i < m; ++i) {
     evalPolynomialTerms(dim, order, points[i], p);
-    A.setRow(i, p);
+    for (unsigned j = 0; j < p.size(); ++j)
+      A(i,j) = p(j);
   }
-  return decompQR(A, qr.V, qr.R);
+  unsigned rank = mth::decomposeQR(A, qr.Q, qr.R);
+  return rank == A.cols();
 }
 
-static void runPolynomialFit(QRDecomp& qr,
-                             apf::DynamicVector& values,
-                             apf::DynamicVector& coeffs)
+static void runPolynomialFit(QRDecomp const& qr,
+                             mth::Vector<double> const& values,
+                             mth::Vector<double>& coeffs)
 {
-  solveFromQR(qr.V, qr.R, values, coeffs);
+  mth::solveFromQR(qr.Q, qr.R, values, coeffs);
 }
 
 static double evalPolynomial(int dim, int order, apf::Vector3& point,
-    apf::DynamicVector& coeffs)
+    mth::Vector<double>& coeffs)
 {
-  apf::DynamicVector terms;
+  mth::Vector<double> terms;
   evalPolynomialTerms(dim, order, point, terms);
   return coeffs * terms;
 }
@@ -328,7 +333,7 @@ static void runSpr(Patch* p)
   getSampleValues(p);
   int num_components = apf::countComponents(r->f_star);
   int num_nodes = m->getShape()->countNodesOn(m->getType(p->entity));
-  apf::DynamicVector values(s->num_points);
+  mth::Vector<double> values(s->num_points);
   apf::NewArray<apf::Vector3> nodal_points(num_nodes);
   apf::NewArray<apf::NewArray<double> > recovered_values(num_nodes);
   for (int i = 0; i < num_nodes; ++i) {
@@ -337,8 +342,8 @@ static void runSpr(Patch* p)
   }
   for (int i = 0; i < num_components; ++i) {
     for (int j = 0; j < s->num_points; ++j)
-      values[j] = s->values[j][i];
-    apf::DynamicVector coeffs;
+      values(j) = s->values[j][i];
+    mth::Vector<double> coeffs;
     runPolynomialFit(p->qr, values, coeffs);
     for (int j = 0; j < num_nodes; ++j)
       recovered_values[j][i] = evalPolynomial(

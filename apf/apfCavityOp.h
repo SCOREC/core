@@ -86,7 +86,7 @@ class CavityOp
     /** \brief apply the operator on the (now local) cavity */
     virtual void apply() = 0;
     /** \brief parallel collective operation over entities of one dimension */
-    void applyToDimension(int d);
+    void applyToDimension(int d, bool matched = false);
     /** \brief within setEntity, require that entities be made local */
     bool requestLocality(MeshEntity** entities, int count);
     /** \brief call before deleting a mesh entity during the operation */
@@ -105,6 +105,8 @@ class CavityOp
     bool canModify;
     bool movedByDeletion;
     MeshIterator* iterator;
+  protected:
+    Sharing* sharing;
 };
 
 } //namespace apf

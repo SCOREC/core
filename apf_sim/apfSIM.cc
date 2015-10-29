@@ -7,6 +7,9 @@
 #include <gmi.h>
 #include <gmi_sim.h>
 #include <apf_simConfig.h>
+#include <cstdlib>
+#include <cassert>
+#include <algorithm>
 
 #ifdef SIMMODSUITE_SimField_FOUND
 #include "apfSIMDataOf.h"
@@ -562,7 +565,7 @@ class IntTagSIM : public TagSIM
 {
   public:
     IntTagSIM(pParMesh m, const char* name, int c):
-      TagSIM(m,name,sizeof(double),c)
+      TagSIM(m,name,sizeof(int),c)
     {
       MD_setMeshCallback(id,CBdelete,deleteIntCB,NULL);
       MD_setMeshCallback(id,CBmigrateOut,pm_sendIntArray,comm);

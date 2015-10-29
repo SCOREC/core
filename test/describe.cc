@@ -11,6 +11,7 @@
 #else
 #include <cstdlib>
 #endif
+#include <cassert>
 
 #ifdef __bgq__
 #include <spi/include/kernel/memory.h>
@@ -43,12 +44,9 @@ static double get_peak()
 static void print_stats(const char* name, double value)
 {
   double min, max, avg;
-  min = value;
-  PCU_Min_Doubles(&min, 1);
-  max = value;
-  PCU_Max_Doubles(&max, 1);
-  avg = value;
-  PCU_Add_Doubles(&avg, 1);
+  min = PCU_Min_Double(value);
+  max = PCU_Max_Double(value);
+  avg = PCU_Add_Double(value);
   avg /= PCU_Comm_Peers();
   double imb = max / avg;
   if (!PCU_Comm_Self())
@@ -96,8 +94,6 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   print_stats("kernel heap", get_peak());
   print_stats("malloc used", get_chunks());
-  print_stats("elements", m->count(m->getDimension()));
-  print_stats("vertices", m->count(0));
   Parma_PrintPtnStats(m, "");
   list_tags(m);
   m->destroyNative();
@@ -108,7 +104,3 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
-
-
-

@@ -15,6 +15,7 @@
 #include "maLayer.h"
 #include "maMatch.h"
 #include <apfGeometry.h>
+#include <cassert>
 
 namespace ma {
 
@@ -132,6 +133,7 @@ class SnapAll : public Operator
       tag = t;
       successCount = 0;
       didAnything = false;
+      vert = 0;
     }
     int getTargetDimension() {return 0;}
     bool shouldApply(Entity* e)
@@ -184,8 +186,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
       ++n;
   }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 static void markVertsToSnap(Adapt* a, Tag* t)
@@ -199,9 +200,7 @@ bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
   markVertsToSnap(a, t);
   SnapAll op(a, t, isSimple);
   applyOperator(a, &op);
-  long n = op.successCount;
-  PCU_Add_Longs(&n, 1);
-  successCount += n;
+  successCount += PCU_Add_Long(op.successCount);
   return PCU_Or(op.didAnything);
 }
 

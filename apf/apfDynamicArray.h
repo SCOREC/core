@@ -5,58 +5,39 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFDYNAMICARRAY_H
-#define APFDYNAMICARRAY_H
+#ifndef APF_DYNAMIC_ARRAY_H
+#define APF_DYNAMIC_ARRAY_H
 
-/** \file apfDynamicArray.h
-    \brief what most std::vectors should be */
-
-#include "apfNew.h"
+#include <canArray.h>
 
 namespace apf {
 
-/** \brief a dynamically allocated array with size knowledge.
-  \details adding a size variables allowas
-   the full range of copying, resizing, etc.
-   over the simple apf::NewArray.
-   We use composition instead of inheritance
-   to prevent exposing things like apf::NewArray::allocate
- */
 template <class T>
-class DynamicArray
-{
+class DynamicArray : public can::Array<T, 0> {
   public:
-    /** \brief default constructor */
-    DynamicArray():size(0) {}
-    /** \brief construct with (n) elements */
-    DynamicArray(std::size_t n):newArray(n),size(n) {}
-    /** \brief copy constructor */
-    DynamicArray(DynamicArray<T> const& other) {copy(other);}
-    /** \brief mutable index operator */
-    T& operator[](std::size_t i) {return newArray[i];}
-    /** \brief immutable index operator */
-    T const& operator[](std::size_t i) const {return newArray[i];}
-    /** \brief assignment operator */
-    DynamicArray<T>& operator=(DynamicArray<T> const& other)
-    {
-      if (&other == this) return *this;
-      copy(other);
-      return *this;
-    }
+    typedef can::Array<T, 0> Base;
+    DynamicArray() {}
+    DynamicArray(std::size_t n):Base((unsigned)n) {}
     /** \brief get size.
-        \details there is already a member called "size",
-        hence the get/set functions */
-    std::size_t getSize() const {return size;}
-    /** \brief resize the array */
-    void setSize(std::size_t newSize)
+        \details this is here for backwards compatibility */
+    std::size_t getSize() const {return Base::size();}
+    /** \brief resize the array
+        \details this is here for backwards compatibility
+        with apf::DynamicArray, hence the different code
+        because it preserves common elements */
+    void setSize(unsigned n)
     {
-      if (size == newSize) return;
-      NewArray<T> newArray2(newSize);
-      std::size_t commonSize = std::min(size,newSize);
-      for (std::size_t i=0; i < commonSize; ++i)
-        newArray2[i] = (*this)[i];
-      newArray.swap(newArray2);
-      size = newSize;
+      if (Base::size() == n)
+        return;
+      T* newElems = new T[n];
+      unsigned commonSize = Base::size();
+      if (n < Base::size())
+        commonSize = n;
+      for (unsigned i = 0; i < commonSize; ++i)
+        newElems[i] = (*this)[i];
+      delete [] Base::elems;
+      Base::elems = newElems;
+      Base::sz = n;
     }
     /** \brief slow element append
         \details this is the one operation where
@@ -64,37 +45,21 @@ class DynamicArray
         here for convenience, but it is O(N) */
     void append(T const& v)
     {
-      setSize(size+1);
-      (*this)[size-1] = v;
+      setSize(Base::size() + 1);
+      (*this)[Base::size() - 1] = v;
     }
     /** \brief append an array
       \details this is slightly optimized
       for appending the contents of another array. */
     void append(DynamicArray<T> const& other)
     {
-      std::size_t oldSize = size;
-      setSize(oldSize+other.size);
-      for (std::size_t i=0; i < other.size; ++i)
-        (*this)[oldSize+i] = other[i];
+      std::size_t oldSize = Base::size();
+      setSize(oldSize + other.size());
+      for (std::size_t i = 0; i < other.size(); ++i)
+        (*this)[oldSize + i] = other[i];
     }
-    /** \brief STL-style iterator type */
-    typedef T* iterator;
-    /** \brief STL-style begin function */
-    iterator begin() {return &((*this)[0]);}
-    /** \brief STL-style end function */
-    iterator end() {return begin()+size;}
-  protected:
-    void copy(DynamicArray<T> const& other)
-    {
-      size = other.size;
-      newArray.allocate(size);
-      for (std::size_t i=0; i < size; ++i)
-        (*this)[i] = other[i];
-    }
-    NewArray<T> newArray;
-    std::size_t size;
 };
 
-}//namespace apf
+}
 
 #endif

@@ -101,6 +101,7 @@ struct ZeroOp : public FieldOp
     data.allocate(n);
     for (int i = 0; i < n; ++i)
       data[i] = 0;
+    ent = 0;
   }
   bool inEntity(MeshEntity* e)
   {

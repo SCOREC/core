@@ -13,7 +13,7 @@ abstractions, including Fields and Meshes.
   apfDynamicMatrix.h
 - The API for partitioning is in apfPartition.h, see also parma.h
 - Useful data structures can be found in
-  apfArray.h, apfNew.h, and apfDynamicArray.h
+  canArray.h, canNew.h, and canDynamicArray.h
 - When coding operations on groups of elements in parallel,
   consider using the \subpage cavity.
 - The API for mesh conversion is in apfConvert.h

@@ -60,8 +60,8 @@ set(SOURCES
 
 set(HEADERS apfAlbany.h)
 if(HAS_STK)
-  set(HEADERS ${HEADERS}
-      apfSTK.h)
+  set(HEADERS ${HEADERS} apfSTK.h)
+  set(SOURCES ${SOURCES} apfExodusOutput.cc)
 endif()
 
 #Library

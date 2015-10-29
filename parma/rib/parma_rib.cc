@@ -1,13 +1,18 @@
 #include "parma_rib.h"
 #include <apfNew.h>
 #include <algorithm>
-#include <apfMatrix.h>
+#include <mthQR.h>
+#include <mth_def.h>
+#include <cassert>
+
+#include <iostream>
+#include <iomanip>
 
 namespace parma {
 
 struct Compare
 {
-  apf::Vector3 normal;
+  mth::Vector3<double> normal;
   bool operator()(Body* a, Body* b)
   {
     return (a->point * normal) < (b->point * normal);
@@ -28,38 +33,63 @@ void Bodies::destroy()
 }
 
 /* http://en.wikipedia.org/wiki/Moment_of_inertia#Angular_momentum */
-static apf::Matrix3x3 getInertiaContribution(Body const* b)
+static mth::Matrix3x3<double> getInertiaContribution(Body const* b)
 {
-  apf::Matrix3x3 c = cross(b->point);
-  return c * c * b->mass;
+  mth::Matrix3x3<double> c = mth::cross(b->point);
+  return c * c * -(b->mass);
 }
 
-static apf::Matrix3x3 getInertiaMatrix(Bodies const* b)
+static mth::Matrix3x3<double> getInertiaMatrix(Bodies const* b)
 {
-  apf::Matrix3x3 m(0,0,0,
-                   0,0,0,
-                   0,0,0);
+  mth::Matrix3x3<double> m(
+      0,0,0,
+      0,0,0,
+      0,0,0);
   for (int i = 0; i < b->n; ++i)
     m = m + getInertiaContribution(b->body[i]);
-  return m * -1;
+  return m;
 }
 
-void getWeakestEigenvector(apf::Matrix3x3 const& A, apf::Vector3& v)
+static mth::Matrix3x3<double> normalize(mth::Matrix3x3<double> const& A)
 {
-  apf::Vector3 vs[3];
-  double ls[3];
-  int n = apf::eigen(A, vs, ls);
-  int best = 0;
-  for (int i = 1; i < n; ++i)
-    if (fabs(ls[i]) < fabs(ls[best]))
+  double max = 0;
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j) {
+    double val = fabs(A(i,j));
+    if (val > max)
+      max = val;
+  }
+  if (max < 1e-10)
+    return A;
+  return A / max;
+}
+
+static void getWeakestEigenvector(mth::Matrix3x3<double> const& A_in,
+    mth::Vector3<double>& v)
+{
+  std::cout << std::scientific << std::setprecision(10);
+  std::cerr << std::scientific << std::setprecision(10);
+  mth::Matrix3x3<double> A, l, q;
+  /* this will help with general conditioning of the eigenvalue solve,
+     mostly superstition at this point */
+  A = normalize(A_in);
+  /* find the eigenvalues (l) and eigenvectors (q) of (A) */
+  bool converged = mth::eigenQR(A, l, q, 100);
+  assert(converged);
+  unsigned best = 0;
+  /* find the *smallest* eigenvalue */
+  for (unsigned i = 1; i < 3; ++i)
+    if (fabs(l(i,i)) < fabs(l(best,best)))
       best = i;
-  v = vs[best];
+  /* return the corresponding eigenvector */
+  for (unsigned i = 0; i < 3; ++i)
+    v(i) = q(i,best);
 }
 
-static apf::Vector3 getBisectionNormal(Bodies const* b)
+static mth::Vector3<double> getBisectionNormal(Bodies const* b)
 {
-  apf::Matrix3x3 im = getInertiaMatrix(b);
-  apf::Vector3 v;
+  mth::Matrix3x3<double> im = getInertiaMatrix(b);
+  mth::Vector3<double> v;
   getWeakestEigenvector(im, v);
   return v;
 }
@@ -72,9 +102,9 @@ static double getTotalMass(Bodies const* b)
   return mass;
 }
 
-static apf::Vector3 getCenterOfGravity(Bodies const* b)
+static mth::Vector3<double> getCenterOfGravity(Bodies const* b)
 {
-  apf::Vector3 c(0,0,0);
+  mth::Vector3<double> c(0,0,0);
   for (int i = 0; i < b->n; ++i) {
     Body* body = b->body[i];
     c = c + (body->point * body->mass);
@@ -82,7 +112,7 @@ static apf::Vector3 getCenterOfGravity(Bodies const* b)
   return c / getTotalMass(b);
 }
 
-static void centerBodies(Bodies* b, apf::Vector3 const& c)
+static void centerBodies(Bodies* b, mth::Vector3<double> const& c)
 {
   for (int i = 0; i < b->n; ++i) {
     Body* body = b->body[i];
@@ -104,7 +134,7 @@ int findSortedMedian(Bodies const* b)
 
 void bisect(Bodies* all, Bodies* left, Bodies* right)
 {
-  apf::Vector3 c = getCenterOfGravity(all);
+  mth::Vector3<double> c = getCenterOfGravity(all);
   centerBodies(all, c);
   Compare comp;
   comp.normal = getBisectionNormal(all);

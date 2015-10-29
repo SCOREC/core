@@ -12,6 +12,8 @@ class Project : public FieldOp
       to = a;
       from = b;
       mesh = a->getMesh();
+      meshElement = 0;
+      fromElement = 0;
     }
     bool inEntity(MeshEntity* e)
     {
@@ -23,7 +25,8 @@ class Project : public FieldOp
     {
       Vector3 xi;
       to->getShape()->getNodeXi(fromElement->getType(),n,xi);
-      T value = fromElement->getValue(xi);
+      T value[1];
+      value[0] = fromElement->getValue(xi);
       to->setNodeValue(fromElement->getEntity(),n,value);
     }
     void outEntity()
@@ -72,10 +75,13 @@ class Axpy : public FieldOp
     }
     void atNode(int n)
     {
-      T xv,yv;
-      x->getNodeValue(entity,n,xv);
-      y->getNodeValue(entity,n,yv);
-      y->setNodeValue(entity,n,( (xv*a) + yv ));
+      T xv[1];
+      T yv[1];
+      x->getNodeValue(entity, n, xv);
+      y->getNodeValue(entity, n, yv);
+      T axpyv[1];
+      axpyv[0] = (xv[0] * a) + yv[0];
+      y->setNodeValue(entity, n, axpyv);
     }
     double a;
     FieldOf<T>* x;

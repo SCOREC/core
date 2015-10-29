@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # load environment variables
 source /usr/local/etc/bash_profile
@@ -15,7 +15,7 @@ module load git
 cd /lore/dibanez/cdash
 
 #run nightly.cmake script
-ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> log
+ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> cmake_log.txt
 
 #core repository checked out by nightly.cmake
 cd /lore/dibanez/cdash/build/core
@@ -25,6 +25,25 @@ make doc
 rm -rf /net/web/public/dibanez/core
 #replace it with the generated one
 cp -r doc/html /net/web/public/dibanez/core
+
+#core repository checked out by nightly.cmake
+cd /lore/dibanez/cdash/build/core
+#clean the build of object files
+make clean
+#run Coverity static analysis on the build
+export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0/bin
+cov-build --dir cov-int make -j 4
+#pack up the tarball of results
+tar czvf pumi.tgz cov-int
+#because its 2015 and this is not standard yet
+export PATH=$PATH:/lore/dibanez/curl-7.45.0/install/bin
+#send it to Coverity Scan site using curl
+curl --form token=faMZVmxTjByhNoJyb_4wDw \
+  --form email=dan.a.ibanez@gmail.com \
+  --form file=@$PWD/pumi.tgz \
+  --form version="1.0.1" \
+  --form description="Automated" \
+  https://scan.coverity.com/builds?project=SCOREC%2Fcore
 
 #remove compilation directories created by nightly.cmake
 cd /lore/dibanez/cdash

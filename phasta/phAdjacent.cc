@@ -1,5 +1,6 @@
 #include "phAdjacent.h"
 #include <maMesh.h> /* rotation functions ! */
+#include <cassert>
 
 namespace ph {
 

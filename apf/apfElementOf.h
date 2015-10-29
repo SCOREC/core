@@ -33,9 +33,9 @@ class ElementOf : public Element
     }
     T getValue(Vector3 const& local)
     {
-      T value;
-      getComponents(local,reinterpret_cast<double*>(&value));
-      return value;
+      T value[1];
+      getComponents(local, reinterpret_cast<double*>(value));
+      return value[0];
     }
     void getValues(NewArray<T>& values)
     {

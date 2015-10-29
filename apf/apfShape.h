@@ -124,10 +124,17 @@ FieldShape* getIPShape(int dimension, int order);
            value at any point in the element is the value of the closest
            integration point in that element. */
 FieldShape* getVoronoiShape(int dimension, int order);
+/** \brief Get the IP Fit shape function
+  \details the IP Fit FieldShape is equivalent to the IPShape except
+           that it is capable of evaluating as a shape function whose
+           value at any point in the element is a polynomial fit to
+           the integration point data in that element. */
+FieldShape* getIPFitShape(int dimension, int order);
 
-/** \brief Get the quadratic hierarchic shape function */
-FieldShape* getHierarchic();
-
+/** \brief Get the quadratic hierarchic shape function
+  \details only first and second order so far
+ */
+FieldShape* getHierarchic(int order);
 
 FieldShape* getShapeByName(const char* name);
 

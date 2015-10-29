@@ -12,6 +12,8 @@
 #include "apfNumbering.h"
 #include "apfTagData.h"
 #include <gmi.h>
+#include <cassert>
+#include <algorithm>
 
 namespace apf {
 
@@ -129,6 +131,13 @@ char const* const Mesh::typeName[TYPES] =
  "hex",
  "prism",
  "pyramid"
+};
+
+Mesh::Type const Mesh::simplexTypes[4] =
+{Mesh::VERTEX
+,Mesh::EDGE
+,Mesh::TRIANGLE
+,Mesh::TET
 };
 
 void Mesh::init(FieldShape* s)
@@ -545,7 +554,7 @@ void ElementVertOp::runDown(
    runTriDown,
    runQuadDown,
    runTetDown,
-   runHexDown,//hex
+   runHexDown,
    runPrismDown,
    runPyramidDown
   };
@@ -724,12 +733,36 @@ int countOwned(Mesh* m, int dim)
   return n;
 }
 
+void printTypes(Mesh* m)
+{
+  const int dim = m->getDimension();
+  if (dim==1) return;
+  assert(dim==2 || dim==3);
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  long typeCnt[Mesh::TYPES];
+  for (int i=0; i<Mesh::TYPES; i++)
+    typeCnt[i]=0;
+  while ((e = m->iterate(it)))
+    typeCnt[m->getType(e)]++;
+  m->end(it);
+  PCU_Add_Longs(typeCnt,Mesh::TYPES);
+  if (!PCU_Comm_Self()) {
+    printf("number of");
+    for (int i=0; i<Mesh::TYPES; i++)
+      if (dim == Mesh::typeDimension[i])
+        printf(" %s %ld", Mesh::typeName[i], typeCnt[i]);
+    printf("\n");
+  }
+}
+
 void printStats(Mesh* m)
 {
   long n[4];
   for (int i = 0; i < 4; ++i)
     n[i] = countOwned(m, i);
   PCU_Add_Longs(n, 4);
+  printTypes(m);
   if (!PCU_Comm_Self())
     printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
         n[0], n[1], n[2], n[3]);
@@ -740,7 +773,7 @@ void warnAboutEmptyParts(Mesh* m)
   int emptyParts = 0;
   if (!m->count(m->getDimension()))
     ++emptyParts;
-  PCU_Add_Ints(&emptyParts, 1);
+  emptyParts = PCU_Add_Int(emptyParts);
   if (emptyParts && (!PCU_Comm_Self()))
     fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
 }
@@ -929,11 +962,15 @@ static int const* getVertIndices(int type, int subtype, int which)
     switch (type) {
       case Mesh::TRIANGLE:
         return tri_edge_verts[which];
+        break;
       case Mesh::QUAD:
         return quad_edge_verts[which];
+        break;
       case Mesh::TET:
         return tet_edge_verts[which];
+        break;
     };
+    break;
     case Mesh::TRIANGLE:
     switch (type) {
       case Mesh::TET:
@@ -941,6 +978,7 @@ static int const* getVertIndices(int type, int subtype, int which)
     };
   };
   fail("getVertIndices: types not supported\n");
+  return 0;
 }
 
 void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
@@ -949,6 +987,7 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   Downward eb;
   int neb = m->getDownward(elem, getDimension(m, boundary), eb);
   which = findIn(eb, neb, boundary);
+  assert(which >= 0);
   if (m->getType(boundary) == Mesh::VERTEX) {
     flip = false;
     rotate = 0;
@@ -959,7 +998,7 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   Downward bv;
   int nbv = m->getDownward(boundary, 0, bv);
   int const* vi = getVertIndices(m->getType(elem), m->getType(boundary), which);
-  Downward ebv;
+  Downward ebv = {0};
   for (int i = 0; i < nbv; ++i)
     ebv[i] = ev[vi[i]];
   int a = findIn(ebv, nbv, bv[0]);

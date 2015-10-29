@@ -54,14 +54,23 @@ void PCU_Comm_Order(bool on);
 /*collective operations*/
 void PCU_Barrier(void);
 void PCU_Add_Doubles(double* p, size_t n);
+double PCU_Add_Double(double x);
 void PCU_Min_Doubles(double* p, size_t n);
+double PCU_Min_Double(double x);
 void PCU_Max_Doubles(double* p, size_t n);
+double PCU_Max_Double(double x);
 void PCU_Add_Ints(int* p, size_t n);
+int PCU_Add_Int(int x);
 void PCU_Add_Longs(long* p, size_t n);
+long PCU_Add_Long(long x);
 void PCU_Exscan_Ints(int* p, size_t n);
+int PCU_Exscan_Int(int x);
 void PCU_Exscan_Longs(long* p, size_t n);
+long PCU_Exscan_Long(long x);
 void PCU_Min_Ints(int* p, size_t n);
+int PCU_Min_Int(int x);
 void PCU_Max_Ints(int* p, size_t n);
+int PCU_Max_Int(int x);
 int PCU_Or(int c);
 
 /*thread functions*/
@@ -114,7 +123,6 @@ void PCU_Switch_Comm(MPI_Comm new_comm);
 MPI_Comm PCU_Get_Comm(void);
 
 /*stack trace helpers using GNU/Linux*/
-void PCU_Trace(void);
 void PCU_Protect(void);
 
 /*MPI_Wtime() equivalent*/

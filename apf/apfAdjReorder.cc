@@ -11,6 +11,7 @@
 #include "apfShape.h"
 
 #include <list>
+#include <cassert>
 
 namespace apf {
 
@@ -277,11 +278,10 @@ MeshTag* reorder(Mesh* mesh, const char* name)
 
 void SetNumberingOffset(Numbering * num, int off)
 {
-  Field * field = getField(num);
-  Mesh * mesh = getMesh(field);
-  FieldShape * shape = getShape(field);
+  Mesh * mesh = getMesh(num);
+  FieldShape * shape = getShape(num);
 
-  int components = countComponents(field);
+  int components = countComponents(num);
   int dim = mesh->getDimension();
 
   /* iterate over all nodes in the mesh,

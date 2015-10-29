@@ -4,11 +4,10 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <cassert>
 
-void testNodeValues(int type, apf::Vector3 const* nodes, int nnodes)
+void testNodeValues(apf::EntityShape* shp, apf::Vector3 const* nodes, int nnodes)
 {
-  apf::EntityShape* shp =
-    apf::getLagrange(1)->getEntityShape(type);
   assert( shp->countNodes() == nnodes );
   for (int i = 0; i < nnodes; ++i) {
     apf::NewArray<double> values;
@@ -34,7 +33,8 @@ void testPrismNodeValues()
     nodes[i] = apf::Vector3(xi0,xi1,xi2);
     ++i;
   }
-  testNodeValues(apf::Mesh::PRISM, nodes, 6);
+  apf::EntityShape* shp = apf::getLagrange(1)->getEntityShape(apf::Mesh::PRISM);
+  testNodeValues(shp, nodes, 6);
 }
 
 void testPyramidNodeValues()
@@ -45,7 +45,32 @@ void testPyramidNodeValues()
    apf::Vector3( 1, 1,-1),
    apf::Vector3(-1, 1,-1),
    apf::Vector3( 0, 0, 1)};
-  testNodeValues(apf::Mesh::PYRAMID, nodes, 5);
+  apf::EntityShape* shp = apf::getLagrange(1)->getEntityShape(apf::Mesh::PYRAMID);
+  testNodeValues(shp, nodes, 5);
+}
+
+void testQuadrilateralNodeValues() {
+  apf::Vector3 nodes[4] =
+  {apf::Vector3(-1,-1, 0),
+   apf::Vector3( 1,-1, 0),
+   apf::Vector3( 1, 1, 0),
+   apf::Vector3(-1, 1, 0)};
+  apf::EntityShape* shp = apf::getLagrange(1)->getEntityShape(apf::Mesh::QUAD);
+  testNodeValues(shp, nodes, 4);
+  /*second order shape functions*/
+  apf::Vector3 nodes2[9] =
+  {apf::Vector3(-1,-1, 0),
+   apf::Vector3( 1,-1, 0),
+   apf::Vector3( 1, 1, 0),
+   apf::Vector3(-1, 1, 0),
+   apf::Vector3( 0,-1, 0),
+   apf::Vector3( 1, 0, 0),
+   apf::Vector3( 0, 1, 0),
+   apf::Vector3(-1, 0, 0),
+   apf::Vector3( 0, 0, 0)};
+
+  apf::EntityShape* shp2 = apf::getLagrange(2)->getEntityShape(apf::Mesh::QUAD);
+  testNodeValues(shp2, nodes2, 9);
 }
 
 void testVolume(int type, apf::Vector3 const* points, double volume)
@@ -92,6 +117,7 @@ int main(int argc, char** argv)
   gmi_register_null();
   testPrismNodeValues();
   testPyramidNodeValues();
+  testQuadrilateralNodeValues();
   testPrismVolume();
   testPyramidVolume();
   PCU_Comm_Free();

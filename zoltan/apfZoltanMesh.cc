@@ -9,6 +9,7 @@
 #include "apfZoltanCallbacks.h"
 #include "apfZoltan.h"
 #include <PCU.h>
+#include <cassert>
 
 namespace apf {
 
@@ -16,10 +17,13 @@ ZoltanMesh::ZoltanMesh(Mesh* mesh_, bool isLocal_, int method_, int approach_,
     bool dbg)
 {
   mesh = mesh_;
+  weights = 0;
   isLocal = isLocal_;
   method = method_;
   approach = approach_;
   debug = dbg;
+  tolerance = 0;
+  multiple = 0;
   local = 0;
   global = 0;
   opposite = 0;

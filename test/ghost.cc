@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
+#include <cassert>
 
 namespace {
   const char* modelFile = 0;

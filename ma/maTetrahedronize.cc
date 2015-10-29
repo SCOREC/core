@@ -8,6 +8,7 @@
 #include <apfShape.h>
 #include <apfCavityOp.h>
 #include "maShape.h"
+#include <cassert>
 
 namespace ma {
 
@@ -187,12 +188,59 @@ static void flagQuadDiagonals(Adapt* a)
    elements twice in the CavityOp and to mark quads
    whose diagonals have been overridden, to identify
    cases of conflicting overrides. */
+
+static int align_quad(apf::Mesh* mesh, Entity* quad, Entity* canonical_0_vert)
+{
+  Entity* qv[4];
+  mesh->getDownward(quad, 0, qv);
+  int dvi = apf::findIn(qv, 4, canonical_0_vert);
+  return dvi % 2;
+}
+
+static void overrideQuadDiagonal(Adapt* a, Entity* quad, int diagonal)
+{
+  assert(diagonal == 1 || diagonal == 0);
+  Mesh* mesh = a->mesh;
+  int old_diagonal = getDiagonalFromFlag(a, quad);
+  if (old_diagonal != diagonal) {
+    if (getFlag(a, quad, CHECKED)) {
+      std::stringstream ss;
+      ss << "quad at " << apf::getLinearCentroid(mesh, quad)
+        << " has conflicting overrides on its diagonal.\n";
+      ss << "a negative tet WILL get produced here.\n";
+      std::string s = ss.str();
+      fprintf(stderr,"%s",s.c_str());
+    } else {
+      std::stringstream ss;
+      ss << "overriding diagonal at " << apf::getLinearCentroid(mesh, quad) << '\n';
+      std::string s = ss.str();
+      fprintf(stderr,"%s",s.c_str());
+      int flag = getFlagFromDiagonal(diagonal);
+      int old_flag = getFlagFromDiagonal(old_diagonal);
+      clearFlag(a, quad, old_flag);
+      setFlag(a, quad, flag);
+      setFlag(a, quad, CHECKED);
+      assert(getFlag(a, quad, flag));
+      assert(!getFlag(a, quad, old_flag));
+    }
+  } else {
+    std::stringstream ss;
+    ss << "diagonal at " << apf::getLinearCentroid(mesh, quad)
+       << " had a consistent override.\n";
+    std::string s = ss.str();
+    fprintf(stderr,"%s",s.c_str());
+  }
+}
+
 struct UnsafePyramidOverride : public apf::CavityOp
 {
   UnsafePyramidOverride(Adapt* a_):
     apf::CavityOp(a_->mesh)
   {
     a = a_;
+    good_rotation = -1;
+    pyramid = 0;
+    quad = 0;
   }
   Outcome setEntity(Entity* r)
   {
@@ -226,45 +274,14 @@ struct UnsafePyramidOverride : public apf::CavityOp
   {
     Entity* pv[5];
     mesh->getDownward(pyramid, 0, pv);
-    Entity* qv[4];
-    mesh->getDownward(quad, 0, qv);
     Entity* dv = 0;
     if (good_rotation == 0)
       dv = pv[0];
     else
       dv = pv[1];
-    int dvi = apf::findIn(qv, 4, dv);
-    int diagonal = dvi % 2;
-    int old_diagonal = getDiagonalFromFlag(a, quad);
+    int diagonal = align_quad(mesh, quad, dv);
     setFlag(a, pyramid, CHECKED);
-    if (old_diagonal != diagonal) {
-      if (getFlag(a, quad, CHECKED)) {
-        std::stringstream ss;
-        ss << "quad at " << apf::getLinearCentroid(mesh, quad)
-           << " has conflicting overrides on its diagonal.\n";
-        ss << "a negative tet WILL get produced here.\n";
-        std::string s = ss.str();
-        fprintf(stderr,"%s",s.c_str());
-      } else {
-        std::stringstream ss;
-        ss << "overriding diagonal at " << apf::getLinearCentroid(mesh, quad) << '\n';
-        std::string s = ss.str();
-        fprintf(stderr,"%s",s.c_str());
-        int flag = getFlagFromDiagonal(diagonal);
-        int old_flag = getFlagFromDiagonal(old_diagonal);
-        clearFlag(a, quad, old_flag);
-        setFlag(a, quad, flag);
-        setFlag(a, quad, CHECKED);
-        assert(getFlag(a, quad, flag));
-        assert(!getFlag(a, quad, old_flag));
-      }
-    } else {
-      std::stringstream ss;
-      ss << "diagonal at " << apf::getLinearCentroid(mesh, quad)
-         << " was already good for pyramid\n";
-      std::string s = ss.str();
-      fprintf(stderr,"%s",s.c_str());
-    }
+    overrideQuadDiagonal(a, quad, diagonal);
   }
   Adapt* a;
   int good_rotation;
@@ -272,10 +289,138 @@ struct UnsafePyramidOverride : public apf::CavityOp
   Entity* quad;
 };
 
-static void overrideDiagonalsForUnsafePyramids(Adapt* a)
+struct UnsafePrismOverride : public apf::CavityOp
+{
+  UnsafePrismOverride(Adapt* a_):
+    apf::CavityOp(a_->mesh)
+  {
+    a = a_;
+    prism = 0;
+    quads[0] = 0;
+    quads[1] = 0;
+    quads[2] = 0;
+    good_diagonal_codes = 0;
+  }
+  Outcome setEntity(Entity* r)
+  {
+    if ((mesh->getType(r) != apf::Mesh::PRISM) ||
+        getFlag(a, r, CHECKED))
+      return SKIP;
+    prism = r;
+    bool isOk = isPrismOk(mesh, prism, &good_diagonal_codes);
+    if (isOk) {
+      setFlag(a, prism, CHECKED);
+      return SKIP;
+    }
+    if (good_diagonal_codes == 0) {
+      setFlag(a, prism, CHECKED);
+      std::stringstream ss;
+      ss << "prism at " << apf::getLinearCentroid(mesh, prism)
+         << " has no good diagonals!\n";
+      ss << "a negative tet WILL get produced here.\n";
+      std::string s = ss.str();
+      fprintf(stderr,"%s",s.c_str());
+      return SKIP;
+    }
+    Entity* faces[5];
+    mesh->getDownward(prism, 2, faces);
+    for (int i = 0; i < 3; ++i)
+      quads[i] = faces[i + 1];
+    if (!requestLocality(quads, 3))
+      return REQUEST;
+    return OK;
+  }
+  int getAllowedDiagonals()
+  {
+    int allowed_diagonals = 0;
+    Entity* pv[6];
+    mesh->getDownward(prism, 0, pv);
+    for (int i = 0; i < 3; ++i) {
+      if (!getFlag(a, quads[i], CHECKED)) {
+        allowed_diagonals |= (3 << (2 * i));
+        continue;
+      }
+      int quad_diagonal = getDiagonalFromFlag(a, quads[i]);
+      Entity* dv = pv[i];
+      int quad_alignment = align_quad(mesh, quads[i], dv);
+      int diagonal = quad_diagonal ^ quad_alignment;
+      allowed_diagonals |= (1 << (2 * i + diagonal));
+    }
+    assert(allowed_diagonals > 0);
+    assert(allowed_diagonals <= ((1<<6)-1));
+    return allowed_diagonals;
+  }
+  bool areDiagonalsAllowed(int diagonals, int allowed_diagonals)
+  {
+    int is_good = 1 & (good_diagonal_codes >> diagonals);
+    if (!is_good)
+      return false;
+    for (int i = 0; i < 3; ++i) {
+      int diagonal = 1 & (diagonals >> i);
+      int allowed = 1 & (allowed_diagonals >> (2 * i + diagonal));
+      if (!allowed)
+        return false;
+    }
+    return true;
+  }
+  void enforceDiagonals(int diagonals)
+  {
+    Entity* pv[6];
+    mesh->getDownward(prism, 0, pv);
+    for (int i = 0; i < 3; ++i) {
+      Entity* dv = pv[i];
+      int quad_diagonal = 1 & (diagonals >> i);
+      Entity* quad = quads[i];
+      int quad_alignment = align_quad(mesh, quad, dv);
+      int diagonal = quad_diagonal ^ quad_alignment;
+      overrideQuadDiagonal(a, quad, diagonal);
+    }
+  }
+  void apply()
+  {
+    int allowed_diagonals = getAllowedDiagonals();
+    for (int diagonals = 1; diagonals < 7; ++diagonals)
+      if (areDiagonalsAllowed(diagonals, allowed_diagonals)) {
+        enforceDiagonals(diagonals);
+        return;
+      }
+    { 
+      std::stringstream ss;
+      ss << "prism at " << apf::getLinearCentroid(mesh, prism)
+         << " has no safe acyclic diagonals\n";
+      ss << "will try cyclic diagonals\n";
+      std::string s = ss.str();
+      fprintf(stderr, "%s", s.c_str());
+    }
+    if (areDiagonalsAllowed(0, allowed_diagonals)) {
+      enforceDiagonals(0);
+      return;
+    }
+    if (areDiagonalsAllowed(7, allowed_diagonals)) {
+      enforceDiagonals(7);
+      return;
+    } 
+    { 
+      std::stringstream ss;
+      ss << "prism at " << apf::getLinearCentroid(mesh, prism)
+         << " has no safe diagonals!\n";
+      ss << "A negative tet WILL get made here\n";
+      std::string s = ss.str();
+      fprintf(stderr, "%s", s.c_str());
+    }
+  }
+  Adapt* a;
+  Entity* prism;
+  Entity* quads[3];
+  int good_diagonal_codes;
+};
+
+static void overrideDiagonalsForUnsafeElements(Adapt* a)
 {
   UnsafePyramidOverride op(a);
   op.applyToDimension(3);
+  UnsafePrismOverride op2(a);
+  op2.applyToDimension(3);
   clearFlagFromDimension(a, CHECKED, 2);
   clearFlagFromDimension(a, CHECKED, 3);
 }
@@ -285,7 +430,7 @@ static void prepareLayerToTets(Adapt* a)
   findLayerBase(a);
   chooseBaseDiagonals(a);
   flagQuadDiagonals(a);
-  overrideDiagonalsForUnsafePyramids(a);
+  overrideDiagonalsForUnsafeElements(a);
 }
 
 /* a tetrahedronization operation re-uses
@@ -473,8 +618,7 @@ static long markIslandPyramids(Adapt* a)
       }
     }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 static int countEntitiesWithFlag(Adapt* a, int flag, int dim)

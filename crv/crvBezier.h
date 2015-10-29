@@ -1,79 +1,92 @@
-/******************************************************************************
-
-  Copyright 2015 Scientific Computation Research Center,
-      Rensselaer Polytechnic Institute. All rights reserved.
-
-  The LICENSE file included with this distribution describes the terms
-  of the SCOREC Non-Commercial License this program is distributed under.
-
-*******************************************************************************/
+/*
+ * Copyright 2015 Scientific Computation Research Center
+ *
+ * This work is open source software, licensed under the terms of the
+ * BSD license as described in the LICENSE file in the top-level directory.
+ */
 
 #ifndef CRVBEZIER_H
 #define CRVBEZIER_H
 
 #include "crv.h"
-#include "apfDynamicMatrix.h"
+#include "mth.h"
 
 namespace crv {
 
-// negative -> flipped relative to canonical
-// relies on e0 being always ordered correctly
-static int const tet_tri_edges[4][3] =
-{{0,1,2},{0,4,3},{1,5,4},{2,5,3}};
-static bool const flip_tet_tri_edges[4][3] =
-{{0,0,0},{0,0,1},{0,0,1},{1,0,1}};
+/** \brief computes node index, use getTriNodeIndex
+ * (getTetNodeIndex) to leverage tables */
+int computeTriNodeIndex(int P, int i, int j);
+int computeTetNodeIndex(int P, int i, int j, int k);
 
-enum {
-  BEZIER,
-  GREGORY,
-  TYPES
-};
+/** \brief calculates number of control points, use
+     tables for smaller numbers, this is for quality */
+int getNumControlPoints(int type, int order);
+int getNumInternalControlPoints(int type, int order);
 
-// numbers of nodes on
-static int const curved_face_internal[2][6] =
-{{0,0,1,3,6,10},{0,0,0,6,0,0}};
-
-static int const curved_tet_internal[2][6] =
-{{0,0,0,1,4,10},{0,0,0,1,4,10}};
-
-// total numbers of nodes
-static int const curved_face_total[2][6] =
-{{3,6,10,15,21,28},{0,0,0,18,0,0}};
-
-static int const blended_tet_total[2][6] =
-{{4,10,20,34,52,74},{0,0,0,46,0,0}};
-
-static int const curved_tet_total[2][6] =
-{{4,10,20,35,56,84},{0,0,0,47,0,0}};
+/** \brief computes nodes of face f from tet
+    \details does not consider alignment, extra care needed */
+void getTriNodesFromTetNodes(int f, int P,
+    apf::NewArray<apf::Vector3>& tetNodes,
+    apf::NewArray<apf::Vector3>& triNodes);
+/** \brief computes det(Jacobian) nodes of face f from tet */
+void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
+    apf::NewArray<double>& tetNodes,
+    apf::NewArray<double>& triNodes);
 
 /** \brief polynomial part of bernstein polynomial */
-double Bij(int i, int j,double u, double v);
-double Bijk(int i, int j, int k, double u, double v, double w);
-double Bijkl(int i, int j, int k, int l,double u,
-    double v, double w, double t);
+double Bij(const int i, const int j,const double u, const double v);
+double Bijk(const int i, const int j, const int k, const double u,
+    const double v, const double w);
+double Bijkl(const int i, const int j, const int k, const int l,
+    const double u, const double v, const double w, const double t);
 
-double Bij(int ij[], double xi[]);
-double Bijk(int ijk[], double xi[]);
-double Bijkl(int ijkl[], double xi[]);
+/** \brief a different form of the above */
+double Bij(const int ij[], const double xi[]);
+double Bijk(const int ijk[], const double xi[]);
+double Bijkl(const int ijkl[], const double xi[]);
 
-/** \brief shape blending functions */
+/** \brief these compute det(Jacobian) from the Bezier conversion
+ * \details this evaluates an order d(P-1) bezier to compute it
+ * and is much, much slower than the direct method, but exists for
+ * comparison*/
+double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,
+    apf::MeshEntity* e, apf::Vector3& xi);
+double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
+    apf::MeshEntity* e, apf::Vector3& xi);
+
+/** \brief shape blending functions
+ * \details see bezier.tex */
 void BlendedTriangleGetValues(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<double>& values);
-
 void BlendedTriangleGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads);
-
 void BlendedTetGetValues(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<double>& values);
-
 void BlendedTetGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads);
 
 /** \brief get bezier node locations in parameter space */
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi);
-/** \brief This is the 2D version. */
-void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi);
 
+/** \brief elevation functions for beziers */
+void elevateBezierEdge(int P, int r, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes);
+void elevateBezierTriangle(int P, int r, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes);
+void elevateBezierTet(int P, int r, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes);
+
+/** \brief subdivision functions for beziers */
+void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[2]);
+void subdivideBezierTriangle(int P, apf::Vector3& p,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[3]);
+void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4]);
+void subdivideBezierTet(int P, apf::Vector3& p,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3> (&subNodes)[4]);
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
  *
  \details this is a support function, not actual ever needed.
@@ -86,7 +99,8 @@ void getBezierCurveNodeXi(int type, int P, int node, apf::Vector3& xi);
  If, in the future, new nodeXi are defined for interpolating Bezier curves,
  this function can be used to generate the A matrix to invert, as apf
  has no functionality for generic matrix inversion.*/
-void getTransformationMatrix(apf::Mesh* m, int type, apf::DynamicMatrix& A);
+void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
+    mth::Matrix<double>& A);
 
 }
 

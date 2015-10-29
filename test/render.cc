@@ -5,6 +5,7 @@
 #include <apfMesh2.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <cstdlib>
 
 int main(int argc, char** argv)
 {

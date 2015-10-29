@@ -1,13 +1,9 @@
-/******************************************************************************
-
-  Copyright 2015 Scientific Computation Research Center,
-      Rensselaer Polytechnic Institute. All rights reserved.
-
-  The LICENSE file included with this distribution describes the terms
-  of the SCOREC Non-Commercial License this program is distributed under.
-
- *******************************************************************************/
-
+/*
+ * Copyright 2015 Scientific Computation Research Center
+ *
+ * This work is open source software, licensed under the terms of the
+ * BSD license as described in the LICENSE file in the top-level directory.
+ */
 #include "crvSnap.h"
 
 #include <gmi.h>
@@ -97,8 +93,6 @@ void transferParametricOnEdgeSplit(
     apf::Vector3& p)
 {
   apf::ModelEntity* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension == m->getDimension()) return;
   apf::MeshEntity* ev[2];
   m->getDownward(e,0,ev);
   crv::transferParametricBetween(m, g, ev, t, p);
@@ -111,8 +105,6 @@ void transferParametricOnTriSplit(
     apf::Vector3& p)
 {
   apf::ModelEntity* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
   apf::MeshEntity* ev[3];
   m->getDownward(e,0,ev); // pick two points, split on edge
   // adjust so the degenerate point is in ev[2]
@@ -143,8 +135,6 @@ void transferParametricOnGeometricEdgeSplit(
     apf::Vector3& p)
 {
   apf::ModelEntity* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension == m->getDimension()) return;
   apf::MeshEntity* ev[2];
   m->getDownward(e,0,ev);
   apf::Vector3 p0,p1,cpt;
@@ -161,8 +151,6 @@ void transferParametricOnGeometricTriSplit(
     apf::Vector3& p)
 {
   apf::ModelEntity* g = m->toModel(e);
-  int modelDimension = m->getModelType(g);
-  if (modelDimension == m->getDimension()) return;
   apf::MeshEntity* ev[3];
   m->getDownward(e,0,ev);
   // split in physical space, project

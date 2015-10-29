@@ -1,7 +1,12 @@
-#include <spr.h>
+#include "mthQR.h"
+#include "mth_def.h"
+#include <cassert>
+
+#include <iostream>
+#include <iomanip>
 
 /* here is a test case run with Octave */
-static double const A_data[16][10] = {
+static double const a_data[16][10] = {
 {  1.0000000e+00, -4.9112749e-02, -1.5629814e+00, -8.2662407e-02,  7.6762316e-02,  1.2919981e-01,  4.0597781e-03,  2.4120621e-03,  2.4429110e+00,  6.8330735e-03},
 {  1.0000000e+00, -7.4718700e-01,  1.1447982e+00, -6.1608208e-01, -8.5537834e-01, -7.0528966e-01,  4.6032852e-01,  5.5828842e-01,  1.3105629e+00,  3.7955713e-01},
 {  1.0000000e+00, -4.8564839e-01, -7.2143765e-01, -5.3574860e-02,  3.5036503e-01,  3.8650921e-02,  2.6018545e-02,  2.3585436e-01,  5.2047228e-01,  2.8702657e-03},
@@ -20,38 +25,6 @@ static double const A_data[16][10] = {
 {  1.0000000e+00,  5.3974943e-01, -7.7853625e-01, -1.2196455e+00, -4.2021450e-01,  9.4953820e-01, -6.5830294e-01,  2.9132945e-01,  6.0611869e-01,  1.4875350e+00},
 };
 
-static double const b_data[16] = {
-  1.8633928e-02,
-  1.2137582e+00,
-  6.7480008e-01,
- -6.2569362e-01,
- -2.0705180e-01,
- -1.5848017e-01,
- -1.2338155e+00,
-  1.0076051e+00,
- -4.3397381e-01,
- -7.1250087e-01,
-  6.1209592e-01,
- -1.4057588e+00,
- -3.4102620e-01,
-  1.1754080e-01,
-  8.3962300e-01,
- -1.3411208e+00
-};
-
-static double const R_data[10][10] = {
-{ -4.0000000e+00,  1.2786594e-01,  6.1894810e-01, -9.2524171e-01,  3.2600130e-02,  1.5561858e-01,  9.6089619e-01, -2.5892061e+00, -4.0794326e+00, -3.3478813e+00},
-{  0.0000000e+00,  3.2156608e+00, -6.5163246e-02, -1.1584797e+00, -9.9020916e-01,  6.9021727e-01,  7.4686553e-01,  2.3595343e+00, -6.7694672e-01, -1.7982260e+00},
-{  0.0000000e+00,  0.0000000e+00,  3.9912890e+00, -3.1390367e-02, -6.9730721e-01,  1.2129781e+00,  4.2425550e-01, -3.5669411e-01,  2.3597766e+00, -9.5030847e-01},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00, -3.3455033e+00, -3.2896097e-01,  1.4246822e+00,  1.3280386e+00, -8.5223845e-01, -1.2197665e-01, -4.3151545e+00},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00, -1.7724713e+00, -1.7380196e-01,  7.4574853e-01, -2.7971972e-01,  5.3160728e-01,  5.6576627e-01},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00, -2.2025080e+00,  8.6818060e-02,  1.0852185e+00, -1.7881264e+00,  5.3777562e-01},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  1.6866895e+00, -6.7900615e-01,  9.8437012e-01, -2.9297990e+00},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  2.1041547e+00, -3.5746474e-01, -1.9120169e+00},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  3.0847466e+00, -4.5848736e-01},
-{  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00,  0.0000000e+00, -2.4274126e+00},
-};
-
 static double const x_data[10] = {
   4.4283983e-01,
  -2.9416715e-01,
@@ -65,23 +38,80 @@ static double const x_data[10] = {
  -5.2756825e-01
 };
 
-int main() {
-  apf::Matrix<16,10> sA(A_data);
-  apf::DynamicMatrix A = fromMatrix(sA);
-  apf::Vector<16> sb(b_data);
-  apf::DynamicVector b = fromVector(sb);
-  apf::Matrix<10,10> sR(R_data);
-  apf::DynamicMatrix R = fromMatrix(sR);
-  apf::Vector<10> sx(x_data);
-  apf::DynamicVector x = fromVector(sx);
-  apf::DynamicMatrix V;
-  apf::DynamicMatrix R2;
-  apf::DynamicVector x2;
-  spr::decompQR(A, V, R2);
-  spr::solveFromQR(V, R2, b, x2);
-  double maxErr = 0;
-  for (std::size_t i = 0; i < x.getSize(); ++i)
-    maxErr = std::max(maxErr, fabs(x[i] - x2[i]));
-  assert(maxErr < 1e-7);
-  return 0;
+static void testSolveQR()
+{
+  mth::Matrix<double> a(16,10);
+  for (unsigned i = 0; i < a.rows(); ++i)
+  for (unsigned j = 0; j < a.cols(); ++j)
+    a(i,j) = a_data[i][j];
+  mth::Vector<double> kx(a.cols());
+  for (unsigned i = 0; i < kx.size(); ++i)
+    kx(i) = x_data[i];
+  mth::Vector<double> b;
+  multiply(a, kx, b);
+  mth::Vector<double> x;
+  mth::solveQR(a, b, x);
+  for (unsigned i = 0; i < kx.size(); ++i)
+    assert(fabs(kx(i) - x(i)) < 1e-15);
+}
+
+void testHessenberg()
+{
+  mth::Matrix3x3<double> a(
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1
+  );
+  mth::Matrix<double,3,3> q;
+  mth::Matrix<double,3,3> h;
+  mth::reduceToHessenberg(a, q, h);
+  mth::Matrix<double,3,3> qt;
+  transpose(q, qt);
+  mth::Matrix<double,3,3> qqt;
+  multiply(q, qt, qqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
+  mth::Matrix<double,3,3> qh;
+  multiply(q, h, qh);
+  mth::Matrix<double,3,3> qhqt;
+  multiply(qh, qt, qhqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qhqt(i,j) - a(i,j)) < 1e-10);
+}
+
+void testEigenQR()
+{
+  mth::Matrix3x3<double> a(
+      1, 5, 4,
+      5, 6, 3,
+      4, 3, 2
+  );
+  mth::Matrix<double,3,3> l;
+  mth::Matrix<double,3,3> q;
+  bool converged = mth::eigenQR(a, l, q, 20);
+  assert(converged);
+  mth::Matrix<double,3,3> qt;
+  transpose(q, qt);
+  mth::Matrix<double,3,3> qqt;
+  multiply(q, qt, qqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
+  mth::Matrix<double,3,3> ql;
+  multiply(q, l, ql);
+  mth::Matrix<double,3,3> qlqt;
+  multiply(ql, qt, qlqt);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    assert(fabs(qlqt(i,j) - a(i,j)) < 1e-10);
+}
+
+int main()
+{
+  testSolveQR();
+  std::cout << std::scientific << std::setprecision(6);
+  testHessenberg();
+  testEigenQR();
 }

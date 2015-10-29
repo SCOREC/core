@@ -5,6 +5,7 @@
 #include <gmi_sim.h>
 #include <apfMDS.h>
 #include <apf.h>
+#include <cassert>
 
 int main(int argc, char** argv)
 {

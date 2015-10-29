@@ -117,7 +117,6 @@ int main(int argc, char** argv)
  apf::Vector3 x1;
  x0[0] = 0.09; x0[1] = 0.05; x0[2] = 0.0;
  x1[0] = 0.11; x1[1] = 0.05; x1[2] = 0.0;
-
  std::cerr << "ph::BCs struct:\n";
   APF_ITERATE(ph::BCs::Map, bcs.fields, it) {
     std::cerr << it->first << '\n';
@@ -144,4 +143,3 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-

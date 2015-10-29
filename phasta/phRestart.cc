@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <cassert>
 
 namespace ph {
 
@@ -21,6 +22,8 @@ void attachField(
     int in_size,
     int out_size)
 {
+  if (!(in_size <= out_size))
+    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   assert(in_size <= out_size);
   apf::Field* f = apf::createPackedField(m, fieldname, out_size);
   size_t n = m->count(0);
@@ -90,10 +93,16 @@ void readAndAttachField(
     const char* fieldname,
     int out_size = -1)
 {
+  FILE* f = in.openfile_read(in, filename);
+  if (!f) {
+    fprintf(stderr,"failed to open \"%s\"!\n", filename);
+    abort();
+  }
   double* data;
   int nodes, vars, step;
-  ph_read_field(filename, fieldname, &data,
+  ph_read_field(f, fieldname, &data,
       &nodes, &vars, &step);
+  fclose(f);
   assert(nodes == static_cast<int>(m->count(0)));
   assert(step == in.timeStepNumber);
   if (out_size == -1)
@@ -136,14 +145,6 @@ static double* buildMappingVtxId(apf::Mesh* m)
   return data;
 }
 
-static void readStepNum(Input& in)
-{
-  std::ifstream tinyFile("numstart.dat");
-  int step;
-  tinyFile >> step;
-  assert(in.timeStepNumber == step);
-}
-
 static std::string buildRestartFileName(std::string prefix, int step)
 {
   std::stringstream ss;
@@ -155,7 +156,6 @@ static std::string buildRestartFileName(std::string prefix, int step)
 void readAndAttachSolution(Input& in, apf::Mesh* m)
 {
   double t0 = PCU_Time();
-  readStepNum(in);
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
   readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
@@ -164,6 +164,8 @@ void readAndAttachSolution(Input& in, apf::Mesh* m)
     readAndAttachField(in, m, filename.c_str(), "displacement");
   if (in.dwalMigration)
     readAndAttachField(in, m, filename.c_str(), "dwal");
+  if (in.adaptStrategy == 1)
+    readAndAttachField(in, m, filename.c_str(), "errors");
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("solution read and attached in %f seconds\n", t1 - t0);
@@ -188,11 +190,11 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
   delete [] data;
 }
 
-void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
+void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string path)
 {
   double t0 = PCU_Time();
   path += buildRestartFileName("restart", in.timeStepNumber);
-  FILE* f = fopen(path.c_str(), "w");
+  FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
     abort();
@@ -201,6 +203,9 @@ void detachAndWriteSolution(Input& in, apf::Mesh* m, std::string path)
   int nodes = m->count(0);
   ph_write_header(f, "number of modes", 0, 1, &nodes);
   ph_write_header(f, "number of variables", 0, 1, &in.ensa_dof);
+  apf::Field* errField = m->findField("errors");
+  if (errField)
+    apf::destroyField(errField);
   if (m->findField("solution"))
     detachAndWriteField(in, m, f, "solution");
   if (in.displacementMigration)

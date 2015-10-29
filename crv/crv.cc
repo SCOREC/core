@@ -6,30 +6,47 @@
  */
 
 #include "crv.h"
+#include "crvBezier.h"
+#include <cstdlib>
 
 namespace crv {
 
-int factorial(int i)
+int getNumInternalControlPoints(int type, int order)
 {
-  static int table[11] = {1,1,2,6,24,120,720,5040,40320,362880,3628800};
-  return table[i];
+  switch (type) {
+    case apf::Mesh::EDGE:
+      return order-1;
+      break;
+    case apf::Mesh::TRIANGLE:
+      return (order-1)*(order-2)/2;
+      break;
+    case apf::Mesh::TET:
+      return (order-1)*(order-2)*(order-3)/6;
+      break;
+    default:
+      break;
+  }
+  fail("invalid type/order combination\n");
+  return 0;
 }
 
-int binomial(int n, int i)
+int getNumControlPoints(int type, int order)
 {
-  static int const table[28] =
-  {1,1,1,1,1,1,1,1,2,3,4,5,6,1,3,6,10,15,1,4,10,20,1,5,15,1,6,1};
-  return table[i*7 - (i-1)*i/2 + n-i];
-}
-
-int trinomial(int n, int i, int j)
-{
-  return binomial(n,i)*binomial(n-i,j);
-}
-
-int quadnomial(int n, int i, int j, int k)
-{
-  return binomial(n,i)*binomial(n-i,j)*binomial(n-i-j,k);
+  switch (type) {
+    case apf::Mesh::EDGE:
+      return order+1;
+      break;
+    case apf::Mesh::TRIANGLE:
+      return (order+1)*(order+2)/2;
+      break;
+    case apf::Mesh::TET:
+      return (order+1)*(order+2)*(order+3)/6;
+      break;
+    default:
+      break;
+  }
+  fail("invalid type/order combination\n");
+  return 0;
 }
 
 void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
@@ -38,31 +55,19 @@ void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
       apf::createElement(m->getCoordinateField(),edge);
 
   apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> p;
-  apf::getVectorNodes(elem,p);
+  apf::NewArray<apf::Vector3> nodes, elevatedNodes(n+r+1);
+  apf::getVectorNodes(elem,nodes);
+  elevateBezierEdge(n,r,nodes,elevatedNodes);
 
-  assert(m->getType(edge) == apf::Mesh::EDGE);
-
-  // reorder p into geometric ordering
-  apf::NewArray<int> map(n+1);
-  map[0] = 0; map[n] = 1;
-
-  for(int i = 1; i < n; ++i)
-    map[i] = i+1;
-  for(int i = 1; i < n+r; ++i){
-    pt.zero();
-    for(int j = std::max(0,i-r); j <= std::min(i,n); ++j)
-      pt += p[map[j]]*binomial(n,j)*
-      binomial(r,i-j)/binomial(n+r,i);
-    m->setPoint(edge,i-1,pt);
-  }
+  for(int i = 1; i < n+r; ++i)
+    m->setPoint(edge,i-1,elevatedNodes[i]);
 
   apf::destroyElement(elem);
 }
 
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   apf::ModelEntity* g = m->toModel(e);
-  if (m->getModelType(g) == m->getDimension())
+  if (m->getModelType(g) == 3)
     return 0.;
   int d = apf::getDimension(m,e);
   int nj = (d == 2) ? n : 1;
@@ -82,6 +87,84 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
   }
   apf::destroyElement(elem);
   return max;
+}
+
+void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
+    mth::Matrix<double>& A)
+{
+
+  apf::Vector3 const edge_vert_xi[2] = {
+      apf::Vector3(-1,0,0),
+      apf::Vector3(1,0,0),
+  };
+  apf::Vector3 const tri_vert_xi[3] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+  };
+  apf::Vector3 const tet_vert_xi[4] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1),
+  };
+  apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+      0, /* vertex */
+      edge_vert_xi,
+      tri_vert_xi,
+      0, /* quad */
+      tet_vert_xi,
+      0, /* hex */
+      0, /* prism */
+      0  /* pyramid */
+  };
+
+  int type = m->getType(e);
+  apf::FieldShape* fs = m->getShape();
+  apf::EntityShape* es = fs->getEntityShape(type);
+  int n = es->countNodes();
+  int typeDim = apf::Mesh::typeDimension[type];
+
+  apf::Vector3 xi, exi;
+  int evi = 0;
+  apf::NewArray<double> values;
+
+  A.zero();
+
+  int row = 0;
+  for(int d = 0; d <= typeDim; ++d){
+    int nDown = apf::Mesh::adjacentCount[type][d];
+    for(int j = 0; j < nDown; ++j){
+      int bt = apf::Mesh::simplexTypes[d];
+      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+      for(int x = 0; x < fs->countNodesOn(bt); ++x){
+        fs->getNodeXi(bt,x,xi);
+        apf::NewArray<double> shape_vals;
+        shape->getValues(0, 0, xi, shape_vals);
+
+        if(d < typeDim){
+          exi.zero();
+          evi = j;
+          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
+              evi = apf::tri_edge_verts[j][i];
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
+              evi = apf::tet_edge_verts[j][i];
+            if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
+              evi = apf::tet_tri_verts[j][i];
+            exi += elem_vert_xi[type][evi] * shape_vals[i];
+          }
+        } else {
+          exi = xi;
+        }
+        es->getValues(m,e,exi,values);
+        for(int i = 0; i < n; ++i){
+          A(row,i) = values[i];
+        }
+        ++row;
+      }
+    }
+  }
 }
 
 void fail(const char* why)

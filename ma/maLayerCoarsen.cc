@@ -5,6 +5,7 @@
 #include "maCoarsen.h"
 #include "maCrawler.h"
 #include "maLayerCollapse.h"
+#include <cassert>
 
 /* see maCoarsen.cc for the unstructured equivalent. */
 namespace ma {
@@ -40,18 +41,17 @@ static long markBaseEdgesToCollapse(Adapt* a)
       }
     }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
-  return n;
+  return PCU_Add_Long(n);
 }
 
 struct CurveLocalizer : public Crawler
 {
-  CurveLocalizer(Adapt* a_, int r):
+  CurveLocalizer(Adapt* a_, int r, apf::Migration* p):
     Crawler(a_)
   {
     a = a_;
     m = a->mesh;
-    plan = new apf::Migration(m);
+    plan = p;
     tag = m->createIntTag("ma_curve_dest", 1);
     round = r;
   }
@@ -144,7 +144,6 @@ struct CurveLocalizer : public Crawler
   }
   Adapt* a;
   Mesh* m;
-  int flag;
   apf::Migration* plan;
   Tag* tag;
   int round;
@@ -152,8 +151,9 @@ struct CurveLocalizer : public Crawler
 
 static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
 {
-  CurveLocalizer cl(a, round);
   Mesh* m = a->mesh;
+  apf::Migration* plan = new apf::Migration(m);
+  CurveLocalizer cl(a, round, plan);
   Iterator* it = m->begin(1);
   Entity* e;
   while ((e = m->iterate(it)))
@@ -165,7 +165,7 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
       cl.handle(v[1], PCU_Comm_Self());
     }
   crawlLayers(&cl);
-  return cl.plan;
+  return plan;
 }
 
 static bool wouldEmptyParts(apf::Migration* plan)
@@ -233,8 +233,7 @@ static long collapseAllStacks(Adapt* a, int d)
     allSuccesses += successCount;
     ++round;
   } while (PCU_Or(skipCount));
-  PCU_Add_Longs(&allSuccesses, 1);
-  return allSuccesses;
+  return PCU_Add_Long(allSuccesses);
 }
 
 bool coarsenLayer(Adapt* a)

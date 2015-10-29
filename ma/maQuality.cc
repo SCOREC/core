@@ -9,6 +9,8 @@
 *******************************************************************************/
 
 #include <cfloat>
+#include <cassert>
+#include <cstdlib>
 #include "maMesh.h"
 #include "maSize.h"
 #include "maAdapt.h"
@@ -280,27 +282,58 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet)
   return measureQuadraticTetQuality(xyz);
 }
 
-bool isPrismOk(Mesh* m, Entity* e)
+static int unrotate_prism_diagonal_code(int code, int rot)
+{
+  static int const shift_table[6] = {0,1,2,2,0,1};
+  int out = 0;
+  for (int i = 0; i < 3; ++i)
+    if (code & (1 << i))
+      out |= (1 << ((i + shift_table[rot]) % 3));
+  return out;
+}
+
+bool isPrismOk(apf::Mesh* m, Entity* e,
+    int* good_diagonal_codes)
 {
   Entity* v[6];
   m->getDownward(e, 0, v);
   Vector p[6];
   for (int i = 0; i < 6; ++i)
     m->getPoint(v[i], 0, p[i]);
+  bool all_good = true;
+  if (good_diagonal_codes)
+    *good_diagonal_codes = 0xFF;
   for (int i = 0; i < 6; ++i) {
     int const* new_to_old = prism_rotation[i];
     apf::Plane pl = apf::Plane::fromPoints(
         p[new_to_old[0]],
         p[new_to_old[1]],
         p[new_to_old[5]]);
-    if (pl.distance(p[new_to_old[3]]) <= 0)
-      return false;
-    if (pl.distance(p[new_to_old[4]]) <= 0)
-      return false;
-    if (pl.distance(p[new_to_old[2]]) >= 0)
-      return false;
+    if (pl.distance(p[new_to_old[3]]) <= 0) {
+      all_good = false;
+      if (good_diagonal_codes) {
+        int bad_code = unrotate_prism_diagonal_code(5, i);
+        *good_diagonal_codes &= ~(1 << bad_code);
+      }
+    }
+    if (pl.distance(p[new_to_old[4]]) <= 0) {
+      all_good = false;
+      if (good_diagonal_codes) {
+        int bad_code = unrotate_prism_diagonal_code(4, i);
+        *good_diagonal_codes &= ~(1 << bad_code);
+      }
+    }
+    if (pl.distance(p[new_to_old[2]]) >= 0) {
+      all_good = false;
+      if (good_diagonal_codes) {
+        int bad_code = unrotate_prism_diagonal_code(5, i);
+        *good_diagonal_codes &= ~(1 << bad_code);
+        bad_code = unrotate_prism_diagonal_code(4, i);
+        *good_diagonal_codes &= ~(1 << bad_code);
+      }
+    }
   }
-  return true;
+  return all_good;
 }
 
 bool isPyramidOk(apf::Mesh* m, Entity* e,

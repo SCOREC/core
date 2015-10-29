@@ -4,6 +4,8 @@
 #include <gmi_mesh.h>
 #include <parma.h>
 #include <PCU.h>
+#include <cassert>
+#include <cstdlib>
 
 int main(int argc, char** argv)
 {

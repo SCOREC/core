@@ -4,6 +4,7 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include <sstream>
+#include <cassert>
 
 namespace ma {
 
@@ -20,7 +21,7 @@ static long markLayerElements(Adapt* a)
       ++n;
     }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
+  n = PCU_Add_Long(n);
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
     return 0;
@@ -163,16 +164,13 @@ void checkLayerShape(Mesh* m, const char* key)
         ss << "layer " << apf::Mesh::typeName[type]
            << " at " << apf::getLinearCentroid(m, e)
            << " is unsafe to tetrahedronize\n";
-        if (type == apf::Mesh::PRISM) {
-          ss << "there is currently no code to help with such prisms,\n";
-          ss << "but there is a chance it will tetrahedronize OK.\n";
-        }
         std::string s = ss.str();
-        fprintf(stderr,"%s",s.c_str());
+        fprintf(stdout,"%s",s.c_str());
+        fflush(stdout);
         ++n;
       }
   m->end(it);
-  PCU_Add_Longs(&n, 1);
+  n = PCU_Add_Long(n);
   double t1 = PCU_Time();
   print("%s: checked layer quality in %f seconds: %ld unsafe elements", key, t1 - t0, n);
 }

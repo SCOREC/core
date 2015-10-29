@@ -4,6 +4,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cassert>
+#include <cstdlib>
 
 namespace {
 
@@ -130,6 +132,7 @@ void readElement(Reader* r)
   /* long id = */ getLong(r);
   long gmshType = getLong(r);
   int apfType = apfFromGmsh(gmshType);
+  assert(0 <= apfType);
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
   long ntags = getLong(r);

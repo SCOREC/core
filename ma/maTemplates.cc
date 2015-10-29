@@ -12,6 +12,7 @@
 #include "maTables.h"
 #include "maSolutionTransfer.h"
 #include "maLayer.h"
+#include <cassert>
 
 namespace ma {
 
@@ -488,6 +489,7 @@ Vector splitTet_4_2_getCentroidXi(
   }
   xi = xi / 6;
   int rotation = findTetRotation(m,tet,tv);
+  assert(rotation >= 0);
   unrotateTetXi(xi,rotation);
   return xi;
 }

@@ -8,7 +8,23 @@ namespace ph {
 
 static void setDefaults(Input& in)
 {
+  in.globalP = 0;
+  in.timeStepNumber = 0;
+  in.ensa_dof = 0;
   in.outMeshFileName = "";
+  in.adaptFlag = 0;
+  in.rRead = 0;
+  in.rStart = 0;
+  in.adaptStrategy = -1;
+  in.periodic = 0;
+  in.prCD = -1;
+  in.timing = 0;
+  in.internalBCNodes = 0;
+  in.writeDebugFiles = 0;
+  in.splitFactor = 1;
+  in.solutionMigration = 1;
+  in.isReorder = 0;
+  in.openfile_read = 0;
   in.numSplit = 10;
   in.tetrahedronize = 0;
   in.localPtn = true; 
@@ -28,6 +44,9 @@ static void setDefaults(Input& in)
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
   in.axisymmetry = 0;
+  in.elementImbalance = 1.03;
+  in.vertexImbalance = 1.05;
+  in.rs = 0;
 }
 
 Input::Input()
@@ -37,8 +56,9 @@ Input::Input()
 
 typedef std::map<std::string, std::string*> StringMap;
 typedef std::map<std::string, int*> IntMap;
+typedef std::map<std::string, double*> DblMap;
 
-static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
+static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& dblMap)
 {
   intMap["globalP"] = &in.globalP;
   intMap["timeStepNumber"] = &in.timeStepNumber;
@@ -80,6 +100,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap)
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
   intMap["filterMatches"] = &in.filterMatches;
   intMap["axisymmetry"] = &in.axisymmetry;
+  dblMap["elementImbalance"] = &in.elementImbalance;
+  dblMap["vertexImbalance"] = &in.vertexImbalance;
 }
 
 template <class T>
@@ -97,8 +119,9 @@ static bool tryReading(std::string const& name,
 static void readInputFile(
     Input& in,
     const char* filename,
-    std::map<std::string, std::string*>& stringMap,
-    std::map<std::string, int*>& intMap)
+    StringMap& stringMap,
+    IntMap& intMap,
+    DblMap& dblMap)
 {
   std::ifstream f(filename);
   if (!f)
@@ -113,6 +136,8 @@ static void readInputFile(
       continue;
     if (tryReading(name, f, intMap))
       continue;
+    if (tryReading(name, f, dblMap))
+      continue;
     /* the WEIRD parameter ! */
     if (name == "RecursivePtnStep") {
       if (in.recursivePtn == -1)
@@ -126,27 +151,22 @@ static void readInputFile(
   }
 }
 
-static bool contains(std::string const& a, std::string const& b)
-{
-  return a.find(b) != std::string::npos;
-}
-
 static void validate(Input& in)
 {
   assert(in.parmaPtn == 0 || in.parmaPtn == 1);
-  if (in.adaptFlag)
-    assert(contains(in.attributeFileName, "NOIC.spj"));
-  assert(in.threaded);
+  assert(in.elementImbalance > 1.0 && in.elementImbalance <= 2.0);
+  assert(in.vertexImbalance > 1.0 && in.vertexImbalance <= 2.0);
   assert( ! (in.buildMapping && in.adaptFlag));
 }
 
 void Input::load(const char* filename)
 {
   setDefaults(*this);
-  std::map<std::string, std::string*> stringMap;
-  std::map<std::string, int*> intMap;
-  formMaps(*this, stringMap, intMap);
-  readInputFile(*this, filename, stringMap, intMap);
+  StringMap stringMap;
+  IntMap intMap;
+  DblMap dblMap;
+  formMaps(*this, stringMap, intMap, dblMap);
+  readInputFile(*this, filename, stringMap, intMap, dblMap);
   validate(*this);
 }
 

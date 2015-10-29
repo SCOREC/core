@@ -8,6 +8,7 @@
 #include <SimUtil.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
+#include <cassert>
 
 static void testInterpolationError(apf::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
@@ -33,9 +34,9 @@ static void testElementSize(apf::Mesh* m)
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
       apf::MeshElement* me = apf::createMeshElement(m,e);
       double v = apf::measure(me);
-//      if(d == 3) printf("Tet volume is %f\n",v);
       if(v < 0){
         std::stringstream ss;
         ss << "error: " << apf::Mesh::typeName[m->getType(e)]
@@ -43,16 +44,19 @@ static void testElementSize(apf::Mesh* m)
            << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
         fprintf(stderr, "%s", s.c_str());
-        abort();
+        assert(v < 0);
       }
       sizes[d-1] += v;
       apf::destroyMeshElement(me);
     }
     m->end(it);
   }
-  printf("Total sizes for order %d %f %f %f\n",
-    m->getShape()->getOrder(),
-    sizes[0],sizes[1],sizes[2]);
+
+  PCU_Add_Doubles(&(sizes[0]),3);
+  if(!PCU_Comm_Self())
+    printf("Total sizes for order %d %f %f %f\n",
+      m->getShape()->getOrder(),
+      sizes[0],sizes[1],sizes[2]);
 }
 
 static void testInterpolating(const char* modelFile, const char* meshFile,
@@ -84,7 +88,6 @@ static void testBezier(const char* modelFile, const char* meshFile,
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
     crv::BezierCurver bc(m2,order,2);
     bc.run();
-
     testElementSize(m2);
     apf::DynamicVector ee(ne);
     apf::DynamicVector fe(nf);
@@ -92,7 +95,6 @@ static void testBezier(const char* modelFile, const char* meshFile,
     testInterpolationError(m2,2,fe);
     edgeErrors.setColumn(order-1,ee);
     faceErrors.setColumn(order-1,fe);
-
     m2->destroyNative();
     apf::destroyMesh(m2);
   }
@@ -108,6 +110,16 @@ static void testBezier(const char* modelFile, const char* meshFile,
       if(faceErrors(id,0) > 1.e-10)
         assert(faceErrors(id,order-1) - faceErrors(id,order) > 0.);
     }
+
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
+    crv::BezierCurver bc(m2,order,0);
+    bc.run();
+    testElementSize(m2);
+    m2->destroyNative();
+    apf::destroyMesh(m2);
+  }
+
 }
 
 static void testGregory(const char* modelFile, const char* meshFile,
@@ -122,7 +134,6 @@ static void testGregory(const char* modelFile, const char* meshFile,
     apf::DynamicVector fe(nf);
     testInterpolationError(m2,1,ee);
     testInterpolationError(m2,2,fe);
-
     m2->destroyNative();
     apf::destroyMesh(m2);
   }

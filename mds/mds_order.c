@@ -348,7 +348,8 @@ static void rebuild_parts(
 
 static struct mds_apf* rebuild(
     struct mds_apf* m,
-    struct mds_tag* new_of)
+    struct mds_tag* new_of,
+    int ignore_peers)
 {
   struct mds_apf* m2;
   struct mds_tag* old_of;
@@ -359,22 +360,24 @@ static struct mds_apf* rebuild(
   rebuild_tags(m, m2, old_of, new_of);
   rebuild_coords(m, m2, old_of);
   rebuild_parts(m, m2, old_of);
-  rebuild_net(&m->remotes, &m->mds,
-              &m2->remotes, &m2->mds,
-              new_of);
-  rebuild_net(&m->matches, &m->mds,
-              &m2->matches, &m2->mds,
-              new_of);
+  if (!ignore_peers) {
+    rebuild_net(&m->remotes, &m->mds,
+                &m2->remotes, &m2->mds,
+                new_of);
+    rebuild_net(&m->matches, &m->mds,
+                &m2->matches, &m2->mds,
+                new_of);
+  }
   mds_destroy_tag(&m2->tags, old_of);
   return m2;
 }
 
-struct mds_apf* mds_reorder(struct mds_apf* m)
+struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers)
 {
   struct mds_tag* new_of;
   struct mds_apf* m2;
   new_of = number_graph(m);
-  m2 = rebuild(m, new_of);
+  m2 = rebuild(m, new_of, ignore_peers);
   mds_apf_destroy(m);
   return m2;
 }

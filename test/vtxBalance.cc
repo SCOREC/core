@@ -6,6 +6,8 @@
 #include <parma.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <cassert>
+#include <cstdlib>
 
 namespace {
   apf::MeshTag* setVtxWeights(apf::Mesh* m) {

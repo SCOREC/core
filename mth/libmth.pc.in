@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: MTH
+URL: http://github.com/SCOREC/core
+Description: Math containers and routines
+Version: @PACKAGE_VERSION@
+Requires:
+Libs: -lmth
+Cflags: -I${includedir} 

@@ -3,6 +3,7 @@
 #include "maShape.h"
 
 #include <cstdio>
+#include <cassert>
 
 namespace ma {
 
@@ -199,7 +200,8 @@ void LayerCollapse::unmark()
   for (size_t i = 1; i < edges.size(); ++i)
     clearFlag(a, curves[0][i], COLLAPSE);
   if (edges.size()) {
-    collapse.setEdge(edges[0]);
+    bool ok = collapse.setEdge(edges[0]);
+    assert(ok);
     collapse.unmark();
   }
 }

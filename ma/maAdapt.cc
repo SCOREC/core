@@ -18,6 +18,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <cfloat>
+#include <cassert>
 #include <stdarg.h>
 
 namespace ma {
@@ -33,7 +34,10 @@ Adapt::Adapt(Input* in)
   solutionTransfer = in->solutionTransfer;
   refine = new Refine(this);
   shape = getShapeHandler(this);
-  coarsensLeft = in->maximumIterations;
+  if (in->shouldCoarsen)
+    coarsensLeft = in->maximumIterations;
+  else
+    coarsensLeft = 0;
   refinesLeft = in->maximumIterations;
   resetLayer(this);
   if (hasLayer)
@@ -146,35 +150,33 @@ DeleteCallback::~DeleteCallback()
 
 bool checkFlagConsistency(Adapt* a, int dimension, int flag)
 {
+  Mesh* m = a->mesh;
+  apf::Sharing* sh = apf::getSharing(m);
   PCU_Comm_Begin();
   Entity* e;
-  Mesh* m = a->mesh;
   Iterator* it = m->begin(dimension);
-  while ((e = m->iterate(it)))
-  {
-    if (m->isShared(e))
-    {
-      bool value = getFlag(a,e,flag);
-      apf::Copies remotes;
-      m->getRemotes(e,remotes);
-      APF_ITERATE(apf::Copies,remotes,rit)
-      {
-        PCU_COMM_PACK(rit->first,rit->second);
-        PCU_COMM_PACK(rit->first,value);
-      }
+  while ((e = m->iterate(it))) {
+    apf::CopyArray others;
+    sh->getCopies(e, others);
+    if (!others.getSize())
+      continue;
+    bool value = getFlag(a, e, flag);
+    APF_ITERATE(apf::CopyArray, others, rit) {
+      PCU_COMM_PACK(rit->peer, rit->entity);
+      PCU_COMM_PACK(rit->peer, value);
     }
   }
   m->end(it);
   PCU_Comm_Send();
   bool ok = true;
-  while (PCU_Comm_Receive())
-  {
+  while (PCU_Comm_Receive()) {
     PCU_COMM_UNPACK(e);
     bool value;
     PCU_COMM_UNPACK(value);
     if(value != getFlag(a,e,flag))
       ok = false;
   }
+  delete sh;
   return ok;
 }
 
@@ -241,8 +243,7 @@ long markEntities(
       setFlag(a,e,falseFlag);
   }
   m->end(it);
-  PCU_Add_Longs(&count,1);
-  return count;
+  return PCU_Add_Long(count);
 }
 
 void NewEntities::reset()
@@ -270,6 +271,10 @@ void NewEntities::retrieve(EntityArray& a)
 Cavity::Cavity()
 {
   shouldTransfer = false;
+  shouldFit = false;
+  adapter = 0;
+  solutionTransfer = 0;
+  shape = 0;
 }
 
 void Cavity::init(Adapt* a)
@@ -406,27 +411,26 @@ void setFlagOnClosure(Adapt* a, Entity* element, int flag)
 
 void syncFlag(Adapt* a, int dimension, int flag)
 {
+  Mesh* m = a->mesh;
+  apf::Sharing* sh = apf::getSharing(m);
   PCU_Comm_Begin();
   Entity* e;
-  Mesh* m = a->mesh;
   Iterator* it = m->begin(dimension);
-  while ((e = m->iterate(it)))
-  {
-    if ((m->isShared(e))&&(getFlag(a,e,flag)))
-    {
-      apf::Copies remotes;
-      m->getRemotes(e,remotes);
-      APF_ITERATE(apf::Copies,remotes,rit)
-        PCU_COMM_PACK(rit->first,rit->second);
-    }
+  while ((e = m->iterate(it))) {
+    if (!getFlag(a, e, flag))
+      continue;
+    apf::CopyArray others;
+    sh->getCopies(e, others);
+    APF_ITERATE(apf::CopyArray, others, rit)
+      PCU_COMM_PACK(rit->peer, rit->entity);
   }
   m->end(it);
   PCU_Comm_Send();
-  while (PCU_Comm_Receive())
-  {
+  while (PCU_Comm_Receive()) {
     PCU_COMM_UNPACK(e);
     setFlag(a,e,flag);
   }
+  delete sh;
 }
 
 HasTag::HasTag(Mesh* m, Tag* t)

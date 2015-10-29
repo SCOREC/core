@@ -8,6 +8,7 @@
 #include "parma_commons.h"
 #include "parma_convert.h"
 #include <apf.h>
+#include <cstdlib>
 
 typedef unsigned int uint;
 typedef std::map<uint,uint> muu;
@@ -106,11 +107,9 @@ namespace parma {
 
   apf::Migration* VtxSelector::run(Targets* tgts) {
     apf::Migration* plan = new apf::Migration(mesh);
-    double t0 = PCU_Time();
     double planW = 0;
     for(int max=2; max <= 12; max+=2)
       planW += select(tgts, plan, planW, max);
-    parmaCommons::printElapsedTime("select", PCU_Time()-t0);
     return plan;
   }
 

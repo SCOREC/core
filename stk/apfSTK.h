@@ -14,6 +14,8 @@
 #include <stk_mesh/base/CoordinateSystems.hpp>
 #include <stk_mesh/base/FieldBase.hpp>
 #include <stk_mesh/base/MetaData.hpp>
+#include <stk_io/StkMeshIoBroker.hpp>
+#include <Teuchos_RCP.hpp>
 
 namespace apf {
 
@@ -45,6 +47,17 @@ void copyFieldsFromBulk(
     GlobalNumbering* n[4],
     StkMetaData* meta,
     StkBulkData* bulk);
+
+void writeExodus(
+    apf::Mesh* mesh,
+    apf::StkModels& models,
+    const char* filename,
+    std::size_t& output_file_idx,
+    const double time_val,
+    Teuchos::RCP<stk::mesh::MetaData>& meta,
+    Teuchos::RCP<stk::mesh::BulkData>& bulk,
+    Teuchos::RCP<stk::io::StkMeshIoBroker>& mesh_data);
+
 }
 
 #endif

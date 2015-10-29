@@ -10,7 +10,7 @@
 #ifndef PCU_MPI_H
 #define PCU_MPI_H
 
-#include "pcu_memory.h"
+#include "pcu_buffer.h"
 #include <mpi.h>
 
 typedef struct

@@ -76,11 +76,13 @@ FieldShape* getShape(Numbering* n);
 const char* getName(Numbering* n);
 /** \brief get the mesh associated with a Numbering */
 Mesh* getMesh(Numbering* n);
+int countComponents(Numbering* n);
 
 /** \brief returns the node numbers of an element
   \details numbers are returned in the standard
-           element node ordering for its shape functions */
-void getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
+           element node ordering for its shape functions
+  \returns the number of element nodes */
+int getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
 
 /** \brief return the number of fixed degrees of freedom */ 
 int countFixed(Numbering* n);
@@ -120,7 +122,7 @@ int countNodes(GlobalNumbering* n);
 /** \brief Node identifier */
 struct Node
 {
-  Node() {}
+  Node():entity(0),node(0) {}
   Node(MeshEntity* e, int n):entity(e),node(n) {}
   /** \brief unique entity to which the node is associated */
   MeshEntity* entity;

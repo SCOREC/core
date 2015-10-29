@@ -1,5 +1,6 @@
 #include <apfCavityOp.h>
 #include <apf.h>
+#include <cassert>
 
 namespace apf {
 
@@ -58,6 +59,7 @@ class GradientIntegrator : public Integrator
       f = f_in;
       isFirst = true;
       volumeSum = 0;
+      e = 0;
     }
     virtual void inElement(MeshElement* me)
     {
@@ -123,6 +125,7 @@ class RecoverGradient : public CavityOp
       mesh = getMesh(f_in);
       f = f_in;
       gradf = gradf_in;
+      vert = 0;
     }
     virtual Outcome setEntity(MeshEntity* v)
     {

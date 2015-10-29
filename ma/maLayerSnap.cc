@@ -3,6 +3,7 @@
 #include "maLayer.h"
 #include "maSnap.h"
 #include "maShape.h"
+#include <cassert>
 
 namespace ma {
 
@@ -197,6 +198,7 @@ struct LayerSnapper : public Crawler
     a = a_;
     m = a->mesh;
     snapTag = t_;
+    ncurves = 0;
   }
   void snap(Entity* v)
   {
@@ -435,7 +437,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
     setFlag(a, v, LAYER_UNSNAP);
     assert(m->hasTag(v, snapTag));
   }
-  PCU_Add_Longs(&n, 1);
+  n = PCU_Add_Long(n);
   print("fed back unsnap flag from %ld tops", n); 
 }
 
@@ -453,6 +455,7 @@ struct Unsnapper : public Crawler
     a = a_;
     m = a->mesh;
     snapTag = t_;
+    ncurves = 0;
   }
   void unsnap(Entity* v)
   {

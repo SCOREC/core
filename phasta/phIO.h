@@ -14,7 +14,7 @@ void ph_write_doubles(FILE* f, const char* name, double* data,
 void ph_write_ints(FILE* f, const char* name, int* data,
     size_t n, int nparam, int* params);
 
-void ph_read_field(const char* file, const char* field, double** data,
+void ph_read_field(FILE* f, const char* field, double** data,
     int* nodes, int* vars, int* step);
 void ph_write_field(FILE* f, const char* field, double* data,
     int nodes, int vars, int step);

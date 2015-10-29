@@ -28,15 +28,15 @@ class FieldOf : public Field
 {
   public:
     virtual ~FieldOf() {}
-    void setNodeValue(MeshEntity* e, int node, T const& value)
+    void setNodeValue(MeshEntity* e, int node, T const* value)
     {
       getData()->setNodeComponents(
-          e,node,reinterpret_cast<double const*>(&value));
+          e,node,reinterpret_cast<double const*>(value));
     }
-    void getNodeValue(MeshEntity* e, int node, T& value)
+    void getNodeValue(MeshEntity* e, int node, T* value)
     {
       getData()->getNodeComponents(
-          e,node,reinterpret_cast<double*>(&value));
+          e,node,reinterpret_cast<double*>(value));
     }
     void project(Field* from)
     {

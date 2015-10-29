@@ -8,8 +8,7 @@
 
 *******************************************************************************/
 #include "pcu_pmpi.h"
-#include "pcu_common.h"
-#include "pcu_memory.h"
+#include "pcu_buffer.h"
 
 static int global_size;
 static int global_rank;

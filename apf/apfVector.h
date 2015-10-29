@@ -5,15 +5,15 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef APFVECTOR_H
-#define APFVECTOR_H
+#ifndef APF_VECTOR_H
+#define APF_VECTOR_H
 
 /** \file apfVector.h
     \brief The APF linear algebra vector interface */
 
 #include <cmath>
 #include "apfArray.h"
-#include <iostream>
+#include <ostream>
 
 namespace apf {
 
@@ -52,21 +52,21 @@ class Vector : public Array<double,N>
     Vector(double const* v)
     {
       for (std::size_t i=0; i < N; ++i)
-        this->elements[i] = v[i];
+        (*this)[i] = v[i];
     }
     /** \brief add two vectors */
     Vector<N> operator+(Vector<N> const& b) const
     {
       Vector<N> c;
       for (std::size_t i=0; i < N; ++i)
-        c.elements[i] = this->elements[i] + b.elements[i];
+        c[i] = (*this)[i] + b[i];
       return c;
     }
     /** \brief add a vector to this vector */
     Vector<N>& operator+=(Vector<N> const& b)
     {
       for (std::size_t i=0; i < N; ++i)
-        this->elements[i] += b.elements[i];
+        (*this)[i] += b[i];
       return (*this);
     }
     /** \brief subtract two vectors */
@@ -74,7 +74,7 @@ class Vector : public Array<double,N>
     {
       Vector<N> c;
       for (std::size_t i=0; i < N; ++i)
-        c.elements[i] = this->elements[i] - b.elements[i];
+        c[i] = (*this)[i] - b[i];
       return c;
     }
     /** \brief multiply a vector times a scalar
@@ -84,7 +84,7 @@ class Vector : public Array<double,N>
     {
       Vector<N> c;
       for (std::size_t i=0; i < N; ++i)
-        c.elements[i] = this->elements[i] * s;
+        c[i] = (*this)[i] * s;
       return c;
     }
     /** \brief divide a vector by a scalar
@@ -93,7 +93,7 @@ class Vector : public Array<double,N>
     {
       Vector<N> c;
       for (std::size_t i=0; i < N; ++i)
-        c.elements[i] = this->elements[i] / s;
+        c[i] = (*this)[i] / s;
       return c;
     }
     /** \brief vector dot product
@@ -104,7 +104,7 @@ class Vector : public Array<double,N>
     {
       double r=0;
       for (std::size_t i=0; i < N; ++i)
-        r += this->elements[i] * b.elements[i];
+        r += (*this)[i] * b[i];
       return r;
     }
     /** \brief get the vector magnitude */
@@ -115,7 +115,7 @@ class Vector : public Array<double,N>
     void zero()
     {
       for (std::size_t i=0; i < N; ++i)
-        this->elements[i] = 0.0;
+        (*this)[i] = 0.0;
     }
 };
 
@@ -158,46 +158,46 @@ class Vector3 : public Vector<3>
       \details this is commonly used for hardcoding vectors */
     Vector3(double a, double b, double c)
     {
-      this->elements[0] = a;
-      this->elements[1] = b;
-      this->elements[2] = c;
+      (*this)[0] = a;
+      (*this)[1] = b;
+      (*this)[2] = c;
     }
     /** \brief construct from array
      \todo this could maybe be templated */
     Vector3(double const* abc)
     {
-      this->elements[0] = abc[0];
-      this->elements[1] = abc[1];
-      this->elements[2] = abc[2];
+      (*this)[0] = abc[0];
+      (*this)[1] = abc[1];
+      (*this)[2] = abc[2];
     }
     /** \brief write vector to array
      \todo this could be templated */
     void toArray(double* abc) const
     {
-      abc[0] = this->elements[0];
-      abc[1] = this->elements[1];
-      abc[2] = this->elements[2];
+      abc[0] = (*this)[0];
+      abc[1] = (*this)[1];
+      abc[2] = (*this)[2];
     }
     /** \brief read vector from array
      \todo this could be templated */
     void fromArray(const double* abc)
     {
-      this->elements[0] = abc[0];
-      this->elements[1] = abc[1];
-      this->elements[2] = abc[2];
+      (*this)[0] = abc[0];
+      (*this)[1] = abc[1];
+      (*this)[2] = abc[2];
     }
     /** \brief immutable x component */
-    double x() const {return this->elements[0];}
+    double x() const {return (*this)[0];}
     /** \brief immutable y component */
-    double y() const {return this->elements[1];}
+    double y() const {return (*this)[1];}
     /** \brief immutable z component */
-    double z() const {return this->elements[2];}
+    double z() const {return (*this)[2];}
     /** \brief mutable x component */
-    double& x() {return this->elements[0];}
+    double& x() {return (*this)[0];}
     /** \brief mutable y component */
-    double& y() {return this->elements[1];}
+    double& y() {return (*this)[1];}
     /** \brief mutable z component */
-    double& z() {return this->elements[2];}
+    double& z() {return (*this)[2];}
 };
 
 }

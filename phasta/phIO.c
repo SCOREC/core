@@ -47,8 +47,9 @@ static void cut_trailing_spaces(char* s)
 static void parse_header(char* header, char** name, long* bytes,
     int nparam, int* params)
 {
-  char* saveptr;
+  char* saveptr = NULL;
   int i;
+  assert(header != NULL);
   header = strtok_r(header, ":", &saveptr);
   if (name) {
     *name = header;
@@ -73,7 +74,8 @@ static int find_header(FILE* f, const char* name, char header[PH_LINE])
   while (fgets(header, PH_LINE, f)) {
     if ((header[0] == '#') || (header[0] == '\n'))
       continue;
-    strcpy(tmp, header);
+    strncpy(tmp, header, PH_LINE-1);
+    tmp[PH_LINE-1] = '\0';
     parse_header(tmp, &hname, &bytes, 0, NULL);
     if (!strcmp(name, hname))
       return 1;
@@ -152,18 +154,13 @@ static void parse_params(char* header, long* bytes,
   *step = params[STEP_PARAM];
 }
 
-void ph_read_field(const char* file, const char* field, double** data,
+void ph_read_field(FILE* f, const char* field, double** data,
     int* nodes, int* vars, int* step)
 {
   long bytes, n;
   char header[PH_LINE];
   int should_swap;
   int ok;
-  FILE* f = fopen(file, "r");
-  if (!f) {
-    fprintf(stderr,"could not open \"%s\"\n", file);
-    abort();
-  }
   should_swap = read_magic_number(f);
   ok = find_header(f, field, header);
   assert(ok);
@@ -175,7 +172,6 @@ void ph_read_field(const char* file, const char* field, double** data,
   my_fread(*data, sizeof(double), n, f);
   if (should_swap)
     pcu_swap_doubles(*data, n);
-  fclose(f);
 }
 
 void ph_write_field(FILE* f, const char* field, double* data,

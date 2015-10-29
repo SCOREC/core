@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -8,6 +9,7 @@
 #include <PCU.h>
 
 #include <math.h>
+#include <cassert>
 
 /* This test file uses an alternative and more traditional method to
  * compute Jacobian differences, using the property of Bezier's that
@@ -15,95 +17,10 @@
  * control point differences. As implementing weights*control point differences
  * is not possible in our current framework, this method is not implemented in
  * the main code, but serves its use for code validation.
+ *
+ * This test file also contains validity checks.
+ * In 2D, orders 3-6 provide invalid meshes
  */
-static int getPointIndex(int P, int I, int J)
-{
-  static apf::NewArray<int> map[6];
-  int m1[] = {2,0,1};
-  int m2[] = {2,5,0,4,3,1};
-  int m3[] = {2,7,8,0,6,9,3,5,4,1};
-  int m4[] = {2,9,10,11,0,8,14,12,3,7,13,4,6,5,1};
-  int m5[] = {2,11,12,13,14,0,10,19,20,15,3,9,18,16,4,8,17,5,7,6,1};
-  int m6[] = {2,13,14,15,16,17,0,12,24,25,26,18,3,11,23,27,19,4,10,
-      22,20,5,9,21,6,8,7,1};
-
-  int* maps[6] = {m1,m2,m3,m4,m5,m6};;
-  for(int j = 1; j <= 6; ++j){
-    map[j-1].allocate((j+1)*(j+2)/2);
-    for(int i = 0; i < (j+1)*(j+2)/2; ++i)
-      map[j-1][i] = maps[j-1][i];
-  }
-  return map[P-1][J*(P+1)+I-J*(J-1)/2];
-}
-
-static double getJacobianDeterminant(apf::NewArray<apf::Vector3>& nodes,
-    int d, int i1, int j1, int i2, int j2)
-{
-  int p00 = getPointIndex(d,i1+1,j1);
-  int p01 = getPointIndex(d,i1,j1+1);
-  int p10 = getPointIndex(d,i2+1,j2);
-  int p11 = getPointIndex(d,i2,j2);
-  apf::Vector3 c0 = nodes[p01]-nodes[p00];
-  apf::Vector3 c1 = nodes[p11]-nodes[p10];
-  return c0[0]*c1[1]-c1[0]*c0[1];
-}
-
-static int factorial(int i)
-{
-  static int table[13] = {1,1,2,6,24,120,720,5040,40320,362880,
-      3628800,39916800,479001600};
-  return table[i];
-}
-
-static int CDIJK(int d, int i, int j, int k)
-{
-  return factorial(d)/factorial(i)/factorial(j)/factorial(k);
-}
-
-static double NIJK(apf::NewArray<apf::Vector3>& nodes,
-    int d, int I, int J, int K)
-{
-  int CD = CDIJK(2*(d-1),I,J,K);
-  double sum = 0.;
-  for(int j1 = 0; j1 <= J; ++j1){
-    for(int i1 = 0; i1 <= I; ++i1){
-      int k1 = d-1 - i1 - j1;
-      if(i1 > d-1 || j1 > d-1 || I-i1 > d-1 || J-j1 > d-1 ||
-         i1+j1 > d-1 || I-i1 + J-j1 > d-1)
-        continue;
-      sum += CDIJK(d-1,i1,j1,k1)
-          *CDIJK(d-1,I-i1,J-j1,K-k1)
-          *getJacobianDeterminant(nodes,d,i1,j1,I-i1,J-j1)/CD;
-    }
-  }
-  return sum*d*d;
-}
-
-static double BIJK(int d, int i, int j, apf::Vector3& xi)
-{
-  double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
-
-  return factorial(d)/factorial(i)/factorial(j)/factorial(d-i-j)
-      *pow(xii[0],i)*pow(xii[1],j)*pow(xii[2],d-i-j);
-}
-
-static double testTriangleJacobian(apf::Mesh* m, apf::MeshEntity* e,
-    apf::Vector3& xi)
-{
-  int d = m->getShape()->getOrder();
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
-  apf::NewArray<apf::Vector3> nodes;
-  apf::getVectorNodes(elem,nodes);
-
-  double detJ = 0.;
-  for(int I = 0; I <= 2*(d-1); ++I){
-    for(int J = 0; J <= 2*(d-1)-I; ++J){
-      detJ += BIJK(2*(d-1),I,J,xi)*NIJK(nodes,d,I,J,2*(d-1)-I-J);
-    }
-  }
-  apf::destroyElement(elem);
-  return detJ;
-}
 
 static void testJacobian(apf::Mesh2* m)
 {
@@ -123,19 +40,13 @@ static void testJacobian(apf::Mesh2* m)
         xi[0] = 1.*i/n;
         apf::getJacobian(me,xi,Jac);
         double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
-        double J = testTriangleJacobian(m,e,xi);
+        double J = crv::computeTriJacobianDetFromBezierFormulation(m,e,xi);
         assert(fabs(detJ-J) < 1e-14);
       }
     }
     apf::destroyMeshElement(me);
   }
   m->end(it);
-}
-
-static double BIJ(int d, int i, apf::Vector3& xi)
-{
-  return factorial(d)/factorial(i)/factorial(d-i)
-      *pow(xi[0],i)*pow(1.-xi[0],d-i);
 }
 
 static void testEdgeGradients(apf::Mesh2* m)
@@ -168,7 +79,8 @@ static void testEdgeGradients(apf::Mesh2* m)
       apf::Vector3 J(0,0,0);
       xi[0] = (double)i/n;
       for(int p = 0; p <= d-1; ++p){
-        J += (nodes[map[p+1]]-nodes[map[p]])*BIJ(d-1,p,xi)*d;
+        J += (nodes[map[p+1]]-nodes[map[p]])*d
+            *crv::binomial(d-1,p)*crv::Bij(p,d-1-p,xi[0],1.-xi[0]);
       }
       assert(fabs(J[0]-Jac[0][0]*2.0) < 1e-14
           && fabs(J[1]-Jac[0][1]*2.0) < 1e-14);
@@ -193,7 +105,7 @@ void edge0(double const p[2], double x[3], void*)
 }
 void edge1(double const p[2], double x[3], void*)
 {
-  x[0] = 1.0-10.0*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
+  x[0] = 1.0-5.0*p[0]*(p[0]-1.0)*p[0]*(p[0]-1.0);
   x[1] = p[0];
 }
 void edge2(double const p[2], double x[3], void*)
@@ -301,55 +213,198 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
-
-static void fixMidPoints(apf::Mesh2* m)
+void checkEntityValidity(int numInvalid, int entity, int order)
 {
-  apf::FieldShape * fs = m->getShape();
+  if(entity == 1){
+    assert(numInvalid == 0);
+  } else {
+    assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+  }
+}
 
+void checkValidity(apf::Mesh* m, int order)
+{
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
-  apf::Vector3 xi;
-
+  int entityNum = 0;
   while ((e = m->iterate(it))) {
-    apf::MeshEntity* v[3];
-    m->getDownward(e,0,v);
-    for(int i = 0; i < fs->countNodesOn(2); ++i){
-      apf::Vector3 pt(0,0,0), vertex;
+    apf::MeshEntity* entities[3];
+    int numInvalid = crv::checkTriValidity(m,e,entities,2);
+    checkEntityValidity(numInvalid,entityNum,order);
+    numInvalid = crv::checkTriValidity(m,e,entities,3);
+    checkEntityValidity(numInvalid,entityNum,order);
 
-      fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-      xi[2] = 1.-xi[0]-xi[1];
-      for(int j = 0; j < 3; ++j){
-        m->getPoint(v[j],0,vertex);
-        pt += vertex*xi[j];
-      }
-      m->setPoint(e,i,pt);
-    }
+    entityNum++;
+    break;
+
   }
   m->end(it);
 }
 
 void test2D()
 {
-  for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 0; blendOrder <= 0; ++blendOrder){
+  for(int order = 2; order <= 6; ++order){
       apf::Mesh2* m = createMesh2D();
-      crv::BezierCurver bc(m,order,blendOrder);
-      bc.run();
-      if(order > 2)
-        fixMidPoints(m);
+      apf::changeMeshShape(m, crv::getBezier(order),true);
+      crv::BezierCurver bc(m,order,0);
+      // creates interpolation points based on the edges of the geometry
+      bc.snapToInterpolate(1);
+      apf::FieldShape* fs = m->getShape();
+
+      // go downward, and convert interpolating to control points
+      {
+        int n = order+1;
+        int ne = fs->countNodesOn(apf::Mesh::EDGE);
+        apf::NewArray<double> c;
+        crv::getBezierTransformationCoefficients(m,order,apf::Mesh::EDGE,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(1);
+        while ((e = m->iterate(it))) {
+          bc.convertInterpolationPoints(e,n,ne,c);
+        }
+        m->end(it);
+      }
+      if(fs->hasNodesIn(2)) {
+        int n = crv::getNumControlPoints(2,order);
+        int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
+        apf::NewArray<double> c;
+        crv::getInternalBezierTransformationCoefficients(m,order,1,
+            apf::Mesh::TRIANGLE,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(2);
+        while ((e = m->iterate(it))){
+          bc.convertInterpolationPoints(e,n-ne,ne,c);
+        }
+        m->end(it);
+      }
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
+//
+//      crv::writeControlPointVtuFiles(m,"curved");
+
       testJacobian(m);
       testEdgeGradients(m);
+      checkValidity(m,order);
+
       m->destroyNative();
       apf::destroyMesh(m);
     }
-  }
 }
 
+apf::Mesh2* createMesh3D()
+{
+  gmi_model* model = gmi_load(".null");
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+
+  apf::Vector3 points3D[4] =
+  {apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1)};
+
+  apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
+
+  apf::deriveMdsModel(m);
+
+  m->acceptChanges();
+  m->verify();
+  return m;
+}
+
+void test3D()
+{
+  gmi_register_null();
+
+  for(int order = 2; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    apf::changeMeshShape(m, crv::getBezier(order),true);
+    apf::FieldShape* fs = m->getShape();
+    crv::BezierCurver bc(m,order,0);
+    // go downward, and convert interpolating to control points
+    for(int d = 2; d >= 1; --d){
+      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+      int ni = fs->countNodesOn(d);
+      if(ni <= 0) continue;
+      apf::NewArray<double> c;
+      crv::getBezierTransformationCoefficients(m,order,d,c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))) {
+        if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
+        bc.convertInterpolationPoints(e,n,ni,c);
+      }
+      m->end(it);
+    }
+
+
+    // get face 2
+    apf::MeshIterator* it = m->begin(3);
+    apf::MeshEntity* tet = m->iterate(it);
+    m->end(it);
+
+    apf::MeshEntity* faces[4], *edges[3];
+    m->getDownward(tet,2,faces);
+    apf::MeshEntity* face = faces[2];
+    m->getDownward(face,1,edges);
+    for (int edge = 0; edge < 3; ++edge){
+      int non = m->getShape()->countNodesOn(apf::Mesh::EDGE);
+      for (int i = 0; i < non; ++i){
+        apf::Vector3 pt;
+        m->getPoint(edges[edge],i,pt);
+        pt = pt*0.6;
+        m->setPoint(edges[edge],i,pt);
+      }
+    }
+    int non = m->getShape()->countNodesOn(apf::Mesh::TRIANGLE);
+    for (int i = 0; i < non; ++i){
+      apf::Vector3 pt;
+      m->getPoint(face,i,pt);
+      pt = pt*0.6;
+      m->setPoint(face,i,pt);
+    }
+    for(int d = 2; d <= 3; ++d){
+      if(!fs->hasNodesIn(d)) continue;
+      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+      int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+      apf::NewArray<double> c;
+      crv::getInternalBezierTransformationCoefficients(m,order,1,
+          apf::Mesh::simplexTypes[d],c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))){
+        bc.convertInterpolationPoints(e,n-ne,ne,c);
+      }
+      m->end(it);
+    }
+    m->acceptChanges();
+
+    apf::MeshEntity* entities[14];
+    int numInvalid = crv::checkTetValidity(m,tet,entities,2);
+
+    if(order == 4){
+      assert(numInvalid > 0);
+    } else {
+      assert(numInvalid == 0);
+    }
+    numInvalid = crv::checkTetValidity(m,tet,entities,3);
+    if(order == 4){
+      assert(numInvalid > 0);
+    } else {
+      assert(numInvalid == 0);
+    }
+//          crv::writeCurvedVtuFiles(m,apf::Mesh::TET,50,"curved");
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+
+}
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
+  test3D();
   PCU_Comm_Free();
   MPI_Finalize();
 }

@@ -25,7 +25,7 @@ class Operator
     virtual void apply() = 0;
 };
 
-void applyOperator(Adapt* a, Operator* o);
+void applyOperator(Adapt* a, Operator* o, bool matched = false);
 
 }
 

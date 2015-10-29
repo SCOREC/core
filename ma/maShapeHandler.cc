@@ -12,6 +12,7 @@
 #include "maShape.h"
 #include "maAdapt.h"
 #include <apfShape.h>
+#include <cassert>
 
 namespace ma {
 

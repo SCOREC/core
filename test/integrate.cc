@@ -1,5 +1,8 @@
 #include <apfIntegrate.h>
 #include <apfMesh.h>
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 
 static void testType(int type, double expectedSum)
 {

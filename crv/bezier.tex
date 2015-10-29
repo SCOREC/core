@@ -1,238 +1,639 @@
-\documentclass{article}
-\usepackage{amsmath}
-\usepackage{algpseudocode}
+\documentclass[12pt]{beamer}
+
+% for themes, etc.
+\mode<presentation>
+{ \usetheme{default} }
+
+\usepackage{graphicx}        % standard LaTeX graphics tool
+                             % when including figure files
+\usepackage{multicol}        % used for the two-column index
+\usepackage[bottom]{footmisc}% places footnotes at page bottom
+
+\usepackage{enumerate,verbatim}
+\usepackage{amssymb,amsmath,ulem}
+\usepackage{transparent}
 \usepackage{tikz}
-\title{Bezier Shape Functions}
-\author{Dan Zaide}
+\usepackage{algpseudocode}
+
+\newcommand{\D}{\mathrm{d}}
+\newcommand{\subt}[1]{\framesubtitle{#1}}
+\newcommand{\dst}{\displaystyle}
+\newcommand{\spa}{\vspace{0.5cm}\newline}
+
+\setbeamertemplate{itemize item}{$\circ$}
+
+\usefonttheme{professionalfonts}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{\hfill \small \insertframenumber/\inserttotalframenumber \vspace{0.1in} \hspace{0.025in}   }%/ }
+
+
+\setbeamercolor{title}{fg=black}
+\setbeamercolor{frametitle}{fg=black}
+
+\setbeamertemplate{frametitle}{\insertframetitle\\\usebeamerfont{framesubtitle}\insertframesubtitle}
+%\setbeamerfont{frametitle}{size=\scriptsize}
+\setbeamerfont{framesubtitle}{size=\normalsize}
+
+
+
+
+\title{Notes on B{\'e}zier Shapes}
+\author{\textbf{Daniel W. Zaide}}
+\institute{Scientific Computation Research Center, Rensselaer Polytechnic Institute}
+\date{September 20, 2015}
+
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Table of Contents}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
 \begin{document}
-\maketitle
+%%%%%%%%%% TITLE SLIDE
+\begin{frame}[plain]
+\titlepage
+\end{frame}
+% \begin{frame}
+% \frametitle{Table of Contents}
+% \tableofcontents[currentsection]
+% \end{frame}
+\section{Introduction to B{\'e}zier Shapes}
+\begin{frame}{B{\'e}zier shapes}
+$P^{th}$ order B{\'e}zier shapes can be defined as follows:
+{
+  \scriptsize
 
-\section{Bezier Curves}
-The Bezier curve, $\mathbf{B}(t)$ of order $P$ is polynomial defined by the set of control points $\mathbf{C}_i$ for $i = 0,\ldots,P$ as 
-\[
-\mathbf{B}(t) = \displaystyle \sum_{i=0}^P {P \choose i}t^i(1-t)^{P-i}\mathbf{C}_i
-\]
-where ${P \choose i}= \frac{P!}{i!(P-i)!}$ is the binomial coefficient and $ t \in [0,1]$. The derivatives are
-\[
-\frac{\mathrm{d} \mathbf{B}(t)}{\mathrm{d} t} = \displaystyle \sum_{i=0}^P {P \choose i}(i-Pt)t^{i-1}(1-t)^{P-i-1}\mathbf{C}_i
-\]
-and
-\[
-\frac{\mathrm{d}^2 \mathbf{B}(t)}{\mathrm{d} t^2} = \displaystyle \sum_{i=0}^P {P \choose i}((P-1)Pt^2-2i(P-1)t+i(i-1))t^{i-2}(1-t)^{P-i-2}\mathbf{C}_i
-\]
-where
-\[\left.\frac{\mathrm{d}^2 \mathbf{B}(t)}{\mathrm{d} t^2}\right|_t=0 = P(P-1)(\mathbf{C}_0-2\mathbf{C}_1+\mathbf{C}_2)\]
-In the current implementation in \texttt{BezierShape} in \texttt{apfBezier.cc}, the edge shape functions are ordered with the vertices first, as $v_0,v_1,e_0,\ldots,e_{p-1}$, which is not geometric order.
-\subsection{Interpolating Bezier Curves}
-To fit a bezier curve to a known geometry, interpolating points, $\mathbf{P}_j = \mathbf{P}(t_j)$, are first needed at $t_0,\ldots, t_{P+1}$ before the control points can be solved for. This requires solving
+\begin{eqnarray*}
+\mathrm{Edge} & \mathbf{B}(u)& = \displaystyle \sum_{i+j=P} \frac{P!}{i!j!}u^iv^j\mathbf{C}_{ij}, \quad v = 1-u\\
+\mathrm{Triangle} & \mathbf{B}(u,v)& = \displaystyle\sum_{i+j+k=P} \frac{P!}{i!j!k!}u^iv^jw^k\mathbf{C}_{ijk}, \quad w = 1-u-v
+\\
+\mathrm{Tet} & \mathbf{B}(u,v,w)& = \displaystyle\sum_{i+j+k+l=P} \frac{P!}{i!j!k!l!}u^iv^jw^kt^l\mathbf{C}_{ijkl}, \quad t = 1-u-v-w
+\end{eqnarray*}
+}
+With all parameters as barycentric coordinates, \[u,v,w,t \in [0,1] \]
+There is often the use of the binomial coefficient, here I will also use that notation, with
+{
+  \scriptsize
 
-\[
-\mathbf{B}(t_j) = \displaystyle \sum_{i=0}^P {P \choose i}t_j^i(1-t_j)^{P-i}\mathbf{C}_i = \mathbf{P}_i
-\]
-at each interpolating point, resulting in a linear system of equations for $\mathbf{C}_i$. The following matlab code solves for these coefficients, which each row of $\mathbf{A}^{-1}$ corresponding to coefficients for the interpolating points. The first six orders are implemented in \texttt{convertEdgeLocations2D} and \texttt{convertEdgeLocations3D}.
-
-% \begin{verbatim}
-% switch (n)
-%     case 2
-%         t = [-1,0,1];
-%     case 3
-%         %         t = [-1,-0.4306648,0.4306648,1];
-%         t = [0,0.2748043,0.7251957,1];
-%     case 4
-%         %         t = [-1,-0.6546,0.0,0.6546,1];
-%         t = [0,0.1693976,0.5,0.8306024,1];
-%     case 5
-%         %         t = [-1,-0.7485748,-0.2765187,0.2765187,0.7485748,1];
-%         t = [0, 0.1257126, 0.36174065, 0.63825935,0.8742874,1];
-%     case 6
-%         %         t = [-1,-0.8161268,-0.4568660,0.0, 0.4568660,0.8161268,1];
-%         t = [   0, 0.0919366, 0.271567, 0.5, 0.728433, 0.9080634,1];
-% end
-% t(end) = [];
-% t = [t(1),1,t(2:end)];
-% % t = (t+1)/2;
-
-% A = zeros(n,n);
-% for i=0:n
-%     bi = factorial(n)/factorial(n-i)/factorial(i);
-%     for j=0:n
-%         A(j+1,i+1) = bi*t(j+1)^i*(1-t(j+1))^(n-i);
-%     end
-% end
-% Ai = inv(A);
-
-% for i = 1:n+1
-%     fprintf('{')
-%     for j = 1:n+1
-%         fprintf(num2str(Ai(i,j),9))
-%         if (j ~= n+1)
-%             fprintf(',')
-%         end
-%     end
-%     fprintf('},\n')
-    
-% end
-% \end{verbatim}
-Several choices of $t_j$ exist. Using equally spaced $t$'s works fairly well, but closer to optimal points are in \textit{Approximate optimal points for polynomial interpolation of real functions in an interval and in a triangle}, Chen and Babuska, 1995.
-\section{Bezier Triangles}
-The Bezier triangle is similar, with each edge its own Bezier curve. For an order $P$ triangle, there are $(P+1)(P+2)/2$ control points, with $(P-1)(P-2)/2$ points on the interior. Using barycentric coordinates $u,v,w = 1-u-v$ we can define the Bezier triangle as 
-\[
-\mathbf{B}(u,v) = \displaystyle\sum_{i,j,k\geq 0}^{i+j+k=P} \frac{P!}{i!j!k!}u^iv^jw^k \alpha^i\beta^j\gamma^k 
-\]
-where $\alpha^i\beta^j\gamma^k$ correspond to the control points. In our implementation, we use a finite element coordinate system where our parameters are $\xi_0,\xi_1$ and our triangle has vertex 0 at $1-\xi_0-\xi_1$, vertex 1 at $\xi_0$ and vertex 2 at $\xi_1$.
-
-This is implemented in a single array with size $(P+1)(P+2)/2$. The summation is then rewritten as
-\[
-\mathbf{B}(u,v) = \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}u^iv^j(1-u-v)^{P-i-j}\mathbf{P}_\ell, \quad \ell = (P+1)j+i-j(j-1)/2
-\]
-which is equivalent to the top left of $[P+1\times P+1]$ matrix with entries at $(i,j)$ and $k$ as follows, shown for $P = 3$
-\begin{verbatim}
- j 0 1 2 3
-ik________
-0 |3 2 1 0
-1 |2 1 0   
-2 |1 0 
-3 |0 
-\end{verbatim}
-The array indices are $\ell = (P+1)j+i-j(j-1)/2$ and are columnwise,
-\begin{verbatim}
- j 0 1 2 3
-i ________ 
-0 |0 4 7 9
-1 |1 5 8   
-2 |2 6 
-3 |3 
-\end{verbatim}
-In each case, the control points attached to each entity are ordered counter clockwise as
-\begin{verbatim}
- j 0   1   2   3
-i _______________ 
-0 |v2  e10 e10 v1
-1 |e20 f0  e01   
-2 |e21 e00 
-3 |v0 
-\end{verbatim}
-In the actual implementation, vertices are the first three points, edges are the next $3(P-1)$ and faces are the rest. So our list of points is actually $v_0,v_1,v_2,e_{0,0},\ldots,e_{0,P-1},e_{1,0},\ldots,e_{1,P-1},e_{2,0},\ldots,e_{2,P-1},f_0,\ldots,f_{(P-1)(P-2)/2}$. 
+\[ \frac{P!}{i!j!} = {P \choose i},\qquad \frac{P!}{i!j!k!} = {P \choose i,j},\qquad \frac{P!}{i!j!k!l!} = {P \choose i,j,k}\]
+\[\frac{P!}{i!j!k!} = {P \choose i}{P-i \choose j},\qquad \frac{P!}{i!j!k!l!} = {P \choose i}{P-i \choose j}{P-i-j \choose k}\]
+}
+\end{frame}
+\begin{frame}{B{\'e}zier Triangle}
+For example, the $4^{th}$ order B{\'e}zier Triangle is drawn here, to illustrate the control points and notation.
 \begin{figure}
-\begin{tikzpicture}[scale=1]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=1pt, minimum width=5pt]
-\path (0,0) node {$0$}
-(1,0) node [label={[label distance=0.1cm]-60:Edge 0}] {$3$}
-(2,0) node {$4$}
-(3,0) node {$1$}
-(2,1) node {$5$}
-(1,2) node [label={[label distance=0.1cm,rotate=-45]10:Edge 1}] {$6$}
-(0,3) node {$2$}
-(0,2) node [label={[label distance=0.2cm,rotate=90]-200:Edge 2}] {$7$}
-(0,1) node {$8$}
-(1,1) node {$9$};
+\centering
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.5,-0.25) and (1.0, -0.25)
+   .. (1.5, 0.) .. controls (1.25,0.6) and (1.0,0.8) 
+   .. (0.75,1.) .. controls (0.5,0.8) and (0.25,0.6) 
+   .. (0,0); 
 
-\end{tikzpicture} \hspace{1cm}
-\begin{tikzpicture}[scale=1]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=2pt, minimum width=5pt]
-\path (0,0) node {$0$}
-(1,0) node {$3$}
-(2,0) node {$4$}
-(3,0) node {$5$}
-(4,0) node {$1$}
-(3,1) node {$6$}
-(2,2) node {$7$}
-(1,3) node {$8$}
-(0,4) node {$2$}
-(0,3) node {$9$}
-(0,2) node {$10$}
-(0,1) node {$11$}
-(1,1) node {$12$}
-(2,1) node {$13$}
-(1,2) node {$14$};
+\path (-0.1,-0.1) node {$\mathbf{C}_{400}$}
+(0.375,-0.35) node {$\mathbf{C}_{310}$}
+(0.75,-0.4) node {$\mathbf{C}_{220}$}
+(1.175,-0.37) node {$\mathbf{C}_{130}$}
+(1.6,-0.13) node {$\mathbf{C}_{040}$}
+(1.6,0.35) node {$\mathbf{C}_{031}$}
+(1.45,0.6) node {$\mathbf{C}_{022}$}
+(1.22,0.85) node {$\mathbf{C}_{013}$}
+(0.75,1.15) node {$\mathbf{C}_{004}$}
+(-0.1,0.35) node {$\mathbf{C}_{301}$}
+(0.1,0.6) node {$\mathbf{C}_{202}$}
+(0.3,0.85) node {$\mathbf{C}_{103}$}
+(0.45,0.1) node {$\mathbf{C}_{211}$}
+(1.175,0.1) node {$\mathbf{C}_{121}$}
+(0.75,0.45) node {$\mathbf{C}_{112}$};
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.375,-0.22) circle [radius=0.5mm];
+\fill (.75,-.25) circle [radius=0.5mm];
+\fill (1.125,-.22) circle [radius=0.5mm];
+\fill (1.5,0) circle [radius=0.5mm];
+\fill (1.4,0.3) circle [radius=0.5mm];
+\fill (1.25,0.6) circle [radius=0.5mm];
+\fill (1.0,0.85) circle [radius=0.5mm];
+\fill (0.1,0.3) circle [radius=0.5mm];
+\fill (0.3,0.6) circle [radius=0.5mm];
+\fill (0.5,0.85) circle [radius=0.5mm];
+\fill (0.5,0.2) circle [radius=0.5mm];
+\fill (1.0,0.2) circle [radius=0.5mm];
+\fill (0.75,0.6) circle [radius=0.5mm];
+\fill (0.75,1.) circle [radius=0.5mm];
+\end{tikzpicture}
+\end{figure}
+\end{frame}
+\begin{frame}{Number of Control Points}
+For $P^{th}$ order B{\'e}zier shapes contain the following number of control points
 
-\end{tikzpicture} \\
-\begin{tikzpicture}[scale=1]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=2pt, minimum width=5pt]
-\path (0,0) node {$0$}
-(1,0) node {$3$}
-(2,0) node {$4$}
-(3,0) node {$5$}
-(4,0) node {$6$}
-(5,0) node {$1$}
-(4,1) node {$6$}
-(3,2) node {$7$}
-(2,3) node {$8$}
-(1,4) node {$9$}
-(0,5) node {$2$}
-(0,4) node {$10$}
-(0,3) node {$11$}
-(0,2) node {$12$}
-(0,1) node {$13$}
-(1,1) node {$14$}
-(2,1) node {$15$}
-(3,1) node {$16$}
-(2,2) node {$17$}
-(1,3) node {$18$}
-(1,2) node {$19$};
+\begin{tabular}{l|cccc}
+ & Total & Internal\\ \hline
+Curve & $P+1$ & $P-1$ \\
+Triangle & $\frac{1}{2}(P+1)(P+2)$ & $\frac{1}{2}(P-1)(P-2)$ \\
+Tet & $\frac{1}{6}(P+1)(P+2)(P+3)$ &$\frac{1}{6}(P-1)(P-2)(P-3)$\\
 
-\end{tikzpicture}\hspace{1cm}
-\begin{tikzpicture}[scale=1]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=2pt, minimum width=5pt]
-\path (0,0) node {$0$}
-(1,0) node {$3$}
-(2,0) node {$4$}
-(3,0) node {$5$}
-(4,0) node {$6$}
-(5,0) node {$7$}
-(6,0) node {$1$}
-(5,1) node {$8$}
-(4,2) node {$9$}
-(3,3) node {$10$}
-(2,4) node {$11$}
-(1,5) node {$12$}
-(0,6) node {$2$}
-(0,5) node {$13$}
-(0,4) node {$14$}
-(0,3) node {$15$}
-(0,2) node {$16$}
-(0,1) node {$17$}
-(1,1) node {$18$}
-(2,1) node {$19$}
-(3,1) node {$20$}
-(4,1) node {$21$}
-(3,2) node {$22$}
-(2,3) node {$23$}
-(1,4) node {$24$}
-(1,3) node {$25$}
-(1,2) node {$26$}
-(2,2) node {$27$};
+\end{tabular}\spa
+For example,\spa
+\begin{tabular}{l|cccc}
+Order & Tri Total & Tri Internal & Tet Total & Tet Internal\\ \hline
+4 & 15 & 3 & 35 & 1\\
+5 & 21 & 6 & 56 & 4\\
+6 & 28 & 10 & 84 & 10
+\end{tabular}
+\end{frame}
+\begin{frame}{Useful Properties}
+\begin{itemize}
+ \item The convex hull property. The max and min values of a B\'{e}zier polynomial evaluated within the domain are bounded by the max and min values of its corresponding control points.
+ \item Variation diminishing. The curve has no more intersections with any plane than polygon of its control points, and converges to the curve.
+ \item Affine invariance. Curves form an affine map, allowing for reparametrization. 
+ \item Degree elevation and subdivision. Curves can be increased to higher-orders without changing behavior of the curve.
+ \item Derivatives of B{\'e}zier  shapes are themselves B{\'e}zier shapes.
+ \item Edges of B{\'e}zier triangles are B{\'e}zier curves and faces of B{\'e}zier tets are B{\'e}zier triangles.
+\end{itemize}
+
+\end{frame}
+\begin{frame}{Convex Hull Property}
+The Convex Hull property of B{\'e}zier shapes guarantees that the shape will lie entirely inside its convex hull. The curve below is inside the hull formed by its control points.
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.25,0.25) circle [radius=0.5mm];
+\fill (0.5,0.3) circle [radius=0.5mm];
+\fill (.75,.25) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\draw [line width=0.6mm, black,dashed ] (0,0) -- (0.25,0.25) -- (0.5,0.3) -- (.75,.25) -- (1.,0) -- (0,0);
+\end{tikzpicture}
+\end{figure}
+This property guarantees a bound on the shape based solely on its control points, and is important in the validity calculations.
+\end{frame}
+\section{Elevation}
+\begin{frame}{Elevation}
+Elevation is the property of B{\'e}zier shapes that describes increasing the order of the shape without changing it. Elevating a curve by one order is shown below
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.33,0.25) circle [radius=0.5mm];
+\fill (.66,.25) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\node at (0.5,-0.2) {Third Order};
+\end{tikzpicture}
+\begin{tikzpicture}
+\draw[line width=0.6mm,->] (0,0.5) -- (1.0,0.5);
+\node at (0,0) {};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25) .. (1.0, 0.);
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.25,0.2) circle [radius=0.5mm];
+\fill (0.5,0.25) circle [radius=0.5mm];
+\fill (.75,.2) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\node at (0.5,-0.2) {Fourth Order};
+\end{tikzpicture}
+\end{figure}
+We note that as we elevate the curve, the control points converge to the shape itself.
+\end{frame}
+\begin{frame}{Elevation - Curves}
+To elevate an order $P$ curve by one order, we have
+\[ \mathbf{C}^{P+1}_i = \frac{i}{P+1}\mathbf{C}^P_{i-1} + \left(1-\frac{i}{P+1}\right)\mathbf{C}^P_i, \quad 1 \leq i \leq P\]
+Generalized to elevate by $r$ orders, we get 
+\[
+\mathbf{C}^{P+r}_i = \displaystyle \sum_{j = \max(0,i-r)}^{\min(i,P)} \frac{{P \choose i}{r \choose i-j}}{{P+r \choose i}}\mathbf{C}^P_j, \quad 1 \leq i < P+r
+\]
+
+\end{frame}
+\begin{frame}{Elevation - Triangles}
+Elevating triangles is achieved similarly. To elevate by $r$ orders, we have that
+\[ \mathbf{C}^{P+r}_{ij} = \displaystyle\sum_{k = \max(0,i-r)}^{\min(i,P)}\sum_{l = \max(0,i-k+j-r)}^{\min(j,P-k)} 
+\frac{{P \choose k,l}{r \choose i-k,j-l}}{{P+r \choose i,j}}\mathbf{C}^P_{lk} \]
+with $i+j=P+r$. In practice, we could elevate the edges separately from the internal points, however this is not currently done.
+\end{frame}
+\section{Subdivision}
+\begin{frame}{Subdivision}
+Subdividing a B{\'e}zier shape splits it it into multiple shapes that together exactly represent the original shape. Curves become two curves, and triangles become three triangles. For a third order curve subdivided at $u = 1/2$, we get the diagram below
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.33,0.25) circle [radius=0.5mm];
+\fill (.66,.25) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\node at (0.5,-0.2) {One Curve};
+\end{tikzpicture}
+\begin{tikzpicture}
+\draw[line width=0.6mm,->] (0,0.5) -- (1.0,0.5);
+\node at (0,0) {};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25) .. (1.0, 0.);
+\fill (0,0) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.125) circle [radius=0.5mm];
+\fill[fill=red] (0.33,0.1875) circle [radius=0.5mm];
+\fill (0.5,0.1875) circle [radius=0.5mm];
+\fill[fill=red] (0.66,0.1875) circle [radius=0.5mm];
+\fill[fill=red] (0.833,0.125) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\node at (0.5,-0.2) {Two Curves};
+\end{tikzpicture}
+\end{figure}
+Again, the new control points all converge to the actual curve.
+\end{frame}
+\begin{frame}{Subdivision - Curves}
+Subdivision is fairly straight forward, computed using de Casteljau's algorithm. We note that we can write any curve as a sum of two curves of one degree lower,
+{
+  \scriptsize
+
+\begin{eqnarray*} \mathbf{B}(u) &=& \sum_{i=0}^P {P \choose i} u^i(1-u)^{P-i}\mathbf{C}_{i} \\ &=& (1-u)\sum_{i=0}^{P-1} {P-1 \choose i} u^i(1-u)^{P-1-i}\mathbf{C}_{i}+u\sum_{i=0}^{P-1} {P-1 \choose i} u^i(1-u)^{P-1-i}\mathbf{C}_{i+1}\end{eqnarray*}
+}This is the premise of de Casteljau's algorithm. Given a parameter $u$ and a $P^{th}$ order curve consisting of control points, $\mathbf{C}^{0}_i$, we first determine the next set of control points, $\mathbf{C}^{1}_i$ as
+\[
+\mathbf{C}^{1}_i = (1-u)\mathbf{C}^{0}_{i-1} + u\mathbf{C}^{0}_i, \qquad  1 \leq i < P
+\]
+
+\end{frame}
+
+\begin{frame}{Subdivision - Curves}
+This continues on, so for a third order curve
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=2.5] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill (0,0) circle [radius=0.3mm];
+\fill (0.33,0.25) circle [radius=0.3mm];
+\fill (.66,.25) circle [radius=0.3mm];
+\fill (1.,0) circle [radius=0.3mm];
+\draw [line width=0.6mm, black,dashed ] (0,0) -- (0.33,0.25) -- (0.66,0.25) -- (1.,0);
+
+\node at (0.5,-0.2) {Original};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2.5] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill (0,0) circle [radius=0.3mm];
+\fill (0.33,0.25) circle [radius=0.3mm];
+\fill (.66,.25) circle [radius=0.3mm];
+\fill (1.,0) circle [radius=0.3mm];
+\fill[fill=blue] (0.166,0.125) circle [radius=0.3mm];
+\fill[fill=blue] (0.5,0.25) circle [radius=0.3mm];
+\fill[fill=blue] (0.833,0.125) circle [radius=0.3mm];
+
+\draw [line width=0.6mm, black,dashed ] (0,0) -- (0.33,0.25) -- (0.66,0.25) -- (1.,0);
+\draw [line width=0.6mm, blue,dashed ] (0.166,0.125) -- (0.5,0.25) -- (0.833,0.125);
+
+\node at (0.5,-0.2) {First Step};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2.5] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill[fill=blue] (0.166,0.125) circle [radius=0.3mm];
+\fill[fill=blue] (0.5,0.25) circle [radius=0.3mm];
+\fill[fill=blue] (0.833,0.125) circle [radius=0.3mm];
+\fill[fill=red] (0.33,0.1875) circle [radius=0.3mm];
+\fill[fill=red] (0.66,0.1875) circle [radius=0.3mm];
+\draw [line width=0.6mm, blue,dashed ] (0.166,0.125) -- (0.5,0.25) -- (0.833,0.125);
+\draw [line width=0.6mm, red,dashed ] (0.33,0.1875) -- (0.66,0.1875);
+
+\node at (0.5,-0.2) {Second Step};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2.5] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,0.25)
+   .. (1.0, 0.);
+\fill[fill=red] (0.33,0.1875) circle [radius=0.3mm];
+\fill[fill=red] (0.66,0.1875) circle [radius=0.3mm];
+\fill[fill=green] (0.5,0.1875) circle [radius=0.3mm];
+
+\draw [line width=0.6mm, red,dashed ] (0.33,0.1875) -- (0.66,0.1875);
+
+\node at (0.5,-0.2) {Third Step};
+\end{tikzpicture}
+\end{figure}
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=3.0] 
+
+\node at (0,1.0) {$\mathbf{C}^{0}_0$};
+\node at (0,0.66) {$\mathbf{C}^{0}_1$};
+\node at (0,0.33) {$\mathbf{C}^{0}_2$};
+\node at (0,0) {$\mathbf{C}^{0}_3$};
+\node at (0.33,0.833) {$\mathbf{C}^{1}_0$};
+\node at (0.33,0.5) {$\mathbf{C}^{1}_1$};
+\node at (0.33,0.166) {$\mathbf{C}^{1}_2$};
+\node at (0.66,0.66) {$\mathbf{C}^{2}_0$};
+\node at (0.66,0.33) {$\mathbf{C}^{2}_1$};
+\node at (1.0,0.5) {$\mathbf{C}^{3}_0$};
+\draw[line width=0.6mm,->] (0.1,0.95) -- (0.23,0.833+0.05);
+\draw[line width=0.6mm,->] (0.1,0.95-0.33) -- (0.23,0.5+0.05);
+\draw[line width=0.6mm,->] (0.1,0.95-0.66) -- (0.23,0.166+0.05);
+\draw[line width=0.6mm,->] (0.1+0.33,0.95-0.166) -- (0.23+0.33,0.833+0.05-0.166);
+\draw[line width=0.6mm,->] (0.1+0.33,0.95-0.33-0.166) -- (0.23+0.33,0.5+0.05-0.166);
+\draw[line width=0.6mm,->] (0.1+0.66,0.95-0.33) -- (0.23+0.66,0.833+0.05-0.33);
+
+\draw[line width=0.6mm,->] (0.1,0.05+0.66) -- (0.23,0.833-0.05);
+\draw[line width=0.6mm,->] (0.1,0.05+0.33) -- (0.23,0.5-0.05);
+\draw[line width=0.6mm,->] (0.1,0.05) -- (0.23,0.166-0.05);
+\draw[line width=0.6mm,->] (0.1+0.33,0.05+0.33+0.166) -- (0.23+0.33,0.833-0.05-0.166);
+\draw[line width=0.6mm,->] (0.1+0.33,0.05+0.166) -- (0.23+0.33,0.5-0.05-0.166);
+\draw[line width=0.6mm,->] (0.1+0.66,0.05+0.33) -- (0.23+0.66,0.833-0.05-0.33);
+\end{tikzpicture}
+\end{figure}
+The two new curves are comprised of points along the upper and lower of the diagram, $\mathbf{C}_0^{0},\mathbf{C}_0^{1},\mathbf{C}_0^{2},\mathbf{C}_0^{3}$, and
+$\mathbf{C}_3^{0},\mathbf{C}_2^{1},\mathbf{C}_1^{2},\mathbf{C}_0^{3}$, where $\mathbf{C}_0^{3} = \mathbf{B}(u)$, it lies exactly on the original curve, at $u$.
+
+\end{frame}
+\begin{frame}{Subdivision - Curves}
+Algorithmically, with the curves as $\mathbf{D}, \mathbf{E}$ we have that
+{
+  \footnotesize
+
+\begin{algorithmic}
+\State $\mathbf{D}_0 = \mathbf{C}^0_0$
+\State $\mathbf{E}_P = \mathbf{C}^0_P$
+\For{$i \in [0..P)$}
+\For{$j \in [0..P-i)$}
+\State $\mathbf{C}_j^{i+1} = (1-u)\mathbf{C}^i_j+u\mathbf{C}^i_{j+1}$
+\EndFor
+\State $\mathbf{D}_{i+1} = \mathbf{C}^{i+1}_{i+1}$
+\State $\mathbf{E}_{P-i-1} = \mathbf{C}^{i+1}_{P-i-1}$
+\EndFor
+\end{algorithmic}
+}
+and we need to compute all intermediate control points to determine the subdivision. We also note that we could evaluate the curves at any $u$ using this method, and it is more stable, however the direct method is significantly faster. 
+\end{frame}
+\begin{frame}{Subdivision - Triangles}
+Subdivision of triangles turns one triangle into three by splitting at some point $(u,v,w)$. Consider the third order triangle, with 10 points. The steps of the subdivision algorithm are shown on the right by subdividing each subtriangle, shown in red, blue, and green.
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=2.5] 
+\fill (0,1.0) circle [radius=0.5mm];
+\fill (0,0.66) circle [radius=0.5mm];
+\fill (0,0.33) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.33,0.833) circle [radius=0.5mm];
+\fill (0.33,0.5) circle [radius=0.5mm];
+\fill (0.33,0.166) circle [radius=0.5mm];
+\fill (0.66,0.66) circle [radius=0.5mm];
+\fill (0.66,0.33) circle [radius=0.5mm];
+\fill (1.0,0.5) circle [radius=0.5mm];
+\draw [line width=0.6mm, black,dashed ] (0,1.0) -- (0,0.66) -- (0,0.33) -- (0,0) -- (0.33,0.166) -- (0.33,0.5) 
+-- (0.33,0.833) -- (0.66,0.66) -- (0.66,0.33) --(1.0,0.5) -- (0.66,0.66);
+\draw [line width=0.6mm, black,dashed ] (0,1.0) -- (0.33,0.833);
+\draw [line width=0.6mm, black,dashed ] (0,0.66) -- (0.33,0.5);
+\draw [line width=0.6mm, black,dashed ] (0,0.33) -- (0.33,0.166);
+\draw [line width=0.6mm, black,dashed ] (0.33,0.5)  -- (0.66,0.33);
+\draw [line width=0.6mm, black,dashed ] (0.33,0.166)  -- (0.66,0.33);
+\draw [line width=0.6mm, black,dashed ] (0.33,0.5)  -- (0.66,0.66);
+\draw [line width=0.6mm, black,dashed ] (0,0.66) -- (0.33,0.833);
+\draw [line width=0.6mm, black,dashed ] (0,0.33) -- (0.33,0.5);
 
 \end{tikzpicture}
-\caption{Node ordering for 3-6 order bezier}
+\begin{tikzpicture}[scale=2.5] 
+\draw[line width=0.6mm,->] (0,0.5) -- (0.5,0.5);
+\node at (0,0) {};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2.5] 
+\fill (0,1.0) circle [radius=0.5mm];
+\fill (0,0.66) circle [radius=0.5mm];
+\fill (0,0.33) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.33,0.833) circle [radius=0.5mm];
+\fill (0.33,0.5) circle [radius=0.5mm];
+\fill (0.33,0.166) circle [radius=0.5mm];
+\fill (0.66,0.66) circle [radius=0.5mm];
+\fill (0.66,0.33) circle [radius=0.5mm];
+\fill (1.0,0.5) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.166) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.5) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.833) circle [radius=0.5mm];
+
+\fill[fill=red] (0.5,0.33) circle [radius=0.5mm];
+\fill[fill=red] (0.5,0.66) circle [radius=0.5mm];
+\fill[fill=red] (0.833,0.5) circle [radius=0.5mm];
+
+\fill[fill=blue] (0.33,0.33) circle [radius=0.5mm];
+\fill[fill=blue] (0.33,0.66) circle [radius=0.5mm];
+\fill[fill=blue] (0.66,0.5) circle [radius=0.5mm];
+\fill[fill=green] (0.5,0.5) circle [radius=0.5mm];
+
+\draw [line width=0.6mm, black,dashed ] (0,1.0) -- (0,0.66) -- (0,0.33) -- (0,0) -- (0.33,0.166) -- (0.33,0.5) 
+-- (0.33,0.833) -- (0.66,0.66) -- (0.66,0.33) --(1.0,0.5) -- (0.66,0.66);
+\draw [line width=0.6mm, black,dashed ] (0,1.0) -- (0.33,0.833);
+\draw [line width=0.6mm, black,dashed ] (0,0.66) -- (0.33,0.5);
+\draw [line width=0.6mm, black,dashed ] (0,0.33) -- (0.33,0.166);
+\draw [line width=0.6mm, black,dashed ] (0.33,0.5)  -- (0.66,0.33);
+\draw [line width=0.6mm, black,dashed ] (0.33,0.166)  -- (0.66,0.33);
+\draw [line width=0.6mm, black,dashed ] (0.33,0.5)  -- (0.66,0.66);
+\draw [line width=0.6mm, black,dashed ] (0,0.66) -- (0.33,0.833);
+\draw [line width=0.6mm, black,dashed ] (0,0.33) -- (0.33,0.5);
+
+
+\draw [line width=0.6mm, red,dashed ] (0.5,0.33) -- (0.833,0.5) -- (0.5,0.66) -- (0.166,0.833) -- (0.166,0.5) -- (0.166,0.166) -- (0.5,0.33);
+\draw [line width=0.6mm, red,dashed ] (0.166,0.5)  -- (0.5,0.66) -- (0.5,0.33) -- (0.166,0.5);
+\draw [line width=0.6mm, blue,dashed ] (0.33,0.33)  -- (0.33,0.66)-- (0.66,0.5) -- (0.33,0.33);
+\end{tikzpicture}
 \end{figure}
 
+\end{frame}
+\begin{frame}{Subdivision - Triangles}
+The three triangles, each with ten control points, are shown below.
+\begin{figure}
+\centering
 
-This is much harder to write in index form, so in the implementation. this ordering is stored as a map, and called upon when getting values or local gradients. The gradients are easily computed as 
-\begin{eqnarray*}
-\frac{\partial \mathbf{B}(u,v)}{\partial u} &=& \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}((1-v)i-(P-j)u)u^{i-1}v^j(1-u-v)^{P-i-j-1}\mathbf{P}_\ell \\
-\frac{\partial \mathbf{B}(u,v)}{\partial v} &=& \displaystyle\sum_{i=0}^P \sum_{j=0}^{P-i}\frac{P!}{i!j!(P-i-j)!}((1-u)j-(P-i)v)u^{i}v^{j-1}(1-u-v)^{P-i-j-1}\mathbf{P}_\ell
-\end{eqnarray*}
-which, in their current implementation are not valid when any $u,v,w = 0$, since this leads to $0^{-1}$.
-\subsection{Triangular Blending}
-For faces not on a boundary, triangular blending of shape functions is needed. This occurs for all 2D triangles and 3D interior triangles with an edge or more on the boundary. For a given entity on the mesh, we have a coordinate field such that 
-\[ \mathbf{x}(\xi) = \sum_{i=0}^N w_i(\xi) \cdot \mathbf{x}_i \]
-for an entity with $N$ total nodes, where $\xi = (u,v,w) = (\xi_0,\xi_1,\xi_2)$ and $\xi_2 = 1-\xi_0-\xi_1$. To implement the blending in our framework, we have 
+\begin{tikzpicture}[scale=2.5] 
+\draw [line width=0.6mm] (0,1.0)  -- (0,0.66) -- (0,0.33) -- (0,0) -- (0.166,0.166) -- (0.33,0.33) -- 
+(0.5,0.5) -- (0.33,0.66) -- (0.166,0.833) -- (0,1.0);
+\draw [line width=0.6mm] (0,0) -- (0.33,0.166) -- (0.66,0.33) -- (1.0,0.5) -- (0.66,0.66) -- (0.33,0.833) -- (0,1.0);
+\draw [line width=0.6mm] (1.0,0.5) -- (0.5,0.5);
+\fill (0,1.0) circle [radius=0.5mm];
+\fill (0,0.66) circle [radius=0.5mm];
+\fill (0,0.33) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.33,0.833) circle [radius=0.5mm];
+\fill (0.33,0.166) circle [radius=0.5mm];
+\fill (0.66,0.66) circle [radius=0.5mm];
+\fill (0.66,0.33) circle [radius=0.5mm];
+\fill (1.0,0.5) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.166) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.5) circle [radius=0.5mm];
+\fill[fill=red] (0.166,0.833) circle [radius=0.5mm];
+
+\fill[fill=red] (0.5,0.33) circle [radius=0.5mm];
+\fill[fill=red] (0.5,0.66) circle [radius=0.5mm];
+\fill[fill=red] (0.833,0.5) circle [radius=0.5mm];
+
+\fill[fill=blue] (0.33,0.33) circle [radius=0.5mm];
+\fill[fill=blue] (0.33,0.66) circle [radius=0.5mm];
+\fill[fill=blue] (0.66,0.5) circle [radius=0.5mm];
+\fill[fill=green] (0.5,0.5) circle [radius=0.5mm];
+\end{tikzpicture}
+\end{figure}
+The control points are 
+\[\mathbf{C}^{n+1}_{i,j,k} = u\mathbf{C}^{n}_{i,j,k}+v\mathbf{C}^{n}_{i-1,j+1,k}+w\mathbf{C}^{n}_{i-1,j,k+1}\]
+For each step of the algorithm. 
+\end{frame}
+\begin{frame}{Subdivision - Triangle}
+In practice, subdivision at the triangle center $(1/3,1/3,1/3)$ is not ideal, since repeated subdivision does not converge (the longest edge of a triangle does not change). The classic option,
+\begin{figure}
+\centering
+
+\begin{tikzpicture}[scale=1.5] 
+\draw [line width=0.6mm] (0.5,1) -- (1,0) -- (0,0) -- (.5,1);
+\draw [line width=0.6mm] (0.5,0) -- (0.25,0.5) -- (0.75,0.5) -- (0.5,0);
+
+\fill (1.0,0) circle [radius=0.5mm];
+\fill (0.5,0) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.25,.5) circle [radius=0.5mm];
+\fill (0.75,.5) circle [radius=0.5mm];
+\fill (0.5,1.0) circle [radius=0.5mm];
+
+\end{tikzpicture}
+\end{figure}
+Can be obtained by four calls to the subdivision algorithm. First, denoting the three triangles in the split by
+\begin{figure}
+\centering
+
+\begin{tikzpicture}[scale=2] 
+\draw [line width=0.6mm] (0.5,1) -- (1,0) -- (0,0) -- (.5,1);
+\draw [line width=0.6mm] (0.5,1.0) -- (0.5,0.5);
+\draw [line width=0.6mm] (1.0,0) -- (0.5,0.5);
+\draw [line width=0.6mm] (0,0) -- (0.5,0.5);
+
+\fill (1.0,0) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.5,1.0) circle [radius=0.5mm];
+\node at (0.5,0.25) {0};
+\node at (0.65,0.55) {1};
+\node at (0.35,0.55) {2};
+
+\end{tikzpicture}
+\end{figure}
+\end{frame}
+\begin{frame}{Subdivision - Triangles}
+1. Split at (0.5,0.5,0).\\
+2. Split 0 at (0,0.5,0.5).\\
+3. Split 1 at (0,0.5,0.5).\\
+4. Split 01 at (-1,1,1)
+\begin{figure}
+\centering
+
+\begin{tikzpicture}[scale=2] 
+\draw [line width=0.6mm] (0.5,1) -- (1,0) -- (0,0) -- (.5,1);
+\draw [line width=0.6mm] (0.25,0.5) -- (1.0,0);
+
+\fill (1.0,0) circle [radius=0.5mm];
+\fill[fill=red] (0.25,0.5) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.5,1.0) circle [radius=0.5mm];
+\node at (0.4,0.25) {0};
+\node at (0.65,0.45) {1};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2] 
+\draw [line width=0.6mm] (0.5,1) -- (1,0) -- (0,0) -- (.5,1);
+\draw [line width=0.6mm] (0.5,0) -- (0.25,0.5) -- (1.0,0);
+
+\fill (1.0,0) circle [radius=0.5mm];
+\fill (0.25,0.5) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.5,1.0) circle [radius=0.5mm];
+\fill[fill=red] (0.5,0) circle [radius=0.5mm];
+
+\node at (0.3,0.15) {02};
+\node at (0.6,0.15) {01};
+
+\node at (0.65,0.45) {1};
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2] 
+\draw [line width=0.6mm] (0.5,1) -- (1,0) -- (0,0) -- (.5,1);
+\draw [line width=0.6mm] (0.5,0) -- (0.25,0.5) -- (1.0,0);
+\draw [line width=0.6mm] (0.25,0.5) -- (0.75,0.5);
+
+\fill (1.0,0) circle [radius=0.5mm];
+\fill (0.25,0.5) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.5,1.0) circle [radius=0.5mm];
+\fill (0.5,0) circle [radius=0.5mm];
+\fill[fill=red] (0.75,0.5) circle [radius=0.5mm];
+
+\node at (0.3,0.15) {02};
+\node at (0.6,0.15) {01};
+
+\node at (0.65,0.35) {12};
+\node at (0.5,0.65) {11};
+
+\end{tikzpicture}
+\begin{tikzpicture}[scale=2] 
+\draw [line width=0.6mm] (0.5,1) -- (1,0) -- (0,0) -- (.5,1);
+\draw [line width=0.6mm,dashed] (0.25,0.5) -- (1.0,0);
+\draw [line width=0.6mm] (0.5,0) -- (0.25,0.5) -- (0.75,0.5);
+\draw [line width=0.6mm] (0.5,0) -- (0.75,0.5);
+
+\fill (1.0,0) circle [radius=0.5mm];
+\fill (0.25,0.5) circle [radius=0.5mm];
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.5,1.0) circle [radius=0.5mm];
+\fill (0.5,0) circle [radius=0.5mm];
+\fill[fill=red] (0.75,0.5) circle [radius=0.5mm];
+
+\node at (0.3,0.15) {02};
+\node at (0.75,0.15) {012};
+
+\node at (0.5,0.35) {011};
+\node at (0.5,0.65) {11};
+
+\end{tikzpicture}
+\end{figure}
+The issue with this split is that it requires a non convex call (-1,1,1), but in practice, this has been shown to work.
+\end{frame}
+\section{Derivatives}
+\begin{frame}{Derivatives of a Curve}
+The derivatives of a B{\'e}zier curve as also a B{\'e}zier curve, writing the formula as a function of just $u$,
+\[ \mathbf{B}(u) = \displaystyle \sum_{i=0}^{P} {P \choose i}u^i(1-u)^{P-i}\mathbf{C}_{i}   \]
+The derivative is an order $P-1$ B{\'e}zier, of the form 
+\[
+\frac{\mathrm{d} \mathbf{B}(u)}{\mathrm{d} u} = P \displaystyle\sum_{i=0}^{P-1}  {P-1 \choose i}u^i(1-u)^{P-1-i}(\mathbf{C}_{i+1}-\mathbf{C}_i)
+\]
+Implementation wise, it is easier to evaluate it based on just the control points themselves, as
+{
+  \footnotesize
+\[
+\frac{\mathrm{d} \mathbf{B}(u)}{\mathrm{d} u} = -P(1-u)^{P-1}\mathbf{C}_0+\displaystyle \sum_{i=1}^{P-1} {P \choose i}(i-Pu)u^{i-1}(1-u)^{P-i-1}\mathbf{C}_i + Pu^{P-1}\mathbf{C}_P
+\]
+}
+The derivatives of a triangle and tet are written out similarly, as sums of derivatives of the weights of each control point.
+\end{frame}
+\section{Blended Shapes}
+\begin{frame}{Blended Triangles}
+For triangles not on a boundary, triangular blending of shape functions can be used. This occurs for all 2D triangles and 3D interior triangles with an edge or more on the boundary. For a given entity on the mesh, we can write the shape as
+\[ \mathbf{x}(\xi) = \sum_{i=0}^N w_i(\xi) \mathbf{x}_i \]
+for an entity with $N$ total nodes, where $\xi = (u,v,w)$. For example, for B{\'e}zier shapes, $w_i(\xi) = B_{\mathbf{i}}(\xi)$ To implement the blending in our framework, we have 
 \[\mathbf{x}_{face}(\xi) = \sum_{i=0}^{3}||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i}\]
-Where the edge parameters are
+\end{frame}
+\begin{frame}{Blended Triangles}
+The edge parameters are
 \begin{eqnarray*} 
 \xi_{e_0} & = & \frac{\xi_1}{\xi_0+\xi_1},\quad ||\xi_{e_0}|| = \xi_0+\xi_1 \\
 \xi_{e_1} & = & \frac{\xi_2}{\xi_1+\xi_2},\quad ||\xi_{e_1}|| = \xi_1+\xi_2 \\
 \xi_{e_2} & = & \frac{\xi_0}{\xi_2+\xi_0},\quad ||\xi_{e_2}|| = \xi_2+\xi_0 
 \end{eqnarray*}
-Based on the canonical ordering of edges and faces. When any of $||\xi_{e_i}|| = 0$, we are either on a vertex opposite that edge, or on a different edge, and do not consider the contribution of those edges (avoiding dividing by zero).
+Based on the canonical ordering of edges and faces. When any of $||\xi_{e_i}|| = 0$, $\frac{\xi_1}{\xi_0+\xi_1} = \frac{1}{2}$, the midpoint of the edge. This is irrelevant for the actual shape, but important in computing derivatives.
+\end{frame}
+\begin{frame}{Blended Triangles}
 
 The goal is then to find face weights such that \[\mathbf{x}_{face}(\xi) = \sum_{i=0}^{N_{face}} w_i(\xi) \cdot \mathbf{x}_i = \sum_{i=0}^{3}||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i} \] 
-This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point on the face, in $x_i$. Consider the third-order triangle, and its edges. The middle point is present, but excluded in the blending.
+This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point on the face, in $x_i$. 
+\end{frame}
+\begin{frame}{Blended Triangles}
 \begin{figure}
 \begin{tikzpicture}[scale=1]
 \tikzstyle{every node}=[circle, draw, fill=white,
@@ -246,7 +647,6 @@ This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point o
 (0,3) node (p6) {$2$}
 (0,2) node [label={[label distance=0.2cm,rotate=90]-200:Edge 2}] (p7) {$7$}
 (0,1) node (p8) {$8$}
-(1,1) node (p9) {$9$}
 (0,-1.5) node (p10) {$0$}
 (1,-1.5) node (p11) {$2$}
 (2,-1.5) node (p12) {$3$}
@@ -279,6 +679,8 @@ This is a bookkeeping exercise, since every $x_{e_i,j}$ corresponds to a point o
 (p20) -- (p21);
 \end{tikzpicture}
 \end{figure}
+\end{frame}
+\begin{frame}{Blended Triangles}
 The face has 9 nodes associated with it, ordered as shown. The weights are then 
 \begin{eqnarray*}
 w_0 & = & ||\xi_{e_0}||w_{e_0,0}(\xi_{e_0}) + ||\xi_{e_2}||w_{e_2,1}(\xi_{e_2}) - \xi_0 \\
@@ -289,105 +691,405 @@ w_4 & = & ||\xi_{e_0}||w_{e_0,3}(\xi_{e_0}) \\
 w_5 & = & ||\xi_{e_1}||w_{e_1,2}(\xi_{e_1}) \\
 w_6 & = & ||\xi_{e_1}||w_{e_1,3}(\xi_{e_1}) \\
 w_7 & = & ||\xi_{e_2}||w_{e_2,2}(\xi_{e_2}) \\
-w_8 & = & ||\xi_{e_2}||w_{e_2,3}(\xi_{e_2}) \\
-w_9 & = & 0
+w_8 & = & ||\xi_{e_2}||w_{e_2,3}(\xi_{e_2})
 \end{eqnarray*}
+Where, for example, $w_{e_0,0}(\xi_{e_0}) = B_{21}(\xi_{e_0})$.
+\end{frame}
+\begin{frame}{Blended Triangles}
 The local gradients are then
 \begin{eqnarray*}\frac{\partial \mathbf{x}(\xi)}{\partial \xi_k}& = & \sum_{i=0}^N \frac{\partial w_i(\xi)}{\partial \xi_k} \cdot \mathbf{x}_i \\
 \frac{\partial \mathbf{x}(\xi)}{\partial \xi_k}& = & \frac{\partial}{\partial \xi_k}\left[\sum_{i=0}^{3}||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i}\right] \\ & & 
 \sum_{i=0}^{3}\frac{\partial}{\partial \xi_k}\left[||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\right]\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3} \frac{\partial \xi_i}{\partial \xi_k}\mathbf{x}_{v_i}\end{eqnarray*}
+\end{frame}
+\begin{frame}{Blended Triangles}
+{
+  \footnotesize
 For the vertex terms, we have
 \[ \frac{\partial \xi_i}{\partial \xi_k} = \left[ \begin{array}{ccc} 1 & 0 & 0 \\ 0 & 1 & 0 \\ -1 & -1 & 0 \end{array}\right]\]
 and for the edge terms, the chain rule leads to
-\begin{eqnarray*}\frac{\partial}{\partial \xi_k}\left[||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\right] & = & \frac{\partial ||\xi_{e_i}||}{\partial \xi_k}\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i}) + ||\xi_{e_i}||\sum_{j=0}^{N_{edge}}\frac{\partial w_{e_i,j}(\xi_{e_i})}{\partial \xi_k}
 
+
+\begin{eqnarray*}
+\frac{\partial}{\partial \xi_k}\left[||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\right] & = & \frac{\partial ||\xi_{e_i}||}{\partial \xi_k}\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i}) \\ & + & ||\xi_{e_i}||\sum_{j=0}^{N_{edge}}\frac{\partial w_{e_i,j}(\xi_{e_i})}{\partial \xi_k}
 \end{eqnarray*}
+
 where the first term is straight forward, and the second term, 
 \begin{eqnarray*}
-||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\partial \xi_k} & = & 
-||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\partial \xi_{e_i}}\frac{\partial \xi_{e_i}}{\partial \xi_k} \\ & = & 
+||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\partial \xi_k} & = &
+||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\partial \xi_{e_i}}\frac{\partial \xi_{e_i}}{\partial \xi_k} 
+\\ & = & 
 ||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\xi_{e_i}}\left[\frac{\partial \xi_{e_i}'}{\partial \xi_k}||\xi_{e_i}||-\xi_{e_i}'\frac{\partial ||\xi_{e_i}||}{\partial \xi_k} \right]
-
 \end{eqnarray*}
-This can all be put together to form the derivative of the triangle blending. Both values and gradients are implemented in a generic form, using the triangle-edge ordering in \texttt{apfMesh.cc} to determine weights and coefficients on the weight terms. 
-
-\subsection{Align Shared Nodes}
-When obtaining the nodes for a particular triangle, specific ordering must be considered. This is due to edges not necessarily being oriented with the face. In \texttt{alignSharedNodes}, this problem is addressed by using \texttt{getAlignment} and specifying the order. If an edge is flipped with respect to the triangle, the ordering of the edge nodes is reversed and the correct ordering of nodes for the triangle is obtained.
-
-\subsection{Interpolation on Triangles}
-Given barycentric coordinates $u,v,w=1-u-v$ such that on a triangle in parameter space, $\mathbf{p} = u\mathbf{p}_0 + v\mathbf{p}_1 + w\mathbf{p}_2$ we are interested in splitting it at a given $(u,v,w)$. Due to denegeracy and periodicity, lets define this as a pair of linear splits, such that $ \mathbf{q} = a\mathbf{p}_0 + (1-a)\mathbf{p}_1 $ and $\mathbf{p} = b\mathbf{p}_2 + (1-b)\mathbf{q}$. Solving for $(a,b)$ gives $ a = v/(u+v), b = 1-u-v$. This is implemented in \texttt{maSnap.cc}.
-\section{Tetrahedral Blending}
-See papers by Dey and Shephard for more details. This is an extension of triangular blending. We use the finite element notation of $\xi = (1-\xi_0-\xi_1-\xi_2,\xi_0,\xi_1,\xi_2)$ rather than strict barycentrics. For a given entity on the mesh, we have a coordinate field such that 
-\[ \mathbf{x}(\xi) = \sum_i w_i(\xi) \cdot \mathbf{x}_i \]
-For tetrahedral blending, we then have that
+}
+\end{frame}
+\begin{frame}{Blended Tetrahedra}
+For blended tetrahedra, we have
 \[\mathbf{x}(\xi) = \sum_{i=0}^{4}||\xi_{f_i}||w_{f_i}(\xi_{f_i})\mathbf{x}(\xi_{f_i}) - \sum_{i=0}^{6}||\xi_{e_i}||w_{e_i}(\xi_{e_i})\mathbf{x}(\xi_{e_i}) + \sum_{i=0}^{4}\xi_i\mathbf{x}_{v_i}\]
-The weights for the tetrahedron are then obtained by summing corresponding weights from the faces, edges, and vertices. Similar to the triangle, we have the ordering of nodes on the tetrahedron as $v_0,v_1,v_2,v_3,[e_0],\ldots,[e_5],[f_0],\ldots,[f_3]$. Each edge and face is then called for its weights, and they are added into into the weights of the tetrahedron. For edges, this is straight-forward and identical to triangle blending. For triangles, the weights obtained also contain weights for the edges which must be added in, as well as the vertex weights. This is identified in the 
-\texttt{tet\_tri\_edges}, containing the edges of the tetrahedron for each face. For example, face 2 is formed from vertices 1,2,3. On the tetrahedron, that corresponds to edges 1,5,4, with 4 in reverse order. Thus when adding to the weights of the edge nodes, if the edge is reversed, the weights are added in reverse order to the tetrahedron weight array, adding them to the correct index in the weight array.
+The math is identical to triangles, though more consideration to ordering is needed, specifically the face contributions from their edges.
+Similar to triangles, when any of $||\xi_{e_i}|| = 0$, $\frac{\xi_1}{\xi_0+\xi_1} = \frac{1}{2}$ for edges and now when $||\xi_{e_f}|| = 0$, $\frac{\xi_0}{\xi_0+\xi_1+\xi_2} = \frac{1}{3}$, again, only relevant when taking derivatives.
+\end{frame}
+\section{Interpolating B{\'e}zier Shapes}
+\begin{frame}{Interpolating B{\'e}zier Triangles}
+To fit a B{\'e}zier triangle to a known geometry, interpolating points, $\mathbf{P}_{ijk} =\mathbf{P}_{\mathbf{i}} = \mathbf{B}(\xi) =\mathbf{B}(u,v,w)$, are first needed at $\xi_0,\ldots, \xi_{N}$, for $N$ total interpolation points before the control points can be calculated. To simplify notation, $\mathbf{i} = ijk$. We can write the triangle as
 
-Derivatives are computed identically to triangular blending, with multiple uses of the chain rule. Once again, when any of $||\xi_{e_i}||,||\xi_{f_i}|| = 0$, we do not consider the contribution of that entity.
-\subsection{Align Shared Nodes}
-Ordering of edge nodes is the same as for a triangle, reversing them if they are flipped relative to the tetrahedron. For the face nodes in the tetrahedron, these can be flipped and rotated. The correct re-ordering is implemented in a more general form, but uses the fact the interior nodes form loops around the vertices, and rotation is just a shift by the number of nodes per edge. Flipped faces are less obvious, but the correct ordering is obtained by simply examining the flipped triangle's nodes, and matching the ordering (in the example below, node 6 is where node 0 is in the canonical triangle, so the ordering starts with 6). Examples are shown below.
-\begin{figure}[!ht]
-\begin{tikzpicture}[scale=0.5]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=2pt, minimum width=5pt]
-\path (0,0) node {$0$}
+\[
+\mathbf{B}(\xi_j) = \displaystyle \sum_{|{\mathbf{i}| = P}} B_\mathbf{i}(\xi_j)\mathbf{C}_{\mathbf{i}} = \mathbf{P}_{\mathbf{i}}
+\]
+at each interpolating point, resulting in a linear system of equations for $\mathbf{C}_i$,
+\[
+\mathbf{P} = \mathbf{B}(\xi_j)\mathbf{C}
+\]
+The control points are then $\mathbf{C} = \mathbf{B}^{-1}(\xi_j)\mathbf{P}$. 
+\end{frame}
+\begin{frame}
+For each set of $\xi_j$, we can precompute and store $\mathbf{B}^{-1}(\xi_j)$. Due to the structure of $\mathbf{B}$ and since edges of B{\'e}zier triangles are B{\'e}zier curves, we only need to store the rows of $\mathbf{B}^{-1}(\xi_j)$ for the internal points of the triangle, a $\frac{(P-1)(P-2)}{2} \times \frac{(P+1)(P+2)}{2}$ matrix. For edges, a $(P-1) \times (P+1)$ matrix is stored. \spa
+To convert interpolation points to control points, the internal triangle control points are computed and then the edge control points. This avoids storing both sets of points. \spa
+Several choices of $\xi_j$ exist. Using equally spaced $\xi_j$'s works fairly well, but closer to optimal points are in a paper by Chen and Babuska, 1995.
+\end{frame}
+\begin{frame}{Computing Internal Control Points of Full B{\'e}zier Shapes}
+For a B{\'e}zier triangle or tetrahedra that has a curved boundary (edges or faces), the internal control points should be placed at a suitable location in parametric space. Without a parametrized geometry to interpolate, shape blending is used to determine the internal interpolation points. \spa
+% \begin{figure}
+% \centering
+% \begin{tikzpicture}[scale=3.0] 
+% \draw [line width=0.6mm, black ] (0, 0) .. controls (0.5,-0.25) and (1.0, -0.25)
+%    .. (1.5, 0.) .. controls (1.25,0.6) and (1.0,0.8) 
+%    .. (0.75,1.) .. controls (0.5,0.8) and (0.25,0.6) 
+%    .. (0,0); 
 
-(6,0) node {$1$}
-(0,6) node {$2$}
-(1,1) node {$0$}
-(2,1) node {$1$}
-(3,1) node {$2$}
-(4,1) node {$3$}
-(3,2) node {$4$}
-(2,3) node {$5$}
-(1,4) node {$6$}
-(1,3) node {$7$}
-(1,2) node {$8$}
-(2,2) node {$9$};
+% \path (-0.1,-0.1) node {$\mathbf{C}_{300}$}
+% (0.375,-0.35) node {$\mathbf{C}_{210}$}
+% (1.175,-0.37) node {$\mathbf{C}_{120}$}
+% (1.6,-0.13) node {$\mathbf{C}_{030}$}
+% (1.45,0.55) node {$\mathbf{C}_{021}$}
+% (1.22,0.85) node {$\mathbf{C}_{012}$}
+% (0.75,1.15) node {$\mathbf{C}_{003}$}
+% (0.1,0.55) node {$\mathbf{C}_{201}$}
+% (0.3,0.85) node {$\mathbf{C}_{102}$}
+% (0.75,0.5) node {$\mathbf{C}_{111}$};
+% \fill (0,0) circle [radius=0.5mm];
+% \fill (0.5,-0.25) circle [radius=0.5mm];
+% \fill (1.0,-.25) circle [radius=0.5mm];
+% \fill (1.5,0) circle [radius=0.5mm];
+% \fill (1.25,0.6) circle [radius=0.5mm];
+% \fill (1.0,0.8) circle [radius=0.5mm];
+% \fill (0.5,0.8) circle [radius=0.5mm];
+% \fill (0.25,0.6) circle [radius=0.5mm];
+% \fill (0.75,0.3) circle [radius=0.5mm];
+% \fill (0.75,1.) circle [radius=0.5mm];
 
-\end{tikzpicture}\hspace{0.5cm}
-\begin{tikzpicture}[scale=0.5]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=2pt, minimum width=5pt]
-\path (0,0) node {$2$}
+% \end{tikzpicture}
+% \end{figure}
+% \end{frame}
+% \begin{frame}{Computing Internal Control Points}
+We choose a set of local parametric locations, $\xi_j$, one for each internal point. We can determine this interpolation point using our blended shapes. 
+\end{frame}
+\begin{frame}{Computing Internal Control Points}
+Write the blended shape as 
+\[\mathbf{P}(\xi) = \displaystyle \sum_{\mathbf{i} \in shape\;boundaries}Bl_{\mathbf{i}}(\xi)\mathbf{C}_\mathbf{i}\] 
+where the control points on the shape boundaries have been determined from interpolating locations along the bounding entities. The equation to solve is then
+\[ \mathbf{P}(\xi) = \displaystyle \sum_{\mathbf{i} \in shape\;boundaries}Bl_{\mathbf{i}}(\xi)\mathbf{C}_\mathbf{i} = \displaystyle \sum_{|{\mathbf{i}| = P}} B_\mathbf{i}(\xi)\mathbf{C}_{\mathbf{i}} \]
+This is an equation for the internal points $\mathbf{C}_{ijk(l)}, i > 0, j>0, k>0, (l > 0), i+j+k(+l) = P$.
+\end{frame}
+\begin{frame}{Computing Internal Control Points}
+ \[\displaystyle \sum_{\mathbf{i} \in shape\;boundaries}(Bl_{\mathbf{i}}(\xi)-B_\mathbf{i}(\xi))\mathbf{C}_\mathbf{i} = \displaystyle \sum_{\mathbf{i} \in internal\;points} B_\mathbf{i}(\xi)\mathbf{C}_{\mathbf{i}} \]
+ Which is a system of equations the size of the number of internal points. We can now solve for those locations. In matrix form, setting $Bl_\mathbf{i} = 0$ for the internal control points, we can write the equation for all the control points as
+\[\mathbf{C} = \mathbf{B}^{-1}\mathbf{Bl}, \qquad \mathbf{B}^{-1}\mathbf{Bl} = \left[\begin{array}{cc}\mathbf{I} & \mathbf{0} \\ \mathbf{A}  &\mathbf{0} \end{array}\right] \]
+and $\mathbf{A}$ is of size (number of internal points)$\times$(number of boundary points). We can precompute $\mathbf{A}$ for each set of $(\xi)$, and store it, applying it to the control points of each internal entity. This determines the control points for a B{\'ezier} shape on the interior. (This is similar to P.L. George's approach for serendipity shapes).
 
-(6,0) node {$1$}
-(0,6) node {$0$}
-(1,1) node {$6$}
-(2,1) node {$5$}
-(3,1) node {$4$}
-(4,1) node {$3$}
-(3,2) node {$2$}
-(2,3) node {$1$}
-(1,4) node {$0$}
-(1,3) node {$8$}
-(1,2) node {$7$}
-(2,2) node {$9$};
-\end{tikzpicture}\hspace{0.5cm}
-\begin{tikzpicture}[scale=0.5]
-\tikzstyle{every node}=[circle, draw, fill=white,
-                        inner sep=2pt, minimum width=5pt]
-\path (0,0) node {$1$}
-(6,0) node {$2$}
-(0,6) node {$0$}
-(1,1) node {$3$}
-(2,1) node {$4$}
-(3,1) node {$5$}
-(4,1) node {$6$}
-(3,2) node {$7$}
-(2,3) node {$8$}
-(1,4) node {$0$}
-(1,3) node {$1$}
-(1,2) node {$2$}
-(2,2) node {$9$};
-\end{tikzpicture}
-\caption{Shared nodes for 6th order Bezier triangle. Original Ordering (left) (0,...,9). Flipped ordering (middle) (6,5,4,3,2,1,0,8,7,9). Rotated ordering by 2 (right) (3,4,5,6,7,8,0,1,2,9).}
+\end{frame}
+\section{Jacobian Determinants}
+\begin{frame}{Jacobian Determinants - Triangle}
+The Jacobian Determinant is itself a B{\'e}zier shape. Consider a triangle in $x-y$, we have
+\[
+\mathbf{J} = \frac{\partial \mathbf{B}(u,v)}{\partial \mathbf{x}} = 
+\left[\begin{array}{cc} \frac{\partial B_x}{\partial x} & \frac{\partial B_x}{\partial y}  \\
+\frac{\partial B_y}{\partial x} & \frac{\partial B_y}{\partial y} \end{array} \right]
+\]
+As the derivative is one order lower, we get
+\[
+\mathbf{J} = \frac{\partial \mathbf{B}(u,v)}{\partial \mathbf{x}} = 
+\left[\begin{array}{cc} \mathcal{O}(P-1) & \mathcal{O}(P-1) \\ \mathcal{O}(P-1) & \mathcal{O}(P-1) \end{array} \right]
+\]
+And thus the determinant for a tet, denoted $\det(\mathbf{J}) = \mathcal{J}(u,v)$, is $\mathcal{J} = \mathcal{O}(2(P-1))$. If the $\mathcal{J} > 0$ everywhere, the element is valid, otherwise it is invalid.
+\end{frame}
+\begin{frame}{Jacobian Determinants - Triangle}
+To evaluate $\mathcal{J}(u,v)$, one option is to compute it directly. Writing the triangle as
+ \[ \mathbf{B}(u,v) = \displaystyle\sum_{i+j+k=P} \frac{P!}{i!j!k!}u^iv^j(1-u-v)^k\mathbf{C}_{ijk} \]
+ and the derivative vector of its coefficients at each control point, with $\mathbf{u} = (u,v)$
+  \[ \frac{\partial B(\mathbf{u})_{ijk}}{\partial \mathbf{u}} =\frac{P!}{i!j!k!} \frac{\partial}{\partial \mathbf{u}}\left( u^iv^j(1-u-v)^k\right) \]
+The Jacobian matrix is
+\[\mathbf{J}(\mathbf{u}) = \displaystyle\sum_{i+j+k=P}\mathbf{C}_{ijk} \otimes \frac{\partial B(\mathbf{u})_{ijk}}{\partial \mathbf{u}} \]
+and the determinant is straightforward.
+\end{frame}
+\begin{frame}{Jacobian Determinants - Triangle}
+The other way to compute it is by first calculating the B{\'e}zier form of $\mathcal{J}$, and then evaluating it. 
+{
+  \footnotesize
+
+\[ \mathcal{J}(u,v) = \displaystyle\sum_{I+J+K+L=2(P-1)}  {2(P-1) \choose I,J,K}u^Iv^J(1-u-v)^KN_{IJK}  \]
+}where the control points, $N_{IJK}$, (scalars) are sums of determinants of the control points
+{
+  \scriptsize
+\begin{eqnarray*}
+N_{IJK} = P^2 \displaystyle\sum_{|i|=I,|j|=J,|k|=K} \frac{{P-1 \choose i_1,j_1}{P-1 \choose i_2,j_2}}{ {2(P-1) \choose I,J,K}} \\  \times|\mathbf{C}_{i_1+1,j_1,k_1}-\mathbf{C}_{i_1,j_1+1,k_1},\mathbf{C}_{i_2+1,j_2,k_2}-\mathbf{C}_{i_2,j_2,k_2+1}|
+\end{eqnarray*}
+\[|i| = i_1+i_2, |j| = j_1+j_2, |k| = k_1+k_2, \qquad i_1+j_1+k_1 = i_2+j_2+k_2 = P-1\]
+}
+\end{frame}
+\begin{frame}{Jacobian Determinants - Triangle}
+Since $\mathcal{J}$ is order $2(P-1)$, the number of control points $N_{IJK}$ is much higher than the number of control points of the original shape. In this table, "Terms" is the number of determinants calculated to compute the control points.
+
+\begin{tabular}{|cc|ccc|}
+\hline \multicolumn{2}{|c|}{Bezier Triangle} & \multicolumn{3}{|c|}{Jacobian Determinant} \\ \hline
+Order & Num Ctrl Pts & Order & Num Ctrl Pts & Terms \\ 
+\hline 1 & 3 & 0 & 1 & 1 \\
+2 & 6 & 2 & 6 & 9 \\
+3 & 10 & 4 & 15 & 36 \\
+4 & 15 & 6 & 28 & 100 \\
+5 & 21 & 8 & 45 & 225 \\
+6 & 28 & 10 & 66 & 441 \\
+7 & 36 & 12 & 91 & 784 \\ \hline
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Jacobian Determinants - Triangle}
+For a second order triangle, the Jacobian determinant is also second order, with control points
+\begin{eqnarray*}
+N_{200}&=&4\left|\mathbf{C}_{110}-\mathbf{C}_{200},\mathbf{C}_{101}-\mathbf{C}_{200}\right|
+\\N_{020}&=&4\left|\mathbf{C}_{020}-\mathbf{C}_{110},\mathbf{C}_{011}-\mathbf{C}_{110}\right|
+\\N_{002}&=&4\left|\mathbf{C}_{011}-\mathbf{C}_{101},\mathbf{C}_{002}-\mathbf{C}_{101}\right|
+\\N_{110}&=&2\left|\mathbf{C}_{110}-\mathbf{C}_{200},\mathbf{C}_{011}-\mathbf{C}_{110}\right|+\\&&2\left|\mathbf{C}_{020}-\mathbf{C}_{110},\mathbf{C}_{101}-\mathbf{C}_{200}\right|
+\\N_{011}&=&2\left|\mathbf{C}_{011}-\mathbf{C}_{101},\mathbf{C}_{011}-\mathbf{C}_{110}\right|+\\&&2\left|\mathbf{C}_{020}-\mathbf{C}_{110},\mathbf{C}_{002}-\mathbf{C}_{101}\right|
+\\N_{101}&=&2\left|\mathbf{C}_{011}-\mathbf{C}_{101},\mathbf{C}_{101}-\mathbf{C}_{200}\right|+\\&&2\left|\mathbf{C}_{110}-\mathbf{C}_{200},\mathbf{C}_{002}-\mathbf{C}_{101}\right|
+\end{eqnarray*}
+\end{frame}
+% \begin{frame}{Jacobian Determinants - Triangle}
+% \begin{figure}
+% \centering
+% \begin{tikzpicture}
+% [x={(-0.866cm,-0.5cm)}, y={(0.866cm,-0.5cm)}, z={(0cm,1cm)}, scale=3.0]
+
+% \draw [line width=0.3mm,->,red](0,0,0) -- (1.3,0,0);
+% \node at (1.4,0,0) {$u$};
+% \draw [line width=0.3mm,->,red](0,0,0) -- (0,1.3,0);
+% \node at (0,1.4,0) {$v$};
+% \draw [line width=0.3mm,<->,red](0,0,-0.5) -- (0,0,0.5);
+% \node at (0,0,0.6) {$\mathcal{J}$};
+% \draw [line width=0.6mm] (0,1,0.2) -- (1,0,0.2) -- (0,0,0.2) -- (0,1,0.2);
+% \draw [line width=0.6mm] (0.5,0,0.1) -- (0.5,0.5,-.2) -- (0,0.5,0.1) -- (0.5,0,0.1);
+
+% \fill (1.0,0,0.2) circle [radius=0.5mm];
+% \fill (0.5,0,0.1) circle [radius=0.5mm];
+% \fill (0,0,0.2) circle [radius=0.5mm];
+% \fill (0,.5,0.1) circle [radius=0.5mm];
+% \fill (0.5,.5,-.2) circle [radius=0.5mm];
+% \fill (0,1.0,0.2) circle [radius=0.5mm];
+
+
+
+% \end{tikzpicture}
+% \end{figure}
+% \end{frame}
+
+\begin{frame}{Jacobian Determinants - Triangle}
+For a third order triangle, the Jacobian determinant is fourth order, with 15 control points, the first 12, corresponding to the vertices and edges of the determinant are
+{
+  \scriptsize
+
+\begin{eqnarray*}
+N_{400}&=&9\left|\mathbf{C}_{210}-\mathbf{C}_{300},\mathbf{C}_{201}-\mathbf{C}_{300}\right|
+\\N_{040}&=&9\left|\mathbf{C}_{030}-\mathbf{C}_{120},\mathbf{C}_{021}-\mathbf{C}_{120}\right|
+\\N_{004}&=&9\left|\mathbf{C}_{012}-\mathbf{C}_{102},\mathbf{C}_{003}-\mathbf{C}_{102}\right|
+\\N_{310}&=&4\left|\mathbf{C}_{210}-\mathbf{C}_{300},\mathbf{C}_{111}-\mathbf{C}_{210}\right|+4\left|\mathbf{C}_{120}-\mathbf{C}_{210},\mathbf{C}_{201}-\mathbf{C}_{300}\right|
+\\N_{220}&=&\left|\mathbf{C}_{210}-\mathbf{C}_{300},\mathbf{C}_{021}-\mathbf{C}_{120}\right|+6\left|\mathbf{C}_{120}-\mathbf{C}_{210},\mathbf{C}_{111}-\mathbf{C}_{210}\right|+\\&&\left|\mathbf{C}_{030}-\mathbf{C}_{120},\mathbf{C}_{201}-\mathbf{C}_{300}\right|
+\\N_{130}&=&4\left|\mathbf{C}_{120}-\mathbf{C}_{210},\mathbf{C}_{021}-\mathbf{C}_{120}\right|+4\left|\mathbf{C}_{030}-\mathbf{C}_{120},\mathbf{C}_{111}-\mathbf{C}_{210}\right|
+\\N_{031}&=&4\left|\mathbf{C}_{021}-\mathbf{C}_{111},\mathbf{C}_{021}-\mathbf{C}_{120}\right|+4\left|\mathbf{C}_{030}-\mathbf{C}_{120},\mathbf{C}_{012}-\mathbf{C}_{111}\right|
+\\N_{022}&=&\left|\mathbf{C}_{012}-\mathbf{C}_{102},\mathbf{C}_{021}-\mathbf{C}_{120}\right|+6\left|\mathbf{C}_{021}-\mathbf{C}_{111},\mathbf{C}_{012}-\mathbf{C}_{111}\right|+\\&&\left|\mathbf{C}_{030}-\mathbf{C}_{120},\mathbf{C}_{003}-\mathbf{C}_{102}\right|
+\\N_{013}&=&4\left|\mathbf{C}_{012}-\mathbf{C}_{102},\mathbf{C}_{012}-\mathbf{C}_{111}\right|+4\left|\mathbf{C}_{021}-\mathbf{C}_{111},\mathbf{C}_{003}-\mathbf{C}_{102}\right|
+\\N_{103}&=&4\left|\mathbf{C}_{012}-\mathbf{C}_{102},\mathbf{C}_{102}-\mathbf{C}_{201}\right|+4\left|\mathbf{C}_{111}-\mathbf{C}_{201},\mathbf{C}_{003}-\mathbf{C}_{102}\right|
+\\N_{202}&=&\left|\mathbf{C}_{012}-\mathbf{C}_{102},\mathbf{C}_{201}-\mathbf{C}_{300}\right|+6\left|\mathbf{C}_{111}-\mathbf{C}_{201},\mathbf{C}_{102}-\mathbf{C}_{201}\right|+\\&&\left|\mathbf{C}_{210}-\mathbf{C}_{300},\mathbf{C}_{003}-\mathbf{C}_{102}\right|
+\\N_{301}&=&4\left|\mathbf{C}_{111}-\mathbf{C}_{201},\mathbf{C}_{201}-\mathbf{C}_{300}\right|+4\left|\mathbf{C}_{210}-\mathbf{C}_{300},\mathbf{C}_{102}-\mathbf{C}_{201}\right|
+\end{eqnarray*}
+}
+\end{frame}
+\begin{frame}{Jacobian Determinant - Triangle}
+The control points on the interior of the Jacobian determinant triangle are
+{
+  \scriptsize
+
+\begin{eqnarray*}
+N_{211}&=&3\left|\mathbf{C}_{111}-\mathbf{C}_{201},\mathbf{C}_{111}-\mathbf{C}_{210}\right|+\left|\mathbf{C}_{210}-\mathbf{C}_{300},\mathbf{C}_{012}-\mathbf{C}_{111}\right|+\\&&\left|\mathbf{C}_{021}-\mathbf{C}_{111},\mathbf{C}_{201}-\mathbf{C}_{300}\right|+3\left|\mathbf{C}_{120}-\mathbf{C}_{210},\mathbf{C}_{102}-\mathbf{C}_{201}\right|
+\\N_{121}&=&\left|\mathbf{C}_{111}-\mathbf{C}_{201},\mathbf{C}_{021}-\mathbf{C}_{120}\right|+3\left|\mathbf{C}_{021}-\mathbf{C}_{111},\mathbf{C}_{111}-\mathbf{C}_{210}\right|+\\&&3\left|\mathbf{C}_{120}-\mathbf{C}_{210},\mathbf{C}_{012}-\mathbf{C}_{111}\right|+\left|\mathbf{C}_{030}-\mathbf{C}_{120},\mathbf{C}_{102}-\mathbf{C}_{201}\right|
+\\N_{112}&=&\left|\mathbf{C}_{012}-\mathbf{C}_{102},\mathbf{C}_{111}-\mathbf{C}_{210}\right|+3\left|\mathbf{C}_{111}-\mathbf{C}_{201},\mathbf{C}_{012}-\mathbf{C}_{111}\right|+\\&&3\left|\mathbf{C}_{021}-\mathbf{C}_{111},\mathbf{C}_{102}-\mathbf{C}_{201}\right|+\left|\mathbf{C}_{120}-\mathbf{C}_{210},\mathbf{C}_{003}-\mathbf{C}_{102}\right|
+\end{eqnarray*}
+}
+I wonder if these are always positive, or, if they are negative, then there must be at least one edge control point that is also negative. As in, do I need to ever check these if the interior control point of my geometric shape is well chosen.
+\end{frame}
+
+
+\begin{frame}{Jacobian Determinants - Tet}
+The Jacobian Determinant is itself a B{\'e}zier shape. Consider a tetrahedron, we have
+\[
+\mathbf{J} = \frac{\partial \mathbf{B}(u,v,w)}{\partial \mathbf{x}} = 
+\left[\begin{array}{ccc} \frac{\partial B_x}{\partial x} & \frac{\partial B_x}{\partial y} & \frac{\partial B_x}{\partial z} \\
+\frac{\partial B_y}{\partial x} & \frac{\partial B_y}{\partial y} & \frac{\partial B_y}{\partial z} \\
+\frac{\partial B_z}{\partial x} & \frac{\partial B_z}{\partial y} & \frac{\partial B_z}{\partial z} \end{array} \right]
+\]
+As the derivative is one order lower, we get
+\[
+\mathbf{J} = \frac{\partial \mathbf{B}(u,v,w)}{\partial \mathbf{x}} = 
+\left[\begin{array}{ccc} \mathcal{O}(P-1) & \mathcal{O}(P-1) & \mathcal{O}(P-1) \\ \mathcal{O}(P-1) & \mathcal{O}(P-1) & \mathcal{O}(P-1) \\ \mathcal{O}(P-1) & \mathcal{O}(P-1) & \mathcal{O}(P-1)\end{array} \right]
+\]
+And thus the determinant for a tet, denoted $\det(\mathbf{J}) = \mathcal{J}(u,v,w)$, is $\mathcal{J} = \mathcal{O}(3(P-1))$. If the $\mathcal{J} > 0$ everywhere, the element is valid, otherwise it is invalid.
+\end{frame}
+\begin{frame}{Jacobian Determinants - Tet}
+To evaluate $\mathcal{J}(u,v,w)$, one option is to compute it directly. Writing the tet as
+ \[ \mathbf{B}(u,v,w) = \displaystyle\sum_{i+j+k+l=P} \frac{P!}{i!j!k!l!}u^iv^jw^k(1-u-v-w)^l\mathbf{C}_{ijkl} \]
+ and the derivative vector of its coefficients at each control point, with $\mathbf{u} = (u,v,w)$
+  \[ \frac{\partial B(\mathbf{u})_{ijkl}}{\partial \mathbf{u}} =\frac{P!}{i!j!k!l!} \frac{\partial}{\partial \mathbf{u}}\left( u^iv^jw^k(1-u-v-w)^l\right) \]
+The Jacobian matrix is
+\[\mathbf{J}(\mathbf{u}) = \displaystyle\sum_{i+j+k+l=P}\mathbf{C}_{ijkl} \otimes \frac{\partial B(\mathbf{u})_{ijkl}}{\partial \mathbf{u}} \]
+and the determinant is straightforward.
+\end{frame}
+\begin{frame}{Jacobian Determinants - Tet}
+The other way to compute it is by first calculating the B{\'e}zier form of $\mathcal{J}$, and then evaluating it. 
+{
+  \footnotesize
+
+\[ \mathcal{J}(u,v,w) = \displaystyle\sum_{I+J+K+L=3(P-1)}  {3(P-1) \choose I,J,K}u^Iv^Jw^K(1-u-v-w)^LN_{IJKL}  \]
+}where the control points, $N_{IJKL}$, (scalars) are sums of determinants of the control points
+{
+  \scriptsize
+\begin{eqnarray*}
+N_{IJKL} = P^3 \displaystyle\sum_{|i|=I,|j|=J,|k|=K,|l|=L} \frac{{P-1 \choose i_1,j_1,k_1}{P-1 \choose i_2,j_2,k_2}{P-1 \choose i_3,j_3,k_3}}{ {3(P-1) \choose I,J,K}} \\  \times|\mathbf{C}_{i_1+1,j_1,k_1,l_1}-\mathbf{C}_{i_1,j_1+1,k_1,l_1},\\\mathbf{C}_{i_2+1,j_2,k_2,l_2}-\mathbf{C}_{i_2,j_2,k_2+1,l_2},\\
+\mathbf{C}_{i_3+1,j_3,k_3,l_3}-\mathbf{C}_{i_3,j_3,k_3,l_3+1}|
+\end{eqnarray*}
+\[|i| = i_1+i_2+i_3, |j| = j_1+j_2+j_3, |k| = k_1+k_2+k_3, |l| = l_1+l_2+l_3 \]
+\[ i_1+j_1+k_1+l_1 = i_2+j_2+k_2+l_2 = i_3+j_3+k_3+l_3 =P-1\]
+
+}
+For each control point, a large number of determinants are needed.
+\end{frame}
+\begin{frame}{Jacobian Determinant - Tet}
+Since $\mathcal{J}$ is order $3(P-1)$, the number of control points $N_{IJKL}$ is much higher than the number of control points of the original shape. In this table, "Terms" is the number of determinants calculated to compute the control points.
+
+\begin{tabular}{|cc|ccc|}
+\hline \multicolumn{2}{|c|}{Bezier Tetrahedron} & \multicolumn{3}{|c|}{Jacobian Determinant} \\ \hline
+Order & Num Ctrl Pts & Order & Num Ctrl Pts & Terms \\ 
+\hline 1 & 4 & 0 & 1 & 1 \\
+2 & 10 & 3 & 20 & 64 \\
+3 & 20 & 6 & 84 & 1000 \\
+4 & 35 & 9 & 220 & 8000 \\
+5 & 56 & 12 & 455 & 42875 \\
+6 & 84 & 15 & 816 & 175616 \\
+7 & 120 & 18 & 1330 & 592704 \\ \hline
+\end{tabular}
+\end{frame}
+\begin{frame}{Jacobian Determinant - Tet}
+For the quadratic tet with 10 control points, there are 20 control points for $\mathcal{J}$. Here are three of these control points, one on a corner, one on an edge, and one on a face of $\mathcal{J}$
+\begin{eqnarray*}
+N_{3000}&=&8\left|\mathbf{C}_{1100}-\mathbf{C}_{2000},\mathbf{C}_{1010}-\mathbf{C}_{2000},\mathbf{C}_{1001}-\mathbf{C}_{2000}\right|
+\\N_{2100}&=&2\left|\mathbf{C}_{1100}-\mathbf{C}_{2000},\mathbf{C}_{1010}-\mathbf{C}_{2000},\mathbf{C}_{0101}-\mathbf{C}_{1100}\right|+\\&&2\left|\mathbf{C}_{1100}-\mathbf{C}_{2000},\mathbf{C}_{0110}-\mathbf{C}_{1100},\mathbf{C}_{1001}-\mathbf{C}_{2000}\right|+\\&&2\left|\mathbf{C}_{0200}-\mathbf{C}_{1100},\mathbf{C}_{1010}-\mathbf{C}_{2000},\mathbf{C}_{1001}-\mathbf{C}_{2000}\right|
+\\N_{1110}&=&\left|\mathbf{C}_{1100}-\mathbf{C}_{2000},\mathbf{C}_{0110}-\mathbf{C}_{1100},\mathbf{C}_{0011}-\mathbf{C}_{1010}\right|+\\&&\left|\mathbf{C}_{0200}-\mathbf{C}_{1100},\mathbf{C}_{1010}-\mathbf{C}_{2000},\mathbf{C}_{0011}-\mathbf{C}_{1010}\right|+\\&&\left|\mathbf{C}_{1100}-\mathbf{C}_{2000},\mathbf{C}_{0020}-\mathbf{C}_{1010},\mathbf{C}_{0101}-\mathbf{C}_{1100}\right|+\\&&\left|\mathbf{C}_{0200}-\mathbf{C}_{1100},\mathbf{C}_{0020}-\mathbf{C}_{1010},\mathbf{C}_{1001}-\mathbf{C}_{2000}\right|+\\&&\left|\mathbf{C}_{0110}-\mathbf{C}_{1010},\mathbf{C}_{1010}-\mathbf{C}_{2000},\mathbf{C}_{0101}-\mathbf{C}_{1100}\right|+\\&&\left|\mathbf{C}_{0110}-\mathbf{C}_{1010},\mathbf{C}_{0110}-\mathbf{C}_{1100},\mathbf{C}_{1001}-\mathbf{C}_{2000}\right|
+\end{eqnarray*}
+
+\end{frame}
+
+\begin{frame}{Jacobian Determinant - Tet}
+For the cubic tet with 20 control points, there are 84 control points for $\mathcal{J}$. 10 of these are on the "inside", 4 for the corners, and 6 for the edges. Heres one for a corner, which has 24 terms. The edge ones have 33.
+{
+  \tiny
+\begin{eqnarray*}
+\\N_{1113}&=&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{1011}-\mathbf{C}_{2001},\mathbf{C}_{0111}-\mathbf{C}_{1110}\right|+\\&&\left|\mathbf{C}_{1101}-\mathbf{C}_{2001},\mathbf{C}_{0012}-\mathbf{C}_{1002},\mathbf{C}_{0111}-\mathbf{C}_{1110}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{0111}-\mathbf{C}_{1101},\mathbf{C}_{1011}-\mathbf{C}_{2010}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{1110}-\mathbf{C}_{2100},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{1101}-\mathbf{C}_{2001},\mathbf{C}_{0111}-\mathbf{C}_{1101},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{0201}-\mathbf{C}_{1101},\mathbf{C}_{0012}-\mathbf{C}_{1002},\mathbf{C}_{1011}-\mathbf{C}_{2010}\right|+\\&&\left|\mathbf{C}_{0201}-\mathbf{C}_{1101},\mathbf{C}_{1011}-\mathbf{C}_{2001},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{1200}-\mathbf{C}_{2100},\mathbf{C}_{0012}-\mathbf{C}_{1002},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{0021}-\mathbf{C}_{1011},\mathbf{C}_{1101}-\mathbf{C}_{2100}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{1020}-\mathbf{C}_{2010},\mathbf{C}_{0102}-\mathbf{C}_{1101}\right|+\\&&\left|\mathbf{C}_{1101}-\mathbf{C}_{2001},\mathbf{C}_{0021}-\mathbf{C}_{1011},\mathbf{C}_{0102}-\mathbf{C}_{1101}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{0120}-\mathbf{C}_{1110},\mathbf{C}_{1002}-\mathbf{C}_{2001}\right|+\ldots
+\end{eqnarray*}
+}I raise the same question as before, can those 10 be negative without an edge or face control point being negative. Are they bound by the other control points?
+\end{frame}
+\section{Determining Validity}
+\begin{frame}{Determining Validity}
+The convex hull property guarantees that if all control points of the Jacobian determinant are positive, the Jacobian determinant is positive everywhere, and thus the corresponding entity provably valid. For triangles (tetrahedra) the condition is
+\[ N_{IJK(L)} > 0, \text{for all control points}\]
+The contrary, however is not true. If one control point is negative, the Jacobian determinant is not necessarily negative everywhere, and thus the entity may be valid.\spa We use adaptive algorithms, converging the control points of the Jacobian determinant until we are confident of their sign.
+\end{frame}
+\begin{frame}{Determining Validity}
+There are two approaches to adapting. \spa
+1. {\bf Subdivision}. Any Bezier  can be split into multiple Bezier shapes that are identical to the original shape, with new control points.
+
+2. {\bf Elevation}. Any Bezier shape can be elevated in order, preserving the original shape, with new control points. \spa
+
+Since we have that the bounding shapes of Bezier shapes are themselves Beziers, that is, the edges of a Bezier triangle are Bezier edges and so forth. This reduces the cost of the adaptive algorithm - e.g, if a coefficient of the Jacobian determinant on the edge is negative, we can simply adapt that edge repeatedly.
+\end{frame}
+\begin{frame}{Validity Check - Subdivision of an Edge}
+Consider an invalid triangle or tetrahedron, with one $N$ negative, corresponding to an edge control point of the Jacobian determinant.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{validity1.png} 
 \end{figure}
+Figure from {\it The Generation of Valid Curvilinear Meshes}, Geuzaine et al.
+\end{frame}
+\begin{frame}{Validity Check - Subdivision of an Triangle}
+Consider an invalid triangle or tetrahedron, with one $N$ negative, corresponding to a triangle control point of the Jacobian determinant. 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{validity2.png} 
+\end{figure}
+Figure from {\it The Generation of Valid Curvilinear Meshes}, Geuzaine et al.
+\end{frame}
+\begin{frame}{Validity Check - Algorithm}
+The algorithm is divided into two parts, a first screening, and a second, adaptive part ({\it The Generation of Valid Curvilinear Meshes}, Geuzaine et al.). \spa
+The first part computes $\mathcal{J}$ at a prescribed set of $\mathbf{u}$, and if a negative value is found, the element is invalid. If all of these are positive, continue on to the adaptive part, to be sure. The adaptive part can use either elevation or subdivision.
+\end{frame}
+\begin{frame}{Validity Check - Initial}\scriptsize
+\begin{algorithmic}[1]
+\Function{CheckValidity}{entity}
+\State compute $B_i$ for entity
+\If{corner $B_i < 0$}
+\State return INVALID, vertex(es) \Comment{Adaptation doesn't improve this}
+\EndIf
+\If{min $B_i > 0$} \Comment{may want $B_i > $ constant}
+\State return VALID, empty 
+\Else
+\State find $B_i < 0$, determine edges, triangles to adapt
+  \For{each lower entity to adapt}
+    \State compute $B_i$ for that entity
+    \If{CheckValidityAdaptive($B_{i,entity},\epsilon$,0) is \texttt{False}}
+    \State entities $\gets$ entity
+    \EndIf
+  \EndFor
+\EndIf
+\If{entities is empty}
+\State return VALID
+\Else
+\State return INVALID
+\EndIf
+\EndFunction
+\end{algorithmic}
+\end{frame}
+\begin{frame}{Validity Check - Adaptive}\scriptsize
+\begin{algorithmic}[1]
+\Function{CheckValidityAdaptive}{$B_{i,entity},\epsilon$,nIter}
+\If{min $B_i > 0$}
+\State return VALID
+\ElsIf{nIter $ > $ maxIter or change in min $B_i < \epsilon$}\Comment{Convergence check}
+\State return INVALID
+\Else
+\State determine subdivisions or elevations
+  \For{each entity in subdivisions or elevations}
+  \State nIter $\gets$ nIter + 1
+  \State checkValidityAdaptive($B_{i,entity},\epsilon$,nIter)
+  \EndFor
+\EndIf
 
-\section{G1 Gregory Patches}
+\EndFunction
+\end{algorithmic}
+\end{frame}
+\begin{frame}{Validity Check - Questions}
+For the higher 
+\end{frame}
+\section{$G^1$ Continuous Patches}
+\begin{frame}{$G^1$ Continuous Patches}
 G1 continuous patches are implemented following Walton and Meek, \textit{A triangular G1 patch from boundary curves}. The mesh is initially set to 4th order, with 6 face nodes for the G1 patch. First, all edges on a geometric surface have control points set (the first two nodes of the three) using surface normals and the vertex locations. Edges on geometric edges have their control points set using the tangents at their endpoints. These edge control points use the algorithm of Walton and Meek to set the six face nodes. Once the internal points are determined, the edges are formally elevated, by resetting all of the points to the elevated control points.
-
+\end{frame}
+\begin{frame}{$G^1$ Continuous Patches}
 The weights on these nodes are similar to the triangular Bezier, with the evaluation done as if it is a Bezier triangle with internal Bezier points, $\mathbf{B}$, and Gregory points, $\mathbf{G}$.
 \begin{equation}
 \mathbf{B}_{12} = \frac{1}{\xi_1+\xi_2}(\xi_2\mathbf{G}_{12}+\xi_1\mathbf{G}_{17})
@@ -399,6 +1101,8 @@ The weights on these nodes are similar to the triangular Bezier, with the evalua
 \mathbf{B}_{14} = \frac{1}{\xi_0+\xi_1}(\xi_1\mathbf{G}_{14}+\xi_0\mathbf{G}_{16})
 \end{equation}
 The remainder of the mathematics is the same as the Bezier triangle, with tetrahedral blending, and other aspects maintaining the same form. We should note that choosing $\mathbf{G}_{12} = \mathbf{G}_{17}, \mathbf{G}_{13} = \mathbf{G}_{15}, \mathbf{G}_{14} = \mathbf{G}_{16}$ results in the original Bezier triangle, albeit with three additional nodes stored per triangle.
+\end{frame}
+\begin{frame}{$G^1$ Continuous Patches}
 \begin{figure}
 \begin{tikzpicture}[scale=1]
 \tikzstyle{every node}=[circle, draw, fill=white,
@@ -422,7 +1126,7 @@ The remainder of the mathematics is the same as the Bezier triangle, with tetrah
 (1.5,2.25) node {$16$}
 (0.5,1.0) node {$17$};
 
-\end{tikzpicture} \hspace{2cm}
+\end{tikzpicture} \hspace{0.5cm}
 \begin{tikzpicture}[scale=1]
 \tikzstyle{every node}=[circle, draw, fill=white,
                         inner sep=2pt, minimum width=5pt]
@@ -440,6 +1144,288 @@ The remainder of the mathematics is the same as the Bezier triangle, with tetrah
 (0.5,1.0) node {$5$};
 
 \end{tikzpicture}
-\caption{Global and local node ordering for the 4th order G1 triangle. The ordering is chosen as these points are set based on edges, so node 0 and node 3 correspond to edge 0 and so forth.}
 \end{figure}
+Global and local node ordering for the 4th order G1 triangle. The ordering is chosen as these points are set based on edges, so node 0 and node 3 correspond to edge 0 and so forth.
+\end{frame}
+\section{Implementation - Parametric Coordinates}
+\begin{frame}{Curves}
+For curves, there is one free parameter, $u$ (v = 1-u), between 0 and 1. In finite element convention, the parameter, $\xi \in [-1,1]$, such that
+\[ u = \frac{1}{2}(\xi+1)\]
+When taking derivatives we have that
+\[ \frac{\mathrm{d} \mathbf{B}(u)}{\mathrm{d} \xi}  =  \frac{\mathrm{d} \mathbf{B}(u)}{\mathrm{d} u}\frac{\mathrm{d} u}{\mathrm{d} \xi} = \frac{1}{2}\frac{\mathrm{d} \mathbf{B}(u)}{\mathrm{d} u}
+\]
+
+\end{frame}
+\begin{frame}{Triangles}
+For triangles, there are two free parameters, $u,v,(w = 1-u-v)$, between 0 and 1. In finite element convention, the parameters, $\xi_0,\xi_1 \in [0,1]$, are such that 
+$\xi_0 = 1$, corresponds to vertex 1, $\xi_1 = 1$ to vertex 2, such that the barycentric coordinates are
+\[(u,v,w) = (1-\xi_0-\xi_1,\xi_0,\xi_1)\]
+When taking derivatives, writing $\mathbf{B}(\xi_0,\xi_1) = \mathbf{B}(u,v,w)$
+{
+  \footnotesize
+\[ \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} \xi_0}  =  \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}\frac{\mathrm{d} u}{\mathrm{d} \xi_0} + \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} v}\frac{\mathrm{d} v}{\mathrm{d} \xi_0} = -\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}+\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} v}
+\]
+\[ \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} \xi_1} = -\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}+\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} w}
+\]
+}
+\end{frame}
+\begin{frame}{Tetrahedra}
+For tetrahedra, there are three free parameters, $u,v,w,(t = 1-u-v-w)$, between 0 and 1. In finite element convention, the parameters, $\xi_0,\xi_1,\xi_2 \in [0,1]$
+\[(u,v,w,t) = (1-\xi_0-\xi_1-\xi_2,\xi_0,\xi_1,\xi_2)\]
+When taking derivatives we have that, similar to triangles,
+{
+  \footnotesize
+\[ \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} \xi_0}  =  \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}\frac{\mathrm{d} u}{\mathrm{d} \xi_0} + \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} v}\frac{\mathrm{d} v}{\mathrm{d} \xi_0} + \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} w}\frac{\mathrm{d} w}{\mathrm{d} \xi_0}+ \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} w}\frac{\mathrm{d} t}{\mathrm{d} \xi_0} = -\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}+\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} v}
+\]
+\[ \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} \xi_1} = -\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}+\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} w} 
+\]
+\[ \frac{\mathrm{d} \mathbf{B}}{\mathrm{d} \xi_2} = -\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} u}+\frac{\mathrm{d} \mathbf{B}}{\mathrm{d} t}
+\]
+}
+\end{frame}
+\section{Implementation - Ordering}
+\begin{frame}{Ordering - Curves}
+Due to shared entities, there is a specific order to store coordinates in a 1D Array. This ordering is used in \texttt{apfShape.h} and nodes from \texttt{apf::getVectorNodes} return the coordinates in this specific ordering. The ordering is stored in \texttt{crvTables.cc}, e.g for triangles in \texttt{getTriNodeIndex(P,i,j)}. \spa
+
+For curves, this is simple. The vertex control points are indexed into 0 and 1, with the remaining points ordered as in the figure below, for a third order curve.
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,-0.25)
+   .. (1.0, 0.);
+\path (-0.1,-0.1) node {$\mathbf{C}_{30}$}
+(0.33,0.15) node {$\mathbf{C}_{21}$}
+(0.56,-0.2) node {$\mathbf{C}_{12}$}
+(1.0,-0.15) node {$\mathbf{C}_{03}$};
+
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.375,0.25) circle [radius=0.5mm];
+\fill (.75,-.25) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\end{tikzpicture}
+\hspace{1cm}
+\begin{tikzpicture}[scale=3.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.33,0.25) and (0.66,-0.25)
+   .. (1.0, 0.);
+\path (-0.1,-0.1) node {$0$}
+(0.33,0.15) node {$2$}
+(0.60,-0.2) node {$3$}
+(1.0,-0.15) node {$1$};
+
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.375,0.25) circle [radius=0.5mm];
+\fill (.75,-.25) circle [radius=0.5mm];
+\fill (1.,0) circle [radius=0.5mm];
+\end{tikzpicture}
+\end{figure}
+\end{frame}
+\begin{frame}{Ordering - Triangles}
+For triangles, this is more complex. The vertices come first, followed by the edge control points, followed by the triangle's internal points.
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=2.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.5,-0.25) and (1.0, -0.25)
+   .. (1.5, 0.) .. controls (1.25,0.6) and (1.0,0.8) 
+   .. (0.75,1.) .. controls (0.5,0.8) and (0.25,0.6) 
+   .. (0,0); 
+
+\path (-0.1,-0.1) node {$\mathbf{C}_{400}$}
+(0.375,-0.35) node {$\mathbf{C}_{310}$}
+(0.75,-0.4) node {$\mathbf{C}_{220}$}
+(1.175,-0.37) node {$\mathbf{C}_{130}$}
+(1.6,-0.13) node {$\mathbf{C}_{040}$}
+(1.6,0.35) node {$\mathbf{C}_{031}$}
+(1.45,0.6) node {$\mathbf{C}_{022}$}
+(1.22,0.85) node {$\mathbf{C}_{013}$}
+(0.75,1.15) node {$\mathbf{C}_{004}$}
+(-0.1,0.35) node {$\mathbf{C}_{301}$}
+(0.1,0.6) node {$\mathbf{C}_{202}$}
+(0.3,0.85) node {$\mathbf{C}_{103}$}
+(0.45,0.1) node {$\mathbf{C}_{211}$}
+(1.175,0.1) node {$\mathbf{C}_{121}$}
+(0.75,0.45) node {$\mathbf{C}_{112}$};
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.375,-0.22) circle [radius=0.5mm];
+\fill (.75,-.25) circle [radius=0.5mm];
+\fill (1.125,-.22) circle [radius=0.5mm];
+\fill (1.5,0) circle [radius=0.5mm];
+\fill (1.4,0.3) circle [radius=0.5mm];
+\fill (1.25,0.6) circle [radius=0.5mm];
+\fill (1.0,0.85) circle [radius=0.5mm];
+\fill (0.1,0.3) circle [radius=0.5mm];
+\fill (0.3,0.6) circle [radius=0.5mm];
+\fill (0.5,0.85) circle [radius=0.5mm];
+\fill (0.5,0.2) circle [radius=0.5mm];
+\fill (1.0,0.2) circle [radius=0.5mm];
+\fill (0.75,0.6) circle [radius=0.5mm];
+\fill (0.75,1.) circle [radius=0.5mm];
+\end{tikzpicture} 
+\begin{tikzpicture}[scale=2.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.5,-0.25) and (1.0, -0.25)
+   .. (1.5, 0.) .. controls (1.25,0.6) and (1.0,0.8) 
+   .. (0.75,1.) .. controls (0.5,0.8) and (0.25,0.6) 
+   .. (0,0); 
+
+\path (-0.1,-0.1) node {$0$}
+(0.375,-0.35) node {$2$}
+(0.75,-0.4) node {$3$}
+(1.175,-0.37) node {$4$}
+(1.6,-0.13) node {$1$}
+(1.6,0.35) node {$5$}
+(1.45,0.6) node {$6$}
+(1.22,0.85) node {$7$}
+(0.75,1.15) node {$2$}
+(-0.1,0.35) node {$8$}
+(0.1,0.6) node {$9$}
+(0.3,0.85) node {$10$}
+(0.45,0.1) node {$12$}
+(1.175,0.1) node {$13$}
+(0.75,0.45) node {$14$};
+\fill (0,0) circle [radius=0.5mm];
+\fill (0.375,-0.22) circle [radius=0.5mm];
+\fill (.75,-.25) circle [radius=0.5mm];
+\fill (1.125,-.22) circle [radius=0.5mm];
+\fill (1.5,0) circle [radius=0.5mm];
+\fill (1.4,0.3) circle [radius=0.5mm];
+\fill (1.25,0.6) circle [radius=0.5mm];
+\fill (1.0,0.85) circle [radius=0.5mm];
+\fill (0.1,0.3) circle [radius=0.5mm];
+\fill (0.3,0.6) circle [radius=0.5mm];
+\fill (0.5,0.85) circle [radius=0.5mm];
+\fill (0.5,0.2) circle [radius=0.5mm];
+\fill (1.0,0.2) circle [radius=0.5mm];
+\fill (0.75,0.6) circle [radius=0.5mm];
+\fill (0.75,1.) circle [radius=0.5mm];
+\end{tikzpicture}
+\end{figure}
+\end{frame}
+\begin{frame}{Ordering - Triangles}
+On the interior, the points are ordered in a zig zag pattern, e.g for a $5^{th}$ order triangle
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=4.0] 
+\draw [line width=0.6mm, black ] (0, 0) .. controls (0.5,-0.25) and (1.0, -0.25)
+   .. (1.5, 0.) .. controls (1.25,0.6) and (1.0,0.8) 
+   .. (0.75,1.) .. controls (0.5,0.8) and (0.25,0.6) 
+   .. (0,0); 
+
+\path (-0.1,-0.1) node {$0$}
+
+(1.6,-0.13) node {$1$}
+
+(0.75,1.15) node {$2$}
+(0.35,0.1) node {$15$}
+(0.85,0.1) node {$16$}
+(0.60,0.45) node {$18$}
+(1.35,0.1) node {$17$}
+(1.1,0.45) node {$19$}
+(0.9,0.8) node {$20$};
+
+\fill (0,0) circle [radius=0.5mm];
+\fill (1.5,0) circle [radius=0.5mm];
+\fill (0.75,1.) circle [radius=0.5mm];
+\fill (0.25,0.1) circle [radius=0.5mm];
+\fill (0.75,0.05) circle [radius=0.5mm];
+\fill (1.25,0.1) circle [radius=0.5mm];
+\fill (1.0,0.4) circle [radius=0.5mm];
+\fill (0.5,0.4) circle [radius=0.5mm];
+\fill (0.75,0.75) circle [radius=0.5mm];
+\end{tikzpicture}
+\end{figure}
+\end{frame}
+\begin{frame}{Ordering - Tetrahedron}
+The ordering for a tetrahedron is similar to that of a triangle, with vertices, edges, faces, and then internal points. For a cubic tetrahedron (no internal control points), the ordering is as below, based on the canonical vertex, edge, and face ordering for a linear tetrahedron.
+{
+  \scriptsize
+
+\begin{eqnarray*}
+&\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\mathbf{C}_{3}\;\mathbf{C}_{15}\mathbf{C}_{14}\mathbf{C}_{2}\;&\mathbf{C}_{0003}\mathbf{C}_{0012}\mathbf{C}_{0021}\mathbf{C}_{0030}\\
+&\;\;\;\;\;\;\;\;\;\;\;\;\mathbf{C}_{13}\mathbf{C}_{18}\mathbf{C}_{7}\;&\mathbf{C}_{0102}\mathbf{C}_{0111}\mathbf{C}_{0120}\\
+&\;\;\;\;\;\;\mathbf{C}_{12}\mathbf{C}_{6}\;&\mathbf{C}_{0201}\mathbf{C}_{0210}\\
+&\mathbf{C}_{1}\;&\mathbf{C}_{0300}\\
+\\
+&\;\;\;\;\;\;\;\;\;\;\;\;\mathbf{C}_{11}\mathbf{C}_{19}\mathbf{C}_{8}\;&\mathbf{C}_{1002}\mathbf{C}_{1011}\mathbf{C}_{1020}\\
+&\;\;\;\;\;\;\mathbf{C}_{17}\mathbf{C}_{16}&\mathbf{C}_{1101}\mathbf{C}_{1110}\\
+&\mathbf{C}_{5}\;&\mathbf{C}_{1200}\\
+\\
+&\;\;\;\;\;\;\mathbf{C}_{10}\mathbf{C}_{9}\;&\mathbf{C}_{2001}\mathbf{C}_{2010}\\
+&\mathbf{C}_{4}\;&\mathbf{C}_{2100}\\
+\\
+&\mathbf{C}_{0}\;&\mathbf{C}_{3000}\\
+\\
+\end{eqnarray*}
+}
+\end{frame}
+\begin{frame}{Aligning Shared Nodes}
+When obtaining the nodes for a particular triangle, specific ordering must be considered. This is due to edges not necessarily being oriented with the face. In \texttt{alignSharedNodes}, this problem is addressed by using \texttt{getAlignment} and specifying the order. If an edge is flipped with respect to the triangle, the ordering of the edge nodes is reversed and the correct ordering of nodes for the triangle is obtained.
+
+\end{frame}
+\begin{frame}{Aligning Shared Nodes}
+Ordering of edge nodes is the same as for a triangle, reversing them if they are flipped relative to the tetrahedron. For the face nodes in the tetrahedron, these can be flipped and rotated. The correct re-ordering is implemented in a more general form, but uses the fact the interior nodes form loops around the vertices, and rotation is just a shift by the number of nodes per edge. Flipped faces are less obvious, but the correct ordering is obtained by simply examining the flipped triangle's nodes, and matching the ordering (in the example below, node 6 is where node 0 is in the canonical triangle, so the ordering starts with 6). Examples are shown below.
+\end{frame}
+\begin{frame}{Aligning Shared Nodes}
+\begin{figure}[!ht]
+\begin{tikzpicture}[scale=0.4]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$0$}
+
+(6,0) node {$1$}
+(0,6) node {$2$}
+(1,1) node {$0$}
+(2,1) node {$1$}
+(3,1) node {$2$}
+(4,1) node {$3$}
+(1,2) node {$4$}
+(2,2) node {$5$}
+(3,2) node {$6$}
+(1,3) node {$7$}
+(2,3) node {$8$}
+(1,4) node {$9$};
+
+\end{tikzpicture}\hspace{0.5cm}
+\begin{tikzpicture}[scale=0.4]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$2$}
+
+(6,0) node {$1$}
+(0,6) node {$0$}
+(1,1) node {$9$}
+(2,1) node {$8$}
+(3,1) node {$6$}
+(4,1) node {$3$}
+(1,2) node {$7$}
+(2,2) node {$5$}
+(3,2) node {$2$}
+(1,3) node {$4$}
+(2,3) node {$1$}
+(1,4) node {$0$};
+\end{tikzpicture}\hspace{0.5cm}
+\begin{tikzpicture}[scale=0.4]
+\tikzstyle{every node}=[circle, draw, fill=white,
+                        inner sep=2pt, minimum width=5pt]
+\path (0,0) node {$1$}
+(6,0) node {$2$}
+(0,6) node {$0$}
+(1,1) node {$3$}
+(2,1) node {$6$}
+(3,1) node {$8$}
+(4,1) node {$9$}
+(1,2) node {$2$}
+(2,2) node {$5$}
+(3,2) node {$7$}
+(1,3) node {$1$}
+(2,3) node {$4$}
+(1,4) node {$0$};
+\end{tikzpicture}
+
+\end{figure}
+The above diagram describes shared nodes for 6th order Bezier triangle. Original Ordering (left) (0,...,9). Flipped ordering (middle) (9,8,6,3,7,5,2,4,1,0). Rotated ordering by 2 (right) (3,6,8,9,2,5,7,1,4,0). All of this information is in \texttt{crvTables.cc}.
+\end{frame}
+\begin{frame}{Split Point Locations on Triangles}
+This is an implementation detail used for interpolation points.\spa
+Given barycentric coordinates $u,v,w=1-u-v$ such that on a triangle in parameter space, $\mathbf{p} = u\mathbf{p}_0 + v\mathbf{p}_1 + w\mathbf{p}_2$ we are interested in splitting it at a given $(u,v,w)$. Due to denegeracy and periodicity, lets define this as a pair of linear splits, such that $ \mathbf{q} = a\mathbf{p}_0 + (1-a)\mathbf{p}_1 $ and $\mathbf{p} = b\mathbf{p}_2 + (1-b)\mathbf{q}$. Solving for $(a,b)$ gives $ a = v/(u+v), b = 1-u-v$. This is implemented in \texttt{crvSnap.cc}.
+
+\end{frame}
 \end{document}

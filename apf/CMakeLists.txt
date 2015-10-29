@@ -11,15 +11,27 @@ else()
    project(apf)
 endif()
 
+set(APF_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(NOT BUILD_IN_TRILINOS)
   find_package(pcu PATHS ${CMAKE_BINARY_DIR})
   find_package(gmi PATHS ${CMAKE_BINARY_DIR})
+  find_package(mth PATHS ${CMAKE_BINARY_DIR})
   set(APF_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${APF_INCLUDE_DIRS}
     ${PCU_INCLUDE_DIRS}
-    ${GMI_INCLUDE_DIRS})
-  set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS})
+    ${GMI_INCLUDE_DIRS}
+    ${MTH_INCLUDE_DIRS}
+  )
+  set(DEP_LIBS ${PCU_LIBS} ${GMI_LIBS} ${MTH_LIBS})
   set(APF_LIBS apf ${DEP_LIBS})
+else()
+  #quickfix hack which is now semi-permanent
+  set(APF_INCLUDE_DIRS
+      ${APF_INCLUDE_DIRS}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../mth
+      ${CMAKE_CURRENT_SOURCE_DIR}/../can)
 endif()
 
 #Sources & Headers
@@ -41,6 +53,7 @@ set(APF_SOURCES
   apfScalarElement.cc
   apfScalarField.cc
   apfShape.cc
+  apfIPShape.cc
   apfHierarchic.cc
   apfVector.cc
   apfVectorElement.cc
@@ -78,14 +91,32 @@ set(APF_HEADERS
   apfNumbering.h
   apfPartition.h
   apfConvert.h
-  apfGeometry.h)
+  apfGeometry.h
+  apf2mth.h
+)
 
-if(BUILD_IN_TRILINOS)
-# THIS IS WHERE TRIBITS GETS HEADERS
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-else()
-  include_directories(${APF_INCLUDE_DIRS})
+#quickfix hack which is now semi-permanent
+if (BUILD_IN_TRILINOS)
+  set(APF_SOURCES
+      ${APF_SOURCES}
+      ../mth/mthQR.cc
+     )
+  set(APF_HEADERS
+      ${APF_HEADERS}
+      ../can/canArray.h
+      ../can/canNewArray.h
+      ../mth/mth.h
+      ../mth/mth_def.h
+      ../mth/mthVector.h
+      ../mth/mthMatrix.h
+      ../mth/mthTensor.h
+      ../mth/mthQR.h
+      ../mth/mthAD.h
+     )
 endif()
+
+# THIS IS WHERE TRIBITS GETS HEADERS
+include_directories(${APF_INCLUDE_DIRS})
 
 #Library
 if(BUILD_IN_TRILINOS)
@@ -125,8 +156,8 @@ if(NOT BUILD_IN_TRILINOS)
    INSTALL(FILES ${APF_HEADERS} DESTINATION include)
    INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf.pc" DESTINATION lib/pkgconfig)
    INSTALL(FILES ${MODULEFILE} DESTINATION lib/module)
-   INSTALL(TARGETS 
-     apf 
+   INSTALL(TARGETS
+     apf
      RUNTIME DESTINATION bin
      LIBRARY DESTINATION lib
      ARCHIVE DESTINATION lib
@@ -134,5 +165,5 @@ if(NOT BUILD_IN_TRILINOS)
 endif(NOT BUILD_IN_TRILINOS)
 
 if(BUILD_IN_TRILINOS)
-   tribits_package_postprocess()
+  tribits_package_postprocess()
 endif(BUILD_IN_TRILINOS)

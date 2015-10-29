@@ -11,7 +11,9 @@
 #include "maCoarsen.h"
 #include "maAdapt.h"
 #include "maCollapse.h"
+#include "maMatchedCollapse.h"
 #include "maOperator.h"
+#include <cassert>
 
 namespace ma {
 
@@ -58,6 +60,8 @@ void checkAllEdgeCollapses(Adapt* a, int modelDimension)
   CollapseChecker checker(a,modelDimension);
   checker.applyToDimension(1);
   clearFlagFromDimension(a,CHECKED,1);
+  assert(checkFlagConsistency(a,1,COLLAPSE));
+  assert(checkFlagConsistency(a,0,COLLAPSE));
 }
 
 class IndependentSetFinder : public apf::CavityOp
@@ -66,7 +70,9 @@ class IndependentSetFinder : public apf::CavityOp
     IndependentSetFinder(Adapt* a):
       CavityOp(a->mesh),
       adapt(a)
-    {}
+    {
+      vertex = 0;
+    }
     virtual Outcome setEntity(Entity* v)
     {
       if (( ! getFlag(adapt,v,COLLAPSE))||
@@ -84,16 +90,48 @@ class IndependentSetFinder : public apf::CavityOp
       else
         clearFlag(adapt,vertex,COLLAPSE);
     }
-  private:
+  protected:
     Adapt* adapt;
     Entity* vertex;
 };
 
+class MatchedIndependentSetFinder : public IndependentSetFinder
+{
+  public:
+    MatchedIndependentSetFinder(Adapt* a):
+      IndependentSetFinder(a)
+    {}
+    virtual void apply()
+    {
+      apf::CopyArray matches;
+      this->sharing->getCopies(vertex, matches);
+      APF_ITERATE(apf::CopyArray, matches, it) {
+        assert(it->peer == PCU_Comm_Self());
+        assert(getFlag(adapt, it->entity, COLLAPSE));
+      }
+      bool keep = isRequiredForAnEdgeCollapse(adapt, vertex);
+      APF_ITERATE(apf::CopyArray, matches, it)
+        if (isRequiredForAnEdgeCollapse(adapt, it->entity))
+          keep = true;
+      if (!keep) {
+        clearFlag(adapt, vertex, COLLAPSE);
+        APF_ITERATE(apf::CopyArray, matches, it)
+          clearFlag(adapt, it->entity, COLLAPSE);
+      }
+    }
+};
+
 void findIndependentSet(Adapt* a)
 {
-  IndependentSetFinder finder(a);
-  finder.applyToDimension(0);
+  if (a->mesh->hasMatching()) {
+    MatchedIndependentSetFinder finder(a);
+    finder.applyToDimension(0, true);
+  } else {
+    IndependentSetFinder finder(a);
+    finder.applyToDimension(0);
+  }
   clearFlagFromDimension(a,CHECKED,0);
+  assert(checkFlagConsistency(a, 0, COLLAPSE));
 }
 
 class AllEdgeCollapser : public Operator
@@ -147,6 +185,57 @@ static int collapseAllEdges(Adapt* a, int modelDimension)
   return collapser.successCount;
 }
 
+class MatchedEdgeCollapser : public Operator
+{
+  public:
+    MatchedEdgeCollapser(Adapt* a, int md):
+      modelDimension(md),
+      collapse(a)
+    {
+      successCount = 0;
+    }
+    virtual int getTargetDimension() {return 1;}
+    virtual bool shouldApply(Entity* e)
+    {
+      Adapt* a = getAdapt();
+      if ( ! getFlag(a,e,COLLAPSE))
+        return false;
+      Mesh* m = a->mesh;
+      int md = m->getModelType(m->toModel(e));
+      if (md!=modelDimension)
+        return false;
+      collapse.setEdge(e);
+      return true;
+    }
+    virtual bool requestLocality(apf::CavityOp* o)
+    {
+      return collapse.requestLocality(o);
+    }
+    virtual void apply()
+    {
+      double qualityToBeat = getAdapt()->input->validQuality;
+      collapse.setEdges();
+      if ( ! collapse.checkTopo())
+        return;
+      if ( ! collapse.tryBothDirections(qualityToBeat))
+        return;
+      collapse.destroyOldElements();
+      ++successCount;
+    }
+    Adapt* getAdapt() {return collapse.adapt;}
+    int successCount;
+  private:
+    int modelDimension;
+    MatchedCollapse collapse;
+};
+
+static int collapseMatchedEdges(Adapt* a, int modelDimension)
+{
+  MatchedEdgeCollapser collapser(a, modelDimension);
+  applyOperator(a, &collapser, true);
+  return collapser.successCount;
+}
+
 struct ShouldCollapse : public Predicate
 {
   ShouldCollapse(Adapt* a_):a(a_) {}
@@ -165,6 +254,8 @@ long markEdgesToCollapse(Adapt* a)
 
 bool coarsen(Adapt* a)
 {
+  if (!a->input->shouldCoarsen)
+    return false;
   double t0 = PCU_Time();
   --(a->coarsensLeft);
   long count = markEdgesToCollapse(a);
@@ -178,9 +269,12 @@ bool coarsen(Adapt* a)
   {
     checkAllEdgeCollapses(a,modelDimension);
     findIndependentSet(a);
-    successCount += collapseAllEdges(a,modelDimension);
+    if (m->hasMatching())
+      successCount += collapseMatchedEdges(a, modelDimension);
+    else
+      successCount += collapseAllEdges(a, modelDimension);
   }
-  PCU_Add_Longs(&successCount,1);
+  successCount = PCU_Add_Long(successCount);
   double t1 = PCU_Time();
   print("coarsened %li edges in %f seconds",successCount,t1-t0);
   return true;

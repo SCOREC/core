@@ -12,6 +12,7 @@
 #include "apfMesh.h"
 #include "apfShape.h"
 #include "apfTagData.h"
+#include <cassert>
 
 namespace apf {
 
@@ -21,6 +22,7 @@ template <class T>
 NumberingOf<T>::NumberingOf()
 {
   field = 0;
+  components = 0;
 }
 
 template <class T>
@@ -175,9 +177,14 @@ Mesh* getMesh(Numbering* n)
   return n->getMesh();
 }
 
-void getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers)
+int countComponents(Numbering* n)
 {
-  n->getData()->getElementData(e,numbers);
+  return n->countComponents();
+}
+
+int getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers)
+{
+  return n->getData()->getElementData(e,numbers);
 }
 
 int countFixed(Numbering* n)
@@ -467,8 +474,7 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
 
 static long exscan(long x)
 {
-  PCU_Exscan_Longs(&x,1);
-  return x;
+  return PCU_Exscan_Long(x);
 }
 
 template <class T>

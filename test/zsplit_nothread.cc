@@ -7,6 +7,8 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <SimUtil.h>
+#include <cassert>
+#include <cstdlib>
 
 namespace {
 

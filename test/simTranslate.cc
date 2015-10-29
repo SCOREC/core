@@ -8,10 +8,9 @@
 
  *******************************************************************************/
 #include "SimModel.h"
+#include "SimAdvModel.h"
 #include "SimUtil.h"
 #include "SimMessages.h"
-#include "ModelTypes.h"
-#include "MeshTypes.h"
 #include "SimError.h"
 #include "SimErrorCodes.h"
 #include "MeshSim.h"
@@ -37,13 +36,6 @@ void messageHandler(int type, const char *msg);
 void progressHandler(const char *what, int level, int startVal, 
     int endVal, int currentVal, void *);
 
-/* Secret Undocumented Simmetrix Functions! */
-#ifdef SIM_ACIS
-pGModel GM_translateAcisModel(pGModel, double tolerance);
-#endif
-#ifdef SIM_PARASOLID
-pGModel GM_translateParasolidModel(pGModel, double tolerance);
-#endif
 void SModel_setAttManager(pModel model, pAManager attMan);
 pAManager SModel_attManager(pModel model);
 
@@ -103,16 +95,8 @@ void translateModel(std::string mdlName, pGModel* simmodel, pProgress& progress)
   PList_delete(modelErrors);
 
   // translate the model
-#ifdef SIM_ACIS
-  if( isAcis )
-    *simmodel = GM_translateAcisModel(model, 1e-04);
-#endif
-#ifdef SIM_PARASOLID
-  if( isParasolid )
-    *simmodel = GM_translateParasolidModel(model, 1e-04);
-#endif
+  *simmodel = GM_translateModel(model, NULL);
   GM_release(model);
-
 }
 
 int main(int argc, char* argv[])

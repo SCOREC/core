@@ -1,20 +1,22 @@
 /****************************************************************************** 
 
-  Copyright 2011 Scientific Computation Research Center, 
+  Copyright 2015 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
-#ifndef PCU_COMMON_H
-#define PCU_COMMON_H
+#ifndef NOTO_MALLOC_H
+#define NOTO_MALLOC_H
 
-void pcu_fail(const char* format, ...) __attribute__((noreturn));
-int pcu_floor_log2(int n);
-int pcu_ceil_log2(int n);
+#include <stddef.h>
 
-#define MIN(a,b) (((b)<(a))?(b):(a))
-#define MAX(a,b) (((b)>(a))?(b):(a))
+void* noto_malloc(size_t size);
+#define NOTO_MALLOC(p,c) ((p)=noto_malloc(sizeof(*(p))*(c)))
+void* noto_realloc(void* p, size_t size);
+void noto_free(void* p);
+size_t noto_malloced(void);
 
 #endif
+

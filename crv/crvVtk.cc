@@ -7,10 +7,97 @@
 
 #include "crv.h"
 #include "PCU.h"
+#include "apfDynamicVector.h"
+#include "apfFieldData.h"
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 namespace crv {
+
+class HasAll : public apf::FieldOp
+{
+  public:
+      virtual bool inEntity(apf::MeshEntity* e)
+      {
+        if (!f->getData()->hasEntity(e) && f->countNodesOn(e))
+          ok = false;
+        return false;
+      }
+      bool run(apf::FieldBase* f_)
+      {
+        f = f_;
+        ok = true;
+        this->apply(f);
+        return ok;
+      }
+  private:
+    bool ok;
+    apf::FieldBase* f;
+};
+
+static bool isPrintable(apf::FieldBase* f)
+{
+  HasAll op;
+  return op.run(f);
+}
+
+static void describeArray(
+    std::ostream& file,
+    const char* name,
+    int type,
+    int size)
+{
+  file << "type=\"";
+  const char* typeNames[3] = {"Float64","Int32","Int64"};
+  file << typeNames[type];
+  file << "\" Name=\"" << name;
+  file << "\" NumberOfComponents=\"" << size;
+  file << "\" format=\"ascii\"";
+}
+
+static void writeDataHeader(std::ostream& file, const char* name,
+    int type, int size)
+{
+  file << "<DataArray ";
+  describeArray(file,name,type,size);
+  file << ">\n";
+}
+
+static int countOwnedEntitiesOfType(apf::Mesh* m, int type)
+{
+  apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
+  apf::MeshEntity* e;
+  int count = 0;
+  while ((e = m->iterate(it)))
+    if (m->getType(e)==type && m->isOwned(e))
+      ++count;
+  m->end(it);
+  return count;
+}
+
+static const char* getSuffix(int type)
+{
+  std::stringstream ss;
+  switch (type) {
+  // control points
+  case apf::Mesh::VERTEX:
+    return "_ctrlPts";
+    break;
+  case apf::Mesh::EDGE:
+    return "_edge";
+    break;
+  case apf::Mesh::TRIANGLE:
+    return "_tri";
+    break;
+  case apf::Mesh::TET:
+    return "_tet";
+    break;
+  default:
+    break;
+  }
+  return "";
+}
 
 static void writePointConnectivity(std::ostream& file, int n)
 {
@@ -203,9 +290,35 @@ static void writeEnd(std::ostream& file)
   file << "</VTKFile>\n";
 }
 
-static void writeTriJacobianData(std::ostream& file, apf::Mesh* m, int n)
+static void writeEdgeJacobianDet(std::ostream& file, apf::Mesh* m, int n)
 {
-  file << "<PointData>\n";
+  file << "<DataArray type=\"Float64\" Name=\"detJacobian\" "
+       << "NumberOfComponents=\"1\" format=\"ascii\">\n";
+
+  apf::MeshIterator* it = m->begin(1);
+  apf::MeshEntity* e;
+  apf::Vector3 p,pt;
+
+  apf::Matrix3x3 J;
+
+  while ((e = m->iterate(it))) {
+    if(!m->isOwned(e)) continue;
+    apf::MeshElement* me = apf::createMeshElement(m,e);
+    for (int i = 0; i <= n; ++i){
+      p[0] = 2.*i/n-1.;
+      apf::getJacobian(me,p,J);
+      double detJ = apf::getJacobianDeterminant(J,1);
+      file << detJ << '\n';
+    }
+    apf::destroyMeshElement(me);
+  }
+  m->end(it);
+
+  file << "</DataArray>\n";
+}
+
+static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
+{
   file << "<DataArray type=\"Float64\" Name=\"detJacobian\" "
        << "NumberOfComponents=\"1\" format=\"ascii\">\n";
 
@@ -214,25 +327,31 @@ static void writeTriJacobianData(std::ostream& file, apf::Mesh* m, int n)
   apf::Vector3 p;
 
   apf::Matrix3x3 J;
-
+  double detJ;
+  bool isValid = true;
   while ((e = m->iterate(it))) {
-    apf::MeshElement* me =
-        apf::createMeshElement(m,e);
+    if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TRIANGLE) continue;
+    apf::MeshElement* me = apf::createMeshElement(m,e);
     for (int j = 0; j <= n; ++j){
       p[1] = 1.*j/n;
       for (int i = 0; i <= n-j; ++i){
         p[0] = 1.*i/n;
         apf::getJacobian(me,p,J);
-        double detJ = apf::getJacobianDeterminant(J,2);
+        if(m->getDimension() == 3){
+          detJ = apf::getJacobianDeterminant(J,2);
+        } else {
+          detJ = J[0][0]*J[1][1]-J[1][0]*J[0][1];
+        }
         file << detJ << '\n';
-        if(detJ < 0.){
+        if(isValid && detJ < 0.){
           apf::Vector3 pt;
           apf::getVector((apf::Element*)me,p,pt);
           std::stringstream ss;
           ss << "warning: Tri Jacobian Determinant is negative,  " << detJ
-              << " at " << pt << '\n';
+             << '\n';
           std::string s = ss.str();
           fprintf(stderr, "%s", s.c_str());
+          isValid = false;
         }
       }
     }
@@ -241,12 +360,10 @@ static void writeTriJacobianData(std::ostream& file, apf::Mesh* m, int n)
   m->end(it);
 
   file << "</DataArray>\n";
-  file << "</PointData>\n";
 }
 
-static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
+static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
 {
-  file << "<PointData>\n";
   file << "<DataArray type=\"Float64\" Name=\"detJacobian\" "
        << "NumberOfComponents=\"1\" format=\"ascii\">\n";
 
@@ -276,7 +393,9 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
   apf::NewArray<double> values;
   apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
 
+  bool isValid = true;
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TET) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
     for(int h = 0; h < 4; ++h){
       for (int k = 0; k <= n; ++k){
@@ -292,15 +411,15 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
 
             apf::getJacobian(me,p,J);
             double detJ = apf::getDeterminant(J);
-            if(detJ < 0.){
+            if(isValid && detJ < 0.){
               apf::Vector3 pt;
               apf::getVector((apf::Element*)me,p,pt);
               std::stringstream ss;
               ss << "warning: Tet Jacobian Determinant is negative,  " << detJ
-                 << " at " << pt << "for " << m->getShape()->getOrder()
-                 << " order method\n";
+                 << '\n';
               std::string s = ss.str();
               fprintf(stderr, "%s", s.c_str());
+              isValid = false;
             }
             file << detJ << '\n';
           }
@@ -312,106 +431,90 @@ static void writeTetJacobianData(std::ostream& file, apf::Mesh* m, int n)
   m->end(it);
 
   file << "</DataArray>\n";
-  file << "</PointData>\n";
 }
 
-static void writeEdgeVtuFiles(apf::Mesh* m, int n, const char* prefix)
+static void writeJacobianDet(std::ostream& file, apf::Mesh* m, int type, int n)
 {
-  std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-      << "_edges.vtu";
+  switch (type) {
+    case apf::Mesh::EDGE:
+      writeEdgeJacobianDet(file,m,n);
+      break;
+    case apf::Mesh::TRIANGLE:
+      writeTriJacobianDet(file,m,n);
+      break;
+    case apf::Mesh::TET:
+      writeTetJacobianDet(file,m,n);
+      break;
+    default:
+      break;
+  }
+}
 
-  int  nCells = m->count(1)*n;
-  int nPoints = m->count(1)*(n+1);
-
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
-
-  writeStart(file,nPoints,nCells);
-
-  file << "<Points>\n";
-  file << "<DataArray type=\"Float64\" Name=\"coordinates\" "
-      "NumberOfComponents=\"3\" format=\"ascii\">\n";
-
+static void writeEdgeNodalField(std::ostream& file, int n, apf::Field* f)
+{
+  int nc = f->countComponents();
+  writeDataHeader(file,f->getName(),f->getScalarType(),nc);
+  apf::Mesh* m = f->getMesh();
   apf::MeshIterator* it = m->begin(1);
   apf::MeshEntity* e;
-  apf::Vector3 p,pt;
+  apf::Vector3 p;
+  apf::DynamicVector v(nc);
   while ((e = m->iterate(it))) {
-    apf::Element* elem =
-        apf::createElement(m->getCoordinateField(),e);
+    if(!m->isOwned(e)) continue;
+    apf::Element* elem = apf::createElement(f,e);
     for (int i = 0; i <= n; ++i){
       p[0] = 2.*i/n-1.;
-      apf::getVector(elem,p,pt);
-      writePoint(file,pt);
+      apf::getComponents(elem,p,&v[0]);
+      for (int j = 0; j < nc; ++j)
+        file << v[j] << ' ';
+      file << '\n';
     }
     apf::destroyElement(elem);
   }
   m->end(it);
   file << "</DataArray>\n";
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::EDGE,m->count(1),n,nCells);
-  writeEnd(file);
 }
 
-static void writeTriangleVtuFiles(apf::Mesh* m, int n, const char* prefix)
+static void writeTriNodalField(std::ostream& file, int n, apf::Field* f)
 {
-  std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << "_tri.vtu";
-
-  int nPoints = m->count(2)*(n+1)*(n+2)/2;
-  int nCells = m->count(2)*n*n;
-
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
-
-  writeStart(file,nPoints,nCells);
-
-  file << "<Points>\n";
-  file << "<DataArray type=\"Float64\" Name=\"coordinates\" "
-      "NumberOfComponents=\"3\" format=\"ascii\">\n";
-
+  int nc = f->countComponents();
+  writeDataHeader(file,f->getName(),f->getScalarType(),nc);
+  apf::Mesh* m = f->getMesh();
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
-  apf::Vector3 p,pt;
+  apf::Vector3 p;
+  apf::DynamicVector v(nc);
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TRIANGLE) continue;
     apf::Element* elem =
-        apf::createElement(m->getCoordinateField(),e);
+        apf::createElement(f,e);
     for (int j = 0; j <= n; ++j){
       p[1] = 1.*j/n;
       for (int i = 0; i <= n-j; ++i){
         p[0] = 1.*i/n;
-        apf::getVector(elem,p,pt);
-        writePoint(file,pt);
+        apf::getComponents(elem,p,&v[0]);
+        for (int j = 0; j < nc; ++j)
+          file << v[j] << ' ';
+        file << '\n';
       }
     }
     apf::destroyElement(elem);
   }
   m->end(it);
   file << "</DataArray>\n";
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::TRIANGLE,m->count(2),n,nCells);
-  if(m->getShape()->getOrder() > 1)
-    writeTriJacobianData(file,m,n);
-  writeEnd(file);
 }
 
-static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
+static void writeTetNodalField(std::ostream& file, int n, apf::Field* f)
 {
-  std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << "_tet.vtu";
-  std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
-
-  int nPoints = m->count(3)*4*(n+1)*(n+1)*(n+1);
-  int nCells = m->count(3)*4*n*n*n;
+  int nc = f->countComponents();
+  writeDataHeader(file,f->getName(),f->getScalarType(),nc);
+  apf::Mesh* m = f->getMesh();
+  apf::MeshIterator* it = m->begin(3);
+  apf::MeshEntity* e;
+  apf::Vector3 xi,p;
+  apf::DynamicVector v(nc);
+  apf::NewArray<double> values;
+  apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
 
   // first initializing with end points
   apf::Vector3 params[15] = {apf::Vector3(0,0,0),apf::Vector3(1,0,0),
@@ -432,21 +535,10 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
   int hex[4][8] = {{0,4,10,6,7,11,14,13},{1,5,10,4,8,12,14,11},
       {2,6,10,5,9,13,14,12},{9,13,14,12,3,7,11,8}};
 
-  writeStart(file,nPoints,nCells);
-
-  file << "<Points>\n";
-  file << "<DataArray type=\"Float64\" Name=\"coordinates\" "
-      "NumberOfComponents=\"3\" format=\"ascii\">\n";
-
-  apf::MeshIterator* it = m->begin(3);
-  apf::MeshEntity* e;
-  apf::Vector3 xi,p,pt;
-  apf::NewArray<double> values;
-  apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
-
   while ((e = m->iterate(it))) {
+    if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TET) continue;
     apf::Element* elem =
-        apf::createElement(m->getCoordinateField(),e);
+        apf::createElement(f,e);
     for(int h = 0; h < 4; ++h){
       for (int k = 0; k <= n; ++k){
         xi[2] = 2.*k/n - 1.;
@@ -458,41 +550,204 @@ static void writeTetVtuFiles(apf::Mesh* m, int n, const char* prefix)
             p.zero();
             for(int l = 0; l < 8; ++l)
               p += params[hex[h][l]]*values[l];
-            apf::getVector(elem,p,pt);
-            writePoint(file,pt);
+            apf::getComponents(elem,p,&v[0]);
+            for (int j = 0; j < nc; ++j)
+              file << v[j] << ' ';
+            file << '\n';
           }
         }
       }
     }
     apf::destroyElement(elem);
   }
+  m->end(it);
 
   file << "</DataArray>\n";
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::TET,m->count(3),n,nCells);
-  writeTetJacobianData(file,m,n);
-  writeEnd(file);
-  m->end(it);
+}
+
+static void writeNodalField(std::ostream& file, int type, int n,
+    apf::Field* f)
+{
+  switch (type) {
+    case apf::Mesh::EDGE:
+      writeEdgeNodalField(file,n,f);
+      break;
+    case apf::Mesh::TRIANGLE:
+      writeTriNodalField(file,n,f);
+      break;
+    case apf::Mesh::TET:
+      writeTetNodalField(file,n,f);
+      break;
+    default:
+      break;
+  }
+}
+
+static void writePDataArray(
+    std::ostream& file,
+    apf::FieldBase* f)
+{
+  file << "<PDataArray ";
+  describeArray(file,
+      f->getName(),
+      f->getScalarType(),
+      f->countComponents());
+  file << "/>\n";
+}
+
+static void writePPointData(std::ostream& file, apf::Mesh* m)
+{
+  for (int i=0; i < m->countFields(); ++i)
+  {
+    apf::Field* f = m->getField(i);
+    if(isPrintable(f))
+      writePDataArray(file,f);
+  }
+}
+
+static void writePvtuFile(const char* prefix, const char* suffix,
+    apf::Mesh* m, int type)
+{
+  std::stringstream ss;
+  ss << prefix << "_" << m->getShape()->getOrder()
+     << suffix << ".pvtu";
+  std::string fileName = ss.str();
+  std::ofstream file(fileName.c_str());
+  assert(file.is_open());
+  file << "<VTKFile type=\"PUnstructuredGrid\">\n";
+  file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
+  file << "<PPoints>\n";
+  writePDataArray(file,m->getCoordinateField());
+  file << "</PPoints>\n";
+  file << "<PPointData>\n";
+  if(type == apf::Mesh::VERTEX){
+    file << "<PDataArray type=\"UInt8\" Name=\"entityType\" "
+         << "NumberOfComponents=\"1\" format=\"ascii\"/>\n";
+  } else {
+    file << "<PDataArray type=\"Float64\" Name=\"detJacobian\" "
+         << "NumberOfComponents=\"1\" format=\"ascii\"/>\n";
+  }
+  writePPointData(file,m);
+  file << "</PPointData>\n";
+  for (int i=0; i < PCU_Comm_Peers(); ++i)
+  {
+    std::stringstream ssPCU;
+    ssPCU << prefix << i << "_"
+       << m->getShape()->getOrder()
+       << suffix << ".vtu";
+    file << "<Piece Source=\"" << ssPCU.str() << "\"/>\n";
+  }
+
+  file << "</PUnstructuredGrid>\n";
+  file << "</VTKFile>\n";
+}
+
+static void writePointData(std::ostream& file, apf::Mesh* m,
+    int type, int n)
+{
+  for (int i=0; i < m->countFields(); ++i)
+  {
+    apf::Field* f = m->getField(i);
+    if(isPrintable(f))
+      writeNodalField(file,type,n,f);
+  }
+}
+
+void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
+{
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix,"_interPts",m,apf::Mesh::VERTEX);
+
+  PCU_Barrier();
+
+  std::stringstream ss;
+  ss << prefix << PCU_Comm_Self() << "_"
+     << m->getShape()->getOrder()
+     << "_interPts" << ".vtu";
+
+  int nPoints = 0;
+    for (int t = 0; t < apf::Mesh::TYPES; ++t)
+      nPoints += m->getShape()->countNodesOn(t)
+      *countOwnedEntitiesOfType(m,t);
+
+  std::string fileName = ss.str();
+  std::stringstream buf;
+
+  writeStart(buf,nPoints,nPoints);
+  buf << "<Points>\n";
+  buf << "<DataArray type=\"Float64\" Name=\"coordinates\" "
+      "NumberOfComponents=\"3\" format=\"ascii\">\n";
+
+  for (int t = 0; t < apf::Mesh::TYPES; ++t){
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[t]);
+    apf::MeshEntity* e;
+    apf::Vector3 pt, xi;
+    while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
+      apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+      for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
+        m->getShape()->getNodeXi(t,i,xi);
+        apf::getVector(elem,xi,pt);
+        writePoint(buf,pt);
+      }
+      apf::destroyElement(elem);
+    }
+    m->end(it);
+  }
+  buf << "</DataArray>\n";
+  buf << "</Points>\n";
+  writeCells(buf,apf::Mesh::VERTEX,nPoints,nPoints,nPoints);
+  buf << "<PointData>\n";
+  buf << "<DataArray type=\"UInt8\" Name=\"entityType\" "
+      << "NumberOfComponents=\"1\" format=\"ascii\">\n";
+
+  for (int t = 0; t < apf::Mesh::TYPES; ++t){
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[t]);
+    apf::MeshEntity* e;
+    apf::Vector3 pt;
+    while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
+      for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
+        buf << t << '\n';
+      }
+    }
+    m->end(it);
+  }
+  buf << "</DataArray>\n";
+  buf << "</PointData>\n";
+  writeEnd(buf);
+  {
+    std::ofstream file(fileName.c_str());
+    assert(file.is_open());
+    file << buf.rdbuf();
+  }
+
+  PCU_Barrier();
 }
 
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix,getSuffix(apf::Mesh::VERTEX),m,apf::Mesh::VERTEX);
+
+  PCU_Barrier();
+
   std::stringstream ss;
   ss << prefix << PCU_Comm_Self() << "_"
      << m->getShape()->getOrder()
-     << "_controlPoints.vtu";
+     << getSuffix(apf::Mesh::VERTEX) << ".vtu";
 
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
-      nPoints += m->getShape()->countNodesOn(t)*apf::countEntitiesOfType(m,t);
+      nPoints += m->getShape()->countNodesOn(t)
+      *countOwnedEntitiesOfType(m,t);
 
   std::string fileName = ss.str();
-  std::ofstream file(fileName.c_str());
-  assert(file.is_open());
+  std::stringstream buf;
 
-  writeStart(file,nPoints,nPoints);
-  file << "<Points>\n";
-  file << "<DataArray type=\"Float64\" Name=\"coordinates\" "
+  writeStart(buf,nPoints,nPoints);
+  buf << "<Points>\n";
+  buf << "<DataArray type=\"Float64\" Name=\"coordinates\" "
       "NumberOfComponents=\"3\" format=\"ascii\">\n";
 
   for (int t = 0; t < apf::Mesh::TYPES; ++t){
@@ -500,34 +755,104 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
     apf::MeshEntity* e;
     apf::Vector3 pt;
     while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
       for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
         m->getPoint(e,i,pt);
-        writePoint(file,pt);
+        writePoint(buf,pt);
       }
     }
     m->end(it);
   }
-  file << "</DataArray>\n";
-  file << "</Points>\n";
-  writeCells(file,apf::Mesh::VERTEX,nPoints,nPoints,nPoints);
-  writeEnd(file);
+  buf << "</DataArray>\n";
+  buf << "</Points>\n";
+  writeCells(buf,apf::Mesh::VERTEX,nPoints,nPoints,nPoints);
+  buf << "<PointData>\n";
+  buf << "<DataArray type=\"UInt8\" Name=\"entityType\" "
+      << "NumberOfComponents=\"1\" format=\"ascii\">\n";
+
+  for (int t = 0; t < apf::Mesh::TYPES; ++t){
+    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[t]);
+    apf::MeshEntity* e;
+    apf::Vector3 pt;
+    while ((e = m->iterate(it))) {
+      if(!m->isOwned(e)) continue;
+      for(int i = 0; i < m->getShape()->countNodesOn(t); ++i){
+        buf << t << '\n';
+      }
+    }
+    m->end(it);
+  }
+  buf << "</DataArray>\n";
+  buf << "</PointData>\n";
+  writeEnd(buf);
+  {
+    std::ofstream file(fileName.c_str());
+    assert(file.is_open());
+    file << buf.rdbuf();
+  }
+
+  PCU_Barrier();
 }
 
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
+  double t0 = PCU_Time();
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix,getSuffix(type),m,type);
+
+  PCU_Barrier();
+
+  std::stringstream ss;
+  ss << prefix << PCU_Comm_Self() << "_"
+     << m->getShape()->getOrder()
+     << getSuffix(type) << ".vtu";
+  std::string fileName = ss.str();
+  std::stringstream buf;
+
+  int nPoints = 0, nCells = 0;
+  int count = countOwnedEntitiesOfType(m,type);
+
   switch (type) {
-    case apf::Mesh::EDGE:
-      writeEdgeVtuFiles(m,n,prefix);
-      break;
-    case apf::Mesh::TRIANGLE:
-      writeTriangleVtuFiles(m,n,prefix);
-      break;
-    case apf::Mesh::TET:
-      writeTetVtuFiles(m,n/2+1,prefix);
-      break;
-    default:
-      break;
+  case apf::Mesh::EDGE:
+    nCells = count*n;
+    nPoints = count*(n+1);
+    break;
+  case apf::Mesh::TRIANGLE:
+    nPoints = count*(n+1)*(n+2)/2;
+    nCells = count*n*n;
+    break;
+  case apf::Mesh::TET:
+    n = n/2+1;
+    nPoints = count*4*(n+1)*(n+1)*(n+1);
+    nCells = count*4*n*n*n;
+    break;
+  default:
+    break;
   }
+
+  writeStart(buf,nPoints,nCells);
+
+  buf << "<Points>\n";
+  writeNodalField(buf,type,n,m->getCoordinateField());
+  buf << "</Points>\n";
+  writeCells(buf,type,count,n,nCells);
+  buf << "<PointData>\n";
+  writeJacobianDet(buf,m,type,n);
+  writePointData(buf,m,type,n);
+  buf << "</PointData>\n";
+  writeEnd(buf);
+
+  {
+    std::ofstream file(fileName.c_str());
+    assert(file.is_open());
+    file << buf.rdbuf();
+  }
+
+  PCU_Barrier();
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("%s vtk files %s written in %f seconds\n",
+        apf::Mesh::typeName[type],prefix, t1 - t0);
 }
 
 } //namespace crv

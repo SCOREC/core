@@ -90,15 +90,6 @@ enum ValueType {
   */
 Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order);
 
-/** \brief Create a quadratic apf::Field using hierarchic shape functions
-  *
-  * \param m the mesh over which the field is defined
-  * \param name a unique name for this field
-  * \param valueType the type of field data
-  * \details only quadratic hierarchic fields are supported.
-  */
-Field* createHierarchicField(Mesh* m, const char* name, int valueType);
-
 /** \brief Create an apf::Field using a step distribution.
   *
   * \details A step-wise distribution is a C-1 continuous field
@@ -133,7 +124,8 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType);
   They contain enough information to interpolate values in an
   element and such, but some higher-level functionality is left out.
   */
-Field* createPackedField(Mesh* m, const char* name, int components);
+Field* createPackedField(Mesh* m, const char* name, int components,
+    apf::FieldShape* shape = 0);
 
 /** \brief Declare a copy of a field on another apf::Mesh
    \details This will just make a Field object with the same
@@ -409,6 +401,15 @@ int getOrder(MeshElement* e);
   */
 void getJacobian(MeshElement* e, Vector3 const& local, Matrix3x3& j);
 
+/** \brief Returns the Jacobian inverse at a local point
+  *
+  * \details computes the Moore-Penrose psuedo-inverse of J. This is needed
+  * to handle non-square Jacobians that arise from edges embedded in 2D or
+  * higher and faces embeded in 3D. If J is invertible, the Moore-Penrose
+  * inverse equals the inverse.
+  */
+void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv);
+
 /** \brief Returns the number of element nodes.
   *
   * \details This is the number of nodes affecting an
@@ -440,6 +441,7 @@ void getShapeValues(Element* e, Vector3 const& local,
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads);
 
+
 /** \brief Retrieve the apf::FieldShape used by a field
   */
 FieldShape* getShape(Field* f);
@@ -466,6 +468,8 @@ for (t::const_iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * \details Nodal fields whose shape differs from the mesh shape will
+  * not be output. Fields with incomplete data will not be output.
   */
 void writeVtkFiles(const char* prefix, Mesh* m);
 /** \brief Output just the .vtu file for this part.
@@ -572,6 +576,25 @@ void copyData(Field* to, Field* from);
 void projectField(Field* to, Field* from);
 
 void axpy(double a, Field* x, Field* y);
+
+void renameField(Field* f, const char* name);
+
+/** \brief Get the basis functions over a mesh element
+  * 
+  * \param s the field shape that defines the basis functions
+  * \param e the mesh element over which the basis functions are defined
+  * \param p the local coordinates at which the basis functions are evaluated
+  * \param BF nodal array of basis functions evaluated at p
+  */
+void getBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<double>& BF);
+
+/** \brief Get global gradients of basis functions over a mesh element
+  *
+  * \param gradBF nodal array of gradients of basis functions evaluated at p
+  */
+void getGradBF(FieldShape* s, MeshElement* e, Vector3 const& p,
+    NewArray<Vector3>& gradBF);
 
 }
 

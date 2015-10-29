@@ -4,6 +4,7 @@
 #include <apfMesh2.h>
 #include <PCU.h>
 #include <apf.h>
+#include <cassert>
 
 void testTriEdge()
 {

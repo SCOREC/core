@@ -6,6 +6,7 @@
 #include "phAxisymmetry.h"
 #include <fstream>
 #include <sstream>
+#include <cassert>
 
 namespace ph {
 
@@ -419,6 +420,13 @@ static void getInitialConditions(BCs& bcs, Output& o)
   ifs.close();
 
   Input& in = *o.in;
+  if (in.solutionMigration) {
+    if (!PCU_Comm_Self())
+      printf("All attribute-based initial conditions, "
+             "if any, "
+             "are ignored due to request for SolutionMigration\n");
+    return;
+  }
   apf::Mesh* m = o.mesh;
   apf::NewArray<double> s(in.ensa_dof);
   apf::NewArray<double> matValue(1);

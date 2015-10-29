@@ -3,6 +3,11 @@
 #Setting Version Number, Project Name
 cmake_minimum_required (VERSION 2.8)
 project (SCOREC)
+set(CORE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+if (APPLE)
+  set(CMAKE_MACOSX_RPATH ON)
+endif()
 
 #unless building shared libs, then select static libs 
 # if both static and shared libs are available 
@@ -58,6 +63,12 @@ add_subdirectory(pcu)
 
 add_subdirectory(gmi)
 
+add_subdirectory(can)
+
+add_subdirectory(mth)
+
+add_subdirectory(lion)
+
 add_subdirectory(apf)
 
 add_subdirectory(gmi_sim)
@@ -88,5 +99,5 @@ add_subdirectory(test)
 
 #binary distribution package
 set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_VERSION "1.1.0")
+set(CPACK_PACKAGE_VERSION "1.2.0")
 include(CPack)

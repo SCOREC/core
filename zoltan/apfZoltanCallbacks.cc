@@ -11,6 +11,9 @@
 #include "apfShape.h"
 #include <PCU.h>
 #include <metis.h>
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 
 namespace apf {
 

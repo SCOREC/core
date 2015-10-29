@@ -53,28 +53,28 @@ class DynamicVector : public DynamicArray<double>
     /** \brief Add a vector to this vector */
     DynamicVector& operator+=(DynamicVector const& b)
     {
-      for (std::size_t i=0; i < size; ++i)
+      for (std::size_t i=0; i < size(); ++i)
         (*this)[i] += b[i];
       return *this;
     }
     /** \brief Subtract a vector from this vector */
     DynamicVector& operator-=(DynamicVector const& b)
     {
-      for (std::size_t i=0; i < size; ++i)
+      for (std::size_t i=0; i < size(); ++i)
         (*this)[i] -= b[i];
       return *this;
     }
     /** \brief Multiply this vector by a scalar */
     DynamicVector& operator*=(double s)
     {
-      for (std::size_t i=0; i < size; ++i)
+      for (std::size_t i=0; i < size(); ++i)
         (*this)[i] *= s;
       return *this;
     }
     /** \brief Divide this vector by a scalar */
     DynamicVector& operator/=(double s)
     {
-      for (std::size_t i=0; i < size; ++i)
+      for (std::size_t i=0; i < size(); ++i)
         (*this)[i] /= s;
       return *this;
     }
@@ -82,7 +82,7 @@ class DynamicVector : public DynamicArray<double>
     double operator*(DynamicVector const& b) const
     {
       double r=0;
-      for (std::size_t i=0; i < size; ++i)
+      for (std::size_t i=0; i < size(); ++i)
         r += (*this)[i] * b[i];
       return r;
     }
@@ -91,7 +91,7 @@ class DynamicVector : public DynamicArray<double>
     /** \brief Initialize all elements to zero */
     void zero()
     {
-      for (std::size_t i=0; i < size; ++i)
+      for (std::size_t i=0; i < size(); ++i)
         (*this)[i] = 0;
     }
 };

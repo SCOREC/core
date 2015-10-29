@@ -12,6 +12,17 @@
 #include <gmi_sim.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <cassert>
+
+namespace {
+  static FILE* openFileRead(ph::Input&, const char* path) {
+    return fopen(path, "r");
+  }
+
+  static FILE* openFileWrite(ph::Output&, const char* path) {
+    return fopen(path, "w");
+  }
+}
 
 ph::Input* globalInput;
 ph::BCs* globalBCs;
@@ -28,13 +39,14 @@ static void afterSplit(apf::Mesh2* m)
       in.adaptFlag ||
       in.tetrahedronize) {
     if (in.parmaPtn && PCU_Comm_Peers() > 1)
-      ph::balance(m);
+      ph::balance(in,m);
     apf::reorderMdsMesh(m);
   }
   assert(!in.filterMatches);
   ph::Output o;
+  o.openfile_write = openFileWrite;
   ph::generateOutput(in, bcs, m, o);
-  ph::detachAndWriteSolution(in, m, path);
+  ph::detachAndWriteSolution(in, o, m, path);
   ph::writeGeomBC(o, path);
   ph::writeAuxiliaryFiles(path, in.timeStepNumber);
   if ( ! in.outMeshFileName.empty() )
@@ -56,6 +68,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   globalPeers = PCU_Comm_Peers();
   ph::Input in;
+  in.openfile_read = openFileRead;
   in.load("adapt.inp");
   ph::BCs bcs;
   gmi_model* g;

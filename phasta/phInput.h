@@ -4,6 +4,8 @@
 #include <apfNew.h>
 #include <string>
 
+struct RStream;
+
 namespace ph {
 
 class Input
@@ -52,6 +54,10 @@ class Input
     int splitAllLayerEdges;
     int filterMatches;
     int axisymmetry;
+    double elementImbalance;
+    double vertexImbalance;
+    FILE* (*openfile_read)(Input& in, const char* path);
+    RStream* rs;
 };
 
 int countNaturalBCs(Input& in);

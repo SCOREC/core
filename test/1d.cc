@@ -4,6 +4,8 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <cassert>
+#include <cstdlib>
 
 void createMesh(gmi_model*& g, apf::Mesh2*& m, int n)
 {
@@ -66,7 +68,10 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   gmi_model* g;
   apf::Mesh2* m;
-  createMesh(g,m,atoi(argv[1]));
+  int nverts = atoi(argv[1]);
+  assert(2 <= nverts);
+  assert(nverts <= 1000);
+  createMesh(g,m,nverts);
   test(m);
   gmi_write_dmg(g,argv[2]);
   m->writeNative(argv[3]);

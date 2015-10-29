@@ -14,6 +14,19 @@
 #include <phRestart.h>
 #include <phInput.h>
 #include <apfGeometry.h>
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
+
+namespace {
+  static FILE* openFileRead(ph::Input&, const char* path) {
+    return fopen(path, "r");
+  }
+
+  static FILE* openFileWrite(ph::Output&, const char* path) {
+    return fopen(path, "w");
+  }
+}
 
 static void fixMatches(apf::Mesh2* m)
 {
@@ -143,12 +156,15 @@ int main(int argc, char** argv)
   mesh->writeNative(argv[3]);
   std::string restartPath = ph::setupOutputDir();
   ph::Input phIn;
+  phIn.openfile_read = openFileRead;
+  ph::Output phOut;
+  phOut.openfile_write = openFileWrite;
   phIn.ensa_dof = 5;
   phIn.timeStepNumber = 0;
   phIn.displacementMigration = false;
   phIn.dwalMigration = false;
   phIn.buildMapping = true;
-  ph::detachAndWriteSolution(phIn, mesh, restartPath);
+  ph::detachAndWriteSolution(phIn, phOut, mesh, restartPath);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);

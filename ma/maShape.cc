@@ -16,6 +16,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
+#include <cassert>
 
 namespace ma {
 
@@ -106,8 +107,7 @@ double getMinQuality(Adapt* a)
       minqual = qual;
   }
   m->end(it);
-  PCU_Min_Doubles(&minqual, 1);
-  return minqual;
+  return PCU_Min_Double(minqual);
 }
 
 class ShortEdgeFixer : public Operator
@@ -121,6 +121,7 @@ class ShortEdgeFixer : public Operator
       sizeField = a->sizeField;
       shortEdgeRatio = a->input->maximumEdgeRatio;
       nr = nf = 0;
+      element = 0;
     }
     virtual ~ShortEdgeFixer()
     {
@@ -199,6 +200,9 @@ class FaceVertFixer : public TetFixerBase
       mesh = a->mesh;
       edgeSwap = makeEdgeSwap(a);
       nes = nf = 0;
+      edges[0] = 0;
+      edges[1] = 0;
+      edges[2] = 0;
     }
     ~FaceVertFixer()
     {
@@ -244,6 +248,8 @@ class EdgeEdgeFixer : public TetFixerBase
       edgeSwap = makeEdgeSwap(a);
       nes = ndsc = nf = 0;
       sf = a->sizeField;
+      edges[0] = 0;
+      edges[1] = 0;
     }
     ~EdgeEdgeFixer()
     {
@@ -299,6 +305,8 @@ class LargeAngleTetFixer : public Operator
     {
       adapter = a;
       mesh = a->mesh;
+      tet = 0;
+      fixer = 0;
     }
     virtual ~LargeAngleTetFixer()
     {
@@ -351,6 +359,8 @@ class LargeAngleTriFixer : public Operator
       mesh = a->mesh;
       edgeSwap = makeEdgeSwap(a);
       ns = nf = 0;
+      tri = 0;
+      edges[0] = edges[1] = edges[2] = 0;
     }
     virtual ~LargeAngleTriFixer()
     {

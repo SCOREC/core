@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <gmi_sim.h>
 #include <SimUtil.h>
+#include <cassert>
 
 namespace apf {
 /* the more dangerous a function is,

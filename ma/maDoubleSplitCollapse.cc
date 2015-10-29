@@ -10,6 +10,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maAdapt.h"
 #include "maShape.h"
+#include <cassert>
 
 namespace ma {
 
@@ -17,6 +18,7 @@ DoubleSplitCollapse::DoubleSplitCollapse(Adapt* a):
   splits(a)
 {
   collapse.Init(a);
+  oldQuality = 2;
 }
 
 void DoubleSplitCollapse::getNewElements(EntityArray& e)

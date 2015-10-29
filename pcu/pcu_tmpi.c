@@ -8,9 +8,8 @@
 
 *******************************************************************************/
 #include "pcu_tmpi.h"
-#include "pcu_thread.h"
+#include "reel.h"
 #include "pcu_pmpi.h"
-#include "pcu_common.h"
 #include <assert.h>
 #include <limits.h>
 
@@ -23,12 +22,12 @@ pcu_mpi pcu_tmpi =
 
 int pcu_tmpi_size(void)
 {
-  return pcu_pmpi_size() * pcu_thread_size();
+  return pcu_pmpi_size() * reel_thread_size();
 }
 
 int pcu_tmpi_rank(void)
 {
-  return pcu_thread_size() * pcu_pmpi_rank() + pcu_thread_rank();
+  return reel_thread_size() * pcu_pmpi_rank() + reel_thread_rank();
 }
 
 #define THREAD_BITS 10
@@ -74,8 +73,8 @@ static int make_compound_tag(int from_thread, int to_thread)
 
 void pcu_tmpi_send(pcu_message* m, MPI_Comm comm)
 {
-  int thread_size = pcu_thread_size();
-  int thread_rank = pcu_thread_rank();
+  int thread_size = reel_thread_size();
+  int thread_rank = reel_thread_rank();
   int peer_thread = m->peer % thread_size;
   int peer_process = m->peer / thread_size;
   int tag = make_compound_tag(thread_rank,peer_thread);
@@ -93,8 +92,8 @@ bool pcu_tmpi_receive(pcu_message* m, MPI_Comm comm)
 {
   MPI_Status status;
   int flag;
-  int thread_size = pcu_thread_size();
-  int thread_rank = pcu_thread_rank();
+  int thread_size = reel_thread_size();
+  int thread_rank = reel_thread_rank();
   int peer_process = INT_MIN;
   int peer_thread = INT_MIN;
   int mpi_tag;
@@ -143,5 +142,5 @@ void pcu_tmpi_check_support(void)
   int provided;
   MPI_Query_thread(&provided);
   if (provided != MPI_THREAD_MULTIPLE)
-    pcu_fail("MPI_Init_thread was not called with MPI_THREAD_MULTIPLE");
+    reel_fail("MPI_Init_thread was not called with MPI_THREAD_MULTIPLE");
 }

@@ -10,6 +10,8 @@
 #include "maInput.h"
 #include <apfShape.h>
 #include <cstdio>
+#include <cassert>
+#include <cstdlib>
 
 namespace ma {
 
@@ -25,6 +27,7 @@ void setDefaultValues(Input* in)
 {
   in->ownsSizeField = true;
   in->maximumIterations = 3;
+  in->shouldCoarsen = true;
   in->shouldSnap = in->mesh->canSnap();
   in->shouldTransferParametric = in->mesh->canSnap();
   in->shouldHandleMatching = in->mesh->hasMatching();

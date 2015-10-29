@@ -22,7 +22,13 @@ set(CRV_SOURCES
   crvBezierPoints.cc
   crvBlended.cc
   crvCurveMesh.cc
+  crvElevation.cc
+  crvG1Points.cc
+  crvMath.cc
   crvSnap.cc
+  crvSubdivision.cc
+  crvTables.cc
+  crvQuality.cc
   crvVtk.cc)
 
 set(CRV_HEADERS

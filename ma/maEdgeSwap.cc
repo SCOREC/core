@@ -12,6 +12,7 @@
 #include "maShape.h"
 #include "maShapeHandler.h"
 #include <cstdio>
+#include <cassert>
 
 namespace ma {
 
@@ -277,6 +278,9 @@ class EdgeSwap2D : public EdgeSwap
       if (mesh->getDimension()==2)
         cavity.init(a);
       oldFaces.setSize(2);
+      edge = 0;
+      quad[0] = quad[1] = quad[2] = quad[3] = 0;
+      newFaces[0] = newFaces[1] = 0;
     }
     virtual ~EdgeSwap2D() {}
     void findOldFaces()
@@ -692,6 +696,7 @@ class EdgeSwap3D : public EdgeSwap
       halves[0].init(a);
       halves[1].init(a);
       cavity.init(a);
+      edge = 0;
     }
     virtual ~EdgeSwap3D() {}
     void destroyOldTets()
