@@ -25,6 +25,8 @@
 
 namespace ma {
 
+class ShapeHandler;
+
 /** \brief User configuration for a MeshAdapt run */
 class Input
 {
@@ -35,6 +37,7 @@ class Input
     bool ownsSizeField;
     SolutionTransfer* solutionTransfer;
     bool ownsSolutionTransfer;
+    ShapeHandler* shapeHandler;
 /** \brief number of refine/coarsen iterations to run (default 3) */
     int maximumIterations;
 /** \brief whether to perform the collapse step */

@@ -33,7 +33,10 @@ Adapt::Adapt(Input* in)
   sizeField = in->sizeField;
   solutionTransfer = in->solutionTransfer;
   refine = new Refine(this);
-  shape = getShapeHandler(this);
+  if (in->shapeHandler)
+    shape = in->shapeHandler;
+  else
+    shape = getShapeHandler(this);
   if (in->shouldCoarsen)
     coarsensLeft = in->maximumIterations;
   else
