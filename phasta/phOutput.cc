@@ -423,7 +423,6 @@ static void getInitialConditions(BCs& bcs, Output& o)
   apf::NewArray<double> s(in.ensa_dof);
   apf::NewArray<double> matValue(1);
   apf::Field* f = m->findField("solution");
-  apf::Field* matField= m->findField("material type");
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   gmi_model* gm = m->getModel();
@@ -450,22 +449,22 @@ static void getInitialConditions(BCs& bcs, Output& o)
           }
         }
       }
+
+/*
       if (change_s) {
         if(ixpoint==-1)
           std::cout << "could not find the point in exact solution!\n";
 s[0] = sol_table[ixpoint][1]; // pressure
-s[1] = sol_table[ixpoint][2]; // velocity:x 
+s[1] = sol_table[ixpoint][2];
+//s[1] = sol_table[ixpoint][2]-1.0; // velocity in moving frame (exact) + umesh (vi)
+s[2] = 0.;
+s[3] = 0.;
 s[4] = sol_table[ixpoint][3]; // temperature
-printf("%6.2f %20.15e %20.15e %20.15e\n",x[0],s[0],s[1],s[4]);
+//printf("%6.2f %20.15e %20.15e %20.15e\n",x[0],s[0],s[1],s[4]);
       }
+ */
       apf::setComponents(f, v[i], 0, &s[0]);
     }
-    /* material type */
-// std::cout << apf::countComponents(matField) << std::endl;
-//    apf::getComponents(matField, e, 0, &matValue[0]);
-//    apf::Vector3 x = apf::getLinearCentroid(m, e);
-//    applySolutionBCs(gm, ge, bcs, x, &matValue[0]);
-//    apf::setComponents(matField, e, 0, &matValue[0]);
   }
   m->end(it);
 }
