@@ -684,8 +684,7 @@ double getQuality(apf::Mesh* m,apf::MeshEntity* e)
       type,subCoefficients);
   getJacDetBySubdivisionMatrices(type,typeDim*(P-1),
       0,subCoefficients,nodes,minJ,maxJ,done,quality);
-  printf(KRED "quality1 %s %d %.15f %.15f" RESET,apf::Mesh::typeName[type],P,minJ,maxJ);
-  printf("\n");
+
   done = false;
   minJ = -1e10; maxJ = -1e10;
   minAcceptable = oldAcceptable;
