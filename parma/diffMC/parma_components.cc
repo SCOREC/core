@@ -82,6 +82,7 @@ namespace parma {
   }
 
   void DCC::sortByDepth() {
+    assert(n>0);
     Comp* comp = new Comp[n];
     for(unsigned i=0; i<n; i++) {
       comp[i].i = i;
