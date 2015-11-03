@@ -29,6 +29,8 @@ Bodies::Bodies(Body* arr, int n_)
 
 Bodies::~Bodies()
 {
+  n = 0;
+  body = NULL;
 }
 
 void Bodies::destroy()
