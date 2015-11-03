@@ -14,6 +14,8 @@
 #include <sstream>
 #include <fstream>
 #include <cassert>
+#include <cstdlib>
+#include "lionBase64.h"
 
 namespace apf {
 
@@ -64,14 +66,22 @@ static void describeArray(
     std::ostream& file,
     const char* name,
     int type,
-    int size)
+    int size,
+    bool isWritingBinary = false )
 {
   file << "type=\"";
   const char* typeNames[3] = {"Float64","Int32","Int64"};
   file << typeNames[type];
   file << "\" Name=\"" << name;
-  file << "\" NumberOfComponents=\"" << size;
-  file << "\" format=\"ascii\"";
+  if (isWritingBinary)
+  {
+    file << "\" format=\"binary\"";
+  }
+  else
+  {
+    file << "\" NumberOfComponents=\"" << size;
+    file << "\" format=\"ascii\"";  
+  }
 }
 
 static void writePDataArray(
@@ -228,34 +238,69 @@ static void writePvtuFile(const char* prefix, Mesh* m)
   file << "</VTKFile>\n";
 }
 
-static void writeDataHeader(std::ostream& file, const char* name, int type, int size)
+static void writeDataHeader(std::ostream& file, 
+                            const char* name, 
+                            int type, int size, 
+                            bool isWritingBinary = false)
 {
   file << "<DataArray ";
-  describeArray(file,name,type,size);
+  describeArray(file,name,type,size,isWritingBinary);
   file << ">\n";
 }
 
 template <class T>
-static void writeNodalField(std::ostream& file, FieldBase* f, DynamicArray<Node>& nodes)
+static void writeNodalField(std::ostream& file, 
+                            FieldBase* f, 
+                            DynamicArray<Node>& nodes,
+                            bool isWritingBinary = false) 
 {
   int nc = f->countComponents();
-  writeDataHeader(file,f->getName(),f->getScalarType(),nc);
+  writeDataHeader(file,f->getName(),f->getScalarType(),nc,isWritingBinary);
   NewArray<T> nodalData(nc);
   FieldDataOf<T>* data = static_cast<FieldDataOf<T>*>(f->getData());
-  for (size_t i=0; i < nodes.getSize(); ++i)
+  if (isWritingBinary)
   {
-    data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
-    for (int j=0; j < nc; ++j)
-      file << nodalData[j] << ' ';
-    file << '\n';
+      unsigned int dataLen = nc * nodes.getSize();
+      unsigned int dataLenBytes = dataLen*sizeof(T);
+      T* dataToEncode = (T*)malloc(dataLenBytes);
+      
+      file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+
+      int dataIndex = 0;
+      for ( size_t i = 0; i < nodes.getSize(); ++i )
+      {
+        data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
+        for ( int j = 0; j < nc; ++j )
+        {
+          dataToEncode[dataIndex] = nodalData[j];
+          dataIndex++;
+        }
+      }
+      file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+      free(dataToEncode);
+  }
+  else
+  {
+    for ( size_t i = 0; i < nodes.getSize(); ++i )
+    {
+      data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
+      for ( int j = 0; j < nc; ++j )
+      {
+        file << nodalData[j] << ' ';
+      }
+      file << '\n';
+    }
   }
   file << "</DataArray>\n"; 
 }
 
-static void writePoints(std::ostream& file, Mesh* m, DynamicArray<Node>& nodes)
+static void writePoints(std::ostream& file, 
+                        Mesh* m, 
+                        DynamicArray<Node>& nodes,
+                        bool isWritingBinary = false)
 {
   file << "<Points>\n";
-  writeNodalField<double>(file,m->getCoordinateField(),nodes);
+  writeNodalField<double>(file,m->getCoordinateField(),nodes,isWritingBinary);
   file << "</Points>\n"; 
 }
 
@@ -401,17 +446,43 @@ class WriteIPField : public FieldOp
     }
 };
 
-static void writeCellParts(std::ostream& file, Mesh* m)
+static void writeCellParts( std::ostream& file, 
+                            Mesh* m, bool 
+                            isWritingBinary = false)
 {
-  writeDataHeader(file, "apf_part", apf::Mesh::INT, 1);
+  writeDataHeader(file, "apf_part", apf::Mesh::INT, 1, isWritingBinary);
   size_t n = m->count(m->getDimension());
   int id = m->getId();
-  for (size_t i = 0; i < n; ++i)
-    file << id << '\n';
-  file << "</DataArray>\n";
+
+  if (isWritingBinary)
+  {
+    unsigned int dataLen = n;
+    unsigned int dataLenBytes = dataLen*sizeof(int);
+    int* dataToEncode = (int*)malloc(dataLenBytes);
+
+    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+
+    for (size_t i = 0; i < n; ++i )
+    {
+      dataToEncode[i] = id;
+    }
+    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << "\n";
+    file << "</DataArray>\n";
+    free(dataToEncode);
+  }
+  else
+  { 
+    for (size_t i = 0; i < n; ++i)
+    {
+      file << id << '\n';
+    }
+    file << "</DataArray>\n";
+  }
 }
 
-static void writeCellData(std::ostream& file, Mesh* m)
+static void writeCellData(std::ostream& file, 
+                          Mesh* m, 
+                          bool isWritingBinary = false)
 {
   file << "<CellData>\n";
   WriteIPField<double> wd;
@@ -435,11 +506,23 @@ static void writeCellData(std::ostream& file, Mesh* m)
     if (isIP(n) && isPrintable(n))
       wl.run(file,n);
   }
-  writeCellParts(file, m);
+  writeCellParts(file, m, isWritingBinary);
   file << "</CellData>\n";
 }
 
-static void writeVtuFile(const char* prefix, Numbering* n)
+//function checks if the machine is a big or little endian machine
+bool is_big_endian()
+{
+    union {
+        unsigned int i;
+        char c[4];
+    } bint = {0x01020304};
+    return bint.c[0] == 1; 
+}
+
+static void writeVtuFile( const char* prefix, 
+                          Numbering* n, 
+                          bool isWritingBinary = false)
 {
   PCU_Barrier();
   double t0 = PCU_Time();
@@ -448,7 +531,21 @@ static void writeVtuFile(const char* prefix, Numbering* n)
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
   getNodes(n,nodes);
-  buf << "<VTKFile type=\"UnstructuredGrid\">\n";
+  buf << "<VTKFile type=\"UnstructuredGrid\"";
+  if (isWritingBinary)
+  {
+    buf << " byte_order=";
+    if (is_big_endian())
+    {
+      buf << "\"BigEndian\"";
+    }
+    else
+    {
+      buf << "\"LittleEndian\"";
+    }
+    buf << " header_type=\"UInt32\"";
+  }
+  buf<< ">\n";
   buf << "<UnstructuredGrid>\n";
   buf << "<Piece NumberOfPoints=\"" << nodes.getSize();
   buf << "\" NumberOfCells=\"" << m->count(m->getDimension());
@@ -456,7 +553,7 @@ static void writeVtuFile(const char* prefix, Numbering* n)
   writePoints(buf,m,nodes);
   writeCells(buf,n);
   writePointData(buf,m,nodes);
-  writeCellData(buf,m);
+  writeCellData(buf,m,isWritingBinary);
   buf << "</Piece>\n";
   buf << "</UnstructuredGrid>\n";
   buf << "</VTKFile>\n";
@@ -498,6 +595,25 @@ void writeOneVtkFile(const char* prefix, Mesh* m)
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n);
+  delete n;
+}
+
+void writeBinaryInlineVtkFiles(const char* prefix, Mesh* m)
+{
+  //*** this function passes a boolean argument to the functions telling them
+  // to write binary vtu files ***
+  bool isWritingBinary = true;
+
+  double t0 = PCU_Time();
+  if (!PCU_Comm_Self())
+    writePvtuFile(prefix, m);
+  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
+  m->removeNumbering(n);
+  writeVtuFile(prefix, n, isWritingBinary);
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("vtk files %s written in %f seconds\n",
+        prefix, t1 - t0);
   delete n;
 }
 
