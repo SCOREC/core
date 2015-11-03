@@ -15,7 +15,7 @@ struct Bodies
 {
   Bodies(Body* arr, int n_);
   ~Bodies();
-  Bodies() {}
+  Bodies();
   void destroy();
   int n;
   Body** body;

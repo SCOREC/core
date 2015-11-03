@@ -16,6 +16,7 @@ namespace parma {
                    double avgSideMult, double avgSide, 
                    double minSideMult, bool isInMIS) {
         init(m,s,w,alpha,avgSideMult,avgSide,minSideMult,isInMIS);
+        totW = 0;
       }
       double total() {
         return totW;

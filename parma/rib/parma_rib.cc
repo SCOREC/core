@@ -19,6 +19,12 @@ struct Compare
   }
 };
 
+Bodies::Bodies()
+{
+  n = 0;
+  body = NULL;
+}
+
 Bodies::Bodies(Body* arr, int n_)
 {
   n = n_;

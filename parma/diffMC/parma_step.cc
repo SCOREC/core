@@ -13,6 +13,7 @@ namespace parma {
      Stop* stopper) 
     : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t), 
     selects(sel), stop(stopper) {
+      verbose = 0;
   }
 
   Stepper::~Stepper() {

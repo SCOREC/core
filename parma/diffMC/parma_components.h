@@ -38,7 +38,6 @@ namespace parma {
       unsigned vb;
       apf::MeshTag* idT;
       unsigned n;
-      unsigned* id;
       unsigned* depth;
       Level* bdry;
       Level* core;

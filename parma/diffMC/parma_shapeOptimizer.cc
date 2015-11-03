@@ -76,6 +76,8 @@ namespace {
         iter=0;
         si=0;
         minSideMult=.05;
+        misNumber = 0;
+        maxMis = 0;
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         PCU_Debug_Print("Outer Iteration: %d Inner Iteration: %d\n",si,iter);
