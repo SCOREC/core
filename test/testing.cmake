@@ -53,6 +53,7 @@ add_test(bezierElevation bezierElevation)
 add_test(bezierExperimental bezierExperimental)
 add_test(bezierMesh bezierMesh)
 add_test(bezierMisc bezierMisc)
+add_test(bezierRefine bezierRefine)
 add_test(bezierSubdivision bezierSubdivision)
 add_test(bezierValidity bezierValidity)
 
