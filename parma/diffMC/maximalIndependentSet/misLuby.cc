@@ -504,7 +504,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     nodesRemoved.clear();
     rmtNodesToRemove.clear();
 
-    PCU_Add_Ints(&numNodesAdded, 1);
+    numNodesAdded = PCU_Add_Int(numNodesAdded);
     loopCount++;
   } while (numNodesAdded > 0);
 

@@ -43,8 +43,8 @@ namespace parma {
   double Stepper::imbalance() { 
     double maxWeight = 0, totalWeight = 0;
     maxWeight = totalWeight = weights->self();
-    PCU_Add_Doubles(&totalWeight,1);
-    PCU_Max_Doubles(&maxWeight, 1);
+    totalWeight = PCU_Add_Double(totalWeight);
+    maxWeight = PCU_Max_Double(maxWeight);
     double averageWeight = totalWeight / PCU_Comm_Peers();
     return maxWeight / averageWeight;
   }

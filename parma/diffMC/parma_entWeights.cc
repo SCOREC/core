@@ -5,15 +5,13 @@
 
 namespace parma {  
   double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
-    double maxW = getWeight(m,w,entDim);
-    PCU_Max_Doubles(&maxW, 1);
-    return maxW;
+    double locW = getWeight(m,w,entDim);
+    return PCU_Max_Double(locW);
   }
 
   double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
-    double maxW = getWeight(m,w,entDim);
-    PCU_Add_Doubles(&maxW, 1);
-    return maxW/PCU_Comm_Peers();
+    double locW = getWeight(m,w,entDim);
+    return PCU_Add_Double(locW) / PCU_Comm_Peers();
   }
 
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {

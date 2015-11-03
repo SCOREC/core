@@ -30,18 +30,15 @@ namespace {
     if (isOutput)
       PCU_Debug_Print("MinSide %d\n",minSides);
     int min=minSides;
-    PCU_Min_Ints(&minSides,1);
+    minSides = PCU_Min_Int(minSides);
     if (min==minSides&&isOutput)
       fprintf(stdout,"%d has smallest side\n",PCU_Comm_Self());
     return minSides;
   }
 
   double getAvgSides(parma::Sides* s) {
-    
-    double tot = s->total();
-    PCU_Add_Doubles(&tot, 1);
-    int cnt = static_cast<int>(s->size());
-    PCU_Add_Ints(&cnt, 1);
+    double tot = PCU_Add_Double(s->total());
+    int cnt = PCU_Add_Int(static_cast<int>(s->size()));
     return tot/cnt;
   }
 
@@ -100,7 +97,7 @@ namespace {
         const double t1 = PCU_Time();
         misNumber = Parma_MisNumbering(mesh,0);
         double elapsedTime = PCU_Time() - t1;
-        PCU_Max_Doubles(&elapsedTime, 1);
+        elapsedTime = PCU_Max_Double(elapsedTime);
         if( !PCU_Comm_Self() )
           fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
         maxMis = misNumber;
