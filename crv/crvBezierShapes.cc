@@ -9,6 +9,7 @@
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
 #include "crvMath.h"
+#include "crvTables.h"
 
 namespace crv {
 
@@ -227,6 +228,69 @@ static void bezierTetGrads(int P, apf::Vector3 const& xi,
         }
         grads[index] = grads[index]*quadnomial(P,i,j,k);
       }
+}
+
+void getBezierTransformationMatrix(int type, int P,
+    mth::Matrix<double>& A,
+    const apf::Vector3 *range)
+{
+
+  int n = getNumControlPoints(type,P);
+  int typeDim = apf::Mesh::typeDimension[type];
+
+  apf::Vector3 xi, exi;
+  int evi = 0;
+  apf::NewArray<double> values(n);
+
+  A.zero();
+
+  int row = 0;
+  for(int d = 0; d <= typeDim; ++d){
+    int nDown = apf::Mesh::adjacentCount[type][d];
+    for(int j = 0; j < nDown; ++j){
+      int bt = apf::Mesh::simplexTypes[d];
+      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+      for(int x = 0; x < getNumInternalControlPoints(bt,P); ++x){
+        getBezierNodeXi(bt,P,x,xi);
+        apf::NewArray<double> shape_vals;
+        shape->getValues(0, 0, xi, shape_vals);
+
+        if(d < typeDim){
+          exi.zero();
+          evi = j;
+          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
+              evi = apf::tri_edge_verts[j][i];
+            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
+              evi = apf::tet_edge_verts[j][i];
+            if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
+              evi = apf::tet_tri_verts[j][i];
+            exi += elem_vert_xi[type][evi] * shape_vals[i];
+          }
+        } else {
+          exi = xi;
+        }
+        // slight change here because edges run [-1,1]
+        if(typeDim == 1){
+          exi[0] = 0.5*(exi[0]+1);
+          exi[0] = range[1][0]*exi[0]+range[0][0]*(1.-exi[0]);
+        }
+        if(typeDim == 2){
+          double p = 1.-exi[0]-exi[1];
+          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1];
+        }
+        if(typeDim == 3){
+          double p = 1.-exi[0]-exi[1]-exi[2];
+          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1]+range[3]*exi[2];
+        }
+        bezier[type](P,exi,values);
+        for(int i = 0; i < n; ++i){
+          A(row,i) = values[i];
+        }
+        ++row;
+      }
+    }
+  }
 }
 
 const bezierShape bezier[apf::Mesh::TYPES] =

@@ -129,7 +129,7 @@ apf::FieldShape* getGregory();
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
+void getBezierTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     int type, apf::NewArray<double>& c);

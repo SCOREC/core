@@ -6,6 +6,7 @@
  */
 #include "crv.h"
 #include "crvBezier.h"
+#include "crvBezierShapes.h"
 #include "crvTables.h"
 #include "crvMath.h"
 #include <mth_def.h>
@@ -138,7 +139,7 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
   }
 }
 
-void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
+void getBezierTransformationCoefficients(int P, int type,
     apf::NewArray<double> & c)
 {
   int ni = getNumInternalControlPoints(type,P);
@@ -147,37 +148,20 @@ void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
   assert(ni > 0);
   static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
   if(!transform[type][P].allocated()){
-    int oldP = getOrder();
-    setOrder(P);
-    int oldB[apf::Mesh::TYPES];
-    for (int i = 0; i < apf::Mesh::TYPES; ++i)
-      oldB[i] = getBlendingOrder(i);
-
-    setBlendingOrder(apf::Mesh::TYPES,0);
 
     transform[type][P].allocate(ni*n);
-    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
-    apf::MeshEntity* e;
-    while ((e = m->iterate(it))){
-      if (m->getType(e) == type)
-        break;
-    }
-    m->end(it);
+
     mth::Matrix<double> A(n,n);
     mth::Matrix<double> Ai(n,n);
 
-    getTransformationMatrix(m,e,A,elem_vert_xi[type]);
+    getBezierTransformationMatrix(type,P,A,elem_vert_xi[type]);
     invertMatrixWithPLU(n,A,Ai);
 
     for( int i = 0; i < ni; ++i)
       for( int j = 0; j < n; ++j)
         transform[type][P][i*n+j] = Ai(i+n-ni,j);
 
-    for (int i = 0; i < apf::Mesh::TYPES; ++i)
-      setBlendingOrder(i,oldB[i]);
-    setOrder(oldP);
   }
-
   c.allocate(n*ni);
   for( int i = 0; i < ni; ++i)
     for( int j = 0; j < n; ++j)
@@ -276,16 +260,7 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
       Asub.zero();
       getTransformationMatrix(m,e,Asub,range[k]);
       mth::multiply(Ai,Asub,A);
-//      if(P == 2 && type == apf::Mesh::TRIANGLE){
-//        printf("mmmmm%d = [",k);
-//             for(int j = 0; j < n; ++j){
-//               for(int k = 0; k < n; ++k){
-//                 printf("%.15f ",A(j,k));
-//               }
-//               printf(";\n");
-//             }
-//             printf("]\n");
-//      }
+
       for( int i = 0; i < n; ++i)
         for( int j = 0; j < n; ++j)
           transform[type][P][i*n+j+k*n*n] = A(i,j);

@@ -204,7 +204,7 @@ void test2D()
       int n = order+1;
       int ni = order-1;
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,apf::Mesh::EDGE,c);
+      crv::getBezierTransformationCoefficients(order,apf::Mesh::EDGE,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(1);
       while ((e = m->iterate(it))) {
@@ -279,7 +279,7 @@ void test3D()
       int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
       int ne = fs->countNodesOn(d);
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,d,c);
+      crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
