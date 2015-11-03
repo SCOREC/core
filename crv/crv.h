@@ -10,6 +10,7 @@
 
 #include "apfMesh2.h"
 #include "apfShape.h"
+#include <ma.h>
 #include <stdio.h>
 
 /** \file crv.h

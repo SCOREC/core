@@ -93,7 +93,7 @@ void addEdgePostAllocation(Refine* refiner, Entity* e, int counts[4])
   }
 }
 
-static void addAllMarkedEdges(Refine* r)
+void addAllMarkedEdges(Refine* r)
 {
   Adapt* a = r->adapt;
   Entity* e;

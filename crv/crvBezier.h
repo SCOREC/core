@@ -36,18 +36,6 @@ void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
     apf::NewArray<double>& tetNodes,
     apf::NewArray<double>& triNodes);
 
-/** \brief polynomial part of bernstein polynomial */
-double Bij(const int i, const int j,const double u, const double v);
-double Bijk(const int i, const int j, const int k, const double u,
-    const double v, const double w);
-double Bijkl(const int i, const int j, const int k, const int l,
-    const double u, const double v, const double w, const double t);
-
-/** \brief a different form of the above */
-double Bij(const int ij[], const double xi[]);
-double Bijk(const int ijk[], const double xi[]);
-double Bijkl(const int ijkl[], const double xi[]);
-
 /** \brief these compute det(Jacobian) from the Bezier conversion
  * \details this evaluates an order d(P-1) bezier to compute it
  * and is much, much slower than the direct method, but exists for

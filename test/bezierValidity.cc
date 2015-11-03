@@ -1,5 +1,6 @@
 #include <crv.h>
 #include <crvBezier.h>
+#include <crvBezierShapes.h>
 #include <crvQuality.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
