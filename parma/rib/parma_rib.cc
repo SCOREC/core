@@ -27,6 +27,10 @@ Bodies::Bodies(Body* arr, int n_)
     body[i] = arr + i;
 }
 
+Bodies::~Bodies()
+{
+}
+
 void Bodies::destroy()
 {
   delete [] body;
