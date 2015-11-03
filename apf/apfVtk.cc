@@ -67,19 +67,19 @@ static void describeArray(
     const char* name,
     int type,
     int size,
-    bool isWritingBinary = false )
+    bool isWritingBinary = false)
 {
   file << "type=\"";
   const char* typeNames[3] = {"Float64","Int32","Int64"};
   file << typeNames[type];
   file << "\" Name=\"" << name;
+  file << "\" NumberOfComponents=\"" << size;
   if (isWritingBinary)
   {
     file << "\" format=\"binary\"";
   }
   else
   {
-    file << "\" NumberOfComponents=\"" << size;
     file << "\" format=\"ascii\"";  
   }
 }
@@ -240,7 +240,8 @@ static void writePvtuFile(const char* prefix, Mesh* m)
 
 static void writeDataHeader(std::ostream& file, 
                             const char* name, 
-                            int type, int size, 
+                            int type, 
+                            int size, 
                             bool isWritingBinary = false)
 {
   file << "<DataArray ";
@@ -263,14 +264,12 @@ static void writeNodalField(std::ostream& file,
       unsigned int dataLen = nc * nodes.getSize();
       unsigned int dataLenBytes = dataLen*sizeof(T);
       T* dataToEncode = (T*)malloc(dataLenBytes);
-      
       file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
-
       int dataIndex = 0;
-      for ( size_t i = 0; i < nodes.getSize(); ++i )
+      for (size_t i = 0; i < nodes.getSize(); ++i)
       {
         data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
-        for ( int j = 0; j < nc; ++j )
+        for (int j = 0; j < nc; ++j)
         {
           dataToEncode[dataIndex] = nodalData[j];
           dataIndex++;
@@ -281,10 +280,10 @@ static void writeNodalField(std::ostream& file,
   }
   else
   {
-    for ( size_t i = 0; i < nodes.getSize(); ++i )
+    for (size_t i = 0; i < nodes.getSize(); ++i)
     {
       data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
-      for ( int j = 0; j < nc; ++j )
+      for (int j = 0; j < nc; ++j)
       {
         file << nodalData[j] << ' ';
       }
@@ -550,7 +549,7 @@ static void writeVtuFile( const char* prefix,
   buf << "<Piece NumberOfPoints=\"" << nodes.getSize();
   buf << "\" NumberOfCells=\"" << m->count(m->getDimension());
   buf << "\">\n";
-  writePoints(buf,m,nodes);
+  writePoints(buf,m,nodes,isWritingBinary);
   writeCells(buf,n);
   writePointData(buf,m,nodes);
   writeCellData(buf,m,isWritingBinary);
