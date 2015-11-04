@@ -6,6 +6,7 @@
  */
 
 #include <PCU.h>
+#include <lionBase64.h>
 #include "apfMesh.h"
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
@@ -15,7 +16,6 @@
 #include <fstream>
 #include <cassert>
 #include <cstdlib>
-#include "lionBase64.h"
 #include <stdint.h>
 
 namespace apf {

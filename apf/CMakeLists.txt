@@ -33,7 +33,8 @@ else()
   set(APF_INCLUDE_DIRS
       ${APF_INCLUDE_DIRS}
       ${CMAKE_CURRENT_SOURCE_DIR}/../mth
-      ${CMAKE_CURRENT_SOURCE_DIR}/../can)
+      ${CMAKE_CURRENT_SOURCE_DIR}/../can
+      ${CMAKE_CURRENT_SOURCE_DIR}/../lion)
 endif()
 
 #Sources & Headers
@@ -114,6 +115,7 @@ if (BUILD_IN_TRILINOS)
       ../mth/mthTensor.h
       ../mth/mthQR.h
       ../mth/mthAD.h
+      ../lion/lionBase64.h
      )
 endif()
 
