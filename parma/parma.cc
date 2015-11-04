@@ -225,7 +225,7 @@ void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
-  loc = TO_INT(dc.getNumComps())-1;
+  loc = TO_INT(dc.getNumDcComps());
   max = PCU_Max_Int(loc);
   avg = TO_DBL( PCU_Add_Int(loc) ) / PCU_Comm_Peers();
 }
