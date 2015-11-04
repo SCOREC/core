@@ -327,6 +327,7 @@ static void writeConnectivity(std::ostream& file,
   MeshIterator* elements = m->begin(m->getDimension());
   if (isWritingBinary)
   {
+    // TODO: PR4: see if we can do this with only one loop
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
     {
@@ -348,7 +349,7 @@ static void writeConnectivity(std::ostream& file,
         dataIndex++;
       }
     }
-    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << "\n";
+    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
     free(dataToEncode);
   }
   else
@@ -369,17 +370,54 @@ static void writeConnectivity(std::ostream& file,
   file << "</DataArray>\n";
 }
 
-static void writeOffsets(std::ostream& file, Numbering* n)
+static void writeOffsets( std::ostream& file,
+                          Numbering* n,
+                          bool isWritingBinary = false)
 {
-  file << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+  file << "<DataArray type=\"Int32\" Name=\"offsets\"";
+  if (isWritingBinary)
+  {
+    file << " format=\"binary\"";
+  }
+  else
+  {
+    file << " format=\"ascii\"";
+  }
+  file << ">\n";
   Mesh* m = n->getMesh();
   MeshEntity* e;
-  int o=0;
   MeshIterator* elements = m->begin(m->getDimension());
-  while ((e = m->iterate(elements)))
+  if (isWritingBinary)
   {
-    o += countElementNodes(n,e);
-    file << o << '\n';
+    // TODO: PR4: see if we can do this with only one loop
+    unsigned int dataLen = 0;
+    while ((e = m->iterate(elements)))
+    {
+      dataLen++;
+    }
+    unsigned int dataLenBytes = dataLen*sizeof(int);
+    int* dataToEncode = (int*)malloc(dataLenBytes);
+    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+    elements = m->begin(m->getDimension());
+    unsigned int dataIndex = 0;
+    int offset = 0;
+    while ((e = m->iterate(elements)))
+    {
+      offset += countElementNodes(n,e);
+      dataToEncode[dataIndex] = offset;
+      dataIndex++;
+    }
+    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    free(dataToEncode);
+  }
+  else
+  {
+    int offset = 0;
+    while ((e = m->iterate(elements)))
+    {
+      offset += countElementNodes(n,e);
+      file << offset << '\n';
+    }
   }
   m->end(elements);
   file << "</DataArray>\n";
@@ -416,7 +454,7 @@ static void writeCells( std::ostream& file,
 {
   file << "<Cells>\n";
   writeConnectivity(file,n,isWritingBinary);
-  writeOffsets(file,n);
+  writeOffsets(file,n,isWritingBinary);
   writeTypes(file,n->getMesh());
   file << "</Cells>\n"; 
 }
