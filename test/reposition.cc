@@ -4,7 +4,6 @@
 #include <apf.h>
 #include <PCU.h>
 #include <maReposition.h>
-#include <cstdlib>
 
 int main(int argc, char** argv)
 {
@@ -36,7 +35,7 @@ int main(int argc, char** argv)
   m->end(it);
   apf::Vector3 randx;
   for (int i = 0; i < 3; ++i)
-    randx[i] = (rand() / ((double) RAND_MAX)) * 70 - 1;
+    randx[i] = (.5) * 70 - 1;
   m->setPoint(v, 0, randx);
 #endif
   apf::writeVtkFiles("before", m);
