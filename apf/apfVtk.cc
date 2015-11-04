@@ -508,27 +508,29 @@ static void writeCells( std::ostream& file,
   file << "</Cells>\n"; 
 }
 
-static void writePointData(std::ostream& file, Mesh* m,
-    DynamicArray<Node>& nodes)
+static void writePointData(std::ostream& file,
+                           Mesh* m,
+                           DynamicArray<Node>& nodes,
+                           bool isWritingBinary = false)
 {
   file << "<PointData>\n";
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
     if (isNodal(f) && isPrintable(f))
-      writeNodalField<double>(file,f,nodes);
+      writeNodalField<double>(file,f,nodes,isWritingBinary);
   }
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
     if (isNodal(n) && isPrintable(n))
-      writeNodalField<int>(file,n,nodes);
+      writeNodalField<int>(file,n,nodes,isWritingBinary);
   }
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isNodal(n) && isPrintable(n))
-      writeNodalField<long>(file,n,nodes);
+      writeNodalField<long>(file,n,nodes,isWritingBinary);
   }
   file << "</PointData>\n";
 }
@@ -607,7 +609,7 @@ static void writeCellParts(std::ostream& file,
   }
 }
 
-static void writeCellData(std::ostream& file, 
+static void writeCellData(std::ostream& file,
                           Mesh* m, 
                           bool isWritingBinary = false)
 {
@@ -679,7 +681,7 @@ static void writeVtuFile(const char* prefix,
   buf << "\">\n";
   writePoints(buf,m,nodes,isWritingBinary);
   writeCells(buf,n,isWritingBinary);
-  writePointData(buf,m,nodes);
+  writePointData(buf,m,nodes,isWritingBinary);
   writeCellData(buf,m,isWritingBinary);
   buf << "</Piece>\n";
   buf << "</UnstructuredGrid>\n";
