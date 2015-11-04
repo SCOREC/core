@@ -16,6 +16,7 @@
 #include <cassert>
 #include <cstdlib>
 #include "lionBase64.h"
+#include <stdint.h>
 
 namespace apf {
 
@@ -423,9 +424,20 @@ static void writeOffsets( std::ostream& file,
   file << "</DataArray>\n";
 }
 
-static void writeTypes(std::ostream& file, Mesh* m)
+static void writeTypes( std::ostream& file,
+                        Mesh* m,
+                        bool isWritingBinary = false)
 {
-  file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+  file << "<DataArray type=\"UInt8\" Name=\"types\"";
+  if (isWritingBinary)
+  {
+    file << " format=\"binary\"";
+  }
+  else
+  {
+    file << " format=\"ascii\"";
+  }
+  file << ">\n";
   MeshEntity* e;
   int order = m->getShape()->getOrder();
   static int vtkTypes[Mesh::TYPES][2] =
@@ -441,10 +453,39 @@ static void writeTypes(std::ostream& file, Mesh* m)
    ,{13,-1}//prism
    ,{14,-1}//pyramid
    };
-  MeshIterator* elements = m->begin(m->getDimension());
-  while ((e = m->iterate(elements)))
-    file << vtkTypes[m->getType(e)][order-1] << '\n';
-  m->end(elements);
+
+  if (isWritingBinary)
+  {
+    unsigned int dataLen = 0;
+    MeshIterator* elements = m->begin(m->getDimension());
+    while ((e = m->iterate(elements)))
+    {
+      dataLen++;
+    }
+    m->end(elements);
+    unsigned int dataLenBytes = dataLen*sizeof(uint8_t);
+    uint8_t* dataToEncode = (uint8_t*)malloc(dataLenBytes);
+    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+    elements = m->begin(m->getDimension());
+    unsigned int dataIndex = 0;
+    while ((e = m->iterate(elements)))
+    {
+      dataToEncode[dataIndex] = vtkTypes[m->getType(e)][order-1];
+      dataIndex++;
+    }
+    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    free(dataToEncode);
+    m->end(elements);
+  }
+  else
+  {
+    MeshIterator* elements = m->begin(m->getDimension());
+    while ((e = m->iterate(elements)))
+    {
+      file << vtkTypes[m->getType(e)][order-1] << '\n';
+    }
+    m->end(elements);
+  }
   file << "</DataArray>\n";
 }
 
@@ -455,7 +496,7 @@ static void writeCells( std::ostream& file,
   file << "<Cells>\n";
   writeConnectivity(file,n,isWritingBinary);
   writeOffsets(file,n,isWritingBinary);
-  writeTypes(file,n->getMesh());
+  writeTypes(file,n->getMesh(),isWritingBinary);
   file << "</Cells>\n"; 
 }
 
