@@ -23,19 +23,19 @@ namespace apf {
 class HasAll : public FieldOp
 {
   public:
-      virtual bool inEntity(MeshEntity* e)
-      {
-        if (!f->getData()->hasEntity(e))
-          ok = false;
-        return false;
-      }
-      bool run(FieldBase* f_)
-      {
-        f = f_;
-        ok = true;
-        this->apply(f);
-        return ok;
-      }
+    virtual bool inEntity(MeshEntity* e)
+    {
+      if (!f->getData()->hasEntity(e))
+        ok = false;
+      return false;
+    }
+    bool run(FieldBase* f_)
+    {
+      f = f_;
+      ok = true;
+      this->apply(f);
+      return ok;
+    }
   private:
     bool ok;
     FieldBase* f;
@@ -262,22 +262,22 @@ static void writeNodalField(std::ostream& file,
   FieldDataOf<T>* data = static_cast<FieldDataOf<T>*>(f->getData());
   if (isWritingBinary)
   {
-      unsigned int dataLen = nc * nodes.getSize();
-      unsigned int dataLenBytes = dataLen*sizeof(T);
-      T* dataToEncode = (T*)malloc(dataLenBytes);
-      file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
-      unsigned int dataIndex = 0;
-      for (size_t i = 0; i < nodes.getSize(); ++i)
+    unsigned int dataLen = nc * nodes.getSize();
+    unsigned int dataLenBytes = dataLen*sizeof(T);
+    T* dataToEncode = (T*)malloc(dataLenBytes);
+    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+    unsigned int dataIndex = 0;
+    for (size_t i = 0; i < nodes.getSize(); ++i)
+    {
+      data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
+      for (int j = 0; j < nc; ++j)
       {
-        data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
-        for (int j = 0; j < nc; ++j)
-        {
-          dataToEncode[dataIndex] = nodalData[j];
-          dataIndex++;
-        }
+        dataToEncode[dataIndex] = nodalData[j];
+        dataIndex++;
       }
-      file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
-      free(dataToEncode);
+    }
+    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    free(dataToEncode);
   }
   else
   {
@@ -327,7 +327,7 @@ static void writeConnectivity(std::ostream& file,
   MeshEntity* e;
   if (isWritingBinary)
   {
-    // TODO: PR4: see if we can do this with only one loop
+    // TODO: see if we can do this with only one loop
     MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
@@ -335,6 +335,7 @@ static void writeConnectivity(std::ostream& file,
       dataLen += countElementNodes(n,e);
     }
     m->end(elements);
+    // TODO: only one function for writing a base64-encoded binary array
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = (int*)malloc(dataLenBytes);
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
@@ -374,9 +375,9 @@ static void writeConnectivity(std::ostream& file,
   file << "</DataArray>\n";
 }
 
-static void writeOffsets( std::ostream& file,
-                          Numbering* n,
-                          bool isWritingBinary = false)
+static void writeOffsets(std::ostream& file,
+                         Numbering* n,
+                         bool isWritingBinary = false)
 {
   file << "<DataArray type=\"Int32\" Name=\"offsets\"";
   if (isWritingBinary)
@@ -392,7 +393,7 @@ static void writeOffsets( std::ostream& file,
   MeshEntity* e;
   if (isWritingBinary)
   {
-    // TODO: PR4: see if we can do this with only one loop
+    // TODO: see if we can do this with only one loop
     MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
@@ -400,6 +401,7 @@ static void writeOffsets( std::ostream& file,
       dataLen++;
     }
     m->end(elements);
+    // TODO: only one function to write a base64-encoded binary array
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = (int*)malloc(dataLenBytes);
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
@@ -447,19 +449,18 @@ static void writeTypes( std::ostream& file,
   MeshEntity* e;
   int order = m->getShape()->getOrder();
   static int vtkTypes[Mesh::TYPES][2] =
-  /* order
- linear,quadratic
-      V  V */
-   {{ 1,-1}//vertex
-   ,{ 3,21}//edge
-   ,{ 5,22}//triangle
-   ,{ 9,23}//quad
-   ,{10,24}//tet
-   ,{12,25}//hex
-   ,{13,-1}//prism
-   ,{14,-1}//pyramid
-   };
-
+    /* order
+       linear,quadratic
+       V  V */
+  {{ 1,-1}//vertex
+    ,{ 3,21}//edge
+    ,{ 5,22}//triangle
+    ,{ 9,23}//quad
+    ,{10,24}//tet
+    ,{12,25}//hex
+    ,{13,-1}//prism
+    ,{14,-1}//pyramid
+  };
   if (isWritingBinary)
   {
     unsigned int dataLen = 0;
@@ -469,6 +470,7 @@ static void writeTypes( std::ostream& file,
       dataLen++;
     }
     m->end(elements);
+    //TODO: another duplicate
     unsigned int dataLenBytes = dataLen*sizeof(uint8_t);
     uint8_t* dataToEncode = (uint8_t*)malloc(dataLenBytes);
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
@@ -574,22 +576,19 @@ class WriteIPField : public FieldOp
     }
 };
 
-static void writeCellParts( std::ostream& file, 
-                            Mesh* m, bool 
-                            isWritingBinary = false)
+static void writeCellParts(std::ostream& file, 
+                           Mesh* m,
+                           bool isWritingBinary = false)
 {
   writeDataHeader(file, "apf_part", apf::Mesh::INT, 1, isWritingBinary);
   size_t n = m->count(m->getDimension());
   int id = m->getId();
-
   if (isWritingBinary)
   {
     unsigned int dataLen = n;
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = (int*)malloc(dataLenBytes);
-
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
-
     for (size_t i = 0; i < n; ++i )
     {
       dataToEncode[i] = id;
@@ -648,9 +647,9 @@ bool is_big_endian()
     return bint.c[0] == 1; 
 }
 
-static void writeVtuFile( const char* prefix, 
-                          Numbering* n, 
-                          bool isWritingBinary = false)
+static void writeVtuFile(const char* prefix, 
+                         Numbering* n, 
+                         bool isWritingBinary = false)
 {
   PCU_Barrier();
   double t0 = PCU_Time();
