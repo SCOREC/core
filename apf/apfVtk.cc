@@ -325,15 +325,16 @@ static void writeConnectivity(std::ostream& file,
   file << ">\n";
   Mesh* m = n->getMesh();
   MeshEntity* e;
-  MeshIterator* elements = m->begin(m->getDimension());
   if (isWritingBinary)
   {
     // TODO: PR4: see if we can do this with only one loop
+    MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
     {
       dataLen += countElementNodes(n,e);
     }
+    m->end(elements);
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = (int*)malloc(dataLenBytes);
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
@@ -350,11 +351,13 @@ static void writeConnectivity(std::ostream& file,
         dataIndex++;
       }
     }
+    m->end(elements);
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
     free(dataToEncode);
   }
   else
   {
+    MeshIterator* elements = m->begin(m->getDimension());
     while ((e = m->iterate(elements)))
     {
       int nen = countElementNodes(n,e);
@@ -366,8 +369,8 @@ static void writeConnectivity(std::ostream& file,
       }
       file << '\n';
     }
+    m->end(elements);
   }
-  m->end(elements);
   file << "</DataArray>\n";
 }
 
@@ -387,15 +390,16 @@ static void writeOffsets( std::ostream& file,
   file << ">\n";
   Mesh* m = n->getMesh();
   MeshEntity* e;
-  MeshIterator* elements = m->begin(m->getDimension());
   if (isWritingBinary)
   {
     // TODO: PR4: see if we can do this with only one loop
+    MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
     {
       dataLen++;
     }
+    m->end(elements);
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = (int*)malloc(dataLenBytes);
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
@@ -408,19 +412,21 @@ static void writeOffsets( std::ostream& file,
       dataToEncode[dataIndex] = offset;
       dataIndex++;
     }
+    m->end(elements);
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
     free(dataToEncode);
   }
   else
   {
+    MeshIterator* elements = m->begin(m->getDimension());
     int offset = 0;
     while ((e = m->iterate(elements)))
     {
       offset += countElementNodes(n,e);
       file << offset << '\n';
     }
+    m->end(elements);
   }
-  m->end(elements);
   file << "</DataArray>\n";
 }
 
