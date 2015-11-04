@@ -73,13 +73,6 @@ namespace misLuby {
 } //end misLuby namespace
 
 /**
- * @brief generate randNums.size() random numbers
- * @param randNums (InOut) random numbers
- * @return 0 on success, non-zero otherwise
- */
-int generateRandomNumbers(std::vector<int>& randNums);
-
-/**
  * @brief compute the maximal independent set
  * @param part (In) info on local part
  * @param randNumsPredefined (In) 0: compute random numbers, 1:uses defined random numbers

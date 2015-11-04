@@ -14,6 +14,7 @@
 #include <set>
 
 #include "mis.h"
+#include "mersenne_twister.h"
 
 using std::find;
 using std::copy;
@@ -34,7 +35,7 @@ using namespace misLuby;
 
 namespace {
   int generateRandomNumber() {
-    return rand();
+    return (int) mersenne_twister();
   }
 
   void setRandomNum(partInfo& part) {
@@ -420,7 +421,7 @@ void partInfo::updateNeighbors(){
 
 void mis_init(unsigned int randNumSeed, int, const char*,
     const char*, const char*) {
-  srand(randNumSeed);
+  mersenne_twister_seed(randNumSeed);
 }
 
 void misFinalize() {}
