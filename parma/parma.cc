@@ -355,7 +355,7 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
     part.net.push_back(*nItr);
   }
 
-  unsigned int seed = static_cast<unsigned int>(part.id+1);
+  unsigned seed = static_cast<unsigned int>(part.id+1);
   mis_init(seed);
   int misNumber=-1;
   int iter=0;
