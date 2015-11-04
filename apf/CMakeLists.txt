@@ -103,6 +103,7 @@ if (BUILD_IN_TRILINOS)
   set(APF_SOURCES
       ${APF_SOURCES}
       ../mth/mthQR.cc
+      ../lion/lionBase64.cc
      )
   set(APF_HEADERS
       ${APF_HEADERS}
@@ -115,7 +116,6 @@ if (BUILD_IN_TRILINOS)
       ../mth/mthTensor.h
       ../mth/mthQR.h
       ../mth/mthAD.h
-      ../lion/lionBase64.h
      )
 endif()
 
