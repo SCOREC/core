@@ -265,7 +265,7 @@ static void writeNodalField(std::ostream& file,
       unsigned int dataLenBytes = dataLen*sizeof(T);
       T* dataToEncode = (T*)malloc(dataLenBytes);
       file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
-      int dataIndex = 0;
+      unsigned int dataIndex = 0;
       for (size_t i = 0; i < nodes.getSize(); ++i)
       {
         data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
@@ -308,20 +308,62 @@ static int countElementNodes(Numbering* n, MeshEntity* e)
   return n->getShape()->getEntityShape(n->getMesh()->getType(e))->countNodes();
 }
 
-static void writeConnectivity(std::ostream& file, Numbering* n)
+static void writeConnectivity(std::ostream& file,
+                              Numbering* n,
+                              bool isWritingBinary = false)
 {
-  file << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+  file << "<DataArray type=\"Int32\" Name=\"connectivity\"";
+  if (isWritingBinary)
+  {
+    file << " format=\"binary\"";
+  }
+  else
+  {
+    file << " format=\"ascii\"";
+  }
+  file << ">\n";
   Mesh* m = n->getMesh();
   MeshEntity* e;
   MeshIterator* elements = m->begin(m->getDimension());
-  while ((e = m->iterate(elements)))
+  if (isWritingBinary)
   {
-    int nen = countElementNodes(n,e);
-    NewArray<int> numbers(nen);
-    getElementNumbers(n,e,numbers);
-    for (int i=0; i < nen; ++i)
-      file << numbers[i] << ' ';
-    file << '\n';
+    unsigned int dataLen = 0;
+    while ((e = m->iterate(elements)))
+    {
+      dataLen += countElementNodes(n,e);
+    }
+    unsigned int dataLenBytes = dataLen*sizeof(int);
+    int* dataToEncode = (int*)malloc(dataLenBytes);
+    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+    elements = m->begin(m->getDimension());
+    unsigned int dataIndex = 0;
+    while ((e = m->iterate(elements)))
+    {
+      int nen = countElementNodes(n,e);
+      NewArray<int> numbers(nen);
+      getElementNumbers(n,e,numbers);
+      for (int i=0; i < nen; ++i)
+      {
+        dataToEncode[dataIndex] = numbers[i];
+        dataIndex++;
+      }
+    }
+    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << "\n";
+    free(dataToEncode);
+  }
+  else
+  {
+    while ((e = m->iterate(elements)))
+    {
+      int nen = countElementNodes(n,e);
+      NewArray<int> numbers(nen);
+      getElementNumbers(n,e,numbers);
+      for (int i=0; i < nen; ++i)
+      {
+        file << numbers[i] << ' ';
+      }
+      file << '\n';
+    }
   }
   m->end(elements);
   file << "</DataArray>\n";
@@ -368,10 +410,12 @@ static void writeTypes(std::ostream& file, Mesh* m)
   file << "</DataArray>\n";
 }
 
-static void writeCells(std::ostream& file, Numbering* n)
+static void writeCells( std::ostream& file,
+                        Numbering* n,
+                        bool isWritingBinary = false)
 {
   file << "<Cells>\n";
-  writeConnectivity(file,n);
+  writeConnectivity(file,n,isWritingBinary);
   writeOffsets(file,n);
   writeTypes(file,n->getMesh());
   file << "</Cells>\n"; 
@@ -550,7 +594,7 @@ static void writeVtuFile( const char* prefix,
   buf << "\" NumberOfCells=\"" << m->count(m->getDimension());
   buf << "\">\n";
   writePoints(buf,m,nodes,isWritingBinary);
-  writeCells(buf,n);
+  writeCells(buf,n,isWritingBinary);
   writePointData(buf,m,nodes);
   writeCellData(buf,m,isWritingBinary);
   buf << "</Piece>\n";
