@@ -113,6 +113,7 @@ setup_exe(bezierElevation bezierElevation.cc)
 setup_exe(bezierExperimental bezierExperimental.cc)
 setup_exe(bezierMesh bezierMesh.cc)
 setup_exe(bezierMisc bezierMisc.cc)
+setup_exe(bezierRefine bezierRefine.cc)
 setup_exe(bezierSubdivision bezierSubdivision.cc)
 setup_exe(bezierValidity bezierValidity.cc)
 

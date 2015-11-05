@@ -488,7 +488,7 @@ void test3DBlended()
         if(ni <= 0) continue;
 
         apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(m,order,d,c);
+        crv::getBezierTransformationCoefficients(order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
@@ -524,7 +524,7 @@ void test3DFull()
       int ni = fs->countNodesOn(d);
       if(ni <= 0) continue;
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,d,c);
+      crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {

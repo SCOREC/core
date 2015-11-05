@@ -16,6 +16,9 @@ namespace crv {
 int getNumInternalControlPoints(int type, int order)
 {
   switch (type) {
+    case apf::Mesh::VERTEX:
+      return 1;
+      break;
     case apf::Mesh::EDGE:
       return order-1;
       break;
@@ -35,6 +38,9 @@ int getNumInternalControlPoints(int type, int order)
 int getNumControlPoints(int type, int order)
 {
   switch (type) {
+    case apf::Mesh::VERTEX:
+      return 1;
+      break;
     case apf::Mesh::EDGE:
       return order+1;
       break;

@@ -104,7 +104,7 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getBezierTransformationCoefficients(m_mesh,m_order,
+    getBezierTransformationCoefficients(m_order,
         apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);

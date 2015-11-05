@@ -20,6 +20,8 @@ extern unsigned const* const* const* const tet_tri[7];
 
 extern apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES];
 
+extern apf::Vector3 const* const elem_edge_xi[apf::Mesh::TYPES];
+
 // negative -> flipped relative to canonical
 // relies on e0 being always ordered correctly
 static int const tet_tri_edges[4][3] =

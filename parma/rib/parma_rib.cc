@@ -25,23 +25,10 @@ Bodies::Bodies()
   body = NULL;
 }
 
-Bodies::Bodies(Body* arr, int n_)
-{
-  n = n_;
-  body = new Body*[n];
-  for (int i = 0; i < n; ++i)
-    body[i] = arr + i;
-}
-
 Bodies::~Bodies()
 {
   n = 0;
   body = NULL;
-}
-
-void Bodies::destroy()
-{
-  delete [] body;
 }
 
 /* http://en.wikipedia.org/wiki/Moment_of_inertia#Angular_momentum */

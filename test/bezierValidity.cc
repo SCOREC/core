@@ -1,5 +1,6 @@
 #include <crv.h>
 #include <crvBezier.h>
+#include <crvBezierShapes.h>
 #include <crvQuality.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
@@ -259,7 +260,7 @@ void test2D()
         int n = order+1;
         int ne = fs->countNodesOn(apf::Mesh::EDGE);
         apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(m,order,apf::Mesh::EDGE,c);
+        crv::getBezierTransformationCoefficients(order,apf::Mesh::EDGE,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(1);
         while ((e = m->iterate(it))) {
@@ -335,7 +336,7 @@ void test3D()
       int ni = fs->countNodesOn(d);
       if(ni <= 0) continue;
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,d,c);
+      crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
