@@ -9,6 +9,7 @@
 *******************************************************************************/
 #include <PCU.h>
 #include "maAdapt.h"
+#include "maInput.h"
 #include "maTables.h"
 #include "maCoarsen.h"
 #include "maRefine.h"
@@ -33,9 +34,9 @@ Adapt::Adapt(Input* in)
   sizeField = in->sizeField;
   solutionTransfer = in->solutionTransfer;
   refine = new Refine(this);
-  if (in->shapeHandler)
-    shape = in->shapeHandler;
-  else
+  if (in->shapeHandler){
+    shape = in->shapeHandler(this);
+  } else
     shape = getShapeHandler(this);
   if (in->shouldCoarsen)
     coarsensLeft = in->maximumIterations;
