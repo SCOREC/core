@@ -12,26 +12,21 @@
 #include "crvMath.h"
 #include "crvQuality.h"
 #include "crvTables.h"
-#include <apfShape.h>
-#include <apfNumbering.h>
-#include <maAffine.h>
 #include <maMap.h>
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
 #include <mth_def.h>
 #include <cassert>
-#include <float.h>
-#include <iostream>
 
 namespace crv {
 
 class BezierTransfer : public ma::SolutionTransfer
 {
   public:
-    BezierTransfer(ma::Mesh* m)
+    BezierTransfer(ma::Mesh* m, ma::Refine* r)
     {
       mesh = m;
-
+      refine = r;
       // pre compute the inverses of the transformation matrices
       int P = mesh->getShape()->getOrder();
       for (int d = 1; d <= 3; ++d){
@@ -50,7 +45,7 @@ class BezierTransfer : public ma::SolutionTransfer
     {
     }
     void getVertParams(int ptype, apf::MeshEntity** parentVerts,
-        apf::NewArray<apf::Vector3>& edges, apf::MeshEntity* e,
+        apf::NewArray<apf::MeshEntity*>& midEdgeVerts, apf::MeshEntity* e,
         apf::Vector3 params[4])
     {
       int npv = apf::Mesh::adjacentCount[ptype][0];
@@ -60,8 +55,6 @@ class BezierTransfer : public ma::SolutionTransfer
       int nv = mesh->getDownward(e,0,verts);
       // first check verts
       for (int v = 0; v < nv; ++v){
-        apf::Vector3 pt;
-        mesh->getPoint(verts[v],0,pt);
         bool vert = false;
         for (int i = 0; i < npv; ++i){
           if(verts[v] == parentVerts[i]){
@@ -75,7 +68,7 @@ class BezierTransfer : public ma::SolutionTransfer
         // to determine if this is the correct edge
         if(!vert){
           for (int i = 0; i < ne; ++i){
-            if( (pt-edges[i]).getLength() < 1e-13 ){
+            if( verts[v] == midEdgeVerts[i] ){
               params[v] = elem_edge_xi[ptype][i];
               break;
             }
@@ -96,20 +89,15 @@ class BezierTransfer : public ma::SolutionTransfer
       int parentType = mesh->getType(parent);
 
       // for the parent, get its vertices and mid edge nodes first
-      apf::Downward pVerts,pEdges;
+      apf::Downward parentVerts,parentEdges;
 
-      mesh->getDownward(parent,0,pVerts);
-      mesh->getDownward(parent,1,pEdges);
+      mesh->getDownward(parent,0,parentVerts);
+      mesh->getDownward(parent,1,parentEdges);
       int ne = apf::Mesh::adjacentCount[parentType][1];
 
-      apf::NewArray<apf::Vector3> midEdgeNodes(ne);
-      apf::Vector3 ep(0,0,0); // mid edge parameter
-      for (int i = 0; i < ne; ++i){
-        apf::Element* edgeElem =
-            apf::createElement(mesh->getCoordinateField(),pEdges[i]);
-        apf::getVector(edgeElem,ep,midEdgeNodes[i]);
-        apf::destroyElement(edgeElem);
-      }
+      apf::NewArray<apf::MeshEntity*> midEdgeVerts(ne);
+      for (int i = 0; i < ne; ++i)
+        midEdgeVerts[i] = ma::findSplitVert(refine,parentEdges[i]);
 
       int np = getNumControlPoints(parentType,P);
 
@@ -130,33 +118,33 @@ class BezierTransfer : public ma::SolutionTransfer
         int n = getNumControlPoints(childType,P);
 
         apf::Vector3 vp[4];
-        getVertParams(parentType,pVerts,midEdgeNodes,newEntities[i],vp);
+        getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
         mth::Matrix<double> A(n,np),B(n,n);
         getBezierTransformationMatrix(parentType,childType,P,A,vp);
         mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
 
         for (int j = 0; j < ni; ++j){
-          apf::Node node(newEntities[i],j);
           apf::Vector3 point(0,0,0);
-          for (int k = 0; k < np; ++k){
+          for (int k = 0; k < np; ++k)
             point += nodes[k]*B(j+n-ni,k);
-          }
+
           mesh->setPoint(newEntities[i],j,point);
         }
       }
     }
   private:
     ma::Mesh* mesh;
+    ma::Refine* refine;
     mth::Matrix<double> Ai[4];
 };
 
 class BezierHandler : public ma::ShapeHandler
 {
   public:
-    BezierHandler(ma::Mesh* m)
+    BezierHandler(ma::Mesh* m, ma::Refine* r)
     {
       mesh = m;
-      bt = new BezierTransfer(mesh);
+      bt = new BezierTransfer(m,r);
       ct = ma::createFieldTransfer(mesh->getCoordinateField());
     }
     ~BezierHandler()
@@ -192,9 +180,9 @@ class BezierHandler : public ma::ShapeHandler
     ma::SolutionTransfer* ct;
 };
 
-ma::ShapeHandler* getShapeHandler(ma::Mesh* m)
+ma::ShapeHandler* getShapeHandler(ma::Adapt* a)
 {
-  return new BezierHandler(m);
+  return new BezierHandler(a->mesh,a->refine);
 }
 
 }

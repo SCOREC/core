@@ -19,7 +19,7 @@ namespace crv {
 bool refine(ma::Adapt* a);
 
 /** \brief experimental function */
-ma::ShapeHandler* getShapeHandler(ma::Mesh* m);
+ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 
 void uniformRefine(ma::Mesh* m);
 

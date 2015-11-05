@@ -5,9 +5,9 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "crvAdapt.h"
 #include <apf.h>
 #include <PCU.h>
-#include "crvAdapt.h"
 #include <maBalance.h>
 #include <maCoarsen.h>
 #include <maSnap.h>
@@ -21,7 +21,7 @@ void uniformRefine(ma::Mesh* m)
     in->shouldSnap = false;
   }
   in->shouldFixShape = false;
-  in->shapeHandler = getShapeHandler(m);
+  in->shapeHandler = crv::getShapeHandler;
   crv::adapt(in);
 }
 

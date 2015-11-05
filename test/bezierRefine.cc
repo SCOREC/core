@@ -137,6 +137,21 @@ apf::Mesh2* createMesh2D()
   return m;
 }
 
+
+static double measureMesh(apf::Mesh2* m)
+{
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  double v = 0.;
+  while ((e = m->iterate(it))){
+    apf::MeshElement* me = apf::createMeshElement(m,e);
+    v += apf::measure(me);
+    apf::destroyMeshElement(me);
+  }
+  m->end(it);
+  return v;
+}
+
 void test2D()
 {
   for(int order = 2; order <= 6; ++order){
@@ -174,7 +189,10 @@ void test2D()
         m->end(it);
       }
 
+      double v0 = measureMesh(m);
       crv::uniformRefine(m);
+      double v1 = measureMesh(m);
+      assert( std::fabs(v1-v0) < 0.05 );
 
       m->destroyNative();
       apf::destroyMesh(m);
@@ -267,7 +285,10 @@ void test3D()
     }
     m->acceptChanges();
 
+    double v0 = measureMesh(m);
     crv::uniformRefine(m);
+    double v1 = measureMesh(m);
+    assert( std::fabs(v1-v0) < 0.05 );
 
     m->destroyNative();
     apf::destroyMesh(m);
