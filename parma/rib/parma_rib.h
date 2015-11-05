@@ -13,7 +13,6 @@ struct Body
 
 struct Bodies
 {
-  Bodies(Body* arr, int n_);
   ~Bodies();
   Bodies();
   void destroy();
