@@ -62,6 +62,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_elmLtVtxEdgeBalancer.cc
   diffMC/zeroOneKnapsack.c
   diffMC/maximalIndependentSet/misLuby.cc
+  diffMC/maximalIndependentSet/mersenne_twister.cc
   )
 
 SET(RIB_SOURCES  
