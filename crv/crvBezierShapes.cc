@@ -10,6 +10,7 @@
 #include "crvBezierShapes.h"
 #include "crvMath.h"
 #include "crvTables.h"
+#include <cassert>
 
 namespace crv {
 
@@ -230,67 +231,87 @@ static void bezierTetGrads(int P, apf::Vector3 const& xi,
       }
 }
 
-void getBezierTransformationMatrix(int type, int P,
-    mth::Matrix<double>& A,
-    const apf::Vector3 *range)
+static void collectNodeXi(int parentType, int childType, int P,
+    const apf::Vector3* range, apf::Vector3* xi)
 {
-
-  int n = getNumControlPoints(type,P);
-  int typeDim = apf::Mesh::typeDimension[type];
-
-  apf::Vector3 xi, exi;
+  int childDim = apf::Mesh::typeDimension[childType];
+  apf::Vector3 childXi, parentXi;
   int evi = 0;
-  apf::NewArray<double> values(n);
-
-  A.zero();
 
   int row = 0;
-  for(int d = 0; d <= typeDim; ++d){
-    int nDown = apf::Mesh::adjacentCount[type][d];
+  for(int d = 0; d <= childDim; ++d){
+    int nDown = apf::Mesh::adjacentCount[childType][d];
     for(int j = 0; j < nDown; ++j){
       int bt = apf::Mesh::simplexTypes[d];
       apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
       for(int x = 0; x < getNumInternalControlPoints(bt,P); ++x){
-        getBezierNodeXi(bt,P,x,xi);
+        getBezierNodeXi(bt,P,x,childXi);
         apf::NewArray<double> shape_vals;
-        shape->getValues(0, 0, xi, shape_vals);
 
-        if(d < typeDim){
-          exi.zero();
-          evi = j;
-          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
-            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
-              evi = apf::tri_edge_verts[j][i];
-            if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
-              evi = apf::tet_edge_verts[j][i];
-            if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
-              evi = apf::tet_tri_verts[j][i];
-            exi += elem_vert_xi[type][evi] * shape_vals[i];
-          }
-        } else {
-          exi = xi;
+        shape->getValues(0, 0, childXi, shape_vals);
+        parentXi.zero();
+        evi = j;
+        for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+          if(bt == apf::Mesh::EDGE && parentType == apf::Mesh::TRIANGLE)
+            evi = apf::tri_edge_verts[j][i];
+          else if(bt == apf::Mesh::EDGE && parentType == apf::Mesh::TET)
+            evi = apf::tet_edge_verts[j][i];
+          else if(bt == apf::Mesh::TRIANGLE && parentType == apf::Mesh::TET)
+            evi = apf::tet_tri_verts[j][i];
+          else if(bt == parentType)
+            evi = i;
+          parentXi += range[evi] * shape_vals[i];
         }
-        // slight change here because edges run [-1,1]
-        if(typeDim == 1){
-          exi[0] = 0.5*(exi[0]+1);
-          exi[0] = range[1][0]*exi[0]+range[0][0]*(1.-exi[0]);
-        }
-        if(typeDim == 2){
-          double p = 1.-exi[0]-exi[1];
-          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1];
-        }
-        if(typeDim == 3){
-          double p = 1.-exi[0]-exi[1]-exi[2];
-          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1]+range[3]*exi[2];
-        }
-        bezier[type](P,exi,values);
-        for(int i = 0; i < n; ++i){
-          A(row,i) = values[i];
-        }
+        xi[row] = parentXi;
         ++row;
       }
     }
   }
+  assert(row == getNumControlPoints(childType,P));
+}
+
+void getBezierTransformationMatrix(int type, int P,
+    mth::Matrix<double>& A,
+    const apf::Vector3* range)
+{
+  int n = getNumControlPoints(type,P);
+
+  apf::Vector3* xi = new apf::Vector3[n];
+  collectNodeXi(type,type,P,range,xi);
+
+  apf::NewArray<double> values(n);
+
+  A.zero();
+
+  for (int x = 0; x < n; ++x){
+    bezier[type](P,xi[x],values);
+    for(int i = 0; i < n; ++i){
+      A(x,i) = values[i];
+    }
+  }
+  delete [] xi;
+}
+
+void getBezierTransformationMatrix(int parentType,
+    int childType, int P,
+    mth::Matrix<double>& A,
+    const apf::Vector3* childRange)
+{
+  int n = getNumControlPoints(parentType,P);
+  int nxi = getNumControlPoints(childType,P);
+  apf::Vector3* xi = new apf::Vector3[nxi];
+
+  collectNodeXi(parentType,childType,P,childRange,xi);
+
+  apf::NewArray<double> values(n);
+  for(int x = 0; x < nxi; ++x){
+    bezier[parentType](P,xi[x],values);
+    for(int i = 0; i < n; ++i){
+      A(x,i) = values[i];
+    }
+  }
+  delete [] xi;
+
 }
 
 const bezierShape bezier[apf::Mesh::TYPES] =

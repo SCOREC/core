@@ -37,6 +37,12 @@ extern const bezierShapeGrads bezierGrads[apf::Mesh::TYPES];
 void getBezierTransformationMatrix(int type, int P,
     mth::Matrix<double>& A,
     const apf::Vector3 *range);
+
+void getBezierTransformationMatrix(int parentType,
+    int childType, int P,
+    mth::Matrix<double>& A,
+    const apf::Vector3* childRange);
+
 }
 
 #endif

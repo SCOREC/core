@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvAdapt.h>
 #include <crvBezier.h>
 #include <crvBezierShapes.h>
 #include <crvQuality.h>
@@ -224,7 +225,6 @@ void test3D()
       }
       m->end(it);
     }
-
 
     // get face 2
     apf::MeshIterator* it = m->begin(3);

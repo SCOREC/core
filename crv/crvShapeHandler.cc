@@ -8,133 +8,146 @@
 
 #include "crvAdapt.h"
 #include "crvBezier.h"
+#include "crvBezierShapes.h"
+#include "crvMath.h"
 #include "crvQuality.h"
+#include "crvTables.h"
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include <maAffine.h>
 #include <maMap.h>
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
+#include <mth_def.h>
 #include <cassert>
 #include <float.h>
+#include <iostream>
 
 namespace crv {
 
-class FieldTransfer : public ma::SolutionTransfer
+class BezierTransfer : public ma::SolutionTransfer
 {
   public:
-    FieldTransfer(apf::Field* f)
+    BezierTransfer(ma::Mesh* m)
     {
-      field = f;
-      mesh = apf::getMesh(f);
-      shape = apf::getShape(f);
-      value.allocate(apf::countComponents(f));
+      mesh = m;
+
+      // pre compute the inverses of the transformation matrices
+      int P = mesh->getShape()->getOrder();
+      for (int d = 1; d <= 3; ++d){
+        if(!getNumInternalControlPoints(apf::Mesh::simplexTypes[d],P))
+          continue;
+        int n = getNumControlPoints(apf::Mesh::simplexTypes[d],P);
+        mth::Matrix<double> A(n,n);
+        Ai[d].resize(n,n);
+        getBezierTransformationMatrix(apf::Mesh::simplexTypes[d],P,
+            A,elem_vert_xi[apf::Mesh::simplexTypes[d]]);
+        invertMatrixWithPLU(getNumControlPoints(apf::Mesh::simplexTypes[d],P),
+            A,Ai[d]);
+      }
     }
-    /* hmm... in vs. on ... probably the ma:: signature
-       should change, it has the least users */
+    ~BezierTransfer()
+    {
+    }
+    void getVertParams(int ptype, apf::MeshEntity** parentVerts,
+        apf::NewArray<apf::Vector3>& edges, apf::MeshEntity* e,
+        apf::Vector3 params[4])
+    {
+      int npv = apf::Mesh::adjacentCount[ptype][0];
+      int ne = apf::Mesh::adjacentCount[ptype][1];
+      apf::Downward verts;
+
+      int nv = mesh->getDownward(e,0,verts);
+      // first check verts
+      for (int v = 0; v < nv; ++v){
+        apf::Vector3 pt;
+        mesh->getPoint(verts[v],0,pt);
+        bool vert = false;
+        for (int i = 0; i < npv; ++i){
+          if(verts[v] == parentVerts[i]){
+            params[v] = elem_vert_xi[ptype][i];
+            vert = true;
+            break;
+          }
+        }
+
+        // this part relies on "closeness"
+        // to determine if this is the correct edge
+        if(!vert){
+          for (int i = 0; i < ne; ++i){
+            if( (pt-edges[i]).getLength() < 1e-13 ){
+              params[v] = elem_edge_xi[ptype][i];
+              break;
+            }
+          }
+        }
+
+      }
+    }
     virtual bool hasNodesOn(int dimension)
     {
-      return shape->hasNodesIn(dimension);
-    }
-    apf::Field* field;
-    apf::Mesh* mesh;
-    apf::FieldShape* shape;
-    apf::NewArray<double> value;
-};
-
-class BezierTransfer : public FieldTransfer
-{
-  public:
-    BezierTransfer(apf::Field* f):
-      FieldTransfer(f), minDim(0)
-    {
-    }
-    void transferToNodeIn(
-        apf::Element* elem,
-        apf::Node const& node,
-        ma::Vector const& elemXi)
-    {
-      apf::getComponents(elem,elemXi,&(value[0]));
-      apf::setComponents(field,node.entity,node.node,&(value[0]));
-    }
-    int getBestElement(
-        int n,
-        apf::Element** elems,
-        ma::Affine* elemInvMaps,
-        ma::Vector const& point,
-        ma::Vector& bestXi)
-    {
-      double bestValue = -DBL_MAX;
-      int bestI = 0;
-      for (int i = 0; i < n; ++i)
-      {
-        ma::Vector xi = elemInvMaps[i] * point;
-        double value = ma::getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
-        if (value > bestValue)
-        {
-          bestValue = value;
-          bestI = i;
-          bestXi = xi;
-        }
-      }
-      return bestI;
-    }
-    void transferToNode(
-        int n,
-        apf::Element** elems,
-        ma::Affine* elemInvMaps,
-        apf::Node const& node)
-    {
-      ma::Vector xi;
-      shape->getNodeXi(mesh->getType(node.entity),node.node,xi);
-      ma::Affine childMap = ma::getMap(mesh,node.entity);
-      ma::Vector point = childMap * xi;
-      ma::Vector elemXi;
-      int i = getBestElement(n,elems,elemInvMaps,point,elemXi);
-      transferToNodeIn(elems[i],node,elemXi);
-    }
-    void transfer(
-        int n,
-        ma::Entity** cavity,
-        ma::EntityArray& newEntities)
-    {
-      if (getDimension(mesh, cavity[0]) < minDim)
-        return;
-      apf::NewArray<apf::Element*> elems(n);
-      for (int i = 0; i < n; ++i)
-        elems[i] = apf::createElement(field,cavity[i]);
-      apf::NewArray<ma::Affine> elemInvMaps(n);
-      for (int i = 0; i < n; ++i)
-        elemInvMaps[i] = invert(ma::getMap(mesh,cavity[i]));
-      for (size_t i = 0; i < newEntities.getSize(); ++i)
-      {
-        int type = mesh->getType(newEntities[i]);
-        if (type == apf::Mesh::VERTEX)
-          continue; //vertices will have been handled specially beforehand
-        int nnodes = shape->countNodesOn(type);
-        for (int j = 0; j < nnodes; ++j)
-        {
-          apf::Node node(newEntities[i],j);
-          transferToNode(n,&(elems[0]),&(elemInvMaps[0]),node);
-        }
-      }
-      for (int i = 0; i < n; ++i)
-        apf::destroyElement(elems[i]);
+      return mesh->getShape()->hasNodesIn(dimension);
     }
     virtual void onRefine(
         ma::Entity* parent,
         ma::EntityArray& newEntities)
     {
-      transfer(1,&parent,newEntities);
-    }
-    virtual void onCavity(
-        ma::EntityArray& oldElements,
-        ma::EntityArray& newEntities)
-    {
-      transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
+      int P = mesh->getShape()->getOrder();
+      int parentType = mesh->getType(parent);
+
+      // for the parent, get its vertices and mid edge nodes first
+      apf::Downward pVerts,pEdges;
+
+      mesh->getDownward(parent,0,pVerts);
+      mesh->getDownward(parent,1,pEdges);
+      int ne = apf::Mesh::adjacentCount[parentType][1];
+
+      apf::NewArray<apf::Vector3> midEdgeNodes(ne);
+      apf::Vector3 ep(0,0,0); // mid edge parameter
+      for (int i = 0; i < ne; ++i){
+        apf::Element* edgeElem =
+            apf::createElement(mesh->getCoordinateField(),pEdges[i]);
+        apf::getVector(edgeElem,ep,midEdgeNodes[i]);
+        apf::destroyElement(edgeElem);
+      }
+
+      int np = getNumControlPoints(parentType,P);
+
+      apf::Element* elem =
+          apf::createElement(mesh->getCoordinateField(),parent);
+      apf::NewArray<apf::Vector3> nodes;
+      apf::getVectorNodes(elem,nodes);
+      apf::destroyElement(elem);
+
+      for (size_t i = 0; i < newEntities.getSize(); ++i)
+      {
+        int childType = mesh->getType(newEntities[i]);
+        int ni = mesh->getShape()->countNodesOn(childType);
+
+        if (childType == apf::Mesh::VERTEX || ni == 0)
+          continue; //vertices will have been handled specially beforehand
+
+        int n = getNumControlPoints(childType,P);
+
+        apf::Vector3 vp[4];
+        getVertParams(parentType,pVerts,midEdgeNodes,newEntities[i],vp);
+        mth::Matrix<double> A(n,np),B(n,n);
+        getBezierTransformationMatrix(parentType,childType,P,A,vp);
+        mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
+
+        for (int j = 0; j < ni; ++j){
+          apf::Node node(newEntities[i],j);
+          apf::Vector3 point(0,0,0);
+          for (int k = 0; k < np; ++k){
+            point += nodes[k]*B(j+n-ni,k);
+          }
+          mesh->setPoint(newEntities[i],j,point);
+        }
+      }
     }
   private:
-    int minDim;
+    ma::Mesh* mesh;
+    mth::Matrix<double> Ai[4];
 };
 
 class BezierHandler : public ma::ShapeHandler
@@ -143,11 +156,13 @@ class BezierHandler : public ma::ShapeHandler
     BezierHandler(ma::Mesh* m)
     {
       mesh = m;
-      bt = new BezierTransfer(mesh->getCoordinateField());
+      bt = new BezierTransfer(mesh);
+      ct = ma::createFieldTransfer(mesh->getCoordinateField());
     }
     ~BezierHandler()
     {
       delete bt;
+      delete ct;
     }
     virtual double getQuality(apf::MeshEntity* e)
     {
@@ -159,13 +174,6 @@ class BezierHandler : public ma::ShapeHandler
     {
       return bt->hasNodesOn(dimension);
     }
-    virtual void onVertex(
-        apf::MeshElement* parent,
-        apf::Vector3 const& xi,
-        apf::MeshEntity* vert)
-    {
-      bt->onVertex(parent,xi,vert);
-    }
     virtual void onRefine(
         apf::MeshEntity* parent,
         ma::EntityArray& newEntities)
@@ -176,11 +184,12 @@ class BezierHandler : public ma::ShapeHandler
         ma::EntityArray& oldElements,
         ma::EntityArray& newEntities)
     {
-      bt->onCavity(oldElements,newEntities);
+      ct->onCavity(oldElements,newEntities);
     }
   private:
     ma::Mesh* mesh;
     BezierTransfer* bt;
+    ma::SolutionTransfer* ct;
 };
 
 ma::ShapeHandler* getShapeHandler(ma::Mesh* m)

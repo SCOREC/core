@@ -12,6 +12,8 @@
 
 namespace crv {
 
+
+
 bool refine(ma::Adapt* a)
 {
   double t0 = PCU_Time();
@@ -32,7 +34,6 @@ bool refine(ma::Adapt* a)
   ma::forgetNewEntities(r);
   double t1 = PCU_Time();
   ma::print("refined %li edges in %f seconds",count,t1-t0);
-
   return true;
 }
 

@@ -12,6 +12,7 @@
 #include <maAdapt.h>
 #include <maInput.h>
 #include <maRefine.h>
+#include <maTables.h>
 
 namespace crv {
 

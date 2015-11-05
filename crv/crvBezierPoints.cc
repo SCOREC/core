@@ -207,8 +207,8 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
     switch (typeDim) {
     case 1:
       for(int i = 0; i < 2; ++i){
-        range[i][0][0] = i*0.5;
-        range[i][1][0] = (i+1.)*0.5;
+        range[i][0][0] = i-1.;
+        range[i][1][0] = i;
       }
       break;
     case 2:
