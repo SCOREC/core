@@ -7,13 +7,18 @@
 
 #include "crv.h"
 #include "crvBezier.h"
+#include "crvTables.h"
 #include <cstdlib>
+#include <iostream>
 
 namespace crv {
 
 int getNumInternalControlPoints(int type, int order)
 {
   switch (type) {
+    case apf::Mesh::VERTEX:
+      return 1;
+      break;
     case apf::Mesh::EDGE:
       return order-1;
       break;
@@ -33,6 +38,9 @@ int getNumInternalControlPoints(int type, int order)
 int getNumControlPoints(int type, int order)
 {
   switch (type) {
+    case apf::Mesh::VERTEX:
+      return 1;
+      break;
     case apf::Mesh::EDGE:
       return order+1;
       break;
@@ -90,34 +98,8 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
 }
 
 void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
-    mth::Matrix<double>& A)
+    mth::Matrix<double>& A, const apf::Vector3 *range)
 {
-
-  apf::Vector3 const edge_vert_xi[2] = {
-      apf::Vector3(-1,0,0),
-      apf::Vector3(1,0,0),
-  };
-  apf::Vector3 const tri_vert_xi[3] = {
-      apf::Vector3(0,0,0),
-      apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0),
-  };
-  apf::Vector3 const tet_vert_xi[4] = {
-      apf::Vector3(0,0,0),
-      apf::Vector3(1,0,0),
-      apf::Vector3(0,1,0),
-      apf::Vector3(0,0,1),
-  };
-  apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
-      0, /* vertex */
-      edge_vert_xi,
-      tri_vert_xi,
-      0, /* quad */
-      tet_vert_xi,
-      0, /* hex */
-      0, /* prism */
-      0  /* pyramid */
-  };
 
   int type = m->getType(e);
   apf::FieldShape* fs = m->getShape();
@@ -156,6 +138,19 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
           }
         } else {
           exi = xi;
+        }
+        // slight change here because edges run [-1,1]
+        if(typeDim == 1){
+          exi[0] = 0.5*(exi[0]+1);
+          exi[0] = range[1][0]*exi[0]+range[0][0]*(1.-exi[0]);
+        }
+        if(typeDim == 2){
+          double p = 1.-exi[0]-exi[1];
+          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1];
+        }
+        if(typeDim == 3){
+          double p = 1.-exi[0]-exi[1]-exi[2];
+          exi = range[0]*p + range[1]*exi[0]+range[2]*exi[1]+range[3]*exi[2];
         }
         es->getValues(m,e,exi,values);
         for(int i = 0; i < n; ++i){

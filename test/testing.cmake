@@ -53,6 +53,7 @@ add_test(bezierElevation bezierElevation)
 add_test(bezierExperimental bezierExperimental)
 add_test(bezierMesh bezierMesh)
 add_test(bezierMisc bezierMisc)
+add_test(bezierRefine bezierRefine)
 add_test(bezierSubdivision bezierSubdivision)
 add_test(bezierValidity bezierValidity)
 
@@ -195,6 +196,12 @@ add_test(vtxElmBalance
   "${MDIR}/afosr.dmg"
   "${MDIR}/4imb/"
   "afosrBal4p/")
+add_test(parmaSerial
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 1
+  ./vtxElmBalance
+  "${MESHES}/cube/cube.dmg"
+  "${MESHES}/cube/pumi670/cube.smb"
+  "cubeBal.smb/")
 set(MDIR ${MESHES}/cube)
 if(ENABLE_ZOLTAN)
   parma(ptnParma_cube

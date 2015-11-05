@@ -488,7 +488,7 @@ void test3DBlended()
         if(ni <= 0) continue;
 
         apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(m,order,d,c);
+        crv::getBezierTransformationCoefficients(order,d,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
@@ -524,7 +524,7 @@ void test3DFull()
       int ni = fs->countNodesOn(d);
       if(ni <= 0) continue;
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,d,c);
+      crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
@@ -570,12 +570,11 @@ void test3DFull()
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
           for(int i = 0; i < ne; ++i){
-            apf::setScalar(f1,e,i,0.1*(rand() % 10));
-            apf::Vector3 V(0.1*(rand() % 10),0.1*(rand() % 10),0.1*(rand() % 10));
-            apf::Matrix3x3 M(0.1*(rand() % 10),0.1*(rand() % 10),
-                0.1*(rand() % 10),0.1*(rand() % 10),0.1*(rand() % 10),
-                0.1*(rand() % 10),0.1*(rand() % 10),0.1*(rand() % 10),
-                0.1*(rand() % 10));
+            apf::setScalar(f1,e,i,1.2345);
+            apf::Vector3 V(1.2345,1.2345,1.2345);
+            apf::Matrix3x3 M(1.2345,1.2345,1.2345,
+                1.2345,1.2345,1.2345,
+                1.2345,1.2345,1.2345);
 
             apf::setVector(f2,e,i,V);
             apf::setMatrix(f3,e,i,M);
@@ -586,7 +585,7 @@ void test3DFull()
 
       // write the field
 //      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,2,"curved");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,2,"curved");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TET,2,"curved");
     }
 //    crv::writeControlPointVtuFiles(m,"curved");
     m->destroyNative();

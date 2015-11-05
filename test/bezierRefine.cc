@@ -1,5 +1,8 @@
 #include <crv.h>
+#include <crvAdapt.h>
 #include <crvBezier.h>
+#include <crvBezierShapes.h>
+#include <crvQuality.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -10,28 +13,6 @@
 
 #include <math.h>
 #include <cassert>
-
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KYEL  "\x1B[33m"
-#define KBLU  "\x1B[34m"
-#define KMAG  "\x1B[35m"
-#define KCYN  "\x1B[36m"
-#define KWHT  "\x1B[37m"
-#define RESET "\033[0m"
-
-
-/* This test file uses an alternative and more traditional method to
- * compute Jacobian differences, using the property of Bezier's that
- * derivatives of Bezier's are themselves Bezier's multiplied by
- * control point differences. As implementing weights*control point differences
- * is not possible in our current framework, this method is not implemented in
- * the main code, but serves its use for code validation.
- *
- * This test file also contains validity checks.
- * In 2D, orders 3-6 provide invalid meshes
- */
 
 // face areas are 1/2 and 19/30
 void vert0(double const p[2], double x[3], void*)
@@ -156,93 +137,66 @@ apf::Mesh2* createMesh2D()
   return m;
 }
 
-void checkValidity(apf::Mesh* m, int order)
-{
-  apf::MeshIterator* it = m->begin(2);
-  apf::MeshEntity* e;
-  int iEntity = 0;
-  while ((e = m->iterate(it))) {
-    apf::MeshEntity* entities[6];
-    double startSub = PCU_Time();
-    int numInvalidSub = crv::checkTriValidity(m,e,entities,2);
-    double endSub = PCU_Time();
-    double startEle = PCU_Time();
-    int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
-    double endEle = PCU_Time();
-    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d\n" RESET,
-        endSub - startSub, numInvalidSub, order);
-    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d\n" RESET,
-        endEle - startEle, numInvalidEle, order);
-  //Uncomment this when the "break" after it is gone
-  //else if(iEntity == 1){
-  //  printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
-  //  printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
-  //  //assert(numInvalid == 0);
-  //} else {
-  //    assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
-  //}
-    iEntity++;
 
+static double measureMesh(apf::Mesh2* m)
+{
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  double v = 0.;
+  while ((e = m->iterate(it))){
+    apf::MeshElement* me = apf::createMeshElement(m,e);
+    v += apf::measure(me);
+    apf::destroyMeshElement(me);
   }
   m->end(it);
+  return v;
 }
 
 void test2D()
 {
   for(int order = 2; order <= 6; ++order){
-    printf(" --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n", order);
-    double start = PCU_Time();
-    apf::Mesh2* m = createMesh2D();
-    apf::changeMeshShape(m, crv::getBezier(order),true);
-    crv::BezierCurver bc(m,order,0);
-    // creates interpolation points based on the edges of the geometry
-    bc.snapToInterpolate(1);
-    apf::FieldShape* fs = m->getShape();
+      apf::Mesh2* m = createMesh2D();
+      apf::changeMeshShape(m, crv::getBezier(order),true);
+      crv::BezierCurver bc(m,order,0);
+      // creates interpolation points based on the edges of the geometry
+      bc.snapToInterpolate(1);
+      apf::FieldShape* fs = m->getShape();
 
-    // go downward, and convert interpolating to control points
-    {
-      int n = order+1;
-      int ni = order-1;
-      apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(order,apf::Mesh::EDGE,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(1);
-      while ((e = m->iterate(it))) {
-        bc.convertInterpolationPoints(e,n,ni,c);
+      // go downward, and convert interpolating to control points
+      {
+        int n = order+1;
+        int ne = fs->countNodesOn(apf::Mesh::EDGE);
+        apf::NewArray<double> c;
+        crv::getBezierTransformationCoefficients(order,apf::Mesh::EDGE,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(1);
+        while ((e = m->iterate(it))) {
+          bc.convertInterpolationPoints(e,n,ne,c);
+        }
+        m->end(it);
       }
-      m->end(it);
-    }
-    if(fs->hasNodesIn(2)) {
-      int n = (order+1)*(order+2)/2;
-      int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
-
-      apf::NewArray<double> c;
-      crv::getInternalBezierTransformationCoefficients(m,order,1,
-          apf::Mesh::TRIANGLE,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(2);
-      while ((e = m->iterate(it))){
-        bc.convertInterpolationPoints(e,n-ne,ne,c);
+      if(fs->hasNodesIn(2)) {
+        int n = crv::getNumControlPoints(2,order);
+        int ne = fs->countNodesOn(apf::Mesh::TRIANGLE);
+        apf::NewArray<double> c;
+        crv::getInternalBezierTransformationCoefficients(m,order,1,
+            apf::Mesh::TRIANGLE,c);
+        apf::MeshEntity* e;
+        apf::MeshIterator* it = m->begin(2);
+        while ((e = m->iterate(it))){
+          bc.convertInterpolationPoints(e,n-ne,ne,c);
+        }
+        m->end(it);
       }
-      m->end(it);
+
+      double v0 = measureMesh(m);
+      crv::uniformRefine(m);
+      double v1 = measureMesh(m);
+      assert( std::fabs(v1-v0) < 0.05 );
+
+      m->destroyNative();
+      apf::destroyMesh(m);
     }
-
-    //uncomment this stuff to plot it and see in paraview
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
-
-    crv::writeControlPointVtuFiles(m,"curved");
-
-    double startValidity = PCU_Time();
-    checkValidity(m,order);
-    double endValidity = PCU_Time();
-    printf("total time of checkValidity: %f\n", endValidity-startValidity);
-
-    m->destroyNative();
-    apf::destroyMesh(m);
-    double end = PCU_Time();
-    printf("total time of order %d test2D: %f\n", order, end-start);
-  }
 }
 
 apf::Mesh2* createMesh3D()
@@ -277,18 +231,18 @@ void test3D()
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-      int ne = fs->countNodesOn(d);
+      int ni = fs->countNodesOn(d);
+      if(ni <= 0) continue;
       apf::NewArray<double> c;
       crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ne,c);
+        bc.convertInterpolationPoints(e,n,ni,c);
       }
       m->end(it);
     }
-
 
     // get face 2
     apf::MeshIterator* it = m->begin(3);
@@ -304,7 +258,7 @@ void test3D()
       for (int i = 0; i < non; ++i){
         apf::Vector3 pt;
         m->getPoint(edges[edge],i,pt);
-        pt = pt*0.5;
+        pt = pt*0.6;
         m->setPoint(edges[edge],i,pt);
       }
     }
@@ -312,15 +266,29 @@ void test3D()
     for (int i = 0; i < non; ++i){
       apf::Vector3 pt;
       m->getPoint(face,i,pt);
-      pt = pt*0.5;
+      pt = pt*0.6;
       m->setPoint(face,i,pt);
     }
-
+    for(int d = 2; d <= 3; ++d){
+      if(!fs->hasNodesIn(d)) continue;
+      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+      int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+      apf::NewArray<double> c;
+      crv::getInternalBezierTransformationCoefficients(m,order,1,
+          apf::Mesh::simplexTypes[d],c);
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(d);
+      while ((e = m->iterate(it))){
+        bc.convertInterpolationPoints(e,n-ne,ne,c);
+      }
+      m->end(it);
+    }
     m->acceptChanges();
-    apf::MeshEntity* entities[14];
-    crv::checkTetValidity(m,tet,entities,0); //default zero to not break things (since I know 0 works)
 
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,20,"curved");
+    double v0 = measureMesh(m);
+    crv::uniformRefine(m);
+    double v1 = measureMesh(m);
+    assert( std::fabs(v1-v0) < 0.05 );
 
     m->destroyNative();
     apf::destroyMesh(m);
@@ -332,7 +300,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
-  //test3D();
+  test3D();
   PCU_Comm_Free();
   MPI_Finalize();
 }

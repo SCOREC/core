@@ -59,6 +59,7 @@ void setDefaultValues(Input* in)
   in->shouldRefineLayer = false;
   in->shouldCoarsenLayer = false;
   in->splitAllLayerEdges = false;
+  in->shapeHandler = 0;
 }
 
 void rejectInput(const char* str)

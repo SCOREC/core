@@ -16,6 +16,7 @@ namespace parma {
                    double avgSideMult, double avgSide, 
                    double minSideMult, bool isInMIS) {
         init(m,s,w,alpha,avgSideMult,avgSide,minSideMult,isInMIS);
+        totW = 0;
       }
       double total() {
         return totW;
@@ -101,9 +102,9 @@ namespace parma {
       }
       double getAvgSides(Sides* s) {
         double tot = s->total();
-        PCU_Add_Doubles(&tot, 1);
+        tot = PCU_Add_Double(tot);
         int cnt = static_cast<int>(s->size());
-        PCU_Add_Ints(&cnt, 1);
+        cnt = PCU_Add_Int(cnt);
         return tot/cnt;
       }
     bool getSmallSide(Sides* s, double small, double minSide,int& peer, int& minSides) {

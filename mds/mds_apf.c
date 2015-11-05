@@ -18,7 +18,7 @@ struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
 {
   struct mds_apf* m;
   int t;
-  assert(0 < d);
+  assert(0 <= d);
   assert(d <= 3);
   m = malloc(sizeof(*m));
   mds_create(&(m->mds),d,cap);
