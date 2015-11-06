@@ -41,11 +41,12 @@ void adapt(ma::Input* in)
   }
   ma::snap(a);
   ma::postBalance(a);
-  delete a;
-  delete in;
   double t1 = PCU_Time();
   ma::print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(a->mesh);
+  delete a;
+  delete in;
+
 }
 
 }
