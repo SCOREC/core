@@ -355,7 +355,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
 
   apf::NewArray<double> subCoefficients;
   if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(m,2*(P-1),
+    getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
         apf::Mesh::EDGE,subCoefficients);
   }
 
@@ -415,7 +415,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
     return numInvalid;
   }
   if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(m,2*(P-1),
+    getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
         apf::Mesh::TRIANGLE,subCoefficients);
   }
   bool done = false;
@@ -506,7 +506,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
 
   apf::NewArray<double> subCoefficients;
   if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(m,3*(P-1),
+    getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
         apf::Mesh::EDGE,subCoefficients);
   }
 
@@ -555,7 +555,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
   }
   if(numInvalid > 0) return numInvalid;
   if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(m,3*(P-1),
+    getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
         apf::Mesh::TRIANGLE,subCoefficients);
   }
   apf::MeshEntity* faces[4];
@@ -588,7 +588,7 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
     }
   }
   if(numInvalid > 0) return numInvalid;
-  getBezierJacobianDetSubdivisionCoefficients(m,3*(P-1),
+  getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
       apf::Mesh::TET,subCoefficients);
 
   for (int i = 0; i < (3*P-4)*(3*P-5)*(3*P-6)/6; ++i){
@@ -654,16 +654,8 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   return detJ;
 }
 
-double getQuality(apf::Mesh* m,apf::MeshEntity* e)
+double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
 {
-  int P = m->getShape()->getOrder();
-
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
-  apf::NewArray<apf::Vector3> elemNodes;
-  apf::getVectorNodes(elem,elemNodes);
-  apf::destroyElement(elem);
-
-  int type = m->getType(e);
   int typeDim = apf::Mesh::typeDimension[type];
 
   apf::NewArray<double> nodes(getNumControlPoints(type,typeDim*(P-1)));
@@ -681,7 +673,7 @@ double getQuality(apf::Mesh* m,apf::MeshEntity* e)
   bool quality = true;
 
   apf::NewArray<double> subCoefficients;
-  getBezierJacobianDetSubdivisionCoefficients(m,typeDim*(P-1),
+  getBezierJacobianDetSubdivisionCoefficients(typeDim*(P-1),
       type,subCoefficients);
   getJacDetBySubdivisionMatrices(type,typeDim*(P-1),
       0,subCoefficients,nodes,minJ,maxJ,done,quality);
@@ -693,5 +685,18 @@ double getQuality(apf::Mesh* m,apf::MeshEntity* e)
   return minJ/maxJ;
 }
 
+double getQuality(apf::Mesh* m, apf::MeshEntity* e)
+{
+  int P = m->getShape()->getOrder();
+
+  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+  apf::NewArray<apf::Vector3> elemNodes;
+  apf::getVectorNodes(elem,elemNodes);
+  apf::destroyElement(elem);
+
+  int type = m->getType(e);
+
+  return getQuality(type,P,elemNodes);
+}
 
 }

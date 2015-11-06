@@ -169,8 +169,8 @@ void getBezierTransformationCoefficients(int P, int type,
 
 }
 
-void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
-    int P, int type, apf::NewArray<double> & c)
+void getBezierJacobianDetSubdivisionCoefficients(int P, int type,
+    apf::NewArray<double> & c)
 {
   int n = getNumControlPoints(type,P);
   assert(n > 0);
