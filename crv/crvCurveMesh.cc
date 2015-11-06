@@ -10,40 +10,41 @@
 
 namespace crv {
 
-void MeshCurver::synchronize()
-{
-  apf::synchronize(m_mesh->getCoordinateField());
+void convertInterpolationPoints(int n, int ne,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<double>& c,
+    apf::NewArray<apf::Vector3>& newNodes){
+
+  for(int i = 0; i < ne; ++i)
+    newNodes[i].zero();
+
+  for( int i = 0; i < ne; ++i)
+    for( int j = 0; j < n; ++j)
+      newNodes[i] += nodes[j]*c[i*n+j];
+
 }
 
-void MeshCurver::snapToInterpolate(apf::MeshEntity* e)
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  int type = m_mesh->getType(e);
-  apf::FieldShape * fs = m_mesh->getShape();
+  int type = m->getType(e);
+  apf::FieldShape * fs = m->getShape();
   int non = fs->countNodesOn(type);
   apf::Vector3 p, xi, pt(0,0,0);
   for(int i = 0; i < non; ++i){
-    apf::ModelEntity* g = m_mesh->toModel(e);
+    apf::ModelEntity* g = m->toModel(e);
     fs->getNodeXi(type,i,xi);
     if(type == apf::Mesh::EDGE)
-      transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+      transferParametricOnEdgeSplit(m,e,0.5*(xi[0]+1.),p);
     else
-      transferParametricOnTriSplit(m_mesh,e,xi,p);
-    m_mesh->snapToModel(g,p,pt);
-    m_mesh->setPoint(e,i,pt);
+      transferParametricOnTriSplit(m,e,xi,p);
+    m->snapToModel(g,p,pt);
+    m->setPoint(e,i,pt);
   }
 }
 
-void MeshCurver::snapToInterpolate(int dim)
+void MeshCurver::synchronize()
 {
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m_mesh->begin(dim);
-  while ((e = m_mesh->iterate(it))) {
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == m_spaceDim) continue;
-    if(m_mesh->isOwned(e))
-      snapToInterpolate(e);
-  }
-  m_mesh->end(it);
+  apf::synchronize(m_mesh->getCoordinateField());
 }
 
 void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
@@ -54,17 +55,25 @@ void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
       apf::createElement(m_mesh->getCoordinateField(),e);
   apf::getVectorNodes(elem,l);
 
-  for(int i = 0; i < ne; ++i)
-    b[i].zero();
-
-  for( int i = 0; i < ne; ++i)
-    for( int j = 0; j < n; ++j)
-      b[i] += l[j]*c[i*n+j];
+  crv::convertInterpolationPoints(n,ne,l,c,b);
 
   for(int i = 0; i < ne; ++i)
     m_mesh->setPoint(e,i,b[i]);
 
   apf::destroyElement(elem);
+}
+
+void MeshCurver::snapToInterpolate(int dim)
+{
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m_mesh->begin(dim);
+  while ((e = m_mesh->iterate(it))) {
+    apf::ModelEntity* g = m_mesh->toModel(e);
+    if(m_mesh->getModelType(g) == m_spaceDim) continue;
+    if(m_mesh->isOwned(e))
+      crv::snapToInterpolate(m_mesh,e);
+  }
+  m_mesh->end(it);
 }
 
 bool InterpolatingCurver::run()

@@ -31,6 +31,17 @@ int getBlendingOrder(const int type);
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D
   meshes and surface meshes. */
+
+/** \brief converts interpolating points to control points */
+void convertInterpolationPoints(int n, int ne,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<double>& c,
+    apf::NewArray<apf::Vector3>& newNodes);
+
+
+/** \brief a per entity version of above */
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
+
 class MeshCurver
 {
   public:
@@ -43,15 +54,10 @@ class MeshCurver
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
+    void convertInterpolationPoints(apf::MeshEntity* e,
+      int n, int ne, apf::NewArray<double>& c);
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
-
-    /** \brief a per entity version of above */
-    void snapToInterpolate(apf::MeshEntity* e);
-
-    /** \brief converts interpolating points to control points */
-    void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
-      apf::NewArray<double>& c);
 
     /** \brief wrapper around synchronizeFieldData */
     void synchronize();
