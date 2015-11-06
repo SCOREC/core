@@ -330,6 +330,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     for( int j = 0; j < (n-ni); ++j)
       c[i*(n-ni)+j] = transform[blend-1][type][P][i*(n-ni)+j];
 
+
 }
 
 } // namespace crv

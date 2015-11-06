@@ -23,9 +23,9 @@ static int maxAdaptiveIter = 5;
 
 static int maxElevationLevel = 19;
 
-static double convergenceTolerance = 0.01;
-
 static double minAcceptable = 0.0;
+
+static double convergenceTolerance = 0.01;
 
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,
@@ -679,9 +679,7 @@ double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
       0,subCoefficients,nodes,minJ,maxJ,done,quality);
 
   done = false;
-  minJ = -1e10; maxJ = -1e10;
   minAcceptable = oldAcceptable;
-
   return minJ/maxJ;
 }
 
@@ -693,7 +691,6 @@ double getQuality(apf::Mesh* m, apf::MeshEntity* e)
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
   apf::destroyElement(elem);
-
   int type = m->getType(e);
 
   return getQuality(type,P,elemNodes);

@@ -31,6 +31,7 @@ bool refine(ma::Adapt* a)
   ma::splitElements(r);
   ma::processNewElements(r);
   ma::destroySplitElements(r);
+  crv::repositionInterior(r);
   ma::forgetNewEntities(r);
   double t1 = PCU_Time();
   ma::print("refined %li edges in %f seconds",count,t1-t0);

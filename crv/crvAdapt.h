@@ -16,6 +16,8 @@
 
 namespace crv {
 
+void repositionInterior(ma::Refine* r);
+
 bool refine(ma::Adapt* a);
 
 /** \brief experimental function */
