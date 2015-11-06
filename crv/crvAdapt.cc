@@ -5,6 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "crv.h"
 #include "crvAdapt.h"
 #include <apf.h>
 #include <PCU.h>
@@ -14,11 +15,15 @@
 
 namespace crv {
 
-void uniformRefine(ma::Mesh* m)
+void uniformRefine(ma::Mesh* m, bool shouldSnap)
 {
   ma::Input* in = ma::configureUniformRefine(m, 1);
-  if (in->shouldSnap) {
+  if(shouldSnap){
+    in->shouldSnap = shouldSnap;
+    in->shouldTransferParametric = true;
+  } else {
     in->shouldSnap = false;
+    in->shouldTransferParametric = false;
   }
   in->shouldFixShape = false;
   in->shapeHandler = crv::getShapeHandler;
@@ -39,7 +44,6 @@ void adapt(ma::Input* in)
     ma::midBalance(a);
     crv::refine(a);
   }
-  ma::snap(a);
   ma::postBalance(a);
   double t1 = PCU_Time();
   ma::print("mesh adapted in %f seconds",t1-t0);

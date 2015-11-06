@@ -23,7 +23,7 @@ bool refine(ma::Adapt* a);
 /** \brief experimental function */
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 
-void uniformRefine(ma::Mesh* m);
+void uniformRefine(ma::Mesh* m, bool shouldSnap);
 
 void adapt(ma::Input* in);
 

@@ -27,6 +27,14 @@ void convertInterpolationPoints(int n, int ne,
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
   int type = m->getType(e);
+  if(type == apf::Mesh::VERTEX){
+    apf::Vector3 p, pt(0,0,0);
+    apf::ModelEntity* g = m->toModel(e);
+    m->getParamOn(g,e,p);
+    m->snapToModel(g,p,pt);
+    m->setPoint(e,0,pt);
+    return;
+  }
   apf::FieldShape * fs = m->getShape();
   int non = fs->countNodesOn(type);
   apf::Vector3 p, xi, pt(0,0,0);

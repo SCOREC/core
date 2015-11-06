@@ -48,7 +48,7 @@ static bool repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
 
   double qualityAfter = getQuality(type,P,nodes);
 
-  if(qualityAfter < 0.01) return false;
+//  if(qualityAfter < 0.01) return false;
   // should improve things by at least 1% or don't do it.
   if(qualityAfter < qualityBefore*1.01) return false;
 
@@ -69,7 +69,7 @@ void repositionInterior(ma::Refine* r)
           successes += repositionInteriorWithBlended(m,a[i]);
     }
   }
-  ma::print("%d successful repositions\n",successes);
+  ma::print("%d successful repositions",successes);
 }
 
 }

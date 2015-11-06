@@ -669,6 +669,8 @@ double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
   double minJ = -1e10, maxJ = -1e10;
 
   double oldAcceptable = minAcceptable;
+  int oldIter = maxAdaptiveIter;
+  maxAdaptiveIter = 1;
   minAcceptable = -1e10;
   bool quality = true;
 
@@ -677,9 +679,9 @@ double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
       type,subCoefficients);
   getJacDetBySubdivisionMatrices(type,typeDim*(P-1),
       0,subCoefficients,nodes,minJ,maxJ,done,quality);
-
   done = false;
   minAcceptable = oldAcceptable;
+  maxAdaptiveIter = oldIter;
   return minJ/maxJ;
 }
 
