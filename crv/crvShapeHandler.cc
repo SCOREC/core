@@ -15,6 +15,7 @@
 #include <maMap.h>
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
+#include <maShape.h>
 #include <mth_def.h>
 #include <cassert>
 
@@ -141,11 +142,12 @@ class BezierTransfer : public ma::SolutionTransfer
 class BezierHandler : public ma::ShapeHandler
 {
   public:
-    BezierHandler(ma::Mesh* m, ma::Refine* r)
+    BezierHandler(ma::Adapt* a)
     {
-      mesh = m;
-      bt = new BezierTransfer(m,r);
+      mesh = a->mesh;
+      bt = new BezierTransfer(mesh,a->refine);
       ct = ma::createFieldTransfer(mesh->getCoordinateField());
+      sizeField = a->sizeField;
     }
     ~BezierHandler()
     {
@@ -156,7 +158,8 @@ class BezierHandler : public ma::ShapeHandler
     {
       assert( mesh->getType(e) == apf::Mesh::TRIANGLE ||
           mesh->getType(e) == apf::Mesh::TET);
-      return crv::getQuality(mesh,e);
+      return crv::getQuality(mesh,e)*
+          ma::measureElementQuality(mesh, sizeField, e);
     }
     virtual bool hasNodesOn(int dimension)
     {
@@ -178,11 +181,13 @@ class BezierHandler : public ma::ShapeHandler
     ma::Mesh* mesh;
     BezierTransfer* bt;
     ma::SolutionTransfer* ct;
+    ma::SizeField * sizeField;
+
 };
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a)
 {
-  return new BezierHandler(a->mesh,a->refine);
+  return new BezierHandler(a);
 }
 
 }
