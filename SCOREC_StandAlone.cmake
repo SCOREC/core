@@ -85,9 +85,9 @@ add_subdirectory(ma)
 
 add_subdirectory(spr)
 
-add_subdirectory(phasta)
+add_subdirectory(sam)
 
-add_subdirectory(mpas)
+add_subdirectory(phasta)
 
 add_subdirectory(viz)
 

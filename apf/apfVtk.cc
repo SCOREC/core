@@ -264,7 +264,7 @@ static void writeNodalField(std::ostream& file,
   {
     unsigned int dataLen = nc * nodes.getSize();
     unsigned int dataLenBytes = dataLen*sizeof(T);
-    T* dataToEncode = (T*)malloc(dataLenBytes);
+    T* dataToEncode = new T[dataLen]();
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     unsigned int dataIndex = 0;
     for (size_t i = 0; i < nodes.getSize(); ++i)
@@ -277,7 +277,7 @@ static void writeNodalField(std::ostream& file,
       }
     }
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
-    free(dataToEncode);
+    delete [] dataToEncode;
   }
   else
   {
@@ -337,7 +337,7 @@ static void writeConnectivity(std::ostream& file,
     m->end(elements);
     // TODO: only one function for writing a base64-encoded binary array
     unsigned int dataLenBytes = dataLen*sizeof(int);
-    int* dataToEncode = (int*)malloc(dataLenBytes);
+    int* dataToEncode = new int[dataLen]();
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
@@ -354,7 +354,7 @@ static void writeConnectivity(std::ostream& file,
     }
     m->end(elements);
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
-    free(dataToEncode);
+    delete [] dataToEncode;
   }
   else
   {
@@ -403,7 +403,7 @@ static void writeOffsets(std::ostream& file,
     m->end(elements);
     // TODO: only one function to write a base64-encoded binary array
     unsigned int dataLenBytes = dataLen*sizeof(int);
-    int* dataToEncode = (int*)malloc(dataLenBytes);
+    int* dataToEncode = new int[dataLen]();
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
@@ -416,7 +416,7 @@ static void writeOffsets(std::ostream& file,
     }
     m->end(elements);
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
-    free(dataToEncode);
+    delete [] dataToEncode;
   }
   else
   {
@@ -472,7 +472,7 @@ static void writeTypes( std::ostream& file,
     m->end(elements);
     //TODO: another duplicate
     unsigned int dataLenBytes = dataLen*sizeof(uint8_t);
-    uint8_t* dataToEncode = (uint8_t*)malloc(dataLenBytes);
+    uint8_t* dataToEncode = new uint8_t[dataLen]();
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
@@ -482,7 +482,7 @@ static void writeTypes( std::ostream& file,
       dataIndex++;
     }
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
-    free(dataToEncode);
+    delete [] dataToEncode;
     m->end(elements);
   }
   else
@@ -589,7 +589,7 @@ static void writeCellParts(std::ostream& file,
   {
     unsigned int dataLen = n;
     unsigned int dataLenBytes = dataLen*sizeof(int);
-    int* dataToEncode = (int*)malloc(dataLenBytes);
+    int* dataToEncode = new int[dataLen]();
     file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     for (size_t i = 0; i < n; ++i )
     {
@@ -597,7 +597,7 @@ static void writeCellParts(std::ostream& file,
     }
     file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << "\n";
     file << "</DataArray>\n";
-    free(dataToEncode);
+    delete [] dataToEncode;
   }
   else
   { 
