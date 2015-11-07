@@ -28,6 +28,7 @@ set(CRV_SOURCES
   crvG1Points.cc
   crvMath.cc
   crvRefine.cc
+  crvReposition.cc
   crvShapeHandler.cc
   crvSnap.cc
   crvSubdivision.cc

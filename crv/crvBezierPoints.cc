@@ -169,8 +169,8 @@ void getBezierTransformationCoefficients(int P, int type,
 
 }
 
-void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
-    int P, int type, apf::NewArray<double> & c)
+void getBezierJacobianDetSubdivisionCoefficients(int P, int type,
+    apf::NewArray<double> & c)
 {
   int n = getNumControlPoints(type,P);
   assert(n > 0);
@@ -178,27 +178,14 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
   int numMatrices = intpow(2.,typeDim);
   static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
   if(!transform[type][P].allocated()){
-    int oldP = getOrder();
-    setOrder(P);
-    int oldB[apf::Mesh::TYPES];
-    for (int i = 0; i < apf::Mesh::TYPES; ++i)
-      oldB[i] = getBlendingOrder(i);
-
-    setBlendingOrder(apf::Mesh::TYPES,0);
 
     transform[type][P].allocate(n*n*numMatrices);
-    apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
-    apf::MeshEntity* e;
-    while ((e = m->iterate(it))){
-      if (m->getType(e) == type)
-        break;
-    }
-    m->end(it);
+
     apf::Vector3 range[8][4];
     mth::Matrix<double> Asub(n,n), A(n,n);
     mth::Matrix<double> Ai(n,n);
 
-    getTransformationMatrix(m,e,A,elem_vert_xi[type]);
+    getBezierTransformationMatrix(type,P,A,elem_vert_xi[type]);
     invertMatrixWithPLU(n,A,Ai);
     apf::Vector3 ring[4] = {apf::Vector3(0.5,0,0.5),
         apf::Vector3(0,0,0.5),apf::Vector3(0,0.5,0),
@@ -258,16 +245,13 @@ void getBezierJacobianDetSubdivisionCoefficients(apf::Mesh* m,
     }
     for( int k = 0; k < numMatrices; ++k){
       Asub.zero();
-      getTransformationMatrix(m,e,Asub,range[k]);
+      getBezierTransformationMatrix(type,P,Asub,range[k]);
       mth::multiply(Ai,Asub,A);
 
       for( int i = 0; i < n; ++i)
         for( int j = 0; j < n; ++j)
           transform[type][P][i*n+j+k*n*n] = A(i,j);
     }
-    for (int i = 0; i < apf::Mesh::TYPES; ++i)
-      setBlendingOrder(i,oldB[i]);
-    setOrder(oldP);
   }
 
   c.allocate(n*n*numMatrices);
@@ -345,6 +329,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
   for( int i = 0; i < ni; ++i)
     for( int j = 0; j < (n-ni); ++j)
       c[i*(n-ni)+j] = transform[blend-1][type][P][i*(n-ni)+j];
+
 
 }
 

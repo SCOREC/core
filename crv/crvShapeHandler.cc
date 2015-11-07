@@ -120,6 +120,7 @@ class BezierTransfer : public ma::SolutionTransfer
 
         apf::Vector3 vp[4];
         getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
+
         mth::Matrix<double> A(n,np),B(n,n);
         getBezierTransformationMatrix(parentType,childType,P,A,vp);
         mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
@@ -128,7 +129,6 @@ class BezierTransfer : public ma::SolutionTransfer
           apf::Vector3 point(0,0,0);
           for (int k = 0; k < np; ++k)
             point += nodes[k]*B(j+n-ni,k);
-
           mesh->setPoint(newEntities[i],j,point);
         }
       }
