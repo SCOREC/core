@@ -49,6 +49,8 @@ static void runFromErrorSize(Input& in, apf::Mesh2* m)
 {
   ReturnErrorSize sf(m);
   ma::Input* ma_in = ma::configure(m, &sf);
+  ma_in->shouldRunPreZoltan = true;
+//  ma_in->shouldSnap = false;  //FIXME - is this needed?
   if (m->hasMatching()) {
     if (in.snap)
       fail("adapt.inp requests snapping but mesh is periodic\n");
