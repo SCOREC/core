@@ -12,7 +12,7 @@ namespace {
   }
 
   void getEdgeLenAndCnt(apf::Mesh* m, apf::MeshEntity* v, double& len, int& cnt) {
-    assert(len==0 && cnt==0);
+    len=0; cnt=0;
     apf::Up edges;
     m->getUp(v, edges);
     for(int eIdx=0; eIdx < edges.n; eIdx++) {
