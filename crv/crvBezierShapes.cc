@@ -231,7 +231,7 @@ static void bezierTetGrads(int P, apf::Vector3 const& xi,
       }
 }
 
-static void collectNodeXi(int parentType, int childType, int P,
+void collectNodeXi(int parentType, int childType, int P,
     const apf::Vector3* range, apf::Vector3* xi)
 {
   int childDim = apf::Mesh::typeDimension[childType];

@@ -24,10 +24,11 @@ namespace crv {
 class BezierTransfer : public ma::SolutionTransfer
 {
   public:
-    BezierTransfer(ma::Mesh* m, ma::Refine* r)
+    BezierTransfer(ma::Mesh* m, ma::Refine* r, bool snap)
     {
       mesh = m;
       refine = r;
+      shouldSnap = snap;
       // pre compute the inverses of the transformation matrices
       int P = mesh->getShape()->getOrder();
       for (int d = 1; d <= 3; ++d){
@@ -113,11 +114,51 @@ class BezierTransfer : public ma::SolutionTransfer
         int childType = mesh->getType(newEntities[i]);
         int ni = mesh->getShape()->countNodesOn(childType);
 
-        if (childType == apf::Mesh::VERTEX || ni == 0)
+        if (childType == apf::Mesh::VERTEX || ni == 0 ||
+            (mesh->getModelType(mesh->toModel(newEntities[i]))
+            < mesh->getDimension() && shouldSnap))
           continue; //vertices will have been handled specially beforehand
 
         int n = getNumControlPoints(childType,P);
 
+//        apf::Vector3 vp[4];
+//        apf::Downward verts;
+//        int nv = mesh->getDownward(newEntities[i],0,verts);
+//        for (int j = 0; j < ni; ++j){
+//          mesh->setPoint(newEntities[i],j,apf::Vector3(0,0,0));
+//        }
+//        apf::NewArray<apf::Vector3> oldNodes,newNodes(ni);
+//        apf::Element* newElem =
+//            apf::createElement(mesh->getCoordinateField(),newEntities[i]);
+//        apf::getVectorNodes(newElem,oldNodes);
+//        apf::destroyElement(newElem);
+//
+//        for (int v = 0; v < nv; ++v){
+//          mesh->getPoint(verts[v],0,vp[v]);
+//        }
+//        for (int j = 0; j < ni; ++j){
+//          apf::Vector3 xi;
+//          mesh->getShape()->getNodeXi(childType,j,xi);
+//          if(childType == apf::Mesh::EDGE){
+//            xi[0] = 0.5*(xi[0]+1.);
+//            oldNodes[j+n-ni] = vp[0]*(1.-xi[0])+vp[1]*xi[0];
+//          }
+//          if(childType == apf::Mesh::TRIANGLE){
+//            oldNodes[j+n-ni] = vp[0]*(1.-xi[0]-xi[1])
+//                + vp[1]*xi[0] + vp[2]*xi[1];
+//          }
+//          if(childType == apf::Mesh::TET){
+//            oldNodes[j+n-ni] = vp[0]*(1.-xi[0]-xi[1]-xi[2]) + vp[1]*xi[0]
+//                + vp[2]*xi[1] + vp[3]*xi[2];
+//          }
+//          mesh->setPoint(newEntities[i],j,oldNodes[j+n-ni]);
+//        }
+//        apf::NewArray<double> c;
+//        crv::getBezierTransformationCoefficients(P,childType,c);
+//        convertInterpolationPoints(n,ni,oldNodes,c,newNodes);
+//        for (int j = 0; j < ni; ++j){
+//          mesh->setPoint(newEntities[i],j,newNodes[j]);
+//        }
         apf::Vector3 vp[4];
         getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
 
@@ -137,6 +178,7 @@ class BezierTransfer : public ma::SolutionTransfer
     ma::Mesh* mesh;
     ma::Refine* refine;
     mth::Matrix<double> Ai[4];
+    bool shouldSnap;
 };
 
 class BezierHandler : public ma::ShapeHandler
@@ -145,7 +187,7 @@ class BezierHandler : public ma::ShapeHandler
     BezierHandler(ma::Adapt* a)
     {
       mesh = a->mesh;
-      bt = new BezierTransfer(mesh,a->refine);
+      bt = new BezierTransfer(mesh,a->refine,a->input->shouldSnap);
       ct = ma::createFieldTransfer(mesh->getCoordinateField());
       sizeField = a->sizeField;
     }

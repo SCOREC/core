@@ -195,9 +195,9 @@ void test2D()
 //      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
 
       crv::uniformRefine(m,true);
-//      crv::writeControlPointVtuFiles(m,"curvedAfter");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfter");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfter");
+//      crv::writeControlPointVtuFiles(m,"curvedAfterS");
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterS");
+//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterS");
 
       double v1 = measureMesh(m);
       assert( std::fabs(v1-v0) < 0.05 );
