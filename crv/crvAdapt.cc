@@ -15,23 +15,10 @@
 
 namespace crv {
 
-void uniformRefine(ma::Mesh* m, bool shouldSnap)
-{
-  ma::Input* in = ma::configureUniformRefine(m, 1);
-  if(shouldSnap){
-    in->shouldSnap = shouldSnap;
-    in->shouldTransferParametric = true;
-  } else {
-    in->shouldSnap = false;
-    in->shouldTransferParametric = false;
-  }
-  in->shouldFixShape = false;
-  in->shapeHandler = crv::getShapeHandler;
-  crv::adapt(in);
-}
-
 void adapt(ma::Input* in)
 {
+  in->shouldFixShape = false;
+  in->shapeHandler = crv::getShapeHandler;
   ma::print("version 2.0 !");
   double t0 = PCU_Time();
   ma::validateInput(in);

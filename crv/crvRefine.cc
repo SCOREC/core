@@ -65,11 +65,8 @@ bool refine(ma::Adapt* a)
   ma::addAllMarkedEdges(r);
   ma::splitElements(r);
   crv::snapToBoundary(a);
-
   ma::processNewElements(r);
-
   ma::destroySplitElements(r);
-
   crv::repositionInterior(r);
   ma::forgetNewEntities(r);
   double t1 = PCU_Time();

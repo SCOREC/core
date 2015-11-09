@@ -193,8 +193,10 @@ void test2D()
 //      crv::writeControlPointVtuFiles(m,"curvedBefore");
 //      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore");
 //      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
-
-      crv::uniformRefine(m,true);
+      ma::Input* in = ma::configureUniformRefine(m,1);
+      in->shouldSnap = true;
+      in->shouldTransferParametric = true;
+      crv::adapt(in);
 //      crv::writeControlPointVtuFiles(m,"curvedAfterS");
 //      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterS");
 //      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterS");
@@ -294,7 +296,10 @@ void test3D()
     m->acceptChanges();
 
     double v0 = measureMesh(m);
-    crv::uniformRefine(m,false);
+    ma::Input* in = ma::configureUniformRefine(m,1);
+    in->shouldSnap = false;
+    in->shouldTransferParametric = false;
+    crv::adapt(in);
     double v1 = measureMesh(m);
     assert( std::fabs(v1-v0) < 0.05 );
 

@@ -224,7 +224,6 @@ class BezierHandler : public ma::ShapeHandler
     BezierTransfer* bt;
     ma::SolutionTransfer* ct;
     ma::SizeField * sizeField;
-
 };
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a)
