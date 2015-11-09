@@ -24,6 +24,22 @@ void convertInterpolationPoints(int n, int ne,
 
 }
 
+void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
+    int n, int ne, apf::NewArray<double>& c){
+
+  apf::NewArray<apf::Vector3> l, b(ne);
+  apf::Element* elem =
+      apf::createElement(m->getCoordinateField(),e);
+  apf::getVectorNodes(elem,l);
+
+  crv::convertInterpolationPoints(n,ne,l,c,b);
+
+  for(int i = 0; i < ne; ++i)
+    m->setPoint(e,i,b[i]);
+
+  apf::destroyElement(elem);
+}
+
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
   int type = m->getType(e);
@@ -53,22 +69,6 @@ void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 void MeshCurver::synchronize()
 {
   apf::synchronize(m_mesh->getCoordinateField());
-}
-
-void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
-    int n, int ne, apf::NewArray<double>& c){
-
-  apf::NewArray<apf::Vector3> l, b(ne);
-  apf::Element* elem =
-      apf::createElement(m_mesh->getCoordinateField(),e);
-  apf::getVectorNodes(elem,l);
-
-  crv::convertInterpolationPoints(n,ne,l,c,b);
-
-  for(int i = 0; i < ne; ++i)
-    m_mesh->setPoint(e,i,b[i]);
-
-  apf::destroyElement(elem);
 }
 
 void MeshCurver::snapToInterpolate(int dim)
@@ -127,7 +127,7 @@ bool BezierCurver::run()
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
       if(m_mesh->isOwned(e))
-        convertInterpolationPoints(e,n,ne,c);
+        convertInterpolationPoints(m_mesh,e,n,ne,c);
     }
     m_mesh->end(it);
   }
@@ -146,7 +146,7 @@ bool BezierCurver::run()
     while ((e = m_mesh->iterate(it))){
       if(m_mesh->isOwned(e) &&
           m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
-        convertInterpolationPoints(e,n-ne,ne,c);
+        convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
   }
@@ -365,7 +365,7 @@ bool GregoryCurver::run()
 
     while ((e = m_mesh->iterate(it))) {
       if(m_mesh->isOwned(e))
-        convertInterpolationPoints(e,n,ne,c);
+        convertInterpolationPoints(m_mesh,e,n,ne,c);
     }
     m_mesh->end(it);
   }
@@ -388,7 +388,7 @@ bool GregoryCurver::run()
     while ((e = m_mesh->iterate(it))){
       if(m_mesh->isOwned(e) &&
           m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
-        convertInterpolationPoints(e,n-ne,ne,c);
+        convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
   }

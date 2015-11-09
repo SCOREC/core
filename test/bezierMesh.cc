@@ -493,7 +493,7 @@ void test3DBlended()
         apf::MeshIterator* it = m->begin(d);
         while ((e = m->iterate(it))) {
           if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-          bc.convertInterpolationPoints(e,n,ni,c);
+          crv::convertInterpolationPoints(m,e,n,ni,c);
         }
         m->end(it);
       }
@@ -528,7 +528,7 @@ void test3DFull()
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
-        bc.convertInterpolationPoints(e,n,ni,c);
+        crv::convertInterpolationPoints(m,e,n,ni,c);
       }
       m->end(it);
     }
@@ -541,7 +541,7 @@ void test3DFull()
     apf::MeshEntity* e;
     apf::MeshIterator* it = m->begin(3);
     while ((e = m->iterate(it))){
-      bc.convertInterpolationPoints(e,n-ne,ne,c);
+      crv::convertInterpolationPoints(m,e,n-ne,ne,c);
     }
     m->end(it);
 

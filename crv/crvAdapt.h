@@ -18,8 +18,6 @@ namespace crv {
 
 void repositionInterior(ma::Refine* r);
 
-bool refine(ma::Adapt* a);
-
 /** \brief experimental function */
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 

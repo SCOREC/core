@@ -14,6 +14,19 @@
 #include <math.h>
 #include <cassert>
 
+class Constant : public ma::IsotropicFunction
+{
+  public:
+    Constant()
+    {
+    }
+    virtual double getValue(ma::Entity* /*v*/)
+    {
+      return 100;
+    }
+  private:
+};
+
 // face areas are 1/2 and 19/30
 void vert0(double const p[2], double x[3], void*)
 {
@@ -171,7 +184,7 @@ void test2D()
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(1);
         while ((e = m->iterate(it))) {
-          bc.convertInterpolationPoints(e,n,ne,c);
+          crv::convertInterpolationPoints(m,e,n,ne,c);
         }
         m->end(it);
       }
@@ -184,25 +197,35 @@ void test2D()
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(2);
         while ((e = m->iterate(it))){
-          bc.convertInterpolationPoints(e,n-ne,ne,c);
+          crv::convertInterpolationPoints(m,e,n-ne,ne,c);
         }
         m->end(it);
       }
 
       double v0 = measureMesh(m);
-//      crv::writeControlPointVtuFiles(m,"curvedBefore");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
-      ma::Input* in = ma::configureUniformRefine(m,1);
-      in->shouldSnap = true;
-      in->shouldTransferParametric = true;
-      crv::adapt(in);
-//      crv::writeControlPointVtuFiles(m,"curvedAfterS");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterS");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterS");
-
+      crv::writeControlPointVtuFiles(m,"curvedBefore");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
+      ma::Input* inRefine = ma::configureUniformRefine(m,1);
+      inRefine->shouldSnap = true;
+      inRefine->shouldTransferParametric = true;
+      crv::adapt(inRefine);
       double v1 = measureMesh(m);
       assert( std::fabs(v1-v0) < 0.05 );
+
+      crv::writeControlPointVtuFiles(m,"curvedAfterRefine");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterRefine");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterRefine");
+      Constant sf;
+      ma::Input* inCoarsen = ma::configure(m, &sf);
+      inCoarsen->shouldSnap = true;
+      inCoarsen->shouldTransferParametric = true;
+      inCoarsen->maximumIterations = 1;
+      crv::adapt(inCoarsen);
+      crv::writeControlPointVtuFiles(m,"curvedAfterCoarsen");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterCoarsen");
+      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterCoarsen");
+
 
       m->destroyNative();
       apf::destroyMesh(m);
@@ -237,7 +260,6 @@ void test3D()
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     apf::FieldShape* fs = m->getShape();
-    crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
@@ -249,7 +271,7 @@ void test3D()
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ni,c);
+        crv::convertInterpolationPoints(m,e,n,ni,c);
       }
       m->end(it);
     }
@@ -289,7 +311,7 @@ void test3D()
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))){
-        bc.convertInterpolationPoints(e,n-ne,ne,c);
+        crv::convertInterpolationPoints(m,e,n-ne,ne,c);
       }
       m->end(it);
     }

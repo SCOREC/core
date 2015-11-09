@@ -312,7 +312,6 @@ void testTetElevation()
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     apf::FieldShape* fs = m->getShape();
-    crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = crv::getNumControlPoints(d,order);
@@ -324,7 +323,7 @@ void testTetElevation()
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ni,c);
+        crv::convertInterpolationPoints(m,e,n,ni,c);
       }
       m->end(it);
     }

@@ -38,6 +38,8 @@ void convertInterpolationPoints(int n, int ne,
     apf::NewArray<double>& c,
     apf::NewArray<apf::Vector3>& newNodes);
 
+void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
+    int n, int ne, apf::NewArray<double>& c);
 
 /** \brief a per entity version of above */
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
@@ -54,8 +56,6 @@ class MeshCurver
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
-    void convertInterpolationPoints(apf::MeshEntity* e,
-      int n, int ne, apf::NewArray<double>& c);
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
 
