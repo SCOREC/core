@@ -203,7 +203,7 @@ class BezierHandler : public ma::ShapeHandler
           mesh->getType(e) == apf::Mesh::TET);
       // FIX THIS!!!!
       return 1;//crv::getQuality(mesh,e)*
-          ma::measureElementQuality(mesh, sizeField, e);
+      // ma::measureElementQuality(mesh, sizeField, e);
     }
     virtual bool hasNodesOn(int dimension)
     {
