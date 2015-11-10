@@ -192,7 +192,7 @@ void checkValidity(apf::Mesh* m, int order)
 void test2D()
 {
   for(int order = 2; order <= 6; ++order){
-    printf(" --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n", order);
+    printf(KYEL " --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n" RESET, order);
     double start = PCU_Time();
     apf::Mesh2* m = createMesh2D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
