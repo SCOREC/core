@@ -8,6 +8,7 @@
 #include "crv.h"
 #include "crvAdapt.h"
 #include <apf.h>
+#include <apfMesh.h>
 #include <PCU.h>
 #include <maBalance.h>
 #include <maCoarsen.h>
@@ -63,7 +64,6 @@ static bool refine(ma::Adapt* a)
   ma::Refine* r = a->refine;
   ma::resetCollection(r);
   ma::collectForTransfer(r);
-  ma::collectForMatching(r);
   ma::addAllMarkedEdges(r);
   ma::splitElements(r);
   crv::snapToBoundary(a);

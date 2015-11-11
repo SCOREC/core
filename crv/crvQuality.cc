@@ -682,7 +682,9 @@ double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
   done = false;
   minAcceptable = oldAcceptable;
   maxAdaptiveIter = oldIter;
-  return minJ/maxJ;
+  if(std::fabs(maxJ) > 1e-8)
+    return minJ/maxJ;
+  else return minJ;
 }
 
 double getQuality(apf::Mesh* m, apf::MeshEntity* e)

@@ -27,6 +27,9 @@ void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
 int getBlendingOrder(const int type);
 
+/** \brief computes min det Jacobian / max det Jacobian */
+double getQuality(apf::Mesh* m,apf::MeshEntity* e);
+
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D

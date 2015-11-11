@@ -11,7 +11,7 @@
 #include "crvMath.h"
 #include <mth_def.h>
 #include <cassert>
-
+#include <iostream>
 namespace crv {
 
 /*
@@ -298,12 +298,11 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     mth::Matrix<double> Ai(n,n);
     mth::Matrix<double> B(n,n);
 
-    getTransformationMatrix(m,e,A,elem_vert_xi[type]);
+    getBezierTransformationMatrix(type,P,A,elem_vert_xi[type]);
     invertMatrixWithPLU(n,A,Ai);
+    B = A;
 
-    // now get second matrix
     setBlendingOrder(type,blend);
-    getTransformationMatrix(m,e,B,elem_vert_xi[type]);
 
     // fill in the last few rows of B
     apf::NewArray<double> values;
@@ -321,7 +320,6 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     for( int i = 0; i < ni; ++i)
       for( int j = 0; j < n-ni; ++j)
         transform[blend-1][type][P][i*(n-ni)+j] = A(i+n-ni,j);
-
     for (int i = 0; i < apf::Mesh::TYPES; ++i)
       setBlendingOrder(i,oldB[i]);
   }
