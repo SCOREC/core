@@ -4,7 +4,6 @@
 #include <cmath>
 
 #include "canArray.h"
-using namespace std;
 namespace mth {
 
 /** \brief forward automatic differentiation variable */
@@ -259,7 +258,6 @@ class AD<double,0>
       dx_.resize(n);
     }
   private:
-    unsigned int _size_;
     void zero()
     {
       for (unsigned int i=0; i < size(); ++i)
@@ -571,6 +569,16 @@ AD<T, N> cos(AD<T, N> A)
   return tmp;
 }
 
+template <class T, unsigned int N>
+AD<T, N> tan(AD<T, N> A)
+{
+  AD<T, N> tmp;
+  tmp.val() = std::tan(A.val());
+  tmp.resize(A.size());
+  for(unsigned int i = 0; i < tmp.size(); i++)
+    tmp.dx(i) = A.dx(i) * (1/(std::cos(A.val()) * std::cos(A.val())));
+  return tmp;
+}
 
 /** \brief absolute value of an AD variable */
 template <class T, unsigned int N>
