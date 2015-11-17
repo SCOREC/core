@@ -1,5 +1,5 @@
 #ifndef SAMSZ_H
-#define SAMSZ_h
+#define SAMSZ_H
 namespace apf { 
   class Field; 
   class Mesh;
