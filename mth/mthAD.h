@@ -30,6 +30,7 @@ class AD
     /** \brief set as the ith variable of N */
     void diff(unsigned int i, unsigned int n=0)
     {
+      (void)n;
       zero();
       dx_[i] = 1.;
     }
@@ -42,7 +43,7 @@ class AD
     /** \brief get the ith derivative value (immutable) */
     const T& dx(unsigned int i) const {return dx_[i];}
     /** \breif resize for static AD (no-op) */
-    inline void resize(unsigned int i) {return;}
+    inline void resize(unsigned int i) {(void)i;}
     /** \brief assignment to a double */
     AD<T, N>& operator=(double other)
     {
