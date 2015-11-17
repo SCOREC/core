@@ -512,7 +512,7 @@ void test3DFull()
 {
   gmi_register_null();
 
-  for(int order = 1; order <= 9; ++order){
+  for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     apf::FieldShape* fs = m->getShape();
