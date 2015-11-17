@@ -149,8 +149,7 @@ class AD<double,0>
     unsigned size() const { return dx_.size();}
     void diff(unsigned int i, unsigned int n=0)
     {
-      if(dx_.size() < i + 1)
-        dx_.resize_copy(i + 1);
+      dx_.resize_copy(3);
       zero();
       dx_[i] = 1;
     }
