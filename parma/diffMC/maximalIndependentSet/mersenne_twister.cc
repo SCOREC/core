@@ -35,7 +35,7 @@ static int mti = N + 1; /* mti == N + 1 means mt is not initialized */
 namespace {
   void fail(const char* msg) {
     if( ! PCU_Comm_Self() )
-      fprintf(stderr, msg);
+      fprintf(stderr, "%s", msg);
     exit(EXIT_FAILURE);
   }
 }
