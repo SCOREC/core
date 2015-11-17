@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvAdapt.h>
 #include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
@@ -42,7 +43,7 @@ void vert0(double const p[2], double x[3], void*)
 // edges go counter clockwise
 void edge0(double const p[2], double x[3], void*)
 {
-  x[0] = p[0];
+  x[0] = p[0];//*.7;//.7...
   x[1] = p[0]*(p[0]-1.0);
 }
 void edge1(double const p[2], double x[3], void*)
@@ -161,21 +162,40 @@ void checkValidity(apf::Mesh* m, int order)
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
   int iEntity = 0;
+  int repeatCount = 1;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[6];
     double startSub = PCU_Time();
-    int numInvalidSub = crv::checkTriValidity(m,e,entities,2);
+    printf(KBLU);
+    int numInvalidSub;
+    for (int i = 0; i<repeatCount; ++i) {
+      numInvalidSub = crv::checkTriValidity(m,e,entities,2);
+    }
     double endSub = PCU_Time();
-    double startEle = PCU_Time();
-    int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
-    double endEle = PCU_Time();
-    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d" RESET,
-        endSub - startSub, numInvalidSub, order);
+    printf("sub checktv total time for %i elements: %f numInvalid: %d order: %d" RESET,
+        repeatCount, endSub - startSub, numInvalidSub, order);
     printf("\n");
-    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d" RESET,
+    double startEle = PCU_Time();
+    printf(KGRN);
+    int numInvalidEle;
+    for (int i = 0; i<repeatCount; ++i) {
+      numInvalidEle = crv::checkTriValidity(m,e,entities,3);
+    }
+    double endEle = PCU_Time();
+    printf("ele checktv total time: %f numInvalid: %d order: %d" RESET,
         endEle - startEle, numInvalidEle, order);
     printf("\n");
-  //Uncomment this when the "break" after it is gone
+    double start4 = PCU_Time();
+    printf(KMAG);
+    int numInvalid4;
+    for (int i = 0; i<repeatCount; ++i) {
+      numInvalid4 = crv::checkTriValidity(m,e,entities,4);
+    }
+    double end4 = PCU_Time();
+    printf("4 checktv total time: %f numInvalid: %d order: %d" RESET,
+        end4 - start4, numInvalid4, order);
+    printf("\n");
+//Uncomment this when the "break" after it is gone
   //else if(iEntity == 1){
   //  printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
   //  printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
@@ -228,7 +248,10 @@ void test2D()
       }
       m->end(it);
     }
-
+    ma::Input* in = ma::configureUniformRefine(m,3);
+    in->shouldSnap = true;
+    in->shouldTransferParametric = true;
+    crv::adapt(in);
     //uncomment this stuff to plot it and see in paraview
     crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"t_curved");
     crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"t_curved");

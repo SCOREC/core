@@ -173,7 +173,7 @@ static void getJacDetByElevation(int type, int P,
   int i = 0;
   while(P+i < maxElevationLevel && minJ/maxJ < minAcceptable
     && std::fabs(maxDist[(i+1) % 2] - maxDist[i % 2]) > convergenceTolerance){
-    double start = PCU_Time();
+    //double start = PCU_Time();
     // use the modulus to alternate between them,
     // never needing to increase storage
     // for now, only elevate by 1
@@ -206,9 +206,10 @@ static void getJacDetBySubdivision(int type, int P,
     int iter, apf::NewArray<double>& nodes,
     double& minJ, double& maxJ, bool& done)
 {
-  double start = PCU_Time();
-  int temp_itr = iter;
+  //double start = PCU_Time();
+  //int temp_itr = iter;
   int n = getNumControlPoints(type,P);
+  printf("minJ: %f maxJ: %f", minJ, maxJ);
   double change = minJ;
   if(!done){
     minJ = calcMinJacDet(n,nodes);
@@ -238,7 +239,7 @@ static void getJacDetBySubdivision(int type, int P,
 
     minJ = newMinJ[0];
     maxJ = newMaxJ[0];
-
+    printf("minJ: %f maxJ: %f", minJ, maxJ);
     for (int i = 1; i < numSplits[type]; ++i){
       minJ = std::min(newMinJ[i],minJ);
       maxJ = std::max(newMaxJ[i],maxJ);
@@ -253,6 +254,7 @@ static void getJacDetBySubdivisionMatrices(int type, int P,
     int iter, apf::NewArray<double>& c,apf::NewArray<double>& nodes,
     double& minJ, double& maxJ, bool& done, bool& quality)
 {
+  printf("4th way\n");
   int n = getNumControlPoints(type,P);
   double change = minJ;
   if(!done){
@@ -284,6 +286,7 @@ static void getJacDetBySubdivisionMatrices(int type, int P,
 
     minJ = newMinJ[0];
     maxJ = newMaxJ[0];
+    printf("minJ: %f maxJ: %f\t", minJ, maxJ);
     for (int i = 1; i < numSplits[type]; ++i){
       minJ = std::min(newMinJ[i],minJ);
       maxJ = std::max(newMaxJ[i],maxJ);
@@ -362,12 +365,23 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
     getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
         apf::Mesh::EDGE,subCoefficients);
   }
-
+  if(algorithm >= 2){
+    apf::Downward verts;
+    m->getDownward(e,0,verts);
+    for (int i = 0; i < 3; ++i){
+      if(nodes[i] < minAcceptable){
+       entities[i] = verts[i]; 
+        numInvalid++;
+      }
+    }
+  }
+  if (numInvalid > 0) return numInvalid;
   m->getDownward(e,1,edges);
   double minJ = 0, maxJ = 0;
   // Vertices will already be flagged in the first check
   for (int edge = 0; edge < 3; ++edge){
     for (int i = 0; i < 2*(P-1)-1; ++i){
+      printf("node %f\n",nodes[3+edge*(2*(P-1)-1)+i]);
       if (nodes[3+edge*(2*(P-1)-1)+i] < minAcceptable){
         minJ = -1e10;
         apf::NewArray<double> edgeNodes(2*(P-1)+1);
@@ -377,23 +391,20 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
           for (int j = 0; j < 2*(P-1)-1; ++j)
             edgeNodes[j+1] = nodes[3+edge*(2*(P-1)-1)+j];
           if(algorithm % 2 == 1){
-            double startJDEle = PCU_Time();
+            //double startJDEle = PCU_Time();
             getJacDetByElevation(apf::Mesh::EDGE,2*(P-1),edgeNodes,minJ,maxJ);
-            printf(KGRN "  time JDEle: %f\t edge: %d" RESET,
-                PCU_Time()-startJDEle, edge);
-            printf("\n");
-
+            /*JDprintf(" time JDele: %f\t edge: %d\n",
+                PCU_Time()-startJDEle, edge);*/
           } else {
             // allows recursion stop on first "conclusive" invalidity
             bool done = false;
 
-            double startJDSub = PCU_Time();
+            //double startJDSub = PCU_Time();
+            printf("going to subdivide");
             getJacDetBySubdivision(apf::Mesh::EDGE,2*(P-1),
                 0,edgeNodes,minJ,maxJ,done);
-            printf(KBLU "  time JDSub: %f\t edge: %d"RESET,
-                PCU_Time()-startJDSub, edge);
-            printf("\n");
-
+            /*printf(" time JDSub: %f\t edge: %d\n",
+                PCU_Time()-startJDSub, edge);*/
           }
         } else {
           edgeNodes[0] = nodes[apf::tri_edge_verts[edge][0]];
@@ -415,10 +426,8 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   }
 
   if(numInvalid > 0) {
-    printf(algorithm%2 == 1 ? KGRN : KBLU);
-    printf("%s tri time: %f" RESET, algorithm%2 == 1 ? "ele":"sub",
+    printf("%s tri time: %f\n", algorithm%2 == 1 ? "ele":"sub",
         PCU_Time() - triStart);
-    printf("\n");
     return numInvalid;
   }
   if(algorithm == 4){
@@ -446,8 +455,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
       break;
     }
   }
-  printf("%s tri time (0? invalid): %f", algorithm%2 == 1 ? "ele":"sub", PCU_Time() - triStart);
-  printf("\n");
+  printf("%s tri time 0 invalid: %f\n", algorithm%2 == 1 ? "ele":"sub", PCU_Time() - triStart);
   return numInvalid;
 }
 
