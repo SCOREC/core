@@ -250,6 +250,14 @@ static void writeDataHeader(std::ostream& file,
   file << ">\n";
 }
 
+static void writeEncodedArray(std::ostream& file,
+                              unsigned int dataLenBytes,
+                              char* dataToEncode)
+{
+  file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+  file << lion::base64Encode( dataToEncode, dataLenBytes ) << '\n';
+}
+
 template <class T>
 static void writeNodalField(std::ostream& file, 
                             FieldBase* f, 
@@ -265,7 +273,6 @@ static void writeNodalField(std::ostream& file,
     unsigned int dataLen = nc * nodes.getSize();
     unsigned int dataLenBytes = dataLen*sizeof(T);
     T* dataToEncode = new T[dataLen]();
-    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     unsigned int dataIndex = 0;
     for (size_t i = 0; i < nodes.getSize(); ++i)
     {
@@ -276,7 +283,7 @@ static void writeNodalField(std::ostream& file,
         dataIndex++;
       }
     }
-    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     delete [] dataToEncode;
   }
   else
@@ -335,10 +342,8 @@ static void writeConnectivity(std::ostream& file,
       dataLen += countElementNodes(n,e);
     }
     m->end(elements);
-    // TODO: only one function for writing a base64-encoded binary array
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = new int[dataLen]();
-    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
     while ((e = m->iterate(elements)))
@@ -353,7 +358,7 @@ static void writeConnectivity(std::ostream& file,
       }
     }
     m->end(elements);
-    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     delete [] dataToEncode;
   }
   else
@@ -401,10 +406,8 @@ static void writeOffsets(std::ostream& file,
       dataLen++;
     }
     m->end(elements);
-    // TODO: only one function to write a base64-encoded binary array
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = new int[dataLen]();
-    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
     int offset = 0;
@@ -415,7 +418,7 @@ static void writeOffsets(std::ostream& file,
       dataIndex++;
     }
     m->end(elements);
-    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     delete [] dataToEncode;
   }
   else
@@ -470,10 +473,8 @@ static void writeTypes( std::ostream& file,
       dataLen++;
     }
     m->end(elements);
-    //TODO: another duplicate
     unsigned int dataLenBytes = dataLen*sizeof(uint8_t);
     uint8_t* dataToEncode = new uint8_t[dataLen]();
-    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
     while ((e = m->iterate(elements)))
@@ -481,7 +482,7 @@ static void writeTypes( std::ostream& file,
       dataToEncode[dataIndex] = vtkTypes[m->getType(e)][order-1];
       dataIndex++;
     }
-    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << '\n';
+    writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     delete [] dataToEncode;
     m->end(elements);
   }
@@ -590,12 +591,11 @@ static void writeCellParts(std::ostream& file,
     unsigned int dataLen = n;
     unsigned int dataLenBytes = dataLen*sizeof(int);
     int* dataToEncode = new int[dataLen]();
-    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
     for (size_t i = 0; i < n; ++i )
     {
       dataToEncode[i] = id;
     }
-    file << lion::base64Encode( (char*)dataToEncode, dataLenBytes ) << "\n";
+    writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     file << "</DataArray>\n";
     delete [] dataToEncode;
   }
