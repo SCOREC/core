@@ -147,9 +147,9 @@ class AD<double,0>
     AD(AD<double, 0> const& other) {zero(); copy(other);}
     unsigned size() { return dx_.size();}
     unsigned size() const { return dx_.size();}
-    void diff(unsigned int i, unsigned int n=0)
+    void diff(unsigned int i, unsigned int n)
     {
-      dx_.resize_copy(3);
+      dx_.resize_copy(n);
       zero();
       dx_[i] = 1;
     }
