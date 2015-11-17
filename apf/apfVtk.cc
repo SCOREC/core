@@ -703,12 +703,15 @@ static void writeVtuFile(const char* prefix,
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
+  //*** this function writes vtk files with binary encoding ***
+  //use writeASCIIVtkFiles for ASCII encoding (not recommended)
+  bool isWritingBinary = true;
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
     writePvtuFile(prefix, m);
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
-  writeVtuFile(prefix, n);
+  writeVtuFile(prefix, n, isWritingBinary);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("vtk files %s written in %f seconds\n",
@@ -721,24 +724,24 @@ void writeOneVtkFile(const char* prefix, Mesh* m)
   /* creating a non-collective numbering is
      a tad bit risky, but we should be fine
      given the current state of the code */
+  //*** this function writes vtk files with binary encoding ***
+  bool isWritingBinary = true;
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
-  writeVtuFile(prefix, n);
+  writeVtuFile(prefix, n, isWritingBinary);
   delete n;
 }
 
-void writeBinaryInlineVtkFiles(const char* prefix, Mesh* m)
+void writeASCIIVtkFiles(const char* prefix, Mesh* m)
 {
-  //*** this function passes a boolean argument to the functions telling them
-  // to write binary vtu files ***
-  bool isWritingBinary = true;
-
+  //*** this function writes vtk files with ASCII encoding ***
+  //*** not recommended, use writeVtkFiles instead ***
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
     writePvtuFile(prefix, m);
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
-  writeVtuFile(prefix, n, isWritingBinary);
+  writeVtuFile(prefix, n);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("vtk files %s written in %f seconds\n",

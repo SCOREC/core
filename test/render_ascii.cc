@@ -17,7 +17,7 @@ int main(int argc, char** argv)
   }
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
-  apf::writeBinaryInlineVtkFiles(argv[3], m);
+  apf::writeASCIIVtkFiles(argv[3], m);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
