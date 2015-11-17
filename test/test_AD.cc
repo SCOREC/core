@@ -1,7 +1,7 @@
 #include "mthAD.h"
 #include <cassert>
 
-typedef mth::AD<3> AD;
+typedef mth::AD<double, 3> AD;
 
 void compare(AD const& x, double val, double da, double db)
 {
