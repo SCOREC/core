@@ -10,9 +10,9 @@ endif()
 
 #unless building shared libs, then select static libs 
 # if both static and shared libs are available 
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so") 
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib") 
 if(BUILD_SHARED_LIBS)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 endif()
 
 set(CMAKE_MODULE_PATH 
