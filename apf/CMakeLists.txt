@@ -104,6 +104,7 @@ if (BUILD_IN_TRILINOS)
       ${APF_SOURCES}
       ../mth/mthQR.cc
       ../lion/lionBase64.cc
+      ../lion/lionNoZLib.cc
      )
   set(APF_HEADERS
       ${APF_HEADERS}
