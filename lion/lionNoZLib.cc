@@ -16,5 +16,11 @@ void compress(void* dest, unsigned long& destLen,
   abort();
 }
 
+unsigned long compressBound(unsigned long sourceLen)
+{
+	(void) sourceLen;
+	abort();
+}
+
 }
 

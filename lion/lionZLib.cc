@@ -12,4 +12,9 @@ void compress(void* dest, unsigned long& destLen,
   ::compress((Bytef*)dest, &destLen, (const Bytef*)source, sourceLen);
 }
 
+unsigned long compressBound(unsigned long sourceLen)
+{
+	return ::compressBound(sourceLen);
+}
+
 }

@@ -7,6 +7,7 @@
 
 #include <PCU.h>
 #include <lionBase64.h>
+#include <lionCompress.h>
 #include "apfMesh.h"
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
@@ -225,6 +226,7 @@ static void writePSources(std::ostream& file, const char* prefix)
 
 static void writePvtuFile(const char* prefix, Mesh* m)
 {
+  //TODO change headers to match encoded vtu files
   std::string fileName = prefix;
   fileName += ".pvtu";
   std::ofstream file(fileName.c_str());
@@ -254,8 +256,29 @@ static void writeEncodedArray(std::ostream& file,
                               unsigned int dataLenBytes,
                               char* dataToEncode)
 {
-  file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
-  file << lion::base64Encode( dataToEncode, dataLenBytes ) << '\n';
+  //if compressing
+  if ( lion::can_compress )
+  {
+    //build the data header and compress dataToEncode
+    long lensToEncode[4];
+    lensToEncode[0] = 1; //data is compressed in one block
+    lensToEncode[1] = dataLenBytes; //size of each block before compression
+    lensToEncode[2] = dataLenBytes; //size of the final block before compression
+    unsigned long dataCompressedLen = lion::compressBound(dataLenBytes);
+    char* dataCompressed = new char[dataCompressedLen]();
+    lion::compress( (void*)dataCompressed, dataCompressedLen, (void*)dataToEncode, dataLenBytes);
+    lensToEncode[3] = dataCompressedLen; //size of the compressed block
+    //encode and output the compressed data
+    file << lion::base64Encode( (char*)lensToEncode, sizeof(lensToEncode) );
+    file << lion::base64Encode( (char*)dataCompressed, dataCompressedLen ) << '\n';
+    delete[] dataCompressed;
+  }
+  else
+  {
+    //not compressing, encode and output
+    file << lion::base64Encode( (char*)&dataLenBytes, sizeof(dataLenBytes) );
+    file << lion::base64Encode( dataToEncode, dataLenBytes ) << '\n';
+  }
 }
 
 template <class T>
@@ -672,8 +695,18 @@ static void writeVtuFile(const char* prefix,
     {
       buf << "\"LittleEndian\"";
     }
-    buf << " header_type=\"UInt32\"";
+    if (lion::can_compress )
+    {
+      //TODO determine what the header_type should be definatively
+      buf << " header_type=\"UInt64\"";
+      buf << " compressor=\"vtkZLibDataCompressor\"";
+    }
+    else
+    {
+      buf << " header_type=\"UInt32\"";
+    }
   }
+
   buf<< ">\n";
   buf << "<UnstructuredGrid>\n";
   buf << "<Piece NumberOfPoints=\"" << nodes.getSize();
