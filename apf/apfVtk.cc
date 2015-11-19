@@ -90,52 +90,59 @@ static void writePDataArray(
     std::ostream& file,
     const char* name,
     int type,
-    int size)
+    int size,
+    bool isWritingBinary = false)
 {
   file << "<PDataArray ";
-  describeArray(file,name,type,size);
+  describeArray(file,name,type,size,isWritingBinary);
   file << "/>\n";
 }
 
 static void writePDataArray(
     std::ostream& file,
-    FieldBase* f)
+    FieldBase* f,
+    bool isWritingBinary = false)
 {
   file << "<PDataArray ";
   describeArray(file,
       f->getName(),
       f->getScalarType(),
-      f->countComponents());
+      f->countComponents(),
+      isWritingBinary);
   file << "/>\n";
 }
 
-static void writePPoints(std::ostream& file, Field* f)
+static void writePPoints(std::ostream& file,
+    Field* f,
+    bool isWritingBinary = false)
 {
   file << "<PPoints>\n";
-  writePDataArray(file,f);
+  writePDataArray(file,f,isWritingBinary);
   file << "</PPoints>\n";
 }
 
-static void writePPointData(std::ostream& file, Mesh* m)
+static void writePPointData(std::ostream& file,
+    Mesh* m, bool
+    isWritingBinary = false)
 {
   file << "<PPointData>\n";
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
     if (isNodal(f) && isPrintable(f))
-      writePDataArray(file,f);
+      writePDataArray(file,f,isWritingBinary);
   }
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
     if (isNodal(n) && isPrintable(n))
-      writePDataArray(file,n);
+      writePDataArray(file,n,isWritingBinary);
   }
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isNodal(n) && isPrintable(n))
-      writePDataArray(file,n);
+      writePDataArray(file,n,isWritingBinary);
   }
   file << "</PPointData>\n";
 }
@@ -160,43 +167,50 @@ static std::string getIPName(FieldBase* f, int point)
   return ss.str();
 }
 
-static void writeIP_PCellData(std::ostream& file, FieldBase* f)
+static void writeIP_PCellData(std::ostream& file,
+    FieldBase* f,
+    bool isWritingBinary = false)
 {
   int n = countIPs(f);
   for (int p=0; p < n; ++p)
   {
     std::string s= getIPName(f,p);
-    writePDataArray(file,s.c_str(),f->getScalarType(),f->countComponents());
+    writePDataArray(file,
+        s.c_str(),f->getScalarType(),
+        f->countComponents(),
+        isWritingBinary);
   }
 }
 
-static void writePCellParts(std::ostream& file)
+static void writePCellParts(std::ostream& file, bool isWritingBinary = false)
 {
-  writePDataArray(file, "apf_part", apf::Mesh::INT, 1);
+  writePDataArray(file, "apf_part", apf::Mesh::INT, 1, isWritingBinary);
 }
 
-static void writePCellData(std::ostream& file, Mesh* m)
+static void writePCellData(std::ostream& file,
+    Mesh* m,
+    bool isWritingBinary = false)
 {
   file << "<PCellData>\n";
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
     if (isIP(f) && isPrintable(f))
-      writeIP_PCellData(file,f);
+      writeIP_PCellData(file,f,isWritingBinary);
   }
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
     if (isIP(n) && isPrintable(n))
-      writeIP_PCellData(file,n);
+      writeIP_PCellData(file,n,isWritingBinary);
   }
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isIP(n) && isPrintable(n))
-      writeIP_PCellData(file,n);
+      writeIP_PCellData(file,n,isWritingBinary);
   }
-  writePCellParts(file);
+  writePCellParts(file,isWritingBinary);
   file << "</PCellData>\n";
 }
 
@@ -224,18 +238,19 @@ static void writePSources(std::ostream& file, const char* prefix)
   }
 }
 
-static void writePvtuFile(const char* prefix, Mesh* m)
+static void writePvtuFile(const char* prefix,
+    Mesh* m,
+    bool isWritingBinary = false)
 {
-  //TODO change headers to match encoded vtu files
   std::string fileName = prefix;
   fileName += ".pvtu";
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
   file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
-  writePPoints(file,m->getCoordinateField());
-  writePPointData(file,m);
-  writePCellData(file,m);
+  writePPoints(file,m->getCoordinateField(),isWritingBinary);
+  writePPointData(file,m,isWritingBinary);
+  writePCellData(file,m,isWritingBinary);
   writePSources(file,prefix);
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
@@ -561,6 +576,7 @@ static void writePointData(std::ostream& file,
 
 template <class T>
 class WriteIPField : public FieldOp
+//TODO change to write encoded data
 {
   public:
     int point;
@@ -741,7 +757,7 @@ void writeVtkFiles(const char* prefix, Mesh* m)
   bool isWritingBinary = true;
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
-    writePvtuFile(prefix, m);
+    writePvtuFile(prefix, m, isWritingBinary);
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n, isWritingBinary);
