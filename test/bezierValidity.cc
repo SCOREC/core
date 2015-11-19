@@ -281,8 +281,6 @@ void test2D()
         }
         m->end(it);
       }
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curved");
 
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(2);
@@ -397,7 +395,6 @@ void test3D()
       assert(numInvalid == 0);
     }
     numInvalid = crv::checkTetValidity(m,tet,entities,3);
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,50,"curvedValidity");
 
     if(order == 4){
       assert(numInvalid > 0);
