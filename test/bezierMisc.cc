@@ -27,7 +27,7 @@ static apf::Vector3 points3D[4] =
 apf::Mesh2* createMesh2D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
 
   apf::buildOneElement(m,0,apf::Mesh::TRIANGLE,points3D);
   apf::deriveMdsModel(m);
@@ -40,7 +40,7 @@ apf::Mesh2* createMesh2D()
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
 
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
   apf::deriveMdsModel(m);

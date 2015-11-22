@@ -187,7 +187,7 @@ gmi_model* makeModel()
 apf::Mesh2* createMesh2D()
 {
   gmi_model* model = makeModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
@@ -302,7 +302,7 @@ void test2D()
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
 
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
