@@ -1,5 +1,7 @@
 #include <crv.h>
 #include <crvBezier.h>
+#include <crvBezierShapes.h>
+#include <crvQuality.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -233,9 +235,11 @@ void checkValidity(apf::Mesh* m, int order)
     checkEntityValidity(numInvalid,entityNum,order);
     numInvalid = crv::checkTriValidity(m,e,entities,3);
     checkEntityValidity(numInvalid,entityNum,order);
+    numInvalid = crv::checkTriValidity(m,e,entities,4);
+    checkEntityValidity(numInvalid,entityNum,order);
 
     entityNum++;
-    break;
+
 
   }
   m->end(it);
@@ -256,11 +260,11 @@ void test2D()
         int n = order+1;
         int ne = fs->countNodesOn(apf::Mesh::EDGE);
         apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(m,order,apf::Mesh::EDGE,c);
+        crv::getBezierTransformationCoefficients(order,apf::Mesh::EDGE,c);
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(1);
         while ((e = m->iterate(it))) {
-          bc.convertInterpolationPoints(e,n,ne,c);
+          crv::convertInterpolationPoints(m,e,n,ne,c);
         }
         m->end(it);
       }
@@ -273,14 +277,18 @@ void test2D()
         apf::MeshEntity* e;
         apf::MeshIterator* it = m->begin(2);
         while ((e = m->iterate(it))){
-          bc.convertInterpolationPoints(e,n-ne,ne,c);
+          crv::convertInterpolationPoints(m,e,n-ne,ne,c);
         }
         m->end(it);
       }
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
-//
-//      crv::writeControlPointVtuFiles(m,"curved");
+
+      apf::MeshEntity* e;
+      apf::MeshIterator* it = m->begin(2);
+      while ((e = m->iterate(it))){
+        crv::getQuality(m,e);
+        break;
+      }
+      m->end(it);
 
       testJacobian(m);
       testEdgeGradients(m);
@@ -326,12 +334,12 @@ void test3D()
       int ni = fs->countNodesOn(d);
       if(ni <= 0) continue;
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,d,c);
+      crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ni,c);
+        crv::convertInterpolationPoints(m,e,n,ni,c);
       }
       m->end(it);
     }
@@ -372,7 +380,7 @@ void test3D()
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))){
-        bc.convertInterpolationPoints(e,n-ne,ne,c);
+        crv::convertInterpolationPoints(m,e,n-ne,ne,c);
       }
       m->end(it);
     }
@@ -387,13 +395,13 @@ void test3D()
       assert(numInvalid == 0);
     }
     numInvalid = crv::checkTetValidity(m,tet,entities,3);
+
     if(order == 4){
       assert(numInvalid > 0);
     } else {
       assert(numInvalid == 0);
     }
-//          crv::writeCurvedVtuFiles(m,apf::Mesh::TET,50,"curved");
-
+    crv::getQuality(m,tet);
     m->destroyNative();
     apf::destroyMesh(m);
   }

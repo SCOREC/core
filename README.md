@@ -20,7 +20,7 @@ For more information, start at our
 * STK: Conversion from APF meshes to Sandia's STK meshes
 * ZOLTAN: Interface to run Sandia's Zoltan code on APF meshes
 * PHASTA: Tools and file formats related to the PHASTA fluid solver
-* MPAS: Tools and file formats for the MPAS-Ocean code
+* MTH: Math containers and routines
 
 ### How do I get set up? ###
 

@@ -2,6 +2,7 @@
 #include "ph.h"
 #include <ma.h>
 #include <PCU.h>
+#include <sam.h>
 
 #include <cstdio>
 #include <cassert>
@@ -26,23 +27,30 @@ class ReturnErrorSize : public ma::IsotropicFunction
   public:
     ReturnErrorSize(apf::Mesh* m)
     {
-      error_field = m->findField("errors");
-      assert(error_field);
+      const unsigned idx = 5;
+      const double errLimit = 1e-6;
+      const double factor = 0.5;
+      szFld = sam::specifiedIso(m,"errors",idx,errLimit,factor);
+      assert(szFld);
+    }
+    ~ReturnErrorSize()
+    {
+      apf::destroyField(szFld);
     }
     virtual double getValue(ma::Entity* vert)
     {
-      double vals[10];
-      apf::getComponents(error_field, vert, 0, vals);
-      return vals[5];
+      return apf::getScalar(szFld,vert,0);
     }
   private:
-    apf::Field* error_field;
+    apf::Field* szFld;
 };
 
 static void runFromErrorSize(Input& in, apf::Mesh2* m)
 {
   ReturnErrorSize sf(m);
   ma::Input* ma_in = ma::configure(m, &sf);
+  ma_in->shouldRunPreZoltan = true;
+//  ma_in->shouldSnap = false;  //FIXME - is this needed?
   if (m->hasMatching()) {
     if (in.snap)
       fail("adapt.inp requests snapping but mesh is periodic\n");

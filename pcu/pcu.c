@@ -337,7 +337,7 @@ int PCU_Add_Int(int x)
   int a[1];
   a[0] = x;
   PCU_Add_Ints(a, 1);
-  return x;
+  return a[0];
 }
 
 /** \brief Performs an Allreduce sum of long integers

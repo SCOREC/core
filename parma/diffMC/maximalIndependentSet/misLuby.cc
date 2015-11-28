@@ -14,6 +14,7 @@
 #include <set>
 
 #include "mis.h"
+#include "mersenne_twister.h"
 
 using std::find;
 using std::copy;
@@ -34,14 +35,14 @@ using namespace misLuby;
 
 namespace {
   int generateRandomNumber() {
-    return rand();
+    return (int) mersenne_twister();
   }
 
   void setRandomNum(partInfo& part) {
     part.randNum = generateRandomNumber();
     // don't select self nets until all other nets are selected
     if ( 1 == part.net.size() )
-      part.randNum = std::numeric_limits<int>::max();
+      part.randNum = std::numeric_limits<unsigned>::max();
   }
 
   void removeNodes(partInfo& p, vector<int>& nodes) {
@@ -160,7 +161,7 @@ namespace {
     PCU_COMM_UNPACK(destPartId);
     assert(PCU_Comm_Self() == destPartId);
 
-    int randNum;
+    unsigned randNum;
     PCU_COMM_UNPACK(randNum);
 
     adjPart ap;
@@ -198,7 +199,7 @@ namespace {
     PCU_COMM_UNPACK(adjPartId);
 
     //unpack random number
-    int randNum;
+    unsigned randNum;
     PCU_COMM_UNPACK(randNum);
 
     adjPart ap;
@@ -224,9 +225,9 @@ namespace {
       unpackAdjPart(msg);
   }
 
-  int minRandNum(netAdjItr first, netAdjItr last) {
-    int min = INT_MAX;
-    for (netAdjItr itr = first; itr != last; itr++) {
+  int minRandNum(mapiuItr first, mapiuItr last) {
+    unsigned min = std::numeric_limits<unsigned>::max();
+    for (mapiuItr itr = first; itr != last; itr++) {
       if (itr->second < min) {
         min = itr->second;
       }
@@ -234,8 +235,8 @@ namespace {
     return min;
   }
 
-  void getNetAdjPartIds(netAdjItr first, netAdjItr last, vector<int>& ids) {
-    for (netAdjItr itr = first; itr != last; itr++) {
+  void getNetAdjPartIds(mapiuItr first, mapiuItr last, vector<int>& ids) {
+    for (mapiuItr itr = first; itr != last; itr++) {
       ids.push_back(itr->first);
     }
   }
@@ -330,52 +331,6 @@ namespace {
   }
 }//end namespace
 
-void misLuby::PartInfo::print() {
-  std::string header="adjPartIds ";
-  std::stringstream out;
-  Print <int, vector<int>::iterator > (out, header, adjPartIds.begin(),
-      adjPartIds.end(), ", ", true);
-  header = "net ";
-  Print <int, vector<int>::iterator > (out, header, net.begin(),
-      net.end(), ", ", true);
-  header = "netAdjParts ";
-  Print(out, header, netAdjParts.begin(), netAdjParts.end(), ", ", true);
-  out << "randNum " << randNum << " isInNetGraph " << isInNetGraph
-      << " isInMIS " << isInMIS << "\n";
-  std::string msg = out.str();
-  PCU_Debug_Print("%s", msg.c_str());
-}
-
-void misLuby::Print(std::ostream& ostr, char* dbgMsg,
-    vector<adjPart>::iterator itbegin, vector<adjPart>::iterator itend,
-    const std::string& delimiter, bool dbg) {
-  if (dbg) {
-    ostr << "DEBUG " << dbgMsg;
-    vector<adjPart>::iterator itr;
-    for (itr = itbegin; itr != itend; itr++) {
-      ostr << "(" << itr->partId << ", {";
-      for (size_t i = 0; i < itr->net.size(); i++) {
-        ostr << itr->net[i] << ";";
-      }
-      ostr << "} )" << delimiter;
-    }
-    ostr << "\n";
-  }
-}
-
-void misLuby::Print(std::ostream& ostr, std::string dbgMsg,
-    map<int, int>::iterator itbegin, map<int, int>::iterator itend,
-    const std::string& delimiter, bool dbg) {
-  if (dbg) {
-    ostr << "DEBUG " << dbgMsg;
-    map<int, int>::iterator itr;
-    for (itr = itbegin; itr != itend; itr++) {
-      ostr << "(" << itr->first << ";" << itr->second << ")" << delimiter;
-    }
-    ostr << "\n";
-  }
-} 
-
 /**
  * @brief add parts as neighbors in the net-graph
  * @remark Intersect the local net with each of the neighbors nets.  If the
@@ -408,7 +363,7 @@ void partInfo::addNetNeighbors(vector<adjPart>& nbNet) {
 void partInfo::updateNeighbors(){
 
   vector<int>::iterator findItr;
-  MIS_ITERATE(mapIntInt, netAdjParts, netAdjPartItr) {
+  MIS_ITERATE(mapiu, netAdjParts, netAdjPartItr) {
     findItr = find(adjPartIds.begin(),
                    adjPartIds.end(),
                    netAdjPartItr->first);
@@ -418,9 +373,9 @@ void partInfo::updateNeighbors(){
   stable_sort(adjPartIds.begin(), adjPartIds.end());
 }
 
-void mis_init(unsigned int randNumSeed, int, const char*,
+void mis_init(unsigned randNumSeed, int, const char*,
     const char*, const char*) {
-  srand(randNumSeed);
+  mersenne_twister_seed(randNumSeed);
 }
 
 void misFinalize() {}
@@ -451,7 +406,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
   int numNodesAdded;
   do {
     numNodesAdded = 0;
-    const int minRand =
+    const unsigned minRand =
       minRandNum(part.netAdjParts.begin(), part.netAdjParts.end());
     // add self to MIS
     if (true == part.isInNetGraph &&
@@ -504,7 +459,7 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     nodesRemoved.clear();
     rmtNodesToRemove.clear();
 
-    PCU_Add_Ints(&numNodesAdded, 1);
+    numNodesAdded = PCU_Add_Int(numNodesAdded);
     loopCount++;
   } while (numNodesAdded > 0);
 

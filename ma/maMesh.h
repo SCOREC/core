@@ -119,11 +119,6 @@ void getFaceEdgesAndDirections(
     Entity** edges,
     int* directions);
 
-int getFaceEdgeDirection(
-    Mesh* m,
-    Entity* face,
-    Entity* edge);
-
 Entity* findEdge(Mesh* m, Entity* v0, Entity* v1);
 bool edgeExists(Mesh* m, Entity* v0, Entity* v1);
 

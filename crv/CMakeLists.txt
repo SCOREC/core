@@ -17,14 +17,18 @@ endif()
 #Sources & Headers
 set(CRV_SOURCES
   crv.cc
+  crvAdapt.cc
   crvBernstein.cc
   crvBezier.cc
   crvBezierPoints.cc
+  crvBezierShapes.cc
   crvBlended.cc
   crvCurveMesh.cc
   crvElevation.cc
   crvG1Points.cc
   crvMath.cc
+  crvReposition.cc
+  crvShapeHandler.cc
   crvSnap.cc
   crvSubdivision.cc
   crvTables.cc

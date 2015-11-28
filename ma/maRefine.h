@@ -33,6 +33,9 @@ void addEdgePreAllocation(Refine* r, Entity* edge, int counts[4]);
 void allocateRefine(Refine* r, int counts[4]);
 void addEdgePostAllocation(Refine* r, Entity* edge, int counts[4]);
 
+void addAllMarkedEdges(Refine* r);
+long markEdgesToSplit(Adapt* a);
+
 void resetCollection(Refine* r);
 void collectForTransfer(Refine* r);
 void collectForMatching(Refine* r);

@@ -68,6 +68,15 @@ unsigned dcPart::getNumComps() {
   return static_cast<unsigned>(dcCompSz.size());
 }
 
+unsigned dcPart::getNumDcComps() {
+  unsigned c = static_cast<unsigned>(dcCompSz.size());
+  //If there are c components, and c > 0, then the 0th component
+  //is considered the core so subtract one from c to get the number
+  //of disconnected components.
+  if( c > 0 ) c-=1;
+  return c;
+}
+
 unsigned dcPart::getNumIso() {
   return numIso;
 }

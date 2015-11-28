@@ -6,6 +6,14 @@
 
 namespace parma {
 
+Body** makeBodies(apf::DynamicArray<Body>& arr) {
+  int n = arr.getSize();
+  Body** body = new Body*[n];
+  for (int i = 0; i < n; ++i)
+    body[i] = &(arr[i]);
+  return body;
+}
+
 static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
 {
   int dim = m->getDimension();
@@ -25,7 +33,9 @@ static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
   }
   assert(i == m->count(dim));
   m->end(it);
-  Bodies all(&arr[0], arr.getSize());
+  Bodies all;
+  all.body = makeBodies(arr);
+  all.n = arr.getSize();
   int n = 1 << depth;
   apf::DynamicArray<Bodies> out(n);
   recursivelyBisect(&all, depth, &out[0]);
@@ -36,7 +46,7 @@ static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
       plan->send(elems[k], i);
     }
   }
-  all.destroy();
+  delete [] all.body;
   return plan;
 }
 

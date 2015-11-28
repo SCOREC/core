@@ -53,6 +53,7 @@ add_test(bezierElevation bezierElevation)
 add_test(bezierExperimental bezierExperimental)
 add_test(bezierMesh bezierMesh)
 add_test(bezierMisc bezierMisc)
+add_test(bezierRefine bezierRefine)
 add_test(bezierSubdivision bezierSubdivision)
 add_test(bezierValidity bezierValidity)
 
@@ -195,6 +196,12 @@ add_test(vtxElmBalance
   "${MDIR}/afosr.dmg"
   "${MDIR}/4imb/"
   "afosrBal4p/")
+add_test(parmaSerial
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 1
+  ./vtxElmBalance
+  "${MESHES}/cube/cube.dmg"
+  "${MESHES}/cube/pumi670/cube.smb"
+  "cubeBal.smb/")
 set(MDIR ${MESHES}/cube)
 if(ENABLE_ZOLTAN)
   parma(ptnParma_cube
@@ -240,40 +247,6 @@ add_test(nonmanif_verify2
   ./verify
   "${MDIR}/nonmanifold.dmg"
   "nonmanifold_2_.smb")
-if (ENABLE_MPAS)
-  set(MDIR ${MESHES}/mpas)
-  add_test(read_mpas
-    mpas_read
-    "${MDIR}/ocean_QU_240km.nc"
-    "mpas.dmg"
-    "mpas.smb")
-  if(ENABLE_THREADS)
-    splitfun(split_mpas
-      ./split
-      "mpas.dmg"
-      "mpas.smb"
-      "mpas_4_.smb"
-      1 4)
-    add_test(verify_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./verify
-      "mpas.dmg"
-      "mpas_4_.smb")
-    add_test(ghost_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./ghost
-      "mpas.dmg"
-      "mpas_4_.smb"
-      "ghost_4_.smb")
-    add_test(write_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./mpas_write
-      "mpas.dmg"
-      "ghost_4_.smb"
-      "${MDIR}/ocean_QU_240km.nc"
-      "mpas_part_")
-  endif()
-endif()
 set(MDIR ${MESHES}/fusion)
 add_test(mkmodel_fusion
   mkmodel
