@@ -64,8 +64,8 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   globalPeers = PCU_Comm_Peers();
   ph::Input in;
-  in.openfile_read = openFileRead;
   in.load("adapt.inp");
+  in.openfile_read = openFileRead;
   apf::Mesh2* m = apf::loadMdsMesh(
       in.modelFileName.c_str(), in.meshFileName.c_str());
   m->verify();
