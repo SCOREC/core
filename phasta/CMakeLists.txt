@@ -15,7 +15,6 @@ set(HEADERS chef.h)
 
 set(SOURCES
   phCook.cc
-  phKitchen.cc
   ph.cc
   phAdjacent.cc
   phOutput.cc

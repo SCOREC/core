@@ -8,9 +8,6 @@
 
 struct RStream;
 struct GRStream;
-namespace ma {
-  class IsotropicFunction;
-}
 namespace kitchen {
   /** @brief read and attach fields from files */
   void readAndAttachFields(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl);
@@ -18,7 +15,7 @@ namespace kitchen {
   void readAndAttachFields(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl, RStream* in);
   /** @brief adapt the mesh using the given szFld */
-  void adapt(gmi_model* g, apf::Mesh2*& m, ma::IsotropicFunction* szFld);
+  void adapt(apf::Mesh2*& m, apf::Field* szFld);
   /** @brief read fields from the mesh and write to streams */
   void preprocess(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl, GRStream* out);
 }

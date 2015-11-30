@@ -45,21 +45,25 @@ class ReturnErrorSize : public ma::IsotropicFunction
     apf::Field* szFld;
 };
 
-static void runFromErrorSize(Input& in, apf::Mesh2* m)
+void setupMatching(ma::Input& in, apf::Mesh2* m) {
+  if (!PCU_Comm_Self())
+    printf("Matched mesh: disabling coarsening,"
+           " snapping, and shape correction,\n");
+  in.shouldCoarsen = false;
+  in.shouldSnap = false;
+  in.shouldFixShape = false;
+}
+
+static void runFromErrorSize(ph::Input& in, apf::Mesh2* m)
 {
   ReturnErrorSize sf(m);
   ma::Input* ma_in = ma::configure(m, &sf);
   ma_in->shouldRunPreZoltan = true;
-//  ma_in->shouldSnap = false;  //FIXME - is this needed?
   if (m->hasMatching()) {
-    if (in.snap)
-      fail("adapt.inp requests snapping but mesh is periodic\n");
+    setupMatching(*ma_in,m);
     if (!PCU_Comm_Self())
-      printf("Matched mesh: disabling coarsening, snapping, and shape correction,\n"
-             "  synchronizing \"errors\" field (source of size)\n");
-    ma_in->shouldCoarsen = false;
-    ma_in->shouldSnap = false;
-    ma_in->shouldFixShape = false;
+      printf("Matched mesh: synchronizing "
+          "\"errors\" field (source of size)\n");
     apf::synchronize(m->findField("errors"));
   }
   ma::adapt(ma_in);
@@ -92,4 +96,14 @@ void adapt(Input& in, apf::Mesh2* m)
   m->verify();
 }
 
+}
+
+namespace kitchen {
+  void adapt(apf::Mesh2*& m, apf::Field* szFld) {
+    ma::Input* ma_in = ma::configure(m, szFld);
+    ma_in->shouldRunPreZoltan = true;
+    if (m->hasMatching())
+      ph::setupMatching(*ma_in,m);
+    ma::adapt(ma_in);
+  }
 }
