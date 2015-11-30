@@ -1,4 +1,5 @@
 #include <ph.h>
+#include <phKitchen.h>
 #include <phstream.h>
 #include <phInput.h>
 #include <phBC.h>
@@ -20,29 +21,14 @@
 
 namespace {
 
-void afterSplit(apf::Mesh2* m, ph::Input& in, ph::Output& out,
-    ph::BCs& bcs, int numMasters)
+void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
 {
-  std::string path = ph::setupOutputDir();
-  ph::setupOutputSubdir(path);
   /* check if the mesh changed at all */
-  if ((PCU_Comm_Peers()!=numMasters) ||
-      in.adaptFlag ||
-      in.tetrahedronize) {
+  if ((PCU_Comm_Peers()!=numMasters) || in.adaptFlag || in.tetrahedronize) {
     if (in.parmaPtn && PCU_Comm_Peers() > 1)
       ph::balance(in,m);
     apf::reorderMdsMesh(m);
   }
-  ph::enterFilteredMatching(m, in, bcs);
-  ph::generateOutput(in, bcs, m, out);
-  ph::exitFilteredMatching(m);
-  // a path is not needed for inmem
-  ph::detachAndWriteSolution(in,out,m,path); //write restart
-  ph::writeGeomBC(out, path); //write geombc
-  ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-  if ( ! in.outMeshFileName.empty() )
-    m->writeNative(in.outMeshFileName.c_str());
-  m->verify();
 }
 
 void switchToMasters(int splitFactor)
@@ -92,6 +78,24 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 }//end namespace
 
+namespace ph {
+  void preprocess(apf::Mesh2* m, ph::Input& in, ph::Output& out, ph::BCs& bcs)
+  {
+    std::string path = ph::setupOutputDir();
+    ph::setupOutputSubdir(path);
+    ph::enterFilteredMatching(m, in, bcs);
+    ph::generateOutput(in, bcs, m, out);
+    ph::exitFilteredMatching(m);
+    // a path is not needed for inmem
+    ph::detachAndWriteSolution(in,out,m,path); //write restart
+    ph::writeGeomBC(out, path); //write geombc
+    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
+    if ( ! in.outMeshFileName.empty() )
+      m->writeNative(in.outMeshFileName.c_str());
+    m->verify();
+  }
+}
+
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
     return fopen(path, "r");
@@ -133,7 +137,8 @@ namespace chef {
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber);
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    afterSplit(m,in,out,bcs,numMasters);
+    balanceAndReorder(m,in,numMasters);
+    ph::preprocess(m,in,out,bcs);
     if (in.adaptFlag)
       ph::goToParentDir();
   }
@@ -180,3 +185,22 @@ namespace chef {
     return;
   }
 }
+
+namespace kitchen {
+  void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
+    ph::readAndAttachSolution(ctrl, m);
+  }
+
+  void preprocess(gmi_model*&, apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
+    ph::BCs bcs;
+    ph::readBCs(in.attributeFileName.c_str(), bcs);
+    ph::Output out;
+    out.openfile_write = chef::openstream_write;
+    out.grs = grs;
+    int numProcs = PCU_Comm_Peers();
+    ph::preprocess(m,in,out,bcs);
+    if (in.adaptFlag)
+      ph::goToParentDir();
+  }
+}
+

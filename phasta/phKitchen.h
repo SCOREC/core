@@ -6,19 +6,14 @@
 #include <gmi.h>
 #include <phInput.h>
 
-struct RStream;
 struct GRStream;
-namespace ma {
-  class IsotropicFunction;
-}
 namespace kitchen {
   /** @brief read and attach fields from files */
-  void readAndAttachFields(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl);
-  /** @brief read and attach fields from streams */
-  void readAndAttachFields(gmi_model*& g, apf::Mesh2*& m,
-      ph::Input& ctrl, RStream* in);
+  void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m);
   /** @brief adapt the mesh using the given szFld */
-  void adapt(gmi_model* g, apf::Mesh2*& m, ma::IsotropicFunction* szFld);
+  void adapt(apf::Mesh2* m, apf::Field* szFld);
+  /** @brief uniformly refine the mesh */
+  void uniformRefinement(ph::Input& ctrl, apf::Mesh2* m);
   /** @brief read fields from the mesh and write to streams */
   void preprocess(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl, GRStream* out);
 }

@@ -1,4 +1,5 @@
 #include "phAdapt.h"
+#include "phKitchen.h"
 #include "ph.h"
 #include <ma.h>
 #include <PCU.h>
@@ -9,60 +10,24 @@
 
 namespace ph {
 
-static void runUniformRefinement(Input& in, apf::Mesh2* m)
-{
-  ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
-  ma_in->shouldRefineLayer = true;
-  ma_in->splitAllLayerEdges = in.splitAllLayerEdges;
-  if (in.snap) {
-    if (!ma_in->shouldSnap)
-      fail("adapt.inp requests snapping but model doesn't support it\n");
-  } else
-    ma_in->shouldSnap = false;
-  ma::adapt(ma_in);
+void setupMatching(ma::Input& in, apf::Mesh2* m) {
+  if (!PCU_Comm_Self())
+    printf("Matched mesh: disabling coarsening,"
+           " snapping, and shape correction,\n");
+  in.shouldCoarsen = false;
+  in.shouldSnap = false;
+  in.shouldFixShape = false;
 }
 
-class ReturnErrorSize : public ma::IsotropicFunction
+static void runFromErrorSize(Input&, apf::Mesh2* m)
 {
-  public:
-    ReturnErrorSize(apf::Mesh* m)
-    {
-      const unsigned idx = 5;
-      const double errLimit = 1e-6;
-      const double factor = 0.5;
-      szFld = sam::specifiedIso(m,"errors",idx,errLimit,factor);
-      assert(szFld);
-    }
-    ~ReturnErrorSize()
-    {
-      apf::destroyField(szFld);
-    }
-    virtual double getValue(ma::Entity* vert)
-    {
-      return apf::getScalar(szFld,vert,0);
-    }
-  private:
-    apf::Field* szFld;
-};
-
-static void runFromErrorSize(Input& in, apf::Mesh2* m)
-{
-  ReturnErrorSize sf(m);
-  ma::Input* ma_in = ma::configure(m, &sf);
-  ma_in->shouldRunPreZoltan = true;
-//  ma_in->shouldSnap = false;  //FIXME - is this needed?
-  if (m->hasMatching()) {
-    if (in.snap)
-      fail("adapt.inp requests snapping but mesh is periodic\n");
-    if (!PCU_Comm_Self())
-      printf("Matched mesh: disabling coarsening, snapping, and shape correction,\n"
-             "  synchronizing \"errors\" field (source of size)\n");
-    ma_in->shouldCoarsen = false;
-    ma_in->shouldSnap = false;
-    ma_in->shouldFixShape = false;
-    apf::synchronize(m->findField("errors"));
-  }
-  ma::adapt(ma_in);
+  const unsigned idx = 5;
+  const double errLimit = 1e-6;
+  const double factor = 0.5;
+  apf::Field* szFld = sam::specifiedIso(m,"errors",idx,errLimit,factor);
+  assert(szFld);
+  kitchen::adapt(m, szFld);
+  apf::destroyField(szFld);
 }
 
 void tetrahedronize(Input&, apf::Mesh2* m)
@@ -77,7 +42,7 @@ void tetrahedronize(Input&, apf::Mesh2* m)
 void adapt(Input& in, apf::Mesh2* m)
 {
   typedef void (*Strategy)(Input&, apf::Mesh2*);
-  static Strategy const table[PH_STRATEGIES] = 
+  static Strategy const table[PH_STRATEGIES] =
   {0//0
   ,runFromErrorSize//1
   ,0//2
@@ -85,11 +50,34 @@ void adapt(Input& in, apf::Mesh2* m)
   ,0//4
   ,0//5
   ,0//6
-  ,runUniformRefinement //7
+  ,kitchen::uniformRefinement //7
   ,0//8
   };
   table[in.adaptStrategy](in, m);
   m->verify();
 }
 
+}
+
+namespace kitchen {
+  void adapt(apf::Mesh2* m, apf::Field* szFld) {
+    ma::Input* ma_in = ma::configure(m, szFld);
+    ma_in->shouldRunPreZoltan = true;
+    if (m->hasMatching())
+      ph::setupMatching(*ma_in,m);
+    ma::adapt(ma_in);
+  }
+
+  void uniformRefinement(ph::Input& in, apf::Mesh2* m)
+  {
+    ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
+    ma_in->shouldRefineLayer = true;
+    ma_in->splitAllLayerEdges = in.splitAllLayerEdges;
+    if (in.snap) {
+      if (!ma_in->shouldSnap)
+        ph::fail("adapt.inp requests snapping but model doesn't support it\n");
+    } else
+      ma_in->shouldSnap = false;
+    ma::adapt(ma_in);
+  }
 }

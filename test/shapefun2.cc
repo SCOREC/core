@@ -7,6 +7,8 @@
 #include <PCU.h>
 #include <cassert>
 
+namespace test {
+
 /* Test all shape functions by comparing them to the base linear,
  * by changing the mesh shape to the new shape functions
  * This assumes the base linear is correct, which is not tested here
@@ -65,7 +67,7 @@ static apf::Vector3 const pyramid[5] = {
 };
 
 static apf::Vector3 const* const points[apf::Mesh::TYPES] =
-{0,edge,tri,quad,tet,hex,prism,pyramid};
+{0,test::edge,test::tri,test::quad,test::tet,test::hex,test::prism,test::pyramid};
 
 
 /* Take a linear mesh and a higher-order mesh, and make sure
@@ -163,6 +165,8 @@ static void checkFieldShape(apf::FieldShape* fs)
   }
 }
 
+} //namespace test
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
@@ -174,7 +178,7 @@ int main(int argc, char** argv)
   crv::getBezier(1),crv::getBezier(2)};
 
   for (int i = 0; i < 4; ++i)
-    checkFieldShape(fs[i]);
+    test::checkFieldShape(fs[i]);
 
   PCU_Comm_Free();
   MPI_Finalize();
