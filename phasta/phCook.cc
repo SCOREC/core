@@ -1,4 +1,5 @@
 #include <ph.h>
+#include <phKitchen.h>
 #include <phstream.h>
 #include <phInput.h>
 #include <phBC.h>
@@ -192,7 +193,7 @@ namespace kitchen {
     ph::readAndAttachSolution(ctrl, m);
   }
 
-  void preprocess(apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
+  void preprocess(gmi_model*&, apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
     ph::BCs bcs;
     ph::readBCs(in.attributeFileName.c_str(), bcs);
     ph::Output out;
