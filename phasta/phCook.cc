@@ -191,9 +191,9 @@ namespace kitchen {
     ph::readAndAttachSolution(ctrl, m);
   }
 
-  void preprocess(gmi_model*&, apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
+  void preprocess(gmi_model*& g, apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
     ph::BCs bcs;
-    ph::readBCs(in.attributeFileName.c_str(), bcs);
+    ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     ph::Output out;
     out.openfile_write = chef::openstream_write;
     out.grs = grs;
