@@ -15,7 +15,9 @@ namespace kitchen {
   void readAndAttachFields(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl, RStream* in);
   /** @brief adapt the mesh using the given szFld */
-  void adapt(apf::Mesh2*& m, apf::Field* szFld);
+  void adapt(apf::Mesh2* m, apf::Field* szFld);
+  /** @brief uniformly refine the mesh */
+  void uniformRefinement(ph::Input& ctrl, apf::Mesh2* m);
   /** @brief read fields from the mesh and write to streams */
   void preprocess(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl, GRStream* out);
 }
