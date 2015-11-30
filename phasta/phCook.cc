@@ -188,11 +188,8 @@ namespace chef {
 }
 
 namespace kitchen {
-  void readAndAttachFields(gmi_model*&, apf::Mesh2*&, ph::Input&) {
-  }
-
-  void readAndAttachFields(gmi_model*&, apf::Mesh2*&,
-      ph::Input&, RStream*) {
+  void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
+    ph::readAndAttachSolution(ctrl, m);
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
