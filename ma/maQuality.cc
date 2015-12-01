@@ -20,6 +20,18 @@
 
 namespace ma {
 
+bool areTetsValid(Mesh* m, EntityArray& tets)
+{
+  Vector v[4];
+  size_t n = tets.getSize();
+  for (size_t i = 0; i < n; ++i){
+    ma::getVertPoints(m,tets[i],v);
+    if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+      return false;
+  }
+  return true;
+}
+
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
 {
   Entity* e[3];
@@ -86,7 +98,7 @@ double getWorstQuality(Adapt* a, EntityArray& e)
 
 bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat)
 {
-  int n = e.getSize();
+  size_t n = e.getSize();
   ShapeHandler* sh = a->shape;
   for (size_t i = 0; i < n; ++i) {
     double quality = sh->getQuality(e[i]);

@@ -38,11 +38,20 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
 {
   assert( ! adapt->mesh->isShared(vertToCollapse));
   rebuildElements();
-  if (hasWorseQuality(adapt,newElements,qualityToBeat))
-    return false;
+  // check quality of linear t before fitting
   if ((adapt->mesh->getDimension()==2)
     &&( ! isGood2DMesh()))
     return false;
+  // check the linear quality of tets before fitting
+  // reject if one is negative
+  if(adapt->mesh->getDimension()==3 && cavity.shouldFit
+      && !areTetsValid(adapt->mesh,newElements))
+    return false;
+  // since they are okay in a linear sense, now fit and do a quality assessment
+  fitElements();
+  if (hasWorseQuality(adapt,newElements,qualityToBeat))
+    return false;
+
   return true;
 }
 
@@ -335,7 +344,11 @@ void Collapse::rebuildElements()
         rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
             adapt->buildCallback, rebuildCallback);
   cavity.afterBuilding();
-  if (cavity.shouldFit) {
+}
+
+void Collapse::fitElements()
+{
+  if(cavity.shouldFit){
     EntityArray oldElements;
     getOldElements(oldElements);
     cavity.fit(oldElements);

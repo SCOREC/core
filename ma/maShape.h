@@ -18,7 +18,8 @@ namespace ma {
 class SizeField;
 class Adapt;
 
-double measureLinearElement(Mesh* m, Entity* e);
+/* quick check of positivity of volumes based on vertices */
+bool areTetsValid(Mesh* m, EntityArray& tets);
 
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri);
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet);
