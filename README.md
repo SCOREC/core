@@ -22,6 +22,7 @@ For more information, start at our
 * ZOLTAN: Interface to run Sandia's Zoltan code on APF meshes
 * PHASTA: Tools and file formats related to the PHASTA fluid solver
 * MTH: Math containers and routines
+* CRV: Support for curved meshes with Bezier Shapes
 
 ### How do I get set up? ###
 
