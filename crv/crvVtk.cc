@@ -440,6 +440,7 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               isValid = false;
             }
             maxJ = std::max(detJ[count],maxJ);
+            count++;
           }
         }
       }
