@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Scientific Computation Research Center
+1;3409;0c * Copyright 2015 Scientific Computation Research Center
  *
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
@@ -22,6 +22,29 @@
 #include <iostream>
 #include <../mds/apfMDS.h>
 namespace crv {
+
+static double measureLinearTriArea(ma::Mesh* m, ma::Entity* tri)
+{
+  ma::Vector p[3];
+  ma::getVertPoints(m,tri,p);
+  return 0.5*apf::cross(p[1]-p[0],p[2]-p[0]).getLength();
+}
+
+static void setLinearEdgePoints(ma::Mesh* m, ma::Entity* edge)
+{
+  apf::Vector3 xi,points[2];
+  apf::MeshEntity* verts[2];
+  int ni = m->getShape()->countNodesOn(apf::Mesh::EDGE);
+  m->getDownward(edge,0,verts);
+  m->getPoint(verts[0],0,points[0]);
+  m->getPoint(verts[1],0,points[1]);
+  for (int j = 0; j < ni; ++j){
+    m->getShape()->getNodeXi(apf::Mesh::EDGE,j,xi);
+    double t = (1.+j)/(1.+ni);
+    xi = points[0]*(1.-t)+points[1]*t;
+    m->setPoint(edge,j,xi);
+  }
+}
 
 class BezierTransfer : public ma::SolutionTransfer
 {
@@ -122,45 +145,6 @@ class BezierTransfer : public ma::SolutionTransfer
           continue; //vertices will have been handled specially beforehand
 
         int n = getNumControlPoints(childType,P);
-
-//        apf::Vector3 vp[4];
-//        apf::Downward verts;
-//        int nv = mesh->getDownward(newEntities[i],0,verts);
-//        for (int j = 0; j < ni; ++j){
-//          mesh->setPoint(newEntities[i],j,apf::Vector3(0,0,0));
-//        }
-//        apf::NewArray<apf::Vector3> oldNodes,newNodes(ni);
-//        apf::Element* newElem =
-//            apf::createElement(mesh->getCoordinateField(),newEntities[i]);
-//        apf::getVectorNodes(newElem,oldNodes);
-//        apf::destroyElement(newElem);
-//
-//        for (int v = 0; v < nv; ++v){
-//          mesh->getPoint(verts[v],0,vp[v]);
-//        }
-//        for (int j = 0; j < ni; ++j){
-//          apf::Vector3 xi;
-//          mesh->getShape()->getNodeXi(childType,j,xi);
-//          if(childType == apf::Mesh::EDGE){
-//            xi[0] = 0.5*(xi[0]+1.);
-//            oldNodes[j+n-ni] = vp[0]*(1.-xi[0])+vp[1]*xi[0];
-//          }
-//          if(childType == apf::Mesh::TRIANGLE){
-//            oldNodes[j+n-ni] = vp[0]*(1.-xi[0]-xi[1])
-//                + vp[1]*xi[0] + vp[2]*xi[1];
-//          }
-//          if(childType == apf::Mesh::TET){
-//            oldNodes[j+n-ni] = vp[0]*(1.-xi[0]-xi[1]-xi[2]) + vp[1]*xi[0]
-//                + vp[2]*xi[1] + vp[3]*xi[2];
-//          }
-//          mesh->setPoint(newEntities[i],j,oldNodes[j+n-ni]);
-//        }
-//        apf::NewArray<double> c;
-//        crv::getBezierTransformationCoefficients(P,childType,c);
-//        convertInterpolationPoints(n,ni,oldNodes,c,newNodes);
-//        for (int j = 0; j < ni; ++j){
-//          mesh->setPoint(newEntities[i],j,newNodes[j]);
-//        }
         apf::Vector3 vp[4];
         getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
 
@@ -184,9 +168,6 @@ class BezierTransfer : public ma::SolutionTransfer
     bool shouldSnap;
 };
 
-typedef std::map<ma::Entity*,ma::Entity*> ES;
-typedef std::map<ma::Entity*,ma::Entity*>::iterator ESIt;
-
 class BezierHandler : public ma::ShapeHandler
 {
   public:
@@ -203,10 +184,34 @@ class BezierHandler : public ma::ShapeHandler
     }
     virtual double getQuality(apf::MeshEntity* e)
     {
-      assert( mesh->getType(e) == apf::Mesh::TRIANGLE ||
-          mesh->getType(e) == apf::Mesh::TET);
-      return ma::measureElementQuality(mesh, sizeField, e)
-        *crv::getQuality(mesh,e);
+      if (mesh->getType(e) == apf::Mesh::TRIANGLE){
+        ma::Vector p[3];
+        ma::getVertPoints(mesh,e,p);
+        double l[3];
+        for (int i=0; i < 3; ++i)
+          l[i] = (p[(i+1)%3]-p[i]).getLength();
+        double A = 0.5*apf::cross(p[1]-p[0],p[2]-p[0])[2];
+        double s=0;
+        for (int i=0; i < 3; ++i)
+          s += l[i]*l[i];
+        double lq;
+        if (A < 0)
+          lq = -48*(A*A)/(s*s);
+        else
+          lq = 48*(A*A)/(s*s);
+        if (lq < 0)
+          return lq;
+        else return lq*crv::getQuality(mesh,e);
+      }
+      if (mesh->getType(e) == apf::Mesh::TET){
+        ma::Vector p[4];
+        ma::getVertPoints(mesh,e,p);
+        double lq = ma::measureLinearTetQuality(p);
+        if (lq < 0)
+          return lq;
+        else return lq*crv::getQuality(mesh,e);
+      }
+      return -1;
     }
     virtual bool hasNodesOn(int dimension)
     {
@@ -218,77 +223,82 @@ class BezierHandler : public ma::ShapeHandler
     {
       bt->onRefine(parent,newEntities);
     }
-//    void getHull(ma::EntityArray& cavity,
-//        ES& hull)
-//    {
-//      int md = mesh->getDimension();
-//      apf::Downward down;
-//      for (size_t i = 0; i < cavity.getSize(); ++i){
-//        int nd = mesh->getDownward(cavity[i],md-1,down);
-//        for (int j = 0; j < nd; ++j){
-//          ESIt it = hull.find(down[j]);
-//          if(it == hull.end())
-//            hull[down[j]] = cavity[i];
-//          else
-//            hull.erase(it);
-//        }
-//      }
-//    }
-//    apf::Vector3 getDirection(ma::Entity* vert, ma::Entity* edge)
-//    {
-//      apf::Vector3 node, vertPosition = ma::getPosition(mesh,vert);
-//      apf::Downward verts;
-//      mesh->getDownward(edge,0,verts);
-//      if(verts[0] == vert){
-//        mesh->getPoint(edge,0,node);
-//        return node - vertPosition;
-//      } else {
-//        int lastNode = mesh->getShape()->countNodesOn(apf::Mesh::EDGE)-1;
-//        mesh->getPoint(edge,lastNode,node);
-//        return node - vertPosition;
-//      }
-//    }
+
     // for a given edge and a cavity, attempt to find the pair
     // of triangles that the edge spans. This is not always possible
+    // if multiple choices exist, as in 3D,
+    // then use the pair with the minimum area
     bool findEdgeTrianglesCross(ma::EntityArray& entities,
         ma::Entity* edgeVerts[2],
         ma::Entity* edgeTris[2])
     {
       ma::Entity* edge0 = 0;
       ma::Entity* edge1 = 0;
+      edgeTris[0] = edgeTris[1] = 0;
+      double totalArea = 1e10;
       for (size_t i = 0; i < entities.getSize(); ++i){
         if (mesh->getType(entities[i]) != apf::Mesh::TRIANGLE) continue;
+        // find a triangle with the first vertex of the edge
         if (ma::isInClosure(mesh,entities[i],edgeVerts[0])){
-          // try this edge, see if theres a match opposite it
+          // try the opposite edge, see if there's a match opposite it
           edge0 = ma::getTriEdgeOppositeVert(mesh,entities[i],edgeVerts[0]);
           for (size_t j = 0; j < entities.getSize(); ++j){
             if(j == i) continue;
             if(ma::isInClosure(mesh,entities[j],edgeVerts[1])){
               edge1 = ma::getTriEdgeOppositeVert(mesh,entities[j],edgeVerts[1]);
               if(edge0 == edge1){
-                edgeTris[0] = entities[i];
-                edgeTris[1] = entities[j];
-                return true;
+                double newTotalArea = apf::measure(mesh, entities[i])
+                  + apf::measure(mesh,entities[j]);
+                if(newTotalArea < totalArea){
+                  edgeTris[0] = entities[i];
+                  edgeTris[1] = entities[j];
+                  totalArea = newTotalArea;
+                }
               }
             }
           }
         }
       }
+      if(edgeTris[0])
+        return true;
       return false;
     }
     // for a given edge and a cavity, attempt to find the pair
     // of triangles that share the edge
-    // by construction, these must be all in the cavity
-    // should do something more intelligent in 3D
+    // in 2D this is trivial,
+    // in 3D it requires a choice
+    // The edge we are trying to find triangles around
+    // has four triangles to choose from
+    // pick the two smallest based on linear area,
+    // since we don't know any better
     bool findEdgeTrianglesShared(ma::Entity* edge,
         ma::Entity* edgeTris[2])
     {
       apf::Up up;
       mesh->getUp(edge,up);
-      edgeTris[0] = up.e[0];
-      edgeTris[1] = up.e[1];
-      assert(ma::isInClosure(mesh,edgeTris[0],edge));
-      assert(ma::isInClosure(mesh,edgeTris[1],edge));
+      if(mesh->getDimension() == 2){
+        edgeTris[0] = up.e[0];
+        edgeTris[1] = up.e[1];
+      } else {
+        edgeTris[0] = edgeTris[1] = 0;
+        double a0, a1;
+        a0 = a1 = 1e10;
+        ma::Entity* verts[2];
+        mesh->getDownward(edge,0,verts);
+        for (int i = 0; i < up.n; ++i){
+          double a = measureLinearTriArea(mesh,up.e[i]);
+          if(a < a0){
+            a1 = a0;
+            a0 = a;
+            edgeTris[1] = edgeTris[0];
+            edgeTris[0] = up.e[i];
+          } else if (a < a1){
+            a1 = a;
+            edgeTris[1] = up.e[i];
+          }
+        }
+      }
+      assert(edgeTris[0] && edgeTris[1]);
       return true;
     }
     void evaluateBlendedQuad(ma::Entity* verts[4], ma::Entity* edges[4],
@@ -299,6 +309,7 @@ class BezierHandler : public ma::ShapeHandler
       apf::Vector3 xii[4] = {
           apf::Vector3(2.*xi[0]-1.,0,0),apf::Vector3(2.*xi[1]-1.,0,0),
           apf::Vector3(1.-2.*xi[0],0,0),apf::Vector3(1.-2.*xi[1],0,0)};
+      // coefficients
       double eC[4] = {1.-xi[1],xi[0],xi[1],1.-xi[0]};
       double vC[4] = {eC[3]*eC[0],eC[0]*eC[1],eC[1]*eC[2],eC[2]*eC[3]};
       for (int i = 0; i < 4; ++i){
@@ -352,7 +363,7 @@ class BezierHandler : public ma::ShapeHandler
       }
       fail("can't find edge in tri");
     }
-    bool setBlendedQuadEdgePointsOld(ma::EntityArray& cavity,
+    bool setBlendedQuadEdgePointsCross(ma::EntityArray& cavity,
         ma::Entity* edge)
     {
       ma::Entity* edgeVerts[2];
@@ -382,7 +393,7 @@ class BezierHandler : public ma::ShapeHandler
       }
       return false;
     }
-    void setBlendedQuadEdgePointsNew(ma::Entity* edge)
+    void setBlendedQuadEdgePointsShared(ma::Entity* edge)
     {
       ma::Entity* edgeVerts[2];
       ma::Entity* edgeTris[2];
@@ -409,61 +420,71 @@ class BezierHandler : public ma::ShapeHandler
 
       setBlendedQuadEdgePoints(edge,verts,edges,dir);
     }
-    void setLinearEdgePoints(ma::Entity* edge)
-    {
-      apf::Vector3 xi,points[2];
-      apf::MeshEntity* verts[2];
-      int ni = mesh->getShape()->countNodesOn(apf::Mesh::EDGE);
-      mesh->getDownward(edge,0,verts);
-      mesh->getPoint(verts[0],0,points[0]);
-      mesh->getPoint(verts[1],0,points[1]);
-      for (int j = 0; j < ni; ++j){
-        mesh->getShape()->getNodeXi(apf::Mesh::EDGE,j,xi);
-        double t = (1.+j)/(1.+ni);
-        xi = points[0]*(1.-t)+points[1]*t;
-        mesh->setPoint(edge,j,xi);
-      }
-    }
     virtual void onCavity(
         ma::EntityArray& oldElements,
         ma::EntityArray& newEntities)
     {
+      printf("starting points \n");
 
       apf::FieldShape* fs = mesh->getShape();
       int P = fs->getOrder();
-      // deal with all the boundary points, if a boundary edge has been
-      // collapsed, this is a snapping operation
+
       int n = fs->getEntityShape(apf::Mesh::EDGE)->countNodes();
       apf::NewArray<double> c;
       crv::getBezierTransformationCoefficients(P,1,c);
+
+      int numNewTriangles = 0;
+      int numMiddleEdges = 0; // upper bound
+
+      // deal with all the boundary points, if a boundary edge has been
+      // collapsed, this is a snapping operation
+      // also count a few things for later use, here
+
       for (size_t i = 0; i < newEntities.getSize(); ++i)
       {
         int newType = mesh->getType(newEntities[i]);
-        int ni = mesh->getShape()->countNodesOn(newType);
+        if (newType == apf::Mesh::TRIANGLE) numNewTriangles++;
         if (newType != apf::Mesh::EDGE) continue;
 
+        int ni = mesh->getShape()->countNodesOn(newType);
         if (mesh->getModelType(mesh->toModel(newEntities[i]))
             < mesh->getDimension() && ni > 0 && shouldSnap){
             snapToInterpolate(mesh,newEntities[i]);
             convertInterpolationPoints(mesh,newEntities[i],n,ni,c);
+        } else {
+          setLinearEdgePoints(mesh,newEntities[i]);
+          numMiddleEdges++;
         }
       }
-      ma::EntityArray middleEdges;
+      printf("mid edges \n");
+
+      ma::EntityArray middleEdges(numMiddleEdges);
+      int me = 0;
       for (size_t i = 0; i < newEntities.getSize(); ++i){
+        // if we aren't an edge or we are on a boundary, don't do this
         if(mesh->getType(newEntities[i]) != apf::Mesh::EDGE) continue;
         if(mesh->getModelType(mesh->toModel(newEntities[i]))
             < mesh->getDimension()) continue;
-        if(!setBlendedQuadEdgePointsOld(oldElements,newEntities[i])){
-          middleEdges.append(newEntities[i]);
+        // special case in 2D
+        if(numNewTriangles == 2 && mesh->getDimension() == 2)
+          setBlendedQuadEdgePointsShared(newEntities[i]);
+
+        else if(!setBlendedQuadEdgePointsCross(oldElements,newEntities[i])){
+          middleEdges[me] = newEntities[i];
+          me++;
           // set to linear, because we don't know any better
-          setLinearEdgePoints(newEntities[i]);
+          setLinearEdgePoints(mesh,newEntities[i]);
         }
       }
-      for (size_t i = 0; i < middleEdges.getSize(); ++i)
-        setBlendedQuadEdgePointsNew(middleEdges[i]);
+      printf("more mid edges \n");
 
+      // set the middle edges
+      for (int i = 0; i < me; ++i)
+        setBlendedQuadEdgePointsShared(middleEdges[i]);
+
+      printf("setting points \n");
+      // set the rest of the interior points
       for (int d = 2; d <= mesh->getDimension(); ++d){
-
         int ni = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
         if(ni == 0) continue;
 
