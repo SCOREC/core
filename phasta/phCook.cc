@@ -197,7 +197,6 @@ namespace kitchen {
     ph::Output out;
     out.openfile_write = chef::openstream_write;
     out.grs = grs;
-    int numProcs = PCU_Comm_Peers();
     ph::preprocess(m,in,out,bcs);
     if (in.adaptFlag)
       ph::goToParentDir();

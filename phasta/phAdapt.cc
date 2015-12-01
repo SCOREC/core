@@ -10,7 +10,7 @@
 
 namespace ph {
 
-void setupMatching(ma::Input& in, apf::Mesh2* m) {
+void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
     printf("Matched mesh: disabling coarsening,"
            " snapping, and shape correction,\n");
@@ -64,7 +64,7 @@ namespace kitchen {
     ma::Input* ma_in = ma::configure(m, szFld);
     ma_in->shouldRunPreZoltan = true;
     if (m->hasMatching())
-      ph::setupMatching(*ma_in,m);
+      ph::setupMatching(*ma_in);
     ma::adapt(ma_in);
   }
 
