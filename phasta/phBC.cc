@@ -101,6 +101,7 @@ void readBCs(const char* filename, BCs& bcs)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("\"%s\" loaded in %f seconds\n", filename, t1 - t0);
+  file.close();
 }
 
 struct KnownBC
