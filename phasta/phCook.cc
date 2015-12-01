@@ -1,5 +1,5 @@
 #include <ph.h>
-#include <phKitchen.h>
+#include <chef.h>
 #include <phstream.h>
 #include <phInput.h>
 #include <phBC.h>
@@ -190,9 +190,7 @@ namespace chef {
     bake(g,m,ctrl,out);
     return;
   }
-}
 
-namespace kitchen {
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
     ph::readAndAttachSolution(ctrl, m);
   }

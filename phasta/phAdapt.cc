@@ -1,5 +1,5 @@
 #include "phAdapt.h"
-#include "phKitchen.h"
+#include "chef.h"
 #include "ph.h"
 #include <ma.h>
 #include <PCU.h>
@@ -26,7 +26,7 @@ static void runFromErrorSize(Input&, apf::Mesh2* m)
   const double factor = 0.5;
   apf::Field* szFld = sam::specifiedIso(m,"errors",idx,errLimit,factor);
   assert(szFld);
-  kitchen::adapt(m, szFld);
+  chef::adapt(m, szFld);
   apf::destroyField(szFld);
 }
 
@@ -50,7 +50,7 @@ void adapt(Input& in, apf::Mesh2* m)
   ,0//4
   ,0//5
   ,0//6
-  ,kitchen::uniformRefinement //7
+  ,chef::uniformRefinement //7
   ,0//8
   };
   table[in.adaptStrategy](in, m);
@@ -59,7 +59,7 @@ void adapt(Input& in, apf::Mesh2* m)
 
 }
 
-namespace kitchen {
+namespace chef {
   void adapt(apf::Mesh2* m, apf::Field* szFld) {
     ma::Input* ma_in = ma::configure(m, szFld);
     ma_in->shouldRunPreZoltan = true;

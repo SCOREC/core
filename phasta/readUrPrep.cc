@@ -3,7 +3,7 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
-#include <phKitchen.h>
+#include <chef.h>
 
 namespace {
   void freeMesh(apf::Mesh* m) {
@@ -26,9 +26,9 @@ int main(int argc, char** argv)
   ctrl.load(argv[3]);
   ctrl.openfile_read = openfile_read;
   ctrl.buildMapping = 0; //can't map new vertices from UR
-  kitchen::readAndAttachFields(ctrl,m);
-  kitchen::uniformRefinement(ctrl,m);
-  kitchen::preprocess(m,ctrl);
+  chef::readAndAttachFields(ctrl,m);
+  chef::uniformRefinement(ctrl,m);
+  chef::preprocess(m,ctrl);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();

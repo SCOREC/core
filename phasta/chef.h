@@ -22,6 +22,17 @@ namespace chef {
   /** @brief read and write to and from streams */
   void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl, RStream* in, GRStream* out);
+
+  /** @brief read and attach fields from files */
+  void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m);
+  /** @brief adapt the mesh using the given szFld */
+  void adapt(apf::Mesh2* m, apf::Field* szFld);
+  /** @brief uniformly refine the mesh */
+  void uniformRefinement(ph::Input& ctrl, apf::Mesh2* m);
+  /** @brief read fields from the mesh and write to files */
+  void preprocess(apf::Mesh2*& m, ph::Input& ctrl);
+  /** @brief read fields from the mesh and write to streams */
+  void preprocess(apf::Mesh2*& m, ph::Input& ctrl, GRStream* out);
 }
 
 #endif
