@@ -393,6 +393,12 @@ class Integrator
   */
 double measure(MeshElement* e);
 
+/** \brief Measures the volume, area, or length of a Mesh Entity.
+  * 
+  * \returns The measure of the element
+  */
+double measure(Mesh* m, MeshEntity* e);
+
 /** \brief Returns the polynomial order of the coordinate field.
   */
 int getOrder(MeshElement* e);

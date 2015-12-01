@@ -298,8 +298,7 @@ long verifyVolumes(Mesh* m, bool printVolumes)
   {
     if (!isSimplex(m->getType(e)))
       continue;
-    MeshElement* me = createMeshElement(m, e);
-    double v = measure(me);
+    double v = measure(m,e);
     if (v < 0) {
       if (printVolumes) {
         std::stringstream ss;
@@ -311,7 +310,6 @@ long verifyVolumes(Mesh* m, bool printVolumes)
       }
       ++n;
     }
-    destroyMeshElement(me);
   }
   m->end(it);
   return PCU_Add_Long(n);

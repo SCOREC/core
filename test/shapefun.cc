@@ -79,9 +79,7 @@ void testVolume(int type, apf::Vector3 const* points, double volume)
   apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
   apf::MeshEntity* e = apf::buildOneElement(
       m, m->findModelEntity(3,0), type, points);
-  apf::MeshElement* me = apf::createMeshElement(m, e);
-  double v = apf::measure(me);
-  apf::destroyMeshElement(me);
+  double v = apf::measure(m,e);
   assert( fabs(v - volume) < 1e-10 );
   m->destroyNative();
   apf::destroyMesh(m);
