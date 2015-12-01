@@ -38,7 +38,7 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
 {
   assert( ! adapt->mesh->isShared(vertToCollapse));
   rebuildElements();
-  if ( ! checkValidity(qualityToBeat))
+  if (hasWorseQuality(adapt,newElements,qualityToBeat))
     return false;
   if ((adapt->mesh->getDimension()==2)
     &&( ! isGood2DMesh()))
@@ -58,12 +58,23 @@ bool Collapse::tryThisDirection(double qualityToBeat)
 bool Collapse::tryBothDirections(double qualityToBeat)
 {
   computeElementSets();
+  // if adaptation is not forced, only accept if it
+  // beats the smaller of good quality and the old quality
+  // and is still of valid quality
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+        std::max(getOldQuality(),adapt->input->validQuality));
+
   if (tryThisDirection(qualityToBeat))
     return true;
   if ( ! getFlag(adapt,vertToKeep,COLLAPSE))
     return false;
   std::swap(vertToKeep,vertToCollapse);
   computeElementSets();
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+        std::max(getOldQuality(),adapt->input->validQuality));
+
   return tryThisDirection(qualityToBeat);
 }
 
@@ -329,11 +340,6 @@ void Collapse::rebuildElements()
     getOldElements(oldElements);
     cavity.fit(oldElements);
   }
-}
-
-bool Collapse::checkValidity(double qualityToBeat)
-{
-  return getWorstQuality(adapt,newElements) > qualityToBeat;
 }
 
 bool Collapse::isGood2DMesh()

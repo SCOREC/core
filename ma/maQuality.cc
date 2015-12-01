@@ -84,6 +84,18 @@ double getWorstQuality(Adapt* a, EntityArray& e)
   return getWorstQuality(a, &(e[0]), e.getSize());
 }
 
+bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat)
+{
+  int n = e.getSize();
+  ShapeHandler* sh = a->shape;
+  for (size_t i = 0; i < n; ++i) {
+    double quality = sh->getQuality(e[i]);
+    if (quality < qualityToBeat)
+      return true;
+  }
+  return false;
+}
+
 /* applies the same measure as measureTetQuality
    but works directly off the points. */
 double measureLinearTetQuality(Vector xyz[4])

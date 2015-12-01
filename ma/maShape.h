@@ -33,6 +33,9 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
 
+/* has worse quality than qualityToBeat
+ */
+bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
 
 /* checks whether a prism is safe to tetrahedronize.
  * the optional "good_diagonal_codes" integer

@@ -142,6 +142,10 @@ class AllEdgeCollapser : public Operator
     {
       collapse.Init(a);
       successCount = 0;
+      if(a->input->shouldForceAdaptation)
+        qualityToBeat = getAdapt()->input->validQuality;
+      else
+        qualityToBeat = getAdapt()->input->goodQuality;
     }
     virtual int getTargetDimension() {return 1;}
     virtual bool shouldApply(Entity* e)
@@ -163,7 +167,6 @@ class AllEdgeCollapser : public Operator
     }
     virtual void apply()
     {
-      double qualityToBeat = getAdapt()->input->validQuality;
       if ( ! collapse.checkTopo())
         return;
       if ( ! collapse.tryBothDirections(qualityToBeat))
@@ -176,6 +179,7 @@ class AllEdgeCollapser : public Operator
   private:
     Collapse collapse;
     int modelDimension;
+    double qualityToBeat;
 };
 
 static int collapseAllEdges(Adapt* a, int modelDimension)

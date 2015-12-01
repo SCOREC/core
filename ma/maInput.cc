@@ -32,6 +32,7 @@ void setDefaultValues(Input* in)
   in->shouldTransferParametric = in->mesh->canSnap();
   in->shouldHandleMatching = in->mesh->hasMatching();
   in->shouldFixShape = true;
+  in->shouldForceAdaptation = false;
   in->shouldPrintQuality = true;
   if (in->mesh->getDimension()==3)
   {
