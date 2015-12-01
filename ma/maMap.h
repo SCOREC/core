@@ -16,8 +16,6 @@
 
 namespace ma {
 
-void getVertPoints(apf::Mesh* m, Entity* e, Vector* p);
-
 Affine getMap(apf::Mesh* m, Entity* e);
 
 double getInsideness(apf::Mesh* m, Entity* e, Vector const& xi);

@@ -12,7 +12,6 @@
 #include "crvMath.h"
 #include "crvQuality.h"
 #include "crvTables.h"
-#include <maMap.h>
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
 #include <maShape.h>

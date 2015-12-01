@@ -71,6 +71,8 @@ Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e);
 
 Entity* findTetByTwoTris(Mesh* m, Entity** tris);
 
+void getVertPoints(apf::Mesh* m, Entity* e, Vector* p);
+
 struct RebuildCallback {
   virtual void rebuilt(Entity* e, Entity* original) = 0;
 };
