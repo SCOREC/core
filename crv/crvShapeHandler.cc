@@ -20,7 +20,7 @@
 #include <math.h>
 #include <cassert>
 #include <iostream>
-#include <../mds/apfMDS.h>
+
 namespace crv {
 
 static double measureLinearTriArea(ma::Mesh* m, ma::Entity* tri)
@@ -28,6 +28,10 @@ static double measureLinearTriArea(ma::Mesh* m, ma::Entity* tri)
   ma::Vector p[3];
   ma::getVertPoints(m,tri,p);
   return 0.5*apf::cross(p[1]-p[0],p[2]-p[0]).getLength();
+//  int b = getBlendingOrder(apf::Mesh::TRIANGLE);
+//  setBlendingOrder(apf::Mesh::TRIANGLE,1);
+//  return apf::measure(m,tri);
+//  setBlendingOrder(apf::Mesh::TRIANGLE,b);
 }
 
 static void setLinearEdgePoints(ma::Mesh* m, ma::Entity* edge)
@@ -424,8 +428,6 @@ class BezierHandler : public ma::ShapeHandler
         ma::EntityArray& oldElements,
         ma::EntityArray& newEntities)
     {
-      printf("starting points \n");
-
       apf::FieldShape* fs = mesh->getShape();
       int P = fs->getOrder();
 
@@ -443,10 +445,21 @@ class BezierHandler : public ma::ShapeHandler
       for (size_t i = 0; i < newEntities.getSize(); ++i)
       {
         int newType = mesh->getType(newEntities[i]);
-        if (newType == apf::Mesh::TRIANGLE) numNewTriangles++;
-        if (newType != apf::Mesh::EDGE) continue;
-
         int ni = mesh->getShape()->countNodesOn(newType);
+
+        if (newType == apf::Mesh::TRIANGLE)
+          numNewTriangles++;
+
+        // zero new entities
+        if (newType != apf::Mesh::EDGE)
+        {
+          for (int j = 0; j < ni; ++j){
+            apf::Vector3 zero(0,0,0);
+            mesh->setPoint(newEntities[i],j,zero);
+          }
+          continue;
+        }
+
         if (mesh->getModelType(mesh->toModel(newEntities[i]))
             < mesh->getDimension() && ni > 0 && shouldSnap){
             snapToInterpolate(mesh,newEntities[i]);
@@ -456,7 +469,6 @@ class BezierHandler : public ma::ShapeHandler
           numMiddleEdges++;
         }
       }
-      printf("mid edges \n");
 
       ma::EntityArray middleEdges(numMiddleEdges);
       int me = 0;
@@ -476,13 +488,11 @@ class BezierHandler : public ma::ShapeHandler
           setLinearEdgePoints(mesh,newEntities[i]);
         }
       }
-      printf("more mid edges \n");
 
       // set the middle edges
       for (int i = 0; i < me; ++i)
         setBlendedQuadEdgePointsShared(middleEdges[i]);
 
-      printf("setting points \n");
       // set the rest of the interior points
       for (int d = 2; d <= mesh->getDimension(); ++d){
         int ni = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
@@ -496,14 +506,6 @@ class BezierHandler : public ma::ShapeHandler
         for (size_t i = 0; i < newEntities.getSize(); ++i)
         {
           int newType = mesh->getType(newEntities[i]);
-          // zero the newEntities.
-          if(apf::Mesh::typeDimension[newType] == d){
-
-            for (int j = 0; j < ni; ++j){
-              apf::Vector3 zero(0,0,0);
-              mesh->setPoint(newEntities[i],j,zero);
-            }
-          }
           if (apf::Mesh::typeDimension[newType] == d && ni > 0
               && (mesh->getModelType(mesh->toModel(newEntities[i]))
               == mesh->getDimension() || !shouldSnap)){
