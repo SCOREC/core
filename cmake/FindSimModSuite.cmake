@@ -68,15 +68,11 @@ string(REGEX MATCH
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 set(SIMMODSUITE_LIBS "")
-set(SIM_LIB_NAMES
-  SimPartitionedMesh-mpi
-  SimMeshing
-  SimMeshTools
-  SimModel
-  SimPartitionWrapper-${SIM_MPI})
 
-simLibCheck("${SIM_LIB_NAMES}" TRUE)
-set(SIM_LIB_NAMES)
+set(SIM_BOOTSTRAP_LIB_NAME
+  SimPartitionedMesh-mpi)
+
+simLibCheck("${SIM_BOOTSTRAP_LIB_NAME}" TRUE)
 
 string(FIND "${SIMMODSUITE_LIBS}" "/lib/" archStart)
 string(FIND "${SIMMODSUITE_LIBS}" "/libSim" archEnd)
@@ -89,7 +85,7 @@ option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
   getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}" 
     SimParasolid simParaLib)
-  set(SIM_LIB_NAMES
+  set(SIM_CAD_LIB_NAMES
     ${simParaLib}
     pskernel)
 endif()
@@ -98,18 +94,28 @@ option(SIM_ACIS "Use Acis through Simmetrix" OFF)
 if (SIM_ACIS)
   getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}" 
     SimAcis simAcisLib)
-  set(SIM_LIB_NAMES
-      ${SIM_LIB_NAMES}
+  set(SIM_CAD_LIB_NAMES
       ${simAcisLib}
+      ${SIM_CAD_LIB_NAMES}
       SpaACIS)
 endif()
+
+simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
 
 set(SIM_OPT_LIB_NAMES
   SimField
   SimAdvMeshing)
 
 simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
-simLibCheck("${SIM_LIB_NAMES}" TRUE)
+
+set(SIM_CORE_LIB_NAMES
+  SimPartitionedMesh-mpi
+  SimMeshing
+  SimMeshTools
+  SimModel
+  SimPartitionWrapper-${SIM_MPI})
+
+simLibCheck("${SIM_CORE_LIB_NAMES}" TRUE)
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set SIMMODSUITE_FOUND to TRUE
