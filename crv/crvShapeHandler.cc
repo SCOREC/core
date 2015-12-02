@@ -330,21 +330,29 @@ class BezierHandler : public ma::ShapeHandler
         int dir[4])
     {
       int P = mesh->getShape()->getOrder();
-      if(P == 2){
-        apf::Vector3 xi(0.5,0.5,0);
+//      if(P == 2){
+//        apf::Vector3 xi(0.5,0.5,0);
+//        apf::Vector3 point;
+//        evaluateBlendedQuad(verts,edges,dir,xi,point);
+//        mesh->setPoint(edge,0,point);
+//      } else {
+//        apf::Vector3 xi(1./3.,1./3.,0);
+//        apf::Vector3 point;
+//        evaluateBlendedQuad(verts,edges,dir,xi,point);
+//        mesh->setPoint(edge,0,point);
+//        xi[0] = 2./3.; xi[1] = 2./3.;
+//        evaluateBlendedQuad(verts,edges,dir,xi,point);
+//        mesh->setPoint(edge,1,point);
+//        if (P > 3)
+//          elevateBezierCurve(mesh,edge,3,P-3);
+//      }
+      for (int i = 0; i < P-1; ++i)
+      {
+        double x = (1.+i)/P;
+        apf::Vector3 xi(x,x,0);
         apf::Vector3 point;
         evaluateBlendedQuad(verts,edges,dir,xi,point);
-        mesh->setPoint(edge,0,point);
-      } else {
-        apf::Vector3 xi(1./3.,1./3.,0);
-        apf::Vector3 point;
-        evaluateBlendedQuad(verts,edges,dir,xi,point);
-        mesh->setPoint(edge,0,point);
-        xi[0] = 2./3.; xi[1] = 2./3.;
-        evaluateBlendedQuad(verts,edges,dir,xi,point);
-        mesh->setPoint(edge,1,point);
-        if (P > 3)
-          elevateBezierCurve(mesh,edge,3,P-3);
+        mesh->setPoint(edge,i,point);
       }
     }
     ma::Entity* findEdgeInTri(ma::Entity* v0, ma::Entity* v1,
@@ -390,7 +398,6 @@ class BezierHandler : public ma::ShapeHandler
         for (int i = 0; i < 4; ++i)
           edges[i] = findEdgeInTri(verts[i],verts[(i+1)%4],
               edgeTris[i==1||i==2],dir[i]);
-
         setBlendedQuadEdgePoints(edge,verts,edges,dir);
         return true;
       }
@@ -429,18 +436,34 @@ class BezierHandler : public ma::ShapeHandler
     {
       apf::FieldShape* fs = mesh->getShape();
       int P = fs->getOrder();
-
       int n = fs->getEntityShape(apf::Mesh::EDGE)->countNodes();
       apf::NewArray<double> c;
       crv::getBezierTransformationCoefficients(P,1,c);
 
+      int numNewElements = 0;
       int numNewTriangles = 0;
       int numMiddleEdges = 0; // upper bound
 
       // deal with all the boundary points, if a boundary edge has been
       // collapsed, this is a snapping operation
       // also count a few things for later use, here
-
+      ma::EntityArray oldTriangles;
+      if(mesh->getDimension() == 2){
+        oldTriangles = oldElements;
+      } else if(mesh->getDimension() == 3){
+        // find the set of triangles on the inside
+        ma::EntitySet triangleSet;
+        ma::Entity* tris[4];
+        for (size_t i = 0; i < oldElements.getSize(); ++i)
+        {
+          mesh->getDownward(oldElements[i],2,tris);
+          for (int j = 0; j < 4; ++j)
+          {
+            if(!triangleSet.insert(tris[j]).second)
+              oldTriangles.append(tris[j]);
+          }
+        }
+      }
       for (size_t i = 0; i < newEntities.getSize(); ++i)
       {
         int newType = mesh->getType(newEntities[i]);
@@ -448,7 +471,8 @@ class BezierHandler : public ma::ShapeHandler
 
         if (newType == apf::Mesh::TRIANGLE)
           numNewTriangles++;
-
+        if (newType == apf::Mesh::TET)
+          numNewElements++;
         // zero new entities
         if (newType != apf::Mesh::EDGE)
         {
@@ -468,7 +492,6 @@ class BezierHandler : public ma::ShapeHandler
           numMiddleEdges++;
         }
       }
-
       ma::EntityArray middleEdges(numMiddleEdges);
       int me = 0;
       for (size_t i = 0; i < newEntities.getSize(); ++i){
@@ -480,7 +503,7 @@ class BezierHandler : public ma::ShapeHandler
         if(numNewTriangles == 2 && mesh->getDimension() == 2)
           setBlendedQuadEdgePointsShared(newEntities[i]);
 
-        else if(!setBlendedQuadEdgePointsCross(oldElements,newEntities[i])){
+        else if(!setBlendedQuadEdgePointsCross(oldTriangles,newEntities[i])){
           middleEdges[me] = newEntities[i];
           me++;
           // set to linear, because we don't know any better
