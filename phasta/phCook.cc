@@ -82,6 +82,8 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 namespace ph {
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
+    if (in.adaptFlag)
+      ph::goToStepDir(in.timeStepNumber);
     std::string path = ph::setupOutputDir();
     ph::setupOutputSubdir(path);
     ph::enterFilteredMatching(m, in, bcs);
@@ -142,8 +144,6 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
-    if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
     balanceAndReorder(m,in,numMasters);
     ph::preprocess(m,in,out,bcs);
