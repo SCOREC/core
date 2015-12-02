@@ -202,20 +202,33 @@ static void addAttributes(BCFactories& fs, pPList as, pGEntity ge,
   }
 }
 
+namespace {
+  void getSimModelAndCase(gmi_model* m, pGModel& smdl, pACase& pd) {
+    smdl = gmi_export_sim(m);
+    pAManager mngr = SModel_attManager(smdl);
+    if (!mngr) {
+      fprintf(stderr,"Simmetrix model did not come with an Attribute Manager\n");
+      abort();
+    }
+    pd = AMAN_findCaseByType(mngr, "problem definition");
+    if (!pd) {
+      fprintf(stderr,"no Attribute Case \"problem definition\"\n");
+      abort();
+    }
+  }
+}
+
 void ph::getSimmetrixAttributes(gmi_model* model, ph::BCs& bcs)
 {
-  pGModel smdl = gmi_export_sim(model);
-  pAManager mngr = SModel_attManager(smdl);
-  if (!mngr) {
-    fprintf(stderr,"Simmetrix model did not come with an Attribute Manager\n");
-    abort();
-  }
-  pACase pd = AMAN_findCaseByType(mngr, "problem definition");
-  if (!pd) {
-    fprintf(stderr,"no Attribute Case \"problem definition\"\n");
-    abort();
-  }
+  pGModel smdl = NULL;
+  pACase pd = NULL;
+  getSimModelAndCase(model,smdl,pd);
   AttCase_setModel(pd, smdl);
+  //ensure there is no prior association
+  pPList asc = AttCase_modelAssociations(pd);
+  if (PList_size(asc))
+    AttCase_unassociate(pd);
+  PList_delete(asc);
   AttCase_associate(pd, NULL);
   BCFactories fs;
   formFactories(fs);
