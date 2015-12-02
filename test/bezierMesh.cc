@@ -122,7 +122,7 @@ gmi_model* makeModel()
 apf::Mesh2* createMesh2D()
 {
   gmi_model* model = makeModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
@@ -154,7 +154,7 @@ apf::Mesh2* createMesh2D()
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
 
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
@@ -221,8 +221,7 @@ void testSize2D(apf::Mesh2* m, int order)
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
       apf::ModelEntity* g = m->toModel(e);
-      apf::MeshElement* me = apf::createMeshElement(m,e);
-      double v = apf::measure(me);
+      double v = apf::measure(m,e);
       // these are checks for the middle edge and first order, which does way
       // worse than second order and higher
       bool correct = true;
@@ -247,7 +246,6 @@ void testSize2D(apf::Mesh2* m, int order)
         fprintf(stderr, "%s", s.c_str());
         abort();
       }
-      apf::destroyMeshElement(me);
     }
     m->end(it);
   }
@@ -290,8 +288,7 @@ void testSize3D(apf::Mesh2* m)
     apf::MeshIterator* it = m->begin(d);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
-      apf::MeshElement* me = apf::createMeshElement(m,e);
-      double v = apf::measure(me);
+      double v = apf::measure(m,e);
       // sizes for edges, faces, and volume.
       if((d == 1 && !(std::fabs(v-1.) < 1e-13 || std::fabs(v-1.414213562373) < 1e-11)) ||
          (d == 2 && !(std::fabs(v-0.5) < 1e-13 || std::fabs(v-0.866025403780) < 1e-11)) ||
@@ -305,7 +302,6 @@ void testSize3D(apf::Mesh2* m)
         fprintf(stderr, "%s", s.c_str());
         abort();
       }
-      apf::destroyMeshElement(me);
     }
     m->end(it);
   }

@@ -216,14 +216,6 @@ static void computeSizeFactor(Estimation* e)
   e->size_factor = pow(b, 1.0 / (2.0 * p));
 }
 
-static double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e)
-{
-  apf::MeshElement* element = apf::createMeshElement(m,e);
-  double h = measure(element);
-  apf::destroyMeshElement(element);
-  return h;
-}
-
 static double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
 {
   /* right now maximum edge length is the formula... */
@@ -231,7 +223,7 @@ static double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
   apf::Downward edges;
   int ne = m->getDownward(e,1,edges);
   for (int i=0; i < ne; ++i)
-    h = std::max(h, getEdgeLength(m, edges[i]));
+    h = std::max(h, measure(m, edges[i]));
   return h;
 }
 

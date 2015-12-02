@@ -133,7 +133,7 @@ gmi_model* makeFaceModel()
 apf::Mesh2* createMesh2D()
 {
   gmi_model* model = makeFaceModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
   apf::MeshEntity* v[3], *edges[3];
   apf::Vector3 points2D[3] =
   {apf::Vector3(0,0,0),apf::Vector3(1,0,0),apf::Vector3(1,1,0)};
@@ -164,7 +164,7 @@ static apf::Vector3 points3D[4] =
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
 
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
   apf::deriveMdsModel(m);
@@ -186,7 +186,7 @@ void testEdgeSubdivision()
   for (int o = 1; o <= 6; ++o){
 
     gmi_model* model = makeEdgeModel();
-    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, true);
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, false);
 
     apf::ModelEntity* edgeModel = m->findModelEntity(1,0);
 

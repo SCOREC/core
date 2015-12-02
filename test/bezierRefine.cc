@@ -121,7 +121,7 @@ gmi_model* makeModel()
 apf::Mesh2* createMesh2D()
 {
   gmi_model* model = makeModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
@@ -156,11 +156,9 @@ static double measureMesh(apf::Mesh2* m)
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(m->getDimension());
   double v = 0.;
-  while ((e = m->iterate(it))){
-    apf::MeshElement* me = apf::createMeshElement(m,e);
-    v += apf::measure(me);
-    apf::destroyMeshElement(me);
-  }
+  while ((e = m->iterate(it)))
+    v += apf::measure(m,e);
+ 
   m->end(it);
   return v;
 }
@@ -203,18 +201,18 @@ void test2D()
       }
 
       double v0 = measureMesh(m);
-      crv::writeControlPointVtuFiles(m,"curvedBefore");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
+      //crv::writeControlPointVtuFiles(m,"curvedBefore");
+      //crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore");
+      //crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
       ma::Input* inRefine = ma::configureUniformRefine(m,1);
       inRefine->shouldSnap = true;
       inRefine->shouldTransferParametric = true;
       crv::adapt(inRefine);
       double v1 = measureMesh(m);
       assert( std::fabs(v1-v0) < 0.05 );
-      crv::writeControlPointVtuFiles(m,"curvedAfterRefine");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterRefine");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterRefine");
+      //crv::writeControlPointVtuFiles(m,"curvedAfterRefine");
+      //crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterRefine");
+      //crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterRefine");
       Constant sf;
       ma::Input* inCoarsen = ma::configure(m, &sf);
       inCoarsen->shouldSnap = true;
@@ -222,9 +220,9 @@ void test2D()
       inCoarsen->maximumIterations = 1;
       crv::adapt(inCoarsen);
       crv::writeControlPointVtuFiles(m,"curvedAfterCoarsen");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterCoarsen");
-      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,20,"curvedAfterCoarsen");
-      crv::writeInterpolationPointVtuFiles(m,"curvedAfterCoarsen");
+      //crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterCoarsen");
+      //crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,20,"curvedAfterCoarsen");
+      //crv::writeInterpolationPointVtuFiles(m,"curvedAfterCoarsen");
 
       m->destroyNative();
       apf::destroyMesh(m);
@@ -234,7 +232,7 @@ void test2D()
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
 
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
@@ -255,7 +253,7 @@ void test3D()
 {
   gmi_register_null();
 
-  for(int order = 2; order <= 2; ++order){
+  for(int order = 2; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     crv::setBlendingOrder(apf::Mesh::TYPES,0);
     apf::changeMeshShape(m, crv::getBezier(order),true);
@@ -351,7 +349,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
-//  test3D();
+  test3D();
   PCU_Comm_Free();
   MPI_Finalize();
 }

@@ -18,10 +18,16 @@ namespace ma {
 class SizeField;
 class Adapt;
 
+double measureLinearElement(Mesh* m, Entity* e);
+
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri);
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet);
 double measureElementQuality(Mesh* m, SizeField* f, Entity* e);
 
+/* gets the quality of an element based on
+ * the vertices used for curved elements
+ */
+double measureLinearTetQuality(Vector xyz[4]);
 double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 
 double getWorstQuality(Adapt* a, EntityArray& e);

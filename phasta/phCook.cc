@@ -1,5 +1,5 @@
 #include <ph.h>
-#include <phKitchen.h>
+#include <chef.h>
 #include <phstream.h>
 #include <phInput.h>
 #include <phBC.h>
@@ -79,8 +79,9 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace ph {
-  void preprocess(apf::Mesh2* m, ph::Input& in, ph::Output& out, ph::BCs& bcs)
-  {
+  void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
+    if (in.adaptFlag)
+      ph::goToStepDir(in.timeStepNumber);
     std::string path = ph::setupOutputDir();
     ph::setupOutputSubdir(path);
     ph::enterFilteredMatching(m, in, bcs);
@@ -93,6 +94,13 @@ namespace ph {
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     m->verify();
+    if (in.adaptFlag)
+      ph::goToParentDir();
+  }
+  void preprocess(apf::Mesh2* m, Input& in, Output& out) {
+    BCs bcs;
+    ph::readBCs(in.attributeFileName.c_str(), bcs);
+    preprocess(m,in,out,bcs);
   }
 }
 
@@ -134,13 +142,9 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
-    if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
     balanceAndReorder(m,in,numMasters);
     ph::preprocess(m,in,out,bcs);
-    if (in.adaptFlag)
-      ph::goToParentDir();
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
@@ -184,22 +188,22 @@ namespace chef {
     bake(g,m,ctrl,out);
     return;
   }
-}
 
-namespace kitchen {
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
     ph::readAndAttachSolution(ctrl, m);
   }
 
-  void preprocess(gmi_model*& g, apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
-    ph::BCs bcs;
-    ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
+  void preprocess(apf::Mesh2*& m, ph::Input& in) {
+    ph::Output out;
+    out.openfile_write = chef::openfile_write;
+    ph::preprocess(m,in,out);
+  }
+
+  void preprocess(apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
     ph::Output out;
     out.openfile_write = chef::openstream_write;
     out.grs = grs;
-    ph::preprocess(m,in,out,bcs);
-    if (in.adaptFlag)
-      ph::goToParentDir();
+    ph::preprocess(m,in,out);
   }
 }
 

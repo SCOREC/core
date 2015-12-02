@@ -82,6 +82,7 @@ void detachField(
     int& size)
 {
   apf::Field* f = m->findField(fieldname);
+  assert(f);
   detachField(f, data, size);
 }
 

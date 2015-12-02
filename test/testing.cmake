@@ -333,4 +333,9 @@ if (PCU_COMPRESS)
   add_test(NAME chef8
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
+  add_test(NAME chefReadUrPrep
+    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep ../../../model.dmg bz2:../good_mesh/ adapt.inp
+    WORKING_DIRECTORY "${MDIR}")
 endif()

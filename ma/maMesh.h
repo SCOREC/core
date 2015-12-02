@@ -95,8 +95,6 @@ void ensureParallelConsistency(Mesh* m);
 
 Entity* findTriFromVerts(Mesh* m, Entity** v);
 
-double measure(Mesh* m, Entity* e);
-
 bool isOnModelEdge(Mesh* m, Entity* e);
 bool isOnModelFace(Mesh* m, Entity* e);
 

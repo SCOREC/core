@@ -300,14 +300,6 @@ Entity* findTriFromVerts(Mesh* m, Entity** v)
   return findUpward(m, apf::Mesh::TRIANGLE, e);
 }
 
-double measure(Mesh* m, Entity* e)
-{
-  apf::MeshElement* me = apf::createMeshElement(m,e);
-  double size = apf::measure(me);
-  apf::destroyMeshElement(me);
-  return size;
-}
-
 bool isOnModelEdge(Mesh* m, Entity* e)
 {
   return m->getModelType(m->toModel(e))==1;

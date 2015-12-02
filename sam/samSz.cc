@@ -4,13 +4,6 @@
 #include <cassert>
 
 namespace {
-  double getEdgeLength(apf::Mesh* m, apf::MeshEntity* e) {
-    apf::MeshElement* element = apf::createMeshElement(m,e);
-    double h = measure(element);
-    apf::destroyMeshElement(element);
-    return h;
-  }
-
   void getEdgeLenAndCnt(apf::Mesh* m, apf::MeshEntity* v, double& len, int& cnt) {
     len=0; cnt=0;
     apf::Up edges;
@@ -18,7 +11,7 @@ namespace {
     for(int eIdx=0; eIdx < edges.n; eIdx++) {
       if( m->isOwned(edges.e[eIdx])) {
         cnt++;
-        len += getEdgeLength(m,edges.e[eIdx]);
+        len += measure(m,edges.e[eIdx]);
       }
     }
   }
