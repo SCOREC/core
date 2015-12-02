@@ -16,6 +16,7 @@
 #include <PCU.h>
 #include <string>
 #include <stdlib.h>
+#include <assert.h>
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -98,8 +99,10 @@ namespace ph {
       ph::goToParentDir();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
+    gmi_model* g = m->getModel();
+    assert(g);
     BCs bcs;
-    ph::readBCs(in.attributeFileName.c_str(), bcs);
+    ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     preprocess(m,in,out,bcs);
   }
 }
