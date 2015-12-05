@@ -12,8 +12,6 @@
 #include "apfVectorElement.h"
 #include <cassert>
 
-#include <iostream>
-
 namespace apf {
 
 static const double c = -2.44948974278318;
