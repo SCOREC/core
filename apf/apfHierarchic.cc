@@ -7,7 +7,12 @@
 
 #include "apfShape.h"
 #include "apfMesh.h"
-#include <vector>
+#include "apfFieldOf.h"
+#include "apfElement.h"
+#include "apfVectorElement.h"
+#include <cassert>
+
+#include <iostream>
 
 namespace apf {
 
@@ -162,6 +167,80 @@ FieldShape* getHierarchic(int o)
   else if (o == 2)
     return &q;
   return NULL;
+}
+
+template <class T>
+class Projector : public FieldOp
+{
+  public:
+    Projector(Field* a, Field* b)
+    {
+      to = static_cast<FieldOf<T>*>(a);
+      from = static_cast<FieldOf<T>*>(b);
+      mesh = to->getMesh();
+      meshElem = 0;
+      fromElem = 0;
+      int n = to->countComponents();
+      data.allocate(n);
+      for (int i=0; i < n; ++i)
+        data[i] = 0.0;
+    }
+    bool inEntity(MeshEntity* e)
+    {
+      meshElem = createMeshElement(mesh, e);
+      fromElem = static_cast<ElementOf<T>*>(createElement(from, meshElem));
+      return true;
+    }
+    void atNode(int n)
+    {
+      int nt = to->countNodesOn(meshElem->getEntity());
+      int nf = from->countNodesOn(meshElem->getEntity());
+      if ( (nf == 0) || ((nf - nt) < 0))
+        setComponents(to, meshElem->getEntity(), n, &data[0]);
+      else {
+        Vector3 xi;
+        to->getShape()->getNodeXi(fromElem->getType(),n,xi);
+        T value[1];
+        value[0] = fromElem->getValue(xi);
+        to->setNodeValue(fromElem->getEntity(),n,value);
+      }
+    }
+    void outEntity()
+    {
+      destroyMeshElement(meshElem);
+      destroyElement(fromElem);
+    }
+    void run()
+    {
+      apply(to);
+    }
+    FieldOf<T>* to;
+    FieldOf<T>* from;
+    Mesh* mesh;
+    VectorElement* meshElem;
+    ElementOf<T>* fromElem;
+    apf::NewArray<double> data;
+};
+
+void projectHierarchicField(Field* to, Field* from)
+{
+  int ttype = to->getValueType();
+  int ftype = from->getValueType();
+  assert(ttype == ftype);
+  if (ttype == SCALAR) {
+    Projector<double> projector(to,from);
+    projector.run();
+  }
+  else if (ttype == VECTOR) {
+    Projector<Vector3> projector(to,from);
+    projector.run();
+  }
+  else if (ttype == MATRIX) {
+    Projector<Matrix3x3> projector(to,from);
+    projector.run();
+  }
+  else
+    fail("projectHierarchicField: unsupported value type");
 }
 
 }
