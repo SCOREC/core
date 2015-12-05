@@ -769,6 +769,8 @@ static void writeVtuFile(const char* prefix,
   if (!PCU_Comm_Self())
   {
     printf("writeVtuFile into buffers: %f seconds\n", t1 - t0);
+  }
+  { //block forces std::ofstream destructor call
     std::ofstream file(fileName.c_str());
     assert(file.is_open());
     file << buf.rdbuf();
