@@ -333,8 +333,10 @@ if (PCU_COMPRESS)
   add_test(NAME chef8
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  set(MDIR ${MESHES}/phasta/simModelAndAttributes)
-  cook(chef9 ${CMAKE_CURRENT_BINARY_DIR}/chef 2 1 ${MDIR})
+  if(NOT ENABLE_THREADS)
+    set(MDIR ${MESHES}/phasta/simModelAndAttributes)
+    cook(chef9 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 2 ${MDIR})
+  endif()
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   add_test(NAME chefReadUrPrep
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} 4
