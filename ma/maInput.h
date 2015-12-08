@@ -55,6 +55,8 @@ class Input
     bool shouldHandleMatching;
 /** \brief whether to run shape correction (default true) */
     bool shouldFixShape;
+/** \brief whether to adapt if it makes local quality worse (default false) */
+    bool shouldForceAdaptation;
 /** \brief whether to print the worst shape quality */
     bool shouldPrintQuality;
 /** \brief minimum desired mean ratio cubed for simplex elements

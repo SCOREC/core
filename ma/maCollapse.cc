@@ -38,11 +38,20 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
 {
   assert( ! adapt->mesh->isShared(vertToCollapse));
   rebuildElements();
-  if ( ! checkValidity(qualityToBeat))
-    return false;
+  // check quality of linear t before fitting
   if ((adapt->mesh->getDimension()==2)
     &&( ! isGood2DMesh()))
     return false;
+  // check the linear quality of tets before fitting
+  // reject if one is negative
+  if(adapt->mesh->getDimension()==3 && cavity.shouldFit
+      && !areTetsValid(adapt->mesh,newElements))
+    return false;
+  // since they are okay in a linear sense, now fit and do a quality assessment
+  fitElements();
+  if (hasWorseQuality(adapt,newElements,qualityToBeat))
+    return false;
+
   return true;
 }
 
@@ -58,12 +67,23 @@ bool Collapse::tryThisDirection(double qualityToBeat)
 bool Collapse::tryBothDirections(double qualityToBeat)
 {
   computeElementSets();
+  // if adaptation is not forced, only accept if it
+  // beats the smaller of good quality and the old quality
+  // and is still of valid quality
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+        std::max(getOldQuality(),adapt->input->validQuality));
+
   if (tryThisDirection(qualityToBeat))
     return true;
   if ( ! getFlag(adapt,vertToKeep,COLLAPSE))
     return false;
   std::swap(vertToKeep,vertToCollapse);
   computeElementSets();
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+        std::max(getOldQuality(),adapt->input->validQuality));
+
   return tryThisDirection(qualityToBeat);
 }
 
@@ -324,16 +344,15 @@ void Collapse::rebuildElements()
         rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
             adapt->buildCallback, rebuildCallback);
   cavity.afterBuilding();
-  if (cavity.shouldFit) {
+}
+
+void Collapse::fitElements()
+{
+  if(cavity.shouldFit){
     EntityArray oldElements;
     getOldElements(oldElements);
     cavity.fit(oldElements);
   }
-}
-
-bool Collapse::checkValidity(double qualityToBeat)
-{
-  return getWorstQuality(adapt,newElements) > qualityToBeat;
 }
 
 bool Collapse::isGood2DMesh()

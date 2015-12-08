@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvAdapt.h>
 #include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
@@ -161,19 +162,40 @@ void checkValidity(apf::Mesh* m, int order)
   apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
   int iEntity = 0;
+  int repeatCount = 5;
   while ((e = m->iterate(it))) {
     apf::MeshEntity* entities[6];
     double startSub = PCU_Time();
-    int numInvalidSub = crv::checkTriValidity(m,e,entities,2);
+    printf(KBLU);
+    int numInvalidSub = 0;
+    for (int i = 0; i<repeatCount; ++i) {
+      numInvalidSub += crv::checkTriValidity(m,e,entities,2);
+    }
     double endSub = PCU_Time();
+    printf("sub checktv total time for %i elements: %f numInvalid: %d order: %d" RESET,
+        repeatCount, endSub - startSub, numInvalidSub, order);
+    printf("\n");
     double startEle = PCU_Time();
-    int numInvalidEle = crv::checkTriValidity(m,e,entities,3);
+    printf(KGRN);
+    int numInvalidEle = 0;
+    for (int i = 0; i<repeatCount; ++i) {
+      numInvalidEle += crv::checkTriValidity(m,e,entities,3);
+    }
     double endEle = PCU_Time();
-    printf(KBLU "subTime: %f\t numInvalidSub: %d\t order: %d\n" RESET,
-        endSub - startSub, numInvalidSub, order);
-    printf(KGRN "eleTime: %f\t numInvalidEle: %d\t order: %d\n" RESET,
+    printf("ele checktv total time: %f numInvalid: %d order: %d" RESET,
         endEle - startEle, numInvalidEle, order);
-  //Uncomment this when the "break" after it is gone
+    printf("\n");
+    double start4 = PCU_Time();
+    printf(KMAG);
+    int numInvalid4 = 0;
+    for (int i = 0; i<repeatCount; ++i) {
+      numInvalid4 += crv::checkTriValidity(m,e,entities,4);
+    }
+    double end4 = PCU_Time();
+    printf("4 checktv total time: %f total numInvalid: %d order: %d" RESET,
+        end4 - start4, numInvalid4, order);
+    printf("\n");
+//Uncomment this when the "break" after it is gone
   //else if(iEntity == 1){
   //  printf("numInvalidSub: %d\t order: %d\n", numInvalidSub, order);
   //  printf("numInvalidEle: %d\t order: %d\n", numInvalidEle, order);
@@ -190,7 +212,7 @@ void checkValidity(apf::Mesh* m, int order)
 void test2D()
 {
   for(int order = 2; order <= 6; ++order){
-    printf(" --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n", order);
+    printf(KYEL " --- --- --- --- --- order: %d --- --- --- --- --- --- --- \n" RESET, order);
     double start = PCU_Time();
     apf::Mesh2* m = createMesh2D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
@@ -226,12 +248,15 @@ void test2D()
       }
       m->end(it);
     }
-
+    ma::Input* in = ma::configureUniformRefine(m,3);
+    in->shouldSnap = true;
+    in->shouldTransferParametric = true;
+    // crv::adapt(in);
     //uncomment this stuff to plot it and see in paraview
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"curved");
-    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"curved");
+    // crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"t_curved");
+    // crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,500,"t_curved");
 
-    crv::writeControlPointVtuFiles(m,"curved");
+    // crv::writeControlPointVtuFiles(m,"t_curved");
 
     double startValidity = PCU_Time();
     checkValidity(m,order);

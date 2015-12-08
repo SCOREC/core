@@ -18,7 +18,8 @@ namespace ma {
 class SizeField;
 class Adapt;
 
-double measureLinearElement(Mesh* m, Entity* e);
+/* quick check of positivity of volumes based on vertices */
+bool areTetsValid(Mesh* m, EntityArray& tets);
 
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri);
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet);
@@ -33,6 +34,9 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
 
+/* has worse quality than qualityToBeat
+ */
+bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
 
 /* checks whether a prism is safe to tetrahedronize.
  * the optional "good_diagonal_codes" integer
