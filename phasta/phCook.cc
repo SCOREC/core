@@ -1,6 +1,7 @@
 #include <ph.h>
 #include <chef.h>
 #include <phstream.h>
+#include <phAttrib.h>
 #include <phInput.h>
 #include <phBC.h>
 #include <phRestart.h>
@@ -95,6 +96,8 @@ namespace ph {
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     m->verify();
+    gmi_model* g = m->getModel();
+    ph::clearAttAssociation(g,in);
     if (in.adaptFlag)
       ph::goToParentDir();
   }

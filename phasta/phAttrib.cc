@@ -218,17 +218,23 @@ namespace {
   }
 }
 
+void ph::clearAttAssociation(gmi_model* mdl, ph::Input& in)
+{
+  const char* attFile = in.attributeFileName.c_str();
+  if (gmi_has_ext(attFile, "spj"))
+    return;
+  pGModel smdl = NULL;
+  pACase pd = NULL;
+  getSimModelAndCase(mdl,smdl,pd);
+  AttCase_unassociate(pd);
+}
+
 void ph::getSimmetrixAttributes(gmi_model* model, ph::BCs& bcs)
 {
   pGModel smdl = NULL;
   pACase pd = NULL;
   getSimModelAndCase(model,smdl,pd);
   AttCase_setModel(pd, smdl);
-  //ensure there is no prior association
-  pPList asc = AttCase_modelAssociations(pd);
-  if (PList_size(asc))
-    AttCase_unassociate(pd);
-  PList_delete(asc);
   AttCase_associate(pd, NULL);
   BCFactories fs;
   formFactories(fs);
