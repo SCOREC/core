@@ -12,9 +12,8 @@ namespace ph {
 
 void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
-    printf("Matched mesh: disabling coarsening,"
+    printf("Matched mesh: disabling"
            " snapping, and shape correction,\n");
-  in.shouldCoarsen = false;
   in.shouldSnap = false;
   in.shouldFixShape = false;
 }
