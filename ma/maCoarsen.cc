@@ -103,6 +103,7 @@ class MatchedIndependentSetFinder : public IndependentSetFinder
     {}
     virtual void apply()
     {
+      assert(!mesh->isShared(vertex));
       apf::CopyArray matches;
       this->sharing->getCopies(vertex, matches);
       APF_ITERATE(apf::CopyArray, matches, it) {

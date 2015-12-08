@@ -74,6 +74,7 @@ void Rebuilds::match(apf::Sharing* sh)
   for (unsigned i = 0; i < v.size(); ++i) {
     Entity* orig = v[i].original;
     Entity* gen = v[i].e;
+    assert(mesh->getType(orig) == mesh->getType(gen));
     apf::CopyArray orig_matches;
     sh->getCopies(orig, orig_matches);
     for (unsigned j = 0; j < orig_matches.getSize(); ++j) {
