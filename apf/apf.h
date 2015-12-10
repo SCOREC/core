@@ -474,12 +474,13 @@ for (t::const_iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
-  * with binary (base64) encoding
+  * with ASCII encoding
   * \details Nodal fields whose shape differs from the mesh shape will
   * not be output. Fields with incomplete data will not be output.
   */
 void writeVtkFiles(const char* prefix, Mesh* m);
-/** \brief Output just the .vtu file with binary (base64) encoding for this part.
+
+/** \brief Output just the .vtu file with ASCII encoding for this part.
   \details this function is useful for debugging large parallel meshes.
   */
 void writeOneVtkFile(const char* prefix, Mesh* m);
@@ -490,6 +491,13 @@ void writeOneVtkFile(const char* prefix, Mesh* m);
   * not be output. Fields with incomplete data will not be output.
   */
 void writeASCIIVtkFiles(const char* prefix, Mesh* m);
+
+/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * with binary (base64) encoding
+  * \details Nodal fields whose shape differs from the mesh shape will
+  * not be output. Fields with incomplete data will not be output.
+  */
+void writeBinaryVtkFiles(const char* prefix, Mesh* m);
 
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType
