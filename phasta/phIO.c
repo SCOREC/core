@@ -163,7 +163,11 @@ void ph_read_field(FILE* f, const char* field, double** data,
   int ok;
   should_swap = read_magic_number(f);
   ok = find_header(f, field, header);
-  assert(ok);
+  if (!ok) {
+    fprintf(stderr, "rank %d could not find field header \"%s\"\n",
+        PCU_Comm_Self(), field);
+    abort();
+  }
   parse_params(header, &bytes, nodes, vars, step);
   assert(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
