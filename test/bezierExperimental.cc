@@ -248,9 +248,9 @@ void test2D()
       }
       m->end(it);
     }
-    ma::Input* in = ma::configureUniformRefine(m,3);
-    in->shouldSnap = true;
-    in->shouldTransferParametric = true;
+//    ma::Input* in = ma::configureUniformRefine(m,3);
+//    in->shouldSnap = true;
+//    in->shouldTransferParametric = true;
     // crv::adapt(in);
     //uncomment this stuff to plot it and see in paraview
     // crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,50,"t_curved");
@@ -356,7 +356,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   test2D();
-  //test3D();
+//  test3D();
   PCU_Comm_Free();
   MPI_Finalize();
 }
