@@ -9,7 +9,7 @@ namespace lion {
 Function getBase64Char:
   gets the char at the index given to it from the encode table
 */
-char getBase64Char (int index);
+unsigned char getBase64Char (int index);
 
 // ===========================================================================
 
@@ -85,8 +85,7 @@ Arguments:
 Returns:
   std::string - Base64 encoded string of the input bytes
 */
-std::string base64Encode (const char* input,
-                          const unsigned long len );
+std::string base64Encode (const char* input, const unsigned long len );
 
 // ===========================================================================
 
