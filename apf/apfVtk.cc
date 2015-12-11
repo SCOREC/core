@@ -17,7 +17,6 @@
 #include <fstream>
 #include <cassert>
 #include <cstdlib>
-#include <stdint.h>
 
 namespace apf {
 
@@ -495,7 +494,7 @@ static void writeTypes(std::ostream& file,
     Mesh* m,
     bool isWritingBinary = false)
 {
-  file << "<DataArray type=\"UInt8\" Name=\"types\"";
+  file << "<DataArray type=\"Int32\" Name=\"types\"";
   if (isWritingBinary)
   {
     file << " format=\"binary\"";
@@ -529,8 +528,8 @@ static void writeTypes(std::ostream& file,
       dataLen++;
     }
     m->end(elements);
-    unsigned int dataLenBytes = dataLen*sizeof(uint8_t);
-    uint8_t* dataToEncode = new uint8_t[dataLen]();
+    unsigned int dataLenBytes = dataLen*sizeof(int);
+    int* dataToEncode = new int[dataLen]();
     elements = m->begin(m->getDimension());
     unsigned int dataIndex = 0;
     while ((e = m->iterate(elements)))
@@ -538,9 +537,9 @@ static void writeTypes(std::ostream& file,
       dataToEncode[dataIndex] = vtkTypes[m->getType(e)][order-1];
       dataIndex++;
     }
+    m->end(elements);
     writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     delete [] dataToEncode;
-    m->end(elements);
   }
   else
   {
