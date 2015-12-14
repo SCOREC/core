@@ -56,6 +56,7 @@ osh_t fromAPF(apf::Mesh* am)
     }
     am->end(it);
   }
+  apf::destroyGlobalNumbering(glob_n);
   return om;
 }
 

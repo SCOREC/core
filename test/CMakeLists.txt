@@ -7,6 +7,7 @@ find_package(viz REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(dsp REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(crv REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(lion REQUIRED PATHS ${CMAKE_BINARY_DIR})
+find_package(apf_omega_h QUIET PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -18,6 +19,7 @@ include_directories(
   ${DSP_INCLUDE_DIRS}
   ${CRV_INCLUDE_DIRS}
   ${LION_INCLUDE_DIRS}
+  ${APF_OMEGA_H_INCLUDE_DIRS}
 )
 set(ALL_LIBS
   ${MA_LIBS}
@@ -29,6 +31,7 @@ set(ALL_LIBS
   ${DSP_LIBS}
   ${CRV_LIBS}
   ${LION_LIBS}
+  ${APF_OMEGA_H_LIBS}
 )
 
 if(NOT IS_TESTING)
@@ -128,6 +131,9 @@ setup_exe(reposition reposition.cc)
 setup_exe(qr qr.cc)
 setup_exe(base64 base64.cc)
 setup_exe(test_AD test_AD.cc)
+if(ENABLE_OMEGA_H)
+  setup_exe(omega_h omega_h.cc)
+endif()
 
 if(IS_TESTING)
   include(testing.cmake)
