@@ -457,14 +457,13 @@ static void getInitialConditions(BCs& bcs, Output& o)
           }
         }
       }
-
 /*
       if (change_s) {
         if(ixpoint==-1)
-          std::cout << "could not find the point in exact solution!\n";
+          printf("could not find the point in exact solution!\n");
 s[0] = sol_table[ixpoint][1]; // pressure
-s[1] = sol_table[ixpoint][2];
-//s[1] = sol_table[ixpoint][2]-1.0; // velocity in moving frame (exact) + umesh (vi)
+//s[1] = sol_table[ixpoint][2];
+s[1] = sol_table[ixpoint][2]-2.5; // velocity in moving frame (exact) + umesh (vi)
 s[2] = 0.;
 s[3] = 0.;
 s[4] = sol_table[ixpoint][3]; // temperature

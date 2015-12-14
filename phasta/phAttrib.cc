@@ -1,8 +1,9 @@
-#include "phAttrib.h"
+# include "phAttrib.h"
 #include "gmi_sim.h"
 #include <SimAttribute.h>
 #include <SimUtil.h>
 #include <cstdlib>
+#include <iostream>
 
 /* Simmetrix, for the love of all that is good,
    please put this in your header files.
@@ -75,6 +76,8 @@ struct CompBC : public SimBC {
         magnitude = (pAttributeDouble) child;
       else if (Attribute_repType(child) == Att_tensor1)
         direction = (pAttributeTensor1) child;
+else
+  fprintf(stderr,"ignored some comp1/3 attributes...\n");
     }
     PList_delete(children);
     if (!magnitude) {

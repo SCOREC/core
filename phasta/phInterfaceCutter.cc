@@ -3,6 +3,7 @@
 #include <apf.h>
 #include <ph.h>
 #include <cassert>
+#include <iostream>
 
 namespace apf {
 /* so dangerous is this function that it
