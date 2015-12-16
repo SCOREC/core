@@ -13,6 +13,21 @@
 
 namespace crv {
 
+bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
+{
+  int dim = apf::Mesh::typeDimension[m->getType(e)];
+  int md = m->getDimension();
+  apf::Downward down;
+  for (int d = dim; d >= 1; --d)
+  {
+    int nd = m->getDownward(e,d,down);
+    for (int i = 0; i < nd; ++i)
+      if(m->getModelType(m->toModel(down[i])) < md)
+        return true;
+  }
+  return false;
+}
+
 int getNumInternalControlPoints(int type, int order)
 {
   switch (type) {
