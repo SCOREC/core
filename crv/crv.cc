@@ -15,16 +15,22 @@ namespace crv {
 
 bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
 {
-  int dim = apf::Mesh::typeDimension[m->getType(e)];
+  return m->getModelType(m->toModel(e)) < m->getDimension();
+}
+
+bool hasTwoEdgesOnBoundary(apf::Mesh* m, apf::MeshEntity* e)
+{
   int md = m->getDimension();
   apf::Downward down;
-  for (int d = dim; d >= 1; --d)
-  {
-    int nd = m->getDownward(e,d,down);
-    for (int i = 0; i < nd; ++i)
-      if(m->getModelType(m->toModel(down[i])) < md)
-        return true;
+  int count = 0;
+  int nd = m->getDownward(e,1,down);
+  for (int i = 0; i < nd; ++i){
+    if(m->getModelType(m->toModel(down[i])) < md)
+      ++count;
+    if(count == 2)
+      return true;
   }
+
   return false;
 }
 
