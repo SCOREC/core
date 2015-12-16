@@ -118,7 +118,7 @@ static void fixLargeAngles(crv::Adapt* a)
   if ( ! count) {
     return;
   }
-  printf("found %d elements\n",count);
+  printf("found %ld elements\n",count);
   assert(ma::checkFlagConsistency(a,1,ma::SPLIT));
   ma::Refine* r = a->refine;
   ma::resetCollection(r);
