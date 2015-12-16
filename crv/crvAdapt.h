@@ -16,7 +16,38 @@
 
 namespace crv {
 
+class Adapt : public ma::Adapt
+{
+  public:
+    Adapt(ma::Input* in);
+    ~Adapt();
+    ma::Tag* validityTag;
+};
+
+void snapRefineToBoundary(ma::Adapt* a);
 void repositionInterior(ma::Refine* r);
+
+int markBadQuality(Adapt* a);
+
+/* Use a crv version of these
+ * because we don't have bitwise operations
+ */
+int getFlag(Adapt* a, ma::Entity* e);
+void setFlag(Adapt* a, ma::Entity* e, int flag);
+void clearFlag(Adapt* a, ma::Entity* e);
+
+/* Use an integer to determine the quality tag
+ * 0 -> Not checked
+ * 1 -> Okay Quality
+ * 2-7 -> Vertices are bad
+ * 8-13 -> Edges are bad
+ * 14-17 -> Face are bad
+ * 18 -> Entity itself is bad, this one is the worst
+ */
+int getQualityTag(ma::Mesh* m, ma::Entity* e,
+    ma::Entity* bdry);
+
+void fixElementShapes(Adapt* a);
 
 /** \brief experimental function */
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
