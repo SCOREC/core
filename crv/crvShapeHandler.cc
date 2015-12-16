@@ -27,10 +27,6 @@ static double measureLinearTriArea(ma::Mesh* m, ma::Entity* tri)
   ma::Vector p[3];
   ma::getVertPoints(m,tri,p);
   return 0.5*apf::cross(p[1]-p[0],p[2]-p[0]).getLength();
-//  int b = getBlendingOrder(apf::Mesh::TRIANGLE);
-//  setBlendingOrder(apf::Mesh::TRIANGLE,1);
-//  return apf::measure(m,tri);
-//  setBlendingOrder(apf::Mesh::TRIANGLE,b);
 }
 
 static void setLinearEdgePoints(ma::Mesh* m, ma::Entity* edge)
@@ -94,8 +90,6 @@ class BezierTransfer : public ma::SolutionTransfer
           }
         }
 
-        // this part relies on "closeness"
-        // to determine if this is the correct edge
         if(!vert){
           for (int i = 0; i < ne; ++i){
             if( verts[v] == midEdgeVerts[i] ){
@@ -330,30 +324,30 @@ class BezierHandler : public ma::ShapeHandler
         int dir[4])
     {
       int P = mesh->getShape()->getOrder();
-//      if(P == 2){
-//        apf::Vector3 xi(0.5,0.5,0);
-//        apf::Vector3 point;
-//        evaluateBlendedQuad(verts,edges,dir,xi,point);
-//        mesh->setPoint(edge,0,point);
-//      } else {
-//        apf::Vector3 xi(1./3.,1./3.,0);
-//        apf::Vector3 point;
-//        evaluateBlendedQuad(verts,edges,dir,xi,point);
-//        mesh->setPoint(edge,0,point);
-//        xi[0] = 2./3.; xi[1] = 2./3.;
-//        evaluateBlendedQuad(verts,edges,dir,xi,point);
-//        mesh->setPoint(edge,1,point);
-//        if (P > 3)
-//          elevateBezierCurve(mesh,edge,3,P-3);
-//      }
-      for (int i = 0; i < P-1; ++i)
-      {
-        double x = (1.+i)/P;
-        apf::Vector3 xi(x,x,0);
+      if(P == 2){
+        apf::Vector3 xi(0.5,0.5,0);
         apf::Vector3 point;
         evaluateBlendedQuad(verts,edges,dir,xi,point);
-        mesh->setPoint(edge,i,point);
+        mesh->setPoint(edge,0,point);
+      } else {
+        apf::Vector3 xi(1./3.,1./3.,0);
+        apf::Vector3 point;
+        evaluateBlendedQuad(verts,edges,dir,xi,point);
+        mesh->setPoint(edge,0,point);
+        xi[0] = 2./3.; xi[1] = 2./3.;
+        evaluateBlendedQuad(verts,edges,dir,xi,point);
+        mesh->setPoint(edge,1,point);
+        if (P > 3)
+          elevateBezierCurve(mesh,edge,3,P-3);
       }
+//      for (int i = 0; i < P-1; ++i)
+//      {
+//        double x = (1.+i)/P;
+//        apf::Vector3 xi(x,x,0);
+//        apf::Vector3 point;
+//        evaluateBlendedQuad(verts,edges,dir,xi,point);
+//        mesh->setPoint(edge,i,point);
+//      }
     }
     ma::Entity* findEdgeInTri(ma::Entity* v0, ma::Entity* v1,
         ma::Entity* tri, int& dir)
