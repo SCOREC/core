@@ -253,7 +253,6 @@ static void getJacDetBySubdivisionMatrices(int type, int P,
     int iter, apf::NewArray<double>& c,apf::NewArray<double>& nodes,
     double& minJ, double& maxJ, bool& done, bool& quality)
 {
-  printf("4th way\t");
   int n = getNumControlPoints(type,P);
   double change = minJ;
   if(!done){
@@ -349,6 +348,7 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
     numInvalid = checkTriValidityAtNodeXi(m,e,entities);
     if(numInvalid > 0) return numInvalid;
   }
+
   // if it is positive, then keep going
   double triStart = PCU_Time();
   apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
@@ -357,24 +357,26 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   apf::destroyElement(elem);
   apf::NewArray<double> nodes(P*(2*P-1));
   getTriJacDetNodes(P,elemNodes,nodes);
-  apf::MeshEntity* edges[3];
+
+  if(algorithm >= 2){
+    apf::Downward verts;
+    m->getDownward(e,0,verts);
+    for (int i = 0; i < 3; ++i){
+      if(nodes[i] < minAcceptable){
+        entities[numInvalid] = verts[i];
+        numInvalid++;
+      }
+    }
+  }
+  if (numInvalid > 0) return numInvalid;
 
   apf::NewArray<double> subCoefficients;
   if(algorithm == 4){
     getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
         apf::Mesh::EDGE,subCoefficients);
   }
-  if(algorithm >= 2){
-    apf::Downward verts;
-    m->getDownward(e,0,verts);
-    for (int i = 0; i < 3; ++i){
-      if(nodes[i] < minAcceptable){
-       entities[i] = verts[i]; 
-        numInvalid++;
-      }
-    }
-  }
-  if (numInvalid > 0) return numInvalid;
+
+  apf::MeshEntity* edges[3];
   m->getDownward(e,1,edges);
   double minJ = 0, maxJ = 0;
   // Vertices will already be flagged in the first check
@@ -515,6 +517,18 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
   // 9*P*P*(P-1)/2+P = (3(P-1)+1)(3(P-1)+2)(3(P-1)+3)/6
   apf::NewArray<double> nodes(9*P*P*(P-1)/2+P);
   getTetJacDetNodes(P,elemNodes,nodes);
+
+  if(algorithm >= 2){
+    apf::Downward verts;
+    m->getDownward(e,0,verts);
+    for (int i = 0; i < 4; ++i){
+      if(nodes[i] < minAcceptable){
+        entities[numInvalid] = verts[i];
+        numInvalid++;
+      }
+    }
+  }
+  if (numInvalid > 0) return numInvalid;
 
   apf::NewArray<double> subCoefficients;
   if(algorithm == 4){
