@@ -25,7 +25,7 @@ bool hasTwoEdgesOnBoundary(apf::Mesh* m, apf::MeshEntity* e)
   int count = 0;
   int nd = m->getDownward(e,1,down);
   for (int i = 0; i < nd; ++i){
-    if(m->getModelType(m->toModel(down[i])) < md)
+    if(isBoundaryEntity(m,down[i]))
       ++count;
     if(count == 2)
       return true;

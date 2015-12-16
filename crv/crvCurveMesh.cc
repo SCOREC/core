@@ -221,9 +221,8 @@ static void elevateBezierCurves(apf::Mesh2* m)
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(1);
   while ((e = m->iterate(it))) {
-    apf::ModelEntity* g = m->toModel(e);
-    if(m->getModelType(g) == 3) continue;
-    elevateBezierCurve(m,e,3,1);
+    if(isBoundaryEntity(m,e))
+      elevateBezierCurve(m,e,3,1);
   }
   m->end(it);
 }

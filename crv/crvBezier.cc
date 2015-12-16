@@ -97,7 +97,7 @@ public:
       values.allocate((P+1)*(P+2)/2);
 
       if(!useBlend(apf::Mesh::TRIANGLE)
-          || m->getModelType(m->toModel(e)) != m->getDimension()){
+          || isBoundaryEntity(m,e)){
         bezier[apf::Mesh::TRIANGLE](P,xi,values);
       } else
         BlendedTriangleGetValues(m,e,xi,values);
@@ -109,7 +109,7 @@ public:
       grads.allocate((P+1)*(P+2)/2);
 
       if(!useBlend(apf::Mesh::TRIANGLE)
-          || m->getModelType(m->toModel(e)) != m->getDimension()){
+          || isBoundaryEntity(m,e)){
         bezierGrads[apf::Mesh::TRIANGLE](P,xi,grads);
       } else
         BlendedTriangleGetLocalGradients(m,e,xi,grads);
@@ -268,9 +268,8 @@ public:
       values.allocate(18);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
-      apf::ModelEntity* g = m->toModel(e);
       if (!useBlend(apf::Mesh::TRIANGLE)
-          || m->getModelType(g) != m->getDimension()){
+          || isBoundaryEntity(m,e)){
         apf::NewArray<double> bvalues;
         getBezier(4)->getEntityShape(apf::Mesh::TRIANGLE)
             ->getValues(m,e,xi,bvalues);
@@ -301,9 +300,9 @@ public:
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
-      apf::ModelEntity* g = m->toModel(e);
+
       if (!useBlend(apf::Mesh::TRIANGLE)
-          || m->getModelType(g) != m->getDimension()){
+          || isBoundaryEntity(m,e)){
         apf::NewArray<apf::Vector3> bgrads;
         apf::NewArray<double> bvalues;
 
