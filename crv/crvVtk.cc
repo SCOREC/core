@@ -633,8 +633,9 @@ static void writePvtuFile(const char* prefix, const char* suffix,
     apf::Mesh* m, int type)
 {
   std::stringstream ss;
-  ss << prefix << "_" << m->getShape()->getOrder()
-     << suffix << ".pvtu";
+  ss << prefix << suffix << "_"
+     << m->getShape()->getOrder()
+     << ".pvtu";
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
@@ -685,9 +686,9 @@ void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << "_interPts" << ".vtu";
+  ss << prefix << PCU_Comm_Self() << "_interPts"
+     << "_" << m->getShape()->getOrder()
+     << ".vtu";
 
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
@@ -757,9 +758,10 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(apf::Mesh::VERTEX) << ".vtu";
+  ss << prefix << PCU_Comm_Self()
+     << getSuffix(apf::Mesh::VERTEX)
+     << "_" << m->getShape()->getOrder()
+     << ".vtu";
 
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
@@ -827,9 +829,10 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(type) << ".vtu";
+  ss << prefix << PCU_Comm_Self()
+     << getSuffix(type)
+     << "_" << m->getShape()->getOrder()
+     << ".vtu";
   std::string fileName = ss.str();
   std::stringstream buf;
 
