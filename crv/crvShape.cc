@@ -48,7 +48,6 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
   m->getDownward(e,1,edges);
   for (int i = 0; i < 3; ++i)
   {
-//    printf("looking at a tri\n");
     ma::Entity* e0 = edges[i];
     ma::Entity* e1 = edges[(i+1) % 3];
     if(isBoundaryEntity(m,e0) && isBoundaryEntity(m,e1))
@@ -59,10 +58,7 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
         // mark the vertex
         ma::setFlag(a,verts[(i+1) % 3],ma::SNAP);
         ma::Entity* edge = edges[(i+2) % 3];
-//        printf("found edge %d\n",edge);
-
         if(!ma::getFlag(a,edge,ma::SPLIT)){
-//          printf("edge %d\n",edge);
           return edge;
         }
       }
