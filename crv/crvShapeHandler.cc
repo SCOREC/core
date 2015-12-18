@@ -48,11 +48,12 @@ static void setLinearEdgePoints(ma::Mesh* m, ma::Entity* edge)
 class BezierTransfer : public ma::SolutionTransfer
 {
   public:
-    BezierTransfer(ma::Mesh* m, ma::Refine* r, bool snap)
+    BezierTransfer(ma::Adapt* a)
     {
-      mesh = m;
-      refine = r;
-      shouldSnap = snap;
+      adapt = a;
+      mesh = a->mesh;
+      refine = a->refine;
+      shouldSnap = a->input->shouldSnap;
       // pre compute the inverses of the transformation matrices
       int P = mesh->getShape()->getOrder();
       for (int d = 1; d <= 3; ++d){
@@ -117,11 +118,16 @@ class BezierTransfer : public ma::SolutionTransfer
 
       mesh->getDownward(parent,0,parentVerts);
       mesh->getDownward(parent,1,parentEdges);
+
       int ne = apf::Mesh::adjacentCount[parentType][1];
 
       apf::NewArray<apf::MeshEntity*> midEdgeVerts(ne);
-      for (int i = 0; i < ne; ++i)
-        midEdgeVerts[i] = ma::findSplitVert(refine,parentEdges[i]);
+      for (int i = 0; i < ne; ++i){
+        if ( ma::getFlag(adapt,parentEdges[i],ma::SPLIT) )
+          midEdgeVerts[i] = ma::findSplitVert(refine,parentEdges[i]);
+        else
+          midEdgeVerts[i] = 0;
+      }
 
       int np = getNumControlPoints(parentType,P);
 
@@ -131,34 +137,62 @@ class BezierTransfer : public ma::SolutionTransfer
       apf::getVectorNodes(elem,nodes);
       apf::destroyElement(elem);
 
-      for (size_t i = 0; i < newEntities.getSize(); ++i)
-      {
-        int childType = mesh->getType(newEntities[i]);
-        int ni = mesh->getShape()->countNodesOn(childType);
+      // check if we can use the curvature of the original element or not
+      bool useLinear = false;
 
-        if (childType == apf::Mesh::VERTEX || ni == 0 ||
-            (mesh->getModelType(mesh->toModel(newEntities[i]))
-            < mesh->getDimension() && shouldSnap))
-          continue; //vertices will have been handled specially beforehand
+      for (int d = 1; d <= apf::Mesh::typeDimension[parentType]; ++d){
+        for (size_t i = 0; i < newEntities.getSize(); ++i)
+        {
+          // go through this hierachically, doing edges first
+          int childType = mesh->getType(newEntities[i]);
+          if(d != apf::Mesh::typeDimension[childType])
+            continue;
 
-        int n = getNumControlPoints(childType,P);
-        apf::Vector3 vp[4];
-        getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
+          int ni = mesh->getShape()->countNodesOn(childType);
 
-        mth::Matrix<double> A(n,np),B(n,n);
-        getBezierTransformationMatrix(parentType,childType,P,A,vp);
-        mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
+          if (childType == apf::Mesh::VERTEX || ni == 0 ||
+              (isBoundaryEntity(mesh,newEntities[i]) && shouldSnap))
+            continue; //vertices will have been handled specially beforehand
+          bool isEdgeLinear = false;
+          if(childType == apf::Mesh::EDGE &&
+              !isBoundaryEntity(mesh,newEntities[i])){
+            ma::Entity* verts[2];
+            mesh->getDownward(newEntities[i],0,verts);
+            // make the edge linear if its not a boundary edge
+            // on a geometry, and one of its vertices has been flagged
+            isEdgeLinear = (ma::getFlag(adapt,verts[0],ma::SNAP) ||
+                ma::getFlag(adapt,verts[1],ma::SNAP));
 
-        for (int j = 0; j < ni; ++j){
-          apf::Vector3 point(0,0,0);
-          for (int k = 0; k < np; ++k)
-            point += nodes[k]*B(j+n-ni,k);
+            useLinear = useLinear || isEdgeLinear;
+          }
+          if (useLinear && childType != apf::Mesh::EDGE){
+            for (int j = 0; j < ni; ++j){
+              apf::Vector3 zero(0,0,0);
+              mesh->setPoint(newEntities[i],j,zero);
+            }
+            repositionInteriorWithBlended(mesh,newEntities[i]);
+          } else if(!isEdgeLinear){
+            int n = getNumControlPoints(childType,P);
+            apf::Vector3 vp[4];
+            getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
 
-          mesh->setPoint(newEntities[i],j,point);
+            mth::Matrix<double> A(n,np),B(n,n);
+            getBezierTransformationMatrix(parentType,childType,P,A,vp);
+            mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
+            for (int j = 0; j < ni; ++j){
+              apf::Vector3 point(0,0,0);
+              for (int k = 0; k < np; ++k)
+                point += nodes[k]*B(j+n-ni,k);
+              mesh->setPoint(newEntities[i],j,point);
+            }
+          } else {
+            setLinearEdgePoints(mesh,newEntities[i]);
+          }
         }
       }
     }
   private:
+    ma::Adapt* adapt;
     ma::Mesh* mesh;
     ma::Refine* refine;
     mth::Matrix<double> Ai[4];
@@ -170,8 +204,9 @@ class BezierHandler : public ma::ShapeHandler
   public:
     BezierHandler(ma::Adapt* a)
     {
+      adapt = a;
       mesh = a->mesh;
-      bt = new BezierTransfer(mesh,a->refine,a->input->shouldSnap);
+      bt = new BezierTransfer(a);
       sizeField = a->sizeField;
       shouldSnap = a->input->shouldSnap;
     }
@@ -531,6 +566,7 @@ class BezierHandler : public ma::ShapeHandler
       }
     }
   private:
+    ma::Adapt* adapt;
     ma::Mesh* mesh;
     BezierTransfer* bt;
     ma::SizeField * sizeField;

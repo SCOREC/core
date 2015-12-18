@@ -54,11 +54,6 @@ static void setFlags(Adapt* a, ma::Entity* e, int flags)
   a->mesh->setIntTag(e,a->validityTag,&flags);
 }
 
-Adapt::~Adapt()
-{
-  clearFlags(this);
-}
-
 void snapRefineToBoundary(ma::Adapt* a){
 
   if ( ! a->input->shouldSnap)
@@ -94,14 +89,8 @@ void snapRefineToBoundary(ma::Adapt* a){
   }
 }
 
-static bool refine(ma::Adapt* a)
+void splitEdges(ma::Adapt* a)
 {
-  double t0 = PCU_Time();
-  --(a->refinesLeft);
-  long count = ma::markEdgesToSplit(a);
-  if ( ! count) {
-    return false;
-  }
   assert(ma::checkFlagConsistency(a,1,ma::SPLIT));
   ma::Refine* r = a->refine;
   ma::resetCollection(r);
@@ -113,9 +102,19 @@ static bool refine(ma::Adapt* a)
   ma::destroySplitElements(r);
   crv::repositionInterior(r);
   ma::forgetNewEntities(r);
+}
+
+static void refine(ma::Adapt* a)
+{
+  double t0 = PCU_Time();
+  --(a->refinesLeft);
+  long count = ma::markEdgesToSplit(a);
+  if ( ! count) {
+    return;
+  }
+  splitEdges(a);
   double t1 = PCU_Time();
-  ma::print("refined %li edges in %f seconds",count,t1-t0);
-  return true;
+  ma::print("split %li edges in %f seconds",count,t1-t0);
 }
 
 int getQualityTag(ma::Mesh* m, ma::Entity* e,
@@ -227,6 +226,7 @@ void adapt(ma::Input* in)
   double t1 = PCU_Time();
   ma::print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(a->mesh);
+  crv::clearFlags(a);
   delete a;
   delete in;
 

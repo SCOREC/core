@@ -20,13 +20,15 @@ class Adapt : public ma::Adapt
 {
   public:
     Adapt(ma::Input* in);
-    ~Adapt();
     ma::Tag* validityTag;
 };
 
 void snapRefineToBoundary(ma::Adapt* a);
+bool repositionInteriorWithBlended(ma::Mesh* m,
+    ma::Entity* e);
 void repositionInterior(ma::Refine* r);
 
+void splitEdges(ma::Adapt* a);
 int markBadQuality(Adapt* a);
 
 /* Use a crv version of these

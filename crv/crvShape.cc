@@ -48,12 +48,23 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
   m->getDownward(e,1,edges);
   for (int i = 0; i < 3; ++i)
   {
+//    printf("looking at a tri\n");
     ma::Entity* e0 = edges[i];
     ma::Entity* e1 = edges[(i+1) % 3];
     if(isBoundaryEntity(m,e0) && isBoundaryEntity(m,e1))
     {
       if(isCornerTriAngleLarge(m,e,(i+1) % 3)){
-        return edges[(i+2) % 3];
+        ma::Entity* verts[3];
+        m->getDownward(e,0,verts);
+        // mark the vertex
+        ma::setFlag(a,verts[(i+1) % 3],ma::SNAP);
+        ma::Entity* edge = edges[(i+2) % 3];
+//        printf("found edge %d\n",edge);
+
+        if(!ma::getFlag(a,edge,ma::SPLIT)){
+//          printf("edge %d\n",edge);
+          return edge;
+        }
       }
     }
   }
@@ -61,84 +72,43 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
   return 0;
 }
 
-static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
-
-{
-  ma::Mesh* m = a->mesh;
-  ma::Entity* faces[4];
-  m->getDownward(e,2,faces);
-  for (int i = 0; i < 4; ++i)
-  {
-    ma::Entity* edge = isLargeAngleTri(a,faces[i]);
-    if(edge) return edge;
-  }
-  return 0;
-};
-
-typedef ma::Entity* (*AngleFunction)(crv::Adapt* a, ma::Entity* e);
-
-const AngleFunction isLargeAngle[4] =
-{
-    NULL,
-    NULL,
-    isLargeAngleTri,
-    isLargeAngleTet
-};
-
-static long markEdgesOppLargeAngles(Adapt* a)
+static int markEdgesOppLargeAngles(Adapt* a)
 {
   ma::Entity* e;
-  long count = 0;
+  int count = 0;
+  int prev_count;
+
   ma::Mesh* m = a->mesh;
-  int dim = m->getDimension();
-  ma::Iterator* it = m->begin(dim);
-  while ((e = m->iterate(it)))
-  {
-    if(!hasTwoEdgesOnBoundary(m,e)) continue;
-    ma::Entity* edge = isLargeAngle[dim](a,e);
-    if (edge)
+  do {
+    ma::Iterator* it = m->begin(2);
+    prev_count = count;
+    while ((e = m->iterate(it)))
     {
-      assert(m->getType(edge) == 1);
-      ma::setFlag(a,edge,ma::SPLIT);
-      if (a->mesh->isOwned(edge))
-        ++count;
+      if(!hasTwoEdgesOnBoundary(m,e)) continue;
+      ma::Entity* edge = isLargeAngleTri(a,e);
+      if (edge && !ma::getFlag(a,edge,ma::SPLIT))
+      {
+        assert(m->getType(edge) == 1);
+        ma::setFlag(a,edge,ma::SPLIT);
+        if (a->mesh->isOwned(edge))
+          ++count;
+      }
     }
-  }
-  m->end(it);
+    m->end(it);
+  } while(count > prev_count);
   return PCU_Add_Long(count);
-}
-
-
-// split large angles at their opposite edge.
-static void fixLargeAngles(crv::Adapt* a)
-{
-  double t0 = PCU_Time();
-  long count = crv::markEdgesOppLargeAngles(a);
-//  long count = ma::markEdgesToSplit(a);
-  if ( ! count) {
-    return;
-  }
-  printf("found %ld elements\n",count);
-  assert(ma::checkFlagConsistency(a,1,ma::SPLIT));
-  ma::Refine* r = a->refine;
-  ma::resetCollection(r);
-  ma::collectForTransfer(r);
-  ma::addAllMarkedEdges(r);
-  ma::splitElements(r);
-  crv::snapRefineToBoundary(a);
-  ma::processNewElements(r);
-  ma::destroySplitElements(r);
-  crv::repositionInterior(r);
-  ma::forgetNewEntities(r);
-
-  double t1 = PCU_Time();
-  ma::print("Fixed %li boundary elements in %f seconds",count,t1-t0);
 }
 
 void fixElementShapes(crv::Adapt* a)
 {
-  fixLargeAngles(a);
-  return;
+  double t0 = PCU_Time();
+  int count = markEdgesOppLargeAngles(a);
+  if ( ! count)
+    return;
+  splitEdges(a);
+  double t1 = PCU_Time();
+  ma::print("split %d boundary edges with "
+      "large angles in %f seconds\n",count,t1-t0);
 }
 
 }

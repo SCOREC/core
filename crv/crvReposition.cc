@@ -17,7 +17,7 @@
 
 namespace crv {
 
-static bool repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
+bool repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
 {
   apf::FieldShape * fs = m->getShape();
 
@@ -59,17 +59,24 @@ static bool repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
 
 void repositionInterior(ma::Refine* r)
 {
-  int successes = 0;
+  int successes[2] = {0,0};
   ma::Mesh* m = r->adapt->mesh;
-  for (int d=1; d <= m->getDimension(); ++d){
-    for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
-      ma::EntityArray& a = r->newEntities[d][i];
-      for (size_t i=0; i < a.getSize(); ++i)
-        if (apf::getDimension(m,a[i]) == m->getDimension())
-          successes += repositionInteriorWithBlended(m,a[i]);
+  int dim = m->getDimension();
+  // do this hierarchically
+  for (int td=2; td < dim; ++td){
+    for (int d=2; d <= dim; ++d){
+      for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
+        ma::EntityArray& newEntities = r->newEntities[d][i];
+        for (size_t j=0; j < newEntities.getSize(); ++j){
+          if (!isBoundaryEntity(m,newEntities[j])
+              && apf::Mesh::typeDimension[m->getType(newEntities[j])] == td)
+            successes[td-2] += repositionInteriorWithBlended(m,newEntities[j]);
+        }
+      }
     }
   }
-  ma::print("%d successful repositions",successes);
+  ma::print("%d and %d successful 2D and 3D repositions",
+      successes[0],successes[1]);
 }
 
 }

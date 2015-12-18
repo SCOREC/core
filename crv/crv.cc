@@ -20,7 +20,6 @@ bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
 
 bool hasTwoEdgesOnBoundary(apf::Mesh* m, apf::MeshEntity* e)
 {
-  int md = m->getDimension();
   apf::Downward down;
   int count = 0;
   int nd = m->getDownward(e,1,down);
@@ -30,7 +29,6 @@ bool hasTwoEdgesOnBoundary(apf::Mesh* m, apf::MeshEntity* e)
     if(count == 2)
       return true;
   }
-
   return false;
 }
 
