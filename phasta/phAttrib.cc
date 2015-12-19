@@ -174,22 +174,33 @@ static void formFactories(BCFactories& fs)
   fs["material type"]        = intFactory;
 }
 
-static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
-    ph::BCs& bcs)
+static std::string getType(pAttribute a)
 {
   char* c_infoType = Attribute_infoType(a);
   std::string infoType(c_infoType);
-  if (!fs.count(infoType)) {
-    fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", c_infoType);
+  Sim_deleteString(c_infoType);
+  char* c_imageClass = Attribute_infoType(a);
+  std::string imageClass(c_imageClass);
+  Sim_deleteString(c_imageClass);
+  if (imageClass.length() != 0)
+    return imageClass;
+  return infoType;
+}
+
+static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
+    ph::BCs& bcs)
+{
+  std::string type = getType(a);
+  if (!fs.count(type)) {
+    fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", type.c_str());
     fprintf(stderr,"it had repType %d\n",
         Attribute_repType(a));
     return;
   }
-  if (!bcs.fields.count(infoType))
-    bcs.fields[infoType] = ph::FieldBCs();
-  ph::FieldBCs& fbcs = bcs.fields[infoType];
-  Sim_deleteString(c_infoType);
-  BCFactory f = fs[infoType];
+  if (!bcs.fields.count(type))
+    bcs.fields[type] = ph::FieldBCs();
+  ph::FieldBCs& fbcs = bcs.fields[type];
+  BCFactory f = fs[type];
   fbcs.bcs.insert( f(a, ge) );
 }
 
