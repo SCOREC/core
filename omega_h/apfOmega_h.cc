@@ -7,29 +7,36 @@
 
 namespace osh {
 
+static void connectivityFromAPF(
+    apf::Mesh* am,
+    osh_t om,
+    apf::Numbering* local,
+    unsigned ent_dim)
+{
+  unsigned verts_per_elem = ent_dim + 1;
+  unsigned nents = (unsigned) am->count(ent_dim);
+  unsigned* conn = osh_build_ents(om, ent_dim, nents);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = am->begin(ent_dim);
+  unsigned i = 0;
+  while ((e = am->iterate(it))) {
+    apf::NewArray<int> e2v;
+    apf::getElementNumbers(local, e, e2v);
+    for (unsigned j = 0; j < verts_per_elem; ++j)
+      conn[i * verts_per_elem + j] = (unsigned) e2v[j];
+    ++i;
+  }
+  am->end(it);
+}
+
 osh_t fromAPF(apf::Mesh* am)
 {
-  apf::Numbering* ovlp_n = apf::numberOverlapNodes(am, "osh_id");
+  apf::Numbering* local = apf::numberOverlapNodes(am, "osh_id");
   unsigned dim = (unsigned) am->getDimension();
-  unsigned verts_per_elem = dim + 1;
-  unsigned nelems = am->count(dim);
-  unsigned* conn = (unsigned*) malloc(
-      sizeof(unsigned) * nelems * verts_per_elem);
-  {
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = am->begin(dim);
-    unsigned i = 0;
-    while ((e = am->iterate(it))) {
-      apf::NewArray<int> e2v;
-      apf::getElementNumbers(ovlp_n, e, e2v);
-      for (unsigned j = 0; j < verts_per_elem; ++j)
-        conn[i * verts_per_elem + j] = (unsigned) e2v[j];
-      ++i;
-    }
-    am->end(it);
-  }
+  osh_t om = osh_new(dim);
   unsigned nverts = am->count(0);
-  osh_t om = osh_build(dim, nelems, nverts, conn);
+  osh_build_ents(om, 0, nverts);
+  connectivityFromAPF(am, om, local, dim);
   apf::GlobalNumbering* glob_n = apf::makeGlobal(
       apf::numberOwnedNodes(am, "osh_global"));
   osh_new_field(om, "coordinates", 3);
