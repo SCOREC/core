@@ -538,9 +538,9 @@ static void writeTypes(std::ostream& file,
       dataToEncode[dataIndex] = vtkTypes[m->getType(e)][order-1];
       dataIndex++;
     }
+    m->end(elements);
     writeEncodedArray(file, dataLenBytes, (char*)dataToEncode);
     delete [] dataToEncode;
-    m->end(elements);
   }
   else
   {
@@ -785,27 +785,9 @@ static void writeVtuFile(const char* prefix,
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
-//*** this function is now writing ASCII encoded, uncompressed vtk files
-  writeASCIIVtkFiles(prefix, m);
-  // --------------------------ignore for now----------------------------------
-  //*** this function writes vtk files with binary encoding ***
-  //use writeASCIIVtkFiles for ASCII encoding (not recommended)
-  // bool isWritingBinary = true;
-  // double t0 = PCU_Time();
-  // if (!PCU_Comm_Self())
-  // {
-  //   writePvtuFile(prefix, m, isWritingBinary);
-  // }
-  // Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
-  // m->removeNumbering(n);
-  // writeVtuFile(prefix, n, isWritingBinary);
-  // double t1 = PCU_Time();
-  // if (!PCU_Comm_Self())
-  // {
-  //   printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
-  // }
-  // delete n;
-  // -------------------------------------------------------------------------
+//*** this function is now writing base64 encoded, compressed vtk files
+  // writeASCIIVtkFiles(prefix, m);
+  writeBinaryVtkFiles(prefix, m);
 }
 
 void writeOneVtkFile(const char* prefix, Mesh* m)

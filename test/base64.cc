@@ -3,8 +3,8 @@
 
 #include <lionBase64.h>
 
-void runEncodeTests () {
-
+void runEncodeTests ()
+{
   //test1, encode3({'a','a','a'}) == "YWFh"
   char testStr3[3];
   testStr3[0] = 'a';
@@ -23,20 +23,24 @@ void runEncodeTests () {
   testStr2[0] = 'a';
   testStr2[1] = 'a';
   assert(lion::base64Encode2Bytes(testStr2) == "YWE=");
+  assert(lion::base64Encode(testStr2, 2) == "YWE=");
 
   //test4, encode2({'x','y'}) == "eHk=""
   testStr2[0] = 'x';
   testStr2[1] = 'y';
   assert(lion::base64Encode2Bytes(testStr2) == "eHk=");
+  assert(lion::base64Encode(testStr2, 2) == "eHk=");
 
   //test5, encode1('a') == "YQ=="
-  char testStr;
-  testStr = 'a';
-  assert(lion::base64Encode1Byte(testStr) == "YQ==");
+  char testStr1[1];
+  testStr1[0] = 'a';
+  assert(lion::base64Encode1Byte(testStr1[0]) == "YQ==");
+  assert(lion::base64Encode(testStr1, 1) == "YQ==");
 
   //test6, encode1('z') == "eg=="
-  testStr = 'z';
-  assert(lion::base64Encode1Byte(testStr) == "eg==");
+  testStr1[0] = 'z';
+  assert(lion::base64Encode1Byte(testStr1[0]) == "eg==");
+  assert(lion::base64Encode(testStr1, 1) == "eg==");
 
   //test7, encodeStr({'a','b','c','d','e','f'}) == "YWJjZGVm"
   char testStr6[6];
@@ -104,14 +108,16 @@ void runEncodeTests () {
   std::cout << "Encode tests pass!" << std::endl;
 }
 
-void runDecodeTests () {
-
+void runDecodeTests ()
+{
   //test1, test decode table
   std::string base64CharsNoEquals = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                     "abcdefghijklmnopqrstuvwxyz"
                                     "0123456789+/";
-  for ( unsigned int i = 0; i < base64CharsNoEquals.length(); i++ ) {
-    unsigned int base64Code = lion::getDecodedBase64Char(base64CharsNoEquals[i]);
+  for ( unsigned int i = 0; i < base64CharsNoEquals.length(); i++ )
+  {
+    unsigned int base64Code =
+        lion::getDecodedBase64Char(base64CharsNoEquals[i]);
     assert(i == base64Code);
   }
 
@@ -122,6 +128,7 @@ void runDecodeTests () {
   testStr4[2] = 'F';
   testStr4[3] = 'h';
   assert(lion::base64Decode4Bytes(testStr4) == "aaa");
+  assert(lion::base64Decode("YWFh") == "aaa");
 
   //test3, decode4({'Y','W','F','='}) == "aa"
   testStr4[0] = 'Y';
@@ -129,6 +136,7 @@ void runDecodeTests () {
   testStr4[2] = 'F';
   testStr4[3] = '=';
   assert(lion::base64Decode4Bytes(testStr4) == "aa");
+  assert(lion::base64Decode("YWF=") == "aa");
 
   //test4, decode4({'Y','W','=','='}) == "a"
   testStr4[0] = 'Y';
@@ -136,6 +144,7 @@ void runDecodeTests () {
   testStr4[2] = '=';
   testStr4[3] = '=';
   assert(lion::base64Decode4Bytes(testStr4) == "a");
+  assert(lion::base64Decode("YW==") == "a");
 
   //test5, decode({'e','H','l','6'}) == "xyz"
   testStr4[0] = 'e';
@@ -143,6 +152,7 @@ void runDecodeTests () {
   testStr4[2] = 'l';
   testStr4[3] = '6';
   assert(lion::base64Decode4Bytes(testStr4) == "xyz");
+  assert(lion::base64Decode("eHl6") == "xyz");
 
   //test6, decode({'e','H','l','='}) == "xy"
   testStr4[0] = 'e';
@@ -150,6 +160,7 @@ void runDecodeTests () {
   testStr4[2] = 'l';
   testStr4[3] = '=';
   assert(lion::base64Decode4Bytes(testStr4) == "xy");
+  assert(lion::base64Decode("eHl=") == "xy");
 
   //test7, decode({'e','H','=','='}) == "x"
   testStr4[0] = 'e';
@@ -157,6 +168,7 @@ void runDecodeTests () {
   testStr4[2] = '=';
   testStr4[3] = '=';
   assert(lion::base64Decode4Bytes(testStr4) == "x");
+  assert(lion::base64Decode("eH==") == "x");
 
   //test8, decode("YWJjZGVm") == "abcdef"
   assert(lion::base64Decode("YWJjZGVm") == "abcdef");
@@ -173,14 +185,16 @@ void runDecodeTests () {
   std::cout << "Decode tests pass!" << std::endl;
 }
 
-void runCombinedTests() {
-
+void runCombinedTests()
+{
   std::string resultStr;
 
   //test1, encode and decode the alphabet in lover case
   std::string alphabet0 = "abcdefghijklmnopqrstuvwxyz";
   resultStr =
-    lion::base64Decode( lion::base64Encode( alphabet0.c_str(), alphabet0.length() ) );
+      lion::base64Decode(
+          lion::base64Encode( alphabet0.c_str(), alphabet0.length() )
+      );
   assert(resultStr  == alphabet0);
 
   //test2, encode and decode more characters
@@ -189,15 +203,17 @@ void runCombinedTests() {
                           "0123456789"
                           "!@#$^&*()-_=+[]{}:;<>,.?/|~`";
   resultStr =
-    lion::base64Decode( lion::base64Encode(alphabet1.c_str(), alphabet1.length() ) );
+      lion::base64Decode(
+          lion::base64Encode(alphabet1.c_str(), alphabet1.length() )
+      );
+
   assert(resultStr == alphabet1);
 
   std::cout << "Combined tests pass!" << std::endl;
-
 }
 
-int main ( ) {
-    
+int main ( )
+{
   runEncodeTests();
   runDecodeTests();
   runCombinedTests();

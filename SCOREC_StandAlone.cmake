@@ -95,6 +95,8 @@ add_subdirectory(dsp)
 
 add_subdirectory(crv)
 
+add_subdirectory(omega_h)
+
 add_subdirectory(test)
 
 #binary distribution package

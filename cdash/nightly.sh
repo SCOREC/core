@@ -13,6 +13,8 @@ module load git
 
 #cdash output root
 cd /lore/dibanez/cdash
+#remove compilation directories created by previous nightly.cmake runs
+rm -rf build/
 
 #run nightly.cmake script
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> cmake_log.txt
@@ -45,10 +47,7 @@ curl --form token=faMZVmxTjByhNoJyb_4wDw \
   --form description="Automated" \
   https://scan.coverity.com/builds?project=SCOREC%2Fcore
 
-#remove compilation directories created by nightly.cmake
-cd /lore/dibanez/cdash
-rm -rf build/
-
+#cleanup the Chef test output
 cd /lore/dibanez
 find meshes/phasta -name "*procs_case" | xargs rm -rf
 find meshes/phasta -name "out_mesh" | xargs rm -rf

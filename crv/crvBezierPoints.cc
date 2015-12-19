@@ -288,8 +288,7 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     apf::MeshIterator* it = m->begin(apf::Mesh::typeDimension[type]);
     apf::MeshEntity* e;
     while ((e = m->iterate(it))){
-      if (m->getType(e) == type &&
-          m->getModelType(m->toModel(e)) == m->getDimension())
+      if (m->getType(e) == type && !isBoundaryEntity(m,e))
         break;
     }
     m->end(it);
