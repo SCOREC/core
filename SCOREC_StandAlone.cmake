@@ -82,6 +82,8 @@ add_subdirectory(spr)
 
 add_subdirectory(sam)
 
+add_subdirectory(size)
+
 add_subdirectory(phasta)
 
 add_subdirectory(viz)
