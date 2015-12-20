@@ -149,8 +149,8 @@ static apf::MeshEntity** entitiesToAPF(
 {
   apf::MeshEntity** ents = new apf::MeshEntity*[osh_count(om, ent_dim)];
   unsigned const* down = osh_down(om, ent_dim, 0);
-  unsigned const* class_dim = osh_get_label(om, 0, "class_dim");
-  unsigned const* class_id = osh_get_label(om, 0, "class_id");
+  unsigned const* class_dim = osh_get_label(om, ent_dim, "class_dim");
+  unsigned const* class_id = osh_get_label(om, ent_dim, "class_id");
   apf::Mesh::Type t = apf::Mesh::simplexTypes[ent_dim];
   unsigned nverts_per_ent = ent_dim + 1;
   for (unsigned i = 0; i < osh_count(om, ent_dim); ++i) {
@@ -221,7 +221,7 @@ static void ownersToAPF(
           }
       }
     }
-  PCU_Comm_Self();
+  PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
     apf::MeshEntity* e;
     PCU_COMM_UNPACK(e);
