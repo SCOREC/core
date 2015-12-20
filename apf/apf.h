@@ -381,6 +381,7 @@ class Integrator
     virtual void parallelReduce();
   protected:
     int order;
+    int ipnode;
 };
 
 /** \brief Measures the volume, area, or length of a Mesh Element.
