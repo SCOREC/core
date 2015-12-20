@@ -8,4 +8,4 @@ Description: size field specification
 Version: @PACKAGE_VERSION@
 Requires: libapf_pumi
 Libs: -L${libdir} -lsize
-Cflags: -I${includedir} 
+Cflags: -I${includedir}
