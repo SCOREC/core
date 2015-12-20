@@ -7,7 +7,7 @@
 namespace osh {
 
 osh_t fromAPF(apf::Mesh* am);
-apf::Mesh2* toAPF(osh_t om);
+void toAPF(osh_t om, apf::Mesh* am);
 
 };
 
