@@ -14,6 +14,7 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <pcu_io.h>
 #include <string>
 #include <stdlib.h>
 
@@ -108,11 +109,11 @@ namespace ph {
 
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
-    return fopen(path, "r");
+    return pcu_group_open(path, false);
   }
 
   static FILE* openfile_write(ph::Output&, const char* path) {
-    return fopen(path, "w");
+    return pcu_group_open(path, true);
   }
 
   static FILE* openstream_write(ph::Output& out, const char* path) {

@@ -11,6 +11,7 @@
 #include "noto_malloc.h"
 #include "reel.h"
 #include "pcu_mpi.h"
+#include "PCU.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -149,15 +150,41 @@ static void close_compressed(pcu_file* pf)
 
 #endif
 
+/**
+ * brief limit the number of ranks that can call fopen simultaneously
+ * remark Argonne's GPFS filesystem is failing to open some files when
+ *        tens of thousands of ranks simultaneously make the request.
+ *        Ideally, the filesystem handles the load and this can be
+ *        removed.
+ */
+FILE* pcu_group_open(const char* path, bool write) {
+  FILE* fp = NULL;
+  const int rank = PCU_Comm_Self();
+  const char* mode = write ? "w" : "r";
+  const int group_size = 4096;
+  const int q = PCU_Comm_Peers()/group_size;
+  const int r = PCU_Comm_Peers()%group_size;
+  const int groups = q + ( r > 0 );
+  if(!rank && groups > 1) {
+    fprintf(stderr,
+        "pcu peers %d max group size %d posix groups %d\n",
+        PCU_Comm_Peers(), group_size, groups);
+  }
+  for(int i=0; i<groups; i++) {
+    if(rank%groups == i)
+      fp = fopen(path, mode);
+    PCU_Barrier();
+  }
+  assert(fp);
+  return fp;
+}
+
 pcu_file* pcu_fopen(const char* name, bool write, bool compress)
 {
   pcu_file* pf = (pcu_file*) malloc(sizeof(pcu_file));
   pf->compress = compress;
   pf->write = write;
-  if (write)
-    pf->f = fopen(name,"w");
-  else
-    pf->f = fopen(name,"r");
+  pf->f = pcu_group_open(name, write);
   if (!pf->f) {
     perror("pcu_fopen");
     reel_fail("pcu_fopen couldn't open \"%s\"", name);
