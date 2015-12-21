@@ -40,11 +40,10 @@ struct Input
 
 /** \brief estimate the error for a mechanics residual
   * \param in user-constructed input
-  * \param updated field value for the adjoint-weighted residual
-  * \returns the estimated value of the global error
+  * \returns updated field value for the adjoint-weighted residual
   * \details uses an adjoint weighted residual method. problems with
   * Neumann boudnary conditions are not yet supported */
-double estimateError(Input const& in, apf::Field* residual);
+apf::Field* estimateError(Input const& in);
 
 }
 

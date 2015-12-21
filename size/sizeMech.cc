@@ -86,13 +86,12 @@ static void validateInput(Input const& in)
   assert(apf::getValueType(in.adjoint) == apf::VECTOR);
 }
 
-double estimateError(Input const& in, apf::Field* residual)
+apf::Field* estimateError(Input const& in)
 {
   validateInput(in);
   MechanicsError e(in);
   e.process(apf::getMesh(in.adjoint));
-  residual = e.getResidual();
-  return e.getGlobalError();
+  return e.getResidual();
 }
 
 }
