@@ -72,8 +72,8 @@ static void coordinatesFromAPF(
     apf::Mesh* am,
     osh_t om)
 {
-  osh_new_field(om, "coordinates", 3);
-  double* coords = osh_get_field(om, "coordinates");
+  osh_new_field(om, 0, "coordinates", 3);
+  double* coords = osh_get_field(om, 0, "coordinates");
   apf::MeshEntity* v;
   apf::MeshIterator* it = am->begin(0);
   unsigned i = 0;
@@ -90,8 +90,8 @@ static void parametricFromAPF(
     apf::Mesh* am,
     osh_t om)
 {
-  osh_new_field(om, "param", 3);
-  double* param = osh_get_field(om, "param");
+  osh_new_field(om, 0, "param", 3);
+  double* param = osh_get_field(om, 0, "param");
   apf::MeshEntity* v;
   apf::MeshIterator* it = am->begin(0);
   unsigned i = 0;
@@ -128,7 +128,7 @@ static apf::MeshEntity** verticesToAPF(
 {
   apf::MeshEntity** verts = new apf::MeshEntity*[osh_nverts(om)];
   double const* coords = osh_coords(om);
-  double const* param = osh_get_field(om, "param");
+  double const* param = osh_get_field(om, 0, "param");
   unsigned const* class_dim = osh_get_label(om, 0, "class_dim");
   unsigned const* class_id = osh_get_label(om, 0, "class_id");
   for (unsigned i = 0; i < osh_nverts(om); ++i) {
