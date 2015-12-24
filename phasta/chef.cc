@@ -72,7 +72,7 @@ int main(int argc, char** argv)
   ph::BCs bcs;
   ph::readBCs(in.attributeFileName.c_str(), bcs);
   if (in.solutionMigration)
-    ph::readAndAttachSolution(in, m);
+    ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)

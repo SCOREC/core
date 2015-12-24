@@ -86,35 +86,6 @@ void detachField(
   detachField(f, data, size);
 }
 
-void readAndAttachField(
-    Input& in,
-    apf::Mesh* m,
-    const char* filename,
-    const char* fieldname,
-    int out_size = -1)
-{
-  FILE* f = in.openfile_read(in, filename);
-  if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", filename);
-    abort();
-  }
-  double* data;
-  char hname[1024];
-  int nodes, vars, step;
-  const int swap = ph_should_swap(f);
-  int ret = ph_read_field(f, fieldname, swap,
-      &data, &nodes, &vars, &step, hname);
-  assert(ret==2);
-  fclose(f);
-  assert(nodes == static_cast<int>(m->count(0)));
-  assert(step == in.timeStepNumber);
-  if (out_size == -1)
-    out_size = vars;
-  attachField(m, hname, data, vars, out_size);
-  free(data);
-}
-
-/* TODO merge with the other version */
 int readAndAttachField(
     Input& in,
     FILE* f,
@@ -196,23 +167,6 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("fields read and attached in %f seconds\n", t1 - t0);
-}
-
-void readAndAttachSolution(Input& in, apf::Mesh* m)
-{
-  double t0 = PCU_Time();
-  setupInputSubdir(in.restartFileName);
-  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
-  if (in.displacementMigration)
-    readAndAttachField(in, m, filename.c_str(), "displacement");
-  if (in.dwalMigration)
-    readAndAttachField(in, m, filename.c_str(), "dwal");
-  if (in.adaptStrategy == 1)
-    readAndAttachField(in, m, filename.c_str(), "errors");
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-    printf("solution read and attached in %f seconds\n", t1 - t0);
 }
 
 void buildMapping(apf::Mesh* m)
