@@ -35,6 +35,7 @@ void pcu_read_string(struct pcu_file* f, char** p);
 void pcu_write_string(struct pcu_file* f, const char* p);
 
 FILE* pcu_open_parallel(const char* prefix, const char* ext);
+FILE* pcu_group_open(const char* path, bool write);
 
 void pcu_swap_doubles(double* p, size_t n);
 

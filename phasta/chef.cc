@@ -76,7 +76,7 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(g, in.meshFileName.c_str());
   m->verify();
   if (in.solutionMigration)
-    ph::readAndAttachSolution(in, m);
+    ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)

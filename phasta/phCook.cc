@@ -15,6 +15,7 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <pcu_io.h>
 #include <string>
 #include <stdlib.h>
 #include <assert.h>
@@ -65,7 +66,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     apf::printStats(m);
   m->verify();
   if (in.solutionMigration)
-    ph::readAndAttachSolution(in, m);
+    ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)
@@ -112,11 +113,11 @@ namespace ph {
 
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
-    return fopen(path, "r");
+    return pcu_group_open(path, false);
   }
 
   static FILE* openfile_write(ph::Output&, const char* path) {
-    return fopen(path, "w");
+    return pcu_group_open(path, true);
   }
 
   static FILE* openstream_write(ph::Output& out, const char* path) {
@@ -196,7 +197,7 @@ namespace chef {
   }
 
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
-    ph::readAndAttachSolution(ctrl, m);
+    ph::readAndAttachFields(ctrl, m);
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in) {
