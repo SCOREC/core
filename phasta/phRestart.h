@@ -8,6 +8,7 @@
 namespace ph {
 
 void readAndAttachSolution(Input& in, apf::Mesh* m);
+void readAndAttachFields(Input& in, apf::Mesh* m);
 void buildMapping(apf::Mesh* m);
 void detachAndWriteSolution(Input& in, Output& out, 
     apf::Mesh* m, std::string path);

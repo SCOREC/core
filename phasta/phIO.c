@@ -48,7 +48,7 @@ static void parse_header(char* header, char** name, long* bytes,
     int nparam, int* params)
 {
   char* saveptr = NULL;
-  int i;
+  int i = 0;
   assert(header != NULL);
   header = strtok_r(header, ":", &saveptr);
   if (name) {
@@ -60,13 +60,15 @@ static void parse_header(char* header, char** name, long* bytes,
   header = strtok_r(NULL, ">", &saveptr);
   if (bytes)
     sscanf(header, "%ld", bytes);
-  for (i = 0; i < nparam; ++i) {
-    header = strtok_r(NULL, " \n", &saveptr);
-    sscanf(header, "%d", &params[i]);
+  if (params) {
+    while( (header = strtok_r(NULL, " \n", &saveptr)) )
+      sscanf(header, "%d", &params[i++]);
+    while( i < nparam )
+      params[i++] = 0;
   }
 }
 
-static int find_header(FILE* f, const char* name, char header[PH_LINE])
+static int find_header(FILE* f, const char* name, char* found, char header[PH_LINE])
 {
   char* hname;
   long bytes;
@@ -77,11 +79,14 @@ static int find_header(FILE* f, const char* name, char header[PH_LINE])
     strncpy(tmp, header, PH_LINE-1);
     tmp[PH_LINE-1] = '\0';
     parse_header(tmp, &hname, &bytes, 0, NULL);
-    if (!strncmp(name, hname, strlen(name)))
+    if (!strncmp(name, hname, strlen(name))) {
+      strncpy(found, hname, strlen(hname));
+      found[strlen(hname)] = '\0';
       return 1;
+    }
     fseek(f, bytes, SEEK_CUR);
   }
-  if (!PCU_Comm_Self())
+  if (!PCU_Comm_Self() && strlen(name) > 0)
     fprintf(stderr,"warning: phIO could not find \"%s\"\n",name);
   return 0;
 }
@@ -98,7 +103,8 @@ static void write_magic_number(FILE* f)
 static int seek_after_header(FILE* f, const char* name)
 {
   char dummy[PH_LINE];
-  return find_header(f, name, dummy);
+  char found[PH_LINE];
+  return find_header(f, name, found, dummy);
 }
 
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
@@ -154,28 +160,30 @@ static void parse_params(char* header, long* bytes,
   *step = params[STEP_PARAM];
 }
 
-void ph_read_field(FILE* f, const char* field, double** data,
-    int* nodes, int* vars, int* step)
+int ph_should_swap(FILE* f) {
+  return read_magic_number(f);
+}
+
+int ph_read_field(FILE* f, const char* field, int swap,
+    double** data, int* nodes, int* vars, int* step, char* hname)
 {
   long bytes, n;
   char header[PH_LINE];
-  int should_swap;
   int ok;
-  should_swap = read_magic_number(f);
-  ok = find_header(f, field, header);
-  if (!ok) {
-    fprintf(stderr, "rank %d could not find field header \"%s\"\n",
-        PCU_Comm_Self(), field);
-    abort();
-  }
+  ok = find_header(f, field, hname, header);
+  if(!ok) /* not found */
+    return 0;
   parse_params(header, &bytes, nodes, vars, step);
+  if(!bytes) /* empty data block */
+    return 1;
   assert(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
   assert((int)n == (*nodes) * (*vars));
   *data = malloc(bytes);
   my_fread(*data, sizeof(double), n, f);
-  if (should_swap)
+  if (swap)
     pcu_swap_doubles(*data, n);
+  return 2;
 }
 
 void ph_write_field(FILE* f, const char* field, double* data,

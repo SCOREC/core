@@ -193,7 +193,7 @@ namespace chef {
   }
 
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
-    ph::readAndAttachSolution(ctrl, m);
+    ph::readAndAttachFields(ctrl, m);
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in) {

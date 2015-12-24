@@ -99,16 +99,44 @@ void readAndAttachField(
     abort();
   }
   double* data;
+  char hname[1024];
   int nodes, vars, step;
-  ph_read_field(f, fieldname, &data,
-      &nodes, &vars, &step);
+  const int swap = ph_should_swap(f);
+  int ret = ph_read_field(f, fieldname, swap,
+      &data, &nodes, &vars, &step, hname);
+  assert(ret==2);
   fclose(f);
   assert(nodes == static_cast<int>(m->count(0)));
   assert(step == in.timeStepNumber);
   if (out_size == -1)
     out_size = vars;
-  attachField(m, fieldname, data, vars, out_size);
+  attachField(m, hname, data, vars, out_size);
   free(data);
+}
+
+/* TODO merge with the other version */
+int readAndAttachField(
+    Input& in,
+    FILE* f,
+    apf::Mesh* m,
+    int swap)
+{
+  double* data;
+  int nodes, vars, step;
+  char hname[1024];
+  const char* anyfield = "";
+  int ret = ph_read_field(f, anyfield, swap,
+      &data, &nodes, &vars, &step, hname);
+  /* no field was found or the field has an empty data block */
+  if(ret==0 || ret==1) return ret;
+  assert(nodes == static_cast<int>(m->count(0)));
+  assert(step == in.timeStepNumber);
+  int out_size = vars;
+  if ( std::string(hname) == std::string("solution") )
+    out_size = in.ensa_dof;
+  attachField(m, hname, data, vars, out_size);
+  free(data);
+  return 1;
 }
 
 void detachAndWriteField(
@@ -151,6 +179,23 @@ static std::string buildRestartFileName(std::string prefix, int step)
   int rank = PCU_Comm_Self() + 1;
   ss << prefix << '.' << step << '.' << rank;
   return ss.str();
+}
+
+void readAndAttachFields(Input& in, apf::Mesh* m) {
+  double t0 = PCU_Time();
+  setupInputSubdir(in.restartFileName);
+  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
+  FILE* f = in.openfile_read(in, filename.c_str());
+  if (!f) {
+    fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
+    abort();
+  }
+  int swap = ph_should_swap(f);
+  while( readAndAttachField(in,f,m,swap) ); /* inf loop?? */
+  fclose(f);
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("fields read and attached in %f seconds\n", t1 - t0);
 }
 
 void readAndAttachSolution(Input& in, apf::Mesh* m)
@@ -215,6 +260,9 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
+  /* detach any remaining fields */
+  while(m->countFields())
+    apf::destroyField( m->getField(0) );
   fclose(f);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
