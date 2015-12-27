@@ -46,8 +46,6 @@ class AD
     const T& dx(unsigned int i) const {return dx_[i];}
     /** \brief resize for static AD (no-op) */
     inline void resize(unsigned int i) {(void)i;}
-    /** \brief type conversion from AD to double*/
-    explicit operator double() const {return double(x_);}
     /** \brief assignment to a double */
     AD<T, N>& operator=(double other)
     {
@@ -161,8 +159,7 @@ class AD<T,0>
     /** \brief constructs from a double*/
     AD(double val):x_(val), dx_() {zero();}
     /** \brief constructs from other AD*/
-    template<class B>
-    AD(AD<B, 0> const& other) {zero(); copy(other);}
+    AD(AD<T, 0> const& other) {zero(); copy(other);}
     unsigned size() { return dx_.size();}
     unsigned size() const { return dx_.size();}
     void diff(unsigned int i, unsigned int n)
@@ -193,8 +190,6 @@ class AD<T,0>
         return T(_zero_);
       return dx_[i];
     }
-    /** \brief type conversion from AD to double */
-    explicit operator double() const {return double(x_);}
     /** \brief assignment to a double */
     AD<T, 0>& operator=(double other)
     {
@@ -203,8 +198,7 @@ class AD<T,0>
       return *this;
     }
     /** \brief assignment to another AD variable */
-    template<class B>
-    AD<T, 0>& operator=(AD<B, 0> const& other)
+    AD<T, 0>& operator=(AD<T, 0> const& other)
     {
       resize(other.size());
       copy(other);
@@ -285,14 +279,13 @@ class AD<T,0>
       for (unsigned int i=0; i < size(); ++i)
         dx_[i] = 0.;
     }
-    template<class B> //templating allows for different derivative sizes
-    void copy(AD<B, 0> const& other)
+    void copy(AD<T, 0> const& other)
     {
       if(size() != other.size())
         dx_.resize(other.size());
       x_ = other.x_;
       for (unsigned int i=0; i < size(); ++i)
-        dx_[i] = (T)other.dx_[i];
+        dx_[i] = other.dx_[i];
     }
 };
 
@@ -421,7 +414,7 @@ AD<T, N> operator*(AD<T, N> const& L, AD<B, N> const& R)
   unsigned int max = L.size() > R.size() ? L.size() : R.size();
   tmp.resize(max);
   for (unsigned int i=0; i < tmp.size(); ++i)
-    tmp.dx(i) = T(L.dx(i) * R + L * R.dx(i));
+    tmp.dx(i) = T(L.dx(i) * R.val() + L.val() * R.dx(i));
   tmp.val() = L.val() * R.val();
   return tmp;
 }
@@ -432,7 +425,7 @@ AD<T, N> operator/(double L, AD<T, N> const& R)
 {
   AD<T, N> tmp;
   tmp.resize(R.size());
-  T R_tmp = R; //Recursive R, used to prevent infinite recurrsion.
+  T R_tmp = R.val(); //Recursive R, used to prevent infinite recurrsion.
   for (unsigned int i = 0; i < R.size(); i++)
     tmp.dx(i) = T(-L * R.dx(i) * (1. / R_tmp) * (1. / R_tmp));
   tmp.val() = L / R.val();
@@ -459,7 +452,8 @@ AD<T, N> operator/(AD<B, N> const& L, AD<T, N> const& R)
   unsigned int max = L.size() > R.size() ? L.size() : R.size();
   tmp.resize(max);
   for (unsigned int i=0; i < tmp.size(); ++i)
-    tmp.dx(i) = T(((L.dx(i) * R) - (L * R.dx(i))) * (1. / R) * (1. / R));
+    tmp.dx(i) = T(((L.dx(i) * R.val()) - (L.val() * R.dx(i)))
+              * (1. / R.val()) * (1. / R.val()));
   tmp.val() = L.val() / R.val();
   return tmp;
 }
@@ -480,7 +474,7 @@ AD<T, N> exp(AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.val() = std::exp(A.val());
   for (unsigned int i=0; i < A.size(); ++i)
     tmp.dx(i) = T(A.dx(i) * exp(A_tmp));
@@ -499,7 +493,7 @@ AD<T, N> log(AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.val() = std::log(A.val());
   for (unsigned int i=0; i < A.size(); ++i)
     tmp.dx(i) = T(A.dx(i) / A_tmp);
@@ -518,7 +512,7 @@ AD<T, N> pow(AD<T, N> const& A, const int e)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.val() = std::pow(A.val(), e);
   for (unsigned int i=0; i < tmp.size(); ++i)
     tmp.dx(i) = T(e*A.dx(i)*pow(A_tmp, (double)e-1.));
@@ -531,7 +525,7 @@ AD<T, N> pow(AD<T, N> const& A, const double e)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
-  T A_tmp = A; 
+  T A_tmp = A.val(); 
   tmp.val() = pow(A.val(), e);
   for (unsigned int i=0; i < tmp.size(); ++i)
     tmp.dx(i) = T(e*A.dx(i)*pow(A_tmp, e - 1.));
@@ -544,7 +538,7 @@ AD<T, N> pow(const int base, AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.val() = std::pow((double)base, A.val());
   for (unsigned int i=0; i < tmp.size(); ++i)
     tmp.dx(i) = T(std::log((double)base) * pow((double)base, A_tmp)  * A.dx(i));
@@ -557,7 +551,7 @@ AD<T, N> pow(const double base, AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.val() = std::pow((double)base, A.val());
   for (unsigned int i=0; i < tmp.size(); ++i)
     tmp.dx(i) = T(std::log(base) * pow(base, A_tmp) * A.dx(i));
@@ -572,8 +566,8 @@ AD<T, N> pow(AD<T, N> const& A, AD<T, N> const& e)
   AD<T, N> tmp;
   unsigned int max = A.size() > e.size() ? A.size() : e.size();
   tmp.resize(max);
-  T A_tmp = A;
-  T e_tmp = e;
+  T A_tmp = A.val();
+  T e_tmp = e.val();
   tmp.val() = std::pow(A.val(), e.val());
   for (unsigned int i=0; i < tmp.size(); ++i)
     tmp.dx(i) = T(e.dx(i) * log(A_tmp) * pow(A_tmp, e_tmp) +
@@ -594,7 +588,7 @@ AD<T, N> sqrt(AD<T, N> const& A)
   AD<T, N> tmp;
   tmp.resize(A.size());
   tmp.val() = std::sqrt(A.val());
-  T A_tmp = A;
+  T A_tmp = A.val();
   for (unsigned int i=0; i < tmp.size(); ++i)
     tmp.dx(i) = T(.5 * A.dx(i) / sqrt(A_tmp));
   return tmp;
@@ -619,7 +613,7 @@ AD<T, N> sin(AD<T, N> A)
   AD<T, N> tmp;
   tmp.resize(A.size());
   tmp.val() = std::sin(A.val());
-  T A_tmp = A;
+  T A_tmp = A.val();
   for(unsigned int i = 0; i < tmp.size(); i++)
     tmp.dx(i) = T(cos(A_tmp) * A.dx(i));
   return tmp;
@@ -631,7 +625,7 @@ AD<T, N> cos(AD<T, N> A)
 {
   AD<T, N> tmp;
   tmp.val() = std::cos(A.val());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.resize(A.size());
   for(unsigned int i = 0; i < tmp.size(); i++)
     tmp.dx(i) = T(-sin(A_tmp) * A.dx(i));
@@ -644,7 +638,7 @@ AD<T, N> tan(AD<T, N> A)
 {
   AD<T, N> tmp;
   tmp.val() = std::tan(A.val());
-  T A_tmp = A;
+  T A_tmp = A.val();
   tmp.resize(A.size());
   for(unsigned int i = 0; i < tmp.size(); i++)
     tmp.dx(i) = T(A.dx(i) * (1. / (cos(A_tmp) * cos(A_tmp))));
