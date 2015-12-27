@@ -22,7 +22,7 @@ class AD
     /** \brief default constructor */
     AD():x_(0.) {zero();}
     /** \brief default constructor from a double */
-    explicit AD(double x):x_(x) {zero();}
+    AD(double x):x_(x) {zero();}
     /** \brief copy constructor */
     AD(AD<T, N> const& other) {copy(other);}
     template <class B>
@@ -159,7 +159,7 @@ class AD<T,0>
     /** \brief default constructor */
     AD():x_(0), dx_() {zero();}
     /** \brief constructs from a double*/
-    explicit AD(double val):x_(val), dx_() {zero();}
+    AD(double val):x_(val), dx_() {zero();}
     /** \brief constructs from other AD*/
     template<class B>
     AD(AD<B, 0> const& other) {zero(); copy(other);}

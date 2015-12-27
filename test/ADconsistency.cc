@@ -134,15 +134,15 @@ int main()
   */
   std::ios::fmtflags f( std::cout.flags() );
   std::cout << std::setprecision(20);
-  AD<double, 3> a = AD<double, 3>(1.0);
-  AD<double, 3> b = AD<double, 3>(3.0);
-  AD<double, 3> c = AD<double, 3>(7.0);
+  AD<double, 3> a = 1.0;
+  AD<double, 3> b = 3.0;
+  AD<double, 3> c = 7.0;
   a.diff(0);
   b.diff(1);
   c.diff(2);
-  AD<double, 0> x = AD<double, 0>(1.0);
-  AD<double, 0> y = AD<double, 0>(3.0);
-  AD<double, 0> z = AD<double, 0>(7.0);
+  AD<double, 0> x = 1.0;
+  AD<double, 0> y = 3.0;
+  AD<double, 0> z = 7.0;
   x.diff(0, 3);
   y.diff(1, 3);
   z.diff(2, 3);
@@ -181,9 +181,9 @@ int main()
   /*
   Third Order Tests
   */
-  AD3 X = AD3(3);
-  AD3 Y = AD3(7);
-  AD3 Z = AD3(5);
+  AD3 X = 3;
+  AD3 Y = 7;
+  AD3 Z = 5;
   X.diff(0);
   Y.diff(1);
   Z.diff(2);
@@ -212,9 +212,9 @@ int main()
   /*
   Dynamic Third Order Tests
   */
-  AD3_dyn A = AD3_dyn(3);
-  AD3_dyn B = AD3_dyn(7);
-  AD3_dyn C = AD3_dyn(5);
+  AD3_dyn A = 3;
+  AD3_dyn B = 7;
+  AD3_dyn C = 5;
   A.diff(0, 3);
   B.diff(1, 3);
   C.diff(2, 3);
@@ -241,7 +241,7 @@ int main()
   printThirdOrder(complex(A, B, C), "Complex Test Dynamic");
 
   // Add another variable to the system.
-  AD3_dyn D = AD3_dyn(4);
+  AD3_dyn D = 4;
   D.diff(3, 4);
   print4thVariable(A * D, "A*D");
   print4thVariable(B/D, "B/D");

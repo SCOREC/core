@@ -17,8 +17,8 @@ AD f1(AD const& a, AD const& b)
 
 int main()
 {
-  AD a = AD(1.0);
-  AD b = AD(2.0);
+  AD a = 1.0;
+  AD b = 2.0;
 
   a.diff(0);
   b.diff(1);
