@@ -16,7 +16,6 @@ class AD
     double x_;
     /** \brief the derivative array */
     T dx_[N];
-
     /** \brief the number of derivatives */
     enum { degree = N };
     /** \brief default constructor */
@@ -614,7 +613,7 @@ double cos(double A)
 
 /** \brief sin of an AD variable */
 template <class T, unsigned int N>
-AD<T, N> sin(AD<T, N> A)
+AD<T, N> sin(AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.resize(A.size());
@@ -627,7 +626,7 @@ AD<T, N> sin(AD<T, N> A)
 
 /** \brief cos of an AD variable */
 template <class T, unsigned int N>
-AD<T, N> cos(AD<T, N> A)
+AD<T, N> cos(AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.val() = std::cos(A.val());
@@ -640,7 +639,7 @@ AD<T, N> cos(AD<T, N> A)
 
 /** \brief tan of an AD variable */
 template <class T, unsigned int N>
-AD<T, N> tan(AD<T, N> A)
+AD<T, N> tan(AD<T, N> const& A)
 {
   AD<T, N> tmp;
   tmp.val() = std::tan(A.val());
