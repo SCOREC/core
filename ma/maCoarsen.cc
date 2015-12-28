@@ -183,7 +183,7 @@ class AllEdgeCollapser : public Operator
     double qualityToBeat;
 };
 
-static int collapseAllEdges(Adapt* a, int modelDimension)
+int collapseAllEdges(Adapt* a, int modelDimension)
 {
   AllEdgeCollapser collapser(a,modelDimension);
   applyOperator(a,&collapser);
