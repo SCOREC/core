@@ -171,11 +171,13 @@ FILE* pcu_group_open(const char* path, bool write) {
         PCU_Comm_Peers(), group_size, groups);
   }
   for(int i=0; i<groups; i++) {
-    if(rank%groups == i)
+    if(rank%groups == i) {
       fp = fopen(path, mode);
+      if (!fp)
+        reel_fail("Could not find or open file \"%s\"\n", path);
+    }
     PCU_Barrier();
   }
-  assert(fp);
   return fp;
 }
 
