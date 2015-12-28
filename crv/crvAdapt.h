@@ -29,7 +29,7 @@ bool repositionInteriorWithBlended(ma::Mesh* m,
 void repositionInterior(ma::Refine* r);
 
 void splitEdges(ma::Adapt* a);
-int markBadQuality(Adapt* a);
+long markBadQuality(Adapt* a);
 
 /* Use a crv version of these
  * because we don't have bitwise operations
@@ -49,7 +49,17 @@ void clearFlag(Adapt* a, ma::Entity* e);
 int getQualityTag(ma::Mesh* m, ma::Entity* e,
     ma::Entity* bdry);
 
-void fixElementShapes(Adapt* a);
+/* Take boundary triangles where two edges on the boundary
+ * form an angle of 180 (or greater) at a vertex and
+ * split the edge opposite them.
+ */
+void fixLargeBoundaryAngles(Adapt* a);
+
+/* If an edge is flagged as invalid,
+ * try and collapse
+ * or swap it away
+ */
+void fixInvalidEdges(Adapt* a);
 
 /** \brief experimental function */
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);

@@ -8,9 +8,8 @@
 #include <PCU.h>
 #include "crv.h"
 #include "crvAdapt.h"
+#include <maCoarsen.h>
 #include <maEdgeSwap.h>
-#include <maDoubleSplitCollapse.h>
-#include <maShortEdgeRemover.h>
 #include <maOperator.h>
 #include <cassert>
 
@@ -18,6 +17,67 @@
  * that some duplicate code makes sense */
 
 namespace crv {
+
+static ma::Entity* isEdgeQualityTag(ma::Mesh* m,
+    ma::Entity* e, int tag)
+{
+  int index = tag-8;
+  int ne = apf::Mesh::adjacentCount[m->getType(e)][1];
+  if(index >= 0 && index < ne){
+    ma::Downward edges;
+    m->getDownward(e,1,edges);
+    return edges[index];
+  }
+  return 0;
+}
+
+class EdgeSwapper : public ma::Operator
+{
+  public:
+    EdgeSwapper(Adapt* a)
+    {
+      adapter = a;
+      mesh = a->mesh;
+      edgeSwap = ma::makeEdgeSwap(a);
+      md = mesh->getDimension();
+      ns = 0;
+    }
+    virtual ~EdgeSwapper()
+    {
+      delete edgeSwap;
+    }
+    virtual int getTargetDimension() {return md;}
+    virtual bool shouldApply(ma::Entity* e)
+    {
+      int tag = crv::getFlag(adapter,e);
+      ma::Entity* edge = isEdgeQualityTag(mesh,e,tag);
+      if (! edge)
+        return false;
+      simplex = e;
+      edges[0] = edge;
+      return true;
+    }
+    virtual bool requestLocality(apf::CavityOp* o)
+    {
+      return o->requestLocality(edges,1);
+    }
+    virtual void apply()
+        {
+          if (edgeSwap->run(edge)){
+            ns++;
+            crv::clearFlag(adapter,simplex);
+          }
+        }
+  private:
+    Adapt* adapter;
+    ma::Mesh* mesh;
+    ma::Entity* simplex;
+    ma::Entity* edge;
+    ma::Entity* edges[1];
+    ma::EdgeSwap* edgeSwap;
+    int md;
+    int ns;
+};
 
 static bool isCornerTriAngleLarge(ma::Mesh* m,
     ma::Entity* tri, int index)
@@ -70,11 +130,12 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
 
 static int markEdgesOppLargeAngles(Adapt* a)
 {
-  ma::Entity* e;
   int count = 0;
   int prev_count;
 
   ma::Mesh* m = a->mesh;
+  ma::Entity* e;
+
   do {
     ma::Iterator* it = m->begin(2);
     prev_count = count;
@@ -95,7 +156,41 @@ static int markEdgesOppLargeAngles(Adapt* a)
   return PCU_Add_Long(count);
 }
 
-void fixElementShapes(crv::Adapt* a)
+/* The whole idea is to do the quality check once,
+ * and then use the results to mark edges, etc for
+ * fixing
+ */
+static int markEdgesToFix(Adapt* a, int flag)
+{
+
+  int count = 0;
+  int prev_count;
+
+  ma::Mesh* m = a->mesh;
+  ma::Entity* e;
+
+  int dimension = m->getDimension();
+  do {
+    ma::Iterator* it = m->begin(dimension);
+    prev_count = count;
+    while ((e = m->iterate(it)))
+    {
+      int tag = crv::getFlag(a,e);
+      ma::Entity* edge = isEdgeQualityTag(m,e,tag);
+      if (edge && !ma::getFlag(a,edge,flag))
+      {
+        assert(m->getType(edge) == 1);
+        ma::setFlag(a,edge,flag);
+        if (a->mesh->isOwned(edge))
+          ++count;
+      }
+    }
+    m->end(it);
+  } while(count > prev_count);
+  return PCU_Add_Long(count);
+}
+
+void fixLargeBoundaryAngles(Adapt* a)
 {
   double t0 = PCU_Time();
   int count = markEdgesOppLargeAngles(a);
@@ -104,7 +199,57 @@ void fixElementShapes(crv::Adapt* a)
   splitEdges(a);
   double t1 = PCU_Time();
   ma::print("split %d boundary edges with "
-      "large angles in %f seconds\n",count,t1-t0);
+      "large angles in %f seconds",count,t1-t0);
+}
+
+static void collapseInvalidEdges(Adapt* a)
+{
+  double t0 = PCU_Time();
+  int nedges = markEdgesToFix(a,ma::COLLAPSE);
+  if ( ! nedges)
+    return;
+  ma::Mesh* m = a->mesh;
+  int maxDimension = m->getDimension();
+  assert(checkFlagConsistency(a,1,ma::COLLAPSE));
+  long successCount = 0;
+  for (int modelDimension=1; modelDimension <= maxDimension; ++modelDimension)
+  {
+    checkAllEdgeCollapses(a,modelDimension);
+    findIndependentSet(a);
+    successCount += ma::collapseAllEdges(a, modelDimension);
+  }
+  successCount = PCU_Add_Long(successCount);
+  double t1 = PCU_Time();
+  ma::print("Collapsed %ld bad edges "
+      "in %f seconds",successCount, t1-t0);
+}
+
+static void swapInvalidEdges(Adapt* a)
+{
+  double t0 = PCU_Time();
+  long count = markBadQuality(a);
+  if ( ! count)
+    return;
+  EdgeSwapper es(a);
+  ma::applyOperator(a,&es);
+
+  double t1 = PCU_Time();
+  ma::print("Swapped %ld bad edges "
+      "in %f seconds",count, t1-t0);
+}
+
+void fixInvalidEdges(Adapt* a)
+{
+  double t0 = PCU_Time();
+  long count = markBadQuality(a);
+  if ( ! count)
+    return;
+  collapseInvalidEdges(a);
+  swapInvalidEdges(a);
+  double t1 = PCU_Time();
+  ma::print("Found %ld bad quality elements"
+      " in %f seconds",count, t1-t0);
+
 }
 
 }

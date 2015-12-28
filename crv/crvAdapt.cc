@@ -141,8 +141,7 @@ int getQualityTag(ma::Mesh* m, ma::Entity* e,
   return -1;
 }
 
-static long markBadQualityEntities(
-    Adapt* a)
+long markBadQuality(Adapt* a)
 {
   ma::Entity* e;
   long count = 0;
@@ -185,11 +184,6 @@ static long markBadQualityEntities(
   return PCU_Add_Long(count);
 }
 
-int markBadQuality(Adapt* a)
-{
-  return markBadQualityEntities(a);
-}
-
 int getFlag(Adapt* a, ma::Entity* e)
 {
   return getFlags(a,e);
@@ -214,7 +208,8 @@ void adapt(ma::Input* in)
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
   ma::preBalance(a);
-  crv::fixElementShapes(a);
+  crv::fixLargeBoundaryAngles(a);
+  crv::fixInvalidEdges(a);
   for (int i=0; i < in->maximumIterations; ++i)
   {
     ma::print("iteration %d",i);
