@@ -194,8 +194,10 @@ void fixLargeBoundaryAngles(Adapt* a)
 {
   double t0 = PCU_Time();
   int count = markEdgesOppLargeAngles(a);
-  if ( ! count)
+  if ( ! count){
+    ma::print("no boundary edges with big angles");
     return;
+  }
   splitEdges(a);
   double t1 = PCU_Time();
   ma::print("split %d boundary edges with "
@@ -242,8 +244,10 @@ void fixInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
   long count = markBadQuality(a);
-  if ( ! count)
+  if ( ! count){
+    ma::print("no bad quality elements found");
     return;
+  }
   collapseInvalidEdges(a);
   swapInvalidEdges(a);
   double t1 = PCU_Time();

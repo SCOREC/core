@@ -81,6 +81,7 @@ void snapRefineToBoundary(ma::Adapt* a){
             m->getModelType(m->toModel(a[i])) < m->getDimension()){
           int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
           int ni = fs->countNodesOn(d);
+          if(ni == 0) continue;
           apf::NewArray<double> c;
           crv::getBezierTransformationCoefficients(P,d,c);
           convertInterpolationPoints(m,a[i],n,ni,c);
@@ -198,6 +199,17 @@ void clearFlag(Adapt* a, ma::Entity* e)
 {
   setFlags(a,e,0);
 }
+// use an identity configuration but with default fixing values
+ma::Input* configureShapeCorrection(
+    ma::Mesh* m, ma::SizeField* f,
+    ma::SolutionTransfer* s)
+{
+  ma::Input* in = ma::configureIdentity(m,f,s);
+  in->shouldFixShape = true;
+  in->shouldSnap = in->mesh->canSnap();
+  in->shouldTransferParametric = in->mesh->canSnap();
+  return in;
+}
 
 void adapt(ma::Input* in)
 {
@@ -224,7 +236,6 @@ void adapt(ma::Input* in)
   crv::clearFlags(a);
   delete a;
   delete in;
-
 }
 
 }
