@@ -5,6 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include "crv.h"
+#include "crvAdapt.h"
 #include "crvSnap.h"
 #include <cassert>
 
@@ -152,7 +153,12 @@ bool BezierCurver::run()
   }
 
   synchronize();
-
+  // curving 1D meshes, while rare, is important in testing
+  // do not fix shape if this is the case
+  if( m_mesh->getDimension() >= 2 && m_order > 1){
+    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
+    crv::adapt(shapeFixer);
+  }
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;

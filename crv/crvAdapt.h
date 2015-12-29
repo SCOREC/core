@@ -23,12 +23,28 @@ class Adapt : public ma::Adapt
     ma::Tag* validityTag;
 };
 
+/* Configures a shape correction input,
+ * Since fixing invalid elements is considered
+ * Adaptation
+ */
+ma::Input* configureShapeCorrection(
+    ma::Mesh* m, ma::SizeField* f=0,
+    ma::SolutionTransfer* s=0);
+
+void adapt(ma::Input* in);
+
+/* Support functions for curved applications, these ones
+ * clean up after cavity operations, by repositioning
+ */
 void snapRefineToBoundary(ma::Adapt* a);
 bool repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
 void repositionInterior(ma::Refine* r);
 
+// Split edges marked with ma::SPLIT
 void splitEdges(ma::Adapt* a);
+// Quality checking is expensive, so tag them with an
+// integer to identify if bad quality, and where
 long markBadQuality(Adapt* a);
 
 /* Use a crv version of these
@@ -61,10 +77,7 @@ void fixLargeBoundaryAngles(Adapt* a);
  */
 void fixInvalidEdges(Adapt* a);
 
-/** \brief experimental function */
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
-
-void adapt(ma::Input* in);
 
 }
 
