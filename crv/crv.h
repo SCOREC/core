@@ -97,10 +97,7 @@ class BezierCurver : public MeshCurver
   public:
     BezierCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m,P,S)
     {
-      if(B > 0){
-        for(int type = 0; type < apf::Mesh::TYPES; ++type)
-        setBlendingOrder(type,B);
-      }
+      setBlendingOrder(apf::Mesh::TYPES,B);
     };
 
     /** \brief curves a mesh using bezier curves of chosen order
