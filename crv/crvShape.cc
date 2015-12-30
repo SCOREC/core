@@ -38,6 +38,7 @@ class EdgeSwapper : public ma::Operator
     {
       adapter = a;
       mesh = a->mesh;
+      edges[0] = 0;
       edgeSwap = ma::makeEdgeSwap(a);
       md = mesh->getDimension();
       ns = 0;
@@ -63,7 +64,7 @@ class EdgeSwapper : public ma::Operator
     }
     virtual void apply()
         {
-          if (edgeSwap->run(edge)){
+          if (edgeSwap->run(edges[0])){
             ns++;
             crv::clearFlag(adapter,simplex);
           }
@@ -72,7 +73,6 @@ class EdgeSwapper : public ma::Operator
     Adapt* adapter;
     ma::Mesh* mesh;
     ma::Entity* simplex;
-    ma::Entity* edge;
     ma::Entity* edges[1];
     ma::EdgeSwap* edgeSwap;
     int md;
