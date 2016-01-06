@@ -43,7 +43,7 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_omega_hConfig.cmake.in"
     "${CMAKE_BINARY_DIR}/apf_omega_hConfig.cmake")
 
-INSTALL(FILES ${LION_HEADERS} DESTINATION include)
+INSTALL(FILES ${APF_OMEGA_H_HEADERS} DESTINATION include)
 INSTALL(TARGETS
   apf_omega_h
   RUNTIME DESTINATION bin
