@@ -37,7 +37,7 @@ void adapt(ma::Input* in);
  * clean up after cavity operations, by repositioning
  */
 void snapRefineToBoundary(ma::Adapt* a);
-bool repositionInteriorWithBlended(ma::Mesh* m,
+void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
 void repositionInterior(ma::Refine* r);
 

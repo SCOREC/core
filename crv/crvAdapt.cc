@@ -67,7 +67,6 @@ void snapRefineToBoundary(ma::Adapt* a){
     for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
       ma::EntityArray& a = r->newEntities[d][i];
       for (size_t i=0; i < a.getSize(); ++i)
-
         if(m->getModelType(m->toModel(a[i])) < m->getDimension()){
           snapToInterpolate(m,a[i]);
         }
@@ -76,8 +75,8 @@ void snapRefineToBoundary(ma::Adapt* a){
   for (int d = m->getDimension(); d >=1; --d){
     for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
       ma::EntityArray& a = r->newEntities[d][i];
-      for (size_t i=0; i < a.getSize(); ++i)
-        if (m->getType(a[i]) != apf::Mesh::VERTEX &&
+      for (size_t i=0; i < a.getSize(); ++i){
+        if (m->getType(a[i]) == apf::Mesh::simplexTypes[d] &&
             m->getModelType(m->toModel(a[i])) < m->getDimension()){
           int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
           int ni = fs->countNodesOn(d);
@@ -86,6 +85,7 @@ void snapRefineToBoundary(ma::Adapt* a){
           crv::getBezierTransformationCoefficients(P,d,c);
           convertInterpolationPoints(m,a[i],n,ni,c);
         }
+      }
     }
   }
 }
@@ -215,13 +215,15 @@ void adapt(ma::Input* in)
 {
   in->shouldFixShape = true;
   in->shapeHandler = crv::getShapeHandler;
-  ma::print("version 2.0 !");
+  ma::print("crv version 2.0 !");
   double t0 = PCU_Time();
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
   ma::preBalance(a);
+
   crv::fixLargeBoundaryAngles(a);
-  crv::fixInvalidEdges(a);
+//  crv::fixInvalidEdges(a);
+//  ma::fixElementShapes(a);
   for (int i=0; i < in->maximumIterations; ++i)
   {
     ma::print("iteration %d",i);
