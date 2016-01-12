@@ -116,7 +116,7 @@ bool BezierCurver::run()
   synchronize();
 
   // go downward, and convert interpolating to control points
-  int startDim =  md - (blendingOrder > 0);
+  int startDim = md - (blendingOrder > 0);
 
   for(int d = startDim; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
@@ -157,10 +157,12 @@ bool BezierCurver::run()
   // curving 1D meshes, while rare, is important in testing
   // do not fix shape if this is the case
   // does not work for blended shapes, yet
-  if( m_mesh->getDimension() >= 2 && m_order > 1 && blendingOrder == 0){
-    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
-    crv::adapt(shapeFixer);
-  }
+  // comment out for now
+
+//  if( m_mesh->getDimension() >= 2 && m_order > 1 && blendingOrder == 0){
+//    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
+//    crv::adapt(shapeFixer);
+//  }
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
