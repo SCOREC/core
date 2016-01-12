@@ -121,6 +121,14 @@ class BezierTransfer : public ma::SolutionTransfer
 
       int ne = apf::Mesh::adjacentCount[parentType][1];
 
+      // check if we can use the curvature of the original element or not
+      // uses BAD_QUALITY on vertices to trick it, rather than recode
+      // everything
+      bool useLinear = false;
+      for (int i = 0; i < apf::Mesh::adjacentCount[parentType][0]; ++i)
+        if ( ma::getFlag(adapt,parentVerts[i],ma::BAD_QUALITY) )
+          useLinear = true;
+
       apf::NewArray<apf::MeshEntity*> midEdgeVerts(ne);
       for (int i = 0; i < ne; ++i){
         if ( ma::getFlag(adapt,parentEdges[i],ma::SPLIT) )
@@ -137,10 +145,8 @@ class BezierTransfer : public ma::SolutionTransfer
       apf::getVectorNodes(elem,nodes);
       apf::destroyElement(elem);
 
-      // check if we can use the curvature of the original element or not
-      bool useLinear = false;
-
       for (int d = 1; d <= apf::Mesh::typeDimension[parentType]; ++d){
+        if (!mesh->getShape()->hasNodesIn(d)) continue;
         for (size_t i = 0; i < newEntities.getSize(); ++i)
         {
           // go through this hierachically, doing edges first
@@ -150,28 +156,20 @@ class BezierTransfer : public ma::SolutionTransfer
 
           int ni = mesh->getShape()->countNodesOn(childType);
 
-          if (childType == apf::Mesh::VERTEX || ni == 0 ||
-              (isBoundaryEntity(mesh,newEntities[i]) && shouldSnap))
-            continue; //vertices will have been handled specially beforehand
-          bool isEdgeLinear = false;
-          if(childType == apf::Mesh::EDGE &&
-              !isBoundaryEntity(mesh,newEntities[i])){
-            ma::Entity* verts[2];
-            mesh->getDownward(newEntities[i],0,verts);
-            // make the edge linear if its not a boundary edge
-            // on a geometry, and one of its vertices has been flagged
-            isEdgeLinear = (ma::getFlag(adapt,verts[0],ma::SNAP) ||
-                ma::getFlag(adapt,verts[1],ma::SNAP));
+          if ((isBoundaryEntity(mesh,newEntities[i]) && shouldSnap))
+            continue; //only do boundary entities if theres no geometry
 
-            useLinear = useLinear || isEdgeLinear;
-          }
-          if (useLinear && childType != apf::Mesh::EDGE){
-            for (int j = 0; j < ni; ++j){
-              apf::Vector3 zero(0,0,0);
-              mesh->setPoint(newEntities[i],j,zero);
+          if (useLinear) {
+            if(childType == apf::Mesh::EDGE){
+              setLinearEdgePoints(mesh,newEntities[i]);
+            } else {
+              for (int j = 0; j < ni; ++j){
+                apf::Vector3 zero(0,0,0);
+                mesh->setPoint(newEntities[i],j,zero);
+              }
+              repositionInteriorWithBlended(mesh,newEntities[i]);
             }
-            repositionInteriorWithBlended(mesh,newEntities[i]);
-          } else if(!isEdgeLinear){
+          } else {
             int n = getNumControlPoints(childType,P);
             apf::Vector3 vp[4];
             getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
@@ -185,8 +183,6 @@ class BezierTransfer : public ma::SolutionTransfer
                 point += nodes[k]*B(j+n-ni,k);
               mesh->setPoint(newEntities[i],j,point);
             }
-          } else {
-            setLinearEdgePoints(mesh,newEntities[i]);
           }
         }
       }

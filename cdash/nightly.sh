@@ -37,16 +37,6 @@ export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0/bin
 cov-build --dir cov-int make -j 4
 #pack up the tarball of results
 tar czvf pumi.tgz cov-int
-#because its 2015 and this is not standard yet
-export PATH=$PATH:/lore/dibanez/curl-7.45.0/install/bin
-#send it to Coverity Scan site using curl
-curl --form token=faMZVmxTjByhNoJyb_4wDw \
-  --form email=dan.a.ibanez@gmail.com \
-  --form file=@$PWD/pumi.tgz \
-  --form version="1.0.1" \
-  --form description="Automated" \
-  https://scan.coverity.com/builds?project=SCOREC%2Fcore
-
 #cleanup the Chef test output
 cd /lore/dibanez
 find meshes/phasta -name "*procs_case" | xargs rm -rf

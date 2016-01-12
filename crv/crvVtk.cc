@@ -656,12 +656,13 @@ static void writePvtuFile(const char* prefix, const char* suffix,
   file << "</PPointData>\n";
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
-    std::stringstream ssPCU;
-    ssPCU << prefix << i << "_"
-       << m->getShape()->getOrder()
-       << suffix << ".vtu";
-    file << "<Piece Source=\"" << ssPCU.str() << "\"/>\n";
+    std::stringstream ssPart;
+    ssPart << prefix << i
+       << suffix << "_"
+       << m->getShape()->getOrder()<< ".vtu";
+    file << "<Piece Source=\"" << ssPart.str() << "\"/>\n";
   }
+
 
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";

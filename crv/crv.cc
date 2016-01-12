@@ -18,11 +18,11 @@ bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
   return m->getModelType(m->toModel(e)) < m->getDimension();
 }
 
-bool hasTwoEdgesOnBoundary(apf::Mesh* m, apf::MeshEntity* e)
+bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimension)
 {
   apf::Downward down;
   int count = 0;
-  int nd = m->getDownward(e,1,down);
+  int nd = m->getDownward(e,dimension,down);
   for (int i = 0; i < nd; ++i){
     if(isBoundaryEntity(m,down[i]))
       ++count;

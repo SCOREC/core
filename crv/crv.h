@@ -24,8 +24,9 @@ namespace crv {
 static unsigned const MAX_ORDER = 20;
 /** \brief checks if is a boundary entity */
 bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
-/** \brief checks if any entity has two edges on the boundary */
-bool hasTwoEdgesOnBoundary(apf::Mesh* m, apf::MeshEntity* e);
+/** \brief checks if any entity has two entities of dimension on the boundary */
+bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e,
+    int dimension);
 /** \brief sets the blending order, if shape blending is used */
 void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
