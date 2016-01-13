@@ -167,4 +167,17 @@ double getAngle(Vector3 const& a, Vector3 const& b)
   return std::acos((a * b) / (a.getLength() * b.getLength()));
 }
 
+double getDistance(LineSegment const& ls, Vector3 const& p)
+{
+  Vector3 direction = (ls.end - ls.start);
+  Vector3 ap = p - ls.start;
+  Vector3 along = project(ap, direction);
+  Vector3 away = reject(ap, direction);
+  if (along * direction < 0)
+    return ap.getLength();
+  if (along.getLength() > direction.getLength())
+    return (p - ls.end).getLength();
+  return away.getLength();
+}
+
 }

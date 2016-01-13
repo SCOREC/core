@@ -12,6 +12,13 @@ struct Line {
   Line(Vector3 const& o, Vector3 const& d);
 };
 
+struct LineSegment {
+  Vector3 start;
+  Vector3 end;
+  LineSegment();
+  LineSegment(Vector3 const& s, Vector3 const& e);
+};
+
 struct Plane {
   Vector3 normal;
   double radius;
@@ -47,6 +54,8 @@ Frame operator*(Frame const& a, Frame const& b);
 Vector3 operator*(Frame const& a, Vector3 const& b);
 
 double getAngle(Vector3 const& a, Vector3 const& b);
+
+double getDistance(LineSegment const& ls, Vector3 const& p);
 
 }
 
