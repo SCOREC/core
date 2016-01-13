@@ -188,6 +188,26 @@ static void migrateForLayerCollapse(Adapt* a, int d, int round)
   a->mesh->migrate(plan);
 }
 
+void localizeLayerStacks(Mesh* m) {
+  Input* in = configureIdentity(m);
+  Adapt* a = new Adapt(in);
+  //mark layer bases
+  findLayerBase(a);
+  //mark all base layer edges for collapse so the localizer
+  //will process their stacks
+  Iterator* it = m->begin(1);
+  Entity* e;
+  while ((e = m->iterate(it)))
+    if (getFlag(a, e, LAYER_BASE))
+      setFlag(a, e, COLLAPSE);
+  m->end(it);
+  int round = 0;
+  for (int d = 1; d < m->getDimension(); ++d)
+    migrateForLayerCollapse(a,d,round);
+  delete a;
+  delete in;
+}
+
 static void collapseLocalStacks(Adapt* a,
     int& skipCount,
     int& successCount,
