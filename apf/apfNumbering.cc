@@ -68,12 +68,12 @@ FieldDataOf<T>* NumberingOf<T>::getData()
 template <class T>
 void NumberingOf<T>::getAll(MeshEntity* e, T* dat)
 {
-  int n = countValuesOn(e);
   FieldDataOf<T>* fieldData = getData();
   if (fieldData->hasEntity(e))
     fieldData->get(e,dat);
   else
   { //default initialization to free and not numbered
+    int n = countValuesOn(e);
     for (int i=0; i < n; ++i)
       dat[i] = FREE_BUT_NOT_NUMBERED;
   }
