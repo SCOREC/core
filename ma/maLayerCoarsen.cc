@@ -164,6 +164,7 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
       cl.handle(v[0], PCU_Comm_Self());
       cl.handle(v[1], PCU_Comm_Self());
     }
+  m->end(it);
   crawlLayers(&cl);
   return plan;
 }
