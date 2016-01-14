@@ -14,6 +14,16 @@ Line::Line(Vector3 const& o, Vector3 const& d):
 {
 }
 
+LineSegment::LineSegment()
+{
+}
+
+LineSegment::LineSegment(Vector3 const& a, Vector3 const& b):
+  start(a),
+  end(b)
+{
+}
+
 Plane::Plane(Vector3 const& n, double r):
   normal(n.normalize()),
   radius(r * n.getLength())
