@@ -38,6 +38,7 @@ class EdgeSwapper : public ma::Operator
     {
       adapter = a;
       mesh = a->mesh;
+      simplex = 0;
       edges[0] = 0;
       edgeSwap = ma::makeEdgeSwap(a);
       md = mesh->getDimension();
