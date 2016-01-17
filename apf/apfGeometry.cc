@@ -14,6 +14,16 @@ Line::Line(Vector3 const& o, Vector3 const& d):
 {
 }
 
+LineSegment::LineSegment()
+{
+}
+
+LineSegment::LineSegment(Vector3 const& a, Vector3 const& b):
+  start(a),
+  end(b)
+{
+}
+
 Plane::Plane(Vector3 const& n, double r):
   normal(n.normalize()),
   radius(r * n.getLength())
@@ -165,6 +175,19 @@ Vector3 operator*(Frame const& a, Vector3 const& b)
 double getAngle(Vector3 const& a, Vector3 const& b)
 {
   return std::acos((a * b) / (a.getLength() * b.getLength()));
+}
+
+double getDistance(LineSegment const& ls, Vector3 const& p)
+{
+  Vector3 direction = (ls.end - ls.start);
+  Vector3 ap = p - ls.start;
+  Vector3 along = project(ap, direction);
+  Vector3 away = reject(ap, direction);
+  if (along * direction < 0)
+    return ap.getLength();
+  if (along.getLength() > direction.getLength())
+    return (p - ls.end).getLength();
+  return away.getLength();
 }
 
 }

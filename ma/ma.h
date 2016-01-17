@@ -55,6 +55,10 @@ void runUniformRefinement(Mesh* m, int n=1, SolutionTransfer* s=0);
   \details currently this supports snapping but not shape correction */
 void adaptMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
 
+/** \brief localize boundary layer stacks
+ *  \details this will fail if parts are emptied */
+void localizeLayerStacks(Mesh* m);
+
 }
 
 #endif

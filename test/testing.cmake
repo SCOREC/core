@@ -129,6 +129,11 @@ add_test(verify_parallel
   ./verify
   "${MDIR}/pipe.smd"
   "pipe_4_.smb")
+add_test(vtxElmMixedBalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./vtxElmMixedBalance
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb")
 if(ENABLE_ZOLTAN)
   add_test(ma_parallel
     ${MPIRUN} ${MPIRUN_PROCFLAG} 4
