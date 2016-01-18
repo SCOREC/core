@@ -56,6 +56,7 @@ static void globalFromAPF(
 {
   apf::GlobalNumbering* glob_n = apf::makeGlobal(
       apf::numberOwnedDimension(am, "osh_global", ent_dim));
+  apf::synchronize(glob_n);
   unsigned long* global = osh_new_global(om, ent_dim);
   apf::MeshEntity* e;
   apf::MeshIterator* it = am->begin(ent_dim);
