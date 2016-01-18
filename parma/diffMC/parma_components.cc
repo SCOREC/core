@@ -82,13 +82,14 @@ namespace parma {
   }
 
   void DCC::sortByDepth() {
-    Comp* comp = new Comp[n];
+    assert(n>0);
+    Comp* comp = new Comp[n]();
     for(unsigned i=0; i<n; i++) {
       comp[i].i = i;
       comp[i].depth = depth[i];
     }
     std::stable_sort(comp, comp+n, compareComp);
-    unsigned* order = new unsigned[n];
+    unsigned* order = new unsigned[n]();
     for(unsigned i=0; i<n; i++)
       order[i] = comp[i].i;
     reorder(order);
@@ -256,7 +257,10 @@ namespace parma {
 
   class dcComponents::BdryItr {
     public:
-      BdryItr() : active(false) {}
+      BdryItr() {
+        active = false;
+        lvl = NULL;
+      }
       void begin(Level* l) {
         assert(!active);
         lvl = l;

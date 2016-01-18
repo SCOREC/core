@@ -666,8 +666,9 @@ static void append(char* s, size_t size, const char* format, ...)
 
 static void safe_mkdir(const char* path, mode_t mode)
 {
+  int err;
   errno = 0;
-  int err = mkdir(path, mode);
+  err = mkdir(path, mode);
   if (err != 0)
     assert(errno == EEXIST);
 }

@@ -68,15 +68,15 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   globalPeers = PCU_Comm_Peers();
   ph::Input in;
-  in.openfile_read = openFileRead;
   in.load("adapt.inp");
+  in.openfile_read = openFileRead;
   ph::BCs bcs;
   gmi_model* g;
   ph::loadModelAndBCs(in, g, bcs);
   apf::Mesh2* m = apf::loadMdsMesh(g, in.meshFileName.c_str());
   m->verify();
   if (in.solutionMigration)
-    ph::readAndAttachSolution(in, m);
+    ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)

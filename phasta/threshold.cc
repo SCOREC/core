@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   in.restartFileName = argv[3];
   in.timeStepNumber = 0;
   in.ensa_dof = 9;
-  ph::readAndAttachSolution(in, m);
+  ph::readAndAttachFields(in, m);
   apf::Field* solf = m->findField("solution");
   double total_volume = 0;
   apf::MeshIterator* it = m->begin(m->getDimension());

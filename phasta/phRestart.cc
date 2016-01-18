@@ -83,32 +83,32 @@ void detachField(
     int& size)
 {
   apf::Field* f = m->findField(fieldname);
+  assert(f);
   detachField(f, data, size);
 }
 
-void readAndAttachField(
+int readAndAttachField(
     Input& in,
+    FILE* f,
     apf::Mesh* m,
-    const char* filename,
-    const char* fieldname,
-    int out_size = -1)
+    int swap)
 {
-  FILE* f = in.openfile_read(in, filename);
-  if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", filename);
-    abort();
-  }
   double* data;
   int nodes, vars, step;
-  ph_read_field(f, fieldname, &data,
-      &nodes, &vars, &step);
-  fclose(f);
+  char hname[1024];
+  const char* anyfield = "";
+  int ret = ph_read_field(f, anyfield, swap,
+      &data, &nodes, &vars, &step, hname);
+  /* no field was found or the field has an empty data block */
+  if(ret==0 || ret==1) return ret;
   assert(nodes == static_cast<int>(m->count(0)));
   assert(step == in.timeStepNumber);
-  if (out_size == -1)
-    out_size = vars;
-  attachField(m, fieldname, data, vars, out_size);
+  int out_size = vars;
+  if ( std::string(hname) == std::string("solution") )
+    out_size = in.ensa_dof;
+  attachField(m, hname, data, vars, out_size);
   free(data);
+  return 1;
 }
 
 void detachAndWriteField(
@@ -153,22 +153,20 @@ static std::string buildRestartFileName(std::string prefix, int step)
   return ss.str();
 }
 
-void readAndAttachSolution(Input& in, apf::Mesh* m)
-{
+void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  readAndAttachField(in, m, filename.c_str(), "solution", in.ensa_dof);
-  readAndAttachField(in, m, filename.c_str(), "material type", 1);
-  if (in.displacementMigration)
-    readAndAttachField(in, m, filename.c_str(), "displacement");
-  if (in.dwalMigration)
-    readAndAttachField(in, m, filename.c_str(), "dwal");
-  if (in.adaptStrategy == 1)
-    readAndAttachField(in, m, filename.c_str(), "errors");
+  if (!f) {
+    fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
+    abort();
+  }
+  int swap = ph_should_swap(f);
+  while( readAndAttachField(in,f,m,swap) ); /* inf loop?? */
+  fclose(f);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("solution read and attached in %f seconds\n", t1 - t0);
+    printf("fields read and attached in %f seconds\n", t1 - t0);
 }
 
 void buildMapping(apf::Mesh* m)
@@ -216,6 +214,9 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
+  /* detach any remaining fields */
+  while(m->countFields())
+    apf::destroyField( m->getField(0) );
   fclose(f);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

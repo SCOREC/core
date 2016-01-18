@@ -53,6 +53,7 @@ add_test(bezierElevation bezierElevation)
 add_test(bezierExperimental bezierExperimental)
 add_test(bezierMesh bezierMesh)
 add_test(bezierMisc bezierMisc)
+add_test(bezierRefine bezierRefine)
 add_test(bezierSubdivision bezierSubdivision)
 add_test(bezierValidity bezierValidity)
 
@@ -128,6 +129,11 @@ add_test(verify_parallel
   ./verify
   "${MDIR}/pipe.smd"
   "pipe_4_.smb")
+add_test(vtxElmMixedBalance
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./vtxElmMixedBalance
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb")
 if(ENABLE_ZOLTAN)
   add_test(ma_parallel
     ${MPIRUN} ${MPIRUN_PROCFLAG} 4
@@ -195,6 +201,12 @@ add_test(vtxElmBalance
   "${MDIR}/afosr.dmg"
   "${MDIR}/4imb/"
   "afosrBal4p/")
+add_test(parmaSerial
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 1
+  ./vtxElmBalance
+  "${MESHES}/cube/cube.dmg"
+  "${MESHES}/cube/pumi670/cube.smb"
+  "cubeBal.smb/")
 set(MDIR ${MESHES}/cube)
 if(ENABLE_ZOLTAN)
   parma(ptnParma_cube
@@ -240,40 +252,6 @@ add_test(nonmanif_verify2
   ./verify
   "${MDIR}/nonmanifold.dmg"
   "nonmanifold_2_.smb")
-if (ENABLE_MPAS)
-  set(MDIR ${MESHES}/mpas)
-  add_test(read_mpas
-    mpas_read
-    "${MDIR}/ocean_QU_240km.nc"
-    "mpas.dmg"
-    "mpas.smb")
-  if(ENABLE_THREADS)
-    splitfun(split_mpas
-      ./split
-      "mpas.dmg"
-      "mpas.smb"
-      "mpas_4_.smb"
-      1 4)
-    add_test(verify_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./verify
-      "mpas.dmg"
-      "mpas_4_.smb")
-    add_test(ghost_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./ghost
-      "mpas.dmg"
-      "mpas_4_.smb"
-      "ghost_4_.smb")
-    add_test(write_mpas
-      ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-      ./mpas_write
-      "mpas.dmg"
-      "ghost_4_.smb"
-      "${MDIR}/ocean_QU_240km.nc"
-      "mpas_part_")
-  endif()
-endif()
 set(MDIR ${MESHES}/fusion)
 add_test(mkmodel_fusion
   mkmodel
@@ -360,4 +338,13 @@ if (PCU_COMPRESS)
   add_test(NAME chef8
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
+  if(NOT ENABLE_THREADS)
+    set(MDIR ${MESHES}/phasta/simModelAndAttributes)
+    cook(chef9 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 2 ${MDIR})
+  endif()
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
+  add_test(NAME chefReadUrPrep
+    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+    ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep ../../../model.dmg bz2:../good_mesh/ adapt.inp
+    WORKING_DIRECTORY "${MDIR}")
 endif()

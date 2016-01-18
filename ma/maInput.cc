@@ -32,6 +32,7 @@ void setDefaultValues(Input* in)
   in->shouldTransferParametric = in->mesh->canSnap();
   in->shouldHandleMatching = in->mesh->hasMatching();
   in->shouldFixShape = true;
+  in->shouldForceAdaptation = false;
   in->shouldPrintQuality = true;
   if (in->mesh->getDimension()==3)
   {
@@ -59,6 +60,7 @@ void setDefaultValues(Input* in)
   in->shouldRefineLayer = false;
   in->shouldCoarsenLayer = false;
   in->splitAllLayerEdges = false;
+  in->shapeHandler = 0;
 }
 
 void rejectInput(const char* str)

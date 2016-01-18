@@ -34,7 +34,7 @@ class Collapse
     void setVerts();
     void computeElementSets();
     void rebuildElements();
-    bool checkValidity(double qualityToBeat);
+    void fitElements();
     bool isGood2DMesh();
     void cancel();
     bool tryThisDirection(double qualityToBeat);

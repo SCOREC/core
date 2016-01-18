@@ -25,6 +25,11 @@
 
 namespace ma {
 
+class ShapeHandler;
+class Adapt;
+
+typedef ShapeHandler* (*ShapeHandlerFunction)(Adapt* a);
+
 /** \brief User configuration for a MeshAdapt run */
 class Input
 {
@@ -35,6 +40,7 @@ class Input
     bool ownsSizeField;
     SolutionTransfer* solutionTransfer;
     bool ownsSolutionTransfer;
+    ShapeHandlerFunction shapeHandler;
 /** \brief number of refine/coarsen iterations to run (default 3) */
     int maximumIterations;
 /** \brief whether to perform the collapse step */
@@ -49,6 +55,8 @@ class Input
     bool shouldHandleMatching;
 /** \brief whether to run shape correction (default true) */
     bool shouldFixShape;
+/** \brief whether to adapt if it makes local quality worse (default false) */
+    bool shouldForceAdaptation;
 /** \brief whether to print the worst shape quality */
     bool shouldPrintQuality;
 /** \brief minimum desired mean ratio cubed for simplex elements

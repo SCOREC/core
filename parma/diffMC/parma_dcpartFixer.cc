@@ -41,8 +41,7 @@ class dcPartFixer::PartFixer : public dcPart {
 
     int totNumDc() {
       int ndc = TO_INT(numDisconnectedComps());
-      PCU_Add_Ints(&ndc, 1);
-      return ndc;
+      return PCU_Add_Int(ndc);
     }
 
     void setupPlan(muu& dcCompTgts, apf::Migration* plan) {

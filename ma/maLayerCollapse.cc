@@ -161,8 +161,7 @@ bool LayerCollapse::checkValidity(double qualityToBeat)
      but since there are layer elements on top it is
      safe and requires no re-classification */
   if (newSimplices.getSize()) {
-    double quality = getWorstQuality(a, newSimplices);
-    if (quality < qualityToBeat)
+    if (hasWorseQuality(a, newSimplices, qualityToBeat))
       return false;
   }
   for (size_t i = 0; i < newLayer.size(); ++i)

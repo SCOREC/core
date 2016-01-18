@@ -5,32 +5,71 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include "crv.h"
+#include "crvAdapt.h"
 #include "crvSnap.h"
 #include <cassert>
 
 namespace crv {
 
-void MeshCurver::synchronize()
-{
-  apf::synchronize(m_mesh->getCoordinateField());
+void convertInterpolationPoints(int n, int ne,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<double>& c,
+    apf::NewArray<apf::Vector3>& newNodes){
+
+  for(int i = 0; i < ne; ++i)
+    newNodes[i].zero();
+
+  for( int i = 0; i < ne; ++i)
+    for( int j = 0; j < n; ++j)
+      newNodes[i] += nodes[j]*c[i*n+j];
+
 }
 
-void MeshCurver::snapToInterpolate(apf::MeshEntity* e)
+void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
+    int n, int ne, apf::NewArray<double>& c){
+
+  apf::NewArray<apf::Vector3> l, b(ne);
+  apf::Element* elem =
+      apf::createElement(m->getCoordinateField(),e);
+  apf::getVectorNodes(elem,l);
+
+  crv::convertInterpolationPoints(n,ne,l,c,b);
+
+  for(int i = 0; i < ne; ++i)
+    m->setPoint(e,i,b[i]);
+
+  apf::destroyElement(elem);
+}
+
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  int type = m_mesh->getType(e);
-  apf::FieldShape * fs = m_mesh->getShape();
+  int type = m->getType(e);
+  if(type == apf::Mesh::VERTEX){
+    apf::Vector3 p, pt(0,0,0);
+    apf::ModelEntity* g = m->toModel(e);
+    m->getParamOn(g,e,p);
+    m->snapToModel(g,p,pt);
+    m->setPoint(e,0,pt);
+    return;
+  }
+  apf::FieldShape * fs = m->getShape();
   int non = fs->countNodesOn(type);
   apf::Vector3 p, xi, pt(0,0,0);
   for(int i = 0; i < non; ++i){
-    apf::ModelEntity* g = m_mesh->toModel(e);
+    apf::ModelEntity* g = m->toModel(e);
     fs->getNodeXi(type,i,xi);
     if(type == apf::Mesh::EDGE)
-      transferParametricOnEdgeSplit(m_mesh,e,0.5*(xi[0]+1.),p);
+      transferParametricOnEdgeSplit(m,e,0.5*(xi[0]+1.),p);
     else
-      transferParametricOnTriSplit(m_mesh,e,xi,p);
-    m_mesh->snapToModel(g,p,pt);
-    m_mesh->setPoint(e,i,pt);
+      transferParametricOnTriSplit(m,e,xi,p);
+    m->snapToModel(g,p,pt);
+    m->setPoint(e,i,pt);
   }
+}
+
+void MeshCurver::synchronize()
+{
+  apf::synchronize(m_mesh->getCoordinateField());
 }
 
 void MeshCurver::snapToInterpolate(int dim)
@@ -41,30 +80,9 @@ void MeshCurver::snapToInterpolate(int dim)
     apf::ModelEntity* g = m_mesh->toModel(e);
     if(m_mesh->getModelType(g) == m_spaceDim) continue;
     if(m_mesh->isOwned(e))
-      snapToInterpolate(e);
+      crv::snapToInterpolate(m_mesh,e);
   }
   m_mesh->end(it);
-}
-
-void MeshCurver::convertInterpolationPoints(apf::MeshEntity* e,
-    int n, int ne, apf::NewArray<double>& c){
-
-  apf::NewArray<apf::Vector3> l, b(ne);
-  apf::Element* elem =
-      apf::createElement(m_mesh->getCoordinateField(),e);
-  apf::getVectorNodes(elem,l);
-
-  for(int i = 0; i < ne; ++i)
-    b[i].zero();
-
-  for( int i = 0; i < ne; ++i)
-    for( int j = 0; j < n; ++j)
-      b[i] += l[j]*c[i*n+j];
-
-  for(int i = 0; i < ne; ++i)
-    m_mesh->setPoint(e,i,b[i]);
-
-  apf::destroyElement(elem);
 }
 
 bool InterpolatingCurver::run()
@@ -87,6 +105,7 @@ bool BezierCurver::run()
   }
 
   int md = m_mesh->getDimension();
+  int blendingOrder = getBlendingOrder(apf::Mesh::simplexTypes[md]);
   apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   apf::FieldShape * fs = m_mesh->getShape();
 
@@ -97,20 +116,20 @@ bool BezierCurver::run()
   synchronize();
 
   // go downward, and convert interpolating to control points
-  int startDim =  md - (getBlendingOrder(apf::Mesh::simplexTypes[md]) > 0);
+  int startDim = md - (blendingOrder > 0);
 
   for(int d = startDim; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getBezierTransformationCoefficients(m_mesh,m_order,
+    getBezierTransformationCoefficients(m_order,
         apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
       if(m_mesh->isOwned(e))
-        convertInterpolationPoints(e,n,ne,c);
+        convertInterpolationPoints(m_mesh,e,n,ne,c);
     }
     m_mesh->end(it);
   }
@@ -129,13 +148,21 @@ bool BezierCurver::run()
     while ((e = m_mesh->iterate(it))){
       if(m_mesh->isOwned(e) &&
           m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
-        convertInterpolationPoints(e,n-ne,ne,c);
+        convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
   }
 
   synchronize();
+  // curving 1D meshes, while rare, is important in testing
+  // do not fix shape if this is the case
+  // does not work for blended shapes, yet
+  // comment out for now
 
+//  if( m_mesh->getDimension() >= 2 && m_order > 1 && blendingOrder == 0){
+//    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
+//    crv::adapt(shapeFixer);
+//  }
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
@@ -204,9 +231,8 @@ static void elevateBezierCurves(apf::Mesh2* m)
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(1);
   while ((e = m->iterate(it))) {
-    apf::ModelEntity* g = m->toModel(e);
-    if(m->getModelType(g) == 3) continue;
-    elevateBezierCurve(m,e,3,1);
+    if(isBoundaryEntity(m,e))
+      elevateBezierCurve(m,e,3,1);
   }
   m->end(it);
 }
@@ -348,7 +374,7 @@ bool GregoryCurver::run()
 
     while ((e = m_mesh->iterate(it))) {
       if(m_mesh->isOwned(e))
-        convertInterpolationPoints(e,n,ne,c);
+        convertInterpolationPoints(m_mesh,e,n,ne,c);
     }
     m_mesh->end(it);
   }
@@ -371,7 +397,7 @@ bool GregoryCurver::run()
     while ((e = m_mesh->iterate(it))){
       if(m_mesh->isOwned(e) &&
           m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
-        convertInterpolationPoints(e,n-ne,ne,c);
+        convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
   }

@@ -3,12 +3,14 @@ project(ph)
 find_package(ma PATHS ${CMAKE_BINARY_DIR})
 find_package(mds PATHS ${CMAKE_BINARY_DIR})
 find_package(gmi_sim PATHS ${CMAKE_BINARY_DIR})
+find_package(sam PATHS ${CMAKE_BINARY_DIR})
 set(PH_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${SAM_INCLUDE_DIRS}
   ${MA_INCLUDE_DIRS}
   ${MDS_INCLUDE_DIRS}
   ${GMI_SIM_INCLUDE_DIRS})
-set(DEP_LIBS ${MA_LIBS} ${MDS_LIBS} ${GMI_SIM_LIBS})
+set(DEP_LIBS ${SAM_LIBS} ${MA_LIBS} ${MDS_LIBS} ${GMI_SIM_LIBS})
 set(PH_LIBS ph ${DEP_LIBS})
 
 set(HEADERS chef.h)

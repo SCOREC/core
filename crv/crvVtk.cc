@@ -304,11 +304,18 @@ static void writeEdgeJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   while ((e = m->iterate(it))) {
     if(!m->isOwned(e)) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
+    double maxJ = -1e-10;
+    apf::NewArray<double> detJ(n+1);
     for (int i = 0; i <= n; ++i){
       p[0] = 2.*i/n-1.;
       apf::getJacobian(me,p,J);
-      double detJ = apf::getJacobianDeterminant(J,1);
-      file << detJ << '\n';
+      detJ[i] = apf::getJacobianDeterminant(J,1);
+      maxJ = std::max(detJ[i],maxJ);
+
+    }
+    for (int i = 0; i <= n; ++i){
+      if(detJ[i] > 0) detJ[i] /= maxJ;
+      file << detJ[i] << '\n';
     }
     apf::destroyMeshElement(me);
   }
@@ -327,33 +334,41 @@ static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   apf::Vector3 p;
 
   apf::Matrix3x3 J;
-  double detJ;
   bool isValid = true;
   while ((e = m->iterate(it))) {
     if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TRIANGLE) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
+    double maxJ = -1e-10;
+    int count = 0;
+    apf::NewArray<double> detJ((n+1)*(n+2)/2);
     for (int j = 0; j <= n; ++j){
       p[1] = 1.*j/n;
       for (int i = 0; i <= n-j; ++i){
         p[0] = 1.*i/n;
         apf::getJacobian(me,p,J);
         if(m->getDimension() == 3){
-          detJ = apf::getJacobianDeterminant(J,2);
+          detJ[count] = apf::getJacobianDeterminant(J,2);
         } else {
-          detJ = J[0][0]*J[1][1]-J[1][0]*J[0][1];
+          detJ[count] = J[0][0]*J[1][1]-J[1][0]*J[0][1];
         }
-        file << detJ << '\n';
-        if(isValid && detJ < 0.){
+        if(isValid && detJ[j] < 0.){
           apf::Vector3 pt;
           apf::getVector((apf::Element*)me,p,pt);
           std::stringstream ss;
-          ss << "warning: Tri Jacobian Determinant is negative,  " << detJ
-             << '\n';
+          ss << "warning: Tri Jacobian Determinant is negative,  " << detJ[j]
+              << '\n';
           std::string s = ss.str();
           fprintf(stderr, "%s", s.c_str());
           isValid = false;
         }
+        maxJ = std::max(detJ[count],maxJ);
+        ++count;
       }
+    }
+    if(std::fabs(maxJ) < 1e-10) maxJ = 1e-10;
+    for (int i = 0; i < (n+1)*(n+2)/2; ++i){
+      if(detJ[i] > 0) detJ[i] /= maxJ;
+      file << detJ[i] << '\n';
     }
     apf::destroyMeshElement(me);
   }
@@ -397,6 +412,9 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   while ((e = m->iterate(it))) {
     if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TET) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
+    double maxJ = -1e-10;
+    apf::NewArray<double> detJ(4*(n+1)*(n+1)*(n+1));
+    int count = 0;
     for(int h = 0; h < 4; ++h){
       for (int k = 0; k <= n; ++k){
         xi[2] = 2.*k/n - 1.;
@@ -410,21 +428,27 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               p += params[hex[h][l]]*values[l];
 
             apf::getJacobian(me,p,J);
-            double detJ = apf::getDeterminant(J);
-            if(isValid && detJ < 0.){
+            detJ[count] = apf::getDeterminant(J);
+            if(isValid && detJ[count] < 0.){
               apf::Vector3 pt;
               apf::getVector((apf::Element*)me,p,pt);
               std::stringstream ss;
-              ss << "warning: Tet Jacobian Determinant is negative,  " << detJ
-                 << '\n';
+              ss << "warning: Tet Jacobian Determinant is negative,  "
+                 << detJ[count] << '\n';
               std::string s = ss.str();
               fprintf(stderr, "%s", s.c_str());
               isValid = false;
             }
-            file << detJ << '\n';
+            maxJ = std::max(detJ[count],maxJ);
+            count++;
           }
         }
       }
+    }
+    if(std::fabs(maxJ) < 1e-10) maxJ = 1e-10;
+    for (int i = 0; i < 4*(n+1)*(n+1)*(n+1); ++i){
+      if(detJ[i] > 0) detJ[i] /= maxJ;
+      file << detJ[i] << '\n';
     }
     apf::destroyMeshElement(me);
   }
@@ -609,8 +633,9 @@ static void writePvtuFile(const char* prefix, const char* suffix,
     apf::Mesh* m, int type)
 {
   std::stringstream ss;
-  ss << prefix << "_" << m->getShape()->getOrder()
-     << suffix << ".pvtu";
+  ss << prefix << suffix << "_"
+     << m->getShape()->getOrder()
+     << ".pvtu";
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
   assert(file.is_open());
@@ -631,12 +656,13 @@ static void writePvtuFile(const char* prefix, const char* suffix,
   file << "</PPointData>\n";
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
-    std::stringstream ssPCU;
-    ssPCU << prefix << i << "_"
-       << m->getShape()->getOrder()
-       << suffix << ".vtu";
-    file << "<Piece Source=\"" << ssPCU.str() << "\"/>\n";
+    std::stringstream ssPart;
+    ssPart << prefix << i
+       << suffix << "_"
+       << m->getShape()->getOrder()<< ".vtu";
+    file << "<Piece Source=\"" << ssPart.str() << "\"/>\n";
   }
+
 
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
@@ -661,9 +687,9 @@ void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << "_interPts" << ".vtu";
+  ss << prefix << PCU_Comm_Self() << "_interPts"
+     << "_" << m->getShape()->getOrder()
+     << ".vtu";
 
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
@@ -733,9 +759,10 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(apf::Mesh::VERTEX) << ".vtu";
+  ss << prefix << PCU_Comm_Self()
+     << getSuffix(apf::Mesh::VERTEX)
+     << "_" << m->getShape()->getOrder()
+     << ".vtu";
 
   int nPoints = 0;
     for (int t = 0; t < apf::Mesh::TYPES; ++t)
@@ -803,9 +830,10 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_"
-     << m->getShape()->getOrder()
-     << getSuffix(type) << ".vtu";
+  ss << prefix << PCU_Comm_Self()
+     << getSuffix(type)
+     << "_" << m->getShape()->getOrder()
+     << ".vtu";
   std::string fileName = ss.str();
   std::stringstream buf;
 

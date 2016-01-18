@@ -10,6 +10,7 @@ class dcPart {
       dcPart(apf::Mesh*& mesh, unsigned verbose=0);
       ~dcPart();
       unsigned getNumComps();
+      unsigned getNumDcComps();
       unsigned getNumIso();
       unsigned getCompSize(unsigned i);
       unsigned getCompPeer(unsigned i);

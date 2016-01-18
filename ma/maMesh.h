@@ -71,6 +71,8 @@ Entity* getQuadEdgeOppositeEdge(Mesh* m, Entity* q, Entity* e);
 
 Entity* findTetByTwoTris(Mesh* m, Entity** tris);
 
+void getVertPoints(apf::Mesh* m, Entity* e, Vector* p);
+
 struct RebuildCallback {
   virtual void rebuilt(Entity* e, Entity* original) = 0;
 };
@@ -95,8 +97,6 @@ void ensureParallelConsistency(Mesh* m);
 
 Entity* findTriFromVerts(Mesh* m, Entity** v);
 
-double measure(Mesh* m, Entity* e);
-
 bool isOnModelEdge(Mesh* m, Entity* e);
 bool isOnModelFace(Mesh* m, Entity* e);
 
@@ -118,11 +118,6 @@ void getFaceEdgesAndDirections(
     Entity* face,
     Entity** edges,
     int* directions);
-
-int getFaceEdgeDirection(
-    Mesh* m,
-    Entity* face,
-    Entity* edge);
 
 Entity* findEdge(Mesh* m, Entity* v0, Entity* v1);
 bool edgeExists(Mesh* m, Entity* v0, Entity* v1);

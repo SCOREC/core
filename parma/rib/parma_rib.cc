@@ -19,17 +19,16 @@ struct Compare
   }
 };
 
-Bodies::Bodies(Body* arr, int n_)
+Bodies::Bodies()
 {
-  n = n_;
-  body = new Body*[n];
-  for (int i = 0; i < n; ++i)
-    body[i] = arr + i;
+  n = 0;
+  body = NULL;
 }
 
-void Bodies::destroy()
+Bodies::~Bodies()
 {
-  delete [] body;
+  n = 0;
+  body = NULL;
 }
 
 /* http://en.wikipedia.org/wiki/Moment_of_inertia#Angular_momentum */

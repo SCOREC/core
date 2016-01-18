@@ -135,6 +135,7 @@ namespace parma {
     public:
       ShapeSelector(apf::Mesh* m, apf::MeshTag* w, Centroids* c)
         : Selector(m, w), centroids(c), wTag(w) {
+        sendTag = NULL;
       }
       apf::Migration* run(Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);

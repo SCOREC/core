@@ -11,7 +11,7 @@
 
 namespace ma {
 
-typedef mth::AD<3> AD;
+typedef mth::AD<double, 3> AD;
 typedef mth::Vector<AD, 3> ADVec;
 
 static AD tet_volume(ADVec v[4])

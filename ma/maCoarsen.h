@@ -20,6 +20,8 @@ bool coarsenLayer(Adapt* a);
 void checkAllEdgeCollapses(Adapt* a, int modelDimension);
 void findIndependentSet(Adapt* a);
 
+int collapseAllEdges(Adapt* a, int modelDimension);
+
 }
 
 #endif

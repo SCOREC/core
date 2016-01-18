@@ -136,6 +136,9 @@ FieldShape* getIPFitShape(int dimension, int order);
  */
 FieldShape* getHierarchic(int order);
 
+/** \brief Project a hierarchic field */
+void projectHierarchicField(Field* to, Field* from);
+
 FieldShape* getShapeByName(const char* name);
 
 /** \brief count the number of nodes affecting an element type

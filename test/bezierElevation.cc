@@ -133,7 +133,7 @@ gmi_model* makeFaceModel()
 apf::Mesh2* createMesh2D()
 {
   gmi_model* model = makeFaceModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
   apf::MeshEntity* v[3], *edges[3];
   apf::Vector3 points2D[3] =
   {apf::Vector3(0,0,0),apf::Vector3(1,0,0),apf::Vector3(1,1,0)};
@@ -164,7 +164,7 @@ static apf::Vector3 points3D[4] =
 apf::Mesh2* createMesh3D()
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, true);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
 
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
   apf::deriveMdsModel(m);
@@ -179,7 +179,7 @@ void testEdgeElevation()
   for (int o = 1; o <= 5; ++o){
 
     gmi_model* model = makeEdgeModel();
-    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, true);
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, false);
 
     apf::Vector3 points[2] = {apf::Vector3(0,0,0),apf::Vector3(1,1,1)};
     apf::MeshEntity* v[2];
@@ -312,19 +312,18 @@ void testTetElevation()
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m, crv::getBezier(order),true);
     apf::FieldShape* fs = m->getShape();
-    crv::BezierCurver bc(m,order,0);
     // go downward, and convert interpolating to control points
     for(int d = 2; d >= 1; --d){
       int n = crv::getNumControlPoints(d,order);
       int ni = fs->countNodesOn(d);
       if(ni <= 0) continue;
       apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(m,order,d,c);
+      crv::getBezierTransformationCoefficients(order,d,c);
       apf::MeshEntity* e;
       apf::MeshIterator* it = m->begin(d);
       while ((e = m->iterate(it))) {
         if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-        bc.convertInterpolationPoints(e,n,ni,c);
+        crv::convertInterpolationPoints(m,e,n,ni,c);
       }
       m->end(it);
     }

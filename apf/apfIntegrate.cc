@@ -622,7 +622,8 @@ EntityIntegration const* getIntegration(int meshEntityType)
 }
 
 Integrator::Integrator(int o):
-  order(o)
+  order(o),
+  ipnode(0)
 {
 }
 
@@ -664,6 +665,7 @@ void Integrator::process(MeshElement* e)
   int np = countIntPoints(e,this->order);
   for (int p=0; p < np; ++p)
   {
+    ipnode = p;
     Vector3 point;
     getIntPoint(e,this->order,p,point);
     double w = getIntWeight(e,this->order,p);
@@ -689,6 +691,14 @@ double measure(MeshElement* e)
   Measurer measurer(getOrder(e));
   measurer.process(e);
   return measurer.m;
+}
+
+  double measure(Mesh* m, MeshEntity* e)
+{
+  MeshElement* me = createMeshElement(m,e);
+  double v = measure(me);
+  destroyMeshElement(me);
+  return v;
 }
 
 }//namespace apf

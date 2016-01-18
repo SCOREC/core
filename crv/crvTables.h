@@ -8,6 +8,9 @@
 #ifndef CRVTABLES_H
 #define CRVTABLES_H
 
+#include "apf.h"
+#include "apfMesh.h"
+
 namespace crv {
 
 extern unsigned const* const* const b2[11];
@@ -15,11 +18,9 @@ extern unsigned const* const* const* const b3[5];
 
 extern unsigned const* const* const* const tet_tri[7];
 
-enum {
-  BEZIER,
-  GREGORY,
-  TYPES
-};
+extern apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES];
+
+extern apf::Vector3 const* const elem_edge_xi[apf::Mesh::TYPES];
 
 // negative -> flipped relative to canonical
 // relies on e0 being always ordered correctly

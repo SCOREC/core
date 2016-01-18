@@ -223,7 +223,7 @@ static void receiveAllCopies(Mesh* m)
   assert(a == b);
 }
 
-static void verifyConnectivity(Mesh* m)
+static void verifyRemoteCopies(Mesh* m)
 {
   PCU_Comm_Begin();
   for (int d = 0; d <= m->getDimension(); ++d)
@@ -238,6 +238,59 @@ static void verifyConnectivity(Mesh* m)
   PCU_Comm_Send();
   while (PCU_Comm_Receive())
     receiveAllCopies(m);
+}
+
+static bool hasMatch(
+    Matches& matches,
+    int peer,
+    MeshEntity* entity)
+{
+  unsigned i;
+  for (i = 0; i < matches.getSize(); ++i)
+    if (matches[i].peer == peer &&
+        matches[i].entity == entity)
+      return true;
+  return false;
+}
+
+static void sendSelfToMatches(MeshEntity* e, Matches& matches)
+{
+  APF_ITERATE(Matches, matches, it)
+  {
+    assert(!((it->peer == PCU_Comm_Self())&&(it->entity == e)));
+    PCU_COMM_PACK(it->peer, e);
+    PCU_COMM_PACK(it->peer, it->entity);
+  }
+}
+
+static void receiveMatches(Mesh* m)
+{
+  MeshEntity* source;
+  PCU_COMM_UNPACK(source);
+  MeshEntity* e;
+  PCU_COMM_UNPACK(e);
+  Matches matches;
+  m->getMatches(e, matches);
+  assert(hasMatch(matches, PCU_Comm_Sender(), source));
+}
+
+static void verifyMatches(Mesh* m)
+{
+  PCU_Comm_Begin();
+  for (int d = 0; d <= m->getDimension(); ++d)
+  {
+    MeshIterator* it = m->begin(d);
+    MeshEntity* e;
+    while ((e = m->iterate(it))) {
+      Matches matches;
+      m->getMatches(e, matches);
+      sendSelfToMatches(e, matches);
+    }
+    m->end(it);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive())
+    receiveMatches(m);
 }
 
 static void sendCoords(Mesh* m, MeshEntity* e)
@@ -298,8 +351,7 @@ long verifyVolumes(Mesh* m, bool printVolumes)
   {
     if (!isSimplex(m->getType(e)))
       continue;
-    MeshElement* me = createMeshElement(m, e);
-    double v = measure(me);
+    double v = measure(m,e);
     if (v < 0) {
       if (printVolumes) {
         std::stringstream ss;
@@ -311,13 +363,12 @@ long verifyVolumes(Mesh* m, bool printVolumes)
       }
       ++n;
     }
-    destroyMeshElement(me);
   }
   m->end(it);
   return PCU_Add_Long(n);
 }
 
-static void packOrder(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
+static void packAlignment(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
 {
   PCU_COMM_PACK(to,r);
   int d = getDimension(m, e);
@@ -331,15 +382,15 @@ static void packOrder(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
   }
 }
 
-static void sendOrder(Mesh* m, MeshEntity* e)
+static void sendAlignment(Mesh* m, MeshEntity* e)
 {
   Copies remotes;
   m->getRemotes(e, remotes);
   APF_ITERATE(Copies, remotes, it)
-    packOrder(m, e, it->second, it->first);
+    packAlignment(m, e, it->second, it->first);
 }
 
-static void receiveOrder(Mesh* m)
+static void receiveAlignment(Mesh* m)
 {
   MeshEntity* e;
   PCU_COMM_UNPACK(e);
@@ -352,7 +403,7 @@ static void receiveOrder(Mesh* m)
   }
 }
 
-static void verifyOrder(Mesh* m)
+static void verifyAlignment(Mesh* m)
 {
   PCU_Comm_Begin();
   for (int d = 1; d <= m->getDimension(); ++d)
@@ -361,12 +412,12 @@ static void verifyOrder(Mesh* m)
     MeshEntity* e;
     while ((e = m->iterate(it)))
       if (m->isShared(e))
-        sendOrder(m, e);
+        sendAlignment(m, e);
     m->end(it);
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive())
-    receiveOrder(m);
+    receiveAlignment(m);
 }
 
 static void verifyTags(Mesh* m)
@@ -422,8 +473,9 @@ void verify(Mesh* m)
       assert(!n);
   }
   guc.clear();
-  verifyConnectivity(m);
-  verifyOrder(m);
+  verifyRemoteCopies(m);
+  verifyAlignment(m);
+  verifyMatches(m);
   long n = verifyCoords(m);
   if (n && (!PCU_Comm_Self()))
     fprintf(stderr,"apf::verify fail: %ld coordinate mismatches\n", n);

@@ -121,6 +121,7 @@ struct BCs
   Map fields;
 };
 
+void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs);
 void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,

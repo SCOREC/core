@@ -6,8 +6,6 @@
  */
 
 #include "crvTables.h"
-#include "apf.h"
-#include "apfMesh.h"
 
 namespace crv {
 
@@ -303,5 +301,60 @@ static unsigned const* const* const tet_tri6[2] = {tet_tri6_f0,tet_tri6_f1};
 
 unsigned const* const* const* const tet_tri[7] =
 {0,0,0,0,tet_tri4,tet_tri5,tet_tri6};
+
+static apf::Vector3 const edge_vert_xi[2] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+};
+static apf::Vector3 const tri_vert_xi[3] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+};
+static apf::Vector3 const tet_vert_xi[4] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1),
+};
+
+apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+    0, /* vertex */
+    edge_vert_xi,
+    tri_vert_xi,
+    0, /* quad */
+    tet_vert_xi,
+    0, /* hex */
+    0, /* prism */
+    0  /* pyramid */
+};
+
+static apf::Vector3 const edge_edge_xi[1] = {
+    apf::Vector3(0,0,0)
+};
+static apf::Vector3 const tri_edge_xi[3] = {
+    apf::Vector3(0.5,0,0.5),
+    apf::Vector3(0.5,0.5,0),
+    apf::Vector3(0,0.5,0.5)
+};
+static apf::Vector3 const tet_edge_xi[6] = {
+    apf::Vector3(0.5,0,0),
+    apf::Vector3(0.5,0.5,0),
+    apf::Vector3(0,0.5,0),
+    apf::Vector3(0,0,0.5),
+    apf::Vector3(0.5,0,0.5),
+    apf::Vector3(0,0.5,0.5)
+};
+
+apf::Vector3 const* const elem_edge_xi[apf::Mesh::TYPES] = {
+    0, /* vertex */
+    edge_edge_xi,
+    tri_edge_xi,
+    0, /* quad */
+    tet_edge_xi,
+    0, /* hex */
+    0, /* prism */
+    0  /* pyramid */
+};
 
 }

@@ -177,22 +177,33 @@ static void formFactories(BCFactories& fs)
   fs["material type"]        = intFactory;
 }
 
-static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
-    ph::BCs& bcs)
+static std::string getType(pAttribute a)
 {
   char* c_infoType = Attribute_infoType(a);
   std::string infoType(c_infoType);
-  if (!fs.count(infoType)) {
-    fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", c_infoType);
+  Sim_deleteString(c_infoType);
+  char* c_imageClass = Attribute_infoType(a);
+  std::string imageClass(c_imageClass);
+  Sim_deleteString(c_imageClass);
+  if (imageClass.length() != 0)
+    return imageClass;
+  return infoType;
+}
+
+static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
+    ph::BCs& bcs)
+{
+  std::string type = getType(a);
+  if (!fs.count(type)) {
+    fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", type.c_str());
     fprintf(stderr,"it had repType %d\n",
         Attribute_repType(a));
     return;
   }
-  if (!bcs.fields.count(infoType))
-    bcs.fields[infoType] = ph::FieldBCs();
-  ph::FieldBCs& fbcs = bcs.fields[infoType];
-  Sim_deleteString(c_infoType);
-  BCFactory f = fs[infoType];
+  if (!bcs.fields.count(type))
+    bcs.fields[type] = ph::FieldBCs();
+  ph::FieldBCs& fbcs = bcs.fields[type];
+  BCFactory f = fs[type];
   fbcs.bcs.insert( f(a, ge) );
 }
 
@@ -205,19 +216,38 @@ static void addAttributes(BCFactories& fs, pPList as, pGEntity ge,
   }
 }
 
+namespace {
+  void getSimModelAndCase(gmi_model* m, pGModel& smdl, pACase& pd) {
+    smdl = gmi_export_sim(m);
+    pAManager mngr = SModel_attManager(smdl);
+    if (!mngr) {
+      fprintf(stderr,"Simmetrix model did not come with an Attribute Manager\n");
+      abort();
+    }
+    pd = AMAN_findCaseByType(mngr, "problem definition");
+    if (!pd) {
+      fprintf(stderr,"no Attribute Case \"problem definition\"\n");
+      abort();
+    }
+  }
+}
+
+void ph::clearAttAssociation(gmi_model* mdl, ph::Input& in)
+{
+  const char* attFile = in.attributeFileName.c_str();
+  if (gmi_has_ext(attFile, "spj"))
+    return;
+  pGModel smdl = NULL;
+  pACase pd = NULL;
+  getSimModelAndCase(mdl,smdl,pd);
+  AttCase_unassociate(pd);
+}
+
 void ph::getSimmetrixAttributes(gmi_model* model, ph::BCs& bcs)
 {
-  pGModel smdl = gmi_export_sim(model);
-  pAManager mngr = SModel_attManager(smdl);
-  if (!mngr) {
-    fprintf(stderr,"Simmetrix model did not come with an Attribute Manager\n");
-    abort();
-  }
-  pACase pd = AMAN_findCaseByType(mngr, "problem definition");
-  if (!pd) {
-    fprintf(stderr,"no Attribute Case \"problem definition\"\n");
-    abort();
-  }
+  pGModel smdl = NULL;
+  pACase pd = NULL;
+  getSimModelAndCase(model,smdl,pd);
   AttCase_setModel(pd, smdl);
   AttCase_associate(pd, NULL);
   BCFactories fs;

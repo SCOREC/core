@@ -110,7 +110,7 @@ void runZoltan(Adapt* a)
 
 void runParma(Adapt* a)
 {
-  runBalancer(a, Parma_MakeCentroidDiffuser(a->mesh));
+  runBalancer(a, Parma_MakeElmBalancer(a->mesh));
 }
 
 void printEntityImbalance(Mesh* m)

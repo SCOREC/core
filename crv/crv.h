@@ -10,6 +10,7 @@
 
 #include "apfMesh2.h"
 #include "apfShape.h"
+#include <ma.h>
 #include <stdio.h>
 
 /** \file crv.h
@@ -19,15 +20,38 @@
   * \brief All CRV functions are contained in this namespace */
 namespace crv {
 
+/** \brief actually 1 greater than max order */
+static unsigned const MAX_ORDER = 20;
+/** \brief checks if is a boundary entity */
+bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
+/** \brief checks if any entity has two entities of dimension on the boundary */
+bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e,
+    int dimension);
 /** \brief sets the blending order, if shape blending is used */
 void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
 int getBlendingOrder(const int type);
 
+/** \brief computes min det Jacobian / max det Jacobian */
+double getQuality(apf::Mesh* m,apf::MeshEntity* e);
+
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D
   meshes and surface meshes. */
+
+/** \brief converts interpolating points to control points */
+void convertInterpolationPoints(int n, int ne,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<double>& c,
+    apf::NewArray<apf::Vector3>& newNodes);
+
+void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
+    int n, int ne, apf::NewArray<double>& c);
+
+/** \brief a per entity version of above */
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
+
 class MeshCurver
 {
   public:
@@ -42,13 +66,6 @@ class MeshCurver
 
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
-
-    /** \brief a per entity version of above */
-    void snapToInterpolate(apf::MeshEntity* e);
-
-    /** \brief converts interpolating points to control points */
-    void convertInterpolationPoints(apf::MeshEntity* e, int n, int ne,
-      apf::NewArray<double>& c);
 
     /** \brief wrapper around synchronizeFieldData */
     void synchronize();
@@ -81,10 +98,7 @@ class BezierCurver : public MeshCurver
   public:
     BezierCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m,P,S)
     {
-      if(B > 0){
-        for(int type = 0; type < apf::Mesh::TYPES; ++type)
-        setBlendingOrder(type,B);
-      }
+      setBlendingOrder(apf::Mesh::TYPES,B);
     };
 
     /** \brief curves a mesh using bezier curves of chosen order
@@ -126,7 +140,7 @@ apf::FieldShape* getGregory();
 
 /** \brief get coefficients for interpolating points to control points
  \details works only for prescribed optimal point locations */
-void getBezierTransformationCoefficients(apf::Mesh* m, int P, int type,
+void getBezierTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
     int type, apf::NewArray<double>& c);
@@ -171,7 +185,7 @@ int quadnomial(int n, int i, int j, int k);
  * 1 - elevation
  * 2 - subdivision, without first check
  * 3 - elevation, without first check
- *
+ * 4 - subdivision, using matrices
  * methods 2 and 3 exist because the first check tends to catch everything
  * without actually using subdivision and elevation, and giving this option
  * is easier for debugging and verifying the efficacy of those procedures

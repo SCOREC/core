@@ -12,6 +12,15 @@
 
 namespace crv {
 
+double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes);
+
+void subdivideBezierEntityJacobianDet(int P, int type,
+    apf::NewArray<double>& c, apf::NewArray<double>& nodes,
+    apf::NewArray<double> *subNodes);
+
+void getBezierJacobianDetSubdivisionCoefficients(int P, int type,
+    apf::NewArray<double>& c);
+
 typedef void (*ElevateFunction)(int P, int r,
     apf::NewArray<double>& nodes,
     apf::NewArray<double>& elevatedNodes);

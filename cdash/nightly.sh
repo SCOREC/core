@@ -13,6 +13,8 @@ module load git
 
 #cdash output root
 cd /lore/dibanez/cdash
+#remove compilation directories created by previous nightly.cmake runs
+rm -rf build/
 
 #run nightly.cmake script
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> cmake_log.txt
@@ -35,20 +37,7 @@ export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0/bin
 cov-build --dir cov-int make -j 4
 #pack up the tarball of results
 tar czvf pumi.tgz cov-int
-#because its 2015 and this is not standard yet
-export PATH=$PATH:/lore/dibanez/curl-7.45.0/install/bin
-#send it to Coverity Scan site using curl
-curl --form token=faMZVmxTjByhNoJyb_4wDw \
-  --form email=dan.a.ibanez@gmail.com \
-  --form file=@$PWD/pumi.tgz \
-  --form version="1.0.1" \
-  --form description="Automated" \
-  https://scan.coverity.com/builds?project=SCOREC%2Fcore
-
-#remove compilation directories created by nightly.cmake
-cd /lore/dibanez/cdash
-rm -rf build/
-
+#cleanup the Chef test output
 cd /lore/dibanez
 find meshes/phasta -name "*procs_case" | xargs rm -rf
 find meshes/phasta -name "out_mesh" | xargs rm -rf

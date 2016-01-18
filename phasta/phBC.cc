@@ -102,6 +102,19 @@ static void readBCsFromSPJ(const char* filename, BCs& bcs)
   }
 }
 
+void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs)
+{
+  /* now load attributes.
+     only two cases:
+     either its an SPJ file or they came in with the model */
+  if (gmi_has_ext(attFile, "spj"))
+    readBCsFromSPJ(attFile, bcs);
+  else
+    getSimmetrixAttributes(m, bcs);
+  if (axisymmetry)
+    attachAllAngleBCs(m, bcs);
+}
+
 void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
 {
   double t0 = PCU_Time();
@@ -123,15 +136,8 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
     else
       m = gmi_sim_load(modelfile, 0);
   }
-  /* now load attributes.
-     only two cases:
-     either its an SPJ file or they came in with the model */
-  if (gmi_has_ext(attribfile, "spj"))
-    readBCsFromSPJ(attribfile, bcs);
-  else
-    getSimmetrixAttributes(m, bcs);
-  if (in.axisymmetry)
-    attachAllAngleBCs(m, bcs);
+  /* load attributes */
+  readBCs(m, attribfile, in.axisymmetry, bcs);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);

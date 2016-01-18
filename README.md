@@ -17,10 +17,12 @@ For more information, start at our
 * PARMA: Scalable partitioning and load balancing procedures
 * SPR: Superconvergent Patch Recovery error estimator
 * MA: Anisotropic mixed mesh adaptation and solution transfer
+* SAM: Sizing anisotropic meshes
 * STK: Conversion from APF meshes to Sandia's STK meshes
 * ZOLTAN: Interface to run Sandia's Zoltan code on APF meshes
 * PHASTA: Tools and file formats related to the PHASTA fluid solver
-* MPAS: Tools and file formats for the MPAS-Ocean code
+* MTH: Math containers and routines
+* CRV: Support for curved meshes with Bezier Shapes
 
 ### How do I get set up? ###
 

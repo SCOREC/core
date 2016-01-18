@@ -381,6 +381,7 @@ class Integrator
     virtual void parallelReduce();
   protected:
     int order;
+    int ipnode;
 };
 
 /** \brief Measures the volume, area, or length of a Mesh Element.
@@ -392,6 +393,12 @@ class Integrator
   * \returns The measure of the element
   */
 double measure(MeshElement* e);
+
+/** \brief Measures the volume, area, or length of a Mesh Entity.
+  * 
+  * \returns The measure of the element
+  */
+double measure(Mesh* m, MeshEntity* e);
 
 /** \brief Returns the polynomial order of the coordinate field.
   */
@@ -468,14 +475,30 @@ for (t::const_iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * with ASCII encoding
   * \details Nodal fields whose shape differs from the mesh shape will
   * not be output. Fields with incomplete data will not be output.
   */
 void writeVtkFiles(const char* prefix, Mesh* m);
-/** \brief Output just the .vtu file for this part.
+
+/** \brief Output just the .vtu file with ASCII encoding for this part.
   \details this function is useful for debugging large parallel meshes.
   */
 void writeOneVtkFile(const char* prefix, Mesh* m);
+
+/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh 
+  * with ASCII encoding
+  * \details Nodal fields whose shape differs from the mesh shape will
+  * not be output. Fields with incomplete data will not be output.
+  */
+void writeASCIIVtkFiles(const char* prefix, Mesh* m);
+
+/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * with binary (base64) encoding
+  * \details Nodal fields whose shape differs from the mesh shape will
+  * not be output. Fields with incomplete data will not be output.
+  */
+void writeBinaryVtkFiles(const char* prefix, Mesh* m);
 
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType
