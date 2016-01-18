@@ -114,7 +114,10 @@ int gmi_base_tag(struct gmi_model* m, struct gmi_ent* e)
 
 struct gmi_ent* gmi_base_find(struct gmi_model* m, int dim, int tag)
 {
-  return gmi_from_agm(gmi_look_up(to_base(m)->lookup, agm_type_from_dim(dim), tag));
+  struct agm_ent ae = gmi_look_up(
+      to_base(m)->lookup,
+      agm_type_from_dim(dim), tag);
+  return gmi_from_agm(ae);
 }
 
 static struct gmi_set* get_up(struct agm* topo, struct agm_ent e)
