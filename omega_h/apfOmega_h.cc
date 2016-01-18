@@ -244,8 +244,10 @@ void toAPF(osh_t om, apf::Mesh2* am)
   ents[0] = verticesToAPF(om, am);
   for (unsigned d = 1; d <= osh_dim(om); ++d)
     ents[d] = entitiesToAPF(om, am, ents[0], d);
-  for (unsigned d = 0; d <= osh_dim(om); ++d)
+  for (unsigned d = 0; d <= osh_dim(om); ++d) {
     ownersToAPF(om, am, ents[d], d);
+    apf::initResidence(am, d);
+  }
   for (unsigned d = 0; d <= osh_dim(om); ++d)
     delete [] ents[d];
   am->acceptChanges();
