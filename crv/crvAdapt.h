@@ -36,16 +36,15 @@ void adapt(ma::Input* in);
 /* Support functions for curved applications, these ones
  * clean up after cavity operations, by repositioning
  */
-void snapRefineToBoundary(ma::Adapt* a);
 void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
 void repositionInterior(ma::Refine* r);
 
 // Split edges marked with ma::SPLIT
 void splitEdges(ma::Adapt* a);
-// Quality checking is expensive, so tag them with an
-// integer to identify if bad quality, and where
-long markBadQuality(Adapt* a);
+// Validity checking is expensive, so tag them with an
+// integer to identify if invalid, and where
+long markInvalidEntities(Adapt* a);
 
 /* Use a crv version of these
  * because we don't have bitwise operations
@@ -69,13 +68,13 @@ int getQualityTag(ma::Mesh* m, ma::Entity* e,
  * form an angle of 180 (or greater) at a vertex and
  * split the edge opposite them.
  */
-void fixLargeBoundaryAngles(Adapt* a);
+int fixLargeBoundaryAngles(Adapt* a);
 
 /* If an edge is flagged as invalid,
  * try and collapse
  * or swap it away
  */
-void fixInvalidEdges(Adapt* a);
+int fixInvalidEdges(Adapt* a);
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 

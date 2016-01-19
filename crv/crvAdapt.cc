@@ -54,42 +54,6 @@ static void setFlags(Adapt* a, ma::Entity* e, int flags)
   a->mesh->setIntTag(e,a->validityTag,&flags);
 }
 
-void snapRefineToBoundary(ma::Adapt* a){
-
-  if ( ! a->input->shouldSnap)
-    return;
-
-  ma::Mesh* m = a->mesh;
-  ma::Refine* r = a->refine;
-  int P = m->getShape()->getOrder();
-  apf::FieldShape* fs = m->getShape();
-  for (int d=1; d <= m->getDimension(); ++d){
-    for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
-      ma::EntityArray& a = r->newEntities[d][i];
-      for (size_t i=0; i < a.getSize(); ++i)
-        if(m->getModelType(m->toModel(a[i])) < m->getDimension()){
-          snapToInterpolate(m,a[i]);
-        }
-    }
-  }
-  for (int d = m->getDimension(); d >=1; --d){
-    for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
-      ma::EntityArray& a = r->newEntities[d][i];
-      for (size_t i=0; i < a.getSize(); ++i){
-        if (m->getType(a[i]) == apf::Mesh::simplexTypes[d] &&
-            m->getModelType(m->toModel(a[i])) < m->getDimension()){
-          int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-          int ni = fs->countNodesOn(d);
-          if(ni == 0) continue;
-          apf::NewArray<double> c;
-          crv::getBezierTransformationCoefficients(P,d,c);
-          convertInterpolationPoints(m,a[i],n,ni,c);
-        }
-      }
-    }
-  }
-}
-
 void splitEdges(ma::Adapt* a)
 {
   assert(ma::checkFlagConsistency(a,1,ma::SPLIT));
@@ -98,10 +62,9 @@ void splitEdges(ma::Adapt* a)
   ma::collectForTransfer(r);
   ma::addAllMarkedEdges(r);
   ma::splitElements(r);
-  crv::snapRefineToBoundary(a);
   ma::processNewElements(r);
   ma::destroySplitElements(r);
-  crv::repositionInterior(r);
+//  crv::repositionInterior(r);
   ma::forgetNewEntities(r);
 }
 
@@ -142,7 +105,7 @@ int getQualityTag(ma::Mesh* m, ma::Entity* e,
   return -1;
 }
 
-long markBadQuality(Adapt* a)
+long markInvalidEntities(Adapt* a)
 {
   ma::Entity* e;
   long count = 0;
@@ -153,26 +116,28 @@ long markBadQuality(Adapt* a)
   {
     /* this skip conditional is powerful: it affords us a
        3X speedup of the entire adaptation in some cases */
-    if (crv::getFlag(a,e) > 0)
-      continue;
-    // going to use check validity here instead
-    int qualityFlag = 1; // okay!
-    // change this later
-    int numInvalid = 0;
-    ma::Entity* invalidEntity = 0;
-    if(dimension == 2){
-      ma::Entity* entities[6];
-      numInvalid = checkTriValidity(m,e,entities,4);
-      if(numInvalid) invalidEntity = entities[0];
-    } else {
-      ma::Entity* entities[14];
-      numInvalid = checkTetValidity(m,e,entities,4);
-      if(numInvalid) invalidEntity = entities[0];
+    int qualityFlag = crv::getFlag(a,e);
+    if (qualityFlag == 0) {
+
+      // going to use check validity here instead
+      qualityFlag = 1; // okay!
+      // change this later
+      int numInvalid = 0;
+      ma::Entity* invalidEntity = 0;
+      if(dimension == 2){
+        ma::Entity* entities[6];
+        numInvalid = checkTriValidity(m,e,entities,4);
+        if(numInvalid) invalidEntity = entities[0];
+      } else {
+        ma::Entity* entities[14];
+        numInvalid = checkTetValidity(m,e,entities,4);
+        if(numInvalid) invalidEntity = entities[0];
+      }
+      if(numInvalid){
+        qualityFlag = getQualityTag(m,e,invalidEntity);
+      }
     }
-    if(numInvalid){
-      qualityFlag = getQualityTag(m,e,invalidEntity);
-    }
-    if (qualityFlag > 1)
+    if (qualityFlag >= 2)
     {
       crv::setFlag(a,e,qualityFlag);
       if (m->isOwned(e))
@@ -211,19 +176,36 @@ ma::Input* configureShapeCorrection(
   return in;
 }
 
+static int fixInvalidElements(crv::Adapt* a)
+{
+  a->input->shouldForceAdaptation = true;
+  int count = crv::fixLargeBoundaryAngles(a);
+  count += crv::fixInvalidEdges(a);
+  int originalCount = count;
+  int prev_count;
+  do {
+    if ( ! count)
+      break;
+    prev_count = count;
+    count = crv::fixLargeBoundaryAngles(a);
+    count += crv::fixInvalidEdges(a);
+  } while(count < prev_count);
+  a->input->shouldForceAdaptation = false;
+  return originalCount - count;
+}
+
 void adapt(ma::Input* in)
 {
   in->shouldFixShape = true;
   in->shapeHandler = crv::getShapeHandler;
-  ma::print("crv version 2.0 !");
+  ma::print("Curved Adaptation Version 2.0 !");
   double t0 = PCU_Time();
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
   ma::preBalance(a);
 
-  crv::fixLargeBoundaryAngles(a);
-//  crv::fixInvalidEdges(a);
-//  ma::fixElementShapes(a);
+  fixInvalidElements(a);
+
   for (int i=0; i < in->maximumIterations; ++i)
   {
     ma::print("iteration %d",i);
@@ -231,6 +213,9 @@ void adapt(ma::Input* in)
     ma::midBalance(a);
     crv::refine(a);
   }
+  if (in->maximumIterations > 0)
+    fixInvalidElements(a);
+
   ma::postBalance(a);
   double t1 = PCU_Time();
   ma::print("mesh adapted in %f seconds",t1-t0);
