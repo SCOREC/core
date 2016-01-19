@@ -69,7 +69,6 @@ static bool repositionInteriorToImproveQuality(ma::Mesh* m, ma::Entity* e)
     for (int i = 0; i < ne; ++i)
       m->setPoint(e,i,nodes[n-ne+i]);
   }
-
   // should improve things by at least 1% or don't do it.
   if(qualityAfter < qualityBefore*1.01) return false;
 
