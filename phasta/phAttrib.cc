@@ -179,7 +179,7 @@ static std::string getType(pAttribute a)
   char* c_infoType = Attribute_infoType(a);
   std::string infoType(c_infoType);
   Sim_deleteString(c_infoType);
-  char* c_imageClass = Attribute_infoType(a);
+  char* c_imageClass = Attribute_imageClass(a);
   std::string imageClass(c_imageClass);
   Sim_deleteString(c_imageClass);
   if (imageClass.length() != 0)
