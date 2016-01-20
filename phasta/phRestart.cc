@@ -157,6 +157,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
+  FILE* f = in.openfile_read(in, filename.c_str()); 
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
     abort();

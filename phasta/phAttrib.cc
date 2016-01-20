@@ -151,6 +151,8 @@ static void formFactories(BCFactories& fs)
   fs["pressure"]             = tensor0Factory;
   fs["comp1"]                = compFactory;
   fs["comp3"]                = compFactory;
+  fs["comp1_elas"]           = compFactory;
+  fs["comp3_elas"]           = compFactory;
   fs["scalar_1"]             = tensor0Factory;
   fs["scalar_2"]             = tensor0Factory;
   fs["scalar_3"]             = tensor0Factory;
@@ -158,6 +160,7 @@ static void formFactories(BCFactories& fs)
   fs["mass flux"]            = tensor0Factory;
   fs["natural pressure"]     = tensor0Factory;
   fs["traction vector"]      = tensor1Factory;
+  fs["traction vector melas"]= tensor1Factory;
   fs["heat flux"]            = tensor0Factory;
   fs["turbulence wall"]      = tensor0Factory;
   fs["scalar_1 flux"]        = tensor0Factory;
