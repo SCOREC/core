@@ -216,7 +216,8 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
 // we want to split the edge opposite the boundary edge
 static int oppEdges[6] = {5,3,4,1,2,0};
 
-static int edgeFaces[6][2] = {{0,1},{0,2},{0,3},{1,3},{1,2},{2,3}};
+// for each edge, this has the left/right face
+static int edgeFaces[6][2] = {{1,0},{2,0},{3,0},{3,1},{1,2},{2,3}};
 
 static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
 {
@@ -228,38 +229,51 @@ static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
   int index = -1;
 
   // find edge that matters
-  for (int i = 0; i < 6; ++i)
+  for (int i = 0; i < 6; ++i){
     if(isBoundaryEntity(m,faces[edgeFaces[i][0]]) &&
         isBoundaryEntity(m,faces[edgeFaces[i][1]])){
       index = i;
       break;
     }
-
+  }
   if(index < 0) return 0;
 
-  apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
-  apf::Matrix3x3 J;
   ma::Entity* edges[6];
   m->getDownward(e,1,edges);
-  apf::Vector3 xi, exi;
 
   ma::Entity* edge = 0;
 
+  // lets do a sampling approach. At each point on the edge
   int bt = apf::Mesh::EDGE;
+  ma::Entity* leftFace = faces[edgeFaces[index][0]];
+  ma::Entity* rightFace = faces[edgeFaces[index][1]];
+  apf::MeshElement* leftMe = apf::createMeshElement(m,leftFace);
+  apf::MeshElement* rightMe = apf::createMeshElement(m,rightFace);
+  apf::Vector3 xi, leftXi,rightXi;
+
   for (int i = 0; i < fs->countNodesOn(bt); ++i){
     fs->getNodeXi(bt,i,xi);
-    exi = apf::boundaryToElementXi(m,edges[index],e,xi);
-    apf::getJacobian(me,exi,J);
-    if(apf::getJacobianDeterminant(J,3) < a->input->validQuality){
+    leftXi = apf::boundaryToElementXi(m,edges[index],leftFace,xi);
+    rightXi = apf::boundaryToElementXi(m,edges[index],rightFace,xi);
+    apf::Matrix3x3 leftJ,rightJ;
+
+    apf::getJacobian(leftMe,leftXi,leftJ);
+    apf::getJacobian(rightMe,rightXi,rightJ);
+    apf::Vector3 leftN = (apf::cross(leftJ[0],leftJ[1])).normalize();
+    apf::Vector3 rightN = (apf::cross(rightJ[0],rightJ[1])).normalize();
+    // jacobian has two rows, each with a vector
+    // these two vectors form the plane
+    // compare their directions to see if they are close to coplanar)
+    // 10 degree tolerance
+    if(std::fabs(leftN*rightN) > 0.9){
       edge = edges[oppEdges[index]];
-      ma::Entity* verts[3];
-      m->getDownward(edge,0,verts);
       break;
     }
   }
+  apf::destroyMeshElement(leftMe);
+  apf::destroyMeshElement(rightMe);
 
-  apf::destroyMeshElement(me);
   return edge;
 }
 
