@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include "crv.h"
 #include "crvAdapt.h"
 #include <apf.h>
 #include <apfMesh.h>
@@ -64,7 +63,6 @@ void splitEdges(ma::Adapt* a)
   ma::splitElements(r);
   ma::processNewElements(r);
   ma::destroySplitElements(r);
-//  crv::repositionInterior(r);
   ma::forgetNewEntities(r);
 }
 
@@ -179,17 +177,17 @@ ma::Input* configureShapeCorrection(
 static int fixInvalidElements(crv::Adapt* a)
 {
   a->input->shouldForceAdaptation = true;
-  int count = crv::fixLargeBoundaryAngles(a);
-  count += crv::fixInvalidEdges(a);
+  int count = crv::fixLargeBoundaryAngles(a)
+            + crv::fixInvalidEdges(a);
   int originalCount = count;
   int prev_count;
   do {
     if ( ! count)
       break;
     prev_count = count;
-    count = crv::fixLargeBoundaryAngles(a);
-    count += crv::fixInvalidEdges(a);
+    count = crv::fixInvalidEdges(a);
   } while(count < prev_count);
+  crv::fixLargeBoundaryAngles(a);
   a->input->shouldForceAdaptation = false;
   return originalCount - count;
 }

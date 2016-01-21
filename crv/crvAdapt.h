@@ -8,6 +8,7 @@
 #ifndef CRVADAPT_H
 #define CRVADAPT_H
 
+#include "crv.h"
 #include <ma.h>
 #include <maAdapt.h>
 #include <maInput.h>
@@ -38,7 +39,6 @@ void adapt(ma::Input* in);
  */
 void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
-void repositionInterior(ma::Refine* r);
 
 // Split edges marked with ma::SPLIT
 void splitEdges(ma::Adapt* a);
