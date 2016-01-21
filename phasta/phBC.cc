@@ -333,7 +333,9 @@ bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
      the code in phConstraint.cc */
   bool didVelocity = applyVelocityConstaints(gm, appliedBCs,
       ge, x, values, bits);
-  return didSimple || didVelocity;
+  bool didElastic = applyElasticConstaints(gm, appliedBCs,
+      ge, x, values, bits);
+  return didSimple || didVelocity || didElastic;
 }
 
 bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,

@@ -522,15 +522,26 @@ bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
     FieldBCs& fbcs = bcs.fields[name];
     c = combineAll(gm, fbcs, makePlaneConstraint, e, x, c);
   }
-  name = "comp3_elas";
+  if (!c)
+    return false;
+  c->write(iBC, BC);
+  delete c;
+  return true;
+}
+
+bool applyElasticConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
+    apf::Vector3 const& x, double* BC, int* iBC)
+{
+  Constraint* c = 0;
+  std::string name = "comp3_elas";
   if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
-    c = combineAllElas(gm, fbcs, makePointConstraint, e, x, c);
+    c = combineAllElas(gm, fbcs, makePointConstraintElas, e, x, c);
   }
   name = "comp1_elas";
   if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
-    c = combineAllElas(gm, fbcs, makePlaneConstraint, e, x, c);
+    c = combineAllElas(gm, fbcs, makePlaneConstraintElas, e, x, c);
   }
   if (!c)
     return false;

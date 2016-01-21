@@ -180,7 +180,9 @@ int countNaturalBCs(Input& in)
 
 int countEssentialBCs(Input& in)
 {
-  return in.ensa_dof + 7;
+//  return in.ensa_dof + 7;
+// HARDCODE DEBUG
+  return in.ensa_dof + 20;
 }
 
 int countScalarBCs(Input& in)
