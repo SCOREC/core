@@ -5,6 +5,7 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <PCU.h>
+#include <apf.h>
 
 namespace osh {
 
@@ -69,22 +70,69 @@ static void globalFromAPF(
   apf::destroyGlobalNumbering(glob_n);
 }
 
-static void coordinatesFromAPF(
+static void fieldFromAPF(
     apf::Mesh* am,
-    osh_t om)
+    osh_t om,
+    apf::Field* f)
 {
-  osh_new_field(om, 0, "coordinates", 3);
-  double* coords = osh_get_field(om, 0, "coordinates");
+  char const* name = apf::getName(f);
+  int nc = apf::countComponents(f);
+  osh_new_field(om, 0, name, nc);
+  double* data = osh_get_field(om, 0, name);
   apf::MeshEntity* v;
   apf::MeshIterator* it = am->begin(0);
   unsigned i = 0;
   while ((v = am->iterate(it))) {
-    apf::Vector3 pt;
-    am->getPoint(v, 0, pt);
-    pt.toArray(coords + i * 3);
+    apf::getComponents(f, v, 0, data + i * nc);
     ++i;
   }
   am->end(it);
+}
+
+static void fieldToAPF(
+    apf::Mesh* am,
+    osh_t om,
+    char const* name)
+{
+  unsigned nc = osh_components(om, 0, name);
+  double* data = osh_get_field(om, 0, name);
+  apf::Field* f = apf::createPackedField(am, name, nc);
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = am->begin(0);
+  unsigned i = 0;
+  while ((v = am->iterate(it))) {
+    apf::setComponents(f, v, 0, data + i * nc);
+    ++i;
+  }
+  am->end(it);
+}
+
+static void fieldsFromAPF(
+    apf::Mesh* am,
+    osh_t om)
+{
+  for (int i = 0; i < am->countFields(); ++i)
+    if (apf::getShape(am->getField(i)) == am->getShape())
+      fieldFromAPF(am, om, am->getField(i));
+}
+
+static void fieldsToAPF(
+    apf::Mesh* am,
+    osh_t om)
+{
+  unsigned nf = osh_nfields(om, 0);
+  for (unsigned i = 0; i < nf; ++i) {
+    std::string name = osh_field(om, 0, i);
+    if (name != "coordinates" && name != "param")
+      fieldToAPF(am, om, name.c_str());
+  }
+}
+
+static void coordinatesFromAPF(
+    apf::Mesh* am,
+    osh_t om)
+{
+  fieldFromAPF(am, om, am->getCoordinateField());
 }
 
 static void parametricFromAPF(
@@ -120,6 +168,7 @@ osh_t fromAPF(apf::Mesh* am)
     classificationFromAPF(am, om, d);
     globalFromAPF(am, om, d);
   }
+  fieldsFromAPF(am, om);
   return om;
 }
 
@@ -251,6 +300,7 @@ void toAPF(osh_t om, apf::Mesh2* am)
   for (unsigned d = 0; d <= osh_dim(om); ++d)
     delete [] ents[d];
   am->acceptChanges();
+  fieldsToAPF(am, om);
 }
 
 };
