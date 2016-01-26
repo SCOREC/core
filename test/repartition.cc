@@ -24,7 +24,7 @@ void freeMesh(apf::Mesh* m)
 
 bool switchToOriginals()
 {
-  apf::Contract contract(inputPartCount, PCU_Comm_Self());
+  apf::Contract contract(inputPartCount, PCU_Comm_Peers());
   int self = PCU_Comm_Self();
   int group;
   int groupRank;
@@ -33,7 +33,9 @@ bool switchToOriginals()
     group = 0;
     groupRank = contract(self);
   } else {
-    group = MPI_UNDEFINED;
+    group = 1;
+    /* MPI standard says they will be sorted by old rank,
+       no need to spend time computing a good contiguous number */
     groupRank = 0;
   }
   MPI_Comm groupComm;
@@ -74,10 +76,12 @@ void balance(apf::Mesh2* m)
     double value = 1.0;
     while ((e = m->iterate(it)))
       m->setDoubleTag(e, weights, &value);
+    m->end(it);
   }
-  apf::Balancer* b = apf::makeZoltanBalancer(m, apf::GRAPH, apf::REPARTITION);
-  b->balance(weights, 0.1);
+  apf::Balancer* b = apf::makeZoltanBalancer(m, apf::RCB, apf::REPARTITION, false);
+  b->balance(weights, 1.1);
   m->destroyTag(weights);
+  delete b;
 }
 
 }
