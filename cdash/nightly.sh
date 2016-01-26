@@ -33,7 +33,7 @@ cd /lore/dibanez/cdash/build/core
 #clean the build of object files
 make clean
 #run Coverity static analysis on the build
-export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0/bin
+export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0.4/bin
 cov-build --dir cov-int make -j 4
 #pack up the tarball of results
 tar czvf pumi.tgz cov-int
