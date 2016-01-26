@@ -12,6 +12,8 @@
  */
 #include "crvAdapt.h"
 #include "crvQuality.h"
+#include "crvTables.h"
+#include <cassert>
 
 namespace crv {
 
@@ -31,6 +33,87 @@ void repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
       apf::Mesh::simplexTypes[typeDim],c);
   convertInterpolationPoints(m,e,n-ne,ne,c);
 
+}
+
+bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
+    ma::Entity* edge)
+{
+  // lets assume we have an edge we want to fix
+  // only support second order for now
+  int P = m->getShape()->getOrder();
+  if (P != 2) return false;
+
+  ma::Entity* verts[4];
+  ma::Entity* edges[6];
+
+  ma::Vector pivotPoint;
+  ma::Vector pivotEdgePoints[3];
+  ma::Vector edgeVectors[3];
+  m->getDownward(tet,0,verts);
+  m->getDownward(tet,1,edges);
+
+  // pick a pivotVert, the vertex with the worse jacobian determinant
+  ma::Entity* pivotVert;
+  int pivotIndex;
+  {
+    apf::MeshElement* me = apf::createMeshElement(m,tet);
+
+    ma::Entity* edgeVerts[2];
+    m->getDownward(edge,0,edgeVerts);
+    apf::Matrix3x3 J;
+    pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
+    ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
+    apf::getJacobian(me,xi,J);
+
+    double j = apf::getJacobianDeterminant(J,3);
+    pivotVert = edgeVerts[0];
+
+    int index = apf::findIn(verts,4,edgeVerts[1]);
+    xi = crv::elem_vert_xi[apf::Mesh::TET][index];
+    apf::getJacobian(me,xi,J);
+    if (apf::getJacobianDeterminant(J,3) < j){
+      pivotVert = edgeVerts[1];
+      pivotIndex = index;
+    }
+    apf::destroyMeshElement(me);
+  }
+
+  m->getPoint(pivotVert,0,pivotPoint);
+  int edgeIndex = -1; // local, of edges around vert, [0,2]
+
+  for (int i = 0; i < 3; ++i){
+    // theres only one point, so reuse this...
+    edgeVectors[i] = ma::getPosition(m,edges[vertEdges[pivotIndex][i]])
+                   - pivotPoint;
+    if (edges[vertEdges[pivotIndex][i]] == edge)
+      edgeIndex = i;
+  }
+  assert(edgeIndex >= 0);
+  // we have the three vectors
+  double validity = edgeVectors[edgeIndex]*
+      apf::cross(edgeVectors[(1+edgeIndex) % 3],
+                 edgeVectors[(2+edgeIndex) % 3]);
+
+  if(validity > 1e-10)
+    return false;
+
+  ma::Vector oldPoint = ma::getPosition(m,edge);
+  apf::Adjacent adjacent;
+  m->getAdjacent(edge,3,adjacent);
+
+  double theta = acos(validity);
+  ma::Vector newPoint = edgeVectors[edgeIndex]*
+      sin(theta)/cos(apf::pi/6.) + pivotPoint;
+  m->setPoint(edge,0,newPoint);
+
+  ma::Entity* invalidEntities[14];
+  for (std::size_t i = 0; i < adjacent.getSize(); ++i){
+    if (checkTetValidity(m,adjacent[i],invalidEntities,4) > 0){
+      m->setPoint(edge,0,oldPoint);
+      return false;
+    }
+  }
+  return true;
 }
 
 }

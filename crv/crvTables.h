@@ -29,6 +29,15 @@ static int const tet_tri_edges[4][3] =
 static bool const flip_tet_tri_edges[4][3] =
 {{0,0,0},{0,0,1},{0,0,1},{1,0,1}};
 
+// edge indices connected to a vert, ordered as XJ Luo's thesis
+static int const vertEdges[4][3] = {{3,0,2},{0,4,1},{1,5,2},{3,5,4}};
+
+// opposite edges (edge with other two verts) for a tet
+static int const oppEdges[6] = {5,3,4,1,2,0};
+
+// for each edge, this has the left/right face
+static int const edgeFaces[6][2] = {{1,0},{2,0},{3,0},{3,1},{1,2},{2,3}};
+
 }
 
 #endif

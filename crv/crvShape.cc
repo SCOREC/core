@@ -19,11 +19,15 @@
 
 namespace crv {
 
-static int vertEdges[4][3] = {{0,2,3},{0,1,4},{1,2,5},{3,4,5}};
-
+/* Mark Edges based on the invalidity code the element has been
+ * tagged with.
+ *
+ */
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[3])
 {
+  if ( tag == 1 )
+    return 0;
   int n = 0;
   int md = m->getDimension();
   int type = m->getType(e);
@@ -41,7 +45,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     edges[0] = ed[edgeIndex];
     n = 1;
   } else if (vertIndex >= 0 && vertIndex < nverts){
-    //if we have an invalid vertex, try and swap all its edges
+    // if we have an invalid vertex, try and swap all its edges
     ma::Downward ed;
     m->getDownward(e,1,ed);
     n = md;
@@ -54,6 +58,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       edges[2] = ed[vertEdges[vertIndex][2]];
     }
   } else if (faceIndex >= 0 && faceIndex < nfaces){
+    // if we have an invalid face, try and swap its edges
     ma::Downward ed, faces;
     m->getDownward(e,2,faces);
     m->getDownward(faces[faceIndex],1,ed);
@@ -69,7 +74,7 @@ class EdgeSwapper : public ma::Operator
 {
 public:
   EdgeSwapper(Adapt* a)
-{
+  {
     adapter = a;
     mesh = a->mesh;
     edges[0] = edges[1] = edges[2] = 0;
@@ -77,7 +82,7 @@ public:
     edgeSwap = ma::makeEdgeSwap(a);
     md = mesh->getDimension();
     ne = ns = 0;
-}
+  }
   virtual ~EdgeSwapper()
   {
     delete edgeSwap;
@@ -86,14 +91,13 @@ public:
   virtual bool shouldApply(ma::Entity* e)
   {
     int tag = crv::getFlag(adapter,e);
-
-    int ne = markEdges(mesh,e,tag,edges);
+    ne = markEdges(mesh,e,tag,edges);
     simplex = e;
     return (ne > 0);
   }
   virtual bool requestLocality(apf::CavityOp* o)
   {
-    return o->requestLocality(edges,1);
+    return o->requestLocality(edges,ne);
   }
   virtual void apply()
   {
@@ -101,6 +105,8 @@ public:
       if (edgeSwap->run(edges[i])){
         ns++;
         crv::clearFlag(adapter,simplex);
+        ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
+        break;
       }
     }
   }
@@ -114,6 +120,55 @@ private:
   int ne;
 public:
   int ns;
+};
+
+class EdgeReshaper : public ma::Operator
+{
+public:
+  EdgeReshaper(Adapt* a)
+  {
+    adapter = a;
+    mesh = a->mesh;
+    edges[0] = edges[1] = edges[2] = 0;
+    simplex = 0;
+    md = mesh->getDimension();
+    ne = nr = 0;
+  }
+  virtual ~EdgeReshaper()
+  {
+  }
+  virtual int getTargetDimension() {return md;}
+  virtual bool shouldApply(ma::Entity* e)
+  {
+    int tag = crv::getFlag(adapter,e);
+    ne = markEdges(mesh,e,tag,edges);
+    simplex = e;
+    return (ne > 0);
+  }
+  virtual bool requestLocality(apf::CavityOp* o)
+  {
+    return o->requestLocality(edges,ne);
+  }
+  virtual void apply()
+  {
+    for (int i = 0; i < ne; ++i){
+      if (repositionEdge(mesh,simplex,edges[i])){
+        nr++;
+        crv::clearFlag(adapter,simplex);
+        ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
+        break;
+      }
+    }
+  }
+private:
+  Adapt* adapter;
+  ma::Mesh* mesh;
+  ma::Entity* simplex;
+  ma::Entity* edges[3];
+  int md;
+  int ne;
+public:
+  int nr;
 };
 
 static bool isCornerTriAngleLarge(crv::Adapt *a,
@@ -187,14 +242,8 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
     if(isBoundaryEntity(m,e0) && isBoundaryEntity(m,e1))
     {
       if(isCornerTriAngleLarge(a,e,(i+1) % 3)){
-
         ma::Entity* edge = edges[(i+2) % 3];
-        if(!ma::getFlag(a,edge,ma::SPLIT)){
-          ma::Entity* verts[3];
-          m->getDownward(e,0,verts);
-          // mark the vertex so linear spaced points are used
-          // this is a trick because refine was not made for this
-          ma::setFlag(a,verts[(i+1) % 3],ma::BAD_QUALITY);
+        if(!ma::getFlag(a,edge,ma::SPLIT) && !isBoundaryEntity(m,edge)){
           return edge;
         }
       }
@@ -213,12 +262,6 @@ static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
  * P+1 points is used. A validity check on this edge could also be used
  */
 
-// we want to split the edge opposite the boundary edge
-static int oppEdges[6] = {5,3,4,1,2,0};
-
-// for each edge, this has the left/right face
-static int edgeFaces[6][2] = {{1,0},{2,0},{3,0},{3,1},{1,2},{2,3}};
-
 static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
 {
   ma::Mesh* m = a->mesh;
@@ -227,7 +270,7 @@ static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
   m->getDownward(e,2,faces);
 
   int index = -1;
-
+  int P = m->getShape()->getOrder();
   // find edge that matters
   for (int i = 0; i < 6; ++i){
     if(isBoundaryEntity(m,faces[edgeFaces[i][0]]) &&
@@ -241,7 +284,7 @@ static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
   apf::FieldShape* fs = m->getShape();
   ma::Entity* edges[6];
   m->getDownward(e,1,edges);
-
+  if(!isBoundaryEntity(m,edges[index])) return 0;
   ma::Entity* edge = 0;
 
   // lets do a sampling approach. At each point on the edge
@@ -250,12 +293,17 @@ static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
   ma::Entity* rightFace = faces[edgeFaces[index][1]];
   apf::MeshElement* leftMe = apf::createMeshElement(m,leftFace);
   apf::MeshElement* rightMe = apf::createMeshElement(m,rightFace);
-  apf::Vector3 xi, leftXi,rightXi;
+  apf::Vector3 leftXi,rightXi;
 
-  for (int i = 0; i < fs->countNodesOn(bt); ++i){
-    fs->getNodeXi(bt,i,xi);
-    leftXi = apf::boundaryToElementXi(m,edges[index],leftFace,xi);
-    rightXi = apf::boundaryToElementXi(m,edges[index],rightFace,xi);
+  apf::NewArray<apf::Vector3> nodeXi(P+1);
+  nodeXi[0] = apf::Vector3(-1,0,0);
+  for (int i = 0; i < P-1; ++i)
+    fs->getNodeXi(bt,i,nodeXi[i+1]);
+  nodeXi[P] = apf::Vector3(1,0,0);
+
+  for (int i = 0; i < P+1; ++i){
+    leftXi = apf::boundaryToElementXi(m,edges[index],leftFace,nodeXi[i]);
+    rightXi = apf::boundaryToElementXi(m,edges[index],rightFace,nodeXi[i]);
     apf::Matrix3x3 leftJ,rightJ;
 
     apf::getJacobian(leftMe,leftXi,leftJ);
@@ -350,34 +398,33 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
  */
 static int markEdgesToFix(Adapt* a, int flag)
 {
-
+  // do a invalidity check first
+  int invalid = markInvalidEntities(a);
+  if ( !invalid )
+    return 0;
   int count = 0;
-  int prev_count;
 
   ma::Mesh* m = a->mesh;
   ma::Entity* e;
   ma::Entity* edges[3];
-  int dimension = m->getDimension();
-  do {
-    ma::Iterator* it = m->begin(dimension);
-    prev_count = count;
-    while ((e = m->iterate(it)))
-    {
-      int tag = crv::getFlag(a,e);
-      int n = markEdges(m,e,tag,edges);
-      for (int i = 0; i < n; ++i){
-        ma::Entity* edge = edges[i];
-        assert(edge);
-        if (edge && !ma::getFlag(a,edge,flag))
-        {
-          ma::setFlag(a,edge,flag);
-          if (a->mesh->isOwned(edge))
-            ++count;
-        }
+  ma::Iterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it)))
+  {
+    int tag = crv::getFlag(a,e);
+    int n = markEdges(m,e,tag,edges);
+    for (int i = 0; i < n; ++i){
+      ma::Entity* edge = edges[i];
+      assert(edge);
+      if (edge && !ma::getFlag(a,edge,flag))
+      {
+        ma::setFlag(a,edge,flag);
+        if (a->mesh->isOwned(edge))
+          ++count;
       }
     }
-    m->end(it);
-  } while(count > prev_count);
+  }
+  m->end(it);
+
   return PCU_Add_Long(count);
 }
 
@@ -400,9 +447,6 @@ int fixLargeBoundaryAngles(Adapt* a)
 static void collapseInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
-  int count = markEdgesToFix(a,ma::COLLAPSE);
-  if ( ! count)
-    return;
   ma::Mesh* m = a->mesh;
   int maxDimension = m->getDimension();
   assert(checkFlagConsistency(a,1,ma::COLLAPSE));
@@ -415,30 +459,39 @@ static void collapseInvalidEdges(Adapt* a)
   }
   successCount = PCU_Add_Long(successCount);
   double t1 = PCU_Time();
-  ma::print("Collapsed %d of %d bad edges "
-      "in %f seconds",successCount, count, t1-t0);
+  ma::print("Collapsed %d bad edges "
+      "in %f seconds",successCount, t1-t0);
 }
 
 static void swapInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
-  int count = markEdgesToFix(a,ma::BAD_QUALITY);
-  if ( ! count)
-    return;
   EdgeSwapper es(a);
   ma::applyOperator(a,&es);
-
   double t1 = PCU_Time();
-  ma::print("Swapped %d of %d bad edges "
-      "in %f seconds",es.ns, count, t1-t0);
+  ma::print("Swapped %d bad edges "
+      "in %f seconds",es.ns, t1-t0);
+}
+
+static void repositionInvalidEdges(Adapt* a)
+{
+  double t0 = PCU_Time();
+  EdgeReshaper es(a);
+  ma::applyOperator(a,&es);
+  double t1 = PCU_Time();
+  ma::print("Repositioned %d bad edges "
+      "in %f seconds",es.nr, t1-t0);
 }
 
 int fixInvalidEdges(Adapt* a)
 {
-  int count = markInvalidEntities(a);
-  if ( ! count){
+  int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
+  if (! count){
     return 0;
   }
+  return 0;
+  if(a->mesh->getShape()->getOrder() == 2)
+    repositionInvalidEdges(a);
   collapseInvalidEdges(a);
   swapInvalidEdges(a);
   return count;
