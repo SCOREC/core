@@ -185,9 +185,12 @@ static int fixInvalidElements(crv::Adapt* a)
     if ( ! count)
       break;
     prev_count = count;
-    count = crv::fixInvalidEdges(a);
+    count = crv::fixLargeBoundaryAngles(a)
+          + crv::fixInvalidEdges(a);
   } while(count < prev_count);
+
   crv::fixLargeBoundaryAngles(a);
+  ma::clearFlagFromDimension(a,ma::COLLAPSE | ma::BAD_QUALITY,1);
   a->input->shouldForceAdaptation = false;
   return originalCount - count;
 }

@@ -34,11 +34,13 @@ ma::Input* configureShapeCorrection(
 
 void adapt(ma::Input* in);
 
-/* Support functions for curved applications, these ones
- * clean up after cavity operations, by repositioning
- */
+// uses blending to position interior points
+// based on edge locations
 void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
+// based on XJ Luo's thesis
+bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
+    ma::Entity* edge);
 
 // Split edges marked with ma::SPLIT
 void splitEdges(ma::Adapt* a);
