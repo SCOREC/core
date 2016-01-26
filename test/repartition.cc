@@ -57,7 +57,7 @@ void getConfig(int argc, char** argv)
   if ( argc != 5 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: mpirun -n <outPartCount> %s"
-             "<model> <inPartCount> <inMesh> <outMesh>\n",
+             " <model> <inPartCount> <inMesh> <outMesh>\n",
              argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
