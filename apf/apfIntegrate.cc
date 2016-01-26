@@ -693,7 +693,7 @@ double measure(MeshElement* e)
   return measurer.m;
 }
 
-  double measure(Mesh* m, MeshEntity* e)
+double measure(Mesh* m, MeshEntity* e)
 {
   MeshElement* me = createMeshElement(m,e);
   double v = measure(me);

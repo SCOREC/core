@@ -26,7 +26,7 @@ void freeMesh(apf::Mesh* m)
 apf::Migration* getPlan(apf::Mesh* m)
 {
   apf::Splitter* splitter = apf::makeZoltanSplitter(
-      m, apf::GRAPH, apf::PARTITION, false);
+      m, apf::GRAPH, apf::REPARTITION, false);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   apf::Migration* plan = splitter->split(weights, 1.05, partitionFactor);
   apf::removeTagFromDimension(m, weights, m->getDimension());
