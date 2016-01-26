@@ -150,7 +150,7 @@ struct Contract : public Remap
   {
     if (out < remainder * (quotient + 1))
       return out / (quotient + 1);
-    return (out - remainder * (quotient + 1)) / quotient;
+    return (out - remainder * (quotient + 1)) / quotient + remainder;
   }
   bool isValid(int out)
   {
