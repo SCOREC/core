@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     plan = getPlan(m);
   }
   switchToAll();
-  m = repeatMdsMesh(m, g, plan, partitionFactor);
+  m = apf::repeatMdsMesh(m, g, plan, partitionFactor);
   m->writeNative(outFile);
   freeMesh(m);
   PCU_Comm_Free();

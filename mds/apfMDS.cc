@@ -640,11 +640,14 @@ static Mesh2* globalMesh;
 static Migration* globalPlan;
 static void (*globalThrdCall)(Mesh2*);
 
-Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
 {
   double t0 = PCU_Time();
   int self = PCU_Comm_Self();
-  bool isOriginal = ((PCU_Comm_Self() % factor) == 0);
+  int outputPartCount = PCU_Comm_Peers();
+  apf::Expand expand(inputPartCount, outputPartCount);
+  apf::Contract contract(inputPartCount, outputPartCount);
+  bool isOriginal = contract.isValid(self);
   int dim;
   bool isMatched;
   PCU_Comm_Begin();
@@ -652,11 +655,10 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
     assert(m != 0);
     dim = m->getDimension();
     isMatched = m->hasMatching();
-    for (int i = 1; i < factor; ++i) {
-      int clone = self + i;
-      PCU_COMM_PACK(clone, dim);
-      PCU_COMM_PACK(clone, isMatched);
-      packDataClone(m, clone);
+    for (int i = self + 1; i < outputPartCount && !contract.isValid(i); ++i) {
+      PCU_COMM_PACK(i, dim);
+      PCU_COMM_PACK(i, isMatched);
+      packDataClone(m, i);
     }
   }
   PCU_Comm_Send();
@@ -666,15 +668,26 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor)
     m = makeEmptyMdsMesh(g, dim, isMatched);
     unpackDataClone(m);
   }
-  apf::Multiply remap(factor);
   assert(m != 0);
-  apf::remapPartition(m, remap);
-  if (!isOriginal)
+  apf::remapPartition(m, expand);
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    printf("mesh expanded from %d to %d parts in %f seconds\n",
+        inputPartCount, outputPartCount, t1 - t0);
+  return m;
+}
+
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
+    int factor)
+{
+  m = expandMdsMesh(m, g, PCU_Comm_Peers() / factor);
+  double t0 = PCU_Time();
+  if (PCU_Comm_Self() % factor != 0)
     plan = new apf::Migration(m, m->findTag("apf_migrate"));
   m->migrate(plan);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("mesh repartitioned from %d to %d in %f seconds\n",
+    printf("mesh migrated from %d to %d in %f seconds\n",
         PCU_Comm_Peers() / factor,
         PCU_Comm_Peers(),
         t1 - t0);
