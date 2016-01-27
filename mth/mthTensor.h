@@ -39,11 +39,10 @@ class Tensor : public Matrix<T>
     /** \brief copy from a matrix */
     Tensor(Matrix<T> const& b) : mth::Matrix<T>() {copy(b);}
     /** \brief assignment operator */
-    Tensor<T> operator=(Tensor<T> const& b)
+    Tensor<T>& operator=(Tensor<T> const& b)
     {
-      Tensor<T> r;
-      r.copy(b);
-      return r;
+      (*this).copy(b);
+      return *this;
     }
     /** \brief assignent to a matrix */
     Tensor<T> operator=(Matrix<T> const& b)
