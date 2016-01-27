@@ -37,7 +37,8 @@ set(MDS_SOURCES
   apfMDS.cc
   apfPM.cc
   mdsANSYS.cc
-  mdsGmsh.cc)
+  mdsGmsh.cc
+  mdsUgrid.cc)
 
 set(MDS_HEADERS
   apfMDS.h)
