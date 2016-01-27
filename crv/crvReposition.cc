@@ -47,7 +47,6 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
   ma::Entity* edges[6];
 
   ma::Vector pivotPoint;
-  ma::Vector pivotEdgePoints[3];
   ma::Vector edgeVectors[3];
   m->getDownward(tet,0,verts);
   m->getDownward(tet,1,edges);
