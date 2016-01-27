@@ -62,6 +62,13 @@ add_test(eigen_test eigen_test)
 add_test(integrate integrate)
 add_test(qr_test qr)
 add_test(base64 base64)
+
+set(MDIR ${MESHES}/fun3d)
+add_test(from_ugrid
+  from_ugrid
+  "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/inviscid_egg.smb")
+
 set(MDIR ${MESHES}/pipe)
 add_test(verify_serial
   verify
