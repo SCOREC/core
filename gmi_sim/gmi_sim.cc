@@ -376,6 +376,7 @@ void gmi_register_sim(void)
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");
+  gmi_register(create_native, "x_t");
   gmi_register(create_native, "sat");
 }
 
@@ -420,6 +421,8 @@ struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
   else if (gmi_has_ext(nativefile, "sat"))
     nm = load_acis(nativefile);
   else if (gmi_has_ext(nativefile, "xmt_txt"))
+    nm = load_parasolid(nativefile);
+  else if (gmi_has_ext(nativefile, "x_t"))
     nm = load_parasolid(nativefile);
   else
     gmi_fail("gmi_sim_load: nativefile has bad extension");
