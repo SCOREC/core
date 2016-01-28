@@ -78,7 +78,9 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
   }
 
   m->getPoint(pivotVert,0,pivotPoint);
-  int edgeIndex = -1; // local, of edges around vert, [0,2]
+
+  // local, of edges around vert, [0,2]
+  int edgeIndex = 0;
 
   for (int i = 0; i < 3; ++i){
     // theres only one point, so reuse this...
@@ -88,21 +90,22 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
       edgeIndex = i;
   }
   assert(edgeIndex >= 0);
-  // we have the three vectors
-  double validity = edgeVectors[edgeIndex]*
-      apf::cross(edgeVectors[(1+edgeIndex) % 3],
-                 edgeVectors[(2+edgeIndex) % 3]);
+  ma::Vector normal = apf::cross(edgeVectors[(1+edgeIndex) % 3],
+      edgeVectors[(2+edgeIndex) % 3]);
+  double length = normal.getLength();
+  double validity = edgeVectors[edgeIndex]*normal;
 
   if(validity > 1e-10)
     return false;
-
   ma::Vector oldPoint = ma::getPosition(m,edge);
   apf::Adjacent adjacent;
   m->getAdjacent(edge,3,adjacent);
 
-  double theta = acos(validity);
-  ma::Vector newPoint = edgeVectors[edgeIndex]*
-      sin(theta)/cos(apf::pi/6.) + pivotPoint;
+  // places the new point at a 20 degree angle with the plane
+  ma::Vector newPoint = edgeVectors[edgeIndex] + pivotPoint
+      + normal/length*(-validity/length +
+          edgeVectors[edgeIndex].getLength()*sin(apf::pi/9.));
+
   m->setPoint(edge,0,newPoint);
 
   ma::Entity* invalidEntities[14];
@@ -112,6 +115,7 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
       return false;
     }
   }
+
   return true;
 }
 

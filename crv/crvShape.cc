@@ -152,7 +152,8 @@ public:
   virtual void apply()
   {
     for (int i = 0; i < ne; ++i){
-      if (repositionEdge(mesh,simplex,edges[i])){
+      if (!isBoundaryEntity(mesh,edges[i]) &&
+          repositionEdge(mesh,simplex,edges[i])){
         nr++;
         crv::clearFlag(adapter,simplex);
         ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
@@ -489,7 +490,7 @@ int fixInvalidEdges(Adapt* a)
   if (! count){
     return 0;
   }
-  return 0;
+
   if(a->mesh->getShape()->getOrder() == 2)
     repositionInvalidEdges(a);
   collapseInvalidEdges(a);
