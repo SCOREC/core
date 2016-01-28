@@ -77,7 +77,8 @@ namespace {
 
   void readDoubles(FILE* f, double* vals, size_t cnt, bool swap) {
     assert(sizeof(double)==8);
-    fread(vals, sizeof(double), cnt, f);
+    size_t read = fread(vals, sizeof(double), cnt, f);
+    assert(read == cnt);
     if ( swap )
       pcu_swap_doubles(vals,cnt);
   }
