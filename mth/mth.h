@@ -60,6 +60,10 @@ Matrix<T,3,3> inverse(Matrix<T,3,3> const& a);
 template <class T>
 T trace(Tensor<T> const& a);
 
+/** \brief identity tensor */
+template <class T>
+Tensor<T> eye(unsigned d);
+
 }
 
 #endif
