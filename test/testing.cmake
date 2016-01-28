@@ -298,11 +298,11 @@ add_test(ma_insphere
   ma_insphere)
 set(MDIR ${MESHES}/curved)
 add_test(curvedSphere
-  curvemesh
+  curvetest
   "${MDIR}/sphere1.xmt_txt"
   "${MDIR}/sphere1_4.smb")
  add_test(curvedKova
-  curvemesh
+  curvetest
   "${MDIR}/Kova.xmt_txt"
   "${MDIR}/Kova.smb")
 if (PCU_COMPRESS)
