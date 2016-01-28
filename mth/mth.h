@@ -11,7 +11,7 @@
 #ifndef MTH_H
 #define MTH_H
 
-#include "mthMatrix.h"
+#include "mthTensor.h"
 
 /** \file mth.h
   * \brief templated math functions */
@@ -55,6 +55,10 @@ Matrix<T,2,2> inverse(Matrix<T,2,2> const& a);
 /** \brief invert a 3 by 3 matrix */
 template <class T>
 Matrix<T,3,3> inverse(Matrix<T,3,3> const& a);
+
+/** \brief trace of a tensor */
+template <class T>
+T trace(Tensor<T> const& a);
 
 }
 

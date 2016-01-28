@@ -12,6 +12,7 @@
 #define MTH_TENSOR_H
 
 #include "mthMatrix.h"
+#include <cassert>
 
 /** \file mthTensor.h
   * \brief Small run-time tensor. */
