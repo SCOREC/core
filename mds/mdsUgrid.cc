@@ -84,13 +84,19 @@ namespace {
   }
 
   void readHeader(Reader* r, header* h) {
-    readUnsigneds(r->file, &h->nvtx, 1, r->swapBytes);
-    readUnsigneds(r->file, &h->ntri, 1, r->swapBytes);
-    readUnsigneds(r->file, &h->nquad, 1, r->swapBytes);
-    readUnsigneds(r->file, &h->ntet, 1, r->swapBytes);
-    readUnsigneds(r->file, &h->npyr, 1, r->swapBytes);
-    readUnsigneds(r->file, &h->nprz, 1, r->swapBytes);
-    readUnsigneds(r->file, &h->nhex, 1, r->swapBytes);
+    const unsigned biggest = 100*1000*1000;
+    unsigned headerVals[7];
+    readUnsigneds(r->file, headerVals, 7, r->swapBytes);
+    for(unsigned i=0; i<7; i++) {
+      assert(headerVals[i] < biggest);
+    }
+    h->nvtx = headerVals[0];
+    h->ntri = headerVals[1];
+    h->nquad = headerVals[2];
+    h->ntet = headerVals[3];
+    h->npyr = headerVals[4];
+    h->nprz = headerVals[5];
+    h->nhex = headerVals[6];
   }
 
   apf::MeshEntity* makeVtx(Reader* r,
