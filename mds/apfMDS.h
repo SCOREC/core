@@ -128,6 +128,8 @@ MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
 
+Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
+
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one
   for a .node and another for a .elem file.
