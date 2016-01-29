@@ -283,8 +283,7 @@ static void getJacDetBySubdivisionMatrices(int type, int P,
  * Distinctly only works for 2D planar meshes in x-y, used as a test for
  * the algorithm used in 3D.
  */
-static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6])
+static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
 {
   apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
@@ -292,7 +291,7 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
   // First, just check at node xi
   apf::Downward down;
   apf::Vector3 xi, exi;
-  int numInvalid = 0;
+
   for (int d = 0; d <= 1; ++d){
     int nDown = m->getDownward(e,d,down);
     for (int j = 0; j < nDown; ++j){
@@ -302,37 +301,32 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
         exi = apf::boundaryToElementXi(m,down[j],e,xi);
         apf::getJacobian(me,exi,J);
         if(J[0][0]*J[1][1]-J[1][0]*J[0][1] < minAcceptable){
-          entities[numInvalid] = down[j];
-          numInvalid++;
-          break;
+          apf::destroyMeshElement(me);
+          return 6*d+2+j;
         }
       }
     }
-    if(numInvalid) break;
   }
 
   for (int i = 0; i < fs->countNodesOn(apf::Mesh::TRIANGLE); ++i){
     fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
     apf::getJacobian(me,xi,J);
     if(J[0][0]*J[1][1]-J[1][0]*J[0][1] < minAcceptable){
-      entities[numInvalid] = e;
-      numInvalid++;
-      break;
+      apf::destroyMeshElement(me);
+      return 14;
     }
   }
-
   apf::destroyMeshElement(me);
-  return numInvalid;
+  return 0;
 }
 
-int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6], int algorithm)
+static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm)
 {
   int P = m->getShape()->getOrder();
-  int numInvalid = 0;
   if (algorithm < 2){
-    numInvalid = checkTriValidityAtNodeXi(m,e,entities);
-    if(numInvalid > 0) return numInvalid;
+    int qualityTag = checkTriValidityAtNodeXi(m,e);
+    if(qualityTag > 0) return qualityTag;
   }
 
   // if it is positive, then keep going
@@ -343,17 +337,16 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
   apf::NewArray<double> nodes(P*(2*P-1));
   getTriJacDetNodes(P,elemNodes,nodes);
 
+  // if we haven't checked at nodeXi, need to check verts
   if(algorithm >= 2){
     apf::Downward verts;
     m->getDownward(e,0,verts);
     for (int i = 0; i < 3; ++i){
       if(nodes[i] < minAcceptable){
-        entities[numInvalid] = verts[i];
-        numInvalid++;
+        return i+2;
       }
     }
   }
-  if (numInvalid > 0) return numInvalid;
 
   apf::NewArray<double> subCoefficients;
   if(algorithm == 4){
@@ -394,17 +387,12 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
               0,subCoefficients,edgeNodes,minJ,maxJ,done,quality);
         }
         if(minJ < minAcceptable){
-          entities[numInvalid] = edges[edge];
-          numInvalid++;
+          return 8+edge;
         }
-        break;
       }
     }
   }
 
-  if(numInvalid > 0) {
-    return numInvalid;
-  }
   if(algorithm == 4){
     getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
         apf::Mesh::TRIANGLE,subCoefficients);
@@ -424,17 +412,14 @@ int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
             0,nodes,minJ,maxJ,done);
       }
       if(minJ < minAcceptable){
-        entities[numInvalid] = e;
-        numInvalid++;
+        return 12;
       }
-      break;
     }
   }
-  return numInvalid;
+  return 1;
 }
 
-static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[14])
+static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
 {
   apf::MeshElement* me = apf::createMeshElement(m,e);
   apf::FieldShape* fs = m->getShape();
@@ -442,7 +427,6 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
   // First, just check at node xi
   apf::Downward down;
   apf::Vector3 xi, exi;
-  int numInvalid = 0;
   for (int d = 0; d <= 2; ++d){
     int nDown = m->getDownward(e,d,down);
     for (int j = 0; j < nDown; ++j){
@@ -452,37 +436,31 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e,
         exi = apf::boundaryToElementXi(m,down[j],e,xi);
         apf::getJacobian(me,exi,J);
         if(apf::getJacobianDeterminant(J,3) < minAcceptable){
-          entities[numInvalid] = down[j];
-          numInvalid++;
-          break;
+          apf::destroyMeshElement(me);
+          return 6*d+2+j;
         }
       }
     }
-    if(numInvalid) break;
   }
-
   for (int i = 0; i < fs->countNodesOn(apf::Mesh::TET); ++i){
     fs->getNodeXi(apf::Mesh::TET,i,xi);
     apf::getJacobian(me,xi,J);
     if(apf::getJacobianDeterminant(J,3) < minAcceptable){
-      entities[numInvalid] = e;
-      numInvalid++;
-      break;
+      apf::destroyMeshElement(me);
+      return 20;
     }
   }
 
-  apf::destroyMeshElement(me);
-  return numInvalid;
+  return 0;
 }
 
-int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[14], int algorithm)
+static int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm)
 {
   int P = m->getShape()->getOrder();
-  int numInvalid = 0;
   if (algorithm < 2){
-    numInvalid = checkTetValidityAtNodeXi(m,e,entities);
-    if(numInvalid > 0) return numInvalid;
+    int qualityTag = checkTetValidityAtNodeXi(m,e);
+    if(qualityTag > 0) return qualityTag;
     // if it is positive, then keep going
   }
   apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
@@ -498,12 +476,10 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
     m->getDownward(e,0,verts);
     for (int i = 0; i < 4; ++i){
       if(nodes[i] < minAcceptable){
-        entities[numInvalid] = verts[i];
-        numInvalid++;
+        return 2+i;
       }
     }
   }
-  if (numInvalid > 0) return numInvalid;
 
   apf::NewArray<double> subCoefficients;
   if(algorithm == 4){
@@ -546,14 +522,11 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
               0,subCoefficients,edgeNodes,minJ,maxJ,done,quality);
         }
         if(minJ < minAcceptable){
-          entities[numInvalid] = edges[edge];
-          numInvalid++;
+          return 8+edge;
         }
-        break;
       }
     }
   }
-  if(numInvalid > 0) return numInvalid;
   if(algorithm == 4){
     getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
         apf::Mesh::TRIANGLE,subCoefficients);
@@ -580,14 +553,12 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
               0,triNodes,minJ,maxJ,done);
         }
         if(minJ < minAcceptable){
-          entities[numInvalid] = faces[face];
-          numInvalid++;
+          return 14+face;
         }
-        break;
       }
     }
   }
-  if(numInvalid > 0) return numInvalid;
+
   getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
       apf::Mesh::TET,subCoefficients);
 
@@ -603,13 +574,11 @@ int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
         getJacDetByElevation(apf::Mesh::TET,3*(P-1),nodes,minJ,maxJ);
       }
       if(minJ < minAcceptable){
-        entities[numInvalid] = e;
-        numInvalid++;
+        return 20;
       }
-      break;
     }
   }
-  return numInvalid;
+  return 1;
 }
 
 double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,
@@ -699,5 +668,17 @@ double getQuality(apf::Mesh* m, apf::MeshEntity* e)
 
   return getQuality(type,P,elemNodes);
 }
+
+const bezierValidity checkBezierValidity[apf::Mesh::TYPES] =
+{
+  NULL,    //vertex
+  NULL,    //edge
+  checkTriValidity,  //triangle
+  NULL,    //quad
+  checkTetValidity,  //tet
+  NULL,    //hex
+  NULL,    //prism
+  NULL     //pyramid
+};
 
 }

@@ -46,22 +46,24 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
 void splitEdges(ma::Adapt* a);
 // Validity checking is expensive, so tag them with an
 // integer to identify if invalid, and where
-long markInvalidEntities(Adapt* a);
+int markInvalidEntities(Adapt* a);
 
 /* Use a crv version of these
  * because we don't have bitwise operations
  */
-int getFlag(Adapt* a, ma::Entity* e);
-void setFlag(Adapt* a, ma::Entity* e, int flag);
-void clearFlag(Adapt* a, ma::Entity* e);
+int getTag(Adapt* a, ma::Entity* e);
+void setTag(Adapt* a, ma::Entity* e, int flag);
+void clearTag(Adapt* a, ma::Entity* e);
 
 /* Use an integer to determine the quality tag
  * 0 -> Not checked
  * 1 -> Okay Quality
  * 2-7 -> Vertices are bad
- * 8-13 -> Edges are bad
- * 14-17 -> Face are bad
- * 18 -> Entity itself is bad, this one is the worst
+ * 8-13 -> Edge is are bad
+ * 14-17 -> Face is are bad
+ * 20 -> Tet itself is bad, this one is the worst
+ *
+ * 6*dim + 2 + index
  */
 int getQualityTag(ma::Mesh* m, ma::Entity* e,
     ma::Entity* bdry);

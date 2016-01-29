@@ -26,47 +26,60 @@ namespace crv {
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[3])
 {
-  if ( tag == 1 )
+  if ( tag <= 1 ) // if its valid, or not checked, don't worry about it
     return 0;
+  int dim = (tag-2)/6;
+  int index = (tag-2) % 6;
   int n = 0;
   int md = m->getDimension();
-  int type = m->getType(e);
-  int vertIndex = tag-2;
-  int edgeIndex = tag-8;
-  int faceIndex = tag-14;
-  int nverts = apf::Mesh::adjacentCount[type][0];
-  int nedges = apf::Mesh::adjacentCount[type][1];
-  int nfaces = apf::Mesh::adjacentCount[type][2];
 
-  // if we have a single invalid edge, try and swap it
-  if(edgeIndex >= 0 && edgeIndex < nedges){
-    ma::Downward ed;
-    m->getDownward(e,1,ed);
-    edges[0] = ed[edgeIndex];
-    n = 1;
-  } else if (vertIndex >= 0 && vertIndex < nverts){
-    // if we have an invalid vertex, try and swap all its edges
-    ma::Downward ed;
-    m->getDownward(e,1,ed);
-    n = md;
-    if(md == 2){
-      edges[0] = ed[vertIndex];
-      edges[1] = ed[(vertIndex+2) % 3];
-    } else {
-      edges[0] = ed[vertEdges[vertIndex][0]];
-      edges[1] = ed[vertEdges[vertIndex][1]];
-      edges[2] = ed[vertEdges[vertIndex][2]];
+  switch (dim) {
+    case 0:
+    {
+      // if we have an invalid vertex, operate on its edges
+      ma::Downward ed;
+      m->getDownward(e,1,ed);
+      n = md;
+      if(md == 2){
+        edges[0] = ed[index];
+        edges[1] = ed[(index+2) % 3];
+      } else {
+        edges[0] = ed[vertEdges[index][0]];
+        edges[1] = ed[vertEdges[index][1]];
+        edges[2] = ed[vertEdges[index][2]];
+      }
     }
-  } else if (faceIndex >= 0 && faceIndex < nfaces){
-    // if we have an invalid face, try and swap its edges
-    ma::Downward ed, faces;
-    m->getDownward(e,2,faces);
-    m->getDownward(faces[faceIndex],1,ed);
-    n = 3;
-    edges[0] = ed[0];
-    edges[1] = ed[1];
-    edges[2] = ed[2];
+      break;
+    case 1:
+    {
+      // if we have a single invalid edge, operate on it
+      ma::Downward ed;
+      m->getDownward(e,1,ed);
+      edges[0] = ed[index];
+      n = 1;
+    }
+      break;
+    case 2:
+    {
+      // if we have an invalid face, operate on its edges
+      ma::Downward ed, faces;
+      m->getDownward(e,2,faces);
+      m->getDownward(faces[index],1,ed);
+      n = 3;
+      edges[0] = ed[0];
+      edges[1] = ed[1];
+      edges[2] = ed[2];
+    }
+      break;
+    case 3:
+      m->getDownward(e,1,edges);
+      n = 6;
+      break;
+    default:
+      fail("invalid quality tag in markEdges\n");
+      break;
   }
+
   return n;
 }
 
@@ -77,7 +90,7 @@ public:
   {
     adapter = a;
     mesh = a->mesh;
-    edges[0] = edges[1] = edges[2] = 0;
+    edges[0] = edges[1] = edges[2] = edges[3] = edges[4] = edges[5] = 0;
     simplex = 0;
     edgeSwap = ma::makeEdgeSwap(a);
     md = mesh->getDimension();
@@ -90,7 +103,7 @@ public:
   virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e)
   {
-    int tag = crv::getFlag(adapter,e);
+    int tag = crv::getTag(adapter,e);
     ne = markEdges(mesh,e,tag,edges);
     simplex = e;
     return (ne > 0);
@@ -104,7 +117,7 @@ public:
     for (int i = 0; i < ne; ++i){
       if (edgeSwap->run(edges[i])){
         ns++;
-        crv::clearFlag(adapter,simplex);
+        crv::clearTag(adapter,simplex);
         ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
         break;
       }
@@ -114,7 +127,7 @@ private:
   Adapt* adapter;
   ma::Mesh* mesh;
   ma::Entity* simplex;
-  ma::Entity* edges[3];
+  ma::Entity* edges[6];
   ma::EdgeSwap* edgeSwap;
   int md;
   int ne;
@@ -129,7 +142,7 @@ public:
   {
     adapter = a;
     mesh = a->mesh;
-    edges[0] = edges[1] = edges[2] = 0;
+    edges[0] = edges[1] = edges[2] = edges[3] = edges[4] = edges[5] = 0;
     simplex = 0;
     md = mesh->getDimension();
     ne = nr = 0;
@@ -140,7 +153,7 @@ public:
   virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e)
   {
-    int tag = crv::getFlag(adapter,e);
+    int tag = crv::getTag(adapter,e);
     ne = markEdges(mesh,e,tag,edges);
     simplex = e;
     return (ne > 0);
@@ -155,7 +168,7 @@ public:
       if (!isBoundaryEntity(mesh,edges[i]) &&
           repositionEdge(mesh,simplex,edges[i])){
         nr++;
-        crv::clearFlag(adapter,simplex);
+        crv::clearTag(adapter,simplex);
         ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
         break;
       }
@@ -165,7 +178,7 @@ private:
   Adapt* adapter;
   ma::Mesh* mesh;
   ma::Entity* simplex;
-  ma::Entity* edges[3];
+  ma::Entity* edges[6];
   int md;
   int ne;
 public:
@@ -411,7 +424,7 @@ static int markEdgesToFix(Adapt* a, int flag)
   ma::Iterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it)))
   {
-    int tag = crv::getFlag(a,e);
+    int tag = crv::getTag(a,e);
     int n = markEdges(m,e,tag,edges);
     for (int i = 0; i < n; ++i){
       ma::Entity* edge = edges[i];

@@ -181,6 +181,17 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
   }
 }
 
+//int countNumberInvalidElements(apf::Mesh2* m)
+//{
+//  int n = 0;
+//  apf::MeshEntity* e;
+//  apf::MeshIterator* it = m->begin(m->getDimension());
+//  while ((e = m->iterate(it))) {
+//checkTetValidity()
+//  }
+//  m->end(it);
+//}
+
 void fail(const char* why)
 {
   fprintf(stderr,"CRV FAILED: %s\n",why);
