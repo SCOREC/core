@@ -151,6 +151,8 @@ static void formFactories(BCFactories& fs)
   fs["pressure"]             = tensor0Factory;
   fs["comp1"]                = compFactory;
   fs["comp3"]                = compFactory;
+  fs["comp1_elas"]           = compFactory;
+  fs["comp3_elas"]           = compFactory;
   fs["scalar_1"]             = tensor0Factory;
   fs["scalar_2"]             = tensor0Factory;
   fs["scalar_3"]             = tensor0Factory;
@@ -158,6 +160,7 @@ static void formFactories(BCFactories& fs)
   fs["mass flux"]            = tensor0Factory;
   fs["natural pressure"]     = tensor0Factory;
   fs["traction vector"]      = tensor1Factory;
+  fs["traction vector melas"]= tensor1Factory;
   fs["heat flux"]            = tensor0Factory;
   fs["turbulence wall"]      = tensor0Factory;
   fs["scalar_1 flux"]        = tensor0Factory;
@@ -182,7 +185,7 @@ static std::string getType(pAttribute a)
   char* c_infoType = Attribute_infoType(a);
   std::string infoType(c_infoType);
   Sim_deleteString(c_infoType);
-  char* c_imageClass = Attribute_infoType(a);
+  char* c_imageClass = Attribute_imageClass(a);
   std::string imageClass(c_imageClass);
   Sim_deleteString(c_imageClass);
   if (imageClass.length() != 0)

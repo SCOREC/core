@@ -46,11 +46,14 @@ FieldBCs::~FieldBCs()
   }
 }
 
-static struct { const char* name; int size; } const knownSizes[4] =
+static struct { const char* name; int size; } const knownSizes[7] =
 {{"initial velocity", 3}
 ,{"comp1", 4}
 ,{"comp3", 4}
+,{"comp1_elas", 4}
+,{"comp3_elas", 4}
 ,{"traction vector", 3}
+,{"traction vector melas", 3}
 };
 
 static int getSize(std::string const& name)
@@ -222,10 +225,11 @@ static KnownBC const essentialBCs[7] = {
   {"scalar_4",        15, 9, applyScalar},
 };
 
-static KnownBC const naturalBCs[10] = {
+static KnownBC const naturalBCs[11] = {
   {"mass flux",        0, 0, applyScalar},
   {"natural pressure", 1, 1, applyScalar},
   {"traction vector",  2, 2, applyVector},
+  {"traction vector melas",  3, 3, applyVector},
   {"heat flux",        5, 3, applyScalar},
   {"turbulence wall", -1, 4, applyBit},
   {"scalar_1 flux",    6, 5, applyScalar},
@@ -329,7 +333,9 @@ bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
      the code in phConstraint.cc */
   bool didVelocity = applyVelocityConstaints(gm, appliedBCs,
       ge, x, values, bits);
-  return didSimple || didVelocity;
+  bool didElastic = applyElasticConstaints(gm, appliedBCs,
+      ge, x, values, bits);
+  return didSimple || didVelocity || didElastic;
 }
 
 bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,

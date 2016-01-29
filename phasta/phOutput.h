@@ -82,16 +82,16 @@ struct EnsaArrays
 /* ibc[i] is the essential boundary condition
    status code of essential BC node i */
 /* ibc bits are as follows:
-var: rho t p u v w sc1 sc2 sc3 sc4 perio
-bit:  0  1 2 3 4 5  6   7   8   9    10 */
+var: rho t p u v w sc1 sc2 sc3 sc4 perio --NULL-- eu ev ew
+bit:  0  1 2 3 4 5  6   7   8   9    10  11 12 13 14 15 16 */
   int* ibc;
 /* bc[i][j] is the essential boundary condition
    value of 
    essential boundary condition j of
    essential BC node i */
 /* bc is organized as follows:
-var:  rho t p c11 c12 c13 m1 c21 c22 c23 m2 theta sc1 sc2 sc3 sc4
-idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15  */
+var:  rho t p c11 c12 c13 m1 c21 c22 c23 m2 theta sc1 sc2 sc3 sc4 ec11 ec12 ec13 em1 ec21 ec22 ec23 em2
+idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18  19   20   21   22  23  */
   double** bc;
 /* encodes part-local element to element connectivity */
   int* ienneigh;
