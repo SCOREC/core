@@ -83,7 +83,7 @@ struct PlaneConstraintElas : public Constraint
   }
   virtual void write(int* iBC, double* BC)
   {
-    int bit = maxComponent(plane.normal) + 11;
+    int bit = maxComponent(plane.normal) + 14;
     *iBC |= (1<<bit);
     plane.normal.toArray(BC + 16);
     BC[19] = plane.radius;
@@ -183,8 +183,8 @@ struct LineConstraintElas : public Constraint
       int comp1 = maxComponent(b);
       assert(comp0 != comp1);
     }
-    int bit0 = comp0 + 11;
-    int bit1 = comp1 + 11;
+    int bit0 = comp0 + 14;
+    int bit1 = comp1 + 14;
     *iBC |= (1<<bit0);
     *iBC |= (1<<bit1);
     pcs[0]->plane.normal.toArray(BC + 16);
@@ -224,7 +224,7 @@ struct PointConstraintElas : public Constraint
   virtual void write(int* iBC, double* BC)
   {
     for (int i = 0; i < 3; ++i) {
-      int bit = i + 11;
+      int bit = i + 14;
       *iBC |= (1<<bit);
     }
     double magnitude = point.getLength();
