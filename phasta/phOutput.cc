@@ -406,19 +406,6 @@ static void getEssentialBCs(BCs& bcs, Output& o)
 
 static void getInitialConditions(BCs& bcs, Output& o)
 {
-
-  // read your file from matlab
-  double sol_table[11][4];
-  std::ifstream ifs("exactsol.txt"); // remove the #include <fstream> when cleaning
-  std::string line;
-  int i = 0;
-  while(getline(ifs, line)) {
-    std::istringstream iss(line);
-    iss >> sol_table[i][0] >> sol_table[i][1] >> sol_table[i][2] >> sol_table[i][3];
-    ++i;
-  }
-  ifs.close();
-
   Input& in = *o.in;
   if (in.solutionMigration) {
     if (!PCU_Comm_Self())
@@ -443,33 +430,6 @@ static void getInitialConditions(BCs& bcs, Output& o)
       apf::Vector3 x;
       m->getPoint(v[i], 0, x);
       applySolutionBCs(gm, ge, bcs, x, &s[0]);
-
-      bool change_s = 0;
-      int ixpoint = -1;
-      apf::Vector3 x4;
-      m->getPoint(v[3], 0, x4);
-      if (x4[0] - 0.1 > 0) {
-        change_s = 1;
-        for(int ix=0; ix<11; ++ix) {
-          if(fabs(x[0]-sol_table[ix][0])<1e-12) {
-            ixpoint = ix;
-            break;
-          }
-        }
-      }
-/*
-      if (change_s) {
-        if(ixpoint==-1)
-          printf("could not find the point in exact solution!\n");
-s[0] = sol_table[ixpoint][1]; // pressure
-//s[1] = sol_table[ixpoint][2];
-s[1] = sol_table[ixpoint][2]-2.5; // velocity in moving frame (exact) + umesh (vi)
-s[2] = 0.;
-s[3] = 0.;
-s[4] = sol_table[ixpoint][3]; // temperature
-//printf("%6.2f %20.15e %20.15e %20.15e\n",x[0],s[0],s[1],s[4]);
-      }
- */
       apf::setComponents(f, v[i], 0, &s[0]);
     }
   }
