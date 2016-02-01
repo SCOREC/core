@@ -291,7 +291,7 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
   // First, just check at node xi
   apf::Downward down;
   apf::Vector3 xi, exi;
-
+  int qualityTag = 0;
   for (int d = 0; d <= 1; ++d){
     int nDown = m->getDownward(e,d,down);
     for (int j = 0; j < nDown; ++j){
@@ -301,8 +301,8 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
         exi = apf::boundaryToElementXi(m,down[j],e,xi);
         apf::getJacobian(me,exi,J);
         if(J[0][0]*J[1][1]-J[1][0]*J[0][1] < minAcceptable){
-          apf::destroyMeshElement(me);
-          return 6*d+2+j;
+          qualityTag = 6*d+2+j;
+          break;
         }
       }
     }
@@ -312,12 +312,13 @@ static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
     fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
     apf::getJacobian(me,xi,J);
     if(J[0][0]*J[1][1]-J[1][0]*J[0][1] < minAcceptable){
-      apf::destroyMeshElement(me);
-      return 14;
+      qualityTag = 14;
+      break;
     }
   }
+
   apf::destroyMeshElement(me);
-  return 0;
+  return qualityTag;
 }
 
 static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
@@ -427,6 +428,7 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
   // First, just check at node xi
   apf::Downward down;
   apf::Vector3 xi, exi;
+  int qualityTag = 0;
   for (int d = 0; d <= 2; ++d){
     int nDown = m->getDownward(e,d,down);
     for (int j = 0; j < nDown; ++j){
@@ -436,8 +438,8 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
         exi = apf::boundaryToElementXi(m,down[j],e,xi);
         apf::getJacobian(me,exi,J);
         if(apf::getJacobianDeterminant(J,3) < minAcceptable){
-          apf::destroyMeshElement(me);
-          return 6*d+2+j;
+          qualityTag = 6*d+2+j;
+          break;
         }
       }
     }
@@ -446,12 +448,13 @@ static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
     fs->getNodeXi(apf::Mesh::TET,i,xi);
     apf::getJacobian(me,xi,J);
     if(apf::getJacobianDeterminant(J,3) < minAcceptable){
-      apf::destroyMeshElement(me);
-      return 20;
+      qualityTag = 20;
+      break;
     }
   }
 
-  return 0;
+  apf::destroyMeshElement(me);
+  return qualityTag;
 }
 
 static int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,

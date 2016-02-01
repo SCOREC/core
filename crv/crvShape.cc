@@ -24,7 +24,7 @@ namespace crv {
  *
  */
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
-    ma::Entity* edges[3])
+    ma::Entity* edges[6])
 {
   if ( tag <= 1 ) // if its valid, or not checked, don't worry about it
     return 0;
@@ -44,12 +44,13 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
         edges[0] = ed[index];
         edges[1] = ed[(index+2) % 3];
       } else {
+        assert(index < 4);
         edges[0] = ed[vertEdges[index][0]];
         edges[1] = ed[vertEdges[index][1]];
         edges[2] = ed[vertEdges[index][2]];
       }
     }
-      break;
+    break;
     case 1:
     {
       // if we have a single invalid edge, operate on it
@@ -58,7 +59,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       edges[0] = ed[index];
       n = 1;
     }
-      break;
+    break;
     case 2:
     {
       // if we have an invalid face, operate on its edges
@@ -70,7 +71,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       edges[1] = ed[1];
       edges[2] = ed[2];
     }
-      break;
+    break;
     case 3:
       m->getDownward(e,1,edges);
       n = 6;
