@@ -447,10 +447,8 @@ class MeshMDS : public Mesh2
       apf::destroyField(coordinateField);
       coordinateField = 0;
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);
-      PCU_Thrd_Barrier();
-      if (!PCU_Thrd_Self() && ownsModel)
+      if (ownsModel)
         gmi_destroy(model);
-      PCU_Thrd_Barrier();
       mds_apf_destroy(mesh);
       mesh = 0;
     }
@@ -618,11 +616,8 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
   double t0 = PCU_Time();
-  PCU_Thrd_Barrier();
   static gmi_model* model;
-  if (!PCU_Thrd_Self())
-    model = gmi_load(modelfile);
-  PCU_Thrd_Barrier();
+  model = gmi_load(modelfile);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
@@ -634,11 +629,6 @@ void reorderMdsMesh(Mesh2* mesh)
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
   m->mesh = mds_reorder(m->mesh, 0);
 }
-
-static int globalFactor;
-static Mesh2* globalMesh;
-static Migration* globalPlan;
-static void (*globalThrdCall)(Mesh2*);
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
 {
@@ -692,23 +682,6 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
         PCU_Comm_Peers(),
         t1 - t0);
   return m;
-}
-
-extern "C" void* splitThrdMain(void*)
-{
-  Mesh2* m;
-  m = repeatMdsMesh(globalMesh, globalMesh->getModel(), globalPlan, globalFactor);
-  globalThrdCall(m);
-  return NULL;
-}
-
-void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*))
-{
-  globalFactor = n;
-  globalMesh = m;
-  globalPlan = plan;
-  globalThrdCall = runAfter;
-  PCU_Thrd_Run(n, splitThrdMain, NULL);
 }
 
 bool alignMdsMatches(Mesh2* in)

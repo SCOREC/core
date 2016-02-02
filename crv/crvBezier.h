@@ -87,10 +87,7 @@ void subdivideBezierTet(int P, apf::Vector3& p,
  To compute the control points from Lagrange points, A^{-1} is used.
  crvBezierPoints.cc contains A^{-1}, precomputed, for
  the nodeXi locations in getBezierNodeXi.
-
- If, in the future, new nodeXi are defined for interpolating Bezier curves,
- this function can be used to generate the A matrix to invert, as apf
- has no functionality for generic matrix inversion.*/
+*/
 void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
     mth::Matrix<double>& A, const apf::Vector3 *range);
 

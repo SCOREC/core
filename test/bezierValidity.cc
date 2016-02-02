@@ -215,12 +215,13 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
-void checkEntityValidity(int numInvalid, int entity, int order)
+void checkEntityValidity(int qualityTag, int entity, int order)
 {
   if(entity == 1){
-    assert(numInvalid == 0);
+    assert(qualityTag == 1);
   } else {
-    assert((numInvalid && order != 3) || (numInvalid == 0 && order == 3));
+    assert((qualityTag > 1 && order != 3)
+        || (qualityTag == 1 && order == 3));
   }
 }
 
@@ -230,17 +231,14 @@ void checkValidity(apf::Mesh* m, int order)
   apf::MeshEntity* e;
   int entityNum = 0;
   while ((e = m->iterate(it))) {
-    apf::MeshEntity* entities[3];
-    int numInvalid = crv::checkTriValidity(m,e,entities,2);
-    checkEntityValidity(numInvalid,entityNum,order);
-    numInvalid = crv::checkTriValidity(m,e,entities,3);
-    checkEntityValidity(numInvalid,entityNum,order);
-    numInvalid = crv::checkTriValidity(m,e,entities,4);
-    checkEntityValidity(numInvalid,entityNum,order);
-
+    int qualityTag =
+        crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,2);
+    checkEntityValidity(qualityTag,entityNum,order);
+    qualityTag = crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,3);
+    checkEntityValidity(qualityTag,entityNum,order);
+    qualityTag = crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,4);
+    checkEntityValidity(qualityTag,entityNum,order);
     entityNum++;
-
-
   }
   m->end(it);
 }
@@ -386,20 +384,19 @@ void test3D()
     }
     m->acceptChanges();
 
-    apf::MeshEntity* entities[14];
-    int numInvalid = crv::checkTetValidity(m,tet,entities,2);
+    int qualityTag = crv::checkBezierValidity[apf::Mesh::TET](m,tet,2);
 
     if(order == 4){
-      assert(numInvalid > 0);
+      assert(qualityTag > 1);
     } else {
-      assert(numInvalid == 0);
+      assert(qualityTag == 1);
     }
-    numInvalid = crv::checkTetValidity(m,tet,entities,3);
+    qualityTag = crv::checkBezierValidity[apf::Mesh::TET](m,tet,3);
 
     if(order == 4){
-      assert(numInvalid > 0);
+      assert(qualityTag > 1);
     } else {
-      assert(numInvalid == 0);
+      assert(qualityTag == 1);
     }
     crv::getQuality(m,tet);
     m->destroyNative();

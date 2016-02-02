@@ -20,10 +20,10 @@ namespace crv {
 Adapt::Adapt(ma::Input* in)
 : ma::Adapt(in)
 {
-  validityTag = mesh->createIntTag("crv_flags",1);
+  validityTag = mesh->createIntTag("crv_tags",1);
 }
 
-static void clearFlags(Adapt* a)
+static void clearTags(Adapt* a)
 {
   ma::Mesh* m = a->mesh;
   ma::Entity* e;
@@ -38,19 +38,19 @@ static void clearFlags(Adapt* a)
   m->destroyTag(a->validityTag);
 }
 
-static int getFlags(Adapt* a, ma::Entity* e)
+static int getTags(Adapt* a, ma::Entity* e)
 {
   ma::Mesh* m = a->mesh;
   if ( ! m->hasTag(e,a->validityTag))
-    return 0; //we assume 0 is the default value for all flags
-  int flags;
-  m->getIntTag(e,a->validityTag,&flags);
-  return flags;
+    return 0; //we assume 0 is the default value for all tags
+  int tags;
+  m->getIntTag(e,a->validityTag,&tags);
+  return tags;
 }
 
-static void setFlags(Adapt* a, ma::Entity* e, int flags)
+static void setTags(Adapt* a, ma::Entity* e, int tags)
 {
-  a->mesh->setIntTag(e,a->validityTag,&flags);
+  a->mesh->setIntTag(e,a->validityTag,&tags);
 }
 
 void splitEdges(ma::Adapt* a)
@@ -103,10 +103,10 @@ int getQualityTag(ma::Mesh* m, ma::Entity* e,
   return -1;
 }
 
-long markInvalidEntities(Adapt* a)
+int markInvalidEntities(Adapt* a)
 {
   ma::Entity* e;
-  long count = 0;
+  int count = 0;
   ma::Mesh* m = a->mesh;
   int dimension = m->getDimension();
   ma::Iterator* it = m->begin(dimension);
@@ -114,53 +114,33 @@ long markInvalidEntities(Adapt* a)
   {
     /* this skip conditional is powerful: it affords us a
        3X speedup of the entire adaptation in some cases */
-    int qualityFlag = crv::getFlag(a,e);
-    if (qualityFlag == 0) {
-
-      // going to use check validity here instead
-      qualityFlag = 1; // okay!
-      // change this later
-      int numInvalid = 0;
-      ma::Entity* invalidEntity = 0;
-      if(dimension == 2){
-        ma::Entity* entities[6];
-        numInvalid = checkTriValidity(m,e,entities,4);
-        if(numInvalid) invalidEntity = entities[0];
-      } else {
-        ma::Entity* entities[14];
-        numInvalid = checkTetValidity(m,e,entities,4);
-        if(numInvalid) invalidEntity = entities[0];
-      }
-      if(numInvalid){
-        qualityFlag = getQualityTag(m,e,invalidEntity);
-      }
-    }
-    if (qualityFlag >= 2)
+    int qualityTag = crv::getTag(a,e);
+    if (qualityTag) continue;
+    qualityTag = checkBezierValidity[m->getType(e)](m,e,4);
+    if (qualityTag >= 2)
     {
-      crv::setFlag(a,e,qualityFlag);
+      crv::setTag(a,e,qualityTag);
       if (m->isOwned(e))
         ++count;
     }
-    else
-      crv::setFlag(a,e,0);
   }
   m->end(it);
-  return PCU_Add_Long(count);
+  return PCU_Add_Int(count);
 }
 
-int getFlag(Adapt* a, ma::Entity* e)
+int getTag(Adapt* a, ma::Entity* e)
 {
-  return getFlags(a,e);
+  return getTags(a,e);
 }
 
-void setFlag(Adapt* a, ma::Entity* e, int flag)
+void setTag(Adapt* a, ma::Entity* e, int tag)
 {
-  setFlags(a,e,flag);
+  setTags(a,e,tag);
 }
 
-void clearFlag(Adapt* a, ma::Entity* e)
+void clearTag(Adapt* a, ma::Entity* e)
 {
-  setFlags(a,e,0);
+  setTags(a,e,0);
 }
 // use an identity configuration but with default fixing values
 ma::Input* configureShapeCorrection(
@@ -221,7 +201,7 @@ void adapt(ma::Input* in)
   double t1 = PCU_Time();
   ma::print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(a->mesh);
-  crv::clearFlags(a);
+  crv::clearTags(a);
   delete a;
   delete in;
 }

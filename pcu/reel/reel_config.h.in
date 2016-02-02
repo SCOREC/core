@@ -1,3 +1,0 @@
-#define ON 1
-#define OFF 0
-#define ENABLE_THREADS @ENABLE_THREADS@

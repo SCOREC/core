@@ -191,11 +191,10 @@ int quadnomial(int n, int i, int j, int k);
  * is easier for debugging and verifying the efficacy of those procedures
  * */
 
-int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[6], int algorithm);
+typedef int (*bezierValidity)(apf::Mesh* m,
+    apf::MeshEntity* e, int algorithm);
 
-int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
-    apf::MeshEntity* entities[14], int algorithm);
+extern const bezierValidity checkBezierValidity[apf::Mesh::TYPES];
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

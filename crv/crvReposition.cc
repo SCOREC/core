@@ -68,6 +68,7 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
     pivotVert = edgeVerts[0];
 
     int index = apf::findIn(verts,4,edgeVerts[1]);
+    assert(index >= 0);
     xi = crv::elem_vert_xi[apf::Mesh::TET][index];
     apf::getJacobian(me,xi,J);
     if (apf::getJacobianDeterminant(J,3) < j){
@@ -108,9 +109,8 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
 
   m->setPoint(edge,0,newPoint);
 
-  ma::Entity* invalidEntities[14];
   for (std::size_t i = 0; i < adjacent.getSize(); ++i){
-    if (checkTetValidity(m,adjacent[i],invalidEntities,4) > 0){
+    if (checkBezierValidity[apf::Mesh::TET](m,adjacent[i],4) > 0){
       m->setPoint(edge,0,oldPoint);
       return false;
     }
