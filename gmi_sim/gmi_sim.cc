@@ -52,7 +52,7 @@ extern "C" {
    until then we protect these code segments
    with a spinlock */
 
-static gmi_iter* begin_nolock(gmi_model* m, int dim)
+static gmi_iter* begin(gmi_model* m, int dim)
 {
   sim_model* mm;
   sim_iter* i;
@@ -70,14 +70,6 @@ static gmi_iter* begin_nolock(gmi_model* m, int dim)
   return (gmi_iter*)i;
 }
 
-static gmi_iter* begin(gmi_model* m, int dim)
-{
-  PCU_Thrd_Lock();
-  gmi_iter* i = begin_nolock(m, dim);
-  PCU_Thrd_Unlock();
-  return i;
-}
-
 static gmi_ent* next(gmi_model*, gmi_iter* i)
 {
   sim_iter* si;
@@ -93,7 +85,7 @@ static gmi_ent* next(gmi_model*, gmi_iter* i)
   return 0;
 }
 
-static void end_nolock(gmi_model*, gmi_iter* i)
+static void end(gmi_model* m, gmi_iter* i)
 {
   sim_iter* si;
   si = (sim_iter*)i;
@@ -106,13 +98,6 @@ static void end_nolock(gmi_model*, gmi_iter* i)
   else if (si->dim == 3)
     GRIter_delete(si->i.r);
   free(si);
-}
-
-static void end(gmi_model* m, gmi_iter* i)
-{
-  PCU_Thrd_Lock();
-  end_nolock(m, i);
-  PCU_Thrd_Unlock();
 }
 
 static int get_dim(gmi_model*, gmi_ent* e)
@@ -193,7 +178,7 @@ static gmi_set* region_faces(pGRegion region)
   return s;
 }
 
-static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
+static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
 {
   int edim = gmi_dim(m, e);
   if (edim == 0 && dim == 1)
@@ -214,14 +199,6 @@ static gmi_set* adjacent_nolock(gmi_model* m, gmi_ent* e, int dim)
     return gmi_make_set(0);
   gmi_fail("requested adjacency not available\n");
   return 0;
-}
-
-static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
-{
-  PCU_Thrd_Lock();
-  gmi_set* s = adjacent_nolock(m, e, dim);
-  PCU_Thrd_Unlock();
-  return s;
 }
 
 static void eval(struct gmi_model* m, struct gmi_ent* e,
