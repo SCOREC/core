@@ -85,7 +85,7 @@ static gmi_ent* next(gmi_model*, gmi_iter* i)
   return 0;
 }
 
-static void end(gmi_model* m, gmi_iter* i)
+static void end(gmi_model*, gmi_iter* i)
 {
   sim_iter* si;
   si = (sim_iter*)i;
