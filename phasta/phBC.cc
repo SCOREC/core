@@ -58,7 +58,7 @@ static struct { const char* name; int size; } const knownSizes[7] =
 
 static int getSize(std::string const& name)
 {
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < 7; ++i)
     if (name == knownSizes[i].name)
       return knownSizes[i].size;
   return 1;
@@ -229,7 +229,6 @@ static KnownBC const naturalBCs[11] = {
   {"mass flux",        0, 0, applyScalar},
   {"natural pressure", 1, 1, applyScalar},
   {"traction vector",  2, 2, applyVector},
-  {"traction vector melas",  3, 3, applyVector},
   {"heat flux",        5, 3, applyScalar},
   {"turbulence wall", -1, 4, applyBit},
   {"scalar_1 flux",    6, 5, applyScalar},
@@ -237,6 +236,7 @@ static KnownBC const naturalBCs[11] = {
   {"scalar_3 flux",    8, 7, applyScalar},
   {"scalar_4 flux",    9, 8, applyScalar},
   {"surf ID",         -1,-1, applySurfID},
+  {"traction vector melas",  10, 9, applyVector},
 };
 
 static KnownBC const solutionBCs[7] = {
