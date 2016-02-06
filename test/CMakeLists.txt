@@ -126,6 +126,7 @@ setup_exe(test_AD test_AD.cc)
 if(ENABLE_OMEGA_H)
   setup_exe(from_omega_h from_omega_h.cc)
   setup_exe(to_omega_h to_omega_h.cc)
+  setup_exe(xgc_split xgc_split.cc)
 endif()
 
 if(IS_TESTING)
