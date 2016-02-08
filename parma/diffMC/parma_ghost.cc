@@ -9,34 +9,40 @@
 #include "parma_selector.h"
 
 namespace {
-  class GhostBalancer : public parma::Balancer {
+  class GhostElmBalancer : public parma::Balancer {
     private: 
       int sideTol;
     public:
-      GhostBalancer(apf::Mesh* m, int l, int b, double f, int v)
-        : Balancer(m, f, v, "ghosts"), layers(l), bridge(b) 
+      GhostElmBalancer(apf::Mesh* m, int l, int b, double f, int v)
+        : Balancer(m, f, v, "ghostElms"), layers(l), bridge(b) 
       {
-        parma::Sides* s = parma::makeElmBdrySides(mesh);
+        parma::Sides* s = parma::makeVtxSides(mesh);
         sideTol = static_cast<int>(parma::avgSharedSides(s));
         delete s;
         if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        parma::Sides* s = parma::makeElmBdrySides(mesh);
+        parma::Sides* s = parma::makeVtxSides(mesh);
 
-        const double maxVtxImb =
-          Parma_GetWeightedEntImbalance(mesh, wtag, 0);
+        const double maxElmImb =
+          Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
         double avgSides = parma::avgSharedSides(s);
-        monitorUpdate(maxVtxImb, iS, iA);
+        monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "avgSides %f\n", avgSides);
 
         parma::Weights* w =
-          parma::makeGhostWeights(mesh, wtag, s, layers, bridge);
+          parma::makeGhostWeights(mesh, wtag, s, layers, bridge);  //check this - elements or vtx?
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
+
+        if( verbose > 3 ) {
+          fprintf(stderr, "%d tot %d %s\n", PCU_Comm_Self(), s->total(), s->print("sides").c_str());
+          fprintf(stderr, "%d self %f %s\n", PCU_Comm_Self(), w->self(), w->print("weights").c_str());
+          fprintf(stderr, "%d %s\n", PCU_Comm_Self(), t->print("tgts").c_str());
+        }
 
         parma::BalOrStall* stopper = 
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
@@ -49,7 +55,30 @@ namespace {
   };
 }
 
+class GhostElmGtVtxBalancer : public parma::Balancer {
+  public:
+    GhostElmGtVtxBalancer(apf::Mesh* m, int l, int b, double f, int v)
+      : Balancer(m, f, v, "ghostsElmGtVtx"), layers(l), bridge(b) { }
+    bool runStep(apf::MeshTag*, double) { return true; }
+    void balance(apf::MeshTag* wtag, double tolerance) {
+      apf::Balancer* b = new GhostElmBalancer(mesh, layers, bridge, factor, verbose);
+      b->balance(wtag, tolerance);
+      delete b;
+      /*
+      Parma_PrintPtnStats(mesh, "post elements", (verbose>2));
+      double maxElmW = parma::getMaxWeight(mesh, wtag, m->getDimension());
+      b = new GhostVtxLtElmBalancer(mesh, factor, maxVtxW, verbose);
+      b->balance(wtag, tolerance);
+      delete b;
+      */
+    }
+  private:
+    int layers;
+    int bridge;
+};
+
+
 apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m,
     int layers, int bridge, double stepFactor, int verbosity) {
-  return new GhostBalancer(m, layers, bridge, stepFactor, verbosity);
+  return new GhostElmGtVtxBalancer(m, layers, bridge, stepFactor, verbosity);
 }
