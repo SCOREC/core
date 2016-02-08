@@ -1,4 +1,5 @@
 #include <gmi_mesh.h>
+#include <ma.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -26,20 +27,25 @@ namespace {
   apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
     apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
     apf::MeshEntity* e;
-    apf::MeshIterator* itr = m->begin(0);
-    double w = 1;
-    while( (e = m->iterate(itr)) )
-      m->setDoubleTag(e, wtag, &w);
-    m->end(itr);
+    for(int d=0; d <= m->getDimension(); d++) {
+      apf::MeshIterator* itr = m->begin(d);
+      double w = 1;
+      while( (e = m->iterate(itr)) )
+        m->setDoubleTag(e, wtag, &w);
+      m->end(itr);
+    }
     return wtag;
   }
 
   void runParma(apf::Mesh* m) {
     apf::MeshTag* weights = applyUnitVtxWeight(m);
-    const int layers = 3;
-    const int bridgeDim = 1;
-    apf::Balancer* ghost = Parma_MakeGhostDiffuser(m, layers, bridgeDim);
-    ghost->balance(weights, 1.01);
+    const int layers = 1;
+    const int bridgeDim = 0;
+    const double stepFactor = 0.5;
+    const int verbosity = 2;
+    apf::Balancer* ghost =
+      Parma_MakeGhostDiffuser(m, layers, bridgeDim, stepFactor, verbosity);
+    ghost->balance(weights, 1.05);
     m->destroyTag(weights);
     delete ghost;
   }
@@ -55,7 +61,7 @@ int main(int argc, char** argv)
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   runParma(m);
-  m->writeNative(argv[3]);
+  apf::writeVtkFiles(argv[3],m);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();
