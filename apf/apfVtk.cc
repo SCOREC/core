@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <stdint.h>
 
+#include <vector>
+
 namespace apf {
 
 class HasAll : public FieldOp
@@ -609,6 +611,9 @@ class WriteIPField : public FieldOp
     FieldDataOf<T>* data;
     MeshEntity* entity;
     std::ostream* fp;
+    bool isWritingBinary;
+    //TODO is it ok to use vectors?
+    std::vector<T> dataToEncodeVector;
     virtual bool inEntity(MeshEntity* e)
     {
       entity = e;
@@ -620,25 +625,45 @@ class WriteIPField : public FieldOp
         return;
       data->getNodeComponents(entity,node,&(ipData[0]));
       for (int i=0; i < components; ++i)
-        (*fp) << ipData[i] << ' ';
-      (*fp) << '\n';
+      {
+        if (isWritingBinary)
+        {
+          dataToEncodeVector.push_back(ipData[i]);
+        }
+        else
+        {
+          (*fp) << ipData[i] << ' ';
+        }
+      }
+      if (!isWritingBinary)
+      {
+        (*fp) << '\n';
+      }
     }
     void runOnce(FieldBase* f)
     {
       std::string s = getIPName(f,point);
       components = f->countComponents();
-      writeDataHeader(*fp,s.c_str(),f->getScalarType(),f->countComponents());
+      writeDataHeader(*fp,s.c_str(),f->getScalarType(),f->countComponents(),isWritingBinary);
       ipData.allocate(components);
       data = static_cast<FieldDataOf<T>*>(f->getData());
       apply(f);
+      if (isWritingBinary)
+      {
+        int dataLenBytes = dataToEncodeVector.size()*sizeof(T);
+        writeEncodedArray( (*fp), dataLenBytes, (char*)&dataToEncodeVector[0]);
+      }
       (*fp) << "</DataArray>\n"; 
     }
-    void run(std::ostream& file, FieldBase* f)
+    void run(std::ostream& file, FieldBase* f, bool isWritingBinaryArg = false)
     {
+      isWritingBinary = isWritingBinaryArg;
       fp = &file;
       int n = countIPs(f);
       for (point=0; point < n; ++point)
+      {
         runOnce(f);
+      }
     }
 };
 
@@ -683,7 +708,7 @@ static void writeCellData(std::ostream& file,
     Field* f = m->getField(i);
     if (isIP(f) && isPrintable(f))
     {
-      wd.run(file,f);
+      wd.run(file,f,isWritingBinary);
     }
   }
   WriteIPField<int> wi;
@@ -692,7 +717,7 @@ static void writeCellData(std::ostream& file,
     Numbering* n = m->getNumbering(i);
     if (isIP(n) && isPrintable(n))
     {
-      wi.run(file,n);
+      wi.run(file,n,isWritingBinary);
     }
   }
   WriteIPField<long> wl;
@@ -701,7 +726,7 @@ static void writeCellData(std::ostream& file,
     GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isIP(n) && isPrintable(n))
     {
-      wl.run(file,n);
+      wl.run(file,n,isWritingBinary);
     }
   }
   writeCellParts(file, m, isWritingBinary);
