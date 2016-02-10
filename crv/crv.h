@@ -14,17 +14,23 @@
 #include <stdio.h>
 
 /** \file crv.h
-  * \brief main file for curved element support */
+  * \brief main file for curved element support,
+  * only one accessible from install right now */
 
 /** \namespace crv
-  * \brief All CRV functions are contained in this namespace */
+  * \brief the main mesh curving functions are contained in this namespace */
 namespace crv {
 
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 20;
 /** \brief checks if is a boundary entity */
 bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
-/** \brief checks if any entity has two entities of dimension on the boundary */
+/** \brief checks if any entity has two entities of
+ * dimension on the boundary
+ * \details this is useful for some shape correction assessments,
+ * and in general, curved elements with multiple entities on the boundary
+ * are at risk for poor quality, since this strongly constrains
+ * their shape */
 bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e,
     int dimension);
 /** \brief sets the blending order, if shape blending is used */
@@ -35,12 +41,11 @@ int getBlendingOrder(const int type);
 /** \brief computes min det Jacobian / max det Jacobian */
 double getQuality(apf::Mesh* m,apf::MeshEntity* e);
 
-/** \brief Base Mesh curving object
-  \details P is the order, S is the space dimension,
-  different from the mesh dimension, used to distinguish between planar 2D
-  meshes and surface meshes. */
-
-/** \brief converts interpolating points to control points */
+/** \brief converts interpolating points to control points
+ * \details n is total number of nodes on the shape
+ * ne is nodes on the entity, that belong to it
+ * c is a coefficient matrix in vector form
+ * corresponding to the matrix */
 void convertInterpolationPoints(int n, int ne,
     apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<double>& c,
@@ -52,6 +57,10 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 /** \brief a per entity version of above */
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
 
+/** \brief Base Mesh curving object
+  \details P is the order, S is the space dimension,
+  different from the mesh dimension, used to distinguish between planar 2D
+  meshes and surface meshes. */
 class MeshCurver
 {
   public:

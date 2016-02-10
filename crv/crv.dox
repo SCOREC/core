@@ -1,0 +1,14 @@
+/** \page crv CRV
+
+The crv library is a library to support curved meshes,
+meant to perform all traditional meshing operations 
+for curved elements. Currently, Bezier simplices are supported.
+
+There is also support for visualization of high-order fields, 
+on linear or curved meshes, through writeCurvedVtuFiles, 
+which uses subdivision to output into current paraview format.
+
+There are several example files that test and make use of this functionality
+all starting with bezier<testname>
+
+*/
