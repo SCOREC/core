@@ -190,11 +190,8 @@ int quadnomial(int n, int i, int j, int k);
  * without actually using subdivision and elevation, and giving this option
  * is easier for debugging and verifying the efficacy of those procedures
  * */
-
-typedef int (*bezierValidity)(apf::Mesh* m,
-    apf::MeshEntity* e, int algorithm);
-
-extern const bezierValidity checkBezierValidity[apf::Mesh::TYPES];
+int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm = 4);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

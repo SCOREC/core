@@ -671,6 +671,8 @@ double getQuality(apf::Mesh* m, apf::MeshEntity* e)
 
   return getQuality(type,P,elemNodes);
 }
+typedef int (*bezierValidity)(apf::Mesh* m,
+    apf::MeshEntity* e, int algorithm);
 
 const bezierValidity checkBezierValidity[apf::Mesh::TYPES] =
 {
@@ -683,5 +685,11 @@ const bezierValidity checkBezierValidity[apf::Mesh::TYPES] =
   NULL,    //prism
   NULL     //pyramid
 };
+
+int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm)
+{
+  return checkBezierValidity[m->getType(e)](m,e,algorithm);
+}
 
 }

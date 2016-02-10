@@ -232,11 +232,11 @@ void checkValidity(apf::Mesh* m, int order)
   int entityNum = 0;
   while ((e = m->iterate(it))) {
     int qualityTag =
-        crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,2);
+        crv::checkValidity(m,e,2);
     checkEntityValidity(qualityTag,entityNum,order);
-    qualityTag = crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,3);
+    qualityTag = crv::checkValidity(m,e,3);
     checkEntityValidity(qualityTag,entityNum,order);
-    qualityTag = crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,4);
+    qualityTag = crv::checkValidity(m,e,4);
     checkEntityValidity(qualityTag,entityNum,order);
     entityNum++;
   }
@@ -384,14 +384,14 @@ void test3D()
     }
     m->acceptChanges();
 
-    int qualityTag = crv::checkBezierValidity[apf::Mesh::TET](m,tet,2);
+    int qualityTag = crv::checkValidity(m,tet,2);
 
     if(order == 4){
       assert(qualityTag > 1);
     } else {
       assert(qualityTag == 1);
     }
-    qualityTag = crv::checkBezierValidity[apf::Mesh::TET](m,tet,3);
+    qualityTag = crv::checkValidity(m,tet,3);
 
     if(order == 4){
       assert(qualityTag > 1);
