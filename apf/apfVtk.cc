@@ -662,6 +662,7 @@ class WriteIPField : public FieldOp
       int n = countIPs(f);
       for (point=0; point < n; ++point)
       {
+        dataToEncodeVector.clear();
         runOnce(f);
       }
     }
