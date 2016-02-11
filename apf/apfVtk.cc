@@ -653,7 +653,7 @@ class WriteIPField : public FieldOp
         int dataLenBytes = dataToEncodeVector.size()*sizeof(T);
         writeEncodedArray( (*fp), dataLenBytes, (char*)&dataToEncodeVector[0]);
       }
-      (*fp) << "</DataArray>\n"; 
+      (*fp) << "</DataArray>\n";
     }
     void run(std::ostream& file, FieldBase* f, bool isWritingBinaryArg = false)
     {
