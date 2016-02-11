@@ -179,21 +179,21 @@ namespace parma {
       GhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int layers, int bridge)
         : wtag(w), weight(0)
       {
-        GhostFinder finder(m, wtag, layers, bridge);
-        findGhosts(&finder, s);
-        exchangeGhostsFrom();
         weight = new double[4];
         for(int dim=0; dim<4; dim++)
           weight[dim] += ownedWeight(m, wtag,dim);
+        GhostFinder finder(m, wtag, layers, bridge);
+        findGhosts(&finder, s);
+        exchangeGhostsFrom();
         exchange();
       }
       ~GhostWeights() {
         const GhostWeights::Item* w;
         begin();
         while( (w = iterate()) )
-          delete w->second;
+          delete [] w->second;
         end();
-        delete weight;
+        delete [] weight;
       }
       double self(int dim) {
         return weight[dim];
@@ -214,12 +214,12 @@ namespace parma {
         const GhostWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
-          PCU_Comm_Pack(ghost->first, ghost->second, 4);
+          PCU_Comm_Pack(ghost->first, ghost->second, 4*sizeof(double));
         end();
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
           double* ghostsFromPeer = new double[4];
-          PCU_Comm_Unpack(ghostsFromPeer, 4);
+          PCU_Comm_Unpack(ghostsFromPeer, 4*sizeof(double));
           for(int i=0; i<4; i++)
             weight[i] += ghostsFromPeer[i];
         }
@@ -229,12 +229,12 @@ namespace parma {
         const GhostWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
-          PCU_Comm_Pack(ghost->first, weight, 4);
+          PCU_Comm_Pack(ghost->first, weight, 4*sizeof(double));
         end();
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
           double* peerWeight = new double[4];
-          PCU_Comm_Unpack(peerWeight, 4);
+          PCU_Comm_Unpack(peerWeight, 4*sizeof(double));
           int peer = PCU_Comm_Sender();
           set(peer, peerWeight);
         }
@@ -243,7 +243,9 @@ namespace parma {
 
   class GhostToEntWeight : public Weights {
     public:
-      GhostToEntWeight(GhostWeights* gw, int dim) {
+      GhostToEntWeight(GhostWeights* gw, int dim)
+        : Weights(NULL,NULL,NULL) {
+        wtag = gw->getTag();
         const GhostWeights::Item* ghost;
         gw->begin();
         while( (ghost = gw->iterate()) )
@@ -254,23 +256,26 @@ namespace parma {
       double self() {
         return weight;
       }
+      apf::MeshTag* getTag() {
+        return wtag;
+      }
     private:
       GhostToEntWeight();
       double weight;
+      apf::MeshTag* wtag;
   };
 
-  Weights* convertGhostToEntWeight(GhostWeights* gw) {
-    Weights* ew[4];
-    for(int dim=0; dim<4; dim++)
-      ew[dim] = new GhostToEntWeight(gw,dim);
-    return ew;
+  Weights* convertGhostToEntWeight(GhostWeights* gw, int dim) {
+    return new GhostToEntWeight(gw,dim);
   }
 
-  Weights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
+  GhostWeights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
       int layers, int bridge) {
-    GhostWeights* gw = new GhostWeights(m, w, s, layers, bridge);
-    Weights* w = convertGhostToEntWeight(gw);
-    delete gw;
-    return w;
+    return new GhostWeights(m, w, s, layers, bridge);
   }
+
+  void destroyGhostWeights(GhostWeights* gw) {
+    delete gw;
+  }
+
 } //end namespace

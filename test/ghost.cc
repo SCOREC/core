@@ -24,7 +24,7 @@ namespace {
     meshFile = argv[2];
   }
 
-  apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
+  apf::MeshTag* applyUnitWeight(apf::Mesh* m) {
     apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
     apf::MeshEntity* e;
     for(int d=0; d <= m->getDimension(); d++) {
@@ -38,7 +38,7 @@ namespace {
   }
 
   void runParma(apf::Mesh* m) {
-    apf::MeshTag* weights = applyUnitVtxWeight(m);
+    apf::MeshTag* weights = applyUnitWeight(m);
     const int layers = 1;
     const int bridgeDim = 0;
     const double stepFactor = 0.5;
@@ -57,6 +57,7 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   assert(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  PCU_Debug_Open();
   gmi_register_mesh();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);

@@ -33,20 +33,23 @@ namespace {
         if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "avgSides %f\n", avgSides);
 
-        parma::Weights* w =
-          parma::makeGhostWeights(mesh, wtag, s, layers, bridge);  //check this - elements or vtx?
-        parma::Targets* t = parma::makeTargets(s, w, factor);
+        parma::GhostWeights* gw =
+          parma::makeGhostWeights(mesh, wtag, s, layers, bridge);
+        parma::Weights* elmW = convertGhostToEntWeight(gw,3);
+        destroyGhostWeights(gw);
+
+        parma::Targets* t = parma::makeTargets(s, elmW, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
 
         if( verbose > 3 ) {
           fprintf(stderr, "%d tot %d %s\n", PCU_Comm_Self(), s->total(), s->print("sides").c_str());
-          fprintf(stderr, "%d self %f %s\n", PCU_Comm_Self(), w->self(), w->print("weights").c_str());
+          fprintf(stderr, "%d self %f %s\n", PCU_Comm_Self(), elmW->self(), elmW->print("weights").c_str());
           fprintf(stderr, "%d %s\n", PCU_Comm_Self(), t->print("tgts").c_str());
         }
 
         parma::BalOrStall* stopper = 
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
-        parma::Stepper b(mesh, factor, s, w, t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, elmW, t, sel, stopper);
         bool ret = b.step(tolerance, verbose);
         return ret;
       }
