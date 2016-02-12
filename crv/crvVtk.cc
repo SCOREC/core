@@ -409,10 +409,12 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
 
   bool isValid = true;
+
   while ((e = m->iterate(it))) {
     if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TET) continue;
     apf::MeshElement* me = apf::createMeshElement(m,e);
     double maxJ = -1e-10;
+    double minJ = 1e10;
     apf::NewArray<double> detJ(4*(n+1)*(n+1)*(n+1));
     int count = 0;
     for(int h = 0; h < 4; ++h){
@@ -440,16 +442,104 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               isValid = false;
             }
             maxJ = std::max(detJ[count],maxJ);
+            minJ = std::min(detJ[count],minJ);
+
             count++;
           }
         }
       }
     }
-    if(std::fabs(maxJ) < 1e-10) maxJ = 1e-10;
+    if(maxJ < 1e-10) maxJ = 1e-10;
     for (int i = 0; i < 4*(n+1)*(n+1)*(n+1); ++i){
       if(detJ[i] > 0) detJ[i] /= maxJ;
       file << detJ[i] << '\n';
     }
+
+    apf::destroyMeshElement(me);
+  }
+  m->end(it);
+
+  file << "</DataArray>\n";
+}
+
+static void writeMinTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
+{
+  file << "<DataArray type=\"Float64\" Name=\"minDetJacobian\" "
+       << "NumberOfComponents=\"1\" format=\"ascii\">\n";
+
+  apf::MeshIterator* it = m->begin(3);
+  apf::MeshEntity* e;
+  apf::Vector3 xi,p,pt;
+  apf::Matrix3x3 J;
+  // first initializing with end points
+  apf::Vector3 params[15] = {apf::Vector3(0,0,0),apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),apf::Vector3(0,0,1),apf::Vector3(0,0,0),
+      apf::Vector3(0,0,0),apf::Vector3(0,0,0),apf::Vector3(0,0,0),
+      apf::Vector3(0,0,0),apf::Vector3(0,0,0),apf::Vector3(0,0,0),
+      apf::Vector3(0,0,0),apf::Vector3(0,0,0),apf::Vector3(0,0,0),
+      apf::Vector3(0.25,0.25,0.25)};
+
+  for(int i = 0; i < 6; ++i)
+    params[i+4] = params[apf::tet_edge_verts[i][0]]*0.5
+      + params[apf::tet_edge_verts[i][1]]*0.5;
+  for(int i = 0; i < 4; ++i)
+    params[i+10] = params[apf::tet_tri_verts[i][0]]*1./3.
+      + params[apf::tet_tri_verts[i][1]]*1./3.
+      + params[apf::tet_tri_verts[i][2]]*1./3.;
+
+  int hex[4][8] = {{0,4,10,6,7,11,14,13},{1,5,10,4,8,12,14,11},
+      {2,6,10,5,9,13,14,12},{9,13,14,12,3,7,11,8}};
+
+  apf::NewArray<double> values;
+  apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(apf::Mesh::HEX);
+
+  bool isValid = true;
+
+  while ((e = m->iterate(it))) {
+    if(!m->isOwned(e) || m->getType(e) != apf::Mesh::TET) continue;
+    apf::MeshElement* me = apf::createMeshElement(m,e);
+    double maxJ = -1e-10;
+    double minJ = 1e10;
+    apf::NewArray<double> detJ(4*(n+1)*(n+1)*(n+1));
+    int count = 0;
+    for(int h = 0; h < 4; ++h){
+      for (int k = 0; k <= n; ++k){
+        xi[2] = 2.*k/n - 1.;
+        for (int j = 0; j <= n; ++j){
+          xi[1] = 2.*j/n - 1.;
+          for (int i = 0; i <= n; ++i){
+            xi[0] = 2.*i/n - 1.;
+            shape->getValues(0, 0, xi, values);
+            p.zero();
+            for(int l = 0; l < 8; ++l)
+              p += params[hex[h][l]]*values[l];
+
+            apf::getJacobian(me,p,J);
+            detJ[count] = apf::getDeterminant(J);
+            if(isValid && detJ[count] < 0.){
+              apf::Vector3 pt;
+              apf::getVector((apf::Element*)me,p,pt);
+              std::stringstream ss;
+              ss << "warning: Tet Jacobian Determinant is negative,  "
+                 << detJ[count] << '\n';
+              std::string s = ss.str();
+              fprintf(stderr, "%s", s.c_str());
+              isValid = false;
+            }
+            maxJ = std::max(detJ[count],maxJ);
+            minJ = std::min(detJ[count],minJ);
+
+            count++;
+          }
+        }
+      }
+    }
+    if(maxJ < 1e-10) maxJ = 1e-10;
+    if(minJ > 0) minJ /= maxJ;
+    for (int i = 0; i < 4*(n+1)*(n+1)*(n+1); ++i){
+      file << minJ << '\n';
+    }
+
     apf::destroyMeshElement(me);
   }
   m->end(it);
@@ -468,6 +558,7 @@ static void writeJacobianDet(std::ostream& file, apf::Mesh* m, int type, int n)
       break;
     case apf::Mesh::TET:
       writeTetJacobianDet(file,m,n);
+      writeMinTetJacobianDet(file,m,n);
       break;
     default:
       break;
@@ -651,6 +742,11 @@ static void writePvtuFile(const char* prefix, const char* suffix,
   } else {
     file << "<PDataArray type=\"Float64\" Name=\"detJacobian\" "
          << "NumberOfComponents=\"1\" format=\"ascii\"/>\n";
+    if(m->getDimension() == 3)
+    {
+      file << "<PDataArray type=\"Float64\" Name=\"minDetJacobian\" "
+           << "NumberOfComponents=\"1\" format=\"ascii\"/>\n";
+    }
   }
   writePPointData(file,m);
   file << "</PPointData>\n";

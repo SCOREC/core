@@ -8,6 +8,7 @@
 #ifndef CRVADAPT_H
 #define CRVADAPT_H
 
+#include "crv.h"
 #include <ma.h>
 #include <maAdapt.h>
 #include <maInput.h>
@@ -33,34 +34,36 @@ ma::Input* configureShapeCorrection(
 
 void adapt(ma::Input* in);
 
-/* Support functions for curved applications, these ones
- * clean up after cavity operations, by repositioning
- */
-void snapRefineToBoundary(ma::Adapt* a);
+// uses blending to position interior points
+// based on edge locations
 void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
-void repositionInterior(ma::Refine* r);
+// based on XJ Luo's thesis
+bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
+    ma::Entity* edge);
 
 // Split edges marked with ma::SPLIT
 void splitEdges(ma::Adapt* a);
-// Quality checking is expensive, so tag them with an
-// integer to identify if bad quality, and where
-long markBadQuality(Adapt* a);
+// Validity checking is expensive, so tag them with an
+// integer to identify if invalid, and where
+int markInvalidEntities(Adapt* a);
 
 /* Use a crv version of these
  * because we don't have bitwise operations
  */
-int getFlag(Adapt* a, ma::Entity* e);
-void setFlag(Adapt* a, ma::Entity* e, int flag);
-void clearFlag(Adapt* a, ma::Entity* e);
+int getTag(Adapt* a, ma::Entity* e);
+void setTag(Adapt* a, ma::Entity* e, int flag);
+void clearTag(Adapt* a, ma::Entity* e);
 
 /* Use an integer to determine the quality tag
  * 0 -> Not checked
  * 1 -> Okay Quality
  * 2-7 -> Vertices are bad
- * 8-13 -> Edges are bad
- * 14-17 -> Face are bad
- * 18 -> Entity itself is bad, this one is the worst
+ * 8-13 -> Edge is are bad
+ * 14-17 -> Face is are bad
+ * 20 -> Tet itself is bad, this one is the worst
+ *
+ * 6*dim + 2 + index
  */
 int getQualityTag(ma::Mesh* m, ma::Entity* e,
     ma::Entity* bdry);
@@ -69,13 +72,13 @@ int getQualityTag(ma::Mesh* m, ma::Entity* e,
  * form an angle of 180 (or greater) at a vertex and
  * split the edge opposite them.
  */
-void fixLargeBoundaryAngles(Adapt* a);
+int fixLargeBoundaryAngles(Adapt* a);
 
 /* If an edge is flagged as invalid,
  * try and collapse
  * or swap it away
  */
-void fixInvalidEdges(Adapt* a);
+int fixInvalidEdges(Adapt* a);
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 

@@ -262,7 +262,6 @@ void enterFilteredMatching(apf::Mesh2* m, Input& in, BCs& bcs)
 {
   if (!in.filterMatches)
     return;
-  assert(PCU_Thrd_Peers() == 1);
   savedVertexMatches = new SavedMatches();
   saveMatches(m, 0, *savedVertexMatches);
   if (in.formElementGraph) {

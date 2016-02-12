@@ -117,6 +117,52 @@ private:
   int factor;
 };
 
+struct Expand : public Remap
+{
+  Expand(int nin, int nout):
+    quotient(nout / nin),
+    remainder(nout % nin)
+  {}
+  int operator()(int in)
+  {
+    if (in < remainder)
+      return in * quotient + in;
+    return in * quotient + remainder;
+  }
+  bool shouldOutBeIn(int out)
+  {
+    if (out < remainder * (quotient + 1))
+      return out % (quotient + 1) == 0;
+    return (out - remainder * (quotient + 1)) % quotient == 0;
+  }
+private:
+  int quotient;
+  int remainder;
+};
+
+struct Contract : public Remap
+{
+  Contract(int nin, int nout):
+    quotient(nout / nin),
+    remainder(nout % nin)
+  {}
+  int operator()(int out)
+  {
+    if (out < remainder * (quotient + 1))
+      return out / (quotient + 1);
+    return (out - remainder * (quotient + 1)) / quotient + remainder;
+  }
+  bool isValid(int out)
+  {
+    if (out < remainder * (quotient + 1))
+      return out % (quotient + 1) == 0;
+    return (out - remainder * (quotient + 1)) % quotient == 0;
+  }
+private:
+  int quotient;
+  int remainder;
+};
+
 /** \brief remap all part ids in the mesh structure
   \details when using sub-group partitioning schemes
            or splitting meshes (see Parma_SplitPartition or apf::Splitter),

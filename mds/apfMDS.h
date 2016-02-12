@@ -80,17 +80,8 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
            there are no gaps in the MDS arrays after this */
 void reorderMdsMesh(Mesh2* mesh);
 
-/** \brief split an MDS mesh into multiple parts per process using threads
-  \param m the MDS mesh
-  \param plan the plan for splitting the local part, usually the output
-              of some apf::Splitter
-  \param n the number of threads per process. this must be consistent
-           on all processes.
-  \param runAfter the code to run on the split parts. This function is
-                  called by n threads, each with a unique MDS split part.
-  */
-void splitMdsMesh(Mesh2* m, Migration* plan, int n, void (*runAfter)(Mesh2*));
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
 
 /** \brief align the downward adjacencies of matched entities */
 bool alignMdsMatches(Mesh2* in);
@@ -126,6 +117,8 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
+
+Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
 
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one

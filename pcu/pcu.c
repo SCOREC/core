@@ -11,11 +11,10 @@
     \brief The PCU communication interface */
 /** \page pcu PCU
   PCU (the Parallel Control Utility) is a library for parallel computation
-  based on MPI with additional support for hybrid MPI/thread environments.
+  based on MPI.
   PCU provides three things to users:
     1. A hybrid phased message passing system
     2. Hybrid collective operations
-    3. A thread management system
 
   Phased message passing is similar to Bulk Synchronous Parallel.
   All messages are exchanged in a phase, which is a collective operation
@@ -26,16 +25,6 @@
   PCU provides termination detection, which is the ability to detect when all
   messages have been received without prior knowledge of which threads
   are sending to which.
-
-  To write hybrid MPI/thread programs, PCU provides a function that creates
-  threads within an MPI process, similar to the way mpirun creates multiple
-  processes. PCU assigns ranks to these threads and has them each run the same
-  function, with thread-specific input arguments to the function.
-
-  Once a program has created threads using PCU, it can call the message passing
-  API from within threads, which will behave as if each thread
-  were an MPI process. Threads have unique ranks and can send messages
-  to one another, regardless of which process they are in.
 
   The API documentation is here: pcu.c
 */
@@ -48,20 +37,13 @@
 #include "pcu_order.h"
 #include "noto_malloc.h"
 #include "reel.h"
-#include "pcu_tmpi.h"
 
 enum state { uninit, init };
 static enum state global_state = uninit;
 static pcu_msg global_pmsg;
-bool global_ordered = false;
-static pcu_msg* global_tmsg = NULL;
-static PCU_Thrd_Func global_function = NULL;
-static void** global_args = NULL;
 
 static pcu_msg* get_msg()
 {
-  if (pcu_get_mpi() == &pcu_tmpi)
-    return global_tmsg + reel_thread_rank();
   return &global_pmsg;
 }
 
@@ -105,8 +87,6 @@ int PCU_Comm_Free(void)
   \details when called from a non-threaded MPI process, this function is
   equivalent to MPI_Comm_rank(MPI_COMM_WORLD,rank).
 
-  When called from a thread inside PCU_Thrd_Run, the rank is unique to a thread
-  in the whole MPI job.
   Ranks are consecutive from 0 to \f$pt-1\f$ for a program with
   \f$p\f$ processes and \f$t\f$ threads per process.
   Ranks are contiguous within a process, so that the \f$t\f$ threads in process
@@ -122,10 +102,6 @@ int PCU_Comm_Self(void)
 /** \brief Returns the number of threads in the program.
   \details when called from a non-threaded MPI process, this function is
   equivalent to MPI_Comm_size(MPI_COMM_WORLD,size).
-
-  When called from a thread inside PCU_Thrd_Run, the size is \f$pt\f$, where
-  \f$p\f$ is the number of MPI processes and \f$t\f$ is the number of threads
-  per process, which is the nthreads argument passed to PCU_Thrd_Run.
  */
 int PCU_Comm_Peers(void)
 {
@@ -451,115 +427,6 @@ int PCU_Or(int c)
   return PCU_Max_Int(c);
 }
 
-/* this wrapper around the user thread function
-   sets up the PCU thread environment, including
-   thread rank and thread-local messenger */
-static void* run(void* in)
-{
-  reel_thread_init(in);
-  int rank = reel_thread_rank();
-  pcu_make_msg(global_tmsg + rank);
-  PCU_Comm_Order(global_ordered);
-  if (global_args)
-    global_args[rank] = global_function(global_args[rank]);
-  else
-    global_function(NULL);
-  if (!rank)
-    global_ordered = global_tmsg[rank].order != NULL;
-  PCU_Comm_Order(false);
-  pcu_free_msg(global_tmsg + rank);
-  return NULL;
-}
-
-/** \brief Runs \a nthreads instances of \a function, each in a thread.
-  \details This function will create (\a nthreads - 1) new pthreads and use
-  these as well as the caller thread to run \a function.
-  The argument passed to thread i is \a in_out [i], and the return value
-  of thread i is then stored in \a in_out [i].
-  If in_out is NULL, all threads will receive NULL as their argument.
-
-  Currently, PCU requires that this call is collective and homogeneous.
-  This means that all processes in an MPI job should call PCU_Thrd_Run
-  at the same time, and they should all pass the same number for \a nthreads.
-  MPI_Init_thread should have been called before this function.
-
-  Any calls to PCU_Comm functions from within one of these threads
-  will have access to the hybrid communication interface.
-  This means that ranks will be unique to a thread in the whole MPI job,
-  and messages are sent and received between threads.
-  Phases will be synchronized across all threads in the MPI job.
- */
-
-int PCU_Thrd_Run(int nthreads, PCU_Thrd_Func function, void** in_out)
-{
-  if (global_state == uninit)
-    reel_fail("Thrd_Run called before Comm_Init");
-  if (pcu_get_mpi() == &pcu_tmpi)
-    reel_fail("nested calls to Thrd_Run");
-  pcu_tmpi_check_support();
-  global_ordered = global_pmsg.order != NULL;
-  PCU_Comm_Order(false);
-  pcu_free_msg(&global_pmsg);
-  pcu_set_mpi(&pcu_tmpi);
-  NOTO_MALLOC(global_tmsg,(size_t)nthreads);
-  global_function = function;
-  global_args = in_out;
-  reel_run_threads(nthreads,run);
-  noto_free(global_tmsg);
-  pcu_set_mpi(&pcu_pmpi);
-  pcu_make_msg(&global_pmsg);
-  PCU_Comm_Order(global_ordered);
-  return PCU_SUCCESS;
-}
-
-/** \brief Returns the process-unique rank of the calling thread.
-  \details When called from a thread inside PCU_Thrd_Run, the resulting rank
-  will be unique only within the same process.
-  Ranks are contiguous integers from 0 to nthreads-1, with the thread that
-  called PCU_Thrd_Run being assigned rank 0.
- */
-int PCU_Thrd_Self(void)
-{
-  return reel_thread_rank();
-}
-
-/** \brief Returns the number of threads running in the current process.
-  \details When called from a thread inside PCU_Thrd_Run, returns the number
-  of threads running in this process,
-  which is equivalent to the nthreads argument to PCU_Thrd_Run.
- */
-int PCU_Thrd_Peers(void)
-{
-  return reel_thread_size();
-}
-
-/** \brief Blocks all threads of a process until all have hit the barrier.
- */
-void PCU_Thrd_Barrier(void)
-{
-  if (global_state == uninit)
-    reel_fail("Thrd_Barrier called before Comm_Init");
-  reel_thread_barrier();
-}
-
-/** \brief Acquire the PCU master spinlock.
-  \details usage is discouraged, this function
-  and PCU_Thrd_Unlock exist as a patch to allow
-  people to use thread-unsafe third-party code
-  at the expense of performance by serializing
-  calls to said code.
- */
-void PCU_Thrd_Lock(void)
-{
-  reel_thread_lock();
-}
-
-/** \brief Release the PCU master spinlock. */
-void PCU_Thrd_Unlock(void)
-{
-  reel_thread_unlock();
-}
-
 /** \brief Returns the unique rank of the calling process.
  */
 int PCU_Proc_Self(void)
@@ -760,7 +627,6 @@ void* PCU_Comm_Extract(size_t size)
  on sub-groups of processes using this function.
  This call should be collective over all processes
  in the previous communicator.
- Please do not mix this feature with PCU threading. 
  */
 void PCU_Switch_Comm(MPI_Comm new_comm)
 {
@@ -770,7 +636,7 @@ void PCU_Switch_Comm(MPI_Comm new_comm)
 }
 
 /** \brief Return the current MPI communicator
-  \details Returns the communicator given to the 
+  \details Returns the communicator given to the
   most recent PCU_Switch_Comm call, or MPI_COMM_WORLD
   otherwise.
  */

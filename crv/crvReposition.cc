@@ -12,79 +12,16 @@
  */
 #include "crvAdapt.h"
 #include "crvQuality.h"
-#include <maShape.h>
+#include "crvTables.h"
 #include <cassert>
 
 namespace crv {
-
-static bool repositionInteriorToImproveQuality(ma::Mesh* m, ma::Entity* e)
-{
-  apf::FieldShape * fs = m->getShape();
-
-  int type = m->getType(e);
-  int P = fs->getOrder();
-  int typeDim = apf::Mesh::typeDimension[type];
-  int meshDim = m->getDimension();
-  int n = fs->getEntityShape(apf::Mesh::simplexTypes[typeDim])->countNodes();
-  int ne = fs->countNodesOn(apf::Mesh::simplexTypes[typeDim]);
-
-  assert(typeDim > 1);
-  double qualityBefore, qualityAfter;
-  if (typeDim == meshDim){
-    qualityBefore = getQuality(m,e);
-  } else {
-    // this handles faces in 3D meshes, where quality is judged by
-    // how it improves the worse of both neighbors
-    apf::Up up;
-    m->getUp(e,up);
-    qualityBefore = std::min(getQuality(m,up.e[0]),getQuality(m,up.e[1]));
-  }
-
-  if(!fs->hasNodesIn(typeDim) ||
-      getBlendingOrder(apf::Mesh::simplexTypes[typeDim])) return false;
-
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
-  apf::NewArray<apf::Vector3> nodes, newNodes(ne);
-  apf::getVectorNodes(elem,nodes);
-  apf::destroyElement(elem);
-
-  apf::NewArray<double> c;
-  getInternalBezierTransformationCoefficients(m,P,1,
-      apf::Mesh::simplexTypes[typeDim],c);
-
-  convertInterpolationPoints(n-ne,ne,nodes,c,newNodes);
-  for (int i = 0; i < ne; ++i)
-    nodes[n-ne+i] = newNodes[i];
-
-  if (typeDim == meshDim){
-    qualityAfter = getQuality(type,P,nodes);
-  } else {
-    // easier to set the nodes of the face, and go from there
-    for (int i = 0; i < ne; ++i)
-      m->setPoint(e,i,newNodes[i]);
-    apf::Up up;
-    m->getUp(e,up);
-    qualityAfter = std::min(getQuality(m,up.e[0]),getQuality(m,up.e[1]));
-    // set them back
-    for (int i = 0; i < ne; ++i)
-      m->setPoint(e,i,nodes[n-ne+i]);
-  }
-
-  // should improve things by at least 1% or don't do it.
-  if(qualityAfter < qualityBefore*1.01) return false;
-
-  for (int i = 0; i < ne; ++i)
-    m->setPoint(e,i,newNodes[i]);
-  return true;
-}
 
 void repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
 {
   apf::FieldShape * fs = m->getShape();
   int order = fs->getOrder();
   int typeDim = apf::Mesh::typeDimension[m->getType(e)];
-
-  assert(typeDim > 1);
 
   if(!fs->hasNodesIn(typeDim) ||
       getBlendingOrder(apf::Mesh::simplexTypes[typeDim])) return;
@@ -98,27 +35,88 @@ void repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
 
 }
 
-void repositionInterior(ma::Refine* r)
+bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
+    ma::Entity* edge)
 {
-  int successes[2] = {0,0};
-  ma::Mesh* m = r->adapt->mesh;
-  int dim = m->getDimension();
-  // do this hierarchically
-  for (int td=2; td <= dim; ++td){
-    for (int d=0; d <= dim; ++d){
-      for (size_t i=0; i < r->newEntities[d].getSize(); ++i){
-        ma::EntityArray& newEntities = r->newEntities[d][i];
-        for (size_t j=0; j < newEntities.getSize(); ++j){
-          if (!isBoundaryEntity(m,newEntities[j])
-              && apf::Mesh::typeDimension[m->getType(newEntities[j])] == td)
-            successes[td-2] +=
-                repositionInteriorToImproveQuality(m,newEntities[j]);
-        }
-      }
+  // lets assume we have an edge we want to fix
+  // only support second order for now
+  int P = m->getShape()->getOrder();
+  if (P != 2) return false;
+
+  ma::Entity* verts[4];
+  ma::Entity* edges[6];
+
+  ma::Vector pivotPoint;
+  ma::Vector edgeVectors[3];
+  m->getDownward(tet,0,verts);
+  m->getDownward(tet,1,edges);
+
+  // pick a pivotVert, the vertex with the worse jacobian determinant
+  ma::Entity* pivotVert;
+  int pivotIndex;
+  {
+    apf::MeshElement* me = apf::createMeshElement(m,tet);
+
+    ma::Entity* edgeVerts[2];
+    m->getDownward(edge,0,edgeVerts);
+    apf::Matrix3x3 J;
+    pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
+    ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
+    apf::getJacobian(me,xi,J);
+
+    double j = apf::getJacobianDeterminant(J,3);
+    pivotVert = edgeVerts[0];
+
+    int index = apf::findIn(verts,4,edgeVerts[1]);
+    assert(index >= 0);
+    xi = crv::elem_vert_xi[apf::Mesh::TET][index];
+    apf::getJacobian(me,xi,J);
+    if (apf::getJacobianDeterminant(J,3) < j){
+      pivotVert = edgeVerts[1];
+      pivotIndex = index;
+    }
+    apf::destroyMeshElement(me);
+  }
+
+  m->getPoint(pivotVert,0,pivotPoint);
+
+  // local, of edges around vert, [0,2]
+  int edgeIndex = 0;
+
+  for (int i = 0; i < 3; ++i){
+    // theres only one point, so reuse this...
+    edgeVectors[i] = ma::getPosition(m,edges[vertEdges[pivotIndex][i]])
+                   - pivotPoint;
+    if (edges[vertEdges[pivotIndex][i]] == edge)
+      edgeIndex = i;
+  }
+  assert(edgeIndex >= 0);
+  ma::Vector normal = apf::cross(edgeVectors[(1+edgeIndex) % 3],
+      edgeVectors[(2+edgeIndex) % 3]);
+  double length = normal.getLength();
+  double validity = edgeVectors[edgeIndex]*normal;
+
+  if(validity > 1e-10)
+    return false;
+  ma::Vector oldPoint = ma::getPosition(m,edge);
+  apf::Adjacent adjacent;
+  m->getAdjacent(edge,3,adjacent);
+
+  // places the new point at a 20 degree angle with the plane
+  ma::Vector newPoint = edgeVectors[edgeIndex] + pivotPoint
+      + normal/length*(-validity/length +
+          edgeVectors[edgeIndex].getLength()*sin(apf::pi/9.));
+
+  m->setPoint(edge,0,newPoint);
+
+  for (std::size_t i = 0; i < adjacent.getSize(); ++i){
+    if (checkBezierValidity[apf::Mesh::TET](m,adjacent[i],4) > 0){
+      m->setPoint(edge,0,oldPoint);
+      return false;
     }
   }
-  ma::print("%d and %d successful 2D and 3D repositions",
-      successes[0],successes[1]);
+
+  return true;
 }
 
 }

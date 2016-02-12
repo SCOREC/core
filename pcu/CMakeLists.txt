@@ -9,15 +9,10 @@ if(BUILD_IN_TRILINOS)
    tribits_package(SCORECpcu) 
 else()
    project(pcu)
-   find_package(Threads)
 endif()
 
 
-option(ENABLE_THREADS "Enable threading using pthread [ON|OFF]" OFF)
 option(PCU_COMPRESS "Enable SMB compression using libbzip2 [ON|OFF]" OFF)
-if( NOT ${ENABLE_THREADS} STREQUAL "ON" AND NOT ${ENABLE_THREADS} STREQUAL "OFF")
-  message(FATAL_ERROR "PCU ENABLE_THREADS must be either ON or OFF, currently set to ${ENABLE_THREADS}")
-endif()
 
 set(CMAKE_MODULE_PATH 
    ${CMAKE_MODULE_PATH} 
@@ -44,9 +39,6 @@ set(PCU_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/reel
 )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/reel/reel_config.h.in"
-    "${PROJECT_BINARY_DIR}/reel_config.h")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/pcuConfig.cmake.in"
     "${CMAKE_BINARY_DIR}/pcuConfig.cmake")
@@ -86,7 +78,6 @@ set(SOURCES
    pcu_msg.c
    pcu_order.c
    pcu_pmpi.c
-   pcu_tmpi.c
    noto/noto_malloc.c
    reel/reel.c
 )

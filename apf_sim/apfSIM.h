@@ -10,13 +10,15 @@ void P_setPos(pPoint,double,double,double);
 
 namespace apf {
 
-/** \brief Creates an apf::Mesh from a Simmetrix mesh.
-  *
-  * \details This object should be destroyed by apf::destroyMesh.
-  */
-Mesh* createMesh(pParMesh mesh);
+/**
+ * \brief Creates an apf::Mesh from a Simmetrix mesh.
+ *
+ * \details This object should be destroyed by apf::destroyMesh.
+ */
+Mesh2* createMesh(pParMesh mesh);
 
-/** \brief Casts a Simmetrix entity to an apf::MeshEntity.
+/**
+  * \brief Casts a Simmetrix entity to an apf::MeshEntity.
   *
   * \details This does not create any objects, use freely.
   */

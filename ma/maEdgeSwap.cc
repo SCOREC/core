@@ -651,7 +651,7 @@ class SwapCavity
         return false;
       if (loop.getSize() > MAX_VERTS)
         return false;
-      qualityToBeat = q;
+      qualityToBeat = std::max(q,adapter->input->validQuality);
       oldTets = &ot;
       int unique_count = unique_triangle_count[loop.getSize()];
       triangleOk.setSize(unique_count);

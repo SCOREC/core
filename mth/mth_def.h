@@ -100,6 +100,26 @@ Matrix<T,3,3> inverse(Matrix<T,3,3> const& a)
   return r / determinant(a);
 }
 
+template <class T>
+T trace(Tensor<T> const& a)
+{
+  unsigned dim = a.dim();
+  T t = a(0,0);
+  for (unsigned i=1; i < dim; ++i)
+    t += a(i,i);
+  return t;
+}
+
+template <class T>
+Tensor<T> eye(unsigned d)
+{
+  Tensor<T> r(d);
+  r.zero();
+  for (unsigned i=0; i < d; ++i)
+    r(i,i) = 1.0;
+  return r;
+}
+
 template <class T, unsigned M, unsigned N>
 void multiply(Matrix<T,M,N> const& a, Vector<T,N> const& b,
     Vector<T,M>& c)

@@ -38,6 +38,7 @@ FILE* pcu_open_parallel(const char* prefix, const char* ext);
 FILE* pcu_group_open(const char* path, bool write);
 
 void pcu_swap_doubles(double* p, size_t n);
+void pcu_swap_unsigneds(unsigned* p, size_t n);
 
 #ifdef __cplusplus
 } /* extern "C" */

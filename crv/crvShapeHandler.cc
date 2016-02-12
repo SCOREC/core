@@ -18,7 +18,6 @@
 #include <mth_def.h>
 #include <math.h>
 #include <cassert>
-#include <iostream>
 
 namespace crv {
 
@@ -112,7 +111,6 @@ class BezierTransfer : public ma::SolutionTransfer
     {
       int P = mesh->getShape()->getOrder();
       int parentType = mesh->getType(parent);
-
       // for the parent, get its vertices and mid edge nodes first
       apf::Downward parentVerts,parentEdges;
 
@@ -122,12 +120,8 @@ class BezierTransfer : public ma::SolutionTransfer
       int ne = apf::Mesh::adjacentCount[parentType][1];
 
       // check if we can use the curvature of the original element or not
-      // uses BAD_QUALITY on vertices to trick it, rather than recode
-      // everything
+      // uses BAD_QUALITY on edges to indicate this
       bool useLinear = false;
-      for (int i = 0; i < apf::Mesh::adjacentCount[parentType][0]; ++i)
-        if ( ma::getFlag(adapt,parentVerts[i],ma::BAD_QUALITY) )
-          useLinear = true;
 
       apf::NewArray<apf::MeshEntity*> midEdgeVerts(ne);
       for (int i = 0; i < ne; ++i){
@@ -135,8 +129,24 @@ class BezierTransfer : public ma::SolutionTransfer
           midEdgeVerts[i] = ma::findSplitVert(refine,parentEdges[i]);
         else
           midEdgeVerts[i] = 0;
+        if ( ma::getFlag(adapt,parentEdges[i],ma::BAD_QUALITY) ){
+          useLinear = true;
+        }
       }
-
+      // do snapping inside here, since its not done elsewhere
+      // general assumption is that initial mesh interpolates the geometry
+      // well enough that we can snap and not affect the quality/validity
+      // at a "significant level"
+      // Since split vertex is already on the shape
+      // of the parent, snapping should not move it very far
+      //
+      // do vertices first
+      for (int i = 0; i < ne; ++i){
+        if(shouldSnap && midEdgeVerts[i] &&
+            isBoundaryEntity(mesh,midEdgeVerts[i])){
+          snapToInterpolate(mesh,midEdgeVerts[i]);
+        }
+      }
       int np = getNumControlPoints(parentType,P);
 
       apf::Element* elem =
@@ -155,11 +165,13 @@ class BezierTransfer : public ma::SolutionTransfer
             continue;
 
           int ni = mesh->getShape()->countNodesOn(childType);
+          bool isBdryEnt = isBoundaryEntity(mesh,newEntities[i]);
 
-          if ((isBoundaryEntity(mesh,newEntities[i]) && shouldSnap))
-            continue; //only do boundary entities if theres no geometry
-
-          if (useLinear) {
+          // do snapping here, inside refinement
+          if (isBdryEnt && shouldSnap){
+            snapToInterpolate(mesh,newEntities[i]);
+          } else if (useLinear && !isBdryEnt) {
+            // boundary entities that don't get snapped should interpolate
             if(childType == apf::Mesh::EDGE){
               setLinearEdgePoints(mesh,newEntities[i]);
             } else {
@@ -184,6 +196,24 @@ class BezierTransfer : public ma::SolutionTransfer
               mesh->setPoint(newEntities[i],j,point);
             }
           }
+        }
+      }
+      // again have to do this hierarchically, downward
+      for (int d = apf::Mesh::typeDimension[parentType]; d >= 1; --d){
+        if (!mesh->getShape()->hasNodesIn(d)) continue;
+        for (size_t i = 0; i < newEntities.getSize(); ++i)
+        {
+          // go through this hierachically, doing edges first
+          int childType = mesh->getType(newEntities[i]);
+          if(d != apf::Mesh::typeDimension[childType] ||
+              !isBoundaryEntity(mesh,newEntities[i]) || !shouldSnap)
+            continue;
+
+          int n = mesh->getShape()->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+          int ni = mesh->getShape()->countNodesOn(d);
+          apf::NewArray<double> c;
+          crv::getBezierTransformationCoefficients(P,d,c);
+          convertInterpolationPoints(mesh,newEntities[i],n,ni,c);
         }
       }
     }
@@ -275,8 +305,8 @@ class BezierHandler : public ma::ShapeHandler
             if(ma::isInClosure(mesh,entities[j],edgeVerts[1])){
               edge1 = ma::getTriEdgeOppositeVert(mesh,entities[j],edgeVerts[1]);
               if(edge0 == edge1){
-                double newTotalArea = apf::measure(mesh, entities[i])
-                  + apf::measure(mesh,entities[j]);
+                double newTotalArea = measureLinearTriArea(mesh, entities[i])
+                  + measureLinearTriArea(mesh,entities[j]);
                 if(newTotalArea < totalArea){
                   edgeTris[0] = entities[i];
                   edgeTris[1] = entities[j];
@@ -462,8 +492,12 @@ class BezierHandler : public ma::ShapeHandler
       apf::FieldShape* fs = mesh->getShape();
       int P = fs->getOrder();
       int n = fs->getEntityShape(apf::Mesh::EDGE)->countNodes();
-      apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(P,1,c);
+      apf::NewArray<double> edgeC;
+      apf::NewArray<double> triC;
+
+      crv::getBezierTransformationCoefficients(P,1,edgeC);
+      if (P > 2)
+        crv::getBezierTransformationCoefficients(P,2,triC);
 
       int numNewElements = 0;
       int numNewTriangles = 0;
@@ -499,31 +533,35 @@ class BezierHandler : public ma::ShapeHandler
         if (newType == apf::Mesh::TET)
           numNewElements++;
         // zero new entities
+        bool snap = isBoundaryEntity(mesh,newEntities[i]) && shouldSnap;
         if (newType != apf::Mesh::EDGE)
         {
-          for (int j = 0; j < ni; ++j){
-            apf::Vector3 zero(0,0,0);
-            mesh->setPoint(newEntities[i],j,zero);
-          }
-          continue;
-        }
-
-        if (mesh->getModelType(mesh->toModel(newEntities[i]))
-            < mesh->getDimension() && ni > 0 && shouldSnap){
+          if (snap && P > 2){
             snapToInterpolate(mesh,newEntities[i]);
-            convertInterpolationPoints(mesh,newEntities[i],n,ni,c);
+            convertInterpolationPoints(mesh,newEntities[i],n,ni,triC);
+          } else {
+            for (int j = 0; j < ni; ++j){
+              apf::Vector3 zero(0,0,0);
+              mesh->setPoint(newEntities[i],j,zero);
+            }
+          }
         } else {
-          setLinearEdgePoints(mesh,newEntities[i]);
-          numMiddleEdges++;
+          if (snap){
+            snapToInterpolate(mesh,newEntities[i]);
+            convertInterpolationPoints(mesh,newEntities[i],n,ni,edgeC);
+          } else {
+            setLinearEdgePoints(mesh,newEntities[i]);
+            numMiddleEdges++;
+          }
         }
       }
+
       ma::EntityArray middleEdges(numMiddleEdges);
       int me = 0;
       for (size_t i = 0; i < newEntities.getSize(); ++i){
         // if we aren't an edge or we are on a boundary, don't do this
         if(mesh->getType(newEntities[i]) != apf::Mesh::EDGE) continue;
-        if(mesh->getModelType(mesh->toModel(newEntities[i]))
-            < mesh->getDimension()) continue;
+        if(isBoundaryEntity(mesh,newEntities[i])) continue;
         // special case in 2D
         if(numNewTriangles == 2 && mesh->getDimension() == 2)
           setBlendedQuadEdgePointsShared(newEntities[i]);
@@ -553,9 +591,9 @@ class BezierHandler : public ma::ShapeHandler
         for (size_t i = 0; i < newEntities.getSize(); ++i)
         {
           int newType = mesh->getType(newEntities[i]);
+          bool boundary = isBoundaryEntity(mesh,newEntities[i]);
           if (apf::Mesh::typeDimension[newType] == d && ni > 0
-              && (mesh->getModelType(mesh->toModel(newEntities[i]))
-              == mesh->getDimension() || !shouldSnap)){
+              && (!boundary || !shouldSnap)){
             convertInterpolationPoints(mesh,newEntities[i],n-ni,ni,c);
           }
         }

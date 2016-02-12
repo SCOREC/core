@@ -37,11 +37,6 @@ apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
   return plan;
 }
 
-void split(Input& in, apf::Mesh2* m, void (*runAfter)(apf::Mesh2*))
-{
-  apf::splitMdsMesh(m, getSplitPlan(in, m), in.splitFactor, runAfter);
-}
-
 apf::Migration* split(Input& in, apf::Mesh2* m)
 {
   return getSplitPlan(in,m);

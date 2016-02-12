@@ -4,9 +4,9 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
-#include <apfZoltan.h>
 #include <parma.h>
 #include <SimUtil.h>
+#include <apfZoltan.h>
 #include <cassert>
 #include <cstdlib>
 
@@ -35,10 +35,22 @@ apf::Migration* getPlan(apf::Mesh* m)
   return plan;
 }
 
-void runAfter(apf::Mesh2* m)
+void switchToOriginals()
 {
-  m->writeNative(outFile);
-  freeMesh(m);
+  int self = PCU_Comm_Self();
+  int groupRank = self / partitionFactor;
+  int group = self % partitionFactor;
+  MPI_Comm groupComm;
+  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  PCU_Switch_Comm(groupComm);
+}
+
+void switchToAll()
+{
+  MPI_Comm prevComm = PCU_Get_Comm();
+  PCU_Switch_Comm(MPI_COMM_WORLD);
+  MPI_Comm_free(&prevComm);
+  PCU_Barrier();
 }
 
 void getConfig(int argc, char** argv)
@@ -53,15 +65,14 @@ void getConfig(int argc, char** argv)
   meshFile = argv[2];
   outFile = argv[3];
   partitionFactor = atoi(argv[4]);
+  assert(partitionFactor <= PCU_Comm_Peers());
 }
 
 }
 
 int main(int argc, char** argv)
 {
-  int provided;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
-  assert(provided==MPI_THREAD_MULTIPLE);
+  MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   SimUtil_start();
   Sim_readLicenseFile(0);
@@ -69,13 +80,23 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_sim();
   getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
-  splitMdsMesh(m, getPlan(m), partitionFactor, runAfter);
+  bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
+  gmi_model* g = 0;
+  g = gmi_load(modelFile);
+  apf::Mesh2* m = 0;
+  apf::Migration* plan = 0;
+  switchToOriginals();
+  if (isOriginal) {
+    m = apf::loadMdsMesh(g, meshFile);
+    plan = getPlan(m);
+  }
+  switchToAll();
+  m = apf::repeatMdsMesh(m, g, plan, partitionFactor);
+  m->writeNative(outFile);
+  freeMesh(m);
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
-

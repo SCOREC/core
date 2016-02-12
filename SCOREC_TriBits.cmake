@@ -15,9 +15,6 @@ TRIBITS_PACKAGE(SCOREC)
 # Tell SCOREC it is building inside Trilinos                        
 SET(BUILD_IN_TRILINOS ON)  
 
-# Disable PCU threads
-SET(ENABLE_THREADS OFF)
-
 #
 # C) Add the libraries, tests, and examples
 #

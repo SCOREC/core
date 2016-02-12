@@ -1,56 +1,32 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string
     "path to the meshes svn repo")
-if(ENABLE_THREADS)
-  macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
-    add_test("${TESTNAME}"
-      ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS}
-      "${PROG}"
-      "${MODEL}"
-      "${IN}"
-      "${OUT}"
-      ${FACTOR})
-  endmacro()
-  macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
-    add_test(NAME "${TESTNAME}"
-      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "${PROG}"
-      WORKING_DIRECTORY "${WORKDIR}")
-  endmacro()
-  macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
-    add_test("${TESTNAME}"
-      ${MPIRUN} ${MPIRUN_PROCFLAG} ${PARTS} "./ptnParma" 
-      ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
-    )
-  endmacro()
-else()
-  macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
-    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
-    add_test("${TESTNAME}"
-      ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS}
-      "${PROG}"
-      "${MODEL}"
-      "${IN}"
-      "${OUT}"
-      ${FACTOR})
-  endmacro()
-  macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
-    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
-    add_test(NAME "${TESTNAME}"
-      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "${PROG}"
-      WORKING_DIRECTORY "${WORKDIR}")
-  endmacro()
-  macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
-    math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
-    add_test("${TESTNAME}"
-      ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "./ptnParma_nothread" 
-      ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
-    )
-  endmacro()
-endif()
+macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
+  math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
+  add_test("${TESTNAME}"
+    ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS}
+    "${PROG}"
+    "${MODEL}"
+    "${IN}"
+    "${OUT}"
+    ${FACTOR})
+endmacro()
+macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
+  math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
+  add_test(NAME "${TESTNAME}"
+    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "${PROG}"
+    WORKING_DIRECTORY "${WORKDIR}")
+endmacro()
+macro(parma TESTNAME MDL IN OUT FACTOR METHOD APPROACH ISLOCAL PARTS)
+  math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
+  add_test("${TESTNAME}"
+    ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "./ptnParma" 
+    ${MDL} ${IN} ${OUT} ${FACTOR} ${METHOD} ${APPROACH} ${ISLOCAL}
+  )
+endmacro()
 add_test(shapefun shapefun)
 add_test(shapefun2 shapefun2)
 add_test(bezierElevation bezierElevation)
-add_test(bezierExperimental bezierExperimental)
 add_test(bezierMesh bezierMesh)
 add_test(bezierMisc bezierMisc)
 add_test(bezierRefine bezierRefine)
@@ -62,6 +38,13 @@ add_test(eigen_test eigen_test)
 add_test(integrate integrate)
 add_test(qr_test qr)
 add_test(base64 base64)
+
+set(MDIR ${MESHES}/fun3d)
+add_test(from_ugrid
+  from_ugrid
+  "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/inviscid_egg.smb")
+
 set(MDIR ${MESHES}/pipe)
 add_test(convert
   convert
@@ -291,11 +274,11 @@ add_test(ma_insphere
   ma_insphere)
 set(MDIR ${MESHES}/curved)
 add_test(curvedSphere
-  curvemesh
+  curvetest
   "${MDIR}/sphere1.xmt_txt"
   "${MDIR}/sphere1_4.smb")
  add_test(curvedKova
-  curvemesh
+  curvetest
   "${MDIR}/Kova.xmt_txt"
   "${MDIR}/Kova.smb")
 if (PCU_COMPRESS)
