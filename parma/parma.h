@@ -154,15 +154,13 @@ apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
  * @brief create an APF Balancer using ghost element aware diffusion
  * @param m (In) partitioned mesh
  * @param layers (In) depth of ghosting
- * @param bridge (In) dimension of entity ghosting depth is based on,
-                      typically meshDim-1
  * @param stepFactor (In) amount of weight to migrate between parts during
                           diffusion, lower values migrate fewer
                           elements per iteration
  * @param verbosity (In) output control, higher values output more
  * @return apf balancer instance
  */
-apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
+apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers,
     double stepFactor = 0.1, int verbosity=0);
 
 /**

@@ -122,8 +122,8 @@ namespace {
 namespace parma {
   class GhostFinder {
     public:
-      GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b)
-        : mesh(m), wtag(w), layers(l), bridge(b) {
+      GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l)
+        : mesh(m), wtag(w), layers(l) {
         depth = NULL;
       }
       /**
@@ -167,7 +167,6 @@ namespace parma {
       apf::Mesh* mesh;
       apf::MeshTag* wtag;
       int layers;
-      int bridge; //FIXME not used
       apf::MeshTag* depth;
   };
 
@@ -176,13 +175,13 @@ namespace parma {
   // peer????
   class GhostWeights : public Associative<double*> {
     public:
-      GhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int layers, int bridge)
+      GhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int layers)
         : wtag(w), weight(0)
       {
         weight = new double[4];
         for(int dim=0; dim<4; dim++)
           weight[dim] += ownedWeight(m, wtag,dim);
-        GhostFinder finder(m, wtag, layers, bridge);
+        GhostFinder finder(m, wtag, layers);
         findGhosts(&finder, s);
         exchangeGhostsFrom();
         exchange();
@@ -270,8 +269,8 @@ namespace parma {
   }
 
   GhostWeights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
-      int layers, int bridge) {
-    return new GhostWeights(m, w, s, layers, bridge);
+      int layers) {
+    return new GhostWeights(m, w, s, layers);
   }
 
   void destroyGhostWeights(GhostWeights* gw) {

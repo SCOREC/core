@@ -40,11 +40,10 @@ namespace {
   void runParma(apf::Mesh* m) {
     apf::MeshTag* weights = applyUnitWeight(m);
     const int layers = 1;
-    const int bridgeDim = 0;
     const double stepFactor = 0.5;
     const int verbosity = 2;
     apf::Balancer* ghost =
-      Parma_MakeGhostDiffuser(m, layers, bridgeDim, stepFactor, verbosity);
+      Parma_MakeGhostDiffuser(m, layers, stepFactor, verbosity);
     ghost->balance(weights, 1.05);
     m->destroyTag(weights);
     delete ghost;

@@ -13,8 +13,8 @@ namespace {
     private: 
       int sideTol;
     public:
-      GhostElmBalancer(apf::Mesh* m, int l, int b, double f, int v)
-        : Balancer(m, f, v, "ghostElms"), layers(l), bridge(b) 
+      GhostElmBalancer(apf::Mesh* m, int l, double f, int v)
+        : Balancer(m, f, v, "ghostElms"), layers(l)
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
         sideTol = static_cast<int>(parma::avgSharedSides(s));
@@ -34,7 +34,7 @@ namespace {
           fprintf(stdout, "avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
-          parma::makeGhostWeights(mesh, wtag, s, layers, bridge);
+          parma::makeGhostWeights(mesh, wtag, s, layers);
         parma::Weights* elmW = convertGhostToEntWeight(gw,3);
         destroyGhostWeights(gw);
 
@@ -54,34 +54,25 @@ namespace {
         return ret;
       }
       int layers;
-      int bridge;
   };
 }
 
 class GhostElmGtVtxBalancer : public parma::Balancer {
   public:
-    GhostElmGtVtxBalancer(apf::Mesh* m, int l, int b, double f, int v)
-      : Balancer(m, f, v, "ghostsElmGtVtx"), layers(l), bridge(b) { }
+    GhostElmGtVtxBalancer(apf::Mesh* m, int l, double f, int v)
+      : Balancer(m, f, v, "ghostsElmGtVtx"), layers(l) { }
     bool runStep(apf::MeshTag*, double) { return true; }
     void balance(apf::MeshTag* wtag, double tolerance) {
-      apf::Balancer* b = new GhostElmBalancer(mesh, layers, bridge, factor, verbose);
+      apf::Balancer* b = new GhostElmBalancer(mesh, layers, factor, verbose);
       b->balance(wtag, tolerance);
       delete b;
-      /*
-      Parma_PrintPtnStats(mesh, "post elements", (verbose>2));
-      double maxElmW = parma::getMaxWeight(mesh, wtag, m->getDimension());
-      b = new GhostVtxLtElmBalancer(mesh, factor, maxVtxW, verbose);
-      b->balance(wtag, tolerance);
-      delete b;
-      */
     }
   private:
     int layers;
-    int bridge;
 };
 
 
 apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m,
-    int layers, int bridge, double stepFactor, int verbosity) {
-  return new GhostElmGtVtxBalancer(m, layers, bridge, stepFactor, verbosity);
+    int layers, double stepFactor, int verbosity) {
+  return new GhostElmGtVtxBalancer(m, layers, stepFactor, verbosity);
 }
