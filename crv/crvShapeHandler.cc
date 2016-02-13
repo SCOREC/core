@@ -37,7 +37,6 @@ static void setLinearEdgePoints(ma::Mesh* m, ma::Entity* edge)
   m->getPoint(verts[0],0,points[0]);
   m->getPoint(verts[1],0,points[1]);
   for (int j = 0; j < ni; ++j){
-    m->getShape()->getNodeXi(apf::Mesh::EDGE,j,xi);
     double t = (1.+j)/(1.+ni);
     xi = points[0]*(1.-t)+points[1]*t;
     m->setPoint(edge,j,xi);
@@ -209,7 +208,8 @@ class BezierTransfer : public ma::SolutionTransfer
               !isBoundaryEntity(mesh,newEntities[i]) || !shouldSnap)
             continue;
 
-          int n = mesh->getShape()->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+          int n = mesh->getShape()->getEntityShape(apf::Mesh::simplexTypes[d])
+              ->countNodes();
           int ni = mesh->getShape()->countNodesOn(d);
           apf::NewArray<double> c;
           crv::getBezierTransformationCoefficients(P,d,c);

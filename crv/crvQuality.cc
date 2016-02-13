@@ -169,7 +169,7 @@ static void getJacDetByElevation(int type, int P,
     // use the modulus to alternate between them,
     // never needing to increase storage
     // for now, only elevate by 1
-    elevateBezierJacobianDet[type](P+i,1,
+    elevateBezierJacobianDet(type,P+i,1,
         elevatedNodes[i % 2],
         elevatedNodes[(i+1) % 2]);
 
