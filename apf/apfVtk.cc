@@ -748,7 +748,6 @@ static void writeVtuFile(const char* prefix,
     Numbering* n,
     bool isWritingBinary = false)
 {
-  PCU_Barrier();
   double t0 = PCU_Time();
   std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
   std::stringstream buf;
@@ -790,7 +789,6 @@ static void writeVtuFile(const char* prefix,
   buf << "</Piece>\n";
   buf << "</UnstructuredGrid>\n";
   buf << "</VTKFile>\n";
-  PCU_Barrier();
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
   {
@@ -801,7 +799,6 @@ static void writeVtuFile(const char* prefix,
     assert(file.is_open());
     file << buf.rdbuf();
   }
-  PCU_Barrier();
   double t2 = PCU_Time();
   if (!PCU_Comm_Self())
   {
