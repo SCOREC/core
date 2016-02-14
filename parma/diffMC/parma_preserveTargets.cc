@@ -40,7 +40,7 @@ namespace parma {
         s->end();
       }
   };
-  Targets* makePreservingTargets(Sides* s, Weights* balanceW, Weights* preserveW, 
+  Targets* makePreservingTargets(Sides* s, Weights* balanceW, Weights* preserveW,
       int sideTol, double preserveTol, double alpha) {
     return new PreserveTargets(s, balanceW, preserveW, sideTol, preserveTol, alpha);
   }

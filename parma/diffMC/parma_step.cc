@@ -10,8 +10,8 @@
 namespace parma {
   Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
-     Stop* stopper) 
-    : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t), 
+     Stop* stopper)
+    : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t),
     selects(sel), stop(stopper) {
       verbose = 0;
   }
@@ -40,7 +40,7 @@ namespace parma {
     return true;
   }
 
-  double Stepper::imbalance() { 
+  double Stepper::imbalance() {
     double maxWeight = 0, totalWeight = 0;
     maxWeight = totalWeight = weights->self();
     totalWeight = PCU_Add_Double(totalWeight);
