@@ -14,8 +14,8 @@ namespace parma {
       virtual double total()=0;
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
-  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int aspectTol,
-      double vtxTol, double alpha);
+  Targets* makePreservingTargets(Sides* s, Weights* balanceW, Weights* preserveW,
+      int sideTol, double vtxTol, double alpha);
   Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol,
       double alpha);
   Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], int sideTol,
