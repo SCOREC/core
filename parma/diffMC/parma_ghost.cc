@@ -57,7 +57,7 @@ namespace {
     private:
       int sideTol;
       int layers;
-      double maxElmImb;
+      double maxElmW;
       int stepNum;
     public:
       GhostVtxLtElmBalancer(apf::Mesh* m, double f, int v, int l)
@@ -89,16 +89,15 @@ namespace {
           fprintf(stdout, "edge imbalance %.3f\n", edgeImb);
         }
         if( !stepNum ) //FIXME need to set the imbalance at the beginning for the primary entity
-          maxElmImb = elmImb;
+          maxElmW = parma::getMaxWeight(elmW);
 
         monitorUpdate(elmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
-        parma::Weights* w[2] = {elmW,vtxW};
         parma::Targets* t =
-          parma::makeVtxElmTargets(s, w, sideTol, maxElmImb, factor); //FIXME
-        delete w[0];
+          parma::makePreservingTargets(s, vtxW, elmW, sideTol, maxElmW, factor);
+        delete elmW;
         parma::Selector* sel =
-          parma::makeVtxLtElmSelector(mesh, wtag, maxElmImb);
+          parma::makeVtxLtElmSelector(mesh, wtag, maxElmW);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
         parma::Stepper b(mesh, factor, s, vtxW, t, sel, stopper);
