@@ -110,11 +110,13 @@ bool BezierCurver::run()
   apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   apf::FieldShape * fs = m_mesh->getShape();
 
-  // interpolate points in each dimension
-  for(int d = 1; d <= 2; ++d)
-    snapToInterpolate(d);
-
-  synchronize();
+  // interpolate points in each dimension if we can,
+  // otherwise assume they are where we want them
+  if (m_mesh->canSnap()){
+    for(int d = 1; d <= 2; ++d)
+      snapToInterpolate(d);
+    synchronize();
+  }
 
   // go downward, and convert interpolating to control points
   int startDim = md - (blendingOrder > 0);

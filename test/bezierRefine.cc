@@ -204,9 +204,6 @@ void test2D()
       }
       }
       double v0 = measureMesh(m);
-//      crv::writeControlPointVtuFiles(m,"curvedBefore2D");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore2D");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore2D");
       ma::Input* inRefine = ma::configureUniformRefine(m,1);
       inRefine->maximumIterations = 0;
       inRefine->shouldSnap = true;
@@ -217,22 +214,6 @@ void test2D()
         ma::adapt(inRefine);
       double v1 = measureMesh(m);
       assert( std::fabs(v1-v0) < 0.05 );
-//      crv::writeControlPointVtuFiles(m,"curvedAfterRefine2D");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedAfterRefine2D");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterRefine2D");
-//      Constant sf;
-//      ma::Input* inCoarsen = ma::configure(m, &sf);
-//      inCoarsen->shouldSnap = true;
-//      inCoarsen->shouldTransferParametric = true;
-//      inCoarsen->maximumIterations = 3;
-//      if(order > 1)
-//        crv::adapt(inCoarsen);
-//      else
-//        ma::adapt(inCoarsen);
-//      crv::writeControlPointVtuFiles(m,"curvedAfterCoarsen2D");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterCoarsen2D");
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,20,"curvedAfterCoarsen2D");
-//      crv::writeInterpolationPointVtuFiles(m,"curvedAfterCoarsen2D");
 
       m->destroyNative();
       apf::destroyMesh(m);
@@ -268,6 +249,8 @@ void test3D()
 
   for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc(m,order,0,3);
+    bc.run();
     crv::setBlendingOrder(apf::Mesh::TYPES,0);
     apf::changeMeshShape(m, crv::getBezier(order),true);
     apf::FieldShape* fs = m->getShape();
@@ -319,13 +302,6 @@ void test3D()
     }
     m->acceptChanges();
 
-//    crv::writeControlPointVtuFiles(m,"curvedBefore");
-//    crv::writeInterpolationPointVtuFiles(m,"curvedBefore");
-//
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,50,"curvedBefore");
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedBefore");
-//
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedBefore");
     ma::Input* inRefine = ma::configureUniformRefine(m,1);
     inRefine->shouldSnap = false;
     inRefine->shouldTransferParametric = false;
@@ -333,25 +309,6 @@ void test3D()
       crv::adapt(inRefine);
     else
       ma::adapt(inRefine);
-//    crv::writeControlPointVtuFiles(m,"curvedAfterRefine");
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterRefine");
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::TRIANGLE,10,"curvedAfterRefine");
-//    crv::writeInterpolationPointVtuFiles(m,"curvedAfterRefine");
-//
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedAfterRefine");
-
-//    Constant sf;
-//    ma::Input* inCoarsen = ma::configure(m, &sf);
-//    inCoarsen->shouldSnap = false;
-//    inCoarsen->shouldTransferParametric = false;
-//    inCoarsen->maximumIterations = 3;
-//    if(order > 1)
-//      crv::adapt(inCoarsen);
-//    else
-//      ma::adapt(inCoarsen);
-//    crv::writeControlPointVtuFiles(m,"curvedAfterCoarsen");
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,10,"curvedAfterCoarsen");
-//    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedAfterCoarsen");
 
     m->destroyNative();
     apf::destroyMesh(m);

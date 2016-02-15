@@ -473,27 +473,8 @@ void test3DBlended()
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, crv::getBezier(order),true);
-      crv::setBlendingOrder(apf::Mesh::TYPES,blendOrder);
-      apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
-      // go downward, and convert interpolating to control points
-      for(int d = 2; d >= 1; --d){
-        int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-        int ni = fs->countNodesOn(d);
-        if(ni <= 0) continue;
-
-        apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(order,d,c);
-        apf::MeshEntity* e;
-        apf::MeshIterator* it = m->begin(d);
-        while ((e = m->iterate(it))) {
-          if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-          crv::convertInterpolationPoints(m,e,n,ni,c);
-        }
-        m->end(it);
-      }
-      m->acceptChanges();
+      bc.run();
       testSize3D(m);
       test3DJacobian(m);
       test3DJacobianTri(m);
@@ -510,38 +491,9 @@ void test3DFull()
 
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
-    apf::changeMeshShape(m, crv::getBezier(order),true);
-    apf::FieldShape* fs = m->getShape();
-    crv::setBlendingOrder(apf::Mesh::TYPES,0);
-    crv::BezierCurver bc(m,order,0);
-    // go downward, and convert interpolating to control points
-    for(int d = 2; d >= 1; --d){
-      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
-      int ni = fs->countNodesOn(d);
-      if(ni <= 0) continue;
-      apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(order,d,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(d);
-      while ((e = m->iterate(it))) {
-        crv::convertInterpolationPoints(m,e,n,ni,c);
-      }
-      m->end(it);
-    }
-    if(!fs->hasNodesIn(3)) continue;
-    int n = fs->getEntityShape(apf::Mesh::simplexTypes[3])->countNodes();
-    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[3]);
-    apf::NewArray<double> c;
-    crv::getInternalBezierTransformationCoefficients(m,order,1,
-        apf::Mesh::simplexTypes[3],c);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(3);
-    while ((e = m->iterate(it))){
-      crv::convertInterpolationPoints(m,e,n-ne,ne,c);
-    }
-    m->end(it);
+    crv::BezierCurver bc(m,order,0,3);
+    bc.run();
 
-    m->acceptChanges();
     if(order <= 6)
       testSize3D(m);
     test3DJacobian(m);
@@ -580,10 +532,8 @@ void test3DFull()
       }
 
       // write the field
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,2,"curved");
       crv::writeCurvedVtuFiles(m,apf::Mesh::TET,2,"curved");
     }
-//    crv::writeControlPointVtuFiles(m,"curved");
     m->destroyNative();
     apf::destroyMesh(m);
   }
