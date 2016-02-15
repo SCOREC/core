@@ -129,10 +129,11 @@ namespace {
 
   void setNodeIds(Reader* r, header* h) {
     apf::Mesh* m = r->mesh;
-    apf::MeshTag* t = m->createLongTag("ugrid-vtx-ids",1);
-    for(long id=0; id<h->nvtx; id++)
-      m->setLongTag(r->nodeMap[id],t,&id);
-    m->destroyTag(t);
+    apf::MeshTag* t = m->createIntTag("ugrid-vtx-ids",1);
+    for(long lid=0; lid<h->nvtx; lid++) {
+      int iid = lid;
+      m->setIntTag(r->nodeMap[lid],t,&iid);
+    }
   }
 
   void readFaces(Reader* r, unsigned nfaces, int apfType) {
