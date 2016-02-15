@@ -61,6 +61,8 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
     m->getDownward(edge,0,edgeVerts);
     apf::Matrix3x3 J;
     pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
+    assert(pivotIndex >= 0);
+
     ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
     apf::getJacobian(me,xi,J);
 
