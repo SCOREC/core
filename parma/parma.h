@@ -166,6 +166,13 @@ apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
     double stepFactor = 0.1, int verbosity=0);
 
 /**
+ * @brief write the vertex based partition to file
+ * @param m (In) partitioned mesh
+ * @param prefix (In) prefix for file names
+ */
+void Parma_WriteVtxPtn(apf::Mesh* m, const char* prefix);
+
+/**
  * @brief create an APF Balancer targeting vertex imbalance
  * @param m (In) partitioned mesh
  * @param verbosity (In) output control, higher values output more
