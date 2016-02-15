@@ -249,7 +249,7 @@ void test3D()
 
   for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
-    crv::BezierCurver bc(m,order,0,3);
+    crv::BezierCurver bc(m,order,0);
     bc.run();
     crv::setBlendingOrder(apf::Mesh::TYPES,0);
     apf::changeMeshShape(m, crv::getBezier(order),true);

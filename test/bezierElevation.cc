@@ -191,7 +191,7 @@ void testEdgeElevation()
 
     m->acceptChanges();
     // curve the mesh
-    crv::BezierCurver bc(m,o,0,3);
+    crv::BezierCurver bc(m,o,0);
     bc.run();
 
     apf::NewArray<apf::Vector3> pts(101);
@@ -310,7 +310,7 @@ void testTetElevation()
   for (int order = 1; order <= 4; ++order){
 
     apf::Mesh2* m = createMesh3D();
-    crv::BezierCurver bc(m,order,0,3);
+    crv::BezierCurver bc(m,order,0);
     bc.run();
 
     apf::MeshIterator* it = m->begin(3);

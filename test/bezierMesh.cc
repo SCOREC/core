@@ -491,7 +491,7 @@ void test3DFull()
 
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
-    crv::BezierCurver bc(m,order,0,3);
+    crv::BezierCurver bc(m,order,0);
     bc.run();
 
     if(order <= 6)

@@ -78,9 +78,7 @@ void MeshCurver::snapToInterpolate(int dim)
   apf::MeshEntity* e;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == m_spaceDim) continue;
-    if(m_mesh->isOwned(e))
+    if(isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
       crv::snapToInterpolate(m_mesh,e);
   }
   m_mesh->end(it);
@@ -98,6 +96,8 @@ bool InterpolatingCurver::run()
   m_mesh->verify();
   return true;
 }
+
+
 
 bool BezierCurver::run()
 {
@@ -149,8 +149,7 @@ bool BezierCurver::run()
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
-      if(m_mesh->isOwned(e) &&
-          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+      if(!isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
         convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
@@ -347,7 +346,7 @@ bool GregoryCurver::run()
   if(m_order != 4){
     fail("cannot convert to G1 of this order\n");
   }
-  if(m_spaceDim != 3)
+  if(m_mesh->getDimension() != 3)
     fail("can only convert to 3D mesh\n");
 
   apf::changeMeshShape(m_mesh, getGregory(),true);
@@ -398,8 +397,7 @@ bool GregoryCurver::run()
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
-      if(m_mesh->isOwned(e) &&
-          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+      if(!isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
         convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
