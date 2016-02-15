@@ -623,6 +623,12 @@ int countEntitiesOfType(Mesh* m, int type)
   return count;
 }
 
+void Mesh::setCoordinateField(Field* field)
+{
+  delete coordinateField;
+  coordinateField = field;
+}
+
 void Mesh::changeShape(FieldShape* newShape, bool project)
 {
   Field* oldCoordinateField = coordinateField;

@@ -208,7 +208,7 @@ void testEdgeElevation()
     }
     apf::destroyElement(elem);
 
-    // elevate everything to 10th order
+    // elevate everything to 6th order
     apf::NewArray<apf::Vector3> elevatedNodes;
     elevatedNodes.allocate(7);
     crv::elevateBezierEdge(o,6-o,nodes,elevatedNodes);

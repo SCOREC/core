@@ -169,7 +169,7 @@ static void getJacDetByElevation(int type, int P,
     // use the modulus to alternate between them,
     // never needing to increase storage
     // for now, only elevate by 1
-    elevateBezierJacobianDet[type](P+i,1,
+    elevateBezierJacobianDet(type,P+i,1,
         elevatedNodes[i % 2],
         elevatedNodes[(i+1) % 2]);
 
@@ -671,6 +671,8 @@ double getQuality(apf::Mesh* m, apf::MeshEntity* e)
 
   return getQuality(type,P,elemNodes);
 }
+typedef int (*bezierValidity)(apf::Mesh* m,
+    apf::MeshEntity* e, int algorithm);
 
 const bezierValidity checkBezierValidity[apf::Mesh::TYPES] =
 {
@@ -683,5 +685,11 @@ const bezierValidity checkBezierValidity[apf::Mesh::TYPES] =
   NULL,    //prism
   NULL     //pyramid
 };
+
+int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm)
+{
+  return checkBezierValidity[m->getType(e)](m,e,algorithm);
+}
 
 }

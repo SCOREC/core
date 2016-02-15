@@ -4,10 +4,13 @@
 #include <cmath>
 #include <iostream>
 #include "canArray.h"
+
+/** \file mthAD.h
+  * \brief A forward automatic differentiation variable */
+
 namespace mth {
 
 /** \brief forward automatic differentiation variable */
-
 template <class T=double, unsigned int N=0>
 class AD
 {
@@ -144,8 +147,8 @@ class AD
         this->dx_[i] = (T)other.dx_[i];
     }
 };
-/** \brief forward automatic differentiation variable with dynamic variable array */
 
+/** \brief forward automatic differentiation variable with dynamic variable array */
 template <class T>
 class AD<T,0>
 {
@@ -297,6 +300,7 @@ class AD<T,0>
 
 template<class T>
 const double mth::AD<T, 0>::_zero_ = 0.;
+
 /**********************
   * UNARY OPERATIONS *
 ***********************/

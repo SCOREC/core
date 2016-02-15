@@ -42,7 +42,7 @@ public:
   const char* getName() const {return name.c_str();}
   Bezier() {
     std::stringstream ss;
-    ss << "Bezier" ;
+    ss << "Bezier";
     name = ss.str();
     this->registerSelf(name.c_str());
   }

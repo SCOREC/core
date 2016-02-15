@@ -14,17 +14,23 @@
 #include <stdio.h>
 
 /** \file crv.h
-  * \brief main file for curved element support */
+  * \brief main file for curved element support,
+  * only one accessible from install right now */
 
 /** \namespace crv
-  * \brief All CRV functions are contained in this namespace */
+  * \brief the main mesh curving functions are contained in this namespace */
 namespace crv {
 
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 20;
 /** \brief checks if is a boundary entity */
 bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
-/** \brief checks if any entity has two entities of dimension on the boundary */
+/** \brief checks if any entity has two entities of
+ * dimension on the boundary
+ * \details this is useful for some shape correction assessments,
+ * and in general, curved elements with multiple entities on the boundary
+ * are at risk for poor quality, since this strongly constrains
+ * their shape */
 bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e,
     int dimension);
 /** \brief sets the blending order, if shape blending is used */
@@ -35,12 +41,11 @@ int getBlendingOrder(const int type);
 /** \brief computes min det Jacobian / max det Jacobian */
 double getQuality(apf::Mesh* m,apf::MeshEntity* e);
 
-/** \brief Base Mesh curving object
-  \details P is the order, S is the space dimension,
-  different from the mesh dimension, used to distinguish between planar 2D
-  meshes and surface meshes. */
-
-/** \brief converts interpolating points to control points */
+/** \brief converts interpolating points to control points
+ * \details n is total number of nodes on the shape
+ * ne is nodes on the entity, that belong to it
+ * c is a coefficient matrix in vector form
+ * corresponding to the matrix */
 void convertInterpolationPoints(int n, int ne,
     apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<double>& c,
@@ -52,6 +57,11 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 /** \brief a per entity version of above */
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
 
+void elevateMeshOrder(apf::Mesh2* m, int newOrder);
+/** \brief Base Mesh curving object
+  \details P is the order, S is the space dimension,
+  different from the mesh dimension, used to distinguish between planar 2D
+  meshes and surface meshes. */
 class MeshCurver
 {
   public:
@@ -105,6 +115,7 @@ class BezierCurver : public MeshCurver
       \details finds interpolating points, then converts to control points
       see crvBezier.cc */
     virtual bool run();
+
 };
 
 /** \brief this curves a mesh with 4th order G1 Patches
@@ -119,9 +130,6 @@ class GregoryCurver : public BezierCurver
     virtual bool run();
     /** \brief sets cubic edge points using normals */
     void setCubicEdgePointsUsingNormals();
-    /** \brief sets internal points using neighbors (See Notes)
-      \details NOT CURRENTLY FULLY IMPLEMENTED */
-//    void setInternalPointsUsingNeighbors();
     /** \brief sets internal points locally */
     void setInternalPointsLocally();
 };
@@ -190,11 +198,8 @@ int quadnomial(int n, int i, int j, int k);
  * without actually using subdivision and elevation, and giving this option
  * is easier for debugging and verifying the efficacy of those procedures
  * */
-
-typedef int (*bezierValidity)(apf::Mesh* m,
-    apf::MeshEntity* e, int algorithm);
-
-extern const bezierValidity checkBezierValidity[apf::Mesh::TYPES];
+int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm = 4);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

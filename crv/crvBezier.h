@@ -66,6 +66,9 @@ void elevateBezierTriangle(int P, int r, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3>& elevatedNodes);
 void elevateBezierTet(int P, int r, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3>& elevatedNodes);
+void elevateBezier(int type, int P, int r,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<apf::Vector3>& elevatedNodes);
 
 /** \brief subdivision functions for beziers */
 void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,

@@ -21,18 +21,15 @@ void subdivideBezierEntityJacobianDet(int P, int type,
 void getBezierJacobianDetSubdivisionCoefficients(int P, int type,
     apf::NewArray<double>& c);
 
-typedef void (*ElevateFunction)(int P, int r,
-    apf::NewArray<double>& nodes,
-    apf::NewArray<double>& elevatedNodes);
-
 typedef void (*SubdivisionFunction)(int P,
     apf::NewArray<double>& nodes,
     apf::NewArray<double> *subNodes);
 
-extern const ElevateFunction elevateBezierJacobianDet[apf::Mesh::TYPES];
-
 extern const SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES];
 
+void elevateBezierJacobianDet(int type, int P, int r,
+    apf::NewArray<double>& nodes,
+    apf::NewArray<double>& elevatedNodes);
 }
 
 #endif

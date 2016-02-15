@@ -116,7 +116,7 @@ int markInvalidEntities(Adapt* a)
        3X speedup of the entire adaptation in some cases */
     int qualityTag = crv::getTag(a,e);
     if (qualityTag) continue;
-    qualityTag = checkBezierValidity[m->getType(e)](m,e,4);
+    qualityTag = checkValidity(m,e,4);
     if (qualityTag >= 2)
     {
       crv::setTag(a,e,qualityTag);
