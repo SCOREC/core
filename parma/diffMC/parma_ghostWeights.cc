@@ -16,14 +16,9 @@ namespace {
     return (dwnVtx[0] != vtx) ? dwnVtx[0] : dwnVtx[1];
   }
 
-  bool isSharedWithTarget(apf::Mesh* m,apf::MeshEntity* v, int target) {
+  bool isOwnedByPeer(apf::Mesh* m,apf::MeshEntity* v, int peer) {
     if( ! m->isShared(v) ) return false;
-    apf::Copies rmts;
-    m->getRemotes(v,rmts);
-    APF_ITERATE(apf::Copies, rmts, itr)
-      if (itr->first==target)
-        return true;
-    return false;
+    return (parma::getOwner(m,v) == peer);
   }
 
   // vertex based BFS
@@ -31,52 +26,32 @@ namespace {
   // - no one needs faces... yet
   // the returned array needs to be deallocated
   double* runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
-      std::vector<apf::MeshEntity*> next, apf::MeshTag* visited,
-      apf::MeshTag* wtag, int peer)
+      apf::MeshTag* visited, apf::MeshTag* wtag, int peer)
   {
     assert(layers>=0);
     const int elmDim = m->getDimension();
-    int yes=1;
     double* weight = new double[4];
     for(unsigned int i=0; i<4; i++)
       weight[i] = 0;
 
-    // self owned ents are zero'th layer of ghosts
-    for (unsigned int i=0;i<next.size();i++) {
-      apf::MeshEntity* e = next[i];
-      const int type = m->getType(e);
-      assert( type == apf::Mesh::VERTEX || type == apf::Mesh::EDGE );
-      weight[type] += parma::getEntWeight(m,e,wtag);
-      m->setIntTag(e,visited,&yes);
-      if(type == apf::Mesh::VERTEX ) {
-        //ghost elements
-        apf::Adjacent elms;
-        m->getAdjacent(e, elmDim, elms);
-        for(size_t k=0; k<elms.size(); k++) {
-          if (!m->hasTag(elms[k],visited)) {
-            m->setIntTag(elms[k],visited,&yes);
-            weight[elmDim] += parma::getEntWeight(m,elms[k],wtag);
-          }
-        }
-      }
-    }
-
+    std::vector<apf::MeshEntity*> next;
     for (int i=1;i<=layers;i++) {
       // when i==1: current contains shared vertices
       //            owned by the peer that are not ghosted
       for (unsigned int j=0;j<current.size();j++) {
         apf::MeshEntity* vertex = current[j];
-        //ghost vertices and edges
         apf::Up edges;
         m->getUp(vertex,edges);
         for (int k=0;k<edges.n;k++) {
           apf::MeshEntity* edge = edges.e[k];
           apf::MeshEntity* v = getOtherVtx(m,edge,vertex);
+          //ghost vertices
           if (parma::isOwned(m, v) && !m->hasTag(v,visited)) {
             next.push_back(v);
             m->setIntTag(v,visited,&i);
             weight[0] += parma::getEntWeight(m,v,wtag);
           }
+          //ghost edges
           if (parma::isOwned(m, edge) && !m->hasTag(edge,visited)) {
             weight[1] += parma::getEntWeight(m,edge,wtag);
             m->setIntTag(edge,visited,&i);
@@ -124,39 +99,26 @@ namespace parma {
         : mesh(m), wtag(w), layers(l) {
         depth = NULL;
       }
-      /**
-       * @brief get the weight of vertices ghosted to peer
-       */
+
       double* weight(int peer) {
         int lvl = 0;
         depth = mesh->createIntTag("parma_depths_ver",1);
         apf::MeshIterator* itr = mesh->begin(0);
-        apf::MeshEntity* v;
+        apf::MeshEntity* e;
         std::vector<apf::MeshEntity*> current;
-        std::vector<apf::MeshEntity*> next;
-        while ((v=mesh->iterate(itr))) {
-          if (isSharedWithTarget(mesh,v,peer)) {
-            if (isOwned(mesh,v))
-              next.push_back(v);
-            else if (getOwner(mesh,v)==peer)
-              current.push_back(v);
-          }
-        }
+        while( (e=mesh->iterate(itr)) )
+          if( isOwnedByPeer(mesh,e,peer) )
+            current.push_back(e);
         mesh->end(itr);
+        //tag the un-owned boundary edges so their weights are not counted
         itr = mesh->begin(1);
-        apf::MeshEntity* edge;
-        while ((edge=mesh->iterate(itr))) {
-          if (isSharedWithTarget(mesh,edge,peer)) {
-            if (isOwned(mesh,edge))
-              next.push_back(edge);
-            else if (getOwner(mesh,edge)==peer)
-              mesh->setIntTag(edge,depth,&lvl);
-          }
-        }
+        while( (e=mesh->iterate(itr)) )
+          if( isOwnedByPeer(mesh,e,peer) )
+            mesh->setIntTag(e,depth,&lvl);
         mesh->end(itr);
 
-        // current: peer owned vtx   next: self owned vtx and edges
-        double* weight = runBFS(mesh,layers,current,next,depth,wtag,peer);
+        // current: peer owned vtx
+        double* weight = runBFS(mesh,layers,current,depth,wtag,peer);
         for (unsigned int i=0;i<4;i++)
           apf::removeTagFromDimension(mesh,depth,i);
         mesh->destroyTag(depth);
