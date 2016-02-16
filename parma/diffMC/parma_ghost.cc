@@ -30,8 +30,8 @@ namespace {
 
         parma::GhostWeights* gw =
           parma::makeGhostWeights(mesh, wtag, s, layers);
-        parma::Weights* elmW = convertGhostToEntWeight(gw,3);
-        parma::Weights* vtxW = convertGhostToEntWeight(gw,0);
+        parma::Weights* elmW = convertGhostToEntWeight(gw,mesh->getDimension());
+        parma::Weights* vtxW =convertGhostToEntWeight(gw,0);
         destroyGhostWeights(gw);
 
         const double vtxImb = parma::getImbalance(vtxW);

@@ -71,7 +71,7 @@ namespace {
       next.clear();
     }
     PCU_Debug_Print("ghostW peer %d vtx %f edge %f elm %f\n",
-        peer, weight[0], weight[1], weight[3]);
+        peer, weight[0], weight[1], weight[elmDim]);
     return weight;
   }
 
@@ -137,9 +137,12 @@ namespace parma {
       GhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int layers)
         : weight(0)
       {
+        const int dim = m->getDimension();
         weight = new double[4];
-        for(int dim=0; dim<4; dim++)
-          weight[dim] += ownedWeight(m,w,dim);
+        for(int d=0; d<dim; d++)
+          weight[d] = ownedWeight(m,w,d);
+        for(int d=dim; d<4; d++)
+          weight[d] = 0;
         GhostFinder finder(m, w, layers);
         findGhosts(&finder, s);
         exchangeGhostsFrom();

@@ -23,34 +23,32 @@ namespace {
     meshFile = argv[2];
   }
 
-  double getFun3dElmW(int type) {
-    assert(type >= apf::Mesh::TET && type <= apf::Mesh::PYRAMID);
+  double getFun3dW(int type) {
+    assert( type >= apf::Mesh::VERTEX && type <= apf::Mesh::PYRAMID );
+    const double vtxw = 1.0;
+    const double edgew = 1.0;
+    const double triw = 1.0;
+    const double quadw = 1.0;
     const double tetw = 1.0;
     const double pyrw = 6.8;
     const double przw = 7.5;
     const double hexw = 13.8;
-    const double elmWeights[4] = {tetw, hexw, przw, pyrw};
-    const int offset = apf::Mesh::TET;
-    return elmWeights[type-offset];
+    const double weights[8] =
+      {vtxw, edgew, triw, quadw, tetw, hexw, przw, pyrw};
+    return weights[type];
   }
 
   apf::MeshTag* applyFun3dWeight(apf::Mesh* m) {
-    assert(3 == m->getDimension());
     apf::MeshTag* wtag = m->createDoubleTag("ghostWeight",1);
     apf::MeshEntity* e;
-    for(int d=0; d < m->getDimension(); d++) {
+    for(int d=0; d <= m->getDimension(); d++) {
       apf::MeshIterator* itr = m->begin(d);
-      double w = 1;
-      while( (e = m->iterate(itr)) )
+      while( (e = m->iterate(itr)) ) {
+        double w = getFun3dW(m->getType(e));
         m->setDoubleTag(e, wtag, &w);
+      }
       m->end(itr);
     }
-    apf::MeshIterator* itr = m->begin(3);
-    while( (e = m->iterate(itr)) ) {
-      double w = getFun3dElmW(m->getType(e));
-      m->setDoubleTag(e, wtag, &w);
-    }
-    m->end(itr);
     return wtag;
   }
 
