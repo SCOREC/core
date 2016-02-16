@@ -25,7 +25,7 @@ namespace parma {
   }
 
   bool Stepper::step(double maxImb, int verbosity) {
-    const double imb = imbalance();
+    const double imb = getImbalance(weights);
     if ( !PCU_Comm_Self() && verbosity )
       fprintf(stdout, "imbalance %.3f\n", imb);
     if ( stop->stop(imb,maxImb) )
@@ -38,14 +38,5 @@ namespace parma {
     if( verbosity > 1 ) 
       Parma_PrintPtnStats(m, "endStep", (verbosity>2));
     return true;
-  }
-
-  double Stepper::imbalance() {
-    double maxWeight = 0, totalWeight = 0;
-    maxWeight = totalWeight = weights->self();
-    totalWeight = PCU_Add_Double(totalWeight);
-    maxWeight = PCU_Max_Double(maxWeight);
-    double averageWeight = totalWeight / PCU_Comm_Peers();
-    return maxWeight / averageWeight;
   }
 }

@@ -264,20 +264,6 @@ namespace parma {
       apf::MeshTag* wtag;
   };
 
-  //FIXME the same code is in parma_step.cc
-  double getImbalance(Weights* w) {
-    double sum, max;
-    sum = max = w->self();
-    sum = PCU_Add_Double(sum);
-    max = PCU_Max_Double(max);
-    const double avg = sum/PCU_Comm_Peers();
-    return max/avg;
-  }
-
-  double getMaxWeight(Weights* w) {
-    return PCU_Max_Double(w->self());
-  }
-
   Weights* convertGhostToEntWeight(GhostWeights* gw, int dim) {
     return new GhostToEntWeight(gw,dim);
   }

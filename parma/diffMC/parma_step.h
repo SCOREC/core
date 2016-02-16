@@ -21,7 +21,6 @@ namespace parma {
       apf::Mesh* m;
       double alpha;
       int verbose;
-      virtual double imbalance();
       Sides* sides;
       Weights* weights;
       Targets* targets;
