@@ -10,7 +10,7 @@ For more information, start at our
 
 ### What is in this repository? ###
 
-* PCU: Communication, threading, and file IO built on MPI 
+* PCU: Communication and file IO built on MPI 
 * APF: Abstract definition of meshes, fields, and related operations
 * GMI: Common interface for geometric modeling kernels
 * MDS: Compact but flexible array-based mesh data structure

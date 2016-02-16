@@ -341,8 +341,6 @@ void test3D()
       }
       m->end(it);
     }
-
-
     // get face 2
     apf::MeshIterator* it = m->begin(3);
     apf::MeshEntity* tet = m->iterate(it);
