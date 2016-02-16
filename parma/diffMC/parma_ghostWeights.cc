@@ -139,14 +139,16 @@ namespace parma {
       {
         const int dim = m->getDimension();
         weight = new double[4];
-        for(int d=0; d<dim; d++)
+        for(int d=0; d<=dim; d++)
           weight[d] = ownedWeight(m,w,d);
-        for(int d=dim; d<4; d++)
+        for(int d=dim+1; d<=4; d++)
           weight[d] = 0;
         GhostFinder finder(m, w, layers);
         findGhosts(&finder, s);
         exchangeGhostsFrom();
         exchange();
+        PCU_Debug_Print("totW vtx %f edge %f elm %f\n",
+            weight[0], weight[1], weight[dim]);
       }
       ~GhostWeights() {
         const GhostWeights::Item* w;
