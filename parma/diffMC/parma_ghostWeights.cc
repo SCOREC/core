@@ -170,18 +170,15 @@ namespace parma {
       apf::MeshTag* depth;
   };
 
-
-  // can the associative container be modified to hold an array of weights per
-  // peer????
   class GhostWeights : public Associative<double*> {
     public:
       GhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int layers)
-        : wtag(w), weight(0)
+        : weight(0)
       {
         weight = new double[4];
         for(int dim=0; dim<4; dim++)
-          weight[dim] += ownedWeight(m, wtag,dim);
-        GhostFinder finder(m, wtag, layers);
+          weight[dim] += ownedWeight(m,w,dim);
+        GhostFinder finder(m, w, layers);
         findGhosts(&finder, s);
         exchangeGhostsFrom();
         exchange();
@@ -199,7 +196,6 @@ namespace parma {
       }
     private:
       GhostWeights();
-      apf::MeshTag* wtag;
       double* weight;
       void findGhosts(GhostFinder* finder, Sides* sides) {
         const Sides::Item* side;
@@ -244,7 +240,6 @@ namespace parma {
     public:
       GhostToEntWeight(GhostWeights* gw, int dim)
         : Weights(NULL,NULL,NULL) {
-        wtag = gw->getTag();
         const GhostWeights::Item* ghost;
         gw->begin();
         while( (ghost = gw->iterate()) )
@@ -255,13 +250,9 @@ namespace parma {
       double self() {
         return weight;
       }
-      apf::MeshTag* getTag() {
-        return wtag;
-      }
     private:
       GhostToEntWeight();
       double weight;
-      apf::MeshTag* wtag;
   };
 
   Weights* convertGhostToEntWeight(GhostWeights* gw, int dim) {
