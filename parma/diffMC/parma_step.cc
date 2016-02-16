@@ -10,9 +10,9 @@
 namespace parma {
   Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
-     Stop* stopper)
+     const char* entType, Stop* stopper)
     : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t),
-    selects(sel), stop(stopper) {
+    selects(sel), name(entType), stop(stopper) {
       verbose = 0;
   }
 
@@ -27,7 +27,7 @@ namespace parma {
   bool Stepper::step(double maxImb, int verbosity) {
     const double imb = getImbalance(weights);
     if ( !PCU_Comm_Self() && verbosity )
-      fprintf(stdout, "imbalance %.3f\n", imb);
+      fprintf(stdout, "%s imbalance %.3f\n", name, imb);
     if ( stop->stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);

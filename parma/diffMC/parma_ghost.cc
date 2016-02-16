@@ -46,7 +46,7 @@ namespace {
         parma::Selector* sel = parma::makeElmSelector(mesh, wtag);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
-        parma::Stepper b(mesh, factor, s, elmW, t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, elmW, t, sel, "elm", stopper);
         bool ret = b.step(tolerance, verbose);
         return ret;
       }
@@ -100,7 +100,7 @@ namespace {
           parma::makeVtxLtElmSelector(mesh, wtag, maxElmW);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
-        parma::Stepper b(mesh, factor, s, vtxW, t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, vtxW, t, sel, "vtx", stopper);
         bool ret = b.step(tolerance, verbose);
         stepNum++;
         return ret;
