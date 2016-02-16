@@ -454,6 +454,13 @@ static void testAlternateTetJacobian(apf::Mesh2* m)
   m->end(it);
 }
 
+
+void test3D(apf::Mesh2* m)
+{
+  testSize3D(m);
+  test3DJacobian(m);
+  test3DJacobianTri(m);
+}
 /* Tests 3D with blending functions. This can go as high as the order of
  * triangles implemented. There are no nodes inside the tetrahedron
  *
@@ -475,9 +482,7 @@ void test3DBlended()
       apf::Mesh2* m = createMesh3D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
-      testSize3D(m);
-      test3DJacobian(m);
-      test3DJacobianTri(m);
+      test3D(m);
       m->destroyNative();
       apf::destroyMesh(m);
     }
@@ -493,14 +498,8 @@ void test3DFull()
     apf::Mesh2* m = createMesh3D();
     crv::BezierCurver bc(m,order,0);
     bc.run();
-
-    if(order <= 6)
-      testSize3D(m);
-    test3DJacobian(m);
-    test3DJacobianTri(m);
-    if(order <= 8){
-      testAlternateTetJacobian(m);
-    }
+    test3D(m);
+    testAlternateTetJacobian(m);
 
     if(order == 4){
       // put a field on the mesh to make sure nothing fails
@@ -536,6 +535,41 @@ void test3DFull()
     }
     m->destroyNative();
     apf::destroyMesh(m);
+  }
+  // test simple elevation
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc(m,order,0);
+    bc.run();
+    crv::changeMeshOrder(m,5);
+    test3D(m);
+  }
+  // test elevation inside a BezierCurver
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc1(m,order,0);
+    bc1.run();
+    crv::BezierCurver bc2(m,order+2,0);
+    bc2.run();
+    test3D(m);
+  }
+  // test going downward
+  for(int order = 4; order <= 6; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc1(m,order,0);
+    bc1.run();
+    crv::BezierCurver bc2(m,order-2,0);
+    bc2.run();
+    test3D(m);
+  }
+  // test going from 2nd order lagrange to various order bezier
+  for(int order = 1; order <= 6; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::InterpolatingCurver ic(m,2);
+    ic.run();
+    crv::BezierCurver bc2(m,order,0);
+    bc2.run();
+    test3D(m);
   }
 }
 

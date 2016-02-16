@@ -10,21 +10,20 @@
 #include "crvTables.h"
 #include "crvQuality.h"
 #include "crvSnap.h"
-#include <apfVectorField.h>
 #include <apfTagData.h>
+#include <apfVectorField.h>
 
 namespace crv {
 
-void elevateMeshOrder(apf::Mesh2* m, int newOrder)
+void changeMeshOrder(apf::Mesh2* m, int newOrder)
 {
   std::string name = m->getShape()->getName();
   if(name != std::string("Bezier"))
     fail("mesh must be already bezier");
 
-  int order = m->getShape()->getOrder();
-  if(order >= newOrder)
-    fail("elevateBezierOrder: "
-        "unable to decrease order of curved mesh");
+  int oldOrder = m->getShape()->getOrder();
+  if(oldOrder == newOrder)
+   return;
 
   apf::VectorField* newCoordinateField = new apf::VectorField();
   newCoordinateField->init("__new_coordinates",
@@ -40,40 +39,51 @@ void elevateMeshOrder(apf::Mesh2* m, int newOrder)
   }
   m->end(it);
 
+  apf::Vector3 xi;
 
   // currently, we don't allow for variable order meshes,
   // as such, the bezier shape class can only be one order at a time
   // to make things happy, we switch back and forth depending on
   // whether we are elevating elements or snapping to boundary
-  setOrder(order);
+  setOrder(oldOrder);
   bool canSnap = m->canSnap();
 
   // do the boundaries first for the new field, this is tricky,
   // snapping them
-  if(canSnap){
-    for (int d = 1; d <= 2; ++d){
-      it = m->begin(d);
-      int type = apf::Mesh::simplexTypes[d];
-      int nNewOn = getNumInternalControlPoints(type,newOrder);
-      apf::Vector3 p, xi, pt(0,0,0);
-      while ((e = m->iterate(it))) {
-        if(isBoundaryEntity(m,e)){
-          for(int i = 0; i < nNewOn; ++i){
-            apf::ModelEntity* g = m->toModel(e);
-            getBezierNodeXi(type,newOrder,i,xi);
-            if(type == apf::Mesh::EDGE)
-              transferParametricOnEdgeSplit(m,e,0.5*(xi[0]+1.),p);
-            else
-              transferParametricOnTriSplit(m,e,xi,p);
-            m->snapToModel(g,p,pt);
-            apf::setVector(newCoordinateField,e,i,pt);
-          }
+
+  for (int d = 1; d <= 3; ++d){
+    it = m->begin(d);
+    int type = apf::Mesh::simplexTypes[d];
+    int nNewOn = getNumInternalControlPoints(type,newOrder);
+    apf::Vector3 p;
+    while ((e = m->iterate(it))) {
+      if(canSnap && isBoundaryEntity(m,e)){
+        for(int i = 0; i < nNewOn; ++i){
+          apf::ModelEntity* g = m->toModel(e);
+          getBezierNodeXi(type,newOrder,i,xi);
+          if(type == apf::Mesh::EDGE)
+            transferParametricOnEdgeSplit(m,e,0.5*(xi[0]+1.),p);
+          else
+            transferParametricOnTriSplit(m,e,xi,p);
+          m->snapToModel(g,p,coord);
+          apf::setVector(newCoordinateField,e,i,coord);
         }
+      } else if (newOrder < oldOrder) {
+        // decrease the order, using old mesh
+        apf::Element* oldElem = apf::createElement(m->getCoordinateField(),e);
+        for (int i = 0; i < nNewOn; ++i){
+          getBezierNodeXi(type,newOrder,i,xi);
+          apf::getVector(oldElem,xi,coord);
+          apf::setVector(newCoordinateField,e,i,coord);
+        }
+        apf::destroyElement(oldElem);
       }
-      m->end(it);
     }
+    m->end(it);
   }
-  // then go downward, and elevate the internal entities
+  setOrder(newOrder);
+
+  // then go downward, and change the internal entities
   for (int d = m->getDimension(); d >= 1; --d){
     int type = apf::Mesh::simplexTypes[d];
     int nNewOn = getNumInternalControlPoints(type,newOrder);
@@ -89,36 +99,94 @@ void elevateMeshOrder(apf::Mesh2* m, int newOrder)
     if (type == apf::Mesh::EDGE)
       offset = 1;
 
+    apf::NewArray<double> c;
+    crv::getBezierTransformationCoefficients(newOrder,type,c);
+
     while ((e = m->iterate(it))) {
-      if(canSnap && isBoundaryEntity(m,e)){
-        // create element to change interpolating boundary points
-        // to control points
+      if(newOrder < oldOrder || (canSnap && isBoundaryEntity(m,e))){
+        // create element to change interpolating points
+        // to control points, which are either on the boundary, or everywhere
+        // depending on the case
         apf::Element* newElem = apf::createElement(newCoordinateField,e);
         apf::getVectorNodes(newElem,oldNodes);
-        apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(newOrder,d,c);
         convertInterpolationPoints(nNew,nNewOn,oldNodes,c,newNodes);
         for(int i = 0; i < nNewOn; ++i)
           apf::setVector(newCoordinateField,e,i,newNodes[i]);
         apf::destroyElement(newElem);
       } else {
-        // change the order to create elements from coordinate field
-        setOrder(order);
+        // elevate the order to create elements from coordinate field
+        setOrder(oldOrder);
         apf::Element* oldElem = apf::createElement(m->getCoordinateField(),e);
         apf::getVectorNodes(oldElem,oldNodes);
-        elevateBezier(type,order,newOrder-order,oldNodes,newNodes);
+        elevateBezier(type,oldOrder,newOrder-oldOrder,oldNodes,newNodes);
         setOrder(newOrder); //set order back
         for(int i = 0; i < nNewOn; ++i){
           apf::setVector(newCoordinateField,e,i,newNodes[offset+i]);
         }
         apf::destroyElement(oldElem);
+
       }
     }
     m->end(it);
   }
-  // just incase
   setOrder(newOrder);
   // set the coordinate field to the newly created one
+  m->setCoordinateField(newCoordinateField);
+}
+
+void reduceMeshOrder(apf::Mesh2* m, int newOrder)
+{
+  std::string name = m->getShape()->getName();
+  if(name != std::string("Bezier"))
+    fail("mesh must be already bezier");
+
+  int order = m->getShape()->getOrder();
+  if(order >= newOrder)
+    fail("elevateBezierOrder: "
+        "unable to decrease order of curved mesh");
+  // project points downward onto the curved mesh
+  // the new points are interpolating points on the mesh
+  apf::Field* oldCoordinateField = m->getCoordinateField();
+  apf::VectorField* newCoordinateField = new apf::VectorField();
+  newCoordinateField->init("__new_coordinates",
+      m, crv::getBezier(newOrder), new apf::TagDataOf<double>());
+  {
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(0);
+    apf::Vector3 coord;
+    while ((e = m->iterate(it))) {
+      m->getPoint(e,0,coord);
+      apf::setVector(newCoordinateField,e,0,coord);
+    }
+    m->end(it);
+  }
+  setOrder(order);
+  for(int d = m->getDimension(); d >= 1; --d)
+  {
+    int type = apf::Mesh::simplexTypes[d];
+    int n = getNumInternalControlPoints(type,newOrder);
+    apf::NewArray<apf::Vector3> nodes(n);
+    apf::Vector3 xi;
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(d);
+    while ((e = m->iterate(it))) {
+      if(m->isOwned(e))
+      {
+        apf::Element* elem =
+            apf::createElement(oldCoordinateField,e);
+        for (int i = 0; i < n; ++i){
+          getBezierNodeXi(type,newOrder,i,xi);
+          apf::getVector(elem,xi,nodes[i]);
+        }
+        apf::destroyElement(elem);
+        for (int i = 0; i < n; ++i){
+          apf::setVector(newCoordinateField,e,i,nodes[i]);
+        }
+      }
+    }
+    m->end(it);
+  }
+  setOrder(newOrder);
   m->setCoordinateField(newCoordinateField);
 }
 

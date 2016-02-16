@@ -57,7 +57,13 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 /** \brief a per entity version of above */
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
 
-void elevateMeshOrder(apf::Mesh2* m, int newOrder);
+/** \brief change the order of a Bezier Mesh
+ * \details going up in order is exact,
+ * except for boundary elements, where snapping changes things
+ * Going down in order is approximate everywhere
+ * */
+void changeMeshOrder(apf::Mesh2* m, int newOrder);
+
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D
@@ -109,7 +115,8 @@ class BezierCurver : public MeshCurver
       \details finds interpolating points, then converts to control points
       see crvBezier.cc */
     virtual bool run();
-
+    /** \brief converts interpolating points to bezier control points */
+    void convertInterpolatingToBezier();
 };
 
 /** \brief this curves a mesh with 4th order G1 Patches
