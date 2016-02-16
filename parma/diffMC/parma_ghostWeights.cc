@@ -115,31 +115,6 @@ namespace {
     m->end(it);
     return sum;
   }
-  void writeBfsVtk(apf::Mesh* m, apf::MeshTag* depth, int peer) {
-    apf::Field* of = createFieldOn(m,"owners_fld",apf::SCALAR);
-    apf::Field* df = createFieldOn(m,"depths_fld",apf::SCALAR);
-    static int calls = 0;
-    double val = 0;
-    apf::MeshIterator* itr = m->begin(0);
-    apf::MeshEntity* v;
-    while ((v=m->iterate(itr))) {
-      val = (double) parma::isOwned(m,v);
-      apf::setScalar(of,v,0,val);
-      int d = -1;
-      if( m->hasTag(v,depth) )
-        m->getIntTag(v,depth,&d);
-      val = (double) d;
-      apf::setScalar(df,v,0,val);
-    }
-    m->end(itr);
-    char name[1024] = "";
-    sprintf(name, "depths-call%d-peer%d-", calls, peer);
-    apf::writeOneVtkFile(name, m);
-    PCU_Debug_Print("deleteing fields\n");
-    calls++;
-    apf::destroyField(of);
-    apf::destroyField(df);
-  }
 }
 
 namespace parma {
@@ -182,7 +157,6 @@ namespace parma {
 
         // current: peer owned vtx   next: self owned vtx and edges
         double* weight = runBFS(mesh,layers,current,next,depth,wtag,peer);
-        //writeBfsVtk(mesh,depth,peer);
         for (unsigned int i=0;i<4;i++)
           apf::removeTagFromDimension(mesh,depth,i);
         mesh->destroyTag(depth);
