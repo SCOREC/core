@@ -260,7 +260,6 @@ void test3D()
       ma::adapt(inRefine);
     double v1 = measureMesh(m);
     assert( std::fabs(v1-v0) < 0.05 );
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedtest");
 
     m->destroyNative();
     apf::destroyMesh(m);
@@ -272,8 +271,6 @@ void test3D()
     bc.run();
 
     double v0 = measureMesh(m);
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedBefore");
-
     ma::Input* inRefine = ma::configureUniformRefine(m,1);
     inRefine->shouldSnap = false;
     inRefine->shouldTransferParametric = false;
@@ -283,7 +280,9 @@ void test3D()
       ma::adapt(inRefine);
     double v1 = measureMesh(m);
     assert( std::fabs(v1-v0) < 0.05 );
-    crv::writeCurvedVtuFiles(m,apf::Mesh::TET,10,"curvedAfter");
+
+    int numinvalid = crv::countNumberInvalidElements(m);
+    assert(numinvalid == 0);
 
     m->destroyNative();
     apf::destroyMesh(m);
