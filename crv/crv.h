@@ -18,7 +18,7 @@
   * only one accessible from install right now */
 
 /** \namespace crv
-  * \brief the main mesh curving functions are contained in this namespace */
+  * \brief the curving functions are contained in this namespace */
 namespace crv {
 
 /** \brief actually 1 greater than max order */
@@ -57,11 +57,18 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 /** \brief a per entity version of above */
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
 
-void elevateMeshOrder(apf::Mesh2* m, int newOrder);
+/** \brief change the order of a Bezier Mesh
+ * \details going up in order is exact,
+ * except for boundary elements, where snapping changes things
+ * Going down in order is approximate everywhere
+ * */
+void changeMeshOrder(apf::Mesh2* m, int newOrder);
+
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D
   meshes and surface meshes. */
+
 class MeshCurver
 {
   public:
@@ -109,7 +116,8 @@ class BezierCurver : public MeshCurver
       \details finds interpolating points, then converts to control points
       see crvBezier.cc */
     virtual bool run();
-
+    /** \brief converts interpolating points to bezier control points */
+    void convertInterpolatingToBezier();
 };
 
 /** \brief this curves a mesh with 4th order G1 Patches
@@ -141,7 +149,8 @@ apf::FieldShape* getBezier(int order);
 apf::FieldShape* getGregory();
 
 /** \brief get coefficients for interpolating points to control points
- \details works only for prescribed optimal point locations */
+ \details works only for prescribed optimal point locations up to 6th order
+ in 2D and */
 void getBezierTransformationCoefficients(int P, int type,
     apf::NewArray<double>& c);
 void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
@@ -162,7 +171,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief Visualization, writes file of shapes evaluated at node xi
- *  for each entity */
+    for each entity */
 void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief publically accessible functions */
 int getTriNodeIndex(int P, int i, int j);
@@ -178,10 +187,10 @@ int quadnomial(int n, int i, int j, int k);
 /** \brief check the validity (det(Jacobian) > eps) of an element
  * \details entities is a container of invalid downward entities
  * algorithm is an integer corresponding to what method to use
- * 0 - subdivision
- * 1 - elevation
- * 2 - subdivision, without first check
- * 3 - elevation, without first check
+ * 0 - subdivision, without first check
+ * 1 - elevation, without first check
+ * 2 - subdivision
+ * 3 - elevation
  * 4 - subdivision, using matrices
  * methods 2 and 3 exist because the first check tends to catch everything
  * without actually using subdivision and elevation, and giving this option
@@ -189,6 +198,8 @@ int quadnomial(int n, int i, int j, int k);
  * */
 int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
     int algorithm = 4);
+/** \brief count invalid elements of the mesh */
+int countNumberInvalidElements(apf::Mesh2* m);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

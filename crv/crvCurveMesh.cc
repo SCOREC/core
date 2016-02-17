@@ -97,27 +97,13 @@ bool InterpolatingCurver::run()
   return true;
 }
 
-
-
-bool BezierCurver::run()
+void BezierCurver::convertInterpolatingToBezier()
 {
-  if(m_order < 1 || m_order > 6){
-    fail("trying to convert to unimplemented Bezier order\n");
-  }
+  apf::FieldShape * fs = m_mesh->getShape();
+  int order = fs->getOrder();
 
   int md = m_mesh->getDimension();
   int blendingOrder = getBlendingOrder(apf::Mesh::simplexTypes[md]);
-  apf::changeMeshShape(m_mesh, getBezier(m_order),true);
-  apf::FieldShape * fs = m_mesh->getShape();
-
-  // interpolate points in each dimension if we can,
-  // otherwise assume they are where we want them
-  if (m_mesh->canSnap()){
-    for(int d = 1; d <= 2; ++d)
-      snapToInterpolate(d);
-    synchronize();
-  }
-
   // go downward, and convert interpolating to control points
   int startDim = md - (blendingOrder > 0);
 
@@ -126,7 +112,7 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getBezierTransformationCoefficients(m_order,
+    getBezierTransformationCoefficients(order,
         apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
@@ -144,7 +130,7 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getInternalBezierTransformationCoefficients(m_mesh,m_order,1,
+    getInternalBezierTransformationCoefficients(m_mesh,order,1,
         apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
@@ -156,6 +142,43 @@ bool BezierCurver::run()
   }
 
   synchronize();
+}
+
+bool BezierCurver::run()
+{
+  std::string name = m_mesh->getShape()->getName();
+  if(m_order < 1 || m_order > 6){
+    fail("trying to convert to unimplemented Bezier order\n");
+  }
+  // if the currentOrder is NOT one, assume the mesh
+  // is already interpolated and curved as one would want it,
+  // otherwise, change it down to first order and then go back up
+  int currentOrder = m_mesh->getShape()->getOrder();
+
+  // if its already bezier, check what needs to be done, if anything
+  if(name == std::string("Bezier")){
+    changeMeshOrder(m_mesh,m_order);
+    return true;
+  } else {
+    // if the initial mesh is first order, project the points
+    // onto the new shape
+    if(currentOrder == 1 || m_order == 1 || currentOrder > m_order)
+    {
+      apf::changeMeshShape(m_mesh, getBezier(m_order),true);
+    } else if(currentOrder > 1){
+      // assume it is interpolating, don't project
+      apf::changeMeshShape(m_mesh,getBezier(m_order),false);
+    }
+  }
+
+  if (m_mesh->canSnap()){
+    for(int d = 1; d <= 2; ++d)
+      snapToInterpolate(d);
+    synchronize();
+  }
+
+  convertInterpolatingToBezier();
+
   // curving 1D meshes, while rare, is important in testing
   // do not fix shape if this is the case
   // does not work for blended shapes, yet

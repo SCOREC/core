@@ -205,7 +205,6 @@ void test2D()
       }
       double v0 = measureMesh(m);
       ma::Input* inRefine = ma::configureUniformRefine(m,1);
-      inRefine->maximumIterations = 0;
       inRefine->shouldSnap = true;
       inRefine->shouldTransferParametric = true;
       if(order > 1)
@@ -213,8 +212,9 @@ void test2D()
       else
         ma::adapt(inRefine);
       double v1 = measureMesh(m);
-      assert( std::fabs(v1-v0) < 0.05 );
-
+      if(order > 1){
+        assert( std::fabs(v1-v0) < 0.05 );
+      }
       m->destroyNative();
       apf::destroyMesh(m);
     }
@@ -244,64 +244,13 @@ apf::Mesh2* createMesh3D()
 void test3D()
 {
   gmi_register_null();
-
-  double radius = 0.5;
-
+  // test full
   for(int order = 1; order <= 4; ++order){
     apf::Mesh2* m = createMesh3D();
     crv::BezierCurver bc(m,order,0);
     bc.run();
-    crv::setBlendingOrder(apf::Mesh::TYPES,0);
-    apf::changeMeshShape(m, crv::getBezier(order),true);
-    apf::FieldShape* fs = m->getShape();
 
-
-    for(int d = 1; d <= 2; ++d){
-      int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-      if(ne == 0) continue;
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(d);
-      while ((e = m->iterate(it))) {
-        for (int i = 0; i < ne; ++i){
-          apf::Vector3 point;
-          m->getPoint(e,i,point);
-          double scale = radius/point.getLength();
-          point = point*scale;
-          m->setPoint(e,i,point);
-        }
-      }
-      m->end(it);
-    }
-
-    for(int d = 2; d >= 1; --d){
-      int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-      int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-      if(ne == 0) continue;
-      apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(order,
-          apf::Mesh::simplexTypes[d],c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(d);
-      while ((e = m->iterate(it))) {
-        crv::convertInterpolationPoints(m,e,n,ne,c);
-      }
-      m->end(it);
-    }
-    if(order >= 4){
-      int n = fs->getEntityShape(apf::Mesh::TET)->countNodes();
-      int ne = fs->countNodesOn(apf::Mesh::TET);
-      apf::NewArray<double> c;
-      crv::getInternalBezierTransformationCoefficients(m,order,1,
-          apf::Mesh::TET,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(3);
-      while ((e = m->iterate(it))){
-        crv::convertInterpolationPoints(m,e,n-ne,ne,c);
-      }
-      m->end(it);
-    }
-    m->acceptChanges();
-
+    double v0 = measureMesh(m);
     ma::Input* inRefine = ma::configureUniformRefine(m,1);
     inRefine->shouldSnap = false;
     inRefine->shouldTransferParametric = false;
@@ -309,6 +258,31 @@ void test3D()
       crv::adapt(inRefine);
     else
       ma::adapt(inRefine);
+    double v1 = measureMesh(m);
+    assert( std::fabs(v1-v0) < 0.05 );
+
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+  // test blended
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc(m,order,1);
+    bc.run();
+
+    double v0 = measureMesh(m);
+    ma::Input* inRefine = ma::configureUniformRefine(m,1);
+    inRefine->shouldSnap = false;
+    inRefine->shouldTransferParametric = false;
+    if(order > 1)
+      crv::adapt(inRefine);
+    else
+      ma::adapt(inRefine);
+    double v1 = measureMesh(m);
+    assert( std::fabs(v1-v0) < 0.05 );
+
+    int numinvalid = crv::countNumberInvalidElements(m);
+    assert(numinvalid == 0);
 
     m->destroyNative();
     apf::destroyMesh(m);
