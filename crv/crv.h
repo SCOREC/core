@@ -197,6 +197,9 @@ int quadnomial(int n, int i, int j, int k);
 int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
     int algorithm = 4);
 
+/** \brief count invalid elements of the mesh */
+int countNumberInvalidElements(apf::Mesh2* m);
+
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
 

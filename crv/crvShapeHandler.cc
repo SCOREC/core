@@ -580,9 +580,8 @@ class BezierHandler : public ma::ShapeHandler
 
       // set the rest of the interior points
       for (int d = 2; d <= mesh->getDimension(); ++d){
+        if (!fs->hasNodesIn(d)) continue;
         int ni = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-        if(ni == 0) continue;
-
         n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
 
         for (size_t i = 0; i < newEntities.getSize(); ++i)

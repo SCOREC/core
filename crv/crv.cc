@@ -34,6 +34,7 @@ bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimension)
 
 int getNumInternalControlPoints(int type, int order)
 {
+  assert(order > 0);
   switch (type) {
     case apf::Mesh::VERTEX:
       return 1;
@@ -181,16 +182,23 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
   }
 }
 
-//int countNumberInvalidElements(apf::Mesh2* m)
-//{
-//  int n = 0;
-//  apf::MeshEntity* e;
-//  apf::MeshIterator* it = m->begin(m->getDimension());
-//  while ((e = m->iterate(it))) {
-//checkTetValidity()
-//  }
-//  m->end(it);
-//}
+int countNumberInvalidElements(apf::Mesh2* m)
+{
+  int n = 0;
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  if (m->getShape()->getOrder() == 1){
+    while ((e = m->iterate(it))) {
+      n += (apf::measure(m,e) < 1e-10);
+    }
+  } else {
+    while ((e = m->iterate(it))) {
+      n += (checkValidity(m,e,4) > 1);
+    }
+  }
+  m->end(it);
+  return n;
+}
 
 void fail(const char* why)
 {

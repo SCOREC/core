@@ -22,15 +22,15 @@ void repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
   apf::FieldShape * fs = m->getShape();
   int order = fs->getOrder();
   int typeDim = apf::Mesh::typeDimension[m->getType(e)];
+  int type = apf::Mesh::simplexTypes[typeDim];
 
-  if(!fs->hasNodesIn(typeDim) ||
-      getBlendingOrder(apf::Mesh::simplexTypes[typeDim])) return;
+  if(!fs->hasNodesIn(typeDim) || getBlendingOrder(type))
+    return;
 
-  int n = fs->getEntityShape(apf::Mesh::simplexTypes[typeDim])->countNodes();
-  int ne = fs->countNodesOn(apf::Mesh::simplexTypes[typeDim]);
+  int n = fs->getEntityShape(type)->countNodes();
+  int ne = fs->countNodesOn(type);
   apf::NewArray<double> c;
-  getInternalBezierTransformationCoefficients(m,order,1,
-      apf::Mesh::simplexTypes[typeDim],c);
+  getInternalBezierTransformationCoefficients(m,order,1,type,c);
   convertInterpolationPoints(m,e,n-ne,ne,c);
 
 }
