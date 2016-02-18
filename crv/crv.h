@@ -136,7 +136,9 @@ apf::FieldShape* getGregory();
    sampling locations in parameter space */
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
 
-/** \brief Visualization, writes file for specified type */
+/** \brief Visualization, writes file for specified type, n is
+   number of subdivisions, higher number -> better resolution,
+   but bigger file */
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
 /** \brief Visualization, writes file of control nodes for each entity */

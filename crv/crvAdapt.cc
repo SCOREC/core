@@ -24,6 +24,8 @@ Adapt::Adapt(ma::Input* in)
   validityTag = mesh->createIntTag("crv_tags",1);
 }
 
+// rather than use the destructor to delete validityTag,
+// this function takes care of it (since ~ma::Adapt() isn't virtual)
 static void clearTags(Adapt* a)
 {
   ma::Mesh* m = a->mesh;
@@ -43,7 +45,7 @@ static int getTags(Adapt* a, ma::Entity* e)
 {
   ma::Mesh* m = a->mesh;
   if ( ! m->hasTag(e,a->validityTag))
-    return 0; //we assume 0 is the default value for all tags
+    return 0; //we assume 0 is the default (unset) value for all tags
   int tags;
   m->getIntTag(e,a->validityTag,&tags);
   return tags;

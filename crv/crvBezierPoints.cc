@@ -140,6 +140,11 @@ void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi)
   }
 }
 
+/* This allocates as needed, however there is still
+   a copy step at the end, which may be superfluous,
+   in which case a pointer may be more efficient.
+   Current profiling does not suggest this is a bottleneck though
+ */
 void getBezierTransformationCoefficients(int P, int type,
     apf::NewArray<double> & c)
 {
@@ -148,8 +153,8 @@ void getBezierTransformationCoefficients(int P, int type,
   assert(n > 0);
   assert(ni > 0);
   static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
-  if(!transform[type][P].allocated()){
 
+  if(!transform[type][P].allocated()){
     transform[type][P].allocate(ni*n);
 
     mth::Matrix<double> A(n,n);

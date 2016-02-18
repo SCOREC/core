@@ -136,62 +136,6 @@ void changeMeshOrder(apf::Mesh2* m, int newOrder)
   m->setCoordinateField(newCoordinateField);
 }
 
-void reduceMeshOrder(apf::Mesh2* m, int newOrder)
-{
-  std::string name = m->getShape()->getName();
-  if(name != std::string("Bezier"))
-    fail("mesh must be already bezier");
-
-  int order = m->getShape()->getOrder();
-  if(order >= newOrder)
-    fail("elevateBezierOrder: "
-        "unable to decrease order of curved mesh");
-  // project points downward onto the curved mesh
-  // the new points are interpolating points on the mesh
-  apf::Field* oldCoordinateField = m->getCoordinateField();
-  apf::VectorField* newCoordinateField = new apf::VectorField();
-  newCoordinateField->init("__new_coordinates",
-      m, crv::getBezier(newOrder), new apf::TagDataOf<double>());
-  {
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(0);
-    apf::Vector3 coord;
-    while ((e = m->iterate(it))) {
-      m->getPoint(e,0,coord);
-      apf::setVector(newCoordinateField,e,0,coord);
-    }
-    m->end(it);
-  }
-  setOrder(order);
-  for(int d = m->getDimension(); d >= 1; --d)
-  {
-    int type = apf::Mesh::simplexTypes[d];
-    int n = getNumInternalControlPoints(type,newOrder);
-    apf::NewArray<apf::Vector3> nodes(n);
-    apf::Vector3 xi;
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(d);
-    while ((e = m->iterate(it))) {
-      if(m->isOwned(e))
-      {
-        apf::Element* elem =
-            apf::createElement(oldCoordinateField,e);
-        for (int i = 0; i < n; ++i){
-          getBezierNodeXi(type,newOrder,i,xi);
-          apf::getVector(elem,xi,nodes[i]);
-        }
-        apf::destroyElement(elem);
-        for (int i = 0; i < n; ++i){
-          apf::setVector(newCoordinateField,e,i,nodes[i]);
-        }
-      }
-    }
-    m->end(it);
-  }
-  setOrder(newOrder);
-  m->setCoordinateField(newCoordinateField);
-}
-
 /*
  * Templating is used for coordinates (Vector3) and det(Jacobian) (double)
  * and is only accessible in this file.

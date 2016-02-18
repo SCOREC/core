@@ -20,7 +20,8 @@ namespace crv {
 void subdivideBezierEntityJacobianDet(int P, int type,
     apf::NewArray<double>& c, apf::NewArray<double>& nodes,
     apf::NewArray<double> *subNodes);
-/** \brief get matrices used for subdivision */
+/** \brief get matrices used for uniform subdivision, 2^dim matrices,
+     unrolled into a double */
 void getBezierJacobianDetSubdivisionCoefficients(int P, int type,
     apf::NewArray<double>& c);
 
