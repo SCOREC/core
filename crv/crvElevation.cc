@@ -7,9 +7,11 @@
 
 #include "crv.h"
 #include "crvBezier.h"
+#include "crvMath.h"
+#include "crvShape.h"
+#include "crvSnap.h"
 #include "crvTables.h"
 #include "crvQuality.h"
-#include "crvSnap.h"
 #include <apfTagData.h>
 #include <apfVectorField.h>
 
@@ -349,6 +351,22 @@ void elevateBezier(int type, int P, int r,
     apf::NewArray<apf::Vector3>& elevatedNodes)
 {
   elevateBezierArray[type](P,r,nodes,elevatedNodes);
+}
+
+void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
+{
+  apf::Element* elem =
+      apf::createElement(m->getCoordinateField(),edge);
+
+  apf::Vector3 pt;
+  apf::NewArray<apf::Vector3> nodes, elevatedNodes(n+r+1);
+  apf::getVectorNodes(elem,nodes);
+  elevateBezierEdge(n,r,nodes,elevatedNodes);
+
+  for(int i = 1; i < n+r; ++i)
+    m->setPoint(edge,i-1,elevatedNodes[i]);
+
+  apf::destroyElement(elem);
 }
 
 }

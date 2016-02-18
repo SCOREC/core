@@ -16,11 +16,6 @@
 
 namespace crv {
 
-/** \brief sets order used in bezier shape functions */
-void setOrder(const int order);
-/** \brief gets order used in bezier shape functions */
-int getOrder();
-
 /** \brief computes node index, use getTriNodeIndex to leverage tables */
 int computeTriNodeIndex(int P, int i, int j);
 /** \brief computes node index, use getTetNodeIndex to leverage tables */
@@ -89,6 +84,12 @@ void elevateBezier(int type, int P, int r,
     apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3>& elevatedNodes);
 
+/** \brief Elevate a bezier curve to a higher order
+ \details This elevates from nth order to n+rth order
+ requires the curve be order n+r in memory already, and
+ that the first n points correspond to the lower order curve */
+void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
+
 /** \brief subdivision functions for beziers */
 void subdivideBezierEdge(int P, double t, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[2]);
@@ -100,6 +101,33 @@ void subdivideBezierTriangle(int P, apf::NewArray<apf::Vector3>& nodes,
 void subdivideBezierTet(int P, apf::Vector3& p,
     apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3> (&subNodes)[4]);
+
+/** \brief converts interpolating points to control points
+ * \details n is total number of nodes on the shape
+ * ne is nodes on the entity, that belong to it
+ * c is a coefficient matrix in vector form
+ * corresponding to the matrix */
+void convertInterpolationPoints(int n, int ne,
+    apf::NewArray<apf::Vector3>& nodes,
+    apf::NewArray<double>& c,
+    apf::NewArray<apf::Vector3>& newNodes);
+
+void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
+    int n, int ne, apf::NewArray<double>& c);
+
+/** \brief get coefficients for interpolating points to control points
+ \details works only for prescribed optimal point locations up to 6th order
+ in 2D and */
+void getBezierTransformationCoefficients(int P, int type,
+    apf::NewArray<double>& c);
+void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
+    int type, apf::NewArray<double>& c);
+void getGregoryTransformationCoefficients(int type, apf::NewArray<double>& c);
+void getGregoryBlendedTransformationCoefficients(int blend, int type,
+    apf::NewArray<double>& c);
+
+/** \brief a per entity version of above */
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
 
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
     \details this is a support function, not actual ever needed.

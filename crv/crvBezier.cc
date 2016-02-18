@@ -9,6 +9,7 @@
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
 #include "crvMath.h"
+#include "crvShape.h"
 #include "crvTables.h"
 /* see bezier.tex */
 

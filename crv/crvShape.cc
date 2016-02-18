@@ -8,6 +8,7 @@
 #include <PCU.h>
 #include "crv.h"
 #include "crvAdapt.h"
+#include "crvShape.h"
 #include "crvTables.h"
 #include <maCoarsen.h>
 #include <maEdgeSwap.h>
@@ -19,9 +20,32 @@
 
 namespace crv {
 
+bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
+{
+  return m->getModelType(m->toModel(e)) < m->getDimension();
+}
+/** \brief checks if any entity has two entities of
+ * dimension on the boundary
+ * \details this is useful for some shape correction assessments,
+ * and in general, curved elements with multiple entities on the boundary
+ * are at risk for poor quality, since this strongly constrains
+ * their shape */
+static bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimension)
+{
+  apf::Downward down;
+  int count = 0;
+  int nd = m->getDownward(e,dimension,down);
+  for (int i = 0; i < nd; ++i){
+    if(isBoundaryEntity(m,down[i]))
+      ++count;
+    if(count == 2)
+      return true;
+  }
+  return false;
+}
+
 /* Mark Edges based on the invalidity code the element has been
  * tagged with.
- *
  */
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[6])

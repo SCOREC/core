@@ -11,6 +11,7 @@
  *
  */
 #include "crvAdapt.h"
+#include "crvBezier.h"
 #include "crvQuality.h"
 #include "crvTables.h"
 #include <cassert>

@@ -22,17 +22,12 @@
 namespace crv {
 
 /** \brief actually 1 greater than max order */
-static unsigned const MAX_ORDER = 20;
-/** \brief checks if is a boundary entity */
-bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
-/** \brief checks if any entity has two entities of
- * dimension on the boundary
- * \details this is useful for some shape correction assessments,
- * and in general, curved elements with multiple entities on the boundary
- * are at risk for poor quality, since this strongly constrains
- * their shape */
-bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e,
-    int dimension);
+static unsigned const MAX_ORDER = 19;
+
+/** \brief sets order used in bezier shape functions */
+void setOrder(const int order);
+/** \brief gets order used in bezier shape functions */
+int getOrder();
 /** \brief sets the blending order, if shape blending is used */
 void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
@@ -40,22 +35,6 @@ int getBlendingOrder(const int type);
 
 /** \brief computes min det Jacobian / max det Jacobian */
 double getQuality(apf::Mesh* m,apf::MeshEntity* e);
-
-/** \brief converts interpolating points to control points
- * \details n is total number of nodes on the shape
- * ne is nodes on the entity, that belong to it
- * c is a coefficient matrix in vector form
- * corresponding to the matrix */
-void convertInterpolationPoints(int n, int ne,
-    apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<double>& c,
-    apf::NewArray<apf::Vector3>& newNodes);
-
-void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
-    int n, int ne, apf::NewArray<double>& c);
-
-/** \brief a per entity version of above */
-void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
 
 /** \brief change the order of a Bezier Mesh
  * \details going up in order is exact,
@@ -136,28 +115,11 @@ class GregoryCurver : public BezierCurver
     void setInternalPointsLocally();
 };
 
-/** \brief Elevate a bezier curve to a higher order
- \details This elevates from nth order to n+rth order
- requires the curve be order n+r in memory already, and
- that the first n points correspond to the lower order curve */
-void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
-
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
 apf::FieldShape* getBezier(int order);
 /** \brief Get the 4th order Gregory Surface*/
 apf::FieldShape* getGregory();
-
-/** \brief get coefficients for interpolating points to control points
- \details works only for prescribed optimal point locations up to 6th order
- in 2D and */
-void getBezierTransformationCoefficients(int P, int type,
-    apf::NewArray<double>& c);
-void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
-    int type, apf::NewArray<double>& c);
-void getGregoryTransformationCoefficients(int type, apf::NewArray<double>& c);
-void getGregoryBlendedTransformationCoefficients(int blend, int type,
-    apf::NewArray<double>& c);
 
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
@@ -173,16 +135,10 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief Visualization, writes file of shapes evaluated at node xi
     for each entity */
 void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix);
+
 /** \brief publically accessible functions */
 int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
-
-/** \brief binomial function n!/(i!(n-i)!) */
-int binomial(int n, int i);
-/** \brief trinomial function n!/(i!j!(n-i-j)!) */
-int trinomial(int n, int i, int j);
-/** \brief "quadnomial" function n!/(i!j!k!(n-i-j-k)!) */
-int quadnomial(int n, int i, int j, int k);
 
 /** \brief check the validity (det(Jacobian) > eps) of an element
  * \details entities is a container of invalid downward entities

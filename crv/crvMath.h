@@ -19,6 +19,13 @@
 
 namespace crv {
 
+/** \brief binomial function n!/(i!(n-i)!) */
+int binomial(int n, int i);
+/** \brief trinomial function n!/(i!j!(n-i-j)!) */
+int trinomial(int n, int i, int j);
+/** \brief "quadnomial" function n!/(i!j!k!(n-i-j-k)!) */
+int quadnomial(int n, int i, int j, int k);
+
 /** \brief faster power for integers */
 inline double intpow(const double b, const int e)
 {

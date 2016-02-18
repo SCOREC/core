@@ -13,25 +13,6 @@
 
 namespace crv {
 
-bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
-{
-  return m->getModelType(m->toModel(e)) < m->getDimension();
-}
-
-bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimension)
-{
-  apf::Downward down;
-  int count = 0;
-  int nd = m->getDownward(e,dimension,down);
-  for (int i = 0; i < nd; ++i){
-    if(isBoundaryEntity(m,down[i]))
-      ++count;
-    if(count == 2)
-      return true;
-  }
-  return false;
-}
-
 int getNumInternalControlPoints(int type, int order)
 {
   assert(order > 0);
@@ -57,6 +38,7 @@ int getNumInternalControlPoints(int type, int order)
 
 int getNumControlPoints(int type, int order)
 {
+  assert(order > 0);
   switch (type) {
     case apf::Mesh::VERTEX:
       return 1;
@@ -75,22 +57,6 @@ int getNumControlPoints(int type, int order)
   }
   fail("invalid type/order combination\n");
   return 0;
-}
-
-void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
-{
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),edge);
-
-  apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> nodes, elevatedNodes(n+r+1);
-  apf::getVectorNodes(elem,nodes);
-  elevateBezierEdge(n,r,nodes,elevatedNodes);
-
-  for(int i = 1; i < n+r; ++i)
-    m->setPoint(edge,i-1,elevatedNodes[i]);
-
-  apf::destroyElement(elem);
 }
 
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
