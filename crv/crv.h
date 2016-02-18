@@ -14,8 +14,7 @@
 #include <stdio.h>
 
 /** \file crv.h
-  * \brief main file for curved element support,
-  * only one accessible from install right now */
+  * \brief main file for curved element support */
 
 /** \namespace crv
   * \brief the curving functions are contained in this namespace */
@@ -114,6 +113,16 @@ class GregoryCurver : public BezierCurver
     /** \brief sets internal points locally */
     void setInternalPointsLocally();
 };
+
+/** \brief configure for fixing invalid elements */
+ma::Input* configureShapeCorrection(
+    ma::Mesh* m, ma::SizeField* f=0,
+    ma::SolutionTransfer* s=0);
+
+/** \brief crv adapt with custom configuration
+  \details see maInput.h for details.
+  note that this function will delete the Input object */
+void adapt(ma::Input* in);
 
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */

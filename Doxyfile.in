@@ -797,7 +797,17 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mthQR.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mthAD.h \
 @CMAKE_CURRENT_SOURCE_DIR@/crv/crv.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crv.h
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crv.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvAdapt.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvBezier.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvBezierShapes.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvMath.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvQuality.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvShape.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvSnap.h \
+@CMAKE_CURRENT_SOURCE_DIR@/crv/crvTables.h
+
+
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

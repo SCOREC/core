@@ -5,14 +5,9 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-/*
- * Here's an experiment. After refinement, re-place interior points based on
- * Boundary entities, rather than the previous structure.
- *
- */
-#include "crvAdapt.h"
 #include "crvBezier.h"
 #include "crvQuality.h"
+#include "crvShape.h"
 #include "crvTables.h"
 #include <cassert>
 
