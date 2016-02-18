@@ -6,6 +6,8 @@
  */
 #include "crv.h"
 #include "crvAdapt.h"
+#include "crvBezier.h"
+#include "crvShape.h"
 #include "crvSnap.h"
 
 #include <cassert>

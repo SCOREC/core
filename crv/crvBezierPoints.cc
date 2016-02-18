@@ -7,8 +7,9 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
-#include "crvTables.h"
 #include "crvMath.h"
+#include "crvShape.h"
+#include "crvTables.h"
 #include <mth_def.h>
 #include <cassert>
 #include <iostream>

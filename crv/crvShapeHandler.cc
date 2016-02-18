@@ -11,6 +11,7 @@
 #include "crvBezierShapes.h"
 #include "crvMath.h"
 #include "crvQuality.h"
+#include "crvShape.h"
 #include "crvTables.h"
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>

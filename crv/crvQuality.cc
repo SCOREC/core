@@ -7,6 +7,7 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
+#include "crvMath.h"
 #include "crvTables.h"
 #include "crvQuality.h"
 
