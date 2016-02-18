@@ -6,6 +6,7 @@
  */
 
 #include "crvAdapt.h"
+#include "crvShape.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <maBalance.h>
@@ -79,7 +80,7 @@ static void refine(ma::Adapt* a)
   ma::print("split %li edges in %f seconds",count,t1-t0);
 }
 
-int getQualityTag(ma::Mesh* m, ma::Entity* e,
+int getValidityTag(ma::Mesh* m, ma::Entity* e,
     ma::Entity* bdry)
 {
   if (bdry == e) return 18;

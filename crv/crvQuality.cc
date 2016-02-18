@@ -637,7 +637,7 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   return detJ;
 }
 
-double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
+static double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
 {
   int typeDim = apf::Mesh::typeDimension[type];
 

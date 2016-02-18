@@ -12,9 +12,21 @@
 #include "mth.h"
 
 /** \file crvBezier.h
-  * \brief main file for bezier shape functions support */
+    \brief main file for support of bezier shape functions */
 
 namespace crv {
+
+/** \brief polynomial part of bernstein polynomial, Bij, Bijk, Bijkl */
+double Bij(const int i, const int j,const double u, const double v);
+double Bijk(const int i, const int j, const int k, const double u,
+    const double v, const double w);
+double Bijkl(const int i, const int j, const int k, const int l,
+    const double u, const double v, const double w, const double t);
+
+/** \brief a different form of Bij, Bijk, Bijkl */
+double Bij(const int ij[], const double xi[]);
+double Bijk(const int ijk[], const double xi[]);
+double Bijkl(const int ijkl[], const double xi[]);
 
 /** \brief computes node index, use getTriNodeIndex to leverage tables */
 int computeTriNodeIndex(int P, int i, int j);
@@ -58,17 +70,6 @@ double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,
     comparison */
 double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
     apf::MeshEntity* e, apf::Vector3& xi);
-
-/** \brief shape blending functions
-    \details see bezier.tex */
-void BlendedTriangleGetValues(apf::Mesh* m, apf::MeshEntity* e,
-    apf::Vector3 const& xi, apf::NewArray<double>& values);
-void BlendedTriangleGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
-    apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads);
-void BlendedTetGetValues(apf::Mesh* m, apf::MeshEntity* e,
-    apf::Vector3 const& xi, apf::NewArray<double>& values);
-void BlendedTetGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
-    apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& grads);
 
 /** \brief get bezier node locations in parameter space */
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi);
