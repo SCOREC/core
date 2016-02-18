@@ -96,24 +96,27 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
   apf::Vector3 xi, exi;
   int evi = 0;
   apf::NewArray<double> values;
+  apf::NewArray<double> shape_vals;
 
   A.zero();
 
   int row = 0;
+  // loop over lower entities to get the xi at each point
   for(int d = 0; d <= typeDim; ++d){
     int nDown = apf::Mesh::adjacentCount[type][d];
+    int bt = apf::Mesh::simplexTypes[d];
+    apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+    int non = fs->countNodesOn(bt);
+    int nvtx =  apf::Mesh::adjacentCount[bt][0];
     for(int j = 0; j < nDown; ++j){
-      int bt = apf::Mesh::simplexTypes[d];
-      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
-      for(int x = 0; x < fs->countNodesOn(bt); ++x){
+      for(int x = 0; x < non; ++x){
         fs->getNodeXi(bt,x,xi);
-        apf::NewArray<double> shape_vals;
         shape->getValues(0, 0, xi, shape_vals);
-
+        // get the xi of the lower entity wrt to the main entity
         if(d < typeDim){
           exi.zero();
           evi = j;
-          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+          for (int i = 0; i < nvtx; ++i) {
             if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
               evi = apf::tri_edge_verts[j][i];
             if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
@@ -125,6 +128,7 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
         } else {
           exi = xi;
         }
+        // scale to the required range
         // slight change here because edges run [-1,1]
         if(typeDim == 1){
           exi[0] = 0.5*(exi[0]+1);

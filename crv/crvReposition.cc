@@ -101,9 +101,10 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
   m->getAdjacent(edge,3,adjacent);
 
   // places the new point at a 20 degree angle with the plane
+  double angle = apf::pi/9.;
   ma::Vector newPoint = edgeVectors[edgeIndex] + pivotPoint
       + normal/length*(-validity/length +
-          edgeVectors[edgeIndex].getLength()*sin(apf::pi/9.));
+          edgeVectors[edgeIndex].getLength()*sin(angle));
 
   m->setPoint(edge,0,newPoint);
 

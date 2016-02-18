@@ -181,15 +181,11 @@ bool BezierCurver::run()
 
   convertInterpolatingToBezier();
 
-  // curving 1D meshes, while rare, is important in testing
-  // do not fix shape if this is the case
-  // does not work for blended shapes, yet
-  // comment out for now
-
-//  if( m_mesh->getDimension() >= 2 && m_order > 1 && blendingOrder == 0){
+//  if( m_mesh->getDimension() >= 2 && m_order > 1){
 //    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
 //    crv::adapt(shapeFixer);
 //  }
+
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;

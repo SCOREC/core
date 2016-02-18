@@ -208,7 +208,7 @@ int computeTetNodeIndex(int P, int i, int j, int k)
   return i-P-((i-P+1)*(i-P+2)*(i-P+3))/6+l*(P-1-i)-l*(l-1)/2+k+2*P*P+2;
 }
 
-// publically accessible access
+// publically accessible function
 // There is likely room for improvement, for example if a dynamic numbering
 // is called on the fly, compute it, store it, and then read it off the table
 int getTriNodeIndex(int P, int i, int j)

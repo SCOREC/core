@@ -11,7 +11,8 @@
 #include "crv.h"
 #include "crvAdapt.h"
 /** \file crvShape.h
-  * \brief main file for shape fixing operations */
+  * \brief main file for shape fixing operations,
+  * largely based off of ma functions */
 
 namespace crv {
 /** \brief checks if is a boundary entity */
@@ -27,7 +28,7 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
     ma::Entity* edge);
 
 /** \brief Split edges marked with ma::SPLIT and place high order nodes
-    using subdivision */
+    using subdivision, see ma::refine */
 void splitEdges(ma::Adapt* a);
 /** \brief mark invalid entities with validity tag
     \details since validity checking is expensive, do this as little

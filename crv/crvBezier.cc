@@ -11,13 +11,23 @@
 #include "crvMath.h"
 #include "crvShape.h"
 #include "crvTables.h"
-/* see bezier.tex */
 
 namespace crv {
 
+/* The order used is static and set here. Rather than
+   define a large number of classes for each order,
+   since shape functions are static, we choose not to template either,
+   but rather force the order of the mesh to be constant,
+   when variable order shape functions are permitted, this
+   will need to be significantly changed
+
+   For functionality such as elevating the mesh order,
+   this needs to be changed frequently, as permitting multiple
+   instances different orders of bezier shape functions is not possible
+ */
 static int P = 1;
 
-static bool useBlend(int type)
+static bool useBlending(int type)
 {
   return (getBlendingOrder(type) != 0);
 }
@@ -120,7 +130,7 @@ public:
     {
       values.allocate((P+1)*(P+2)/2);
 
-      if(!useBlend(apf::Mesh::TRIANGLE)
+      if(!useBlending(apf::Mesh::TRIANGLE)
           || isBoundaryEntity(m,e)){
         bezier[apf::Mesh::TRIANGLE](P,xi,values);
       } else
@@ -132,7 +142,7 @@ public:
     {
       grads.allocate((P+1)*(P+2)/2);
 
-      if(!useBlend(apf::Mesh::TRIANGLE)
+      if(!useBlending(apf::Mesh::TRIANGLE)
           || isBoundaryEntity(m,e)){
         bezierGrads[apf::Mesh::TRIANGLE](P,xi,grads);
       } else
@@ -152,7 +162,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      if(!useBlend(apf::Mesh::TET)){
+      if(!useBlending(apf::Mesh::TET)){
         values.allocate((P+1)*(P+2)*(P+3)/6);
         bezier[apf::Mesh::TET](P,xi,values);
       } else {
@@ -164,7 +174,7 @@ public:
         apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      if(!useBlend(apf::Mesh::TET)){
+      if(!useBlending(apf::Mesh::TET)){
         grads.allocate((P+1)*(P+2)*(P+3)/6);
         bezierGrads[apf::Mesh::TET](P,xi,grads);
       } else {
@@ -173,7 +183,7 @@ public:
       }
     }
     int countNodes() const {
-      if(!useBlend(apf::Mesh::TET))
+      if(!useBlending(apf::Mesh::TET))
         return (P+1)*(P+2)*(P+3)/6;
       else
         return 2*P*P+2;
@@ -199,6 +209,7 @@ public:
         for(int i = 0; i < n; ++i)
           order[i] = tet_tri[P][flip][rotate][i];
       else {
+        // since we don't have a table, compute it all
         int index0, index1;
         if(!flip){
           index0 = (3-rotate) % 3;
@@ -238,7 +249,7 @@ public:
   bool hasNodesIn(int dimension)
   {
     if ((dimension < P && dimension < 3)
-        || (P > 3 && !useBlend(apf::Mesh::TET)))
+        || (P > 3 && !useBlending(apf::Mesh::TET)))
       return true;
     else
       return false;
@@ -253,7 +264,7 @@ public:
       case apf::Mesh::TRIANGLE:
         return (P-1)*(P-2)/2;
       case apf::Mesh::TET:
-        if(!useBlend(apf::Mesh::TET)){
+        if(!useBlending(apf::Mesh::TET)){
           return (P-1)*(P-2)*(P-3)/6;
         } else
           return 0;
@@ -292,7 +303,7 @@ public:
       values.allocate(18);
       double xii[3] = {1.-xi[0]-xi[1],xi[0],xi[1]};
 
-      if (!useBlend(apf::Mesh::TRIANGLE)
+      if (!useBlending(apf::Mesh::TRIANGLE)
           || isBoundaryEntity(m,e)){
         apf::NewArray<double> bvalues;
         getBezier(4)->getEntityShape(apf::Mesh::TRIANGLE)
@@ -325,7 +336,7 @@ public:
       apf::Vector3 gxii[3] =
         {apf::Vector3(-1,-1,0),apf::Vector3(1,0,0),apf::Vector3(0,1,0)};
 
-      if (!useBlend(apf::Mesh::TRIANGLE)
+      if (!useBlending(apf::Mesh::TRIANGLE)
           || isBoundaryEntity(m,e)){
         apf::NewArray<apf::Vector3> bgrads;
         apf::NewArray<double> bvalues;
@@ -380,7 +391,7 @@ public:
     void getValues(apf::Mesh* m, apf::MeshEntity* e,
         apf::Vector3 const& xi, apf::NewArray<double>& values) const
     {
-      if(!useBlend(apf::Mesh::TET)){
+      if(!useBlending(apf::Mesh::TET)){
         values.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         for(int i = 0; i < 4; ++i)
@@ -433,7 +444,7 @@ public:
         apf::Vector3 const& xi,
         apf::NewArray<apf::Vector3>& grads) const
     {
-      if(!useBlend(apf::Mesh::TET)){
+      if(!useBlending(apf::Mesh::TET)){
         grads.allocate(47);
         double xii[4] = {1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2]};
         apf::Vector3 gxii[4] = {apf::Vector3(-1,-1,-1),apf::Vector3(1,0,0),
@@ -506,7 +517,7 @@ public:
       }
     }
     int countNodes() const {
-      if(!useBlend(apf::Mesh::TET))
+      if(!useBlending(apf::Mesh::TET))
         return 47;
       else
         return 46;
@@ -553,7 +564,7 @@ public:
   }
   bool hasNodesIn(int dimension)
   {
-    if (useBlend(apf::Mesh::TET) && dimension == 3)
+    if (useBlending(apf::Mesh::TET) && dimension == 3)
       return false;
     else
       return true;
@@ -565,7 +576,7 @@ public:
      3,                 //edge
      6,                 //triangle
      0,                 //quad
-     !useBlend(4),       //tet
+     !useBlending(4),       //tet
      0,                 //hex
      0,                 //prism
      0};                //pyramid
@@ -611,19 +622,16 @@ apf::FieldShape* getBezier(int order)
 {
   if(order < 1 ||order > 19)
     fail("order must be in [1,19]\n");
-  crv::setOrder(order);
+  setOrder(order);
   static crv::Bezier bezier;
   return &bezier;
 }
 
 apf::FieldShape* getGregory()
 {
-  static GregorySurface4 gregorySurface4;
-
   setOrder(4);
+  static GregorySurface4 gregorySurface4;
   return &gregorySurface4;
-
-  return NULL;
 }
 
 } // namespace crv
