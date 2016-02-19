@@ -88,7 +88,7 @@ int main(int argc, char** argv)
   int faceDim = m->getDimension() - 1;
   int i = 0;
 
-  apf::MeshIterator* it = m->begin(1);
+  apf::MeshIterator* it = m->begin(faceDim);
   apf::MeshEntity* f;
   apf::Migration* plan = new apf::Migration(m);
   apf::Parts residence;
@@ -124,9 +124,11 @@ printf("proc-%d: %d\n",PCU_Comm_Self(),++i);
 //printf("proc-%d sending to %d\n",PCU_Comm_Self(),plan->sending(e));
   }
   m->end(it);
-printf("proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
+  printf("proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
+/*
 for (int i = 0; i < plan->count(); ++i) 
-printf("proc-%d: sending %d to %d:\n",PCU_Comm_Self(),i,plan->sending(plan->get( i )));
+  printf("proc-%d: sending %d to %d:\n",PCU_Comm_Self(),i,plan->sending(plan->get( i )));
+ */
 
   m->migrate(plan);
   m->verify();
