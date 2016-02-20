@@ -112,15 +112,8 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   if (!isExposedByMesh && isOnEqualOrder)
     expected = std::max(expected, modelUpwardCount);
   assert(upwardCount >= expected);
-  if (difference == 1) {
-    if (!(upwardCount == expected)) {
-      fprintf(stderr, "meshDimension %d\n", meshDimension);
-      fprintf(stderr, "entityDimension %d\n", entityDimension);
-      fprintf(stderr, "upwardCount %d\n", upwardCount);
-      fprintf(stderr, "expected %d\n", expected);
-    }
+  if (difference == 1)
     assert(upwardCount == expected);
-  }
   /* this is here for some spiderwebby simmetrix meshes */
   if (upwardCount >= 200) {
     std::stringstream ss;
