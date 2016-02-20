@@ -13,6 +13,7 @@
 /* see bezier.tex */
 namespace crv {
 
+/* tolerance to determine if on a bounding entity */
 static double const blendingTol = 1.e-12;
 
 /* default is no blending */

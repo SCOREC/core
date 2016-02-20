@@ -127,6 +127,15 @@ namespace {
     fprintf(stderr, "read %d vtx\n", h->nvtx);
   }
 
+  void setNodeIds(Reader* r, header* h) {
+    apf::Mesh* m = r->mesh;
+    apf::MeshTag* t = m->createIntTag("ugrid-vtx-ids",1);
+    for(long lid=0; lid<h->nvtx; lid++) {
+      int iid = lid;
+      m->setIntTag(r->nodeMap[lid],t,&iid);
+    }
+  }
+
   void readFaces(Reader* r, unsigned nfaces, int apfType) {
     const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
     size_t cnt = nfaces * nverts;
@@ -235,6 +244,7 @@ namespace {
     readHeader(&r, &hdr);
     hdr.print();
     readNodes(&r, &hdr);
+    setNodeIds(&r, &hdr);
     readFacesAndTags(&r,&hdr);
     checkFilePos(&r,&hdr);
     readElms(&r,&hdr);

@@ -5,13 +5,9 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-/*
- * Here's an experiment. After refinement, re-place interior points based on
- * Boundary entities, rather than the previous structure.
- *
- */
-#include "crvAdapt.h"
+#include "crvBezier.h"
 #include "crvQuality.h"
+#include "crvShape.h"
 #include "crvTables.h"
 #include <cassert>
 
@@ -22,15 +18,15 @@ void repositionInteriorWithBlended(ma::Mesh* m, ma::Entity* e)
   apf::FieldShape * fs = m->getShape();
   int order = fs->getOrder();
   int typeDim = apf::Mesh::typeDimension[m->getType(e)];
+  int type = apf::Mesh::simplexTypes[typeDim];
 
-  if(!fs->hasNodesIn(typeDim) ||
-      getBlendingOrder(apf::Mesh::simplexTypes[typeDim])) return;
+  if(!fs->hasNodesIn(typeDim) || getBlendingOrder(type))
+    return;
 
-  int n = fs->getEntityShape(apf::Mesh::simplexTypes[typeDim])->countNodes();
-  int ne = fs->countNodesOn(apf::Mesh::simplexTypes[typeDim]);
+  int n = fs->getEntityShape(type)->countNodes();
+  int ne = fs->countNodesOn(type);
   apf::NewArray<double> c;
-  getInternalBezierTransformationCoefficients(m,order,1,
-      apf::Mesh::simplexTypes[typeDim],c);
+  getInternalBezierTransformationCoefficients(m,order,1,type,c);
   convertInterpolationPoints(m,e,n-ne,ne,c);
 
 }
@@ -61,6 +57,8 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
     m->getDownward(edge,0,edgeVerts);
     apf::Matrix3x3 J;
     pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
+    assert(pivotIndex >= 0);
+
     ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
     apf::getJacobian(me,xi,J);
 
@@ -103,9 +101,10 @@ bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
   m->getAdjacent(edge,3,adjacent);
 
   // places the new point at a 20 degree angle with the plane
+  double angle = apf::pi/9.;
   ma::Vector newPoint = edgeVectors[edgeIndex] + pivotPoint
       + normal/length*(-validity/length +
-          edgeVectors[edgeIndex].getLength()*sin(apf::pi/9.));
+          edgeVectors[edgeIndex].getLength()*sin(angle));
 
   m->setPoint(edge,0,newPoint);
 

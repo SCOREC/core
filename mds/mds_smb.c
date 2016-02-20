@@ -669,8 +669,8 @@ static void safe_mkdir(const char* path, mode_t mode)
   int err;
   errno = 0;
   err = mkdir(path, mode);
-  if (err != 0)
-    assert(errno == EEXIST);
+  if (err != 0 && errno != EEXIST)
+    reel_fail("MDS: could not create directory \"%s\"\n", path);
 }
 
 static char* handle_path(const char* in, int is_write, int* zip,

@@ -231,7 +231,7 @@ static void bezierTetGrads(int P, apf::Vector3 const& xi,
       }
 }
 
-void collectNodeXi(int parentType, int childType, int P,
+static void collectNodeXi(int parentType, int childType, int P,
     const apf::Vector3* range, apf::Vector3* xi)
 {
   int childDim = apf::Mesh::typeDimension[childType];
@@ -241,10 +241,11 @@ void collectNodeXi(int parentType, int childType, int P,
   int row = 0;
   for(int d = 0; d <= childDim; ++d){
     int nDown = apf::Mesh::adjacentCount[childType][d];
+    int bt = apf::Mesh::simplexTypes[d];
+    apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+    int non = getNumInternalControlPoints(bt,P);
     for(int j = 0; j < nDown; ++j){
-      int bt = apf::Mesh::simplexTypes[d];
-      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
-      for(int x = 0; x < getNumInternalControlPoints(bt,P); ++x){
+      for(int x = 0; x < non; ++x){
         getBezierNodeXi(bt,P,x,childXi);
         apf::NewArray<double> shape_vals;
 

@@ -7,6 +7,7 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
+#include "crvMath.h"
 #include "crvTables.h"
 #include "crvQuality.h"
 
@@ -169,7 +170,7 @@ static void getJacDetByElevation(int type, int P,
     // use the modulus to alternate between them,
     // never needing to increase storage
     // for now, only elevate by 1
-    elevateBezierJacobianDet[type](P+i,1,
+    elevateBezierJacobianDet(type,P+i,1,
         elevatedNodes[i % 2],
         elevatedNodes[(i+1) % 2]);
 
@@ -325,21 +326,26 @@ static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
     int algorithm)
 {
   int P = m->getShape()->getOrder();
-  if (algorithm < 2){
+  if (algorithm >= 2){
     int qualityTag = checkTriValidityAtNodeXi(m,e);
     if(qualityTag > 0) return qualityTag;
   }
 
-  // if it is positive, then keep going
   apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
+  // if we are blended, we need to create a full representation
+  int blendingOrder = getBlendingOrder(apf::Mesh::TRIANGLE);
+  if (blendingOrder > 0 && getNumInternalControlPoints(apf::Mesh::TRIANGLE,P)) {
+    getFullRepFromBlended(m,apf::Mesh::TRIANGLE,elemNodes);
+  }
+
   apf::destroyElement(elem);
   apf::NewArray<double> nodes(P*(2*P-1));
   getTriJacDetNodes(P,elemNodes,nodes);
 
   // if we haven't checked at nodeXi, need to check verts
-  if(algorithm >= 2){
+  if(algorithm < 2){
     apf::Downward verts;
     m->getDownward(e,0,verts);
     for (int i = 0; i < 3; ++i){
@@ -461,20 +467,25 @@ static int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
     int algorithm)
 {
   int P = m->getShape()->getOrder();
-  if (algorithm < 2){
+  if (algorithm >= 2){
     int qualityTag = checkTetValidityAtNodeXi(m,e);
     if(qualityTag > 0) return qualityTag;
-    // if it is positive, then keep going
   }
+
   apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
+  int blendingOrder = getBlendingOrder(apf::Mesh::TET);
+  if (blendingOrder > 0 && getNumInternalControlPoints(apf::Mesh::TET,P)) {
+    getFullRepFromBlended(m,apf::Mesh::TET,elemNodes);
+  }
+
   apf::destroyElement(elem);
   // 9*P*P*(P-1)/2+P = (3(P-1)+1)(3(P-1)+2)(3(P-1)+3)/6
   apf::NewArray<double> nodes(9*P*P*(P-1)/2+P);
   getTetJacDetNodes(P,elemNodes,nodes);
 
-  if(algorithm >= 2){
+  if(algorithm < 2){
     apf::Downward verts;
     m->getDownward(e,0,verts);
     for (int i = 0; i < 4; ++i){
@@ -626,7 +637,7 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   return detJ;
 }
 
-double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
+static double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
 {
   int typeDim = apf::Mesh::typeDimension[type];
 
@@ -662,12 +673,16 @@ double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
 double getQuality(apf::Mesh* m, apf::MeshEntity* e)
 {
   int P = m->getShape()->getOrder();
+  int type = m->getType(e);
 
   apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
+  int blendingOrder = getBlendingOrder(type);
+  if (blendingOrder > 0 && getNumInternalControlPoints(type,P)) {
+    getFullRepFromBlended(m,type,elemNodes);
+  }
   apf::destroyElement(elem);
-  int type = m->getType(e);
 
   return getQuality(type,P,elemNodes);
 }

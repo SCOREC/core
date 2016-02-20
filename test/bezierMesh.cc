@@ -454,6 +454,13 @@ static void testAlternateTetJacobian(apf::Mesh2* m)
   m->end(it);
 }
 
+
+void test3D(apf::Mesh2* m)
+{
+  testSize3D(m);
+  test3DJacobian(m);
+  test3DJacobianTri(m);
+}
 /* Tests 3D with blending functions. This can go as high as the order of
  * triangles implemented. There are no nodes inside the tetrahedron
  *
@@ -473,30 +480,9 @@ void test3DBlended()
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
-      apf::changeMeshShape(m, crv::getBezier(order),true);
-      crv::setBlendingOrder(apf::Mesh::TYPES,blendOrder);
-      apf::FieldShape * fs = m->getShape();
       crv::BezierCurver bc(m,order,blendOrder);
-      // go downward, and convert interpolating to control points
-      for(int d = 2; d >= 1; --d){
-        int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-        int ni = fs->countNodesOn(d);
-        if(ni <= 0) continue;
-
-        apf::NewArray<double> c;
-        crv::getBezierTransformationCoefficients(order,d,c);
-        apf::MeshEntity* e;
-        apf::MeshIterator* it = m->begin(d);
-        while ((e = m->iterate(it))) {
-          if(m->getModelType(m->toModel(e)) == m->getDimension()) continue;
-          crv::convertInterpolationPoints(m,e,n,ni,c);
-        }
-        m->end(it);
-      }
-      m->acceptChanges();
-      testSize3D(m);
-      test3DJacobian(m);
-      test3DJacobianTri(m);
+      bc.run();
+      test3D(m);
       m->destroyNative();
       apf::destroyMesh(m);
     }
@@ -510,45 +496,10 @@ void test3DFull()
 
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
-    apf::changeMeshShape(m, crv::getBezier(order),true);
-    apf::FieldShape* fs = m->getShape();
-    crv::setBlendingOrder(apf::Mesh::TYPES,0);
     crv::BezierCurver bc(m,order,0);
-    // go downward, and convert interpolating to control points
-    for(int d = 2; d >= 1; --d){
-      int n = (d == 2)? (order+1)*(order+2)/2 : order+1;
-      int ni = fs->countNodesOn(d);
-      if(ni <= 0) continue;
-      apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(order,d,c);
-      apf::MeshEntity* e;
-      apf::MeshIterator* it = m->begin(d);
-      while ((e = m->iterate(it))) {
-        crv::convertInterpolationPoints(m,e,n,ni,c);
-      }
-      m->end(it);
-    }
-    if(!fs->hasNodesIn(3)) continue;
-    int n = fs->getEntityShape(apf::Mesh::simplexTypes[3])->countNodes();
-    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[3]);
-    apf::NewArray<double> c;
-    crv::getInternalBezierTransformationCoefficients(m,order,1,
-        apf::Mesh::simplexTypes[3],c);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m->begin(3);
-    while ((e = m->iterate(it))){
-      crv::convertInterpolationPoints(m,e,n-ne,ne,c);
-    }
-    m->end(it);
-
-    m->acceptChanges();
-    if(order <= 6)
-      testSize3D(m);
-    test3DJacobian(m);
-    test3DJacobianTri(m);
-    if(order <= 8){
-      testAlternateTetJacobian(m);
-    }
+    bc.run();
+    test3D(m);
+    testAlternateTetJacobian(m);
 
     if(order == 4){
       // put a field on the mesh to make sure nothing fails
@@ -580,12 +531,45 @@ void test3DFull()
       }
 
       // write the field
-//      crv::writeCurvedVtuFiles(m,apf::Mesh::EDGE,2,"curved");
       crv::writeCurvedVtuFiles(m,apf::Mesh::TET,2,"curved");
     }
-//    crv::writeControlPointVtuFiles(m,"curved");
     m->destroyNative();
     apf::destroyMesh(m);
+  }
+  // test simple elevation
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc(m,order,0);
+    bc.run();
+    crv::changeMeshOrder(m,5);
+    test3D(m);
+  }
+  // test elevation inside a BezierCurver
+  for(int order = 1; order <= 4; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc1(m,order,0);
+    bc1.run();
+    crv::BezierCurver bc2(m,order+2,0);
+    bc2.run();
+    test3D(m);
+  }
+  // test going downward
+  for(int order = 4; order <= 6; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::BezierCurver bc1(m,order,0);
+    bc1.run();
+    crv::BezierCurver bc2(m,order-2,0);
+    bc2.run();
+    test3D(m);
+  }
+  // test going from 2nd order lagrange to various order bezier
+  for(int order = 1; order <= 6; ++order){
+    apf::Mesh2* m = createMesh3D();
+    crv::InterpolatingCurver ic(m,2);
+    ic.run();
+    crv::BezierCurver bc2(m,order,0);
+    bc2.run();
+    test3D(m);
   }
 }
 

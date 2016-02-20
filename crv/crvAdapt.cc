@@ -6,6 +6,7 @@
  */
 
 #include "crvAdapt.h"
+#include "crvShape.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <maBalance.h>
@@ -23,6 +24,8 @@ Adapt::Adapt(ma::Input* in)
   validityTag = mesh->createIntTag("crv_tags",1);
 }
 
+// rather than use the destructor to delete validityTag,
+// this function takes care of it (since ~ma::Adapt() isn't virtual)
 static void clearTags(Adapt* a)
 {
   ma::Mesh* m = a->mesh;
@@ -42,7 +45,7 @@ static int getTags(Adapt* a, ma::Entity* e)
 {
   ma::Mesh* m = a->mesh;
   if ( ! m->hasTag(e,a->validityTag))
-    return 0; //we assume 0 is the default value for all tags
+    return 0; //we assume 0 is the default (unset) value for all tags
   int tags;
   m->getIntTag(e,a->validityTag,&tags);
   return tags;
@@ -79,7 +82,7 @@ static void refine(ma::Adapt* a)
   ma::print("split %li edges in %f seconds",count,t1-t0);
 }
 
-int getQualityTag(ma::Mesh* m, ma::Entity* e,
+int getValidityTag(ma::Mesh* m, ma::Entity* e,
     ma::Entity* bdry)
 {
   if (bdry == e) return 18;

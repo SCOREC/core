@@ -15,7 +15,8 @@ double Bij(const int i, const int j, const double u, const double v)
   return intpow(u,i)*intpow(v,j);
 }
 
-double Bijk(const int i, const int j, const int k, const double u, const double v, const double w)
+double Bijk(const int i, const int j, const int k,
+    const double u, const double v, const double w)
 {
   return intpow(u,i)*intpow(v,j)*intpow(w,k);
 }
