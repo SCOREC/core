@@ -19,8 +19,6 @@
 #include <cstdlib>
 #include <stdint.h>
 
-#include <vector>
-
 namespace apf {
 
 class HasAll : public FieldOp
@@ -602,7 +600,6 @@ static void writePointData(std::ostream& file,
 
 template <class T>
 class WriteIPField : public FieldOp
-//TODO change to write encoded data
 {
   public:
     int point;
@@ -612,8 +609,10 @@ class WriteIPField : public FieldOp
     MeshEntity* entity;
     std::ostream* fp;
     bool isWritingBinary;
-    //TODO is it ok to use vectors?
-    std::vector<T> dataToEncodeVector;
+
+    T* dataToEncode;
+    int dataIndex;
+
     virtual bool inEntity(MeshEntity* e)
     {
       entity = e;
@@ -628,41 +627,65 @@ class WriteIPField : public FieldOp
       {
         if (isWritingBinary)
         {
-          dataToEncodeVector.push_back(ipData[i]);
+          // if we are writing base64 then populate the array to be encoded
+          dataToEncode[dataIndex] = ipData[i];
+          dataIndex++;
         }
         else
         {
-          (*fp) << ipData[i] << ' ';
+          (*fp) << ipData[i] << ' '; //otherwise simply write to the file
         }
       }
       if (!isWritingBinary)
       {
-        (*fp) << '\n';
+        (*fp) << '\n'; //newline for each node when not writing base64
       }
     }
     void runOnce(FieldBase* f)
     {
       std::string s = getIPName(f,point);
       components = f->countComponents();
-      writeDataHeader(*fp,s.c_str(),f->getScalarType(),f->countComponents(),isWritingBinary);
+      writeDataHeader(*fp,
+        s.c_str(),
+        f->getScalarType(),
+        f->countComponents(),
+        isWritingBinary);
       ipData.allocate(components);
       data = static_cast<FieldDataOf<T>*>(f->getData());
-      apply(f);
-      if (isWritingBinary)
+
+      if (isWritingBinary) //extra steps if we are writing base64
       {
-        int dataLenBytes = dataToEncodeVector.size()*sizeof(T);
-        writeEncodedArray( (*fp), dataLenBytes, (char*)&dataToEncodeVector[0]);
+        //calculate size of array
+        Mesh* m = f->getMesh();
+        int arraySize = m->count(m->getDimension())*components;
+
+        dataToEncode = new T[arraySize](); //allocate space for array
+        apply(f); //populate array
+
+        //encode and write to file
+        int dataLenBytes = arraySize * sizeof(T);
+        writeEncodedArray( (*fp), dataLenBytes, (char*)dataToEncode);
+
+        //free array
+        delete [] dataToEncode;
+        dataIndex = 0;
+      }
+      else
+      {
+        apply(f); //same function call if writing ASCII
       }
       (*fp) << "</DataArray>\n";
     }
-    void run(std::ostream& file, FieldBase* f, bool isWritingBinaryArg = false)
+    void run(std::ostream& file,
+      FieldBase* f,
+      bool isWritingBinaryArg = false)
     {
       isWritingBinary = isWritingBinaryArg;
       fp = &file;
+      dataIndex = 0;
       int n = countIPs(f);
       for (point=0; point < n; ++point)
       {
-        dataToEncodeVector.clear();
         runOnce(f);
       }
     }
