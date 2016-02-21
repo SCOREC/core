@@ -8,14 +8,6 @@
 #include "parma_ghostOwner.h"
 
 namespace {
-  apf::MeshEntity* getOtherVtx(apf::Mesh* m,
-      apf::MeshEntity* edge, apf::MeshEntity* vtx) {
-    apf::Downward dwnVtx;
-    int nDwnVtx = m->getDownward(edge,getDimension(m,edge)-1,dwnVtx);
-    assert(nDwnVtx==2);
-    return (dwnVtx[0] != vtx) ? dwnVtx[0] : dwnVtx[1];
-  }
-
   bool isOwnedByPeer(apf::Mesh* m,apf::MeshEntity* v, int peer) {
     if( ! m->isShared(v) ) return false;
     return (parma::getOwner(m,v) == peer);
@@ -36,34 +28,32 @@ namespace {
 
     std::vector<apf::MeshEntity*> next;
     for (int i=1;i<=layers;i++) {
-      // when i==1: current contains shared vertices
-      //            owned by the peer that are not ghosted
       for (unsigned int j=0;j<current.size();j++) {
         apf::MeshEntity* vertex = current[j];
-        apf::Up edges;
-        m->getUp(vertex,edges);
-        for (int k=0;k<edges.n;k++) {
-          apf::MeshEntity* edge = edges.e[k];
-          apf::MeshEntity* v = getOtherVtx(m,edge,vertex);
-          //ghost vertices
-          if (parma::isOwned(m, v) && !m->hasTag(v,visited)) {
-            next.push_back(v);
-            m->setIntTag(v,visited,&i);
-            weight[0] += parma::getEntWeight(m,v,wtag);
-          }
-          //ghost edges
-          if (parma::isOwned(m, edge) && !m->hasTag(edge,visited)) {
-            weight[1] += parma::getEntWeight(m,edge,wtag);
-            m->setIntTag(edge,visited,&i);
-          }
-        }
-        //ghost elements
         apf::Adjacent elms;
+        apf::Downward verts;
+        apf::Downward edges;
         m->getAdjacent(vertex, elmDim, elms);
         for(size_t k=0; k<elms.size(); k++) {
           if (!m->hasTag(elms[k],visited)) {
+            //ghost elements
             m->setIntTag(elms[k],visited,&i);
             weight[elmDim] += parma::getEntWeight(m,elms[k],wtag);
+            //ghost edges
+            const int nedges = m->getDownward(elms[k],1,edges);
+            for(int l=0; l < nedges; l++)
+              if (!m->hasTag(edges[l],visited)) {
+                m->setIntTag(edges[l],visited,&i);
+                weight[1] += parma::getEntWeight(m,edges[l],wtag);
+              }
+            //ghost vertices
+            const int nverts = m->getDownward(elms[k],0,verts);
+            for(int l=0; l < nverts; l++)
+              if (parma::isOwned(m, verts[l]) && !m->hasTag(verts[l],visited)) {
+                next.push_back(verts[l]);
+                m->setIntTag(verts[l],visited,&i);
+                weight[0] += parma::getEntWeight(m,verts[l],wtag);
+              }
           }
         }
       }
