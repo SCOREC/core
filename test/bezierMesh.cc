@@ -563,13 +563,11 @@ void test3DFull()
     test3D(m);
   }
   // test going from 2nd order lagrange to various order bezier
-  for(int order = 1; order <= 6; ++order){
+  for(int order = 2; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
     apf::changeMeshShape(m,apf::getLagrange(2),true);
-    crv::InterpolatingCurver ic(m,2);
-    ic.run();
-    crv::BezierCurver bc2(m,order,0);
-    bc2.run();
+    crv::BezierCurver bc(m,order,0);
+    bc.run();
     test3D(m);
   }
 }
