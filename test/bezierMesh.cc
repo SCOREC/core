@@ -10,7 +10,7 @@
 #include <cstdlib>
 
 /* this test file contains tests for
- * a curved 2D surface mesh
+ * a curved 2D mesh
  * and a 3D Planar tetrahedron
  *
  * The basic idea is generate a mesh,
@@ -565,6 +565,7 @@ void test3DFull()
   // test going from 2nd order lagrange to various order bezier
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
+    apf::changeMeshShape(m,apf::getLagrange(2),true);
     crv::InterpolatingCurver ic(m,2);
     ic.run();
     crv::BezierCurver bc2(m,order,0);
