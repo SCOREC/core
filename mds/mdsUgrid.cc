@@ -252,6 +252,88 @@ namespace {
     freeReader(&r);
     m->acceptChanges();
   }
+
+  void printPtnStats(apf::Mesh2* m, const char* ufile, const char* ptnFile,
+      const double elmWeights[]) {
+    header hdr;
+    Reader r;
+    initReader(&r, m, ufile);
+    readHeader(&r, &hdr);
+    hdr.print();
+
+    FILE* f = fopen(ptnFile, "r");
+    int numparts = 0;
+    // 'ptn' is the vertex id to part id array
+    int* ptn = new int[hdr.nvtx];
+    for(long id=0; id<hdr.nvtx; id++) {
+      fscanf(f, "%d", &ptn[id]);
+      if( ptn[id] > numparts )
+        numparts = ptn[id];
+    }
+    fclose(f);
+    fprintf(stderr, "read ptn\n");
+
+    // 'part[vtx|elm]' counts the number of [vtx|elm] per part
+    int* partvtx = new int[numparts];
+    int* partelm = new int[numparts];
+    for(int i=0; i<numparts; i++)
+      partvtx[i] = partelm[i] = 0;
+
+    //count number of vtx per part
+    for(long id=0; id<hdr.nvtx; id++)
+      partvtx[ ptn[id] ]++;
+
+    readNodes(&r, &hdr); //dummy to advance the fileptr
+    readFacesAndTags(&r,&hdr); //dummy to advance the fileptr
+    checkFilePos(&r,&hdr); //sanity check
+
+    typedef std::set<int> SetInt;
+    SetInt elmparts;
+
+    int types[4] =
+      {apf::Mesh::TET, apf::Mesh::PYRAMID, apf::Mesh::PRISM, apf::Mesh::HEX};
+    long typeCnt[4] = {hdr.ntet, hdr.npyr, hdr.nprz, hdr.nhex};
+    for(int tidx=0; tidx < 4; tidx++) {
+      const int apfType = types[tidx];
+      const long nelms = typeCnt[tidx];
+      const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
+      size_t cnt = nelms*nverts;
+      unsigned* vtx = (unsigned*) calloc(cnt,sizeof(unsigned));
+      readUnsigneds(r.file, vtx, cnt, r.swapBytes);
+      for(long i=0; i<nelms; i++) {
+        for(unsigned j=0; j<nverts; j++)
+          elmparts.insert( ptn[ vtx[i*nverts+j] ] );
+        //increment the elm per part counts
+        APF_ITERATE(SetInt,elmparts,ep)
+          partelm[*ep] += elmWeights[apfType];
+        elmparts.clear();
+      }
+      free(vtx);
+      fprintf(stderr, "read %lu %s\n", nelms, apf::Mesh::typeName[apfType]);
+    }
+
+    //get max and avg vtx and elm per part
+    int maxvtx = 0, maxelm = 0;
+    double avgvtx = 0, avgelm = 0;
+    for(int i=0; i<numparts; i++) {
+      if( partvtx[i] > maxvtx )
+        maxvtx = partvtx[i];
+      avgvtx += partvtx[i];
+      if( partelm[i] > maxelm )
+        maxelm = partelm[i];
+      avgelm += partelm[i];
+    }
+    avgvtx /= numparts;
+    avgelm /= numparts;
+    double imbvtx = maxvtx / avgvtx;
+    double imbelm = maxelm / avgelm;
+    fprintf(stderr, "imbvtx %.3f imbelm %.3f avgvtx %.3f avgelm %.3f\n",
+        imbvtx, imbelm, avgvtx, avgelm);
+
+    delete [] ptn;
+    delete [] partvtx;
+    delete [] partelm;
+  }
 }
 
 namespace apf {
@@ -263,5 +345,13 @@ namespace apf {
     fprintf(stderr,"vtx %lu edge %lu face %lu rgn %lu\n",
         m->count(0), m->count(1), m->count(2), m->count(3));
     return m;
+  }
+  void printUgridPtnStats(gmi_model* g, const char* ufile, const char* vtxptn,
+      const double elmWeights[]) {
+    Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+    apf::changeMdsDimension(m, 3);
+    printPtnStats(m, ufile, vtxptn, elmWeights);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
 }
