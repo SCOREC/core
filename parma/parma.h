@@ -163,6 +163,11 @@ apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
 apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers,
     double stepFactor = 0.1, int verbosity=0);
 
+/** @brief backward compatability
+ */
+apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
+    double stepFactor = 0.1, int verbosity=0);
+
 /**
  * @brief write the vertex based partition to file
  * @param m (In) partitioned mesh

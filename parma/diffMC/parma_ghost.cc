@@ -126,6 +126,10 @@ class GhostElmGtVtxBalancer : public parma::Balancer {
     int layers;
 };
 
+apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m,
+    int layers, int, double stepFactor, int verbosity) {
+  return Parma_MakeGhostDiffuser(m,layers,stepFactor,verbosity);
+}
 
 apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m,
     int layers, double stepFactor, int verbosity) {
