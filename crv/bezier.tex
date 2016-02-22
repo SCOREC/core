@@ -39,9 +39,9 @@
 
 
 \title{Notes on B{\'e}zier Shapes}
-\author{\textbf{Daniel W. Zaide}}
+\author{\textbf{Daniel W. Zaide}\\ dan.zaide@gmail.com}
 \institute{Scientific Computation Research Center, Rensselaer Polytechnic Institute}
-\date{September 20, 2015}
+\date{February 26, 2016}
 
 
 \AtBeginSection[]
@@ -56,10 +56,10 @@
 \begin{frame}[plain]
 \titlepage
 \end{frame}
-% \begin{frame}
-% \frametitle{Table of Contents}
-% \tableofcontents[currentsection]
-% \end{frame}
+\begin{frame}
+\frametitle{Table of Contents}
+\tableofcontents[]
+\end{frame}
 \section{Introduction to B{\'e}zier Shapes}
 \begin{frame}{B{\'e}zier shapes}
 $P^{th}$ order B{\'e}zier shapes can be defined as follows:
@@ -595,6 +595,17 @@ Can be obtained by four calls to the subdivision algorithm. First, denoting the 
 \end{figure}
 The issue with this split is that it requires a non convex call (-1,1,1), but in practice, this has been shown to work.
 \end{frame}
+\begin{frame}{Subdivision - Matrices}
+Subdivision can also be computed with matrices, as is done by Remacle and others. Consider the subdivision of a curve, creating a new curve from $\xi = a$ to $\xi = b$, $0 < a < b < 1$. Define $\xi_s = a+(b-a)\xi$, we can write the control points of the new curve, $\mathbf{C}_s$, in terms of the old curve as
+\[
+\mathbf{B}(\xi_s)\mathbf{C} = \mathbf{B}(\xi)\mathbf{C}_s
+\]
+The control points are then 
+\[ 
+\mathbf{C}_s = \mathbf{B}^{-1}\mathbf{B}_s \mathbf{C}
+\]
+With $\mathbf{B}_s = \mathbf{B}(\xi_s)$ and $\mathbf{B}^{-1}\mathbf{B}_s$ is the subdivision matrix for that particular subdivision. To subdivide a tetrahedron into 8 tetrahedra, for validity checking, the ranges are given in \texttt{crvBezierPoints.cc}.
+\end{frame}
 \section{Derivatives}
 \begin{frame}{Derivatives of a Curve}
 The derivatives of a B{\'e}zier curve as also a B{\'e}zier curve, writing the formula as a function of just $u$,
@@ -614,7 +625,12 @@ The derivatives of a triangle and tet are written out similarly, as sums of deri
 \end{frame}
 \section{Blended Shapes}
 \begin{frame}{Blended Triangles}
-For triangles not on a boundary, triangular blending of shape functions can be used. This occurs for all 2D triangles and 3D interior triangles with an edge or more on the boundary. For a given entity on the mesh, we can write the shape as
+The blended triangle is a transfinite interpolation of triangle edges, of the form
+\[\mathbf{x}(\xi) = \sum_{i=0}^{3}||\xi_{e_i}||w_{e_i}(\xi_{e_i})\mathbf{x}(\xi_{e_i}) - \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i}\]
+We can use this on all triangles not on a boundary, triangular blending of shape functions can be used. This occurs for all 2D triangles and 3D interior triangles with an edge or more on the boundary.
+\end{frame}
+\begin{frame}{Blended Triangles}
+For a given entity on the mesh, we can write the shape as
 \[ \mathbf{x}(\xi) = \sum_{i=0}^N w_i(\xi) \mathbf{x}_i \]
 for an entity with $N$ total nodes, where $\xi = (u,v,w)$. For example, for B{\'e}zier shapes, $w_i(\xi) = B_{\mathbf{i}}(\xi)$ To implement the blending in our framework, we have 
 \[\mathbf{x}_{face}(\xi) = \sum_{i=0}^{3}||\xi_{e_i}||\sum_{j=0}^{N_{edge}}w_{e_i,j}(\xi_{e_i})\cdot\mathbf{x}_{e_i,j}- \sum_{i=0}^{3}\xi_i\mathbf{x}_{v_i}\]
@@ -721,6 +737,59 @@ where the first term is straight forward, and the second term,
 ||\xi_{e_i}||\frac{\partial w_{e_i,j}(\xi_{e_i})}{\xi_{e_i}}\left[\frac{\partial \xi_{e_i}'}{\partial \xi_k}||\xi_{e_i}||-\xi_{e_i}'\frac{\partial ||\xi_{e_i}||}{\partial \xi_k} \right]
 \end{eqnarray*}
 }
+\end{frame}
+\begin{frame}{Blended Triangles}{Continuity}
+The linear blending, with $k = 1$ is not continuous across edges. To increase the order of continuity, Dey suggests a general form
+\[\mathbf{x}(\xi) = \sum_{i=0}^{3}||\xi_{e_i}||^kw_{e_i}(\xi_{e_i})\mathbf{x}(\xi_{e_i}) - \sum_{i=0}^{3}\xi_i^k\mathbf{x}_{v_i}\]
+However, this is only useful up to $k = 2$, where the blending no longer preserves a linear element.
+\end{frame}
+\begin{frame}{Blended Triangles}
+Consider a linear triangle, with vertices $\mathbf{v}_0,\mathbf{v}_1,\mathbf{v}_2$ and barycentric coordinates $u,v,w$. We can write the blending as
+\begin{eqnarray*}
+\mathbf{x} & = &(u+v)^k\left(\left(1-\frac{v}{u+v}\right)\mathbf{v}_0 + \frac{v}{u+v}\mathbf{v}_1\right) + \\
+&&(v+w)^k\left(\left(1-\frac{w}{v+w}\right)\mathbf{v}_1 + \frac{w}{v+w}\mathbf{v}_2\right) + \\
+&&(w+u)^k\left(\left(1-\frac{u}{w+u}\right)\mathbf{v}_2 + \frac{u}{w+u}\mathbf{v}_0\right) + \\
+&&-u^k\mathbf{v}_0-v^k\mathbf{v}_1-w^k\mathbf{v}_2
+\end{eqnarray*}
+\end{frame}
+\begin{frame}{Blended Triangles}
+We can rewrite this as
+\begin{eqnarray*}
+\mathbf{x} & = &(u+v)^{k-1}\left(u\mathbf{v}_0 + v\mathbf{v}_1\right) + \\
+&&(v+w)^{k-1}\left(v\mathbf{v}_1 + w\mathbf{v}_2\right) + \\
+&&(w+u)^{k-1}\left(w\mathbf{v}_2 + u\mathbf{v}_0\right) + \\
+&&-u^k\mathbf{v}_0-v^k\mathbf{v}_1-w^k\mathbf{v}_2
+\end{eqnarray*}
+for $k = 1$, we reduce to the exact linear mapping.
+\[
+\mathbf{x} = u\mathbf{v}_0+v\mathbf{v}_1+w\mathbf{v}_2
+\]
+
+For $k = 2$, we again reduce to the exact linear mapping.
+\[
+\mathbf{x} = (u\mathbf{v}_0+v\mathbf{v}_1+w\mathbf{v}_2)(u+v+w) = u\mathbf{v}_0+v\mathbf{v}_1+w\mathbf{v}_2
+\]
+\end{frame}
+\begin{frame}{Blended Triangles}
+For $k = 3$, we get
+\[
+\mathbf{x} = (u^3 + 2u^2v + 2u^2w + uv^2 + uw^2)\mathbf{v}_0
+\]
+Which is a valid mapping, but does not preserve the linear behavior we would hope for.
+Of interest is if there exists a function $g(x)$ such that the linear behavior is preserved for all $k$.
+\begin{eqnarray*}
+\mathbf{x} & = &g(u+v)^k\left(\left(1-\frac{v}{u+v}\right)\mathbf{v}_0 + \frac{v}{u+v}\mathbf{v}_1\right) + \\
+&&g(v+w)^k\left(\left(1-\frac{w}{v+w}\right)\mathbf{v}_1 + \frac{w}{v+w}\mathbf{v}_2\right) + \\
+&&g(w+u)^k\left(\left(1-\frac{u}{w+u}\right)\mathbf{v}_2 + \frac{u}{w+u}\mathbf{v}_0\right) + \\
+&&-u^k\mathbf{v}_0-v^k\mathbf{v}_1-w^k\mathbf{v}_2
+\end{eqnarray*}
+\end{frame}
+\begin{frame}{Blended Triangles}
+The goal would be to find a $g(x)$ such that 
+\[\mathbf{x} = (u\mathbf{v}_0+v\mathbf{v}_1+w\mathbf{v}_2)(u+v+w)^{k-1} \]
+which reduces to the linear mapping. If we consider the coefficient of the first vertex $\mathbf{v}_0$, we get
+\[\left(g(u+v)^k\left(1-\frac{v}{u+v}\right)+g(w+u)^k\frac{u}{w+u}-u^k\right)\]
+Observing that $ (u+v+w)^{k-1} = (vw^{k-2}+\ldots+v^{k-2}w) + \ldots$, we note that there is no way for the coefficient of $\mathbf{v}_0$ to contain a $vw$ term, and therefore this formulation makes it impossible to preserve the linear triangle.
 \end{frame}
 \begin{frame}{Blended Tetrahedra}
 For blended tetrahedra, we have
@@ -840,7 +909,7 @@ N_{IJK} = P^2 \displaystyle\sum_{|i|=I,|j|=J,|k|=K} \frac{{P-1 \choose i_1,j_1}{
 Since $\mathcal{J}$ is order $2(P-1)$, the number of control points $N_{IJK}$ is much higher than the number of control points of the original shape. In this table, "Terms" is the number of determinants calculated to compute the control points.
 
 \begin{tabular}{|cc|ccc|}
-\hline \multicolumn{2}{|c|}{Bezier Triangle} & \multicolumn{3}{|c|}{Jacobian Determinant} \\ \hline
+\hline \multicolumn{2}{|c|}{B{\'e}zier Triangle} & \multicolumn{3}{|c|}{Jacobian Determinant} \\ \hline
 Order & Num Ctrl Pts & Order & Num Ctrl Pts & Terms \\ 
 \hline 1 & 3 & 0 & 1 & 1 \\
 2 & 6 & 2 & 6 & 9 \\
@@ -974,7 +1043,7 @@ For each control point, a large number of determinants are needed.
 Since $\mathcal{J}$ is order $3(P-1)$, the number of control points $N_{IJKL}$ is much higher than the number of control points of the original shape. In this table, "Terms" is the number of determinants calculated to compute the control points.
 
 \begin{tabular}{|cc|ccc|}
-\hline \multicolumn{2}{|c|}{Bezier Tetrahedron} & \multicolumn{3}{|c|}{Jacobian Determinant} \\ \hline
+\hline \multicolumn{2}{|c|}{B{\'e}zier Tetrahedron} & \multicolumn{3}{|c|}{Jacobian Determinant} \\ \hline
 Order & Num Ctrl Pts & Order & Num Ctrl Pts & Terms \\ 
 \hline 1 & 4 & 0 & 1 & 1 \\
 2 & 10 & 3 & 20 & 64 \\
@@ -1002,7 +1071,50 @@ For the cubic tet with 20 control points, there are 84 control points for $\math
 \begin{eqnarray*}
 \\N_{1113}&=&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{1011}-\mathbf{C}_{2001},\mathbf{C}_{0111}-\mathbf{C}_{1110}\right|+\\&&\left|\mathbf{C}_{1101}-\mathbf{C}_{2001},\mathbf{C}_{0012}-\mathbf{C}_{1002},\mathbf{C}_{0111}-\mathbf{C}_{1110}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{0111}-\mathbf{C}_{1101},\mathbf{C}_{1011}-\mathbf{C}_{2010}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{1110}-\mathbf{C}_{2100},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{1101}-\mathbf{C}_{2001},\mathbf{C}_{0111}-\mathbf{C}_{1101},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{0201}-\mathbf{C}_{1101},\mathbf{C}_{0012}-\mathbf{C}_{1002},\mathbf{C}_{1011}-\mathbf{C}_{2010}\right|+\\&&\left|\mathbf{C}_{0201}-\mathbf{C}_{1101},\mathbf{C}_{1011}-\mathbf{C}_{2001},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{1200}-\mathbf{C}_{2100},\mathbf{C}_{0012}-\mathbf{C}_{1002},\mathbf{C}_{0012}-\mathbf{C}_{1011}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{0021}-\mathbf{C}_{1011},\mathbf{C}_{1101}-\mathbf{C}_{2100}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{1020}-\mathbf{C}_{2010},\mathbf{C}_{0102}-\mathbf{C}_{1101}\right|+\\&&\left|\mathbf{C}_{1101}-\mathbf{C}_{2001},\mathbf{C}_{0021}-\mathbf{C}_{1011},\mathbf{C}_{0102}-\mathbf{C}_{1101}\right|+\\&&\left|\mathbf{C}_{0102}-\mathbf{C}_{1002},\mathbf{C}_{0120}-\mathbf{C}_{1110},\mathbf{C}_{1002}-\mathbf{C}_{2001}\right|+\ldots
 \end{eqnarray*}
-}I raise the same question as before, can those 10 be negative without an edge or face control point being negative. Are they bound by the other control points?
+}
+\end{frame}
+\section{Measuring Quality}
+\begin{frame}{Measuring Quality}{Linear Elements}
+For linear elements, quality is easy to measure
+\begin{itemize}
+\item Minimum angle
+\item Circumradius to shortest edge ratio
+\item Size (volume or area)
+\item etc.
+\end{itemize}
+All of these are simple and straightforward to measure. 
+\end{frame}
+\begin{frame}{Measuring Quality}
+
+Define the Jacobian matrix as
+\[\mathbf{J} = \frac{\partial \mathbf{B}(\mathbf{x})}{\partial \mathbf{x}}\]
+with $\det \mathbf{J} = \mathcal{J}(\mathbf{u}) > 0$ for valid elements.
+
+Define a curved quality measure, the scaled Jacobian
+\[
+Q_C = \frac{\min \mathcal{J}(\mathbf{u})}{\max \mathcal{J}(\mathbf{u})}
+\]
+and a normalized linear measure, $Q_L$. The quality of an element is then
+\[
+Q = Q_C\times Q_L
+\]
+where $Q \in (-\infty,1]$
+\end{frame}
+\begin{frame}{Measuring Quality}
+We can write the Jacobian determinant as a $d(P-1)$ order B{\'e}zier shape,
+\[
+\mathcal{J}(\mathbf{u}) = \dst\sum_{|\mathbf{i}|=d(P-1)} b_{\mathbf{i}}(\mathbf{u})N_{\mathbf{i}} \]
+With the bound of
+\[
+\min N_i \leq \mathcal{J}(\mathbf{u}) \leq \max N_i
+\]
+It is not uncommon to have $\min N_i < 0$ but $\min \mathcal{J}(\mathbf{u}) > 0$, a false negative! \spa
+\end{frame}
+\begin{frame}{Measuring Quality}{Adaptive Refinement}
+This requires an adaptive algorithm, subdividing $\mathcal{J}$ to refine the bounds, until sufficiently tight bounds are achieved. \spa
+A fourth-order tet has 35 control points, and $\mathcal{J}$ has 220 control points - even before adaptive refinement is used, this gets very expensive! \spa
+\textit{Measuring quality is computationally expensive!} \spa
+Within our measure, if the element formed by the vertices (the linear element) is invalid, the entire element is invalid, even though there are cases where curving can get around this. In these cases
 \end{frame}
 \section{Determining Validity}
 \begin{frame}{Determining Validity}
@@ -1012,27 +1124,11 @@ The contrary, however is not true. If one control point is negative, the Jacobia
 \end{frame}
 \begin{frame}{Determining Validity}
 There are two approaches to adapting. \spa
-1. {\bf Subdivision}. Any Bezier  can be split into multiple Bezier shapes that are identical to the original shape, with new control points.
+1. {\bf Subdivision}. Any B{\'e}zier  can be split into multiple B{\'e}zier shapes that are identical to the original shape, with new control points.
 
-2. {\bf Elevation}. Any Bezier shape can be elevated in order, preserving the original shape, with new control points. \spa
+2. {\bf Elevation}. Any B{\'e}zier shape can be elevated in order, preserving the original shape, with new control points. \spa
 
-Since we have that the bounding shapes of Bezier shapes are themselves Beziers, that is, the edges of a Bezier triangle are Bezier edges and so forth. This reduces the cost of the adaptive algorithm - e.g, if a coefficient of the Jacobian determinant on the edge is negative, we can simply adapt that edge repeatedly.
-\end{frame}
-\begin{frame}{Validity Check - Subdivision of an Edge}
-Consider an invalid triangle or tetrahedron, with one $N$ negative, corresponding to an edge control point of the Jacobian determinant.
-\begin{figure}
-  \centering
-  \includegraphics[width=0.65\textwidth]{validity1.png} 
-\end{figure}
-Figure from {\it The Generation of Valid Curvilinear Meshes}, Geuzaine et al.
-\end{frame}
-\begin{frame}{Validity Check - Subdivision of an Triangle}
-Consider an invalid triangle or tetrahedron, with one $N$ negative, corresponding to a triangle control point of the Jacobian determinant. 
-\begin{figure}
-  \centering
-  \includegraphics[width=0.65\textwidth]{validity2.png} 
-\end{figure}
-Figure from {\it The Generation of Valid Curvilinear Meshes}, Geuzaine et al.
+Since we have that the bounding shapes of B{\'e}zier shapes are themselves B{\'e}ziers, that is, the edges of a B{\'e}zier triangle are B{\'e}zier edges and so forth. This reduces the cost of the adaptive algorithm - e.g, if a coefficient of the Jacobian determinant on the edge is negative, we can simply adapt that edge repeatedly.
 \end{frame}
 \begin{frame}{Validity Check - Algorithm}
 The algorithm is divided into two parts, a first screening, and a second, adaptive part ({\it The Generation of Valid Curvilinear Meshes}, Geuzaine et al.). \spa
@@ -1082,15 +1178,230 @@ The first part computes $\mathcal{J}$ at a prescribed set of $\mathbf{u}$, and i
 \EndFunction
 \end{algorithmic}
 \end{frame}
-\begin{frame}{Validity Check - Questions}
-For the higher 
+\begin{frame}{Validity Check - Subdivision}
+On subdivision, we can use either algorithm for subdivision, de Casteljau's algorithm or subdivision matrices. For tetrahedra, only subdivision matrices are implemented for the adaptive procedure. Both are implemented in the code, see \texttt{crv.h,crvQuality.cc}. It is not which one is faster. Convergence is determined if
+\[
+\max_i(|\min B_i^n - \min B_i^{n-1}|) < \epsilon
+\]
+\end{frame}
+\begin{frame}{Validity Check - Elevation}
+For elevation, we currently elevate by one order at a time, though this can easily be changed. \\
+
+To determine when to this check is complete, either the maximum elevation order has been reached (in which case, $\min B_i$ is what it is), or the maximum total variation of the Jacobian determinant control points,
+\[
+\max_i |B_{i}-B_{i-1}| < \epsilon
+\]
+which is used to avoid early termination if simply $\max_i(|\min B_i^n - \min B_i^{n-1}|) < \epsilon$  as is used as in subdivision.
+\end{frame}
+\section{Refinement}
+\begin{frame}{Refinement - Example}
+Refinement is done within the template-based framework using subdivision to compute the new control point locations, for example, to determine the control points on the edge between $a = (0,1/2,1/2)$ and $b = (1/2,1/2,0)$, we have \[\xi_s = (0,1/2,1/2), (1/2,1/2,0), (1/6,1/2,1/3), (1/3,1/2,1/6) \]
+and the new control points as
+\[ \mathbf{C}_s = \mathbf{B}^{-1}_{edge}\mathbf{B}_{triangle}(\xi_s) \mathbf{C} \]
+where $\mathbf{B}_{edge}^{-1}$ is $4 \times 4$ and $\mathbf{B}_{triangle}(\xi_s)$ is $4 \times 9$ and $\mathbf{C}$ are the control points of the parent triangle. \spa
+This approach does not require apriori knowledge of the template used, only the parametric locations of the end points of the new entities. \\
+During refinement, boundary entities are snapped to the geometry, so invalid elements can be introduced here.
+\end{frame}
+\begin{frame}{Refinement for shape correction}
+As in the previous work, boundary edges are split if they form a 180$^\circ$ angle or more due to the geometry. This results in bad elements on the boundary. To overcome this, that edge should be split. If subdivision is used to perform the split, the invalidity is preserved. \spa To overcome this, new edges that connect to split edges are connected with linearly spaced points, and blending is used to place control points in triangles and tetrahedra created by the split.
+
+\end{frame}
+\section{Cavity Operations (Coarsening and Swapping)}
+\begin{frame}{Cavity Problem For Curved Meshing}
+Given a cavity of old elements ($d$ dimensional) and new entities, determine the control points on the new entities.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.45\textwidth]{/net/web/public/zaided/bezier_images/cavity2.png} 
+\end{figure}
+In this 2D example with cubic mesh entities, there are 5 triangles in the old cavity, 3 triangles and 2 edges are newly created elements, and there are 7 control points to determine (2 on each new edge, 1 in each triangle).
+\end{frame}
+
+\begin{frame}{Edge Collapsing}
+In the curved case, reconnecting with straight edges would result in an invalid mesh.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.55\textwidth]{/net/web/public/zaided/bezier_images/collapse1.png} 
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.55\textwidth]{/net/web/public/zaided/bezier_images/collapse2.png} 
+\end{figure}
+\end{frame}
+
+\begin{frame}{Edge Swapping}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.45\textwidth]{/net/web/public/zaided/bezier_images/swap1.png} 
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.45\textwidth]{/net/web/public/zaided/bezier_images/swap2.png} 
+\end{figure}
+\end{frame}
+\begin{frame}{Cavity Problem For Curved Meshing}
+As the cavity connectivity is pre-determined by the linear configurations, and the problem is to find a path within the cavity that does not intersect the sides of the cavity.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{/net/web/public/zaided/bezier_images/collapse4.png} 
+\end{figure}
+Once the edge control points are chosen, the triangle control points can be determined using a blending of the edge points (serendipity-like approach), thus for now, only the edge control points are of interest.
+\end{frame}
+\begin{frame}{Previous Approaches}
+\textit{Automatic p-version mesh generation for curved domains}, SCOREC 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapseOld2.png} 
+\end{figure}
+Edges placed based on forming a quadrilateral around the edge and blending
+\end{frame}
+\begin{frame}{Previous Approaches}
+\textit{Automatic p-version mesh generation for curved domains}, SCOREC
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapseOld3.png} 
+\end{figure}
+Quadrilaterals for the two edges shown here, and blending is formed. 
+\end{frame}
+\begin{frame}{Previous Approaches}
+\textit{Automatic p-version mesh generation for curved domains}, SCOREC \spa
+Quadrilaterals to blend are shown here, with new edge.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapseOld4.png} 
+\end{figure}
+2nd and 3rd orders are shown here. for higher than 3rd, we can either elevate the third, or just use equally spaced points.
+\end{frame}
+\begin{frame}{Previous Approaches}
+\textit{Automatic p-version mesh generation for curved domains}, SCOREC \spa
+Quadrilaterals to blend are shown here, with new edge.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapseOld4.png} 
+\end{figure}
+Requires collecting and orienting edges, still no guarantees the blended edge creates valid elements. Using the notation in the paper the equation is
+{\footnotesize
+\begin{eqnarray*}
+x = (1-v)\phi_0(u)+u\phi_1(v)+v\phi_2(1-u)+(1-u)\phi_3(1-v) \\
+- (1-u)(1-v)P_0 - (1-v)uP_1 - uvP_2 -(1-u)vP_3 
+\end{eqnarray*}
+}
+\end{frame}
+\begin{frame}{Quad Blending}
+ One downside to this approach is that it will result in curving edges unnecessarily, e.g. in the swap,
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/swap3.png} 
+\end{figure}
+the new edge could (and I think should) be straight.
+\end{frame}
+\begin{frame}{Quad Blending - 2D Collapses}
+While this approach is described as a 3D approach, it still raises some questions which are not addressed in the literature. For example, looking at the 2D problem, consider a collapse with 6 triangles in the cavity.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapse9.png} 
+\end{figure}
+How do we determine the middle edge?
+\end{frame}
+\begin{frame}{Quad Blending - 2D Collapses}
+In this case, its fairly easy to see how we can use the first two edges to determine the middle edge.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapse10.png} 
+\end{figure}
+
+\end{frame}
+\begin{frame}{Quad Blending - 2D Collapses}
+But now what happens if we have 7 (or more) triangles in the collapse?
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapse11.png} 
+\end{figure}
+We have a choice to make.  We can assume one is linear and solve for the other, as shown on the next slide.
+\end{frame}
+\begin{frame}{Quad Blending - 2D Collapses}
+But now what happens if we have 7 (or more) triangles in the collapse?
+\begin{figure}
+  \centering
+  \includegraphics[width=0.75\textwidth]{/net/web/public/zaided/bezier_images/collapse12.png} 
+\end{figure}
+In this case, currently straight lines are assumed for the middle edges, nothing smarter is done.
+\end{frame}
+
+\begin{frame}{Quad Blending - 3D Collapses}
+Collapses are similar in 3D, for example, shown below, we have two quads we can form, and the new edges form naturally.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{/net/web/public/zaided/bezier_images/edgeCollapse.png} 
+\end{figure}
+This is largely because of the diagram itself, in reality
+\end{frame}
+\begin{frame}{Quad Blending - 3D Collapses}
+Collapses are similar in 3D, for example, shown below, we have two quads we can form, one for each edge, and the new edges form naturally.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{/net/web/public/zaided/bezier_images/edgeCollapse3.png} 
+\end{figure}
+This is largely because of the way the diagram is drawn, in reality, there are three quads we could choose for the left edge. In this case, the quadrilateral with the smallest "linear" area is chosen, and they are blended, on the idea that they are most likely to influence the new edge.
+\end{frame}
+
+\begin{frame}{Quad Blending - 3D Collapses}
+In the same diagram, if we had collapsed to the bottom vertex, there are 5 quads we could have chosen.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{/net/web/public/zaided/bezier_images/edgeCollapse2.png} 
+\end{figure}
+Which one should be chosen?
+\end{frame}
+\begin{frame}{Quad Blending - 3D Swaps}
+We note that the new entities shown in the previous cases are the new entities present from a 3D edge swap (with the edge connecting a top/bottom vertices swapped out). \spa For all edge swaps, there is no single pair of triangles to blend into a quad. For an interior swap, all new edges formed connect with four triangles (two in the ring, one with each vertex of the original edge).
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{/net/web/public/zaided/bezier_images/edgeSwap.png} 
+\end{figure}
+\end{frame}
+\begin{frame}{Quad Blending - 3D Swaps}
+With four triangles to choose from, we have a choice to make. We could blend the two triangles in the ring, however it is easy to construct an example where those four edges are less influential than those of another pair of edges. In this case, the pair of triangles with the smallest "linear" area is chosen, and they are blended, on the idea that they are most likely to influence the new edge.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.65\textwidth]{/net/web/public/zaided/bezier_images/edgeSwap.png} 
+\end{figure}
+\end{frame}
+\section{Curved Adaptation and Shape Correction}
+
+\begin{frame}{Curved Adaptation and Shape Correction}{\textit{Automatic p-version mesh generation for curved domains} (XJ Luo et al, 2004)}
+Curved adaptation and shape correction are implemented in \texttt{crvAdapt.cc}. First, a pass of shape correction to attempt to fix invalid elements is performed, followed by the normal adaptive loop with refinement and coarsening to match length scales. This is followed by another pass of shape correction. Shape correction is implemented as, in increasing order of cost.\spa
+While the number of invalid elements is decreasing:
+\begin{enumerate}
+\item Fix Large Boundary Angles by splitting
+\item If is second-order, reposition mid edge nodes (shown a few slides from now)
+\item Collapse Invalid Edges
+\item Swap Invalid Edges
+\end{enumerate}
+\end{frame}
+\begin{frame}{Curved Adaptation and Shape Correction}
+In each case, the operation is only performed if it makes elements valid. Going from bad quality (invalid, < 0), to better quality but still invalid is not done. In practice, this may actually help gradually improve things, but right now, this is not the implementation. \spa
+To determine which edges to mark, the validity of an element is used. \spa
+If an element is invalid at a vertex, the connecting edges are marked. \spa
+If an element is invalid at an edge, that edge is marked. \spa
+If an element is invalid on a face, that faces edges are marked. \spa
+If an element is invalid on its interior, all its edges are marked. \spa
+In each case, only the first invalidity is marked. If an element is invalid in multiple places, only one of them will be flagged.
+\end{frame}
+\begin{frame}{Mid-edge Node Repositioning}
+This is exactly as in the work in XJ Luo's thesis. This is implemented in \texttt{crvReposition.cc}. Given a tetrahedron and an edge marked as invalid, one of the edges' two vertices are used for repositioning. In this implementation, the edge with the worse jacobian determininant is chosen (one of them must be negative, choose the more negative one). \spa
+Denote the vector connecting the invalid edge's midpoint node to the vertex as $\mathbf{a}$, and the other two vectors connected edges to the chosen vertex as $\mathbf{b}$ and $\mathbf{c}$. For the invalidity, we have that $\mathbf{a}\cdot (\mathbf{b}\times\mathbf{c}) < 0$. To correct it, we need to choose $\mathbf{a}$ such that this is positive. \spa
+Denote the new vector as $\mathbf{a}'$ 
+\[
+\mathbf{a}' = \frac{\mathbf{n}}{||\mathbf{n}||}(-\frac{\mathbf{a}\cdot \mathbf{n}}{||\mathbf{n}||} + ||\mathbf{a}||\sin(\theta)
+\]
+where $\mathbf{n} = \mathbf{b}\times\mathbf{c} $ and $\theta$ is the angle between $\mathbf{a}'$ and the plane defined by $\mathbf{n}$ and the chosen vertex. This places the new point on the other side of this plane, hopefully creating a valid element.
 \end{frame}
 \section{$G^1$ Continuous Patches}
 \begin{frame}{$G^1$ Continuous Patches}
 G1 continuous patches are implemented following Walton and Meek, \textit{A triangular G1 patch from boundary curves}. The mesh is initially set to 4th order, with 6 face nodes for the G1 patch. First, all edges on a geometric surface have control points set (the first two nodes of the three) using surface normals and the vertex locations. Edges on geometric edges have their control points set using the tangents at their endpoints. These edge control points use the algorithm of Walton and Meek to set the six face nodes. Once the internal points are determined, the edges are formally elevated, by resetting all of the points to the elevated control points.
 \end{frame}
 \begin{frame}{$G^1$ Continuous Patches}
-The weights on these nodes are similar to the triangular Bezier, with the evaluation done as if it is a Bezier triangle with internal Bezier points, $\mathbf{B}$, and Gregory points, $\mathbf{G}$.
+The weights on these nodes are similar to the triangular B{\'e}zier, with the evaluation done as if it is a B{\'e}zier triangle with internal B{\'e}zier points, $\mathbf{B}$, and Gregory points, $\mathbf{G}$.
 \begin{equation}
 \mathbf{B}_{12} = \frac{1}{\xi_1+\xi_2}(\xi_2\mathbf{G}_{12}+\xi_1\mathbf{G}_{17})
 \end{equation}
@@ -1100,7 +1411,7 @@ The weights on these nodes are similar to the triangular Bezier, with the evalua
 \begin{equation}
 \mathbf{B}_{14} = \frac{1}{\xi_0+\xi_1}(\xi_1\mathbf{G}_{14}+\xi_0\mathbf{G}_{16})
 \end{equation}
-The remainder of the mathematics is the same as the Bezier triangle, with tetrahedral blending, and other aspects maintaining the same form. We should note that choosing $\mathbf{G}_{12} = \mathbf{G}_{17}, \mathbf{G}_{13} = \mathbf{G}_{15}, \mathbf{G}_{14} = \mathbf{G}_{16}$ results in the original Bezier triangle, albeit with three additional nodes stored per triangle.
+The remainder of the mathematics is the same as the B{\'e}zier triangle, with tetrahedral blending, and other aspects maintaining the same form. We should note that choosing $\mathbf{G}_{12} = \mathbf{G}_{17}, \mathbf{G}_{13} = \mathbf{G}_{15}, \mathbf{G}_{14} = \mathbf{G}_{16}$ results in the original B{\'e}zier triangle, albeit with three additional nodes stored per triangle.
 \end{frame}
 \begin{frame}{$G^1$ Continuous Patches}
 \begin{figure}
@@ -1147,8 +1458,8 @@ The remainder of the mathematics is the same as the Bezier triangle, with tetrah
 \end{figure}
 Global and local node ordering for the 4th order G1 triangle. The ordering is chosen as these points are set based on edges, so node 0 and node 3 correspond to edge 0 and so forth.
 \end{frame}
-\section{Implementation - Parametric Coordinates}
-\begin{frame}{Curves}
+\section{Implementation}
+\begin{frame}{Parametrization - Curves}
 For curves, there is one free parameter, $u$ (v = 1-u), between 0 and 1. In finite element convention, the parameter, $\xi \in [-1,1]$, such that
 \[ u = \frac{1}{2}(\xi+1)\]
 When taking derivatives we have that
@@ -1156,7 +1467,7 @@ When taking derivatives we have that
 \]
 
 \end{frame}
-\begin{frame}{Triangles}
+\begin{frame}{Parametrization - Triangles}
 For triangles, there are two free parameters, $u,v,(w = 1-u-v)$, between 0 and 1. In finite element convention, the parameters, $\xi_0,\xi_1 \in [0,1]$, are such that 
 $\xi_0 = 1$, corresponds to vertex 1, $\xi_1 = 1$ to vertex 2, such that the barycentric coordinates are
 \[(u,v,w) = (1-\xi_0-\xi_1,\xi_0,\xi_1)\]
@@ -1169,7 +1480,7 @@ When taking derivatives, writing $\mathbf{B}(\xi_0,\xi_1) = \mathbf{B}(u,v,w)$
 \]
 }
 \end{frame}
-\begin{frame}{Tetrahedra}
+\begin{frame}{Parametrization - Tetrahedra}
 For tetrahedra, there are three free parameters, $u,v,w,(t = 1-u-v-w)$, between 0 and 1. In finite element convention, the parameters, $\xi_0,\xi_1,\xi_2 \in [0,1]$
 \[(u,v,w,t) = (1-\xi_0-\xi_1-\xi_2,\xi_0,\xi_1,\xi_2)\]
 When taking derivatives we have that, similar to triangles,
@@ -1183,7 +1494,9 @@ When taking derivatives we have that, similar to triangles,
 \]
 }
 \end{frame}
-\section{Implementation - Ordering}
+\begin{frame}{Ordering}
+All ordering is in \texttt{crvTables.cc}. For triangles 10th order and below and tetrahedra 6th order and below, the ordering is stored in tables. Otherwise, it is computed as needed. 
+\end{frame}
 \begin{frame}{Ordering - Curves}
 Due to shared entities, there is a specific order to store coordinates in a 1D Array. This ordering is used in \texttt{apfShape.h} and nodes from \texttt{apf::getVectorNodes} return the coordinates in this specific ordering. The ordering is stored in \texttt{crvTables.cc}, e.g for triangles in \texttt{getTriNodeIndex(P,i,j)}. \spa
 
@@ -1421,7 +1734,7 @@ Ordering of edge nodes is the same as for a triangle, reversing them if they are
 \end{tikzpicture}
 
 \end{figure}
-The above diagram describes shared nodes for 6th order Bezier triangle. Original Ordering (left) (0,...,9). Flipped ordering (middle) (9,8,6,3,7,5,2,4,1,0). Rotated ordering by 2 (right) (3,6,8,9,2,5,7,1,4,0). All of this information is in \texttt{crvTables.cc}.
+The above diagram describes shared nodes for 6th order B{\'e}zier triangle. Original Ordering (left) (0,...,9). Flipped ordering (middle) (9,8,6,3,7,5,2,4,1,0). Rotated ordering by 2 (right) (3,6,8,9,2,5,7,1,4,0). All of this information is in \texttt{crvTables.cc}.
 \end{frame}
 \begin{frame}{Split Point Locations on Triangles}
 This is an implementation detail used for interpolation points.\spa
