@@ -180,6 +180,10 @@ static int fixInvalidElements(crv::Adapt* a)
 
 void adapt(ma::Input* in)
 {
+  std::string name = in->mesh->getShape()->getName();
+  if(name != std::string("Bezier"))
+    fail("mesh must be bezier to adapt\n");
+
   in->shouldFixShape = true;
   in->shapeHandler = crv::getShapeHandler;
   ma::print("Curved Adaptation Version 2.0 !");
