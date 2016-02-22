@@ -67,7 +67,6 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Debug_Open();
   gmi_register_mesh();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
@@ -75,6 +74,7 @@ int main(int argc, char** argv)
   runParma(m,weights);
   m->destroyTag(weights);
   apf::writeVtkFiles(argv[3],m);
+  Parma_WriteVtxPtn(m,argv[3]);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();
