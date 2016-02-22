@@ -216,13 +216,13 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
-void checkEntityValidity(int qualityTag, int entity, int order)
+void checkEntityValidity(int validityTag, int entity, int order)
 {
   if(entity == 1){
-    assert(qualityTag == 1);
+    assert(validityTag == 1);
   } else {
-    assert((qualityTag > 1 && order != 3)
-        || (qualityTag == 1 && order == 3));
+    assert((validityTag > 1 && order != 3)
+        || (validityTag == 1 && order == 3));
   }
 }
 
@@ -232,13 +232,13 @@ void checkValidity(apf::Mesh* m, int order)
   apf::MeshEntity* e;
   int entityNum = 0;
   while ((e = m->iterate(it))) {
-    int qualityTag =
-        crv::checkValidity(m,e,2);
-    checkEntityValidity(qualityTag,entityNum,order);
-    qualityTag = crv::checkValidity(m,e,3);
-    checkEntityValidity(qualityTag,entityNum,order);
-    qualityTag = crv::checkValidity(m,e,4);
-    checkEntityValidity(qualityTag,entityNum,order);
+    int validityTag =
+        crv::checkValidity(m,e,0);
+    checkEntityValidity(validityTag,entityNum,order);
+    validityTag = crv::checkValidity(m,e,1);
+    checkEntityValidity(validityTag,entityNum,order);
+    validityTag = crv::checkValidity(m,e,2);
+    checkEntityValidity(validityTag,entityNum,order);
     entityNum++;
   }
   m->end(it);
@@ -383,19 +383,19 @@ void test3D()
     }
     m->acceptChanges();
 
-    int qualityTag = crv::checkValidity(m,tet,2);
+    int validityTag = crv::checkValidity(m,tet,0);
 
     if(order == 4){
-      assert(qualityTag > 1);
+      assert(validityTag > 1);
     } else {
-      assert(qualityTag == 1);
+      assert(validityTag == 1);
     }
-    qualityTag = crv::checkValidity(m,tet,3);
+    validityTag = crv::checkValidity(m,tet,1);
 
     if(order == 4){
-      assert(qualityTag > 1);
+      assert(validityTag > 1);
     } else {
-      assert(qualityTag == 1);
+      assert(validityTag == 1);
     }
     crv::getQuality(m,tet);
     m->destroyNative();

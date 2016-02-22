@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvAdapt.h>
 #include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
@@ -255,7 +256,7 @@ void test2D()
 {
   // test all orders for all blending orders
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 0; blendOrder <= 3; ++blendOrder){
+    for(int blendOrder = 0; blendOrder <= 2; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
@@ -478,7 +479,7 @@ void test3DBlended()
   apf::destroyMesh(mbase);
 
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
+    for(int blendOrder = 1; blendOrder <= 2; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();

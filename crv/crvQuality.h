@@ -9,6 +9,8 @@
 #define CRVQUALITY_H
 
 #include "crv.h"
+#include <apf.h>
+#include <cassert>
 
 /** \file crvQuality.h
     \brief main file for quality functions defined outside of crvQuality.cc */

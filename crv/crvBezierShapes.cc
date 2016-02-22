@@ -231,8 +231,8 @@ static void bezierTetGrads(int P, apf::Vector3 const& xi,
       }
 }
 
-static void collectNodeXi(int parentType, int childType, int P,
-    const apf::Vector3* range, apf::Vector3* xi)
+void collectNodeXi(int parentType, int childType, int P,
+    const apf::Vector3* range, apf::NewArray<apf::Vector3>& xi)
 {
   int childDim = apf::Mesh::typeDimension[childType];
   apf::Vector3 childXi, parentXi;
@@ -277,7 +277,7 @@ void getBezierTransformationMatrix(int type, int P,
 {
   int n = getNumControlPoints(type,P);
 
-  apf::Vector3* xi = new apf::Vector3[n];
+  apf::NewArray<apf::Vector3> xi(n);
   collectNodeXi(type,type,P,range,xi);
 
   apf::NewArray<double> values(n);
@@ -290,7 +290,6 @@ void getBezierTransformationMatrix(int type, int P,
       A(x,i) = values[i];
     }
   }
-  delete [] xi;
 }
 
 void getBezierTransformationMatrix(int parentType,
@@ -300,8 +299,8 @@ void getBezierTransformationMatrix(int parentType,
 {
   int n = getNumControlPoints(parentType,P);
   int nxi = getNumControlPoints(childType,P);
-  apf::Vector3* xi = new apf::Vector3[nxi];
 
+  apf::NewArray<apf::Vector3> xi(nxi);
   collectNodeXi(parentType,childType,P,childRange,xi);
 
   apf::NewArray<double> values(n);
@@ -311,8 +310,6 @@ void getBezierTransformationMatrix(int parentType,
       A(x,i) = values[i];
     }
   }
-  delete [] xi;
-
 }
 
 const bezierShape bezier[apf::Mesh::TYPES] =

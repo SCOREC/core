@@ -22,10 +22,6 @@ bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
     based on edge locations */
 void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
-/** \brief reposition second order edge control point based on XJ Luo's
-    thesis and bezier.tex in SCOREC/docs repo, only works for second order */
-bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
-    ma::Entity* edge);
 
 /** \brief Split edges marked with ma::SPLIT and place high order nodes
     using subdivision, see ma::refine */
@@ -42,7 +38,7 @@ void setTag(Adapt* a, ma::Entity* e, int tag);
 /** \brief reset validityTag */
 void clearTag(Adapt* a, ma::Entity* e);
 /** \brief get validityTag
-    \details Use an integer to determine the vuality tag
+    \details Use an integer to determine the validity tag
     0 -> Not checked
     1 -> Okay Quality
     2-7 -> Vertices are bad

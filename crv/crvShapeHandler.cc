@@ -242,10 +242,12 @@ class BezierHandler : public ma::ShapeHandler
       bt = new BezierTransfer(a);
       sizeField = a->sizeField;
       shouldSnap = a->input->shouldSnap;
+      qual = makeQuality(mesh,2);
     }
     ~BezierHandler()
     {
       delete bt;
+      delete qual;
     }
     virtual double getQuality(apf::MeshEntity* e)
     {
@@ -274,7 +276,7 @@ class BezierHandler : public ma::ShapeHandler
         double lq = ma::measureLinearTetQuality(p);
         if (lq < 0)
           return lq;
-        else return lq*crv::getQuality(mesh,e);
+        else return lq*qual->getQuality(e);
       }
       return -1;
     }
@@ -603,6 +605,7 @@ class BezierHandler : public ma::ShapeHandler
     BezierTransfer* bt;
     ma::SizeField * sizeField;
     bool shouldSnap;
+    Quality* qual;
 };
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a)

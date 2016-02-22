@@ -29,6 +29,14 @@ class Adapt : public ma::Adapt
     ma::Tag* validityTag;
 };
 
+/** \brief change the order of a Bezier Mesh
+ * \details going up in order is exact,
+ * except for boundary elements, where snapping changes things
+ * Going down in order is approximate everywhere
+ * */
+void changeMeshOrder(apf::Mesh2* m, int newOrder);
+
+
 }
 
 #endif
