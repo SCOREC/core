@@ -98,8 +98,8 @@ void transferParametricOnEdgeSplit(
   crv::transferParametricBetween(m, g, ev, t, p);
 }
 
-/* see bezier.tex for more info on this, but its straightforward,
- two line splits */
+/* see bezier.tex in SCOREC/docs repo for more info on this,
+   but its straightforward, two line splits */
 void transferParametricOnTriSplit(
     apf::Mesh2* m,
     apf::MeshEntity* e,

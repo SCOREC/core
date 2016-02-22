@@ -10,7 +10,7 @@
 #include "crvBezier.h"
 #include "crvMath.h"
 #include "crvTables.h"
-/* see bezier.tex */
+/* see bezier.tex in SCOREC/docs repo */
 namespace crv {
 
 /* tolerance to determine if on a bounding entity */

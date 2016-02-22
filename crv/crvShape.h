@@ -23,7 +23,7 @@ bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
 void repositionInteriorWithBlended(ma::Mesh* m,
     ma::Entity* e);
 /** \brief reposition second order edge control point based on XJ Luo's
-    thesis and bezier.tex, only works for second order */
+    thesis and bezier.tex in SCOREC/docs repo, only works for second order */
 bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
     ma::Entity* edge);
 
