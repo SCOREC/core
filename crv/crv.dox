@@ -5,7 +5,7 @@ meant to perform all traditional meshing operations
 for curved elements. Currently, Bezier simplices are supported.
 
 There are several example files that test and make use of this functionality
-all starting with bezier<testname>
+all starting with bezier<testname>.
 
 In practice, geometry models are required (analytic or CAD), 
 and this works best with those formats, however all of the functionality will
@@ -36,7 +36,6 @@ Triangles are divided into more triangles,
 Tetrahedra are first divided into four hexes, which are then
 divided into more hexes.
 
-
 They will also write two additional variables for each entity,
 detJacobian, the scaled Jacobian determinant, a quality measure,
 and minDetJacobian, the scaled Jacobian determinant, but the minimum
@@ -45,7 +44,7 @@ as well as proper quality assessment.
 
 ie, crv::writeCurvedVtuFiles(mesh,apf::Mesh::TET,4,"curvedMesh")
 writes a pvtu file and vtu files with each tet subdivided into 4
-(each tet split into 4 hexes, each hex split into 2 hexes per direction)
+(each tet split into 4 hexes, each hex split into 2 hexes per direction).
 
 crv::writeCurvedVtuFiles(mesh,apf::Mesh::TRIANGLE,4,"curvedMesh")
 writes a pvtu file and vtu files with each triangle subdivided into 16
@@ -53,11 +52,11 @@ triangles.
 
 Viewing each entity type seperately is a useful debugging tool, since
 a 3D mesh with just faces subdivided is much smaller than the full
-subdivided tet mesh, and makes viewing the outer surface much easier
+subdivided tet mesh, and makes viewing the outer surface much easier.
 
 There is crv::writeControlPointVtuFiles 
 and crv::writeInterpolationPointVtuFiles,
 which write out the actual node values, with point data showing entity
 type, allowing for debugging point locations by looking at where the
-control points are, and what interpolating location their xi corresponds to
+control points are, and what interpolating location their xi corresponds to.
 */
