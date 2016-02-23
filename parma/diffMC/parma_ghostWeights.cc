@@ -42,7 +42,7 @@ namespace {
             //ghost edges
             const int nedges = m->getDownward(elms[k],1,edges);
             for(int l=0; l < nedges; l++)
-              if (!m->hasTag(edges[l],visited)) {
+              if (parma::isOwned(m, edges[l]) && !m->hasTag(edges[l],visited)) {
                 m->setIntTag(edges[l],visited,&i);
                 weight[1] += parma::getEntWeight(m,edges[l],wtag);
               }

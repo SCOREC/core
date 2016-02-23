@@ -34,11 +34,13 @@ namespace {
         parma::Weights* vtxW =convertGhostToEntWeight(gw,0);
         destroyGhostWeights(gw);
 
-        const double vtxImb = parma::getImbalance(vtxW);
+        double vtxImb, vtxAvg;
+        parma::getImbalance(vtxW, vtxImb, vtxAvg);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "vtx imbalance %.3f\n", vtxImb);
+          fprintf(stdout, "vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
 
-        const double elmImb = parma::getImbalance(elmW);
+        double elmImb, elmAvg;
+        parma::getImbalance(elmW, elmImb, elmAvg);
         monitorUpdate(elmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
 
@@ -82,11 +84,13 @@ namespace {
         parma::Weights* elmW = convertGhostToEntWeight(gw,mesh->getDimension());
         destroyGhostWeights(gw);
 
-        const double elmImb = parma::getImbalance(elmW);
-        const double edgeImb = parma::getImbalance(edgeW);
+        double elmImb, elmAvg;
+        parma::getImbalance(elmW,elmImb,elmAvg);
+        double edgeImb, edgeAvg;
+        parma::getImbalance(edgeW, edgeImb, edgeAvg);
         if( !PCU_Comm_Self() && verbose ) {
-          fprintf(stdout, "elm imbalance %.3f\n", elmImb);
-          fprintf(stdout, "edge imbalance %.3f\n", edgeImb);
+          fprintf(stdout, "elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
+          fprintf(stdout, "edge imbalance %.3f avg %.3f\n", edgeImb, edgeAvg);
         }
         if( !stepNum ) //FIXME need to set the imbalance at the beginning for the primary entity
           maxElmW = parma::getMaxWeight(elmW);
