@@ -106,8 +106,12 @@ namespace {
     return v;
   }
 
+  int ftnToC(long id) {
+    return --id;
+  }
+
   apf::MeshEntity* lookupVert(Reader* r, long ftnNodeId) {
-    const long cNodeId = ftnNodeId - 1;
+    const long cNodeId = ftnToC(ftnNodeId);
     assert(r->nodeMap.count(cNodeId));
     return r->nodeMap[cNodeId];
   }
@@ -253,6 +257,24 @@ namespace {
     m->acceptChanges();
   }
 
+  void getMaxAndAvg(std::set<int>*& cnt, int numparts, unsigned& max, double& avg) {
+    for(int i=0; i<numparts; i++) {
+      avg += cnt[i].size();
+      if( cnt[i].size() > max )
+        max = cnt[i].size();
+    }
+    avg /= numparts;
+  }
+
+  void getMaxAndAvg(int* cnt, int numparts, int& max, double& avg) {
+    for(int i=0; i<numparts; i++) {
+      avg += cnt[i];
+      if( cnt[i] > max )
+        max = cnt[i];
+    }
+    avg /= numparts;
+  }
+
   void printPtnStats(apf::Mesh2* m, const char* ufile, const char* ptnFile,
       const double elmWeights[]) {
     header hdr;
@@ -270,24 +292,34 @@ namespace {
       if( ptn[id] > numparts )
         numparts = ptn[id];
     }
+    numparts++; //we want count, not rank
     fclose(f);
-    fprintf(stderr, "read ptn\n");
+    fprintf(stderr, "read ptn for %d parts\n", numparts);
 
     // 'part[vtx|elm]' counts the number of [vtx|elm] per part
-    int* partvtx = new int[numparts];
+    typedef std::set<int> SetInt;
+    SetInt* partvtx = new SetInt[numparts];
     int* partelm = new int[numparts];
+    int* partelmW = new int[numparts]; //weighted elm counts
     for(int i=0; i<numparts; i++)
-      partvtx[i] = partelm[i] = 0;
+      partelm[i] = partelmW[i] = 0;
 
-    //count number of vtx per part
+    //count number of non-ghosted vtx per part
     for(long id=0; id<hdr.nvtx; id++)
-      partvtx[ ptn[id] ]++;
+      partvtx[ ptn[id] ].insert(id);
+    unsigned maxvtx = 0; double avgvtx = 0;
+    getMaxAndAvg(partvtx,numparts,maxvtx,avgvtx);
+    double imbvtx = maxvtx / avgvtx;
+    fprintf(stderr, "imbvtx %.3f avgvtx %.3f\n", imbvtx, avgvtx);
 
     readNodes(&r, &hdr); //dummy to advance the fileptr
     readFacesAndTags(&r,&hdr); //dummy to advance the fileptr
+    free(r.faceVerts[faceTypeIdx(apf::Mesh::TRIANGLE)]);
+    free(r.faceVerts[faceTypeIdx(apf::Mesh::QUAD)]);
+    free(r.faceTags[faceTypeIdx(apf::Mesh::TRIANGLE)]);
+    free(r.faceTags[faceTypeIdx(apf::Mesh::QUAD)]);
     checkFilePos(&r,&hdr); //sanity check
 
-    typedef std::set<int> SetInt;
     SetInt elmparts;
 
     int types[4] =
@@ -301,38 +333,48 @@ namespace {
       unsigned* vtx = (unsigned*) calloc(cnt,sizeof(unsigned));
       readUnsigneds(r.file, vtx, cnt, r.swapBytes);
       for(long i=0; i<nelms; i++) {
-        for(unsigned j=0; j<nverts; j++)
-          elmparts.insert( ptn[ vtx[i*nverts+j] ] );
+        //determine which parts have a copy of the element
+        //  based on who ones the elements bounding vertices
+        for(unsigned j=0; j<nverts; j++) {
+          const int id = ftnToC(vtx[i*nverts+j]);
+          elmparts.insert( ptn[id] );
+        }
+        assert(elmparts.size() <= nverts);
         //increment the elm per part counts
-        APF_ITERATE(SetInt,elmparts,ep)
-          partelm[*ep] += elmWeights[apfType];
+        APF_ITERATE(SetInt,elmparts,ep) {
+          assert(*ep < numparts);
+          partelmW[*ep] += elmWeights[apfType];
+          partelm[*ep]++;
+          for(unsigned j=0; j<nverts; j++) {
+            const int id = ftnToC(vtx[i*nverts+j]);
+            partvtx[ *ep ].insert(id);
+          }
+        }
         elmparts.clear();
+        assert(!elmparts.size());
       }
       free(vtx);
       fprintf(stderr, "read %lu %s\n", nelms, apf::Mesh::typeName[apfType]);
     }
 
     //get max and avg vtx and elm per part
-    int maxvtx = 0, maxelm = 0;
-    double avgvtx = 0, avgelm = 0;
-    for(int i=0; i<numparts; i++) {
-      if( partvtx[i] > maxvtx )
-        maxvtx = partvtx[i];
-      avgvtx += partvtx[i];
-      if( partelm[i] > maxelm )
-        maxelm = partelm[i];
-      avgelm += partelm[i];
-    }
-    avgvtx /= numparts;
-    avgelm /= numparts;
-    double imbvtx = maxvtx / avgvtx;
+    int maxelm = 0; double avgelm = 0;
+    int maxelmW = 0; double avgelmW = 0;
+    maxvtx = 0; avgvtx = 0;
+    getMaxAndAvg(partvtx,numparts,maxvtx,avgvtx);
+    getMaxAndAvg(partelm,numparts,maxelm,avgelm);
+    getMaxAndAvg(partelmW,numparts,maxelmW,avgelmW);
+    imbvtx = maxvtx / avgvtx;
     double imbelm = maxelm / avgelm;
-    fprintf(stderr, "imbvtx %.3f imbelm %.3f avgvtx %.3f avgelm %.3f\n",
-        imbvtx, imbelm, avgvtx, avgelm);
+    double imbelmW = maxelmW / avgelmW;
+    fprintf(stderr, "imbvtx %.3f imbelmW %.3f imbelm %.3f "
+        "avgvtx %.3f avgelmW %.3f avgelm %.3f\n",
+        imbvtx, imbelmW, imbelm, avgvtx, avgelmW, avgelm);
 
     delete [] ptn;
-    delete [] partvtx;
     delete [] partelm;
+    delete [] partelmW;
+    delete [] partvtx;
   }
 }
 
