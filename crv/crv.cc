@@ -8,8 +8,8 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvTables.h"
+#include "crvQuality.h"
 #include <cstdlib>
-#include <iostream>
 
 namespace crv {
 
@@ -162,9 +162,11 @@ int countNumberInvalidElements(apf::Mesh2* m)
       n += (apf::measure(m,e) < 1e-10);
     }
   } else {
+    Quality* qual = makeQuality(m,2);
     while ((e = m->iterate(it))) {
-      n += (checkValidity(m,e,4) > 1);
+      n += (qual->checkValidity(e) > 1);
     }
+    delete qual;
   }
   m->end(it);
   return n;

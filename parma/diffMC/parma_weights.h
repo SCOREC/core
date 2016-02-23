@@ -13,13 +13,18 @@ namespace parma {
     private:
       Weights();
   };
+  class GhostWeights;
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim);
-  Weights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, 
-      int layers, int bridge);
+  GhostWeights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
+      int layers);
+  void destroyGhostWeights(GhostWeights* gw);
+  Weights* convertGhostToEntWeight(GhostWeights* gw, int dim);
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w);
   double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
   double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
+  double getMaxWeight(Weights* w);
+  double getImbalance(Weights* w);
 }
 
 #endif

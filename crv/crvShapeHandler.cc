@@ -68,6 +68,7 @@ class BezierTransfer : public ma::SolutionTransfer
             A,elem_vert_xi[type]);
         invertMatrixWithPLU(getNumControlPoints(type,P),
             A,Ai[d]);
+
         crv::getBezierTransformationCoefficients(P,type,coeffs[d]);
         crv::getInternalBezierTransformationCoefficients(mesh,
             P,1,apf::Mesh::simplexTypes[d],internalCoeffs[d]);
@@ -191,15 +192,29 @@ class BezierTransfer : public ma::SolutionTransfer
             int n = getNumControlPoints(childType,P);
             apf::Vector3 vp[4];
             getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
+            if(getBlendingOrder(parentType) > 0){
+              apf::Element* elem =
+                  apf::createElement(mesh->getCoordinateField(),parent);
+              apf::NewArray<apf::Vector3> xi(ni);
+              collectNodeXi(parentType,childType,P,vp,xi);
+              for (int j = 0; j < ni; ++j){
+                apf::Vector3 point(0,0,0);
+                apf::getVector(elem,xi[j],point);
+                mesh->setPoint(newEntities[i],j,point);
+              }
+              apf::destroyElement(elem);
+              convertInterpolationPoints(mesh,newEntities[i],n,ni,coeffs[d]);
 
-            mth::Matrix<double> A(n,np),B(n,n);
-            getBezierTransformationMatrix(parentType,childType,P,A,vp);
-            mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
-            for (int j = 0; j < ni; ++j){
-              apf::Vector3 point(0,0,0);
-              for (int k = 0; k < np; ++k)
-                point += nodes[k]*B(j+n-ni,k);
-              mesh->setPoint(newEntities[i],j,point);
+            } else {
+              mth::Matrix<double> A(n,np),B(n,n);
+              getBezierTransformationMatrix(parentType,childType,P,A,vp);
+              mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
+              for (int j = 0; j < ni; ++j){
+                apf::Vector3 point(0,0,0);
+                for (int k = 0; k < np; ++k)
+                  point += nodes[k]*B(j+n-ni,k);
+                mesh->setPoint(newEntities[i],j,point);
+              }
             }
           }
         }
@@ -242,10 +257,12 @@ class BezierHandler : public ma::ShapeHandler
       bt = new BezierTransfer(a);
       sizeField = a->sizeField;
       shouldSnap = a->input->shouldSnap;
+      qual = makeQuality(mesh,2);
     }
     ~BezierHandler()
     {
       delete bt;
+      delete qual;
     }
     virtual double getQuality(apf::MeshEntity* e)
     {
@@ -274,7 +291,7 @@ class BezierHandler : public ma::ShapeHandler
         double lq = ma::measureLinearTetQuality(p);
         if (lq < 0)
           return lq;
-        else return lq*crv::getQuality(mesh,e);
+        else return lq*qual->getQuality(e);
       }
       return -1;
     }
@@ -603,6 +620,7 @@ class BezierHandler : public ma::ShapeHandler
     BezierTransfer* bt;
     ma::SizeField * sizeField;
     bool shouldSnap;
+    Quality* qual;
 };
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a)

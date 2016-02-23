@@ -50,4 +50,4 @@ For more information, start at our
 * mailing list <scorec-pumi@lists.rpi.edu>
   (subscribe at https://lists.sympa.rpi.edu/wws/subscribe/scorec-pumi)
 * Dan Ibanez <ibaned@rpi.edu>
-* Cameron Smith <smithc11@rpi.edu>
+* [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith)

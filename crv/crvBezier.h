@@ -56,7 +56,8 @@ void getTriDetJacNodesFromTetDetJacNodes(int f, int P,
 /** \brief gets full set of bezier control points given blended points
     \details this is used for quality assessment of blended shapes,
     and reallocates elemNodes */
-void getFullRepFromBlended(apf::Mesh* m, int type,
+void getFullRepFromBlended(int type,
+    apf::NewArray<double>& transformCoefficients,
     apf::NewArray<apf::Vector3>& elemNodes);
 /** \brief computes det(Jacobian) for tri from the Bezier conversion
     \details this evaluates an order d(P-1) bezier to compute it
@@ -71,9 +72,11 @@ double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,
 double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
     apf::MeshEntity* e, apf::Vector3& xi);
 
-/** \brief get bezier node locations in parameter space */
+/** \brief get one bezier node location in parameter space */
 void getBezierNodeXi(int type, int P, int node, apf::Vector3& xi);
-
+/** \brief get all bezier node locations in parameter space */
+void collectNodeXi(int parentType, int childType, int P,
+    const apf::Vector3* range, apf::NewArray<apf::Vector3>& xi);
 /** \brief elevation functions for beziers */
 void elevateBezierEdge(int P, int r, apf::NewArray<apf::Vector3>& nodes,
     apf::NewArray<apf::Vector3>& elevatedNodes);

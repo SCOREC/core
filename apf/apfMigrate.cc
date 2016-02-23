@@ -31,8 +31,10 @@ static void getAffected(
   for (int i=0; i < plan->count(); ++i)
   {
     MeshEntity* e = plan->get(i);
-    if (plan->sending(e) != self)
+    if (plan->sending(e) != self) {
+      assert(apf::getDimension(m, e) == m->getDimension());
       affected[maxDimension].push_back(e);
+    }
   }
   int dummy;
   MeshTag* tag = m->createIntTag("apf_migrate_affected",1);

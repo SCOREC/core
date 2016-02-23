@@ -27,8 +27,6 @@ namespace {
       const int remainder = totv % PCU_Comm_Peers();
       if( PCU_Comm_Self() == PCU_Comm_Peers()-1 )
         c += remainder;
-      fprintf(stderr, "p %d totv %ld count %d vtxpp %d remainder %d first %d\n",
-          PCU_Comm_Self(), totv, c, pp, remainder, f);
     }
     int getWriter(int id) {
       int writer = id / pp;

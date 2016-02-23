@@ -32,18 +32,15 @@ static bool useBlending(int type)
   return (getBlendingOrder(type) != 0);
 }
 
-void getFullRepFromBlended(apf::Mesh* m, int type,
+void getFullRepFromBlended(int type,
+    apf::NewArray<double>& transformCoefficients,
     apf::NewArray<apf::Vector3>& elemNodes)
 {
   int n = getNumControlPoints(type,P);
   int ne = getNumInternalControlPoints(type,P);
-  int blendingOrder = getBlendingOrder(type);
-  apf::NewArray<double> c;
   apf::NewArray<apf::Vector3> newNodes(ne);
   apf::NewArray<apf::Vector3> nodes(n-ne);
-  getInternalBezierTransformationCoefficients(m,P,blendingOrder,
-      type,c);
-  convertInterpolationPoints(n-ne,ne,elemNodes,c,newNodes);
+  convertInterpolationPoints(n-ne,ne,elemNodes,transformCoefficients,newNodes);
   for (int i = 0; i < n-ne; ++i)
     nodes[i] = elemNodes[i];
 

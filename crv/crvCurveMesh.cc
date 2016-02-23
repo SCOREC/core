@@ -46,6 +46,7 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
+  assert(m->canSnap());
   int type = m->getType(e);
   if(type == apf::Mesh::VERTEX){
     apf::Vector3 p, pt(0,0,0);
@@ -77,6 +78,7 @@ void MeshCurver::synchronize()
 
 void MeshCurver::snapToInterpolate(int dim)
 {
+  assert(m_mesh->canSnap());
   apf::MeshEntity* e;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
@@ -88,6 +90,9 @@ void MeshCurver::snapToInterpolate(int dim)
 
 bool InterpolatingCurver::run()
 {
+  if (!m_mesh->canSnap())
+    fail("Cannot snap to geometry, "
+        "this operation is pointless.\n");
   // interpolate points in each dimension
   for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
@@ -152,25 +157,13 @@ bool BezierCurver::run()
   if(m_order < 1 || m_order > 6){
     fail("trying to convert to unimplemented Bezier order\n");
   }
-  // if the currentOrder is NOT one, assume the mesh
-  // is already interpolated and curved as one would want it,
-  // otherwise, change it down to first order and then go back up
-  int currentOrder = m_mesh->getShape()->getOrder();
-
   // if its already bezier, check what needs to be done, if anything
   if(name == std::string("Bezier")){
     changeMeshOrder(m_mesh,m_order);
     return true;
   } else {
-    // if the initial mesh is first order, project the points
-    // onto the new shape
-    if(currentOrder == 1 || m_order == 1 || currentOrder > m_order)
-    {
-      apf::changeMeshShape(m_mesh, getBezier(m_order),true);
-    } else if(currentOrder > 1){
-      // assume it is interpolating, don't project
-      apf::changeMeshShape(m_mesh,getBezier(m_order),false);
-    }
+    // project the new mesh onto the old, with interpolating shapes
+    apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   }
 
   if (m_mesh->canSnap()){
@@ -365,10 +358,15 @@ void GregoryCurver::setInternalPointsLocally()
 bool GregoryCurver::run()
 {
   if(m_order != 4){
-    fail("cannot convert to G1 of this order\n");
+    fail("cannot only convert to G1 of order 4\n");
   }
-  if(m_mesh->getDimension() != 3)
-    fail("can only convert to 3D mesh\n");
+  if(m_mesh->getDimension() != 3){
+    fail("can only convert 3D mesh\n");
+  }
+  if (!m_mesh->canSnap()){
+     fail("Cannot snap to geometry, "
+         "cannot convert mesh to G1.\n");
+  }
 
   apf::changeMeshShape(m_mesh, getGregory(),true);
   int md = m_mesh->getDimension();

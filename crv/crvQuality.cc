@@ -21,6 +21,85 @@ static double minAcceptable = 0.0;
 
 static double convergenceTolerance = 0.01;
 
+class Quality2D : public Quality
+{
+public:
+  Quality2D(apf::Mesh* m, int algorithm) : Quality(m,algorithm)
+  {
+    blendingOrder = getBlendingOrder(apf::Mesh::TRIANGLE);
+    if ( blendingOrder > 0 &&
+        getNumInternalControlPoints(apf::Mesh::TRIANGLE,order)){
+      getInternalBezierTransformationCoefficients(mesh,order,
+          blendingOrder,apf::Mesh::TRIANGLE,blendingCoeffs);
+    }
+    n = getNumControlPoints(apf::Mesh::TRIANGLE,2*(order-1));
+    if (algorithm == 0 || algorithm == 2){
+      for (int d = 1; d <= 2; ++d)
+      getBezierJacobianDetSubdivisionCoefficients(
+          2*(order-1),apf::Mesh::simplexTypes[d],subdivisionCoeffs[d]);
+    }
+  };
+  virtual ~Quality2D() {};
+  double getQuality(apf::MeshEntity* e);
+  int checkValidity(apf::MeshEntity* e);
+  int blendingOrder;
+  int n;
+  apf::NewArray<double> blendingCoeffs;
+  apf::NewArray<double> subdivisionCoeffs[3];
+};
+
+class Quality3D : public Quality
+{
+public:
+  Quality3D(apf::Mesh* m, int algorithm) : Quality(m,algorithm)
+  {
+    if (algorithm == 0 || algorithm == 2){
+      for (int d = 1; d <= 3; ++d)
+      getBezierJacobianDetSubdivisionCoefficients(
+          3*(order-1),apf::Mesh::simplexTypes[d],subdivisionCoeffs[d]);
+    }
+    n = getNumControlPoints(apf::Mesh::TET,3*(order-1));
+    xi.allocate(n);
+    transformationMatrix.resize(n,n);
+    mth::Matrix<double> A(n,n);
+    collectNodeXi(apf::Mesh::TET,apf::Mesh::TET,3*(order-1),
+        elem_vert_xi[apf::Mesh::TET],xi);
+    getBezierTransformationMatrix(apf::Mesh::TET,3*(order-1),A,
+        elem_vert_xi[apf::Mesh::TET]);
+    invertMatrixWithPLU(n,A,transformationMatrix);
+  }
+  virtual ~Quality3D() {};
+  double getQuality(apf::MeshEntity* e);
+  int checkValidity(apf::MeshEntity* e);
+  // 3D uses an alternate method of computing these
+  // returns a validity tag so both quality and validity can
+  // quit early if this function thinks they should
+  // if validity = true, quit if its obvious the element is invalid
+  int computeJacDetNodes(apf::MeshEntity* e,
+      apf::NewArray<double>& nodes, bool validity);
+  int n;
+  apf::NewArray<double> subdivisionCoeffs[4];
+  apf::NewArray<apf::Vector3> xi;
+  mth::Matrix<double> transformationMatrix;
+};
+
+Quality* makeQuality(apf::Mesh* m, int algorithm)
+{
+  if (m->getDimension() == 2)
+    return new Quality2D(m,algorithm);
+  else if (m->getDimension() == 3)
+    return new Quality3D(m,algorithm);
+  return 0;
+}
+/* Set up quality object, computing matrices that are used frequently */
+Quality::Quality(apf::Mesh* m, int algorithm_) :
+  mesh(m), algorithm(algorithm_)
+{
+  assert(algorithm >= 0 && algorithm <= 2);
+  order = mesh->getShape()->getOrder();
+  assert(order >= 1);
+};
+
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,
  * by George, Borouchaki, and Barral. (2014)
@@ -51,7 +130,17 @@ static double getTetPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
   return apf::cross(nodes[p01]-nodes[p00],nodes[p11]-nodes[p10])
     *(nodes[p21]-nodes[p20]);
 }
-
+/* These two functions are in George, Borouchaki, and Barral. (2014)
+ *
+ * The math is not fun, and they are for loop madness. They exist
+ * because it was the first implementation, I have since switched
+ * to a different approach to computing jacobian determinant
+ * control points
+ *
+ * the 2D one exists, because the other approach does not quite work for
+ * 2D planar meshes.
+ *
+ */
 static double Nijk(apf::NewArray<apf::Vector3>& nodes,
     int d, int I, int J)
 {
@@ -118,6 +207,10 @@ static double calcMaxJacDet(int n, apf::NewArray<double>& nodes)
 /* nodes is (2(P-1)+1)(2(P-1)+2)/2 = P(2P-1)
  * except for P = 1, which has size 3 due to numbering convention used,
  * such that i=j=k=0 results in index 2
+ *
+ * these are not actively used, other than to debug and double check other
+ * algorithms. The cost of compute Nijkl is significant (and the for loops
+ * are ugly), so for now, lets compute things using Remacle's approach.
  */
 static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
     apf::NewArray<double>& nodes)
@@ -126,14 +219,14 @@ static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
     for (int J = 0; J <= 2*(P-1)-I; ++J)
       nodes[getTriNodeIndex(2*(P-1),I,J)] = Nijk(elemNodes,P,I,J);
 }
-static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
-    apf::NewArray<double>& nodes)
-{
-  for (int I = 0; I <= 3*(P-1); ++I)
-    for (int J = 0; J <= 3*(P-1)-I; ++J)
-      for (int K = 0; K <= 3*(P-1)-I-J; ++K)
-         nodes[getTetNodeIndex(3*(P-1),I,J,K)] = Nijkl(elemNodes,P,I,J,K);
-}
+//static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
+//    apf::NewArray<double>& nodes)
+//{
+//  for (int I = 0; I <= 3*(P-1); ++I)
+//    for (int J = 0; J <= 3*(P-1)-I; ++J)
+//      for (int K = 0; K <= 3*(P-1)-I-J; ++K)
+//         nodes[getTetNodeIndex(3*(P-1),I,J,K)] = Nijkl(elemNodes,P,I,J,K);
+//}
 
 /*
  * This is the elevation version of this algorithm
@@ -280,118 +373,65 @@ static void getJacDetBySubdivisionMatrices(int type, int P,
     done = true;
   }
 }
-/*
- * Distinctly only works for 2D planar meshes in x-y, used as a test for
- * the algorithm used in 3D.
- */
-static int checkTriValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
+
+int Quality2D::checkValidity(apf::MeshEntity* e)
 {
-  apf::MeshElement* me = apf::createMeshElement(m,e);
-  apf::FieldShape* fs = m->getShape();
-  apf::Matrix3x3 J;
-  // First, just check at node xi
-  apf::Downward down;
-  apf::Vector3 xi, exi;
-  int qualityTag = 0;
-  for (int d = 0; d <= 1; ++d){
-    int nDown = m->getDownward(e,d,down);
-    for (int j = 0; j < nDown; ++j){
-      int bt = m->getType(down[j]);
-      for (int i = 0; i < fs->countNodesOn(bt); ++i){
-        fs->getNodeXi(bt,i,xi);
-        exi = apf::boundaryToElementXi(m,down[j],e,xi);
-        apf::getJacobian(me,exi,J);
-        if(J[0][0]*J[1][1]-J[1][0]*J[0][1] < minAcceptable){
-          qualityTag = 6*d+2+j;
-          break;
-        }
-      }
-    }
-  }
 
-  for (int i = 0; i < fs->countNodesOn(apf::Mesh::TRIANGLE); ++i){
-    fs->getNodeXi(apf::Mesh::TRIANGLE,i,xi);
-    apf::getJacobian(me,xi,J);
-    if(J[0][0]*J[1][1]-J[1][0]*J[0][1] < minAcceptable){
-      qualityTag = 14;
-      break;
-    }
-  }
-
-  apf::destroyMeshElement(me);
-  return qualityTag;
-}
-
-static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
-    int algorithm)
-{
-  int P = m->getShape()->getOrder();
-  if (algorithm >= 2){
-    int qualityTag = checkTriValidityAtNodeXi(m,e);
-    if(qualityTag > 0) return qualityTag;
-  }
-
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
+  apf::Element* elem = apf::createElement(mesh->getCoordinateField(),e);
   apf::NewArray<apf::Vector3> elemNodes;
   apf::getVectorNodes(elem,elemNodes);
   // if we are blended, we need to create a full representation
-  int blendingOrder = getBlendingOrder(apf::Mesh::TRIANGLE);
-  if (blendingOrder > 0 && getNumInternalControlPoints(apf::Mesh::TRIANGLE,P)) {
-    getFullRepFromBlended(m,apf::Mesh::TRIANGLE,elemNodes);
+  if (blendingOrder > 0 &&
+      getNumInternalControlPoints(apf::Mesh::TRIANGLE,order)) {
+    getFullRepFromBlended(apf::Mesh::TRIANGLE,blendingCoeffs,elemNodes);
   }
 
   apf::destroyElement(elem);
-  apf::NewArray<double> nodes(P*(2*P-1));
-  getTriJacDetNodes(P,elemNodes,nodes);
+  apf::NewArray<double> nodes(order*(2*order-1));
+  // have to use this function because its for x-y plane, and
+  // the other method used in 3D does not work in those cases
+  getTriJacDetNodes(order,elemNodes,nodes);
 
-  // if we haven't checked at nodeXi, need to check verts
-  if(algorithm < 2){
-    apf::Downward verts;
-    m->getDownward(e,0,verts);
-    for (int i = 0; i < 3; ++i){
-      if(nodes[i] < minAcceptable){
-        return i+2;
-      }
+  // check vertices
+  apf::Downward verts;
+  mesh->getDownward(e,0,verts);
+  for (int i = 0; i < 3; ++i){
+    if(nodes[i] < minAcceptable){
+      return i+2;
     }
   }
 
-  apf::NewArray<double> subCoefficients;
-  if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
-        apf::Mesh::EDGE,subCoefficients);
-  }
-
   apf::MeshEntity* edges[3];
-  m->getDownward(e,1,edges);
+  mesh->getDownward(e,1,edges);
   double minJ = 0, maxJ = 0;
   // Vertices will already be flagged in the first check
   for (int edge = 0; edge < 3; ++edge){
-    for (int i = 0; i < 2*(P-1)-1; ++i){
-      if (nodes[3+edge*(2*(P-1)-1)+i] < minAcceptable){
+    for (int i = 0; i < 2*(order-1)-1; ++i){
+      if (nodes[3+edge*(2*(order-1)-1)+i] < minAcceptable){
         minJ = -1e10;
-        apf::NewArray<double> edgeNodes(2*(P-1)+1);
-        if(algorithm != 4){
+        apf::NewArray<double> edgeNodes(2*(order-1)+1);
+        if(algorithm < 2){
           edgeNodes[0] = nodes[apf::tri_edge_verts[edge][0]];
-          edgeNodes[2*(P-1)] = nodes[apf::tri_edge_verts[edge][1]];
-          for (int j = 0; j < 2*(P-1)-1; ++j)
-            edgeNodes[j+1] = nodes[3+edge*(2*(P-1)-1)+j];
-          if(algorithm % 2 == 1){
-            getJacDetByElevation(apf::Mesh::EDGE,2*(P-1),edgeNodes,minJ,maxJ);
+          edgeNodes[2*(order-1)] = nodes[apf::tri_edge_verts[edge][1]];
+          for (int j = 0; j < 2*(order-1)-1; ++j)
+            edgeNodes[j+1] = nodes[3+edge*(2*(order-1)-1)+j];
+          if(algorithm == 1){
+            getJacDetByElevation(apf::Mesh::EDGE,2*(order-1),edgeNodes,minJ,maxJ);
           } else {
             // allows recursion stop on first "conclusive" invalidity
             bool done = false;
-            getJacDetBySubdivision(apf::Mesh::EDGE,2*(P-1),
+            getJacDetBySubdivision(apf::Mesh::EDGE,2*(order-1),
                 0,edgeNodes,minJ,maxJ,done);
           }
         } else {
           edgeNodes[0] = nodes[apf::tri_edge_verts[edge][0]];
           edgeNodes[1] = nodes[apf::tri_edge_verts[edge][1]];
-          for (int j = 0; j < 2*(P-1)-1; ++j)
-            edgeNodes[j+2] = nodes[3+edge*(2*(P-1)-1)+j];
+          for (int j = 0; j < 2*(order-1)-1; ++j)
+            edgeNodes[j+2] = nodes[3+edge*(2*(order-1)-1)+j];
           bool done = false;
           bool quality = false;
-          getJacDetBySubdivisionMatrices(apf::Mesh::EDGE,2*(P-1),
-              0,subCoefficients,edgeNodes,minJ,maxJ,done,quality);
+          getJacDetBySubdivisionMatrices(apf::Mesh::EDGE,2*(order-1),
+              0,subdivisionCoeffs[1],edgeNodes,minJ,maxJ,done,quality);
         }
         if(minJ < minAcceptable){
           return 8+edge;
@@ -400,140 +440,83 @@ static int checkTriValidity(apf::Mesh* m, apf::MeshEntity* e,
     }
   }
 
-  if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(2*(P-1),
-        apf::Mesh::TRIANGLE,subCoefficients);
-  }
   bool done = false;
-  for (int i = 0; i < (2*P-3)*(2*P-4)/2; ++i){
-    if (nodes[6*(P-1)+i] < minAcceptable){
+  for (int i = 0; i < (2*order-3)*(2*order-4)/2; ++i){
+    if (nodes[6*(order-1)+i] < minAcceptable){
       minJ = -1e10;
-      if(algorithm % 2 == 1)
-        getJacDetByElevation(apf::Mesh::TRIANGLE,2*(P-1),nodes,minJ,maxJ);
-      else if(algorithm == 4){
+      if(algorithm == 1)
+        getJacDetByElevation(apf::Mesh::TRIANGLE,2*(order-1),nodes,minJ,maxJ);
+      else if(algorithm == 2){
         bool quality = false;
-        getJacDetBySubdivisionMatrices(apf::Mesh::TRIANGLE,2*(P-1),
-            0,subCoefficients,nodes,minJ,maxJ,done,quality);
+        getJacDetBySubdivisionMatrices(apf::Mesh::TRIANGLE,2*(order-1),
+            0,subdivisionCoeffs[2],nodes,minJ,maxJ,done,quality);
       } else {
-        getJacDetBySubdivision(apf::Mesh::TRIANGLE,2*(P-1),
+        getJacDetBySubdivision(apf::Mesh::TRIANGLE,2*(order-1),
             0,nodes,minJ,maxJ,done);
       }
       if(minJ < minAcceptable){
-        return 12;
+        return 14;
       }
     }
   }
   return 1;
 }
 
-static int checkTetValidityAtNodeXi(apf::Mesh* m, apf::MeshEntity* e)
+int Quality3D::checkValidity(apf::MeshEntity* e)
 {
-  apf::MeshElement* me = apf::createMeshElement(m,e);
-  apf::FieldShape* fs = m->getShape();
-  apf::Matrix3x3 J;
-  // First, just check at node xi
-  apf::Downward down;
-  apf::Vector3 xi, exi;
-  int qualityTag = 0;
-  for (int d = 0; d <= 2; ++d){
-    int nDown = m->getDownward(e,d,down);
-    for (int j = 0; j < nDown; ++j){
-      int bt = m->getType(down[j]);
-      for (int i = 0; i < fs->countNodesOn(bt); ++i){
-        fs->getNodeXi(bt,i,xi);
-        exi = apf::boundaryToElementXi(m,down[j],e,xi);
-        apf::getJacobian(me,exi,J);
-        if(apf::getJacobianDeterminant(J,3) < minAcceptable){
-          qualityTag = 6*d+2+j;
-          break;
-        }
-      }
+
+  apf::NewArray<double> nodes(n);
+//  apf::Element* elem = apf::createElement(mesh->getCoordinateField(),e);
+//  apf::NewArray<apf::Vector3> elemNodes;
+//  apf::getVectorNodes(elem,elemNodes);
+//  apf::destroyElement(elem);
+//  getTetJacDetNodes(order,elemNodes,nodes);
+  int validityTag = computeJacDetNodes(e,nodes,true);
+  if (validityTag > 1)
+    return validityTag;
+// check verts
+  apf::Downward verts;
+  mesh->getDownward(e,0,verts);
+  for (int i = 0; i < 4; ++i){
+    if(nodes[i] < minAcceptable){
+      return 2+i;
     }
-  }
-  for (int i = 0; i < fs->countNodesOn(apf::Mesh::TET); ++i){
-    fs->getNodeXi(apf::Mesh::TET,i,xi);
-    apf::getJacobian(me,xi,J);
-    if(apf::getJacobianDeterminant(J,3) < minAcceptable){
-      qualityTag = 20;
-      break;
-    }
-  }
-
-  apf::destroyMeshElement(me);
-  return qualityTag;
-}
-
-static int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
-    int algorithm)
-{
-  int P = m->getShape()->getOrder();
-  if (algorithm >= 2){
-    int qualityTag = checkTetValidityAtNodeXi(m,e);
-    if(qualityTag > 0) return qualityTag;
-  }
-
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
-  apf::NewArray<apf::Vector3> elemNodes;
-  apf::getVectorNodes(elem,elemNodes);
-  int blendingOrder = getBlendingOrder(apf::Mesh::TET);
-  if (blendingOrder > 0 && getNumInternalControlPoints(apf::Mesh::TET,P)) {
-    getFullRepFromBlended(m,apf::Mesh::TET,elemNodes);
-  }
-
-  apf::destroyElement(elem);
-  // 9*P*P*(P-1)/2+P = (3(P-1)+1)(3(P-1)+2)(3(P-1)+3)/6
-  apf::NewArray<double> nodes(9*P*P*(P-1)/2+P);
-  getTetJacDetNodes(P,elemNodes,nodes);
-
-  if(algorithm < 2){
-    apf::Downward verts;
-    m->getDownward(e,0,verts);
-    for (int i = 0; i < 4; ++i){
-      if(nodes[i] < minAcceptable){
-        return 2+i;
-      }
-    }
-  }
-
-  apf::NewArray<double> subCoefficients;
-  if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
-        apf::Mesh::EDGE,subCoefficients);
   }
 
   apf::MeshEntity* edges[6];
-  m->getDownward(e,1,edges);
+  mesh->getDownward(e,1,edges);
   double minJ = 0, maxJ = 0;
   // Vertices will already be flagged in the first check
   for (int edge = 0; edge < 6; ++edge){
-    for (int i = 0; i < 3*(P-1)-1; ++i){
-      if (nodes[4+edge*(3*(P-1)-1)+i] < minAcceptable){
+    for (int i = 0; i < 3*(order-1)-1; ++i){
+      if (nodes[4+edge*(3*(order-1)-1)+i] < minAcceptable){
         minJ = -1e10;
-        apf::NewArray<double> edgeNodes(3*(P-1)+1);
+        apf::NewArray<double> edgeNodes(3*(order-1)+1);
 
-        if(algorithm != 4){
+        if(algorithm < 2){
           edgeNodes[0] = nodes[apf::tet_edge_verts[edge][0]];
-          edgeNodes[3*(P-1)] = nodes[apf::tet_edge_verts[edge][1]];
-          for (int j = 0; j < 3*(P-1)-1; ++j)
-            edgeNodes[j+1] = nodes[4+edge*(3*(P-1)-1)+j];
+          edgeNodes[3*(order-1)] = nodes[apf::tet_edge_verts[edge][1]];
+          for (int j = 0; j < 3*(order-1)-1; ++j)
+            edgeNodes[j+1] = nodes[4+edge*(3*(order-1)-1)+j];
           // allows recursion stop on first "conclusive" invalidity
-          if(algorithm % 2 == 1)
-            getJacDetByElevation(apf::Mesh::EDGE,3*(P-1),edgeNodes,minJ,maxJ);
+          if(algorithm == 1)
+            getJacDetByElevation(apf::Mesh::EDGE,3*(order-1),
+                edgeNodes,minJ,maxJ);
           else {
             bool done = false;
-            getJacDetBySubdivision(apf::Mesh::EDGE,3*(P-1),
+            getJacDetBySubdivision(apf::Mesh::EDGE,3*(order-1),
                 0,edgeNodes,minJ,maxJ,done);
           }
         } else {
           edgeNodes[0] = nodes[apf::tet_edge_verts[edge][0]];
           edgeNodes[1] = nodes[apf::tet_edge_verts[edge][1]];
-          for (int j = 0; j < 3*(P-1)-1; ++j)
-            edgeNodes[j+2] = nodes[4+edge*(3*(P-1)-1)+j];
+          for (int j = 0; j < 3*(order-1)-1; ++j)
+            edgeNodes[j+2] = nodes[4+edge*(3*(order-1)-1)+j];
 
           bool done = false;
           bool quality = false;
-          getJacDetBySubdivisionMatrices(apf::Mesh::EDGE,3*(P-1),
-              0,subCoefficients,edgeNodes,minJ,maxJ,done,quality);
+          getJacDetBySubdivisionMatrices(apf::Mesh::EDGE,3*(order-1),
+              0,subdivisionCoeffs[1],edgeNodes,minJ,maxJ,done,quality);
         }
         if(minJ < minAcceptable){
           return 8+edge;
@@ -541,29 +524,26 @@ static int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
       }
     }
   }
-  if(algorithm == 4){
-    getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
-        apf::Mesh::TRIANGLE,subCoefficients);
-  }
   apf::MeshEntity* faces[4];
-  m->getDownward(e,2,faces);
+  mesh->getDownward(e,2,faces);
   for (int face = 0; face < 4; ++face){
     double minJ = -1e10;
-    for (int i = 0; i < (3*P-4)*(3*P-5)/2; ++i){
-      if (nodes[18*P-20+face*(3*P-4)*(3*P-5)/2+i] < minAcceptable){
+    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
+      if (nodes[18*order-20+face*(3*order-4)*(3*order-5)/2+i] < minAcceptable){
         minJ = -1e10;
-        apf::NewArray<double> triNodes((3*P-2)*(3*P-1)/2);
-        getTriDetJacNodesFromTetDetJacNodes(face,3*(P-1),nodes,triNodes);
-        if(algorithm == 4){
+        apf::NewArray<double> triNodes((3*order-2)*(3*order-1)/2);
+        getTriDetJacNodesFromTetDetJacNodes(face,3*(order-1),nodes,triNodes);
+        if(algorithm == 2){
           bool done = false;
           bool quality = false;
-          getJacDetBySubdivisionMatrices(apf::Mesh::TRIANGLE,3*(P-1),
-              0,subCoefficients,triNodes,minJ,maxJ,done,quality);
-        } else if(algorithm % 2 == 1)
-          getJacDetByElevation(apf::Mesh::TRIANGLE,3*(P-1),triNodes,minJ,maxJ);
+          getJacDetBySubdivisionMatrices(apf::Mesh::TRIANGLE,3*(order-1),
+              0,subdivisionCoeffs[2],triNodes,minJ,maxJ,done,quality);
+        } else if(algorithm == 1)
+          getJacDetByElevation(apf::Mesh::TRIANGLE,3*(order-1),
+              triNodes,minJ,maxJ);
         else {
           bool done = false;
-          getJacDetBySubdivision(apf::Mesh::TRIANGLE,3*(P-1),
+          getJacDetBySubdivision(apf::Mesh::TRIANGLE,3*(order-1),
               0,triNodes,minJ,maxJ,done);
         }
         if(minJ < minAcceptable){
@@ -573,19 +553,16 @@ static int checkTetValidity(apf::Mesh* m, apf::MeshEntity* e,
     }
   }
 
-  getBezierJacobianDetSubdivisionCoefficients(3*(P-1),
-      apf::Mesh::TET,subCoefficients);
-
-  for (int i = 0; i < (3*P-4)*(3*P-5)*(3*P-6)/6; ++i){
-    if (nodes[18*P*P-36*P+20+i] < minAcceptable){
+  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
+    if (nodes[18*order*order-36*order+20+i] < minAcceptable){
       minJ = -1e10;
-      if(algorithm % 2 == 0){
+      if(algorithm == 1){
+        getJacDetByElevation(apf::Mesh::TET,3*(order-1),nodes,minJ,maxJ);
+      } else {
         bool done = false;
         bool quality = false;
-        getJacDetBySubdivisionMatrices(apf::Mesh::TET,3*(P-1),
-            0,subCoefficients,nodes,minJ,maxJ,done,quality);
-      } else {
-        getJacDetByElevation(apf::Mesh::TET,3*(P-1),nodes,minJ,maxJ);
+        getJacDetBySubdivisionMatrices(apf::Mesh::TET,3*(order-1),
+            0,subdivisionCoeffs[3],nodes,minJ,maxJ,done,quality);
       }
       if(minJ < minAcceptable){
         return 20;
@@ -637,17 +614,79 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   return detJ;
 }
 
-static double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes)
+int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
+    apf::NewArray<double>& nodes, bool validity)
 {
-  int typeDim = apf::Mesh::typeDimension[type];
+  apf::NewArray<double> interNodes(n);
+  apf::MeshElement* me = apf::createMeshElement(mesh,e);
+  if (validity == false)
+  {
+    for (int i = 0; i < n; ++i){
+      interNodes[i] = apf::getDV(me,xi[i]);
+    }
+  }
+  for (int i = 0; i < 4; ++i){
+    interNodes[i] = apf::getDV(me,xi[i]);
+    if(interNodes[i] < 1e-10){
+      apf::destroyMeshElement(me);
+      return i+2;
+    }
+  }
+  for (int edge = 0; edge < 6; ++edge){
+    for (int i = 0; i < 3*(order-1)-1; ++i){
+      int index = 4+edge*(3*(order-1)-1)+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        apf::destroyMeshElement(me);
+        return i+8;
+      }
+    }
+  }
+  for (int face = 0; face < 4; ++face){
+    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
+      int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        apf::destroyMeshElement(me);
+        return i+14;
+      }
+    }
+  }
+  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
+    int index = 18*order*order-36*order+20+i;
+    interNodes[index] = apf::getDV(me,xi[index]);
+    if(interNodes[index] < 1e-10){
+      apf::destroyMeshElement(me);
+      return 20;
+    }
+  }
+  apf::destroyMeshElement(me);
 
-  apf::NewArray<double> nodes(getNumControlPoints(type,typeDim*(P-1)));
-  if(type == apf::Mesh::TRIANGLE){
-    getTriJacDetNodes(P,elemNodes,nodes);
+  for( int i = 0; i < n; ++i){
+    nodes[i] = 0.;
+    for( int j = 0; j < n; ++j)
+      nodes[i] += interNodes[j]*transformationMatrix(i,j);
   }
-  if(type == apf::Mesh::TET){
-    getTetJacDetNodes(P,elemNodes,nodes);
+
+  return 1;
+}
+
+double Quality2D::getQuality(apf::MeshEntity* e)
+{
+  apf::Element* elem = apf::createElement(mesh->getCoordinateField(),e);
+  apf::NewArray<apf::Vector3> elemNodes;
+  apf::getVectorNodes(elem,elemNodes);
+
+  if(blendingOrder > 0
+      && mesh->getShape()->hasNodesIn(2)){
+    getFullRepFromBlended(apf::Mesh::TRIANGLE,blendingCoeffs,elemNodes);
   }
+
+  apf::destroyElement(elem);
+
+  apf::NewArray<double> nodes(n);
+  getTriJacDetNodes(order,elemNodes,nodes);
+
   bool done = false;
   double minJ = -1e10, maxJ = -1e10;
 
@@ -656,12 +695,8 @@ static double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes
   maxAdaptiveIter = 1;
   minAcceptable = -1e10;
   bool quality = true;
-
-  apf::NewArray<double> subCoefficients;
-  getBezierJacobianDetSubdivisionCoefficients(typeDim*(P-1),
-      type,subCoefficients);
-  getJacDetBySubdivisionMatrices(type,typeDim*(P-1),
-      0,subCoefficients,nodes,minJ,maxJ,done,quality);
+  getJacDetBySubdivisionMatrices(apf::Mesh::TRIANGLE,2*(order-1),
+      0,subdivisionCoeffs[2],nodes,minJ,maxJ,done,quality);
   done = false;
   minAcceptable = oldAcceptable;
   maxAdaptiveIter = oldIter;
@@ -670,41 +705,68 @@ static double getQuality(int type, int P, apf::NewArray<apf::Vector3>& elemNodes
   else return minJ;
 }
 
-double getQuality(apf::Mesh* m, apf::MeshEntity* e)
+double Quality3D::getQuality(apf::MeshEntity* e)
 {
-  int P = m->getShape()->getOrder();
-  int type = m->getType(e);
+  // this is the old way of computing things, don't do it anymore
+  //  apf::Element* elem = apf::createElement(mesh->getCoordinateField(),e);
+  //
+  //  apf::NewArray<apf::Vector3> elemNodes;
+  //  apf::getVectorNodes(elem,elemNodes);
+  //
+  //  if(blendingOrder > 0
+  //      && mesh->getShape()->hasNodesIn(mesh->getDimension())){
+  //    getFullRepFromBlended(type,blendingCoeffs,elemNodes);
+  //  }
+  //  apf::destroyElement(elem);
+  // getTetJacDetNodes(order,elemNodes,nodes);
+  apf::NewArray<double> nodes(n);
 
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),e);
-  apf::NewArray<apf::Vector3> elemNodes;
-  apf::getVectorNodes(elem,elemNodes);
-  int blendingOrder = getBlendingOrder(type);
-  if (blendingOrder > 0 && getNumInternalControlPoints(type,P)) {
-    getFullRepFromBlended(m,type,elemNodes);
-  }
-  apf::destroyElement(elem);
+  /* This part is optional, if we use the validity tag,
+   * we can decide the entity is invalid, and just return some
+   * negative number. While not a true assessment of quality,
+   * this is enough to convince swapping/coarsening to give up
+   * on the configuration its looking at, which is good.
+   * There is some downside to this, I'm sure.
+   */
+  int validityTag =
+      computeJacDetNodes(e,nodes,false);
 
-  return getQuality(type,P,elemNodes);
+  if (validityTag > 1)
+    return -1e-10;
+
+  bool done = false;
+  double minJ = -1e10, maxJ = -1e10;
+
+  double oldAcceptable = minAcceptable;
+  int oldIter = maxAdaptiveIter;
+  maxAdaptiveIter = 1; // just do one interation, thats enough
+  minAcceptable = -1e10;
+  bool quality = true;
+  getJacDetBySubdivisionMatrices(apf::Mesh::TET,3*(order-1),
+      0,subdivisionCoeffs[3],nodes,minJ,maxJ,done,quality);
+  done = false;
+  minAcceptable = oldAcceptable;
+  maxAdaptiveIter = oldIter;
+  if(std::fabs(maxJ) > 1e-8)
+    return minJ/maxJ;
+  else return minJ;
 }
-typedef int (*bezierValidity)(apf::Mesh* m,
-    apf::MeshEntity* e, int algorithm);
-
-const bezierValidity checkBezierValidity[apf::Mesh::TYPES] =
-{
-  NULL,    //vertex
-  NULL,    //edge
-  checkTriValidity,  //triangle
-  NULL,    //quad
-  checkTetValidity,  //tet
-  NULL,    //hex
-  NULL,    //prism
-  NULL     //pyramid
-};
 
 int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
     int algorithm)
 {
-  return checkBezierValidity[m->getType(e)](m,e,algorithm);
+  Quality* qual = makeQuality(m,algorithm);
+  int validity = qual->checkValidity(e);
+  delete qual;
+  return validity;
+}
+
+double getQuality(apf::Mesh* m, apf::MeshEntity* e)
+{
+  Quality* qual = makeQuality(m,2);
+  double quality = qual->getQuality(e);
+  delete qual;
+  return quality;
 }
 
 }

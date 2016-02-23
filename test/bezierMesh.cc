@@ -1,4 +1,5 @@
 #include <crv.h>
+#include <crvAdapt.h>
 #include <crvBezier.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
@@ -10,7 +11,7 @@
 #include <cstdlib>
 
 /* this test file contains tests for
- * a curved 2D surface mesh
+ * a curved 2D mesh
  * and a 3D Planar tetrahedron
  *
  * The basic idea is generate a mesh,
@@ -255,7 +256,7 @@ void test2D()
 {
   // test all orders for all blending orders
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 0; blendOrder <= 3; ++blendOrder){
+    for(int blendOrder = 0; blendOrder <= 2; ++blendOrder){
       apf::Mesh2* m = createMesh2D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
@@ -478,7 +479,7 @@ void test3DBlended()
   apf::destroyMesh(mbase);
 
   for(int order = 1; order <= 6; ++order){
-    for(int blendOrder = 1; blendOrder <= 3; ++blendOrder){
+    for(int blendOrder = 1; blendOrder <= 2; ++blendOrder){
       apf::Mesh2* m = createMesh3D();
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
@@ -543,6 +544,8 @@ void test3DFull()
     bc.run();
     crv::changeMeshOrder(m,5);
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
   // test elevation inside a BezierCurver
   for(int order = 1; order <= 4; ++order){
@@ -552,6 +555,8 @@ void test3DFull()
     crv::BezierCurver bc2(m,order+2,0);
     bc2.run();
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
   // test going downward
   for(int order = 4; order <= 6; ++order){
@@ -561,15 +566,18 @@ void test3DFull()
     crv::BezierCurver bc2(m,order-2,0);
     bc2.run();
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
   // test going from 2nd order lagrange to various order bezier
-  for(int order = 1; order <= 6; ++order){
+  for(int order = 2; order <= 6; ++order){
     apf::Mesh2* m = createMesh3D();
-    crv::InterpolatingCurver ic(m,2);
-    ic.run();
-    crv::BezierCurver bc2(m,order,0);
-    bc2.run();
+    apf::changeMeshShape(m,apf::getLagrange(2),true);
+    crv::BezierCurver bc(m,order,0);
+    bc.run();
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
 }
 

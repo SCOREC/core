@@ -113,13 +113,14 @@ int markInvalidEntities(Adapt* a)
   ma::Mesh* m = a->mesh;
   int dimension = m->getDimension();
   ma::Iterator* it = m->begin(dimension);
+  Quality* qual = makeQuality(m,2);
   while ((e = m->iterate(it)))
   {
     /* this skip conditional is powerful: it affords us a
        3X speedup of the entire adaptation in some cases */
     int qualityTag = crv::getTag(a,e);
     if (qualityTag) continue;
-    qualityTag = checkValidity(m,e,4);
+    qualityTag = qual->checkValidity(e);
     if (qualityTag >= 2)
     {
       crv::setTag(a,e,qualityTag);
@@ -128,6 +129,7 @@ int markInvalidEntities(Adapt* a)
     }
   }
   m->end(it);
+  delete qual;
   return PCU_Add_Int(count);
 }
 
@@ -180,6 +182,10 @@ static int fixInvalidElements(crv::Adapt* a)
 
 void adapt(ma::Input* in)
 {
+  std::string name = in->mesh->getShape()->getName();
+  if(name != std::string("Bezier"))
+    fail("mesh must be bezier to adapt\n");
+
   in->shouldFixShape = true;
   in->shapeHandler = crv::getShapeHandler;
   ma::print("Curved Adaptation Version 2.0 !");

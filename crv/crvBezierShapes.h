@@ -14,7 +14,7 @@
 namespace crv {
 
 /** \brief shape blending functions
-    \details see bezier.tex */
+    \details see bezier.tex in SCOREC/docs repo */
 void BlendedTriangleGetValues(apf::Mesh* m, apf::MeshEntity* e,
     apf::Vector3 const& xi, apf::NewArray<double>& values);
 void BlendedTriangleGetLocalGradients(apf::Mesh* m, apf::MeshEntity* e,
@@ -42,7 +42,7 @@ extern const bezierShapeGrads bezierGrads[apf::Mesh::TYPES];
 /** \brief Get transformation matrix corresponding to a parametric range
     \details Range is an array of size(num vertices), this is used for
     subdivision, refinement. It is the element transformation matrix,
-    see bezier.tex */
+    see notes */
 void getBezierTransformationMatrix(int type, int P,
     mth::Matrix<double>& A,
     const apf::Vector3 *range);
@@ -50,7 +50,7 @@ void getBezierTransformationMatrix(int type, int P,
     over a parametric range
     \details Range is an array of size(num vertices), this is used for
     refinement, It is the lower dimensional component, as part of the
-    higher array, see bezier.tex */
+    higher array, see notes */
 void getBezierTransformationMatrix(int parentType,
     int childType, int P,
     mth::Matrix<double>& A,
