@@ -265,28 +265,28 @@ void test3D()
     apf::destroyMesh(m);
   }
   // test blended
-  for(int order = 1; order <= 4; ++order){
-    apf::Mesh2* m = createMesh3D();
-    crv::BezierCurver bc(m,order,1);
-    bc.run();
-
-    double v0 = measureMesh(m);
-    ma::Input* inRefine = ma::configureUniformRefine(m,1);
-    inRefine->shouldSnap = false;
-    inRefine->shouldTransferParametric = false;
-    if(order > 1)
-      crv::adapt(inRefine);
-    else
-      ma::adapt(inRefine);
-    double v1 = measureMesh(m);
-    assert( std::fabs(v1-v0) < 0.05 );
-
-    int numinvalid = crv::countNumberInvalidElements(m);
-    assert(numinvalid == 0);
-
-    m->destroyNative();
-    apf::destroyMesh(m);
-  }
+//  for(int order = 1; order <= 4; ++order){
+//    apf::Mesh2* m = createMesh3D();
+//    crv::BezierCurver bc(m,order,1);
+//    bc.run();
+//
+//    double v0 = measureMesh(m);
+//    ma::Input* inRefine = ma::configureUniformRefine(m,1);
+//    inRefine->shouldSnap = false;
+//    inRefine->shouldTransferParametric = false;
+//    if(order > 1)
+//      crv::adapt(inRefine);
+//    else
+//      ma::adapt(inRefine);
+//    double v1 = measureMesh(m);
+//    assert( std::fabs(v1-v0) < 0.05 );
+//
+//    int numinvalid = crv::countNumberInvalidElements(m);
+//    assert(numinvalid == 0);
+//
+//    m->destroyNative();
+//    apf::destroyMesh(m);
+//  }
 
 }
 int main(int argc, char** argv)

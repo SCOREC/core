@@ -74,8 +74,9 @@ public:
   // 3D uses an alternate method of computing these
   // returns a validity tag so both quality and validity can
   // quit early if this function thinks they should
+  // if validity = true, quit if its obvious the element is invalid
   int computeJacDetNodes(apf::MeshEntity* e,
-      apf::NewArray<double>& nodes);
+      apf::NewArray<double>& nodes, bool validity);
   int n;
   apf::NewArray<double> subdivisionCoeffs[4];
   apf::NewArray<apf::Vector3> xi;
@@ -470,7 +471,7 @@ int Quality3D::checkValidity(apf::MeshEntity* e)
 //  apf::getVectorNodes(elem,elemNodes);
 //  apf::destroyElement(elem);
 //  getTetJacDetNodes(order,elemNodes,nodes);
-  int validityTag = computeJacDetNodes(e,nodes);
+  int validityTag = computeJacDetNodes(e,nodes,true);
   if (validityTag > 1)
     return validityTag;
 // check verts
@@ -614,14 +615,19 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
 }
 
 int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
-    apf::NewArray<double>& nodes)
+    apf::NewArray<double>& nodes, bool validity)
 {
   apf::NewArray<double> interNodes(n);
   apf::MeshElement* me = apf::createMeshElement(mesh,e);
-
+  if (validity == false)
+  {
+    for (int i = 0; i < n; ++i){
+      interNodes[i] = apf::getDV(me,xi[i]);
+    }
+  }
   for (int i = 0; i < 4; ++i){
     interNodes[i] = apf::getDV(me,xi[i]);
-    if(interNodes[i] < minAcceptable){
+    if(interNodes[i] < 1e-10){
       apf::destroyMeshElement(me);
       return i+2;
     }
@@ -630,7 +636,7 @@ int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
     for (int i = 0; i < 3*(order-1)-1; ++i){
       int index = 4+edge*(3*(order-1)-1)+i;
       interNodes[index] = apf::getDV(me,xi[index]);
-      if(interNodes[index] < minAcceptable){
+      if(interNodes[index] < 1e-10){
         apf::destroyMeshElement(me);
         return i+8;
       }
@@ -640,7 +646,7 @@ int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
     for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
       int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
       interNodes[index] = apf::getDV(me,xi[index]);
-      if(interNodes[index] < minAcceptable){
+      if(interNodes[index] < 1e-10){
         apf::destroyMeshElement(me);
         return i+14;
       }
@@ -649,7 +655,7 @@ int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
   for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
     int index = 18*order*order-36*order+20+i;
     interNodes[index] = apf::getDV(me,xi[index]);
-    if(interNodes[index] < minAcceptable){
+    if(interNodes[index] < 1e-10){
       apf::destroyMeshElement(me);
       return 20;
     }
@@ -714,7 +720,6 @@ double Quality3D::getQuality(apf::MeshEntity* e)
   //  apf::destroyElement(elem);
   // getTetJacDetNodes(order,elemNodes,nodes);
   apf::NewArray<double> nodes(n);
-  int validityTag = computeJacDetNodes(e,nodes);
 
   /* This part is optional, if we use the validity tag,
    * we can decide the entity is invalid, and just return some
@@ -723,6 +728,9 @@ double Quality3D::getQuality(apf::MeshEntity* e)
    * on the configuration its looking at, which is good.
    * There is some downside to this, I'm sure.
    */
+  int validityTag =
+      computeJacDetNodes(e,nodes,false);
+
   if (validityTag > 1)
     return -1e-10;
 

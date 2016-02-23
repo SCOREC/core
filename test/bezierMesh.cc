@@ -544,6 +544,8 @@ void test3DFull()
     bc.run();
     crv::changeMeshOrder(m,5);
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
   // test elevation inside a BezierCurver
   for(int order = 1; order <= 4; ++order){
@@ -553,6 +555,8 @@ void test3DFull()
     crv::BezierCurver bc2(m,order+2,0);
     bc2.run();
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
   // test going downward
   for(int order = 4; order <= 6; ++order){
@@ -562,6 +566,8 @@ void test3DFull()
     crv::BezierCurver bc2(m,order-2,0);
     bc2.run();
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
   // test going from 2nd order lagrange to various order bezier
   for(int order = 2; order <= 6; ++order){
@@ -570,6 +576,8 @@ void test3DFull()
     crv::BezierCurver bc(m,order,0);
     bc.run();
     test3D(m);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
 }
 
