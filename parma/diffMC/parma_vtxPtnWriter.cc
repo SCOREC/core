@@ -55,6 +55,7 @@ namespace {
         PCU_COMM_PACK(p.getWriter(id), id);
       }
     }
+    m->end(itr);
     PCU_Comm_Send();
     while( PCU_Comm_Receive() ) {
       int id = 0;
@@ -63,7 +64,6 @@ namespace {
       assert(idx >= 0 && idx < p.count());
       ptn[idx] = PCU_Comm_Sender();
     }
-    m->end(itr);
   }
 
   void writePtnArray(int* a, int n, std::fstream& f) {
