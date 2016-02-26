@@ -14,19 +14,6 @@
 #include <math.h>
 #include <cassert>
 
-class Constant : public ma::IsotropicFunction
-{
-  public:
-    Constant()
-    {
-    }
-    virtual double getValue(ma::Entity* /*v*/)
-    {
-      return 100.0;
-    }
-  private:
-};
-
 // face areas are 1/2 and 19/30
 void vert0(double const p[2], double x[3], void*)
 {
