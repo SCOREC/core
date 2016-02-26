@@ -10,6 +10,28 @@
 #include <apfDynamicMatrix.h>
 #include <cassert>
 
+class Linear : public ma::IsotropicFunction
+{
+  public:
+    Linear(ma::Mesh* m)
+    {
+      mesh = m;
+      average = ma::getAverageEdgeLength(m);
+      ma::getBoundingBox(m,lower,upper);
+    }
+    virtual double getValue(ma::Entity* v)
+    {
+      ma::Vector p = ma::getPosition(mesh,v);
+      double x = (p[0] - lower[0])/(upper[0] - lower[0]);
+      return average*(4*x+2)/3;
+    }
+  private:
+    ma::Mesh* mesh;
+    double average;
+    ma::Vector lower;
+    ma::Vector upper;
+};
+
 static void testInterpolationError(apf::Mesh* m, int entityDim,
     apf::DynamicVector & errors){
   apf::MeshIterator* it = m->begin(entityDim);
@@ -83,7 +105,8 @@ static void testBezier(const char* modelFile, const char* meshFile,
 
   apf::DynamicMatrix edgeErrors(ne,6);
   apf::DynamicMatrix faceErrors(nf,6);
-
+  // check blended shapes + interpolation error
+  // interpolation error decreases as order is increased
   for(int order = 1; order <= 6; ++order){
     apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
     crv::BezierCurver bc(m2,order,2);
@@ -110,14 +133,33 @@ static void testBezier(const char* modelFile, const char* meshFile,
       if(faceErrors(id,0) > 1.e-10)
         assert(faceErrors(id,order-1) - faceErrors(id,order) > 0.);
     }
-
-  for(int order = 1; order <= 4; ++order){
-    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
-    crv::BezierCurver bc(m2,order,0);
+  // check some refinement
+  for(int order = 2; order <= 4; ++order){
+    apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+    crv::BezierCurver bc(m,order,0);
     bc.run();
-    testElementSize(m2);
-    m2->destroyNative();
-    apf::destroyMesh(m2);
+    Linear sf(m);
+    ma::Input* in = ma::configure(m,&sf);
+    in->shouldSnap = true;
+    in->shouldTransferParametric = true;
+    in->maximumIterations = 1;
+    crv::adapt(in);
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
+  // check some refinement for blended shapes
+  for(int order = 2; order <= 4; ++order){
+    apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+    crv::BezierCurver bc(m,order,1);
+    bc.run();
+    Linear sf(m);
+    ma::Input* in = ma::configure(m,&sf);
+    in->shouldSnap = true;
+    in->shouldTransferParametric = true;
+    in->maximumIterations = 1;
+    crv::adapt(in);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
 
 }
