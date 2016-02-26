@@ -61,7 +61,7 @@ namespace {
       int stepNum;
     public:
       GhostVtxLtElmBalancer(apf::Mesh* m, double f, int v, int l)
-        : Balancer(m, f, v, "ghostVtxLtElms"), layers(l), stepNum(0)
+        : Balancer(m, f, v, "ghostVtxLtElms"), layers(l), maxElmW(0), stepNum(0)
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
         sideTol = static_cast<int>(parma::avgSharedSides(s));

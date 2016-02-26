@@ -1,5 +1,6 @@
 #include <apf.h>
 #include <gmi_mesh.h>
+#include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
@@ -17,6 +18,7 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
+  gmi_register_null();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
   osh_t om = osh::fromAPF(m);
   m->destroyNative();
