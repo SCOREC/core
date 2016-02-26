@@ -1066,4 +1066,11 @@ void unpackTagInfo(std::string& name, int& type, int& size)
   PCU_COMM_UNPACK(size);
 }
 
+char const* const dimName[4] = {
+  "vertex",
+  "edge",
+  "face",
+  "region",
+};
+
 } //namespace apf

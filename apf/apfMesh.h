@@ -562,6 +562,8 @@ std::string unpackString();
 void packTagInfo(Mesh* m, MeshTag* t, int to);
 void unpackTagInfo(std::string& name, int& type, int& size);
 
+extern char const* const dimName[4];
+
 } //namespace apf
 
 #endif
