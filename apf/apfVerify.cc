@@ -129,7 +129,7 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
        << " model " << dimName[modelDimension + 1] << "s\n";
     if (isOnNonManifoldFace)
       ss << "   " << "and is a non-manifold " << dimName[modelDimension] << '\n';
-    else
+    if (isOnManifoldBoundary)
       ss << "   " << "and is a manifold boundary " << dimName[modelDimension] << '\n';
     if (isExposedByModel)
       ss << "   making the " << n << " \"exposed\" at the geometric boundary\n";
