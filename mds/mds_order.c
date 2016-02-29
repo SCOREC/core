@@ -14,6 +14,8 @@
 #include <string.h>
 #include <PCU.h>
 
+#include <stdio.h>
+
 struct queue {
   mds_id* e;
   mds_id end;
@@ -72,7 +74,8 @@ static int visit(
   mds_give_tag(tag,m,e);
   l = mds_get_tag(tag,e);
   t = mds_type(e);
-  *l = *label++;
+  *l = *label;
+  ++(*label);
   return 1;
 }
 
@@ -103,6 +106,7 @@ static void number_connected_verts(struct mds* m, mds_id v,
   adj[0].n = adj[1].n = 0;
   if (!visit(m, tag, label, v))
     return;
+  fprintf(stderr, "found new component\n");
   make_queue(&q, m->n[MDS_VERTEX]);
   push_queue(&q, v);
   while ( ! queue_empty(&q)) {
@@ -126,9 +130,14 @@ static struct mds_tag* number_all_verts(struct mds_apf* m)
   tag = mds_create_tag(&m->tags, "mds_number", sizeof(mds_id), 1);
   label = 0;
   v = find_seed(m);
+  fprintf(stderr, "got seed, first component...\n");
   number_connected_verts(&m->mds, v, tag, &label);
+  fprintf(stderr, "other components...\n");
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
     number_connected_verts(&m->mds, v, tag, &label);
+  if (label != m->mds.n[MDS_VERTEX])
+    fprintf(stderr, "label %u, vertex count %u\n",
+        label, m->mds.n[MDS_VERTEX]);
   assert(label == m->mds.n[MDS_VERTEX]);
   return tag;
 }
@@ -157,7 +166,8 @@ static void number_ents_of_type(struct mds* m,
   for (int i = 0; i < m->n[MDS_VERTEX]; ++i) {
     mds_get_adjacent(m, sorted_verts[i], dim, &adj);
     for (int j = 0; j < adj.n; ++j)
-      visit(m, tag, &label, adj.e[j]);
+      if (mds_type(adj.e[j]) == type)
+        visit(m, tag, &label, adj.e[j]);
   }
 }
 
