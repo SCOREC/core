@@ -627,7 +627,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 void reorderMdsMesh(Mesh2* mesh)
 {
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  m->mesh = mds_reorder(m->mesh, 0);
+  m->mesh = mds_reorder(m->mesh, 0, mds_number_verts_bfs(m->mesh));
 }
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)

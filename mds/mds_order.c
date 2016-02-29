@@ -122,7 +122,7 @@ static void number_connected_verts(struct mds* m, mds_id v,
   free_queue(&q);
 }
 
-static struct mds_tag* number_all_verts(struct mds_apf* m)
+struct mds_tag* mds_number_verts_bfs(struct mds_apf* m)
 {
   struct mds_tag* tag;
   mds_id label;
@@ -171,14 +171,12 @@ static void number_ents_of_type(struct mds* m,
   }
 }
 
-static struct mds_tag* number_all_ents(struct mds_apf* m)
+static void number_other_ents(struct mds_apf* m, struct mds_tag* tag)
 {
-  struct mds_tag* tag = number_all_verts(m);
   mds_id* sorted_verts = sort_verts(m, tag);
   for (int type = MDS_VERTEX + 1; type < MDS_TYPES; ++type)
     number_ents_of_type(&m->mds, sorted_verts, tag, type);
   free(sorted_verts);
-  return tag;
 }
 
 static mds_id lookup(struct mds_tag* tag, mds_id old)
@@ -412,12 +410,14 @@ static struct mds_apf* rebuild(
   return m2;
 }
 
-struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers)
+struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers,
+    struct mds_tag* vert_numbers)
 {
-  struct mds_tag* new_of;
+  struct mds_tag* tag;
   struct mds_apf* m2;
-  new_of = number_all_ents(m);
-  m2 = rebuild(m, new_of, ignore_peers);
+  tag = vert_numbers;
+  number_other_ents(m, tag);
+  m2 = rebuild(m, tag, ignore_peers);
   mds_apf_destroy(m);
   return m2;
 }
