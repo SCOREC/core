@@ -99,7 +99,7 @@ static void number_connected_verts(struct mds* m, mds_id v,
 {
   struct queue q;
   struct mds_set adj[2];
-  int i,j;
+  int i;
   adj[0].n = adj[1].n = 0;
   if (!visit(m, tag, label, v))
     return;
@@ -123,14 +123,13 @@ static struct mds_tag* number_all_verts(struct mds_apf* m)
   struct mds_tag* tag;
   mds_id label;
   mds_id v;
-  int i;
   tag = mds_create_tag(&m->tags, "mds_number", sizeof(mds_id), 1);
   label = 0;
   v = find_seed(m);
-  number_connected_verts(&m->mds, v, tag, label);
+  number_connected_verts(&m->mds, v, tag, &label);
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
-    number_connected_verts(&m->mds, v, tag, label);
-  assert(label == m->mds.n[MDS_VERTEX];
+    number_connected_verts(&m->mds, v, tag, &label);
+  assert(label == m->mds.n[MDS_VERTEX]);
   return tag;
 }
 
@@ -144,13 +143,12 @@ static mds_id* sort_verts(struct mds_apf* m, struct mds_tag* tag)
     ip = mds_get_tag(tag, v);
     sorted_verts[*ip] = v;
   }
-  return sorted;
+  return sorted_verts;
 }
 
-static void number_ents_of_type(struct mds_apf* m,
+static void number_ents_of_type(struct mds* m,
     mds_id* sorted_verts, struct mds_tag* tag, int type)
 {
-  mds_id e;
   int dim;
   struct mds_set adj;
   mds_id label;
@@ -165,9 +163,11 @@ static void number_ents_of_type(struct mds_apf* m,
 
 static struct mds_tag* number_all_ents(struct mds_apf* m)
 {
-  struct tag* tag = number_all_verts(m);
+  struct mds_tag* tag = number_all_verts(m);
+  mds_id* sorted_verts = sort_verts(m, tag);
   for (int type = MDS_VERTEX + 1; type < MDS_TYPES; ++type)
-    number_ents_of_type(m, sorted_verts, tag, type);
+    number_ents_of_type(&m->mds, sorted_verts, tag, type);
+  free(sorted_verts);
   return tag;
 }
 
