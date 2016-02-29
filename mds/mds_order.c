@@ -62,7 +62,7 @@ static mds_id other_vert(struct mds* m, mds_id e, mds_id v)
 static int visit(
     struct mds* m,
     struct mds_tag* tag,
-    mds_id label[MDS_TYPES],
+    mds_id* label,
     mds_id e)
 {
   mds_id* l;
@@ -72,8 +72,7 @@ static int visit(
   mds_give_tag(tag,m,e);
   l = mds_get_tag(tag,e);
   t = mds_type(e);
-  *l = label[t];
-  --(label[t]);
+  *l = *label++;
   return 1;
 }
 
@@ -95,49 +94,80 @@ static mds_id find_seed(struct mds_apf* m)
   return best_v;
 }
 
-static void number_connected_graph(struct mds* m, mds_id v,
-    struct mds_tag* tag, mds_id label[MDS_TYPES])
+static void number_connected_verts(struct mds* m, mds_id v,
+    struct mds_tag* tag, mds_id* label)
 {
   struct queue q;
-  struct mds_set adj[4];
+  struct mds_set adj[2];
   int i,j;
-  adj[0].n = adj[1].n = adj[2].n = adj[3].n = 0;
+  adj[0].n = adj[1].n = 0;
   if (!visit(m, tag, label, v))
     return;
   make_queue(&q, m->n[MDS_VERTEX]);
   push_queue(&q, v);
   while ( ! queue_empty(&q)) {
     v = pop_queue(&q);
-    for (i = 1; i <= m->d; ++i)
-      mds_get_adjacent(m, v, i, adj + i);
+    mds_get_adjacent(m, v, 1, &adj[1]);
     adj[0].n = adj[1].n;
     for (i = 0; i < adj[1].n; ++i)
       adj[0].e[i] = other_vert(m, adj[1].e[i], v);
     for (i = 0; i < adj[0].n; ++i)
       if (visit(m, tag, label, adj[0].e[i]))
         push_queue(&q, adj[0].e[i]);
-    for (i = 1; i <= m->d; ++i)
-      for (j = 0; j < adj[i].n; ++j)
-        visit(m, tag, label, adj[i].e[j]);
   }
   free_queue(&q);
 }
 
-static struct mds_tag* number_graph(struct mds_apf* m)
+static struct mds_tag* number_all_verts(struct mds_apf* m)
 {
   struct mds_tag* tag;
-  mds_id label[MDS_TYPES];
+  mds_id label;
   mds_id v;
   int i;
   tag = mds_create_tag(&m->tags, "mds_number", sizeof(mds_id), 1);
-  for (i = 0; i < MDS_TYPES; ++i)
-    label[i] = m->mds.n[i] - 1;
+  label = 0;
   v = find_seed(m);
-  number_connected_graph(&m->mds, v, tag, label);
+  number_connected_verts(&m->mds, v, tag, label);
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
-    number_connected_graph(&m->mds, v, tag, label);
-  for (i = 0; i < MDS_TYPES; ++i)
-    assert(label[i] == -1);
+    number_connected_verts(&m->mds, v, tag, label);
+  assert(label == m->mds.n[MDS_VERTEX];
+  return tag;
+}
+
+static mds_id* sort_verts(struct mds_apf* m, struct mds_tag* tag)
+{
+  mds_id v;
+  mds_id* sorted_verts;
+  sorted_verts = malloc(sizeof(mds_id) * m->mds.n[MDS_VERTEX]);
+  for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v)) {
+    mds_id* ip;
+    ip = mds_get_tag(tag, v);
+    sorted_verts[*ip] = v;
+  }
+  return sorted;
+}
+
+static void number_ents_of_type(struct mds_apf* m,
+    mds_id* sorted_verts, struct mds_tag* tag, int type)
+{
+  mds_id e;
+  int dim;
+  struct mds_set adj;
+  mds_id label;
+  label = 0;
+  dim = mds_dim[type];
+  for (int i = 0; i < m->n[MDS_VERTEX]; ++i) {
+    mds_get_adjacent(m, sorted_verts[i], dim, &adj);
+    for (int j = 0; j < adj.n; ++j)
+      visit(m, tag, &label, adj.e[j]);
+  }
+}
+
+static struct mds_tag* number_all_ents(struct mds_apf* m)
+{
+  struct tag* tag = number_all_verts(m);
+  for (int type = MDS_VERTEX + 1; type < MDS_TYPES; ++type)
+    number_ents_of_type(m, sorted_verts, tag, type);
   return tag;
 }
 
@@ -376,7 +406,7 @@ struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers)
 {
   struct mds_tag* new_of;
   struct mds_apf* m2;
-  new_of = number_graph(m);
+  new_of = number_all_ents(m);
   m2 = rebuild(m, new_of, ignore_peers);
   mds_apf_destroy(m);
   return m2;
