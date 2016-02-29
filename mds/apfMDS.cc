@@ -624,10 +624,22 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   return loadMdsMesh(model, meshfile);
 }
 
-void reorderMdsMesh(Mesh2* mesh)
+void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
 {
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
-  m->mesh = mds_reorder(m->mesh, 0, mds_number_verts_bfs(m->mesh));
+  mds_tag* vert_nums;
+  if (t) {
+    if (sizeof(mds_id) == sizeof(int)) {
+      assert(mesh->getTagType(t) == Mesh::INT);
+    } else {
+      assert(sizeof(mds_id) == sizeof(long));
+      assert(mesh->getTagType(t) == Mesh::LONG);
+    }
+    vert_nums = reinterpret_cast<mds_tag*>(t);
+  } else {
+    vert_nums = mds_number_verts_bfs(m->mesh);
+  }
+  m->mesh = mds_reorder(m->mesh, 0, vert_nums);
 }
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
