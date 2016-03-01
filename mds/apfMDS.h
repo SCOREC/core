@@ -72,13 +72,19 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
 /** \brief apply adjacency-based reordering
+  \param t Optional user-defined ordering of the vertices.
+           Set this to NULL to use the internal ordering system.
+           Otherwise, attach a unique integer to each vertex
+           in the range [0, #vertices).
+           this will indicate the order in which they appear
+           after reordering.
   \details similar to the algorithm for apf::reorder,
            this function will traverse adjacencies to reorder
            each topological type.
            Then all MDS arrays are re-formed in this new order.
            An important side effect of this function is that
            there are no gaps in the MDS arrays after this */
-void reorderMdsMesh(Mesh2* mesh);
+void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);

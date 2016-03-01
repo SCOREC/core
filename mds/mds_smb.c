@@ -743,9 +743,9 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
   char* filename;
   int zip;
   if (ignore_peers && (!is_compact(m)))
-    m = mds_reorder(m, 1);
+    m = mds_reorder(m, 1, mds_number_verts_bfs(m));
   if ((!ignore_peers) && PCU_Or(!is_compact(m)))
-    m = mds_reorder(m, 0);
+    m = mds_reorder(m, 0, mds_number_verts_bfs(m));
   filename = handle_path(pathname, 1, &zip, ignore_peers);
   write_smb(m, filename, zip, ignore_peers);
   free(filename);
