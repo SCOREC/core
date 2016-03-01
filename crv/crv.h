@@ -189,6 +189,6 @@ int getTetNodeIndex(int P, int i, int j, int k);
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
 
-} //namespace crv
+}
 
 #endif

@@ -883,7 +883,7 @@ static bool findMatches(Mesh* m)
   return found;
 }
 
-Mesh* createMesh(pParMesh mesh)
+Mesh2* createMesh(pParMesh mesh)
 {
   /* require one part per process currently for SIM */
   assert(PM_numParts(mesh)==1);
