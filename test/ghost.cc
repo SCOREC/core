@@ -23,39 +23,58 @@ namespace {
     meshFile = argv[2];
   }
 
-  apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
-    apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
+  double getFun3dW(int type) {
+    assert( type >= apf::Mesh::VERTEX && type <= apf::Mesh::PYRAMID );
+    const double vtxw = 1.0;
+    const double edgew = 1.0;
+    const double triw = 1.0;
+    const double quadw = 1.0;
+    const double tetw = 1.0;
+    const double pyrw = 6.8;
+    const double przw = 7.5;
+    const double hexw = 13.8;
+    const double weights[8] =
+      {vtxw, edgew, triw, quadw, tetw, hexw, przw, pyrw};
+    return weights[type];
+  }
+
+  apf::MeshTag* applyFun3dWeight(apf::Mesh* m) {
+    apf::MeshTag* wtag = m->createDoubleTag("ghostWeight",1);
     apf::MeshEntity* e;
-    apf::MeshIterator* itr = m->begin(0);
-    double w = 1;
-    while( (e = m->iterate(itr)) )
-      m->setDoubleTag(e, wtag, &w);
-    m->end(itr);
+    for(int d=0; d <= m->getDimension(); d++) {
+      apf::MeshIterator* itr = m->begin(d);
+      while( (e = m->iterate(itr)) ) {
+        double w = getFun3dW(m->getType(e));
+        m->setDoubleTag(e, wtag, &w);
+      }
+      m->end(itr);
+    }
     return wtag;
   }
 
-  void runParma(apf::Mesh* m) {
-    apf::MeshTag* weights = applyUnitVtxWeight(m);
-    const int layers = 3;
-    const int bridgeDim = 1;
-    apf::Balancer* ghost = Parma_MakeGhostDiffuser(m, layers, bridgeDim);
-    ghost->balance(weights, 1.01);
-    m->destroyTag(weights);
+  void runParma(apf::Mesh* m, apf::MeshTag* weights) {
+    const int layers = 1;
+    const double stepFactor = 0.5;
+    const int verbosity = 2;
+    apf::Balancer* ghost =
+      Parma_MakeGhostDiffuser(m, layers, stepFactor, verbosity);
+    ghost->balance(weights, 1.05);
     delete ghost;
   }
 }
 
 int main(int argc, char** argv)
 {
-  int provided;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
-  assert(provided==MPI_THREAD_MULTIPLE);
+  MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
-  runParma(m);
-  m->writeNative(argv[3]);
+  apf::MeshTag* weights = applyFun3dWeight(m);
+  runParma(m,weights);
+  m->destroyTag(weights);
+  apf::writeVtkFiles(argv[3],m);
+  Parma_WriteVtxPtn(m,argv[3]);
   freeMesh(m);
   PCU_Comm_Free();
   MPI_Finalize();

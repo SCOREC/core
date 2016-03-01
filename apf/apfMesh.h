@@ -289,6 +289,8 @@ class Mesh
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */
     Field* getCoordinateField() {return coordinateField;}
+    /** \brief Set the mesh's coordinate field - Be very careful using this */
+    void setCoordinateField(Field* field);
     /** \brief make a new coordinate field.
         \param project whether to project coordinate values from the old field */
     void changeShape(FieldShape* newShape, bool project = true);
@@ -559,6 +561,8 @@ void packString(std::string s, int to);
 std::string unpackString();
 void packTagInfo(Mesh* m, MeshTag* t, int to);
 void unpackTagInfo(std::string& name, int& type, int& size);
+
+extern char const* const dimName[4];
 
 } //namespace apf
 

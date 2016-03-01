@@ -623,6 +623,12 @@ int countEntitiesOfType(Mesh* m, int type)
   return count;
 }
 
+void Mesh::setCoordinateField(Field* field)
+{
+  delete coordinateField;
+  coordinateField = field;
+}
+
 void Mesh::changeShape(FieldShape* newShape, bool project)
 {
   Field* oldCoordinateField = coordinateField;
@@ -1059,5 +1065,12 @@ void unpackTagInfo(std::string& name, int& type, int& size)
   PCU_COMM_UNPACK(type);
   PCU_COMM_UNPACK(size);
 }
+
+char const* const dimName[4] = {
+  "vertex",
+  "edge",
+  "face",
+  "region",
+};
 
 } //namespace apf

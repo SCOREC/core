@@ -51,7 +51,7 @@ namespace {
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
-        parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, w[1], t, sel, "edge", stopper);
         bool ok = b.step(tolerance, verbose);
         delete w[0];
         return ok;

@@ -49,7 +49,9 @@ void mds_apf_destroy_entity(struct mds_apf* m, mds_id e);
 void* mds_get_part(struct mds_apf* m, mds_id e);
 void mds_set_part(struct mds_apf* m, mds_id e, void* p);
 
-struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers);
+struct mds_tag* mds_number_verts_bfs(struct mds_apf* m);
+struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers,
+    struct mds_tag* vert_numbers);
 
 struct gmi_ent* mds_find_model(struct mds_apf* m, int dim, int id);
 int mds_model_dim(struct mds_apf* m, struct gmi_ent* model);

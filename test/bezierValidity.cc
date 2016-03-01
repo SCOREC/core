@@ -1,6 +1,7 @@
 #include <crv.h>
 #include <crvBezier.h>
 #include <crvBezierShapes.h>
+#include <crvMath.h>
 #include <crvQuality.h>
 #include <gmi_analytic.h>
 #include <gmi_null.h>
@@ -21,7 +22,7 @@
  * the main code, but serves its use for code validation.
  *
  * This test file also contains validity checks.
- * In 2D, orders 3-6 provide invalid meshes
+ * In 2D, orders 2,4,5,6 are invalid
  */
 
 static void testJacobian(apf::Mesh2* m)
@@ -54,13 +55,13 @@ static void testJacobian(apf::Mesh2* m)
 static void testEdgeGradients(apf::Mesh2* m)
 {
   int n = 5;
-  int d = m->getShape()->getOrder();
-  apf::NewArray<int> map(d+1);
-  for(int p = 1; p < d; ++p){
-    map[p] = p+1;
+  int P = m->getShape()->getOrder();
+  apf::NewArray<int> map(P+1);
+  for(int i = 1; i < P; ++i){
+    map[i] = i+1;
   }
   map[0] = 0;
-  map[d] = 1;
+  map[P] = 1;
 
   apf::MeshIterator* it = m->begin(1);
   apf::MeshEntity* e;
@@ -80,12 +81,12 @@ static void testEdgeGradients(apf::Mesh2* m)
       apf::getJacobian(me,xi,Jac);
       apf::Vector3 J(0,0,0);
       xi[0] = (double)i/n;
-      for(int p = 0; p <= d-1; ++p){
-        J += (nodes[map[p+1]]-nodes[map[p]])*d
-            *crv::binomial(d-1,p)*crv::Bij(p,d-1-p,xi[0],1.-xi[0]);
+      for(int j = 0; j <= P-1; ++j){
+        J += (nodes[map[j+1]]-nodes[map[j]])*P/2.0
+            *crv::binomial(P-1,j)*crv::Bij(j,P-1-j,xi[0],1.-xi[0]);
       }
-      assert(fabs(J[0]-Jac[0][0]*2.0) < 1e-14
-          && fabs(J[1]-Jac[0][1]*2.0) < 1e-14);
+      assert(fabs(J[0]-Jac[0][0]) < 1e-14
+          && fabs(J[1]-Jac[0][1]) < 1e-14);
     }
     apf::destroyMeshElement(me);
     apf::destroyElement(elem);
@@ -215,13 +216,13 @@ apf::Mesh2* createMesh2D()
   m->verify();
   return m;
 }
-void checkEntityValidity(int qualityTag, int entity, int order)
+void checkEntityValidity(int validityTag, int entity, int order)
 {
   if(entity == 1){
-    assert(qualityTag == 1);
+    assert(validityTag == 1);
   } else {
-    assert((qualityTag > 1 && order != 3)
-        || (qualityTag == 1 && order == 3));
+    assert((validityTag > 1 && order != 3)
+        || (validityTag == 1 && order == 3));
   }
 }
 
@@ -231,13 +232,13 @@ void checkValidity(apf::Mesh* m, int order)
   apf::MeshEntity* e;
   int entityNum = 0;
   while ((e = m->iterate(it))) {
-    int qualityTag =
-        crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,2);
-    checkEntityValidity(qualityTag,entityNum,order);
-    qualityTag = crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,3);
-    checkEntityValidity(qualityTag,entityNum,order);
-    qualityTag = crv::checkBezierValidity[apf::Mesh::TRIANGLE](m,e,4);
-    checkEntityValidity(qualityTag,entityNum,order);
+    int validityTag =
+        crv::checkValidity(m,e,0);
+    checkEntityValidity(validityTag,entityNum,order);
+    validityTag = crv::checkValidity(m,e,1);
+    checkEntityValidity(validityTag,entityNum,order);
+    validityTag = crv::checkValidity(m,e,2);
+    checkEntityValidity(validityTag,entityNum,order);
     entityNum++;
   }
   m->end(it);
@@ -341,8 +342,6 @@ void test3D()
       }
       m->end(it);
     }
-
-
     // get face 2
     apf::MeshIterator* it = m->begin(3);
     apf::MeshEntity* tet = m->iterate(it);
@@ -384,19 +383,19 @@ void test3D()
     }
     m->acceptChanges();
 
-    int qualityTag = crv::checkBezierValidity[apf::Mesh::TET](m,tet,2);
+    int validityTag = crv::checkValidity(m,tet,0);
 
     if(order == 4){
-      assert(qualityTag > 1);
+      assert(validityTag > 1);
     } else {
-      assert(qualityTag == 1);
+      assert(validityTag == 1);
     }
-    qualityTag = crv::checkBezierValidity[apf::Mesh::TET](m,tet,3);
+    validityTag = crv::checkValidity(m,tet,1);
 
     if(order == 4){
-      assert(qualityTag > 1);
+      assert(validityTag > 1);
     } else {
-      assert(qualityTag == 1);
+      assert(validityTag == 1);
     }
     crv::getQuality(m,tet);
     m->destroyNative();

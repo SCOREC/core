@@ -15,8 +15,13 @@
 #include <maRefine.h>
 #include <maTables.h>
 
+/** \file crvAdapt.h
+  * \brief main file for curved adaptation, see maAdapt.h */
+
 namespace crv {
 
+/** \brief base crv::Adapt class, looks the same as ma::Adapt,
+    but carries tag identifying validity (see crvShape.h) */
 class Adapt : public ma::Adapt
 {
   public:
@@ -24,63 +29,13 @@ class Adapt : public ma::Adapt
     ma::Tag* validityTag;
 };
 
-/* Configures a shape correction input,
- * Since fixing invalid elements is considered
- * Adaptation
- */
-ma::Input* configureShapeCorrection(
-    ma::Mesh* m, ma::SizeField* f=0,
-    ma::SolutionTransfer* s=0);
+/** \brief change the order of a Bezier Mesh
+ * \details going up in order is exact,
+ * except for boundary elements, where snapping changes things
+ * Going down in order is approximate everywhere
+ * */
+void changeMeshOrder(apf::Mesh2* m, int newOrder);
 
-void adapt(ma::Input* in);
-
-// uses blending to position interior points
-// based on edge locations
-void repositionInteriorWithBlended(ma::Mesh* m,
-    ma::Entity* e);
-// based on XJ Luo's thesis
-bool repositionEdge(ma::Mesh* m, ma::Entity* tet,
-    ma::Entity* edge);
-
-// Split edges marked with ma::SPLIT
-void splitEdges(ma::Adapt* a);
-// Validity checking is expensive, so tag them with an
-// integer to identify if invalid, and where
-int markInvalidEntities(Adapt* a);
-
-/* Use a crv version of these
- * because we don't have bitwise operations
- */
-int getTag(Adapt* a, ma::Entity* e);
-void setTag(Adapt* a, ma::Entity* e, int flag);
-void clearTag(Adapt* a, ma::Entity* e);
-
-/* Use an integer to determine the quality tag
- * 0 -> Not checked
- * 1 -> Okay Quality
- * 2-7 -> Vertices are bad
- * 8-13 -> Edge is are bad
- * 14-17 -> Face is are bad
- * 20 -> Tet itself is bad, this one is the worst
- *
- * 6*dim + 2 + index
- */
-int getQualityTag(ma::Mesh* m, ma::Entity* e,
-    ma::Entity* bdry);
-
-/* Take boundary triangles where two edges on the boundary
- * form an angle of 180 (or greater) at a vertex and
- * split the edge opposite them.
- */
-int fixLargeBoundaryAngles(Adapt* a);
-
-/* If an edge is flagged as invalid,
- * try and collapse
- * or swap it away
- */
-int fixInvalidEdges(Adapt* a);
-
-ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 
 }
 

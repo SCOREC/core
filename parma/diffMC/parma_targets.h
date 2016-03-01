@@ -14,8 +14,8 @@ namespace parma {
       virtual double total()=0;
   };
   Targets* makeTargets(Sides* s, Weights* w, double alpha);
-  Targets* makeVtxElmTargets(Sides* s, Weights* w[2], int aspectTol,
-      double vtxTol, double alpha);
+  Targets* makePreservingTargets(Sides* s, Weights* balanceW, Weights* preserveW,
+      int sideTol, double vtxTol, double alpha);
   Targets* makeWeightSideTargets(Sides* s, Weights* w, int sideTol,
       double alpha);
   Targets* makeVtxEdgeTargets(Sides* s, Weights* w[2], int sideTol,
@@ -23,7 +23,7 @@ namespace parma {
   Targets* makeElmLtVtxEdgeTargets(Sides* s, Weights* w[3], int sideTol,
       double vtxTol, double edgeTol, double alpha);
   Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
-                            double avgSideMult, double avgSide, 
+                            double avgSideMult, double avgSide,
                             double minSideMult, bool isInMIS);
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
 }

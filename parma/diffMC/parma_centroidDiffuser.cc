@@ -21,7 +21,7 @@ namespace {
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Centroids c(mesh, wtag, s);
         parma::Selector* sel = parma::makeCentroidSelector(mesh, wtag, &c);
-        parma::Stepper b(mesh, factor, s, w, t, sel);
+        parma::Stepper b(mesh, factor, s, w, t, sel, "elm");
         return b.step(tolerance, verbose);
       }
   };

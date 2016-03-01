@@ -600,7 +600,6 @@ static void writePointData(std::ostream& file,
 
 template <class T>
 class WriteIPField : public FieldOp
-//TODO change to write encoded data
 {
   public:
     int point;
@@ -609,6 +608,11 @@ class WriteIPField : public FieldOp
     FieldDataOf<T>* data;
     MeshEntity* entity;
     std::ostream* fp;
+    bool isWritingBinary;
+
+    T* dataToEncode;
+    int dataIndex;
+
     virtual bool inEntity(MeshEntity* e)
     {
       entity = e;
@@ -620,25 +624,70 @@ class WriteIPField : public FieldOp
         return;
       data->getNodeComponents(entity,node,&(ipData[0]));
       for (int i=0; i < components; ++i)
-        (*fp) << ipData[i] << ' ';
-      (*fp) << '\n';
+      {
+        if (isWritingBinary)
+        {
+          // if we are writing base64 then populate the array to be encoded
+          dataToEncode[dataIndex] = ipData[i];
+          dataIndex++;
+        }
+        else
+        {
+          (*fp) << ipData[i] << ' '; //otherwise simply write to the file
+        }
+      }
+      if (!isWritingBinary)
+      {
+        (*fp) << '\n'; //newline for each node when not writing base64
+      }
     }
     void runOnce(FieldBase* f)
     {
       std::string s = getIPName(f,point);
       components = f->countComponents();
-      writeDataHeader(*fp,s.c_str(),f->getScalarType(),f->countComponents());
+      writeDataHeader(*fp,
+        s.c_str(),
+        f->getScalarType(),
+        f->countComponents(),
+        isWritingBinary);
       ipData.allocate(components);
       data = static_cast<FieldDataOf<T>*>(f->getData());
-      apply(f);
-      (*fp) << "</DataArray>\n"; 
+
+      if (isWritingBinary) //extra steps if we are writing base64
+      {
+        //calculate size of array
+        Mesh* m = f->getMesh();
+        int arraySize = m->count(m->getDimension())*components;
+
+        dataToEncode = new T[arraySize](); //allocate space for array
+        apply(f); //populate array
+
+        //encode and write to file
+        int dataLenBytes = arraySize * sizeof(T);
+        writeEncodedArray( (*fp), dataLenBytes, (char*)dataToEncode);
+
+        //free array
+        delete [] dataToEncode;
+        dataIndex = 0;
+      }
+      else
+      {
+        apply(f); //same function call if writing ASCII
+      }
+      (*fp) << "</DataArray>\n";
     }
-    void run(std::ostream& file, FieldBase* f)
+    void run(std::ostream& file,
+      FieldBase* f,
+      bool isWritingBinaryArg = false)
     {
+      isWritingBinary = isWritingBinaryArg;
       fp = &file;
+      dataIndex = 0;
       int n = countIPs(f);
       for (point=0; point < n; ++point)
+      {
         runOnce(f);
+      }
     }
 };
 
@@ -683,7 +732,7 @@ static void writeCellData(std::ostream& file,
     Field* f = m->getField(i);
     if (isIP(f) && isPrintable(f))
     {
-      wd.run(file,f);
+      wd.run(file,f,isWritingBinary);
     }
   }
   WriteIPField<int> wi;
@@ -692,7 +741,7 @@ static void writeCellData(std::ostream& file,
     Numbering* n = m->getNumbering(i);
     if (isIP(n) && isPrintable(n))
     {
-      wi.run(file,n);
+      wi.run(file,n,isWritingBinary);
     }
   }
   WriteIPField<long> wl;
@@ -701,7 +750,7 @@ static void writeCellData(std::ostream& file,
     GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isIP(n) && isPrintable(n))
     {
-      wl.run(file,n);
+      wl.run(file,n,isWritingBinary);
     }
   }
   writeCellParts(file, m, isWritingBinary);
@@ -722,7 +771,6 @@ static void writeVtuFile(const char* prefix,
     Numbering* n,
     bool isWritingBinary = false)
 {
-  PCU_Barrier();
   double t0 = PCU_Time();
   std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
   std::stringstream buf;
@@ -764,7 +812,6 @@ static void writeVtuFile(const char* prefix,
   buf << "</Piece>\n";
   buf << "</UnstructuredGrid>\n";
   buf << "</VTKFile>\n";
-  PCU_Barrier();
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
   {
@@ -775,7 +822,6 @@ static void writeVtuFile(const char* prefix,
     assert(file.is_open());
     file << buf.rdbuf();
   }
-  PCU_Barrier();
   double t2 = PCU_Time();
   if (!PCU_Comm_Self())
   {

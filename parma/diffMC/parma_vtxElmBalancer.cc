@@ -36,12 +36,12 @@ namespace {
         if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "vtx imbalance %.3f\n", maxVtxImb);
         parma::Sides* s = parma::makeVtxSides(mesh);
-        parma::Weights* w[2] =
-          {parma::makeEntWeights(mesh, wtag, s, 0),
-           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension())};
+        parma::Weights* vtxW = parma::makeEntWeights(mesh, wtag, s, 0);
+        parma::Weights* elmW =
+          parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t =
-          parma::makeVtxElmTargets(s, w, sideTol, maxVtx, factor);
-        delete w[0];
+          parma::makePreservingTargets(s, elmW, vtxW, sideTol, maxVtx, factor);
+        delete vtxW;
         parma::Selector* sel =
           parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
 
@@ -53,7 +53,7 @@ namespace {
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
-        parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, elmW, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
   };

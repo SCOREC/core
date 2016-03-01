@@ -34,7 +34,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_elmBdrySides.cc
   diffMC/parma_elmSideSides.cc
   diffMC/parma_edgeEqVtxSelector.cc
-  diffMC/parma_elmLtVtxSelector.cc
+  diffMC/parma_ltSelector.cc
   diffMC/parma_elmLtVtxEdgeSelector.cc
   diffMC/parma_elmSelector.cc
   diffMC/parma_vtxSides.cc
@@ -42,6 +42,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_ghost.cc
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
+  diffMC/parma_vtxPtnWriter.cc
   diffMC/parma_graphDist.cc
   diffMC/parma_monitor.cc
   diffMC/parma_sides.cc
@@ -54,7 +55,7 @@ SET(DIFFMC_SOURCES
   diffMC/parma_vtxSelector.cc
   diffMC/parma_weightTargets.cc
   diffMC/parma_weightSideTargets.cc
-  diffMC/parma_vtxElmTargets.cc
+  diffMC/parma_preserveTargets.cc
   diffMC/parma_vtxEdgeTargets.cc
   diffMC/parma_elmLtVtxEdgeTargets.cc
   diffMC/parma_vtxEdgeElmBalancer.cc

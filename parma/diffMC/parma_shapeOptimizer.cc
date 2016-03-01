@@ -120,7 +120,7 @@ namespace {
         parma::Centroids c(mesh, wtag, s);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag, &c);
         ImbOrLong* stopper = new ImbOrLong(s, avgSide*0.7);
-        parma::Stepper b(mesh, factor, s, w, t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
     private:

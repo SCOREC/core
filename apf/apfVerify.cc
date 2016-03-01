@@ -111,9 +111,42 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     expected = difference + 1;
   if (!isExposedByMesh && isOnEqualOrder)
     expected = std::max(expected, modelUpwardCount);
-  assert(upwardCount >= expected);
+  bool okay;
   if (difference == 1)
-    assert(upwardCount == expected);
+    okay = (upwardCount == expected);
+  else
+    okay = (upwardCount >= expected);
+  if ( ! okay) {
+    std::stringstream ss;
+    char const* n = apf::Mesh::typeName[m->getType(e)];
+    ss << "apf::Verify: " << n << " with " << upwardCount << " adjacent "
+       << dimName[entityDimension + 1] << "s\n";
+    ss << "centroid: " << apf::getLinearCentroid(m, e) << '\n';
+    ss << "based on the following:\n";
+    ss << " - "  << n << " is classified on a model "
+       << dimName[modelDimension] << '\n';
+    ss << "   "  << "which is adjacent to " << modelUpwardCount
+       << " model " << dimName[modelDimension + 1] << "s\n";
+    if (isOnNonManifoldFace)
+      ss << "   " << "and is a non-manifold " << dimName[modelDimension] << '\n';
+    if (isOnManifoldBoundary)
+      ss << "   " << "and is a manifold boundary " << dimName[modelDimension] << '\n';
+    if (isExposedByModel)
+      ss << "   making the " << n << " \"exposed\" at the geometric boundary\n";
+    if (isShared)
+      ss << " - " << n << " is shared in parallel\n";
+    if (isMatched)
+      ss << " - " << n << " has periodic matches\n";
+    if (isExposedByMesh)
+      ss << "   making it \"exposed\" at the part boundary\n";
+    ss << "we would expect the adjacent " << dimName[entityDimension + 1] << " count to be ";
+    if (difference == 1)
+      ss << "exactly " << expected << '\n';
+    else
+      ss << "at least " << expected << '\n';
+    std::string s = ss.str();
+    fail(s.c_str());
+  }
   /* this is here for some spiderwebby simmetrix meshes */
   if (upwardCount >= 200) {
     std::stringstream ss;

@@ -1,4 +1,5 @@
 #include <apf.h>
+#include <gmi_null.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -17,6 +18,7 @@ int main(int argc, char** argv)
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
+  gmi_register_null();
   gmi_register_mesh();
   gmi_model* g = gmi_load(argv[1]);
   apf::Mesh2* m = apf::loadMdsPart(g, argv[2]);

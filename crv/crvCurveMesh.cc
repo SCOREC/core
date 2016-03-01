@@ -6,7 +6,10 @@
  */
 #include "crv.h"
 #include "crvAdapt.h"
+#include "crvBezier.h"
+#include "crvShape.h"
 #include "crvSnap.h"
+
 #include <cassert>
 
 namespace crv {
@@ -43,6 +46,7 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
+  assert(m->canSnap());
   int type = m->getType(e);
   if(type == apf::Mesh::VERTEX){
     apf::Vector3 p, pt(0,0,0);
@@ -74,12 +78,11 @@ void MeshCurver::synchronize()
 
 void MeshCurver::snapToInterpolate(int dim)
 {
+  assert(m_mesh->canSnap());
   apf::MeshEntity* e;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {
-    apf::ModelEntity* g = m_mesh->toModel(e);
-    if(m_mesh->getModelType(g) == m_spaceDim) continue;
-    if(m_mesh->isOwned(e))
+    if(isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
       crv::snapToInterpolate(m_mesh,e);
   }
   m_mesh->end(it);
@@ -87,6 +90,9 @@ void MeshCurver::snapToInterpolate(int dim)
 
 bool InterpolatingCurver::run()
 {
+  if (!m_mesh->canSnap())
+    fail("Cannot snap to geometry, "
+        "this operation is pointless.\n");
   // interpolate points in each dimension
   for(int d = 1; d < 2; ++d)
     snapToInterpolate(d);
@@ -98,23 +104,13 @@ bool InterpolatingCurver::run()
   return true;
 }
 
-bool BezierCurver::run()
+void BezierCurver::convertInterpolatingToBezier()
 {
-  if(m_order < 1 || m_order > 6){
-    fail("trying to convert to unimplemented Bezier order\n");
-  }
+  apf::FieldShape * fs = m_mesh->getShape();
+  int order = fs->getOrder();
 
   int md = m_mesh->getDimension();
   int blendingOrder = getBlendingOrder(apf::Mesh::simplexTypes[md]);
-  apf::changeMeshShape(m_mesh, getBezier(m_order),true);
-  apf::FieldShape * fs = m_mesh->getShape();
-
-  // interpolate points in each dimension
-  for(int d = 1; d <= 2; ++d)
-    snapToInterpolate(d);
-
-  synchronize();
-
   // go downward, and convert interpolating to control points
   int startDim = md - (blendingOrder > 0);
 
@@ -123,7 +119,7 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getBezierTransformationCoefficients(m_order,
+    getBezierTransformationCoefficients(order,
         apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
@@ -141,28 +137,48 @@ bool BezierCurver::run()
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
-    getInternalBezierTransformationCoefficients(m_mesh,m_order,1,
+    getInternalBezierTransformationCoefficients(m_mesh,order,1,
         apf::Mesh::simplexTypes[d],c);
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
-      if(m_mesh->isOwned(e) &&
-          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+      if(!isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
         convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);
   }
 
   synchronize();
-  // curving 1D meshes, while rare, is important in testing
-  // do not fix shape if this is the case
-  // does not work for blended shapes, yet
-  // comment out for now
+}
 
-//  if( m_mesh->getDimension() >= 2 && m_order > 1 && blendingOrder == 0){
+bool BezierCurver::run()
+{
+  std::string name = m_mesh->getShape()->getName();
+  if(m_order < 1 || m_order > 6){
+    fail("trying to convert to unimplemented Bezier order\n");
+  }
+  // if its already bezier, check what needs to be done, if anything
+  if(name == std::string("Bezier")){
+    changeMeshOrder(m_mesh,m_order);
+    return true;
+  } else {
+    // project the new mesh onto the old, with interpolating shapes
+    apf::changeMeshShape(m_mesh, getBezier(m_order),true);
+  }
+
+  if (m_mesh->canSnap()){
+    for(int d = 1; d <= 2; ++d)
+      snapToInterpolate(d);
+    synchronize();
+  }
+
+  convertInterpolatingToBezier();
+
+//  if( m_mesh->getDimension() >= 2 && m_order > 1){
 //    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
 //    crv::adapt(shapeFixer);
 //  }
+
   m_mesh->acceptChanges();
   m_mesh->verify();
   return true;
@@ -342,10 +358,15 @@ void GregoryCurver::setInternalPointsLocally()
 bool GregoryCurver::run()
 {
   if(m_order != 4){
-    fail("cannot convert to G1 of this order\n");
+    fail("cannot only convert to G1 of order 4\n");
   }
-  if(m_spaceDim != 3)
-    fail("can only convert to 3D mesh\n");
+  if(m_mesh->getDimension() != 3){
+    fail("can only convert 3D mesh\n");
+  }
+  if (!m_mesh->canSnap()){
+     fail("Cannot snap to geometry, "
+         "cannot convert mesh to G1.\n");
+  }
 
   apf::changeMeshShape(m_mesh, getGregory(),true);
   int md = m_mesh->getDimension();
@@ -395,8 +416,7 @@ bool GregoryCurver::run()
     apf::MeshEntity* e;
     apf::MeshIterator* it = m_mesh->begin(d);
     while ((e = m_mesh->iterate(it))){
-      if(m_mesh->isOwned(e) &&
-          m_mesh->getModelType(m_mesh->toModel(e)) == m_spaceDim)
+      if(!isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
         convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
     }
     m_mesh->end(it);

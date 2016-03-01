@@ -12,8 +12,8 @@ namespace parma {
   class Stepper {
     public:
       Stepper(apf::Mesh* mIn, double alphaIn,
-        Sides* s, Weights* w, Targets* t, Selector* sel, 
-        Stop* stopper = new Less);
+        Sides* s, Weights* w, Targets* t, Selector* sel,
+        const char* entType, Stop* stopper = new Less);
       virtual ~Stepper();
       bool step(double maxImb, int verbosity=0);
     private:
@@ -21,11 +21,11 @@ namespace parma {
       apf::Mesh* m;
       double alpha;
       int verbose;
-      virtual double imbalance();
       Sides* sides;
       Weights* weights;
       Targets* targets;
       Selector* selects;
+      const char* name;
       Stop* stop;
   };
 }
