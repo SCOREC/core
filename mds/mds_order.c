@@ -68,12 +68,10 @@ static int visit(
     mds_id e)
 {
   mds_id* l;
-  int t;
   if (mds_has_tag(tag,e))
     return 0;
   mds_give_tag(tag,m,e);
   l = mds_get_tag(tag,e);
-  t = mds_type(e);
   *l = *label;
   ++(*label);
   return 1;
@@ -161,11 +159,12 @@ static void number_ents_of_type(struct mds* m,
   int dim;
   struct mds_set adj;
   mds_id label;
+  int i, j;
   label = 0;
   dim = mds_dim[type];
-  for (int i = 0; i < m->n[MDS_VERTEX]; ++i) {
+  for (i = 0; i < m->n[MDS_VERTEX]; ++i) {
     mds_get_adjacent(m, sorted_verts[i], dim, &adj);
-    for (int j = 0; j < adj.n; ++j)
+    for (j = 0; j < adj.n; ++j)
       if (mds_type(adj.e[j]) == type)
         visit(m, tag, &label, adj.e[j]);
   }
@@ -173,8 +172,10 @@ static void number_ents_of_type(struct mds* m,
 
 static void number_other_ents(struct mds_apf* m, struct mds_tag* tag)
 {
-  mds_id* sorted_verts = sort_verts(m, tag);
-  for (int type = MDS_VERTEX + 1; type < MDS_TYPES; ++type)
+  mds_id* sorted_verts;
+  int type;
+  sorted_verts = sort_verts(m, tag);
+  for (type = MDS_VERTEX + 1; type < MDS_TYPES; ++type)
     number_ents_of_type(&m->mds, sorted_verts, tag, type);
   free(sorted_verts);
 }
