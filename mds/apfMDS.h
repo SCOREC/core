@@ -126,6 +126,9 @@ Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
 
 Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
 
+void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile,
+    const double elmWeights[]);
+
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one
   for a .node and another for a .elem file.

@@ -25,9 +25,10 @@ namespace parma {
   }
 
   bool Stepper::step(double maxImb, int verbosity) {
-    const double imb = getImbalance(weights);
+    double imb, avg;
+    getImbalance(weights, imb, avg);
     if ( !PCU_Comm_Self() && verbosity )
-      fprintf(stdout, "%s imbalance %.3f\n", name, imb);
+      fprintf(stdout, "%s imbalance %.3f avg %.3f\n", name, imb, avg);
     if ( stop->stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);

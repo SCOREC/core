@@ -25,13 +25,13 @@ namespace parma {
     return sum;
   }
 
-  double getImbalance(Weights* w) {
+  void getImbalance(Weights* w, double& imb, double& avg) {
     double sum, max;
     sum = max = w->self();
     sum = PCU_Add_Double(sum);
     max = PCU_Max_Double(max);
-    const double avg = sum/PCU_Comm_Peers();
-    return max/avg;
+    avg = sum/PCU_Comm_Peers();
+    imb = max/avg;
   }
 
   double getMaxWeight(Weights* w) {
