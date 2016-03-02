@@ -8,7 +8,7 @@ module load parmetis/mpich3.1.2/4.0.3
 module load zoltan/mpich3.1.2/3.8
 module load simmetrix/simModSuite
 module load netcdf
-module load llvm/latest
+module load gcc/4.9.2
 module load git
 
 #cdash output root
