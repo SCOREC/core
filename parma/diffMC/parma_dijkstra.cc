@@ -158,7 +158,7 @@ namespace parma {
     parma::DistanceQueue<parma::Less> pq(m);
     int zero = 0;
     m->setIntTag(src, d, &zero);
-    pq.push(src,0);
+    pq.push(src,zero);
     dijkstra_(m,c,pq,d);
   }
   void dijkstra(apf::Mesh* m, DijkstraContains* c,

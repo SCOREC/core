@@ -173,7 +173,7 @@ namespace {
    *   during the walks will have a INT_MAX distance which will bias diffusion
    *   to migrate the bounded cavities before other cavities.
    */
-  void getBdryVtx(apf::Mesh* m, apf::MeshTag* dist, 
+  void getBdryVtx(apf::Mesh* m, apf::MeshTag* dist,
       parma::DistanceQueue<parma::Less>& pq) {
     int dmax = INT_MAX;
     apf::MeshEntity* u;
@@ -218,6 +218,94 @@ namespace {
   }
 } //end namespace
 
+namespace parma_ordering {
+  typedef std::list<apf::MeshEntity*> queue;
+
+  inline apf::MeshEntity* pop(queue& q) {
+    apf::MeshEntity* e = q.front();
+    assert(e);
+    q.pop_front();
+    return e;
+  }
+
+  int bfs(apf::Mesh* m, parma::DijkstraContains* c,
+       apf::MeshEntity* src, apf::MeshTag* order, int num) {
+    queue q;
+    q.push_back(src);
+    while( !q.empty() ) {
+      apf::MeshEntity* v = pop(q);
+      if( m->hasTag(v,order) ) continue;
+      m->setIntTag(v,order,&num); num++;
+      apf::Adjacent adjVtx;
+      getEdgeAdjVtx(m,v,adjVtx);
+      APF_ITERATE(apf::Adjacent, adjVtx, eItr) {
+        apf::MeshEntity* u = *eItr;
+        if( c->has(u) && ! m->hasTag(u,order) )
+          q.push_back(u);
+      }
+    }
+    return num;
+  }
+
+  apf::MeshEntity* getMaxDistSeed(apf::Mesh* m, parma::dcComponents& c,
+      apf::MeshTag* dt, apf::MeshTag* order, unsigned comp) {
+    unsigned rmax = 0;
+    apf::MeshEntity* emax = NULL;
+    apf::MeshEntity* v;
+    c.beginBdry(comp);
+    while( (v = c.iterateBdry()) ) {
+      int d; m->getIntTag(v,dt,&d);
+      unsigned du = TO_UINT(d);
+      // max distance unordered vertex
+      if( du > rmax && !m->hasTag(v,order) ) {
+        rmax = du;
+        emax = v;
+      }
+    }
+    c.endBdry();
+    return emax;
+  }
+
+  apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
+    apf::MeshTag* order = m->createIntTag("parma_ordering",1);
+    int start = 0;
+    PCU_Debug_Print("c.size %u\n", c.size());
+    for(unsigned i=0; i<c.size(); i++) {
+      CompContains* contains = new CompContains(c,i);
+      apf::MeshEntity* src = getMaxDistSeed(m,c,dist,order,i);
+      assert(src);
+      assert(!m->hasTag(src,order));
+      PCU_Debug_Print("comp %u start %d\n", i, start);
+      start = bfs(m, contains, src, order, start);
+      delete contains;
+    }
+    PCU_Debug_Print("comps %u numIso %u m->count(0) %lu start %d\n",
+        c.size(), c.numIso(), m->count(0), start);
+    assert(start == TO_INT(m->count(0)));
+
+    int* sorted = new int[m->count(0)];
+    for(unsigned i=0; i<m->count(0); i++)
+      sorted[i] = 0;
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while( (e = m->iterate(it)) ) {
+      int id; m->getIntTag(e,order,&id);
+      if(id >= TO_INT(m->count(0)))
+        PCU_Debug_Print("out of range id %d\n", id);
+      assert(id < TO_INT(m->count(0)));
+      sorted[id] = 1;
+    }
+    m->end(it);
+    for(unsigned i=0; i<m->count(0); i++) {
+      if(!sorted[i]) {
+        PCU_Debug_Print("sorted entry missing %d\n", i);
+      }
+      assert(sorted[i]);
+    }
+    return order;
+  }
+} //end namespace
+
 namespace parma {
   apf::MeshTag* getDistTag(apf::Mesh* m) {
     return m->findTag(distanceTagName());
@@ -244,4 +332,20 @@ namespace parma {
     }
     return t;
   }
+}
+
+apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
+  assert( !hasDistance(m) );
+  parma::dcComponents c = parma::dcComponents(m);
+  apf::MeshTag* dist = computeDistance(m,c);
+  if( PCU_Comm_Peers() > 1 && !c.numIso() )
+    if( !hasDistance(m,dist) ) {
+      fprintf(stderr, "CAKE rank %d comp %u iso %u ... "
+          "some vertices don't have distance computed\n",
+          PCU_Comm_Self(), c.size(), c.numIso());
+      assert(false);
+    }
+  apf::MeshTag* order = parma_ordering::reorder(m,c,dist);
+  m->destroyTag(dist);
+  return order;
 }

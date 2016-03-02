@@ -121,6 +121,12 @@ if(ENABLE_ZOLTAN)
     "tet.smb")
 endif()
 set(MDIR ${MESHES}/torus)
+add_test(reorder
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./reorder
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusBfs4p/")
 add_test(balance
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./balance
