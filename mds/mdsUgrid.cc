@@ -284,6 +284,8 @@ namespace {
       SetInt* partvtx;  //vtx ids for each part
       int* partelm;     //elm cnts
       double* partelmW; //weighted elm counts
+
+      ptnstats() : ptn(NULL), partvtx(NULL), partelm(NULL), partelmW(NULL) {}
       void getVtxPtn(int numVtx, const char* ptnFile) {
         FILE* f = fopen(ptnFile, "r");
         numparts = 0;
