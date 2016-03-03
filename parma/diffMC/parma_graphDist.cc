@@ -269,18 +269,14 @@ namespace parma_ordering {
   apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
     apf::MeshTag* order = m->createIntTag("parma_ordering",1);
     int start = 0;
-    PCU_Debug_Print("c.size %u\n", c.size());
     for(unsigned i=0; i<c.size(); i++) {
       CompContains* contains = new CompContains(c,i);
       apf::MeshEntity* src = getMaxDistSeed(m,c,dist,order,i);
       assert(src);
       assert(!m->hasTag(src,order));
-      PCU_Debug_Print("comp %u start %d\n", i, start);
       start = bfs(m, contains, src, order, start);
       delete contains;
     }
-    PCU_Debug_Print("comps %u numIso %u m->count(0) %lu start %d\n",
-        c.size(), c.numIso(), m->count(0), start);
     assert(start == TO_INT(m->count(0)));
 
     int* sorted = new int[m->count(0)];
@@ -290,18 +286,13 @@ namespace parma_ordering {
     apf::MeshEntity* e;
     while( (e = m->iterate(it)) ) {
       int id; m->getIntTag(e,order,&id);
-      if(id >= TO_INT(m->count(0)))
-        PCU_Debug_Print("out of range id %d\n", id);
       assert(id < TO_INT(m->count(0)));
       sorted[id] = 1;
     }
     m->end(it);
-    for(unsigned i=0; i<m->count(0); i++) {
-      if(!sorted[i]) {
-        PCU_Debug_Print("sorted entry missing %d\n", i);
-      }
+    for(unsigned i=0; i<m->count(0); i++)
       assert(sorted[i]);
-    }
+    delete [] sorted;
     return order;
   }
 } //end namespace
