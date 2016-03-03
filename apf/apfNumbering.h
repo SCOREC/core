@@ -96,6 +96,8 @@ void synchronize(Numbering * n, Sharing* shr = 0);
 
 /** \brief number the local owned entities of a given dimension */
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
+/** \brief number all local entities of a given dimension */
+Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim);
 /** \brief number the local elements */
 Numbering* numberElements(Mesh* mesh, const char* name);
 /** \brief number all local nodes
