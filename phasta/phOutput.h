@@ -65,7 +65,7 @@ var: rho t p u v w sc1 sc2 sc3 sc4 perio
 bit:  0  1 2 3 4 5  6   7   8   9    10 */
   int* ibc;
 /* bc[i][j] is the essential boundary condition
-   value of 
+   value of
    essential boundary condition j of
    essential BC node i */
 /* bc is organized as follows:
@@ -74,6 +74,8 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15  */
   double** bc;
 /* encodes part-local element to element connectivity */
   int* ienneigh;
+/* encodes parallel communication between mesh edges */
+  int* ilworke;
 };
 
 
@@ -92,6 +94,7 @@ struct Output
   int nEssentialBCNodes;
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
+  int nlworke; /* size of arrays.ilworke */
   FILE* (*openfile_write)(Output& out, const char* path);
   GRStream* grs;
   AllBlocks blocks;

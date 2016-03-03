@@ -84,7 +84,7 @@ int countComponents(Numbering* n);
   \returns the number of element nodes */
 int getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
 
-/** \brief return the number of fixed degrees of freedom */ 
+/** \brief return the number of fixed degrees of freedom */
 int countFixed(Numbering* n);
 
 /** \brief numbers non-owned nodes with the values from their owners

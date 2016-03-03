@@ -316,9 +316,23 @@ static void getElementGraph(Output& o)
     Links links;
     getLinks(o.mesh, o.mesh->getDimension() - 1, links);
     encodeILWORKF(n, links, o.nlworkf, o.arrays.ilworkf);
+    apf::destroyNumbering(n);
   } else {
     o.arrays.ilworkf = 0;
     o.arrays.ienneigh = 0;
+  }
+}
+
+static void getEdges(Output& o)
+{
+  if (o.in->formElementGraph) {
+    Links links;
+    getLinks(o.mesh, 1, links);
+    apf::Numbering* n = apf::numberOverlapDimension(o.mesh, "ph::getEdges", 1);
+    encodeILWORK(n, links, o.nlworke, o.arrays.ilworke);
+    apf::destroyNumbering(n);
+  } else {
+    o.arrays.ilworke = 0;
   }
 }
 
@@ -378,6 +392,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);
   getElementGraph(o);
+  getEdges(o);
   if (in.initBubbles)
     initBubbles(o.mesh, in);
   double t1 = PCU_Time();
