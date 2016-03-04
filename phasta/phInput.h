@@ -54,6 +54,7 @@ class Input
     int splitAllLayerEdges;
     int filterMatches;
     int axisymmetry;
+    int formEdges;
     double elementImbalance;
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);

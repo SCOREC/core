@@ -148,6 +148,18 @@ static void writeElementGraph(Output& o, FILE* f)
   }
 }
 
+static void writeEdges(Output& o, FILE* f)
+{
+  if (o.in->formEdges) {
+    writeInt(f, "size of ilworkl array", o.nlworkl);
+    writeInts(f, "ilworkl", o.arrays.ilworkl, o.nlworkl);
+    apf::Mesh* m = o.mesh;
+    writeInts(f, "iel", o.arrays.iel, m->count(3) * 6);
+    writeInts(f, "ileo", o.arrays.ileo, m->count(1) + 1);
+    writeInts(f, "ile", o.arrays.ile, m->count(3) * 6);
+  }
+}
+
 void writeGeomBC(Output& o, std::string path)
 {
   double t0 = PCU_Time();
@@ -195,6 +207,7 @@ void writeGeomBC(Output& o, std::string path)
   writeDoubles(f, "boundary condition array", &bc[0], bc.getSize());
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   writeElementGraph(o, f);
+  writeEdges(o, f);
   fclose(f);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

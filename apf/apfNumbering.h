@@ -84,7 +84,7 @@ int countComponents(Numbering* n);
   \returns the number of element nodes */
 int getElementNumbers(Numbering* n, MeshEntity* e, NewArray<int>& numbers);
 
-/** \brief return the number of fixed degrees of freedom */ 
+/** \brief return the number of fixed degrees of freedom */
 int countFixed(Numbering* n);
 
 /** \brief numbers non-owned nodes with the values from their owners
@@ -96,6 +96,8 @@ void synchronize(Numbering * n, Sharing* shr = 0);
 
 /** \brief number the local owned entities of a given dimension */
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
+/** \brief number all local entities of a given dimension */
+Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim);
 /** \brief number the local elements */
 Numbering* numberElements(Mesh* mesh, const char* name);
 /** \brief number all local nodes
