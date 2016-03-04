@@ -14,8 +14,6 @@
 #include <string.h>
 #include <PCU.h>
 
-#include <stdio.h>
-
 struct queue {
   mds_id* e;
   mds_id end;
@@ -104,7 +102,6 @@ static void number_connected_verts(struct mds* m, mds_id v,
   adj[0].n = adj[1].n = 0;
   if (!visit(m, tag, label, v))
     return;
-  fprintf(stderr, "found new component\n");
   make_queue(&q, m->n[MDS_VERTEX]);
   push_queue(&q, v);
   while ( ! queue_empty(&q)) {
@@ -128,14 +125,9 @@ struct mds_tag* mds_number_verts_bfs(struct mds_apf* m)
   tag = mds_create_tag(&m->tags, "mds_number", sizeof(mds_id), 1);
   label = 0;
   v = find_seed(m);
-  fprintf(stderr, "got seed, first component...\n");
   number_connected_verts(&m->mds, v, tag, &label);
-  fprintf(stderr, "other components...\n");
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
     number_connected_verts(&m->mds, v, tag, &label);
-  if (label != m->mds.n[MDS_VERTEX])
-    fprintf(stderr, "label %u, vertex count %u\n",
-        label, m->mds.n[MDS_VERTEX]);
   assert(label == m->mds.n[MDS_VERTEX]);
   return tag;
 }

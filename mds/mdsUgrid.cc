@@ -285,13 +285,15 @@ namespace {
       int* partelm;     //elm cnts
       double* partelmW; //weighted elm counts
 
-      ptnstats() : ptn(NULL), partvtx(NULL), partelm(NULL), partelmW(NULL) {}
+      ptnstats() : numparts(0), ptn(NULL), partvtx(NULL),
+                   partelm(NULL), partelmW(NULL) {}
       void getVtxPtn(int numVtx, const char* ptnFile) {
         FILE* f = fopen(ptnFile, "r");
         numparts = 0;
         ptn = new int[numVtx];
         for(long id=0; id<numVtx; id++) {
-          fscanf(f, "%d", &ptn[id]);
+          int read = fscanf(f, "%d", &ptn[id]);
+          assert(read);
           if( ptn[id] > numparts )
             numparts = ptn[id];
         }

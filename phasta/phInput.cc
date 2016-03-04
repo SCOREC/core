@@ -27,7 +27,7 @@ static void setDefaults(Input& in)
   in.openfile_read = 0;
   in.numSplit = 10;
   in.tetrahedronize = 0;
-  in.localPtn = true; 
+  in.localPtn = 1;
   in.recursivePtn = -1;
   in.recursiveUR = 1;
   in.parmaPtn = 0; // No Parma by default
@@ -47,6 +47,7 @@ static void setDefaults(Input& in)
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
   in.rs = 0;
+  in.formEdges = 0;
 }
 
 Input::Input()
@@ -102,6 +103,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["axisymmetry"] = &in.axisymmetry;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
+  intMap["formEdges"] = &in.formEdges;
 }
 
 template <class T>
