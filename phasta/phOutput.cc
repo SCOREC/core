@@ -384,7 +384,6 @@ Output::~Output()
   delete [] arrays.coordinates;
   delete [] arrays.ilwork;
   delete [] arrays.ilworkf;
-  delete [] arrays.ilworkl;
   delete [] arrays.iper;
   delete [] arrays.globalNodeNumbers;
   Blocks& ibs = blocks.interior;
@@ -414,7 +413,10 @@ Output::~Output()
     delete [] arrays.bc[i];
   delete [] arrays.bc;
   delete [] arrays.ienneigh;
+  delete [] arrays.ilworkl;
   delete [] arrays.iel;
+  delete [] arrays.ileo;
+  delete [] arrays.ile;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)

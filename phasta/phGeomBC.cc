@@ -153,6 +153,10 @@ static void writeEdges(Output& o, FILE* f)
   if (o.in->formEdges) {
     writeInt(f, "size of ilworkl array", o.nlworkl);
     writeInts(f, "ilworkl", o.arrays.ilworkl, o.nlworkl);
+    apf::Mesh* m = o.mesh;
+    writeInts(f, "iel", o.arrays.iel, m->count(3) * 6);
+    writeInts(f, "ileo", o.arrays.ileo, m->count(1) + 1);
+    writeInts(f, "ile", o.arrays.ile, m->count(3) * 6);
   }
 }
 
