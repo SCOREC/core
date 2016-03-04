@@ -282,5 +282,13 @@ void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
  */
 int Parma_MisNumbering(apf::Mesh* m, int d);
 
+/**
+ * @brief reorder the mesh via a breadth first search
+ * @remark the returned tag has the reordered vertex order
+ * @param m (In) partitioned mesh
+ * @param verbosity (In) output control, higher values output more
+ * @return apf mesh tag
+ */
+apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int verbosity=0);
 
 #endif
