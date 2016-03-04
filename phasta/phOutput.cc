@@ -308,31 +308,74 @@ static void getInitialConditions(BCs& bcs, Output& o)
   m->end(it);
 }
 
-static void getElementGraph(Output& o)
+static void getElementGraph(Output& o, apf::Numbering* rn)
 {
   if (o.in->formElementGraph) {
-    apf::Numbering* n = apf::numberElements(o.mesh, "ph::getElementGraph");
-    o.arrays.ienneigh = formIENNEIGH(n);
+    o.arrays.ienneigh = formIENNEIGH(rn);
     Links links;
     getLinks(o.mesh, o.mesh->getDimension() - 1, links);
-    encodeILWORKF(n, links, o.nlworkf, o.arrays.ilworkf);
-    apf::destroyNumbering(n);
+    encodeILWORKF(rn, links, o.nlworkf, o.arrays.ilworkf);
   } else {
     o.arrays.ilworkf = 0;
     o.arrays.ienneigh = 0;
   }
 }
 
-static void getEdges(Output& o)
+static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn)
 {
-  if (o.in->formElementGraph) {
+  if (o.in->formEdges) {
     Links links;
     getLinks(o.mesh, 1, links);
-    apf::Numbering* n = apf::numberOverlapDimension(o.mesh, "ph::getEdges", 1);
-    encodeILWORK(n, links, o.nlworke, o.arrays.ilworke);
-    apf::destroyNumbering(n);
+    apf::Numbering* en = apf::numberOverlapDimension(o.mesh, "ph::getEdges", 1);
+    encodeILWORK(en, links, o.nlworkl, o.arrays.ilworkl);
+    apf::destroyNumbering(en);
   } else {
-    o.arrays.ilworke = 0;
+    o.arrays.ilworkl = 0;
+  }
+  if (o.in->formEdges) {
+    apf::Mesh* m = o.mesh;
+    assert(m->getDimension() == 3);
+    int nelems = m->count(3);
+    o.arrays.iel = new int[nelems * 6];
+    apf::MeshIterator* it = m->begin(3);
+    apf::MeshEntity* e;
+    int i = 0;
+    while ((e = m->iterate(it))) {
+      apf::MeshEntity* ev[6];
+      m->getDownward(e, 0, ev);
+      for (int j = 0; j < 6; ++j)
+        o.arrays.iel[j * nelems + i] = apf::getNumber(vn, ev[j], 0, 0) + 1;
+      ++i;
+    }
+    m->end(it);
+    assert(i == nelems);
+  } else {
+    o.arrays.iel = 0;
+  }
+  if (o.in->formEdges) {
+    apf::Mesh* m = o.mesh;
+    int nelems = m->count(3);
+    int nedges = m->count(1);
+    o.arrays.ileo = new int[nedges + 1];
+    o.arrays.ile = new int[nelems * 6];
+    apf::MeshIterator* it = m->begin(1);
+    apf::MeshEntity* e;
+    int i = 0;
+    o.arrays.ileo[0] = 0;
+    while ((e = m->iterate(it))) {
+      apf::Adjacent adj;
+      m->getAdjacent(e, 3, adj);
+      int k = o.arrays.ileo[i];
+      for (size_t j = 0; j < adj.getSize(); ++j)
+        o.arrays.ile[k++] = apf::getNumber(rn, adj[j], 0, 0) + 1;
+      o.arrays.ileo[i + 1] = k;
+      ++i;
+    }
+    m->end(it);
+    assert(i == nedges);
+  } else {
+    o.arrays.ileo = 0;
+    o.arrays.ile = 0;
   }
 }
 
@@ -341,6 +384,7 @@ Output::~Output()
   delete [] arrays.coordinates;
   delete [] arrays.ilwork;
   delete [] arrays.ilworkf;
+  delete [] arrays.ilworkl;
   delete [] arrays.iper;
   delete [] arrays.globalNodeNumbers;
   Blocks& ibs = blocks.interior;
@@ -370,6 +414,7 @@ Output::~Output()
     delete [] arrays.bc[i];
   delete [] arrays.bc;
   delete [] arrays.ienneigh;
+  delete [] arrays.iel;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -382,17 +427,19 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getGlobal(o);
   getAllBlocks(o.mesh, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
+  apf::Numbering* rn = apf::numberElements(o.mesh, "ph_elem");
   getVertexLinks(o, n);
   getInterior(o, n);
   getBoundary(o, bcs, n);
   getLocalPeriodicMasters(o, n);
+  getEdges(o, n, rn);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);
-  getElementGraph(o);
-  getEdges(o);
+  getElementGraph(o, rn);
+  apf::destroyNumbering(rn);
   if (in.initBubbles)
     initBubbles(o.mesh, in);
   double t1 = PCU_Time();

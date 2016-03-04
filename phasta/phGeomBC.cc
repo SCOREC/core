@@ -151,8 +151,8 @@ static void writeElementGraph(Output& o, FILE* f)
 static void writeEdges(Output& o, FILE* f)
 {
   if (o.in->formEdges) {
-    writeInt(f, "size of ilworke array", o.nlworke);
-    writeInts(f, "ilworke", o.arrays.ilworke, o.nlworke);
+    writeInt(f, "size of ilworkl array", o.nlworkl);
+    writeInts(f, "ilworkl", o.arrays.ilworkl, o.nlworkl);
   }
 }
 

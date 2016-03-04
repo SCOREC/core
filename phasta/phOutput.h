@@ -22,7 +22,7 @@ struct EnsaArrays
 /* describes inter-part element connectivity,
    see ph::encodeILWORKF */
   int* ilworkf;
-/* periodic masters array, one per node... */  
+/* periodic masters array, one per node... */
   int* iper;
 /* note: int will overflow at about 2 billion total nodes */
   int* globalNodeNumbers;
@@ -75,7 +75,13 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15  */
 /* encodes part-local element to element connectivity */
   int* ienneigh;
 /* encodes parallel communication between mesh edges */
-  int* ilworke;
+  int* ilworkl;
+/* tetrahedra to local edges, already in FORTRAN order and from 1 */
+  int* iel;
+/* edges to tetrahedra offsets */
+  int* ileo;
+/* edges to tetrahedra adjacencies */
+  int* ile;
 };
 
 
@@ -92,9 +98,10 @@ struct Output
   int nBoundaryElements;
   int nMaxElementNodes;
   int nEssentialBCNodes;
+  int nOverlapEdges;
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
-  int nlworke; /* size of arrays.ilworke */
+  int nlworkl; /* size of arrays.ilworkl */
   FILE* (*openfile_write)(Output& out, const char* path);
   GRStream* grs;
   AllBlocks blocks;
