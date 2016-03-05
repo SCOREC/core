@@ -8,6 +8,7 @@
 #include <phOutput.h>
 #include <phPartition.h>
 #include <phFilterMatching.h>
+#include <parma.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfPartition.h>
@@ -25,10 +26,17 @@ namespace {
 void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
 {
   /* check if the mesh changed at all */
-  if ((PCU_Comm_Peers()!=numMasters) || in.adaptFlag || in.tetrahedronize) {
+  if ( (PCU_Comm_Peers()!=numMasters) ||
+       in.adaptFlag ||
+       in.tetrahedronize ||
+       in.isReorder )
+  {
     if (in.parmaPtn && PCU_Comm_Peers() > 1)
       ph::balance(in,m);
-    apf::reorderMdsMesh(m);
+    apf::MeshTag* order = NULL;
+    if (PCU_Comm_Peers() > 1)
+      order = Parma_BfsReorder(m);
+    apf::reorderMdsMesh(m,order);
   }
 }
 
