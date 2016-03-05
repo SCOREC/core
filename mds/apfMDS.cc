@@ -626,6 +626,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
 {
+  double t0 = PCU_Time();
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
   mds_tag* vert_nums;
   if (t) {
@@ -640,6 +641,8 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
     vert_nums = mds_number_verts_bfs(m->mesh);
   }
   m->mesh = mds_reorder(m->mesh, 0, vert_nums);
+  if (!PCU_Comm_Self())
+    printf("mesh reordered in %f seconds\n", PCU_Time()-t0);
 }
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)

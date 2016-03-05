@@ -8,6 +8,7 @@
 #include "parma_dcpart.h"
 #include "parma_meshaux.h"
 #include "parma_convert.h"
+#include "parma_commons.h"
 
 namespace {
   apf::MeshTag* initTag(apf::Mesh* m, const char* name,
@@ -326,6 +327,7 @@ namespace parma {
 }
 
 apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
+  double t0 = PCU_Time();
   assert( !hasDistance(m) );
   parma::dcComponents c = parma::dcComponents(m);
   apf::MeshTag* dist = computeDistance(m,c);
@@ -338,5 +340,6 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
     }
   apf::MeshTag* order = parma_ordering::reorder(m,c,dist);
   m->destroyTag(dist);
+  parmaCommons::printElapsedTime(__func__,PCU_Time()-t0);
   return order;
 }
