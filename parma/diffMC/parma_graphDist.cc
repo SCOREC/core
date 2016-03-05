@@ -183,7 +183,7 @@ namespace {
       if( !m->isShared(u) && !onMdlBdry(m,u) ) continue;
       m->setIntTag(u,dist,&dmax); // (1)
       apf::Adjacent verts;
-      getEdgeAdjVtx(m,u,verts);
+      getElmAdjVtx(m,u,verts);
       APF_ITERATE(apf::Adjacent, verts, v) {
         if( !m->isShared(*v) && !onMdlBdry(m,*v) ) {
           int vd; m->getIntTag(*v,dist,&vd);

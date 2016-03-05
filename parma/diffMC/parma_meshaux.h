@@ -7,6 +7,7 @@
 inline void clearTag(apf::Mesh*&, apf::MeshTag*);
 inline apf::MeshEntity* getUpEnt(apf::Mesh*, apf::MeshEntity*);
 inline void getEdgeAdjVtx(apf::Mesh*, apf::MeshEntity*, apf::Adjacent&);
+inline void getElmAdjVtx(apf::Mesh*, apf::MeshEntity*, apf::Adjacent&);
 inline void getDwn2ndAdj(apf::Mesh*, apf::MeshEntity*, apf::Adjacent&);
 inline bool onBoundary(apf::Mesh*, apf::MeshEntity*);
 
@@ -18,6 +19,11 @@ void clearTag(apf::Mesh*& m, apf::MeshTag* t) {
 
 apf::MeshEntity* getUpEnt(apf::Mesh* m, apf::MeshEntity* e) {
   return m->getUpward(e, 0);
+}
+
+void getElmAdjVtx(apf::Mesh* m, apf::MeshEntity* v, apf::Adjacent& adj) {
+  int bridge = m->getDimension(); int tgt = 0;
+  getBridgeAdjacent(m, v, bridge, tgt, adj);
 }
 
 void getEdgeAdjVtx(apf::Mesh* m, apf::MeshEntity* v, apf::Adjacent& adj) {
