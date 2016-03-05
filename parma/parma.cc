@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include "parma.h"
 #include "diffMC/maximalIndependentSet/mis.h"
+#include "diffMC/parma_commons.h"
 #include <parma_dcpart.h>
 #include <limits>
 #include <assert.h>
@@ -107,6 +108,8 @@ namespace {
     avg = TO_DBL(tot) / TO_DBL(PCU_Comm_Peers());
   }
 
+  using parmaCommons::status;
+
   void writeFineStats(apf::Mesh* m, std::string key,
       int locDc, int locNb, int* locV, int surf, double vol) {
     const char* entNames[4] = {"vtx", "edge", "face", "rgn"};
@@ -138,7 +141,7 @@ namespace {
     const char* orders[4] = {"vtx","edge","face","rgn"};
     if(!PCU_Comm_Self()) {
       for( int d=0; d<=m->getDimension(); d++)
-        fprintf(stdout, "STATUS %s weighted %s <tot max min avg> "
+        status("%s weighted %s <tot max min avg> "
             "%.1f %.1f %.1f %.3f\n",
             key.c_str(), orders[d],
             totEnt[d], maxEnt[d], minEnt[d], avgEnt[d]);
@@ -305,28 +308,28 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   PCU_Debug_Print("\n");
 
   if( 0 == PCU_Comm_Self() ) {
-    fprintf(stdout, "STATUS %s disconnected <max avg> %d %.3f\n",
+    status("%s disconnected <max avg> %d %.3f\n",
         key.c_str(), maxDc, avgDc);
-    fprintf(stdout, "STATUS %s neighbors <max avg> %d %.3f\n",
+    status("%s neighbors <max avg> %d %.3f\n",
         key.c_str(), maxNb, avgNb);
-    fprintf(stdout, "STATUS %s empty parts %d\n",
+    status("%s empty parts %d\n",
         key.c_str(), empty);
   }
   writeWeightedEntStats(m,w,key);
   if( 0 == PCU_Comm_Self() ) {
-    fprintf(stdout, "STATUS %s owned bdry vtx <tot max min avg> "
+    status("%s owned bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[0], maxV[0], minV[0], avgV[0]);
-    fprintf(stdout, "STATUS %s shared bdry vtx <tot max min avg> "
+    status("%s shared bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[1], maxV[1], minV[1], avgV[1]);
-    fprintf(stdout, "STATUS %s model bdry vtx <tot max min avg> "
+    status("%s model bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[2], maxV[2], minV[2], avgV[2]);
-    fprintf(stdout, "STATUS %s sharedSidesToElements <max min avg> "
+    status("%s sharedSidesToElements <max min avg> "
         "%.3f %.3f %.3f\n",
         key.c_str(), maxSurfToVol, minSurfToVol, avgSurfToVol);
-    fprintf(stdout, "STATUS %s entity imbalance <v e f r>: "
+    status("%s entity imbalance <v e f r>: "
         "%.2f %.2f %.2f %.2f\n", key.c_str(), imb[0], imb[1], imb[2], imb[3]);
   }
 }

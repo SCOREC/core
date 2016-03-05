@@ -6,8 +6,11 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 #include "parma_stop.h"
+#include "parma_commons.h"
 
 namespace parma {
+  using parmaCommons::status;
+
   Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
      const char* entType, Stop* stopper)
@@ -28,14 +31,14 @@ namespace parma {
     double imb, avg;
     getImbalance(weights, imb, avg);
     if ( !PCU_Comm_Self() && verbosity )
-      fprintf(stdout, "%s imbalance %.3f avg %.3f\n", name, imb, avg);
+      status("%s imbalance %.3f avg %.3f\n", name, imb, avg);
     if ( stop->stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);
     const double t0 = PCU_Time();
     m->migrate(plan);
     if ( !PCU_Comm_Self() && verbosity )
-      fprintf(stdout, "elements migrated in %f seconds\n", PCU_Time()-t0);
+      status("elements migrated in %f seconds\n", PCU_Time()-t0);
     if( verbosity > 1 ) 
       Parma_PrintPtnStats(m, "endStep", (verbosity>2));
     return true;

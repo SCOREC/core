@@ -9,11 +9,14 @@
 #include "parma_centroids.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
+#include "parma_commons.h"
 
 #include <sstream>
 #include <string.h>
 
 namespace {
+  using parmaCommons::status;
+
   int getMinSide(parma::Sides* s) {
     int minSides = INT_MAX;
     s->begin();
@@ -32,7 +35,7 @@ namespace {
     int min=minSides;
     minSides = PCU_Min_Int(minSides);
     if (min==minSides&&isOutput)
-      fprintf(stdout,"%d has smallest side\n",PCU_Comm_Self());
+      status("%d has smallest side\n",PCU_Comm_Self());
     return minSides;
   }
 
@@ -51,7 +54,7 @@ namespace {
         const double small = static_cast<double>(getSmallestSide(sides,true));
         si++;
         if (!PCU_Comm_Self())
-          fprintf(stdout,"Smallest Side: %f, endPoint: %f\n", small, sideTol);
+          status("Smallest Side: %f, endPoint: %f\n", small, sideTol);
         return imb > maxImb || small > sideTol;
       }
     private:
@@ -65,7 +68,7 @@ namespace {
       ShapeOptimizer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "gap") {
         if (!PCU_Comm_Self())
-          fprintf(stdout,"Factor: %f\n",f);
+          status("Factor: %f\n",f);
         parma::Sides* s = parma::makeVtxSides(mesh);
         avgSide=getAvgSides(s);
         delete s;
@@ -79,7 +82,7 @@ namespace {
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         PCU_Debug_Print("Outer Iteration: %d Inner Iteration: %d\n",si,iter);
         if (!PCU_Comm_Self())
-          fprintf(stdout,"Outer Iteration: %d Inner Iteration: %d\n",si,iter);
+          status("Outer Iteration: %d Inner Iteration: %d\n",si,iter);
         Parma_ProcessDisconnectedParts(mesh);
 
         /*
@@ -99,15 +102,15 @@ namespace {
         double elapsedTime = PCU_Time() - t1;
         elapsedTime = PCU_Max_Double(elapsedTime);
         if( !PCU_Comm_Self() )
-          fprintf(stdout,"mis completed in %f (seconds)\n", elapsedTime);
+          status("mis completed in %f (seconds)\n", elapsedTime);
         maxMis = misNumber;
         PCU_Max_Ints(&maxMis,1);
         double small = static_cast<double>(getSmallestSide(s));
         if (small>=avgSide*avgSideMult||iter==0)
           avgSideMult+=(1-avgSideMult)/10;
         if (!PCU_Comm_Self()) {
-          fprintf(stdout,"The average mult is now %f\n",avgSideMult);
-          fprintf(stdout,"mis maxNum %d\n", maxMis);
+          status("The average mult is now %f\n",avgSideMult);
+          status("mis maxNum %d\n", maxMis);
         }
 
         parma::Targets* t = 

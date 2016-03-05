@@ -7,8 +7,11 @@
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
+#include "parma_commons.h"
 
 namespace {
+  using parmaCommons::status;
+
   class GhostElmBalancer : public parma::Balancer {
     private:
       int sideTol;
@@ -20,13 +23,13 @@ namespace {
         sideTol = static_cast<int>(parma::avgSharedSides(s));
         delete s;
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "sideTol %d\n", sideTol);
+          status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
         double avgSides = parma::avgSharedSides(s);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "avgSides %f\n", avgSides);
+          status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
           parma::makeGhostWeights(mesh, wtag, s, layers);
@@ -37,7 +40,7 @@ namespace {
         double vtxImb, vtxAvg;
         parma::getImbalance(vtxW, vtxImb, vtxAvg);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
+          status("vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
 
         double elmImb, elmAvg;
         parma::getImbalance(elmW, elmImb, elmAvg);
@@ -69,13 +72,13 @@ namespace {
         sideTol = static_cast<int>(parma::avgSharedSides(s));
         delete s;
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "sideTol %d\n", sideTol);
+          status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
         double avgSides = parma::avgSharedSides(s);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "avgSides %f\n", avgSides);
+          status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
           parma::makeGhostWeights(mesh, wtag, s, layers);
@@ -89,8 +92,8 @@ namespace {
         double edgeImb, edgeAvg;
         parma::getImbalance(edgeW, edgeImb, edgeAvg);
         if( !PCU_Comm_Self() && verbose ) {
-          fprintf(stdout, "elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
-          fprintf(stdout, "edge imbalance %.3f avg %.3f\n", edgeImb, edgeAvg);
+          status("elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
+          status("edge imbalance %.3f avg %.3f\n", edgeImb, edgeAvg);
         }
         if( !stepNum ) //FIXME need to set the imbalance at the beginning for the primary entity
           maxElmW = parma::getMaxWeight(elmW);
