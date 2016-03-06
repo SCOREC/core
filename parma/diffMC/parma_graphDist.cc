@@ -183,7 +183,7 @@ namespace {
       if( !m->isShared(u) && !onMdlBdry(m,u) ) continue;
       m->setIntTag(u,dist,&dmax); // (1)
       apf::Adjacent verts;
-      getEdgeAdjVtx(m,u,verts);
+      getElmAdjVtx(m,u,verts);
       APF_ITERATE(apf::Adjacent, verts, v) {
         if( !m->isShared(*v) && !onMdlBdry(m,*v) ) {
           int vd; m->getIntTag(*v,dist,&vd);
@@ -313,7 +313,7 @@ namespace parma {
       t = computeDistance(m,c);
       if( PCU_Comm_Peers() > 1 && !c.numIso() )
         if( !hasDistance(m,t) ) {
-          fprintf(stderr, "CAKE rank %d comp %u iso %u ... "
+          parmaCommons::error("rank %d comp %u iso %u ... "
               "some vertices don't have distance computed\n",
               PCU_Comm_Self(), c.size(), c.numIso());
           assert(false);
@@ -333,7 +333,7 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   apf::MeshTag* dist = computeDistance(m,c);
   if( PCU_Comm_Peers() > 1 && !c.numIso() )
     if( !hasDistance(m,dist) ) {
-      fprintf(stderr, "CAKE rank %d comp %u iso %u ... "
+      parmaCommons::error("rank %d comp %u iso %u ... "
           "some vertices don't have distance computed\n",
           PCU_Comm_Self(), c.size(), c.numIso());
       assert(false);

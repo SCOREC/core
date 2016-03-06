@@ -1,4 +1,5 @@
 #include "parma_stop.h"
+#include "parma_commons.h"
 #include <PCU.h>
 #include <math.h>
 
@@ -10,7 +11,7 @@ namespace parma {
     const double iSlope = i->avg();
     const double sSlope = s->avg();
     if( !PCU_Comm_Self() && verbose )
-      fprintf(stdout, "imbSlope %f sidesSlope %f\n", iSlope, sSlope);
+      parmaCommons::status("imbSlope %f sidesSlope %f\n", iSlope, sSlope);
     return imb < maxImb || 
       ( fabs(iSlope) < iTol && fabs(sSlope) < sTol );
   }
