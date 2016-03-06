@@ -329,7 +329,7 @@ namespace parma_ordering {
     apf::MeshIterator* it = m->begin(1);
     apf::MeshEntity* e;
     while( (e = m->iterate(it)) ) {
-      int n = m->getDownward(e,0,verts);
+      m->getDownward(e,0,verts);
       int vid; m->getIntTag(verts[0],order,&vid);
       int uid; m->getIntTag(verts[1],order,&uid);
       la += abs(vid-uid);
