@@ -253,8 +253,10 @@ namespace parma_ordering {
     unsigned rmax = 0;
     apf::MeshEntity* emax = NULL;
     apf::MeshEntity* v;
+    int cnt=0;
     c.beginBdry(comp);
     while( (v = c.iterateBdry()) ) {
+      cnt++;
       int d; m->getIntTag(v,dt,&d);
       unsigned du = TO_UINT(d);
       // max distance unordered vertex
@@ -264,6 +266,10 @@ namespace parma_ordering {
       }
     }
     c.endBdry();
+    if( !emax ) {
+      parmaCommons::error("%s comp %u no src vtx found bdry cnt %d\n",
+          __func__, comp, cnt);
+    }
     return emax;
   }
 
@@ -276,6 +282,12 @@ namespace parma_ordering {
       assert(src);
       assert(!m->hasTag(src,order));
       start = bfs(m, contains, src, order, start);
+      if(start == TO_INT(m->count(0))) {
+        if( i != c.size()-1 )
+          parmaCommons::status("%d all vertices visited comp %u of %u\n",
+              PCU_Comm_Self(), i, c.size());
+        break;
+      }
       delete contains;
     }
     assert(start == TO_INT(m->count(0)));
