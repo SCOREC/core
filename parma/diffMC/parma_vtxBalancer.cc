@@ -10,6 +10,7 @@
 #include "parma_stop.h"
 #include "parma_graphDist.h"
 #include "parma_commons.h"
+#include "parma_convert.h"
 
 namespace {
   using parmaCommons::status;
@@ -21,7 +22,7 @@ namespace {
       VtxBalancer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "vertices") {
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = static_cast<int>(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s));
           delete s;
           if( !PCU_Comm_Self() && verbose )
             status("sideTol %d\n", sideTol);

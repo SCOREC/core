@@ -16,13 +16,11 @@ int main(int argc, char** argv) {
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-  PCU_Debug_Open();
   gmi_register_null();
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::MeshTag* order = Parma_BfsReorder(m);
   apf::reorderMdsMesh(m, order);
-  apf::writeVtkFiles("parma_ordered", m);
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
