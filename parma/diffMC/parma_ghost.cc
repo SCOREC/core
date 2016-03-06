@@ -8,6 +8,7 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 #include "parma_commons.h"
+#include "parma_convert.h"
 
 namespace {
   using parmaCommons::status;
@@ -20,7 +21,7 @@ namespace {
         : Balancer(m, f, v, "ghostElms"), layers(l)
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        sideTol = static_cast<int>(parma::avgSharedSides(s));
+        sideTol = TO_INT(parma::avgSharedSides(s));
         delete s;
         if( !PCU_Comm_Self() && verbose )
           status("sideTol %d\n", sideTol);
@@ -69,7 +70,7 @@ namespace {
         : Balancer(m, f, v, "ghostVtxLtElms"), layers(l), maxElmW(0), stepNum(0)
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        sideTol = static_cast<int>(parma::avgSharedSides(s));
+        sideTol = TO_INT(parma::avgSharedSides(s));
         delete s;
         if( !PCU_Comm_Self() && verbose )
           status("sideTol %d\n", sideTol);

@@ -3,6 +3,7 @@
 #include "parma_sides.h"
 #include "parma_weights.h"
 #include "parma_targets.h"
+#include "parma_convert.h"
 #include <apf.h>
 #include <limits.h>
 #include "maximalIndependentSet/mis.h"
@@ -103,7 +104,7 @@ namespace parma {
       double getAvgSides(Sides* s) {
         double tot = s->total();
         tot = PCU_Add_Double(tot);
-        int cnt = static_cast<int>(s->size());
+        int cnt = TO_INT(s->size());
         cnt = PCU_Add_Int(cnt);
         return tot/cnt;
       }

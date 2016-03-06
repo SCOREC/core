@@ -2,15 +2,12 @@
 #include "parma.h"
 #include "diffMC/maximalIndependentSet/mis.h"
 #include "diffMC/parma_commons.h"
+#include "diffMC/parma_convert.h"
 #include <parma_dcpart.h>
 #include <limits>
 #include <assert.h>
 #include <sstream>
 #include <string>
-
-#define TO_SIZET(a) static_cast<size_t>(a)
-#define TO_INT(a) static_cast<int>(a)
-#define TO_DBL(a) static_cast<double>(a)
 
 namespace {
   int numSharedSides(apf::Mesh* m) {
@@ -83,7 +80,7 @@ namespace {
           (*weight)[i] += getEntWeight(m, e, w);
         m->end(it);
       } else {
-          (*weight)[i] += TO_DBL(m->count(i));
+          (*weight)[i] += TO_DOUBLE(m->count(i));
       }
     }
   }
@@ -96,16 +93,16 @@ namespace {
     PCU_Max_Doubles(*max, 4);
     PCU_Add_Doubles(*tot, 4);
     for(int d=0; d<4; d++) {
-      (*avg)[d] = static_cast<double>((*tot)[d]);
-      (*avg)[d] /= TO_DBL(PCU_Comm_Peers());
+      (*avg)[d] = TO_DOUBLE((*tot)[d]);
+      (*avg)[d] /= TO_DOUBLE(PCU_Comm_Peers());
     }
   }
 
   void getStats(int& loc, long& tot, int& min, int& max, double& avg) {
     min = PCU_Min_Int(loc);
     max = PCU_Max_Int(loc);
-    tot = PCU_Add_Long(static_cast<long>(loc));
-    avg = TO_DBL(tot) / TO_DBL(PCU_Comm_Peers());
+    tot = PCU_Add_Long(TO_LONG(loc));
+    avg = TO_DOUBLE(tot) / PCU_Comm_Peers();
   }
 
   using parmaCommons::status;
@@ -126,7 +123,7 @@ namespace {
        << locDc  << ' '
        << locNb  << ' '
        << locV[0]  << ' ' <<  locV[1]  << ' ' <<  locV[2]  << ' '
-       << surf/TO_DBL(vol);
+       << surf/TO_DOUBLE(vol);
     std::string s = ss.str();
     fprintf(stderr, "%s\n", s.c_str());
     PCU_Barrier();
@@ -204,7 +201,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   m->end(it);
   loc = TO_INT(neighbors.size())-1;
   max = PCU_Max_Int(loc);
-  avg = TO_DBL(PCU_Add_Int(loc)) / TO_DBL(PCU_Comm_Peers());
+  avg = TO_DOUBLE(PCU_Add_Int(loc)) / PCU_Comm_Peers();
 }
 
 void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
@@ -230,7 +227,7 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
   loc = TO_INT(dc.getNumDcComps());
   max = PCU_Max_Int(loc);
-  avg = TO_DBL( PCU_Add_Int(loc) ) / PCU_Comm_Peers();
+  avg = TO_DOUBLE( PCU_Add_Int(loc) ) / PCU_Comm_Peers();
 }
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
@@ -284,7 +281,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   PCU_Debug_Print("%s mdlBdryVtx %d\n", key.c_str(), locV[2]);
 
   int surf = numSharedSides(m);
-  double vol = static_cast<double>( m->count(m->getDimension()) );
+  double vol = TO_DOUBLE( m->count(m->getDimension()) );
   double surfToVol = surf/vol;
   double minSurfToVol = PCU_Min_Double(surfToVol);
   double maxSurfToVol = PCU_Max_Double(surfToVol);
@@ -358,7 +355,7 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
     part.net.push_back(*nItr);
   }
 
-  unsigned seed = static_cast<unsigned int>(part.id+1);
+  unsigned seed = TO_UINT(part.id+1);
   mis_init(seed);
   int misNumber=-1;
   int iter=0;

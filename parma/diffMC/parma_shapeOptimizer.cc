@@ -10,6 +10,7 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 #include "parma_commons.h"
+#include "parma_convert.h"
 
 #include <sstream>
 #include <string.h>
@@ -41,7 +42,7 @@ namespace {
 
   double getAvgSides(parma::Sides* s) {
     double tot = PCU_Add_Double(s->total());
-    int cnt = PCU_Add_Int(static_cast<int>(s->size()));
+    int cnt = PCU_Add_Int(TO_INT(s->size()));
     return tot/cnt;
   }
 
@@ -51,7 +52,7 @@ namespace {
       ImbOrLong(parma::Sides* s, double tol)
         : sides(s), sideTol(tol) {}
       bool stop(double imb, double maxImb) {
-        const double small = static_cast<double>(getSmallestSide(sides,true));
+        const double small = TO_DOUBLE(getSmallestSide(sides,true));
         si++;
         if (!PCU_Comm_Self())
           status("Smallest Side: %f, endPoint: %f\n", small, sideTol);
@@ -105,7 +106,7 @@ namespace {
           status("mis completed in %f (seconds)\n", elapsedTime);
         maxMis = misNumber;
         PCU_Max_Ints(&maxMis,1);
-        double small = static_cast<double>(getSmallestSide(s));
+        double small = TO_DOUBLE(getSmallestSide(s));
         if (small>=avgSide*avgSideMult||iter==0)
           avgSideMult+=(1-avgSideMult)/10;
         if (!PCU_Comm_Self()) {

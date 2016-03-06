@@ -40,7 +40,7 @@ apf::MeshEntity* dcPart::getSeedEnt(unsigned i) {
 unsigned dcPart::compId(apf::MeshEntity* e) {
   assert(m->hasTag(e, vtag));
   int c; m->getIntTag(e, vtag, &c);
-  return static_cast<unsigned>(c);
+  return TO_UINT(c);
 }
 
 bool dcPart::isIsolated(apf::MeshEntity* e) {
@@ -55,7 +55,7 @@ void dcPart::markIsolated(const unsigned dcComp) {
   while( (elm = m->iterate(itr)) ) {
     if( m->hasTag(elm, vtag) ) {
       m->getIntTag(elm, vtag, &tval);
-      if( tval == static_cast<int>(dcComp) ) {
+      if( tval == TO_INT(dcComp) ) {
         m->removeTag(elm, vtag); //clear the dc comp id
         m->setIntTag(elm, isotag, &one);
       }
@@ -65,11 +65,11 @@ void dcPart::markIsolated(const unsigned dcComp) {
 }
 
 unsigned dcPart::getNumComps() {
-  return static_cast<unsigned>(dcCompSz.size());
+  return TO_UINT(dcCompSz.size());
 }
 
 unsigned dcPart::getNumDcComps() {
-  unsigned c = static_cast<unsigned>(dcCompSz.size());
+  unsigned c = TO_UINT(dcCompSz.size());
   //If there are c components, and c > 0, then the 0th component
   //is considered the core so subtract one from c to get the number
   //of disconnected components.
@@ -172,7 +172,7 @@ unsigned dcPart::maxContactNeighbor(const unsigned dcComp) {
    while( (e = m->iterate(itr)) ) {
       if( m->hasTag(e, vtag) ) {
 	 m->getIntTag(e, vtag, &tval);
-	 if( tval != static_cast<int>(dcComp) ) continue;
+	 if( tval != TO_INT(dcComp) ) continue;
          int ns = m->getDownward(e, dim-1, sides);
          for(int sIdx=0; sIdx<ns; sIdx++) {
            apf::MeshEntity* s = sides[sIdx];
