@@ -102,6 +102,7 @@ int main(int argc, char** argv)
   switchToAll();
   m = apf::expandMdsMesh(m, g, inputPartCount);
   balance(m);
+  Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
   PCU_Comm_Free();
