@@ -20,6 +20,7 @@ int main(int argc, char** argv)
   balancer->balance(weights, 1.10);
   delete balancer;
   apf::removeTagFromDimension(m, weights, m->getDimension());
+  Parma_PrintPtnStats(m, "");
   m->destroyTag(weights);
   m->writeNative(argv[3]);
   // destroy mds
