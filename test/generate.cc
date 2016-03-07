@@ -9,6 +9,7 @@
 #include <apfConvert.h>
 #include <apfMesh2.h>
 #include <ma.h>
+#include <parma.h>
 #include <cassert>
 #include <cstdlib>
 
@@ -194,6 +195,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
   postConvert(mesh);
+  Parma_PrintPtnStats(mesh, "");
   mesh->writeNative(outMeshFile.c_str());
 
   mesh->destroyNative();
