@@ -251,7 +251,7 @@ namespace parma_ordering {
 
   apf::MeshEntity* getMaxDistSeed(apf::Mesh* m, parma::dcComponents& c,
       apf::MeshTag* dt, apf::MeshTag* order, unsigned comp) {
-    unsigned rmax = 0;
+    int rmax = 0;
     apf::MeshEntity* emax = NULL;
     apf::MeshEntity* v;
     int cnt=0;
@@ -259,10 +259,9 @@ namespace parma_ordering {
     while( (v = c.iterateBdry()) ) {
       cnt++;
       int d; m->getIntTag(v,dt,&d);
-      unsigned du = TO_UINT(d);
       // max distance unordered vertex
-      if( du > rmax && !m->hasTag(v,order) ) {
-        rmax = du;
+      if( d > rmax && !m->hasTag(v,order) ) {
+        rmax = d;
         emax = v;
       }
     }
@@ -270,11 +269,29 @@ namespace parma_ordering {
     if( !emax ) {
       parmaCommons::error("%s comp %u no src vtx found bdry cnt %d\n",
           __func__, comp, cnt);
+      assert(!rmax);
+      cnt=0;
+      apf::MeshIterator* it = m->begin(0);
+      apf::MeshEntity* e;
+      while( (e = m->iterate(it)) ) {
+        bool inComp = (c.has(e) && c.getId(e) == comp);
+        if( !inComp ) continue;
+        cnt++;
+        int d; m->getIntTag(e,dt,&d);
+        if( !m->hasTag(e,order) && d > rmax ) {
+          rmax = d;
+          emax = e;
+        }
+      }
+      m->end(it);
+      if( !emax ) {
+        parmaCommons::error("%s comp %u no src vtx found cnt %d\n", __func__, comp, cnt);
+      }
     }
     return emax;
   }
 
-  apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
+      apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
     apf::MeshTag* order = m->createIntTag("parma_ordering",1);
     int start = 0;
     for(unsigned i=0; i<c.size(); i++) {
@@ -335,6 +352,7 @@ namespace parma_ordering {
       la += abs(vid-uid);
     }
     m->end(it);
+    PCU_Debug_Print("la %d\n", la);
     long tot=PCU_Add_Long(TO_LONG(la));
     int max=PCU_Max_Int(la);
     int min=PCU_Min_Int(la);
