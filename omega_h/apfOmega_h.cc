@@ -77,7 +77,7 @@ static void fieldFromAPF(
 {
   char const* name = apf::getName(f);
   int nc = apf::countComponents(f);
-  osh_new_field(om, 0, name, nc);
+  osh_new_field(om, 0, name, nc, OSH_TRANSFER_NOT);
   double* data = osh_get_field(om, 0, name);
   apf::MeshEntity* v;
   apf::MeshIterator* it = am->begin(0);
@@ -139,7 +139,7 @@ static void parametricFromAPF(
     apf::Mesh* am,
     osh_t om)
 {
-  osh_new_field(om, 0, "param", 3);
+  osh_new_field(om, 0, "param", 3, OSH_TRANSFER_NOT);
   double* param = osh_get_field(om, 0, "param");
   apf::MeshEntity* v;
   apf::MeshIterator* it = am->begin(0);
