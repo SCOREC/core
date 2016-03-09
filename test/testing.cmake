@@ -40,11 +40,23 @@ add_test(qr_test qr)
 add_test(base64 base64)
 
 set(MDIR ${MESHES}/fun3d)
-add_test(from_ugrid
-  from_ugrid
+add_test(inviscid_ugrid
+  ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/inviscid_egg.dmg"
   "${MDIR}/inviscid_egg.smb")
-
+splitfun(inviscid_split
+  ./split
+  "${MDIR}/inviscid_egg.dmg"
+  "${MDIR}/inviscid_egg.smb"
+  "${MDIR}/4/"
+  1 4)
+add_test(inviscid_ghost
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./ghost
+  "${MDIR}/inviscid_egg.dmg"
+  "${MDIR}/4/"
+  "${MDIR}/vis")
 set(MDIR ${MESHES}/pipe)
 add_test(convert
   convert
@@ -157,6 +169,13 @@ add_test(gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
+add_test(ghostElement
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./ghostElement
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusGhostEle4p/")
+
 add_test(fixDisconnected
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fixDisconnected
