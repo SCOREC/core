@@ -159,6 +159,13 @@ add_test(gap
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusOpt4p/")
+add_test(ghostElement
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./ghostElement
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusGhostEle4p/")
+
 add_test(fixDisconnected
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./fixDisconnected
