@@ -2,8 +2,10 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <parma.h>
 #include <PCU.h>
+#include <SimUtil.h>
 #include <cassert>
 
 namespace {
@@ -23,7 +25,11 @@ int main(int argc, char** argv)
   assert(argc == 4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  SimUtil_start();
+  Sim_readLicenseFile(NULL);
+  gmi_sim_start();
   gmi_register_mesh();
+  gmi_register_sim();
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   Parma_PrintPtnStats(m, "initial");
@@ -40,6 +46,9 @@ int main(int argc, char** argv)
   // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
+  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }
