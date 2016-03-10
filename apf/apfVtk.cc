@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <stdint.h>
 
+// #include <iostream>
+
 namespace apf {
 
 class HasAll : public FieldOp
@@ -82,7 +84,7 @@ static void describeArray(
   }
   else
   {
-    file << "\" format=\"ascii\"";  
+    file << "\" format=\"ascii\"";
   }
 }
 
@@ -226,6 +228,15 @@ static void writePCellData(std::ostream& file,
   file << "</PCellData>\n";
 }
 
+// static void safe_mkdir(const char* path, mode_t mode)
+// {
+//   int err;
+//   errno = 0;
+//   err = mkdir(path, mode);
+//   if (err != 0 && errno != EEXIST)
+//     reel_fail("MDS: could not create directory \"%s\"\n", path);
+// }
+
 static std::string getPieceFileName(const char* prefix, int id)
 {
   std::stringstream ss;
@@ -243,11 +254,24 @@ static std::string stripPath(std::string const& s)
   return s.substr(i + 1, std::string::npos);
 }
 
+static std::string getRelativePath(const char* prefix, int id)
+{
+  std::stringstream ss1;
+  std::stringstream ss2;
+  ss1 << prefix;
+  std::string prefixNoPath = stripPath(ss1.str());
+  int dirNum = id/1024;
+  ss2 << prefixNoPath << dirNum << '/';
+  return ss2.str();
+}
+
 static void writePSources(std::ostream& file, const char* prefix)
 {
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
     std::string fileName = stripPath(getPieceFileName(prefix,i));
+    std::string fileNameAndPath = getRelativePath(prefix, i) + fileName;
+    // std::cout << fileNameAndPath << std::endl;
     file << "<Piece Source=\"" << fileName << "\"/>\n";
   }
 }
@@ -354,7 +378,7 @@ static void writeNodalField(std::ostream& file,
       file << '\n';
     }
   }
-  file << "</DataArray>\n"; 
+  file << "</DataArray>\n";
 }
 
 static void writePoints(std::ostream& file,
@@ -364,7 +388,7 @@ static void writePoints(std::ostream& file,
 {
   file << "<Points>\n";
   writeNodalField<double>(file,m->getCoordinateField(),nodes,isWritingBinary);
-  file << "</Points>\n"; 
+  file << "</Points>\n";
 }
 
 static int countElementNodes(Numbering* n, MeshEntity* e)
@@ -562,7 +586,7 @@ static void writeCells(std::ostream& file,
   writeConnectivity(file,n,isWritingBinary);
   writeOffsets(file,n,isWritingBinary);
   writeTypes(file,n->getMesh(),isWritingBinary);
-  file << "</Cells>\n"; 
+  file << "</Cells>\n";
 }
 
 static void writePointData(std::ostream& file,
@@ -691,7 +715,7 @@ class WriteIPField : public FieldOp
     }
 };
 
-static void writeCellParts(std::ostream& file, 
+static void writeCellParts(std::ostream& file,
     Mesh* m,
     bool isWritingBinary = false)
 {
@@ -712,7 +736,7 @@ static void writeCellParts(std::ostream& file,
     delete [] dataToEncode;
   }
   else
-  { 
+  {
     for (size_t i = 0; i < n; ++i)
     {
       file << id << '\n';
@@ -841,7 +865,7 @@ void writeOneVtkFile(const char* prefix, Mesh* m)
   /* creating a non-collective numbering is
      a tad bit risky, but we should be fine
      given the current state of the code */
-  
+
   // bool isWritingBinary = true;
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
@@ -874,6 +898,10 @@ void writeBinaryVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with binary encoding ***
   //use writeASCIIVtkFiles for ASCII encoding (not recommended)
+
+  //TODO: PR4:  - make subdirectories for .vtu files
+  //            - write .vtu files to directories
+
   bool isWritingBinary = true;
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
