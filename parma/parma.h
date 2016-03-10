@@ -49,10 +49,27 @@ double Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
  *         vertices with
  * @param m (In) partitioned mesh
  * @param max (InOut) max neighbors
+ * @param maxNumParts (InOut) number of parts with max neighbors
  * @param avg (InOut) average neighbors
  * @param loc (InOut) local neighbors
  */
-void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc);
+void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& maxNumParts,
+    double& avg, int& loc);
+
+/**
+ * @brief write the number of parts with neighbors formed by a small number of shared vtx
+ * @param m (In) partitioned mesh
+ * @param small (In) report part counts with [1:small] number of shared vertices
+ */
+void Parma_WriteSmallNeighbors(apf::Mesh* m, int small);
+
+/**
+ * @brief get the smallest number of shared vertices forming a neighbor
+ *        ,a 'side', in a part with the maximum number of neigbhors
+ * @param m (In) partitioned mesh
+ * @return smallest number of shared vertices
+ */
+int Parma_GetSmallestSideMaxNeighborParts(apf::Mesh* m);
 
 /**
  * @brief get the number of owned vertices on inter-part boundaries

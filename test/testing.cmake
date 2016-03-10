@@ -154,7 +154,13 @@ add_test(balance
   ./balance
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
-  "torusBal4p/")
+  "${MDIR}/torusBal4p/")
+add_test(gap
+  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
+  ./gap
+  "${MDIR}/torus.dmg"
+  "${MDIR}/torusBal4p/"
+  "${MDIR}/torusOpt4p/")
 if(ENABLE_ZOLTAN)
   add_test(zbalance
     ${MPIRUN} ${MPIRUN_PROCFLAG} 4
@@ -163,12 +169,6 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
 endif()
-add_test(gap
-  ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-  ./gap
-  "${MDIR}/torus.dmg"
-  "${MDIR}/4imb/torus.smb"
-  "torusOpt4p/")
 add_test(ghostElement
   ${MPIRUN} ${MPIRUN_PROCFLAG} 4
   ./ghostElement

@@ -30,6 +30,7 @@ void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
   /* check if the mesh changed at all */
   if ( (PCU_Comm_Peers()!=numMasters) ||
        in.adaptFlag ||
+       in.parmaPtn ||
        in.tetrahedronize ||
        in.isReorder )
   {
