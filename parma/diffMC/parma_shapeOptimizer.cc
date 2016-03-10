@@ -32,15 +32,6 @@ namespace {
     return minSides;
   }
 
-  int getMisNumber(apf::Mesh* m) {
-    const double t0 = PCU_Time();
-    int misNumber = Parma_MisNumbering(m,0);
-    double elapsedTime = PCU_Max_Double(PCU_Time()-t0);
-    if( !PCU_Comm_Self() )
-      status("mis completed in %f (seconds)\n", elapsedTime);
-    return misNumber;
-  }
-
   class ImbOrLong : public parma::Stop {
     public:
       ImbOrLong(parma::Sides* s, int tol)
@@ -57,35 +48,24 @@ namespace {
   };
   
   class ShapeOptimizer : public parma::Balancer {
-
     public:
       ShapeOptimizer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "gap") {
         smallestTgtSide = 10;
         iter=0;
-        misNumber = 0;
-        maxMis = 0;
         if (!PCU_Comm_Self())
           status("Factor %f Smallest target side %d\n",f, smallestTgtSide);
       }
+
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         if (!PCU_Comm_Self())
           status("Iteration: %d\n",iter);
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
-        if( !iter ) {
-          misNumber = getMisNumber(mesh);
-          maxMis = PCU_Max_Int(misNumber);
-          if (!PCU_Comm_Self())
-            status("mis maxNum %d\n", maxMis);
-        }
         const int small = getSmallestSide(s);
-        parma::Targets* t = 
-          parma::makeShapeTargets(s, small, misNumber==iter);
-        iter++;
-        if (iter>maxMis)
-          iter=0;
+        parma::Targets* t =
+          parma::makeShapeTargets(s, small);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag);
         ImbOrLong* stopper = new ImbOrLong(s, smallestTgtSide);
         parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
