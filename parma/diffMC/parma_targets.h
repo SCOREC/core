@@ -22,9 +22,7 @@ namespace parma {
       double vtxTol, double alpha);
   Targets* makeElmLtVtxEdgeTargets(Sides* s, Weights* w[3], int sideTol,
       double vtxTol, double edgeTol, double alpha);
-  Targets* makeShapeTargets(apf::Mesh* m, Sides* s, Weights* w, double alpha,
-                            double avgSideMult, double avgSide,
-                            double minSideMult, bool isInMIS);
+  Targets* makeShapeTargets(Sides* s, int small, bool isInMIS);
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
 }
 #endif
