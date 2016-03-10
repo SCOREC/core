@@ -14,36 +14,18 @@
 namespace {
   using parmaCommons::status;
 
-  int getMinSide(parma::Sides* s) {
-    int minSides = INT_MAX;
-    s->begin();
-    const parma::Sides::Item* side;
-    while( (side = s->iterate()) ) 
-      if(side->second < minSides && side->second>0) {
-        minSides = side->second;
-      }
-    s->end();
-    PCU_Debug_Print("minside %d\n", minSides);
-    return minSides;
-  }
-  int getSmallestSide(parma::Sides* s) {
-    int minSides=getMinSide(s);
-    minSides = PCU_Min_Int(minSides);
-    return minSides;
-  }
-
   class ImbOrLong : public parma::Stop {
     public:
-      ImbOrLong(parma::Sides* s, int tol)
-        : sides(s), sideTol(tol) {}
+      ImbOrLong(apf::Mesh* m, int tol)
+        : mesh(m), sideTol(tol) {}
       bool stop(double imb, double maxImb) {
-        const int small = getSmallestSide(sides);
+        const int small = Parma_GetSmallestSideMaxNeighborParts(mesh);
         if (!PCU_Comm_Self())
           status("Smallest Side %d, Target Side %f\n", small, sideTol);
         return imb > maxImb || small >= sideTol;
       }
     private:
-      parma::Sides* sides;
+      apf::Mesh* mesh;
       double sideTol;
   };
   
@@ -63,11 +45,10 @@ namespace {
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
-        const int small = getSmallestSide(s);
         parma::Targets* t =
-          parma::makeShapeTargets(s, small);
+          parma::makeShapeTargets(s);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag);
-        ImbOrLong* stopper = new ImbOrLong(s, smallestTgtSide);
+        ImbOrLong* stopper = new ImbOrLong(mesh, smallestTgtSide);
         parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }

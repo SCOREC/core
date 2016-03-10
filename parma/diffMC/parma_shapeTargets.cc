@@ -7,14 +7,15 @@
 #include "parma_commons.h"
 #include <apf.h>
 #include <string>
+#include <limits.h>
 
 namespace parma {
   using parmaCommons::status;
 
   class ShapeTargets : public Targets {
     public:
-      ShapeTargets(Sides* s, int small) {
-        init(s,small);
+      ShapeTargets(Sides* s) {
+        init(s);
         totW = 0;
       }
       double total() {
@@ -23,25 +24,30 @@ namespace parma {
     private:
       ShapeTargets();
       double totW;
-      void init(Sides* s, int small) {
-        PCU_Debug_Print("small %d\n", small);
+      void init(Sides* s) {
+        const unsigned maxNb = TO_UINT(PCU_Max_Int(s->size()));
+        if( s->size() != maxNb ) return;
+        PCU_Debug_Print("maxNb %d\n", maxNb);
         std::string sstr = s->print("sides");
         PCU_Debug_Print("%s\n", sstr.c_str());
+        int small = INT_MAX;
         s->begin();
         const Sides::Item* side;
-        while( (side = s->iterate()) ) {
-          PCU_Debug_Print("side %d size %d\n", side->first, side->second);
-          if( side->second <= small ) {
-            PCU_Debug_Print("adding %d to targets\n", side->first);
+        while( (side = s->iterate()) )
+          if( side->second < small )
+            small = side->second;
+        s->end();
+        PCU_Debug_Print("small %d\n", small);
+        s->begin();
+        while( (side = s->iterate()) )
+          if( side->second <= small )
             set(side->first, small);
-          }
-        }
         s->end();
         std::string tgtstr = print("targets");
         PCU_Debug_Print("%s\n", tgtstr.c_str());
       }
   };
-  Targets* makeShapeTargets(Sides* s, int small) {
-    return new ShapeTargets(s,small);
+  Targets* makeShapeTargets(Sides* s) {
+    return new ShapeTargets(s);
   }
 } //end namespace
