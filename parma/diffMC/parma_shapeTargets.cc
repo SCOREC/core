@@ -13,8 +13,8 @@ namespace parma {
 
   class ShapeTargets : public Targets {
     public:
-      ShapeTargets(Sides* s, int small, bool isInMIS) {
-        init(s,small,isInMIS);
+      ShapeTargets(Sides* s, int small) {
+        init(s,small);
         totW = 0;
       }
       double total() {
@@ -23,8 +23,7 @@ namespace parma {
     private:
       ShapeTargets();
       double totW;
-      void init(Sides* s, int small, bool isInMIS) {
-        if(!isInMIS) return;
+      void init(Sides* s, int small) {
         PCU_Debug_Print("small %d\n", small);
         std::string sstr = s->print("sides");
         PCU_Debug_Print("%s\n", sstr.c_str());
@@ -42,7 +41,7 @@ namespace parma {
         PCU_Debug_Print("%s\n", tgtstr.c_str());
       }
   };
-  Targets* makeShapeTargets(Sides* s, int small, bool isInMIS) {
-    return new ShapeTargets(s,small,isInMIS);
+  Targets* makeShapeTargets(Sides* s, int small) {
+    return new ShapeTargets(s,small);
   }
 } //end namespace
