@@ -49,7 +49,7 @@ namespace {
         const int small = getSmallestSide(sides);
         if (!PCU_Comm_Self())
           status("Smallest Side %d, Target Side %f\n", small, sideTol);
-        return imb > maxImb || small > sideTol;
+        return imb > maxImb || small >= sideTol;
       }
     private:
       parma::Sides* sides;
