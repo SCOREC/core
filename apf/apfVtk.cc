@@ -269,7 +269,8 @@ static void writePSources(std::ostream& file, const char* prefix)
     std::string fileName = stripPath(getPieceFileName(prefix,i));
     std::string fileNameAndPath = getRelativePath(prefix, i) + fileName;
     // std::cout << fileNameAndPath << std::endl;
-    file << "<Piece Source=\"" << fileName << "\"/>\n";
+    // file << "<Piece Source=\"" << fileName << "\"/>\n";
+    file << "<Piece Source=\"" << fileNameAndPath << "\"/>\n";
   }
 }
 
@@ -794,6 +795,7 @@ static void writeVtuFile(const char* prefix,
 {
   double t0 = PCU_Time();
   std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
+  std::string fileNameAndPath = getRelativePath(prefix, PCU_Comm_Self()) + fileName;
   std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
@@ -839,7 +841,8 @@ static void writeVtuFile(const char* prefix,
     printf("writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
   { //block forces std::ofstream destructor call
-    std::ofstream file(fileName.c_str());
+    // std::ofstream file(fileName.c_str());
+    std::ofstream file(fileNameAndPath.c_str());
     assert(file.is_open());
     file << buf.rdbuf();
   }
@@ -850,33 +853,35 @@ static void writeVtuFile(const char* prefix,
   }
 }
 
-// static void safe_mkdir(const char* path)
-// {
-//   mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
-//   int err;
-//   errno = 0;
-//   err = mkdir(path, mode);
-//   if (err != 0 && errno != EEXIST)
-//     reel_fail("MDS: could not create directory \"%s\"\n", path);
-// }
+static void safe_mkdir(const char* path)
+{
+  mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+  int err;
+  errno = 0;
+  err = mkdir(path, mode);
+  if (err != 0 && errno != EEXIST)
+  {
+    reel_fail("MDS: could not create directory \"%s\"\n", path);
+  }
+}
 
-// static void makeVtuSubdirectories(const char* prefix, int numParts)
-// {
-//   std::stringstream ss1;
-//   ss1 << prefix;
-//   std::string prefixStr = ss1.str();
-//   int numDirectories = numParts/1024;
-//   if (numParts % 1024 != 0)
-//   {
-//     numDirectories++;
-//   }
-//   for (int i = 0; i < numDirectories; i++)
-//   {
-//     std::stringstream ss2;
-//     ss2 << prefix <<  i;
-//     safe_mkdir(ss2.str().c_str());
-//   }
-// }
+static void makeVtuSubdirectories(const char* prefix, int numParts)
+{
+  std::stringstream ss1;
+  ss1 << prefix;
+  std::string prefixStr = ss1.str();
+  int numDirectories = numParts/1024;
+  if (numParts % 1024 != 0)
+  {
+    numDirectories++;
+  }
+  for (int i = 0; i < numDirectories; i++)
+  {
+    std::stringstream ss2;
+    ss2 << prefix <<  i;
+    safe_mkdir(ss2.str().c_str());
+  }
+}
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
@@ -931,8 +936,10 @@ void writeBinaryVtkFiles(const char* prefix, Mesh* m)
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
   {
+    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
     writePvtuFile(prefix, m, isWritingBinary);
   }
+  PCU_Barrier();
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n, isWritingBinary);
