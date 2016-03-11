@@ -55,8 +55,6 @@ namespace {
     private:
       int smallestTgtSide;
       int iter;
-      int misNumber;
-      int maxMis;
   };
 }
 
