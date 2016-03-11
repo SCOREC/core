@@ -10,9 +10,17 @@
 #ifndef REEL_H
 #define REEL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void reel_fail(const char* format, ...)
   __attribute__((noreturn,format(printf,1,2)));
 
 void reel_protect(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
