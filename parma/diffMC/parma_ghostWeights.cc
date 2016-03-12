@@ -131,7 +131,7 @@ namespace parma {
         weight = new double[4];
         for(int d=0; d<=dim; d++)
           weight[d] = ownedWeight(m,w,d);
-        for(int d=dim+1; d<=4; d++)
+        for(int d=dim+1; d<=3; d++)
           weight[d] = 0;
         GhostFinder finder(m, w, layers);
         findGhosts(&finder, s);
