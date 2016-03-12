@@ -25,7 +25,7 @@ namespace {
       bool stop(double imb, double maxImb) {
         const double nbSlope = nb->avg();
         if( !PCU_Comm_Self() && verbose )
-          status("max neighbor slope %f\n", nbSlope);
+          status("max neighbor slope %f tolerance %f\n", nbSlope, nbTol);
         return imb > maxImb || ( fabs(nbSlope) < nbTol );
       }
     private:
@@ -50,7 +50,7 @@ namespace {
         double maxNb = TO_DOUBLE(getMaxNb(s));
         monitorUpdate(maxNb, sS, sA);
         parma::Stop* stopper =
-          new ImbOrMaxNeighbor(sA, maxNb*.01, verbose);
+          new ImbOrMaxNeighbor(sA, maxNb*.001, verbose);
         parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
