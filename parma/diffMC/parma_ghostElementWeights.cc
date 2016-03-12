@@ -83,6 +83,7 @@ namespace parma {
     public:
       GhostElementFinder(apf::Mesh* m, apf::MeshTag* w, int l, int b)
         : mesh(m), wtag(w), layers(l), bridge(b) {
+        depth=NULL;
       }
       /**
        * @brief get the weight of vertices ghosted to peer

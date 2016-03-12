@@ -850,33 +850,33 @@ static void writeVtuFile(const char* prefix,
   }
 }
 
-static void safe_mkdir(const char* path)
-{
-  mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
-  int err;
-  errno = 0;
-  err = mkdir(path, mode);
-  if (err != 0 && errno != EEXIST)
-    reel_fail("MDS: could not create directory \"%s\"\n", path);
-}
+// static void safe_mkdir(const char* path)
+// {
+//   mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+//   int err;
+//   errno = 0;
+//   err = mkdir(path, mode);
+//   if (err != 0 && errno != EEXIST)
+//     reel_fail("MDS: could not create directory \"%s\"\n", path);
+// }
 
-static void makeVtuSubdirectories(const char* prefix, int numParts)
-{
-  std::stringstream ss1;
-  ss1 << prefix;
-  std::string prefixStr = ss1.str();
-  int numDirectories = numParts/1024;
-  if (numParts % 1024 != 0)
-  {
-    numDirectories++;
-  }
-  for (int i = 0; i < numDirectories; i++)
-  {
-    std::stringstream ss2;
-    ss2 << prefix <<  i;
-    safe_mkdir(ss2.str().c_str());
-  }
-}
+// static void makeVtuSubdirectories(const char* prefix, int numParts)
+// {
+//   std::stringstream ss1;
+//   ss1 << prefix;
+//   std::string prefixStr = ss1.str();
+//   int numDirectories = numParts/1024;
+//   if (numParts % 1024 != 0)
+//   {
+//     numDirectories++;
+//   }
+//   for (int i = 0; i < numDirectories; i++)
+//   {
+//     std::stringstream ss2;
+//     ss2 << prefix <<  i;
+//     safe_mkdir(ss2.str().c_str());
+//   }
+// }
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {

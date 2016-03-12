@@ -14,49 +14,46 @@
 namespace {
   using parmaCommons::status;
 
-  class ImbOrLong : public parma::Stop {
+  int getMaxNb(parma::Sides* s) {
+    return PCU_Max_Int(s->size());
+  }
+
+  class ImbOrMaxNeighbor : public parma::Stop {
     public:
-      ImbOrLong(apf::Mesh* m, int tol)
-        : mesh(m), sideTol(tol) {}
+      ImbOrMaxNeighbor(parma::Average* nbAvg, double maxNbTol, int v=0)
+        : nb(nbAvg), nbTol(maxNbTol), verbose(v) {}
       bool stop(double imb, double maxImb) {
-        const int small = Parma_GetSmallestSideMaxNeighborParts(mesh);
-        if (!PCU_Comm_Self())
-          status("Smallest Side %d, Target Side %f\n", small, sideTol);
-        return imb > maxImb || small >= sideTol;
+        const double nbSlope = nb->avg();
+        if( !PCU_Comm_Self() && verbose )
+          status("max neighbor slope %f tolerance %f\n", nbSlope, nbTol);
+        return imb > maxImb || ( fabs(nbSlope) < nbTol );
       }
     private:
-      apf::Mesh* mesh;
-      double sideTol;
+      parma::Average* nb;
+      double nbTol;
+      int verbose;
   };
   
   class ShapeOptimizer : public parma::Balancer {
     public:
       ShapeOptimizer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "gap") {
-        smallestTgtSide = 10;
-        iter=0;
-        if (!PCU_Comm_Self())
-          status("Factor %f Smallest target side %d\n",f, smallestTgtSide);
       }
 
       bool runStep(apf::MeshTag* wtag, double tolerance) {
-        if (!PCU_Comm_Self())
-          status("Iteration: %d\n",iter);
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t =
           parma::makeShapeTargets(s);
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag);
-        ImbOrLong* stopper = new ImbOrLong(mesh, smallestTgtSide);
+        double maxNb = TO_DOUBLE(getMaxNb(s));
+        monitorUpdate(maxNb, sS, sA);
+        parma::Stop* stopper =
+          new ImbOrMaxNeighbor(sA, maxNb*.001, verbose);
         parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
-    private:
-      int smallestTgtSide;
-      int iter;
-      int misNumber;
-      int maxMis;
   };
 }
 
