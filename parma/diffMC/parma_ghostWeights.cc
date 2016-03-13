@@ -169,8 +169,8 @@ namespace parma {
           PCU_Comm_Pack(ghost->first, ghost->second, 4*sizeof(double));
         end();
         PCU_Comm_Send();
+        double ghostsFromPeer[4];
         while (PCU_Comm_Listen()) {
-          double* ghostsFromPeer = new double[4];
           PCU_Comm_Unpack(ghostsFromPeer, 4*sizeof(double));
           for(int i=0; i<4; i++)
             weight[i] += ghostsFromPeer[i];
@@ -185,10 +185,9 @@ namespace parma {
         end();
         PCU_Comm_Send();
         while (PCU_Comm_Listen()) {
-          double* peerWeight = new double[4];
-          PCU_Comm_Unpack(peerWeight, 4*sizeof(double));
           int peer = PCU_Comm_Sender();
-          set(peer, peerWeight);
+          double* peerWeight = get(peer);
+          PCU_Comm_Unpack(peerWeight, 4*sizeof(double));
         }
       }
   };
