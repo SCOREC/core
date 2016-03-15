@@ -42,6 +42,7 @@ namespace {
         parma::getImbalance(vtxW, vtxImb, vtxAvg);
         if( !PCU_Comm_Self() && verbose )
           status("vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
+        delete vtxW;
 
         double elmImb, elmAvg;
         parma::getImbalance(elmW, elmImb, elmAvg);
@@ -98,6 +99,7 @@ namespace {
         }
         if( !stepNum ) //FIXME need to set the imbalance at the beginning for the primary entity
           maxElmW = parma::getMaxWeight(elmW);
+        delete edgeW;
 
         monitorUpdate(elmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
