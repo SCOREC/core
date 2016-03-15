@@ -7,16 +7,6 @@ macro(mpi_test TESTNAME PROCS EXE)
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
 endmacro(mpi_test)
-macro(splitfun TESTNAME PROG MODEL IN OUT PARTS FACTOR)
-  math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
-  add_test("${TESTNAME}"
-    ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS}
-    "${PROG}"
-    "${MODEL}"
-    "${IN}"
-    "${OUT}"
-    ${FACTOR})
-endmacro()
 macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
   math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
   add_test(NAME "${TESTNAME}"
@@ -44,12 +34,12 @@ mpi_test(inviscid_ugrid 1
   "${MDIR}/inviscid_egg.b8.ugrid"
   "${MDIR}/inviscid_egg.dmg"
   "${MDIR}/inviscid_egg.smb")
-splitfun(inviscid_split
+mpi_test(inviscid_split 4
   ./split
   "${MDIR}/inviscid_egg.dmg"
   "${MDIR}/inviscid_egg.smb"
   "${MDIR}/4/"
-  1 4)
+  4)
 mpi_test(inviscid_ghost 4
   ./ghost
   "${MDIR}/inviscid_egg.dmg"
@@ -79,12 +69,12 @@ if (PCU_COMPRESS)
 else()
   set(MESHFILE "pipe_2_.smb")
 endif()
-splitfun(split_2
+mpi_test(split_2 2
   ./split
   "${MDIR}/pipe.dmg"
   "pipe.smb"
   ${MESHFILE}
-  1 2)
+  2)
 mpi_test(refineX 2
   ./refine2x
   "${MDIR}/pipe.dmg"
@@ -92,19 +82,19 @@ mpi_test(refineX 2
   0
   "refXpipe/")
 if(ENABLE_ZOLTAN)
-  splitfun(split_4
+  mpi_test(split_4 4
     ./zsplit
     "${MDIR}/pipe.dmg"
     ${MESHFILE}
     "pipe_4_.smb"
-    2 2)
+    2)
 else()
-  splitfun(split_4
+  mpi_test(split_4 4
     ./split
     "${MDIR}/pipe.dmg"
     ${MESHFILE}
     "pipe_4_.smb"
-    2 2)
+    2)
 endif()
 mpi_test(verify_parallel 4
   ./verify
@@ -219,12 +209,12 @@ mpi_test(nonmanif_verify 1
   ./verify
   "${MDIR}/nonmanifold.dmg"
   "${MDIR}/nonmanifold.smb")
-splitfun(nonmanif_split
+mpi_test(nonmanif_split 2
   ./split
   "${MDIR}/nonmanifold.dmg"
   "${MDIR}/nonmanifold.smb"
   "nonmanifold_2_.smb"
-  1 2)
+  2)
 mpi_test(nonmanif_verify2 2
   ./verify
   "${MDIR}/nonmanifold.dmg"
@@ -234,12 +224,12 @@ mpi_test(mkmodel_fusion 1
   ./mkmodel
   "${MDIR}/fusion.smb"
   "fusion.dmg")
-splitfun(split_fusion
+mpi_test(split_fusion 2
   ./split
   "fusion.dmg"
   "${MDIR}/fusion.smb"
   "fusion_2_.smb"
-  1 2)
+  2)
 # the part count mismatch is intentional,
 # this test runs on half its procs
 if(ENABLE_ZOLTAN)
