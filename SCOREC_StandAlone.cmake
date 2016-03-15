@@ -31,7 +31,6 @@ set(MPIRUN_PROCFLAG "-np"
     CACHE string 
     "the command line flag to give process count to MPIRUN")
 
-option(IS_VALGRIND "Test with valgrind" OFF)
 set(VALGRIND ""
     CACHE string
     "the valgrind executable")
