@@ -31,6 +31,14 @@ set(MPIRUN_PROCFLAG "-np"
     CACHE string 
     "the command line flag to give process count to MPIRUN")
 
+option(IS_VALGRIND "Test with valgrind" OFF)
+set(VALGRIND ""
+    CACHE string
+    "the valgrind executable")
+set(VALGRIND_ARGS ""
+    CACHE string
+    "the command line arguments to VALGRIND")
+
 #Doxygen generation system
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
