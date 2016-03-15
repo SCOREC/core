@@ -133,5 +133,39 @@ SET(REPO git@github.com:SCOREC/core-sim.git)
 
 run_subproject("core-sim" "${REPO}" "${CONFIGURE_OPTIONS}")
 
+SET(CONFIGURE_OPTIONS
+  "-DCMAKE_C_COMPILER=mpicc"
+  "-DCMAKE_CXX_COMPILER=mpicxx"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
+  "-DENABLE_ZOLTAN=ON"
+  "-DENABLE_MPAS=ON"
+  "-DPCU_COMPRESS=ON"
+  "-DIS_TESTING=True"
+  "-DVALGRIND=valgrind"
+  "-DVALGRIND_ARGS=--leak-check=full;--error-exitcode=1"
+)
+SET(REPO https://github.com/SCOREC/core.git)
+
+run_subproject("core-valgrind" "${REPO}" "${CONFIGURE_OPTIONS}")
+
+SET(CONFIGURE_OPTIONS
+  "-DCMAKE_C_COMPILER=mpicc"
+  "-DCMAKE_CXX_COMPILER=mpicxx"
+  "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
+  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
+  "-DENABLE_ZOLTAN=ON"
+  "-DENABLE_MPAS=ON"
+  "-DPCU_COMPRESS=ON"
+  "-DIS_TESTING=True"
+  "-DSIM_PARASOLID=ON"
+  "-DSIM_MPI=mpich3.1.2"
+  "-DVALGRIND=valgrind"
+  "-DVALGRIND_ARGS=--leak-check=full;--error-exitcode=1"
+)
+SET(REPO git@github.com:SCOREC/core-sim.git)
+
+run_subproject("core-sim-valgrind" "${REPO}" "${CONFIGURE_OPTIONS}")
+
 message("DONE")
 
