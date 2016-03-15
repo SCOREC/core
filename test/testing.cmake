@@ -7,12 +7,6 @@ macro(mpi_test TESTNAME PROCS EXE)
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
 endmacro(mpi_test)
-macro(cook TESTNAME PROG PARTS FACTOR WORKDIR)
-  math(EXPR OUTPARTS "${PARTS} * ${FACTOR}")
-  add_test(NAME "${TESTNAME}"
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${OUTPARTS} "${PROG}"
-    WORKING_DIRECTORY "${WORKDIR}")
-endmacro()
 add_test(shapefun shapefun)
 add_test(shapefun2 shapefun2)
 add_test(bezierElevation bezierElevation)
@@ -246,7 +240,8 @@ mpi_test(ma_insphere 1
 if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run)
   if (PHASTA_CHEF_ENABLED)
-    cook(chefStream ${CMAKE_CURRENT_BINARY_DIR}/chefStream 1 1 ${MDIR})
+    mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
+      WORKING_DIRECTORY ${MDIR})
     set(cmd 
       ${CMAKE_BINARY_DIR}/phasta/bin/checkphasta 
       ${MDIR}/1-procs_case/ 
@@ -258,28 +253,26 @@ if (PCU_COMPRESS)
       WORKING_DIRECTORY ${MDIR}
     )
   endif()
-  cook(chef0 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 1 ${MDIR})
+  mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
   add_test(NAME chef1
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/run)
   if(ENABLE_ZOLTAN)
-    cook(chef2 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 2 ${MDIR})
-    set(MDIR ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/run)
-    cook(chef3 ${CMAKE_CURRENT_BINARY_DIR}/chef 2 2 ${MDIR})
-    set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/run)
-    cook(chef4 ${CMAKE_CURRENT_BINARY_DIR}/chef 1 4 ${MDIR})
+    mpi_test(chef2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+      WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/run)
+    mpi_test(chef3 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+      WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/run)
+    mpi_test(chef4 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+      WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/run)
   endif()
-  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
-  cook(chef5 ${CMAKE_CURRENT_BINARY_DIR}/chef 4 1 ${MDIR})
-  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
+  mpi_test(chef5 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   add_test(NAME chef6
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
-    WORKING_DIRECTORY ${MDIR})
-  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
-  add_test(NAME chefReadUrPrep
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} 4
-    ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep ../../../model.dmg bz2:../good_mesh/ adapt.inp
-    WORKING_DIRECTORY "${MDIR}")
+    WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
+  mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
+    ../../../model.dmg bz2:../good_mesh/ adapt.inp
+    WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
 endif()
