@@ -300,13 +300,13 @@ namespace parma_ordering {
       assert(src);
       assert(!m->hasTag(src,order));
       start = bfs(m, contains, src, order, start);
+      delete contains;
       if(start == TO_INT(m->count(0))) {
         if( i != c.size()-1 )
           parmaCommons::status("%d all vertices visited comp %u of %u\n",
               PCU_Comm_Self(), i, c.size());
         break;
       }
-      delete contains;
     }
     assert(start == TO_INT(m->count(0)));
 
