@@ -10,6 +10,7 @@ module load simmetrix/simModSuite
 module load netcdf
 module load gcc/4.9.2
 module load git
+module load valgrind/3.8.1
 
 #cdash output root
 cd /lore/dibanez/cdash

@@ -7,6 +7,7 @@
 #include <PCU.h>
 #include <SimUtil.h>
 #include <cassert>
+#include <stdlib.h>
 
 namespace {
   apf::MeshTag* setWeights(apf::Mesh* m) {
@@ -22,12 +23,18 @@ namespace {
 }
 int main(int argc, char** argv)
 {
-  assert(argc == 4);
+  assert(argc == 5);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   SimUtil_start();
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
+  if ( argc != 5 ) {
+    if ( !PCU_Comm_Self() )
+      printf("Usage: %s <model> <mesh> <max elm imb> <out prefix>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
   gmi_register_mesh();
   gmi_register_sim();
   //load model and mesh
@@ -37,12 +44,12 @@ int main(int argc, char** argv)
   int verbose = 2; // set to 1 to silence the 'endStep' stats
   double stepFactor = 0.5;
   apf::Balancer* balancer = Parma_MakeShapeOptimizer(m, stepFactor, verbose);
-  balancer->balance(weights, 1.10);
+  balancer->balance(weights, atof(argv[3]));
   delete balancer;
   apf::removeTagFromDimension(m, weights, m->getDimension());
   Parma_PrintPtnStats(m, "final");
   m->destroyTag(weights);
-  m->writeNative(argv[3]);
+  m->writeNative(argv[4]);
   // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);
