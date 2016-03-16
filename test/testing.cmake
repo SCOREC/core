@@ -124,6 +124,7 @@ mpi_test(gap 4
   ./gap
   "${MDIR}/torus.dmg"
   "${MDIR}/torusBal4p/"
+  "1.08"
   "${MDIR}/torusOpt4p/")
 if(ENABLE_ZOLTAN)
   mpi_test(zbalance 4
