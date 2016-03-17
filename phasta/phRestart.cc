@@ -101,8 +101,10 @@ int readAndAttachField(
   /* no field was found or the field has an empty data block */
   if(ret==0 || ret==1)
     return ret;
-  if ( std::string(hname) == std::string("VOF solution") )
+  if ( std::string(hname) == std::string("VOF solution") ) {
+    free(data);
     return 1;
+  }
   assert(nodes == static_cast<int>(m->count(0)));
   assert(step == in.timeStepNumber);
   int out_size = vars;
