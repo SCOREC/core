@@ -60,6 +60,11 @@ namespace {
       Parma_MakeGhostDiffuser(m, layers, stepFactor, verbosity);
     ghost->balance(weights, 1.05);
     delete ghost;
+    double elmImb = Parma_GetWeightedEntImbalance(m,weights,m->getDimension());
+    double ignored = 0.0;
+    apf::Balancer* gap = Parma_MakeShapeOptimizer(m, ignored, verbosity);
+    gap->balance(weights, 1+((elmImb-1)*1.25));
+    delete gap;
   }
 }
 
