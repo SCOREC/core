@@ -62,6 +62,10 @@ namespace chef {
   void adapt(apf::Mesh2* m, apf::Field* szFld) {
     ma::Input* ma_in = ma::configure(m, szFld);
     ma_in->shouldRunPreZoltan = true;
+//... DEBUGGING disable parametric transfer
+    ma_in->shouldTransferParametric = false;
+    ma_in->shouldSnap = false; 
+//... end DEBUGGING
     if (m->hasMatching())
       ph::setupMatching(*ma_in);
     ma::adapt(ma_in);

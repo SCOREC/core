@@ -1,6 +1,7 @@
 #include "sam.h"
 #include "samSz.h"
 #include <cassert>
+#include <stdio.h>
 
 namespace sam {
   apf::Field* specifiedIso(apf::Mesh* m, const char* fieldName, 

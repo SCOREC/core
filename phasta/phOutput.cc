@@ -504,8 +504,8 @@ Output::~Output()
     delete [] arrays.ien    [i];
     delete [] arrays.mattype[i];
     delete [] arrays.mattypeb[i];
-    delete [] arrays.mattypeif0[i];
-    delete [] arrays.mattypeif1[i];
+//    delete [] arrays.mattypeif0[i];
+//    delete [] arrays.mattypeif1[i];
   }
   delete [] arrays.ien;
   delete [] arrays.mattype;

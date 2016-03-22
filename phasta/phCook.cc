@@ -19,6 +19,7 @@
 #include <string>
 #include <stdlib.h>
 #include <assert.h>
+#include <iostream>
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -94,8 +95,8 @@ namespace ph {
     ph::detachAndWriteSolution(in,out,m,path); //write restart
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-    if ( ! in.outMeshFileName.empty() )
-      m->writeNative(in.outMeshFileName.c_str());
+//    if ( ! in.outMeshFileName.empty() )
+//      m->writeNative(in.outMeshFileName.c_str());
     m->verify();
     gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
