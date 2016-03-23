@@ -653,6 +653,8 @@ static void convert_down(struct mds* m,
 
 mds_id mds_create_entity(struct mds* m, int t, mds_id* from)
 {
+  assert(0 <= t);
+  assert(t < MDS_TYPES);
   if (t == MDS_VERTEX)
     return alloc_ent(m, t);
   return add_ent(m, t, from);
