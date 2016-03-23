@@ -23,24 +23,6 @@
 
 namespace {
 
-void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
-{
-  /* check if the mesh changed at all */
-  if ( (PCU_Comm_Peers()!=numMasters) ||
-       in.adaptFlag ||
-       in.parmaPtn ||
-       in.tetrahedronize ||
-       in.isReorder )
-  {
-    if (in.parmaPtn && PCU_Comm_Peers() > 1)
-      ph::balance(in,m);
-    apf::MeshTag* order = NULL;
-    if (PCU_Comm_Peers() > 1)
-      order = Parma_BfsReorder(m);
-    apf::reorderMdsMesh(m,order);
-  }
-}
-
 void switchToMasters(int splitFactor)
 {
   int self = PCU_Comm_Self();
@@ -91,6 +73,24 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace ph {
+  void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
+  {
+    /* check if the mesh changed at all */
+    if ( (PCU_Comm_Peers()!=numMasters) ||
+        in.adaptFlag ||
+        in.parmaPtn ||
+        in.tetrahedronize ||
+        in.isReorder )
+    {
+      if (in.parmaPtn && PCU_Comm_Peers() > 1)
+        ph::balance(in,m);
+      apf::MeshTag* order = NULL;
+      if (PCU_Comm_Peers() > 1)
+        order = Parma_BfsReorder(m);
+      apf::reorderMdsMesh(m,order);
+    }
+  }
+
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber);
@@ -155,7 +155,7 @@ namespace chef {
       originalMain(m, in, g, plan);
     switchToAll();
     m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    balanceAndReorder(m,in,numMasters);
+    ph::balanceAndReorder(m,in,numMasters);
     ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
@@ -203,6 +203,10 @@ namespace chef {
 
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
     ph::readAndAttachFields(ctrl, m);
+  }
+
+  void balanceAndReorder(ph::Input& ctrl, apf::Mesh2* m) {
+    ph::balanceAndReorder(m,ctrl,PCU_Comm_Peers());
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in) {
