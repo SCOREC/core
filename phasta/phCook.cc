@@ -84,8 +84,8 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 namespace ph {
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
+//    if (in.adaptFlag)
+//      ph::goToStepDir(in.timeStepNumber);
     std::string path = ph::setupOutputDir();
     ph::setupOutputSubdir(path);
     ph::enterFilteredMatching(m, in, bcs);
@@ -93,6 +93,15 @@ namespace ph {
     ph::exitFilteredMatching(m);
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
+    if (in.adaptFlag && (in.timeStepNumber % in.writeVizFiles == 0) ) {
+      // store the value of the function pointer
+      FILE (*fn)(out, path) = out.openfile_write;
+      // set function pointer for file writing
+      out.openfile_write = openfile_write; // as defined in phCook.cc
+      writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
+      // reset the function pointer to the original value
+      out.openfile_write = fn;
+    }
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
 //    if ( ! in.outMeshFileName.empty() )

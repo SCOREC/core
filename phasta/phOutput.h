@@ -121,7 +121,7 @@ struct Output
 };
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o);
-void writeGeomBC(Output& o, std::string path);
+void writeGeomBC(Output& o, std::string path, int timestep = 0);
 
 }
 
