@@ -232,6 +232,8 @@ namespace parma_ordering {
 
   int bfs(apf::Mesh* m, parma::DijkstraContains* c,
        apf::MeshEntity* src, apf::MeshTag* order, int num) {
+    if( !src )
+      return num;
     queue q;
     q.push_back(src);
     while( !q.empty() ) {
@@ -249,56 +251,34 @@ namespace parma_ordering {
     return num;
   }
 
-  apf::MeshEntity* getMaxDistSeed(apf::Mesh* m, parma::dcComponents& c,
-      apf::MeshTag* dt, apf::MeshTag* order, unsigned comp) {
-    int rmax = 0;
+  apf::MeshEntity* getMaxDistSeed(apf::Mesh* m, CompContains* c,
+      apf::MeshTag* dt, apf::MeshTag* order) {
+    int rmax = -1;
     apf::MeshEntity* emax = NULL;
-    apf::MeshEntity* v;
     int cnt=0;
-    c.beginBdry(comp);
-    while( (v = c.iterateBdry()) ) {
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while( (e = m->iterate(it)) ) {
+      if( ! c->has(e) ) continue;
       cnt++;
-      int d; m->getIntTag(v,dt,&d);
-      // max distance unordered vertex
-      if( d > rmax && !m->hasTag(v,order) ) {
+      int d; m->getIntTag(e,dt,&d);
+      PCU_Debug_Print("cnt %d d %d hasTag %d\n", cnt, d, m->hasTag(e,order));
+      if( !m->hasTag(e,order) && d > rmax ) {
         rmax = d;
-        emax = v;
+        emax = e;
       }
     }
-    c.endBdry();
-    if( !emax ) {
-      parmaCommons::error("%s comp %u no src vtx found bdry cnt %d\n",
-          __func__, comp, cnt);
-      assert(!rmax);
-      cnt=0;
-      apf::MeshIterator* it = m->begin(0);
-      apf::MeshEntity* e;
-      while( (e = m->iterate(it)) ) {
-        bool inComp = (c.has(e) && c.getId(e) == comp);
-        if( !inComp ) continue;
-        cnt++;
-        int d; m->getIntTag(e,dt,&d);
-        if( !m->hasTag(e,order) && d > rmax ) {
-          rmax = d;
-          emax = e;
-        }
-      }
-      m->end(it);
-      if( !emax ) {
-        parmaCommons::error("%s comp %u no src vtx found cnt %d\n", __func__, comp, cnt);
-      }
-    }
+    m->end(it);
     return emax;
   }
 
-      apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
+  apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
     apf::MeshTag* order = m->createIntTag("parma_ordering",1);
     int start = 0;
     for(unsigned i=0; i<c.size(); i++) {
       CompContains* contains = new CompContains(c,i);
-      apf::MeshEntity* src = getMaxDistSeed(m,c,dist,order,i);
-      assert(src);
-      assert(!m->hasTag(src,order));
+      apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
+      PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
       start = bfs(m, contains, src, order, start);
       delete contains;
       if(start == TO_INT(m->count(0))) {
@@ -316,6 +296,7 @@ namespace parma_ordering {
     apf::MeshIterator* it = m->begin(0);
     apf::MeshEntity* e;
     while( (e = m->iterate(it)) ) {
+      assert( m->hasTag(e,order) );
       int id; m->getIntTag(e,order,&id);
       assert(id < TO_INT(m->count(0)));
       sorted[id] = 1;
