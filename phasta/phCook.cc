@@ -95,9 +95,9 @@ namespace ph {
     ph::detachAndWriteSolution(in,out,m,path); //write restart
     if (in.adaptFlag && (in.timeStepNumber % in.writeVizFiles == 0) ) {
       // store the value of the function pointer
-      FILE (*fn)(out, path) = out.openfile_write;
+      FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
-      out.openfile_write = openfile_write; // as defined in phCook.cc
+      out.openfile_write = openfile_write;
       writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
       // reset the function pointer to the original value
       out.openfile_write = fn;
