@@ -25,6 +25,7 @@
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
 // ===============================
+#include <iostream>
 
 namespace apf {
 
@@ -233,10 +234,10 @@ static void writePCellData(std::ostream& file,
   file << "</PCellData>\n";
 }
 
-static std::string getPieceFileName(const char* prefix, int id)
+static std::string getPieceFileName(int id)
 {
   std::stringstream ss;
-  ss << prefix << id << ".vtu";
+  ss << id << ".vtu";
   return ss.str();
 }
 
@@ -250,23 +251,20 @@ static std::string stripPath(std::string const& s)
   return s.substr(i + 1, std::string::npos);
 }
 
-static std::string getRelativePathPSource(const char* prefix, int id)
+static std::string getRelativePathPSource(int id)
 {
-  std::stringstream ss1;
-  std::stringstream ss2;
-  ss1 << prefix;
-  std::string prefixNoPath = stripPath(ss1.str());
+  std::stringstream ss;
   int dirNum = id/1024;
-  ss2 << prefixNoPath << dirNum << '/';
-  return ss2.str();
+  ss << dirNum << '/';
+  return ss.str();
 }
 
-static void writePSources(std::ostream& file, const char* prefix)
+static void writePSources(std::ostream& file)
 {
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
-    std::string fileName = stripPath(getPieceFileName(prefix,i));
-    std::string fileNameAndPath = getRelativePathPSource(prefix, i) + fileName;
+    std::string fileName = stripPath(getPieceFileName(i));
+    std::string fileNameAndPath = getRelativePathPSource(i) + fileName;
     file << "<Piece Source=\"" << fileNameAndPath << "\"/>\n";
   }
 }
@@ -275,16 +273,20 @@ static void writePvtuFile(const char* prefix,
     Mesh* m,
     bool isWritingBinary = false)
 {
-  std::string fileName = prefix;
+  std::string fileName = stripPath(prefix);
   fileName += ".pvtu";
-  std::ofstream file(fileName.c_str());
+  std::stringstream ss;
+  ss << prefix << '/' << fileName;
+  std::string fileNameAndPath = ss.str();
+  std::cout << "PVTU: " << fileNameAndPath << std::endl;
+  std::ofstream file(fileNameAndPath.c_str());
   assert(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
   file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
   writePPoints(file,m->getCoordinateField(),isWritingBinary);
   writePPointData(file,m,isWritingBinary);
   writePCellData(file,m,isWritingBinary);
-  writePSources(file,prefix);
+  writePSources(file);
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
 }
@@ -791,12 +793,9 @@ static std::string getFileNameAndPathVtu(const char* prefix,
     int id)
 {
   int dirNum = id/1024;
-  std::stringstream ss1;
-  std::stringstream ss2;
-  ss1 << prefix;
-  std::string prefixStr = ss1.str();
-  ss2 << prefixStr << dirNum << '/' << stripPath(fileName);
-  return ss2.str();
+  std::stringstream ss;
+  ss << prefix << '/' << dirNum << '/' << fileName;
+  return ss.str();
 }
 
 static void writeVtuFile(const char* prefix,
@@ -804,8 +803,9 @@ static void writeVtuFile(const char* prefix,
     bool isWritingBinary = false)
 {
   double t0 = PCU_Time();
-  std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
+  std::string fileName = getPieceFileName(PCU_Comm_Self());
   std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
+  std::cout << fileNameAndPath << std::endl;
   std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
@@ -887,7 +887,7 @@ static void makeVtuSubdirectories(const char* prefix, int numParts)
   for (int i = 0; i < numDirectories; i++)
   {
     std::stringstream ss2;
-    ss2 << prefix <<  i;
+    ss2 << prefix << '/' << i;
     safe_mkdir(ss2.str().c_str());
   }
 }
@@ -937,11 +937,11 @@ void writeBinaryVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with binary encoding ***
   //use writeASCIIVtkFiles for ASCII encoding (not recommended)
-
   bool isWritingBinary = true;
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
   {
+    safe_mkdir(prefix);
     makeVtuSubdirectories(prefix, PCU_Comm_Peers());
     writePvtuFile(prefix, m, isWritingBinary);
   }
