@@ -25,7 +25,6 @@
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
 // ===============================
-// #include <iostream>
 
 namespace apf {
 
@@ -268,8 +267,6 @@ static void writePSources(std::ostream& file, const char* prefix)
   {
     std::string fileName = stripPath(getPieceFileName(prefix,i));
     std::string fileNameAndPath = getRelativePathPSource(prefix, i) + fileName;
-    // std::cout << fileNameAndPath << std::endl;
-    // file << "<Piece Source=\"" << fileName << "\"/>\n";
     file << "<Piece Source=\"" << fileNameAndPath << "\"/>\n";
   }
 }
@@ -827,7 +824,7 @@ static void writeVtuFile(const char* prefix,
     }
     if (lion::can_compress )
     {
-      //TODO determine what the header_type should be definatively
+      //TODO determine what the header_type should be definitively
       buf << " header_type=\"UInt64\"";
       buf << " compressor=\"vtkZLibDataCompressor\"";
     }
@@ -854,7 +851,6 @@ static void writeVtuFile(const char* prefix,
     printf("writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
   { //block forces std::ofstream destructor call
-    // std::ofstream file(fileName.c_str());
     std::ofstream file(fileNameAndPath.c_str());
     assert(file.is_open());
     file << buf.rdbuf();
@@ -941,9 +937,6 @@ void writeBinaryVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with binary encoding ***
   //use writeASCIIVtkFiles for ASCII encoding (not recommended)
-
-  //TODO: PR4:  - make subdirectories for .vtu files
-  //            - write .vtu files to directories
 
   bool isWritingBinary = true;
   double t0 = PCU_Time();
