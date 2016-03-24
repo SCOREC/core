@@ -230,6 +230,7 @@ void Parma_WriteSmallNeighbors(apf::Mesh* m, int small) {
     std::string s = ss.str();
     status("small neighbor counts %s\n", s.c_str());
   }
+  delete [] smallCnt;
 }
 
 int Parma_GetSmallestSideMaxNeighborParts(apf::Mesh* m) {

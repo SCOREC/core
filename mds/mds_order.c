@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <limits.h>
 #include <PCU.h>
 
 struct queue {
@@ -62,10 +63,10 @@ static mds_id other_vert(struct mds* m, mds_id e, mds_id v)
 static int visit(
     struct mds* m,
     struct mds_tag* tag,
-    mds_id* label,
+    int* label,
     mds_id e)
 {
-  mds_id* l;
+  int* l;
   if (mds_has_tag(tag,e))
     return 0;
   mds_give_tag(tag,m,e);
@@ -94,7 +95,7 @@ static mds_id find_seed(struct mds_apf* m)
 }
 
 static void number_connected_verts(struct mds* m, mds_id v,
-    struct mds_tag* tag, mds_id* label)
+    struct mds_tag* tag, int* label)
 {
   struct queue q;
   struct mds_set adj[2];
@@ -120,9 +121,10 @@ static void number_connected_verts(struct mds* m, mds_id v,
 struct mds_tag* mds_number_verts_bfs(struct mds_apf* m)
 {
   struct mds_tag* tag;
-  mds_id label;
+  int label;
   mds_id v;
-  tag = mds_create_tag(&m->tags, "mds_number", sizeof(mds_id), 1);
+  assert(m->mds.n[MDS_VERTEX] < INT_MAX);
+  tag = mds_create_tag(&m->tags, "mds_number", sizeof(int), 1);
   label = 0;
   v = find_seed(m);
   number_connected_verts(&m->mds, v, tag, &label);
@@ -138,7 +140,7 @@ static mds_id* sort_verts(struct mds_apf* m, struct mds_tag* tag)
   mds_id* sorted_verts;
   sorted_verts = malloc(sizeof(mds_id) * m->mds.n[MDS_VERTEX]);
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v)) {
-    mds_id* ip;
+    int* ip;
     ip = mds_get_tag(tag, v);
     sorted_verts[*ip] = v;
   }
@@ -150,8 +152,9 @@ static void number_ents_of_type(struct mds* m,
 {
   int dim;
   struct mds_set adj;
-  mds_id label;
+  int label;
   int i, j;
+  assert(m->n[type] < INT_MAX);
   label = 0;
   dim = mds_dim[type];
   for (i = 0; i < m->n[MDS_VERTEX]; ++i) {
@@ -174,7 +177,7 @@ static void number_other_ents(struct mds_apf* m, struct mds_tag* tag)
 
 static mds_id lookup(struct mds_tag* tag, mds_id old)
 {
-  mds_id* ip;
+  int* ip;
   ip = mds_get_tag(tag,old);
   return mds_identify(mds_type(old),*ip);
 }
@@ -229,9 +232,8 @@ static struct mds_tag* invert(
   int d;
   mds_id e;
   mds_id ne;
-  mds_id* ip;
-  old_of = mds_create_tag(&(m2->tags),
-      "mds_inverse",sizeof(mds_id),1);
+  int* ip;
+  old_of = mds_create_tag(&(m2->tags), "mds_inverse", sizeof(int), 1);
   for (d = 0; d <= m->d; ++d) {
     for (e = mds_begin(m,d);
          e != MDS_NONE;

@@ -102,6 +102,7 @@ namespace parma {
               current.push_back(v);
           }
         }
+        mesh->end(itr);
         double weight = runBFS(mesh,layers,current,next,depth,wtag);
         apf::removeTagFromDimension(mesh,depth,0);
         mesh->destroyTag(depth);

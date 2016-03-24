@@ -5,6 +5,7 @@
 #include <PCU.h>
 #include <parma.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace {
   const char* modelFile = 0;
@@ -18,7 +19,12 @@ namespace {
 
   void getConfig(int argc, char** argv)
   {
-    assert(argc==4);
+    if ( argc != 4 ) {
+      if ( !PCU_Comm_Self() )
+        printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
+      MPI_Finalize();
+      exit(EXIT_FAILURE);
+    }
     modelFile = argv[1];
     meshFile = argv[2];
   }

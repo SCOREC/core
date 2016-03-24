@@ -56,32 +56,7 @@ void getConfig(int argc, char** argv)
 
 }
 
-apf::Migration* get_xgc_plan(gmi_model* g, apf::Mesh* m, int num_peers)
-{
-  apf::Migration* plan = new apf::Migration(m);
-  apf::MeshEntity* e;
-  int num_gface = g->n[2];
-  gmi_ent* gface = gmi_find(g, 2, num_gface);
-  assert(gface);
-  int gface_id;
-  int dest_pid;
-  apf::MeshIterator* it = m->begin(2);
-  while ((e = m->iterate(it))) 
-  { 
-    gface = (gmi_ent*)(m->toModel(e));
-    gface_id = gmi_tag(g, gface);
-    if (gface_id>num_gface-3) 
-      dest_pid = num_peers-1;
-    else
-      dest_pid = gface_id/((num_gface-3)/(num_peers-1));
-    plan->send(e, dest_pid);
-    std::cout<<" send face "<<apf::getMdsIndex((apf::Mesh2*)m, e)<<" (gface "<<gface_id<<") to p"<<dest_pid<<"\n";
-  }
-  m->end(it);
-  return plan;
-}
-
-apf::Migration* get_model_plan(gmi_model* g, apf::Mesh* m, int num_peers)
+apf::Migration* get_model_plan(gmi_model* g, apf::Mesh* m)
 {
   apf::Migration* plan = new apf::Migration(m);
   apf::MeshEntity* e;
@@ -91,8 +66,8 @@ apf::Migration* get_model_plan(gmi_model* g, apf::Mesh* m, int num_peers)
   int gface_id;
   gmi_ent* gface;
   apf::MeshIterator* it = m->begin(2);
-  while ((e = m->iterate(it))) 
-  { 
+  while ((e = m->iterate(it)))
+  {
     gface = (gmi_ent*)(m->toModel(e));
     gface_id = gmi_tag(g, gface);
     plan->send(e, gface_id-1);
@@ -121,7 +96,7 @@ int main(int argc, char** argv)
   switchToOriginals();
   if (isOriginal) {
     m = apf::loadMdsMesh(g, meshFile);
-    plan = get_model_plan(g, m,atoi(argv[4]));
+    plan = get_model_plan(g, m);
   }
   switchToAll();
   m = repeatMdsMesh(m, g, plan, partitionFactor);
@@ -159,8 +134,8 @@ int main(int argc, char** argv)
   apf::MeshEntity* e;
   double ghost_value;
   int ghost_flag=1, non_ghost_flag=0;
-  while ((e = gm->iterate(it))) 
-  { 
+  while ((e = gm->iterate(it)))
+  {
     gm->getIntTag(e, own_tag, &own_partid); //gm->getOwner(e) does not work
     if (own_partid!=PCU_Comm_Self())
       ghost_value=ghost_flag;

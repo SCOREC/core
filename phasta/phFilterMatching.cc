@@ -92,9 +92,17 @@ static void getAttributeMatching(gmi_model* gm, BCs& bcs, ModelMatching& mm)
   APF_ITERATE(FieldBCs::Set, fbcs.bcs, it) {
     BC* bc = *it;
     gmi_ent* e = gmi_find(gm, bc->dim, bc->tag);
+    assert(e);
     double* val = bc->eval(apf::Vector3(0,0,0));
     int otherTag = *val;
     gmi_ent* oe = gmi_find(gm, bc->dim, otherTag);
+    if (!oe)
+      fprintf(stderr, "model %s %d has %s %s %d,\n"
+                      "but %s %d doesn not exist in the model\n",
+          apf::dimName[bc->dim], bc->tag, name.c_str(),
+          apf::dimName[bc->dim], otherTag,
+          apf::dimName[bc->dim], otherTag);
+    assert(oe);
     addMatch(e, oe, mm);
   }
 }

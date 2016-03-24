@@ -47,9 +47,7 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  int provided;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
-  assert(provided==MPI_THREAD_MULTIPLE);
+  MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
   getConfig(argc,argv);

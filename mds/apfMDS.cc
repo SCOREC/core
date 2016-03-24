@@ -630,12 +630,7 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
   mds_tag* vert_nums;
   if (t) {
-    if (sizeof(mds_id) == sizeof(int)) {
-      assert(mesh->getTagType(t) == Mesh::INT);
-    } else {
-      assert(sizeof(mds_id) == sizeof(long));
-      assert(mesh->getTagType(t) == Mesh::LONG);
-    }
+    assert(mesh->getTagType(t) == Mesh::INT);
     vert_nums = reinterpret_cast<mds_tag*>(t);
   } else {
     vert_nums = mds_number_verts_bfs(m->mesh);
