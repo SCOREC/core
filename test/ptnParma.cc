@@ -107,6 +107,15 @@ void runParma(apf::Mesh2* m) {
   apf::Balancer* balancer = Parma_MakeVtxElmBalancer(m, step, verbose);
   balancer->balance(weights, 1.05);
   delete balancer;
+  Parma_PrintPtnStats(m, "postVtxElm");
+
+  // let the percent imbalance increase by 10% e.g. 1.05 -> 1.055
+  double elmImb = Parma_GetWeightedEntImbalance(m, weights, m->getDimension());
+  double elmImbLimit = 1+((elmImb-1)*1.10);
+  balancer = Parma_MakeShapeOptimizer(m, step, verbose);
+  balancer->balance(weights, elmImbLimit);
+  delete balancer;
+
   clearTags(m, weights);
   m->destroyTag(weights);
   Parma_PrintPtnStats(m, "final");
