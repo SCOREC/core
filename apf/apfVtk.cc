@@ -251,7 +251,7 @@ static std::string stripPath(std::string const& s)
   return s.substr(i + 1, std::string::npos);
 }
 
-static std::string getRelativePath(const char* prefix, int id)
+static std::string getRelativePathPSource(const char* prefix, int id)
 {
   std::stringstream ss1;
   std::stringstream ss2;
@@ -267,7 +267,7 @@ static void writePSources(std::ostream& file, const char* prefix)
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
     std::string fileName = stripPath(getPieceFileName(prefix,i));
-    std::string fileNameAndPath = getRelativePath(prefix, i) + fileName;
+    std::string fileNameAndPath = getRelativePathPSource(prefix, i) + fileName;
     // std::cout << fileNameAndPath << std::endl;
     // file << "<Piece Source=\"" << fileName << "\"/>\n";
     file << "<Piece Source=\"" << fileNameAndPath << "\"/>\n";
@@ -789,13 +789,26 @@ bool isBigEndian()
   return bint.c[0] == 1;
 }
 
+static std::string getFileNameAndPathVtu(const char* prefix,
+    std::string fileName,
+    int id)
+{
+  int dirNum = id/1024;
+  std::stringstream ss1;
+  std::stringstream ss2;
+  ss1 << prefix;
+  std::string prefixStr = ss1.str();
+  ss2 << prefixStr << dirNum << '/' << stripPath(fileName);
+  return ss2.str();
+}
+
 static void writeVtuFile(const char* prefix,
     Numbering* n,
     bool isWritingBinary = false)
 {
   double t0 = PCU_Time();
   std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
-  std::string fileNameAndPath = getRelativePath(prefix, PCU_Comm_Self()) + fileName;
+  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
   std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
