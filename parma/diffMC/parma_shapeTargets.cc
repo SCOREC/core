@@ -15,6 +15,7 @@ namespace parma {
   class ShapeTargets : public Targets {
     public:
       ShapeTargets(Sides* s) {
+        smallLimit = 10;
         init(s);
         totW = 0;
       }
@@ -23,6 +24,7 @@ namespace parma {
       }
     private:
       ShapeTargets();
+      int smallLimit;
       double totW;
       void init(Sides* s) {
         const unsigned maxNb = TO_UINT(PCU_Max_Int(s->size()));
@@ -38,6 +40,7 @@ namespace parma {
             small = side->second;
         s->end();
         PCU_Debug_Print("small %d\n", small);
+        if( small > smallLimit ) return;
         s->begin();
         while( (side = s->iterate()) )
           if( side->second <= small )
