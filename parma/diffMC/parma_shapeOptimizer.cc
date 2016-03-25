@@ -20,17 +20,21 @@ namespace {
 
   class ImbOrMaxNeighbor : public parma::Stop {
     public:
-      ImbOrMaxNeighbor(parma::Average* nbAvg, double maxNbTol, int v=0)
-        : nb(nbAvg), nbTol(maxNbTol), verbose(v) {}
+      ImbOrMaxNeighbor(parma::Average* nbAvg, double maxNbTol, int targets, int v=0)
+        : nb(nbAvg), nbTol(maxNbTol), tgts(targets), verbose(v) {}
       bool stop(double imb, double maxImb) {
+        int maxTgts = PCU_Max_Int(tgts);
         const double nbSlope = nb->avg();
         if( !PCU_Comm_Self() && verbose )
           status("max neighbor slope %f tolerance %f\n", nbSlope, nbTol);
-        return imb > maxImb || ( fabs(nbSlope) < nbTol );
+        if( !PCU_Comm_Self() && verbose && maxTgts == 0 )
+          status("no targets found... stopping\n");
+        return imb > maxImb || ( fabs(nbSlope) < nbTol ) || ( maxTgts == 0 );
       }
     private:
       parma::Average* nb;
       double nbTol;
+      int tgts;
       int verbose;
   };
   
@@ -50,7 +54,7 @@ namespace {
         double maxNb = TO_DOUBLE(getMaxNb(s));
         monitorUpdate(maxNb, sS, sA);
         parma::Stop* stopper =
-          new ImbOrMaxNeighbor(sA, maxNb*.001, verbose);
+          new ImbOrMaxNeighbor(sA, maxNb*.001, t->size(), verbose);
         parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
