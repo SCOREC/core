@@ -25,7 +25,6 @@
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
 // ===============================
-#include <iostream>
 
 namespace apf {
 
@@ -278,7 +277,6 @@ static void writePvtuFile(const char* prefix,
   std::stringstream ss;
   ss << prefix << '/' << fileName;
   std::string fileNameAndPath = ss.str();
-  std::cout << "PVTU: " << fileNameAndPath << std::endl;
   std::ofstream file(fileNameAndPath.c_str());
   assert(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
@@ -411,7 +409,6 @@ static void writeConnectivity(std::ostream& file,
   MeshEntity* e;
   if (isWritingBinary)
   {
-    // TODO: see if we can do this with only one loop
     MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
@@ -475,7 +472,6 @@ static void writeOffsets(std::ostream& file,
   MeshEntity* e;
   if (isWritingBinary)
   {
-    // TODO: see if we can do this with only one loop
     MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
@@ -805,7 +801,6 @@ static void writeVtuFile(const char* prefix,
   double t0 = PCU_Time();
   std::string fileName = getPieceFileName(PCU_Comm_Self());
   std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
-  std::cout << fileNameAndPath << std::endl;
   std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
