@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
+#include <cstring>
 
 namespace ph {
 
@@ -93,7 +94,9 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "displacement",
     "dwal",
     "mapping_partid",
-    "mapping_vtxid"
+    "mapping_vtxid",
+    "errors",
+    "time derivative of solution"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
@@ -104,7 +107,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     sizeof(known_cell_fields) / sizeof(known_cell_fields[0]);
   for (int i = 0; i < known_nodal_field_count; ++i)
     if (!strcmp(fieldname, known_nodal_fields[i])) {
-      assert(nnodes == m->count(0));
+      assert(static_cast<size_t>(nnodes) == m->count(0));
       return true;
     }
   for (int i = 0; i < known_cell_field_count; ++i)
@@ -113,7 +116,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
   fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
       fieldname, __LINE__, __FILE__);
-  if (nnodes == m->count(0)) {
+  if (static_cast<size_t>(nnodes) == m->count(0)) {
     fprintf(stderr, "assuming \"%s\" is a nodal field,\n"
                     "it is the right size...\n", fieldname);
     return true;
