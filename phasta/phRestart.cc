@@ -94,7 +94,9 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "displacement",
     "dwal",
     "mapping_partid",
-    "mapping_vtxid"
+    "mapping_vtxid",
+    "errors",
+    "time derivative of solution"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
