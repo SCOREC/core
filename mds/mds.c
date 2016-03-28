@@ -532,19 +532,11 @@ static mds_id alloc_ent(struct mds* m, int t)
   if (m->n[t] == m->cap[t])
     grow(m,t);
   ++(m->n[t]);
-  if (m->n[t] > 10 * 1000 * 1000) {
-    if (sizeof(mds_id) < 8) {
-      fprintf(stderr, "your mesh has %ld entities of type %d but sizeof(mds_id) = %zu !\n",
-          ((long)(m->n[t])), t, sizeof(mds_id));
-      fprintf(stderr, "INTEGER OVERFLOW COULD OCCUR SOON\n");
-      fprintf(stderr, "please recompile with -DMDS_ID_TYPE=long\n");
-    } else {
-      if (PCU_Comm_Self() == 0) {
-        printf("your mesh has %ld entities of type %d and sizeof(mds_id) = %zu\n",
-          ((long)(m->n[t])), t, sizeof(mds_id));
-        printf("integer overflow is not expected\n");
-      }
-    }
+  if ((sizeof(mds_id) < 8) && (m->n[t] == 10 * 1000 * 1000)) {
+    fprintf(stderr, "your mesh over %ld entities of type %d but sizeof(mds_id) = %zu !\n",
+        ((long)(m->n[t])), t, sizeof(mds_id));
+    fprintf(stderr, "INTEGER OVERFLOW COULD OCCUR SOON\n");
+    fprintf(stderr, "please recompile with -DMDS_ID_TYPE=long\n");
   }
   if (m->first_free[t] == MDS_NONE)
     id = ID(t,m->n[t] - 1);
