@@ -10,8 +10,10 @@
 
 #include "mds.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <PCU.h>
 
 static void* mds_realloc(void* p, size_t n)
 {
@@ -527,8 +529,25 @@ static mds_id fill_hole(struct mds* m, int t)
 static mds_id alloc_ent(struct mds* m, int t)
 {
   mds_id id;
-  if (m->n[t] == m->cap[t])
+  if (m->n[t] == m->cap[t]) {
+    mds_id old_cap = m->cap[t];
     grow(m,t);
+    if (old_cap <= 10 * 1000 * 1000 &&
+        m->cap[t] > 10 * 1000 * 1000) {
+      if (sizeof(mds_id) < 8) {
+        fprintf(stderr, "your mesh has %ld entities of type %d but sizeof(mds_id) = %zu !\n",
+            ((long)(m->n[t])), t, sizeof(mds_id));
+        fprintf(stderr, "INTEGER OVERFLOW COULD OCCUR SOON\n");
+        fprintf(stderr, "please recompile with -DMDS_ID_TYPE=long\n");
+      } else {
+        if (PCU_Comm_Self() == 0) {
+          printf("your mesh has %ld entities of type %d and sizeof(mds_id) = %zu\n",
+            ((long)(m->n[t])), t, sizeof(mds_id));
+          printf("integer overflow is not expected\n");
+        }
+      }
+    }
+  }
   ++(m->n[t]);
   if (m->first_free[t] == MDS_NONE)
     id = ID(t,m->n[t] - 1);
