@@ -5,7 +5,7 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 if(BUILD_IN_TRILINOS)
-  tribits_package(apf_sim)
+  tribits_package(SCORECapf_sim)
 else()
   set(PACKAGE_VERSION "1.0")
   project(apf_sim)
