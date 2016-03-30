@@ -147,7 +147,13 @@ int readAndAttachField(
   int out_size = vars;
   if ( std::string(hname) == std::string("solution") )
     out_size = in.ensa_dof;
-  attachField(m, hname, data, vars, out_size);
+  if (m->findField(hname)) {
+    if (!PCU_Comm_Self())
+      fprintf(stderr, "field \"%s\" listed twice in restart files, ignoring...\n",
+          hname);
+  } else {
+    attachField(m, hname, data, vars, out_size);
+  }
   free(data);
   return 1;
 }
