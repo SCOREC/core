@@ -18,12 +18,21 @@ void setupMatching(ma::Input& in) {
   in.shouldFixShape = false;
 }
 
-static void runFromErrorSize(Input&, apf::Mesh2* m)
+static void runFromErrorThreshold(Input&, apf::Mesh2* m)
 {
   const unsigned idx = 5;
   const double errLimit = 1e-6;
   const double factor = 0.5;
-  apf::Field* szFld = sam::specifiedIso(m,"errors",idx,errLimit,factor);
+  apf::Field* szFld = sam::errorThreshold(m,"errors",idx,errLimit,factor);
+  assert(szFld);
+  chef::adapt(m, szFld);
+  apf::destroyField(szFld);
+}
+
+static void runFromGivenSize(Input&, apf::Mesh2* m)
+{
+  const unsigned idx = 5;
+  apf::Field* szFld = sam::specifiedIso(m,"errors",idx);
   assert(szFld);
   chef::adapt(m, szFld);
   apf::destroyField(szFld);
@@ -43,8 +52,8 @@ void adapt(Input& in, apf::Mesh2* m)
   typedef void (*Strategy)(Input&, apf::Mesh2*);
   static Strategy const table[PH_STRATEGIES] =
   {0//0
-  ,runFromErrorSize//1
-  ,0//2
+  ,runFromGivenSize//1
+  ,runFromErrorThreshold//2
   ,0//3
   ,0//4
   ,0//5
