@@ -230,8 +230,10 @@ bool MatchedCollapse::tryThisDirection(double qualityToBeat)
 {
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     collapses[i].computeElementSets();
-  if (overlapsSelf())
+  if (overlapsSelf()) {
+    cancel();
     return false;
+  }
   rebuilds.reset();
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     collapses[i].rebuildCallback = &rebuilds;
