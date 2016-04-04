@@ -42,6 +42,7 @@ struct MatchedCollapse
   bool checkTopo();
   void unmark();
   void cancel();
+  bool overlapsSelf();
   bool tryThisDirection(double qualityToBeat);
   bool tryBothDirections(double qualityToBeat);
   void destroyOldElements();
