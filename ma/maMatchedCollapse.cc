@@ -209,23 +209,29 @@ void MatchedCollapse::cancel()
   unmark();
 }
 
+bool MatchedCollapse::overlapsSelf()
+{
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
+  for (unsigned j = 0; j < collapses.getSize(); ++j) {
+    if (i == j)
+      continue;
+    EntityArray old[2];
+    collapses[i].getOldElements(old[0]);
+    collapses[j].getOldElements(old[1]);
+    for (size_t k = 0; k < old[0].getSize(); ++k)
+    for (size_t l = 0; l < old[1].getSize(); ++l)
+      if (old[0][k] == old[1][l])
+        return true;
+  }
+  return false;
+}
+
 bool MatchedCollapse::tryThisDirection(double qualityToBeat)
 {
-  for (unsigned i = 0; i < collapses.getSize(); ++i) {
+  for (unsigned i = 0; i < collapses.getSize(); ++i)
     collapses[i].computeElementSets();
-  }
-
-  {
-    EntityArray left_old;
-    collapses[0].getOldElements(left_old);
-    for (unsigned i = 1; i < collapses.getSize(); ++i) {
-      EntityArray right_old;
-      collapses[i].getOldElements(right_old);
-      for (unsigned j = 0; j < left_old.getSize(); ++j)
-      for (unsigned k = 0; k < right_old.getSize(); ++k)
-        assert(left_old[j] != right_old[k]);
-    }
-  }
+  if (overlapsSelf())
+    return false;
   rebuilds.reset();
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     collapses[i].rebuildCallback = &rebuilds;
