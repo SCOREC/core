@@ -915,8 +915,11 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m)
   double t0 = PCU_Time();
   if (!PCU_Comm_Self())
   {
+    safe_mkdir(prefix);
+    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
     writePvtuFile(prefix, m);
   }
+  PCU_Barrier();
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n);
