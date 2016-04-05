@@ -24,10 +24,13 @@ apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
       methodMap["zrib"] = apf::RIB;
       methodMap["hypergraph"] = apf::HYPERGRAPH;
       int method = methodMap[in.partitionMethod];
-      splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
+      if(in.localPtn == true)
+        splitter = apf::makeZoltanSplitter(m, method, apf::REPARTITION);
+      else
+        splitter = apf::makeZoltanGlobalSplitter(m, method, apf::REPARTITION);
     }
     apf::MeshTag* weights = Parma_WeighByMemory(m);
-    plan = splitter->split(weights, in.elementImbalance, in.splitFactor);
+    plan = splitter->split(weights, 1.01, in.splitFactor);
     apf::removeTagFromDimension(m, weights, m->getDimension());
     m->destroyTag(weights);
     delete splitter;
