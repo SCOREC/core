@@ -28,7 +28,7 @@ mpi_test(render 1
   ${MESHES}/cube/pumi11/cube.smb
   render_test)
 mpi_test(render_ascii 1
-  ./render
+  ./render_ascii
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi11/cube.smb
   render_ascii_test)
