@@ -22,6 +22,17 @@ add_test(integrate integrate)
 add_test(qr_test qr)
 add_test(base64 base64)
 
+mpi_test(render 1
+  ./render
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi11/cube.smb
+  render_test)
+mpi_test(render_ascii 1
+  ./render
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi11/cube.smb
+  render_ascii_test)
+
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 1
   ./from_ugrid
