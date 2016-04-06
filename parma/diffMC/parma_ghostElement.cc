@@ -26,7 +26,7 @@ namespace {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
 
         const double maxElmImb =
-          Parma_GetWeightedEntImbalance(mesh, wtag, m->getDimension());
+          Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
         double avgSides = parma::avgSharedSides(s);
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
