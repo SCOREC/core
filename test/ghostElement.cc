@@ -26,7 +26,7 @@ namespace {
   apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
     apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
     apf::MeshEntity* e;
-    apf::MeshIterator* itr = m->begin(0);
+    apf::MeshIterator* itr = m->begin(m->getDimension());
     double w = 1;
     while( (e = m->iterate(itr)) )
       m->setDoubleTag(e, wtag, &w);
