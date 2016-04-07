@@ -40,7 +40,7 @@ namespace {
 
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
-	parma::Stepper b(mesh, factor, s, w, t, sel, "elm");
+	parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         bool ret = b.step(tolerance, verbose);
         return ret;
       }
