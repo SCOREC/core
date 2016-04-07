@@ -493,13 +493,6 @@ void writeOneVtkFile(const char* prefix, Mesh* m);
   */
 void writeASCIIVtkFiles(const char* prefix, Mesh* m);
 
-/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
-  * with binary (base64) encoding
-  * \details Nodal fields whose shape differs from the mesh shape will
-  * not be output. Fields with incomplete data will not be output.
-  */
-void writeBinaryVtkFiles(const char* prefix, Mesh* m);
-
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType
   \param order the order of the integration rule

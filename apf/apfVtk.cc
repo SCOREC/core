@@ -931,11 +931,4 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m)
   writeVtkFiles(prefix, m, false);
 }
 
-void writeBinaryVtkFiles(const char* prefix, Mesh* m)
-{
-  //*** this function writes vtk files with binary encoding ***
-  //use writeASCIIVtkFiles for ASCII encoding (not recommended)
-  writeVtkFiles(prefix, m, false);
-}
-
 }
