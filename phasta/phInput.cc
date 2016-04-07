@@ -44,6 +44,7 @@ static void setDefaults(Input& in)
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
   in.axisymmetry = 0;
+  in.writeVizFiles = 1;
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
   in.rs = 0;
@@ -100,6 +101,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
   intMap["filterMatches"] = &in.filterMatches;
   intMap["axisymmetry"] = &in.axisymmetry;
+  intMap["writeVizFiles"] = &in.writeVizFiles;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
 }

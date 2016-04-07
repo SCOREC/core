@@ -80,6 +80,33 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   plan = ph::split(in, m);
 }
 
+static FILE* openfile_read(ph::Input&, const char* path) {
+  return pcu_group_open(path, false);
+}
+
+static FILE* openfile_write(ph::Output&, const char* path) {
+  return pcu_group_open(path, true);
+}
+
+static FILE* openstream_write(ph::Output& out, const char* path) {
+  return openGRStreamWrite(out.grs, path);
+}
+
+static FILE* openstream_read(ph::Input& in, const char* path) {
+  std::string fname(path);
+  std::string restartStr("restart");
+  FILE* f = NULL;
+  if( fname.find(restartStr) != std::string::npos )
+    f = openRStreamRead(in.rs);
+  else {
+    fprintf(stderr,
+      "ERROR %s type of stream %s is unknown... exiting\n",
+      __func__, fname.c_str());
+    exit(1);
+  }
+  return f;
+}
+
 }//end namespace
 
 namespace ph {
@@ -109,8 +136,8 @@ namespace ph {
     m->verify();
     gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
-    if (in.adaptFlag)
-      ph::goToParentDir();
+//    if (in.adaptFlag)
+//      ph::goToParentDir();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     gmi_model* g = m->getModel();
@@ -122,32 +149,6 @@ namespace ph {
 }
 
 namespace chef {
-  static FILE* openfile_read(ph::Input&, const char* path) {
-    return pcu_group_open(path, false);
-  }
-
-  static FILE* openfile_write(ph::Output&, const char* path) {
-    return pcu_group_open(path, true);
-  }
-
-  static FILE* openstream_write(ph::Output& out, const char* path) {
-    return openGRStreamWrite(out.grs, path);
-  }
-
-  static FILE* openstream_read(ph::Input& in, const char* path) {
-    std::string fname(path);
-    std::string restartStr("restart");
-    FILE* f = NULL;
-    if( fname.find(restartStr) != std::string::npos )
-      f = openRStreamRead(in.rs);
-    else {
-      fprintf(stderr,
-        "ERROR %s type of stream %s is unknown... exiting\n",
-        __func__, fname.c_str());
-      exit(1);
-    }
-    return f;
-  }
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;
@@ -212,13 +213,13 @@ namespace chef {
 
   void preprocess(apf::Mesh2*& m, ph::Input& in) {
     ph::Output out;
-    out.openfile_write = chef::openfile_write;
+    out.openfile_write = openfile_write;
     ph::preprocess(m,in,out);
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
     ph::Output out;
-    out.openfile_write = chef::openstream_write;
+    out.openfile_write = openstream_write;
     out.grs = grs;
     ph::preprocess(m,in,out);
   }
