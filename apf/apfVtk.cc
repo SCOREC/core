@@ -887,11 +887,27 @@ static void makeVtuSubdirectories(const char* prefix, int numParts)
   }
 }
 
-void writeVtkFiles(const char* prefix, Mesh* m)
+void writeVtkFiles(const char* prefix,
+    Mesh* m,
+    bool isWritingBinary)
 {
-//*** this function is now writing base64 encoded, compressed vtk files
-  // writeASCIIVtkFiles(prefix, m);
-  writeBinaryVtkFiles(prefix, m);
+  double t0 = PCU_Time();
+  if (!PCU_Comm_Self())
+  {
+    safe_mkdir(prefix);
+    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
+    writePvtuFile(prefix, m, isWritingBinary);
+  }
+  PCU_Barrier();
+  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
+  m->removeNumbering(n);
+  writeVtuFile(prefix, n, isWritingBinary);
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+  {
+    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
+  }
+  delete n;
 }
 
 void writeOneVtkFile(const char* prefix, Mesh* m)
@@ -912,47 +928,14 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with ASCII encoding ***
   //*** not recommended, use writeVtkFiles instead ***
-  double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    safe_mkdir(prefix);
-    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
-    writePvtuFile(prefix, m);
-  }
-  PCU_Barrier();
-  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
-  m->removeNumbering(n);
-  writeVtuFile(prefix, n);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
-  }
-  delete n;
+  writeVtkFiles(prefix, m, false);
 }
 
 void writeBinaryVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with binary encoding ***
   //use writeASCIIVtkFiles for ASCII encoding (not recommended)
-  bool isWritingBinary = true;
-  double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    safe_mkdir(prefix);
-    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
-    writePvtuFile(prefix, m, isWritingBinary);
-  }
-  PCU_Barrier();
-  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
-  m->removeNumbering(n);
-  writeVtuFile(prefix, n, isWritingBinary);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
-  }
-  delete n;
+  writeVtkFiles(prefix, m, false);
 }
 
 }

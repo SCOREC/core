@@ -475,11 +475,11 @@ for (t::const_iterator (i) = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
-  * with ASCII encoding
+  * with binary (base64) encoding and zlib compression (if LION_COMPRESS=ON)
   * \details Nodal fields whose shape differs from the mesh shape will
   * not be output. Fields with incomplete data will not be output.
   */
-void writeVtkFiles(const char* prefix, Mesh* m);
+void writeVtkFiles(const char* prefix, Mesh* m, bool isWritingBinary = true);
 
 /** \brief Output just the .vtu file with ASCII encoding for this part.
   \details this function is useful for debugging large parallel meshes.
