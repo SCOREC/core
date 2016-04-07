@@ -16,6 +16,9 @@ static void setDefaults(Input& in)
   in.rRead = 0;
   in.rStart = 0;
   in.adaptStrategy = -1;
+  in.adaptErrorThreshold = 1e-6;  //used by adaptStrategy=2 (runFromErrorThreshold)
+  in.adaptErrorFieldName = "errors"; //used by adaptStrategy=2 (runFromErrorThreshold)
+  in.adaptErrorFieldIndex = 5; //used by adaptStrategy=2 (runFromErrorThreshold)
   in.periodic = 0;
   in.prCD = -1;
   in.timing = 0;

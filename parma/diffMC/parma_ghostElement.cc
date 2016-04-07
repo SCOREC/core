@@ -25,10 +25,10 @@ namespace {
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
 
-        const double maxVtxImb =
-          Parma_GetWeightedEntImbalance(mesh, wtag, 0);
+        const double maxElmImb =
+          Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
         double avgSides = parma::avgSharedSides(s);
-        monitorUpdate(maxVtxImb, iS, iA);
+        monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
           fprintf(stdout, "avgSides %f\n", avgSides);
@@ -38,10 +38,9 @@ namespace {
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
 
-        /*parma::BalOrStall* stopper = 
+        parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
-	*/
-	parma::Stepper b(mesh, factor, s, w, t, sel, "elm");
+	parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         bool ret = b.step(tolerance, verbose);
         return ret;
       }

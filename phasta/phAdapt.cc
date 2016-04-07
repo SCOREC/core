@@ -18,12 +18,13 @@ void setupMatching(ma::Input& in) {
   in.shouldFixShape = false;
 }
 
-static void runFromErrorThreshold(Input&, apf::Mesh2* m)
+static void runFromErrorThreshold(Input& in, apf::Mesh2* m)
 {
-  const unsigned idx = 5;
-  const double errLimit = 1e-6;
+  const char* fieldname = in.adaptErrorFieldName.c_str();
+  const unsigned idx = in.adaptErrorFieldIndex;
+  const double errLimit = in.adaptErrorThreshold;
   const double factor = 0.5;
-  apf::Field* szFld = sam::errorThreshold(m,"errors",idx,errLimit,factor);
+  apf::Field* szFld = sam::errorThreshold(m,fieldname,idx,errLimit,factor);
   assert(szFld);
   chef::adapt(m, szFld);
   apf::destroyField(szFld);

@@ -23,19 +23,23 @@ namespace {
     meshFile = argv[2];
   }
 
-  apf::MeshTag* applyUnitVtxWeight(apf::Mesh* m) {
+  apf::MeshTag* applyUnitWeight(apf::Mesh* m) {
     apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
     apf::MeshEntity* e;
-    apf::MeshIterator* itr = m->begin(0);
     double w = 1;
-    while( (e = m->iterate(itr)) )
-      m->setDoubleTag(e, wtag, &w);
-    m->end(itr);
+    int dims[2] = {0,m->getDimension()};
+    const size_t len = sizeof(dims)/sizeof(int);
+    for(size_t i=0; i<len; i++) {
+      apf::MeshIterator* itr = m->begin(dims[i]);
+      while( (e = m->iterate(itr)) )
+        m->setDoubleTag(e, wtag, &w);
+      m->end(itr);
+    }
     return wtag;
   }
 
   void runParma(apf::Mesh* m) {
-    apf::MeshTag* weights = applyUnitVtxWeight(m);
+    apf::MeshTag* weights = applyUnitWeight(m);
     const int layers = 3;
     const int bridgeDim = 1;
     apf::Balancer* ghost = Parma_MakeGhostElementDiffuser(m, layers, bridgeDim);

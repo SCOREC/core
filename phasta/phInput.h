@@ -27,6 +27,9 @@ class Input
     int rRead;
     int rStart;
     int adaptStrategy;
+    double adaptErrorThreshold;
+    std::string adaptErrorFieldName;
+    int adaptErrorFieldIndex;
     int periodic;
     int prCD;
     int timing;
