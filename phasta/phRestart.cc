@@ -218,11 +218,20 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
     printf("fields read and attached in %f seconds\n", t1 - t0);
 }
 
+static void destroyIfExists(apf::Mesh* m, const char* name)
+{
+  apf::Field* f = m->findField(name);
+  if (f)
+    apf::destroyField(f);
+}
+
 void buildMapping(apf::Mesh* m)
 {
+  destroyIfExists(m, "mapping_partid");
   double* mapping = buildMappingPartId(m);
   attachField(m, "mapping_partid", mapping, 1);
   free(mapping);
+  destroyIfExists(m, "mapping_vtxid");
   mapping = buildMappingVtxId(m);
   attachField(m, "mapping_vtxid", mapping, 1);
   free(mapping);
