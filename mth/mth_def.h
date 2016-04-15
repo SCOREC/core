@@ -195,8 +195,6 @@ void inverse(Tensor<T> const& a, Tensor<T>& r)
     case 3:
       inverse3x3(a, r);
       break;
-    default:
-      abort();
   }
 }
 
