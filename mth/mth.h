@@ -60,6 +60,22 @@ Matrix<T,3,3> inverse(Matrix<T,3,3> const& a);
 template <class T>
 T trace(Tensor<T> const& a);
 
+/** \brief Frobenius norm of a tensor */
+template <class T>
+T norm(Tensor<T> const& a);
+
+/** \brief determinant of a tensor */
+template <class T>
+T determinant(Tensor<T> const& a);
+
+/** \brief transpose of a tensor */
+template <class T>
+void transpose(Tensor<T> const& a, Tensor<T>& r);
+
+/** \brief inverse of a tensor */
+template <class T>
+void inverse(Tensor<T> const& a, Tensor<T>& r);
+
 /** \brief identity tensor */
 template <class T>
 Tensor<T> eye(unsigned d);

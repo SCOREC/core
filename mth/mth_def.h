@@ -111,6 +111,96 @@ T trace(Tensor<T> const& a)
 }
 
 template <class T>
+T norm(Tensor<T> const& a)
+{
+  T n = 0.0;
+  for (unsigned i=0; i < a.dim(); ++i)
+  for (unsigned j=0; j < a.dim(); ++j)
+    n += a(i,j)*a(i,j);
+  return std::sqrt(n);
+}
+
+template <class T>
+T det2x2(Tensor<T> const& a)
+{
+  return a(0,0)*a(1,1) - a(1,0)*a(0,1);
+}
+
+template <class T>
+T det3x3(Tensor<T> const& a)
+{
+  return
+    a(0,0) * (a(1,1)*a(2,2) - a(2,1)*a(1,2)) -
+    a(0,1) * (a(1,0)*a(2,2) - a(2,0)*a(1,2)) +
+    a(0,2) * (a(1,0)*a(2,1) - a(2,0)*a(1,1));
+}
+
+template <class T>
+T determinant(Tensor<T> const& a)
+{
+  T det = T(0.0);
+  switch(a.dim())
+  {
+    case 2:
+      det = det2x2(a);
+      break;
+    case 3:
+      det = det3x3(a);
+      break;
+  }
+  return det;
+}
+
+template <class T>
+void transpose(Tensor<T> const& a, Tensor<T>& r)
+{
+  r.resize(a.dim());
+  for (unsigned i=0; i < a.dim(); ++i)
+  for (unsigned j=0; j < a.dim(); ++j)
+    r(j,i) = a(i,j);
+}
+
+template <class T>
+void inverse2x2(Tensor<T> const& a, Tensor<T>& r)
+{
+  r(0,0) =  a(1,1); r(0,1) = -a(0,1);
+  r(1,0) = -a(1,0); r(1,1) =  a(0,0);
+  r /= determinant(a);
+}
+
+template <class T>
+void inverse3x3(Tensor<T> const& a, Tensor<T>& r)
+{
+  r(0,0) = a(2,2)*a(1,1) - a(2,1)*a(1,2);
+  r(0,1) = a(2,1)*a(0,2) - a(2,2)*a(0,1);
+  r(0,2) = a(1,2)*a(0,1) - a(1,1)*a(0,2);
+  r(1,0) = a(2,0)*a(1,2) - a(2,2)*a(1,0);
+  r(1,1) = a(2,2)*a(0,0) - a(2,0)*a(0,2);
+  r(1,2) = a(1,0)*a(0,2) - a(1,2)*a(0,0);
+  r(2,0) = a(2,1)*a(1,0) - a(2,0)*a(1,1);
+  r(2,1) = a(2,0)*a(0,1) - a(2,1)*a(0,0);
+  r(2,2) = a(1,1)*a(0,0) - a(1,0)*a(0,1);
+  r /= determinant(a);
+}
+
+template <class T>
+void inverse(Tensor<T> const& a, Tensor<T>& r)
+{
+  r.resize(a.dim());
+  switch(a.dim())
+  {
+    case 2:
+      inverse2x2(a, r);
+      break;
+    case 3:
+      inverse3x3(a, r);
+      break;
+    default:
+      abort();
+  }
+}
+
+template <class T>
 Tensor<T> eye(unsigned d)
 {
   Tensor<T> r(d);
