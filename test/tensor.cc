@@ -60,7 +60,7 @@ static void testInverse(mth::Tensor<double>& a)
 
 }
 
-int main(int argc, char** argv)
+int main()
 {
   mth::Tensor<double> a(2);
   mth::Tensor<double> b(3);
