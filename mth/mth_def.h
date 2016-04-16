@@ -199,6 +199,15 @@ void inverse(Tensor<T> const& a, Tensor<T>& r)
 }
 
 template <class T>
+void deviatoric(Tensor<T> const& a, Tensor<T>& r)
+{
+  r = a;
+  T p = trace(a) / a.dim();
+  for (unsigned i=0; i < a.dim(); ++i)
+    r(i,i) -= p;
+}
+
+template <class T>
 Tensor<T> eye(unsigned d)
 {
   Tensor<T> r(d);

@@ -58,6 +58,14 @@ static void testInverse(mth::Tensor<double>& a)
   std::cout << b << std::endl;
 }
 
+static void testDeviatoric(mth::Tensor<double>& a)
+{
+  mth::Tensor<double> b;
+  mth::deviatoric(a, b);
+  std::cout << "\ndeviatoric:" << std::endl;
+  std::cout << b << std::endl;
+}
+
 }
 
 int main()
@@ -76,4 +84,6 @@ int main()
   testTranspose(b);
   testInverse(a);
   testInverse(b);
+  testDeviatoric(a);
+  testDeviatoric(b);
 }
