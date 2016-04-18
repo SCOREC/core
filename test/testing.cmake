@@ -21,6 +21,7 @@ add_test(eigen_test eigen_test)
 add_test(integrate integrate)
 add_test(qr_test qr)
 add_test(base64 base64)
+add_test(tensor_test tensor)
 
 mpi_test(render 1
   ./render

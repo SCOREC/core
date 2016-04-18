@@ -10,6 +10,7 @@
 #include "apfCavityOp.h"
 #include "apf.h"
 #include <cassert>
+#include <cstdlib>
 
 namespace apf {
 
@@ -803,10 +804,17 @@ static void migrate1(Mesh2* m, Migration* plan)
   m->acceptChanges();
 }
 
-static size_t migrationLimit = 1000*1000*1000;
+const size_t maxMigrationLimit = 10*1000*1000;
+static size_t migrationLimit = maxMigrationLimit;
 
 void setMigrationLimit(size_t maxElements)
 {
+  if( maxElements >= maxMigrationLimit ) {
+    if(!PCU_Comm_Self())
+      fprintf(stderr, "ERROR requested migration limit exceeds"
+                      " %lu... exiting\n", maxMigrationLimit);
+    abort();
+  }
   migrationLimit = maxElements;
 }
 
