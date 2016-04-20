@@ -70,6 +70,8 @@ class Input
     double maximumImbalance;
 /** \brief whether to run zoltan predictive load balancing (default false) */
     bool shouldRunPreZoltan;
+/** \brief whether to run zoltan predictive load balancing using RIB (default false) */
+    bool shouldRunPreZoltanRib;
 /** \brief whether to run parma predictive load balancing (default false) */
     bool shouldRunPreParma;
 /** \brief whether to run zoltan during adaptation (default false) */

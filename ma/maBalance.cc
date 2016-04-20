@@ -101,10 +101,10 @@ static void runBalancer(Adapt* a, apf::Balancer* b)
   m->destroyTag(weights);
 }
 
-void runZoltan(Adapt* a)
+void runZoltan(Adapt* a, int method=apf::GRAPH)
 {
   runBalancer(a, apf::makeZoltanBalancer(
-        a->mesh, apf::GRAPH, apf::REPARTITION,
+        a->mesh, method, apf::REPARTITION,
         /* debug = */ false));
 }
 
@@ -128,6 +128,8 @@ void preBalance(Adapt* a)
   Input* in = a->input;
   if (in->shouldRunPreZoltan)
     runZoltan(a);
+  if (in->shouldRunPreZoltanRib)
+    runZoltan(a,apf::RIB);
   if (in->shouldRunPreParma)
     runParma(a);
 }
