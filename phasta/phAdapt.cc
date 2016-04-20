@@ -15,7 +15,7 @@ void setupPreBalance(Input& in, ma::Input* ma_in) {
     ma_in->shouldRunPreParma = true;
   } else if( in.preAdaptBalanceMethod == "graph" ) {
     ma_in->shouldRunPreZoltan = true;
-  } else if( in.preAdaptBalanceMethod == "rib" ) {
+  } else if( in.preAdaptBalanceMethod == "zrib" ) {
     ma_in->shouldRunPreZoltanRib = true;
   } else if ( in.preAdaptBalanceMethod == "none" ) {
     ma_in->shouldRunPreZoltan = false;
