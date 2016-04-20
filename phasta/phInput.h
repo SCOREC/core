@@ -23,6 +23,7 @@ class Input
     std::string outputFormat;
     std::string partitionMethod;
     std::string preAdaptBalanceMethod;
+    std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
     int rStart;
@@ -43,7 +44,6 @@ class Input
     int tetrahedronize;
     int localPtn;
     int recursiveUR;
-    int parmaPtn;
     int dwalMigration;
     int buildMapping;
     int elementsPerMigration;
