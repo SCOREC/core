@@ -119,7 +119,6 @@ static bool tryReading(std::string const& name,
 }
 
 static void readInputFile(
-    Input& in,
     const char* filename,
     StringMap& stringMap,
     IntMap& intMap,
@@ -159,7 +158,7 @@ void Input::load(const char* filename)
   IntMap intMap;
   DblMap dblMap;
   formMaps(*this, stringMap, intMap, dblMap);
-  readInputFile(*this, filename, stringMap, intMap, dblMap);
+  readInputFile(filename, stringMap, intMap, dblMap);
   validate(*this);
 }
 
