@@ -22,6 +22,7 @@ class Input
     std::string modelFileName;
     std::string outputFormat;
     std::string partitionMethod;
+    std::string preAdaptBalanceMethod;
     int adaptFlag;
     int rRead;
     int rStart;

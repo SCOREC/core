@@ -15,6 +15,7 @@ static void setDefaults(Input& in)
   in.adaptFlag = 0;
   in.rRead = 0;
   in.rStart = 0;
+  in.preAdaptBalanceMethod = "parma";
   in.adaptStrategy = -1;
   in.adaptErrorThreshold = 1e-6;  //used by adaptStrategy=2 (runFromErrorThreshold)
   in.adaptErrorFieldName = "errors"; //used by adaptStrategy=2 (runFromErrorThreshold)
@@ -73,6 +74,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   stringMap["modelFileName"] = &in.modelFileName;
   stringMap["outputFormat"] = &in.outputFormat;
   stringMap["partitionMethod"] = &in.partitionMethod;
+  stringMap["preAdaptBalanceMethod"] = &in.preAdaptBalanceMethod;
   intMap["adaptFlag"] = &in.adaptFlag;
   intMap["rRead"] = &in.rRead;
   intMap["rStart"] = &in.rStart;
