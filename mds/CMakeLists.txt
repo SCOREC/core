@@ -36,6 +36,7 @@ set(MDS_SOURCES
   mds_tag.c
   apfMDS.cc
   apfPM.cc
+  apfBox.cc
   mdsANSYS.cc
   mdsGmsh.cc
   mdsUgrid.cc)
