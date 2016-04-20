@@ -3,6 +3,7 @@
 #include <gmi_base.h>
 #include <gmi_lookup.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace apf {
 
