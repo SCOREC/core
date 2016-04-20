@@ -55,6 +55,8 @@ class Input
     int filterMatches;
     int axisymmetry;
     int formEdges;
+    int parmaLoops;
+    int parmaVerbosity;
     double elementImbalance;
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);

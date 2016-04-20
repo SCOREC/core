@@ -108,10 +108,10 @@ void parmaTet(Input& in, apf::Mesh2* m, bool runGap) {
   Parma_PrintPtnStats(m, "preRefine", fineStats); //FIXME
   apf::MeshTag* weights = setWeights(m);
   const double step = 0.3;
-  const int verbose = 1;  // set to 2 for per iteration stats
+  const int verbose = in.parmaVerbosity;  // set to 2 for per iteration stats
   if(runGap)
     neighborReduction(m,weights,verbose,fineStats);
-  for(int i=0; i<3; i++) {
+  for(int i=0; i<in.parmaLoops; i++) {
     apf::Balancer* balancer = Parma_MakeVtxElmBalancer(m, step, verbose);
     balancer->balance(weights, in.vertexImbalance);
     Parma_PrintPtnStats(m, "post Parma_MakeVtxElmBalancer", fineStats);
