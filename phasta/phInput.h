@@ -1,7 +1,6 @@
 #ifndef PH_INPUT_H
 #define PH_INPUT_H
 
-#include <apfNew.h>
 #include <string>
 
 struct RStream;
@@ -42,8 +41,6 @@ class Input
     int isReorder;
     int tetrahedronize;
     int localPtn;
-    int recursivePtn;
-    apf::NewArray<int> recursivePtnStep;
     int recursiveUR;
     int parmaPtn;
     int dwalMigration;

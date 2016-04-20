@@ -30,7 +30,6 @@ static void setDefaults(Input& in)
   in.openfile_read = 0;
   in.tetrahedronize = 0;
   in.localPtn = 1;
-  in.recursivePtn = -1;
   in.recursiveUR = 1;
   in.parmaPtn = 0; // No Parma by default
   in.displacementMigration = 0; // Do not migrate displacement field by default
@@ -90,7 +89,6 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["isReorder"] = &in.isReorder;
   intMap["Tetrahedronize"] = &in.tetrahedronize;
   intMap["LocalPtn"] = &in.localPtn;
-  intMap["RecursivePtn"] = &in.recursivePtn;
   intMap["ParmaPtn"] = &in.parmaPtn;
   intMap["dwalMigration"] = &in.dwalMigration;
   intMap["buildMapping"] = &in.buildMapping;
@@ -141,15 +139,6 @@ static void readInputFile(
       continue;
     if (tryReading(name, f, dblMap))
       continue;
-    /* the WEIRD parameter ! */
-    if (name == "RecursivePtnStep") {
-      if (in.recursivePtn == -1)
-        fail("RecursivePtn needs to be set before RecursivePtnStep");
-      in.recursivePtnStep.allocate(in.recursivePtn);
-      for (int i = 0; i < in.recursivePtn; ++i)
-        f >> in.recursivePtnStep[i];
-      continue;
-    }
     fail("unknown variable \"%s\" in %s\n", name.c_str(), filename);
   }
 }

@@ -11,7 +11,6 @@ namespace ph {
 
 apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
 {
-  assert(in.recursivePtn <= 1);
   assert(in.splitFactor >= 1);
   apf::Migration* plan;
   if (in.splitFactor != 1) {
