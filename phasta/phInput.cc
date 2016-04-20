@@ -25,11 +25,12 @@ static void setDefaults(Input& in)
   in.internalBCNodes = 0;
   in.writeDebugFiles = 0;
   in.splitFactor = 1;
+  in.partitionMethod = "rib";
+  in.localPtn = 1;
   in.solutionMigration = 1;
   in.isReorder = 0;
   in.openfile_read = 0;
   in.tetrahedronize = 0;
-  in.localPtn = 1;
   in.recursiveUR = 1;
   in.parmaPtn = 0; // No Parma by default
   in.displacementMigration = 0; // Do not migrate displacement field by default
