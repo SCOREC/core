@@ -40,7 +40,6 @@ class Input
     int solutionMigration;
     int displacementMigration;
     int isReorder;
-    int numSplit;
     int tetrahedronize;
     int localPtn;
     int recursivePtn;

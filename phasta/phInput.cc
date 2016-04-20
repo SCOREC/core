@@ -28,7 +28,6 @@ static void setDefaults(Input& in)
   in.solutionMigration = 1;
   in.isReorder = 0;
   in.openfile_read = 0;
-  in.numSplit = 10;
   in.tetrahedronize = 0;
   in.localPtn = 1;
   in.recursivePtn = -1;
@@ -89,7 +88,6 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["SolutionMigration"] = &in.solutionMigration;
   intMap["DisplacementMigration"] = &in.displacementMigration;
   intMap["isReorder"] = &in.isReorder;
-  intMap["numSplit"] = &in.numSplit;
   intMap["Tetrahedronize"] = &in.tetrahedronize;
   intMap["LocalPtn"] = &in.localPtn;
   intMap["RecursivePtn"] = &in.recursivePtn;
