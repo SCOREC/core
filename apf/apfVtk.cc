@@ -929,15 +929,8 @@ void writeVtkFilesRunner(const char* prefix,
   delete n;
 }
 
-void writeOneVtkFile(const char* prefix, Mesh* m)
+std::vector<std::string> populateWriteFields(Mesh* m)
 {
-  /* creating a non-collective numbering is
-     a tad bit risky, but we should be fine
-     given the current state of the code */
-
-  // bool isWritingBinary = true;
-  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
-  m->removeNumbering(n);
   std::vector<std::string> writeFields;
   for (int i=0; i < m->countFields(); ++i)
   {
@@ -954,6 +947,19 @@ void writeOneVtkFile(const char* prefix, Mesh* m)
     GlobalNumbering* n = m->getGlobalNumbering(i);
     writeFields.push_back(n->getName());
   }
+  return writeFields;
+}
+
+void writeOneVtkFile(const char* prefix, Mesh* m)
+{
+  /* creating a non-collective numbering is
+     a tad bit risky, but we should be fine
+     given the current state of the code */
+
+  // bool isWritingBinary = true;
+  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
+  m->removeNumbering(n);
+  std::vector<std::string> writeFields = populateWriteFields(m);
   writeVtuFile(prefix,n,writeFields);
   delete n;
 }
@@ -968,22 +974,7 @@ void writeVtkFiles(
 
 void writeVtkFiles(const char* prefix, Mesh* m)
 {
-  std::vector<std::string> writeFields;
-  for (int i=0; i < m->countFields(); ++i)
-  {
-    Field* f = m->getField(i);
-    writeFields.push_back(f->getName());
-  }
-  for (int i=0; i < m->countNumberings(); ++i)
-  {
-    Numbering* n = m->getNumbering(i);
-    writeFields.push_back(n->getName());
-  }
-  for (int i=0; i < m->countGlobalNumberings(); ++i)
-  {
-    GlobalNumbering* n = m->getGlobalNumbering(i);
-    writeFields.push_back(n->getName());
-  }
+  std::vector<std::string> writeFields = populateWriteFields(m);
   writeVtkFilesRunner(prefix,m,writeFields,true);
 }
 
@@ -1001,22 +992,7 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with ASCII encoding ***
   //*** not recommended, use writeVtkFiles instead ***
-  std::vector<std::string> writeFields;
-  for (int i=0; i < m->countFields(); ++i)
-  {
-    Field* f = m->getField(i);
-    writeFields.push_back(f->getName());
-  }
-  for (int i=0; i < m->countNumberings(); ++i)
-  {
-    Numbering* n = m->getNumbering(i);
-    writeFields.push_back(n->getName());
-  }
-  for (int i=0; i < m->countGlobalNumberings(); ++i)
-  {
-    GlobalNumbering* n = m->getGlobalNumbering(i);
-    writeFields.push_back(n->getName());
-  }
+  std::vector<std::string> writeFields = populateWriteFields(m);
   writeVtkFilesRunner(prefix,m,writeFields,false);
 }
 
