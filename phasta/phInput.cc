@@ -1,6 +1,8 @@
+#include <PCU.h>
 #include "phInput.h"
 #include <fstream>
 #include <map>
+#include <set>
 #include "ph.h"
 #include <cassert>
 
@@ -15,6 +17,8 @@ static void setDefaults(Input& in)
   in.adaptFlag = 0;
   in.rRead = 0;
   in.rStart = 0;
+  in.preAdaptBalanceMethod = "parma";
+  in.prePhastaBalanceMethod = "parma-gap";
   in.adaptStrategy = -1;
   in.adaptErrorThreshold = 1e-6;  //used by adaptStrategy=2 (runFromErrorThreshold)
   in.adaptErrorFieldName = "errors"; //used by adaptStrategy=2 (runFromErrorThreshold)
@@ -25,15 +29,13 @@ static void setDefaults(Input& in)
   in.internalBCNodes = 0;
   in.writeDebugFiles = 0;
   in.splitFactor = 1;
+  in.partitionMethod = "rib";
+  in.localPtn = 1;
   in.solutionMigration = 1;
   in.isReorder = 0;
   in.openfile_read = 0;
-  in.numSplit = 10;
   in.tetrahedronize = 0;
-  in.localPtn = 1;
-  in.recursivePtn = -1;
   in.recursiveUR = 1;
-  in.parmaPtn = 0; // No Parma by default
   in.displacementMigration = 0; // Do not migrate displacement field by default
   in.dwalMigration = 0; // Do not migrate dwal field by default
   in.buildMapping = 0; // Do not build the mapping field by default
@@ -47,6 +49,8 @@ static void setDefaults(Input& in)
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
   in.axisymmetry = 0;
+  in.parmaLoops = 3; //a magical value
+  in.parmaVerbosity = 1; //fairly quiet
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
   in.rs = 0;
@@ -74,6 +78,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   stringMap["modelFileName"] = &in.modelFileName;
   stringMap["outputFormat"] = &in.outputFormat;
   stringMap["partitionMethod"] = &in.partitionMethod;
+  stringMap["preAdaptBalanceMethod"] = &in.preAdaptBalanceMethod;
+  stringMap["prePhastaBalanceMethod"] = &in.prePhastaBalanceMethod;
   intMap["adaptFlag"] = &in.adaptFlag;
   intMap["rRead"] = &in.rRead;
   intMap["rStart"] = &in.rStart;
@@ -89,11 +95,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["SolutionMigration"] = &in.solutionMigration;
   intMap["DisplacementMigration"] = &in.displacementMigration;
   intMap["isReorder"] = &in.isReorder;
-  intMap["numSplit"] = &in.numSplit;
   intMap["Tetrahedronize"] = &in.tetrahedronize;
   intMap["LocalPtn"] = &in.localPtn;
-  intMap["RecursivePtn"] = &in.recursivePtn;
-  intMap["ParmaPtn"] = &in.parmaPtn;
   intMap["dwalMigration"] = &in.dwalMigration;
   intMap["buildMapping"] = &in.buildMapping;
   intMap["elementsPerMigration"] = &in.elementsPerMigration;
@@ -104,6 +107,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
   intMap["filterMatches"] = &in.filterMatches;
   intMap["axisymmetry"] = &in.axisymmetry;
+  intMap["parmaLoops"] = &in.parmaLoops;
+  intMap["parmaVerbosity"] = &in.parmaVerbosity;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   intMap["formEdges"] = &in.formEdges;
@@ -121,19 +126,43 @@ static bool tryReading(std::string const& name,
   return true;
 }
 
+typedef std::set<std::string> stringset;
+
+static void makeDeprecated(stringset& old)
+{
+  old.insert("numSplit");
+  old.insert("ParmaPtn");
+  old.insert("RecursivePtn");
+  old.insert("RecursivePtnStep");
+}
+
+static bool deprecated(stringset& old, std::string const& name)
+{
+  if( old.count(name) ) {
+    if( !PCU_Comm_Self() )
+      fprintf(stderr, "WARNING deprecated input \"%s\" ... "
+          "carefully check stderr and stdout for unexpected behavior\n",
+          name.c_str());
+    return true;
+  } else {
+    return false;
+  }
+}
+
 static void readInputFile(
-    Input& in,
     const char* filename,
     StringMap& stringMap,
     IntMap& intMap,
     DblMap& dblMap)
 {
+  stringset old;
+  makeDeprecated(old);
   std::ifstream f(filename);
   if (!f)
     fail("could not open \"%s\"", filename);
   std::string name;
   while (f >> name) {
-    if (name[0] == '#') {
+    if (name[0] == '#' || deprecated(old,name)) {
       std::getline(f, name, '\n');
       continue;
     }
@@ -143,22 +172,12 @@ static void readInputFile(
       continue;
     if (tryReading(name, f, dblMap))
       continue;
-    /* the WEIRD parameter ! */
-    if (name == "RecursivePtnStep") {
-      if (in.recursivePtn == -1)
-        fail("RecursivePtn needs to be set before RecursivePtnStep");
-      in.recursivePtnStep.allocate(in.recursivePtn);
-      for (int i = 0; i < in.recursivePtn; ++i)
-        f >> in.recursivePtnStep[i];
-      continue;
-    }
     fail("unknown variable \"%s\" in %s\n", name.c_str(), filename);
   }
 }
 
 static void validate(Input& in)
 {
-  assert(in.parmaPtn == 0 || in.parmaPtn == 1);
   assert(in.elementImbalance > 1.0 && in.elementImbalance <= 2.0);
   assert(in.vertexImbalance > 1.0 && in.vertexImbalance <= 2.0);
   assert( ! (in.buildMapping && in.adaptFlag));
@@ -171,7 +190,7 @@ void Input::load(const char* filename)
   IntMap intMap;
   DblMap dblMap;
   formMaps(*this, stringMap, intMap, dblMap);
-  readInputFile(*this, filename, stringMap, intMap, dblMap);
+  readInputFile(filename, stringMap, intMap, dblMap);
   validate(*this);
 }
 

@@ -47,6 +47,7 @@ class Migration;
   \param isMatched whether or not there will be matched entities */
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
+
 /** \brief load an MDS mesh from files
   \param model the geometric model interface
   \param meshfile The path to an SMB format mesh.
@@ -141,6 +142,19 @@ void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile
   supported, which become linear and quadratic tetrahedra,
   respectively. */
 Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
+
+
+/** \brief create a box from an MDS mesh
+  \param nx number of x elements
+  \param ny number of y elements
+  \param nz number of z elements
+  \param wx x dimension width
+  \param wy y dimension width
+  \param wz z dimension width
+  \param is true = simplical mesh, false = quad/hex
+  \details set ny,nz=0 for a 1D mesh, set nz=0 for a 2D mesh */
+Mesh2* makeMdsBox(
+    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
 
 void disownMdsModel(Mesh2* in);
 

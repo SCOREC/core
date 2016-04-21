@@ -37,11 +37,12 @@ void StkModels::computeInverse()
   for (int i = 0; i < 4; ++i) {
     assert(invMaps[i].empty());
     APF_ITERATE(StkModels::Vector, models[i], mit) {
-      StkModel* model = *mit;
-      APF_ITERATE(StkModel::Vector, model->ents, eit) {
+      StkModel* model_ptr = *mit;
+      assert(0 != model_ptr);
+      APF_ITERATE(StkModel::Vector, model_ptr->ents, eit) {
         apf::ModelEntity* e = *eit;
         assert( ! invMaps[i].count(e));
-        invMaps[i][e] = model;
+        invMaps[i][e] = model_ptr;
       }
     }
   }

@@ -506,6 +506,8 @@ void* agm_tag_at(struct agm_tag* t, enum agm_obj_type o,
 
 enum agm_ent_type agm_type_from_dim(int dim)
 {
+  assert(0 <= dim);
+  assert(dim <= 3);
   static enum agm_ent_type const tab[4] = {
     AGM_VERTEX,
     AGM_EDGE,

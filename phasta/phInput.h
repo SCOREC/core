@@ -1,7 +1,6 @@
 #ifndef PH_INPUT_H
 #define PH_INPUT_H
 
-#include <apfNew.h>
 #include <string>
 
 struct RStream;
@@ -23,6 +22,8 @@ class Input
     std::string modelFileName;
     std::string outputFormat;
     std::string partitionMethod;
+    std::string preAdaptBalanceMethod;
+    std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
     int rStart;
@@ -40,13 +41,9 @@ class Input
     int solutionMigration;
     int displacementMigration;
     int isReorder;
-    int numSplit;
     int tetrahedronize;
     int localPtn;
-    int recursivePtn;
-    apf::NewArray<int> recursivePtnStep;
     int recursiveUR;
-    int parmaPtn;
     int dwalMigration;
     int buildMapping;
     int elementsPerMigration;
@@ -58,6 +55,8 @@ class Input
     int filterMatches;
     int axisymmetry;
     int formEdges;
+    int parmaLoops;
+    int parmaVerbosity;
     double elementImbalance;
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);

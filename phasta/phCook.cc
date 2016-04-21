@@ -75,14 +75,14 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 namespace ph {
   void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
   {
-    /* check if the mesh changed at all */
+    /* check if the mesh changed at all or balancing was requested */
     if ( (PCU_Comm_Peers()!=numMasters) ||
         in.adaptFlag ||
-        in.parmaPtn ||
+        in.prePhastaBalanceMethod != "none" ||
         in.tetrahedronize ||
         in.isReorder )
     {
-      if (in.parmaPtn && PCU_Comm_Peers() > 1)
+      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
         ph::balance(in,m);
       apf::MeshTag* order = NULL;
       if (PCU_Comm_Peers() > 1)
