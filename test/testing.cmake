@@ -21,6 +21,7 @@ add_test(eigen_test eigen_test)
 add_test(integrate integrate)
 add_test(qr_test qr)
 add_test(base64 base64)
+add_test(tensor_test tensor)
 
 mpi_test(render 1
   ./render
@@ -323,5 +324,8 @@ if (PCU_COMPRESS)
     WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
     ../../../model.dmg bz2:../good_mesh/ adapt.inp
+    WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
+  mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
+    ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
 endif()

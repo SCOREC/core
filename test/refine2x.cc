@@ -95,6 +95,7 @@ int main(int argc, char** argv)
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
   ma::Input* in = ma::configure(m, ansx);
+  in->shouldRunPreZoltanRib = true;
   in->shouldRunPreParma = true;
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;

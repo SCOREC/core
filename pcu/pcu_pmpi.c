@@ -9,6 +9,9 @@
 *******************************************************************************/
 #include "pcu_pmpi.h"
 #include "pcu_buffer.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
 
 static int global_size;
 static int global_rank;
@@ -56,6 +59,10 @@ void pcu_pmpi_send(pcu_message* m, MPI_Comm comm)
 
 void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm)
 {
+  if( m->buffer.size > (size_t)INT_MAX ) {
+    fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
+    abort();
+  }
   MPI_Issend(
       m->buffer.start,
       (int)(m->buffer.size),
