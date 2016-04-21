@@ -50,6 +50,7 @@ void setDefaultValues(Input* in)
   in->validQuality = 1e-10;
   in->maximumImbalance = 1.10;
   in->shouldRunPreZoltan = false;
+  in->shouldRunPreZoltanRib = false;
   in->shouldRunPreParma = false;
   in->shouldRunMidZoltan = false;
   in->shouldRunMidParma = false;
