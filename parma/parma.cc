@@ -213,7 +213,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& numMaxParts,
   numMaxParts = PCU_Add_Int( (loc==max) );
 }
 
-void Parma_WriteSmallNeighbors(apf::Mesh* m, int small) {
+void Parma_WriteSmallNeighbors(apf::Mesh* m, int small, const char* prefix) {
   mii nborToShared;
   getNeighborCounts(m,nborToShared);
   int* smallCnt = new int[small];
@@ -228,7 +228,7 @@ void Parma_WriteSmallNeighbors(apf::Mesh* m, int small) {
     for(int i=0; i<small; i++)
       ss << i+1 << ":" << smallCnt[i] << " ";
     std::string s = ss.str();
-    status("small neighbor counts %s\n", s.c_str());
+    status("%s small neighbor counts %s\n", prefix, s.c_str());
   }
   delete [] smallCnt;
 }
@@ -361,7 +361,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
         key.c_str(), empty);
   }
   const int smallestSide = 10;
-  Parma_WriteSmallNeighbors(m, smallestSide);
+  Parma_WriteSmallNeighbors(m, smallestSide, key.c_str());
   writeWeightedEntStats(m,w,key);
   if( 0 == PCU_Comm_Self() ) {
     status("%s owned bdry vtx <tot max min avg> "
