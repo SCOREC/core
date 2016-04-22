@@ -1,5 +1,6 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
+#include <apfBox.h>
 #include <apfMesh2.h>
 #include <apf.h>
 #include <PCU.h>
