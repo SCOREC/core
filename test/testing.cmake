@@ -81,13 +81,13 @@ mpi_test(split_2 2
   "pipe.smb"
   ${MESHFILE}
   2)
-mpi_test(refineX 2
-  ./refine2x
-  "${MDIR}/pipe.dmg"
-  ${MESHFILE}
-  0
-  "refXpipe/")
 if(ENABLE_ZOLTAN)
+  mpi_test(refineX 2
+    ./refine2x
+    "${MDIR}/pipe.dmg"
+    ${MESHFILE}
+    0
+    "refXpipe/")
   mpi_test(split_4 4
     ./zsplit
     "${MDIR}/pipe.dmg"
@@ -288,7 +288,9 @@ if (PCU_COMPRESS)
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
     ../../../model.dmg bz2:../good_mesh/ adapt.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
-  mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
-    ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
-    WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
+  if(ENABLE_ZOLTAN)
+    mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
+      ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
+      WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
+  endif()
 endif()
