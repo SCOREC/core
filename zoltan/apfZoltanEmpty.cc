@@ -16,6 +16,12 @@ Splitter* makeZoltanSplitter(Mesh*, int, int, bool, bool)
   return 0;
 }
 
+Splitter* makeZoltanGlobalSplitter(Mesh*, int, int, bool)
+{
+  fail("apf_zoltan compiled empty !");
+  return 0;
+}
+
 Balancer* makeZoltanBalancer(Mesh*, int, int, bool)
 {
   fail("apf_zoltan compiled empty !");
