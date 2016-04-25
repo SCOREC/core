@@ -7,7 +7,7 @@
 
 namespace apf {
 
-Indices::Indices() {}
+Indices::Indices() : x(0), y(0), z(0) {}
 
 Indices::Indices(int a, int b, int c): x(a),y(b),z(c) {}
 
