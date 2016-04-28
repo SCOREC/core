@@ -11,13 +11,17 @@
 #include "crv.h"
 #include <mthQR.h>
 
-/*
- * Brian won't let me put stuff in his mth,
- * because hes a dictator
- * so this is the next best thing
- */
+/** \file crvMath.h
+    \brief main file for math functions used in crv */
 
 namespace crv {
+
+/** \brief binomial function n!/(i!(n-i)!) */
+int binomial(int n, int i);
+/** \brief trinomial function n!/(i!j!(n-i-j)!) */
+int trinomial(int n, int i, int j);
+/** \brief "quadnomial" function n!/(i!j!k!(n-i-j-k)!) */
+int quadnomial(int n, int i, int j, int k);
 
 /** \brief faster power for integers */
 inline double intpow(const double b, const int e)
@@ -35,8 +39,10 @@ inline double intpow(const double b, const int e)
   }
 }
 
+/** \brief invert a matrix using QR factorization */
 void invertMatrixWithQR(int n, mth::Matrix<double>& A,
     mth::Matrix<double>& Ai);
+/** \brief invert a matrix using Pivoting and LU decomposition */
 void invertMatrixWithPLU(int n, mth::Matrix<double>& A,
     mth::Matrix<double>& Ai);
 }

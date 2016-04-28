@@ -6,8 +6,11 @@
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
+#include "parma_commons.h"
 
 namespace {
+  using parmaCommons::status;
+
   class ElmBalancer : public parma::Balancer {
     private:
       double sideTol;
@@ -31,11 +34,11 @@ namespace {
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "elmImb %f avgSides %f\n", maxElmImb, avgSides);
+          status("elmImb %f avgSides %f\n", maxElmImb, avgSides);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
-        parma::Stepper b(mesh, factor, s, w, t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, w, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
   };
@@ -44,6 +47,6 @@ namespace {
 apf::Balancer* Parma_MakeElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
   if( !PCU_Comm_Self() && verbosity )
-    fprintf(stdout,"PARMA_STATUS stepFactor %.3f\n", stepFactor);
+    status("stepFactor %.3f\n", stepFactor);
   return new ElmBalancer(m, stepFactor, verbosity);
 }

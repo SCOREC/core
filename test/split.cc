@@ -90,6 +90,7 @@ int main(int argc, char** argv)
   }
   switchToAll();
   m = repeatMdsMesh(m, g, plan, partitionFactor);
+  Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
   gmi_sim_stop();

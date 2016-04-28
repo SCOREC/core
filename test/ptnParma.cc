@@ -1,10 +1,12 @@
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
 #include <apfZoltan.h>
 #include <parma.h>
+#include <SimUtil.h>
 #include <cstdlib>
 
 namespace {
@@ -107,6 +109,15 @@ void runParma(apf::Mesh2* m) {
   apf::Balancer* balancer = Parma_MakeVtxElmBalancer(m, step, verbose);
   balancer->balance(weights, 1.05);
   delete balancer;
+  Parma_PrintPtnStats(m, "postVtxElm");
+
+  // let the percent imbalance increase by 10% e.g. 1.05 -> 1.055
+  double elmImb = Parma_GetWeightedEntImbalance(m, weights, m->getDimension());
+  double elmImbLimit = 1+((elmImb-1)*1.10);
+  balancer = Parma_MakeShapeOptimizer(m, step, verbose);
+  balancer->balance(weights, elmImbLimit);
+  delete balancer;
+
   clearTags(m, weights);
   m->destroyTag(weights);
   Parma_PrintPtnStats(m, "final");
@@ -147,7 +158,7 @@ void mymain(bool ismaster)
   remapMesh(m);
   m->migrate(plan);
   runParma(m);
-  //m->writeNative(outFile);
+  m->writeNative(outFile);
   freeMesh(m);
 }
 
@@ -179,14 +190,19 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  PCU_Comm_Order(true);
+  SimUtil_start();
+  Sim_readLicenseFile(NULL);
+  gmi_sim_start();
   gmi_register_mesh();
+  gmi_register_sim();
   getConfig(argc,argv);
   if (PCU_Comm_Self() % partitionFactor)
     mymain(false);
   else
     mymain(true);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
+  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }
-

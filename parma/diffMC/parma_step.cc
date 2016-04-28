@@ -6,13 +6,16 @@
 #include "parma_targets.h"
 #include "parma_selector.h"
 #include "parma_stop.h"
+#include "parma_commons.h"
 
 namespace parma {
+  using parmaCommons::status;
+
   Stepper::Stepper(apf::Mesh* mIn, double alphaIn,
      Sides* s, Weights* w, Targets* t, Selector* sel,
-     Stop* stopper) 
-    : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t), 
-    selects(sel), stop(stopper) {
+     const char* entType, Stop* stopper)
+    : m(mIn), alpha(alphaIn), sides(s), weights(w), targets(t),
+    selects(sel), name(entType), stop(stopper) {
       verbose = 0;
   }
 
@@ -25,27 +28,20 @@ namespace parma {
   }
 
   bool Stepper::step(double maxImb, int verbosity) {
-    const double imb = imbalance();
+    double imb, avg;
+    getImbalance(weights, imb, avg);
     if ( !PCU_Comm_Self() && verbosity )
-      fprintf(stdout, "imbalance %.3f\n", imb);
+      status("%s imbalance %.3f avg %.3f\n", name, imb, avg);
     if ( stop->stop(imb,maxImb) )
       return false;
     apf::Migration* plan = selects->run(targets);
+    int planSz = PCU_Add_Int(plan->count());
     const double t0 = PCU_Time();
     m->migrate(plan);
     if ( !PCU_Comm_Self() && verbosity )
-      fprintf(stdout, "elements migrated in %f seconds\n", PCU_Time()-t0);
+      status("%d elements migrated in %f seconds\n", planSz, PCU_Time()-t0);
     if( verbosity > 1 ) 
       Parma_PrintPtnStats(m, "endStep", (verbosity>2));
     return true;
-  }
-
-  double Stepper::imbalance() { 
-    double maxWeight = 0, totalWeight = 0;
-    maxWeight = totalWeight = weights->self();
-    totalWeight = PCU_Add_Double(totalWeight);
-    maxWeight = PCU_Max_Double(maxWeight);
-    double averageWeight = totalWeight / PCU_Comm_Peers();
-    return maxWeight / averageWeight;
   }
 }

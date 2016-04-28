@@ -10,9 +10,11 @@
 #include "crvBezier.h"
 #include "crvMath.h"
 #include "crvTables.h"
-/* see bezier.tex */
+#include <cassert>
+/* see bezier.tex in SCOREC/docs repo */
 namespace crv {
 
+/* tolerance to determine if on a bounding entity */
 static double const blendingTol = 1.e-12;
 
 /* default is no blending */
@@ -21,6 +23,7 @@ static int B[apf::Mesh::TYPES] =
 
 void setBlendingOrder(const int type, const int b)
 {
+  assert(b >= 0 && b <= 2);
   if (type == apf::Mesh::TYPES){
     for(int t = 0; t < apf::Mesh::TYPES; ++t)
       B[t] = b;

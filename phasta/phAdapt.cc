@@ -10,6 +10,25 @@
 
 namespace ph {
 
+void setupPreBalance(Input& in, ma::Input* ma_in) {
+  if ( in.preAdaptBalanceMethod == "parma" ) {
+    ma_in->shouldRunPreParma = true;
+  } else if( in.preAdaptBalanceMethod == "graph" ) {
+    ma_in->shouldRunPreZoltan = true;
+  } else if( in.preAdaptBalanceMethod == "zrib" ) {
+    ma_in->shouldRunPreZoltanRib = true;
+  } else if ( in.preAdaptBalanceMethod == "none" ) {
+    ma_in->shouldRunPreZoltan = false;
+    ma_in->shouldRunPreZoltanRib = false;
+    ma_in->shouldRunPreParma = false;
+  } else {
+    if (!PCU_Comm_Self())
+      fprintf(stderr,
+          "warning: ignoring unknown value of preAdaptBalanceMethod %s\n",
+          in.preAdaptBalanceMethod.c_str());
+  }
+}
+
 void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
     printf("Matched mesh: disabling"
@@ -18,21 +37,31 @@ void setupMatching(ma::Input& in) {
   in.shouldFixShape = false;
 }
 
-static void runFromErrorSize(Input&, apf::Mesh2* m)
+static void runFromErrorThreshold(Input& in, apf::Mesh2* m)
 {
-  const unsigned idx = 5;
-  const double errLimit = 1e-6;
+  const char* fieldname = in.adaptErrorFieldName.c_str();
+  const unsigned idx = in.adaptErrorFieldIndex;
+  const double errLimit = in.adaptErrorThreshold;
   const double factor = 0.5;
-  apf::Field* szFld = sam::specifiedIso(m,"errors",idx,errLimit,factor);
+  apf::Field* szFld = sam::errorThreshold(m,fieldname,idx,errLimit,factor);
   assert(szFld);
   chef::adapt(m, szFld);
   apf::destroyField(szFld);
 }
 
-void tetrahedronize(Input&, apf::Mesh2* m)
+static void runFromGivenSize(Input&, apf::Mesh2* m)
+{
+  const unsigned idx = 5;
+  apf::Field* szFld = sam::specifiedIso(m,"errors",idx);
+  assert(szFld);
+  chef::adapt(m, szFld);
+  apf::destroyField(szFld);
+}
+
+void tetrahedronize(Input& in, apf::Mesh2* m)
 {
   ma::Input* ma_in = ma::configureIdentity(m);
-  ma_in->shouldRunPreParma = true;
+  setupPreBalance(in, ma_in);
   ma_in->shouldTurnLayerToTets = true;
   ma::adapt(ma_in);
   m->verify();
@@ -43,8 +72,8 @@ void adapt(Input& in, apf::Mesh2* m)
   typedef void (*Strategy)(Input&, apf::Mesh2*);
   static Strategy const table[PH_STRATEGIES] =
   {0//0
-  ,runFromErrorSize//1
-  ,0//2
+  ,runFromGivenSize//1
+  ,runFromErrorThreshold//2
   ,0//3
   ,0//4
   ,0//5
@@ -70,6 +99,7 @@ namespace chef {
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)
   {
     ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
+    setupPreBalance(in, ma_in);
     ma_in->shouldRefineLayer = true;
     ma_in->splitAllLayerEdges = in.splitAllLayerEdges;
     if (in.snap) {

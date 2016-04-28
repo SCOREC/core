@@ -25,6 +25,19 @@ namespace parma {
     return sum;
   }
 
+  void getImbalance(Weights* w, double& imb, double& avg) {
+    double sum, max;
+    sum = max = w->self();
+    sum = PCU_Add_Double(sum);
+    max = PCU_Max_Double(max);
+    avg = sum/PCU_Comm_Peers();
+    imb = max/avg;
+  }
+
+  double getMaxWeight(Weights* w) {
+    return PCU_Max_Double(w->self());
+  }
+
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
     assert(m->hasTag(e,w));
     double weight;

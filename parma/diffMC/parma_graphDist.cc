@@ -1,13 +1,15 @@
 #include <apf.h>
 #include <PCU.h>
-#include <list>
-#include <set>
-#include <limits.h>
 #include "parma_graphDist.h"
 #include "parma_dijkstra.h"
 #include "parma_dcpart.h"
 #include "parma_meshaux.h"
 #include "parma_convert.h"
+#include "parma_commons.h"
+#include <list>
+#include <set>
+#include <limits.h>
+#include <stdlib.h>
 
 namespace {
   apf::MeshTag* initTag(apf::Mesh* m, const char* name,
@@ -173,7 +175,7 @@ namespace {
    *   during the walks will have a INT_MAX distance which will bias diffusion
    *   to migrate the bounded cavities before other cavities.
    */
-  void getBdryVtx(apf::Mesh* m, apf::MeshTag* dist, 
+  void getBdryVtx(apf::Mesh* m, apf::MeshTag* dist,
       parma::DistanceQueue<parma::Less>& pq) {
     int dmax = INT_MAX;
     apf::MeshEntity* u;
@@ -182,7 +184,7 @@ namespace {
       if( !m->isShared(u) && !onMdlBdry(m,u) ) continue;
       m->setIntTag(u,dist,&dmax); // (1)
       apf::Adjacent verts;
-      getEdgeAdjVtx(m,u,verts);
+      getElmAdjVtx(m,u,verts);
       APF_ITERATE(apf::Adjacent, verts, v) {
         if( !m->isShared(*v) && !onMdlBdry(m,*v) ) {
           int vd; m->getIntTag(*v,dist,&vd);
@@ -218,6 +220,131 @@ namespace {
   }
 } //end namespace
 
+namespace parma_ordering {
+  typedef std::list<apf::MeshEntity*> queue;
+
+  inline apf::MeshEntity* pop(queue& q) {
+    apf::MeshEntity* e = q.front();
+    assert(e);
+    q.pop_front();
+    return e;
+  }
+
+  int bfs(apf::Mesh* m, parma::DijkstraContains* c,
+       apf::MeshEntity* src, apf::MeshTag* order, int num) {
+    if( !src )
+      return num;
+    queue q;
+    q.push_back(src);
+    while( !q.empty() ) {
+      apf::MeshEntity* v = pop(q);
+      if( m->hasTag(v,order) ) continue;
+      m->setIntTag(v,order,&num); num++;
+      apf::Adjacent adjVtx;
+      getEdgeAdjVtx(m,v,adjVtx);
+      APF_ITERATE(apf::Adjacent, adjVtx, eItr) {
+        apf::MeshEntity* u = *eItr;
+        if( c->has(u) && ! m->hasTag(u,order) )
+          q.push_back(u);
+      }
+    }
+    return num;
+  }
+
+  apf::MeshEntity* getMaxDistSeed(apf::Mesh* m, CompContains* c,
+      apf::MeshTag* dt, apf::MeshTag* order) {
+    int rmax = -1;
+    apf::MeshEntity* emax = NULL;
+    int cnt=0;
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while( (e = m->iterate(it)) ) {
+      if( ! c->has(e) ) continue;
+      cnt++;
+      int d; m->getIntTag(e,dt,&d);
+      PCU_Debug_Print("cnt %d d %d hasTag %d\n", cnt, d, m->hasTag(e,order));
+      if( !m->hasTag(e,order) && d > rmax ) {
+        rmax = d;
+        emax = e;
+      }
+    }
+    m->end(it);
+    return emax;
+  }
+
+  apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
+    apf::MeshTag* order = m->createIntTag("parma_ordering",1);
+    int start = 0;
+    for(unsigned i=0; i<c.size(); i++) {
+      CompContains* contains = new CompContains(c,i);
+      apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
+      PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
+      start = bfs(m, contains, src, order, start);
+      delete contains;
+      if(start == TO_INT(m->count(0))) {
+        if( i != c.size()-1 )
+          parmaCommons::status("%d all vertices visited comp %u of %u\n",
+              PCU_Comm_Self(), i, c.size());
+        break;
+      }
+    }
+    assert(start == TO_INT(m->count(0)));
+
+    int* sorted = new int[m->count(0)];
+    for(unsigned i=0; i<m->count(0); i++)
+      sorted[i] = 0;
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while( (e = m->iterate(it)) ) {
+      assert( m->hasTag(e,order) );
+      int id; m->getIntTag(e,order,&id);
+      assert(id < TO_INT(m->count(0)));
+      sorted[id] = 1;
+    }
+    m->end(it);
+    for(unsigned i=0; i<m->count(0); i++)
+      assert(sorted[i]);
+    delete [] sorted;
+    return order;
+  }
+
+  // linear arrangement - estimate effectiveness of reordering
+  void la(apf::Mesh* m, apf::MeshTag* order=NULL) {
+    int setOrder = (order == NULL);
+    if( setOrder ) {
+      order = m->createIntTag("parma_default_ordering",1);
+      apf::MeshIterator* it = m->begin(0);
+      apf::MeshEntity* e;
+      int i = 0;
+      while( (e = m->iterate(it)) ) {
+        m->setIntTag(e,order,&i);
+        i++;
+      }
+      m->end(it);
+    }
+    int la = 0;
+    apf::Downward verts;
+    apf::MeshIterator* it = m->begin(1);
+    apf::MeshEntity* e;
+    while( (e = m->iterate(it)) ) {
+      m->getDownward(e,0,verts);
+      int vid; m->getIntTag(verts[0],order,&vid);
+      int uid; m->getIntTag(verts[1],order,&uid);
+      la += abs(vid-uid);
+    }
+    m->end(it);
+    PCU_Debug_Print("la %d\n", la);
+    long tot=PCU_Add_Long(TO_LONG(la));
+    int max=PCU_Max_Int(la);
+    int min=PCU_Min_Int(la);
+    double avg = TO_DOUBLE(tot)/PCU_Comm_Peers();
+    if( !PCU_Comm_Self() )
+      parmaCommons::status("la min %d max %d avg %.3f\n", min, max, avg);
+    if( setOrder )
+      m->destroyTag(order);
+  }
+} //end namespace
+
 namespace parma {
   apf::MeshTag* getDistTag(apf::Mesh* m) {
     return m->findTag(distanceTagName());
@@ -233,7 +360,7 @@ namespace parma {
       t = computeDistance(m,c);
       if( PCU_Comm_Peers() > 1 && !c.numIso() )
         if( !hasDistance(m,t) ) {
-          fprintf(stderr, "CAKE rank %d comp %u iso %u ... "
+          parmaCommons::error("rank %d comp %u iso %u ... "
               "some vertices don't have distance computed\n",
               PCU_Comm_Self(), c.size(), c.numIso());
           assert(false);
@@ -244,4 +371,24 @@ namespace parma {
     }
     return t;
   }
+}
+
+apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
+  double t0 = PCU_Time();
+  assert( !hasDistance(m) );
+  parma::dcComponents c = parma::dcComponents(m);
+  apf::MeshTag* dist = computeDistance(m,c);
+  if( PCU_Comm_Peers() > 1 && !c.numIso() )
+    if( !hasDistance(m,dist) ) {
+      parmaCommons::error("rank %d comp %u iso %u ... "
+          "some vertices don't have distance computed\n",
+          PCU_Comm_Self(), c.size(), c.numIso());
+      assert(false);
+    }
+  parma_ordering::la(m);
+  apf::MeshTag* order = parma_ordering::reorder(m,c,dist);
+  parma_ordering::la(m,order);
+  m->destroyTag(dist);
+  parmaCommons::printElapsedTime(__func__,PCU_Time()-t0);
+  return order;
 }

@@ -19,6 +19,13 @@
 #include <cstdlib>
 #include <stdint.h>
 
+// === includes for safe_mkdir ===
+#include <reel.h>
+#include <sys/types.h> /*required for mode_t for mkdir on some systems*/
+#include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
+// ===============================
+
 namespace apf {
 
 class HasAll : public FieldOp
@@ -82,7 +89,7 @@ static void describeArray(
   }
   else
   {
-    file << "\" format=\"ascii\"";  
+    file << "\" format=\"ascii\"";
   }
 }
 
@@ -226,10 +233,10 @@ static void writePCellData(std::ostream& file,
   file << "</PCellData>\n";
 }
 
-static std::string getPieceFileName(const char* prefix, int id)
+static std::string getPieceFileName(int id)
 {
   std::stringstream ss;
-  ss << prefix << id << ".vtu";
+  ss << id << ".vtu";
   return ss.str();
 }
 
@@ -243,12 +250,21 @@ static std::string stripPath(std::string const& s)
   return s.substr(i + 1, std::string::npos);
 }
 
-static void writePSources(std::ostream& file, const char* prefix)
+static std::string getRelativePathPSource(int id)
+{
+  std::stringstream ss;
+  int dirNum = id/1024;
+  ss << dirNum << '/';
+  return ss.str();
+}
+
+static void writePSources(std::ostream& file)
 {
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
-    std::string fileName = stripPath(getPieceFileName(prefix,i));
-    file << "<Piece Source=\"" << fileName << "\"/>\n";
+    std::string fileName = stripPath(getPieceFileName(i));
+    std::string fileNameAndPath = getRelativePathPSource(i) + fileName;
+    file << "<Piece Source=\"" << fileNameAndPath << "\"/>\n";
   }
 }
 
@@ -256,16 +272,19 @@ static void writePvtuFile(const char* prefix,
     Mesh* m,
     bool isWritingBinary = false)
 {
-  std::string fileName = prefix;
+  std::string fileName = stripPath(prefix);
   fileName += ".pvtu";
-  std::ofstream file(fileName.c_str());
+  std::stringstream ss;
+  ss << prefix << '/' << fileName;
+  std::string fileNameAndPath = ss.str();
+  std::ofstream file(fileNameAndPath.c_str());
   assert(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
   file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
   writePPoints(file,m->getCoordinateField(),isWritingBinary);
   writePPointData(file,m,isWritingBinary);
   writePCellData(file,m,isWritingBinary);
-  writePSources(file,prefix);
+  writePSources(file);
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
 }
@@ -354,7 +373,7 @@ static void writeNodalField(std::ostream& file,
       file << '\n';
     }
   }
-  file << "</DataArray>\n"; 
+  file << "</DataArray>\n";
 }
 
 static void writePoints(std::ostream& file,
@@ -364,7 +383,7 @@ static void writePoints(std::ostream& file,
 {
   file << "<Points>\n";
   writeNodalField<double>(file,m->getCoordinateField(),nodes,isWritingBinary);
-  file << "</Points>\n"; 
+  file << "</Points>\n";
 }
 
 static int countElementNodes(Numbering* n, MeshEntity* e)
@@ -390,7 +409,6 @@ static void writeConnectivity(std::ostream& file,
   MeshEntity* e;
   if (isWritingBinary)
   {
-    // TODO: see if we can do this with only one loop
     MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
@@ -454,7 +472,6 @@ static void writeOffsets(std::ostream& file,
   MeshEntity* e;
   if (isWritingBinary)
   {
-    // TODO: see if we can do this with only one loop
     MeshIterator* elements = m->begin(m->getDimension());
     unsigned int dataLen = 0;
     while ((e = m->iterate(elements)))
@@ -562,7 +579,7 @@ static void writeCells(std::ostream& file,
   writeConnectivity(file,n,isWritingBinary);
   writeOffsets(file,n,isWritingBinary);
   writeTypes(file,n->getMesh(),isWritingBinary);
-  file << "</Cells>\n"; 
+  file << "</Cells>\n";
 }
 
 static void writePointData(std::ostream& file,
@@ -600,7 +617,6 @@ static void writePointData(std::ostream& file,
 
 template <class T>
 class WriteIPField : public FieldOp
-//TODO change to write encoded data
 {
   public:
     int point;
@@ -609,6 +625,11 @@ class WriteIPField : public FieldOp
     FieldDataOf<T>* data;
     MeshEntity* entity;
     std::ostream* fp;
+    bool isWritingBinary;
+
+    T* dataToEncode;
+    int dataIndex;
+
     virtual bool inEntity(MeshEntity* e)
     {
       entity = e;
@@ -620,29 +641,74 @@ class WriteIPField : public FieldOp
         return;
       data->getNodeComponents(entity,node,&(ipData[0]));
       for (int i=0; i < components; ++i)
-        (*fp) << ipData[i] << ' ';
-      (*fp) << '\n';
+      {
+        if (isWritingBinary)
+        {
+          // if we are writing base64 then populate the array to be encoded
+          dataToEncode[dataIndex] = ipData[i];
+          dataIndex++;
+        }
+        else
+        {
+          (*fp) << ipData[i] << ' '; //otherwise simply write to the file
+        }
+      }
+      if (!isWritingBinary)
+      {
+        (*fp) << '\n'; //newline for each node when not writing base64
+      }
     }
     void runOnce(FieldBase* f)
     {
       std::string s = getIPName(f,point);
       components = f->countComponents();
-      writeDataHeader(*fp,s.c_str(),f->getScalarType(),f->countComponents());
+      writeDataHeader(*fp,
+        s.c_str(),
+        f->getScalarType(),
+        f->countComponents(),
+        isWritingBinary);
       ipData.allocate(components);
       data = static_cast<FieldDataOf<T>*>(f->getData());
-      apply(f);
-      (*fp) << "</DataArray>\n"; 
+
+      if (isWritingBinary) //extra steps if we are writing base64
+      {
+        //calculate size of array
+        Mesh* m = f->getMesh();
+        int arraySize = m->count(m->getDimension())*components;
+
+        dataToEncode = new T[arraySize](); //allocate space for array
+        apply(f); //populate array
+
+        //encode and write to file
+        int dataLenBytes = arraySize * sizeof(T);
+        writeEncodedArray( (*fp), dataLenBytes, (char*)dataToEncode);
+
+        //free array
+        delete [] dataToEncode;
+        dataIndex = 0;
+      }
+      else
+      {
+        apply(f); //same function call if writing ASCII
+      }
+      (*fp) << "</DataArray>\n";
     }
-    void run(std::ostream& file, FieldBase* f)
+    void run(std::ostream& file,
+      FieldBase* f,
+      bool isWritingBinaryArg = false)
     {
+      isWritingBinary = isWritingBinaryArg;
       fp = &file;
+      dataIndex = 0;
       int n = countIPs(f);
       for (point=0; point < n; ++point)
+      {
         runOnce(f);
+      }
     }
 };
 
-static void writeCellParts(std::ostream& file, 
+static void writeCellParts(std::ostream& file,
     Mesh* m,
     bool isWritingBinary = false)
 {
@@ -663,7 +729,7 @@ static void writeCellParts(std::ostream& file,
     delete [] dataToEncode;
   }
   else
-  { 
+  {
     for (size_t i = 0; i < n; ++i)
     {
       file << id << '\n';
@@ -683,7 +749,7 @@ static void writeCellData(std::ostream& file,
     Field* f = m->getField(i);
     if (isIP(f) && isPrintable(f))
     {
-      wd.run(file,f);
+      wd.run(file,f,isWritingBinary);
     }
   }
   WriteIPField<int> wi;
@@ -692,7 +758,7 @@ static void writeCellData(std::ostream& file,
     Numbering* n = m->getNumbering(i);
     if (isIP(n) && isPrintable(n))
     {
-      wi.run(file,n);
+      wi.run(file,n,isWritingBinary);
     }
   }
   WriteIPField<long> wl;
@@ -701,7 +767,7 @@ static void writeCellData(std::ostream& file,
     GlobalNumbering* n = m->getGlobalNumbering(i);
     if (isIP(n) && isPrintable(n))
     {
-      wl.run(file,n);
+      wl.run(file,n,isWritingBinary);
     }
   }
   writeCellParts(file, m, isWritingBinary);
@@ -718,13 +784,23 @@ bool isBigEndian()
   return bint.c[0] == 1;
 }
 
+static std::string getFileNameAndPathVtu(const char* prefix,
+    std::string fileName,
+    int id)
+{
+  int dirNum = id/1024;
+  std::stringstream ss;
+  ss << prefix << '/' << dirNum << '/' << fileName;
+  return ss.str();
+}
+
 static void writeVtuFile(const char* prefix,
     Numbering* n,
     bool isWritingBinary = false)
 {
-  PCU_Barrier();
   double t0 = PCU_Time();
-  std::string fileName = getPieceFileName(prefix,PCU_Comm_Self());
+  std::string fileName = getPieceFileName(PCU_Comm_Self());
+  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
   std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
@@ -743,7 +819,7 @@ static void writeVtuFile(const char* prefix,
     }
     if (lion::can_compress )
     {
-      //TODO determine what the header_type should be definatively
+      //TODO determine what the header_type should be definitively
       buf << " header_type=\"UInt64\"";
       buf << " compressor=\"vtkZLibDataCompressor\"";
     }
@@ -764,18 +840,16 @@ static void writeVtuFile(const char* prefix,
   buf << "</Piece>\n";
   buf << "</UnstructuredGrid>\n";
   buf << "</VTKFile>\n";
-  PCU_Barrier();
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
   {
     printf("writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
   { //block forces std::ofstream destructor call
-    std::ofstream file(fileName.c_str());
+    std::ofstream file(fileNameAndPath.c_str());
     assert(file.is_open());
     file << buf.rdbuf();
   }
-  PCU_Barrier();
   double t2 = PCU_Time();
   if (!PCU_Comm_Self())
   {
@@ -783,11 +857,57 @@ static void writeVtuFile(const char* prefix,
   }
 }
 
-void writeVtkFiles(const char* prefix, Mesh* m)
+static void safe_mkdir(const char* path)
 {
-//*** this function is now writing base64 encoded, compressed vtk files
-  // writeASCIIVtkFiles(prefix, m);
-  writeBinaryVtkFiles(prefix, m);
+  mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+  int err;
+  errno = 0;
+  err = mkdir(path, mode);
+  if (err != 0 && errno != EEXIST)
+  {
+    reel_fail("MDS: could not create directory \"%s\"\n", path);
+  }
+}
+
+static void makeVtuSubdirectories(const char* prefix, int numParts)
+{
+  std::stringstream ss1;
+  ss1 << prefix;
+  std::string prefixStr = ss1.str();
+  int numDirectories = numParts/1024;
+  if (numParts % 1024 != 0)
+  {
+    numDirectories++;
+  }
+  for (int i = 0; i < numDirectories; i++)
+  {
+    std::stringstream ss2;
+    ss2 << prefix << '/' << i;
+    safe_mkdir(ss2.str().c_str());
+  }
+}
+
+void writeVtkFiles(const char* prefix,
+    Mesh* m,
+    bool isWritingBinary)
+{
+  double t0 = PCU_Time();
+  if (!PCU_Comm_Self())
+  {
+    safe_mkdir(prefix);
+    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
+    writePvtuFile(prefix, m, isWritingBinary);
+  }
+  PCU_Barrier();
+  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
+  m->removeNumbering(n);
+  writeVtuFile(prefix, n, isWritingBinary);
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+  {
+    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
+  }
+  delete n;
 }
 
 void writeOneVtkFile(const char* prefix, Mesh* m)
@@ -795,7 +915,7 @@ void writeOneVtkFile(const char* prefix, Mesh* m)
   /* creating a non-collective numbering is
      a tad bit risky, but we should be fine
      given the current state of the code */
-  
+
   // bool isWritingBinary = true;
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
@@ -808,41 +928,7 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m)
 {
   //*** this function writes vtk files with ASCII encoding ***
   //*** not recommended, use writeVtkFiles instead ***
-  double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    writePvtuFile(prefix, m);
-  }
-  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
-  m->removeNumbering(n);
-  writeVtuFile(prefix, n);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
-  }
-  delete n;
-}
-
-void writeBinaryVtkFiles(const char* prefix, Mesh* m)
-{
-  //*** this function writes vtk files with binary encoding ***
-  //use writeASCIIVtkFiles for ASCII encoding (not recommended)
-  bool isWritingBinary = true;
-  double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    writePvtuFile(prefix, m, isWritingBinary);
-  }
-  Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
-  m->removeNumbering(n);
-  writeVtuFile(prefix, n, isWritingBinary);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-  {
-    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
-  }
-  delete n;
+  writeVtkFiles(prefix, m, false);
 }
 
 }

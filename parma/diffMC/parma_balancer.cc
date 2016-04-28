@@ -2,11 +2,12 @@
 #include "parma_balancer.h"
 #include "parma_monitor.h"
 #include "parma_graphDist.h"
+#include "parma_commons.h"
 
 namespace {
   void printTiming(const char* type, int steps, double tol, double time) {
     if (!PCU_Comm_Self())
-      printf("%s balanced in %d steps to %f in %f seconds\n",
+      parmaCommons::status("%s balanced in %d steps to %f in %f seconds\n",
           type, steps, tol, time);
   }
 }

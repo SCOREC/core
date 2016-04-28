@@ -8,6 +8,7 @@
 #include <PCU.h>
 #include "crv.h"
 #include "crvAdapt.h"
+#include "crvShape.h"
 #include "crvTables.h"
 #include <maCoarsen.h>
 #include <maEdgeSwap.h>
@@ -19,9 +20,32 @@
 
 namespace crv {
 
+bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
+{
+  return m->getModelType(m->toModel(e)) < m->getDimension();
+}
+/** \brief checks if any entity has two entities of
+ * dimension on the boundary
+ * \details this is useful for some shape correction assessments,
+ * and in general, curved elements with multiple entities on the boundary
+ * are at risk for poor quality, since this strongly constrains
+ * their shape */
+static bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimension)
+{
+  apf::Downward down;
+  int count = 0;
+  int nd = m->getDownward(e,dimension,down);
+  for (int i = 0; i < nd; ++i){
+    if(isBoundaryEntity(m,down[i]))
+      ++count;
+    if(count == 2)
+      return true;
+  }
+  return false;
+}
+
 /* Mark Edges based on the invalidity code the element has been
  * tagged with.
- *
  */
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[6])
@@ -147,9 +171,11 @@ public:
     simplex = 0;
     md = mesh->getDimension();
     ne = nr = 0;
+    qual = makeQuality(mesh,2);
   }
   virtual ~EdgeReshaper()
   {
+    delete qual;
   }
   virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e)
@@ -167,7 +193,7 @@ public:
   {
     for (int i = 0; i < ne; ++i){
       if (!isBoundaryEntity(mesh,edges[i]) &&
-          repositionEdge(mesh,simplex,edges[i])){
+          repositionEdge(edges[i])){
         nr++;
         crv::clearTag(adapter,simplex);
         ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
@@ -176,8 +202,96 @@ public:
     }
   }
 private:
+  /** \brief reposition second order edge control point based on XJ Luo's
+      thesis and bezier.tex in SCOREC/docs repo, only works for second order */
+  bool repositionEdge(ma::Entity* edge)
+  {
+    // lets assume we have an edge we want to fix
+    // only support second order for now
+    int P = mesh->getShape()->getOrder();
+    if (P != 2) return false;
+
+    ma::Entity* verts[4];
+    ma::Entity* edges[6];
+
+    ma::Vector pivotPoint;
+    ma::Vector edgeVectors[3];
+    mesh->getDownward(simplex,0,verts);
+    mesh->getDownward(simplex,1,edges);
+
+    // pick a pivotVert, the vertex with the worse jacobian determinant
+    ma::Entity* pivotVert;
+    int pivotIndex;
+    {
+      apf::MeshElement* me = apf::createMeshElement(mesh,simplex);
+
+      ma::Entity* edgeVerts[2];
+      mesh->getDownward(edge,0,edgeVerts);
+      apf::Matrix3x3 J;
+      pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
+      assert(pivotIndex >= 0);
+
+      ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
+      apf::getJacobian(me,xi,J);
+
+      double j = apf::getJacobianDeterminant(J,3);
+      pivotVert = edgeVerts[0];
+
+      int index = apf::findIn(verts,4,edgeVerts[1]);
+      assert(index >= 0);
+      xi = crv::elem_vert_xi[apf::Mesh::TET][index];
+      apf::getJacobian(me,xi,J);
+      if (apf::getJacobianDeterminant(J,3) < j){
+        pivotVert = edgeVerts[1];
+        pivotIndex = index;
+      }
+      apf::destroyMeshElement(me);
+    }
+
+    mesh->getPoint(pivotVert,0,pivotPoint);
+
+    // local, of edges around vert, [0,2]
+    int edgeIndex = 0;
+
+    for (int i = 0; i < 3; ++i){
+      // theres only one point, so reuse this...
+      edgeVectors[i] = ma::getPosition(mesh,edges[vertEdges[pivotIndex][i]])
+                     - pivotPoint;
+      if (edges[vertEdges[pivotIndex][i]] == edge)
+        edgeIndex = i;
+    }
+    assert(edgeIndex >= 0);
+    ma::Vector normal = apf::cross(edgeVectors[(1+edgeIndex) % 3],
+        edgeVectors[(2+edgeIndex) % 3]);
+    double length = normal.getLength();
+    double validity = edgeVectors[edgeIndex]*normal;
+
+    if(validity > 1e-10)
+      return false;
+    ma::Vector oldPoint = ma::getPosition(mesh,edge);
+    apf::Adjacent adjacent;
+    mesh->getAdjacent(edge,3,adjacent);
+
+    // places the new point at a 20 degree angle with the plane
+    double angle = apf::pi/9.;
+    ma::Vector newPoint = edgeVectors[edgeIndex] + pivotPoint
+        + normal/length*(-validity/length +
+            edgeVectors[edgeIndex].getLength()*sin(angle));
+
+    mesh->setPoint(edge,0,newPoint);
+
+    for (std::size_t i = 0; i < adjacent.getSize(); ++i){
+      if (qual->checkValidity(adjacent[i]) > 0){
+        mesh->setPoint(edge,0,oldPoint);
+        return false;
+      }
+    }
+
+    return true;
+  }
   Adapt* adapter;
   ma::Mesh* mesh;
+  Quality* qual;
   ma::Entity* simplex;
   ma::Entity* edges[6];
   int md;

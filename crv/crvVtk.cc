@@ -15,6 +15,10 @@
 
 namespace crv {
 
+/* this file has all the VTK commands for curved meshing,
+   it is more meant as a debugging tool as proper visualization
+   does not exist in paraview past second order */
+
 class HasAll : public apf::FieldOp
 {
   public:

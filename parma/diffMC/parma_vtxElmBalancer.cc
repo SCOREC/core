@@ -8,8 +8,12 @@
 #include "parma_selector.h"
 #include "parma_step.h"
 #include "parma_monitor.h"
+#include "parma_commons.h"
+#include "parma_convert.h"
 
 namespace {
+  using parmaCommons::status;
+
   class ElmLtVtx : public parma::Balancer {
     private:
       int sideTol;
@@ -19,14 +23,14 @@ namespace {
         : Balancer(m, f, v, "elements") {
           maxVtx = maxV;
           if( !PCU_Comm_Self() && verbose ) {
-            fprintf(stdout, "PARMA_STATUS stepFactor %.3f\n", f);
-            fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
+            status("stepFactor %.3f\n", f);
+            status("maxVtx %.3f\n", maxVtx);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = static_cast<int>(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s));
           delete s;
           if( !PCU_Comm_Self() && verbose )
-            fprintf(stdout, "sideTol %d\n", sideTol);
+            status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxVtxImb =
@@ -34,14 +38,14 @@ namespace {
         const double maxElmImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "vtx imbalance %.3f\n", maxVtxImb);
+          status("vtx imbalance %.3f\n", maxVtxImb);
         parma::Sides* s = parma::makeVtxSides(mesh);
-        parma::Weights* w[2] =
-          {parma::makeEntWeights(mesh, wtag, s, 0),
-           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension())};
+        parma::Weights* vtxW = parma::makeEntWeights(mesh, wtag, s, 0);
+        parma::Weights* elmW =
+          parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t =
-          parma::makeVtxElmTargets(s, w, sideTol, maxVtx, factor);
-        delete w[0];
+          parma::makePreservingTargets(s, elmW, vtxW, sideTol, maxVtx, factor);
+        delete vtxW;
         parma::Selector* sel =
           parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
 
@@ -49,11 +53,11 @@ namespace {
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "elmImb %f avgSides %f\n", maxElmImb, avgSides);
+          status("elmImb %f avgSides %f\n", maxElmImb, avgSides);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
-        parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, elmW, t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
   };

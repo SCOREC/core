@@ -49,10 +49,27 @@ double Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* weight,
  *         vertices with
  * @param m (In) partitioned mesh
  * @param max (InOut) max neighbors
+ * @param maxNumParts (InOut) number of parts with max neighbors
  * @param avg (InOut) average neighbors
  * @param loc (InOut) local neighbors
  */
-void Parma_GetNeighborStats(apf::Mesh* m, int& max, double& avg, int& loc);
+void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& maxNumParts,
+    double& avg, int& loc);
+
+/**
+ * @brief write the number of parts with neighbors formed by a small number of shared vtx
+ * @param m (In) partitioned mesh
+ * @param small (In) report part counts with [1:small] number of shared vertices
+ */
+void Parma_WriteSmallNeighbors(apf::Mesh* m, int small);
+
+/**
+ * @brief get the smallest number of shared vertices forming a neighbor
+ *        ,a 'side', in a part with the maximum number of neigbhors
+ * @param m (In) partitioned mesh
+ * @return smallest number of shared vertices
+ */
+int Parma_GetSmallestSideMaxNeighborParts(apf::Mesh* m);
 
 /**
  * @brief get the number of owned vertices on inter-part boundaries
@@ -162,8 +179,33 @@ apf::Balancer* Parma_MakeShapeOptimizer(apf::Mesh* m, double stepFactor = 0.1,
  * @param verbosity (In) output control, higher values output more
  * @return apf balancer instance
  */
+apf::Balancer* Parma_MakeGhostElementDiffuser(apf::Mesh* m, int layers, int bridge,
+    double stepFactor = 0.1, int verbosity=0);
+
+/**
+ * @brief create an APF Balancer using ghost element aware diffusion
+ * @param m (In) partitioned mesh
+ * @param layers (In) depth of ghosting
+ * @param stepFactor (In) amount of weight to migrate between parts during
+                          diffusion, lower values migrate fewer
+                          elements per iteration
+ * @param verbosity (In) output control, higher values output more
+ * @return apf balancer instance
+ */
+apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers,
+    double stepFactor = 0.1, int verbosity=0);
+
+/** @brief backward compatability
+ */
 apf::Balancer* Parma_MakeGhostDiffuser(apf::Mesh* m, int layers, int bridge,
     double stepFactor = 0.1, int verbosity=0);
+
+/**
+ * @brief write the vertex based partition to file
+ * @param m (In) partitioned mesh
+ * @param prefix (In) prefix for file names
+ */
+void Parma_WriteVtxPtn(apf::Mesh* m, const char* prefix);
 
 /**
  * @brief create an APF Balancer targeting vertex imbalance
@@ -272,5 +314,13 @@ void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
  */
 int Parma_MisNumbering(apf::Mesh* m, int d);
 
+/**
+ * @brief reorder the mesh via a breadth first search
+ * @remark the returned tag has the reordered vertex order
+ * @param m (In) partitioned mesh
+ * @param verbosity (In) output control, higher values output more
+ * @return apf mesh tag
+ */
+apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int verbosity=0);
 
 #endif

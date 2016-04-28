@@ -18,6 +18,7 @@ read files in the AFLR3 format from Dave Marcum at Mississippi State
 */
 
 namespace {
+  typedef std::set<int> SetInt;
   int faceTypeIdx(int type) {
     switch(type) {
       case apf::Mesh::TRIANGLE: return 0;
@@ -106,8 +107,12 @@ namespace {
     return v;
   }
 
+  int ftnToC(long id) {
+    return --id;
+  }
+
   apf::MeshEntity* lookupVert(Reader* r, long ftnNodeId) {
-    const long cNodeId = ftnNodeId - 1;
+    const long cNodeId = ftnToC(ftnNodeId);
     assert(r->nodeMap.count(cNodeId));
     return r->nodeMap[cNodeId];
   }
@@ -125,6 +130,15 @@ namespace {
     }
     free(xyz);
     fprintf(stderr, "read %d vtx\n", h->nvtx);
+  }
+
+  void setNodeIds(Reader* r, header* h) {
+    apf::Mesh* m = r->mesh;
+    apf::MeshTag* t = m->createIntTag("ugrid-vtx-ids",1);
+    for(long lid=0; lid<h->nvtx; lid++) {
+      int iid = lid;
+      m->setIntTag(r->nodeMap[lid],t,&iid);
+    }
   }
 
   void readFaces(Reader* r, unsigned nfaces, int apfType) {
@@ -235,12 +249,157 @@ namespace {
     readHeader(&r, &hdr);
     hdr.print();
     readNodes(&r, &hdr);
+    setNodeIds(&r, &hdr);
     readFacesAndTags(&r,&hdr);
     checkFilePos(&r,&hdr);
     readElms(&r,&hdr);
     setFaceTags(&r,&hdr);
     freeReader(&r);
     m->acceptChanges();
+  }
+
+  void getMaxAndAvg(std::set<int>*& cnt, int numparts, int& max, double& avg) {
+    for(int i=0; i<numparts; i++) {
+      avg += cnt[i].size();
+      if( (double)cnt[i].size() > max )
+        max = cnt[i].size();
+    }
+    avg /= numparts;
+  }
+
+  template<typename T>
+  void getMaxAndAvg(T* cnt, int numparts, double& max, double& avg) {
+    for(int i=0; i<numparts; i++) {
+      avg += cnt[i];
+      if( cnt[i] > max )
+        max = cnt[i];
+    }
+    avg /= numparts;
+  }
+
+  class ptnstats {
+    public:
+      int numparts;
+      int* ptn;         //vertex id to part id array
+      SetInt* partvtx;  //vtx ids for each part
+      int* partelm;     //elm cnts
+      double* partelmW; //weighted elm counts
+
+      ptnstats() : numparts(0), ptn(NULL), partvtx(NULL),
+                   partelm(NULL), partelmW(NULL) {}
+      void getVtxPtn(int numVtx, const char* ptnFile) {
+        FILE* f = fopen(ptnFile, "r");
+        numparts = 0;
+        ptn = new int[numVtx];
+        for(long id=0; id<numVtx; id++) {
+          int read = fscanf(f, "%d", &ptn[id]);
+          assert(read);
+          if( ptn[id] > numparts )
+            numparts = ptn[id];
+        }
+        numparts++; //we want count, not rank
+        fclose(f);
+        fprintf(stderr, "read ptn for %d parts\n", numparts);
+      }
+      ~ptnstats() {
+        delete [] ptn;
+        delete [] partelm;
+        delete [] partelmW;
+        delete [] partvtx;
+      }
+      void getOwnedVtx(int nvtx) {
+        //count number of non-ghosted vtx per part
+        for(long id=0; id<nvtx; id++) {
+          const int partid = ptn[id];
+          assert(partid >= 0 && partid < numparts);
+          assert(!partvtx[partid].count(id));
+          partvtx[partid].insert(id);
+        }
+      }
+      void setup() {
+        partvtx = new SetInt[numparts];
+        partelm = new int[numparts];
+        partelmW = new double[numparts];
+        for(int i=0; i<numparts; i++)
+          partelm[i] = partelmW[i] = 0;
+      }
+  };
+
+  void readElms(Reader* r, unsigned nelms, int apfType,
+      const double weight, ptnstats& ps) {
+    const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
+    size_t cnt = nelms*nverts;
+    unsigned* vtx = (unsigned*) calloc(cnt,sizeof(unsigned));
+    readUnsigneds(r->file, vtx, cnt, r->swapBytes);
+    for(unsigned i=0; i<nelms; i++) {
+      SetInt elmparts;
+      //determine which parts have a copy of the element
+      //  based on who owns the elements bounding vertices
+      for(unsigned j=0; j<nverts; j++) {
+        const unsigned idx = i*nverts+j;
+        assert(idx < cnt);
+        const int vtxid = ftnToC(vtx[idx]);
+        const int partid = ps.ptn[vtxid];
+        //an element can only exist once on each part
+        elmparts.insert(partid);
+      }
+      assert(elmparts.size() > 0 && elmparts.size() <= nverts);
+      //increment the elm per part counts
+      APF_ITERATE(SetInt,elmparts,ep) {
+        const int partid = *ep;
+        assert(partid >= 0 && partid < ps.numparts);
+        ps.partelmW[partid] += weight;
+        ps.partelm[partid]++;
+        //add ghost vertices
+        for(unsigned j=0; j<nverts; j++) {
+          const int vtxid = ftnToC(vtx[i*nverts+j]);
+          ps.partvtx[partid].insert(vtxid);
+        }
+      }
+    }
+    free(vtx);
+    fprintf(stderr, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
+  }
+
+  void printPtnStats(apf::Mesh2* m, const char* ufile, const char* ptnFile,
+      const double elmWeights[]) {
+    header hdr;
+    Reader r;
+    initReader(&r, m, ufile);
+    readHeader(&r, &hdr);
+    hdr.print();
+
+    ptnstats ps;
+    ps.getVtxPtn(hdr.nvtx,ptnFile);
+    ps.setup();
+    ps.getOwnedVtx(hdr.nvtx);
+
+    readNodes(&r,&hdr); //dummy to advance the fileptr
+    readFacesAndTags(&r,&hdr); //dummy to advance the fileptr
+    free(r.faceVerts[faceTypeIdx(apf::Mesh::TRIANGLE)]);
+    free(r.faceVerts[faceTypeIdx(apf::Mesh::QUAD)]);
+    free(r.faceTags[faceTypeIdx(apf::Mesh::TRIANGLE)]);
+    free(r.faceTags[faceTypeIdx(apf::Mesh::QUAD)]);
+    checkFilePos(&r,&hdr); //sanity check
+
+    int type[] = {apf::Mesh::TET,apf::Mesh::PYRAMID,apf::Mesh::PRISM,apf::Mesh::HEX};
+    unsigned cnt[] = {hdr.ntet, hdr.npyr, hdr.nprz, hdr.nhex};
+    for(int i=0; i<4; i++)
+      readElms(&r,cnt[i],type[i], elmWeights[ type[i] ], ps);
+
+    //get max and avg vtx and elm per part
+    double maxelm = 0; double avgelm = 0;
+    double maxelmW = 0; double avgelmW = 0;
+    int maxvtx = 0; double avgvtx = 0;
+    getMaxAndAvg(ps.partvtx,ps.numparts,maxvtx,avgvtx);
+    getMaxAndAvg(ps.partelm,ps.numparts,maxelm,avgelm);
+    getMaxAndAvg(ps.partelmW,ps.numparts,maxelmW,avgelmW);
+    double imbvtx = maxvtx / avgvtx;
+    double imbelm = maxelm / avgelm;
+    double imbelmW = maxelmW / avgelmW;
+    fprintf(stderr, "imbvtx %.3f imbelmW %.3f imbelm %.3f "
+        "avgvtx %.3f avgelmW %.3f avgelm %.3f\n",
+        imbvtx, imbelmW, imbelm, avgvtx, avgelmW, avgelm);
   }
 }
 
@@ -253,5 +412,13 @@ namespace apf {
     fprintf(stderr,"vtx %lu edge %lu face %lu rgn %lu\n",
         m->count(0), m->count(1), m->count(2), m->count(3));
     return m;
+  }
+  void printUgridPtnStats(gmi_model* g, const char* ufile, const char* vtxptn,
+      const double elmWeights[]) {
+    Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+    apf::changeMdsDimension(m, 3);
+    printPtnStats(m, ufile, vtxptn, elmWeights);
+    m->destroyNative();
+    apf::destroyMesh(m);
   }
 }

@@ -8,32 +8,14 @@
 #include "crv.h"
 #include "crvBezier.h"
 #include "crvTables.h"
+#include "crvQuality.h"
 #include <cstdlib>
-#include <iostream>
 
 namespace crv {
 
-bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e)
-{
-  return m->getModelType(m->toModel(e)) < m->getDimension();
-}
-
-bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimension)
-{
-  apf::Downward down;
-  int count = 0;
-  int nd = m->getDownward(e,dimension,down);
-  for (int i = 0; i < nd; ++i){
-    if(isBoundaryEntity(m,down[i]))
-      ++count;
-    if(count == 2)
-      return true;
-  }
-  return false;
-}
-
 int getNumInternalControlPoints(int type, int order)
 {
+  assert(order > 0);
   switch (type) {
     case apf::Mesh::VERTEX:
       return 1;
@@ -56,6 +38,7 @@ int getNumInternalControlPoints(int type, int order)
 
 int getNumControlPoints(int type, int order)
 {
+  assert(order > 0);
   switch (type) {
     case apf::Mesh::VERTEX:
       return 1;
@@ -74,22 +57,6 @@ int getNumControlPoints(int type, int order)
   }
   fail("invalid type/order combination\n");
   return 0;
-}
-
-void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r)
-{
-  apf::Element* elem =
-      apf::createElement(m->getCoordinateField(),edge);
-
-  apf::Vector3 pt;
-  apf::NewArray<apf::Vector3> nodes, elevatedNodes(n+r+1);
-  apf::getVectorNodes(elem,nodes);
-  elevateBezierEdge(n,r,nodes,elevatedNodes);
-
-  for(int i = 1; i < n+r; ++i)
-    m->setPoint(edge,i-1,elevatedNodes[i]);
-
-  apf::destroyElement(elem);
 }
 
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n){
@@ -129,24 +96,27 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
   apf::Vector3 xi, exi;
   int evi = 0;
   apf::NewArray<double> values;
+  apf::NewArray<double> shape_vals;
 
   A.zero();
 
   int row = 0;
+  // loop over lower entities to get the xi at each point
   for(int d = 0; d <= typeDim; ++d){
     int nDown = apf::Mesh::adjacentCount[type][d];
+    int bt = apf::Mesh::simplexTypes[d];
+    apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+    int non = fs->countNodesOn(bt);
+    int nvtx =  apf::Mesh::adjacentCount[bt][0];
     for(int j = 0; j < nDown; ++j){
-      int bt = apf::Mesh::simplexTypes[d];
-      apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
-      for(int x = 0; x < fs->countNodesOn(bt); ++x){
+      for(int x = 0; x < non; ++x){
         fs->getNodeXi(bt,x,xi);
-        apf::NewArray<double> shape_vals;
         shape->getValues(0, 0, xi, shape_vals);
-
+        // get the xi of the lower entity wrt to the main entity
         if(d < typeDim){
           exi.zero();
           evi = j;
-          for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+          for (int i = 0; i < nvtx; ++i) {
             if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
               evi = apf::tri_edge_verts[j][i];
             if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
@@ -158,6 +128,7 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
         } else {
           exi = xi;
         }
+        // scale to the required range
         // slight change here because edges run [-1,1]
         if(typeDim == 1){
           exi[0] = 0.5*(exi[0]+1);
@@ -181,16 +152,25 @@ void getTransformationMatrix(apf::Mesh* m, apf::MeshEntity* e,
   }
 }
 
-//int countNumberInvalidElements(apf::Mesh2* m)
-//{
-//  int n = 0;
-//  apf::MeshEntity* e;
-//  apf::MeshIterator* it = m->begin(m->getDimension());
-//  while ((e = m->iterate(it))) {
-//checkTetValidity()
-//  }
-//  m->end(it);
-//}
+int countNumberInvalidElements(apf::Mesh2* m)
+{
+  int n = 0;
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  if (m->getShape()->getOrder() == 1){
+    while ((e = m->iterate(it))) {
+      n += (apf::measure(m,e) < 1e-10);
+    }
+  } else {
+    Quality* qual = makeQuality(m,2);
+    while ((e = m->iterate(it))) {
+      n += (qual->checkValidity(e) > 1);
+    }
+    delete qual;
+  }
+  m->end(it);
+  return n;
+}
 
 void fail(const char* why)
 {

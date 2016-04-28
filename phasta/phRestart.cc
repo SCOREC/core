@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
+#include <cstring>
 
 namespace ph {
 
@@ -87,6 +88,43 @@ void detachField(
   detachField(f, data, size);
 }
 
+static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
+{
+  static char const* const known_nodal_fields[] = {
+    "solution",
+    "displacement",
+    "dwal",
+    "mapping_partid",
+    "mapping_vtxid",
+    "errors",
+    "time derivative of solution"
+  };
+  static char const* const known_cell_fields[] = {
+    "VOF solution",
+  };
+  int known_nodal_field_count =
+    sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);
+  int known_cell_field_count =
+    sizeof(known_cell_fields) / sizeof(known_cell_fields[0]);
+  for (int i = 0; i < known_nodal_field_count; ++i)
+    if (!strcmp(fieldname, known_nodal_fields[i])) {
+      assert(static_cast<size_t>(nnodes) == m->count(0));
+      return true;
+    }
+  for (int i = 0; i < known_cell_field_count; ++i)
+    if (!strcmp(fieldname, known_cell_fields[i]))
+      return false;
+  fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
+  fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
+      fieldname, __LINE__, __FILE__);
+  if (static_cast<size_t>(nnodes) == m->count(0)) {
+    fprintf(stderr, "assuming \"%s\" is a nodal field,\n"
+                    "it is the right size...\n", fieldname);
+    return true;
+  }
+  return false;
+}
+
 int readAndAttachField(
     Input& in,
     FILE* f,
@@ -100,13 +138,23 @@ int readAndAttachField(
   int ret = ph_read_field(f, anyfield, swap,
       &data, &nodes, &vars, &step, hname);
   /* no field was found or the field has an empty data block */
-  if(ret==0 || ret==1) return ret;
-  assert(nodes == static_cast<int>(m->count(0)));
+  if(ret==0 || ret==1)
+    return ret;
+  if (!isNodalField(hname, nodes, m)) {
+    free(data);
+    return 1;
+  }
   assert(step == in.timeStepNumber);
   int out_size = vars;
   if ( std::string(hname) == std::string("solution") )
     out_size = in.ensa_dof;
-  attachField(m, hname, data, vars, out_size);
+  if (m->findField(hname)) {
+    if (!PCU_Comm_Self())
+      fprintf(stderr, "field \"%s\" listed twice in restart files, ignoring...\n",
+          hname);
+  } else {
+    attachField(m, hname, data, vars, out_size);
+  }
   free(data);
   return 1;
 }
@@ -163,18 +211,28 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
     abort();
   }
   int swap = ph_should_swap(f);
-  while( readAndAttachField(in,f,m,swap) ); /* inf loop?? */
+  /* stops when ph_read_field returns 0 */
+  while( readAndAttachField(in,f,m,swap) );
   fclose(f);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("fields read and attached in %f seconds\n", t1 - t0);
 }
 
+static void destroyIfExists(apf::Mesh* m, const char* name)
+{
+  apf::Field* f = m->findField(name);
+  if (f)
+    apf::destroyField(f);
+}
+
 void buildMapping(apf::Mesh* m)
 {
+  destroyIfExists(m, "mapping_partid");
   double* mapping = buildMappingPartId(m);
   attachField(m, "mapping_partid", mapping, 1);
   free(mapping);
+  destroyIfExists(m, "mapping_vtxid");
   mapping = buildMappingVtxId(m);
   attachField(m, "mapping_vtxid", mapping, 1);
   free(mapping);

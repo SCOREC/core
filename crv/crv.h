@@ -11,56 +11,40 @@
 #include "apfMesh2.h"
 #include "apfShape.h"
 #include <ma.h>
+#include <mth.h>
 #include <stdio.h>
 
 /** \file crv.h
   * \brief main file for curved element support */
 
 /** \namespace crv
-  * \brief All CRV functions are contained in this namespace */
+  * \brief the curving functions are contained in this namespace */
 namespace crv {
 
 /** \brief actually 1 greater than max order */
-static unsigned const MAX_ORDER = 20;
-/** \brief checks if is a boundary entity */
-bool isBoundaryEntity(apf::Mesh* m, apf::MeshEntity* e);
-/** \brief checks if any entity has two entities of dimension on the boundary */
-bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e,
-    int dimension);
+static unsigned const MAX_ORDER = 19;
+
+/** \brief sets order used in bezier shape functions */
+void setOrder(const int order);
+/** \brief gets order used in bezier shape functions */
+int getOrder();
 /** \brief sets the blending order, if shape blending is used */
 void setBlendingOrder(const int type, const int b);
 /** \brief gets the blending order */
 int getBlendingOrder(const int type);
 
-/** \brief computes min det Jacobian / max det Jacobian */
-double getQuality(apf::Mesh* m,apf::MeshEntity* e);
+/** \brief count invalid elements of the mesh */
+int countNumberInvalidElements(apf::Mesh2* m);
 
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D
   meshes and surface meshes. */
 
-/** \brief converts interpolating points to control points */
-void convertInterpolationPoints(int n, int ne,
-    apf::NewArray<apf::Vector3>& nodes,
-    apf::NewArray<double>& c,
-    apf::NewArray<apf::Vector3>& newNodes);
-
-void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
-    int n, int ne, apf::NewArray<double>& c);
-
-/** \brief a per entity version of above */
-void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
-
 class MeshCurver
 {
   public:
-    MeshCurver(apf::Mesh2* m, int P, int S) : m_mesh(m), m_order(P),
-    m_spaceDim(S)
-    {
-      if (S == 0)
-        m_spaceDim = m->getDimension();
-    };
+    MeshCurver(apf::Mesh2* m, int P) : m_mesh(m), m_order(P) {};
     virtual ~MeshCurver() {};
     virtual bool run() = 0;
 
@@ -73,7 +57,6 @@ class MeshCurver
   protected:
     apf::Mesh2* m_mesh;
     int m_order;
-    int m_spaceDim;
 };
 
 /** \brief curves an already changed mesh
@@ -83,7 +66,7 @@ class MeshCurver
 class InterpolatingCurver : public MeshCurver
 {
   public:
-    InterpolatingCurver(apf::Mesh2* m, int P, int S = 0) : MeshCurver(m,P,S) {};
+    InterpolatingCurver(apf::Mesh2* m, int P) : MeshCurver(m,P) {};
     virtual ~InterpolatingCurver() {};
     virtual bool run();
 
@@ -96,7 +79,7 @@ class InterpolatingCurver : public MeshCurver
 class BezierCurver : public MeshCurver
 {
   public:
-    BezierCurver(apf::Mesh2* m, int P, int B, int S = 0) : MeshCurver(m,P,S)
+    BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m,P)
     {
       setBlendingOrder(apf::Mesh::TYPES,B);
     };
@@ -105,6 +88,8 @@ class BezierCurver : public MeshCurver
       \details finds interpolating points, then converts to control points
       see crvBezier.cc */
     virtual bool run();
+    /** \brief converts interpolating points to bezier control points */
+    void convertInterpolatingToBezier();
 };
 
 /** \brief this curves a mesh with 4th order G1 Patches
@@ -113,24 +98,25 @@ class BezierCurver : public MeshCurver
 class GregoryCurver : public BezierCurver
 {
   public:
-    GregoryCurver(apf::Mesh2* m, int P, int B, int S = 0)
-    : BezierCurver(m,P,B,S) {};
+    GregoryCurver(apf::Mesh2* m, int P, int B)
+    : BezierCurver(m,P,B) {};
     /** \brief curves a mesh using G1 gregory surfaces, see crvBezier.cc */
     virtual bool run();
     /** \brief sets cubic edge points using normals */
     void setCubicEdgePointsUsingNormals();
-    /** \brief sets internal points using neighbors (See Notes)
-      \details NOT CURRENTLY FULLY IMPLEMENTED */
-//    void setInternalPointsUsingNeighbors();
     /** \brief sets internal points locally */
     void setInternalPointsLocally();
 };
 
-/** \brief Elevate a bezier curve to a higher order
- \details This elevates from nth order to n+rth order
- requires the curve be order n+r in memory already, and
- that the first n points correspond to the lower order curve */
-void elevateBezierCurve(apf::Mesh2* m, apf::MeshEntity* edge, int n, int r);
+/** \brief configure for fixing invalid elements */
+ma::Input* configureShapeCorrection(
+    ma::Mesh* m, ma::SizeField* f=0,
+    ma::SolutionTransfer* s=0);
+
+/** \brief crv adapt with custom configuration
+  \details see maInput.h for details.
+  note that this function will delete the Input object */
+void adapt(ma::Input* in);
 
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
@@ -138,20 +124,46 @@ apf::FieldShape* getBezier(int order);
 /** \brief Get the 4th order Gregory Surface*/
 apf::FieldShape* getGregory();
 
-/** \brief get coefficients for interpolating points to control points
- \details works only for prescribed optimal point locations */
-void getBezierTransformationCoefficients(int P, int type,
-    apf::NewArray<double>& c);
-void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
-    int type, apf::NewArray<double>& c);
-void getGregoryTransformationCoefficients(int type, apf::NewArray<double>& c);
-void getGregoryBlendedTransformationCoefficients(int blend, int type,
-    apf::NewArray<double>& c);
+/** \brief computes min det Jacobian / max det Jacobian. Quality::getQuality
+ * should be used if multiple elements checked in a row */
+double getQuality(apf::Mesh* m,apf::MeshEntity* e);
 
-void getHigherOrderBezierTransform(apf::Mesh* m, int P, int type,
-    apf::NewArray<double> & c);
-void getHigherOrderInternalBezierTransform(apf::Mesh* m, int P, int blend,
-    int type, apf::NewArray<double> & c);
+/** \brief checks validity of it and returns integer
+  corresponding to invalid entity. Quality::checkValidity should be used if
+  multiple elements checked in a row
+  \details Use an integer to determine the vuality tag
+  0 -> Not checked
+  1 -> Okay Quality
+  2-7 -> Vertex of index+2 is bad
+  8-13 -> Edge of index+6 is bad
+  14-17 -> Face of index+12 bad
+  20 -> Tet itself is bad, this one is the worst
+
+  6*dim + 2 + index */
+int checkValidity(apf::Mesh* m, apf::MeshEntity* e,
+    int algorithm = 2);
+/** \brief class to store matrices used in
+ * quality assessment and validity checking */
+class Quality
+{
+public:
+/*  \brief three options for algorithm:
+   * 0 - subdivision
+   * 1 - elevation
+   * 2 - subdivision, using matrices */
+  Quality(apf::Mesh* m, int algorithm_);
+  virtual ~Quality() {};
+  /** \brief get scaled jacobian, a quality measure */
+  virtual double getQuality(apf::MeshEntity* e) = 0;
+  /** \brief check the validity (det(Jacobian) > eps) of an element */
+  virtual int checkValidity(apf::MeshEntity* e) = 0;
+protected:
+  apf::Mesh* mesh;
+  int algorithm;
+  int order;
+};
+/** \brief use this to make a quality object with the correct dimension */
+Quality* makeQuality(apf::Mesh* m, int algorithm = 2);
 
 /** \brief computes interpolation error of a curved entity on a mesh
   \details this computes the Hausdorff distance by sampling
@@ -159,46 +171,24 @@ void getHigherOrderInternalBezierTransform(apf::Mesh* m, int P, int blend,
    sampling locations in parameter space */
 double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
 
-/** \brief Visualization, writes file for specified type */
+/** \brief Visualization, writes file for specified type, n is
+   number of subdivisions, higher number -> better resolution,
+   but bigger file */
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief Visualization, writes file of shapes evaluated at node xi
- *  for each entity */
+    for each entity */
 void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix);
+
 /** \brief publically accessible functions */
 int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
 
-/** \brief binomial function n!/(i!(n-i)!) */
-int binomial(int n, int i);
-/** \brief trinomial function n!/(i!j!(n-i-j)!) */
-int trinomial(int n, int i, int j);
-/** \brief "quadnomial" function n!/(i!j!k!(n-i-j-k)!) */
-int quadnomial(int n, int i, int j, int k);
-
-/** \brief check the validity (det(Jacobian) > eps) of an element
- * \details entities is a container of invalid downward entities
- * algorithm is an integer corresponding to what method to use
- * 0 - subdivision
- * 1 - elevation
- * 2 - subdivision, without first check
- * 3 - elevation, without first check
- * 4 - subdivision, using matrices
- * methods 2 and 3 exist because the first check tends to catch everything
- * without actually using subdivision and elevation, and giving this option
- * is easier for debugging and verifying the efficacy of those procedures
- * */
-
-typedef int (*bezierValidity)(apf::Mesh* m,
-    apf::MeshEntity* e, int algorithm);
-
-extern const bezierValidity checkBezierValidity[apf::Mesh::TYPES];
-
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
 
-} //namespace crv
+}
 
 #endif

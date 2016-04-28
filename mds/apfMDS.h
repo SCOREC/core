@@ -47,6 +47,7 @@ class Migration;
   \param isMatched whether or not there will be matched entities */
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
+
 /** \brief load an MDS mesh from files
   \param model the geometric model interface
   \param meshfile The path to an SMB format mesh.
@@ -72,13 +73,19 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
 
 /** \brief apply adjacency-based reordering
+  \param t Optional user-defined ordering of the vertices.
+           Set this to NULL to use the internal ordering system.
+           Otherwise, attach a unique integer to each vertex
+           in the range [0, #vertices).
+           this will indicate the order in which they appear
+           after reordering.
   \details similar to the algorithm for apf::reorder,
            this function will traverse adjacencies to reorder
            each topological type.
            Then all MDS arrays are re-formed in this new order.
            An important side effect of this function is that
            there are no gaps in the MDS arrays after this */
-void reorderMdsMesh(Mesh2* mesh);
+void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
@@ -120,6 +127,9 @@ Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
 
 Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
 
+void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile,
+    const double elmWeights[]);
+
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one
   for a .node and another for a .elem file.
@@ -132,6 +142,19 @@ Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
   supported, which become linear and quadratic tetrahedra,
   respectively. */
 Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
+
+
+/** \brief create a box from an MDS mesh
+  \param nx number of x elements
+  \param ny number of y elements
+  \param nz number of z elements
+  \param wx x dimension width
+  \param wy y dimension width
+  \param wz z dimension width
+  \param is true = simplical mesh, false = quad/hex
+  \details set ny,nz=0 for a 1D mesh, set nz=0 for a 2D mesh */
+Mesh2* makeMdsBox(
+    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
 
 void disownMdsModel(Mesh2* in);
 

@@ -8,8 +8,12 @@
 #include "parma_selector.h"
 #include "parma_step.h"
 #include "parma_monitor.h"
+#include "parma_commons.h"
+#include "parma_convert.h"
 
 namespace {
+  using parmaCommons::status;
+
   class ElmLtVtxEdge : public parma::Balancer {
     private:
       int sideTol;
@@ -21,15 +25,15 @@ namespace {
           maxVtx = maxV;
           maxEdge = maxE;
           if( !PCU_Comm_Self() && verbose ) {
-            fprintf(stdout, "PARMA_STATUS stepFactor %.3f\n", f);
-            fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
-            fprintf(stdout, "PARMA_STATUS maxEdge %.3f\n", maxEdge);
+            status("stepFactor %.3f\n", f);
+            status("maxVtx %.3f\n", maxVtx);
+            status("maxEdge %.3f\n", maxEdge);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = static_cast<int>(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s));
           delete s;
           if( !PCU_Comm_Self() && verbose )
-            fprintf(stdout, "sideTol %d\n", sideTol);
+            status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxElmImb =
@@ -50,11 +54,11 @@ namespace {
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "elmImb %f avgSides %f\n", maxElmImb, avgSides);
+          status("elmImb %f avgSides %f\n", maxElmImb, avgSides);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
-        parma::Stepper b(mesh, factor, s, w[2], t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, w[2], t, sel, "elm", stopper);
         return b.step(tolerance, verbose);
       }
   };

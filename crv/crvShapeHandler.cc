@@ -11,6 +11,7 @@
 #include "crvBezierShapes.h"
 #include "crvMath.h"
 #include "crvQuality.h"
+#include "crvShape.h"
 #include "crvTables.h"
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
@@ -37,7 +38,6 @@ static void setLinearEdgePoints(ma::Mesh* m, ma::Entity* edge)
   m->getPoint(verts[0],0,points[0]);
   m->getPoint(verts[1],0,points[1]);
   for (int j = 0; j < ni; ++j){
-    m->getShape()->getNodeXi(apf::Mesh::EDGE,j,xi);
     double t = (1.+j)/(1.+ni);
     xi = points[0]*(1.-t)+points[1]*t;
     m->setPoint(edge,j,xi);
@@ -54,17 +54,22 @@ class BezierTransfer : public ma::SolutionTransfer
       refine = a->refine;
       shouldSnap = a->input->shouldSnap;
       // pre compute the inverses of the transformation matrices
+      // pre store transformation matrices too
       int P = mesh->getShape()->getOrder();
-      for (int d = 1; d <= 3; ++d){
-        if(!getNumInternalControlPoints(apf::Mesh::simplexTypes[d],P))
+      for (int d = 1; d <= mesh->getDimension(); ++d){
+        int type = apf::Mesh::simplexTypes[d];
+        if(!mesh->getShape()->hasNodesIn(d))
           continue;
-        int n = getNumControlPoints(apf::Mesh::simplexTypes[d],P);
+        int n = mesh->getShape()->getEntityShape(type)->countNodes();
         mth::Matrix<double> A(n,n);
         Ai[d].resize(n,n);
-        getBezierTransformationMatrix(apf::Mesh::simplexTypes[d],P,
-            A,elem_vert_xi[apf::Mesh::simplexTypes[d]]);
-        invertMatrixWithPLU(getNumControlPoints(apf::Mesh::simplexTypes[d],P),
+        getBezierTransformationMatrix(type,P,
+            A,elem_vert_xi[type]);
+        invertMatrixWithPLU(getNumControlPoints(type,P),
             A,Ai[d]);
+        crv::getBezierTransformationCoefficients(P,type,coeffs[d]);
+        crv::getInternalBezierTransformationCoefficients(mesh,
+            P,1,apf::Mesh::simplexTypes[d],internalCoeffs[d]);
       }
     }
     ~BezierTransfer()
@@ -147,13 +152,12 @@ class BezierTransfer : public ma::SolutionTransfer
           snapToInterpolate(mesh,midEdgeVerts[i]);
         }
       }
-      int np = getNumControlPoints(parentType,P);
+      int np = mesh->getShape()->getEntityShape(parentType)->countNodes();
 
       apf::Element* elem =
           apf::createElement(mesh->getCoordinateField(),parent);
       apf::NewArray<apf::Vector3> nodes;
       apf::getVectorNodes(elem,nodes);
-      apf::destroyElement(elem);
 
       for (int d = 1; d <= apf::Mesh::typeDimension[parentType]; ++d){
         if (!mesh->getShape()->hasNodesIn(d)) continue;
@@ -185,15 +189,24 @@ class BezierTransfer : public ma::SolutionTransfer
             int n = getNumControlPoints(childType,P);
             apf::Vector3 vp[4];
             getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
-
-            mth::Matrix<double> A(n,np),B(n,n);
-            getBezierTransformationMatrix(parentType,childType,P,A,vp);
-            mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
-            for (int j = 0; j < ni; ++j){
-              apf::Vector3 point(0,0,0);
-              for (int k = 0; k < np; ++k)
-                point += nodes[k]*B(j+n-ni,k);
-              mesh->setPoint(newEntities[i],j,point);
+            if(getBlendingOrder(childType) > 0){
+              apf::NewArray<apf::Vector3> childXi(n);
+              collectNodeXi(parentType,childType,P,vp,childXi);
+              for (int j = 0; j < ni; ++j){
+                apf::Vector3 point(0,0,0);
+                apf::getVector(elem,childXi[j+n-ni],point);
+                mesh->setPoint(newEntities[i],j,point);
+              }
+            } else {
+              mth::Matrix<double> A(n,np),B(n,n);
+              getBezierTransformationMatrix(parentType,childType,P,A,vp);
+              mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
+              for (int j = 0; j < ni; ++j){
+                apf::Vector3 point(0,0,0);
+                for (int k = 0; k < np; ++k)
+                  point += nodes[k]*B(j+n-ni,k);
+                mesh->setPoint(newEntities[i],j,point);
+              }
             }
           }
         }
@@ -201,21 +214,25 @@ class BezierTransfer : public ma::SolutionTransfer
       // again have to do this hierarchically, downward
       for (int d = apf::Mesh::typeDimension[parentType]; d >= 1; --d){
         if (!mesh->getShape()->hasNodesIn(d)) continue;
+        int n = mesh->getShape()->getEntityShape(apf::Mesh::simplexTypes[d])
+            ->countNodes();
         for (size_t i = 0; i < newEntities.getSize(); ++i)
         {
           // go through this hierachically, doing edges first
           int childType = mesh->getType(newEntities[i]);
-          if(d != apf::Mesh::typeDimension[childType] ||
-              !isBoundaryEntity(mesh,newEntities[i]) || !shouldSnap)
-            continue;
+          int ni = mesh->getShape()->countNodesOn(childType);
 
-          int n = mesh->getShape()->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-          int ni = mesh->getShape()->countNodesOn(d);
-          apf::NewArray<double> c;
-          crv::getBezierTransformationCoefficients(P,d,c);
-          convertInterpolationPoints(mesh,newEntities[i],n,ni,c);
+          if(d != apf::Mesh::typeDimension[childType] ||
+              (!isBoundaryEntity(mesh,newEntities[i]) &&
+              		getBlendingOrder(parentType) == 0) || !shouldSnap)
+            continue;
+          // if using blended shapes, do this.
+          convertInterpolationPoints(mesh,newEntities[i],n,ni,coeffs[d]);
         }
       }
+
+      apf::destroyElement(elem);
+
     }
   private:
     ma::Adapt* adapt;
@@ -223,6 +240,9 @@ class BezierTransfer : public ma::SolutionTransfer
     ma::Refine* refine;
     mth::Matrix<double> Ai[4];
     bool shouldSnap;
+  public:
+    apf::NewArray<double> coeffs[4];
+    apf::NewArray<double> internalCoeffs[4];
 };
 
 class BezierHandler : public ma::ShapeHandler
@@ -235,10 +255,12 @@ class BezierHandler : public ma::ShapeHandler
       bt = new BezierTransfer(a);
       sizeField = a->sizeField;
       shouldSnap = a->input->shouldSnap;
+      qual = makeQuality(mesh,2);
     }
     ~BezierHandler()
     {
       delete bt;
+      delete qual;
     }
     virtual double getQuality(apf::MeshEntity* e)
     {
@@ -267,7 +289,7 @@ class BezierHandler : public ma::ShapeHandler
         double lq = ma::measureLinearTetQuality(p);
         if (lq < 0)
           return lq;
-        else return lq*crv::getQuality(mesh,e);
+        else return lq*qual->getQuality(e);
       }
       return -1;
     }
@@ -492,12 +514,6 @@ class BezierHandler : public ma::ShapeHandler
       apf::FieldShape* fs = mesh->getShape();
       int P = fs->getOrder();
       int n = fs->getEntityShape(apf::Mesh::EDGE)->countNodes();
-      apf::NewArray<double> edgeC;
-      apf::NewArray<double> triC;
-
-      crv::getBezierTransformationCoefficients(P,1,edgeC);
-      if (P > 2)
-        crv::getBezierTransformationCoefficients(P,2,triC);
 
       int numNewElements = 0;
       int numNewTriangles = 0;
@@ -538,7 +554,7 @@ class BezierHandler : public ma::ShapeHandler
         {
           if (snap && P > 2){
             snapToInterpolate(mesh,newEntities[i]);
-            convertInterpolationPoints(mesh,newEntities[i],n,ni,triC);
+            convertInterpolationPoints(mesh,newEntities[i],n,ni,bt->coeffs[2]);
           } else {
             for (int j = 0; j < ni; ++j){
               apf::Vector3 zero(0,0,0);
@@ -548,7 +564,7 @@ class BezierHandler : public ma::ShapeHandler
         } else {
           if (snap){
             snapToInterpolate(mesh,newEntities[i]);
-            convertInterpolationPoints(mesh,newEntities[i],n,ni,edgeC);
+            convertInterpolationPoints(mesh,newEntities[i],n,ni,bt->coeffs[1]);
           } else {
             setLinearEdgePoints(mesh,newEntities[i]);
             numMiddleEdges++;
@@ -580,13 +596,9 @@ class BezierHandler : public ma::ShapeHandler
 
       // set the rest of the interior points
       for (int d = 2; d <= mesh->getDimension(); ++d){
+        if (!fs->hasNodesIn(d)) continue;
         int ni = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-        if(ni == 0) continue;
-
         n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-        apf::NewArray<double> c;
-        crv::getInternalBezierTransformationCoefficients(mesh,
-            P,1,apf::Mesh::simplexTypes[d],c);
 
         for (size_t i = 0; i < newEntities.getSize(); ++i)
         {
@@ -594,7 +606,8 @@ class BezierHandler : public ma::ShapeHandler
           bool boundary = isBoundaryEntity(mesh,newEntities[i]);
           if (apf::Mesh::typeDimension[newType] == d && ni > 0
               && (!boundary || !shouldSnap)){
-            convertInterpolationPoints(mesh,newEntities[i],n-ni,ni,c);
+            convertInterpolationPoints(mesh,newEntities[i],n-ni,ni,
+                bt->internalCoeffs[d]);
           }
         }
       }
@@ -605,6 +618,7 @@ class BezierHandler : public ma::ShapeHandler
     BezierTransfer* bt;
     ma::SizeField * sizeField;
     bool shouldSnap;
+    Quality* qual;
 };
 
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a)

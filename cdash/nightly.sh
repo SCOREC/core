@@ -8,8 +8,9 @@ module load parmetis/mpich3.1.2/4.0.3
 module load zoltan/mpich3.1.2/3.8
 module load simmetrix/simModSuite
 module load netcdf
-module load llvm/latest
+module load gcc/4.9.2
 module load git
+module load valgrind/3.8.1
 
 #cdash output root
 cd /lore/dibanez/cdash
@@ -19,14 +20,18 @@ rm -rf build/
 #run nightly.cmake script
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> cmake_log.txt
 
-#core repository checked out by nightly.cmake
-cd /lore/dibanez/cdash/build/core
-#build the Doxygen html documentation
-make doc
-#remove the old web documentation
-rm -rf /net/web/public/dibanez/core
-#replace it with the generated one
-cp -r doc/html /net/web/public/dibanez/core
+if [ -d "/lore/dibanez/cdash/build/core" ]; then
+  #core repository checked out by nightly.cmake
+  cd /lore/dibanez/cdash/build/core
+  #build the Doxygen html documentation
+  make doc
+  if [ -d "$PWD/doc/html" ]; then
+    #remove the old web documentation
+    rm -rf /net/web/public/dibanez/core
+    #replace it with the generated one
+    cp -r doc/html /net/web/public/dibanez/core
+  fi
+fi
 
 #core repository checked out by nightly.cmake
 cd /lore/dibanez/cdash/build/core

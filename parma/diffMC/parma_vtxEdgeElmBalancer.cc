@@ -7,9 +7,12 @@
 #include "parma_weights.h"
 #include "parma_targets.h"
 #include "parma_selector.h"
-
+#include "parma_commons.h"
+#include "parma_convert.h"
 
 namespace {
+  using parmaCommons::status;
+
   class VtxEdgeBalancer : public parma::Balancer {
     private:
       int sideTol;
@@ -19,20 +22,20 @@ namespace {
         : Balancer(m, f, v, "edges") {
           maxVtx = maxV;
           if( !PCU_Comm_Self() && verbose ) {
-            fprintf(stdout, "PARMA_STATUS stepFactor %.3f\n", f);
-            fprintf(stdout, "PARMA_STATUS maxVtx %.3f\n", maxVtx);
+            status("stepFactor %.3f\n", f);
+            status("maxVtx %.3f\n", maxVtx);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = static_cast<int>(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s));
           delete s;
           if( !PCU_Comm_Self() && verbose )
-            fprintf(stdout, "sideTol %d\n", sideTol);
+            status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxVtxImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 0);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "vtx imbalance %.3f\n", maxVtxImb);
+          status("vtx imbalance %.3f\n", maxVtxImb);
         const double maxEdgeImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 1);
         parma::Sides* s = parma::makeVtxSides(mesh);
@@ -47,11 +50,11 @@ namespace {
         monitorUpdate(maxEdgeImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "edgeImb %f avgSides %f\n", maxEdgeImb, avgSides);
+          status("edgeImb %f avgSides %f\n", maxEdgeImb, avgSides);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
 
-        parma::Stepper b(mesh, factor, s, w[1], t, sel, stopper);
+        parma::Stepper b(mesh, factor, s, w[1], t, sel, "edge", stopper);
         bool ok = b.step(tolerance, verbose);
         delete w[0];
         return ok;

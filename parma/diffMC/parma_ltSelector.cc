@@ -9,13 +9,14 @@
 namespace {
   typedef std::set<apf::MeshEntity*> SetEnt;
 
-  class ElmLtVtxSelector : public parma::VtxSelector {
+  class LtSelector : public parma::VtxSelector {
     private:
-      double maxVtx;
+      double primaryMax;
+      int primaryDim;
 
     public:
-      ElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxV)
-        : VtxSelector(m, w), maxVtx(maxV) { }
+      LtSelector(apf::Mesh* m, apf::MeshTag* w, double primeMaxW, int primeDim)
+        : VtxSelector(m, w), primaryMax(primeMaxW), primaryDim(primeDim) { }
 
       apf::Migration* run(parma::Targets* tgts) {
         apf::Migration* plan = new apf::Migration(mesh);
@@ -28,9 +29,14 @@ namespace {
       }
 
     protected:
-      void insertInteriorVerts(apf::MeshEntity* e, int dest, SetEnt& s) {
+      void insertInteriorEnts(apf::MeshEntity* e, int dest, SetEnt& s, int entDim) {
+        assert(entDim >= 0);
+        if( entDim == mesh->getDimension() ) {
+          s.insert(e);
+          return;
+        }
         apf::Adjacent adjVtx;
-        mesh->getAdjacent(e, 0, adjVtx);
+        mesh->getAdjacent(e, entDim, adjVtx);
         APF_ITERATE(apf::Adjacent, adjVtx, v) {
           apf::Parts res;
          mesh->getResidence(*v,res);
@@ -56,17 +62,17 @@ namespace {
         //The plan is a vector so this loop will visit the plan's elements in
         //the same order that they were selected in, which, with graph distance
         //sorting, is from far to near.  An element is kept in the plan if
-        //adding its vertices to the weight does not exceed the peer's vtx
-        //weight capacity, capacity[dest].
-        std::map<int,SetEnt > peerVerts;
+        //adding its primary entities to the weight does not exceed the peer's
+        //primary entity weight capacity, capacity[dest].
+        std::map<int,SetEnt > peerEnts;
         for(int i=0; i < planA->count(); i++) {
            apf::MeshEntity* e = planA->get(i);
            int dest = planA->sending(e);
-           SetEnt vset = peerVerts[dest];
-           insertInteriorVerts(e, dest, vset);
+           SetEnt vset = peerEnts[dest];
+           insertInteriorEnts(e, dest, vset, primaryDim);
            if( weight(vset) <= (*capacity)[dest] ) {
              keep.push_back(PairEntInt(e,dest));
-             peerVerts[dest] = vset;
+             peerEnts[dest] = vset;
            }
         }
         delete capacity;
@@ -87,23 +93,23 @@ namespace {
       };
 
       parma::Mid* trim(parma::Targets*, apf::Migration* plan) {
-        //compute the weight of the vertices being sent to each peer
+        //compute the weight of the primary entities being sent to each peer
         typedef std::map<int,SetEnt > PeerEntSet;
-        PeerEntSet peerVerts;
+        PeerEntSet peerEnts;
         for(int i=0; i < plan->count(); i++) {
           apf::MeshEntity* elm = plan->get(i);
           const int dest = plan->sending(elm);
-          insertInteriorVerts(elm, dest, peerVerts[dest]);
+          insertInteriorEnts(elm, dest, peerEnts[dest], primaryDim);
         }
 
-        parma::Mid sendingVtx;
-        APF_ITERATE(PeerEntSet, peerVerts, pv)
-          sendingVtx[pv->first] = weight(pv->second);
+        parma::Mid sendingEnts;
+        APF_ITERATE(PeerEntSet, peerEnts, pe)
+          sendingEnts[pe->first] = weight(pe->second);
 
         typedef std::set<Migr,CompareMigr> MigrComm;
 
         PCU_Comm_Begin();
-        APF_ITERATE(parma::Mid, sendingVtx, s)
+        APF_ITERATE(parma::Mid, sendingEnts, s)
           PCU_COMM_PACK(s->first, s->second);
         PCU_Comm_Send();
 
@@ -114,11 +120,11 @@ namespace {
           incoming.insert(Migr(PCU_Comm_Sender(),w));
         }
 
-        double selfW = parma::getWeight(mesh,wtag,0);
+        double selfW = parma::getWeight(mesh,wtag,primaryDim);
         parma::Mid accept;
         double totW = selfW;
         APF_ITERATE(MigrComm, incoming, in) {
-          double avail = maxVtx - totW;
+          double avail = primaryMax - totW;
           if( avail > 0 )
             if( in->second <= avail )
               accept[in->first] = in->second;
@@ -141,10 +147,28 @@ namespace {
         }
         return capacity;
       }
+  };
 
-      virtual double add(apf::MeshEntity*, apf::Up& cavity,
-          const int destPid, apf::Migration* plan) {
-        SetEnt cav;
+  class VtxLtSelector : public LtSelector {
+    public:
+      VtxLtSelector(apf::Mesh* m, apf::MeshTag* w, double primeMaxW, int primeDim)
+        : LtSelector(m, w, primeMaxW, primeDim) { }
+    protected:
+      double add(apf::MeshEntity* v, apf::Up& cavity, const int destPid,
+          apf::Migration* plan) {
+        for(int i=0; i < cavity.n; i++)
+          plan->send(cavity.e[i], destPid);
+        return getWeight(v);
+      }
+  };
+
+  class ElmLtSelector : public LtSelector {
+    public:
+      ElmLtSelector(apf::Mesh* m, apf::MeshTag* w, double primeMaxW, int primeDim)
+        : LtSelector(m, w, primeMaxW, primeDim) { }
+    protected:
+      double add(apf::MeshEntity*, apf::Up& cavity, const int destPid,
+          apf::Migration* plan) {
         double w = 0;
         for(int i=0; i < cavity.n; i++) {
           plan->send(cavity.e[i], destPid);
@@ -157,6 +181,9 @@ namespace {
 
 namespace parma {
   Selector* makeElmLtVtxSelector(apf::Mesh* m, apf::MeshTag* w, double maxVtx) {
-    return new ElmLtVtxSelector(m, w, maxVtx);
+    return new ElmLtSelector(m, w, maxVtx, 0);
+  }
+  Selector* makeVtxLtElmSelector(apf::Mesh* m, apf::MeshTag* w, double maxElm) {
+    return new VtxLtSelector(m, w, maxElm, m->getDimension());
   }
 }
