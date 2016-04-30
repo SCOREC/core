@@ -485,7 +485,7 @@ void writeVtkFiles(const char* prefix, Mesh* m);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   * with binary (base64) encoding and zlib compression (if LION_COMPRESS=ON)
-  * \details Only fields who's name appears in the vector writeFields will be
+  * \details Only fields whose name appears in the vector writeFields will be
   * output. Nodal fields whose shape differs from the mesh shape will not be
   * output. Fields with incomplete data will not be output.
   */
@@ -506,7 +506,7 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   * with ASCII encoding
-  * \details Only fields who's name appears in the vector writeFields will be
+  * \details Only fields whose name appears in the vector writeFields will be
   * output. Nodal fields whose shape differs from the mesh shape will not be
   * output. Fields with incomplete data will not be output.
   */
