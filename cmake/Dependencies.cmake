@@ -5,7 +5,8 @@ SET(LIB_REQUIRED_DEP_PACKAGES
     SCORECmds      
     SCORECparma     
     SCORECapf_zoltan 
-    SCORECma   
+    SCORECma  
+    SCORECpumi  
     SCORECspr   
     SCORECapf_stk
 )

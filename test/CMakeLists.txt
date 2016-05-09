@@ -8,6 +8,7 @@ find_package(dsp REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(crv REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(lion REQUIRED PATHS ${CMAKE_BINARY_DIR})
 find_package(apf_omega_h QUIET PATHS ${CMAKE_BINARY_DIR})
+find_package(pumi QUIET PATHS ${CMAKE_BINARY_DIR})
 
 include_directories(
   ${MA_INCLUDE_DIRS}
@@ -20,6 +21,7 @@ include_directories(
   ${CRV_INCLUDE_DIRS}
   ${LION_INCLUDE_DIRS}
   ${APF_OMEGA_H_INCLUDE_DIRS}
+  ${PUMI_INCLUDE_DIRS}
 )
 set(ALL_LIBS
   ${MA_LIBS}
@@ -32,6 +34,7 @@ set(ALL_LIBS
   ${CRV_LIBS}
   ${LION_LIBS}
   ${APF_OMEGA_H_LIBS}
+  ${PUMI_LIBS}
 )
 
 if(NOT IS_TESTING)
@@ -48,6 +51,7 @@ macro(setup_exe exename srcname)
   endif()
 endmacro(setup_exe)
 
+setup_exe(test_pumi pumi.cc)
 setup_exe(mdlConvert mdlConvert.c)
 setup_exe(mkmodel mkmodel.cc)
 setup_exe(ma_insphere ma_insphere.cc)

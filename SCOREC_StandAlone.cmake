@@ -83,6 +83,8 @@ add_subdirectory(parma)
 
 add_subdirectory(zoltan)
 
+add_subdirectory(pumi)
+
 add_subdirectory(ma)
 
 add_subdirectory(spr)
