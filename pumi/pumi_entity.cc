@@ -204,12 +204,22 @@ void pumi_ment_getclosureresidence(pMeshEnt e, std::vector<int>& resPartId)
 
 // ghosting information
 bool pumi_ment_isghost(pMeshEnt e)
-{}
+{
+  return false;
+}
+
 bool pumi_ment_isghosted (pMeshEnt e)
-{}
+{
+  return false;
+}
+
 int pumi_ment_getnumghost (pMeshEnt e)
-{}
+{
+  return 0;
+}
+
 void pumi_ment_getallghost (pMeshEnt e, pCopies& ghosts)
 {}
+
 pMeshEnt pumi_ment_getghost(pMeshEnt& meshEnt, int partID)
 {}

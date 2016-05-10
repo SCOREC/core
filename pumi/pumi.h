@@ -52,7 +52,7 @@ void pumi_sync(void);
 void pumi_printsys();
 double pumi_gettime();
 double pumi_getmem();
-void pumi_printtimemem();
+void pumi_printtimemem(const char* msg, double time, double memory);
 
 //************************************
 //************************************
