@@ -44,7 +44,7 @@ void pumi_sync(void)
 
 #include <sys/utsname.h>
 #include <sys/resource.h>
-void pumi_info()
+void pumi_printsys()
 {
   if (PCU_Comm_Self()) return;
   struct utsname u;
@@ -53,3 +53,49 @@ void pumi_info()
            __func__, u.sysname, u.nodename, u.release, u.version, u.machine);
   fflush(stdout);
 }
+
+double pumi_gettime()
+{
+  struct rusage ruse_now;
+  getrusage(RUSAGE_SELF, &ruse_now);
+  return double(ruse_now.ru_utime.tv_sec) + double(ruse_now.ru_utime.tv_usec)/1000000.0;
+}
+
+#if defined(__APPLE__)
+#include <mach/task.h>
+#include <mach/mach_init.h>
+#elif defined(__bgq__)
+#include <spi/include/kernel/memory.h>
+#else
+#include <malloc.h> //warning - this is GNU-specific
+#endif
+
+double pumi_getmem()
+{
+  const double M = 1024*1024;
+#if defined(__APPLE__)
+  bool resident = true;
+  struct task_basic_info t_info;
+  mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+  task_info(current_task(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
+  size_t size = (resident ? t_info.resident_size : t_info.virtual_size);
+  return (double)size/M;
+#elif defined(__bgq__)
+  size_t heap;
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
+  return (double)heap/M;
+#else
+  struct mallinfo meminfo_now = mallinfo();
+  return ((double)meminfo_now.arena)/M;
+#endif
+}
+
+void pumi_printtimemem(const char* msg, double time, double memory)
+{
+  if (!PCU_Comm_Self())
+  {
+    printf("%-20s %6.3f sec %7.3f MB \n", msg, time, memory);
+    fflush(stdout);
+  }
+}
+

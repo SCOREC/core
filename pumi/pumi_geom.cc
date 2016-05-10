@@ -18,15 +18,16 @@ pGeom pumi_geom_create(const char* filename, const char* model_type)
   if (!strcmp(model_type,"mesh"))
   {
     gmi_register_mesh();
-    return gmi_load(filename);
+    pumi::instance()->model = gmi_load(filename);
   }
 
-  if (!strcmp(model_type,"null"))
+  else if (!strcmp(model_type,"null"))
   {
     gmi_register_null();
-    return gmi_load(".null");
+    pumi::instance()->model = gmi_load(".null");
   }
+  else
+    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid model type "<<model_type<<"\n";
 
-  if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid model type "<<model_type<<"\n";
-  return NULL;
+  return pumi::instance()->model;
 }

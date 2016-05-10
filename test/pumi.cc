@@ -68,15 +68,49 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   pumi_start();
-  pumi_info();
-  
+  pumi_printsys();
+
+  // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
   getConfig(argc,argv);
 
+  // load model
   gmi_model* g = pumi_geom_create(modelFile);
-  pMesh m=pumi_mesh_create(g, meshFile, num_in_part);
+ 
+  // load mesh
+  int num_proc_group=1;
+  if (num_in_part>1 && pumi_size()!=num_in_part)
+    num_proc_group = pumi_size()/num_in_part;
+  assert(pumi_size()%num_in_part==0);
+
+  pMesh m=pumi_mesh_create(g, meshFile, num_in_part, num_proc_group);
+  // write mesh in .smb
   pumi_mesh_write(m,outFile);
+  // write mesh in .vtk
   pumi_mesh_write(m,"output", "vtk");
 
+  // print mesh info
+  if (!pumi_rank()) std::cout<<"[pumi_test]: mesh dim="<<pumi_mesh_getdim(m)<<"\n";
+
+  // loop with mesh vertex
+  int remote_count=0;
+  pMeshEnt e;
+  // loop over vertices
+  pMeshIter it = m->begin(0);
+  while ((e = m->iterate(it)))
+  {
+    if (!pumi_ment_isonbdry(e)) continue; // skip internal entity
+    // if entity is on part boundary, count remote copies    
+    pCopies copies;
+    pumi_ment_getallrmt(e,copies);
+    // loop over remote copies and increase the counter
+    APF_ITERATE(pCopies,copies,rit)
+      ++remote_count;
+  }
+  m->end(it);
+
+  if (!pumi_rank()) std::cout<<"[pumi_test]: remote_count="<<remote_count<<"\n";
+
+  // clean-up
   pumi_mesh_delete(m);
   pumi_finalize();
   MPI_Finalize();

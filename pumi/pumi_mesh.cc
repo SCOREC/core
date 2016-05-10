@@ -15,6 +15,30 @@
 #include <PCU.h>
 #include <apfZoltan.h>
 
+// *********************************************************
+pumi::pumi()
+// *********************************************************
+{
+  mesh = NULL;
+  model = NULL;
+}
+
+// *********************************************int num_proc_grp************
+pumi::~pumi()
+// *********************************************************
+{
+  delete _instance;
+  _instance = NULL;
+}
+
+pumi* pumi::_instance=NULL;
+pumi* pumi::instance()
+{
+  if (_instance==NULL)
+    _instance = new pumi();
+  return _instance;
+}
+
 apf::Migration* getPlan(apf::Mesh* m, int partitionFactor)
 {
   apf::Splitter* splitter = apf::makeZoltanSplitter(
@@ -45,7 +69,7 @@ void switchToAll()
   PCU_Barrier();
 }
 
-pMesh pumi_mesh_create(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
+pMesh pumi_mesh_create(pGeom g, const char* filename, int num_in_part, int num_proc_grp, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
   {
@@ -54,7 +78,7 @@ pMesh pumi_mesh_create(pGeom g, const char* filename, int num_in_part, const cha
   }
 
   if (num_in_part==PCU_Comm_Peers())
-    return apf::loadMdsMesh(g, filename);
+    pumi::instance()->mesh = apf::loadMdsMesh(g, filename);
   else
   {
   // if do static partitioning
@@ -68,8 +92,14 @@ pMesh pumi_mesh_create(pGeom g, const char* filename, int num_in_part, const cha
     plan = getPlan(m, partitionFactor);
   }
   switchToAll();
-  return apf::repeatMdsMesh(m, g, plan, partitionFactor);
+  pumi::instance()->mesh = apf::repeatMdsMesh(m, g, plan, partitionFactor);
   }
+  return pumi::instance()->mesh;
+}
+
+int pumi_mesh_getdim(pMesh m)
+{
+  return m->getDimension();
 }
 
 void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)

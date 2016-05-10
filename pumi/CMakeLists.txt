@@ -28,7 +28,9 @@ endif()
 
 #Sources & Headers
 set(SOURCES
+  pumi_entity.cc
   pumi_geom.cc
+  pumi_ghost.cc
   pumi_mesh.cc
   pumi_sys.cc
 )
