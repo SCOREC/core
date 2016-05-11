@@ -93,6 +93,15 @@ int main(int argc, char** argv)
   apf::Migration* plan = new apf::Migration(m);
   apf::Parts residence;
 
+/*
+apf::MeshEntity* v;
+apf::MeshIterator* it2 = m->begin(faceDim-1);
+while ((v = m->iterate(it2))) {
+  if (m->isOwned(v)) printf("proc-%d: yes\n",PCU_Comm_Self());
+  else printf("proc-%d: no\n",PCU_Comm_Self())
+}
+ */
+
   while ((f = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != faceDim)
@@ -104,11 +113,7 @@ int main(int argc, char** argv)
 
     apf::Matches matches;
     m->getMatches(f,matches);
-/*
-    if (matches.getSize() != 1)
-      continue;
-printf("proc-%d: %d\n",PCU_Comm_Self(),++i);
- */
+
     apf::MeshEntity* e = m->getUpward(f, 0);
 
     int remoteResidence = -1;

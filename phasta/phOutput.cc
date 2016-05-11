@@ -520,15 +520,9 @@ Output::~Output()
       delete [] arrays.ien    [i][j];
     delete [] arrays.ien    [i];
     delete [] arrays.mattype[i];
-    delete [] arrays.mattypeb[i];
-    delete [] arrays.mattypeif0[i];
-    delete [] arrays.mattypeif1[i];
   }
   delete [] arrays.ien;
   delete [] arrays.mattype;
-  delete [] arrays.mattypeb;
-  delete [] arrays.mattypeif0;
-  delete [] arrays.mattypeif1;
   Blocks& bbs = blocks.boundary;
   for (int i = 0; i < bbs.getSize(); ++i) {
     for (int j = 0; j < bbs.nElements[i]; ++j) {
@@ -539,12 +533,14 @@ Output::~Output()
     delete [] arrays.ienb[i];
     delete [] arrays.ibcb[i];
     delete [] arrays.bcb[i];
+    delete [] arrays.mattypeb[i];
   }
   delete [] arrays.ienb;
   delete [] arrays.ibcb;
   delete [] arrays.bcb;
   delete [] arrays.nbc;
   delete [] arrays.ibc;
+  delete [] arrays.mattypeb;
   for (int i = 0; i < nEssentialBCNodes; ++i)
     delete [] arrays.bc[i];
   delete [] arrays.bc;
@@ -557,9 +553,13 @@ Output::~Output()
     }
     delete [] arrays.ienif0[i];
     delete [] arrays.ienif1[i];
+    delete [] arrays.mattypeif0[i];
+    delete [] arrays.mattypeif1[i];
   }
   delete [] arrays.ienif0;
   delete [] arrays.ienif1;
+  delete [] arrays.mattypeif0;
+  delete [] arrays.mattypeif1;
   delete [] arrays.ilworkl;
   delete [] arrays.iel;
   delete [] arrays.ileo;
