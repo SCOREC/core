@@ -42,7 +42,9 @@ set(MDS_SOURCES
   mdsUgrid.cc)
 
 set(MDS_HEADERS
-  apfMDS.h)
+  apfMDS.h
+  apfBox.h
+)
 
 if(BUILD_IN_TRILINOS)
 # THIS IS WHERE TRIBITS GETS HEADERS

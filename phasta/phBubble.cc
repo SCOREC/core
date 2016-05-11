@@ -28,18 +28,17 @@ void readBubbles(Bubbles& bubbles)
 
   filebubble = fopen(bubblefname, "r");
   assert(filebubble != NULL); 
-  while(1)
-  {
-    // File format (each line represents a bubble):
-    // x_center y_center z_center radius
-    int ret = fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id,
+  // File format (each line represents a bubble):
+  // bubble_id x_center y_center z_center radius (5 columns in total)
+  // Set bubble_id = 0 in bubble.inp for bubbles located outside the CAD (periodic channel for instance)
+  while(fscanf(filebubble, "%d %lf %lf %lf %lf", &readbubble.id,
         &readbubble.center[0], &readbubble.center[1], &readbubble.center[2],
-        &readbubble.radius);
-    assert(ret == 5);
-    if (feof(filebubble))
-      break;
+        &readbubble.radius) == 5)
+  {
     bubbles.push_back(readbubble);
   }
+  if(!feof(filebubble) && !PCU_Comm_Self()) // If while loop was exited for another reason then eof
+    printf("WARNING: data in %s does not match expected format\n",bubblefname);
   fclose(filebubble);
 
   if (!PCU_Comm_Self())
