@@ -12,12 +12,13 @@ const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
 int num_in_part = 1;
+int num_proc_group = 1;
 
 void getConfig(int argc, char** argv)
 {
-  if ( argc != 5 ) {
+  if ( argc < 5 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <outMesh> <num_in_mesh_part>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <outMesh> <num_in_mesh_part>  <num_proc_group>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
@@ -25,44 +26,19 @@ void getConfig(int argc, char** argv)
   meshFile = argv[2];
   outFile = argv[3];
   num_in_part = atoi(argv[4]);
+  if (argc>5) 
+    num_proc_group = atoi(argv[5]);
   assert(num_in_part <= PCU_Comm_Peers());
+  if (argc==5 && num_in_part!=1)
+    num_proc_group = PCU_Comm_Peers()/num_in_part;
+
+  if (num_in_part!=1) assert(PCU_Comm_Peers()/num_in_part==num_proc_group);
 }
 
 #include <pumi.h>
 #include <iostream>
 #include <cstdlib>
-#include <assert.h>
 #include <mpi.h>
-
-int main_(int argc, char** argv)
-{
-  MPI_Init(&argc,&argv);
-  pumi_start();
-  if (argc<3)
-  {
-    if (!pumi_rank()) std::cout<<"[pumi_test] ./test_pumi geom_file.dmg mesh_file.smb num_in_part\n";
-    pumi_finalize();
-    return 1;
-  }
-  modelFile = argv[1];
-  meshFile = argv[2];
-
-  pGeom g = pumi_geom_create(modelFile);
-  int num_in_part=1;
-  if (argc>3 && atoi(argv[3])>1)
-  {
-    assert(atoi(argv[3]) == pumi_size());
-    num_in_part == pumi_size();
-  }
-  pMesh m=pumi_mesh_create(g, meshFile, num_in_part);
-  
-  pumi_mesh_write(m, "output.smb", "mds");
-  pumi_mesh_write(m, "output", "vtk");
-  pumi_mesh_delete(m);
-  pumi_finalize();
-  MPI_Finalize();
-  return 1;
-}
 
 int main(int argc, char** argv)
 {
@@ -99,8 +75,8 @@ int main(int argc, char** argv)
   pMeshEnt e;
 
   // loop over vertices
-  pMeshIter it = m->begin(0);
-  while ((e = m->iterate(it)))
+  pMeshIter mit = m->begin(0);
+  while ((e = m->iterate(mit)))
   {
     assert(pumi_ment_getdim(e)==0);
     assert(pumi_ment_getnumadj(e, mesh_dim+1)==0);
@@ -116,11 +92,13 @@ int main(int argc, char** argv)
     // check the entity is not ghost or ghosted
     assert(!pumi_ment_isghost(e) && !pumi_ment_isghosted(e));
   }
-  m->end(it);
+  m->end(mit);
 
-  if (!pumi_rank()) std::cout<<"[pumi_test]: remote_count="<<remote_count<<"\n";
   // print elapsed time and increased heap memory
   pumi_printtimemem("elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
+
+  // print mesh info
+  pumi_mesh_print(m);
 
   // clean-up
   pumi_mesh_delete(m);

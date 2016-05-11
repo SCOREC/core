@@ -66,6 +66,7 @@ void pumi_printtimemem(const char* msg, double time, double memory);
 pGeom pumi_geom_create(const char* fileName, const char* model_type="mesh");
 pMesh pumi_mesh_create(pGeom geom, const char* fileName, int option, int num_proc_grp=1, const char* mesh_type="mds");
 int pumi_mesh_getdim(pMesh m);
+void pumi_mesh_print(pMesh m);
 void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
 void pumi_mesh_delete(pMesh m);
 
