@@ -85,7 +85,7 @@ namespace ph {
       if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
         ph::balance(in,m);
       apf::MeshTag* order = NULL;
-      if (PCU_Comm_Peers() > 1)
+      if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
       apf::reorderMdsMesh(m,order);
     }
