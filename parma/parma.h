@@ -60,8 +60,9 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& maxNumParts,
  * @brief write the number of parts with neighbors formed by a small number of shared vtx
  * @param m (In) partitioned mesh
  * @param small (In) report part counts with [1:small] number of shared vertices
+ * @param prefix (In) string to prepend to output
  */
-void Parma_WriteSmallNeighbors(apf::Mesh* m, int small);
+void Parma_WriteSmallNeighbors(apf::Mesh* m, int small, const char* prefix);
 
 /**
  * @brief get the smallest number of shared vertices forming a neighbor

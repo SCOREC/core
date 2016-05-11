@@ -11,6 +11,8 @@
 #include "apfMatrix.h"
 #include "apfNew.h"
 #include "apfDynamicArray.h"
+
+#include <vector>
 /** \file apf.h
   * \brief The APF Field interface
   */
@@ -45,7 +47,7 @@ struct Sharing;
 void destroyMesh(Mesh* m);
 
 /** \brief Creates a Mesh Element over an entity.
-  * 
+  *
   * \details A Mesh Element allows queries to the coordinate field,
   * including mapping, differential and total volume, as well as
   * gauss integration point data. A Mesh Element is also required
@@ -58,7 +60,7 @@ MeshElement* createMeshElement(Mesh* m, MeshEntity* e);
 MeshEntity * getMeshEntity(MeshElement * me);
 
 /** \brief Destroys a Mesh Element.
-  * 
+  *
   * \details This only destroys the apf::MeshElement object,
   * the underlying mesh entity and field data are unaffected.
   */
@@ -315,7 +317,7 @@ double getIntWeight(MeshElement* e, int order, int point);
 void mapLocalToGlobal(MeshElement* e, Vector3 const& local, Vector3& global);
 
 /** \brief Get the differential volume at a point.
-  * 
+  *
   * \details This function is meant to provide the differential
   * measure of an element at a point, based on
   * the Jacobian determinant in the case of regions, and equivalent
@@ -395,7 +397,7 @@ class Integrator
 double measure(MeshElement* e);
 
 /** \brief Measures the volume, area, or length of a Mesh Entity.
-  * 
+  *
   * \returns The measure of the element
   */
 double measure(Mesh* m, MeshEntity* e);
@@ -479,19 +481,37 @@ for (t::const_iterator (i) = (w).begin(); \
   * \details Nodal fields whose shape differs from the mesh shape will
   * not be output. Fields with incomplete data will not be output.
   */
-void writeVtkFiles(const char* prefix, Mesh* m, bool isWritingBinary = true);
+void writeVtkFiles(const char* prefix, Mesh* m);
+
+/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * with binary (base64) encoding and zlib compression (if LION_COMPRESS=ON)
+  * \details Only fields whose name appears in the vector writeFields will be
+  * output. Nodal fields whose shape differs from the mesh shape will not be
+  * output. Fields with incomplete data will not be output.
+  */
+void writeVtkFiles(const char* prefix, Mesh* m,
+    std::vector<std::string> writeFields);
 
 /** \brief Output just the .vtu file with ASCII encoding for this part.
   \details this function is useful for debugging large parallel meshes.
   */
 void writeOneVtkFile(const char* prefix, Mesh* m);
 
-/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh 
+/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   * with ASCII encoding
   * \details Nodal fields whose shape differs from the mesh shape will
   * not be output. Fields with incomplete data will not be output.
   */
 void writeASCIIVtkFiles(const char* prefix, Mesh* m);
+
+/** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
+  * with ASCII encoding
+  * \details Only fields whose name appears in the vector writeFields will be
+  * output. Nodal fields whose shape differs from the mesh shape will not be
+  * output. Fields with incomplete data will not be output.
+  */
+void writeASCIIVtkFiles(const char* prefix, Mesh* m,
+    std::vector<std::string> writeFields);
 
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType
@@ -596,7 +616,7 @@ void axpy(double a, Field* x, Field* y);
 void renameField(Field* f, const char* name);
 
 /** \brief Get the basis functions over a mesh element
-  * 
+  *
   * \param s the field shape that defines the basis functions
   * \param e the mesh element over which the basis functions are defined
   * \param p the local coordinates at which the basis functions are evaluated

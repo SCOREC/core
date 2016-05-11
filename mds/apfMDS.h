@@ -143,19 +143,6 @@ void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile
   respectively. */
 Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
 
-
-/** \brief create a box from an MDS mesh
-  \param nx number of x elements
-  \param ny number of y elements
-  \param nz number of z elements
-  \param wx x dimension width
-  \param wy y dimension width
-  \param wz z dimension width
-  \param is true = simplical mesh, false = quad/hex
-  \details set ny,nz=0 for a 1D mesh, set nz=0 for a 2D mesh */
-Mesh2* makeMdsBox(
-    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
-
 void disownMdsModel(Mesh2* in);
 
 void setMdsMatching(Mesh2* in, bool has);
