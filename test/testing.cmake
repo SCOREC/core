@@ -150,7 +150,11 @@ mpi_test(ghostMPAS 4
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusGhostEle4p/")
-
+mpi_test(ghostEdge 4
+  ./ghostEdge
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusGhostEle4p/")
 mpi_test(fixDisconnected 4
   ./fixDisconnected
   "${MDIR}/torus.dmg"
