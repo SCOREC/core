@@ -184,7 +184,10 @@ apf::Balancer* Parma_MakeGhostElementDiffuser(apf::Mesh* m, int layers, int brid
     double stepFactor = 0.1, int verbosity=0);
 
 /**
- * @brief create an APF Balancer using ghost element aware diffusion
+ * @brief create an APF Balancer using ghost element aware diffusion for a
+ * vertex-based partition
+ * @remark Ghosting for a vertex-based partition is asymetric; ghosts
+ * are only needed for vertices on the boundary that are owned.
  * @param m (In) partitioned mesh
  * @param layers (In) depth of ghosting
  * @param stepFactor (In) amount of weight to migrate between parts during
