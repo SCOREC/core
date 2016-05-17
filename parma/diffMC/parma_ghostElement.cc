@@ -50,10 +50,10 @@ namespace {
         monitorUpdate(avgSides, sS, sA);
 
         parma::Targets* t = parma::makeTargets(s, edgeW, factor);
-        parma::Selector* sel = parma::makeElmSelector(mesh, wtag);
+        parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);
-        parma::Stepper b(mesh, factor, s, edgeW, t, sel, "elm", stopper);
+        parma::Stepper b(mesh, factor, s, edgeW, t, sel, "edge", stopper);
         bool ret = b.step(tolerance, verbose);
         return ret;
       }
