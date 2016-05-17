@@ -9,11 +9,11 @@
 #include "parma_selector.h"
 
 namespace {
-  class GhostElementBalancer : public parma::Balancer {
+  class MPASGhostBalancer : public parma::Balancer {
     private: 
       int sideTol;
     public:
-      GhostElementBalancer(apf::Mesh* m, int l, int b, double f, int v)
+      MPASGhostBalancer(apf::Mesh* m, int l, int b, double f, int v)
         : Balancer(m, f, v, "ghosts"), layers(l), bridge(b) 
       {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
@@ -34,7 +34,7 @@ namespace {
           fprintf(stdout, "avgSides %f\n", avgSides);
 
         parma::Weights* w =
-          parma::makeGhostElementWeights(mesh, wtag, s, layers, bridge);
+          parma::makeGhostMPASWeights(mesh, wtag, s, layers, bridge);
         parma::Targets* t = parma::makeTargets(s, w, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
 
@@ -51,5 +51,5 @@ namespace {
 
 apf::Balancer* Parma_MakeGhostElementDiffuser(apf::Mesh* m,
     int layers, int bridge, double stepFactor, int verbosity) {
-  return new GhostElementBalancer(m, layers, bridge, stepFactor, verbosity);
+  return new MPASGhostBalancer(m, layers, bridge, stepFactor, verbosity);
 }

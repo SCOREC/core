@@ -119,9 +119,9 @@ namespace parma {
 
 
 
-  class GhostElementWeights : public Weights {
+  class GhostMPASWeights : public Weights {
     public:
-      GhostElementWeights(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, int layers, int bridge)
+      GhostMPASWeights(apf::Mesh* m, apf::MeshTag* wtag, Sides* s, int layers, int bridge)
         : Weights(m, wtag, s), entDim(0), weight(0)
       {
         GhostElementFinder finder(m, wtag, layers, bridge);
@@ -130,12 +130,12 @@ namespace parma {
         weight += ownedVtxWeight(m, wtag);
         exchange();
       }
-      ~GhostElementWeights() {}
+      ~GhostMPASWeights() {}
       double self() {
         return weight;
       }
     private:
-      GhostElementWeights();
+      GhostMPASWeights();
       int entDim;
       double weight;
       void findGhostElements(GhostElementFinder* finder, Sides* sides) {
@@ -147,7 +147,7 @@ namespace parma {
       }
       void exchangeGhostElementsFrom() {
         PCU_Comm_Begin();
-        const GhostElementWeights::Item* ghost;
+        const GhostMPASWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
           PCU_COMM_PACK(ghost->first, ghost->second);
@@ -161,7 +161,7 @@ namespace parma {
       }
       void exchange() {
         PCU_Comm_Begin();
-        const GhostElementWeights::Item* ghost;
+        const GhostMPASWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
           PCU_COMM_PACK(ghost->first, weight);
@@ -175,8 +175,8 @@ namespace parma {
         }
       }
   };
-  Weights* makeGhostElementWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
+  Weights* makeGhostMPASWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
       int layers, int bridge) {
-    return new GhostElementWeights(m, w, s, layers, bridge);
+    return new GhostMPASWeights(m, w, s, layers, bridge);
   }
 } //end namespace
