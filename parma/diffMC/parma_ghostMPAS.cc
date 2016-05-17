@@ -49,7 +49,7 @@ namespace {
   };
 }
 
-apf::Balancer* Parma_MakeGhostElementDiffuser(apf::Mesh* m,
+apf::Balancer* Parma_MakeMPASDiffuser(apf::Mesh* m,
     int layers, int bridge, double stepFactor, int verbosity) {
   return new MPASGhostBalancer(m, layers, bridge, stepFactor, verbosity);
 }

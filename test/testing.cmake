@@ -145,8 +145,8 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
 endif()
-mpi_test(ghostElement 4
-  ./ghostElement
+mpi_test(ghostMPAS 4
+  ./ghostMPAS
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusGhostEle4p/")

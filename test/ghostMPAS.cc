@@ -42,7 +42,7 @@ namespace {
     apf::MeshTag* weights = applyUnitWeight(m);
     const int layers = 3;
     const int bridgeDim = 1;
-    apf::Balancer* ghost = Parma_MakeGhostElementDiffuser(m, layers, bridgeDim);
+    apf::Balancer* ghost = Parma_MakeMPASDiffuser(m, layers, bridgeDim);
     ghost->balance(weights, 1.01);
     m->destroyTag(weights);
     delete ghost;
