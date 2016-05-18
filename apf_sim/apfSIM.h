@@ -92,6 +92,7 @@ class MeshSIM : public Mesh2
     MeshEntity * createVert_(ModelEntity*) { return NULL; }
     MeshEntity * createEntity_(int, ModelEntity*, MeshEntity**) { return NULL; }
     void destroy_(MeshEntity* ) {};
+    void setModelEntity(MeshEntity*, ModelEntity*) {};
     void addMatch(MeshEntity*, int, MeshEntity* ) {};
     void clearMatches(MeshEntity*) {};
     void acceptChanges() {};
