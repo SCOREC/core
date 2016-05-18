@@ -15,10 +15,11 @@ namespace parma {
   };
   class GhostWeights;
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim);
-  Weights* makeGhostElementWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, 
+  Weights* makeGhostMPASWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
       int layers, int bridge);
-  GhostWeights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
+  GhostWeights* makeVtxGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
       int layers);
+  GhostWeights* makeElmGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s);
   void destroyGhostWeights(GhostWeights* gw);
   Weights* convertGhostToEntWeight(GhostWeights* gw, int dim);
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w);
