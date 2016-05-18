@@ -42,6 +42,7 @@ void mds_apf_destroy(struct mds_apf* m);
 double* mds_apf_point(struct mds_apf* m, mds_id e);
 double* mds_apf_param(struct mds_apf* m, mds_id e);
 struct gmi_ent* mds_apf_model(struct mds_apf* m, mds_id e);
+void mds_apf_set_model(struct mds_apf* m, mds_id e, struct gmi_ent* model);
 mds_id mds_apf_create_entity(
     struct mds_apf* m, int type, struct gmi_ent* model, mds_id* from);
 void mds_apf_destroy_entity(struct mds_apf* m, mds_id e);

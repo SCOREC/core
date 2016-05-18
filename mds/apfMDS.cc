@@ -540,6 +540,11 @@ class MeshMDS : public Mesh2
       putPME(parts, op);
       mds_apf_destroy_entity(mesh,id);
     }
+    void setModelEntity(MeshEntity* e, ModelEntity* c)
+    {
+      mds_apf_set_model(mesh, fromEnt(e),
+         reinterpret_cast<gmi_ent*>(c));
+    }
     bool hasMatching()
     {
       return isMatched;

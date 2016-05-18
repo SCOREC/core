@@ -97,6 +97,8 @@ class Mesh2 : public Mesh
       requireUnfrozen();
       destroy_(e);
     }
+/** \brief Change the geometric classification of an entity. */
+    virtual void setModelEntity(MeshEntity* e, ModelEntity* c) = 0;
 /** \brief Add a matched copy to an entity */
     virtual void addMatch(MeshEntity* e, int peer, MeshEntity* match) = 0;
 /** \brief Remove all matched copies of an entity */
