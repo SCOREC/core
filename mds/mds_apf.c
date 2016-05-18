@@ -66,6 +66,11 @@ struct gmi_ent* mds_apf_model(struct mds_apf* m, mds_id e)
   return m->model[mds_type(e)][mds_index(e)];
 }
 
+void mds_apf_set_model(struct mds_apf* m, mds_id e, struct gmi_ent* model)
+{
+  m->model[mds_type(e)][mds_index(e)] = model;
+}
+
 mds_id mds_apf_create_entity(
     struct mds_apf* m, int type, struct gmi_ent* model, mds_id* from)
 {
