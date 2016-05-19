@@ -57,7 +57,6 @@ namespace {
         bool ret = b.step(tolerance, verbose);
         return ret;
       }
-      int layers;
   };
 }
 
