@@ -78,9 +78,9 @@ void printDiagnostics()
     printf("quality tolerance: %f\n", qualityTol);
     printf("number of elements below tolerance: %ld\n", numElemsBelowTol);
     if (numElemsBelowTol > 0)
-      printf("avgerage quality of elements below tolerance: %f\n",
+      printf("average quality of elements below tolerance: %f\n",
           avgQualityBelowTol);
-    printf("minumum quality in mesh: %f\n", minQuality);
+    printf("minimum quality in mesh: %f\n", minQuality);
   }
 }
 
