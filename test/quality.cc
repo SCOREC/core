@@ -6,6 +6,7 @@
 #include <ma.h>
 #include <maShape.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace {
 
