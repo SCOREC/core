@@ -160,6 +160,11 @@ mpi_test(fixDisconnected 4
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusDcFix4p/")
+mpi_test(quality 4
+  ./quality
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  .3)
 set(MDIR ${MESHES}/airFoilAfosr)
 mpi_test(elmBalance 4
   ./elmBalance
