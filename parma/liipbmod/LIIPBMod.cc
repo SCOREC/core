@@ -56,9 +56,6 @@ int LIIPBMod::run(apf::Mesh* m)
   double numNPAve = numNPTot/PCU_Comm_Peers()/numParts;
   int tag;
 
-  pMeshDataId POtoMoveTag;
-  POtoMoveTag = MD_newMeshDataId("POtoMove");
-
   map <int, int> *Neigbors = new map<int,int>[numParts];
   int *numNeigbor = new int [numParts];
   pmModel::PEIter peiter;
@@ -93,13 +90,11 @@ int LIIPBMod::run(apf::Mesh* m)
   liipbmod_commuInt(numRgn, numRgnRecv, Neigbors, numParts);
   liipbmod_commuDouble(NP_ratio, RatioRecv, Neigbors, numParts);
 
-  zoltanCB cb;
-  cb.setAlgorithm(pmZoltanCallbacks::PARMETIS);
+  apf::Migration* plan;
 
   // if the current part_mesh have high nodes number, move some regions to 
   // its neighbor
   for(Iter=0; Iter<IterMax;Iter++){
-      map<pEntity, int*> POtoMove;
       map<pEntity, int*>::iterator poIter;
       int needtoupdate=0, needtoupdateglobal;
       map<pEntity, int>::iterator mapIter;
@@ -136,13 +131,12 @@ int LIIPBMod::run(apf::Mesh* m)
                                   numNodesMarked++;                  
                                   int pidtomove=rank;
                                   while(region=(pRegion)PList_next(vRegions,&tmp))
-                                      if(!EN_getDataInt((pEntity)region,POtoMoveTag,&tag)){ 
+                                      if(!plan->has(region)) {
                                           int *pid = new int[3];
                                           pid[0] = ipart;
                                           pid[1] = pidtomove;
                                           pid[2] = pidtomove/numParts;
-                                          POtoMove[(pEntity)region] = pid;
-                                          EN_attachDataInt((pEntity)region,POtoMoveTag,1);
+                                          plan->send(region,pid);
                                       }
                               }
                           }
@@ -157,14 +151,11 @@ int LIIPBMod::run(apf::Mesh* m)
 
       MPI_Allreduce(&needtoupdate, &needtoupdateglobal, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
-      for(poIter=POtoMove.begin();poIter!=POtoMove.end();poIter++)
-          EN_deleteData((pEntity)(*poIter).first,POtoMoveTag);
-
       if(needtoupdateglobal){                
 
           if(PCU_Comm_Self()==0)
               printf("[%2d]migrationMeshEntities....Iter%d\n",PCU_Comm_Self(),Iter);
-          migrateMeshEntities(meshes, POtoMove, cb);          
+          m->migrate(plan);
 
           //update the inforamtion for next iteration
           for(ipart=0;ipart<numParts;ipart++){
