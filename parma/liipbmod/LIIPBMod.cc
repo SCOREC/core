@@ -54,7 +54,6 @@ int LIIPBMod::run(apf::Mesh* m)
   MPI_Gather(numNP, numParts, MPI_INT, NpB, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
 
   double numNPAve = numNPTot/PCU_Comm_Peers()/numParts;
-  int tag;
 
   map <int, int> *Neigbors = new map<int,int>[numParts];
   int *numNeigbor = new int [numParts];
@@ -87,11 +86,11 @@ int LIIPBMod::run(apf::Mesh* m)
   liipbmod_commuInt(numRgn, numRgnRecv, Neigbors, numParts);
   liipbmod_commuDouble(NP_ratio, RatioRecv, Neigbors, numParts);
 
-  apf::Migration* plan;
 
   // if the current part_mesh have high nodes number, move some regions to 
   // its neighbor
   for(int Iter=0; Iter<IterMax;Iter++){
+      apf::Migration* plan = new apf::Migration(m);
       int needtoupdate=0, needtoupdateglobal;
       for(ipart=0;ipart<numParts;ipart++) {
           int numNodesMarked = 0;
@@ -105,7 +104,6 @@ int LIIPBMod::run(apf::Mesh* m)
                       int numV_R = 0;
                       apf::Adjacent vRegions;
                       m->getAdjacent(vertex,m->getDimension(), vRegions);
-                      void* tmp=0;
                       numV_R = vRegions.size(); //number of adjcent regions of the
                       // current part
                       if(numV_R<=numVregionMax){ //small number of  adjacent regions 
@@ -178,8 +176,10 @@ int LIIPBMod::run(apf::Mesh* m)
           liipbmod_commuInt(numRgn, numRgnRecv, Neigbors, numParts);
           liipbmod_commuDouble(NP_ratio,RatioRecv, Neigbors, numParts);
       }
-      else
+      else {
+          delete plan;
           break;
+      }
   }
 
   numNPTotonPart = 0;
