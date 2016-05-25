@@ -106,45 +106,39 @@ int LIIPBMod::run(apf::Mesh* m)
           if(NP_ratio[ipart]>tolerance1){ //high nodes number part
               //loop over the boundary nodes, seach the ones has only small number of 
               //adjcent regions on the current part
-              pVertex vertex;
-              VIter vertices = M_vertexIter(meshes[ipart]);
-              while(vertex=VIter_next(vertices)){ // loop over the boundary nodes
-                  if(EN_duplicate(vertex)){ //looking for the ones on the boundary
+              apf::MeshEntity* vertex;
+              apf::MeshIterator* vertices = m->begin(0);
+              while( (vertex=m->iterate(vertices)) ){ // loop over the boundary nodes
+                  if(m->shared(vertex)){ //looking for the ones on the boundary
                       int numV_R = 0;
-                      pPList vRegions=V_regions(vertex);
+                      apf::Adjacent vRegions;
+                      vRegions = m->getAdjacent(vertex,m->getDimension(), vRegions);
                       void* tmp=0;
-                      pRegion region;
-                      numV_R = PList_size(vRegions); //number of adjcent regions of the
+                      apf::MeshEntity* region;
+                      numV_R = vRegions.size(); //number of adjcent regions of the
                       // current part
                       if(numV_R<=numVregionMax){ //small number of  adjacent regions 
                                         //on the current part
-                          std::vector<std::pair<pEntity,int> > remoteCopies;
-                          std::vector<std::pair<pEntity,int> >::iterator vecIter;
-                          EN_getCopies(vertex,remoteCopies);
+                          apf::Copies* remoteCopies;
+                          m->getRemotes(vertex,remoteCopies);
                           if(remoteCopies.size()==1){ //has only one remote
                               // copy. i.e. belong to two parts
-                              vecIter=remoteCopies.begin();
-                              int rank= vecIter->second;
+                              int rank = remoteCopies.begin()->first;
                               int index = Neigbors[ipart][rank];
                               if((NP_ratio[ipart]-RatioRecv[ipart][index]>tolerance2||RatioRecv[ipart][index]<tolerance3)){
                                   needtoupdate = 1;
                                   numNodesMarked++;                  
-                                  int pidtomove=rank;
-                                  while(region=(pRegion)PList_next(vRegions,&tmp))
+                                  APF_ITERATE(apf::Adjacent,vRegions,region) {
                                       if(!plan->has(region)) {
-                                          int *pid = new int[3];
-                                          pid[0] = ipart;
-                                          pid[1] = pidtomove;
-                                          pid[2] = pidtomove/numParts;
-                                          plan->send(region,pid);
+                                          plan->send(region,rank);
                                       }
+                                  }
                               }
                           }
                       }                 
-                      PList_delete(vRegions);
                   }
               }
-              VIter_delete(vertices);    
+              m->end(vertices);
           }
           
       }  // loop over all the parts on this process
