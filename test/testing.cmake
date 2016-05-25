@@ -176,6 +176,11 @@ mpi_test(vtxBalance 4
   "${MDIR}/afosr.dmg"
   "${MDIR}/4imb/"
   "afosrBal4p/")
+mpi_test(liipbmod 4
+  ./liipbmod
+  "${MDIR}/afosr.dmg"
+  "${MDIR}/4imb/"
+  "afosrBal4p-liipbmod/")
 mpi_test(vtxEdgeElmBalance 4
   ./vtxEdgeElmBalance
   "${MDIR}/afosr.dmg"

@@ -23,6 +23,7 @@ int main(int argc, char** argv)
   LIIPBMod liipbmod;
   liipbmod.run(m);
   Parma_PrintPtnStats(m, "final");
+  m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
