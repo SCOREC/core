@@ -9,6 +9,8 @@
 *******************************************************************************/
 
 #include "LIIPBMod.h"
+#include <PCU.h>
+#include <apfMesh.h>
 using namespace std;
 
 int LIIPBMod::run(apf::Mesh* m)
@@ -34,7 +36,7 @@ int LIIPBMod::run(apf::Mesh* m)
   int numNPTotonPart=0, numRgnTotonPart=0;
   int *NpA, *NpB;
 
-  if(P_pid()==0){
+  if(!PCU_Comm_Self()){
       NpA = new int[P_size()*numParts];
       NpB = new int[P_size()*numParts];
   }
@@ -50,7 +52,7 @@ int LIIPBMod::run(apf::Mesh* m)
   
   MPI_Allreduce(&numNPTotonPart, &numNPTot, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&numRgnTotonPart, &numRgnTot, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  if(P_pid()==0)
+  if(PCU_Comm_Self()==0)
       printf("numnpTot before Boundary Modification: %d\n", numNPTot);
 
   MPI_Gather(numNP, numParts, MPI_INT, NpB, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
@@ -106,7 +108,7 @@ int LIIPBMod::run(apf::Mesh* m)
               std::vector<std::pair<pEntity,int> >::iterator vecIter;
               EN_getCopies(vertex,remoteCopies);
               for(vecIter=remoteCopies.begin();vecIter!=remoteCopies.end();vecIter++)
-                  if(vecIter->second!=P_pid()*numParts+ipart && Neigbors[ipart].find(vecIter->second)==Neigbors[ipart].end())
+                  if(vecIter->second!=PCU_Comm_Self()*numParts+ipart && Neigbors[ipart].find(vecIter->second)==Neigbors[ipart].end())
                       Neigbors[ipart][vecIter->second]= numNeigbor[ipart]++;
           }
       }
@@ -198,8 +200,8 @@ int LIIPBMod::run(apf::Mesh* m)
 
       if(needtoupdateglobal){                
 
-          if(P_pid()==0)
-              printf("[%2d]migrationMeshEntities....Iter%d\n",P_pid(),Iter);
+          if(PCU_Comm_Self()==0)
+              printf("[%2d]migrationMeshEntities....Iter%d\n",PCU_Comm_Self(),Iter);
           migrateMeshEntities(meshes, POtoMove, cb);          
 
           //update the inforamtion for next iteration
@@ -238,7 +240,7 @@ int LIIPBMod::run(apf::Mesh* m)
                       std::vector<std::pair<pEntity,int> >::iterator vecIter;
                       EN_getCopies(vertex,remoteCopies);
                       for(vecIter=remoteCopies.begin();vecIter!=remoteCopies.end();vecIter++)
-                          if(vecIter->second!=P_pid()*numParts+ipart && Neigbors[ipart].find(vecIter->second)==Neigbors[ipart].end())
+                          if(vecIter->second!=PCU_Comm_Self()*numParts+ipart && Neigbors[ipart].find(vecIter->second)==Neigbors[ipart].end())
                               Neigbors[ipart][vecIter->second]= numNeigbor[ipart]++;
                   }
               }
@@ -274,7 +276,7 @@ int LIIPBMod::run(apf::Mesh* m)
   }
   
   MPI_Allreduce(&numNPTotonPart, &numNPTot, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  if(P_pid()==0)
+  if(PCU_Comm_Self()==0)
       printf("numnpTot after Boundary Modification: %d\n", numNPTot);  
 
   MPI_Gather(numNP, numParts, MPI_INT, NpA, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
@@ -285,7 +287,7 @@ int LIIPBMod::run(apf::Mesh* m)
 
 //  PM_write2(meshes,"geom_.sms");
   
-  if(P_pid()==0){
+  if(PCU_Comm_Self()==0){
       for(ipart=0;ipart<numParts*P_size();ipart++)
           printf("[%2d] numnp before Boundary Modification: %d\n",ipart,NpB[ipart]);
       for(ipart=0;ipart<numParts*P_size();ipart++)
@@ -301,7 +303,7 @@ int LIIPBMod::run(apf::Mesh* m)
   delete [] numNP;
   delete [] Neigbors;
   delete [] numNeigbor;
-  if(P_pid()==0){
+  if(PCU_Comm_Self()==0){
       delete [] NpA;
       delete [] NpB;
   }
