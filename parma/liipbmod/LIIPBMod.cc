@@ -41,14 +41,10 @@ int LIIPBMod::run(apf::Mesh* m)
       NpB = new int[P_size()*numParts];
   }
 
-  for(ipart=0;ipart<numParts;ipart++){
-      numNP[ipart] = M_numVertices(meshes[ipart]);
-      numRgn[ipart] = M_numRegions(meshes[ipart]);
-//      printf("[%2d] numnp before Boundary Modification: %d\n", P_pid()*numParts+ipart,numNP[ipart]);
-//      printf("[%2d] numRgn before Boundary Modification: %d\n", P_pid()*numParts+ipart,numRgn[ipart]);
-      numNPTotonPart += numNP[ipart];
-      numRgnTotonPart += numRgn[ipart];
-  }
+  numNP[0] = m->count(0);
+  numRgn[0] = m->count(m->getDimension());
+  numNPTotonPart += numNP[0];
+  numRgnTotonPart += numRgn[0];
   
   MPI_Allreduce(&numNPTotonPart, &numNPTot, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&numRgnTotonPart, &numRgnTot, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
