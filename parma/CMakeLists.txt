@@ -14,11 +14,12 @@ if(NOT BUILD_IN_TRILINOS)
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
 endif()
 
-SET(PARMA_EXTERNAL_HEADERS parma.h)
+SET(PARMA_EXTERNAL_HEADERS LIIPBMod.h parma.h)
 
 SET(API_SOURCE parma.cc)
 
 ######################################################################
+SET(LIIPBMOD_SOURCES LIIPBMod.cc)
 SET(DIFFMC_SOURCES  
   diffMC/parma_balancer.cc
   diffMC/parma_bdryVtx.cc
@@ -96,10 +97,11 @@ SET(parmaDepLibs ${APF_LIBS})
 if(BUILD_IN_TRILINOS)
   TRIBITS_ADD_LIBRARY(
     parma
-    SOURCES ${DIFFMC_SOURCES} ${RIB_SOURCES} ${GROUP_SOURCES} ${API_SOURCE}
+    SOURCES ${LIIPBMOD_SOURCES} ${DIFFMC_SOURCES} ${RIB_SOURCES} ${GROUP_SOURCES} ${API_SOURCE}
     HEADERS ${PARMA_EXTERNAL_HEADERS})
 else(BUILD_IN_TRILINOS)
   ADD_LIBRARY(parma 
+    ${LIIPBMOD_SOURCES}
     ${DIFFMC_SOURCES}
     ${RIB_SOURCES}
     ${GROUP_SOURCES}
