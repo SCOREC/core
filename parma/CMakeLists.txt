@@ -14,12 +14,12 @@ if(NOT BUILD_IN_TRILINOS)
   find_package(apf PATHS ${CMAKE_BINARY_DIR})
 endif()
 
-SET(PARMA_EXTERNAL_HEADERS LIIPBMod.h parma.h)
+SET(PARMA_EXTERNAL_HEADERS liipbmod/LIIPBMod.h parma.h)
 
 SET(API_SOURCE parma.cc)
 
 ######################################################################
-SET(LIIPBMOD_SOURCES LIIPBMod.cc)
+SET(LIIPBMOD_SOURCES liipbmod/LIIPBMod.cc)
 SET(DIFFMC_SOURCES  
   diffMC/parma_balancer.cc
   diffMC/parma_bdryVtx.cc
