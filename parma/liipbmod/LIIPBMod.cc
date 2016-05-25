@@ -37,8 +37,8 @@ int LIIPBMod::run(apf::Mesh* m)
   int *NpA, *NpB;
 
   if(!PCU_Comm_Self()){
-      NpA = new int[P_size()*numParts];
-      NpB = new int[P_size()*numParts];
+      NpA = new int[PCU_Comm_Peers()*numParts];
+      NpB = new int[PCU_Comm_Peers()*numParts];
   }
 
   numNP[0] = m->count(0);
@@ -53,7 +53,7 @@ int LIIPBMod::run(apf::Mesh* m)
 
   MPI_Gather(numNP, numParts, MPI_INT, NpB, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
 
-  double numNPAve = numNPTot/P_size()/numParts;
+  double numNPAve = numNPTot/PCU_Comm_Peers()/numParts;
 //  double numRgnAve = numRgnTot/P_size()/numParts;
 //  double numRgnMax = numRgnAve*1.010; //region could be 2% higher than average
   int tag;
@@ -284,9 +284,9 @@ int LIIPBMod::run(apf::Mesh* m)
 //  PM_write2(meshes,"geom_.sms");
   
   if(PCU_Comm_Self()==0){
-      for(ipart=0;ipart<numParts*P_size();ipart++)
+      for(ipart=0;ipart<numParts*PCU_Comm_Peers();ipart++)
           printf("[%2d] numnp before Boundary Modification: %d\n",ipart,NpB[ipart]);
-      for(ipart=0;ipart<numParts*P_size();ipart++)
+      for(ipart=0;ipart<numParts*PCU_Comm_Peers();ipart++)
           printf("[%2d] numnp after Boundary Modification: %d\n",ipart,NpA[ipart]);
   }
 
