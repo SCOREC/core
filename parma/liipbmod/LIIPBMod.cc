@@ -58,7 +58,6 @@ int LIIPBMod::run(apf::Mesh* m)
 
   map <int, int> *Neigbors = new map<int,int>[numParts];
   int *numNeigbor = new int [numParts];
-  pmModel::PEIter peiter;
   for(ipart=0;ipart<numParts;ipart++) {
       numNeigbor[ipart] = 0;
       apf::MeshIterator* viter = m->begin(0);
@@ -66,9 +65,7 @@ int LIIPBMod::run(apf::Mesh* m)
       while( (vertex=m->iterate(viter)) ){
           if(m->isShared(vertex)){
               apf::Copies remoteCopies;
-              std::vector<std::pair<pEntity,int> >::iterator vecIter;
               m->getRemotes(vertex,remoteCopies);
-              EN_getCopies(vertex,remoteCopies);
               APF_ITERATE(apf::Copies, remoteCopies, vecIter) {
                   if(vecIter->first!=PCU_Comm_Self()*numParts+ipart 
                       && Neigbors[ipart].find(vecIter->first)==Neigbors[ipart].end())
@@ -94,32 +91,26 @@ int LIIPBMod::run(apf::Mesh* m)
 
   // if the current part_mesh have high nodes number, move some regions to 
   // its neighbor
-  for(Iter=0; Iter<IterMax;Iter++){
-      map<pEntity, int*>::iterator poIter;
+  for(int Iter=0; Iter<IterMax;Iter++){
       int needtoupdate=0, needtoupdateglobal;
-      map<pEntity, int>::iterator mapIter;
-          
       for(ipart=0;ipart<numParts;ipart++) {
-
           int numNodesMarked = 0;
- 
           if(NP_ratio[ipart]>tolerance1){ //high nodes number part
               //loop over the boundary nodes, seach the ones has only small number of 
               //adjcent regions on the current part
               apf::MeshEntity* vertex;
               apf::MeshIterator* vertices = m->begin(0);
               while( (vertex=m->iterate(vertices)) ){ // loop over the boundary nodes
-                  if(m->shared(vertex)){ //looking for the ones on the boundary
+                  if(m->isShared(vertex)){ //looking for the ones on the boundary
                       int numV_R = 0;
                       apf::Adjacent vRegions;
-                      vRegions = m->getAdjacent(vertex,m->getDimension(), vRegions);
+                      m->getAdjacent(vertex,m->getDimension(), vRegions);
                       void* tmp=0;
-                      apf::MeshEntity* region;
                       numV_R = vRegions.size(); //number of adjcent regions of the
                       // current part
                       if(numV_R<=numVregionMax){ //small number of  adjacent regions 
                                         //on the current part
-                          apf::Copies* remoteCopies;
+                          apf::Copies remoteCopies;
                           m->getRemotes(vertex,remoteCopies);
                           if(remoteCopies.size()==1){ //has only one remote
                               // copy. i.e. belong to two parts
@@ -129,8 +120,8 @@ int LIIPBMod::run(apf::Mesh* m)
                                   needtoupdate = 1;
                                   numNodesMarked++;                  
                                   APF_ITERATE(apf::Adjacent,vRegions,region) {
-                                      if(!plan->has(region)) {
-                                          plan->send(region,rank);
+                                      if(!plan->has(*region)) {
+                                          plan->send(*region,rank);
                                       }
                                   }
                               }
@@ -163,8 +154,8 @@ int LIIPBMod::run(apf::Mesh* m)
               apf::MeshIterator* viter = m->begin(0);
               apf::MeshEntity* vertex;
               while( (vertex=m->iterate(viter)) ){
-                  if(m->shared(vertex)){
-                      apf::Copies* remoteCopies;
+                  if(m->isShared(vertex)){
+                      apf::Copies remoteCopies;
                       m->getRemotes(vertex,remoteCopies);
                       APF_ITERATE(apf::Copies, remoteCopies, vecIter)
                           if(vecIter->first!=PCU_Comm_Self()*numParts+ipart && Neigbors[ipart].find(vecIter->first)==Neigbors[ipart].end())
