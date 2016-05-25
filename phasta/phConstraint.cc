@@ -238,6 +238,11 @@ struct PointConstraintElas : public Constraint
   }
 };
 
+struct InterfaceConstraint : public Constraint
+{
+  
+};
+
 static Constraint* makePointConstraint(double* values)
 {
   PointConstraint* c = new PointConstraint();
@@ -251,6 +256,16 @@ static Constraint* makePointConstraint(double* values)
 static Constraint* makePointConstraintElas(double* values)
 {
   PointConstraintElas* c = new PointConstraintElas();
+  c->originalDirection_.fromArray(values + 1);
+  c->point = c->originalDirection_ * values[0];
+  /* just-in-case normalization */
+  c->originalDirection_ = c->originalDirection_.normalize();
+  return c;
+}
+
+static Constraint* makeInterfaceConstraint(double* values)
+{
+  PointConstraint* c = new PointConstraint();
   c->originalDirection_.fromArray(values + 1);
   c->point = c->originalDirection_ * values[0];
   /* just-in-case normalization */
@@ -508,6 +523,32 @@ Constraint* combineAllElas(gmi_model* gm, FieldBCs& bcs, Make make,
   return a;
 }
 
+Constraint* combineInterface
+(
+  gmi_model* gm, FieldBCs& bcs, Make make,
+  gmi_ent* ge, apf::Vector3 const& x, Constraint* a
+)
+{
+  double* v = getBCValue(gm, bcs, ge, x);
+  if (v) {
+    /* The interface attribute only takes an integer value now
+       and it is not even used. So, in order to reuse combineElas,
+       fake value (u) is used. It is equivalent to mag=0, direction=(1,0,0)
+     */
+    double u[4] = {0,1,0,0}; 
+    DebugConstraint dbg;
+    dbg.modelTag = gmi_tag(gm, ge);
+    dbg.modelDim = gmi_dim(gm, ge);
+    Constraint* b = make(u);
+    return combineElas(a, b, dbg);
+  }
+  gmi_set* up = gmi_adjacent(gm, ge, gmi_dim(gm, ge) + 1);
+  for (int i = 0; i < up->n; ++i)
+    a = combineInterface(gm, bcs, make, up->e[i], x, a);
+  gmi_free_set(up);
+  return a;
+}
+
 bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
     apf::Vector3 const& x, double* BC, int* iBC)
 {
@@ -533,7 +574,13 @@ bool applyElasticConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
     apf::Vector3 const& x, double* BC, int* iBC)
 {
   Constraint* c = 0;
-  std::string name = "comp3_elas";
+  std::string name;
+  name = "DG interface";
+  if (haveBC(bcs, name)) {
+    FieldBCs& fbcs = bcs.fields[name];
+    c = combineInterface(gm, fbcs, makePointConstraintElas, e, x, c);
+  }
+  name = "comp3_elas";
   if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
     c = combineAllElas(gm, fbcs, makePointConstraintElas, e, x, c);
@@ -549,5 +596,4 @@ bool applyElasticConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
   delete c;
   return true;
 }
-
 }
