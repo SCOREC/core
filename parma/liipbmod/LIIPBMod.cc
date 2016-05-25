@@ -153,27 +153,25 @@ int LIIPBMod::run(apf::Mesh* m)
 
           //update the inforamtion for next iteration
           for(ipart=0;ipart<numParts;ipart++){
-              numNP[ipart] = M_numVertices(meshes[ipart]);
-              numRgn[ipart] = M_numRegions(meshes[ipart]);
+              numNP[ipart] = m->count(0);
+              numRgn[ipart] = m->count(m->getDimension());
               NP_ratio[ipart] = numNP[ipart]/numNPAve;
               
               //updated the neibgorhood
               Neigbors[ipart].clear();
               numNeigbor[ipart] = 0;
-              VIter viter = M_vertexIter(meshes[ipart]);
-              pVertex vertex;
-              while(vertex=VIter_next(viter)){
-                  if(EN_duplicate(vertex)){
-                      std::vector<std::pair<pEntity,int> > remoteCopies;
-                      std::vector<std::pair<pEntity,int> >::iterator vecIter;
-                      EN_getCopies(vertex,remoteCopies);
-                      for(vecIter=remoteCopies.begin();vecIter!=remoteCopies.end();vecIter++)
-                          if(vecIter->second!=PCU_Comm_Self()*numParts+ipart && Neigbors[ipart].find(vecIter->second)==Neigbors[ipart].end())
-                              Neigbors[ipart][vecIter->second]= numNeigbor[ipart]++;
+              apf::MeshIterator* viter = m->begin(0);
+              apf::MeshEntity* vertex;
+              while( (vertex=m->iterate(viter)) ){
+                  if(m->shared(vertex)){
+                      apf::Copies* remoteCopies;
+                      m->getRemotes(vertex,remoteCopies);
+                      APF_ITERATE(apf::Copies, remoteCopies, vecIter)
+                          if(vecIter->first!=PCU_Comm_Self()*numParts+ipart && Neigbors[ipart].find(vecIter->first)==Neigbors[ipart].end())
+                              Neigbors[ipart][vecIter->first]= numNeigbor[ipart]++;
                   }
               }
-              VIter_delete(viter);
-              
+              m->end(viter);
               
               delete [] RatioRecv[ipart];
               delete [] numRgnRecv[ipart];
