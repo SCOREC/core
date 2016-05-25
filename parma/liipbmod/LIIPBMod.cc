@@ -54,8 +54,6 @@ int LIIPBMod::run(apf::Mesh* m)
   MPI_Gather(numNP, numParts, MPI_INT, NpB, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
 
   double numNPAve = numNPTot/PCU_Comm_Peers()/numParts;
-//  double numRgnAve = numRgnTot/P_size()/numParts;
-//  double numRgnMax = numRgnAve*1.010; //region could be 2% higher than average
   int tag;
 
   pMeshDataId POtoMoveTag;
@@ -64,36 +62,6 @@ int LIIPBMod::run(apf::Mesh* m)
   map <int, int> *Neigbors = new map<int,int>[numParts];
   int *numNeigbor = new int [numParts];
   pmModel::PEIter peiter;
-//  pmEntity* pe;
-
-/*  for(ipart=0;ipart<numParts;ipart++) {
-      peiter=pmModel::Instance()->peBegin();
-      numNeigbor[ipart] = 0;
-      for(;peiter!=pmModel::Instance()->peEnd();++peiter)
-      {
-          pe=(*peiter);
-          int isOnPart = 0;
-          for (pmEntity::BPIter bpiter=pe->bpBegin();bpiter!=pe->bpEnd();++bpiter)
-              if(*bpiter == P_pid()*numParts+ipart){
-                  isOnPart = 1;
-                  break;
-              }
-          if(isOnPart) 
-              for (pmEntity::BPIter bpiter=pe->bpBegin();bpiter!=pe->bpEnd();++bpiter)                  
-                  if(*bpiter!=P_pid()*numParts+ipart && Neigbors[ipart].find(*bpiter)==Neigbors[ipart].end())
-                      Neigbors[ipart][*bpiter] = numNeigbor[ipart]++;
-      }
-      
-      RatioRecv[ipart] = new double[numNeigbor[ipart]];
-      numRgnRecv[ipart] = new int[numNeigbor[ipart]];
-
-      for(int i=0;i<numNeigbor[ipart];i++){
-          RatioRecv[ipart][i]=0;
-          numRgnRecv[ipart][i]=0;
-      }
-      NP_ratio[ipart] = numNP[ipart]/numNPAve;
-  }
-*/  
   for(ipart=0;ipart<numParts;ipart++) {
       numNeigbor[ipart] = 0;
       VIter viter = M_vertexIter(meshes[ipart]);
@@ -135,7 +103,6 @@ int LIIPBMod::run(apf::Mesh* m)
           
       for(ipart=0;ipart<numParts;ipart++) {
 
-//          double numNodesToMove = (NP_ratio[ipart]-tolerance1)*numNPAve;
           int numNodesMarked = 0;
  
           if(NP_ratio[ipart]>tolerance1){ //high nodes number part
@@ -161,8 +128,6 @@ int LIIPBMod::run(apf::Mesh* m)
                               vecIter=remoteCopies.begin();
                               int rank= vecIter->second;
                               int index = Neigbors[ipart][rank];
-                              //       if((NP_ratio-RatioRecv[rank]>tolerance2||RatioRecv[rank]<tolerance3) && numRgnRecv[rank]<numRgnMax){
-                              //   if((NP_ratio-RatioRecv[rank]>tolerance2) && numRgnRecv[rank]<numRgnMax){
                               if((NP_ratio[ipart]-RatioRecv[ipart][index]>tolerance2||RatioRecv[ipart][index]<tolerance3)){
                                   needtoupdate = 1;
                                   numNodesMarked++;                  
@@ -181,8 +146,6 @@ int LIIPBMod::run(apf::Mesh* m)
                       }                 
                       PList_delete(vRegions);
                   }
-//           if(numNodesToMove<numNodesMarked)
-//               break;          
               }
               VIter_delete(vertices);    
           }
@@ -209,25 +172,6 @@ int LIIPBMod::run(apf::Mesh* m)
               //updated the neibgorhood
               Neigbors[ipart].clear();
               numNeigbor[ipart] = 0;
-/*              peiter=pmModel::Instance()->peBegin();
-              pmEntity* pe;
-               
-              for(;peiter!=pmModel::Instance()->peEnd();++peiter)
-              {
-
-                  pe=(*peiter);
-                  int isOnPart = 0;
-                  for (pmEntity::BPIter bpiter=pe->bpBegin();bpiter!=pe->bpEnd();++bpiter)
-                      if(*bpiter == P_pid()*numParts+ipart){
-                          isOnPart = 1;
-                          break;
-                      }
-                  if(isOnPart) 
-                      for (pmEntity::BPIter bpiter=pe->bpBegin();bpiter!=pe->bpEnd();++bpiter)                  
-                          if(*bpiter!=P_pid()*numParts+ipart && Neigbors[ipart].find(*bpiter)==Neigbors[ipart].end())
-                              Neigbors[ipart][*bpiter] = numNeigbor[ipart]++;
-              }
-*/
               VIter viter = M_vertexIter(meshes[ipart]);
               pVertex vertex;
               while(vertex=VIter_next(viter)){
@@ -256,9 +200,6 @@ int LIIPBMod::run(apf::Mesh* m)
           }
           liipbmod_commuInt(numRgn, numRgnRecv, Neigbors, numParts);
           liipbmod_commuDouble(NP_ratio,RatioRecv, Neigbors, numParts);
-              
-//        sprintf(vtkfile, "vtkfile%d_",Iter);
-//        M_writeVTKFile(mesh, vtkfile,NP_ratio);
       }
       else
           break;
@@ -266,8 +207,6 @@ int LIIPBMod::run(apf::Mesh* m)
 
   numNPTotonPart = 0;
   for(ipart=0;ipart<numParts;ipart++) {
-//      printf("[%2d] numnp after Boundary Modification: %d\n", P_pid()*numParts+ipart,numNP[ipart]);
-//      printf("[%2d] numRgn after Boundary Modification: %d\n", P_pid()*numParts+ipart,numRgn[ipart]);
       numNPTotonPart += numNP[ipart];
   }
   
@@ -277,12 +216,6 @@ int LIIPBMod::run(apf::Mesh* m)
 
   MPI_Gather(numNP, numParts, MPI_INT, NpA, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
 
-//  char sys[64];
-//  sprintf(sys,"new_meshes");
-//  mkdir(sys,"00755");
-
-//  PM_write2(meshes,"geom_.sms");
-  
   if(PCU_Comm_Self()==0){
       for(ipart=0;ipart<numParts*PCU_Comm_Peers();ipart++)
           printf("[%2d] numnp before Boundary Modification: %d\n",ipart,NpB[ipart]);
@@ -333,8 +266,6 @@ void liipbmod_commuInt(int* ns, int **nr, map<int,int> *Neigbors, int numParts)
     
     MPI_Waitall(m, req, stat);
     
-/*      delete [] req; */
-/*      delete [] stat;     */
     free(req);
     free(stat);
 }
@@ -348,8 +279,6 @@ void liipbmod_commuDouble(double *ns, double **nr, map<int,int> *Neigbors, int n
     MPI_Request* req = (MPI_Request *)malloc(sizeof(MPI_Request)*2*numNeigbor ); 
     MPI_Status* stat = (MPI_Status *)malloc(sizeof(MPI_Status)*2*numNeigbor );
     
-/*      MPI_Request* req = new MPI_Request[2*(PMU_size()-1)]; */
-/*      MPI_Status*  stat= new MPI_Status[2*(PMU_size()-1)]; */
     int m, tag = 0;
     map <int, int>::iterator neigb;
 
@@ -365,8 +294,6 @@ void liipbmod_commuDouble(double *ns, double **nr, map<int,int> *Neigbors, int n
     }
     MPI_Waitall(m, req, stat);
     
-/*      delete [] req; */
-/*      delete [] stat;     */
     free(req);
     free(stat);
 }
