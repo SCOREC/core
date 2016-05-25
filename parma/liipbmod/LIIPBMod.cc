@@ -15,6 +15,7 @@ using namespace std;
 
 int LIIPBMod::run(apf::Mesh* m)
 {
+  double t0 = PCU_Time();
 
   int ipart;
   int numParts = 1;
@@ -89,7 +90,8 @@ int LIIPBMod::run(apf::Mesh* m)
 
   // if the current part_mesh have high nodes number, move some regions to 
   // its neighbor
-  for(int Iter=0; Iter<IterMax;Iter++){
+  int Iter=0;
+  for(; Iter<IterMax;Iter++){
       apf::Migration* plan = new apf::Migration(m);
       int needtoupdate=0, needtoupdateglobal;
       for(ipart=0;ipart<numParts;ipart++) {
@@ -214,7 +216,14 @@ int LIIPBMod::run(apf::Mesh* m)
       delete [] NpB;
   }
 
-  return 1;
+  double elapsed = PCU_Time()-t0;
+  elapsed = PCU_Max_Double(elapsed);
+  if(!PCU_Comm_Self()) {
+    fprintf(stderr, "LIIPBMod balanced in %d steps and %f seconds\n",
+        Iter, elapsed);
+  }
+
+  return 0;
 }
 
 
