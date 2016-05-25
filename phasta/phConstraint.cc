@@ -531,7 +531,11 @@ Constraint* combineInterface
 {
   double* v = getBCValue(gm, bcs, ge, x);
   if (v) {
-    double u[4] = {0,1,0,0};
+    /* The interface attribute only takes an integer value now
+       and it is not even used. So, in order to reuse combineElas,
+       fake value (u) is used. It is equivalent to mag=0, direction=(1,0,0)
+     */
+    double u[4] = {0,1,0,0}; 
     DebugConstraint dbg;
     dbg.modelTag = gmi_tag(gm, ge);
     dbg.modelDim = gmi_dim(gm, ge);
