@@ -192,12 +192,12 @@ int LIIPBMod::run(apf::Mesh* m)
   }
   
   MPI_Allreduce(&numNPTotonPart, &numNPTot, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  if(PCU_Comm_Self()==0)
+  if(!PCU_Comm_Self() && verbose>0)
       printf("numnpTot after Boundary Modification: %d\n", numNPTot);  
 
   MPI_Gather(numNP, numParts, MPI_INT, NpA, numParts, MPI_INT, 0, MPI_COMM_WORLD); 
 
-  if(PCU_Comm_Self()==0){
+  if(!PCU_Comm_Self() && verbose>1){
       for(ipart=0;ipart<numParts*PCU_Comm_Peers();ipart++)
           printf("[%2d] numnp before Boundary Modification: %d\n",ipart,NpB[ipart]);
       for(ipart=0;ipart<numParts*PCU_Comm_Peers();ipart++)

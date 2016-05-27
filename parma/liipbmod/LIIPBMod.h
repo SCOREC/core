@@ -31,23 +31,26 @@ private:
    double tolerance3;
    int IterMax;
    int numVregionMax;
+   int verbose;
 public:
   LIIPBMod()
   {
      tolerance1 = 1.05;
      tolerance2 = 0.02;
      tolerance3 = 1.045;
-     IterMax = 10;
+     IterMax = 300;
      numVregionMax = 5;
+     verbose = 0;
   }
 
-  LIIPBMod(int niter, int adjElm, double tol1, double tol2, double tol3)
+  LIIPBMod(int niter, int adjElm, double tol1, double tol2, double tol3, int v)
   {
      tolerance1 = tol1;
      tolerance2 = tol2;
      tolerance3 = tol3;
      IterMax = niter;
      numVregionMax = adjElm;
+     verbose = v;
   }
   void setMaxIter(int niter) {IterMax = niter;}
   void setMaxAdjElm(int adjElm) {numVregionMax = adjElm;}
