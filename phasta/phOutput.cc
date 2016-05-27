@@ -146,6 +146,8 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     m->getMatches(f, matches);
     if (matches.getSize() == 1) // This prevents adding interface elements...
       continue;
+    if (m->countUpward(f)>1)   // don't want interior region boundaries here...
+      continue;
     gmi_ent* gf = (gmi_ent*)me;
     apf::MeshEntity* e = m->getUpward(f, 0);
     BlockKey k;
