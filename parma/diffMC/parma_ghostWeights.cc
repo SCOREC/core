@@ -126,16 +126,16 @@ namespace parma {
       }
       /**
        * @brief get the weight of vertices, edges, faces, and elements
-       * ghosted to the peers
+       * ghosted to the peers via shared vertices
        */
       double* weight(int peer) {
         std::set<apf::MeshEntity*> ghosts[4];
         const int d = mesh->getDimension();
-        apf::MeshIterator* itr = mesh->begin(d-1);
-        apf::MeshEntity* f;
-        while((f=mesh->iterate(itr)))
-          if(isSharedWithTarget(mesh,f,peer))
-            insertGhosts(f,ghosts);
+        apf::MeshIterator* itr = mesh->begin(0);
+        apf::MeshEntity* v;
+        while((v=mesh->iterate(itr)))
+          if(isSharedWithTarget(mesh,v,peer))
+            insertGhosts(v,ghosts);
         mesh->end(itr);
         double* weight = new double[4];
         for(unsigned int i=0; i<4; i++)

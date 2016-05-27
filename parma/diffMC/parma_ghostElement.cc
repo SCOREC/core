@@ -35,18 +35,23 @@ namespace {
         parma::GhostWeights* gw =
           parma::makeElmGhostWeights(mesh, wtag, s);
         parma::Weights* edgeW = convertGhostToEntWeight(gw,1);
-        parma::Weights* vtxW =convertGhostToEntWeight(gw,0);
+        parma::Weights* faceW = convertGhostToEntWeight(gw,2);
+        parma::Weights* elmW = convertGhostToEntWeight(gw,3);
         destroyGhostWeights(gw);
 
-        double vtxImb, vtxAvg;
-        parma::getImbalance(vtxW, vtxImb, vtxAvg);
-        if( !PCU_Comm_Self() && verbose )
-          status("vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
-        delete vtxW;
+        double faceImb, faceAvg, elmImb, elmAvg;
+        parma::getImbalance(faceW, faceImb, faceAvg);
+        parma::getImbalance(elmW, elmImb, elmAvg);
+        if( !PCU_Comm_Self() && verbose ) {
+          status("face imbalance %.3f avg %.3f\n", faceImb, faceAvg);
+          status("elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
+        }
+        delete faceW;
+        delete elmW;
 
-        double elmImb, elmAvg;
-        parma::getImbalance(edgeW, elmImb, elmAvg);
-        monitorUpdate(elmImb, iS, iA);
+        double edgeImb, edgeAvg;
+        parma::getImbalance(edgeW, edgeImb, edgeAvg);
+        monitorUpdate(edgeImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
 
         parma::Targets* t = parma::makeTargets(s, edgeW, factor);
@@ -57,7 +62,6 @@ namespace {
         bool ret = b.step(tolerance, verbose);
         return ret;
       }
-      int layers;
   };
 }
 

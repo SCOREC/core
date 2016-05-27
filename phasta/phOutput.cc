@@ -123,6 +123,8 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
+    if (m->countUpward(f)>1)   // don't want interior region boundaries here...
+      continue;
     gmi_ent* gf = (gmi_ent*)me;
     apf::MeshEntity* e = m->getUpward(f, 0);
     BlockKey k;

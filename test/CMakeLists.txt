@@ -156,6 +156,7 @@ if(ENABLE_OMEGA_H)
   setup_exe(to_omega_h to_omega_h.cc)
   setup_exe(xgc_split xgc_split.cc)
 endif()
+setup_exe(quality quality.cc)
 
 if(IS_TESTING)
   include(testing.cmake)
