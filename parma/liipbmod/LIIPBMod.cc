@@ -221,7 +221,7 @@ int LIIPBMod::run(apf::Mesh* m)
   double elapsed = PCU_Time()-t0;
   elapsed = PCU_Max_Double(elapsed);
   if(!PCU_Comm_Self()) {
-    fprintf(stderr, "LIIPBMod balanced in %d steps and %f seconds\n",
+    fprintf(stdout, "LIIPBMod balanced in %d steps and %f seconds\n",
         Iter, elapsed);
   }
 
