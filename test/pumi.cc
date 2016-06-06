@@ -11,12 +11,12 @@
 const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
-int num_in_part = 1;
+int num_in_part = 0;
 int num_proc_group = 1;
 
 void getConfig(int argc, char** argv)
 {
-  if ( argc < 5 ) {
+  if ( argc < 4 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <num_in_mesh_part>  <num_proc_group>\n", argv[0]);
     MPI_Finalize();
@@ -25,14 +25,16 @@ void getConfig(int argc, char** argv)
   modelFile = argv[1];
   meshFile = argv[2];
   outFile = argv[3];
-  num_in_part = atoi(argv[4]);
+  if (argc>4)
+    num_in_part = atoi(argv[4]);
+  else 
+    num_in_part=PCU_Comm_Peers();
   if (argc>5) 
     num_proc_group = atoi(argv[5]);
   assert(num_in_part <= PCU_Comm_Peers());
   if (argc==5 && num_in_part!=1)
     num_proc_group = PCU_Comm_Peers()/num_in_part;
 
-  if (num_in_part!=1) assert(PCU_Comm_Peers()/num_in_part==num_proc_group);
 }
 
 #include <pumi.h>
@@ -60,6 +62,9 @@ int main(int argc, char** argv)
     num_proc_group = pumi_size()/num_in_part;
   assert(pumi_size()%num_in_part==0);
   pMesh m=pumi_mesh_create(g, meshFile, num_in_part, num_proc_group);
+  pumi_mesh_print(m);
+  sleep(.5);
+  if (!pumi_rank()) std::cout<<"\n";
 
   // write mesh in .smb
   pumi_mesh_write(m,outFile);
@@ -68,7 +73,6 @@ int main(int argc, char** argv)
 
   // print mesh info
   int mesh_dim=pumi_mesh_getdim(m);
-  if (!pumi_rank()) std::cout<<"[pumi_test]: mesh dim="<<mesh_dim<<"\n";
 
   // loop with mesh vertex
   int remote_count=0;
@@ -93,12 +97,32 @@ int main(int argc, char** argv)
     assert(!pumi_ment_isghost(e) && !pumi_ment_isghosted(e));
   }
   m->end(mit);
+  int num_org_vtx = pumi_mesh_getnument(m, 0);
 
-  // print elapsed time and increased heap memory
-  pumi_printtimemem("elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
+  m = pumi_ghost_create(0, mesh_dim, 2, 1);
+  if (!pumi_rank()) std::cout<<"creating ghost layers\n";
+  int num_ghost_vtx=0;
+  mit = m->begin(0);
+  while ((e = m->iterate(mit)))
+  {
+    if (pumi_ment_isghost(e))
+    {
+      ++num_ghost_vtx;
+     assert(pumi_ment_getownpid(e)!=pumi_rank());
+    }
+  }   
+  m->end(mit);
+  assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getnument(m,0));
 
   // print mesh info
   pumi_mesh_print(m);
+  if (!pumi_rank()) std::cout<<"\n";
+
+  // FIXME: deleting ghost layers is temporarily unavailable
+  //pumi_ghost_delete(m);
+ 
+  // print elapsed time and increased heap memory
+  pumi_printtimemem("elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
 
   // clean-up
   pumi_mesh_delete(m);

@@ -83,6 +83,8 @@ add_subdirectory(parma)
 
 add_subdirectory(zoltan)
 
+add_subdirectory(omega_h)
+
 add_subdirectory(pumi)
 
 add_subdirectory(ma)
@@ -100,8 +102,6 @@ add_subdirectory(viz)
 add_subdirectory(dsp)
 
 add_subdirectory(crv)
-
-add_subdirectory(omega_h)
 
 add_subdirectory(test)
 

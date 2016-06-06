@@ -15,18 +15,88 @@
 #include <PCU.h>
 #include <apfZoltan.h>
 #include <assert.h>
+#include <iostream>
+#include <string.h>
 
-// *********************************************************
-pumi::pumi()
-// *********************************************************
+//*******************************************************
+void destroy_node_global_numbering(apf::Mesh2* m)
+//*******************************************************
 {
-  mesh = NULL;
-  model = NULL;
+  if (m->findField("node own partid field"))
+    destroyField(m->findField("node own partid field"));
+  if (m->findField("node global id field"))
+    destroyField(m->findField("node global id field"));
 }
 
-// *********************************************int num_proc_grp************
-pumi::~pumi()
+//*******************************************************
+void generate_node_global_numbering(apf::Mesh2* m)
+//*******************************************************
+{
+//  if (!PCU_Comm_Self())  std::cout<<"[M3D-C1 INFO] ***** GENERATING GLOBAL NODE NUMBERING ***** \n"; 
+  destroy_node_global_numbering(m);
+
+  double id[1];
+  double own_partid[1];
+  apf::Field* node_ownpid_f = createPackedField(m, "node own partid field", 1);
+  apf::freeze(node_ownpid_f);
+  apf::Field* node_globalid_f = createPackedField(m, "node global id field", 1);
+  apf::freeze(node_globalid_f);
+
+  // count #own_vtx
+  int num_own_ent=0;
+  pMeshEnt e;
+  apf::MeshIterator* it = m->begin(0);
+  while ((e = m->iterate(it)))
+  {
+    if (m->getOwner(e)==PCU_Comm_Self())
+      ++num_own_ent;
+  }
+  m->end(it);
+
+  // generate global node_id
+  pumi::instance()->num_own_vtx=num_own_ent;
+  PCU_Exscan_Ints(&num_own_ent,1);
+  int start=num_own_ent;
+
+  PCU_Comm_Begin();
+
+  it = m->begin(0);
+  while ((e = m->iterate(it)))
+  {
+    own_partid[0]=(double)m->getOwner(e); 
+    setComponents(node_ownpid_f, e, 0, own_partid);    
+    if ((int)(own_partid[0])!=PCU_Comm_Self()) continue;
+    id[0] = (double) start;
+    setComponents(node_globalid_f, e, 0, id);
+    apf::Copies remotes;
+    m->getRemotes(e,remotes);
+    APF_ITERATE(apf::Copies,remotes,it)
+    {
+      PCU_COMM_PACK(it->first,it->second);
+      PCU_Comm_Pack(it->first,&start,sizeof(int));
+    }
+    ++start;
+  }
+  m->end(it);
+  PCU_Comm_Send();
+
+  int value;
+  while (PCU_Comm_Listen())
+    while ( ! PCU_Comm_Unpacked())
+    {
+      apf::MeshEntity* r;
+      PCU_COMM_UNPACK(r);
+      PCU_Comm_Unpack(&value,sizeof(int));
+      id[0] = (double) value;
+      setComponents(node_globalid_f, r, 0, id);
+    }
+}
+
+
 // *********************************************************
+pumi::pumi(): mesh(NULL), model(NULL), org_mesh(NULL) {}
+
+pumi::~pumi()
 {
   delete _instance;
   _instance = NULL;
@@ -117,7 +187,7 @@ pMesh pumi_mesh_create(pGeom g, const char* filename, int num_in_part,
     // FIXME: in non-master process group, incorrect proc ranks in 
     //        remote copies, owning part and partition model entity's residence part 
   }
-
+  generate_node_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
@@ -126,12 +196,22 @@ int pumi_mesh_getdim(pMesh m)
   return m->getDimension();
 }
 
+int pumi_mesh_getnument(pMesh m, int dim)
+{ return m->count(dim); }
+
 #include <parma.h>
 void pumi_mesh_print (pMesh m)
 {
-  if (!PCU_Comm_Self()) std::cout<<"=== mesh info === \n";
+  if (!PCU_Comm_Self()) std::cout<<"\n=== mesh count === \n";
   printStats(m);
-  Parma_PrintPtnStats(m, "initial");
+  for (int i=0; i<PCU_Comm_Peers(); ++i)
+  {
+    if (i==pumi_rank())
+      std::cout<<"(p"<<PCU_Comm_Self()<<") # local ent: v "<<m->count(0)
+        <<", e "<<m->count(1)<<", f "<<m->count(2)<<", r "<<m->count(3)<<"\n";
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+  //Parma_PrintPtnStats(m, "initial");
 }
 
 void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
@@ -146,8 +226,9 @@ void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
 
 void pumi_mesh_delete(pMesh m)
 {
-  m->destroyNative();
-  apf::destroyMesh(m);
+  destroy_node_global_numbering(pumi::instance()->mesh);
+  pumi::instance()->mesh->destroyNative();
+  apf::destroyMesh(pumi::instance()->mesh);
 }
 
 
