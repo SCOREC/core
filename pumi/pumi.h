@@ -79,6 +79,9 @@ pMesh pumi_mesh_create(pGeom geom, const char* fileName, int option, int num_pro
 // get mesh dimension
 int pumi_mesh_getdim(pMesh m);
 
+// get # mesh entities of type d on local process
+int pumi_mesh_getnument(pMesh m, int d);
+
 // print mesh size info - global and local
 void pumi_mesh_print(pMesh m);
 
@@ -88,8 +91,8 @@ void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds"
 // delete mesh
 void pumi_mesh_delete(pMesh m);
 
-// get # mesh entities of type d on local process
-int pumi_mesh_getnument(pMesh m, int d);
+// verify mesh
+void pumi_mesh_verify(pMesh m);
 
 //************************************
 //  Ghosting

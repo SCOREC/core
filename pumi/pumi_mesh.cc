@@ -734,16 +734,34 @@ int pumi_mesh_getnument(pMesh m, int dim)
 #include <parma.h>
 void pumi_mesh_print (pMesh m)
 {
-  if (!PCU_Comm_Self()) std::cout<<"\n=== mesh count === \n";
+  if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \nglobal ";
   printStats(m);
-  for (int i=0; i<PCU_Comm_Peers(); ++i)
-  {
-    if (i==pumi_rank())
-      std::cout<<"(p"<<PCU_Comm_Self()<<") # local ent: v "<<m->count(0)
-        <<", e "<<m->count(1)<<", f "<<m->count(2)<<", r "<<m->count(3)<<"\n";
-    MPI_Barrier(PCU_Get_Comm());
-  }
-  //Parma_PrintPtnStats(m, "initial");
+
+  int* local_entity_count = new int[4*PCU_Comm_Peers()];
+  for (int i=0; i<4*PCU_Comm_Peers();++i)
+    local_entity_count[i]=0;
+  for (int d=0; d<4;++d)
+    local_entity_count[4*pumi_rank()+d] = m->count(d);
+  
+  int* global_entity_count = new int[4*PCU_Comm_Peers()]; 
+
+  MPI_Allreduce(local_entity_count, global_entity_count, 4*PCU_Comm_Peers(), MPI_INT, MPI_SUM, PCU_Get_Comm());
+  if (pumi_rank()) return;
+
+  for (int p=0; p<PCU_Comm_Peers(); ++p)
+    std::cout<<"(p"<<p<<") # local ent: v "<<global_entity_count[p*4]
+        <<", e "<<global_entity_count[p*4+1]
+        <<", f "<<global_entity_count[p*4+2]
+        <<", r "<<global_entity_count[p*4+3]<<"\n";
+
+  delete [] local_entity_count;
+  delete [] global_entity_count;
+
+  apf::DynamicArray<pTag> tags;
+  m->getTags(tags);
+  int n = tags.getSize();
+  for (int i = 0; i < n; ++i) 
+    std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "<< m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
 }
 
 void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
@@ -763,4 +781,12 @@ void pumi_mesh_delete(pMesh m)
   apf::destroyMesh(m);
 }
 
-
+void pumi_mesh_verify(pMesh m)
+{
+  if (pumi::instance()->ghosted) 
+  {
+    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported for ghosted mesh\n";
+    return;
+  }
+  apf::verify(m);
+}
