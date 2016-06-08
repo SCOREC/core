@@ -39,7 +39,7 @@ int pumi_rank()
 
 void pumi_sync(void)
 {
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(PCU_Get_Comm());
 }
 
 #include <sys/utsname.h>

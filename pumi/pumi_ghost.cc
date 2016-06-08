@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
+#include <PCU.h>
 #include "apf.h"
 #include "apfMDS.h"
 
@@ -42,33 +43,30 @@ pMesh pumi_ghost_create (int brgType, int ghostType, int numLayer, int includeCo
     std::cout<<"[PUMI ERROR] "<<__func__<<" failed: includeCopy=0"<<" not supported\n";
     return NULL;
   }
-  // back up the original mesh for recovery
-  if (!pumi::instance()->org_mesh) 
-  {
-    pumi::instance()->org_mesh = pumi::instance()->mesh;
-
-    // build orig_node_flag for "isghost" query
-    pumi::instance()->org_node_flag = new std::vector<bool>;
-    int num_global_vtx;
-    MPI_Allreduce(&(pumi::instance()->num_own_vtx), &num_global_vtx, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  
-    pumi::instance()->org_node_flag->resize(num_global_vtx);
-
-    for (std::vector<bool>::iterator vit=pumi::instance()->org_node_flag->begin();
-          vit!=pumi::instance()->org_node_flag->end(); ++vit)
-      *vit = false;
-
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = pumi::instance()->org_mesh->begin(0);
-    while ((e = pumi::instance()->org_mesh->iterate(it)))
-      pumi::instance()->org_node_flag->at(pumi_ment_getglobalid(e)) = true;
-    pumi::instance()->org_mesh->end(it);
-  }
-  else // re-ghosting
+  if (pumi::instance()->ghosted)
   {
     if (!pumi_rank()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: accumulative ghosting not supported\n";
       return NULL;
   }
+
+  pumi::instance()->ghosted=true;
+
+  // build orig_node_flag for "isghost" query
+  pumi::instance()->org_node_flag = new std::vector<bool>;
+  int num_global_vtx;
+  MPI_Allreduce(&(pumi::instance()->num_own_vtx), &num_global_vtx, 1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+  
+  pumi::instance()->org_node_flag->resize(num_global_vtx);
+
+  for (std::vector<bool>::iterator vit=pumi::instance()->org_node_flag->begin();
+          vit!=pumi::instance()->org_node_flag->end(); ++vit)
+    *vit = false;
+
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = pumi::instance()->mesh->begin(0);
+  while ((e = pumi::instance()->mesh->iterate(it)))
+    pumi::instance()->org_node_flag->at(pumi_ment_getglobalid(e)) = true;
+  pumi::instance()->mesh->end(it);
 
   // create ghosted mesh
   pMesh gm = apf::makeEmptyMdsMesh(pumi::instance()->model, ghostType, false);
@@ -76,6 +74,9 @@ pMesh pumi_ghost_create (int brgType, int ghostType, int numLayer, int includeCo
   osh_ghost(osh_mesh, numLayer);
   osh::toAPF(osh_mesh, gm);
   osh_free(osh_mesh);
+
+  //pumi::instance()->mesh->destroyNative();
+  //apf::destroyMesh(pumi::instance()->mesh);
 
   pumi::instance()->mesh = gm;
   return gm;

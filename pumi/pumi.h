@@ -33,8 +33,12 @@ public:
   pGeom model;
   std::map<pMeshEnt, pCopies> ghost_map[4];
   std::map<pMeshEnt, std::set<int> > bps_map[4];
-  pMesh org_mesh;
   std::vector<bool>* org_node_flag;
+  bool ghosted;
+  int local_planeid;
+  int prev_plane_partid;
+  int next_plane_partid;
+  int plane_size;
   int num_own_vtx;
 private:
   static pumi* _instance;
@@ -78,13 +82,13 @@ int pumi_mesh_getdim(pMesh m);
 // print mesh size info - global and local
 void pumi_mesh_print(pMesh m);
 
-// write mesh into a file
+// write mesh into a file - mesh_type should be "mds" or "vtk"
 void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
 
 // delete mesh
 void pumi_mesh_delete(pMesh m);
 
-// get # local entities of type d
+// get # mesh entities of type d on local process
 int pumi_mesh_getnument(pMesh m, int d);
 
 //************************************
@@ -109,6 +113,7 @@ The error is returned in the following cases:
 */
 pMesh pumi_ghost_create (int brgType, int ghostType, int numLayer, int includeCopy);
 
+// unavailable
 void pumi_ghost_delete (pMesh m);
 
 /* 
@@ -123,48 +128,103 @@ example:
   If pumi_ghost_create was called twice in the following order (mesh, 0, 2, 1, 1) and (mesh, 1, 3, 0), 
   the vector "ghostinfo" contains [0, 2, 1, 1, 1, 3, 3, 0]
 */
+// unavailable
 void pumi_ghost_info (pMesh m, std::vector<int>& ghostinfo);
 
 //************************************
 //  Mesh Entity
 //************************************
+// get geometric entity's dimension
 int pumi_gent_getdim(pGeomEnt ge);
+
+// get geometric entity's global id
 int pumi_gent_getid(pGeomEnt ge);
 
+// get mesh entity's dimension
 int pumi_ment_getdim(pMeshEnt e);
-int pumi_ment_getid(pMeshEnt e);
 
+// get mesh entity's local id
+int pumi_ment_getlocalid(pMeshEnt e);
+
+// get mesh entity's global id - vertex only
+// global id is maintained if mesh is ghosted
+// global id is NOT maintained if mesh is adapted or re-partitioned
+int pumi_ment_getglobalid(pMeshEnt e);
+
+// get # adjacent entities
 int pumi_ment_getnumadj(pMeshEnt e, int tgtType);
+
+// get adjacent entities
 void pumi_ment_getadj(pMeshEnt e, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
+
+// get 2nd-order adjacent entities
 void pumi_ment_get2ndadj (pMeshEnt e, int brgType, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
 
+// return entity's geometric classification
 pGeomEnt pumi_ment_getgeomclass(pMeshEnt e);
+
+// unavailable
 pPartEnt pumi_ment_getptnclass(pMeshEnt e);
 
-int pumi_ment_getglobalid(pMeshEnt e); // vertex only
+// return owning part id. if ghosted mesh, vertex or element only
+int pumi_ment_getownpid(pMeshEnt e); 
 
-// owner part information
-int pumi_ment_getownpid(pMeshEnt e);
-pMeshEnt pumi_ment_getownent(pMeshEnt e);
+// return owner entity copy. if ghoted mesh, vertex or element only
+pMeshEnt pumi_ment_getownent(pMeshEnt e); 
+
+// return true if the entity is an owner copy
 bool pumi_ment_isowned(pMeshEnt e);
 
-// remote copy information
-bool pumi_ment_isonbdry (pMeshEnt e);
-int pumi_ment_getnumrmt (pMeshEnt e);
-void pumi_ment_getallrmt(pMeshEnt e, pCopies& remotes);
-pMeshEnt pumi_ment_getrmt(pMeshEnt& meshEnt, int destPart);
+// return true if entity is on part boundary, ghosted, or ghost
+//  - this will fixed to consider only part boundary entities later
+bool pumi_ment_isonbdry (pMeshEnt e); 
+
+// return # remote and ghost copies
+//  - this will fixed to consider only part boundary entities later
+int pumi_ment_getnumrmt (pMeshEnt e); 
+
+// return remote and ghost copies
+//  - this will fixed to consider only part boundary entities later
+void pumi_ment_getallrmt(pMeshEnt e, pCopies& remotes); 
+
+// return remote or ghost copy on a destination part
+//  - this will fixed to consider only part boundary entities later
+pMeshEnt pumi_ment_getrmt(pMeshEnt& meshEnt, int destPart); 
+
+// unavailable
 void pumi_ment_setrmt(pMeshEnt e, int partID, pMeshEnt rmtEnt);
+
+// unavailable
 void pumi_ment_deletermt (pMeshEnt e, int partID);
+
+// unavailable
 void pumi_ment_cleanrmt (pMeshEnt e);
 
+// unavailable
 void pumi_ment_setptntopology (pMeshEnt e);
+
+// return part ids where the entity is duplicated - part boundary or ghost
 void pumi_ment_getresidence(pMeshEnt e, std::vector<int>& resPartId);
+
+// return part ids where the entity and its downward adjacency are duplicated - part boundary or ghost
 void pumi_ment_getclosureresidence(pMeshEnt ent, std::vector<int>& resPartId);
 
-// ghosting information
+// return true if the entity is a ghost copy
 bool pumi_ment_isghost(pMeshEnt e);
+
+// return true if the entity is ghosted
+// unavailable
 bool pumi_ment_isghosted (pMeshEnt e);
+
+// unavailable
+// return #ghost copies
 int pumi_ment_getnumghost (pMeshEnt e);
+
+// unavailable
+// return ghost copies
 void pumi_ment_getallghost (pMeshEnt e, pCopies&);
+
+// unavailable
+// return ghost copy on a destination part
 pMeshEnt pumi_ment_getghost(pMeshEnt& e, int partID);
 #endif

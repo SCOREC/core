@@ -24,7 +24,7 @@ int pumi_gent_getdim(pGeomEnt ge)
     return gmi_dim(pumi::instance()->model, ge);
 }
 
-int pumi_gent_getid(pGeomEnt ge)
+int pumi_gent_getlocalid(pGeomEnt ge)
 {
   return gmi_tag(pumi::instance()->model, ge);
 }
@@ -98,11 +98,12 @@ pPartEnt pumi_ment_getptnclass(pMeshEnt e)
 // owner part information
 int pumi_ment_getownpid(pMeshEnt e)
 {
-  if (!pumi::instance()->org_mesh)
+  if (!pumi::instance()->ghosted)
     return pumi::instance()->mesh->getOwner(e);
   else // ghosted mesh
   {
     int ent_dim = apf::getDimension(pumi::instance()->mesh, e);
+    assert(ent_dim==0 || ent_dim==2);
     if (ent_dim==0) 
     {
       double partid[1];
@@ -236,7 +237,7 @@ void pumi_ment_getclosureresidence(pMeshEnt e, std::vector<int>& resPartId)
 // ghosting information
 bool pumi_ment_isghost(pMeshEnt e)
 {
-  if (!pumi::instance()->org_mesh)
+  if (!pumi::instance()->ghosted)
     return false;
   int ent_dim = apf::getDimension(pumi::instance()->mesh, e);
   assert(ent_dim==0 || ent_dim==pumi::instance()->mesh->getDimension());
@@ -259,7 +260,7 @@ bool pumi_ment_isghost(pMeshEnt e)
 
 bool pumi_ment_isghosted (pMeshEnt e)
 {
-  if (!pumi::instance()->org_mesh)
+  if (!pumi::instance()->ghosted)
     return false;
 
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
@@ -271,7 +272,7 @@ bool pumi_ment_isghosted (pMeshEnt e)
 
 int pumi_ment_getnumghost (pMeshEnt e)
 {
-  if (!pumi::instance()->org_mesh)
+  if (!pumi::instance()->ghosted)
     return 0;
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
