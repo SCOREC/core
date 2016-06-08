@@ -34,7 +34,6 @@ void getConfig(int argc, char** argv)
   assert(num_in_part <= PCU_Comm_Peers());
   if (argc==5 && num_in_part!=1)
     num_proc_group = PCU_Comm_Peers()/num_in_part;
-
 }
 
 #include <pumi.h>
@@ -48,6 +47,18 @@ int main(int argc, char** argv)
   pumi_start();
   pumi_printsys();
 
+#if 0
+  int i, processid = getpid();
+  if (!PCU_Comm_Self())
+  {
+    std::cout<<"Proc "<<PCU_Comm_Self()<<">> pid "<<processid<<" Enter any digit...\n";
+    std::cin>>i;
+  }
+  else
+    std::cout<<"Proc "<<PCU_Comm_Self()<<">> pid "<<processid<<" Waiting...\n";
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
   double begin_mem = pumi_getmem(), begin_time=pumi_gettime();
 
   // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
@@ -57,14 +68,13 @@ int main(int argc, char** argv)
   gmi_model* g = pumi_geom_create(modelFile);
  
   // load mesh per process group
-  int num_proc_group=1;
-  if (num_in_part>1 && pumi_size()!=num_in_part)
-    num_proc_group = pumi_size()/num_in_part;
   assert(pumi_size()%num_in_part==0);
   pMesh m=pumi_mesh_create(g, meshFile, num_in_part, num_proc_group);
   pumi_mesh_print(m);
   sleep(.5);
   if (!pumi_rank()) std::cout<<"\n";
+
+  if (!pumi_rank()) std::cout<<"[test_pumi] writing mesh\n";
 
   // write mesh in .smb
   pumi_mesh_write(m,outFile);
@@ -78,7 +88,7 @@ int main(int argc, char** argv)
   int remote_count=0;
   pMeshEnt e;
 
-  // loop over vertices
+  if (!pumi_rank()) std::cout<<"[test_pumi] checking various api's\n";
   pMeshIter mit = m->begin(0);
   while ((e = m->iterate(mit)))
   {
@@ -99,8 +109,10 @@ int main(int argc, char** argv)
   m->end(mit);
   int num_org_vtx = pumi_mesh_getnument(m, 0);
 
+  pumi_mesh_verify(m);
+
   m = pumi_ghost_create(0, mesh_dim, 2, 1);
-  if (!pumi_rank()) std::cout<<"creating ghost layers\n";
+  if (!pumi_rank()) std::cout<<"[test_pumi] creating ghost layers\n";
   int num_ghost_vtx=0;
   mit = m->begin(0);
   while ((e = m->iterate(mit)))
@@ -120,9 +132,11 @@ int main(int argc, char** argv)
 
   // FIXME: deleting ghost layers is temporarily unavailable
   //pumi_ghost_delete(m);
+
+  pumi_mesh_verify(m);
  
   // print elapsed time and increased heap memory
-  pumi_printtimemem("elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
+  pumi_printtimemem("[test_pumi] elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
 
   // clean-up
   pumi_mesh_delete(m);
