@@ -90,18 +90,20 @@ int LIIPBMod::run(apf::Mesh* m)
 
   // if the current part_mesh have high nodes number, move some regions to 
   // its neighbor
+  const int nNodesAccept = ceil(numNPAve * tolerance1);
   int Iter=0;
   for(; Iter<IterMax;Iter++){
       apf::Migration* plan = new apf::Migration(m);
       int needtoupdate=0, needtoupdateglobal;
       for(ipart=0;ipart<numParts;ipart++) {
           int numNodesMarked = 0;
+          int nNodesNeedToMove = numNP[ipart] - nNodesAccept;
           if(NP_ratio[ipart]>tolerance1){ //high nodes number part
               //loop over the boundary nodes, seach the ones has only small number of 
               //adjcent regions on the current part
               apf::MeshEntity* vertex;
               apf::MeshIterator* vertices = m->begin(0);
-              while( (vertex=m->iterate(vertices)) ){ // loop over the boundary nodes
+              while( (vertex=m->iterate(vertices)) && numNodesMarked < nNodesNeedToMove ){ // loop over the boundary nodes
                   if(m->isShared(vertex)){ //looking for the ones on the boundary
                       int numV_R = 0;
                       apf::Adjacent vRegions;
@@ -128,7 +130,7 @@ int LIIPBMod::run(apf::Mesh* m)
                           }
                       }                 
                   }
-              }
+              } //end while
               m->end(vertices);
           }
           
