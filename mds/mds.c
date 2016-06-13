@@ -594,7 +594,6 @@ static void unrelate_ent(struct mds* m, mds_id e)
 
 void mds_destroy_entity(struct mds* m, mds_id e)
 {
-  fprintf(stderr, "mds_destroy_entity\n");
   check_ent(m,e);
   if (TYPE(e) != MDS_VERTEX)
     unrelate_ent(m,e);
