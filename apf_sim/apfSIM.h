@@ -114,6 +114,7 @@ apf::Field* createSIMField(Mesh* m, const char* name, int valueType, FieldShape*
 apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order);
 apf::Field* createSIMFieldOn(Mesh* m, const char* name, int valueType);
 ::Field* getSIMField(apf::Field* f);
+apf::Field* wrapSIMField(Mesh* m, ::Field* fd);
 
 template <typename T>
 static void pListToDynamicArray(pPList list, DynamicArray<T>& array)

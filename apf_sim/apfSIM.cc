@@ -12,18 +12,39 @@
 #include <algorithm>
 
 #ifdef USE_FIELDSIM
+
 #include "apfSIMDataOf.h"
+
 apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
     FieldShape* shape)
 {
   return makeField(m, name, valueType, 0,shape, new SIMDataOf<double>);
 }
+
 ::Field* apf::getSIMField(apf::Field* f)
 {
   apf::SIMDataOf<double>* data = dynamic_cast<apf::SIMDataOf<double>*>(f->getData());
   return data->getSimField();
 }
+
+apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
+{
+  pPolyField pf = Field_polyField(fd);
+  int order = PolyField_entOrder(pf, 0);
+  apf::FieldShape* shape = apf::getLagrange(order);
+  char const* name = Field_name(fd);
+  int num_comp = Field_numComp(fd);
+  int valueType = -1;
+  switch (num_comp) {
+    case 1: valueType = apf::SCALAR; break;
+    case 3: valueType = apf::VECTOR; break;
+    case 9: valueType = apf::MATRIX; break;
+  }
+  return makeField(m, name, valueType, 0, shape, new SIMDataOf<double>(fd));
+}
+
 #else
+
 apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
     FieldShape* shape)
 {
@@ -33,11 +54,20 @@ apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
   (void)shape;
   apf::fail("SimField not found when APF_SIM compiled");
 }
+
 ::Field* apf::getSIMField(apf::Field* f)
 {
   (void)f;
   apf::fail("SimField not found when APF_SIM compiled");
 }
+
+apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
+{
+  (void)m;
+  (void)fd;
+  apf::fail("SimField not found when APF_SIM compiled");
+}
+
 #endif
 
 namespace apf {
