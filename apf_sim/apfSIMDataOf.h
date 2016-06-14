@@ -17,7 +17,7 @@ public:
     mesh = f->getMesh();
     assert(f->getShape() == apf::getLagrange(f->getShape()->getOrder()));
     pf = PolyField_new(f->getShape()->getOrder(), 0);
-    fd = Field_new(static_cast<MeshSIM*>(mesh)->mesh,
+    fd = Field_new(static_cast<MeshSIM*>(mesh)->getMesh(),
 		   f->countComponents(),
 		   f->getName(),
 		   "apf_field_data",

@@ -1,0 +1,6 @@
+INCLUDE(TribitsTplDeclareLibraries)
+
+TRIBITS_TPL_FIND_INCLUDE_DIRS_AND_LIBRARIES( SimField
+  REQUIRED_HEADERS SimField.h FieldTypes.h
+  REQUIRED_LIBS_NAMES SimField
+)

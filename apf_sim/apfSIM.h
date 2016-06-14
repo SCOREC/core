@@ -29,7 +29,6 @@ class TagSIM;
 
 class MeshSIM : public Mesh2
 {
-  template <class T> friend class SIMDataOf;
   public:
     MeshSIM(pParMesh m);
     virtual ~MeshSIM();

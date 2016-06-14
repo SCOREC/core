@@ -11,16 +11,17 @@
 #include <cassert>
 #include <algorithm>
 
-#ifdef SIMMODSUITE_SimField_FOUND
+#ifdef USE_FIELDSIM
 #include "apfSIMDataOf.h"
 apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
     FieldShape* shape)
 {
   return makeField(m, name, valueType, 0,shape, new SIMDataOf<double>);
 }
-::Field* getSIMField(apf::Field* f)
+::Field* apf::getSIMField(apf::Field* f)
 {
-  return f->getData()->getSimField();
+  apf::SIMDataOf<double>* data = dynamic_cast<apf::SIMDataOf<double>*>(f->getData());
+  return data->getSimField();
 }
 #else
 apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
@@ -32,7 +33,7 @@ apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
   (void)shape;
   apf::fail("SimField not found when APF_SIM compiled");
 }
-::Field* getSIMField(apf::Field* f)
+::Field* apf::getSIMField(apf::Field* f)
 {
   (void)f;
   apf::fail("SimField not found when APF_SIM compiled");
