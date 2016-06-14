@@ -29,27 +29,6 @@
 
 namespace apf {
 
-class HasAll : public FieldOp
-{
-  public:
-    virtual bool inEntity(MeshEntity* e)
-    {
-      if (!f->getData()->hasEntity(e))
-        ok = false;
-      return false;
-    }
-    bool run(FieldBase* f_)
-    {
-      f = f_;
-      ok = true;
-      this->apply(f);
-      return ok;
-    }
-  private:
-    bool ok;
-    FieldBase* f;
-};
-
 static bool isPrintable(
     FieldBase* f,
     std::vector<std::string> writeFields)
@@ -63,8 +42,7 @@ static bool isPrintable(
       inWriteFields = true;
     }
   }
-  HasAll op;
-  return inWriteFields && op.run(f);
+  return inWriteFields;
 }
 
 static bool isNodal(FieldBase* f)
