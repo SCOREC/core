@@ -80,6 +80,10 @@ public:
   {
     return NULL;
   }
+  virtual void rename(const char* name)
+  {
+    Field_setName(fd, name);
+  }
   pField getSimField() {return fd;}
 private:
   Mesh * mesh;
