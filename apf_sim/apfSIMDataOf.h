@@ -64,9 +64,7 @@ public:
   {
     return NULL;
   }
-
   pField getSimField() {return fd;}
-
 private:
   Mesh * mesh;
   pField fd;

@@ -7,6 +7,7 @@
 #include <PartitionedMeshTypes.h>
 
 void P_setPos(pPoint,double,double,double);
+class Field;
 
 namespace apf {
 
@@ -110,9 +111,10 @@ class MeshSIM : public Mesh2
     gmi_model* model;
 };
 
-Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape);
-Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order);
-Field * createSIMFieldOn(Mesh * m, const char * name, int valueType);
+apf::Field* createSIMField(Mesh* m, const char* name, int valueType, FieldShape* shape);
+apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order);
+apf::Field* createSIMFieldOn(Mesh* m, const char* name, int valueType);
+::Field* getSIMField(apf::Field* f);
 
 template <typename T>
 static void pListToDynamicArray(pPList list, DynamicArray<T>& array)

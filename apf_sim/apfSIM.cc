@@ -18,6 +18,10 @@ apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
 {
   return makeField(m, name, valueType, 0,shape, new SIMDataOf<double>);
 }
+::Field* getSIMField(apf::Field* f)
+{
+  return f->getData()->getSimField();
+}
 #else
 apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
     FieldShape* shape)
@@ -28,16 +32,21 @@ apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
   (void)shape;
   apf::fail("SimField not found when APF_SIM compiled");
 }
+::Field* getSIMField(apf::Field* f)
+{
+  (void)f;
+  apf::fail("SimField not found when APF_SIM compiled");
+}
 #endif
 
 namespace apf {
 
-Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order)
+apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order)
 {
   return createSIMField(m, name, valueType, getLagrange(order));
 }
 
-Field * createSIMFieldOn(Mesh * m, const char * name, int valueType)
+apf::Field* createSIMFieldOn(Mesh* m, const char* name, int valueType)
 {
   return createSIMField(m, name, valueType, m->getShape());
 }
