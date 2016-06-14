@@ -15,17 +15,18 @@ public:
   {
     FieldData::field = f;
     mesh = f->getMesh();
+    assert(f->getShape() == apf::getLagrange(f->getShape()->getOrder()));
     pf = PolyField_new(f->getShape()->getOrder(), 0);
     fd = Field_new(static_cast<MeshSIM*>(mesh)->mesh,
 		   f->countComponents(),
-		   "apf_field_data",
 		   f->getName(),
+		   "apf_field_data",
 		   ShpLagrange,
 		   1, // surfcont (always 1 in current simModSuite)
 		   1, // num_time_derivatives to keep available
 		   1, // num_section
 		   pf);
-    Field_apply(fd,mesh->getDimension(),NULL);
+    Field_apply(fd, mesh->getDimension(), NULL);
   }
   virtual bool hasEntity(MeshEntity *)
   {
