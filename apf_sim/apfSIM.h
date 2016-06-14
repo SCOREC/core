@@ -96,6 +96,7 @@ class MeshSIM : public Mesh2
     void addMatch(MeshEntity*, int, MeshEntity* ) {};
     void clearMatches(MeshEntity*) {};
     void acceptChanges() {};
+    pParMesh getMesh() {return mesh;}
   protected:
     pParMesh mesh;
     pMesh part;
