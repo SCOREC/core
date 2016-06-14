@@ -125,8 +125,10 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     ss << "based on the following:\n";
     ss << " - "  << n << " is classified on a model "
        << dimName[modelDimension] << '\n';
-    ss << "   "  << "which is adjacent to " << modelUpwardCount
-       << " model " << dimName[modelDimension + 1] << "s\n";
+    if (modelDimension < meshDimension) {
+      ss << "   "  << "which is adjacent to " << modelUpwardCount
+         << " model " << dimName[modelDimension + 1] << "s\n";
+    }
     if (isOnNonManifoldFace)
       ss << "   " << "and is a non-manifold " << dimName[modelDimension] << '\n';
     if (isOnManifoldBoundary)
