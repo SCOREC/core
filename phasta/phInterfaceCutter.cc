@@ -52,6 +52,13 @@ static void findMaterialsDFS(gmi_model* gm, FieldBCs& fbcs,
     for (int j = 0; j < rs->n; ++j) {
       if (mm.count(rs->e[j]))
         continue;
+/*
+std::cerr << "model region " << gmi_tag(gm, rs->e[j])
+<< " is connected to model region " << gmi_tag(gm, ge)
+<< " by model face " << gmi_tag(gm, fs->e[i])
+<< " so they have the same material\n";
+ */
+
       findMaterialsDFS(gm, fbcs, mm, rs->e[j], mid);
     }
     gmi_free_set(rs);
@@ -119,6 +126,8 @@ static void cutEntity(apf::Mesh2* m, MaterialMap& mm, apf::MeshEntity* e)
   MaterialSet ms;
   APF_ITERATE(apf::Adjacent, elements, it)
     ms.insert(mm[ (gmi_ent*) (m->toModel(*it)) ]);
+//printf("mm size: %d\n",mm.size());
+//printf("ms size: %d\n",ms.size());
   std::vector<apf::MeshEntity*> ents;
   ents.reserve(ms.size());
   ms.erase(ms.begin());
@@ -150,6 +159,7 @@ static void cutEntities(apf::Mesh2* m, FieldBCs& fbcs, MaterialMap& mm)
         toCut.push_back(e);
     }
     m->end(it);
+//printf("d: %d, toCut size: %d\n",d,toCut.size());
     for (size_t i = 0; i < toCut.size(); ++i)
       cutEntity(m, mm, toCut[i]);
   }

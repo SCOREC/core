@@ -27,16 +27,25 @@ void freeMesh(apf::Mesh* m)
 
 void getConfig(int argc, char** argv)
 {
-  if (argc != 5) {
-    if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <attributes> <in mesh> <out mesh>\n", argv[0]);
+  if (argc < 4 || argc > 5) {
+    if ( !PCU_Comm_Self() ) {
+      fprintf(stderr,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
+      fprintf(stderr,"       to take model and attributes in separate files\n");
+      fprintf(stderr,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
+      fprintf(stderr,"       to take combined model and attributes file (by simTranslate)\n");}
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-  modelFile = argv[1];
-  attribFile = argv[2];
-  inMesh = argv[3];
-  outMesh = argv[4];
+  if (argc == 5) {
+    modelFile = argv[1];
+    attribFile = argv[2];
+    inMesh = argv[3];
+    outMesh = argv[4];}
+  else if (argc == 4) {
+    attribFile = argv[1];
+    inMesh = argv[2];
+    outMesh = argv[3];
+    modelFile = argv[4];}
 }
 }
 
@@ -102,6 +111,7 @@ while ((v = m->iterate(it2))) {
 }
  */
 
+  int nDG = 0;
   while ((f = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != faceDim)
@@ -111,6 +121,7 @@ while ((v = m->iterate(it2))) {
     if (!ph::isInterface(m->getModel(), gf, fbcs))
       continue;
 
+    ++nDG;
     apf::Matches matches;
     m->getMatches(f,matches);
 
