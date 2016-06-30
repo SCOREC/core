@@ -166,6 +166,8 @@ Mesh* getMesh(GlobalNumbering* n);
 void number(GlobalNumbering* n, Node node, long number);
 /** \brief get a global number */
 long getNumber(GlobalNumbering* n, Node node);
+/** \brief get a global number */
+long getNumber(GlobalNumbering* n, MeshEntity* e, int node);
 /** \brief get an element's global node numbers */
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers);

@@ -473,6 +473,11 @@ long getNumber(GlobalNumbering* n, Node node)
   return n->get(node.entity,node.node,0);
 }
 
+long getNumber(GlobalNumbering* n, MeshEntity* e, int node)
+{
+  return n->get(e,node,0);
+}
+
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers)
 {
