@@ -31,6 +31,7 @@ struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
   for (t = 0; t < MDS_TYPES; ++t)
     m->parts[t] = calloc(cap[t], sizeof(*(m->parts[t])));
   mds_create_net(&m->remotes);
+  mds_create_net(&m->ghosts);
   mds_create_net(&m->matches);
   return m;
 }
@@ -40,6 +41,7 @@ void mds_apf_destroy(struct mds_apf* m)
   int t;
   mds_destroy_net(&m->matches, &m->mds);
   mds_destroy_net(&m->remotes, &m->mds);
+  mds_destroy_net(&m->ghosts, &m->mds);
   for (t = 0; t < MDS_TYPES; ++t)
     free(m->model[t]);
   for (t = 0; t < MDS_TYPES; ++t)
@@ -66,6 +68,11 @@ struct gmi_ent* mds_apf_model(struct mds_apf* m, mds_id e)
   return m->model[mds_type(e)][mds_index(e)];
 }
 
+void mds_apf_set_model(struct mds_apf* m, mds_id e, struct gmi_ent* model)
+{
+  m->model[mds_type(e)][mds_index(e)] = model;
+}
+
 mds_id mds_apf_create_entity(
     struct mds_apf* m, int type, struct gmi_ent* model, mds_id* from)
 {
@@ -90,6 +97,7 @@ mds_id mds_apf_create_entity(
     m->parts[type] = realloc(m->parts[type],
         m->mds.cap[type] * sizeof(*(m->parts[type])));
     mds_grow_net(&m->remotes, &m->mds, old_cap);
+    mds_grow_net(&m->ghosts, &m->mds, old_cap);
     mds_grow_net(&m->matches, &m->mds, old_cap);
   }
   m->model[type][i] = model;
@@ -108,6 +116,7 @@ void mds_apf_destroy_entity(struct mds_apf* m, mds_id e)
     if (mds_has_tag(t,e))
       mds_take_tag(t,e);
   mds_set_copies(&m->remotes, &m->mds, e, NULL);
+  mds_set_copies(&m->ghosts, &m->mds, e, NULL);
   mds_set_copies(&m->matches, &m->mds, e, NULL);
   mds_destroy_entity(&(m->mds),e);
 }

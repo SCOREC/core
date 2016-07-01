@@ -1,7 +1,7 @@
 PETSC_DIR=/fasttmp/seol/petsc-3.5.4
 PETSC_ARCH=real-mpich3-gcc4.4.5
-ZOLTAN_DIR= /usr/local/zoltan/3.81/mpich3.1.2
-PARMETIS_DIR=/usr/local/parmetis/4.0.3/mpich3.1.2
+ZOLTAN_DIR=/fasttmp/seol/mpich3-gcc4.4.5-install
+PARMETIS_DIR=$PETSC_DIR/$PETSC_ARCH
 
 cmake .. \
   -DCMAKE_C_COMPILER="/usr/local/mpich3/latest/bin/mpicc" \
@@ -14,7 +14,7 @@ cmake .. \
   -DPARMETIS_INCLUDE_DIR="$PARMETIS_DIR/include" \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.a" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.a" \
-  -DCMAKE_INSTALL_PREFIX="SET_YOUR_PREFIX" \
+  -DCMAKE_INSTALL_PREFIX=$ZOLTAN_DIR \
   -DENABLE_OMEGA_H=ON \
   -DCMAKE_BUILD_TYPE=Debug
 

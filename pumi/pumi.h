@@ -32,7 +32,7 @@ public:
   pMesh mesh;
   pGeom model;
   std::map<pMeshEnt, pCopies> ghost_map[4];
-  std::map<pMeshEnt, std::set<int> > bps_map[4];
+
   std::vector<bool>* org_node_flag;
   bool ghosted;
   int local_planeid;
@@ -97,6 +97,40 @@ void pumi_mesh_verify(pMesh m);
 //************************************
 //  Ghosting
 //************************************
+
+
+/** \brief Ghosting plan object: local elements or part to destinations. */
+class Ghosting
+{
+  public:
+/** \brief must be constructed with a mesh
+  \details use (new apf::Migration(mesh)) to make these objects */
+    Ghosting(pMesh, int);
+    ~Ghosting();
+/** \brief return the number of elements with ghost destinations */
+    int count(int d);
+/** \brief return the number of ghost destinations with entity */
+    int count(pMeshEnt ent);
+/** \brief get the i'th element with an assigned destination */
+    pMeshEnt get(int d, int i);
+/** \brief return true if the i'th element has been assigned a destination */
+    bool has(pMeshEnt e);
+/** \brief assign a destination part id to an entity */
+    void send(pMeshEnt e, int to);
+/** \brief assign a destination part id of all entities of dimension */
+    void send(int dim, int to);
+/** \brief return the destination part id of an element */
+//    int sending(MeshEntity* e);
+    pMesh getMesh() {return m;}
+    std::map<pMeshEnt, std::set<int> > pid_map[4];
+    int ghost_dim;
+    pTag ghosted_tag;
+    pTag ghost_tag;
+  private:
+    pMesh m;
+};
+
+
 /* 
 input:
   - brgType - desired bridge entity type
@@ -114,7 +148,12 @@ The error is returned in the following cases:
   - ghost type is mesh vertex
   - ghost type is grester than mesh dimension
 */
-pMesh pumi_ghost_create (int brgType, int ghostType, int numLayer, int includeCopy);
+pMesh pumi_ghost_createlayer (int brgType, int ghostType, int numLayer, int includeCopy);
+
+/* 
+  Ghosting: ghosting plan object for local elements or part to destinations.
+*/
+void pumi_ghost_create(pMesh m, Ghosting* plan);
 
 // unavailable
 void pumi_ghost_delete (pMesh m);
@@ -143,6 +182,8 @@ int pumi_gent_getdim(pGeomEnt ge);
 // get geometric entity's global id
 int pumi_gent_getid(pGeomEnt ge);
 
+void pumi_gent_getrevclas (pGeomEnt g, std::vector<pMeshEnt>& ents);
+
 // get mesh entity's dimension
 int pumi_ment_getdim(pMeshEnt e);
 
@@ -164,10 +205,10 @@ void pumi_ment_getadj(pMeshEnt e, int tgtType, std::vector<pMeshEnt>& vecAdjEnt)
 void pumi_ment_get2ndadj (pMeshEnt e, int brgType, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
 
 // return entity's geometric classification
-pGeomEnt pumi_ment_getgeomclass(pMeshEnt e);
+pGeomEnt pumi_ment_getgeomclas(pMeshEnt e);
 
 // unavailable
-pPartEnt pumi_ment_getptnclass(pMeshEnt e);
+pPartEnt pumi_ment_getptnclas(pMeshEnt e);
 
 // return owning part id. if ghosted mesh, vertex or element only
 int pumi_ment_getownpid(pMeshEnt e); 

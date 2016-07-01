@@ -96,7 +96,7 @@ static void read_links(struct pcu_file* f, struct mds_links* l)
   l->l = malloc(l->np * sizeof(unsigned*));
   pcu_read_unsigneds(f, l->n, l->np);
   for (i = 0; i < l->np; ++i) {
-    assert(l->n[i] < MAX_ENTITIES);
+    if (sizeof(mds_id) == 4) assert(l->n[i] < MAX_ENTITIES);
     l->l[i] = malloc(l->n[i] * sizeof(unsigned));
     pcu_read_unsigneds(f, l->l[i], l->n[i]);
   }
@@ -458,7 +458,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
-      assert(sizes[j] < MAX_ENTITIES);
+      if (sizeof(mds_id) == 4) assert(sizes[j] < MAX_ENTITIES);
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
@@ -571,7 +571,7 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   pcu_read_unsigneds(f, n, SMB_TYPES);
   for (i = 0; i < MDS_TYPES; ++i) {
     tmp = n[mds2smb(i)];
-    assert(tmp < MAX_ENTITIES);
+    if (sizeof(mds_id) == 4) assert(tmp < MAX_ENTITIES);
     cap[i] = tmp;
   }
   m = mds_apf_create(model, dim, cap);

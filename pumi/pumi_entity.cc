@@ -19,6 +19,8 @@
 #include <assert.h>
 
 using std::vector;
+// geometric entity functions
+
 int pumi_gent_getdim(pGeomEnt ge)
 {
     return gmi_dim(pumi::instance()->model, ge);
@@ -29,6 +31,19 @@ int pumi_gent_getlocalid(pGeomEnt ge)
   return gmi_tag(pumi::instance()->model, ge);
 }
 
+void pumi_gent_getrevclas (pGeomEnt g, std::vector<pMeshEnt>& ents)
+{
+  assert(!ents.size());
+  int dim=gmi_dim(pumi::instance()->model, g);
+  pMesh m = pumi::instance()->mesh;
+  pMeshEnt e;
+  apf::MeshIterator* ent_it = m->begin(dim);
+  while ((e = m->iterate(ent_it)))
+    if (((pGeomEnt)m->toModel(e))==g)  ents.push_back(e);
+  m->end(ent_it);
+}
+
+// mesh entity functions
 int pumi_ment_getdim(pMeshEnt e)
 {
   return apf::getDimension(pumi::instance()->mesh, e);
@@ -84,12 +99,12 @@ int pumi_ment_getid(pMeshEnt e)
   return getMdsIndex(pumi::instance()->mesh, e);
 }
 
-pGeomEnt pumi_ment_getgeomclass(pMeshEnt e)
+pGeomEnt pumi_ment_getgeomclas(pMeshEnt e)
 {
   return (pGeomEnt)(pumi::instance()->mesh->toModel(e));
 }
 
-pPartEnt pumi_ment_getptnclass(pMeshEnt e)
+pPartEnt pumi_ment_getptnclas(pMeshEnt e)
 {  
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
   return NULL;

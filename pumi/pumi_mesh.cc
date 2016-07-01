@@ -94,7 +94,7 @@ void generate_node_global_numbering(apf::Mesh2* m)
 
 
 // *********************************************************
-pumi::pumi(): mesh(NULL), model(NULL), ghosted(false) {}
+pumi::pumi(): mesh(NULL), model(NULL) {}
 
 pumi::~pumi()
 {
@@ -783,10 +783,5 @@ void pumi_mesh_delete(pMesh m)
 
 void pumi_mesh_verify(pMesh m)
 {
-  if (pumi::instance()->ghosted) 
-  {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported for ghosted mesh\n";
-    return;
-  }
   apf::verify(m);
 }
