@@ -333,12 +333,12 @@ void writeStkField(
   size_t nqp = stk::mesh::find_restriction(
       stkField, bucket.entity_rank(), bucket.supersets()).dimension();
   size_t elemsInBucket = bucket.size();
-  for (int i=0; i < elemsInBucket; ++i)
+  for (size_t i=0; i < elemsInBucket; ++i)
   {
     long globalId = bulk.identifier(bucket[i]);
     MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Matrix3x3 value;
-    for (int j=0; j < nqp; ++j)
+    for (size_t j=0; j < nqp; ++j)
     {
       getMatrix(field,elem,j,value);
       for (int k=0; k < 3; ++k)
@@ -462,12 +462,12 @@ void readStkField(
   size_t nqp = stk::mesh::find_restriction(
       stkField, bucket.entity_rank(), bucket.supersets()).dimension();
   size_t elemsInBucket = bucket.size();
-  for (int i=0; i < elemsInBucket; ++i)
+  for (size_t i=0; i < elemsInBucket; ++i)
   {
     long globalId = bulk.identifier(bucket[i]);
     MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Matrix3x3 value;
-    for (int j=0; j < nqp; ++j)
+    for (size_t j=0; j < nqp; ++j)
     {
       getMatrix(field,elem,j,value);
       for (int k=0; k < 3; ++k)
