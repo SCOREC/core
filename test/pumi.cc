@@ -29,7 +29,7 @@ void getConfig(int argc, char** argv)
     num_in_part = atoi(argv[4]);
 }
 
-Ghosting* getPlan(pMesh m)
+Ghosting* getGhostingPlan(pMesh m)
 {
   int mesh_dim=m->getDimension();
   Ghosting* plan = new Ghosting(m, m->getDimension());
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   pumi_start();
   pumi_printsys();
 
-#if 1
+#if 0
   int i, processid = getpid();
   if (!PCU_Comm_Self())
   {
@@ -87,12 +87,14 @@ int main(int argc, char** argv)
   else
     m = pumi_mesh_load(g, meshFile, num_in_part);
 
+  pumi_mesh_print(m);
+  pMeshEnt e;
   // let's do distribution
   // partitioning: sending an element to a single part
   // distribution: sending an element to multiple parts. Element may have remote copies.
   {
     Distribution* plan = new Distribution(m);
-    pMeshEnt e;
+
     int dim=pumi_mesh_getdim(m), count=0, pid;
     apf::MeshIterator* it = m->begin(dim);
     while ((e = m->iterate(it)))
@@ -105,9 +107,9 @@ int main(int argc, char** argv)
       ++count;
     }
     m->end(it);
-    plan->print();
+    plan->print(); // print distribution plan 
     pumi_mesh_distribute(m, plan);
-  }
+  }  pumi_mesh_print(m);
 
   pumi_mesh_print(m);
   sleep(.5);
@@ -123,34 +125,29 @@ int main(int argc, char** argv)
   // print mesh info
   int mesh_dim=pumi_mesh_getdim(m);
 
-  // loop with mesh vertex
-  int remote_count=0;
-  pMeshEnt e;
+  // loop with elements
 
   if (!pumi_rank()) std::cout<<"[test_pumi] checking various api's\n";
-  pMeshIter mit = m->begin(0);
+  pMeshIter mit = m->begin(mesh_dim);
   while ((e = m->iterate(mit)))
   {
-    assert(pumi_ment_getdim(e)==0);
+    assert(pumi_ment_getdim(e)==mesh_dim);
     assert(pumi_ment_getnumadj(e, mesh_dim+1)==0);
     if (!pumi_ment_isonbdry(e)) continue; // skip internal entity
     // if entity is on part boundary, count remote copies    
     Copies copies;
     pumi_ment_getallrmt(e,copies);
     // loop over remote copies and increase the counter
-    APF_ITERATE(Copies,copies,rit)
-      ++remote_count;
     // check #remotes
-    assert (pumi_ment_getnumrmt(e)==copies.size());
+    assert (pumi_ment_getnumrmt(e)==copies.size() && copies.size()>0);
     // check the entity is not ghost or ghosted
     assert(!pumi_ment_isghost(e) && !pumi_ment_isghosted(e));
   }
   m->end(mit);
   int num_org_vtx = pumi_mesh_getnument(m, 0);
 
-//  pumi_mesh_verify(m);
-
-  Ghosting* plan = getPlan(m);
+  Ghosting* plan = getGhostingPlan(m);
+  // 
   //pumi_ghost_create(m, plan);
 
   int num_ghost_vtx=0;

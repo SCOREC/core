@@ -299,8 +299,7 @@ bool Distribution::has(pMeshEnt e)
 
 void Distribution::send(pMeshEnt e, int to)
 {
-  if (to!=PCU_Comm_Self())
-    element_map[e].insert(to);
+  element_map[e].insert(to);
 }
 
 Parts& Distribution::sending(pMeshEnt e)
