@@ -7,36 +7,47 @@
 #include <apfZoltan.h>
 #include <cassert>
 #include <cstdlib>
+#include <pumi.h>
 
 const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
 int num_in_part = 0;
-int num_proc_group = 1;
 
 void getConfig(int argc, char** argv)
 {
   if ( argc < 4 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <outMesh> <num_in_mesh_part>  <num_proc_group>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <outMesh> <num_part_in_mesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
   meshFile = argv[2];
   outFile = argv[3];
-  if (argc>4)
+  if (argc>=4)
     num_in_part = atoi(argv[4]);
-  else 
-    num_in_part=PCU_Comm_Peers();
-  if (argc>5) 
-    num_proc_group = atoi(argv[5]);
-  assert(num_in_part <= PCU_Comm_Peers());
-  if (argc==5 && num_in_part!=1)
-    num_proc_group = PCU_Comm_Peers()/num_in_part;
 }
 
-#include <pumi.h>
+Ghosting* getPlan(pMesh m)
+{
+  int mesh_dim=m->getDimension();
+  Ghosting* plan = new Ghosting(m, m->getDimension());
+  if (!PCU_Comm_Self())
+  {
+  apf::MeshIterator* it = m->begin(mesh_dim);
+  pMeshEnt e;
+  while ((e = m->iterate(it)))
+  {
+    int pid=PCU_Comm_Self()+1;
+    if (pid==PCU_Comm_Peers()) pid=0;
+    plan->send(e, pid);
+  }
+  assert(plan->count(mesh_dim)==m->count(mesh_dim));
+  }
+  return plan;
+}
+
 #include <iostream>
 #include <cstdlib>
 #include <mpi.h>
@@ -47,7 +58,7 @@ int main(int argc, char** argv)
   pumi_start();
   pumi_printsys();
 
-#if 0
+#if 1
   int i, processid = getpid();
   if (!PCU_Comm_Self())
   {
@@ -69,7 +80,35 @@ int main(int argc, char** argv)
  
   // load mesh per process group
   assert(pumi_size()%num_in_part==0);
-  pMesh m=pumi_mesh_create(g, meshFile, num_in_part, num_proc_group);
+  if (!pumi_rank()) std::cout<<"[test_pumi] num_in_part="<<num_in_part<<"\n";
+  pMesh m=NULL;
+  if (num_in_part==1)
+    m = pumi_mesh_loadserial(g, meshFile);
+  else
+    m = pumi_mesh_load(g, meshFile, num_in_part);
+
+  // let's do distribution
+  // partitioning: sending an element to a single part
+  // distribution: sending an element to multiple parts. Element may have remote copies.
+  {
+    Distribution* plan = new Distribution(m);
+    pMeshEnt e;
+    int dim=pumi_mesh_getdim(m), count=0, pid;
+    apf::MeshIterator* it = m->begin(dim);
+    while ((e = m->iterate(it)))
+    {
+      pid=pumi_ment_getlocalid(e)%PCU_Comm_Peers();
+      plan->send(e, pid);
+      if (pid-1>=0) plan->send(e, pid-1);
+      if (pid+1<PCU_Comm_Peers()) plan->send(e, pid+1);
+      if (count==5) break;
+      ++count;
+    }
+    m->end(it);
+    plan->print();
+    pumi_mesh_distribute(m, plan);
+  }
+
   pumi_mesh_print(m);
   sleep(.5);
   if (!pumi_rank()) std::cout<<"\n";
@@ -96,10 +135,10 @@ int main(int argc, char** argv)
     assert(pumi_ment_getnumadj(e, mesh_dim+1)==0);
     if (!pumi_ment_isonbdry(e)) continue; // skip internal entity
     // if entity is on part boundary, count remote copies    
-    pCopies copies;
+    Copies copies;
     pumi_ment_getallrmt(e,copies);
     // loop over remote copies and increase the counter
-    APF_ITERATE(pCopies,copies,rit)
+    APF_ITERATE(Copies,copies,rit)
       ++remote_count;
     // check #remotes
     assert (pumi_ment_getnumrmt(e)==copies.size());
@@ -109,10 +148,11 @@ int main(int argc, char** argv)
   m->end(mit);
   int num_org_vtx = pumi_mesh_getnument(m, 0);
 
-  pumi_mesh_verify(m);
+//  pumi_mesh_verify(m);
 
-  m = pumi_ghost_create(0, mesh_dim, 2, 1);
-  if (!pumi_rank()) std::cout<<"[test_pumi] creating ghost layers\n";
+  Ghosting* plan = getPlan(m);
+  //pumi_ghost_create(m, plan);
+
   int num_ghost_vtx=0;
   mit = m->begin(0);
   while ((e = m->iterate(mit)))
@@ -133,7 +173,7 @@ int main(int argc, char** argv)
   // FIXME: deleting ghost layers is temporarily unavailable
   //pumi_ghost_delete(m);
 
-  pumi_mesh_verify(m);
+  //pumi_mesh_verify(m);
  
   // print elapsed time and increased heap memory
   pumi_printtimemem("[test_pumi] elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);

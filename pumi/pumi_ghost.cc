@@ -58,7 +58,7 @@ int Ghosting::count(int d)
 pMeshEnt Ghosting::get(int d, int i)
 {
   assert(i<count(d));
-  map<pMeshEnt, set<int> >::iterator mapit = pid_map[d].begin();
+  map<pMeshEnt, Parts >::iterator mapit = pid_map[d].begin();
   for (int k=0; k<i; ++k)
     mapit++;
   return mapit->first;
@@ -67,7 +67,7 @@ pMeshEnt Ghosting::get(int d, int i)
 bool Ghosting::has(pMeshEnt e)
 {
   int ent_dim = apf::getDimension(m, e);
-  map<pMeshEnt, set<int> >::iterator mapit = pid_map[ent_dim].find(e);
+  map<pMeshEnt, Parts >::iterator mapit = pid_map[ent_dim].find(e);
   if (mapit!=pid_map[ent_dim].end())
     return true;
   else
@@ -99,50 +99,60 @@ void copy_pids(Ghosting* plan, pMeshEnt s, pMeshEnt d)
 { 
   int s_dim = apf::getDimension(plan->getMesh(), s);
   int d_dim = apf::getDimension(plan->getMesh(), d);
-  std::set<int>::iterator pidit;
-  for (pidit=plan->pid_map[s_dim][s].begin(); pidit!=plan->pid_map[s_dim][s].end(); ++pidit)
-    plan->pid_map[d_dim][d].insert(*pidit);
+  APF_ITERATE(Parts, plan->pid_map[s_dim][s], pit)
+    plan->pid_map[d_dim][d].insert(*pit);
 }
 
-typedef std::vector<pMeshEnt> EntityVec;
-
-// *****************************************
-static void getAffected(Ghosting* plan, EntityVec affected[4])
-// *****************************************
-{  
+static void getAffected(
+    pMesh m,
+    Ghosting* plan,
+    EntityVector affected[4])
+{
+  int maxDimension = plan->ghost_dim;
   int self = PCU_Comm_Self();
-  affected[plan->ghost_dim].reserve(plan->count(plan->ghost_dim));
-  map<pMeshEnt, set<int> >::iterator mapit;
+  affected[maxDimension].reserve(plan->count(maxDimension));
+/*
+  for (int i=0; i < plan->count(); ++i)
+  {
+    pMeshEnt e = plan->get(i);
+    if (plan->sending(e) != self) {
+      assert(apf::getDimension(m, e) == m->getDimension());
+      affected[maxDimension].push_back(e);
+    }
+  }
+*/
+  map<pMeshEnt, Parts >::iterator mapit;
   for (mapit=plan->pid_map[plan->ghost_dim].begin();mapit!=plan->pid_map[plan->ghost_dim].end();++mapit)
-    affected[plan->ghost_dim].push_back(mapit->first);
+    affected[maxDimension].push_back(mapit->first);
 
   int dummy=1;
-  pTag tag = plan->getMesh()->createIntTag("apf_migrate_affected",1);
-  for (int dimension=plan->ghost_dim-1; dimension >= 0; --dimension)
+  pTag tag = m->createIntTag("ghosting_affected",1);
+  for (int dimension=maxDimension-1; dimension >= 0; --dimension)
   {
     int upDimension = dimension + 1;
     PCU_Comm_Begin();
-    APF_ITERATE(EntityVec,affected[upDimension],it)
+    APF_ITERATE(EntityVector,affected[upDimension],it)
     {
       pMeshEnt up = *it;
       apf::Downward adjacent;
-      int na = plan->getMesh()->getDownward(up,dimension,adjacent);
+      int na = m->getDownward(up,dimension,adjacent);
       for (int i=0; i < na; ++i)
       {
-        if (!plan->getMesh()->hasTag(adjacent[i],tag))
+        if ( ! m->hasTag(adjacent[i],tag))
         {
-          plan->getMesh()->setIntTag(adjacent[i],tag,&dummy);
+          m->setIntTag(adjacent[i],tag,&dummy);
           affected[dimension].push_back(adjacent[i]);
+          // copy destination pids
           copy_pids(plan, up, adjacent[i]);
         }
-        apf::Copies remotes;
-        plan->getMesh()->getRemotes(adjacent[i],remotes);
-        APF_ITERATE(apf::Copies,remotes,rit)
+        Copies remotes;
+        m->getRemotes(adjacent[i],remotes);
+        APF_ITERATE(Copies,remotes,rit)
           PCU_COMM_PACK(rit->first,rit->second);
-        if (plan->getMesh()->hasMatching())
+        if (m->hasMatching())
         {
           apf::Matches matches;
-          plan->getMesh()->getMatches(adjacent[i],matches);
+          m->getMatches(adjacent[i],matches);
           for (size_t j=0; j < matches.getSize(); ++j)
             PCU_COMM_PACK(matches[j].peer,matches[j].entity);
         }
@@ -153,288 +163,26 @@ static void getAffected(Ghosting* plan, EntityVec affected[4])
     {
       pMeshEnt entity;
       PCU_COMM_UNPACK(entity);
-      if (!plan->getMesh()->hasTag(entity,tag))
+      if ( !m->hasTag(entity,tag))
       {
-        plan->getMesh()->setIntTag(entity,tag,&dummy);
+        m->setIntTag(entity,tag,&dummy);
         affected[dimension].push_back(entity);
       }
     }
-    APF_ITERATE(EntityVec,affected[dimension],it)
-      plan->getMesh()->removeTag(*it,tag);
+    APF_ITERATE(EntityVector,affected[dimension],it)
+      m->removeTag(*it,tag);
   }//dimension loop
-  plan->getMesh()->destroyTag(tag);
+  m->destroyTag(tag);
 }
 
-
-static void getSenders(
-    pMesh m,
-    EntityVec affected[4],
-    EntityVec senders[4])
-{
-  for (int i=0; i < 4; ++i)
-  {
-    /* maybe overkill for pre-allocation, but
-       ensures the vector will never re-allocate. */
-    senders[i].reserve(affected[i].size());
-    APF_ITERATE(EntityVec,affected[i],it)
-      if (m->isOwned(*it))
-        senders[i].push_back(*it);
-  }
-}
-
-/* at this point if one matched copy is affected, all of
-   its matches are in the affected set and the "senders", or
-   representatives of a set of remote copies, are in
-   the senders vector.
-   So, if each sender just remembers the other senders
-   it is matched to, that is enough for them to re-negotiate
-   matches after each of them does the job of creating new
-   entities and computing new remote copies */
-static void reduceMatchingToSenders(
-    pMesh m,
-    EntityVec senders[4])
-{
-  if ( ! m->hasMatching()) return;
-  PCU_Comm_Begin();
-  for (int d=0; d < 4; ++d)
-  {
-    for (size_t i=0; i < senders[d].size(); ++i)
-    {
-      pMeshEnt e = senders[d][i];
-      apf::Matches matches;
-      m->getMatches(e,matches);
-      for (size_t j=0; j < matches.getSize(); ++j)
-      { /* advertise to the match that this is a sender */
-        int to = matches[j].peer;
-        PCU_COMM_PACK(to,matches[j].entity);
-        PCU_COMM_PACK(to,e);
-      }
-      /* now forget all other matchings */
-      m->clearMatches(e);
-    }
-  }
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen())
-  {
-    int sender = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked())
-    {
-      pMeshEnt e;
-      PCU_COMM_UNPACK(e);
-      pMeshEnt match;
-      PCU_COMM_UNPACK(match);
-/* all matches of the sender receive this.
-   We only care that the senders themselves receive
-   messages from only other senders matched to them,
-   but some non-senders do harmlessly add a few matchings */
-      m->addMatch(e,sender,match);
-    }
-  }
-/* now senders only match other senders */
-}
-
-// packing
-
-static void packParts(int to, apf::Parts& parts)
-{
-  size_t n = parts.size();
-  PCU_COMM_PACK(to,n);
-  APF_ITERATE(apf::Parts,parts,it)
-  {
-    int p = *it;
-    PCU_COMM_PACK(to,p);
-  }
-}
-
-static void packCommon(
-    pMesh m,
-    int to,
-    pMeshEnt e)
-{
-  PCU_COMM_PACK(to,e);
-  apf::ModelEntity* me = m->toModel(e);
-  int modelType = m->getModelType(me);
-  PCU_COMM_PACK(to,modelType);
-  int modelTag = m->getModelTag(me);
-  PCU_COMM_PACK(to,modelTag);
-  apf::Parts residence;
-  m->getResidence(e,residence);
-  packParts(to,residence);
-}
-
-static void packVertex(
-    pMesh m,
-    int to,
-    pMeshEnt e)
-{
-  apf::Vector3 p;
-  m->getPoint(e,0,p);
-  PCU_COMM_PACK(to,p);
-  m->getParam(e,p);
-  PCU_COMM_PACK(to,p);
-}
-
-static void packReference(
-    pMesh m,
-    int to,
-    pMeshEnt e)
-{
-  apf::Copies remotes;
-  m->getRemotes(e,remotes);
-  apf::Copies::iterator found = remotes.find(to);
-  pMeshEnt remote = found->second;
-  assert(remote);
-  PCU_COMM_PACK(to,remote);
-}
-
-static void packDownward(pMesh m, int to, pMeshEnt e)
-{
-  apf::Downward down;
-  int d = getDimension(m, e);
-  int n = m->getDownward(e,d-1,down);
-  PCU_COMM_PACK(to,n);
-  for (int i=0; i < n; ++i)
-    packReference(m,to,down[i]);
-}
-
-static void packNonVertex(
-    pMesh m,
-    int to,
-    pMeshEnt e)
-{
-  packDownward(m,to,e);
-}
-
-static void packTags(
-    pMesh m,
-    int to,
-    pMeshEnt e,
-    apf::DynamicArray<pTag>& tags)
-{
-  size_t total = tags.getSize();
-  size_t n = 0;
-  for (size_t i=0; i < total; ++i)
-    if (m->hasTag(e,tags[i]))
-      ++n;
-  PCU_COMM_PACK(to,n);
-  for (size_t i=0; i < total; ++i)
-  {
-    pTag tag = tags[i];
-    if (m->hasTag(e,tag))
-    {
-      PCU_COMM_PACK(to,i);
-      int type = m->getTagType(tag);
-      int size = m->getTagSize(tag);
-      if (type == apf::Mesh2::DOUBLE)
-      {
-        apf::DynamicArray<double> d(size);
-        m->getDoubleTag(e,tag,&(d[0]));
-        PCU_Comm_Pack(to,&(d[0]),size*sizeof(double));
-      }
-      if (type == apf::Mesh2::INT)
-      {
-        apf::DynamicArray<int> d(size);
-        m->getIntTag(e,tag,&(d[0]));
-        PCU_Comm_Pack(to,&(d[0]),size*sizeof(int));
-      }
-    }
-  }
-}
-
-// unpacking
-static void unpackParts(apf::Parts& parts)
-{
-  size_t n;
-  PCU_COMM_UNPACK(n);
-  for (size_t i=0;i<n;++i)
-  {
-    int p;
-    PCU_COMM_UNPACK(p);
-    parts.insert(p);
-  }
-}
-
-static void unpackCommon(
-    pMesh m,
-    pMeshEnt& sender,
-    apf::ModelEntity*& c,
-    apf::Parts& residence)
-{
-  PCU_COMM_UNPACK(sender);
-  int modelType,modelTag;
-  PCU_COMM_UNPACK(modelType);
-  PCU_COMM_UNPACK(modelTag);
-  c = m->findModelEntity(modelType,modelTag);
-  unpackParts(residence);
-}
-
-static pMeshEnt unpackVertex(
-    pMesh m,
-    apf::ModelEntity* c)
-{
-  apf::Vector3 point;
-  PCU_COMM_UNPACK(point);
-  apf::Vector3 param;
-  PCU_COMM_UNPACK(param);
-  return m->createVertex(c,point,param);
-}
-
-static void unpackDownward(
-    apf::Downward& entities)
-{
-  int n;
-  PCU_COMM_UNPACK(n);
-  for (int i=0; i < n; ++i)
-    PCU_COMM_UNPACK(entities[i]);
-}
-
-static pMeshEnt unpackNonVertex(
-    pMesh m,
-    int type, apf::ModelEntity* c)
-{
-  apf::Downward down;
-  unpackDownward(down);
-  return m->createEntity(type,c,down);
-}
-
-
-static void unpackTags(
-    pMesh m,
-    pMeshEnt e,
-    apf::DynamicArray<pTag>& tags)
-{
-  size_t n;
-  PCU_COMM_UNPACK(n);
-  for (size_t t=0; t < n; ++t)
-  {
-    size_t i;
-    PCU_COMM_UNPACK(i);
-    pTag tag = tags[i];
-    int type = m->getTagType(tag);
-    int size = m->getTagSize(tag);
-    if (type == apf::Mesh2::DOUBLE)
-    {
-      apf::DynamicArray<double> d(size);
-      PCU_Comm_Unpack(&(d[0]),size*sizeof(double));
-      m->setDoubleTag(e,tag,&(d[0]));
-    }
-    if (type == apf::Mesh2::INT)
-    {
-      apf::DynamicArray<int> d(size);
-      PCU_Comm_Unpack(&(d[0]),size*sizeof(int));
-      m->setIntTag(e,tag,&(d[0]));
-    }
-  }
-}
-
+// packing and unpacking are defined in apfMigrate.cc
 
 // *****************************************
-void update_pids(Ghosting* plan, EntityVec affected[4])
+void unify_pids(Ghosting* plan, EntityVector affected[4])
 // *****************************************
 {
   pMeshEnt e;
   int self = PCU_Comm_Self();
-  set<int>::iterator setit;
 
   void* msg_send;
   pMeshEnt* s_ent;
@@ -443,7 +191,7 @@ void update_pids(Ghosting* plan, EntityVec affected[4])
   for (int d=0; d <plan->ghost_dim;++d)
   {
     PCU_Comm_Begin();
-    APF_ITERATE(EntityVec,affected[d],it)
+    APF_ITERATE(EntityVector,affected[d],it)
     {
       e = *it;
       apf::Copies remotes;
@@ -459,9 +207,9 @@ void update_pids(Ghosting* plan, EntityVec affected[4])
 
         int *pids = (int*)((char*)msg_send + sizeof(pMeshEnt));
         int i = 0;
-        for (setit=plan->pid_map[d][e].begin();setit!=plan->pid_map[d][e].end();++setit)
+        APF_ITERATE(Parts, plan->pid_map[d][e], pit)
         {
-          pids[i]=*setit;
+          pids[i]=*pit;
           ++i;
         }
         PCU_Comm_Write(rit->first, (void*)msg_send, msg_size);
@@ -481,85 +229,77 @@ void update_pids(Ghosting* plan, EntityVec affected[4])
       pids = (int*)((char*)msg_recv+sizeof(pMeshEnt)); 
       int num_pids = (msg_size-sizeof(pMeshEnt))/sizeof(int);
       for (int i = 0; i < num_pids; ++i)
+      {
+        if (pids[i]==pumi_rank()) continue;
         plan->pid_map[r_dim][r].insert(pids[i]);
+        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": plan->pid_map["<<r_dim<<"]["<<pumi_ment_getglobalid(r)<<"].insert("<<pids[i]<<");\n";
+      }
     }
   }//dimension loop
 }
 
-static void packGhost(
-    pMesh m,
-    int to,
-    pMeshEnt e,
-    apf::DynamicArray<pTag>& tags)
-{
-  int type = m->getType(e);
-  PCU_COMM_PACK(to,type);
-  packCommon(m,to,e);
-  if (type == apf::Mesh::VERTEX)
-    packVertex(m,to,e);
-  else
-    packNonVertex(m,to,e);
-  packTags(m,to,e,tags);
-}
-
-static pMeshEnt unpackGhost(
-    Ghosting* plan,
-    apf::DynamicArray<pTag>& tags)
+static pMeshEnt unpackGhost(Ghosting* plan, apf::DynamicArray<pTag>& tags)
 {
   int from = PCU_Comm_Sender();
-  int type, dummy=1;
+  int type;
   PCU_COMM_UNPACK(type);
   pMeshEnt sender;
   apf::ModelEntity* c;
-  apf::Parts residence;
-  unpackCommon(plan->getMesh(),sender,c,residence);
+  Parts residence;
+  apf::unpackCommon(plan->getMesh(),sender,c,residence);
   pMeshEnt entity;
   if (type == apf::Mesh::VERTEX)
-    entity = unpackVertex(plan->getMesh(),c);
+    entity = apf::unpackVertex(plan->getMesh(),c);
   else
-    entity = unpackNonVertex(plan->getMesh(),type,c);
-  plan->getMesh()->setIntTag(entity,plan->ghost_tag,&dummy);
+    entity = apf::unpackNonVertex(plan->getMesh(),type,c);
   plan->getMesh()->setResidence(entity,residence);
-  unpackTags(plan->getMesh(),entity,tags);
+  apf::unpackTags(plan->getMesh(),entity,tags);
 
+  // tag ghoating flag
+  int dummy=1;
+  plan->getMesh()->setIntTag(entity,plan->ghost_tag,&dummy);
   /* store the sender as a ghost copy */
   plan->getMesh()->addGhost(entity, from, sender);
+  std::cout<<"("<<pumi_rank()<<") "<<__func__<<": ghost (from "<<from<<", dim "<<type<<", id "<< pumi_ment_getglobalid(entity)<<") \n";
   return entity;
 }
 
-
-static void sendGhosts(
-    Ghosting* plan,
-    int ent_dim,
-    EntityVec& senders,
-    apf::DynamicArray<pTag>& tags)
+// *********************************************************
+static void sendGhosts(Ghosting* plan, int ent_dim,
+    EntityVector& senders, apf::DynamicArray<pTag>& tags)
+// *********************************************************
 {
   int dummy=1;
-  APF_ITERATE(EntityVec,senders,it)
+  std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<", senders.size() "<<senders.size()<<"\n";
+  APF_ITERATE(EntityVector,senders,it)
   {
-    pMeshEnt entity = *it;
-    apf::Copies remotes;
-    plan->getMesh()->getRemotes(entity,remotes);
-    apf::Parts residence;
-    plan->getMesh()->getResidence(entity,residence);
-    apf::Parts sendTo;
-    set<int>::iterator setit;
-    APF_ITERATE(apf::Parts,residence,pit)
+    pMeshEnt e = *it;
+    Copies remotes;
+    plan->getMesh()->getRemotes(e,remotes);
+    Parts ghosting_pids;
+    APF_ITERATE(Parts, plan->pid_map[ent_dim][e], pit)
+      ghosting_pids.insert(*pit);
+
+    Parts sendTo;
+    apf::split(remotes,ghosting_pids,sendTo);
+    if (!sendTo.size())
     {
-      setit=plan->pid_map[ent_dim][entity].find(*pit);
-      if (setit==plan->pid_map[ent_dim][entity].end())
-        sendTo.insert(*pit);
+      std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<", sendTo.size()=0 for ent "<<pumi_ment_getglobalid(e)<<"\n";
+      continue;
     }
-    APF_ITERATE(apf::Parts,sendTo,sit)
-      packGhost(plan->getMesh(),*sit,entity,tags);
+    APF_ITERATE(Parts,sendTo,sit)
+    {
+      std::cout<<"("<<pumi_rank()<<") "<<__func__<<": pack dim "<<ent_dim<<", id "<<pumi_ment_getglobalid(e)<<" to "<<*sit<<"\n";
+      apf::packEntity(plan->getMesh(),*sit,e,tags);
+    }
     // attach ghosted_tag after packing to avoid this tag migrated
-    plan->getMesh()->setIntTag(entity,plan->ghosted_tag,&dummy);
+    plan->getMesh()->setIntTag(e,plan->ghosted_tag,&dummy);
   }
 }
 
 // *********************************************************
 static void receiveGhosts(Ghosting* plan, apf::DynamicArray<pTag>& tags,
-    EntityVec& received)
+    EntityVector& received)
 // *********************************************************
 {
   received.reserve(1024);
@@ -568,10 +308,10 @@ static void receiveGhosts(Ghosting* plan, apf::DynamicArray<pTag>& tags,
 }
 
 // *********************************************************
-static void _echo_(pMesh m, EntityVec& received)
+static void echoGhostCopy(pMesh m, EntityVector& received)
 // *********************************************************
 {
-  APF_ITERATE(EntityVec,received,it)
+  APF_ITERATE(EntityVector,received,it)
   {
     pMeshEnt entity = *it;
     /* the remote copies are currently temporary
@@ -582,11 +322,12 @@ static void _echo_(pMesh m, EntityVec& received)
     pMeshEnt sender = temp.begin()->second;
     PCU_COMM_PACK(from,sender);
     PCU_COMM_PACK(from,entity);
+    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": echo dim "<<apf::getDimension(m, entity)<<" id "<<pumi_ment_getglobalid(entity)<<" "<<getMdsIndex(m, entity)<<" to "<<from<<"\n";
   }
 }
 
 // *********************************************************
-static void _receive_(pMesh m)
+static void receiveGhostCopy(pMesh m)
 // *********************************************************
 {
   while (PCU_Comm_Listen())
@@ -599,23 +340,24 @@ static void _receive_(pMesh m)
       pMeshEnt entity;
       PCU_COMM_UNPACK(entity);
       assert(entity);
+      std::cout<<"("<<pumi_rank()<<") "<<__func__<<": dim "<<apf::getDimension(m, entity)<<" id "<<pumi_ment_getglobalid(entity)<<" "<<getMdsIndex(m, entity)<<" from "<<from<<"\n";
       m->addGhost(sender, from, entity);
     }
   }
 }
 
 // *********************************************************
-static void setupGhosts(pMesh m, EntityVec& received, EntityVec& senders)
+static void setupGhosts(pMesh m, EntityVector& received, EntityVector& senders)
 // *********************************************************
 {
   PCU_Comm_Begin();
-  _echo_(m,received);
+  echoGhostCopy(m,received);
   PCU_Comm_Send();
-  _receive_(m);
+  receiveGhostCopy(m);
 }
 
 // *********************************************************
-static void moveGhosts(Ghosting* plan, EntityVec senders[4])
+static void moveGhosts(Ghosting* plan, EntityVector senders[4])
 // *********************************************************
 {
   apf::DynamicArray<pTag> tags;
@@ -623,12 +365,14 @@ static void moveGhosts(Ghosting* plan, EntityVec senders[4])
 
   for (int dimension = 0; dimension <= plan->ghost_dim; ++dimension)
   {
+    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": START dim "<<dimension<<"\n";
     PCU_Comm_Begin();
     sendGhosts(plan, dimension, senders[dimension], tags);
     PCU_Comm_Send();
-    EntityVec received;
+    EntityVector received;
     receiveGhosts(plan,tags,received);
     setupGhosts(plan->getMesh(),received,senders[dimension]);
+    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": END dim "<<dimension<<"\n";
   }
 }
 
@@ -637,18 +381,16 @@ static void moveGhosts(Ghosting* plan, EntityVec senders[4])
 void pumi_ghost_create(pMesh m, Ghosting* plan)
 // *********************************************************
 {
-  EntityVec affected[4];
-  getAffected(plan,affected);
-  EntityVec senders[4];
-  getSenders(m,affected,senders);
-//  reduceMatchingToSenders(m,senders);
-//  updateResidences(m,plan,affected);
-  update_pids(plan, affected);
-  delete plan;
+  EntityVector affected[4];
+  getAffected(m, plan,affected);
+  EntityVector senders[4];
+  apf::getSenders(m,affected,senders);
+  unify_pids(plan, affected);
   moveGhosts(plan,senders);
 //  updateMatching(m,affected,senders);
 //  deleteOldEntities(m,affected);
   m->acceptChanges();
+  delete plan;
 }
 
 

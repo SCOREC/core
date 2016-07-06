@@ -4,8 +4,8 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-
 #include <PCU.h>
+#include "apfMesh.h"
 #include "apfMesh2.h"
 #include "apfCavityOp.h"
 #include "apf.h"
@@ -87,7 +87,7 @@ static void getAffected(
 
 /* gets the subset of the closure copies
    which are owned by this part */
-static void getSenders(
+void getSenders(
     Mesh2* m,
     EntityVector affected[4],
     EntityVector senders[4])
@@ -111,7 +111,7 @@ static void getSenders(
    it is matched to, that is enough for them to re-negotiate
    matches after each of them does the job of creating new
    entities and computing new remote copies */
-static void reduceMatchingToSenders(
+void reduceMatchingToSenders(
     Mesh2* m,
     EntityVector senders[4])
 {
@@ -161,7 +161,7 @@ static Parts makeResidence(int part)
   return r;
 }
 
-static void packParts(int to, Parts& parts)
+void packParts(int to, Parts& parts)
 {
   size_t n = parts.size();
   PCU_COMM_PACK(to,n);
@@ -172,7 +172,7 @@ static void packParts(int to, Parts& parts)
   }
 }
 
-static void unpackParts(Parts& parts)
+void unpackParts(Parts& parts)
 {
   size_t n;
   PCU_COMM_UNPACK(n);
@@ -214,7 +214,7 @@ static void updateResidences(
         MeshEntity* up = upward.e[ui];
         Parts upResidence;
         m->getResidence(up,upResidence);
-        unite(newResidence,upResidence);
+        apf::unite(newResidence,upResidence);
       }
       m->setResidence(entity,newResidence);
       Copies remotes;
@@ -233,8 +233,8 @@ static void updateResidences(
       Parts current;
       m->getResidence(entity,current);
       Parts incoming;
-      unpackParts(incoming);
-      unite(current,incoming);
+      apf::unpackParts(incoming);
+      apf::unite(current,incoming);
       m->setResidence(entity,current);
     }
   }
@@ -246,7 +246,8 @@ static void updateResidences(
    of REMOTE parts in the new residence that
    don't have remotes yet, which is the
    set we have to send to */
-static void split(
+// declared in apfMesh2.h
+void split(
     Copies& remotes,
     Parts& parts,
     Parts& newParts)
@@ -256,7 +257,7 @@ static void split(
       newParts.insert(*it);
 }
 
-static void packCommon(
+void packCommon(
     Mesh2* m,
     int to,
     MeshEntity* e)
@@ -271,8 +272,8 @@ static void packCommon(
   m->getResidence(e,residence);
   packParts(to,residence);
 }
-
-static void unpackCommon(
+// declared in apfMesh2.h
+void unpackCommon(
     Mesh2* m,
     MeshEntity*& sender,
     ModelEntity*& c,
@@ -298,7 +299,8 @@ static void packVertex(
   PCU_COMM_PACK(to,p);
 }
 
-static MeshEntity* unpackVertex(
+// declared in apfMesh2.h
+MeshEntity* unpackVertex(
     Mesh2* m,
     ModelEntity* c)
 {
@@ -349,7 +351,8 @@ static void packNonVertex(
   packDownward(m,to,e);
 }
 
-static MeshEntity* unpackNonVertex(
+// declared in apfMesh2.h
+MeshEntity* unpackNonVertex(
     Mesh2* m,
     int type, ModelEntity* c)
 {
@@ -394,7 +397,8 @@ static void packTags(
   }
 }
 
-static void unpackTags(
+// declared in apfMesh2.h
+void unpackTags(
     Mesh2* m,
     MeshEntity* e,
     DynamicArray<MeshTag*>& tags)
@@ -423,7 +427,8 @@ static void unpackTags(
   }
 }
 
-static void packEntity(
+// declared in apfMesh2.h
+void packEntity(
     Mesh2* m,
     int to,
     MeshEntity* e,
@@ -624,7 +629,7 @@ static void setupRemotes(
   bcastRemotes(m,senders);
 }
 
-static void moveEntities(
+void moveEntities(
     Mesh2* m,
     EntityVector senders[4])
 {
@@ -761,7 +766,7 @@ static void bcastMatching(
    including the senders themselves if they are
    not being removed, and then broadcast from the
    senders again, this time with matchings */
-static void updateMatching(
+void updateMatching(
     Mesh2* m,
     EntityVector affected[4],
     EntityVector senders[4])
@@ -771,7 +776,7 @@ static void updateMatching(
   bcastMatching(m,senders);
 }
 
-static void deleteOldEntities(
+void deleteOldEntities(
     Mesh2* m,
     EntityVector affected[4])
 {

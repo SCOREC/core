@@ -189,6 +189,30 @@ void stitchMesh(Mesh2* m);
 void packDataClone(Mesh2* m, int to);
 void unpackDataClone(Mesh2* m);
 
-}//namespace apf
+// common functions for migration/ghosting/distribution
+typedef std::vector<MeshEntity*> EntityVector;
+void packParts(int to, Parts& parts);
+void unpackParts(Parts& parts);
+void moveEntities(
+    Mesh2* m,
+    EntityVector senders[4]);
+void updateMatching(
+    Mesh2* m,
+    EntityVector affected[4],
+    EntityVector senders[4]);
+void deleteOldEntities(
+    Mesh2* m,
+    EntityVector affected[4]);
+void reduceMatchingToSenders(
+    Mesh2* m,
+    EntityVector senders[4]);
+void getSenders(Mesh2* m,EntityVector affected[4],EntityVector senders[4]);
+void split(Copies& remotes, Parts& parts, Parts& newParts);
+void packEntity(Mesh2* m, int to, MeshEntity* e, DynamicArray<MeshTag*>& tags);
+void unpackTags(Mesh2* m, MeshEntity* e, DynamicArray<MeshTag*>& tags);
+void unpackCommon(Mesh2* m, MeshEntity*& sender, ModelEntity*& c, Parts& residence);
+MeshEntity* unpackVertex(Mesh2* m, ModelEntity* c);
+MeshEntity* unpackNonVertex(Mesh2* m,int type, ModelEntity* c);
 
+}//namespace apf
 #endif

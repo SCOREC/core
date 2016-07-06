@@ -18,8 +18,13 @@ typedef apf::Mesh2* pMesh;
 typedef apf::MeshEntity* pMeshEnt;
 typedef apf::MeshEntity* pPartEnt;
 typedef apf::MeshIterator* pMeshIter;
-typedef apf::Copies pCopies;
+typedef apf::Copies Copies;
 typedef apf::MeshTag* pTag;
+typedef apf::Parts Parts;
+typedef apf::EntityVector EntityVector;
+typedef apf::Parts Parts;
+typedef apf::Up Up;
+typedef apf::Downward Downward;
 
 // singleton to save model/mesh
 class pumi
@@ -31,17 +36,34 @@ public:
 
   pMesh mesh;
   pGeom model;
-  std::map<pMeshEnt, pCopies> ghost_map[4];
-
-  std::vector<bool>* org_node_flag;
-  bool ghosted;
-  int local_planeid;
-  int prev_plane_partid;
-  int next_plane_partid;
-  int plane_size;
-  int num_own_vtx;
 private:
   static pumi* _instance;
+};
+
+/** \brief Distribution plan object: local elements to multiple destinations. */
+// defined in pumi_distribution.cc
+class Distribution
+{
+  public:
+/** \brief must be constructed with a mesh
+  \details use (new Distribution(mesh)) to make these objects */
+    Distribution(pMesh m);
+    ~Distribution() {}
+/** \brief return the number of elements with assigned destination(s) */
+    int count();
+/** \brief get the i'th element with an assigned destination */
+    pMeshEnt get(int i);
+/** \brief return true if the i'th element has been assigned destination(s) */
+    bool has(pMeshEnt e);
+/** \brief assign a destination part id to an element */
+    void send(pMeshEnt e, int to);
+/** \brief return the destination part id of an element */
+    Parts& sending(pMeshEnt e);
+    void print();
+    pMesh getMesh() {return mesh;}
+    std::map<pMeshEnt, Parts> element_map;
+  private:
+    pMesh mesh;
 };
 
 //************************************
@@ -70,11 +92,18 @@ void pumi_printtimemem(const char* msg, double time, double memory);
 //************************************
 // Model/Mesh management
 //************************************
+
 // create a model from a file
 pGeom pumi_geom_create(const char* fileName, const char* model_type="mesh");
 
-// create a mesh from a file
-pMesh pumi_mesh_create(pGeom geom, const char* fileName, int option, int num_proc_grp=1, const char* mesh_type="mds");
+// load a serial mesh. 
+pMesh pumi_mesh_loadserial(pGeom g, const char* filename, const char* mesh_type="mds");
+
+// load a mesh from a file. Do static partitioning if num_in_part==1
+pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
+
+// load a serial mesh on master process then distribute as per the distribution object
+void pumi_mesh_distribute(pMesh m, Distribution* plan);
 
 // get mesh dimension
 int pumi_mesh_getdim(pMesh m);
@@ -98,8 +127,8 @@ void pumi_mesh_verify(pMesh m);
 //  Ghosting
 //************************************
 
-
 /** \brief Ghosting plan object: local elements or part to destinations. */
+// defined in pumi_ghost.cc
 class Ghosting
 {
   public:
@@ -120,9 +149,9 @@ class Ghosting
 /** \brief assign a destination part id of all entities of dimension */
     void send(int dim, int to);
 /** \brief return the destination part id of an element */
-//    int sending(MeshEntity* e);
+//    int sending(pMeshEnt e);
     pMesh getMesh() {return m;}
-    std::map<pMeshEnt, std::set<int> > pid_map[4];
+    std::map<pMeshEnt, Parts> pid_map[4];
     int ghost_dim;
     pTag ghosted_tag;
     pTag ghost_tag;
@@ -229,7 +258,7 @@ int pumi_ment_getnumrmt (pMeshEnt e);
 
 // return remote and ghost copies
 //  - this will fixed to consider only part boundary entities later
-void pumi_ment_getallrmt(pMeshEnt e, pCopies& remotes); 
+void pumi_ment_getallrmt(pMeshEnt e, Copies& remotes); 
 
 // return remote or ghost copy on a destination part
 //  - this will fixed to consider only part boundary entities later
@@ -266,7 +295,7 @@ int pumi_ment_getnumghost (pMeshEnt e);
 
 // unavailable
 // return ghost copies
-void pumi_ment_getallghost (pMeshEnt e, pCopies&);
+void pumi_ment_getallghost (pMeshEnt e, Copies&);
 
 // unavailable
 // return ghost copy on a destination part

@@ -181,14 +181,20 @@ class MeshMDS : public Mesh2
 
     bool isGhosted(MeshEntity* e)
     {
-      apf::MeshTag* tag = ((Mesh*)mesh)->findTag("_ghosted_");
-      return ((Mesh*)mesh)->hasTag(e,tag);
+      MeshTag* tag=findTag("_ghosted_");
+      if (tag) 
+        return hasTag(e,tag);
+      else
+        return false;
     }
 
     bool isGhost(MeshEntity* e)
     {
-      apf::MeshTag* tag = ((Mesh*)mesh)->findTag("ghost");
-      return ((Mesh*)mesh)->hasTag(e,tag);
+      MeshTag* tag=findTag("_ghost_");
+      if (tag) 
+        return hasTag(e,tag);
+      else
+        return false;
     }
 
     bool isOwned(MeshEntity* e)
@@ -198,16 +204,19 @@ class MeshMDS : public Mesh2
 
     int getOwner(MeshEntity* e)
     {
-      if (isGhost(e))
+      if (!findTag("_ghost_") || !isGhost(e))
+      {
+        // non-ghost uses partition classification
+        void* vp = mds_get_part(mesh, fromEnt(e));
+        PME* p = static_cast<PME*>(vp);
+        return p->owner;
+      }
+      else // isGhost(e)
       {
         mds_copies* c = mds_get_copies(&mesh->ghosts, fromEnt(e));
         assert(c != NULL);
         return c->c[0].p;
       }
-      // non-ghost uses partition classification
-      void* vp = mds_get_part(mesh, fromEnt(e));
-      PME* p = static_cast<PME*>(vp);
-      return p->owner;
     }
 
     void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent)
@@ -532,7 +541,9 @@ class MeshMDS : public Mesh2
       mds_copy c;
       c.e = fromEnt(r);
       c.p = p;
+      printf("START %s: e %d %d;\n", __func__, mds_type(fromEnt(e)), mds_id(fromEnt(e)));
       mds_add_copy(&mesh->ghosts, &mesh->mds, fromEnt(e), c);
+      printf("END  %s: e %d %d;\n", __func__, mds_type(fromEnt(e)), mds_id(fromEnt(e)));
     }
 
     void setResidence(MeshEntity* e, Parts& residence)
