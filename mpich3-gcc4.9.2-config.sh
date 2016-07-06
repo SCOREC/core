@@ -14,6 +14,5 @@ cmake .. \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.so" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.so" \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
-  -DENABLE_OMEGA_H=ON \
   -DCMAKE_BUILD_TYPE=Debug
 

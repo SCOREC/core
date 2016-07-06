@@ -15,6 +15,5 @@ cmake .. \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.a" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.a" \
   -DCMAKE_INSTALL_PREFIX=$ZOLTAN_DIR \
-  -DENABLE_OMEGA_H=ON \
   -DCMAKE_BUILD_TYPE=Debug
 
