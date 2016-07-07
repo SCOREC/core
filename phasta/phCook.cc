@@ -112,6 +112,12 @@ namespace ph {
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     BCs bcs;
     ph::readBCs(in.attributeFileName.c_str(), bcs);
+    if (in.solutionMigration)
+      ph::readAndAttachFields(in, m);
+    else
+      ph::attachZeroSolution(in, m);
+    if (in.buildMapping)
+      ph::buildMapping(m);
     preprocess(m,in,out,bcs);
   }
 }
