@@ -26,13 +26,11 @@ namespace {
   apf::MeshTag* applyUnitWeight(apf::Mesh* m) {
     apf::MeshTag* wtag = m->createDoubleTag("ghostUnitWeight",1);
     apf::MeshEntity* e;
-    double w = 1;
-    int dims[2] = {0,m->getDimension()};
-    const size_t len = sizeof(dims)/sizeof(int);
-    for(size_t i=0; i<len; i++) {
-      apf::MeshIterator* itr = m->begin(dims[i]);
+    double one = 1;
+    for(int d=0; d<=m->getDimension(); d++) {
+      apf::MeshIterator* itr = m->begin(d);
       while( (e = m->iterate(itr)) )
-        m->setDoubleTag(e, wtag, &w);
+        m->setDoubleTag(e, wtag, &one);
       m->end(itr);
     }
     return wtag;
@@ -40,10 +38,10 @@ namespace {
 
   void runParma(apf::Mesh* m) {
     apf::MeshTag* weights = applyUnitWeight(m);
-    const int layers = 3;
-    const int bridgeDim = 1;
-    apf::Balancer* ghost = Parma_MakeGhostElementDiffuser(m, layers, bridgeDim);
-    ghost->balance(weights, 1.01);
+    double factor = 0.6;
+    int verbose = 2;
+    apf::Balancer* ghost = Parma_MakeGhostEdgeDiffuser(m,factor,verbose);
+    ghost->balance(weights, 1.05);
     m->destroyTag(weights);
     delete ghost;
   }
