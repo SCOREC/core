@@ -314,7 +314,7 @@ void Distribution::print()
   {
     int ent_id = pumi_ment_getglobalid(mapit->first);
     APF_ITERATE(Parts,element_map[mapit->first],pit)
-      std::cout<<"("<<PCU_Comm_Self()<<") send e "<<ent_id<<" to "<<*pit<<"\n";
+      std::cout<<"("<<PCU_Comm_Self()<<") distribute e "<<ent_id<<" to "<<*pit<<"\n";
   }
 }
 

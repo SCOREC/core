@@ -93,6 +93,18 @@ void Ghosting::send(int d, int to)
   m->end(it);
 }
 
+void Ghosting::print()
+{
+  map<pMeshEnt, Parts >::iterator mapit;
+  for (mapit = pid_map[ghost_dim].begin(); mapit!=pid_map[ghost_dim].end(); ++mapit)
+  {
+    int ent_id = pumi_ment_getglobalid(mapit->first);
+    APF_ITERATE(Parts,pid_map[ghost_dim][mapit->first],pit)
+      std::cout<<"("<<PCU_Comm_Self()<<") ghost e "<<ent_id<<" to "<<*pit<<"\n";
+  }
+}
+
+
 // *****************************************
 void copy_pids(Ghosting* plan, pMeshEnt s, pMeshEnt d)
 // *****************************************
@@ -259,7 +271,7 @@ static pMeshEnt unpackGhost(Ghosting* plan, apf::DynamicArray<pTag>& tags)
   int dummy=1;
   plan->getMesh()->setIntTag(entity,plan->ghost_tag,&dummy);
   /* store the sender as a ghost copy */
-  plan->getMesh()->addGhost(entity, from, sender);
+//  plan->getMesh()->addGhost(entity, from, sender);
   std::cout<<"("<<pumi_rank()<<") "<<__func__<<": ghost (from "<<from<<", dim "<<type<<", id "<< pumi_ment_getglobalid(entity)<<") \n";
   return entity;
 }
@@ -317,7 +329,7 @@ static void echoGhostCopy(pMesh m, EntityVector& received)
     /* the remote copies are currently temporary
        storage for the sender */
     apf::Copies temp;
-    m->getGhosts(entity,temp);
+//    m->getGhosts(entity,temp);
     int from = temp.begin()->first;
     pMeshEnt sender = temp.begin()->second;
     PCU_COMM_PACK(from,sender);
@@ -341,7 +353,7 @@ static void receiveGhostCopy(pMesh m)
       PCU_COMM_UNPACK(entity);
       assert(entity);
       std::cout<<"("<<pumi_rank()<<") "<<__func__<<": dim "<<apf::getDimension(m, entity)<<" id "<<pumi_ment_getglobalid(entity)<<" "<<getMdsIndex(m, entity)<<" from "<<from<<"\n";
-      m->addGhost(sender, from, entity);
+//      m->addGhost(sender, from, entity);
     }
   }
 }

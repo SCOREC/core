@@ -37,13 +37,13 @@ Ghosting* getGhostingPlan(pMesh m)
   {
   apf::MeshIterator* it = m->begin(mesh_dim);
   pMeshEnt e;
+  int count=0;
   while ((e = m->iterate(it)))
   {
-    int pid=PCU_Comm_Self()+1;
-    if (pid==PCU_Comm_Peers()) pid=0;
+    int pid=(count+1)%PCU_Comm_Peers();
     plan->send(e, pid);
+    if (count==10) break;
   }
-  assert(plan->count(mesh_dim)==m->count(mesh_dim));
   }
   return plan;
 }
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
   getConfig(argc,argv);
 
   // load model
-  gmi_model* g = pumi_geom_create(modelFile);
+  gmi_model* g = pumi_geom_load(modelFile);
  
   // load mesh per process group
   assert(pumi_size()%num_in_part==0);
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     m->end(it);
     plan->print(); // print distribution plan 
     pumi_mesh_distribute(m, plan);
-  }  pumi_mesh_print(m);
+  }  
 
   pumi_mesh_print(m);
   sleep(.5);
@@ -144,11 +144,21 @@ int main(int argc, char** argv)
     assert(!pumi_ment_isghost(e) && !pumi_ment_isghosted(e));
   }
   m->end(mit);
+
+  // re-load partitioned mesh
+  {
+    pumi_mesh_delete(m);
+    g = pumi_geom_load(modelFile);
+    m = pumi_mesh_load(g, meshFile, num_in_part); 
+    pumi_mesh_print(m);
+  }
+
+  // let's do ghosting
   int num_org_vtx = pumi_mesh_getnument(m, 0);
 
-  Ghosting* plan = getGhostingPlan(m);
-  // 
-  //pumi_ghost_create(m, plan);
+  Ghosting* ghosting_plan = getGhostingPlan(m);
+  ghosting_plan->print();
+  //pumi_ghost_create(m, ghosting_plan);
 
   int num_ghost_vtx=0;
   mit = m->begin(0);

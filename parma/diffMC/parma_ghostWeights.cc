@@ -8,6 +8,26 @@
 #include "parma_ghostOwner.h"
 
 namespace {
+  double localWeight(apf::Mesh* m, apf::MeshTag* w, int dim) {
+    apf::MeshIterator* it = m->begin(dim);
+    apf::MeshEntity* e;
+    double sum = 0;
+    while ((e = m->iterate(it)))
+      sum += parma::getEntWeight(m,e,w);
+    m->end(it);
+    return sum;
+  }
+
+  bool isSharedWithTarget(apf::Mesh* m,apf::MeshEntity* e, int target) {
+    if( ! m->isShared(e) ) return false;
+    apf::Copies rmts;
+    m->getRemotes(e,rmts);
+    APF_ITERATE(apf::Copies, rmts, itr)
+      if (itr->first==target)
+        return true;
+    return false;
+  }
+
   bool isOwnedByPeer(apf::Mesh* m,apf::MeshEntity* v, int peer) {
     if( ! m->isShared(v) ) return false;
     return (parma::getOwner(m,v) == peer);
@@ -85,7 +105,77 @@ namespace {
 namespace parma {
   class GhostFinder {
     public:
-      GhostFinder(apf::Mesh* m, apf::MeshTag* w, int l)
+      virtual double* weight(int)=0;
+  };
+  class ElmGhostFinder : public GhostFinder {
+    public:
+      typedef std::set<apf::MeshEntity*> entset;
+      ElmGhostFinder(apf::Mesh* m, apf::MeshTag* w)
+        : mesh(m), wtag(w) {
+        //set missing weights to one
+        double one = 1;
+        const int d = mesh->getDimension();
+        for(int i=0; i<=d; i++) {
+          apf::MeshIterator* itr = mesh->begin(i);
+          apf::MeshEntity* e;
+          while((e=mesh->iterate(itr)))
+            if(!mesh->hasTag(e,wtag))
+              mesh->setDoubleTag(e,wtag,&one);
+          mesh->end(itr);
+        }
+      }
+      /**
+       * @brief get the weight of vertices, edges, faces, and elements
+       * ghosted to the peers via shared vertices
+       */
+      double* weight(int peer) {
+        std::set<apf::MeshEntity*> ghosts[4];
+        const int d = mesh->getDimension();
+        apf::MeshIterator* itr = mesh->begin(0);
+        apf::MeshEntity* v;
+        while((v=mesh->iterate(itr)))
+          if(isSharedWithTarget(mesh,v,peer))
+            insertGhosts(v,ghosts);
+        mesh->end(itr);
+        double* weight = new double[4];
+        for(unsigned int i=0; i<4; i++)
+          weight[i] = 0;
+        for(int gdim=0; gdim<=d; gdim++) {
+          APF_ITERATE(entset, ghosts[gdim], gItr) {
+            if(!isSharedWithTarget(mesh,*gItr,peer))
+              weight[gdim] += getEntWeight(mesh,*gItr,wtag);
+          }
+        }
+        return weight;
+      }
+    private:
+      //get the elements bounding the input entity e and insert the
+      //entities bounding those elements into the ghosts sets
+      //note, the ghosts sets will have to be filtered later to account for entities
+      //on the common part boundary
+      void insertGhosts(apf::MeshEntity* e, entset* ghosts) {
+        const int d = mesh->getDimension();
+        apf::Adjacent elms;
+        mesh->getAdjacent(e, d, elms);
+        APF_ITERATE(apf::Adjacent, elms, adjItr) {
+          ghosts[d].insert(*adjItr);
+          apf::Downward dwn;
+          for(int dwndim=0; dwndim<d; dwndim++) {
+            const int n = mesh->getDownward(*adjItr,dwndim,dwn);
+            for(int i=0; i<n; i++)
+              ghosts[dwndim].insert(dwn[i]);
+          }
+        }
+      }
+
+      ElmGhostFinder();
+      apf::Mesh* mesh;
+      apf::MeshTag* wtag;
+  };
+
+  class VtxGhostFinder : public GhostFinder {
+    public:
+      VtxGhostFinder(apf::Mesh* m, apf::MeshTag* w, int l)
         : mesh(m), wtag(w), layers(l) {
         depth = NULL;
       }
@@ -115,7 +205,7 @@ namespace parma {
         return weight;
       }
     private:
-      GhostFinder();
+      VtxGhostFinder();
       apf::Mesh* mesh;
       apf::MeshTag* wtag;
       int layers;
@@ -124,17 +214,17 @@ namespace parma {
 
   class GhostWeights : public Associative<double*> {
     public:
-      GhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int layers)
+      GhostWeights(apf::Mesh* m, Sides* s,
+          GhostFinder* finder, double* localweight)
         : weight(0)
       {
         const int dim = m->getDimension();
         weight = new double[4];
         for(int d=0; d<=dim; d++)
-          weight[d] = ownedWeight(m,w,d);
+          weight[d] = localweight[d];
         for(int d=dim+1; d<=3; d++)
           weight[d] = 0;
-        GhostFinder finder(m, w, layers);
-        findGhosts(&finder, s);
+        findGhosts(finder, s);
         exchangeGhostsFrom();
         exchange();
         PCU_Debug_Print("totW vtx %f edge %f elm %f\n",
@@ -215,9 +305,21 @@ namespace parma {
     return new GhostToEntWeight(gw,dim);
   }
 
-  GhostWeights* makeGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
+  GhostWeights* makeVtxGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s,
       int layers) {
-    return new GhostWeights(m, w, s, layers);
+    VtxGhostFinder finder(m,w,layers);
+    double weights[4] = {0,0,0,0};
+    for(int d=0; d<=m->getDimension(); d++)
+      weights[d] = ownedWeight(m,w,d);
+    return new GhostWeights(m, s, &finder, weights);
+  }
+
+  GhostWeights* makeElmGhostWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s) {
+    ElmGhostFinder finder(m,w);
+    double weights[4] = {0,0,0,0};
+    for(int d=0; d<=m->getDimension(); d++)
+      weights[d] = localWeight(m,w,d);
+    return new GhostWeights(m, s, &finder, weights);
   }
 
   void destroyGhostWeights(GhostWeights* gw) {

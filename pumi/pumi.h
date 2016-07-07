@@ -94,7 +94,7 @@ void pumi_printtimemem(const char* msg, double time, double memory);
 //************************************
 
 // create a model from a file
-pGeom pumi_geom_create(const char* fileName, const char* model_type="mesh");
+pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh");
 
 // load a serial mesh. 
 pMesh pumi_mesh_loadserial(pGeom g, const char* filename, const char* mesh_type="mds");
@@ -148,6 +148,7 @@ class Ghosting
     void send(pMeshEnt e, int to);
 /** \brief assign a destination part id of all entities of dimension */
     void send(int dim, int to);
+    void print();
 /** \brief return the destination part id of an element */
 //    int sending(pMeshEnt e);
     pMesh getMesh() {return m;}

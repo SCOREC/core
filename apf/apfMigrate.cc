@@ -4,8 +4,8 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
+
 #include <PCU.h>
-#include "apfMesh.h"
 #include "apfMesh2.h"
 #include "apfCavityOp.h"
 #include "apf.h"
@@ -214,7 +214,7 @@ static void updateResidences(
         MeshEntity* up = upward.e[ui];
         Parts upResidence;
         m->getResidence(up,upResidence);
-        apf::unite(newResidence,upResidence);
+        unite(newResidence,upResidence);
       }
       m->setResidence(entity,newResidence);
       Copies remotes;
@@ -233,8 +233,8 @@ static void updateResidences(
       Parts current;
       m->getResidence(entity,current);
       Parts incoming;
-      apf::unpackParts(incoming);
-      apf::unite(current,incoming);
+      unpackParts(incoming);
+      unite(current,incoming);
       m->setResidence(entity,current);
     }
   }
@@ -246,7 +246,6 @@ static void updateResidences(
    of REMOTE parts in the new residence that
    don't have remotes yet, which is the
    set we have to send to */
-// declared in apfMesh2.h
 void split(
     Copies& remotes,
     Parts& parts,
@@ -257,7 +256,7 @@ void split(
       newParts.insert(*it);
 }
 
-void packCommon(
+static void packCommon(
     Mesh2* m,
     int to,
     MeshEntity* e)
@@ -272,7 +271,7 @@ void packCommon(
   m->getResidence(e,residence);
   packParts(to,residence);
 }
-// declared in apfMesh2.h
+
 void unpackCommon(
     Mesh2* m,
     MeshEntity*& sender,
@@ -299,7 +298,6 @@ static void packVertex(
   PCU_COMM_PACK(to,p);
 }
 
-// declared in apfMesh2.h
 MeshEntity* unpackVertex(
     Mesh2* m,
     ModelEntity* c)
@@ -351,7 +349,6 @@ static void packNonVertex(
   packDownward(m,to,e);
 }
 
-// declared in apfMesh2.h
 MeshEntity* unpackNonVertex(
     Mesh2* m,
     int type, ModelEntity* c)
@@ -397,7 +394,6 @@ static void packTags(
   }
 }
 
-// declared in apfMesh2.h
 void unpackTags(
     Mesh2* m,
     MeshEntity* e,
@@ -427,7 +423,6 @@ void unpackTags(
   }
 }
 
-// declared in apfMesh2.h
 void packEntity(
     Mesh2* m,
     int to,

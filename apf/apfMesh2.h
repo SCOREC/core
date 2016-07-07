@@ -36,11 +36,11 @@ class Mesh2 : public Mesh
     virtual void setRemotes(MeshEntity* e, Copies& remotes) = 0;
 /** \brief Add just one remote copy to an entity */
     virtual void addRemote(MeshEntity* e, int p, MeshEntity* r) = 0;
-//seol
-    virtual void setGhosts(MeshEntity* e, Copies& remotes) = 0;
-    virtual void addGhost(MeshEntity* e, int p, MeshEntity* r) = 0;
 /** \brief Set the resident part set of an entity
   \details this is also known as partition model classification */
+// seol
+//    virtual void setGhosts(MeshEntity* e, Copies& remotes) = 0;
+//    virtual void addGhost(MeshEntity* e, int p, MeshEntity* r) = 0;
     virtual void setResidence(MeshEntity* e, Parts& residence) = 0;
 /** \brief Set the geometric parametric coordinates for a vertex */
     virtual void setParam(MeshEntity* e, Vector3 const& p) = 0;
@@ -100,6 +100,8 @@ class Mesh2 : public Mesh
       requireUnfrozen();
       destroy_(e);
     }
+/** \brief Change the geometric classification of an entity. */
+    virtual void setModelEntity(MeshEntity* e, ModelEntity* c) = 0;
 /** \brief Add a matched copy to an entity */
     virtual void addMatch(MeshEntity* e, int peer, MeshEntity* match) = 0;
 /** \brief Remove all matched copies of an entity */
@@ -213,6 +215,6 @@ void unpackTags(Mesh2* m, MeshEntity* e, DynamicArray<MeshTag*>& tags);
 void unpackCommon(Mesh2* m, MeshEntity*& sender, ModelEntity*& c, Parts& residence);
 MeshEntity* unpackVertex(Mesh2* m, ModelEntity* c);
 MeshEntity* unpackNonVertex(Mesh2* m,int type, ModelEntity* c);
-
 }//namespace apf
+
 #endif

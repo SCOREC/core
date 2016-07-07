@@ -245,10 +245,7 @@ static void ownersToAPF(
     apf::MeshEntity* r;
     PCU_COMM_UNPACK(r);
     int from = PCU_Comm_Sender();
-    if (from == PCU_Comm_Self()) 
-    {
-      if ((unsigned)from != own_ranks[own_id])
-        printf("fatal error - from %d, own_ranks[own_id] %d\n", from, own_ranks[own_id]);
+    if (from == PCU_Comm_Self()) {
       assert((unsigned)from == own_ranks[own_id]);
       continue;
     }

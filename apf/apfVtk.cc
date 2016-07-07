@@ -348,6 +348,28 @@ static void writeEncodedArray(std::ostream& file,
   }
 }
 
+/* Paraview/VTK has trouble with sub-normal double precision floating point
+ * ASCII values.
+ *
+ * http://www.paraview.org/Bug/view.php?id=15925
+ *
+ * This function exists to cast "double" to "float"
+ * before writing it to file, the others are to maintain the
+ * templated design of writeNodalField and others */
+
+static float workaround(double v)
+{
+  return static_cast<float>(v);
+}
+static int workaround(int v)
+{
+  return v;
+}
+static long workaround(long v)
+{
+  return v;
+}
+
 template <class T>
 static void writeNodalField(std::ostream& file,
     FieldBase* f,
@@ -383,7 +405,7 @@ static void writeNodalField(std::ostream& file,
       data->getNodeComponents(nodes[i].entity,nodes[i].node,&(nodalData[0]));
       for (int j = 0; j < nc; ++j)
       {
-        file << nodalData[j] << ' ';
+        file << workaround(nodalData[j]) << ' ';
       }
       file << '\n';
     }
@@ -666,7 +688,8 @@ class WriteIPField : public FieldOp
         }
         else
         {
-          (*fp) << ipData[i] << ' '; //otherwise simply write to the file
+          //otherwise simply write to the file
+          (*fp) << workaround(ipData[i]) << ' ';
         }
       }
       if (!isWritingBinary)

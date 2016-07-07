@@ -33,7 +33,6 @@ struct mds_apf {
   struct gmi_model* user_model;
   void** parts[MDS_TYPES];
   struct mds_net remotes;
-  struct mds_net ghosts;
   struct mds_net matches;
 };
 

@@ -13,7 +13,7 @@
 #include "PCU.h"
 #include <iostream>
 #include <cstring>
-pGeom pumi_geom_create(const char* filename, const char* model_type)
+pGeom pumi_geom_load(const char* filename, const char* model_type)
 {
   if (!strcmp(model_type,"mesh"))
   {

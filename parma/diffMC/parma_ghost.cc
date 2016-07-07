@@ -33,7 +33,7 @@ namespace {
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
-          parma::makeGhostWeights(mesh, wtag, s, layers);
+          parma::makeVtxGhostWeights(mesh, wtag, s, layers);
         parma::Weights* elmW = convertGhostToEntWeight(gw,mesh->getDimension());
         parma::Weights* vtxW =convertGhostToEntWeight(gw,0);
         destroyGhostWeights(gw);
@@ -83,7 +83,7 @@ namespace {
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
-          parma::makeGhostWeights(mesh, wtag, s, layers);
+          parma::makeVtxGhostWeights(mesh, wtag, s, layers);
         parma::Weights* vtxW = convertGhostToEntWeight(gw,0);
         parma::Weights* edgeW = convertGhostToEntWeight(gw,1);
         parma::Weights* elmW = convertGhostToEntWeight(gw,mesh->getDimension());

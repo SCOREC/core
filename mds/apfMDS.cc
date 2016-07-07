@@ -178,47 +178,16 @@ class MeshMDS : public Mesh2
     {
       return mds_get_copies(&mesh->remotes, fromEnt(e));
     }
-
-    bool isGhosted(MeshEntity* e)
-    {
-      MeshTag* tag=findTag("_ghosted_");
-      if (tag) 
-        return hasTag(e,tag);
-      else
-        return false;
-    }
-
-    bool isGhost(MeshEntity* e)
-    {
-      MeshTag* tag=findTag("_ghost_");
-      if (tag) 
-        return hasTag(e,tag);
-      else
-        return false;
-    }
-
     bool isOwned(MeshEntity* e)
     {
       return getId() == getOwner(e);
     }
-
     int getOwner(MeshEntity* e)
     {
-      if (!findTag("_ghost_") || !isGhost(e))
-      {
-        // non-ghost uses partition classification
-        void* vp = mds_get_part(mesh, fromEnt(e));
-        PME* p = static_cast<PME*>(vp);
-        return p->owner;
-      }
-      else // isGhost(e)
-      {
-        mds_copies* c = mds_get_copies(&mesh->ghosts, fromEnt(e));
-        assert(c != NULL);
-        return c->c[0].p;
-      }
+      void* vp = mds_get_part(mesh, fromEnt(e));
+      PME* p = static_cast<PME*>(vp);
+      return p->owner;
     }
-
     void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent)
     {
       mds_set s;
@@ -303,17 +272,6 @@ class MeshMDS : public Mesh2
       for (int i = 0; i < c->n; ++i)
         remotes[c->c[i].p] = toEnt(c->c[i].e);
     }
-
-    void getGhosts(MeshEntity* e, Copies& ghosts)
-    {
-      if (!isGhosted(e))
-        return;
-      mds_copies* c = mds_get_copies(&mesh->ghosts, fromEnt(e));
-      assert(c != NULL);
-      for (int i = 0; i < c->n; ++i)
-        ghosts[c->c[i].p] = toEnt(c->c[i].e);
-    }
-
     void getResidence(MeshEntity* e, Parts& residence)
     {
       void* vp = mds_get_part(mesh, fromEnt(e));
@@ -512,22 +470,6 @@ class MeshMDS : public Mesh2
       }
       mds_set_copies(&mesh->remotes, &mesh->mds, id, c);
     }
-
-    void setGhosts(MeshEntity* e, Copies& ghosts)
-    {
-      mds_id id = fromEnt(e);
-      if (!ghosts.size())
-        return mds_set_copies(&mesh->ghosts, &mesh->mds, id, NULL);
-      mds_copies* c = mds_make_copies(ghosts.size());
-      c->n = 0;
-      APF_ITERATE(Copies, ghosts, it) {
-        c->c[c->n].p = it->first;
-        c->c[c->n].e = fromEnt(it->second);
-        ++c->n;
-      }
-      mds_set_copies(&mesh->ghosts, &mesh->mds, id, c);
-    }
-
     void addRemote(MeshEntity* e, int p, MeshEntity* r)
     {
       mds_copy c;
@@ -535,17 +477,6 @@ class MeshMDS : public Mesh2
       c.p = p;
       mds_add_copy(&mesh->remotes, &mesh->mds, fromEnt(e), c);
     }
-
-    void addGhost(MeshEntity* e, int p, MeshEntity* r)
-    {
-      mds_copy c;
-      c.e = fromEnt(r);
-      c.p = p;
-      printf("START %s: e %d %d;\n", __func__, mds_type(fromEnt(e)), mds_id(fromEnt(e)));
-      mds_add_copy(&mesh->ghosts, &mesh->mds, fromEnt(e), c);
-      printf("END  %s: e %d %d;\n", __func__, mds_type(fromEnt(e)), mds_id(fromEnt(e)));
-    }
-
     void setResidence(MeshEntity* e, Parts& residence)
     {
       mds_id id = fromEnt(e);
