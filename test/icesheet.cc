@@ -90,7 +90,7 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
   fclose(f);
 }
 
-int* readVtx_type(const char* fname, unsigned numvtx) {
+int* readVtxClassification(const char* fname, unsigned numvtx) {
   FILE* f = fopen(fname, "r");
   assert(f);
   unsigned n;
@@ -102,6 +102,120 @@ int* readVtx_type(const char* fname, unsigned numvtx) {
     assert(vtx_type_int[i] >= INTERIORTAG && vtx_type_int[i] <= TOP_PERIMETERTAG);
   }
   return vtx_type_int;
+}
+
+apf::MeshTag* attachVtxClassification(apf::Mesh2* mesh, apf::GlobalToVert& vtxMap,
+    unsigned numVerts, int* vtxClass) {
+  apf::MeshTag* vtxTag = mesh->createIntTag(VTX_TYPE_NAME, 1);
+  for(unsigned i=0; i<numVerts; i++)
+    mesh->setIntTag(vtxMap[i], vtxTag, &(vtxClass[i]));
+  delete [] vtxClass;
+  return vtxTag;
+}
+
+bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
+  int numAdjElms = mesh->countUpward(face);
+  assert( numAdjElms > 0 );
+  if( numAdjElms == 2 )
+    return false; // both regions exist -> interior
+  else
+    return true; // only one region -> exterior
+}
+
+/* returns -1 for an interior face
+ *          0 for a boundary face with at least one vertex with an interior tag
+ *          1 for a marked boundary face
+ */
+int setModelClassification(apf::Mesh2* mesh,
+    std::map<int,int> vtx_type_num,
+    apf::MeshEntity* face,
+    std::map<int,int>& faceClass) {
+  if( ! isClassifiedOnBoundary(mesh,face) )
+    return -1;
+  //this is a boundary face
+  assert(vtx_type_num.at(INTERIORTAG) == 0);
+  //we only need to mark vertex that in on the boundary
+  if(vtx_type_num[PERIMETERTAG]!=0) {
+    //if perimeter point exist it's on the perimeter
+    faceClass[PERIMETERFACE]++;
+    //F_markAsBoundary(face, PERIMETERFACE);
+  }
+  else {
+    if((vtx_type_num[BOTTOMTAG] + vtx_type_num[BOTTOM_PERIMETERTAG]) == 3) {
+      /*include vtx_type_num[BOTTOMTAG]=3;
+        vtx_type_num[BOTTOMTAG]=2, vtx_type_num[BOTTOM_PERIMETERTAG])=1;
+        vtx_type_num[BOTTOMTAG]=1, vtx_type_num[BOTTOM_PERIMETERTAG])=2;
+        vtx_type_num[BOTTOM_PERIMETERTAG])=3;*/
+      faceClass[BOTTOMFACE]++;
+      //F_markAsBoundary(face, BOTTOMFACE);
+    }
+    else {
+      if((vtx_type_num[TOPTAG] + vtx_type_num[TOP_PERIMETERTAG]) == 3) {
+        /*include vtx_type_num[TOPTAG]=3;
+          vtx_type_num[TOPTAG]=2, vtx_type_num[TOP_PERIMETERTAG])=1;
+          vtx_type_num[TOPTAG]=1, vtx_type_num[TOP_PERIMETERTAG])=2;
+          vtx_type_num[BOTTOM_PERIMETERTAG])=3;*/
+        faceClass[TOPFACE]++;
+        //F_markAsBoundary(face, TOPFACE );
+      }
+      else {
+        faceClass[PERIMETERFACE]++;
+        //F_markAsBoundary(face, PERIMETERFACE);
+      }
+    }
+  }
+  return 1;
+}
+
+void setFaceClassification(apf::Mesh2* mesh, apf::MeshTag* vtxType) {
+  int numbdryfaces = 0;
+  int markedfaces = 0;
+  int skippedfaces = 0;
+  std::map<int,int> faceClass;
+
+  apf::MeshIterator* it = mesh->begin(2);
+  apf::MeshEntity* face;
+  while( (face = mesh->iterate(it)) ) {
+    apf::Downward verts;
+    int n = mesh->getDownward(face, 0, verts);
+    assert(n == 3);
+
+    std::map<int, int> vtx_type_num;
+    for(int i=INTERIORTAG; i<=TOP_PERIMETERTAG; i++)
+      vtx_type_num[i] = 0;
+    for(int i=0; i<3; i++){
+      int value;
+      mesh->getIntTag(verts[i], vtxType, &value);
+      assert(value >= INTERIORTAG && value <= TOP_PERIMETERTAG);
+      vtx_type_num[value]++;
+    }
+    int counttaggedvtx = 0;
+    for(int i=INTERIORTAG; i<=TOP_PERIMETERTAG; i++)
+      counttaggedvtx += vtx_type_num[i];
+    assert(counttaggedvtx==3);
+    int isSet = setModelClassification(mesh, vtx_type_num, face, faceClass);
+    if( isSet == 1 )
+      markedfaces++;
+    if(isSet == 0)
+      skippedfaces++;
+    if( isSet == 0 || isSet == 1 )
+      numbdryfaces++;
+  }
+  mesh->end(it);
+
+  fprintf(stderr, "num boundary faces %d\n", numbdryfaces);
+  fprintf(stderr, "num marked faces %d\n", markedfaces);
+  fprintf(stderr, "num skipped faces %d\n", skippedfaces);
+  int totmarkedfaces=0;
+  for(int i=1; i<4; i++) {
+    fprintf(stderr,"%d: %d\n", i, faceClass[i]);
+    totmarkedfaces += faceClass[i];
+  }
+  assert(numbdryfaces == totmarkedfaces);
+}
+
+void setClassification(apf::Mesh2* mesh, apf::MeshTag* t) {
+  setFaceClassification(mesh,t);
 }
 
 int main(int argc, char** argv)
@@ -125,8 +239,6 @@ int main(int argc, char** argv)
   MeshInfo m;
   readMesh(argv[2],m);
 
-  int* type = readVtx_type(argv[3], m.numVerts);
-  delete [] type;
 
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
@@ -137,8 +249,10 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
+  int* vc = readVtxClassification(argv[3], m.numVerts);
+  apf::MeshTag* vtxClass = attachVtxClassification(mesh, outMap, m.numVerts, vc);
+  setClassification(mesh,vtxClass);
   outMap.clear();
-
   mesh->verify();
   mesh->writeNative(argv[3]);
   //apf::writeVtkFiles("after", mesh);
