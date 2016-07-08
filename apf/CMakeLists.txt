@@ -76,6 +76,7 @@ set(APF_SOURCES
   apfVerify.cc
   apfGeometry.cc
   apfBoundaryToElementXi.cc
+  apfFile.cc
 )
 
 set(APF_HEADERS
