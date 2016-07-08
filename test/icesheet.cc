@@ -142,13 +142,15 @@ apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
  *          0 for a boundary face with at least one vertex with an interior tag
  *          1 for a marked boundary face
  */
-int setModelClassification(gmi_model*,
+int setModelClassification(gmi_model* model,
     apf::Mesh2* mesh,
     std::map<int,int> vtx_type_num,
     apf::MeshEntity* face,
     std::map<int,int>& faceClass) {
-  if( ! isClassifiedOnBoundary(mesh,face) )
+  if( ! isClassifiedOnBoundary(mesh,face) ) {
+    mesh->setModelEntity(face,getMdlRgn(model));
     return -1;
+  }
   //this is a boundary face
   assert(vtx_type_num.at(INTERIORTAG) == 0);
   //we only need to mark vertex that in on the boundary
