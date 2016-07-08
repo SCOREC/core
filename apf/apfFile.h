@@ -8,8 +8,6 @@
 #ifndef APF_FILE_H
 #define APF_FILE_H
 
-#include <cstdio>
-
 struct pcu_file;
 
 namespace apf {
