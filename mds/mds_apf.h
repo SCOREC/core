@@ -21,6 +21,8 @@ extern "C" {
 #include "mds_tag.h"
 #include "mds_net.h"
 
+struct pcu_file;
+
 struct gmi_model;
 struct gmi_ent;
 
@@ -59,9 +61,9 @@ int mds_model_dim(struct mds_apf* m, struct gmi_ent* model);
 int mds_model_id(struct mds_apf* m, struct gmi_ent* model);
 
 struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
-    int ignore_peers);
+    int ignore_peers, void* apf_mesh);
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
-    int ignore_peers);
+    int ignore_peers, void* apf_mesh);
 
 void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
@@ -74,6 +76,10 @@ void mds_derive_model(struct mds_apf* m);
 extern int const mds_apf_double;
 extern int const mds_apf_int;
 extern int const mds_apf_long;
+
+void mds_write_smb_meta(struct pcu_file* file, void* mesh_cpp);
+void mds_read_smb_meta(struct pcu_file* file, struct mds_apf* mesh,
+                       void* mesh_cpp);
 
 #ifdef __cplusplus
 }
