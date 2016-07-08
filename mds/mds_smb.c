@@ -578,8 +578,14 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   make_verts(m);
   read_conn(f, m);
   pcu_read_doubles(f, &m->point[0][0], 3 * n[SMB_VERT]);
-  if (version >= 2)
+  if (version >= 2) {
     pcu_read_doubles(f, &m->param[0][0], 2 * n[SMB_VERT]);
+  } else {
+/* initialize parameteric coordinates to zero if they are not in the file */
+    for (unsigned i = 0; i < n[SMB_VERT]; ++i) {
+      for (unsigned j = 0; j < 2; ++j) m->param[i][j] = 0.0;
+    }
+  }
   read_remotes(f, m, ignore_peers);
   read_class(f, m);
   read_tags(f, m);
@@ -588,7 +594,7 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   else if (version >= 3)
     read_matches_old(f, m, ignore_peers);
   if (version >= 5)
-    mds_read_smb_meta(f, apf_mesh);
+    mds_read_smb_meta(f, m, apf_mesh);
   pcu_fclose(f);
   return m;
 }

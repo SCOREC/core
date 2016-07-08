@@ -77,8 +77,9 @@ extern int const mds_apf_double;
 extern int const mds_apf_int;
 extern int const mds_apf_long;
 
-void mds_write_smb_meta(struct pcu_file* file, void* apf_mesh);
-void mds_read_smb_meta(struct pcu_file* file, void* apf_mesh);
+void mds_write_smb_meta(struct pcu_file* file, void* mesh_cpp);
+void mds_read_smb_meta(struct pcu_file* file, struct mds_apf* mesh,
+                       void* mesh_cpp);
 
 #ifdef __cplusplus
 }
