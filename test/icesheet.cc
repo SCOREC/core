@@ -77,11 +77,11 @@ struct MeshInfo {
 };
 
 void readMesh(const char* meshfilename, MeshInfo& mesh) {
-  FILE* f = fopen(meshfilename, "r"); 
+  FILE* f = fopen(meshfilename, "r");
   assert(f);
   readHeader(f,mesh.numVerts,mesh.numElms,mesh.numVtxPerElm);
-  fprintf(stderr, "numVerts %u numElms %u numVtxPerElm %u\n", 
-      mesh.numVerts, mesh.numElms, mesh.numVtxPerElm); 
+  fprintf(stderr, "numVerts %u numElms %u numVtxPerElm %u\n",
+      mesh.numVerts, mesh.numElms, mesh.numVtxPerElm);
   mesh.coords = new double[mesh.numVerts*3];
   readCoords(f, mesh.numVerts, mesh.coords);
   mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
@@ -122,8 +122,17 @@ bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
     return true; // only one region -> exterior
 }
 
+/** \brief just get the first geometric model region - hack
+*/
+apf::ModelEntity* getMdlRgn(gmi_model* model) {
+  gmi_iter* it = gmi_begin(model, 3);
+  gmi_ent* rgn = gmi_next(model, it);
+  assert(rgn);
+  gmi_end(model, it);
+  return (apf::ModelEntity*)rgn;
+}
+
 apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
-  //gmi_ent* face = gmi_find(model, 2, tag);
   apf::ModelEntity* face = mesh->findModelEntity(2,tag);
   assert(face);
   return face;
@@ -146,8 +155,7 @@ int setModelClassification(gmi_model*,
   if(vtx_type_num[PERIMETERTAG]!=0) {
     //if perimeter point exist it's on the perimeter
     faceClass[PERIMETERFACE]++;
-    apf::ModelEntity* mdlEnt = getMdlFace(mesh,PERIMETERFACE);
-    mesh->setModelEntity(face,mdlEnt);
+    mesh->setModelEntity(face,getMdlFace(mesh,PERIMETERFACE));
   }
   else {
     if((vtx_type_num[BOTTOMTAG] + vtx_type_num[BOTTOM_PERIMETERTAG]) == 3) {
@@ -223,17 +231,29 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   assert(numbdryfaces == totmarkedfaces);
 }
 
+/** \brief set the mesh region classification
+  \details hacked to set the classification to the same geometric model region
+*/
+void setRgnClassification(gmi_model* model, apf::Mesh2* mesh) {
+  apf::ModelEntity* mdlRgn = getMdlRgn(model);
+  apf::MeshIterator* it = mesh->begin(3);
+  apf::MeshEntity* rgn;
+  while( (rgn = mesh->iterate(it)) )
+    mesh->setModelEntity(rgn,mdlRgn);
+  mesh->end(it);
+}
+
 void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
-  setRgnClassification(model,mesh,t);
+  setRgnClassification(model,mesh);
   setFaceClassification(model,mesh,t);
-  setEdgeClassification(model,mesh,t);
-  setVtxClassification(model,mesh,t);
+  //setEdgeClassification(model,mesh,t);
+  //setVtxClassification(model,mesh,t);
 }
 
 int main(int argc, char** argv)
 {
   if( argc < 5 ) {
-    printf("Usage: %s <GeomSim model .smd> <ascii mesh> <vertex classification> <output mesh> [<vertex field>...]\n", 
+    printf("Usage: %s <GeomSim model .smd> <ascii mesh> <vertex classification> <output mesh> [<vertex field>...]\n",
         argv[0]);
     return 0;
   }
@@ -265,6 +285,7 @@ int main(int argc, char** argv)
   apf::MeshTag* vtxClass = attachVtxClassification(mesh, outMap, m.numVerts, vc);
   setClassification(model,mesh,vtxClass);
   outMap.clear();
+  fprintf(stderr,"calling verify... flamesuit on\n");
   mesh->verify();
   mesh->writeNative(argv[3]);
   //apf::writeVtkFiles("after", mesh);
