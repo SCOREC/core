@@ -138,6 +138,41 @@ apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
   return face;
 }
 
+/** \brief brute force serach to find the intersection
+ * \details models don't have that many edges bounding each face.... right???
+ */
+gmi_ent* getCommonEdge(gmi_set* a, gmi_set* b) {
+  gmi_ent* match;
+  unsigned found = 0;
+  for(int i=0; i<a->n; i++) {
+    for(int j=0; j<b->n; j++) {
+      if( a->e[i] == b->e[j] ) {
+        assert(!found);
+        found++;
+        match = a->e[i];
+      }
+    }
+  }
+  return match;
+}
+
+/** \brief get the model edge that bounds the model faces with the given tags
+*/
+apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int faceTagA, int faceTagB) {
+  gmi_model* model = mesh->getModel();
+  gmi_ent* faceA = (gmi_ent*) getMdlFace(mesh,faceTagA);
+  gmi_set* faceAedges = gmi_adjacent(model, faceA, 1);
+  assert(faceAedges->n);
+  gmi_ent* faceB = (gmi_ent*) getMdlFace(mesh,faceTagB);
+  gmi_set* faceBedges = gmi_adjacent(model, faceB, 1);
+  assert(faceBedges->n);
+  gmi_ent* edge = getCommonEdge(faceAedges,faceBedges);
+  assert(edge);
+  gmi_free_set(faceAedges);
+  gmi_free_set(faceBedges);
+  return (apf::ModelEntity*) edge;
+}
+
 /* returns -1 for an interior face
  *          0 for a boundary face with at least one vertex with an interior tag
  *          1 for a marked boundary face
@@ -245,10 +280,65 @@ void setRgnClassification(gmi_model* model, apf::Mesh2* mesh) {
   mesh->end(it);
 }
 
+void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
+    apf::MeshTag* t, int* tags) {
+  apf::Downward verts;
+  int n = mesh->getDownward(edge, 0, verts);
+  assert(n == 2);
+
+  for(int i=0; i<2; i++){
+    int value;
+    mesh->getIntTag(verts[i], t, &value);
+    assert(value >= INTERIORTAG && value <= TOP_PERIMETERTAG);
+    tags[i] = value;
+  }
+}
+
+/** \brief set the mesh region classification
+  \details hacked to set the classification to the same geometric model region
+*/
+void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
+  apf::ModelEntity* mdlRgn = getMdlRgn(model);
+  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
+  apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
+  apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
+  apf::MeshIterator* it = mesh->begin(1);
+  apf::MeshEntity* edge;
+  while( (edge = mesh->iterate(it)) ) {
+    int tags[2];
+    getMeshEdgeTags(mesh,edge,t,tags);
+    // classified on model region
+    if( tags[0] == INTERIORTAG || tags[1] == INTERIORTAG )
+      mesh->setModelEntity(edge,mdlRgn);
+    // classified on bottom perimeter
+    else if( tags[0] == BOTTOM_PERIMETERTAG && tags[1] == BOTTOM_PERIMETERTAG )
+      mesh->setModelEntity(edge,mdlBotEdge);
+    // classified on top perimeter
+    else if( tags[0] == TOP_PERIMETERTAG && tags[1] == TOP_PERIMETERTAG )
+      mesh->setModelEntity(edge,mdlTopEdge);
+    // classified on top face
+    else if( tags[0] == TOPTAG || tags[1] == TOPTAG )
+      mesh->setModelEntity(edge,mdlTopFace);
+    // classified on bottom face
+    else if( tags[0] == BOTTOMTAG || tags[1] == BOTTOMTAG )
+      mesh->setModelEntity(edge,mdlBotFace);
+    // classified on perimeter face
+    else if( tags[0] == PERIMETERTAG || tags[1] == PERIMETERTAG )
+      mesh->setModelEntity(edge,mdlPerFace);
+    else {
+      fprintf(stderr, "classification of edges fell through the conditional...exiting\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  mesh->end(it);
+}
+
 void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setRgnClassification(model,mesh);
   setFaceClassification(model,mesh,t);
-  //setEdgeClassification(model,mesh,t);
+  setEdgeClassification(model,mesh,t);
   //setVtxClassification(model,mesh,t);
 }
 
