@@ -21,7 +21,7 @@
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
 
-enum { SMB_VERSION = 4 };
+enum { SMB_VERSION = 5 };
 
 enum {
   SMB_VERT,
@@ -555,7 +555,7 @@ static void write_matches(struct pcu_file* f, struct mds_apf* m,
 }
 
 static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
-    int zip, int ignore_peers)
+    int zip, int ignore_peers, void* apf_mesh)
 {
   struct mds_apf* m;
   struct pcu_file* f;
@@ -587,6 +587,8 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
     read_matches_new(f, m, ignore_peers);
   else if (version >= 3)
     read_matches_old(f, m, ignore_peers);
+  if (version >= 5)
+    mds_read_smb_meta(f, apf_mesh);
   pcu_fclose(f);
   return m;
 }
@@ -601,7 +603,7 @@ static void write_coords(struct pcu_file* f, struct mds_apf* m)
 }
 
 static void write_smb(struct mds_apf* m, const char* filename,
-    int zip, int ignore_peers)
+    int zip, int ignore_peers, void* apf_mesh)
 {
   struct pcu_file* f;
   unsigned n[SMB_TYPES] = {0};
@@ -618,6 +620,7 @@ static void write_smb(struct mds_apf* m, const char* filename,
   write_class(f, m);
   write_tags(f, m);
   write_matches(f, m, ignore_peers);
+  mds_write_smb_meta(f, apf_mesh);
   pcu_fclose(f);
 }
 
@@ -717,13 +720,13 @@ static char* handle_path(const char* in, int is_write, int* zip,
 }
 
 struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
-    int ignore_peers)
+    int ignore_peers, void* apf_mesh)
 {
   char* filename;
   int zip;
   struct mds_apf* m;
   filename = handle_path(pathname, 0, &zip, ignore_peers);
-  m = read_smb(model, filename, zip, ignore_peers);
+  m = read_smb(model, filename, zip, ignore_peers, apf_mesh);
   free(filename);
   return m;
 }
@@ -738,7 +741,7 @@ static int is_compact(struct mds_apf* m)
 }
 
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
-    int ignore_peers)
+    int ignore_peers, void* apf_mesh)
 {
   char* filename;
   int zip;
@@ -747,7 +750,7 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
   if ((!ignore_peers) && PCU_Or(!is_compact(m)))
     m = mds_reorder(m, 0, mds_number_verts_bfs(m));
   filename = handle_path(pathname, 1, &zip, ignore_peers);
-  write_smb(m, filename, zip, ignore_peers);
+  write_smb(m, filename, zip, ignore_peers, apf_mesh);
   free(filename);
   return m;
 }

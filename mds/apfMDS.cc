@@ -17,6 +17,7 @@
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include <apfPartition.h>
+#include <apfFile.h>
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -132,7 +133,7 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, const char* pathname)
     {
       init(apf::getLagrange(1));
-      mesh = mds_read_smb(m, pathname, 0);
+      mesh = mds_read_smb(m, pathname, 0, static_cast<apf::Mesh*>(this));
       isMatched = PCU_Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
     }
@@ -433,7 +434,7 @@ class MeshMDS : public Mesh2
     void writeNative(const char* fileName)
     {
       double t0 = PCU_Time();
-      mesh = mds_write_smb(mesh, fileName, 0);
+      mesh = mds_write_smb(mesh, fileName, 0, static_cast<apf::Mesh*>(this));
       double t1 = PCU_Time();
       if (!PCU_Comm_Self())
         printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
@@ -775,7 +776,7 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
 {
   MeshMDS* m = new MeshMDS();
   m->init(apf::getLagrange(1));
-  m->mesh = mds_read_smb(model, meshfile, 1);
+  m->mesh = mds_read_smb(model, meshfile, 1, static_cast<apf::Mesh*>(m));
   m->isMatched = false;
   m->ownsModel = true;
   initResidence(m, m->getDimension());
@@ -785,7 +786,19 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
 void writeMdsPart(Mesh2* in, const char* meshfile)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  m->mesh = mds_write_smb(m->mesh, meshfile, 1);
+  m->mesh = mds_write_smb(m->mesh, meshfile, 1, static_cast<apf::Mesh*>(in));
+}
+
+}
+
+extern "C" {
+
+void mds_write_smb_meta(FILE* file, void* apf_mesh) {
+  apf::save_meta(file, static_cast<apf::Mesh*>(apf_mesh));
+}
+
+void mds_read_smb_meta(FILE* file, void* apf_mesh) {
+  apf::restore_meta(file, static_cast<apf::Mesh*>(apf_mesh));
 }
 
 }
