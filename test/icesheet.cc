@@ -295,7 +295,8 @@ void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
 }
 
 /** \brief set the mesh region classification
-  \details hacked to set the classification to the same geometric model region
+  \details hack - interior edges have classification set to the
+  same geometric model region
 */
 void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
@@ -328,7 +329,44 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) 
     else if( tags[0] == PERIMETERTAG || tags[1] == PERIMETERTAG )
       mesh->setModelEntity(edge,mdlPerFace);
     else {
-      fprintf(stderr, "classification of edges fell through the conditional...exiting\n");
+      fprintf(stderr, "classification of an edge fell through the conditional...exiting\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  mesh->end(it);
+}
+
+void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
+  apf::ModelEntity* mdlRgn = getMdlRgn(model);
+  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
+  apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
+  apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
+  apf::MeshIterator* it = mesh->begin(0);
+  apf::MeshEntity* vtx;
+  while( (vtx = mesh->iterate(it)) ) {
+    int tag = -1;
+    mesh->getIntTag(vtx, t, &tag);
+    if( tag == INTERIORTAG )
+      mesh->setModelEntity(vtx,mdlRgn);
+    // classified on bottom perimeter
+    else if( tag == BOTTOM_PERIMETERTAG )
+      mesh->setModelEntity(vtx,mdlBotEdge);
+    // classified on top perimeter
+    else if( tag == TOP_PERIMETERTAG )
+      mesh->setModelEntity(vtx,mdlTopEdge);
+    // classified on top face
+    else if( tag == TOPTAG )
+      mesh->setModelEntity(vtx,mdlTopFace);
+    // classified on bottom face
+    else if( tag == BOTTOMTAG )
+      mesh->setModelEntity(vtx,mdlBotFace);
+    // classified on perimeter face
+    else if( tag == PERIMETERTAG )
+      mesh->setModelEntity(vtx,mdlPerFace);
+    else {
+      fprintf(stderr, "classification of a vertex fell through the conditional...exiting\n");
       exit(EXIT_FAILURE);
     }
   }
@@ -339,7 +377,7 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setRgnClassification(model,mesh);
   setFaceClassification(model,mesh,t);
   setEdgeClassification(model,mesh,t);
-  //setVtxClassification(model,mesh,t);
+  setVtxClassification(model,mesh,t);
 }
 
 int main(int argc, char** argv)
@@ -379,12 +417,11 @@ int main(int argc, char** argv)
   outMap.clear();
   fprintf(stderr,"calling verify... flamesuit on\n");
   mesh->verify();
-  mesh->writeNative(argv[3]);
+  mesh->writeNative(argv[4]);
   //apf::writeVtkFiles("after", mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  gmi_destroy(model);
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimUtil_stop();
