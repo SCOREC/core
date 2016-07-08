@@ -90,9 +90,23 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
   fclose(f);
 }
 
+int* readVtx_type(const char* fname, unsigned numvtx) {
+  FILE* f = fopen(fname, "r");
+  assert(f);
+  unsigned n;
+  fscanf(f,"%u", &n);
+  assert( n == numvtx );
+  int* vtx_type_int = new int[numvtx];
+  for(unsigned i = 0; i< numvtx; i++) {
+    fscanf(f, "%d", &vtx_type_int[i]);
+    assert(vtx_type_int[i] >= INTERIORTAG && vtx_type_int[i] <= TOP_PERIMETERTAG);
+  }
+  return vtx_type_int;
+}
+
 int main(int argc, char** argv)
 {
-  if( argc < 4 ) {
+  if( argc < 5 ) {
     printf("Usage: %s <GeomSim model .smd> <ascii mesh> <vertex classification> <output mesh> [<vertex field>...]\n", 
         argv[0]);
     return 0;
@@ -106,10 +120,14 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_sim();
 
+  gmi_model* model = gmi_load(argv[1]);
+
   MeshInfo m;
   readMesh(argv[2],m);
 
-  gmi_model* model = gmi_load(argv[1]);
+  int* type = readVtx_type(argv[3], m.numVerts);
+  delete [] type;
+
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
   apf::GlobalToVert outMap;
@@ -120,7 +138,7 @@ int main(int argc, char** argv)
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
   outMap.clear();
-  //set classification
+
   mesh->verify();
   mesh->writeNative(argv[3]);
   //apf::writeVtkFiles("after", mesh);
