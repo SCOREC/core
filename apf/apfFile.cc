@@ -7,7 +7,9 @@
 
 #include <string>
 #include <cassert>
+#include <cstdlib>
 
+#include "pcu_io.h"
 #include "apfFile.h"
 #include "apf.h"
 #include "apfShape.h"
@@ -15,40 +17,37 @@
 
 namespace apf {
 
-static void save_string(FILE* file, const char* s) {
-  fprintf(file, "%s\n", s);
+static void save_string(pcu_file* file, const char* s) {
+  pcu_write_string(file, s);
 }
 
-static std::string restore_string(FILE* file) {
-  std::string s;
-  while (true) {
-    int c = fgetc(file);
-    assert(c != EOF);
-    if (c == '\n') break;
-    s.push_back(c);
-  }
-  return s;
+static std::string restore_string(pcu_file* file) {
+  char* s;
+  pcu_read_string(file, &s);
+  std::string s_cpp(s);
+  free(s);
+  return s_cpp;
 }
 
-static void save_int(FILE* file, int x) {
-  fprintf(file, "%d\n", x);
+static void save_int(pcu_file* file, int x) {
+  unsigned tmp = static_cast<unsigned>(x);
+  PCU_WRITE_UNSIGNED(file, tmp);
 }
 
-static int restore_int(FILE* file) {
-  int x;
-  int ret = fscanf(file, "%d\n", &x);
-  assert(ret == 1);
-  return x;
+static int restore_int(pcu_file* file) {
+  unsigned tmp;
+  PCU_READ_UNSIGNED(file, tmp);
+  return static_cast<int>(tmp);
 }
 
-static void save_field_meta(FILE* file, apf::Field* field) {
+static void save_field_meta(pcu_file* file, apf::Field* field) {
   save_string(file, getName(field));
   save_int(file, getValueType(field));
   save_int(file, countComponents(field));
   save_string(file, getShape(field)->getName());
 }
 
-static void restore_field_meta(FILE* file, apf::Mesh* mesh) {
+static void restore_field_meta(pcu_file* file, apf::Mesh* mesh) {
   std::string field_name = restore_string(file);
   int value_type = restore_int(file);
   int ncomps = restore_int(file);
@@ -58,7 +57,7 @@ static void restore_field_meta(FILE* file, apf::Mesh* mesh) {
       shape, new TagDataOf<double>);
 }
 
-void save_meta(FILE* file, apf::Mesh* mesh) {
+void save_meta(pcu_file* file, apf::Mesh* mesh) {
   save_string(file, mesh->getShape()->getName());
   save_int(file, mesh->countFields());
   for (int i = 0; i < mesh->countFields(); ++i) {
@@ -66,7 +65,7 @@ void save_meta(FILE* file, apf::Mesh* mesh) {
   }
 }
 
-void restore_meta(FILE* file, apf::Mesh* mesh) {
+void restore_meta(pcu_file* file, apf::Mesh* mesh) {
   std::string shape_name = restore_string(file);
   apf::FieldShape* shape = getShapeByName(shape_name.c_str());
   if (shape != mesh->getShape()) mesh->changeShape(shape, false);

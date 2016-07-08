@@ -10,12 +10,14 @@
 
 #include <cstdio>
 
+struct pcu_file;
+
 namespace apf {
 
 class Mesh;
 
-void save_meta(FILE* file, apf::Mesh* mesh);
-void restore_meta(FILE* file, apf::Mesh* mesh);
+void save_meta(pcu_file* file, apf::Mesh* mesh);
+void restore_meta(pcu_file* file, apf::Mesh* mesh);
 
 }
 

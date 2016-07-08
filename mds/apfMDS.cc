@@ -793,11 +793,11 @@ void writeMdsPart(Mesh2* in, const char* meshfile)
 
 extern "C" {
 
-void mds_write_smb_meta(FILE* file, void* apf_mesh) {
+void mds_write_smb_meta(struct pcu_file* file, void* apf_mesh) {
   apf::save_meta(file, static_cast<apf::Mesh*>(apf_mesh));
 }
 
-void mds_read_smb_meta(FILE* file, void* apf_mesh) {
+void mds_read_smb_meta(struct pcu_file* file, void* apf_mesh) {
   apf::restore_meta(file, static_cast<apf::Mesh*>(apf_mesh));
 }
 

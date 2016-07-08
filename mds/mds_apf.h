@@ -21,6 +21,8 @@ extern "C" {
 #include "mds_tag.h"
 #include "mds_net.h"
 
+struct pcu_file;
+
 struct gmi_model;
 struct gmi_ent;
 
@@ -75,8 +77,8 @@ extern int const mds_apf_double;
 extern int const mds_apf_int;
 extern int const mds_apf_long;
 
-void mds_write_smb_meta(FILE* file, void* apf_mesh);
-void mds_read_smb_meta(FILE* file, void* apf_mesh);
+void mds_write_smb_meta(struct pcu_file* file, void* apf_mesh);
+void mds_read_smb_meta(struct pcu_file* file, void* apf_mesh);
 
 #ifdef __cplusplus
 }
