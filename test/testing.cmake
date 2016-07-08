@@ -33,6 +33,10 @@ mpi_test(render_ascii 1
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi11/cube.smb
   render_ascii_test)
+mpi_test(field_io 1
+  ./field_io
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi11/cube.smb)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 1

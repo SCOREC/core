@@ -87,15 +87,16 @@ namespace {
     }
   }
 
-  void getWeightedStats(double (*loc)[4], double (*tot)[4],
+  void getWeightedStats(
+      int dim, double (*loc)[4], double (*tot)[4],
       double (*min)[4], double (*max)[4], double (*avg)[4]) {
-    for(int d=0; d<4; d++)
+    for(int d=0; d<=dim; d++)
       (*min)[d] = (*max)[d] = (*tot)[d] = (*loc)[d];
-    PCU_Min_Doubles(*min, 4);
-    PCU_Max_Doubles(*max, 4);
-    PCU_Add_Doubles(*tot, 4);
-    for(int d=0; d<4; d++) {
-      (*avg)[d] = TO_DOUBLE((*tot)[d]);
+    PCU_Min_Doubles(*min, dim);
+    PCU_Max_Doubles(*max, dim);
+    PCU_Add_Doubles(*tot, dim);
+    for(int d=0; d<=dim; d++) {
+      (*avg)[d] = (*tot)[d];
       (*avg)[d] /= TO_DOUBLE(PCU_Comm_Peers());
     }
   }
@@ -136,7 +137,7 @@ namespace {
     getPartWeights(m, w, &weight);
     double minEnt[4] = {0,0,0,0}, maxEnt[4] = {0,0,0,0};
     double totEnt[4] = {0,0,0,0}, avgEnt[4] = {0,0,0,0};
-    getWeightedStats(&weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
+    getWeightedStats(m->getDimension(), &weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
     const char* orders[4] = {"vtx","edge","face","rgn"};
     if(!PCU_Comm_Self()) {
       for( int d=0; d<=m->getDimension(); d++)
