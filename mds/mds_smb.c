@@ -565,6 +565,7 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   mds_id cap[MDS_TYPES];
   int i;
   unsigned tmp;
+  unsigned pi, pj;
   f = pcu_fopen(filename, 0, zip);
   assert(f);
   read_header(f, &version, &dim, ignore_peers);
@@ -582,8 +583,8 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
     pcu_read_doubles(f, &m->param[0][0], 2 * n[SMB_VERT]);
   } else {
 /* initialize parameteric coordinates to zero if they are not in the file */
-    for (unsigned i = 0; i < n[SMB_VERT]; ++i) {
-      for (unsigned j = 0; j < 2; ++j) m->param[i][j] = 0.0;
+    for (pi = 0; pi < n[SMB_VERT]; ++pi) {
+      for (pj = 0; pj < 2; ++pj) m->param[pi][pj] = 0.0;
     }
   }
   read_remotes(f, m, ignore_peers);
