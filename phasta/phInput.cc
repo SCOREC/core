@@ -55,6 +55,7 @@ static void setDefaults(Input& in)
   in.vertexImbalance = 1.05;
   in.rs = 0;
   in.formEdges = 0;
+  in.writePhastaFiles = 0;
 }
 
 Input::Input()
@@ -112,6 +113,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   intMap["formEdges"] = &in.formEdges;
+  intMap["writePhastaFiles"] = &in.writePhastaFiles;
 }
 
 template <class T>

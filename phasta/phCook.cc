@@ -73,6 +73,35 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 }//end namespace
 
+namespace chef {
+  static FILE* openfile_read(ph::Input&, const char* path) {
+    return pcu_group_open(path, false);
+  }
+
+  static FILE* openfile_write(ph::Output&, const char* path) {
+    return pcu_group_open(path, true);
+  }
+
+  static FILE* openstream_write(ph::Output& out, const char* path) {
+    return openGRStreamWrite(out.grs, path);
+  }
+
+  static FILE* openstream_read(ph::Input& in, const char* path) {
+    std::string fname(path);
+    std::string restartStr("restart");
+    FILE* f = NULL;
+    if( fname.find(restartStr) != std::string::npos )
+      f = openRStreamRead(in.rs);
+    else {
+      fprintf(stderr,
+        "ERROR %s type of stream %s is unknown... exiting\n",
+        __func__, fname.c_str());
+      exit(1);
+    }
+    return f;
+  }
+}
+
 namespace ph {
   void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
   {
@@ -104,6 +133,12 @@ namespace ph {
       m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
+    // user requests files and chef is setup to write to streams
+    if ( in.writePhastaFiles && out.openfile_write == chef::openstream_write ) {
+      out.openfile_write = chef::openfile_write;
+      ph::writeGeomBC(out, path); //write geombc
+      out.openfile_write = chef::openstream_write;
+    }
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
@@ -122,32 +157,6 @@ namespace ph {
 }
 
 namespace chef {
-  static FILE* openfile_read(ph::Input&, const char* path) {
-    return pcu_group_open(path, false);
-  }
-
-  static FILE* openfile_write(ph::Output&, const char* path) {
-    return pcu_group_open(path, true);
-  }
-
-  static FILE* openstream_write(ph::Output& out, const char* path) {
-    return openGRStreamWrite(out.grs, path);
-  }
-
-  static FILE* openstream_read(ph::Input& in, const char* path) {
-    std::string fname(path);
-    std::string restartStr("restart");
-    FILE* f = NULL;
-    if( fname.find(restartStr) != std::string::npos )
-      f = openRStreamRead(in.rs);
-    else {
-      fprintf(stderr,
-        "ERROR %s type of stream %s is unknown... exiting\n",
-        __func__, fname.c_str());
-      exit(1);
-    }
-    return f;
-  }
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;
