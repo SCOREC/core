@@ -9,7 +9,8 @@
 #include <cassert>
 #include <cstdlib>
 
-#include "pcu_io.h"
+#include <reel.h>
+#include <pcu_io.h>
 #include "apfFile.h"
 #include "apf.h"
 #include "apfShape.h"
@@ -53,7 +54,8 @@ static void restore_field_meta(pcu_file* file, apf::Mesh* mesh) {
   int ncomps = restore_int(file);
   std::string shape_name = restore_string(file);
   apf::FieldShape* shape = getShapeByName(shape_name.c_str());
-  assert(shape != 0);
+  if (shape == 0)
+    reel_fail("field shape \"%s\" could not be found\n", shape_name.c_str());
   makeField(mesh, field_name.c_str(), value_type, ncomps,
       shape, new TagDataOf<double>);
 }
