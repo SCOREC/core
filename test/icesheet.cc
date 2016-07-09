@@ -53,7 +53,8 @@ void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
     fprintf(stderr, "%c %lf %lf \n", d[i], min[i], max[i]);
 }
 
-void readElements(FILE* f, unsigned numelms, int numVtxPerElm, int* elements) {
+void readElements(FILE* f, unsigned numelms, int numVtxPerElm,
+    unsigned numVerts, int* elements) {
   unsigned i;
   std::map<int, int> count;
   for (i = 0; i < numelms*numVtxPerElm; i++) {
@@ -62,7 +63,7 @@ void readElements(FILE* f, unsigned numelms, int numVtxPerElm, int* elements) {
     elements[i] = --vtxid; //export from matlab using 1-based indices
     count[elements[i]]++;
   }
-  fprintf(stderr, "Number of vertices used %lu\n", count.size());
+  assert(count.size() == numVerts);
 }
 
 struct MeshInfo {
@@ -83,7 +84,7 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
   mesh.coords = new double[mesh.numVerts*3];
   readCoords(f, mesh.numVerts, mesh.coords);
   mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
-  readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.elements);
+  readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.numVerts, mesh.elements);
   mesh.elementType = getElmType(mesh.numVtxPerElm);
   fclose(f);
 }
@@ -233,14 +234,11 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   }
   mesh->end(it);
 
-  fprintf(stderr, "num boundary faces %d\n", numbdryfaces);
-  fprintf(stderr, "num marked faces %d\n", markedfaces);
-  fprintf(stderr, "num skipped faces %d\n", skippedfaces);
+  assert(!skippedfaces);
+
   int totmarkedfaces=0;
-  for(int i=1; i<4; i++) {
-    fprintf(stderr,"%d: %d\n", i, faceClass[i]);
+  for(int i=1; i<4; i++)
     totmarkedfaces += faceClass[i];
-  }
   assert(numbdryfaces == totmarkedfaces);
 }
 
@@ -417,7 +415,6 @@ int main(int argc, char** argv)
   delete [] m.coords;
   apf::MeshTag* vtxClass = attachVtxField(mesh,argv[3],outMap);
   setClassification(model,mesh,vtxClass);
-  fprintf(stderr,"calling verify... flamesuit on\n");
   mesh->verify();
   attachVtxField(mesh,argv[4],outMap);
   attachVtxField(mesh,argv[5],outMap);
