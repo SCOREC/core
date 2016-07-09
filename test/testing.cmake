@@ -299,7 +299,7 @@ if (PCU_COMPRESS)
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
-    ../../../model.dmg bz2:../good_mesh/ adapt.inp
+    ../../../model.dmg bz2:../good_mesh/ adapt.ur.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   if(ENABLE_ZOLTAN)
     mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
