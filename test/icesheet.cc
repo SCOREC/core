@@ -19,8 +19,6 @@
 #define BOTTOMFACE 2
 #define PERIMETERFACE 3
 
-#define VTX_TYPE_NAME "vertex_type"
-
 unsigned getElmType(int numVtxPerElm) {
   if (numVtxPerElm == 4) {
     return apf::Mesh::TET;
@@ -90,33 +88,6 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
   fclose(f);
 }
 
-int* readArray(const char* fname, unsigned len) {
-  FILE* f = fopen(fname, "r");
-  assert(f);
-  unsigned n;
-  fscanf(f,"%u", &n);
-  assert( n == len );
-  int* data = new int[len];
-  for(unsigned i = 0; i< len; i++)
-    fscanf(f, "%d", &data[i]);
-  return data;
-}
-
-int* readVtxClassification(const char* fname, unsigned numvtx) {
-  int* vtx_type_int = readArray(fname,numvtx);
-  for(unsigned i = 0; i< numvtx; i++)
-    assert(vtx_type_int[i] >= INTERIORTAG && vtx_type_int[i] <= TOP_PERIMETERTAG);
-  return vtx_type_int;
-}
-
-apf::MeshTag* attachVtxClassification(apf::Mesh2* mesh, apf::GlobalToVert& vtxMap,
-    unsigned numVerts, int* vtxClass) {
-  apf::MeshTag* vtxTag = mesh->createIntTag(VTX_TYPE_NAME, 1);
-  for(unsigned i=0; i<numVerts; i++)
-    mesh->setIntTag(vtxMap[i], vtxTag, &(vtxClass[i]));
-  delete [] vtxClass;
-  return vtxTag;
-}
 
 bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
   int numAdjElms = mesh->countUpward(face);
@@ -385,6 +356,18 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setVtxClassification(model,mesh,t);
 }
 
+int* readArray(const char* fname, unsigned len) {
+  FILE* f = fopen(fname, "r");
+  assert(f);
+  unsigned n;
+  fscanf(f,"%u", &n);
+  assert( n == len );
+  int* data = new int[len];
+  for(unsigned i = 0; i< len; i++)
+    fscanf(f, "%d", &data[i]);
+  return data;
+}
+
 apf::MeshTag* attachVtxField(apf::Mesh2* mesh, const char* fname,
     apf::GlobalToVert& vtxMap) {
   unsigned numverts = mesh->count(0);
@@ -432,8 +415,7 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
-  int* vc = readVtxClassification(argv[3], m.numVerts);
-  apf::MeshTag* vtxClass = attachVtxClassification(mesh, outMap, m.numVerts, vc);
+  apf::MeshTag* vtxClass = attachVtxField(mesh,argv[3],outMap);
   setClassification(model,mesh,vtxClass);
   fprintf(stderr,"calling verify... flamesuit on\n");
   mesh->verify();
