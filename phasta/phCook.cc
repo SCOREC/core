@@ -100,12 +100,12 @@ namespace ph {
     ph::enterFilteredMatching(m, in, bcs);
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
+    if ( ! in.outMeshFileName.empty() )
+      m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-    if ( ! in.outMeshFileName.empty() )
-      m->writeNative(in.outMeshFileName.c_str());
     m->verify();
     if (in.adaptFlag)
       ph::goToParentDir();
