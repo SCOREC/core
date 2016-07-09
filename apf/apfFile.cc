@@ -53,6 +53,7 @@ static void restore_field_meta(pcu_file* file, apf::Mesh* mesh) {
   int ncomps = restore_int(file);
   std::string shape_name = restore_string(file);
   apf::FieldShape* shape = getShapeByName(shape_name.c_str());
+  assert(shape != 0);
   makeField(mesh, field_name.c_str(), value_type, ncomps,
       shape, new TagDataOf<double>);
 }
@@ -68,6 +69,7 @@ void save_meta(pcu_file* file, apf::Mesh* mesh) {
 void restore_meta(pcu_file* file, apf::Mesh* mesh) {
   std::string shape_name = restore_string(file);
   apf::FieldShape* shape = getShapeByName(shape_name.c_str());
+  assert(shape != 0);
   if (shape != mesh->getShape()) mesh->changeShape(shape, false);
   int nfields = restore_int(file);
   for (int i = 0; i < nfields; ++i) {
