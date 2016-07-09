@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include "phRestart.h"
 #include <apf.h>
+#include <apfField.h>
 #include "phIO.h"
 #include "ph.h"
 #include <cstdlib>
@@ -26,7 +27,10 @@ void attachField(
   if (!(in_size <= out_size))
     fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   assert(in_size <= out_size);
-  apf::Field* f = apf::createPackedField(m, fieldname, out_size);
+  apf::Field* f = m->findField(fieldname);
+  if( f )
+    apf::destroyField(f);
+  f = apf::createPackedField(m, fieldname, out_size);
   size_t n = m->count(0);
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;

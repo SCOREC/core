@@ -48,6 +48,20 @@ void FieldShape::registerSelf(const char* name_)
 
 FieldShape* getShapeByName(const char* name)
 {
+  /* Static variables in functions (which is what
+     all the FieldShape objects are) are constructed
+     *on the first call to the function*, and they register
+     themselves in their constructors.
+     If we had an apf::initialize() function, that would be a good
+     place to do this, but we don't so we'll do it here.
+     Users who have their own FieldShapes should make sure they are
+     constructed before this gets called as well. */
+  getLagrange(1);
+  getSerendipity();
+  getConstant(0);
+  getIPShape(2,1);
+  getVoronoiShape(2,1);
+  getIPFitShape(2,1);
   std::string s(name);
   if (registry.count(s))
     return registry[s];

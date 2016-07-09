@@ -55,6 +55,7 @@ class Input
     int filterMatches;
     int axisymmetry;
     int formEdges;
+    int writePhastaFiles;
     int parmaLoops;
     int parmaVerbosity;
     double elementImbalance;
