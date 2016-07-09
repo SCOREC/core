@@ -90,17 +90,22 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
   fclose(f);
 }
 
-int* readVtxClassification(const char* fname, unsigned numvtx) {
+int* readArray(const char* fname, unsigned len) {
   FILE* f = fopen(fname, "r");
   assert(f);
   unsigned n;
   fscanf(f,"%u", &n);
-  assert( n == numvtx );
-  int* vtx_type_int = new int[numvtx];
-  for(unsigned i = 0; i< numvtx; i++) {
-    fscanf(f, "%d", &vtx_type_int[i]);
+  assert( n == len );
+  int* data = new int[len];
+  for(unsigned i = 0; i< len; i++)
+    fscanf(f, "%d", &data[i]);
+  return data;
+}
+
+int* readVtxClassification(const char* fname, unsigned numvtx) {
+  int* vtx_type_int = readArray(fname,numvtx);
+  for(unsigned i = 0; i< numvtx; i++)
     assert(vtx_type_int[i] >= INTERIORTAG && vtx_type_int[i] <= TOP_PERIMETERTAG);
-  }
   return vtx_type_int;
 }
 
@@ -380,10 +385,26 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setVtxClassification(model,mesh,t);
 }
 
+apf::MeshTag* attachVtxField(apf::Mesh2* mesh, const char* fname,
+    apf::GlobalToVert& vtxMap) {
+  unsigned numverts = mesh->count(0);
+  fprintf(stderr, "attaching %s\n", fname);
+  int* arr = readArray(fname, numverts);
+  apf::MeshTag* tag = mesh->createIntTag(fname, 1);
+  for(unsigned i=0; i<numverts; i++)
+    mesh->setIntTag(vtxMap[i], tag, &(arr[i]));
+  delete [] arr;
+  return tag;
+}
+
 int main(int argc, char** argv)
 {
-  if( argc < 5 ) {
-    printf("Usage: %s <GeomSim model .smd> <ascii mesh> <vertex classification> <output mesh> [<vertex field>...]\n",
+  if( argc != 7 ) {
+    printf("Usage: %s <GeomSim model .smd> <ascii mesh .ascii> "
+        "<vertex classification field .ascii> "
+        "<basal friction field .ascii> "
+        "<temperature field .ascii> "
+        "<output mesh>\n",
         argv[0]);
     return 0;
   }
@@ -414,11 +435,12 @@ int main(int argc, char** argv)
   int* vc = readVtxClassification(argv[3], m.numVerts);
   apf::MeshTag* vtxClass = attachVtxClassification(mesh, outMap, m.numVerts, vc);
   setClassification(model,mesh,vtxClass);
-  outMap.clear();
   fprintf(stderr,"calling verify... flamesuit on\n");
   mesh->verify();
-  mesh->writeNative(argv[4]);
-  //apf::writeVtkFiles("after", mesh);
+  attachVtxField(mesh,argv[4],outMap);
+  attachVtxField(mesh,argv[5],outMap);
+  outMap.clear();
+  mesh->writeNative(argv[6]);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
