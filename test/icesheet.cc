@@ -119,17 +119,16 @@ apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
  * \details models don't have that many edges bounding each face.... right???
  */
 gmi_ent* getCommonEdge(gmi_set* a, gmi_set* b) {
-  gmi_ent* match;
-  unsigned found = 0;
+  gmi_ent* match = NULL;
   for(int i=0; i<a->n; i++) {
     for(int j=0; j<b->n; j++) {
       if( a->e[i] == b->e[j] ) {
-        assert(!found);
-        found++;
+        assert(!match);
         match = a->e[i];
       }
     }
   }
+  assert(match);
   return match;
 }
 
@@ -144,7 +143,6 @@ apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int faceTagA, int faceTagB) {
   gmi_set* faceBedges = gmi_adjacent(model, faceB, 1);
   assert(faceBedges->n);
   gmi_ent* edge = getCommonEdge(faceAedges,faceBedges);
-  assert(edge);
   gmi_free_set(faceAedges);
   gmi_free_set(faceBedges);
   return (apf::ModelEntity*) edge;
