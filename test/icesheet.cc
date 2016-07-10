@@ -352,6 +352,7 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setFaceClassification(model,mesh,t);
   setEdgeClassification(model,mesh,t);
   setVtxClassification(model,mesh,t);
+  mesh->acceptChanges();
 }
 
 int* readArray(const char* fname, unsigned len) {
