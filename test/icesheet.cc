@@ -48,7 +48,7 @@ void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
     }
   }
   char d[3] = {'x','y','z'};
-  fprintf(stderr, "boundary of the domain:\n");
+  fprintf(stderr, "mesh bounding box:\n");
   for(unsigned i=0; i<3; i++)
     fprintf(stderr, "%c %lf %lf \n", d[i], min[i], max[i]);
 }
@@ -402,7 +402,6 @@ int main(int argc, char** argv)
 
   MeshInfo m;
   readMesh(argv[2],m);
-
 
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
