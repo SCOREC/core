@@ -12,6 +12,7 @@
     \brief wrapper for operator new/delete [] */
 
 #include <cstddef>
+#include "canArray.h"
 
 namespace can {
 
@@ -21,48 +22,30 @@ namespace can {
   preventing memory leaks and forming the base
   class for other containers.
   Ideally, all usage of operator new [] should be
-  replaced with this.
-  However, since this class does not store its
-  own size, it cannot be copied and its niche
-  is limited. see vas::DynamicArray for the
-  next step */
+  replaced with this. */
 template <class T>
-class NewArray
+class NewArray : public Array<T,0>
 {
   public:
     /** \brief default initialize pointer to zero */
-    NewArray():elements(0) {}
+    NewArray() {}
     /** \brief construct with (n) elements */
-    NewArray(std::size_t n):elements(0) {allocate(n);}
-    /** \brief destructor automatically frees memory */
-    ~NewArray() {deallocate();}
+    NewArray(std::size_t n) : Array<T,0>(n) {}
+    /** \brief Array destructor frees memory */
+    ~NewArray() {}
     /** \brief return true if memory has been allocated */
-    bool allocated() const {return elements;}
+    bool allocated() const {return this->elems;}
     /** \brief mutable index operator */
-    T& operator[](std::size_t i) {return elements[i];}
-    /** \brief immutable index operator */
-    T const& operator[](std::size_t i) const {return elements[i];}
-    /** \brief user-callable deallocation helper
-        \details remember that operator delete [] is
-                 a no-op on a zero pointer */
-    void deallocate() {delete [] elements; elements=0;}
+    void deallocate()
+    {
+      delete [] this->elems;
+      this->sz = 0;
+      this->elems=0;
+    }
     /** \brief user-callable allocation helper
       \details note that no mix of allocate/deallocate
       calls can cause a memory leak */
-    void allocate(std::size_t n)
-    {
-      deallocate();
-      elements = new T[n];
-    }
-    /** \brief swap pointers with another NewArray */
-    void swap(NewArray<T>& other)
-    {
-      T* tmp = other.elements;
-      other.elements = elements;
-      elements = tmp;
-    }
-  protected:
-    T* elements;
+    void allocate(std::size_t n) {this->resize(n);}
   private:
     NewArray(NewArray<T> const& other);
     NewArray<T>& operator=(const NewArray<T>& other);
