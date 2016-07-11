@@ -74,6 +74,8 @@ void restore_meta(pcu_file* file, apf::Mesh* mesh) {
   assert(shape != 0);
   if (shape != mesh->getShape()) mesh->changeShape(shape, false);
   int nfields = restore_int(file);
+  assert(nfields >= 0);
+  assert(nfields < 256);
   for (int i = 0; i < nfields; ++i) {
     restore_field_meta(file, mesh);
   }
