@@ -377,13 +377,23 @@ apf::MeshTag* attachVtxField(apf::Mesh2* mesh, const char* fname,
   return tag;
 }
 
+void detachVtxField(apf::Mesh2* mesh, apf::MeshTag* t) {
+  apf::MeshIterator* it = mesh->begin(0);
+  apf::MeshEntity* vtx;
+  while( (vtx = mesh->iterate(it)) )
+    mesh->removeTag(vtx,t);
+  mesh->end(it);
+  mesh->destroyTag(t);
+}
+
 int main(int argc, char** argv)
 {
-  if( argc != 7 ) {
+  if( argc != 8 ) {
     printf("Usage: %s <GeomSim model .smd> <ascii mesh .ascii> "
         "<vertex classification field .ascii> "
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
+        "<surface elevation field .ascii> "
         "<output mesh>\n",
         argv[0]);
     return 0;
@@ -413,11 +423,13 @@ int main(int argc, char** argv)
   delete [] m.coords;
   apf::MeshTag* vtxClass = attachVtxField(mesh,argv[3],outMap);
   setClassification(model,mesh,vtxClass);
+  detachVtxField(mesh,vtxClass);
   mesh->verify();
   attachVtxField(mesh,argv[4],outMap);
   attachVtxField(mesh,argv[5],outMap);
+  attachVtxField(mesh,argv[6],outMap);
   outMap.clear();
-  mesh->writeNative(argv[6]);
+  mesh->writeNative(argv[7]);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
