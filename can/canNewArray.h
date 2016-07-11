@@ -35,7 +35,7 @@ class NewArray : public Array<T,0>
     ~NewArray() {}
     /** \brief return true if memory has been allocated */
     bool allocated() const {return this->elems;}
-    /** \brief mutable index operator */
+    /** \brief user-callable deallocation helper */
     void deallocate()
     {
       delete [] this->elems;
