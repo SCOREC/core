@@ -35,6 +35,7 @@ add_subdirectory(can)
 add_subdirectory(mth)
 add_subdirectory(lion)
 add_subdirectory(apf)
+add_subdirectory(mds)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
