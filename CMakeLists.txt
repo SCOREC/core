@@ -1,103 +1,52 @@
-cmake_minimum_required (VERSION 2.8.6)
+# This is the top level CMake file for the SCOREC build
+cmake_minimum_required(VERSION 3.0)
+project(SCOREC)
 
-#This is the top SCOREC CMakeList File for the Build
+# The version number of the project
+set(SCOREC_MAJOR "1")
+set(SCOREC_MINOR "0")
+set(SCOREC_PATCH "1")
 
-#Setting Version Number, Project Name
-cmake_minimum_required (VERSION 2.8)
-project (SCOREC)
+# CMake RPATH "always full" configuration, see:
+# https://cmake.org/Wiki/CMake_RPATH_handling#Always_full_RPATH
+set(CMAKE_SKIP_BUILD_RPATH False)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH False)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+  "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
-if (APPLE)
-  set(CMAKE_MACOSX_RPATH ON)
-endif()
-
-#unless building shared libs, then select static libs 
-# if both static and shared libs are available 
+# Unless building shared libs, select static libs
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib") 
 if(BUILD_SHARED_LIBS)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 endif()
 
-set(CMAKE_MODULE_PATH 
-   ${CMAKE_MODULE_PATH} 
-   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+# Let CMake know where to find custom find package implementations
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
-#Settings options for testing
-enable_testing()
-include(CTest)
-#This will be set to ON by the CTest driver script (and only by that)
-option(IS_TESTING "Build for CTest" OFF)
-set(MPIRUN "mpirun"
-    CACHE string 
-    "the mpirun or srun executable")
-set(MPIRUN_PROCFLAG "-np"
-    CACHE string 
-    "the command line flag to give process count to MPIRUN")
-
-set(VALGRIND ""
-    CACHE string
-    "the valgrind executable")
-set(VALGRIND_ARGS ""
-    CACHE string
-    "the command line arguments to VALGRIND")
-
-#Doxygen generation system
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-               ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-endif(DOXYGEN_FOUND)
-
+# Include the SCOREC project packages
 add_subdirectory(pcu)
 
-add_subdirectory(gmi)
-
-add_subdirectory(can)
-
-add_subdirectory(mth)
-
-add_subdirectory(lion)
-
-add_subdirectory(apf)
-
-add_subdirectory(mds)
-
-add_subdirectory(parma)
-
-add_subdirectory(zoltan)
-
-add_subdirectory(ma)
-
-add_subdirectory(spr)
-
-add_subdirectory(sam)
-
-add_subdirectory(phasta)
-
-add_subdirectory(viz)
-
-add_subdirectory(dsp)
-
-add_subdirectory(crv)
-
-add_subdirectory(omega_h)
-
-add_subdirectory(test)
-
+# Tell CMake to install the project in a nice way :)
 configure_file(
   "${PROJECT_SOURCE_DIR}/scorec-config.cmake.in"
   "${PROJECT_BINARY_DIR}/scorec-config.cmake"
   @ONLY)
-
+configure_file(
+  "${PROJECT_SOURCE_DIR}/scorec-config-version.cmake.in"
+  "${PROJECT_BINARY_DIR}/scorec-config-version.cmake"
+  @ONLY)
 install(FILES
   "${PROJECT_BINARY_DIR}/scorec-config.cmake"
+  "${PROJECT_BINARY_DIR}/scorec-config-version.cmake"
   DESTINATION lib/scorec)
 
-#binary distribution package
+# Binary distribution package
 set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_VERSION "1.0.1")
+set(CPACK_PACKAGE_VERSION
+  "${SCOREC_MAJOR}.${SCOREC_MINOR}.${SCOREC_PATCH}")
 include(CPack)
