@@ -1,5 +1,6 @@
-# Package Options
+# Package options
 option(PCU_COMPRESS "Enable SMB compression using libbzip2 [ON|OFF]" OFF)
+message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
 # Let CMake know where to find custom find package implementations
 set(CMAKE_MODULE_PATH
@@ -14,12 +15,6 @@ message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 # Check for and enable compression support
 if(PCU_COMPRESS)
   find_package(BZip2 REQUIRED)
-  if(NOT BZIP2_INCLUDE_DIR STREQUAL "")
-    include_directories(${BZIP2_INCLUDE_DIR})
-    set(BZ_INCLUDE "-I${BZIP2_INCLUDE_DIR}")
-    string(REGEX REPLACE "libbz2.*" " " BZ_LIB_DIR "${BZIP2_LIBRARIES}")
-    set(BZ_LINK "-L${BZ_LIB_DIR} -lbz2")
-  endif()
 endif(PCU_COMPRESS)
 
 # Package sources
@@ -57,10 +52,10 @@ include_directories(
 
 # Do extra work if compression is enabled
 if(PCU_COMPRESS)
- include_directories(${BZIP_INCLUDE_DIR})
+ include_directories(${BZIP2_INCLUDE_DIR})
  target_link_libraries(pcu ${BZIP2_LIBRARIES})
  add_definitions(-DPCU_BZIP)
-endif(PCU_COMPRESS)
+endif()
 
 # Tell CMake to add this package to the SCOREC project
 set_property(
