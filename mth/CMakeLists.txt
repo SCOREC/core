@@ -1,25 +1,9 @@
-cmake_minimum_required(VERSION 2.8.6)
-set(PACKAGE_VERSION "1.0")
-
-project(mth)
-
-set(MTH_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR})
-
-find_package(can PATHS ${CMAKE_BINARY_DIR})
-set(MTH_INCLUDE_DIRS
-  ${MTH_INCLUDE_DIRS}
-  ${CAN_INCLUDE_DIRS}
-)
-set(DEP_LIBS ${CAN_LIBS})
-set(MTH_LIBS mth ${DEP_LIBS})
-
-set(MTH_LIBS mth)
-
+# Package sources
 set(MTH_SOURCES
   mthQR.cc
 )
 
+# Package headers
 set(MTH_HEADERS
   mth.h
   mth_def.h
@@ -30,32 +14,22 @@ set(MTH_HEADERS
   mthAD.h
 )
 
-# THIS IS WHERE TRIBITS GETS HEADERS
-include_directories(${MTH_INCLUDE_DIRS})
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../can
+)
 
-#Library
+# Add the mth library
 add_library(mth ${MTH_SOURCES})
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/mthConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/mthConfig.cmake")
-
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libmth.pc.in"
-    "${PROJECT_BINARY_DIR}/libmth.pc"
-    @ONLY)
-#pkgconfig }
-
-INSTALL(FILES ${MTH_HEADERS} DESTINATION include)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/libmth.pc" DESTINATION lib/pkgconfig)
-INSTALL(TARGETS
-  mth
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+# Tell CMake to add this package to the SCOREC project
+set_property(
+  TARGET mth
+  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
 )
+install(TARGETS mth EXPORT mth-targets DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
+install(EXPORT pcu-targets DESTINATION lib/scorec)

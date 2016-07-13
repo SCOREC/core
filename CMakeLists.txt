@@ -32,6 +32,7 @@ set(CMAKE_MODULE_PATH
 add_subdirectory(pcu)
 add_subdirectory(gmi)
 add_subdirectory(can)
+add_subdirectory(mth)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
