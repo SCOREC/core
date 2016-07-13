@@ -47,7 +47,7 @@ static long markBaseEdgesToCollapse(Adapt* a)
 struct CurveLocalizer : public Crawler
 {
   CurveLocalizer(Adapt* a_, int r, apf::Migration* p):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;

@@ -133,7 +133,8 @@ static Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
    layer edges and all layer quads */
 struct QuadFlagger : public Crawler
 {
-  QuadFlagger(Adapt* a):Crawler(a) {}
+  Adapt* adapter;
+  QuadFlagger(Adapt* a):Crawler(a->mesh),adapter(a) {}
   void begin(Layer& first)
   {
     getDimensionBase(adapter, 1, first);
@@ -522,7 +523,7 @@ void tetrahedronize(Adapt* a)
 struct QuadMarker : public Crawler
 {
   QuadMarker(Adapt* a_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;

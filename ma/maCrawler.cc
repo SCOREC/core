@@ -8,7 +8,7 @@ namespace ma {
 
 void syncLayer(Crawler* c, Crawler::Layer& layer)
 {
-  Mesh* m = c->adapter->mesh;
+  Mesh* m = c->mesh;
   PCU_Comm_Begin();
   for (size_t i = 0; i < layer.size(); ++i) {
     Entity* e = layer[i];
@@ -132,7 +132,7 @@ struct Tagger
 struct LayerNumberer : public Crawler
 {
   LayerNumberer(Adapt* a_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;

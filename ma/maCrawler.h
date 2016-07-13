@@ -8,7 +8,7 @@ namespace ma {
 
 struct Crawler
 {
-  Crawler(Adapt* a):adapter(a) {}
+  Crawler(Mesh* m):mesh(m) {}
   virtual ~Crawler() {}
   typedef std::vector<Entity*> Layer;
   virtual void begin(Layer& first) = 0;
@@ -16,7 +16,7 @@ struct Crawler
   virtual Entity* crawl(Entity* e) = 0;
   virtual void send(Entity* e, int to) = 0;
   virtual bool recv(Entity* e, int from) = 0;
-  Adapt* adapter;
+  Mesh* mesh;
 };
 
 void crawlLayers(Crawler* c);
