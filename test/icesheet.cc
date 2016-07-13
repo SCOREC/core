@@ -390,12 +390,14 @@ void detachVtxField(apf::Mesh2* mesh, apf::MeshTag* t) {
 
 int main(int argc, char** argv)
 {
-  if( argc != 8 ) {
+  if( argc != 10 ) {
     printf("Usage: %s <GeomSim model .smd> <ascii mesh .ascii> "
         "<vertex classification field .ascii> "
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
         "<surface elevation field .ascii> "
+        "<solution_x field .ascii> "
+        "<solution_y field .ascii> "
         "<output mesh>\n",
         argv[0]);
     return 0;
@@ -427,11 +429,10 @@ int main(int argc, char** argv)
   setClassification(model,mesh,vtxClass);
   detachVtxField(mesh,vtxClass);
   mesh->verify();
-  attachVtxField(mesh,argv[4],outMap);
-  attachVtxField(mesh,argv[5],outMap);
-  attachVtxField(mesh,argv[6],outMap);
+  for(int i=4; i<argc-1; i++)
+    attachVtxField(mesh,argv[i],outMap);
   outMap.clear();
-  mesh->writeNative(argv[7]);
+  mesh->writeNative(argv[9]);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
