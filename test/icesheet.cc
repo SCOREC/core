@@ -22,6 +22,8 @@
 unsigned getElmType(int numVtxPerElm) {
   if (numVtxPerElm == 4) {
     return apf::Mesh::TET;
+  } else if (numVtxPerElm == 6) {
+    return apf::Mesh::PRISM;
   } else {
     fprintf(stderr, "unknown element type in %s\n", __func__);
     exit(EXIT_FAILURE);
@@ -207,7 +209,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   while( (face = mesh->iterate(it)) ) {
     apf::Downward verts;
     int n = mesh->getDownward(face, 0, verts);
-    assert(n == 3);
+    assert(n);
 
     std::map<int, int> vtx_type_num;
     for(int i=INTERIORTAG; i<=TOP_PERIMETERTAG; i++)
