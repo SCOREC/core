@@ -22,39 +22,38 @@ if(PCU_COMPRESS)
   endif()
 endif(PCU_COMPRESS)
 
-# Include directories
-set(PCU_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/noto
-  ${CMAKE_CURRENT_SOURCE_DIR}/reel
-)
-include_directories(${PCU_INCLUDE_DIRS})
-include_directories("${PROJECT_BINARY_DIR}")
-
 # Package sources
 set(SOURCES
-   pcu.c
-   pcu_aa.c
-   pcu_coll.c
-   pcu_io.c
-   pcu_buffer.c
-   pcu_mpi.c
-   pcu_msg.c
-   pcu_order.c
-   pcu_pmpi.c
-   noto/noto_malloc.c
-   reel/reel.c
+  pcu.c
+  pcu_aa.c
+  pcu_coll.c
+  pcu_io.c
+  pcu_buffer.c
+  pcu_mpi.c
+  pcu_msg.c
+  pcu_order.c
+  pcu_pmpi.c
+  noto/noto_malloc.c
+  reel/reel.c
 )
 
 # Package headers
 set(HEADERS
-   PCU.h
-   pcu_io.h
-   noto/noto_malloc.h
-   reel/reel.h)
+  PCU.h
+  pcu_io.h
+  noto/noto_malloc.h
+  reel/reel.h
+)
 
 # Add the pcu library
 add_library(pcu ${SOURCES})
+
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/noto
+  ${CMAKE_CURRENT_SOURCE_DIR}/reel
+)
 
 # Do extra work if compression is enabled
 if(PCU_COMPRESS)
@@ -63,7 +62,7 @@ if(PCU_COMPRESS)
  add_definitions(-DPCU_BZIP)
 endif(PCU_COMPRESS)
 
-# Tell CMake to add this package nicely to the SCOREC project
+# Tell CMake to add this package to the SCOREC project
 set_property(
   TARGET pcu
   APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES

@@ -37,7 +37,7 @@ set(HEADERS
 # Add the gmi library
 add_library(gmi ${SOURCES})
 
-# Tell Cmake to add this package nicely to the SCOREC project
+# Tell Cmake to add this package to the SCOREC project
 set_property(
   TARGET gmi
   APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
