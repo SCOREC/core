@@ -30,6 +30,7 @@ set(CMAKE_MODULE_PATH
 
 # Include the SCOREC project packages
 add_subdirectory(pcu)
+add_subdirectory(gmi)
 add_subdirectory(can)
 
 # Tell CMake to install the project in a nice way :)
