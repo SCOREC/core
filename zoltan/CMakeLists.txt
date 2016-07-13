@@ -1,95 +1,61 @@
-cmake_minimum_required(VERSION 2.8.6)
+# Package options
+option(ENABLE_ZOLTAN "Enable Zoltan interface [ON|OFF]" OFF)
+message(STATUS "ENABLE_ZOLTAN: " ${ENABLE_ZOLTAN})
 
-IF(DEFINED TRIBITS_PACKAGE)
- SET(BUILD_IN_TRILINOS ON)
-ENDIF()
+# Let CMake know where to find custom find package implementations
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
-if(BUILD_IN_TRILINOS)
-  tribits_package(SCORECapf_zoltan) 
-  set(ENABLE_ZOLTAN ON)
-else()
-  project(apf_zoltan)
-  option(ENABLE_ZOLTAN "Enable Zoltan interface" OFF)
+# Check for and enable zoltan support
+if(ENABLE_ZOLTAN)
+  find_package(Zoltan REQUIRED)
 endif()
 
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  if(ENABLE_ZOLTAN)
-    find_package(Zoltan QUIET REQUIRED)
-  endif()
-  set(APF_ZOLTAN_INCLUDE_DIRS
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${APF_INCLUDE_DIRS})
-  set(DEP_LIBS ${APF_LIBS})
-  if(ENABLE_ZOLTAN)
-    set(DEP_LIBS ${DEP_LIBS} ${ZOLTAN_LIBRARIES} ${PARMETIS_LIBRARIES})
-  endif()
-  set(APF_ZOLTAN_LIBS apf_zoltan ${DEP_LIBS})
-  include_directories(${APF_ZOLTAN_INCLUDE_DIRS})
-  if(ENABLE_ZOLTAN)
-    include_directories(${ZOLTAN_INCLUDE_DIRS})
-    include_directories(${PARMETIS_INCLUDE_DIRS})
-  endif()
-else(NOT BUILD_IN_TRILINOS)
-  include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
-endif()
-
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_zoltanConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/apf_zoltanConfig.cmake")
-
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libapf_zoltan.pc.in"
-    "${PROJECT_BINARY_DIR}/libapf_zoltan.pc"
-    @ONLY)
-#pkgconfig }
-
-#Sources & Headers
+# Package sources
 if(ENABLE_ZOLTAN)
   set(SOURCES
     apfInterElement.cc
     apfZoltan.cc
     apfZoltanMesh.cc
-    apfZoltanCallbacks.cc)
+    apfZoltanCallbacks.cc
+  )
 else()
   set(SOURCES
     apfInterElement.cc
-    apfZoltanEmpty.cc)
+    apfZoltanEmpty.cc
+  )
 endif()
 
-set(HEADERS
-  apfZoltan.h)
+# Package headers
+set(HEADERS apfZoltan.h)
 
-#Library
-if(BUILD_IN_TRILINOS)
-   tribits_add_library(
-     apf_zoltan
-     HEADERS ${HEADERS}
-     SOURCES ${SOURCES})
-else()
-   add_library(apf_zoltan ${SOURCES})
-   target_link_libraries(apf_zoltan ${DEP_LIBS})
+# Add the apf_zoltan library
+add_library(apf_zoltan ${SOURCES})
+
+# Link this package to these libraries
+target_link_libraries(apf_zoltan apf)
+
+# Do extra work if zoltan is enabled
+if(ENABLE_ZOLTAN)
+  include_directories(
+    ${ZOLTAN_INCLUDE_DIRS}
+    ${PARMETIS_INCLUDE_DIRS}
+  )
+  target_link_libraries(
+    apf_zoltan zoltan
+    ${ZOLTAN_LIBRARIES}
+    ${PARMETIS_LIBRARIES}
+  )
 endif()
 
-#Install
-if(NOT BUILD_IN_TRILINOS)
-   INSTALL(FILES ${HEADERS} DESTINATION include)
-   INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_zoltan.pc" DESTINATION lib/pkgconfig)
-   INSTALL(TARGETS  
-      apf_zoltan
-      RUNTIME DESTINATION bin
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib)
-endif(NOT BUILD_IN_TRILINOS)
-
-if(BUILD_IN_TRILINOS)
-   tribits_package_postprocess()
-endif()
-
+# Tell CMake to add this package to the SCOREC project
+set_property(
+  TARGET apf_zoltan
+  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS apf_zoltan EXPORT apf_zoltan-targets DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
+install(EXPORT apf_zoltan-targets DESTINATION lib/scorec)

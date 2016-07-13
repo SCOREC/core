@@ -37,6 +37,7 @@ add_subdirectory(lion)
 add_subdirectory(apf)
 add_subdirectory(mds)
 add_subdirectory(parma)
+add_subdirectory(zoltan)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
