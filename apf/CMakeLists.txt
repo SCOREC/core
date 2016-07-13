@@ -61,28 +61,6 @@ set(HEADERS
   apf2mth.h
 )
 
-#quickfix hack which is now semi-permanent
-if (BUILD_IN_TRILINOS)
-  set(APF_SOURCES
-      ${APF_SOURCES}
-      ../mth/mthQR.cc
-      ../lion/lionBase64.cc
-      ../lion/lionNoZLib.cc
-     )
-  set(APF_HEADERS
-      ${APF_HEADERS}
-      ../can/canArray.h
-      ../can/canNewArray.h
-      ../mth/mth.h
-      ../mth/mth_def.h
-      ../mth/mthVector.h
-      ../mth/mthMatrix.h
-      ../mth/mthTensor.h
-      ../mth/mthQR.h
-      ../mth/mthAD.h
-     )
-endif()
-
 # Add the apf library
 add_library(apf ${SOURCES})
 
