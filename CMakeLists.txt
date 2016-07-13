@@ -33,6 +33,7 @@ add_subdirectory(pcu)
 add_subdirectory(gmi)
 add_subdirectory(can)
 add_subdirectory(mth)
+add_subdirectory(lion)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
