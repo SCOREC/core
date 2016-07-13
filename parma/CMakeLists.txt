@@ -1,25 +1,5 @@
-cmake_minimum_required(VERSION 2.8.6)
-
-IF(DEFINED TRIBITS_PACKAGE)
- SET(BUILD_IN_TRILINOS ON)
-ENDIF()
-
-if(BUILD_IN_TRILINOS)
-  TRIBITS_PACKAGE(SCORECparma) 
-else()
-  project(parma)
-endif()
-
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-endif()
-
-SET(PARMA_EXTERNAL_HEADERS parma.h)
-
-SET(API_SOURCE parma.cc)
-
-######################################################################
-SET(DIFFMC_SOURCES  
+# Package sources
+set(SOURCES
   diffMC/parma_balancer.cc
   diffMC/parma_bdryVtx.cc
   diffMC/parma_centroidDiffuser.cc
@@ -67,76 +47,40 @@ SET(DIFFMC_SOURCES
   diffMC/zeroOneKnapsack.c
   diffMC/maximalIndependentSet/misLuby.cc
   diffMC/maximalIndependentSet/mersenne_twister.cc
-  )
-
-SET(RIB_SOURCES  
-  rib/parma_rib.cc 
-  rib/parma_mesh_rib.cc 
-  )
-
-SET(GROUP_SOURCES  
-  group/parma_group.cc 
-  )
-
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(diffMC)
-
-if(NOT BUILD_IN_TRILINOS) 
-  set(parmaIncDirs 
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${APF_INCLUDE_DIRS}
-    )
-  INCLUDE_DIRECTORIES(${parmaIncDirs}
-    ${PUMI_GEOM_MESHMODEL_INCLUDE_DIRS})
-endif()
-
-SET(parmaDepLibs ${APF_LIBS})
-
-if(BUILD_IN_TRILINOS)
-  TRIBITS_ADD_LIBRARY(
-    parma
-    SOURCES ${DIFFMC_SOURCES} ${RIB_SOURCES} ${GROUP_SOURCES} ${API_SOURCE}
-    HEADERS ${PARMA_EXTERNAL_HEADERS})
-else(BUILD_IN_TRILINOS)
-  ADD_LIBRARY(parma 
-    ${DIFFMC_SOURCES}
-    ${RIB_SOURCES}
-    ${GROUP_SOURCES}
-    ${API_SOURCE})
-  target_link_libraries(parma ${parmaDepLibs})
-endif(BUILD_IN_TRILINOS)
-
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/parmaConfig.cmake.in"
-  "${CMAKE_BINARY_DIR}/parmaConfig.cmake"
+  rib/parma_rib.cc
+  rib/parma_mesh_rib.cc
+  group/parma_group.cc
+  parma.cc
 )
 
-if(NOT BUILD_IN_TRILINOS)
-  #pkgconfig {
-  set(prefix "${CMAKE_INSTALL_PREFIX}")
-  set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-  set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-  set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-  set(PACKAGE_VERSION "1.0")
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libparma.pc.in"
-    "${PROJECT_BINARY_DIR}/libparma.pc"
-    @ONLY
-    )
-  #pkgconfig }
-endif()
+# Package headers
+set(HEADERS
+  parma.h
+)
 
-if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES ${PARMA_EXTERNAL_HEADERS} DESTINATION include)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/libparma.pc" DESTINATION lib/pkgconfig)
-  INSTALL(TARGETS 
-    parma
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-endif(NOT BUILD_IN_TRILINOS)
+# Add the parma library
+add_library(parma ${SOURCES})
 
-if(BUILD_IN_TRILINOS)
-  TRIBITS_PACKAGE_POSTPROCESS()
-endif()
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/diffMC
+  ${CMAKE_CURRENT_SOURCE_DIR}/group
+  ${CMAKE_CURRENT_SOURCE_DIR}/rib
+  ${CMAKE_CURRENT_SOURCE_DIR}/../apf
+)
+
+# Link this package to these libraries
+target_link_libraries(parma apf)
+
+# Tell CMake to add this package to the SCOREC project
+set_property(
+  TARGET parma
+  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS parma EXPORT parma-targets DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
+install(EXPORT parma-targets DESTINATION lib/scorec)
+
