@@ -32,4 +32,4 @@ set_property(
 )
 install(TARGETS mth EXPORT mth-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT pcu-targets DESTINATION lib/scorec)
+install(EXPORT mth-targets DESTINATION lib/scorec)
