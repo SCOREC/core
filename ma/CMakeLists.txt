@@ -63,6 +63,7 @@ set(SOURCES
   maLayerSnap.cc
   maMap.cc
   maReposition.cc
+  maExtrude.cc
 )
 
 set(HEADERS
@@ -72,7 +73,9 @@ set(HEADERS
   maSize.h
   maShape.h
   maTables.h
-  maSolutionTransfer.h)
+  maSolutionTransfer.h
+  maExtrude.h
+)
 
 if(BUILD_IN_TRILINOS)
 # THIS IS WHERE TRIBITS GETS HEADERS
