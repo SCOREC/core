@@ -1,2 +1,3 @@
 get_filename_component(SCOREC_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 include(${SCOREC_CMAKE_DIR}/pcu-targets.cmake)
+include(${SCOREC_CMAKE_DIR}/can-targets.cmake)
