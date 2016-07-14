@@ -1,45 +1,32 @@
-project(sam)
-
-find_package(ma PATHS ${CMAKE_BINARY_DIR})
-find_package(mds PATHS ${CMAKE_BINARY_DIR})
-set(SAM_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${MA_INCLUDE_DIRS}
-  ${MDS_INCLUDE_DIRS})
-set(DEP_LIBS ${MA_LIBS} ${MDS_LIBS})
-set(SAM_LIBS sam ${DEP_LIBS})
-
-set(HEADERS sam.h)
-
-set(SOURCES sam.cc samSz.cc)
-
-include_directories(${SAM_INCLUDE_DIRS})
-
-add_library(sam ${SOURCES})
-target_link_libraries(sam ${DEP_LIBS})
-
-INSTALL(FILES ${HEADERS} DESTINATION include)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/libsam.pc" DESTINATION lib/pkgconfig)
-INSTALL(TARGETS 
-  sam 
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+# Package sources
+set(SOURCES
+  samSz.cc
+  sam.cc
 )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/samConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/samConfig.cmake")
+# Package headers
+set(HEADERS
+  sam.h
+)
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libsam.pc.in"
-    "${PROJECT_BINARY_DIR}/libsam.pc"
-    @ONLY)
-#pkgconfig }
+# Add the sam library
+add_library(sam ${SOURCES})
 
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Link this package to these libraries
+target_link_libraries(sam mds ma)
+
+# Tell CMake to add this package to the SCOREC project
+set_property(
+  TARGET sam
+  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS sam EXPORT sam-targets DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
+install(EXPORT sam-targets DESTINATION lib/scorec)

@@ -40,6 +40,7 @@ add_subdirectory(parma)
 add_subdirectory(zoltan)
 add_subdirectory(ma)
 add_subdirectory(spr)
+add_subdirectory(sam)
 add_subdirectory(dsp)
 add_subdirectory(viz)
 
