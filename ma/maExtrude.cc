@@ -161,6 +161,27 @@ void defrag(Mesh* m) {
   reorderMdsMesh(m, tag);
 }
 
+void applyFlatField(Mesh* m, std::string const& extruded_name,
+    int ncomps, FieldData const& field_data) {
+  for (size_t j = 0; j < field_data.size(); ++j) {
+    std::stringstream ss;
+    ss << 'L' << j << '_';
+    ss << extruded_name;
+    std::string name = ss.str();
+    apf::Field* flat_field = apf::createPackedField(
+        m, name.c_str(), ncomps);
+    LayerFieldData const& layer_data = field_data[j];
+    Iterator* it = m->begin(0);
+    Entity* v;
+    size_t k = 0;
+    while ((v = m->iterate(it))) {
+      apf::setComponents(flat_field, v, 0, &layer_data[k * ncomps]);
+      ++k;
+    }
+    m->end(it);
+  }
+}
+
 void applyFlatFields(Mesh* m, Fields const& extruded_fields,
     AllFieldsData const& all_data) {
   for (size_t i = 0; i < extruded_fields.size(); ++i) {
@@ -169,24 +190,9 @@ void applyFlatFields(Mesh* m, Fields const& extruded_fields,
     int ncomps = apf::countComponents(extruded_field);
     apf::destroyField(extruded_field);
     FieldData const& field_data = all_data.flat_data[i];
-    for (size_t j = 0; j < field_data.size(); ++j) {
-      std::stringstream ss;
-      ss << 'L' << j << '_';
-      ss << extruded_name;
-      std::string name = ss.str();
-      apf::Field* flat_field = apf::createPackedField(
-          m, name.c_str(), ncomps);
-      LayerFieldData const& layer_data = field_data[j];
-      Iterator* it = m->begin(0);
-      Entity* v;
-      size_t k = 0;
-      while ((v = m->iterate(it))) {
-        apf::setComponents(flat_field, v, 0, &layer_data[k * ncomps]);
-        ++k;
-      }
-      m->end(it);
-    }
+    applyFlatField(m, extruded_name, ncomps, field_data);
   }
+  applyFlatField(m, "z", 1, all_data.flat_z_data);
 }
 
 void zeroOutZCoords(Mesh* m) {
