@@ -1,92 +1,89 @@
-cmake_minimum_required(VERSION 2.8.6)
+# Package options
+set(Trilinos_PREFIX CACHE STRING "Trilinos installation directory")
+option(ENABLE_STK "Enable the stk interface [ON|OFF]" OFF)
+option(ENABLE_STK_MESH "Enable the stk mesh interface [ON|OFF]" OFF)
+message(STATUS "ENABLE_STK: " ${ENABLE_STK})
+message(STATUS "ENABLE_STK_MESH: " ${ENABLE_STK_MESH})
 
-IF(DEFINED TRIBITS_PACKAGE)
- SET(BUILD_IN_TRILINOS ON)
-ENDIF()
-
-if(BUILD_IN_TRILINOS)
-   # determine if Trilinos has been configured with stk
-   SET(HAS_STK OFF)
-   if(Trilinos_ENABLE_STKIO AND
-      Trilinos_ENABLE_STKMesh AND
-      Trilinos_ENABLE_SEACASIoss)
-     SET(HAS_STK ON)
-   endif()
-
-   tribits_package(SCORECapf_stk) 
-else()
-   project(apf_stk)
+# Only install the package if enabled
+if(NOT ENABLE_STK)
+  return()
 endif()
 
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  set(APF_STK_INCLUDE_DIRS
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${APF_INCLUDE_DIRS}
-      ${STK_INCLUDE_DIRS})
-  set(APF_STK_LIBS
-      apf_stk
-      ${APF_LIBS}
-      ${STK_LIBRARIES})
-  include_directories(${APF_STK_INCLUDE_DIRS})
-else(NOT BUILD_IN_TRILINOS)
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-endif(NOT BUILD_IN_TRILINOS)
+# Find the shards Trilinos package
+set(HAS_STK OFF)
+find_package(Shards REQUIRED PATHS ${Trilinos_PREFIX})
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.h.in"
-    "${PROJECT_BINARY_DIR}/apf_stkConfig.h")
-include_directories("${PROJECT_BINARY_DIR}")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/apf_stkConfig.cmake")
+# If enabling more mesh features, find additional Trilinos packages
+if(ENABLE_STK_MESH)
+  set(HAS_STK ON)
+  find_package(STKIO REQUIRED PATHS ${Trilinos_PREFIX})
+  find_package(STKMesh REQUIRED PATHS ${Trilinos_PREFIX})
+  find_package(STKIoss REQUIRED PATHS ${Trilinos_PREFIX})
+endif()
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
+# Configure the input header
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libapf_stk.pc.in"
-    "${PROJECT_BINARY_DIR}/libapf_stk.pc"
-    @ONLY)
-#pkgconfig }
+  ${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/apf_stkConfig.h
+)
 
-#Sources & Headers
+# Package sources
 set(SOURCES
   apfMeshSTK.cc
-  apfSTK.cc)
+  apfSTK.cc
+)
 
-set(HEADERS apfAlbany.h)
+# Package headers
+set(
+  apfAlbany.h
+)
+
+# Set the link libraries and include directories
+set(APF_STK_INCS
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${Shards_INCLUDE_DIRS}
+)
+set(APF_STK_LIBS
+  apf
+  ${Shards_LIBRARIES}
+)
+
+# Do some extra work if has stk is on
 if(HAS_STK)
   set(HEADERS ${HEADERS} apfSTK.h)
   set(SOURCES ${SOURCES} apfExodusOutput.cc)
+  set(APF_STK_LIBS
+    ${APF_STK_LIBS}
+    ${STKIO_LIBRARIES}
+    ${STKMesh_LIBRARIES}
+    ${STKIoss_LIBRARIES}
+  )
+  set(APF_STK_INCS
+    ${APF_STK_INCS}
+    ${STKIO_INCLUDE_DIRS}
+    ${STKMesh_INCLUDE_DIRS}
+    ${STKIoss_INCLUDE_DIRS}
+  )
 endif()
 
-#Library
-if(BUILD_IN_TRILINOS)
-   tribits_add_library(
-     apf_stk
-     HEADERS ${HEADERS}
-     SOURCES ${SOURCES})
-else()
-   add_library(apf_stk ${SOURCES})
-   target_link_libraries(apf_stk ${APF_STK_LIBS})
-endif()
+# Add the apf_stk library
+add_library(apf_stk ${SOURCES})
 
-#Install
-if(NOT BUILD_IN_TRILINOS)
-   INSTALL(FILES ${HEADERS} DESTINATION include)
-   INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_stk.pc" DESTINATION lib/pkgconfig)
-   INSTALL(TARGETS  
-      apf_stk
-      RUNTIME DESTINATION bin
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib)
-endif(NOT BUILD_IN_TRILINOS)
+# Inlcude directories
+include_directories(${APF_STK_INCS})
 
-if(BUILD_IN_TRILINOS)
-   tribits_package_postprocess()
-endif()
+# Link this package to these libraries
+target_link_libraries(apf_stk ${APF_STK_LIBS})
 
+# Tell CMake to add this package to the SCOREC project
+set_property(
+  TARGET apf_stk
+  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS apf_stk EXPORT apf_stk-targets DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
+install(EXPORT apf_stk-targets DESTINATION lib/scorec)
