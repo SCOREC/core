@@ -39,6 +39,7 @@ add_subdirectory(mds)
 add_subdirectory(parma)
 add_subdirectory(zoltan)
 add_subdirectory(ma)
+add_subdirectory(spr)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
