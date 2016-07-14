@@ -8,6 +8,7 @@
 #include <apf_stkConfig.h>
 #include <apfNumbering.h>
 #include <cassert>
+#include <cstdlib>
 
 #if HAS_STK
 #include "apfSTK.h"
