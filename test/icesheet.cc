@@ -483,6 +483,7 @@ int main(int argc, char** argv)
     attachVtxField(mesh,argv[i],outMap);
   outMap.clear();
   mesh->writeNative(argv[9]);
+  apf::writeVtkFiles("rendered",mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
