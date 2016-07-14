@@ -8,9 +8,14 @@
 namespace ma {
 
 struct ModelExtrusion {
-  apf::ModelEntity* bottom;
-  apf::ModelEntity* middle;
-  apf::ModelEntity* top;
+  ModelExtrusion(Model* a, Model* b, Model* c):
+    bottom(a),
+    middle(b),
+    top(c)
+  {}
+  Model* bottom;
+  Model* middle;
+  Model* top;
 };
 
 typedef std::vector<ModelExtrusion> ModelExtrusions;

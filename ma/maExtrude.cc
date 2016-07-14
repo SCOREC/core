@@ -5,6 +5,9 @@
 #include <cassert>
 #include <sstream>
 
+//DEBUG
+#include <iostream>
+
 namespace ma {
 
 namespace {
@@ -89,7 +92,7 @@ void gatherAllFieldsData(Mesh* m, Layers const& layers,
 
 void getBottomModels(ModelExtrusions const& model_extrusions,
     ModelSet* bottoms_out) {
-  ModelSet bottoms = *bottoms_out;
+  ModelSet& bottoms = *bottoms_out;
   APF_CONST_ITERATE(ModelExtrusions, model_extrusions, it)
     bottoms.insert(it->bottom);
 }
@@ -97,6 +100,11 @@ void getBottomModels(ModelExtrusions const& model_extrusions,
 void getBase(Mesh* m, ModelSet const& bottoms,
     int d, Crawler::Layer* base_out)
 {
+  std::cerr << "bottoms:\n";
+  APF_CONST_ITERATE(ModelSet, bottoms, it) {
+    std::cerr << "(" << m->getModelType(*it) << ", "
+      << m->getModelTag(*it) << ")\n";
+  }
   Crawler::Layer& base = *base_out;
   Iterator* it = m->begin(d);
   Entity* e;
@@ -104,6 +112,7 @@ void getBase(Mesh* m, ModelSet const& bottoms,
     if (bottoms.count(m->toModel(e)))
       base.push_back(e);
   m->end(it);
+  std::cerr << "bottom layer has " << base.size() << " verts\n";
 }
 
 void getVertLayers(Mesh* m, Crawler::Layer const& base_layer,
@@ -115,6 +124,10 @@ void getVertLayers(Mesh* m, Crawler::Layer const& base_layer,
   do {
     layers.push_back(current_layer);
     Crawler::Layer next_layer;
+    for (size_t i = 0; i < current_layer.size(); ++i) {
+      m->setIntTag(current_layer[i], visited, 0);
+    }
+    std::cerr << "crawling a layer...\n";
     for (size_t i = 0; i < current_layer.size(); ++i) {
       Entity* v = current_layer[i];
       Entity* ov = getOtherVert(m, v, pred);
