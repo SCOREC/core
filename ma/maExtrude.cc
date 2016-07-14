@@ -65,11 +65,10 @@ struct ZDataGetter : public DataGetter {
   virtual int ncomps() const { return 1; }
 };
 
-void gatherFieldData(DataGetter const& getter,
-    Layers const& layers, FieldData* data_out) {
+FieldData gatherExtrudedFieldData(DataGetter const& getter,
+    Layers const& layers) {
   int ncomps = getter.ncomps();
-  FieldData& data = *data_out;
-  data.clear();
+  FieldData data;
   for (size_t l = 0; l < layers.size(); ++l) {
     Crawler::Layer const& layer = layers[l];
     data.push_back(LayerFieldData());
@@ -80,19 +79,18 @@ void gatherFieldData(DataGetter const& getter,
       getter.get(e, &layer_data[i * ncomps]);
     }
   }
+  return data;
 }
 
-AllFieldsData gatherAllFieldsData(Mesh* m, Layers const& layers,
+AllFieldsData gatherExtrudedFieldsData(Mesh* m, Layers const& layers,
     Fields const& extruded_fields) {
   AllFieldsData all_data;
   for (size_t i = 0; i < extruded_fields.size(); ++i) {
     FieldDataGetter getter(extruded_fields[i]);
-    all_data.flat_data.resize(all_data.flat_data.size() + 1);
-    FieldData& field_data = all_data.flat_data.back();
-    gatherFieldData(getter, layers, &field_data);
+    all_data.flat_data.push_back(gatherExtrudedFieldData(getter, layers));
   }
   ZDataGetter getter(m);
-  gatherFieldData(getter, layers, &all_data.flat_z_data);
+  all_data.flat_z_data = gatherExtrudedFieldData(getter, layers);
   return all_data;
 }
 
@@ -180,18 +178,36 @@ void defrag(Mesh* m) {
   reorderMdsMesh(m, tag);
 }
 
+std::string getFlatName(std::string const& extruded_name, size_t layer) {
+  std::stringstream ss;
+  ss << 'L' << layer << '_';
+  ss << extruded_name;
+  return ss.str();
+}
+
+std::string getExtrudedName(std::string const& flat_name) {
+  std::stringstream ss(flat_name);
+  int c;
+  c = ss.get();
+  assert(c == 'L');
+  size_t layer;
+  ss >> layer;
+  c = ss.get();
+  assert(c == '_');
+  std::string extruded_name;
+  ss >> extruded_name;
+  return extruded_name;
+}
+
 void applyFlatField(Mesh* m, std::string const& extruded_name,
     int ncomps, FieldData const& field_data) {
   std::cerr << "flat field " << extruded_name << " will have "
     << field_data.size() << " layers\n";
-  for (size_t j = 0; j < field_data.size(); ++j) {
-    std::stringstream ss;
-    ss << 'L' << j << '_';
-    ss << extruded_name;
-    std::string name = ss.str();
+  for (size_t i = 0; i < field_data.size(); ++i) {
+    std::string flat_name = getFlatName(extruded_name, i);
     apf::Field* flat_field = apf::createPackedField(
-        m, name.c_str(), ncomps);
-    LayerFieldData const& layer_data = field_data[j];
+        m, flat_name.c_str(), ncomps);
+    LayerFieldData const& layer_data = field_data[i];
     Iterator* it = m->begin(0);
     Entity* v;
     size_t k = 0;
@@ -328,15 +344,116 @@ FullLayer buildLayer(Mesh* m, Tag* visited, FullLayer const& prev_layer,
   return next_layer;
 }
 
-void buildLayers(Mesh* m, ModelExtrusions const& extrusions, size_t nlayers,
+Layers buildLayers(Mesh* m, ModelExtrusions const& extrusions, size_t nlayers,
     FullLayer const& base_layer) {
+  Layers out_layers;
+  apf::changeMdsDimension(m, 3);
   Tag* visited = m->createIntTag("visited", 0);
   FullLayer prev_layer = base_layer;
-  for (size_t i = 0; i < nlayers; ++i) {
+  out_layers.push_back(prev_layer.ents[0]);
+  for (size_t i = 1; i < nlayers; ++i) {
     bool is_last = (i == (nlayers - 1));
     prev_layer = buildLayer(m, visited, prev_layer, extrusions, is_last);
+    out_layers.push_back(prev_layer.ents[0]);
   }
   m->destroyTag(visited);
+  m->acceptChanges();
+  return out_layers;
+}
+
+FieldData gatherFlatFieldData(Mesh* m, std::string const& extruded_name,
+    int ncomps, Crawler::Layer const& base_verts, size_t nlayers) {
+  FieldData field_data;
+  for (size_t i = 0; i < nlayers; ++i) {
+    std::string flat_name = getFlatName(extruded_name, i);
+    apf::Field* flat_field = m->findField(flat_name.c_str());
+    assert(flat_field);
+    LayerFieldData layer_data(base_verts.size() * ncomps);
+    for (size_t j = 0; j < base_verts.size(); ++j) {
+      apf::getComponents(flat_field, base_verts[j], 0, &layer_data[j * ncomps]);
+    }
+    if (i != 0) apf::destroyField(flat_field);
+    field_data.push_back(layer_data);
+  }
+  return field_data;
+}
+
+AllFieldsData gatherFlatFieldsData(Mesh* m, Fields const& base_fields,
+    Crawler::Layer const& base_verts, size_t nlayers) {
+  AllFieldsData all_data;
+  for (size_t i = 0; i < base_fields.size(); ++i) {
+    apf::Field* base_field = base_fields[i];
+    std::string base_name = apf::getName(base_field);
+    int ncomps = apf::countComponents(base_field);
+    std::string extruded_name = getExtrudedName(base_name);
+    FieldData field_data = gatherFlatFieldData(m, extruded_name,
+          ncomps, base_verts, nlayers);
+    if (base_name == "L0_z") all_data.flat_z_data = field_data;
+    else all_data.flat_data.push_back(field_data);
+  }
+  return all_data;
+}
+
+struct DataSetter {
+  virtual void set(Entity* e, double const* data_in) const = 0;
+  virtual int ncomps() const = 0;
+};
+
+struct FieldDataSetter : public DataSetter {
+  apf::Field* field;
+  FieldDataSetter(apf::Field* f):field(f) {}
+  virtual void set(Entity* e, double const* data_in) const {
+    apf::setComponents(field, e, 0, data_in);
+  }
+  virtual int ncomps() const { return apf::countComponents(field); }
+};
+
+struct ZDataSetter : public DataSetter {
+  Mesh* mesh;
+  ZDataSetter(Mesh* m):mesh(m) {}
+  virtual void set(Entity* v, double const* data_in) const {
+    Vector x;
+    mesh->getPoint(v, 0, x);
+    x[2] = *data_in;
+    mesh->setPoint(v, 0, x);
+  }
+  virtual int ncomps() const { return 1; }
+};
+
+void applyExtrudedData(DataSetter const& setter,
+    FieldData const& field_data, Layers const& layers) {
+  int ncomps = setter.ncomps();
+  for (size_t i = 0; i < layers.size(); ++i) {
+    Crawler::Layer const& layer_verts = layers[i];
+    LayerFieldData const& layer_data = field_data[i];
+    for (size_t j = 0; j < layer_verts.size(); ++j) {
+      setter.set(layer_verts[j], &layer_data[j * ncomps]);
+    }
+  }
+}
+
+void applyExtrudedFields(Mesh* m, Fields const& base_fields,
+    AllFieldsData const& all_data, Layers const& layers) {
+  size_t j = 0;
+  for (size_t i = 0; i < base_fields.size(); ++i) {
+    apf::Field* base_field = base_fields[i];
+    std::string flat_name = apf::getName(base_field);
+    std::string extruded_name = getExtrudedName(flat_name);
+    if (extruded_name == "z") {
+      ZDataSetter setter(m);
+      FieldData const& field_data = all_data.flat_z_data;
+      applyExtrudedData(setter, field_data, layers);
+    } else {
+      int ncomps = apf::countComponents(base_field);
+      apf::destroyField(base_field);
+      apf::Field* extruded_field = apf::createPackedField(
+          m, extruded_name.c_str(), ncomps);
+      FieldDataSetter setter(extruded_field);
+      FieldData const& field_data = all_data.flat_data[j];
+      applyExtrudedData(setter, field_data, layers);
+      ++j;
+    }
+  }
 }
 
 } // end anonymous namespace
@@ -349,7 +466,7 @@ void intrude(Mesh* m, ModelExtrusions const& model_extrusions,
   Layers layers = getVertLayers(m, base);
   *num_layers_out = layers.size();
   Fields extruded_fields = gatherExtrudedFields(m);
-  AllFieldsData all_data = gatherAllFieldsData(m, layers, extruded_fields);
+  AllFieldsData all_data = gatherExtrudedFieldsData(m, layers, extruded_fields);
   remove3DPortion(m, bottoms);
   defrag(m);
   applyFlatFields(m, extruded_fields, all_data);
@@ -360,7 +477,11 @@ void extrude(Mesh* m, ModelExtrusions const& model_extrusions,
     size_t num_layers) {
   Fields base_fields = gatherBaseFields(m);
   FullLayer base_layer = getFullFlatLayer(m);
-  buildLayers(m, model_extrusions, num_layers, base_layer);
+  Crawler::Layer const& base_verts = base_layer.ents[0];
+  AllFieldsData all_data = gatherFlatFieldsData(m, base_fields,
+      base_verts, num_layers);
+  Layers layers = buildLayers(m, model_extrusions, num_layers, base_layer);
+  applyExtrudedFields(m, base_fields, all_data, layers);
 }
 
 } // end namespac ma
