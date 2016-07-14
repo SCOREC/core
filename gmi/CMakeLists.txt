@@ -37,6 +37,11 @@ set(HEADERS
 # Add the gmi library
 add_library(gmi ${SOURCES})
 
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # Tell Cmake to add this package to the SCOREC project
 set_property(
   TARGET gmi

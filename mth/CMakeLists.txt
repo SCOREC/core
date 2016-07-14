@@ -17,11 +17,13 @@ set(MTH_HEADERS
 # Include directories
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../can
 )
 
 # Add the mth library
 add_library(mth ${MTH_SOURCES})
+
+# Link this library to these libraries
+target_link_libraries(mth can)
 
 # Tell CMake to add this package to the SCOREC project
 set_property(

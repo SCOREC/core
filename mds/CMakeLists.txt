@@ -39,11 +39,7 @@ add_library(mds ${SOURCES})
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../pcu
-  ${CMAKE_CURRENT_SOURCE_DIR}/../gmi
-  ${CMAKE_CURRENT_SOURCE_DIR}/../apf
   ${CMAKE_CURRENT_SOURCE_DIR}/../pcu/reel
-  ${CMAKE_CURRENT_SOURCE_DIR}/../pcu/noto
 )
 
 # Link this package to these libraries

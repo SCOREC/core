@@ -7,6 +7,11 @@ set(HEADERS
 # Add the can 'library' as a CMake Interface
 add_library(can INTERFACE)
 
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # Tell CMake to add this package nicely to the SCOREC project
 set_property(
   TARGET can

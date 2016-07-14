@@ -33,6 +33,11 @@ set(HEADERS apfZoltan.h)
 # Add the apf_zoltan library
 add_library(apf_zoltan ${SOURCES})
 
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # Link this package to these libraries
 target_link_libraries(apf_zoltan apf)
 

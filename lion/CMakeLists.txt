@@ -25,7 +25,9 @@ set(HEADERS
 add_library(lion ${SOURCES})
 
 # Include directories
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 # Do extra work if compression is enabled
 if(LION_COMPRESS)

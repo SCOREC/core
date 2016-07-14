@@ -67,13 +67,7 @@ add_library(apf ${SOURCES})
 # Include directories
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../pcu
-  ${CMAKE_CURRENT_SOURCE_DIR}/../gmi
-  ${CMAKE_CURRENT_SOURCE_DIR}/../can
-  ${CMAKE_CURRENT_SOURCE_DIR}/../mth
-  ${CMAKE_CURRENT_SOURCE_DIR}/../lion
   ${CMAKE_CURRENT_SOURCE_DIR}/../pcu/reel
-  ${CMAKE_CURRENT_SOURCE_DIR}/../pcu/noto
 )
 
 # Link this package to these libraries

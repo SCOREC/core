@@ -67,7 +67,6 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/diffMC
   ${CMAKE_CURRENT_SOURCE_DIR}/group
   ${CMAKE_CURRENT_SOURCE_DIR}/rib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../apf
 )
 
 # Link this package to these libraries
