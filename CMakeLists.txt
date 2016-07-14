@@ -40,6 +40,8 @@ add_subdirectory(parma)
 add_subdirectory(zoltan)
 add_subdirectory(ma)
 add_subdirectory(spr)
+add_subdirectory(dsp)
+add_subdirectory(viz)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
