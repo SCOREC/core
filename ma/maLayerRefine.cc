@@ -38,7 +38,7 @@ static void allowBaseToSplit(Adapt* a)
 struct SplitTagger : public Crawler
 {
   SplitTagger(Adapt* a_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;
@@ -173,7 +173,7 @@ static Entity* getOtherTri(Mesh* m, Entity* prism, Predicate& visited)
 struct Disambiguator : public Crawler
 {
   Disambiguator(Adapt* a_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;

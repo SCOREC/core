@@ -139,6 +139,8 @@ if(ENABLE_OMEGA_H)
 endif()
 setup_exe(quality quality.cc)
 setup_exe(field_io field_io.cc)
+setup_exe(intrude intrude.cc)
+setup_exe(extrude extrude.cc)
 
 if(IS_TESTING)
   include(testing.cmake)

@@ -270,7 +270,7 @@ void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
   \details hack - interior edges have classification set to the
   same geometric model region
 */
-void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
+void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
   apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
   apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
@@ -280,30 +280,33 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) 
   apf::MeshIterator* it = mesh->begin(1);
   apf::MeshEntity* edge;
   while( (edge = mesh->iterate(it)) ) {
-    int tags[2];
-    getMeshEdgeTags(mesh,edge,t,tags);
-    // classified on model region
-    if( tags[0] == INTERIORTAG || tags[1] == INTERIORTAG )
-      mesh->setModelEntity(edge,mdlRgn);
+    apf::Up adj_faces;
+    mesh->getUp(edge, adj_faces);
+    std::set<apf::ModelEntity*> adj_mdl_faces;
+    for (int i = 0; i < adj_faces.n; ++i) {
+      apf::MeshEntity* adj_face = adj_faces.e[i];
+      apf::ModelEntity* face_class = mesh->toModel(adj_face);
+      if (mesh->getModelType(face_class) == 2)
+        adj_mdl_faces.insert(face_class);
+    }
     // classified on bottom perimeter
-    else if( tags[0] == BOTTOM_PERIMETERTAG && tags[1] == BOTTOM_PERIMETERTAG )
+    if(adj_mdl_faces.count(mdlBotFace) && adj_mdl_faces.count(mdlPerFace))
       mesh->setModelEntity(edge,mdlBotEdge);
     // classified on top perimeter
-    else if( tags[0] == TOP_PERIMETERTAG && tags[1] == TOP_PERIMETERTAG )
+    else if(adj_mdl_faces.count(mdlTopFace) && adj_mdl_faces.count(mdlPerFace))
       mesh->setModelEntity(edge,mdlTopEdge);
     // classified on top face
-    else if( tags[0] == TOPTAG || tags[1] == TOPTAG )
+    else if(adj_mdl_faces.count(mdlTopFace))
       mesh->setModelEntity(edge,mdlTopFace);
     // classified on bottom face
-    else if( tags[0] == BOTTOMTAG || tags[1] == BOTTOMTAG )
+    else if(adj_mdl_faces.count(mdlBotFace))
       mesh->setModelEntity(edge,mdlBotFace);
     // classified on perimeter face
-    else if( tags[0] == PERIMETERTAG || tags[1] == PERIMETERTAG )
+    else if(adj_mdl_faces.count(mdlPerFace))
       mesh->setModelEntity(edge,mdlPerFace);
-    else {
-      fprintf(stderr, "classification of an edge fell through the conditional...exiting\n");
-      exit(EXIT_FAILURE);
-    }
+    // classified on model region
+    else
+      mesh->setModelEntity(edge,mdlRgn);
   }
   mesh->end(it);
 }
@@ -348,7 +351,7 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
 void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setRgnClassification(model,mesh);
   setFaceClassification(model,mesh,t);
-  setEdgeClassification(model,mesh,t);
+  setEdgeClassification(model,mesh);
   setVtxClassification(model,mesh,t);
   mesh->acceptChanges();
 }
