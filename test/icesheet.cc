@@ -355,7 +355,7 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   mesh->acceptChanges();
 }
 
-int* readArray(const char* fname, unsigned len) {
+int* readIntArray(const char* fname, unsigned len) {
   FILE* f = fopen(fname, "r");
   assert(f);
   unsigned n;
@@ -367,19 +367,69 @@ int* readArray(const char* fname, unsigned len) {
   return data;
 }
 
-apf::MeshTag* attachVtxField(apf::Mesh2* mesh, const char* fname,
+double* readScalarArray(const char* fname, unsigned len) {
+  FILE* f = fopen(fname, "r");
+  assert(f);
+  unsigned n;
+  fscanf(f,"%u", &n);
+  assert( n == len );
+  double* data = new double[len];
+  for(unsigned i = 0; i< len; i++)
+    fscanf(f, "%lf", &data[i]);
+  return data;
+}
+
+std::string getName(const char* fname) {
+  using std::string;
+  std::string in(fname);
+  if( in.find("vertex_type") != string::npos ) {
+    return string("vertex_type");
+  } else if( in.find("basal_friction") != string::npos ) {
+    return string("basal_friction");
+  } else if( in.find("temperature") != string::npos ) {
+    return string("temperature");
+  } else if( in.find("surface_elevation") != string::npos ) {
+    return string("surface_elevation");
+  } else if( in.find("solution_x") != string::npos ) {
+    return string("solution_x");
+  } else if( in.find("solution_y") != string::npos ) {
+    return string("solution_y");
+  } else {
+    fprintf(stderr, "unknown field name in %s\n", __func__);
+    exit(EXIT_FAILURE);
+  }
+}
+
+apf::MeshTag* attachVtxTag(apf::Mesh2* mesh, const char* fname,
     apf::GlobalToVert& vtxMap) {
   unsigned numverts = mesh->count(0);
-  fprintf(stderr, "attaching %s\n", fname);
-  int* arr = readArray(fname, numverts);
-  apf::MeshTag* tag = mesh->createIntTag(fname, 1);
+  std::string fldname = getName(fname);
+  fprintf(stderr, "attaching %s\n", fldname.c_str());
+  int* arr = readIntArray(fname, numverts);
+  apf::MeshTag* tag = mesh->createIntTag(fldname.c_str(), 1);
   for(unsigned i=0; i<numverts; i++)
     mesh->setIntTag(vtxMap[i], tag, &(arr[i]));
   delete [] arr;
   return tag;
 }
 
-void detachVtxField(apf::Mesh2* mesh, apf::MeshTag* t) {
+/** \brief attach a field to the vertices
+ *  \detail all the fields being attached need to exist with the mesh so the
+ *  field pointer is not returned
+ */
+void attachVtxField(apf::Mesh2* mesh, const char* fname,
+    apf::GlobalToVert& vtxMap) {
+  std::string fldname = getName(fname);
+  unsigned numverts = mesh->count(0);
+  fprintf(stderr, "attaching %s\n", fldname.c_str());
+  double* arr = readScalarArray(fname, numverts);
+  apf::Field* fld = apf::createFieldOn(mesh,fldname.c_str(),apf::SCALAR);
+  for(unsigned i=0; i<numverts; i++)
+    apf::setScalar(fld,vtxMap[i],0,arr[i]);
+  delete [] arr;
+}
+
+void detachVtxTag(apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) )
@@ -425,9 +475,9 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
-  apf::MeshTag* vtxClass = attachVtxField(mesh,argv[3],outMap);
+  apf::MeshTag* vtxClass = attachVtxTag(mesh,argv[3],outMap);
   setClassification(model,mesh,vtxClass);
-  detachVtxField(mesh,vtxClass);
+  detachVtxTag(mesh,vtxClass);
   mesh->verify();
   for(int i=4; i<argc-1; i++)
     attachVtxField(mesh,argv[i],outMap);
