@@ -294,13 +294,16 @@ ModelExtrusion getLocalClass(Mesh* m, Entity* prev_ent,
   return out;
 }
 
-FullLayer buildLayer(Mesh* m, Tag* visited, FullLayer const& prev_layer,
+FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     ModelExtrusions const& extrusions, bool is_last) {
   Crawler::Layer const& prev_verts = prev_layer.ents[0];
-  for (size_t i = 0; i < prev_verts.size(); ++i)
-    m->setIntTag(prev_verts[i], visited, 0);
-  HasTag pred(m, visited);
+  Tag* indices = m->createIntTag("index", 1);
+  for (size_t i = 0; i < prev_verts.size(); ++i) {
+    int i_int = int(i);
+    m->setIntTag(prev_verts[i], indices, &i_int);
+  }
   FullLayer next_layer;
+  std::cerr << "extruding " << prev_verts.size() << " verts...\n";
   for (size_t i = 0; i < prev_verts.size(); ++i) {
     Entity* ev[2];
     ev[0] = prev_verts[i];
@@ -312,20 +315,25 @@ FullLayer buildLayer(Mesh* m, Tag* visited, FullLayer const& prev_layer,
     m->createEntity(apf::Mesh::EDGE, local_class.middle, ev);
     next_layer.ents[0].push_back(ev[1]);
   }
+  std::cerr << "extruding " << prev_layer.ents[1].size() << " edges...\n";
   for (size_t i = 0; i < prev_layer.ents[1].size(); ++i) {
     Entity* pe = prev_layer.ents[1][i];
+    assert(m->getType(pe) == apf::Mesh::EDGE);
     ModelExtrusion local_class = getLocalClass(m, pe, extrusions, is_last);
     Entity* pev[2];
     m->getDownward(pe, 0, pev);
     Entity* nev[2];
     for (int j = 0; j < 2; ++j) {
-      nev[j] = getOtherVert(m, pev[j], pred);
+      int vindex;
+      m->getIntTag(pev[j], indices, &vindex);
+      nev[j] = next_layer.ents[0][vindex];
     }
     Entity* ne = apf::buildElement(m, local_class.top, apf::Mesh::EDGE, nev);
     Entity* qv[4] = {pev[0], pev[1], nev[1], nev[0]};
     apf::buildElement(m, local_class.middle, apf::Mesh::QUAD, qv);
     next_layer.ents[1].push_back(ne);
   }
+  std::cerr << "extruding " << prev_layer.ents[2].size() << " tris...\n";
   for (size_t i = 0; i < prev_layer.ents[2].size(); ++i) {
     Entity* pt = prev_layer.ents[2][i];
     ModelExtrusion local_class = getLocalClass(m, pt, extrusions, is_last);
@@ -333,7 +341,9 @@ FullLayer buildLayer(Mesh* m, Tag* visited, FullLayer const& prev_layer,
     m->getDownward(pt, 0, ptv);
     Entity* ntv[3];
     for (int j = 0; j < 3; ++j) {
-      ntv[j] = getOtherVert(m, ptv[j], pred);
+      int vindex;
+      m->getIntTag(ptv[j], indices, &vindex);
+      ntv[j] = next_layer.ents[0][vindex];
     }
     Entity* nt =
       apf::buildElement(m, local_class.top, apf::Mesh::TRIANGLE, ntv);
@@ -341,6 +351,7 @@ FullLayer buildLayer(Mesh* m, Tag* visited, FullLayer const& prev_layer,
     apf::buildElement(m, local_class.middle, apf::Mesh::PRISM, wv);
     next_layer.ents[2].push_back(nt);
   }
+  m->destroyTag(indices);
   return next_layer;
 }
 
@@ -348,15 +359,13 @@ Layers buildLayers(Mesh* m, ModelExtrusions const& extrusions, size_t nlayers,
     FullLayer const& base_layer) {
   Layers out_layers;
   apf::changeMdsDimension(m, 3);
-  Tag* visited = m->createIntTag("visited", 0);
   FullLayer prev_layer = base_layer;
   out_layers.push_back(prev_layer.ents[0]);
   for (size_t i = 1; i < nlayers; ++i) {
     bool is_last = (i == (nlayers - 1));
-    prev_layer = buildLayer(m, visited, prev_layer, extrusions, is_last);
+    prev_layer = buildLayer(m, prev_layer, extrusions, is_last);
     out_layers.push_back(prev_layer.ents[0]);
   }
-  m->destroyTag(visited);
   m->acceptChanges();
   return out_layers;
 }
