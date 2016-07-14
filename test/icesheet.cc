@@ -1,11 +1,9 @@
 #include <gmi_mesh.h>
-#include <gmi_sim.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfConvert.h>
 #include <apf.h>
 #include <PCU.h>
-#include <SimUtil.h>
 #include <cassert>
 #include <cstdlib>
 
@@ -458,7 +456,7 @@ void detachVtxTag(apf::Mesh2* mesh, apf::MeshTag* t) {
 int main(int argc, char** argv)
 {
   if( argc != 10 ) {
-    printf("Usage: %s <GeomSim model .smd> <ascii mesh .ascii> "
+    printf("Usage: %s <model .dmg> <ascii mesh .ascii> "
         "<vertex classification field .ascii> "
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
@@ -472,11 +470,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  SimUtil_start();
-  Sim_readLicenseFile(NULL);
-  gmi_sim_start();
   gmi_register_mesh();
-  gmi_register_sim();
 
   gmi_model* model = gmi_load(argv[1]);
 
@@ -505,9 +499,6 @@ int main(int argc, char** argv)
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  gmi_sim_stop();
-  Sim_unregisterAllKeys();
-  SimUtil_stop();
   PCU_Comm_Free();
   MPI_Finalize();
 }
