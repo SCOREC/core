@@ -1,11 +1,15 @@
 #include "maExtrude.h"
 #include "maCrawler.h"
+#include <apfMDS.h>
 
 #include <cassert>
+#include <sstream>
 
 namespace ma {
 
 namespace {
+
+typedef std::set<Model*> ModelSet;
 
 typedef std::vector<Crawler::Layer> Layers;
 
@@ -83,12 +87,16 @@ void gatherAllFieldsData(Mesh* m, Layers const& layers,
   gatherFieldData(getter, layers, &all_data.flat_z_data);
 }
 
-void getBase(Mesh* m, std::vector<ModelExtrusion> const& model_extrusions,
+void getBottomModels(ModelExtrusions const& model_extrusions,
+    ModelSet* bottoms_out) {
+  ModelSet bottoms = *bottoms_out;
+  APF_CONST_ITERATE(ModelExtrusions, model_extrusions, it)
+    bottoms.insert(it->bottom);
+}
+
+void getBase(Mesh* m, ModelSet const& bottoms,
     int d, Crawler::Layer* base_out)
 {
-  std::set<apf::ModelEntity*> bottoms;
-  APF_CONST_ITERATE(std::vector<ModelExtrusion>, model_extrusions, it)
-    bottoms.insert(it->bottom);
   Crawler::Layer& base = *base_out;
   Iterator* it = m->begin(d);
   Entity* e;
@@ -119,19 +127,99 @@ void getVertLayers(Mesh* m, Crawler::Layer const& base_layer,
   m->destroyTag(visited);
 }
 
+void remove3DPortion(Mesh* m, ModelSet const& bottoms) {
+  for (int d = 3; d >= 0; --d) {
+    Iterator* it = m->begin(d);
+    Entity* e;
+    while ((e = m->iterate(it))) {
+      if (!bottoms.count(m->toModel(e)))
+        m->destroy(e);
+    }
+    m->end(it);
+  }
+  assert(m->count(3) == 0);
+  apf::changeMdsDimension(m, 2);
+  m->acceptChanges(); // needed ? not needed ? who knows...
+}
+
+void defrag(Mesh* m) {
+  /* we need to use reordering to remove all holes in
+   * the data structure leftover from removing the 3D portion,
+   * but at the same time we don't want to change the vertex
+   * order because it lines up with temporary field data
+   * vectors, so we explicitly specify an identity ordering.
+   */
+  Tag* tag = m->createIntTag("reorder", 1);
+  Iterator* it = m->begin(0);
+  Entity* v;
+  int i = 0;
+  while ((v = m->iterate(it))) {
+    m->setIntTag(v, tag, &i);
+    ++i;
+  }
+  m->end(it);
+  reorderMdsMesh(m, tag);
+}
+
+void applyFlatFields(Mesh* m, Fields const& extruded_fields,
+    AllFieldsData const& all_data) {
+  for (size_t i = 0; i < extruded_fields.size(); ++i) {
+    apf::Field* extruded_field = extruded_fields[i];
+    std::string extruded_name = apf::getName(extruded_field);
+    int ncomps = apf::countComponents(extruded_field);
+    apf::destroyField(extruded_field);
+    FieldData const& field_data = all_data.flat_data[i];
+    for (size_t j = 0; j < field_data.size(); ++j) {
+      std::stringstream ss;
+      ss << 'L' << j << '_';
+      ss << extruded_name;
+      std::string name = ss.str();
+      apf::Field* flat_field = apf::createPackedField(
+          m, name.c_str(), ncomps);
+      LayerFieldData const& layer_data = field_data[j];
+      Iterator* it = m->begin(0);
+      Entity* v;
+      size_t k = 0;
+      while ((v = m->iterate(it))) {
+        apf::setComponents(flat_field, v, 0, &layer_data[k * ncomps]);
+        ++k;
+      }
+      m->end(it);
+    }
+  }
+}
+
+void zeroOutZCoords(Mesh* m) {
+  Iterator* it = m->begin(0);
+  Entity* v;
+  while ((v = m->iterate(it))) {
+    Vector x;
+    m->getPoint(v, 0, x);
+    x[2] = 0;
+    m->setPoint(v, 0, x);
+  }
+  m->end(it);
+}
+
 } // end anonymous namespace
 
-void intrude(Mesh* m, std::vector<ModelExtrusion> const& model_extrusions,
+void intrude(Mesh* m, ModelExtrusions const& model_extrusions,
     size_t* num_layers_out) {
+  ModelSet bottoms;
+  getBottomModels(model_extrusions, &bottoms);
   Crawler::Layer base;
-  getBase(m, model_extrusions, 0, &base);
+  getBase(m, bottoms, 0, &base);
   Layers layers;
   getVertLayers(m, base, &layers);
+  *num_layers_out = layers.size();
   Fields extruded_fields;
   gatherExtrudedFields(m, &extruded_fields);
   AllFieldsData all_data;
   gatherAllFieldsData(m, layers, extruded_fields, &all_data);
-  *num_layers_out = layers.size();
+  remove3DPortion(m, bottoms);
+  defrag(m);
+  applyFlatFields(m, extruded_fields, all_data);
+  zeroOutZCoords(m);
 }
 
 } // end namespac ma
