@@ -270,7 +270,7 @@ void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
   \details hack - interior edges have classification set to the
   same geometric model region
 */
-void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
+void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
   apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
   apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
@@ -282,7 +282,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) 
   while( (edge = mesh->iterate(it)) ) {
     apf::Up adj_faces;
     mesh->getUp(edge, adj_faces);
-    std::set<int> adj_mdl_faces;
+    std::set<apf::ModelEntity*> adj_mdl_faces;
     for (int i = 0; i < adj_faces.n; ++i) {
       apf::MeshEntity* adj_face = adj_faces.e[i];
       apf::ModelEntity* face_class = mesh->toModel(adj_face);
@@ -351,7 +351,7 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
 void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setRgnClassification(model,mesh);
   setFaceClassification(model,mesh,t);
-  setEdgeClassification(model,mesh,t);
+  setEdgeClassification(model,mesh);
   setVtxClassification(model,mesh,t);
   mesh->acceptChanges();
 }
