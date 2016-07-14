@@ -44,6 +44,7 @@ add_subdirectory(sam)
 add_subdirectory(phasta)
 add_subdirectory(dsp)
 add_subdirectory(viz)
+add_subdirectory(omega_h)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
