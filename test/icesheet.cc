@@ -429,6 +429,23 @@ void attachVtxField(apf::Mesh2* mesh, const char* fname,
   delete [] arr;
 }
 
+void mergeSolutionFields(apf::Mesh2* mesh) {
+  apf::Field* x = mesh->findField("solution_x");
+  apf::Field* y = mesh->findField("solution_y");
+  apf::Field* xy = apf::createPackedField(mesh,"solution_xy",2);
+  apf::MeshIterator* it = mesh->begin(0);
+  apf::MeshEntity* vtx;
+  while( (vtx = mesh->iterate(it)) ) {
+    double v[2] = {0,0};
+    v[0] = apf::getScalar(x,vtx,0);
+    v[1] = apf::getScalar(y,vtx,0);
+    apf::setComponents(xy, vtx, 0, v);
+  }
+  mesh->end(it);
+  apf::destroyField(x);
+  apf::destroyField(y);
+}
+
 void detachVtxTag(apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
@@ -481,6 +498,7 @@ int main(int argc, char** argv)
   mesh->verify();
   for(int i=4; i<argc-1; i++)
     attachVtxField(mesh,argv[i],outMap);
+  mergeSolutionFields(mesh);
   outMap.clear();
   mesh->writeNative(argv[9]);
   apf::writeVtkFiles("rendered",mesh);
