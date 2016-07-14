@@ -6,9 +6,6 @@
 #include <sstream>
 #include <cstdlib>
 
-//DEBUG
-#include <iostream>
-
 namespace ma {
 
 namespace {
@@ -27,14 +24,11 @@ struct AllFieldsData {
 };
 
 Fields gatherExtrudedFields(Mesh* m) {
-  std::cerr << "gathering extruded fields...\n";
   Fields fields;
   fields.clear();
   for (int i = 0; i < m->countFields(); ++i) {
     apf::Field* f = m->getField(i);
-    std::cerr << "field " << apf::getName(f) << " exists\n";
     if (apf::getShape(f) == m->getShape()) {
-      std::cerr << "field " << apf::getName(f) << " accepted\n";
       fields.push_back(f);
     }
   }
@@ -104,11 +98,6 @@ void getBottomModels(ModelExtrusions const& model_extrusions,
 
 Crawler::Layer getBase(Mesh* m, ModelSet const& bottoms, int d)
 {
-  std::cerr << "bottoms:\n";
-  APF_CONST_ITERATE(ModelSet, bottoms, it) {
-    std::cerr << "(" << m->getModelType(*it) << ", "
-      << m->getModelTag(*it) << ")\n";
-  }
   Crawler::Layer base;
   Iterator* it = m->begin(d);
   Entity* e;
@@ -116,7 +105,6 @@ Crawler::Layer getBase(Mesh* m, ModelSet const& bottoms, int d)
     if (bottoms.count(m->toModel(e)))
       base.push_back(e);
   m->end(it);
-  std::cerr << "bottom layer has " << base.size() << " verts\n";
   return base;
 }
 
@@ -131,7 +119,6 @@ Layers getVertLayers(Mesh* m, Crawler::Layer const& base_layer) {
     for (size_t i = 0; i < current_layer.size(); ++i) {
       m->setIntTag(current_layer[i], visited, 0);
     }
-    std::cerr << "crawling a layer...\n";
     for (size_t i = 0; i < current_layer.size(); ++i) {
       Entity* v = current_layer[i];
       Entity* ov = getOtherVert(m, v, pred);
@@ -202,8 +189,6 @@ std::string getExtrudedName(std::string const& flat_name) {
 
 void applyFlatField(Mesh* m, std::string const& extruded_name,
     int ncomps, FieldData const& field_data) {
-  std::cerr << "flat field " << extruded_name << " will have "
-    << field_data.size() << " layers\n";
   for (size_t i = 0; i < field_data.size(); ++i) {
     std::string flat_name = getFlatName(extruded_name, i);
     apf::Field* flat_field = apf::createPackedField(
@@ -222,14 +207,12 @@ void applyFlatField(Mesh* m, std::string const& extruded_name,
 
 void applyFlatFields(Mesh* m, Fields const& extruded_fields,
     AllFieldsData const& all_data) {
-  std::cerr << "applying flat fields...\n";
   for (size_t i = 0; i < extruded_fields.size(); ++i) {
     apf::Field* extruded_field = extruded_fields[i];
     std::string extruded_name = apf::getName(extruded_field);
     int ncomps = apf::countComponents(extruded_field);
     apf::destroyField(extruded_field);
     FieldData const& field_data = all_data.flat_data[i];
-    std::cerr << "applying flat field " << extruded_name << '\n';
     applyFlatField(m, extruded_name, ncomps, field_data);
   }
   applyFlatField(m, "z", 1, all_data.flat_z_data);
@@ -313,7 +296,6 @@ class DebugBuildCallback : public apf::BuildCallback {
 
 FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     ModelExtrusions const& extrusions, bool is_last) {
-  std::cerr << "buildLayer (is_last = " << is_last << ")\n";
   Crawler::Layer const& prev_verts = prev_layer.ents[0];
   Tag* indices = m->createIntTag("index", 1);
   for (size_t i = 0; i < prev_verts.size(); ++i) {
@@ -321,7 +303,6 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     m->setIntTag(prev_verts[i], indices, &i_int);
   }
   FullLayer next_layer;
-  std::cerr << "extruding " << prev_verts.size() << " verts...\n";
   for (size_t i = 0; i < prev_verts.size(); ++i) {
     Entity* ev[2];
     ev[0] = prev_verts[i];
@@ -333,7 +314,6 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     m->createEntity(apf::Mesh::EDGE, local_class.middle, ev);
     next_layer.ents[0].push_back(ev[1]);
   }
-  std::cerr << "extruding " << prev_layer.ents[1].size() << " edges...\n";
   for (size_t i = 0; i < prev_layer.ents[1].size(); ++i) {
     Entity* pe = prev_layer.ents[1][i];
     assert(m->getType(pe) == apf::Mesh::EDGE);
@@ -353,7 +333,6 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     apf::buildElement(m, local_class.middle, apf::Mesh::QUAD, qv, &qcb);
     next_layer.ents[1].push_back(ne);
   }
-  std::cerr << "extruding " << prev_layer.ents[2].size() << " tris...\n";
   for (size_t i = 0; i < prev_layer.ents[2].size(); ++i) {
     Entity* pt = prev_layer.ents[2][i];
     ModelExtrusion local_class = getLocalClass(m, pt, extrusions, is_last);
