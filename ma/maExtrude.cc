@@ -26,12 +26,16 @@ struct AllFieldsData {
 };
 
 void gatherExtrudedFields(Mesh* m, Fields* fields_out) {
+  std::cerr << "gathering extruded fields...\n";
   Fields& fields = *fields_out;
   fields.clear();
   for (int i = 0; i < m->countFields(); ++i) {
     apf::Field* f = m->getField(i);
-    if (apf::getShape(f) == m->getShape())
+    std::cerr << "field " << apf::getName(f) << " exists\n";
+    if (apf::getShape(f) == m->getShape()) {
+      std::cerr << "field " << apf::getName(f) << " accepted\n";
       fields.push_back(f);
+    }
   }
 }
 
@@ -83,7 +87,7 @@ void gatherAllFieldsData(Mesh* m, Layers const& layers,
   for (size_t i = 0; i < extruded_fields.size(); ++i) {
     FieldDataGetter getter(extruded_fields[i]);
     all_data.flat_data.resize(all_data.flat_data.size() + 1);
-    FieldData field_data = all_data.flat_data.back();
+    FieldData& field_data = all_data.flat_data.back();
     gatherFieldData(getter, layers, &field_data);
   }
   ZDataGetter getter(m);
@@ -176,6 +180,8 @@ void defrag(Mesh* m) {
 
 void applyFlatField(Mesh* m, std::string const& extruded_name,
     int ncomps, FieldData const& field_data) {
+  std::cerr << "flat field " << extruded_name << " will have "
+    << field_data.size() << " layers\n";
   for (size_t j = 0; j < field_data.size(); ++j) {
     std::stringstream ss;
     ss << 'L' << j << '_';
@@ -197,12 +203,14 @@ void applyFlatField(Mesh* m, std::string const& extruded_name,
 
 void applyFlatFields(Mesh* m, Fields const& extruded_fields,
     AllFieldsData const& all_data) {
+  std::cerr << "applying flat fields...\n";
   for (size_t i = 0; i < extruded_fields.size(); ++i) {
     apf::Field* extruded_field = extruded_fields[i];
     std::string extruded_name = apf::getName(extruded_field);
     int ncomps = apf::countComponents(extruded_field);
     apf::destroyField(extruded_field);
     FieldData const& field_data = all_data.flat_data[i];
+    std::cerr << "applying flat field " << extruded_name << '\n';
     applyFlatField(m, extruded_name, ncomps, field_data);
   }
   applyFlatField(m, "z", 1, all_data.flat_z_data);
