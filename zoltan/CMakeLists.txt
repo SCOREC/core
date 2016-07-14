@@ -48,7 +48,7 @@ if(ENABLE_ZOLTAN)
     ${PARMETIS_INCLUDE_DIRS}
   )
   target_link_libraries(
-    apf_zoltan zoltan
+    apf_zoltan
     ${ZOLTAN_LIBRARIES}
     ${PARMETIS_LIBRARIES}
   )
