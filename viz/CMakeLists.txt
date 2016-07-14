@@ -8,8 +8,14 @@ if(NOT ENABLE_VIZ)
 endif()
 
 # Find the milo library
-find_path(MILO_INCLUDE NAMES milo.h)
+find_path(MILO_INCLUDE_DIR NAMES milo.h)
+if(NOT EXISTS "${MILO_INCLUDE_DIR}")
+  message(FATAL_ERROR "milo header not found")
+endif()
 find_library(MILO_LIB NAMES milo)
+if(NOT EXISTS "${MILO_LIB}")
+ message(FATAL_ERROR "milo library not found")
+endif()
 
 # Package sources
 set(SOURCES
@@ -27,7 +33,7 @@ add_library(viz ${SOURCES})
 # Inlcude directories
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${MILO_INCLUDE}
+  ${MILO_INCLUDE_DIR}
 )
 
 # Link this package to these libraries
