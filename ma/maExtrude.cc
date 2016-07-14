@@ -454,7 +454,6 @@ void applyExtrudedFields(Mesh* m, Fields const& base_fields,
       applyExtrudedData(setter, field_data, layers);
     } else {
       int ncomps = apf::countComponents(base_field);
-      apf::destroyField(base_field);
       apf::Field* extruded_field = apf::createPackedField(
           m, extruded_name.c_str(), ncomps);
       FieldDataSetter setter(extruded_field);
@@ -462,6 +461,7 @@ void applyExtrudedFields(Mesh* m, Fields const& base_fields,
       applyExtrudedData(setter, field_data, layers);
       ++j;
     }
+    apf::destroyField(base_field);
   }
 }
 
