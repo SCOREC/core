@@ -1,21 +1,5 @@
-cmake_minimum_required(VERSION 2.8.6)
-
-project(crv)
-
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  find_package(ma PATHS ${CMAKE_BINARY_DIR})
-  
-  set(CRV_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${APF_INCLUDE_DIRS}
-    ${MA_INCLUDE_DIRS})
-  set(DEP_LIBS ${APF_LIBS} ${MA_LIBS})
-  set(CRV_LIBS crv ${DEP_LIBS})
-endif()
-
-#Sources & Headers
-set(CRV_SOURCES
+# Package sources
+set(SOURCES
   crv.cc
   crvAdapt.cc
   crvBernstein.cc
@@ -34,26 +18,32 @@ set(CRV_SOURCES
   crvSubdivision.cc
   crvTables.cc
   crvQuality.cc
-  crvVtk.cc)
-
-set(CRV_HEADERS
-  crv.h)
-
-include_directories(${CRV_INCLUDE_DIRS})
-
-#Library
-add_library(crv ${CRV_SOURCES})
-target_link_libraries(crv ${DEP_LIBS})
-
-INSTALL(FILES ${CRV_HEADERS} DESTINATION include)
-INSTALL(TARGETS 
-  crv
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+  crvVtk.cc
 )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/crvConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/crvConfig.cmake")
+# Package headers
+set(HEADERS
+  crv.h
+)
 
+# Add the crv library
+add_library(crv ${SOURCES})
+
+# Include directories
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Link this package to these libraries
+target_link_libraries(crv apf ma)
+
+# Tell CMake to add this package to the SCOREC project
+set_property(
+  TARGET crv
+  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS crv EXPORT crv-targets DESTINATION lib)
+install(FILES ${HEADERS} DESTINATION include)
+install(EXPORT crv-targets DESTINATION lib/scorec)
