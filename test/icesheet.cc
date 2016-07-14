@@ -29,7 +29,7 @@ unsigned getElmType(int numVtxPerElm) {
 }
 
 void readHeader(FILE* f, unsigned& nodes, unsigned& elms, unsigned& numVtxPerElm) {
-  fscanf(f,"%d %d %d", &nodes, &elms, &numVtxPerElm);
+  gmi_fscanf(f, 3, "%d %d %d", &nodes, &elms, &numVtxPerElm);
 }
 
 void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
@@ -39,7 +39,7 @@ void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
   for(unsigned i=0; i<numvtx; i++) {
     for(unsigned j=0; j<3; j++) {
       double pos = 0;
-      fscanf(f, "%lf", &pos);
+      gmi_fscanf(f, 1, "%lf", &pos);
       coordinates[i*3+j] = pos;
       if( pos < min[j] )
         min[j] = pos;
@@ -59,7 +59,7 @@ void readElements(FILE* f, unsigned numelms, int numVtxPerElm,
   std::map<int, int> count;
   for (i = 0; i < numelms*numVtxPerElm; i++) {
     int vtxid;
-    fscanf(f, "%u", &vtxid);
+    gmi_fscanf(f, 1, "%u", &vtxid);
     elements[i] = --vtxid; //export from matlab using 1-based indices
     count[elements[i]]++;
   }
@@ -357,11 +357,11 @@ int* readIntArray(const char* fname, unsigned len) {
   FILE* f = fopen(fname, "r");
   assert(f);
   unsigned n;
-  fscanf(f,"%u", &n);
+  gmi_fscanf(f, 1, "%u", &n);
   assert( n == len );
   int* data = new int[len];
   for(unsigned i = 0; i< len; i++)
-    fscanf(f, "%d", &data[i]);
+    gmi_fscanf(f, 1, "%d", &data[i]);
   return data;
 }
 
@@ -369,11 +369,11 @@ double* readScalarArray(const char* fname, unsigned len) {
   FILE* f = fopen(fname, "r");
   assert(f);
   unsigned n;
-  fscanf(f,"%u", &n);
+  gmi_fscanf(f, 1, "%u", &n);
   assert( n == len );
   double* data = new double[len];
   for(unsigned i = 0; i< len; i++)
-    fscanf(f, "%lf", &data[i]);
+    gmi_fscanf(f, 1, "%lf", &data[i]);
   return data;
 }
 
