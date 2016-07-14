@@ -338,8 +338,6 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     Entity* pe = prev_layer.ents[1][i];
     assert(m->getType(pe) == apf::Mesh::EDGE);
     ModelExtrusion local_class = getLocalClass(m, pe, extrusions, is_last);
-    if (m->getModelType(local_class.middle) == 2)
-      assert(m->getModelType(local_class.bottom) == 1);
     Entity* pev[2];
     m->getDownward(pe, 0, pev);
     Entity* nev[2];
