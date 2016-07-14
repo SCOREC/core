@@ -3,7 +3,7 @@ IF(DEFINED TRIBITS_PACKAGE)
 ENDIF()
 
 if(BUILD_IN_TRILINOS)
-   tribits_package(SCORECmds) 
+   tribits_package(SCORECmds)
 else()
    project(mds)
 endif()
