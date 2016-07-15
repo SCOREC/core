@@ -464,8 +464,8 @@ int main(int argc, char** argv)
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
         "<surface elevation field .ascii> "
-        "<solution_x field .ascii> "
-        "<solution_y field .ascii> "
+        "<solution_x field .ascii>/NULL "
+        "<solution_y field .ascii>/NULL "
         "<output mesh>\n",
         argv[0]);
     return 0;
@@ -495,7 +495,8 @@ int main(int argc, char** argv)
   mesh->verify();
   for(int i=4; i<argc-1; i++)
     attachVtxField(mesh,argv[i],outMap);
-  mergeSolutionFields(mesh);
+  if(avg[8]!="NULL"&&avg[9]!="NULL")
+	mergeSolutionFields(mesh);
   outMap.clear();
   mesh->writeNative(argv[9]);
   apf::writeVtkFiles("rendered",mesh);
