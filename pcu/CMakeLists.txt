@@ -2,20 +2,10 @@
 option(PCU_COMPRESS "Enable SMB compression using libbzip2 [ON|OFF]" OFF)
 message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
-# Let CMake know where to find custom find package implementations
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
-
 # Gets C99 support
 find_package(C99 REQUIRED)
 set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
-message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
-
-# Check for and enable compression support
-if(PCU_COMPRESS)
-  find_package(BZip2 REQUIRED)
-endif(PCU_COMPRESS)
+message(STATUS "PCU CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 
 # Package sources
 set(SOURCES
@@ -40,30 +30,30 @@ set(HEADERS
   reel/reel.h
 )
 
-# Add the pcu library
-add_library(pcu ${SOURCES})
-
 # Include directories
-include_directories(
+set(INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/noto
   ${CMAKE_CURRENT_SOURCE_DIR}/reel
 )
 
-# Do extra work if compression is enabled
-if(PCU_COMPRESS)
- include_directories(${BZIP2_INCLUDE_DIR})
- target_link_libraries(pcu ${BZIP2_LIBRARIES})
- add_definitions(-DPCU_BZIP)
-endif()
-
-# Tell CMake to add this package to the SCOREC project
+# Add the pcu library
+add_library(pcu ${SOURCES})
 set_property(
   TARGET pcu
   APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${INCLUDE_DIRS}>
   $<INSTALL_INTERFACE:include>
 )
+
+# Check for and enable compression support
+if(PCU_COMPRESS)
+  find_package(BZip2 REQUIRED)
+  target_include_directories(pcu PRIVATE ${BZIP2_INCLUDE_DIR})
+  target_link_libraries(pcu PRIVATE ${BZIP2_LIBRARIES})
+  target_add_definitions(pcu PRIVATE "-DPCU_BZIP")
+endif()
+
 install(TARGETS pcu EXPORT pcu-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT pcu-targets DESTINATION lib/scorec)
