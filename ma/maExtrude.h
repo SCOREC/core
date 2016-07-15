@@ -21,6 +21,8 @@ struct ModelExtrusion {
 
 typedef std::vector<ModelExtrusion> ModelExtrusions;
 
+std::string getFlatName(std::string const& extruded_name, size_t layer);
+
 /** \brief Compress an extruded prism mesh into a triangle mesh */
 void intrude(Mesh* m, ModelExtrusions const& model_extrusions,
     size_t* num_layers_out);

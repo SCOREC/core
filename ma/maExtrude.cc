@@ -166,13 +166,6 @@ void defrag(Mesh* m) {
   reorderMdsMesh(m, tag);
 }
 
-std::string getFlatName(std::string const& extruded_name, size_t layer) {
-  std::stringstream ss;
-  ss << 'L' << layer << '_';
-  ss << extruded_name;
-  return ss.str();
-}
-
 std::string getExtrudedName(std::string const& flat_name) {
   std::stringstream ss(flat_name);
   int c;
@@ -468,6 +461,13 @@ void applyExtrudedFields(Mesh* m, Fields const& base_fields,
 }
 
 } // end anonymous namespace
+
+std::string getFlatName(std::string const& extruded_name, size_t layer) {
+  std::stringstream ss;
+  ss << 'L' << layer << '_';
+  ss << extruded_name;
+  return ss.str();
+}
 
 void intrude(Mesh* m, ModelExtrusions const& model_extrusions,
     size_t* num_layers_out) {
