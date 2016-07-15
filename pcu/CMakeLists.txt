@@ -2,11 +2,6 @@
 option(PCU_COMPRESS "Enable SMB compression using libbzip2 [ON|OFF]" OFF)
 message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
-# Gets C99 support
-find_package(C99 REQUIRED)
-set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
-message(STATUS "PCU CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
-
 # Package sources
 set(SOURCES
   pcu.c
@@ -39,12 +34,10 @@ set(INCLUDE_DIRS
 
 # Add the pcu library
 add_library(pcu ${SOURCES})
-set_property(
-  TARGET pcu
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${INCLUDE_DIRS}>
-  $<INSTALL_INTERFACE:include>
-)
+target_include_directories(pcu INTERFACE
+    $<BUILD_INTERFACE:${INCLUDE_DIRS}>
+    $<INSTALL_INTERFACE:include>
+    )
 
 # Check for and enable compression support
 if(PCU_COMPRESS)
