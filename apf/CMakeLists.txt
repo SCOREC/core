@@ -65,21 +65,21 @@ set(HEADERS
 add_library(apf ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../pcu/reel
-)
+target_include_directories(apf INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
-# Link this package to these libraries
-target_link_libraries(apf pcu gmi can mth lion)
+# Link this library to these others
+target_link_libraries(apf
+# these headers are not included in
+# public APF headers
+   PRIVATE pcu gmi lion
+# these headers are visible from public APF headers
+   PUBLIC can mth
+   )
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET apf
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS apf EXPORT apf-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT apf-targets DESTINATION lib/scorec)
