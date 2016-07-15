@@ -19,7 +19,7 @@ endif("${isSystemDir}" STREQUAL "-1")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
 # Unless building shared libs, select static libs
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib") 
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
 if(BUILD_SHARED_LIBS)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 endif()
