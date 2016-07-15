@@ -62,24 +62,24 @@ set(HEADERS
 add_library(parma ${SOURCES})
 
 # Include directories
-include_directories(
+target_include_directories(parma INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+set(PRIVATE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/diffMC
   ${CMAKE_CURRENT_SOURCE_DIR}/group
   ${CMAKE_CURRENT_SOURCE_DIR}/rib
 )
+target_include_directories(parma PRIVATE
+    $<BUILD_INTERFACE:${PRIVATE_DIRS}>
+    )
 
-# Link this package to these libraries
-target_link_libraries(parma apf)
+# Link this library to these libraries
+target_link_libraries(parma PUBLIC apf)
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET parma
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS parma EXPORT parma-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT parma-targets DESTINATION lib/scorec)
-

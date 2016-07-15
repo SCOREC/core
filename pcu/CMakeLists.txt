@@ -21,22 +21,23 @@ set(SOURCES
 set(HEADERS
   PCU.h
   pcu_io.h
-  noto/noto_malloc.h
   reel/reel.h
-)
-
-# Include directories
-set(INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/noto
-  ${CMAKE_CURRENT_SOURCE_DIR}/reel
 )
 
 # Add the pcu library
 add_library(pcu ${SOURCES})
-target_include_directories(pcu INTERFACE
-    $<BUILD_INTERFACE:${INCLUDE_DIRS}>
+
+# Include directories
+set(PUBLIC_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/reel
+)
+target_include_directories(pcu PUBLIC
+    $<BUILD_INTERFACE:${PUBLIC_DIRS}>
     $<INSTALL_INTERFACE:include>
+    )
+target_include_directories(pcu PRIVATE
+    $<BUILD_INTERFACE:"${CMAKE_CURRENT_SOURCE_DIR}/noto">
     )
 
 # Check for and enable compression support
