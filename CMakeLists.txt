@@ -28,6 +28,34 @@ endif()
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
+# Set options for testing
+enable_testing()
+include(CTest)
+option(IS_TESTING "Build for CTest" OFF)
+message(STATUS "IS_TESTING: ${IS_TESTING}")
+set(MPIRUN "mpirun" CACHE string
+  "the mpirun or srun executable")
+set(MPIRUN_PROCFLAG "-np" CACHE string
+  "the command line flag to give process count to MPIRUN")
+set(VALGRIND "" CACHE string
+  "the valgrind executable")
+set(VALGRIND_ARGS "" CACHE string
+  "the command line arguments to VALGRIND")
+
+# Set options for doxygen documentation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY
+)
+add_custom_target(doc
+  ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating API documentation with Doxygen" VERBATIM
+)
+endif()
+
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
@@ -47,20 +75,24 @@ add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(viz)
 add_subdirectory(omega_h)
+add_subdirectory(test)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(
   "${PROJECT_SOURCE_DIR}/scorec-config.cmake.in"
   "${PROJECT_BINARY_DIR}/scorec-config.cmake"
-  @ONLY)
+  @ONLY
+)
 configure_file(
   "${PROJECT_SOURCE_DIR}/scorec-config-version.cmake.in"
   "${PROJECT_BINARY_DIR}/scorec-config-version.cmake"
-  @ONLY)
+  @ONLY
+)
 install(FILES
   "${PROJECT_BINARY_DIR}/scorec-config.cmake"
   "${PROJECT_BINARY_DIR}/scorec-config-version.cmake"
-  DESTINATION lib/scorec)
+  DESTINATION lib/scorec
+)
 
 # Binary distribution package
 set(CPACK_GENERATOR "TGZ")
