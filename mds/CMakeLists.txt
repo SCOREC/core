@@ -1,4 +1,3 @@
-# Package options
 set(MDS_SET_MAX 256 CACHE STRING "Buffer size for adjacency computation")
 set(MDS_ID_TYPE "int" CACHE STRING "Interal identifier integer type")
 message(STATUS "MDS_SET_MAX: ${MDS_SET_MAX}")

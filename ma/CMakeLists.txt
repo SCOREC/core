@@ -36,6 +36,7 @@ set(SOURCES
   maLayerSnap.cc
   maMap.cc
   maReposition.cc
+  maExtrude.cc
 )
 
 # Package headers
@@ -47,6 +48,7 @@ set(HEADERS
   maShape.h
   maTables.h
   maSolutionTransfer.h
+  maExtrude.h
 )
 
 # Add the ma library
