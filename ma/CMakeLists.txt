@@ -60,7 +60,7 @@ include_directories(
 )
 
 # Link this package to these libraries
-target_link_libraries(ma apf parma apf_zoltan)
+target_link_libraries(ma apf mds parma apf_zoltan)
 
 # Tell CMake to add this package to the SCOREC project
 set_property(
