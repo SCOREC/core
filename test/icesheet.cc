@@ -433,7 +433,7 @@ void attachVtxField(apf::Mesh2* mesh, const char* fname,
 void mergeSolutionFields(apf::Mesh2* mesh) {
   apf::Field* x = mesh->findField("solution_x");
   apf::Field* y = mesh->findField("solution_y");
-  apf::Field* xy = apf::createPackedField(mesh,"solution_xy",2);
+  apf::Field* xy = apf::createPackedField(mesh,"Solution",2);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) ) {
