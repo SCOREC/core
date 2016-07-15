@@ -390,7 +390,7 @@ std::string getName(const char* fname) {
   } else if( in.find("temperature") != string::npos ) {
     return string("temperature");
   } else if( in.find("surface_elevation") != string::npos ) {
-    return string("surface_elevation");
+    return string("surface_height");
   } else if( in.find("solution_x") != string::npos ) {
     return string("solution_x");
   } else if( in.find("solution_y") != string::npos ) {
