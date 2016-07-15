@@ -24,7 +24,7 @@ if(BUILD_SHARED_LIBS)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 endif()
 
-# Let CMake know where to find custom find package implementations
+# Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
