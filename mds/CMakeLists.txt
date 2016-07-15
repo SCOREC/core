@@ -1,5 +1,5 @@
 # Package options
-set(MDS_SET_MAX 256 CACHE STRING "Buffer size for adjacency computation")
+set(MDS_SET_MAX "256" CACHE STRING "Buffer size for adjacency computation")
 set(MDS_ID_TYPE "int" CACHE STRING "Interal identifier integer type")
 message(STATUS "MDS_SET_MAX: ${MDS_SET_MAX}")
 message(STATUS "MDS_ID_TYPE: ${MDS_ID_TYPE}")
@@ -35,23 +35,26 @@ set(HEADERS
 # Add the mds library
 add_library(mds ${SOURCES})
 
-# Inlcude directories
-include_directories(
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../pcu/reel
-)
+# Include directories
+target_include_directories(apf INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+# for the generated mds_config.h
+# private because no one outside MDS needs it
+target_include_directories(apf PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    )
 
-# Link this package to these libraries
-target_link_libraries(mds pcu gmi apf)
+# Link this library to these libraries
+target_link_libraries(mds
+# these headers are visible from public MDS headers
+   PRIVATE pcu
+# these headers are visible from public MDS headers
+   PUBLIC gmi apf
+   )
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET mds
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS mds EXPORT mds-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT mds-targets DESTINATION lib/scorec)
