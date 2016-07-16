@@ -1,15 +1,11 @@
-# Set up a convenience macro to setup test exes
-if(NOT IS_TESTING)
-  set(MYEXCLUDE EXCLUDE_FROM_ALL)
-else()
-  set(MYEXCLUDE)
-endif()
 function(setup_exe exename srcname)
-  add_executable(${exename} ${MYEXCLUDE} ${srcname})
-  target_link_libraries(${exename} scorec)
   if(IS_TESTING)
+    add_executable(${exename} ${srcname})
     install(TARGETS ${exename} DESTINATION bin)
+  else()
+    add_executable(${exename} EXCLUDE_FROM_ALL ${srcname})
   endif()
+  target_link_libraries(${exename} scorec)
 endfunction(setup_exe)
 
 # Mesh validity/statistics utilities
