@@ -39,28 +39,24 @@ set(HEADERS
 # Add the ph library
 add_library(ph ${SOURCES})
 
+# Include directories
+target_include_directories(ph INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+target_link_libraries(ph PRIVATE ma mds sam)
+
 # Handle the complexity of the chef enabled flag
 if(PHASTA_CHEF_ENABLED)
-  include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PHASTACHEF_SOURCE_DIR}/phstream
-  )
-  target_link_libraries(ph ma mds sam phstream)
+  target_link_libraries(ph PRIVATE phstream)
 else()
-  include_directories(
+  target_include_directories(ph PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/phstreamEmpty
-  )
-  target_link_libraries(ph ma mds sam)
+    ${PHASTACHEF_SOURCE_DIR}/phstreamEmpty
+    )
 endif()
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET ph
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS ph EXPORT ph-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT ph-targets DESTINATION lib/scorec)
