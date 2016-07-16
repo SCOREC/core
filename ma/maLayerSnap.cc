@@ -16,7 +16,7 @@ namespace ma {
 struct SnapTagger : public Crawler
 {
   SnapTagger(Adapt* a_, Tag* t_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;
@@ -102,7 +102,7 @@ static void tagLayerForSnap(Adapt* a, Tag* snapTag)
 struct BaseTopLinker : public Crawler
 {
   BaseTopLinker(Adapt* a_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;
@@ -193,7 +193,7 @@ struct BaseTopLinker : public Crawler
 struct LayerSnapper : public Crawler
 {
   LayerSnapper(Adapt* a_, Tag* t_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;
@@ -294,7 +294,7 @@ static bool isElementOk(Adapt* a, Entity* e)
 struct UnsnapChecker : public Crawler
 {
   UnsnapChecker(Adapt* a_, Tag* t_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;
@@ -438,7 +438,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
     assert(m->hasTag(v, snapTag));
   }
   n = PCU_Add_Long(n);
-  print("fed back unsnap flag from %ld tops", n); 
+  print("fed back unsnap flag from %ld tops", n);
 }
 
 /* for each layer curve whose base vertex
@@ -450,7 +450,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
 struct Unsnapper : public Crawler
 {
   Unsnapper(Adapt* a_, Tag* t_):
-    Crawler(a_)
+    Crawler(a_->mesh)
   {
     a = a_;
     m = a->mesh;
