@@ -34,33 +34,27 @@ set(HEADERS apfZoltan.h)
 add_library(apf_zoltan ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(apf_zoltan INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
 # Link this package to these libraries
-target_link_libraries(apf_zoltan apf)
+target_link_libraries(apf_zoltan PUBLIC apf)
 
 # Do extra work if zoltan is enabled
 if(ENABLE_ZOLTAN)
-  include_directories(
-    ${ZOLTAN_INCLUDE_DIRS}
-    ${PARMETIS_INCLUDE_DIRS}
-  )
-  target_link_libraries(
-    apf_zoltan
+  target_include_directories(apf_zoltan PRIVATE
+      ${ZOLTAN_INCLUDE_DIRS}
+      ${PARMETIS_INCLUDE_DIRS}
+      )
+  target_link_libraries(apf_zoltan PRIVATE
     ${ZOLTAN_LIBRARIES}
     ${PARMETIS_LIBRARIES}
   )
 endif()
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET apf_zoltan
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS apf_zoltan EXPORT apf_zoltan-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT apf_zoltan-targets DESTINATION lib/scorec)
