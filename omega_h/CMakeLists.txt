@@ -14,7 +14,7 @@ if(NOT EXISTS "${OMEGA_H_INCLUDE_DIR}")
 endif()
 find_library(OMEGA_H_LIB omega_h)
 if(NOT EXISTS "${OMEGA_H_LIB}")
- message(FATAL_ERROR "Omega_h library not found")
+  message(FATAL_ERROR "Omega_h library not found")
 endif()
 
 # Package sources
@@ -31,21 +31,16 @@ set(SOURCES
 add_library(apf_omega_h ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${OMEGA_H_INCLUDE_DIR}
-)
+target_include_directories(apf_omega_h INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+target_include_directories(apf_omega_h PUBLIC ${OMEGA_H_INCLUDE_DIR})
 
 # Link this package to these libraries
-target_link_libraries(apf_omega_h mds apf ${OMEGA_H_LIB})
+target_link_libraries(apf_omega_h PUBLIC apf ${OMEGA_H_LIB} PRIVATE mds)
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET apf_omega_h
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS apf_omega_h EXPORT apf_omega_h-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT apf_omega_h-targets DESTINATION lib/scorec)

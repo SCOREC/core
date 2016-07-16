@@ -14,7 +14,7 @@ if(NOT EXISTS "${MILO_INCLUDE_DIR}")
 endif()
 find_library(MILO_LIB NAMES milo)
 if(NOT EXISTS "${MILO_LIB}")
- message(FATAL_ERROR "milo library not found")
+  message(FATAL_ERROR "milo library not found")
 endif()
 
 # Package sources
@@ -30,22 +30,19 @@ set(HEADERS
 # Add the viz library
 add_library(viz ${SOURCES})
 
-# Inlcude directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${MILO_INCLUDE_DIR}
-)
+# Include directories
+target_include_directories(apf INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+target_include_directories(apf PRIVATE
+    ${MILO_INCLUDE_DIR}
+    )
 
 # Link this package to these libraries
-target_link_libraries(viz apf ${MILO_LIB})
+target_link_libraries(viz PRIVATE apf ${MILO_LIB})
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET viz
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS viz EXPORT viz-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT viz-targets DESTINATION lib/scorec)
