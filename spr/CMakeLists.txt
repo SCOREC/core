@@ -18,7 +18,7 @@ target_include_directories(spr INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(spr PUBLIC apf)
+target_link_libraries(spr PUBLIC apf PRIVATE pcu)
 
 # Tell CMake to add this package to the SCOREC project
 install(TARGETS spr EXPORT spr-targets DESTINATION lib)

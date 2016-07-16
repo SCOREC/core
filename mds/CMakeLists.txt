@@ -36,13 +36,13 @@ set(HEADERS
 add_library(mds ${SOURCES})
 
 # Include directories
-target_include_directories(apf INTERFACE
+target_include_directories(mds INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
     )
 # for the generated mds_config.h
 # private because no one outside MDS needs it
-target_include_directories(apf PRIVATE
+target_include_directories(mds PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     )
 

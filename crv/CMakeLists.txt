@@ -36,7 +36,7 @@ target_include_directories(crv INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(crv PUBLIC apf ma)
+target_link_libraries(crv PUBLIC apf ma PRIVATE gmi pcu)
 
 # Tell CMake to add this package to the SCOREC project
 install(TARGETS crv EXPORT crv-targets DESTINATION lib)

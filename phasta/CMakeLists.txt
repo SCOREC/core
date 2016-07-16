@@ -24,11 +24,9 @@ set(SOURCES
   phAxisymmetry.cc
   phInterfaceCutter.cc
 )
+
 if(NOT PHASTA_CHEF_ENABLED)
-  set(SOURCES
-    ${SOURCES}
-    phstreamEmpty/phstreamEmpty.cc
-  )
+  set(SOURCES ${SOURCES} phstreamEmpty/phstreamEmpty.cc)
 endif()
 
 # Package headers
@@ -44,15 +42,24 @@ target_include_directories(ph INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
     )
-target_link_libraries(ph PRIVATE ma mds sam)
+target_include_directories(ph PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+target_link_libraries(ph PRIVATE
+    ma
+    mds
+    sam
+    parma
+    pcu
+    apf_zoltan
+    )
 
 # Handle the complexity of the chef enabled flag
 if(PHASTA_CHEF_ENABLED)
   target_link_libraries(ph PRIVATE phstream)
 else()
   target_include_directories(ph PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PHASTACHEF_SOURCE_DIR}/phstreamEmpty
+    ${CMAKE_CURRENT_SOURCE_DIR}/phstreamEmpty
     )
 endif()
 

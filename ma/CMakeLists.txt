@@ -63,7 +63,7 @@ target_include_directories(ma INTERFACE
 # Link this library to these libraries
 target_link_libraries(ma
    PUBLIC apf
-   PRIVATE mds parma apf_zoltan)
+   PRIVATE mds parma apf_zoltan pcu)
 
 # Tell CMake to add this package to the SCOREC project
 install(TARGETS ma EXPORT ma-targets DESTINATION lib)
