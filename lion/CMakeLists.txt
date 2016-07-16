@@ -25,23 +25,15 @@ set(HEADERS
 add_library(lion ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(lion INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
 # Do extra work if compression is enabled
 if(LION_COMPRESS)
-  include_directories(${ZLIB_INCLUDE_DIR})
-  target_link_libraries(lion ${ZLIB_LIBRARIES})
+  target_include_directories(lion PRIVATE ${ZLIB_INCLUDE_DIR})
+  target_link_libraries(lion PRIVATE ${ZLIB_LIBRARIES})
 endif()
 
-# Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET lion
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
-install(TARGETS lion EXPORT lion-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT lion-targets DESTINATION lib/scorec)
+target_macro(lion)

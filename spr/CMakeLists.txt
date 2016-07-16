@@ -12,20 +12,12 @@ set(HEADERS
 add_library(spr ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(spr INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
 # Link this package to these libraries
-target_link_libraries(spr apf)
+target_link_libraries(spr PUBLIC apf PRIVATE pcu)
 
-# Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET spr
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
-install(TARGETS spr EXPORT spr-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT spr-targets DESTINATION lib/scorec)
+target_macro(spr)

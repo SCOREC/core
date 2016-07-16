@@ -1,16 +1,3 @@
-# Let CMake know where to find package implementations
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
-
-# Gets C99 support
-find_package(C99 REQUIRED)
-set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
-message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
-
-# Include directories
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
-
 # Package sources
 set(SOURCES
   gmi.c
@@ -36,19 +23,9 @@ set(HEADERS
 
 # Add the gmi library
 add_library(gmi ${SOURCES})
+target_include_directories(gmi INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
-# Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-# Tell Cmake to add this package to the SCOREC project
-set_property(
-  TARGET gmi
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
-install(TARGETS gmi EXPORT gmi-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT gmi-targets DESTINATION lib/scorec)
+target_macro(gmi)

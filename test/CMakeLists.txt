@@ -1,28 +1,16 @@
-# Set up dependent libraries
-set(ALL_LIBS ma mds spr parma ph crv lion)
-if(ENABLE_DSP)
-  set(ALL_LIBS ${ALL_LIBS} dsp)
-endif()
-if(ENABLE_VIZ)
-  set(ALL_LIBS ${ALL_LIBS} viz)
-endif()
-if(ENABLE_OMEGA_H)
-  set(ALL_LIBS ${ALL_LIBS} apf_omega_h)
-endif()
-
 # Set up a convenience macro to setup test exes
 if(NOT IS_TESTING)
   set(MYEXCLUDE EXCLUDE_FROM_ALL)
 else()
   set(MYEXCLUDE)
 endif()
-macro(setup_exe exename srcname)
+function(setup_exe exename srcname)
   add_executable(${exename} ${MYEXCLUDE} ${srcname})
-  target_link_libraries(${exename} ${ALL_LIBS})
+  target_link_libraries(${exename} scorec)
   if(IS_TESTING)
     install(TARGETS ${exename} DESTINATION bin)
   endif()
-endmacro(setup_exe)
+endfunction(setup_exe)
 
 # Mesh validity/statistics utilities
 setup_exe(verify verify.cc)

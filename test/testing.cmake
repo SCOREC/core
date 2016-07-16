@@ -1,12 +1,12 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string
-    "path to the meshes svn repo")
-macro(mpi_test TESTNAME PROCS EXE)
+    "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
+function(mpi_test TESTNAME PROCS EXE)
   add_test(
     NAME ${TESTNAME}
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
-endmacro(mpi_test)
+endfunction(mpi_test)
 add_test(shapefun shapefun)
 add_test(shapefun2 shapefun2)
 add_test(bezierElevation bezierElevation)

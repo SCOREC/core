@@ -19,14 +19,19 @@ endif("${isSystemDir}" STREQUAL "-1")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
 # Unless building shared libs, select static libs
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib") 
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
 if(BUILD_SHARED_LIBS)
   set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 endif()
 
-# Let CMake know where to find custom find package implementations
+# Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+
+# Gets C99 support
+find_package(C99 REQUIRED)
+set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
+message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 
 # Set options for testing
 enable_testing()
@@ -56,6 +61,20 @@ add_custom_target(doc
 )
 endif()
 
+set(TARGETS)
+
+function(target_func TARGET_NAME)
+  install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-targets DESTINATION lib)
+  install(FILES ${HEADERS} DESTINATION include)
+  install(EXPORT ${TARGET_NAME}-targets DESTINATION lib/scorec)
+endfunction()
+
+macro(target_macro TARGET_NAME)
+  target_func(${TARGET_NAME})
+  # this PARENT_SCOPE is the reason for this being a macro, not a function
+  set(TARGETS ${TARGETS} ${TARGET_NAME} PARENT_SCOPE)
+endmacro()
+
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
@@ -75,6 +94,13 @@ add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(viz)
 add_subdirectory(omega_h)
+
+# this INTERFACE target bundles all the enabled libraries together
+add_library(scorec INTERFACE)
+target_link_libraries(scorec INTERFACE ${TARGETS})
+target_func(scorec)
+set(TARGETS ${TARGETS} scorec)
+
 add_subdirectory(test)
 
 # Tell CMake to install the project in a nice way :)

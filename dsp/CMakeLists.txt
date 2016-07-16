@@ -26,20 +26,12 @@ set(HEADERS
 add_library(dsp ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(apf INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
 # Link this package to these libraries
-target_link_libraries(dsp ma)
+target_link_libraries(dsp PRIVATE ma PUBLIC apf)
 
-# Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET dsp
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
-install(TARGETS dsp EXPORT dsp-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT dsp-targets DESTINATION lib/scorec)
+target_macro(dsp)
