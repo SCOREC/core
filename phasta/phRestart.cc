@@ -46,6 +46,35 @@ void attachField(
   assert(i == n);
 }
 
+void attachCellField(
+    apf::Mesh* m,
+    const char* fieldname,
+    double* data,
+    int in_size,
+    int out_size)
+{
+  if (!(in_size <= out_size))
+    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
+  assert(in_size <= out_size);
+  apf::Field* f = m->findField(fieldname);
+  if( f )
+    apf::destroyField(f);
+  f = apf::createPackedField(m, fieldname, out_size);
+  size_t n = m->count(m->getDimension());
+  apf::NewArray<double> c(out_size);
+  apf::MeshEntity* e;
+  size_t i = 0;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+    for (int j = 0; j < in_size; ++j)
+      c[j] = data[j * n + i];
+    apf::setComponents(f, e, 0, &c[0]);
+    ++i;
+  }
+  m->end(it);
+  assert(i == n);
+}
+
 /* convenience wrapper, in most cases in_size=out_size */
 void attachField(
     apf::Mesh* m,
@@ -104,6 +133,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
+    "MeshQ"
   };
   int known_nodal_field_count =
     sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);
@@ -144,6 +174,7 @@ int readAndAttachField(
   if(ret==0 || ret==1)
     return ret;
   if (!isNodalField(hname, nodes, m)) {
+    attachCellField(m, hname, data, vars, vars);
     free(data);
     return 1;
   }
