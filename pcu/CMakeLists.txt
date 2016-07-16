@@ -37,7 +37,7 @@ target_include_directories(pcu PUBLIC
     $<INSTALL_INTERFACE:include>
     )
 target_include_directories(pcu PRIVATE
-    $<BUILD_INTERFACE:"${CMAKE_CURRENT_SOURCE_DIR}/noto">
+    $<BUILD_INTERFACE:noto>
     )
 
 # Check for and enable compression support
