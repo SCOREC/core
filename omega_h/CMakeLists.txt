@@ -1,6 +1,6 @@
 # Package options
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
-message(STATUS "ENABLE_OMEGA_H:" ${ENABLE_OMEGA_H})
+message(STATUS "ENABLE_OMEGA_H: " ${ENABLE_OMEGA_H})
 
 # Only install the package if enabled
 if (NOT ENABLE_OMEGA_H)

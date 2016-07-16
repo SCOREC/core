@@ -63,10 +63,15 @@ endif()
 
 set(TARGETS)
 
-macro(target_macro TARGET_NAME)
+function(target_func TARGET_NAME)
   install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-targets DESTINATION lib)
   install(FILES ${HEADERS} DESTINATION include)
   install(EXPORT ${TARGET_NAME}-targets DESTINATION lib/scorec)
+endfunction()
+
+macro(target_macro TARGET_NAME)
+  target_func(${TARGET_NAME})
+  # this PARENT_SCOPE is the reason for this being a macro, not a function
   set(TARGETS ${TARGETS} ${TARGET_NAME} PARENT_SCOPE)
 endmacro()
 
@@ -89,6 +94,13 @@ add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(viz)
 add_subdirectory(omega_h)
+
+# this INTERFACE target bundles all the enabled libraries together
+add_library(scorec INTERFACE)
+target_link_libraries(scorec INTERFACE ${TARGETS})
+target_func(scorec)
+set(TARGETS ${TARGETS} scorec)
+
 add_subdirectory(test)
 
 # Tell CMake to install the project in a nice way :)
