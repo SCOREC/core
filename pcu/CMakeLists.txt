@@ -45,6 +45,4 @@ if(PCU_COMPRESS)
   target_add_definitions(pcu PRIVATE "-DPCU_BZIP")
 endif()
 
-install(TARGETS pcu EXPORT pcu-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT pcu-targets DESTINATION lib/scorec)
+target_macro(pcu)

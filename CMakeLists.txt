@@ -61,6 +61,15 @@ add_custom_target(doc
 )
 endif()
 
+set(TARGETS)
+
+macro(target_macro TARGET_NAME)
+  install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-targets DESTINATION lib)
+  install(FILES ${HEADERS} DESTINATION include)
+  install(EXPORT ${TARGET_NAME}-targets DESTINATION lib/scorec)
+  set(TARGETS ${TARGETS} ${TARGET_NAME} PARENT_SCOPE)
+endmacro()
+
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
