@@ -30,20 +30,15 @@ set(HEADERS
 add_library(crv ${SOURCES})
 
 # Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_include_directories(ma INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
 # Link this package to these libraries
-target_link_libraries(crv apf ma)
+target_link_libraries(crv PUBLIC apf ma)
 
 # Tell CMake to add this package to the SCOREC project
-set_property(
-  TARGET crv
-  APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include>
-)
 install(TARGETS crv EXPORT crv-targets DESTINATION lib)
 install(FILES ${HEADERS} DESTINATION include)
 install(EXPORT crv-targets DESTINATION lib/scorec)
