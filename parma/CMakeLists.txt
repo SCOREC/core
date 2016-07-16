@@ -76,7 +76,4 @@ target_include_directories(parma
 # Link this library to these libraries
 target_link_libraries(parma PUBLIC apf PRIVATE pcu)
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS parma EXPORT parma-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT parma-targets DESTINATION lib/scorec)
+target_macro(parma)

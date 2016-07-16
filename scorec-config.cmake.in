@@ -1,5 +1,5 @@
 get_filename_component(SCOREC_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-set(TARGETS @TARGETS@)
+set(TARGETS "@TARGETS@")
 foreach(target IN LISTS TARGETS)
   include(${SCOREC_CMAKE_DIR}/${target}-targets.cmake)
 endforeach()

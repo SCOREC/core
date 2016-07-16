@@ -54,7 +54,4 @@ if(ENABLE_ZOLTAN)
   )
 endif()
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS apf_zoltan EXPORT apf_zoltan-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT apf_zoltan-targets DESTINATION lib/scorec)
+target_macro(apf_zoltan)

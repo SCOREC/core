@@ -40,7 +40,4 @@ target_include_directories(apf_omega_h PUBLIC ${OMEGA_H_INCLUDE_DIR})
 # Link this package to these libraries
 target_link_libraries(apf_omega_h PUBLIC apf ${OMEGA_H_LIB} PRIVATE mds)
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS apf_omega_h EXPORT apf_omega_h-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT apf_omega_h-targets DESTINATION lib/scorec)
+target_macro(apf_omega_h)

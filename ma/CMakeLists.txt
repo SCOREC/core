@@ -65,7 +65,4 @@ target_link_libraries(ma
    PUBLIC apf
    PRIVATE mds parma apf_zoltan pcu)
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS ma EXPORT ma-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT ma-targets DESTINATION lib/scorec)
+target_macro(ma)

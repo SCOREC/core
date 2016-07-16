@@ -77,7 +77,4 @@ if(HAS_STK)
   )
 endif()
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS apf_stk EXPORT apf_stk-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT apf_stk-targets DESTINATION lib/scorec)
+target_macro(apf_stk)

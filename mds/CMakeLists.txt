@@ -54,7 +54,4 @@ target_link_libraries(mds
    PUBLIC gmi apf
    )
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS mds EXPORT mds-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT mds-targets DESTINATION lib/scorec)
+target_macro(mds)

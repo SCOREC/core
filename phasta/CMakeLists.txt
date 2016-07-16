@@ -63,7 +63,4 @@ else()
     )
 endif()
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS ph EXPORT ph-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT ph-targets DESTINATION lib/scorec)
+target_macro(ph)

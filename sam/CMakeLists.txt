@@ -21,7 +21,4 @@ target_include_directories(sam INTERFACE
 # Link this package to these libraries
 target_link_libraries(sam PUBLIC apf)
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS sam EXPORT sam-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT sam-targets DESTINATION lib/scorec)
+target_macro(sam)

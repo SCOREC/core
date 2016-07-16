@@ -34,7 +34,4 @@ target_include_directories(apf INTERFACE
 # Link this package to these libraries
 target_link_libraries(dsp PRIVATE ma PUBLIC apf)
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS dsp EXPORT dsp-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT dsp-targets DESTINATION lib/scorec)
+target_macro(dsp)

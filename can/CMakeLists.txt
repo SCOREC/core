@@ -14,7 +14,4 @@ target_include_directories(can INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
-# Tell CMake to add this package nicely to the SCOREC project
-install(TARGETS can EXPORT can-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT can-targets DESTINATION lib/scorec)
+target_macro(can)

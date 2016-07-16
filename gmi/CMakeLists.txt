@@ -28,6 +28,4 @@ target_include_directories(gmi INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
-install(TARGETS gmi EXPORT gmi-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT gmi-targets DESTINATION lib/scorec)
+target_macro(gmi)

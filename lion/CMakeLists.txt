@@ -36,7 +36,4 @@ if(LION_COMPRESS)
   target_link_libraries(lion PRIVATE ${ZLIB_LIBRARIES})
 endif()
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS lion EXPORT lion-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT lion-targets DESTINATION lib/scorec)
+target_macro(lion)

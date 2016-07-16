@@ -78,7 +78,4 @@ target_link_libraries(apf
    PUBLIC can mth
    )
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS apf EXPORT apf-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT apf-targets DESTINATION lib/scorec)
+target_macro(apf)

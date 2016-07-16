@@ -42,7 +42,4 @@ target_include_directories(apf PRIVATE
 # Link this package to these libraries
 target_link_libraries(viz PRIVATE apf ${MILO_LIB})
 
-# Tell CMake to add this package to the SCOREC project
-install(TARGETS viz EXPORT viz-targets DESTINATION lib)
-install(FILES ${HEADERS} DESTINATION include)
-install(EXPORT viz-targets DESTINATION lib/scorec)
+target_macro(viz)
