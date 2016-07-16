@@ -38,10 +38,11 @@ enable_testing()
 include(CTest)
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
-set(MPIRUN "mpirun" CACHE string
-  "the mpirun or srun executable")
+get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
+find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
 set(MPIRUN_PROCFLAG "-np" CACHE string
   "the command line flag to give process count to MPIRUN")
+message(STATUS "MPIRUN: ${MPIRUN} ${MPIRUN_PROCFLAG}")
 set(VALGRIND "" CACHE string
   "the valgrind executable")
 set(VALGRIND_ARGS "" CACHE string
