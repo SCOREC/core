@@ -28,16 +28,13 @@ set(HEADERS
 add_library(pcu ${SOURCES})
 
 # Include directories
-set(PUBLIC_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/reel
-)
-target_include_directories(pcu PUBLIC
-    $<BUILD_INTERFACE:${PUBLIC_DIRS}>
+target_include_directories(pcu
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/reel>
     $<INSTALL_INTERFACE:include>
-    )
-target_include_directories(pcu PRIVATE
-    $<BUILD_INTERFACE:noto>
+    PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/noto>
     )
 
 # Check for and enable compression support
