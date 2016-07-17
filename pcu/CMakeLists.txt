@@ -42,7 +42,7 @@ if(PCU_COMPRESS)
   find_package(BZip2 REQUIRED)
   target_include_directories(pcu PRIVATE ${BZIP2_INCLUDE_DIR})
   target_link_libraries(pcu PRIVATE ${BZIP2_LIBRARIES})
-  target_add_definitions(pcu PRIVATE "-DPCU_BZIP")
+  target_compile_definitions(pcu PRIVATE "-DPCU_BZIP")
 endif()
 
 target_macro(pcu)
