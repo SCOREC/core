@@ -35,7 +35,7 @@ set(SOURCES
 )
 
 # Package headers
-set(
+set(HEADERS
   apfAlbany.h
 )
 
