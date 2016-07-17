@@ -66,9 +66,9 @@ void attachCellField(
   size_t i = 0;
   apf::MeshIterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it))) {
-    for (int j = 0; j < in_size; ++j)
-      c[j] = data[j * n + i];
-    apf::setComponents(f, e, 0, &c[0]);
+//    for (int j = 0; j < in_size; ++j)
+//      c[j] = data[j * n + i];
+    apf::setScalar(f, e, 0, data[i]);
     ++i;
   }
   m->end(it);
