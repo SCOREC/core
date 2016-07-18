@@ -435,14 +435,15 @@ void attachVtxField(apf::Mesh2* mesh, const char* fname,
 void mergeSolutionFields(apf::Mesh2* mesh) {
   apf::Field* x = mesh->findField("solution_x");
   apf::Field* y = mesh->findField("solution_y");
-  apf::Field* xy = apf::createPackedField(mesh,"Solution",2);
+  apf::Field* xy = apf::createFieldOn(mesh,"Solution",apf::VECTOR);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) ) {
-    double v[2] = {0,0};
+    apf::Vector3 v;
     v[0] = apf::getScalar(x,vtx,0);
     v[1] = apf::getScalar(y,vtx,0);
-    apf::setComponents(xy, vtx, 0, v);
+    v[2] = 0.0;
+    apf::setVector(xy, vtx, 0, v);
   }
   mesh->end(it);
   apf::destroyField(x);

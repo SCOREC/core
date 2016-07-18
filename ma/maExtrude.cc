@@ -181,11 +181,12 @@ std::string getExtrudedName(std::string const& flat_name) {
 }
 
 void applyFlatField(Mesh* m, std::string const& extruded_name,
-    int ncomps, FieldData const& field_data) {
+    int ncomps, int value_type, apf::FieldShape* shape,
+    FieldData const& field_data) {
   for (size_t i = 0; i < field_data.size(); ++i) {
     std::string flat_name = getFlatName(extruded_name, i);
-    apf::Field* flat_field = apf::createPackedField(
-        m, flat_name.c_str(), ncomps);
+    apf::Field* flat_field = apf::createGeneralField(
+        m, flat_name.c_str(), value_type, ncomps, shape);
     LayerFieldData const& layer_data = field_data[i];
     Iterator* it = m->begin(0);
     Entity* v;
@@ -204,11 +205,13 @@ void applyFlatFields(Mesh* m, Fields const& extruded_fields,
     apf::Field* extruded_field = extruded_fields[i];
     std::string extruded_name = apf::getName(extruded_field);
     int ncomps = apf::countComponents(extruded_field);
+    int value_type = apf::getValueType(extruded_field);
+    apf::FieldShape* shape = apf::getShape(extruded_field);
     apf::destroyField(extruded_field);
     FieldData const& field_data = all_data.flat_data[i];
-    applyFlatField(m, extruded_name, ncomps, field_data);
+    applyFlatField(m, extruded_name, ncomps, value_type, shape, field_data);
   }
-  applyFlatField(m, "z", 1, all_data.flat_z_data);
+  applyFlatField(m, "z", 1, apf::PACKED, m->getShape(), all_data.flat_z_data);
 }
 
 void zeroOutZCoords(Mesh* m) {
@@ -449,8 +452,10 @@ void applyExtrudedFields(Mesh* m, Fields const& base_fields,
       applyExtrudedData(setter, field_data, layers);
     } else {
       int ncomps = apf::countComponents(base_field);
-      apf::Field* extruded_field = apf::createPackedField(
-          m, extruded_name.c_str(), ncomps);
+      int value_type = apf::getValueType(base_field);
+      apf::FieldShape* shape = apf::getShape(base_field);
+      apf::Field* extruded_field = apf::createGeneralField(
+          m, extruded_name.c_str(), value_type, ncomps, shape);
       FieldDataSetter setter(extruded_field);
       FieldData const& field_data = all_data.flat_data[j];
       applyExtrudedData(setter, field_data, layers);
