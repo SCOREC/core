@@ -365,6 +365,7 @@ int* readIntArray(const char* fname, unsigned len) {
   int* data = new int[len];
   for(unsigned i = 0; i< len; i++)
     gmi_fscanf(f, 1, "%d", &data[i]);
+  fclose(f);
   return data;
 }
 
@@ -377,6 +378,7 @@ double* readScalarArray(const char* fname, unsigned len) {
   double* data = new double[len];
   for(unsigned i = 0; i< len; i++)
     gmi_fscanf(f, 1, "%lf", &data[i]);
+  fclose(f);
   return data;
 }
 
