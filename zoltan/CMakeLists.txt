@@ -40,7 +40,9 @@ target_include_directories(apf_zoltan INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(apf_zoltan PUBLIC apf)
+target_link_libraries(apf_zoltan
+  PRIVATE pcu
+  PUBLIC apf)
 
 # Do extra work if zoltan is enabled
 if(ENABLE_ZOLTAN)

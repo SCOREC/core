@@ -47,7 +47,9 @@ endif()
 # Add the apf_stk library
 add_library(apf_stk ${SOURCES})
 
-target_link_libraries(apf_stk PUBLIC apf)
+target_link_libraries(apf_stk
+  PRIVATE gmi
+  PUBLIC apf)
 target_link_libraries(apf_stk PUBLIC ${Shards_LIBRARIES})
 
 # Include directories
