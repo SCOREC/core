@@ -13,6 +13,7 @@ namespace spr {
 
 apf::Field* getGradIPField(apf::Field* f, const char* name, int order)
 {
+  assert(f);
   apf::Mesh* m = getMesh(f);
   int vt = apf::getValueType(f);
   assert(vt == apf::SCALAR || vt == apf::VECTOR);

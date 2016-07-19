@@ -8,6 +8,8 @@
 #include "apfTagData.h"
 #include "apfShape.h"
 
+#include <cassert>
+
 namespace apf {
 
 void TagData::init(
@@ -60,6 +62,7 @@ static const char* typePostfix[Mesh::TYPES] =
 
 void TagData::createTags(const char* name, int components)
 {
+  assert(name);
   for (int type=Mesh::VERTEX; type < Mesh::TYPES; ++type)
   {
     int n = shape->countNodesOn(type);
