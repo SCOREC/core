@@ -506,10 +506,7 @@ class TetrahedronIntegration : public EntityIntegration
 
 class PrismIntegration : public EntityIntegration
 {
-  public: /* a cheap one-point prism integration rule, not
-             really legitimately 1st-order accurate but
-             should be all right for our current purposes
-           \todo revise this with some proper mathematics */
+  public:
     class N1 : public Integration
     {
       public:
@@ -519,7 +516,7 @@ class PrismIntegration : public EntityIntegration
           static IntegrationPoint point(Vector3(1.0/3.0,1.0/3.0,0),1);
           return &point;
         }
-        virtual int getAccuracy() const {return 1;} //sort of
+        virtual int getAccuracy() const {return 1;}
     };
     virtual int countIntegrations() const {return 1;}
     virtual Integration const* getIntegration(int) const
