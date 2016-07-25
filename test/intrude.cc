@@ -30,7 +30,8 @@ int main(int argc, char** argv)
         m->findModelEntity(2, 1)));
   size_t nlayers;
   ma::intrude(m, extrusions, &nlayers);
-  std::cout << "counted " << nlayers << " layers\n";
+  if (!PCU_Comm_Self())
+    std::cout << "counted " << nlayers << " layers\n";
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);

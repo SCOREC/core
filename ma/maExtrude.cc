@@ -1,6 +1,7 @@
 #include "maExtrude.h"
 #include "maCrawler.h"
 #include <apfMDS.h>
+#include <PCU.h>
 
 #include <cassert>
 #include <sstream>
@@ -290,6 +291,36 @@ class DebugBuildCallback : public apf::BuildCallback {
     }
 };
 
+void stitchVerts(Mesh* m, Crawler::Layer const& prev_verts,
+    Crawler::Layer const& next_verts, Tag* indices) {
+  PCU_Comm_Begin();
+  assert(prev_verts.size() == next_verts.size());
+  for (size_t i = 0; i < prev_verts.size(); ++i) {
+    Entity* prev_vert = prev_verts[i];
+    Entity* next_vert = next_verts[i];
+    Remotes remotes;
+    m->getRemotes(prev_vert, remotes);
+    APF_ITERATE(Remotes, remotes, rit) {
+      int remote_part = rit->first;
+      Entity* remote_prev_vert = rit->second;
+      PCU_COMM_PACK(remote_part, remote_prev_vert);
+      PCU_COMM_PACK(remote_part, next_vert);
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int remote_part = PCU_Comm_Sender();
+    Entity* prev_vert;
+    Entity* remote_next_vert;
+    PCU_COMM_UNPACK(prev_vert);
+    PCU_COMM_UNPACK(remote_next_vert);
+    int prev_idx;
+    m->getIntTag(prev_vert, indices, &prev_idx);
+    Entity* next_vert = next_verts.at(prev_idx);
+    m->addRemote(next_vert, remote_part, remote_next_vert);
+  }
+}
+
 FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     ModelExtrusions const& extrusions, bool is_last) {
   Crawler::Layer const& prev_verts = prev_layer.ents[0];
@@ -349,6 +380,7 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
     apf::buildElement(m, local_class.middle, apf::Mesh::PRISM, wv, &wcb);
     next_layer.ents[2].push_back(nt);
   }
+  stitchVerts(m, prev_layer.ents[0], next_layer.ents[0], indices);
   m->destroyTag(indices);
   return next_layer;
 }
@@ -364,7 +396,9 @@ Layers buildLayers(Mesh* m, ModelExtrusions const& extrusions, size_t nlayers,
     prev_layer = buildLayer(m, prev_layer, extrusions, is_last);
     out_layers.push_back(prev_layer.ents[0]);
   }
+  apf::stitchMesh(m);
   m->acceptChanges();
+  apf::alignMdsRemotes(m);
   return out_layers;
 }
 
