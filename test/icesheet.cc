@@ -1,4 +1,5 @@
 #include <gmi_mesh.h>
+#include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfConvert.h>
@@ -16,6 +17,11 @@
 #define TOPFACE 1
 #define BOTTOMFACE 2
 #define PERIMETERFACE 3
+#define BOTTOM_EDGE 2
+#define TOP_EDGE 1
+#define TOUCH_EDGE 3
+#define TOUCH_VERTEX 1
+#define INTERIOR_REGION 1
 
 unsigned getElmType(int numVtxPerElm) {
   if (numVtxPerElm == 4) {
@@ -109,43 +115,16 @@ apf::ModelEntity* getMdlRgn(gmi_model* model) {
   return (apf::ModelEntity*)rgn;
 }
 
+apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* edge = mesh->findModelEntity(1,tag);
+  assert(edge);
+  return edge;
+}
+
 apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* face = mesh->findModelEntity(2,tag);
   assert(face);
   return face;
-}
-
-/** \brief brute force serach to find the intersection
- * \details models don't have that many edges bounding each face.... right???
- */
-gmi_ent* getCommonEdge(gmi_set* a, gmi_set* b) {
-  gmi_ent* match = NULL;
-  for(int i=0; i<a->n; i++) {
-    for(int j=0; j<b->n; j++) {
-      if( a->e[i] == b->e[j] ) {
-        assert(!match);
-        match = a->e[i];
-      }
-    }
-  }
-  assert(match);
-  return match;
-}
-
-/** \brief get the model edge that bounds the model faces with the given tags
-*/
-apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int faceTagA, int faceTagB) {
-  gmi_model* model = mesh->getModel();
-  gmi_ent* faceA = (gmi_ent*) getMdlFace(mesh,faceTagA);
-  gmi_set* faceAedges = gmi_adjacent(model, faceA, 1);
-  assert(faceAedges->n);
-  gmi_ent* faceB = (gmi_ent*) getMdlFace(mesh,faceTagB);
-  gmi_set* faceBedges = gmi_adjacent(model, faceB, 1);
-  assert(faceBedges->n);
-  gmi_ent* edge = getCommonEdge(faceAedges,faceBedges);
-  gmi_free_set(faceAedges);
-  gmi_free_set(faceBedges);
-  return (apf::ModelEntity*) edge;
 }
 
 /* returns -1 for an interior face
@@ -272,22 +251,26 @@ void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
 */
 void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
-  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
-  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOM_EDGE);
+  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOP_EDGE);
   apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
   apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
   apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
+  apf::ModelEntity* mdlTouchEdge = getMdlEdge(mesh,TOUCH_EDGE);
   apf::MeshIterator* it = mesh->begin(1);
   apf::MeshEntity* edge;
   while( (edge = mesh->iterate(it)) ) {
     apf::Up adj_faces;
     mesh->getUp(edge, adj_faces);
     std::set<apf::ModelEntity*> adj_mdl_faces;
+    int perimeter_count = 0;
     for (int i = 0; i < adj_faces.n; ++i) {
       apf::MeshEntity* adj_face = adj_faces.e[i];
       apf::ModelEntity* face_class = mesh->toModel(adj_face);
-      if (mesh->getModelType(face_class) == 2)
+      if (mesh->getModelType(face_class) == 2) {
         adj_mdl_faces.insert(face_class);
+        if (face_class == mdlPerFace) ++perimeter_count;
+      }
     }
     // classified on bottom perimeter
     if(adj_mdl_faces.count(mdlBotFace) && adj_mdl_faces.count(mdlPerFace))
@@ -302,22 +285,40 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
     else if(adj_mdl_faces.count(mdlBotFace))
       mesh->setModelEntity(edge,mdlBotFace);
     // classified on perimeter face
-    else if(adj_mdl_faces.count(mdlPerFace))
-      mesh->setModelEntity(edge,mdlPerFace);
-    // classified on model region
-    else
+    else if(adj_mdl_faces.count(mdlPerFace)) {
+      assert(perimeter_count == 2 || perimeter_count == 4);
+      if (perimeter_count == 2)
+        mesh->setModelEntity(edge,mdlPerFace);
+      else
+        mesh->setModelEntity(edge,mdlTouchEdge);
+    } else { // classified on model region
       mesh->setModelEntity(edge,mdlRgn);
+    }
   }
   mesh->end(it);
 }
 
+static bool isVertexAdjacentToTouchEdge(apf::Mesh* mesh,
+    apf::MeshEntity* vertex, apf::ModelEntity* model_touch_edge) {
+  apf::Up edges;
+  mesh->getUp(vertex, edges);
+  for (int i = 0; i < edges.n; ++i) {
+    apf::MeshEntity* edge = edges.e[i];
+    if (mesh->toModel(edge) == model_touch_edge)
+      return true;
+  }
+  return false;
+}
+
 void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
-  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
-  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOM_EDGE);
+  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOP_EDGE);
   apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
   apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
   apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
+  apf::ModelEntity* mdlTouchEdge = getMdlFace(mesh,TOUCH_EDGE);
+  apf::ModelEntity* mdlTouchVtx = mesh->findModelEntity(0, TOUCH_VERTEX);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) ) {
@@ -326,13 +327,17 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
     if( tag == INTERIORTAG )
       mesh->setModelEntity(vtx,mdlRgn);
     // classified on bottom perimeter
-    else if( tag == BOTTOM_PERIMETERTAG )
-      mesh->setModelEntity(vtx,mdlBotEdge);
-    // classified on top perimeter
-    else if( tag == TOP_PERIMETERTAG )
-      mesh->setModelEntity(vtx,mdlTopEdge);
-    // classified on top face
-    else if( tag == TOPTAG )
+    else if( tag == BOTTOM_PERIMETERTAG ) {
+      if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
+        mesh->setModelEntity(vtx,mdlTouchVtx);
+      else
+        mesh->setModelEntity(vtx,mdlBotEdge);
+    } else if( tag == TOP_PERIMETERTAG ) { // classified on top perimeter
+      if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
+        mesh->setModelEntity(vtx,mdlTouchVtx);
+      else
+        mesh->setModelEntity(vtx,mdlTopEdge);
+    } else if( tag == TOPTAG ) // classified on top face
       mesh->setModelEntity(vtx,mdlTopFace);
     // classified on bottom face
     else if( tag == BOTTOMTAG )
@@ -477,6 +482,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
+  gmi_register_null();
 
   gmi_model* model = gmi_load(argv[1]);
 
