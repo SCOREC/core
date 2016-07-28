@@ -342,10 +342,12 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
     // classified on bottom face
     else if( tag == BOTTOMTAG )
       mesh->setModelEntity(vtx,mdlBotFace);
-    // classified on perimeter face
-    else if( tag == PERIMETERTAG )
-      mesh->setModelEntity(vtx,mdlPerFace);
-    else {
+    else if( tag == PERIMETERTAG ) { // classified on perimeter face
+      if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
+        mesh->setModelEntity(vtx,mdlTouchEdge);
+      else
+        mesh->setModelEntity(vtx,mdlPerFace);
+    } else {
       fprintf(stderr, "classification of a vertex fell through the conditional...exiting\n");
       exit(EXIT_FAILURE);
     }
