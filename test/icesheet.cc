@@ -8,12 +8,15 @@
 #include <cassert>
 #include <cstdlib>
 
+/* tags on vertices */
 #define INTERIORTAG 0
 #define BOTTOMTAG 1
 #define TOPTAG 2
 #define PERIMETERTAG 3
 #define BOTTOM_PERIMETERTAG 4
 #define TOP_PERIMETERTAG 5
+
+/* tags of model entities */
 #define TOPFACE 1
 #define BOTTOMFACE 2
 #define PERIMETERFACE 3
@@ -106,14 +109,11 @@ bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
     return true; // only one region -> exterior
 }
 
-/** \brief just get the first geometric model region - hack
-*/
 apf::ModelEntity* getMdlRgn(gmi_model* model) {
-  gmi_iter* it = gmi_begin(model, 3);
-  gmi_ent* rgn = gmi_next(model, it);
+  apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
+      gmi_find(model, 3, INTERIOR_REGION));
   assert(rgn);
-  gmi_end(model, it);
-  return (apf::ModelEntity*)rgn;
+  return rgn;
 }
 
 apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
