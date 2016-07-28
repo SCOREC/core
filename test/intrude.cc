@@ -28,6 +28,10 @@ int main(int argc, char** argv)
         m->findModelEntity(2, 2),
         m->findModelEntity(3, 1),
         m->findModelEntity(2, 1)));
+  extrusions.push_back(ma::ModelExtrusion(
+        m->findModelEntity(0, 2),
+        m->findModelEntity(1, 3),
+        m->findModelEntity(0, 1)));
   size_t nlayers;
   ma::intrude(m, extrusions, &nlayers);
   if (!PCU_Comm_Self())
