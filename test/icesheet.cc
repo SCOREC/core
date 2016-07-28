@@ -317,7 +317,7 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
   apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
   apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
-  apf::ModelEntity* mdlTouchEdge = getMdlFace(mesh,TOUCH_EDGE);
+  apf::ModelEntity* mdlTouchEdge = getMdlEdge(mesh,TOUCH_EDGE);
   apf::ModelEntity* mdlTouchVtx = mesh->findModelEntity(0, TOUCH_VERTEX);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
