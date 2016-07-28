@@ -20,7 +20,8 @@
 #define BOTTOM_EDGE 2
 #define TOP_EDGE 1
 #define TOUCH_EDGE 3
-#define TOUCH_VERTEX 1
+#define BOTTOM_VERTEX 2
+#define TOP_VERTEX 1
 #define INTERIOR_REGION 1
 
 unsigned getElmType(int numVtxPerElm) {
@@ -318,7 +319,8 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
   apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
   apf::ModelEntity* mdlTouchEdge = getMdlEdge(mesh,TOUCH_EDGE);
-  apf::ModelEntity* mdlTouchVtx = mesh->findModelEntity(0, TOUCH_VERTEX);
+  apf::ModelEntity* mdlTopVtx = mesh->findModelEntity(0, TOP_VERTEX);
+  apf::ModelEntity* mdlBottomVtx = mesh->findModelEntity(0, BOTTOM_VERTEX);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) ) {
@@ -329,12 +331,12 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
     // classified on bottom perimeter
     else if( tag == BOTTOM_PERIMETERTAG ) {
       if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
-        mesh->setModelEntity(vtx,mdlTouchVtx);
+        mesh->setModelEntity(vtx, mdlBottomVtx);
       else
         mesh->setModelEntity(vtx,mdlBotEdge);
     } else if( tag == TOP_PERIMETERTAG ) { // classified on top perimeter
       if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
-        mesh->setModelEntity(vtx,mdlTouchVtx);
+        mesh->setModelEntity(vtx, mdlTopVtx);
       else
         mesh->setModelEntity(vtx,mdlTopEdge);
     } else if( tag == TOPTAG ) // classified on top face
