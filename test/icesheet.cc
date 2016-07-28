@@ -467,14 +467,14 @@ void detachVtxTag(apf::Mesh2* mesh, apf::MeshTag* t) {
 int main(int argc, char** argv)
 {
   if( argc != 10 ) {
-    printf("Usage: %s <model .dmg> <ascii mesh .ascii> "
+    printf("Usage: %s <ascii mesh .ascii> "
         "<vertex classification field .ascii> "
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
         "<surface elevation field .ascii> "
         "<solution_x field .ascii> "
         "<solution_y field .ascii> "
-        "<output mesh>\n",
+        "<output model .dmg> <output mesh>\n",
         argv[0]);
     return 0;
   }
@@ -484,10 +484,10 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  gmi_model* model = gmi_load(argv[1]);
+  gmi_model* model = gmi_load(".null");
 
   MeshInfo m;
-  readMesh(argv[2],m);
+  readMesh(argv[1],m);
 
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
@@ -498,14 +498,16 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
-  apf::MeshTag* vtxClass = attachVtxTag(mesh,argv[3],outMap);
+  apf::MeshTag* vtxClass = attachVtxTag(mesh,argv[2],outMap);
   setClassification(model,mesh,vtxClass);
   detachVtxTag(mesh,vtxClass);
   mesh->verify();
-  for(int i=4; i<argc-1; i++)
+  for(int i=3; i<8; i++)
     attachVtxField(mesh,argv[i],outMap);
   mergeSolutionFields(mesh);
   outMap.clear();
+
+  gmi_write_dmg(model, argv[8]);
   mesh->writeNative(argv[9]);
   apf::writeVtkFiles("rendered",mesh);
 
