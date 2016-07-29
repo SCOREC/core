@@ -1,4 +1,5 @@
 #include <gmi_mesh.h>
+#include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfConvert.h>
@@ -7,15 +8,24 @@
 #include <cassert>
 #include <cstdlib>
 
+/* tags on vertices */
 #define INTERIORTAG 0
 #define BOTTOMTAG 1
 #define TOPTAG 2
 #define PERIMETERTAG 3
 #define BOTTOM_PERIMETERTAG 4
 #define TOP_PERIMETERTAG 5
+
+/* tags of model entities */
 #define TOPFACE 1
 #define BOTTOMFACE 2
 #define PERIMETERFACE 3
+#define BOTTOM_EDGE 2
+#define TOP_EDGE 1
+#define TOUCH_EDGE 3
+#define BOTTOM_VERTEX 2
+#define TOP_VERTEX 1
+#define INTERIOR_REGION 1
 
 unsigned getElmType(int numVtxPerElm) {
   if (numVtxPerElm == 4) {
@@ -99,53 +109,23 @@ bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
     return true; // only one region -> exterior
 }
 
-/** \brief just get the first geometric model region - hack
-*/
 apf::ModelEntity* getMdlRgn(gmi_model* model) {
-  gmi_iter* it = gmi_begin(model, 3);
-  gmi_ent* rgn = gmi_next(model, it);
+  apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
+      gmi_find(model, 3, INTERIOR_REGION));
   assert(rgn);
-  gmi_end(model, it);
-  return (apf::ModelEntity*)rgn;
+  return rgn;
+}
+
+apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* edge = mesh->findModelEntity(1,tag);
+  assert(edge);
+  return edge;
 }
 
 apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* face = mesh->findModelEntity(2,tag);
   assert(face);
   return face;
-}
-
-/** \brief brute force serach to find the intersection
- * \details models don't have that many edges bounding each face.... right???
- */
-gmi_ent* getCommonEdge(gmi_set* a, gmi_set* b) {
-  gmi_ent* match = NULL;
-  for(int i=0; i<a->n; i++) {
-    for(int j=0; j<b->n; j++) {
-      if( a->e[i] == b->e[j] ) {
-        assert(!match);
-        match = a->e[i];
-      }
-    }
-  }
-  assert(match);
-  return match;
-}
-
-/** \brief get the model edge that bounds the model faces with the given tags
-*/
-apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int faceTagA, int faceTagB) {
-  gmi_model* model = mesh->getModel();
-  gmi_ent* faceA = (gmi_ent*) getMdlFace(mesh,faceTagA);
-  gmi_set* faceAedges = gmi_adjacent(model, faceA, 1);
-  assert(faceAedges->n);
-  gmi_ent* faceB = (gmi_ent*) getMdlFace(mesh,faceTagB);
-  gmi_set* faceBedges = gmi_adjacent(model, faceB, 1);
-  assert(faceBedges->n);
-  gmi_ent* edge = getCommonEdge(faceAedges,faceBedges);
-  gmi_free_set(faceAedges);
-  gmi_free_set(faceBedges);
-  return (apf::ModelEntity*) edge;
 }
 
 /* returns -1 for an interior face
@@ -272,22 +252,26 @@ void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
 */
 void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
-  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
-  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOM_EDGE);
+  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOP_EDGE);
   apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
   apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
   apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
+  apf::ModelEntity* mdlTouchEdge = getMdlEdge(mesh,TOUCH_EDGE);
   apf::MeshIterator* it = mesh->begin(1);
   apf::MeshEntity* edge;
   while( (edge = mesh->iterate(it)) ) {
     apf::Up adj_faces;
     mesh->getUp(edge, adj_faces);
     std::set<apf::ModelEntity*> adj_mdl_faces;
+    int perimeter_count = 0;
     for (int i = 0; i < adj_faces.n; ++i) {
       apf::MeshEntity* adj_face = adj_faces.e[i];
       apf::ModelEntity* face_class = mesh->toModel(adj_face);
-      if (mesh->getModelType(face_class) == 2)
+      if (mesh->getModelType(face_class) == 2) {
         adj_mdl_faces.insert(face_class);
+        if (face_class == mdlPerFace) ++perimeter_count;
+      }
     }
     // classified on bottom perimeter
     if(adj_mdl_faces.count(mdlBotFace) && adj_mdl_faces.count(mdlPerFace))
@@ -302,22 +286,41 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
     else if(adj_mdl_faces.count(mdlBotFace))
       mesh->setModelEntity(edge,mdlBotFace);
     // classified on perimeter face
-    else if(adj_mdl_faces.count(mdlPerFace))
-      mesh->setModelEntity(edge,mdlPerFace);
-    // classified on model region
-    else
+    else if(adj_mdl_faces.count(mdlPerFace)) {
+      assert(perimeter_count == 2 || perimeter_count == 4);
+      if (perimeter_count == 2)
+        mesh->setModelEntity(edge,mdlPerFace);
+      else
+        mesh->setModelEntity(edge,mdlTouchEdge);
+    } else { // classified on model region
       mesh->setModelEntity(edge,mdlRgn);
+    }
   }
   mesh->end(it);
 }
 
+static bool isVertexAdjacentToTouchEdge(apf::Mesh* mesh,
+    apf::MeshEntity* vertex, apf::ModelEntity* model_touch_edge) {
+  apf::Up edges;
+  mesh->getUp(vertex, edges);
+  for (int i = 0; i < edges.n; ++i) {
+    apf::MeshEntity* edge = edges.e[i];
+    if (mesh->toModel(edge) == model_touch_edge)
+      return true;
+  }
+  return false;
+}
+
 void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   apf::ModelEntity* mdlRgn = getMdlRgn(model);
-  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOMFACE,PERIMETERFACE);
-  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOPFACE,PERIMETERFACE);
+  apf::ModelEntity* mdlBotEdge = getMdlEdge(mesh,BOTTOM_EDGE);
+  apf::ModelEntity* mdlTopEdge = getMdlEdge(mesh,TOP_EDGE);
   apf::ModelEntity* mdlTopFace = getMdlFace(mesh,TOPFACE);
   apf::ModelEntity* mdlBotFace = getMdlFace(mesh,BOTTOMFACE);
   apf::ModelEntity* mdlPerFace = getMdlFace(mesh,PERIMETERFACE);
+  apf::ModelEntity* mdlTouchEdge = getMdlEdge(mesh,TOUCH_EDGE);
+  apf::ModelEntity* mdlTopVtx = mesh->findModelEntity(0, TOP_VERTEX);
+  apf::ModelEntity* mdlBottomVtx = mesh->findModelEntity(0, BOTTOM_VERTEX);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) ) {
@@ -326,21 +329,27 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
     if( tag == INTERIORTAG )
       mesh->setModelEntity(vtx,mdlRgn);
     // classified on bottom perimeter
-    else if( tag == BOTTOM_PERIMETERTAG )
-      mesh->setModelEntity(vtx,mdlBotEdge);
-    // classified on top perimeter
-    else if( tag == TOP_PERIMETERTAG )
-      mesh->setModelEntity(vtx,mdlTopEdge);
-    // classified on top face
-    else if( tag == TOPTAG )
+    else if( tag == BOTTOM_PERIMETERTAG ) {
+      if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
+        mesh->setModelEntity(vtx, mdlBottomVtx);
+      else
+        mesh->setModelEntity(vtx,mdlBotEdge);
+    } else if( tag == TOP_PERIMETERTAG ) { // classified on top perimeter
+      if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
+        mesh->setModelEntity(vtx, mdlTopVtx);
+      else
+        mesh->setModelEntity(vtx,mdlTopEdge);
+    } else if( tag == TOPTAG ) // classified on top face
       mesh->setModelEntity(vtx,mdlTopFace);
     // classified on bottom face
     else if( tag == BOTTOMTAG )
       mesh->setModelEntity(vtx,mdlBotFace);
-    // classified on perimeter face
-    else if( tag == PERIMETERTAG )
-      mesh->setModelEntity(vtx,mdlPerFace);
-    else {
+    else if( tag == PERIMETERTAG ) { // classified on perimeter face
+      if (isVertexAdjacentToTouchEdge(mesh, vtx, mdlTouchEdge))
+        mesh->setModelEntity(vtx,mdlTouchEdge);
+      else
+        mesh->setModelEntity(vtx,mdlPerFace);
+    } else {
       fprintf(stderr, "classification of a vertex fell through the conditional...exiting\n");
       exit(EXIT_FAILURE);
     }
@@ -365,6 +374,7 @@ int* readIntArray(const char* fname, unsigned len) {
   int* data = new int[len];
   for(unsigned i = 0; i< len; i++)
     gmi_fscanf(f, 1, "%d", &data[i]);
+  fclose(f);
   return data;
 }
 
@@ -377,6 +387,7 @@ double* readScalarArray(const char* fname, unsigned len) {
   double* data = new double[len];
   for(unsigned i = 0; i< len; i++)
     gmi_fscanf(f, 1, "%lf", &data[i]);
+  fclose(f);
   return data;
 }
 
@@ -433,14 +444,15 @@ void attachVtxField(apf::Mesh2* mesh, const char* fname,
 void mergeSolutionFields(apf::Mesh2* mesh) {
   apf::Field* x = mesh->findField("solution_x");
   apf::Field* y = mesh->findField("solution_y");
-  apf::Field* xy = apf::createPackedField(mesh,"Solution",2);
+  apf::Field* xy = apf::createFieldOn(mesh,"Solution",apf::VECTOR);
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vtx;
   while( (vtx = mesh->iterate(it)) ) {
-    double v[2] = {0,0};
+    apf::Vector3 v;
     v[0] = apf::getScalar(x,vtx,0);
     v[1] = apf::getScalar(y,vtx,0);
-    apf::setComponents(xy, vtx, 0, v);
+    v[2] = 0.0;
+    apf::setVector(xy, vtx, 0, v);
   }
   mesh->end(it);
   apf::destroyField(x);
@@ -459,14 +471,14 @@ void detachVtxTag(apf::Mesh2* mesh, apf::MeshTag* t) {
 int main(int argc, char** argv)
 {
   if( argc != 10 ) {
-    printf("Usage: %s <model .dmg> <ascii mesh .ascii> "
+    printf("Usage: %s <ascii mesh .ascii> "
         "<vertex classification field .ascii> "
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
         "<surface elevation field .ascii> "
         "<solution_x field .ascii> "
         "<solution_y field .ascii> "
-        "<output mesh>\n",
+        "<output model .dmg> <output mesh>\n",
         argv[0]);
     return 0;
   }
@@ -474,11 +486,12 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
+  gmi_register_null();
 
-  gmi_model* model = gmi_load(argv[1]);
+  gmi_model* model = gmi_load(".null");
 
   MeshInfo m;
-  readMesh(argv[2],m);
+  readMesh(argv[1],m);
 
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
@@ -489,14 +502,16 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
-  apf::MeshTag* vtxClass = attachVtxTag(mesh,argv[3],outMap);
+  apf::MeshTag* vtxClass = attachVtxTag(mesh,argv[2],outMap);
   setClassification(model,mesh,vtxClass);
   detachVtxTag(mesh,vtxClass);
   mesh->verify();
-  for(int i=4; i<argc-1; i++)
+  for(int i=3; i<8; i++)
     attachVtxField(mesh,argv[i],outMap);
   mergeSolutionFields(mesh);
   outMap.clear();
+
+  gmi_write_dmg(model, argv[8]);
   mesh->writeNative(argv[9]);
   apf::writeVtkFiles("rendered",mesh);
 
