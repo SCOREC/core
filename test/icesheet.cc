@@ -7,6 +7,7 @@
 #include <PCU.h>
 #include <cassert>
 #include <cstdlib>
+#include <string.h>
 
 /* tags on vertices */
 #define INTERIORTAG 0
@@ -406,6 +407,8 @@ std::string getName(const char* fname) {
     return string("solution_x");
   } else if( in.find("solution_y") != string::npos ) {
     return string("solution_y");
+  } else if( in.find("NULL") != string::npos ) {
+    return string("NULL");
   } else {
     fprintf(stderr, "unknown field name in %s\n", __func__);
     exit(EXIT_FAILURE);
@@ -476,9 +479,9 @@ int main(int argc, char** argv)
         "<basal friction field .ascii> "
         "<temperature field .ascii> "
         "<surface elevation field .ascii> "
-        "<solution_x field .ascii> "
-        "<solution_y field .ascii> "
-        "<output model .dmg> <output mesh>\n",
+        "<solution_x field .ascii / NULL> "
+        "<solution_y field .ascii / NULL> "
+        "<output model .dmg> <output mesh .smb>\n",
         argv[0]);
     return 0;
   }
@@ -506,9 +509,17 @@ int main(int argc, char** argv)
   setClassification(model,mesh,vtxClass);
   detachVtxTag(mesh,vtxClass);
   mesh->verify();
-  for(int i=3; i<8; i++)
+  
+  char key[]="NULL";
+   
+  for(int i=3; i<6; i++)
     attachVtxField(mesh,argv[i],outMap);
-  mergeSolutionFields(mesh);
+  if(strcmp(argv[6], key) != 0) 
+    attachVtxField(mesh,argv[6],outMap);
+  if(strcmp(argv[7], key) != 0)
+    attachVtxField(mesh,argv[7],outMap);
+   if(strcmp(argv[6], key) != 0 && !strcmp(argv[7], key) != 0)
+	mergeSolutionFields(mesh);
   outMap.clear();
 
   gmi_write_dmg(model, argv[8]);
