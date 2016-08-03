@@ -54,16 +54,12 @@ int main(int argc, char** argv)
   for (int i = 1; i < argc; ++i) {
     if (!strcmp(argv[i], "--no-pyramid-fix")) {
       should_fix_pyramids = false;
-      std::cerr << "found " << argv[i]  << '\n';
     } else if (!gmi_path) {
       gmi_path = argv[i];
-      std::cerr << "gmi_path " << gmi_path << '\n';
     } else if (!sms_path) {
       sms_path = argv[i];
-      std::cerr << "sms_path " << sms_path << '\n';
     } else if (!smb_path) {
       smb_path = argv[i];
-      std::cerr << "smb_path " << smb_path << '\n';
     } else {
       if(!PCU_Comm_Self())
         std::cerr << "bad argument \"" << argv[i] << "\"\n";
