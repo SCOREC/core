@@ -12,6 +12,7 @@
 #include <ma.h>
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 static void fixMatches(apf::Mesh2* m)
@@ -36,41 +37,63 @@ static void fixPyramids(apf::Mesh2* m)
   ma::adapt(in);
 }
 
-static void postConvert(apf::Mesh2* m)
-{
-  fixMatches(m);
-  fixPyramids(m);
-  m->verify();
-}
-
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
-  if (argc != 4) {
-    if(0==PCU_Comm_Self())
-      std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <scorec mesh>\n";
-    return EXIT_FAILURE;
-  }
   SimUtil_start();
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
+
+  const char* gmi_path = NULL;
+  const char* sms_path = NULL;
+  const char* smb_path = NULL;
+  bool should_fix_pyramids = true;
+  bool found_bad_arg = false;
+
+  for (int i = 1; i < argc; ++i) {
+    if (!gmi_path) {
+      gmi_path = argv[i];
+    } else if (!sms_path) {
+      sms_path = argv[i];
+    } else if (!smb_path) {
+      smb_path = argv[i];
+    } else if (!strcmp(argv[i], "--no-pyramid-fix")) {
+      should_fix_pyramids = false;
+    } else {
+      if(!PCU_Comm_Self())
+        std::cerr << "bad argument \"" << argv[i] << "\"\n";
+      found_bad_arg = true;
+    }
+  }
+
+  if (!gmi_path || !sms_path || !smb_path || found_bad_arg) {
+    if(!PCU_Comm_Self()) {
+      std::cerr << "usage: " << argv[0] << " [options] <model file> <simmetrix mesh> <scorec mesh>\n";
+      std::cerr << "options:\n";
+      std::cerr << "  --no-pyramid-fix           Disable quad-connected pyramid tetrahedronization\n";
+    }
+    return EXIT_FAILURE;
+  }
+
   gmi_sim_start();
   gmi_register_sim();
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
-  gmi_model* mdl = gmi_load(argv[1]);
+  gmi_model* mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
-  pParMesh sim_mesh = PM_load(argv[2], sthreadNone, simModel, progress);
+  pParMesh sim_mesh = PM_load(sms_path, sthreadNone, simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::printStats(mesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  postConvert(mesh);
-  mesh->writeNative(argv[3]);
+  fixMatches(mesh);
+  if (should_fix_pyramids) fixPyramids(mesh);
+  mesh->verify();
+  mesh->writeNative(smb_path);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
