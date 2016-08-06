@@ -15,6 +15,7 @@
 #include "apf.h"
 #include "apfShape.h"
 #include "apfTagData.h"
+#include "apfNumbering.h"
 
 namespace apf {
 
@@ -60,7 +61,23 @@ static void restore_field_meta(pcu_file* file, apf::Mesh* mesh) {
       shape, new TagDataOf<double>);
 }
 
-static int latest_version_number = 2;
+static void save_numbering_meta(pcu_file* file, apf::Numbering* numbering) {
+  save_string(file, getName(numbering));
+  save_int(file, countComponents(numbering));
+  save_string(file, getShape(numbering)->getName());
+}
+
+static void restore_numbering_meta(pcu_file* file, apf::Mesh* mesh) {
+  std::string numbering_name = restore_string(file);
+  int ncomps = restore_int(file);
+  std::string shape_name = restore_string(file);
+  apf::FieldShape* shape = getShapeByName(shape_name.c_str());
+  if (shape == 0)
+    reel_fail("numbering shape \"%s\" could not be found\n", shape_name.c_str());
+  createNumbering(mesh, numbering_name.c_str(), shape, ncomps);
+}
+
+static int latest_version_number = 3;
 
 void save_meta(pcu_file* file, apf::Mesh* mesh) {
   save_string(file, mesh->getShape()->getName());
@@ -75,6 +92,10 @@ void save_meta(pcu_file* file, apf::Mesh* mesh) {
   save_int(file, mesh->countFields());
   for (int i = 0; i < mesh->countFields(); ++i) {
     save_field_meta(file, mesh->getField(i));
+  }
+  save_int(file, mesh->countNumberings());
+  for (int i = 0; i < mesh->countNumberings(); ++i) {
+    save_numbering_meta(file, mesh->getNumbering(i));
   }
 }
 
@@ -98,6 +119,14 @@ void restore_meta(pcu_file* file, apf::Mesh* mesh) {
   assert(nfields < 256);
   for (int i = 0; i < nfields; ++i) {
     restore_field_meta(file, mesh);
+  }
+  if (version >= 3) {
+    int nnumberings = restore_int(file);
+    assert(nnumberings >= 0);
+    assert(nnumberings < 256);
+    for (int i = 0; i < nnumberings; ++i) {
+      restore_numbering_meta(file, mesh);
+    }
   }
 }
 
