@@ -9,11 +9,17 @@
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMesh2.h>
+#include <apfNumbering.h>
 #include <ma.h>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+
+static void attachOrder(apf::Mesh* m)
+{
+  apf::numberOverlapDimension(m, "sim_order", m->getDimension());
+}
 
 static void fixMatches(apf::Mesh2* m)
 {
@@ -49,11 +55,14 @@ int main(int argc, char** argv)
   const char* sms_path = NULL;
   const char* smb_path = NULL;
   bool should_fix_pyramids = true;
+  bool should_attach_order = false;
   bool found_bad_arg = false;
 
   for (int i = 1; i < argc; ++i) {
     if (!strcmp(argv[i], "--no-pyramid-fix")) {
       should_fix_pyramids = false;
+    } else if (!strcmp(argv[i], "--attach-order")) {
+      should_attach_order = true;
     } else if (!gmi_path) {
       gmi_path = argv[i];
     } else if (!sms_path) {
@@ -69,11 +78,18 @@ int main(int argc, char** argv)
 
   if (!gmi_path || !sms_path || !smb_path || found_bad_arg) {
     if(!PCU_Comm_Self()) {
-      std::cerr << "usage: " << argv[0] << " [options] <model file> <simmetrix mesh> <scorec mesh>\n";
-      std::cerr << "options:\n";
-      std::cerr << "  --no-pyramid-fix           Disable quad-connected pyramid tetrahedronization\n";
+      std::cout << "usage: " << argv[0] << " [options] <model file> <simmetrix mesh> <scorec mesh>\n";
+      std::cout << "options:\n";
+      std::cout << "  --no-pyramid-fix           Disable quad-connected pyramid tetrahedronization\n";
+      std::cout << "  --attach-order             Attach the Simmetrix element order as a Numbering\n";
     }
     return EXIT_FAILURE;
+  }
+
+  if (should_attach_order && should_fix_pyramids) {
+    if (!PCU_Comm_Self())
+      std::cout << "disabling pyramid fix because --attach-order was given\n";
+    should_fix_pyramids = false;
   }
 
   gmi_sim_start();
@@ -85,6 +101,7 @@ int main(int argc, char** argv)
   pGModel simModel = gmi_export_sim(mdl);
   pParMesh sim_mesh = PM_load(sms_path, sthreadNone, simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  if (should_attach_order) attachOrder(simApfMesh);
   
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::printStats(mesh);
