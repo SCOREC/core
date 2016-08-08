@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.0)
 project(SCOREC)
 
 # The version number of the project
-set(SCOREC_MAJOR "1")
+set(SCOREC_MAJOR "2")
 set(SCOREC_MINOR "0")
-set(SCOREC_PATCH "1")
+set(SCOREC_PATCH "0")
 
 # CMake RPATH "always full" configuration, see:
 # https://cmake.org/Wiki/CMake_RPATH_handling#Always_full_RPATH
@@ -67,7 +67,7 @@ set(TARGETS)
 function(target_func TARGET_NAME)
   install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-targets DESTINATION lib)
   install(FILES ${HEADERS} DESTINATION include)
-  install(EXPORT ${TARGET_NAME}-targets DESTINATION lib/scorec)
+  install(EXPORT ${TARGET_NAME}-targets NAMESPACE SCOREC:: DESTINATION lib/scorec)
 endfunction()
 
 macro(target_macro TARGET_NAME)
@@ -97,10 +97,10 @@ add_subdirectory(viz)
 add_subdirectory(omega_h)
 
 # this INTERFACE target bundles all the enabled libraries together
-add_library(scorec INTERFACE)
-target_link_libraries(scorec INTERFACE ${TARGETS})
-target_func(scorec)
-set(TARGETS ${TARGETS} scorec)
+add_library(core INTERFACE)
+target_link_libraries(core INTERFACE ${TARGETS})
+target_func(core)
+set(TARGETS ${TARGETS} core)
 
 add_subdirectory(test)
 

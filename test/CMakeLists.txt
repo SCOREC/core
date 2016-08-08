@@ -5,7 +5,7 @@ function(setup_exe exename srcname)
   else()
     add_executable(${exename} EXCLUDE_FROM_ALL ${srcname})
   endif()
-  target_link_libraries(${exename} scorec)
+  target_link_libraries(${exename} core)
 endfunction(setup_exe)
 
 # Mesh validity/statistics utilities
