@@ -4,6 +4,7 @@
 #include "apfMesh.h"
 #include "apfMesh2.h"
 #include "apfShape.h"
+#include "apfNumbering.h"
 #include <map>
 #include <cassert>
 
@@ -28,6 +29,7 @@ class Converter
           createMatches(i);
       convertQuadratic();
       convertFields();
+      convertNumberings();
       outMesh->acceptChanges();
     }
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
@@ -162,12 +164,46 @@ class Converter
         }
       }
     }
+    void convertNumbering(Numbering* in, Numbering* out)
+    {
+      FieldShape* s = getShape(in);
+      int nc = countComponents(in);
+      for (int d = 0; d <= 3; ++d)
+      {
+        if (s->hasNodesIn(d))
+        {
+          MeshIterator* it = inMesh->begin(d);
+          MeshEntity* e;
+          while ((e = inMesh->iterate(it)))
+          {
+            int nn = s->countNodesOn(inMesh->getType(e));
+            for (int i = 0; i < nn; ++i)
+            {
+              for (int j = 0; j < nc; ++j) {
+                number(out, newFromOld[e], i, j,
+                    getNumber(in, e, i, j));
+              }
+            }
+          }
+          inMesh->end(it);
+        }
+      }
+    }
     void convertFields()
     {
       for (int i = 0; i < inMesh->countFields(); ++i) {
         Field* in = inMesh->getField(i);
         Field* out = cloneField(in, outMesh);
         convertField(in, out);
+      }
+    }
+    void convertNumberings()
+    {
+      for (int i = 0; i < inMesh->countNumberings(); ++i) {
+        Numbering* in = inMesh->getNumbering(i);
+        Numbering* out = createNumbering(outMesh,
+            getName(in), getShape(in), countComponents(in));
+        convertNumbering(in, out);
       }
     }
     void convertQuadratic()

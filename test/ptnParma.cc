@@ -94,12 +94,6 @@ void switchToAll()
   PCU_Barrier();
 }
 
-void remapMesh(apf::Mesh2* m)
-{
-  apf::Multiply remap(partitionFactor);
-  apf::remapPartition(m, remap);
-}
-
 void runParma(apf::Mesh2* m) {
   Parma_PrintPtnStats(m, "afterSplit");
   apf::MeshTag* weights = setWeights(m);
@@ -123,38 +117,17 @@ void runParma(apf::Mesh2* m) {
 
 void mymain(bool ismaster)
 {
-  gmi_model* g = 0;
+  gmi_model* g = gmi_load(modelFile);
   apf::Mesh2* m = NULL;
   apf::Migration* plan = NULL;
-  int dim = 0, matched = 0;
   switchToMasters();
   if (ismaster) {
     m = apf::loadMdsMesh(modelFile,meshFile);
     Parma_PrintPtnStats(m, "initial");
-    dim = m->getDimension();
-    matched = m->hasMatching();
     plan = getPlan(m);
-  } else {
-    g = gmi_load(modelFile);
   }
   switchToAll();
-  PCU_Comm_Begin();
-  if (ismaster)
-    for (int i = 1; i < partitionFactor; ++i) {
-      PCU_COMM_PACK(PCU_Comm_Self() + i, dim);
-      PCU_COMM_PACK(PCU_Comm_Self() + i, matched);
-    }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(dim);
-    PCU_COMM_UNPACK(matched);
-  }
-  if (!ismaster) {
-    m = apf::makeEmptyMdsMesh(g, dim, matched);
-    plan = new apf::Migration(m);
-  }
-  remapMesh(m);
-  m->migrate(plan);
+  m = apf::repeatMdsMesh(m, g, plan, partitionFactor);
   runParma(m);
   m->writeNative(outFile);
   freeMesh(m);

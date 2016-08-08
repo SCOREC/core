@@ -82,7 +82,7 @@ namespace {
           (*weight)[i] += getEntWeight(m, e, w);
         m->end(it);
       } else {
-          (*weight)[i] += TO_DOUBLE(m->count(i));
+        (*weight)[i] += TO_DOUBLE(m->count(i));
       }
     }
   }
@@ -92,9 +92,9 @@ namespace {
       double (*min)[4], double (*max)[4], double (*avg)[4]) {
     for(int d=0; d<=dim; d++)
       (*min)[d] = (*max)[d] = (*tot)[d] = (*loc)[d];
-    PCU_Min_Doubles(*min, dim);
-    PCU_Max_Doubles(*max, dim);
-    PCU_Add_Doubles(*tot, dim);
+    PCU_Min_Doubles(*min, dim+1);
+    PCU_Max_Doubles(*max, dim+1);
+    PCU_Add_Doubles(*tot, dim+1);
     for(int d=0; d<=dim; d++) {
       (*avg)[d] = (*tot)[d];
       (*avg)[d] /= TO_DOUBLE(PCU_Comm_Peers());

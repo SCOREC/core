@@ -8,7 +8,11 @@
 namespace ma {
 
 struct ModelExtrusion {
-  ModelExtrusion() {}
+  ModelExtrusion():
+    bottom(0),
+    middle(0),
+    top(0)
+  {}
   ModelExtrusion(Model* a, Model* b, Model* c):
     bottom(a),
     middle(b),
