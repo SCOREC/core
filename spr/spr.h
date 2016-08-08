@@ -45,6 +45,13 @@ apf::Field* recoverField(apf::Field* ip_field);
   */
 apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
 
+/** @brief run the SPR ZZ error estimator with a target # of output  elems
+  * @param f the integration-point input field
+  * @param t the target number of output elements after adaptation
+  * @returns a scalar mesh size field at mesh vertices
+  */
+apf::Field* getTargetSPRSizeField(apf::Field* f, size_t t);
+
 }
 
 #endif
