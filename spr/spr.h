@@ -41,8 +41,7 @@ apf::Field* recoverField(apf::Field* ip_field);
   * @param f the integration-point input field
   * @param adapt_ratio the fraction of allowable error,
   *                    scales the output size field.
-  * @returns a nodal scalar size field with the same distribution
-  *          as the mesh coordinate field
+  * @returns a scalar mesh size field defined at vertices
   */
 apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
 
