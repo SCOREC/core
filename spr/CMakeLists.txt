@@ -47,7 +47,8 @@ configure_file(
 set(SOURCES
   sprGetGradIPField.cc
   sprRecoverField.cc
-  sprEstimateError.cc)
+  sprEstimateError.cc
+  sprEstimateTargetError.cc)
 
 set(HEADERS
   spr.h)
