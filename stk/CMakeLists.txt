@@ -19,8 +19,10 @@ if(ENABLE_STK_MESH)
   set(HAS_STK ON)
   find_package(STKIO REQUIRED PATHS ${Trilinos_PREFIX})
   find_package(STKMesh REQUIRED PATHS ${Trilinos_PREFIX})
-  find_package(STKIoss REQUIRED PATHS ${Trilinos_PREFIX})
+  find_package(SEACASIoss REQUIRED PATHS ${Trilinos_PREFIX})
 endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # Configure the input header
 configure_file(
@@ -70,12 +72,16 @@ if(HAS_STK)
   target_link_libraries(apf_stk PUBLIC
     ${STKIO_LIBRARIES}
     ${STKMesh_LIBRARIES}
-    ${STKIoss_LIBRARIES}
+    ${STKMesh_TPL_LIBRARIES}
+    ${SEACASIoss_LIBRARIES}
   )
-  target_include_directories(apf_stk PUBLIC
+  target_include_directories(apf_stk
+    SYSTEM
+    PUBLIC
     ${STKIO_INCLUDE_DIRS}
     ${STKMesh_INCLUDE_DIRS}
-    ${STKIoss_INCLUDE_DIRS}
+    ${STKMesh_TPL_INCLUDE_DIRS}
+    ${SEACASIoss_INCLUDE_DIRS}
   )
 endif()
 
