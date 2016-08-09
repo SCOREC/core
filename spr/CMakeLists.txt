@@ -2,7 +2,8 @@
 set(SOURCES
   sprGetGradIPField.cc
   sprRecoverField.cc
-  sprEstimateError.cc)
+  sprEstimateError.cc
+  sprEstimateTargetError.cc)
 
 # Package headers
 set(HEADERS
