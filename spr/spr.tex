@@ -4,7 +4,7 @@
 \usepackage{algorithm}
 \usepackage[margin=1.0in]{geometry}
 \title{SPR-based Error Estimation}
-\author{Dan Ibanez}
+\author{Dan Ibanez and Brian Granzow}
 \date{Jun 21, 2014}
 \begin{document}
 \maketitle
@@ -209,5 +209,69 @@ the vertices is recovered from the per-element
 size factors $h_e^\text{new}$ by a simple
 process of averaging the values from elements
 adjacent to a vertex.
+
+\section{Target Size Field Computation}
+
+In practical applications, it is desirable to target a specified
+number of elements $N$ during mesh adaption to avoid over-coarsening
+or over-refinement, and to avoid exhausting the memory on the available
+machine.
+
+Boussetta et al. ("Adaptive remeshing based on a posteriori error
+estimation for forging simulation") define a size field specification
+by the following:
+\[
+h^{new}_e = \left(
+\frac{\theta_{uni}}{\theta_e} \right)
+^{( \frac{2}{2p +d} )} h_e
+\]
+where $\theta_e$ is the element-wise contribution to the error,
+$\theta_{uni}$ is the value of a uniformly distributed error
+across the mesh, $h_e^{new}$ is the new element mesh size,
+$h_e$ is the old element mesh size, $p$ is the polynomial order
+of accuracy of the finite element method, and $d$ is the number
+of spatial dimensions of the mesh.
+
+Let $G$ be a globally computed error metric given by:
+\[
+G = \sum_e^n \left( \theta_e \right) ^{(\frac{2d}{2p+d})}
+\]
+where $n$ is the total number of elements in the mesh.
+Then value of the uniformly distributed error is given by
+\[
+\theta_{uni} = \left( \theta_{imp} \right) ^{( \frac{2p+d}{2p} )}
+\left( G \right) ^{-(\frac{2p+d}{4p} )}
+\]
+where $\theta_{imp}$ is a prescribed accuracy parameter. 
+To generate a size field that will yield an adapted
+mesh with approximately $N$ elements, the accuracy parameter
+$\theta_{imp}$ is given by
+\[
+\theta_{imp} = \left( N \right) ^{-(\frac{p}{d})}
+\left( G \right)^{(\frac{2p+d}{2d})}
+\]
+
+Algebraic manipulation of these quantities yields a simpler
+equivalent expression for the new element size field:
+\[
+h_e^{new} = \left(\frac{G}{N}\right)^{\frac{1}{d}}
+\left( \theta_e \right)^{-(\frac{2}{2p+d})} h_e
+\]
+The element-level error contribution $\theta_e$ is chosen to be
+\[
+\theta_e = \left( 
+\int_{\Omega^e}(\epsilon - \epsilon^*) : (\epsilon - \epsilon^*)
+\text{d} \Omega
+\right) ^{\frac{1}{2}}
+\]
+as is done in the previous size field computation.
+
+In addition to targeting a specified number of elements in the
+output mesh, Boussetta et al. define user-input parameters
+$\alpha$ and $\beta$ to control the gradients of the mesh size
+field such that
+\[
+\alpha < \frac{h_e^{new}}{h_e} < \beta
+\]
 
 \end{document}
