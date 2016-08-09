@@ -68,13 +68,25 @@ function(target_func TARGET_NAME)
   install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-targets DESTINATION lib)
   install(FILES ${HEADERS} DESTINATION include)
   install(EXPORT ${TARGET_NAME}-targets NAMESPACE SCOREC:: DESTINATION lib/scorec)
-endfunction()
+endfunction(target_func)
 
 macro(target_macro TARGET_NAME)
   target_func(${TARGET_NAME})
   # this PARENT_SCOPE is the reason for this being a macro, not a function
   set(TARGETS ${TARGETS} ${TARGET_NAME} PARENT_SCOPE)
-endmacro()
+endmacro(target_macro)
+
+macro(dep_macro DEP_NAME DEP_PREFIX)
+  find_package(${DEP_NAME} REQUIRED PATHS "${DEP_PREFIX}")
+  set(DEPS ${DEPS} ${DEP_NAME})
+  set(DEP_PREFIXES ${DEP_PREFIXES} "${DEP_PREFIX}")
+endmacro(dep_macro)
+
+macro(deps_end_macro)
+  # this PARENT_SCOPE is the reason for this being a macro, not a function
+  set(DEPS ${DEPS} PARENT_SCOPE)
+  set(DEP_PREFIXES ${DEP_PREFIXES} PARENT_SCOPE)
+endmacro(deps_end_macro)
 
 # Include the SCOREC project packages
 add_subdirectory(pcu)
@@ -103,6 +115,9 @@ target_func(core)
 set(TARGETS ${TARGETS} core)
 
 add_subdirectory(test)
+
+list(REMOVE_DUPLICATES DEPS)
+list(REMOVE_DUPLICATES DEP_PREFIXES)
 
 # Tell CMake to install the project in a nice way :)
 configure_file(

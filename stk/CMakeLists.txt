@@ -12,14 +12,14 @@ endif()
 
 # Find the shards Trilinos package
 set(HAS_STK OFF)
-find_package(Shards REQUIRED PATHS ${Trilinos_PREFIX})
+dep_macro(Shards "${Trilinos_PREFIX}")
 
 # If enabling more mesh features, find additional Trilinos packages
 if(ENABLE_STK_MESH)
   set(HAS_STK ON)
-  find_package(STKIO REQUIRED PATHS ${Trilinos_PREFIX})
-  find_package(STKMesh REQUIRED PATHS ${Trilinos_PREFIX})
-  find_package(SEACASIoss REQUIRED PATHS ${Trilinos_PREFIX})
+  dep_macro(STKIO "${Trilinos_PREFIX}")
+  dep_macro(STKMesh "${Trilinos_PREFIX}")
+  dep_macro(SEACASIoss "${Trilinos_PREFIX}")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -86,3 +86,5 @@ if(HAS_STK)
 endif()
 
 target_macro(apf_stk)
+
+deps_end_macro()
