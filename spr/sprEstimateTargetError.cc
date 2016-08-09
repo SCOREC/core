@@ -154,7 +154,7 @@ static double getNewSize(Estimation* e, apf::MeshEntity* ent)
   int p = e->recovered_order;
   int d = e->mesh->getDimension();
   double h = getCurrentSize(e->mesh, ent);
-  double theta_e = elemError.result;
+  double theta_e = sqrt(elemError.sum);
   double r = pow(theta_e, ((-2.0)/(2.0*p+d)));
   double h_new = e->size_factor * r * h;
   if (h_new < e->alpha*h) h_new = e->alpha*h;
