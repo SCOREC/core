@@ -23,6 +23,10 @@ add_test(qr_test qr)
 add_test(base64 base64)
 add_test(tensor_test tensor)
 
+mpi_test(test_scaling 1
+  ./test_scaling
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi670/cube.smb)
 mpi_test(render 1
   ./render
   ${MESHES}/cube/cube.dmg

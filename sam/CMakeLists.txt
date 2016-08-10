@@ -11,6 +11,7 @@ set(SAM_LIBS sam ${DEP_LIBS})
 
 set(HEADERS
   sam.h
+  samSz.h
   samElementCount.h
   )
 
