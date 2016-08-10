@@ -5,9 +5,10 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-/* see Bousetta et al.
+/* see Boussetta, Ramzy et al.
    "Adaptive remeshing based on a posteriori error estimation
-   for forging simulation" */
+   for forging simulation." Computer methods in applied mechanics
+   and engineering 195.48 (2006): 6626-6645. */
 
 #include "spr.h"
 

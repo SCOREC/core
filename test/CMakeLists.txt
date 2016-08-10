@@ -123,6 +123,9 @@ if(ENABLE_DSP)
   test_exe_func(graphdist graphdist.cc)
   test_exe_func(moving moving.cc)
 endif()
+util_exe_func(intrude intrude.cc)
+util_exe_func(extrude extrude.cc)
+test_exe_func(test_scaling test_scaling.cc)
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included

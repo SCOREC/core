@@ -1,4 +1,3 @@
-# Package sources
 set(SOURCES
   samSz.cc
   sam.cc
@@ -8,6 +7,7 @@ set(SOURCES
 # Package headers
 set(HEADERS
   sam.h
+  samSz.h
   samElementCount.h
 )
 
