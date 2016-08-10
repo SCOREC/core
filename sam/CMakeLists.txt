@@ -2,11 +2,13 @@
 set(SOURCES
   samSz.cc
   sam.cc
+  samElementCount.cc
 )
 
 # Package headers
 set(HEADERS
   sam.h
+  samElementCount.h
 )
 
 # Add the sam library
@@ -19,6 +21,8 @@ target_include_directories(sam INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(sam PUBLIC apf)
+target_link_libraries(sam
+    PUBLIC apf
+    PRIVATE pcu)
 
 target_macro(sam)
