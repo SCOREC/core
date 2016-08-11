@@ -280,17 +280,14 @@ Distribution::Distribution(pMesh m)
 Distribution::~Distribution()
 {
   if (parts_vec)
-  {
     delete [] parts_vec;
-    delete [] element_vec;
-  }
 }
 
 
 bool Distribution::has(pMeshEnt e)
 {
   int ent_id = getMdsIndex(mesh, e);
-  if (element_vec[ent_id]!=NULL)
+  if (parts_vec[ent_id].size())
     return true;
   else
     return false;
@@ -302,57 +299,61 @@ void Distribution::send(pMeshEnt e, int to)
   int nele = mesh->count(dim);
   if(parts_vec == NULL) {
      parts_vec = new Parts[nele];
-     element_vec = new pMeshEnt[nele];
-    for (int i=0; i<nele; ++i)
-      element_vec[i]=NULL;
   }
   int ent_id = getMdsIndex(mesh, e);
   assert(-1<ent_id && ent_id<nele);
   parts_vec[ent_id].insert(to);
-  if (element_vec[ent_id]==NULL)
-  {
-    ++element_count;
-    element_vec[ent_id] = e; 
-  }
 }
 
 Parts& Distribution::sending(pMeshEnt e)
 {
   int ent_id = getMdsIndex(mesh, e);
-  assert(element_vec[ent_id]!=NULL);
+  assert(parts_vec[ent_id].size()>0);
   return parts_vec[ent_id];
+}
+
+int Distribution::count()
+{
+  if (element_count==0)
+  {
+    int nele = mesh->count(mesh->getDimension());
+    for (int i=0; i<nele; ++i)
+      if (parts_vec[i].size()>0) ++element_count;
+  }
 }
 
 void Distribution::print()
 {
-  for (int i=0; i<mesh->count(mesh->getDimension()); ++i)
+  pMeshEnt e;
+  apf::MeshIterator* it = mesh->begin(mesh->getDimension());
+  int i=-1;
+  while ((e = mesh->iterate(it)))
   {
-    if (element_vec[i]==NULL) continue;
+    ++i;
+    if (parts_vec[i].size()==0) continue;
     APF_ITERATE(Parts,parts_vec[i],pit)
-      std::cout<<"("<<PCU_Comm_Self()<<") distribute e "<<i<<" to "<<*pit<<"\n";
+      std::cout<<"("<<PCU_Comm_Self()<<") distribute element "<<i<<" to "<<*pit<<"\n";
+
   }
+  mesh->end(it);
 }
 
 static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affected[4])
 {
   int maxDimension = m->getDimension();
   int self = PCU_Comm_Self();
-  affected[maxDimension].reserve(plan->element_count);
-/*
-  for (int i=0; i < plan->count(); ++i)
+  affected[maxDimension].reserve(plan->count());
+
+  pMeshEnt e;
+  apf::MeshIterator* it = m->begin(maxDimension);
+  int i=0;
+  while ((e = m->iterate(it)))
   {
-    pMeshEnt e = plan->get(i);
-    if (plan->sending(e) != self) {
-      assert(apf::getDimension(m, e) == m->getDimension());
+    if (plan->parts_vec[i].size()>0) 
       affected[maxDimension].push_back(e);
-    }
+    ++i;
   }
-*/
-  for (int i=0; i<m->count(maxDimension); ++i)
-  {
-    if (plan->element_vec[i]!=NULL)
-      affected[maxDimension].push_back(plan->element_vec[i]);
-  }
+  m->end(it);
 
   int dummy=1;
   pTag tag = m->createIntTag("distribution_affected",1);
@@ -417,14 +418,19 @@ static void distr_updateResidences(pMesh m,
 {
   int maxDimension = m->getDimension();
   pMeshEnt e;
-  int nele = m->count(maxDimension);
-  for (int i=0; i<nele; ++i) 
+
+  apf::MeshIterator* it = m->begin(maxDimension);
+  int i=0;
+  while ((e = m->iterate(it)))
   {
-     if(plan->element_vec[i]==NULL) continue;
-     e = plan->element_vec[i];
-     Parts res = distr_makeResidence(plan->parts_vec[i]);
-     m->setResidence(e,res);
+    if (plan->parts_vec[i].size()>0) 
+    {
+      Parts res = distr_makeResidence(plan->parts_vec[i]);
+      m->setResidence(e,res);
+    }
+    ++i;
   }
+  m->end(it);
 
   for (int dimension = maxDimension-1; dimension >= 0; --dimension)
   {

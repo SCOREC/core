@@ -59,10 +59,10 @@ class Distribution
 /** \brief return the destination part id of an element */
     Parts& sending(pMeshEnt e);
     void print();
+    int count();
     pMesh getMesh() {return mesh;}
 
     Parts* parts_vec;
-    pMeshEnt* element_vec;
     int element_count;
   private:
     pMesh mesh;
