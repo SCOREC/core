@@ -273,25 +273,24 @@ void pumi_mesh_verify(pMesh m)
 Distribution::Distribution(pMesh m)
 {
   mesh = m;
+  parts_vec = NULL;
+  element_count=0;
 }
 
-int Distribution::count()
+Distribution::~Distribution()
 {
-  return element_map.size();
+  if (parts_vec)
+  {
+    delete [] parts_vec;
+    delete [] element_vec;
+  }
 }
 
-pMeshEnt Distribution::get(int i)
-{
-  map<pMeshEnt, Parts >::iterator mapit = element_map.begin();
-  for (int k=0; k<i; ++k)
-    mapit++;
-  return mapit->first;
-}
 
 bool Distribution::has(pMeshEnt e)
 {
-  map<pMeshEnt, Parts >::iterator mapit = element_map.find(e);
-  if (mapit!=element_map.end())
+  int ent_id = getMdsIndex(mesh, e);
+  if (element_vec[ent_id]!=NULL)
     return true;
   else
     return false;
@@ -299,22 +298,38 @@ bool Distribution::has(pMeshEnt e)
 
 void Distribution::send(pMeshEnt e, int to)
 {
-  element_map[e].insert(to);
+  int dim = mesh->getDimension();
+  int nele = mesh->count(dim);
+  if(parts_vec == NULL) {
+     parts_vec = new Parts[nele];
+     element_vec = new pMeshEnt[nele];
+    for (int i=0; i<nele; ++i)
+      element_vec[i]=NULL;
+  }
+  int ent_id = getMdsIndex(mesh, e);
+  assert(-1<ent_id && ent_id<nele);
+  parts_vec[ent_id].insert(to);
+  if (element_vec[ent_id]==NULL)
+  {
+    ++element_count;
+    element_vec[ent_id] = e; 
+  }
 }
 
 Parts& Distribution::sending(pMeshEnt e)
 {
-  return element_map[e];
+  int ent_id = getMdsIndex(mesh, e);
+  assert(element_vec[ent_id]!=NULL);
+  return parts_vec[ent_id];
 }
 
 void Distribution::print()
 {
-  map<pMeshEnt, Parts >::iterator mapit;
-  for (mapit = element_map.begin(); mapit!=element_map.end(); ++mapit)
+  for (int i=0; i<mesh->count(mesh->getDimension()); ++i)
   {
-    int ent_id = pumi_ment_getglobalid(mapit->first);
-    APF_ITERATE(Parts,element_map[mapit->first],pit)
-      std::cout<<"("<<PCU_Comm_Self()<<") distribute e "<<ent_id<<" to "<<*pit<<"\n";
+    if (element_vec[i]==NULL) continue;
+    APF_ITERATE(Parts,parts_vec[i],pit)
+      std::cout<<"("<<PCU_Comm_Self()<<") distribute e "<<i<<" to "<<*pit<<"\n";
   }
 }
 
@@ -322,7 +337,7 @@ static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affecte
 {
   int maxDimension = m->getDimension();
   int self = PCU_Comm_Self();
-  affected[maxDimension].reserve(plan->count());
+  affected[maxDimension].reserve(plan->element_count);
 /*
   for (int i=0; i < plan->count(); ++i)
   {
@@ -333,9 +348,11 @@ static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affecte
     }
   }
 */
-  map<pMeshEnt, Parts >::iterator mapit;
-  for (mapit=plan->element_map.begin();mapit!=plan->element_map.end();++mapit)
-    affected[maxDimension].push_back(mapit->first);
+  for (int i=0; i<m->count(maxDimension); ++i)
+  {
+    if (plan->element_vec[i]!=NULL)
+      affected[maxDimension].push_back(plan->element_vec[i]);
+  }
 
   int dummy=1;
   pTag tag = m->createIntTag("distribution_affected",1);
@@ -399,12 +416,16 @@ static void distr_updateResidences(pMesh m,
 // *********************************************************
 {
   int maxDimension = m->getDimension();
-  for (int i=0; i < plan->count(); ++i)
+  pMeshEnt e;
+  int nele = m->count(maxDimension);
+  for (int i=0; i<nele; ++i) 
   {
-    pMeshEnt e = plan->get(i);
-    Parts res = distr_makeResidence(plan->sending(e));
-    m->setResidence(e,res);
+     if(plan->element_vec[i]==NULL) continue;
+     e = plan->element_vec[i];
+     Parts res = distr_makeResidence(plan->parts_vec[i]);
+     m->setResidence(e,res);
   }
+
   for (int dimension = maxDimension-1; dimension >= 0; --dimension)
   {
     PCU_Comm_Begin();

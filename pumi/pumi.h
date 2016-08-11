@@ -48,9 +48,8 @@ class Distribution
 /** \brief must be constructed with a mesh
   \details use (new Distribution(mesh)) to make these objects */
     Distribution(pMesh m);
-    ~Distribution() {}
-/** \brief return the number of elements with assigned destination(s) */
-    int count();
+    ~Distribution();
+
 /** \brief get the i'th element with an assigned destination */
     pMeshEnt get(int i);
 /** \brief return true if the i'th element has been assigned destination(s) */
@@ -61,7 +60,10 @@ class Distribution
     Parts& sending(pMeshEnt e);
     void print();
     pMesh getMesh() {return mesh;}
-    std::map<pMeshEnt, Parts> element_map;
+
+    Parts* parts_vec;
+    pMeshEnt* element_vec;
+    int element_count;
   private:
     pMesh mesh;
 };
