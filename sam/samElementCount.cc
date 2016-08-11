@@ -38,6 +38,7 @@ public:
     apf::Integrator(1),
     iso_field(iso_field_),
     dim(apf::getMesh(iso_field_)->getDimension()),
+    element(0),
     sum(0) {
   }
   virtual void inElement(apf::MeshElement* me) {
