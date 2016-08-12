@@ -120,6 +120,12 @@ else()
     "pipe_4_.smb"
     2)
 endif()
+mpi_test(pipe_condense 4
+  ./serialize
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb"
+  "pipe_2.smb"
+  2)
 mpi_test(verify_parallel 4
   ./verify
   "${MDIR}/pipe.smd"
