@@ -14,6 +14,7 @@
 #include <string.h>
 #include <assert.h>
 #include <PCU.h>
+#include <reel.h>
 
 static void* mds_realloc(void* p, size_t n)
 {
@@ -25,7 +26,8 @@ static void* mds_realloc(void* p, size_t n)
     free(p);
     p = NULL;
   }
-  assert((p) || (!n));
+  if ((!p) && (n))
+    reel_fail("MDS ran out of memory!\n");
   return p;
 }
 
