@@ -55,6 +55,7 @@ class Input
     int filterMatches;
     int axisymmetry;
     int writeVizFiles;
+    double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);

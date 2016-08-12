@@ -3,6 +3,7 @@
 #include <apf.h>
 #include <apfField.h>
 #include "phIO.h"
+#include "apfShape.h"
 #include "ph.h"
 #include <cstdlib>
 #include <fstream>
@@ -59,7 +60,7 @@ void attachCellField(
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
-  f = apf::createPackedField(m, fieldname, out_size);
+  f = apf::createPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
   size_t n = m->count(m->getDimension());
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
@@ -68,6 +69,7 @@ void attachCellField(
   while ((e = m->iterate(it))) {
 //    for (int j = 0; j < in_size; ++j)
 //      c[j] = data[j * n + i];
+//    apf::setComponents(f, e, 0, &c[0]);
     apf::setScalar(f, e, 0, data[i]);
     ++i;
   }
@@ -129,11 +131,13 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "mapping_partid",
     "mapping_vtxid",
     "errors",
-    "time derivative of solution"
+    "time derivative of solution",
+    "motion_coords",
+    "mesh_vel"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
-    "MeshQ"
+    "meshQ"
   };
   int known_nodal_field_count =
     sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);
