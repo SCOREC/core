@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <cassert>
+#include <cstdlib>
 
 struct GroupCode : public Parma_GroupCode
 {
@@ -16,15 +17,20 @@ struct GroupCode : public Parma_GroupCode
 
 int main( int argc, char* argv[])
 {
-  assert(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  if ( argc != 5 ) {
+    if ( !PCU_Comm_Self() )
+      printf("Usage: %s <model> <mesh> <out prefix> <reduction-factor>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
   gmi_register_mesh();
   GroupCode code;
   code.mesh = apf::loadMdsMesh(argv[1], argv[2]);
   code.meshFile = argv[3];
   apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
-  Parma_ShrinkPartition(code.mesh, PCU_Comm_Peers(), code);
+  Parma_ShrinkPartition(code.mesh, atoi(argv[4]), code);
   PCU_Comm_Free();
   MPI_Finalize();
 }
