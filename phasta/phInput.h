@@ -16,6 +16,7 @@ class Input
     int globalP;
     int timeStepNumber;
     int ensa_dof;
+    int ensa_melas_dof;
     std::string restartFileName;
     std::string attributeFileName;
     std::string meshFileName;
