@@ -5,13 +5,17 @@
 #include <cassert>
 #include <cstdlib>
 
+#ifndef debug
+#define debug
+#endif
+
 namespace ph {
 
-static std::string buildGeomBCFileName()
+static std::string buildGeomBCFileName(std::string timestep)
 {
   std::stringstream ss;
   int rank = PCU_Comm_Self() + 1;
-  ss << "geombc.dat." << rank;
+  ss << "geombc." << timestep << "." << rank;
   return ss.str();
 }
 
@@ -263,11 +267,21 @@ static void writeEdges(Output& o, FILE* f)
   }
 }
 
-void writeGeomBC(Output& o, std::string path)
+void writeGeomBC(Output& o, std::string path, int timestep)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
-  path += buildGeomBCFileName();
+#ifdef debug
+  std::stringstream tss; 
+  std::string timestep_str;
+  if (! timestep)
+    timestep_str = "dat";
+  else {
+    tss << timestep;   
+    timestep_str = tss.str();
+  }
+  path += buildGeomBCFileName(timestep_str);
+#endif
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());

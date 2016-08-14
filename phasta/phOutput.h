@@ -63,8 +63,8 @@ struct EnsaArrays
    element j of
    boundary block i */
 /* ibcb (part 0) has these bits:
-   MF NP TV HF TW F1 F2 F3 F4
-   0  1  2  3  4  5  6  7  8
+   MF NP TV HF TW F1 F2 F3 F4 TVM
+   0  1  2  3  4  5  6  7  8   9
    part 1 is just the value of SID */
   int*** ibcb;
 /* bcb[i][j][k] is the natural boundary condition
@@ -73,8 +73,8 @@ struct EnsaArrays
    element j of
    boundary block i */
 /* bcb is organized as follows:
-   MF NP TV     HF F1 F2 F3 F4
-   0  1  2 3 4  5  6  7  8  9 */
+   MF NP TV     HF F1 F2 F3 F4 --TVM---
+   0  1  2 3 4  5  6  7  8  9  10 11 12 */
   double*** bcb;
 /* nbc[i] is the index into essential boundary condition
    arrays of local node i (probably ;) */
@@ -131,7 +131,7 @@ struct Output
 };
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o);
-void writeGeomBC(Output& o, std::string path);
+void writeGeomBC(Output& o, std::string path, int timestep = 0);
 
 }
 

@@ -1,7 +1,9 @@
 #include <PCU.h>
 #include "phRestart.h"
 #include <apf.h>
+#include <apfField.h>
 #include "phIO.h"
+#include "apfShape.h"
 #include "ph.h"
 #include <cstdlib>
 #include <fstream>
@@ -26,7 +28,10 @@ void attachField(
   if (!(in_size <= out_size))
     fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   assert(in_size <= out_size);
-  apf::Field* f = apf::createPackedField(m, fieldname, out_size);
+  apf::Field* f = m->findField(fieldname);
+  if( f )
+    apf::destroyField(f);
+  f = apf::createPackedField(m, fieldname, out_size);
   size_t n = m->count(0);
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
@@ -36,6 +41,36 @@ void attachField(
     for (int j = 0; j < in_size; ++j)
       c[j] = data[j * n + i];
     apf::setComponents(f, e, 0, &c[0]);
+    ++i;
+  }
+  m->end(it);
+  assert(i == n);
+}
+
+void attachCellField(
+    apf::Mesh* m,
+    const char* fieldname,
+    double* data,
+    int in_size,
+    int out_size)
+{
+  if (!(in_size <= out_size))
+    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
+  assert(in_size <= out_size);
+  apf::Field* f = m->findField(fieldname);
+  if( f )
+    apf::destroyField(f);
+  f = apf::createPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
+  size_t n = m->count(m->getDimension());
+  apf::NewArray<double> c(out_size);
+  apf::MeshEntity* e;
+  size_t i = 0;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+//    for (int j = 0; j < in_size; ++j)
+//      c[j] = data[j * n + i];
+//    apf::setComponents(f, e, 0, &c[0]);
+    apf::setScalar(f, e, 0, data[i]);
     ++i;
   }
   m->end(it);
@@ -67,9 +102,8 @@ void detachField(
   apf::MeshIterator* it = m->begin(0);
   while ((e = m->iterate(it))) {
     apf::getComponents(f, e, 0, &c[0]);
-    for (int j = 0; j < size; ++j) 
+    for (int j = 0; j < size; ++j)
       data[j * n + i] = c[j];
-//std::cout << i << " " << data[0*n + i] << "\n"; /* pressure */
     ++i;
   }
   m->end(it);
@@ -97,10 +131,13 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "mapping_partid",
     "mapping_vtxid",
     "errors",
-    "time derivative of solution"
+    "time derivative of solution",
+    "motion_coords",
+    "mesh_vel"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
+    "meshQ"
   };
   int known_nodal_field_count =
     sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);
@@ -141,6 +178,7 @@ int readAndAttachField(
   if(ret==0 || ret==1)
     return ret;
   if (!isNodalField(hname, nodes, m)) {
+    attachCellField(m, hname, data, vars, vars);
     free(data);
     return 1;
   }
@@ -205,7 +243,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  FILE* f = in.openfile_read(in, filename.c_str()); 
+  FILE* f = in.openfile_read(in, filename.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
     abort();

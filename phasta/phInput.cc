@@ -13,6 +13,7 @@ static void setDefaults(Input& in)
   in.globalP = 0;
   in.timeStepNumber = 0;
   in.ensa_dof = 0;
+  in.ensa_melas_dof = 0; 
   in.outMeshFileName = "";
   in.adaptFlag = 0;
   in.rRead = 0;
@@ -51,6 +52,8 @@ static void setDefaults(Input& in)
   in.axisymmetry = 0;
   in.parmaLoops = 3; //a magical value
   in.parmaVerbosity = 1; //fairly quiet
+  in.writeVizFiles = 1;
+  in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
   in.rs = 0;
@@ -109,6 +112,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["axisymmetry"] = &in.axisymmetry;
   intMap["parmaLoops"] = &in.parmaLoops;
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
+  intMap["writeVizFiles"] = &in.writeVizFiles;
+  dblMap["meshqCrtn"] = &in.meshqCrtn;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   intMap["formEdges"] = &in.formEdges;
@@ -204,9 +209,10 @@ int countNaturalBCs(Input& in)
 
 int countEssentialBCs(Input& in)
 {
-//  return in.ensa_dof + 7;
-// HARDCODE DEBUG
-  return in.ensa_dof + 20;
+  if(!in.ensa_melas_dof)
+    return in.ensa_dof + 7;
+  else
+    return 3+2+4+7+8; // (assuming 4 scalars to be ON) and 8 is for ec11 ec12 ec13 em1 ec21 ec22 ec23 em2
 }
 
 int countScalarBCs(Input& in)
