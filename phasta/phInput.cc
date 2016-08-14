@@ -66,6 +66,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["globalP"] = &in.globalP;
   intMap["timeStepNumber"] = &in.timeStepNumber;
   intMap["ensa_dof"] = &in.ensa_dof;
+  intMap["ensa_melas_dof"] = &in.ensa_melas_dof;
   stringMap["restartFileName"] = &in.restartFileName;
   stringMap["attributeFileName"] = &in.attributeFileName;
   stringMap["meshFileName"] = &in.meshFileName;
