@@ -2,7 +2,9 @@
 #include <apfMesh.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
+#include <gmi_sim.h>
 #include <PCU.h>
+#include <SimUtil.h>
 #include <chef.h>
 #include <parma.h>
 #include <cassert>
@@ -39,6 +41,9 @@ int main(int argc, char** argv) {
   PCU_Comm_Init();
   PCU_Protect();
   checkInputs(argc,argv);
+  Sim_readLicenseFile(0);
+  gmi_sim_start();
+  gmi_register_sim();
   gmi_register_mesh();
   GroupCode code;
   ph::Input in;
@@ -49,6 +54,8 @@ int main(int argc, char** argv) {
   apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
   code.ctrl = in;
   Parma_ShrinkPartition(code.mesh, atoi(argv[2]), code);
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
   PCU_Comm_Free();
   MPI_Finalize();
 }
