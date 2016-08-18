@@ -252,9 +252,7 @@ static void getElementSizeField(Estimation* e)
   e->element_size = eSize;
 }
 
-/* note that this only works when there is
-   one node per entity at most. */
-void averageToEntity(apf::Field* ef, apf::Field* vf, apf::MeshEntity* ent)
+void averageToVertex(apf::Field* ef, apf::Field* vf, apf::MeshEntity* ent)
 {
   apf::Mesh* m = apf::getMesh(ef);
   apf::Adjacent elements;
@@ -286,7 +284,7 @@ class AverageOp : public apf::CavityOp
     }
     virtual void apply()
     {
-      averageToEntity(estimation->element_size,
+      averageToVertex(estimation->element_size,
           estimation->size, entity);
     }
     Estimation* estimation;
@@ -295,11 +293,9 @@ class AverageOp : public apf::CavityOp
 
 void averageSizeField(Estimation* e)
 {
-  e->size = apf::createFieldOn(e->mesh, "size", apf::SCALAR);
+  e->size = apf::createLagrangeField(e->mesh, "size", apf::SCALAR, 1);
   AverageOp op(e);
-  for (int d = 0; d <= e->mesh->getDimension(); ++d)
-    if (e->mesh->getShape()->hasNodesIn(d))
-      op.applyToDimension(d);
+  op.applyToDimension(0);
 }
 
 static void estimateError(Estimation* e)

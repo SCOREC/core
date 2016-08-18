@@ -7,6 +7,7 @@
 #include <PartitionedMeshTypes.h>
 
 void P_setPos(pPoint,double,double,double);
+class Field;
 
 namespace apf {
 
@@ -28,7 +29,6 @@ class TagSIM;
 
 class MeshSIM : public Mesh2
 {
-  template <class T> friend class SIMDataOf;
   public:
     MeshSIM(pParMesh m);
     virtual ~MeshSIM();
@@ -92,9 +92,11 @@ class MeshSIM : public Mesh2
     MeshEntity * createVert_(ModelEntity*) { return NULL; }
     MeshEntity * createEntity_(int, ModelEntity*, MeshEntity**) { return NULL; }
     void destroy_(MeshEntity* ) {};
+    void setModelEntity(MeshEntity*, ModelEntity*) {};
     void addMatch(MeshEntity*, int, MeshEntity* ) {};
     void clearMatches(MeshEntity*) {};
     void acceptChanges() {};
+    pParMesh getMesh() {return mesh;}
   protected:
     pParMesh mesh;
     pMesh part;
@@ -108,9 +110,11 @@ class MeshSIM : public Mesh2
     gmi_model* model;
 };
 
-Field * createSIMField(Mesh * m, const char * name, int valueType, FieldShape * shape);
-Field * createSIMLagrangeField(Mesh * m, const char * name, int valueType, int order);
-Field * createSIMFieldOn(Mesh * m, const char * name, int valueType);
+apf::Field* createSIMField(Mesh* m, const char* name, int valueType, FieldShape* shape);
+apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order);
+apf::Field* createSIMFieldOn(Mesh* m, const char* name, int valueType);
+::Field* getSIMField(apf::Field* f);
+apf::Field* wrapSIMField(Mesh* m, ::Field* fd);
 
 template <typename T>
 static void pListToDynamicArray(pPList list, DynamicArray<T>& array)

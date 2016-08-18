@@ -23,6 +23,10 @@ add_test(qr_test qr)
 add_test(base64 base64)
 add_test(tensor_test tensor)
 
+mpi_test(test_scaling 1
+  ./test_scaling
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi670/cube.smb)
 mpi_test(render 1
   ./render
   ${MESHES}/cube/cube.dmg
@@ -33,6 +37,10 @@ mpi_test(render_ascii 1
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi11/cube.smb
   render_ascii_test)
+mpi_test(field_io 1
+  ./field_io
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi11/cube.smb)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 1
@@ -112,6 +120,12 @@ else()
     "pipe_4_.smb"
     2)
 endif()
+mpi_test(pipe_condense 4
+  ./serialize
+  "${MDIR}/pipe.dmg"
+  "pipe_4_.smb"
+  "pipe_2.smb"
+  2)
 mpi_test(verify_parallel 4
   ./verify
   "${MDIR}/pipe.smd"
@@ -155,17 +169,26 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
 endif()
-mpi_test(ghostElement 4
-  ./ghostElement
+mpi_test(ghostMPAS 4
+  ./ghostMPAS
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusGhostEle4p/")
-
+mpi_test(ghostEdge 4
+  ./ghostEdge
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  "torusGhostEle4p/")
 mpi_test(fixDisconnected 4
   ./fixDisconnected
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusDcFix4p/")
+mpi_test(quality 4
+  ./quality
+  "${MDIR}/torus.dmg"
+  "${MDIR}/4imb/torus.smb"
+  .3)
 set(MDIR ${MESHES}/airFoilAfosr)
 mpi_test(elmBalance 4
   ./elmBalance
@@ -323,7 +346,7 @@ if (PCU_COMPRESS)
   mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
-    ../../../model.dmg bz2:../good_mesh/ adapt.inp
+    ../../../model.dmg bz2:../good_mesh/ adapt.ur.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   if(ENABLE_ZOLTAN)
     mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep

@@ -40,6 +40,7 @@ class Input
     int phastaIO;
     int splitFactor;
     int solutionMigration;
+    int useAttachedFields;
     int displacementMigration;
     int isReorder;
     int tetrahedronize;
@@ -56,6 +57,7 @@ class Input
     int filterMatches;
     int axisymmetry;
     int formEdges;
+    int writePhastaFiles;
     int parmaLoops;
     int parmaVerbosity;
     int writeVizFiles;

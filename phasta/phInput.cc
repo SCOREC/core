@@ -33,6 +33,7 @@ static void setDefaults(Input& in)
   in.partitionMethod = "rib";
   in.localPtn = 1;
   in.solutionMigration = 1;
+  in.useAttachedFields = 0;
   in.isReorder = 0;
   in.openfile_read = 0;
   in.tetrahedronize = 0;
@@ -58,6 +59,7 @@ static void setDefaults(Input& in)
   in.vertexImbalance = 1.05;
   in.rs = 0;
   in.formEdges = 0;
+  in.writePhastaFiles = 0;
 }
 
 Input::Input()
@@ -97,6 +99,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["phastaIO"] = &in.phastaIO;
   intMap["splitFactor"] = &in.splitFactor;
   intMap["SolutionMigration"] = &in.solutionMigration;
+  intMap["UseAttachedFields"] = &in.useAttachedFields;
   intMap["DisplacementMigration"] = &in.displacementMigration;
   intMap["isReorder"] = &in.isReorder;
   intMap["Tetrahedronize"] = &in.tetrahedronize;
@@ -118,6 +121,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   intMap["formEdges"] = &in.formEdges;
+  intMap["writePhastaFiles"] = &in.writePhastaFiles;
 }
 
 template <class T>

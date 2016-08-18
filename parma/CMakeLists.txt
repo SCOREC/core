@@ -40,10 +40,11 @@ SET(DIFFMC_SOURCES
   diffMC/parma_vtxSides.cc
   diffMC/parma_entWeights.cc
   diffMC/parma_ghost.cc
+  diffMC/parma_ghostElement.cc
   diffMC/parma_ghostOwner.cc
   diffMC/parma_ghostWeights.cc
-  diffMC/parma_ghostElement.cc
-  diffMC/parma_ghostElementWeights.cc
+  diffMC/parma_ghostMPAS.cc
+  diffMC/parma_ghostMPASWeights.cc
   diffMC/parma_vtxPtnWriter.cc
   diffMC/parma_graphDist.cc
   diffMC/parma_monitor.cc

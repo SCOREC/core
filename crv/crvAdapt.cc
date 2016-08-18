@@ -13,6 +13,7 @@
 #include <maCoarsen.h>
 #include <maShape.h>
 #include <maSnap.h>
+#include <maLayer.h>
 #include <PCU.h>
 #include <cassert>
 
@@ -203,9 +204,11 @@ void adapt(ma::Input* in)
     ma::midBalance(a);
     crv::refine(a);
   }
+  allowSplitCollapseOutsideLayer(a);
   if (in->maximumIterations > 0)
     fixInvalidElements(a);
-
+  cleanupLayer(a);
+  ma::printQuality(a);
   ma::postBalance(a);
   double t1 = PCU_Time();
   ma::print("mesh adapted in %f seconds",t1-t0);

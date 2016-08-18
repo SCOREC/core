@@ -71,9 +71,20 @@ Field* makeField(
   return f;
 }
 
+Field* createGeneralField(
+    Mesh* m,
+    const char* name,
+    int valueType,
+    int components,
+    FieldShape* shape)
+{
+  return makeField(m, name, valueType, components, shape,
+                   new TagDataOf<double>);
+}
+
 Field* createField(Mesh* m, const char* name, int valueType, FieldShape* shape)
 {
-  return makeField(m, name, valueType, 0, shape, new TagDataOf<double>);
+  return createGeneralField(m, name, valueType, 0, shape);
 }
 
 Field* createLagrangeField(Mesh* m, const char* name, int valueType, int order)
@@ -101,8 +112,7 @@ Field* createPackedField(Mesh* m, const char* name, int components,
 {
   if (!shape)
     shape = m->getShape();
-  return makeField(m, name, PACKED, components, shape,
-      new TagDataOf<double>());
+  return createGeneralField(m, name, PACKED, components, shape);
 }
 
 Field* cloneField(Field* f, Mesh* onto)

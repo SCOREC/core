@@ -81,6 +81,9 @@ void FieldOp::apply(FieldBase* f)
     MeshEntity* e;
     while ((e = m->iterate(it)))
     {
+      // this condition makes sure that the entity has node(s)
+	  if ( s->countNodesOn(m->getType(e)) == 0)
+		continue;
       if ( ! this->inEntity(e))
         continue;
       int n = f->countNodesOn(e);

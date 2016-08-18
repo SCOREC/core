@@ -11,21 +11,38 @@ template <class T>
 class SIMDataOf : public FieldDataOf<T>
 {
 public:
+  SIMDataOf()
+  {
+    fd = 0;
+  }
+  SIMDataOf(pField fd_in)
+  {
+    fd = fd_in;
+    pf = Field_polyField(fd);
+  }
   virtual void init(FieldBase * f)
   {
     FieldData::field = f;
     mesh = f->getMesh();
+    assert(f->getShape() == apf::getLagrange(f->getShape()->getOrder()));
+    if (fd) {
+      assert(f->getShape()->getOrder() == PolyField_entOrder(pf, 0));
+      std::string name = f->getName();
+      assert(name == Field_name(fd));
+      assert(f->countComponents() == Field_numComp(fd));
+      return;
+    }
     pf = PolyField_new(f->getShape()->getOrder(), 0);
-    fd = Field_new(static_cast<MeshSIM*>(mesh)->mesh,
+    fd = Field_new(static_cast<MeshSIM*>(mesh)->getMesh(),
 		   f->countComponents(),
-		   "apf_field_data",
 		   f->getName(),
+		   "apf_field_data",
 		   ShpLagrange,
 		   1, // surfcont (always 1 in current simModSuite)
 		   1, // num_time_derivatives to keep available
 		   1, // num_section
 		   pf);
-    Field_apply(fd,mesh->getDimension(),NULL);
+    Field_apply(fd, mesh->getDimension(), NULL);
   }
   virtual bool hasEntity(MeshEntity *)
   {
@@ -63,9 +80,11 @@ public:
   {
     return NULL;
   }
-
+  virtual void rename(const char* name)
+  {
+    Field_setName(fd, name);
+  }
   pField getSimField() {return fd;}
-
 private:
   Mesh * mesh;
   pField fd;

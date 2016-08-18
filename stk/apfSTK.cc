@@ -333,12 +333,12 @@ void writeStkField(
   size_t nqp = stk::mesh::find_restriction(
       stkField, bucket.entity_rank(), bucket.supersets()).dimension();
   size_t elemsInBucket = bucket.size();
-  for (int i=0; i < elemsInBucket; ++i)
+  for (size_t i=0; i < elemsInBucket; ++i)
   {
     long globalId = bulk.identifier(bucket[i]);
     MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Matrix3x3 value;
-    for (int j=0; j < nqp; ++j)
+    for (size_t j=0; j < nqp; ++j)
     {
       getMatrix(field,elem,j,value);
       for (int k=0; k < 3; ++k)
@@ -462,12 +462,12 @@ void readStkField(
   size_t nqp = stk::mesh::find_restriction(
       stkField, bucket.entity_rank(), bucket.supersets()).dimension();
   size_t elemsInBucket = bucket.size();
-  for (int i=0; i < elemsInBucket; ++i)
+  for (size_t i=0; i < elemsInBucket; ++i)
   {
     long globalId = bulk.identifier(bucket[i]);
     MeshEntity* elem = lookup(globalId,globalIdsToElems).entity;
     Matrix3x3 value;
-    for (int j=0; j < nqp; ++j)
+    for (size_t j=0; j < nqp; ++j)
     {
       getMatrix(field,elem,j,value);
       for (int k=0; k < 3; ++k)
@@ -703,8 +703,6 @@ const CellTopologyData* getTopology(Mesh* m, int t)
   FieldShape* s = m->getShape();
   if (t == Mesh::VERTEX)
     return shards::getCellTopologyData< shards::Node >();
-/* right now this ignores  boundary layer entities, which we
-   are unlikely to deal with in STK in the near future */
   if (s->getOrder()==1)
   {
     if (t == Mesh::EDGE)
@@ -717,6 +715,8 @@ const CellTopologyData* getTopology(Mesh* m, int t)
       return shards::getCellTopologyData< shards::Tetrahedron<4> >();
     if (t == Mesh::HEX)
       return shards::getCellTopologyData< shards::Hexahedron<8> >();
+    if (t == Mesh::PRISM)
+      return shards::getCellTopologyData< shards::Wedge<6> >();
   }
 /* we also assume that all second order bases being considered
    (lagrange and composite, so far) use these topologies */
@@ -733,7 +733,7 @@ const CellTopologyData* getTopology(Mesh* m, int t)
     if (t == Mesh::HEX)
       return shards::getCellTopologyData< shards::Hexahedron<20> >();
   }
-  abort();
+  apf::fail("Unknown STK cell topology!");
   return 0;
 }
 

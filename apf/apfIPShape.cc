@@ -72,6 +72,7 @@ FieldShape* getIPShape(int dimension, int order)
   static IPShape d2o2(2,2);
   static IPShape d2o3(2,3);
   static IPShape d2o4(2,4);
+  static IPShape d2o5(2,5);
   static IPShape d3o1(3,1);
   static IPShape d3o2(3,2);
   static IPShape d3o3(3,3);
@@ -82,14 +83,16 @@ FieldShape* getIPShape(int dimension, int order)
   static IPShape* table[4][8] =
   {{0,0,0,0,0}//vertex
   ,{0,0,0,0,0}//edge
-  ,{0,&d2o1,&d2o2,&d2o3,&d2o4,0,0,0}//face
+  ,{0,&d2o1,&d2o2,&d2o3,&d2o4,&d2o5,0,0}//face
   ,{0,&d3o1,&d3o2,&d3o3,&d3o4,&d3o5,&d3o6,&d3o7}//region
   };
   assert(dimension >= 0);
   assert(dimension <= 3);
   assert(order >= 0);
   assert(order <= 7);
-  return table[dimension][order];
+  apf::FieldShape* shape = table[dimension][order];
+  assert(shape);
+  return shape;
 }
 
 static void getIntegrationPoints(
@@ -304,15 +307,46 @@ class LinearIPFit : public IPBase
         }
         int countNodes() const {return 3;}
     };
+    class Tetrahedron : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& values) const
+        {
+          values.allocate(4);
+
+          mth::Matrix<double,4,4> c;
+          c(0,0) = 1.927050983124845; c(0,1) = -2.236067977499789; c(0,2) = -2.236067977499789; c(0,3) = -2.236067977499789;
+          c(1,0) = -0.309016994374948; c(1,1) = 2.236067977499789; c(1,2) = 0.000000000000000; c(1,3) = 0.000000000000000;
+          c(2,0) = -0.309016994374948; c(2,1) = 0.000000000000000; c(2,2) = 2.236067977499789; c(2,3) = 0.000000000000000;
+          c(3,0) = -0.309016994374948; c(3,1) = 0.000000000000000; c(3,2) = 0.000000000000000; c(3,3) = 2.236067977499789;
+
+          mth::Vector<double,4> p;
+          p(0) = 1.0;
+          p(1) = xi[0];
+          p(2) = xi[1];
+          p(3) = xi[2];
+
+          for (int i=0; i < 4; ++i)
+            values[i] = c[i] * p;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+        {
+          fail("grads not implemented yet");
+        }
+        int countNodes() const {return 4;}
+    };
     EntityShape* getEntityShape(int type)
     {
       static Triangle triangle;
+      static Tetrahedron tet;
       static EntityShape* shapes[Mesh::TYPES] =
       {0,         // vertex
        0,         // edge
        &triangle, // triangle
        0,         // quad
-       0,         // tet
+       &tet,      // tet
        0,         // prism
        0,         // pyramid
        0};        // hex

@@ -420,6 +420,7 @@ static void getInitialConditions(BCs& bcs, Output& o)
   apf::NewArray<double> s(in.ensa_dof);
   apf::NewArray<double> matValue(1);
   apf::Field* f = m->findField("solution");
+  assert(f);
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   gmi_model* gm = m->getModel();

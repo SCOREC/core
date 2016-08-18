@@ -9,9 +9,17 @@ set(SAM_INCLUDE_DIRS
 set(DEP_LIBS ${MA_LIBS} ${MDS_LIBS})
 set(SAM_LIBS sam ${DEP_LIBS})
 
-set(HEADERS sam.h)
+set(HEADERS
+  sam.h
+  samSz.h
+  samElementCount.h
+  )
 
-set(SOURCES sam.cc samSz.cc)
+set(SOURCES
+  sam.cc
+  samSz.cc
+  samElementCount.cc
+  )
 
 include_directories(${SAM_INCLUDE_DIRS})
 
@@ -20,8 +28,8 @@ target_link_libraries(sam ${DEP_LIBS})
 
 INSTALL(FILES ${HEADERS} DESTINATION include)
 INSTALL(FILES "${PROJECT_BINARY_DIR}/libsam.pc" DESTINATION lib/pkgconfig)
-INSTALL(TARGETS 
-  sam 
+INSTALL(TARGETS
+  sam
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
