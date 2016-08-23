@@ -232,42 +232,34 @@ void pumi_ment_getclosureresidence(pMeshEnt e, std::vector<int>& resPartId)
 // ghosting information
 bool pumi_ment_isghost(pMeshEnt e)
 {
-  return false;
-//  return pumi::instance()->mesh->isGhost(e);
+  return pumi::instance()->mesh->isGhost(e);
 }
 
 bool pumi_ment_isghosted (pMeshEnt e)
 {
-  return false;
-//  return pumi::instance()->mesh->isGhosted(e);
+  return pumi::instance()->mesh->isGhosted(e);
 }
 
 int pumi_ment_getnumghost (pMeshEnt e)
 {
-  return 0;
-/*
   if (!pumi::instance()->mesh->isGhosted(e)) return 0;
   apf::Copies ghosts;
   pumi::instance()->mesh->getGhosts(e,ghosts);
   return ghosts.size();
-*/
 }
 
 void pumi_ment_getallghost(pMeshEnt e, Copies& ghosts)
 {
-/*
   if (pumi::instance()->mesh->isGhosted(e))
     pumi::instance()->mesh->getGhosts(e,ghosts);
-*/
 }
 
 pMeshEnt pumi_ment_getghost(pMeshEnt& e, int pid)
 {
-/*  if (!(pumi::instance()->mesh->isGhosted(e))) // internal ent
+ if (!(pumi::instance()->mesh->isGhosted(e))) // internal ent
     return NULL;
 
   Copies ghosts;
-  pumi::instance()->mesh->getRemotes(e,ghosts);
+  pumi::instance()->mesh->getGhosts(e,ghosts);
   return ghosts[pid];
-*/
 }

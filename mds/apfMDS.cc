@@ -178,16 +178,29 @@ class MeshMDS : public Mesh2
     {
       return mds_get_copies(&mesh->remotes, fromEnt(e));
     }
+//seol
+    bool isGhost(MeshEntity* e)
+    {
+      return (!isOwned(e) && mds_get_copies(&mesh->ghosts, fromEnt(e)));
+    }
+
+    bool isGhosted(MeshEntity* e)
+    {
+      return (isOwned(e) && mds_get_copies(&mesh->ghosts, fromEnt(e)));
+    }
+
     bool isOwned(MeshEntity* e)
     {
       return getId() == getOwner(e);
     }
+
     int getOwner(MeshEntity* e)
     {
       void* vp = mds_get_part(mesh, fromEnt(e));
       PME* p = static_cast<PME*>(vp);
       return p->owner;
     }
+
     void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent)
     {
       mds_set s;
@@ -272,6 +285,16 @@ class MeshMDS : public Mesh2
       for (int i = 0; i < c->n; ++i)
         remotes[c->c[i].p] = toEnt(c->c[i].e);
     }
+
+// seol
+    void getGhosts(MeshEntity* e, Copies& ghosts)
+    {
+      mds_copies* c = mds_get_copies(&mesh->ghosts, fromEnt(e));
+      assert(c != NULL);
+      for (int i = 0; i < c->n; ++i)
+        ghosts[c->c[i].p] = toEnt(c->c[i].e);
+    }
+
     void getResidence(MeshEntity* e, Parts& residence)
     {
       void* vp = mds_get_part(mesh, fromEnt(e));
@@ -477,6 +500,16 @@ class MeshMDS : public Mesh2
       c.p = p;
       mds_add_copy(&mesh->remotes, &mesh->mds, fromEnt(e), c);
     }
+
+//seol
+    void addGhost(MeshEntity* e, int p, MeshEntity* r)
+    {
+      mds_copy c;
+      c.e = fromEnt(r);
+      c.p = p;
+      mds_add_copy(&mesh->ghosts, &mesh->mds, fromEnt(e), c);
+    }
+
     void setResidence(MeshEntity* e, Parts& residence)
     {
       mds_id id = fromEnt(e);

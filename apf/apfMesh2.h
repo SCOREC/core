@@ -36,11 +36,13 @@ class Mesh2 : public Mesh
     virtual void setRemotes(MeshEntity* e, Copies& remotes) = 0;
 /** \brief Add just one remote copy to an entity */
     virtual void addRemote(MeshEntity* e, int p, MeshEntity* r) = 0;
+
+// seol
+/** \brief Add just one ghost copy to an entity */
+    virtual void addGhost(MeshEntity* e, int p, MeshEntity* r) = 0;
+
 /** \brief Set the resident part set of an entity
   \details this is also known as partition model classification */
-// seol
-//    virtual void setGhosts(MeshEntity* e, Copies& remotes) = 0;
-//    virtual void addGhost(MeshEntity* e, int p, MeshEntity* r) = 0;
     virtual void setResidence(MeshEntity* e, Parts& residence) = 0;
 /** \brief Set the geometric parametric coordinates for a vertex */
     virtual void setParam(MeshEntity* e, Vector3 const& p) = 0;

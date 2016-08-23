@@ -3,22 +3,25 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
-#include <parma.h>
 #include <apfZoltan.h>
 #include <cassert>
 #include <cstdlib>
 #include <pumi.h>
+#include <unistd.h>
+#include <iostream>
+#include <mpi.h>
 
 const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
 int num_in_part = 0;
+int do_distr=0;
 
 void getConfig(int argc, char** argv)
 {
   if ( argc < 4 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <outMesh> <num_part_in_mesh>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <outMesh> <num_part_in_mesh> <do_distribution(0/1)>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
@@ -27,6 +30,8 @@ void getConfig(int argc, char** argv)
   outFile = argv[3];
   if (argc>=4)
     num_in_part = atoi(argv[4]);
+if (argc>=5)
+    do_distr = atoi(argv[5]);
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -35,22 +40,19 @@ Ghosting* getGhostingPlan(pMesh m)
   Ghosting* plan = new Ghosting(m, m->getDimension());
   if (!PCU_Comm_Self())
   {
-  apf::MeshIterator* it = m->begin(mesh_dim);
-  pMeshEnt e;
-  int count=0;
-  while ((e = m->iterate(it)))
-  {
-    int pid=(count+1)%PCU_Comm_Peers();
-    plan->send(e, pid);
-    if (count==10) break;
-  }
+    apf::MeshIterator* it = m->begin(mesh_dim);
+    pMeshEnt e;
+    int count=0;
+    while ((e = m->iterate(it)))
+    {
+      int pid = (pumi_ment_getglobalid(e)+1)%pumi_size();
+      plan->send(e, pid);
+      ++count; 
+     if (count==5) break;
+    }
   }
   return plan;
 }
-
-#include <iostream>
-#include <cstdlib>
-#include <mpi.h>
 
 int main(int argc, char** argv)
 {
@@ -58,7 +60,7 @@ int main(int argc, char** argv)
   pumi_start();
   pumi_printsys();
 
-#if 0
+#if 1
   int i, processid = getpid();
   if (!PCU_Comm_Self())
   {
@@ -70,7 +72,7 @@ int main(int argc, char** argv)
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-  double begin_mem = pumi_getmem(), begin_time=pumi_gettime();
+
 
   // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
   getConfig(argc,argv);
@@ -81,17 +83,26 @@ int main(int argc, char** argv)
   // load mesh per process group
   assert(pumi_size()%num_in_part==0);
   if (!pumi_rank()) std::cout<<"[test_pumi] num_in_part="<<num_in_part<<"\n";
+
+  double begin_mem = pumi_getmem(), begin_time=pumi_gettime();
+
   pMesh m=NULL;
-  if (num_in_part==1)
+  if (do_distr)
     m = pumi_mesh_loadserial(g, meshFile);
   else
-    m = pumi_mesh_load(g, meshFile, num_in_part);
+  {
+    m = pumi_mesh_load(g, meshFile, num_in_part); // static partitioning if num_in_part=1
+    if (num_in_part==1) 
+    {
+      std::cout<<"writing distributed mesh into \"mesh.smb\"\n";
+      pumi_mesh_write(m,"mesh.smb");
+    }
+  }
 
-  pumi_mesh_print(m);
   pMeshEnt e;
-  // let's do distribution
-  // partitioning: sending an element to a single part
+
   // distribution: sending an element to multiple parts. Element may have remote copies.
+  if (do_distr)
   {
     Distribution* plan = new Distribution(m);
 
@@ -109,20 +120,22 @@ int main(int argc, char** argv)
     m->end(it);
     plan->print(); // print distribution plan 
     pumi_mesh_distribute(m, plan);
+    if (!pumi_rank()) std::cout<<"\n[test_pumi] writing mesh in vtk\n";
+
+    // write mesh in .smb
+    pumi_mesh_write(m,outFile);  
   }  
 
-  pumi_mesh_print(m);
-  sleep(.5);
-  if (!pumi_rank()) std::cout<<"\n";
+  // print mesh info
+  if (1)
+    for (int i=0; i<pumi_size(); ++i)
+  {
+    pumi_mesh_print(m, i);
+    pumi_sync();
+  }
 
-  if (!pumi_rank()) std::cout<<"[test_pumi] writing mesh\n";
-
-  // write mesh in .smb
-  pumi_mesh_write(m,outFile);
-  // write mesh in .vtk
   pumi_mesh_write(m,"output", "vtk");
 
-  // print mesh info
   int mesh_dim=pumi_mesh_getdim(m);
 
   // loop with elements
@@ -145,20 +158,21 @@ int main(int argc, char** argv)
   }
   m->end(mit);
 
-  // re-load partitioned mesh
+  if (0)// re-load partitioned mesh
   {
     pumi_mesh_delete(m);
     g = pumi_geom_load(modelFile);
     m = pumi_mesh_load(g, meshFile, num_in_part); 
-    pumi_mesh_print(m);
   }
+    if (!pumi_rank()) std::cout<<"[test_pumi] delete and reload mesh\n";
 
   // let's do ghosting
   int num_org_vtx = pumi_mesh_getnument(m, 0);
 
   Ghosting* ghosting_plan = getGhostingPlan(m);
   ghosting_plan->print();
-  //pumi_ghost_create(m, ghosting_plan);
+
+  pumi_ghost_create(m, ghosting_plan);
 
   int num_ghost_vtx=0;
   mit = m->begin(0);
@@ -172,13 +186,10 @@ int main(int argc, char** argv)
   }   
   m->end(mit);
   assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getnument(m,0));
-
-  // print mesh info
   pumi_mesh_print(m);
-  if (!pumi_rank()) std::cout<<"\n";
 
   // FIXME: deleting ghost layers is temporarily unavailable
-  //pumi_ghost_delete(m);
+  pumi_ghost_delete(m);
 
   //pumi_mesh_verify(m);
  

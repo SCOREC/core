@@ -9,7 +9,7 @@ cmake .. \
   -DCMAKE_CXX_FLAGS=" -g -O2" \
   -DENABLE_ZOLTAN=ON \
   -DZOLTAN_INCLUDE_DIR="$ZOLTAN_DIR/include" \
-  -DZOLTAN_LIBRARY="ZOLTAN_DIR/lib/libzoltan.a" \
+  -DZOLTAN_LIBRARY="$ZOLTAN_DIR/lib/libzoltan.a" \
   -DPARMETIS_INCLUDE_DIR="$PARMETIS_DIR/include" \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.so" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.so" \

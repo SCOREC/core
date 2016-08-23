@@ -56,6 +56,17 @@ void generate_globalid(pMesh m, pTag tag, int dim)
         PCU_COMM_PACK(it->first, it->second);
         PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
       }
+
+      if (m->isGhosted(e))
+      {
+        Copies ghosts;
+        m->getGhosts(e, ghosts);
+        APF_ITERATE(Copies, ghosts, it)
+        {
+          PCU_COMM_PACK(it->first, it->second);
+          PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
+        }
+      }
       ++initial_id;
     }
   }
@@ -76,7 +87,6 @@ void generate_globalid(pMesh m, pTag tag, int dim)
 //*******************************************************
 void generate_global_numbering(apf::Mesh2* m)
 //*******************************************************
-
 {
   pTag tag = m->findTag("global_id");
   if (tag)  // destroy existing tag
@@ -216,7 +226,7 @@ int pumi_mesh_getnument(pMesh m, int dim)
 { return m->count(dim); }
 
 #include <parma.h>
-void pumi_mesh_print (pMesh m)
+void pumi_mesh_print (pMesh m, int p)
 {
   if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \nglobal ";
   printStats(m);
@@ -230,22 +240,73 @@ void pumi_mesh_print (pMesh m)
   int* global_entity_count = new int[4*PCU_Comm_Peers()]; 
 
   MPI_Allreduce(local_entity_count, global_entity_count, 4*PCU_Comm_Peers(), MPI_INT, MPI_SUM, PCU_Get_Comm());
-  if (pumi_rank()) return;
-
-  for (int p=0; p<PCU_Comm_Peers(); ++p)
-    std::cout<<"(p"<<p<<") # local ent: v "<<global_entity_count[p*4]
+  if (!PCU_Comm_Self())
+  {
+    for (int p=0; p<PCU_Comm_Peers(); ++p)
+      std::cout<<"(p"<<p<<") # local ent: v "<<global_entity_count[p*4]
         <<", e "<<global_entity_count[p*4+1]
         <<", f "<<global_entity_count[p*4+2]
         <<", r "<<global_entity_count[p*4+3]<<"\n";
+  }
 
   delete [] local_entity_count;
   delete [] global_entity_count;
 
-  apf::DynamicArray<pTag> tags;
-  m->getTags(tags);
-  int n = tags.getSize();
-  for (int i = 0; i < n; ++i) 
-    std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "<< m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
+    if (!PCU_Comm_Self())
+    {
+      apf::DynamicArray<pTag> tags;
+      m->getTags(tags);
+      int n = tags.getSize();
+      for (int i = 0; i < n; ++i) 
+        std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "
+                << m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
+    }
+
+  return;
+
+  // print mesh entities
+  if (p!=PCU_Comm_Self()) return;
+  pMeshEnt e;
+
+  apf::MeshIterator* vit = m->begin(0);
+  while ((e = m->iterate(vit)))
+  {
+    apf::Vector3 xyz;
+    m->getPoint(e, 0, xyz);
+    std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<pumi_ment_getglobalid(e)
+             <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
+  }
+  m->end(vit);
+
+  apf::MeshIterator* eit = m->begin(1);
+  while ((e = m->iterate(eit)))
+  {
+    int global_id=pumi_ment_getglobalid(e);
+    apf::Downward vertices;
+    m->getDownward(e,0,vertices); 
+    std::cout<<"("<<PCU_Comm_Self()<<") edge "<<global_id<<" (v"<<pumi_ment_getglobalid(vertices[0])
+              <<", v"<<pumi_ment_getglobalid(vertices[1])<<")\n";
+  }
+  m->end(eit);
+
+  apf::MeshIterator* elem_it = m->begin(m->getDimension());
+  while ((e = m->iterate(elem_it)))
+  {
+    int global_id=pumi_ment_getglobalid(e);
+    apf::Downward vertices;
+    int num_vtx=m->getDownward(e,0,vertices); 
+    apf::Downward onelevel_down;
+    m->getDownward(e,m->getDimension()-1,onelevel_down); 
+    if (num_vtx==3) // triangle
+      std::cout<<"("<<PCU_Comm_Self()<<") elem "<<global_id
+              <<": v("<<pumi_ment_getglobalid(vertices[0])
+              <<", "<<pumi_ment_getglobalid(vertices[1])
+              <<", "<<pumi_ment_getglobalid(vertices[2])
+              <<"), e("<<pumi_ment_getglobalid(onelevel_down[0])
+              <<", "<<pumi_ment_getglobalid(onelevel_down[1])
+              <<", "<<pumi_ment_getglobalid(onelevel_down[2])<<")\n";
+  }
+  m->end(elem_it);
 }
 
 void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
@@ -270,9 +331,9 @@ void pumi_mesh_verify(pMesh m)
   apf::verify(m);
 }
 
-Distribution::Distribution(pMesh m)
+Distribution::Distribution(pMesh mesh)
 {
-  mesh = m;
+  m = mesh;
   parts_vec = NULL;
   element_count=0;
 }
@@ -286,8 +347,8 @@ Distribution::~Distribution()
 
 bool Distribution::has(pMeshEnt e)
 {
-  int ent_id = getMdsIndex(mesh, e);
-  if (parts_vec[ent_id].size())
+  int i = getMdsIndex(m, e);
+  if (parts_vec[i].size())
     return true;
   else
     return false;
@@ -295,39 +356,41 @@ bool Distribution::has(pMeshEnt e)
 
 void Distribution::send(pMeshEnt e, int to)
 {
-  int dim = mesh->getDimension();
-  int nele = mesh->count(dim);
-  if(parts_vec == NULL) {
-     parts_vec = new Parts[nele];
+  if (parts_vec == NULL) 
+  {
+    int dim = m->getDimension();
+    int nele = m->count(dim);
+    parts_vec = new Parts[nele];
   }
-  int ent_id = getMdsIndex(mesh, e);
-  assert(-1<ent_id && ent_id<nele);
-  parts_vec[ent_id].insert(to);
+  int i = getMdsIndex(m, e);
+  parts_vec[i].insert(to);
 }
 
 Parts& Distribution::sending(pMeshEnt e)
 {
-  int ent_id = getMdsIndex(mesh, e);
-  assert(parts_vec[ent_id].size()>0);
-  return parts_vec[ent_id];
+  int i = getMdsIndex(m, e);
+  assert(parts_vec[i].size()>0);
+  return parts_vec[i];
 }
 
 int Distribution::count()
 {
   if (element_count==0)
   {
-    int nele = mesh->count(mesh->getDimension());
+    int nele = m->count(m->getDimension());
     for (int i=0; i<nele; ++i)
-      if (parts_vec[i].size()>0) ++element_count;
+      if (parts_vec[i].size()>0)
+        ++element_count;
   }
+  return element_count;
 }
 
 void Distribution::print()
 {
   pMeshEnt e;
-  apf::MeshIterator* it = mesh->begin(mesh->getDimension());
+  apf::MeshIterator* it = m->begin(m->getDimension());
   int i=-1;
-  while ((e = mesh->iterate(it)))
+  while ((e = m->iterate(it)))
   {
     ++i;
     if (parts_vec[i].size()==0) continue;
@@ -335,7 +398,7 @@ void Distribution::print()
       std::cout<<"("<<PCU_Comm_Self()<<") distribute element "<<i<<" to "<<*pit<<"\n";
 
   }
-  mesh->end(it);
+  m->end(it);
 }
 
 static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affected[4])

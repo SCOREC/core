@@ -40,7 +40,7 @@ private:
   static pumi* _instance;
 };
 
-/** \brief Distribution plan object: local elements to multiple destinations. */
+/** \brief Distribution plan object: send local elements to multiple destinations. */
 // defined in pumi_distribution.cc
 class Distribution
 {
@@ -50,8 +50,6 @@ class Distribution
     Distribution(pMesh m);
     ~Distribution();
 
-/** \brief get the i'th element with an assigned destination */
-    pMeshEnt get(int i);
 /** \brief return true if the i'th element has been assigned destination(s) */
     bool has(pMeshEnt e);
 /** \brief assign a destination part id to an element */
@@ -60,12 +58,12 @@ class Distribution
     Parts& sending(pMeshEnt e);
     void print();
     int count();
-    pMesh getMesh() {return mesh;}
+    pMesh getMesh() {return m;}
 
     Parts* parts_vec;
     int element_count;
   private:
-    pMesh mesh;
+    pMesh m;
 };
 
 //************************************
@@ -114,7 +112,7 @@ int pumi_mesh_getdim(pMesh m);
 int pumi_mesh_getnument(pMesh m, int d);
 
 // print mesh size info - global and local
-void pumi_mesh_print(pMesh m);
+void pumi_mesh_print(pMesh m, int p=0);
 
 // write mesh into a file - mesh_type should be "mds" or "vtk"
 void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
@@ -136,30 +134,29 @@ class Ghosting
   public:
 /** \brief must be constructed with a mesh
   \details use (new apf::Migration(mesh)) to make these objects */
-    Ghosting(pMesh, int);
+    Ghosting(pMesh, int d);
     ~Ghosting();
+
 /** \brief return the number of elements with ghost destinations */
-    int count(int d);
-/** \brief return the number of ghost destinations with entity */
-    int count(pMeshEnt ent);
-/** \brief get the i'th element with an assigned destination */
-    pMeshEnt get(int d, int i);
+    int count();
+    int count(pMeshEnt e, int d);
 /** \brief return true if the i'th element has been assigned a destination */
     bool has(pMeshEnt e);
 /** \brief assign a destination part id to an entity */
     void send(pMeshEnt e, int to);
-/** \brief assign a destination part id of all entities of dimension */
-    void send(int dim, int to);
+/** \brief assign a destination part id of all ghost_dim entities */
+    void send(int to);
     void print();
-/** \brief return the destination part id of an element */
-//    int sending(pMeshEnt e);
+/** \brief return the destination parts of an entity */
+    Parts& sending(pMeshEnt e, int d);
+
     pMesh getMesh() {return m;}
-    std::map<pMeshEnt, Parts> pid_map[4];
+
     int ghost_dim;
-    pTag ghosted_tag;
-    pTag ghost_tag;
   private:
     pMesh m;
+    pTag parts_index_tag;
+    std::vector<Parts*> parts_vec[4];
 };
 
 
