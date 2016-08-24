@@ -177,7 +177,7 @@ The error is returned in the following cases:
   - ghost type is mesh vertex
   - ghost type is grester than mesh dimension
 */
-pMesh pumi_ghost_createlayer (int brgType, int ghostType, int numLayer, int includeCopy);
+void pumi_ghost_createlayer (pMesh m, int brgType, int ghostType, int numLayer, int includeCopy);
 
 /* 
   Ghosting: ghosting plan object for local elements or part to destinations.

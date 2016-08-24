@@ -49,6 +49,7 @@ Ghosting* getGhostingPlan(pMesh m)
       ++count; 
      if (count==m->count(mesh_dim)/5) break;
     }
+    m->end(it);
   }
   return plan;
 }
@@ -178,16 +179,24 @@ int main(int argc, char** argv)
   }   
   m->end(mit);
   assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getnument(m,0));
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] create ghosts\n";
-  pumi_mesh_print(m);
 
-  // FIXME: deleting ghost layers is temporarily unavailable
   pumi_ghost_delete(m);
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] delete ghosts\n";
   assert(org_mcount==m->count(mesh_dim));
-  pumi_mesh_print(m);
-  //pumi_mesh_verify(m);
- 
+
+  // do intensive ghosting test
+  for (int brg_dim=mesh_dim-1; brg_dim>=0; --brg_dim)
+    for (int num_layer=1; num_layer<=3; ++num_layer)
+      for (int include_copy=0; include_copy<=1; ++include_copy)
+      {
+        int before_mcount = m->count(mesh_dim);
+        pumi_ghost_createlayer (m, brg_dim, mesh_dim, num_layer, include_copy);
+        int total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
+        MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+        if (!pumi_rank()) std::cout<<"\n[test_pumi] pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim<<"nl, "<<num_layer<<", ic"<<include_copy<<") #ghost increase="<<total_mcount_diff<<"\n";
+        //pumi_mesh_print(m);
+      }
+  pumi_ghost_delete(m);
+  
   // print elapsed time and increased heap memory
   pumi_printtimemem("[test_pumi] elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
 

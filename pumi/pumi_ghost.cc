@@ -171,13 +171,16 @@ static void sendGhosts(Ghosting* plan, int ent_dim,
 
     Copies remotes;
     plan->getMesh()->getRemotes(e,remotes);
-    Parts ghosting_pids;
-    
-    APF_ITERATE(Parts, plan->sending(e, ent_dim), pit)
-      ghosting_pids.insert(*pit);
 
     Parts sendTo;
-    apf::split(remotes,ghosting_pids,sendTo);
+    apf::split(remotes,plan->sending(e, ent_dim),sendTo);
+    if (plan->getMesh()->isGhosted(e)) 
+    {
+      Copies ghosts;
+      plan->getMesh()->getGhosts(e,ghosts);
+      apf::split(ghosts,plan->sending(e, ent_dim),sendTo);
+    }
+
     if (!sendTo.size())
       continue;
     APF_ITERATE(Parts,sendTo,sit)
@@ -260,7 +263,9 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
   
   int down_ent_dim, ghost_dim = plan->ghost_dim;
 
-  pTag tag = m->createIntTag("entity_2_ghost",1);
+  pTag tag = m->findTag("entity_2_ghost");
+  if (!tag)
+    tag = m->createIntTag("entity_2_ghost",1);
 
   entitiesToGhost[ghost_dim].reserve(plan->count());
 
@@ -380,35 +385,106 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
 
 
 // *********************************************************
-pMesh pumi_ghost_createlayer (int brgType, int ghostType, int numLayer, int includeCopy)
+void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer, int include_copy)
 // *********************************************************
 {
+  if (PCU_Comm_Peers()==1 || num_layer==0) return;
   
-  if (brgType!=0 && !pumi_rank()) 
-  {
-    std::cout<<"[PUMI ERROR] "<<__func__<<" failed: bridge type "<<brgType<<" not supported\n";
-    return NULL;
-  }
+  int dummy=1, mesh_dim=m->getDimension(), self = pumi_rank();;
   
-  if (ghostType!=pumi::instance()->mesh->getDimension() && !pumi_rank()) 
+// brid/ghost dim check
+  if (brg_dim>=ghost_dim || 0>brg_dim || brg_dim>=mesh_dim || 
+      ghost_dim>mesh_dim || ghost_dim<1)
   {
-    std::cout<<"[PUMI ERROR] "<<__func__<<" faild: ghost type "<<brgType<<" not supported\n";
-    return NULL;
+    if (!self)
+       std::cout<<__func__<<" ERROR: invalid bridge/ghost dimension\n";   
+    return;
   }
-  
-  if (numLayer<1 && !pumi_rank()) 
-  {
-    std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid numLayer "<<numLayer<<"\n";
-    return NULL;
-  }
+  pTag tag = m->createIntTag("entity_2_ghost",1);
+  Ghosting* plan = new Ghosting(m, ghost_dim);
 
-  if (includeCopy==0 && !pumi_rank()) 
+// ********************************************
+// STEP 1: compute entities to ghost
+// ********************************************
+
+  pMeshEnt ghost_ent;
+  pMeshEnt brg_ent;
+
+  std::vector<pMeshEnt> processed_ent;
+  std::vector<pMeshEnt> adj_ent;
+  //PUMI_PartEntIter_InitPartBdry(part, PUMI_ALL, brg_dim, PUMI_ALLTOPO, pbdry_iter);
+  //while (PUMI_PartEntIter_GetNext(pbdry_iter, brg_ent)==PUMI_SUCCESS)
+
+  apf::MeshIterator* it = m->begin(brg_dim);
+  std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<"\n";
+
+  while ((brg_ent = m->iterate(it)))
   {
-    std::cout<<"[PUMI ERROR] "<<__func__<<" failed: includeCopy=0"<<" not supported\n";
-    return NULL;
-  }
-  if (!pumi_rank()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: accumulative ghosting not supported\n";
-      return NULL;
+    if (!m->isShared(brg_ent)) continue; // skip non-partboundary entity
+    if (!include_copy && m->getOwner(brg_ent)!=self) continue;
+
+    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<" brg_ent "<<pumi_ment_getglobalid(brg_ent)<<"\n";
+    processed_ent.clear();
+
+    apf::Adjacent adjacent;
+    m->getAdjacent(brg_ent,ghost_dim, adjacent);   
+    APF_ITERATE(apf::Adjacent, adjacent, adj_ent_it)
+    {
+      ghost_ent = *adj_ent_it;
+      if (m->isGhost(ghost_ent)) continue; // skip ghost copy
+
+      //copy_RC_to_BP(brg_ent, ghost_ent);
+      apf::Copies remotes;
+      m->getRemotes(brg_ent,remotes);
+      APF_ITERATE(apf::Copies,remotes,rit)
+        plan->send(ghost_ent, rit->first);
+
+      m->setIntTag(ghost_ent,tag,&dummy);
+      processed_ent.push_back(ghost_ent);
+    }
+    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<"\n";
+    
+    //for (std::vector<pMeshEnt>::iterator ghost_it=brg_ghost_map[ent]->begin();ghost_it!=brg_ghost_map[ent]->end(); ++ghost_it)
+//    std::cout<<"[p"<<PUMI_CommRank()<<"] "<<PUMI_MeshEnt_StrID(brg_ent)<<"- 1-layer ghost "<<processed_ent.size()<<"\n";
+    int start_prev_layer=0, size_prev_layer=processed_ent.size(), num_prev_layer;
+    for (int layer=2; layer<num_layer+1; ++layer)
+    {  
+      num_prev_layer=0;
+      for (int i=start_prev_layer; i<size_prev_layer; ++i)
+      {
+        ghost_ent = processed_ent.at(i);
+        adj_ent.clear();
+        pumi_ment_get2ndadj (ghost_ent, brg_dim, ghost_dim, adj_ent);
+        
+        for (std::vector<pMeshEnt>::iterator adj_ent_it=adj_ent.begin(); adj_ent_it!=adj_ent.end(); ++adj_ent_it)
+        {
+          if (m->isGhost(*adj_ent_it) || m->hasTag(*adj_ent_it,tag))
+            continue; // skip ghost copy or already-processed copy
+      
+          //copy_RC_to_BP(brg_ent, ghost_ent);
+          apf::Copies remotes;
+          m->getRemotes(brg_ent,remotes);
+          APF_ITERATE(apf::Copies,remotes,rit)
+            plan->send(*adj_ent_it, rit->first);
+
+          m->setIntTag(*adj_ent_it,tag,&dummy);
+          processed_ent.push_back(*adj_ent_it);
+          ++num_prev_layer;
+        } // for (std::vector<pMeshEnt>::iterator adj_ent_it=adj_ent.begin()
+      } // for int i=start_prev_layerghost_it
+      start_prev_layer+=size_prev_layer;
+      size_prev_layer+=num_prev_layer;
+    } // for layer
+    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<" brg_ent "<<pumi_ment_getglobalid(brg_ent)<<"\n";
+  } // while brg_ent
+  m->end(it);
+
+// ********************************************
+// STEP 2: perform ghosting
+// ********************************************
+  std::cout<<"("<<pumi_rank()<<") "<<__func__<<": plan->count()="<<plan->count()<<"\n";
+
+  pumi_ghost_create(m, plan);
 }
 
 // *********************************************************
