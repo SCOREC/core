@@ -184,6 +184,11 @@ class MeshMDS : public Mesh2
       return (!isOwned(e) && mds_get_copies(&mesh->ghosts, fromEnt(e)));
     }
 
+    bool deleteGhost(MeshEntity* e)
+    {
+      mds_set_copies(&mesh->ghosts, &mesh->mds, fromEnt(e), NULL); 
+    }
+
     bool isGhosted(MeshEntity* e)
     {
       return (isOwned(e) && mds_get_copies(&mesh->ghosts, fromEnt(e)));

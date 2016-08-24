@@ -38,7 +38,6 @@ Ghosting* getGhostingPlan(pMesh m)
 {
   int mesh_dim=m->getDimension();
   Ghosting* plan = new Ghosting(m, m->getDimension());
-  if (!PCU_Comm_Self())
   {
     apf::MeshIterator* it = m->begin(mesh_dim);
     pMeshEnt e;
@@ -48,7 +47,7 @@ Ghosting* getGhostingPlan(pMesh m)
       int pid = (pumi_ment_getglobalid(e)+1)%pumi_size();
       plan->send(e, pid);
       ++count; 
-     if (count==5) break;
+     if (count==m->count(mesh_dim)/5) break;
     }
   }
   return plan;
@@ -93,10 +92,7 @@ int main(int argc, char** argv)
   {
     m = pumi_mesh_load(g, meshFile, num_in_part); // static partitioning if num_in_part=1
     if (num_in_part==1) 
-    {
-      std::cout<<"writing distributed mesh into \"mesh.smb\"\n";
       pumi_mesh_write(m,"mesh.smb");
-    }
   }
 
   pMeshEnt e;
@@ -118,21 +114,13 @@ int main(int argc, char** argv)
       ++count;
     }
     m->end(it);
-    plan->print(); // print distribution plan 
+
     pumi_mesh_distribute(m, plan);
     if (!pumi_rank()) std::cout<<"\n[test_pumi] writing mesh in vtk\n";
 
     // write mesh in .smb
     pumi_mesh_write(m,outFile);  
   }  
-
-  // print mesh info
-  if (1)
-    for (int i=0; i<pumi_size(); ++i)
-  {
-    pumi_mesh_print(m, i);
-    pumi_sync();
-  }
 
   pumi_mesh_write(m,"output", "vtk");
 
@@ -158,19 +146,23 @@ int main(int argc, char** argv)
   }
   m->end(mit);
 
-  if (0)// re-load partitioned mesh
+  if (1)// re-load partitioned mesh
   {
     pumi_mesh_delete(m);
     g = pumi_geom_load(modelFile);
-    m = pumi_mesh_load(g, meshFile, num_in_part); 
+    if (num_in_part==1 && pumi_size()>1)
+      m =  pumi_mesh_load(g, "mesh.smb", pumi_size()); 
+    else
+      m = pumi_mesh_load(g, meshFile, num_in_part); 
   }
-    if (!pumi_rank()) std::cout<<"[test_pumi] delete and reload mesh\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
+  pumi_mesh_print(m);
 
   // let's do ghosting
   int num_org_vtx = pumi_mesh_getnument(m, 0);
+  int org_mcount=m->count(mesh_dim);
 
   Ghosting* ghosting_plan = getGhostingPlan(m);
-  ghosting_plan->print();
 
   pumi_ghost_create(m, ghosting_plan);
 
@@ -186,11 +178,14 @@ int main(int argc, char** argv)
   }   
   m->end(mit);
   assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getnument(m,0));
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] create ghosts\n";
   pumi_mesh_print(m);
 
   // FIXME: deleting ghost layers is temporarily unavailable
   pumi_ghost_delete(m);
-
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] delete ghosts\n";
+  assert(org_mcount==m->count(mesh_dim));
+  pumi_mesh_print(m);
   //pumi_mesh_verify(m);
  
   // print elapsed time and increased heap memory

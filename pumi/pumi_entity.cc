@@ -78,12 +78,61 @@ void pumi_ment_getadj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjE
   }
   else if (ent_dim>target_dim)
   {
-    apf::Downward adjacent;
-    int num_adj= pumi::instance()->mesh->getDownward(e,target_dim,adjacent); 
-    for (int j = 0; j < num_adj; ++j) 
-      vecAdjEnt.push_back(adjacent[j]);
-  }
-  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<": invalid target dimension "<<target_dim<<"\n";
+    if (target_dim>=0)
+    {
+      apf::Downward adjacent;
+      int num_adj= pumi::instance()->mesh->getDownward(e,target_dim,adjacent); 
+      for (int j = 0; j < num_adj; ++j) 
+        vecAdjEnt.push_back(adjacent[j]);
+    }
+    else // get all downward adjacent entities
+    {
+      switch (ent_dim)
+      {
+        case 3:
+          {
+            apf::Downward faces;
+            int num_faces= pumi::instance()->mesh->getDownward(e,2,faces); 
+            for (int i=0; i<num_faces;++i)
+            {
+              vecAdjEnt.push_back(faces[i]);
+              apf::Downward edges;
+              int num_edges= pumi::instance()->mesh->getDownward(faces[i],1,edges); 
+              for (int j=0; j<num_edges;++j)
+                if (std::find(vecAdjEnt.begin(), vecAdjEnt.end(), edges[j])==vecAdjEnt.end())
+                  vecAdjEnt.push_back(edges[j]);
+            }
+            apf::Downward vertices;
+            int num_vertices= pumi::instance()->mesh->getDownward(e,0,vertices);
+            for (int j=0; j<num_vertices;++j)
+              vecAdjEnt.push_back(vertices[j]);
+            if (num_vertices==4) assert(vecAdjEnt.size()==14);
+            break;
+          }
+        case 2:// face
+          {
+            apf::Downward edges;
+            int num_edges= pumi::instance()->mesh->getDownward(e,1,edges); 
+            for (int j=0; j<num_edges;++j)
+              vecAdjEnt.push_back(edges[j]);
+            apf::Downward vertices;
+            int num_vertices= pumi::instance()->mesh->getDownward(e,0,vertices);
+            for (int j=0; j<num_vertices;++j)
+              vecAdjEnt.push_back(vertices[j]);
+            break;
+          }
+        case 1: // edge
+          {
+            apf::Downward vertices;
+            int num_vertices= pumi::instance()->mesh->getDownward(e,0,vertices);
+            for (int j=0; j<num_vertices;++j)
+              vecAdjEnt.push_back(vertices[j]);
+            break;
+          }
+        default: break;
+      } // switch
+    } // else
+  } // else if
 }
 
 void pumi_ment_get2ndadj (pMeshEnt e, int bridge_dim, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)

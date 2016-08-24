@@ -83,9 +83,9 @@ add_subdirectory(parma)
 
 add_subdirectory(zoltan)
 
-add_subdirectory(omega_h)
-
 add_subdirectory(pumi)
+
+add_subdirectory(omega_h)
 
 add_subdirectory(ma)
 
