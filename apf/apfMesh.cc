@@ -318,6 +318,7 @@ void unite(Parts& into, Parts const& from)
 
 void getPeers(Mesh* m, int d, Parts& peers)
 {
+  printf("START getPeers()\n");
   assert(d < m->getDimension());
   MeshEntity* e;
   MeshIterator* ents = m->begin(d);
@@ -329,6 +330,7 @@ void getPeers(Mesh* m, int d, Parts& peers)
   }
   m->end(ents);
   peers.erase(m->getId());
+  printf("END getPeers()\n");
 }
 
 static bool residesOn(Mesh* m, MeshEntity* e, int part)
