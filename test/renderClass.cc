@@ -41,7 +41,6 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
   SimUtil_stop();
   PCU_Comm_Free();
-  PCU_Comm_Free();
   MPI_Finalize();
 }
 
