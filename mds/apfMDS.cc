@@ -565,6 +565,7 @@ class MeshMDS : public Mesh2
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
+      assert(isMatched);
       mds_copy c;
       c.e = fromEnt(match);
       c.p = peer;
