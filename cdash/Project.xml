@@ -1,11 +1,17 @@
 <Project name="SCOREC">
-  <SubProject name="core">
+  <SubProject name="master">
   </SubProject>
-  <SubProject name="core-sim">
+  <SubProject name="develop">
   </SubProject>
-  <SubProject name="core-valgrind">
+  <SubProject name="master-sim">
   </SubProject>
-  <SubProject name="core-sim-valgrind">
+  <SubProject name="develop-sim">
+  </SubProject>
+  <SubProject name="develop-into-master">
+  </SubProject>
+  <SubProject name="master-into-master-sim">
+  </SubProject>
+  <SubProject name="develop-sim-into-master-sim">
   </SubProject>
 </Project>
 
