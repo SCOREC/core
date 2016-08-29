@@ -181,7 +181,10 @@ class MeshMDS : public Mesh2
 //seol
     bool isGhost(MeshEntity* e)
     {
-      return (!isOwned(e) && mds_get_copies(&mesh->ghosts, fromEnt(e)));
+      MeshTag* t = findTag("ghost_tag");
+      if (t && hasTag(e, t))
+        return true;
+      return false;
     }
 
     bool deleteGhost(MeshEntity* e)
@@ -191,7 +194,10 @@ class MeshMDS : public Mesh2
 
     bool isGhosted(MeshEntity* e)
     {
-      return (isOwned(e) && mds_get_copies(&mesh->ghosts, fromEnt(e)));
+      MeshTag* t = findTag("ghosted_tag");
+      if (t && hasTag(e, t))
+        return true;
+      return false;
     }
 
     bool isOwned(MeshEntity* e)

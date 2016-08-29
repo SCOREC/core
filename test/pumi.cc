@@ -47,7 +47,7 @@ Ghosting* getGhostingPlan(pMesh m)
       int pid = (pumi_ment_getglobalid(e)+1)%pumi_size();
       plan->send(e, pid);
       ++count; 
-     if (count==m->count(mesh_dim)/5) break;
+     if (count==m->count(mesh_dim)/3) break;
     }
     m->end(it);
   }
@@ -159,18 +159,19 @@ int main(int argc, char** argv)
   if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
   pumi_mesh_print(m);
 
-  // let's do ghosting
+  // element-wise ghosting test
   int num_org_vtx = pumi_mesh_getnument(m, 0);
   int* org_mcount=new int[4];
   for (int i=0; i<4; ++i)
-  {
     org_mcount[i] = m->count(i);
-    std::cout<<"("<<pumi_rank()<<") INFO dim "<<i<<": org ent count "<<org_mcount[i]<<"\n";
-  }
 
   Ghosting* ghosting_plan = getGhostingPlan(m);
-
+  int before_mcount=m->count(mesh_dim);
   pumi_ghost_create(m, ghosting_plan);
+
+  int total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
+  MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] element-wise pumi_ghost_create: #ghost increase="<<total_mcount_diff<<"\n";
 
   int num_ghost_vtx=0;
   mit = m->begin(0);
@@ -186,29 +187,49 @@ int main(int argc, char** argv)
   assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getnument(m,0));
 
   pumi_ghost_delete(m);
-
   for (int i=0; i<4; ++i)
     assert(org_mcount[i] == m->count(i));
 
-  // do intensive ghosting test
+  // layer-wise ghosting test
   for (int brg_dim=mesh_dim-1; brg_dim>=0; --brg_dim)
     for (int num_layer=1; num_layer<=3; ++num_layer)
       for (int include_copy=0; include_copy<=1; ++include_copy)
       {
-        int before_mcount = m->count(mesh_dim);
+        if (!pumi_rank()) std::cout<<"\n[test_pumi] pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<") ";
+        before_mcount=m->count(mesh_dim);
+        pumi_ghost_createlayer (m, brg_dim, mesh_dim, num_layer, include_copy);
+        total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
+        MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+        if (!pumi_rank()) std::cout<<"#ghost increase="<<total_mcount_diff<<"\n";
+        pumi_ghost_delete(m);
+
+        for (int i=0; i<4; ++i)
+          assert(org_mcount[i] == m->count(i));
+        pumi_sync();
+      }
+  
+  // accumulative layer-ghosting
+  for (int brg_dim=mesh_dim-1; brg_dim>=0; --brg_dim)
+    for (int num_layer=1; num_layer<=3; ++num_layer)
+      for (int include_copy=0; include_copy<=1; ++include_copy)
+      {
+        if (!pumi_rank()) 
+          std::cout<<"\n[test_pumi] accumulative pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim
+                   <<", nl   "<<num_layer<<", ic"<<include_copy<<") ";
+        int before_mcount=m->count(mesh_dim);
         pumi_ghost_createlayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         int total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
-        if (!pumi_rank()) std::cout<<"\n[test_pumi] pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<") #ghost increase="<<total_mcount_diff<<"\n";
-        pumi_mesh_print(m);
+        if (!pumi_rank()) std::cout<<"#ghost increase="<<total_mcount_diff<<"\n";
       }
+
   pumi_ghost_delete(m);
 
   for (int i=0; i<4; ++i)
   {
     if (org_mcount[i] != m->count(i)) 
        std::cout<<"("<<pumi_rank()<<") ERROR dim "<<i<<": org ent count "<<org_mcount[i]<<", current ent count "<<m->count(i)<<"\n";
-//    assert(org_mcount[i] == m->count(i));
+    assert(org_mcount[i] == m->count(i));
   }
   
   delete [] org_mcount;

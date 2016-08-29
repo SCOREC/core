@@ -36,6 +36,10 @@ public:
 
   pMesh mesh;
   pGeom model;
+  pTag ghosted_tag;
+  pTag ghost_tag;
+  std::vector<pMeshEnt> ghost_vec[4];
+  std::vector<pMeshEnt> ghosted_vec[4];
 private:
   static pumi* _instance;
 };
@@ -151,8 +155,8 @@ class Ghosting
     Parts& sending(pMeshEnt e, int d);
 
     pMesh getMesh() {return m;}
-
     int ghost_dim;
+
   private:
     pMesh m;
     pTag parts_index_tag;

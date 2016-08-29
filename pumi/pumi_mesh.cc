@@ -113,7 +113,11 @@ void destroy_global_numbering(apf::Mesh2* m)
 }
 
 // *********************************************************
-pumi::pumi(): mesh(NULL), model(NULL) {}
+pumi::pumi(): mesh(NULL), model(NULL) 
+{
+  ghost_tag=NULL;
+  ghosted_tag=NULL;
+}
 
 pumi::~pumi()
 {
@@ -321,6 +325,11 @@ void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
 
 void pumi_mesh_delete(pMesh m)
 {
+  if (m->findTag("ghost_tag"))
+    m->destroyTag(pumi::instance()->ghost_tag);
+  if (m->findTag("ghosted_tag"))
+    m->destroyTag(pumi::instance()->ghosted_tag);
+
   destroy_global_numbering(m);
   m->destroyNative();
   apf::destroyMesh(m);
