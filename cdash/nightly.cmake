@@ -145,6 +145,8 @@ ${BRANCH_NAME} config failed!
         RETURN_VALUE SUBMIT_ERROR)
     if(SUBMIT_ERROR)
       message(WARNING "Could not submit ${BRANCH_NAME} results to CDash (code ${SUBMIT_ERROR})!")
+    else()
+      message(STATUS "Submitted ${BRANCH_NAME} results to CDash")
     endif()
   endif()
 endfunction(check_current_branch)
