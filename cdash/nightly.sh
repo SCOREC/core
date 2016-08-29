@@ -20,9 +20,9 @@ rm -rf build/
 #run nightly.cmake script
 ctest -VV -D Nightly -S /lore/dibanez/core/cdash/nightly.cmake &> cmake_log.txt
 
-if [ -d "/lore/dibanez/cdash/build/core" ]; then
+if [ -d "/lore/dibanez/cdash/build/master" ]; then
   #core repository checked out by nightly.cmake
-  cd /lore/dibanez/cdash/build/core
+  cd /lore/dibanez/cdash/build/master
   #build the Doxygen html documentation
   make doc
   if [ -d "$PWD/doc/html" ]; then
@@ -34,7 +34,7 @@ if [ -d "/lore/dibanez/cdash/build/core" ]; then
 fi
 
 #core repository checked out by nightly.cmake
-cd /lore/dibanez/cdash/build/core
+cd /lore/dibanez/cdash/build/master
 #clean the build of object files
 make clean
 #run Coverity static analysis on the build
