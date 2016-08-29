@@ -213,7 +213,6 @@ int main(int argc, char** argv)
     for (int num_layer=1; num_layer<=3; ++num_layer)
       for (int include_copy=0; include_copy<=1; ++include_copy)
       {
-        if (bd==0 && gd==3&&nl==1&&ic==1) break;
         if (!pumi_rank()) 
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl   "<<num_layer<<", ic"<<include_copy<<") ";
