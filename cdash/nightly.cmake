@@ -281,7 +281,7 @@ if(CTEST_DO_SUBMIT)
   ctest_submit(FILES "${CTEST_SCRIPT_DIRECTORY}/Project.xml"
       RETURN_VALUE HAD_ERROR)
   if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot submit SCOREC Project.xml!")
+    message(WARNING "Cannot submit SCOREC Project.xml!")
   endif()
 endif()
 
