@@ -315,7 +315,7 @@ foreach(REPO_SUFFIX IN LISTS REPO_SUFFIXES)
   foreach(BRANCH_BASE IN LISTS BRANCH_BASES)
     check_tracking_branch("${BRANCH_BASE}${REPO_SUFFIX}"
         "${CONFIGURE_OPTIONS${REPO_SUFFIX}}"
-        "${ALLOWED_WARNINGS${REPO_SUFFIX}" CHECK_ERR)
+        "${ALLOWED_WARNINGS${REPO_SUFFIX}}" CHECK_ERR)
   endforeach()
 endforeach()
 try_merge(master "" develop "${CONFIGURE_OPTIONS}" ${ALLOWED_WARNINGS})
