@@ -90,7 +90,14 @@ function(setup_repo)
   endif()
 endfunction(setup_repo)
 
-function(check_current_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
+# NUM_ALLOWED_WARNINGS EXISTS BECAUSE SIMMETRIX, INC. REFUSE TO FIX
+# THEIR USE OF `tmpnam`, WHICH IS SO DANGEROUS (see here:
+#http://stackoverflow.com/questions/3299881/tmpnam-warning-saying-it-is-dangerous
+# ) THAT THE GNU LINKER EMITS AN UNSILENCEABLE WARNING ABOUT IT.
+# SCOREC CODE DOES NOT HAVE WARNINGS.
+
+function(check_current_branch BRANCH_NAME CONFIG_OPTS
+    NUM_ALLOWED_WARNINGS ERRVAR)
   file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}")
 
   ctest_configure(
@@ -109,7 +116,8 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
       NUMBER_ERRORS NUM_BUILD_ERRORS
       NUMBER_WARNINGS NUM_BUILD_WARNINGS
       RETURN_VALUE BUILD_RET)
-  if(NUM_BUILD_WARNINGS OR NUM_BUILD_ERRORS OR BUILD_RET)
+  if((NUM_BUILD_WARNINGS GREATER NUM_ALLOWED_WARNINGS) OR
+      NUM_BUILD_ERRORS OR BUILD_RET)
     message(WARNING "
 ${BRANCH_NAME} build failed!
   ${NUM_BUILD_WARNINGS} warnings
@@ -129,7 +137,8 @@ ${BRANCH_NAME} build failed!
   endif()
 
   if(CONFIG_RET OR
-     BUILD_RET OR NUM_BUILD_WARNINGS OR NUM_BUILD_ERRORS OR
+     (NUM_BUILD_WARNINGS GREATER NUM_ALLOWED_WARNINGS) OR
+     NUM_BUILD_ERRORS OR BUILD_RET OR
      TEST_RET)
     message(WARNING "some ${BRANCH_NAME} checks failed!")
     set(${ERRVAR} True PARENT_SCOPE)
@@ -151,7 +160,8 @@ ${BRANCH_NAME} build failed!
   endif()
 endfunction(check_current_branch)
 
-function(check_tracking_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
+function(check_tracking_branch BRANCH_NAME CONFIG_OPTS
+    NUM_ALLOWED_WARNINGS ERRVAR)
   checkout_branch("${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY SubProject "${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY Label "${BRANCH_NAME}")
@@ -161,14 +171,17 @@ function(check_tracking_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
     message(FATAL_ERROR "Could not update ${BRANCH_NAME} branch!")
   endif()
   message("Updated ${NUM_UPDATES} files")
-  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}" ERRVAL2)
+  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}"
+      ${NUM_ALLOWED_WARNINGS} ERRVAL2)
   set(${ERRVAR} ${ERRVAL2} PARENT_SCOPE)
 endfunction(check_tracking_branch)
 
-function(check_merge_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
+function(check_merge_branch BRANCH_NAME CONFIG_OPTS
+    NUM_ALLOWED_WARNINGS ERRVAR)
   set_property(GLOBAL PROPERTY SubProject "${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY Label "${BRANCH_NAME}")
-  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}" ERRVAL2)
+  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}"
+      ${NUM_ALLOWED_WARNINGS} ERRVAL2)
   set(${ERRVAR} ${ERRVAL2} PARENT_SCOPE)
 endfunction(check_merge_branch)
 
@@ -240,7 +253,8 @@ function(abort_merge FIRST_NAME SECOND_NAME)
   cleanup_merge(${FIRST_NAME} ${SECOND_NAME})
 endfunction(abort_merge)
 
-function(try_merge FIRST_BASE REPO_SUFFIX SECOND_NAME CONFIG)
+function(try_merge FIRST_BASE REPO_SUFFIX SECOND_NAME CONFIG
+    NUM_ALLOWED_WARNINGS)
   set(FIRST_NAME ${FIRST_BASE}${REPO_SUFFIX})
   start_merge(${FIRST_BASE} "${REPO_SUFFIX}" ${SECOND_NAME} NEXT_ACTION)
   if("${NEXT_ACTION}" STREQUAL "CLEANUP")
@@ -251,7 +265,8 @@ function(try_merge FIRST_BASE REPO_SUFFIX SECOND_NAME CONFIG)
     return()
   endif()
   set(NEW_NAME "${SECOND_NAME}-into-${FIRST_NAME}")
-  check_merge_branch("${NEW_NAME}" "${CONFIG}" CHECK_ERR)
+  check_merge_branch("${NEW_NAME}" "${CONFIG}"
+      ${NUM_ALLOWED_WARNINGS} CHECK_ERR)
   if(CHECK_ERR)
     abort_merge(${FIRST_NAME} ${SECOND_NAME})
     return()
@@ -292,13 +307,17 @@ SET(CONFIGURE_OPTIONS-sim
   "-DSIM_MPI=mpich3.1.2"
 )
 
+SET(ALLOWED_WARNINGS 0)
+SET(ALLOWED_WARNINGS-sim 0)
+
 setup_repo()
 foreach(REPO_SUFFIX IN LISTS REPO_SUFFIXES)
   foreach(BRANCH_BASE IN LISTS BRANCH_BASES)
     check_tracking_branch("${BRANCH_BASE}${REPO_SUFFIX}"
-        "${CONFIGURE_OPTIONS${REPO_SUFFIX}}" CHECK_ERR)
+        "${CONFIGURE_OPTIONS${REPO_SUFFIX}}"
+        "${ALLOWED_WARNINGS${REPO_SUFFIX}" CHECK_ERR)
   endforeach()
 endforeach()
-try_merge(master "" develop "${CONFIGURE_OPTIONS}")
-try_merge(master "-sim" master "${CONFIGURE_OPTIONS-sim}")
-try_merge(master "-sim" develop-sim "${CONFIGURE_OPTIONS-sim}")
+try_merge(master "" develop "${CONFIGURE_OPTIONS}" ${ALLOWED_WARNINGS})
+try_merge(master "-sim" master "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
+try_merge(master "-sim" develop-sim "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
