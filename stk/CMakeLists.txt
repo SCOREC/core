@@ -4,7 +4,6 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # Package options
-set(Trilinos_PREFIX CACHE STRING "Trilinos installation directory")
 option(ENABLE_STK "Enable the stk interface [ON|OFF]" OFF)
 option(ENABLE_STK_MESH "Enable the stk mesh interface [ON|OFF]" OFF)
 message(STATUS "ENABLE_STK: " ${ENABLE_STK})
@@ -16,16 +15,18 @@ if(NOT ENABLE_STK)
 endif()
 
 # Find the shards Trilinos package
-set(HAS_STK OFF)
-dep_macro(Shards "${Trilinos_PREFIX}")
-
-# If enabling more mesh features, find additional Trilinos packages
-if(ENABLE_STK_MESH)
-  set(HAS_STK ON)
-  dep_macro(STKIO "${Trilinos_PREFIX}")
-  dep_macro(STKMesh "${Trilinos_PREFIX}")
-  dep_macro(SEACASIoss "${Trilinos_PREFIX}")
-endif()
+set(SCOREC_USE_Shards_DEFAULT ${ENABLE_STK})
+set(SCOREC_USE_STKIO_DEFAULT ${ENABLE_STK_MESH})
+set(SCOREC_USE_STKMesh_DEFAULT ${ENABLE_STK_MESH})
+set(SCOREC_USE_SEACASIoss_DEFAULT ${ENABLE_STK_MESH})
+set(Shards_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+set(STKIO_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+set(STKMesh_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+set(SEACASIoss_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+bob_public_dep(Shards)
+bob_public_dep(STKIO)
+bob_public_dep(STKMesh)
+bob_public_dep(SEACASIoss)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -46,7 +47,7 @@ set(HEADERS
   apfAlbany.h
 )
 
-if(HAS_STK)
+if(ENABLE_STK_MESH)
   set(HEADERS ${HEADERS} apfSTK.h)
   set(SOURCES ${SOURCES} apfExodusOutput.cc)
 endif()
@@ -54,9 +55,7 @@ endif()
 # Add the apf_stk library
 add_library(apf_stk ${SOURCES})
 
-target_link_libraries(apf_stk
-  PRIVATE gmi
-  PUBLIC apf)
+target_link_libraries(apf_stk PUBLIC apf gmi)
 target_link_libraries(apf_stk PUBLIC ${Shards_LIBRARIES})
 
 # Include directories
@@ -73,12 +72,14 @@ target_include_directories(apf_stk PRIVATE
     )
 
 # Do some extra work if has stk is on
-if(HAS_STK)
+if(ENABLE_STK_MESH)
   target_link_libraries(apf_stk PUBLIC
-    ${STKIO_LIBRARIES}
-    ${STKMesh_LIBRARIES}
+    stk_io
+    stk_io_util
+    stk_mesh_base
     ${STKMesh_TPL_LIBRARIES}
-    ${SEACASIoss_LIBRARIES}
+    Ioss
+    Ioex
   )
   target_include_directories(apf_stk
     SYSTEM
@@ -90,6 +91,6 @@ if(HAS_STK)
   )
 endif()
 
-target_macro(apf_stk)
+bob_export_target(apf_stk)
 
-deps_end_macro()
+bob_end_subdir()

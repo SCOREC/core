@@ -77,10 +77,14 @@ target_include_directories(apf PUBLIC
 
 # Link this library to these others
 target_link_libraries(apf
-# these headers are visible from public APF headers
-   PRIVATE pcu gmi lion
-# these headers are visible from public APF headers
-   PUBLIC can mth
+   PUBLIC
+     pcu
+     gmi
+     lion
+     can
+     mth
    )
 
-target_macro(apf)
+bob_export_target(apf)
+
+bob_end_subdir()

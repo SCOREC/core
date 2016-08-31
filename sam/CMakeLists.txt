@@ -21,8 +21,8 @@ target_include_directories(sam INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(sam
-    PUBLIC apf
-    PRIVATE pcu)
+target_link_libraries(sam PUBLIC apf pcu)
 
-target_macro(sam)
+bob_export_target(sam)
+
+bob_export_subdir()

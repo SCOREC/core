@@ -33,4 +33,6 @@ target_include_directories(gmi INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
-target_macro(gmi)
+bob_export_target(gmi)
+
+bob_end_subdir()

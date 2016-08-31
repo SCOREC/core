@@ -38,6 +38,8 @@ target_include_directories(apf_omega_h INTERFACE
 target_include_directories(apf_omega_h PUBLIC ${OMEGA_H_INCLUDE_DIR})
 
 # Link this package to these libraries
-target_link_libraries(apf_omega_h PUBLIC apf ${OMEGA_H_LIB} PRIVATE mds)
+target_link_libraries(apf_omega_h PUBLIC apf ${OMEGA_H_LIB} mds)
 
-target_macro(apf_omega_h)
+bob_export_target(apf_omega_h)
+
+bob_end_subdir()

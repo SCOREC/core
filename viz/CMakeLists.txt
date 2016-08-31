@@ -1,4 +1,4 @@
-# Package options
+# Component options
 option(ENABLE_VIZ "Enable the viz package [ON|OFF]" OFF)
 message(STATUS "ENABLE_VIZ: " ${ENABLE_VIZ})
 
@@ -42,4 +42,6 @@ target_include_directories(apf PRIVATE
 # Link this package to these libraries
 target_link_libraries(viz PRIVATE apf ${MILO_LIB})
 
-target_macro(viz)
+bob_export_target(viz)
+
+bob_end_subdir()

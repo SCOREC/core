@@ -79,6 +79,8 @@ target_include_directories(parma
     )
 
 # Link this library to these libraries
-target_link_libraries(parma PUBLIC apf PRIVATE pcu)
+target_link_libraries(parma PUBLIC apf pcu)
 
-target_macro(parma)
+bob_export_target(parma)
+
+bob_end_subdir()
