@@ -63,6 +63,6 @@ if(ENABLE_ZOLTAN)
   )
 endif()
 
-bob_export_target(apf_zoltan)
+scorec_export_library(apf_zoltan)
 
 bob_end_subdir()

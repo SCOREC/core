@@ -85,6 +85,6 @@ target_link_libraries(apf
      mth
    )
 
-bob_export_target(apf)
+scorec_export_library(apf)
 
 bob_end_subdir()

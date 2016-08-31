@@ -91,6 +91,6 @@ if(ENABLE_STK_MESH)
   )
 endif()
 
-bob_export_target(apf_stk)
+scorec_export_library(apf_stk)
 
 bob_end_subdir()

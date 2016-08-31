@@ -42,6 +42,6 @@ target_include_directories(apf PRIVATE
 # Link this package to these libraries
 target_link_libraries(viz PRIVATE apf ${MILO_LIB})
 
-bob_export_target(viz)
+scorec_export_library(viz)
 
 bob_end_subdir()

@@ -81,6 +81,6 @@ target_include_directories(parma
 # Link this library to these libraries
 target_link_libraries(parma PUBLIC apf pcu)
 
-bob_export_target(parma)
+scorec_export_library(parma)
 
 bob_end_subdir()

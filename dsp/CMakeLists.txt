@@ -34,6 +34,6 @@ target_include_directories(apf INTERFACE
 # Link this package to these libraries
 target_link_libraries(dsp PUBLIC ma apf)
 
-bob_export_target(dsp)
+scorec_export_library(dsp)
 
 bob_end_subdir()

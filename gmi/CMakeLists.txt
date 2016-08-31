@@ -33,6 +33,6 @@ target_include_directories(gmi INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
-bob_export_target(gmi)
+scorec_export_library(gmi)
 
 bob_end_subdir()

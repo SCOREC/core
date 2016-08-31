@@ -40,6 +40,6 @@ target_include_directories(apf_omega_h PUBLIC ${OMEGA_H_INCLUDE_DIR})
 # Link this package to these libraries
 target_link_libraries(apf_omega_h PUBLIC apf ${OMEGA_H_LIB} mds)
 
-bob_export_target(apf_omega_h)
+scorec_export_library(apf_omega_h)
 
 bob_end_subdir()

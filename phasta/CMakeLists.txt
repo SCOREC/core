@@ -64,6 +64,6 @@ else()
     )
 endif()
 
-bob_export_target(ph)
+scorec_export_library(ph)
 
 bob_end_subdir()

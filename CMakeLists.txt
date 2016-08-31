@@ -50,6 +50,11 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
+macro(scorec_export_library target)
+bob_export_target(${target})
+install(FILES ${HEADERS} DESTINATION include)
+endmacro(scorec_export_library)
+
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
@@ -73,7 +78,7 @@ add_subdirectory(omega_h)
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
-bob_export_target(core)
+scorec_export_library(core)
 
 add_subdirectory(test)
 

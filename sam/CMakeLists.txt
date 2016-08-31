@@ -23,6 +23,6 @@ target_include_directories(sam INTERFACE
 # Link this package to these libraries
 target_link_libraries(sam PUBLIC apf pcu)
 
-bob_export_target(sam)
+scorec_export_library(sam)
 
 bob_end_subdir()

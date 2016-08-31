@@ -36,6 +36,6 @@ if(LION_COMPRESS)
   target_link_libraries(lion PUBLIC ${ZLIB_LIBRARIES})
 endif()
 
-bob_export_target(lion)
+scorec_export_library(lion)
 
 bob_end_subdir()

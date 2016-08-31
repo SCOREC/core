@@ -59,6 +59,6 @@ target_link_libraries(mds
      apf
    )
 
-bob_export_target(mds)
+scorec_export_library(mds)
 
 bob_end_subdir()

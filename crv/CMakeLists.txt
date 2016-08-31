@@ -44,6 +44,6 @@ target_link_libraries(crv
       pcu
     )
 
-bob_export_target(crv)
+scorec_export_library(crv)
 
 bob_end_subdir()

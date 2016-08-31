@@ -75,6 +75,6 @@ target_link_libraries(ma
      pcu
    )
 
-bob_export_target(ma)
+scorec_export_library(ma)
 
 bob_end_subdir()

@@ -26,6 +26,6 @@ target_include_directories(spr INTERFACE
 # Link this package to these libraries
 target_link_libraries(spr PUBLIC apf pcu)
 
-bob_export_target(spr)
+scorec_export_library(spr)
 
 bob_end_subdir()

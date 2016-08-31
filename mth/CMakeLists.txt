@@ -26,6 +26,6 @@ target_include_directories(mth INTERFACE
 # Link this library to these libraries
 target_link_libraries(mth PUBLIC can)
 
-bob_export_target(mth)
+scorec_export_library(mth)
 
 bob_end_subdir()
