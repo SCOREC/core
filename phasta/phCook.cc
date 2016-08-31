@@ -57,7 +57,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     apf::printStats(m);
   m->verify();
-  if (in.solutionMigration)
+  if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);

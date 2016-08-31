@@ -83,6 +83,7 @@ util_exe_func(fixDisconnected fixDisconnected.cc)
 
 # Phasta utilities
 util_exe_func(chef ../phasta/chef.cc)
+util_exe_func(condense ../phasta/condense.cc)
 util_exe_func(chefReadUrPrep ../phasta/readUrPrep.cc)
 util_exe_func(threshold ../phasta/threshold.cc)
 if(PHASTA_CHEF_ENABLED)

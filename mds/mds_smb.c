@@ -125,7 +125,9 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim,
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1 && (!ignore_peers))
-    assert(np == (unsigned)PCU_Comm_Peers());
+  if (np != (unsigned)PCU_Comm_Peers())
+    reel_fail("To whom it may concern\n"
+        "the # of mesh partitions != the # of MPI ranks");
 }
 
 static void write_header(struct pcu_file* f, unsigned dim,

@@ -39,6 +39,7 @@ class Input
     int phastaIO;
     int splitFactor;
     int solutionMigration;
+    int useAttachedFields;
     int displacementMigration;
     int isReorder;
     int tetrahedronize;
