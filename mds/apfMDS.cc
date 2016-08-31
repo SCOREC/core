@@ -553,8 +553,10 @@ class MeshMDS : public Mesh2
     void getMatches(MeshEntity* e, Matches& m)
     {
       mds_copies* c = mds_get_copies(&mesh->matches, fromEnt(e));
-      if (!c)
+      if (!c) {
+        m.setSize(0);
         return;
+      }
       m.setSize(c->n);
       for (int i = 0; i < c->n; ++i) {
         m[i].entity = toEnt(c->c[i].e);
@@ -563,6 +565,7 @@ class MeshMDS : public Mesh2
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
+      assert(isMatched);
       mds_copy c;
       c.e = fromEnt(match);
       c.p = peer;
