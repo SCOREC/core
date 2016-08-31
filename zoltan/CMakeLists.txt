@@ -1,3 +1,8 @@
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
+endif()
+
 # Package options
 option(ENABLE_ZOLTAN "Enable Zoltan interface [ON|OFF]" OFF)
 message(STATUS "ENABLE_ZOLTAN: " ${ENABLE_ZOLTAN})

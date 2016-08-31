@@ -1,9 +1,6 @@
-if(DEFINED TRIBITS_PACKAGE)
-  include(pkg_tribits.cmake)
-  return()
-endif()
+tribits_package(SCORECma)
 
-# Package sources
+#Sources & Headers
 set(SOURCES
   ma.cc
   maInput.cc
@@ -44,7 +41,6 @@ set(SOURCES
   maExtrude.cc
 )
 
-# Package headers
 set(HEADERS
   ma.h
   maInput.h
@@ -56,18 +52,13 @@ set(HEADERS
   maExtrude.h
 )
 
-# Add the ma library
-add_library(ma ${SOURCES})
+# THIS IS WHERE TRIBITS GETS HEADERS
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Include directories
-target_include_directories(ma INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-    )
+#Library
+tribits_add_library(
+   ma
+   HEADERS ${HEADERS}
+   SOURCES ${SOURCES})
 
-# Link this library to these libraries
-target_link_libraries(ma
-   PUBLIC apf
-   PRIVATE mds parma apf_zoltan pcu)
-
-target_macro(ma)
+TRIBITS_PACKAGE_POSTPROCESS()

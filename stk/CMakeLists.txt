@@ -1,3 +1,8 @@
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
+endif()
+
 # Package options
 set(Trilinos_PREFIX CACHE STRING "Trilinos installation directory")
 option(ENABLE_STK "Enable the stk interface [ON|OFF]" OFF)

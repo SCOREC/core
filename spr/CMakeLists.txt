@@ -1,3 +1,8 @@
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
+endif()
+
 # Package sources
 set(SOURCES
   sprGetGradIPField.cc

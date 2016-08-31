@@ -1,10 +1,10 @@
-if(DEFINED TRIBITS_PACKAGE)
-  include(pkg_tribits.cmake)
-  return()
-endif()
+TRIBITS_PACKAGE(SCORECparma)
 
-# Package sources
-set(SOURCES
+SET(PARMA_EXTERNAL_HEADERS parma.h)
+
+SET(API_SOURCE parma.cc)
+
+SET(DIFFMC_SOURCES
   diffMC/parma_balancer.cc
   diffMC/parma_bdryVtx.cc
   diffMC/parma_centroidDiffuser.cc
@@ -52,33 +52,26 @@ set(SOURCES
   diffMC/zeroOneKnapsack.c
   diffMC/maximalIndependentSet/misLuby.cc
   diffMC/maximalIndependentSet/mersenne_twister.cc
+  )
+
+SET(RIB_SOURCES
   rib/parma_rib.cc
   rib/parma_mesh_rib.cc
+  )
+
+SET(GROUP_SOURCES
   group/parma_group.cc
-  parma.cc
-)
+  )
 
-# Package headers
-set(HEADERS
-  parma.h
-)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(diffMC)
 
-# Add the parma library
-add_library(parma ${SOURCES})
+SET(parmaDepLibs ${APF_LIBS})
 
-# Include directories
-target_include_directories(parma
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/diffMC>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/group>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rib>
-    )
+TRIBITS_ADD_LIBRARY(
+  parma
+  SOURCES ${DIFFMC_SOURCES} ${RIB_SOURCES} ${GROUP_SOURCES} ${API_SOURCE}
+  HEADERS ${PARMA_EXTERNAL_HEADERS})
 
-# Link this library to these libraries
-target_link_libraries(parma PUBLIC apf PRIVATE pcu)
-
-target_macro(parma)
+TRIBITS_PACKAGE_POSTPROCESS()
