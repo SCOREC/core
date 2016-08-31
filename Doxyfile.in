@@ -768,7 +768,6 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicVector.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicMatrix.h \
 @CMAKE_CURRENT_SOURCE_DIR@/can/canArray.h \
-@CMAKE_CURRENT_SOURCE_DIR@/can/canDynamicArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/can/canNewArray.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfCavityOp.h \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apfPartition.h \
