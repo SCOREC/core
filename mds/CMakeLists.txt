@@ -1,3 +1,8 @@
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
+endif()
+
 # Package options
 set(MDS_SET_MAX "256" CACHE STRING "Buffer size for adjacency computation")
 set(MDS_ID_TYPE "int" CACHE STRING "Interal identifier integer type")

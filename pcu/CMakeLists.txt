@@ -1,3 +1,8 @@
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
+endif()
+
 # Package options
 option(PCU_COMPRESS "Enable SMB compression using libbzip2 [ON|OFF]" OFF)
 message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
