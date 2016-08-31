@@ -15,9 +15,10 @@ set(CMAKE_MODULE_PATH
 # Check for and enable zoltan support
 if(ENABLE_ZOLTAN)
   if(Trilinos_PREFIX)
-    set(ZOLTAN_PREFIX "${Trilinos_PREFIX}")
+    set(ZOLTAN_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+    message(STATUS "ZOLTAN_PREFIX_DEFAULT ${ZOLTAN_PREFIX_DEFAULT}")
   endif()
-  find_package(Zoltan REQUIRED)
+  find_package(Zoltan MODULE REQUIRED)
 endif()
 
 # Package sources

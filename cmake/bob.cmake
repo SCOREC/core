@@ -98,6 +98,7 @@ macro(bob_private_dep pkg_name)
     set(${pkg_name}_PREFIX "${${pkg_name}_PREFIX_DEFAULT}"
         CACHE PATH "${pkg_name} install directory")
     if (${pkg_name}_PREFIX)
+      message(STATUS "${pkg_name}_PREFIX ${${pkg_name}_PREFIX}")
       #if ${pkg_name}_PREFIX is set, don't find it anywhere else:
       find_package(${pkg_name} ${${pkg_name}_REQUIRED_VERSION}
                    REQUIRED PATHS ${${pkg_name}_PREFIX} NO_DEFAULT_PATH)

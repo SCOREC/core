@@ -25,4 +25,4 @@ target_link_libraries(sam PUBLIC apf pcu)
 
 bob_export_target(sam)
 
-bob_export_subdir()
+bob_end_subdir()
