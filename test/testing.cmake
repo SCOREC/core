@@ -278,9 +278,9 @@ if (PCU_COMPRESS)
   if (PHASTA_CHEF_ENABLED)
     mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
       WORKING_DIRECTORY ${MDIR})
-    set(cmd 
-      ${CMAKE_BINARY_DIR}/phasta/bin/checkphasta 
-      ${MDIR}/1-procs_case/ 
+    set(cmd
+      ${CMAKE_BINARY_DIR}/phasta/bin/checkphasta
+      ${MDIR}/1-procs_case/
       ${MESHES}/phasta/1-1-Chef-Tet-Part/good_phasta/
       0 1e-6)
     add_test(
