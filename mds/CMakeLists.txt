@@ -53,10 +53,12 @@ target_include_directories(mds PRIVATE
 
 # Link this library to these libraries
 target_link_libraries(mds
-# these headers are visible from public MDS headers
-   PRIVATE pcu
-# these headers are visible from public MDS headers
-   PUBLIC gmi apf
+   PUBLIC
+     pcu
+     gmi
+     apf
    )
 
-target_macro(mds)
+scorec_export_library(mds)
+
+bob_end_subdir()

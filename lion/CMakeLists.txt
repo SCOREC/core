@@ -33,7 +33,9 @@ target_include_directories(lion INTERFACE
 # Do extra work if compression is enabled
 if(LION_COMPRESS)
   target_include_directories(lion PRIVATE ${ZLIB_INCLUDE_DIR})
-  target_link_libraries(lion PRIVATE ${ZLIB_LIBRARIES})
+  target_link_libraries(lion PUBLIC ${ZLIB_LIBRARIES})
 endif()
 
-target_macro(lion)
+scorec_export_library(lion)
+
+bob_end_subdir()

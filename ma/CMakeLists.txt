@@ -67,7 +67,14 @@ target_include_directories(ma INTERFACE
 
 # Link this library to these libraries
 target_link_libraries(ma
-   PUBLIC apf
-   PRIVATE mds parma apf_zoltan pcu)
+   PUBLIC
+     apf
+     mds
+     parma
+     apf_zoltan
+     pcu
+   )
 
-target_macro(ma)
+scorec_export_library(ma)
+
+bob_end_subdir()

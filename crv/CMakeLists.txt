@@ -36,6 +36,14 @@ target_include_directories(crv INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(crv PUBLIC apf ma PRIVATE gmi pcu)
+target_link_libraries(crv
+    PUBLIC
+      apf
+      ma
+      gmi
+      pcu
+    )
 
-target_macro(crv)
+scorec_export_library(crv)
+
+bob_end_subdir()

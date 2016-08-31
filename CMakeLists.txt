@@ -6,29 +6,11 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-project(SCOREC)
+project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
 
-# The version number of the project
-set(SCOREC_MAJOR "2")
-set(SCOREC_MINOR "0")
-set(SCOREC_PATCH "0")
+include(cmake/bob.cmake)
 
-# CMake RPATH "always full" configuration, see:
-# https://cmake.org/Wiki/CMake_RPATH_handling#Always_full_RPATH
-set(CMAKE_SKIP_BUILD_RPATH False)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH False)
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
-  "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-endif("${isSystemDir}" STREQUAL "-1")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
-
-# Unless building shared libs, select static libs
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
-if(BUILD_SHARED_LIBS)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
-endif()
+bob_begin_package()
 
 # Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
@@ -39,11 +21,9 @@ find_package(C99 REQUIRED)
 set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
 message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 
-# Set options for testing
-enable_testing()
-include(CTest)
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
+
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
 set(MPIRUN_PROCFLAG "-np" CACHE string
@@ -68,31 +48,12 @@ add_custom_target(doc
 )
 endif()
 
-set(TARGETS)
+set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
-function(target_func TARGET_NAME)
-  install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-targets DESTINATION lib)
-  install(FILES ${HEADERS} DESTINATION include)
-  install(EXPORT ${TARGET_NAME}-targets NAMESPACE SCOREC:: DESTINATION lib/scorec)
-endfunction(target_func)
-
-macro(target_macro TARGET_NAME)
-  target_func(${TARGET_NAME})
-  # this PARENT_SCOPE is the reason for this being a macro, not a function
-  set(TARGETS ${TARGETS} ${TARGET_NAME} PARENT_SCOPE)
-endmacro(target_macro)
-
-macro(dep_macro DEP_NAME DEP_PREFIX)
-  find_package(${DEP_NAME} REQUIRED PATHS "${DEP_PREFIX}")
-  set(DEPS ${DEPS} ${DEP_NAME})
-  set(DEP_PREFIXES ${DEP_PREFIXES} "${DEP_PREFIX}")
-endmacro(dep_macro)
-
-macro(deps_end_macro)
-  # this PARENT_SCOPE is the reason for this being a macro, not a function
-  set(DEPS ${DEPS} PARENT_SCOPE)
-  set(DEP_PREFIXES ${DEP_PREFIXES} PARENT_SCOPE)
-endmacro(deps_end_macro)
+macro(scorec_export_library target)
+bob_export_target(${target})
+install(FILES ${HEADERS} DESTINATION include)
+endmacro(scorec_export_library)
 
 # Include the SCOREC project packages
 add_subdirectory(pcu)
@@ -116,34 +77,9 @@ add_subdirectory(omega_h)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
-target_link_libraries(core INTERFACE ${TARGETS})
-target_func(core)
-set(TARGETS ${TARGETS} core)
+target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
+scorec_export_library(core)
 
 add_subdirectory(test)
 
-list(REMOVE_DUPLICATES DEPS)
-list(REMOVE_DUPLICATES DEP_PREFIXES)
-
-# Tell CMake to install the project in a nice way :)
-configure_file(
-  "${PROJECT_SOURCE_DIR}/scorec-config.cmake.in"
-  "${PROJECT_BINARY_DIR}/scorec-config.cmake"
-  @ONLY
-)
-configure_file(
-  "${PROJECT_SOURCE_DIR}/scorec-config-version.cmake.in"
-  "${PROJECT_BINARY_DIR}/scorec-config-version.cmake"
-  @ONLY
-)
-install(FILES
-  "${PROJECT_BINARY_DIR}/scorec-config.cmake"
-  "${PROJECT_BINARY_DIR}/scorec-config-version.cmake"
-  DESTINATION lib/scorec
-)
-
-# Binary distribution package
-set(CPACK_GENERATOR "TGZ")
-set(CPACK_PACKAGE_VERSION
-  "${SCOREC_MAJOR}.${SCOREC_MINOR}.${SCOREC_PATCH}")
-include(CPack)
+bob_end_package()

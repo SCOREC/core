@@ -1,9 +1,8 @@
 function(util_exe_func exename srcname)
   add_executable(${exename} ${srcname})
   target_link_libraries(${exename} core)
-  install(TARGETS ${exename} EXPORT ${exename}-targets DESTINATION bin)
-  install(EXPORT ${exename}-targets NAMESPACE SCOREC:: DESTINATION lib/scorec)
-  set(TARGETS ${TARGETS} ${exename} PARENT_SCOPE)
+  bob_export_target(${exename})
+  bob_end_subdir()
 endfunction(util_exe_func)
 
 function(test_exe_func exename srcname)
@@ -137,3 +136,5 @@ set(TARGETS ${TARGETS} PARENT_SCOPE)
 if(IS_TESTING)
   include(testing.cmake)
 endif()
+
+bob_end_subdir()

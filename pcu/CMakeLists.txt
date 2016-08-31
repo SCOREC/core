@@ -50,4 +50,6 @@ if(PCU_COMPRESS)
   target_compile_definitions(pcu PRIVATE "-DPCU_BZIP")
 endif()
 
-target_macro(pcu)
+scorec_export_library(pcu)
+
+bob_end_subdir()

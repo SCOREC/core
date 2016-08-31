@@ -45,22 +45,25 @@ target_include_directories(ph INTERFACE
 target_include_directories(ph PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
-target_link_libraries(ph PRIVATE
-    ma
-    mds
-    sam
-    parma
-    pcu
-    apf_zoltan
+target_link_libraries(ph
+    PUBLIC
+      ma
+      mds
+      sam
+      parma
+      pcu
+      apf_zoltan
     )
 
 # Handle the complexity of the chef enabled flag
 if(PHASTA_CHEF_ENABLED)
-  target_link_libraries(ph PRIVATE phstream)
+  target_link_libraries(ph PUBLIC phstream)
 else()
   target_include_directories(ph PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/phstreamEmpty
     )
 endif()
 
-target_macro(ph)
+scorec_export_library(ph)
+
+bob_end_subdir()

@@ -14,7 +14,11 @@ set(CMAKE_MODULE_PATH
 
 # Check for and enable zoltan support
 if(ENABLE_ZOLTAN)
-  find_package(Zoltan REQUIRED)
+  if(Trilinos_PREFIX)
+    set(ZOLTAN_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+    message(STATUS "ZOLTAN_PREFIX_DEFAULT ${ZOLTAN_PREFIX_DEFAULT}")
+  endif()
+  find_package(Zoltan MODULE REQUIRED)
 endif()
 
 # Package sources
@@ -45,9 +49,7 @@ target_include_directories(apf_zoltan INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(apf_zoltan
-  PRIVATE pcu
-  PUBLIC apf)
+target_link_libraries(apf_zoltan PUBLIC pcu apf)
 
 # Do extra work if zoltan is enabled
 if(ENABLE_ZOLTAN)
@@ -55,10 +57,12 @@ if(ENABLE_ZOLTAN)
       ${ZOLTAN_INCLUDE_DIRS}
       ${PARMETIS_INCLUDE_DIRS}
       )
-  target_link_libraries(apf_zoltan PRIVATE
+  target_link_libraries(apf_zoltan PUBLIC
     ${ZOLTAN_LIBRARIES}
     ${PARMETIS_LIBRARIES}
   )
 endif()
 
-target_macro(apf_zoltan)
+scorec_export_library(apf_zoltan)
+
+bob_end_subdir()

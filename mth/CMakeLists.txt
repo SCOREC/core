@@ -24,7 +24,8 @@ target_include_directories(mth INTERFACE
     )
 
 # Link this library to these libraries
-# can is PUBLIC because public mth headers include can headers
 target_link_libraries(mth PUBLIC can)
 
-target_macro(mth)
+scorec_export_library(mth)
+
+bob_end_subdir()

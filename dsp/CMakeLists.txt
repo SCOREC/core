@@ -1,4 +1,4 @@
-# Package options
+# Component options
 option(ENABLE_DSP "Enable the dsp package [ON|OFF]" OFF)
 message(STATUS "ENABLE_DSP: " ${ENABLE_DSP})
 
@@ -32,6 +32,8 @@ target_include_directories(apf INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(dsp PRIVATE ma PUBLIC apf)
+target_link_libraries(dsp PUBLIC ma apf)
 
-target_macro(dsp)
+scorec_export_library(dsp)
+
+bob_end_subdir()

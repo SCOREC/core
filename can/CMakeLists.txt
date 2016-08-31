@@ -14,4 +14,6 @@ target_include_directories(can INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
-target_macro(can)
+scorec_export_library(can)
+
+bob_end_subdir()
