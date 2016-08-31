@@ -1,7 +1,10 @@
 tribits_package(SCORECapf)
 
 set(APF_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR})
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../mth
+    ${CMAKE_CURRENT_SOURCE_DIR}/../can
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lion)
 
 #Sources & Headers
 set(APF_SOURCES
