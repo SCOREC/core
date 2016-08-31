@@ -68,16 +68,3 @@ set(SIM_LINK_LIBS "")
 foreach(lib ${SIM_LIB_NAMES})
   set(SIM_LINK_LIBS "${SIM_LINK_LIBS} -l${lib}")
 endforeach()
-
-#pkgconfig
-set(prefix "${SIMMODSUITE_INSTALL_DIR}")
-set(includedir "${SIMMODSUITE_INCLUDE_DIR}")
-configure_file(
-  "${CMAKE_HOME_DIRECTORY}/cmake/libSimModSuite.pc.in"
-  "${CMAKE_BINARY_DIR}/libSimModSuite.pc"
-  @ONLY)
-
-#is this OK for a package file????
-if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES "${CMAKE_BINARY_DIR}/libSimModSuite.pc" DESTINATION lib/pkgconfig)
-endif()
