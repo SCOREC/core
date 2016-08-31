@@ -24,14 +24,14 @@ endif()
 set(SIMMODSUITE_LIBS "")
 set(SIM_LIB_NAMES
   SimPartitionedMesh-mpi
-  SimMeshing 
-  SimModel 
+  SimMeshing
+  SimModel
   SimMeshTools
   SimPartitionWrapper-${SIM_MPI})
-foreach(lib ${SIM_LIB_NAMES}) 
-  find_library(simlib ${lib} 
-    PATHS ${SIMMETRIX_LIB_DIR} 
-    PATH_SUFFIXES ${SIM_ARCHOS})  
+foreach(lib ${SIM_LIB_NAMES})
+  find_library(simlib ${lib}
+    PATHS ${SIMMETRIX_LIB_DIR}
+    PATH_SUFFIXES ${SIM_ARCHOS})
   if(simlib MATCHES "^simlib-NOTFOUND$")
     message(FATAL_ERROR "simmetrix library ${lib} not found in ${SIMMETRIX_LIB_DIR}")
   endif()
@@ -39,19 +39,19 @@ foreach(lib ${SIM_LIB_NAMES})
 endforeach()
 string(REGEX REPLACE "libSimMeshing.*" " " simLibDir "${simMesh}")
 
-find_path(SIMMODSUITE_INCLUDE_DIR 
-  NAMES SimUtil.h SimError.h SimModel.h 
+find_path(SIMMODSUITE_INCLUDE_DIR
+  NAMES SimUtil.h SimError.h SimModel.h
   PATHS ${SIMMETRIX_INCLUDE_DIR})
 if(NOT EXISTS "${SIMMODSUITE_INCLUDE_DIR}")
   message(FATAL_ERROR "simmetrix include dir not found")
 endif()
 
-string(REGEX REPLACE 
-  "/include$" "" 
+string(REGEX REPLACE
+  "/include$" ""
   SIMMODSUITE_INSTALL_DIR
   "${SIMMODSUITE_INCLUDE_DIR}")
 
-string(REGEX MATCH 
+string(REGEX MATCH
   "[0-9]+.[0-9]+-[0-9]+"
   SIM_VERSION
   "${SIMMODSUITE_INCLUDE_DIR}")
@@ -69,7 +69,7 @@ foreach(lib ${SIM_LIB_NAMES})
   set(SIM_LINK_LIBS "${SIM_LINK_LIBS} -l${lib}")
 endforeach()
 
-#pkgconfig  
+#pkgconfig
 set(prefix "${SIMMODSUITE_INSTALL_DIR}")
 set(includedir "${SIMMODSUITE_INCLUDE_DIR}")
 configure_file(
