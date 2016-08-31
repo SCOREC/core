@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-SET(CTEST_DO_SUBMIT OFF)
-SET(CTEST_TEST_TYPE Experimental)
+SET(CTEST_DO_SUBMIT ON)
+SET(CTEST_TEST_TYPE Nightly)
 
 set(CTEST_NIGHTLY_START_TIME "19:00:00 EST")
 set(CTEST_SITE "jenga.scorec.rpi.edu" )
@@ -41,14 +41,14 @@ set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
 function(git_exec CMD ACTION)
   string(REPLACE " " ";" CMD2 "${CMD}")
-  message(STATUS "Running \"git ${CMD}\"")
+  message("Running \"git ${CMD}\"")
   execute_process(COMMAND "${CTEST_GIT_COMMAND}" ${CMD2}
     WORKING_DIRECTORY "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
     RESULT_VARIABLE RETVAR)
   if(RETVAR)
     message(FATAL_ERROR "${ACTION} failed (code ${RETVAR})!")
   else()
-    message(STATUS "${ACTION} succeeded")
+    message("${ACTION} succeeded")
   endif()
 endfunction(git_exec)
 
@@ -64,14 +64,14 @@ endfunction(checkout_branch)
 
 function(setup_repo)
   if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
-    message(STATUS "Running \"git clone ${REPO_URL_BASE}.git ${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}\"")
+    message("Running \"git clone ${REPO_URL_BASE}.git ${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}\"")
     execute_process(COMMAND "${CTEST_GIT_COMMAND}" clone ${REPO_URL_BASE}.git
         "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
         RESULT_VARIABLE CLONE_RET)
     if(CLONE_RET)
       message(FATAL_ERROR "Cloning ${REPO_URL_BASE}.git failed (code ${RETVAR})!")
     else()
-      message(STATUS "Cloning ${REPO_URL_BASE}.git succeeded")
+      message("Cloning ${REPO_URL_BASE}.git succeeded")
     endif()
     # make local tracking versions of all remote branches
     foreach(REPO_SUFFIX IN LISTS REPO_SUFFIXES)
@@ -90,7 +90,14 @@ function(setup_repo)
   endif()
 endfunction(setup_repo)
 
-function(check_current_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
+# NUM_ALLOWED_WARNINGS EXISTS BECAUSE SIMMETRIX, INC. REFUSE TO FIX
+# THEIR USE OF `tmpnam`, WHICH IS SO DANGEROUS (see here:
+#http://stackoverflow.com/questions/3299881/tmpnam-warning-saying-it-is-dangerous
+# ) THAT THE GNU LINKER EMITS AN UNSILENCEABLE WARNING ABOUT IT.
+# SCOREC CODE DOES NOT HAVE WARNINGS.
+
+function(check_current_branch BRANCH_NAME CONFIG_OPTS
+    NUM_ALLOWED_WARNINGS ERRVAR)
   file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}")
 
   ctest_configure(
@@ -101,7 +108,7 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
   if(CONFIG_RET)
     message(WARNING "${BRANCH_NAME} config failed (code ${CONFIG_RET})!")
   else()
-    message(STATUS "${BRANCH_NAME} config passed")
+    message("${BRANCH_NAME} config passed")
   endif()
 
   ctest_build(
@@ -109,14 +116,15 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
       NUMBER_ERRORS NUM_BUILD_ERRORS
       NUMBER_WARNINGS NUM_BUILD_WARNINGS
       RETURN_VALUE BUILD_RET)
-  if(CONFIG_RET OR NUM_BUILD_WARNINGS OR NUM_BUILD_ERRORS)
+  if((NUM_BUILD_WARNINGS GREATER NUM_ALLOWED_WARNINGS) OR
+      NUM_BUILD_ERRORS OR BUILD_RET)
     message(WARNING "
-${BRANCH_NAME} config failed!
+${BRANCH_NAME} build failed!
   ${NUM_BUILD_WARNINGS} warnings
   ${NUM_BUILD_ERRORS} errors
   code ${BUILD_RET}")
   else()
-    message(STATUS "${BRANCH_NAME} build passed")
+    message("${BRANCH_NAME} build passed")
   endif()
 
   ctest_test(
@@ -125,16 +133,17 @@ ${BRANCH_NAME} config failed!
   if(TEST_RET)
     message(WARNING "${BRANCH_NAME} testing failed (code ${TEST_RET})!")
   else()
-    message(STATUS "${BRANCH_NAME} testing passed")
+    message("${BRANCH_NAME} testing passed")
   endif()
 
   if(CONFIG_RET OR
-     BUILD_RET OR NUM_BUILD_WARNINGS OR NUM_BUILD_ERRORS OR
+     (NUM_BUILD_WARNINGS GREATER NUM_ALLOWED_WARNINGS) OR
+     NUM_BUILD_ERRORS OR BUILD_RET OR
      TEST_RET)
     message(WARNING "some ${BRANCH_NAME} checks failed!")
     set(${ERRVAR} True PARENT_SCOPE)
   else()
-    message(STATUS "all ${BRANCH_NAME} checks passed")
+    message("all ${BRANCH_NAME} checks passed")
     set(${ERRVAR} False PARENT_SCOPE)
   endif()
 
@@ -145,11 +154,14 @@ ${BRANCH_NAME} config failed!
         RETURN_VALUE SUBMIT_ERROR)
     if(SUBMIT_ERROR)
       message(WARNING "Could not submit ${BRANCH_NAME} results to CDash (code ${SUBMIT_ERROR})!")
+    else()
+      message("Submitted ${BRANCH_NAME} results to CDash")
     endif()
   endif()
 endfunction(check_current_branch)
 
-function(check_tracking_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
+function(check_tracking_branch BRANCH_NAME CONFIG_OPTS
+    NUM_ALLOWED_WARNINGS ERRVAR)
   checkout_branch("${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY SubProject "${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY Label "${BRANCH_NAME}")
@@ -158,15 +170,18 @@ function(check_tracking_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
   if("${NUM_UPDATES}" EQUAL "-1")
     message(FATAL_ERROR "Could not update ${BRANCH_NAME} branch!")
   endif()
-  message(STATUS "Updated ${NUM_UPDATES} files")
-  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}" ERRVAL2)
+  message("Updated ${NUM_UPDATES} files")
+  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}"
+      ${NUM_ALLOWED_WARNINGS} ERRVAL2)
   set(${ERRVAR} ${ERRVAL2} PARENT_SCOPE)
 endfunction(check_tracking_branch)
 
-function(check_merge_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
+function(check_merge_branch BRANCH_NAME CONFIG_OPTS
+    NUM_ALLOWED_WARNINGS ERRVAR)
   set_property(GLOBAL PROPERTY SubProject "${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY Label "${BRANCH_NAME}")
-  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}" ERRVAL2)
+  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}"
+      ${NUM_ALLOWED_WARNINGS} ERRVAL2)
   set(${ERRVAR} ${ERRVAL2} PARENT_SCOPE)
 endfunction(check_merge_branch)
 
@@ -183,7 +198,7 @@ function(start_merge FIRST_BASE REPO_SUFFIX SECOND_NAME NEXT_ACTION)
   set(NEW_NAME "${SECOND_NAME}-into-${FIRST_NAME}")
   create_branch(${NEW_NAME} origin${REPO_SUFFIX}/${FIRST_BASE})
   checkout_branch(${NEW_NAME})
-  message(STATUS "Running \"git merge --no-ff --no-commit ${SECOND_NAME}\"")
+  message("Running \"git merge --no-ff --no-commit ${SECOND_NAME}\"")
   execute_process(COMMAND "${CTEST_GIT_COMMAND}" merge --no-ff --no-commit ${SECOND_NAME}
     WORKING_DIRECTORY ${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}
     OUTPUT_VARIABLE MERGE_OUTPUT
@@ -194,14 +209,14 @@ function(start_merge FIRST_BASE REPO_SUFFIX SECOND_NAME NEXT_ACTION)
     return()
   endif()
   if("${MERGE_OUTPUT}" MATCHES "Already up-to-date")
-    message(STATUS "${FIRST_NAME} up-to-date with ${SECOND_NAME}, stopping merge")
+    message("${FIRST_NAME} up-to-date with ${SECOND_NAME}, stopping merge")
     set(${NEXT_ACTION} CLEANUP PARENT_SCOPE)
     return()
   endif()
   if(MERGE_RET)
     message(FATAL_ERROR "Merging ${SECOND_NAME} into ${FIRST_NAME} failed (code ${MERGE_RET})!")
   endif()
-  message(STATUS "Merging ${SECOND_NAME} into ${FIRST_NAME} worked okay...")
+  message("Merging ${SECOND_NAME} into ${FIRST_NAME} worked okay...")
   set(${NEXT_ACTION} PROCEED PARENT_SCOPE)
 endfunction(start_merge)
 
@@ -215,7 +230,7 @@ endfunction(cleanup_merge)
 function(accept_merge FIRST_BASE REPO_SUFFIX SECOND_NAME)
   set(FIRST_NAME ${FIRST_BASE}${REPO_SUFFIX})
   set(NEW_NAME "${SECOND_NAME}-into-${FIRST_NAME}")
-  message(STATUS "Running \"git commit -m \"Merging ${SECOND_NAME} into ${FIRST_NAME}\" --author=\"${MERGE_AUTHOR}\"\"")
+  message("Running \"git commit -m \"Merging ${SECOND_NAME} into ${FIRST_NAME}\" --author=\"${MERGE_AUTHOR}\"\"")
   execute_process(COMMAND "${CTEST_GIT_COMMAND}" commit
     -m "Merging ${SECOND_NAME} into ${FIRST_NAME}"
     --author="${MERGE_AUTHOR}"
@@ -224,7 +239,7 @@ function(accept_merge FIRST_BASE REPO_SUFFIX SECOND_NAME)
   if(RETVAR)
     message(FATAL_ERROR "Commiting merge ${NEW_NAME} failed (code ${RETVAR})!")
   else()
-    message(STATUS "Commiting merge ${NEW_NAME} succeeded")
+    message("Commiting merge ${NEW_NAME} succeeded")
   endif()
   git_exec("push origin${REPO_SUFFIX} ${NEW_NAME}:${FIRST_BASE}"
            "Pushing merge ${NEW_NAME}")
@@ -238,7 +253,8 @@ function(abort_merge FIRST_NAME SECOND_NAME)
   cleanup_merge(${FIRST_NAME} ${SECOND_NAME})
 endfunction(abort_merge)
 
-function(try_merge FIRST_BASE REPO_SUFFIX SECOND_NAME CONFIG)
+function(try_merge FIRST_BASE REPO_SUFFIX SECOND_NAME CONFIG
+    NUM_ALLOWED_WARNINGS)
   set(FIRST_NAME ${FIRST_BASE}${REPO_SUFFIX})
   start_merge(${FIRST_BASE} "${REPO_SUFFIX}" ${SECOND_NAME} NEXT_ACTION)
   if("${NEXT_ACTION}" STREQUAL "CLEANUP")
@@ -249,7 +265,8 @@ function(try_merge FIRST_BASE REPO_SUFFIX SECOND_NAME CONFIG)
     return()
   endif()
   set(NEW_NAME "${SECOND_NAME}-into-${FIRST_NAME}")
-  check_merge_branch("${NEW_NAME}" "${CONFIG}" CHECK_ERR)
+  check_merge_branch("${NEW_NAME}" "${CONFIG}"
+      ${NUM_ALLOWED_WARNINGS} CHECK_ERR)
   if(CHECK_ERR)
     abort_merge(${FIRST_NAME} ${SECOND_NAME})
     return()
@@ -264,7 +281,7 @@ if(CTEST_DO_SUBMIT)
   ctest_submit(FILES "${CTEST_SCRIPT_DIRECTORY}/Project.xml"
       RETURN_VALUE HAD_ERROR)
   if(HAD_ERROR)
-    message(FATAL_ERROR "Cannot submit SCOREC Project.xml!")
+    message(WARNING "Cannot submit SCOREC Project.xml!")
   endif()
 endif()
 
@@ -274,7 +291,6 @@ SET(CONFIGURE_OPTIONS
   "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
   "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
   "-DENABLE_ZOLTAN=ON"
-  "-DENABLE_MPAS=ON"
   "-DPCU_COMPRESS=ON"
   "-DIS_TESTING=True"
 )
@@ -285,20 +301,23 @@ SET(CONFIGURE_OPTIONS-sim
   "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
   "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
   "-DENABLE_ZOLTAN=ON"
-  "-DENABLE_MPAS=ON"
   "-DPCU_COMPRESS=ON"
   "-DIS_TESTING=True"
   "-DSIM_PARASOLID=ON"
   "-DSIM_MPI=mpich3.1.2"
 )
 
+SET(ALLOWED_WARNINGS 0)
+SET(ALLOWED_WARNINGS-sim 3)
+
 setup_repo()
 foreach(REPO_SUFFIX IN LISTS REPO_SUFFIXES)
   foreach(BRANCH_BASE IN LISTS BRANCH_BASES)
     check_tracking_branch("${BRANCH_BASE}${REPO_SUFFIX}"
-        "${CONFIGURE_OPTIONS${REPO_SUFFIX}}" CHECK_ERR)
+        "${CONFIGURE_OPTIONS${REPO_SUFFIX}}"
+        "${ALLOWED_WARNINGS${REPO_SUFFIX}}" CHECK_ERR)
   endforeach()
 endforeach()
-try_merge(master "" develop "${CONFIGURE_OPTIONS}")
-try_merge(master "-sim" master "${CONFIGURE_OPTIONS-sim}")
-try_merge(master "-sim" develop-sim "${CONFIGURE_OPTIONS-sim}")
+try_merge(master "" develop "${CONFIGURE_OPTIONS}" ${ALLOWED_WARNINGS})
+try_merge(master "-sim" master "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
+try_merge(master "-sim" develop-sim "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
