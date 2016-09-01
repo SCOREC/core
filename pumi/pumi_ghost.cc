@@ -77,7 +77,7 @@ void Ghosting::send(pMeshEnt e, int to)
   else
     m->getIntTag(e, parts_index_tag,&index);
   assert(index!=-1);
-//  std::cout<<"("<<PCU_Comm_Self()<<") send e (dim "<<d<<", id "<<pumi_ment_getglobalid(e)<<") to "<<to<<")\n"; 
+//  std::cout<<"("<<PCU_Comm_Self()<<") send e (dim "<<d<<", id "<<pumi_ment_getGlobalID(e)<<") to "<<to<<")\n"; 
   parts_vec[d][index]->insert(to);
 }
 
@@ -104,7 +104,7 @@ void Ghosting::print()
     m->getIntTag(e, parts_index_tag, &index);
     
     APF_ITERATE(Parts,*(parts_vec[ghost_dim][index]),pit)
-      std::cout<<"("<<PCU_Comm_Self()<<") ghost e "<<pumi_ment_getglobalid(e)<<" to "<<*pit<<"\n";
+      std::cout<<"("<<PCU_Comm_Self()<<") ghost e "<<pumi_ment_getGlobalID(e)<<" to "<<*pit<<"\n";
   }
   m->end(it);
 }
@@ -113,7 +113,7 @@ Parts& Ghosting::sending(pMeshEnt e, int d)
 {
   int index;
   if(!m->hasTag(e, parts_index_tag))
-    std::cout<<"("<<PCU_Comm_Self()<<") ERROR: ghost e (dim "<<d<<") "<<pumi_ment_getglobalid(e)<<" has no parts_index_tag\n";
+    std::cout<<"("<<PCU_Comm_Self()<<") ERROR: ghost e (dim "<<d<<") "<<pumi_ment_getGlobalID(e)<<" has no parts_index_tag\n";
   assert(m->hasTag(e, parts_index_tag));
   m->getIntTag(e, parts_index_tag, &index);
   return *(parts_vec[d][index]);
@@ -134,7 +134,7 @@ int Ghosting::count()
 
 #include <assert.h>
 // *********************************************************
-static pMeshEnt unpackGhost(Ghosting* plan, pTag global_id_tag, apf::DynamicArray<pTag>& tags)
+static pMeshEnt unpackGhost(Ghosting* plan, pMeshTag global_id_tag, apf::DynamicArray<pMeshTag>& tags)
 // *********************************************************
 {
   int from = PCU_Comm_Sender();
@@ -160,12 +160,12 @@ static pMeshEnt unpackGhost(Ghosting* plan, pTag global_id_tag, apf::DynamicArra
 
 //  if (!getDimension(plan->getMesh(), entity))  
 //    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": ghost (d "<<getDimension(plan->getMesh(), entity)
-//             <<", id "<<pumi_ment_getglobalid(entity)<<")->addGhost("<<from<<", "<<sender<<")\n";
+//             <<", id "<<pumi_ment_getGlobalID(entity)<<")->addGhost("<<from<<", "<<sender<<")\n";
   return entity;
 }
 
 // *********************************************************
-static void ghost_receiveEntities(Ghosting* plan, pTag global_id_tag, apf::DynamicArray<pTag>& tags,
+static void ghost_receiveEntities(Ghosting* plan, pMeshTag global_id_tag, apf::DynamicArray<pMeshTag>& tags,
     EntityVector& received)
 // *********************************************************
 {
@@ -200,7 +200,7 @@ static void setupGhosts(pMesh m, EntityVector& received)
     pMeshEnt sender;
     PCU_COMM_UNPACK(sender);
 //    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": received entity="<<entity<<", sender="<<sender<<"\n";
-//  std::cout<<"("<<pumi_rank()<<") "<<__func__<<": received dim "<<apf::getDimension(m, entity)<<" id "<<pumi_ment_getglobalid(entity)<<" from "<<from<<"\n";
+//  std::cout<<"("<<pumi_rank()<<") "<<__func__<<": received dim "<<apf::getDimension(m, entity)<<" id "<<pumi_ment_getGlobalID(entity)<<" from "<<from<<"\n";
 
     m->addGhost(entity, from, sender);
     if (!m->hasTag(entity, pumi::instance()->ghosted_tag))
@@ -210,7 +210,7 @@ static void setupGhosts(pMesh m, EntityVector& received)
     }
 //    if (!getDimension(m,entity)) 
 //    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<entity<<" (d "<<getDimension(m,entity)
-//             <<", id "<<pumi_ment_getglobalid(entity)<<")->addGhost("<<from<<", "<<sender<<")\n";
+//             <<", id "<<pumi_ment_getGlobalID(entity)<<")->addGhost("<<from<<", "<<sender<<")\n";
   }
 }
 
@@ -228,7 +228,7 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
   
   int down_ent_dim, ghost_dim = plan->ghost_dim;
 
-  pTag tag = m->findTag("entity_2_ghost");
+  pMeshTag tag = m->findTag("entity_2_ghost");
   if (!tag)
     tag = m->createIntTag("entity_2_ghost",1);
 
@@ -247,9 +247,9 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
   APF_ITERATE(EntityVector,entitiesToGhost[ghost_dim],it)
   {
     ghost_ent=*it;    
-//    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": -- ghost_ent "<<pumi_ment_getglobalid(ghost_ent)<<"\n";
+//    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": -- ghost_ent "<<pumi_ment_getGlobalID(ghost_ent)<<"\n";
     DownEnts.clear();
-    pumi_ment_getadj(ghost_ent, -1, DownEnts);
+    pumi_ment_getAdj(ghost_ent, -1, DownEnts);
   
     for (std::vector<pMeshEnt>::iterator downadj_it=DownEnts.begin();downadj_it!=DownEnts.end();++downadj_it)
     {
@@ -259,7 +259,7 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
       {
         m->setIntTag(down_ent,tag,&dummy);
         entitiesToGhost[down_ent_dim].push_back(down_ent);
-//        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": entitiesToGhost["<<down_ent_dim<<"].push_back("<<pumi_ment_getglobalid(down_ent)<<")\n";
+//        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": entitiesToGhost["<<down_ent_dim<<"].push_back("<<pumi_ment_getGlobalID(down_ent)<<")\n";
       }
       APF_ITERATE(Parts, plan->sending(ghost_ent, ghost_dim), pit)
         plan->send(down_ent, *pit);
@@ -317,7 +317,7 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
       {
         m->setIntTag(r,tag,&dummy);
         entitiesToGhost[dim].push_back(r);
-//        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": rmt entitiesToGhost["<<dim<<"].push_back("<<pumi_ment_getglobalid(r)<<")\n";
+//        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": rmt entitiesToGhost["<<dim<<"].push_back("<<pumi_ment_getGlobalID(r)<<")\n";
       }
 
       pids = (int*)((char*)msg_recv+sizeof(pMeshEnt)); 
@@ -348,7 +348,7 @@ void set_subtract(std::set<int> A, std::set<int> B, std::set<int>& C)
 
 // **********************************************
 void ghost_sendEntities(Ghosting* plan, int entDim,
-      std::vector<pMeshEnt>& entitiesToExchg, apf::DynamicArray<pTag>& tags)	  
+      std::vector<pMeshEnt>& entitiesToExchg, apf::DynamicArray<pMeshTag>& tags)	  
 // **********************************************
 {
   pMeshEnt ent;
@@ -395,7 +395,7 @@ void ghost_sendEntities(Ghosting* plan, int entDim,
       if (*piter==src_partid) continue;
       apf::packEntity(plan->getMesh(),*piter,ent,tags);  
 //      if (!entDim) std::cout<<"("<<pumi_rank()<<") "<<__func__<<": send entity "<<ent<<" (d "<<entDim
-//           <<", id "<<pumi_ment_getglobalid(ent)<<") to "<<*piter<<"\n";
+//           <<", id "<<pumi_ment_getGlobalID(ent)<<") to "<<*piter<<"\n";
     }
   }
 }
@@ -410,9 +410,9 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   EntityVector entities_to_ghost[4];
   ghost_collectEntities(m, plan, entities_to_ghost);
 
-  apf::DynamicArray<pTag> tags;
+  apf::DynamicArray<pMeshTag> tags;
   plan->getMesh()->getTags(tags);
-  pTag global_id_tag=plan->getMesh()->findTag("global_id");
+  pMeshTag global_id_tag=plan->getMesh()->findTag("global_id");
   for (int dimension = 0; dimension <= plan->ghost_dim; ++dimension)
   {
     PCU_Comm_Begin();
@@ -429,7 +429,7 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
 
 
 // *********************************************************
-void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer, int include_copy)
+void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer, int include_copy)
 // *********************************************************
 {
   if (PCU_Comm_Peers()==1 || num_layer==0) return;
@@ -447,7 +447,7 @@ void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 
 //  std::cout<<"\n("<<pumi_rank()<<") START "<<__func__<<" (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<")\n";
 
-  pTag tag = m->createIntTag("ghost_check_mark",1);
+  pMeshTag tag = m->createIntTag("ghost_check_mark",1);
   Ghosting* plan = new Ghosting(m, ghost_dim);
 
 // ********************************************
@@ -470,7 +470,7 @@ void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
     if (!m->isShared(brg_ent)) continue; // skip non-partboundary entity
     if (!include_copy && m->getOwner(brg_ent)!=self) continue;
 
-//    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<" brg_ent "<<pumi_ment_getglobalid(brg_ent)<<"\n";
+//    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<" brg_ent "<<pumi_ment_getGlobalID(brg_ent)<<"\n";
     processed_ent.clear();
 
     apf::Copies remotes;
@@ -500,10 +500,10 @@ void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
       for (int i=start_prev_layer; i<size_prev_layer; ++i)
       {
         ghost_ent = processed_ent.at(i);
-//        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": brg_ent "<<pumi_ment_getglobalid(brg_ent)<<", processing "<<i<<" ghost_ent "<<pumi_ment_getglobalid(ghost_ent)<<"\n";
+//        std::cout<<"("<<pumi_rank()<<") "<<__func__<<": brg_ent "<<pumi_ment_getGlobalID(brg_ent)<<", processing "<<i<<" ghost_ent "<<pumi_ment_getGlobalID(ghost_ent)<<"\n";
         adj_ent.clear();
-        pumi_ment_get2ndadj (ghost_ent, brg_dim, ghost_dim, adj_ent);
-        //std::cout<<"("<<pumi_rank()<<") "<<__func__<<": pumi_ment_get2ndadj.size()="<<adj_ent.size()<<"\n";
+        pumi_ment_get2ndAdj (ghost_ent, brg_dim, ghost_dim, adj_ent);
+        //std::cout<<"("<<pumi_rank()<<") "<<__func__<<": pumi_ment_get2ndAdj.size()="<<adj_ent.size()<<"\n";
 
         for (std::vector<pMeshEnt>::iterator git=adj_ent.begin(); git!=adj_ent.end(); ++git)
         {
@@ -524,7 +524,7 @@ void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
     } // for layer
     for (std::vector<pMeshEnt>::iterator git=processed_ent.begin(); git!=processed_ent.end(); ++git)
       m->removeTag(*git,tag);
-//    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<" brg_ent "<<pumi_ment_getglobalid(brg_ent)<<"\n";
+//    std::cout<<"("<<pumi_rank()<<") "<<__func__<<": "<<__LINE__<<" brg_ent "<<pumi_ment_getGlobalID(brg_ent)<<"\n";
   } // while brg_ent
   m->end(it);
   m->destroyTag(tag);
@@ -541,7 +541,7 @@ void pumi_ghost_createlayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 void pumi_ghost_delete (pMesh m)
 // *********************************************************
 {
-  pTag tag = pumi::instance()->ghosted_tag;
+  pMeshTag tag = pumi::instance()->ghosted_tag;
   assert(tag);
 
   for (int d=3; d>=0; --d)
@@ -571,7 +571,7 @@ void pumi_ghost_delete (pMesh m)
 }
 
 // *********************************************************
-void pumi_ghost_info (pMesh m, std::vector<int>& ghostinfo)
+void pumi_ghost_getInfo (pMesh m, std::vector<int>& ghostinfo)
 // *********************************************************
 {
   if (!pumi_rank()) 

@@ -8,7 +8,6 @@
  
 *******************************************************************************/
 #include "pumi.h"
-#include <mpi.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -19,37 +18,14 @@
 #include <assert.h>
 
 using std::vector;
-// geometric entity functions
-
-int pumi_gent_getdim(pGeomEnt ge)
-{
-    return gmi_dim(pumi::instance()->model, ge);
-}
-
-int pumi_gent_getid(pGeomEnt ge)
-{
-  return gmi_tag(pumi::instance()->model, ge);
-}
-
-void pumi_gent_getrevclas (pGeomEnt g, std::vector<pMeshEnt>& ents)
-{
-  assert(!ents.size());
-  int dim=gmi_dim(pumi::instance()->model, g);
-  pMesh m = pumi::instance()->mesh;
-  pMeshEnt e;
-  apf::MeshIterator* ent_it = m->begin(dim);
-  while ((e = m->iterate(ent_it)))
-    if (((pGeomEnt)m->toModel(e))==g)  ents.push_back(e);
-  m->end(ent_it);
-}
 
 // mesh entity functions
-int pumi_ment_getdim(pMeshEnt e)
+int pumi_ment_getDim(pMeshEnt e)
 {
   return apf::getDimension(pumi::instance()->mesh, e);
 }
 
-int pumi_ment_getnumadj(pMeshEnt e, int target_dim)
+int pumi_ment_getNumAdj(pMeshEnt e, int target_dim)
 {
   int ent_dim= apf::getDimension(pumi::instance()->mesh, e);
   if (ent_dim<target_dim) // upward
@@ -67,7 +43,7 @@ int pumi_ment_getnumadj(pMeshEnt e, int target_dim)
   return 0;
 }
 
-void pumi_ment_getadj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
+void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
 {
   int num_adj, ent_dim= apf::getDimension(pumi::instance()->mesh, e);
   if (ent_dim<target_dim) // upward
@@ -136,7 +112,7 @@ void pumi_ment_getadj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjE
   } // else if
 }
 
-void pumi_ment_get2ndadj (pMeshEnt e, int bridge_dim, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
+void pumi_ment_get2ndAdj (pMeshEnt e, int bridge_dim, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
 {
   if (bridge_dim==target_dim) 
   {
@@ -180,50 +156,50 @@ void pumi_ment_get2ndadj (pMeshEnt e, int bridge_dim, int target_dim, std::vecto
 */
 }
 
-int pumi_ment_getlocalid(pMeshEnt e)
+int pumi_ment_getLocalID(pMeshEnt e)
 {
   return getMdsIndex(pumi::instance()->mesh, e);
 }
 
-pGeomEnt pumi_ment_getgeomclas(pMeshEnt e)
+pGeomEnt pumi_ment_getGeomClas(pMeshEnt e)
 {
   return (pGeomEnt)(pumi::instance()->mesh->toModel(e));
 }
 
-pPartEnt pumi_ment_getptnclas(pMeshEnt e)
+pPartEnt pumi_ment_getPtnClas(pMeshEnt e)
 {  
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
   return NULL;
 }
 
 // owner part information
-int pumi_ment_getownpid(pMeshEnt e)
+int pumi_ment_getOwnPID(pMeshEnt e)
 {
   return pumi::instance()->mesh->getOwner(e);
 }
 
-pMeshEnt pumi_ment_getownent(pMeshEnt e)
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e)
 {
 
   if (!(pumi::instance()->mesh->isShared(e))) // internal ent
     return e;
 
-  int own_partid = pumi_ment_getownpid(e);
+  int own_partid = pumi_ment_getOwnPID(e);
   if (own_partid==pumi_rank()) return e;
 
-  return pumi_ment_getrmt(e, own_partid);
+  return pumi_ment_getRmt(e, own_partid);
 }
 
-bool pumi_ment_isowned(pMeshEnt e)
+bool pumi_ment_isOwned(pMeshEnt e)
 {  
-  if (pumi_ment_getownpid(e)==pumi_rank())
+  if (pumi_ment_getOwnPID(e)==pumi_rank())
     return true;
   else
     return false;
 }
 
 // remote copy information
-bool pumi_ment_isonbdry (pMeshEnt e)
+bool pumi_ment_isOnBdry (pMeshEnt e)
 {
   if (pumi::instance()->mesh->isShared(e)) // internal ent
     return true;
@@ -231,7 +207,7 @@ bool pumi_ment_isonbdry (pMeshEnt e)
     return false;
 }
 
-int pumi_ment_getnumrmt (pMeshEnt e)
+int pumi_ment_getNumRmt (pMeshEnt e)
 {
   if (!(pumi::instance()->mesh->isShared(e))) // internal ent
     return 0;
@@ -240,13 +216,13 @@ int pumi_ment_getnumrmt (pMeshEnt e)
   return remotes.size();
 }
 
-void pumi_ment_getallrmt(pMeshEnt e, Copies& remotes)
+void pumi_ment_getAllRmt(pMeshEnt e, Copies& remotes)
 {
   if (pumi::instance()->mesh->isShared(e))
     pumi::instance()->mesh->getRemotes(e,remotes);
 }
 
-pMeshEnt pumi_ment_getrmt(pMeshEnt& e, int pid)
+pMeshEnt pumi_ment_getRmt(pMeshEnt& e, int pid)
 {
   if (!(pumi::instance()->mesh->isShared(e))) // internal ent
     return NULL;
@@ -256,29 +232,29 @@ pMeshEnt pumi_ment_getrmt(pMeshEnt& e, int pid)
   return remotes[pid];
 }
 
-void pumi_ment_setrmt(pMeshEnt e, int partID, pMeshEnt r)
+void pumi_ment_setRmt(pMeshEnt e, int partID, pMeshEnt r)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-void pumi_ment_deletermt (pMeshEnt e, int partID)
+void pumi_ment_deleteRmt (pMeshEnt e, int partID)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-void pumi_ment_cleanrmt (pMeshEnt e)
+void pumi_ment_cleanRmt (pMeshEnt e)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-void pumi_ment_setptntopology (pMeshEnt e)
+void pumi_ment_setPtnTopology (pMeshEnt e)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-int pumi_ment_getglobalid(pMeshEnt e)
+int pumi_ment_getGlobalID(pMeshEnt e)
 {
-  pTag tag = pumi::instance()->mesh->findTag("global_id");
+  pMeshTag tag = pumi::instance()->mesh->findTag("global_id");
   assert(tag);
   int global_id;
   pumi::instance()->mesh->getIntTag(e, tag, &global_id);
@@ -286,7 +262,7 @@ int pumi_ment_getglobalid(pMeshEnt e)
   
 }
 
-void pumi_ment_getresidence(pMeshEnt e, std::vector<int>& resPartId)
+void pumi_ment_getResidence(pMeshEnt e, std::vector<int>& resPartId)
 {
   resPartId.clear();
   Copies remotes;
@@ -296,7 +272,7 @@ void pumi_ment_getresidence(pMeshEnt e, std::vector<int>& resPartId)
   resPartId.push_back(pumi_rank());
 }
 
-void pumi_ment_getclosureresidence(pMeshEnt e, std::vector<int>& resPartId)
+void pumi_ment_getClosureResidence(pMeshEnt e, std::vector<int>& resPartId)
 {
   resPartId.clear();
   apf::Downward vertices;
@@ -316,17 +292,17 @@ void pumi_ment_getclosureresidence(pMeshEnt e, std::vector<int>& resPartId)
 }
 
 // ghosting information
-bool pumi_ment_isghost(pMeshEnt e)
+bool pumi_ment_isGhost(pMeshEnt e)
 {
   return pumi::instance()->mesh->isGhost(e);
 }
 
-bool pumi_ment_isghosted (pMeshEnt e)
+bool pumi_ment_isGhosted (pMeshEnt e)
 {
   return pumi::instance()->mesh->isGhosted(e);
 }
 
-int pumi_ment_getnumghost (pMeshEnt e)
+int pumi_ment_geNumGhost (pMeshEnt e)
 {
   if (!pumi::instance()->mesh->isGhosted(e)) return 0;
   apf::Copies ghosts;
@@ -334,13 +310,13 @@ int pumi_ment_getnumghost (pMeshEnt e)
   return ghosts.size();
 }
 
-void pumi_ment_getallghost(pMeshEnt e, Copies& ghosts)
+void pumi_ment_getAllGhost(pMeshEnt e, Copies& ghosts)
 {
   if (pumi::instance()->mesh->isGhosted(e))
     pumi::instance()->mesh->getGhosts(e,ghosts);
 }
 
-pMeshEnt pumi_ment_getghost(pMeshEnt& e, int pid)
+pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int pid)
 {
  if (!(pumi::instance()->mesh->isGhosted(e))) // internal ent
     return NULL;

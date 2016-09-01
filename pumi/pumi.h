@@ -12,6 +12,13 @@
 #include <gmi.h>
 #include <apfMesh2.h>
 
+class geom_tag {
+ int tag_type;
+ int tag_size;
+};
+
+typedef geom_tag* pGeomTag;
+
 typedef gmi_model* pGeom;
 typedef gmi_ent* pGeomEnt;
 typedef apf::Mesh2* pMesh;
@@ -19,7 +26,7 @@ typedef apf::MeshEntity* pMeshEnt;
 typedef apf::MeshEntity* pPartEnt;
 typedef apf::MeshIterator* pMeshIter;
 typedef apf::Copies Copies;
-typedef apf::MeshTag* pTag;
+typedef apf::MeshTag* pMeshTag;
 typedef apf::Parts Parts;
 typedef apf::EntityVector EntityVector;
 typedef apf::Parts Parts;
@@ -36,8 +43,8 @@ public:
 
   pMesh mesh;
   pGeom model;
-  pTag ghosted_tag;
-  pTag ghost_tag;
+  pMeshTag ghosted_tag;
+  pMeshTag ghost_tag;
   std::vector<pMeshEnt> ghost_vec[4];
   std::vector<pMeshEnt> ghosted_vec[4];
 private:
@@ -82,10 +89,10 @@ int pumi_size();
 int pumi_rank();
 
 void pumi_sync(void);
-void pumi_printsys();
-double pumi_gettime();
-double pumi_getmem();
-void pumi_printtimemem(const char* msg, double time, double memory);
+void pumi_printSys();
+double pumi_getTime();
+double pumi_getMem();
+void pumi_printTimeMem(const char* msg, double time, double memory);
 
 //************************************
 //************************************
@@ -94,14 +101,51 @@ void pumi_printtimemem(const char* msg, double time, double memory);
 //************************************
 
 //************************************
-// Model/Mesh management
+// Model management
 //************************************
 
 // create a model from a file
 pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh");
 
+pGeomTag pumi_geom_createTag (pGeom model, const char* tagName, int tagType, int tagSize);
+void pumi_geom_deleteTag (pGeom model, pGeomTag tag, int forceDel);
+pGeomTag pumi_geom_findTag (pGeom model, const char* tagName);
+bool pumi_geom_hasTag (pGeom model, const pGeomTag tag);
+int pumi_geom_getTag (pGeom model, std::vector<pGeomTag>& tags);
+bool pumi_geom_isTagInUse (pGeom model, pGeomTag tag);
+
+bool pumi_gent_hasTag (pGeomEnt ent, pGeomTag tag);
+void pumi_gent_deleteTag (pGeomEnt ent, pGeomTag tag);
+void pumi_gent_getTag (pGeomEnt ent, std::vector<pGeomTag>& tags);
+
+//void pumi_gent_setPtrTag (pGeomEnt ent, pGeomTag tag, void* data);
+//int pumi_gent_getPtrTag (pGeomEnt ent, pGeomTag tag, void** data);
+void pumi_gent_setIntTag (pGeomEnt ent, pGeomTag tag, const int data);
+int pumi_gent_getIntTag (pGeomEnt ent, pGeomTag tag);
+void pumi_gent_setLongTag (pGeomEnt ent, pGeomTag tag, const long data);
+long pumi_gent_getLongTag (pGeomEnt ent, pGeomTag tag);
+void pumi_gent_setDblTag (pGeomEnt ent, pGeomTag tag, const double data);
+double pumi_gent_getDblTag (pGeomEnt ent, pGeomTag tag);
+//int pumi_gent_setEntTag (pGeomEnt ent, pGeomTag tag, const pGeomEnt data);
+//int pumi_gent_getEntTag (pGeomEnt ent, pGeomTag tag, pGeomEnt* data);
+
+void pumi_gent_setIntArrTag (pGeomEnt ent, pGeomTag tag, const int* data);
+void pumi_gent_getIntArrTag (pGeomEnt ent, pGeomTag tag, int** data, int* data_size);
+void pumi_gent_setLongArrTag (pGeomEnt ent, pGeomTag tag, const long* data);
+void pumi_gent_getLongArrTag (pGeomEnt ent, pGeomTag tag, long** data, int* data_size);
+void pumi_gent_setDblArrTag (pGeomEnt ent, pGeomTag tag, const double* data);
+void pumi_gent_getDblArrTag (pGeomEnt ent, pGeomTag tag, double** data, int* data_size);
+//void pumi_gent_setEntArrTag (pGeomEnt ent, pGeomTag tag, const pGeomEnt* data);
+//int pumi_gent_getEntArrTag (pGeomEnt ent, pGeomTag tag, pGeomEnt** data, int* data_size);
+//void pumi_gent_setStringTag(pGeomEnt ent, pGeomTag tag, const char* s);
+//int pumi_gent_getStringTag(pGeomEnt ent, pGeomTag tag, const char*& s);
+
+//************************************
+// Mesh management
+//************************************
+
 // load a serial mesh. 
-pMesh pumi_mesh_loadserial(pGeom g, const char* filename, const char* mesh_type="mds");
+pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type="mds");
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
@@ -110,10 +154,10 @@ pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const ch
 void pumi_mesh_distribute(pMesh m, Distribution* plan);
 
 // get mesh dimension
-int pumi_mesh_getdim(pMesh m);
+int pumi_mesh_getDim(pMesh m);
 
 // get # mesh entities of type d on local process
-int pumi_mesh_getnument(pMesh m, int d);
+int pumi_mesh_getNumEnt(pMesh m, int d);
 
 // print mesh size info - global and local
 void pumi_mesh_print(pMesh m, int p=0);
@@ -126,6 +170,46 @@ void pumi_mesh_delete(pMesh m);
 
 // verify mesh
 void pumi_mesh_verify(pMesh m);
+
+//************************************
+// mesh tag management
+//************************************
+pMeshTag pumi_mesh_createTag (pMesh mesh, const char* tagName, int tagType, int tagSize);
+void pumi_mesh_deleteTag (pMesh mesh, pMeshTag tag, int forceDel);
+pMeshTag pumi_mesh_findTag (pMesh mesh, const char* tagName);
+bool pumi_mesh_hasTag (pMesh mesh, const pMeshTag tag);
+void pumi_mesh_getTag (pMesh mesh, std::vector<pMeshTag>& tags);
+bool pumi_mesh_isTagInUse (pMesh mesh, const pMeshTag tag); 
+// sync tag data attached to the part boundary entities
+void pumi_mesh_syncTag (pMesh mesh, pMeshTag tag, int ent_type);
+
+void PUMI_MeshEnt_deleteTag (pMeshEnt meshEnt, pMeshTag tag);
+bool PUMI_MeshEnt_hasTag (pMeshEnt meshEnt, pMeshTag tag);
+void pumi_ment_getTag (pMeshEnt meshEnt, std::vector<pMeshTag>& tags);
+
+//int pumi_ment_setPtrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void* data);
+//int pumi_ment_getPtrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void** data);
+void pumi_ment_setIntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const int data);
+int pumi_ment_getIntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, int* data);
+void pumi_ment_setLongTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const int data);
+int pumi_ment_getLongTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, int* data);
+void pumi_ment_setDblTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const double data);
+int pumi_ment_getDblTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, double* data);
+//int pumi_ment_setEntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pMeshEnt data);
+//int pumi_ment_getEntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pMeshEnt* data);
+//int pumi_ment_setSetTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pEntSet data);
+//int pumi_ment_getSetTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pEntSet* data);
+
+//int pumi_ment_setPtrArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void* const* data);
+//int pumi_ment_getPtrArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void** data);
+void pumi_ment_setIntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const int* data, int data_size);
+void pumi_ment_getIntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, int** data, int* data_size);
+void pumi_ment_setDblArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const double* data, int data_size);
+void pumi_ment_getDblArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, double** data, int* data_size);
+//int pumi_ment_setEntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pMeshEnt* data, int data_size);
+//int pumi_ment_getEntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pMeshEnt** data, int* data_size);
+//int pumi_ment_setSetArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pEntSet* data, int data_size);
+//int pumi_ment_getSetArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pEntSet** data, int* data_size);
 
 //************************************
 //  Ghosting
@@ -159,7 +243,7 @@ class Ghosting
 
   private:
     pMesh m;
-    pTag parts_index_tag;
+    pMeshTag parts_index_tag;
     std::vector<Parts*> parts_vec[4];
 };
 
@@ -181,7 +265,7 @@ The error is returned in the following cases:
   - ghost type is mesh vertex
   - ghost type is grester than mesh dimension
 */
-void pumi_ghost_createlayer (pMesh m, int brgType, int ghostType, int numLayer, int includeCopy);
+void pumi_ghost_createLayer (pMesh m, int brgType, int ghostType, int numLayer, int includeCopy);
 
 /* 
   Ghosting: ghosting plan object for local elements or part to destinations.
@@ -204,104 +288,104 @@ example:
   the vector "ghostinfo" contains [0, 2, 1, 1, 1, 3, 3, 0]
 */
 // unavailable
-void pumi_ghost_info (pMesh m, std::vector<int>& ghostinfo);
+void pumi_ghost_getInfo (pMesh m, std::vector<int>& ghostinfo);
 
 //************************************
 //  Mesh Entity
 //************************************
 // get geometric entity's dimension
-int pumi_gent_getdim(pGeomEnt ge);
+int pumi_gent_getDim(pGeomEnt ge);
 
 // get geometric entity's global id
-int pumi_gent_getid(pGeomEnt ge);
+int pumi_gent_getID(pGeomEnt ge);
 
-void pumi_gent_getrevclas (pGeomEnt g, std::vector<pMeshEnt>& ents);
+void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
 
 // get mesh entity's dimension
-int pumi_ment_getdim(pMeshEnt e);
+int pumi_ment_getDim(pMeshEnt e);
 
 // get mesh entity's local id
-int pumi_ment_getlocalid(pMeshEnt e);
+int pumi_ment_getLocalID(pMeshEnt e);
 
 // get mesh entity's global id - vertex only
 // global id is maintained if mesh is ghosted
 // global id is NOT maintained if mesh is adapted or re-partitioned
-int pumi_ment_getglobalid(pMeshEnt e);
+int pumi_ment_getGlobalID(pMeshEnt e);
 
 // get # adjacent entities
-int pumi_ment_getnumadj(pMeshEnt e, int tgtType);
+int pumi_ment_getNumAdj(pMeshEnt e, int tgtType);
 
 // get adjacent entities
-void pumi_ment_getadj(pMeshEnt e, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
+void pumi_ment_getAdj(pMeshEnt e, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
 
 // get 2nd-order adjacent entities
-void pumi_ment_get2ndadj (pMeshEnt e, int brgType, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
+void pumi_ment_get2ndAdj (pMeshEnt e, int brgType, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
 
 // return entity's geometric classification
-pGeomEnt pumi_ment_getgeomclas(pMeshEnt e);
+pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);
 
 // unavailable
-pPartEnt pumi_ment_getptnclas(pMeshEnt e);
+pPartEnt pumi_ment_getPtnClas(pMeshEnt e);
 
 // return owning part id. if ghosted mesh, vertex or element only
-int pumi_ment_getownpid(pMeshEnt e); 
+int pumi_ment_getOwnPID(pMeshEnt e); 
 
 // return owner entity copy. if ghoted mesh, vertex or element only
-pMeshEnt pumi_ment_getownent(pMeshEnt e); 
+pMeshEnt pumi_ment_getWwnEnt(pMeshEnt e); 
 
 // return true if the entity is an owner copy
-bool pumi_ment_isowned(pMeshEnt e);
+bool pumi_ment_isOwned(pMeshEnt e);
 
 // return true if entity is on part boundary, ghosted, or ghost
 //  - this will fixed to consider only part boundary entities later
-bool pumi_ment_isonbdry (pMeshEnt e); 
+bool pumi_ment_isOnBdry (pMeshEnt e); 
 
 // return # remote and ghost copies
 //  - this will fixed to consider only part boundary entities later
-int pumi_ment_getnumrmt (pMeshEnt e); 
+int pumi_ment_getNumRmt (pMeshEnt e); 
 
 // return remote and ghost copies
 //  - this will fixed to consider only part boundary entities later
-void pumi_ment_getallrmt(pMeshEnt e, Copies& remotes); 
+void pumi_ment_getAllRmt(pMeshEnt e, Copies& remotes); 
 
 // return remote or ghost copy on a destination part
 //  - this will fixed to consider only part boundary entities later
-pMeshEnt pumi_ment_getrmt(pMeshEnt& meshEnt, int destPart); 
+pMeshEnt pumi_ment_getRmt(pMeshEnt& meshEnt, int destPart); 
 
 // unavailable
-void pumi_ment_setrmt(pMeshEnt e, int partID, pMeshEnt rmtEnt);
+void pumi_ment_setRmt(pMeshEnt e, int partID, pMeshEnt rmtEnt);
 
 // unavailable
-void pumi_ment_deletermt (pMeshEnt e, int partID);
+void pumi_ment_deleteRmt (pMeshEnt e, int partID);
 
 // unavailable
-void pumi_ment_cleanrmt (pMeshEnt e);
+void pumi_ment_cleanRmt (pMeshEnt e);
 
 // unavailable
-void pumi_ment_setptntopology (pMeshEnt e);
+void pumi_ment_setPtnTopology (pMeshEnt e);
 
 // return part ids where the entity is duplicated - part boundary or ghost
-void pumi_ment_getresidence(pMeshEnt e, std::vector<int>& resPartId);
+void pumi_ment_getResidence(pMeshEnt e, std::vector<int>& resPartId);
 
 // return part ids where the entity and its downward adjacency are duplicated - part boundary or ghost
-void pumi_ment_getclosureresidence(pMeshEnt ent, std::vector<int>& resPartId);
+void pumi_ment_getClosureResidence(pMeshEnt ent, std::vector<int>& resPartId);
 
 // return true if the entity is a ghost copy
-bool pumi_ment_isghost(pMeshEnt e);
+bool pumi_ment_isGhost(pMeshEnt e);
 
 // return true if the entity is ghosted
 // unavailable
-bool pumi_ment_isghosted (pMeshEnt e);
+bool pumi_ment_isGhosted (pMeshEnt e);
 
 // unavailable
 // return #ghost copies
-int pumi_ment_getnumghost (pMeshEnt e);
+int pumi_ment_getNumGhost (pMeshEnt e);
 
 // unavailable
 // return ghost copies
-void pumi_ment_getallghost (pMeshEnt e, Copies&);
+void pumi_ment_getAllGhost (pMeshEnt e, Copies&);
 
 // unavailable
 // return ghost copy on a destination part
-pMeshEnt pumi_ment_getghost(pMeshEnt& e, int partID);
+pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 #endif

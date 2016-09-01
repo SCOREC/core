@@ -44,7 +44,7 @@ void pumi_sync(void)
 
 #include <sys/utsname.h>
 #include <sys/resource.h>
-void pumi_printsys()
+void pumi_printSys()
 {
   if (PCU_Comm_Self()) return;
   struct utsname u;
@@ -54,7 +54,7 @@ void pumi_printsys()
   fflush(stdout);
 }
 
-double pumi_gettime()
+double pumi_getTime()
 {
   struct rusage ruse_now;
   getrusage(RUSAGE_SELF, &ruse_now);
@@ -70,7 +70,7 @@ double pumi_gettime()
 #include <malloc.h> //warning - this is GNU-specific
 #endif
 
-double pumi_getmem()
+double pumi_getMem()
 {
   const double M = 1024*1024;
 #if defined(__APPLE__)
@@ -90,7 +90,7 @@ double pumi_getmem()
 #endif
 }
 
-void pumi_printtimemem(const char* msg, double time, double memory)
+void pumi_printTimeMem(const char* msg, double time, double memory)
 {
   if (!PCU_Comm_Self())
   {

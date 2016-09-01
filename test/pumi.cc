@@ -44,7 +44,7 @@ Ghosting* getGhostingPlan(pMesh m)
     int count=0;
     while ((e = m->iterate(it)))
     {
-      int pid = (pumi_ment_getglobalid(e)+1)%pumi_size();
+      int pid = (pumi_ment_getGlobalID(e)+1)%pumi_size();
       plan->send(e, pid);
       ++count; 
      if (count==m->count(mesh_dim)/3) break;
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   pumi_start();
-  pumi_printsys();
+  pumi_printSys();
 
 #if 1
   int i, processid = getpid();
@@ -84,11 +84,11 @@ int main(int argc, char** argv)
   assert(pumi_size()%num_in_part==0);
   if (!pumi_rank()) std::cout<<"[test_pumi] num_in_part="<<num_in_part<<"\n";
 
-  double begin_mem = pumi_getmem(), begin_time=pumi_gettime();
+  double begin_mem = pumi_getMem(), begin_time=pumi_getTime();
 
   pMesh m=NULL;
   if (do_distr)
-    m = pumi_mesh_loadserial(g, meshFile);
+    m = pumi_mesh_loadSerial(g, meshFile);
   else
   {
     m = pumi_mesh_load(g, meshFile, num_in_part); // static partitioning if num_in_part=1
@@ -103,11 +103,11 @@ int main(int argc, char** argv)
   {
     Distribution* plan = new Distribution(m);
 
-    int dim=pumi_mesh_getdim(m), count=0, pid;
+    int dim=pumi_mesh_getDim(m), count=0, pid;
     apf::MeshIterator* it = m->begin(dim);
     while ((e = m->iterate(it)))
     {
-      pid=pumi_ment_getlocalid(e)%PCU_Comm_Peers();
+      pid=pumi_ment_getLocalID(e)%PCU_Comm_Peers();
       plan->send(e, pid);
       if (pid-1>=0) plan->send(e, pid-1);
       if (pid+1<PCU_Comm_Peers()) plan->send(e, pid+1);
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 
   pumi_mesh_write(m,"output", "vtk");
 
-  int mesh_dim=pumi_mesh_getdim(m);
+  int mesh_dim=pumi_mesh_getDim(m);
 
   // loop with elements
 
@@ -133,17 +133,17 @@ int main(int argc, char** argv)
   pMeshIter mit = m->begin(mesh_dim);
   while ((e = m->iterate(mit)))
   {
-    assert(pumi_ment_getdim(e)==mesh_dim);
-    assert(pumi_ment_getnumadj(e, mesh_dim+1)==0);
-    if (!pumi_ment_isonbdry(e)) continue; // skip internal entity
+    assert(pumi_ment_getDim(e)==mesh_dim);
+    assert(pumi_ment_getNumAdj(e, mesh_dim+1)==0);
+    if (!pumi_ment_isOnBdry(e)) continue; // skip internal entity
     // if entity is on part boundary, count remote copies    
     Copies copies;
-    pumi_ment_getallrmt(e,copies);
+    pumi_ment_getAllRmt(e,copies);
     // loop over remote copies and increase the counter
     // check #remotes
-    assert (pumi_ment_getnumrmt(e)==copies.size() && copies.size()>0);
+    assert (pumi_ment_getNumRmt(e)==copies.size() && copies.size()>0);
     // check the entity is not ghost or ghosted
-    assert(!pumi_ment_isghost(e) && !pumi_ment_isghosted(e));
+    assert(!pumi_ment_isGhost(e) && !pumi_ment_isGhosted(e));
   }
   m->end(mit);
 
@@ -160,7 +160,7 @@ int main(int argc, char** argv)
   pumi_mesh_print(m);
 
   // element-wise ghosting test
-  int num_org_vtx = pumi_mesh_getnument(m, 0);
+  int num_org_vtx = pumi_mesh_getNumEnt(m, 0);
   int* org_mcount=new int[4];
   for (int i=0; i<4; ++i)
     org_mcount[i] = m->count(i);
@@ -177,14 +177,14 @@ int main(int argc, char** argv)
   mit = m->begin(0);
   while ((e = m->iterate(mit)))
   {
-    if (pumi_ment_isghost(e))
+    if (pumi_ment_isGhost(e))
     {
       ++num_ghost_vtx;
-     assert(pumi_ment_getownpid(e)!=pumi_rank());
+     assert(pumi_ment_getOwnPID(e)!=pumi_rank());
     }
   }   
   m->end(mit);
-  assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getnument(m,0));
+  assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getNumEnt(m,0));
 
   pumi_ghost_delete(m);
   for (int i=0; i<4; ++i)
@@ -195,9 +195,9 @@ int main(int argc, char** argv)
     for (int num_layer=1; num_layer<=3; ++num_layer)
       for (int include_copy=0; include_copy<=1; ++include_copy)
       {
-        if (!pumi_rank()) std::cout<<"\n[test_pumi] pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<") ";
+        if (!pumi_rank()) std::cout<<"\n[test_pumi] pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<") ";
         before_mcount=m->count(mesh_dim);
-        pumi_ghost_createlayer (m, brg_dim, mesh_dim, num_layer, include_copy);
+        pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
         if (!pumi_rank()) std::cout<<"#ghost increase="<<total_mcount_diff<<"\n";
@@ -214,10 +214,10 @@ int main(int argc, char** argv)
       for (int include_copy=0; include_copy<=1; ++include_copy)
       {
         if (!pumi_rank()) 
-          std::cout<<"\n[test_pumi] accumulative pumi_ghost_createlayer (bd "<<brg_dim<<", gd "<<mesh_dim
+          std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl   "<<num_layer<<", ic"<<include_copy<<") ";
         int before_mcount=m->count(mesh_dim);
-        pumi_ghost_createlayer (m, brg_dim, mesh_dim, num_layer, include_copy);
+        pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         int total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
         if (!pumi_rank()) std::cout<<"#ghost increase="<<total_mcount_diff<<"\n";
@@ -235,7 +235,7 @@ int main(int argc, char** argv)
   delete [] org_mcount;
 
   // print elapsed time and increased heap memory
-  pumi_printtimemem("[test_pumi] elapsed time and increased heap memory:", pumi_gettime()-begin_time, pumi_getmem()-begin_mem);
+  pumi_printTimeMem("[test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
 
   // clean-up
   pumi_mesh_delete(m);

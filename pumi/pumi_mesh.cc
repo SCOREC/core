@@ -24,7 +24,7 @@
 
 using std::map;
 
-void generate_globalid(pMesh m, pTag tag, int dim)
+void generate_globalid(pMesh m, pMeshTag tag, int dim)
 {
   pMeshEnt e;
   int own_partid, num_own=0, myrank=PCU_Comm_Self();
@@ -88,7 +88,7 @@ void generate_globalid(pMesh m, pTag tag, int dim)
 void generate_global_numbering(apf::Mesh2* m)
 //*******************************************************
 {
-  pTag tag = m->findTag("global_id");
+  pMeshTag tag = m->findTag("global_id");
   if (tag)  // destroy existing tag
   {
     for (int i=0; i<4; ++i)
@@ -105,7 +105,7 @@ void generate_global_numbering(apf::Mesh2* m)
 void destroy_global_numbering(apf::Mesh2* m)
 //*******************************************************
 {
-  pTag tag = m->findTag("global_id");
+  pMeshTag tag = m->findTag("global_id");
   for (int i=0; i<4; ++i)
     apf::removeTagFromDimension(m, tag, m->getDimension());
 
@@ -137,7 +137,7 @@ apf::Migration* getPlan(apf::Mesh* m, int num_target_part)
 {
   apf::Splitter* splitter = apf::makeZoltanSplitter(
       m, apf::GRAPH, apf::PARTITION, false);
-  pTag weights = Parma_WeighByMemory(m);
+  pMeshTag weights = Parma_WeighByMemory(m);
   apf::Migration* plan = splitter->split(weights, 1.05, num_target_part);
   apf::removeTagFromDimension(m, weights, m->getDimension());
   m->destroyTag(weights);
@@ -165,7 +165,7 @@ void merge_comm(MPI_Comm oldComm)
 
 
 // load a serial mesh on master process then distribute as per the distribution object
-pMesh pumi_mesh_loadserial(pGeom g, const char* filename, const char* mesh_type)
+pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
   {
@@ -221,12 +221,12 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   return pumi::instance()->mesh;
 }
 
-int pumi_mesh_getdim(pMesh m)
+int pumi_mesh_getDim(pMesh m)
 {
   return m->getDimension();
 }
 
-int pumi_mesh_getnument(pMesh m, int dim)
+int pumi_mesh_getNumEnt(pMesh m, int dim)
 { return m->count(dim); }
 
 #include <parma.h>
@@ -258,7 +258,7 @@ void pumi_mesh_print (pMesh m, int p)
 
     if (!PCU_Comm_Self())
     {
-      apf::DynamicArray<pTag> tags;
+      apf::DynamicArray<pMeshTag> tags;
       m->getTags(tags);
       int n = tags.getSize();
       for (int i = 0; i < n; ++i) 
@@ -277,7 +277,7 @@ void pumi_mesh_print (pMesh m, int p)
   {
     apf::Vector3 xyz;
     m->getPoint(e, 0, xyz);
-    std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<pumi_ment_getglobalid(e)
+    std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<pumi_ment_getGlobalID(e)
              <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
   }
   m->end(vit);
@@ -285,30 +285,30 @@ void pumi_mesh_print (pMesh m, int p)
   apf::MeshIterator* eit = m->begin(1);
   while ((e = m->iterate(eit)))
   {
-    int global_id=pumi_ment_getglobalid(e);
+    int global_id=pumi_ment_getGlobalID(e);
     apf::Downward vertices;
     m->getDownward(e,0,vertices); 
-    std::cout<<"("<<PCU_Comm_Self()<<") edge "<<global_id<<" (v"<<pumi_ment_getglobalid(vertices[0])
-              <<", v"<<pumi_ment_getglobalid(vertices[1])<<")\n";
+    std::cout<<"("<<PCU_Comm_Self()<<") edge "<<global_id<<" (v"<<pumi_ment_getGlobalID(vertices[0])
+              <<", v"<<pumi_ment_getGlobalID(vertices[1])<<")\n";
   }
   m->end(eit);
 
   apf::MeshIterator* elem_it = m->begin(m->getDimension());
   while ((e = m->iterate(elem_it)))
   {
-    int global_id=pumi_ment_getglobalid(e);
+    int global_id=pumi_ment_getGlobalID(e);
     apf::Downward vertices;
     int num_vtx=m->getDownward(e,0,vertices); 
     apf::Downward onelevel_down;
     m->getDownward(e,m->getDimension()-1,onelevel_down); 
     if (num_vtx==3) // triangle
       std::cout<<"("<<PCU_Comm_Self()<<") elem "<<global_id
-              <<": v("<<pumi_ment_getglobalid(vertices[0])
-              <<", "<<pumi_ment_getglobalid(vertices[1])
-              <<", "<<pumi_ment_getglobalid(vertices[2])
-              <<"), e("<<pumi_ment_getglobalid(onelevel_down[0])
-              <<", "<<pumi_ment_getglobalid(onelevel_down[1])
-              <<", "<<pumi_ment_getglobalid(onelevel_down[2])<<")\n";
+              <<": v("<<pumi_ment_getGlobalID(vertices[0])
+              <<", "<<pumi_ment_getGlobalID(vertices[1])
+              <<", "<<pumi_ment_getGlobalID(vertices[2])
+              <<"), e("<<pumi_ment_getGlobalID(onelevel_down[0])
+              <<", "<<pumi_ment_getGlobalID(onelevel_down[1])
+              <<", "<<pumi_ment_getGlobalID(onelevel_down[2])<<")\n";
   }
   m->end(elem_it);
 }
@@ -428,7 +428,7 @@ static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affecte
   m->end(it);
 
   int dummy=1;
-  pTag tag = m->createIntTag("distribution_affected",1);
+  pMeshTag tag = m->createIntTag("distribution_affected",1);
   for (int dimension=maxDimension-1; dimension >= 0; --dimension)
   {
     int upDimension = dimension + 1;
