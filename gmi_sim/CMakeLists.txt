@@ -3,8 +3,6 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-find_package(SimModSuite MODULE REQUIRED)
-
 option(SIM_PARASOLID "Enable Parasolid interface" OFF)
 option(SIM_ACIS "Enable Acis interface" OFF)
 # this file brings SIM_PARASOLID and SIM_ACIS from CMake to C++

@@ -55,6 +55,10 @@ bob_export_target(${target})
 install(FILES ${HEADERS} DESTINATION include)
 endmacro(scorec_export_library)
 
+#This is core-sim, so bring in Simmetrix !
+#(needed by apf_sim and gmi_sim)
+find_package(SimModSuite MODULE REQUIRED)
+
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
