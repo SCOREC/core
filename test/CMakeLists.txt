@@ -41,6 +41,7 @@ util_exe_func(icesheet icesheet.cc)
 if(ENABLE_OMEGA_H)
   util_exe_func(from_omega_h from_omega_h.cc)
   util_exe_func(to_omega_h to_omega_h.cc)
+  util_exe_func(xgc_split xgc_split.cc)
 endif()
 
 # Mesh rendering/visualization utilities
