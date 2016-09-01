@@ -32,14 +32,70 @@ bool areTetsValid(Mesh* m, EntityArray& tets)
   return true;
 }
 
+class FixedMetricIntegrator : public apf::Integrator
+{
+  public:
+    FixedMetricIntegrator(Mesh* inMesh, const Matrix& inQ):
+      Integrator(1),
+      measurement(0),
+      mesh(inMesh),
+      Q(inQ)
+    {
+      dimension = 0;
+      elem = 0;
+    }
+    virtual void inElement(apf::MeshElement* me)
+    {
+      dimension = apf::getDimension(me);
+      elem = apf::createElement(mesh->getCoordinateField(), me);
+    }
+    virtual void outElement()
+    {
+      apf::destroyElement(elem);
+    }
+    virtual void atPoint(Vector const& p, double w, double)
+    {
+      Matrix J;
+      apf::getJacobian(apf::getMeshElement(elem),p,J);
+/* transforms the rows of J, the differential tangent vectors,
+   into the metric space, then uses the generalized determinant */
+      double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
+      measurement += w*dV2;
+    }
+    double measurement;
+  private:
+    Mesh* mesh;
+    Matrix Q;
+    int dimension;
+    apf::Element* elem;
+};
+
+
+double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
+{
+  FixedMetricIntegrator integrator(mesh, Q);
+  apf::MeshElement* me = apf::createMeshElement(mesh, e);
+  integrator.process(me);
+  apf::destroyMeshElement(me);
+  return integrator.measurement;
+}
+
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
 {
+  /* currently, we are using Q at the center of the tri.
+   * In the future we may want to used average of Q over the tri */
+  Matrix Q;
+  apf::MeshElement* me = createMeshElement(m, tri);
+  Vector xi(1./3., 1./3., 1./3.);
+  f->getTransform(me, xi, Q);
+  apf::destroyMeshElement(me);
+
   Entity* e[3];
   m->getDownward(tri,1,e);
   double l[3];
   for (int i=0; i < 3; ++i)
-    l[i] = f->measure(e[i]);
-  double A = f->measure(tri);
+    l[i] = qMeasure(m, e[i], Q);
+  double A = qMeasure(m, tri, Q);
   double s = 0;
   for (int i=0; i < 3; ++i)
     s += l[i]*l[i];
@@ -49,12 +105,20 @@ double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
 /* applies the mean ratio cubed formula from Li's thesis */
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
 {
+  /* currently, we are using Q at the center of the tet.
+   * In the future we may want to used average of Q over the tet */
+  Matrix Q;
+  apf::MeshElement* me = createMeshElement(m, tet);
+  Vector xi(0.25, 0.25, 0.25);
+  f->getTransform(me, xi, Q);
+  apf::destroyMeshElement(me);
+
   Entity* e[6];
   m->getDownward(tet,1,e);
   double l[6];
   for (int i=0; i < 6; ++i)
-    l[i] = f->measure(e[i]);
-  double V = f->measure(tet);
+    l[i] = qMeasure(m, e[i], Q);
+  double V = qMeasure(m, tet, Q);
   double s=0;
   for (int i=0; i < 6; ++i)
     s += l[i]*l[i];

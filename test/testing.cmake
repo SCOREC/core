@@ -73,6 +73,10 @@ mpi_test(ma_serial 1
   ./ma_test
   "${MDIR}/pipe.dmg"
   "pipe.smb")
+mpi_test(aniso_ma_serial 1
+  ./aniso_ma_test
+  "${MESHES}/cube/cube.dmg"
+  "${MESHES}/cube/pumi670/cube.smb")
 mpi_test(tet_serial 1
   ./tetrahedronize
   "${MDIR}/pipe.dmg"
