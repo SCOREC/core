@@ -678,7 +678,6 @@ static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
   dim = mds_dim[TYPE(from->e[0])];
   for (i = 0; i < from->n; ++i) {
     look_up(m,from->e[i],dim + 1,&up);
-    printf("expand_once\n");
     unite(to,&up);
   }
 }
