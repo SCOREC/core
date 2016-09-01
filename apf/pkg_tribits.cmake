@@ -1,10 +1,13 @@
-if(DEFINED TRIBITS_PACKAGE)
-  include(pkg_tribits.cmake)
-  return()
-endif()
+tribits_package(SCORECapf)
 
-# Package sources
-set(SOURCES
+set(APF_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../mth
+    ${CMAKE_CURRENT_SOURCE_DIR}/../can
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lion)
+
+#Sources & Headers
+set(APF_SOURCES
   apf.cc
   apfCavityOp.cc
   apfElement.cc
@@ -45,8 +48,7 @@ set(SOURCES
   apfFile.cc
 )
 
-# Package headers
-set(HEADERS
+set(APF_HEADERS
   apf.h
   apfMesh.h
   apfMesh2.h
@@ -66,25 +68,32 @@ set(HEADERS
   apf2mth.h
 )
 
-# Add the apf library
-add_library(apf ${SOURCES})
-
-# Include directories
-target_include_directories(apf PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-    )
-
-# Link this library to these others
-target_link_libraries(apf
-   PUBLIC
-     pcu
-     gmi
-     lion
-     can
-     mth
+set(APF_SOURCES
+    ${APF_SOURCES}
+    ../mth/mthQR.cc
+    ../lion/lionBase64.cc
+    ../lion/lionNoZLib.cc
+   )
+set(APF_HEADERS
+    ${APF_HEADERS}
+    ../can/canArray.h
+    ../can/canNewArray.h
+    ../mth/mth.h
+    ../mth/mth_def.h
+    ../mth/mthVector.h
+    ../mth/mthMatrix.h
+    ../mth/mthTensor.h
+    ../mth/mthQR.h
+    ../mth/mthAD.h
    )
 
-scorec_export_library(apf)
+# THIS IS WHERE TRIBITS GETS HEADERS
+include_directories(${APF_INCLUDE_DIRS})
 
-bob_end_subdir()
+#Library
+tribits_add_library(
+   apf
+   HEADERS ${APF_HEADERS}
+   SOURCES ${APF_SOURCES})
+
+tribits_package_postprocess()
