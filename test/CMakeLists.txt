@@ -21,7 +21,7 @@ test_exe_func(quality quality.cc)
 test_exe_func(writeVtxPtn writeVtxPtn.cc)
 
 # Geometric model utilities
-util_exe_func(mdlConvert mdlConvert.c)
+util_exe_func(mdlConvert mdlConvert.cc)
 util_exe_func(mkmodel mkmodel.cc)
 
 # Mesh generation utilities
@@ -111,6 +111,8 @@ test_exe_func(reposition reposition.cc)
 test_exe_func(writeIPFieldTest writeIPFieldTest.cc)
 test_exe_func(shapefun shapefun.cc)
 test_exe_func(shapefun2 shapefun2.cc)
+test_exe_func(curvetest curvetest.cc)
+test_exe_func(curve_to_bezier curve_to_bezier.cc)
 test_exe_func(bezierElevation bezierElevation.cc)
 test_exe_func(bezierMesh bezierMesh.cc)
 test_exe_func(bezierMisc bezierMisc.cc)

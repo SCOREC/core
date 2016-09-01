@@ -54,6 +54,7 @@ target_link_libraries(ph
       parma
       pcu
       apf_zoltan
+      gmi_sim
     )
 
 # Handle the complexity of the chef enabled flag

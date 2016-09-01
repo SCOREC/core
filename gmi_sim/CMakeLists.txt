@@ -19,7 +19,7 @@ target_include_directories(gmi_sim PUBLIC ${SIMMODSUITE_INCLUDE_DIR})
 target_link_libraries(gmi_sim PUBLIC gmi pcu ${SIMMODSUITE_LIBS})
 
 # Include directories
-target_include_directories(gmi_sim INTERFACE
+target_include_directories(gmi_sim PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
     )
