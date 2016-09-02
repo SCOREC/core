@@ -1,1 +1,1 @@
-#cmakedefine SIMMODSUITE_SimField_FOUND
+#cmakedefine USE_FIELDSIM

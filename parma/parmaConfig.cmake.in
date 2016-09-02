@@ -1,3 +1,0 @@
-SET(PARMA_LIBS parma @parmaDepLibs@ )
-SET(PARMA_INCLUDE_DIRS @parmaIncDirs@ )
-SET(PARMA_FOUND TRUE )

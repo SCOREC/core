@@ -11,6 +11,7 @@
 #include <apfShape.h>
 #include <gmi.h>
 #include <cassert>
+#include <cstdlib>
 
 #if HAS_STK
 #include "apfSTK.h"

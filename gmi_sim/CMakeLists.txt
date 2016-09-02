@@ -1,87 +1,32 @@
-cmake_minimum_required(VERSION 2.8.6)
-
 if(DEFINED TRIBITS_PACKAGE)
-  set(BUILD_IN_TRILINOS ON)
+  include(pkg_tribits.cmake)
+  return()
 endif()
 
-if(BUILD_IN_TRILINOS)
-  tribits_package(SCORECgmi_sim)
-else()
-  project(gmi_sim)
-endif()
-
-if(NOT BUILD_IN_TRILINOS)
-  find_package(gmi PATHS ${CMAKE_BINARY_DIR})
-  find_package(pcu PATHS ${CMAKE_BINARY_DIR})
-  find_package(SimModSuite REQUIRED)
-
-  set(GMI_SIM_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${GMI_INCLUDE_DIRS}
-    ${PCU_INCLUDE_DIRS}
-    ${SIMMODSUITE_INCLUDE_DIR})
-  include_directories(${GMI_SIM_INCLUDE_DIRS})
-  set(DEP_LIBS ${GMI_LIBS} ${PCU_LIBS} ${SIMMODSUITE_LIBS})
-  set(GMI_SIM_LIBS gmi_sim ${DEP_LIBS})
-else()
-# these ENABLE vars are made by tribits based on ./cmake/Dependencies.cmake
-  if (SCORECgmi_sim_ENABLE_SimParasolid)
-    set(SIM_PARASOLID ON)
-  endif()
-  if (SCORECgmi_sim_ENABLE_SimAcis)
-    set(SIM_ACIS ON)
-  endif()
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-endif()
-
+option(SIM_PARASOLID "Enable Parasolid interface" OFF)
+option(SIM_ACIS "Enable Acis interface" OFF)
 # this file brings SIM_PARASOLID and SIM_ACIS from CMake to C++
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_sim_config.h.in"
-               "${PROJECT_BINARY_DIR}/gmi_sim_config.h")
-# make sure the compiler can find the above header
-include_directories(${PROJECT_BINARY_DIR})
+               "${CMAKE_CURRENT_BINARY_DIR}/gmi_sim_config.h")
 
 #Sources & Headers
 set(SOURCES gmi_sim.cc)
 set(HEADERS gmi_sim.h)
 
-#Library
-if(BUILD_IN_TRILINOS)
-  tribits_add_library(
-    gmi_sim 
-    HEADERS ${HEADERS}
-    SOURCES ${SOURCES})
-else()
-  add_library(gmi_sim ${SOURCES})
-  target_link_libraries(gmi_sim ${DEP_LIBS})
-endif()
+add_library(gmi_sim ${SOURCES})
 
-if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES ${HEADERS} DESTINATION include)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/libgmi_sim.pc" DESTINATION lib/pkgconfig)
-  INSTALL(TARGETS 
-    gmi_sim 
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
+target_include_directories(gmi_sim PUBLIC ${SIMMODSUITE_INCLUDE_DIR})
+target_link_libraries(gmi_sim PUBLIC gmi pcu ${SIMMODSUITE_LIBS})
+
+# Include directories
+target_include_directories(gmi_sim PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
     )
-endif()
+# make sure the compiler can find the config header
+target_include_directories(gmi_sim PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmi_simConfig.cmake.in"
-  "${CMAKE_BINARY_DIR}/gmi_simConfig.cmake")
+scorec_export_library(gmi_sim)
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/libgmi_sim.pc.in"
-  "${PROJECT_BINARY_DIR}/libgmi_sim.pc"
-  @ONLY)
-#pkgconfig }
-
-if(BUILD_IN_TRILINOS)
-  tribits_package_postprocess()
-endif()
+bob_end_subdir()

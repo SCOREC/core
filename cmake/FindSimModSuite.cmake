@@ -124,21 +124,3 @@ find_package_handle_standard_args(SIMMODSUITE  DEFAULT_MSG
                                   SIMMODSUITE_LIBS SIMMODSUITE_INCLUDE_DIR)
 
 mark_as_advanced(SIMMODSUITE_INCLUDE_DIR SIMMODSUITE_LIBS)
-
-set(SIM_LINK_LIBS "")
-foreach(lib ${SIM_LIB_NAMES})
-  set(SIM_LINK_LIBS "${SIM_LINK_LIBS} -l${lib}")
-endforeach()
-
-#pkgconfig
-set(prefix "${SIMMODSUITE_INSTALL_DIR}")
-set(includedir "${SIMMODSUITE_INCLUDE_DIR}")
-configure_file(
-  "${CORE_SOURCE_DIR}/cmake/libSimModSuite.pc.in"
-  "${CMAKE_BINARY_DIR}/libSimModSuite.pc"
-  @ONLY)
-
-#is this OK for a package file????
-if(NOT BUILD_IN_TRILINOS)
-  INSTALL(FILES "${CMAKE_BINARY_DIR}/libSimModSuite.pc" DESTINATION lib/pkgconfig)
-endif()
