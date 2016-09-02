@@ -1,12 +1,12 @@
 set(MESHES "/lore/dibanez/meshes"
     CACHE string
-    "path to the meshes svn repo")
-macro(mpi_test TESTNAME PROCS EXE)
+    "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
+function(mpi_test TESTNAME PROCS EXE)
   add_test(
     NAME ${TESTNAME}
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
-endmacro(mpi_test)
+endfunction(mpi_test)
 add_test(shapefun shapefun)
 add_test(shapefun2 shapefun2)
 add_test(bezierElevation bezierElevation)
@@ -282,9 +282,9 @@ if (PCU_COMPRESS)
   if (PHASTA_CHEF_ENABLED)
     mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
       WORKING_DIRECTORY ${MDIR})
-    set(cmd 
-      ${CMAKE_BINARY_DIR}/phasta/bin/checkphasta 
-      ${MDIR}/1-procs_case/ 
+    set(cmd
+      ${CMAKE_BINARY_DIR}/phasta/bin/checkphasta
+      ${MDIR}/1-procs_case/
       ${MESHES}/phasta/1-1-Chef-Tet-Part/good_phasta/
       0 1e-6)
     add_test(
