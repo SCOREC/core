@@ -1,9 +1,9 @@
 # determine if Trilinos has been configured with stk
-SET(HAS_STK OFF)
+SET(ENABLE_STK_MESH OFF)
 if(Trilinos_ENABLE_STKIO AND
    Trilinos_ENABLE_STKMesh AND
    Trilinos_ENABLE_SEACASIoss)
-  SET(HAS_STK ON)
+  SET(ENABLE_STK_MESH ON)
 endif()
 
 tribits_package(SCORECapf_stk) 
@@ -12,8 +12,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.h.in"
-    "${PROJECT_BINARY_DIR}/apf_stkConfig.h")
-include_directories("${PROJECT_BINARY_DIR}")
+    "${CMAKE_CURRENT_BINARY_DIR}/apf_stkConfig.h")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 #Sources & Headers
 set(SOURCES

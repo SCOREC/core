@@ -58,6 +58,7 @@ if(SIMMODSUITE_SimAdvMeshing_FOUND)
   util_exe_func(generate generate.cc)
 endif()
 util_exe_func(snap snap.cc)
+
 # Mesh partitioning utilities
 util_exe_func(split split.cc)
 util_exe_func(zsplit zsplit.cc)
