@@ -1,26 +1,10 @@
-cmake_minimum_required(VERSION 2.8.6)
-set(PACKAGE_VERSION "1.0")
-
-project(mth)
-
-set(MTH_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR})
-
-find_package(can PATHS ${CMAKE_BINARY_DIR})
-set(MTH_INCLUDE_DIRS
-  ${MTH_INCLUDE_DIRS}
-  ${CAN_INCLUDE_DIRS}
-)
-set(DEP_LIBS ${CAN_LIBS})
-set(MTH_LIBS mth ${DEP_LIBS})
-
-set(MTH_LIBS mth)
-
-set(MTH_SOURCES
+# Package sources
+set(SOURCES
   mthQR.cc
 )
 
-set(MTH_HEADERS
+# Package headers
+set(HEADERS
   mth.h
   mth_def.h
   mthVector.h
@@ -30,32 +14,18 @@ set(MTH_HEADERS
   mthAD.h
 )
 
-# THIS IS WHERE TRIBITS GETS HEADERS
-include_directories(${MTH_INCLUDE_DIRS})
+# Add the mth library
+add_library(mth ${SOURCES})
 
-#Library
-add_library(mth ${MTH_SOURCES})
+# Include directories
+target_include_directories(mth INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/mthConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/mthConfig.cmake")
+# Link this library to these libraries
+target_link_libraries(mth PUBLIC can)
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libmth.pc.in"
-    "${PROJECT_BINARY_DIR}/libmth.pc"
-    @ONLY)
-#pkgconfig }
+scorec_export_library(mth)
 
-INSTALL(FILES ${MTH_HEADERS} DESTINATION include)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/libmth.pc" DESTINATION lib/pkgconfig)
-INSTALL(TARGETS
-  mth
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
+bob_end_subdir()

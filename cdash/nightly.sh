@@ -19,6 +19,7 @@ rm -rf build/
 
 #run nightly.cmake script
 ctest --output-on-failure --script /lore/dibanez/src/core/cdash/nightly.cmake &> cmake_log.txt
+cp cmake_log.txt /net/web/public/dibanez/nightly_cmake_log.txt
 
 if [ -d "/lore/dibanez/cdash/build/master" ]; then
   #core repository checked out by nightly.cmake
