@@ -63,6 +63,8 @@ struct agm_bdry {
 
 struct agm* agm_new(void);
 void agm_free(struct agm* m);
+// seol
+void agm_free_tags(struct agm* m);
 
 struct agm_ent agm_add_ent(struct agm* m, enum agm_ent_type t);
 struct agm_bdry agm_add_bdry(struct agm* m, struct agm_ent e);

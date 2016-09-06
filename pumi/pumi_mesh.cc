@@ -181,9 +181,9 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
   pMesh m = 0;
   split_comm(num_target_part);
   if (isMaster) 
-    m = apf::loadMdsMesh(g, filename);
+    m = apf::loadMdsMesh(g->getGmi(), filename);
   merge_comm(prevComm);
-  pumi::instance()->mesh = expandMdsMesh(m, g, 1);
+  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1);
   generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
@@ -208,14 +208,14 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
     apf::Migration* plan = 0;   
     split_comm(num_target_part);
     if (isMaster) {
-      m = apf::loadMdsMesh(g, filename);
+      m = apf::loadMdsMesh(g->getGmi(), filename);
       plan = getPlan(m, num_target_part);
     }
     merge_comm(prevComm);
-    pumi::instance()->mesh = apf::repeatMdsMesh(m, g, plan, num_target_part);
+    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part);
   }
   else
-    pumi::instance()->mesh = apf::loadMdsMesh(g, filename);
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
 
   generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
@@ -559,21 +559,6 @@ void distribute(pMesh m, Distribution* plan)
   updateMatching(m,affected,senders);
   deleteOldEntities(m,affected);
   m->acceptChanges();
-}
-
-// *********************************************************
-pMesh distr_repeatMdsMesh(pMesh m, pGeom g, Distribution* plan,  int factor)
-// *********************************************************
-{
-  double t0 = PCU_Time();
-  if (PCU_Comm_Self() % factor != 0)
-    plan = new Distribution(m);
-  distribute(m, plan);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-    printf("[PUMI INFO] mesh distributed from %d to %d in %f seconds\n",
-        PCU_Comm_Peers() / factor, PCU_Comm_Peers(), t1 - t0);
-  return m;
 }
 
 // *********************************************************
