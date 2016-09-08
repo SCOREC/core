@@ -78,7 +78,6 @@ add_subdirectory(sam)
 add_subdirectory(phasta)
 add_subdirectory(stk)
 add_subdirectory(dsp)
-add_subdirectory(viz)
 add_subdirectory(omega_h)
 
 # this INTERFACE target bundles all the enabled libraries together
