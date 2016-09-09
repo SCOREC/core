@@ -28,7 +28,7 @@ For more information, start at our
 
 * Dependencies: CMake for compiling and MPI for running
 * Configuration: Typical CMake configure and build.
-  The example `config.sh` shows common options to select,
+  The `example_config.sh` shows common options to select,
   use a front-end like `ccmake` to see a full list of options
 * Tests: the test/ subdirectory has tests and standalone
   tools that can be compiled by explicitly listing them as targets
