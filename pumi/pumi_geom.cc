@@ -11,10 +11,12 @@
 #include "gmi_mesh.h"
 #include "gmi_null.h"
 #include "gmi_analytic.h"
+#include "pumi_iter.h"
 #include "PCU.h"
 #include <iostream>
 #include <cstring>
 #include <assert.h>
+#include "GenIterator.h"
 
 gModel::gModel(gmi_model* model) : TagHolder() 
 {
@@ -49,4 +51,55 @@ pGeom pumi_geom_load(const char* filename, const char* model_type)
     gmi_end(pumi::instance()->model->getGmi(), giter);
   }
   return pumi::instance()->model;
+}
+
+inline void processingNonFilter(mPartEntityContainer::iter& it_begin, mPartEntityContainer::iter& it_end, void* ptr, int type, int topo)
+{}
+
+int pumi_giter_init (pGeom model, int type, gIter& iter)
+{
+  if (model->size(type)==0)
+      return PUMI_FAILURE;
+  int dim=model->size(3)?3:2;
+
+// FIXME: compilation error 
+// /users/seol/develop/pumi/trunk/pumi/pumi_geom.cc:65:40: error: new initializer expression list treated as compound expression [-fpermissive] &processingNonFilter);
+// /users/seol/develop/pumi/trunk/pumi/pumi_geom.cc:65:40: error: cannot convert 'void (*)(mPartEntityContainer::iter&, mPartEntityContainer::iter&, void*, int, int) {aka void (*)(ListIterator<gEntity>&, ListIterator<gEntity>&, void*, int, int)}' to 'gIter {aka GenIterator<ListIterator<gEntity>, gEntity>*}' in initialization
+
+//  iter = new gIter(model->beginall(type), model->endall(type), dim, type, (void*)model, 
+//                   &processingNonFilter);
+  if (iter->end())
+    return PUMI_FAILURE;
+  return PUMI_SUCCESS;
+}
+
+/* get next element of the mesh iterator */
+int pumi_giter_getNext(gIter iter, pGeomEnt& ent)
+{
+   if(iter->end())
+     return PUMI_FAILURE;
+   else
+     ent = **iter;
+   iter->next();
+   return PUMI_SUCCESS;
+}
+
+/* Check if the iterator has reached its end */
+bool pumi_giter_isEnd(gIter iter)
+{
+  if(iter->end())
+    return true;
+  else
+    return false;
+}
+
+void pumi_giter_delete(gIter iter)
+{
+  if (iter) delete iter;
+  iter=NULL;
+}
+
+void pumi_giter_reset(gIter iter)
+{
+  iter->reset();
 }

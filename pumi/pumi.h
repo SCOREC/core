@@ -121,7 +121,7 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 //************************************
 
 int pumi_tag_getType (const pTag tag);
-void pumi_tag_getName (const pTag tag, const char** tag_name);
+void pumi_tag_getName (const pTag tag, const char** name);
 int pumi_tag_getSize (const pTag tag);
 int pumi_tag_getByte (const pTag tag);
 
@@ -133,29 +133,31 @@ int pumi_tag_getByte (const pTag tag);
 pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh");
 
 // iterator
-gIter pumi_giter_init (pGeom part, int type);
-pGeomEnt pumi_giter_getNext(gIter iter);
+/*
+int pumi_giter_init (pGeom part, int type, gIter&);
+int pumi_giter_getNext(gIter iter, pGeomEnt&);
 void pumi_giter_delete(gIter iter);
 void pumi_giter_reset(gIter iter);
 bool pumi_giter_isEnd(gIter iter);
+*/
 
-pTag pumi_geom_createTag (pGeom model, const char* tagName, int tagType, int tagSize);
-void pumi_geom_deleteTag (pGeom model, pTag tag, int forceDel=0);
-pTag pumi_geom_findTag (pGeom model, const char* tagName);
-bool pumi_geom_hasTag (pGeom model, const pTag tag);
-bool pumi_geom_isTagInUse (pGeom m, const pTag tag);
-void pumi_geom_getTag (pGeom model, std::vector<pTag>& tags);
+pTag pumi_geom_createTag (pGeom g, const char* tagName, int tagType, int tagSize);
+void pumi_geom_deleteTag (pGeom g, pTag tag, int forceDel=0);
+pTag pumi_geom_findTag (pGeom g, const char* tagName);
+bool pumi_geom_hasTag (pGeom g, const pTag tag);
+bool pumi_geom_isTagInUse (pGeom g, const pTag tag);
+void pumi_geom_getTag (pGeom g, std::vector<pTag>& tags);
 
 bool pumi_gent_hasTag (pGeomEnt ent, pTag tag);
 void pumi_gent_deleteTag (pGeomEnt ent, pTag tag);
 void pumi_gent_getTag (pGeomEnt ent, std::vector<pTag>& tags);
 
-void pumi_gent_setStringTag(pGeomEnt ent, pTag tag, const char* s);
-void pumi_gent_getStringTag(pGeomEnt ent, pTag tag, const char*& s);
+//void pumi_gent_setStringTag(pGeomEnt ent, pTag tag, const char* s);
+//void pumi_gent_getStringTag(pGeomEnt ent, pTag tag, const char*& s);
 
 void pumi_gent_setPtrTag (pGeomEnt ent, pTag tag, void* data);
 void pumi_gent_getPtrTag (pGeomEnt ent, pTag tag, void** data);
-void pumi_gent_setIntTag (pGeomEnt ent, pTag tag, const int data);
+void pumi_gent_setIntTag (pGeomEnt ent, pTag tag,int data);
 int pumi_gent_getIntTag (pGeomEnt ent, pTag tag);
 void pumi_gent_setLongTag (pGeomEnt ent, pTag tag, const long data);
 long pumi_gent_getLongTag (pGeomEnt ent, pTag tag);

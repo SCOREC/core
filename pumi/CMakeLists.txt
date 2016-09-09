@@ -45,7 +45,6 @@ set(HEADERS
   pumi_errorcode.h
   GenTag.h
   GenIterator.h
-  pumi_iter.h
   pumi_list.h
   mPartEntityContainer.h
   pumi.h

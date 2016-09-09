@@ -54,7 +54,11 @@ Ghosting* getGhostingPlan(pMesh m)
   return plan;
 }
 
+void TEST_GEOM_TAG(pGeom g);
+
+//*********************************************************
 int main(int argc, char** argv)
+//*********************************************************
 {
   MPI_Init(&argc,&argv);
   pumi_start();
@@ -72,13 +76,14 @@ int main(int argc, char** argv)
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-
-
   // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
   getConfig(argc,argv);
 
   // load model
-  gmi_model* g = pumi_geom_load(modelFile);
+  pGeom g = pumi_geom_load(modelFile);
+
+  if (!pumi_rank()) std::cout<<"[test_pumi] testing geometric model tagging api's\n";
+  TEST_GEOM_TAG(g);
  
   // load mesh per process group
   assert(pumi_size()%num_in_part==0);
@@ -125,11 +130,8 @@ int main(int argc, char** argv)
 
   pumi_mesh_write(m,"output", "vtk");
 
+  if (!pumi_rank()) std::cout<<"[test_pumi] checking various mesh api's\n";
   int mesh_dim=pumi_mesh_getDim(m);
-
-  // loop with elements
-
-  if (!pumi_rank()) std::cout<<"[test_pumi] checking various api's\n";
   pMeshIter mit = m->begin(mesh_dim);
   while ((e = m->iterate(mit)))
   {
@@ -242,4 +244,215 @@ int main(int argc, char** argv)
   pumi_finalize();
   MPI_Finalize();
 }
+
+#include <string.h>
+#include <cstring>
+
+//*********************************************************
+template <class T>
+void TEST_TAG (pTag tag, char* in_name, int name_len, int in_type, int in_size)
+//*********************************************************
+{
+  const char* tag_name;
+  // verifying byte tag info
+  pumi_tag_getName (tag, &tag_name);
+  int tag_type= pumi_tag_getType (tag);
+  int tag_size = pumi_tag_getSize (tag);
+  int tag_byte= pumi_tag_getByte (tag);
+  assert(!strncmp(tag_name, in_name, name_len));
+  assert(tag_type == in_type);
+  assert(tag_size == in_size);
+  assert(tag_byte==sizeof(T)*tag_size);
+  assert(!strcmp(tag_name, in_name)
+         && tag_type == in_type && tag_size == in_size 
+         && ((size_t)tag_byte)==sizeof(T)*tag_size);
+}
+
+
+//*********************************************************
+void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
+//*********************************************************
+{
+  char data[] = "abcdefg";
+
+  pTag pointer_tag=pumi_geom_findTag(g, "pointer");
+  pTag int_tag=pumi_geom_findTag(g, "integer");
+  pTag long_tag = pumi_geom_findTag(g, "long");
+  pTag dbl_tag = pumi_geom_findTag(g, "double");
+  pTag ent_tag = pumi_geom_findTag(g, "entity");
+  pTag intarr_tag = pumi_geom_findTag(g, "integer array");
+  pTag longarr_tag = pumi_geom_findTag(g, "integer array");
+  pTag dblarr_tag = pumi_geom_findTag(g, "double array");
+  pTag entarr_tag = pumi_geom_findTag(g, "entity array");
+
+  // get an entity to use as tag data
+  pGeomEnt ent_tag_data=*(g->beginall(0));
+
+  // pumi_gent_set/getPtrTag 
+  pumi_gent_setPtrTag (ent, pointer_tag, (void*)(data));
+  void* void_data = (void*)calloc(strlen(data), sizeof(char));
+  pumi_gent_getPtrTag (ent, pointer_tag, &void_data);
+  assert(!strcmp((char*)void_data, data));
+//  free (void_data);
+
+  if (!pumi_rank()) std::cout<<"[test_pumi] strlen(data)="<<strlen(data)<<", gent_set/get pointer tag\n";
+
+  // pumi_gent_set/getIntTag 
+  pumi_gent_setIntTag(ent, int_tag, 1000);
+  int int_data = pumi_gent_getIntTag (ent, int_tag);
+  assert(int_data == 1000);
+  if (!pumi_rank()) std::cout<<"[test_pumi] gent_set/get int tag\n";
+
+  // pumi_gent_set/getLongTag
+  pumi_gent_setLongTag(ent, long_tag, 3000);
+  long long_data = pumi_gent_getLongTag (ent, long_tag);
+  assert(long_data==3000);
+  if (!pumi_rank()) std::cout<<"[test_pumi] gent_set/get long tag\n";
+
+  // pumi_gent_set/getDblTag
+  pumi_gent_setDblTag (ent, dbl_tag, 1000.37);
+  double dbl_data = pumi_gent_getDblTag (ent, dbl_tag);
+  assert(dbl_data == 1000.37);
+  if (!pumi_rank()) std::cout<<"[test_pumi] gent_set/get double tag\n";
+
+  // pumi_gent_set/getEntTag
+  pumi_gent_setEntTag (ent, ent_tag, ent_tag_data);
+  pGeomEnt ent_data = pumi_gent_getEntTag (ent, ent_tag);
+  assert(ent_data == ent_tag_data);
+
+
+ // pumi_gent_set/GetIntArrTag with integer arr tag
+  int int_arr[] = {4,8,12};
+  int arr_size;
+  pumi_gent_setIntArrTag (ent, intarr_tag, int_arr);
+  int* int_arr_back = new int[4];
+  pumi_gent_getIntArrTag (ent, intarr_tag, &int_arr_back, &arr_size);
+  assert(arr_size==3 && int_arr_back[0] == 4 && int_arr_back[1] == 8 && int_arr_back[2] == 12);
+            
+ // pumi_gent_set/GetIntArrTag with long arr tag
+  long long_arr[] = {4,8,12};
+  pumi_gent_setLongArrTag (ent, longarr_tag, long_arr);
+  long* long_arr_back = new long[4];
+  pumi_gent_getLongArrTag (ent, longarr_tag, &long_arr_back, &arr_size);
+  assert(arr_size==3 && long_arr_back[0] == 4 && long_arr_back[1] == 8 && long_arr_back[2] == 12);
+
+   // pumi_gent_set/GetDblArrTag
+  double dbl_arr[] = {4.1,8.2,12.3};
+  pumi_gent_setDblArrTag (ent, dblarr_tag, dbl_arr);
+  double* dbl_arr_back = new double[4];
+  pumi_gent_getDblArrTag (ent, dblarr_tag, &dbl_arr_back, &arr_size);
+  assert(arr_size==3 && dbl_arr_back[0] == 4.1 && dbl_arr_back[1] == 8.2 && 
+         dbl_arr_back[2] == 12.3);
+
+  // pumi_gent_set/GetEntArrTag
+    pGeomEnt* ent_arr = new pGeomEnt[3];
+    ent_arr[0] = ent_arr[1] = ent_arr[2] = ent_tag_data;
+    pumi_gent_setEntArrTag (ent, entarr_tag, ent_arr);
+    pGeomEnt* ent_arr_back = new pGeomEnt[4];
+    pumi_gent_getEntArrTag (ent, entarr_tag, &ent_arr_back, &arr_size);
+    assert(arr_size==3 && ent_arr_back[0] == ent_tag_data && ent_arr_back[1] == 
+           ent_tag_data && ent_arr_back[2] == ent_tag_data
+           && ent_arr[0]==ent_arr_back[0] && ent_arr[1]==ent_arr_back[1] && 
+           ent_arr[2] == ent_arr_back[2]);
+
+  delete [] int_arr_back;
+  delete [] long_arr_back;
+  delete [] dbl_arr_back;
+  delete [] ent_arr;
+  delete [] ent_arr_back;
+}
+
+//*********************************************************
+void TEST_GENT_DEL_TAG (pGeom g, pGeomEnt ent)
+//*********************************************************
+{
+  pTag pointer_tag=pumi_geom_findTag(g, "pointer");
+  pTag int_tag=pumi_geom_findTag(g, "integer");
+  pTag long_tag = pumi_geom_findTag(g, "long");
+  pTag dbl_tag = pumi_geom_findTag(g, "double");
+  pTag ent_tag = pumi_geom_findTag(g, "entity");
+  pTag intarr_tag = pumi_geom_findTag(g, "integer array");
+  pTag longarr_tag = pumi_geom_findTag(g, "integer array");
+  pTag dblarr_tag = pumi_geom_findTag(g, "double array");
+  pTag entarr_tag = pumi_geom_findTag(g, "entity array");
+
+  pumi_gent_deleteTag(ent, pointer_tag);
+  pumi_gent_deleteTag(ent, int_tag);
+  pumi_gent_deleteTag(ent, long_tag);
+  pumi_gent_deleteTag(ent, dbl_tag);
+  pumi_gent_deleteTag(ent, ent_tag);
+  pumi_gent_deleteTag(ent, intarr_tag);
+  pumi_gent_deleteTag(ent, longarr_tag);
+  pumi_gent_deleteTag(ent, dblarr_tag);
+  pumi_gent_deleteTag(ent, entarr_tag);
+
+  assert(!pumi_gent_hasTag(ent, pointer_tag));
+  assert(!pumi_gent_hasTag(ent, int_tag));
+  assert(!pumi_gent_hasTag(ent, long_tag));
+  assert(!pumi_gent_hasTag(ent, dbl_tag));
+  assert(!pumi_gent_hasTag(ent, ent_tag));
+  assert(!pumi_gent_hasTag(ent, intarr_tag));
+  assert(!pumi_gent_hasTag(ent, longarr_tag));
+  assert(!pumi_gent_hasTag(ent, dblarr_tag));
+  assert(!pumi_gent_hasTag(ent, entarr_tag));
+}
+
+void TEST_GEOM_TAG(pGeom g)
+{
+  pTag pointer_tag = pumi_geom_createTag(g, "pointer", PUMI_PTR, 1);
+  pTag int_tag = pumi_geom_createTag(g, "integer", PUMI_INT, 1);
+  pTag long_tag = pumi_geom_createTag(g, "long", PUMI_LONG, 1);
+  pTag dbl_tag = pumi_geom_createTag(g, "double", PUMI_DBL, 1);
+  pTag ent_tag = pumi_geom_createTag(g, "entity", PUMI_ENT, 1);
+
+  pTag intarr_tag=pumi_geom_createTag(g, "integer array", PUMI_INT, 3);
+  pTag longarr_tag=pumi_geom_createTag(g, "long array", PUMI_LONG, 3);
+  pTag dblarr_tag = pumi_geom_createTag(g, "double array", PUMI_DBL, 3);
+  pTag entarr_tag = pumi_geom_createTag(g, "entity array", PUMI_ENT, 3);
+
+  // verifying tag info
+  TEST_TAG<void*>(pointer_tag, "pointer", strlen("pointer"), PUMI_PTR, 1);
+  TEST_TAG<int>(int_tag, "integer", strlen("integer"), PUMI_INT, 1);
+  TEST_TAG<long>(long_tag, "long", strlen("long"), PUMI_LONG, 1);
+  TEST_TAG<double>(dbl_tag, "double", strlen("double"), PUMI_DBL, 1);
+  TEST_TAG<pMeshEnt>(ent_tag, "entity", strlen("entity"), PUMI_ENT, 1);
+
+  TEST_TAG<int>(intarr_tag, "integer array", strlen("integer array"), PUMI_INT, 3);
+  TEST_TAG<long>(longarr_tag, "long array", strlen("long array"), PUMI_LONG, 3);
+  TEST_TAG<double>(dblarr_tag, "double array", strlen("double array"), PUMI_DBL, 3);
+  TEST_TAG<pMeshEnt>(entarr_tag, "entity array", strlen("entity array"), PUMI_ENT, 3);
+
+  assert(pumi_geom_hasTag(g, int_tag));
+  pTag cloneTag = pumi_geom_findTag(g, "pointer");
+  assert(cloneTag);
+  std::vector<pTag> tags;
+  pumi_geom_getTag(g, tags);
+  assert(cloneTag == pointer_tag && tags.size()==9);
+
+  for (gModel::iterall gent_it = g->beginall(0); gent_it!=g->endall(0);++gent_it)
+  {
+  if (!pumi_rank()) 
+    std::cout<<"[test_pumi] testing geom entity (dim "<<pumi_gent_getDim(*gent_it)<<") "<<pumi_gent_getID(*gent_it)<<"\n";
+
+    TEST_GENT_SETGET_TAG(g, *gent_it);
+    TEST_GENT_DEL_TAG(g, *gent_it);
+  }
+
+
+  // delete tags
+  pumi_geom_deleteTag(g, pointer_tag);
+  pumi_geom_deleteTag(g, int_tag);
+  pumi_geom_deleteTag(g, long_tag);
+  pumi_geom_deleteTag(g, dbl_tag);
+  pumi_geom_deleteTag(g, ent_tag);
+  pumi_geom_deleteTag(g, intarr_tag);
+  pumi_geom_deleteTag(g, longarr_tag);
+  pumi_geom_deleteTag(g, dblarr_tag);
+  pumi_geom_deleteTag(g, entarr_tag);
+
+  tags.clear();
+  pumi_geom_getTag (g, tags);
+  assert(!tags.size());
+}
+
 
