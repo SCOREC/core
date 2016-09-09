@@ -542,7 +542,7 @@ void pumi_ghost_delete (pMesh m)
 // *********************************************************
 {
   pMeshTag tag = pumi::instance()->ghosted_tag;
-  assert(tag);
+  if (!tag) return;
 
   for (int d=3; d>=0; --d)
   {

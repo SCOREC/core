@@ -157,14 +157,14 @@ void pumi_gent_getTag (pGeomEnt ent, std::vector<pTag>& tags);
 
 void pumi_gent_setPtrTag (pGeomEnt ent, pTag tag, void* data);
 void pumi_gent_getPtrTag (pGeomEnt ent, pTag tag, void** data);
-void pumi_gent_setIntTag (pGeomEnt ent, pTag tag,int data);
-int pumi_gent_getIntTag (pGeomEnt ent, pTag tag);
+void pumi_gent_setIntTag (pGeomEnt ent, pTag tag, const int data);
+void pumi_gent_getIntTag (pGeomEnt ent, pTag tag, int* data);
 void pumi_gent_setLongTag (pGeomEnt ent, pTag tag, const long data);
-long pumi_gent_getLongTag (pGeomEnt ent, pTag tag);
+void pumi_gent_getLongTag (pGeomEnt ent, pTag tag, long*);
 void pumi_gent_setDblTag (pGeomEnt ent, pTag tag, const double data);
-double pumi_gent_getDblTag (pGeomEnt ent, pTag tag);
+void pumi_gent_getDblTag (pGeomEnt ent, pTag tag, double*);
 void pumi_gent_setEntTag (pGeomEnt ent, pTag tag, const pGeomEnt data);
-pGeomEnt pumi_gent_getEntTag (pGeomEnt ent, pTag tag);
+void pumi_gent_getEntTag (pGeomEnt ent, pTag tag, pGeomEnt*);
 
 void pumi_gent_setPtrArrTag (pGeomEnt ent, pTag tag, void* const* data);
 void pumi_gent_getPtrArrTag (pGeomEnt ent, pTag tag, void** data);

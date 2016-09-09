@@ -195,13 +195,12 @@ void pumi_gent_setIntTag (pGeomEnt ent, pTag tag, const int data)
 }
 
 //**********************************************************
-int pumi_gent_getIntTag (pGeomEnt ent, pTag tag)
+void pumi_gent_getIntTag (pGeomEnt ent, pTag tag, int* data)
 //**********************************************************
 {
-  int* data;
   assert(!Taggable_GetData<int>(static_cast<pTaggable>(ent), tag, data));
-  return *data;
 }
+
 //**********************************************************
 void pumi_gent_setLongTag (pGeomEnt ent, pTag tag, const long data)
 //**********************************************************
@@ -210,12 +209,10 @@ void pumi_gent_setLongTag (pGeomEnt ent, pTag tag, const long data)
 }
 
 //**********************************************************
-long pumi_gent_getLongTag (pGeomEnt ent, pTag tag)
+void pumi_gent_getLongTag (pGeomEnt ent, pTag tag, long* data)
 //**********************************************************
 {
-  long* data;
   assert(!Taggable_GetData<long>(static_cast<pTaggable>(ent), tag, data));
-  return *data;
 }
 
 //**********************************************************
@@ -226,12 +223,10 @@ void pumi_gent_setDblTag (pGeomEnt ent, pTag tag, const double data)
 }
 
 //**********************************************************
-double pumi_gent_getDblTag (pGeomEnt ent, pTag tag)
+void pumi_gent_getDblTag (pGeomEnt ent, pTag tag, double* data)
 //**********************************************************
 {
-  double* data;
   assert(!Taggable_GetData<double>(static_cast<pTaggable>(ent), tag, data));
-  return *data;
 }
 
 //**********************************************************
@@ -242,12 +237,10 @@ void pumi_gent_setEntTag (pGeomEnt ent, pTag tag, const pGeomEnt data)
 }
 
 //**********************************************************
-pGeomEnt pumi_gent_getEntTag (pGeomEnt ent, pTag tag)
+void pumi_gent_getEntTag (pGeomEnt ent, pTag tag, pGeomEnt *data)
 //**********************************************************
 {
-  pGeomEnt *data;
   assert(!Taggable_GetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, data));
-  return *data;
 }
 
 //**********************************************************
