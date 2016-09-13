@@ -1,7 +1,3 @@
-# Package options
-option(PHASTA_CHEF_ENABLED "Enable the chef package [ON|OFF]" OFF)
-message(STATUS "PHASTA_CHEF_ENABLED: " ${PHASTA_CHEF_ENABLED})
-
 # Package sources
 set(SOURCES
   phCook.cc
@@ -23,16 +19,14 @@ set(SOURCES
   phFilterMatching.cc
   phAxisymmetry.cc
   phInterfaceCutter.cc
+  phstream.cc
 )
-
-if(NOT PHASTA_CHEF_ENABLED)
-  set(SOURCES ${SOURCES} phstreamEmpty/phstreamEmpty.cc)
-endif()
 
 # Package headers
 set(HEADERS
   chef.h
   phInput.h
+  phstream.h
 )
 
 # Add the ph library
@@ -55,15 +49,6 @@ target_link_libraries(ph
       pcu
       apf_zoltan
     )
-
-# Handle the complexity of the chef enabled flag
-if(PHASTA_CHEF_ENABLED)
-  target_link_libraries(ph PUBLIC phstream)
-else()
-  target_include_directories(ph PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/phstreamEmpty
-    )
-endif()
 
 scorec_export_library(ph)
 
