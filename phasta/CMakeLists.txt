@@ -32,6 +32,7 @@ endif()
 # Package headers
 set(HEADERS
   chef.h
+  phInput.h
 )
 
 # Add the ph library
