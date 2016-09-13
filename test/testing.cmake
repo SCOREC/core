@@ -279,20 +279,8 @@ mpi_test(ma_insphere 1
   ./ma_insphere)
 if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run)
-  if (PHASTA_CHEF_ENABLED)
-    mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
-      WORKING_DIRECTORY ${MDIR})
-    set(cmd
-      ${CMAKE_BINARY_DIR}/phasta/bin/checkphasta
-      ${MDIR}/1-procs_case/
-      ${MESHES}/phasta/1-1-Chef-Tet-Part/good_phasta/
-      0 1e-6)
-    add_test(
-      NAME compareChefStream
-      COMMAND ${cmd}
-      WORKING_DIRECTORY ${MDIR}
-    )
-  endif()
+  mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
+    WORKING_DIRECTORY ${MDIR})
   mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)

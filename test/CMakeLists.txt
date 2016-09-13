@@ -87,9 +87,7 @@ util_exe_func(chef ../phasta/chef.cc)
 util_exe_func(condense ../phasta/condense.cc)
 util_exe_func(chefReadUrPrep ../phasta/readUrPrep.cc)
 util_exe_func(threshold ../phasta/threshold.cc)
-if(PHASTA_CHEF_ENABLED)
-  util_exe_func(chefStream ../phasta/chefStream.cc)
-endif()
+util_exe_func(chefStream ../phasta/chefStream.cc)
 
 # Unit tests / functionality regression tests
 test_exe_func(qr qr.cc)
