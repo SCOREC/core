@@ -18,6 +18,8 @@ namespace {
     return !rank;
   }
   inline void printTime(const char* key, double t) {
+    (void) key;
+    (void) t;
 #if PHSTREAM_TIMERS_ON==1
     if( isRankZero() )
       fprintf(stderr, "%s %f seconds\n", key, t);
