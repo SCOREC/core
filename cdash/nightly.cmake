@@ -286,25 +286,20 @@ if(CTEST_DO_SUBMIT)
 endif()
 
 SET(CONFIGURE_OPTIONS
-  "-DCMAKE_C_COMPILER=mpicc"
-  "-DCMAKE_CXX_COMPILER=mpicxx"
-  "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
-  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
-  "-DENABLE_ZOLTAN=ON"
-  "-DPCU_COMPRESS=ON"
-  "-DIS_TESTING=True"
+  "-DCMAKE_C_COMPILER:FILEPATH=mpicc"
+  "-DCMAKE_CXX_COMPILER:FILEPATH=mpicxx"
+  "-DCMAKE_C_FLAGS:STRING=-O2 -g -Wall -Wextra"
+  "-DCMAKE_CXX_FLAGS:STRING=-O2 -g -Wall -Wextra"
+  "-DENABLE_ZOLTAN:BOOL=ON"
+  "-DPCU_COMPRESS:BOOL=ON"
+  "-DIS_TESTING:BOOL=True"
+  "-DMESHES:STRING=/lore/dibanez/meshes"
 )
 
 SET(CONFIGURE_OPTIONS-sim
-  "-DCMAKE_C_COMPILER=mpicc"
-  "-DCMAKE_CXX_COMPILER=mpicxx"
-  "-DCMAKE_C_FLAGS=-O2 -g -Wall -Wextra"
-  "-DCMAKE_CXX_FLAGS=-O2 -g -Wall -Wextra"
-  "-DENABLE_ZOLTAN=ON"
-  "-DPCU_COMPRESS=ON"
-  "-DIS_TESTING=True"
-  "-DSIM_PARASOLID=ON"
-  "-DSIM_MPI=mpich3.1.2"
+  "${CONFIGURE_OPTIONS}"
+  "-DSIM_PARASOLID:BOOL=ON"
+  "-DSIM_MPI:STRING=mpich3.1.2"
 )
 
 SET(ALLOWED_WARNINGS 0)
@@ -319,5 +314,5 @@ foreach(REPO_SUFFIX IN LISTS REPO_SUFFIXES)
   endforeach()
 endforeach()
 try_merge(master "" develop "${CONFIGURE_OPTIONS}" ${ALLOWED_WARNINGS})
-try_merge(master "-sim" master "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
 try_merge(master "-sim" develop-sim "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
+try_merge(master "-sim" master "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})

@@ -56,6 +56,7 @@ set(HEADERS
   apfDynamicMatrix.h
   apfDynamicVector.h
   apfDynamicArray.h
+  apfField.h
   apfNew.h
   apfCavityOp.h
   apfShape.h
