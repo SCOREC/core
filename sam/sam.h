@@ -2,7 +2,6 @@
 #define SAM_H
 
 #include <apf.h>
-#include <apfField.h>
 
 namespace sam {
 
