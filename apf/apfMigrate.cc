@@ -317,9 +317,31 @@ static void packReference(
   Copies remotes;
   m->getRemotes(e,remotes);
   Copies::iterator found = remotes.find(to);
-  MeshEntity* remote = found->second;
-  assert(remote);
-  PCU_COMM_PACK(to,remote);
+  if (found!=remotes.end())
+  {
+    MeshEntity* remote = found->second;
+    PCU_COMM_PACK(to,remote);
+  }
+  else
+  {
+/*  int global_id;
+  MeshTag* tag = m->findTag("global_id");
+  m->getIntTag(e, tag, &global_id);
+
+    if (global_id==9 && getDimension(m, e)==0)
+      APF_ITERATE(Copies,remotes,rit)
+      {
+        printf("(%d) e (d %d, id %d)'s remote exists on p %d\n", PCU_Comm_Self(), getDimension(m, e),global_id, rit->first); 
+      }
+    printf("(%d) packReference - getGhosts e (d %d, id %d)\n", PCU_Comm_Self(), getDimension(m, e),global_id);
+*/
+    Copies ghosts;
+    m->getGhosts(e,ghosts);
+    found = ghosts.find(to);
+    assert(found!=ghosts.end());
+    MeshEntity* ghost = found->second;
+    PCU_COMM_PACK(to,ghost);
+  }
 }
 
 static void packDownward(Mesh2* m, int to, MeshEntity* e)
@@ -394,6 +416,39 @@ static void packTags(
   }
 }
 
+// seol
+void packRemotes(
+    Mesh2* m,
+    int to,
+    MeshEntity* e)
+{
+  Copies remotes;
+  m->getRemotes(e,remotes);
+  size_t n = remotes.size();
+  PCU_COMM_PACK(to,n);
+  APF_ITERATE(Copies,remotes,rit)
+  {
+    int p=rit->first;
+    MeshEntity* remote = rit->second;
+    PCU_COMM_PACK(to,p);
+    PCU_COMM_PACK(to,remote);
+  }
+}
+
+void unpackRemotes(Mesh2* m, MeshEntity* e)
+{
+  size_t n;
+  PCU_COMM_UNPACK(n);
+  for (int i=0; i < n; ++i)
+  {
+    int p;
+    PCU_COMM_UNPACK(p);
+    MeshEntity* r;
+    PCU_COMM_UNPACK(r);
+    m->addRemote(e, p, r);
+  }
+}
+
 void unpackTags(
     Mesh2* m,
     MeshEntity* e,
@@ -427,7 +482,8 @@ void packEntity(
     Mesh2* m,
     int to,
     MeshEntity* e,
-    DynamicArray<MeshTag*>& tags)
+    DynamicArray<MeshTag*>& tags,
+    bool ghosting)
 {
   int type = m->getType(e);
   PCU_COMM_PACK(to,type);
@@ -437,6 +493,8 @@ void packEntity(
   else
     packNonVertex(m,to,e);
   packTags(m,to,e,tags);
+  if (ghosting) 
+    packRemotes(m, to, e);
 }
 
 static MeshEntity* unpackEntity(

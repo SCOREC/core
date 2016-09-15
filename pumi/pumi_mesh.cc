@@ -230,6 +230,29 @@ int pumi_mesh_getNumEnt(pMesh m, int dim)
 { return m->count(dim); }
 
 #include <parma.h>
+
+void print_copies(pMesh m, pMeshEnt e)
+{
+  if (m->isShared(e))
+  {
+    Copies remotes;
+    m->getRemotes(e,remotes);
+    std::cout<<"\tremotes: ";
+    APF_ITERATE(Copies,remotes,rit)
+      std::cout<<"("<<rit->first<<", "<<rit->second<<") ";
+    std::cout<<"\n";
+  }
+  if (m->isGhosted(e) || m->isGhost(e))
+  {
+    Copies ghosts;
+    m->getGhosts(e,ghosts);
+    std::cout<<"\tghosts: ";
+    APF_ITERATE(Copies,ghosts,rit)
+      std::cout<<"("<<rit->first<<", "<<rit->second<<") ";
+    std::cout<<"\n";
+  }
+}
+
 void pumi_mesh_print (pMesh m, int p)
 {
   if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \nglobal ";
@@ -256,61 +279,55 @@ void pumi_mesh_print (pMesh m, int p)
   delete [] local_entity_count;
   delete [] global_entity_count;
 
-    if (!PCU_Comm_Self())
-    {
-      apf::DynamicArray<pMeshTag> tags;
-      m->getTags(tags);
-      int n = tags.getSize();
-      for (int i = 0; i < n; ++i) 
-        std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "
-                << m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
-    }
-
-  return;
+  if (!PCU_Comm_Self())
+  {
+    apf::DynamicArray<pMeshTag> tags;
+    m->getTags(tags);
+    int n = tags.getSize();
+    for (int i = 0; i < n; ++i) 
+      std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "
+              << m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
+  }
 
   // print mesh entities
   if (p!=PCU_Comm_Self()) return;
-  pMeshEnt e;
 
+  pMeshEnt e;
+  int global_id;
   apf::MeshIterator* vit = m->begin(0);
   while ((e = m->iterate(vit)))
   {
     apf::Vector3 xyz;
     m->getPoint(e, 0, xyz);
-    std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<pumi_ment_getGlobalID(e)
+    if (m->isGhost(e))
+      std::cout<<"("<<PCU_Comm_Self()<<") GHOST vtx "<<pumi_ment_getGlobalID(e)
              <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
+    else
+      std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<pumi_ment_getGlobalID(e)
+             <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
+    print_copies(m,e);
   }
   m->end(vit);
 
-  apf::MeshIterator* eit = m->begin(1);
-  while ((e = m->iterate(eit)))
+  for (int d=1; d<4; ++d)
   {
-    int global_id=pumi_ment_getGlobalID(e);
-    apf::Downward vertices;
-    m->getDownward(e,0,vertices); 
-    std::cout<<"("<<PCU_Comm_Self()<<") edge "<<global_id<<" (v"<<pumi_ment_getGlobalID(vertices[0])
-              <<", v"<<pumi_ment_getGlobalID(vertices[1])<<")\n";
+    apf::MeshIterator* eit = m->begin(d);
+    while ((e = m->iterate(eit)))
+    {
+      global_id=pumi_ment_getGlobalID(e);
+      apf::Downward down;
+      int num_down=m->getDownward(e,d-1,down); 
+      if (m->isGhost(e)) 
+        std::cout<<"("<<PCU_Comm_Self()<<") GHOST e [d "<<d<<", id "<<global_id<<"] down: ";
+      else
+        std::cout<<"("<<PCU_Comm_Self()<<") e [d "<<d<<", id "<<global_id<<"] down: ";
+      for (int i=0; i<num_down; ++i)
+        std::cout<<pumi_ment_getGlobalID(down[i])<<" ";
+      std::cout<<"\n";
+      print_copies(m,e);
+    }
+    m->end(eit);
   }
-  m->end(eit);
-
-  apf::MeshIterator* elem_it = m->begin(m->getDimension());
-  while ((e = m->iterate(elem_it)))
-  {
-    int global_id=pumi_ment_getGlobalID(e);
-    apf::Downward vertices;
-    int num_vtx=m->getDownward(e,0,vertices); 
-    apf::Downward onelevel_down;
-    m->getDownward(e,m->getDimension()-1,onelevel_down); 
-    if (num_vtx==3) // triangle
-      std::cout<<"("<<PCU_Comm_Self()<<") elem "<<global_id
-              <<": v("<<pumi_ment_getGlobalID(vertices[0])
-              <<", "<<pumi_ment_getGlobalID(vertices[1])
-              <<", "<<pumi_ment_getGlobalID(vertices[2])
-              <<"), e("<<pumi_ment_getGlobalID(onelevel_down[0])
-              <<", "<<pumi_ment_getGlobalID(onelevel_down[1])
-              <<", "<<pumi_ment_getGlobalID(onelevel_down[2])<<")\n";
-  }
-  m->end(elem_it);
 }
 
 void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
@@ -337,6 +354,11 @@ void pumi_mesh_delete(pMesh m)
 
 void pumi_mesh_verify(pMesh m)
 {
+  if (pumi::instance()->ghosted_tag)
+  {
+    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
+    return;
+  }
   apf::verify(m);
 }
 
@@ -566,5 +588,11 @@ void pumi_mesh_distribute(pMesh m, Distribution* plan)
 // *********************************************************
 {
   if (PCU_Comm_Peers()==1) return;
+
+  if (pumi::instance()->ghosted_tag)
+  {
+    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
+    return;
+  }
   distribute(m, plan);
 }

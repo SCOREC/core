@@ -301,7 +301,7 @@ class MeshMDS : public Mesh2
     void getGhosts(MeshEntity* e, Copies& ghosts)
     {
       mds_copies* c = mds_get_copies(&mesh->ghosts, fromEnt(e));
-      assert(c != NULL);
+      if (c==NULL) return;
       for (int i = 0; i < c->n; ++i)
         ghosts[c->c[i].p] = toEnt(c->c[i].e);
     }

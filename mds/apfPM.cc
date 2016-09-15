@@ -67,9 +67,10 @@ static void setOwners(PM& ps, CountMap& mp)
     std::vector<int> const& ids = p.ids;
     assert(ids.size());
     int owner = ids[0];
-    assert(mp.count(owner));
-    for (size_t i = 1; i < ids.size(); ++i) {
-      assert(mp.count(ids[i]));
+//    assert(mp.count(owner)); // seol - this doesn't work for ghost copy
+    for (size_t i = 1; i < ids.size(); ++i) 
+    {
+//      assert(mp.count(ids[i]));  // seol - this doesn't work for ghost copy
       if (mp[ids[i]] < mp[owner])
         owner = ids[i];
     }

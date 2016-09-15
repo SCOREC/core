@@ -212,7 +212,9 @@ void reduceMatchingToSenders(
     EntityVector senders[4]);
 void getSenders(Mesh2* m,EntityVector affected[4],EntityVector senders[4]);
 void split(Copies& remotes, Parts& parts, Parts& newParts);
-void packEntity(Mesh2* m, int to, MeshEntity* e, DynamicArray<MeshTag*>& tags);
+// seol
+void packEntity(Mesh2* m, int to, MeshEntity* e, DynamicArray<MeshTag*>& tags, bool ghosting=false);
+void unpackRemotes(Mesh2* m, MeshEntity* e);
 void unpackTags(Mesh2* m, MeshEntity* e, DynamicArray<MeshTag*>& tags);
 void unpackCommon(Mesh2* m, MeshEntity*& sender, ModelEntity*& c, Parts& residence);
 MeshEntity* unpackVertex(Mesh2* m, ModelEntity* c);
