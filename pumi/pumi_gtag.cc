@@ -67,7 +67,7 @@ void pumi_geom_deleteTag (pGeom g, pTag tag, int forceDel)
 
       // entity
       for (int i=0; i<=part->getDimension(); ++i)
-        for (mPart::iterall ent_it=part->beginall(i); ent_it!=part->endall(i); ++ent_it)
+        for (mPart::iterall ent_it=part->begin(i); ent_it!=part->end(i); ++ent_it)
           Taggable_DelTag(static_cast<pTaggable>(*ent_it), tag);
      // part set
      std::vector<pEntSet> entsets;

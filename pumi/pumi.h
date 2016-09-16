@@ -31,8 +31,8 @@ public:
   void add (int d, gEntity *ge) {allEntities.add(d, ge);}
   void del(int d, gEntity *ge) {allEntities.del(d, ge); } 
   typedef mPartEntityContainer::iter iterall;
-  iterall beginall(int d) {return allEntities.begin(d);}
-  iterall endall(int d) {return allEntities.end(d);}
+  iterall begin(int d) {return allEntities.begin(d);}
+  iterall end(int d) {return allEntities.end(d);}
   int size(int d) {return allEntities.size(d); }
 };
 
@@ -129,11 +129,20 @@ int pumi_tag_getByte (const pTag tag);
 //************************************
 // Model management
 //************************************
-
+// Geometric Model
 // create a model from a file
 pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh");
 
-// iterator
+int pumi_geom_getNumEnt(pGeom g, int d);
+
+// Geometric Entity
+// get geometric entity's dimension
+int pumi_gent_getDim(pGeomEnt ge);
+// get geometric entity's global id
+int pumi_gent_getID(pGeomEnt ge);
+void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
+
+// Geometric Model Iterator
 /*
 int pumi_giter_init (pGeom part, int type, gIter&);
 int pumi_giter_getNext(gIter iter, pGeomEnt&);
@@ -340,14 +349,6 @@ void pumi_ghost_getInfo (pMesh m, std::vector<int>& ghostinfo);
 //************************************
 //  Mesh Entity
 //************************************
-// get geometric entity's dimension
-int pumi_gent_getDim(pGeomEnt ge);
-
-// get geometric entity's global id
-int pumi_gent_getID(pGeomEnt ge);
-
-void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
-
 // get mesh entity's dimension
 int pumi_ment_getDim(pMeshEnt e);
 

@@ -344,8 +344,32 @@ void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
   if (!strcmp(mesh_type,"mds"))
     m->writeNative(filename);
   else if (!strcmp(mesh_type,"vtk"))
+  {
+    // attach ghost flag for visualization
+    apf::Field* ghost_f = apf::createStepField(m, "ghost_field", apf::SCALAR);
+    apf::Field* own_f = apf::createStepField(m, "own_field", apf::SCALAR);
+    apf::MeshIterator* it = m->begin(m->getDimension());
+    apf::MeshEntity* e;
+    double ghost_value, own_partid;
+    int ghost_flag=1, non_ghost_flag=0;
+    while ((e = m->iterate(it))) 
+    { 
+      own_partid=pumi_ment_getOwnPID(e);
+      if (m->isGhost(e))
+        ghost_value=ghost_flag;
+      else
+        ghost_value=non_ghost_flag;
+      setScalar(ghost_f, e, 0, ghost_value);
+      setScalar(own_f, e, 0, own_partid);
+    }
+    m->end(it);
+
     apf::writeVtkFiles(filename, m);
-  else
+
+    destroyField(ghost_f);
+    destroyField(own_f);
+  }
+else
     if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
 }
 

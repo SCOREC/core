@@ -190,7 +190,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pTag entarr_tag = pumi_geom_findTag(g, "entity array");
 
   // get an entity to use as tag data
-  pGeomEnt ent_tag_data=*(g->beginall(0));
+  pGeomEnt ent_tag_data=*(g->begin(0));
 
   // pumi_gent_set/getPtrTag 
   pumi_gent_setPtrTag (ent, pointer_tag, (void*)(data));
@@ -332,7 +332,7 @@ void TEST_GEOM_TAG(pGeom g)
   pumi_geom_getTag(g, tags);
   assert(cloneTag == pointer_tag && tags.size()==9);
 
-  for (gModel::iterall gent_it = g->beginall(0); gent_it!=g->endall(0);++gent_it)
+  for (gModel::iterall gent_it = g->begin(0); gent_it!=g->end(0);++gent_it)
   {
     TEST_GENT_SETGET_TAG(g, *gent_it);
     TEST_GENT_DEL_TAG(g, *gent_it);

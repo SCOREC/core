@@ -54,6 +54,11 @@ pGeom pumi_geom_load(const char* filename, const char* model_type)
   return pumi::instance()->model;
 }
 
+int pumi_geom_getNumEnt(pGeom g, int d)
+{
+  return g->getGmi()->n[d];
+}
+
 inline void processingNonFilter(mPartEntityContainer::iter& it_begin, mPartEntityContainer::iter& it_end, void* ptr, int type, int topo)
 {}
 
@@ -67,7 +72,7 @@ int pumi_giter_init (pGeom model, int type, gIter& iter)
 // /users/seol/develop/pumi/trunk/pumi/pumi_geom.cc:65:40: error: new initializer expression list treated as compound expression [-fpermissive] &processingNonFilter);
 // /users/seol/develop/pumi/trunk/pumi/pumi_geom.cc:65:40: error: cannot convert 'void (*)(mPartEntityContainer::iter&, mPartEntityContainer::iter&, void*, int, int) {aka void (*)(ListIterator<gEntity>&, ListIterator<gEntity>&, void*, int, int)}' to 'gIter {aka GenIterator<ListIterator<gEntity>, gEntity>*}' in initialization
 
-//  iter = new gIter(model->beginall(type), model->endall(type), dim, type, (void*)model, 
+//  iter = new gIter(model->begin(type), model->end(type), dim, type, (void*)model, 
 //                   &processingNonFilter);
   if (iter->end())
     return PUMI_FAILURE;
