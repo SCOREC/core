@@ -150,8 +150,8 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-//    if (in.adaptFlag)
-//      ph::goToStepDir(in.timeStepNumber);
+    if (in.adaptFlag)
+      ph::goToStepDir(in.timeStepNumber);
     std::string path = ph::setupOutputDir();
     ph::setupOutputSubdir(path);
     ph::enterFilteredMatching(m, in, bcs);
@@ -190,8 +190,8 @@ namespace ph {
     m->verify();
     gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
-//    if (in.adaptFlag)
-//      ph::goToParentDir();
+    if (in.adaptFlag)
+      ph::goToParentDir();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     gmi_model* g = m->getModel();
