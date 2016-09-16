@@ -52,6 +52,7 @@ typedef apf::EntityVector EntityVector;
 typedef apf::Parts Parts;
 typedef apf::Up Up;
 typedef apf::Downward Downward;
+typedef apf::Migration Migration;
 
 // singleton to save model/mesh
 class pumi
@@ -182,6 +183,8 @@ void pumi_gent_getEntArrTag (pGeomEnt ent, pTag tag, pGeomEnt** data, int* data_
 // Mesh management
 //************************************
 
+pGeom pumi_mesh_getGeom(pMesh m);
+
 // load a serial mesh. 
 pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type="mds");
 
@@ -212,41 +215,46 @@ void pumi_mesh_verify(pMesh m);
 //************************************
 // mesh tag management
 //************************************
-pMeshTag pumi_mesh_createTag (pMesh mesh, const char* tagName, int tagType, int tagSize);
-void pumi_mesh_deleteTag (pMesh mesh, pMeshTag tag, int forceDel);
-pMeshTag pumi_mesh_findTag (pMesh mesh, const char* tagName);
-bool pumi_mesh_hasTag (pMesh mesh, const pMeshTag tag);
-void pumi_mesh_getTag (pMesh mesh, std::vector<pMeshTag>& tags);
+
+/*
+pTag pumi_mesh_createTag (pMesh g, const char* tagName, int tagType, int tagSize);
+void pumi_mesh_deleteTag (pMesh g, pTag tag, int forceDel=0);
+pTag pumi_mesh_findTag (pMesh g, const char* tagName);
+bool pumi_mesh_hasTag (pMesh g, const pTag tag);
+bool pumi_mesh_isTagInUse (pMesh g, const pTag tag);
+void pumi_mesh_getTag (pMesh g, std::vector<pTag>& tags);
 // sync tag data attached to the part boundary entities
 void pumi_mesh_syncTag (pMesh mesh, pMeshTag tag, int ent_type);
 
-void PUMI_MeshEnt_deleteTag (pMeshEnt meshEnt, pMeshTag tag);
-bool PUMI_MeshEnt_hasTag (pMeshEnt meshEnt, pMeshTag tag);
-void pumi_ment_getTag (pMeshEnt meshEnt, std::vector<pMeshTag>& tags);
+bool pumi_ment_hasTag (pMeshEnt ent, pTag tag);
+void pumi_ment_deleteTag (pMeshEnt ent, pTag tag);
+void pumi_ment_getTag (pMeshEnt ent, std::vector<pTag>& tags);
 
-//int pumi_ment_setPtrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void* data);
-//int pumi_ment_getPtrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void** data);
-void pumi_ment_setIntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const int data);
-int pumi_ment_getIntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, int* data);
-void pumi_ment_setLongTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const int data);
-int pumi_ment_getLongTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, int* data);
-void pumi_ment_setDblTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const double data);
-int pumi_ment_getDblTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, double* data);
-//int pumi_ment_setEntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pMeshEnt data);
-//int pumi_ment_getEntTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pMeshEnt* data);
-//int pumi_ment_setSetTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pEntSet data);
-//int pumi_ment_getSetTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pEntSet* data);
+//void pumi_ment_setStringTag(pMeshEnt ent, pTag tag, const char* s);
+//void pumi_ment_getStringTag(pMeshEnt ent, pTag tag, const char*& s);
 
-//int pumi_ment_setPtrArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void* const* data);
-//int pumi_ment_getPtrArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, void** data);
-void pumi_ment_setIntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const int* data, int data_size);
-void pumi_ment_getIntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, int** data, int* data_size);
-void pumi_ment_setDblArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const double* data, int data_size);
-void pumi_ment_getDblArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, double** data, int* data_size);
-//int pumi_ment_setEntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pMeshEnt* data, int data_size);
-//int pumi_ment_getEntArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pMeshEnt** data, int* data_size);
-//int pumi_ment_setSetArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, const pEntSet* data, int data_size);
-//int pumi_ment_getSetArrTag (pMesh mesh, pMeshEnt ent, pMeshTag tag, pEntSet** data, int* data_size);
+void pumi_ment_setPtrTag (pMeshEnt ent, pTag tag, void* data);
+void pumi_ment_getPtrTag (pMeshEnt ent, pTag tag, void** data);
+void pumi_ment_setIntTag (pMeshEnt ent, pTag tag, const int data);
+void pumi_ment_getIntTag (pMeshEnt ent, pTag tag, int* data);
+void pumi_ment_setLongTag (pMeshEnt ent, pTag tag, const long data);
+void pumi_ment_getLongTag (pMeshEnt ent, pTag tag, long*);
+void pumi_ment_setDblTag (pMeshEnt ent, pTag tag, const double data);
+void pumi_ment_getDblTag (pMeshEnt ent, pTag tag, double*);
+void pumi_ment_setEntTag (pMeshEnt ent, pTag tag, const pMeshEnt data);
+void pumi_ment_getEntTag (pMeshEnt ent, pTag tag, pMeshEnt*);
+
+void pumi_ment_setPtrArrTag (pMeshEnt ent, pTag tag, void* const* data);
+void pumi_ment_getPtrArrTag (pMeshEnt ent, pTag tag, void** data);
+void pumi_ment_setIntArrTag (pMeshEnt ent, pTag tag, const int* data);
+void pumi_ment_getIntArrTag (pMeshEnt ent, pTag tag, int** data, int* data_size);
+void pumi_ment_setLongArrTag (pMeshEnt ent, pTag tag, const long* data);
+void pumi_ment_getLongArrTag (pMeshEnt ent, pTag tag, long** data, int* data_size);
+void pumi_ment_setDblArrTag (pMeshEnt ent, pTag tag, const double* data);
+void pumi_ment_getDblArrTag (pMeshEnt ent, pTag tag, double** data, int* data_size);
+void pumi_ment_setEntArrTag (pMeshEnt ent, pTag tag, const pMeshEnt* data);
+void pumi_ment_getEntArrTag (pMeshEnt ent, pTag tag, pMeshEnt** data, int* data_size);
+*/
 
 //************************************
 //  Ghosting
@@ -284,6 +292,8 @@ class Ghosting
     std::vector<Parts*> parts_vec[4];
 };
 
+// migrate mesh per migration plan which contains a set of pairs [element and destination part]
+void pumi_mesh_migrate(pMesh m, Migration* plan);
 
 /* 
 input:

@@ -163,6 +163,10 @@ void merge_comm(MPI_Comm oldComm)
 }
 
 
+pGeom pumi_mesh_getGeom(pMesh m)
+{
+  return pumi::instance()->model;
+}
 
 // load a serial mesh on master process then distribute as per the distribution object
 pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
@@ -219,6 +223,11 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
 
   generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
+}
+
+void pumi_mesh_migrate(pMesh m, Migration* plan)
+{
+  apf::migrate(m, plan);
 }
 
 int pumi_mesh_getDim(pMesh m)

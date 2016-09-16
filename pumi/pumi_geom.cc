@@ -27,6 +27,7 @@ gModel::~gModel()
 {
   delete g;
 }
+
 pGeom pumi_geom_load(const char* filename, const char* model_type)
 {
   assert(!strcmp(model_type,"null") || !strcmp(model_type,"mesh") || !strcmp(model_type,"analytic"));

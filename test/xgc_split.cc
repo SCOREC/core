@@ -2,8 +2,9 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
+#include <cstring>
+#include "pumi.h"
 #include <PCU.h>
-#include <parma.h>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -41,119 +42,111 @@ void switchToAll()
 
 void getConfig(int argc, char** argv)
 {
-  if ( argc != 5 ) {
+  if ( argc != 4) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
   meshFile = argv[2];
   outFile = argv[3];
-  partitionFactor = atoi(argv[4]);
+  partitionFactor = pumi_size();
   assert(partitionFactor <= PCU_Comm_Peers());
 }
 
 }
 
-apf::Migration* get_model_plan(gmi_model* g, apf::Mesh* m)
+apf::Migration* get_xgc_plan(gmi_model* g, apf::Mesh* m, int num_peers)
 {
+  int dim = m->getDimension();
   apf::Migration* plan = new apf::Migration(m);
   apf::MeshEntity* e;
   int num_gface = g->n[2];
-  assert(gmi_find(g, 2, num_gface));
-
+  gmi_ent* gface = gmi_find(g, 2, num_gface);
+  assert(gface);
   int gface_id;
-  gmi_ent* gface;
-  apf::MeshIterator* it = m->begin(2);
-  while ((e = m->iterate(it)))
-  {
-    gface = (gmi_ent*)(m->toModel(e));
-    gface_id = gmi_tag(g, gface);
-    plan->send(e, gface_id-1);
+  int dest_pid;
+  apf::MeshIterator* it = m->begin(2); // face
+  while ((e = m->iterate(it))) 
+  { 
+    gface = (gmi_ent*)(m->toModel(e)); // get the classification
+    gface_id = gmi_tag(g, gface); // get the geom face id
+    dest_pid = gface_id-1;
+    plan->send(e, dest_pid);    
   }
   m->end(it);
   return plan;
 }
 
-#include <cstring>
-#include "omega_h.h"
-#include <apfOmega_h.h>
-#include "apfMesh2.h"
-#include "apf.h"
+pMesh split_serial_xgc_mesh(pGeom model)
+{
+  bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
+
+  gmi_model* g = model->getGmi();
+
+  apf::Mesh2* m = 0;
+  apf::Migration* plan = 0;
+//  apf::MeshTag* dest_pid_tag = m->createIntTag("dest_pid", 2);
+  switchToOriginals();
+  if (isOriginal) {
+    m = pumi_mesh_load(model, meshFile, 1);
+    plan = get_xgc_plan(g, m, pumi_size()); // determine the destination part id for elements
+  }
+  switchToAll();
+  m = repeatMdsMesh(m, g, plan, partitionFactor);
+  pumi_mesh_write(m,outFile);
+
+  // write to vtk
+  char without_extension[256];
+  snprintf(without_extension,strlen(outFile)-3,"%s",outFile);
+  char vtk_fname[32];
+  sprintf(vtk_fname,"%s.vtk",without_extension); 
+  pumi_mesh_write(m, vtk_fname, "vtk");
+  m->verify();
+  return m;
+}
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
-  gmi_register_mesh();
-  getConfig(argc,argv);
-  bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
-  gmi_model* g = 0;
-  g = gmi_load(modelFile);
-  apf::Mesh2* m = 0;
-  apf::Migration* plan = 0;
-  switchToOriginals();
-  if (isOriginal) {
-    m = apf::loadMdsMesh(g, meshFile);
-    plan = get_model_plan(g, m);
-  }
-  switchToAll();
-  m = repeatMdsMesh(m, g, plan, partitionFactor);
-  m->writeNative(outFile);
+  pumi_start();
 
-  // write to vtk
-  apf::writeVtkFiles("partitioned", m);
+  getConfig(argc,argv);
+
+  pGeom model = pumi_geom_load(modelFile);
+  // FIXME: loading serial xgc mesh (/meshes/xgc/mesh.smb) then splitting and ghosting fails inside ghosting
+  //  pMesh m = split_serial_xgc_mesh(model);
+  // Loading a partitioned xgc mesh (/meshes/xgc/1-xpoint.smb) and ghosting works
+  pMesh m = pumi_mesh_load(model, meshFile, pumi_size());
 
   // ghosting
-  apf::Mesh2* gm = apf::makeEmptyMdsMesh(g, 2, false);
-
-  double t0 = PCU_Time();
-  osh_t osh_mesh = osh::fromAPF(m);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-    std::cout << "to omega_h " << t1 - t0 << " seconds\n";
-  osh_ghost(osh_mesh, 3);
-  double t2 = PCU_Time();
-  if (!PCU_Comm_Self())
-    std::cout << "3 layer ghosting " << t2 - t1 << " seconds\n";
-  osh::toAPF(osh_mesh, gm);
-  double t3 = PCU_Time();
-  if (!PCU_Comm_Self())
-    std::cout << "back to APF " << t3 - t2 << " seconds\n";
+  pumi_ghost_createLayer(m, 0, 2, 1, 1);
 
   // attach ghost flag
-
-  apf::MeshTag* own_tag = gm->findTag("owner");
-  assert (own_tag);
-  int own_partid;
-
-  apf::Field* ghost_f = apf::createStepField(gm, "ghost_field", apf::SCALAR);
-  apf::Field* own_f = apf::createStepField(gm, "own_field", apf::SCALAR);
-  apf::MeshIterator* it = gm->begin(2);
+  apf::Field* ghost_f = apf::createStepField(m, "ghost_field", apf::SCALAR);
+  apf::Field* own_f = apf::createStepField(m, "own_field", apf::SCALAR);
+  apf::MeshIterator* it = m->begin(2);
   apf::MeshEntity* e;
-  double ghost_value;
+  double ghost_value, own_partid;
   int ghost_flag=1, non_ghost_flag=0;
-  while ((e = gm->iterate(it)))
-  {
-    gm->getIntTag(e, own_tag, &own_partid); //gm->getOwner(e) does not work
-    if (own_partid!=PCU_Comm_Self())
+  while ((e = m->iterate(it))) 
+  { 
+    own_partid=pumi_ment_getOwnPID(e);
+    if (pumi_ment_isGhost(e))
       ghost_value=ghost_flag;
     else
       ghost_value=non_ghost_flag;
     setScalar(ghost_f, e, 0, ghost_value);
     setScalar(own_f, e, 0, own_partid);
   }
-  gm->end(it);
+  m->end(it);
 
-  apf::writeVtkFiles("ghosted", gm);
+  pumi_mesh_write(m, "ghosted", "vtk");
 
-  destroyField(ghost_f);
-  destroyField(own_f);
-  osh_free(osh_mesh);
+  pumi_mesh_delete(m);
 
-  freeMesh(m);
-  PCU_Comm_Free();
+  pumi_finalize();
   MPI_Finalize();
 }
 
