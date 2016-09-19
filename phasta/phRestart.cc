@@ -137,7 +137,8 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
-    "meshQ"
+    "meshQ",
+    "material_type"
   };
   int known_nodal_field_count =
     sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);

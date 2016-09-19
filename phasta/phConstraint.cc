@@ -296,7 +296,7 @@ static Constraint* combinePoints(Constraint* a, Constraint* b,
   if (mb == 0)
     return takeFirst(b, a);
   /* multiple non-zero point constraints ? we got a problem. */
-  std::cerr << "ph error: point overconstrain (standard): ";
+  std::cerr << "ph error: point overconstrain (velocity): ";
   std::cerr << pa->point << " and " << pb->point << dbg;
   abort();
   return 0;
@@ -334,7 +334,7 @@ static Constraint* combinePlanes(Constraint* a, Constraint* b,
     return takeFirst(a, b);
   /* the planes are different, so make sure they're not parallel */
   if (apf::areParallel(pa->plane, pb->plane, 0.0)) {
-    std::cerr << "ph error: different parallel planes (standard)" << dbg;
+    std::cerr << "ph error: different parallel planes (velocity)" << dbg;
     abort();
   }
   /* different intersecting planes, combine into a line constraint */
@@ -383,7 +383,7 @@ static Constraint* combineLinePlane(Constraint* a, Constraint* b,
     return takeFirst(a, b); /* keep the line */
   /* it may never intersect */
   if (apf::areParallel(line, pb->plane, 0.0)) {
-    std::cerr << "line doesn't intersect plane (standard)" << dbg;
+    std::cerr << "line doesn't intersect plane (velocity)" << dbg;
     abort();
   }
   /* okay, there is a legit intersection point. find it. */

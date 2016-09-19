@@ -76,8 +76,8 @@ struct CompBC : public SimBC {
         magnitude = (pAttributeDouble) child;
       else if (Attribute_repType(child) == Att_tensor1)
         direction = (pAttributeTensor1) child;
-else
-  fprintf(stderr,"ignored some comp1/3 attributes...\n");
+      else
+        fprintf(stderr,"ignored some comp1/3 attributes...\n");
     }
     PList_delete(children);
     if (!magnitude) {
