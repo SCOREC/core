@@ -71,34 +71,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::tetrahedronize(in, m);
   plan = ph::split(in, m);
 }
-/*
-static FILE* openfile_read(ph::Input&, const char* path) {
-  return pcu_group_open(path, false);
-}
 
-static FILE* openfile_write(ph::Output&, const char* path) {
-  return pcu_group_open(path, true);
-}
-
-static FILE* openstream_write(ph::Output& out, const char* path) {
-  return openGRStreamWrite(out.grs, path);
-}
-
-static FILE* openstream_read(ph::Input& in, const char* path) {
-  std::string fname(path);
-  std::string restartStr("restart");
-  FILE* f = NULL;
-  if( fname.find(restartStr) != std::string::npos )
-    f = openRStreamRead(in.rs);
-  else {
-    fprintf(stderr,
-      "ERROR %s type of stream %s is unknown... exiting\n",
-      __func__, fname.c_str());
-    exit(1);
-  }
-  return f;
-}
-*/
 }//end namespace
 
 namespace chef {
