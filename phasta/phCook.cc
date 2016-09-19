@@ -71,7 +71,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::tetrahedronize(in, m);
   plan = ph::split(in, m);
 }
-
+/*
 static FILE* openfile_read(ph::Input&, const char* path) {
   return pcu_group_open(path, false);
 }
@@ -98,7 +98,7 @@ static FILE* openstream_read(ph::Input& in, const char* path) {
   }
   return f;
 }
-
+*/
 }//end namespace
 
 namespace chef {
@@ -167,7 +167,7 @@ namespace ph {
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
-      out.openfile_write = openfile_write;
+      out.openfile_write = chef::openfile_write;
       writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
       // reset the function pointer to the original value
       out.openfile_write = fn;
