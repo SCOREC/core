@@ -51,7 +51,7 @@ pTag pumi_geom_createTag (pGeom m, const char* tag_name, int tag_type, int tag_s
 }
 
 //**********************************************************
-void pumi_geom_deleteTag (pGeom g, pTag tag, int forceDel)
+void pumi_geom_deleteTag (pGeom g, pTag tag, int)
 //**********************************************************
 { 
   if (!pumi_geom_hasTag (g, tag)) return;
@@ -111,23 +111,24 @@ bool pumi_geom_hasTag (pGeom m, const pTag tag)
 }
 
 //**********************************************************
-bool pumi_geom_isTagInUse (pGeom m, const pTag tag)
+bool pumi_geom_isTagInUse (pGeom, const pTag)
 //**********************************************************
 {
   if (!pumi_rank()) std::cout<<__func__<<" not supported\n";
+  // FIXME
+  return true;
   // entity
-  for (int i=0; i<=3; ++i)
-  {
-    gmi_iter* giter = gmi_begin(m->getGmi(), i);
-    while(gmi_ent* gent = gmi_next(m->getGmi(), giter))
-  {
-    // FIXME
+//for (int i=0; i<=3; ++i)
+//{
+//  gmi_iter* giter = gmi_begin(m->getGmi(), i);
+//  while(gmi_ent* gent = gmi_next(m->getGmi(), giter))
+//  {
 //    if (Taggable_HasTag(static_cast<pTaggable>(*gent), tag)) 
-      return true;
-    }
-    gmi_end(m->getGmi(), giter);
-  }
-  return false;
+//      return true;
+//  }
+//  gmi_end(m->getGmi(), giter);
+//}
+//return false;
 }
 
 //**********************************************************

@@ -134,7 +134,7 @@ int Ghosting::count()
 
 #include <assert.h>
 // *********************************************************
-static pMeshEnt unpackGhost(Ghosting* plan, pMeshTag global_id_tag, apf::DynamicArray<pMeshTag>& tags)
+static pMeshEnt unpackGhost(Ghosting* plan, pMeshTag, apf::DynamicArray<pMeshTag>& tags)
 // *********************************************************
 {
   int from = PCU_Comm_Sender();
@@ -235,7 +235,6 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
 {    
 
   pMeshEnt down_ent; 
-  pMeshEnt remote_ent;
   pMeshEnt ghost_ent;
   int dummy=1;
   std::vector<pMeshEnt> DownEnts;
@@ -284,10 +283,8 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
   // do communication to unify ghost target pids
   void* msg_send;
   pMeshEnt* s_ent;
-  int* s_id; 
 
   size_t msg_size;
-  int numBP;
   for (int dim = 0; dim <=ghost_dim; ++dim)
   {
     PCU_Comm_Begin();
@@ -322,7 +319,7 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
   
     // receive phase
     void *msg_recv;
-    int pid_from, r_dim, r_id;
+    int pid_from;
     int* pids;
     pMeshEnt r;
     while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
@@ -606,7 +603,7 @@ void pumi_ghost_delete (pMesh m)
 }
 
 // *********************************************************
-void pumi_ghost_getInfo (pMesh m, std::vector<int>& ghostinfo)
+void pumi_ghost_getInfo (pMesh, std::vector<int>&)
 // *********************************************************
 {
   if (!pumi_rank()) 

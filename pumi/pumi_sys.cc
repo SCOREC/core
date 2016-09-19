@@ -22,7 +22,7 @@ void pumi_start()
   PCU_Comm_Init();
 }
 
-void pumi_finalize(bool do_mpi_finalize)
+void pumi_finalize(bool)
 {
   PCU_Comm_Free();
 }

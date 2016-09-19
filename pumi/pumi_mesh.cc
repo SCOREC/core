@@ -163,7 +163,7 @@ void merge_comm(MPI_Comm oldComm)
 }
 
 
-pGeom pumi_mesh_getGeom(pMesh m)
+pGeom pumi_mesh_getGeom(pMesh)
 {
   return pumi::instance()->model;
 }
@@ -176,9 +176,6 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
     if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  // set proc_group_id
-  int self = PCU_Comm_Self();
-
   MPI_Comm prevComm = PCU_Get_Comm();
   int num_target_part = PCU_Comm_Peers();
   bool isMaster = ((PCU_Comm_Self() % num_target_part) == 0);
@@ -200,9 +197,6 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
     if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  // set proc_group_id
-  int self = PCU_Comm_Self();
-
   if (num_in_part==1) // do static partitioning
   {
     MPI_Comm prevComm = PCU_Get_Comm();
@@ -468,7 +462,6 @@ void Distribution::print()
 static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affected[4])
 {
   int maxDimension = m->getDimension();
-  int self = PCU_Comm_Self();
   affected[maxDimension].reserve(plan->count());
 
   pMeshEnt e;

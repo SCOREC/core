@@ -45,12 +45,12 @@ int pumi_ment_getNumAdj(pMeshEnt e, int target_dim)
 
 void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
 {
-  int num_adj, ent_dim= apf::getDimension(pumi::instance()->mesh, e);
+  int ent_dim= apf::getDimension(pumi::instance()->mesh, e);
   if (ent_dim<target_dim) // upward
   {
     apf::Adjacent adjacent;
     pumi::instance()->mesh->getAdjacent(e,target_dim,adjacent);      
-    for (int i=0; i<adjacent.getSize(); ++i)
+    for (size_t i=0; i<adjacent.getSize(); ++i)
       vecAdjEnt.push_back(adjacent[i]);
   }
   else if (ent_dim>target_dim)
@@ -122,7 +122,7 @@ void pumi_ment_get2ndAdj (pMeshEnt e, int bridge_dim, int target_dim, std::vecto
 
   apf::Adjacent adjacent;
   apf::getBridgeAdjacent(pumi::instance()->mesh, e, bridge_dim, target_dim, adjacent);
-  for (int i=0; i<adjacent.getSize(); ++i)
+  for (size_t i=0; i<adjacent.getSize(); ++i)
     vecAdjEnt.push_back(adjacent[i]);
 
   /* org algorithm copied from FMDB
@@ -166,7 +166,7 @@ pGeomEnt pumi_ment_getGeomClas(pMeshEnt e)
   return (pGeomEnt)(pumi::instance()->mesh->toModel(e));
 }
 
-pPartEnt pumi_ment_getPtnClas(pMeshEnt e)
+pPartEnt pumi_ment_getPtnClas(pMeshEnt)
 {  
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
   return NULL;
@@ -232,22 +232,22 @@ pMeshEnt pumi_ment_getRmt(pMeshEnt& e, int pid)
   return remotes[pid];
 }
 
-void pumi_ment_setRmt(pMeshEnt e, int partID, pMeshEnt r)
+void pumi_ment_setRmt(pMeshEnt, int, pMeshEnt)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-void pumi_ment_deleteRmt (pMeshEnt e, int partID)
+void pumi_ment_deleteRmt (pMeshEnt, int)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-void pumi_ment_cleanRmt (pMeshEnt e)
+void pumi_ment_cleanRmt (pMeshEnt)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
-void pumi_ment_setPtnTopology (pMeshEnt e)
+void pumi_ment_setPtnTopology (pMeshEnt)
 {
   if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }

@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     pumi_ment_getAllRmt(e,copies);
     // loop over remote copies and increase the counter
     // check #remotes
-    assert (pumi_ment_getNumRmt(e)==copies.size() && copies.size()>0);
+    assert (pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
     // check the entity is not ghost or ghosted
     assert(!pumi_ment_isGhost(e) && !pumi_ment_isGhosted(e));
   }
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 
 //*********************************************************
 template <class T>
-void TEST_TAG (pTag tag, char* in_name, int name_len, int in_type, int in_size)
+void TEST_TAG (pTag tag, char const* in_name, int name_len, int in_type, int in_size)
 //*********************************************************
 {
   const char* tag_name;
@@ -166,10 +166,7 @@ void TEST_TAG (pTag tag, char* in_name, int name_len, int in_type, int in_size)
   assert(!strncmp(tag_name, in_name, name_len));
   assert(tag_type == in_type);
   assert(tag_size == in_size);
-  assert(tag_byte==sizeof(T)*tag_size);
-  assert(!strcmp(tag_name, in_name)
-         && tag_type == in_type && tag_size == in_size 
-         && ((size_t)tag_byte)==sizeof(T)*tag_size);
+  assert(size_t(tag_byte)==sizeof(T)*tag_size);
 }
 
 
@@ -356,12 +353,12 @@ Ghosting* getGhostingPlan(pMesh m)
   {
     apf::MeshIterator* it = m->begin(mesh_dim);
     pMeshEnt e;
-    int count=0, pid;
+    size_t count=0;
     while ((e = m->iterate(it)))
     {
       for (int i=0; i<pumi_size()/2; ++i)
       {
-        pid = (pumi_ment_getGlobalID(e)+rand())%pumi_size();
+        int pid = (pumi_ment_getGlobalID(e)+rand())%pumi_size();
         plan->send(e, pid);
       }
       ++count; 
@@ -409,7 +406,7 @@ void TEST_GHOSTING(pMesh m)
   pumi_mesh_verify(m); // this should throw an error message
   pumi_ghost_delete(m);
   for (int i=0; i<4; ++i)
-    assert(org_mcount[i] == m->count(i));
+    assert(org_mcount[i] == int(m->count(i)));
 
   // layer-wise ghosting test
   for (int brg_dim=mesh_dim-1; brg_dim>=0; --brg_dim)
@@ -424,7 +421,7 @@ void TEST_GHOSTING(pMesh m)
         pumi_ghost_delete(m);
         pumi_mesh_verify(m);
         for (int i=0; i<4; ++i)
-          assert(org_mcount[i] == m->count(i));
+          assert(org_mcount[i] == int(m->count(i)));
       }
   
   // accumulative layer-ghosting
@@ -444,9 +441,9 @@ void TEST_GHOSTING(pMesh m)
 
   for (int i=0; i<4; ++i)
   {
-    if (org_mcount[i] != m->count(i)) 
+    if (org_mcount[i] != int(m->count(i)))
        std::cout<<"("<<pumi_rank()<<") ERROR dim "<<i<<": org ent count "<<org_mcount[i]<<", current ent count "<<m->count(i)<<"\n";
-    assert(org_mcount[i] == m->count(i));
+    assert(org_mcount[i] == int(m->count(i)));
   }
   
   delete [] org_mcount;
