@@ -71,34 +71,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::tetrahedronize(in, m);
   plan = ph::split(in, m);
 }
-/*
-static FILE* openfile_read(ph::Input&, const char* path) {
-  return pcu_group_open(path, false);
-}
 
-static FILE* openfile_write(ph::Output&, const char* path) {
-  return pcu_group_open(path, true);
-}
-
-static FILE* openstream_write(ph::Output& out, const char* path) {
-  return openGRStreamWrite(out.grs, path);
-}
-
-static FILE* openstream_read(ph::Input& in, const char* path) {
-  std::string fname(path);
-  std::string restartStr("restart");
-  FILE* f = NULL;
-  if( fname.find(restartStr) != std::string::npos )
-    f = openRStreamRead(in.rs);
-  else {
-    fprintf(stderr,
-      "ERROR %s type of stream %s is unknown... exiting\n",
-      __func__, fname.c_str());
-    exit(1);
-  }
-  return f;
-}
-*/
 }//end namespace
 
 namespace chef {
@@ -161,32 +134,17 @@ namespace ph {
       m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
-//<<<<<<< HEAD
-// NOTE: KEEPING MY CONFLICTS
     if (in.adaptFlag && (in.timeStepNumber % in.writeVizFiles == 0) ) {
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
       out.openfile_write = chef::openfile_write;
-      writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
+      ph::writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
       // reset the function pointer to the original value
       out.openfile_write = fn;
     }
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-//    if ( ! in.outMeshFileName.empty() )
-//      m->writeNative(in.outMeshFileName.c_str());
-/*=======
-    // user requests files and chef is setup to write to streams
-    if ( in.writePhastaFiles && out.openfile_write == chef::openstream_write ) {
-      out.openfile_write = chef::openfile_write;
-      ph::writeGeomBC(out, path); //write geombc
-      out.openfile_write = chef::openstream_write;
-    }
-    ph::writeGeomBC(out, path); //write geombc
-    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
->>>>>>> upstream/master
- */
     m->verify();
     gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
