@@ -1,33 +1,22 @@
-IF(DEFINED TRIBITS_PACKAGE)
- SET(BUILD_IN_TRILINOS ON)
-ENDIF()
-
-if(BUILD_IN_TRILINOS)
-   tribits_package(SCORECmds) 
-else()
-   project(mds)
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
 endif()
 
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  find_package(gmi PATHS ${CMAKE_BINARY_DIR})
-  set(MDS_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${APF_INCLUDE_DIRS}
-    ${GMI_INCLUDE_DIRS})
-  set(DEP_LIBS ${GMI_LIBS} ${APF_LIBS})
-  set(MDS_LIBS mds ${DEP_LIBS})
-endif()
-
-set(MDS_SET_MAX 256 CACHE STRING "Buffer size for adjacency computation")
+# Package options
+set(MDS_SET_MAX "256" CACHE STRING "Buffer size for adjacency computation")
 set(MDS_ID_TYPE "int" CACHE STRING "Interal identifier integer type")
+message(STATUS "MDS_SET_MAX: ${MDS_SET_MAX}")
+message(STATUS "MDS_ID_TYPE: ${MDS_ID_TYPE}")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mds_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/mds_config.h)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+# Configure the input header
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/mds_config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/mds_config.h
+)
 
-#Sources & Headers
-set(MDS_SOURCES
+# Package sources
+set(SOURCES
   mds.c
   mds_apf.c
   mds_net.c
@@ -39,59 +28,37 @@ set(MDS_SOURCES
   apfBox.cc
   mdsANSYS.cc
   mdsGmsh.cc
-  mdsUgrid.cc)
+  mdsUgrid.cc
+)
 
-set(MDS_HEADERS
+# Package headers
+set(HEADERS
   apfMDS.h
   apfBox.h
 )
 
-if(BUILD_IN_TRILINOS)
-# THIS IS WHERE TRIBITS GETS HEADERS
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-else()
-  include_directories(${MDS_INCLUDE_DIRS})
-endif()
+# Add the mds library
+add_library(mds ${SOURCES})
 
-#Library
-if(BUILD_IN_TRILINOS)
-   tribits_add_library(
-      mds 
-      HEADERS ${MDS_HEADERS}
-      SOURCES ${MDS_SOURCES})
-else()
-   add_library(mds ${MDS_SOURCES})
-   target_link_libraries(mds ${DEP_LIBS})
-endif()
+# Include directories
+target_include_directories(mds INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+# for the generated mds_config.h
+# private because no one outside MDS needs it
+target_include_directories(mds PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    )
 
-if(NOT BUILD_IN_TRILINOS)
-   INSTALL(FILES ${MDS_HEADERS} DESTINATION include)
-   INSTALL(FILES "${PROJECT_BINARY_DIR}/libmds.pc" DESTINATION lib/pkgconfig)
-   INSTALL(TARGETS 
-     mds 
-     RUNTIME DESTINATION bin
-     LIBRARY DESTINATION lib
-     ARCHIVE DESTINATION lib
+# Link this library to these libraries
+target_link_libraries(mds
+   PUBLIC
+     pcu
+     gmi
+     apf
    )
-endif(NOT BUILD_IN_TRILINOS)
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/mdsConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/mdsConfig.cmake")
+scorec_export_library(mds)
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libmds.pc.in"
-    "${PROJECT_BINARY_DIR}/libmds.pc"
-    @ONLY)
-#pkgconfig }
-
-if(BUILD_IN_TRILINOS)
-   tribits_package_postprocess()
-endif(BUILD_IN_TRILINOS)
-
+bob_end_subdir()

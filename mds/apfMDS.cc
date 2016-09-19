@@ -17,6 +17,7 @@
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include <apfPartition.h>
+#include <apfFile.h>
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -132,7 +133,7 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, const char* pathname)
     {
       init(apf::getLagrange(1));
-      mesh = mds_read_smb(m, pathname, 0);
+      mesh = mds_read_smb(m, pathname, 0, this);
       isMatched = PCU_Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
     }
@@ -467,7 +468,7 @@ class MeshMDS : public Mesh2
     void writeNative(const char* fileName)
     {
       double t0 = PCU_Time();
-      mesh = mds_write_smb(mesh, fileName, 0);
+      mesh = mds_write_smb(mesh, fileName, 0, this);
       double t1 = PCU_Time();
       if (!PCU_Comm_Self())
         printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
@@ -596,8 +597,10 @@ class MeshMDS : public Mesh2
     void getMatches(MeshEntity* e, Matches& m)
     {
       mds_copies* c = mds_get_copies(&mesh->matches, fromEnt(e));
-      if (!c)
+      if (!c) {
+        m.setSize(0);
         return;
+      }
       m.setSize(c->n);
       for (int i = 0; i < c->n; ++i) {
         m[i].entity = toEnt(c->c[i].e);
@@ -606,6 +609,7 @@ class MeshMDS : public Mesh2
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
+      assert(isMatched);
       mds_copy c;
       c.e = fromEnt(match);
       c.p = peer;
@@ -819,7 +823,7 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
 {
   MeshMDS* m = new MeshMDS();
   m->init(apf::getLagrange(1));
-  m->mesh = mds_read_smb(model, meshfile, 1);
+  m->mesh = mds_read_smb(model, meshfile, 1, m);
   m->isMatched = false;
   m->ownsModel = true;
   initResidence(m, m->getDimension());
@@ -829,7 +833,27 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
 void writeMdsPart(Mesh2* in, const char* meshfile)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  m->mesh = mds_write_smb(m->mesh, meshfile, 1);
+  m->mesh = mds_write_smb(m->mesh, meshfile, 1, m);
+}
+
+}
+
+extern "C" {
+
+void mds_write_smb_meta(struct pcu_file* file, void* mesh_cpp) {
+  apf::MeshMDS* m = static_cast<apf::MeshMDS*>(mesh_cpp);
+  apf::save_meta(file, m);
+}
+
+void mds_read_smb_meta(struct pcu_file* file, struct mds_apf* mesh,
+                       void* mesh_cpp) {
+  apf::MeshMDS* m = static_cast<apf::MeshMDS*>(mesh_cpp);
+/* hack warning: in order for apf::restore_data to work,
+   the mds_apf pointer needs to be connected to the MeshMDS class,
+   but that is typically done right after calling mds_read_smb()
+   and this code is executing as a callback during read_smb() */
+  m->mesh = mesh;
+  apf::restore_meta(file, m);
 }
 
 }

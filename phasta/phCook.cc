@@ -21,6 +21,7 @@
 
 #define SIZET(a) static_cast<size_t>(a)
 
+
 namespace {
 
 void switchToMasters(int splitFactor)
@@ -56,7 +57,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     apf::printStats(m);
   m->verify();
-  if (in.solutionMigration)
+  if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
@@ -71,50 +72,6 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }
 
 }//end namespace
-
-namespace ph {
-  void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
-  {
-    /* check if the mesh changed at all or balancing was requested */
-    if ( (PCU_Comm_Peers()!=numMasters) ||
-        in.adaptFlag ||
-        in.prePhastaBalanceMethod != "none" ||
-        in.tetrahedronize ||
-        in.isReorder )
-    {
-      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
-        ph::balance(in,m);
-      apf::MeshTag* order = NULL;
-      if (in.isReorder && PCU_Comm_Peers() > 1)
-        order = Parma_BfsReorder(m);
-      apf::reorderMdsMesh(m,order);
-    }
-  }
-
-  void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
-    std::string path = ph::setupOutputDir();
-    ph::setupOutputSubdir(path);
-    ph::enterFilteredMatching(m, in, bcs);
-    ph::generateOutput(in, bcs, m, out);
-    ph::exitFilteredMatching(m);
-    // a path is not needed for inmem
-    ph::detachAndWriteSolution(in,out,m,path); //write restart
-    ph::writeGeomBC(out, path); //write geombc
-    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
-    if ( ! in.outMeshFileName.empty() )
-      m->writeNative(in.outMeshFileName.c_str());
-    m->verify();
-    if (in.adaptFlag)
-      ph::goToParentDir();
-  }
-  void preprocess(apf::Mesh2* m, Input& in, Output& out) {
-    BCs bcs;
-    ph::readBCs(in.attributeFileName.c_str(), bcs);
-    preprocess(m,in,out,bcs);
-  }
-}
 
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
@@ -143,6 +100,63 @@ namespace chef {
     }
     return f;
   }
+}
+
+namespace ph {
+  void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
+  {
+    /* check if the mesh changed at all or balancing was requested */
+    if ( (PCU_Comm_Peers()!=numMasters) ||
+        in.adaptFlag ||
+        in.prePhastaBalanceMethod != "none" ||
+        in.tetrahedronize ||
+        in.isReorder )
+    {
+      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
+        ph::balance(in,m);
+      apf::MeshTag* order = NULL;
+      if (in.isReorder && PCU_Comm_Peers() > 1)
+        order = Parma_BfsReorder(m);
+      apf::reorderMdsMesh(m,order);
+    }
+  }
+
+  void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
+    if (in.adaptFlag)
+      ph::goToStepDir(in.timeStepNumber);
+    std::string path = ph::setupOutputDir();
+    ph::setupOutputSubdir(path);
+    ph::enterFilteredMatching(m, in, bcs);
+    ph::generateOutput(in, bcs, m, out);
+    ph::exitFilteredMatching(m);
+    if ( ! in.outMeshFileName.empty() )
+      m->writeNative(in.outMeshFileName.c_str());
+    // a path is not needed for inmem
+    ph::detachAndWriteSolution(in,out,m,path); //write restart
+    // user requests files and chef is setup to write to streams
+    if ( in.writePhastaFiles && out.openfile_write == chef::openstream_write ) {
+      out.openfile_write = chef::openfile_write;
+      ph::writeGeomBC(out, path); //write geombc
+      out.openfile_write = chef::openstream_write;
+    }
+    ph::writeGeomBC(out, path); //write geombc
+    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
+    m->verify();
+    if (in.adaptFlag)
+      ph::goToParentDir();
+  }
+  void preprocess(apf::Mesh2* m, Input& in, Output& out) {
+    BCs bcs;
+    ph::readBCs(in.attributeFileName.c_str(), bcs);
+    if (!in.solutionMigration)
+      ph::attachZeroSolution(in, m);
+    if (in.buildMapping)
+      ph::buildMapping(m);
+    preprocess(m,in,out,bcs);
+  }
+}
+
+namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
     apf::Migration* plan = 0;

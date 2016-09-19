@@ -1,92 +1,96 @@
-cmake_minimum_required(VERSION 2.8.6)
-
-IF(DEFINED TRIBITS_PACKAGE)
- SET(BUILD_IN_TRILINOS ON)
-ENDIF()
-
-if(BUILD_IN_TRILINOS)
-   # determine if Trilinos has been configured with stk
-   SET(HAS_STK OFF)
-   if(Trilinos_ENABLE_STKIO AND
-      Trilinos_ENABLE_STKMesh AND
-      Trilinos_ENABLE_SEACASIoss)
-     SET(HAS_STK ON)
-   endif()
-
-   tribits_package(SCORECapf_stk) 
-else()
-   project(apf_stk)
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
 endif()
 
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  set(APF_STK_INCLUDE_DIRS
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${APF_INCLUDE_DIRS}
-      ${STK_INCLUDE_DIRS})
-  set(APF_STK_LIBS
-      apf_stk
-      ${APF_LIBS}
-      ${STK_LIBRARIES})
-  include_directories(${APF_STK_INCLUDE_DIRS})
-else(NOT BUILD_IN_TRILINOS)
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-endif(NOT BUILD_IN_TRILINOS)
+# Package options
+option(ENABLE_STK "Enable the stk interface [ON|OFF]" OFF)
+option(ENABLE_STK_MESH "Enable the stk mesh interface [ON|OFF]" OFF)
+message(STATUS "ENABLE_STK: " ${ENABLE_STK})
+message(STATUS "ENABLE_STK_MESH: " ${ENABLE_STK_MESH})
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.h.in"
-    "${PROJECT_BINARY_DIR}/apf_stkConfig.h")
-include_directories("${PROJECT_BINARY_DIR}")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/apf_stkConfig.cmake")
+# Only install the package if enabled
+if(NOT ENABLE_STK)
+  return()
+endif()
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libapf_stk.pc.in"
-    "${PROJECT_BINARY_DIR}/libapf_stk.pc"
-    @ONLY)
-#pkgconfig }
+# Find the shards Trilinos package
+set(SCOREC_USE_Shards_DEFAULT ${ENABLE_STK})
+set(SCOREC_USE_STKIO_DEFAULT ${ENABLE_STK_MESH})
+set(SCOREC_USE_STKMesh_DEFAULT ${ENABLE_STK_MESH})
+set(SCOREC_USE_SEACASIoss_DEFAULT ${ENABLE_STK_MESH})
+set(Shards_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+set(STKIO_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+set(STKMesh_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+set(SEACASIoss_PREFIX_DEFAULT "${Trilinos_PREFIX}")
+bob_public_dep(Shards)
+bob_public_dep(STKIO)
+bob_public_dep(STKMesh)
+bob_public_dep(SEACASIoss)
 
-#Sources & Headers
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+# Configure the input header
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/apf_stkConfig.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/apf_stkConfig.h
+)
+
+# Package sources
 set(SOURCES
   apfMeshSTK.cc
-  apfSTK.cc)
+  apfSTK.cc
+)
 
-set(HEADERS apfAlbany.h)
-if(HAS_STK)
+# Package headers
+set(HEADERS
+  apfAlbany.h
+)
+
+if(ENABLE_STK_MESH)
   set(HEADERS ${HEADERS} apfSTK.h)
   set(SOURCES ${SOURCES} apfExodusOutput.cc)
 endif()
 
-#Library
-if(BUILD_IN_TRILINOS)
-   tribits_add_library(
-     apf_stk
-     HEADERS ${HEADERS}
-     SOURCES ${SOURCES})
-else()
-   add_library(apf_stk ${SOURCES})
-   target_link_libraries(apf_stk ${APF_STK_LIBS})
+# Add the apf_stk library
+add_library(apf_stk ${SOURCES})
+
+target_link_libraries(apf_stk PUBLIC apf gmi)
+target_link_libraries(apf_stk PUBLIC ${Shards_LIBRARIES})
+
+# Include directories
+target_include_directories(apf_stk INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+target_include_directories(apf_stk PUBLIC
+    ${Shards_INCLUDE_DIRS}
+    )
+# Find the config header while building
+target_include_directories(apf_stk PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    )
+
+# Do some extra work if has stk is on
+if(ENABLE_STK_MESH)
+  target_link_libraries(apf_stk PUBLIC
+    stk_io
+    stk_io_util
+    stk_mesh_base
+    ${STKMesh_TPL_LIBRARIES}
+    Ioss
+    Ioex
+  )
+  target_include_directories(apf_stk
+    SYSTEM
+    PUBLIC
+    ${STKIO_INCLUDE_DIRS}
+    ${STKMesh_INCLUDE_DIRS}
+    ${STKMesh_TPL_INCLUDE_DIRS}
+    ${SEACASIoss_INCLUDE_DIRS}
+  )
 endif()
 
-#Install
-if(NOT BUILD_IN_TRILINOS)
-   INSTALL(FILES ${HEADERS} DESTINATION include)
-   INSTALL(FILES "${PROJECT_BINARY_DIR}/libapf_stk.pc" DESTINATION lib/pkgconfig)
-   INSTALL(TARGETS  
-      apf_stk
-      RUNTIME DESTINATION bin
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib)
-endif(NOT BUILD_IN_TRILINOS)
+scorec_export_library(apf_stk)
 
-if(BUILD_IN_TRILINOS)
-   tribits_package_postprocess()
-endif()
-
+bob_end_subdir()

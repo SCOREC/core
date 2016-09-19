@@ -1,18 +1,8 @@
-project(ph)
+# Package options
+option(PHASTA_CHEF_ENABLED "Enable the chef package [ON|OFF]" OFF)
+message(STATUS "PHASTA_CHEF_ENABLED: " ${PHASTA_CHEF_ENABLED})
 
-find_package(ma PATHS ${CMAKE_BINARY_DIR})
-find_package(mds PATHS ${CMAKE_BINARY_DIR})
-find_package(sam PATHS ${CMAKE_BINARY_DIR})
-set(PH_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${SAM_INCLUDE_DIRS}
-  ${MA_INCLUDE_DIRS}
-  ${MDS_INCLUDE_DIRS})
-set(DEP_LIBS ${SAM_LIBS} ${MA_LIBS} ${MDS_LIBS})
-set(PH_LIBS ph ${DEP_LIBS})
-
-set(HEADERS chef.h)
-
+# Package sources
 set(SOURCES
   phCook.cc
   ph.cc
@@ -32,43 +22,48 @@ set(SOURCES
   phModelGeometry.cc
   phFilterMatching.cc
   phAxisymmetry.cc
-  phInterfaceCutter.cc)
-
-if(PHASTA_CHEF_ENABLED)
-  set(DEP_LIBS ${DEP_LIBS} phstream)
-  set(PH_INCLUDE_DIRS ${PH_INCLUDE_DIRS} ${PHASTACHEF_SOURCE_DIR}/phstream)
-else()
-  set(SOURCES ${SOURCES} phstreamEmpty/phstreamEmpty.cc)
-  set(PH_INCLUDE_DIRS ${PH_INCLUDE_DIRS} phstreamEmpty)
-endif()
-
-include_directories(${PH_INCLUDE_DIRS})
-
-add_library(ph ${SOURCES})
-target_link_libraries(ph ${DEP_LIBS})
-
-INSTALL(FILES ${HEADERS} DESTINATION include)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/libph.pc" DESTINATION lib/pkgconfig)
-INSTALL(TARGETS 
-  ph 
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+  phInterfaceCutter.cc
 )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/phConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/phConfig.cmake")
+if(NOT PHASTA_CHEF_ENABLED)
+  set(SOURCES ${SOURCES} phstreamEmpty/phstreamEmpty.cc)
+endif()
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libph.pc.in"
-    "${PROJECT_BINARY_DIR}/libph.pc"
-    @ONLY)
-#pkgconfig }
+# Package headers
+set(HEADERS
+  chef.h
+)
 
+# Add the ph library
+add_library(ph ${SOURCES})
+
+# Include directories
+target_include_directories(ph INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+target_include_directories(ph PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+target_link_libraries(ph
+    PUBLIC
+      ma
+      mds
+      sam
+      parma
+      pcu
+      apf_zoltan
+    )
+
+# Handle the complexity of the chef enabled flag
+if(PHASTA_CHEF_ENABLED)
+  target_link_libraries(ph PUBLIC phstream)
+else()
+  target_include_directories(ph PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/phstreamEmpty
+    )
+endif()
+
+scorec_export_library(ph)
+
+bob_end_subdir()

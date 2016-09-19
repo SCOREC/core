@@ -129,6 +129,14 @@ Field* createFieldOn(Mesh* m, const char* name, int valueType);
 Field* createPackedField(Mesh* m, const char* name, int components,
     apf::FieldShape* shape = 0);
 
+/** \brief Encompasses both packed and typed fields */
+Field* createGeneralField(
+    Mesh* m,
+    const char* name,
+    int valueType,
+    int components,
+    FieldShape* shape);
+
 /** \brief Declare a copy of a field on another apf::Mesh
    \details This will just make a Field object with the same
    properties, but not fill in any data. */

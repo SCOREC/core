@@ -21,7 +21,7 @@
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
 
-enum { SMB_VERSION = 4 };
+enum { SMB_VERSION = 5 };
 
 enum {
   SMB_VERT,
@@ -125,7 +125,9 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim,
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1 && (!ignore_peers))
-    assert(np == (unsigned)PCU_Comm_Peers());
+  if (np != (unsigned)PCU_Comm_Peers())
+    reel_fail("To whom it may concern\n"
+        "the # of mesh partitions != the # of MPI ranks");
 }
 
 static void write_header(struct pcu_file* f, unsigned dim,
@@ -555,7 +557,7 @@ static void write_matches(struct pcu_file* f, struct mds_apf* m,
 }
 
 static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
-    int zip, int ignore_peers)
+    int zip, int ignore_peers, void* apf_mesh)
 {
   struct mds_apf* m;
   struct pcu_file* f;
@@ -565,6 +567,7 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   mds_id cap[MDS_TYPES];
   int i;
   unsigned tmp;
+  unsigned pi, pj;
   f = pcu_fopen(filename, 0, zip);
   assert(f);
   read_header(f, &version, &dim, ignore_peers);
@@ -578,8 +581,14 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   make_verts(m);
   read_conn(f, m);
   pcu_read_doubles(f, &m->point[0][0], 3 * n[SMB_VERT]);
-  if (version >= 2)
+  if (version >= 2) {
     pcu_read_doubles(f, &m->param[0][0], 2 * n[SMB_VERT]);
+  } else {
+/* initialize parameteric coordinates to zero if they are not in the file */
+    for (pi = 0; pi < n[SMB_VERT]; ++pi) {
+      for (pj = 0; pj < 2; ++pj) m->param[pi][pj] = 0.0;
+    }
+  }
   read_remotes(f, m, ignore_peers);
   read_class(f, m);
   read_tags(f, m);
@@ -587,6 +596,8 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
     read_matches_new(f, m, ignore_peers);
   else if (version >= 3)
     read_matches_old(f, m, ignore_peers);
+  if (version >= 5)
+    mds_read_smb_meta(f, m, apf_mesh);
   pcu_fclose(f);
   return m;
 }
@@ -601,7 +612,7 @@ static void write_coords(struct pcu_file* f, struct mds_apf* m)
 }
 
 static void write_smb(struct mds_apf* m, const char* filename,
-    int zip, int ignore_peers)
+    int zip, int ignore_peers, void* apf_mesh)
 {
   struct pcu_file* f;
   unsigned n[SMB_TYPES] = {0};
@@ -618,6 +629,7 @@ static void write_smb(struct mds_apf* m, const char* filename,
   write_class(f, m);
   write_tags(f, m);
   write_matches(f, m, ignore_peers);
+  mds_write_smb_meta(f, apf_mesh);
   pcu_fclose(f);
 }
 
@@ -717,13 +729,13 @@ static char* handle_path(const char* in, int is_write, int* zip,
 }
 
 struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
-    int ignore_peers)
+    int ignore_peers, void* apf_mesh)
 {
   char* filename;
   int zip;
   struct mds_apf* m;
   filename = handle_path(pathname, 0, &zip, ignore_peers);
-  m = read_smb(model, filename, zip, ignore_peers);
+  m = read_smb(model, filename, zip, ignore_peers, apf_mesh);
   free(filename);
   return m;
 }
@@ -738,7 +750,7 @@ static int is_compact(struct mds_apf* m)
 }
 
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
-    int ignore_peers)
+    int ignore_peers, void* apf_mesh)
 {
   char* filename;
   int zip;
@@ -747,7 +759,7 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
   if ((!ignore_peers) && PCU_Or(!is_compact(m)))
     m = mds_reorder(m, 0, mds_number_verts_bfs(m));
   filename = handle_path(pathname, 1, &zip, ignore_peers);
-  write_smb(m, filename, zip, ignore_peers);
+  write_smb(m, filename, zip, ignore_peers, apf_mesh);
   free(filename);
   return m;
 }
