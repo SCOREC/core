@@ -1,13 +1,6 @@
-cmake_minimum_required(VERSION 2.8.6)
-
-IF(DEFINED TRIBITS_PACKAGE)
- SET(BUILD_IN_TRILINOS ON)
-ENDIF()
-
-if(BUILD_IN_TRILINOS)
-   tribits_package(SCORECpumi) 
-else()
-   project(pumi)
+if(DEFINED TRIBITS_PACKAGE)
+  include(pkg_tribits.cmake)
+  return()
 endif()
 
 if(NOT BUILD_IN_TRILINOS)
@@ -38,7 +31,6 @@ set(SOURCES
   pumi_mentity.cc
   pumi_mtag.cc
   pumi_sys.cc
-
 )
 
 set(HEADERS
@@ -50,51 +42,23 @@ set(HEADERS
   pumi.h
 )
 
-if(BUILD_IN_TRILINOS)
-# THIS IS WHERE TRIBITS GETS HEADERS
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-else()
-  include_directories(${PUMI_INCLUDE_DIRS})
-endif()
-
 #Library
-if(BUILD_IN_TRILINOS)
-   tribits_add_library(
-      pumi
-      HEADERS ${HEADERS}
-      SOURCES ${SOURCES})
-else()
-   add_library(pumi ${SOURCES})
-   target_link_libraries(pumi ${DEP_LIBS})
-endif()
+add_library(pumi ${SOURCES})
 
-if(NOT BUILD_IN_TRILINOS)
-   INSTALL(FILES ${HEADERS} DESTINATION include)
-   INSTALL(FILES "${PROJECT_BINARY_DIR}/libpumi.pc" DESTINATION lib/pkgconfig)
-   INSTALL(TARGETS 
-     pumi
-     RUNTIME DESTINATION bin
-     LIBRARY DESTINATION lib
-     ARCHIVE DESTINATION lib
-   )
-endif(NOT BUILD_IN_TRILINOS)
+# Include directories
+target_include_directories(pumi PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/pumiConfig.cmake.in"
-    "${CMAKE_BINARY_DIR}/pumiConfig.cmake")
+target_link_libraries(pumi
+  PUBLIC
+    apf
+    parma
+    apf_zoltan
+    mds
+  )
 
-#pkgconfig {
-set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}/bin")
-set(libdir "${CMAKE_INSTALL_PREFIX}/lib")
-set(includedir "${CMAKE_INSTALL_PREFIX}/include")
-set(PACKAGE_VERSION "1.0")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/libpumi.pc.in"
-    "${PROJECT_BINARY_DIR}/libpumi.pc"
-    @ONLY)
-#pkgconfig }
+scorec_export_library(pumi)
 
-if(BUILD_IN_TRILINOS)
-   TRIBITS_PACKAGE_POSTPROCESS()
-endif()
+bob_end_subdir()
