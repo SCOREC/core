@@ -40,6 +40,7 @@ class Mesh2 : public Mesh
 // seol
 /** \brief Add just one ghost copy to an entity */
     virtual void addGhost(MeshEntity* e, int p, MeshEntity* r) = 0;
+    virtual void deleteGhost(MeshEntity* e) = 0;
 
 /** \brief Set the resident part set of an entity
   \details this is also known as partition model classification */

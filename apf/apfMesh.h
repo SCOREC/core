@@ -129,7 +129,6 @@ class Mesh
 //seol
     virtual bool isGhosted(MeshEntity* e) = 0;
     virtual bool isGhost(MeshEntity* e) = 0;
-    virtual bool deleteGhost(MeshEntity* e) = 0;
     /** \brief Returns true if the entity is shared in parallel
               and this is the dominant copy, or the entity is not shared. */
     virtual bool isOwned(MeshEntity* e) = 0;

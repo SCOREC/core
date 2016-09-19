@@ -439,7 +439,7 @@ void unpackRemotes(Mesh2* m, MeshEntity* e)
 {
   size_t n;
   PCU_COMM_UNPACK(n);
-  for (int i=0; i < n; ++i)
+  for (size_t i=0; i < n; ++i)
   {
     int p;
     PCU_COMM_UNPACK(p);

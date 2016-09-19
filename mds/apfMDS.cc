@@ -179,7 +179,6 @@ class MeshMDS : public Mesh2
     {
       return mds_get_copies(&mesh->remotes, fromEnt(e));
     }
-//seol
     bool isGhost(MeshEntity* e)
     {
       MeshTag* t = findTag("ghost_tag");
@@ -188,9 +187,9 @@ class MeshMDS : public Mesh2
       return false;
     }
 
-    bool deleteGhost(MeshEntity* e)
+    void deleteGhost(MeshEntity* e)
     {
-      mds_set_copies(&mesh->ghosts, &mesh->mds, fromEnt(e), NULL); 
+      mds_set_copies(&mesh->ghosts, &mesh->mds, fromEnt(e), NULL);
     }
 
     bool isGhosted(MeshEntity* e)
