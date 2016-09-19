@@ -3,22 +3,6 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-if(NOT BUILD_IN_TRILINOS)
-  find_package(apf PATHS ${CMAKE_BINARY_DIR})
-  find_package(parma PATHS ${CMAKE_BINARY_DIR})
-  find_package(apf_zoltan PATHS ${CMAKE_BINARY_DIR})
-  find_package(mds PATHS ${CMAKE_BINARY_DIR})
-  set(PUMI_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${APF_INCLUDE_DIRS}
-    ${PARMA_INCLUDE_DIRS}
-    ${APF_ZOLTAN_INCLUDE_DIRS}
-    ${MDS_INCLUDE_DIRS}
-  )
-  set(DEP_LIBS ${APF_LIBS} ${PARMA_LIBS} ${APF_ZOLTAN_LIBS} ${MDS_LIBS})
-  set(PUMI_LIBS pumi ${DEP_LIBS})
-endif()
-
 #Sources & Headers
 set(SOURCES
   GenTag.cc
