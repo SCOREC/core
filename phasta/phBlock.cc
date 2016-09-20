@@ -197,7 +197,7 @@ void getInterfaceBlocks(apf::Mesh* m, BlocksInterface& b)
       continue;
     apf::MeshEntity* e0 = m->getUpward(face, 0);
     apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
-    /* in order to avoid repeatation of elements */
+    /* in order to avoid repetition of elements */
     if (e0 > e1)
       continue;
 

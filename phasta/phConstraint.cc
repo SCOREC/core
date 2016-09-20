@@ -296,7 +296,7 @@ static Constraint* combinePoints(Constraint* a, Constraint* b,
   if (mb == 0)
     return takeFirst(b, a);
   /* multiple non-zero point constraints ? we got a problem. */
-  std::cerr << "ph error: point overconstrain (velocity): ";
+  std::cerr << "ph error: point overconstraint (velocity): ";
   std::cerr << pa->point << " and " << pb->point << dbg;
   abort();
   return 0;
@@ -318,7 +318,7 @@ static Constraint* combinePointsElas(Constraint* a, Constraint* b,
   if (mb == 0)
     return takeFirst(b, a);
   /* multiple non-zero point constraints ? we got a problem. */
-  std::cerr << "ph error: point overconstrain (mesh-elas): ";
+  std::cerr << "ph error: point overconstraint (mesh-elas): ";
   std::cerr << pa->point << " and " << pb->point << dbg;
   abort();
   return 0;

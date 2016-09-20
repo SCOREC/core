@@ -31,12 +31,14 @@ int main(int argc, char** argv)
     modelfile = argv[1];
     attribfile = argv[2];
     meshfile = argv[3];
-    outfile = argv[4];}
+    outfile = argv[4];
+  }
   else if (argc == 4) {
     attribfile = argv[1];
     meshfile = argv[2];
     outfile = argv[3];
-    modelfile = argv[4];}
+    modelfile = argv[4];
+  }
   gmi_model* gm;
   gm = gmi_sim_load(modelfile, attribfile);
   ph::BCs bcs;
