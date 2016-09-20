@@ -11,4 +11,5 @@ TRIBITS_PACKAGE_DEFINE_DEPENDENCIES(
     SCORECma
     SCORECspr
     SCORECapf_stk
+    SCORECpumi
   )
