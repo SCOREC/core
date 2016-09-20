@@ -48,6 +48,7 @@ static void setDefaults(Input& in)
   in.restartFileName = "restart";
   in.phastaIO = 1;
   in.snap = 0;
+  in.transferParametric = 1;
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
   in.axisymmetry = 0;
@@ -111,6 +112,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["initBubbles"] = &in.initBubbles;
   intMap["formElementGraph"] = &in.formElementGraph;
   intMap["snap"] = &in.snap;
+  intMap["transferParametric"] = &in.transferParametric;
   intMap["splitAllLayerEdges"] = &in.splitAllLayerEdges;
   intMap["filterMatches"] = &in.filterMatches;
   intMap["axisymmetry"] = &in.axisymmetry;

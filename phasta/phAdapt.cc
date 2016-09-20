@@ -91,10 +91,16 @@ namespace chef {
   void adapt(apf::Mesh2* m, apf::Field* szFld) {
     ma::Input* ma_in = ma::configure(m, szFld);
     ma_in->shouldRunPreZoltan = true;
-//    ma_in->shouldTransferParametric = true;
-    ma_in->shouldTransferParametric = false;
-//    ma_in->shouldSnap = true; 
-    ma_in->shouldSnap = false; 
+    if (m->hasMatching())
+      ph::setupMatching(*ma_in);
+    ma::adapt(ma_in);
+  }
+
+  void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& in) {
+    ma::Input* ma_in = ma::configure(m, szFld);
+    ma_in->shouldRunPreZoltan = true;
+    ma_in->shouldTransferParametric = in.transferParametric;
+    ma_in->shouldSnap = in.snap; 
     if (m->hasMatching())
       ph::setupMatching(*ma_in);
     ma::adapt(ma_in);

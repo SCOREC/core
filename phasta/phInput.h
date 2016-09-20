@@ -53,6 +53,7 @@ class Input
     int initBubbles;
     int formElementGraph;
     int snap;
+    int transferParametric;
     int splitAllLayerEdges;
     int filterMatches;
     int axisymmetry;
