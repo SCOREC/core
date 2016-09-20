@@ -75,11 +75,14 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   apf::Mesh* m = o.mesh;
   Blocks& bs = o.blocks.interior;
   int*** ien     = new int**[bs.getSize()];
-  int**  mattype = new int* [bs.getSize()];
+  int**  mattype = 0;
+  if (bcs.fields.count("material type")) 
+    mattype = new int* [bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ien    [i] = new int*[bs.nElements[i]];
-    mattype[i] = new int [bs.nElements[i]];
+    if (mattype) 
+      mattype[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
   gmi_model* gm = m->getModel();
@@ -99,15 +102,16 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
       ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
 
     /* get material type */
-    gmi_ent* ge = (gmi_ent*)m->toModel(e);
-    apf::Vector3 x;
-    //m->getPoint(e, 0, x);
-    x = apf::getLinearCentroid(m, e);
-    std::string s("material type");
-    FieldBCs& fbcs = bcs.fields[s];
-    double* matval = getBCValue(gm, fbcs, ge, x);
-    mattype[i][j] = *matval;
-
+    if (mattype) {
+      gmi_ent* ge = (gmi_ent*)m->toModel(e);
+      apf::Vector3 x;
+      //m->getPoint(e, 0, x);
+      x = apf::getLinearCentroid(m, e);
+      std::string s("material type");
+      FieldBCs& fbcs = bcs.fields[s];
+      double* matval = getBCValue(gm, fbcs, ge, x);
+      mattype[i][j] = *matval;
+    }
     ++js[i];
   }
   m->end(it);
@@ -124,13 +128,16 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
-  int**  mattypeb = new int*[bs.getSize()];
+  int**  mattypeb = 0;
+  if (bcs.fields.count("material type")) 
+    mattypeb = new int*[bs.getSize()];
   int*** ibcb = new int**[bs.getSize()];
   double*** bcb = new double**[bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ienb[i]     = new int*[bs.nElements[i]];
-    mattypeb[i] = new int [bs.nElements[i]];
+    if (mattypeb) 
+      mattypeb[i] = new int [bs.nElements[i]];
     ibcb[i]     = new int*[bs.nElements[i]];
     bcb[i]      = new double*[bs.nElements[i]];
     js[i] = 0;
@@ -167,13 +174,14 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     applyNaturalBCs(gm, gf, bcs, x, bcb[i][j], ibcb[i][j]);
 
     /* get material type */
-    gmi_ent* ge = (gmi_ent*)m->toModel(e);
-    x = apf::getLinearCentroid(m, e);
-    std::string s("material type");
-    FieldBCs& fbcs = bcs.fields[s];
-    double* matvalb = getBCValue(gm, fbcs, ge, x);
-    mattypeb[i][j] = *matvalb;
-
+    if (mattypeb) {
+      gmi_ent* ge = (gmi_ent*)m->toModel(e);
+      x = apf::getLinearCentroid(m, e);
+      std::string s("material type");
+      FieldBCs& fbcs = bcs.fields[s];
+      double* matvalb = getBCValue(gm, fbcs, ge, x);
+      mattypeb[i][j] = *matvalb;
+    }
     ++js[i];
   }
   m->end(it);
@@ -197,14 +205,18 @@ static void getInterface
   BlocksInterface&  bs = o.blocks.interface;
   int***            ienif0 = new int**[bs.getSize()];
   int***            ienif1 = new int**[bs.getSize()];
-  int**             mattypeif0 = new int*[bs.getSize()];
-  int**             mattypeif1 = new int*[bs.getSize()];
+  int**             mattypeif0 = 0;
+  int**             mattypeif1 = 0;
+  if (bcs.fields.count("material type")) {
+    mattypeif0 = new int*[bs.getSize()];
+    mattypeif1 = new int*[bs.getSize()];
+  }
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ienif0[i] = new int*[bs.nElements[i]];
     ienif1[i] = new int*[bs.nElements[i]];
-    mattypeif0[i] = new int [bs.nElements[i]];
-    mattypeif1[i] = new int [bs.nElements[i]];
+    if (mattypeif0) mattypeif0[i] = new int [bs.nElements[i]];
+    if (mattypeif1) mattypeif1[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
   int interfaceDim = m->getDimension() - 1;
@@ -243,19 +255,20 @@ static void getInterface
       ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
 
     /* get material type */
-    gmi_ent* ge0 = (gmi_ent*)m->toModel(e0);
-    gmi_ent* ge1 = (gmi_ent*)m->toModel(e1);
-    apf::Vector3 x0;
-    apf::Vector3 x1;
-    x0 = apf::getLinearCentroid(m, e0);
-    x1 = apf::getLinearCentroid(m, e1);
-    std::string s("material type");
-    FieldBCs& fbcs = bcs.fields[s];
-    double* matvalif0 = getBCValue(gm, fbcs, ge0, x0);
-    double* matvalif1 = getBCValue(gm, fbcs, ge1, x1);
-    mattypeif0[i][j] = *matvalif0;
-    mattypeif1[i][j] = *matvalif1;
-
+    if (mattypeif0) {
+      gmi_ent* ge0 = (gmi_ent*)m->toModel(e0);
+      gmi_ent* ge1 = (gmi_ent*)m->toModel(e1);
+      apf::Vector3 x0;
+      apf::Vector3 x1;
+      x0 = apf::getLinearCentroid(m, e0);
+      x1 = apf::getLinearCentroid(m, e1);
+      std::string s("material type");
+      FieldBCs& fbcs = bcs.fields[s];
+      double* matvalif0 = getBCValue(gm, fbcs, ge0, x0);
+      double* matvalif1 = getBCValue(gm, fbcs, ge1, x1);
+      mattypeif0[i][j] = *matvalif0;
+      mattypeif1[i][j] = *matvalif1;
+    }
     ++js[i];
   }
   m->end(it);
@@ -378,6 +391,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     ibc = 0;
     for (int j = 0; j < nec; ++j)
       bc[j] = 0;
+    //bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc) && bcs.fields.count("material type");
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
     /* which is set for all slaves */
@@ -522,10 +536,10 @@ Output::~Output()
     for (int j = 0; j < ibs.nElements[i]; ++j)
       delete [] arrays.ien    [i][j];
     delete [] arrays.ien    [i];
-    delete [] arrays.mattype[i];
+    if (arrays.mattype) delete [] arrays.mattype[i];
   }
   delete [] arrays.ien;
-  delete [] arrays.mattype;
+  if (arrays.mattype) delete [] arrays.mattype;
   Blocks& bbs = blocks.boundary;
   for (int i = 0; i < bbs.getSize(); ++i) {
     for (int j = 0; j < bbs.nElements[i]; ++j) {
@@ -536,14 +550,14 @@ Output::~Output()
     delete [] arrays.ienb[i];
     delete [] arrays.ibcb[i];
     delete [] arrays.bcb[i];
-    delete [] arrays.mattypeb[i];
+    if (arrays.mattypeb) delete [] arrays.mattypeb[i];
   }
   delete [] arrays.ienb;
   delete [] arrays.ibcb;
   delete [] arrays.bcb;
   delete [] arrays.nbc;
   delete [] arrays.ibc;
-  delete [] arrays.mattypeb;
+  if (arrays.mattypeb) delete [] arrays.mattypeb;
   for (int i = 0; i < nEssentialBCNodes; ++i)
     delete [] arrays.bc[i];
   delete [] arrays.bc;
@@ -556,13 +570,13 @@ Output::~Output()
     }
     delete [] arrays.ienif0[i];
     delete [] arrays.ienif1[i];
-    delete [] arrays.mattypeif0[i];
-    delete [] arrays.mattypeif1[i];
+    if (arrays.mattypeif0) delete [] arrays.mattypeif0[i];
+    if (arrays.mattypeif1) delete [] arrays.mattypeif1[i];
   }
   delete [] arrays.ienif0;
   delete [] arrays.ienif1;
-  delete [] arrays.mattypeif0;
-  delete [] arrays.mattypeif1;
+  if (arrays.mattypeif0) delete [] arrays.mattypeif0;
+  if (arrays.mattypeif1) delete [] arrays.mattypeif1;
   delete [] arrays.ilworkl;
   delete [] arrays.iel;
   delete [] arrays.ileo;

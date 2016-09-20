@@ -578,7 +578,7 @@ bool applyElasticConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
   name = "DG interface";
   if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
-    c = combineInterface(gm, fbcs, makePointConstraintElas, e, x, c);
+    c = combineInterface(gm, fbcs, makeInterfaceConstraint, e, x, c);
   }
   name = "comp3_elas";
   if (haveBC(bcs, name)) {

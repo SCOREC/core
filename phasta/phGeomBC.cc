@@ -183,9 +183,11 @@ void writeBlocks(FILE* f, Output& o)
     fillBlockKeyParams(params, k);
     getInteriorConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 7, params);
-    phrase = getBlockKeyPhrase(k, "material type interior ");
-    getInteriorMaterialType(o, i, c);
-    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+    if (o.arrays.mattype) {
+      phrase = getBlockKeyPhrase(k, "material type interior ");
+      getInteriorMaterialType(o, i, c);
+      ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+    }
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
@@ -195,9 +197,11 @@ void writeBlocks(FILE* f, Output& o)
     params[7] = countNaturalBCs(*o.in);
     getBoundaryConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 8, params);
-    phrase = getBlockKeyPhrase(k, "material type boundary ");
-    getBoundaryMaterialType(o, i, c);
-    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+    if (o.arrays.mattypeb) {
+      phrase = getBlockKeyPhrase(k, "material type boundary ");
+      getBoundaryMaterialType(o, i, c);
+      ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+    }
     phrase = getBlockKeyPhrase(k, "nbc codes ");
     apf::DynamicArray<int> codes;
     getNaturalBCCodes(o, i, codes);
@@ -214,10 +218,12 @@ void writeBlocks(FILE* f, Output& o)
     fillBlockKeyInterfaceParams(params, k);
     getInterfaceConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 9, params);
-    phrase = getBlockKeyPhraseInterface(k, "material type interface ");
-    getInterfaceMaterialType(o, i, c);
-    params[1] = 2; // number of materials
-    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 2, params); 
+    if (o.arrays.mattypeif0) {
+      phrase = getBlockKeyPhraseInterface(k, "material type interface ");
+      getInterfaceMaterialType(o, i, c);
+      params[1] = 2; // number of materials
+      ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 2, params); 
+    }
   }
 
 }
