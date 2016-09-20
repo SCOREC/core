@@ -1,5 +1,6 @@
 #include "sam.h"
 #include "samSz.h"
+#include <apfField.h>
 #include <cassert>
 
 namespace sam {
