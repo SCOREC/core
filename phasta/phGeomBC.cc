@@ -301,11 +301,13 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeInt(f, "number of global modes", 0);
   writeInt(f, "number of interior elements", m->count(m->getDimension()));
   writeInt(f, "number of boundary elements", o.nBoundaryElements);
-  writeInt(f, "number of interface elements", o.nInterfaceElements);
+  if (o.nInterfaceElements>0) 
+    writeInt(f, "number of interface elements", o.nInterfaceElements);
   writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
   writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
   writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
-  writeInt(f, "number of interface tpblocks", o.blocks.interface.getSize());
+  if (o.blocks.interface.getSize()>0)
+    writeInt(f, "number of interface tpblocks", o.blocks.interface.getSize());
   writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
   params[0] = m->count(0);
   params[1] = 3;
