@@ -23,6 +23,11 @@ add_test(qr_test qr)
 add_test(base64 base64)
 add_test(tensor_test tensor)
 
+mpi_test(pumi3d-1p 4
+  ./test_pumi
+  ${MESHES}/pumi/3d-1p/model.dmg
+  ${MESHES}/pumi/3d-1p/part.smb
+  out.smb 1 0)
 mpi_test(test_scaling 1
   ./test_scaling
   ${MESHES}/cube/cube.dmg

@@ -87,7 +87,7 @@ static void getAffected(
 
 /* gets the subset of the closure copies
    which are owned by this part */
-static void getSenders(
+void getSenders(
     Mesh2* m,
     EntityVector affected[4],
     EntityVector senders[4])
@@ -111,7 +111,7 @@ static void getSenders(
    it is matched to, that is enough for them to re-negotiate
    matches after each of them does the job of creating new
    entities and computing new remote copies */
-static void reduceMatchingToSenders(
+void reduceMatchingToSenders(
     Mesh2* m,
     EntityVector senders[4])
 {
@@ -161,7 +161,7 @@ static Parts makeResidence(int part)
   return r;
 }
 
-static void packParts(int to, Parts& parts)
+void packParts(int to, Parts& parts)
 {
   size_t n = parts.size();
   PCU_COMM_PACK(to,n);
@@ -172,7 +172,7 @@ static void packParts(int to, Parts& parts)
   }
 }
 
-static void unpackParts(Parts& parts)
+void unpackParts(Parts& parts)
 {
   size_t n;
   PCU_COMM_UNPACK(n);
@@ -246,7 +246,7 @@ static void updateResidences(
    of REMOTE parts in the new residence that
    don't have remotes yet, which is the
    set we have to send to */
-static void split(
+void split(
     Copies& remotes,
     Parts& parts,
     Parts& newParts)
@@ -272,7 +272,7 @@ static void packCommon(
   packParts(to,residence);
 }
 
-static void unpackCommon(
+void unpackCommon(
     Mesh2* m,
     MeshEntity*& sender,
     ModelEntity*& c,
@@ -298,7 +298,7 @@ static void packVertex(
   PCU_COMM_PACK(to,p);
 }
 
-static MeshEntity* unpackVertex(
+MeshEntity* unpackVertex(
     Mesh2* m,
     ModelEntity* c)
 {
@@ -317,9 +317,31 @@ static void packReference(
   Copies remotes;
   m->getRemotes(e,remotes);
   Copies::iterator found = remotes.find(to);
-  MeshEntity* remote = found->second;
-  assert(remote);
-  PCU_COMM_PACK(to,remote);
+  if (found!=remotes.end())
+  {
+    MeshEntity* remote = found->second;
+    PCU_COMM_PACK(to,remote);
+  }
+  else
+  {
+/*  int global_id;
+  MeshTag* tag = m->findTag("global_id");
+  m->getIntTag(e, tag, &global_id);
+
+    if (global_id==9 && getDimension(m, e)==0)
+      APF_ITERATE(Copies,remotes,rit)
+      {
+        printf("(%d) e (d %d, id %d)'s remote exists on p %d\n", PCU_Comm_Self(), getDimension(m, e),global_id, rit->first); 
+      }
+    printf("(%d) packReference - getGhosts e (d %d, id %d)\n", PCU_Comm_Self(), getDimension(m, e),global_id);
+*/
+    Copies ghosts;
+    m->getGhosts(e,ghosts);
+    found = ghosts.find(to);
+    assert(found!=ghosts.end());
+    MeshEntity* ghost = found->second;
+    PCU_COMM_PACK(to,ghost);
+  }
 }
 
 static void packDownward(Mesh2* m, int to, MeshEntity* e)
@@ -349,7 +371,7 @@ static void packNonVertex(
   packDownward(m,to,e);
 }
 
-static MeshEntity* unpackNonVertex(
+MeshEntity* unpackNonVertex(
     Mesh2* m,
     int type, ModelEntity* c)
 {
@@ -394,7 +416,40 @@ static void packTags(
   }
 }
 
-static void unpackTags(
+// seol
+void packRemotes(
+    Mesh2* m,
+    int to,
+    MeshEntity* e)
+{
+  Copies remotes;
+  m->getRemotes(e,remotes);
+  size_t n = remotes.size();
+  PCU_COMM_PACK(to,n);
+  APF_ITERATE(Copies,remotes,rit)
+  {
+    int p=rit->first;
+    MeshEntity* remote = rit->second;
+    PCU_COMM_PACK(to,p);
+    PCU_COMM_PACK(to,remote);
+  }
+}
+
+void unpackRemotes(Mesh2* m, MeshEntity* e)
+{
+  size_t n;
+  PCU_COMM_UNPACK(n);
+  for (size_t i=0; i < n; ++i)
+  {
+    int p;
+    PCU_COMM_UNPACK(p);
+    MeshEntity* r;
+    PCU_COMM_UNPACK(r);
+    m->addRemote(e, p, r);
+  }
+}
+
+void unpackTags(
     Mesh2* m,
     MeshEntity* e,
     DynamicArray<MeshTag*>& tags)
@@ -423,11 +478,12 @@ static void unpackTags(
   }
 }
 
-static void packEntity(
+void packEntity(
     Mesh2* m,
     int to,
     MeshEntity* e,
-    DynamicArray<MeshTag*>& tags)
+    DynamicArray<MeshTag*>& tags,
+    bool ghosting)
 {
   int type = m->getType(e);
   PCU_COMM_PACK(to,type);
@@ -437,6 +493,8 @@ static void packEntity(
   else
     packNonVertex(m,to,e);
   packTags(m,to,e,tags);
+  if (ghosting) 
+    packRemotes(m, to, e);
 }
 
 static MeshEntity* unpackEntity(
@@ -624,7 +682,7 @@ static void setupRemotes(
   bcastRemotes(m,senders);
 }
 
-static void moveEntities(
+void moveEntities(
     Mesh2* m,
     EntityVector senders[4])
 {
@@ -761,7 +819,7 @@ static void bcastMatching(
    including the senders themselves if they are
    not being removed, and then broadcast from the
    senders again, this time with matchings */
-static void updateMatching(
+void updateMatching(
     Mesh2* m,
     EntityVector affected[4],
     EntityVector senders[4])
@@ -771,7 +829,7 @@ static void updateMatching(
   bcastMatching(m,senders);
 }
 
-static void deleteOldEntities(
+void deleteOldEntities(
     Mesh2* m,
     EntityVector affected[4])
 {

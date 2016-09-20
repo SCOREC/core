@@ -122,6 +122,12 @@ void agm_free(struct agm* m)
   free(m);
 }
 
+// seol
+void agm_free_tags(struct agm* m)
+{
+  free_tags(&m->tags);
+}
+
 static void grow(int* n)
 {
   *n = ((*n + 1) * 3) / 2;

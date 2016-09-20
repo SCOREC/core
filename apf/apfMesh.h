@@ -126,6 +126,9 @@ class Mesh
     virtual void end(MeshIterator* it) = 0;
     /** \brief Returns true if the entity is shared in parallel */
     virtual bool isShared(MeshEntity* e) = 0;
+//seol
+    virtual bool isGhosted(MeshEntity* e) = 0;
+    virtual bool isGhost(MeshEntity* e) = 0;
     /** \brief Returns true if the entity is shared in parallel
               and this is the dominant copy, or the entity is not shared. */
     virtual bool isOwned(MeshEntity* e) = 0;
@@ -204,6 +207,8 @@ class Mesh
     virtual Type getType(MeshEntity* e) = 0;
     /** \brief Get the remote copies of an entity */
     virtual void getRemotes(MeshEntity* e, Copies& remotes) = 0;
+// seol
+    virtual void getGhosts(MeshEntity* e, Copies& ghosts) = 0;
     /** \brief Get the resident parts of an entity
       \details this includes parts with remote copies and the
                current part as well */
