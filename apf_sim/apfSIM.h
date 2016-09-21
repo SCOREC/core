@@ -80,23 +80,28 @@ class MeshSIM : public Mesh2
     bool hasMatching() {return hasMatches;}
     void getMatches(MeshEntity* e, Matches& m);
     bool hasMatches;
+    bool isGhosted(MeshEntity*) { return false; }
+    bool isGhost(MeshEntity*) { return false; }
+    void getGhosts(MeshEntity*, Copies&) {}
     // Mesh2 interface ==============================
-    void setRemotes(MeshEntity*, Copies&) {};
-    void addRemote(MeshEntity*, int, MeshEntity*) {};
-    void setResidence(MeshEntity*, Parts&) {};
-    void setParam(MeshEntity*, Vector3 const &) {};
-    void increment(MeshIterator*) {};
+    void setRemotes(MeshEntity*, Copies&) {}
+    void addRemote(MeshEntity*, int, MeshEntity*) {}
+    void setResidence(MeshEntity*, Parts&) {}
+    void setParam(MeshEntity*, Vector3 const &) {}
+    void increment(MeshIterator*) {}
     bool isDone(MeshIterator*) { return true; }
     MeshEntity * deref(MeshIterator*) { return NULL; }
     void setPoint_(MeshEntity* me, int node, Vector3 const & p);
     MeshEntity * createVert_(ModelEntity*) { return NULL; }
     MeshEntity * createEntity_(int, ModelEntity*, MeshEntity**) { return NULL; }
-    void destroy_(MeshEntity* ) {};
-    void setModelEntity(MeshEntity*, ModelEntity*) {};
-    void addMatch(MeshEntity*, int, MeshEntity* ) {};
-    void clearMatches(MeshEntity*) {};
-    void acceptChanges() {};
-    pParMesh getMesh() {return mesh;}
+    void destroy_(MeshEntity* ) {}
+    void setModelEntity(MeshEntity*, ModelEntity*) {}
+    void addMatch(MeshEntity*, int, MeshEntity* ) {}
+    void clearMatches(MeshEntity*) {}
+    void acceptChanges() {}
+    void addGhost(MeshEntity*, int, MeshEntity*) {}
+    void deleteGhost(MeshEntity*) {}
+    pParMesh getMesh() { return mesh; }
   protected:
     pParMesh mesh;
     pMesh part;

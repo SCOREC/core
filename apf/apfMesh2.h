@@ -36,6 +36,12 @@ class Mesh2 : public Mesh
     virtual void setRemotes(MeshEntity* e, Copies& remotes) = 0;
 /** \brief Add just one remote copy to an entity */
     virtual void addRemote(MeshEntity* e, int p, MeshEntity* r) = 0;
+
+// seol
+/** \brief Add just one ghost copy to an entity */
+    virtual void addGhost(MeshEntity* e, int p, MeshEntity* r) = 0;
+    virtual void deleteGhost(MeshEntity* e) = 0;
+
 /** \brief Set the resident part set of an entity
   \details this is also known as partition model classification */
     virtual void setResidence(MeshEntity* e, Parts& residence) = 0;
@@ -188,6 +194,32 @@ void stitchMesh(Mesh2* m);
 void packDataClone(Mesh2* m, int to);
 void unpackDataClone(Mesh2* m);
 
+// common functions for migration/ghosting/distribution
+typedef std::vector<MeshEntity*> EntityVector;
+void packParts(int to, Parts& parts);
+void unpackParts(Parts& parts);
+void moveEntities(
+    Mesh2* m,
+    EntityVector senders[4]);
+void updateMatching(
+    Mesh2* m,
+    EntityVector affected[4],
+    EntityVector senders[4]);
+void deleteOldEntities(
+    Mesh2* m,
+    EntityVector affected[4]);
+void reduceMatchingToSenders(
+    Mesh2* m,
+    EntityVector senders[4]);
+void getSenders(Mesh2* m,EntityVector affected[4],EntityVector senders[4]);
+void split(Copies& remotes, Parts& parts, Parts& newParts);
+// seol
+void packEntity(Mesh2* m, int to, MeshEntity* e, DynamicArray<MeshTag*>& tags, bool ghosting=false);
+void unpackRemotes(Mesh2* m, MeshEntity* e);
+void unpackTags(Mesh2* m, MeshEntity* e, DynamicArray<MeshTag*>& tags);
+void unpackCommon(Mesh2* m, MeshEntity*& sender, ModelEntity*& c, Parts& residence);
+MeshEntity* unpackVertex(Mesh2* m, ModelEntity* c);
+MeshEntity* unpackNonVertex(Mesh2* m,int type, ModelEntity* c);
 }//namespace apf
 
 #endif
