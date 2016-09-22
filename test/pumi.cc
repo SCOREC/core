@@ -329,7 +329,7 @@ void TEST_GEOM_TAG(pGeom g)
   pumi_geom_getTag(g, tags);
   assert(cloneTag == pointer_tag && tags.size()==9);
 
-  for (gModel::iterall gent_it = g->begin(0); gent_it!=g->end(0);++gent_it)
+  for (pGeomIter gent_it = g->begin(0); gent_it!=g->end(0);++gent_it)
   {
     TEST_GENT_SETGET_TAG(g, *gent_it);
     TEST_GENT_DEL_TAG(g, *gent_it);
