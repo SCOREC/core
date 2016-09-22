@@ -7,16 +7,16 @@
 
 namespace ph {
 
-static std::string buildGeomBCFileName()
+static std::string buildGeomBCFileName(std::string timestep_or_dat)
 {
   std::stringstream ss;
   int rank = PCU_Comm_Self() + 1;
-  ss << "geombc.dat." << rank;
+  ss << "geombc." << timestep_or_dat << "." << rank;
   return ss.str();
 }
 
 enum {
-  MAX_PARAMS = 8
+  MAX_PARAMS = 12
 };
 
 void getInteriorConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
@@ -40,6 +40,74 @@ void getBoundaryConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
       c[i++] = o.arrays.ienb[block][elem][vert] + 1;
+  assert(i == c.getSize());
+}
+
+void getInterfaceConnectivity
+(
+  Output& o,
+  int block,
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.interface.nElements[block];
+  int nvert0 = o.blocks.interface.keys[block].nElementVertices;
+  int nvert1 = o.blocks.interface.keys[block].nElementVertices1;
+  c.setSize(nelem * (nvert0 + nvert1));
+  size_t i = 0;
+  for (int vert = 0; vert < nvert0; ++vert)
+    for (int elem = 0; elem < nelem; ++elem)
+      c[i++] = o.arrays.ienif0[block][elem][vert] + 1;
+  for (int vert = 0; vert < nvert1; ++vert)
+    for (int elem = 0; elem < nelem; ++elem)
+      c[i++] = o.arrays.ienif1[block][elem][vert] + 1;
+  assert(i == c.getSize());
+}
+
+void getInteriorMaterialType
+(
+  Output& o, 
+  int block, 
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.interior.nElements[block];
+  c.setSize(nelem);
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem)
+    c[i++] = o.arrays.mattype[block][elem];
+  assert(i == c.getSize());
+}
+
+void getBoundaryMaterialType
+(
+  Output& o, 
+  int block, 
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.boundary.nElements[block];
+  c.setSize(nelem);
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem)
+    c[i++] = o.arrays.mattypeb[block][elem];
+  assert(i == c.getSize());
+}
+
+void getInterfaceMaterialType
+(
+  Output& o, 
+  int block, 
+  apf::DynamicArray<int>& c
+)
+{
+  int nelem = o.blocks.interface.nElements[block];
+  c.setSize(2*nelem);
+  size_t i = 0;
+  for (int elem = 0; elem < nelem; ++elem) 
+    c[i++] = o.arrays.mattypeif0[block][elem];
+  for (int elem = 0; elem < nelem; ++elem) 
+    c[i++] = o.arrays.mattypeif1[block][elem];
   assert(i == c.getSize());
 }
 
@@ -88,6 +156,22 @@ void fillBlockKeyParams(int* params, BlockKey& k)
   params[6] = k.elementType;
 }
 
+void fillBlockKeyInterfaceParams
+(
+  int* params,
+  BlockKeyInterface& k
+)
+{
+  params[1] = k.nElementVertices;
+  params[2] = k.nElementVertices1;
+  params[3] = k.polynomialOrder;
+  params[4] = k.nElementVertices;
+  params[5] = k.nElementVertices1;
+  params[6] = k.nBoundaryFaceEdges; /* num boundary nodes */
+  params[7] = k.elementType;
+  params[8] = k.elementType1;
+}
+
 void writeBlocks(FILE* f, Output& o)
 {
   apf::DynamicArray<int> c;
@@ -99,6 +183,11 @@ void writeBlocks(FILE* f, Output& o)
     fillBlockKeyParams(params, k);
     getInteriorConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 7, params);
+    if (o.arrays.mattype) {
+      phrase = getBlockKeyPhrase(k, "material type interior ");
+      getInteriorMaterialType(o, i, c);
+      ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+    }
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
@@ -108,6 +197,11 @@ void writeBlocks(FILE* f, Output& o)
     params[7] = countNaturalBCs(*o.in);
     getBoundaryConnectivity(o, i, c);
     ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 8, params);
+    if (o.arrays.mattypeb) {
+      phrase = getBlockKeyPhrase(k, "material type boundary ");
+      getBoundaryMaterialType(o, i, c);
+      ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 1, params); 
+    }
     phrase = getBlockKeyPhrase(k, "nbc codes ");
     apf::DynamicArray<int> codes;
     getNaturalBCCodes(o, i, codes);
@@ -117,6 +211,21 @@ void writeBlocks(FILE* f, Output& o)
     getNaturalBCValues(o, i, values);
     ph_write_doubles(f, phrase.c_str(), &values[0], values.getSize(), 8, params);
   }
+  for (int i = 0; i < o.blocks.interface.getSize(); ++i) {
+    BlockKeyInterface& k = o.blocks.interface.keys[i];
+    std::string phrase = getBlockKeyPhraseInterface(k, "connectivity interface ");
+    params[0] = o.blocks.interface.nElements[i];
+    fillBlockKeyInterfaceParams(params, k);
+    getInterfaceConnectivity(o, i, c);
+    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 9, params);
+    if (o.arrays.mattypeif0) {
+      phrase = getBlockKeyPhraseInterface(k, "material type interface ");
+      getInterfaceMaterialType(o, i, c);
+      params[1] = 2; // number of materials
+      ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 2, params); 
+    }
+  }
+
 }
 
 static void writeInt(FILE* f, const char* name, int i)
@@ -160,11 +269,19 @@ static void writeEdges(Output& o, FILE* f)
   }
 }
 
-void writeGeomBC(Output& o, std::string path)
+void writeGeomBC(Output& o, std::string path, int timestep)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
-  path += buildGeomBCFileName();
+  std::stringstream tss; 
+  std::string timestep_or_dat;
+  if (! timestep)
+    timestep_or_dat = "dat";
+  else {
+    tss << timestep;   
+    timestep_or_dat = tss.str();
+  }
+  path += buildGeomBCFileName(timestep_or_dat);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
@@ -184,9 +301,13 @@ void writeGeomBC(Output& o, std::string path)
   writeInt(f, "number of global modes", 0);
   writeInt(f, "number of interior elements", m->count(m->getDimension()));
   writeInt(f, "number of boundary elements", o.nBoundaryElements);
+  if (o.nInterfaceElements>0) 
+    writeInt(f, "number of interface elements", o.nInterfaceElements);
   writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
   writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
   writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
+  if (o.blocks.interface.getSize()>0)
+    writeInt(f, "number of interface tpblocks", o.blocks.interface.getSize());
   writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
   params[0] = m->count(0);
   params[1] = 3;

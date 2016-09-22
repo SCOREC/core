@@ -29,15 +29,21 @@ struct BlockKey
   bool operator<(BlockKey const& other) const;
 };
 
+struct BlockKeyInterface : public BlockKey
+{
+  int nElementVertices1;
+  int elementType1;
+  bool operator<(BlockKeyInterface const& other) const;
+};
+
 enum {
   MAX_BLOCK_KEYS = 12
 };
 
-struct Blocks
+struct BlocksCommon
 {
   typedef std::map<BlockKey, int> Map;
   Map keyToIndex;
-  BlockKey keys[MAX_BLOCK_KEYS];
   int nElements[MAX_BLOCK_KEYS];
   int nElementNodes[MAX_BLOCK_KEYS];
   int getSize()
@@ -46,19 +52,43 @@ struct Blocks
   }
 };
 
+struct Blocks : public BlocksCommon
+{
+  BlockKey keys[MAX_BLOCK_KEYS];
+};
+
+struct BlocksInterface : public BlocksCommon
+{
+  BlockKeyInterface keys[MAX_BLOCK_KEYS];
+};
+
 struct AllBlocks
 {
   Blocks interior;
   Blocks boundary;
+  BlocksInterface interface;
 };
 
 void getAllBlocks(apf::Mesh* m, AllBlocks& b);
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
+std::string getBlockKeyPhraseInterface
+(
+  BlockKeyInterface& b, 
+  const char* prefix
+);
 
 void getInteriorBlockKey(apf::Mesh* m, apf::MeshEntity* e, BlockKey& k);
 void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
     apf::MeshEntity* f, BlockKey& k);
+void getInterfaceBlockKey
+(
+  apf::Mesh*         m, 
+  apf::MeshEntity*   e0, 
+  apf::MeshEntity*   e1, 
+  apf::MeshEntity*   f, 
+  BlockKeyInterface& k
+);
 
 }
 

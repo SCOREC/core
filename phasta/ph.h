@@ -12,7 +12,7 @@ void goToParentDir();
 std::string setupOutputDir();
 void setupInputSubdir(std::string& path);
 void setupOutputSubdir(std::string& path);
-void writeAuxiliaryFiles(std::string path, int timestep);
+void writeAuxiliaryFiles(std::string path, int timestep_or_dat);
 
 }
 
