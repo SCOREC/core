@@ -39,11 +39,12 @@ public:
 typedef gModel* pGeom;
 typedef gEntity* pGeomEnt;
 
+typedef gModel::iterall pGeomIter;
+
 typedef GenIterator<mPartEntityContainer::iter, gEntity>* gIter;
 
 typedef apf::Mesh2* pMesh;
 typedef apf::MeshEntity* pMeshEnt;
-typedef apf::MeshEntity* pPartEnt;
 typedef apf::MeshIterator* pMeshIter;
 typedef apf::Copies Copies;
 typedef apf::MeshTag* pMeshTag;
@@ -371,9 +372,6 @@ void pumi_ment_get2ndAdj (pMeshEnt e, int brgType, int tgtType, std::vector<pMes
 
 // return entity's geometric classification
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);
-
-// unavailable
-pPartEnt pumi_ment_getPtnClas(pMeshEnt e);
 
 // return owning part id. if ghosted mesh, vertex or element only
 int pumi_ment_getOwnPID(pMeshEnt e); 
