@@ -2,7 +2,7 @@
 #include "samSz.h"
 #include <apfField.h>
 #include <cassert>
-#include <apfField.h>
+#include <stdio.h>
 
 namespace sam {
 
