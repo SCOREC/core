@@ -15,6 +15,13 @@ bool BlockKey::operator<(BlockKey const& other) const
   return polynomialOrder < other.polynomialOrder;
 }
 
+bool BlockKeyInterface::operator<(BlockKeyInterface const& other) const
+{
+  if (elementType1 != other.elementType1)
+    return elementType1 < other.elementType1;
+  return this->BlockKey::operator<(other);
+}
+
 static int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
 {
   static int const table[apf::Mesh::TYPES] = 
@@ -30,6 +37,24 @@ static int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
 }
 
 static void insertKey(Blocks& b, BlockKey const& k)
+{
+  if (b.keyToIndex.count(k)) {
+    int idx = b.keyToIndex[k];
+    ++(b.nElements[idx]);
+  } else {
+    int idx = b.keyToIndex.size();
+    b.keyToIndex[k] = idx;
+    b.nElements[idx] = 1;
+    b.keys[idx] = k;
+    b.nElementNodes[idx] = k.nElementVertices;
+  }
+}
+
+static void insertKeyInterface
+(
+  BlocksInterface&         b, 
+  BlockKeyInterface const& k
+)
 {
   if (b.keyToIndex.count(k)) {
     int idx = b.keyToIndex[k];
@@ -100,6 +125,10 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
+    apf::Matches matches;
+    m->getMatches(f, matches);
+    if (matches.getSize() == 1) // This prevents adding interface elements...
+      continue;
     if (m->countUpward(f)>1)   // don't want interior region boundaries here...
       continue;
     apf::MeshEntity* e = m->getUpward(f, 0);
@@ -110,22 +139,101 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
   m->end(it);
 }
 
+static void applyTriQuadHackElement
+(
+  int elementType,
+  int nBoundaryFaceEdges
+)
+{
+  if (WEDGE == elementType)
+    elementType = nBoundaryFaceEdges;
+  else if ((PYRAMID == elementType) && (3 == nBoundaryFaceEdges))
+    elementType = PYRAMID_TRI;
+}
+  
+void applyTriQuadHackInterface
+(
+  BlockKeyInterface& k
+)
+{
+  applyTriQuadHackElement(k.elementType,  k.nBoundaryFaceEdges);
+  applyTriQuadHackElement(k.elementType1, k.nBoundaryFaceEdges);
+}
+
+void getInterfaceBlockKey
+(
+  apf::Mesh*         m, 
+  apf::MeshEntity*   e0,
+  apf::MeshEntity*   e1,
+  apf::MeshEntity*   f, 
+  BlockKeyInterface& k
+)
+{
+  k.elementType      = getPhastaType(m, e0);
+  k.elementType1     = getPhastaType(m, e1);
+  k.nElementVertices =
+    apf::Mesh::adjacentCount[m->getType(e0)][0];
+  k.nElementVertices1 =
+    apf::Mesh::adjacentCount[m->getType(e1)][0];
+  k.polynomialOrder = 1;
+  k.nBoundaryFaceEdges =
+    apf::Mesh::adjacentCount[m->getType(f)][1];
+  applyTriQuadHackInterface(k);
+}
+
+void getInterfaceBlocks(apf::Mesh* m, BlocksInterface& b)
+{
+  int interfaceDim = m->getDimension() - 1;
+  apf::MeshIterator* it = m->begin(interfaceDim);
+  apf::MeshEntity* face;
+
+  while ((face = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(face);
+    if (m->getModelType(me) != interfaceDim)
+      continue;
+    apf::Matches matches;
+    m->getMatches(face, matches);
+    if (matches.getSize() != 1)
+      continue;
+    apf::MeshEntity* e0 = m->getUpward(face, 0);
+    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    /* in order to avoid repetition of elements */
+    if (e0 > e1)
+      continue;
+
+    BlockKeyInterface k;
+    getInterfaceBlockKey(m, e0, e1, face, k);
+    insertKeyInterface(b, k);
+  }
+  m->end(it);
+}
+
 void getAllBlocks(apf::Mesh* m, AllBlocks& b)
 {
   getInteriorBlocks(m, b.interior);
   getBoundaryBlocks(m, b.boundary);
+  getInterfaceBlocks(m, b.interface);
 }
 
-std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)
+std::string getPolyOrder
+(
+  int polyOrder
+)
 {
-  std::string s = prefix;
   static const char* const polyTable[5] =
   {NULL
   ,"linear "
   ,"quadratic "
   ,"cubic "
   ,"quartic "};
-  s += polyTable[b.polynomialOrder];
+  return polyTable[polyOrder];
+}
+
+std::string getElementType
+(
+  int elementType
+)
+{
   static const char* typeTable[TYPES] =
   {NULL
   ,"tetrahedron "
@@ -134,7 +242,31 @@ std::string getBlockKeyPhrase(BlockKey& b, const char* prefix)
   ,"wedge quadface "
   ,"pyramid "
   ,"pyramid triface "};
-  s += typeTable[b.elementType];
+  return typeTable[elementType];
+}
+
+std::string getBlockKeyPhrase
+(
+  BlockKey& b, 
+  const char* prefix
+)
+{
+  std::string s = prefix;
+  s += getPolyOrder(b.polynomialOrder); 
+  s += getElementType(b.elementType);
+  return s;
+}
+
+std::string getBlockKeyPhraseInterface
+(
+  BlockKeyInterface& b, 
+  const char* prefix
+)
+{
+  std::string s = prefix;
+  s += getPolyOrder(b.polynomialOrder); 
+  s += getElementType(b.elementType);
+  s += getElementType(b.elementType1);
   return s;
 }
 

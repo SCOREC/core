@@ -29,6 +29,8 @@ namespace chef {
   void balanceAndReorder(ph::Input& ctrl, apf::Mesh2* m);
   /** @brief adapt the mesh using the given szFld */
   void adapt(apf::Mesh2* m, apf::Field* szFld);
+  /** @brief adapt the mesh based on input control */
+  void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& ctrl);
   /** @brief uniformly refine the mesh */
   void uniformRefinement(ph::Input& ctrl, apf::Mesh2* m);
   /** @brief read fields from the mesh and write to files */

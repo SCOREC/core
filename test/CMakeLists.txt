@@ -96,6 +96,7 @@ util_exe_func(chefReadUrPrep ../phasta/readUrPrep.cc)
 util_exe_func(threshold ../phasta/threshold.cc)
 util_exe_func(chefStream ../phasta/chefStream.cc)
 util_exe_func(cut_interface ../phasta/cut_interface.cc)
+util_exe_func(migrate_interface ../phasta/migrate_interface.cc)
 
 # Unit tests / functionality regression tests
 test_exe_func(qr qr.cc)

@@ -15,6 +15,7 @@ class Input
     int globalP;
     int timeStepNumber;
     int ensa_dof;
+    int ensa_melas_dof;
     std::string restartFileName;
     std::string attributeFileName;
     std::string meshFileName;
@@ -52,6 +53,7 @@ class Input
     int initBubbles;
     int formElementGraph;
     int snap;
+    int transferParametric;
     int splitAllLayerEdges;
     int filterMatches;
     int axisymmetry;
@@ -59,6 +61,8 @@ class Input
     int writePhastaFiles;
     int parmaLoops;
     int parmaVerbosity;
+    int writeVizFiles;
+    double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);

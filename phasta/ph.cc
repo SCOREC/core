@@ -120,7 +120,7 @@ void setupInputSubdir(std::string& path)
   PCU_Barrier();
 }
 
-void writeAuxiliaryFiles(std::string path, int timestep)
+void writeAuxiliaryFiles(std::string path, int timestep_or_dat)
 {
   std::string numpePath = path;
   numpePath += "numpe.in";
@@ -132,7 +132,7 @@ void writeAuxiliaryFiles(std::string path, int timestep)
   numstartPath += "numstart.dat";
   std::ofstream numstart(numstartPath.c_str());
   assert(numstart.is_open());
-  numstart << timestep << '\n';
+  numstart << timestep_or_dat << '\n';
   numstart.close();
 }
 
