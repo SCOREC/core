@@ -166,12 +166,6 @@ pGeomEnt pumi_ment_getGeomClas(pMeshEnt e)
   return (pGeomEnt)(pumi::instance()->mesh->toModel(e));
 }
 
-pPartEnt pumi_ment_getPtnClas(pMeshEnt)
-{  
-  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
-  return NULL;
-}
-
 // owner part information
 int pumi_ment_getOwnPID(pMeshEnt e)
 {
