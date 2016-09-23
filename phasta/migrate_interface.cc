@@ -95,7 +95,6 @@ int main(int argc, char** argv)
   ph::FieldBCs& fbcs = bcs.fields[name];
 
   int faceDim = m->getDimension() - 1;
-  int i = 0;
 
   apf::MeshIterator* it = m->begin(faceDim);
   apf::MeshEntity* f;
@@ -128,7 +127,7 @@ while ((v = m->iterate(it2))) {
     apf::MeshEntity* e = m->getUpward(f, 0);
 
     int remoteResidence = -1;
-    for (int j = 0; j != matches.getSize(); ++j) {
+    for (size_t j = 0; j != matches.getSize(); ++j) {
       if (matches[j].peer != PCU_Comm_Self()) 
         remoteResidence = matches[j].peer;
 //printf("proc-%d: j=%d, peer=%d.\n",PCU_Comm_Self(),j,matches[j].peer);
