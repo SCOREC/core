@@ -43,3 +43,7 @@ export PATH=$PATH:/lore/dibanez/cov-analysis-linux64-7.7.0.4/bin
 cov-build --dir cov-int make -j 4
 #pack up the tarball of results
 tar czvf pumi.tgz cov-int
+#cleanup the Chef test output
+cd /lore/dibanez
+find meshes/phasta -name "*procs_case" | xargs rm -rf
+find meshes/phasta -name "out_mesh" | xargs rm -rf
