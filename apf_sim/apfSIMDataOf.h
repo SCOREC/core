@@ -18,7 +18,7 @@ public:
   SIMDataOf(pField fd_in)
   {
     fd = fd_in;
-    pf = Field_polyField(fd);
+    pf = static_cast<pPolyField>(Field_def(fd));
   }
   virtual void init(FieldBase * f)
   {

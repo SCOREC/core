@@ -2,5 +2,5 @@ INCLUDE(TribitsTplDeclareLibraries)
 
 TRIBITS_TPL_FIND_INCLUDE_DIRS_AND_LIBRARIES( SimParasolid
   REQUIRED_HEADERS SimParasolidKrnl.h
-  REQUIRED_LIBS_NAMES SimParasolid270${SIM_DEBUG} pskernel
+  REQUIRED_LIBS_NAMES SimParasolid280${SIM_DEBUG} pskernel
 )
