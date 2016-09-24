@@ -9,7 +9,7 @@
   </SubProject>
   <SubProject name="develop-into-master">
   </SubProject>
-  <SubProject name="master-into-master-sim">
+  <SubProject name="master-into-develop-sim">
   </SubProject>
   <SubProject name="develop-sim-into-master-sim">
   </SubProject>
