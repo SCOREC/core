@@ -29,7 +29,7 @@ apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
 
 apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
 {
-  pPolyField pf = Field_polyField(fd);
+  pPolyField pf = static_cast<pPolyField>(Field_def(fd));
   int order = PolyField_entOrder(pf, 0);
   apf::FieldShape* shape = apf::getLagrange(order);
   char const* name = Field_name(fd);
