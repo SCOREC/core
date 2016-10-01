@@ -50,24 +50,30 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
+option(USE_SIMMETRIX "Build with Simmetrix support" OFF)
+
 macro(scorec_export_library target)
 bob_export_target(${target})
 install(FILES ${HEADERS} DESTINATION include)
 endmacro(scorec_export_library)
 
-#This is core-sim, so bring in Simmetrix !
-#(needed by apf_sim and gmi_sim)
-find_package(SimModSuite MODULE REQUIRED)
+if(USE_SIMMETRIX)
+  find_package(SimModSuite MODULE REQUIRED)
+endif()
 
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
-add_subdirectory(gmi_sim)
+if(USE_SIMMETRIX)
+  add_subdirectory(gmi_sim)
+endif()
 add_subdirectory(can)
 add_subdirectory(mth)
 add_subdirectory(lion)
 add_subdirectory(apf)
-add_subdirectory(apf_sim)
+if(USE_SIMMETRIX)
+  add_subdirectory(apf_sim)
+endif()
 add_subdirectory(mds)
 add_subdirectory(parma)
 add_subdirectory(zoltan)
