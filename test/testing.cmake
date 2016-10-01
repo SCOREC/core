@@ -65,28 +65,36 @@ mpi_test(inviscid_ghost 4
   "${MDIR}/4/"
   "${MDIR}/vis")
 set(MDIR ${MESHES}/pipe)
-mpi_test(convert 1
-  ./convert
-  "${MDIR}/pipe.smd"
-  "${MDIR}/pipe.sms"
-  "pipe.smb")
+if(ENABLE_SIMMETRIX)
+  set(PIPE_MODEL "${MDIR}/pipe.smd")
+  mpi_test(convert 1
+    ./convert
+    "${MDIR}/pipe.smd"
+    "${MDIR}/pipe.sms"
+    "pipe.smb")
+else()
+  set(PIPE_MODEL "${MDIR}/pipe.dmg")
+  file(COPY "${MDIR}/pipe0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 mpi_test(verify_serial 1
   ./verify
-  "${MDIR}/pipe.smd"
+  "${PIPE_MODEL}"
   "pipe.smb")
 mpi_test(uniform_serial 1
   ./uniform
-  "${MDIR}/pipe.smd"
+  "${PIPE_MODEL}"
   "pipe.smb"
   "pipe_unif.smb")
-mpi_test(snap_serial 1
-  ./snap
-  "${MDIR}/pipe.smd"
-  "pipe_unif.smb"
-  "pipe.smb")
+if(ENABLE_SIMMETRIX)
+  mpi_test(snap_serial 1
+    ./snap
+    "${PIPE_MODEL}"
+    "pipe_unif.smb"
+    "pipe.smb")
+endif()
 mpi_test(ma_serial 1
   ./ma_test
-  "${MDIR}/pipe.smd"
+  "${PIPE_MODEL}"
   "pipe.smb")
 mpi_test(aniso_ma_serial 1
   ./aniso_ma_test
@@ -301,15 +309,17 @@ mpi_test(adapt_meshgen 4
   "67k/")
 mpi_test(ma_insphere 1
   ./ma_insphere)
-set(MDIR ${MESHES}/curved)
-mpi_test(curvedSphere 1
-  ./curvetest
-  "${MDIR}/sphere1.xmt_txt"
-  "${MDIR}/sphere1_4.smb")
-mpi_test(curvedKova 1
-  ./curvetest
-  "${MDIR}/Kova.xmt_txt"
-  "${MDIR}/Kova.smb")
+if(ENABLE_SIMMETRIX)
+  set(MDIR ${MESHES}/curved)
+  mpi_test(curvedSphere 1
+    ./curvetest
+    "${MDIR}/sphere1.xmt_txt"
+    "${MDIR}/sphere1_4.smb")
+  mpi_test(curvedKova 1
+    ./curvetest
+    "${MDIR}/Kova.xmt_txt"
+    "${MDIR}/Kova.smb")
+endif()
 if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
   mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
