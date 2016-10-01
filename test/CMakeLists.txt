@@ -154,11 +154,13 @@ if(IS_TESTING)
   include(testing.cmake)
 endif()
 
-#executables which call only Simmetrix functions
-include_directories(${PROJECT_BINARY_DIR}/gmi_sim)
-util_exe_func(simTranslate simTranslate.cc)
-if(SIM_PARASOLID)
-  util_exe_func(simSpjToSmd simSpjToSmd.cc)
+if(ENABLE_SIMMETRIX)
+  #executables which call only Simmetrix functions
+  include_directories(${PROJECT_BINARY_DIR}/gmi_sim)
+  util_exe_func(simTranslate simTranslate.cc)
+  if(SIM_PARASOLID)
+    util_exe_func(simSpjToSmd simSpjToSmd.cc)
+  endif()
 endif()
 
 bob_end_subdir()
