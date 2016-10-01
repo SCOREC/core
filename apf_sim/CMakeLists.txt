@@ -3,6 +3,10 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
+if(NOT ENABLE_SIMMETRIX)
+  return()
+endif()
+
 #Sources & Headers
 set(SOURCES apfSIM.cc)
 set(HEADERS apfSIM.h)
