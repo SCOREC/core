@@ -23,6 +23,12 @@ add_test(qr_test qr)
 add_test(base64 base64)
 add_test(tensor_test tensor)
 
+if(ENABLE_SIMMETRIX)
+  set(GXT smd)
+else()
+  set(GXT dmg)
+endif()
+
 mpi_test(pumi3d-1p 4
   ./test_pumi
   ${MESHES}/pumi/3d-1p/model.dmg
@@ -66,35 +72,33 @@ mpi_test(inviscid_ghost 4
   "${MDIR}/vis")
 set(MDIR ${MESHES}/pipe)
 if(ENABLE_SIMMETRIX)
-  set(PIPE_MODEL "${MDIR}/pipe.smd")
   mpi_test(convert 1
     ./convert
     "${MDIR}/pipe.smd"
     "${MDIR}/pipe.sms"
     "pipe.smb")
 else()
-  set(PIPE_MODEL "${MDIR}/pipe.dmg")
   file(COPY "${MDIR}/pipe0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 mpi_test(verify_serial 1
   ./verify
-  "${PIPE_MODEL}"
+  "${MDIR}/pipe.${GXT}"
   "pipe.smb")
 mpi_test(uniform_serial 1
   ./uniform
-  "${PIPE_MODEL}"
+  "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "pipe_unif.smb")
 if(ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
-    "${PIPE_MODEL}"
+    "${MDIR}/pipe.${GXT}"
     "pipe_unif.smb"
     "pipe.smb")
 endif()
 mpi_test(ma_serial 1
   ./ma_test
-  "${PIPE_MODEL}"
+  "${MDIR}/pipe.${GXT}"
   "pipe.smb")
 mpi_test(aniso_ma_serial 1
   ./aniso_ma_test
@@ -102,63 +106,63 @@ mpi_test(aniso_ma_serial 1
   "${MESHES}/cube/pumi670/cube.smb")
 mpi_test(tet_serial 1
   ./tetrahedronize
-  "${MDIR}/pipe.smd"
+  "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
-if (PCU_COMPRESS)
+if(PCU_COMPRESS)
   set(MESHFILE "bz2:pipe_2_.smb")
 else()
   set(MESHFILE "pipe_2_.smb")
 endif()
 mpi_test(split_2 2
   ./split
-  "${MDIR}/pipe.smd"
+  "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   ${MESHFILE}
   2)
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x
-    "${MDIR}/pipe.dmg"
+    "${MDIR}/pipe.${GXT}"
     ${MESHFILE}
     0
     "refXpipe/")
   mpi_test(split_4 4
     ./zsplit
-    "${MDIR}/pipe.smd"
+    "${MDIR}/pipe.${GXT}"
     ${MESHFILE}
     "pipe_4_.smb"
     2)
 else()
   mpi_test(split_4 4
     ./split
-    "${MDIR}/pipe.smd"
+    "${MDIR}/pipe.${GXT}"
     ${MESHFILE}
     "pipe_4_.smb"
     2)
 endif()
 mpi_test(pipe_condense 4
   ./serialize
-  "${MDIR}/pipe.dmg"
+  "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb"
   "pipe_2.smb"
   2)
 mpi_test(verify_parallel 4
   ./verify
-  "${MDIR}/pipe.smd"
+  "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb")
 mpi_test(vtxElmMixedBalance 4
   ./vtxElmMixedBalance
-  "${MDIR}/pipe.dmg"
+  "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb")
 if(ENABLE_ZOLTAN)
   mpi_test(ma_parallel 4
     ./ma_test
-    "${MDIR}/pipe.smd"
+    "${MDIR}/pipe.${GXT}"
     "pipe_4_.smb")
   mpi_test(tet_parallel 4
     ./tetrahedronize
-    "${MDIR}/pipe.smd"
+    "${MDIR}/pipe.${GXT}"
     "pipe_4_.smb"
     "tet.smb")
 endif()
@@ -214,12 +218,12 @@ mpi_test(elmBalance 4
   "afosrBal4p/")
 mpi_test(vtxBalance 4
   ./vtxBalance
-  "${MDIR}/afosr.smd"
+  "${MDIR}/afosr.${GXT}"
   "${MDIR}/4imb/"
   "afosrBal4p/")
 mpi_test(vtxEdgeElmBalance 4
   ./vtxEdgeElmBalance
-  "${MDIR}/afosr.smd"
+  "${MDIR}/afosr.${GXT}"
   "${MDIR}/4imb/"
   "afosrBal4p/"
   "2"
@@ -298,18 +302,18 @@ mpi_test(fusion_field 2
   ./fusion2)
 mpi_test(change_dim 1
   ./newdim)
-set(MDIR ${MESHES}/upright)
-mpi_test(parallel_meshgen 4
-  ./generate
-  "${MDIR}/upright.smd"
-  "67k")
-mpi_test(adapt_meshgen 4
-  ./ma_test
-  "${MDIR}/upright.smd"
-  "67k/")
 mpi_test(ma_insphere 1
   ./ma_insphere)
 if(ENABLE_SIMMETRIX)
+  set(MDIR ${MESHES}/upright)
+  mpi_test(parallel_meshgen 4
+    ./generate
+    "${MDIR}/upright.smd"
+    "67k")
+  mpi_test(adapt_meshgen 4
+    ./ma_test
+    "${MDIR}/upright.smd"
+    "67k/")
   set(MDIR ${MESHES}/curved)
   mpi_test(curvedSphere 1
     ./curvetest
@@ -321,37 +325,48 @@ if(ENABLE_SIMMETRIX)
     "${MDIR}/Kova.smb")
 endif()
 if (PCU_COMPRESS)
-  set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/run_sim)
+  if(ENABLE_SIMMETRIX)
+    set(RUNDIR run_sim)
+  else()
+    set(RUNDIR run)
+  endif()
+  set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/${RUNDIR})
   mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
     WORKING_DIRECTORY ${MDIR})
   mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
-  add_test(NAME chef1
-    COMMAND diff -r -x .svn run_sim/1-procs_case/ good_phasta/
-    WORKING_DIRECTORY ${MDIR})
+  if(ENABLE_SIMMETRIX)
+    add_test(NAME chef1
+      COMMAND diff -r -x .svn ${RUNDIR}/1-procs_case/ good_phasta/
+      WORKING_DIRECTORY ${MDIR})
+  endif()
   add_test(NAME chef2
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   if(ENABLE_ZOLTAN)
     mpi_test(chef3 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
-      WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/run_sim)
+      WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/${RUNDIR})
     mpi_test(chef4 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
-      WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/run_sim)
+      WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/4-2-Chef-Part/${RUNDIR})
     mpi_test(chef5 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
-      WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/run_sim)
+      WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/${RUNDIR})
   endif()
-  mpi_test(chef6 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
-    WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run_sim)
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
-  add_test(NAME chef7
-    COMMAND diff -r -x .svn run_sim/4-procs_case/ good_phasta/
-    WORKING_DIRECTORY ${MDIR})
+  mpi_test(chef6 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/${RUNDIR})
+  if(ENABLE_SIMMETRIX)
+    add_test(NAME chef7
+      COMMAND diff -r -x .svn ${RUNDIR}/4-procs_case/ good_phasta/
+      WORKING_DIRECTORY ${MDIR})
+  endif()
   add_test(NAME chef8
     COMMAND diff -r -x .svn out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
-    WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
+  if(ENABLE_SIMMETRIX)
+    mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+      WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
+  endif()
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
     ../../../model.dmg bz2:../good_mesh/ adapt.ur.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
