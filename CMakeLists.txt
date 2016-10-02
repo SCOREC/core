@@ -51,6 +51,9 @@ endif()
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
+if(ENABLE_SIMMETRIX)
+  add_definitions(-DHAVE_SIMMETRIX)
+endif()
 
 macro(scorec_export_library target)
 bob_export_target(${target})

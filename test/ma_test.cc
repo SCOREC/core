@@ -1,11 +1,13 @@
 #include "ma.h"
 #include <apf.h>
 #include <gmi_mesh.h>
-#include <gmi_sim.h>
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#ifdef HAVE_SIMMETRIX
+#include <gmi_sim.h>
 #include <SimUtil.h>
+#endif
 #include <cassert>
 
 class Linear : public ma::IsotropicFunction
@@ -37,11 +39,13 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+#ifdef HAVE_SIMMETRIX
   SimUtil_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
-  gmi_register_mesh();
   gmi_register_sim();
+#endif
+  gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
   Linear sf(m);
@@ -55,10 +59,12 @@ int main(int argc, char** argv)
   apf::writeVtkFiles("after",m);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+#ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimUtil_stop();
+#endif
+  PCU_Comm_Free();
   MPI_Finalize();
 }
 

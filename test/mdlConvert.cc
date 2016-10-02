@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <SimUtil.h>
-#include "gmi_mesh.h"
 #include "gmi_sim.h"
+#include "gmi_mesh.h"
 
 int main(int argc, char** argv)
 {

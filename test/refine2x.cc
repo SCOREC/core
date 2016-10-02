@@ -1,12 +1,14 @@
 #include <ma.h>
 #include <apf.h>
 #include <gmi_mesh.h>
-#include <gmi_sim.h>
 #include <apfMDS.h>
 #include <PCU.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
+#ifdef HAVE_SIMMETRIX
+#include <gmi_sim.h>
 #include <SimUtil.h>
+#endif
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -87,11 +89,13 @@ int main(int argc, char** argv)
         << " <model file> <in mesh> <split direction=[0-2]> <out mesh> \n";
     return EXIT_FAILURE;
   }
+#ifdef HAVE_SIMMETRIX
   SimUtil_start();
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
-  gmi_register_mesh();
   gmi_register_sim();
+#endif
+  gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
   ma::Input* in = ma::configure(m, ansx);
@@ -111,9 +115,11 @@ int main(int argc, char** argv)
   m->writeNative(argv[4]);
   m->destroyNative();
   apf::destroyMesh(m);
+#ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimUtil_stop();
+#endif
   PCU_Comm_Free();
   MPI_Finalize();
 }

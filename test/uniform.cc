@@ -1,10 +1,12 @@
 #include <ma.h>
 #include <apf.h>
 #include <gmi_mesh.h>
-#include <gmi_sim.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#ifdef HAVE_SIMMETRIX
+#include <gmi_sim.h>
 #include <SimUtil.h>
+#endif
 #include <cassert>
 #include <stdlib.h>
 
@@ -30,11 +32,13 @@ int main(int argc, char** argv)
   assert(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+#ifdef HAVE_SIMMETRIX
   SimUtil_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
-  gmi_register_mesh();
   gmi_register_sim();
+#endif
+  gmi_register_mesh();
   getConfig(argc,argv);
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   ma::Input* in = ma::configureUniformRefine(m, 1);
@@ -47,9 +51,11 @@ int main(int argc, char** argv)
   m->writeNative(outFile);
   m->destroyNative();
   apf::destroyMesh(m);
+#ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimUtil_stop();
+#endif
   PCU_Comm_Free();
   MPI_Finalize();
 }
