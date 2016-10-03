@@ -148,8 +148,8 @@ namespace ph {
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
-    gmi_model* g = m->getModel();
 #ifdef HAVE_SIMMETRIX
+    gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
 #endif
     if (in.adaptFlag)

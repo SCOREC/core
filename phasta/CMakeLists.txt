@@ -54,8 +54,10 @@ target_link_libraries(ph
       parma
       pcu
       apf_zoltan
-      gmi_sim
     )
+if(ENABLE_SIMMETRIX)
+  target_link_libraries(ph PUBLIC gmi_sim)
+endif()
 
 scorec_export_library(ph)
 

@@ -51,6 +51,7 @@ endif()
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
+message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()

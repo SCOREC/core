@@ -21,7 +21,9 @@ test_exe_func(quality quality.cc)
 test_exe_func(writeVtxPtn writeVtxPtn.cc)
 
 # Geometric model utilities
-util_exe_func(mdlConvert mdlConvert.cc)
+if(ENABLE_SIMMETRIX)
+  util_exe_func(mdlConvert mdlConvert.cc)
+endif()
 util_exe_func(mkmodel mkmodel.cc)
 
 # Mesh generation utilities
