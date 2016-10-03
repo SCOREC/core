@@ -13,7 +13,6 @@ set(SOURCES
   phPartition.cc
   phIO.c
   phBC.cc
-  phAttrib.cc
   phBubble.cc
   phConstraint.cc
   phModelGeometry.cc
@@ -22,6 +21,12 @@ set(SOURCES
   phInterfaceCutter.cc
   phstream.cc
 )
+
+if(ENABLE_SIMMETRIX)
+  set(SOURCES ${SOURCES}
+      phAttrib.cc
+     )
+endif()
 
 # Package headers
 set(HEADERS

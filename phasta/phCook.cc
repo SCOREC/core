@@ -1,7 +1,9 @@
 #include <ph.h>
 #include <chef.h>
 #include <phstream.h>
+#ifdef HAVE_SIMMETRIX
 #include <phAttrib.h>
+#endif
 #include <phInput.h>
 #include <phBC.h>
 #include <phRestart.h>
@@ -147,7 +149,9 @@ namespace ph {
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
     gmi_model* g = m->getModel();
+#ifdef HAVE_SIMMETRIX
     ph::clearAttAssociation(g,in);
+#endif
     if (in.adaptFlag)
       ph::goToParentDir();
   }

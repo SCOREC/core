@@ -1,6 +1,9 @@
 #include <PCU.h>
 #include "phBC.h"
+#ifdef HAVE_SIMMETRIX
 #include "phAttrib.h"
+#include <gmi_sim.h>
+#endif
 #include "phAxisymmetry.h"
 #include <apf.h>
 #include <apfMesh.h>
@@ -8,7 +11,6 @@
 #include <sstream>
 #include <cstring>
 #include <gmi.h>
-#include <gmi_sim.h>
 #include <cassert>
 
 namespace ph {
@@ -112,8 +114,10 @@ void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs)
      either its an SPJ file or they came in with the model */
   if (gmi_has_ext(attFile, "spj"))
     readBCsFromSPJ(attFile, bcs);
+#ifdef HAVE_SIMMETRIX
   else
     getSimmetrixAttributes(m, bcs);
+#endif
   if (axisymmetry)
     attachAllAngleBCs(m, bcs);
 }
@@ -127,6 +131,7 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
   /* case 1: meshmodel */
   if (gmi_has_ext(modelfile, "dmg"))
     m = gmi_load(modelfile);
+#ifdef HAVE_SIMMETRIX
   /* cases 2: Simmetrix model (and possibly attributes) file */
   else if (gmi_has_ext(modelfile, "smd"))
     m = gmi_sim_load(0, modelfile);
@@ -139,6 +144,7 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
     else
       m = gmi_sim_load(modelfile, 0);
   }
+#endif
   /* load attributes */
   readBCs(m, attribfile, in.axisymmetry, bcs);
   double t1 = PCU_Time();
