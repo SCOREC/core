@@ -104,6 +104,10 @@ mpi_test(aniso_ma_serial 1
   ./aniso_ma_test
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb")
+mpi_test(torus_ma_paralle 4
+  ./torus_ma_test
+  "${MESHES}/torus/torus.dmg"
+  "${MESHES}/torus/4imb/torus.smb")
 mpi_test(tet_serial 1
   ./tetrahedronize
   "${MDIR}/pipe.${GXT}"
