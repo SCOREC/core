@@ -3,15 +3,7 @@
   </SubProject>
   <SubProject name="develop">
   </SubProject>
-  <SubProject name="master-sim">
-  </SubProject>
-  <SubProject name="develop-sim">
-  </SubProject>
   <SubProject name="develop-into-master">
-  </SubProject>
-  <SubProject name="master-into-develop-sim">
-  </SubProject>
-  <SubProject name="develop-sim-into-master-sim">
   </SubProject>
 </Project>
 
