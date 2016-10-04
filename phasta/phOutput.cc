@@ -4,6 +4,8 @@
 #include "phAdjacent.h"
 #include "phBubble.h"
 #include "phAxisymmetry.h"
+#include <fstream>
+#include <sstream>
 #include <cassert>
 
 namespace ph {
@@ -68,16 +70,22 @@ static void getVertexLinks(Output& o, apf::Numbering* n)
   encodeILWORK(n, links, o.nlwork, o.arrays.ilwork);
 }
 
-static void getInterior(Output& o, apf::Numbering* n)
+static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
   Blocks& bs = o.blocks.interior;
-  int*** ien = new int**[bs.getSize()];
+  int*** ien     = new int**[bs.getSize()];
+  int**  mattype = 0;
+  if (bcs.fields.count("material type")) 
+    mattype = new int* [bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
-    ien[i] = new int*[bs.nElements[i]];
+    ien    [i] = new int*[bs.nElements[i]];
+    if (mattype) 
+      mattype[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
+  gmi_model* gm = m->getModel();
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it))) {
@@ -92,12 +100,25 @@ static void getInterior(Output& o, apf::Numbering* n)
     getVertices(m, e, v);
     for (int k = 0; k < nv; ++k)
       ien[i][j][k] = apf::getNumber(n, v[k], 0, 0);
+
+    /* get material type */
+    if (mattype) {
+      gmi_ent* ge = (gmi_ent*)m->toModel(e);
+      apf::Vector3 x;
+      //m->getPoint(e, 0, x);
+      x = apf::getLinearCentroid(m, e);
+      std::string s("material type");
+      FieldBCs& fbcs = bcs.fields[s];
+      double* matval = getBCValue(gm, fbcs, ge, x);
+      mattype[i][j] = *matval;
+    }
     ++js[i];
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
-  o.arrays.ien = ien;
+  o.arrays.ien     = ien;
+  o.arrays.mattype = mattype;
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
@@ -107,13 +128,18 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   int nbc = countNaturalBCs(*o.in);
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
+  int**  mattypeb = 0;
+  if (bcs.fields.count("material type")) 
+    mattypeb = new int*[bs.getSize()];
   int*** ibcb = new int**[bs.getSize()];
   double*** bcb = new double**[bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
-    ienb[i] = new int*[bs.nElements[i]];
-    ibcb[i] = new int*[bs.nElements[i]];
-    bcb[i] = new double*[bs.nElements[i]];
+    ienb[i]     = new int*[bs.nElements[i]];
+    if (mattypeb) 
+      mattypeb[i] = new int [bs.nElements[i]];
+    ibcb[i]     = new int*[bs.nElements[i]];
+    bcb[i]      = new double*[bs.nElements[i]];
     js[i] = 0;
   }
   int boundaryDim = m->getDimension() - 1;
@@ -122,6 +148,10 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   while ((f = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
+      continue;
+    apf::Matches matches;
+    m->getMatches(f, matches);
+    if (matches.getSize() == 1) // This prevents adding interface elements...
       continue;
     if (m->countUpward(f)>1)   // don't want interior region boundaries here...
       continue;
@@ -142,15 +172,113 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     ibcb[i][j] = new int[2](); /* <- parens initialize to zero */
     apf::Vector3 x = apf::getLinearCentroid(m, f);
     applyNaturalBCs(gm, gf, bcs, x, bcb[i][j], ibcb[i][j]);
+
+    /* get material type */
+    if (mattypeb) {
+      gmi_ent* ge = (gmi_ent*)m->toModel(e);
+      x = apf::getLinearCentroid(m, e);
+      std::string s("material type");
+      FieldBCs& fbcs = bcs.fields[s];
+      double* matvalb = getBCValue(gm, fbcs, ge, x);
+      mattypeb[i][j] = *matvalb;
+    }
     ++js[i];
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
     assert(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
+  o.arrays.mattypeb = mattypeb;
   o.arrays.ibcb = ibcb;
   o.arrays.bcb = bcb;
 }
+
+static void getInterface
+(
+  Output&         o,
+  BCs&            bcs,
+  apf::Numbering* n
+)
+{
+  apf::Mesh*        m  = o.mesh;
+  gmi_model*        gm = m->getModel();
+  BlocksInterface&  bs = o.blocks.interface;
+  int***            ienif0 = new int**[bs.getSize()];
+  int***            ienif1 = new int**[bs.getSize()];
+  int**             mattypeif0 = 0;
+  int**             mattypeif1 = 0;
+  if (bcs.fields.count("material type")) {
+    mattypeif0 = new int*[bs.getSize()];
+    mattypeif1 = new int*[bs.getSize()];
+  }
+  apf::NewArray<int> js(bs.getSize());
+  for (int i = 0; i < bs.getSize(); ++i) {
+    ienif0[i] = new int*[bs.nElements[i]];
+    ienif1[i] = new int*[bs.nElements[i]];
+    if (mattypeif0) mattypeif0[i] = new int [bs.nElements[i]];
+    if (mattypeif1) mattypeif1[i] = new int [bs.nElements[i]];
+    js[i] = 0;
+  }
+  int interfaceDim = m->getDimension() - 1;
+  apf::MeshEntity*   face;
+  apf::MeshIterator* it = m->begin(interfaceDim);
+
+  while ((face = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(face);
+    if (m->getModelType(me) != interfaceDim)
+      continue;
+    apf::Matches matches;
+    m->getMatches(face, matches);
+    if (matches.getSize() != 1)
+      continue;
+    apf::MeshEntity* e0 = m->getUpward(face, 0);
+    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    /* in order to avoid repeatation of elements */
+    if (e0 > e1)
+      continue;
+
+    BlockKeyInterface k;
+    getInterfaceBlockKey(m, e0, e1, face, k);
+    assert(bs.keyToIndex.count(k));
+    int i = bs.keyToIndex[k];
+    int j = js[i];
+    int nv0 = k.nElementVertices;
+    int nv1 = k.nElementVertices1;
+    apf::Downward v0, v1;
+    getBoundaryVertices(m, e0, face, v0);
+    getBoundaryVertices(m, e1, matches[0].entity, v1);
+    ienif0[i][j] = new int[nv0];
+    ienif1[i][j] = new int[nv1];
+    for (int k = 0; k < nv0; ++k) 
+      ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
+    for (int k = 0; k < nv1; ++k)
+      ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
+
+    /* get material type */
+    if (mattypeif0) {
+      gmi_ent* ge0 = (gmi_ent*)m->toModel(e0);
+      gmi_ent* ge1 = (gmi_ent*)m->toModel(e1);
+      apf::Vector3 x0;
+      apf::Vector3 x1;
+      x0 = apf::getLinearCentroid(m, e0);
+      x1 = apf::getLinearCentroid(m, e1);
+      std::string s("material type");
+      FieldBCs& fbcs = bcs.fields[s];
+      double* matvalif0 = getBCValue(gm, fbcs, ge0, x0);
+      double* matvalif1 = getBCValue(gm, fbcs, ge1, x1);
+      mattypeif0[i][j] = *matvalif0;
+      mattypeif1[i][j] = *matvalif1;
+    }
+    ++js[i];
+  }
+  m->end(it);
+  for (int i = 0; i < bs.getSize(); ++i)
+    assert(js[i] == bs.nElements[i]);
+  o.arrays.ienif0 = ienif0;
+  o.arrays.ienif1 = ienif1;
+  o.arrays.mattypeif0 = mattypeif0;
+  o.arrays.mattypeif1 = mattypeif1;
+}  
 
 static void getBoundaryElements(Output& o)
 {
@@ -159,6 +287,15 @@ static void getBoundaryElements(Output& o)
   for (int i = 0; i < bs.getSize(); ++i)
     n += bs.nElements[i];
   o.nBoundaryElements = n;
+}
+
+static void getInterfaceElements(Output& o)
+{
+  BlocksInterface& bs = o.blocks.interface;
+  int n = 0;
+  for (int i = 0; i < bs.getSize(); ++i)
+    n += bs.nElements[i]; /* need to add nElementsOther as well ??? */
+  o.nInterfaceElements = n;
 }
 
 static void getMaxElementNodes(Output& o)
@@ -170,6 +307,9 @@ static void getMaxElementNodes(Output& o)
   Blocks& bbs = o.blocks.boundary;
   for (int i = 0; i < bbs.getSize(); ++i)
     n = std::max(n, bbs.keys[i].nElementVertices);
+  BlocksInterface ifbs = o.blocks.interface;
+  for (int i = 0; i < ifbs.getSize(); ++i)
+    n = std::max(n, ifbs.keys[i].nElementVertices);
   o.nMaxElementNodes = n;
 }
 
@@ -251,6 +391,7 @@ static void getEssentialBCs(BCs& bcs, Output& o)
     ibc = 0;
     for (int j = 0; j < nec; ++j)
       bc[j] = 0;
+    //bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc) && bcs.fields.count("material type");
     bool hasBC = applyEssentialBCs(gm, ge, bcs, x, bc, &ibc);
     /* matching introduces an iper bit */
     /* which is set for all slaves */
@@ -291,6 +432,7 @@ static void getInitialConditions(BCs& bcs, Output& o)
   }
   apf::Mesh* m = o.mesh;
   apf::NewArray<double> s(in.ensa_dof);
+  apf::NewArray<double> matValue(1);
   apf::Field* f = m->findField("solution");
   assert(f);
   apf::MeshIterator* it = m->begin(3);
@@ -392,10 +534,12 @@ Output::~Output()
   Blocks& ibs = blocks.interior;
   for (int i = 0; i < ibs.getSize(); ++i) {
     for (int j = 0; j < ibs.nElements[i]; ++j)
-      delete [] arrays.ien[i][j];
-    delete [] arrays.ien[i];
+      delete [] arrays.ien    [i][j];
+    delete [] arrays.ien    [i];
+    if (arrays.mattype) delete [] arrays.mattype[i];
   }
   delete [] arrays.ien;
+  if (arrays.mattype) delete [] arrays.mattype;
   Blocks& bbs = blocks.boundary;
   for (int i = 0; i < bbs.getSize(); ++i) {
     for (int j = 0; j < bbs.nElements[i]; ++j) {
@@ -406,16 +550,33 @@ Output::~Output()
     delete [] arrays.ienb[i];
     delete [] arrays.ibcb[i];
     delete [] arrays.bcb[i];
+    if (arrays.mattypeb) delete [] arrays.mattypeb[i];
   }
   delete [] arrays.ienb;
   delete [] arrays.ibcb;
   delete [] arrays.bcb;
   delete [] arrays.nbc;
   delete [] arrays.ibc;
+  if (arrays.mattypeb) delete [] arrays.mattypeb;
   for (int i = 0; i < nEssentialBCNodes; ++i)
     delete [] arrays.bc[i];
   delete [] arrays.bc;
   delete [] arrays.ienneigh;
+  BlocksInterface& ifbs = blocks.interface;
+  for (int i = 0; i < ifbs.getSize(); ++i) {
+    for (int j = 0; j < ifbs.nElements[i]; ++j) {
+      delete [] arrays.ienif0[i][j];
+      delete [] arrays.ienif1[i][j];
+    }
+    delete [] arrays.ienif0[i];
+    delete [] arrays.ienif1[i];
+    if (arrays.mattypeif0) delete [] arrays.mattypeif0[i];
+    if (arrays.mattypeif1) delete [] arrays.mattypeif1[i];
+  }
+  delete [] arrays.ienif0;
+  delete [] arrays.ienif1;
+  if (arrays.mattypeif0) delete [] arrays.mattypeif0;
+  if (arrays.mattypeif1) delete [] arrays.mattypeif1;
   delete [] arrays.ilworkl;
   delete [] arrays.iel;
   delete [] arrays.ileo;
@@ -434,12 +595,14 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
   apf::Numbering* rn = apf::numberElements(o.mesh, "ph_elem");
   getVertexLinks(o, n);
-  getInterior(o, n);
+  getInterior(o, bcs, n);
   getBoundary(o, bcs, n);
+  getInterface(o, bcs, n);
   getLocalPeriodicMasters(o, n);
   getEdges(o, n, rn);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
+  getInterfaceElements(o);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);

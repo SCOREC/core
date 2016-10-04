@@ -7,6 +7,7 @@
 
 #include <apfVector.h>
 #include <gmi.h>
+#include "phInput.h"
 
 /* full names and abbreviations for boundary conditions:
 
@@ -21,12 +22,15 @@
    scalar_2        S2  sc1
    scalar_3        S3  sc1
    scalar_4        S4  sc1
-
+   comp1_elas      EC1
+   comp3_elas      EC3
+ 
    Natural boundary conditions:
 
    mass flux        MF
    natural pressure NP
    traction vector  TV
+   traction vector melas TVM
    heat flux        HF
  * turbulence wall  TW
    scalar_1 flux    F1
@@ -60,6 +64,9 @@
    comp3            4
    initial velocity 3
    traction vector  3
+   comp1_elas       4
+   comp3_elas       4 
+   traction vector melas  3
 
    A bit about comp1 and comp3: both of them are essential
    boundary conditions affecting velocity.
@@ -120,7 +127,8 @@ struct BCs
   Map fields;
 };
 
-void readBCs(const char* filename, BCs& bcs);
+void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs);
+void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);
@@ -130,6 +138,9 @@ bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, apf::Vector3 const& x, double* values);
 
 bool applyVelocityConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
+    apf::Vector3 const& x, double* BC, int* iBC);
+
+bool applyElasticConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
     apf::Vector3 const& x, double* BC, int* iBC);
 
 double* getBCValue(gmi_model* gm, FieldBCs& bcs, gmi_ent* ge,

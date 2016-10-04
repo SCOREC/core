@@ -50,18 +50,30 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
+option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
+message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+if(ENABLE_SIMMETRIX)
+  add_definitions(-DHAVE_SIMMETRIX)
+endif()
+
 macro(scorec_export_library target)
 bob_export_target(${target})
 install(FILES ${HEADERS} DESTINATION include)
 endmacro(scorec_export_library)
 
+if(ENABLE_SIMMETRIX)
+  find_package(SimModSuite MODULE REQUIRED)
+endif()
+
 # Include the SCOREC project packages
 add_subdirectory(pcu)
 add_subdirectory(gmi)
+add_subdirectory(gmi_sim)
 add_subdirectory(can)
 add_subdirectory(mth)
 add_subdirectory(lion)
 add_subdirectory(apf)
+add_subdirectory(apf_sim)
 add_subdirectory(mds)
 add_subdirectory(parma)
 add_subdirectory(zoltan)

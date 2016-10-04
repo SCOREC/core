@@ -21,7 +21,9 @@ test_exe_func(quality quality.cc)
 test_exe_func(writeVtxPtn writeVtxPtn.cc)
 
 # Geometric model utilities
-util_exe_func(mdlConvert mdlConvert.c)
+if(ENABLE_SIMMETRIX)
+  util_exe_func(mdlConvert mdlConvert.cc)
+endif()
 util_exe_func(mkmodel mkmodel.cc)
 
 # Mesh generation utilities
@@ -50,6 +52,15 @@ util_exe_func(renderClass renderClass.cc)
 util_exe_func(render_ascii render_ascii.cc)
 if(ENABLE_VIZ)
   test_exe_func(viz_test viz.cc)
+endif()
+
+if(ENABLE_SIMMETRIX)
+  util_exe_func(convert convert.cc)
+  util_exe_func(ph_convert ../phasta/ph_convert.cc)
+  if(SIMMODSUITE_SimAdvMeshing_FOUND)
+    util_exe_func(generate generate.cc)
+  endif()
+  util_exe_func(snap snap.cc)
 endif()
 
 # Mesh partitioning utilities
@@ -85,9 +96,13 @@ util_exe_func(fixDisconnected fixDisconnected.cc)
 # Phasta utilities
 util_exe_func(chef ../phasta/chef.cc)
 util_exe_func(condense ../phasta/condense.cc)
-util_exe_func(chefReadUrPrep ../phasta/readUrPrep.cc)
 util_exe_func(threshold ../phasta/threshold.cc)
+util_exe_func(chefReadUrPrep ../phasta/readUrPrep.cc)
 util_exe_func(chefStream ../phasta/chefStream.cc)
+if(ENABLE_SIMMETRIX)
+  util_exe_func(cut_interface ../phasta/cut_interface.cc)
+  util_exe_func(migrate_interface ../phasta/migrate_interface.cc)
+endif()
 
 # Unit tests / functionality regression tests
 test_exe_func(qr qr.cc)
@@ -102,6 +117,10 @@ test_exe_func(reposition reposition.cc)
 test_exe_func(writeIPFieldTest writeIPFieldTest.cc)
 test_exe_func(shapefun shapefun.cc)
 test_exe_func(shapefun2 shapefun2.cc)
+if(ENABLE_SIMMETRIX)
+  test_exe_func(curvetest curvetest.cc)
+  test_exe_func(curve_to_bezier curve_to_bezier.cc)
+endif()
 test_exe_func(bezierElevation bezierElevation.cc)
 test_exe_func(bezierMesh bezierMesh.cc)
 test_exe_func(bezierMisc bezierMisc.cc)
@@ -138,6 +157,15 @@ set(TARGETS ${TARGETS} PARENT_SCOPE)
 # Add the nightly testing script, if needed
 if(IS_TESTING)
   include(testing.cmake)
+endif()
+
+if(ENABLE_SIMMETRIX)
+  #executables which call only Simmetrix functions
+  include_directories(${PROJECT_BINARY_DIR}/gmi_sim)
+  util_exe_func(simTranslate simTranslate.cc)
+  if(SIM_PARASOLID)
+    util_exe_func(simSpjToSmd simSpjToSmd.cc)
+  endif()
 endif()
 
 bob_end_subdir()

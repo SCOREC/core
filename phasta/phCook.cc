@@ -1,6 +1,9 @@
 #include <ph.h>
 #include <chef.h>
 #include <phstream.h>
+#ifdef HAVE_SIMMETRIX
+#include <phAttrib.h>
+#endif
 #include <phInput.h>
 #include <phBC.h>
 #include <phRestart.h>
@@ -18,6 +21,8 @@
 #include <pcu_io.h>
 #include <string>
 #include <stdlib.h>
+#include <assert.h>
+#include <iostream>
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -44,9 +49,7 @@ void switchToAll()
 
 void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 {
-  ph::readBCs(in.attributeFileName.c_str(), bcs);
-  if(!g)
-    g = gmi_load(in.modelFileName.c_str());
+  ph::loadModelAndBCs(in, g, bcs);
 }
 
 void originalMain(apf::Mesh2*& m, ph::Input& in,
@@ -133,21 +136,30 @@ namespace ph {
       m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
-    // user requests files and chef is setup to write to streams
-    if ( in.writePhastaFiles && out.openfile_write == chef::openstream_write ) {
+    if (in.adaptFlag && (in.timeStepNumber % in.writeVizFiles == 0) ) {
+      // store the value of the function pointer
+      FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
+      // set function pointer for file writing
       out.openfile_write = chef::openfile_write;
-      ph::writeGeomBC(out, path); //write geombc
-      out.openfile_write = chef::openstream_write;
+      ph::writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
+      // reset the function pointer to the original value
+      out.openfile_write = fn;
     }
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
+#ifdef HAVE_SIMMETRIX
+    gmi_model* g = m->getModel();
+    ph::clearAttAssociation(g,in);
+#endif
     if (in.adaptFlag)
       ph::goToParentDir();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
+    gmi_model* g = m->getModel();
+    assert(g);
     BCs bcs;
-    ph::readBCs(in.attributeFileName.c_str(), bcs);
+    ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     if (!in.solutionMigration)
       ph::attachZeroSolution(in, m);
     if (in.buildMapping)
@@ -225,13 +237,13 @@ namespace chef {
 
   void preprocess(apf::Mesh2*& m, ph::Input& in) {
     ph::Output out;
-    out.openfile_write = chef::openfile_write;
+    out.openfile_write = openfile_write;
     ph::preprocess(m,in,out);
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in, GRStream* grs) {
     ph::Output out;
-    out.openfile_write = chef::openstream_write;
+    out.openfile_write = openstream_write;
     out.grs = grs;
     ph::preprocess(m,in,out);
   }

@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: GMI-SIM
+URL: http://www.scorec.rpi.edu/~dibanez/
+Description: Geometric Model Interface for Simmetrix
+Version: @PACKAGE_VERSION@
+Requires: libgmi libSimModSuite
+Libs: -L${libdir} -lgmi_sim 
+Cflags: -I${includedir} 

@@ -20,7 +20,7 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile);
   if (mesh->findTag("coordinates_edg"))
     mesh->changeShape(apf::getSerendipity(), false);
-  apf::Field* f = 
+  apf::Field* f =
     apf::createLagrangeField(mesh, "solution", apf::VECTOR, order);
   apf::Field* eps = spr::getGradIPField(f, "eps", order);
   apf::destroyField(f);
