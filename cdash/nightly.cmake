@@ -298,4 +298,4 @@ foreach(BRANCH IN LISTS BRANCHES)
       "${CONFIGURE_OPTIONS-sim}"
       "${ALLOWED_WARNINGS-sim}" CHECK_ERR)
 endforeach()
-try_merge(master "" develop "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
+try_merge(master develop "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
