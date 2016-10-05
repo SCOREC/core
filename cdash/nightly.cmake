@@ -286,6 +286,7 @@ SET(CONFIGURE_OPTIONS
 
 SET(CONFIGURE_OPTIONS-sim
   "${CONFIGURE_OPTIONS}"
+  "-DENABLE_SIMMETRIX:BOOL=ON"
   "-DSIM_PARASOLID:BOOL=ON"
   "-DSIM_MPI:STRING=mpich3.1.2"
 )
@@ -298,4 +299,4 @@ foreach(BRANCH IN LISTS BRANCHES)
       "${CONFIGURE_OPTIONS-sim}"
       "${ALLOWED_WARNINGS-sim}" CHECK_ERR)
 endforeach()
-try_merge(master "" develop "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
+try_merge(master develop "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})
