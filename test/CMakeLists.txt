@@ -82,9 +82,6 @@ if(ENABLE_ZOLTAN)
   util_exe_func(zbalance zbalance.cc)
   util_exe_func(ptnParma ptnParma.cc)
 endif()
-if(ENABLE_OMEGA_H)
-  test_exe_func(xgc_split xgc_split.cc)
-endif()
 
 # Mesh improvement utilities
 util_exe_func(reorder reorder.cc)
