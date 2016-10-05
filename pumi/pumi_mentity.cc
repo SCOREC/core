@@ -192,6 +192,16 @@ bool pumi_ment_isOwned(pMeshEnt e)
     return false;
 }
 
+bool pumi_ment_isOn(pMeshEnt e, int partID)
+{
+  if (partID==pumi_rank()) return true;
+  apf::Copies remotes;
+  pumi::instance()->mesh->getRemotes(e,remotes);
+  APF_ITERATE(Copies,remotes,rit)
+    if (rit->first==partID) return true;
+  return false;
+}
+
 // remote copy information
 bool pumi_ment_isOnBdry (pMeshEnt e)
 {
