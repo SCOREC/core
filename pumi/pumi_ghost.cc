@@ -15,7 +15,7 @@
 #include <map>
 #include <set>
 #include <assert.h>
-#include <malloc.h>
+#include <cstdlib>
 
 #include "apf.h"
 #include "apfMDS.h"
