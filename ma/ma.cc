@@ -26,7 +26,7 @@ void adapt(Input* in)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  for (int i=0; i < in->maximumIterations; ++i)
+  for (int i = 0; i < in->maximumIterations; ++i)
   {
     print("iteration %d",i);
     coarsen(a);
