@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 namespace {
+#ifndef __APPLE__
   void freeMesh(apf::Mesh* m) {
     m->destroyNative();
     apf::destroyMesh(m);
@@ -18,9 +19,11 @@ namespace {
     ctrl.solutionMigration = 1;
     ctrl.outMeshFileName = std::string("bz2:chefStream/");
   }
+#endif
 }
 
 int main(int argc, char** argv) {
+#ifndef __APPLE__
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
   PCU_Protect();
@@ -49,4 +52,5 @@ int main(int argc, char** argv) {
 #endif
   PCU_Comm_Free();
   MPI_Finalize();
+#endif
 }
