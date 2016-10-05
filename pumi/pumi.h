@@ -382,6 +382,9 @@ pMeshEnt pumi_ment_getWwnEnt(pMeshEnt e);
 // return true if the entity is an owner copy
 bool pumi_ment_isOwned(pMeshEnt e);
 
+// return true if the entity exists on the part
+bool pumi_ment_isOn(pMeshEnt e, int partID);
+
 // return true if entity is on part boundary, ghosted, or ghost
 //  - this will fixed to consider only part boundary entities later
 bool pumi_ment_isOnBdry (pMeshEnt e); 

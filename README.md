@@ -10,6 +10,8 @@ For more information, start at our
 
 ### What is in this repository? ###
 
+* PUMI: parallel unstructured mesh infrastructure API
+  [User's Guide](http://scorec.rpi.edu/~seol/PUMI.pdf)
 * PCU: Communication and file IO built on MPI 
 * APF: Abstract definition of meshes, fields, and related operations
 * GMI: Common interface for geometric modeling kernels
@@ -47,7 +49,6 @@ For more information, start at our
 
 ### Who do I talk to? ###
 
-* mailing list <scorec-pumi@lists.rpi.edu>
-  (subscribe at https://lists.sympa.rpi.edu/wws/subscribe/scorec-pumi)
+* PUMI administrator <pumi@scorec.rpi.edu>
 * Dan Ibanez <ibaned@rpi.edu>
 * [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith)

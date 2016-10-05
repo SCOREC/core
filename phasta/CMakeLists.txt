@@ -22,6 +22,12 @@ set(SOURCES
   phstream.cc
 )
 
+if(ENABLE_SIMMETRIX)
+  set(SOURCES ${SOURCES}
+      phAttrib.cc
+     )
+endif()
+
 # Package headers
 set(HEADERS
   chef.h
@@ -49,6 +55,9 @@ target_link_libraries(ph
       pcu
       apf_zoltan
     )
+if(ENABLE_SIMMETRIX)
+  target_link_libraries(ph PUBLIC gmi_sim)
+endif()
 
 scorec_export_library(ph)
 

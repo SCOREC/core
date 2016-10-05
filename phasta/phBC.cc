@@ -1,10 +1,15 @@
 #include <PCU.h>
 #include "phBC.h"
+#ifdef HAVE_SIMMETRIX
+#include "phAttrib.h"
+#include <gmi_sim.h>
+#endif
 #include "phAxisymmetry.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <fstream>
 #include <sstream>
+#include <cstring>
 #include <gmi.h>
 #include <cassert>
 
@@ -43,16 +48,19 @@ FieldBCs::~FieldBCs()
   }
 }
 
-static struct { const char* name; int size; } const knownSizes[4] =
+static struct { const char* name; int size; } const knownSizes[7] =
 {{"initial velocity", 3}
 ,{"comp1", 4}
 ,{"comp3", 4}
+,{"comp1_elas", 4}
+,{"comp3_elas", 4}
 ,{"traction vector", 3}
+,{"traction vector melas", 3}
 };
 
 static int getSize(std::string const& name)
 {
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < 7; ++i)
     if (name == knownSizes[i].name)
       return knownSizes[i].size;
   return 1;
@@ -87,9 +95,8 @@ static void readBC(std::string const& line, BCs& bcs)
     ss >> bc->value[i];
 }
 
-void readBCs(const char* filename, BCs& bcs)
+static void readBCsFromSPJ(const char* filename, BCs& bcs)
 {
-  double t0 = PCU_Time();
   std::ifstream file(filename);
   assert(file.is_open()); //check if the spj file could be opened successfully
   std::string line;
@@ -98,10 +105,51 @@ void readBCs(const char* filename, BCs& bcs)
       continue;
     readBC(line, bcs);
   }
+}
+
+void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs)
+{
+  /* now load attributes.
+     only two cases:
+     either its an SPJ file or they came in with the model */
+  if (gmi_has_ext(attFile, "spj"))
+    readBCsFromSPJ(attFile, bcs);
+#ifdef HAVE_SIMMETRIX
+  else
+    getSimmetrixAttributes(m, bcs);
+#endif
+  if (axisymmetry)
+    attachAllAngleBCs(m, bcs);
+}
+
+void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
+{
+  double t0 = PCU_Time();
+  const char* modelfile = in.modelFileName.c_str();
+  const char* attribfile = in.attributeFileName.c_str();
+  /* loading the model */
+  /* case 1: meshmodel */
+  if (gmi_has_ext(modelfile, "dmg"))
+    m = gmi_load(modelfile);
+#ifdef HAVE_SIMMETRIX
+  /* cases 2: Simmetrix model (and possibly attributes) file */
+  else if (gmi_has_ext(modelfile, "smd"))
+    m = gmi_sim_load(0, modelfile);
+  /* cases 3&4: assuming native model file */
+  else {
+    /* case 3: native model and Simmetrix attributes file */
+    if (gmi_has_ext(attribfile, "smd"))
+      m = gmi_sim_load(modelfile, attribfile);
+    /* case 4: just a native model */
+    else
+      m = gmi_sim_load(modelfile, 0);
+  }
+#endif
+  /* load attributes */
+  readBCs(m, attribfile, in.axisymmetry, bcs);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("\"%s\" loaded in %f seconds\n", filename, t1 - t0);
-  file.close();
+    printf("\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);
 }
 
 struct KnownBC
@@ -183,7 +231,7 @@ static KnownBC const essentialBCs[7] = {
   {"scalar_4",        15, 9, applyScalar},
 };
 
-static KnownBC const naturalBCs[10] = {
+static KnownBC const naturalBCs[11] = {
   {"mass flux",        0, 0, applyScalar},
   {"natural pressure", 1, 1, applyScalar},
   {"traction vector",  2, 2, applyVector},
@@ -194,6 +242,7 @@ static KnownBC const naturalBCs[10] = {
   {"scalar_3 flux",    8, 7, applyScalar},
   {"scalar_4 flux",    9, 8, applyScalar},
   {"surf ID",         -1,-1, applySurfID},
+  {"traction vector melas",  10, 9, applyVector},
 };
 
 static KnownBC const solutionBCs[7] = {
@@ -290,7 +339,9 @@ bool applyEssentialBCs(gmi_model* gm, gmi_ent* ge,
      the code in phConstraint.cc */
   bool didVelocity = applyVelocityConstaints(gm, appliedBCs,
       ge, x, values, bits);
-  return didSimple || didVelocity;
+  bool didElastic = applyElasticConstaints(gm, appliedBCs,
+      ge, x, values, bits);
+  return didSimple || didVelocity || didElastic;
 }
 
 bool applySolutionBCs(gmi_model* gm, gmi_ent* ge,
