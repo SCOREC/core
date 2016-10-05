@@ -30,7 +30,6 @@ void getConfig(int argc, char** argv)
 Migration* get_xgc_plan(pGeom g, pMesh m)
 {
   int dim = pumi_mesh_getDim(m);
-  int num_peers = pumi_size();
   Migration* plan = new Migration(m);
   if (!pumi_rank()) return plan;
 

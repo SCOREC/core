@@ -545,7 +545,6 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
       local_num_off_part+=off_bridge_set[i][j].size();
   MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 
-  int l_counter=3;
   while (global_num_off_part)
   {
     PCU_Comm_Begin();
