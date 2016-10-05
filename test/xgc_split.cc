@@ -10,10 +10,11 @@
 const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
+int serial=1;
 
 void getConfig(int argc, char** argv)
 {
-  if (argc != 4) {
+  if (argc < 4) {
     if (!pumi_rank() )
       printf("Usage: %s <model> <serial-mesh> <outMesh>\n", argv[0]);
     MPI_Finalize();
@@ -22,6 +23,8 @@ void getConfig(int argc, char** argv)
   modelFile = argv[1];
   meshFile = argv[2];
   outFile = argv[3];
+  if (argc > 4) 
+    serial=atoi(argv[4]);
 }
 
 Migration* get_xgc_plan(pGeom g, pMesh m)
@@ -56,15 +59,20 @@ int main(int argc, char** argv)
   getConfig(argc,argv);
 
   pGeom g = pumi_geom_load(modelFile);
-  pMesh m = pumi_mesh_loadSerial(g, meshFile);
-
-  // split a serial mesh based on model ID
-  Migration* plan = get_xgc_plan(g, m);
-  pumi_mesh_migrate(m, plan);
-  pumi_mesh_write(m, outFile);
+  pMesh m;
+  if (serial) 
+  {
+    m = pumi_mesh_loadSerial(g, meshFile);
+    // split a serial mesh based on model ID
+    Migration* plan = get_xgc_plan(g, m);
+    pumi_mesh_migrate(m, plan);
+    pumi_mesh_write(m, outFile);
+  }
+  else 
+    m = pumi_mesh_load(g, meshFile, pumi_size());
 
   // ghosting
-  pumi_ghost_createLayer(m, 0, 2, 1, 1);
+  pumi_ghost_createLayer(m, 0, 2, 3, 1);
 
   // write to vtk
   char without_extension[256];
