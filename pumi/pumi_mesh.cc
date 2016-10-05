@@ -19,7 +19,7 @@
 #include <string.h>
 #include <map>
 #include <assert.h>
-#include <malloc.h>
+#include <cstdlib>
 #include "apf.h"
 
 using std::map;
