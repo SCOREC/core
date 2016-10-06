@@ -7,6 +7,9 @@
 #include <maMesh.h>
 #include <PCU.h>
 #include <sstream>
+#include <vector>
+
+using namespace std;
 
 static void writeStep(apf::Mesh* m, int i)
 {
@@ -36,7 +39,9 @@ int main(int argc, char** argv)
   fixed.insert(m->findModelEntity(2, 6));
   fixed.insert(m->findModelEntity(2, 17));
   dsp::closeBoundary(m, fixed);
-  dsp::Smoother* smoother = dsp::Smoother::makeLaplacian();
+  dsp::Smoother* smoother = dsp::Smoother::makeElastic();
+//  dsp::Smoother* smoother = dsp::Smoother::makeSemiSpring();
+//  dsp::Smoother* smoother = dsp::Smoother::makeLaplacian();
 //double avgEdgeLen = ma::getAverageEdgeLength(m);
 //dsp::Adapter* adapter = dsp::Adapter::makeUniform(avgEdgeLen);
   dsp::Adapter* adapter = dsp::Adapter::makeEmpty();
@@ -49,16 +54,18 @@ int main(int argc, char** argv)
                    0,1,0,
                    0,0,1);
   writeStep(m, 0);
-  smoother->preprocess(m, fixed, moving);
+  vector < apf::MeshEntity* > V_total;
+  int in_0; int fb_0;
+  smoother->preprocess(m, fixed, moving, V_total, in_0, fb_0);
   /* number of displacement steps */
-  for (int i = 0; i < 1; ++i) {
+  for (int i = 0; i < 3; ++i) {
     apf::Field* dsp = dsp::applyRigidMotion(m, moving, r, t);
-    smoother->smooth(dsp, fixed, moving);
+    smoother->smooth(dsp, V_total, in_0, fb_0);
   //dsp::tryToDisplace(m, dsp);
     apf::axpy(1, dsp, m->getCoordinateField());
-    apf::destroyField(dsp);
     writeStep(m, i + 1);
-    smoother->cleanup();
+    apf::destroyField(dsp);
+    smoother->cleanup(m);
   }
   delete smoother;
   delete adapter;
