@@ -175,7 +175,12 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "errors",
     "time derivative of solution",
     "motion_coords",
-    "mesh_vel"
+    "mesh_vel",
+    "ybar",
+    "wss",
+    "wssbar",
+    "pressure projection vectors",
+    "vorticity"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
