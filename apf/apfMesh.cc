@@ -909,8 +909,8 @@ bool MatchedSharing::isShared(MeshEntity* e) {
   this->getCopies(e, copies);
   APF_ITERATE(CopyArray, copies, it)
     if (it->peer != PCU_Comm_Self())
-      return false;
-  return true;
+      return true;
+  return false;
 }
 
 Sharing* getSharing(Mesh* m)
