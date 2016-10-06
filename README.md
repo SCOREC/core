@@ -1,5 +1,3 @@
-something else
-
 # SCOREC Core #
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/6698/badge.svg)](https://scan.coverity.com/projects/scorec-core)
