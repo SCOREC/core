@@ -45,12 +45,16 @@ struct PhastaSharing : public apf::Sharing {
         copies[i++] = copies[j];
     copies.setSize(i);
   }
+  bool isShared(apf::MeshEntity* e)
+  {
+    return helper->isShared(e);
+  }
   apf::Mesh* mesh;
   apf::Sharing* helper;
 };
 
 /* this algorithm is essential to parallel
-   scalability: generate local inter-part 
+   scalability: generate local inter-part
    communication arrays describing shared entities.
 
    for every partition model face, each part

@@ -447,6 +447,7 @@ struct Sharing
 /** \brief get the copies of the entity */
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies) = 0;
+  virtual bool isShared(MeshEntity* e) = 0;
 };
 
 struct NormalSharing : public Sharing
@@ -455,6 +456,7 @@ struct NormalSharing : public Sharing
   virtual bool isOwned(MeshEntity* e);
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies);
+  virtual bool isShared(MeshEntity* e);
 private:
   Mesh* mesh;
 };
@@ -466,6 +468,7 @@ struct MatchedSharing : public Sharing
   virtual bool isOwned(MeshEntity* e);
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies);
+  virtual bool isShared(MeshEntity* e);
   Mesh* mesh;
 private:
   size_t getNeighborCount(int peer);

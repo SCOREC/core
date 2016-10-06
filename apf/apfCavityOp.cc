@@ -39,7 +39,7 @@ void CavityOp::applyLocallyWithModification(int d)
     {
       Outcome o = setEntity(e);
       if (o == OK)
-      { 
+      {
         movedByDeletion = false;
         apply();
         if (movedByDeletion)
@@ -107,7 +107,7 @@ void CavityOp::applyToDimension(int d, bool matched)
   /* the iteration count of this loop is hard to predict,
    * but typical cavity definitions should cause a small
    * constant number of iterations that does not grow
-   * with parallelism 
+   * with parallelism
    */
   do {
     /* apply the operator to all local cavities
@@ -129,7 +129,7 @@ bool CavityOp::requestLocality(MeshEntity** entities, int count)
 {
   bool areLocal = true;
   for (int i=0; i < count; ++i)
-    if (mesh->isShared(entities[i]))
+    if (sharing->isShared(entities[i]))
       areLocal = false;
   if (isRequesting && ( ! areLocal))
     for (int i=0; i < count; ++i)

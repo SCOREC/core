@@ -11,6 +11,7 @@
 #include <phOutput.h>
 #include <phPartition.h>
 #include <phFilterMatching.h>
+#include "phInterfaceCutter.h"
 #include <parma.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -117,14 +118,21 @@ namespace ph {
     {
       if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
         ph::balance(in,m);
-      apf::MeshTag* order = NULL;
-      if (in.isReorder && PCU_Comm_Peers() > 1)
-        order = Parma_BfsReorder(m);
-      apf::reorderMdsMesh(m,order);
+//      apf::MeshTag* order = NULL;
+//      if (in.isReorder && PCU_Comm_Peers() > 1)
+//        order = Parma_BfsReorder(m);
+//      apf::reorderMdsMesh(m,order);
     }
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
+    gmi_model* g = m->getModel();
+    if(!ph::migrateInterface(m, g, bcs))
+      fprintf(stderr, "No DG interface attribute!\n");
+    apf::MeshTag* order = NULL;
+    if (in.isReorder && PCU_Comm_Peers() > 1)
+      order = Parma_BfsReorder(m);
+    apf::reorderMdsMesh(m,order);
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber);
     std::string path = ph::setupOutputDir();
@@ -149,7 +157,7 @@ namespace ph {
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
 #ifdef HAVE_SIMMETRIX
-    gmi_model* g = m->getModel();
+//    gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
 #endif
     if (in.adaptFlag)
