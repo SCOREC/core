@@ -4,6 +4,7 @@
 #include "phAdjacent.h"
 #include "phBubble.h"
 #include "phAxisymmetry.h"
+#include "phInterfaceCutter.h"
 #include <fstream>
 #include <sstream>
 #include <cassert>
@@ -191,6 +192,35 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.mattypeb = mattypeb;
   o.arrays.ibcb = ibcb;
   o.arrays.bcb = bcb;
+}
+
+bool checkInterface(Output& o, BCs& bcs) {
+  apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
+  std::string name1("DG interface");
+  FieldBCs& fbcs1 = bcs.fields[name1];
+  std::string name2("material type");
+  FieldBCs& fbcs2 = bcs.fields[name2];
+  int a = 0; int b = 0;
+  apf::MeshIterator* it = m->begin(m->getDimension()-1);
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*) m->toModel(e); 
+    if (ph::isInterface(gm, ge, fbcs1)) {
+      apf::MeshEntity* eUp = m->getUpward(e, 0);
+      gmi_ent* geUp = (gmi_ent*) m->toModel(eUp);
+      apf::Vector3 x = apf::getLinearCentroid(m, eUp);
+      double* matID = getBCValue(gm, fbcs2, geUp, x);
+//DEBUGGING
+      if (*matID > 15.0 ) a++; 
+      if (*matID < 15.0 ) b++;
+//END DEBUGGING
+    }
+  }
+  m->end(it);
+  printf("check face on each side of interface: %d == %d\n",a,b);
+//  assert(a==b);
+  return true;
 }
 
 static void getInterface
@@ -598,6 +628,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getInterior(o, bcs, n);
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
+  checkInterface(o,bcs);
   getLocalPeriodicMasters(o, n);
   getEdges(o, n, rn);
   apf::destroyNumbering(n);

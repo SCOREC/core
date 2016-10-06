@@ -1,5 +1,6 @@
 #include "phAttrib.h"
 #include "phBC.h"
+#include "phInterfaceCutter.h"
 #include <ph.h>
 #include <PCU.h>
 #include <apf.h>
@@ -49,28 +50,6 @@ void getConfig(int argc, char** argv)
 }
 }
 
-namespace ph
-{
-
-static bool isInterface(gmi_model* gm, gmi_ent* ge, FieldBCs& fbcs)
-{
-  int d = gmi_dim(gm, ge);
-  if (d > 2)
-    return false;
-  if (d == 2)
-    return getBCValue(gm, fbcs, ge) != 0;
-  bool out = false;
-  gmi_set* s = gmi_adjacent(gm, ge, d + 1);
-  for (int i = 0; i < s->n; ++i)
-    if (isInterface(gm, s->e[i], fbcs)) {
-      out = true;
-      break;
-    }
-  gmi_free_set(s);
-  return out;
-}
-}
-
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
@@ -89,63 +68,8 @@ int main(int argc, char** argv)
   m->verify();
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
-  std::string name("DG interface");
-  if (!haveBC(bcs, name))
+  if(!ph::migrateInterface(m, gm, bcs))
     ph::fail("no DG interface attributes!");
-  ph::FieldBCs& fbcs = bcs.fields[name];
-
-  int faceDim = m->getDimension() - 1;
-
-  apf::MeshIterator* it = m->begin(faceDim);
-  apf::MeshEntity* f;
-  apf::Migration* plan = new apf::Migration(m);
-  apf::Parts residence;
-
-/*
-apf::MeshEntity* v;
-apf::MeshIterator* it2 = m->begin(faceDim-1);
-while ((v = m->iterate(it2))) {
-  if (m->isOwned(v)) printf("proc-%d: yes\n",PCU_Comm_Self());
-  else printf("proc-%d: no\n",PCU_Comm_Self())
-}
- */
-
-  int nDG = 0;
-  while ((f = m->iterate(it))) {
-    apf::ModelEntity* me = m->toModel(f);
-    if (m->getModelType(me) != faceDim)
-      continue;
-
-    gmi_ent* gf = (gmi_ent*) me;
-    if (!ph::isInterface(m->getModel(), gf, fbcs))
-      continue;
-
-    ++nDG;
-    apf::Matches matches;
-    m->getMatches(f,matches);
-
-    apf::MeshEntity* e = m->getUpward(f, 0);
-
-    int remoteResidence = -1;
-    for (size_t j = 0; j != matches.getSize(); ++j) {
-      if (matches[j].peer != PCU_Comm_Self()) 
-        remoteResidence = matches[j].peer;
-//printf("proc-%d: j=%d, peer=%d.\n",PCU_Comm_Self(),j,matches[j].peer);
-    }
-
-  if (remoteResidence > PCU_Comm_Self())
-    plan->send(e,remoteResidence);
-//printf("proc-%d: %d has a remote copy on %d.\n",PCU_Comm_Self(),++i,remoteResidence);
-//printf("proc-%d sending to %d\n",PCU_Comm_Self(),plan->sending(e));
-  }
-  m->end(it);
-  printf("proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
-/*
-for (int i = 0; i < plan->count(); ++i) 
-  printf("proc-%d: sending %d to %d:\n",PCU_Comm_Self(),i,plan->sending(plan->get( i )));
- */
-
-  m->migrate(plan);
   m->verify();
   m->writeNative(outMesh);
   apf::writeVtkFiles("test", m);
