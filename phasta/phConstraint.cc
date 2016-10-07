@@ -263,16 +263,6 @@ static Constraint* makePointConstraintElas(double* values)
   return c;
 }
 
-static Constraint* makeInterfaceConstraint(double* values)
-{
-  PointConstraint* c = new PointConstraint();
-  c->originalDirection_.fromArray(values + 1);
-  c->point = c->originalDirection_ * values[0];
-  /* just-in-case normalization */
-  c->originalDirection_ = c->originalDirection_.normalize();
-  return c;
-}
-
 static Constraint* takeFirst(Constraint* a, Constraint* b)
 {
   delete b;
@@ -578,7 +568,7 @@ bool applyElasticConstaints(gmi_model* gm, BCs& bcs, gmi_ent* e,
   name = "DG interface";
   if (haveBC(bcs, name)) {
     FieldBCs& fbcs = bcs.fields[name];
-    c = combineInterface(gm, fbcs, makeInterfaceConstraint, e, x, c);
+    c = combineInterface(gm, fbcs, makePointConstraintElas, e, x, c);
   }
   name = "comp3_elas";
   if (haveBC(bcs, name)) {

@@ -39,7 +39,7 @@ void CavityOp::applyLocallyWithModification(int d)
     {
       Outcome o = setEntity(e);
       if (o == OK)
-      { 
+      {
         movedByDeletion = false;
         apply();
         if (movedByDeletion)
@@ -94,22 +94,16 @@ void CavityOp::applyLocallyWithoutModification(int d)
   mesh->end(entities);
 }
 
-void CavityOp::applyToDimension(int d, bool matched)
+void CavityOp::applyToDimension(int d)
 {
-  /* note: in the case of matching, we ought to rebuild
-     this sharing at least after each migration.
-     the matching feature isn't used in any working code
-     yet, so don't worry about this too much... */
-  if (matched)
-    sharing = new MatchedSharing(mesh);
-  else
-    sharing = new NormalSharing(mesh);
   /* the iteration count of this loop is hard to predict,
    * but typical cavity definitions should cause a small
    * constant number of iterations that does not grow
-   * with parallelism 
+   * with parallelism
    */
   do {
+    delete sharing;
+    sharing = apf::getSharing(mesh);
     /* apply the operator to all local cavities
        and request missing cavity elements */
     if (this->canModify)
@@ -123,13 +117,14 @@ void CavityOp::applyToDimension(int d, bool matched)
        on have been. */
   } while (tryToPull());
   delete sharing;
+  sharing = 0;
 }
 
 bool CavityOp::requestLocality(MeshEntity** entities, int count)
 {
   bool areLocal = true;
   for (int i=0; i < count; ++i)
-    if (mesh->isShared(entities[i]))
+    if (sharing->isShared(entities[i]))
       areLocal = false;
   if (isRequesting && ( ! areLocal))
     for (int i=0; i < count; ++i)

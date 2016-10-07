@@ -219,6 +219,7 @@ struct NoSharing : public Sharing
 {
   bool isOwned(MeshEntity*) {return true;}
   virtual void getCopies(MeshEntity*, CopyArray&) {}
+  bool isShared(MeshEntity*) {return false;}
 };
 
 Numbering* numberNodes(
