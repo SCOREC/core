@@ -66,7 +66,9 @@ int getFlags(Adapt* a, Entity* e);
 void setFlags(Adapt* a, Entity* e, int flags);
 bool getFlag(Adapt* a, Entity* e, int flag);
 void setFlag(Adapt* a, Entity* e, int flag);
+void setFlagMatched(Adapt* a, Entity* e, int flag);
 void clearFlag(Adapt* a, Entity* e, int flag);
+void clearFlagMatched(Adapt* a, Entity* e, int flag);
 
 void clearFlagFromDimension(Adapt* a, int flag, int dimension);
 
