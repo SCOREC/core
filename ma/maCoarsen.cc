@@ -47,7 +47,7 @@ class CollapseChecker : public apf::CavityOp
       Adapt* a = getAdapt();
       Entity* e = collapse.edge;
       if (collapse.checkClass())
-        setFlag(a,e,CHECKED);
+        setFlagMatched(a,e,CHECKED);
     }
     Adapt* getAdapt() {return collapse.adapt;}
   private:
@@ -85,52 +85,20 @@ class IndependentSetFinder : public apf::CavityOp
     }
     virtual void apply()
     {
-      if (isRequiredForAnEdgeCollapse(adapt,vertex))
-        setFlag(adapt,vertex,CHECKED);
+      if (isRequiredForMatchedEdgeCollapse(adapt,vertex))
+        setFlagMatched(adapt,vertex,CHECKED);
       else
-        clearFlag(adapt,vertex,COLLAPSE);
+        clearFlagMatched(adapt,vertex,COLLAPSE);
     }
   protected:
     Adapt* adapt;
     Entity* vertex;
 };
 
-class MatchedIndependentSetFinder : public IndependentSetFinder
-{
-  public:
-    MatchedIndependentSetFinder(Adapt* a):
-      IndependentSetFinder(a)
-    {}
-    virtual void apply()
-    {
-      assert(!mesh->isShared(vertex));
-      apf::CopyArray matches;
-      this->sharing->getCopies(vertex, matches);
-      APF_ITERATE(apf::CopyArray, matches, it) {
-        assert(it->peer == PCU_Comm_Self());
-        assert(getFlag(adapt, it->entity, COLLAPSE));
-      }
-      bool keep = isRequiredForAnEdgeCollapse(adapt, vertex);
-      APF_ITERATE(apf::CopyArray, matches, it)
-        if (isRequiredForAnEdgeCollapse(adapt, it->entity))
-          keep = true;
-      if (!keep) {
-        clearFlag(adapt, vertex, COLLAPSE);
-        APF_ITERATE(apf::CopyArray, matches, it)
-          clearFlag(adapt, it->entity, COLLAPSE);
-      }
-    }
-};
-
 void findIndependentSet(Adapt* a)
 {
-  if (a->mesh->hasMatching()) {
-    MatchedIndependentSetFinder finder(a);
-    finder.applyToDimension(0, true);
-  } else {
-    IndependentSetFinder finder(a);
-    finder.applyToDimension(0);
-  }
+  IndependentSetFinder finder(a);
+  finder.applyToDimension(0);
   clearFlagFromDimension(a,CHECKED,0);
   assert(checkFlagConsistency(a, 0, COLLAPSE));
 }
@@ -237,7 +205,7 @@ class MatchedEdgeCollapser : public Operator
 static int collapseMatchedEdges(Adapt* a, int modelDimension)
 {
   MatchedEdgeCollapser collapser(a, modelDimension);
-  applyOperator(a, &collapser, true);
+  applyOperator(a, &collapser);
   return collapser.successCount;
 }
 

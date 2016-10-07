@@ -112,7 +112,7 @@ static bool checkRingSide(Adapt* a, Entity* side, Entity* vert, Model* centerMod
     else {
 /* this function is responsible for disabling collapse of a
    vertex that has no material to pull from ! */
-      clearFlag(a,vert,COLLAPSE);
+      clearFlagMatched(a,vert,COLLAPSE);
       return false;
     }
   }
@@ -226,7 +226,7 @@ static bool setVertexToCollapse(Adapt* a, Entity* v)
 {
   if (getFlag(a,v,DONT_COLLAPSE))
     return false;
-  setFlag(a,v,COLLAPSE);
+  setFlagMatched(a,v,COLLAPSE);
   return true;
 }
 
@@ -277,7 +277,7 @@ bool Collapse::checkClass()
 {
   if (checkEdgeCollapseClassification(adapt,edge))
     return true;
-  clearFlag(adapt,edge,COLLAPSE);
+  clearFlagMatched(adapt,edge,COLLAPSE);
   return false;
 }
 
@@ -295,13 +295,13 @@ bool Collapse::checkTopo()
 void Collapse::unmark()
 { /* flags must be properly cleared to prevent misinterpretation
      later in the algorithms */
-  clearFlag(adapt,edge,COLLAPSE);
+  clearFlagMatched(adapt,edge,COLLAPSE);
   Entity* v[2];
   Mesh* m = adapt->mesh;
   m->getDownward(edge,0,v);
   for (int i=0; i < 2; ++i)
     if ( ! isRequiredForAnEdgeCollapse(adapt,v[i]))
-      clearFlag(adapt,v[i],COLLAPSE);
+      clearFlagMatched(adapt,v[i],COLLAPSE);
 }
 
 void Collapse::setVerts()
@@ -434,6 +434,18 @@ bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex)
     }
   }
   return false;
+}
+
+bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex)
+{
+  if (adapt->mesh->hasMatching()) {
+    apf::Matches matches;
+    adapt->mesh->getMatches(vertex, matches);
+    APF_ITERATE(apf::Matches, matches, it)
+      if (isRequiredForAnEdgeCollapse(adapt, it->entity))
+        return true;
+  }
+  return isRequiredForAnEdgeCollapse(adapt, vertex);
 }
 
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
