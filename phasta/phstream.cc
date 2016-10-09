@@ -12,11 +12,13 @@ namespace {
   inline double getTime() {
     return MPI_Wtime();
   }
+#if PHSTREAM_TIMERS_ON==1
   inline bool isRankZero() {
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     return !rank;
   }
+#endif
   inline void printTime(const char* key, double t) {
     (void) key;
     (void) t;
@@ -51,7 +53,7 @@ RStream* makeRStream() {
 }
 
 #ifdef __APPLE__
-FILE* openRStreamRead(RStream* rs) {
+FILE* openRStreamRead(RStream*) {
   return NULL;
 }
 #else
@@ -64,7 +66,7 @@ FILE* openRStreamRead(RStream* rs) {
 #endif
 
 #ifdef __APPLE__
-FILE* openRStreamWrite(RStream* rs) {
+FILE* openRStreamWrite(RStream*) {
   return NULL;
 }
 #else
@@ -132,7 +134,7 @@ void writeUnknown(const char* fname) {
 }
 
 #ifdef __APPLE__
-FILE* openGRStreamRead(GRStream* grs, const char* named) {
+FILE* openGRStreamRead(GRStream*, const char*) {
   return NULL;
 }
 #else
@@ -155,7 +157,7 @@ FILE* openGRStreamRead(GRStream* grs, const char* named) {
 #endif
 
 #ifdef __APPLE__
-FILE* openGRStreamWrite(GRStream* grs, const char* named) {
+FILE* openGRStreamWrite(GRStream*, const char*) {
   return NULL;
 }
 #else
