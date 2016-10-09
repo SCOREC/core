@@ -12,6 +12,11 @@ include(cmake/bob.cmake)
 
 bob_begin_package()
 
+# Set some default compiler flags that should always be used
+bob_begin_cxx_flags()
+bob_end_cxx_flags()
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+
 # Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
