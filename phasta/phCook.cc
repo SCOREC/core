@@ -126,8 +126,7 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    gmi_model* g = m->getModel();
-    if(!ph::migrateInterface(m, g, bcs))
+    if(!ph::migrateInterface(m, bcs))
       fprintf(stderr, "No DG interface attribute!\n");
     apf::MeshTag* order = NULL;
     if (in.isReorder && PCU_Comm_Peers() > 1)
@@ -157,7 +156,7 @@ namespace ph {
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
 #ifdef HAVE_SIMMETRIX
-//    gmi_model* g = m->getModel();
+    gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
 #endif
     if (in.adaptFlag)

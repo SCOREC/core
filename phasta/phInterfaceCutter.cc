@@ -168,7 +168,7 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
   cutEntities(m, fbcs, mm);
 }
 
-bool migrateInterface(apf::Mesh2*& m, gmi_model*& gm, ph::BCs& bcs) {
+bool migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   std::string name("DG interface");
   if (!haveBC(bcs, name)) {
     fprintf(stderr, "Not run migrateInterface!");
