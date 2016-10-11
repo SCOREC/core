@@ -335,8 +335,10 @@ if (PCU_COMPRESS)
     set(RUNDIR run)
   endif()
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/${RUNDIR})
-  mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
-    WORKING_DIRECTORY ${MDIR})
+  if(NOT APPLE)
+    mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
+      WORKING_DIRECTORY ${MDIR})
+  endif()
   mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
