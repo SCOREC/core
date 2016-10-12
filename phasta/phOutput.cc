@@ -598,6 +598,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getInterior(o, bcs, n);
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
+  o.hasDGInterface = in.hasDGInterface == 1;
   getLocalPeriodicMasters(o, n);
   getEdges(o, n, rn);
   apf::destroyNumbering(n);
