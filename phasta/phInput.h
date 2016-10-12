@@ -67,6 +67,7 @@ class Input
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);
     RStream* rs;
+    int hasDGInterface;
 };
 
 int countNaturalBCs(Input& in);

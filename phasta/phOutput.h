@@ -124,6 +124,7 @@ struct Output
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
   int nlworkl; /* size of arrays.ilworkl */
+  bool hasDGInterface;
   FILE* (*openfile_write)(Output& out, const char* path);
   GRStream* grs;
   AllBlocks blocks;
