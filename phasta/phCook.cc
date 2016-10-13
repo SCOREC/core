@@ -128,6 +128,10 @@ namespace ph {
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
     if(!ph::migrateInterface(m, bcs))
       fprintf(stderr, "No DG interface attribute!\n");
+    if(!ph::migrateInterface(m, bcs))
+      fprintf(stderr, "No DG interface attribute!\n");
+    if(!ph::migrateInterface(m, bcs))
+      fprintf(stderr, "No DG interface attribute!\n");
     apf::MeshTag* order = NULL;
     if (in.isReorder && PCU_Comm_Peers() > 1)
       order = Parma_BfsReorder(m);

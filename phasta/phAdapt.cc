@@ -100,6 +100,8 @@ namespace chef {
     ma::Input* ma_in = ma::configure(m, szFld);
     ma_in->shouldRunPreZoltan = true;
     ma_in->shouldTransferParametric = in.transferParametric;
+    ma_in->shouldRunMidZoltan = true; 
+    ma_in->shouldRunPostZoltan = true; 
     ma_in->shouldSnap = in.snap; 
     if (m->hasMatching())
       ph::setupMatching(*ma_in);

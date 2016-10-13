@@ -1,10 +1,8 @@
 #include "phBlock.h"
 #include <apf.h>
 #include <gmi.h>
-//FOR DEBUGGING
 #include <PCU.h>
 #include <cassert>
-//END DEBUGGING
 
 namespace ph {
 
