@@ -131,32 +131,11 @@ namespace ph {
   void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters) {
     ph::checkBalance(m,in);
     ph::checkReorder(m,in,numMasters);
-/*
-    if ( (PCU_Comm_Peers()!=numMasters) ||
-        in.adaptFlag ||
-        in.prePhastaBalanceMethod != "none" ||
-        in.tetrahedronize ||
-        in.isReorder )
-    {
-      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
-        ph::balance(in,m);
-      apf::MeshTag* order = NULL;
-      if (in.isReorder && PCU_Comm_Peers() > 1)
-        order = Parma_BfsReorder(m);
-      apf::reorderMdsMesh(m,order);
-    }
-*/
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
     if(!ph::migrateInterfaceItr(m, bcs))
       fprintf(stderr, "No DG interface attribute!\n");
-/*
-    apf::MeshTag* order = NULL;
-    if (in.isReorder && PCU_Comm_Peers() > 1)
-      order = Parma_BfsReorder(m);
-    apf::reorderMdsMesh(m,order);
-*/
     if(in.timeStepNumber > 0)
       ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
