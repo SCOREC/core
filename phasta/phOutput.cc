@@ -197,29 +197,50 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 bool checkInterface(Output& o, BCs& bcs) {
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
+
   std::string name1("DG interface");
+  if (!haveBC(bcs, name1))
+    return false;
   FieldBCs& fbcs1 = bcs.fields[name1];
+
   std::string name2("material type");
+  if (!haveBC(bcs, name2))
+    return false;
   FieldBCs& fbcs2 = bcs.fields[name2];
-  int a = 0; int b = 0;
+
+  if (PCU_Comm_Self() == 0)
+    printf("Run checkInterface!\n");
+
+  int a = 0; int b = 0; 
+  int aID = 0;
+  int bID = 0;
+  int matID = 0;
+  int aIDSetFlag = 0;
+  int bIDSetFlag = 0;
   apf::MeshIterator* it = m->begin(m->getDimension()-1);
   apf::MeshEntity* e;
   while ((e = m->iterate(it))) {
-    gmi_ent* ge = (gmi_ent*) m->toModel(e); 
+    gmi_ent* ge = (gmi_ent*) m->toModel(e);
     if (ph::isInterface(gm, ge, fbcs1)) {
       apf::MeshEntity* eUp = m->getUpward(e, 0);
       gmi_ent* geUp = (gmi_ent*) m->toModel(eUp);
       apf::Vector3 x = apf::getLinearCentroid(m, eUp);
-      double* matID = getBCValue(gm, fbcs2, geUp, x);
-//DEBUGGING
-      if (*matID > 15.0 ) a++; 
-      if (*matID < 15.0 ) b++;
-//END DEBUGGING
+      double* floatID = getBCValue(gm, fbcs2, geUp, x);
+      matID = (int)(*floatID+0.5);
+      if (aIDSetFlag == 0) {
+        aID = matID;
+        aIDSetFlag = 1;
+      } else if (bIDSetFlag == 0 && matID != aID) {
+        bID = matID;
+        bIDSetFlag = 1;
+      }
+      if ( matID == aID ) a++;
+      if ( matID == bID ) b++;
     }
   }
   m->end(it);
-  printf("check face on each side of interface: %d == %d\n",a,b);
-//  assert(a==b);
+  assert(aID!=bID); //assert different material ID on two sides
+  assert(a==b); //assert same number of faces on each side
   return true;
 }
 
