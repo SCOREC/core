@@ -27,6 +27,8 @@ namespace chef {
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m);
   /** @brief load balance the partition then reorder the vertices */
   void balanceAndReorder(ph::Input& ctrl, apf::Mesh2* m);
+  /** @brief load balance the partition */
+  void balance(ph::Input& ctrl, apf::Mesh2* m);
   /** @brief adapt the mesh using the given szFld */
   void adapt(apf::Mesh2* m, apf::Field* szFld);
   /** @brief adapt the mesh based on input control */
