@@ -11,6 +11,7 @@
 #include <phOutput.h>
 #include <phPartition.h>
 #include <phFilterMatching.h>
+#include "phInterfaceCutter.h"
 #include <parma.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -106,17 +107,20 @@ namespace chef {
 }
 
 namespace ph {
-  void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters)
-  {
-    /* check if the mesh changed at all or balancing was requested */
+  void checkBalance(apf::Mesh2* m, ph::Input& in) {
+    /* check if balancing was requested */
+      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
+        ph::balance(in,m);
+  }
+
+  void checkReorder(apf::Mesh2* m, ph::Input& in, int numMasters) {
+    /* check if the mesh changed at all */
     if ( (PCU_Comm_Peers()!=numMasters) ||
         in.adaptFlag ||
         in.prePhastaBalanceMethod != "none" ||
         in.tetrahedronize ||
         in.isReorder )
     {
-      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
-        ph::balance(in,m);
       apf::MeshTag* order = NULL;
       if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
@@ -124,7 +128,16 @@ namespace ph {
     }
   }
 
+  void balanceAndReorder(apf::Mesh2* m, ph::Input& in, int numMasters) {
+    ph::checkBalance(m,in);
+    ph::checkReorder(m,in,numMasters);
+  }
+
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
+    if(!ph::migrateInterfaceItr(m, bcs))
+      fprintf(stderr, "No DG interface attribute!\n");
+    if(in.timeStepNumber > 0)
+      ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber);
     std::string path = ph::setupOutputDir();
@@ -233,6 +246,10 @@ namespace chef {
 
   void balanceAndReorder(ph::Input& ctrl, apf::Mesh2* m) {
     ph::balanceAndReorder(m,ctrl,PCU_Comm_Peers());
+  }
+
+  void balance(ph::Input& ctrl, apf::Mesh2* m) {
+    ph::checkBalance(m,ctrl);
   }
 
   void preprocess(apf::Mesh2*& m, ph::Input& in) {

@@ -13,6 +13,40 @@
 
 namespace ph {
 
+/* This function is used by phastaChef driver 
+   to extract a certain field from solution field. */
+
+apf::Field* extractField(apf::Mesh* m,
+    const char* packedFieldname, 
+    const char* requestFieldname,
+    int firstComp, 
+    int numOfComp) 
+{
+  apf::Field* f = m->findField(packedFieldname);
+  if(!f) fprintf(stderr, "No packed field \"%s\". Cannot extractField.", packedFieldname);
+  assert(f);
+  apf::Field* rf = apf::createPackedField(m, requestFieldname, numOfComp);
+  double* inVal = new double[apf::countComponents(f)];
+  double* outVal = new double[numOfComp];
+  int endComp = firstComp + numOfComp - 1;
+  assert(firstComp >= 1); 
+  assert(endComp <= apf::countComponents(f));
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* it = m->begin(0);
+  while ((vtx = m->iterate(it))) {
+    apf::getComponents(f, vtx, 0, inVal);
+    int j = 0; 
+    for (int i = firstComp-1; i < endComp; i++){ 
+      outVal[j] = inVal[i]; 
+      j++; 
+    }
+    assert(j == numOfComp);
+    apf::setComponents(rf,vtx, 0, outVal);
+  }
+  m->end(it);
+  return rf;  
+}
+
 /* in_size is the number of dofs for the data array
    and out_size is the number of dofs in the field.
    they are unequal when we read a restart file
@@ -321,4 +355,4 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     printf("solution written in %f seconds\n", t1 - t0);
 }
 
-}
+} //end namespace ph
