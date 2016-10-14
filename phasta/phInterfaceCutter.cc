@@ -168,11 +168,11 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
   cutEntities(m, fbcs, mm);
 }
 
-bool migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
+int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   std::string name("DG interface");
   if (!haveBC(bcs, name)) {
     fprintf(stderr, "Not run migrateInterface!");
-    return false; 
+    return -1; 
   }
   ph::FieldBCs& fbcs = bcs.fields[name];
 
@@ -182,15 +182,6 @@ bool migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   apf::MeshEntity* f;
   apf::Migration* plan = new apf::Migration(m);
   apf::Parts residence;
-
-/*
-apf::MeshEntity* v;
-apf::MeshIterator* it2 = m->begin(faceDim-1);
-while ((v = m->iterate(it2))) {
-  if (m->isOwned(v)) printf("proc-%d: yes\n",PCU_Comm_Self());
-  else printf("proc-%d: no\n",PCU_Comm_Self())
-}
- */
 
   int nDG = 0;
   while ((f = m->iterate(it))) {
@@ -210,25 +201,38 @@ while ((v = m->iterate(it2))) {
 
     int remoteResidence = -1;
     for (size_t j = 0; j != matches.getSize(); ++j) {
-      if (matches[j].peer != PCU_Comm_Self()) 
+      if (matches[j].peer != PCU_Comm_Self())
         remoteResidence = matches[j].peer;
-//printf("proc-%d: j=%d, peer=%d.\n",PCU_Comm_Self(),j,matches[j].peer);
     }
 
-  if (remoteResidence > PCU_Comm_Self())
-    plan->send(e,remoteResidence);
-//printf("proc-%d: %d has a remote copy on %d.\n",PCU_Comm_Self(),++i,remoteResidence);
-//printf("proc-%d sending to %d\n",PCU_Comm_Self(),plan->sending(e));
+    if (remoteResidence > PCU_Comm_Self())
+      plan->send(e,remoteResidence);
   }
   m->end(it);
   printf("proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
-/*
-for (int i = 0; i < plan->count(); ++i) 
-  printf("proc-%d: sending %d to %d:\n",PCU_Comm_Self(),i,plan->sending(plan->get( i )));
- */
+
+  int totalPlan = plan->count();
+  totalPlan = PCU_Add_Int(totalPlan);
 
   m->migrate(plan);
-  return true; 
+  return totalPlan;
+}
+
+bool migrateInterfaceItr(apf::Mesh2*& m, ph::BCs& bcs) {
+  int maxItr = 10;
+  int itr = 0;
+  int result = 1;
+  while(result != 0) {
+    result = migrateInterface(m, bcs);
+    itr++;
+    if(itr >= maxItr) {
+      printf("migrate interface iteration more than maxItr");
+      break;
+    }
+    if(result == -1)
+      return false;
+  }
+  return true;
 }
 
 }

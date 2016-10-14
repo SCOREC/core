@@ -68,7 +68,7 @@ int main(int argc, char** argv)
   m->verify();
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
-  if(!ph::migrateInterface(m, bcs))
+  if(ph::migrateInterface(m, bcs) == -1)
     ph::fail("no DG interface attributes!");
   m->verify();
   m->writeNative(outMesh);
