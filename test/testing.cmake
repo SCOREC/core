@@ -29,6 +29,19 @@ else()
   set(GXT dmg)
 endif()
 
+set(MDIR ${MESHES}/phasta/dg)
+if(ENABLE_SIMMETRIX)
+  mpi_test(migrate_interface 4
+    ./migrate_interface
+    "${MDIR}/box.smd"
+    "${MDIR}/box.smb"
+    "${MDIR}/4/")
+  mpi_test(dg_ma_test 4
+    ./dg_ma_test
+    "${MDIR}/box.smd"
+    "${MDIR}/4/")
+endif(ENABLE_SIMMETRIX)
+
 mpi_test(pumi3d-1p 4
   ./test_pumi
   ${MESHES}/pumi/3d-1p/model.dmg
