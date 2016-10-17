@@ -29,7 +29,7 @@ else()
   set(GXT dmg)
 endif()
 
-set(MDIR ${MESHES}/dg)
+set(MDIR ${MESHES}/phasta/dg)
 if(ENABLE_SIMMETRIX)
   mpi_test(migrate_interface 4
     ./migrate_interface
