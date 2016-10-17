@@ -183,6 +183,7 @@ namespace ph {
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
+    assert(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
     loadCommon(in, bcs, g);
