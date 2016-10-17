@@ -134,8 +134,7 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    if(!ph::migrateInterfaceItr(m, bcs))
-      fprintf(stderr, "No DG interface attribute!\n");
+    ph::migrateInterfaceItr(m, bcs);
     if(in.timeStepNumber > 0)
       ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)

@@ -171,8 +171,7 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
 int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   std::string name("DG interface");
   if (!haveBC(bcs, name)) {
-    fprintf(stderr, "Not run migrateInterface!");
-    return -1; 
+    return -1;
   }
   ph::FieldBCs& fbcs = bcs.fields[name];
 
