@@ -26,6 +26,7 @@ set(MERGE_AUTHOR "Nightly Bot <donotemail@scorec.rpi.edu>")
 
 set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
+set(MESHES "/lore/dibanez/src/pumi-meshes")
 
 if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}")
   file(MAKE_DIRECTORY "${CTEST_SOURCE_DIRECTORY}")
@@ -37,6 +38,17 @@ file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}")
 
 find_program(CTEST_GIT_COMMAND NAMES git)
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+
+function(update_meshes)
+  execute_process(COMMAND "${CTEST_GIT_COMMAND}" pull
+      WORKING_DIRECTORY "${MESHES}"
+      RESULT_VARIABLE RETVAR)
+  if(RETVAR)
+    message(FATAL_ERROR "failed to update meshes repository")
+  else()
+    message("updated meshes repository")
+  endif()
+endfunction(update_meshes)
 
 function(git_exec CMD ACTION)
   string(REPLACE " " ";" CMD2 "${CMD}")
@@ -279,7 +291,7 @@ SET(CONFIGURE_OPTIONS
   "-DENABLE_ZOLTAN:BOOL=ON"
   "-DPCU_COMPRESS:BOOL=ON"
   "-DIS_TESTING:BOOL=True"
-  "-DMESHES:STRING=/lore/dibanez/meshes"
+  "-DMESHES:STRING=${MESHES}"
 )
 
 SET(CONFIGURE_OPTIONS-sim
@@ -292,6 +304,7 @@ SET(CONFIGURE_OPTIONS-sim
 SET(ALLOWED_WARNINGS-sim 3)
 
 setup_repo()
+update_meshes()
 foreach(BRANCH IN LISTS BRANCHES)
   check_tracking_branch("${BRANCH}"
       "${CONFIGURE_OPTIONS-sim}"
