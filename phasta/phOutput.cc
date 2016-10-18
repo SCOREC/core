@@ -211,9 +211,9 @@ bool checkInterface(Output& o, BCs& bcs) {
   if (PCU_Comm_Self() == 0)
     printf("Run checkInterface!\n");
 
-  int a = 0; int b = 0; 
+  int a = 0; int b = 0;
   int aID = 0;
-  int bID = 0;
+  int bID = 1;
   int matID = 0;
   int aIDSetFlag = 0;
   int bIDSetFlag = 0;
