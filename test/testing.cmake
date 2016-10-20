@@ -65,6 +65,11 @@ mpi_test(field_io 1
   ./field_io
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi11/cube.smb)
+mpi_test(reorder_serial 1
+  ./reorder
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi7k/cube.smb
+  cube_bfs.smb)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 1
