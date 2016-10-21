@@ -22,7 +22,12 @@ namespace chef {
   /** @brief read and write to and from streams */
   void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl, RStream* in, GRStream* out);
-
+  /** @brief extract a field from a packed field */
+  apf::Field* extractField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* requestFieldname,
+    int firstComp,
+    int numOfComp);
   /** @brief read and attach fields from files */
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m);
   /** @brief load balance the partition then reorder the vertices */

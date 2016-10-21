@@ -240,6 +240,15 @@ namespace chef {
     return;
   }
 
+  apf::Field* extractField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* requestFieldname,
+    int firstComp,
+    int numOfComp) {
+    return ph::extractField(m,packedFieldname,
+             requestFieldname,firstComp,numOfComp);
+  }
+
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
     ph::readAndAttachFields(ctrl, m);
   }

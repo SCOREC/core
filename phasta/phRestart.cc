@@ -20,12 +20,20 @@ apf::Field* extractField(apf::Mesh* m,
     const char* packedFieldname, 
     const char* requestFieldname,
     int firstComp, 
-    int numOfComp) 
+    int valueType) 
 {
   apf::Field* f = m->findField(packedFieldname);
-  if(!f) fprintf(stderr, "No packed field \"%s\". Cannot extractField.", packedFieldname);
+  if(!f && PCU_Comm_Self() == 0) 
+    fprintf(stderr, "No packed field \"%s\"", packedFieldname);
   assert(f);
-  apf::Field* rf = apf::createPackedField(m, requestFieldname, numOfComp);
+  int numOfComp = 0;
+  if (valueType == apf::SCALAR)
+    numOfComp = 1;
+  else if (valueType == apf::VECTOR)
+    numOfComp= 3;
+  else 
+    assert(valueType == apf::SCALAR || valueType == apf::VECTOR);
+  apf::Field* rf = apf::createFieldOn(m, requestFieldname, valueType);
   double* inVal = new double[apf::countComponents(f)];
   double* outVal = new double[numOfComp];
   int endComp = firstComp + numOfComp - 1;
