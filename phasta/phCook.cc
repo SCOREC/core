@@ -181,9 +181,9 @@ namespace ph {
     if(in.timeStepNumber > 0)
       ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
-    std::string path = ph::setupOutputDir();
-    ph::setupOutputSubdir(path);
+      ph::goToStepDir(in.timeStepNumber,in.ramdisk);
+    std::string path = ph::setupOutputDir(in.ramdisk);
+    ph::setupOutputSubdir(path,in.ramdisk);
     ph::enterFilteredMatching(m, in, bcs);
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
