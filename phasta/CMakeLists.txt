@@ -56,7 +56,10 @@ target_link_libraries(ph
       apf_zoltan
     )
 if(ENABLE_SIMMETRIX)
-  target_link_libraries(ph PUBLIC gmi_sim)
+  target_link_libraries(ph PUBLIC
+      gmi_sim
+      apf_sim
+    )
 endif()
 
 scorec_export_library(ph)
