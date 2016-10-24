@@ -48,9 +48,9 @@ static double interpolateParametricCoordinate(
     return (1-t)*a + t*b;
   a += period;
   double result = (1-t)*a + t*b;
-  if (result > range[1])
+  if (result >= range[1])
     result -= period;
-  assert(result > range[0]);
+  assert(result >= range[0]);
   assert(result < range[1]);
   return result;
 }
