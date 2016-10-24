@@ -13,22 +13,42 @@
 #include <phFilterMatching.h>
 #include "phInterfaceCutter.h"
 #include <parma.h>
+//#include <SimUtil.h>
+//#include <apfSIM.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfPartition.h>
 #include <apf.h>
+//#include <gmi.h>
 #include <gmi_mesh.h>
+//#include <gmi_sim.h>
+//#include <SimPartitionedMesh.h>
 #include <PCU.h>
 #include <pcu_io.h>
 #include <string>
 #include <stdlib.h>
+//#include <cstring>
 #include <assert.h>
 #include <iostream>
+//#include <MeshSim.h>
 
 #define SIZET(a) static_cast<size_t>(a)
 
-
 namespace {
+static int mesh_has_ext(const char* filename, const char* ext)
+{
+  const char* c = strrchr(filename, '.');
+  if (!c) {
+    if (PCU_Comm_Self()==0)
+      fprintf(stderr, "mesh file name with no extension");
+    assert(c);
+  }
+  ++c; /* exclude the dot itself */
+  if (!strcmp(c, ext))
+    return 1;
+  return 0;
+}
+
 
 void switchToMasters(int splitFactor)
 {
@@ -53,11 +73,40 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
   ph::loadModelAndBCs(in, g, bcs);
 }
 
+static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
+  /* if it is a simmetrix mesh */
+  if (mesh_has_ext(meshfile, "sms")) {
+    pProgress progress = Progress_new();
+    Progress_setDefaultCallback(progress);
+
+    pGModel simModel = gmi_export_sim(g);
+    pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
+    apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+
+    apf::Mesh2* mesh = apf::createMdsMesh(g, simApfMesh);
+
+    apf::destroyMesh(simApfMesh);
+    M_release(sim_mesh);
+    Progress_delete(progress);
+  }
+  /* if it is a SCOREC mesh */
+  else if (mesh_has_ext(meshfile, "smb")) {
+    apf::Mesh2* mesh = apf::loadMdsMesh(g, meshfile);
+  }
+  /* if neither of above */
+  else {
+    if (PCU_Comm_Self()==0)
+      fprintf(stderr, "Not support this extension\n");
+    assert(0);
+  }
+  return mesh;
+}
+
 void originalMain(apf::Mesh2*& m, ph::Input& in,
     gmi_model* g, apf::Migration*& plan)
 {
   if(!m)
-    m = apf::loadMdsMesh(g, in.meshFileName.c_str());
+    m = loadMesh(g, in.meshFileName.c_str());
   else
     apf::printStats(m);
   m->verify();
