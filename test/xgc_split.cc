@@ -6,17 +6,19 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include "apfMDS.h"
+#include "apfShape.h"
 
 const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
-int serial=1;
+int serial=0;
 
 void getConfig(int argc, char** argv)
 {
   if (argc < 4) {
     if (!pumi_rank() )
-      printf("Usage: %s <model> <serial-mesh> <outMesh>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
