@@ -13,7 +13,7 @@
 #include "GenTag.h"
 #include "pumi_list.h"
 #include "gmi.h"
-
+#include <map>
 class gEntity : public Taggable, public ListMember
 {
 public:
@@ -32,6 +32,7 @@ class mPartEntityContainer
   private:
     enum { _DIMS_ = 4 };
     List gEntities[_DIMS_];
+    std::map<gmi_ent*, gEntity*> gEntities_map[_DIMS_]; // gmi_ent to gEntity
   public:
     mPartEntityContainer();
     virtual ~mPartEntityContainer();
@@ -39,6 +40,7 @@ class mPartEntityContainer
     iter end(int what);
     void add(int d, gEntity* e);
     void del(int d, gEntity* e);
+    gEntity* getGeomEnt(int d, gmi_ent*);
     int  size(int what) const;
 };
 
