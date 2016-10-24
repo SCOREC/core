@@ -18,7 +18,6 @@ static void getCounts(Output& o)
   PCU_Add_Ints(o.nGlobalEntities, 4);
   o.nOwnedNodes = apf::countOwned(o.mesh, 0);
   o.nOverlapNodes = o.mesh->count(0);
-  o.nGlobalNodes = o.nGlobalEntities[0];
 }
 
 static void getCoordinates(Output& o)
