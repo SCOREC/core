@@ -163,7 +163,8 @@ int pumi_ment_getLocalID(pMeshEnt e)
 
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e)
 {
-  return (pGeomEnt)(pumi::instance()->mesh->toModel(e));
+  gmi_ent* clas=(gmi_ent*)pumi::instance()->mesh->toModel(e);
+  return pumi::instance()->model->getGeomEnt(clas);
 }
 
 // owner part information

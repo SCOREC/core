@@ -28,6 +28,7 @@ public:
   gModel(gmi_model* model);
   ~gModel();
   gmi_model* getGmi() {return g; }
+  gEntity* getGeomEnt(gmi_ent* ge);
   void add (int d, gEntity *ge) {allEntities.add(d, ge);}
   void del(int d, gEntity *ge) {allEntities.del(d, ge); } 
   typedef mPartEntityContainer::iter iterall;
