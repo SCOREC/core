@@ -29,6 +29,19 @@ else()
   set(GXT dmg)
 endif()
 
+set(MDIR ${MESHES}/phasta/dg)
+if(ENABLE_SIMMETRIX)
+  mpi_test(migrate_interface 4
+    ./migrate_interface
+    "${MDIR}/box.smd"
+    "${MDIR}/box.smb"
+    "${MDIR}/4/")
+  mpi_test(dg_ma_test 4
+    ./dg_ma_test
+    "${MDIR}/box.smd"
+    "${MDIR}/4/")
+endif(ENABLE_SIMMETRIX)
+
 mpi_test(pumi3d-1p 4
   ./test_pumi
   ${MESHES}/pumi/3d-1p/model.dmg
@@ -52,6 +65,11 @@ mpi_test(field_io 1
   ./field_io
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi11/cube.smb)
+mpi_test(reorder_serial 1
+  ./reorder
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi7k/cube.smb
+  cube_bfs.smb)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 1
@@ -335,8 +353,10 @@ if (PCU_COMPRESS)
     set(RUNDIR run)
   endif()
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part/${RUNDIR})
-  mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
-    WORKING_DIRECTORY ${MDIR})
+  if(NOT APPLE)
+    mpi_test(chefStream 1 ${CMAKE_CURRENT_BINARY_DIR}/chefStream
+      WORKING_DIRECTORY ${MDIR})
+  endif()
   mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)

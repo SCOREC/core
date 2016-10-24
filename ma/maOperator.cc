@@ -43,10 +43,10 @@ class CollectiveOperation : public apf::CavityOp, public DeleteCallback
 
 Operator::~Operator() {}
 
-void applyOperator(Adapt* a, Operator* o, bool matched)
+void applyOperator(Adapt* a, Operator* o)
 {
   CollectiveOperation op(a,o);
-  op.applyToDimension(o->getTargetDimension(), matched);
+  op.applyToDimension(o->getTargetDimension());
 }
 
 }

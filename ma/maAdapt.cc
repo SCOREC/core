@@ -102,11 +102,37 @@ void setFlag(Adapt* a, Entity* e, int flag)
   setFlags(a,e,flags);
 }
 
+void setFlagMatched(Adapt* a, Entity* e, int flag)
+{
+  if (a->mesh->hasMatching()) {
+    apf::Matches matches;
+    a->mesh->getMatches(e, matches);
+    APF_ITERATE(apf::Matches, matches, it) {
+      assert(it->peer == PCU_Comm_Self());
+      setFlag(a, it->entity, flag);
+    }
+  }
+  setFlag(a, e, flag);
+}
+
 void clearFlag(Adapt* a, Entity* e, int flag)
 {
   int flags = getFlags(a,e);
   flags &= ~flag;
   setFlags(a,e,flags);
+}
+
+void clearFlagMatched(Adapt* a, Entity* e, int flag)
+{
+  if (a->mesh->hasMatching()) {
+    apf::Matches matches;
+    a->mesh->getMatches(e, matches);
+    APF_ITERATE(apf::Matches, matches, it) {
+      assert(it->peer == PCU_Comm_Self());
+      clearFlag(a, it->entity, flag);
+    }
+  }
+  clearFlag(a, e, flag);
 }
 
 void clearFlagFromDimension(Adapt* a, int flag, int dimension)

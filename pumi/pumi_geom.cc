@@ -28,6 +28,11 @@ gModel::~gModel()
   delete g;
 }
 
+gEntity* gModel::getGeomEnt(gmi_ent* ge)
+{
+  return allEntities.getGeomEnt(gmi_dim(g, ge), ge);
+}
+
 pGeom pumi_geom_load(const char* filename, const char* model_type)
 {
   assert(!strcmp(model_type,"null") || !strcmp(model_type,"mesh") || !strcmp(model_type,"analytic"));

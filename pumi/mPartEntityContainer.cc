@@ -35,12 +35,20 @@ mPartEntityContainer::iter mPartEntityContainer::end(int what)
 void mPartEntityContainer::add(int d, gEntity* e)
 { 
   gEntities[d].push_back(e);
+  gEntities_map[d].insert(std::map<gmi_ent*, gEntity*>::value_type(e->getGmi(), e));
 }
 
 void mPartEntityContainer::del(int d, gEntity* e)
 { 
   gEntities[d].remove(e);
+  gEntities_map[d].erase(std::map<gmi_ent*, gEntity*>::key_type(e->getGmi()));
 }
+
+gEntity* mPartEntityContainer::getGeomEnt(int d, gmi_ent* e)
+{
+  return gEntities_map[d][e];
+}
+
 
 int mPartEntityContainer::size(int what) const 
 {

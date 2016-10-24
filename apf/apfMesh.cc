@@ -812,6 +812,10 @@ void NormalSharing::getCopies(MeshEntity* e,
   getRemotesArray(mesh, e, copies);
 }
 
+bool NormalSharing::isShared(MeshEntity* e) {
+  return mesh->isShared(e);
+}
+
 /* okay... so previously this used a min-rank rule
    for matched copies, but thats inconsistent with
    the min-count rule in MDS for regular copies,
@@ -898,6 +902,15 @@ void MatchedSharing::formCountMap()
     PCU_COMM_UNPACK(oc);
     countMap[PCU_Comm_Sender()] = oc;
   }
+}
+
+bool MatchedSharing::isShared(MeshEntity* e) {
+  CopyArray copies;
+  this->getCopies(e, copies);
+  APF_ITERATE(CopyArray, copies, it)
+    if (it->peer != PCU_Comm_Self())
+      return true;
+  return false;
 }
 
 Sharing* getSharing(Mesh* m)
