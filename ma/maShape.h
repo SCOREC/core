@@ -21,6 +21,7 @@ class Adapt;
 /* quick check of positivity of volumes based on vertices */
 bool areTetsValid(Mesh* m, EntityArray& tets);
 
+double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q);
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri);
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet);
 double measureElementQuality(Mesh* m, SizeField* f, Entity* e);
