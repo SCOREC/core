@@ -517,7 +517,7 @@ static MeshEntity* unpackEntity(
   unpackTags(m,entity,tags);
   Copies remotes;
   /* temporarily store the sender as
-     a remote copy */
+     the only remote copy */
   m->addRemote(entity, from, sender);
   return entity;
 }
@@ -558,8 +558,9 @@ static void echoRemotes(
   APF_ITERATE(EntityVector,received,it)
   {
     MeshEntity* entity = *it;
-    /* the remote copies are currently temporary
-       storage for the sender */
+    /* unpackEntity() stored the identity of the
+       sender as the only remote copy so we could use
+       it here to echo copies back to their sender */
     Copies temp;
     m->getRemotes(entity,temp);
     int from = temp.begin()->first;
