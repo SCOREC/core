@@ -13,24 +13,21 @@
 #include <phFilterMatching.h>
 #include "phInterfaceCutter.h"
 #include <parma.h>
-//#include <SimUtil.h>
-//#include <apfSIM.h>
+#include <apfSIM.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfPartition.h>
 #include <apf.h>
-//#include <gmi.h>
 #include <gmi_mesh.h>
-//#include <gmi_sim.h>
-//#include <SimPartitionedMesh.h>
+#include <gmi_sim.h>
+#include <SimPartitionedMesh.h>
 #include <PCU.h>
 #include <pcu_io.h>
 #include <string>
 #include <stdlib.h>
-//#include <cstring>
+#include <cstring>
 #include <assert.h>
 #include <iostream>
-//#include <MeshSim.h>
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -74,6 +71,7 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 }
 
 static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
+  apf::Mesh2* mesh;
   /* if it is a simmetrix mesh */
   if (mesh_has_ext(meshfile, "sms")) {
     pProgress progress = Progress_new();
@@ -83,21 +81,15 @@ static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
     pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
     apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
 
-    apf::Mesh2* mesh = apf::createMdsMesh(g, simApfMesh);
+    mesh = apf::createMdsMesh(g, simApfMesh);
 
     apf::destroyMesh(simApfMesh);
     M_release(sim_mesh);
     Progress_delete(progress);
   }
   /* if it is a SCOREC mesh */
-  else if (mesh_has_ext(meshfile, "smb")) {
-    apf::Mesh2* mesh = apf::loadMdsMesh(g, meshfile);
-  }
-  /* if neither of above */
   else {
-    if (PCU_Comm_Self()==0)
-      fprintf(stderr, "Not support this extension\n");
-    assert(0);
+    mesh = apf::loadMdsMesh(g, meshfile);
   }
   return mesh;
 }
