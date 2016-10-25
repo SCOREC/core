@@ -115,7 +115,6 @@ struct Output
   int nGlobalEntities[4];
   int nOverlapNodes;
   int nOwnedNodes;
-  int nGlobalNodes;
   int nBoundaryElements;
   int nInterfaceElements;
   int nMaxElementNodes;
