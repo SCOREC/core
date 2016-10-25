@@ -7,7 +7,10 @@
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
+#include <apfSIM.h>
+#include <SimPartitionedMesh.h>
 #endif
+#include <cstring>
 #include <cassert>
 #include <cstdlib>
 
@@ -22,6 +25,46 @@ void freeMesh(apf::Mesh* m)
 {
   m->destroyNative();
   apf::destroyMesh(m);
+}
+
+#ifdef HAVE_SIMMETRIX
+static bool mesh_has_ext(const char* filename, const char* ext)
+{
+  const char* c = strrchr(filename, '.');
+  if (!c) {
+    if (PCU_Comm_Self()==0)
+      fprintf(stderr, "mesh file name with no extension");
+    assert(c);
+  }
+  ++c; /* exclude the dot itself */
+  return !strcmp(c, ext);
+}
+#endif
+
+static apf::Mesh2* loadMesh(gmi_model*& g) {
+  apf::Mesh2* mesh;
+#ifdef HAVE_SIMMETRIX
+  /* if it is a simmetrix mesh */
+  if (mesh_has_ext(meshFile, "sms")) {
+    pProgress progress = Progress_new();
+    Progress_setDefaultCallback(progress);
+
+    pGModel simModel = gmi_export_sim(g);
+    pParMesh sim_mesh = PM_load(meshFile, sthreadNone, simModel, progress);
+    apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+
+    mesh = apf::createMdsMesh(g, simApfMesh);
+
+    apf::destroyMesh(simApfMesh);
+    M_release(sim_mesh);
+    Progress_delete(progress);
+  } else
+#endif
+  /* if it is a SCOREC mesh */
+  {
+    mesh = apf::loadMdsMesh(g, meshFile);
+  }
+  return mesh;
 }
 
 apf::Migration* getPlan(apf::Mesh* m)
@@ -89,7 +132,7 @@ int main(int argc, char** argv)
   apf::Migration* plan = 0;
   switchToOriginals();
   if (isOriginal) {
-    m = apf::loadMdsMesh(g, meshFile);
+    m = loadMesh(g);
     plan = getPlan(m);
   }
   switchToAll();
