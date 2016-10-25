@@ -3,6 +3,9 @@
 #include <phstream.h>
 #ifdef HAVE_SIMMETRIX
 #include <phAttrib.h>
+#include <apfSIM.h>
+#include <gmi_sim.h>
+#include <SimPartitionedMesh.h>
 #endif
 #include <phInput.h>
 #include <phBC.h>
@@ -13,14 +16,11 @@
 #include <phFilterMatching.h>
 #include "phInterfaceCutter.h"
 #include <parma.h>
-#include <apfSIM.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfPartition.h>
 #include <apf.h>
 #include <gmi_mesh.h>
-#include <gmi_sim.h>
-#include <SimPartitionedMesh.h>
 #include <PCU.h>
 #include <pcu_io.h>
 #include <string>
@@ -32,7 +32,9 @@
 #define SIZET(a) static_cast<size_t>(a)
 
 namespace {
-static int mesh_has_ext(const char* filename, const char* ext)
+
+#ifdef HAVE_SIMMETRIX
+static bool mesh_has_ext(const char* filename, const char* ext)
 {
   const char* c = strrchr(filename, '.');
   if (!c) {
@@ -41,11 +43,9 @@ static int mesh_has_ext(const char* filename, const char* ext)
     assert(c);
   }
   ++c; /* exclude the dot itself */
-  if (!strcmp(c, ext))
-    return 1;
-  return 0;
+  return !strcmp(c, ext);
 }
-
+#endif
 
 void switchToMasters(int splitFactor)
 {
@@ -72,6 +72,7 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 
 static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
   apf::Mesh2* mesh;
+#ifdef HAVE_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (mesh_has_ext(meshfile, "sms")) {
     pProgress progress = Progress_new();
@@ -86,9 +87,10 @@ static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
     apf::destroyMesh(simApfMesh);
     M_release(sim_mesh);
     Progress_delete(progress);
-  }
+  } else
+#endif
   /* if it is a SCOREC mesh */
-  else {
+  {
     mesh = apf::loadMdsMesh(g, meshfile);
   }
   return mesh;
