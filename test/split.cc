@@ -89,7 +89,7 @@ int main(int argc, char** argv)
   apf::Migration* plan = 0;
   switchToOriginals();
   if (isOriginal) {
-    m = loadMdsMesh(g);
+    m = apf::loadMdsMesh(g, meshFile);
     plan = getPlan(m);
   }
   switchToAll();
