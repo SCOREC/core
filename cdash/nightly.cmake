@@ -301,7 +301,7 @@ SET(CONFIGURE_OPTIONS-sim
   "-DSIM_MPI:STRING=mpich3.1.2"
 )
 
-SET(ALLOWED_WARNINGS-sim 3)
+SET(ALLOWED_WARNINGS-sim 7)
 
 setup_repo()
 update_meshes()
