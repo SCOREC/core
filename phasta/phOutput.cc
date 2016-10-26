@@ -13,9 +13,6 @@ namespace ph {
 
 static void getCounts(Output& o)
 {
-  for (int i = 0; i < 4; ++i)
-    o.nGlobalEntities[i] = apf::countOwned(o.mesh, i);
-  PCU_Add_Ints(o.nGlobalEntities, 4);
   o.nOwnedNodes = apf::countOwned(o.mesh, 0);
   o.nOverlapNodes = o.mesh->count(0);
 }
