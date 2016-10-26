@@ -5,6 +5,7 @@
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
+#include <SimPartitionedMesh.h>
 #endif
 #include <cassert>
 #include <chef.h>
@@ -23,6 +24,7 @@ int main(int argc, char** argv)
   PCU_Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
+  SimPartitionedMesh_start(0, 0);
   gmi_sim_start();
   gmi_register_sim();
 #endif
@@ -33,6 +35,7 @@ int main(int argc, char** argv)
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
+  SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
 #endif
   PCU_Comm_Free();
