@@ -59,6 +59,7 @@ if(ENABLE_SIMMETRIX)
   if(SIMMODSUITE_SimAdvMeshing_FOUND)
     util_exe_func(generate generate.cc)
   endif()
+  util_exe_func(sim_part sim_part.cc)
   util_exe_func(snap snap.cc)
 endif()
 
