@@ -7,6 +7,12 @@
 
 namespace ph {
 
+apf::Field* extractField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* requestFieldname,
+    int firstComp,
+    int valueType);
+
 void readAndAttachFields(Input& in, apf::Mesh* m);
 void buildMapping(apf::Mesh* m);
 void detachAndWriteSolution(Input& in, Output& out, 

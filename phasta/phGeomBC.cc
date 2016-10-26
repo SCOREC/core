@@ -293,9 +293,6 @@ void writeGeomBC(Output& o, std::string path, int timestep)
    reading this format, so don't fix spelling errors or
    other silliness, it has already been set in stone */
   writeInt(f, "number of nodes", m->count(0));
-  writeInt(f, "number of nodes in the mesh", o.nGlobalEntities[0]);
-  writeInt(f, "number of edges in the mesh", o.nGlobalEntities[1]);
-  writeInt(f, "number of faces in the mesh", o.nGlobalEntities[2]);
   writeInt(f, "number of modes", o.nOverlapNodes);
   writeInt(f, "number of shapefunctions soved on processor", 0);
   writeInt(f, "number of global modes", 0);
