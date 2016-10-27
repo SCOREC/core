@@ -82,10 +82,6 @@ static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
     pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
     mesh = apf::createMesh(sim_mesh);
 
-//    mesh = apf::createMdsMesh(g, simApfMesh);
-
-//    apf::destroyMesh(simApfMesh);
-    M_release(sim_mesh);
     Progress_delete(progress);
   } else
 #endif
@@ -104,7 +100,6 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     apf::printStats(m);
   m->verify();
-  printf("code runs here\n");
   if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
@@ -233,12 +228,12 @@ namespace chef {
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
     switchToMasters(in.splitFactor);
-    const int numMasters = PCU_Comm_Peers();
+//    const int numMasters = PCU_Comm_Peers();
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
-    m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    ph::balanceAndReorder(m,in,numMasters);
+//    m = repeatMdsMesh(m, g, plan, in.splitFactor);
+//    ph::balanceAndReorder(m,in,numMasters);
     ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
