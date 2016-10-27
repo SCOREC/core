@@ -62,6 +62,7 @@ class Input
     int parmaLoops;
     int parmaVerbosity;
     int writeVizFiles;
+    int ramdisk;
     double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;

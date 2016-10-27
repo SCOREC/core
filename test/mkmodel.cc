@@ -5,12 +5,19 @@
 #include <gmi_mesh.h>
 #include <PCU.h>
 #include <cassert>
+#include <cstdlib>
 
 int main(int argc, char** argv)
 {
-  assert(argc == 3);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  if ( argc != 3 ) {
+    if ( !PCU_Comm_Self() )
+      printf("Create a discrete geometric model from a mesh\n"
+             "Usage: %s <mesh> <out model (.dmg)>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+  }
   gmi_register_null();
   apf::Mesh2* m = apf::loadMdsMesh(".null", argv[1]);
   gmi_model* g = m->getModel();
