@@ -37,13 +37,12 @@ namespace {
 static bool mesh_has_ext(const char* filename, const char* ext)
 {
   const char* c = strrchr(filename, '.');
-  if (!c) {
-    if (PCU_Comm_Self()==0)
-      fprintf(stderr, "mesh file name with no extension");
-    assert(c);
+  if (c) {
+    ++c; /* exclude the dot itself */
+    return !strcmp(c, ext);
+  } else {
+    return false;
   }
-  ++c; /* exclude the dot itself */
-  return !strcmp(c, ext);
 }
 #endif
 
