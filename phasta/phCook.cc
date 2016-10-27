@@ -80,14 +80,11 @@ static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
 
     pGModel simModel = gmi_export_sim(g);
     pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
-    apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
-
-    mesh = dynamic_cast<apf::Mesh2*>(simApfMesh);
-    assert(mesh);
+    mesh = apf::createMesh(sim_mesh);
 
 //    mesh = apf::createMdsMesh(g, simApfMesh);
 
-    apf::destroyMesh(simApfMesh);
+//    apf::destroyMesh(simApfMesh);
     M_release(sim_mesh);
     Progress_delete(progress);
   } else
@@ -107,6 +104,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     apf::printStats(m);
   m->verify();
+  printf("code runs here\n");
   if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
