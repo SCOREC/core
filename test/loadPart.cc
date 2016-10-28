@@ -14,7 +14,9 @@ int main(int argc, char** argv)
   assert(PCU_Comm_Peers() == 1);
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <in part file> <out mesh file>\n", argv[0]);
+      printf("Load a single part from a partitioned mesh and "
+             "write it as a serial part.\n"
+             "Usage: %s <model> <in part file> <out mesh file>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }

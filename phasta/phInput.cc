@@ -55,6 +55,7 @@ static void setDefaults(Input& in)
   in.parmaLoops = 3; //a magical value
   in.parmaVerbosity = 1; //fairly quiet
   in.writeVizFiles = 1;
+  in.ramdisk = 0;
   in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
   in.vertexImbalance = 1.05;
@@ -121,6 +122,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["parmaLoops"] = &in.parmaLoops;
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
   intMap["writeVizFiles"] = &in.writeVizFiles;
+  intMap["ramdisk"] = &in.ramdisk;
   dblMap["meshqCrtn"] = &in.meshqCrtn;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;

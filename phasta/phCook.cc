@@ -37,13 +37,12 @@ namespace {
 static bool mesh_has_ext(const char* filename, const char* ext)
 {
   const char* c = strrchr(filename, '.');
-  if (!c) {
-    if (PCU_Comm_Self()==0)
-      fprintf(stderr, "mesh file name with no extension");
-    assert(c);
+  if (c) {
+    ++c; /* exclude the dot itself */
+    return !strcmp(c, ext);
+  } else {
+    return false;
   }
-  ++c; /* exclude the dot itself */
-  return !strcmp(c, ext);
 }
 #endif
 
@@ -183,9 +182,9 @@ namespace ph {
     if(in.timeStepNumber > 0)
       ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
-    std::string path = ph::setupOutputDir();
-    ph::setupOutputSubdir(path);
+      ph::goToStepDir(in.timeStepNumber,in.ramdisk);
+    std::string path = ph::setupOutputDir(in.ramdisk);
+    ph::setupOutputSubdir(path,in.ramdisk);
     ph::enterFilteredMatching(m, in, bcs);
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);

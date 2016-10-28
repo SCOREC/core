@@ -53,12 +53,12 @@ void goToParentDir() {
   my_chdir("..");
 }
 
-void goToStepDir(int step)
+void goToStepDir(int step, bool all_mkdir)
 {
   std::stringstream ss;
   ss << step;
   std::string s = ss.str();
-  if (!PCU_Comm_Self())
+  if (all_mkdir || !PCU_Comm_Self())
     my_mkdir(s.c_str());
   PCU_Barrier();
   my_chdir(s.c_str());
@@ -68,18 +68,18 @@ enum {
   DIR_FANOUT = 2048
 };
 
-std::string setupOutputDir()
+std::string setupOutputDir(bool all_mkdir)
 {
   std::stringstream ss;
   ss << PCU_Comm_Peers() << "-procs_case/";
   std::string s = ss.str();
-  if (!PCU_Comm_Self())
+  if (all_mkdir || !PCU_Comm_Self())
     my_mkdir(s.c_str());
   PCU_Barrier();
   return s;
 }
 
-void setupOutputSubdir(std::string& path)
+void setupOutputSubdir(std::string& path, bool all_mkdir)
 {
   if (PCU_Comm_Peers() <= DIR_FANOUT)
     return;
@@ -89,7 +89,7 @@ void setupOutputSubdir(std::string& path)
   std::stringstream ss;
   ss << path << subGroup << '/';
   path = ss.str();
-  if (!subSelf)
+  if (all_mkdir || !subSelf)
     my_mkdir(path.c_str());
   PCU_Barrier();
 }
