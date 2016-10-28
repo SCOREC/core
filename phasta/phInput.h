@@ -69,6 +69,7 @@ class Input
     FILE* (*openfile_read)(Input& in, const char* path);
     RStream* rs;
     int hasDGInterface;
+    int simmetrixMesh;
 };
 
 int countNaturalBCs(Input& in);

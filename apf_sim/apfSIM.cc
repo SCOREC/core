@@ -856,19 +856,24 @@ void MeshSIM::verify()
 void MeshSIM::getMatches(MeshEntity* e, Matches& m)
 {
   pEntity ent = reinterpret_cast<pEntity>(e);
-  pPList l = EN_getMatchingEnts(ent, NULL);
-  if (!l)
+  pPList l = EN_matches(ent, NULL);
+  if (!l) {
+    m.setSize(0);
     return;
+  }
   int n = PList_size(l);
   m.setSize(n - 1);
   int j = 0;
-  for (int i=0; i < n; ++i)
+  for (int i = 0; i < n; ++i)
   {
-    MeshEntity* match = reinterpret_cast<MeshEntity*>(PList_item(l,i));
-    if (match == e)
+    pMatch match = PList_matchItem(l, i);
+    pEntity match_ent = Match_ent(match);
+    int match_gid = Match_gid(match);
+    if (match_gid == this->getId() &&
+        match_ent == ent)
       continue;
-    m[j].peer = this->getId();
-    m[j].entity = match;
+    m[j].peer = match_gid;
+    m[j].entity = reinterpret_cast<MeshEntity*>(match_ent);
     j++;
   }
   assert(j == n - 1);

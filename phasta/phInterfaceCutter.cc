@@ -167,7 +167,19 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
   findMaterials(m->getModel(), fbcs, mm);
   cutEntities(m, fbcs, mm);
 }
-
+/*
+static int countMatchedFaces(apf::Mesh2* m, apf::MeshEntity* e) {
+  apf::Downward f;
+  apf::Matches matches;
+  int numFaces = m->getDownward(e,2,f);
+  int countFaces = 0;
+  for (int i = 0; i < numFaces; i++) {
+    m->getMatches(f[i],matches);
+    if (matches.getSize() > 0) countFaces++;
+  }
+  return countFaces;
+}
+*/
 int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   std::string name("DG interface");
   if (!haveBC(bcs, name)) {
@@ -197,6 +209,9 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
     m->getMatches(f,matches);
 
     apf::MeshEntity* e = m->getUpward(f, 0);
+
+//    if (countMatchedFaces(m,e) > 1)
+//      printf("an element has more than one matched element\n");
 
     int remoteResidence = -1;
     for (size_t j = 0; j != matches.getSize(); ++j) {

@@ -69,22 +69,24 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
   ph::loadModelAndBCs(in, g, bcs);
 }
 
-static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
+static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
   apf::Mesh2* mesh;
+  const char* meshfile = in.meshFileName.c_str();
 #ifdef HAVE_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (mesh_has_ext(meshfile, "sms")) {
+    if (in.simmetrixMesh == 0) {
+      if (PCU_Comm_Self()==0)
+        fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
+      in.simmetrixMesh = 1;
+    }
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);
 
     pGModel simModel = gmi_export_sim(g);
     pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
-    apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+    mesh = apf::createMesh(sim_mesh);
 
-    mesh = apf::createMdsMesh(g, simApfMesh);
-
-    apf::destroyMesh(simApfMesh);
-    M_release(sim_mesh);
     Progress_delete(progress);
   } else
 #endif
@@ -99,7 +101,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     gmi_model* g, apf::Migration*& plan)
 {
   if(!m)
-    m = loadMesh(g, in.meshFileName.c_str());
+    m = loadMesh(g, in);
   else
     apf::printStats(m);
   m->verify();
@@ -235,8 +237,12 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
-    m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    ph::balanceAndReorder(m,in,numMasters);
+    if (in.simmetrixMesh == 0) {
+      m = repeatMdsMesh(m, g, plan, in.splitFactor);
+      ph::balanceAndReorder(m,in,numMasters);
+    } else {
+      ph::checkBalance(m,in);
+    }
     ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
