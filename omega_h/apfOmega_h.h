@@ -8,8 +8,8 @@ namespace apf {
 
 namespace osh = ::Omega_h;
 
-void to_omega_h(apf::Mesh* am, osh::Mesh* om);
-void from_omega_h(osh::Mesh* om, apf::Mesh2* am);
+void to_omega_h(osh::Mesh* om, apf::Mesh* am);
+void from_omega_h(apf::Mesh2* am, osh::Mesh* om);
 
 };
 

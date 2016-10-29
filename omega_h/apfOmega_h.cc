@@ -139,6 +139,7 @@ static void field_from_osh(apf::Field* f, osh::Tag<osh::Real> const* tag) {
     if (dim == 2) matrices_from_osh<2>(f, it, data);
     if (dim == 3) matrices_from_osh<3>(f, it, data);
   } else components_from_osh(f, it, data);
+  am->end(it);
 }
 
 static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real> const* tag) {
@@ -252,27 +253,27 @@ static void globals_to_osh(
   mesh_osh->set_owners(dim, owners);
 }
 
-void to_omega_h(apf::Mesh* mesh_apf, osh::Mesh* mesh_osh) {
+void to_omega_h(osh::Mesh* om, apf::Mesh* am) {
   auto comm_mpi = PCU_Get_Comm();
   decltype(comm_mpi) comm_impl;
   MPI_Comm_dup(comm_mpi, &comm_impl);
   auto comm_osh = osh::CommPtr(new osh::Comm(comm_impl));
-  mesh_osh->set_comm(comm_osh);
-  auto dim = mesh_apf->getDimension();
+  om->set_comm(comm_osh);
+  auto dim = am->getDimension();
   OMEGA_H_CHECK(dim == 2 || dim == 3);
-  mesh_osh->set_dim(mesh_apf->getDimension());
-  mesh_osh->set_verts(osh::LO(mesh_apf->count(0)));
-  coords_to_osh(mesh_osh, mesh_apf);
-  class_to_osh(mesh_osh, mesh_apf, 0);
-  globals_to_osh(mesh_osh, mesh_apf, 0);
-  auto vert_nums = apf::numberOverlapDimension(mesh_apf, "apf2osh", 0);
+  om->set_dim(am->getDimension());
+  om->set_verts(osh::LO(am->count(0)));
+  coords_to_osh(om, am);
+  class_to_osh(om, am, 0);
+  globals_to_osh(om, am, 0);
+  auto vert_nums = apf::numberOverlapDimension(am, "apf2osh", 0);
   for (int d = 1; d <= dim; ++d) {
-    conn_to_osh(mesh_osh, mesh_apf, vert_nums, d);
-    class_to_osh(mesh_osh, mesh_apf, d);
-    globals_to_osh(mesh_osh, mesh_apf, d);
+    conn_to_osh(om, am, vert_nums, d);
+    class_to_osh(om, am, d);
+    globals_to_osh(om, am, d);
   }
   apf::destroyNumbering(vert_nums);
-  fields_to_osh(mesh_osh, mesh_apf);
+  fields_to_osh(om, am);
 }
 
 static void
@@ -306,8 +307,10 @@ ents_from_osh(
 {
   std::vector<apf::MeshEntity*> ents(om->nents(ent_dim));
   auto ev2v = osh::HostRead<osh::LO>(om->ask_verts_of(ent_dim));
-  auto class_dim = osh::HostRead<osh::I8>(om->get_array<osh::I8>(0, "class_dim"));
-  auto class_id = osh::HostRead<osh::LO>(om->get_array<osh::LO>(0, "class_id"));
+  auto class_dim = osh::HostRead<osh::I8>(
+      om->get_array<osh::I8>(ent_dim, "class_dim"));
+  auto class_id = osh::HostRead<osh::LO>(
+      om->get_array<osh::LO>(ent_dim, "class_id"));
   apf::Mesh::Type t = apf::Mesh::simplexTypes[ent_dim];
   int nverts_per_ent = ent_dim + 1;
   for (int i = 0; i < om->nents(ent_dim); ++i) {

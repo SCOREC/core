@@ -15,8 +15,8 @@ int main(int argc, char** argv) {
   if (argc != 4) {
     if (PCU_Comm_Self() == 0) {
       std::cout << "\n";
-      std::cout << "usage: smb2osh in.dmg in.smb out.osh\n";
-      std::cout << "   or: smb2osh               (usage)\n";
+      std::cout << "usage: osh2smb in.osh in.dmg out.smb\n";
+      std::cout << "   or: osh2smb               (usage)\n";
     }
     PCU_Comm_Free();
     MPI_Finalize();
@@ -24,14 +24,16 @@ int main(int argc, char** argv) {
   }
   gmi_register_mesh();
   gmi_register_null();
-  apf::Mesh2* am = apf::loadMdsMesh(argv[1], argv[2]);
+  gmi_model* model = gmi_load(argv[2]);
   {
     auto lib = Omega_h::Library(&argc, &argv);
     Omega_h::Mesh om(&lib);
-    apf::to_omega_h(&om, am);
+    Omega_h::binary::read(argv[1], lib.world(), &om);
+    apf::Mesh2* am = apf::makeEmptyMdsMesh(model, om.dim(), false);
+    apf::from_omega_h(am, &om);
+    am->writeNative(argv[3]);
     am->destroyNative();
     apf::destroyMesh(am);
-    Omega_h::binary::write(argv[3], &om);
   }
   PCU_Comm_Free();
   MPI_Finalize();
