@@ -299,4 +299,94 @@ ents_from_osh(
   return ents;
 }
 
+static void owners_from_osh(
+    apf::Mesh2* am,
+    osh::Mesh* om,
+    std::vector<apf::MeshEntity*> const& ents,
+    int ent_dim)
+{
+  auto owners = om->ask_owners(ent_dim);
+  auto own_ranks = osh::HostRead<osh::I32>(owners.ranks);
+  auto own_ids = osh::HostRead<osh::LO>(owners.idxs);
+  if (om->parting() != OMEGA_H_ELEM_BASED) {
+    /* currently MDS defines ownership between pairs of ranks
+       only, which is insufficient to represent ghosting
+       ownership of elements.
+       therefore we will tag the owners to the entities,
+       which can later be used by an apf::Sharing */
+    apf::MeshTag* own_tag = am->findTag("owner");
+    if (!own_tag) own_tag = am->createIntTag("owner", 1);
+    for (int i = 0; i < om->nents(ent_dim); ++i) {
+      am->setIntTag(ents[i], own_tag, &own_ranks[i]);
+    }
+  }
+  PCU_Comm_Begin();
+  for (int i = 0; i < osh_count(om, ent_dim); ++i) {
+    PCU_COMM_PACK(own_ranks[i], own_ids[i]);
+    PCU_COMM_PACK(own_ranks[i], ents[i]);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int own_id;
+    PCU_COMM_UNPACK(own_id);
+    apf::MeshEntity* r;
+    PCU_COMM_UNPACK(r);
+    int from = PCU_Comm_Sender();
+    if (from == PCU_Comm_Self()) {
+      assert((int)from == own_ranks[own_id]);
+      continue;
+    }
+    apf::MeshEntity* owner = ents[own_id];
+    am->addRemote(owner, from, r);
+  }
+  PCU_Comm_Begin();
+  for (int i = 0; i < osh_count(om, ent_dim); ++i)
+    if (own_ranks[i] == (int)(PCU_Comm_Self())) {
+      apf::Copies remotes;
+      am->getRemotes(ents[i], remotes);
+      int ncopies = remotes.size();
+      int self = PCU_Comm_Self();
+      APF_ITERATE(apf::Copies, remotes, it) {
+        PCU_COMM_PACK(it->first, it->second);
+        PCU_COMM_PACK(it->first, ncopies);
+        PCU_COMM_PACK(it->first, self);
+        PCU_COMM_PACK(it->first, ents[i]);
+        APF_ITERATE(apf::Copies, remotes, it2)
+          if (it2->first != it->first) {
+            PCU_COMM_PACK(it->first, it2->first);
+            PCU_COMM_PACK(it->first, it2->second);
+          }
+      }
+    }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    apf::MeshEntity* e;
+    PCU_COMM_UNPACK(e);
+    int ncopies;
+    PCU_COMM_UNPACK(ncopies);
+    for (int i = 0; i < ncopies; ++i) {
+      int p;
+      PCU_COMM_UNPACK(p);
+      apf::MeshEntity* r;
+      PCU_COMM_UNPACK(r);
+      am->addRemote(e, p, r);
+    }
+  }
+}
+
+void from_omega_h(apf::Mesh2* am, osh::Mesh* om)
+{
+  std::vector<apf::MeshEntity*> ents[4];
+  ents[0] = verts_from_osh(am, om);
+  for (unsigned d = 1; d <= om->dim(); ++d)
+    ents[d] = ents_from_osh(am, om, ents[0], d);
+  for (unsigned d = 0; d <= om->dim(); ++d) {
+    owners_from_osh(am, om, ents[d], d);
+    apf::initResidence(am, d);
+  }
+  am->acceptChanges();
+  fields_from_osh(am, om);
+}
+
+
 };
