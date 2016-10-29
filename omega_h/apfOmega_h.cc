@@ -118,16 +118,12 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
   om->add_tag(osh::VERT, name, nc, xfer, OMEGA_H_DO_OUTPUT, data.write());
 }
 
-static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real>* tag) {
+static void field_from_osh(apf::Field* f, osh::Tag<osh::Real>* tag) {
+  auto am = apf::getMesh(f);
   auto dim = am->getDimension();
   auto nc = tagbase->ncomps();
   auto data = osh::HostRead<osh::Real>(tag->array());
-  int vt = -1;
-  if (nc == 1) vt = apf::SCALAR;
-  if (nc == dim) vt = apf::VECTOR;
-  if (nc == dim * dim) vt = apf::MATRIX;
-  auto f = apf::createGeneralField(am, tag->name().c_str(), vt, nc,
-      am->getShape());
+  auto vt = apf::getValueType(f);
   apf::MeshEntity* v;
   apf::MeshIterator* it = am->begin(0);
   if (vt == apf::VECTOR) {
@@ -137,6 +133,18 @@ static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real>* tag) {
     if (dim == 2) matrices_from_osh<2>(f, it, data);
     if (dim == 3) matrices_from_osh<3>(f, it, data);
   } else components_from_osh(f, it, data);
+}
+
+static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real>* tag) {
+  auto dim = am->getDimension();
+  auto nc = tagbase->ncomps();
+  int vt = -1;
+  if (nc == 1) vt = apf::SCALAR;
+  if (nc == dim) vt = apf::VECTOR;
+  if (nc == dim * dim) vt = apf::MATRIX;
+  auto f = apf::createGeneralField(am, tag->name().c_str(), vt, nc,
+      am->getShape());
+  field_from_osh(f, tag);
 }
 
 static void fields_to_osh(osh::Mesh* om, apf::Mesh* am) {
@@ -156,8 +164,13 @@ static void fields_from_osh(apf::Mesh* am, osh::Mesh* om) {
   }
 }
 
-static void coords_to_osh(apf::Mesh* mesh_apf, osh::Mesh* mesh_osh) {
-  field_to_osh(mesh_apf->getCoordinateField(), mesh_osh);
+static void coords_to_osh(osh::Mesh* om, apf::Mesh* am) {
+  field_to_osh(am->getCoordinateField(), om);
+}
+
+static void coords_from_osh(apf::Mesh* am, osh::Mesh* om) {
+  field_from_osh(am->getCoordinateField(),
+      om->get_tag<osh::Real>(0, "coordinates"));
 }
 
 static void class_to_osh(apf::Mesh* mesh_apf, osh::Mesh* mesh_osh, int dim) {
@@ -256,21 +269,25 @@ void to_omega_h(apf::Mesh* mesh_apf, osh::Mesh* mesh_osh) {
   fields_to_osh(mesh_osh, mesh_apf);
 }
 
+static void
+class_from_osh(apf::Mesh2* am, osh::Mesh2* om,
+    std::vector<apf::MeshEntity*> const& ents,
+    int ent_dim) {
+{
+  auto class_dim = osh::HostRead<osh::I8>(om->get_array<osh::I8>(ent_dim, "class_dim"));
+  auto class_id = osh::HostRead<osh::LO>(om->get_array<osh::LO>(ent_dim, "class_id"));
+  for (int i = 0; i < om->nents(ent_dim); ++i) {
+    auto ge = am->findModelEntity(class_dim[i], class_id[i]);
+    am->setModelEntity(ents[i], ge);
+  }
+}
+
 static std::vector<apf::MeshEntity*>
 verts_from_osh(osh::Mesh* om, apf::Mesh2* am) {
 {
   std::vector<apf::MeshEntity*> verts(om->nverts());
-  auto coords = osh::HostRead<osh::Real>(om->coords());
-  osh::HostRead<osh::Real> param;
-  if (om->has_tag(0, "param")) param = om->get_array<osh::Real>(0, "param");
-  else param = osh::HostRead<osh::Real>(om->nverts() * 2, 0);
-  auto class_dim = osh::HostRead<osh::I8>(om->get_array<osh::I8>(0, "class_dim"));
-  auto class_id = osh::HostRead<osh::LO>(om->get_array<osh::LO>(0, "class_id"));
   for (int i = 0; i < om->nverts(); ++i) {
-    auto ge = am->findModelEntity(class_dim[i], class_id[i]);
-    apf::Vector3 x(coords.data() + i * 3);
-    apf::Vector3 p(param.data() + i * 2);
-    verts[i] = am->createVertex(ge, x, p);
+    verts[i] = am->createVert(nullptr);
   }
   assert(am->count(0) == om->nverts());
   return verts;
@@ -380,13 +397,14 @@ void from_omega_h(apf::Mesh2* am, osh::Mesh* om)
   ents[0] = verts_from_osh(am, om);
   for (unsigned d = 1; d <= om->dim(); ++d)
     ents[d] = ents_from_osh(am, om, ents[0], d);
+  coords_from_osh(am, om);
   for (unsigned d = 0; d <= om->dim(); ++d) {
+    class_from_osh(am, om, ents[d], d);
     owners_from_osh(am, om, ents[d], d);
     apf::initResidence(am, d);
   }
   am->acceptChanges();
   fields_from_osh(am, om);
 }
-
 
 };
