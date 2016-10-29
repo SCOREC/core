@@ -121,6 +121,7 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
     if (dim == 2) matrices_to_osh<2>(f, it, data);
     if (dim == 3) matrices_to_osh<3>(f, it, data);
   } else components_to_osh(f, it, data);
+  am->end(it);
   auto xfer = OMEGA_H_LINEAR_INTERP;
   om->add_tag(osh::VERT, name, nc, xfer, OMEGA_H_DO_OUTPUT,
       osh::Reals(data.write()));
