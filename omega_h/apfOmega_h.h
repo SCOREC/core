@@ -2,12 +2,14 @@
 #define APF_OMEGA_H_H
 
 #include <apfMesh2.h>
-#include <omega_h.h>
+#include <Omega_h.hpp>
 
-namespace osh {
+namespace apf {
 
-osh_t fromAPF(apf::Mesh* am);
-void toAPF(osh_t om, apf::Mesh2* am);
+namespace osh = ::Omega_h;
+
+void to_omega_h(osh::Mesh* om, apf::Mesh* am);
+void from_omega_h(apf::Mesh2* am, osh::Mesh* om);
 
 };
 

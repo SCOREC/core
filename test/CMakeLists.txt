@@ -41,8 +41,8 @@ util_exe_func(from_ugrid ugrid.cc)
 util_exe_func(nektar_align nektar_align.cc)
 util_exe_func(icesheet icesheet.cc)
 if(ENABLE_OMEGA_H)
-  util_exe_func(from_omega_h from_omega_h.cc)
-  util_exe_func(to_omega_h to_omega_h.cc)
+  util_exe_func(smb2osh smb2osh.cc)
+  util_exe_func(osh2smb osh2smb.cc)
 endif()
 
 # Mesh rendering/visualization utilities
