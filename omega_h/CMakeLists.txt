@@ -8,7 +8,7 @@ if (NOT ENABLE_OMEGA_H)
 endif()
 
 # find the omega_h library
-set(SCOREC_USE_Omega_h ${ENABLE_OMEGA_H})
+set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
 set(Omega_h_REQUIRED_VERSION 5.0.0)
 bob_public_dep(Omega_h)
 
@@ -18,7 +18,7 @@ set(SOURCES
 )
 
 # Package headers
-set(SOURCES
+set(HEADERS
   apfOmega_h.h
 )
 
@@ -31,7 +31,6 @@ target_include_directories(apf_omega_h INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
     )
-target_include_directories(apf_omega_h PUBLIC ${OMEGA_H_INCLUDE_DIR})
 
 # Link this package to these libraries
 target_link_libraries(apf_omega_h PUBLIC apf mds Omega_h::omega_h)
