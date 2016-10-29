@@ -102,14 +102,14 @@ static void globals_to_osh(
   mesh_osh->set_owners(dim, owners);
 }
 
-static void apf2osh(apf::Mesh* mesh_apf, Omega_h::Mesh* mesh_osh) {
+void to_omega_h(apf::Mesh* mesh_apf, Omega_h::Mesh* mesh_osh) {
   auto comm_mpi = PCU_Get_Comm();
   decltype(comm_mpi) comm_impl;
   MPI_Comm_dup(comm_mpi, &comm_impl);
   auto comm_osh = Omega_h::CommPtr(new Omega_h::Comm(comm_impl));
   mesh_osh->set_comm(comm_osh);
   auto dim = mesh_apf->getDimension();
-  CHECK(dim == 2 || dim == 3);
+  OMEGA_H_CHECK(dim == 2 || dim == 3);
   mesh_osh->set_dim(mesh_apf->getDimension());
   mesh_osh->set_verts(Omega_h::LO(mesh_apf->count(0)));
   coords_to_osh(mesh_apf, mesh_osh);
@@ -122,35 +122,6 @@ static void apf2osh(apf::Mesh* mesh_apf, Omega_h::Mesh* mesh_osh) {
     globals_to_osh(mesh_apf, mesh_osh, d);
   }
   apf::destroyNumbering(vert_nums);
-}
-
-int main(int argc, char** argv) {
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
-  if (argc != 4) {
-    if (PCU_Comm_Self() == 0) {
-      std::cout << "\n";
-      std::cout << "usage: smb2osh in.dmg in.smb out.osh\n";
-      std::cout << "   or: smb2osh                   (usage)\n";
-    }
-    PCU_Comm_Free();
-    MPI_Finalize();
-    exit(EXIT_FAILURE);
-  }
-  gmi_register_mesh();
-  gmi_register_null();
-  apf::Mesh2* am = apf::loadMdsMesh(argv[1], argv[2]);
-  {
-    auto lib = Omega_h::Library(&argc, &argv);
-    auto world = lib.world();
-    Omega_h::Mesh om(&lib);
-    apf2osh(am, &om);
-    am->destroyNative();
-    apf::destroyMesh(am);
-    Omega_h::binary::write(argv[3], &om);
-  }
-  PCU_Comm_Free();
-  MPI_Finalize();
 }
 
 };

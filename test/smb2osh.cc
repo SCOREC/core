@@ -7,6 +7,8 @@
 #include <apfOmega_h.h>
 #include <cstdlib>
 
+#include <iostream>
+
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();

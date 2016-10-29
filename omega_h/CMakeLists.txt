@@ -9,7 +9,7 @@ endif()
 
 # find the omega_h library
 set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
-set(Omega_h_REQUIRED_VERSION 5.0.0)
+set(Omega_h_REQUIRED_VERSION 5.1.0)
 bob_public_dep(Omega_h)
 
 # Package sources
