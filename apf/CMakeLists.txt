@@ -29,6 +29,7 @@ set(SOURCES
   apfVectorField.cc
   apfPackedField.cc
   apfNumbering.cc
+  apfMixedNumbering.cc
   apfAdjReorder.cc
   apfVtk.cc
   apfFieldData.cc
@@ -60,6 +61,7 @@ set(HEADERS
   apfCavityOp.h
   apfShape.h
   apfNumbering.h
+  apfMixedNumbering.h
   apfPartition.h
   apfConvert.h
   apfGeometry.h
