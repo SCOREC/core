@@ -65,7 +65,6 @@ namespace {
 std::string modelFile;
 std::string caseName;
 std::string outMeshFile;
-std::string outVtkFile;
 
 void messageHandler(int type, const char* msg)
 {
@@ -133,7 +132,7 @@ void getConfig(int argc, char** argv)
     exit(EXIT_SUCCESS);
   }
   modelFile = argv[1];
-  outMeshFile = outVtkFile = caseName = argv[2];
+  outMeshFile = caseName = argv[2];
   outMeshFile.append("/");
   if(0==PCU_Comm_Self())
     printf("Inputs: model %s case %s\n", modelFile.c_str(), caseName.c_str());
