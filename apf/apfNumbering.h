@@ -157,17 +157,18 @@ void getNodesOnClosure(
 GlobalNumbering* createGlobalNumbering(
     Mesh* mesh,
     const char* name,
-    FieldShape* shape);
+    FieldShape* shape,
+    int components=1);
 FieldShape* getShape(GlobalNumbering* n);
 const char* getName(GlobalNumbering* n);
 /** \brief get the mesh associated with a global numbering */
 Mesh* getMesh(GlobalNumbering* n);
 /** \brief assign a global number */
-void number(GlobalNumbering* n, Node node, long number);
+void number(GlobalNumbering* n, Node node, long number, int component=0);
 /** \brief get a global number */
-long getNumber(GlobalNumbering* n, Node node);
+long getNumber(GlobalNumbering* n, Node node, int component=0);
 /** \brief get a global number */
-long getNumber(GlobalNumbering* n, MeshEntity* e, int node);
+long getNumber(GlobalNumbering* n, MeshEntity* e, int node, int component=0);
 /** \brief get an element's global node numbers */
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers);

@@ -441,10 +441,11 @@ void getNodesOnClosure(
 GlobalNumbering* createGlobalNumbering(
     Mesh* mesh,
     const char* name,
-    FieldShape* shape)
+    FieldShape* shape,
+    int components)
 {
   GlobalNumbering* n = new GlobalNumbering();
-  n->init(name,mesh,shape,1);
+  n->init(name,mesh,shape,components);
   mesh->addGlobalNumbering(n);
   return n;
 }
@@ -464,19 +465,19 @@ Mesh* getMesh(GlobalNumbering* n)
   return n->getMesh();
 }
 
-void number(GlobalNumbering* n, Node node, long number)
+void number(GlobalNumbering* n, Node node, long number, int component)
 {
-  n->set(node.entity,node.node,0,number);
+  n->set(node.entity,node.node,component,number);
 }
 
-long getNumber(GlobalNumbering* n, Node node)
+long getNumber(GlobalNumbering* n, Node node, int component)
 {
-  return n->get(node.entity,node.node,0);
+  return n->get(node.entity,node.node,component);
 }
 
-long getNumber(GlobalNumbering* n, MeshEntity* e, int node)
+long getNumber(GlobalNumbering* n, MeshEntity* e, int node, int component)
 {
-  return n->get(e,node,0);
+  return n->get(e,node,component);
 }
 
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
