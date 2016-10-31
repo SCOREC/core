@@ -20,10 +20,15 @@ namespace apf {
 
 typedef NumberingOf<long> GlobalNumbering;
 
+/** \brief Count the total numbered degrees of freedom
+  * \param n The input global numberings.
+  * \returns The number of on-part numbered degrees of freedom */
+int countDOFs(std::vector<GlobalNumbering*> const& n);
+
 /** \brief Number owned nodes of multiple fields.
   * \param fields The input fields to be numbered.
   * \param n The output global numberings corresponding to the fields.
-  * \returns The number of owned nodes across all fields. */
+  * \returns The number of on-part owned nodes across all fields. */
 int numberMixed(
     std::vector<Field*> const& fields,
     std::vector<GlobalNumbering*>& n);
