@@ -15,6 +15,30 @@
 
 namespace apf {
 
+int countDOFs(std::vector<GlobalNumbering*> const& n) {
+  int dofs = 0;
+  for (size_t f=0; f < n.size(); ++f) {
+    apf::GlobalNumbering* numbering = n[f];
+    dofs += countComponents(numbering) * countNodes(numbering);
+  }
+  return dofs;
+}
+
+/* prevent unneeded allocation? */
+NewArray<long> mixed_numbers;
+
+void getElementNumbers(
+    std::vector<GlobalNumbering*> const& n,
+    MeshEntity* e,
+    std::vector<long>& numbers) {
+  numbers.resize(0);
+  for (size_t f=0; f < n.size(); ++f) {
+    int dofs = getElementNumbers(n[f], e, mixed_numbers);
+    for (int dof=0; dof < dofs; ++dof)
+      numbers.push_back(mixed_numbers[dof]);
+  }
+}
+
 static void verify_fields(std::vector<Field*> const& f) {
   assert(f.size() > 0);
   for (size_t i=0; i < f.size()-1; ++i) {
@@ -201,15 +225,6 @@ int numberMixed(
   get_shapes(fields, shapes);
   int dofs = number_owned(fields, components, shapes, owned);
   make_global(dofs, owned, numberings);
-  return dofs;
-}
-
-int countDOFs(std::vector<GlobalNumbering*> const& n) {
-  int dofs = 0;
-  for (size_t f=0; f < n.size(); ++f) {
-    apf::GlobalNumbering* numbering = n[f];
-    dofs += countComponents(numbering) * countNodes(numbering);
-  }
   return dofs;
 }
 
