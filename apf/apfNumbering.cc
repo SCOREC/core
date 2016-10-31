@@ -465,6 +465,11 @@ Mesh* getMesh(GlobalNumbering* n)
   return n->getMesh();
 }
 
+int countComponents(GlobalNumbering* n)
+{
+  return n->countComponents();
+}
+
 void number(GlobalNumbering* n, Node node, long number, int component)
 {
   n->set(node.entity,node.node,component,number);

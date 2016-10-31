@@ -272,12 +272,13 @@ static void getInterface
 
   while ((face = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(face);
+    if (getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) == 0)
+      continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
     apf::Matches matches;
     m->getMatches(face, matches);
-    if (matches.getSize() != 1)
-      continue;
+    assert(matches.getSize() == 1);
     apf::MeshEntity* e0 = m->getUpward(face, 0);
     apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
     /* in order to avoid repeatation of elements */

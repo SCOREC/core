@@ -62,12 +62,29 @@ double pumi_getTime()
 }
 
 #if defined(__APPLE__)
+
 #include <mach/task.h>
 #include <mach/mach_init.h>
+
 #elif defined(__bgq__)
+
+//the BG/Q headers have warning-triggering
+//code in them.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include <spi/include/kernel/memory.h>
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #else
+
 #include <malloc.h> //warning - this is GNU-specific
+
 #endif
 
 double pumi_getMem()
