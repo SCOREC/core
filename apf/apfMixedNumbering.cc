@@ -204,4 +204,13 @@ int numberMixed(
   return dofs;
 }
 
+int countDOFs(std::vector<GlobalNumbering*> const& n) {
+  int dofs = 0;
+  for (size_t f=0; f < n.size(); ++f) {
+    apf::GlobalNumbering* numbering = n[f];
+    dofs += countComponents(numbering) * countNodes(numbering);
+  }
+  return dofs;
+}
+
 }

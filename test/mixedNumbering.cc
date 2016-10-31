@@ -20,9 +20,13 @@ static void test_numbering(apf::Mesh* m) {
   fields[0] = f1;
   fields[1] = f2;
   std::vector<apf::GlobalNumbering*> numbers;
-  apf::numberMixed(fields, numbers);
+  int owned = apf::numberMixed(fields, numbers);
+  PCU_Debug_Open();
+  PCU_Debug_Print("number owned: %d\n", owned);
   for (size_t n=0; n < numbers.size(); ++n)
     apf::synchronize(numbers[n]);
+  int ghost = apf::countDOFs(numbers);
+  PCU_Debug_Print("number ghost: %d\n", ghost);
 }
 
 static void write_output(apf::Mesh* m, const char* out) {
