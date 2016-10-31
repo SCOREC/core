@@ -1,16 +1,9 @@
 # Package options
-option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
-message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 
 # Only install the package if enabled
 if (NOT ENABLE_OMEGA_H)
   return()
 endif()
-
-# find the omega_h library
-set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
-set(Omega_h_REQUIRED_VERSION 5.1.0)
-bob_public_dep(Omega_h)
 
 # Package sources
 set(SOURCES
