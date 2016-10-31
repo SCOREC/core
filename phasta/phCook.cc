@@ -116,7 +116,8 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::adapt(in, m);
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  plan = ph::split(in, m);
+  if (in.simmetrixMesh == 0)
+    plan = ph::split(in, m);
 }
 
 }//end namespace
@@ -178,7 +179,8 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    ph::migrateInterfaceItr(m, bcs);
+    if(PCU_Comm_Peers() > 1)
+      ph::migrateInterfaceItr(m, bcs);
     if(in.timeStepNumber > 0)
       ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
