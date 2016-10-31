@@ -57,6 +57,8 @@ set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
@@ -68,6 +70,13 @@ endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
+endif()
+
+if(ENABLE_OMEGA_H)
+  # find the omega_h library
+  set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
+  set(Omega_h_REQUIRED_VERSION 5.1.0)
+  bob_public_dep(Omega_h)
 endif()
 
 # Include the SCOREC project packages
