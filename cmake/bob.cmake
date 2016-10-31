@@ -19,6 +19,9 @@ endfunction(bob_always_full_rpath)
 
 macro(bob_begin_package)
   message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
+  if (${PROJECT_NAME}_VERSION)
+    message(STATUS "${PROJECT_NAME}_VERSION: ${${PROJECT_NAME}_VERSION}")
+  endif()
   #try to force BUILD_TESTING to be OFF by default
   set(BUILD_TESTING OFF CACHE STRING "Build and run tests")
   include(CTest)
@@ -26,10 +29,11 @@ macro(bob_begin_package)
   option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
   #If not building shared libs, then prefer static
   #dependency libs
-  if(NOT BUILD_SHARED_LIBS)
+  if(BUILD_SHARED_LIBS)
+    bob_always_full_rpath()
+  else()
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
   endif()
-  bob_always_full_rpath()
   message(STATUS "BUILD_TESTING: ${BUILD_TESTING}")
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
   message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
@@ -106,6 +110,9 @@ macro(bob_private_dep pkg_name)
     if(${pkg_name}_CONFIG)
       message(STATUS "${pkg_name}_CONFIG: ${${pkg_name}_CONFIG}")
     endif()
+    if(${pkg_name}_VERSION)
+      message(STATUS "${pkg_name}_VERSION: ${${pkg_name}_VERSION}")
+    endif()
   endif()
 endmacro(bob_private_dep)
 
@@ -167,15 +174,19 @@ endforeach()
 set(${PROJECT_NAME}_COMPILER \"${CMAKE_CXX_COMPILER}\")
 set(${PROJECT_NAME}_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\")
 ")
-  file(WRITE
-      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-      "${CONFIG_CONTENT}")
-  write_basic_package_version_file(
-      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-      VERSION ${PROJECT_VERSION}
-      COMPATIBILITY SameMajorVersion)
   install(FILES
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     DESTINATION lib/cmake/${PROJECT_NAME})
+  if(PROJECT_VERSION)
+    file(WRITE
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+        "${CONFIG_CONTENT}")
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion)
+    install(FILES
+      "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+      DESTINATION lib/cmake/${PROJECT_NAME})
+  endif()
 endfunction(bob_end_package)

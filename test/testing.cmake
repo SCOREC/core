@@ -287,6 +287,12 @@ mpi_test(spr_2D 4
   "${MDIR}/square.smb"
   spr2D
   1)
+mpi_test(mixedNumbering 4
+  ./mixedNumbering
+  "${MDIR}/square.dmg"
+  "${MDIR}/square.smb"
+  out)
+
 set(MDIR ${MESHES}/nonmanifold)
 mpi_test(nonmanif_verify 1
   ./verify
