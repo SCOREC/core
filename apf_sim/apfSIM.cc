@@ -862,7 +862,10 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
     return;
   }
   int n = PList_size(l);
-  m.setSize(n - 1);
+  if(EN_isOwnerProc(ent))
+    m.setSize(n - 1);
+  else
+    m.setSize(n);
   int j = 0;
   for (int i = 0; i < n; ++i)
   {
