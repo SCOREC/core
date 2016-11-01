@@ -872,6 +872,9 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
     if (match_gid == this->getId() &&
         match_ent == ent)
       continue;
+    if (!EN_isOwnerProc(ent))
+      if (match_ent == EntOrig_ent(EN_original(ent)))
+        continue;
     m[j].peer = match_gid;
     m[j].entity = reinterpret_cast<MeshEntity*>(match_ent);
     j++;
