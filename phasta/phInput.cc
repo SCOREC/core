@@ -62,7 +62,7 @@ static void setDefaults(Input& in)
   in.rs = 0;
   in.formEdges = 0;
   in.writePhastaFiles = 0;
-  in.hasDGInterface = 0;
+//  in.hasDGInterface = 0;
   in.simmetrixMesh = 0;
 }
 
@@ -128,7 +128,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   intMap["formEdges"] = &in.formEdges;
   intMap["writePhastaFiles"] = &in.writePhastaFiles;
-  intMap["hasDGInterface"] = &in.hasDGInterface;
+//  intMap["hasDGInterface"] = &in.hasDGInterface;
   intMap["simmetrixMesh"] = &in.simmetrixMesh;
 }
 

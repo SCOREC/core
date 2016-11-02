@@ -205,7 +205,9 @@ bool checkInterface(Output& o, BCs& bcs) {
   FieldBCs& fbcs2 = bcs.fields[name2];
 
   if (PCU_Comm_Self() == 0)
-    printf("Run checkInterface!\n");
+    printf("Run checkInterface! Turn on hasDGInterface!\n");
+
+  o.hasDGInterface = 1;
 
   int a = 0; int b = 0;
   int aID = 0;
@@ -647,7 +649,6 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
-  o.hasDGInterface = in.hasDGInterface == 1;
   getLocalPeriodicMasters(o, n);
   getEdges(o, n, rn);
   apf::destroyNumbering(n);
