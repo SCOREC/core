@@ -29,6 +29,9 @@ message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
 
+option(BUILD_EXES "Build executables" ON)
+message(STATUS "BUILD_EXES: ${BUILD_EXES}")
+
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
 set(MPIRUN_PROCFLAG "-np" CACHE string
@@ -106,6 +109,8 @@ add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
 scorec_export_library(core)
 
-add_subdirectory(test)
+if(BUILD_EXES)
+  add_subdirectory(test)
+endif()
 
 bob_end_package()
