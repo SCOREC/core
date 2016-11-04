@@ -29,6 +29,7 @@ class Snapper
     bool setVert(Entity* v, apf::CavityOp* o);
     bool run();
     bool dug;
+    bool toFPP;
   private:
     Adapt* adapter;
     Tag* snapTag;
@@ -36,6 +37,38 @@ class Snapper
     Collapse collapse;
     bool isSimple;
 };
+
+struct Ray{
+  Vector start;
+  Vector dir;
+};
+
+class FPPSnapper
+{
+  public:
+    FPPSnapper(Adapt* a, Tag* st, Entity* v, apf::Up& badElems);
+    bool findFPP();
+    bool snapToFPP();
+  private:
+    Adapt* adapter;
+    Tag* snapTag;
+    Entity* vert;
+    Collapse collapse;
+    apf::Up badElements;
+    Entity* problemFace;
+    Entity* problemRegion;
+    Vector intersection;
+    apf::Up commEdges;
+    double tol;
+    Entity* faceOppositeOfVert(Entity* e, Entity* v);
+    void getFaceCoords(Entity* face, std::vector<Vector>& coords);
+    bool intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
+    	Vector& intersection, bool& isInf);
+    void findCommonEdges(apf::Up& coplanarBadElems);
+};
+
+Vector getCenter(Mesh* mesh, Entity* face);
+bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt);
 
 }
 
