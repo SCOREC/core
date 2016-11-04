@@ -111,11 +111,8 @@ struct Output
   ~Output();
   Input* in;
   apf::Mesh* mesh;
-/* again, int will overflow */
-  int nGlobalEntities[4];
   int nOverlapNodes;
   int nOwnedNodes;
-  int nGlobalNodes;
   int nBoundaryElements;
   int nInterfaceElements;
   int nMaxElementNodes;

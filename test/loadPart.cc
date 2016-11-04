@@ -14,15 +14,19 @@ int main(int argc, char** argv)
   assert(PCU_Comm_Peers() == 1);
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <in part file> <out mesh file>\n", argv[0]);
+      printf("Load a single part from a partitioned mesh and "
+             "write it as a serial part.\n"
+             "Usage: %s <in part file> <out mesh file> <out model file (.dmg)>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
   gmi_register_mesh();
-  gmi_model* g = gmi_load(argv[1]);
-  apf::Mesh2* m = apf::loadMdsPart(g, argv[2]);
-  m->writeNative(argv[3]);
+  gmi_model* g = gmi_load(".null");
+  apf::Mesh2* m = apf::loadMdsPart(g, argv[1]);
+  apf::deriveMdsModel(m);
+  gmi_write_dmg(g, argv[3]);
+  m->writeNative(argv[2]);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();

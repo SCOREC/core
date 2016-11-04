@@ -441,10 +441,11 @@ void getNodesOnClosure(
 GlobalNumbering* createGlobalNumbering(
     Mesh* mesh,
     const char* name,
-    FieldShape* shape)
+    FieldShape* shape,
+    int components)
 {
   GlobalNumbering* n = new GlobalNumbering();
-  n->init(name,mesh,shape,1);
+  n->init(name,mesh,shape,components);
   mesh->addGlobalNumbering(n);
   return n;
 }
@@ -464,19 +465,24 @@ Mesh* getMesh(GlobalNumbering* n)
   return n->getMesh();
 }
 
-void number(GlobalNumbering* n, Node node, long number)
+int countComponents(GlobalNumbering* n)
 {
-  n->set(node.entity,node.node,0,number);
+  return n->countComponents();
 }
 
-long getNumber(GlobalNumbering* n, Node node)
+void number(GlobalNumbering* n, Node node, long number, int component)
 {
-  return n->get(node.entity,node.node,0);
+  n->set(node.entity,node.node,component,number);
 }
 
-long getNumber(GlobalNumbering* n, MeshEntity* e, int node)
+long getNumber(GlobalNumbering* n, Node node, int component)
 {
-  return n->get(e,node,0);
+  return n->get(node.entity,node.node,component);
+}
+
+long getNumber(GlobalNumbering* n, MeshEntity* e, int node, int component)
+{
+  return n->get(e,node,component);
 }
 
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
@@ -532,7 +538,7 @@ void globalize(Numbering* n)
   g.run(n);
 }
 
-GlobalNumbering* makeGlobal(Numbering* n)
+GlobalNumbering* makeGlobal(Numbering* n, bool destroy)
 {
   std::string name = n->getName();
   name += "_global";
@@ -557,7 +563,8 @@ GlobalNumbering* makeGlobal(Numbering* n)
       m->end(it);
     }
   }
-  apf::destroyNumbering(n);
+  if (destroy)
+    apf::destroyNumbering(n);
   globalize(gn);
   return gn;
 }

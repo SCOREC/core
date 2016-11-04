@@ -13,12 +13,8 @@ namespace ph {
 
 static void getCounts(Output& o)
 {
-  for (int i = 0; i < 4; ++i)
-    o.nGlobalEntities[i] = apf::countOwned(o.mesh, i);
-  PCU_Add_Ints(o.nGlobalEntities, 4);
   o.nOwnedNodes = apf::countOwned(o.mesh, 0);
   o.nOverlapNodes = o.mesh->count(0);
-  o.nGlobalNodes = o.nGlobalEntities[0];
 }
 
 static void getCoordinates(Output& o)
@@ -209,7 +205,9 @@ bool checkInterface(Output& o, BCs& bcs) {
   FieldBCs& fbcs2 = bcs.fields[name2];
 
   if (PCU_Comm_Self() == 0)
-    printf("Run checkInterface!\n");
+    printf("Run checkInterface! Turn on hasDGInterface!\n");
+
+  o.hasDGInterface = 1;
 
   int a = 0; int b = 0;
   int aID = 0;
@@ -276,12 +274,13 @@ static void getInterface
 
   while ((face = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(face);
+    if (getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) == 0)
+      continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
     apf::Matches matches;
     m->getMatches(face, matches);
-    if (matches.getSize() != 1)
-      continue;
+    assert(matches.getSize() == 1);
     apf::MeshEntity* e0 = m->getUpward(face, 0);
     apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
     /* in order to avoid repeatation of elements */
@@ -650,7 +649,6 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
-  o.hasDGInterface = in.hasDGInterface == 1;
   getLocalPeriodicMasters(o, n);
   getEdges(o, n, rn);
   apf::destroyNumbering(n);

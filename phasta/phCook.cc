@@ -3,6 +3,9 @@
 #include <phstream.h>
 #ifdef HAVE_SIMMETRIX
 #include <phAttrib.h>
+#include <apfSIM.h>
+#include <gmi_sim.h>
+#include <SimPartitionedMesh.h>
 #endif
 #include <phInput.h>
 #include <phBC.h>
@@ -22,13 +25,26 @@
 #include <pcu_io.h>
 #include <string>
 #include <stdlib.h>
+#include <cstring>
 #include <assert.h>
 #include <iostream>
 
 #define SIZET(a) static_cast<size_t>(a)
 
-
 namespace {
+
+#ifdef HAVE_SIMMETRIX
+static bool mesh_has_ext(const char* filename, const char* ext)
+{
+  const char* c = strrchr(filename, '.');
+  if (c) {
+    ++c; /* exclude the dot itself */
+    return !strcmp(c, ext);
+  } else {
+    return false;
+  }
+}
+#endif
 
 void switchToMasters(int splitFactor)
 {
@@ -53,11 +69,39 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
   ph::loadModelAndBCs(in, g, bcs);
 }
 
+static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
+  apf::Mesh2* mesh;
+  const char* meshfile = in.meshFileName.c_str();
+#ifdef HAVE_SIMMETRIX
+  /* if it is a simmetrix mesh */
+  if (mesh_has_ext(meshfile, "sms")) {
+    if (in.simmetrixMesh == 0) {
+      if (PCU_Comm_Self()==0)
+        fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
+      in.simmetrixMesh = 1;
+    }
+    pProgress progress = Progress_new();
+    Progress_setDefaultCallback(progress);
+
+    pGModel simModel = gmi_export_sim(g);
+    pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
+    mesh = apf::createMesh(sim_mesh);
+
+    Progress_delete(progress);
+  } else
+#endif
+  /* if it is a SCOREC mesh */
+  {
+    mesh = apf::loadMdsMesh(g, meshfile);
+  }
+  return mesh;
+}
+
 void originalMain(apf::Mesh2*& m, ph::Input& in,
     gmi_model* g, apf::Migration*& plan)
 {
   if(!m)
-    m = apf::loadMdsMesh(g, in.meshFileName.c_str());
+    m = loadMesh(g, in);
   else
     apf::printStats(m);
   m->verify();
@@ -72,7 +116,8 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::adapt(in, m);
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  plan = ph::split(in, m);
+  if (in.simmetrixMesh == 0)
+    plan = ph::split(in, m);
 }
 
 }//end namespace
@@ -134,13 +179,14 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    ph::migrateInterfaceItr(m, bcs);
+    if(PCU_Comm_Peers() > 1)
+      ph::migrateInterfaceItr(m, bcs);
     if(in.timeStepNumber > 0)
       ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
-      ph::goToStepDir(in.timeStepNumber);
-    std::string path = ph::setupOutputDir();
-    ph::setupOutputSubdir(path);
+      ph::goToStepDir(in.timeStepNumber,in.ramdisk);
+    std::string path = ph::setupOutputDir(in.ramdisk);
+    ph::setupOutputSubdir(path,in.ramdisk);
     ph::enterFilteredMatching(m, in, bcs);
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
@@ -193,8 +239,12 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
-    m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    ph::balanceAndReorder(m,in,numMasters);
+    if (in.simmetrixMesh == 0) {
+      m = repeatMdsMesh(m, g, plan, in.splitFactor);
+      ph::balanceAndReorder(m,in,numMasters);
+    } else {
+      ph::checkBalance(m,in);
+    }
     ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
@@ -238,6 +288,15 @@ namespace chef {
     out.grs = grs;
     bake(g,m,ctrl,out);
     return;
+  }
+
+  apf::Field* extractField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* requestFieldname,
+    int firstComp,
+    int numOfComp) {
+    return ph::extractField(m,packedFieldname,
+             requestFieldname,firstComp,numOfComp);
   }
 
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {

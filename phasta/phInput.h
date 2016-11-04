@@ -62,12 +62,14 @@ class Input
     int parmaLoops;
     int parmaVerbosity;
     int writeVizFiles;
+    int ramdisk;
     double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);
     RStream* rs;
-    int hasDGInterface;
+//    int hasDGInterface;
+    int simmetrixMesh;
 };
 
 int countNaturalBCs(Input& in);
