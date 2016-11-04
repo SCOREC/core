@@ -538,7 +538,7 @@ void globalize(Numbering* n)
   g.run(n);
 }
 
-GlobalNumbering* makeGlobal(Numbering* n)
+GlobalNumbering* makeGlobal(Numbering* n, bool destroy)
 {
   std::string name = n->getName();
   name += "_global";
@@ -563,7 +563,8 @@ GlobalNumbering* makeGlobal(Numbering* n)
       m->end(it);
     }
   }
-  apf::destroyNumbering(n);
+  if (destroy)
+    apf::destroyNumbering(n);
   globalize(gn);
   return gn;
 }
