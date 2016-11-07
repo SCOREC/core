@@ -96,13 +96,8 @@ static int count_owned_dofs(
   Mesh* m = getMesh(fields[0]);
   MeshEntity* ent = 0;
   MeshIterator* it = 0;
-  for (int d=0; d < m->getDimension(); ++d) {
-    bool in = false;
-    for (size_t f=0; f < fields.size(); ++f)
-      if (shapes[f]->hasNodesIn(d))
-        in = true;
-    if (! in)
-      continue;
+  int hdim = get_highest_dof_dim(fields, shapes);
+  for (int d=0; d <= hdim; ++d) {
     it = m->begin(d);
     while ((ent = m->iterate(it))) {
       int t = m->getType(ent);
