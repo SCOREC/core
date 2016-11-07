@@ -15,27 +15,6 @@
 
 namespace apf {
 
-int countDOFs(std::vector<Numbering*> const& n) {
-  int dofs = 0;
-  for (size_t f=0; f < n.size(); ++f)
-    dofs += countComponents(n[f]) * countNodes(n[f]);
-  return dofs;
-}
-
-void getElementNumbers(
-    std::vector<GlobalNumbering*> const& n,
-    MeshEntity* e,
-    std::vector<long>& numbers) {
-  /* prevent unneeded allocation? */
-  static NewArray<long> mixed_numbers;
-  numbers.resize(0);
-  for (size_t f=0; f < n.size(); ++f) {
-    int dofs = getElementNumbers(n[f], e, mixed_numbers);
-    for (int dof=0; dof < dofs; ++dof)
-      numbers.push_back(mixed_numbers[dof]);
-  }
-}
-
 static void verify_fields(std::vector<Field*> const& f) {
   assert(f.size() > 0);
   for (size_t i=0; i < f.size()-1; ++i) {
@@ -68,6 +47,47 @@ static void get_shapes(
     shapes[i] = getShape(fields[i]);
 }
 
+static void create_owned(
+    std::vector<Field*> const& fields,
+    std::vector<int> const& comps,
+    std::vector<Numbering*>& owned) {
+  Mesh* m = getMesh(fields[0]);
+  owned.resize(fields.size());
+  for (size_t i=0; i < fields.size(); ++i) {
+    std::ostringstream oss;
+    oss << "n_" << i;
+    const char* n = oss.str().c_str();
+    FieldShape* s = getShape(fields[i]);
+    owned[i] = createNumbering(m, n, s, comps[i]);
+  }
+}
+
+static void create_global(
+    std::vector<Numbering*> const& owned,
+    std::vector<GlobalNumbering*>& global) {
+  apf::Mesh* m = owned[0]->getMesh();
+  global.resize(owned.size());
+  for (size_t n=0; n < owned.size(); ++n) {
+    std::string name = owned[n]->getName();
+    name += "_global";
+    FieldShape* s = owned[n]->getShape();
+    int c = owned[n]->countComponents();
+    global[n] = createGlobalNumbering(m, name.c_str(), s, c);
+  }
+}
+
+static int get_highest_dof_dim(
+    std::vector<Field*> const& fields,
+    std::vector<FieldShape*> const& shapes) {
+  int hdim = 0;
+  Mesh* m = getMesh(fields[0]);
+  for (int d=0; d < m->getDimension(); ++d)
+    for (size_t f=0; f < fields.size(); ++f)
+      if (shapes[f]->hasNodesIn(d))
+        hdim = d;
+  return hdim;
+}
+
 static int count_owned_dofs(
     std::vector<Field*> const& fields,
     std::vector<int> const& comps,
@@ -93,33 +113,6 @@ static int count_owned_dofs(
     m->end(it);
   }
   return dofs;
-}
-
-static int get_highest_dof_dim(
-    std::vector<Field*> const& fields,
-    std::vector<FieldShape*> const& shapes) {
-  int hdim = 0;
-  Mesh* m = getMesh(fields[0]);
-  for (int d=0; d < m->getDimension(); ++d)
-    for (size_t f=0; f < fields.size(); ++f)
-      if (shapes[f]->hasNodesIn(d))
-        hdim = d;
-  return hdim;
-}
-
-static void create_owned(
-    std::vector<Field*> const& fields,
-    std::vector<int> const& comps,
-    std::vector<Numbering*>& owned) {
-  Mesh* m = getMesh(fields[0]);
-  owned.resize(fields.size());
-  for (size_t i=0; i < fields.size(); ++i) {
-    std::ostringstream oss;
-    oss << "n_" << i;
-    const char* n = oss.str().c_str();
-    FieldShape* s = getShape(fields[i]);
-    owned[i] = createNumbering(m, n, s, comps[i]);
-  }
 }
 
 static void number_ent(
@@ -175,20 +168,6 @@ static int number_owned(
   return dofs;
 }
 
-static void create_global(
-    std::vector<Numbering*> const& owned,
-    std::vector<GlobalNumbering*>& global) {
-  apf::Mesh* m = owned[0]->getMesh();
-  global.resize(owned.size());
-  for (size_t n=0; n < owned.size(); ++n) {
-    std::string name = owned[n]->getName();
-    name += "_global";
-    FieldShape* s = owned[n]->getShape();
-    int c = owned[n]->countComponents();
-    global[n] = createGlobalNumbering(m, name.c_str(), s, c);
-  }
-}
-
 static void globalize(
     int dofs,
     std::vector<Numbering*> const& owned,
@@ -206,6 +185,27 @@ static void globalize(
         number(global[f], nodes[n], idx, c);
       }
     }
+  }
+}
+
+int countDOFs(std::vector<Numbering*> const& n) {
+  int dofs = 0;
+  for (size_t f=0; f < n.size(); ++f)
+    dofs += countComponents(n[f]) * countNodes(n[f]);
+  return dofs;
+}
+
+void getElementNumbers(
+    std::vector<GlobalNumbering*> const& n,
+    MeshEntity* e,
+    std::vector<long>& numbers) {
+  /* prevent unneeded allocation? */
+  static NewArray<long> mixed_numbers;
+  numbers.resize(0);
+  for (size_t f=0; f < n.size(); ++f) {
+    int dofs = getElementNumbers(n[f], e, mixed_numbers);
+    for (int dof=0; dof < dofs; ++dof)
+      numbers.push_back(mixed_numbers[dof]);
   }
 }
 
