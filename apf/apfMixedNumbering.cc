@@ -55,10 +55,25 @@ static void create_owned(
   owned.resize(fields.size());
   for (size_t i=0; i < fields.size(); ++i) {
     std::ostringstream oss;
-    oss << "n_" << i;
+    oss << "owned_n_" << i;
     const char* n = oss.str().c_str();
     FieldShape* s = getShape(fields[i]);
     owned[i] = createNumbering(m, n, s, comps[i]);
+  }
+}
+
+static void create_ghost(
+    std::vector<Field*> const& fields,
+    std::vector<int> const& comps,
+    std::vector<Numbering*>& ghost) {
+  Mesh* m = getMesh(fields[0]);
+  ghost.resize(fields.size());
+  for (size_t i=0; i < fields.size(); ++i) {
+    std::ostringstream oss;
+    oss << "ghost_n_" << i;
+    const char* n = oss.str().c_str();
+    FieldShape* s = getShape(fields[i]);
+    ghost[i] = createNumbering(m, n, s, comps[i]);
   }
 }
 
@@ -110,6 +125,27 @@ static int count_owned_dofs(
   return dofs;
 }
 
+static int count_ghost_dofs(
+    std::vector<Field*> const& fields,
+    std::vector<int> const& comps,
+    std::vector<FieldShape*> const& shapes) {
+  int dofs = 0;
+  Mesh* m = getMesh(fields[0]);
+  MeshEntity* ent = 0;
+  MeshIterator* it = 0;
+  int hdim = get_highest_dof_dim(fields, shapes);
+  for (int d=0; d <= hdim; ++d) {
+    it = m->begin(d);
+    while ((ent = m->iterate(it))) {
+      int t = m->getType(ent);
+      for (size_t f=0; f < fields.size(); ++f)
+        dofs += shapes[f]->countNodesOn(t)*comps[f];
+    }
+    m->end(it);
+  }
+  return dofs;
+}
+
 static void number_ent(
     int& idx,
     MeshEntity* ent,
@@ -142,7 +178,6 @@ static int number_owned(
   int dofs = count_owned_dofs(fields, comps, shapes);
   int hdim = get_highest_dof_dim(fields, shapes);
   int idx = 0;
-  create_owned(fields, comps, owned);
   Mesh* m = getMesh(fields[0]);
   MeshEntity* vtx = 0;
   MeshIterator* verts = m->begin(0);
@@ -163,12 +198,38 @@ static int number_owned(
   return dofs;
 }
 
+static int number_ghost(
+    std::vector<Field*> const& fields,
+    std::vector<int> const& comps,
+    std::vector<FieldShape*> const& shapes,
+    std::vector<Numbering*>& ghost) {
+  int dofs = count_ghost_dofs(fields, comps, shapes);
+  int hdim = get_highest_dof_dim(fields, shapes);
+  int idx = 0;
+  Mesh* m = getMesh(fields[0]);
+  MeshEntity* vtx = 0;
+  MeshIterator* verts = m->begin(0);
+  Adjacent adjacent;
+  while ((vtx = m->iterate(verts))) {
+    number_ent(idx, vtx, fields, comps, shapes, ghost);
+    for (int d=1; d <= hdim; ++d) {
+      m->getAdjacent(vtx, d, adjacent);
+      APF_ITERATE(Adjacent, adjacent, ent) {
+        if (! is_ent_numbered(*ent, ghost))
+          number_ent(idx, *ent, fields, comps, shapes, ghost);
+      }
+    }
+  }
+  m->end(verts);
+  assert(idx == dofs);
+  return dofs;
+}
+
 static void globalize(
     int dofs,
     std::vector<Numbering*> const& owned,
     std::vector<GlobalNumbering*>& global) {
   long start = PCU_Exscan_Long(long(dofs));
-  create_global(owned, global);
   DynamicArray<Node> nodes;
   for (size_t f=0; f < global.size(); ++f) {
     getNodes(owned[f], nodes);
@@ -177,7 +238,8 @@ static void globalize(
       apf::MeshEntity* ent = nodes[n].entity;
       for (int c=0; c < global[f]->countComponents(); ++c) {
         long idx = start + getNumber(owned[f], ent, node, c);
-        number(global[f], nodes[n], idx, c);
+        apf::Node gnode(ent, node);
+        number(global[f], gnode, idx, c);
       }
     }
   }
@@ -191,11 +253,11 @@ int countDOFs(std::vector<Numbering*> const& n) {
 }
 
 void getElementNumbers(
-    std::vector<GlobalNumbering*> const& n,
+    std::vector<Numbering*> const& n,
     MeshEntity* e,
-    std::vector<long>& numbers) {
+    std::vector<int>& numbers) {
   /* prevent unneeded allocation? */
-  static NewArray<long> mixed_numbers;
+  static NewArray<int> mixed_numbers;
   numbers.resize(0);
   for (size_t f=0; f < n.size(); ++f) {
     int dofs = getElementNumbers(n[f], e, mixed_numbers);
@@ -206,27 +268,36 @@ void getElementNumbers(
 
 int numberOwned(
     std::vector<Field*> const& fields,
-    std::vector<Numbering*>& n) {
+    std::vector<Numbering*>& owned) {
   verify_fields(fields);
   std::vector<int> components;
   std::vector<FieldShape*> shapes;
   get_components(fields, components);
   get_shapes(fields, shapes);
-  int dofs = number_owned(fields, components, shapes, n);
+  create_owned(fields, components, owned);
+  int dofs = number_owned(fields, components, shapes, owned);
+  return dofs;
+}
+
+int numberGhost(
+    std::vector<Field*> const& fields,
+    std::vector<Numbering*>& ghost) {
+  verify_fields(fields);
+  std::vector<int> components;
+  std::vector<FieldShape*> shapes;
+  get_components(fields, components);
+  get_shapes(fields, shapes);
+  create_ghost(fields, components, ghost);
+  int dofs = number_ghost(fields, components, shapes, ghost);
   return dofs;
 }
 
 void makeGlobal(
-    std::vector<Numbering*>& local,
-    std::vector<GlobalNumbering*>& global,
-    bool destroy) {
-  int dofs = countDOFs(local);
-  globalize(dofs, local, global);
-  if (destroy) {
-    for (size_t f=0; f < local.size(); ++f)
-      apf::destroyNumbering(local[f]);
-    local.resize(0);
-  }
+    std::vector<Numbering*>& owned,
+    std::vector<GlobalNumbering*>& global) {
+  int dofs = countDOFs(owned);
+  create_global(owned, global);
+  globalize(dofs, owned, global);
 }
 
 }
