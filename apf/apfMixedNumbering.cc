@@ -15,22 +15,19 @@
 
 namespace apf {
 
-int countDOFs(std::vector<GlobalNumbering*> const& n) {
+int countDOFs(std::vector<Numbering*> const& n) {
   int dofs = 0;
-  for (size_t f=0; f < n.size(); ++f) {
-    apf::GlobalNumbering* numbering = n[f];
-    dofs += countComponents(numbering) * countNodes(numbering);
-  }
+  for (size_t f=0; f < n.size(); ++f)
+    dofs += countComponents(n[f]) * countNodes(n[f]);
   return dofs;
 }
-
-/* prevent unneeded allocation? */
-NewArray<long> mixed_numbers;
 
 void getElementNumbers(
     std::vector<GlobalNumbering*> const& n,
     MeshEntity* e,
     std::vector<long>& numbers) {
+  /* prevent unneeded allocation? */
+  static NewArray<long> mixed_numbers;
   numbers.resize(0);
   for (size_t f=0; f < n.size(); ++f) {
     int dofs = getElementNumbers(n[f], e, mixed_numbers);
@@ -192,7 +189,7 @@ static void create_global(
   }
 }
 
-static void make_global(
+static void globalize(
     int dofs,
     std::vector<Numbering*> const& owned,
     std::vector<GlobalNumbering*>& global) {
@@ -210,22 +207,31 @@ static void make_global(
       }
     }
   }
-  for (size_t f=0; f < owned.size(); ++f)
-    apf::destroyNumbering(owned[f]);
 }
 
-int numberMixed(
+int numberOwned(
     std::vector<Field*> const& fields,
-    std::vector<GlobalNumbering*>& numberings) {
+    std::vector<Numbering*>& n) {
   verify_fields(fields);
   std::vector<int> components;
   std::vector<FieldShape*> shapes;
-  std::vector<Numbering*> owned;
   get_components(fields, components);
   get_shapes(fields, shapes);
-  int dofs = number_owned(fields, components, shapes, owned);
-  make_global(dofs, owned, numberings);
+  int dofs = number_owned(fields, components, shapes, n);
   return dofs;
+}
+
+void makeGlobal(
+    std::vector<Numbering*>& local,
+    std::vector<GlobalNumbering*>& global,
+    bool destroy) {
+  int dofs = countDOFs(local);
+  globalize(dofs, local, global);
+  if (destroy) {
+    for (size_t f=0; f < local.size(); ++f)
+      apf::destroyNumbering(local[f]);
+    local.resize(0);
+  }
 }
 
 }
