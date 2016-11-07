@@ -116,7 +116,8 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::adapt(in, m);
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  plan = ph::split(in, m);
+  if (in.simmetrixMesh == 0)
+    plan = ph::split(in, m);
 }
 
 }//end namespace
@@ -178,9 +179,9 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    ph::migrateInterfaceItr(m, bcs);
-    if(in.timeStepNumber > 0)
-      ph::checkReorder(m,in,PCU_Comm_Peers());
+    if(PCU_Comm_Peers() > 1)
+      ph::migrateInterfaceItr(m, bcs);
+    ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber,in.ramdisk);
     std::string path = ph::setupOutputDir(in.ramdisk);
@@ -233,16 +234,12 @@ namespace chef {
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
     switchToMasters(in.splitFactor);
-    const int numMasters = PCU_Comm_Peers();
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll();
-    if (in.simmetrixMesh == 0) {
+    if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
-      ph::balanceAndReorder(m,in,numMasters);
-    } else {
-      ph::checkBalance(m,in);
-    }
+    ph::checkBalance(m,in);
     ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {

@@ -29,6 +29,9 @@ message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
 
+option(BUILD_EXES "Build executables" ON)
+message(STATUS "BUILD_EXES: ${BUILD_EXES}")
+
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
 set(MPIRUN_PROCFLAG "-np" CACHE string
@@ -57,6 +60,8 @@ set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
@@ -68,6 +73,13 @@ endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
+endif()
+
+if(ENABLE_OMEGA_H)
+  # find the omega_h library
+  set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
+  set(Omega_h_REQUIRED_VERSION 5.1.0)
+  bob_public_dep(Omega_h)
 endif()
 
 # Include the SCOREC project packages
@@ -97,6 +109,8 @@ add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
 scorec_export_library(core)
 
-add_subdirectory(test)
+if(BUILD_EXES)
+  add_subdirectory(test)
+endif()
 
 bob_end_package()

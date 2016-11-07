@@ -862,7 +862,10 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
     return;
   }
   int n = PList_size(l);
-  m.setSize(n - 1);
+  if(EN_isOwnerProc(ent))
+    m.setSize(n - 1);
+  else
+    m.setSize(n);
   int j = 0;
   for (int i = 0; i < n; ++i)
   {
@@ -876,7 +879,7 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
     m[j].entity = reinterpret_cast<MeshEntity*>(match_ent);
     j++;
   }
-  assert(j == n - 1);
+  assert(EN_isOwnerProc(ent)?j == n - 1:j == n);
   PList_delete(l);
 }
 

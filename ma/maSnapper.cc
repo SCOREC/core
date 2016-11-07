@@ -12,6 +12,7 @@
 #include "maShapeHandler.h"
 #include <apfCavityOp.h>
 #include <cassert>
+#include <iostream>
 
 namespace ma {
 
@@ -22,6 +23,7 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is)
   collapse.Init(a);
   isSimple = is;
   dug = false;
+  toFPP = false;
   vert = 0;
 }
 
@@ -153,19 +155,306 @@ static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
   return ok;
 }
 
+static bool trySnappingToFPP(Adapt* adapter, Tag* st, Entity* vert,
+    apf::Up& badElements)
+{
+  // to be completed ...
+  // make a FPPSnapper Object
+  FPPSnapper fpps(adapter, st, vert, badElements);
+  /* return fpps.findFPP() ? fpps.snapToFPP() : false; */
+  return true;
+}
+
+
 bool Snapper::run()
 {
   dug = false;
+  toFPP = false;
   apf::Up badElements;
   bool ok = trySnapping(adapter, snapTag, vert, badElements);
   if (isSimple)
     return ok;
   if (ok)
     return true;
+  toFPP = trySnappingToFPP(adapter, snapTag, vert, badElements);
+  if (!toFPP)
+    return false;
   dug = tryDigging(adapter, collapse, vert, badElements);
   if (!dug)
     return false;
   return trySnapping(adapter, snapTag, vert, badElements);
+}
+
+
+FPPSnapper::FPPSnapper(Adapt* a, Tag* st, Entity* v, apf::Up& badElems)
+{
+  adapter = a;
+  snapTag = st;
+  collapse.Init(a);
+  vert = v;
+  badElements.n = badElems.n;
+  for (int i = 0; i < badElems.n; i++) {
+    badElements.e[i] = badElems.e[i];
+  }
+  problemFace = 0;
+  problemRegion = 0;
+  commEdges.n = 0;
+  tol = 1.0e-14;
+}
+
+bool FPPSnapper::findFPP()
+{
+  Mesh* mesh = adapter->mesh;
+  std::vector<double> dists;
+  double minDist = 1.0e6;
+
+  // determine distances to all possible problem faces, the shortest
+  // distance and its intersection on first problem plane (FPP)
+  int n = badElements.n;
+  Entity* elem;
+  Entity* face;
+  std::vector<Vector> coords;
+  Ray ray;
+  Vector target;
+  mesh->getDoubleTag(vert, snapTag, &target[0]);
+
+  ray.start = getPosition(mesh, vert);
+  ray.dir   = target - ray.start;
+
+  for (int i = 0; i < n; i++) {
+    elem = badElements.e[i];
+    face = faceOppositeOfVert(elem, vert);
+    getFaceCoords(face, coords);
+    Vector intersect;
+    bool isInf;
+    bool ok = intersectRayFace(ray, coords, intersect, isInf);
+    if (ok){
+      if (isInf)
+      	std::cout << "Error: could not find a first problem plane!" <<
+      	  std::endl;
+      Vector newDirection = intersect - ray.start;
+      dists.push_back(newDirection.getLength());
+      if (dists.back() < minDist) {
+      	minDist = dists.back();
+      	problemFace = face;
+      	problemRegion = elem;
+      	intersection = intersect;
+      	// do not need to check whether the move is valid since the valid
+      	// ones should have been taken care of by this point
+      }
+      else
+      	dists.push_back(minDist + 1.0 + tol);
+    }
+  }
+
+  //////////
+  // this is from old meshAdapt
+  // but here since we have digging afterwards there should be
+  // no need for this
+  //////////
+  /* apf::Up coplanarBadElements; */
+  /* coplanarBadElements.n = 0; */
+  /* if (!problemRegion) { */
+  /*   problemRegion = badElements.e[0]; */
+  /*   problemFace = faceOppositeOfVert(problemRegion, vert); */
+  /*   coplanarBadElements.n = badElements.n; */
+  /*   for (int i = 0; i < badElements.n; i++) { */
+  /*     coplanarBadElements.e[i] = badElements.e[i]; */
+  /*   } */
+  /* } */
+  /* else */
+  /* { */
+  /*   minDist += tol; */
+  /*   for (int i = 0; i < badElements.n; i++) { */
+  /*     if (dists[i] < minDist) { */
+  /*     	coplanarBadElements.n++; */
+  /*     	coplanarBadElements.e[i] = badElements.e[i]; */
+  /*     } */
+  /*   } */
+  /* } */
+
+  if (!problemRegion)
+    return false;
+
+  apf::Up coplanarBadElements;
+  coplanarBadElements.n = 0;
+  minDist += tol;
+  for (int i = 0; i < badElements.n; i++) {
+    if (dists[i] < minDist) {
+      coplanarBadElements.n++;
+      coplanarBadElements.e[i] = badElements.e[i];
+    }
+  }
+
+  findCommonEdges(coplanarBadElements);
+  return true;
+}
+
+bool FPPSnapper::snapToFPP()
+{
+  // to be completed
+  bool snapped = false;
+  return snapped || true;
+}
+
+Entity* FPPSnapper::faceOppositeOfVert(Entity* e, Entity* v)
+{
+  Mesh* mesh = adapter->mesh;
+  Downward faces;
+  Entity* oppositeFace = 0;
+  int nDownFaces = mesh->getDownward(e, 2, faces);
+  for (int i = 0; i < nDownFaces; i++) {
+    Downward verts;
+    int nDownVerts = mesh->getDownward(faces[i], 0, verts);
+    int j;
+    for (j = 0; j < nDownVerts; j++) {
+      if (v == verts[j])
+      	break;
+    }
+    if (j == nDownVerts)
+      oppositeFace = faces[i];
+    else
+      continue;
+  }
+  return oppositeFace;
+}
+
+void FPPSnapper::getFaceCoords(Entity* face, std::vector<Vector>& coords)
+{
+  Mesh* mesh = adapter->mesh;
+  Downward verts;
+  int nDownVerts = mesh->getDownward(face, 0, verts);
+  assert(nDownVerts);
+  for (int i = 0; i < nDownVerts; i++)
+    coords.push_back(getPosition(mesh, verts[i]));
+}
+
+bool
+FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
+    Vector& intersection, bool& isInf)
+{
+  bool res = false;
+  isInf = false;
+  if (coords.size() != 3){
+    std::cout << "No implementation for non-tri faces!" << std::endl;
+    res = false;
+  }
+
+  assert(ray.dir.getLength() > tol);
+  Vector start = ray.start;
+  Vector dir   = ray.dir;
+
+  Vector p0p1 = coords[1] - coords[0];
+  Vector p0p2 = coords[2] - coords[0];
+  Vector startP0 = coords[0] - start;
+
+  Vector faceAreaVect = apf::cross(p0p1, p0p2);
+  double faceAreaSize = faceAreaVect.getLength();
+
+  double vol = dir * faceAreaVect;
+  double volPrime = startP0 * faceAreaVect;
+
+  if (vol <= tol * faceAreaSize) {
+    if (volPrime <= tol * faceAreaSize) {
+      isInf = true;
+      res = true;
+    }
+    else
+      res = false;
+  }
+  else {
+    intersection = start - dir * (volPrime / vol);
+    Vector newDir = start - intersection;
+    if (newDir * dir < 0)
+      res = false;
+    else
+      res = true;
+  }
+  return res;
+}
+
+void FPPSnapper::findCommonEdges(apf::Up& coplanarBadElems)
+{
+  Mesh* mesh = adapter->mesh;
+  if (coplanarBadElems.n == 1) {
+    Downward edges;
+    int nDownEdges = mesh->getDownward(coplanarBadElems.e[0], 1, edges);
+    for (int i = 0; i < nDownEdges; i++) {
+      if (isLowInHigh(mesh, edges[i], vert)) {
+	commEdges.e[commEdges.n] = edges[i];
+	commEdges.n++;
+      }
+    }
+    return;
+  }
+  // determine the problem face closest to intersection
+  Entity* region;
+  Entity* tmpRegion;
+  Entity* face;
+
+  Vector ctrToIntersect = getCenter(mesh, problemFace) - intersection;
+  double minDist = ctrToIntersect.getLength();
+  tmpRegion = problemRegion;
+
+  for (int i = 0; i < coplanarBadElems.n; i++) {
+    region = coplanarBadElems.e[i];
+    if (region == tmpRegion) continue;
+    face = faceOppositeOfVert(region, vert);
+    ctrToIntersect = getCenter(mesh, face) - intersection;
+    double dist = ctrToIntersect.getLength();
+    if (dist < minDist) {
+      minDist = dist;
+      problemFace = face;
+      problemRegion = region;
+    }
+  }
+
+  Downward edges;
+  int flag = 0;
+  int nDownEdges = mesh->getDownward(problemRegion, 1, edges);
+  for (int i = 0; i < nDownEdges; i++) {
+    if (isLowInHigh(mesh, edges[i], vert)) {
+      flag = 1;
+      for (int j = 0; j < coplanarBadElems.n; j++) {
+      	region = coplanarBadElems.e[j];
+      	if (region == problemRegion) continue;
+      	if (!isLowInHigh(mesh, region, edges[i])) {
+      	  flag = 0;
+      	  break;
+	}
+	if (flag) {
+	  commEdges.e[commEdges.n] = edges[i];
+	  commEdges.n++;
+	}
+      }
+    }
+  }
+}
+
+Vector getCenter(Mesh* mesh, Entity* face)
+{
+  assert(face);
+  Downward verts;
+  int nDownVerts = mesh->getDownward(face, 0, verts);
+  assert(nDownVerts == 3);
+  Vector center(0., 0., 0.);
+  for (int i = 0; i < nDownVerts; i++)
+    center += getPosition(mesh, verts[i]);
+
+  center = center / 3.;
+  return center;
+}
+
+bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt)
+{
+  assert(mesh->getType(highEnt) > mesh->getType(lowEnt));
+  Downward down;
+  int nDown = mesh->getDownward(highEnt, apf::getDimension(mesh, lowEnt), down);
+  for (int i = 0; i < nDown; i++) {
+    if (lowEnt == down[i])
+      return true;
+  }
+  return false;
 }
 
 }

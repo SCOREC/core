@@ -19,10 +19,18 @@ static void test_numbering(apf::Mesh* m) {
   std::vector<apf::Field*> fields(2);
   fields[0] = f1;
   fields[1] = f2;
-  std::vector<apf::GlobalNumbering*> numbers;
-  apf::numberMixed(fields, numbers);
-  for (size_t n=0; n < numbers.size(); ++n)
-    apf::synchronize(numbers[n]);
+  std::vector<apf::Numbering*> local;
+  std::vector<apf::GlobalNumbering*> global;
+  int owned = apf::numberOwned(fields, local);
+  makeGlobal(local, global);
+  PCU_Debug_Open();
+  PCU_Debug_Print("number owned: %d\n", owned);
+  for (size_t n=0; n < global.size(); ++n) {
+    apf::synchronize(local[n]);
+    apf::synchronize(global[n]);
+  }
+  int ghost = apf::countDOFs(local);
+  PCU_Debug_Print("number ghost: %d\n", ghost);
 }
 
 static void write_output(apf::Mesh* m, const char* out) {

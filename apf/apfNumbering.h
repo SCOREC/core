@@ -163,6 +163,8 @@ FieldShape* getShape(GlobalNumbering* n);
 const char* getName(GlobalNumbering* n);
 /** \brief get the mesh associated with a global numbering */
 Mesh* getMesh(GlobalNumbering* n);
+/** \brief get the components associated with a global numbering */
+int countComponents(GlobalNumbering* n);
 /** \brief assign a global number */
 void number(GlobalNumbering* n, Node node, long number, int component=0);
 /** \brief get a global number */
@@ -174,6 +176,7 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers);
 
 /** \brief converts a local numbering into a global numbering.
+  \param destroy Should the input Numbering* be destroyed?
   \details
    the original local numbering is destroyed.
    All local numbers are increased by an offset;
@@ -190,7 +193,7 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
    numbering completes the typical process which leaves all nodes
    (owned and not) with a global number attached.
  */
-GlobalNumbering* makeGlobal(Numbering* n);
+GlobalNumbering* makeGlobal(Numbering* n, bool destroy=true);
 
 /** \brief see the Numbering equivalent and apf::makeGlobal */
 void synchronize(GlobalNumbering* n, Sharing* shr = 0);
