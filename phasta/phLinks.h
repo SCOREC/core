@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <apfNumbering.h>
+#include <phBC.h>
 #include "apfZoltan.h"
 
 namespace ph {
@@ -20,7 +21,7 @@ typedef std::vector<apf::MeshEntity*> Link;
 
 typedef std::map<LinkKey, Link> Links;
 
-void getLinks(apf::Mesh* m, int dim, Links& links);
+void getLinks(apf::Mesh* m, int dim, Links& links, ph::BCs& bcs);
 
 void encodeILWORK(apf::Numbering* n, Links& links, int& size, int*& a);
 
