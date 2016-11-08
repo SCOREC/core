@@ -377,7 +377,7 @@ static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
     return e;
 }
 
-static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
+static void getLocalPeriodicMasters(Output& o, apf::Numbering* n, BCs& bcs)
 {
   apf::Mesh* m = o.mesh;
   int* iper = new int[m->count(0)];
@@ -386,8 +386,10 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
   apf::MatchedSharing* sh = m->hasMatching() ? new apf::MatchedSharing(m) : 0;
   int i = 0;
   while ((e = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(e);
+    bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
     apf::MeshEntity* master = getLocalPeriodicMaster(sh, e);
-    if (master == e)
+    if (master == e || isDG)
       iper[i] = 0;
     else
       iper[i] = apf::getNumber(n, master, 0, 0) + 1;
@@ -649,7 +651,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
-  getLocalPeriodicMasters(o, n);
+  getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
