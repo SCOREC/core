@@ -2,6 +2,7 @@
 #include "phLinks.h"
 #include "phAdjacent.h"
 #include <apf.h>
+#include <phInterfaceCutter.h>
 #include <cassert>
 
 namespace ph {
@@ -95,11 +96,7 @@ void getLinks(apf::Mesh* m, int dim, Links& links, BCs& bcs)
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(v);
-    shr.isDG = getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) != 0;
-//debugging
-    if (shr.isDG == 0)
-      printf("find one: dim == %d\n",dim);
-//end debugging
+    shr.isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
 /* the alignment is such that the owner part's
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
