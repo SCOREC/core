@@ -21,26 +21,41 @@ namespace apf {
 typedef NumberingOf<long> GlobalNumbering;
 
 /** \brief Count the total numbered degrees of freedom.
-  * \param n The input global numberings.
+  * \param n The input local numberings.
   * \returns The number of on-part numbered degrees of freedom */
-int countDOFs(std::vector<GlobalNumbering*> const& n);
+int countDOFs(std::vector<Numbering*> const& n);
 
 /** \brief Get the element numbers for multiple numberings.
   * \param n The input global numberings.
   * \param e The mesh entity for which to get element numbers.
   * \param numbers the output element numbers. */
 void getElementNumbers(
-    std::vector<GlobalNumbering*> const& n,
+    std::vector<Numbering*> const& n,
     MeshEntity* e,
     std::vector<long>& numbers);
 
-/** \brief Number owned nodes of multiple fields.
+/** \brief Number the owned nodes of multiple fields.
   * \param fields The input fields to be numbered.
-  * \param n The output global numberings corresponding to the fields.
+  * \param owned The output local owned numberings.
   * \returns The number of on-part owned nodes across all fields. */
-int numberMixed(
+int numberOwned(
     std::vector<Field*> const& fields,
-    std::vector<GlobalNumbering*>& n);
+    std::vector<Numbering*>& owned);
+
+/** \brief Number the ghost (overlapped/shared) nodes of multiple fields.
+  * \param fields The input fields to be numbered.
+  * \param ghost The output local ghost numberings.
+  * \returns The number of on-part ghost nodes across all fields. */
+int numberGhost(
+    std::vector<Field*> const& fields,
+    std::vector<Numbering*>& ghost);
+
+/** \brief Globalize a mixed numbering scheme.
+  * \param owned The local owned on-part numberings.
+  * \param global The output global numberings. */
+void makeGlobal(
+    std::vector<Numbering*>& owned,
+    std::vector<GlobalNumbering*>& global);
 
 }
 

@@ -50,21 +50,23 @@ class HasAll : public FieldOp
     FieldBase* f;
 };
 
-static bool isPrintable(
+static bool shouldPrint(
     FieldBase* f,
     std::vector<std::string> writeFields)
 {
-  bool inWriteFields = false;
+  bool print = false;
   std::string fieldName = f->getName();
-  for (unsigned int i = 0; i < writeFields.size(); i++)
-  {
+  for (size_t i=0; i < writeFields.size(); ++i)
     if (fieldName == writeFields[i])
-    {
-      inWriteFields = true;
-    }
-  }
+      print = true;
+  return print;
+}
+
+static bool isPrintable(FieldBase* f)
+{
   HasAll op;
-  return inWriteFields && op.run(f);
+  bool local = op.run(f);
+  return (! PCU_Or(! local));
 }
 
 static bool isNodal(FieldBase* f)
@@ -149,7 +151,7 @@ static void writePPointData(std::ostream& file,
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
-    if (isNodal(f) && isPrintable(f,writeFields))
+    if (isNodal(f) && shouldPrint(f,writeFields))
     {
       writePDataArray(file,f,isWritingBinary);
     }
@@ -157,7 +159,7 @@ static void writePPointData(std::ostream& file,
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
-    if (isNodal(n) && isPrintable(n,writeFields))
+    if (isNodal(n) && shouldPrint(n,writeFields))
     {
       writePDataArray(file,n,isWritingBinary);
     }
@@ -165,7 +167,7 @@ static void writePPointData(std::ostream& file,
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
-    if (isNodal(n) && isPrintable(n,writeFields))
+    if (isNodal(n) && shouldPrint(n,writeFields))
     {
       writePDataArray(file,n,isWritingBinary);
     }
@@ -222,7 +224,7 @@ static void writePCellData(std::ostream& file,
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
-    if (isIP(f) && isPrintable(f,writeFields))
+    if (isIP(f) && shouldPrint(f,writeFields))
     {
       writeIP_PCellData(file,f,isWritingBinary);
     }
@@ -230,7 +232,7 @@ static void writePCellData(std::ostream& file,
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
-    if (isIP(n) && isPrintable(n,writeFields))
+    if (isIP(n) && shouldPrint(n,writeFields))
     {
       writeIP_PCellData(file,n,isWritingBinary);
     }
@@ -238,7 +240,7 @@ static void writePCellData(std::ostream& file,
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
-    if (isIP(n) && isPrintable(n,writeFields))
+    if (isIP(n) && shouldPrint(n,writeFields))
     {
       writeIP_PCellData(file,n,isWritingBinary);
     }
@@ -629,7 +631,7 @@ static void writePointData(std::ostream& file,
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
-    if (isNodal(f) && isPrintable(f,writeFields))
+    if (isNodal(f) && shouldPrint(f,writeFields))
     {
       writeNodalField<double>(file,f,nodes,isWritingBinary);
     }
@@ -637,7 +639,7 @@ static void writePointData(std::ostream& file,
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
-    if (isNodal(n) && isPrintable(n,writeFields))
+    if (isNodal(n) && shouldPrint(n,writeFields))
     {
       writeNodalField<int>(file,n,nodes,isWritingBinary);
     }
@@ -645,7 +647,7 @@ static void writePointData(std::ostream& file,
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
-    if (isNodal(n) && isPrintable(n,writeFields))
+    if (isNodal(n) && shouldPrint(n,writeFields))
     {
       writeNodalField<long>(file,n,nodes,isWritingBinary);
     }
@@ -787,7 +789,7 @@ static void writeCellData(std::ostream& file,
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
-    if (isIP(f) && isPrintable(f,writeFields))
+    if (isIP(f) && shouldPrint(f,writeFields))
     {
       wd.run(file,f,isWritingBinary);
     }
@@ -796,7 +798,7 @@ static void writeCellData(std::ostream& file,
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
-    if (isIP(n) && isPrintable(n,writeFields))
+    if (isIP(n) && shouldPrint(n,writeFields))
     {
       wi.run(file,n,isWritingBinary);
     }
@@ -805,7 +807,7 @@ static void writeCellData(std::ostream& file,
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
-    if (isIP(n) && isPrintable(n,writeFields))
+    if (isIP(n) && shouldPrint(n,writeFields))
     {
       wl.run(file,n,isWritingBinary);
     }
@@ -958,17 +960,20 @@ std::vector<std::string> populateWriteFields(Mesh* m)
   for (int i=0; i < m->countFields(); ++i)
   {
     Field* f = m->getField(i);
-    writeFields.push_back(f->getName());
+    if (isPrintable(f))
+      writeFields.push_back(f->getName());
   }
   for (int i=0; i < m->countNumberings(); ++i)
   {
     Numbering* n = m->getNumbering(i);
-    writeFields.push_back(n->getName());
+    if (isPrintable(n))
+      writeFields.push_back(n->getName());
   }
   for (int i=0; i < m->countGlobalNumberings(); ++i)
   {
     GlobalNumbering* n = m->getGlobalNumbering(i);
-    writeFields.push_back(n->getName());
+    if (isPrintable(n))
+      writeFields.push_back(n->getName());
   }
   return writeFields;
 }
