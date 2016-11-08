@@ -194,7 +194,8 @@ namespace ph {
       m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
-    if (in.adaptFlag && (in.timeStepNumber % in.writeVizFiles == 0) ) {
+    if ( (in.adaptFlag && (in.timeStepNumber % in.writeGeomBCFiles == 0) ) ||
+         (in.timeStepNumber == 0 && in.writeGeomBCFiles > 0) ) {
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
