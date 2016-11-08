@@ -191,6 +191,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 bool checkInterface(Output& o, BCs& bcs) {
+  o.hasDGInterface = 0;
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
 
