@@ -16,17 +16,22 @@ static void test_numbering(apf::Mesh* m) {
   apf::Field* f2 = apf::createField(m, "p", apf::SCALAR, S1);
   apf::zeroField(f1);
   apf::zeroField(f2);
-  std::vector<apf::Field*> fields(2);
-  fields[0] = f1;
-  fields[1] = f2;
-  std::vector<apf::GlobalNumbering*> numbers;
-  int owned = apf::numberMixed(fields, numbers);
+  std::vector<apf::Field*> fields;
+  fields.push_back(f1);
+  fields.push_back(f2);
+  std::vector<apf::Numbering*> owned;
+  std::vector<apf::Numbering*> ghost;
+  std::vector<apf::GlobalNumbering*> global;
+  int num_owned = apf::numberOwned(fields, owned);
+  int num_ghost = apf::numberGhost(fields, ghost);
+  apf::makeGlobal(owned, global);
+  for (size_t n=0; n < owned.size(); ++n)
+    apf::destroyNumbering(owned[n]);
+  for (size_t n=0; n < global.size(); ++n)
+    apf::synchronize(global[n]);
   PCU_Debug_Open();
-  PCU_Debug_Print("number owned: %d\n", owned);
-  for (size_t n=0; n < numbers.size(); ++n)
-    apf::synchronize(numbers[n]);
-  int ghost = apf::countDOFs(numbers);
-  PCU_Debug_Print("number ghost: %d\n", ghost);
+  PCU_Debug_Print("number owned: %d\n", num_owned);
+  PCU_Debug_Print("number ghost: %d\n", num_ghost);
 }
 
 static void write_output(apf::Mesh* m, const char* out) {
