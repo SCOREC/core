@@ -2,6 +2,7 @@
 #include "phLinks.h"
 #include "phAdjacent.h"
 #include <apf.h>
+#include <phInterfaceCutter.h>
 #include <cassert>
 
 namespace ph {
@@ -20,21 +21,28 @@ struct PhastaSharing : public apf::Sharing {
   PhastaSharing(apf::Mesh* m)
   {
     mesh = m;
-    helper = apf::getSharing(m);
+    helperN = new apf::NormalSharing(m);
+    helperM = new apf::MatchedSharing(m);
   }
   ~PhastaSharing()
   {
-    delete helper;
+    delete helperN;
+    delete helperM;
   }
   bool isOwned(apf::MeshEntity* e)
   {
-    return helper->isOwned(e);
+    if (isDG)
+      return helperN->isOwned(e);
+    return helperM->isOwned(e);
   }
   /* this will only be called for global masters */
   void getCopies(apf::MeshEntity* e,
       apf::CopyArray& copies)
   {
-    helper->getCopies(e, copies);
+    if (isDG)
+      helperN->getCopies(e, copies);
+    else
+      helperM->getCopies(e, copies);
     if ( ! mesh->hasMatching())
       return;
     /* filter out matches which are on the same part as the global master */
@@ -47,10 +55,14 @@ struct PhastaSharing : public apf::Sharing {
   }
   bool isShared(apf::MeshEntity* e)
   {
-    return helper->isShared(e);
+    if (isDG)
+      return helperN->isShared(e);
+    return helperM->isShared(e);
   }
   apf::Mesh* mesh;
-  apf::Sharing* helper;
+  apf::Sharing* helperN;
+  apf::Sharing* helperM;
+  bool isDG;
 };
 
 /* this algorithm is essential to parallel
@@ -76,13 +88,15 @@ struct PhastaSharing : public apf::Sharing {
    of this code.
 */
 
-void getLinks(apf::Mesh* m, int dim, Links& links)
+void getLinks(apf::Mesh* m, int dim, Links& links, BCs& bcs)
 {
   PhastaSharing shr(m);
   PCU_Comm_Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(v);
+    shr.isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
 /* the alignment is such that the owner part's
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
