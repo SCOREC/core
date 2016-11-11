@@ -199,9 +199,11 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   for (int i = 0; i < known_cell_field_count; ++i)
     if (!strcmp(fieldname, known_cell_fields[i]))
       return false;
-  fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
-  fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
-      fieldname, __LINE__, __FILE__);
+  if( !PCU_Comm_Self() ) {
+    fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
+    fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
+        fieldname, __LINE__, __FILE__);
+  }
   if (static_cast<size_t>(nnodes) == m->count(0)) {
     fprintf(stderr, "assuming \"%s\" is a nodal field,\n"
                     "it is the right size...\n", fieldname);

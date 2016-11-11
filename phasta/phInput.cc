@@ -54,7 +54,7 @@ static void setDefaults(Input& in)
   in.axisymmetry = 0;
   in.parmaLoops = 3; //a magical value
   in.parmaVerbosity = 1; //fairly quiet
-  in.writeVizFiles = 1;
+  in.writeGeomBCFiles = 1;
   in.ramdisk = 0;
   in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
@@ -121,7 +121,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["axisymmetry"] = &in.axisymmetry;
   intMap["parmaLoops"] = &in.parmaLoops;
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
-  intMap["writeVizFiles"] = &in.writeVizFiles;
+  intMap["writeGeomBCFiles"] = &in.writeGeomBCFiles;
   intMap["ramdisk"] = &in.ramdisk;
   dblMap["meshqCrtn"] = &in.meshqCrtn;
   dblMap["elementImbalance"] = &in.elementImbalance;
