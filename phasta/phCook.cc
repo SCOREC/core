@@ -79,6 +79,7 @@ static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
       if (PCU_Comm_Self()==0)
         fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
       in.simmetrixMesh = 1;
+      in.filterMatches = 0; //not support
     }
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);

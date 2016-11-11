@@ -18,16 +18,20 @@
 // as the desired partitions.
 //
 // Dan Fovargue - Feb 2014
+// Fan Yang     - Nov 2016
 //
-
+#ifdef HAVE_SIMMETRIX
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
+#include "SimParasolidKrnl.h"
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
-
 #include <iostream>
 #include <cstring>
+#include <sstream>
 
 using namespace std;
 
@@ -36,102 +40,81 @@ using namespace std;
 // of partitions, and writes out the partitioned mesh. 
 // To run, type mpirun -np <#procs> <exec-with-path> in parallel
 
+const char* modelFilename;
+const char* attribFilename;
+const char* meshFilename;
+const char* outmeshFilename;
+
 void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
-  pParMesh pmesh;
-  pPartitionOpts pOpts;
-
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
+  SimParasolid_start(1);
 
   // Read in command line arguments
   if(argc != 5){
-    cout<<"Usage: "<<argv[0]<<" [model] [mesh_directory] [input_mesh] [num_parts]" << endl; // MeshDirectoryPath ModelFilename InputMeshFilename NumParts"<<endl;
+    cout<<"Usage: "<<argv[0]<<" [model.x_t] [attrib.smd] [input_mesh.sms] [num_parts]" << endl;
     return 1;
   }
 
   int desiredTotNumParts = atoi(argv[4]);  // Desired total no. of partitions
 
-  // Initialize all strings needed for filenames
-  char * modelFilename = (char*) malloc((strlen(argv[1]) + 10) * sizeof(char));
-  char * meshFilename = (char*) malloc((strlen(argv[2]) + strlen(argv[3]) + 10)*sizeof(char));
-  char * pmeshFilename = (char*) malloc((strlen(argv[2]) + strlen(argv[3]) + 20)*sizeof(char));
-  char * pmeshname = (char*) malloc((strlen(argv[3]) + 20)*sizeof(char));
+  /* Initialize all strings needed for filenames */
+  modelFilename = argv[1];
+  attribFilename = argv[2];
+  meshFilename = argv[3];
 
-  strcpy(modelFilename,argv[1]);
-  strcpy( meshFilename,argv[2]);
-  strcpy(pmeshFilename,argv[2]);
+  std::stringstream ss;
+  ss << "outmesh_" << desiredTotNumParts << "_parts.sms";
+  std::string tmp = ss.str();   
+  outmeshFilename = tmp.c_str();
 
-  //strcat(modelFilename,"/../");
-  strcat( meshFilename,"/");
-  strcat(pmeshFilename,"/");
-
-  // Create filename for partitioned mesh from other input info
-  memcpy(pmeshname,argv[3],strlen(argv[3])-4);
-  pmeshname[strlen(argv[3])-4] = '\0';
-
-  //strcat(modelFilename,argv[1]);
-  strcat( meshFilename,argv[3]);
-
-  strcat(pmeshFilename,pmeshname);
-  strcat(pmeshFilename,"_");
-  strcat(pmeshFilename,argv[4]);
-  strcat(pmeshFilename,"_parts.sms");
-
+  /* print message */
   cout<<endl;
-  cout<<"Using model and mesh:"<<endl;
-  cout<<modelFilename<<endl;
-  cout<< meshFilename<<endl;
-  cout<<endl;
+  cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
   cout<<"Partitioning into "<<argv[4]<<" parts."<<endl;  
-  cout<<endl;
   cout<<"Simmetrix says..."<<endl;
   cout<<"**********************************"<<endl;
-
 
   // NOTE: Sim_readLicenseFile() is for internal testing only.  To use,
   // pass in the location of a file containing your keys.  For a release 
   // product, use Sim_registerKey() 
   Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
-
   Sim_logOn("partition.log");
 
   Sim_setMessageHandler(messageHandler);
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
-  pGModel model = GM_load(modelFilename, 0, progress);
+  pNativeModel nmodel = ParasolidNM_createFromFile(modelFilename, 0);
+  pGModel model = GM_load(attribFilename, nmodel, progress);
 
   // Read a serial/partitioned mesh. It's advisable to read it on a GeomSim
   // model (ie. pass valid pGModel instead of 0 below).
-  pmesh = PM_load(meshFilename, sthreadNone, model, progress);
+  pParMesh pmesh = PM_load(meshFilename, sthreadNone, model, progress);
+  pPartitionOpts pOpts = PM_newPartitionOpts();
 
-  pOpts = PM_newPartitionOpts();
   PartitionOpts_setTotalNumParts(pOpts, desiredTotNumParts);
   PM_partition(pmesh, pOpts, sthreadNone, progress);   // Do a default partitioning
   PartitionOpts_delete(pOpts);
 
-  PM_write(pmesh, pmeshFilename, sthreadNone, progress); // Write it out to a directory
+  PM_write(pmesh, outmeshFilename, sthreadNone, progress); // Write it out to a directory
   M_release(pmesh);                                    // Delete the partitioned mesh
+  GM_release(model);
+  NM_release(nmodel);
 
   cout<<"**********************************"<<endl;
-  cout<<"Partitioned mesh output to:"<<endl;
-  cout<<pmeshFilename<<endl;
+  cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
   cout<<endl;
 
   Progress_delete(progress); 
   Sim_logOff();
+  SimParasolid_stop(1);
   Sim_unregisterAllKeys();
   SimPartitionedMesh_stop();
-
-  free(modelFilename);
-  free( meshFilename);
-  free(pmeshFilename);
-  free(pmeshname);
-
   return 0;
 }
 
