@@ -134,7 +134,7 @@ int pumi_tag_getByte (const pTag tag);
 // Geometric Model
 // create a model from a file
 pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh", void (*fp)(const char*)=NULL);
-void pumi_geom_freeze(pGeom g); // shall be called after adding analytic model entities
+void pumi_geom_freezeAnalytic(pGeom g); // shall be called after adding analytic model entities
 int pumi_geom_getNumEnt(pGeom g, int d);
 
 // Geometric Entity
