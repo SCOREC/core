@@ -33,6 +33,11 @@ gEntity* gModel::getGeomEnt(gmi_ent* ge)
   return allEntities.getGeomEnt(gmi_dim(g, ge), ge);
 }
 
+void pumi_geom_freeze(pGeom g)
+{
+  pumi_geom_freezeAnalytic(g);
+}
+
 pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
 {
   if (!strcmp(model_type,"null"))
@@ -67,7 +72,7 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
   return pumi::instance()->model;
 }
 
-void pumi_geom_freeze(pGeom g)
+void pumi_geom_freezeAnalytic(pGeom g)
 {
   // loop over entities and fill the container
   for (int i=0; i<=3; ++i)
@@ -80,6 +85,7 @@ void pumi_geom_freeze(pGeom g)
     gmi_end(g->getGmi(), giter);
   }
 }
+
 int pumi_geom_getNumEnt(pGeom g, int d)
 {
   return g->getGmi()->n[d];
