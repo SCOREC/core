@@ -17,16 +17,95 @@
 #include <assert.h>
 #include <iostream>
 #include <string.h>
+#include <map>
 #include <assert.h>
 #include <cstdlib>
 #include "apf.h"
+
+using std::map;
+
+void generate_globalid(pMesh m, pMeshTag tag, int dim)
+{
+  pMeshEnt e;
+  int own_partid, num_own=0, myrank=PCU_Comm_Self();
+
+  apf::MeshIterator* it = m->begin(dim);
+  while ((e = m->iterate(it)))
+  {
+    own_partid = m->getOwner(e);
+    if (own_partid==myrank)
+      ++num_own;
+  }
+  m->end(it);
+
+  PCU_Exscan_Ints(&num_own,1);
+  int initial_id=num_own;
+
+  PCU_Comm_Begin();
+  it = m->begin(dim);
+  while ((e = m->iterate(it)))
+  {
+    own_partid = m->getOwner(e);
+    if (own_partid==myrank)
+    {
+      m->setIntTag(e, tag, &initial_id);
+      Copies remotes;
+      m->getRemotes(e, remotes);
+      APF_ITERATE(Copies, remotes, it)
+      {
+        PCU_COMM_PACK(it->first, it->second);
+        PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
+      }
+
+      if (m->isGhosted(e))
+      {
+        Copies ghosts;
+        m->getGhosts(e, ghosts);
+        APF_ITERATE(Copies, ghosts, it)
+        {
+          PCU_COMM_PACK(it->first, it->second);
+          PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
+        }
+      }
+      ++initial_id;
+    }
+  }
+  m->end(it);
+
+  PCU_Comm_Send();
+  int global_id;
+  while (PCU_Comm_Listen())
+    while (!PCU_Comm_Unpacked())
+    {
+      pMeshEnt remote_ent;
+      PCU_COMM_UNPACK(remote_ent);
+      PCU_Comm_Unpack(&global_id, sizeof(int));
+      m->setIntTag(remote_ent, tag, &global_id);
+    }
+}
+
+//*******************************************************
+void generate_global_numbering(apf::Mesh2* m)
+//*******************************************************
+{
+  pMeshTag tag = m->findTag("global_id");
+  if (tag)  // destroy existing tag
+  {
+    for (int i=0; i<4; ++i)
+      apf::removeTagFromDimension(m, tag, m->getDimension());
+  }  
+  else
+    tag = m->createIntTag("global_id",1);
+
+  for (int i=0; i<4; ++i)
+    generate_globalid(m, tag, i);
+}
 
 //*******************************************************
 void destroy_global_numbering(apf::Mesh2* m)
 //*******************************************************
 {
   pMeshTag tag = m->findTag("global_id");
-  if (!tag) return;
   for (int i=0; i<4; ++i)
     apf::removeTagFromDimension(m, tag, m->getDimension());
 
@@ -106,6 +185,7 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
     m = apf::loadMdsMesh(g->getGmi(), filename);
   merge_comm(prevComm);
   pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1);
+  generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
@@ -134,6 +214,8 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   }
   else
     pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
+
+  generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
