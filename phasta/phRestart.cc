@@ -10,6 +10,7 @@
 #include <sstream>
 #include <cassert>
 #include <cstring>
+#include <apfSIM.h>
 
 namespace ph {
 
@@ -63,6 +64,7 @@ apf::Field* extractField(apf::Mesh* m,
 void attachField(
     apf::Mesh* m,
     const char* fieldname,
+    bool simField,
     double* data,
     int in_size,
     int out_size)
@@ -73,7 +75,10 @@ void attachField(
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
-  f = apf::createPackedField(m, fieldname, out_size);
+  if (simField)
+    f = apf::createSIMPackedField(m, fieldname, out_size);
+  else
+    f = apf::createPackedField(m, fieldname, out_size);
   size_t n = m->count(0);
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
@@ -92,6 +97,7 @@ void attachField(
 void attachCellField(
     apf::Mesh* m,
     const char* fieldname,
+    bool simField,
     double* data,
     int in_size,
     int out_size)
@@ -102,7 +108,10 @@ void attachCellField(
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
-  f = apf::createPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
+  if (simField)
+    f = apf::createSIMPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
+  else
+    f = apf::createPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
   size_t n = m->count(m->getDimension());
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
@@ -123,10 +132,11 @@ void attachCellField(
 void attachField(
     apf::Mesh* m,
     const char* fieldname,
+    bool simField,
     double* data,
     int size)
 {
-  attachField(m, fieldname, data, size, size);
+  attachField(m, fieldname, simField, data, size, size);
 }
 
 void detachField(
@@ -228,7 +238,7 @@ int readAndAttachField(
   if(ret==0 || ret==1)
     return ret;
   if (!isNodalField(hname, nodes, m)) {
-    attachCellField(m, hname, data, vars, vars);
+    attachCellField(m, hname, in.simmetrixMesh, data, vars, vars);
     free(data);
     return 1;
   }
@@ -241,7 +251,7 @@ int readAndAttachField(
       fprintf(stderr, "field \"%s\" listed twice in restart files, ignoring...\n",
           hname);
   } else {
-    attachField(m, hname, data, vars, out_size);
+    attachField(m, hname, in.simmetrixMesh, data, vars, out_size);
   }
   free(data);
   return 1;
@@ -314,15 +324,15 @@ static void destroyIfExists(apf::Mesh* m, const char* name)
     apf::destroyField(f);
 }
 
-void buildMapping(apf::Mesh* m)
+void buildMapping(Input& in, apf::Mesh* m)
 {
   destroyIfExists(m, "mapping_partid");
   double* mapping = buildMappingPartId(m);
-  attachField(m, "mapping_partid", mapping, 1);
+  attachField(m, "mapping_partid", in.simmetrixMesh, mapping, 1);
   free(mapping);
   destroyIfExists(m, "mapping_vtxid");
   mapping = buildMappingVtxId(m);
-  attachField(m, "mapping_vtxid", mapping, 1);
+  attachField(m, "mapping_vtxid", in.simmetrixMesh, mapping, 1);
   free(mapping);
 }
 
@@ -331,7 +341,7 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
   int vars = in.ensa_dof;
   int nodes = m->count(0);
   double* data = new double[nodes * vars]();
-  attachField(m, "solution", data, vars);
+  attachField(m, "solution", in.simmetrixMesh, data, vars);
   delete [] data;
 }
 
@@ -353,6 +363,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     apf::destroyField(errField);
   if (m->findField("solution"))
     detachAndWriteField(in, m, f, "solution");
+//  if (m->findField("time derivative of solution"))
+//    detachAndWriteField(in, m, f, "time derivative of solution");
   if (in.displacementMigration)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)

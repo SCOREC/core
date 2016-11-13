@@ -146,7 +146,9 @@ int main(int argc, char** argv)
   pGModel simModel = gmi_export_sim(mdl);
   pParMesh sim_mesh = PM_load(argv[2], sthreadNone, simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
-  ph::buildMapping(simApfMesh);
+  ph::Input phIn;
+  phIn.simmetrixMesh = true;
+  ph::buildMapping(phIn, simApfMesh);
   
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   apf::printStats(mesh);
@@ -155,7 +157,6 @@ int main(int argc, char** argv)
   postConvert(mesh);
   mesh->writeNative(argv[3]);
   std::string restartPath = ph::setupOutputDir();
-  ph::Input phIn;
   phIn.openfile_read = openFileRead;
   ph::Output phOut;
   phOut.openfile_write = openFileWrite;
