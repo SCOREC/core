@@ -111,7 +111,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)
-    ph::buildMapping(in, m);
+    ph::buildMapping(m);
   apf::setMigrationLimit(SIZET(in.elementsPerMigration));
   if (in.adaptFlag)
     ph::adapt(in, m);
@@ -223,7 +223,7 @@ namespace ph {
     if (!in.solutionMigration)
       ph::attachZeroSolution(in, m);
     if (in.buildMapping)
-      ph::buildMapping(in, m);
+      ph::buildMapping(m);
     preprocess(m,in,out,bcs);
   }
 }
@@ -292,9 +292,19 @@ namespace chef {
     const char* packedFieldname,
     const char* requestFieldname,
     int firstComp,
-    int numOfComp) {
+    int numOfComp,
+    bool simField) {
     return ph::extractField(m,packedFieldname,
-             requestFieldname,firstComp,numOfComp);
+             requestFieldname,firstComp,numOfComp,simField);
+  }
+
+  apf::Field* combineField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* inFieldname1,
+    const char* inFieldname2,
+    const char* inFieldname3) {
+    return ph::combineField(m,packedFieldname,
+             inFieldname1,inFieldname2,inFieldname3);
   }
 
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {
