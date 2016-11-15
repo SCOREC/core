@@ -40,10 +40,16 @@ apf::Field* extractField(apf::Mesh* m,
     numOfComp= 3;
   else
     assert(valueType == apf::SCALAR || valueType == apf::VECTOR);
-  if (simField)
+#ifdef HAVE_SIMMETRIX
+  if (simField) {
     rf = apf::createSIMFieldOn(m, requestFieldname, valueType);
-  else
+  } else
+#else
+  (void)simField;
+#endif
+  {
     rf = apf::createFieldOn(m, requestFieldname, valueType);
+  }
   double* inVal = new double[apf::countComponents(f)];
   double* outVal = new double[numOfComp];
   int endComp = firstComp + numOfComp - 1;
