@@ -72,6 +72,7 @@ int PCU_Min_Int(int x);
 void PCU_Max_Ints(int* p, size_t n);
 int PCU_Max_Int(int x);
 int PCU_Or(int c);
+int PCU_And(int c);
 
 /*process-level self/peers (mpi wrappers)*/
 int PCU_Proc_Self(void);
