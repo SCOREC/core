@@ -111,7 +111,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)
-    ph::buildMapping(m);
+    ph::buildMapping(in, m);
   apf::setMigrationLimit(SIZET(in.elementsPerMigration));
   if (in.adaptFlag)
     ph::adapt(in, m);
@@ -223,7 +223,7 @@ namespace ph {
     if (!in.solutionMigration)
       ph::attachZeroSolution(in, m);
     if (in.buildMapping)
-      ph::buildMapping(m);
+      ph::buildMapping(in, m);
     preprocess(m,in,out,bcs);
   }
 }

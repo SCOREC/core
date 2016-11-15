@@ -14,7 +14,7 @@ apf::Field* extractField(apf::Mesh* m,
     int valueType);
 
 void readAndAttachFields(Input& in, apf::Mesh* m);
-void buildMapping(apf::Mesh* m);
+void buildMapping(Input& in, apf::Mesh* m);
 void detachAndWriteSolution(Input& in, Output& out, 
     apf::Mesh* m, std::string path);
 void attachZeroSolution(Input& in, apf::Mesh* m);
