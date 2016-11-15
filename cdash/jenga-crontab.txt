@@ -24,6 +24,6 @@
 SHELL=/bin/bash
 
 #nightly testing and documentation build of SCOREC/core
-0 19 * * * /lore/dibanez/src/core/cdash/nightly.sh &> /lore/dibanez/cdash/nightly_log.txt
+0 19 * * * /fasttmp/seol/scorec/src/core/cdash/nightly.sh &> /fasttmp/seol/scorec/cdash/nightly_log.txt
 #upload Coverity scans an hour later, but only a few days a week
-0 20 * * 0,3 /lore/dibanez/src/core/cdash/upload_coverity.sh &> /lore/dibanez/cdash/upload_log.txt
+0 20 * * 0,3 /fasttmp/seol/scorec/src/core/cdash/upload_coverity.sh &> /fasttmp/seol/scorec/cdash/upload_log.txt
