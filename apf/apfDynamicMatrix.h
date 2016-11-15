@@ -64,7 +64,7 @@ class DynamicMatrix
     DynamicMatrix& operator-=(DynamicMatrix const& b)
     {
       for (std::size_t i=0; i < this->values.getSize(); ++i)
-        this->values[i] += b.values[i];
+        this->values[i] -= b.values[i];
       return *this;
     }
     /** \brief multiply this matrix by a scalar */
@@ -78,7 +78,7 @@ class DynamicMatrix
     DynamicMatrix& operator/=(double s)
     {
       for (std::size_t i=0; i < this->values.getSize(); ++i)
-        this->values[i] *= s;
+        this->values[i] /= s;
       return *this;
     }
     /** \brief copy row data into a DynamicVector */

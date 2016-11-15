@@ -427,6 +427,13 @@ int PCU_Or(int c)
   return PCU_Max_Int(c);
 }
 
+/** \brief Performs a parallel logical AND reduction
+  */
+int PCU_And(int c)
+{
+  return PCU_Min_Int(c);
+}
+
 /** \brief Returns the unique rank of the calling process.
  */
 int PCU_Proc_Self(void)

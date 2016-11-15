@@ -489,7 +489,7 @@ for (t::const_iterator (i) = (w).begin(); \
   * \details Nodal fields whose shape differs from the mesh shape will
   * not be output. Fields with incomplete data will not be output.
   */
-void writeVtkFiles(const char* prefix, Mesh* m);
+void writeVtkFiles(const char* prefix, Mesh* m, int cellDim = -1);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   * with binary (base64) encoding and zlib compression (if LION_COMPRESS=ON)
@@ -498,7 +498,7 @@ void writeVtkFiles(const char* prefix, Mesh* m);
   * output. Fields with incomplete data will not be output.
   */
 void writeVtkFiles(const char* prefix, Mesh* m,
-    std::vector<std::string> writeFields);
+    std::vector<std::string> writeFields, int cellDim = -1);
 
 /** \brief Output just the .vtu file with ASCII encoding for this part.
   \details this function is useful for debugging large parallel meshes.
