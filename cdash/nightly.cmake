@@ -11,7 +11,7 @@ set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
 set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
-set(CTEST_DASHBOARD_ROOT "/lore/dibanez/cdash" )
+set(CTEST_DASHBOARD_ROOT "/fasttmp/seol/scorec/cdash" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 set(CTEST_BUILD_FLAGS -j4)
@@ -26,7 +26,7 @@ set(MERGE_AUTHOR "Nightly Bot <donotemail@scorec.rpi.edu>")
 
 set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
-set(MESHES "/lore/dibanez/src/pumi-meshes")
+set(MESHES "/fasttmp/seol/scorec/pumi-meshes")
 
 set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION} "tmpnam")
 
