@@ -10,7 +10,9 @@
 #include <sstream>
 #include <cassert>
 #include <cstring>
+#ifdef HAVE_SIMMETRIX
 #include <apfSIM.h>
+#endif
 
 namespace ph {
 
