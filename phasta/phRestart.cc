@@ -432,8 +432,10 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     apf::destroyField(errField);
   if (m->findField("solution"))
     detachAndWriteField(in, m, f, "solution");
-//  if (m->findField("time derivative of solution"))
-//    detachAndWriteField(in, m, f, "time derivative of solution");
+  if (m->findField("time derivative of solution"))
+    detachAndWriteField(in, m, f, "time derivative of solution");
+  if (m->findField("mesh_vel"))
+    detachAndWriteField(in, m, f, "mesh_vel");
   if (in.displacementMigration)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)
@@ -442,7 +444,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
-  /* detach any remaining fields */
+  /* destroy any remaining fields */
   while(m->countFields())
     apf::destroyField( m->getField(0) );
   fclose(f);
