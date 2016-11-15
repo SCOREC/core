@@ -10,7 +10,9 @@
 #include <sstream>
 #include <cassert>
 #include <cstring>
+#ifdef HAVE_SIMMETRIX
 #include <apfSIM.h>
+#endif
 
 namespace ph {
 
@@ -75,10 +77,16 @@ void attachField(
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
-  if (simField)
+#ifdef HAVE_SIMMETRIX
+  if (simField) {
     f = apf::createSIMPackedField(m, fieldname, out_size);
-  else
+  } else
+#else
+  (void)simField;
+#endif
+  {
     f = apf::createPackedField(m, fieldname, out_size);
+  }
   size_t n = m->count(0);
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
@@ -108,10 +116,16 @@ void attachCellField(
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
+#ifdef HAVE_SIMMETRIX
   if (simField)
     f = apf::createSIMPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
   else
+#else
+  (void)simField;
+#endif
+  {
     f = apf::createPackedField(m, fieldname, out_size, apf::getConstant(m->getDimension()));
+  }
   size_t n = m->count(m->getDimension());
   apf::NewArray<double> c(out_size);
   apf::MeshEntity* e;
