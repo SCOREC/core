@@ -127,6 +127,11 @@ void gmi_first_derivative(struct gmi_model* m, struct gmi_ent* e,
   m->ops->first_derivative(m, e, p, t0, t1);
 }
 
+int gmi_is_point_in_region(struct gmi_model* m, struct gmi_ent* e, double point[3])
+{
+  return m->ops->is_point_in_region(m, e, point);
+}
+
 void gmi_destroy(struct gmi_model* m)
 {
   m->ops->destroy(m);

@@ -178,6 +178,30 @@ static gmi_set* region_faces(pGRegion region)
   return s;
 }
 
+/* getting the region adj to an edge. This version
+ * does not support non-manifold models
+ */
+static gmi_set* edge_regions(pGEdge e)
+{
+  pPList list = GE_faces((pGEdge)e);
+
+  // do the first one outside of the loop
+  gmi_set* regions_set = face_regions((pGFace)PList_item(list, 0));
+  if (regions_set->n != 1)
+    gmi_fail("no support for non-manifold surfaces!\n");
+  pGRegion r = (pGRegion)regions_set->e[0];
+
+  // do the rest inside of the loop
+  for (int i = 1; i < PList_size(list); i++) {
+    regions_set = face_regions((pGFace)PList_item(list, i));
+    if (regions_set->n != 1)
+      gmi_fail("no support for non-manifold surfaces!\n");
+    if (r != (pGRegion)regions_set->e[0])
+      gmi_fail("no support for non-manifold surfaces!\n");
+  }
+  return regions_set;
+}
+
 static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
 {
   int edim = gmi_dim(m, e);
@@ -193,6 +217,8 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
     return plist_to_set(GF_edges((pGFace)e));
   if (edim == 2 && dim == 3)
     return face_regions((pGFace)e);
+  if (edim == 1 && dim == 3)
+    return edge_regions((pGEdge)e);
   if (edim == 3 && dim == 2)
     return region_faces((pGRegion)e);
   if (edim == 3 && dim == 4) /* sometimes people just keep looking up */
@@ -290,6 +316,13 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
     GE_firstDerivative((pGEdge)e,p[0],&t0[0]);
 }
 
+static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e, double point[3])
+{
+  gmi_dim(m, e);
+  int res = GR_containsPoint((pGRegion)e, &point[0]);
+  return res;
+}
+
 static void destroy(gmi_model* m)
 {
   sim_model* mm = (sim_model*)m;
@@ -350,6 +383,7 @@ void gmi_register_sim(void)
   ops.closest_point = closest_point;
   ops.normal = normal;
   ops.first_derivative = first_derivative;
+  ops.is_point_in_region = is_point_in_region;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");
