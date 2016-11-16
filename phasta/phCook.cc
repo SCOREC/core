@@ -79,6 +79,7 @@ static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
       if (PCU_Comm_Self()==0)
         fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
       in.simmetrixMesh = 1;
+      in.filterMatches = 0; //not support
     }
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);
@@ -181,7 +182,8 @@ namespace ph {
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
     if(PCU_Comm_Peers() > 1)
       ph::migrateInterfaceItr(m, bcs);
-    ph::checkReorder(m,in,PCU_Comm_Peers());
+    if (in.simmetrixMesh == 0)
+      ph::checkReorder(m,in,PCU_Comm_Peers());
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber,in.ramdisk);
     std::string path = ph::setupOutputDir(in.ramdisk);
@@ -193,7 +195,8 @@ namespace ph {
       m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,path); //write restart
-    if (in.adaptFlag && (in.timeStepNumber % in.writeVizFiles == 0) ) {
+    if ( (in.adaptFlag && (in.timeStepNumber % in.writeGeomBCFiles == 0) ) ||
+         (in.timeStepNumber == 0 && in.writeGeomBCFiles > 0) ) {
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
@@ -289,9 +292,19 @@ namespace chef {
     const char* packedFieldname,
     const char* requestFieldname,
     int firstComp,
-    int numOfComp) {
+    int numOfComp,
+    bool simField) {
     return ph::extractField(m,packedFieldname,
-             requestFieldname,firstComp,numOfComp);
+             requestFieldname,firstComp,numOfComp,simField);
+  }
+
+  apf::Field* combineField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* inFieldname1,
+    const char* inFieldname2,
+    const char* inFieldname3) {
+    return ph::combineField(m,packedFieldname,
+             inFieldname1,inFieldname2,inFieldname3);
   }
 
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m) {

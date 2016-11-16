@@ -11,7 +11,7 @@ set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
 set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
-set(CTEST_DASHBOARD_ROOT "/lore/dibanez/cdash" )
+set(CTEST_DASHBOARD_ROOT "/fasttmp/seol/scorec/cdash" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 set(CTEST_BUILD_FLAGS -j4)
@@ -26,7 +26,9 @@ set(MERGE_AUTHOR "Nightly Bot <donotemail@scorec.rpi.edu>")
 
 set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
-set(MESHES "/lore/dibanez/src/pumi-meshes")
+set(MESHES "/fasttmp/seol/scorec/meshes")
+
+set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION} "tmpnam")
 
 if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}")
   file(MAKE_DIRECTORY "${CTEST_SOURCE_DIRECTORY}")
@@ -93,14 +95,8 @@ function(setup_repo)
   endif()
 endfunction(setup_repo)
 
-# NUM_ALLOWED_WARNINGS EXISTS BECAUSE SIMMETRIX, INC. REFUSE TO FIX
-# THEIR USE OF `tmpnam`, WHICH IS SO DANGEROUS (see here:
-#http://stackoverflow.com/questions/3299881/tmpnam-warning-saying-it-is-dangerous
-# ) THAT THE GNU LINKER EMITS AN UNSILENCEABLE WARNING ABOUT IT.
-# SCOREC CODE DOES NOT HAVE WARNINGS.
-
 function(check_current_branch BRANCH_NAME CONFIG_OPTS
-    NUM_ALLOWED_WARNINGS ERRVAR)
+    ERRVAR)
   file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}")
 
   ctest_configure(
@@ -119,7 +115,7 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS
       NUMBER_ERRORS NUM_BUILD_ERRORS
       NUMBER_WARNINGS NUM_BUILD_WARNINGS
       RETURN_VALUE BUILD_RET)
-  if((NUM_BUILD_WARNINGS GREATER NUM_ALLOWED_WARNINGS) OR
+  if(NUM_BUILD_WARNINGS OR
       NUM_BUILD_ERRORS OR BUILD_RET)
     message(WARNING "
 ${BRANCH_NAME} build failed!
@@ -140,7 +136,7 @@ ${BRANCH_NAME} build failed!
   endif()
 
   if(CONFIG_RET OR
-     (NUM_BUILD_WARNINGS GREATER NUM_ALLOWED_WARNINGS) OR
+     NUM_BUILD_WARNINGS OR
      NUM_BUILD_ERRORS OR BUILD_RET OR
      TEST_RET)
     message(WARNING "some ${BRANCH_NAME} checks failed!")
@@ -163,8 +159,7 @@ ${BRANCH_NAME} build failed!
   endif()
 endfunction(check_current_branch)
 
-function(check_tracking_branch BRANCH_NAME CONFIG_OPTS
-    NUM_ALLOWED_WARNINGS ERRVAR)
+function(check_tracking_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
   checkout_branch("${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY SubProject "${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY Label "${BRANCH_NAME}")
@@ -174,17 +169,14 @@ function(check_tracking_branch BRANCH_NAME CONFIG_OPTS
     message(FATAL_ERROR "Could not update ${BRANCH_NAME} branch!")
   endif()
   message("Updated ${NUM_UPDATES} files")
-  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}"
-      ${NUM_ALLOWED_WARNINGS} ERRVAL2)
+  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}" ERRVAL2)
   set(${ERRVAR} ${ERRVAL2} PARENT_SCOPE)
 endfunction(check_tracking_branch)
 
-function(check_merge_branch BRANCH_NAME CONFIG_OPTS
-    NUM_ALLOWED_WARNINGS ERRVAR)
+function(check_merge_branch BRANCH_NAME CONFIG_OPTS ERRVAR)
   set_property(GLOBAL PROPERTY SubProject "${BRANCH_NAME}")
   set_property(GLOBAL PROPERTY Label "${BRANCH_NAME}")
-  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}"
-      ${NUM_ALLOWED_WARNINGS} ERRVAL2)
+  check_current_branch(${BRANCH_NAME} "${CONFIG_OPTS}" ERRVAL2)
   set(${ERRVAR} ${ERRVAL2} PARENT_SCOPE)
 endfunction(check_merge_branch)
 
@@ -254,8 +246,7 @@ function(abort_merge FIRST_BRANCH SECOND_BRANCH)
   cleanup_merge(${FIRST_BRANCH} ${SECOND_BRANCH})
 endfunction(abort_merge)
 
-function(try_merge FIRST_BRANCH SECOND_BRANCH CONFIG
-    NUM_ALLOWED_WARNINGS)
+function(try_merge FIRST_BRANCH SECOND_BRANCH CONFIG)
   start_merge(${FIRST_BRANCH} ${SECOND_BRANCH} NEXT_ACTION)
   if("${NEXT_ACTION}" STREQUAL "CLEANUP")
     cleanup_merge(${FIRST_BRANCH} ${SECOND_BRANCH})
@@ -265,8 +256,7 @@ function(try_merge FIRST_BRANCH SECOND_BRANCH CONFIG
     return()
   endif()
   set(NEW_BRANCH "${SECOND_BRANCH}-into-${FIRST_BRANCH}")
-  check_merge_branch("${NEW_BRANCH}" "${CONFIG}"
-      ${NUM_ALLOWED_WARNINGS} CHECK_ERR)
+  check_merge_branch("${NEW_BRANCH}" "${CONFIG}" CHECK_ERR)
   if(CHECK_ERR)
     abort_merge(${FIRST_BRANCH} ${SECOND_BRANCH})
     return()
@@ -301,13 +291,11 @@ SET(CONFIGURE_OPTIONS-sim
   "-DSIM_MPI:STRING=mpich3.1.2"
 )
 
-SET(ALLOWED_WARNINGS-sim 7)
-
 setup_repo()
 update_meshes()
 foreach(BRANCH IN LISTS BRANCHES)
   check_tracking_branch("${BRANCH}"
       "${CONFIGURE_OPTIONS-sim}"
-      "${ALLOWED_WARNINGS-sim}" CHECK_ERR)
+      CHECK_ERR)
 endforeach()
 try_merge(master develop "${CONFIGURE_OPTIONS-sim}" ${ALLOWED_WARNINGS-sim})

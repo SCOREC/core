@@ -61,7 +61,7 @@ class Input
     int writePhastaFiles;
     int parmaLoops;
     int parmaVerbosity;
-    int writeVizFiles;
+    int writeGeomBCFiles;
     int ramdisk;
     double meshqCrtn;
     double elementImbalance;

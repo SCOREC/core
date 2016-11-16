@@ -10,49 +10,128 @@
 #include <sstream>
 #include <cassert>
 #include <cstring>
+#ifdef HAVE_SIMMETRIX
+#include <apfSIM.h>
+#endif
 
 namespace ph {
 
-/* This function is used by phastaChef driver 
-   to extract a certain field from solution field. */
-
+/* This function is used by phastaChef driver
+   to extract a certain field from solution field.
+   can also extract sim field from apf field. */
 apf::Field* extractField(apf::Mesh* m,
-    const char* packedFieldname, 
+    const char* packedFieldname,
     const char* requestFieldname,
-    int firstComp, 
-    int valueType) 
+    int firstComp,
+    int valueType,
+    bool simField)
 {
   apf::Field* f = m->findField(packedFieldname);
-  if(!f && PCU_Comm_Self() == 0) 
+  if(!f && PCU_Comm_Self() == 0)
     fprintf(stderr, "No packed field \"%s\"", packedFieldname);
   assert(f);
+  apf::Field* rf = m->findField(requestFieldname);
+  if (rf)
+    apf::destroyField(rf);
   int numOfComp = 0;
   if (valueType == apf::SCALAR)
     numOfComp = 1;
   else if (valueType == apf::VECTOR)
     numOfComp= 3;
-  else 
+  else
     assert(valueType == apf::SCALAR || valueType == apf::VECTOR);
-  apf::Field* rf = apf::createFieldOn(m, requestFieldname, valueType);
+#ifdef HAVE_SIMMETRIX
+  if (simField) {
+    rf = apf::createSIMFieldOn(m, requestFieldname, valueType);
+  } else
+#else
+  (void)simField;
+#endif
+  {
+    rf = apf::createFieldOn(m, requestFieldname, valueType);
+  }
   double* inVal = new double[apf::countComponents(f)];
   double* outVal = new double[numOfComp];
   int endComp = firstComp + numOfComp - 1;
-  assert(firstComp >= 1); 
+  assert(firstComp >= 1);
   assert(endComp <= apf::countComponents(f));
   apf::MeshEntity* vtx;
   apf::MeshIterator* it = m->begin(0);
   while ((vtx = m->iterate(it))) {
     apf::getComponents(f, vtx, 0, inVal);
-    int j = 0; 
-    for (int i = firstComp-1; i < endComp; i++){ 
-      outVal[j] = inVal[i]; 
-      j++; 
+    int j = 0;
+    for (int i = firstComp-1; i < endComp; i++){
+      outVal[j] = inVal[i];
+      j++;
     }
     assert(j == numOfComp);
     apf::setComponents(rf,vtx, 0, outVal);
   }
   m->end(it);
-  return rf;  
+  return rf;
+}
+
+/* default combine 3 fields into 1 */
+apf::Field* combineField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* inFieldname1,
+    const char* inFieldname2,
+    const char* inFieldname3)
+{
+  apf::Field* f1 = m->findField(inFieldname1);
+  apf::Field* f2 = m->findField(inFieldname2);
+  apf::Field* f3 = m->findField(inFieldname3);
+  assert(f1);
+  assert(f2);
+  assert(f3);
+  int in_size1 = apf::countComponents(f1);
+  int in_size2 = apf::countComponents(f2);
+  int in_size3 = apf::countComponents(f3);
+  int out_size = in_size1 + in_size2 + in_size3;
+  apf::Field* rf = m->findField(packedFieldname);
+  if (rf)
+    apf::destroyField(rf);
+  rf = apf::createPackedField(m, packedFieldname, out_size);
+  double* inVal1 = new double[in_size1];
+  double* inVal2 = new double[in_size2];
+  double* inVal3 = new double[in_size3];
+  double* outVal = new double[out_size];
+  /* copy data */
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* it = m->begin(0);
+  while ((vtx = m->iterate(it))) {
+    apf::getComponents(f1, vtx, 0, inVal1);
+    apf::getComponents(f2, vtx, 0, inVal2);
+    apf::getComponents(f3, vtx, 0, inVal3);
+/* simpler, test later, need algorithm header */
+/*
+    copy(inVal1, inVal2 + in_size1, outVal);
+    copy(inVal2, inVal2 + in_size2, outVal + in_size1);
+    copy(inVal3, inVal2 + in_size3, outVal + in_size2);
+*/
+    int j = 0;
+    int i = 0;
+    for (i = 0; i < in_size1; i++){
+      outVal[j] = inVal1[i];
+      j++;
+    }
+    for (i = 0; i < in_size2; i++){
+      outVal[j] = inVal2[i];
+      j++;
+    }
+    for (i = 0; i < in_size3; i++){
+      outVal[j] = inVal3[i];
+      j++;
+    }
+    assert(j == out_size);
+    apf::setComponents(rf, vtx, 0, outVal);
+  }
+  m->end(it);
+  /* destroy input fields */
+  apf::destroyField(f1);
+  apf::destroyField(f2);
+  apf::destroyField(f3);
+  return rf;
 }
 
 /* in_size is the number of dofs for the data array
@@ -199,9 +278,11 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   for (int i = 0; i < known_cell_field_count; ++i)
     if (!strcmp(fieldname, known_cell_fields[i]))
       return false;
-  fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
-  fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
-      fieldname, __LINE__, __FILE__);
+  if( !PCU_Comm_Self() ) {
+    fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
+    fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
+        fieldname, __LINE__, __FILE__);
+  }
   if (static_cast<size_t>(nnodes) == m->count(0)) {
     fprintf(stderr, "assuming \"%s\" is a nodal field,\n"
                     "it is the right size...\n", fieldname);
@@ -351,6 +432,10 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     apf::destroyField(errField);
   if (m->findField("solution"))
     detachAndWriteField(in, m, f, "solution");
+  if (m->findField("time derivative of solution"))
+    detachAndWriteField(in, m, f, "time derivative of solution");
+  if (m->findField("mesh_vel"))
+    detachAndWriteField(in, m, f, "mesh_vel");
   if (in.displacementMigration)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)
@@ -359,7 +444,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
-  /* detach any remaining fields */
+  /* destroy any remaining fields */
   while(m->countFields())
     apf::destroyField( m->getField(0) );
   fclose(f);

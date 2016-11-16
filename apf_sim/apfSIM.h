@@ -115,11 +115,13 @@ class MeshSIM : public Mesh2
     gmi_model* model;
 };
 
+apf::Field* createSIMGeneralField(Mesh* m, const char* name, int valueType, int components, FieldShape* shape);
+::Field* getSIMField(apf::Field* f);
+apf::Field* wrapSIMField(Mesh* m, ::Field* fd);
 apf::Field* createSIMField(Mesh* m, const char* name, int valueType, FieldShape* shape);
 apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order);
 apf::Field* createSIMFieldOn(Mesh* m, const char* name, int valueType);
-::Field* getSIMField(apf::Field* f);
-apf::Field* wrapSIMField(Mesh* m, ::Field* fd);
+apf::Field* createSIMPackedField(Mesh* m, const char* name, int components, apf::FieldShape* shape = 0);
 
 template <typename T>
 static void pListToDynamicArray(pPList list, DynamicArray<T>& array)

@@ -407,6 +407,7 @@ static pNativeModel load_parasolid(const char* filename)
 #else
 static pNativeModel load_parasolid(const char* filename)
 {
+  (void)filename;
   gmi_fail("recompile with -DSIM_PARASOLID=ON");
 }
 #endif

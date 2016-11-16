@@ -1,6 +1,6 @@
-cd /lore/dibanez/cdash/build/core
+cd /fasttmp/seol/scorec/cdash/build/core
 curl --form token=faMZVmxTjByhNoJyb_4wDw \
-  --form email=dan.a.ibanez@gmail.com \
+  --form email=seols@rpi.edu \
   --form file=@$PWD/pumi.tgz \
   --form version="1.0.1" \
   --form description="Automated" \

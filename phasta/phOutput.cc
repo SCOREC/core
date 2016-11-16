@@ -60,10 +60,10 @@ static void getGlobal(Output& o)
   }
 }
 
-static void getVertexLinks(Output& o, apf::Numbering* n)
+static void getVertexLinks(Output& o, apf::Numbering* n, BCs& bcs)
 {
   Links links;
-  getLinks(o.mesh, 0, links);
+  getLinks(o.mesh, 0, links, bcs);
   encodeILWORK(n, links, o.nlwork, o.arrays.ilwork);
 }
 
@@ -191,6 +191,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 bool checkInterface(Output& o, BCs& bcs) {
+  o.hasDGInterface = 0;
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
 
@@ -377,7 +378,7 @@ static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
     return e;
 }
 
-static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
+static void getLocalPeriodicMasters(Output& o, apf::Numbering* n, BCs& bcs)
 {
   apf::Mesh* m = o.mesh;
   int* iper = new int[m->count(0)];
@@ -386,8 +387,10 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n)
   apf::MatchedSharing* sh = m->hasMatching() ? new apf::MatchedSharing(m) : 0;
   int i = 0;
   while ((e = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(e);
+    bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
     apf::MeshEntity* master = getLocalPeriodicMaster(sh, e);
-    if (master == e)
+    if (master == e || isDG)
       iper[i] = 0;
     else
       iper[i] = apf::getNumber(n, master, 0, 0) + 1;
@@ -503,12 +506,12 @@ static void getInitialConditions(BCs& bcs, Output& o)
   m->end(it);
 }
 
-static void getElementGraph(Output& o, apf::Numbering* rn)
+static void getElementGraph(Output& o, apf::Numbering* rn, BCs& bcs)
 {
   if (o.in->formElementGraph) {
     o.arrays.ienneigh = formIENNEIGH(rn);
     Links links;
-    getLinks(o.mesh, o.mesh->getDimension() - 1, links);
+    getLinks(o.mesh, o.mesh->getDimension() - 1, links, bcs);
     encodeILWORKF(rn, links, o.nlworkf, o.arrays.ilworkf);
   } else {
     o.arrays.ilworkf = 0;
@@ -516,11 +519,11 @@ static void getElementGraph(Output& o, apf::Numbering* rn)
   }
 }
 
-static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn)
+static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs)
 {
   if (o.in->formEdges) {
     Links links;
-    getLinks(o.mesh, 1, links);
+    getLinks(o.mesh, 1, links, bcs);
     apf::Numbering* en = apf::numberOverlapDimension(o.mesh, "ph::getEdges", 1);
     encodeILWORK(en, links, o.nlworkl, o.arrays.ilworkl);
     apf::destroyNumbering(en);
@@ -644,20 +647,20 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getAllBlocks(o.mesh, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
   apf::Numbering* rn = apf::numberElements(o.mesh, "ph_elem");
-  getVertexLinks(o, n);
+  getVertexLinks(o, n, bcs);
   getInterior(o, bcs, n);
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
-  getLocalPeriodicMasters(o, n);
-  getEdges(o, n, rn);
+  getLocalPeriodicMasters(o, n, bcs);
+  getEdges(o, n, rn, bcs);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);
-  getElementGraph(o, rn);
+  getElementGraph(o, rn, bcs);
   apf::destroyNumbering(rn);
   if (in.initBubbles)
     initBubbles(o.mesh, in);

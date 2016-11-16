@@ -15,10 +15,15 @@
 
 #include "apfSIMDataOf.h"
 
-apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
+apf::Field* apf::createSIMGeneralField(
+    Mesh* m,
+    const char* name,
+    int valueType,
+    int components,
     FieldShape* shape)
 {
-  return makeField(m, name, valueType, 0,shape, new SIMDataOf<double>);
+  return makeField(m, name, valueType, components, shape,
+                   new SIMDataOf<double>);
 }
 
 ::Field* apf::getSIMField(apf::Field* f)
@@ -45,12 +50,17 @@ apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
 
 #else
 
-apf::Field* apf::createSIMField(Mesh* m, const char* name, int valueType,
+apf::Field* createSIMGeneralField(
+    Mesh* m,
+    const char* name,
+    int valueType,
+    int components,
     FieldShape* shape)
 {
-  (void)m;
+  (void)m; 
   (void)name;
   (void)valueType;
+  (void)components;
   (void)shape;
   apf::fail("SimField not found when APF_SIM compiled");
 }
@@ -71,6 +81,11 @@ apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
 #endif
 
 namespace apf {
+apf::Field* createSIMField(Mesh* m, const char* name, int valueType,
+    FieldShape* shape)
+{
+  return createSIMGeneralField(m, name, valueType, 0, shape);
+}
 
 apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int order)
 {
@@ -80,6 +95,14 @@ apf::Field* createSIMLagrangeField(Mesh* m, const char* name, int valueType, int
 apf::Field* createSIMFieldOn(Mesh* m, const char* name, int valueType)
 {
   return createSIMField(m, name, valueType, m->getShape());
+}
+
+apf::Field* createSIMPackedField(Mesh* m, const char* name, int components,
+    apf::FieldShape* shape)
+{
+  if (!shape)
+    shape = m->getShape();
+  return createSIMGeneralField(m, name, PACKED, components, shape);
 }
 
 MeshSIM::MeshSIM(pParMesh m):

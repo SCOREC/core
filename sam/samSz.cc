@@ -35,6 +35,8 @@ void setLenAndCnt(apf::Mesh* m, apf::Field* fLen, apf::Field* fCnt) {
 }
 
 apf::Field* getIsoSize(apf::Mesh* m, apf::Field* fLen, apf::Field* fCnt) {
+  if (m->findField("isoSize"))
+    apf::destroyField(m->findField("isoSize"));
   apf::Field* sz = createFieldOn(m, "isoSize", apf::SCALAR);
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
