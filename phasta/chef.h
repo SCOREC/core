@@ -27,7 +27,14 @@ namespace chef {
     const char* packedFieldname,
     const char* requestFieldname,
     int firstComp,
-    int numOfComp);
+    int numOfComp,
+    bool simField = false);
+  /** @brief combine 3 fields into 1 packed field */
+  apf::Field* combineField(apf::Mesh* m,
+    const char* packedFieldname,
+    const char* inFieldname1,
+    const char* inFieldname2,
+    const char* inFieldname3);
   /** @brief read and attach fields from files */
   void readAndAttachFields(ph::Input& ctrl, apf::Mesh2*& m);
   /** @brief load balance the partition then reorder the vertices */
