@@ -46,7 +46,7 @@ struct Ray{
 class FPPSnapper
 {
   public:
-    FPPSnapper(Adapt* a, Tag* st, Entity* v, apf::Up& badElems);
+    FPPSnapper(Adapt* a, Collapse& c, Tag* st, Entity* v, apf::Up& badElements);
     bool findFPP();
     bool snapToFPP();
   private:
@@ -54,7 +54,7 @@ class FPPSnapper
     Tag* snapTag;
     Entity* vert;
     Collapse collapse;
-    apf::Up badElements;
+    apf::Up problemRegions;
     Entity* problemFace;
     Entity* problemRegion;
     Vector intersection;
@@ -64,7 +64,7 @@ class FPPSnapper
     void getFaceCoords(Entity* face, std::vector<Vector>& coords);
     bool intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
     	Vector& intersection, bool& isInf);
-    void findCommonEdges(apf::Up& coplanarBadElems);
+    void findCommonEdges(apf::Up& cpRegions);
 };
 
 Vector getCenter(Mesh* mesh, Entity* face);
