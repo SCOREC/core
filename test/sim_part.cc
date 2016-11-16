@@ -24,6 +24,9 @@
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
+#endif
+
+#ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
 #endif
 
