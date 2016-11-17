@@ -16,6 +16,7 @@
 #include "maMatch.h"
 #include <apfGeometry.h>
 #include <cassert>
+#include <iostream>
 
 namespace ma {
 
@@ -25,13 +26,22 @@ namespace ma {
    the vertex coordinates of a mesh edge is more than half
    the periodic range, then the edge
    crosses over the discontinuity and we need
-   to interpolate differently. */
+   to interpolate differently.
+   The last parameter "mode" is there since sometimes
+   this function needs to be called with mode = 0 and
+   other times it needs to be called with mode = 1.
+   For example, "interpolateParametricCoordinates".
+   Also, this function needs to be called with with
+   mode = 0 first. And if the resulting point corresponding
+   to the parametric coordinates is not inside the model,
+   it should be called again with mode =1 a second time*/
 static double interpolateParametricCoordinate(
     double t,
     double a,
     double b,
     double range[2],
-    bool isPeriodic)
+    bool isPeriodic,
+    int mode)
 {
   if ( ! isPeriodic)
     return (1-t)*a + t*b;
@@ -44,8 +54,14 @@ static double interpolateParametricCoordinate(
   }
   double period = range[1]-range[0];
   double span = b-a;
-  if (span < (period/2))
-    return (1-t)*a + t*b;
+  if (!mode) {
+    if (span < (period/2))
+      return (1-t)*a + t*b;
+  }
+  else {
+    if (span <= (period/2))
+      return (1-t)*a + t*b;
+  }
   a += period;
   double result = (1-t)*a + t*b;
   if (result >= range[1])
@@ -67,7 +83,30 @@ void interpolateParametricCoordinates(
   int dim = m->getModelType(g);
   for (int d=0; d < dim; ++d) {
     bool isPeriodic = m->getPeriodicRange(g,d,range);
-    p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic);
+    p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 0);
+  }
+
+  /* check if the new point is inside the model.
+   * otherwise re-run the above loop with last option
+   * in "interpolateParametricCoordinae" being 1.
+   * Notes
+   * 1) we are assuming manifold surfaces
+   * 2) we only check for faces that are periodic
+   */
+
+  // this need to be done for faces, only
+  if (dim != 2)
+    return;
+
+  Vector x;
+  bool ok;
+  ok = m->isParamPointInsideModel(g, &p[0], x);
+  if (ok)
+    return;
+
+  for (int d=0; d < dim; ++d) {
+    bool isPeriodic = m->getPeriodicRange(g,d,range);
+    p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
 }
 
@@ -248,6 +287,7 @@ void visualizeGeometricInfo(Mesh* m, const char* name)
   Tag* dimensionTag = m->createIntTag("ma_geom_dim",1);
   Tag* idTag = m->createIntTag("ma_geom_id",1);
   apf::Field* field = apf::createLagrangeField(m,"ma_param",apf::VECTOR,1);
+  apf::Field* targetField = apf::createLagrangeField(m,"ma_target",apf::VECTOR,1);
   Iterator* it = m->begin(0);
   Entity* v;
   while ((v = m->iterate(it)))
@@ -258,7 +298,17 @@ void visualizeGeometricInfo(Mesh* m, const char* name)
     int id = m->getModelTag(c);
     m->setIntTag(v,idTag,&id);
     Vector p;
+    Vector xp = getPosition(m, v);
     m->getParam(v,p);
+    if (dimension == 2 || dimension == 1) {
+      Vector x;
+      m->isParamPointInsideModel(c, &p[0], x);
+      apf::setVector(targetField, v, 0, x - xp);
+    }
+    else {
+      Vector x(0., 0., 0.);
+      apf::setVector(targetField, v, 0, x);
+    }
     apf::setVector(field,v,0,p);
   }
   m->end(it);
@@ -273,6 +323,7 @@ void visualizeGeometricInfo(Mesh* m, const char* name)
   m->destroyTag(dimensionTag);
   m->destroyTag(idTag);
   apf::destroyField(field);
+  apf::destroyField(targetField);
 }
 
 }

@@ -130,20 +130,43 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
   return true;
 }
 
+#ifdef DO_FPP
+  static bool trySnappingToFPP2(Adapt* a, Collapse& c, Tag* st, Entity* v,
+      apf::Up& badElements)
+  {
+    // make a FPPSnapper Object
+    FPPSnapper fpps(a, c, st, v, badElements);
+    return fpps.findFPP() ? fpps.snapToFPP() : false;
+  }
+
+  static bool trySnappingToFPP(Adapt* a, Collapse& c, Tag* st, Entity* v,
+      apf::Up& badElements)
+  {
+    bool hadItBefore = getFlag(a, v, DONT_COLLAPSE);
+    setFlag(a, v, DONT_COLLAPSE);
+    bool ok = trySnappingToFPP2(a, c, st, v, badElements);
+    if (!hadItBefore)
+      clearFlag(a, v, DONT_COLLAPSE);
+    return ok;
+  }
+#endif
+
 static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements)
 {
   Mesh* m = a->mesh;
   for (int i = 0; i < badElements.n; ++i) {
     Entity* elem = badElements.e[i];
     Downward edges;
-    int nedges = m->getDownward(elem, 1, edges);
-    for (int j = 0; j < nedges; ++j)
+    int nedges;
+    nedges = m->getDownward(elem, 1, edges);
+    for (int j = 0; j < nedges; ++j){
+      /* std::cout << "(i,j) is (" << i << "," << j << ")" << std::endl; */
       if (tryDiggingEdge(a, c, edges[j]))
-        return true;
+	return true;
+    }
   }
   return false;
 }
-
 static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
     apf::Up& badElements)
 {
@@ -155,17 +178,6 @@ static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
   return ok;
 }
 
-static bool trySnappingToFPP(Adapt* adapter, Tag* st, Entity* vert,
-    apf::Up& badElements)
-{
-  // to be completed ...
-  // make a FPPSnapper Object
-  FPPSnapper fpps(adapter, st, vert, badElements);
-  /* return fpps.findFPP() ? fpps.snapToFPP() : false; */
-  return true;
-}
-
-
 bool Snapper::run()
 {
   dug = false;
@@ -176,9 +188,13 @@ bool Snapper::run()
     return ok;
   if (ok)
     return true;
-  toFPP = trySnappingToFPP(adapter, snapTag, vert, badElements);
+#ifdef DO_FPP
+  Mesh* mesh = adapter->mesh;
+  assert(mesh->hasTag(vert, snapTag));
+  toFPP = trySnappingToFPP(adapter, collapse, snapTag, vert, badElements);
   if (!toFPP)
     return false;
+#endif
   dug = tryDigging(adapter, collapse, vert, badElements);
   if (!dug)
     return false;
@@ -186,15 +202,15 @@ bool Snapper::run()
 }
 
 
-FPPSnapper::FPPSnapper(Adapt* a, Tag* st, Entity* v, apf::Up& badElems)
+FPPSnapper::FPPSnapper(Adapt* a, Collapse& c, Tag* st, Entity* v, apf::Up& badElements)
 {
   adapter = a;
   snapTag = st;
-  collapse.Init(a);
+  collapse = c;
   vert = v;
-  badElements.n = badElems.n;
-  for (int i = 0; i < badElems.n; i++) {
-    badElements.e[i] = badElems.e[i];
+  problemRegions.n = badElements.n;
+  for (int i = 0; i < badElements.n; i++) {
+    problemRegions.e[i] = badElements.e[i];
   }
   problemFace = 0;
   problemRegion = 0;
@@ -210,10 +226,10 @@ bool FPPSnapper::findFPP()
 
   // determine distances to all possible problem faces, the shortest
   // distance and its intersection on first problem plane (FPP)
-  int n = badElements.n;
+  int n;
+  n = problemRegions.n;
   Entity* elem;
   Entity* face;
-  std::vector<Vector> coords;
   Ray ray;
   Vector target;
   mesh->getDoubleTag(vert, snapTag, &target[0]);
@@ -222,9 +238,11 @@ bool FPPSnapper::findFPP()
   ray.dir   = target - ray.start;
 
   for (int i = 0; i < n; i++) {
-    elem = badElements.e[i];
+    elem = problemRegions.e[i];
     face = faceOppositeOfVert(elem, vert);
+    std::vector<Vector> coords;
     getFaceCoords(face, coords);
+
     Vector intersect;
     bool isInf;
     bool ok = intersectRayFace(ray, coords, intersect, isInf);
@@ -276,25 +294,55 @@ bool FPPSnapper::findFPP()
   if (!problemRegion)
     return false;
 
-  apf::Up coplanarBadElements;
-  coplanarBadElements.n = 0;
+  apf::Up coplanarProblemRegions;
+  coplanarProblemRegions.n = 0;
   minDist += tol;
-  for (int i = 0; i < badElements.n; i++) {
+  for (int i = 0; i < problemRegions.n; i++) {
     if (dists[i] < minDist) {
-      coplanarBadElements.n++;
-      coplanarBadElements.e[i] = badElements.e[i];
+      coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions.e[i];
+      coplanarProblemRegions.n++;
     }
   }
 
-  findCommonEdges(coplanarBadElements);
+  findCommonEdges(coplanarProblemRegions);
   return true;
 }
 
 bool FPPSnapper::snapToFPP()
 {
-  // to be completed
   bool snapped = false;
-  return snapped || true;
+  Mesh* mesh = adapter->mesh;
+
+  // We deny collapsing that moves further away form the current target
+  // Need the original dist b/w the current vert and the target snap point
+  Vector x, t;
+  x = getPosition(mesh, vert);
+  mesh->getDoubleTag(vert, snapTag, &t[0]);
+
+  double dist = (x - t).getLength();
+
+  Entity* edge;
+  Entity* v;
+
+  for (int i = 0; i < commEdges.n; i++) {
+    edge = commEdges.e[i];
+    Downward dv;
+    mesh->getDownward(edge, 0, dv);
+    (dv[0] == vert) ? v = dv[1] : v = dv[0];
+    Vector vCoord = getPosition(mesh, v);
+
+    if (false) {;} // boundary layer stuff
+
+    double candidateDist = (vCoord - x).getLength();
+    if (candidateDist > dist)
+      continue;
+
+    // try digging edge here
+    snapped = tryDiggingEdge(adapter, collapse, edge);
+    if (snapped)
+      return true;
+  }
+  return snapped;
 }
 
 Entity* FPPSnapper::faceOppositeOfVert(Entity* e, Entity* v)
@@ -316,6 +364,19 @@ Entity* FPPSnapper::faceOppositeOfVert(Entity* e, Entity* v)
     else
       continue;
   }
+
+  // make sure that oppositeFace is what it is meant to be!
+  Downward verts;
+  int numDownVerts = mesh->getDownward(oppositeFace, 0, verts);
+  bool flag = true;
+  for (int i = 0; i < numDownVerts; i++) {
+    if (v == verts[i]){
+      flag = false;
+      break;
+    }
+  }
+  assert(flag);
+
   return oppositeFace;
 }
 
@@ -333,9 +394,22 @@ bool
 FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
     Vector& intersection, bool& isInf)
 {
+
+  std::cout << ">>>>--------------------" << std::endl;
+  /* std::cout << "inside loop at iteration " << i << std::endl; */
+  std::cout << "start of ray " << ray.start << std::endl;
+  std::cout << "dir   of ray " << ray.dir << std::endl;
+  /* std::cout << "number of face verts " << coords.size() << std::endl; */
+  /* for (int k = 0; k < (int)coords.size(); k++) { */
+  /*   std::cout << "face " << k << ": " << coords[k] << std::endl; */
+  /* } */
+  std::cout << "--------------------<<<<" << std::endl;
+
+
   bool res = false;
   isInf = false;
   if (coords.size() != 3){
+    std::cout << "coords.size() is " << coords.size() << std::endl;
     std::cout << "No implementation for non-tri faces!" << std::endl;
     res = false;
   }
@@ -373,12 +447,12 @@ FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
   return res;
 }
 
-void FPPSnapper::findCommonEdges(apf::Up& coplanarBadElems)
+void FPPSnapper::findCommonEdges(apf::Up& cpRegions)
 {
   Mesh* mesh = adapter->mesh;
-  if (coplanarBadElems.n == 1) {
+  if (cpRegions.n == 1) {
     Downward edges;
-    int nDownEdges = mesh->getDownward(coplanarBadElems.e[0], 1, edges);
+    int nDownEdges = mesh->getDownward(cpRegions.e[0], 1, edges);
     for (int i = 0; i < nDownEdges; i++) {
       if (isLowInHigh(mesh, edges[i], vert)) {
 	commEdges.e[commEdges.n] = edges[i];
@@ -396,8 +470,8 @@ void FPPSnapper::findCommonEdges(apf::Up& coplanarBadElems)
   double minDist = ctrToIntersect.getLength();
   tmpRegion = problemRegion;
 
-  for (int i = 0; i < coplanarBadElems.n; i++) {
-    region = coplanarBadElems.e[i];
+  for (int i = 0; i < cpRegions.n; i++) {
+    region = cpRegions.e[i];
     if (region == tmpRegion) continue;
     face = faceOppositeOfVert(region, vert);
     ctrToIntersect = getCenter(mesh, face) - intersection;
@@ -415,8 +489,8 @@ void FPPSnapper::findCommonEdges(apf::Up& coplanarBadElems)
   for (int i = 0; i < nDownEdges; i++) {
     if (isLowInHigh(mesh, edges[i], vert)) {
       flag = 1;
-      for (int j = 0; j < coplanarBadElems.n; j++) {
-      	region = coplanarBadElems.e[j];
+      for (int j = 0; j < cpRegions.n; j++) {
+      	region = cpRegions.e[j];
       	if (region == problemRegion) continue;
       	if (!isLowInHigh(mesh, region, edges[i])) {
       	  flag = 0;

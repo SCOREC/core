@@ -93,6 +93,8 @@ struct gmi_model_ops {
   /** \brief implement gmi_first_derivative */
   void (*first_derivative)(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double t0[3], double t1[3]);
+  /** \brief implement gmi_is_point_in_region */
+  int (*is_point_in_region)(struct gmi_model* m, struct gmi_ent* e, double p[3]);
   /** \brief implement gmi_destroy */
   void (*destroy)(struct gmi_model* m);
 };
@@ -167,6 +169,8 @@ void gmi_normal(struct gmi_model* m, struct gmi_ent* e,
 /** \brief return first derivative */
 void gmi_first_derivative(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double t0[3], double t1[3]);
+/** \brief check if point is in region*/
+int gmi_is_point_in_region(struct gmi_model* m, struct gmi_ent* e, double point[3]);
 /** \brief destroy a geometric model */
 void gmi_destroy(struct gmi_model* m);
 

@@ -219,6 +219,20 @@ void Mesh::getFirstDerivative(ModelEntity* g, Vector3 const& p,
   gmi_first_derivative(getModel(),e,&p[0], &t0[0], &t1[0]);
 }
 
+bool Mesh::isParamPointInsideModel(ModelEntity* g,
+    Vector3 const& param, Vector3& x)
+{
+  int dim = getModelType(g);
+  assert(dim == 1 || dim == 2);
+  gmi_ent* e = (gmi_ent*)g;
+  gmi_set* adjRegions = gmi_adjacent(getModel(), e, 3);
+  assert(adjRegions->n == 1);
+  gmi_ent* r = (gmi_ent*)adjRegions->e[0];
+  gmi_eval(getModel(), (gmi_ent*)g, &param[0], &x[0]);
+  int res = gmi_is_point_in_region(getModel(), r, &x[0]);
+  return (res == 1) ? true : false;
+}
+
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
 {
   getVector(coordinateField,e,node,p);
