@@ -82,6 +82,11 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   apf::Up up;
   m->getUp(e, up);
   int upwardCount = up.n;
+
+  bool adjacentToUpwardGhost=false;
+  for (int i=0; i<upwardCount; ++i)
+    if (m->isGhost(up.e[i])) adjacentToUpwardGhost=true;
+
   int meshDimension = m->getDimension();
   int entityDimension = getDimension(m, e);
   int difference = meshDimension - entityDimension;
@@ -116,7 +121,8 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     okay = (upwardCount == expected);
   else
     okay = (upwardCount >= expected);
-  if ( ! okay) {
+  if ( ! okay) 
+  {
     std::stringstream ss;
     char const* n = apf::Mesh::typeName[m->getType(e)];
     ss << "apf::Verify: " << n << " with " << upwardCount << " adjacent "
@@ -141,13 +147,21 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
       ss << " - " << n << " has periodic matches\n";
     if (isExposedByMesh)
       ss << "   making it \"exposed\" at the part boundary\n";
-    ss << "we would expect the adjacent " << dimName[entityDimension + 1] << " count to be ";
-    if (difference == 1)
-      ss << "exactly " << expected << '\n';
+    if (m->isGhost(e))
+      ss << " - " << n << " is a ghost entity\n";
+    if (adjacentToUpwardGhost)
+      ss << " - " << n << " is adjacent to "<<entityDimension+1<<"-dimensional ghost entity\n";
     else
-      ss << "at least " << expected << '\n';
-    std::string s = ss.str();
-    fail(s.c_str());
+    {
+      ss << "we would expect the adjacent " << dimName[entityDimension + 1] << " count to be ";
+      if (difference == 1)
+        ss << "exactly " << expected << '\n';
+      else
+        ss << "at least " << expected << '\n';
+    }
+    std::string s = ss.str(); 
+    if (!adjacentToUpwardGhost)
+      fail(s.c_str()); 
   }
   /* this is here for some spiderwebby simmetrix meshes */
   if (upwardCount >= 200) {
@@ -266,7 +280,7 @@ static void verifyRemoteCopies(Mesh* m)
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
     while ((e = m->iterate(it)))
-      if (m->isShared(e))
+      if (m->isShared(e) && !m->isGhost(e))
         sendAllCopies(m, e);
     m->end(it);
   }
@@ -274,6 +288,65 @@ static void verifyRemoteCopies(Mesh* m)
   while (PCU_Comm_Receive())
     receiveAllCopies(m);
 }
+
+// ghost verification
+static void sendGhostCopies(Mesh* m, MeshEntity* e)
+{
+  Copies g;
+  m->getGhosts(e, g);
+  assert(g.size());
+  APF_ITERATE(Copies, g, it)
+  {
+    PCU_COMM_PACK(it->first, it->second);
+    PCU_COMM_PACK(it->first, e);
+  }
+}
+
+static void receiveGhostCopies(Mesh* m)
+{
+  int from = PCU_Comm_Sender();
+  MeshEntity* e;
+  PCU_COMM_UNPACK(e);
+  MeshEntity* g;
+  PCU_COMM_UNPACK(g);
+  assert(m->isGhost(e) || m->isGhosted(e));
+  Copies ghosts;
+  m->getGhosts(e,ghosts);
+  if (m->isGhosted(e))
+    assert(ghosts.count(from));
+  if (m->isGhost(e) && m->getOwner(e)==from)
+  {
+    assert(ghosts.size()==1);
+  }
+}
+
+static void verifyGhostCopies(Mesh* m)
+{
+  PCU_Comm_Begin();
+  for (int d = 0; d <= m->getDimension(); ++d)
+  {
+    MeshIterator* it = m->begin(d);
+    MeshEntity* e;
+    while ((e = m->iterate(it)))
+      if (m->isGhosted(e) || m->isGhost(e))
+        sendGhostCopies(m, e);
+    m->end(it);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive())
+    receiveGhostCopies(m);
+}
+
+static void verifyFields(Mesh* m) 
+{
+  m->getDimension(); 
+}
+
+static void verifyTagData(Mesh* m) 
+{
+ m->getDimension(); 
+}
+
 
 static bool hasMatch(
     Matches& matches,
@@ -488,6 +561,8 @@ void verify(Mesh* m)
 {
   double t0 = PCU_Time();
   verifyTags(m);
+  verifyTagData(m);
+  verifyFields(m);
   UpwardCounts guc;
   getUpwardCounts(m->getModel(), m->getDimension(), guc);
   /* got to 3 on purpose, so we can verify if
@@ -509,6 +584,7 @@ void verify(Mesh* m)
   }
   guc.clear();
   verifyRemoteCopies(m);
+  verifyGhostCopies(m);
   verifyAlignment(m);
   verifyMatches(m);
   long n = verifyCoords(m);

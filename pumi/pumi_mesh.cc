@@ -381,11 +381,6 @@ void pumi_mesh_delete(pMesh m)
 
 void pumi_mesh_verify(pMesh m)
 {
-  if (pumi::instance()->ghosted_tag)
-  {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
-    return;
-  }
   apf::verify(m);
 }
 
