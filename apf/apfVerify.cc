@@ -5,6 +5,7 @@
 #include <sstream>
 #include <apfGeometry.h>
 #include <cassert>
+#include "stdlib.h" // malloc
 
 namespace apf {
 
@@ -77,11 +78,16 @@ static void getUpwardCounts(gmi_model* gm, int meshDimension, UpwardCounts& uc)
 }
 
 static void verifyUp(Mesh* m, UpwardCounts& guc,
-    MeshEntity* e)
+    MeshEntity* e, bool abort_on_error)
 {
   apf::Up up;
   m->getUp(e, up);
   int upwardCount = up.n;
+
+  bool adjacentToUpwardGhost=false;
+  for (int i=0; i<upwardCount; ++i)
+    if (m->isGhost(up.e[i])) adjacentToUpwardGhost=true;
+
   int meshDimension = m->getDimension();
   int entityDimension = getDimension(m, e);
   int difference = meshDimension - entityDimension;
@@ -116,7 +122,8 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     okay = (upwardCount == expected);
   else
     okay = (upwardCount >= expected);
-  if ( ! okay) {
+  if ( ! okay) 
+  {
     std::stringstream ss;
     char const* n = apf::Mesh::typeName[m->getType(e)];
     ss << "apf::Verify: " << n << " with " << upwardCount << " adjacent "
@@ -141,13 +148,21 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
       ss << " - " << n << " has periodic matches\n";
     if (isExposedByMesh)
       ss << "   making it \"exposed\" at the part boundary\n";
-    ss << "we would expect the adjacent " << dimName[entityDimension + 1] << " count to be ";
-    if (difference == 1)
-      ss << "exactly " << expected << '\n';
+    if (m->isGhost(e))
+      ss << " - " << n << " is a ghost entity\n";
+    if (adjacentToUpwardGhost)
+      ss << " - " << n << " is adjacent to "<<entityDimension+1<<"-dimensional ghost entity\n";
     else
-      ss << "at least " << expected << '\n';
-    std::string s = ss.str();
-    fail(s.c_str());
+    {
+      ss << "we would expect the adjacent " << dimName[entityDimension + 1] << " count to be ";
+      if (difference == 1)
+        ss << "exactly " << expected << '\n';
+      else
+        ss << "at least " << expected << '\n';
+    }
+    std::string s = ss.str(); 
+    if (!adjacentToUpwardGhost && abort_on_error)
+      fail(s.c_str()); 
   }
   /* this is here for some spiderwebby simmetrix meshes */
   if (upwardCount >= 200) {
@@ -173,7 +188,7 @@ static void verifyResidence(Mesh* m, MeshEntity* e)
     assert(p.count(it->first));
 }
 
-static void verifyEntity(Mesh* m, UpwardCounts& guc, MeshEntity* e)
+static void verifyEntity(Mesh* m, UpwardCounts& guc, MeshEntity* e, bool abort_on_error)
 {
   int ed = getDimension(m, e);
   int md = m->getDimension();
@@ -183,7 +198,7 @@ static void verifyEntity(Mesh* m, UpwardCounts& guc, MeshEntity* e)
   if (ed)
     verifyDown(m, e, gd, ed);
   if (ed < md)
-    verifyUp(m, guc, e);
+    verifyUp(m, guc, e, abort_on_error);
   verifyResidence(m, e);
 }
 
@@ -266,13 +281,63 @@ static void verifyRemoteCopies(Mesh* m)
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
     while ((e = m->iterate(it)))
-      if (m->isShared(e))
+      if (m->isShared(e) && !m->isGhost(e))
         sendAllCopies(m, e);
     m->end(it);
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive())
     receiveAllCopies(m);
+}
+
+// ghost verification
+static void sendGhostCopies(Mesh* m, MeshEntity* e)
+{
+  Copies g;
+  m->getGhosts(e, g);
+  assert(g.size());
+  APF_ITERATE(Copies, g, it)
+  {
+    PCU_COMM_PACK(it->first, it->second);
+    PCU_COMM_PACK(it->first, e);
+  }
+}
+
+static void receiveGhostCopies(Mesh* m)
+{
+  int from = PCU_Comm_Sender();
+  MeshEntity* e;
+  PCU_COMM_UNPACK(e);
+  MeshEntity* g;
+  PCU_COMM_UNPACK(g);
+  assert(m->isGhost(e) || m->isGhosted(e));
+  Copies ghosts;
+  m->getGhosts(e,ghosts);
+  if (m->isGhosted(e))
+  {
+    assert(ghosts.count(from));
+  }
+  if (m->isGhost(e) && m->getOwner(e)==from)
+  {
+    assert(ghosts.size()==1);
+  }
+}
+
+static void verifyGhostCopies(Mesh* m)
+{
+  PCU_Comm_Begin();
+  for (int d = 0; d <= m->getDimension(); ++d)
+  {
+    MeshIterator* it = m->begin(d);
+    MeshEntity* e;
+    while ((e = m->iterate(it)))
+      if (m->isGhosted(e) || m->isGhost(e))
+        sendGhostCopies(m, e);
+    m->end(it);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive())
+    receiveGhostCopies(m);
 }
 
 static bool hasMatch(
@@ -455,17 +520,180 @@ static void verifyAlignment(Mesh* m)
     receiveAlignment(m);
 }
 
+// VERIFY FIELDS
+/*static void verifyFields(Mesh* m) 
+{
+}
+
+// VERIFY NUMBERINGS
+static void verifyNumberings(Mesh* m) 
+{
+}
+*/
+// VERIFY TAGS
+static void sendTagData(Mesh* m, MeshEntity* e, DynamicArray<MeshTag*>& tags, Copies& copies, bool is_ghost=false)
+{
+  void* msg_send;
+  MeshEntity** s_ent;
+  size_t msg_size;
+  int n = tags.getSize(), tag_type, tag_size;
+
+  for (int i = 0; i < n; ++i)
+  {
+    if (m->getTagName(tags[i])==std::string("ghosted_tag") && is_ghost) continue;
+    if (m->getTagName(tags[i])==std::string("ghost_tag")) continue;
+    if (!m->hasTag(e, tags[i])) continue;
+
+    APF_ITERATE(Copies, copies, it)
+    {
+      tag_type = m->getTagType(tags[i]);
+      tag_size = m->getTagSize(tags[i]);
+      switch (tag_type)
+      {
+        case Mesh::DOUBLE:  msg_size=sizeof(MeshEntity*)+sizeof(int)+tag_size*sizeof(double); break;
+        case Mesh::INT:  msg_size=sizeof(MeshEntity*)+sizeof(int)+tag_size*sizeof(int); break;
+        case Mesh::LONG:  msg_size=sizeof(MeshEntity*)+sizeof(int)+tag_size*sizeof(long); break;
+        default: msg_size=0;
+      }
+      assert(msg_size);
+      msg_send = malloc(msg_size);
+      s_ent = (MeshEntity**)msg_send; 
+      *s_ent = it->second; 
+      int *s_tagid = (int*)((char*)msg_send + sizeof(MeshEntity*));
+      s_tagid[0] =  i;
+      switch (tag_type)
+      {
+        case Mesh::DOUBLE: {
+                             double *data = (double*)((char*)msg_send+sizeof(MeshEntity*)+sizeof(int));
+                             m->getDoubleTag(e, tags[i], data);
+                             break;
+                           }
+        case Mesh::INT:    {
+                             int *data = (int*)((char*)msg_send+sizeof(MeshEntity*)+sizeof(int));
+                             m->getIntTag(e, tags[i], data);
+                             break;
+                           }
+        case Mesh::LONG:   {
+                             long *data = (long*)((char*)msg_send+sizeof(MeshEntity*)+sizeof(int));
+                             m->getLongTag(e, tags[i], data);
+                             break;
+                           }
+        default: break;
+      }
+      PCU_Comm_Write(it->first, (void*)msg_send, msg_size);
+      free(msg_send);
+    }
+  }
+}
+
+static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
+{
+  MeshEntity* e;
+  int tag_type, tag_size;
+  void *msg_recv;
+  int pid_from;
+  MeshTag* tag;
+  size_t msg_size;
+  std::set<MeshTag*> mismatch_tags;
+  
+  while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+  {
+    e = *((MeshEntity**)msg_recv); 
+    int *id = (int*)((char*)msg_recv+sizeof(MeshEntity*)); 
+    tag = tags[id[0]];
+    if (mismatch_tags.find(tag)!=mismatch_tags.end()) continue;
+    tag_type = m->getTagType(tag);
+    tag_size = m->getTagSize(tag);
+    if (!m->hasTag(e,tag)) 
+    {
+      mismatch_tags.insert(tag);
+      continue;
+    }
+    switch (tag_type)
+    {
+      case Mesh::DOUBLE: {
+                           double* r_data = (double*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
+                           int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(double);
+                           assert(num_data==tag_size);
+                           double *tag_data = new double[tag_size];
+                           m->getDoubleTag(e, tag, tag_data);
+                           for (int i=0; i<num_data; ++i)
+                           {
+                             if(tag_data[i]!=r_data[i])
+                             {
+                                mismatch_tags.insert(tag);
+                                break;
+                             }
+                           }
+                           delete [] tag_data;
+                           break;
+                         }
+      case Mesh::INT: {
+                           int* r_data = (int*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
+                           int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(int);
+                           assert(num_data==tag_size);
+                           int *tag_data = new int[tag_size];
+                           m->getIntTag(e, tag, tag_data);
+                           for (int i=0; i<num_data; ++i)
+                           {
+                             if (tag_data[i]!=r_data[i])
+                             {
+                                mismatch_tags.insert(tag);
+                                break;
+                             }
+                           }
+                           delete [] tag_data;
+                           break;
+                         }
+      case Mesh::LONG: {
+                           long* r_data = (long*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
+                           int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(long);
+                           assert(num_data==tag_size);
+                           long *tag_data = new long[tag_size];
+                           m->getLongTag(e, tag, tag_data);
+                           for (int i=0; i<num_data; ++i)
+                             if (tag_data[i]!=r_data[i])
+                             {
+                                mismatch_tags.insert(tag);
+                                break;
+                             }
+                           delete [] tag_data;
+                           break;
+                         }
+        default: break;
+    } // switch
+  } // while
+
+//FIXME: this crashes with test/adapt_fusion
+//  int global_size, local_size=(int)mismatch_tags.size();
+//  MPI_Allreduce(&local_size, &global_size,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+//  if (global_size&&!PCU_Comm_Self())
+  if (!PCU_Comm_Self())
+    for (std::set<MeshTag*>::iterator it=mismatch_tags.begin(); it!=mismatch_tags.end(); ++it)
+      printf("  - tag \"%s\" data mismatch over remote/ghost copies\n", m->getTagName(*it));
+}
+
 static void verifyTags(Mesh* m)
 {
   PCU_Comm_Begin();
   DynamicArray<MeshTag*> tags;
   m->getTags(tags);
   int self = PCU_Comm_Self();
+  int n = tags.getSize();
   if (self) {
-    int n = tags.getSize();
     PCU_COMM_PACK(self - 1, n);
     for (int i = 0; i < n; ++i)
       packTagInfo(m, tags[i], self - 1);
+  }
+  else // master
+  {
+    printf("verifying tags: ");
+    for (int i = 0; i < n; ++i)
+    {
+      printf("%s", m->getTagName(tags[i]));
+      if (i<n-1) printf(", ");      
+    }
+    printf("\n");
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
@@ -482,12 +710,42 @@ static void verifyTags(Mesh* m)
       assert(size == m->getTagSize(tags[i]));
     }
   }
+  
+  // verify tag data
+  PCU_Comm_Begin();
+  for (int d = 0; d <= m->getDimension(); ++d)
+  {
+    MeshIterator* it = m->begin(d);
+    MeshEntity* e;
+    while ((e = m->iterate(it)))
+    {
+      if (m->getOwner(e)!=PCU_Comm_Self()) continue;
+      if (m->isShared(e))
+      {
+        Copies r;
+        m->getRemotes(e, r);
+        sendTagData(m, e, tags, r);
+      }
+      if (m->isGhosted(e))
+      {
+        Copies g;
+        m->getGhosts(e, g);
+        sendTagData(m, e, tags, g, true);
+      }
+    } // while
+    m->end(it);
+  } // for
+  PCU_Comm_Send();
+  receiveTagData(m, tags);
 }
 
-void verify(Mesh* m)
+void verify(Mesh* m, bool abort_on_error)
 {
   double t0 = PCU_Time();
   verifyTags(m);
+//  verifyFields(m);
+//  verifyNumberings(m);
+
   UpwardCounts guc;
   getUpwardCounts(m->getModel(), m->getDimension(), guc);
   /* got to 3 on purpose, so we can verify if
@@ -499,7 +757,7 @@ void verify(Mesh* m)
     size_t n = 0;
     while ((e = m->iterate(it)))
     {
-      verifyEntity(m, guc, e);
+      verifyEntity(m, guc, e, abort_on_error);
       ++n;
     }
     m->end(it);
@@ -509,6 +767,7 @@ void verify(Mesh* m)
   }
   guc.clear();
   verifyRemoteCopies(m);
+  verifyGhostCopies(m);
   verifyAlignment(m);
   verifyMatches(m);
   long n = verifyCoords(m);

@@ -33,19 +33,24 @@ gEntity* gModel::getGeomEnt(gmi_ent* ge)
   return allEntities.getGeomEnt(gmi_dim(g, ge), ge);
 }
 
+void geom_freeze(pGeom g)
+{
+  pumi_geom_freezeAnalytic(g);
+}
+
 pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
 {
   if (!strcmp(model_type,"null"))
   {
     gmi_register_null();
     pumi::instance()->model = new gModel(gmi_load(".null"));
-    pumi_geom_freeze(pumi::instance()->model);
+    geom_freeze(pumi::instance()->model);
   }
   else if (!strcmp(model_type,"mesh"))
   {
     gmi_register_mesh();
     pumi::instance()->model = new gModel(gmi_load(filename));
-    pumi_geom_freeze(pumi::instance()->model);
+    geom_freeze(pumi::instance()->model);
   }
   else if (!strcmp(model_type,"analytic")) 
   {
@@ -53,10 +58,8 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
     if (geom_load_fp)
     {
       geom_load_fp(filename);
-      pumi_geom_freeze(pumi::instance()->model);
+      geom_freeze(pumi::instance()->model);
     }
-    else 
-      if (!pumi_rank()) std::cout<<"[PUMI INFO] Call \"pumi_geom_freeze(pGeom g)\" after adding analytic entities\n";
   }
   else
   {
@@ -67,7 +70,7 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
   return pumi::instance()->model;
 }
 
-void pumi_geom_freeze(pGeom g)
+void pumi_geom_freezeAnalytic(pGeom g)
 {
   // loop over entities and fill the container
   for (int i=0; i<=3; ++i)

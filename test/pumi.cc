@@ -138,12 +138,20 @@ int main(int argc, char** argv)
     m = pumi_mesh_load(g, meshFile, num_in_part); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
 
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] crean loaded tags from the mesh file\n";
+  std::vector<pMeshTag> tag_vec;
+  for (size_t n = 0; n<tag_vec.size(); ++n)
+  {
+    pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
+  }
+
   TEST_GHOSTING(m);
 
   // print elapsed time and increased heap memory
   pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
 
-  // clean-up
+  // clean-up 
+  pumi_mesh_verify(m);
   pumi_mesh_delete(m);
   pumi_finalize();
   MPI_Finalize();
@@ -358,7 +366,7 @@ Ghosting* getGhostingPlan(pMesh m)
     {
       for (int i=0; i<pumi_size()/2; ++i)
       {
-        int pid = (pumi_ment_getGlobalID(e)+rand())%pumi_size();
+        int pid = rand()%pumi_size();
         plan->send(e, pid);
       }
       ++count; 
@@ -366,10 +374,6 @@ Ghosting* getGhostingPlan(pMesh m)
     }
     m->end(it);
   }
-  // print mesh entities
-//  for (int i=0; i<pumi_size(); ++i)
-//    pumi_mesh_print(m, i);
-//  plan->print();
   return plan;
 }
 
@@ -418,8 +422,8 @@ void TEST_GHOSTING(pMesh m)
         total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
         if (!pumi_rank()) std::cout<<"\n[test_pumi] layer-wise pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
-        pumi_ghost_delete(m);
         pumi_mesh_verify(m);
+        pumi_ghost_delete(m);
         for (int i=0; i<4; ++i)
           assert(org_mcount[i] == int(m->count(i)));
       }
@@ -437,6 +441,7 @@ void TEST_GHOSTING(pMesh m)
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
       }
+ // pumi_mesh_verify(m); -- FIXME: this returns an error with ghost copy
   pumi_ghost_delete(m);
 
   for (int i=0; i<4; ++i)

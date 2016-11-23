@@ -15,9 +15,9 @@
 #include <set>
 #include <vector>
 
-enum PUMI_TagType { PUMI_BYTE=0,/*1*/ PUMI_INT,  /*2*/ PUMI_DBL,
+enum PUMI_TagType {/*0*/ PUMI_DBL, /*1*/ PUMI_INT, /*2*/ PUMI_LONG,
               /*3*/ PUMI_ENT,   /*4*/ PUMI_SET,  /*5*/ PUMI_PTR,
-              /*6*/ PUMI_STR,   /*7*/ PUMI_LONG, /*8*/ PUMI_TAGTYPES};
+              /*6*/ PUMI_STR,   /*7*/ PUMI_BYTE, /*8*/ PUMI_TAGTYPES};
 
 //******************************
 class TagHandle

@@ -85,7 +85,7 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
 }
 
 //*******************************************************
-void generate_global_numbering(apf::Mesh2* m)
+void pumi_mesh_createGlobalID(apf::Mesh2* m)
 //*******************************************************
 {
   pMeshTag tag = m->findTag("global_id");
@@ -102,12 +102,33 @@ void generate_global_numbering(apf::Mesh2* m)
 }
 
 //*******************************************************
-void destroy_global_numbering(apf::Mesh2* m)
+void pumi_mesh_deleteGlobalID(apf::Mesh2* m)
 //*******************************************************
 {
   pMeshTag tag = m->findTag("global_id");
+  if (!tag) return;
+
   for (int i=0; i<4; ++i)
-    apf::removeTagFromDimension(m, tag, m->getDimension());
+    apf::removeTagFromDimension(m, tag, i);
+
+  m->destroyTag(tag);
+}
+
+void pumi_mesh_getTags(pMesh m, std::vector<pMeshTag> tag_vec)
+{
+  apf::DynamicArray<pMeshTag> tags;
+  m->getTags(tags);
+  for (size_t n = 0; n<tags.getSize();++n)
+    tag_vec.push_back(tags[n]);
+}
+
+//*******************************************************
+void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete)
+//*******************************************************
+{
+  if (force_delete)
+    for (int i=0; i<4; ++i)
+      apf::removeTagFromDimension(m, tag, i);
 
   m->destroyTag(tag);
 }
@@ -185,7 +206,6 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
     m = apf::loadMdsMesh(g->getGmi(), filename);
   merge_comm(prevComm);
   pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1);
-  generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
@@ -215,7 +235,6 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   else
     pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
 
-  generate_global_numbering(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
@@ -258,6 +277,7 @@ void print_copies(pMesh m, pMeshEnt e)
 
 void pumi_mesh_print (pMesh m, int p)
 {
+  pumi_mesh_createGlobalID(m);
   if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \nglobal ";
   printStats(m);
 
@@ -331,6 +351,7 @@ void pumi_mesh_print (pMesh m, int p)
     }
     m->end(eit);
   }
+  pumi_mesh_deleteGlobalID(m);
 }
 
 void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
@@ -363,7 +384,7 @@ void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
     destroyField(ghost_f);
     destroyField(own_f);
   }
-else
+  else
     if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
 }
 
@@ -374,19 +395,13 @@ void pumi_mesh_delete(pMesh m)
   if (m->findTag("ghosted_tag"))
     m->destroyTag(pumi::instance()->ghosted_tag);
 
-  destroy_global_numbering(m);
   m->destroyNative();
   apf::destroyMesh(m);
 }
 
-void pumi_mesh_verify(pMesh m)
+void pumi_mesh_verify(pMesh m, bool abort_on_error)
 {
-  if (pumi::instance()->ghosted_tag)
-  {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
-    return;
-  }
-  apf::verify(m);
+  apf::verify(m, abort_on_error);
 }
 
 Distribution::Distribution(pMesh mesh)

@@ -134,7 +134,7 @@ int pumi_tag_getByte (const pTag tag);
 // Geometric Model
 // create a model from a file
 pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh", void (*fp)(const char*)=NULL);
-void pumi_geom_freeze(pGeom g); // shall be called after adding analytic model entities
+void pumi_geom_freezeAnalytic(pGeom g); // shall be called after adding analytic model entities
 int pumi_geom_getNumEnt(pGeom g, int d);
 
 // Geometric Entity
@@ -220,9 +220,18 @@ void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds"
 // delete mesh
 void pumi_mesh_delete(pMesh m);
 
-// verify mesh
-void pumi_mesh_verify(pMesh m);
+// create/delete tag
+void pumi_mesh_getTags(pMesh m, std::vector<pMeshTag> tags);
+void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete=false);
 
+// create/delete global ID
+void  pumi_mesh_createGlobalID(pMesh m);
+void  pumi_mesh_deleteGlobalID(pMesh m);
+// verify mesh
+void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
+//void pumi_mesh_verifyTag(pMesh m, pTag tag);
+//void pumi_mesh_verifyField(pMesh m, pTag tag);
+//void pumi_mesh_verifyNumbering(pMesh m, pTag tag);
 //************************************
 // mesh tag management
 //************************************

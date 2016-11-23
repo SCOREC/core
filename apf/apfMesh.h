@@ -370,7 +370,7 @@ class Mesh
 /** \brief run consistency checks on an apf::Mesh structure
   \details this can be used to implement apf::Mesh::verify.
   Other implementations may define their own. */
-void verify(Mesh* m);
+void verify(Mesh* m, bool abort_on_error=true);
 
 long verifyVolumes(Mesh* m, bool printVolumes = true);
 

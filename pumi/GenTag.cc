@@ -13,15 +13,20 @@
 #include <cassert>
 #include <cstring>
 
+//enum PUMI_TagType {/*0*/ PUMI_DBL, /*1*/ PUMI_INT, /*2*/ PUMI_LONG,
+//              /*3*/ PUMI_ENT,   /*4*/ PUMI_SET,  /*5*/ PUMI_PTR,
+//              /*6*/ PUMI_STR,   /*7*/ PUMI_BYTE, /*8*/ PUMI_TAGTYPES};
+
 size_t const TagHandle::typeSizes[PUMI_TAGTYPES] = 
-{sizeof(char)    //PUMI_BYTE
+{
+sizeof(double)  //PUMI_DBL
 ,sizeof(int)     //PUMI_INT
-,sizeof(double)  //PUMI_DBL
+,sizeof(long)    //PUMI_LONG
 ,sizeof(void*)   //PUMI_ENT
 ,sizeof(void*)   //PUMI_SET
 ,sizeof(void*)   //PUMI_PTR
 ,0               //PUMI_STR
-,sizeof(long)    //PUMI_LONG
+,sizeof(char)    //PUMI_BYTE
 };
 
 TagHandle::TagHandle(
