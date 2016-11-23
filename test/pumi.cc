@@ -150,7 +150,8 @@ int main(int argc, char** argv)
   // print elapsed time and increased heap memory
   pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
 
-  // clean-up
+  // clean-up 
+  pumi_mesh_verify(m);
   pumi_mesh_delete(m);
   pumi_finalize();
   MPI_Finalize();

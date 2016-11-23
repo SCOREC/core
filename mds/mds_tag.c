@@ -54,15 +54,12 @@ void mds_grow_tags(
     grow_tag(t,m,old_cap);
 }
 
-#include <stdio.h>
-
 struct mds_tag* mds_create_tag(
     struct mds_tags* ts,
     const char* name,
     int bytes,
     int user_type)
 {
-  printf("createTag %s\n", name);
   int l;
   struct mds_tag* t;
   t = calloc(1,sizeof(*t));
