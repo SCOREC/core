@@ -663,11 +663,11 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
         default: break;
     } // switch
   } // while
-  if (!PCU_Comm_Self())
-  {
+  int global_size, local_size=(int)mismatch_tags.size();
+  MPI_Allreduce(&local_size, &global_size,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  if (global_size&&!PCU_Comm_Self())
     for (std::set<MeshTag*>::iterator it=mismatch_tags.begin(); it!=mismatch_tags.end(); ++it)
       std::cout<<"  - tag \""<<m->getTagName(*it)<<"\" data mismatch over remote/ghost copies\n";
-  }
 }
 
 static void verifyTags(Mesh* m)
