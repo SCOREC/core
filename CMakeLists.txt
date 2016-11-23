@@ -66,6 +66,12 @@ if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
 
+option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
+message(STATUS "ENABLE_FPP: ${ENABLE_FPP}")
+if(ENABLE_FPP)
+  add_definitions(-DDO_FPP)
+endif()
+
 macro(scorec_export_library target)
 bob_export_target(${target})
 install(FILES ${HEADERS} DESTINATION include)

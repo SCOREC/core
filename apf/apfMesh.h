@@ -290,6 +290,10 @@ class Mesh
     /** \brief get first derivative at a point */
       void getFirstDerivative(ModelEntity* g, Vector3 const& p,
           Vector3& t0, Vector3& t1);
+    /** \brief checks if parametric  point is inside the model,
+     * and updates puts the location in x */
+    bool isParamPointInsideModel(ModelEntity* g,
+      Vector3 const& param, Vector3& x);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */
