@@ -220,9 +220,18 @@ void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds"
 // delete mesh
 void pumi_mesh_delete(pMesh m);
 
-// verify mesh
-void pumi_mesh_verify(pMesh m);
+// create/delete tag
+void pumi_mesh_getTags(pMesh m, std::vector<pMeshTag> tags);
+void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete=false);
 
+// create/delete global ID
+void  pumi_mesh_createGlobalID(pMesh m);
+void  pumi_mesh_deleteGlobalID(pMesh m);
+// verify mesh
+void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
+//void pumi_mesh_verifyTag(pMesh m, pTag tag);
+//void pumi_mesh_verifyField(pMesh m, pTag tag);
+//void pumi_mesh_verifyNumbering(pMesh m, pTag tag);
 //************************************
 // mesh tag management
 //************************************

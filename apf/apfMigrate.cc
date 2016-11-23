@@ -324,17 +324,6 @@ static void packReference(
   }
   else
   {
-/*  int global_id;
-  MeshTag* tag = m->findTag("global_id");
-  m->getIntTag(e, tag, &global_id);
-
-    if (global_id==9 && getDimension(m, e)==0)
-      APF_ITERATE(Copies,remotes,rit)
-      {
-        printf("(%d) e (d %d, id %d)'s remote exists on p %d\n", PCU_Comm_Self(), getDimension(m, e),global_id, rit->first); 
-      }
-    printf("(%d) packReference - getGhosts e (d %d, id %d)\n", PCU_Comm_Self(), getDimension(m, e),global_id);
-*/
     Copies ghosts;
     m->getGhosts(e,ghosts);
     found = ghosts.find(to);
