@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
 
-set(CTEST_NIGHTLY_START_TIME "19:00:00 EST")
+set(CTEST_NIGHTLY_START_TIME "17:00:00 EST")
 set(CTEST_SITE "jenga.scorec.rpi.edu" )
 set(CTEST_DROP_METHOD "http")
 set(CTEST_DROP_SITE "my.cdash.org")
