@@ -82,6 +82,12 @@ Do not mix tabs and spaces, be consistent.
 
 Do not leave trailing whitespace.
 
+## Comments ##
+
+Reserve the use of comments for describing functionality, why some code exists, etc. .
+
+Do not leave commented code in the develop or master branches.  
+
 ## Projects ##
 
 Each project should have a small abbreviation of its name that
