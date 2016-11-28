@@ -138,7 +138,7 @@ int main(int argc, char** argv)
     m = pumi_mesh_load(g, meshFile, num_in_part); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
 
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] crean loaded tags from the mesh file\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] clean loaded tags from the mesh file\n";
   std::vector<pMeshTag> tag_vec;
   for (size_t n = 0; n<tag_vec.size(); ++n)
   {

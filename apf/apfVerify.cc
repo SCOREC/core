@@ -664,11 +664,8 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
     } // switch
   } // while
 
-//FIXME: this crashes with test/adapt_fusion
-//  int global_size, local_size=(int)mismatch_tags.size();
-//  MPI_Allreduce(&local_size, &global_size,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
-//  if (global_size&&!PCU_Comm_Self())
-  if (!PCU_Comm_Self())
+  int global_size = PCU_Max_Int((int)mismatch_tags.size());
+  if (global_size&&!PCU_Comm_Self())
     for (std::set<MeshTag*>::iterator it=mismatch_tags.begin(); it!=mismatch_tags.end(); ++it)
       printf("  - tag \"%s\" data mismatch over remote/ghost copies\n", m->getTagName(*it));
 }
@@ -687,13 +684,16 @@ static void verifyTags(Mesh* m)
   }
   else // master
   {
-    printf("verifying tags: ");
-    for (int i = 0; i < n; ++i)
+    if (n)
     {
-      printf("%s", m->getTagName(tags[i]));
-      if (i<n-1) printf(", ");      
+      printf("verifying tags: ");
+      for (int i = 0; i < n; ++i)
+      {
+        printf("%s", m->getTagName(tags[i]));
+        if (i<n-1) printf(", ");      
+      }
+      printf("\n");
     }
-    printf("\n");
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
