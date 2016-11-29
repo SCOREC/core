@@ -20,11 +20,18 @@
 // Dan Fovargue - Feb 2014
 // Fan Yang     - Nov 2016
 //
+
+/* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
+#include "gmi_sim_config.h"
+#include <gmi_sim.h>
+
 #ifdef HAVE_SIMMETRIX
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
+#ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
+#endif
 #endif
 
 #include <stdlib.h>
@@ -41,9 +48,12 @@ using namespace std;
 // To run, type mpirun -np <#procs> <exec-with-path> in parallel
 
 const char* modelFilename;
+#ifdef SIM_PARASOLID
 const char* attribFilename;
+#endif
 const char* meshFilename;
 const char* outmeshFilename;
+int desiredTotNumParts;  // Desired total no. of partitions
 
 void messageHandler(int type, const char *msg);
 
@@ -52,30 +62,39 @@ int main(int argc, char **argv)
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
+#ifdef SIM_PARASOLID
   SimParasolid_start(1);
-
+#endif
   // Read in command line arguments
-  if(argc != 5){
-    cout<<"Usage: "<<argv[0]<<" [model.x_t] [attrib.smd] [input_mesh.sms] [num_parts]" << endl;
+  if (argc == 4) {
+    modelFilename = argv[1];
+    meshFilename = argv[2];
+    desiredTotNumParts = atoi(argv[3]);  // Desired total no. of partitions
+  }
+#ifdef SIM_PARASOLID
+  else if (argc == 5) {
+    modelFilename = argv[1];
+    attribFilename = argv[2];
+    meshFilename = argv[3];
+    desiredTotNumParts = atoi(argv[4]);  // Desired total no. of partitions
+  }
+#endif
+  else {
+    cout<<"Usage1: "<<argv[0]<<" [model.smd] [input_mesh.sms] [num_parts]" << endl;
+    cout<<"Enable Parasolid: " << endl;
+    cout<<"Usage2: "<<argv[0]<<" [model.x_t] [attrib.smd] [input_mesh.sms] [num_parts]" << endl;
     return 1;
   }
 
-  int desiredTotNumParts = atoi(argv[4]);  // Desired total no. of partitions
-
-  /* Initialize all strings needed for filenames */
-  modelFilename = argv[1];
-  attribFilename = argv[2];
-  meshFilename = argv[3];
-
   std::stringstream ss;
   ss << "outmesh_" << desiredTotNumParts << "_parts.sms";
-  std::string tmp = ss.str();   
+  std::string tmp = ss.str();
   outmeshFilename = tmp.c_str();
 
   /* print message */
   cout<<endl;
   cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
-  cout<<"Partitioning into "<<argv[4]<<" parts."<<endl;  
+  cout<<"Partitioning into "<< desiredTotNumParts <<" parts."<<endl;
   cout<<"Simmetrix says..."<<endl;
   cout<<"**********************************"<<endl;
 
@@ -89,8 +108,18 @@ int main(int argc, char **argv)
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
-  pNativeModel nmodel = ParasolidNM_createFromFile(modelFilename, 0);
-  pGModel model = GM_load(attribFilename, nmodel, progress);
+  pGModel model;
+#ifdef SIM_PARASOLID
+  pNativeModel nmodel = NULL;
+  if (argc == 5) {
+    nmodel = ParasolidNM_createFromFile(modelFilename, 0);
+    model = GM_load(attribFilename, nmodel, progress);
+  }
+  else
+#endif
+  {
+    model = GM_load(modelFilename, 0, progress);
+  }
 
   // Read a serial/partitioned mesh. It's advisable to read it on a GeomSim
   // model (ie. pass valid pGModel instead of 0 below).
@@ -104,7 +133,9 @@ int main(int argc, char **argv)
   PM_write(pmesh, outmeshFilename, sthreadNone, progress); // Write it out to a directory
   M_release(pmesh);                                    // Delete the partitioned mesh
   GM_release(model);
+#ifdef SIM_PARASOLID
   NM_release(nmodel);
+#endif
 
   cout<<"**********************************"<<endl;
   cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
@@ -112,7 +143,9 @@ int main(int argc, char **argv)
 
   Progress_delete(progress); 
   Sim_logOff();
+#ifdef SIM_PARASOLID
   SimParasolid_stop(1);
+#endif
   Sim_unregisterAllKeys();
   SimPartitionedMesh_stop();
   return 0;
