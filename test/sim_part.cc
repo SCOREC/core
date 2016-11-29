@@ -20,6 +20,11 @@
 // Dan Fovargue - Feb 2014
 // Fan Yang     - Nov 2016
 //
+
+/* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
+#include "gmi_sim_config.h"
+#include <gmi_sim.h>
+
 #ifdef HAVE_SIMMETRIX
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
