@@ -203,6 +203,7 @@ namespace ph {
       ph::writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
       // reset the function pointer to the original value
       out.openfile_write = fn;
+      in.writeGeomBCFiles = 0;
     }
     ph::writeGeomBC(out, path); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
