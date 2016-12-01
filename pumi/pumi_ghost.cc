@@ -395,6 +395,18 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
 {
   if (PCU_Comm_Peers()==1) return;
   
+  std::vector<apf::Field*> fields;
+  std::vector<apf::Field*> frozen_fields;
+  for (int i=0; i<m->countFields(); ++i)
+    fields.push_back(m->getField(i));
+  for (std::vector<apf::Field*>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
+    if (isFrozen(*fit))
+    {
+      frozen_fields.push_back(*fit); // turn field data from tag to array
+      apf::unfreeze(*fit);
+      if (!PCU_Comm_Self())  printf("unfreezing field %s\n", getName(*fit));
+    }
+
   double t0=PCU_Time();
 
   EntityVector entities_to_ghost[4];
@@ -414,6 +426,10 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   
   delete plan;
   m->acceptChanges();
+
+  for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
+    apf::freeze(*fit);
+
   if (!PCU_Comm_Self())
     printf("mesh ghosted in %f seconds\n", PCU_Time()-t0);
 }
