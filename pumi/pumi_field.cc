@@ -9,10 +9,20 @@
 *******************************************************************************/
 #include "pumi.h"
 #include "apf.h"
+#include "apfShape.h"
 
-pField pumi_field_create(pMesh m, const char* name, int num_dof_per_elm)
+void pumi_mesh_getField(pMesh m, std::vector<pField>& fields)
 {
-  return apf::createPackedField(m, name, num_dof_per_elm);
+  for (int i=0; i<m->countFields(); ++i)
+    fields.push_back(m->getField(i));
+}
+
+pField pumi_field_create(pMesh m, const char* name, int num_dof_per_vtx, int type, pShape s)
+{
+  if (type==apf::PACKED)
+    return apf::createPackedField(m, name, num_dof_per_vtx);
+  else
+    return createGeneralField(m, name, type, num_dof_per_vtx, s);
 }
 
 int pumi_field_getSize(pField f)

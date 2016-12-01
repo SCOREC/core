@@ -147,15 +147,25 @@ int main(int argc, char** argv)
   }
 
   TEST_FIELD(m);
+  std::vector<pField> fields;
+  pumi_mesh_getField(m, fields);
+
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated and synchronized\n\n";
 
   TEST_GHOSTING(m);
 
-  // print elapsed time and increased heap memory
-  pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
+  // delete fields
+  for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
+    pumi_field_delete(*fit);
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] field deleted\n";
 
   // clean-up 
   pumi_mesh_verify(m);
   pumi_mesh_delete(m);
+
+  // print elapsed time and increased heap memory
+  pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
+
   pumi_finalize();
   MPI_Finalize();
 }
@@ -395,8 +405,6 @@ void TEST_FIELD(pMesh m)
         assert(data[i] == xyz[i]);
   }
   m->end(it);
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] field generated and synchronized\n\n";
-
 }
 
 Ghosting* getGhostingPlan(pMesh m)
