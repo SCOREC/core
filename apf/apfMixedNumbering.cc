@@ -266,6 +266,20 @@ void getElementNumbers(
   }
 }
 
+void getElementNumbers(
+    std::vector<GlobalNumbering*> const& n,
+    MeshEntity* e,
+    std::vector<long>& numbers) {
+  /* prevent unneeded allocation? */
+  static NewArray<long> mixed_numbers;
+  numbers.resize(0);
+  for (size_t f=0; f < n.size(); ++f) {
+    int dofs = getElementNumbers(n[f], e, mixed_numbers);
+    for (int dof=0; dof < dofs; ++dof)
+      numbers.push_back(mixed_numbers[dof]);
+  }
+}
+
 int numberOwned(
     std::vector<Field*> const& fields,
     std::vector<Numbering*>& owned) {
