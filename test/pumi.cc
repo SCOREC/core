@@ -35,6 +35,7 @@ if (argc>=5)
 }
 
 void TEST_GEOM_TAG(pGeom g);
+void TEST_FIELD(pMesh m);
 void TEST_GHOSTING(pMesh m);
 
 //*********************************************************
@@ -138,12 +139,14 @@ int main(int argc, char** argv)
     m = pumi_mesh_load(g, meshFile, num_in_part); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
 
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] crean loaded tags from the mesh file\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] clean loaded tags from the mesh file\n";
   std::vector<pMeshTag> tag_vec;
   for (size_t n = 0; n<tag_vec.size(); ++n)
   {
     pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
   }
+
+  TEST_FIELD(m);
 
   TEST_GHOSTING(m);
 
@@ -353,6 +356,48 @@ void TEST_GEOM_TAG(pGeom g)
   assert(!tags.size());
 }
 
+void TEST_FIELD(pMesh m)
+{
+  int num_dofs_per_value=3;
+  pField f =pumi_field_create(m, "xyz_field", num_dofs_per_value);
+  assert(pumi_field_getName(f)==std::string("xyz_field"));
+  assert(pumi_field_getType(f)==apf::PACKED);
+  assert(pumi_field_getSize(f)==num_dofs_per_value);
+
+  // fill the dof data
+  double data[3];
+  double xyz[3];
+  apf::MeshIterator* it = m->begin(0);
+  pMeshEnt e;
+  while ((e = m->iterate(it)))
+  {
+    if (!pumi_ment_isOwned(e)) continue;
+    pumi_mvtx_getCoord(e, xyz);
+    if (pumi_ment_isOnBdry(e)) 
+      for (int i=0; i<3;++i) 
+        xyz[i] *= pumi_ment_getLocalID(e);
+    pumi_ment_setField(e, f, xyz);
+  }
+  m->end(it);
+
+  pumi_field_synchronize(f);
+
+  it = m->begin(0);
+  while ((e = m->iterate(it)))
+  {
+    if (!pumi_ment_isOwned(e)) continue;
+    pumi_mvtx_getCoord(e, xyz);
+    pumi_ment_getField(e, f, data);
+    for (int i=0; i<3;++i) 
+      if (pumi_ment_isOnBdry(e)) 
+        assert(data[i] == xyz[i]*pumi_ment_getLocalID(e));
+      else
+        assert(data[i] == xyz[i]);
+  }
+  m->end(it);
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] field generated and synchronized\n\n";
+
+}
 
 Ghosting* getGhostingPlan(pMesh m)
 {
