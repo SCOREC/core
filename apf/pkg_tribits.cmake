@@ -32,7 +32,7 @@ set(APF_SOURCES
   apfVectorField.cc
   apfPackedField.cc
   apfNumbering.cc
-  aprMixedNumbering.cc
+  apfMixedNumbering.cc
   apfAdjReorder.cc
   apfVtk.cc
   apfFieldData.cc
