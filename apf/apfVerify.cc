@@ -521,11 +521,101 @@ static void verifyAlignment(Mesh* m)
 }
 
 // VERIFY FIELDS
-/*static void verifyFields(Mesh* m) 
+
+void packFieldInfo(Field* f, int to)
 {
+  std::string name; 
+  name = getName(f);
+  packString(name, to);
+  int type, size;
+  type = getValueType(f);
+  PCU_COMM_PACK(to, type);
+  size = countComponents(f);
+  PCU_COMM_PACK(to, size);
+}
+
+void unpackFieldInfo(std::string& name, int& type, int& size)
+{
+  name = unpackString();
+  PCU_COMM_UNPACK(type);
+  PCU_COMM_UNPACK(size);
+}
+
+static void verifyFields(Mesh* m) 
+{
+  PCU_Comm_Begin();
+  int self = PCU_Comm_Self();
+  int n = m->countFields();
+  std::vector<Field*> fields;
+  for (int i=0; i<n; ++i)
+    fields.push_back(m->getField(i));
+  
+  if (self) {
+    PCU_COMM_PACK(self - 1, n);
+    for (int i = 0; i < n; ++i)
+      packFieldInfo(fields[i], self - 1);
+  }
+  else // master
+  {
+    if (n)
+    {
+      printf("  - verifying fields: ");
+      for (int i = 0; i < n; ++i)
+      {
+        printf("%s", getName(fields[i]));
+        if (i<n-1) printf(", ");      
+      }
+      printf("\n");
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int n;
+    PCU_COMM_UNPACK(n);
+    assert(fields.size() == (size_t)n);
+    for (int i = 0; i < n; ++i) {
+      std::string name;
+      int type;
+      int size;
+      unpackTagInfo(name, type, size);
+      assert(name == getName(fields[i]));
+      assert(type == getValueType(fields[i]));
+      assert(size == countComponents(fields[i]));
+    }
+  }
+  
+  // verify field data
+/*
+  PCU_Comm_Begin();
+  for (int d = 0; d <= m->getDimension(); ++d)
+  {
+    MeshIterator* it = m->begin(d);
+    MeshEntity* e;
+    while ((e = m->iterate(it)))
+    {
+      if (m->getOwner(e)!=PCU_Comm_Self()) continue;
+      if (m->isShared(e))
+      {
+        Copies r;
+        m->getRemotes(e, r);
+        sendTagData(m, e, tags, r);
+      }
+      if (m->isGhosted(e))
+      {
+        Copies g;
+        m->getGhosts(e, g);
+        sendTagData(m, e, tags, g, true);
+      }
+    } // while
+    m->end(it);
+  } // for
+  PCU_Comm_Send();
+  receiveTagData(m, tags);
+*/
 }
 
 // VERIFY NUMBERINGS
+/*
 static void verifyNumberings(Mesh* m) 
 {
 }
@@ -686,7 +776,7 @@ static void verifyTags(Mesh* m)
   {
     if (n)
     {
-      printf("verifying tags: ");
+      printf("  - verifying tags: ");
       for (int i = 0; i < n; ++i)
       {
         printf("%s", m->getTagName(tags[i]));
@@ -743,7 +833,7 @@ void verify(Mesh* m, bool abort_on_error)
 {
   double t0 = PCU_Time();
   verifyTags(m);
-//  verifyFields(m);
+  verifyFields(m);
 //  verifyNumberings(m);
 
   UpwardCounts guc;

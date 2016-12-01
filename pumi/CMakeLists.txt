@@ -7,6 +7,7 @@ endif()
 set(SOURCES
   GenTag.cc
   mPartEntityContainer.cc
+  pumi_field.cc
   pumi_geom.cc
   pumi_gentity.cc
   pumi_ghost.cc
