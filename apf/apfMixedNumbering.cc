@@ -56,9 +56,9 @@ static void create_owned(
   for (size_t i=0; i < fields.size(); ++i) {
     std::ostringstream oss;
     oss << "owned_n_" << i;
-    const char* n = oss.str().c_str();
+    std::string n = oss.str();
     FieldShape* s = getShape(fields[i]);
-    owned[i] = createNumbering(m, n, s, comps[i]);
+    owned[i] = createNumbering(m, n.c_str(), s, comps[i]);
   }
 }
 
@@ -71,9 +71,9 @@ static void create_ghost(
   for (size_t i=0; i < fields.size(); ++i) {
     std::ostringstream oss;
     oss << "ghost_n_" << i;
-    const char* n = oss.str().c_str();
+    std::string n = oss.str().c_str();
     FieldShape* s = getShape(fields[i]);
-    ghost[i] = createNumbering(m, n, s, comps[i]);
+    ghost[i] = createNumbering(m, n.c_str(), s, comps[i]);
   }
 }
 
