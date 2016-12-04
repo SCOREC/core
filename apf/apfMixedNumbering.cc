@@ -252,6 +252,13 @@ int countDOFs(std::vector<Numbering*> const& n) {
   return dofs;
 }
 
+int countDOFs(std::vector<GlobalNumbering*> const& n) {
+  int dofs = 0;
+  for (size_t f=0; f < n.size(); ++f)
+    dofs += countComponents(n[f]) * countNodes(n[f]);
+  return dofs;
+}
+
 void getElementNumbers(
     std::vector<Numbering*> const& n,
     MeshEntity* e,
