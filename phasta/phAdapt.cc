@@ -102,7 +102,8 @@ namespace chef {
     ma_in->shouldTransferParametric = in.transferParametric;
     ma_in->shouldRunMidParma = true; 
     ma_in->shouldRunPostParma = true; 
-    ma_in->shouldSnap = in.snap; 
+    ma_in->shouldSnap = in.snap;
+    ma_in->maximumIterations = in.maxAdaptIterations;
     if (m->hasMatching())
       ph::setupMatching(*ma_in);
     ma::adapt(ma_in);
