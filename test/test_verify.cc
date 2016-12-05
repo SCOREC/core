@@ -1,5 +1,4 @@
 #include <apf.h>
-#include <apfBox.h>
 #include <apfShape.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
