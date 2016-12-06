@@ -1,10 +1,10 @@
 /****************************************************************************** 
 
-  Copyright 2013 Scientific Computation Research Center, 
+  (c) 2004-2016 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
-  The LICENSE file included with this distribution describes the terms
-  of the SCOREC Non-Commercial License this program is distributed under.
+  This work is open source software, licensed under the terms of the
+  BSD license as described in the LICENSE file in the top-level directory.
  
 *******************************************************************************/
 #ifndef PUMI_H
@@ -14,6 +14,7 @@
 #include "GenTag.h"
 #include "GenIterator.h"
 #include "mPartEntityContainer.h"
+#include "apf.h"
 
 class gEntity;
 class mPartEntityContainer;
@@ -55,6 +56,8 @@ typedef apf::Parts Parts;
 typedef apf::Up Up;
 typedef apf::Downward Downward;
 typedef apf::Migration Migration;
+typedef apf::Field* pField;
+typedef apf::FieldShape* pShape;
 
 // singleton to save model/mesh
 class pumi
@@ -277,6 +280,25 @@ void pumi_ment_getEntArrTag (pMeshEnt ent, pTag tag, pMeshEnt** data, int* data_
 */
 
 //************************************
+//  Field
+//************************************
+
+pField pumi_field_create(pMesh m, const char* name, 
+    int num_dof_per_vtx, int type=apf::PACKED, pShape shape = NULL);
+int pumi_field_getSize(pField f);
+int pumi_field_getType(pField f);
+std::string pumi_field_getName(pField f);
+
+void pumi_field_delete(pField f);
+void pumi_field_synchronize(apf::Field* f);
+void pumi_field_accumulate(apf::Field* f);
+void pumi_field_freeze(apf::Field* f);
+void pumi_field_unfreeze(apf::Field* f);
+void pumi_mesh_getField(pMesh m, std::vector<pField>&);
+void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data);
+void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data);
+
+//************************************
 //  Ghosting
 //************************************
 
@@ -360,6 +382,8 @@ void pumi_ghost_getInfo (pMesh m, std::vector<int>& ghostinfo);
 //************************************
 //  Mesh Entity
 //************************************
+void pumi_mvtx_getCoord(pMeshEnt e, double* xyz);
+
 // get mesh entity's dimension
 int pumi_ment_getDim(pMeshEnt e);
 
@@ -387,7 +411,7 @@ pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);
 int pumi_ment_getOwnPID(pMeshEnt e); 
 
 // return owner entity copy. if ghoted mesh, vertex or element only
-pMeshEnt pumi_ment_getWwnEnt(pMeshEnt e); 
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e); 
 
 // return true if the entity is an owner copy
 bool pumi_ment_isOwned(pMeshEnt e);

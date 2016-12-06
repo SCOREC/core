@@ -150,6 +150,7 @@ util_exe_func(intrude intrude.cc)
 util_exe_func(extrude extrude.cc)
 test_exe_func(test_scaling test_scaling.cc)
 test_exe_func(mixedNumbering mixedNumbering.cc)
+test_exe_func(test_verify test_verify.cc)
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included

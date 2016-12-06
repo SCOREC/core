@@ -25,12 +25,26 @@ typedef NumberingOf<long> GlobalNumbering;
   * \returns The number of on-part numbered degrees of freedom */
 int countDOFs(std::vector<Numbering*> const& n);
 
+/** \brief Count the total numbered degrees of freedom.
+  * \param n The input local numberings.
+  * \returns The number of on-part numbered degrees of freedom */
+int countDOFs(std::vector<GlobalNumbering*> const& n);
+
 /** \brief Get the element numbers for multiple numberings.
-  * \param n The input global numberings.
+  * \param n The input numberings.
   * \param e The mesh entity for which to get element numbers.
   * \param numbers the output element numbers. */
 void getElementNumbers(
     std::vector<Numbering*> const& n,
+    MeshEntity* e,
+    std::vector<int>& numbers);
+
+/** \brief Get the element numbers for multiple global numberings.
+  * \param n The input global numberings.
+  * \param e The mesh entity for which to get element numbers.
+  * \param numbers The output element numbers. */
+void getElementNumbers(
+    std::vector<GlobalNumbering*> const& n,
     MeshEntity* e,
     std::vector<long>& numbers);
 

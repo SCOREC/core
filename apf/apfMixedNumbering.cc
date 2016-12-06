@@ -56,9 +56,9 @@ static void create_owned(
   for (size_t i=0; i < fields.size(); ++i) {
     std::ostringstream oss;
     oss << "owned_n_" << i;
-    const char* n = oss.str().c_str();
+    std::string n = oss.str();
     FieldShape* s = getShape(fields[i]);
-    owned[i] = createNumbering(m, n, s, comps[i]);
+    owned[i] = createNumbering(m, n.c_str(), s, comps[i]);
   }
 }
 
@@ -71,9 +71,9 @@ static void create_ghost(
   for (size_t i=0; i < fields.size(); ++i) {
     std::ostringstream oss;
     oss << "ghost_n_" << i;
-    const char* n = oss.str().c_str();
+    std::string n = oss.str().c_str();
     FieldShape* s = getShape(fields[i]);
-    ghost[i] = createNumbering(m, n, s, comps[i]);
+    ghost[i] = createNumbering(m, n.c_str(), s, comps[i]);
   }
 }
 
@@ -252,12 +252,33 @@ int countDOFs(std::vector<Numbering*> const& n) {
   return dofs;
 }
 
+int countDOFs(std::vector<GlobalNumbering*> const& n) {
+  int dofs = 0;
+  for (size_t f=0; f < n.size(); ++f)
+    dofs += countComponents(n[f]) * countNodes(n[f]);
+  return dofs;
+}
+
 void getElementNumbers(
     std::vector<Numbering*> const& n,
     MeshEntity* e,
     std::vector<int>& numbers) {
   /* prevent unneeded allocation? */
   static NewArray<int> mixed_numbers;
+  numbers.resize(0);
+  for (size_t f=0; f < n.size(); ++f) {
+    int dofs = getElementNumbers(n[f], e, mixed_numbers);
+    for (int dof=0; dof < dofs; ++dof)
+      numbers.push_back(mixed_numbers[dof]);
+  }
+}
+
+void getElementNumbers(
+    std::vector<GlobalNumbering*> const& n,
+    MeshEntity* e,
+    std::vector<long>& numbers) {
+  /* prevent unneeded allocation? */
+  static NewArray<long> mixed_numbers;
   numbers.resize(0);
   for (size_t f=0; f < n.size(); ++f) {
     int dofs = getElementNumbers(n[f], e, mixed_numbers);

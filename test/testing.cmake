@@ -299,7 +299,11 @@ mpi_test(mixedNumbering 4
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   out)
-
+set(MDIR ${MESHES}/cube)
+mpi_test(test_verify 4
+  ./test_verify
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi7k/4/cube.smb")
 set(MDIR ${MESHES}/nonmanifold)
 mpi_test(nonmanif_verify 1
   ./verify

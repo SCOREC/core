@@ -18,6 +18,13 @@
 #include <assert.h>
 
 using std::vector;
+void pumi_mvtx_getCoord(pMeshEnt e, double* xyz)
+{
+  apf::Vector3 coord;
+  pumi::instance()->mesh->getPoint(e, 0, coord);
+  for (int i=0; i<3; ++i)
+    xyz[i] = coord[i]; 
+}
 
 // mesh entity functions
 int pumi_ment_getDim(pMeshEnt e)
