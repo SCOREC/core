@@ -316,11 +316,26 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
     GE_firstDerivative((pGEdge)e,p[0],&t0[0]);
 }
 
-static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e, double point[3])
+static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
+    double point[3])
 {
   gmi_dim(m, e);
   int res = GR_containsPoint((pGRegion)e, &point[0]);
   return res;
+}
+
+static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
+    struct gmi_ent* et)
+{
+  int etd = gmi_dim(m, et);
+  if (etd == 3)
+    return GR_inClosure((pGRegion)et, (pGEntity)e);
+  if (etd == 2)
+    return GF_inClosure((pGFace)et, (pGEntity)e);
+  if (etd == 1)
+    return GE_inClosure((pGEdge)et, (pGEntity)e);
+  gmi_fail("requested operation is not possible\n");
+  return 0;
 }
 
 static void destroy(gmi_model* m)
@@ -384,6 +399,7 @@ void gmi_register_sim(void)
   ops.normal = normal;
   ops.first_derivative = first_derivative;
   ops.is_point_in_region = is_point_in_region;
+  ops.is_in_closure_of = is_in_closure_of;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");
