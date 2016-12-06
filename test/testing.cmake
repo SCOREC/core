@@ -23,6 +23,13 @@ mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
 
+
+if(ENABLE_SIMMETRIX)
+  mpi_test(in_closure_of 1
+    ./inClosureOf_test
+    "${MESHES}/cube/cube.smd")
+endif(ENABLE_SIMMETRIX)
+
 if(ENABLE_SIMMETRIX)
   set(GXT smd)
 else()
