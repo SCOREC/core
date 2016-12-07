@@ -30,6 +30,33 @@ apf::Field* errorThreshold(apf::Mesh* m, const char* fieldName,
   return newSz;
 }
 
+apf::Field* compareIsoSF(apf::Mesh* m, const char* desiredSzFld, int method)
+{
+  apf::Field* f = m->findField(desiredSzFld);
+  assert(f);
+  assert(f->countComponents() == 1);
+  apf::synchronize(f);
+  apf::Field* newSz = apf::createFieldOn(m,"compareIsoSF",apf::SCALAR);
+  apf::Field* curSz = samSz::isoSize(m);
+  double dsr = 0.0;
+  double cur = 0.0;
+  double rsl = 0.0;
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* itr = m->begin(0);
+  while( (vtx = m->iterate(itr)) ) {
+    dsr = apf::getScalar(f, vtx, 0);
+    cur = apf::getScalar(curSz,vtx,0);
+    switch (method) {
+      case 1:  rsl = (dsr-cur) / cur; break; // ratio of difference
+      default: rsl = dsr / cur;
+    }
+    apf::setScalar(newSz,vtx,0,rsl);
+  }
+  m->end(itr);
+  apf::destroyField(curSz);
+  return newSz;
+}
+
 apf::Field* specifiedIso(apf::Mesh* m, const char* fieldName, const unsigned idx)
 {
   apf::Field* f = m->findField(fieldName);
