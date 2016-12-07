@@ -146,6 +146,7 @@ typedef std::set<std::string> stringset;
 
 static void makeDeprecated(stringset& old)
 {
+  old.insert("globalP");
   old.insert("numSplit");
   old.insert("ParmaPtn");
   old.insert("RecursivePtn");
