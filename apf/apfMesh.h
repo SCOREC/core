@@ -294,6 +294,8 @@ class Mesh
      * and updates puts the location in x */
     bool isParamPointInsideModel(ModelEntity* g,
       Vector3 const& param, Vector3& x);
+    /** \brief checks if g is in the closure of the target */
+    bool isInClosureOf(ModelEntity* g, ModelEntity* target);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */

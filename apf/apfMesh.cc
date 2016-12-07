@@ -233,6 +233,16 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
   return (res == 1) ? true : false;
 }
 
+bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
+  // make sure that the dimension of target is greater or equal the
+  // dimension of the model entity to be checked.
+  assert(getModelType(target) >= getModelType(g));
+  gmi_ent* e  = (gmi_ent*)g;
+  gmi_ent* et = (gmi_ent*)target;
+  int res = gmi_is_in_closure_of(getModel(), e, et);
+  return (res == 1) ? true : false;
+}
+
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
 {
   getVector(coordinateField,e,node,p);

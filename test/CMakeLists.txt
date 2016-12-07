@@ -118,6 +118,7 @@ test_exe_func(shapefun2 shapefun2.cc)
 if(ENABLE_SIMMETRIX)
   test_exe_func(curvetest curvetest.cc)
   test_exe_func(curve_to_bezier curve_to_bezier.cc)
+  test_exe_func(inClosureOf_test inClosureOf_test.cc)
 endif()
 test_exe_func(bezierElevation bezierElevation.cc)
 test_exe_func(bezierMesh bezierMesh.cc)
@@ -150,6 +151,7 @@ util_exe_func(intrude intrude.cc)
 util_exe_func(extrude extrude.cc)
 test_exe_func(test_scaling test_scaling.cc)
 test_exe_func(mixedNumbering mixedNumbering.cc)
+test_exe_func(test_verify test_verify.cc)
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
