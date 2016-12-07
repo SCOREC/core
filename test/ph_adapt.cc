@@ -1,4 +1,5 @@
 #include "ma.h"
+#include "samSz.h"
 #include <chef.h>
 #include <apf.h>
 #include <gmi_mesh.h>
@@ -32,32 +33,16 @@ static bool overwriteAPFCoord(apf::Mesh2* m) {
   return true;
 }
 
-static apf::Field* prescribedSF(apf::Mesh2* m) {
-    double h = 0.0;
-//    double box[] = {2.625, 0.0, 0.0, 3.25, 1.75, 0.625};
-//    double ref = 0.00004;
-//    double cor = 0.0001;
-    double box[] = {0.0, 0.0, 0.0, 2.0, 2.0, 2.0};
-    double ref = 0.2;
-    double cor = 0.2;
-    apf::Field* newSz = apf::createFieldOn(m,"preSF",apf::SCALAR);
-    apf::Vector3 points;
-    apf::MeshEntity* vtx;
-    apf::MeshIterator* itr = m->begin(0);
-    while( (vtx = m->iterate(itr)) ) {
-      m->getPoint(vtx, 0, points);
-      if ( fabs(points[0]- box[0]) < box[3] &&
-           fabs(points[1]- box[1]) < box[4] &&
-           fabs(points[2]- box[2]) < box[5] ) {
-        h = ref;
-      }
-      else {
-        h = cor;
-      }
-      apf::setScalar(newSz,vtx,0,h);
-    }
-    m->end(itr);
-    return newSz;
+apf::Field* multipleSF(apf::Mesh* m, apf::Field* sf, double factor) {
+  apf::Field* sz = createFieldOn(m, "multipliedSize", apf::SCALAR);
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* itr = m->begin(0);
+  while( (vtx = m->iterate(itr)) ) {
+    double h = apf::getScalar(sf,vtx,0);
+    apf::setScalar(sz,vtx,0,h*factor);
+  }
+  m->end(itr);
+  return sz;
 }
 
 static FILE* openfile_read(ph::Input&, const char* path) {
@@ -93,7 +78,9 @@ int main(int argc, char** argv)
   if (m->findField("meshQ"))
     apf::destroyField(m->findField("meshQ"));
   /* prepare size field */
-  apf::Field* szFld = prescribedSF(m);
+  apf::Field* isoFld = samSz::isoSize(m);
+  apf::Field* szFld = multipleSF(m, isoFld, 1.0);
+  apf::writeVtkFiles("before",m);
   /* mesh adaptation */
   ma::Input* ma_in = ma::configure(m, szFld);
   ma_in->shouldRunPreZoltan = true;

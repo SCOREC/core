@@ -260,6 +260,7 @@ static void getInterface
     if (mattypeif1) mattypeif1[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
+  o.hasDGInterface = 0;
   int interfaceDim = m->getDimension() - 1;
   apf::MeshEntity*   face;
   apf::MeshIterator* it = m->begin(interfaceDim);
