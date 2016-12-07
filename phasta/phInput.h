@@ -12,7 +12,6 @@ class Input
   public:
     Input();
     void load(const char* filename);
-    int globalP;
     int timeStepNumber;
     int ensa_dof;
     int ensa_melas_dof;
