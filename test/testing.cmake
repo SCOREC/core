@@ -49,6 +49,15 @@ if(ENABLE_SIMMETRIX)
     "${MDIR}/4/")
 endif(ENABLE_SIMMETRIX)
 
+set(MDIR ${MESHES}/phasta/loopDriver)
+if(ENABLE_SIMMETRIX)
+  mpi_test(ph_adapt 1
+    ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
+    "${MDIR}/model.smd"
+    "${MDIR}/mesh_.smb"
+    WORKING_DIRECTORY ${MDIR})
+endif(ENABLE_SIMMETRIX)
+
 mpi_test(pumi3d-1p 4
   ./test_pumi
   ${MESHES}/pumi/3d-1p/model.dmg

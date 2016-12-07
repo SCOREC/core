@@ -10,7 +10,6 @@ namespace ph {
 
 static void setDefaults(Input& in)
 {
-  in.globalP = 0;
   in.timeStepNumber = 0;
   in.ensa_dof = 0;
   in.ensa_melas_dof = 0; 
@@ -62,8 +61,8 @@ static void setDefaults(Input& in)
   in.rs = 0;
   in.formEdges = 0;
   in.writePhastaFiles = 0;
-//  in.hasDGInterface = 0;
   in.simmetrixMesh = 0;
+  in.maxAdaptIterations = 3;
 }
 
 Input::Input()
@@ -77,7 +76,6 @@ typedef std::map<std::string, double*> DblMap;
 
 static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& dblMap)
 {
-  intMap["globalP"] = &in.globalP;
   intMap["timeStepNumber"] = &in.timeStepNumber;
   intMap["ensa_dof"] = &in.ensa_dof;
   intMap["ensa_melas_dof"] = &in.ensa_melas_dof;
@@ -128,8 +126,8 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   intMap["formEdges"] = &in.formEdges;
   intMap["writePhastaFiles"] = &in.writePhastaFiles;
-//  intMap["hasDGInterface"] = &in.hasDGInterface;
   intMap["simmetrixMesh"] = &in.simmetrixMesh;
+  intMap["maxAdaptIterations"] = &in.maxAdaptIterations;
 }
 
 template <class T>
@@ -148,6 +146,7 @@ typedef std::set<std::string> stringset;
 
 static void makeDeprecated(stringset& old)
 {
+  old.insert("globalP");
   old.insert("numSplit");
   old.insert("ParmaPtn");
   old.insert("RecursivePtn");

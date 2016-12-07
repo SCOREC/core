@@ -191,25 +191,14 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 bool checkInterface(Output& o, BCs& bcs) {
-  o.hasDGInterface = 0;
+  if (o.hasDGInterface == 0)
+    return false;
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
-
   std::string name1("DG interface");
-  if (!haveBC(bcs, name1))
-    return false;
   FieldBCs& fbcs1 = bcs.fields[name1];
-
   std::string name2("material type");
-  if (!haveBC(bcs, name2))
-    return false;
   FieldBCs& fbcs2 = bcs.fields[name2];
-
-  if (PCU_Comm_Self() == 0)
-    printf("Run checkInterface! Turn on hasDGInterface!\n");
-
-  o.hasDGInterface = 1;
-
   int a = 0; int b = 0;
   int aID = 0;
   int bID = 1;
@@ -240,6 +229,8 @@ bool checkInterface(Output& o, BCs& bcs) {
   m->end(it);
   assert(aID!=bID); //assert different material ID on two sides
   assert(a==b); //assert same number of faces on each side
+  if (PCU_Comm_Self() == 0)
+    printf("Checked! Same number of faces on each side of interface.\n");
   return true;
 }
 
@@ -269,6 +260,7 @@ static void getInterface
     if (mattypeif1) mattypeif1[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
+  o.hasDGInterface = 0;
   int interfaceDim = m->getDimension() - 1;
   apf::MeshEntity*   face;
   apf::MeshIterator* it = m->begin(interfaceDim);
@@ -279,6 +271,8 @@ static void getInterface
       continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
+    /* turn on hasDGInterface */
+    o.hasDGInterface = 1;
     apf::Matches matches;
     m->getMatches(face, matches);
     assert(matches.getSize() == 1);
