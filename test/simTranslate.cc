@@ -54,6 +54,7 @@ void printSimError(pSimError err)
 
 void translateModel(std::string mdlName, pGModel* simmodel, pProgress& progress)
 {
+  (void)progress;
   pGModel model;
   bool isAcis = (mdlName.find(acisExt) != std::string::npos);
   bool isParasolid = (mdlName.find(paraExt) != std::string::npos);
