@@ -76,4 +76,45 @@ apf::Field* specifiedIso(apf::Mesh* m, const char* fieldName, const unsigned idx
   return newSz;
 }
 
+static bool withinBox(apf::Vector3 points, double* box) {
+  if ( fabs(points[0]- box[0]) <= box[3] &&
+       fabs(points[1]- box[1]) <= box[4] &&
+       fabs(points[2]- box[2]) <= box[5] )
+    return true;
+  else
+    return false;
+}
+
+apf::Field* multipleSF(apf::Mesh* m, apf::Field* sf, double factor) {
+  apf::Field* newSz = createFieldOn(m, "multipliedSize", apf::SCALAR);
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* itr = m->begin(0);
+  while( (vtx = m->iterate(itr)) ) {
+    double h = apf::getScalar(sf,vtx,0);
+    apf::setScalar(newSz,vtx,0,h*factor);
+  }
+  m->end(itr);
+  apf::destroyField(sf);
+  return newSz;
+}
+
+apf::Field* mulipleSFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
+  assert(box[3] > 0 && box[4] > 0 && box[5] > 0);
+  apf::Field* newSz = apf::createFieldOn(m,"multipliedBox",apf::SCALAR);
+  apf::Vector3 points;
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* itr = m->begin(0);
+  while( (vtx = m->iterate(itr)) ) {
+    double h = apf::getScalar(sf,vtx,0);
+    m->getPoint(vtx, 0, points);
+    if (withinBox(points, box))
+      apf::setScalar(newSz,vtx,0,h*factor);
+    else
+      apf::setScalar(newSz,vtx,0,h);
+  }
+  m->end(itr);
+  apf::destroyField(sf);
+  return newSz;
+}
+
 }
