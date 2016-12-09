@@ -85,8 +85,8 @@ static bool withinBox(apf::Vector3 points, double* box) {
     return false;
 }
 
-apf::Field* multipleSF(apf::Mesh* m, apf::Field* sf, double factor) {
-  apf::Field* newSz = createFieldOn(m, "multipliedSize", apf::SCALAR);
+apf::Field* multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
+  apf::Field* newSz = createFieldOn(m, "multiplySz", apf::SCALAR);
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
@@ -98,9 +98,9 @@ apf::Field* multipleSF(apf::Mesh* m, apf::Field* sf, double factor) {
   return newSz;
 }
 
-apf::Field* mulipleSFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
+apf::Field* multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
   assert(box[3] > 0 && box[4] > 0 && box[5] > 0);
-  apf::Field* newSz = apf::createFieldOn(m,"multipliedBox",apf::SCALAR);
+  apf::Field* newSz = apf::createFieldOn(m,"multiplySzBox",apf::SCALAR);
   apf::Vector3 points;
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);

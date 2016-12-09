@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     apf::destroyField(m->findField("meshQ"));
   /* prepare size field */
   apf::Field* isoFld = samSz::isoSize(m);
-  apf::Field* szFld = sam::multipleSF(m, isoFld, 1.0);
+  apf::Field* szFld = sam::multiplySF(m, isoFld, 1.0);
   apf::writeVtkFiles("before",m);
   /* mesh adaptation */
   ma::Input* ma_in = ma::configure(m, szFld);
