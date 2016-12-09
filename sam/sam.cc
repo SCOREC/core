@@ -47,8 +47,8 @@ apf::Field* compareIsoSF(apf::Mesh* m, const char* desiredSzFld, int method)
     dsr = apf::getScalar(f, vtx, 0);
     cur = apf::getScalar(curSz,vtx,0);
     switch (method) {
-      case 1:  rsl = (dsr-cur) / cur; break; // ratio of difference
-      default: rsl = dsr / cur;
+      case 1:  rsl = (cur-dsr) / dsr; break; // ratio of difference
+      default: rsl = cur / dsr;
     }
     apf::setScalar(newSz,vtx,0,rsl);
   }
