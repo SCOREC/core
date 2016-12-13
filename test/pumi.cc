@@ -152,14 +152,19 @@ int main(int argc, char** argv)
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_freeze(*fit);
 
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized and frozen\n\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized, and frozen\n\n";
 
   TEST_GHOSTING(m);
 
+  // delete numbering
+  for (int i=0; i<m->countGlobalNumberings(); ++i)
+    pumi_numbering_delete(m->getGlobalNumbering(i));
+
   // delete fields
+  // FIXME: FieldShape doesn't get removed along the field
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_delete(*fit);
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] field deleted\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] field and numbering deleted\n";
 
   // clean-up 
   pumi_mesh_verify(m);
@@ -376,6 +381,9 @@ void TEST_FIELD(pMesh m)
   assert(pumi_field_getType(f)==apf::PACKED);
   assert(pumi_field_getSize(f)==num_dofs_per_value);
 
+  // create global numbering
+  pumi_numbering_create(m, "xyz_numbering", getShape(f));
+
   // fill the dof data
   double data[3];
   double xyz[3];
@@ -496,6 +504,7 @@ void TEST_GHOSTING(pMesh m)
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
       }
+  // pumi_mesh_verify(m); // FIXME - this crashes
   pumi_ghost_delete(m);
 
   for (int i=0; i<4; ++i)

@@ -84,6 +84,19 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
     }
 }
 
+pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
+ pShape shape)
+{
+  if (!shape) shape= m->getShape();
+  return createGlobalNumbering(m, name, shape);
+}
+
+void  pumi_numbering_delete(pGlobalNumbering gn)
+{
+  destroyGlobalNumbering(gn);
+}
+
+
 //*******************************************************
 void pumi_mesh_createGlobalID(pMesh m)
 //*******************************************************

@@ -22,7 +22,9 @@ pField pumi_field_create(pMesh m, const char* name, int num_dof_per_vtx, int typ
   if (type==apf::PACKED)
     return apf::createPackedField(m, name, num_dof_per_vtx);
   else
+  {
     return createGeneralField(m, name, type, num_dof_per_vtx, s);
+  }
 }
 
 int pumi_field_getSize(pField f)

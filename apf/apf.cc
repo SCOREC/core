@@ -17,7 +17,6 @@
 #include "apfArrayData.h"
 #include "apfTagData.h"
 #include "apfUserData.h"
-#include "apfNumbering.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>

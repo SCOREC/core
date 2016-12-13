@@ -8,6 +8,8 @@
 #include "apfField.h"
 #include "apfFieldData.h"
 #include "apfShape.h"
+#include "apfNumbering.h"
+#include "apfNumberingClass.h"
 #include "stdlib.h" // malloc
 
 namespace apf {
@@ -523,6 +525,173 @@ static void verifyAlignment(Mesh* m)
     receiveAlignment(m);
 }
 
+// VERIFY GLOBAL NUMBERING
+static void sendNumberingData(Mesh* m, int d, MeshEntity* e, std::vector<GlobalNumbering*>& numberings)
+{
+  GlobalNumbering* gn;
+  void* msg_send;
+  MeshEntity** s_ent;
+  size_t msg_size;
+
+/*  apf::MeshTag* tag = getMesh(fields[0])->findTag("global_id");
+  int global_id;
+
+  if (!tag) global_id=-1;
+  else
+   m->getIntTag(e, tag, &global_id);
+*/
+  Sharing* shr = getSharing(m);
+ 
+  for (size_t index = 0; index < numberings.size(); ++index)
+  {
+    gn = numberings[index];
+    FieldShape* s = getShape(gn);
+    FieldDataOf<long>* data = static_cast<FieldDataOf<long>*>(gn->getData());
+
+    if (!s->hasNodesIn(d) || !data->hasEntity(e) || !shr->isOwned(e)) 
+       continue;
+
+    int n = s->countNodesOn(d);
+
+    msg_size=sizeof(MeshEntity*)+sizeof(int)+n*sizeof(long);
+    NewArray<long> values(n);
+    for (int i=0; i<n; ++i)
+      values[i] = getNumber(gn,e,i,0);
+
+    CopyArray copies;
+    shr->getCopies(e, copies);
+    for (size_t i = 0; i < copies.getSize(); ++i)
+    {
+      msg_send = malloc(msg_size);
+      s_ent = (MeshEntity**)msg_send; 
+      *s_ent = copies[i].entity; 
+      int *s_numberingid = (int*)((char*)msg_send + sizeof(MeshEntity*));
+      s_numberingid[0] =  index;
+      long *s_data = (long*)((char*)msg_send+sizeof(MeshEntity*)+sizeof(int));
+      for (int pos=0; pos<n; ++pos)
+        s_data[pos]=values[pos];
+      PCU_Comm_Write(copies[i].peer, (void*)msg_send, msg_size);
+      free(msg_send);
+    }
+
+    if (m->isGhosted(e))
+    {
+      Copies g;
+      m->getGhosts(e, g);
+      APF_ITERATE(Copies, g, it)
+      {
+        msg_send = malloc(msg_size);
+      s_ent = (MeshEntity**)msg_send; 
+      *s_ent = it->second; 
+      int *s_numberingid = (int*)((char*)msg_send + sizeof(MeshEntity*));
+      s_numberingid[0] =  index;
+      long *s_data = (long*)((char*)msg_send+sizeof(MeshEntity*)+sizeof(int));
+      for (int pos=0; pos<n; ++pos)
+        s_data[pos]=values[pos];
+        PCU_Comm_Write(it->first, (void*)msg_send, msg_size);
+        free(msg_send);
+      }
+    } //if (m->isGhosted(e))
+  }
+}
+
+static void receiveNumberingData (std::vector<GlobalNumbering*>& numberings, 
+        std::set<GlobalNumbering*>& mismatch_numberings)
+{
+  GlobalNumbering* gn;
+  void *msg_recv;
+  int pid_from;
+  size_t msg_size;
+  MeshEntity* e;
+
+  while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+  {
+    e = *((MeshEntity**)msg_recv); 
+    int *numberingid = (int*)((char*)msg_recv+sizeof(MeshEntity*)); 
+    gn = numberings[*numberingid];
+    
+    int n = getShape(gn)->countNodesOn(getMesh(gn)->getType(e));
+
+    long* r_values = (long*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
+    int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(long);
+    assert(n==num_data);
+ 
+    if (mismatch_numberings.find(gn)!=mismatch_numberings.end()) continue;
+
+    for (int i=0; i<n; ++i)
+    {
+      if (getNumber(gn,e,i,0)!=r_values[i])
+      {
+        std::cout<<"("<<PCU_Comm_Self()<<") global numbering "<<getName(gn)<<" mismatch for e "<<e<<": index "
+                 <<i<<", value="<<getNumber(gn,e,i,0)<<", received value="<<r_values[i]<<"\n";
+        mismatch_numberings.insert(gn);
+        break;
+      }
+    }
+  } // while
+}
+
+static void verifyNumberings(Mesh* m)
+{
+
+  int self = PCU_Comm_Self();
+  int n = m->countGlobalNumberings();
+  std::vector<GlobalNumbering*> numberings;
+  for (int i=0; i<n; ++i)
+    numberings.push_back(m->getGlobalNumbering(i));
+  if (!numberings.size()) return;
+
+  PCU_Comm_Begin();
+  if (self) {
+    PCU_COMM_PACK(self - 1, n);
+    for (int i = 0; i < n; ++i)
+      packString(getName(numberings[i]), self-1);
+  }
+  else // master
+  {
+    if (n)
+    {
+      printf("  - verifying global numberings: ");
+      for (int i = 0; i < n; ++i)
+      {
+        printf("%s", getName(numberings[i]));
+        if (i<n-1) printf(", ");      
+      }
+      printf("\n");
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int n;
+    PCU_COMM_UNPACK(n);
+    assert(numberings.size() == (size_t)n);
+    for (int i = 0; i < n; ++i) {
+      std::string name=unpackString();
+      assert(name == getName(numberings[i]));      
+    }
+  }
+
+  // verify numbering data
+  std::set<GlobalNumbering*> mismatch_numberings;
+  for (int d=0; d < 4; ++d)
+  {
+    PCU_Comm_Begin();
+    MeshIterator* it = m->begin(d);
+    MeshEntity* e;
+    while ((e = m->iterate(it)))
+      sendNumberingData(m, d, e, numberings);  
+    m->end(it);
+    PCU_Comm_Send();
+    receiveNumberingData(numberings,mismatch_numberings); 
+  }
+
+  int global_size = PCU_Max_Int((int)mismatch_numberings.size());
+  if (global_size&&!PCU_Comm_Self())
+    for (std::set<GlobalNumbering*>::iterator it=mismatch_numberings.begin(); it!=mismatch_numberings.end(); ++it)
+      printf("  - global numbering \"%s\" data mismatch over remote/ghost copies\n", getName(*it));
+}
+
+
 // VERIFY FIELDS
 static void sendFieldData(Mesh* m, int d, MeshEntity* e, std::vector<Field*>& fields)
 {
@@ -530,12 +699,6 @@ static void sendFieldData(Mesh* m, int d, MeshEntity* e, std::vector<Field*>& fi
   void* msg_send;
   MeshEntity** s_ent;
   size_t msg_size;
-  apf::MeshTag* tag = getMesh(fields[0])->findTag("global_id");
-  int global_id;
-
-  if (!tag) global_id=-1;
-  else
-   getMesh(fields[0])->getIntTag(e, tag, &global_id);
 
   for (size_t nf = 0; nf < fields.size(); ++nf)
   {
@@ -602,9 +765,6 @@ static void receiveFieldData(std::vector<Field*>& fields, std::set<Field*>& mism
   size_t msg_size;
   MeshEntity* e;
 
-  apf::MeshTag* tag = getMesh(fields[0])->findTag("global_id");
-  int global_id;
-
   while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
   {
     e = *((MeshEntity**)msg_recv); 
@@ -621,10 +781,6 @@ static void receiveFieldData(std::vector<Field*>& fields, std::set<Field*>& mism
 
     NewArray<double> values(n);
     f->getData()->get(e,&(values[0]));
-
-    if (!tag) global_id=-1;
-    else
-     getMesh(fields[0])->getIntTag(e, tag, &global_id);
 
     for (int i=0; i<n; ++i)
     {
@@ -658,7 +814,6 @@ void unpackFieldInfo(std::string& name, int& type, int& size)
 
 static void verifyFields(Mesh* m) 
 {
-
   int self = PCU_Comm_Self();
   int n = m->countFields();
   std::vector<Field*> fields;
@@ -937,7 +1092,7 @@ void verify(Mesh* m, bool abort_on_error)
   double t0 = PCU_Time();
   verifyTags(m);
   verifyFields(m);
-//  verifyNumberings(m);
+  verifyNumberings(m);
 
   UpwardCounts guc;
   getUpwardCounts(m->getModel(), m->getDimension(), guc);
