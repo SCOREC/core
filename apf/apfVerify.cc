@@ -622,8 +622,6 @@ static void receiveNumberingData (std::vector<GlobalNumbering*>& numberings,
     {
       if (getNumber(gn,e,i,0)!=r_values[i])
       {
-        std::cout<<"("<<PCU_Comm_Self()<<") global numbering "<<getName(gn)<<" mismatch for e "<<e<<": index "
-                 <<i<<", value="<<getNumber(gn,e,i,0)<<", received value="<<r_values[i]<<"\n";
         mismatch_numberings.insert(gn);
         break;
       }
