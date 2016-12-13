@@ -17,10 +17,8 @@ class ArrayDataOf : public FieldDataOf<T>
       FieldShape* s = f->getShape();
       const char* name = s->getName();
       Numbering* n = f->getMesh()->findNumbering(name);
-      if (n==NULL)
-        num_var = numberOverlapNodes(f->getMesh(),name,s);
-      else
-        num_var = n;
+      if (n) apf::destroyNumbering(n);
+      num_var = numberOverlapNodes(f->getMesh(),name,s);
       arraySize = f->countComponents()*countNodes(num_var);
       dataArray = new T[arraySize];
     }

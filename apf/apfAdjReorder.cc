@@ -131,7 +131,6 @@ int AdjReorder(Numbering * num)
 	   !isNumbered(num,ent,ii,jj) )
         {
           number(num,ent,ii,jj,dof_index);
-	  //std::cout << dof_index << std::endl;
           dof_index--;
         }
       }
@@ -182,7 +181,6 @@ int AdjReorder(Numbering * num)
 		  if(!isFixed(num,ov,jj,kk))
 		  {
 		    number(num,ov,jj,kk,dof_index);
-		    //std::cout << dof_index << std::endl;
 		    dof_index--;
 		  }
 		}
@@ -309,7 +307,6 @@ void SetNumberingOffset(Numbering * num, int off)
             {
               int current = getNumber(num,e,ii,jj);
               number(num,e,ii,jj,current+off);
-              //std::cout << current+off << std::endl;
             }
           }
       }
