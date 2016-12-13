@@ -3,6 +3,7 @@
 #include <apfField.h>
 #include <cassert>
 #include <stdio.h>
+#include <math.h>
 
 namespace sam {
 
@@ -85,46 +86,86 @@ static bool withinBox(apf::Vector3 points, double* box) {
     return false;
 }
 
-apf::Field* multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
-  apf::Field* newSz;
-  const char* existFieldName = "multiplySz";
-  if (apf::getName(sf) == existFieldName)
-    newSz = createFieldOn(m, "multiplySz1", apf::SCALAR);
+static bool withinCyl(apf::Vector3 points, double* cyl) {
+  double length = sqrt(cyl[3]*cyl[3]+cyl[4]*cyl[4]+cyl[5]*cyl[5]);
+  cyl[3] = cyl[3] / length;
+  cyl[4] = cyl[4] / length;
+  cyl[5] = cyl[5] / length;
+  if((fabs((points[0]- cyl[0])*cyl[3]+
+           (points[1]- cyl[1])*cyl[4]+
+		   (points[2]- cyl[2])*cyl[5]) <= cyl[6]) &&
+  sqrt(((points[0]- cyl[0])*cyl[4] - (points[1]- cyl[1])*cyl[3])*
+       ((points[0]- cyl[0])*cyl[4] - (points[1]- cyl[1])*cyl[3])+
+	   ((points[0]- cyl[0])*cyl[5] - (points[2]- cyl[2])*cyl[3])*
+	   ((points[0]- cyl[0])*cyl[5] - (points[2]- cyl[2])*cyl[3])+
+	   ((points[1]- cyl[1])*cyl[5] - (points[2]- cyl[2])*cyl[4])*
+	   ((points[1]- cyl[1])*cyl[5] - (points[2]- cyl[2])*cyl[4]) <= cyl[7]))
+    return true;
   else
-    newSz = createFieldOn(m, "multiplySz", apf::SCALAR);
+    return false;
+}
+
+void multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
+  assert(m->findField(apf::getName(sf)));
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
     double h = apf::getScalar(sf,vtx,0);
-    apf::setScalar(newSz,vtx,0,h*factor);
+    apf::setScalar(sf,vtx,0,h*factor);
   }
   m->end(itr);
-  apf::destroyField(sf);
-  return newSz;
 }
 
-apf::Field* multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
+void multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
   assert(box[3] > 0 && box[4] > 0 && box[5] > 0);
-  apf::Field* newSz;
-  const char* existFieldName = "multiplySzBox";
-  if (apf::getName(sf) == existFieldName)
-    newSz = apf::createFieldOn(m,"multiplySzBox1",apf::SCALAR);
-  else
-    newSz = apf::createFieldOn(m,"multiplySzBox",apf::SCALAR);
+  assert(m->findField(apf::getName(sf)));
   apf::Vector3 points;
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
-    double h = apf::getScalar(sf,vtx,0);
     m->getPoint(vtx, 0, points);
-    if (withinBox(points, box))
-      apf::setScalar(newSz,vtx,0,h*factor);
-    else
-      apf::setScalar(newSz,vtx,0,h);
+    if (withinBox(points, box)) {
+      double h = apf::getScalar(sf,vtx,0);
+      apf::setScalar(sf,vtx,0,h*factor);
+	}
   }
   m->end(itr);
-  apf::destroyField(sf);
-  return newSz;
+}
+
+void multiplySFCyl(apf::Mesh* m, apf::Field* sf, double factor, double* cyl) {
+  /* cylinder is defined as {center_x, center_y, center_z,
+     normal_x, normal_y, normal_z, half_height, radius}   */
+  assert(cyl[6] > 0 && cyl[7] > 0);
+  assert(m->findField(apf::getName(sf)));
+  apf::Vector3 points;
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* itr = m->begin(0);
+  while( (vtx = m->iterate(itr)) ) {
+    m->getPoint(vtx, 0, points);
+    if (withinCyl(points, cyl)) {
+      double h = apf::getScalar(sf,vtx,0);
+      apf::setScalar(sf,vtx,0,h*factor);
+	}
+  }
+  m->end(itr);
+}
+
+void multiplySFRegion(apf::Mesh* m, apf::Field* sf, double factor, int tag) {
+  /* tag should be a tag of a region */
+  assert(m->findField(apf::getName(sf)));
+  int type = 3; // 3D region by default
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* itr = m->begin(0);
+  while( (vtx = m->iterate(itr)) ) {
+    apf::ModelEntity* m_vtx = m->toModel(vtx);
+    apf::ModelEntity* region = m->findModelEntity(type, tag);
+    if (m_vtx == region ||
+	    m->isInClosureOf(m_vtx, region)) {
+      double h = apf::getScalar(sf,vtx,0);
+      apf::setScalar(sf,vtx,0,h*factor);
+	}
+  }
+  m->end(itr);
 }
 
 }
