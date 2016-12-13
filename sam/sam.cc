@@ -86,7 +86,12 @@ static bool withinBox(apf::Vector3 points, double* box) {
 }
 
 apf::Field* multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
-  apf::Field* newSz = createFieldOn(m, "multiplySz", apf::SCALAR);
+  apf::Field* newSz;
+  const char* existFieldName = "multiplySz";
+  if (apf::getName(sf) == existFieldName)
+    newSz = createFieldOn(m, "multiplySz1", apf::SCALAR);
+  else
+    newSz = createFieldOn(m, "multiplySz", apf::SCALAR);
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
@@ -100,7 +105,12 @@ apf::Field* multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
 
 apf::Field* multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
   assert(box[3] > 0 && box[4] > 0 && box[5] > 0);
-  apf::Field* newSz = apf::createFieldOn(m,"multiplySzBox",apf::SCALAR);
+  apf::Field* newSz;
+  const char* existFieldName = "multiplySzBox";
+  if (apf::getName(sf) == existFieldName)
+    newSz = apf::createFieldOn(m,"multiplySzBox1",apf::SCALAR);
+  else
+    newSz = apf::createFieldOn(m,"multiplySzBox",apf::SCALAR);
   apf::Vector3 points;
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
