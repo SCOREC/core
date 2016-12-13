@@ -17,6 +17,7 @@
 #include "apfArrayData.h"
 #include "apfTagData.h"
 #include "apfUserData.h"
+#include "apfNumbering.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
@@ -400,13 +401,15 @@ void fail(const char* why)
 
 void freeze(Field* f)
 {
+  if (isFrozen(f)) return;
   f->getMesh()->hasFrozenFields = true;
   freezeFieldData<double>(f);
 }
 
 void unfreeze(Field* f)
 {
-  unfreezeFieldData<double>(f);
+  if (isFrozen(f))
+    unfreezeFieldData<double>(f);
 }
 
 bool isFrozen(Field* f)

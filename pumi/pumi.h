@@ -288,12 +288,13 @@ pField pumi_field_create(pMesh m, const char* name,
 int pumi_field_getSize(pField f);
 int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
-
+void pumi_field_print(pField f);
 void pumi_field_delete(pField f);
 void pumi_field_synchronize(apf::Field* f);
 void pumi_field_accumulate(apf::Field* f);
 void pumi_field_freeze(apf::Field* f);
 void pumi_field_unfreeze(apf::Field* f);
+pField pumi_mesh_findField(pMesh m, const char* name);
 void pumi_mesh_getField(pMesh m, std::vector<pField>&);
 void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data);
