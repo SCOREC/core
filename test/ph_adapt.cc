@@ -1,5 +1,6 @@
 #include "ma.h"
 #include "samSz.h"
+#include "sam.h"
 #include <chef.h>
 #include <apf.h>
 #include <gmi_mesh.h>
@@ -33,22 +34,9 @@ static bool overwriteAPFCoord(apf::Mesh2* m) {
   return true;
 }
 
-apf::Field* multipleSF(apf::Mesh* m, apf::Field* sf, double factor) {
-  apf::Field* sz = createFieldOn(m, "multipliedSize", apf::SCALAR);
-  apf::MeshEntity* vtx;
-  apf::MeshIterator* itr = m->begin(0);
-  while( (vtx = m->iterate(itr)) ) {
-    double h = apf::getScalar(sf,vtx,0);
-    apf::setScalar(sz,vtx,0,h*factor);
-  }
-  m->end(itr);
-  return sz;
-}
-
 static FILE* openfile_read(ph::Input&, const char* path) {
   return pcu_group_open(path, false);
 }
-
 
 int main(int argc, char** argv)
 {
@@ -78,8 +66,8 @@ int main(int argc, char** argv)
   if (m->findField("meshQ"))
     apf::destroyField(m->findField("meshQ"));
   /* prepare size field */
-  apf::Field* isoFld = samSz::isoSize(m);
-  apf::Field* szFld = multipleSF(m, isoFld, 1.0);
+  apf::Field* szFld = samSz::isoSize(m);
+  sam::multiplySF(m, szFld, 1.0);
   apf::writeVtkFiles("before",m);
   /* mesh adaptation */
   ma::Input* ma_in = ma::configure(m, szFld);

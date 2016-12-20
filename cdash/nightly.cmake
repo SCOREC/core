@@ -26,7 +26,9 @@ set(MERGE_AUTHOR "Nightly Bot <donotemail@scorec.rpi.edu>")
 
 set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
+set(MESH_URL_BASE "git@github.com:SCOREC/pumi-meshes")
 set(MESHES "/fasttmp/seol/scorec/meshes")
+set(SCOREC "/fasttmp/seol/scorec")
 
 set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION} "tmpnam")
 
@@ -41,16 +43,39 @@ file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}")
 find_program(CTEST_GIT_COMMAND NAMES git)
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
-function(update_meshes)
-  execute_process(COMMAND "${CTEST_GIT_COMMAND}" pull
-      WORKING_DIRECTORY "${MESHES}"
-      RESULT_VARIABLE RETVAR)
-  if(RETVAR)
-    message(FATAL_ERROR "failed to update meshes repository")
-  else()
-    message("updated meshes repository")
+function(setup_repo)
+  if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
+    message("Running \"git clone ${REPO_URL_BASE}.git ${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}\"")
+    execute_process(COMMAND "${CTEST_GIT_COMMAND}" clone ${REPO_URL_BASE}.git
+        "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
+        RESULT_VARIABLE CLONE_RET)
+    if(CLONE_RET)
+      message(FATAL_ERROR "Cloning ${REPO_URL_BASE}.git failed (code ${RETVAR})!")
+    else()
+      message("Cloning ${REPO_URL_BASE}.git succeeded")
+    endif()
+    # make local tracking versions of all remote branches
+    foreach(BRANCH IN LISTS BRANCHES)
+      if(NOT "${BRANCH}" STREQUAL "master")
+        create_branch(${BRANCH} origin/${BRANCH})
+      endif()
+    endforeach()
   endif()
-endfunction(update_meshes)
+endfunction(setup_repo)
+
+function(setup_meshes)
+  execute_process(COMMAND rm -rf "${MESHES}"
+        WORKING_DIRECTORY "${SCOREC}"
+        RESULT_VARIABLE RM_RET)
+  execute_process(COMMAND "${CTEST_GIT_COMMAND}" clone ${MESH_URL_BASE}.git meshes
+        WORKING_DIRECTORY "${SCOREC}"
+        RESULT_VARIABLE RETVAR)
+  if(RETVAR)
+    message(FATAL_ERROR "failed to clone meshes repository")
+  else()
+    message("check out meshes repository")
+  endif()
+endfunction(setup_meshes)
 
 function(git_exec CMD ACTION)
   string(REPLACE " " ";" CMD2 "${CMD}")
@@ -292,7 +317,7 @@ SET(CONFIGURE_OPTIONS-sim
 )
 
 setup_repo()
-update_meshes()
+setup_meshes()
 foreach(BRANCH IN LISTS BRANCHES)
   check_tracking_branch("${BRANCH}"
       "${CONFIGURE_OPTIONS-sim}"

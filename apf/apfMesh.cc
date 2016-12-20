@@ -690,9 +690,8 @@ void unfreezeFields(Mesh* m) {
   Field* f;
   for (int i=0; i<m->countFields(); i++) {
     f = m->getField(i);
-    if (isFrozen(f)) {
+    if (isFrozen(f)) 
       unfreeze(f);
-    }
   }
   m->hasFrozenFields = false;
 }

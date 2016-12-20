@@ -339,7 +339,6 @@ void ghost_sendEntities(Ghosting* plan, int entDim,
       std::vector<pMeshEnt>& entitiesToExchg, apf::DynamicArray<pMeshTag>& tags)	  
 // **********************************************
 {
-//  std::cout<<"("<<pumi_rank()<<") START "<<__func__<<": d "<<entDim<"\n";
   pMeshEnt ent;
   int src_partid=PCU_Comm_Self();
   pMesh m = plan->getMesh();
@@ -388,24 +387,25 @@ void ghost_sendEntities(Ghosting* plan, int entDim,
   }
 }
 
-
+#include "apfNumbering.h"
+#include "apfShape.h"
 // *********************************************************
 void pumi_ghost_create(pMesh m, Ghosting* plan)
 // *********************************************************
 {
   if (PCU_Comm_Peers()==1) return;
-  
+ 
   std::vector<apf::Field*> fields;
   std::vector<apf::Field*> frozen_fields;
   for (int i=0; i<m->countFields(); ++i)
-    fields.push_back(m->getField(i));
-  for (std::vector<apf::Field*>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
-    if (isFrozen(*fit))
+  {
+    pField f = m->getField(i);
+    if (isFrozen(f))
     {
-      frozen_fields.push_back(*fit); // turn field data from tag to array
-      apf::unfreeze(*fit);
-      if (!PCU_Comm_Self())  printf("unfreezing field %s\n", getName(*fit));
+      frozen_fields.push_back(f); // turn field data from tag to array
+      apf::unfreeze(f);
     }
+  }
 
   double t0=PCU_Time();
 
@@ -428,8 +428,10 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   m->acceptChanges();
 
   for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
-    apf::freeze(*fit);
-
+  {    
+    // true - update the existing numbering as the mesh has been changed
+    apf::freeze(*fit);    
+  }
   if (!PCU_Comm_Self())
     printf("mesh ghosted in %f seconds\n", PCU_Time()-t0);
 }
@@ -847,6 +849,17 @@ void pumi_ghost_delete (pMesh m)
   pMeshTag tag = pumi::instance()->ghosted_tag;
   if (!tag) return;
 
+  std::vector<apf::Field*> frozen_fields;
+  for (int i=0; i<m->countFields(); ++i)
+  {
+    pField f = m->getField(i);
+    if (isFrozen(f))
+    {
+      frozen_fields.push_back(f); // turn field data from tag to array
+      apf::unfreeze(f);
+    }
+  }
+
   for (int d=3; d>=0; --d)
   {
     for (std::vector<pMeshEnt>::iterator it=pumi::instance()->ghost_vec[d].begin();
@@ -871,6 +884,9 @@ void pumi_ghost_delete (pMesh m)
     pumi::instance()->ghost_vec[d].clear();
     pumi::instance()->ghosted_vec[d].clear();
   }
+
+  for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
+    apf::freeze(*fit);    
 }
 
 // *********************************************************

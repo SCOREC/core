@@ -84,8 +84,21 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
     }
 }
 
+pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
+ pShape shape)
+{
+  if (!shape) shape= m->getShape();
+  return createGlobalNumbering(m, name, shape);
+}
+
+void  pumi_numbering_delete(pGlobalNumbering gn)
+{
+  destroyGlobalNumbering(gn);
+}
+
+
 //*******************************************************
-void pumi_mesh_createGlobalID(apf::Mesh2* m)
+void pumi_mesh_createGlobalID(pMesh m)
 //*******************************************************
 {
   pMeshTag tag = m->findTag("global_id");
@@ -102,7 +115,7 @@ void pumi_mesh_createGlobalID(apf::Mesh2* m)
 }
 
 //*******************************************************
-void pumi_mesh_deleteGlobalID(apf::Mesh2* m)
+void pumi_mesh_deleteGlobalID(pMesh m)
 //*******************************************************
 {
   pMeshTag tag = m->findTag("global_id");
@@ -277,7 +290,8 @@ void print_copies(pMesh m, pMeshEnt e)
 
 void pumi_mesh_print (pMesh m, int p)
 {
-  pumi_mesh_createGlobalID(m);
+  if (!m->findTag("global_id")) pumi_mesh_createGlobalID(m);
+
   if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \nglobal ";
   printStats(m);
 
@@ -323,10 +337,10 @@ void pumi_mesh_print (pMesh m, int p)
     apf::Vector3 xyz;
     m->getPoint(e, 0, xyz);
     if (m->isGhost(e))
-      std::cout<<"("<<PCU_Comm_Self()<<") GHOST vtx "<<pumi_ment_getGlobalID(e)
+      std::cout<<"("<<PCU_Comm_Self()<<") GHOST vtx "<<e<<": "<<pumi_ment_getGlobalID(e)
              <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
     else
-      std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<pumi_ment_getGlobalID(e)
+      std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<e<<": "<<pumi_ment_getGlobalID(e)
              <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
     print_copies(m,e);
   }
@@ -341,9 +355,9 @@ void pumi_mesh_print (pMesh m, int p)
       apf::Downward down;
       int num_down=m->getDownward(e,d-1,down); 
       if (m->isGhost(e)) 
-        std::cout<<"("<<PCU_Comm_Self()<<") GHOST e [d "<<d<<", id "<<global_id<<"] down: ";
+        std::cout<<"("<<PCU_Comm_Self()<<") GHOST e "<<e<<": [d "<<d<<", id "<<global_id<<"] down: ";
       else
-        std::cout<<"("<<PCU_Comm_Self()<<") e [d "<<d<<", id "<<global_id<<"] down: ";
+        std::cout<<"("<<PCU_Comm_Self()<<") e "<<e<<": [d "<<d<<", id "<<global_id<<"] down: ";
       for (int i=0; i<num_down; ++i)
         std::cout<<pumi_ment_getGlobalID(down[i])<<" ";
       std::cout<<"\n";
@@ -394,7 +408,6 @@ void pumi_mesh_delete(pMesh m)
     m->destroyTag(pumi::instance()->ghost_tag);
   if (m->findTag("ghosted_tag"))
     m->destroyTag(pumi::instance()->ghosted_tag);
-
   m->destroyNative();
   apf::destroyMesh(m);
 }

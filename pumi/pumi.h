@@ -19,7 +19,6 @@
 class gEntity;
 class mPartEntityContainer;
 
-
 class gModel : public TagHolder
 {
 private:  
@@ -58,6 +57,7 @@ typedef apf::Downward Downward;
 typedef apf::Migration Migration;
 typedef apf::Field* pField;
 typedef apf::FieldShape* pShape;
+typedef apf::GlobalNumbering* pGlobalNumbering;
 
 // singleton to save model/mesh
 class pumi
@@ -227,9 +227,15 @@ void pumi_mesh_delete(pMesh m);
 void pumi_mesh_getTags(pMesh m, std::vector<pMeshTag> tags);
 void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete=false);
 
-// create/delete global ID
-void  pumi_mesh_createGlobalID(pMesh m);
-void  pumi_mesh_deleteGlobalID(pMesh m);
+// create/delete global ID using tag "global_id"
+void pumi_mesh_createGlobalID(pMesh m);
+void pumi_mesh_deleteGlobalID(pMesh m);
+
+// create/delete global ID using numbering object and field shape
+pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
+ pShape shape=NULL);
+void  pumi_numbering_delete(pGlobalNumbering);
+
 // verify mesh
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
 //void pumi_mesh_verifyTag(pMesh m, pTag tag);
@@ -288,12 +294,13 @@ pField pumi_field_create(pMesh m, const char* name,
 int pumi_field_getSize(pField f);
 int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
-
+void pumi_field_print(pField f);
 void pumi_field_delete(pField f);
 void pumi_field_synchronize(apf::Field* f);
 void pumi_field_accumulate(apf::Field* f);
 void pumi_field_freeze(apf::Field* f);
 void pumi_field_unfreeze(apf::Field* f);
+pField pumi_mesh_findField(pMesh m, const char* name);
 void pumi_mesh_getField(pMesh m, std::vector<pField>&);
 void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data);
