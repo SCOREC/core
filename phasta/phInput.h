@@ -12,7 +12,6 @@ class Input
   public:
     Input();
     void load(const char* filename);
-    int globalP;
     int timeStepNumber;
     int ensa_dof;
     int ensa_melas_dof;
@@ -68,8 +67,8 @@ class Input
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);
     RStream* rs;
-//    int hasDGInterface;
     int simmetrixMesh;
+    int maxAdaptIterations;
 };
 
 int countNaturalBCs(Input& in);

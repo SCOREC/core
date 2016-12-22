@@ -142,22 +142,29 @@ int main(int argc, char** argv)
   if (!pumi_rank()) std::cout<<"\n[test_pumi] clean loaded tags from the mesh file\n";
   std::vector<pMeshTag> tag_vec;
   for (size_t n = 0; n<tag_vec.size(); ++n)
-  {
     pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
-  }
 
   TEST_FIELD(m);
+
   std::vector<pField> fields;
   pumi_mesh_getField(m, fields);
 
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated and synchronized\n\n";
+  for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
+    pumi_field_freeze(*fit);
+
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized, and frozen\n\n";
 
   TEST_GHOSTING(m);
 
+  // delete numbering
+  for (int i=0; i<m->countGlobalNumberings(); ++i)
+    pumi_numbering_delete(m->getGlobalNumbering(i));
+
   // delete fields
+  // FIXME: FieldShape doesn't get removed along the field
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_delete(*fit);
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] field deleted\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] field and numbering deleted\n";
 
   // clean-up 
   pumi_mesh_verify(m);
@@ -374,6 +381,9 @@ void TEST_FIELD(pMesh m)
   assert(pumi_field_getType(f)==apf::PACKED);
   assert(pumi_field_getSize(f)==num_dofs_per_value);
 
+  // create global numbering
+  pumi_numbering_create(m, "xyz_numbering", getShape(f));
+
   // fill the dof data
   double data[3];
   double xyz[3];
@@ -390,8 +400,6 @@ void TEST_FIELD(pMesh m)
   }
   m->end(it);
 
-  pumi_field_synchronize(f);
-
   it = m->begin(0);
   while ((e = m->iterate(it)))
   {
@@ -405,6 +413,7 @@ void TEST_FIELD(pMesh m)
         assert(data[i] == xyz[i]);
   }
   m->end(it);
+  pumi_field_synchronize(f);
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -439,7 +448,7 @@ void TEST_GHOSTING(pMesh m)
   int* org_mcount=new int[4];
   for (int i=0; i<4; ++i)
     org_mcount[i] = m->count(i);
-
+  
   Ghosting* ghosting_plan = getGhostingPlan(m);
   int before_mcount=m->count(mesh_dim);
   pumi_ghost_create(m, ghosting_plan);
@@ -460,8 +469,9 @@ void TEST_GHOSTING(pMesh m)
   }   
   m->end(mit);
   assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getNumEnt(m,0));
-  pumi_mesh_verify(m); // this should throw an error message
+  pumi_mesh_verify(m);
   pumi_ghost_delete(m);
+  
   for (int i=0; i<4; ++i)
     assert(org_mcount[i] == int(m->count(i)));
 
@@ -494,7 +504,7 @@ void TEST_GHOSTING(pMesh m)
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
       }
- // pumi_mesh_verify(m); -- FIXME: this returns an error with ghost copy
+  // pumi_mesh_verify(m); // FIXME - this crashes
   pumi_ghost_delete(m);
 
   for (int i=0; i<4; ++i)
