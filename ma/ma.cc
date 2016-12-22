@@ -33,9 +33,14 @@ void adapt(Input* in)
     coarsenLayer(a);
     midBalance(a);
     refine(a);
+#ifdef DO_FPP
+    snap(a);
+#endif
   }
   allowSplitCollapseOutsideLayer(a);
+#ifndef DO_FPP
   snap(a);
+#endif
   fixElementShapes(a);
   cleanupLayer(a);
   tetrahedronize(a);
