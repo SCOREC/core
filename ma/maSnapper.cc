@@ -243,27 +243,12 @@ bool FPPSnapper::findFPP()
   ray.start = getPosition(mesh, vert);
   ray.dir   = target - ray.start;
 
-  std::cout << "<<< Inside Find FPP >>> " << std::endl;
-  std::cout << "there are  " << n << "problem regions" << std::endl;
-
-  std::cout << "Inputs: " << std::endl;
-  std::cout << "ray.start: " << ray.start << std::endl;
-  std::cout << "ray.dir  : " << ray.dir << std::endl;
-  std::cout << std::endl;
-
   dists.clear();
   for (int i = 0; i < n; i++) {
-    std::cout << "pb_region " << i << ":" << std::endl;
     elem = problemRegions.e[i];
     face = faceOppositeOfVert(elem, vert);
     std::vector<Vector> coords;
     getFaceCoords(face, coords);
-
-    std::cout << "face opposite vertex coords:" << std::endl;
-    std::cout << "v1: " << coords[0] << std::endl;
-    std::cout << "v2: " << coords[1] << std::endl;
-    std::cout << "v3: " << coords[2] << std::endl;
-    std::cout << "ce: " << (coords[0] + coords[1] + coords[2]) * (1./3.) << std::endl;
 
     Vector intersect;
     bool isInf;
@@ -288,17 +273,11 @@ bool FPPSnapper::findFPP()
     }
   }
 
-  std::cout << "distances are " << std::endl;
-  for (size_t i = 0; i < dists.size(); i++) {
-    std::cout << dists[i] << " - ";
-  }
-  std::cout << std::endl;
 
   apf::Up coplanarProblemRegions;
   coplanarProblemRegions.n = 0;
 
   if (!problemRegion) {
-    std::cout << "no problemRegion was found! Assigning the first one in list problemRegions to problemRegion" << std::endl;
     problemRegion = problemRegions.e[0];
     problemFace = faceOppositeOfVert(problemRegion, vert);
     coplanarProblemRegions.n = n;
@@ -316,7 +295,6 @@ bool FPPSnapper::findFPP()
     }
   }
 
-  std::cout << "out of " << n << " problem regions " << coplanarProblemRegions.n << " are coplanar" << std::endl;
 
   findCommonEdges(coplanarProblemRegions);
   return true;
@@ -430,11 +408,6 @@ FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
   double vol = std::fabs(dir * faceAreaVect);
   double volPrime = std::fabs(startP0 * faceAreaVect);
 
-  std::cout << "<<< Inside Intersect >>>" << std::endl;
-  std::cout << "face area times tol: " << faceAreaSize * tol << std::endl;
-  std::cout << "vol      : " << vol << std::endl;
-  std::cout << "volPrime : " << volPrime << std::endl;
-
   if (vol <= tol * faceAreaSize) { // dir _|_ face consisting of coords
     if (volPrime <= tol * faceAreaSize) {
       isInf = true;
@@ -443,23 +416,17 @@ FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
     }
     else {
       res = false;
-      std::cout << "zero area when perp: " << volPrime << std::endl;
     }
   }
   else {
     intersection = start + dir * (volPrime / vol);
     Vector newDir = intersection - start;
-    std::cout << "newdir*dir: " << newDir * dir << std::endl;
     if (newDir * dir < 0)
     {
       res = false;
     }
     else
       res = true;
-  }
-  if (res) {
-    std::cout << "intersect: " << intersection << std::endl;
-    std::cout << "zero area: " << (intersection - coords[0]) * faceAreaVect << std::endl;
   }
   return res;
 }
