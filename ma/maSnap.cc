@@ -188,7 +188,18 @@ class SnapAll : public Operator
     }
     void apply()
     {
+      Vector s;
+      adapter->mesh->getDoubleTag(vert, tag, &s[0]);
+      std::cout << "------------------------" << std::endl;
+      std::cout << "trying to snap vert  " << getPosition(adapter->mesh, vert) << "to " <<  s << std::endl;
       bool snapped = snapper.run();
+
+      std::cout << (snapped ? "snapped" : "not snapped") << std::endl;
+      std::cout << (snapper.toFPP ? "to_fpped" : "not to_fpped") << std::endl;
+      if (snapper.toFPP)
+	std::cout << "new position of the vertex is " << getPosition(adapter->mesh, vert) << std::endl;
+      std::cout << (snapper.dug ? "dug" : "not dug") << std::endl;
+
       didAnything = didAnything || snapped || snapper.dug;
       if (snapped)
         ++successCount;
