@@ -181,6 +181,9 @@ static gmi_set* region_faces(pGRegion region)
 /* getting the region adj to an edge. This version
  * does not support non-manifold models
  */
+// NOTE: the corresponding functionality does not exist
+// in gmi_base!
+// TODO: maybe add it in the future
 static gmi_set* edge_regions(pGEdge e)
 {
   pPList list = GE_faces((pGEdge)e);
@@ -199,6 +202,7 @@ static gmi_set* edge_regions(pGEdge e)
     if (r != (pGRegion)regions_set->e[0])
       gmi_fail("no support for non-manifold surfaces!\n");
   }
+  PList_delete(list);
   return regions_set;
 }
 
