@@ -618,6 +618,10 @@ class MeshMDS : public Mesh2
     {
       mds_set_copies(&mesh->matches, &mesh->mds, fromEnt(e), 0);
     }
+    void clear_()
+    {
+      mesh = mds_apf_create(mesh->user_model, mesh->mds.d, mesh->mds.n);
+    }
     double getElementBytes(int type)
     {
       static double const table[TYPES] =

@@ -5,6 +5,7 @@
 
 #include "apfShape.h"
 #include "apfTagData.h"
+#include "apfNumbering.h"
 
 namespace apf
 {
@@ -300,6 +301,20 @@ void unpackDataClone(Mesh2* m)
 {
   unpackTagClones(m);
   unpackFieldClones(m);
+}
+
+void clear(Mesh2* m) {
+  while (m->countFields()) destroyField(m->getField(0));
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
+  while (m->countGlobalNumberings()) {
+    destroyGlobalNumbering(m->getGlobalNumbering(0));
+  }
+  DynamicArray<MeshTag*> tags;
+  m->getTags(tags);
+  for (size_t i = 0; i < tags.getSize(); ++i) {
+    m->destroyTag(tags[i]);
+  }
+  m->clear_();
 }
 
 }
