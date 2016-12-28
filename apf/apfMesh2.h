@@ -109,6 +109,8 @@ class Mesh2 : public Mesh
     virtual void addMatch(MeshEntity* e, int peer, MeshEntity* match) = 0;
 /** \brief Remove all matched copies of an entity */
     virtual void clearMatches(MeshEntity* e) = 0;
+/** \brief Remove all entities */
+    virtual void clear_() = 0;
 /** \brief Implementation-defined synchronization after modification
   \details users are encouraged to call this function after finishing
   mesh modifications so that all structures are properly updated before
@@ -191,6 +193,9 @@ void initResidence(Mesh2* m, int dim);
   other entities correctly. */
 void stitchMesh(Mesh2* m);
 
+/** \brief removes all entities and fields. */
+void clear(Mesh2* m);
+
 void packDataClone(Mesh2* m, int to);
 void unpackDataClone(Mesh2* m);
 
@@ -213,6 +218,7 @@ void reduceMatchingToSenders(
     EntityVector senders[4]);
 void getSenders(Mesh2* m,EntityVector affected[4],EntityVector senders[4]);
 void split(Copies& remotes, Parts& parts, Parts& newParts);
+
 // seol
 void packEntity(Mesh2* m, int to, MeshEntity* e, DynamicArray<MeshTag*>& tags, bool ghosting=false);
 void unpackRemotes(Mesh2* m, MeshEntity* e);
@@ -220,6 +226,7 @@ void unpackTags(Mesh2* m, MeshEntity* e, DynamicArray<MeshTag*>& tags);
 void unpackCommon(Mesh2* m, MeshEntity*& sender, ModelEntity*& c, Parts& residence);
 MeshEntity* unpackVertex(Mesh2* m, ModelEntity* c);
 MeshEntity* unpackNonVertex(Mesh2* m,int type, ModelEntity* c);
+
 }//namespace apf
 
 #endif

@@ -98,6 +98,7 @@ class MeshSIM : public Mesh2
     void setModelEntity(MeshEntity*, ModelEntity*) {}
     void addMatch(MeshEntity*, int, MeshEntity* ) {}
     void clearMatches(MeshEntity*) {}
+    void clear_() {}
     void acceptChanges() {}
     void addGhost(MeshEntity*, int, MeshEntity*) {}
     void deleteGhost(MeshEntity*) {}
