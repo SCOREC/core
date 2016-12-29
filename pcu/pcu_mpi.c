@@ -44,6 +44,7 @@ int pcu_mpi_rank(void)
 
 static void check_rank(int rank)
 {
+  (void)rank;
   assert(0 <= rank);
   assert(rank < pcu_mpi_size());
 }
