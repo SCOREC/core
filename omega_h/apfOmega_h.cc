@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cassert>
+#include <iostream>
 
 #include <apfMesh2.h>
 #include <apfNumbering.h>
@@ -111,13 +112,20 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
   auto dim = om->dim();
   auto am = apf::getMesh(f);
   std::string name = apf::getName(f);
-  auto nc = apf::countComponents(f);
   auto vt = apf::getValueType(f);
+  int nc = -1;
+  if (vt == apf::VECTOR) {
+    nc = dim;
+  } else if (vt == apf::MATRIX) {
+    nc = dim * dim;
+  } else {
+    nc = apf::countComponents(f);
+  }
   auto data = osh::HostWrite<osh::Real>(om->nverts() * nc);
   auto it = am->begin(0);
   if (vt == apf::VECTOR) {
     vectors_to_osh(f, it, data);
-  } if (vt == apf::MATRIX) {
+  } else if (vt == apf::MATRIX) {
     if (dim == 2) matrices_to_osh<2>(f, it, data);
     if (dim == 3) matrices_to_osh<3>(f, it, data);
   } else components_to_osh(f, it, data);
@@ -147,8 +155,14 @@ static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real> const* tag) {
   auto nc = tag->ncomps();
   int vt = -1;
   if (nc == 1) vt = apf::SCALAR;
-  if (nc == dim) vt = apf::VECTOR;
-  if (nc == dim * dim) vt = apf::MATRIX;
+  else if (nc == dim) vt = apf::VECTOR;
+  else if (nc == dim * dim) vt = apf::MATRIX;
+  else {
+    if (!PCU_Comm_Self()) {
+      std::cout << "not copying tag \"" << tag->name() << "\" to APF\n";
+      return;
+    }
+  }
   auto f = apf::createGeneralField(am, tag->name().c_str(), vt, nc,
       am->getShape());
   field_from_osh(f, tag);
