@@ -6,6 +6,7 @@
 
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <apfShape.h>
 #include <PCU.h>
 #include <apf.h>
 #include <Omega_h_math.hpp>
@@ -112,8 +113,25 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
   auto dim = om->dim();
   auto am = apf::getMesh(f);
   std::string name = apf::getName(f);
+  int ent_dim;
+  Omega_h_Xfer xfer;
+  if (apf::getShape(f) == apf::getLagrange(1)) {
+    ent_dim = 0;
+    xfer = OMEGA_H_LINEAR_INTERP;
+  } else if (
+      apf::getShape(f) == apf::getVoronoiShape(dim, 1) ||
+      apf::getShape(f) == apf::getIPFitShape(dim, 1)
+      ) {
+    ent_dim = dim;
+    xfer = OMEGA_H_POINTWISE;
+  } else {
+    if (!PCU_Comm_Self()) {
+      std::cout << "not copying field " << name << " to Omega_h\n";
+    }
+    return;
+  }
   auto vt = apf::getValueType(f);
-  int nc = -1;
+  int nc;
   if (vt == apf::VECTOR) {
     nc = dim;
   } else if (vt == apf::MATRIX) {
@@ -121,8 +139,8 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
   } else {
     nc = apf::countComponents(f);
   }
-  auto data = osh::HostWrite<osh::Real>(om->nverts() * nc);
-  auto it = am->begin(0);
+  auto data = osh::HostWrite<osh::Real>(om->nents(ent_dim) * nc);
+  auto it = am->begin(ent_dim);
   if (vt == apf::VECTOR) {
     vectors_to_osh(f, it, data);
   } else if (vt == apf::MATRIX) {
@@ -130,59 +148,69 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
     if (dim == 3) matrices_to_osh<3>(f, it, data);
   } else components_to_osh(f, it, data);
   am->end(it);
-  auto xfer = OMEGA_H_LINEAR_INTERP;
-  om->add_tag(osh::VERT, name, nc, xfer, OMEGA_H_DO_OUTPUT,
+  om->add_tag(ent_dim, name, nc, xfer, OMEGA_H_DO_OUTPUT,
       osh::Reals(data.write()));
 }
 
-static void field_from_osh(apf::Field* f, osh::Tag<osh::Real> const* tag) {
+static void field_from_osh(apf::Field* f, osh::Tag<osh::Real> const* tag,
+    int ent_dim) {
   auto am = apf::getMesh(f);
   auto dim = am->getDimension();
   auto data = osh::HostRead<osh::Real>(tag->array());
-  auto vt = apf::getValueType(f);
-  apf::MeshIterator* it = am->begin(0);
-  if (vt == apf::VECTOR) {
+  auto value_type = apf::getValueType(f);
+  apf::MeshIterator* it = am->begin(ent_dim);
+  if (value_type == apf::VECTOR) {
     vectors_from_osh(f, it, data);
-  } if (vt == apf::MATRIX) {
+  } if (value_type == apf::MATRIX) {
     if (dim == 2) matrices_from_osh<2>(f, it, data);
     if (dim == 3) matrices_from_osh<3>(f, it, data);
   } else components_from_osh(f, it, data);
   am->end(it);
 }
 
-static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real> const* tag) {
+static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real> const* tag,
+    int ent_dim) {
   auto dim = am->getDimension();
   auto nc = tag->ncomps();
-  int vt = -1;
-  if (nc == 1) vt = apf::SCALAR;
-  else if (nc == dim) vt = apf::VECTOR;
-  else if (nc == dim * dim) vt = apf::MATRIX;
+  auto name = tag->name();
+  int value_type;
+  if (nc == 1) value_type = apf::SCALAR;
+  else if (nc == dim) value_type = apf::VECTOR;
+  else if (nc == dim * dim) value_type = apf::MATRIX;
+  else value_type = apf::PACKED;
+  apf::FieldShape* shape;
+  if (ent_dim == 0) shape = apf::getLagrange(1);
+  else if (ent_dim == dim) shape = apf::getIPFitShape(dim, 1);
   else {
     if (!PCU_Comm_Self()) {
-      std::cout << "not copying tag \"" << tag->name() << "\" to APF\n";
-      return;
+      std::cout << "not copying field " << name << " from Omega_h\n";
     }
+    return;
   }
-  auto f = apf::createGeneralField(am, tag->name().c_str(), vt, nc,
-      am->getShape());
-  field_from_osh(f, tag);
+  auto f = apf::createGeneralField(am, name.c_str(), value_type, nc,
+      shape);
+  field_from_osh(f, tag, ent_dim);
 }
 
 static void fields_to_osh(osh::Mesh* om, apf::Mesh* am) {
   for (int i = 0; i < am->countFields(); ++i)
-    if (apf::getShape(am->getField(i)) == am->getShape())
-      field_to_osh(om, am->getField(i));
+    field_to_osh(om, am->getField(i));
+}
+
+static void fields_from_osh(apf::Mesh* am, osh::Mesh* om, int ent_dim) {
+  for (int i = 0; i < om->ntags(ent_dim); ++i) {
+    auto tagbase = om->get_tag(ent_dim, i);
+    if (tagbase->type() == OMEGA_H_F64 &&
+        tagbase->name() != "metric" &&
+        tagbase->name() != "coordinates") {
+      field_from_osh(am, dynamic_cast<osh::Tag<osh::Real> const*>(tagbase), ent_dim);
+    }
+  }
 }
 
 static void fields_from_osh(apf::Mesh* am, osh::Mesh* om) {
-  for (int i = 0; i < om->ntags(0); ++i) {
-    auto tagbase = om->get_tag(0, i);
-    if (tagbase->type() == OMEGA_H_F64 &&
-        tagbase->name() != "coordinates" &&
-        tagbase->name() != "param") {
-      field_from_osh(am, dynamic_cast<osh::Tag<osh::Real> const*>(tagbase));
-    }
-  }
+  fields_from_osh(am, om, 0);
+  fields_from_osh(am, om, am->getDimension());
 }
 
 static void coords_to_osh(osh::Mesh* om, apf::Mesh* am) {
@@ -191,7 +219,7 @@ static void coords_to_osh(osh::Mesh* om, apf::Mesh* am) {
 
 static void coords_from_osh(apf::Mesh* am, osh::Mesh* om) {
   field_from_osh(am->getCoordinateField(),
-      om->get_tag<osh::Real>(0, "coordinates"));
+      om->get_tag<osh::Real>(0, "coordinates"), 0);
 }
 
 static void class_to_osh(osh::Mesh* mesh_osh, apf::Mesh* mesh_apf, int dim) {
