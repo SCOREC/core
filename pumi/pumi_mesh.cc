@@ -24,6 +24,30 @@
 
 using std::map;
 
+// mesh creation
+pMesh pumi_mesh_create(pGeom g, int mesh_dim)
+{
+  return apf::makeEmptyMdsMesh((gmi_model*)g, mesh_dim, false);
+}
+
+void pumi_mesh_freeze(pMesh m)
+{
+  deriveMdsModel(m);
+  m->acceptChanges();
+}
+
+pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz)
+{
+  apf::Vector3 coord(xyz[0],xyz[1],xyz[2]);
+  apf::Vector3 param(0,0,0);
+  return m->createVertex((apf::ModelEntity*)ge, coord, param);
+}
+
+pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int ent_topology, pMeshEnt* down)
+{
+  return m->createEntity(ent_topology, (apf::ModelEntity*)ge, down);
+}
+
 void generate_globalid(pMesh m, pMeshTag tag, int dim)
 {
   pMeshEnt e;
@@ -123,25 +147,6 @@ void pumi_mesh_deleteGlobalID(pMesh m)
 
   for (int i=0; i<4; ++i)
     apf::removeTagFromDimension(m, tag, i);
-
-  m->destroyTag(tag);
-}
-
-void pumi_mesh_getTags(pMesh m, std::vector<pMeshTag> tag_vec)
-{
-  apf::DynamicArray<pMeshTag> tags;
-  m->getTags(tags);
-  for (size_t n = 0; n<tags.getSize();++n)
-    tag_vec.push_back(tags[n]);
-}
-
-//*******************************************************
-void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete)
-//*******************************************************
-{
-  if (force_delete)
-    for (int i=0; i<4; ++i)
-      apf::removeTagFromDimension(m, tag, i);
 
   m->destroyTag(tag);
 }

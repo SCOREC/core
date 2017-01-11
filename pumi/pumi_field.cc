@@ -17,13 +17,13 @@ void pumi_mesh_getField(pMesh m, std::vector<pField>& fields)
     fields.push_back(m->getField(i));
 }
 
-pField pumi_field_create(pMesh m, const char* name, int num_dof_per_vtx, int type, pShape s)
+pField pumi_field_create(pMesh m, const char* name, int num_dof_per_ent, int type, pShape s)
 {
   if (type==apf::PACKED)
-    return apf::createPackedField(m, name, num_dof_per_vtx);
+    return apf::createPackedField(m, name, num_dof_per_ent, s);
   else
   {
-    return createGeneralField(m, name, type, num_dof_per_vtx, s);
+    return createGeneralField(m, name, type, num_dof_per_ent, s);
   }
 }
 
