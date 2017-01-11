@@ -26,6 +26,14 @@ void pumi_mvtx_getCoord(pMeshEnt e, double* xyz)
     xyz[i] = coord[i]; 
 }
 
+void pumi_mvtx_setCoord(pMeshEnt e, double* xyz)
+{
+  apf::Vector3 coord;
+  for (int i=0; i<3; ++i)
+    coord[i] = xyz[i];
+  pumi::instance()->mesh->setPoint(e, 0, coord);
+}
+
 // mesh entity functions
 int pumi_ment_getDim(pMeshEnt e)
 {
@@ -50,6 +58,7 @@ int pumi_ment_getNumAdj(pMeshEnt e, int target_dim)
   return 0;
 }
 
+// if target_dim=-1, get all downward adjacent entities
 void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
 {
   int ent_dim= apf::getDimension(pumi::instance()->mesh, e);

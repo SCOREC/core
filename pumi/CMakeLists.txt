@@ -14,6 +14,7 @@ set(SOURCES
   pumi_gtag.cc
   pumi_mesh.cc
   pumi_mentity.cc
+  pumi_mtag.cc
   pumi_sys.cc
 )
 

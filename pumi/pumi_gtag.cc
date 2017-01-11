@@ -51,39 +51,19 @@ pTag pumi_geom_createTag (pGeom m, const char* tag_name, int tag_type, int tag_s
 }
 
 //**********************************************************
-void pumi_geom_deleteTag (pGeom g, pTag tag, int)
+void pumi_geom_deleteTag (pGeom g, pTag tag, bool force_delete)
 //**********************************************************
 { 
   if (!pumi_geom_hasTag (g, tag)) return;
 
-  // FIXME
-/*
-  if (forceDel)
+  if (force_delete)
   {
-    for (mm::partIter pit=m->partBegin(); pit!=m->partEnd(); ++pit)
-    {
-      part = *pit;
-      Taggable_DelTag(static_cast<pTaggable>(part), tag);
+    for (int i=0; i<4; ++i)
+      for (pGeomIter git = g->begin(i); git!=g->end(i);++git)
+        pumi_gent_deleteTag (*git, tag);
+  }
 
-      // entity
-      for (int i=0; i<=part->getDimension(); ++i)
-        for (mPart::iterall ent_it=part->begin(i); ent_it!=part->end(i); ++ent_it)
-          Taggable_DelTag(static_cast<pTaggable>(*ent_it), tag);
-     // part set
-     std::vector<pEntSet> entsets;
-     PUMI_Part_GetSet (part, entsets);
-     for (std::vector<pEntSet>::iterator set_it=entsets.begin(); set_it!=entsets.end(); ++set_it)
-       Taggable_DelTag(static_cast<pTaggable>(*set_it), tag);
-       //(*set_it)->deleteTagData(tag); 
-    }  // for each part
-
-    // entity set
-    for (std::list<pEntSet>::iterator eset_it = m->beginEntSet();
-         eset_it!=m->endEntSet(); ++eset_it)
-      Taggable_DelTag(static_cast<pTaggable>(*eset_it), tag);
-  }  // forceDel
-*/
-  // if forceDel==0 and tag still in use, pumi_geom_Del crashes
+  // if force_delete==0 and tag handle is still in use, pumi_geom_deleteTag crashes
   TagHolder_DelTag(static_cast<pTagHolder>(g), tag); 
 }
 
@@ -108,27 +88,6 @@ bool pumi_geom_hasTag (pGeom m, const pTag tag)
     return true;
   else
     return false;
-}
-
-//**********************************************************
-bool pumi_geom_isTagInUse (pGeom, const pTag)
-//**********************************************************
-{
-  if (!pumi_rank()) std::cout<<__func__<<" not supported\n";
-  // FIXME
-  return true;
-  // entity
-//for (int i=0; i<=3; ++i)
-//{
-//  gmi_iter* giter = gmi_begin(m->getGmi(), i);
-//  while(gmi_ent* gent = gmi_next(m->getGmi(), giter))
-//  {
-//    if (Taggable_HasTag(static_cast<pTaggable>(*gent), tag)) 
-//      return true;
-//  }
-//  gmi_end(m->getGmi(), giter);
-//}
-//return false;
 }
 
 //**********************************************************

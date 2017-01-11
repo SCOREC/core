@@ -77,32 +77,6 @@ private:
   static pumi* _instance;
 };
 
-/** \brief Distribution plan object: send local elements to multiple destinations. */
-// defined in pumi_distribution.cc
-class Distribution
-{
-  public:
-/** \brief must be constructed with a mesh
-  \details use (new Distribution(mesh)) to make these objects */
-    Distribution(pMesh m);
-    ~Distribution();
-
-/** \brief return true if the i'th element has been assigned destination(s) */
-    bool has(pMeshEnt e);
-/** \brief assign a destination part id to an element */
-    void send(pMeshEnt e, int to);
-/** \brief return the destination part id of an element */
-    Parts& sending(pMeshEnt e);
-    void print();
-    int count();
-    pMesh getMesh() {return m;}
-
-    Parts* parts_vec;
-    int element_count;
-  private:
-    pMesh m;
-};
-
 //************************************
 //************************************
 //      0- SYSTEM-LEVEL FUNCTIONS
@@ -136,7 +110,8 @@ int pumi_tag_getByte (const pTag tag);
 //************************************
 // Geometric Model
 // create a model from a file
-pGeom pumi_geom_load(const char* fileName, const char* model_type="mesh", void (*fp)(const char*)=NULL);
+pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
+                      void (*fp)(const char*)=NULL);
 void pumi_geom_freezeAnalytic(pGeom g); // shall be called after adding analytic model entities
 int pumi_geom_getNumEnt(pGeom g, int d);
 
@@ -147,28 +122,16 @@ int pumi_gent_getDim(pGeomEnt ge);
 int pumi_gent_getID(pGeomEnt ge);
 void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
 
-// Geometric Model Iterator
-/*
-int pumi_giter_init (pGeom part, int type, gIter&);
-int pumi_giter_getNext(gIter iter, pGeomEnt&);
-void pumi_giter_delete(gIter iter);
-void pumi_giter_reset(gIter iter);
-bool pumi_giter_isEnd(gIter iter);
-*/
-
+// Tag management
 pTag pumi_geom_createTag (pGeom g, const char* tagName, int tagType, int tagSize);
-void pumi_geom_deleteTag (pGeom g, pTag tag, int forceDel=0);
+void pumi_geom_deleteTag (pGeom g, pTag tag, bool force_delete=false);
 pTag pumi_geom_findTag (pGeom g, const char* tagName);
 bool pumi_geom_hasTag (pGeom g, const pTag tag);
-bool pumi_geom_isTagInUse (pGeom g, const pTag tag);
 void pumi_geom_getTag (pGeom g, std::vector<pTag>& tags);
 
-bool pumi_gent_hasTag (pGeomEnt ent, pTag tag);
 void pumi_gent_deleteTag (pGeomEnt ent, pTag tag);
+bool pumi_gent_hasTag (pGeomEnt ent, pTag tag);
 void pumi_gent_getTag (pGeomEnt ent, std::vector<pTag>& tags);
-
-//void pumi_gent_setStringTag(pGeomEnt ent, pTag tag, const char* s);
-//void pumi_gent_getStringTag(pGeomEnt ent, pTag tag, const char*& s);
 
 void pumi_gent_setPtrTag (pGeomEnt ent, pTag tag, void* data);
 void pumi_gent_getPtrTag (pGeomEnt ent, pTag tag, void** data);
@@ -197,16 +160,25 @@ void pumi_gent_getEntArrTag (pGeomEnt ent, pTag tag, pGeomEnt** data, int* data_
 // Mesh management
 //************************************
 
-pGeom pumi_mesh_getGeom(pMesh m);
+// create an empty mesh
+pMesh pumi_mesh_create(pGeom g, int mesh_dim);
+void pumi_mesh_freeze(pMesh m);
+pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz);
+//ent_topology: VERTEX (0), EDGE (1), TRIANGLE (2), QUAD (3), TET (4), HEX (5), PRISM (6), PYRAMID (7)
+pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* down);
 
 // load a serial mesh. 
-pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type="mds");
+pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type="mds");
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
 
-// load a serial mesh on master process then distribute as per the distribution object
-void pumi_mesh_distribute(pMesh m, Distribution* plan);
+// delete mesh
+void pumi_mesh_delete(pMesh m);
+
+// write mesh into a file - mesh_type should be "mds" or "vtk"
+void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
+pGeom pumi_mesh_getGeom(pMesh m);
 
 // get mesh dimension
 int pumi_mesh_getDim(pMesh m);
@@ -214,96 +186,68 @@ int pumi_mesh_getDim(pMesh m);
 // get # mesh entities of type d on local process
 int pumi_mesh_getNumEnt(pMesh m, int d);
 
-// print mesh size info - global and local
-void pumi_mesh_print(pMesh m, int p=0);
+//************************************
+// Tag management over mesh
+//************************************
+pMeshTag pumi_mesh_createIntTag(pMesh m, const char* name, int size);
+pMeshTag pumi_mesh_createLongTag(pMesh m, const char* name, int size);
+pMeshTag pumi_mesh_createDblTag(pMesh m, const char* name, int size);
 
-// write mesh into a file - mesh_type should be "mds" or "vtk"
-void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
-
-// delete mesh
-void pumi_mesh_delete(pMesh m);
-
-// create/delete tag
-void pumi_mesh_getTags(pMesh m, std::vector<pMeshTag> tags);
 void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete=false);
+pMeshTag pumi_mesh_findTag(pMesh m, const char* name);
+bool pumi_mesh_hasTag (pMesh m, const pMeshTag tag);
+void pumi_mesh_getTag(pMesh m, std::vector<pMeshTag> tags);
 
-// create/delete global ID using tag "global_id"
-void pumi_mesh_createGlobalID(pMesh m);
-void pumi_mesh_deleteGlobalID(pMesh m);
+// tag management over mesh entity
+void pumi_ment_deleteTag (pMeshEnt e, pMeshTag tag);
+bool pumi_ment_hasTag (pMeshEnt e, pMeshTag tag);
 
-// create/delete global ID using numbering object and field shape
-pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
- pShape shape=NULL);
-void  pumi_numbering_delete(pGlobalNumbering);
-
-// verify mesh
-void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
-//void pumi_mesh_verifyTag(pMesh m, pTag tag);
-//void pumi_mesh_verifyField(pMesh m, pTag tag);
-//void pumi_mesh_verifyNumbering(pMesh m, pTag tag);
-//************************************
-// mesh tag management
-//************************************
-
-/*
-pTag pumi_mesh_createTag (pMesh g, const char* tagName, int tagType, int tagSize);
-void pumi_mesh_deleteTag (pMesh g, pTag tag, int forceDel=0);
-pTag pumi_mesh_findTag (pMesh g, const char* tagName);
-bool pumi_mesh_hasTag (pMesh g, const pTag tag);
-bool pumi_mesh_isTagInUse (pMesh g, const pTag tag);
-void pumi_mesh_getTag (pMesh g, std::vector<pTag>& tags);
-// sync tag data attached to the part boundary entities
-void pumi_mesh_syncTag (pMesh mesh, pMeshTag tag, int ent_type);
-
-bool pumi_ment_hasTag (pMeshEnt ent, pTag tag);
-void pumi_ment_deleteTag (pMeshEnt ent, pTag tag);
-void pumi_ment_getTag (pMeshEnt ent, std::vector<pTag>& tags);
-
-//void pumi_ment_setStringTag(pMeshEnt ent, pTag tag, const char* s);
-//void pumi_ment_getStringTag(pMeshEnt ent, pTag tag, const char*& s);
-
-void pumi_ment_setPtrTag (pMeshEnt ent, pTag tag, void* data);
-void pumi_ment_getPtrTag (pMeshEnt ent, pTag tag, void** data);
-void pumi_ment_setIntTag (pMeshEnt ent, pTag tag, const int data);
-void pumi_ment_getIntTag (pMeshEnt ent, pTag tag, int* data);
-void pumi_ment_setLongTag (pMeshEnt ent, pTag tag, const long data);
-void pumi_ment_getLongTag (pMeshEnt ent, pTag tag, long*);
-void pumi_ment_setDblTag (pMeshEnt ent, pTag tag, const double data);
-void pumi_ment_getDblTag (pMeshEnt ent, pTag tag, double*);
-void pumi_ment_setEntTag (pMeshEnt ent, pTag tag, const pMeshEnt data);
-void pumi_ment_getEntTag (pMeshEnt ent, pTag tag, pMeshEnt*);
-
-void pumi_ment_setPtrArrTag (pMeshEnt ent, pTag tag, void* const* data);
-void pumi_ment_getPtrArrTag (pMeshEnt ent, pTag tag, void** data);
-void pumi_ment_setIntArrTag (pMeshEnt ent, pTag tag, const int* data);
-void pumi_ment_getIntArrTag (pMeshEnt ent, pTag tag, int** data, int* data_size);
-void pumi_ment_setLongArrTag (pMeshEnt ent, pTag tag, const long* data);
-void pumi_ment_getLongArrTag (pMeshEnt ent, pTag tag, long** data, int* data_size);
-void pumi_ment_setDblArrTag (pMeshEnt ent, pTag tag, const double* data);
-void pumi_ment_getDblArrTag (pMeshEnt ent, pTag tag, double** data, int* data_size);
-void pumi_ment_setEntArrTag (pMeshEnt ent, pTag tag, const pMeshEnt* data);
-void pumi_ment_getEntArrTag (pMeshEnt ent, pTag tag, pMeshEnt** data, int* data_size);
-*/
+void pumi_ment_setIntTag(pMeshEnt e, pMeshTag tag, int const* data);
+void pumi_ment_getIntTag(pMeshEnt e, pMeshTag tag, int* data);
+void pumi_ment_setLongTag(pMeshEnt e, pMeshTag tag, long const* data);
+void pumi_ment_getLongTag(pMeshEnt e, pMeshTag tag, long* data);
+void pumi_ment_setDblTag(pMeshEnt e, pMeshTag tag, double const* data);
+void pumi_ment_getDblTag(pMeshEnt e, pMeshTag tag, double* data);
 
 //************************************
-//  Field
+//  Migration
 //************************************
 
-pField pumi_field_create(pMesh m, const char* name, 
-    int num_dof_per_vtx, int type=apf::PACKED, pShape shape = NULL);
-int pumi_field_getSize(pField f);
-int pumi_field_getType(pField f);
-std::string pumi_field_getName(pField f);
-void pumi_field_print(pField f);
-void pumi_field_delete(pField f);
-void pumi_field_synchronize(apf::Field* f);
-void pumi_field_accumulate(apf::Field* f);
-void pumi_field_freeze(apf::Field* f);
-void pumi_field_unfreeze(apf::Field* f);
-pField pumi_mesh_findField(pMesh m, const char* name);
-void pumi_mesh_getField(pMesh m, std::vector<pField>&);
-void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data);
-void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data);
+// migrate mesh per migration plan which contains a set of pairs [element and destination part]
+void pumi_mesh_migrate(pMesh m, Migration* plan);
+
+//************************************
+//  Distribution
+//************************************
+
+/** \brief Distribution plan object: send local elements to multiple destinations. */
+// defined in pumi_distribution.cc
+class Distribution
+{
+  public:
+/** \brief must be constructed with a mesh
+  \details use (new Distribution(mesh)) to make these objects */
+    Distribution(pMesh m);
+    ~Distribution();
+
+/** \brief return true if the i'th element has been assigned destination(s) */
+    bool has(pMeshEnt e);
+/** \brief assign a destination part id to an element */
+    void send(pMeshEnt e, int to);
+/** \brief return the destination part id of an element */
+    Parts& sending(pMeshEnt e);
+    void print();
+    int count();
+    pMesh getMesh() {return m;}
+
+    Parts* parts_vec;
+    int element_count;
+  private:
+    pMesh m;
+};
+
+// load a serial mesh on master process then distribute as per the distribution object
+void pumi_mesh_distribute(pMesh m, Distribution* plan);
 
 //************************************
 //  Ghosting
@@ -341,9 +285,6 @@ class Ghosting
     std::vector<Parts*> parts_vec[4];
 };
 
-// migrate mesh per migration plan which contains a set of pairs [element and destination part]
-void pumi_mesh_migrate(pMesh m, Migration* plan);
-
 /* 
 input:
   - brgType - desired bridge entity type
@@ -363,34 +304,32 @@ The error is returned in the following cases:
 */
 void pumi_ghost_createLayer (pMesh m, int brgType, int ghostType, int numLayer, int includeCopy);
 
-/* 
-  Ghosting: ghosting plan object for local elements or part to destinations.
-*/
+// Ghosting: ghosting plan object for local elements or part to destinations. 
 void pumi_ghost_create(pMesh m, Ghosting* plan);
 
-// unavailable
 void pumi_ghost_delete (pMesh m);
 
-/* 
-input: 	
-  - a mesh instance
-   
-output: 
-  - return the historical ghosting information in order which consists of four integers, ghost type, 
-    bridge type, the number of layers, and includeCopy flag (0 or 1)
+//************************************
+// MISCELLANEOUS
+//************************************
+// create/delete global ID using tag "global_id"
+void pumi_mesh_createGlobalID(pMesh m);
+void pumi_mesh_deleteGlobalID(pMesh m);
 
-example:
-  If pumi_ghost_create was called twice in the following order (mesh, 0, 2, 1, 1) and (mesh, 1, 3, 0), 
-  the vector "ghostinfo" contains [0, 2, 1, 1, 1, 3, 3, 0]
-*/
-// unavailable
-void pumi_ghost_getInfo (pMesh m, std::vector<int>& ghostinfo);
+// create/delete global ID using numbering object and field shape
+pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
+ pShape shape=NULL);
+void  pumi_numbering_delete(pGlobalNumbering);
+
+// verify mesh
+void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
+
+// print mesh size info - global and local
+void pumi_mesh_print(pMesh m, int p=0);
 
 //************************************
 //  Mesh Entity
 //************************************
-void pumi_mvtx_getCoord(pMeshEnt e, double* xyz);
-
 // get mesh entity's dimension
 int pumi_ment_getDim(pMeshEnt e);
 
@@ -398,8 +337,8 @@ int pumi_ment_getDim(pMeshEnt e);
 int pumi_ment_getLocalID(pMeshEnt e);
 
 // get mesh entity's global id - vertex only
-// global id is maintained if mesh is ghosted
-// global id is NOT maintained if mesh is adapted or re-partitioned
+// global id is maintained if mesh is re-partitioned or ghosted
+// global id is NOT maintained if mesh is adapted
 int pumi_ment_getGlobalID(pMeshEnt e);
 
 // get # adjacent entities
@@ -442,18 +381,6 @@ void pumi_ment_getAllRmt(pMeshEnt e, Copies& remotes);
 //  - this will fixed to consider only part boundary entities later
 pMeshEnt pumi_ment_getRmt(pMeshEnt& meshEnt, int destPart); 
 
-// unavailable
-void pumi_ment_setRmt(pMeshEnt e, int partID, pMeshEnt rmtEnt);
-
-// unavailable
-void pumi_ment_deleteRmt (pMeshEnt e, int partID);
-
-// unavailable
-void pumi_ment_cleanRmt (pMeshEnt e);
-
-// unavailable
-void pumi_ment_setPtnTopology (pMeshEnt e);
-
 // return part ids where the entity is duplicated - part boundary or ghost
 void pumi_ment_getResidence(pMeshEnt e, std::vector<int>& resPartId);
 
@@ -464,18 +391,40 @@ void pumi_ment_getClosureResidence(pMeshEnt ent, std::vector<int>& resPartId);
 bool pumi_ment_isGhost(pMeshEnt e);
 
 // return true if the entity is ghosted
-// unavailable
 bool pumi_ment_isGhosted (pMeshEnt e);
 
-// unavailable
 // return #ghost copies
 int pumi_ment_getNumGhost (pMeshEnt e);
 
-// unavailable
 // return ghost copies
 void pumi_ment_getAllGhost (pMeshEnt e, Copies&);
 
-// unavailable
 // return ghost copy on a destination part
 pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
+
+void pumi_mvtx_getCoord(pMeshEnt e, double* xyz);
+void pumi_mvtx_setCoord(pMeshEnt e, double* xyz);
+
+
+
+//************************************
+//  Field
+//************************************
+
+// field type: spf::SCALAR, apf::VECTOR, apf::MATRIX, apf::PACKED
+pField pumi_field_create(pMesh m, const char* name,
+    int num_dof_per_ent, int type=apf::PACKED, pShape shape = NULL);
+int pumi_field_getSize(pField f);
+int pumi_field_getType(pField f);
+std::string pumi_field_getName(pField f);
+void pumi_field_print(pField f);
+void pumi_field_delete(pField f);
+void pumi_field_synchronize(apf::Field* f);
+void pumi_field_accumulate(apf::Field* f);
+void pumi_field_freeze(apf::Field* f);
+void pumi_field_unfreeze(apf::Field* f);
+pField pumi_mesh_findField(pMesh m, const char* name);
+void pumi_mesh_getField(pMesh m, std::vector<pField>&);
+void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data);
+void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data);
 #endif
