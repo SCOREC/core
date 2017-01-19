@@ -24,6 +24,7 @@ namespace {
   }
 
   unsigned* getMaxDist(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dt) {
+    const unsigned check = m->getTagChecksum(dt);
     unsigned* rmax = new unsigned[c.size()];
     for(unsigned i=0; i<c.size(); i++) {
       rmax[i] = 0;
@@ -37,6 +38,7 @@ namespace {
       }
       c.endBdry();
     }
+    assert(check == m->getTagChecksum(dt));
     return rmax;
   }
 
