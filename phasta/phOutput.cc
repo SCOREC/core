@@ -638,7 +638,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getCounts(o);
   getCoordinates(o);
   getGlobal(o);
-  getAllBlocks(o.mesh, o.blocks);
+  getAllBlocks(o.mesh, bcs, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");
   apf::Numbering* rn = apf::numberElements(o.mesh, "ph_elem");
   getVertexLinks(o, n, bcs);

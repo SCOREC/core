@@ -1,6 +1,7 @@
 #ifndef PH_BLOCK_H
 #define PH_BLOCK_H
 
+#include "phBC.h"
 #include <apfMesh.h>
 #include <map>
 #include <set>
@@ -69,7 +70,7 @@ struct AllBlocks
   BlocksInterface interface;
 };
 
-void getAllBlocks(apf::Mesh* m, AllBlocks& b);
+void getAllBlocks(apf::Mesh* m, BCs& bcs, AllBlocks& b);
 
 std::string getBlockKeyPhrase(BlockKey& b, const char* prefix);
 std::string getBlockKeyPhraseInterface
