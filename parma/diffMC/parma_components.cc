@@ -132,6 +132,13 @@ namespace parma {
   }
 
   /**
+   * brief return the checksum of the id tag on mesh vertices
+   */
+  unsigned DCC::getIdChecksum() {
+    return m->getTagChecksum(idT, apf::Mesh::VERTEX);
+  }
+
+  /**
    * brief get the core vertices in the component
    * remark if a component has no vertices assigned to it
    then it must has only boundary vertices
@@ -289,6 +296,7 @@ namespace parma {
   dcComponents::~dcComponents() { delete c; delete bItr; }
   unsigned dcComponents::size() { return c->size(); }
   unsigned dcComponents::getId(apf::MeshEntity* e) { return c->getId(e); }
+  unsigned dcComponents::getIdChecksum() { return c->getIdChecksum(); }
   unsigned dcComponents::numIso() { return c->iso(); }
   bool dcComponents::has(apf::MeshEntity* e) { return c->has(e); }
   apf::MeshEntity* dcComponents::getCore(unsigned i) { return c->getCoreVtx(i); }
