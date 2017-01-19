@@ -22,6 +22,7 @@ namespace parma {
 
       bool has(apf::MeshEntity* e);
       unsigned getId(apf::MeshEntity* e);
+      unsigned getIdChecksum();
     private:
       Components();
       void markVertices();

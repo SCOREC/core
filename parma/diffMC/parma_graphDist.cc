@@ -287,6 +287,7 @@ namespace parma_ordering {
   }
 
   apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
+    const unsigned check = c.getIdChecksum();
     apf::MeshTag* order = m->createIntTag("parma_ordering",1);
     int start = 0;
     for(unsigned i=0; i<c.size(); i++) {
@@ -294,6 +295,7 @@ namespace parma_ordering {
       apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
       PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
       start = bfs(m, contains, src, order, start);
+      assert(check == c.getIdChecksum());
       delete contains;
       if(start == TO_INT(m->count(0))) {
         if( i != c.size()-1 )
@@ -319,6 +321,7 @@ namespace parma_ordering {
     for(unsigned i=0; i<m->count(0); i++)
       assert(sorted[i]);
     delete [] sorted;
+    assert(check == c.getIdChecksum());
     return order;
   }
 
