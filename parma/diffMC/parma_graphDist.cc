@@ -396,7 +396,9 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   double t0 = PCU_Time();
   assert( !hasDistance(m) );
   parma::dcComponents c = parma::dcComponents(m);
+  const unsigned checkIds = c.getIdChecksum();
   apf::MeshTag* dist = computeDistance(m,c);
+  const unsigned check = m->getTagChecksum(dist,apf::Mesh::VERTEX);
   if( PCU_Comm_Peers() > 1 && !c.numIso() )
     if( !hasDistance(m,dist) ) {
       parmaCommons::error("rank %d comp %u iso %u ... "
@@ -407,6 +409,8 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   parma_ordering::la(m);
   apf::MeshTag* order = parma_ordering::reorder(m,c,dist);
   parma_ordering::la(m,order);
+  assert(checkIds == c.getIdChecksum());
+  assert(check == m->getTagChecksum(dist,apf::Mesh::VERTEX));
   m->destroyTag(dist);
   parmaCommons::printElapsedTime(__func__,PCU_Time()-t0);
   return order;
