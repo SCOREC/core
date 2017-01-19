@@ -58,6 +58,7 @@ class MeshSIM : public Mesh2
     MeshTag* findTag(const char* name);
     void destroyTag(MeshTag* tag);
     void renameTag(MeshTag*, const char*);
+    unsigned getTagChecksum(MeshTag*,int);
     void getTags(DynamicArray<MeshTag*>& ts);
     void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data);
     void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data);

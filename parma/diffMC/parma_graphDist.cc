@@ -24,6 +24,7 @@ namespace {
   }
 
   unsigned* getMaxDist(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dt) {
+    const unsigned check = m->getTagChecksum(dt,apf::Mesh::VERTEX);
     unsigned* rmax = new unsigned[c.size()];
     for(unsigned i=0; i<c.size(); i++) {
       rmax[i] = 0;
@@ -37,6 +38,7 @@ namespace {
       }
       c.endBdry();
     }
+    assert(check == m->getTagChecksum(dt,apf::Mesh::VERTEX));
     return rmax;
   }
 
@@ -51,6 +53,8 @@ namespace {
     //per step from part one to zero.  The max distance of part zero increases
     //by one each step.  Thus in maxDistanceIncrease steps the distance can at
     //most increase by maxDistanceIncrease for a given component.
+    const unsigned csStart = m->getTagChecksum(dt,apf::Mesh::VERTEX);
+    fprintf(stderr, "offset dt checksum %10u\n", csStart);
     const int maxDistanceIncrease = 1000;
     if (!c.size())
       return;
@@ -64,6 +68,7 @@ namespace {
 
     // Go backwards so that the largest bdry vtx changes are made first
     //  and won't be augmented in subsequent bdry traversals.
+    unsigned dtchanges = 0;
     for(unsigned i=c.size()-1; i>0; i--) {
       apf::MeshEntity* v;
       c.beginBdry(i);
@@ -73,12 +78,16 @@ namespace {
         if(d < rsi) { //not visited
           d+=rsi;
           m->setIntTag(v,dt,&d);
+          dtchanges++;
         }
       }
       c.endBdry();
     }
+    const unsigned csMid = m->getTagChecksum(dt,apf::Mesh::VERTEX);
+    assert((!dtchanges && csStart == csMid) || (dtchanges && csStart != csMid));
 
     // Offset the interior vertices
+    dtchanges = 0;
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
     while( (v = m->iterate(it)) ) {
@@ -87,11 +96,16 @@ namespace {
       unsigned id = c.getId(v);
       //also skip if on a component boundary
       if( c.bdryHas(id,v) ) continue;
+      //also skip if the offset is zero
+      if( !rsum[id] ) continue;
       int d; m->getIntTag(v,dt,&d);
       d += TO_INT(rsum[id]);
       m->setIntTag(v,dt,&d);
+      dtchanges++;
     }
     m->end(it);
+    const unsigned csEnd = m->getTagChecksum(dt,apf::Mesh::VERTEX);
+    assert((!dtchanges && csMid == csEnd) || (dtchanges && csMid != csEnd));
     delete [] rsum;
   }
 
@@ -273,6 +287,7 @@ namespace parma_ordering {
   }
 
   apf::MeshTag* reorder(apf::Mesh* m, parma::dcComponents& c, apf::MeshTag* dist) {
+    const unsigned check = c.getIdChecksum();
     apf::MeshTag* order = m->createIntTag("parma_ordering",1);
     int start = 0;
     for(unsigned i=0; i<c.size(); i++) {
@@ -280,6 +295,7 @@ namespace parma_ordering {
       apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
       PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
       start = bfs(m, contains, src, order, start);
+      assert(check == c.getIdChecksum());
       delete contains;
       if(start == TO_INT(m->count(0))) {
         if( i != c.size()-1 )
@@ -305,6 +321,7 @@ namespace parma_ordering {
     for(unsigned i=0; i<m->count(0); i++)
       assert(sorted[i]);
     delete [] sorted;
+    assert(check == c.getIdChecksum());
     return order;
   }
 
@@ -322,6 +339,7 @@ namespace parma_ordering {
       }
       m->end(it);
     }
+    const unsigned check = m->getTagChecksum(order,apf::Mesh::VERTEX);
     int la = 0;
     apf::Downward verts;
     apf::MeshIterator* it = m->begin(1);
@@ -340,6 +358,7 @@ namespace parma_ordering {
     double avg = TO_DOUBLE(tot)/PCU_Comm_Peers();
     if( !PCU_Comm_Self() )
       parmaCommons::status("la min %d max %d avg %.3f\n", min, max, avg);
+    assert(check == m->getTagChecksum(order,apf::Mesh::VERTEX));
     if( setOrder )
       m->destroyTag(order);
   }
@@ -377,7 +396,9 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   double t0 = PCU_Time();
   assert( !hasDistance(m) );
   parma::dcComponents c = parma::dcComponents(m);
+  const unsigned checkIds = c.getIdChecksum();
   apf::MeshTag* dist = computeDistance(m,c);
+  const unsigned check = m->getTagChecksum(dist,apf::Mesh::VERTEX);
   if( PCU_Comm_Peers() > 1 && !c.numIso() )
     if( !hasDistance(m,dist) ) {
       parmaCommons::error("rank %d comp %u iso %u ... "
@@ -388,6 +409,8 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   parma_ordering::la(m);
   apf::MeshTag* order = parma_ordering::reorder(m,c,dist);
   parma_ordering::la(m,order);
+  assert(checkIds == c.getIdChecksum());
+  assert(check == m->getTagChecksum(dist,apf::Mesh::VERTEX));
   m->destroyTag(dist);
   parmaCommons::printElapsedTime(__func__,PCU_Time()-t0);
   return order;
