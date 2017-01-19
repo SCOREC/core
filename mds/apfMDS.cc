@@ -445,12 +445,16 @@ class MeshMDS : public Mesh2
       tag = reinterpret_cast<mds_tag*>(t);
       mds_rename_tag(tag,newName);
     }
-    unsigned getTagChecksum(MeshTag* t)
+    /* \brief 16 bit additive checksum of a tag
+     * \remark the code is from
+     *  http://barrgroup.com/Embedded-Systems/How-To/Additive-Checksums
+     */
+    unsigned getTagChecksum(MeshTag* t, int type)
     {
       mds_tag* tag;
       tag = reinterpret_cast<mds_tag*>(t);
-      int nWords = tag->bytes / sizeof(uint16_t);
-      uint16_t* data = reinterpret_cast<uint16_t*>(tag->data[tag->user_type]);
+      int nWords = tag->bytes*mesh->mds.cap[type] / sizeof(uint16_t);
+      uint16_t* data = reinterpret_cast<uint16_t*>(tag->data[type]);
       uint32_t sum = 0;
       /* IP headers always contain an even number of bytes. */
       while (nWords-- > 0)
