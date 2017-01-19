@@ -755,6 +755,11 @@ void MeshSIM::renameTag(MeshTag*, const char*)
   apf::fail("MeshSIM::renameTag called!\n");
 }
 
+unsigned MeshSIM::getTagChecksum(MeshTag*)
+{
+  apf::fail("MeshSIM::getTagChecksum called!\n");
+}
+
 void MeshSIM::getTags(DynamicArray<MeshTag*>& ts)
 {
   ts.setSize(tags.size());

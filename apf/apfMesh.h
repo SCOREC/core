@@ -244,6 +244,8 @@ class Mesh
     virtual bool hasTag(MeshEntity* e, MeshTag* tag) = 0;
     /** \brief renames a tag */
     virtual void renameTag(MeshTag* tag, const char* newName) = 0;
+    /** \brief renames a tag */
+    virtual unsigned getTagChecksum(MeshTag* tag) = 0;
     /** \brief Tag data type enumeration */
     enum TagType {
       /** \brief 64-bit IEE754 floating-point number */

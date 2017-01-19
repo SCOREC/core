@@ -21,6 +21,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
+#include<stdint.h>
 
 extern "C" {
 
@@ -444,6 +445,22 @@ class MeshMDS : public Mesh2
       tag = reinterpret_cast<mds_tag*>(t);
       mds_rename_tag(tag,newName);
     }
+    unsigned getTagChecksum(MeshTag* t)
+    {
+      mds_tag* tag;
+      tag = reinterpret_cast<mds_tag*>(t);
+      int nWords = tag->bytes / sizeof(uint16_t);
+      uint16_t* data = reinterpret_cast<uint16_t*>(tag->data[tag->user_type]);
+      uint32_t sum = 0;
+      /* IP headers always contain an even number of bytes. */
+      while (nWords-- > 0)
+        sum += *(data++);
+      /* Use carries to compute 1's complement sum. */
+      sum = (sum >> 16) + (sum & 0xFFFF);
+      sum += sum >> 16;
+      /* Return the inverted 16-bit result.  */
+      return ((unsigned) ~sum);
+    }
     ModelEntity* toModel(MeshEntity* e)
     {
       return reinterpret_cast<ModelEntity*>(mds_apf_model(mesh, fromEnt(e)));
@@ -838,6 +855,7 @@ void writeMdsPart(Mesh2* in, const char* meshfile)
   MeshMDS* m = static_cast<MeshMDS*>(in);
   m->mesh = mds_write_smb(m->mesh, meshfile, 1, m);
 }
+
 
 }
 
