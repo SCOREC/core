@@ -1,4 +1,5 @@
 #include "phBlock.h"
+#include "phBC.h"
 #include <apf.h>
 #include <gmi.h>
 #include <PCU.h>
@@ -183,7 +184,7 @@ void getInterfaceBlockKey
   applyTriQuadHackInterface(k);
 }
 
-void getInterfaceBlocks(apf::Mesh* m, BlocksInterface& b)
+void getInterfaceBlocks(apf::Mesh* m, BCs& bcs, BlocksInterface& b)
 {
   int interfaceDim = m->getDimension() - 1;
   apf::MeshIterator* it = m->begin(interfaceDim);
@@ -191,6 +192,8 @@ void getInterfaceBlocks(apf::Mesh* m, BlocksInterface& b)
 
   while ((face = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(face);
+    if (getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) == 0)
+      continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
     apf::Matches matches;
@@ -211,11 +214,11 @@ void getInterfaceBlocks(apf::Mesh* m, BlocksInterface& b)
   m->end(it);
 }
 
-void getAllBlocks(apf::Mesh* m, AllBlocks& b)
+void getAllBlocks(apf::Mesh* m, BCs& bcs, AllBlocks& b)
 {
   getInteriorBlocks(m, b.interior);
   getBoundaryBlocks(m, b.boundary);
-  getInterfaceBlocks(m, b.interface);
+  getInterfaceBlocks(m, bcs, b.interface);
 }
 
 std::string getPolyOrder

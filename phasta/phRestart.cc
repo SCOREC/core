@@ -317,8 +317,8 @@ int readAndAttachField(
     out_size = in.ensa_dof;
   if (m->findField(hname)) {
     if (!PCU_Comm_Self())
-      fprintf(stderr, "field \"%s\" listed twice in restart files, ignoring...\n",
-          hname);
+      fprintf(stderr, "field \"%s\" already attached to the mesh, "
+                      "ignoring request to re-attach...\n", hname);
   } else {
     attachField(m, hname, data, vars, out_size);
   }
