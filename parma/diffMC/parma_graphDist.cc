@@ -290,7 +290,7 @@ namespace parma_ordering {
     const unsigned check = c.getIdChecksum();
     apf::MeshTag* order = m->createIntTag("parma_ordering",1);
     int start = 0;
-    for(unsigned i=0; i<c.size(); i++) {
+    for(int i=TO_INT(c.size())-1; i>=0; i--) {
       CompContains* contains = new CompContains(c,i);
       apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
       PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
@@ -298,7 +298,7 @@ namespace parma_ordering {
       assert(check == c.getIdChecksum());
       delete contains;
       if(start == TO_INT(m->count(0))) {
-        if( i != c.size()-1 )
+        if( i != 0 ) //if not the last component to order
           parmaCommons::status("%d all vertices visited comp %u of %u\n",
               PCU_Comm_Self(), i, c.size());
         break;
