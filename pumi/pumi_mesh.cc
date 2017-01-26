@@ -27,7 +27,7 @@ using std::map;
 // mesh creation
 pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic)
 {
-  pumi::instance()->mesh = apf::makeEmptyMdsMesh((gmi_model*)g, mesh_dim, periodic);
+  pumi::instance()->mesh = apf::makeEmptyMdsMesh(g->getGmi(), mesh_dim, periodic);
   return pumi::instance()->mesh;
 }
 
@@ -35,6 +35,7 @@ void pumi_mesh_freeze(pMesh m)
 {
   deriveMdsModel(m);
   m->acceptChanges();
+  pumi_geom_freeze(pumi_mesh_getGeom(m));
 }
 
 pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz)
