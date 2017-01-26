@@ -11,15 +11,56 @@
 #include "apf.h"
 #include "apfShape.h"
 
-void pumi_mesh_getField(pMesh m, std::vector<pField>& fields)
+//************************************
+// Field shape and nodes
+//************************************
+
+pShape pumi_mesh_getShape (pMesh m)
 {
-  for (int i=0; i<m->countFields(); ++i)
-    fields.push_back(m->getField(i));
+  return m->getShape();
 }
+
+void pumi_mesh_setShape (pMesh m, pShape s, bool project)
+{
+  m->changeShape(s, project);
+}
+
+int pumi_shape_getNumNode (pShape s, int type)
+{
+  return s->countNodesOn(type);
+}
+
+void pumi_node_getCoord(pMeshEnt e, int i, double* xyz)
+{
+  apf::Vector3 coord;
+  pumi::instance()->mesh->getPoint(e, i, coord);
+  for (int i=0; i<3; ++i)
+    xyz[i] = coord[i]; 
+}
+
+void pumi_node_setCoord(pMeshEnt e,int i, double* xyz)
+{
+  apf::Vector3 coord;
+  for (int k=0; k<3; ++k)
+    coord[k] = xyz[k];
+  pumi::instance()->mesh->setPoint(e, i, coord);
+}
+
+pShape pumi_shape_getLagrange (int order) { return apf::getLagrange(order); }
+pShape pumi_shape_getSerendipity () { return apf::getSerendipity(); }
+pShape pumi_shape_getConstant (int type) { return apf::getConstant(type); }
+pShape pumi_shape_getIP (int dimension, int order) { return apf::getIPShape(dimension, order); }
+pShape pumi_shape_getVoronoi (int dimension, int order) { return apf::getVoronoiShape(dimension, order); }
+pShape pumi_shape_getIPFit(int dimension, int order) { return apf::getIPFitShape(dimension, order); }
+pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); }
+
+//************************************
+//  Field Management
+//************************************ 
 
 pField pumi_field_create(pMesh m, const char* name, int num_dof_per_ent, int type, pShape s)
 {
-  if (type==apf::PACKED)
+  if (type==PUMI_PACKED)
     return apf::createPackedField(m, name, num_dof_per_ent, s);
   else
   {
@@ -41,49 +82,60 @@ std::string pumi_field_getName(pField f)
 { 
   return apf::getName(f); 
 }
+pShape pumi_field_getShape (pField f)
+{
+  return apf::getShape(f);
+}
 
 void pumi_field_delete(pField f)
 {
   apf::destroyField(f);
 }
 
-void pumi_field_synchronize(apf::Field* f)
+void pumi_field_synchronize(pField f)
 {  
   apf::synchronize(f, getSharing(getMesh(f)));
 }
 
-void pumi_field_accumulate(apf::Field* f)
+void pumi_field_accumulate(pField f)
 {  
   apf::accumulate(f, getSharing(getMesh(f)));
 }
 
-void pumi_field_freeze(apf::Field* f)
+void pumi_field_freeze(pField f)
 {  
   if (!isFrozen(f))
     apf::freeze(f); 
 }
 
-void pumi_field_unfreeze(apf::Field* f)
+void pumi_field_unfreeze(pField f)
 {  
   if (isFrozen(f))
     apf::unfreeze(f); 
 }
 
-//*******************************************************
-void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data)
-//*******************************************************
-{
-  apf::getComponents(f, e, 0, dof_data);
-}    
-
-void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data)
-{
-  apf::setComponents(f, e, 0, dof_data);
-}
 
 pField pumi_mesh_findField(pMesh m, const char* name)
 {
   return m->findField(name);
+}
+
+void pumi_mesh_getField(pMesh m, std::vector<pField>& fields)
+{
+  for (int i=0; i<m->countFields(); ++i)
+    fields.push_back(m->getField(i));
+}
+
+//*******************************************************
+void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data)
+//*******************************************************
+{
+  apf::getComponents(f, e, i, dof_data);
+}    
+
+void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data)
+{
+  apf::setComponents(f, e, i, dof_data);
 }
 
 #include "apfField.h"

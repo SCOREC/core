@@ -16,6 +16,24 @@
 #include "mPartEntityContainer.h"
 #include "apf.h"
 
+enum PUMI_EntTopology {
+  PUMI_VERTEX, // 0 
+  PUMI_EDGE,   // 1 
+  PUMI_TRIANGLE, // 2 
+  PUMI_QUAD, // 3
+  PUMI_TET,  // 4
+  PUMI_HEX,  // 5 
+  PUMI_PRISM, // 6
+  PUMI_PYRAMID // 7
+};
+
+enum PUMI_FieldType {
+  PUMI_SCALAR, //  a single scalar value
+  PUMI_VECTOR, // a 3D vector
+  PUMI_MATRIX, // a 3x3 matrix 
+  PUMI_PACKED, // a user-defined set of components
+  VALUE_TYPES
+};
 class gEntity;
 class mPartEntityContainer;
 
@@ -48,6 +66,7 @@ typedef apf::Mesh2* pMesh;
 typedef apf::MeshEntity* pMeshEnt;
 typedef apf::MeshIterator* pMeshIter;
 typedef apf::Copies Copies;
+typedef apf::Copies::iterator pCopyIter;
 typedef apf::MeshTag* pMeshTag;
 typedef apf::Parts Parts;
 typedef apf::EntityVector EntityVector;
@@ -57,6 +76,7 @@ typedef apf::Downward Downward;
 typedef apf::Migration Migration;
 typedef apf::Field* pField;
 typedef apf::FieldShape* pShape;
+typedef apf::Numbering* pNumbering;
 typedef apf::GlobalNumbering* pGlobalNumbering;
 
 // singleton to save model/mesh
@@ -96,18 +116,10 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 
 //************************************
 //************************************
-//      1- MESH FUNCTIONS
+//      1- MODEL FUNCTIONS
 //************************************
 //************************************
 
-int pumi_tag_getType (const pTag tag);
-void pumi_tag_getName (const pTag tag, const char** name);
-int pumi_tag_getSize (const pTag tag);
-int pumi_tag_getByte (const pTag tag);
-
-//************************************
-// Model management
-//************************************
 // Geometric Model
 // create a model from a file
 pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
@@ -128,6 +140,11 @@ void pumi_geom_deleteTag (pGeom g, pTag tag, bool force_delete=false);
 pTag pumi_geom_findTag (pGeom g, const char* tagName);
 bool pumi_geom_hasTag (pGeom g, const pTag tag);
 void pumi_geom_getTag (pGeom g, std::vector<pTag>& tags);
+
+int pumi_tag_getType (const pTag tag);
+void pumi_tag_getName (const pTag tag, const char** name);
+int pumi_tag_getSize (const pTag tag);
+int pumi_tag_getByte (const pTag tag);
 
 void pumi_gent_deleteTag (pGeomEnt ent, pTag tag);
 bool pumi_gent_hasTag (pGeomEnt ent, pTag tag);
@@ -161,11 +178,12 @@ void pumi_gent_getEntArrTag (pGeomEnt ent, pTag tag, pGeomEnt** data, int* data_
 //************************************
 
 // create an empty mesh
-pMesh pumi_mesh_create(pGeom g, int mesh_dim);
+pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic=false);
 void pumi_mesh_freeze(pMesh m);
 pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz);
 //ent_topology: VERTEX (0), EDGE (1), TRIANGLE (2), QUAD (3), TET (4), HEX (5), PRISM (6), PYRAMID (7)
 pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* down);
+pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* vertices); 
 
 // load a serial mesh. 
 pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type="mds");
@@ -175,7 +193,6 @@ pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const ch
 
 // delete mesh
 void pumi_mesh_delete(pMesh m);
-
 // write mesh into a file - mesh_type should be "mds" or "vtk"
 void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
 pGeom pumi_mesh_getGeom(pMesh m);
@@ -197,17 +214,6 @@ void pumi_mesh_deleteTag(pMesh m, pMeshTag tag, bool force_delete=false);
 pMeshTag pumi_mesh_findTag(pMesh m, const char* name);
 bool pumi_mesh_hasTag (pMesh m, const pMeshTag tag);
 void pumi_mesh_getTag(pMesh m, std::vector<pMeshTag> tags);
-
-// tag management over mesh entity
-void pumi_ment_deleteTag (pMeshEnt e, pMeshTag tag);
-bool pumi_ment_hasTag (pMeshEnt e, pMeshTag tag);
-
-void pumi_ment_setIntTag(pMeshEnt e, pMeshTag tag, int const* data);
-void pumi_ment_getIntTag(pMeshEnt e, pMeshTag tag, int* data);
-void pumi_ment_setLongTag(pMeshEnt e, pMeshTag tag, long const* data);
-void pumi_ment_getLongTag(pMeshEnt e, pMeshTag tag, long* data);
-void pumi_ment_setDblTag(pMeshEnt e, pMeshTag tag, double const* data);
-void pumi_ment_getDblTag(pMeshEnt e, pMeshTag tag, double* data);
 
 //************************************
 //  Migration
@@ -317,9 +323,19 @@ void pumi_mesh_createGlobalID(pMesh m);
 void pumi_mesh_deleteGlobalID(pMesh m);
 
 // create/delete global ID using numbering object and field shape
-pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
- pShape shape=NULL);
-void  pumi_numbering_delete(pGlobalNumbering);
+pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape=NULL, int num_component=1);
+void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
+int pumi_mesh_getNumGlobalNumbering (pMesh m);
+void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings);
+void pumi_ment_setGlobalNumber(pGlobalNumbering gn, pMeshEnt e, int node, int component, long number);
+long pumi_ment_getGlobalNumber(pGlobalNumbering gn, pMeshEnt e, int node, int component);
+
+pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL);
+void pumi_numbering_delete(pNumbering n);
+void pumi_ment_setNumber(pNumbering n, pMeshEnt e, int node, int component, int number);
+int pumi_ment_getNumber(pNumbering n, pMeshEnt e, int node, int component);
 
 // verify mesh
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
@@ -332,7 +348,7 @@ void pumi_mesh_print(pMesh m, int p=0);
 //************************************
 // get mesh entity's dimension
 int pumi_ment_getDim(pMeshEnt e);
-
+int pumi_ment_getTopo(pMeshEnt e);
 // get mesh entity's local id
 int pumi_ment_getLocalID(pMeshEnt e);
 
@@ -352,6 +368,17 @@ void pumi_ment_get2ndAdj (pMeshEnt e, int brgType, int tgtType, std::vector<pMes
 
 // return entity's geometric classification
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);
+
+// tag management over mesh entity
+void pumi_ment_deleteTag (pMeshEnt e, pMeshTag tag);
+bool pumi_ment_hasTag (pMeshEnt e, pMeshTag tag);
+
+void pumi_ment_setIntTag(pMeshEnt e, pMeshTag tag, int const* data);
+void pumi_ment_getIntTag(pMeshEnt e, pMeshTag tag, int* data);
+void pumi_ment_setLongTag(pMeshEnt e, pMeshTag tag, long const* data);
+void pumi_ment_getLongTag(pMeshEnt e, pMeshTag tag, long* data);
+void pumi_ment_setDblTag(pMeshEnt e, pMeshTag tag, double const* data);
+void pumi_ment_getDblTag(pMeshEnt e, pMeshTag tag, double* data);
 
 // return owning part id. if ghosted mesh, vertex or element only
 int pumi_ment_getOwnPID(pMeshEnt e); 
@@ -402,29 +429,43 @@ void pumi_ment_getAllGhost (pMeshEnt e, Copies&);
 // return ghost copy on a destination part
 pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 
-void pumi_mvtx_getCoord(pMeshEnt e, double* xyz);
-void pumi_mvtx_setCoord(pMeshEnt e, double* xyz);
-
-
 
 //************************************
-//  Field
+// Field shape and nodes
+//************************************
+pShape pumi_mesh_getShape (pMesh m);
+void pumi_mesh_setShape (pMesh m, pShape s, bool project=true);
+int pumi_shape_getNumNode (pShape s, int type);
+
+void pumi_node_getCoord(pMeshEnt e, int i, double* xyz);
+void pumi_node_setCoord(pMeshEnt e, int i, double* xyz);
+
+pShape pumi_shape_getLagrange (int order);
+pShape pumi_shape_getSerendipity ();
+pShape pumi_shape_getConstant (int type);
+pShape pumi_shape_getIP (int dimension, int order);
+pShape pumi_shape_getVoronoi (int dimension, int order);
+pShape pumi_shape_getIPFit(int dimension, int order);
+pShape pumi_shape_getHierarchic (int order);
+
+//************************************
+//  Field Management
 //************************************
 
-// field type: spf::SCALAR, apf::VECTOR, apf::MATRIX, apf::PACKED
 pField pumi_field_create(pMesh m, const char* name,
-    int num_dof_per_ent, int type=apf::PACKED, pShape shape = NULL);
+    int num_dof_per_node, int type=PUMI_PACKED, pShape shape = NULL);
 int pumi_field_getSize(pField f);
 int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
-void pumi_field_print(pField f);
+pShape pumi_field_getShape (pField f);
 void pumi_field_delete(pField f);
-void pumi_field_synchronize(apf::Field* f);
-void pumi_field_accumulate(apf::Field* f);
-void pumi_field_freeze(apf::Field* f);
-void pumi_field_unfreeze(apf::Field* f);
+void pumi_field_synchronize(pField f);
+void pumi_field_accumulate(pField f);
+void pumi_field_freeze(pField f);
+void pumi_field_unfreeze(pField f);
 pField pumi_mesh_findField(pMesh m, const char* name);
 void pumi_mesh_getField(pMesh m, std::vector<pField>&);
-void pumi_ment_getField (pMeshEnt e, pField f, double* dof_data);
-void pumi_ment_setField (pMeshEnt e, pField f, double* dof_data);
+void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
+void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
+void pumi_field_print(pField f);
 #endif

@@ -88,6 +88,7 @@ int pumi_geom_getNumEnt(pGeom g, int d)
   return g->getGmi()->n[d];
 }
 
+
 int pumi_giter_init (pGeom model, int type, gIter& iter)
 {
   if (model->size(type)==0)
