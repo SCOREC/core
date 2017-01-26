@@ -136,14 +136,14 @@ void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numbe
     numberings.push_back(m->getGlobalNumbering(i));
 }
 
-void pumi_ment_setGlobalNumber(pGlobalNumbering gn, pMeshEnt e, 
+void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
     int node, int component, long number)
 {
   apf::Node n(e,node);
   apf::number(gn, n, component, number);
 }
 
-long pumi_ment_getGlobalNumber(pGlobalNumbering gn, pMeshEnt e, int node, int component)
+long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
 {
   return apf::getNumber(gn, e, node, component);
 }
@@ -170,12 +170,12 @@ void pumi_numbering_delete(pNumbering n)
   destroyNumbering(n);
 }
 
-void pumi_ment_setNumber(pNumbering n, pMeshEnt e, int node, int component, int number)
+void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number)
 {
   apf::number(n, e, node, component, number);
 }
 
-int pumi_ment_getNumber(pNumbering n, pMeshEnt e, int node, int component)
+int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
 {
   return apf::getNumber(n, e, node, component);
 }

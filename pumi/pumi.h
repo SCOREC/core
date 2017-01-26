@@ -327,15 +327,15 @@ pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
 int pumi_mesh_getNumGlobalNumbering (pMesh m);
 void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings);
-void pumi_ment_setGlobalNumber(pGlobalNumbering gn, pMeshEnt e, int node, int component, long number);
-long pumi_ment_getGlobalNumber(pGlobalNumbering gn, pMeshEnt e, int node, int component);
+void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component, long number);
+long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component);
 
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
 pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL);
 void pumi_numbering_delete(pNumbering n);
-void pumi_ment_setNumber(pNumbering n, pMeshEnt e, int node, int component, int number);
-int pumi_ment_getNumber(pNumbering n, pMeshEnt e, int node, int component);
+void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number);
+int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component);
 
 // verify mesh
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
