@@ -18,26 +18,15 @@
 #include <assert.h>
 
 using std::vector;
-void pumi_mvtx_getCoord(pMeshEnt e, double* xyz)
-{
-  apf::Vector3 coord;
-  pumi::instance()->mesh->getPoint(e, 0, coord);
-  for (int i=0; i<3; ++i)
-    xyz[i] = coord[i]; 
-}
-
-void pumi_mvtx_setCoord(pMeshEnt e, double* xyz)
-{
-  apf::Vector3 coord;
-  for (int i=0; i<3; ++i)
-    coord[i] = xyz[i];
-  pumi::instance()->mesh->setPoint(e, 0, coord);
-}
-
 // mesh entity functions
 int pumi_ment_getDim(pMeshEnt e)
 {
   return apf::getDimension(pumi::instance()->mesh, e);
+}
+
+int pumi_ment_getType(pMeshEnt e)
+{
+  return pumi::instance()->mesh->getType(e);
 }
 
 int pumi_ment_getNumAdj(pMeshEnt e, int target_dim)

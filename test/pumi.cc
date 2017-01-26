@@ -9,6 +9,7 @@
 #include <pumi.h>
 #include <unistd.h>
 #include <iostream>
+#include <algorithm>
 #include <mpi.h>
 
 const char* modelFile = 0;
@@ -34,9 +35,33 @@ if (argc>=5)
     do_distr = atoi(argv[5]);
 }
 
+bool is_double_isequal(double A, double B)
+{
+  double maxDiff = 1e-5;
+  double maxRelDiff = 1e-5;
+// http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/ 
+    // Check if the numbers are really close -- needed
+    // when comparing numbers near zero.
+    double diff = fabs(A - B);
+    if (diff <= maxDiff)
+        return true;
+ 
+    A = fabs(A);
+    B = fabs(B);
+    double largest = (B > A) ? B : A;
+ 
+    if (diff <= largest * maxRelDiff)
+        return true;
+    return false;
+}
+
+
 void TEST_GEOM_TAG(pGeom g);
-void TEST_FIELD(pMesh m);
+void TEST_MESH(pMesh m);
+void TEST_MESH_TAG(pMesh m);
+void TEST_NEW_MESH(pMesh m);
 void TEST_GHOSTING(pMesh m);
+void TEST_FIELD(pMesh m);
 
 //*********************************************************
 int main(int argc, char** argv)
@@ -90,7 +115,7 @@ int main(int argc, char** argv)
     Distribution* plan = new Distribution(m);
 
     int dim=pumi_mesh_getDim(m), count=0, pid;
-    apf::MeshIterator* it = m->begin(dim);
+    pMeshIter it = m->begin(dim);
     while ((e = m->iterate(it)))
     {
       pid=pumi_ment_getLocalID(e)%PCU_Comm_Peers();
@@ -111,27 +136,11 @@ int main(int argc, char** argv)
 
   pumi_mesh_write(m,"output", "vtk");
 
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] checking various mesh api's\n";
-  int mesh_dim=pumi_mesh_getDim(m);
-  pMeshIter mit = m->begin(mesh_dim);
-  while ((e = m->iterate(mit)))
-  {
-    assert(pumi_ment_getDim(e)==mesh_dim);
-    assert(pumi_ment_getNumAdj(e, mesh_dim+1)==0);
-    if (!pumi_ment_isOnBdry(e)) continue; // skip internal entity
-    // if entity is on part boundary, count remote copies    
-    Copies copies;
-    pumi_ment_getAllRmt(e,copies);
-    // loop over remote copies and increase the counter
-    // check #remotes
-    assert (pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
-    // check the entity is not ghost or ghosted
-    assert(!pumi_ment_isGhost(e) && !pumi_ment_isGhosted(e));
-  }
-  m->end(mit);
-
-  // re-load partitioned mesh via file i/o
+  TEST_MESH(m);
+ 
+ // re-load partitioned mesh via file i/o
   pumi_mesh_delete(m);
+
   g = pumi_geom_load(modelFile);
   if (num_in_part==1 && pumi_size()>1)
     m =  pumi_mesh_load(g, "mesh.smb", pumi_size()); 
@@ -157,17 +166,22 @@ int main(int argc, char** argv)
   TEST_GHOSTING(m);
 
   // delete numbering
-  for (int i=0; i<m->countGlobalNumberings(); ++i)
-    pumi_numbering_delete(m->getGlobalNumbering(i));
+  std::vector<pGlobalNumbering> numberings;
+  pumi_mesh_getGlobalNumbering(m, numberings);
+  assert (pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
+  for (int i=0; i<(int)numberings.size(); ++i)
+    pumi_numbering_deleteGlobal(numberings.at(i));
 
   // delete fields
   // FIXME: FieldShape doesn't get removed along the field
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_delete(*fit);
   if (!pumi_rank()) std::cout<<"\n[test_pumi] field and numbering deleted\n";
+  pumi_mesh_verify(m);
+
+  TEST_MESH_TAG(m);
 
   // clean-up 
-  pumi_mesh_verify(m);
   pumi_mesh_delete(m);
 
   // print elapsed time and increased heap memory
@@ -175,6 +189,49 @@ int main(int argc, char** argv)
 
   pumi_finalize();
   MPI_Finalize();
+}
+
+void TEST_MESH(pMesh m)
+{
+  int mesh_dim=pumi_mesh_getDim(m);
+  pMeshEnt e;
+  std::vector<pMeshEnt> adj_vtx;
+  std::vector<pMeshEnt> adj_elem;
+
+  pMeshIter mit = m->begin(mesh_dim);
+  while ((e = m->iterate(mit)))
+  {
+    assert(pumi_ment_getDim(e)==mesh_dim);
+    assert(pumi_ment_getNumAdj(e, mesh_dim+1)==0);
+    // check adjacency
+    adj_vtx.clear();
+    pumi_ment_getAdj(e, 0, adj_vtx);
+    assert((size_t)pumi_ment_getNumAdj(e, 0)==adj_vtx.size());
+
+    adj_elem.clear();
+    pumi_ment_getAdj(adj_vtx.at(0), mesh_dim, adj_elem);
+    assert(std::find(adj_elem.begin(), adj_elem.end(), e)!=adj_elem.end());
+
+    apf::Adjacent adjacent;
+    m->getAdjacent(adj_vtx.at(0), mesh_dim,adjacent);      
+    assert(adjacent.getSize()==adj_elem.size());
+
+    if (!pumi_ment_isOnBdry(e)) continue; // skip internal entity
+    // if entity is on part boundary, count remote copies    
+    Copies copies;
+    pumi_ment_getAllRmt(e,copies);
+    // loop over remote copies and increase the counter
+    // check #remotes
+    assert (pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
+    for (pCopyIter it = copies.begin();
+           it != copies.end(); ++it)
+      assert(it->first!=pumi_rank());
+    // check the entity is not ghost or ghosted
+    assert(!pumi_ment_isGhost(e) && !pumi_ment_isGhosted(e));
+  }
+  m->end(mit);
+
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] checking various mesh apis\n";
 }
 
 #include <string.h>
@@ -239,7 +296,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_setDblTag (ent, dbl_tag, 1000.37);
   double dbl_data;
   pumi_gent_getDblTag (ent, dbl_tag, &dbl_data);
-  assert(dbl_data == 1000.37);
+  assert(is_double_isequal(dbl_data,1000.37));
 
   // pumi_gent_set/getEntTag
   pumi_gent_setEntTag (ent, ent_tag, ent_tag_data);
@@ -254,7 +311,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_setIntArrTag (ent, intarr_tag, int_arr);
   int* int_arr_back = new int[4];
   pumi_gent_getIntArrTag (ent, intarr_tag, &int_arr_back, &arr_size);
-  assert(arr_size==3 && int_arr_back[0] == 4 && int_arr_back[1] == 8 && int_arr_back[2] == 12);
+  assert(arr_size==3 && int_arr_back[0] == int_arr[0] && int_arr_back[1] == int_arr[1] && int_arr_back[2] == int_arr[2]);
             
  // pumi_gent_set/getLongArrTag 
   long long_arr[] = {4,8,12};
@@ -262,15 +319,16 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   long* long_arr_back = new long[4];
   pumi_gent_getLongArrTag (ent, longarr_tag, &long_arr_back, &arr_size);
 // FIXME: this fails
-//  assert(arr_size==3 && long_arr_back[0] == 4 && long_arr_back[1] == 8 && long_arr_back[2] == 12);
+//  assert(arr_size==3 && long_arr_back[0] == long_arr[0] 
+//         && long_arr_back[1] == long_arr[1] && long_arr_back[2] == long_arr[2]);
 
    // pumi_gent_set/getDblArrTag
   double dbl_arr[] = {4.1,8.2,12.3};
   pumi_gent_setDblArrTag (ent, dblarr_tag, dbl_arr);
   double* dbl_arr_back = new double[4];
   pumi_gent_getDblArrTag (ent, dblarr_tag, &dbl_arr_back, &arr_size);
-  assert(arr_size==3 && dbl_arr_back[0] == 4.1 && dbl_arr_back[1] == 8.2 && 
-         dbl_arr_back[2] == 12.3);
+  assert(arr_size==3 && dbl_arr_back[0] == dbl_arr[0] && dbl_arr_back[1] == dbl_arr[1] && 
+         dbl_arr_back[2] == dbl_arr[2]);
 
   // pumi_gent_set/getEntArrTag
   pGeomEnt* ent_arr = new pGeomEnt[3];
@@ -373,30 +431,216 @@ void TEST_GEOM_TAG(pGeom g)
   assert(!tags.size());
 }
 
+//*********************************************************
+void TEST_MENT_SETGET_TAG (pMesh m, pMeshEnt ent)
+//*********************************************************
+{
+  pMeshTag int_tag=pumi_mesh_findTag(m, "integer");
+  pMeshTag long_tag = pumi_mesh_findTag(m, "long");
+  pMeshTag dbl_tag = pumi_mesh_findTag(m, "double");
+  pMeshTag intarr_tag = pumi_mesh_findTag(m, "integer array");
+  pMeshTag longarr_tag = pumi_mesh_findTag(m, "long array");
+  pMeshTag dblarr_tag = pumi_mesh_findTag(m, "double array");
+
+  // pumi_ment_set/getIntTag 
+  int int_value=pumi_ment_getLocalID(ent), int_data;
+  pumi_ment_setIntTag(ent, int_tag, &int_value);
+  pumi_ment_getIntTag (ent, int_tag, &int_data);
+  assert(int_data == int_value);
+
+  // pumi_ment_set/getLongTag
+  long long_value=3000, long_data;
+  pumi_ment_setLongTag(ent, long_tag, &long_value);
+  pumi_ment_getLongTag (ent, long_tag, &long_data);
+  assert(long_data==long_value);
+
+  // pumi_gent_set/getDblTag
+  double dbl_value=1000.37, dbl_data;
+  pumi_ment_setDblTag (ent, dbl_tag, &dbl_value);
+  pumi_ment_getDblTag (ent, dbl_tag, &dbl_data);
+  assert(is_double_isequal(dbl_data,dbl_value));
+
+ // pumi_ment_set/getIntTag with integer arr
+  int int_arr[] = {4,8,12};
+  pumi_ment_setIntTag (ent, intarr_tag, int_arr);
+  int* int_arr_back = new int[3];
+  pumi_ment_getIntTag (ent, intarr_tag, int_arr_back);
+  assert(int_arr_back[0] == 4 && int_arr_back[1] == 8 && int_arr_back[2] == 12);
+            
+ // pumi_ment_set/getLongTag with long arr
+  long long_arr[] = {4,8,12};
+  pumi_ment_setLongTag (ent, longarr_tag, long_arr);
+  long* long_arr_back = new long[3];
+  pumi_ment_getLongTag (ent, longarr_tag, long_arr_back);
+  assert(long_arr_back[0] == long_arr[0] && long_arr_back[1] == long_arr[1] && long_arr_back[2] == long_arr[2]);
+
+   // pumi_ment_set/getDblTag with double arr
+  double dbl_arr[] = {4.1,8.2,12.3};
+  pumi_ment_setDblTag (ent, dblarr_tag, dbl_arr);
+  double* dbl_arr_back = new double[3];
+  pumi_ment_getDblTag (ent, dblarr_tag, dbl_arr_back);
+  assert(dbl_arr_back[0] == dbl_arr[0] && dbl_arr_back[1] == dbl_arr[1] && dbl_arr_back[2] == dbl_arr[2]);
+
+  delete [] int_arr_back;
+  delete [] long_arr_back;
+  delete [] dbl_arr_back;
+}
+
+//*********************************************************
+void TEST_MENT_DEL_TAG (pMesh m, pMeshEnt ent)
+//*********************************************************
+{
+  pMeshTag int_tag=pumi_mesh_findTag(m, "integer");
+  pMeshTag long_tag = pumi_mesh_findTag(m, "long");
+  pMeshTag dbl_tag = pumi_mesh_findTag(m, "double");
+  pMeshTag intarr_tag = pumi_mesh_findTag(m, "integer array");
+  pMeshTag longarr_tag = pumi_mesh_findTag(m, "long array");
+  pMeshTag dblarr_tag = pumi_mesh_findTag(m, "double array");
+
+  pumi_ment_deleteTag(ent, int_tag);
+  pumi_ment_deleteTag(ent, long_tag);
+  pumi_ment_deleteTag(ent, dbl_tag);
+  pumi_ment_deleteTag(ent, intarr_tag);
+  pumi_ment_deleteTag(ent, longarr_tag);
+  pumi_ment_deleteTag(ent, dblarr_tag);
+
+  assert(!pumi_ment_hasTag(ent, int_tag));
+  assert(!pumi_ment_hasTag(ent, long_tag));
+  assert(!pumi_ment_hasTag(ent, dbl_tag));
+  assert(!pumi_ment_hasTag(ent, intarr_tag));
+  assert(!pumi_ment_hasTag(ent, longarr_tag));
+  assert(!pumi_ment_hasTag(ent, dblarr_tag));
+}
+
+//*********************************************************
+void TEST_MESH_TAG(pMesh m)
+//*********************************************************
+{
+  pMeshTag int_tag = pumi_mesh_createIntTag(m, "integer", 1);
+  pMeshTag long_tag = pumi_mesh_createLongTag(m, "long", 1);
+  pMeshTag dbl_tag = pumi_mesh_createDblTag(m, "double", 1);
+
+  pMeshTag intarr_tag=pumi_mesh_createIntTag(m, "integer array", 3);
+  pMeshTag longarr_tag=pumi_mesh_createLongTag(m, "long array", 3);
+  pMeshTag dblarr_tag = pumi_mesh_createDblTag(m, "double array", 3);
+
+  assert(pumi_mesh_hasTag(m, int_tag));
+  assert(pumi_mesh_hasTag(m, long_tag));
+  assert(pumi_mesh_hasTag(m, dbl_tag));
+
+  assert(pumi_mesh_hasTag(m, intarr_tag));
+  assert(pumi_mesh_hasTag(m, longarr_tag));
+  assert(pumi_mesh_hasTag(m, dblarr_tag));
+
+  pMeshTag cloneTag = pumi_mesh_findTag(m, "double");
+  assert(cloneTag);
+  std::vector<pMeshTag> tags;
+  pumi_mesh_getTag(m, tags);
+  assert(cloneTag == dbl_tag);
+
+  pMeshIter it = m->begin(0);
+  pMeshEnt e;
+
+  while ((e = m->iterate(it)))
+  {
+    TEST_MENT_SETGET_TAG(m, e);
+    TEST_MENT_DEL_TAG(m, e);
+  }
+  m->end(it);
+
+  // delete tags
+  for (std::vector<pMeshTag>::iterator tag_it=tags.begin(); tag_it!=tags.end(); ++tag_it)
+    pumi_mesh_deleteTag(m, *tag_it);
+
+  tags.clear();
+  pumi_mesh_getTag(m, tags);
+
+  assert(!tags.size());
+}
+
+
+void TEST_NEW_MESH(pMesh m)
+{
+  // change chape of the mesh
+  pShape s = pumi_mesh_getShape(m);
+  assert(pumi_shape_getNumNode(s, 1)==0);
+
+  pumi_mesh_setShape(m, pumi_shape_getLagrange(2));
+  assert(pumi_shape_getNumNode(pumi_mesh_getShape(m), 1)==1);
+
+  // create an empty mesh
+  pGeom new_g = pumi_geom_load (NULL, "null");
+  pMesh new_m = pumi_mesh_create(new_g, 2);
+
+  double xyz[3];
+  pMeshIter it = m->begin(1);
+  pMeshEnt e;
+  std::vector<pMeshEnt> new_vertices;
+  std::vector<pMeshEnt> new_edges;
+
+  while ((e = m->iterate(it)))
+  {
+    pumi_node_getCoord(e, 0, xyz);
+    new_vertices.push_back (pumi_mesh_createVtx(new_m, NULL, xyz));
+  }
+  m->end(it);
+
+  for (size_t i=0; i< new_vertices.size()/2-1; ++i)
+  {
+    pMeshEnt vertices[2];
+    vertices[0] = new_vertices[i];    
+    vertices[1] = new_vertices[i+1]; 
+    new_edges.push_back(pumi_mesh_createEnt(new_m, NULL, 1, vertices));
+  }
+
+  // note we ignore face-edge order in this example
+  for (size_t i=0; i< new_edges.size()/3-1; ++i)
+  {
+    pMeshEnt edges[3];
+    edges[0] = new_edges[i];     
+    edges[1] = new_edges[i+1]; 
+    edges[2] = new_edges[i+2];
+    pumi_mesh_createEnt(new_m, NULL, 2, edges);
+  }
+
+  for (int d=0; d<=pumi_mesh_getDim(new_m);++d)
+    assert(pumi_mesh_getNumEnt(new_m,d));
+
+//  pumi_mesh_freeze(new_m);
+
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] new mesh constructed (#v "
+         <<pumi_mesh_getNumEnt(new_m, 0)
+         <<", #e "<<pumi_mesh_getNumEnt(new_m, 1)
+         <<", #f "<<pumi_mesh_getNumEnt(new_m, 2)
+         <<", #r "<<pumi_mesh_getNumEnt(new_m, 3)<<")\n";
+
+//  pumi_mesh_delete(new_m);
+}
+
 void TEST_FIELD(pMesh m)
 {
-  int num_dofs_per_value=3;
-  pField f =pumi_field_create(m, "xyz_field", num_dofs_per_value);
+  int num_dofs_per_node=3;
+  pField f =pumi_field_create(m, "xyz_field", num_dofs_per_node);
   assert(pumi_field_getName(f)==std::string("xyz_field"));
-  assert(pumi_field_getType(f)==apf::PACKED);
-  assert(pumi_field_getSize(f)==num_dofs_per_value);
+  assert(pumi_field_getType(f)==PUMI_PACKED);
+  assert(pumi_field_getSize(f)==num_dofs_per_node);
 
   // create global numbering
-  pumi_numbering_create(m, "xyz_numbering", getShape(f));
+  pumi_numbering_createGlobal(m, "xyz_numbering", pumi_field_getShape(f));
 
   // fill the dof data
   double data[3];
   double xyz[3];
-  apf::MeshIterator* it = m->begin(0);
+  pMeshIter it = m->begin(0);
   pMeshEnt e;
   while ((e = m->iterate(it)))
   {
     if (!pumi_ment_isOwned(e)) continue;
-    pumi_mvtx_getCoord(e, xyz);
+    pumi_node_getCoord(e, 0, xyz);
     if (pumi_ment_isOnBdry(e)) 
       for (int i=0; i<3;++i) 
         xyz[i] *= pumi_ment_getLocalID(e);
-    pumi_ment_setField(e, f, xyz);
+    pumi_ment_setField(e, f, 0, xyz);
   }
   m->end(it);
 
@@ -404,8 +648,8 @@ void TEST_FIELD(pMesh m)
   while ((e = m->iterate(it)))
   {
     if (!pumi_ment_isOwned(e)) continue;
-    pumi_mvtx_getCoord(e, xyz);
-    pumi_ment_getField(e, f, data);
+    pumi_node_getCoord(e, 0, xyz);
+    pumi_ment_getField(e, f, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e)) 
         assert(data[i] == xyz[i]*pumi_ment_getLocalID(e));
@@ -418,12 +662,12 @@ void TEST_FIELD(pMesh m)
 
 Ghosting* getGhostingPlan(pMesh m)
 {
-  int mesh_dim=m->getDimension();
-  Ghosting* plan = new Ghosting(m, m->getDimension());
+  int mesh_dim=pumi_mesh_getDim(m);
+  Ghosting* plan = new Ghosting(m, pumi_mesh_getDim(m));
   {
-    apf::MeshIterator* it = m->begin(mesh_dim);
+    pMeshIter it = m->begin(mesh_dim);
     pMeshEnt e;
-    size_t count=0;
+    int count=0;
     while ((e = m->iterate(it)))
     {
       for (int i=0; i<pumi_size()/2; ++i)
@@ -432,7 +676,7 @@ Ghosting* getGhostingPlan(pMesh m)
         plan->send(e, pid);
       }
       ++count; 
-     if (count==m->count(mesh_dim)/3) break;
+     if (count==pumi_mesh_getNumEnt(m, mesh_dim)/3) break;
     }
     m->end(it);
   }
@@ -441,19 +685,19 @@ Ghosting* getGhostingPlan(pMesh m)
 
 void TEST_GHOSTING(pMesh m)
 {  
-  int mesh_dim=m->getDimension();
+  int mesh_dim=pumi_mesh_getDim(m);
   pMeshEnt e;
   // element-wise ghosting test
   int num_org_vtx = pumi_mesh_getNumEnt(m, 0);
   int* org_mcount=new int[4];
   for (int i=0; i<4; ++i)
-    org_mcount[i] = m->count(i);
+    org_mcount[i] = pumi_mesh_getNumEnt(m, i);
   
   Ghosting* ghosting_plan = getGhostingPlan(m);
-  int before_mcount=m->count(mesh_dim);
+  int before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
   pumi_ghost_create(m, ghosting_plan);
 
-  int total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
+  int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
   MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm()); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] element-wise pumi_ghost_create: #ghost increase="<<total_mcount_diff<<"\n";
 
@@ -473,22 +717,22 @@ void TEST_GHOSTING(pMesh m)
   pumi_ghost_delete(m);
   
   for (int i=0; i<4; ++i)
-    assert(org_mcount[i] == int(m->count(i)));
+    assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
 
   // layer-wise ghosting test
   for (int brg_dim=mesh_dim-1; brg_dim>=0; --brg_dim)
     for (int num_layer=1; num_layer<=3; ++num_layer)
       for (int include_copy=0; include_copy<=1; ++include_copy)
       {
-        before_mcount=m->count(mesh_dim);
+        before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
-        total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
+        total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
         if (!pumi_rank()) std::cout<<"\n[test_pumi] layer-wise pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
         pumi_mesh_verify(m);
         pumi_ghost_delete(m);
         for (int i=0; i<4; ++i)
-          assert(org_mcount[i] == int(m->count(i)));
+          assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
       }
   
   // accumulative layer-ghosting
@@ -496,9 +740,9 @@ void TEST_GHOSTING(pMesh m)
     for (int num_layer=1; num_layer<=3; ++num_layer)
       for (int include_copy=0; include_copy<=1; ++include_copy)
       {
-        int before_mcount=m->count(mesh_dim);
+        int before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
-        int total_mcount_diff=0, mcount_diff = m->count(mesh_dim)-before_mcount;
+        int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
         if (!pumi_rank()) 
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
@@ -509,9 +753,9 @@ void TEST_GHOSTING(pMesh m)
 
   for (int i=0; i<4; ++i)
   {
-    if (org_mcount[i] != int(m->count(i)))
-       std::cout<<"("<<pumi_rank()<<") ERROR dim "<<i<<": org ent count "<<org_mcount[i]<<", current ent count "<<m->count(i)<<"\n";
-    assert(org_mcount[i] == int(m->count(i)));
+    if (org_mcount[i] != pumi_mesh_getNumEnt(m, i))
+       std::cout<<"("<<pumi_rank()<<") ERROR dim "<<i<<": org ent count "<<org_mcount[i]<<", current ent count "<<pumi_mesh_getNumEnt(m, i)<<"\n";
+    assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
   }
   
   delete [] org_mcount;

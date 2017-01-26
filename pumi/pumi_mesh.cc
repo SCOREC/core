@@ -25,15 +25,17 @@
 using std::map;
 
 // mesh creation
-pMesh pumi_mesh_create(pGeom g, int mesh_dim)
+pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic)
 {
-  return apf::makeEmptyMdsMesh((gmi_model*)g, mesh_dim, false);
+  pumi::instance()->mesh = apf::makeEmptyMdsMesh(g->getGmi(), mesh_dim, periodic);
+  return pumi::instance()->mesh;
 }
 
 void pumi_mesh_freeze(pMesh m)
 {
   deriveMdsModel(m);
   m->acceptChanges();
+  pumi_geom_freeze(pumi_mesh_getGeom(m));
 }
 
 pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz)
@@ -46,6 +48,11 @@ pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz)
 pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int ent_topology, pMeshEnt* down)
 {
   return m->createEntity(ent_topology, (apf::ModelEntity*)ge, down);
+}
+
+pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int ent_topology, pMeshEnt* vertices) 
+{
+  return apf::buildElement(m, (apf::ModelEntity*)ge, ent_topology, vertices);
 }
 
 void generate_globalid(pMesh m, pMeshTag tag, int dim)
@@ -108,18 +115,71 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
     }
 }
 
-pGlobalNumbering pumi_numbering_create(pMesh m, const char* name,
- pShape shape)
+pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape, int num_component)
 {
   if (!shape) shape= m->getShape();
-  return createGlobalNumbering(m, name, shape);
+  return createGlobalNumbering(m, name, shape, num_component);
 }
 
-void  pumi_numbering_delete(pGlobalNumbering gn)
+void pumi_numbering_deleteGlobal(pGlobalNumbering gn)
 {
   destroyGlobalNumbering(gn);
 }
 
+int pumi_mesh_getNumGlobalNumbering (pMesh m)
+{
+  return m->countGlobalNumberings();
+}
+
+void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings)
+{
+  for (int i=0; i<m->countGlobalNumberings(); ++i)
+    numberings.push_back(m->getGlobalNumbering(i));
+}
+
+void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
+    int node, int component, long number)
+{
+  apf::Node n(e,node);
+  apf::number(gn, n, component, number);
+}
+
+long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
+{
+  return apf::getNumber(gn, e, node, component);
+}
+
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim)
+{
+  return numberOwnedDimension(m, name, dim);
+}
+
+pNumbering pumi_numbering_create
+   (pMesh m, const char* name, pShape shape, int num_component)
+{
+  if (!shape) shape= m->getShape();
+  return createNumbering(m, name, shape, num_component);
+}
+
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape)
+{
+   if (!shape) shape= m->getShape();
+   return numberOwnedNodes(m, name, shape);
+}
+void pumi_numbering_delete(pNumbering n)
+{
+  destroyNumbering(n);
+}
+
+void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number)
+{
+  apf::number(n, e, node, component, number);
+}
+
+int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
+{
+  return apf::getNumber(n, e, node, component);
+}
 
 //*******************************************************
 void pumi_mesh_createGlobalID(pMesh m)
