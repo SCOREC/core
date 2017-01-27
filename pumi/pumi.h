@@ -327,15 +327,11 @@ pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
 int pumi_mesh_getNumGlobalNumbering (pMesh m);
 void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings);
-void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component, long number);
-long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component);
 
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
 pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL);
 void pumi_numbering_delete(pNumbering n);
-void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number);
-int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component);
 
 // verify mesh
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
@@ -429,6 +425,14 @@ void pumi_ment_getAllGhost (pMeshEnt e, Copies&);
 // return ghost copy on a destination part
 pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 
+//************************************
+// Mesh entity numbering
+//************************************
+
+void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component, long number);
+long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component);
+void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number);
+int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component);
 
 //************************************
 // Field shape and nodes
@@ -467,5 +471,7 @@ pField pumi_mesh_findField(pMesh m, const char* name);
 void pumi_mesh_getField(pMesh m, std::vector<pField>&);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
+// verify field
+void pumi_field_verify(pMesh m, pField f=NULL);
 void pumi_field_print(pField f);
 #endif

@@ -27,7 +27,7 @@ bool BlockKeyInterface::operator<(BlockKeyInterface const& other) const
 
 static int getPhastaType(apf::Mesh* m, apf::MeshEntity* e)
 {
-  static int const table[apf::Mesh::TYPES] = 
+  static int const table[apf::Mesh::TYPES] =
   {-1  //vertex
   ,-1  //edge
   ,-1  //triangle
@@ -55,7 +55,7 @@ static void insertKey(Blocks& b, BlockKey const& k)
 
 static void insertKeyInterface
 (
-  BlocksInterface&         b, 
+  BlocksInterface&         b,
   BlockKeyInterface const& k
 )
 {
@@ -102,9 +102,8 @@ static void applyTriQuadHack(BlockKey& k)
 {
   /* distinguish between WEDGE_TRI (wedge with triangle on boundary)
      and WEDGE_QUAD (wedge with quad on boundary) */
-  if (WEDGE == k.elementType)
-    /* WEDGE_TRI and WEDGE_QUAD are lined up just right for this */
-    k.elementType = k.nBoundaryFaceEdges;
+  if ((WEDGE == k.elementType) && (4 == k.nBoundaryFaceEdges))
+    k.elementType = WEDGE_QUAD;
   /* same hack for pyramids */
   else if ((PYRAMID == k.elementType) && (3 == k.nBoundaryFaceEdges))
     k.elementType = PYRAMID_TRI;
@@ -148,12 +147,12 @@ static void applyTriQuadHackElement
   int nBoundaryFaceEdges
 )
 {
-  if (WEDGE == elementType)
-    elementType = nBoundaryFaceEdges;
+  if ((WEDGE == elementType) && (4 == nBoundaryFaceEdges))
+    elementType = WEDGE_QUAD;
   else if ((PYRAMID == elementType) && (3 == nBoundaryFaceEdges))
     elementType = PYRAMID_TRI;
 }
-  
+
 void applyTriQuadHackInterface
 (
   BlockKeyInterface& k
@@ -165,10 +164,10 @@ void applyTriQuadHackInterface
 
 void getInterfaceBlockKey
 (
-  apf::Mesh*         m, 
+  apf::Mesh*         m,
   apf::MeshEntity*   e0,
   apf::MeshEntity*   e1,
-  apf::MeshEntity*   f, 
+  apf::MeshEntity*   f,
   BlockKeyInterface& k
 )
 {
@@ -253,24 +252,24 @@ std::string getElementType
 
 std::string getBlockKeyPhrase
 (
-  BlockKey& b, 
+  BlockKey& b,
   const char* prefix
 )
 {
   std::string s = prefix;
-  s += getPolyOrder(b.polynomialOrder); 
+  s += getPolyOrder(b.polynomialOrder);
   s += getElementType(b.elementType);
   return s;
 }
 
 std::string getBlockKeyPhraseInterface
 (
-  BlockKeyInterface& b, 
+  BlockKeyInterface& b,
   const char* prefix
 )
 {
   std::string s = prefix;
-  s += getPolyOrder(b.polynomialOrder); 
+  s += getPolyOrder(b.polynomialOrder);
   s += getElementType(b.elementType);
   s += getElementType(b.elementType1);
   return s;
