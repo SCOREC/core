@@ -472,6 +472,6 @@ void pumi_mesh_getField(pMesh m, std::vector<pField>&);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field
-void pumi_field_verify(pField f, bool abort_on_error=true);
-void pumi_field_print(pMesh m, pField f=NULL);
+void pumi_field_verify(pMesh m, pField f=NULL);
+void pumi_field_print(pField f);
 #endif

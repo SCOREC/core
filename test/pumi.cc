@@ -159,7 +159,10 @@ int main(int argc, char** argv)
   pumi_mesh_getField(m, fields);
 
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
+  { 
+    pumi_field_verify(m, *fit);
     pumi_field_freeze(*fit);
+  }
 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized, and frozen\n\n";
 
