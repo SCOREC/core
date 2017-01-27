@@ -42,7 +42,7 @@ static void getCoordinates(Output& o)
    like this. I guess PHASTA is ok with a unique
    number for each copy, regardless of part boundary
    sharing...
- 
+
 update: Michel says these global numbers are ignored
         by phasta. get rid of them when you can.
  */
@@ -73,12 +73,12 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   Blocks& bs = o.blocks.interior;
   int*** ien     = new int**[bs.getSize()];
   int**  mattype = 0;
-  if (bcs.fields.count("material type")) 
+  if (bcs.fields.count("material type"))
     mattype = new int* [bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ien    [i] = new int*[bs.nElements[i]];
-    if (mattype) 
+    if (mattype)
       mattype[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
@@ -126,14 +126,14 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   Blocks& bs = o.blocks.boundary;
   int*** ienb = new int**[bs.getSize()];
   int**  mattypeb = 0;
-  if (bcs.fields.count("material type")) 
+  if (bcs.fields.count("material type"))
     mattypeb = new int*[bs.getSize()];
   int*** ibcb = new int**[bs.getSize()];
   double*** bcb = new double**[bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
   for (int i = 0; i < bs.getSize(); ++i) {
     ienb[i]     = new int*[bs.nElements[i]];
-    if (mattypeb) 
+    if (mattypeb)
       mattypeb[i] = new int [bs.nElements[i]];
     ibcb[i]     = new int*[bs.nElements[i]];
     bcb[i]      = new double*[bs.nElements[i]];
@@ -294,7 +294,7 @@ static void getInterface
     getBoundaryVertices(m, e1, matches[0].entity, v1);
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
-    for (int k = 0; k < nv0; ++k) 
+    for (int k = 0; k < nv0; ++k)
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)
       ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
@@ -323,7 +323,7 @@ static void getInterface
   o.arrays.ienif1 = ienif1;
   o.arrays.mattypeif0 = mattypeif0;
   o.arrays.mattypeif1 = mattypeif1;
-}  
+}
 
 static void getBoundaryElements(Output& o)
 {
@@ -353,8 +353,10 @@ static void getMaxElementNodes(Output& o)
   for (int i = 0; i < bbs.getSize(); ++i)
     n = std::max(n, bbs.keys[i].nElementVertices);
   BlocksInterface ifbs = o.blocks.interface;
-  for (int i = 0; i < ifbs.getSize(); ++i)
+  for (int i = 0; i < ifbs.getSize(); ++i) {
     n = std::max(n, ifbs.keys[i].nElementVertices);
+    n = std::max(n, ifbs.keys[i].nElementVertices1);
+  }
   o.nMaxElementNodes = n;
 }
 
