@@ -118,6 +118,24 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.mattype = mattype;
 }
 
+/* make sure the first n vertices are those on boundary */
+void boundaryVertexFirst(apf::Mesh* m, apf::MeshEntity* boundary,
+                         int* ienij, apf::Numbering* n) {
+  apf::Downward bv;
+  int flag = 0;
+  int nbv = m->getDownward(boundary, 0, bv);
+  for (int k = 0; k < nbv; ++k) {
+    int number = apf::getNumber(n, bv[k], 0, 0);
+    for (int kk = 0; kk < nbv; ++kk)
+      if (ienij[kk] == number) {
+        flag = 1;
+        break;
+      }
+    assert(flag == 1);
+	flag = 0;
+  }
+}
+
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 {
   apf::Mesh* m = o.mesh;
@@ -298,6 +316,8 @@ static void getInterface
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)
       ienif1[i][j][k] = apf::getNumber(n, v1[k], 0, 0);
+    boundaryVertexFirst(m, face,              ienif0[i][j], n);
+    boundaryVertexFirst(m, matches[0].entity, ienif1[i][j], n);
 
     /* get material type */
     if (mattypeif0) {
