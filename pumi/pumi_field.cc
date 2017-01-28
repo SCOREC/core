@@ -10,7 +10,9 @@
 #include "pumi.h"
 #include "apf.h"
 #include "apfShape.h"
-
+#include <assert.h>
+#include <PCU.h>
+#include <cstdlib> // for malloc and free
 //************************************
 // Field shape and nodes
 //************************************
@@ -63,9 +65,7 @@ pField pumi_field_create(pMesh m, const char* name, int num_dof_per_ent, int typ
   if (type==PUMI_PACKED)
     return apf::createPackedField(m, name, num_dof_per_ent, s);
   else
-  {
     return createGeneralField(m, name, type, num_dof_per_ent, s);
-  }
 }
 
 int pumi_field_getSize(pField f)
@@ -156,7 +156,7 @@ void pumi_field_print(pField f)
 
     apf::FieldDataOf<double>* data = static_cast<apf::FieldDataOf<double>*>(f->getData());
     apf::MeshIterator* it = m->begin(d);
-    apf::MeshEntity* e;
+    pMeshEnt e;
     while ((e = m->iterate(it)))
     {
       if (!data->hasEntity(e))
@@ -297,5 +297,135 @@ void pumi_field_print(pField f)
     } // while
     m->end(it);
   }
+}
+
+// VERIFY FIELDS
+static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf)
+{
+  void* msg_send;
+  pMeshEnt* s_ent;
+  size_t msg_size;
+
+  apf::Sharing* shr = getSharing(m);
+    
+  apf::FieldDataOf<double>* data = static_cast<apf::FieldDataOf<double>*>(f->getData());
+
+  if ((!data->hasEntity(e))|| (!shr->isOwned(e)))
+    return;
+
+  int n = f->countValuesOn(e);
+
+    msg_size=sizeof(pMeshEnt)+sizeof(int)+n*sizeof(double);
+    apf::NewArray<double> values(n);
+    data->get(e,&(values[0]));
+    apf::CopyArray copies;
+    shr->getCopies(e, copies);
+    for (size_t i = 0; i < copies.getSize(); ++i)
+    {
+      int to = copies[i].peer;
+      msg_send = malloc(msg_size);
+      s_ent = (pMeshEnt*)msg_send; 
+      *s_ent = copies[i].entity; 
+      int *s_fieldid = (int*)((char*)msg_send + sizeof(pMeshEnt));
+      s_fieldid[0] =  nf;
+      double *s_data = (double*)((char*)msg_send+sizeof(pMeshEnt)+sizeof(int));
+      for (int pos=0; pos<n; ++pos)
+        s_data[pos]=values[pos];
+      PCU_Comm_Write(to, (void*)msg_send, msg_size);
+      free(msg_send);
+    }
+
+    if (m->isGhosted(e))
+    {
+      Copies g;
+      m->getGhosts(e, g);
+      APF_ITERATE(Copies, g, it)
+      {
+      int to = it->first;
+      msg_send = malloc(msg_size);
+      s_ent = (pMeshEnt*)msg_send; 
+      *s_ent = it->second; 
+      int *s_fieldid = (int*)((char*)msg_send + sizeof(pMeshEnt));
+      s_fieldid[0] =  nf;
+      double *s_data = (double*)((char*)msg_send+sizeof(pMeshEnt)+sizeof(int));
+      for (int pos=0; pos<n; ++pos)
+        s_data[pos]=values[pos];
+      PCU_Comm_Write(to, (void*)msg_send, msg_size);
+      free(msg_send);
+      }
+    } //if (m->isGhosted(e))
+}
+
+static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mismatch_fields)
+{
+  pField f;
+  void *msg_recv;
+  int pid_from;
+  size_t msg_size;
+  pMeshEnt e;
+
+  while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+  {
+    e = *((pMeshEnt*)msg_recv); 
+    int *nf = (int*)((char*)msg_recv+sizeof(pMeshEnt)); 
+    f = fields[*nf];
+
+    int n = f->countValuesOn(e);
+
+    double* r_values = (double*)((char*)msg_recv+sizeof(pMeshEnt)+sizeof(int)); 
+    int num_data = (msg_size-sizeof(pMeshEnt)-sizeof(int))/sizeof(double);
+    assert(n==num_data);
+ 
+    if (mismatch_fields.find(f)!=mismatch_fields.end()) continue;
+
+    apf::NewArray<double> values(n);
+    f->getData()->get(e,&(values[0]));
+
+    for (int i=0; i<n; ++i)
+    {
+      if (values[i]!=r_values[i])
+      {
+        mismatch_fields.insert(f);
+        break;
+      }
+    }
+  } // while
+}
+
+void pumi_field_verify(pMesh m, pField f)
+{
+  int n = m->countFields();
+  if (!n) return;
+  std::vector<pField> fields;
+  if (f==NULL)
+  {
+    for (int i=0; i<n; ++i)
+      fields.push_back(m->getField(i));
+  }
+  else 
+    fields.push_back(f);
+
+  std::set<pField> mismatch_fields;
+  for (size_t nf = 0; nf < fields.size(); ++nf)
+  {
+    for (int d=0; d < 4; ++d)
+    {
+      if (!static_cast<apf::FieldBase*>(fields[nf])->getShape()->hasNodesIn(d))
+        continue;
+
+      PCU_Comm_Begin();
+      pMeshIter it = m->begin(d);
+      pMeshEnt e;
+      while ((e = m->iterate(it)))
+        sendFieldData(m, e, f, nf);
+      m->end(it);
+      PCU_Comm_Send();
+      receiveFieldData(fields,mismatch_fields); 
+    }
+  }
+  int global_size = PCU_Max_Int((int)mismatch_fields.size());
+  if (global_size&&!PCU_Comm_Self())
+    for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
+      printf("%s: \"%s\" data mismatch over remote/ghost copies\n", __func__, getName(*it));
 }
 
