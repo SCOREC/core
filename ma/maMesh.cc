@@ -228,8 +228,9 @@ Entity* rebuildElement(
   int nd = m->getDownward(original,d-1,down);
   for (int i=0; i < nd; ++i)
     down[i] = rebuildElement(m, down[i], oldVert, newVert, cb, rcb);
-  Entity* e = apf::makeOrFind(m, m->toModel(original), type, down, cb);
-  if (rcb)
+  bool made;
+  Entity* e = apf::makeOrFind(m, m->toModel(original), type, down, cb, &made);
+  if (made && rcb)
     rcb->rebuilt(e, original);
   return e;
 }
