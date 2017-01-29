@@ -159,7 +159,8 @@ MeshEntity* makeOrFind(
     ModelEntity* c,
     int type,
     MeshEntity** down,
-    BuildCallback* cb = 0);
+    BuildCallback* cb = 0,
+    bool* p_made = 0);
 
 /** \brief build an entity from its vertices
   \details any missing intermediate entities will also be built,
