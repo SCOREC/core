@@ -374,6 +374,15 @@ static void receiveMatches(Mesh* m)
   assert(hasMatch(matches, PCU_Comm_Sender(), source));
 }
 
+static bool hasDuplicates(Matches const& matches) {
+  for (size_t i = 0; i < matches.getSize(); ++i)
+  for (size_t j = 0; j < matches.getSize(); ++j)
+    if (i != j && matches[i].peer == matches[j].peer &&
+                  matches[i].entity == matches[j].entity)
+      return true;
+  return false;
+}
+
 static void verifyMatches(Mesh* m)
 {
   PCU_Comm_Begin();
@@ -384,6 +393,7 @@ static void verifyMatches(Mesh* m)
     while ((e = m->iterate(it))) {
       Matches matches;
       m->getMatches(e, matches);
+      assert(!hasDuplicates(matches));
       sendSelfToMatches(e, matches);
     }
     m->end(it);
