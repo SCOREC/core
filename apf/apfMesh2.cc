@@ -34,12 +34,17 @@ MeshEntity* makeOrFind(
     ModelEntity* c,
     int type,
     MeshEntity** down,
-    BuildCallback* cb)
+    BuildCallback* cb,
+    bool* p_made)
 {
   MeshEntity* e = findUpward(m,type,down);
-  if (e) return e;
+  if (e) {
+    if (p_made) *p_made = false;
+    return e;
+  }
   e = m->createEntity(type,c,down);
   if (cb) cb->call(e);
+  if (p_made) *p_made = true;
   return e;
 }
 
