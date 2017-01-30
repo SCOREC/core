@@ -110,7 +110,8 @@ namespace chef {
       validQuality sets which elements will be accepted during mesh 
       modification. If no boundary layers, you might bring this high (e.g, 
       O(1e-2).  This would be bad for boundary layers though since their
-      high aspect ration routinely produces quality measures in the e-6 to e-7 range so, when there are layers, this needs to be O(1e-8).
+      high aspect ratio routinely produces quality measures in the e-6 to e-7
+      range so, when there are layers, this needs to be O(1e-8).
     */
     ma_in->validQuality = in.validQuality;
     if (m->hasMatching())
