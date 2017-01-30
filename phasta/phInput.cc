@@ -63,6 +63,7 @@ static void setDefaults(Input& in)
   in.writePhastaFiles = 0;
   in.simmetrixMesh = 0;
   in.maxAdaptIterations = 3;
+  in.validQuality = 1.0e-10;
 }
 
 Input::Input()
@@ -121,6 +122,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
   intMap["writeGeomBCFiles"] = &in.writeGeomBCFiles;
   intMap["ramdisk"] = &in.ramdisk;
+  dblMap["validQuality"] = &in.validQuality;
   dblMap["meshqCrtn"] = &in.meshqCrtn;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;

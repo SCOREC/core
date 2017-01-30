@@ -259,6 +259,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "wss",
     "wssbar",
     "pressure projection vectors",
+    "projection vectors",
     "vorticity"
   };
   static char const* const known_cell_fields[] = {

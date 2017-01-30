@@ -49,12 +49,12 @@ static void runFromErrorThreshold(Input& in, apf::Mesh2* m)
   apf::destroyField(szFld);
 }
 
-static void runFromGivenSize(Input&, apf::Mesh2* m)
+static void runFromGivenSize(Input& in, apf::Mesh2* m)
 {
   const unsigned idx = 5;
   apf::Field* szFld = sam::specifiedIso(m,"errors",idx);
   assert(szFld);
-  chef::adapt(m, szFld);
+  chef::adapt(m, szFld,in);
   apf::destroyField(szFld);
 }
 
@@ -99,11 +99,20 @@ namespace chef {
   void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& in) {
     ma::Input* ma_in = ma::configure(m, szFld);
     ma_in->shouldRunPreZoltan = true;
-    ma_in->shouldTransferParametric = in.transferParametric;
-    ma_in->shouldRunMidParma = true; 
-    ma_in->shouldRunPostParma = true; 
-    ma_in->shouldSnap = in.snap;
-    ma_in->maximumIterations = in.maxAdaptIterations;
+//  For now I commmented the next 5 lines because they are not in the 
+//  2 argument adapt call above and I want to be sure of 1 change below
+//    ma_in->shouldTransferParametric = in.transferParametric;
+//    ma_in->shouldRunMidParma = true; 
+//    ma_in->shouldRunPostParma = true; 
+//    ma_in->shouldSnap = in.snap;
+//    ma_in->maximumIterations = in.maxAdaptIterations;
+    /*
+      validQuality sets which elements will be accepted during mesh 
+      modification. If no boundary layers, you might bring this high (e.g, 
+      O(1e-2).  This would be bad for boundary layers though since their
+      high aspect ration routinely produces quality measures in the e-6 to e-7 range so, when there are layers, this needs to be O(1e-8).
+    */
+    ma_in->validQuality = in.validQuality;
     if (m->hasMatching())
       ph::setupMatching(*ma_in);
     ma::adapt(ma_in);

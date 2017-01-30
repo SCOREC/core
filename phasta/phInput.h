@@ -28,6 +28,7 @@ class Input
     int rRead;
     int rStart;
     int adaptStrategy;
+    double validQuality;
     double adaptErrorThreshold;
     std::string adaptErrorFieldName;
     int adaptErrorFieldIndex;
