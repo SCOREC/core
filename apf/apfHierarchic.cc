@@ -14,7 +14,7 @@
 
 namespace apf {
 
-static const double c = -2.44948974278318;
+static const double c0 = -2.44948974278318;
 
 class Hierarchic : public FieldShape
 {
@@ -45,7 +45,7 @@ class Hierarchic : public FieldShape
           N.allocate(3);
           N[0] = (1.0-xi[0])/2.0;
           N[1] = (1.0+xi[0])/2.0;
-          N[2] = c*N[0]*N[1];
+          N[2] = c0*N[0]*N[1];
         }
         void getLocalGradients(Mesh*, MeshEntity*,
             Vector3 const& xi, NewArray<Vector3>& dN) const
@@ -53,7 +53,7 @@ class Hierarchic : public FieldShape
           dN.allocate(3);
           dN[0] = Vector3(-0.5, 0.0, 0.0);
           dN[1] = Vector3( 0.5, 0.0, 0.0);
-          dN[2] = Vector3(-0.5*c*xi[0], 0.0, 0.0);
+          dN[2] = Vector3(-0.5*c0*xi[0], 0.0, 0.0);
         }
         int countNodes() const {return 3;}
     };
@@ -67,9 +67,9 @@ class Hierarchic : public FieldShape
           N[0] = 1.0-xi[0]-xi[1];
           N[1] = xi[0];
           N[2] = xi[1];
-          N[3] = c*N[0]*N[1];
-          N[4] = c*N[1]*N[2];
-          N[5] = c*N[2]*N[0];
+          N[3] = c0*N[0]*N[1];
+          N[4] = c0*N[1]*N[2];
+          N[5] = c0*N[2]*N[0];
         }
         void getLocalGradients(Mesh*, MeshEntity*,
             Vector3 const& xi, NewArray<Vector3>& dN) const
@@ -78,9 +78,9 @@ class Hierarchic : public FieldShape
           dN[0] = Vector3(-1.0, -1.0, 0.0);
           dN[1] = Vector3( 1.0,  0.0, 0.0);
           dN[2] = Vector3( 0.0,  1.0, 0.0);
-          dN[3] = Vector3( 1.0-2.0*xi[0]-xi[1],  -xi[0], 0.0) * c;
-          dN[4] = Vector3( xi[1], xi[0], 0.0) * c;
-          dN[5] = Vector3( -xi[1],  1.0-xi[0]-2.0*xi[1], 0.0) * c;
+          dN[3] = Vector3( 1.0-2.0*xi[0]-xi[1],  -xi[0], 0.0) * c0;
+          dN[4] = Vector3( xi[1], xi[0], 0.0) * c0;
+          dN[5] = Vector3( -xi[1],  1.0-xi[0]-2.0*xi[1], 0.0) * c0;
         }
         int countNodes() const {return 6;}
     };
@@ -95,12 +95,12 @@ class Hierarchic : public FieldShape
           N[1] = xi[0];
           N[2] = xi[1];
           N[3] = xi[2];
-          N[4] = c*N[0]*N[1];
-          N[5] = c*N[1]*N[2];
-          N[6] = c*N[2]*N[0];
-          N[7] = c*N[0]*N[3];
-          N[8] = c*N[1]*N[3];
-          N[9] = c*N[2]*N[3];
+          N[4] = c0*N[0]*N[1];
+          N[5] = c0*N[1]*N[2];
+          N[6] = c0*N[2]*N[0];
+          N[7] = c0*N[0]*N[3];
+          N[8] = c0*N[1]*N[3];
+          N[9] = c0*N[2]*N[3];
         }
         void getLocalGradients(Mesh*, MeshEntity*,
             Vector3 const& xi, NewArray<Vector3>& dN) const
@@ -110,12 +110,12 @@ class Hierarchic : public FieldShape
           dN[1] = Vector3( 1.0,  0.0,  0.0);
           dN[2] = Vector3( 0.0,  1.0,  0.0);
           dN[3] = Vector3( 0.0,  0.0,  1.0);
-          dN[4] = Vector3( 1.0-2.0*xi[0]-xi[1]-xi[2], -xi[0], -xi[0] ) * c;
-          dN[5] = Vector3( xi[1], xi[0], 0.0 ) * c;
-          dN[6] = Vector3( -xi[1], 1.0-xi[0]-2.0*xi[1]-xi[2], -xi[1] ) * c;
-          dN[7] = Vector3( -xi[2], -xi[2], 1.0-xi[0]-xi[1]-2.0*xi[2] ) * c;
-          dN[8] = Vector3( xi[2], 0.0, xi[0] ) * c;
-          dN[9] = Vector3( 0.0, xi[2], xi[1] ) * c;
+          dN[4] = Vector3( 1.0-2.0*xi[0]-xi[1]-xi[2], -xi[0], -xi[0] ) * c0;
+          dN[5] = Vector3( xi[1], xi[0], 0.0 ) * c0;
+          dN[6] = Vector3( -xi[1], 1.0-xi[0]-2.0*xi[1]-xi[2], -xi[1] ) * c0;
+          dN[7] = Vector3( -xi[2], -xi[2], 1.0-xi[0]-xi[1]-2.0*xi[2] ) * c0;
+          dN[8] = Vector3( xi[2], 0.0, xi[0] ) * c0;
+          dN[9] = Vector3( 0.0, xi[2], xi[1] ) * c0;
         }
         int countNodes() const {return 10;}
     };
