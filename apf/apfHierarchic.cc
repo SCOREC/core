@@ -17,11 +17,11 @@ namespace apf {
 static const double c0 = -2.449489742783178;
 static const double c1 = -3.162277660168379;
 
-class Hierarchic : public FieldShape
+class Hierarchic2 : public FieldShape
 {
   public:
-    Hierarchic() {}
-    const char* getName() const { return "Hierarchic"; }
+    Hierarchic2() {}
+    const char* getName() const { return "Hierarchic2"; }
     class Vertex : public EntityShape
     {
       public:
@@ -160,7 +160,7 @@ class Hierarchic : public FieldShape
 
 FieldShape* getHierarchic(int o)
 {
-  static Hierarchic q;
+  static Hierarchic2 q;
   if (o == 1)
     return getLagrange(o);
   else if (o == 2)
