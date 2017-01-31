@@ -19,7 +19,7 @@ static double linear(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  double v = x;
+  double v = 1.0 + x;
   if (d > 1) v += y;
   if (d > 2) v += z;
   return v;
@@ -29,9 +29,9 @@ static double quadratic(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  double v = x*x;
-  if (d > 1) v += y*y;
-  if (d > 2) v += z*z;
+  double v = 1.0 + x + x*x;
+  if (d > 1) v += y + x*y + y*y;
+  if (d > 2) v += z + x*z + y*z + z*z;
   return v;
 }
 
@@ -198,7 +198,7 @@ void L2Projector::compare() {
     apf::mapLocalToGlobal(me, p, x);
     double v = function(p_order, d, x);
     double vh = apf::getScalar(e, p);
-    assert(std::abs(v - vh) < 1.0e-14);
+    assert(std::abs(v - vh) < 1.0e-13);
     apf::destroyElement(e);
     apf::destroyMeshElement(me);
   }
