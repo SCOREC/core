@@ -158,14 +158,97 @@ class Hierarchic2 : public FieldShape
     int getOrder() {return 2;}
 };
 
+class Hierarchic3 : public FieldShape
+{
+  public:
+    Hierarchic3() {}
+    const char* getName() const { return "Hierarchic3"; }
+    class Vertex : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<double>& N) const
+        {
+          N.allocate(1);
+          N[0] = 1.0;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+        {
+        }
+        int countNodes() const {return 1;}
+    };
+    class Edge : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& N) const
+        {
+          N.allocate(4);
+          N[0] = (1.0-xi[0])/2.0;
+          N[1] = (1.0+xi[0])/2.0;
+          N[2] = c0*N[0]*N[1];
+          N[3] = c1*N[0]*N[1]*(N[1]-N[0]);
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& dN) const
+        {
+          dN.allocate(4);
+          dN[0] = Vector3(-0.5, 0.0, 0.0);
+          dN[1] = Vector3( 0.5, 0.0, 0.0);
+          dN[2] = Vector3(-0.5*c0*xi[0], 0.0, 0.0);
+          dN[3] = Vector3(0,0,0); /* FILL THIS IN! */
+        }
+        int countNodes() const {return 4;}
+    };
+    EntityShape* getEntityShape(int type)
+    {
+      static Vertex vertex;
+      static Edge edge;
+      static EntityShape* shapes[Mesh::TYPES] =
+      {&vertex,   //vertex
+       &edge,     //edge
+       NULL,      //triangle
+       NULL,      //quad
+       NULL,      //tet
+       NULL,      //hex
+       NULL,      //prism
+       NULL};     //pyramid
+      return shapes[type];
+    }
+    void getNodeXi(int, int, Vector3& xi)
+    {
+      xi = Vector3(0,0,0);
+    }
+    bool hasNodesIn(int dimension)
+    {
+      if ((dimension == 0) ||
+          (dimension == 1) ||
+          (dimension == 2))
+        return true;
+      else
+        return false;
+    }
+    int countNodesOn(int type)
+    {
+      if ((type == Mesh::VERTEX) || (type == Mesh::TRIANGLE))
+        return 1;
+      else if (type == Mesh::EDGE)
+        return 2;
+      else
+        return 0;
+    }
+    int getOrder() {return 3;}
+};
+
 FieldShape* getHierarchic(int o)
 {
   static Hierarchic2 q;
-  if (o == 1)
-    return getLagrange(o);
-  else if (o == 2)
-    return &q;
-  return NULL;
+  static Hierarchic3 c;
+  if (o == 1) return getLagrange(o);
+  else if (o == 2) return &q;
+  else if (o == 3) return &c;
+  else return NULL;
 }
 
 template <class T>
