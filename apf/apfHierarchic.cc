@@ -12,10 +12,16 @@
 #include "apfVectorElement.h"
 #include <cassert>
 
+#include <iostream>
+
 namespace apf {
 
 static const double c0 = -2.449489742783178;
 static const double c1 = -3.162277660168379;
+
+static double sign(bool should_flip) {
+  return should_flip ? -1 : 1;
+}
 
 class Hierarchic2 : public FieldShape
 {
@@ -201,14 +207,62 @@ class Hierarchic3 : public FieldShape
         }
         int countNodes() const {return 4;}
     };
+    class Triangle : public EntityShape {
+      public:
+        void getValues(Mesh* m, MeshEntity* e,
+            Vector3 const& xi, NewArray<double>& N) const
+        {
+          N.allocate(10);
+
+          /* linear */
+          N[0] = 1.0-xi[0]-xi[1];
+          N[1] = xi[0];
+          N[2] = xi[1];
+
+          /* quadratic edge modes */
+          N[3] = c0*N[0]*N[1];
+          N[4] = c0*N[1]*N[2];
+          N[5] = c0*N[2]*N[0];
+
+          /* cubic edge modes */
+          int which;
+          int rotate;
+          bool flip[3];
+          apf::MeshEntity* edges[3];
+          m->getDownward(e, 1, edges);
+          for (int i=0; i < 3; ++i)
+            apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
+          N[6] = c1 * sign(flip[0]) * N[0] * N[1] * (N[1] - N[0]);
+          N[7] = c1 * sign(flip[1]) * N[1] * N[2] * (N[2] - N[1]);
+          N[8] = c1 * sign(flip[2]) * N[2] * N[0] * (N[0] - N[2]);
+
+          /* cubic face mode */
+          N[9] = N[0]*N[1]*N[2];
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>& dN) const {
+          dN.allocate(10);
+        }
+        void alignSharedNodes(Mesh*, MeshEntity*, MeshEntity*, int order[])
+        {
+          /* unlike Lagrange shape functions, hierarchic 'modes' do not
+             correspond to physical point in space. we want the nodes to
+             always come out in terms of dimension-specific polynomial
+             order */
+          for (int i=0; i < 10; ++i)
+            order[i] = i;
+        }
+        int countNodes() const {return 10;}
+    };
     EntityShape* getEntityShape(int type)
     {
       static Vertex vertex;
       static Edge edge;
+      static Triangle tri;
       static EntityShape* shapes[Mesh::TYPES] =
       {&vertex,   //vertex
        &edge,     //edge
-       NULL,      //triangle
+       &tri,      //triangle
        NULL,      //quad
        NULL,      //tet
        NULL,      //hex
