@@ -308,6 +308,18 @@ mpi_test(mixedNumbering 4
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   out)
+set(MDIR ${MESHES}/square)
+add_test(hierarchic_2p_2D
+  ./hierarchic
+  "${MDIR}/square.dmg"
+  "${MDIR}/square.smb"
+  2)
+set(MDIR ${MESHES}/cube/pumi24)
+add_test(hierarchic_2p_3D
+  ./hierarchic
+  "${MDIR}/cube.dmg"
+  "${MDIR}/cube.smb"
+  2)
 set(MDIR ${MESHES}/cube)
 mpi_test(test_verify 4
   ./test_verify
