@@ -14,7 +14,8 @@
 
 namespace apf {
 
-static const double c0 = -2.44948974278318;
+static const double c0 = -2.449489742783178;
+static const double c1 = -3.162277660168379;
 
 class Hierarchic : public FieldShape
 {
