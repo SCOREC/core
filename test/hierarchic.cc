@@ -187,7 +187,6 @@ void L2Projector::compare() {
     apf::mapLocalToGlobal(me, p, x);
     double v = function(p_order, d, x);
     double vh = apf::getScalar(e, p);
-    std::cout << std::abs(v - vh) << std::endl;
     assert(std::abs(v - vh) < 1.0e-14);
     apf::destroyElement(e);
     apf::destroyMeshElement(me);
