@@ -19,25 +19,36 @@ static double linear(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  if (d == 1) return x;
-  if (d == 2) return x + y;
-  if (d == 3) return x + y + z;
-  else return 0.0;
+  double v = x;
+  if (d > 1) v += y;
+  if (d > 2) v += z;
+  return v;
 }
 
 static double quadratic(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  if (d == 1) return x*x;
-  else if (d == 2) return x*x + y*y;
-  else if (d == 3) return x*x + y*y + z*z;
-  else return 0.0;
+  double v = x*x;
+  if (d > 1) v += y*y;
+  if (d > 2) v += z*z;
+  return v;
+}
+
+static double cubic(int d, apf::Vector3 const& p) {
+  double x = p[0];
+  double y = p[1];
+  double z = p[2];
+  double v = x*x*x;
+  if (d > 1) v += y*y*y;
+  if (d > 2) v += z*z*z;
+  return v;
 }
 
 static double function(int p_order, int d, apf::Vector3 const& p) {
   if (p_order == 1) return linear(d, p);
   else if (p_order == 2) return quadratic(d, p);
+  else if (p_order == 3) return cubic(d, p);
   else apf::fail("invalid polynomial order\n");
 }
 
