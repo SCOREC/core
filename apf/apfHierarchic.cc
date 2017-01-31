@@ -197,7 +197,7 @@ class Hierarchic3 : public FieldShape
           dN[0] = Vector3(-0.5, 0.0, 0.0);
           dN[1] = Vector3( 0.5, 0.0, 0.0);
           dN[2] = Vector3(-0.5*c0*xi[0], 0.0, 0.0);
-          dN[3] = Vector3(0,0,0); /* FILL THIS IN! */
+          dN[3] = Vector3(0.25*(1.0 - 3.0*xi[0]*xi[0]),0,0);
         }
         int countNodes() const {return 4;}
     };
