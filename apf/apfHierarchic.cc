@@ -214,17 +214,7 @@ class Hierarchic3 : public FieldShape
         {
           N.allocate(10);
 
-          /* linear */
-          N[0] = 1.0-xi[0]-xi[1];
-          N[1] = xi[0];
-          N[2] = xi[1];
-
-          /* quadratic edge modes */
-          N[3] = c0*N[0]*N[1];
-          N[4] = c0*N[1]*N[2];
-          N[5] = c0*N[2]*N[0];
-
-          /* cubic edge modes */
+          /* edge orientations */
           int which;
           int rotate;
           bool flip[3];
@@ -232,12 +222,26 @@ class Hierarchic3 : public FieldShape
           m->getDownward(e, 1, edges);
           for (int i=0; i < 3; ++i)
             apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
-          N[6] = c1 * sign(flip[0]) * N[0] * N[1] * (N[1] - N[0]);
-          N[7] = c1 * sign(flip[1]) * N[1] * N[2] * (N[2] - N[1]);
+
+          /* linear */
+          N[0] = 1.0-xi[0]-xi[1];
+          N[1] = xi[0];
+          N[2] = xi[1];
+
+          /* edge 1 */
+          N[3] = c0 * N[0] * N[1];
+          N[4] = c1 * sign(flip[0]) * N[0] * N[1] * (N[1] - N[0]);
+
+          /* edge 2 */
+          N[5] = c0 * N[1] * N[2];
+          N[6] = c1 * sign(flip[1]) * N[1] * N[2] * (N[2] - N[1]);
+
+          /* edge 3 */
+          N[7] = c0 * N[2] * N[0];
           N[8] = c1 * sign(flip[2]) * N[2] * N[0] * (N[0] - N[2]);
 
-          /* cubic face mode */
-          N[9] = N[0]*N[1]*N[2];
+          /* face */
+          N[9] = N[0] * N[1] * N[2];
         }
         void getLocalGradients(Mesh*, MeshEntity*,
             Vector3 const&, NewArray<Vector3>& dN) const {
@@ -249,7 +253,7 @@ class Hierarchic3 : public FieldShape
              correspond to physical point in space. we want the nodes to
              always come out in terms of dimension-specific polynomial
              order */
-          for (int i=0; i < 10; ++i)
+          for (int i=0; i < 2; ++i)
             order[i] = i;
         }
         int countNodes() const {return 10;}

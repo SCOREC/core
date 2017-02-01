@@ -39,8 +39,8 @@ static double cubic(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  double v = x*x*x;
-  if (d > 1) v += y*y*y;
+  double v = 1.0 + x*x*x;
+  if (d > 1) v += x*y*y + y*y*y;
   if (d > 2) v += z*z*z;
   return v;
 }
