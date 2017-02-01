@@ -208,7 +208,7 @@ class Mesh
     /** \brief Get the remote copies of an entity */
     virtual void getRemotes(MeshEntity* e, Copies& remotes) = 0;
 // seol
-    virtual void getGhosts(MeshEntity* e, Copies& ghosts) = 0;
+    virtual int getGhosts(MeshEntity* e, Copies& ghosts) = 0;
     /** \brief Get the resident parts of an entity
       \details this includes parts with remote copies and the
                current part as well */

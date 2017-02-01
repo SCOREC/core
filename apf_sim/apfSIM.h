@@ -83,7 +83,7 @@ class MeshSIM : public Mesh2
     bool hasMatches;
     bool isGhosted(MeshEntity*) { return false; }
     bool isGhost(MeshEntity*) { return false; }
-    void getGhosts(MeshEntity*, Copies&) {}
+    int getGhosts(MeshEntity*, Copies&) { return 0; }
     // Mesh2 interface ==============================
     void setRemotes(MeshEntity*, Copies&) {}
     void addRemote(MeshEntity*, int, MeshEntity*) {}

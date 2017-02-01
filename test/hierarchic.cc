@@ -19,25 +19,36 @@ static double linear(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  if (d == 1) return x;
-  if (d == 2) return x + y;
-  if (d == 3) return x + y + z;
-  else return 0.0;
+  double v = 1.0 + x;
+  if (d > 1) v += y;
+  if (d > 2) v += z;
+  return v;
 }
 
 static double quadratic(int d, apf::Vector3 const& p) {
   double x = p[0];
   double y = p[1];
   double z = p[2];
-  if (d == 1) return x*x;
-  else if (d == 2) return x*x + y*y;
-  else if (d == 3) return x*x + y*y + z*z;
-  else return 0.0;
+  double v = 1.0 + x + x*x;
+  if (d > 1) v += y + x*y + y*y;
+  if (d > 2) v += z + x*z + y*z + z*z;
+  return v;
+}
+
+static double cubic(int d, apf::Vector3 const& p) {
+  double x = p[0];
+  double y = p[1];
+  double z = p[2];
+  double v = 1.0 + x*x*x;
+  if (d > 1) v += x*y*y + y*y*y;
+  if (d > 2) v += z*z*z;
+  return v;
 }
 
 static double function(int p_order, int d, apf::Vector3 const& p) {
   if (p_order == 1) return linear(d, p);
   else if (p_order == 2) return quadratic(d, p);
+  else if (p_order == 3) return cubic(d, p);
   else apf::fail("invalid polynomial order\n");
 }
 
@@ -122,38 +133,6 @@ void L2Projector::fill() {
   mesh->end(elems);
 }
 
-void L2Projector::write_matrix() {
-  printf("L2 projector: writing mass matrix to file\n");
-  std::ofstream matrix;
-  matrix.open("mass_matrix.mm");
-  int nnz = 0;
-  int n = M.rows();
-  int m = M.cols();
-  for (int i=0; i < m; ++i)
-  for (int j=0; j < n; ++j)
-  if ( std::abs( M(i,j) ) > 1.0e-15 )
-    nnz++;
-  matrix << "\%\%MatrixMarket matrix coordinate real general\n";
-  matrix << m << " " << n << " " << nnz << std::endl;
-  for (int i=0; i < m; ++i)
-  for (int j=0; j < n; ++j)
-  if ( std::abs( M(i, j) ) > 1.0e-15)
-    matrix << i+1 << " " << j+1 << " " <<
-      std::setprecision(15) << std::scientific << M(i,j) << std::endl;
-  matrix.close();
-}
-
-void L2Projector::write_vector() {
-  printf("L2 projector: writing vector to file\n");
-  std::ofstream rhs;
-  rhs.open("rhs.mm");
-  int n = b.size();
-  rhs << "\%\%MatrixMarket matrix array real general\n";
-  rhs << n << " 1" << std::endl;
-  for (int i=0; i < n; ++i)
-    rhs << std::setprecision(15) << std::scientific << b(i) << std::endl;
-}
-
 void L2Projector::solve() {
   printf("L2 projector: solving\n");
   bool solved = mth::solveQR(M, b, x);
@@ -187,8 +166,7 @@ void L2Projector::compare() {
     apf::mapLocalToGlobal(me, p, x);
     double v = function(p_order, d, x);
     double vh = apf::getScalar(e, p);
-    std::cout << std::abs(v - vh) << std::endl;
-    assert(std::abs(v - vh) < 1.0e-14);
+    assert(std::abs(v - vh) < 1.0e-13);
     apf::destroyElement(e);
     apf::destroyMeshElement(me);
   }
