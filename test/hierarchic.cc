@@ -9,10 +9,6 @@
 #include <cassert>
 #include <cstdlib>
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-
 namespace {
 
 static double linear(int d, apf::Vector3 const& p) {
