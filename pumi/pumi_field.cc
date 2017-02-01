@@ -405,6 +405,17 @@ void pumi_field_verify(pMesh m, pField f)
   else 
     fields.push_back(f);
 
+  if (!pumi_rank()) // master
+  {
+    printf("  - verifying fields: ");
+    for (size_t nf = 0; nf < fields.size(); ++nf)
+    {
+      printf("%s", getName(fields[nf]));
+      if (nf<fields.size()-1) printf(", ");      
+    }
+    printf("\n");
+  }
+
   std::set<pField> mismatch_fields;
   for (size_t nf = 0; nf < fields.size(); ++nf)
   {
