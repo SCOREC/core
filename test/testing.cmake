@@ -314,6 +314,11 @@ add_test(hierarchic_2p_2D
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
+add_test(hierarchic_3p_2D
+  ./hierarchic
+  "${MDIR}/square.dmg"
+  "${MDIR}/square.smb"
+  3)
 set(MDIR ${MESHES}/cube/pumi24)
 add_test(hierarchic_2p_3D
   ./hierarchic
