@@ -133,38 +133,6 @@ void L2Projector::fill() {
   mesh->end(elems);
 }
 
-void L2Projector::write_matrix() {
-  printf("L2 projector: writing mass matrix to file\n");
-  std::ofstream matrix;
-  matrix.open("mass_matrix.mm");
-  int nnz = 0;
-  int n = M.rows();
-  int m = M.cols();
-  for (int i=0; i < m; ++i)
-  for (int j=0; j < n; ++j)
-  if ( std::abs( M(i,j) ) > 1.0e-15 )
-    nnz++;
-  matrix << "\%\%MatrixMarket matrix coordinate real general\n";
-  matrix << m << " " << n << " " << nnz << std::endl;
-  for (int i=0; i < m; ++i)
-  for (int j=0; j < n; ++j)
-  if ( std::abs( M(i, j) ) > 1.0e-15)
-    matrix << i+1 << " " << j+1 << " " <<
-      std::setprecision(15) << std::scientific << M(i,j) << std::endl;
-  matrix.close();
-}
-
-void L2Projector::write_vector() {
-  printf("L2 projector: writing vector to file\n");
-  std::ofstream rhs;
-  rhs.open("rhs.mm");
-  int n = b.size();
-  rhs << "\%\%MatrixMarket matrix array real general\n";
-  rhs << n << " 1" << std::endl;
-  for (int i=0; i < n; ++i)
-    rhs << std::setprecision(15) << std::scientific << b(i) << std::endl;
-}
-
 void L2Projector::solve() {
   printf("L2 projector: solving\n");
   bool solved = mth::solveQR(M, b, x);
