@@ -118,34 +118,84 @@ class HTriangle3 : public EntityShape {
       int which;
       int rotate;
       bool flip[3];
+      double sgn[3];
       apf::MeshEntity* edges[3];
       m->getDownward(e, 1, edges);
-      for (int i=0; i < 3; ++i)
+      for (int i=0; i < 3; ++i) {
         apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
+        sgn[i] = sign(flip[i]);
+      }
+
+      /* barycentric coordinates */
+      double l0 = 1.0 - xi[0] - xi[1];
+      double l1 = xi[0];
+      double l2 = xi[1];
 
       /* vertices */
-      N[0] = 1.0-xi[0]-xi[1];
-      N[1] = xi[0];
-      N[2] = xi[1];
+      N[0] = l0;
+      N[1] = l1;
+      N[2] = l2;
 
       /* edge 1 */
-      N[3] = c0 * N[0] * N[1];
-      N[4] = c1 * sign(flip[0]) * N[0] * N[1] * (N[1] - N[0]);
+      N[3] = c0*l0*l1;
+      N[4] = c1*sgn[0]*l0*l1*(l1 - l0);
 
       /* edge 2 */
-      N[5] = c0 * N[1] * N[2];
-      N[6] = c1 * sign(flip[1]) * N[1] * N[2] * (N[2] - N[1]);
+      N[5] = c0*l1*l2;
+      N[6] = c1*sgn[1]*l1*l2*(l2 - l1);
 
       /* edge 3 */
-      N[7] = c0 * N[2] * N[0];
-      N[8] = c1 * sign(flip[2]) * N[2] * N[0] * (N[0] - N[2]);
+      N[7] = c0*l2*l0;
+      N[8] = c1*sgn[2]*l2*l0*(l0 - l2);
 
       /* face */
-      N[9] = N[0] * N[1] * N[2];
+      N[9] = l0*l1*l2;
     }
     void getLocalGradients(
-        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>& dN) const {
+        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& dN) const {
       dN.allocate(10);
+
+      /* edge orientations */
+      int which;
+      int rotate;
+      bool flip[3];
+      double sgn[3];
+      apf::MeshEntity* edges[3];
+      m->getDownward(e, 1, edges);
+      for (int i=0; i < 3; ++i) {
+        apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
+        sgn[i] = sign(flip[i]);
+      }
+
+      /* barycentric coordinates */
+      double l0 = 1.0 - xi[0] - xi[1];
+      double l1 = xi[0];
+      double l2 = xi[1];
+
+      /* barycentric gradients */
+      apf::Vector3 dl0 = Vector3(-1.0, -1.0, 0.0);
+      apf::Vector3 dl1 = Vector3( 1.0,  0.0, 0.0);
+      apf::Vector3 dl2 = Vector3( 0.0,  1.0, 0.0);
+
+      /* vertices */
+      dN[0] = dl0;
+      dN[1] = dl1;
+      dN[2] = dl2;
+
+      /* edge 1 */
+      dN[3] = (dl0*l1 + dl1*l0)*c0;
+      dN[4] = (dl0*l1*(l1-l0) + dl1*l0*(l1-l0) + (dl1-dl0)*l0*l1)*c1*sgn[0];
+
+      /* edge 2 */
+      dN[5] = (dl1*l2 + dl2*l1)*c0;
+      dN[6] = (dl1*l2*(l2-l1) + dl2*l1*(l2-l1) + (dl2-dl1)*l1*l2)*c1*sgn[1];
+
+      /* edge 3 */
+      dN[7] = (dl2*l0 + dl0*l2)*c0;
+      dN[8] = (dl2*l0*(l0-l2) + dl0*l2*(l0-l2) + (dl0-dl2)*l2*l0)*c1*sgn[2];
+
+      /* face */
+      dN[9] = dl0*l1*l2 + dl1*l0*l2 + dl2*l0*l1;
     }
     void alignSharedNodes(Mesh*, MeshEntity*, MeshEntity*, int order[])
     {
