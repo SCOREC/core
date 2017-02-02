@@ -20,142 +20,265 @@ static const double c0 = -2.449489742783178;
 static const double c1 = -3.162277660168379;
 
 static double sign(bool should_flip) {
-  return should_flip ? -1 : 1;
+  return should_flip ? -1.0 : 1.0;
 }
 
-class Hierarchic2 : public FieldShape
-{
+class HVertex : public EntityShape {
   public:
-    Hierarchic2() {}
+    void getValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<double>& N) const {
+      N.allocate(1);
+      N[0] = 1.0;
+    }
+    void getLocalGradients(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
+    int countNodes() const { return 1; }
+};
+
+class HEdge2 : public EntityShape {
+  public:
+    void getValues(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<double>& N) const {
+      N.allocate(3);
+      N[0] = 0.5 * (1.0 - xi[0]);
+      N[1] = 0.5 * (1.0 + xi[0]);
+      N[2] = 0.25 * c0 * (1.0 - xi[0]*xi[0]);
+    }
+    void getLocalGradients(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<Vector3>& dN) const {
+      dN.allocate(3);
+      dN[0] = Vector3(-0.5, 0.0, 0.0);
+      dN[1] = Vector3(0.5, 0.0, 0.0);
+      dN[2] = Vector3(-0.5 * c0 * xi[0], 0.0, 0.0);
+    }
+    int countNodes() const { return 3; }
+};
+
+class HEdge3 : public EntityShape {
+  public:
+    void getValues(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<double>& N) const {
+      N.allocate(4);
+      N[0] = 0.5 * (1.0 - xi[0]);
+      N[1] = 0.5 * (1.0 + xi[0]);
+      N[2] = 0.25 * c0 * (1.0 - xi[0]*xi[0]);
+      N[3] = 0.25 * c0 * (1.0 - xi[0]*xi[0])*xi[0];
+    }
+    void getLocalGradients(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<Vector3>& dN) const {
+      dN.allocate(4);
+      dN[0] = Vector3(-0.5, 0.0, 0.0);
+      dN[1] = Vector3(0.5, 0.0, 0.0);
+      dN[2] = Vector3(-0.5 * c0 * xi[0], 0.0, 0.0);
+      dN[3] = Vector3(0.25 * c0 * (1.0 - 3.0*xi[0]*xi[0]), 0.0, 0.0);
+    }
+    int countNodes() const { return 4; }
+};
+
+class HTriangle2 : public EntityShape {
+  public:
+    void getValues(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<double>& N) const {
+      N.allocate(6);
+
+      /* vertices */
+      N[0] = 1.0 - xi[0] - xi[1];
+      N[1] = xi[0];
+      N[2] = xi[1];
+
+      /* edges */
+      N[3] = c0 * N[0] * N[1];
+      N[4] = c0 * N[1] * N[2];
+      N[5] = c0 * N[2] * N[0];
+    }
+    void getLocalGradients(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<Vector3>& dN) const {
+      dN.allocate(6);
+
+      /* vertices */
+      dN[0] = Vector3(-1.0, -1.0, 0.0);
+      dN[1] = Vector3( 1.0,  0.0, 0.0);
+      dN[2] = Vector3( 0.0,  1.0, 0.0);
+
+      /* edges */
+      dN[3] = Vector3(c0 * (1.0 - 2.0*xi[0] - xi[1]), -c0 * xi[0], 0.0);
+      dN[4] = Vector3(c0 * xi[1], c0 * xi[0], 0.0);
+      dN[5] = Vector3(-c0 * xi[1], c0 * (1.0 - xi[0] - 2.0*xi[1]), 0.0);
+    }
+    int countNodes() const { return 6; }
+};
+
+class HTriangle3 : public EntityShape {
+  public:
+    void getValues(
+        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<double>& N) const {
+      N.allocate(10);
+
+      /* edge orientations */
+      int which;
+      int rotate;
+      bool flip[3];
+      double sgn[3];
+      apf::MeshEntity* edges[3];
+      m->getDownward(e, 1, edges);
+      for (int i=0; i < 3; ++i) {
+        apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
+        sgn[i] = sign(flip[i]);
+      }
+
+      /* barycentric coordinates */
+      double l0 = 1.0 - xi[0] - xi[1];
+      double l1 = xi[0];
+      double l2 = xi[1];
+
+      /* vertices */
+      N[0] = l0;
+      N[1] = l1;
+      N[2] = l2;
+
+      /* edge 1 */
+      N[3] = c0*l0*l1;
+      N[4] = c1*sgn[0]*l0*l1*(l1 - l0);
+
+      /* edge 2 */
+      N[5] = c0*l1*l2;
+      N[6] = c1*sgn[1]*l1*l2*(l2 - l1);
+
+      /* edge 3 */
+      N[7] = c0*l2*l0;
+      N[8] = c1*sgn[2]*l2*l0*(l0 - l2);
+
+      /* face */
+      N[9] = l0*l1*l2;
+    }
+    void getLocalGradients(
+        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& dN) const {
+      dN.allocate(10);
+
+      /* edge orientations */
+      int which;
+      int rotate;
+      bool flip[3];
+      double sgn[3];
+      apf::MeshEntity* edges[3];
+      m->getDownward(e, 1, edges);
+      for (int i=0; i < 3; ++i) {
+        apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
+        sgn[i] = sign(flip[i]);
+      }
+
+      /* barycentric coordinates */
+      double l0 = 1.0 - xi[0] - xi[1];
+      double l1 = xi[0];
+      double l2 = xi[1];
+
+      /* barycentric gradients */
+      apf::Vector3 dl0 = Vector3(-1.0, -1.0, 0.0);
+      apf::Vector3 dl1 = Vector3( 1.0,  0.0, 0.0);
+      apf::Vector3 dl2 = Vector3( 0.0,  1.0, 0.0);
+
+      /* vertices */
+      dN[0] = dl0;
+      dN[1] = dl1;
+      dN[2] = dl2;
+
+      /* edge 1 */
+      dN[3] = (dl0*l1 + dl1*l0)*c0;
+      dN[4] = (dl0*l1*(l1-l0) + dl1*l0*(l1-l0) + (dl1-dl0)*l0*l1)*c1*sgn[0];
+
+      /* edge 2 */
+      dN[5] = (dl1*l2 + dl2*l1)*c0;
+      dN[6] = (dl1*l2*(l2-l1) + dl2*l1*(l2-l1) + (dl2-dl1)*l1*l2)*c1*sgn[1];
+
+      /* edge 3 */
+      dN[7] = (dl2*l0 + dl0*l2)*c0;
+      dN[8] = (dl2*l0*(l0-l2) + dl0*l2*(l0-l2) + (dl0-dl2)*l2*l0)*c1*sgn[2];
+
+      /* face */
+      dN[9] = dl0*l1*l2 + dl1*l0*l2 + dl2*l0*l1;
+    }
+    void alignSharedNodes(Mesh*, MeshEntity*, MeshEntity*, int order[])
+    {
+      /* unlike Lagrange shape functions, hierarchic 'modes' do not
+         correspond to physical point in space. we want the nodes to
+         always come out in terms of dimension-specific polynomial
+         order */
+      for (int i=0; i < 2; ++i)
+        order[i] = i;
+    }
+    int countNodes() const {return 10;}
+};
+
+class HTetrahedron2 : public EntityShape {
+  public:
+    void getValues(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<double>& N) const {
+      N.allocate(10);
+
+      /* vertices */
+      N[0] = 1.0 - xi[0] - xi[1] - xi[2];
+      N[1] = xi[0];
+      N[2] = xi[1];
+      N[3] = xi[2];
+
+      /* edges */
+      N[4] = c0 * N[0] * N[1];
+      N[5] = c0 * N[1] * N[2];
+      N[6] = c0 * N[2] * N[0];
+      N[7] = c0 * N[0] * N[3];
+      N[8] = c0 * N[1] * N[3];
+      N[9] = c0 * N[2] * N[3];
+    }
+    void getLocalGradients(
+        Mesh*, MeshEntity*, Vector3 const& xi, NewArray<Vector3>& dN) const {
+      dN.allocate(10);
+
+      /* vertices */
+      dN[0] = Vector3(-1.0, -1.0, -1.0);
+      dN[1] = Vector3( 1.0,  0.0,  0.0);
+      dN[2] = Vector3( 0.0,  1.0,  0.0);
+      dN[3] = Vector3( 0.0,  0.0,  1.0);
+
+      /* edges */
+      dN[4] = Vector3( 1.0-2.0*xi[0]-xi[1]-xi[2], -xi[0], -xi[0] ) * c0;
+      dN[5] = Vector3( xi[1], xi[0], 0.0 ) * c0;
+      dN[6] = Vector3( -xi[1], 1.0-xi[0]-2.0*xi[1]-xi[2], -xi[1] ) * c0;
+      dN[7] = Vector3( -xi[2], -xi[2], 1.0-xi[0]-xi[1]-2.0*xi[2] ) * c0;
+      dN[8] = Vector3( xi[2], 0.0, xi[0] ) * c0;
+      dN[9] = Vector3( 0.0, xi[2], xi[1] ) * c0;
+    }
+    int countNodes() const {return 10;}
+};
+
+class Hierarchic2 : public FieldShape {
+  public:
     const char* getName() const { return "Hierarchic2"; }
-    class Vertex : public EntityShape
-    {
-      public:
-        void getValues(Mesh*, MeshEntity*,
-            Vector3 const&, NewArray<double>& N) const
-        {
-          N.allocate(1);
-          N[0] = 1.0;
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const&, NewArray<Vector3>&) const
-        {
-        }
-        int countNodes() const {return 1;}
-    };
-    class Edge : public EntityShape
-    {
-      public:
-        void getValues(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<double>& N) const
-        {
-          N.allocate(3);
-          N[0] = (1.0-xi[0])/2.0;
-          N[1] = (1.0+xi[0])/2.0;
-          N[2] = c0*N[0]*N[1];
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& dN) const
-        {
-          dN.allocate(3);
-          dN[0] = Vector3(-0.5, 0.0, 0.0);
-          dN[1] = Vector3( 0.5, 0.0, 0.0);
-          dN[2] = Vector3(-0.5*c0*xi[0], 0.0, 0.0);
-        }
-        int countNodes() const {return 3;}
-    };
-    class Triangle : public EntityShape
-    {
-      public:
-        void getValues(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<double>& N) const
-        {
-          N.allocate(6);
-          N[0] = 1.0-xi[0]-xi[1];
-          N[1] = xi[0];
-          N[2] = xi[1];
-          N[3] = c0*N[0]*N[1];
-          N[4] = c0*N[1]*N[2];
-          N[5] = c0*N[2]*N[0];
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& dN) const
-        {
-          dN.allocate(6);
-          dN[0] = Vector3(-1.0, -1.0, 0.0);
-          dN[1] = Vector3( 1.0,  0.0, 0.0);
-          dN[2] = Vector3( 0.0,  1.0, 0.0);
-          dN[3] = Vector3( 1.0-2.0*xi[0]-xi[1],  -xi[0], 0.0) * c0;
-          dN[4] = Vector3( xi[1], xi[0], 0.0) * c0;
-          dN[5] = Vector3( -xi[1],  1.0-xi[0]-2.0*xi[1], 0.0) * c0;
-        }
-        int countNodes() const {return 6;}
-    };
-    class Tetrahedron : public EntityShape
-    {
-      public:
-        void getValues(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<double>& N) const
-        {
-          N.allocate(10);
-          N[0] = 1.0-xi[0]-xi[1]-xi[2];
-          N[1] = xi[0];
-          N[2] = xi[1];
-          N[3] = xi[2];
-          N[4] = c0*N[0]*N[1];
-          N[5] = c0*N[1]*N[2];
-          N[6] = c0*N[2]*N[0];
-          N[7] = c0*N[0]*N[3];
-          N[8] = c0*N[1]*N[3];
-          N[9] = c0*N[2]*N[3];
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& dN) const
-        {
-          dN.allocate(10);
-          dN[0] = Vector3(-1.0, -1.0, -1.0);
-          dN[1] = Vector3( 1.0,  0.0,  0.0);
-          dN[2] = Vector3( 0.0,  1.0,  0.0);
-          dN[3] = Vector3( 0.0,  0.0,  1.0);
-          dN[4] = Vector3( 1.0-2.0*xi[0]-xi[1]-xi[2], -xi[0], -xi[0] ) * c0;
-          dN[5] = Vector3( xi[1], xi[0], 0.0 ) * c0;
-          dN[6] = Vector3( -xi[1], 1.0-xi[0]-2.0*xi[1]-xi[2], -xi[1] ) * c0;
-          dN[7] = Vector3( -xi[2], -xi[2], 1.0-xi[0]-xi[1]-2.0*xi[2] ) * c0;
-          dN[8] = Vector3( xi[2], 0.0, xi[0] ) * c0;
-          dN[9] = Vector3( 0.0, xi[2], xi[1] ) * c0;
-        }
-        int countNodes() const {return 10;}
-    };
-    EntityShape* getEntityShape(int type)
-    {
-      static Vertex vertex;
-      static Edge edge;
-      static Triangle triangle;
-      static Tetrahedron tet;
+    EntityShape* getEntityShape(int type) {
+      static HVertex vtx;
+      static HEdge2 edge;
+      static HTriangle2 tri;
+      static HTetrahedron2 tet;
       static EntityShape* shapes[Mesh::TYPES] =
-      {&vertex,   //vertex
+      {&vtx,      //vertex
        &edge,     //edge
-       &triangle, //triangle
-       NULL,     //quad
+       &tri,      //triangle
+       NULL,      //quad
        &tet,      //tet
        NULL,      //hex
        NULL,      //prism
        NULL};     //pyramid
       return shapes[type];
     }
-    void getNodeXi(int, int, Vector3& xi)
-    {
+    void getNodeXi(int, int, Vector3& xi) {
       xi = Vector3(0,0,0);
     }
-    bool hasNodesIn(int dimension)
-    {
+    bool hasNodesIn(int dimension) {
       if ( (dimension == 0) || (dimension == 1) )
         return true;
       else
         return false;
     }
-    int countNodesOn(int type)
-    {
+    int countNodesOn(int type) {
       if ( (type == Mesh::VERTEX) || (type == Mesh::EDGE) )
         return 1;
       else
@@ -169,100 +292,11 @@ class Hierarchic3 : public FieldShape
   public:
     Hierarchic3() {}
     const char* getName() const { return "Hierarchic3"; }
-    class Vertex : public EntityShape
-    {
-      public:
-        void getValues(Mesh*, MeshEntity*,
-            Vector3 const&, NewArray<double>& N) const
-        {
-          N.allocate(1);
-          N[0] = 1.0;
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const&, NewArray<Vector3>&) const
-        {
-        }
-        int countNodes() const {return 1;}
-    };
-    class Edge : public EntityShape
-    {
-      public:
-        void getValues(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<double>& N) const
-        {
-          N.allocate(4);
-          N[0] = (1.0-xi[0])/2.0;
-          N[1] = (1.0+xi[0])/2.0;
-          N[2] = c0*N[0]*N[1];
-          N[3] = c1*N[0]*N[1]*(N[1]-N[0]);
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const& xi, NewArray<Vector3>& dN) const
-        {
-          dN.allocate(4);
-          dN[0] = Vector3(-0.5, 0.0, 0.0);
-          dN[1] = Vector3( 0.5, 0.0, 0.0);
-          dN[2] = Vector3(-0.5*c0*xi[0], 0.0, 0.0);
-          dN[3] = Vector3(0.25*(1.0 - 3.0*xi[0]*xi[0]),0,0);
-        }
-        int countNodes() const {return 4;}
-    };
-    class Triangle : public EntityShape {
-      public:
-        void getValues(Mesh* m, MeshEntity* e,
-            Vector3 const& xi, NewArray<double>& N) const
-        {
-          N.allocate(10);
-
-          /* edge orientations */
-          int which;
-          int rotate;
-          bool flip[3];
-          apf::MeshEntity* edges[3];
-          m->getDownward(e, 1, edges);
-          for (int i=0; i < 3; ++i)
-            apf::getAlignment(m, e, edges[i], which, flip[i], rotate);
-
-          /* linear */
-          N[0] = 1.0-xi[0]-xi[1];
-          N[1] = xi[0];
-          N[2] = xi[1];
-
-          /* edge 1 */
-          N[3] = c0 * N[0] * N[1];
-          N[4] = c1 * sign(flip[0]) * N[0] * N[1] * (N[1] - N[0]);
-
-          /* edge 2 */
-          N[5] = c0 * N[1] * N[2];
-          N[6] = c1 * sign(flip[1]) * N[1] * N[2] * (N[2] - N[1]);
-
-          /* edge 3 */
-          N[7] = c0 * N[2] * N[0];
-          N[8] = c1 * sign(flip[2]) * N[2] * N[0] * (N[0] - N[2]);
-
-          /* face */
-          N[9] = N[0] * N[1] * N[2];
-        }
-        void getLocalGradients(Mesh*, MeshEntity*,
-            Vector3 const&, NewArray<Vector3>& dN) const {
-          dN.allocate(10);
-        }
-        void alignSharedNodes(Mesh*, MeshEntity*, MeshEntity*, int order[])
-        {
-          /* unlike Lagrange shape functions, hierarchic 'modes' do not
-             correspond to physical point in space. we want the nodes to
-             always come out in terms of dimension-specific polynomial
-             order */
-          for (int i=0; i < 2; ++i)
-            order[i] = i;
-        }
-        int countNodes() const {return 10;}
-    };
     EntityShape* getEntityShape(int type)
     {
-      static Vertex vertex;
-      static Edge edge;
-      static Triangle tri;
+      static HVertex vertex;
+      static HEdge3 edge;
+      static HTriangle3 tri;
       static EntityShape* shapes[Mesh::TYPES] =
       {&vertex,   //vertex
        &edge,     //edge
