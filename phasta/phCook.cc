@@ -85,7 +85,7 @@ static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
     Progress_setDefaultCallback(progress);
 
     pGModel simModel = gmi_export_sim(g);
-    pParMesh sim_mesh = PM_load(meshfile, sthreadNone, simModel, progress);
+    pParMesh sim_mesh = PM_load(meshfile, simModel, progress);
     mesh = apf::createMesh(sim_mesh);
 
     Progress_delete(progress);

@@ -873,6 +873,9 @@ void pumi_ghost_delete (pMesh m)
     }
   }
 
+  // update owners
+  m->acceptChanges();
+
   // delete tag
   m->destroyTag(pumi::instance()->ghost_tag);
   pumi::instance()->ghost_tag = NULL;

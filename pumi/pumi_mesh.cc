@@ -194,7 +194,7 @@ void pumi_mesh_createGlobalID(pMesh m)
   else
     tag = m->createIntTag("global_id",1);
 
-  for (int i=0; i<4; ++i)
+  for (int i=0; i<=m->getDimension(); ++i)
     generate_globalid(m, tag, i);
 }
 

@@ -153,27 +153,28 @@ int main(int argc, char** argv)
   for (size_t n = 0; n<tag_vec.size(); ++n)
     pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
 
+  // create global ID
+  pumi_mesh_createGlobalID(m);
+
   TEST_FIELD(m);
 
   std::vector<pField> fields;
   pumi_mesh_getField(m, fields);
 
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
-  { 
-    pumi_field_verify(m, *fit);
     pumi_field_freeze(*fit);
-  }
 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized, and frozen\n\n";
 
   TEST_GHOSTING(m);
 
-  // delete numbering
+  // delete numbering and ID
   std::vector<pGlobalNumbering> numberings;
   pumi_mesh_getGlobalNumbering(m, numberings);
   assert (pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
   for (int i=0; i<(int)numberings.size(); ++i)
     pumi_numbering_deleteGlobal(numberings.at(i));
+  pumi_mesh_deleteGlobalID(m);
 
   // delete fields
   // FIXME: FieldShape doesn't get removed along the field
@@ -623,44 +624,52 @@ void TEST_NEW_MESH(pMesh m)
 void TEST_FIELD(pMesh m)
 {
   int num_dofs_per_node=3;
-  pField f =pumi_field_create(m, "xyz_field", num_dofs_per_node);
-  assert(pumi_field_getName(f)==std::string("xyz_field"));
-  assert(pumi_field_getType(f)==PUMI_PACKED);
-  assert(pumi_field_getSize(f)==num_dofs_per_node);
-
-  // create global numbering
-  pumi_numbering_createGlobal(m, "xyz_numbering", pumi_field_getShape(f));
-
-  // fill the dof data
+  pField f = pumi_mesh_findField(m, "xyz_field");
+  pMeshIter it;
+  pMeshEnt e;
   double data[3];
   double xyz[3];
-  pMeshIter it = m->begin(0);
-  pMeshEnt e;
-  while ((e = m->iterate(it)))
+
+  // create field and set the field data
+  if (!f)
   {
-    if (!pumi_ment_isOwned(e)) continue;
-    pumi_node_getCoord(e, 0, xyz);
-    if (pumi_ment_isOnBdry(e)) 
-      for (int i=0; i<3;++i) 
-        xyz[i] *= pumi_ment_getLocalID(e);
-    pumi_ment_setField(e, f, 0, xyz);
+    f=pumi_field_create(m, "xyz_field", num_dofs_per_node);
+    // create global numbering
+    pumi_numbering_createGlobal(m, "xyz_numbering", pumi_field_getShape(f));
+
+    assert(pumi_field_getName(f)==std::string("xyz_field"));
+    assert(pumi_field_getType(f)==PUMI_PACKED);
+    assert(pumi_field_getSize(f)==num_dofs_per_node);
+    it = m->begin(0);
+    
+    while ((e = m->iterate(it)))
+    {
+      if (!pumi_ment_isOwned(e)) continue;
+      if (pumi_ment_isOnBdry(e)) 
+        for (int i=0; i<3;++i) 
+          xyz[i] = pumi_ment_getGlobalID(e);
+      else 
+        pumi_node_getCoord(e, 0, xyz);
+      pumi_ment_setField(e, f, 0, xyz);
+    }
+    m->end(it);
+
+    pumi_field_synchronize(f);
   }
-  m->end(it);
 
   it = m->begin(0);
   while ((e = m->iterate(it)))
   {
-    if (!pumi_ment_isOwned(e)) continue;
     pumi_node_getCoord(e, 0, xyz);
     pumi_ment_getField(e, f, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e)) 
-        assert(data[i] == xyz[i]*pumi_ment_getLocalID(e));
+        assert(data[i] == pumi_ment_getGlobalID(e));
       else
         assert(data[i] == xyz[i]);
   }
   m->end(it);
-  pumi_field_synchronize(f);
+  pumi_field_verify(m, f);
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -717,6 +726,7 @@ void TEST_GHOSTING(pMesh m)
   m->end(mit);
   assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getNumEnt(m,0));
   pumi_mesh_verify(m);
+  TEST_FIELD(m);
   pumi_ghost_delete(m);
   
   for (int i=0; i<4; ++i)
@@ -733,6 +743,7 @@ void TEST_GHOSTING(pMesh m)
         MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
         if (!pumi_rank()) std::cout<<"\n[test_pumi] layer-wise pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
         pumi_mesh_verify(m);
+        TEST_FIELD(m);
         pumi_ghost_delete(m);
         for (int i=0; i<4; ++i)
           assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
@@ -751,7 +762,27 @@ void TEST_GHOSTING(pMesh m)
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
       }
-  // pumi_mesh_verify(m); // FIXME - this crashes
+
+  // test field accumulation with ghosted mesh  
+  pField f = pumi_mesh_findField(m, "xyz_field");
+  double data[3];
+  double xyz[3];
+
+  pumi_field_accumulate(f);
+
+  pMeshIter it = m->begin(0);
+  while ((e = m->iterate(it)))
+  {
+    pumi_node_getCoord(e, 0, xyz);
+    pumi_ment_getField(e, f, 0, data);
+    for (int i=0; i<3;++i) 
+      if (pumi_ment_isOnBdry(e))
+        assert(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));
+      else
+        assert(data[i] == xyz[i]);
+  }
+  m->end(it);
+
   pumi_ghost_delete(m);
 
   for (int i=0; i<4; ++i)

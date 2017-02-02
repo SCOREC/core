@@ -1,6 +1,8 @@
 #include <PCU.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
+#include <SimModelerAdvUtil.h>
+#include <SimModelerUtil.h>
 #include <SimUtil.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
@@ -19,44 +21,6 @@
 
 #include "SimAttribute.h"
 #include "ModelTypes.h"
-
-/* The fields in this structure are set mainly based on the "Surface Meshing" 
-   and "Volume Meshing" attributes in the meshing case. */
-struct AdvMeshing_EXPORT MeshingOptions {
-  bool surfaceRun;                // whether to run surface meshing
-  bool surfaceDoFixIntersections; // whether to run fix self intersections
-  bool surfaceDoCurve;            // whether to curve surface mesh
-  double proximityMeshSize;
-
-  int maxFaces, maxRegions; // abort surf/vol meshing if these max numbers 
-                            //  are exceeded
-
-  // These correspond as indicated to the fields in the 
-  //  "Surface Meshing" attribute
-  int surfaceSmoothingLevel;      // "Smoothing Level"
-  int surfaceSmoothingType;       // "Smoothing Type"
-  int surfaceFixIntersections;    // "Fix Intersections"
-  int surfaceOptimization;        // "Optimization"
-  int surfaceEnforceGradation;    // "Enforce Spatial Gradation"
-  double surfaceFaceRotationLimit;// "Discrete Face Rotation Limit" 
-  int surfaceCurveType;           // ignore
-
-  bool volumeRun;                 // whether to run volume meshing
-  bool volumeDoStructured;        // always true
-  bool volumeDoUnstructured;      // always true
-  bool volumeDoCurve;             // whether to run mesh curving
-
-  // These correspond as indicated to the fields in the 
-  //  "Volume Meshing" attribute
-  int volumeEnforceSize;          // "Enforce Size"
-  int volumeSmoothingLevel;       // "Smoothing Level"
-  int volumeSmoothingType;        // "Smoothing Type"
-  int volumeOptimization;         // "Optimization"
-  int volumeCurveType;            // ignore
-};
-
-void MS_setupSimModelerMeshCase(pACase sourceCase, pACase meshCase, 
-MeshingOptions *options);
 
 pAManager SModel_attManager(pModel model);
 
@@ -95,7 +59,8 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
   AttCase_setModel(mcaseFile, mdl);
   pACase mcase = MS_newMeshCase(mdl);
   MeshingOptions meshingOptions;
-  MS_setupSimModelerMeshCase(mcaseFile, mcase, &meshingOptions);
+  MS_processSimModelerMeshingAtts(mcaseFile, mcase, &meshingOptions);
+  MS_processSimModelerAdvMeshingAtts(mcaseFile, mcase);
   AttCase_setModel(mcase, mdl);
 
   pParMesh pmesh = PM_new(0, mdl, PMU_size());
