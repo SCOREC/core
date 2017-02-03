@@ -688,14 +688,73 @@ class LagrangeCubic : public FieldShape
         }
         int countNodes() const {return 4;}
     };
+    class Triangle : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& N) const
+        {
+          N.allocate(10);
+          double l1 = 1.0-xi[0]-xi[1];
+          double l2 = xi[0];
+          double l3 = xi[1];
+          N[0] = 0.5*(3.*l1-1.)*(3.*l1-2.)*l1;
+          N[1] = 0.5*(3.*l2-1.)*(3.*l2-2.)*l2;
+          N[2] = 0.5*(3.*l3-1.)*(3.*l3-2.)*l3;
+          N[3] = 9./2.*l1*l2*(3.*l1-1.);
+          N[4] = 9./2.*l1*l2*(3.*l2-1.);
+          N[5] = 9./2.*l2*l3*(3.*l2-1.);
+          N[6] = 9./2.*l2*l3*(3.*l3-1.);
+          N[7] = 9./2.*l3*l1*(3.*l3-1.);
+          N[8] = 9./2.*l3*l1*(3.*l1-1.);
+          N[9] = 27.*l1*l2*l3;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& dN) const
+        {
+          dN.allocate(10);
+          double l1 = 1.0-xi[0]-xi[1];
+          double l2 = xi[0];
+          double l3 = xi[1];
+          apf::Vector3 gl1(-1,-1,0);
+          apf::Vector3 gl2(1,0,0);
+          apf::Vector3 gl3(0,1,0);
+          dN[0] = gl1*(27./2.*l1*l1-9.*l1+1.);
+          dN[1] = gl2*(27./2.*l2*l2-9.*l2+1.);
+          dN[2] = gl3*(27./2.*l3*l3-9.*l3+1.);
+          dN[3] = (gl2*(3.*l1*l1-l1) + gl1*(6.*l1*l2-l2))*9./2;
+          dN[4] = (gl1*(3.*l2*l2-l2) + gl2*(6.*l1*l2-l1))*9./2.;
+          dN[5] = (gl3*(3.*l2*l2-l2) + gl2*(6.*l2*l3-l3))*9./2.;
+          dN[6] = (gl2*(3.*l3*l3-l3) + gl3*(6.*l2*l3-l2))*9./2.;
+          dN[7] = (gl1*(3.*l3*l3-l3) + gl3*(6.*l3*l1-l1))*9./2.;
+          dN[8] = (gl3*(3.*l1*l1-l1) + gl1*(6.*l3*l1-l3))*9./2.;
+          dN[9] = (gl1*l2*l3+gl2*l1*l3+gl3*l1*l2)*27.;
+        }
+        int countNodes() const {return 10;}
+        void alignSharedNodes(Mesh* m, MeshEntity* elem,
+            MeshEntity* edge, int order[]) {
+          int which, rotate;
+          bool flip;
+          getAlignment(m, elem, edge, which, flip, rotate);
+          if (! flip) {
+            order[0] = 0;
+            order[1] = 1;
+          }
+          else {
+            order[0] = 1;
+            order[1] = 0;
+          }
+        }
+    };
     EntityShape* getEntityShape(int type)
     {
       static Vertex vertex;
       static Edge edge;
+      static Triangle tri;
       static EntityShape* shapes[Mesh::TYPES] =
       {&vertex,   // vertex
        &edge,     // edge
-       NULL,      // triangle
+       &tri,      // triangle
        NULL,      // quad
        NULL,      // tet
        NULL,      // hex
@@ -733,20 +792,6 @@ class LagrangeCubic : public FieldShape
         xi = Vector3(1./3., 1./3., 0);
       else
         xi = Vector3(0, 0, 0);
-    }
-    void alignSharedNodes(Mesh* m, MeshEntity* elem,
-        MeshEntity* edge, int order[]) {
-      int which, rotate;
-      bool flip;
-      getAlignment(m, elem, edge, which, flip, rotate);
-      if (! flip) {
-        order[0] = 0;
-        order[1] = 1;
-      }
-      else {
-        order[0] = 1;
-        order[1] = 0;
-      }
     }
 };
 
