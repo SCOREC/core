@@ -51,6 +51,8 @@ set(HEADERS
   apf.h
   apfMesh.h
   apfMesh2.h
+  apfField.h
+  apfFieldData.h
   apfMatrix.h
   apfVector.h
   apfArray.h
