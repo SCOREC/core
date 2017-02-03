@@ -282,12 +282,11 @@ bool pumi_ment_isGhosted (pMeshEnt e)
   return pumi::instance()->mesh->isGhosted(e);
 }
 
-int pumi_ment_geNumGhost (pMeshEnt e)
+int pumi_ment_getNumGhost (pMeshEnt e)
 {
   if (!pumi::instance()->mesh->isGhosted(e)) return 0;
   apf::Copies ghosts;
-  pumi::instance()->mesh->getGhosts(e,ghosts);
-  return ghosts.size();
+  return pumi::instance()->mesh->getGhosts(e,ghosts);
 }
 
 void pumi_ment_getAllGhost(pMeshEnt e, Copies& ghosts)

@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 
   gmi_model* mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
-  pParMesh sim_mesh = PM_load(sms_path, sthreadNone, simModel, progress);
+  pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   if (should_attach_order) attachOrder(simApfMesh);
   

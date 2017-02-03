@@ -299,12 +299,13 @@ class MeshMDS : public Mesh2
     }
 
 // seol
-    void getGhosts(MeshEntity* e, Copies& ghosts)
+    int getGhosts(MeshEntity* e, Copies& ghosts)
     {
       mds_copies* c = mds_get_copies(&mesh->ghosts, fromEnt(e));
-      if (c==NULL) return;
+      if (c==NULL) return 0;
       for (int i = 0; i < c->n; ++i)
         ghosts[c->c[i].p] = toEnt(c->c[i].e);
+      return c->n;
     }
 
     void getResidence(MeshEntity* e, Parts& residence)

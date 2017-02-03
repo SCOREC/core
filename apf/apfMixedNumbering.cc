@@ -96,7 +96,7 @@ static int get_highest_dof_dim(
     std::vector<FieldShape*> const& shapes) {
   int hdim = 0;
   Mesh* m = getMesh(fields[0]);
-  for (int d=0; d < m->getDimension(); ++d)
+  for (int d=0; d <= m->getDimension(); ++d)
     for (size_t f=0; f < fields.size(); ++f)
       if (shapes[f]->hasNodesIn(d))
         hdim = d;

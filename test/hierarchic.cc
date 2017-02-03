@@ -9,10 +9,6 @@
 #include <cassert>
 #include <cstdlib>
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-
 namespace {
 
 static double linear(int d, apf::Vector3 const& p) {
@@ -59,8 +55,6 @@ class L2Projector {
   private:
     void initialize();
     void fill();
-    void write_matrix();
-    void write_vector();
     void solve();
     void attach();
     void compare();

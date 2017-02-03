@@ -564,19 +564,7 @@ static void verifyFields(Mesh* m)
     for (int i = 0; i < n; ++i)
       packFieldInfo(fields[i], self - 1);
   }
-  else // master
-  {
-    if (n)
-    {
-      printf("  - verifying fields: ");
-      for (int i = 0; i < n; ++i)
-      {
-        printf("%s", getName(fields[i]));
-        if (i<n-1) printf(", ");      
-      }
-      printf("\n");
-    }
-  }
+
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
     int n;

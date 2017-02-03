@@ -517,7 +517,7 @@ class TagSIM
       name(n)
     {
       id = MD_newMeshDataId(n);
-      comm = PM_newAttachDataCommu(unitSize/sizeof(int),0,count);
+      comm = AttachDataCommu_new(unitSize/sizeof(int),0,count);
       PM_setMigrId(mesh,id);
     }
     virtual ~TagSIM()
@@ -846,7 +846,7 @@ gmi_model* MeshSIM::getModel()
 
 void MeshSIM::migrate(Migration* plan)
 {
-  pMigrator migrator = PM_newMigrator(mesh,sthreadNone);
+  pMigrator migrator = Migrator_new(mesh,0);
   Migrator_reset(migrator,this->getDimension());
   int gid = PMU_gid(getId(),0);
   for (int i=0; i < plan->count(); ++i)
@@ -868,7 +868,7 @@ int MeshSIM::getId()
 
 void MeshSIM::writeNative(const char* fileName)
 {
-  PM_write(mesh,fileName,sthreadNone,NULL);
+  PM_write(mesh,fileName,NULL);
 }
 
 void MeshSIM::destroyNative()
@@ -878,7 +878,7 @@ void MeshSIM::destroyNative()
 
 void MeshSIM::verify()
 {
-  assert(PM_verify(mesh,0,sthreadNone,NULL));
+  assert(PM_verify(mesh,0,NULL));
 }
 
 void MeshSIM::getMatches(MeshEntity* e, Matches& m)
