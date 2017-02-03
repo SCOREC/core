@@ -643,14 +643,124 @@ class SerendipityQuadratic : public QuadraticBase
     }
 };
 
+class LagrangeCubic : public FieldShape
+{
+  public:
+    LagrangeCubic() { registerSelf(apf::LagrangeCubic::getName()); }
+    const char* getName() const { return "Lagrange Cubic"; }
+    class Vertex : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<double>& values) const
+        {
+          values.allocate(1);
+          values[0] = 1.0;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+        {
+        }
+        int countNodes() const {return 1;}
+    };
+    class Edge : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& p, NewArray<double>& N) const
+        {
+          N.allocate(4);
+          double xi = p[0];
+          N[0] = 9./16.*(1./9.-xi*xi)*(xi-1.);
+          N[1] = -9./16.*(1./9.-xi*xi)*(xi+1.);
+          N[2] = 27./16.*(1.-xi*xi)*(1./3.-xi);
+          N[3] = 27./16.*(1.-xi*xi)*(1./3.+xi);
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& p, NewArray<Vector3>& dN) const
+        {
+          dN.allocate(4);
+          double xi = p[0];
+          dN[0] = Vector3(-9./16.*(3.*xi*xi-2.*xi-1./9.), 0, 0);
+          dN[1] = Vector3(-9./16.*(-3.*xi*xi-2.*xi+1./9.), 0, 0);
+          dN[2] = Vector3(27./16.*(3.*xi*xi-2./3.*xi-1.), 0, 0);
+          dN[3] = Vector3(27./16.*(-3.*xi*xi-2./3.*xi+1.), 0, 0);
+        }
+        int countNodes() const {return 4;}
+    };
+    EntityShape* getEntityShape(int type)
+    {
+      static Vertex vertex;
+      static Edge edge;
+      static EntityShape* shapes[Mesh::TYPES] =
+      {&vertex,   // vertex
+       &edge,     // edge
+       NULL,      // triangle
+       NULL,      // quad
+       NULL,      // tet
+       NULL,      // hex
+       NULL,      // prism
+       NULL};     // pyramid
+      return shapes[type];
+    }
+    bool hasNodesIn(int dimension)
+    {
+      if (dimension < 3)
+        return true;
+      else
+        return false;
+    }
+    int countNodesOn(int type)
+    {
+      if (type == Mesh::VERTEX)
+        return 1;
+      else if (type == Mesh::EDGE)
+        return 2;
+      else if (type == Mesh::TRIANGLE)
+        return 1;
+      else
+        return 0;
+    }
+    int getOrder() {return 3;}
+    void getNodeXi(int type, int node, Vector3& xi)
+    {
+      assert(node < 2);
+      if (type == Mesh::EDGE && node == 0)
+        xi = Vector3(-1./3., 0, 0);
+      else if (type == Mesh::EDGE && node == 1)
+        xi = Vector3(1./3., 0, 0);
+      else if (type == Mesh::TRIANGLE)
+        xi = Vector3(1./3., 1./3., 0);
+      else
+        xi = Vector3(0, 0, 0);
+    }
+    void alignSharedNodes(Mesh* m, MeshEntity* elem,
+        MeshEntity* edge, int order[]) {
+      int which, rotate;
+      bool flip;
+      getAlignment(m, elem, edge, which, flip, rotate);
+      if (! flip) {
+        order[0] = 0;
+        order[1] = 1;
+      }
+      else {
+        order[0] = 1;
+        order[1] = 0;
+      }
+    }
+};
+
 FieldShape* getLagrange(int order)
 {
   static Linear linear;
   static LagrangeQuadratic quadratic;
+  static LagrangeCubic cubic;
   if (order == 1)
     return &linear;
   if (order == 2)
     return &quadratic;
+  if (order == 3)
+    return &cubic;
   return NULL;
 }
 
