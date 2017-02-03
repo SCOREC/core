@@ -21,6 +21,39 @@ void testNodeValues(apf::EntityShape* shp, apf::Vector3 const* nodes, int nnodes
   }
 }
 
+void testP1LineNodeValues()
+{
+  apf::Vector3 nodes[2] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(1)->getEntityShape(apf::Mesh::EDGE);
+  testNodeValues(shp, nodes, 2);
+}
+
+void testP2LineNodeValues()
+{
+  apf::Vector3 nodes[3] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,0,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(2)->getEntityShape(apf::Mesh::EDGE);
+  testNodeValues(shp, nodes, 3);
+}
+
+void testP3LineNodeValues()
+{
+  apf::Vector3 nodes[4] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(-1./3.,0,0),
+    apf::Vector3(1./3.,0,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(3)->getEntityShape(apf::Mesh::EDGE);
+  testNodeValues(shp, nodes, 4);
+}
+
 void testPrismNodeValues()
 {
   apf::Vector3 nodes[6];
@@ -113,6 +146,9 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_null();
+  testP1LineNodeValues();
+  testP2LineNodeValues();
+  testP3LineNodeValues();
   testPrismNodeValues();
   testPyramidNodeValues();
   testQuadrilateralNodeValues();
