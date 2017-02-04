@@ -746,17 +746,100 @@ class LagrangeCubic : public FieldShape
           }
         }
     };
+    class Tetrahedron : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<double>& N) const
+        {
+          N.allocate(20);
+          double l0 = 1.0-xi[0]-xi[1]-xi[2];
+          double l1 = xi[0];
+          double l2 = xi[1];
+          double l3 = xi[2];
+          N[0] = 0.5*(3.*l0-1.)*(3.*l0-2.)*l0;
+          N[1] = 0.5*(3.*l1-1.)*(3.*l1-2.)*l1;
+          N[2] = 0.5*(3.*l2-1.)*(3.*l2-2.)*l2;
+          N[3] = 0.5*(3.*l3-1.)*(3.*l3-2.)*l3;
+          N[4] = 9./2.*l0*l1*(3.*l0-1.);
+          N[5] = 9./2.*l0*l1*(3.*l1-1.);
+          N[6] = 9./2.*l1*l2*(3.*l1-1.);
+          N[7] = 9./2.*l1*l2*(3.*l2-1.);
+          N[8] = 9./2.*l2*l0*(3.*l2-1.);
+          N[9] = 9./2.*l2*l0*(3.*l0-1.);
+          N[10] = 9./2.*l0*l3*(3.*l0-1.);
+          N[11] = 9./2.*l0*l3*(3.*l3-1.);
+          N[12] = 9./2.*l1*l3*(3.*l1-1.);
+          N[13] = 9./2.*l1*l3*(3.*l3-1.);
+          N[14] = 9./2.*l2*l3*(3.*l2-1.);
+          N[15] = 9./2.*l2*l3*(3.*l3-1.);
+          N[16] = 27.*l0*l1*l2;
+          N[17] = 27.*l0*l1*l3;
+          N[18] = 27.*l1*l2*l3;
+          N[19] = 27.*l0*l2*l3;
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& xi, NewArray<Vector3>& dN) const
+        {
+          dN.allocate(20);
+          double l0 = 1.0-xi[0]-xi[1]-xi[2];
+          double l1 = xi[0];
+          double l2 = xi[1];
+          double l3 = xi[2];
+          apf::Vector3 gl0(-1,-1,-1);
+          apf::Vector3 gl1(1,0,0);
+          apf::Vector3 gl2(0,1,0);
+          apf::Vector3 gl3(0,0,1);
+          dN[0] = gl0*(27./2.*l0*l0-9.*l0+1.);
+          dN[1] = gl1*(27./2.*l1*l1-9.*l1+1.);
+          dN[2] = gl2*(27./2.*l2*l2-9.*l2+1.);
+          dN[3] = gl3*(27./2.*l3*l3-9.*l3+1.);
+          dN[4] = (gl1*(3.*l0*l0-l0) + gl0*(6.*l0*l1-l1))*9./2.;
+          dN[5] = (gl0*(3.*l1*l1-l1) + gl1*(6.*l0*l1-l0))*9./2.;
+          dN[6] = (gl2*(3.*l1*l1-l1) + gl1*(6.*l1*l2-l2))*9./2.;
+          dN[7] = (gl1*(3.*l2*l2-l2) + gl2*(6.*l1*l2-l1))*9./2.;
+          dN[8] = (gl0*(3.*l2*l2-l2) + gl2*(6.*l2*l0-l0))*9./2.;
+          dN[9] = (gl2*(3.*l0*l0-l0) + gl0*(6.*l2*l0-l2))*9./2.;
+          dN[10] = (gl3*(3.*l0*l0-l0) + gl0*(6.*l0*l3-l3))*9./2.;
+          dN[11] = (gl0*(3.*l3*l3-l3) + gl3*(6.*l0*l3-l0))*9./2.;
+          dN[12] = (gl3*(3.*l1*l1-l1) + gl1*(6.*l1*l3-l3))*9./2.;
+          dN[13] = (gl1*(3.*l3*l3-l3) + gl3*(6.*l1*l3-l1))*9./2.;
+          dN[14] = (gl3*(3.*l2*l2-l2) + gl2*(6.*l2*l3-l3))*9./2.;
+          dN[15] = (gl2*(3.*l3*l3-l3) + gl3*(6.*l2*l3-l2))*9./2.;
+          dN[16] = (gl0*l1*l2 + gl1*l0*l2 + gl2*l0*l1)*27.;
+          dN[17] = (gl0*l1*l3 + gl1*l0*l3 + gl3*l0*l1)*27.;
+          dN[18] = (gl1*l2*l3 + gl2*l1*l3 + gl3*l1*l2)*27.;
+          dN[19] = (gl0*l2*l3 + gl2*l0*l3 + gl3*l0*l2)*27.;
+        }
+        int countNodes() const {return 20;}
+        void alignSharedNodes(Mesh* m, MeshEntity* elem,
+            MeshEntity* edge, int order[]) {
+          int which, rotate;
+          bool flip;
+          getAlignment(m, elem, edge, which, flip, rotate);
+          if (! flip) {
+            order[0] = 0;
+            order[1] = 1;
+          }
+          else {
+            order[0] = 1;
+            order[1] = 0;
+          }
+        }
+    };
+
     EntityShape* getEntityShape(int type)
     {
       static Vertex vertex;
       static Edge edge;
       static Triangle tri;
+      static Tetrahedron tet;
       static EntityShape* shapes[Mesh::TYPES] =
       {&vertex,   // vertex
        &edge,     // edge
        &tri,      // triangle
        NULL,      // quad
-       NULL,      // tet
+       &tet,      // tet
        NULL,      // hex
        NULL,      // prism
        NULL};     // pyramid
