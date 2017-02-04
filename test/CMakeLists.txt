@@ -153,6 +153,7 @@ test_exe_func(test_scaling test_scaling.cc)
 test_exe_func(mixedNumbering mixedNumbering.cc)
 test_exe_func(test_verify test_verify.cc)
 test_exe_func(hierarchic hierarchic.cc)
+test_exe_func(poisson poisson.cc)
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
