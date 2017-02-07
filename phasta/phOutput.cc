@@ -119,7 +119,7 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 static void alignInterfaceVertex(apf::Mesh* m,
-  apf::MeshEntity* boundary, apf::MeshEntity** ev) {
+  apf::MeshEntity* boundary, apf::MeshEntity** ev, int type) {
 // make sure the first n vertices are those on boundary
   apf::Downward bv;
   int flag = 0;
@@ -133,16 +133,15 @@ static void alignInterfaceVertex(apf::Mesh* m,
     assert(flag == 1);
 	flag = 0;
   }
-// make sure the normal is outward
+// make sure the normal direction is consistent with PHASTA
   apf::Vector3 p[4];
   for (int i = 0; i < 3; ++i)
     m->getPoint(ev[i], 0, p[i]);
   m->getPoint(ev[nbv], 0, p[3]);
-  if (((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0]))) > 0) {
-    apf::MeshEntity* tmp = ev[1];
-	ev[1] = ev[2];
-	ev[2] = tmp;
-  }
+  if (type == TETRAHEDRON) // outward
+    assert((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
+  else if (type == WEDGE) // inward
+    assert((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) > 0);
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
@@ -321,8 +320,8 @@ static void getInterface
     getBoundaryVertices(m, e1, matches[0].entity, v1);
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
-    alignInterfaceVertex(m, face,              v0);
-    alignInterfaceVertex(m, matches[0].entity, v1);
+    alignInterfaceVertex(m, face,              v0, k.elementType );
+    alignInterfaceVertex(m, matches[0].entity, v1, k.elementType1);
     for (int k = 0; k < nv0; ++k)
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)
