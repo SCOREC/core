@@ -115,72 +115,6 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
     }
 }
 
-pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape, int num_component)
-{
-  if (!shape) shape= m->getShape();
-  return createGlobalNumbering(m, name, shape, num_component);
-}
-
-void pumi_numbering_deleteGlobal(pGlobalNumbering gn)
-{
-  destroyGlobalNumbering(gn);
-}
-
-int pumi_mesh_getNumGlobalNumbering (pMesh m)
-{
-  return m->countGlobalNumberings();
-}
-
-void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings)
-{
-  for (int i=0; i<m->countGlobalNumberings(); ++i)
-    numberings.push_back(m->getGlobalNumbering(i));
-}
-
-void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
-    int node, int component, long number)
-{
-  apf::Node n(e,node);
-  apf::number(gn, n, component, number);
-}
-
-long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
-{
-  return apf::getNumber(gn, e, node, component);
-}
-
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim)
-{
-  return numberOwnedDimension(m, name, dim);
-}
-
-pNumbering pumi_numbering_create
-   (pMesh m, const char* name, pShape shape, int num_component)
-{
-  if (!shape) shape= m->getShape();
-  return createNumbering(m, name, shape, num_component);
-}
-
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape)
-{
-   if (!shape) shape= m->getShape();
-   return numberOwnedNodes(m, name, shape);
-}
-void pumi_numbering_delete(pNumbering n)
-{
-  destroyNumbering(n);
-}
-
-void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number)
-{
-  apf::number(n, e, node, component, number);
-}
-
-int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
-{
-  return apf::getNumber(n, e, node, component);
-}
-
 //*******************************************************
 void pumi_mesh_createGlobalID(pMesh m)
 //*******************************************************
@@ -295,7 +229,7 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
     if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  if (num_in_part==1) // do static partitioning
+  if (num_in_part==1 && pumi_size()>1) // do static partitioning
   {
     MPI_Comm prevComm = PCU_Get_Comm();
     int num_target_part = PCU_Comm_Peers()/num_in_part;
@@ -328,6 +262,11 @@ int pumi_mesh_getDim(pMesh m)
 
 int pumi_mesh_getNumEnt(pMesh m, int dim)
 { return m->count(dim); }
+
+pMeshEnt pumi_mesh_findEnt(pMesh m, int d, int id)
+{
+  return getMdsEntity(m, d, id);
+}
 
 #include <parma.h>
 
@@ -652,7 +591,7 @@ static void distr_updateResidences(pMesh m,
     {
       pMeshEnt entity = *it;
       Parts newResidence;
-      Up upward;
+      apf::Up upward;
       m->getUp(entity, upward);
       for (int ui=0; ui < upward.n; ++ui)
       {
