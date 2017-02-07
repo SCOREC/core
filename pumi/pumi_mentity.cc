@@ -12,6 +12,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <apfNumbering.h>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -24,7 +25,7 @@ int pumi_ment_getDim(pMeshEnt e)
   return apf::getDimension(pumi::instance()->mesh, e);
 }
 
-int pumi_ment_getType(pMeshEnt e)
+int pumi_ment_getTopo(pMeshEnt e) 
 {
   return pumi::instance()->mesh->getType(e);
 }
@@ -131,7 +132,7 @@ void pumi_ment_get2ndAdj (pMeshEnt e, int bridge_dim, int target_dim, std::vecto
     vecAdjEnt.push_back(adjacent[i]);
 }
 
-int pumi_ment_getLocalID(pMeshEnt e)
+int pumi_ment_getID(pMeshEnt e)
 {
   return getMdsIndex(pumi::instance()->mesh, e);
 }
@@ -242,19 +243,15 @@ int pumi_ment_getGlobalID(pMeshEnt e)
   
 }
 
-void pumi_ment_getResidence(pMeshEnt e, std::vector<int>& resPartId)
+void pumi_ment_getResidence(pMeshEnt e, Parts& residence)
 {
-  resPartId.clear();
-  Copies remotes;
-  pumi::instance()->mesh->getRemotes(e,remotes);
-  APF_ITERATE(Copies,remotes,rit)
-    resPartId.push_back(rit->first);
-  resPartId.push_back(pumi_rank());
+   pumi::instance()->mesh->getResidence(e,residence);
 }
 
-void pumi_ment_getClosureResidence(pMeshEnt e, std::vector<int>& resPartId)
+void pumi_ment_getClosureResidence(pMeshEnt e, Parts& residence)
 {
-  resPartId.clear();
+  pumi::instance()->mesh->getResidence(e,residence);
+
   apf::Downward vertices;
   int nvtx = pumi::instance()->mesh->getDownward(e,0,vertices);
   pMeshEnt vtx;
@@ -262,13 +259,10 @@ void pumi_ment_getClosureResidence(pMeshEnt e, std::vector<int>& resPartId)
   for (int i=0; i<nvtx; ++i)
   {
     vtx=vertices[i];
-    Copies remotes;
-    pumi::instance()->mesh->getRemotes(vtx,remotes);
-    APF_ITERATE(Copies,remotes,rit)
-      if (std::find(resPartId.begin(), resPartId.end(), rit->first)!=resPartId.end())
-        resPartId.push_back(rit->first);
+    Parts vtx_res;
+    pumi::instance()->mesh->getResidence(vtx,vtx_res);
+    apf::unite(residence, vtx_res);
   }
-  resPartId.push_back(pumi_rank());
 }
 
 // ghosting information
@@ -303,4 +297,24 @@ pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int pid)
   Copies ghosts;
   pumi::instance()->mesh->getGhosts(e,ghosts);
   return ghosts[pid];
+}
+
+void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number)
+{
+  apf::number(n, e, node, component, number);
+}
+
+int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
+{
+  return apf::getNumber(n, e, node, component);
+}
+
+bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n)
+{
+  return apf::isNumbered(n, e, 0, 0);
+}
+
+pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
+{
+  return apf::getEdgeVertOppositeVert(pumi::instance()->mesh, edge, vtx);
 }

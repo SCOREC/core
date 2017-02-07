@@ -10,9 +10,11 @@
 #include "pumi.h"
 #include "apf.h"
 #include "apfShape.h"
+#include "apfNumbering.h"
 #include <assert.h>
 #include <PCU.h>
 #include <cstdlib> // for malloc and free
+
 //************************************
 // Field shape and nodes
 //************************************
@@ -27,26 +29,51 @@ void pumi_mesh_setShape (pMesh m, pShape s, bool project)
   m->changeShape(s, project);
 }
 
-int pumi_shape_getNumNode (pShape s, int type)
+int pumi_shape_getNumNode (pShape s, int topo)
 {
-  return s->countNodesOn(type);
+  return s->countNodesOn(topo);
+}
+
+bool pumi_shape_hasNode (pShape s, int topo)
+{
+  if (s->countNodesOn(topo)>0) 
+    return true;
+  return false;
 }
 
 void pumi_node_getCoord(pMeshEnt e, int i, double* xyz)
 {
-  apf::Vector3 coord;
+  Vector3 coord;
   pumi::instance()->mesh->getPoint(e, i, coord);
   for (int i=0; i<3; ++i)
     xyz[i] = coord[i]; 
 }
 
+void pumi_node_getCoordVector(pMeshEnt e, int i, Vector3& xyz)
+{
+  pumi::instance()->mesh->getPoint(e, i, xyz);
+}
+
+
 void pumi_node_setCoord(pMeshEnt e,int i, double* xyz)
 {
-  apf::Vector3 coord;
+  Vector3 coord;
   for (int k=0; k<3; ++k)
     coord[k] = xyz[k];
   pumi::instance()->mesh->setPoint(e, i, coord);
 }
+
+void pumi_node_setCoordVector(pMeshEnt e, int i, Vector3 const& xyz)
+{
+  pumi::instance()->mesh->setPoint(e, i, xyz);
+}
+
+/** \brief 3D vector cross product */
+Vector3 pumi_vector3_cross(Vector3 const& a, Vector3 const& b)
+{
+  return apf::cross(a, b);
+}
+
 
 pShape pumi_shape_getLagrange (int order) { return apf::getLagrange(order); }
 pShape pumi_shape_getSerendipity () { return apf::getSerendipity(); }
@@ -55,6 +82,71 @@ pShape pumi_shape_getIP (int dimension, int order) { return apf::getIPShape(dime
 pShape pumi_shape_getVoronoi (int dimension, int order) { return apf::getVoronoiShape(dimension, order); }
 pShape pumi_shape_getIPFit(int dimension, int order) { return apf::getIPFitShape(dimension, order); }
 pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); }
+
+//************************************
+// Node numbering
+//************************************
+
+pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape, int num_component)
+{
+  if (!shape) shape= m->getShape();
+  return apf::createGlobalNumbering(m, name, shape, num_component);
+}
+
+void pumi_numbering_deleteGlobal(pGlobalNumbering gn)
+{
+  apf::destroyGlobalNumbering(gn);
+}
+
+int pumi_mesh_getNumGlobalNumbering (pMesh m)
+{
+  return m->countGlobalNumberings();
+}
+
+void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings)
+{
+  for (int i=0; i<m->countGlobalNumberings(); ++i)
+    numberings.push_back(m->getGlobalNumbering(i));
+}
+
+void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
+    int node, int component, long number)
+{
+  apf::Node n(e,node);
+  apf::number(gn, n, component, number);
+}
+
+long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
+{
+  return apf::getNumber(gn, e, node, component);
+}
+
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim)
+{
+  return numberOwnedDimension(m, name, dim);
+}
+
+pNumbering pumi_numbering_create
+   (pMesh m, const char* name, pShape shape, int num_component)
+{
+  if (!shape) shape= m->getShape();
+  return createNumbering(m, name, shape, num_component);
+}
+
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape)
+{
+   if (!shape) shape= m->getShape();
+   return numberOwnedNodes(m, name, shape);
+}
+void pumi_numbering_delete(pNumbering n)
+{
+  destroyNumbering(n);
+}
+
+int pumi_numbering_getNumNode(pNumbering n)
+{
+  return apf::countNodes(n);
+}
 
 //************************************
 //  Field Management

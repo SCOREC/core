@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     pMeshIter it = m->begin(dim);
     while ((e = m->iterate(it)))
     {
-      pid=pumi_ment_getLocalID(e)%PCU_Comm_Peers();
+      pid=pumi_ment_getID(e)%PCU_Comm_Peers();
       plan->send(e, pid);
       if (pid-1>=0) plan->send(e, pid-1);
       if (pid+1<PCU_Comm_Peers()) plan->send(e, pid+1);
@@ -227,6 +227,10 @@ void TEST_MESH(pMesh m)
     // loop over remote copies and increase the counter
     // check #remotes
     assert (pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
+    Parts parts;
+    pumi_ment_getResidence(e, parts);
+    assert(parts.size()==copies.size()+1);
+
     for (pCopyIter it = copies.begin();
            it != copies.end(); ++it)
       assert(it->first!=pumi_rank());
@@ -447,7 +451,7 @@ void TEST_MENT_SETGET_TAG (pMesh m, pMeshEnt ent)
   pMeshTag dblarr_tag = pumi_mesh_findTag(m, "double array");
 
   // pumi_ment_set/getIntTag 
-  int int_value=pumi_ment_getLocalID(ent), int_data;
+  int int_value=pumi_ment_getID(ent), int_data;
   pumi_ment_setIntTag(ent, int_tag, &int_value);
   pumi_ment_getIntTag (ent, int_tag, &int_data);
   assert(int_data == int_value);
