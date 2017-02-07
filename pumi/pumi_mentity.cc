@@ -24,6 +24,10 @@ int pumi_ment_getDim(pMeshEnt e)
   return apf::getDimension(pumi::instance()->mesh, e);
 }
 
+int pumi_ment_getTopo(pMeshEnt e) {
+  return pumi::instance()->mesh->getType(e);
+}
+
 int pumi_ment_getType(pMeshEnt e)
 {
   return pumi::instance()->mesh->getType(e);
