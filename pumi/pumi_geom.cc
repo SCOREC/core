@@ -35,10 +35,12 @@ gEntity* gModel::getGeomEnt(gmi_ent* ge)
 
 pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
 {
+  double t0 = PCU_Time();
   if (!strcmp(model_type,"null"))
   {
+    filename=".null";
     gmi_register_null();
-    pumi::instance()->model = new gModel(gmi_load(".null"));
+    pumi::instance()->model = new gModel(gmi_load(filename));
   }
   else if (!strcmp(model_type,"mesh"))
   {
@@ -61,6 +63,9 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
     return NULL;
   }
 
+  if (!PCU_Comm_Self() && filename)
+    printf("model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+
   return pumi::instance()->model;
 }
 
@@ -76,6 +81,19 @@ void pumi_geom_freeze(pGeom g)
       g->add(i, new gEntity(gent));
     gmi_end(g->getGmi(), giter);
   }
+}
+
+pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id)
+{
+  if (g->getGmi()->n[d]==0) 
+    return NULL;
+
+  for (pGeomIter gent_it = g->begin(d); gent_it!=g->end(d);++gent_it)
+  {
+    if (pumi_gent_getID(*gent_it)==id)
+      return *gent_it;
+  }
+  return NULL;
 }
 
 int pumi_geom_getNumEnt(pGeom g, int d)

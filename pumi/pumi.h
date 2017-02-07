@@ -64,20 +64,18 @@ typedef GenIterator<mPartEntityContainer::iter, gEntity>* gIter;
 
 typedef apf::Mesh2* pMesh;
 typedef apf::MeshEntity* pMeshEnt;
+typedef apf::EntityVector EntityVector;
 typedef apf::MeshIterator* pMeshIter;
 typedef apf::Copies Copies;
 typedef apf::Copies::iterator pCopyIter;
 typedef apf::MeshTag* pMeshTag;
 typedef apf::Parts Parts;
-typedef apf::EntityVector EntityVector;
-typedef apf::Parts Parts;
-typedef apf::Up Up;
-typedef apf::Downward Downward;
 typedef apf::Migration Migration;
 typedef apf::Field* pField;
 typedef apf::FieldShape* pShape;
 typedef apf::Numbering* pNumbering;
 typedef apf::GlobalNumbering* pGlobalNumbering;
+typedef apf::Vector3 Vector3; // 3d vector
 
 // singleton to save model/mesh
 class pumi
@@ -126,11 +124,12 @@ pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh",
                       void (*fp)(const char*)=NULL);
 void pumi_geom_freeze(pGeom g); // shall be called after modifying model entities
 int pumi_geom_getNumEnt(pGeom g, int d);
+pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
 // Geometric Entity
 // get geometric entity's dimension
 int pumi_gent_getDim(pGeomEnt ge);
-// get geometric entity's global id
+// get geometric entity's local id (note local==global for geometric model)
 int pumi_gent_getID(pGeomEnt ge);
 void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
 
@@ -202,6 +201,7 @@ int pumi_mesh_getDim(pMesh m);
 
 // get # mesh entities of type d on local process
 int pumi_mesh_getNumEnt(pMesh m, int d);
+pMeshEnt pumi_mesh_findEnt(pMesh m, int d, int id);
 
 //************************************
 // Tag management over mesh
@@ -293,7 +293,7 @@ class Ghosting
 
 /* 
 input:
-  - brgType - desired bridge entity type
+  - brgType - desired bridge entity dimension
   - ghostType - desired ghost entity type 
   - numLayer - the number of ghost layers
   - includeCopy - integer flag indicating whether to include non-owned bridge entity (1: yes, 0: no)
@@ -322,17 +322,6 @@ void pumi_ghost_delete (pMesh m);
 void pumi_mesh_createGlobalID(pMesh m);
 void pumi_mesh_deleteGlobalID(pMesh m);
 
-// create/delete global ID using numbering object and field shape
-pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape=NULL, int num_component=1);
-void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
-int pumi_mesh_getNumGlobalNumbering (pMesh m);
-void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings);
-
-pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL);
-void pumi_numbering_delete(pNumbering n);
-
 // verify mesh
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
 
@@ -346,7 +335,7 @@ void pumi_mesh_print(pMesh m, int p=0);
 int pumi_ment_getDim(pMeshEnt e);
 int pumi_ment_getTopo(pMeshEnt e);
 // get mesh entity's local id
-int pumi_ment_getLocalID(pMeshEnt e);
+int pumi_ment_getID(pMeshEnt e);
 
 // get mesh entity's global id - vertex only
 // global id is maintained if mesh is re-partitioned or ghosted
@@ -405,10 +394,10 @@ void pumi_ment_getAllRmt(pMeshEnt e, Copies& remotes);
 pMeshEnt pumi_ment_getRmt(pMeshEnt& meshEnt, int destPart); 
 
 // return part ids where the entity is duplicated - part boundary or ghost
-void pumi_ment_getResidence(pMeshEnt e, std::vector<int>& resPartId);
+void pumi_ment_getResidence(pMeshEnt e, Parts& residence);
 
 // return part ids where the entity and its downward adjacency are duplicated - part boundary or ghost
-void pumi_ment_getClosureResidence(pMeshEnt ent, std::vector<int>& resPartId);
+void pumi_ment_getClosureResidence(pMeshEnt ent, Parts& residence);
 
 // return true if the entity is a ghost copy
 bool pumi_ment_isGhost(pMeshEnt e);
@@ -433,31 +422,51 @@ void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int co
 long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component);
 void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number);
 int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component);
+bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n);
 
+pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx);
 //************************************
 // Field shape and nodes
 //************************************
 pShape pumi_mesh_getShape (pMesh m);
 void pumi_mesh_setShape (pMesh m, pShape s, bool project=true);
-int pumi_shape_getNumNode (pShape s, int type);
+int pumi_shape_getNumNode (pShape s, int topo);
+bool pumi_shape_hasNode (pShape s, int topo);
 
 void pumi_node_getCoord(pMeshEnt e, int i, double* xyz);
 void pumi_node_setCoord(pMeshEnt e, int i, double* xyz);
+void pumi_node_getCoordVector(pMeshEnt e, int i, Vector3& xyz);
+void pumi_node_setCoordVector(pMeshEnt e, int i, Vector3 const& xyz);
 
 pShape pumi_shape_getLagrange (int order);
 pShape pumi_shape_getSerendipity ();
-pShape pumi_shape_getConstant (int type);
+pShape pumi_shape_getConstant (int dimension);
 pShape pumi_shape_getIP (int dimension, int order);
 pShape pumi_shape_getVoronoi (int dimension, int order);
 pShape pumi_shape_getIPFit(int dimension, int order);
 pShape pumi_shape_getHierarchic (int order);
 
 //************************************
+//  Node numbering
+//************************************
+pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, 
+                 pShape shape=NULL, int num_component=1);
+void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
+int pumi_mesh_getNumGlobalNumbering (pMesh m);
+void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings);
+
+pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL);
+void pumi_numbering_delete(pNumbering n);
+int pumi_numbering_getNumNode(pNumbering n);
+
+//************************************
 //  Field Management
 //************************************
 
 pField pumi_field_create(pMesh m, const char* name,
-    int num_dof_per_node, int type=PUMI_PACKED, pShape shape = NULL);
+    int num_dof_per_node, int field_type=PUMI_PACKED, pShape shape = NULL);
 int pumi_field_getSize(pField f);
 int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
@@ -474,4 +483,7 @@ void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field
 void pumi_field_verify(pMesh m, pField f=NULL);
 void pumi_field_print(pField f);
+
+/** double[3] cross product */
+Vector3 pumi_vector3_cross(Vector3 const& a, Vector3 const& b);
 #endif
