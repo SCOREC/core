@@ -54,7 +54,6 @@ namespace {
     //by one each step.  Thus in maxDistanceIncrease steps the distance can at
     //most increase by maxDistanceIncrease for a given component.
     const unsigned csStart = m->getTagChecksum(dt,apf::Mesh::VERTEX);
-    fprintf(stderr, "offset dt checksum %10u\n", csStart);
     const int maxDistanceIncrease = 1000;
     if (!c.size())
       return;
