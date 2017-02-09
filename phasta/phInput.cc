@@ -63,6 +63,7 @@ static void setDefaults(Input& in)
   in.writePhastaFiles = 0;
   in.simmetrixMesh = 0;
   in.maxAdaptIterations = 3;
+  in.adaptShrinkLimit = 10000;
 }
 
 Input::Input()
@@ -124,6 +125,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["meshqCrtn"] = &in.meshqCrtn;
   dblMap["elementImbalance"] = &in.elementImbalance;
   dblMap["vertexImbalance"] = &in.vertexImbalance;
+  dblMap["adaptShrinkLimit"] = &in.adaptShrinkLimit;
   intMap["formEdges"] = &in.formEdges;
   intMap["writePhastaFiles"] = &in.writePhastaFiles;
   intMap["simmetrixMesh"] = &in.simmetrixMesh;
