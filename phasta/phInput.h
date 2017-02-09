@@ -69,6 +69,7 @@ class Input
     RStream* rs;
     int simmetrixMesh;
     int maxAdaptIterations;
+    double adaptShrinkLimit;
 };
 
 int countNaturalBCs(Input& in);

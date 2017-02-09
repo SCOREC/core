@@ -146,7 +146,7 @@ namespace chef {
     ph::AdaptCallback acb;
     acb.mesh = m;
     acb.in = ma_in;
-    adaptShrunken(m,200000,acb);
+    adaptShrunken(m,10000,acb);
   }
 
   void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& in) {
@@ -162,7 +162,7 @@ namespace chef {
     ph::AdaptCallback acb;
     acb.mesh = m;
     acb.in = ma_in;
-    adaptShrunken(m,200000,acb);
+    adaptShrunken(m,in.adaptShrinkLimit,acb);
   }
 
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)
