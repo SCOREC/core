@@ -67,6 +67,13 @@ string(REGEX MATCH
   SIM_VERSION
   "${SIMMODSUITE_INCLUDE_DIR}")
 
+set(VALID_SIM_VERSION 11.0-170119)
+if (NOT "${SIM_VERSION}" MATCHES "${VALID_SIM_VERSION}")
+  MESSAGE(FATAL_ERROR 
+    "invalid Simmetrix version: ${SIM_VERSION}, \
+     valid version is: ${VALID_SIM_VERSION}")
+endif()
+
 set(SIMMODSUITE_LIBS "")
 
 set(SIM_BOOTSTRAP_LIB_NAME
