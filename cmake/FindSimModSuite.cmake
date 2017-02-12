@@ -67,11 +67,19 @@ string(REGEX MATCH
   SIM_VERSION
   "${SIMMODSUITE_INCLUDE_DIR}")
 
-set(VALID_SIM_VERSION 11.0-170119)
-if (NOT "${SIM_VERSION}" MATCHES "${VALID_SIM_VERSION}")
+#VERSION_LESS and VERSION_GREATER need '.' delimited version strings.
+string(REGEX REPLACE
+  "([0-9]+.[0-9]+)-([0-9]+)"
+  "\\1.\\2" SIM_DOT_VERSION
+  "${SIM_VERSION}")
+
+set(MIN_VALID_SIM_VERSION 11.0.170119)
+set(MAX_VALID_SIM_VERSION 11.0.170131)
+if( (SIM_DOT_VERSION VERSION_LESS MIN_VALID_SIM_VERSION) OR
+    (SIM_DOT_VERSION VERSION_GREATER MAX_VALID_SIM_VERSION) )
   MESSAGE(FATAL_ERROR 
-    "invalid Simmetrix version: ${SIM_VERSION}, \
-     valid version is: ${VALID_SIM_VERSION}")
+    "invalid Simmetrix version: ${SIM_DOT_VERSION}, \
+    valid versions are ${MIN_VALID_SIM_VERSION} to ${MAX_VALID_SIM_VERSION}")
 endif()
 
 set(SIMMODSUITE_LIBS "")
