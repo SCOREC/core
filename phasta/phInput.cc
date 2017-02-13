@@ -18,6 +18,7 @@ static void setDefaults(Input& in)
   in.rRead = 0;
   in.rStart = 0;
   in.preAdaptBalanceMethod = "parma";
+  in.midAdaptBalanceMethod = "zoltan";
   in.prePhastaBalanceMethod = "parma-gap";
   in.adaptStrategy = -1;
   in.adaptErrorThreshold = 1e-6;  //used by adaptStrategy=2 (runFromErrorThreshold)
@@ -88,6 +89,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   stringMap["outputFormat"] = &in.outputFormat;
   stringMap["partitionMethod"] = &in.partitionMethod;
   stringMap["preAdaptBalanceMethod"] = &in.preAdaptBalanceMethod;
+  stringMap["midAdaptBalanceMethod"] = &in.midAdaptBalanceMethod;
   stringMap["prePhastaBalanceMethod"] = &in.prePhastaBalanceMethod;
   intMap["adaptFlag"] = &in.adaptFlag;
   intMap["rRead"] = &in.rRead;

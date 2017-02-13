@@ -29,6 +29,22 @@ void setupPreBalance(Input& in, ma::Input* ma_in) {
   }
 }
 
+void setupMidBalance(Input& in, ma::Input* ma_in) {
+  if ( in.midAdaptBalanceMethod == "parma" ) {
+    ma_in->shouldRunMidParma = true;
+  } else if( in.midAdaptBalanceMethod == "graph" ) {
+    ma_in->shouldRunMidZoltan = true;
+  } else if ( in.midAdaptBalanceMethod == "none" ) {
+    ma_in->shouldRunMidZoltan = false;
+    ma_in->shouldRunMidParma = false;
+  } else {
+    if (!PCU_Comm_Self())
+      fprintf(stderr,
+          "warning: ignoring unknown value of midAdaptBalanceMethod %s\n",
+          in.midAdaptBalanceMethod.c_str());
+  }
+}
+
 void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
     printf("Matched mesh: disabling"
@@ -98,10 +114,14 @@ namespace chef {
 
   void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& in) {
     ma::Input* ma_in = ma::configure(m, szFld);
+    //chef defaults
     ma_in->shouldRunPreZoltan = true;
-    ma_in->shouldTransferParametric = in.transferParametric;
     ma_in->shouldRunMidParma = true;
     ma_in->shouldRunPostParma = true;
+    //override with user inputs if specified
+    setupPreBalance(in, ma_in);
+    setupMidBalance(in, ma_in);
+    ma_in->shouldTransferParametric = in.transferParametric;
     ma_in->shouldSnap = in.snap;
     ma_in->maximumIterations = in.maxAdaptIterations;
     /*

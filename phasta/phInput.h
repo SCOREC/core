@@ -23,6 +23,7 @@ class Input
     std::string outputFormat;
     std::string partitionMethod;
     std::string preAdaptBalanceMethod;
+    std::string midAdaptBalanceMethod;
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
