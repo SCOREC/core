@@ -23,11 +23,13 @@ class Input
     std::string outputFormat;
     std::string partitionMethod;
     std::string preAdaptBalanceMethod;
+    std::string midAdaptBalanceMethod;
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
     int rStart;
     int adaptStrategy;
+    double validQuality;
     double adaptErrorThreshold;
     std::string adaptErrorFieldName;
     int adaptErrorFieldIndex;

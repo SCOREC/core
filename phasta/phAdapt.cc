@@ -79,6 +79,22 @@ void setupPreBalance(Input& in, ma::Input* ma_in) {
   }
 }
 
+void setupMidBalance(Input& in, ma::Input* ma_in) {
+  if ( in.midAdaptBalanceMethod == "parma" ) {
+    ma_in->shouldRunMidParma = true;
+  } else if( in.midAdaptBalanceMethod == "graph" ) {
+    ma_in->shouldRunMidZoltan = true;
+  } else if ( in.midAdaptBalanceMethod == "none" ) {
+    ma_in->shouldRunMidZoltan = false;
+    ma_in->shouldRunMidParma = false;
+  } else {
+    if (!PCU_Comm_Self())
+      fprintf(stderr,
+          "warning: ignoring unknown value of midAdaptBalanceMethod %s\n",
+          in.midAdaptBalanceMethod.c_str());
+  }
+}
+
 void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
     printf("Matched mesh: disabling"
@@ -99,12 +115,12 @@ static void runFromErrorThreshold(Input& in, apf::Mesh2* m)
   apf::destroyField(szFld);
 }
 
-static void runFromGivenSize(Input&, apf::Mesh2* m)
+static void runFromGivenSize(Input& in, apf::Mesh2* m)
 {
   const unsigned idx = 5;
   apf::Field* szFld = sam::specifiedIso(m,"errors",idx);
   assert(szFld);
-  chef::adapt(m, szFld);
+  chef::adapt(m, szFld,in);
   apf::destroyField(szFld);
 }
 
@@ -151,12 +167,24 @@ namespace chef {
 
   void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& in) {
     ma::Input* ma_in = ma::configure(m, szFld);
+    //chef defaults
     ma_in->shouldRunPreZoltan = true;
+    ma_in->shouldRunMidParma = true;
+    ma_in->shouldRunPostParma = true;
+    //override with user inputs if specified
+    setupPreBalance(in, ma_in);
+    setupMidBalance(in, ma_in);
     ma_in->shouldTransferParametric = in.transferParametric;
-    ma_in->shouldRunMidParma = true; 
-    ma_in->shouldRunPostParma = true; 
     ma_in->shouldSnap = in.snap;
     ma_in->maximumIterations = in.maxAdaptIterations;
+    /*
+      validQuality sets which elements will be accepted during mesh
+      modification. If no boundary layers, you might bring this high (e.g,
+      O(1e-2).  This would be bad for boundary layers though since their
+      high aspect ratio routinely produces quality measures in the e-6 to e-7
+      range so, when there are layers, this needs to be O(1e-8).
+    */
+    ma_in->validQuality = in.validQuality;
     if (m->hasMatching())
       ph::setupMatching(*ma_in);
     ph::AdaptCallback acb;
