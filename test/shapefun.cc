@@ -6,20 +6,152 @@
 #include <PCU.h>
 #include <cassert>
 
+#include <iostream>
+
 void testNodeValues(apf::EntityShape* shp, apf::Vector3 const* nodes, int nnodes)
 {
   assert( shp->countNodes() == nnodes );
+  double tol = 1.0e-15;
   for (int i = 0; i < nnodes; ++i) {
     apf::NewArray<double> values;
     shp->getValues(0, 0, nodes[i], values);
     for (int j = 0; j < nnodes; ++j) {
       if (j == i)
-        assert(values[j] == 1);
+        assert(fabs(values[j] - 1) < tol);
       else
-        assert(values[j] == 0);
+        assert(fabs(values[j] - 0) < tol);
     }
   }
 }
+
+void testP1LineNodeValues()
+{
+  apf::Vector3 nodes[2] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(1)->getEntityShape(apf::Mesh::EDGE);
+  testNodeValues(shp, nodes, 2);
+}
+
+void testP2LineNodeValues()
+{
+  apf::Vector3 nodes[3] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,0,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(2)->getEntityShape(apf::Mesh::EDGE);
+  testNodeValues(shp, nodes, 3);
+}
+
+void testP3LineNodeValues()
+{
+  apf::Vector3 nodes[4] = {
+    apf::Vector3(-1,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(-1./3.,0,0),
+    apf::Vector3(1./3.,0,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(3)->getEntityShape(apf::Mesh::EDGE);
+  testNodeValues(shp, nodes, 4);
+}
+
+void testP1TriNodeValues() {
+  apf::Vector3 nodes[3] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(1)->getEntityShape(apf::Mesh::TRIANGLE);
+  testNodeValues(shp, nodes, 3);
+}
+
+void testP2TriNodeValues() {
+  apf::Vector3 nodes[6] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(.5,0,0),
+    apf::Vector3(.5,.5,0),
+    apf::Vector3(0,.5,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(2)->getEntityShape(apf::Mesh::TRIANGLE);
+  testNodeValues(shp, nodes, 6);
+}
+
+void testP3TriNodeValues() {
+  apf::Vector3 nodes[10] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(1./3.,0,0),
+    apf::Vector3(2./3.,0,0),
+    apf::Vector3(2./3.,1./3.,0),
+    apf::Vector3(1./3.,2./3.,0),
+    apf::Vector3(0,2./3.,0),
+    apf::Vector3(0,1./3.,0),
+    apf::Vector3(1./3.,1./3.,0) };
+  apf::EntityShape* shp =
+    apf::getLagrange(3)->getEntityShape(apf::Mesh::TRIANGLE);
+  testNodeValues(shp, nodes, 10);
+}
+
+void testP1TetNodeValues() {
+  apf::Vector3 nodes[4] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1) };
+    apf::EntityShape* shp =
+      apf::getLagrange(1)->getEntityShape(apf::Mesh::TET);
+    testNodeValues(shp, nodes, 4);
+}
+
+void testP2TetNodeValues() {
+  apf::Vector3 nodes[10] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1),
+    apf::Vector3(0.5,0,0),
+    apf::Vector3(0.5,0.5,0),
+    apf::Vector3(0,0.5,0),
+    apf::Vector3(0,0,0.5),
+    apf::Vector3(0.5,0,0.5),
+    apf::Vector3(0,0.5,0.5) };
+    apf::EntityShape* shp =
+      apf::getLagrange(2)->getEntityShape(apf::Mesh::TET);
+    testNodeValues(shp, nodes, 10);
+}
+
+void testP3TetNodeValues() {
+  apf::Vector3 nodes[20] = {
+    apf::Vector3(0,0,0),
+    apf::Vector3(1,0,0),
+    apf::Vector3(0,1,0),
+    apf::Vector3(0,0,1),
+    apf::Vector3(1./3.,0,0),
+    apf::Vector3(2./3.,0,0),
+    apf::Vector3(2./3.,1./3.,0),
+    apf::Vector3(1./3.,2./3.,0),
+    apf::Vector3(0,2./3.,0),
+    apf::Vector3(0,1./3.,0),
+    apf::Vector3(0,0,1./3.),
+    apf::Vector3(0,0,2./3.),
+    apf::Vector3(2./3.,0,1./3.),
+    apf::Vector3(1./3.,0,2./3.),
+    apf::Vector3(0,2./3.,1./3.),
+    apf::Vector3(0,1./3.,2./3.),
+    apf::Vector3(1./3.,1./3.,0),
+    apf::Vector3(1./3.,0,1./3.),
+    apf::Vector3(1./3,1./3.,1./3.),
+    apf::Vector3(0,1./3.,1./3.) };
+  apf::EntityShape* shp =
+    apf::getLagrange(3)->getEntityShape(apf::Mesh::TET);
+  testNodeValues(shp, nodes, 20);
+}
+
 
 void testPrismNodeValues()
 {
@@ -113,6 +245,15 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_null();
+  testP1LineNodeValues();
+  testP2LineNodeValues();
+  testP3LineNodeValues();
+  testP1TriNodeValues();
+  testP2TriNodeValues();
+  testP3TriNodeValues();
+  testP1TetNodeValues();
+  testP2TetNodeValues();
+  testP3TetNodeValues();
   testPrismNodeValues();
   testPyramidNodeValues();
   testQuadrilateralNodeValues();

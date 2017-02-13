@@ -123,14 +123,14 @@ int main(int argc, char **argv)
 
   // Read a serial/partitioned mesh. It's advisable to read it on a GeomSim
   // model (ie. pass valid pGModel instead of 0 below).
-  pParMesh pmesh = PM_load(meshFilename, sthreadNone, model, progress);
-  pPartitionOpts pOpts = PM_newPartitionOpts();
+  pParMesh pmesh = PM_load(meshFilename, model, progress);
+  pPartitionOpts pOpts = PartitionOpts_new();
 
   PartitionOpts_setTotalNumParts(pOpts, desiredTotNumParts);
-  PM_partition(pmesh, pOpts, sthreadNone, progress);   // Do a default partitioning
+  PM_partition(pmesh, pOpts, progress);   // Do a default partitioning
   PartitionOpts_delete(pOpts);
 
-  PM_write(pmesh, outmeshFilename, sthreadNone, progress); // Write it out to a directory
+  PM_write(pmesh, outmeshFilename, progress); // Write it out to a directory
   M_release(pmesh);                                    // Delete the partitioned mesh
   GM_release(model);
 #ifdef SIM_PARASOLID

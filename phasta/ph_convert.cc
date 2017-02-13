@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 
   gmi_model* mdl = gmi_load(argv[1]);
   pGModel simModel = gmi_export_sim(mdl);
-  pParMesh sim_mesh = PM_load(argv[2], sthreadNone, simModel, progress);
+  pParMesh sim_mesh = PM_load(argv[2], simModel, progress);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   ph::buildMapping(simApfMesh);
   

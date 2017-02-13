@@ -299,7 +299,7 @@ void to_omega_h(osh::Mesh* om, apf::Mesh* am) {
   auto comm_mpi = PCU_Get_Comm();
   decltype(comm_mpi) comm_impl;
   MPI_Comm_dup(comm_mpi, &comm_impl);
-  auto comm_osh = osh::CommPtr(new osh::Comm(comm_impl));
+  auto comm_osh = osh::CommPtr(new osh::Comm(om->library(), comm_impl));
   om->set_comm(comm_osh);
   om->set_parting(OMEGA_H_ELEM_BASED);
   auto dim = am->getDimension();
