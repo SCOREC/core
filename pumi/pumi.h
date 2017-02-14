@@ -46,7 +46,7 @@ public:
   gModel(gmi_model* model);
   ~gModel();
   gmi_model* getGmi() {return g; }
-  gEntity* getGeomEnt(gmi_ent* ge);
+  gEntity* getGeomEnt(int d, gmi_ent* ge);
   void add (int d, gEntity *ge) {allEntities.add(d, ge);}
   void del(int d, gEntity *ge) {allEntities.del(d, ge); } 
   typedef mPartEntityContainer::iter iterall;
@@ -59,7 +59,6 @@ typedef gModel* pGeom;
 typedef gEntity* pGeomEnt;
 
 typedef gModel::iterall pGeomIter;
-
 typedef GenIterator<mPartEntityContainer::iter, gEntity>* gIter;
 
 typedef apf::Mesh2* pMesh;
@@ -132,6 +131,8 @@ int pumi_gent_getDim(pGeomEnt ge);
 // get geometric entity's local id (note local==global for geometric model)
 int pumi_gent_getID(pGeomEnt ge);
 void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
+int pumi_gent_getNumAdj (pGeomEnt g, int target_dim);
+void pumi_gent_getAdj (pGeomEnt g, int target_dim, std::vector<pGeomEnt>& ents);
 
 // Tag management
 pTag pumi_geom_createTag (pGeom g, const char* tagName, int tagType, int tagSize);
@@ -354,6 +355,9 @@ void pumi_ment_get2ndAdj (pMeshEnt e, int brgType, int tgtType, std::vector<pMes
 // return entity's geometric classification
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);
 
+// for mesh edge and vertex, return the other vertex
+pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx);
+
 // tag management over mesh entity
 void pumi_ment_deleteTag (pMeshEnt e, pMeshTag tag);
 bool pumi_ment_hasTag (pMeshEnt e, pMeshTag tag);
@@ -424,7 +428,6 @@ void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int 
 int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component);
 bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n);
 
-pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx);
 //************************************
 // Field shape and nodes
 //************************************
@@ -437,6 +440,8 @@ void pumi_node_getCoord(pMeshEnt e, int i, double* xyz);
 void pumi_node_setCoord(pMeshEnt e, int i, double* xyz);
 void pumi_node_getCoordVector(pMeshEnt e, int i, Vector3& xyz);
 void pumi_node_setCoordVector(pMeshEnt e, int i, Vector3 const& xyz);
+/** double[3] cross product */
+Vector3 pumi_vector3_cross(Vector3 const& a, Vector3 const& b);
 
 pShape pumi_shape_getLagrange (int order);
 pShape pumi_shape_getSerendipity ();
@@ -483,7 +488,4 @@ void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field
 void pumi_field_verify(pMesh m, pField f=NULL);
 void pumi_field_print(pField f);
-
-/** double[3] cross product */
-Vector3 pumi_vector3_cross(Vector3 const& a, Vector3 const& b);
 #endif
