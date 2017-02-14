@@ -28,9 +28,9 @@ gModel::~gModel()
   delete g;
 }
 
-gEntity* gModel::getGeomEnt(gmi_ent* ge)
+gEntity* gModel::getGeomEnt(int d, gmi_ent* ge)
 {
-  return allEntities.getGeomEnt(gmi_dim(g, ge), ge);
+  return allEntities.getGeomEnt(d, ge);
 }
 
 pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
@@ -87,13 +87,11 @@ pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id)
 {
   if (g->getGmi()->n[d]==0) 
     return NULL;
-
-  for (pGeomIter gent_it = g->begin(d); gent_it!=g->end(d);++gent_it)
-  {
-    if (pumi_gent_getID(*gent_it)==id)
-      return *gent_it;
-  }
-  return NULL;
+  gmi_ent* ge = gmi_find(g->getGmi(), d, id);
+  if (ge) 
+    return g->getGeomEnt(d, ge);
+  else
+    return NULL;
 }
 
 int pumi_geom_getNumEnt(pGeom g, int d)

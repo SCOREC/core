@@ -89,8 +89,31 @@ int main(int argc, char** argv)
   // load model
   pGeom g = pumi_geom_load(modelFile);
 
-  if (!pumi_rank()) std::cout<<"[test_pumi] testing geometric model tagging api's\n\n";
-  TEST_GEOM_TAG(g);
+  if (!pumi_rank()) std::cout<<"[test_pumi] testing geometric model/entity api's\n\n";
+  {
+    // test geom_find and gent_adj
+    for (pGeomIter gent_it = g->begin(2); gent_it!=g->end(2);++gent_it)
+    {
+      int id = pumi_gent_getID(*gent_it);
+      pGeomEnt ge = pumi_geom_findEnt(g, 2, id);
+      assert (ge == *gent_it);
+      std::vector<pGeomEnt> adj_edges;
+      pumi_gent_getAdj(ge, 1, adj_edges);
+      std::vector<pGeomEnt> adj_vertices;
+      pumi_gent_getAdj(ge, 0, adj_vertices);
+
+      for (size_t nv=0; nv<adj_vertices.size(); ++nv)
+      {
+        pGeomEnt gv=adj_vertices.at(nv);
+        std::vector<pGeomEnt> adj_faces;
+        pumi_gent_getAdj(gv, 2, adj_faces);
+        assert(std::find(adj_faces.begin(), adj_faces.end(), ge)!=adj_faces.end());
+      }
+
+    }
+
+    TEST_GEOM_TAG(g);
+  }
  
   // load mesh per process group
   assert(pumi_size()%num_in_part==0);
@@ -152,6 +175,9 @@ int main(int argc, char** argv)
   std::vector<pMeshTag> tag_vec;
   for (size_t n = 0; n<tag_vec.size(); ++n)
     pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
+
+  int num_mesh_rg=pumi_mesh_getNumEnt(m,3);
+  assert(pumi_mesh_findEnt(m, 3, num_mesh_rg+1)==NULL);
 
   // create global ID
   pumi_mesh_createGlobalID(m);
@@ -239,7 +265,7 @@ void TEST_MESH(pMesh m)
   }
   m->end(mit);
 
-  if (!pumi_rank()) std::cout<<"\n[test_pumi] checking various mesh apis\n";
+  if (!pumi_rank()) std::cout<<"\n[test_pumi] testing  mesh/entity apis\n";
 }
 
 #include <string.h>
@@ -721,6 +747,7 @@ void TEST_GHOSTING(pMesh m)
   pMeshIter mit = m->begin(0);
   while ((e = m->iterate(mit)))
   {
+    // FIXME: test pumi_ment_isOn and pumi_ment_getResidence with ghost copies
     if (pumi_ment_isGhost(e))
     {
       ++num_ghost_vtx;

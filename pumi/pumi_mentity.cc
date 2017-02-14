@@ -140,7 +140,13 @@ int pumi_ment_getID(pMeshEnt e)
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e)
 {
   gmi_ent* clas=(gmi_ent*)pumi::instance()->mesh->toModel(e);
-  return pumi::instance()->model->getGeomEnt(clas);
+  int dim = gmi_dim(pumi::instance()->model->getGmi(), clas);
+  return pumi::instance()->model->getGeomEnt(dim, clas);
+}
+
+pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
+{
+  return apf::getEdgeVertOppositeVert(pumi::instance()->mesh, edge, vtx);
 }
 
 // owner part information
@@ -171,12 +177,17 @@ bool pumi_ment_isOwned(pMeshEnt e)
 
 bool pumi_ment_isOn(pMeshEnt e, int partID)
 {
+  // FIXME: include ghost copy
   if (partID==pumi_rank()) return true;
   apf::Copies remotes;
   pumi::instance()->mesh->getRemotes(e,remotes);
   APF_ITERATE(Copies,remotes,rit)
     if (rit->first==partID) return true;
-  return false;
+  apf::Copies ghosts;
+  pumi::instance()->mesh->getGhosts(e,ghosts);
+  APF_ITERATE(Copies,ghosts,rit)
+    if (rit->first==partID) return true;
+ return false;
 }
 
 // remote copy information
@@ -245,7 +256,14 @@ int pumi_ment_getGlobalID(pMeshEnt e)
 
 void pumi_ment_getResidence(pMeshEnt e, Parts& residence)
 {
-   pumi::instance()->mesh->getResidence(e,residence);
+  // apf::getResidence takes part IDs from partiton classification
+  // note ghosting part ID's are not stored apf::getResidence
+  pumi::instance()->mesh->getResidence(e,residence);
+  // now add ghost part id's 
+  apf::Copies ghosts;
+  pumi::instance()->mesh->getGhosts(e,ghosts);
+  APF_ITERATE(Copies,ghosts,rit)
+   residence.insert(rit->first);
 }
 
 void pumi_ment_getClosureResidence(pMeshEnt e, Parts& residence)
@@ -312,9 +330,4 @@ int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
 bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n)
 {
   return apf::isNumbered(n, e, 0, 0);
-}
-
-pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
-{
-  return apf::getEdgeVertOppositeVert(pumi::instance()->mesh, edge, vtx);
 }
