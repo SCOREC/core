@@ -15,6 +15,7 @@
 #include <phPartition.h>
 #include <phFilterMatching.h>
 #include "phInterfaceCutter.h"
+#include "phIO.h" //for chefio_initStats and chefio_printStats
 #include <parma.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -180,6 +181,7 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
+    chefio_initStats();
     if(PCU_Comm_Peers() > 1)
       ph::migrateInterfaceItr(m, bcs);
     if (in.simmetrixMesh == 0)
@@ -213,6 +215,7 @@ namespace ph {
 #endif
     if (in.adaptFlag)
       ph::goToParentDir();
+    chefio_printStats();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     gmi_model* g = m->getModel();
