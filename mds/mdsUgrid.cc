@@ -85,7 +85,7 @@ namespace {
   }
 
   void readHeader(Reader* r, header* h) {
-    const unsigned biggest = 100*1000*1000;
+    const unsigned biggest = 2*1000*1000*1000;
     unsigned headerVals[7];
     readUnsigneds(r->file, headerVals, 7, r->swapBytes);
     for(unsigned i=0; i<7; i++) {
