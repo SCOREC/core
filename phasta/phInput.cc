@@ -61,7 +61,6 @@ static void setDefaults(Input& in)
   in.vertexImbalance = 1.05;
   in.rs = 0;
   in.formEdges = 0;
-  in.writePhastaFiles = 0;
   in.simmetrixMesh = 0;
   in.maxAdaptIterations = 3;
   in.adaptShrinkLimit = 10000;
@@ -131,7 +130,6 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["vertexImbalance"] = &in.vertexImbalance;
   dblMap["adaptShrinkLimit"] = &in.adaptShrinkLimit;
   intMap["formEdges"] = &in.formEdges;
-  intMap["writePhastaFiles"] = &in.writePhastaFiles;
   intMap["simmetrixMesh"] = &in.simmetrixMesh;
   intMap["maxAdaptIterations"] = &in.maxAdaptIterations;
 }
@@ -157,6 +155,7 @@ static void makeDeprecated(stringset& old)
   old.insert("ParmaPtn");
   old.insert("RecursivePtn");
   old.insert("RecursivePtnStep");
+  old.insert("writePhastaFiles");
 }
 
 static bool deprecated(stringset& old, std::string const& name)
