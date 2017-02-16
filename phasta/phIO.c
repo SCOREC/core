@@ -11,6 +11,88 @@
 #define MAGIC 362436
 #define FIELD_PARAMS 3
 
+struct chefio_stats {
+  double readTime;
+  double writeTime;
+  size_t readBytes;
+  size_t writeBytes;
+  size_t reads;
+  size_t writes;
+};
+struct chefio_stats chefio_global_stats;
+
+void printMinMaxAvgSzt(const char* key, size_t v) {
+  int val = (int)v;
+  int min = PCU_Min_Int(val);
+  int max = PCU_Max_Int(val);
+  long tot = PCU_Add_Long((long)val);
+  double avg = tot/(double)PCU_Comm_Peers();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "chefio_%s min max avg %d %d %f\n",
+        key, min, max, avg);
+}
+
+void printMinMaxAvgDbl(const char* key, double v) {
+  double min = PCU_Min_Double(v);
+  double max = PCU_Max_Double(v);
+  double tot = PCU_Add_Double(v);
+  double avg = tot/PCU_Comm_Peers();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "chefio_%s min max avg %f %f %f\n",
+        key, min, max, avg);
+}
+
+double chefio_getReadTime() {
+  return chefio_global_stats.readTime;
+}
+
+double chefio_getWriteTime() {
+  return chefio_global_stats.writeTime;
+}
+
+size_t chefio_getReadBytes() {
+  return chefio_global_stats.readBytes;
+}
+
+size_t chefio_getWriteBytes() {
+  return chefio_global_stats.writeBytes;
+}
+
+size_t chefio_getReads() {
+  return chefio_global_stats.reads;
+}
+
+size_t chefio_getWrites() {
+  return chefio_global_stats.writes;
+}
+
+void chefio_printStats() {
+  const int mebi=1024*1024;
+  int reads = PCU_Max_Int((int)chefio_getReads());
+  if(reads) {
+    printMinMaxAvgDbl("readTime (s)",chefio_getReadTime());
+    printMinMaxAvgSzt("readBytes (B)", chefio_getReadBytes());
+    printMinMaxAvgDbl("readBandwidth (MiB/s)",
+        (chefio_getReadBytes()/chefio_getReadTime())/mebi);
+  }
+  int writes = PCU_Max_Int((int)chefio_getWrites());
+  if(writes) {
+    printMinMaxAvgDbl("writeTime (s)", chefio_getWriteTime());
+    printMinMaxAvgSzt("writeBytes (B)", chefio_getWriteBytes());
+    printMinMaxAvgDbl("writeBandwidth (MiB/s)",
+        (chefio_getWriteBytes()/chefio_getWriteTime())/mebi);
+  }
+}
+
+void chefio_initStats() {
+  chefio_global_stats.readTime = 0;
+  chefio_global_stats.writeTime = 0;
+  chefio_global_stats.readBytes = 0;
+  chefio_global_stats.writeBytes = 0;
+  chefio_global_stats.reads = 0;
+  chefio_global_stats.writes = 0;
+}
+
 enum {
 NODES_PARAM,
 VARS_PARAM,
@@ -109,8 +191,12 @@ static int seek_after_header(FILE* f, const char* name)
 
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 {
+  double t0 = PCU_Time();
   size_t r = fread(p, size, nmemb, f);
   assert(r == nmemb);
+  chefio_global_stats.readTime += PCU_Time()-t0;
+  chefio_global_stats.readBytes += nmemb*size;
+  chefio_global_stats.reads++;
 }
 
 static int read_magic_number(FILE* f)
@@ -138,16 +224,24 @@ void ph_write_doubles(FILE* f, const char* name, double* data,
     size_t n, int nparam, int* params)
 {
   ph_write_header(f, name, n * sizeof(double) + 1, nparam, params);
+  double t0 = PCU_Time();
   fwrite(data, sizeof(double), n, f);
   fprintf(f, "\n");
+  chefio_global_stats.writeTime += PCU_Time()-t0;
+  chefio_global_stats.writeBytes += n*sizeof(double);
+  chefio_global_stats.writes++;
 }
 
 void ph_write_ints(FILE* f, const char* name, int* data,
     size_t n, int nparam, int* params)
 {
   ph_write_header(f, name, n * sizeof(int) + 1, nparam, params);
+  double t0 = PCU_Time();
   fwrite(data, sizeof(int), n, f);
   fprintf(f, "\n");
+  chefio_global_stats.writeTime += PCU_Time()-t0;
+  chefio_global_stats.writeBytes += n*sizeof(int);
+  chefio_global_stats.writes++;
 }
 
 static void parse_params(char* header, long* bytes,

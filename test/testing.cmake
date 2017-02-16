@@ -88,17 +88,12 @@ mpi_test(reorder_serial 1
   cube_bfs.smb)
 
 set(MDIR ${MESHES}/fun3d)
-mpi_test(inviscid_ugrid 1
+mpi_test(inviscid_ugrid 4
   ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
   "${MDIR}/inviscid_egg.dmg"
-  "${MDIR}/inviscid_egg.smb")
-mpi_test(inviscid_split 4
-  ./split
-  "${MDIR}/inviscid_egg.dmg"
-  "${MDIR}/inviscid_egg.smb"
   "${MDIR}/4/"
-  4)
+  "4")
 mpi_test(inviscid_ghost 4
   ./ghost
   "${MDIR}/inviscid_egg.dmg"

@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+void chefio_initStats();
+void chefio_printStats();
+
 void ph_write_preamble(FILE* f);
 void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params);

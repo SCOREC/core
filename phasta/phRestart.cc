@@ -370,6 +370,7 @@ static std::string buildRestartFileName(std::string prefix, int step)
 }
 
 void readAndAttachFields(Input& in, apf::Mesh* m) {
+  chefio_initStats();
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
@@ -385,6 +386,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("fields read and attached in %f seconds\n", t1 - t0);
+  chefio_printStats();
 }
 
 static void destroyIfExists(apf::Mesh* m, const char* name)
