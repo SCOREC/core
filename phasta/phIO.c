@@ -104,15 +104,11 @@ static const char* magic_name = "byteorder magic number";
 void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params)
 {
-  double t0 = PCU_Time();
   int i;
   fprintf(f,"%s : < %lu > ", name, (long)bytes);
   for (i = 0; i < nparam; ++i)
     fprintf(f, "%d ", params[i]);
   fprintf(f, "\n");
-  chefio_global_stats.writeTime += PCU_Time()-t0;
-  chefio_global_stats.writeBytes += nparam*sizeof(int);
-  chefio_global_stats.writes++;
 }
 
 static void skip_leading_spaces(char** s)
@@ -227,8 +223,8 @@ void ph_write_preamble(FILE* f)
 void ph_write_doubles(FILE* f, const char* name, double* data,
     size_t n, int nparam, int* params)
 {
-  double t0 = PCU_Time();
   ph_write_header(f, name, n * sizeof(double) + 1, nparam, params);
+  double t0 = PCU_Time();
   fwrite(data, sizeof(double), n, f);
   fprintf(f, "\n");
   chefio_global_stats.writeTime += PCU_Time()-t0;
@@ -239,8 +235,8 @@ void ph_write_doubles(FILE* f, const char* name, double* data,
 void ph_write_ints(FILE* f, const char* name, int* data,
     size_t n, int nparam, int* params)
 {
-  double t0 = PCU_Time();
   ph_write_header(f, name, n * sizeof(int) + 1, nparam, params);
+  double t0 = PCU_Time();
   fwrite(data, sizeof(int), n, f);
   fprintf(f, "\n");
   chefio_global_stats.writeTime += PCU_Time()-t0;
