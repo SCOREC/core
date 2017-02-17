@@ -99,11 +99,22 @@ int main(int argc, char** argv)
 
   gmi_model* mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
+  double t0 = PCU_Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
+  double t1 = PCU_Time();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  double t2 = PCU_Time();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
   
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
+  double t3 = PCU_Time();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "created the apf_mds mesh in %f seconds\n", t3-t2);
+
   apf::printStats(mesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
