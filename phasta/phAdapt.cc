@@ -14,14 +14,20 @@ namespace ph {
 void setupPreBalance(Input& in, ma::Input* ma_in) {
   if ( in.preAdaptBalanceMethod == "parma" ) {
     ma_in->shouldRunPreParma = true;
-  } else if( in.preAdaptBalanceMethod == "graph" ) {
-    ma_in->shouldRunPreZoltan = true;
-  } else if( in.preAdaptBalanceMethod == "zrib" ) {
-    ma_in->shouldRunPreZoltanRib = true;
-  } else if ( in.preAdaptBalanceMethod == "none" ) {
     ma_in->shouldRunPreZoltan = false;
     ma_in->shouldRunPreZoltanRib = false;
+  } else if( in.preAdaptBalanceMethod == "graph" ) {
     ma_in->shouldRunPreParma = false;
+    ma_in->shouldRunPreZoltan = true;
+    ma_in->shouldRunPreZoltanRib = false;
+  } else if( in.preAdaptBalanceMethod == "zrib" ) {
+    ma_in->shouldRunPreParma = false;
+    ma_in->shouldRunPreZoltan = false;
+    ma_in->shouldRunPreZoltanRib = true;
+  } else if ( in.preAdaptBalanceMethod == "none" ) {
+    ma_in->shouldRunPreParma = false;
+    ma_in->shouldRunPreZoltan = false;
+    ma_in->shouldRunPreZoltanRib = false;
   } else {
     if (!PCU_Comm_Self())
       fprintf(stderr,
@@ -33,7 +39,9 @@ void setupPreBalance(Input& in, ma::Input* ma_in) {
 void setupMidBalance(Input& in, ma::Input* ma_in) {
   if ( in.midAdaptBalanceMethod == "parma" ) {
     ma_in->shouldRunMidParma = true;
+    ma_in->shouldRunMidZoltan = false;
   } else if( in.midAdaptBalanceMethod == "graph" ) {
+    ma_in->shouldRunMidParma = false;
     ma_in->shouldRunMidZoltan = true;
   } else if ( in.midAdaptBalanceMethod == "none" ) {
     ma_in->shouldRunMidZoltan = false;
