@@ -36,16 +36,23 @@ void setupPreBalance(Input& in, ma::Input* ma_in) {
   }
 }
 
-void setupBalance(const char* key, std::string& method, bool& parmaBal, bool& zoltanBal) {
+void setupBalance(const char* key, std::string& method, bool& parmaBal, bool& zoltanBal, bool& zoltanRibBal) {
   if ( method == "parma" ) {
     parmaBal = true;
     zoltanBal = false;
+    zoltanRibBal = false;
   } else if( method == "graph" ) {
     parmaBal = false;
     zoltanBal = true;
+    zoltanRibBal = false;
+  } else if( method == "zrib" ) {
+    parmaBal = false;
+    zoltanBal = false;
+    zoltanRibBal = true;
   } else if ( method == "none" ) {
     parmaBal = false;
     zoltanBal = false;
+    zoltanRibBal = false;
   } else {
     if (!PCU_Comm_Self())
       fprintf(stderr,
@@ -79,10 +86,12 @@ struct AdaptCallback : public Parma_GroupCode
       ma_in->shouldRunMidParma = true;
       ma_in->shouldRunPostParma = true;
       //override with user inputs if specified
+      bool ignored;
       setupBalance("midAdaptBalanceMethod", in->midAdaptBalanceMethod,
-          ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan);
+          ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan, ignored);
       setupBalance("postAdaptBalanceMethod", in->postAdaptBalanceMethod,
-          ma_in->shouldRunPostParma, ma_in->shouldRunPostZoltan);
+          ma_in->shouldRunPostParma, ma_in->shouldRunPostZoltan,
+          ma_in->shouldRunPostZoltanRib);
       ma_in->shouldTransferParametric = in->transferParametric;
       ma_in->shouldSnap = in->snap;
       ma_in->maximumIterations = in->maxAdaptIterations;
