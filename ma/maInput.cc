@@ -55,6 +55,7 @@ void setDefaultValues(Input* in)
   in->shouldRunMidZoltan = false;
   in->shouldRunMidParma = false;
   in->shouldRunPostZoltan = false;
+  in->shouldRunPostZoltanRib = false;
   in->shouldRunPostParma = false;
   in->shouldTurnLayerToTets = false;
   in->shouldCleanupLayer = false;
