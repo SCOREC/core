@@ -36,21 +36,21 @@ void setupPreBalance(Input& in, ma::Input* ma_in) {
   }
 }
 
-void setupMidBalance(Input& in, ma::Input* ma_in) {
-  if ( in.midAdaptBalanceMethod == "parma" ) {
-    ma_in->shouldRunMidParma = true;
-    ma_in->shouldRunMidZoltan = false;
-  } else if( in.midAdaptBalanceMethod == "graph" ) {
-    ma_in->shouldRunMidParma = false;
-    ma_in->shouldRunMidZoltan = true;
-  } else if ( in.midAdaptBalanceMethod == "none" ) {
-    ma_in->shouldRunMidZoltan = false;
-    ma_in->shouldRunMidParma = false;
+void setupBalance(const char* key, std::string& method, bool& parmaBal, bool& zoltanBal) {
+  if ( method == "parma" ) {
+    parmaBal = true;
+    zoltanBal = false;
+  } else if( method == "graph" ) {
+    parmaBal = false;
+    zoltanBal = true;
+  } else if ( method == "none" ) {
+    parmaBal = false;
+    zoltanBal = false;
   } else {
     if (!PCU_Comm_Self())
       fprintf(stderr,
-          "warning: ignoring unknown value of midAdaptBalanceMethod %s\n",
-          in.midAdaptBalanceMethod.c_str());
+          "warning: ignoring unknown value of %s = %s\n",
+          key, method.c_str());
   }
 }
 
@@ -79,8 +79,10 @@ struct AdaptCallback : public Parma_GroupCode
       ma_in->shouldRunMidParma = true;
       ma_in->shouldRunPostParma = true;
       //override with user inputs if specified
-      setupPreBalance(*in, ma_in);
-      setupMidBalance(*in, ma_in);
+      setupBalance("midAdaptBalanceMethod", in->midAdaptBalanceMethod,
+          ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan);
+      setupBalance("postAdaptBalanceMethod", in->postAdaptBalanceMethod,
+          ma_in->shouldRunPostParma, ma_in->shouldRunPostZoltan);
       ma_in->shouldTransferParametric = in->transferParametric;
       ma_in->shouldSnap = in->snap;
       ma_in->maximumIterations = in->maxAdaptIterations;

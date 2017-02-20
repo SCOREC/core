@@ -24,6 +24,7 @@ class Input
     std::string partitionMethod;
     std::string preAdaptBalanceMethod;
     std::string midAdaptBalanceMethod;
+    std::string postAdaptBalanceMethod;
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
