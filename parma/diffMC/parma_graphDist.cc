@@ -42,6 +42,22 @@ namespace {
     return rmax;
   }
 
+  void warnAboutDistanceProblem(const unsigned csA, const unsigned csB,
+      const unsigned dtchanges) {
+    if( !dtchanges && csA != csB ) {
+      parmaCommons::error(
+          "rank %d there were no distance changes but the checksum "
+          "on the distance array does not match\n",
+          PCU_Comm_Self());
+    }
+    if( dtchanges && csA == csB ) {
+      parmaCommons::error(
+          "rank %d there were distance changes but the checksum "
+          "on the distance array did not change\n",
+          PCU_Comm_Self());
+    }
+  }
+
   void offset(apf::Mesh* m, parma::dcComponents& c,
       apf::MeshTag* dt, unsigned* rmax) {
     //If maxDistanceIncrease number of diffusion steps were ran there could be
@@ -83,6 +99,7 @@ namespace {
       c.endBdry();
     }
     const unsigned csMid = m->getTagChecksum(dt,apf::Mesh::VERTEX);
+    warnAboutDistanceProblem(csStart,csMid,dtchanges);
     assert((!dtchanges && csStart == csMid) || (dtchanges && csStart != csMid));
 
     // Offset the interior vertices
@@ -90,20 +107,21 @@ namespace {
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
     while( (v = m->iterate(it)) ) {
-      //skip if
-      if( !c.has(v) ) continue; // not part of a component
+      //skip if not part of a component
+      if( !c.has(v) ) continue;
       unsigned id = c.getId(v);
       //also skip if on a component boundary
       if( c.bdryHas(id,v) ) continue;
       //also skip if the offset is zero
       if( !rsum[id] ) continue;
       int d; m->getIntTag(v,dt,&d);
-      d += TO_INT(rsum[id]);
-      m->setIntTag(v,dt,&d);
-      dtchanges++;
+      int dist = d + TO_INT(rsum[id]);
+      m->setIntTag(v,dt,&dist);
+      if(dist != d) dtchanges++;
     }
     m->end(it);
     const unsigned csEnd = m->getTagChecksum(dt,apf::Mesh::VERTEX);
+    warnAboutDistanceProblem(csMid,csEnd,dtchanges);
     assert((!dtchanges && csMid == csEnd) || (dtchanges && csMid != csEnd));
     delete [] rsum;
   }
