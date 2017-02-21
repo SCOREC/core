@@ -18,7 +18,6 @@
 
 #ifdef __INTEL_COMPILER
 typedef size_t chefioTime;
-size_t chefio_global_cpus;
 static size_t chefio_time_diff(chefioTime* start, chefioTime* end);
 /* return the cycle count */
 void chefio_time(chefioTime* t) {
@@ -44,7 +43,7 @@ static size_t chefio_getCyclesPerMicroSec() {
 /*return elapsed time in micro seconds*/
 static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
   size_t cycles = *end - *start;
-  size_t us = ((double)cycles)/chefio_global_cpus;
+  size_t us = ((double)cycles)/chefio_global_stats.cpus;
   return us;
 }
 #else
@@ -72,6 +71,7 @@ static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
 #endif
 
 struct chefio_stats {
+  size_t cpus;
   size_t readTime;
   size_t writeTime;
   size_t readBytes;
@@ -163,7 +163,7 @@ void chefio_printStats() {
 
 void chefio_initStats() {
 #ifdef __INTEL_COMPILER
-  chefio_global_cpus = chefio_getCyclesPerMicroSec();
+  chefio_global_stats.cpus = chefio_getCyclesPerMicroSec();
 #endif
   chefio_global_stats.readTime = 0;
   chefio_global_stats.writeTime = 0;
