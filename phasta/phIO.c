@@ -19,13 +19,13 @@
 #ifdef __INTEL_COMPILER
 typedef size_t chefioTime;
 size_t chefio_global_cpus;
-size_t chefio_time_diff(chefioTime* start, chefioTime* end);
+static size_t chefio_time_diff(chefioTime* start, chefioTime* end);
 /* return the cycle count */
 void chefio_time(chefioTime* t) {
   *t = _rdtsc(); //intel intrinsic
 }
 /* determine the reference clock frequency */
-size_t chefio_getCyclesPerMicroSec() {
+static size_t chefio_getCyclesPerMicroSec() {
   const size_t usec = 5*MILLION;
   size_t cpus, cycles;
   chefioTime t0, t1;
@@ -42,20 +42,20 @@ size_t chefio_getCyclesPerMicroSec() {
   return cpus;
 }
 /*return elapsed time in micro seconds*/
-size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
+static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
   size_t cycles = *end - *start;
   size_t us = ((double)cycles)/chefio_global_cpus;
   return us;
 }
 #else
 typedef struct timespec chefioTime;
-void chefio_time(chefioTime* t) {
+static void chefio_time(chefioTime* t) {
   int err;
   err = clock_gettime(CLOCK_MONOTONIC,t);
   assert(!err);
 }
 /*return elapsed time in micro seconds*/
-size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
+static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
   assert(sizeof(size_t)==8);
   size_t elapsed = 0;
   chefioTime diff;
@@ -79,9 +79,9 @@ struct chefio_stats {
   size_t reads;
   size_t writes;
 };
-struct chefio_stats chefio_global_stats;
+static struct chefio_stats chefio_global_stats;
 
-void printMinMaxAvgSzt(const char* key, size_t v) {
+static void printMinMaxAvgSzt(const char* key, size_t v) {
   size_t min = PCU_Min_SizeT(v);
   size_t max = PCU_Max_SizeT(v);
   size_t tot = PCU_Add_SizeT(v);
@@ -90,7 +90,7 @@ void printMinMaxAvgSzt(const char* key, size_t v) {
     fprintf(stderr, "chefio_%s min max avg %" PRIu64 " %" PRIu64 " %f\n", key, min, max, avg);
 }
 
-void printMinMaxAvgDbl(const char* key, double v) {
+static void printMinMaxAvgDbl(const char* key, double v) {
   double min = PCU_Min_Double(v);
   double max = PCU_Max_Double(v);
   double tot = PCU_Add_Double(v);
@@ -100,27 +100,27 @@ void printMinMaxAvgDbl(const char* key, double v) {
         key, min, max, avg);
 }
 
-size_t chefio_getReadTime() {
+static size_t chefio_getReadTime() {
   return chefio_global_stats.readTime;
 }
 
-size_t chefio_getWriteTime() {
+static size_t chefio_getWriteTime() {
   return chefio_global_stats.writeTime;
 }
 
-size_t chefio_getReadBytes() {
+static size_t chefio_getReadBytes() {
   return chefio_global_stats.readBytes;
 }
 
-size_t chefio_getWriteBytes() {
+static size_t chefio_getWriteBytes() {
   return chefio_global_stats.writeBytes;
 }
 
-size_t chefio_getReads() {
+static size_t chefio_getReads() {
   return chefio_global_stats.reads;
 }
 
-size_t chefio_getWrites() {
+static size_t chefio_getWrites() {
   return chefio_global_stats.writes;
 }
 
