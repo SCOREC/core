@@ -16,6 +16,17 @@
 #define BILLION 1000L*1000L*1000L
 #define MILLION 1000L*1000L
 
+struct chefio_stats {
+  size_t cpus;
+  size_t readTime;
+  size_t writeTime;
+  size_t readBytes;
+  size_t writeBytes;
+  size_t reads;
+  size_t writes;
+};
+static struct chefio_stats chefio_global_stats;
+
 #ifdef __INTEL_COMPILER
 typedef size_t chefioTime;
 static size_t chefio_time_diff(chefioTime* start, chefioTime* end);
@@ -70,16 +81,6 @@ static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
 }
 #endif
 
-struct chefio_stats {
-  size_t cpus;
-  size_t readTime;
-  size_t writeTime;
-  size_t readBytes;
-  size_t writeBytes;
-  size_t reads;
-  size_t writes;
-};
-static struct chefio_stats chefio_global_stats;
 
 static void printMinMaxAvgSzt(const char* key, size_t v) {
   size_t min = PCU_Min_SizeT(v);
