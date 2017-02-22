@@ -333,6 +333,53 @@ long PCU_Add_Long(long x)
   return a[0];
 }
 
+/** \brief Performs an Allreduce sum of size_t unsigned integers
+  */
+void PCU_Add_SizeTs(size_t* p, size_t n)
+{
+  if (global_state == uninit)
+    reel_fail("Add_SizeTs called before Comm_Init");
+  pcu_allreduce(&(get_msg()->coll),pcu_add_sizets,p,n*sizeof(size_t));
+}
+
+size_t PCU_Add_SizeT(size_t x)
+{
+  size_t a[1];
+  a[0] = x;
+  PCU_Add_SizeTs(a, 1);
+  return a[0];
+}
+
+/** \brief Performs an Allreduce minimum of size_t unsigned integers
+  */
+void PCU_Min_SizeTs(size_t* p, size_t n) {
+  if (global_state == uninit)
+    reel_fail("Min_SizeTs called before Comm_Init");
+  pcu_allreduce(&(get_msg()->coll),pcu_min_sizets,p,n*sizeof(size_t));
+}
+
+size_t PCU_Min_SizeT(size_t x) {
+  size_t a[1];
+  a[0] = x;
+  PCU_Min_SizeTs(a, 1);
+  return a[0];
+}
+
+/** \brief Performs an Allreduce maximum of size_t unsigned integers
+  */
+void PCU_Max_SizeTs(size_t* p, size_t n) {
+  if (global_state == uninit)
+    reel_fail("Max_SizeTs called before Comm_Init");
+  pcu_allreduce(&(get_msg()->coll),pcu_max_sizets,p,n*sizeof(size_t));
+}
+
+size_t PCU_Max_SizeT(size_t x) {
+  size_t a[1];
+  a[0] = x;
+  PCU_Max_SizeTs(a, 1);
+  return a[0];
+}
+
 /** \brief Performs an exclusive prefix sum of integer arrays.
   \details This function must be called by all ranks at
   the same time. \a p must point to an array of \a n integers.

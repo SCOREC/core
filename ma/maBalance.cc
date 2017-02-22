@@ -152,6 +152,8 @@ void postBalance(Adapt* a)
   Input* in = a->input;
   if (in->shouldRunPostZoltan)
     runZoltan(a);
+  if (in->shouldRunPostZoltanRib)
+    runZoltan(a,apf::RIB);
   if (in->shouldRunPostParma)
     runParma(a);
   printEntityImbalance(a->mesh);

@@ -34,6 +34,9 @@ void pcu_add_ints(void* local, void* incoming, size_t size);
 void pcu_min_ints(void* local, void* incoming, size_t size);
 void pcu_max_ints(void* local, void* incoming, size_t size);
 void pcu_add_longs(void* local, void* incoming, size_t size);
+void pcu_add_sizets(void* local, void* incoming, size_t size);
+void pcu_min_sizets(void* local, void* incoming, size_t size);
+void pcu_max_sizets(void* local, void* incoming, size_t size);
 
 /* Enumerated actions that a rank takes during one
    step of the communication pattern */

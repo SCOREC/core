@@ -80,6 +80,8 @@ class Input
     bool shouldRunMidParma;
 /** \brief whether to run zoltan after adapting (default false) */
     bool shouldRunPostZoltan;
+/** \brief whether to run zoltan RIB after adapting (default false) */
+    bool shouldRunPostZoltanRib;
 /** \brief whether to run parma after adapting (default false) */
     bool shouldRunPostParma;
 /** \brief the ratio between longest and shortest edges that differentiates a
