@@ -24,6 +24,7 @@ class Input
     std::string partitionMethod;
     std::string preAdaptBalanceMethod;
     std::string midAdaptBalanceMethod;
+    std::string postAdaptBalanceMethod;
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
@@ -59,7 +60,6 @@ class Input
     int filterMatches;
     int axisymmetry;
     int formEdges;
-    int writePhastaFiles;
     int parmaLoops;
     int parmaVerbosity;
     int writeGeomBCFiles;
