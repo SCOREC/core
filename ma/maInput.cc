@@ -146,7 +146,7 @@ Input* configure(
    the metric field, which has its own built-in
    solution transfer */
   Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, f);
+  in->sizeField = makeSizeField(m, f, 1);
   return in;
 }
 
