@@ -13,13 +13,17 @@ ParMA API: parma.h
 
 @section References
 
+- Cameron W. Smith, Michel Rasquin, Dan Ibanez, Kenneth E. Jansen, and Mark S.
+  Shephard "Improving Unstructured Mesh Partitions for Multiple Criteria Using
+  Mesh Adjacencies ",  SIAM Journal on Scientific Computing, Submitted 2017.
+  https://www.scorec.rpi.edu/REPORTS/2017-3.pdf
 - Seol, S, Smith C.W., Ibanez, D.A and Shephard, M.S.,
   "A Parallel Unstructured Mesh Infrastructure",
   Proc. 2nd Int. Workshop on Domain-Specific Languages and
   High-Level Frameworks for High Performance Computing (WOLFHPC), 2012. 
 - M. Zhou, O. Sahni, T. Xie, M.S. Shephard and K.E. Jansen,
   "Unstructured Mesh Partition Improvement for Implicit Finite Element
-  at Extreme Scale”, J. Supercomputing, 59(3): 1218-1228, 2012. 
+  at Extreme Scale", J. Supercomputing, 59(3): 1218-1228, 2012. 
 - M. Zhou, T. Xie, S. Seol, M.S. Shephard and O. Sahni and K.E. Jansen,
   "Tools to Support Mesh Adaptation on Massively Parallel Computers",
   Eng. with Computers, 28(3):287-301, 2012. 
@@ -27,10 +31,10 @@ ParMA API: parma.h
   "Controlling unstructured mesh partitions for massively parallel simulations",
   SIAM J. Sci. Comp., 32(6):3201-3227, 2010. 
 - Sahni, O., Zhou, M., Shephard, M.S., and Jansen, K.E.,
-  "Scalable Implicit Finite Element Solver for Massively Parallel Processing
+  "Scalable Implicit Finite Element Solver for Massively Parallel Processing
   with Demonstration to 160K Cores",
   Proceedings of the 2009 ACM/IEEE Conference on Supercomputing,
-   2009 ACM Gordon Bell Finalist, Portland, OR, USA, Nov. 2009.
+  2009 ACM Gordon Bell Finalist, Portland, OR, USA, Nov. 2009.
 
 @author <a href="http://www.scorec.rpi.edu/~cwsmith/">Cameron W. Smith</a>
 */
