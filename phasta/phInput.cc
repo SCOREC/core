@@ -6,6 +6,9 @@
 #include "ph.h"
 #include <cassert>
 
+/** \file phInput.cc
+    \brief The implementation of Chef's interface for execution control */
+
 namespace ph {
 
 static void setDefaults(Input& in)

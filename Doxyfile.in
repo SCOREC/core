@@ -787,8 +787,8 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.cc \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/chefStream.cc \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/phstream.h \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInputs.h \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInputs.cc \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInput.h \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInput.cc \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \

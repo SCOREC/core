@@ -1,6 +1,9 @@
 #ifndef PH_INPUT_H
 #define PH_INPUT_H
 
+/** \file phInput.h
+    \brief The Chef interface for execution control */
+
 #include <string>
 
 struct RStream;
