@@ -1,0 +1,42 @@
+/** \page phasta Chef
+
+@section Chef-Overview Overview
+Chef provides pre-processing, tetrahedronization, error estimation,
+partitioning, mesh adaptation, and load balaning for <a
+href="https://phasta.scigap.org/">PHASTA</a>.  In other
+words, "Chef prepares PHASTA".
+
+Chef can be executed on the command line as a stand-alone
+executable or as a library via its API in chef.h.
+The Chef executable (chef.cc) uses this API and provides
+a good starting point for workflow developers.
+More advanced examples of API use are found in chefStream.cc
+and in the
+<a href=https://github.com/PHASTA/phastaChef>phastaChef</a>.
+phastaChef implements in-memory parallel adaptive workflows
+using APIs from chef.h,
+<a href=https://github.com/PHASTA/phasta>phasta</a>, and
+the data streams interface in phstream.h.
+
+Inputs controlling the execution of Chef are defined in phInput.h
+and phInput.cc.
+Adding new inputs is fairly trivial following the multiple examples
+provided.
+
+Chef API: chef.h
+
+Chef API Examples: chef.cc, chefStream.cc
+
+Chef Inputs: phInput.h, phInput.cc
+
+@section Chef-References References
+
+- Cameron W. Smith, Brian Granzow, Dan Ibanez, Onkar Sahni, Kenneth E. Jansen
+  and Mark .S. Shephard, <a href="https://www.scorec.rpi.edu/REPORTS/2016-23.pdf">
+  "In-memory Integration of Existing Software Components for Parallel Adaptive
+  Unstructured Mesh Workflows"</a>, Proceedings of the XSEDE16 Conference, Miami,
+  FL. July 19, 2016.
+
+
+@author Dan Ibanez, <a href="http://www.scorec.rpi.edu/~cwsmith/">Cameron W. Smith</a>
+*/

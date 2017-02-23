@@ -782,6 +782,13 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.h \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/phasta.dox \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.h \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.cc \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/chefStream.cc \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/phstream.h \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInput.h \
+@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInput.cc \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \
@@ -953,13 +960,13 @@ USE_MDFILE_AS_MAINPAGE =
 # also VERBATIM_HEADERS is set to NO.
 # The default value is: NO.
 
-SOURCE_BROWSER         = NO
+SOURCE_BROWSER         = YES
 
 # Setting the INLINE_SOURCES tag to YES will include the body of functions,
 # classes and enums directly into the documentation.
 # The default value is: NO.
 
-INLINE_SOURCES         = NO
+INLINE_SOURCES         = YES
 
 # Setting the STRIP_CODE_COMMENTS tag to YES will instruct doxygen to hide any
 # special comment blocks from generated source code fragments. Normal C, C++ and

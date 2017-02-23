@@ -10,6 +10,9 @@
 #include <cassert>
 #include <chef.h>
 
+/** \file chef.cc
+    \brief The Chef command line executable. */
+
 namespace {
   void freeMesh(apf::Mesh* m) {
     m->destroyNative();
@@ -17,6 +20,7 @@ namespace {
   }
 }
 
+/** @brief run the operations requested in "adapt.inp" */
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);

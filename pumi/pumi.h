@@ -24,7 +24,8 @@ enum PUMI_EntTopology {
   PUMI_TET,  // 4
   PUMI_HEX,  // 5 
   PUMI_PRISM, // 6
-  PUMI_PYRAMID // 7
+  PUMI_PYRAMID, // 7
+  ENT_TOPOLOGIES
 };
 
 enum PUMI_FieldType {
@@ -32,7 +33,7 @@ enum PUMI_FieldType {
   PUMI_VECTOR, // a 3D vector
   PUMI_MATRIX, // a 3x3 matrix 
   PUMI_PACKED, // a user-defined set of components
-  VALUE_TYPES
+  FIELD_TYPES
 };
 class gEntity;
 class mPartEntityContainer;

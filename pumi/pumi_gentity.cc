@@ -49,81 +49,82 @@ void pumi_gent_getRevClas (pGeomEnt ge, std::vector<pMeshEnt>& ents)
   m->end(ent_it);
 }
 
-void get_one_level_adj (pGeom g, std::vector<pGeomEnt>& ents, 
-                        int dim, std::vector<pGeomEnt>& adj_ents)
+void get_one_level_adj (pGeom g, std::set<pGeomEnt>& ents, 
+                        int dim, std::set<pGeomEnt>& adj_ents)
 {
-  for (size_t i=0; i< ents.size(); ++i)
+  for (std::set<pGeomEnt>::iterator it=ents.begin(); it!=ents.end(); ++it)
   {
-    gmi_ent* ent = ents.at(i)->getGmi();
-    gmi_set* g_adj = gmi_adjacent(g->getGmi(), ent, dim);
+    gmi_set* g_adj = gmi_adjacent(g->getGmi(), (*it)->getGmi(), dim);
     for (int i=0; i<g_adj->n; ++i)
-      adj_ents.push_back(g->getGeomEnt(dim, g_adj->e[i]));
+      adj_ents.insert(g->getGeomEnt(dim, g_adj->e[i]));
   }
 }
 
-void pumi_gent_getAdj (pGeomEnt ge, int target_dim, std::vector<pGeomEnt>& adj_ents)
+void pumi_gent_getAdj (pGeomEnt ge, int target_dim, std::vector<pGeomEnt>& adj_ents_vec)
 {
   pGeom g = pumi::instance()->model;
   int ent_dim = gmi_dim(g->getGmi(), ge->getGmi());
   if (ent_dim==target_dim) return;
 
-  std::vector<pGeomEnt> ents;
-  ents.push_back(ge);
+  std::set<pGeomEnt> adj_ents;
+  std::set<pGeomEnt> ents;
+  ents.insert(ge);
 
   if (abs(ent_dim-target_dim)==1) 
-  {
     get_one_level_adj (g, ents, target_dim, adj_ents);
-    return;
-  }
-
-  switch(ent_dim)
+  else
   {
-    case 0: if (target_dim==2) 
+    switch(ent_dim)
+    {
+      case 0: if (target_dim==2) 
             {
-              std::vector<pGeomEnt> edges;
+              std::set<pGeomEnt> edges;
               get_one_level_adj (g, ents, 1, edges);
               get_one_level_adj (g, edges, 2, adj_ents);
             }  
             if (target_dim==3)
             {
-              std::vector<pGeomEnt> edges;
+              std::set<pGeomEnt> edges;
               get_one_level_adj (g, ents, 1, edges);
-              std::vector<pGeomEnt> faces;
+              std::set<pGeomEnt> faces;
               get_one_level_adj (g, edges, 2, faces);
               get_one_level_adj (g, faces, 3, adj_ents);
             }  
             break;
-    case 1: if (target_dim==3)
+      case 1: if (target_dim==3)
             {
-              std::vector<pGeomEnt> faces;
+              std::set<pGeomEnt> faces;
               get_one_level_adj (g, ents, 2, faces);
               get_one_level_adj (g, faces, 3, adj_ents);
             }
             break;
-    case 2: if (target_dim==0)
+      case 2: if (target_dim==0)
             {
-              std::vector<pGeomEnt> edges;
+              std::set<pGeomEnt> edges;
               get_one_level_adj (g, ents, 1, edges);
               get_one_level_adj (g, edges, 0, adj_ents);
             }  
             break;
-    case 3: if (target_dim==0)
+      case 3: if (target_dim==0)
             {
-              std::vector<pGeomEnt> faces;
+              std::set<pGeomEnt> faces;
               get_one_level_adj (g, ents, 2, faces);
-              std::vector<pGeomEnt> edges;
+              std::set<pGeomEnt> edges;
               get_one_level_adj (g, faces, 1, edges);
               get_one_level_adj (g, edges, 0, adj_ents);
             }  
             if (target_dim==1)
             {
-              std::vector<pGeomEnt> faces;
+              std::set<pGeomEnt> faces;
               get_one_level_adj (g, ents, 2, faces);
               get_one_level_adj (g, faces, 1, adj_ents);
             }  
             break;
-    default: break;
+      default: break;
+    }
   }
+  for (std::set<pGeomEnt>::iterator it=adj_ents.begin(); it!=adj_ents.end(); ++it)
+    adj_ents_vec.push_back(*it);
 }
 
 int pumi_gent_getNumAdj (pGeomEnt ge, int target_dim)

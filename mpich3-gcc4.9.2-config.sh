@@ -1,6 +1,6 @@
-ZOLTAN_DIR=/fasttmp/seol/mpich3-gcc4.9.2-install
-PARMETIS_DIR=/fasttmp/esyoon/openlib/petsc-3.6.4-mpich3-gcc-4.9.2
-PREFIX=/fasttmp/seol/mpich3-gcc4.9.2-install
+ZOLTAN_DIR=/lore/seol/mpich3-gcc4.9.2-install
+PARMETIS_DIR=/lore/esyoon/openlib/petsc-3.7.5-gcc-4.9.2
+PREFIX=/lore/seol/mpich3-gcc4.9.2-install
 
 cmake .. \
   -DCMAKE_C_COMPILER="/usr/local/mpich3/latest/bin/mpicc" \
@@ -14,5 +14,9 @@ cmake .. \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.so" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.so" \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
-  -DCMAKE_BUILD_TYPE=Debug
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DBUILD_EXES=ON \
+  -DIS_TESTING=ON \
+  -DMESHES=/users/seol/develop/meshes \
+  -DMPIRUN=/usr/local/mpich3/latest/bin/mpirun
 

@@ -1,6 +1,9 @@
 #ifndef CHEF_H
 #define CHEF_H
 
+/** \file chef.h
+    \brief The Chef interface */
+
 #include <apf.h>
 #include <apfMesh2.h>
 #include <gmi.h>

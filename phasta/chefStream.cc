@@ -1,3 +1,16 @@
+/** \file chefStream.cc
+    \brief An example use of the chef.h and stream APIs
+    \remark This example reads inputs via files, executes
+            the operations requested by the "adapt.inp"
+            configuration file, and writes PHASTA mesh
+            and field data to a stream (using the
+            the phstream.h API). The requested Chef operations
+            are executed again (the second call to 'cook') using
+            the stream inputs (instead of files) and then the
+            generates PHASTA files containing the mesh and field
+            information.
+*/
+
 #include <PCU.h>
 #include <chef.h>
 #include <phstream.h>
