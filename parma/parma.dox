@@ -1,6 +1,6 @@
 /** \page parma ParMA
 
-@section Overview
+@section parma-overview Overview
 Parallel unstructured simulations at extreme scale require that the mesh be
 distributed across a large number of processors with equal workload and minimum
 inter-part communications. ParMA's goal is to dynamically partition unstructured
@@ -11,7 +11,7 @@ and account for multiple criteria.
 
 ParMA API: parma.h
 
-@section References
+@section parma-references References
 
 - Cameron W. Smith, Michel Rasquin, Dan Ibanez, Kenneth E. Jansen, and Mark S.
   Shephard "Improving Unstructured Mesh Partitions for Multiple Criteria Using
