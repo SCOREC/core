@@ -1,6 +1,15 @@
 #ifndef PHSTREAM_H_
 #define PHSTREAM_H_
 #include <stdio.h>
+
+
+/** \file phstream.h
+    \brief The data stream API
+    \remark This api supports the creation and destruction and
+            manipulation of data streams as used in chefStream.cc and
+            <a href=https://github.com/PHASTA/phastaChef>phastaChef</a>.
+*/
+
 typedef struct RStream* rstream;
 typedef struct GRStream* grstream;
 /** @brief make restart stream */
