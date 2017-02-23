@@ -89,11 +89,11 @@ namespace {
       c.beginBdry(i);
       while( (v = c.iterateBdry()) ) {
         int d; m->getIntTag(v,dt,&d);
-        int rsi = TO_INT(rsum[i]);
-        if(d < rsi) { //not visited
-          d+=rsi;
-          m->setIntTag(v,dt,&d);
+        int dist = d + TO_INT(rsum[i]);
+        if(d < dist) { //needs updating
+          m->setIntTag(v,dt,&dist);
           dtchanges++;
+          assert(d != dist);
         }
       }
       c.endBdry();
