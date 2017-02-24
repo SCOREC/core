@@ -276,6 +276,7 @@ static Field* unpackFieldClone(Mesh2* m)
   PCU_COMM_UNPACK(components);
   std::string shapeName = unpackString();
   FieldShape* shape = getShapeByName(shapeName.c_str());
+  assert(shape);
   /* warning! this only supports tag-stored fields */
   return makeField(m, name.c_str(), valueType, components, shape, new TagDataOf<double>);
 }
@@ -296,15 +297,33 @@ static void unpackFieldClones(Mesh2* m)
     unpackFieldClone(m);
 }
 
+static void packMeshShape(Mesh2* m, int to)
+{
+  std::string shapeName = m->getShape()->getName();
+  packString(shapeName, to);
+}
+
+static void unpackMeshShape(Mesh2* m)
+{
+  std::string shapeName = unpackString();
+  FieldShape* shape = getShapeByName(shapeName.c_str());
+  assert(shape);
+  if (shape != m->getShape()) {
+    m->changeShape(shape, /*project=*/false);
+  }
+}
+
 void packDataClone(Mesh2* m, int to)
 {
   packTagClones(m, to);
+  packMeshShape(m, to);
   packFieldClones(m, to);
 }
 
 void unpackDataClone(Mesh2* m)
 {
   unpackTagClones(m);
+  unpackMeshShape(m);
   unpackFieldClones(m);
 }
 
