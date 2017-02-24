@@ -11,32 +11,8 @@
 
 namespace ph {
 
-void setupPreBalance(Input& in, ma::Input* ma_in) {
-  if ( in.preAdaptBalanceMethod == "parma" ) {
-    ma_in->shouldRunPreParma = true;
-    ma_in->shouldRunPreZoltan = false;
-    ma_in->shouldRunPreZoltanRib = false;
-  } else if( in.preAdaptBalanceMethod == "graph" ) {
-    ma_in->shouldRunPreParma = false;
-    ma_in->shouldRunPreZoltan = true;
-    ma_in->shouldRunPreZoltanRib = false;
-  } else if( in.preAdaptBalanceMethod == "zrib" ) {
-    ma_in->shouldRunPreParma = false;
-    ma_in->shouldRunPreZoltan = false;
-    ma_in->shouldRunPreZoltanRib = true;
-  } else if ( in.preAdaptBalanceMethod == "none" ) {
-    ma_in->shouldRunPreParma = false;
-    ma_in->shouldRunPreZoltan = false;
-    ma_in->shouldRunPreZoltanRib = false;
-  } else {
-    if (!PCU_Comm_Self())
-      fprintf(stderr,
-          "warning: ignoring unknown value of preAdaptBalanceMethod %s\n",
-          in.preAdaptBalanceMethod.c_str());
-  }
-}
-
-void setupBalance(const char* key, std::string& method, bool& parmaBal, bool& zoltanBal, bool& zoltanRibBal) {
+void setupBalance(const char* key, std::string& method,
+    bool& parmaBal, bool& zoltanBal, bool& zoltanRibBal) {
   if ( method == "parma" ) {
     parmaBal = true;
     zoltanBal = false;
@@ -86,6 +62,9 @@ struct AdaptCallback : public Parma_GroupCode
       ma_in->shouldRunMidParma = true;
       ma_in->shouldRunPostParma = true;
       //override with user inputs if specified
+      setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
+          ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
+          ma_in->shouldRunPreZoltanRib);
       bool ignored;
       setupBalance("midAdaptBalanceMethod", in->midAdaptBalanceMethod,
           ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan, ignored);
@@ -176,7 +155,9 @@ static void runFromGivenSize(Input& in, apf::Mesh2* m)
 void tetrahedronize(Input& in, apf::Mesh2* m)
 {
   ma::Input* ma_in = ma::configureIdentity(m);
-  setupPreBalance(in, ma_in);
+  setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
+      ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
+      ma_in->shouldRunPreZoltanRib);
   ma_in->shouldTurnLayerToTets = true;
   ma::adapt(ma_in);
   m->verify();
@@ -216,7 +197,9 @@ namespace chef {
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)
   {
     ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
-    setupPreBalance(in, ma_in);
+    setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
+        ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
+        ma_in->shouldRunPreZoltanRib);
     ma_in->shouldRefineLayer = true;
     ma_in->splitAllLayerEdges = in.splitAllLayerEdges;
     if (in.snap) {
