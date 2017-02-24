@@ -155,7 +155,7 @@ static void runFromGivenSize(Input& in, apf::Mesh2* m)
 void tetrahedronize(Input& in, apf::Mesh2* m)
 {
   ma::Input* ma_in = ma::configureIdentity(m);
-  setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
+  ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
       ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
       ma_in->shouldRunPreZoltanRib);
   ma_in->shouldTurnLayerToTets = true;
@@ -197,7 +197,7 @@ namespace chef {
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)
   {
     ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
-    setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
+    ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
         ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
         ma_in->shouldRunPreZoltanRib);
     ma_in->shouldRefineLayer = true;
