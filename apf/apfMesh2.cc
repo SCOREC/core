@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <cassert>
 #include "apfMesh2.h"
 #include "apfField.h"
 #include "apf.h"
