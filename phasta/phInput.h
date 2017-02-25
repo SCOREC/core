@@ -2,7 +2,14 @@
 #define PH_INPUT_H
 
 /** \file phInput.h
-    \brief The Chef interface for execution control */
+    \brief The Chef interface for execution control 
+    \remark The variables defined here should be placed in a file named
+            'adapt.inp'.  Each variable should be on its own line and 
+            followed by a space and then the value assigned to the 
+            variable. Blank lines and lines starting with '#' are ignored.
+            
+            To add a new variable edit this file and phInput.cc .
+*/
 
 #include <string>
 
