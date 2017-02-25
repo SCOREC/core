@@ -142,10 +142,6 @@ void chefio_printStats() {
     printMinMaxAvgSzt("readTime (us)", chefio_getReadTime());
     printMinMaxAvgSzt("readBytes (B)", chefio_getReadBytes());
     double bw = ((double)chefio_getReadBytes())/chefio_getReadTime();
-    if( chefio_getReadTime() == 0 ) {
-      fprintf(stderr, "%d ZERO read time reads %" PRIu64 " readTime %" PRIu64 " readBytes %" PRIu64 " bw %f\n",
-          PCU_Comm_Self(), chefio_getReads(), chefio_getReadTime(), chefio_getReadBytes(), bw);
-    }
     printMinMaxAvgDbl("readBandwidth (MB/s)", bw);
     /* B  * 10^6us *  1MB   = MB
      * -    ------   -----    --
@@ -281,10 +277,6 @@ static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
   chefio_global_stats.readTime += time;
   chefio_global_stats.readBytes += bytes;
   chefio_global_stats.reads++;
-  if( !time ) {
-    fprintf(stderr, "%s %d ZERO read time reads %" PRIu64 " time %" PRIu64 " bytes %" PRIu64 "\n",
-        __func__, PCU_Comm_Self(), chefio_getReads(), time, bytes);
-  }
   assert(r == nmemb);
 }
 
