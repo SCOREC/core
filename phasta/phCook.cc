@@ -189,14 +189,15 @@ namespace ph {
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber,in.ramdisk);
     std::string path = ph::setupOutputDir(in.ramdisk);
-    ph::setupOutputSubdir(path,in.ramdisk);
+    std::string subDirPath = path;
+    ph::setupOutputSubdir(subDirPath,in.ramdisk);
     ph::enterFilteredMatching(m, in, bcs);
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
-    ph::detachAndWriteSolution(in,out,m,path); //write restart
+    ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
     if ( in.writeGeomBCFiles ) {
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
@@ -206,7 +207,7 @@ namespace ph {
       // reset the function pointer to the original value
       out.openfile_write = fn;
     }
-    ph::writeGeomBC(out, path); //write geombc
+    ph::writeGeomBC(out, subDirPath); //write geombc
     ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
 #ifdef HAVE_SIMMETRIX
