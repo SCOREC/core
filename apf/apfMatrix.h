@@ -40,6 +40,13 @@ class Matrix : public Array<Vector<N>,M>
       for (std::size_t j=0; j < N; ++j)
         (*this)[i][j] = array[i][j];
     }
+    /** \brief construct from an array of Vector*/
+    Matrix(Vector<N> const* vectors)
+    {
+      for (std::size_t i=0; i < M; ++i)
+      for (std::size_t j=0; j < N; ++j)
+        (*this)[i][j] = vectors[i][j];
+    }
     /** \brief add two matrices */
     Matrix<M,N> operator+(Matrix<M,N> const& b) const
     {
