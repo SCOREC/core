@@ -116,8 +116,6 @@ class Input
     double vertexImbalance;
     FILE* (*openfile_read)(Input& in, const char* path);
     RStream* rs;
-/** \brief minimum desired mean ratio cubed for simplex elements
-   \details a different measure is used for curved elements */
 /** \brief the flag for switch between simmetrix mesh and pumi-based mesh.
    \ avoid run incompatible APIs with simmetrix mesh */
     int simmetrixMesh;
