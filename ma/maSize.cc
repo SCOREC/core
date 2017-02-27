@@ -169,7 +169,6 @@ class SizeFieldIntegrator : public apf::Integrator
    into the metric space, then uses the generalized determinant */
       double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
       measurement += w*dV2;
-    //printf("atPoint: rank %d, dV2 %E\n", PCU_Comm_Self(), dV2);
     }
     double measurement;
     SizeField* sizeField;
