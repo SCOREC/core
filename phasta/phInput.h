@@ -83,6 +83,7 @@ class Input
     int useAttachedFields;
     int displacementMigration;
     int isReorder;
+/** \brief tetrahedronize a mixed mesh if set to 1. */
     int tetrahedronize;
     int localPtn;
     int recursiveUR;
@@ -95,13 +96,21 @@ class Input
     int snap;
     int transferParametric;
     int splitAllLayerEdges;
+/** \brief filter out a subset of 3-way periodic matches.
+   \ it also fileter out DG ineterface matches. */
     int filterMatches;
     int axisymmetry;
     int formEdges;
     int parmaLoops;
     int parmaVerbosity;
+/** \brief write the geombc file during in-memory data transfer
+   \ between phasta and chef. */
     int writeGeomBCFiles;
     int ramdisk;
+/** \brief the value of criteria for the mesh measure.
+   \details this is only used in solver-adaptor (phastaChef) loop.
+   \ If the mesh quality is less than this value,
+   \ it will trigger the mesh adaptor. */
     double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;
@@ -109,7 +118,11 @@ class Input
     RStream* rs;
 /** \brief minimum desired mean ratio cubed for simplex elements
    \details a different measure is used for curved elements */
+/** \brief the flag for switch between simmetrix mesh and pumi-based mesh.
+   \ avoid run incompatible APIs with simmetrix mesh */
     int simmetrixMesh;
+/** \brief the max number of iterations in mesh adaptation
+   \details this is only used in solver-adaptor (phastaChef) loop */
     int maxAdaptIterations;
     double adaptShrinkLimit;
 };
