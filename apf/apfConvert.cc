@@ -208,11 +208,11 @@ class Converter
     }
     void convertQuadratic()
     {
-      if (inMesh->getShape() != getLagrange(2))
+      if (inMesh->getShape() != getLagrange(2) && inMesh->getShape() != getSerendipity())
         return;
       if ( ! PCU_Comm_Self())
         fprintf(stderr,"transferring quadratic mesh\n");
-      changeMeshShape(outMesh,getLagrange(2),/*project=*/false);
+      changeMeshShape(outMesh,inMesh->getShape(),/*project=*/false);
       convertField(inMesh->getCoordinateField(),outMesh->getCoordinateField());
     }
     void createMatches(int dim)
