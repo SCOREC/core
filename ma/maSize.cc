@@ -9,6 +9,7 @@
 *******************************************************************************/
 #include <PCU.h>
 #include "maSize.h"
+#include "apfMatrix.h"
 #include <apfShape.h>
 #include <cstdlib>
 #include <cassert>
@@ -64,20 +65,8 @@ double IdentitySizeField::getWeight(Entity*)
   return 1.0;
 }
 
-static void makeQ(Matrix const& R, Vector const& h, Matrix& Q)
+static void orthogonalizeR(Matrix& R)
 {
-  Matrix S(1/h[0],0,0,
-           0,1/h[1],0,
-           0,0,1/h[2]);
-  Q = R*S;
-}
-
-static void interpolateR(
-    apf::Element* rElement,
-    Vector const& xi,
-    Matrix& R)
-{
-  apf::getMatrix(rElement,xi,R);
   /* by the way, the principal direction vectors
      are in the columns, so lets do our cleanup
      work on the transpose */
@@ -105,62 +94,26 @@ static void interpolateR(
   R = transpose(RT);
 }
 
-static void interpolateQ(
-    apf::Element* rElement,
-    apf::Element* hElement,
-    Vector const& xi,
-    Matrix& Q)
+static void orthogonalEigenDecompForSymmetricMatrix(Matrix const& A, Vector& v, Matrix& R)
 {
-  Matrix R;
-  interpolateR(rElement,xi,R);
-  Vector h;
-  apf::getVector(hElement,xi,h);
-  makeQ(R,h,Q);
-}
+  /* here we assume A to be real symmetric 3x3 matrix, 
+   * we should be able to get 3 orthogonal eigen vectors
+   * we also normalize the eigen vectors */
+  double eigenValues[3];
+  Vector eigenVectors[3];
+  
+  apf::eigen(A, eigenVectors, eigenValues);
+  
+  Matrix RT(eigenVectors); // eigen vectors are stored in the rows of RT
 
-class SizeFieldIntegrator : public apf::Integrator
-{
-  public:
-    SizeFieldIntegrator(apf::Field* r, apf::Field* h):
-      Integrator(1),
-      measurement(0),
-      rField(r),
-      hField(h)
-    {
-      dimension = 0;
-      rElement = 0;
-      hElement = 0;
-    }
-    virtual void inElement(apf::MeshElement* me)
-    {
-      dimension = apf::getDimension(me);
-      rElement = apf::createElement(rField,me);
-      hElement = apf::createElement(hField,me);
-    }
-    virtual void outElement()
-    {
-      apf::destroyElement(rElement);
-      apf::destroyElement(hElement);
-    }
-    virtual void atPoint(Vector const& p, double w, double)
-    {
-      Matrix Q;
-      interpolateQ(rElement,hElement,p,Q);
-      Matrix J;
-      apf::getJacobian(apf::getMeshElement(rElement),p,J);
-/* transforms the rows of J, the differential tangent vectors,
-   into the metric space, then uses the generalized determinant */
-      double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
-      measurement += w*dV2;
-    }
-    double measurement;
-  private:
-    apf::Field* rField;
-    apf::Field* hField;
-    int dimension;
-    apf::Element* rElement;
-    apf::Element* hElement;
-};
+  RT[0] = RT[0].normalize();
+  RT[1] = RT[1] - RT[0]*(RT[0]*RT[1]);
+  RT[1] = RT[1].normalize();
+  RT[2] = apf::cross(RT[0],RT[1]);
+
+  v = Vector(eigenValues);
+  R = transpose(RT);
+}
 
 /* the length, area, or volume of
    the parent element for this
@@ -176,24 +129,63 @@ static double parentMeasure[apf::Mesh::TYPES] =
 ,8.0/3.0 //pyramid
 };
 
+class SizeFieldIntegrator : public apf::Integrator
+{
+  public:
+    SizeFieldIntegrator(SizeField* sF):
+      Integrator(1),
+      measurement(0),
+      sizeField(sF),
+      meshElement(0),
+      dimension(0)
+    {
+    }
+    void process(apf::MeshElement* me)
+    {
+      this->inElement(me);
+      int np = countIntPoints(me,this->order);
+      for (int p=0; p < np; ++p)
+      {
+        ipnode = p;
+        Vector point;
+        getIntPoint(me,this->order,p,point);
+        double w = getIntWeight(me,this->order,p);
+        this->atPoint(point,w,0);
+      }
+      this->outElement();
+    }
+    void inElement(apf::MeshElement* me)
+    {
+      meshElement = me;
+      dimension = apf::getDimension(me);
+    }
+    void atPoint(Vector const& p , double w, double )
+    {
+      Matrix Q;
+      sizeField->getTransform(meshElement,p,Q);
+      Matrix J;
+      apf::getJacobian(meshElement,p,J);
+/* transforms the rows of J, the differential tangent vectors,
+   into the metric space, then uses the generalized determinant */
+      double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
+      measurement += w*dV2;
+    }
+    double measurement;
+    SizeField* sizeField;
+  private:
+    apf::MeshElement* meshElement;
+    int dimension;
+};
+
 struct MetricSizeField : public SizeField
 {
-  void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
-  {
-    mesh = m;
-    rField = frames;
-    hField = sizes;
-  }
-  ~MetricSizeField()
-  {
-  }
   double measure(Entity* e)
   {
-    SizeFieldIntegrator integrator(rField, hField);
+    SizeFieldIntegrator sFI(this); 
     apf::MeshElement* me = apf::createMeshElement(mesh, e);
-    integrator.process(me);
+    sFI.process(me);
     apf::destroyMeshElement(me);
-    return integrator.measurement;
+    return sFI.measurement;
   }
   bool shouldSplit(Entity* edge)
   {
@@ -203,58 +195,12 @@ struct MetricSizeField : public SizeField
   {
     return this->measure(edge) < 0.5;
   }
-  void interpolate(
-      apf::MeshElement* parent,
-      Vector const& xi,
-      Entity* newVert)
-  {
-    apf::Element* rElement = apf::createElement(rField,parent);
-    apf::Element* hElement = apf::createElement(hField,parent);
-    Matrix R;
-    interpolateR(rElement,xi,R);
-    Vector h;
-    apf::getVector(hElement,xi,h);
-    this->setValue(newVert,R,h);
-    apf::destroyElement(hElement);
-    apf::destroyElement(rElement);
-  }
-  void getTransform(
-          apf::MeshElement* e,
-          Vector const& xi,
-          Matrix& t)
-  {
-    apf::Element* rElement = apf::createElement(rField,e);
-    apf::Element* hElement = apf::createElement(hField,e);
-    interpolateQ(rElement,hElement,xi,t);
-    apf::destroyElement(rElement);
-    apf::destroyElement(hElement);
-  }
   double getWeight(Entity* e)
   {
     /* parentMeasure is used to normalize */
     return measure(e) / parentMeasure[mesh->getType(e)];
   }
-  void setValue(
-      Entity* vert,
-      Matrix const& r,
-      Vector const& h)
-  {
-    apf::setMatrix(rField,vert,0,r);
-    apf::setVector(hField,vert,0,h);
-  }
-  void setIsotropicValue(
-      Entity* vert,
-      double value)
-  {
-    this->setValue(vert,
-                   Matrix(1,0,0,
-                          0,1,0,
-                          0,0,1),
-                   Vector(value,value,value));
-  }
   Mesh* mesh;
-  apf::Field* rField;
-  apf::Field* hField;
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -284,6 +230,9 @@ struct IsoWrapper : public AnisotropicFunction
 
 struct BothEval
 {
+  BothEval()
+  {
+  }
   BothEval(AnisotropicFunction* f)
   {
     function = f;
@@ -314,6 +263,9 @@ struct BothEval
 
 struct SizesEval : public apf::Function
 {
+  SizesEval()
+  {
+  }
   SizesEval(BothEval* b)
   {
     both = b;
@@ -328,6 +280,9 @@ struct SizesEval : public apf::Function
 
 struct FrameEval : public apf::Function
 {
+  FrameEval()
+  {
+  }
   FrameEval(BothEval* b)
   {
     both = b;
@@ -340,29 +295,194 @@ struct FrameEval : public apf::Function
   BothEval* both;
 };
 
+struct LogMEval : public apf::Function
+{
+  LogMEval()
+  {
+  }
+  LogMEval(AnisotropicFunction* f)
+  {
+    function = f;
+    cachedVert = 0;
+  }
+  void updateCache(Entity* v)
+  {
+    if (v == cachedVert)
+      return;
+    Matrix R;
+    Vector h;
+    function->getValue(v, R, h);
+    Matrix S( -2*log(h[0]),0,0,
+              0,-2*log(h[1]),0,
+              0,0,-2*log(h[2]));
+    cachedLogM = R*S*transpose(R);
+    cachedVert = v;
+  }
+  void getLogM(Entity* v, Matrix& f)
+  {
+    updateCache(v);
+    f = cachedLogM;
+  }
+  void eval(Entity* e, double* result)
+  {
+    Matrix* f = (Matrix*) result;
+    getLogM(e, *f);
+  }
+  Entity* cachedVert;
+  Matrix cachedLogM;
+  AnisotropicFunction* function;
+};
+
 struct AnisoSizeField : public MetricSizeField
 {
+  AnisoSizeField()
+  {
+  }
   AnisoSizeField(Mesh* m, AnisotropicFunction* f):
     bothEval(f),
     sizesEval(&bothEval),
     frameEval(&bothEval)
   {
-    sizesField = apf::createUserField(m, "ma_sizes", apf::VECTOR,
+    mesh = m;
+    hField = apf::createUserField(m, "ma_sizes", apf::VECTOR,
         apf::getLagrange(1), &sizesEval);
-    frameField = apf::createUserField(m, "ma_frame", apf::MATRIX,
+    rField = apf::createUserField(m, "ma_frame", apf::MATRIX,
         apf::getLagrange(1), &frameEval);
-    this->init(m, sizesField, frameField);
   }
   ~AnisoSizeField()
   {
-    apf::destroyField(sizesField);
-    apf::destroyField(frameField);
+    apf::destroyField(hField);
+    apf::destroyField(rField);
   }
+  void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
+  {
+    mesh = m;
+    hField = sizes;
+    rField = frames;
+  }
+  void getTransform(
+      apf::MeshElement* me,
+      Vector const& xi,
+      Matrix& Q)
+  {
+    apf::Element* hElement = apf::createElement(hField,me);
+    apf::Element* rElement = apf::createElement(rField,me);
+    Vector h;
+    Matrix R;
+    apf::getVector(hElement,xi,h);
+    apf::getMatrix(rElement,xi,R);
+    apf::destroyElement(hElement);
+    apf::destroyElement(rElement);
+    orthogonalizeR(R);
+    Matrix S(1/h[0],0,0,
+             0,1/h[1],0,
+             0,0,1/h[2]);
+    Q = R*S;
+  }
+  void interpolate(
+      apf::MeshElement* parent,
+      Vector const& xi,
+      Entity* newVert)
+  {
+    apf::Element* rElement = apf::createElement(rField,parent);
+    apf::Element* hElement = apf::createElement(hField,parent);
+    Vector h;
+    apf::getVector(hElement,xi,h);
+    Matrix R;
+    apf::getMatrix(rElement,xi,R);
+    orthogonalizeR(R);
+    this->setValue(newVert,R,h);
+    apf::destroyElement(hElement);
+    apf::destroyElement(rElement);
+  }
+  void setValue(
+      Entity* vert,
+      Matrix const& r,
+      Vector const& h)
+  {
+    apf::setMatrix(rField,vert,0,r);
+    apf::setVector(hField,vert,0,h);
+  }
+  void setIsotropicValue(
+      Entity* vert,
+      double value)
+  {
+    this->setValue(vert,
+                   Matrix(1,0,0,
+                          0,1,0,
+                          0,0,1),
+                   Vector(value,value,value));
+  }
+  apf::Field* hField;
+  apf::Field* rField;
   BothEval bothEval;
   SizesEval sizesEval;
   FrameEval frameEval;
-  apf::Field* sizesField;
-  apf::Field* frameField;
+};
+
+struct LogAnisoSizeField : public MetricSizeField
+{
+  LogAnisoSizeField(Mesh* m, AnisotropicFunction* f):
+    logMEval(f)
+  {
+    mesh = m;
+    logMField = apf::createUserField(m, "ma_logM", apf::MATRIX,
+        apf::getLagrange(1), &logMEval);
+  }
+  ~LogAnisoSizeField()
+  {
+    apf::destroyField(logMField);
+  }
+  void init(Mesh* m, apf::Field* logM)
+  {
+    mesh = m;
+    logMField = logM;
+  }
+  void getTransform(
+      apf::MeshElement* me,
+      Vector const& xi,
+      Matrix& Q)
+  {
+    apf::Element* logMElement = apf::createElement(logMField,me);
+    Matrix logM;
+    apf::getMatrix(logMElement,xi,logM);
+    apf::destroyElement(logMElement);
+    Vector v;
+    Matrix R;
+    orthogonalEigenDecompForSymmetricMatrix(logM, v, R);
+    Matrix S( sqrt(exp(v[0])), 0, 0,
+              0, sqrt(exp(v[1])), 0,
+              0, 0, sqrt(exp(v[2])));
+    Q = R*S;
+  }
+  void interpolate(
+      apf::MeshElement* parent,
+      Vector const& xi,
+      Entity* newVert)
+  {
+    apf::Element* logMElement = apf::createElement(logMField,parent);
+    Matrix logM;
+    apf::getMatrix(logMElement,xi,logM);
+    this->setValue(newVert,logM);
+    apf::destroyElement(logMElement);
+  }
+  void setValue(
+      Entity* vert,
+      Matrix const& logM)
+  {
+    apf::setMatrix(logMField,vert,0,logM);
+  }
+  void setIsotropicValue(
+      Entity* vert,
+      double value)
+  {
+    this->setValue(vert,
+                   Matrix(value,0,0,
+                          0,value,0,
+                          0,0,value));
+  }
+  apf::Field* logMField;
+  LogMEval logMEval;
 };
 
 struct IsoSizeField : public AnisoSizeField
@@ -404,14 +524,18 @@ struct IsoUserField : public IsoSizeField
 
 SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames)
 {
-  MetricSizeField* f = new MetricSizeField();
+  AnisoSizeField* f = new AnisoSizeField();
   f->init(m, sizes, frames);
   return f;
 }
 
-SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f)
+SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f, int const interpolationOption)
 {
-  return new AnisoSizeField(m, f);
+  // interpolationOption is 0 by default
+  if(interpolationOption == 0) 
+    return new AnisoSizeField(m, f);
+  else
+    return new LogAnisoSizeField(m,f);
 }
 
 SizeField* makeSizeField(Mesh* m, IsotropicFunction* f)
