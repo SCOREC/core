@@ -194,10 +194,10 @@ namespace ph {
     ph::enterFilteredMatching(m, in, bcs);
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
-    if ( ! in.outMeshFileName.empty() )
-      m->writeNative(in.outMeshFileName.c_str());
     // a path is not needed for inmem
     ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+    if ( ! in.outMeshFileName.empty() )
+      m->writeNative(in.outMeshFileName.c_str());
     if ( in.writeGeomBCFiles ) {
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
