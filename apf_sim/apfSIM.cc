@@ -941,6 +941,24 @@ static bool isQuadratic(pParMesh mesh)
   return result;
 }
 
+static bool hasAnySerendipity(pParMesh mesh)
+{
+  pMesh part = PM_mesh(mesh,0);
+  FIter it = M_faceIter(part);
+  pFace e;
+  bool result = false;
+  while ((e = FIter_next(it)))
+  {
+    if (F_numEdges(e) == 4)
+    {
+      result = true;
+      break;
+    }
+  }
+  FIter_delete(it);
+  return result;
+}
+
 static bool findMatches(Mesh* m)
 {
   bool found = false;
@@ -972,9 +990,16 @@ Mesh2* createMesh(pParMesh mesh)
   assert(PM_numParts(mesh)==1);
   MeshSIM* m = new MeshSIM(mesh);
   int order = 1;
-  if (isQuadratic(mesh))
+  bool serendipity = false;
+  if (isQuadratic(mesh)) {
     order = 2;
-  m->init(getLagrange(order));
+    if (hasAnySerendipity(mesh))
+      serendipity = true;
+  }
+  if (serendipity)
+    m->init(getSerendipity());
+  else
+    m->init(getLagrange(order));
   m->hasMatches = findMatches(m);
   return m;
 }
