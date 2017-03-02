@@ -24,12 +24,14 @@ struct chefio_stats {
   size_t writeBytes;
   size_t reads;
   size_t writes;
+  size_t openTime;
+  size_t closeTime;
+  size_t opens;
+  size_t closes;
 };
 static struct chefio_stats chefio_global_stats;
 
 #ifdef __INTEL_COMPILER
-typedef size_t chefioTime;
-static size_t chefio_time_diff(chefioTime* start, chefioTime* end);
 /* return the cycle count */
 void chefio_time(chefioTime* t) {
   *t = _rdtsc(); //intel intrinsic
@@ -52,20 +54,19 @@ static size_t chefio_getCyclesPerMicroSec() {
   return cpus;
 }
 /*return elapsed time in micro seconds*/
-static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
+size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
   size_t cycles = *end - *start;
   size_t us = ((double)cycles)/chefio_global_stats.cpus;
   return us;
 }
 #else
-typedef struct timespec chefioTime;
-static void chefio_time(chefioTime* t) {
+void chefio_time(chefioTime* t) {
   int err;
   err = clock_gettime(CLOCK_MONOTONIC,t);
   assert(!err);
 }
 /*return elapsed time in micro seconds*/
-static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
+size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
   assert(sizeof(size_t)==8);
   size_t elapsed = 0;
   chefioTime diff;
@@ -81,6 +82,15 @@ static size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
 }
 #endif
 
+void chefio_addOpenTime(size_t t) {
+  chefio_global_stats.openTime += t;
+  chefio_global_stats.opens++;
+}
+
+void chefio_addCloseTime(size_t t) {
+  chefio_global_stats.closeTime += t;
+  chefio_global_stats.closes++;
+}
 
 static void printMinMaxAvgSzt(const char* key, size_t v) {
   size_t min = PCU_Min_SizeT(v);
@@ -125,6 +135,22 @@ static size_t chefio_getWrites() {
   return chefio_global_stats.writes;
 }
 
+static size_t chefio_getOpens() {
+  return chefio_global_stats.opens;
+}
+
+static size_t chefio_getCloses() {
+  return chefio_global_stats.closes;
+}
+
+static size_t chefio_getOpenTime() {
+  return chefio_global_stats.openTime;
+}
+
+static size_t chefio_getCloseTime() {
+  return chefio_global_stats.closeTime;
+}
+
 void chefio_printStats() {
   if(!PCU_Comm_Self()) {
     const size_t us = 1000;
@@ -156,6 +182,16 @@ void chefio_printStats() {
     printMinMaxAvgDbl("writeBandwidth (MB/s)",
         ((double)chefio_getWriteBytes())/chefio_getWriteTime());
   }
+  int opens = PCU_Max_Int((int)chefio_getOpens());
+  if(opens) {
+    printMinMaxAvgSzt("opens", chefio_getOpens());
+    printMinMaxAvgSzt("openTime (us)", chefio_getOpenTime());
+  }
+  int closes = PCU_Max_Int((int)chefio_getCloses());
+  if(closes) {
+    printMinMaxAvgSzt("closes", chefio_getCloses());
+    printMinMaxAvgSzt("closeTime (us)", chefio_getCloseTime());
+  }
 }
 
 void chefio_initStats() {
@@ -168,6 +204,10 @@ void chefio_initStats() {
   chefio_global_stats.writeBytes = 0;
   chefio_global_stats.reads = 0;
   chefio_global_stats.writes = 0;
+  chefio_global_stats.openTime = 0;
+  chefio_global_stats.closeTime = 0;
+  chefio_global_stats.opens = 0;
+  chefio_global_stats.closes = 0;
 }
 
 enum {

@@ -126,21 +126,41 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
-    return pcu_group_open(path, false);
+    chefioTime t0,t1;
+    chefio_time(&t0);
+    FILE* f = pcu_group_open(path, false);
+    chefio_time(&t1);
+    const size_t elapsed = chefio_time_diff(&t0,&t1);
+    chefio_addOpenTime(elapsed);
+    return f;
   }
 
   static FILE* openfile_write(ph::Output&, const char* path) {
-    return pcu_group_open(path, true);
+    chefioTime t0,t1;
+    chefio_time(&t0);
+    FILE* f = pcu_group_open(path, true);
+    chefio_time(&t1);
+    const size_t elapsed = chefio_time_diff(&t0,&t1);
+    chefio_addOpenTime(elapsed);
+    return f;
   }
 
   static FILE* openstream_write(ph::Output& out, const char* path) {
-    return openGRStreamWrite(out.grs, path);
+    chefioTime t0,t1;
+    chefio_time(&t0);
+    FILE* f = openGRStreamWrite(out.grs, path);
+    chefio_time(&t1);
+    const size_t elapsed = chefio_time_diff(&t0,&t1);
+    chefio_addOpenTime(elapsed);
+    return f;
   }
 
   static FILE* openstream_read(ph::Input& in, const char* path) {
     std::string fname(path);
     std::string restartStr("restart");
     FILE* f = NULL;
+    chefioTime t0,t1;
+    chefio_time(&t0);
     if( fname.find(restartStr) != std::string::npos )
       f = openRStreamRead(in.rs);
     else {
@@ -149,6 +169,9 @@ namespace chef {
         __func__, fname.c_str());
       exit(1);
     }
+    chefio_time(&t1);
+    const size_t elapsed = chefio_time_diff(&t0,&t1);
+    chefio_addOpenTime(elapsed);
     return f;
   }
 }
@@ -216,7 +239,7 @@ namespace ph {
 #endif
     if (in.adaptFlag)
       ph::goToParentDir();
-    chefio_printStats();
+    if(in.printIOtime) chefio_printStats();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     gmi_model* g = m->getModel();
