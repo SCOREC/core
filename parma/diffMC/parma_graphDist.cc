@@ -42,22 +42,6 @@ namespace {
     return rmax;
   }
 
-  void warnAboutDistanceProblem(const unsigned csA, const unsigned csB,
-      const unsigned dtchanges) {
-    if( !dtchanges && csA != csB ) {
-      parmaCommons::error(
-          "rank %d there were no distance changes but the checksum "
-          "on the distance array does not match\n",
-          PCU_Comm_Self());
-    }
-    if( dtchanges && csA == csB ) {
-      parmaCommons::error(
-          "rank %d there were distance changes but the checksum "
-          "on the distance array did not change\n",
-          PCU_Comm_Self());
-    }
-  }
-
   void offset(apf::Mesh* m, parma::dcComponents& c,
       apf::MeshTag* dt, unsigned* rmax) {
     //If maxDistanceIncrease number of diffusion steps were ran there could be
@@ -69,7 +53,6 @@ namespace {
     //per step from part one to zero.  The max distance of part zero increases
     //by one each step.  Thus in maxDistanceIncrease steps the distance can at
     //most increase by maxDistanceIncrease for a given component.
-    const unsigned csStart = m->getTagChecksum(dt,apf::Mesh::VERTEX);
     const int maxDistanceIncrease = 1000;
     if (!c.size())
       return;
@@ -83,7 +66,6 @@ namespace {
 
     // Go backwards so that the largest bdry vtx changes are made first
     //  and won't be augmented in subsequent bdry traversals.
-    unsigned dtchanges = 0;
     for(unsigned i=c.size()-1; i>0; i--) {
       apf::MeshEntity* v;
       c.beginBdry(i);
@@ -92,18 +74,13 @@ namespace {
         int dist = d + TO_INT(rsum[i]);
         if(d < dist) { //needs updating
           m->setIntTag(v,dt,&dist);
-          dtchanges++;
           assert(d != dist);
         }
       }
       c.endBdry();
     }
-    const unsigned csMid = m->getTagChecksum(dt,apf::Mesh::VERTEX);
-    warnAboutDistanceProblem(csStart,csMid,dtchanges);
-    assert((!dtchanges && csStart == csMid) || (dtchanges && csStart != csMid));
 
     // Offset the interior vertices
-    dtchanges = 0;
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
     while( (v = m->iterate(it)) ) {
@@ -117,12 +94,8 @@ namespace {
       int d; m->getIntTag(v,dt,&d);
       int dist = d + TO_INT(rsum[id]);
       m->setIntTag(v,dt,&dist);
-      if(dist != d) dtchanges++;
     }
     m->end(it);
-    const unsigned csEnd = m->getTagChecksum(dt,apf::Mesh::VERTEX);
-    warnAboutDistanceProblem(csMid,csEnd,dtchanges);
-    assert((!dtchanges && csMid == csEnd) || (dtchanges && csMid != csEnd));
     delete [] rsum;
   }
 
