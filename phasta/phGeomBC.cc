@@ -326,7 +326,12 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   writeElementGraph(o, f);
   writeEdges(o, f);
+  chefioTime ct0,ct1;
+  chefio_time(&ct0);
   fclose(f);
+  chefio_time(&ct1);
+  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
+  chefio_addCloseTime(elapsed);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("geombc file written in %f seconds\n", t1 - t0);

@@ -400,11 +400,11 @@ if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
   if(ENABLE_SIMMETRIX)
     add_test(NAME chef1
-      COMMAND diff -r -x .svn ${RUNDIR}/1-procs_case/ good_phasta/
+      COMMAND diff -r ${RUNDIR}/1-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
   endif()
   add_test(NAME chef2
-    COMMAND diff -r -x .svn out_mesh/ good_mesh/
+    COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   if(ENABLE_ZOLTAN)
     mpi_test(chef3 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
@@ -419,11 +419,11 @@ if (PCU_COMPRESS)
     WORKING_DIRECTORY ${MDIR}/${RUNDIR})
   if(ENABLE_SIMMETRIX)
     add_test(NAME chef7
-      COMMAND diff -r -x .svn ${RUNDIR}/4-procs_case/ good_phasta/
+      COMMAND diff -r ${RUNDIR}/4-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
   endif()
   add_test(NAME chef8
-    COMMAND diff -r -x .svn out_mesh/ good_mesh/
+    COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   if(ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef

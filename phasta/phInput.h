@@ -122,6 +122,8 @@ class Input
         \details this is only used in solver-adaptor (phastaChef) loop */
     int maxAdaptIterations;
     double adaptShrinkLimit;
+    /** \brief report the time spent in IO */
+    int printIOtime;
 };
 
 int countNaturalBCs(Input& in);

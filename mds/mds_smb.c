@@ -752,12 +752,17 @@ static int is_compact(struct mds_apf* m)
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
+  const char* reorderWarning ="MDS: reordering before writing smb files\n";
   char* filename;
   int zip;
-  if (ignore_peers && (!is_compact(m)))
+  if (ignore_peers && (!is_compact(m))) {
+    if(!PCU_Comm_Self()) fprintf(stderr, "%s", reorderWarning);
     m = mds_reorder(m, 1, mds_number_verts_bfs(m));
-  if ((!ignore_peers) && PCU_Or(!is_compact(m)))
+  }
+  if ((!ignore_peers) && PCU_Or(!is_compact(m))) {
+    if(!PCU_Comm_Self()) fprintf(stderr, "%s", reorderWarning);
     m = mds_reorder(m, 0, mds_number_verts_bfs(m));
+  }
   filename = handle_path(pathname, 1, &zip, ignore_peers);
   write_smb(m, filename, zip, ignore_peers, apf_mesh);
   free(filename);
