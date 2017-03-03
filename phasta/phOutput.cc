@@ -5,9 +5,19 @@
 #include "phBubble.h"
 #include "phAxisymmetry.h"
 #include "phInterfaceCutter.h"
+#include "apfSIM.h"
+#include "gmi_sim.h"
+#include <SimUtil.h>
+#include <SimPartitionedMesh.h>
+#include <SimAdvMeshing.h>
 #include <fstream>
 #include <sstream>
 #include <cassert>
+#include <iostream>
+#include <stdio.h>
+#include <typeinfo>
+
+class MeshEntity;
 
 namespace ph {
 
@@ -371,6 +381,145 @@ static void getInterfaceElements(Output& o)
   o.nInterfaceElements = n;
 }
 
+static void getGrowthCurves(Output& o)
+{
+  Input& in = *o.in;
+  if (in.simmetrixMesh == 1) {
+    printf("getGrowthCurves: this is a simmetrix mesh\n");
+    Sim_logOn("BLquery.log");
+    pProgress progress = Progress_new();
+    Progress_setDefaultCallback(progress);
+
+    // get simmetrix mesh
+    apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(o.mesh);
+    pParMesh parMesh = apf_msim->getMesh();
+    pMesh mesh = PM_mesh(parMesh,0);
+    // get simmetrix model
+    gmi_model* gmiModel = apf_msim->getModel();
+    pGModel model = gmi_export_sim(gmiModel);
+
+    printf("rank %d,  Num. model verts : %d\n",  PCU_Comm_Self(), GM_numVertices(model));
+    printf("rank %d,  Num. model edges : %d\n",  PCU_Comm_Self(), GM_numEdges(model));
+    printf("rank %d,  Num. model faces : %d\n",  PCU_Comm_Self(), GM_numFaces(model));
+    printf("rank %d,  Num. model rngs  : %d\n",  PCU_Comm_Self(), GM_numRegions(model));
+
+    printf("rank %d,  Num. mesh verts :  %d\n",  PCU_Comm_Self(), M_numVertices(mesh));
+    printf("rank %d,  Num. mesh edges :  %d\n",  PCU_Comm_Self(), M_numEdges(mesh));
+    printf("rank %d,  Num. mesh faces :  %d\n",  PCU_Comm_Self(), M_numFaces(mesh));
+    printf("rank %d,  Num. mesh rngs  :  %d\n",  PCU_Comm_Self(), M_numRegions(mesh));
+
+    pGFace modelFace;
+    pVertex meshVertex;
+    pEntity seed;
+    pGEntity into;
+    GFIter fIter;
+    VIter vIter;
+    pPList vertices = PList_new();
+    pPList edges = PList_new();
+    MeshEntity* me;
+    double xyz[3];
+
+
+    std::cout << "typeid(seed).name: " << typeid(seed).name() << std::endl;
+    std::cout << "typeid(meshEntity).name: " << typeid(meshEntity).name() << std::endl;
+
+    // number of growth curves
+    int ngc = 0;
+    int nv  = 0;
+    fIter = GM_faceIter(model);
+    while((modelFace=GFIter_next(fIter))){
+      vIter = M_classifiedVertexIter(mesh, modelFace, 1);
+      while((meshVertex=VIter_next(vIter))){
+        // should add some error catch later
+        if(BL_isBaseEntity(meshVertex, modelFace) == 0 )
+          continue;
+        else if (BL_stackSeedEntity(meshVertex,modelFace,0,into,&seed) == 0 ) // should try both side 0 & 1
+          continue;
+        else
+          ngc++;
+
+        if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
+          printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
+        }
+
+        nv += PList_size(vertices);
+
+        // clean up
+        PList_clear(vertices);
+      }
+      VIter_delete(vIter);
+    }
+    GFIter_delete(fIter);
+
+    // generate output
+    o.nGrowthCurves = ngc;
+    o.arrays.gcflt = new double[ngc];
+    o.arrays.gcgr  = new double[ngc];
+    o.arrays.igcnv = new int[ngc];
+    o.arrays.igclv = new int[nv];
+
+    fIter = GM_faceIter(model);
+    while((modelFace=GFIter_next(fIter))){
+      printf("**Processing model face: %d\n", GEN_tag(modelFace));
+
+      vIter = M_classifiedVertexIter(mesh, modelFace, 1);
+      while((meshVertex=VIter_next(vIter))){
+        // should add some error catch later
+        if(BL_isBaseEntity(meshVertex, modelFace) == 0 )
+          continue;
+        else if (BL_stackSeedEntity(meshVertex,modelFace,0,into,&seed) == 0 ) // should try both side 0 & 1
+          continue;
+
+        if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
+          printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
+        }
+
+        //print some message
+        V_coord(meshVertex, xyz);
+        std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
+        std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+
+        printf("stack vertices size: %d, stack vertices id:", PList_size(vertices));
+        for(int i = 0; i < PList_size(vertices); i++){
+          pVertex v = (pVertex) PList_item(vertices,i);
+          me = reinterpret_cast<MeshEntity*>(v);
+          int vnumber = apf::getNumber(n, v, 0, 0);
+          int vid = EN_id(v);
+          printf("%d,",vid);
+        }
+        printf("\n");
+        printf("stack edges size: %d, stack edges id:", PList_size(edges));
+        for(int i = 0; i < PList_size(edges); i++){
+          pEdge e = (pEdge) PList_item(edges,i);
+          int eid = EN_id(e);
+          printf("%d,",eid);
+        }
+        printf("\n");
+       
+        // generate info
+        
+        
+        
+        
+        // clean up
+        PList_clear(vertices);
+        PList_clear(edges);
+      }
+      VIter_delete(vIter);
+    }
+    GFIter_delete(fIter);
+
+    PList_delete(vertices);
+    PList_delete(edges);
+
+    Progress_delete(progress);
+    Sim_logOff();
+  }
+  else {
+  }
+  return;
+}
+
 static void getMaxElementNodes(Output& o)
 {
   int n = 0;
@@ -681,6 +830,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
+  getGrowthCurves(o);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);

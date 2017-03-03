@@ -103,6 +103,11 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
   int* ileo;
 /* edges to tetrahedra adjacencies */
   int* ile;
+/* growth curve  */
+  double* gcflt;  // 1st layer thickness
+  double* gcgr;   // growth ratio
+  int* igcnv;     // number of vertices
+  int* igclv;     // list of vertices
 };
 
 
@@ -118,6 +123,7 @@ struct Output
   int nMaxElementNodes;
   int nEssentialBCNodes;
   int nOverlapEdges;
+  int nGrowthCurves;
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
   int nlworkl; /* size of arrays.ilworkl */
