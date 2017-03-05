@@ -19,6 +19,7 @@ util_exe_func(verify verify.cc)
 util_exe_func(describe describe.cc)
 test_exe_func(quality quality.cc)
 test_exe_func(writeVtxPtn writeVtxPtn.cc)
+util_exe_func(verify_2nd_order_shapes verify_2nd_order_shapes.cc)
 
 # Geometric model utilities
 if(ENABLE_SIMMETRIX)

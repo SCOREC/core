@@ -113,6 +113,30 @@ mpi_test(verify_serial 1
   ./verify
   "${MDIR}/pipe.${GXT}"
   "pipe.smb")
+if(ENABLE_SIMMETRIX)
+  mpi_test(convert_2d_quads 1
+    ./convert
+    "${MESHES}/disk/disk.smd"
+    "${MESHES}/disk/disk_quad_mesh.sms"
+    "disk_quad_mesh.smb")
+else()
+  file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+if(ENABLE_SIMMETRIX)
+  mpi_test(convert_2d_tris 1
+    ./convert
+    "${MESHES}/disk/disk.smd"
+    "${MESHES}/disk/disk_tri_mesh.sms"
+    "disk_tri_mesh.smb")
+else()
+  file(COPY "${MESHES}/disk/disk_tri_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+mpi_test(verify_2nd_order_shape_quads 1
+  ./verify_2nd_order_shapes
+  "disk_quad_mesh.smb")
+mpi_test(verify_2nd_order_shape_tris 1
+  ./verify_2nd_order_shapes
+  "disk_tri_mesh.smb")
 mpi_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.${GXT}"

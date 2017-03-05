@@ -1,0 +1,6 @@
+#ifndef PUMI_VERSION_H
+#define PUMI_VERSION_H
+const char* pumi_version() {
+  return "${PUMI_GIT_SHA1}";   
+}
+#endif
