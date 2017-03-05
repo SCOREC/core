@@ -3,6 +3,10 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
+include(GetGitRevisionDescription)
+get_git_head_revision(PUMI_GIT_REFSPEC PUMI_GIT_SHA1)
+configure_file( pumi_version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/pumi_version.h )
+
 #Sources & Headers
 set(SOURCES
   GenTag.cc
@@ -24,6 +28,7 @@ set(HEADERS
   GenIterator.h
   pumi_list.h
   mPartEntityContainer.h
+  pumi_version.h
   pumi.h
 )
 
