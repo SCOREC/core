@@ -103,10 +103,9 @@ int pumi_mesh_getNumGlobalNumbering (pMesh m)
   return m->countGlobalNumberings();
 }
 
-void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings)
+pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i)
 {
-  for (int i=0; i<m->countGlobalNumberings(); ++i)
-    numberings.push_back(m->getGlobalNumbering(i));
+  return m->getGlobalNumbering(i);
 }
 
 void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
@@ -212,10 +211,14 @@ pField pumi_mesh_findField(pMesh m, const char* name)
   return m->findField(name);
 }
 
-void pumi_mesh_getField(pMesh m, std::vector<pField>& fields)
+int pumi_mesh_getNumField(pMesh m)
 {
-  for (int i=0; i<m->countFields(); ++i)
-    fields.push_back(m->getField(i));
+  return m->countFields();
+}
+
+pField pumi_mesh_getField(pMesh m, int i)
+{
+  return m->getField(i);
 }
 
 //*******************************************************
