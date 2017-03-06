@@ -328,7 +328,7 @@ void pumi_mesh_deleteGlobalID(pMesh m);
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
 
 // print mesh size info - global and local
-void pumi_mesh_print(pMesh m, int p=0);
+void pumi_mesh_print(pMesh m, int print_ent=0);
 
 //************************************
 //  Mesh Entity
@@ -459,7 +459,7 @@ pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name,
                  pShape shape=NULL, int num_component=1);
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
 int pumi_mesh_getNumGlobalNumbering (pMesh m);
-void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings);
+pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i);
 
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
@@ -483,7 +483,8 @@ void pumi_field_accumulate(pField f);
 void pumi_field_freeze(pField f);
 void pumi_field_unfreeze(pField f);
 pField pumi_mesh_findField(pMesh m, const char* name);
-void pumi_mesh_getField(pMesh m, std::vector<pField>&);
+int pumi_mesh_getNumField(pMesh m);
+pField pumi_mesh_getField(pMesh m, int i);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field

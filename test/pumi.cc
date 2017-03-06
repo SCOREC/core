@@ -184,8 +184,10 @@ int main(int argc, char** argv)
 
   TEST_FIELD(m);
 
+  int num_field=pumi_mesh_getNumField(m);
   std::vector<pField> fields;
-  pumi_mesh_getField(m, fields);
+  for (int i=0; i<num_field;++i)
+    fields.push_back(pumi_mesh_getField(m, i));
 
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_freeze(*fit);
@@ -196,8 +198,11 @@ int main(int argc, char** argv)
 
   // delete numbering and ID
   std::vector<pGlobalNumbering> numberings;
-  pumi_mesh_getGlobalNumbering(m, numberings);
+  int num_gn=pumi_mesh_getNumGlobalNumbering(m);
+  for (int i=0; i<num_gn;++i)
+    numberings.push_back(pumi_mesh_getGlobalNumbering(m, i));
   assert (pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
+
   for (int i=0; i<(int)numberings.size(); ++i)
     pumi_numbering_deleteGlobal(numberings.at(i));
   pumi_mesh_deleteGlobalID(m);
