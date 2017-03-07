@@ -381,7 +381,7 @@ static void getInterfaceElements(Output& o)
   o.nInterfaceElements = n;
 }
 
-static void getGrowthCurves(Output& o)
+static void getGrowthCurves(Output& o, apf::numbering* n)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -419,7 +419,6 @@ static void getGrowthCurves(Output& o)
     MeshEntity* me;
     double xyz[3];
 
-
     std::cout << "typeid(seed).name: " << typeid(seed).name() << std::endl;
     std::cout << "typeid(meshEntity).name: " << typeid(meshEntity).name() << std::endl;
 
@@ -433,22 +432,31 @@ static void getGrowthCurves(Output& o)
         // should add some error catch later
         if(BL_isBaseEntity(meshVertex, modelFace) == 0 )
           continue;
-        else if (BL_stackSeedEntity(meshVertex,modelFace,0,into,&seed) == 0 ) // should try both side 0 & 1
-          continue;
-        else
+
+        for(int faceSide = 0; faceSide < 2; faceSide++){
+          if (BL_stackSeedEntity(meshVertex,modelFace,0,into,&seed) == 0 ) // should try both side 0 & 1
+            continue;
+
           ngc++;
 
-        if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
-          printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
-        }
+          if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
+            printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
+          }
+  
+          // assert
+          assert(PList_size(vertices) > 1);
+          assert(PList_size(edges) > 0);
+          assert(PList_size(vertices) == PList_size(edges) + 1);
 
-        nv += PList_size(vertices);
-
-        // clean up
-        PList_clear(vertices);
-      }
-      VIter_delete(vIter);
-    }
+          nv += PList_size(vertices);
+  
+          // clean up
+          PList_clear(vertices);
+          PList_clear(edges);
+        }//vertex loop
+        VIter_delete(vIter);
+      }//faceSide loop
+    }//modelFace loop
     GFIter_delete(fIter);
 
     // generate output
@@ -467,46 +475,62 @@ static void getGrowthCurves(Output& o)
         // should add some error catch later
         if(BL_isBaseEntity(meshVertex, modelFace) == 0 )
           continue;
-        else if (BL_stackSeedEntity(meshVertex,modelFace,0,into,&seed) == 0 ) // should try both side 0 & 1
-          continue;
 
-        if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
-          printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
-        }
-
-        //print some message
-        V_coord(meshVertex, xyz);
-        std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
-        std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
-
-        printf("stack vertices size: %d, stack vertices id:", PList_size(vertices));
-        for(int i = 0; i < PList_size(vertices); i++){
-          pVertex v = (pVertex) PList_item(vertices,i);
-          me = reinterpret_cast<MeshEntity*>(v);
-          int vnumber = apf::getNumber(n, v, 0, 0);
-          int vid = EN_id(v);
-          printf("%d,",vid);
-        }
-        printf("\n");
-        printf("stack edges size: %d, stack edges id:", PList_size(edges));
-        for(int i = 0; i < PList_size(edges); i++){
-          pEdge e = (pEdge) PList_item(edges,i);
-          int eid = EN_id(e);
-          printf("%d,",eid);
-        }
-        printf("\n");
-       
-        // generate info
-        
-        
-        
-        
-        // clean up
-        PList_clear(vertices);
-        PList_clear(edges);
-      }
-      VIter_delete(vIter);
-    }
+        for(int faceSide = 0; faceSide < 2; faceSide++){
+          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,into,&seed) == 0 )
+            continue;
+  
+          // list of vertices on growth curve
+          if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
+            printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
+          }
+  
+          // assert
+          assert(PList_size(vertices) > 1);
+          assert(PList_size(edges) > 0);
+          assert(PList_size(vertices) == PList_size(edges) + 1);
+  
+          o.arrays.igcnv[ngc] = PList_size(vertices);
+  
+          //print some message
+          V_coord(meshVertex, xyz);
+          std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
+          std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+  
+          printf("stack vertices size: %d, stack vertices id:", PList_size(vertices));
+  
+          for(int i = 0; i < PList_size(vertices); i++){
+            pVertex v = (pVertex) PList_item(vertices,i);
+            me = reinterpret_cast<MeshEntity*>(v);
+            int vnumber = apf::getNumber(n, v, 0, 0);
+            o.arrays.igclv[nv+i] = vnumber
+  
+            int vid = EN_id(v);
+            printf("%d,",vid);
+          }
+          printf("\n");
+  
+          // generate info
+          double l0 = E_length(PList_item(edges,0));
+          o.arrays.gcflt[ngc] = l0;
+          if( PList_size(edges) > 1 ){
+            double l1 = E_lenght(PList_item(edges,1));
+            o.arrays.gcgr[ngc] = l1/l0;
+          }
+          else
+            o.arrays.gcgr[ngc] = 1.0;
+          
+          // increment counter
+          nv += PList_size(vertices);
+          ngc += 1
+          
+          // clean up
+          PList_clear(vertices);
+          PList_clear(edges);
+        }//vertex loop
+        VIter_delete(vIter);
+      }//faceSide loop
+    }//modelFace loop
     GFIter_delete(fIter);
 
     PList_delete(vertices);
@@ -516,6 +540,7 @@ static void getGrowthCurves(Output& o)
     Sim_logOff();
   }
   else {
+    print("wrong! getGrowthCurves: not implemented for non-simmetrix mesh")
   }
   return;
 }
@@ -830,7 +855,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
-  getGrowthCurves(o);
+  getGrowthCurves(o, n);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);
