@@ -113,6 +113,30 @@ mpi_test(verify_serial 1
   ./verify
   "${MDIR}/pipe.${GXT}"
   "pipe.smb")
+if(ENABLE_SIMMETRIX)
+  mpi_test(convert_2d_quads 1
+    ./convert
+    "${MESHES}/disk/disk.smd"
+    "${MESHES}/disk/disk_quad_mesh.sms"
+    "disk_quad_mesh.smb")
+else()
+  file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+if(ENABLE_SIMMETRIX)
+  mpi_test(convert_2d_tris 1
+    ./convert
+    "${MESHES}/disk/disk.smd"
+    "${MESHES}/disk/disk_tri_mesh.sms"
+    "disk_tri_mesh.smb")
+else()
+  file(COPY "${MESHES}/disk/disk_tri_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+mpi_test(verify_2nd_order_shape_quads 1
+  ./verify_2nd_order_shapes
+  "disk_quad_mesh.smb")
+mpi_test(verify_2nd_order_shape_tris 1
+  ./verify_2nd_order_shapes
+  "disk_tri_mesh.smb")
 mpi_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.${GXT}"
@@ -400,11 +424,11 @@ if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
   if(ENABLE_SIMMETRIX)
     add_test(NAME chef1
-      COMMAND diff -r -x .svn ${RUNDIR}/1-procs_case/ good_phasta/
+      COMMAND diff -r ${RUNDIR}/1-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
   endif()
   add_test(NAME chef2
-    COMMAND diff -r -x .svn out_mesh/ good_mesh/
+    COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   if(ENABLE_ZOLTAN)
     mpi_test(chef3 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
@@ -419,11 +443,11 @@ if (PCU_COMPRESS)
     WORKING_DIRECTORY ${MDIR}/${RUNDIR})
   if(ENABLE_SIMMETRIX)
     add_test(NAME chef7
-      COMMAND diff -r -x .svn ${RUNDIR}/4-procs_case/ good_phasta/
+      COMMAND diff -r ${RUNDIR}/4-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
   endif()
   add_test(NAME chef8
-    COMMAND diff -r -x .svn out_mesh/ good_mesh/
+    COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   if(ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef

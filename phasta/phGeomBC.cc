@@ -269,6 +269,20 @@ static void writeEdges(Output& o, FILE* f)
   }
 }
 
+static void writeBoundaryLayer(Output& o, FILE* f)
+{
+  o.nGrowthCurves = 0;         // JUST FOR NOW. Need data from generateOutput
+  o.nLayeredMeshVertices = 0;  // JUST FOR NOW. Need data from generateOutput
+  if (o.nGrowthCurves > 0) {
+    writeInt(f, "number of growth curves", o.nGrowthCurves);
+    writeInt(f, "number of layered mesh vertices", o.nGrowthCurves);
+    writeDoubles(f, "first layer thickness", o.arrays.blflt, o.nGrowthCurves);
+    writeDoubles(f, "growth ratio", o.arrays.blgr, o.nGrowthCurves);
+    writeInts(f, "total number of vertices", o.arrays.bltnv, o.nGrowthCurves);
+    writeInts(f, "growth curve connectivity", o.arrays.bllist, o.nLayeredMeshVertices);
+  }
+}
+
 void writeGeomBC(Output& o, std::string path, int timestep)
 {
   double t0 = PCU_Time();
@@ -282,6 +296,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     timestep_or_dat = tss.str();
   }
   path += buildGeomBCFileName(timestep_or_dat);
+  chefio_setfile(CHEF_GEOMBC);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
@@ -326,7 +341,13 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   writeElementGraph(o, f);
   writeEdges(o, f);
+  writeBoundaryLayer(o, f);
+  chefioTime ct0,ct1;
+  chefio_time(&ct0);
   fclose(f);
+  chefio_time(&ct1);
+  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
+  chefio_addCloseTime(elapsed);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("geombc file written in %f seconds\n", t1 - t0);

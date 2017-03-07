@@ -69,6 +69,7 @@ static void setDefaults(Input& in)
   in.maxAdaptIterations = 3;
   in.adaptShrinkLimit = 10000;
   in.validQuality = 1.0e-10;
+  in.printIOtime = 0;
 }
 
 Input::Input()
@@ -137,6 +138,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["formEdges"] = &in.formEdges;
   intMap["simmetrixMesh"] = &in.simmetrixMesh;
   intMap["maxAdaptIterations"] = &in.maxAdaptIterations;
+  intMap["printIOtime"] = &in.printIOtime;
 }
 
 template <class T>

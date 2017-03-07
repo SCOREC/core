@@ -2,6 +2,7 @@
 #include <apfMesh.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <pumi_version.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -27,6 +28,8 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   PCU_Protect();
+  if( !PCU_Comm_Self() )
+    printf("PUMI Git hash %s\n", pumi_version());
 #ifdef HAVE_SIMMETRIX
   SimUtil_start();
   Sim_readLicenseFile(0);

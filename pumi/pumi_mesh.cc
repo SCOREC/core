@@ -21,6 +21,8 @@
 #include <assert.h>
 #include <cstdlib>
 #include "apf.h"
+#include "apfShape.h"
+#include "apfNumbering.h"
 
 using std::map;
 
@@ -246,7 +248,7 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   }
   else
     pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
-
+  pumi_mesh_print(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
@@ -292,7 +294,7 @@ void print_copies(pMesh m, pMeshEnt e)
   }
 }
 
-void pumi_mesh_print (pMesh m, int p)
+void pumi_mesh_print (pMesh m, int print_ent)
 {
   if (!m->findTag("global_id")) pumi_mesh_createGlobalID(m);
 
@@ -320,18 +322,36 @@ void pumi_mesh_print (pMesh m, int p)
   delete [] local_entity_count;
   delete [] global_entity_count;
 
-  if (!PCU_Comm_Self())
+  if (!PCU_Comm_Self()) 
   {
-    apf::DynamicArray<pMeshTag> tags;
+    std::cout<<"mesh shape: \""<< m->getShape()->getName()<<"\"\n";
+
+    apf::DynamicArray<pMeshTag> tags; // tags
     m->getTags(tags);
     int n = tags.getSize();
-    for (int i = 0; i < n; ++i) 
-      std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "
-              << m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
+    if (n) 
+      for (int i = 0; i < n; ++i) 
+        std::cout<<"tag "<<i<<": \""<< m->getTagName(tags[i])<<"\", type "
+                << m->getTagType(tags[i])<<", size "<< m->getTagSize(tags[i])<<"\n";
+
+    if (m->countFields())
+      for (int i = 0; i < m->countFields(); ++i)  // fields
+        std::cout<<"field "<<i<<": \""<< getName(m->getField(i))
+                 <<"\", size "<<  apf::countComponents(m->getField(i))<<"\n";
+
+    if (m->countNumberings()) 
+      for (int i = 0; i < m->countNumberings(); ++i)  // fields
+        std::cout<<"numbering "<<i<<": \""<< getName(m->getNumbering(i))
+                 <<"\" on shape \""<< getShape(m->getNumbering(i))->getName()<<"\n";
+  
+    if (m->countGlobalNumberings()) 
+      for (int i = 0; i < m->countGlobalNumberings(); ++i)  // fields
+        std::cout<<"numbering "<<i<<": \""<< getName(m->getGlobalNumbering(i))
+                 <<"\" on shape \""<< getShape(m->getGlobalNumbering(i))->getName()<<"\n";
   }
 
   // print mesh entities
-  if (p!=PCU_Comm_Self()) return;
+  if (!print_ent) return;
 
   pMeshEnt e;
   int global_id;

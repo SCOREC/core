@@ -103,11 +103,14 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
   int* ileo;
 /* edges to tetrahedra adjacencies */
   int* ile;
-/* growth curve  */
-  double* gcflt;  // 1st layer thickness
-  double* gcgr;   // growth ratio
-  int* igcnv;     // number of vertices
-  int* igclv;     // list of vertices
+/* layer mesh growth curves: first layer thickness */
+  double* gcflt;
+/* layer mesh growth curves: growth ratio */
+  double* gcgr;
+/* layer mesh growth curves: number of vertices on each growth curve */
+  int* igcnv;
+/* layer mesh growth curves: list of vertices */
+  int* igclv;
 };
 
 
@@ -127,6 +130,8 @@ struct Output
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
   int nlworkl; /* size of arrays.ilworkl */
+  int nGrowthCurves; /* number of growth curves */
+  int nLayeredMeshVertices; /* number of layered mesh vertices */
   bool hasDGInterface;
   FILE* (*openfile_write)(Output& out, const char* path);
   GRStream* grs;
