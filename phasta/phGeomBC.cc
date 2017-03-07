@@ -296,6 +296,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     timestep_or_dat = tss.str();
   }
   path += buildGeomBCFileName(timestep_or_dat);
+  chefio_setfile(CHEF_GEOMBC);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
