@@ -17,8 +17,6 @@
 #include <stdio.h>
 #include <typeinfo>
 
-class MeshEntity;
-
 namespace ph {
 
 static void getCounts(Output& o)
@@ -381,7 +379,7 @@ static void getInterfaceElements(Output& o)
   o.nInterfaceElements = n;
 }
 
-static void getGrowthCurves(Output& o, apf::numbering* n)
+static void getGrowthCurves(Output& o, apf::Numbering* n)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -411,16 +409,11 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
     pGFace modelFace;
     pVertex meshVertex;
     pEntity seed;
-    pGEntity into;
     GFIter fIter;
     VIter vIter;
     pPList vertices = PList_new();
     pPList edges = PList_new();
-    MeshEntity* me;
     double xyz[3];
-
-    std::cout << "typeid(seed).name: " << typeid(seed).name() << std::endl;
-    std::cout << "typeid(meshEntity).name: " << typeid(meshEntity).name() << std::endl;
 
     // number of growth curves
     int ngc = 0;
@@ -434,7 +427,7 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
           continue;
 
         for(int faceSide = 0; faceSide < 2; faceSide++){
-          if (BL_stackSeedEntity(meshVertex,modelFace,0,into,&seed) == 0 ) // should try both side 0 & 1
+          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 ) // should try both side 0 & 1
             continue;
 
           ngc++;
@@ -461,6 +454,7 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
 
     // generate output
     o.nGrowthCurves = ngc;
+    o.nLayeredMeshVertices = nv;
     o.arrays.gcflt = new double[ngc];
     o.arrays.gcgr  = new double[ngc];
     o.arrays.igcnv = new int[ngc];
@@ -477,7 +471,7 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
           continue;
 
         for(int faceSide = 0; faceSide < 2; faceSide++){
-          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,into,&seed) == 0 )
+          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
             continue;
   
           // list of vertices on growth curve
@@ -501,9 +495,8 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
   
           for(int i = 0; i < PList_size(vertices); i++){
             pVertex v = (pVertex) PList_item(vertices,i);
-            me = reinterpret_cast<MeshEntity*>(v);
-            int vnumber = apf::getNumber(n, v, 0, 0);
-            o.arrays.igclv[nv+i] = vnumber
+            apf::MeshEntity* me = reinterpret_cast<apf::MeshEntity*> (v);
+            o.arrays.igclv[nv+i] = apf::getNumber(n, me, 0, 0);
   
             int vid = EN_id(v);
             printf("%d,",vid);
@@ -511,10 +504,10 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
           printf("\n");
   
           // generate info
-          double l0 = E_length(PList_item(edges,0));
+          double l0 = E_length((pEdge)PList_item(edges,0));
           o.arrays.gcflt[ngc] = l0;
           if( PList_size(edges) > 1 ){
-            double l1 = E_lenght(PList_item(edges,1));
+            double l1 = E_length((pEdge)PList_item(edges,1));
             o.arrays.gcgr[ngc] = l1/l0;
           }
           else
@@ -522,7 +515,7 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
           
           // increment counter
           nv += PList_size(vertices);
-          ngc += 1
+          ngc += 1;
           
           // clean up
           PList_clear(vertices);
@@ -540,7 +533,7 @@ static void getGrowthCurves(Output& o, apf::numbering* n)
     Sim_logOff();
   }
   else {
-    print("wrong! getGrowthCurves: not implemented for non-simmetrix mesh")
+    printf("wrong! getGrowthCurves: not implemented for non-simmetrix mesh");
   }
   return;
 }
@@ -852,10 +845,10 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   checkInterface(o,bcs);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
+  getGrowthCurves(o, n);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
-  getGrowthCurves(o, n);
   getMaxElementNodes(o);
   getEssentialBCs(bcs, o);
   getInitialConditions(bcs, o);

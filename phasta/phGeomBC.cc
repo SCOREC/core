@@ -275,11 +275,11 @@ static void writeBoundaryLayer(Output& o, FILE* f)
   o.nLayeredMeshVertices = 0;  // JUST FOR NOW. Need data from generateOutput
   if (o.nGrowthCurves > 0) {
     writeInt(f, "number of growth curves", o.nGrowthCurves);
-    writeInt(f, "number of layered mesh vertices", o.nGrowthCurves);
-    writeDoubles(f, "first layer thickness", o.arrays.blflt, o.nGrowthCurves);
-    writeDoubles(f, "growth ratio", o.arrays.blgr, o.nGrowthCurves);
-    writeInts(f, "total number of vertices", o.arrays.bltnv, o.nGrowthCurves);
-    writeInts(f, "growth curve connectivity", o.arrays.bllist, o.nLayeredMeshVertices);
+    writeInt(f, "number of layered mesh vertices", o.nLayeredMeshVertices);
+    writeDoubles(f, "first layer thickness", o.arrays.gcflt, o.nGrowthCurves);
+    writeDoubles(f, "growth ratio", o.arrays.gcgr, o.nGrowthCurves);
+    writeInts(f, "number of vertices on growth curve", o.arrays.igcnv, o.nGrowthCurves);
+    writeInts(f, "list of vertices on growth curve", o.arrays.igclv, o.nLayeredMeshVertices);
   }
 }
 
