@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+enum chefio_file { CHEF_GEOMBC, CHEF_RESTART, NUM_CHEF_FILES};
+
+int chefio_file_idx(const char* field);
+
 #ifdef __INTEL_COMPILER
 typedef size_t chefioTime;
 #else
@@ -12,6 +16,7 @@ typedef struct timespec chefioTime;
 #endif
 void chefio_time(chefioTime* t);
 size_t chefio_time_diff(chefioTime* start, chefioTime* end);
+void chefio_setfile(int t);
 void chefio_addOpenTime(size_t t);
 void chefio_addCloseTime(size_t t);
 void chefio_initStats();
