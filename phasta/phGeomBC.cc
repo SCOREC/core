@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include "phOutput.h"
 #include "phIO.h"
+#include "phiotimer.h"
 #include <sstream>
 #include <cassert>
 #include <cstdlib>

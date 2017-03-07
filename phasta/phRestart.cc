@@ -3,6 +3,7 @@
 #include <apf.h>
 #include <apfField.h>
 #include "phIO.h"
+#include "phiotimer.h"
 #include "apfShape.h"
 #include "ph.h"
 #include <cstdlib>

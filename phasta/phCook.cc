@@ -15,7 +15,7 @@
 #include <phPartition.h>
 #include <phFilterMatching.h>
 #include "phInterfaceCutter.h"
-#include "phIO.h" //for chefio_initStats and chefio_printStats
+#include "phiotimer.h" //for chefio_initStats and chefio_printStats
 #include <parma.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
