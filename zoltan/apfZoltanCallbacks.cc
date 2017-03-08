@@ -11,7 +11,7 @@
 #include "apfShape.h"
 #include <PCU.h>
 #include <metis.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -89,7 +89,7 @@ static int getPartId(Mesh* m, MeshEntity* s)
     return getOtherCopy(m, s).peer;
   Matches matches;
   m->getMatches(s, matches);
-  assert(matches.getSize() == 1);
+  PCU_ALWAYS_ASSERT(matches.getSize() == 1);
   return matches[0].peer;
 }
 
@@ -227,7 +227,7 @@ void getHg(void* data, int ngid, int, int totAdjVtx, int,
     for(int i=0; i<nv; i++) {
       //add get(...) support for vertices???
       const int avIdx = (adjVtxIdx[ind]+i)*ngid;
-      assert(totAdjVtx > avIdx);
+      PCU_ALWAYS_ASSERT(totAdjVtx > avIdx);
       long gid = zb->isLocal ?
         getNumber(ln,verts[i],0,0) : getNumber(gn,Node(verts[i],0));
       adjVtx[avIdx] = gid;
@@ -303,7 +303,7 @@ ZoltanData::~ZoltanData()
 void ZoltanData::run()
 {
 /* ensure Metis indices are the same size as Zoltan indices */
-  assert(IDXTYPEWIDTH == sizeof(ZOLTAN_ID_TYPE)*8);
+  PCU_ALWAYS_ASSERT(IDXTYPEWIDTH == sizeof(ZOLTAN_ID_TYPE)*8);
   setup();
   ptn();
 }
@@ -382,7 +382,7 @@ void ZoltanData::ptn()
 
 void ZoltanData::getExport(int ind, int *localId, int *export_part)
 {
-  assert(export_lids[ind]<zb->elements.getSize());
+  PCU_ALWAYS_ASSERT(export_lids[ind]<zb->elements.getSize());
   *localId = export_lids[ind];
   *export_part = export_to_part[ind];
 }

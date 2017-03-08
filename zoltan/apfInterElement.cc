@@ -1,7 +1,7 @@
 #include <PCU.h>
 #include "apfZoltan.h"
 #include <apfMesh.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -22,7 +22,7 @@ static Copy getOtherSide(Mesh* m, MeshEntity* s)
     return getOtherCopy(m, s);
   Matches matches;
   m->getMatches(s, matches);
-  assert(matches.getSize() == 1);
+  PCU_ALWAYS_ASSERT(matches.getSize() == 1);
   return matches[0];
 }
 
