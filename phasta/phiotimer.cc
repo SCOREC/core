@@ -143,44 +143,54 @@ static void printMinMaxAvgDbl(const char* key, double v) {
         getFileName(), key, min, max, avg);
 }
 
-static size_t phastaio_getReadTime(int file) {
-  return phastaio_global_stats.readTime[file];
+static size_t phastaio_getReadTime() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.readTime[i];
 }
 
-static size_t phastaio_getWriteTime(int file) {
-  return phastaio_global_stats.writeTime[file];
+static size_t phastaio_getWriteTime() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.writeTime[i];
 }
 
-static size_t phastaio_getReadBytes(int file) {
-  return phastaio_global_stats.readBytes[file];
+static size_t phastaio_getReadBytes() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.readBytes[i];
 }
 
-static size_t phastaio_getWriteBytes(int file) {
-  return phastaio_global_stats.writeBytes[file];
+static size_t phastaio_getWriteBytes() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.writeBytes[i];
 }
 
-static size_t phastaio_getReads(int file) {
-  return phastaio_global_stats.reads[file];
+static size_t phastaio_getReads() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.reads[i];
 }
 
-static size_t phastaio_getWrites(int file) {
-  return phastaio_global_stats.writes[file];
+static size_t phastaio_getWrites() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.writes[i];
 }
 
-static size_t phastaio_getOpens(int file) {
-  return phastaio_global_stats.opens[file];
+static size_t phastaio_getOpens() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.opens[i];
 }
 
-static size_t phastaio_getCloses(int file) {
-  return phastaio_global_stats.closes[file];
+static size_t phastaio_getCloses() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.closes[i];
 }
 
-static size_t phastaio_getOpenTime(int file) {
-  return phastaio_global_stats.openTime[file];
+static size_t phastaio_getOpenTime() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.openTime[i];
 }
 
-static size_t phastaio_getCloseTime(int file) {
-  return phastaio_global_stats.closeTime[file];
+static size_t phastaio_getCloseTime() {
+  const int i = phastaio_global_stats.fileIdx;
+  return phastaio_global_stats.closeTime[i];
 }
 
 void phastaio_printStats() {
@@ -195,37 +205,38 @@ void phastaio_printStats() {
     fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
   }
   for(int chefFile=0; chefFile<NUM_PHASTA_FILES; chefFile++) {
+    phastaio_setfile(chefFile);
     if(!PCU_Comm_Self())
-      fprintf(stderr, "phastaio_filename %s\n", chefFile ? "restart" : "geombc");
-    int reads = PCU_Max_Int((int)phastaio_getReads(chefFile));
+      fprintf(stderr, "phastaio_filename %s\n", getFileName());
+    int reads = PCU_Max_Int((int)phastaio_getReads());
     if(reads) {
-      printMinMaxAvgSzt("reads", phastaio_getReads(chefFile));
-      printMinMaxAvgSzt("readTime (us)", phastaio_getReadTime(chefFile));
-      printMinMaxAvgSzt("readBytes (B)", phastaio_getReadBytes(chefFile));
-      double bw = ((double)phastaio_getReadBytes(chefFile))/phastaio_getReadTime(chefFile);
+      printMinMaxAvgSzt("reads", phastaio_getReads());
+      printMinMaxAvgSzt("readTime (us)", phastaio_getReadTime());
+      printMinMaxAvgSzt("readBytes (B)", phastaio_getReadBytes());
+      double bw = ((double)phastaio_getReadBytes())/phastaio_getReadTime();
       printMinMaxAvgDbl("readBandwidth (MB/s)", bw);
       /* B  * 10^6us *  1MB   = MB
        * -    ------   -----    --
        * us     1s     10^6B    s
        */
     }
-    int writes = PCU_Max_Int((int)phastaio_getWrites(chefFile));
+    int writes = PCU_Max_Int((int)phastaio_getWrites());
     if(writes) {
-      printMinMaxAvgSzt("writes", phastaio_getWrites(chefFile));
-      printMinMaxAvgSzt("writeTime (us)", phastaio_getWriteTime(chefFile));
-      printMinMaxAvgSzt("writeBytes (B)", phastaio_getWriteBytes(chefFile));
+      printMinMaxAvgSzt("writes", phastaio_getWrites());
+      printMinMaxAvgSzt("writeTime (us)", phastaio_getWriteTime());
+      printMinMaxAvgSzt("writeBytes (B)", phastaio_getWriteBytes());
       printMinMaxAvgDbl("writeBandwidth (MB/s)",
-          ((double)phastaio_getWriteBytes(chefFile))/phastaio_getWriteTime(chefFile));
+          ((double)phastaio_getWriteBytes())/phastaio_getWriteTime());
     }
-    int opens = PCU_Max_Int((int)phastaio_getOpens(chefFile));
+    int opens = PCU_Max_Int((int)phastaio_getOpens());
     if(opens) {
-      printMinMaxAvgSzt("opens", phastaio_getOpens(chefFile));
-      printMinMaxAvgSzt("openTime (us)", phastaio_getOpenTime(chefFile));
+      printMinMaxAvgSzt("opens", phastaio_getOpens());
+      printMinMaxAvgSzt("openTime (us)", phastaio_getOpenTime());
     }
-    int closes = PCU_Max_Int((int)phastaio_getCloses(chefFile));
+    int closes = PCU_Max_Int((int)phastaio_getCloses());
     if(closes) {
-      printMinMaxAvgSzt("closes", phastaio_getCloses(chefFile));
-      printMinMaxAvgSzt("closeTime (us)", phastaio_getCloseTime(chefFile));
+      printMinMaxAvgSzt("closes", phastaio_getCloses());
+      printMinMaxAvgSzt("closeTime (us)", phastaio_getCloseTime());
     }
   }
 }
