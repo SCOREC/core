@@ -2,7 +2,7 @@
 #include <parma_ghostOwner.h>
 #include <sstream>
 #include <fstream>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace {
   class Ptn {
@@ -44,7 +44,7 @@ namespace {
 
   void getPtnArray(apf::Mesh* m, Ptn& p, int* ptn) {
     apf::MeshTag* t = m->findTag("ugrid-vtx-ids");
-    assert(t);
+    PCU_ALWAYS_ASSERT(t);
     apf::MeshEntity* vtx;
     apf::MeshIterator* itr = m->begin(0);
     int id = 0;
@@ -61,7 +61,7 @@ namespace {
       int id = 0;
       PCU_COMM_UNPACK(id);
       const int idx = id - p.first();
-      assert(idx >= 0 && idx < p.count());
+      PCU_ALWAYS_ASSERT(idx >= 0 && idx < p.count());
       ptn[idx] = PCU_Comm_Sender();
     }
   }
@@ -79,7 +79,7 @@ namespace {
   }
 
   void writeVtxPtn(apf::Mesh* m, const char* name) {
-    assert(name);
+    PCU_ALWAYS_ASSERT(name);
     std::fstream f;
     open(name,f);
     Ptn p(m);

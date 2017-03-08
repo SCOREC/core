@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <pcu_util.h>
 #include <apf.h>
 #include <apfMesh.h>
 #include "parma_selector.h"
@@ -42,7 +43,7 @@ namespace {
     APF_ITERATE(muu, pc, p)
       if( p->second > max )
          max = p->second;
-    assert( peers->s >= pc.size() );
+    PCU_ALWAYS_ASSERT( peers->s >= pc.size() );
     peers->l=0;
     APF_ITERATE(muu, pc, p)
       if( p->second == max )

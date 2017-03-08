@@ -8,7 +8,7 @@
 #include <set>
 #include <list>
 #include <map>
-#include <cassert>
+#include <pcu_util.h>
 
 typedef std::map<unsigned, unsigned> muu;
 
@@ -38,7 +38,7 @@ apf::MeshEntity* dcPart::getSeedEnt(unsigned i) {
 }
 
 unsigned dcPart::compId(apf::MeshEntity* e) {
-  assert(m->hasTag(e, vtag));
+  PCU_ALWAYS_ASSERT(m->hasTag(e, vtag));
   int c; m->getIntTag(e, vtag, &c);
   return TO_UINT(c);
 }
@@ -82,12 +82,12 @@ unsigned dcPart::getNumIso() {
 }
 
 unsigned dcPart::getCompSize(unsigned i) {
-  assert( i < dcCompSz.size());
+  PCU_ALWAYS_ASSERT( i < dcCompSz.size());
   return dcCompSz[i];
 }
 
 unsigned dcPart::getCompPeer(unsigned i) {
-  assert( i < dcCompSz.size());
+  PCU_ALWAYS_ASSERT( i < dcCompSz.size());
   return dcCompNbor[i];
 }
 
@@ -121,7 +121,7 @@ unsigned dcPart::numDisconnectedComps() {
    }
    if( verbose )
      parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
-   assert(numDc+numIso >= 1);
+   PCU_ALWAYS_ASSERT(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }
 
@@ -137,12 +137,12 @@ unsigned dcPart::walkPart(unsigned visited) {
           ( m->hasTag(elm, vtag) || m->hasTag(elm, isotag) ) );
    m->end(itr);
    // start the walk
-   assert(elm);
+   PCU_ALWAYS_ASSERT(elm);
    elms.push_back(elm);
    while( ! elms.empty() ) {
       elm = elms.front();
       elms.pop_front();
-      assert( elm != NULL );
+      PCU_ALWAYS_ASSERT( elm != NULL );
       if ( m->hasTag(elm, vtag) || m->hasTag(elm, isotag) ) continue;
       const int dcId = TO_INT(visited);
       m->setIntTag(elm, vtag, &dcId);
@@ -152,7 +152,7 @@ unsigned dcPart::walkPart(unsigned visited) {
       APF_ITERATE(apf::Adjacent, adjElms, eit)
         if ( ! m->hasTag(*eit, vtag) )
           elms.push_back(*eit);
-      assert( count <= TO_UINT(m->count(dim)) );
+      PCU_ALWAYS_ASSERT( count <= TO_UINT(m->count(dim)) );
    }
    return count;
 }

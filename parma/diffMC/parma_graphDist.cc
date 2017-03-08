@@ -1,5 +1,6 @@
 #include <apf.h>
 #include <PCU.h>
+#include <pcu_util.h>
 #include "parma_graphDist.h"
 #include "parma_dijkstra.h"
 #include "parma_dcpart.h"
@@ -38,7 +39,7 @@ namespace {
       }
       c.endBdry();
     }
-    assert(check == m->getTagChecksum(dt,apf::Mesh::VERTEX));
+    PCU_ALWAYS_ASSERT(check == m->getTagChecksum(dt,apf::Mesh::VERTEX));
     return rmax;
   }
 
@@ -74,7 +75,7 @@ namespace {
         int dist = d + TO_INT(rsum[i]);
         if(d < dist) { //needs updating
           m->setIntTag(v,dt,&dist);
-          assert(d != dist);
+          PCU_ALWAYS_ASSERT(d != dist);
         }
       }
       c.endBdry();
@@ -229,7 +230,7 @@ namespace parma_ordering {
 
   inline apf::MeshEntity* pop(queue& q) {
     apf::MeshEntity* e = q.front();
-    assert(e);
+    PCU_ALWAYS_ASSERT(e);
     q.pop_front();
     return e;
   }
@@ -285,7 +286,7 @@ namespace parma_ordering {
       apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
       PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
       start = bfs(m, contains, src, order, start);
-      assert(check == c.getIdChecksum());
+      PCU_ALWAYS_ASSERT(check == c.getIdChecksum());
       delete contains;
       if(start == TO_INT(m->count(0))) {
         if( i != 0 ) //if not the last component to order
@@ -294,7 +295,7 @@ namespace parma_ordering {
         break;
       }
     }
-    assert(start == TO_INT(m->count(0)));
+    PCU_ALWAYS_ASSERT(start == TO_INT(m->count(0)));
 
     int* sorted = new int[m->count(0)];
     for(unsigned i=0; i<m->count(0); i++)
@@ -302,16 +303,16 @@ namespace parma_ordering {
     apf::MeshIterator* it = m->begin(0);
     apf::MeshEntity* e;
     while( (e = m->iterate(it)) ) {
-      assert( m->hasTag(e,order) );
+      PCU_ALWAYS_ASSERT( m->hasTag(e,order) );
       int id; m->getIntTag(e,order,&id);
-      assert(id < TO_INT(m->count(0)));
+      PCU_ALWAYS_ASSERT(id < TO_INT(m->count(0)));
       sorted[id] = 1;
     }
     m->end(it);
     for(unsigned i=0; i<m->count(0); i++)
-      assert(sorted[i]);
+      PCU_ALWAYS_ASSERT(sorted[i]);
     delete [] sorted;
-    assert(check == c.getIdChecksum());
+    PCU_ALWAYS_ASSERT(check == c.getIdChecksum());
     return order;
   }
 
@@ -348,7 +349,7 @@ namespace parma_ordering {
     double avg = TO_DOUBLE(tot)/PCU_Comm_Peers();
     if( !PCU_Comm_Self() )
       parmaCommons::status("la min %d max %d avg %.3f\n", min, max, avg);
-    assert(check == m->getTagChecksum(order,apf::Mesh::VERTEX));
+    PCU_ALWAYS_ASSERT(check == m->getTagChecksum(order,apf::Mesh::VERTEX));
     if( setOrder )
       m->destroyTag(order);
   }
@@ -372,7 +373,7 @@ namespace parma {
           parmaCommons::error("rank %d comp %u iso %u ... "
               "some vertices don't have distance computed\n",
               PCU_Comm_Self(), c.size(), c.numIso());
-          assert(false);
+          PCU_ALWAYS_ASSERT(false);
         }
       unsigned* rmax = getMaxDist(m,c,t);
       offset(m,c,t,rmax);
@@ -384,7 +385,7 @@ namespace parma {
 
 apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   double t0 = PCU_Time();
-  assert( !hasDistance(m) );
+  PCU_ALWAYS_ASSERT( !hasDistance(m) );
   parma::dcComponents c = parma::dcComponents(m);
   const unsigned checkIds = c.getIdChecksum();
   apf::MeshTag* dist = computeDistance(m,c);
@@ -394,13 +395,13 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
       parmaCommons::error("rank %d comp %u iso %u ... "
           "some vertices don't have distance computed\n",
           PCU_Comm_Self(), c.size(), c.numIso());
-      assert(false);
+      PCU_ALWAYS_ASSERT(false);
     }
   parma_ordering::la(m);
   apf::MeshTag* order = parma_ordering::reorder(m,c,dist);
   parma_ordering::la(m,order);
-  assert(checkIds == c.getIdChecksum());
-  assert(check == m->getTagChecksum(dist,apf::Mesh::VERTEX));
+  PCU_ALWAYS_ASSERT(checkIds == c.getIdChecksum());
+  PCU_ALWAYS_ASSERT(check == m->getTagChecksum(dist,apf::Mesh::VERTEX));
   m->destroyTag(dist);
   parmaCommons::printElapsedTime(__func__,PCU_Time()-t0);
   return order;

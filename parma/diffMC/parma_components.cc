@@ -1,7 +1,7 @@
 #include <list>
 #include <set>
 #include <algorithm>
-#include <cassert>
+#include <pcu_util.h>
 #include <apf.h>
 #include <PCU.h>
 #include "parma_components.h"
@@ -57,7 +57,7 @@ namespace parma {
       oldToNew[order[i]] = i;
       dtmp[i] = depth[i];
       btmp[i] = bdry[i];
-      assert(1 == core[i].size());
+      PCU_ALWAYS_ASSERT(1 == core[i].size());
       ctmp[i] = *(core[i].begin());
     }
     for(unsigned i=0; i<n; i++) {
@@ -82,7 +82,7 @@ namespace parma {
   }
 
   void DCC::sortByDepth() {
-    assert(n>0);
+    PCU_ALWAYS_ASSERT(n>0);
     Comp* comp = new Comp[n]();
     for(unsigned i=0; i<n; i++) {
       comp[i].i = i;
@@ -101,28 +101,28 @@ namespace parma {
 
   unsigned DCC::iso() { return getNumIso(); }
 
-  unsigned DCC::getDepth(unsigned i) { assert(i<n); return depth[i]; }
+  unsigned DCC::getDepth(unsigned i) { PCU_ALWAYS_ASSERT(i<n); return depth[i]; }
 
-  void DCC::setDepth(unsigned i, unsigned d) { assert(i<n); depth[i] = d; }
+  void DCC::setDepth(unsigned i, unsigned d) { PCU_ALWAYS_ASSERT(i<n); depth[i] = d; }
 
-  Level* DCC::getBdry(unsigned i) { assert(i<n); return &(bdry[i]); }
+  Level* DCC::getBdry(unsigned i) { PCU_ALWAYS_ASSERT(i<n); return &(bdry[i]); }
 
-  Level* DCC::getCore(unsigned i) { assert(i<n); return &(core[i]); }
+  Level* DCC::getCore(unsigned i) { PCU_ALWAYS_ASSERT(i<n); return &(core[i]); }
 
   bool DCC::has(apf::MeshEntity* e) { return m->hasTag(e, idT); }
 
   apf::MeshEntity* DCC::getCoreVtx(unsigned i) {
-    assert(i<n);
+    PCU_ALWAYS_ASSERT(i<n);
     Level* lvl = getCore(i);
-    assert(1 == lvl->size());
+    PCU_ALWAYS_ASSERT(1 == lvl->size());
     return *(lvl->begin());
   }
 
   unsigned DCC::getId(apf::MeshEntity* e) {
-    assert(m->hasTag(e, idT));
+    PCU_ALWAYS_ASSERT(m->hasTag(e, idT));
     int ctv; m->getIntTag(e, idT, &ctv);
     unsigned cid = TO_UINT(ctv);
-    assert(cid < n);
+    PCU_ALWAYS_ASSERT(cid < n);
     return cid;
   }
 
@@ -196,7 +196,7 @@ namespace parma {
 
   void DCC::getCoreVtx() {
     for(unsigned i=0; i<size(); i++) {
-      assert( core[i].size() );
+      PCU_ALWAYS_ASSERT( core[i].size() );
       apf::MeshEntity* e = *(core[i].begin());
       core[i].clear();
       core[i].insert(e);
@@ -269,20 +269,20 @@ namespace parma {
         lvl = NULL;
       }
       void begin(Level* l) {
-        assert(!active);
+        PCU_ALWAYS_ASSERT(!active);
         lvl = l;
         active = true;
         itr = lvl->begin();
       }
       apf::MeshEntity* iterate() {
-        assert(active);
+        PCU_ALWAYS_ASSERT(active);
         if( itr == lvl->end() )
           return NULL;
         else
           return *(itr++);
       }
       void end() {
-        assert(active);
+        PCU_ALWAYS_ASSERT(active);
         active = false;
       }
     private:
