@@ -11,7 +11,7 @@
 #include "apf.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include <cstdlib> // for malloc and free
 
@@ -469,7 +469,7 @@ static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mism
 
     double* r_values = (double*)((char*)msg_recv+sizeof(pMeshEnt)+sizeof(int)); 
     int num_data = (msg_size-sizeof(pMeshEnt)-sizeof(int))/sizeof(double);
-    assert(n==num_data);
+    PCU_ALWAYS_ASSERT(n==num_data);
  
     if (mismatch_fields.find(f)!=mismatch_fields.end()) continue;
 
