@@ -1,6 +1,5 @@
 #include "gmi_lookup.h"
 #include "agm.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <pcu_util.h>
 

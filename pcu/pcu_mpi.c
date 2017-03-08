@@ -7,7 +7,6 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
-#include <stdio.h>
 #include "pcu_mpi.h"
 #include "pcu_util.h"
 

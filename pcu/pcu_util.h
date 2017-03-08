@@ -10,6 +10,8 @@
 #ifndef PCU_UTIL_H
 #define PCU_UTIL_H
 
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -9,7 +9,6 @@
 *******************************************************************************/
 
 #include "pcu_util.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 void PCU_Assert_Fail(const char* msg) {
