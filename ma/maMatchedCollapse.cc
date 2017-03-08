@@ -9,7 +9,7 @@
 *******************************************************************************/
 #include "maMatchedCollapse.h"
 #include "maAdapt.h"
-#include <cassert>
+#include <pcu_util.h>
 #include <PCU.h>
 
 #include <algorithm>
@@ -74,16 +74,16 @@ void Rebuilds::match(apf::Sharing* sh)
   for (unsigned i = 0; i < v.size(); ++i) {
     Entity* orig = v[i].original;
     Entity* gen = v[i].e;
-    assert(mesh->getType(orig) == mesh->getType(gen));
+    PCU_ALWAYS_ASSERT(mesh->getType(orig) == mesh->getType(gen));
     apf::CopyArray orig_matches;
     sh->getCopies(orig, orig_matches);
     for (unsigned j = 0; j < orig_matches.getSize(); ++j) {
-      assert(orig_matches[j].peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(orig_matches[j].peer == PCU_Comm_Self());
       Entity* gen_match_j = 0;
       for (unsigned k = 0; k < v.size(); ++k)
         if (v[k].original == orig_matches[j].entity)
           gen_match_j = v[k].e;
-      assert(gen_match_j);
+      PCU_ALWAYS_ASSERT(gen_match_j);
       mesh->addMatch(gen, PCU_Comm_Self(), gen_match_j);
     }
   }
@@ -108,7 +108,7 @@ void MatchedCollapse::setEdge(Entity* e)
   collapses.setSize(1);
   collapses[0].Init(adapt);
   bool ok = collapses[0].setEdge(e);
-  assert(ok);
+  PCU_ALWAYS_ASSERT(ok);
 }
 
 bool MatchedCollapse::requestLocality(apf::CavityOp* o)
@@ -123,17 +123,17 @@ void MatchedCollapse::setEdges()
   apf::CopyArray copies;
   sharing->getCopies(e, copies);
   APF_ITERATE(apf::CopyArray, copies, it) {
-    assert(it->peer == PCU_Comm_Self());
-    assert(it->entity != e);
+    PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+    PCU_ALWAYS_ASSERT(it->entity != e);
   }
   collapses.setSize(copies.getSize() + 1);
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     collapses[i].Init(adapt);
   bool ok = collapses[0].setEdge(e);
-  assert(ok);
+  PCU_ALWAYS_ASSERT(ok);
   for (unsigned i = 0; i < copies.getSize(); ++i) {
     ok = collapses[i + 1].setEdge(copies[i].entity);
-    assert(ok);
+    PCU_ALWAYS_ASSERT(ok);
   }
 }
 
@@ -153,13 +153,13 @@ bool MatchedCollapse::checkTopo2()
     unsigned j;
     bool ok = false;
     for (j = 0; j < copies.getSize(); ++i) {
-      assert(copies[j].peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(copies[j].peer == PCU_Comm_Self());
       if (copies[j].entity == collapses[i].vertToCollapse) {
         ok = true;
         break;
       }
     }
-    assert(ok);
+    PCU_ALWAYS_ASSERT(ok);
   }
   /* things go quite badly if the sub-collapse cavities overlap.
      one cheap way to check is to see if there exist mesh

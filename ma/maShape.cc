@@ -16,7 +16,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -52,7 +52,7 @@ int getSliverCode(
   for (int i=0; i < 3; ++i)
     if (areaPoint[i] > 0)
       code |= (1<<i);
-  assert(code);
+  PCU_ALWAYS_ASSERT(code);
   return code;
 }
 
@@ -92,10 +92,10 @@ int markBadQuality(Adapt* a)
 
 double getMinQuality(Adapt* a)
 {
-  assert(a);
+  PCU_ALWAYS_ASSERT(a);
   Mesh* m;
   m = a->mesh;
-  assert(m);
+  PCU_ALWAYS_ASSERT(m);
   Iterator* it = m->begin(m->getDimension());
   Entity* e;
   double minqual = 1;
@@ -322,7 +322,7 @@ class LargeAngleTetFixer : public Operator
       if (match.code_index==EDGE_EDGE)
         fixer = &edgeEdgeFixer;
       else
-      { assert(match.code_index==FACE_VERT);
+      { PCU_ALWAYS_ASSERT(match.code_index==FACE_VERT);
         fixer = &faceVertFixer;
       }
       Entity* v[4];

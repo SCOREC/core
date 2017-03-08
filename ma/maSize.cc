@@ -12,7 +12,7 @@
 #include "apfMatrix.h"
 #include <apfShape.h>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -501,8 +501,8 @@ class FieldReader : public IsotropicFunction
     FieldReader(apf::Field* f)
     {
       field = f;
-      assert(apf::getValueType(field)==apf::SCALAR);
-      assert(apf::getShape(field)==apf::getLagrange(1));
+      PCU_ALWAYS_ASSERT(apf::getValueType(field)==apf::SCALAR);
+      PCU_ALWAYS_ASSERT(apf::getShape(field)==apf::getLagrange(1));
     }
     virtual ~FieldReader() {}
     virtual double getValue(Entity* vert)

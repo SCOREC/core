@@ -12,7 +12,7 @@
 #include "maTables.h"
 #include "maSolutionTransfer.h"
 #include "maLayer.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -168,7 +168,7 @@ void pyramidToTets(Refine* r, Entity* parent, Entity** v)
   Entity* v2[5];
   rotatePyramid(v,rotation,v2);
   ev[0] = v2[0]; ev[1] = v2[2];
-  assert(findUpward(m, apf::Mesh::EDGE, ev));
+  PCU_ALWAYS_ASSERT(findUpward(m, apf::Mesh::EDGE, ev));
   Entity* tv[4];
   tv[0] = v2[0]; tv[1] = v2[1]; tv[2] = v2[2]; tv[3] = v2[4];
   buildSplitElement(r, parent, apf::Mesh::TET, tv);
@@ -475,21 +475,21 @@ Vector splitTet_4_2_getCentroidXi(
   int whichPrism = (pv[2]==tv[2]) ? (0) : (1);
   if (whichPrism == 0)
   {
-    assert(pv[2]==tv[2]);
-    assert(pv[5]==tv[3]);
+    PCU_ALWAYS_ASSERT(pv[2]==tv[2]);
+    PCU_ALWAYS_ASSERT(pv[5]==tv[3]);
     xi = xi + Vector(0,1,0); //tet vertex 2
     xi = xi + Vector(0,0,1); //tet vertex 3
   }
   else //prism 1
   {
-    assert(pv[2]==tv[1]);
-    assert(pv[5]==tv[0]);
+    PCU_ALWAYS_ASSERT(pv[2]==tv[1]);
+    PCU_ALWAYS_ASSERT(pv[5]==tv[0]);
     xi = xi + Vector(0,0,0); //tet vertex 0
     xi = xi + Vector(1,0,0); //tet vertex 1
   }
   xi = xi / 6;
   int rotation = findTetRotation(m,tet,tv);
-  assert(rotation >= 0);
+  PCU_ALWAYS_ASSERT(rotation >= 0);
   unrotateTetXi(xi,rotation);
   return xi;
 }
@@ -537,9 +537,9 @@ void splitTet_4_2(Refine* r, Entity* tet, Entity** v)
   int diag = quadToTrisRestricted(r,tet,sv,ok);
   bool wasOk;
   wasOk = splitTet_prismToTets(r,tet,v,p0,splitTet_4_2_getCentroidXi);
-  assert(wasOk == static_cast<bool>(ok0 & (1<<diag)));
+  PCU_ALWAYS_ASSERT(wasOk == static_cast<bool>(ok0 & (1<<diag)));
   wasOk = splitTet_prismToTets(r,tet,v,p1,splitTet_4_2_getCentroidXi);
-  assert(wasOk == static_cast<bool>(ok1 & (1<<diag)));
+  PCU_ALWAYS_ASSERT(wasOk == static_cast<bool>(ok1 & (1<<diag)));
 }
 
 /* given a prism shaped area denoted by wv and a pyramid from the
@@ -555,7 +555,7 @@ void prismAndPyramidToTets(Refine* r, Entity* p, Entity** wv, Entity* v)
   Entity* pv[5] = {qv[0], qv[1], qv[2], qv[3], v};
   pyramidToTets(r, p, pv);
   int diagonals = getPrismDiagonalCode(m, wv);
-  assert(checkPrismDiagonalCode(diagonals));
+  PCU_ALWAYS_ASSERT(checkPrismDiagonalCode(diagonals));
   prismToTetsGoodCase(r, p, wv, diagonals);
 }
 
@@ -608,7 +608,7 @@ void octToTetsGeometric(Refine* r, Entity* parent, Entity** v)
   int n = getClosestPair(r->adapt,pairs,3);
   Entity* v2[6];
   rotateOct(v,n*4,v2);
-  assert(v2[0]==v[n]);
+  PCU_ALWAYS_ASSERT(v2[0]==v[n]);
   octToTets(r,parent,v2);
 }
 
@@ -633,7 +633,7 @@ void splitTet_6(Refine* r, Entity* tet, Entity** v)
   {
     Entity* v2[4];
     rotateTet(v,i*3,v2);
-    assert(v2[0]==v[i]);
+    PCU_ALWAYS_ASSERT(v2[0]==v[i]);
     Entity* tv[4];
     tv[0] = v2[0];
     for (int j = 1; j < 4; ++j)

@@ -12,7 +12,7 @@
 #include "maShape.h"
 #include "maAdapt.h"
 #include <apfShape.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -60,7 +60,7 @@ class QuadraticHandler : public ShapeHandler
     }
     virtual double getQuality(Entity* e)
     {
-      assert( mesh->getType(e) == apf::Mesh::TET );
+      PCU_ALWAYS_ASSERT( mesh->getType(e) == apf::Mesh::TET );
       return measureQuadraticTetQuality(mesh,e);
     }
     virtual bool hasNodesOn(int dimension)

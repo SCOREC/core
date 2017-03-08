@@ -19,7 +19,7 @@
 #include "maSnap.h"
 #include "maLayer.h"
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -204,7 +204,7 @@ static int getEdgeSplitCode(Adapt* a, Entity* e)
 int matchToTemplate(int type, Entity** vi, int code, Entity** vo)
 {
   CodeMatch const* table = code_match[type];
-  assert(table[code].code_index != -1);
+  PCU_ALWAYS_ASSERT(table[code].code_index != -1);
   int rotation = table[code].rotation;
   rotateEntity(type, vi, rotation, vo);
   return table[code].code_index;
@@ -412,7 +412,7 @@ bool refine(Adapt* a)
     freezeLayer(a);
     return false;
   }
-  assert(checkFlagConsistency(a,1,SPLIT));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,SPLIT));
   Refine* r = a->refine;
   resetCollection(r);
   collectForTransfer(r);
