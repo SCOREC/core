@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +58,7 @@ int chefio_file_idx(const char* field) {
   } else if( !strcmp(field,"restart") ) {
     return CHEF_RESTART;
   } else {
-    assert(0);
+    PCU_ALWAYS_ASSERT(0);
     exit(EXIT_FAILURE);
   }
 }
@@ -95,11 +95,11 @@ size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
 void chefio_time(chefioTime* t) {
   int err;
   err = clock_gettime(CLOCK_MONOTONIC,t);
-  assert(!err);
+  PCU_ALWAYS_ASSERT(!err);
 }
 /*return elapsed time in micro seconds*/
 size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
-  assert(sizeof(size_t)==8);
+  PCU_ALWAYS_ASSERT(sizeof(size_t)==8);
   size_t elapsed = 0;
   chefioTime diff;
   if ((end->tv_nsec-start->tv_nsec)<0) {
@@ -137,7 +137,7 @@ static void chefio_addWriteTime(size_t t) {
 }
 
 void chefio_setfile(int f) {
-  assert(f >= 0 && f < NUM_CHEF_FILES);
+  PCU_ALWAYS_ASSERT(f >= 0 && f < NUM_CHEF_FILES);
   chefio_global_stats.fileIdx = f;
 }
 
@@ -315,7 +315,7 @@ static void parse_header(char* header, char** name, long* bytes,
 {
   char* saveptr = NULL;
   int i = 0;
-  assert(header != NULL);
+  PCU_ALWAYS_ASSERT(header != NULL);
   header = strtok_r(header, ":", &saveptr);
   if (name) {
     *name = header;
@@ -376,7 +376,7 @@ static int seek_after_header(FILE* f, const char* name)
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 {
   size_t r = fread(p, size, nmemb, f);
-  assert(r == nmemb);
+  PCU_ALWAYS_ASSERT(r == nmemb);
 }
 
 static int read_magic_number(FILE* f)
@@ -442,9 +442,9 @@ int ph_read_field(FILE* f, const char* field, int swap,
   parse_params(header, &bytes, nodes, vars, step);
   if(!bytes) /* empty data block */
     return 1;
-  assert(((bytes - 1) % sizeof(double)) == 0);
+  PCU_ALWAYS_ASSERT(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
-  assert((int)n == (*nodes) * (*vars));
+  PCU_ALWAYS_ASSERT((int)n == (*nodes) * (*vars));
   *data = malloc(bytes);
   CHEFIO_READTIME(my_fread(*data, sizeof(double), n, f);, (sizeof(double)*n))
   if (swap)

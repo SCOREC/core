@@ -4,7 +4,7 @@
 #include <apfMesh.h>
 #include <apf.h>
 #include <stdio.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -27,7 +27,7 @@ void readBubbles(Bubbles& bubbles)
     printf("reading bubbles info from %s\n",bubblefname);
 
   filebubble = fopen(bubblefname, "r");
-  assert(filebubble != NULL); 
+  PCU_ALWAYS_ASSERT(filebubble != NULL); 
   // File format (each line represents a bubble):
   // bubble_id x_center y_center z_center radius (5 columns in total)
   // Set bubble_id = 0 in bubble.inp for bubbles located outside the CAD (periodic channel for instance)
@@ -90,7 +90,7 @@ void initBubbles(apf::Mesh* m, Input& in)
 {
   Bubbles bubbles;
   readBubbles(bubbles);
-  assert(in.ensa_dof >= 7);
+  PCU_ALWAYS_ASSERT(in.ensa_dof >= 7);
   apf::NewArray<double> s(in.ensa_dof);
   apf::Field* f = m->findField("solution");
   apf::MeshIterator* it = m->begin(0);

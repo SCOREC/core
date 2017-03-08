@@ -3,7 +3,7 @@
 #include <PCU.h>
 #include <apf.h>
 #include <ph.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 #include <stdio.h>
 
@@ -124,7 +124,7 @@ static void cutEntity(apf::Mesh2* m, MaterialMap& mm, apf::MeshEntity* e)
   std::vector<apf::MeshEntity*> ents;
   ents.reserve(ms.size());
   ms.erase(ms.begin());
-  assert(ms.size());
+  PCU_ALWAYS_ASSERT(ms.size());
   ents.push_back(e);
   APF_ITERATE(MaterialSet, ms, it) {
     apf::MeshEntity* ne = cloneEntity(m, e);
