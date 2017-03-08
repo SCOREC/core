@@ -371,11 +371,11 @@ static std::string buildRestartFileName(std::string prefix, int step)
 }
 
 void readAndAttachFields(Input& in, apf::Mesh* m) {
-  chefio_initStats();
+  phastaio_initStats();
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  chefio_setfile(CHEF_RESTART);
+  phastaio_setfile(CHEF_RESTART);
   FILE* f = in.openfile_read(in, filename.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
@@ -384,16 +384,11 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   int swap = ph_should_swap(f);
   /* stops when ph_read_field returns 0 */
   while( readAndAttachField(in,f,m,swap) );
-  chefioTime ct0,ct1;
-  chefio_time(&ct0);
-  fclose(f);
-  chefio_time(&ct1);
-  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
-  chefio_addCloseTime(elapsed);
+  PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("fields read and attached in %f seconds\n", t1 - t0);
-  if(in.printIOtime) chefio_printStats();
+  if(in.printIOtime) phastaio_printStats();
 }
 
 static void destroyIfExists(apf::Mesh* m, const char* name)
@@ -428,7 +423,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
 {
   double t0 = PCU_Time();
   path += buildRestartFileName("restart", in.timeStepNumber);
-  chefio_setfile(CHEF_RESTART);
+  phastaio_setfile(CHEF_RESTART);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
@@ -458,12 +453,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   /* destroy any remaining fields */
   while(m->countFields())
     apf::destroyField( m->getField(0) );
-  chefioTime ct0,ct1;
-  chefio_time(&ct0);
-  fclose(f);
-  chefio_time(&ct1);
-  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
-  chefio_addCloseTime(elapsed);
+  PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("solution written in %f seconds\n", t1 - t0);

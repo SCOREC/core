@@ -297,7 +297,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     timestep_or_dat = tss.str();
   }
   path += buildGeomBCFileName(timestep_or_dat);
-  chefio_setfile(CHEF_GEOMBC);
+  phastaio_setfile(CHEF_GEOMBC);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
@@ -343,12 +343,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeElementGraph(o, f);
   writeEdges(o, f);
   writeBoundaryLayer(o, f);
-  chefioTime ct0,ct1;
-  chefio_time(&ct0);
-  fclose(f);
-  chefio_time(&ct1);
-  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
-  chefio_addCloseTime(elapsed);
+  PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("geombc file written in %f seconds\n", t1 - t0);

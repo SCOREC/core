@@ -138,7 +138,7 @@ void ph_write_doubles(FILE* f, const char* name, double* data,
     size_t n, int nparam, int* params)
 {
   ph_write_header(f, name, n * sizeof(double) + 1, nparam, params);
-  CHEFIO_WRITETIME(fwrite(data, sizeof(double), n, f);, (n*sizeof(double)))
+  PHASTAIO_WRITETIME(fwrite(data, sizeof(double), n, f);, (n*sizeof(double)))
   fprintf(f, "\n");
 }
 
@@ -146,7 +146,7 @@ void ph_write_ints(FILE* f, const char* name, int* data,
     size_t n, int nparam, int* params)
 {
   ph_write_header(f, name, n * sizeof(int) + 1, nparam, params);
-  CHEFIO_WRITETIME(fwrite(data, sizeof(int), n, f);, (n*sizeof(int)))
+  PHASTAIO_WRITETIME(fwrite(data, sizeof(int), n, f);, (n*sizeof(int)))
   fprintf(f, "\n");
 }
 
@@ -180,7 +180,7 @@ int ph_read_field(FILE* f, const char* field, int swap,
   n = (bytes - 1) / sizeof(double);
   assert((int)n == (*nodes) * (*vars));
   *data = malloc(bytes);
-  CHEFIO_READTIME(my_fread(*data, sizeof(double), n, f);, (sizeof(double)*n))
+  PHASTAIO_READTIME(my_fread(*data, sizeof(double), n, f);, (sizeof(double)*n))
   if (swap)
     pcu_swap_doubles(*data, n);
   return 2;
