@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <phiotimer.h>
 #include <PCU.h>
 #include <inttypes.h> /* PRIu64 */
@@ -56,11 +56,11 @@ size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
 void phastaio_time(phastaioTime* t) {
   int err;
   err = clock_gettime(CLOCK_MONOTONIC,t);
-  assert(!err);
+  PCU_ALWAYS_ASSERT(!err);
 }
 /*return elapsed time in micro seconds*/
 size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
-  assert(sizeof(size_t)==8);
+  PCU_ALWAYS_ASSERT(sizeof(size_t)==8);
   size_t elapsed = 0;
   phastaioTime diff;
   if ((end->tv_nsec-start->tv_nsec)<0) {
@@ -98,7 +98,7 @@ void phastaio_addWriteTime(size_t t) {
 }
 
 void phastaio_setfile(int f) {
-  assert(f >= 0 && f < NUM_PHASTA_FILES);
+  PCU_ALWAYS_ASSERT(f >= 0 && f < NUM_PHASTA_FILES);
   phastaio_global_stats.fileIdx = f;
 }
 
