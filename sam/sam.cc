@@ -1,7 +1,7 @@
 #include "sam.h"
 #include "samSz.h"
 #include <apfField.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <stdio.h>
 #include <math.h>
 
@@ -11,7 +11,7 @@ apf::Field* errorThreshold(apf::Mesh* m, const char* fieldName,
     const unsigned idx, const double limit, const double factor)
 {
   apf::Field* f = m->findField(fieldName);
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   apf::synchronize(f);
   apf::Field* newSz = apf::createFieldOn(m,"specifiedIso",apf::SCALAR);
   apf::Field* curSz = samSz::isoSize(m);
@@ -34,8 +34,8 @@ apf::Field* errorThreshold(apf::Mesh* m, const char* fieldName,
 apf::Field* compareIsoSF(apf::Mesh* m, const char* desiredSzFld, int method)
 {
   apf::Field* f = m->findField(desiredSzFld);
-  assert(f);
-  assert(f->countComponents() == 1);
+  PCU_ALWAYS_ASSERT(f);
+  PCU_ALWAYS_ASSERT(f->countComponents() == 1);
   apf::synchronize(f);
   apf::Field* newSz = apf::createFieldOn(m,"compareIsoSF",apf::SCALAR);
   apf::Field* curSz = samSz::isoSize(m);
@@ -61,7 +61,7 @@ apf::Field* compareIsoSF(apf::Mesh* m, const char* desiredSzFld, int method)
 apf::Field* specifiedIso(apf::Mesh* m, const char* fieldName, const unsigned idx)
 {
   apf::Field* f = m->findField(fieldName);
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   apf::synchronize(f);
   apf::Field* newSz = apf::createFieldOn(m,"specifiedIso",apf::SCALAR);
   double* vals = new double[f->countComponents()];
@@ -106,7 +106,7 @@ static bool withinCyl(apf::Vector3 points, double* cyl) {
 }
 
 void multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
-  assert(m->findField(apf::getName(sf)));
+  PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
@@ -117,8 +117,8 @@ void multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
 }
 
 void multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
-  assert(box[3] > 0 && box[4] > 0 && box[5] > 0);
-  assert(m->findField(apf::getName(sf)));
+  PCU_ALWAYS_ASSERT(box[3] > 0 && box[4] > 0 && box[5] > 0);
+  PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   apf::Vector3 points;
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
@@ -135,8 +135,8 @@ void multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
 void multiplySFCyl(apf::Mesh* m, apf::Field* sf, double factor, double* cyl) {
   /* cylinder is defined as {center_x, center_y, center_z,
      normal_x, normal_y, normal_z, half_height, radius}   */
-  assert(cyl[6] > 0 && cyl[7] > 0);
-  assert(m->findField(apf::getName(sf)));
+  PCU_ALWAYS_ASSERT(cyl[6] > 0 && cyl[7] > 0);
+  PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   apf::Vector3 points;
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
@@ -152,7 +152,7 @@ void multiplySFCyl(apf::Mesh* m, apf::Field* sf, double factor, double* cyl) {
 
 void multiplySFRegion(apf::Mesh* m, apf::Field* sf, double factor, int tag) {
   /* tag should be a tag of a region */
-  assert(m->findField(apf::getName(sf)));
+  PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   int type = 3; // 3D region by default
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
