@@ -218,6 +218,8 @@ static void resize_adjacency(struct mds* m, int from, int to,
     mds_id old_cap[MDS_TYPES],
     mds_id new_cap[MDS_TYPES])
 {
+  PCU_ALWAYS_ASSERT(from <= 3);
+  PCU_ALWAYS_ASSERT(to <= 3);
   if (from < to)
     resize_up(m,from,to,old_cap,new_cap);
   else
@@ -811,6 +813,7 @@ static void increase_dimension(struct mds* m)
   old_d = m->d;
   ++(m->d);
   PCU_ALWAYS_ASSERT(old_d < m->d);
+  PCU_ALWAYS_ASSERT(m->d <= 3);
   mds_add_adjacency(m, old_d, m->d);
   mds_add_adjacency(m, m->d, old_d);
 }
@@ -820,6 +823,9 @@ static void decrease_dimension(struct mds* m)
   int old_d;
   old_d = m->d;
   --(m->d);
+  PCU_ALWAYS_ASSERT(m->d < old_d);
+  PCU_ALWAYS_ASSERT(m->d >= 1);
+  PCU_ALWAYS_ASSERT(old_d <= 3);
   mds_remove_adjacency(m, old_d, m->d);
   mds_remove_adjacency(m, m->d, old_d);
 }
