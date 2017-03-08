@@ -22,17 +22,7 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 } /* extern "C" */
 #endif
 
-#define PCU_ASSERT_IMPL(cond)                     \
-  do {                                            \
-    if (!(cond)) {                                \
-      char omsg[512];                             \
-      sprintf(omsg, "%s failed at %s + %d \n",    \
-        #cond, __FILE__, __LINE__);               \
-      PCU_Assert_Fail(omsg);                      \
-    }                                             \
-  } while (0)
-
-#define PCU_ASSERT_VERBOSE_IMPL(cond, msg)        \
+#define PCU_ASSERT_IMPL(cond, msg, ...)           \
   do {                                            \
     if (!(cond)) {                                \
       char omsg[512];                             \
@@ -42,15 +32,17 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
     }                                             \
   } while (0)
 
-#define PCU_ALWAYS_ASSERT(cond) PCU_ASSERT_IMPL(cond)
-#define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg) PCU_ASSERT_VERBOSE_IMPL(cond, msg)
+#define PCU_ASSERT(...) PCU_ASSERT_IMPL(__VA_ARGS__, "")
 
 #ifdef NDEBUG
-#define PCU_DEBUG_ASSERT(cond)
-#define PCU_DEBUG_ASSERT_VERBOSE(cond, msg)
+#define PCU_EXPECT(...)
 #else
-#define PCU_DEBUG_ASSERT(cond) PCU_ASSERT_IMPL(cond)
-#define PCU_DEBUG_ASSERT_VERBOSE(cond, msg) PCU_ASSERT_VERBOSE_IMPL(cond, msg)
+#define PCU_EXPECT(...) PCU_ASSERT(__VA_ARGS__)
 #endif
+
+#define PCU_ALWAYS_ASSERT(cond) PCU_ASSERT(cond)
+#define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg) PCU_ASSERT(cond, msg)
+#define PCU_DEBUG_ASSERT(cond) PCU_EXPECT(cond)
+#define PCU_DEBUG_ASSERT_VERBOSE(cond, msg) PCU_EXPECT(cond, msg)
 
 #endif
