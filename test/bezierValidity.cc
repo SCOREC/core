@@ -12,7 +12,7 @@
 #include <PCU.h>
 
 #include <math.h>
-#include <cassert>
+#include <pcu_util.h>
 
 /* This test file uses an alternative and more traditional method to
  * compute Jacobian differences, using the property of Bezier's that
@@ -44,7 +44,7 @@ static void testJacobian(apf::Mesh2* m)
         apf::getJacobian(me,xi,Jac);
         double detJ = (Jac[0][0]*Jac[1][1])-(Jac[1][0]*Jac[0][1]);
         double J = crv::computeTriJacobianDetFromBezierFormulation(m,e,xi);
-        assert(fabs(detJ-J) < 1e-14);
+        PCU_ALWAYS_ASSERT(fabs(detJ-J) < 1e-14);
       }
     }
     apf::destroyMeshElement(me);
@@ -85,7 +85,7 @@ static void testEdgeGradients(apf::Mesh2* m)
         J += (nodes[map[j+1]]-nodes[map[j]])*P/2.0
             *crv::binomial(P-1,j)*crv::Bij(j,P-1-j,xi[0],1.-xi[0]);
       }
-      assert(fabs(J[0]-Jac[0][0]) < 1e-14
+      PCU_ALWAYS_ASSERT(fabs(J[0]-Jac[0][0]) < 1e-14
           && fabs(J[1]-Jac[0][1]) < 1e-14);
     }
     apf::destroyMeshElement(me);
@@ -219,9 +219,9 @@ apf::Mesh2* createMesh2D()
 void checkEntityValidity(int validityTag, int entity, int order)
 {
   if(entity == 1){
-    assert(validityTag == 1);
+    PCU_ALWAYS_ASSERT(validityTag == 1);
   } else {
-    assert((validityTag > 1 && order != 3)
+    PCU_ALWAYS_ASSERT((validityTag > 1 && order != 3)
         || (validityTag == 1 && order == 3));
   }
 }
@@ -386,16 +386,16 @@ void test3D()
     int validityTag = crv::checkValidity(m,tet,0);
 
     if(order == 4){
-      assert(validityTag > 1);
+      PCU_ALWAYS_ASSERT(validityTag > 1);
     } else {
-      assert(validityTag == 1);
+      PCU_ALWAYS_ASSERT(validityTag == 1);
     }
     validityTag = crv::checkValidity(m,tet,1);
 
     if(order == 4){
-      assert(validityTag > 1);
+      PCU_ALWAYS_ASSERT(validityTag > 1);
     } else {
-      assert(validityTag == 1);
+      PCU_ALWAYS_ASSERT(validityTag == 1);
     }
     crv::getQuality(m,tet);
     m->destroyNative();

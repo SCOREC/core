@@ -5,7 +5,7 @@
 #include <apfConvert.h>
 #include <apf.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <string.h>
 
@@ -74,7 +74,7 @@ void readElements(FILE* f, unsigned numelms, int numVtxPerElm,
     elements[i] = --vtxid; //export from matlab using 1-based indices
     count[elements[i]]++;
   }
-  assert(count.size() == numVerts);
+  PCU_ALWAYS_ASSERT(count.size() == numVerts);
 }
 
 struct MeshInfo {
@@ -88,7 +88,7 @@ struct MeshInfo {
 
 void readMesh(const char* meshfilename, MeshInfo& mesh) {
   FILE* f = fopen(meshfilename, "r");
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   readHeader(f,mesh.numVerts,mesh.numElms,mesh.numVtxPerElm);
   fprintf(stderr, "numVerts %u numElms %u numVtxPerElm %u\n",
       mesh.numVerts, mesh.numElms, mesh.numVtxPerElm);
@@ -103,7 +103,7 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
 
 bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
   int numAdjElms = mesh->countUpward(face);
-  assert( numAdjElms > 0 );
+  PCU_ALWAYS_ASSERT( numAdjElms > 0 );
   if( numAdjElms == 2 )
     return false; // both regions exist -> interior
   else
@@ -113,19 +113,19 @@ bool isClassifiedOnBoundary(apf::Mesh2* mesh, apf::MeshEntity* face) {
 apf::ModelEntity* getMdlRgn(gmi_model* model) {
   apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
       gmi_find(model, 3, INTERIOR_REGION));
-  assert(rgn);
+  PCU_ALWAYS_ASSERT(rgn);
   return rgn;
 }
 
 apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* edge = mesh->findModelEntity(1,tag);
-  assert(edge);
+  PCU_ALWAYS_ASSERT(edge);
   return edge;
 }
 
 apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* face = mesh->findModelEntity(2,tag);
-  assert(face);
+  PCU_ALWAYS_ASSERT(face);
   return face;
 }
 
@@ -143,7 +143,7 @@ int setModelClassification(gmi_model* model,
     return -1;
   }
   //this is a boundary face
-  assert(vtx_type_num.at(INTERIORTAG) == 0);
+  PCU_ALWAYS_ASSERT(vtx_type_num.at(INTERIORTAG) == 0);
   //we only need to mark vertex that in on the boundary
   if(vtx_type_num[PERIMETERTAG]!=0) {
     //if perimeter point exist it's on the perimeter
@@ -188,7 +188,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   while( (face = mesh->iterate(it)) ) {
     apf::Downward verts;
     int n = mesh->getDownward(face, 0, verts);
-    assert(n);
+    PCU_ALWAYS_ASSERT(n);
 
     std::map<int, int> vtx_type_num;
     for(int i=INTERIORTAG; i<=TOP_PERIMETERTAG; i++)
@@ -196,13 +196,13 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     for(int i=0; i<3; i++){
       int value;
       mesh->getIntTag(verts[i], vtxType, &value);
-      assert(value >= INTERIORTAG && value <= TOP_PERIMETERTAG);
+      PCU_ALWAYS_ASSERT(value >= INTERIORTAG && value <= TOP_PERIMETERTAG);
       vtx_type_num[value]++;
     }
     int counttaggedvtx = 0;
     for(int i=INTERIORTAG; i<=TOP_PERIMETERTAG; i++)
       counttaggedvtx += vtx_type_num[i];
-    assert(counttaggedvtx==3);
+    PCU_ALWAYS_ASSERT(counttaggedvtx==3);
     int isSet = setModelClassification(model, mesh, vtx_type_num, face, faceClass);
     if( isSet == 1 )
       markedfaces++;
@@ -213,12 +213,12 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   }
   mesh->end(it);
 
-  assert(!skippedfaces);
+  PCU_ALWAYS_ASSERT(!skippedfaces);
 
   int totmarkedfaces=0;
   for(int i=1; i<4; i++)
     totmarkedfaces += faceClass[i];
-  assert(numbdryfaces == totmarkedfaces);
+  PCU_ALWAYS_ASSERT(numbdryfaces == totmarkedfaces);
 }
 
 /** \brief set the mesh region classification
@@ -237,12 +237,12 @@ void getMeshEdgeTags(apf::Mesh2* mesh, apf::MeshEntity* edge,
     apf::MeshTag* t, int* tags) {
   apf::Downward verts;
   int n = mesh->getDownward(edge, 0, verts);
-  assert(n == 2);
+  PCU_ALWAYS_ASSERT(n == 2);
 
   for(int i=0; i<2; i++){
     int value;
     mesh->getIntTag(verts[i], t, &value);
-    assert(value >= INTERIORTAG && value <= TOP_PERIMETERTAG);
+    PCU_ALWAYS_ASSERT(value >= INTERIORTAG && value <= TOP_PERIMETERTAG);
     tags[i] = value;
   }
 }
@@ -288,7 +288,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
       mesh->setModelEntity(edge,mdlBotFace);
     // classified on perimeter face
     else if(adj_mdl_faces.count(mdlPerFace)) {
-      assert(perimeter_count == 2 || perimeter_count == 4);
+      PCU_ALWAYS_ASSERT(perimeter_count == 2 || perimeter_count == 4);
       if (perimeter_count == 2)
         mesh->setModelEntity(edge,mdlPerFace);
       else
@@ -368,10 +368,10 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
 
 int* readIntArray(const char* fname, unsigned len) {
   FILE* f = fopen(fname, "r");
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   unsigned n;
   gmi_fscanf(f, 1, "%u", &n);
-  assert( n == len );
+  PCU_ALWAYS_ASSERT( n == len );
   int* data = new int[len];
   for(unsigned i = 0; i< len; i++)
     gmi_fscanf(f, 1, "%d", &data[i]);
@@ -381,10 +381,10 @@ int* readIntArray(const char* fname, unsigned len) {
 
 double* readScalarArray(const char* fname, unsigned len) {
   FILE* f = fopen(fname, "r");
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   unsigned n;
   gmi_fscanf(f, 1, "%u", &n);
-  assert( n == len );
+  PCU_ALWAYS_ASSERT( n == len );
   double* data = new double[len];
   for(unsigned i = 0; i< len; i++)
     gmi_fscanf(f, 1, "%lf", &data[i]);

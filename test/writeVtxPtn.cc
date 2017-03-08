@@ -4,7 +4,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {

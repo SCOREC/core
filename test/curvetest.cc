@@ -8,7 +8,7 @@
 #include <SimUtil.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
-#include <cassert>
+#include <pcu_util.h>
 
 class Linear : public ma::IsotropicFunction
 {
@@ -66,7 +66,7 @@ static void testElementSize(apf::Mesh* m)
            << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
         fprintf(stderr, "%s", s.c_str());
-        assert(v < 0);
+        PCU_ALWAYS_ASSERT(v < 0);
       }
       sizes[d-1] += v;
       apf::destroyMeshElement(me);
@@ -125,13 +125,13 @@ static void testBezier(const char* modelFile, const char* meshFile,
   for(int order = 1; order <= 5; ++order)
     for(int id = 0; id < ne; ++id){
       if(edgeErrors(id,0) > 1.e-10)
-        assert(edgeErrors(id,order-1) - edgeErrors(id,order) > 0.);
+        PCU_ALWAYS_ASSERT(edgeErrors(id,order-1) - edgeErrors(id,order) > 0.);
     }
 
   for(int order = 1; order <= 5; ++order)
     for(int id = 0; id < nf; ++id){
       if(faceErrors(id,0) > 1.e-10)
-        assert(faceErrors(id,order-1) - faceErrors(id,order) > 0.);
+        PCU_ALWAYS_ASSERT(faceErrors(id,order-1) - faceErrors(id,order) > 0.);
     }
   // check some refinement
   for(int order = 2; order <= 4; ++order){
@@ -183,7 +183,7 @@ static void testGregory(const char* modelFile, const char* meshFile,
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);

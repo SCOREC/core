@@ -8,7 +8,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 apf::MeshTag* setWeights(apf::Mesh* m) {
@@ -24,7 +24,7 @@ apf::MeshTag* setWeights(apf::Mesh* m) {
 
 int main(int argc, char** argv)
 {
-  assert(argc == 4);
+  PCU_ALWAYS_ASSERT(argc == 4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   if ( argc != 4 ) {

@@ -1,6 +1,6 @@
 #include "mthQR.h"
 #include "mth_def.h"
-#include <cassert>
+#include <pcu_util.h>
 
 #include <iostream>
 #include <iomanip>
@@ -52,7 +52,7 @@ static void testSolveQR()
   mth::Vector<double> x;
   mth::solveQR(a, b, x);
   for (unsigned i = 0; i < kx.size(); ++i)
-    assert(fabs(kx(i) - x(i)) < 1e-15);
+    PCU_ALWAYS_ASSERT(fabs(kx(i) - x(i)) < 1e-15);
 }
 
 void testHessenberg()
@@ -71,14 +71,14 @@ void testHessenberg()
   multiply(q, qt, qqt);
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
-    assert(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
+    PCU_ALWAYS_ASSERT(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
   mth::Matrix<double,3,3> qh;
   multiply(q, h, qh);
   mth::Matrix<double,3,3> qhqt;
   multiply(qh, qt, qhqt);
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
-    assert(fabs(qhqt(i,j) - a(i,j)) < 1e-10);
+    PCU_ALWAYS_ASSERT(fabs(qhqt(i,j) - a(i,j)) < 1e-10);
 }
 
 void testEigenQR()
@@ -91,21 +91,21 @@ void testEigenQR()
   mth::Matrix<double,3,3> l;
   mth::Matrix<double,3,3> q;
   bool converged = mth::eigenQR(a, l, q, 20);
-  assert(converged);
+  PCU_ALWAYS_ASSERT(converged);
   mth::Matrix<double,3,3> qt;
   transpose(q, qt);
   mth::Matrix<double,3,3> qqt;
   multiply(q, qt, qqt);
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
-    assert(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
+    PCU_ALWAYS_ASSERT(fabs(qqt(i,j) - ((double)i==j)) < 1e-10);
   mth::Matrix<double,3,3> ql;
   multiply(q, l, ql);
   mth::Matrix<double,3,3> qlqt;
   multiply(ql, qt, qlqt);
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
-    assert(fabs(qlqt(i,j) - a(i,j)) < 1e-10);
+    PCU_ALWAYS_ASSERT(fabs(qlqt(i,j) - a(i,j)) < 1e-10);
 }
 
 int main()

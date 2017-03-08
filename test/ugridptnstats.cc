@@ -4,7 +4,7 @@
 #include <apfMesh2.h>
 #include <PCU.h>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 
 const double vtxw = 1.0;
 const double edgew = 1.0;
@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_null();
-  assert( 3 == argc );
+  PCU_ALWAYS_ASSERT( 3 == argc );
   const char* ugridfile = argv[1];
   const char* ptnfile = argv[2];
   gmi_register_null();

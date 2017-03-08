@@ -7,7 +7,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <apfDynamicMatrix.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 /* this test file contains tests for
@@ -446,7 +446,7 @@ static void testAlternateTetJacobian(apf::Mesh2* m)
           apf::getJacobian(me,xi,Jac);
           double detJ = apf::getDeterminant(Jac);
           double J2 = crv::computeTetJacobianDetFromBezierFormulation(m,e,xi);
-          assert(std::fabs(detJ-J2) < 1e-13);
+          PCU_ALWAYS_ASSERT(std::fabs(detJ-J2) < 1e-13);
         }
       }
     }

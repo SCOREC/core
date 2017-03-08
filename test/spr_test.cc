@@ -4,12 +4,12 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 int main(int argc, char** argv)
 {
-  assert(argc==5);
+  PCU_ALWAYS_ASSERT(argc==5);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   const char* outFile = argv[3];
