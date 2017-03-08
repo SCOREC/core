@@ -7,8 +7,9 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
+#include <stdio.h>
 #include "pcu_mpi.h"
-#include <assert.h>
+#include "pcu_util.h"
 
 static pcu_mpi* global_mpi;
 
@@ -45,8 +46,8 @@ int pcu_mpi_rank(void)
 static void check_rank(int rank)
 {
   (void)rank;
-  assert(0 <= rank);
-  assert(rank < pcu_mpi_size());
+  PCU_ALWAYS_ASSERT(0 <= rank);
+  PCU_ALWAYS_ASSERT(rank < pcu_mpi_size());
 }
 
 void pcu_mpi_send(pcu_message* m, MPI_Comm comm)
