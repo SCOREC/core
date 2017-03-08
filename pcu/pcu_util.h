@@ -22,34 +22,34 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 } /* extern "C" */
 #endif
 
-#define PCU_ALWAYS_ASSERT(...)                    \
+#define PCU_ALWAYS_ASSERT(cond)                   \
   do {                                            \
-    if (! (__VA_ARGS__)) {                        \
-      char omsg[512];                             \
+    if (! (cond)) {                               \
+      char omsg[2048];                            \
       sprintf(omsg, "%s failed at %s + %d \n",    \
-        #__VA_ARGS__, __FILE__, __LINE__);        \
+        #cond, __FILE__, __LINE__);               \
       PCU_Assert_Fail(omsg);                      \
     }                                             \
   } while (0)
 
-#define PCU_ALWAYS_ASSERT_VERBOSE(msg, ...)       \
+#define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)      \
   do {                                            \
-    if (! (__VA_ARGS__)) {                        \
-      char omsg[512];                             \
+    if (! (cond)) {                               \
+      char omsg[248];                             \
       sprintf(omsg, "%s failed at %s + %d \n %s", \
-        #__VA_ARGS__, __FILE__, __LINE__, msg);   \
+        #cond, __FILE__, __LINE__, msg);          \
       PCU_Assert_Fail(omsg);                      \
     }                                             \
   } while(0)
 
 #ifdef NDEBUG
-#define PCU_DEBUG_ASSERT(...)
-#define PCU_DEBUG_ASSERT_VERBOSE(msg, ...)
+#define PCU_DEBUG_ASSERT(cond)
+#define PCU_DEBUG_ASSERT_VERBOSE(cond, msg)
 #else
-#define PCU_DEBUG_ASSERT(...) \
-  PCU_ALWAYS_ASSERT(__VA_ARGS__)
-#define PCU_DEBUG_ASSERT_VERBOSE(msg, ...) \
-  PCU_ALWAYS_ASSERT_VERBOSE(msg, __VA_ARGS__)
+#define PCU_DEBUG_ASSERT(cond) \
+  PCU_ALWAYS_ASSERT(cond)
+#define PCU_DEBUG_ASSERT_VERBOSE(cond, msg) \
+  PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)
 #endif
 
 #endif
