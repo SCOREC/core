@@ -15,7 +15,7 @@
 #include <maSnap.h>
 #include <maLayer.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
@@ -59,7 +59,7 @@ static void setTags(Adapt* a, ma::Entity* e, int tags)
 
 void splitEdges(ma::Adapt* a)
 {
-  assert(ma::checkFlagConsistency(a,1,ma::SPLIT));
+  PCU_ALWAYS_ASSERT(ma::checkFlagConsistency(a,1,ma::SPLIT));
   ma::Refine* r = a->refine;
   ma::resetCollection(r);
   ma::collectForTransfer(r);

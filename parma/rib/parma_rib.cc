@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <mthQR.h>
 #include <mth_def.h>
-#include <cassert>
+#include <pcu_util.h>
 
 #include <iostream>
 #include <iomanip>
@@ -74,7 +74,7 @@ static void getWeakestEigenvector(mth::Matrix3x3<double> const& A_in,
   A = normalize(A_in);
   /* find the eigenvalues (l) and eigenvectors (q) of (A) */
   bool converged = mth::eigenQR(A, l, q, 100);
-  assert(converged);
+  PCU_ALWAYS_ASSERT(converged);
   unsigned best = 0;
   /* find the *smallest* eigenvalue */
   for (unsigned i = 1; i < 3; ++i)

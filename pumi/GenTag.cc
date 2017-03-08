@@ -10,7 +10,7 @@
 #include "GenTag.h"
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstring>
 
 //enum PUMI_TagType {/*0*/ PUMI_DBL, /*1*/ PUMI_INT, /*2*/ PUMI_LONG,
@@ -164,7 +164,7 @@ void Taggable::setTagData(TagHandle* tag, void const* data)
 
 const char* Taggable::getTagString(TagHandle* tag)
 {
-  assert(tag->getType()==PUMI_STR);
+  PCU_ALWAYS_ASSERT(tag->getType()==PUMI_STR);
   int const i = findEntry(container,tag,size);
   if (i==-1)
     return 0;
@@ -173,7 +173,7 @@ const char* Taggable::getTagString(TagHandle* tag)
 
 void Taggable::setTagString(TagHandle* tag, const char* data)
 {
-  assert(tag->getType()==PUMI_STR);
+  PCU_ALWAYS_ASSERT(tag->getType()==PUMI_STR);
   int i = findEntry(container,tag,size);
   size_t const bytes = strlen(data)+1;
   Entry* e;

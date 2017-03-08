@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include "parma_entWeights.h"
 #include "parma_sides.h"
@@ -15,7 +15,7 @@ namespace parma {
   }
 
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
-    assert(entDim >= 0 && entDim <= 3);
+    PCU_ALWAYS_ASSERT(entDim >= 0 && entDim <= 3);
     apf::MeshIterator* it = m->begin(entDim);
     apf::MeshEntity* e;
     double sum = 0;
@@ -39,7 +39,7 @@ namespace parma {
   }
 
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
+    PCU_ALWAYS_ASSERT(m->hasTag(e,w));
     double weight;
     m->getDoubleTag(e,w,&weight);
     return weight;
@@ -48,7 +48,7 @@ namespace parma {
   EntWeights::EntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int d) 
     : Weights(m, w, s), entDim(d) 
   {
-    assert(entDim >= 0 && entDim <= 3);
+    PCU_ALWAYS_ASSERT(entDim >= 0 && entDim <= 3);
     weight = getWeight(m, w, entDim);
     init(m, w, s);
   }
@@ -57,7 +57,7 @@ namespace parma {
   }
   double EntWeights::getEntWeight(apf::Mesh* m, apf::MeshEntity* e, 
       apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
+    PCU_ALWAYS_ASSERT(m->hasTag(e,w));
     double entW = 0;
     m->getDoubleTag(e,w,&entW);
     return entW;

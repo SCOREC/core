@@ -6,7 +6,7 @@
 #include <iterator>
 #include <time.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <locale>
 
 #include <map>
@@ -118,7 +118,7 @@ namespace {
     //unpack destination part Id
     int destPartId;
     PCU_COMM_UNPACK(destPartId);
-    assert(rank == destPartId);
+    PCU_ALWAYS_ASSERT(rank == destPartId);
 
     //unpack array length
     size_t n;
@@ -155,11 +155,11 @@ namespace {
   void unpackNet(vector<adjPart>& msg) {
     int srcPartId;
     PCU_COMM_UNPACK(srcPartId);
-    assert(PCU_Comm_Sender() == srcPartId);
+    PCU_ALWAYS_ASSERT(PCU_Comm_Sender() == srcPartId);
 
     int destPartId;
     PCU_COMM_UNPACK(destPartId);
-    assert(PCU_Comm_Self() == destPartId);
+    PCU_ALWAYS_ASSERT(PCU_Comm_Self() == destPartId);
 
     unsigned randNum;
     PCU_COMM_UNPACK(randNum);
@@ -170,7 +170,7 @@ namespace {
 
     size_t arrayLen;
     PCU_COMM_UNPACK(arrayLen);
-    assert(arrayLen > 0);
+    PCU_ALWAYS_ASSERT(arrayLen > 0);
 
     int buff;
     for(size_t i=0; i < arrayLen; i++) {
@@ -192,7 +192,7 @@ namespace {
     //unpack destination part Id
     int destPartId;
     PCU_COMM_UNPACK(destPartId);
-    assert(rank == destPartId);
+    PCU_ALWAYS_ASSERT(rank == destPartId);
 
     //unpack adjacent part Id
     int adjPartId;
@@ -388,7 +388,7 @@ void misFinalize() {}
  * as opposed to the netgraph.
  */
 int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
-  assert(PCU_Comm_Initialized());
+  PCU_ALWAYS_ASSERT(PCU_Comm_Initialized());
 
   if (false == randNumsPredefined)
     setRandomNum(part);

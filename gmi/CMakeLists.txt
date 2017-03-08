@@ -28,6 +28,7 @@ set(HEADERS
 
 # Add the gmi library
 add_library(gmi ${SOURCES})
+target_link_libraries(gmi pcu)
 target_include_directories(gmi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>

@@ -19,7 +19,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <cfloat>
-#include <cassert>
+#include <pcu_util.h>
 #include <stdarg.h>
 
 namespace ma {
@@ -108,7 +108,7 @@ void setFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      assert(it->peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
       setFlag(a, it->entity, flag);
     }
   }
@@ -128,7 +128,7 @@ void clearFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      assert(it->peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
       clearFlag(a, it->entity, flag);
     }
   }
@@ -258,7 +258,7 @@ long markEntities(
   Iterator* it = m->begin(dimension);
   while ((e = m->iterate(it)))
   {
-    assert( ! getFlag(a,e,trueFlag));
+    PCU_ALWAYS_ASSERT( ! getFlag(a,e,trueFlag));
     /* this skip conditional is powerful: it affords us a
        3X speedup of the entire adaptation in some cases */
     if (getFlag(a,e,falseFlag))
@@ -405,7 +405,7 @@ Entity* rebuildElement(
 
 void setBuildCallback(Adapt* a, apf::BuildCallback* cb)
 {
-  assert(a->buildCallback==0);
+  PCU_ALWAYS_ASSERT(a->buildCallback==0);
   a->buildCallback = cb;
 }
 

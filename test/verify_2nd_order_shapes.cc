@@ -11,7 +11,7 @@
 #include <SimUtil.h>
 #endif
 #include <stdlib.h>
-#include <assert.h>
+#include <pcu_util.h>
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
       }
       else
       	printf("Shape is Lagrange(2).\n");
-      assert(apf::countNodes(elem) == 6);
+      PCU_ALWAYS_ASSERT(apf::countNodes(elem) == 6);
       break;
     case apf::Mesh::QUAD:
       if (fs != apf::getSerendipity()) {
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
       }
       else
       	printf("Shape is serendipity.\n");
-      assert(apf::countNodes(elem) == 8);
+      PCU_ALWAYS_ASSERT(apf::countNodes(elem) == 8);
       break;
     case apf::Mesh::TET:
       if (fs != apf::getLagrange(2)) {
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
       }
       else
       	printf("Shape is Lagrange(2).\n");
-      assert(apf::countNodes(elem) == 10);
+      PCU_ALWAYS_ASSERT(apf::countNodes(elem) == 10);
     default:
       printf("Serify_shape is not implemented for "
       	  "elements of type %d. Aborting!", type);

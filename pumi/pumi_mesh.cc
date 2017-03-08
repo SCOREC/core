@@ -14,11 +14,11 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <apfZoltan.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <iostream>
 #include <string.h>
 #include <map>
-#include <assert.h>
+#include <pcu_util.h>
 #include <cstdlib>
 #include "apf.h"
 #include "apfShape.h"
@@ -479,7 +479,7 @@ void Distribution::send(pMeshEnt e, int to)
 Parts& Distribution::sending(pMeshEnt e)
 {
   int i = getMdsIndex(m, e);
-  assert(parts_vec[i].size()>0);
+  PCU_ALWAYS_ASSERT(parts_vec[i].size()>0);
   return parts_vec[i];
 }
 

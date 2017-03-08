@@ -1,7 +1,7 @@
 #include "gmi_lookup.h"
 #include "agm.h"
 #include <stdlib.h>
-#include <assert.h>
+#include <pcu_util.h>
 
 struct entry {
   int index;
@@ -32,7 +32,7 @@ void gmi_freeze_lookup(struct gmi_lookup* l, enum agm_ent_type t)
   int n;
   struct agm_ent e;
   struct entry* y;
-  assert(!(l->sorted[t]));
+  PCU_ALWAYS_ASSERT(!(l->sorted[t]));
   n = agm_ent_count(l->topo, t);
   es = malloc(n * sizeof(*es));
   y = es;
@@ -43,7 +43,7 @@ void gmi_freeze_lookup(struct gmi_lookup* l, enum agm_ent_type t)
     y->tag = *(get_tag(l, e));
     ++y;
   }
-  assert(y - es == n);
+  PCU_ALWAYS_ASSERT(y - es == n);
   qsort(es, n, sizeof(*es), comp_entries);
   l->sorted[t] = es;
 }

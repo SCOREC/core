@@ -10,7 +10,7 @@
 
 #include "mds_apf.h"
 #include <stdlib.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 
 struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
@@ -18,8 +18,8 @@ struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
 {
   struct mds_apf* m;
   int t;
-  assert(0 <= d);
-  assert(d <= 3);
+  PCU_ALWAYS_ASSERT(0 <= d);
+  PCU_ALWAYS_ASSERT(d <= 3);
   m = malloc(sizeof(*m));
   mds_create(&(m->mds),d,cap);
   mds_create_tags(&(m->tags));
@@ -174,7 +174,7 @@ static void change_down(struct mds* m, mds_id e, struct mds_set* s)
      of create/destroy */
   mds_destroy_entity(m, e);
   e2 = mds_create_entity(m, mds_type(e), s->e);
-  assert(e2 == e);
+  PCU_ALWAYS_ASSERT(e2 == e);
 }
 
 static int has_copy(struct mds_net* net, mds_id e, struct mds_copy c)
@@ -182,7 +182,7 @@ static int has_copy(struct mds_net* net, mds_id e, struct mds_copy c)
   int i;
   struct mds_copies* cs;
   cs = mds_get_copies(net, e);
-  assert(cs);
+  PCU_ALWAYS_ASSERT(cs);
   for (i = 0; i < cs->n; ++i)
     if ((cs->c[i].p == c.p)&&(cs->c[i].e == c.e))
       return 1;
@@ -197,7 +197,7 @@ static int compare_copy_sets(struct mds_net* net,
   int i;
   struct mds_copy c;
   c.p = from;
-  assert(local->n == remote->n);
+  PCU_ALWAYS_ASSERT(local->n == remote->n);
   for (i = 0; i < local->n; ++i) {
     c.e = remote->e[i];
     if (!has_copy(net, local->e[i], c))

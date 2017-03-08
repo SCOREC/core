@@ -7,7 +7,7 @@
 
 #include <cstdio>
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -364,7 +364,7 @@ static void splitPyramid_2_b0(Refine* r, Entity* p, Entity** v)
 {
   /* ambiguous diagonal on face 0,1,4 requires searching */
   bool ok = splitPyramidSearch(r, p, v);
-  assert(ok);
+  PCU_ALWAYS_ASSERT(ok);
 }
 
 /* vertical edges v[0]-v[4] and v[2]-v[4] split */
@@ -379,7 +379,7 @@ static void splitPyramid_4_b0(Refine* r, Entity* p, Entity** v)
   /* two ambiguous diagonals here, but all cases should
      reduce to the common case */
   bool ok = splitPyramidSearch(r, p, v);
-  assert(ok);
+  PCU_ALWAYS_ASSERT(ok);
 }
 
 static Entity* makePyramidCentroid(Adapt* a, Entity* p)

@@ -10,7 +10,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maAdapt.h"
 #include "maShape.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -35,7 +35,7 @@ void DoubleSplitCollapse::getNewElements(EntityArray& e)
       e[i++] = ab[j];
   for (size_t j=0; j < c.getSize(); ++j)
     e[i++] = c[j];
-  assert(i==e.getSize());
+  PCU_ALWAYS_ASSERT(i==e.getSize());
 }
 
 bool DoubleSplitCollapse::tryBothCollapses(Entity* e)

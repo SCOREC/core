@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 #include "ph.h"
-#include <cassert>
+#include <pcu_util.h>
 
 /** \file phInput.cc
     \brief The implementation of Chef's interface for execution control */
@@ -207,9 +207,9 @@ static void readInputFile(
 
 static void validate(Input& in)
 {
-  assert(in.elementImbalance > 1.0 && in.elementImbalance <= 2.0);
-  assert(in.vertexImbalance > 1.0 && in.vertexImbalance <= 2.0);
-  assert( ! (in.buildMapping && in.adaptFlag));
+  PCU_ALWAYS_ASSERT(in.elementImbalance > 1.0 && in.elementImbalance <= 2.0);
+  PCU_ALWAYS_ASSERT(in.vertexImbalance > 1.0 && in.vertexImbalance <= 2.0);
+  PCU_ALWAYS_ASSERT( ! (in.buildMapping && in.adaptFlag));
 }
 
 void Input::load(const char* filename)

@@ -6,7 +6,7 @@
 #include <PCU.h>
 #include <parma.h>
 #include <apfZoltan.h>
-#include <cassert>
+#include <pcu_util.h>
 
 double const a_param = 0.2;
 double const b_param = 1.0;
@@ -103,8 +103,8 @@ static void testIndexing(apf::Mesh2* m)
     int i = 0;
     apf::MeshEntity* e;
     while ((e = m->iterate(it))) {
-      assert( apf::getMdsIndex(m, e) == i );
-      assert( apf::getMdsEntity(m, d, i) == e );
+      PCU_ALWAYS_ASSERT( apf::getMdsIndex(m, e) == i );
+      PCU_ALWAYS_ASSERT( apf::getMdsEntity(m, d, i) == e );
       ++i;
     }
     m->end(it);
@@ -143,7 +143,7 @@ struct GroupCode : public Parma_GroupCode
 
 int main( int argc, char* argv[])
 {
-  assert(argc==2);
+  PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   GroupCode code;

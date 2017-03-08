@@ -14,7 +14,7 @@
 #include <phRestart.h>
 #include <phInput.h>
 #include <apfGeometry.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -35,7 +35,7 @@ static void fixMatches(apf::Mesh2* m)
       printf("fixed misaligned matches\n");
     else
       printf("matches were aligned\n");
-    assert( ! apf::alignMdsMatches(m));
+    PCU_ALWAYS_ASSERT( ! apf::alignMdsMatches(m));
   }
 }
 

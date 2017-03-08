@@ -5,7 +5,7 @@
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include <mthQR.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iomanip>
 #include <fstream>
@@ -249,10 +249,10 @@ void test(int dim, int p) {
 }
 
 int main(int argc, char** argv) {
-  assert(argc == 3);
+  PCU_ALWAYS_ASSERT(argc == 3);
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
-  assert(! PCU_Comm_Self());
+  PCU_ALWAYS_ASSERT(! PCU_Comm_Self());
   int dim = atoi(argv[1]);
   int p = atoi(argv[2]);
   test(dim, p);

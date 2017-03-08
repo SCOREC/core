@@ -11,7 +11,7 @@
 #include <PCU.h>
 #include "apfPM.h"
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -65,12 +65,12 @@ static void setOwners(PM& ps, CountMap& mp)
     PME const& cp = *it;
     PME& p = const_cast<PME&>(cp); /* again with the silly */
     std::vector<int> const& ids = p.ids;
-    assert(ids.size());
+    PCU_ALWAYS_ASSERT(ids.size());
     int owner = ids[0];
-//    assert(mp.count(owner)); // seol - this doesn't work for ghost copy
+//    PCU_ALWAYS_ASSERT(mp.count(owner)); // seol - this doesn't work for ghost copy
     for (size_t i = 1; i < ids.size(); ++i) 
     {
-//      assert(mp.count(ids[i]));  // seol - this doesn't work for ghost copy
+//      PCU_ALWAYS_ASSERT(mp.count(ids[i]));  // seol - this doesn't work for ghost copy
       if (mp[ids[i]] < mp[owner])
         owner = ids[i];
     }

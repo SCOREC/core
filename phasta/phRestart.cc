@@ -3,12 +3,13 @@
 #include <apf.h>
 #include <apfField.h>
 #include "phIO.h"
+#include "phiotimer.h"
 #include "apfShape.h"
 #include "ph.h"
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstring>
 #ifdef HAVE_SIMMETRIX
 #include <apfSIM.h>
@@ -29,7 +30,7 @@ apf::Field* extractField(apf::Mesh* m,
   apf::Field* f = m->findField(packedFieldname);
   if(!f && PCU_Comm_Self() == 0)
     fprintf(stderr, "No packed field \"%s\"", packedFieldname);
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   apf::Field* rf = m->findField(requestFieldname);
   if (rf)
     apf::destroyField(rf);
@@ -39,7 +40,7 @@ apf::Field* extractField(apf::Mesh* m,
   else if (valueType == apf::VECTOR)
     numOfComp= 3;
   else
-    assert(valueType == apf::SCALAR || valueType == apf::VECTOR);
+    PCU_ALWAYS_ASSERT(valueType == apf::SCALAR || valueType == apf::VECTOR);
 #ifdef HAVE_SIMMETRIX
   if (simField) {
     rf = apf::createSIMFieldOn(m, requestFieldname, valueType);
@@ -53,8 +54,8 @@ apf::Field* extractField(apf::Mesh* m,
   double* inVal = new double[apf::countComponents(f)];
   double* outVal = new double[numOfComp];
   int endComp = firstComp + numOfComp - 1;
-  assert(firstComp >= 1);
-  assert(endComp <= apf::countComponents(f));
+  PCU_ALWAYS_ASSERT(firstComp >= 1);
+  PCU_ALWAYS_ASSERT(endComp <= apf::countComponents(f));
   apf::MeshEntity* vtx;
   apf::MeshIterator* it = m->begin(0);
   while ((vtx = m->iterate(it))) {
@@ -64,7 +65,7 @@ apf::Field* extractField(apf::Mesh* m,
       outVal[j] = inVal[i];
       j++;
     }
-    assert(j == numOfComp);
+    PCU_ALWAYS_ASSERT(j == numOfComp);
     apf::setComponents(rf,vtx, 0, outVal);
   }
   m->end(it);
@@ -81,9 +82,9 @@ apf::Field* combineField(apf::Mesh* m,
   apf::Field* f1 = m->findField(inFieldname1);
   apf::Field* f2 = m->findField(inFieldname2);
   apf::Field* f3 = m->findField(inFieldname3);
-  assert(f1);
-  assert(f2);
-  assert(f3);
+  PCU_ALWAYS_ASSERT(f1);
+  PCU_ALWAYS_ASSERT(f2);
+  PCU_ALWAYS_ASSERT(f3);
   int in_size1 = apf::countComponents(f1);
   int in_size2 = apf::countComponents(f2);
   int in_size3 = apf::countComponents(f3);
@@ -123,7 +124,7 @@ apf::Field* combineField(apf::Mesh* m,
       outVal[j] = inVal3[i];
       j++;
     }
-    assert(j == out_size);
+    PCU_ALWAYS_ASSERT(j == out_size);
     apf::setComponents(rf, vtx, 0, outVal);
   }
   m->end(it);
@@ -148,7 +149,7 @@ void attachField(
 {
   if (!(in_size <= out_size))
     fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
-  assert(in_size <= out_size);
+  PCU_ALWAYS_ASSERT(in_size <= out_size);
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
@@ -165,7 +166,7 @@ void attachField(
     ++i;
   }
   m->end(it);
-  assert(i == n);
+  PCU_ALWAYS_ASSERT(i == n);
 }
 
 void attachCellField(
@@ -177,7 +178,7 @@ void attachCellField(
 {
   if (!(in_size <= out_size))
     fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
-  assert(in_size <= out_size);
+  PCU_ALWAYS_ASSERT(in_size <= out_size);
   apf::Field* f = m->findField(fieldname);
   if( f )
     apf::destroyField(f);
@@ -195,7 +196,7 @@ void attachCellField(
     ++i;
   }
   m->end(it);
-  assert(i == n);
+  PCU_ALWAYS_ASSERT(i == n);
 }
 
 /* convenience wrapper, in most cases in_size=out_size */
@@ -228,7 +229,7 @@ void detachField(
     ++i;
   }
   m->end(it);
-  assert(i == n);
+  PCU_ALWAYS_ASSERT(i == n);
   apf::destroyField(f);
 }
 
@@ -239,7 +240,7 @@ void detachField(
     int& size)
 {
   apf::Field* f = m->findField(fieldname);
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   detachField(f, data, size);
 }
 
@@ -273,7 +274,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     sizeof(known_cell_fields) / sizeof(known_cell_fields[0]);
   for (int i = 0; i < known_nodal_field_count; ++i)
     if (!strcmp(fieldname, known_nodal_fields[i])) {
-      assert(static_cast<size_t>(nnodes) == m->count(0));
+      PCU_ALWAYS_ASSERT(static_cast<size_t>(nnodes) == m->count(0));
       return true;
     }
   for (int i = 0; i < known_cell_field_count; ++i)
@@ -312,7 +313,7 @@ int readAndAttachField(
     free(data);
     return 1;
   }
-  assert(step == in.timeStepNumber);
+  PCU_ALWAYS_ASSERT(step == in.timeStepNumber);
   int out_size = vars;
   if ( std::string(hname) == std::string("solution") )
     out_size = in.ensa_dof;
@@ -370,11 +371,11 @@ static std::string buildRestartFileName(std::string prefix, int step)
 }
 
 void readAndAttachFields(Input& in, apf::Mesh* m) {
-  chefio_initStats();
+  phastaio_initStats();
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  chefio_setfile(CHEF_RESTART);
+  phastaio_setfile(CHEF_RESTART);
   FILE* f = in.openfile_read(in, filename.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
@@ -383,16 +384,11 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   int swap = ph_should_swap(f);
   /* stops when ph_read_field returns 0 */
   while( readAndAttachField(in,f,m,swap) );
-  chefioTime ct0,ct1;
-  chefio_time(&ct0);
-  fclose(f);
-  chefio_time(&ct1);
-  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
-  chefio_addCloseTime(elapsed);
+  PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("fields read and attached in %f seconds\n", t1 - t0);
-  if(in.printIOtime) chefio_printStats();
+  if(in.printIOtime) phastaio_printStats();
 }
 
 static void destroyIfExists(apf::Mesh* m, const char* name)
@@ -427,7 +423,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
 {
   double t0 = PCU_Time();
   path += buildRestartFileName("restart", in.timeStepNumber);
-  chefio_setfile(CHEF_RESTART);
+  phastaio_setfile(CHEF_RESTART);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
@@ -457,12 +453,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   /* destroy any remaining fields */
   while(m->countFields())
     apf::destroyField( m->getField(0) );
-  chefioTime ct0,ct1;
-  chefio_time(&ct0);
-  fclose(f);
-  chefio_time(&ct1);
-  const size_t elapsed = chefio_time_diff(&ct0,&ct1);
-  chefio_addCloseTime(elapsed);
+  PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("solution written in %f seconds\n", t1 - t0);

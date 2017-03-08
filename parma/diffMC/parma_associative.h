@@ -2,7 +2,7 @@
 #define PARMA_ASSOCIATIVE_H
 #include <map>
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace parma {
   template <class T> class Associative {
@@ -12,20 +12,20 @@ namespace parma {
         iteratorActive = false;
       }
       void begin() {
-        assert(!iteratorActive);
+        PCU_ALWAYS_ASSERT(!iteratorActive);
         iteratorActive = true;
         cItr = c.begin();
       }
       typedef std::pair<const int, T> Item;
       const Item* iterate() {
-        assert(iteratorActive);
+        PCU_ALWAYS_ASSERT(iteratorActive);
         if( cItr == c.end() ) 
           return NULL;
         else
           return &(*cItr++); // there is no spoon ... and this is likely crap
       }
       void end() {
-        assert(iteratorActive);
+        PCU_ALWAYS_ASSERT(iteratorActive);
         iteratorActive = false;
       }
       T get(int key) {

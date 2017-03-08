@@ -8,7 +8,7 @@
 #include <SimUtil.h>
 #include <SimPartitionedMesh.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <chef.h>
 
 /** \file chef.cc

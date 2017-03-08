@@ -11,7 +11,7 @@
 #include "maAdapt.h"
 #include "maShapeHandler.h"
 #include <apfCavityOp.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 
 namespace ma {
@@ -82,7 +82,7 @@ static void collectBadElements(Adapt* a, Upward& es,
              didInvert(m, normals[i], es[i]))
       bad.e[bad.n++] = es[i];
   }
-  assert(bad.n < (int)(sizeof(bad.e) / sizeof(Entity*)));
+  PCU_ALWAYS_ASSERT(bad.n < (int)(sizeof(bad.e) / sizeof(Entity*)));
 }
 
 static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
@@ -116,7 +116,7 @@ static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
 static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
 {
   Mesh* mesh = adapter->mesh;
-  assert(mesh->getType(e) == apf::Mesh::EDGE);
+  PCU_ALWAYS_ASSERT(mesh->getType(e) == apf::Mesh::EDGE);
   if ( ! collapse.setEdge(e))
     return false;
   if ( ! collapse.checkClass())
@@ -190,7 +190,7 @@ bool Snapper::run()
     return true;
 #ifdef DO_FPP
   Mesh* mesh = adapter->mesh;
-  assert(mesh->hasTag(vert, snapTag));
+  PCU_ALWAYS_ASSERT(mesh->hasTag(vert, snapTag));
   toFPP = trySnappingToFPP(adapter, collapse, snapTag, vert, badElements);
   if (!toFPP) {
     return false;
@@ -367,7 +367,7 @@ Entity* FPPSnapper::faceOppositeOfVert(Entity* e, Entity* v)
       break;
     }
   }
-  assert(flag);
+  PCU_ALWAYS_ASSERT(flag);
 
   return oppositeFace;
 }
@@ -377,7 +377,7 @@ void FPPSnapper::getFaceCoords(Entity* face, std::vector<Vector>& coords)
   Mesh* mesh = adapter->mesh;
   Downward verts;
   int nDownVerts = mesh->getDownward(face, 0, verts);
-  assert(nDownVerts);
+  PCU_ALWAYS_ASSERT(nDownVerts);
   for (int i = 0; i < nDownVerts; i++)
     coords.push_back(getPosition(mesh, verts[i]));
 }
@@ -394,7 +394,7 @@ FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
     res = false;
   }
 
-  assert(ray.dir.getLength() > tol);
+  PCU_ALWAYS_ASSERT(ray.dir.getLength() > tol);
   Vector start = ray.start;
   Vector dir   = ray.dir;
 
@@ -491,10 +491,10 @@ void FPPSnapper::findCommonEdges(apf::Up& cpRegions)
 
 Vector getCenter(Mesh* mesh, Entity* face)
 {
-  assert(face);
+  PCU_ALWAYS_ASSERT(face);
   Downward verts;
   int nDownVerts = mesh->getDownward(face, 0, verts);
-  assert(nDownVerts == 3);
+  PCU_ALWAYS_ASSERT(nDownVerts == 3);
   Vector center(0., 0., 0.);
   for (int i = 0; i < nDownVerts; i++)
     center += getPosition(mesh, verts[i]);
@@ -505,7 +505,7 @@ Vector getCenter(Mesh* mesh, Entity* face)
 
 bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt)
 {
-  assert(mesh->getType(highEnt) > mesh->getType(lowEnt));
+  PCU_ALWAYS_ASSERT(mesh->getType(highEnt) > mesh->getType(lowEnt));
   Downward down;
   int nDown = mesh->getDownward(highEnt, apf::getDimension(mesh, lowEnt), down);
   for (int i = 0; i < nDown; i++) {

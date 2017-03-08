@@ -1,7 +1,7 @@
 #include "phAxisymmetry.h"
 #include <apf.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 
 namespace ph {
@@ -40,8 +40,8 @@ static void tryAttachingAngleBCs(BCs& bcs, gmi_model* gm, gmi_ent* f, gmi_ent* o
   if (!getAxisymmetry(gm, f, of, axis, angle))
     return;
   /* PHASTA is constrained to axisymmetry around the Z axis */
-  assert(apf::areClose(axis.origin, apf::Vector3(0,0,0), ph::tolerance));
-  assert(apf::areParallel(axis.direction, apf::Vector3(0,0,1), ph::tolerance));
+  PCU_ALWAYS_ASSERT(apf::areClose(axis.origin, apf::Vector3(0,0,0), ph::tolerance));
+  PCU_ALWAYS_ASSERT(apf::areParallel(axis.direction, apf::Vector3(0,0,1), ph::tolerance));
   if (axis.direction.z() < 0)
     angle = -angle;
   attachAngleBC(bcs, gm, f, angle);
@@ -62,7 +62,7 @@ void attachAllAngleBCs(gmi_model* gm, BCs& bcs)
     int otherTag = *val;
     gmi_ent* oe = gmi_find(gm, bc->dim, otherTag);
     if (getBCValue(gm, afbcs, e)) {
-      assert(getBCValue(gm, afbcs, oe));
+      PCU_ALWAYS_ASSERT(getBCValue(gm, afbcs, oe));
       continue;
     }
     tryAttachingAngleBCs(bcs, gm, e, oe);

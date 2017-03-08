@@ -1,11 +1,11 @@
 #include <PCU.h>
+#include <pcu_util.h>
 #include "parma.h"
 #include "diffMC/maximalIndependentSet/mis.h"
 #include "diffMC/parma_commons.h"
 #include "diffMC/parma_convert.h"
 #include <parma_dcpart.h>
 #include <limits>
-#include <assert.h>
 #include <sstream>
 #include <string>
 
@@ -63,7 +63,7 @@ namespace {
   }
 
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
-    assert(m->hasTag(e,w));
+    PCU_ALWAYS_ASSERT(m->hasTag(e,w));
     double weight;
     m->getDoubleTag(e,w,&weight);
     return weight;
@@ -192,7 +192,7 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
 
 double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
     int dim) {
-    assert(dim >= 0 && dim <= 3);
+    PCU_ALWAYS_ASSERT(dim >= 0 && dim <= 3);
     apf::MeshIterator* it = m->begin(dim);
     apf::MeshEntity* e;
     double sum = 0;

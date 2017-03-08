@@ -16,7 +16,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
-#include <assert.h>
+#include <pcu_util.h>
 
 using std::vector;
 // mesh entity functions
@@ -89,7 +89,7 @@ void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjE
             int num_vertices= pumi::instance()->mesh->getDownward(e,0,vertices);
             for (int j=0; j<num_vertices;++j)
               vecAdjEnt.push_back(vertices[j]);
-            if (num_vertices==4) assert(vecAdjEnt.size()==14);
+            if (num_vertices==4) PCU_ALWAYS_ASSERT(vecAdjEnt.size()==14);
             break;
           }
         case 2:// face

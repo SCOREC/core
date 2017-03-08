@@ -7,16 +7,16 @@
 
 #include "spr.h"
 #include "apfMesh.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace spr {
 
 apf::Field* getGradIPField(apf::Field* f, const char* name, int order)
 {
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   apf::Mesh* m = getMesh(f);
   int vt = apf::getValueType(f);
-  assert(vt == apf::SCALAR || vt == apf::VECTOR);
+  PCU_ALWAYS_ASSERT(vt == apf::SCALAR || vt == apf::VECTOR);
   apf::Field* ip_field = apf::createIPField(m,name,vt+1,order);
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;

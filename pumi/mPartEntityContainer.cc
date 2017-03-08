@@ -8,7 +8,7 @@
  
 *******************************************************************************/
 #include "mPartEntityContainer.h"
-#include <assert.h>
+#include <pcu_util.h>
 
 mPartEntityContainer::mPartEntityContainer()
 {
@@ -20,15 +20,15 @@ mPartEntityContainer::~mPartEntityContainer()
 
 mPartEntityContainer::iter mPartEntityContainer::begin(int what)
 {
-  assert(what >= 0);
-  assert(what < _DIMS_);
+  PCU_ALWAYS_ASSERT(what >= 0);
+  PCU_ALWAYS_ASSERT(what < _DIMS_);
   return gEntities[what].begin<gEntity>();
 }
 
 mPartEntityContainer::iter mPartEntityContainer::end(int what)
 {
-  assert(what >= 0);
-  assert(what < _DIMS_);
+  PCU_ALWAYS_ASSERT(what >= 0);
+  PCU_ALWAYS_ASSERT(what < _DIMS_);
   return gEntities[what].end<gEntity>();
 }
 
@@ -52,8 +52,8 @@ gEntity* mPartEntityContainer::getGeomEnt(int d, gmi_ent* e)
 
 int mPartEntityContainer::size(int what) const 
 {
-  assert(what >= 0);
-  assert(what < _DIMS_);
+  PCU_ALWAYS_ASSERT(what >= 0);
+  PCU_ALWAYS_ASSERT(what < _DIMS_);
   return gEntities[what].size();
 } 
 

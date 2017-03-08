@@ -10,7 +10,7 @@
 #include "apfIntegrate.h"
 #include "apfVector.h"
 #include "apfMatrix.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -42,7 +42,7 @@ void FieldShape::getNodeXi(int, int, Vector3&)
 void FieldShape::registerSelf(const char* name_)
 {
   std::string name = name_;
-  assert(registry.count(name) == 0);
+  PCU_ALWAYS_ASSERT(registry.count(name) == 0);
   registry[name] = this;
 }
 
@@ -866,7 +866,7 @@ class LagrangeCubic : public FieldShape
     int getOrder() {return 3;}
     void getNodeXi(int type, int node, Vector3& xi)
     {
-      assert(node < 2);
+      PCU_ALWAYS_ASSERT(node < 2);
       if (type == Mesh::EDGE && node == 0)
         xi = Vector3(-1./3., 0, 0);
       else if (type == Mesh::EDGE && node == 1)

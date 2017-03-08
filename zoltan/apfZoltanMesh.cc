@@ -9,7 +9,7 @@
 #include "apfZoltanCallbacks.h"
 #include "apfZoltan.h"
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -51,7 +51,7 @@ static void getElements(ZoltanMesh* b)
   size_t i = 0;
   while ((e = m->iterate(it)))
     b->elements[i++] = e;
-  assert(i == b->elements.getSize());
+  PCU_ALWAYS_ASSERT(i == b->elements.getSize());
   m->end(it);
 }
 

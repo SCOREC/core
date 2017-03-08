@@ -15,7 +15,7 @@
 #include "apfFieldData.h"
 #include <sstream>
 #include <fstream>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <stdint.h>
 #include <vector>
@@ -295,7 +295,7 @@ static void writePvtuFile(const char* prefix,
   ss << prefix << '/' << fileName;
   std::string fileNameAndPath = ss.str();
   std::ofstream file(fileNameAndPath.c_str());
-  assert(file.is_open());
+  PCU_ALWAYS_ASSERT(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
   file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
   writePPoints(file,m->getCoordinateField(),isWritingBinary);
@@ -900,7 +900,7 @@ static void writeVtuFile(const char* prefix,
   }
   { //block forces std::ofstream destructor call
     std::ofstream file(fileNameAndPath.c_str());
-    assert(file.is_open());
+    PCU_ALWAYS_ASSERT(file.is_open());
     file << buf.rdbuf();
   }
   double t2 = PCU_Time();

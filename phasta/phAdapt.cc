@@ -7,7 +7,7 @@
 #include <parma.h>
 
 #include <cstdio>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -106,7 +106,7 @@ static int getShrinkFactor(apf::Mesh* m, double minPartDensity) {
     factor *= 2;
     partDensity *= 2;
   }
-  assert(PCU_Comm_Peers() % factor == 0);
+  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % factor == 0);
   return factor;
 }
 
@@ -138,7 +138,7 @@ static void runFromErrorThreshold(Input& in, apf::Mesh2* m)
   const double errLimit = in.adaptErrorThreshold;
   const double factor = 0.5;
   apf::Field* szFld = sam::errorThreshold(m,fieldname,idx,errLimit,factor);
-  assert(szFld);
+  PCU_ALWAYS_ASSERT(szFld);
   chef::adapt(m, szFld);
   apf::destroyField(szFld);
 }
@@ -147,7 +147,7 @@ static void runFromGivenSize(Input& in, apf::Mesh2* m)
 {
   const unsigned idx = 5;
   apf::Field* szFld = sam::specifiedIso(m,"errors",idx);
-  assert(szFld);
+  PCU_ALWAYS_ASSERT(szFld);
   chef::adapt(m, szFld,in);
   apf::destroyField(szFld);
 }

@@ -6,7 +6,7 @@
 #include "apfShape.h"
 #include "apfNumbering.h"
 #include <map>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -54,7 +54,7 @@ class Converter
         newFromOld[oldV] = newV;
       }
       inMesh->end(it);
-      assert(outMesh->count(0) == inMesh->count(0));
+      PCU_ALWAYS_ASSERT(outMesh->count(0) == inMesh->count(0));
     }
     void createEntities()
     { 
@@ -81,7 +81,7 @@ class Converter
         newFromOld[oldE] = newE;
       }
       inMesh->end(it);
-      assert(outMesh->count(dim) == inMesh->count(dim));
+      PCU_ALWAYS_ASSERT(outMesh->count(dim) == inMesh->count(dim));
     }
     void createRemotes(int dim)
     {

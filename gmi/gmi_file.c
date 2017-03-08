@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
+#include <pcu_util.h>
 
 void gmi_fscanf(FILE* f, int n, const char* format, ...)
 {
@@ -15,7 +15,7 @@ void gmi_fscanf(FILE* f, int n, const char* format, ...)
   va_start(ap, format);
   r = vfscanf(f, format, ap);
   va_end(ap);
-  assert(r == n);
+  PCU_ALWAYS_ASSERT(r == n);
 }
 
 int gmi_getline(char** line, size_t* cap, FILE* f)

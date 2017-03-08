@@ -4,7 +4,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace {
   const char* modelFile = 0;
@@ -18,7 +18,7 @@ namespace {
 
   void getConfig(int argc, char** argv)
   {
-    assert(argc==4);
+    PCU_ALWAYS_ASSERT(argc==4);
     modelFile = argv[1];
     meshFile = argv[2];
   }

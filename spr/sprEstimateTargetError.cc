@@ -18,7 +18,7 @@
 #include <apfCavityOp.h>
 
 #include <limits>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace spr {
 namespace target {
@@ -245,8 +245,8 @@ apf::Field* getTargetSPRSizeField(
     double beta)
 {
   double t0 = PCU_Time();
-  assert(target > 0);
-  assert(alpha < beta);
+  PCU_ALWAYS_ASSERT(target > 0);
+  PCU_ALWAYS_ASSERT(alpha < beta);
   target::Estimation e;
   target::setupEstimation(&e, eps, target, alpha, beta);
   target::estimateError(&e);

@@ -4,12 +4,15 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 int main(int argc, char** argv)
 {
-  assert(argc==5);
+  const char* exe = argv[0];
+  char usage[1024];
+  sprintf(usage, "%s <model.dmg> <in.smb> <out-vtk> <p order>\n", exe);
+  PCU_ALWAYS_ASSERT_VERBOSE(argc==5, usage);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   const char* outFile = argv[3];

@@ -12,7 +12,7 @@
 #include <PCU.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <pcu_util.h>
 
 void mds_create_net(struct mds_net* net)
 {
@@ -54,7 +54,7 @@ void mds_set_copies(struct mds_net* net, struct mds* m, mds_id e,
       return;
   }
   p = &net->data[t][i];
-  assert(p);
+  PCU_ALWAYS_ASSERT(p);
   if (!*p && c)
     ++net->n[t];
   else if (*p && !c)
@@ -253,14 +253,14 @@ void mds_set_type_links(struct mds_net* net, struct mds* m,
   struct mds_copy c;
   PCU_Comm_Begin();
   for (i = 0; i < ln->np; ++i) {
-    assert(ln->l);
+    PCU_ALWAYS_ASSERT(ln->l);
     for (j = 0; j < ln->n[i]; ++j)
       PCU_COMM_PACK(ln->p[i], ln->l[i][j]);
   }
   PCU_Comm_Send();
   while (PCU_Comm_Listen()) {
     c.p = PCU_Comm_Sender();
-    assert(c.p != PCU_Comm_Self());
+    PCU_ALWAYS_ASSERT(c.p != PCU_Comm_Self());
     i = find_peer(ln, c.p);
     in = PCU_Comm_Extract(ln->n[i] * sizeof(unsigned));
     for (j = 0; j < ln->n[i]; ++j) {
@@ -323,7 +323,7 @@ void mds_get_local_matches(struct mds_net* net, struct mds* m,
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
-  assert(ln->n[self] == ln->n[other]);
+  PCU_ALWAYS_ASSERT(ln->n[self] == ln->n[other]);
   ln->l[self] = malloc(ln->n[self] * sizeof(unsigned));
   ln->l[other] = malloc(ln->n[other] * sizeof(unsigned));
   ln->n[self] = 0;
@@ -343,10 +343,10 @@ void mds_set_local_matches(struct mds_net* net, struct mds* m,
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
-  assert(ln->n != 0);
-  assert(ln->n[self] == ln->n[other]);
+  PCU_ALWAYS_ASSERT(ln->n != 0);
+  PCU_ALWAYS_ASSERT(ln->n[self] == ln->n[other]);
   for (i = 0; i < ln->n[self]; ++i) {
-    assert(ln->l != 0);
+    PCU_ALWAYS_ASSERT(ln->l != 0);
     a = mds_identify(t, ln->l[self][i]);
     b = mds_identify(t, ln->l[other][i]);
     c.e = b;
@@ -363,9 +363,9 @@ void mds_free_local_links(struct mds_links* ln)
   if (self == -1)
     return;
   other = find_peer(ln, PCU_Comm_Peers());
-  assert(ln->n != 0);
+  PCU_ALWAYS_ASSERT(ln->n != 0);
   ln->n[self] = ln->n[other] = 0;
-  assert(ln->l != 0);
+  PCU_ALWAYS_ASSERT(ln->l != 0);
   free(ln->l[self]);
   free(ln->l[other]);
   ln->l[self] = ln->l[other] = NULL;

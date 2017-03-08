@@ -4,7 +4,7 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -25,7 +25,7 @@ static long markLayerElements(Adapt* a)
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
     return 0;
-  assert(meshDimension == 3);
+  PCU_ALWAYS_ASSERT(meshDimension == 3);
   for (int i=0; i < 4; ++i)
     syncFlag(a,i,LAYER);
   return n;

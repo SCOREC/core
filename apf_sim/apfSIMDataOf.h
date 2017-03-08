@@ -24,12 +24,12 @@ public:
   {
     FieldData::field = f;
     mesh = f->getMesh();
-    assert(f->getShape() == apf::getLagrange(f->getShape()->getOrder()));
+    PCU_ALWAYS_ASSERT(f->getShape() == apf::getLagrange(f->getShape()->getOrder()));
     if (fd) {
-      assert(f->getShape()->getOrder() == PolyField_entOrder(pf, 0));
+      PCU_ALWAYS_ASSERT(f->getShape()->getOrder() == PolyField_entOrder(pf, 0));
       std::string name = f->getName();
-      assert(name == Field_name(fd));
-      assert(f->countComponents() == Field_numComp(fd));
+      PCU_ALWAYS_ASSERT(name == Field_name(fd));
+      PCU_ALWAYS_ASSERT(f->countComponents() == Field_numComp(fd));
       return;
     }
     pf = PolyField_new(f->getShape()->getOrder(), 0);

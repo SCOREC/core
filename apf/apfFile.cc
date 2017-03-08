@@ -6,7 +6,7 @@
  */
 
 #include <string>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 #include <reel.h>
@@ -102,7 +102,7 @@ void save_meta(pcu_file* file, apf::Mesh* mesh) {
 void restore_meta(pcu_file* file, apf::Mesh* mesh) {
   std::string shape_name = restore_string(file);
   apf::FieldShape* shape = getShapeByName(shape_name.c_str());
-  assert(shape != 0);
+  PCU_ALWAYS_ASSERT(shape != 0);
   if (shape != mesh->getShape()) mesh->changeShape(shape, false);
   int nfields_or_version = restore_int(file);
   int nfields;
@@ -114,16 +114,16 @@ void restore_meta(pcu_file* file, apf::Mesh* mesh) {
     nfields = restore_int(file);
     version = -nfields_or_version;
   }
-  assert(version <= latest_version_number);
-  assert(nfields >= 0);
-  assert(nfields < 256);
+  PCU_ALWAYS_ASSERT(version <= latest_version_number);
+  PCU_ALWAYS_ASSERT(nfields >= 0);
+  PCU_ALWAYS_ASSERT(nfields < 256);
   for (int i = 0; i < nfields; ++i) {
     restore_field_meta(file, mesh);
   }
   if (version >= 3) {
     int nnumberings = restore_int(file);
-    assert(nnumberings >= 0);
-    assert(nnumberings < 256);
+    PCU_ALWAYS_ASSERT(nnumberings >= 0);
+    PCU_ALWAYS_ASSERT(nnumberings < 256);
     for (int i = 0; i < nnumberings; ++i) {
       restore_numbering_meta(file, mesh);
     }

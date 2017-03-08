@@ -9,7 +9,7 @@
 #include "apfMesh.h"
 #include "apfIntegrate.h"
 #include <mthMatrix.h>
-#include <cassert>
+#include <pcu_util.h>
 
 #include <iostream>
 
@@ -86,12 +86,12 @@ FieldShape* getIPShape(int dimension, int order)
   ,{0,&d2o1,&d2o2,&d2o3,&d2o4,&d2o5,0,0}//face
   ,{0,&d3o1,&d3o2,&d3o3,&d3o4,&d3o5,&d3o6,&d3o7}//region
   };
-  assert(dimension >= 0);
-  assert(dimension <= 3);
-  assert(order >= 0);
-  assert(order <= 7);
+  PCU_ALWAYS_ASSERT(dimension >= 0);
+  PCU_ALWAYS_ASSERT(dimension <= 3);
+  PCU_ALWAYS_ASSERT(order >= 0);
+  PCU_ALWAYS_ASSERT(order <= 7);
   apf::FieldShape* shape = table[dimension][order];
-  assert(shape);
+  PCU_ALWAYS_ASSERT(shape);
   return shape;
 }
 
@@ -193,10 +193,10 @@ FieldShape* getVoronoiShape(int dimension, int order)
   ,{0,&d2o1,&d2o2,&d2o3,&d2o4}//face
   ,{0,&d3o1,&d3o2,&d3o3,&d3o4}//region
   };
-  assert(dimension >= 0);
-  assert(dimension <= 3);
-  assert(order >= 0);
-  assert(order <= 4);
+  PCU_ALWAYS_ASSERT(dimension >= 0);
+  PCU_ALWAYS_ASSERT(dimension <= 3);
+  PCU_ALWAYS_ASSERT(order >= 0);
+  PCU_ALWAYS_ASSERT(order <= 4);
   return table[dimension][order];
 }
 
@@ -375,10 +375,10 @@ FieldShape* getIPFitShape(int dimension, int order)
   ,{0,0,0}//edge
   ,{0,&d2o1,&d2o2}//face
   ,{0,&d3o1,&d3o2}};//region
-  assert(dimension >= 0);
-  assert(dimension <= 3);
-  assert(order >= 0);
-  assert(order <= 2);
+  PCU_ALWAYS_ASSERT(dimension >= 0);
+  PCU_ALWAYS_ASSERT(dimension <= 3);
+  PCU_ALWAYS_ASSERT(order >= 0);
+  PCU_ALWAYS_ASSERT(order <= 2);
   return table[dimension][order];
 }
 

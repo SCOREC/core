@@ -6,13 +6,13 @@
 #include <PCU.h>
 #include <vector>
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  assert(argc == 3);
+  PCU_ALWAYS_ASSERT(argc == 3);
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   apf::DynamicArray<apf::Field*> fields(10);

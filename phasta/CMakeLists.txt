@@ -20,6 +20,7 @@ set(SOURCES
   phAxisymmetry.cc
   phInterfaceCutter.cc
   phstream.cc
+  phiotimer.cc
 )
 
 if(ENABLE_SIMMETRIX)
@@ -33,6 +34,7 @@ set(HEADERS
   chef.h
   phInput.h
   phstream.h
+  phiotimer.h
 )
 
 # Add the ph library

@@ -1,6 +1,6 @@
 #include "phAdjacent.h"
 #include <maMesh.h> /* rotation functions ! */
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -28,7 +28,7 @@ void orderForPhasta(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
   ,hex_ph2apf
   ,pri_ph2apf
   ,pyr_ph2apf};
-  assert(ph2apf[t]);
+  PCU_ALWAYS_ASSERT(ph2apf[t]);
   int nv = apf::Mesh::adjacentCount[t][0];
   for (int i = 0; i < nv; ++i)
     vout[i] = vin[ph2apf[t][i]];

@@ -11,7 +11,7 @@
 #include "apfFieldData.h"
 #include <sstream>
 #include <fstream>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
@@ -243,8 +243,8 @@ static void writeOffsets(std::ostream& file, int type, int nCells)
 static void writeTypes(std::ostream& file, int type, int nCells)
 {
   file << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
-  assert(type >= 0);
-  assert(type < apf::Mesh::TYPES);
+  PCU_ALWAYS_ASSERT(type >= 0);
+  PCU_ALWAYS_ASSERT(type < apf::Mesh::TYPES);
   static int vtkTypes[apf::Mesh::TYPES] = {
     1,  //parent vertex
     3,  //parent edge
@@ -255,7 +255,7 @@ static void writeTypes(std::ostream& file, int type, int nCells)
     -1,
     -1
   };
-  assert(vtkTypes[type] != -1);
+  PCU_ALWAYS_ASSERT(vtkTypes[type] != -1);
   for (int i=0; i < nCells; ++i)
     file << vtkTypes[type] << '\n';
   file << "</DataArray>\n";
@@ -733,7 +733,7 @@ static void writePvtuFile(const char* prefix, const char* suffix,
      << ".pvtu";
   std::string fileName = ss.str();
   std::ofstream file(fileName.c_str());
-  assert(file.is_open());
+  PCU_ALWAYS_ASSERT(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
   file << "<PUnstructuredGrid GhostLevel=\"0\">\n";
   file << "<PPoints>\n";
@@ -844,7 +844,7 @@ void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
   writeEnd(buf);
   {
     std::ofstream file(fileName.c_str());
-    assert(file.is_open());
+    PCU_ALWAYS_ASSERT(file.is_open());
     file << buf.rdbuf();
   }
 
@@ -914,7 +914,7 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   writeEnd(buf);
   {
     std::ofstream file(fileName.c_str());
-    assert(file.is_open());
+    PCU_ALWAYS_ASSERT(file.is_open());
     file << buf.rdbuf();
   }
 
@@ -972,7 +972,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 
   {
     std::ofstream file(fileName.c_str());
-    assert(file.is_open());
+    PCU_ALWAYS_ASSERT(file.is_open());
     file << buf.rdbuf();
   }
 
