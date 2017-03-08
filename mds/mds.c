@@ -577,10 +577,14 @@ static mds_id add_ent(struct mds* m, int t, mds_id* from)
 
 static void check_ent(struct mds* m, mds_id e)
 {
+  int t;
+  mds_id i;
   assert(e >= 0);
-  assert(TYPE(e) < MDS_TYPES);
-  assert(INDEX(e) < m->end[TYPE(e)]);
-  assert(m->free[TYPE(e)][INDEX(e)] == MDS_LIVE);
+  t = TYPE(e);
+  assert(t < MDS_TYPES);
+  i = INDEX(e);
+  assert(i < m->end[t]);
+  assert(m->free[t][i] == MDS_LIVE);
 }
 
 static void unrelate_ent(struct mds* m, mds_id e)
