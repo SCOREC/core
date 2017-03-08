@@ -3,7 +3,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 
-#include <cassert>
+#include <pcu_util.h>
 #include <sstream>
 #include <cstdlib>
 
@@ -126,7 +126,7 @@ Layers getVertLayers(Mesh* m, Crawler::Layer const& base_layer) {
       if (ov) next_layer.push_back(ov);
     }
     if (!next_layer.empty())
-      assert(next_layer.size() == current_layer.size());
+      PCU_ALWAYS_ASSERT(next_layer.size() == current_layer.size());
     current_layer = next_layer;
   } while (!current_layer.empty());
   m->destroyTag(visited);
@@ -143,7 +143,7 @@ void remove3DPortion(Mesh* m, ModelSet const& bottoms) {
     }
     m->end(it);
   }
-  assert(m->count(3) == 0);
+  PCU_ALWAYS_ASSERT(m->count(3) == 0);
   apf::changeMdsDimension(m, 2);
   m->acceptChanges(); // needed ? not needed ? who knows...
 }
@@ -171,11 +171,11 @@ std::string getExtrudedName(std::string const& flat_name) {
   std::stringstream ss(flat_name);
   int c;
   c = ss.get();
-  assert(c == 'L');
+  PCU_ALWAYS_ASSERT(c == 'L');
   size_t layer;
   ss >> layer;
   c = ss.get();
-  assert(c == '_');
+  PCU_ALWAYS_ASSERT(c == '_');
   std::string extruded_name;
   ss >> extruded_name;
   return extruded_name;
@@ -287,14 +287,14 @@ class DebugBuildCallback : public apf::BuildCallback {
       expected_type_(expected_type)
     {}
     virtual void call(Entity* e) {
-      assert(mesh->getType(e) == expected_type_);
+      PCU_ALWAYS_ASSERT(mesh->getType(e) == expected_type_);
     }
 };
 
 void stitchVerts(Mesh* m, Crawler::Layer const& prev_verts,
     Crawler::Layer const& next_verts, Tag* indices) {
   PCU_Comm_Begin();
-  assert(prev_verts.size() == next_verts.size());
+  PCU_ALWAYS_ASSERT(prev_verts.size() == next_verts.size());
   for (size_t i = 0; i < prev_verts.size(); ++i) {
     Entity* prev_vert = prev_verts[i];
     Entity* next_vert = next_verts[i];
@@ -343,7 +343,7 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
   }
   for (size_t i = 0; i < prev_layer.ents[1].size(); ++i) {
     Entity* pe = prev_layer.ents[1][i];
-    assert(m->getType(pe) == apf::Mesh::EDGE);
+    PCU_ALWAYS_ASSERT(m->getType(pe) == apf::Mesh::EDGE);
     ModelExtrusion local_class = getLocalClass(m, pe, extrusions, is_last);
     Entity* pev[2];
     m->getDownward(pe, 0, pev);
@@ -363,7 +363,7 @@ FullLayer buildLayer(Mesh* m, FullLayer const& prev_layer,
   for (size_t i = 0; i < prev_layer.ents[2].size(); ++i) {
     Entity* pt = prev_layer.ents[2][i];
     ModelExtrusion local_class = getLocalClass(m, pt, extrusions, is_last);
-    assert(m->getModelType(local_class.middle) == 3);
+    PCU_ALWAYS_ASSERT(m->getModelType(local_class.middle) == 3);
     Entity* ptv[3];
     m->getDownward(pt, 0, ptv);
     Entity* ntv[3];
@@ -408,7 +408,7 @@ FieldData gatherFlatFieldData(Mesh* m, std::string const& extruded_name,
   for (size_t i = 0; i < nlayers; ++i) {
     std::string flat_name = getFlatName(extruded_name, i);
     apf::Field* flat_field = m->findField(flat_name.c_str());
-    assert(flat_field);
+    PCU_ALWAYS_ASSERT(flat_field);
     LayerFieldData layer_data(base_verts.size() * ncomps);
     for (size_t j = 0; j < base_verts.size(); ++j) {
       apf::getComponents(flat_field, base_verts[j], 0, &layer_data[j * ncomps]);

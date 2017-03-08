@@ -10,7 +10,7 @@
 #include <apfMesh.h>
 #include <apfShape.h>
 #include <gmi.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 #if HAS_STK
@@ -36,13 +36,13 @@ StkModels::~StkModels()
 void StkModels::computeInverse()
 {
   for (int i = 0; i < 4; ++i) {
-    assert(invMaps[i].empty());
+    PCU_ALWAYS_ASSERT(invMaps[i].empty());
     APF_ITERATE(StkModels::Vector, models[i], mit) {
       StkModel* model_ptr = *mit;
-      assert(0 != model_ptr);
+      PCU_ALWAYS_ASSERT(0 != model_ptr);
       APF_ITERATE(StkModel::Vector, model_ptr->ents, eit) {
         apf::ModelEntity* e = *eit;
-        assert( ! invMaps[i].count(e));
+        PCU_ALWAYS_ASSERT( ! invMaps[i].count(e));
         invMaps[i][e] = model_ptr;
       }
     }
@@ -216,7 +216,7 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
 
 static Node lookup(long id, GlobalMap& map)
 {
-  assert(map.count(id));
+  PCU_ALWAYS_ASSERT(map.count(id));
   return map[id];
 }
 

@@ -7,7 +7,7 @@
 #include "phInterfaceCutter.h"
 #include <fstream>
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -33,7 +33,7 @@ static void getCoordinates(Output& o)
     ++i;
   }
   m->end(it);
-  assert(i == n);
+  PCU_ALWAYS_ASSERT(i == n);
   o.arrays.coordinates = x;
 }
 
@@ -89,7 +89,7 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
     BlockKey k;
     getInteriorBlockKey(m, e, k);
     int nv = k.nElementVertices;
-    assert(bs.keyToIndex.count(k));
+    PCU_ALWAYS_ASSERT(bs.keyToIndex.count(k));
     int i = bs.keyToIndex[k];
     int j = js[i];
     ien[i][j] = new int[nv];
@@ -113,7 +113,7 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
-    assert(js[i] == bs.nElements[i]);
+    PCU_ALWAYS_ASSERT(js[i] == bs.nElements[i]);
   o.arrays.ien     = ien;
   o.arrays.mattype = mattype;
 }
@@ -130,7 +130,7 @@ static void alignInterfaceVertex(apf::Mesh* m,
         flag = 1;
         break;
       }
-    assert(flag == 1);
+    PCU_ALWAYS_ASSERT(flag == 1);
 	flag = 0;
   }
 // make sure the normal direction is consistent with PHASTA
@@ -139,9 +139,9 @@ static void alignInterfaceVertex(apf::Mesh* m,
     m->getPoint(ev[i], 0, p[i]);
   m->getPoint(ev[nbv], 0, p[3]);
   if (type == TETRAHEDRON) // outward
-    assert((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
+    PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
   else if (type == WEDGE) // inward
-    assert((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) > 0);
+    PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) > 0);
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
@@ -182,7 +182,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::MeshEntity* e = m->getUpward(f, 0);
     BlockKey k;
     getBoundaryBlockKey(m, e, f, k);
-    assert(bs.keyToIndex.count(k));
+    PCU_ALWAYS_ASSERT(bs.keyToIndex.count(k));
     int i = bs.keyToIndex[k];
     int j = js[i];
     int nv = k.nElementVertices;
@@ -209,7 +209,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
-    assert(js[i] == bs.nElements[i]);
+    PCU_ALWAYS_ASSERT(js[i] == bs.nElements[i]);
   o.arrays.ienb = ienb;
   o.arrays.mattypeb = mattypeb;
   o.arrays.ibcb = ibcb;
@@ -253,8 +253,8 @@ bool checkInterface(Output& o, BCs& bcs) {
     }
   }
   m->end(it);
-  assert(aID!=bID); //assert different material ID on two sides
-  assert(a==b); //assert same number of faces on each side
+  PCU_ALWAYS_ASSERT(aID!=bID); //assert different material ID on two sides
+  PCU_ALWAYS_ASSERT(a==b); //assert same number of faces on each side
   if (PCU_Comm_Self() == 0)
     printf("Checked! Same number of faces on each side of interface.\n");
   return true;
@@ -301,7 +301,7 @@ static void getInterface
     o.hasDGInterface = 1;
     apf::Matches matches;
     m->getMatches(face, matches);
-    assert(matches.getSize() == 1);
+    PCU_ALWAYS_ASSERT(matches.getSize() == 1);
     apf::MeshEntity* e0 = m->getUpward(face, 0);
     apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
     /* in order to avoid repeatation of elements */
@@ -310,7 +310,7 @@ static void getInterface
 
     BlockKeyInterface k;
     getInterfaceBlockKey(m, e0, e1, face, k);
-    assert(bs.keyToIndex.count(k));
+    PCU_ALWAYS_ASSERT(bs.keyToIndex.count(k));
     int i = bs.keyToIndex[k];
     int j = js[i];
     int nv0 = k.nElementVertices;
@@ -346,7 +346,7 @@ static void getInterface
   }
   m->end(it);
   for (int i = 0; i < bs.getSize(); ++i)
-    assert(js[i] == bs.nElements[i]);
+    PCU_ALWAYS_ASSERT(js[i] == bs.nElements[i]);
   o.arrays.ienif0 = ienif0;
   o.arrays.ienif1 = ienif1;
   o.arrays.mattypeif0 = mattypeif0;
@@ -511,7 +511,7 @@ static void getInitialConditions(BCs& bcs, Output& o)
   apf::NewArray<double> s(in.ensa_dof);
   apf::NewArray<double> matValue(1);
   apf::Field* f = m->findField("solution");
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   gmi_model* gm = m->getModel();
@@ -556,7 +556,7 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
   }
   if (o.in->formEdges) {
     apf::Mesh* m = o.mesh;
-    assert(m->getDimension() == 3);
+    PCU_ALWAYS_ASSERT(m->getDimension() == 3);
     int nelems = m->count(3);
     o.arrays.iel = new int[nelems * 6];
     apf::MeshIterator* it = m->begin(3);
@@ -570,7 +570,7 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
       ++i;
     }
     m->end(it);
-    assert(i == nelems);
+    PCU_ALWAYS_ASSERT(i == nelems);
   } else {
     o.arrays.iel = 0;
   }
@@ -594,7 +594,7 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
       ++i;
     }
     m->end(it);
-    assert(i == nedges);
+    PCU_ALWAYS_ASSERT(i == nedges);
   } else {
     o.arrays.ileo = 0;
     o.arrays.ile = 0;

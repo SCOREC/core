@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <stdarg.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -39,14 +39,14 @@ static bool my_mkdir(const char* name)
     err = 0;
     return false;
   }
-  assert(!err);
+  PCU_ALWAYS_ASSERT(!err);
   return true;
 }
 
 static void my_chdir(const char* name)
 {
   int err = chdir(name);
-  assert(!err);
+  PCU_ALWAYS_ASSERT(!err);
 }
 
 void goToParentDir() {
@@ -125,13 +125,13 @@ void writeAuxiliaryFiles(std::string path, int timestep_or_dat)
   std::string numpePath = path;
   numpePath += "numpe.in";
   std::ofstream numpe(numpePath.c_str());
-  assert(numpe.is_open());
+  PCU_ALWAYS_ASSERT(numpe.is_open());
   numpe << PCU_Comm_Peers() << '\n';
   numpe.close();
   std::string numstartPath = path;
   numstartPath += "numstart.dat";
   std::ofstream numstart(numstartPath.c_str());
-  assert(numstart.is_open());
+  PCU_ALWAYS_ASSERT(numstart.is_open());
   numstart << timestep_or_dat << '\n';
   numstart.close();
 }

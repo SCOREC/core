@@ -4,7 +4,7 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {
@@ -61,7 +61,7 @@ void freeReader(Reader* r)
 void getLine(Reader* r)
 {
   ssize_t ret = gmi_getline(&r->line, &r->linecap, r->file);
-  assert(ret != -1);
+  PCU_ALWAYS_ASSERT(ret != -1);
   r->word = r->line;
 }
 
@@ -70,7 +70,7 @@ long getLong(Reader* r)
   long x;
   int nchars;
   int ret = sscanf(r->word, "%ld%n", &x, &nchars);
-  assert(ret == 1);
+  PCU_ALWAYS_ASSERT(ret == 1);
   r->word += nchars;
   return x;
 }
@@ -93,7 +93,7 @@ void seekMarker(Reader* r, char const* marker)
 
 void checkMarker(Reader* r, char const* marker)
 {
-  assert(startsWith(marker, r->line));
+  PCU_ALWAYS_ASSERT(startsWith(marker, r->line));
 }
 
 void readNode(Reader* r)
@@ -118,7 +118,7 @@ void readNodes(Reader* r)
 
 apf::MeshEntity* lookupVert(Reader* r, long nodeId, apf::ModelEntity* g)
 {
-  assert(r->nodeMap.count(nodeId));
+  PCU_ALWAYS_ASSERT(r->nodeMap.count(nodeId));
   Node& n = r->nodeMap[nodeId];
   if (n.entity)
     return n.entity;
@@ -132,11 +132,11 @@ void readElement(Reader* r)
   /* long id = */ getLong(r);
   long gmshType = getLong(r);
   int apfType = apfFromGmsh(gmshType);
-  assert(0 <= apfType);
+  PCU_ALWAYS_ASSERT(0 <= apfType);
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
   long ntags = getLong(r);
-  assert(ntags >= 2);
+  PCU_ALWAYS_ASSERT(ntags >= 2);
   getLong(r); /* discard physical type */
   long gtag = getLong(r);
   for (long i = 2; i < ntags; ++i)

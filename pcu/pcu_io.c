@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
+#include "pcu_util.h"
 #include <sys/types.h>
 #include <limits.h>
 
@@ -70,12 +70,12 @@ static void compressed_read(pcu_file* pf, void* data, size_t size)
   int bzerror;
   int len;
   int rv;
-  assert(size < INT_MAX);
+  PCU_ALWAYS_ASSERT(size < INT_MAX);
   len = size;
   rv = BZ2_bzRead(&bzerror, pf->bzf, data, len);
   if (bzerror != BZ_OK && bzerror != BZ_STREAM_END)
     reel_fail("BZ2_bzRead failed with code %d", bzerror);
-  assert(rv == len);
+  PCU_ALWAYS_ASSERT(rv == len);
 }
 
 static void compressed_write(pcu_file* pf, void const* data, size_t size)
@@ -83,7 +83,7 @@ static void compressed_write(pcu_file* pf, void const* data, size_t size)
   int bzerror;
   int len;
   void* bzip2_is_not_const_correct;
-  assert(size < INT_MAX);
+  PCU_ALWAYS_ASSERT(size < INT_MAX);
   len = size;
   bzip2_is_not_const_correct = (void*)data;
   BZ2_bzWrite(&bzerror, pf->bzf, bzip2_is_not_const_correct, len);
@@ -272,14 +272,14 @@ static void pcu_swap_64(uint32_t* p)
 
 void pcu_swap_unsigneds(unsigned* p, size_t n)
 {
-  assert(sizeof(unsigned)==4);
+  PCU_ALWAYS_ASSERT(sizeof(unsigned)==4);
   for (size_t i=0; i < n; ++i)
     pcu_swap_32(p++);
 }
 
 void pcu_swap_doubles(double* p, size_t n)
 {
-  assert(sizeof(double)==8);
+  PCU_ALWAYS_ASSERT(sizeof(double)==8);
   for (size_t i=0; i < n; ++i)
     pcu_swap_64((uint32_t*)(p++));
 }
@@ -288,7 +288,7 @@ void pcu_write_unsigneds(pcu_file* f, unsigned* p, size_t n)
 {
   unsigned* tmp;
   if (n)
-    assert(p != 0);
+    PCU_ALWAYS_ASSERT(p != 0);
   if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN) {
     tmp = malloc(n * sizeof(unsigned));
     memcpy(tmp, p, n * sizeof(unsigned));
@@ -304,7 +304,7 @@ void pcu_write_doubles(pcu_file* f, double* p, size_t n)
 {
   double* tmp;
   if (n)
-    assert(p != 0);
+    PCU_ALWAYS_ASSERT(p != 0);
   if (PCU_ENDIANNESS != PCU_ENCODED_ENDIAN) {
     tmp = malloc(n * sizeof(double));
     memcpy(tmp, p, n * sizeof(double));

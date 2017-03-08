@@ -11,7 +11,7 @@
 #include "apf.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include <cstdlib> // for malloc and free
 
@@ -103,10 +103,9 @@ int pumi_mesh_getNumGlobalNumbering (pMesh m)
   return m->countGlobalNumberings();
 }
 
-void pumi_mesh_getGlobalNumbering (pMesh m, std::vector<pGlobalNumbering>& numberings)
+pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i)
 {
-  for (int i=0; i<m->countGlobalNumberings(); ++i)
-    numberings.push_back(m->getGlobalNumbering(i));
+  return m->getGlobalNumbering(i);
 }
 
 void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
@@ -212,10 +211,14 @@ pField pumi_mesh_findField(pMesh m, const char* name)
   return m->findField(name);
 }
 
-void pumi_mesh_getField(pMesh m, std::vector<pField>& fields)
+int pumi_mesh_getNumField(pMesh m)
 {
-  for (int i=0; i<m->countFields(); ++i)
-    fields.push_back(m->getField(i));
+  return m->countFields();
+}
+
+pField pumi_mesh_getField(pMesh m, int i)
+{
+  return m->getField(i);
 }
 
 //*******************************************************
@@ -466,7 +469,7 @@ static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mism
 
     double* r_values = (double*)((char*)msg_recv+sizeof(pMeshEnt)+sizeof(int)); 
     int num_data = (msg_size-sizeof(pMeshEnt)-sizeof(int))/sizeof(double);
-    assert(n==num_data);
+    PCU_ALWAYS_ASSERT(n==num_data);
  
     if (mismatch_fields.find(f)!=mismatch_fields.end()) continue;
 

@@ -7,7 +7,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <stdlib.h>
 
 const char* modelFile = 0;
@@ -29,7 +29,7 @@ void getConfig(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-  assert(argc==4);
+  PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
 #ifdef HAVE_SIMMETRIX
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
   ma::Input* in = ma::configureUniformRefine(m, 1);
   if (in->shouldSnap) {
     in->shouldSnap = false;
-    assert(in->shouldTransferParametric);
+    PCU_ALWAYS_ASSERT(in->shouldTransferParametric);
   }
   in->shouldFixShape = false;
   ma::adapt(in);

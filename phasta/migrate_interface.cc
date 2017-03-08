@@ -9,7 +9,7 @@
 #include <gmi_mesh.h>
 #include <gmi_sim.h>
 #include <SimUtil.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 

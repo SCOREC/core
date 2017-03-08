@@ -107,7 +107,7 @@ int findVertFaceRotation(int vert)
     int const* v = ma::tet_rotation[r];
     if (v[3]==vert) return r;
   }
-  assert(!"vert-face rotation not found");
+  PCU_ALWAYS_ASSERT(!"vert-face rotation not found");
 }
 
 bool isSameEdge(int const a[2], int const b[2])
@@ -149,7 +149,7 @@ int findEdgeEdgeRotation(int const edges[2][2])
     if (isSameEdgePair(rotatedEdges,canonicalEdges))
       return r;
   }
-  assert(!"edge-edge rotation not found");
+  PCU_ALWAYS_ASSERT(!"edge-edge rotation not found");
 }
 
 int main()

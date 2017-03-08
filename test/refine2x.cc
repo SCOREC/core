@@ -9,7 +9,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -18,7 +18,7 @@ class AnisotropicX: public ma::AnisotropicFunction {
     AnisotropicX(ma::Mesh* mesh, int splitDir) {
       m = mesh;
       dir = splitDir;
-      assert(dir>=0 && dir<3);
+      PCU_ALWAYS_ASSERT(dir>=0 && dir<3);
       isf = new ma::IdentitySizeField(m);
       fLen = createFieldOn(m, "incidentEdgeLength", apf::SCALAR);
       fCnt = createFieldOn(m, "incidentEdgeCount", apf::SCALAR);
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
   in->maximumIterations = 10;
   if (in->shouldSnap) {
     in->shouldSnap = false;
-    assert(in->shouldTransferParametric);
+    PCU_ALWAYS_ASSERT(in->shouldTransferParametric);
   }
   in->shouldFixShape = false;
   ma::adapt(in);

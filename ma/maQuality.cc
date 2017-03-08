@@ -9,7 +9,7 @@
 *******************************************************************************/
 
 #include <cfloat>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include "maMesh.h"
 #include "maSize.h"
@@ -144,7 +144,7 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
 
 double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
-  assert(n);
+  PCU_ALWAYS_ASSERT(n);
   ShapeHandler* sh = a->shape;
   double worst = sh->getQuality(e[0]);
   for (size_t i = 1; i < n; ++i) {
@@ -468,7 +468,7 @@ bool isLayerElementOk(Mesh* m, Entity* e)
 
 double getInsphere(Mesh* m, Entity* e)
 {
-  assert(m->getType(e) == apf::Mesh::TET);
+  PCU_ALWAYS_ASSERT(m->getType(e) == apf::Mesh::TET);
 
   // Insphere r of a tet computed by the forumla at
   // http://maths.ac-noumea.nc/polyhedr/stuff/tetra_sf_.htm

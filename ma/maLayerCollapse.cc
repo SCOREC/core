@@ -3,7 +3,7 @@
 #include "maShape.h"
 
 #include <cstdio>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -24,7 +24,7 @@ bool LayerCollapse::setup_(Entity* edge)
   newSimplices.setSize(0);
   newLayer.clear();
   bool ok = collapse.setEdge(edge);
-  assert(ok);
+  PCU_ALWAYS_ASSERT(ok);
   collapse.setVerts();
   Entity* v[2] = {collapse.vertToCollapse,
                   collapse.vertToKeep};
@@ -44,7 +44,7 @@ bool LayerCollapse::setup_(Entity* edge)
     if ( ! findUpward(m, apf::Mesh::EDGE, av)) {
       std::swap(v[0], v[1]);
       av[0] = v[0];
-      assert(findUpward(m, apf::Mesh::EDGE, av));
+      PCU_ALWAYS_ASSERT(findUpward(m, apf::Mesh::EDGE, av));
     }
     setFlag(a, v[0], COLLAPSE);
   }
@@ -92,9 +92,9 @@ bool LayerCollapse::involvesPyramids()
 bool LayerCollapse::checkIndividualCollapses()
 {
   for (size_t i = 0; i < edges.size(); ++i) {
-    assert(getFlag(a, edges[i], COLLAPSE));
+    PCU_ALWAYS_ASSERT(getFlag(a, edges[i], COLLAPSE));
     bool ok = collapse.setEdge(edges[i]);
-    assert( ok );
+    PCU_ALWAYS_ASSERT( ok );
     collapse.vertToCollapse = curves[0][i];
     collapse.vertToKeep = curves[1][i];
     if ( ! collapse.checkTopo())
@@ -138,7 +138,7 @@ static Entity* rebuildLayerElement(
 
 void LayerCollapse::rebuildElements()
 {
-  assert(elementsToKeep.size());
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
   newSimplices.setSize(elementsToKeep.size());
   int nsi = 0;
   APF_ITERATE(EntitySet, elementsToKeep, it) {
@@ -200,7 +200,7 @@ void LayerCollapse::unmark()
     clearFlag(a, curves[0][i], COLLAPSE);
   if (edges.size()) {
     bool ok = collapse.setEdge(edges[0]);
-    assert(ok);
+    PCU_ALWAYS_ASSERT(ok);
     collapse.unmark();
   }
 }

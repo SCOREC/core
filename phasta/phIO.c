@@ -1,214 +1,15 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pcu_io.h>
 #include <phIO.h>
 #include <PCU.h>
-#include <inttypes.h> /* PRIu64 */
-#include <time.h> /* clock_gettime */
-#include <unistd.h> /* usleep */
+#include <phiotimer.h>
 
 #define PH_LINE 1024
 #define MAGIC 362436
 #define FIELD_PARAMS 3
-
-#define BILLION 1000L*1000L*1000L
-#define MILLION 1000L*1000L
-
-struct chefio_stats {
-  size_t cpus;
-  size_t readTime;
-  size_t writeTime;
-  size_t readBytes;
-  size_t writeBytes;
-  size_t reads;
-  size_t writes;
-  size_t openTime;
-  size_t closeTime;
-  size_t opens;
-  size_t closes;
-};
-static struct chefio_stats chefio_global_stats;
-
-#ifdef __INTEL_COMPILER
-/* return the cycle count */
-void chefio_time(chefioTime* t) {
-  *t = _rdtsc(); //intel intrinsic
-}
-/* determine the reference clock frequency */
-static size_t chefio_getCyclesPerMicroSec() {
-  const size_t usec = 5*MILLION;
-  size_t cpus, cycles;
-  chefioTime t0, t1;
-  chefio_time(&t0);
-  /* Testing on Theta indicates that 5s is long enough
-   * to get a stable value for the reference frequency.
-   */
-  usleep(usec);
-  chefio_time(&t1);
-  cycles = t1 - t0;
-  cpus = ((double)cycles)/(usec);
-  if(!PCU_Comm_Self())
-    fprintf(stderr, "cycles %" PRIu64 " us %" PRIu64 " cycles per micro second %" PRIu64"\n", cycles, usec, cpus);
-  return cpus;
-}
-/*return elapsed time in micro seconds*/
-size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
-  size_t cycles = *end - *start;
-  size_t us = ((double)cycles)/chefio_global_stats.cpus;
-  return us;
-}
-#else
-void chefio_time(chefioTime* t) {
-  int err;
-  err = clock_gettime(CLOCK_MONOTONIC,t);
-  assert(!err);
-}
-/*return elapsed time in micro seconds*/
-size_t chefio_time_diff(chefioTime* start, chefioTime* end) {
-  assert(sizeof(size_t)==8);
-  size_t elapsed = 0;
-  chefioTime diff;
-  if ((end->tv_nsec-start->tv_nsec)<0) {
-    diff.tv_sec = end->tv_sec-start->tv_sec-1;
-    diff.tv_nsec = BILLION+end->tv_nsec-start->tv_nsec;
-  } else {
-    diff.tv_sec = end->tv_sec-start->tv_sec;
-    diff.tv_nsec = end->tv_nsec-start->tv_nsec;
-  }
-  elapsed = (diff.tv_sec)*MILLION + (diff.tv_nsec)/1000L;
-  return elapsed;
-}
-#endif
-
-void chefio_addOpenTime(size_t t) {
-  chefio_global_stats.openTime += t;
-  chefio_global_stats.opens++;
-}
-
-void chefio_addCloseTime(size_t t) {
-  chefio_global_stats.closeTime += t;
-  chefio_global_stats.closes++;
-}
-
-static void printMinMaxAvgSzt(const char* key, size_t v) {
-  size_t min = PCU_Min_SizeT(v);
-  size_t max = PCU_Max_SizeT(v);
-  size_t tot = PCU_Add_SizeT(v);
-  double avg = ((double)tot)/PCU_Comm_Peers();
-  if(!PCU_Comm_Self())
-    fprintf(stderr, "chefio_%s min max avg %" PRIu64 " %" PRIu64 " %f\n", key, min, max, avg);
-}
-
-static void printMinMaxAvgDbl(const char* key, double v) {
-  double min = PCU_Min_Double(v);
-  double max = PCU_Max_Double(v);
-  double tot = PCU_Add_Double(v);
-  double avg = tot/PCU_Comm_Peers();
-  if(!PCU_Comm_Self())
-    fprintf(stderr, "chefio_%s min max avg %f %f %f\n",
-        key, min, max, avg);
-}
-
-static size_t chefio_getReadTime() {
-  return chefio_global_stats.readTime;
-}
-
-static size_t chefio_getWriteTime() {
-  return chefio_global_stats.writeTime;
-}
-
-static size_t chefio_getReadBytes() {
-  return chefio_global_stats.readBytes;
-}
-
-static size_t chefio_getWriteBytes() {
-  return chefio_global_stats.writeBytes;
-}
-
-static size_t chefio_getReads() {
-  return chefio_global_stats.reads;
-}
-
-static size_t chefio_getWrites() {
-  return chefio_global_stats.writes;
-}
-
-static size_t chefio_getOpens() {
-  return chefio_global_stats.opens;
-}
-
-static size_t chefio_getCloses() {
-  return chefio_global_stats.closes;
-}
-
-static size_t chefio_getOpenTime() {
-  return chefio_global_stats.openTime;
-}
-
-static size_t chefio_getCloseTime() {
-  return chefio_global_stats.closeTime;
-}
-
-void chefio_printStats() {
-  if(!PCU_Comm_Self()) {
-    const size_t us = 1000;
-    chefioTime t0,t1;
-    size_t elapsed;
-    chefio_time(&t0);
-    usleep(us);
-    chefio_time(&t1);
-    elapsed = chefio_time_diff(&t0,&t1);
-    fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
-  }
-  int reads = PCU_Max_Int((int)chefio_getReads());
-  if(reads) {
-    printMinMaxAvgSzt("reads", chefio_getReads());
-    printMinMaxAvgSzt("readTime (us)", chefio_getReadTime());
-    printMinMaxAvgSzt("readBytes (B)", chefio_getReadBytes());
-    double bw = ((double)chefio_getReadBytes())/chefio_getReadTime();
-    printMinMaxAvgDbl("readBandwidth (MB/s)", bw);
-    /* B  * 10^6us *  1MB   = MB
-     * -    ------   -----    --
-     * us     1s     10^6B    s
-     */
-  }
-  int writes = PCU_Max_Int((int)chefio_getWrites());
-  if(writes) {
-    printMinMaxAvgSzt("writes", chefio_getWrites());
-    printMinMaxAvgSzt("writeTime (us)", chefio_getWriteTime());
-    printMinMaxAvgSzt("writeBytes (B)", chefio_getWriteBytes());
-    printMinMaxAvgDbl("writeBandwidth (MB/s)",
-        ((double)chefio_getWriteBytes())/chefio_getWriteTime());
-  }
-  int opens = PCU_Max_Int((int)chefio_getOpens());
-  if(opens) {
-    printMinMaxAvgSzt("opens", chefio_getOpens());
-    printMinMaxAvgSzt("openTime (us)", chefio_getOpenTime());
-  }
-  int closes = PCU_Max_Int((int)chefio_getCloses());
-  if(closes) {
-    printMinMaxAvgSzt("closes", chefio_getCloses());
-    printMinMaxAvgSzt("closeTime (us)", chefio_getCloseTime());
-  }
-}
-
-void chefio_initStats() {
-#ifdef __INTEL_COMPILER
-  chefio_global_stats.cpus = chefio_getCyclesPerMicroSec();
-#endif
-  chefio_global_stats.readTime = 0;
-  chefio_global_stats.writeTime = 0;
-  chefio_global_stats.readBytes = 0;
-  chefio_global_stats.writeBytes = 0;
-  chefio_global_stats.reads = 0;
-  chefio_global_stats.writes = 0;
-  chefio_global_stats.openTime = 0;
-  chefio_global_stats.closeTime = 0;
-  chefio_global_stats.opens = 0;
-  chefio_global_stats.closes = 0;
-}
 
 enum {
 NODES_PARAM,
@@ -248,7 +49,7 @@ static void parse_header(char* header, char** name, long* bytes,
 {
   char* saveptr = NULL;
   int i = 0;
-  assert(header != NULL);
+  PCU_ALWAYS_ASSERT(header != NULL);
   header = strtok_r(header, ":", &saveptr);
   if (name) {
     *name = header;
@@ -308,16 +109,8 @@ static int seek_after_header(FILE* f, const char* name)
 
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 {
-  chefioTime t0,t1;
-  chefio_time(&t0);
   size_t r = fread(p, size, nmemb, f);
-  chefio_time(&t1);
-  const size_t time = chefio_time_diff(&t0,&t1);
-  const size_t bytes = nmemb*size;
-  chefio_global_stats.readTime += time;
-  chefio_global_stats.readBytes += bytes;
-  chefio_global_stats.reads++;
-  assert(r == nmemb);
+  PCU_ALWAYS_ASSERT(r == nmemb);
 }
 
 static int read_magic_number(FILE* f)
@@ -344,29 +137,17 @@ void ph_write_preamble(FILE* f)
 void ph_write_doubles(FILE* f, const char* name, double* data,
     size_t n, int nparam, int* params)
 {
-  chefioTime t0,t1;
   ph_write_header(f, name, n * sizeof(double) + 1, nparam, params);
-  chefio_time(&t0);
-  fwrite(data, sizeof(double), n, f);
-  chefio_time(&t1);
+  PHASTAIO_WRITETIME(fwrite(data, sizeof(double), n, f);, (n*sizeof(double)))
   fprintf(f, "\n");
-  chefio_global_stats.writeTime += chefio_time_diff(&t0,&t1);
-  chefio_global_stats.writeBytes += n*sizeof(double);
-  chefio_global_stats.writes++;
 }
 
 void ph_write_ints(FILE* f, const char* name, int* data,
     size_t n, int nparam, int* params)
 {
-  chefioTime t0,t1;
   ph_write_header(f, name, n * sizeof(int) + 1, nparam, params);
-  chefio_time(&t0);
-  fwrite(data, sizeof(int), n, f);
-  chefio_time(&t1);
+  PHASTAIO_WRITETIME(fwrite(data, sizeof(int), n, f);, (n*sizeof(int)))
   fprintf(f, "\n");
-  chefio_global_stats.writeTime += chefio_time_diff(&t0,&t1);
-  chefio_global_stats.writeBytes += n*sizeof(int);
-  chefio_global_stats.writes++;
 }
 
 static void parse_params(char* header, long* bytes,
@@ -395,11 +176,11 @@ int ph_read_field(FILE* f, const char* field, int swap,
   parse_params(header, &bytes, nodes, vars, step);
   if(!bytes) /* empty data block */
     return 1;
-  assert(((bytes - 1) % sizeof(double)) == 0);
+  PCU_ALWAYS_ASSERT(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
-  assert((int)n == (*nodes) * (*vars));
+  PCU_ALWAYS_ASSERT((int)n == (*nodes) * (*vars));
   *data = malloc(bytes);
-  my_fread(*data, sizeof(double), n, f);
+  PHASTAIO_READTIME(my_fread(*data, sizeof(double), n, f);, (sizeof(double)*n))
   if (swap)
     pcu_swap_doubles(*data, n);
   return 2;

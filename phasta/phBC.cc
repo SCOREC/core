@@ -11,7 +11,7 @@
 #include <sstream>
 #include <cstring>
 #include <gmi.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -98,7 +98,7 @@ static void readBC(std::string const& line, BCs& bcs)
 static void readBCsFromSPJ(const char* filename, BCs& bcs)
 {
   std::ifstream file(filename);
-  assert(file.is_open()); //check if the spj file could be opened successfully
+  PCU_ALWAYS_ASSERT(file.is_open()); //check if the spj file could be opened successfully
   std::string line;
   while (std::getline(file, line, '\n')) {
     if (line[0] == '#')

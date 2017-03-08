@@ -14,7 +14,7 @@
 #include <PCU.h>
 #include <map>
 #include <set>
-#include <assert.h>
+#include <pcu_util.h>
 #include <cstdlib>
 
 #include "apf.h"
@@ -46,7 +46,7 @@ Ghosting::~Ghosting()
   }
   // FIXME: delete tag
   parts_index_tag = m->findTag("_parts_index_");
-  assert (parts_index_tag);
+  PCU_ALWAYS_ASSERT(parts_index_tag);
 
   // FIXME: this is not efficient
   for (int d=0; d<=ghost_dim; ++d)
@@ -76,7 +76,7 @@ void Ghosting::send(pMeshEnt e, int to)
   }
   else
     m->getIntTag(e, parts_index_tag,&index);
-  assert(index!=-1);
+  PCU_ALWAYS_ASSERT(index!=-1);
   parts_vec[d][index]->insert(to);
 }
 
@@ -111,7 +111,7 @@ void Ghosting::print()
 Parts& Ghosting::sending(pMeshEnt e, int d)
 {
   int index;
-  assert(m->hasTag(e, parts_index_tag));
+  PCU_ALWAYS_ASSERT(m->hasTag(e, parts_index_tag));
   m->getIntTag(e, parts_index_tag, &index);
   return *(parts_vec[d][index]);
 }
@@ -129,7 +129,7 @@ int Ghosting::count()
   return parts_vec[ghost_dim].size();
 }
 
-#include <assert.h>
+#include <pcu_util.h>
 // *********************************************************
 static pMeshEnt unpackGhost(Ghosting* plan, apf::DynamicArray<pMeshTag>& tags)
 // *********************************************************
@@ -620,7 +620,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
 
       r_layer=r_int[0];
       r_pid=r_int[1];
-      assert(r_layer<=num_layer && r_pid<pumi_size());
+      PCU_ALWAYS_ASSERT(r_layer<=num_layer && r_pid<pumi_size());
       off_bridge_marker[r].insert(r_pid);
 
       apf::Adjacent ghost_cands;

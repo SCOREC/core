@@ -1,20 +1,20 @@
 #include <apfIntegrate.h>
 #include <apfMesh.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 
 static void testType(int type, double expectedSum)
 {
   apf::EntityIntegration const* eg = apf::getIntegration(type);
-  assert(eg);
+  PCU_ALWAYS_ASSERT(eg);
   for (int i = 0; i < eg->countIntegrations(); ++i) {
     apf::Integration const* g = eg->getIntegration(i);
-    assert(g);
+    PCU_ALWAYS_ASSERT(g);
     double sum = 0;
     for (int j = 0; j < g->countPoints(); ++j) {
       apf::IntegrationPoint const* p = g->getPoint(j);
-      assert(p);
+      PCU_ALWAYS_ASSERT(p);
       sum += p->weight;
     }
     if (fabs(sum - expectedSum) > 1e-10) {

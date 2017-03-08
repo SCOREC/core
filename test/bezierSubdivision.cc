@@ -9,7 +9,7 @@
 #include <PCU.h>
 #include <mth.h>
 #include <mth_def.h>
-#include <cassert>
+#include <pcu_util.h>
 
 /*
  * This contains all the tests for bezier subdivision
@@ -238,12 +238,12 @@ void testEdgeSubdivision()
       p2[0] = 0.005*i-1.;
       apf::getVector(elem0,p1,pt1);
       apf::getVector(elem,p2,pt2);
-      assert(std::abs((pt2-pt1).getLength()) < 1e-15);
+      PCU_ALWAYS_ASSERT(std::abs((pt2-pt1).getLength()) < 1e-15);
 
       p2[0] = 0.015*i-0.5;
       apf::getVector(elem1,p1,pt1);
       apf::getVector(elem,p2,pt2);
-      assert(std::abs((pt2-pt1).getLength()) < 1e-15);
+      PCU_ALWAYS_ASSERT(std::abs((pt2-pt1).getLength()) < 1e-15);
     }
     apf::destroyElement(elem);
     apf::destroyElement(elem0);
@@ -327,7 +327,7 @@ void testTriSubdivision1()
           pOld[t] += p[0];
           pOld[(t+2) % 3] += p[2];
           apf::getVector(elem,pOld,ptOld);
-          assert(std::abs((ptOld-pt).getLength()) < 1e-15);
+          PCU_ALWAYS_ASSERT(std::abs((ptOld-pt).getLength()) < 1e-15);
         }
       }
     }
@@ -467,7 +467,7 @@ void testTetSubdivision1()
         apf::measure((apf::MeshElement*)elems[2]) +
         apf::measure((apf::MeshElement*)elems[3]);
 
-    assert(fabs(totalVolume - volumeSum) < 1e-15);
+    PCU_ALWAYS_ASSERT(fabs(totalVolume - volumeSum) < 1e-15);
     apf::destroyElement(elem);
     m->destroy(tet);
     for(int t = 0; t < 4; ++t)

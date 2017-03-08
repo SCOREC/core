@@ -10,7 +10,7 @@
 #include "crvBezierShapes.h"
 #include "crvMath.h"
 #include "crvTables.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
@@ -268,7 +268,7 @@ void collectNodeXi(int parentType, int childType, int P,
       }
     }
   }
-  assert(row == getNumControlPoints(childType,P));
+  PCU_ALWAYS_ASSERT(row == getNumControlPoints(childType,P));
 }
 
 void getBezierTransformationMatrix(int type, int P,

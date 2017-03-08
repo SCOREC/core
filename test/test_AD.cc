@@ -1,13 +1,13 @@
 #include "mthAD.h"
-#include <cassert>
+#include <pcu_util.h>
 
 typedef mth::AD<double, 3> AD;
 
 void compare(AD const& x, double val, double da, double db)
 {
-  assert(fabs(x.val() - val) < 1e-15);
-  assert(fabs(x.dx(0) - da) < 1e-15);
-  assert(fabs(x.dx(1) - db) < 1e-15);
+  PCU_ALWAYS_ASSERT(fabs(x.val() - val) < 1e-15);
+  PCU_ALWAYS_ASSERT(fabs(x.dx(0) - da) < 1e-15);
+  PCU_ALWAYS_ASSERT(fabs(x.dx(1) - db) < 1e-15);
 }
 
 AD f1(AD const& a, AD const& b)

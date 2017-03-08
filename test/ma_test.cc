@@ -8,7 +8,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 
 class Linear : public ma::IsotropicFunction
 {
@@ -34,7 +34,7 @@ class Linear : public ma::IsotropicFunction
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);

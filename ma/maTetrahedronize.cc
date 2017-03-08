@@ -8,7 +8,7 @@
 #include <apfShape.h>
 #include <apfCavityOp.h>
 #include "maShape.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -25,7 +25,7 @@ int getFlagFromDiagonal(int diagonal)
 {
   if (diagonal==0)
     return DIAGONAL_1;
-  assert(diagonal==1);
+  PCU_ALWAYS_ASSERT(diagonal==1);
   return DIAGONAL_2;
 }
 
@@ -114,7 +114,7 @@ static Entity* flagQuad(Adapt* a, Entity* q, Entity* e)
 {
   Mesh* m = a->mesh;
   int diagonal = getDiagonalFromFlag(a,e);
-  assert(diagonal != -1);
+  PCU_ALWAYS_ASSERT(diagonal != -1);
   Entity* es[4];
   int ds[4];
   getFaceEdgesAndDirections(m,q,es,ds);
@@ -200,7 +200,7 @@ static int align_quad(apf::Mesh* mesh, Entity* quad, Entity* canonical_0_vert)
 
 static void overrideQuadDiagonal(Adapt* a, Entity* quad, int diagonal)
 {
-  assert(diagonal == 1 || diagonal == 0);
+  PCU_ALWAYS_ASSERT(diagonal == 1 || diagonal == 0);
   Mesh* mesh = a->mesh;
   int old_diagonal = getDiagonalFromFlag(a, quad);
   if (old_diagonal != diagonal) {
@@ -221,8 +221,8 @@ static void overrideQuadDiagonal(Adapt* a, Entity* quad, int diagonal)
       clearFlag(a, quad, old_flag);
       setFlag(a, quad, flag);
       setFlag(a, quad, CHECKED);
-      assert(getFlag(a, quad, flag));
-      assert(!getFlag(a, quad, old_flag));
+      PCU_ALWAYS_ASSERT(getFlag(a, quad, flag));
+      PCU_ALWAYS_ASSERT(!getFlag(a, quad, old_flag));
     }
   } else {
     std::stringstream ss;
@@ -347,8 +347,8 @@ struct UnsafePrismOverride : public apf::CavityOp
       int diagonal = quad_diagonal ^ quad_alignment;
       allowed_diagonals |= (1 << (2 * i + diagonal));
     }
-    assert(allowed_diagonals > 0);
-    assert(allowed_diagonals <= ((1<<6)-1));
+    PCU_ALWAYS_ASSERT(allowed_diagonals > 0);
+    PCU_ALWAYS_ASSERT(allowed_diagonals <= ((1<<6)-1));
     return allowed_diagonals;
   }
   bool areDiagonalsAllowed(int diagonals, int allowed_diagonals)
@@ -459,7 +459,7 @@ static void addAllLayerElements(Refine* r)
       ++nf;
     }
   m->end(it);
-  assert(static_cast<size_t>(nf) == r->toSplit[2].getSize());
+  PCU_ALWAYS_ASSERT(static_cast<size_t>(nf) == r->toSplit[2].getSize());
   it = m->begin(3);
   int nr = 0;
   while ((e = m->iterate(it)))
@@ -470,7 +470,7 @@ static void addAllLayerElements(Refine* r)
       ++nr;
     }
   m->end(it);
-  assert(static_cast<size_t>(nr) == r->toSplit[3].getSize());
+  PCU_ALWAYS_ASSERT(static_cast<size_t>(nr) == r->toSplit[3].getSize());
 }
 
 /* the commonly reused part of the
@@ -496,7 +496,7 @@ void tetrahedronize(Adapt* a)
 {
   if ( ! a->input->shouldTurnLayerToTets)
     return;
-  assert(a->hasLayer);
+  PCU_ALWAYS_ASSERT(a->hasLayer);
   double t0 = PCU_Time();
   prepareLayerToTets(a);
   Refine* r = a->refine;
@@ -588,8 +588,8 @@ static void markIslandQuads(Adapt* a)
     }
   m->end(it);
   clearFlagFromDimension(a, CHECKED, 2);
-  assert(checkFlagConsistency(a, 2, SPLIT));
-  assert(checkFlagConsistency(a, 2, DIAGONAL_1));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a, 2, SPLIT));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a, 2, DIAGONAL_1));
 }
 
 /* this function marks pyramids adjacent
@@ -613,7 +613,7 @@ static long markIslandPyramids(Adapt* a)
       m->getUp(e, up);
       for (int i = 0; i < up.n; ++i) {
         Entity* elem = up.e[i];
-        assert(m->getType(elem) == apf::Mesh::PYRAMID);
+        PCU_ALWAYS_ASSERT(m->getType(elem) == apf::Mesh::PYRAMID);
         setFlag(a, elem, SPLIT);
         ++n;
       }
@@ -651,7 +651,7 @@ static void addIslandPyramids(Refine* r)
       if (getFlag(a, e, SPLIT))
         r->toSplit[d][n[d]++] = e;
     m->end(it);
-    assert(r->toSplit[d].getSize() == n[d]);
+    PCU_ALWAYS_ASSERT(r->toSplit[d].getSize() == n[d]);
   }
 }
 

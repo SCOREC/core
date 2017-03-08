@@ -4,11 +4,11 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <SimUtil.h>
-#include <cassert>
+#include <pcu_util.h>
 
 int main(int argc, char** argv)
 {
-  assert(argc==4);
+  PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   SimUtil_start();

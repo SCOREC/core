@@ -1,6 +1,7 @@
 #include <limits.h>
 #include <apf.h>
 #include <PCU.h>
+#include <pcu_util.h>
 #include "parma_dijkstra.h" 
 #include "parma_meshaux.h" 
 #include "parma_distQ.h"
@@ -42,7 +43,7 @@ namespace {
       for(int j=0; j<ne; j++) {
         apf::Downward verts;
         int nv = m->getDownward(edges[j], 0, verts);
-        assert(nv==2);
+        PCU_ALWAYS_ASSERT(nv==2);
         if( c->has(verts[0]) && c->has(verts[1]) )
           ce->insert(edges[j]);
       }
@@ -90,7 +91,7 @@ namespace {
         if( m->hasTag(u,lvlT) ) continue;
         m->setIntTag(u,lvlT,&treeDepth);
         visited[visCnt++] = u;
-        assert(visCnt < maxVisited);
+        PCU_ALWAYS_ASSERT(visCnt < maxVisited);
         apf::Up edges;
         m->getUp(u,edges);
         for(int i=0; i<edges.n; i++) {
@@ -107,7 +108,7 @@ namespace {
     }
     adjVtx.setSize(numAdj);
     for(std::size_t i = 0; i<visCnt; i++) {
-      assert(m->hasTag(visited[i],lvlT));
+      PCU_ALWAYS_ASSERT(m->hasTag(visited[i],lvlT));
       m->removeTag(visited[i],lvlT);
     }
     m->destroyTag(lvlT);
@@ -135,7 +136,7 @@ namespace {
       apf::MeshEntity* v = pq.pop();
       if( ! c->has(v) ) continue;
       int vd; m->getIntTag(v, d, &vd);
-      assert( vd >= 0 && vd != INT_MAX );
+      PCU_ALWAYS_ASSERT( vd >= 0 && vd != INT_MAX );
       apf::Adjacent adjVtx;
       getConnectedVtx(m,c,d,v,adjVtx);
       APF_ITERATE(apf::Adjacent, adjVtx, eItr) {

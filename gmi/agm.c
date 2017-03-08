@@ -11,7 +11,7 @@
 #include "agm.h"
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <pcu_util.h>
 
 struct ents {
   int n[AGM_ENT_TYPES];
@@ -148,7 +148,7 @@ static int get_cap(struct agm* m, enum agm_obj_type o, int subtype)
     case AGM_BOUNDARY:
       return m->bdrys.cap[subtype];
     default:
-      assert(!"bad obj type");
+      PCU_ALWAYS_ASSERT(!"bad obj type");
   }
 
   return 0; // Should never be reached (but stops compilers from complaining)
@@ -173,7 +173,7 @@ void agm_reserve(struct agm* m, enum agm_ent_type t, int n)
 {
   struct ents* e;
   e = &m->ents;
-  assert(e->n[t] <= n);
+  PCU_ALWAYS_ASSERT(e->n[t] <= n);
   resize(&e->first_use[t], n);
   resize(&e->first_bdry[t], n);
   resize(&e->last_bdry[t], n);
@@ -251,9 +251,9 @@ static enum agm_ent_type const use_ent_types[AGM_USE_TYPES] = {
 
 static void check_ent(struct agm* m, struct agm_ent e)
 {
-  assert(e.type < AGM_ENT_TYPES);
-  assert(e.id >= 0);
-  assert(e.id < m->ents.n[e.type]);
+  PCU_ALWAYS_ASSERT(e.type < AGM_ENT_TYPES);
+  PCU_ALWAYS_ASSERT(e.id >= 0);
+  PCU_ALWAYS_ASSERT(e.id < m->ents.n[e.type]);
 }
 
 struct agm_use agm_add_use(struct agm* m, struct agm_bdry b, struct agm_ent of)
@@ -265,7 +265,7 @@ struct agm_use agm_add_use(struct agm* m, struct agm_bdry b, struct agm_ent of)
   check_ent(m, of);
   u = &m->uses;
   use.type = t = bdry_use_types[b.type];
-  assert(of.type == use_ent_types[use.type]);
+  PCU_ALWAYS_ASSERT(of.type == use_ent_types[use.type]);
   if (u->n[t] == u->cap[t]) {
     grow(&u->cap[t]);
     resize(&u->used[t], u->cap[t]);
@@ -502,7 +502,7 @@ void* agm_tag_at(struct agm_tag* t, enum agm_obj_type o,
   data = &t->data[o][subtype];
   if (!(*data))
     *data = malloc(t->bytes * get_cap(t->m, o, subtype));
-  assert(*data);
+  PCU_ALWAYS_ASSERT(*data);
   return *data + t->bytes * index;
 }
 
@@ -512,8 +512,8 @@ void* agm_tag_at(struct agm_tag* t, enum agm_obj_type o,
 
 enum agm_ent_type agm_type_from_dim(int dim)
 {
-  assert(0 <= dim);
-  assert(dim <= 3);
+  PCU_ALWAYS_ASSERT(0 <= dim);
+  PCU_ALWAYS_ASSERT(dim <= 3);
   static enum agm_ent_type const tab[4] = {
     AGM_VERTEX,
     AGM_EDGE,
@@ -573,7 +573,7 @@ int agm_find_path(struct agm* m, struct agm_ent from, struct agm_ent to,
     struct agm_use path[4])
 {
   int depth = to.type - from.type;
-  assert(depth >= 0);
+  PCU_ALWAYS_ASSERT(depth >= 0);
   if (!find_path(m, from, to, path, depth))
     return -1;
   return depth;

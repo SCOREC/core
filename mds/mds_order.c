@@ -10,7 +10,7 @@
 
 #include "mds_apf.h"
 #include <stdlib.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <string.h>
 #include <limits.h>
 #include <PCU.h>
@@ -123,14 +123,14 @@ struct mds_tag* mds_number_verts_bfs(struct mds_apf* m)
   struct mds_tag* tag;
   int label;
   mds_id v;
-  assert(m->mds.n[MDS_VERTEX] < INT_MAX);
+  PCU_ALWAYS_ASSERT(m->mds.n[MDS_VERTEX] < INT_MAX);
   tag = mds_create_tag(&m->tags, "mds_number", sizeof(int), 1);
   label = 0;
   v = find_seed(m);
   number_connected_verts(&m->mds, v, tag, &label);
   for (v = mds_begin(&m->mds, 0); v != MDS_NONE; v = mds_next(&m->mds, v))
     number_connected_verts(&m->mds, v, tag, &label);
-  assert(label == m->mds.n[MDS_VERTEX]);
+  PCU_ALWAYS_ASSERT(label == m->mds.n[MDS_VERTEX]);
   return tag;
 }
 
@@ -154,7 +154,7 @@ static void number_ents_of_type(struct mds* m,
   struct mds_set adj;
   int label;
   int i, j;
-  assert(m->n[type] < INT_MAX);
+  PCU_ALWAYS_ASSERT(m->n[type] < INT_MAX);
   label = 0;
   dim = mds_dim[type];
   for (i = 0; i < m->n[MDS_VERTEX]; ++i) {
@@ -261,11 +261,11 @@ static void rebuild_verts(
   double* q;
   for (i = 0; i < m->mds.n[MDS_VERTEX]; ++i) {
     ne = mds_identify(MDS_VERTEX,i);
-    assert(mds_has_tag(old_of,ne));
+    PCU_ALWAYS_ASSERT(mds_has_tag(old_of,ne));
     e = lookup(old_of,ne);
     model = mds_apf_model(m,e);
     ne = mds_apf_create_entity(m2,MDS_VERTEX,model,0);
-    assert(ne == mds_identify(MDS_VERTEX,i));
+    PCU_ALWAYS_ASSERT(ne == mds_identify(MDS_VERTEX,i));
     p = mds_apf_point(m,e);
     q = mds_apf_point(m2,ne);
     for (j = 0; j < 3; ++j)
@@ -275,7 +275,7 @@ static void rebuild_verts(
     for (j = 0; j < 2; ++j)
       q[j] = p[j];
   }
-  assert(m2->mds.n[MDS_VERTEX] == m->mds.n[MDS_VERTEX]);
+  PCU_ALWAYS_ASSERT(m2->mds.n[MDS_VERTEX] == m->mds.n[MDS_VERTEX]);
 }
 
 static void rebuild_ents(
@@ -301,9 +301,9 @@ static void rebuild_ents(
       for (j = 0; j < old_down.n; ++j)
         new_down.e[j] = lookup(new_of,old_down.e[j]);
       ne = mds_apf_create_entity(m2,t,model,new_down.e);
-      assert(ne == mds_identify(t,i));
+      PCU_ALWAYS_ASSERT(ne == mds_identify(t,i));
     }
-    assert(m->mds.n[t] == m2->mds.n[t]);
+    PCU_ALWAYS_ASSERT(m->mds.n[t] == m2->mds.n[t]);
   }
 }
 

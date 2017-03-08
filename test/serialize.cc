@@ -6,7 +6,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 struct GroupCode : public Parma_GroupCode

@@ -15,7 +15,7 @@
 #include "maLayer.h"
 #include "maMatch.h"
 #include <apfGeometry.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 
 namespace ma {
@@ -66,8 +66,8 @@ static double interpolateParametricCoordinate(
   double result = (1-t)*a + t*b;
   if (result >= range[1])
     result -= period;
-  assert(result >= range[0]);
-  assert(result < range[1]);
+  PCU_ALWAYS_ASSERT(result >= range[0]);
+  PCU_ALWAYS_ASSERT(result < range[1]);
   return result;
 }
 

@@ -4,19 +4,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifdef __INTEL_COMPILER
-typedef size_t chefioTime;
-#else
-typedef struct timespec chefioTime;
-#endif
-void chefio_time(chefioTime* t);
-size_t chefio_time_diff(chefioTime* start, chefioTime* end);
-void chefio_addOpenTime(size_t t);
-void chefio_addCloseTime(size_t t);
-void chefio_initStats();
-void chefio_printStats();
-
 void ph_write_preamble(FILE* f);
 void ph_write_header(FILE* f, const char* name, size_t bytes,
     int nparam, int* params);

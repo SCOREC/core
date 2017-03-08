@@ -1,6 +1,7 @@
 #include <set>
 #include <apf.h>
 #include <PCU.h>
+#include <pcu_util.h>
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
@@ -30,7 +31,7 @@ namespace {
 
     protected:
       void insertInteriorEnts(apf::MeshEntity* e, int dest, SetEnt& s, int entDim) {
-        assert(entDim >= 0);
+        PCU_ALWAYS_ASSERT(entDim >= 0);
         if( entDim == mesh->getDimension() ) {
           s.insert(e);
           return;

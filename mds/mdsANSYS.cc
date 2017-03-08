@@ -4,7 +4,7 @@
 #include <apfNumbering.h>
 #include <fstream>
 #include <gmi.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 #define MAX_ELEM_NODES 10
@@ -27,7 +27,7 @@ static void ansys2apf(int ansysType, int& apfType, apf::FieldShape*& shape)
 
 static void parseElemInt(std::string const& line, int at, int& out)
 {
-  assert(line.length() >= ((size_t)at + 1) * 6);
+  PCU_ALWAYS_ASSERT(line.length() >= ((size_t)at + 1) * 6);
   std::string field = line.substr(at * 6, 6);
   if (field != "      ") {
     std::stringstream ss(field);
@@ -112,7 +112,7 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
       enumbers = createNumbering(m, "ansys_element", getConstant(m->getDimension()), 1);
     }
     if (prevShape)
-      assert(prevShape == shape);
+      PCU_ALWAYS_ASSERT(prevShape == shape);
     int nev = Mesh::adjacentCount[type][0];
     int nen = shape->getEntityShape(type)->countNodes();
     Downward ev;
@@ -138,13 +138,13 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
       Downward ee;
       int nee = m->getDownward(e, d, ee);
       for (int j = 0; j < nee; ++j) {
-        assert(shape->countNodesOn(m->getType(ee[j])) == 1);
+        PCU_ALWAYS_ASSERT(shape->countNodesOn(m->getType(ee[j])) == 1);
         m->setPoint(ee[j], 0, nodes[en[i]]);
         ++i;
       }
     }
     number(enumbers, e, 0, 0, id);
-    assert(i == nen);
+    PCU_ALWAYS_ASSERT(i == nen);
     prevShape = shape;
   }
   return m;

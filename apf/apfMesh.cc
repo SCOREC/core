@@ -12,7 +12,7 @@
 #include "apfNumbering.h"
 #include "apfTagData.h"
 #include <gmi.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <algorithm>
 
 namespace apf {
@@ -223,10 +223,10 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
     Vector3 const& param, Vector3& x)
 {
   int dim = getModelType(g);
-  assert(dim == 1 || dim == 2);
+  PCU_ALWAYS_ASSERT(dim == 1 || dim == 2);
   gmi_ent* e = (gmi_ent*)g;
   gmi_set* adjRegions = gmi_adjacent(getModel(), e, 3);
-  assert(adjRegions->n == 1);
+  PCU_ALWAYS_ASSERT(adjRegions->n == 1);
   gmi_ent* r = (gmi_ent*)adjRegions->e[0];
   gmi_eval(getModel(), (gmi_ent*)g, &param[0], &x[0]);
   int res = gmi_is_point_in_region(getModel(), r, &x[0]);
@@ -236,7 +236,7 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
 bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
   // make sure that the dimension of target is greater or equal the
   // dimension of the model entity to be checked.
-  assert(getModelType(target) >= getModelType(g));
+  PCU_ALWAYS_ASSERT(getModelType(target) >= getModelType(g));
   gmi_ent* e  = (gmi_ent*)g;
   gmi_ent* et = (gmi_ent*)target;
   int res = gmi_is_in_closure_of(getModel(), e, et);
@@ -342,7 +342,7 @@ void unite(Parts& into, Parts const& from)
 
 void getPeers(Mesh* m, int d, Parts& peers)
 {
-  assert(d < m->getDimension());
+  PCU_ALWAYS_ASSERT(d < m->getDimension());
   MeshEntity* e;
   MeshIterator* ents = m->begin(d);
   while ((e = m->iterate(ents)))
@@ -700,7 +700,7 @@ Copy getOtherCopy(Mesh* m, MeshEntity* s)
 {
   Copies remotes;
   m->getRemotes(s,remotes);
-  assert(remotes.size()==1);
+  PCU_ALWAYS_ASSERT(remotes.size()==1);
   Copies::iterator it = remotes.begin();
   return Copy(it->first, it->second);
 }
@@ -766,7 +766,7 @@ void printTypes(Mesh* m)
 {
   const int dim = m->getDimension();
   if (dim==1) return;
-  assert(dim==2 || dim==3);
+  PCU_ALWAYS_ASSERT(dim==2 || dim==3);
   MeshIterator* it = m->begin(dim);
   MeshEntity* e;
   long typeCnt[Mesh::TYPES];
@@ -856,7 +856,7 @@ MatchedSharing::MatchedSharing(Mesh* m):
 
 size_t MatchedSharing::getNeighborCount(int peer)
 {
-  assert(countMap.count(peer));
+  PCU_ALWAYS_ASSERT(countMap.count(peer));
   return countMap[peer];
 }
 
@@ -947,7 +947,7 @@ static void getUpBridgeAdjacent(Mesh* m, MeshEntity* origin,
     int bridgeDimension, int targetDimension,
     std::set<MeshEntity*>& result)
 {
-  assert(targetDimension < bridgeDimension);
+  PCU_ALWAYS_ASSERT(targetDimension < bridgeDimension);
   Adjacent bridges;
   m->getAdjacent(origin, bridgeDimension, bridges);
   for (size_t i = 0; i < bridges.getSize(); ++i) {
@@ -962,7 +962,7 @@ static void getDownBridgeAdjacent(Mesh* m, MeshEntity* origin,
     int bridgeDimension, int targetDimension,
     std::set<MeshEntity*>& result)
 {
-  assert(targetDimension > bridgeDimension);
+  PCU_ALWAYS_ASSERT(targetDimension > bridgeDimension);
   std::set<MeshEntity*> s;
   Downward bridges;
   int nbridges = m->getDownward(origin, bridgeDimension, bridges);
@@ -977,7 +977,7 @@ static void getDownBridgeAdjacent(Mesh* m, MeshEntity* origin,
 void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
     int bridgeDimension, int targetDimension, Adjacent& result)
 {
-  assert(targetDimension != bridgeDimension);
+  PCU_ALWAYS_ASSERT(targetDimension != bridgeDimension);
   std::set<MeshEntity*> s;
   if (targetDimension < bridgeDimension)
     getUpBridgeAdjacent(m, origin, bridgeDimension, targetDimension, s);
@@ -1029,7 +1029,7 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   Downward eb;
   int neb = m->getDownward(elem, getDimension(m, boundary), eb);
   which = findIn(eb, neb, boundary);
-  assert(which >= 0);
+  PCU_ALWAYS_ASSERT(which >= 0);
   if (m->getType(boundary) == Mesh::VERTEX) {
     flip = false;
     rotate = 0;

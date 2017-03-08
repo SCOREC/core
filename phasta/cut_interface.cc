@@ -5,7 +5,7 @@
 #include <gmi_sim.h>
 #include <apfMDS.h>
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 char const* modelfile;
 char const* attribfile;
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     return 0;
   }
   PCU_Comm_Init();
-  assert(PCU_Comm_Peers() == 1);
+  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 1);
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();

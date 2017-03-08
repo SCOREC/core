@@ -1,6 +1,6 @@
 #include <apfMatrix.h>
 #include <algorithm>
-#include <cassert>
+#include <pcu_util.h>
 
 struct Input {
   double A[3][3];
@@ -135,10 +135,10 @@ int main()
     apf::Matrix3x3 V2;
     apf::Vector3 l2;
     int n = apf::eigen(A, &V2[0], &l2[0]);
-    assert(n == 3);
+    PCU_ALWAYS_ASSERT(n == 3);
     sortEigen(V, l);
     sortEigen(V2, l2);
-    assert(diffnormEigenVecs(V, V2) < 1e-10);
-    assert(diffnorm(l, l2) < 1e-10);
+    PCU_ALWAYS_ASSERT(diffnormEigenVecs(V, V2) < 1e-10);
+    PCU_ALWAYS_ASSERT(diffnorm(l, l2) < 1e-10);
   }
 }

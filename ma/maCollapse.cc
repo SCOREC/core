@@ -11,7 +11,7 @@
 #include "maAdapt.h"
 #include "maShape.h"
 #include <apfCavityOp.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -36,7 +36,7 @@ bool Collapse::requestLocality(apf::CavityOp* o)
 
 bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
 {
-  assert( ! adapt->mesh->isShared(vertToCollapse));
+  PCU_ALWAYS_ASSERT( ! adapt->mesh->isShared(vertToCollapse));
   rebuildElements();
   // check quality of linear t before fitting
   if ((adapt->mesh->getDimension()==2)
@@ -127,8 +127,8 @@ bool checkEdgeCollapseEdgeRings(Adapt* a, Entity* edge)
   Mesh* m = a->mesh;
   Entity* v[2];
   m->getDownward(edge,0,v);
-  assert( ! m->isShared(v[0]));
-  assert( ! m->isShared(v[1]));
+  PCU_ALWAYS_ASSERT( ! m->isShared(v[0]));
+  PCU_ALWAYS_ASSERT( ! m->isShared(v[1]));
   apf::Up ve[2];
   m->getUp(v[0],ve[0]);
   m->getUp(v[1],ve[1]);
@@ -313,7 +313,7 @@ void Collapse::setVerts()
     vertToCollapse = v[0];
   else
     vertToCollapse = v[1];
-  assert(getFlag(adapt,vertToCollapse,COLLAPSE));
+  PCU_ALWAYS_ASSERT(getFlag(adapt,vertToCollapse,COLLAPSE));
   vertToKeep = getEdgeVertOppositeVert(m,edge,vertToCollapse);
 }
 
@@ -330,12 +330,12 @@ void Collapse::computeElementSets()
   APF_ITERATE(Upward,adjacent,it)
     if ( ! elementsToCollapse.count(*it))
       elementsToKeep.insert(*it);
-  assert(elementsToKeep.size());
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
 }
 
 void Collapse::rebuildElements()
 {
-  assert(elementsToKeep.size());
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
   newElements.setSize(elementsToKeep.size());
   cavity.beforeBuilding();
   size_t ni=0;
@@ -384,16 +384,16 @@ void Collapse::cancel()
 void Collapse::getOldElements(EntityArray& oldElements)
 {
   EntitySet& toCollapse = elementsToCollapse;
-  assert(toCollapse.size());
+  PCU_ALWAYS_ASSERT(toCollapse.size());
   EntitySet& toKeep = elementsToKeep;
-  assert(toKeep.size());
+  PCU_ALWAYS_ASSERT(toKeep.size());
   oldElements.setSize(toCollapse.size() + toKeep.size());
   size_t k=0;
   APF_ITERATE(EntitySet,toCollapse,it)
     oldElements[k++] = *it;
   APF_ITERATE(EntitySet,toKeep,it)
     oldElements[k++] = *it;
-  assert(k==oldElements.getSize());
+  PCU_ALWAYS_ASSERT(k==oldElements.getSize());
 }
 
 double Collapse::getOldQuality()
@@ -451,8 +451,8 @@ bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex)
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
 {
   Adapt* adapter = collapse.adapt;
-  assert(adapter->mesh->getType(edge) == apf::Mesh::EDGE);
-  assert(adapter->mesh->getType(vert) == apf::Mesh::VERTEX);
+  PCU_ALWAYS_ASSERT(adapter->mesh->getType(edge) == apf::Mesh::EDGE);
+  PCU_ALWAYS_ASSERT(adapter->mesh->getType(vert) == apf::Mesh::VERTEX);
   if ( ! collapse.setEdge(edge))
     return false;
   if ( ! collapse.checkClass())
@@ -465,7 +465,7 @@ bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
   }
   if (collapse.vertToCollapse != vert)
     std::swap(collapse.vertToCollapse, collapse.vertToKeep);
-  assert(collapse.vertToCollapse == vert);
+  PCU_ALWAYS_ASSERT(collapse.vertToCollapse == vert);
   collapse.computeElementSets();
   return true;
 }

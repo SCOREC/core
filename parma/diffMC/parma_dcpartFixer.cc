@@ -3,7 +3,7 @@
 #include "parma_commons.h"
 #include "parma_convert.h"
 #include <maximalIndependentSet/mis.h>
-#include <cassert>
+#include <pcu_util.h>
 
 typedef std::map<unsigned, unsigned> muu;
 
@@ -79,7 +79,7 @@ class dcPartFixer::PartFixer : public dcPart {
         for(unsigned i=0; i<getNumComps(); i++)
           if( getCompSize(i) != maxSz )
             dcCompTgts[i] = getCompPeer(i);
-        assert( dcCompTgts.size() == getNumComps()-1 );
+        PCU_ALWAYS_ASSERT( dcCompTgts.size() == getNumComps()-1 );
         apf::Migration* plan = new apf::Migration(m);
         if ( isInMis(dcCompTgts) )
           setupPlan(dcCompTgts, plan);

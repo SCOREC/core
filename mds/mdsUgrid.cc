@@ -6,7 +6,7 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 /*
@@ -24,7 +24,7 @@ namespace {
       case apf::Mesh::TRIANGLE: return 0;
       case apf::Mesh::QUAD: return 1;
       default: {
-                 assert(false);
+                 PCU_ALWAYS_ASSERT(false);
                  return -1;
                }
     }
@@ -69,17 +69,17 @@ namespace {
   }
 
   void readUnsigneds(FILE* f, unsigned* v, size_t cnt, bool swap) {
-    assert(sizeof(unsigned)==4);
+    PCU_ALWAYS_ASSERT(sizeof(unsigned)==4);
     size_t read = fread(v, sizeof(unsigned), cnt, f);
-    assert(read == cnt);
+    PCU_ALWAYS_ASSERT(read == cnt);
     if ( swap )
       pcu_swap_unsigneds(v,cnt);
   }
 
   void readDoubles(FILE* f, double* vals, size_t cnt, bool swap) {
-    assert(sizeof(double)==8);
+    PCU_ALWAYS_ASSERT(sizeof(double)==8);
     size_t read = fread(vals, sizeof(double), cnt, f);
-    assert(read == cnt);
+    PCU_ALWAYS_ASSERT(read == cnt);
     if ( swap )
       pcu_swap_doubles(vals,cnt);
   }
@@ -89,7 +89,7 @@ namespace {
     unsigned headerVals[7];
     readUnsigneds(r->file, headerVals, 7, r->swapBytes);
     for(unsigned i=0; i<7; i++) {
-      assert(headerVals[i] < biggest);
+      PCU_ALWAYS_ASSERT(headerVals[i] < biggest);
     }
     h->nvtx = headerVals[0];
     h->ntri = headerVals[1];
@@ -113,7 +113,7 @@ namespace {
 
   apf::MeshEntity* lookupVert(Reader* r, long ftnNodeId) {
     const long cNodeId = ftnToC(ftnNodeId);
-    assert(r->nodeMap.count(cNodeId));
+    PCU_ALWAYS_ASSERT(r->nodeMap.count(cNodeId));
     return r->nodeMap[cNodeId];
   }
 
@@ -169,7 +169,7 @@ namespace {
     long expected = h->nvtx*3*sizeof(double) +
       sizeof(unsigned)*(7 + h->ntri*3 + h->nquad*4 + (h->ntri+h->nquad));
     long pos = ftell(r->file);
-    assert( pos == expected );
+    PCU_ALWAYS_ASSERT( pos == expected );
   }
 
   void setFaceTags(Reader* r, apf::MeshTag* t, unsigned nfaces, int apfType) {
@@ -183,7 +183,7 @@ namespace {
       }
       apf::MeshEntity* f =
         apf::findElement(r->mesh, apfType, verts);
-      assert(f);
+      PCU_ALWAYS_ASSERT(f);
       int val = tags[id];
       r->mesh->setIntTag(f, t, &val);
     }
@@ -206,7 +206,7 @@ namespace {
       {0, 1, 2, 3,  4,  5, -1, -1}, //prism
       {3, 2, 4, 0,  1, -1, -1, -1}  //pyramid
     };
-    assert(apfType >= 4);
+    PCU_ALWAYS_ASSERT(apfType >= 4);
     return ugrid_to_mds_verts[apfType-4][ugridIdx];
   }
 
@@ -224,7 +224,7 @@ namespace {
       }
       apf::MeshEntity* elm =
         apf::buildElement(r->mesh, g, apfType, verts);
-      assert(elm);
+      PCU_ALWAYS_ASSERT(elm);
     }
     free(vtx);
     fprintf(stderr, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
@@ -293,7 +293,7 @@ namespace {
         ptn = new int[numVtx];
         for(long id=0; id<numVtx; id++) {
           int read = fscanf(f, "%d", &ptn[id]);
-          assert(read);
+          PCU_ALWAYS_ASSERT(read);
           if( ptn[id] > numparts )
             numparts = ptn[id];
         }
@@ -311,8 +311,8 @@ namespace {
         //count number of non-ghosted vtx per part
         for(long id=0; id<nvtx; id++) {
           const int partid = ptn[id];
-          assert(partid >= 0 && partid < numparts);
-          assert(!partvtx[partid].count(id));
+          PCU_ALWAYS_ASSERT(partid >= 0 && partid < numparts);
+          PCU_ALWAYS_ASSERT(!partvtx[partid].count(id));
           partvtx[partid].insert(id);
         }
       }
@@ -337,17 +337,17 @@ namespace {
       //  based on who owns the elements bounding vertices
       for(unsigned j=0; j<nverts; j++) {
         const unsigned idx = i*nverts+j;
-        assert(idx < cnt);
+        PCU_ALWAYS_ASSERT(idx < cnt);
         const int vtxid = ftnToC(vtx[idx]);
         const int partid = ps.ptn[vtxid];
         //an element can only exist once on each part
         elmparts.insert(partid);
       }
-      assert(elmparts.size() > 0 && elmparts.size() <= nverts);
+      PCU_ALWAYS_ASSERT(elmparts.size() > 0 && elmparts.size() <= nverts);
       //increment the elm per part counts
       APF_ITERATE(SetInt,elmparts,ep) {
         const int partid = *ep;
-        assert(partid >= 0 && partid < ps.numparts);
+        PCU_ALWAYS_ASSERT(partid >= 0 && partid < ps.numparts);
         ps.partelmW[partid] += weight;
         ps.partelm[partid]++;
         //add ghost vertices

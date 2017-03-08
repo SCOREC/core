@@ -11,7 +11,7 @@
 #include "pcu_aa.h"
 #include "pcu_msg.h"
 #include "noto_malloc.h"
-#include <assert.h>
+#include "pcu_util.h"
 
 struct message {
   pcu_aa_node node;

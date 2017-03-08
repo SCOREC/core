@@ -3,7 +3,7 @@
 #include "maLayer.h"
 #include "maSnap.h"
 #include "maShape.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -308,7 +308,7 @@ struct UnsnapChecker : public Crawler
       return;
     if (alreadyUnsnapping) {
       setFlag(a, v, LAYER_UNSNAP);
-      assert(m->hasTag(v, snapTag));
+      PCU_ALWAYS_ASSERT(m->hasTag(v, snapTag));
       return;
     }
     apf::Adjacent elements;
@@ -317,7 +317,7 @@ struct UnsnapChecker : public Crawler
       if (!isElementOk(a, *eit)) {
         foundAnything = true;
         setFlag(a, v, LAYER_UNSNAP);
-        assert(m->hasTag(v, snapTag));
+        PCU_ALWAYS_ASSERT(m->hasTag(v, snapTag));
         return;
       }
   }
@@ -435,7 +435,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
     PCU_COMM_UNPACK(link);
     Entity* v = l.lookup(link);
     setFlag(a, v, LAYER_UNSNAP);
-    assert(m->hasTag(v, snapTag));
+    PCU_ALWAYS_ASSERT(m->hasTag(v, snapTag));
   }
   n = PCU_Add_Long(n);
   print("fed back unsnap flag from %ld tops", n);

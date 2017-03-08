@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
@@ -12,7 +12,7 @@ namespace {
       apf::MeshEntity* edge, apf::MeshEntity* vtx) {
     apf::Downward dwnVtx;
     int nDwnVtx = m->getDownward(edge,getDimension(m,edge)-1,dwnVtx);
-    assert(nDwnVtx==2);
+    PCU_ALWAYS_ASSERT(nDwnVtx==2);
     return (dwnVtx[0] != vtx) ? dwnVtx[0] : dwnVtx[1];
   }
 
@@ -49,7 +49,7 @@ namespace {
             continue;
           if (m->hasTag(v,visited))
             continue;
-          assert(v!=checkVertex);
+          PCU_ALWAYS_ASSERT(v!=checkVertex);
           next.push_back(v);
           m->setIntTag(v,visited,&i);
           weight += parma::getEntWeight(m,v,wtag);
@@ -67,7 +67,7 @@ namespace {
     double entW = 0;
     double sum = 0;
     while ((e = m->iterate(it))) {
-      assert(m->hasTag(e,w));
+      PCU_ALWAYS_ASSERT(m->hasTag(e,w));
       if (parma::isOwned(m,e)) {
         m->getDoubleTag(e,w,&entW);
         sum += entW;

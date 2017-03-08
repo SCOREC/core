@@ -9,7 +9,7 @@
 #endif
 #include <chef.h>
 #include <parma.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {

@@ -6,7 +6,7 @@
 #include <apfNumbering.h>
 #include <apfMixedNumbering.h>
 #include <gmi_mesh.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <sstream>
 
 static void test_numbering(apf::Mesh* m) {
@@ -46,7 +46,7 @@ static void write_output(apf::Mesh* m, const char* out) {
 
 int main(int argc, char** argv)
 {
-  assert(argc==4);
+  PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();

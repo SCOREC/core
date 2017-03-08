@@ -7,7 +7,7 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <vector>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 
 using std::vector;
@@ -30,7 +30,7 @@ private:
 };
 BSpline :: BSpline(int order_p, vector<double> &ctrlPts_p, vector<double> & knots_p)
 {
-  assert(order_p>1);
+  PCU_ALWAYS_ASSERT(order_p>1);
   order=order_p;
   ctrlPts=ctrlPts_p;
   knots=knots_p;
@@ -280,7 +280,7 @@ class Vortex : public ma::AnisotropicFunction
 
 int main(int argc, char * argv[])
 {
-  assert(argc==2);
+  PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_model* model = makeModel();

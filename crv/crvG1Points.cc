@@ -7,7 +7,7 @@
 
 #include "crvBezier.h"
 #include "crvTables.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
@@ -54,7 +54,7 @@ static void getGregoryTriangleTransform(apf::NewArray<double> & c)
 
 static void getGregoryTetTransform(apf::NewArray<double> & c)
 {
-  assert(getBlendingOrder(apf::Mesh::TET) == 0);
+  PCU_ALWAYS_ASSERT(getBlendingOrder(apf::Mesh::TET) == 0);
   double t4[47] = {
       -0.665492638178598,-0.665492638178598,-0.665492638178598,-0.665492638178598,
       0.697909481209196,0.496340368840329,0.697909481209197,0.697909481209196,
@@ -126,7 +126,7 @@ static void getBlendedGregoryTriangleTransform(int blend,
 static void getBlendedGregoryTetTransform(int blend,
     apf::NewArray<double> & c)
 {
-  assert(getBlendingOrder(apf::Mesh::TET) == 0);
+  PCU_ALWAYS_ASSERT(getBlendingOrder(apf::Mesh::TET) == 0);
   double t4_1[46] = {
       1.921296296296296,1.921296296296296,1.921296296296296,1.921296296296296,
       -0.7098765432098767,-1.064814814814814,-0.7098765432098767,-0.7098765432098767,

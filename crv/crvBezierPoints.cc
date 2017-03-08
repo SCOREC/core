@@ -11,7 +11,7 @@
 #include "crvShape.h"
 #include "crvTables.h"
 #include <mth_def.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 namespace crv {
 
@@ -150,8 +150,8 @@ void getBezierTransformationCoefficients(int P, int type,
 {
   int ni = getNumInternalControlPoints(type,P);
   int n = getNumControlPoints(type,P);
-  assert(n > 0);
-  assert(ni > 0);
+  PCU_ALWAYS_ASSERT(n > 0);
+  PCU_ALWAYS_ASSERT(ni > 0);
   static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
 
   if(!transform[type][P].allocated()){
@@ -179,7 +179,7 @@ void getBezierJacobianDetSubdivisionCoefficients(int P, int type,
     apf::NewArray<double> & c)
 {
   int n = getNumControlPoints(type,P);
-  assert(n > 0);
+  PCU_ALWAYS_ASSERT(n > 0);
   int typeDim = apf::Mesh::typeDimension[type];
   int numMatrices = intpow(2.,typeDim);
   static apf::NewArray<double> transform[apf::Mesh::TYPES][MAX_ORDER];
@@ -279,8 +279,8 @@ void getInternalBezierTransformationCoefficients(apf::Mesh* m, int P, int blend,
 
   int ni = getNumInternalControlPoints(type,P);
   int n = getNumControlPoints(type,P);
-  assert(n > 0);
-  assert(ni > 0);
+  PCU_ALWAYS_ASSERT(n > 0);
+  PCU_ALWAYS_ASSERT(ni > 0);
   static apf::NewArray<double> transform[2][apf::Mesh::TYPES][MAX_ORDER];
   if(!transform[blend-1][type][P].allocated()){
 

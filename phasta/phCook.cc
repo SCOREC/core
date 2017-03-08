@@ -15,7 +15,7 @@
 #include <phPartition.h>
 #include <phFilterMatching.h>
 #include "phInterfaceCutter.h"
-#include "phIO.h" //for chefio_initStats and chefio_printStats
+#include "phiotimer.h" //for phastaio_initStats and phastaio_printStats
 #include <parma.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -24,10 +24,10 @@
 #include <gmi_mesh.h>
 #include <PCU.h>
 #include <pcu_io.h>
+#include <pcu_util.h>
 #include <string>
 #include <stdlib.h>
 #include <cstring>
-#include <assert.h>
 #include <iostream>
 
 #define SIZET(a) static_cast<size_t>(a)
@@ -126,32 +126,20 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 
 namespace chef {
   static FILE* openfile_read(ph::Input&, const char* path) {
-    chefioTime t0,t1;
-    chefio_time(&t0);
-    FILE* f = pcu_group_open(path, false);
-    chefio_time(&t1);
-    const size_t elapsed = chefio_time_diff(&t0,&t1);
-    chefio_addOpenTime(elapsed);
+    FILE* f = NULL;
+    PHASTAIO_OPENTIME(f = pcu_group_open(path, false);)
     return f;
   }
 
   static FILE* openfile_write(ph::Output&, const char* path) {
-    chefioTime t0,t1;
-    chefio_time(&t0);
-    FILE* f = pcu_group_open(path, true);
-    chefio_time(&t1);
-    const size_t elapsed = chefio_time_diff(&t0,&t1);
-    chefio_addOpenTime(elapsed);
+    FILE* f = NULL;
+    PHASTAIO_OPENTIME(f = pcu_group_open(path, true);)
     return f;
   }
 
   static FILE* openstream_write(ph::Output& out, const char* path) {
-    chefioTime t0,t1;
-    chefio_time(&t0);
-    FILE* f = openGRStreamWrite(out.grs, path);
-    chefio_time(&t1);
-    const size_t elapsed = chefio_time_diff(&t0,&t1);
-    chefio_addOpenTime(elapsed);
+    FILE* f = NULL;
+    PHASTAIO_OPENTIME(f = openGRStreamWrite(out.grs, path);)
     return f;
   }
 
@@ -159,19 +147,14 @@ namespace chef {
     std::string fname(path);
     std::string restartStr("restart");
     FILE* f = NULL;
-    chefioTime t0,t1;
-    chefio_time(&t0);
     if( fname.find(restartStr) != std::string::npos )
-      f = openRStreamRead(in.rs);
+      PHASTAIO_OPENTIME(f = openRStreamRead(in.rs);)
     else {
       fprintf(stderr,
         "ERROR %s type of stream %s is unknown... exiting\n",
         __func__, fname.c_str());
       exit(1);
     }
-    chefio_time(&t1);
-    const size_t elapsed = chefio_time_diff(&t0,&t1);
-    chefio_addOpenTime(elapsed);
     return f;
   }
 }
@@ -204,7 +187,7 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    chefio_initStats();
+    phastaio_initStats();
     if(PCU_Comm_Peers() > 1)
       ph::migrateInterfaceItr(m, bcs);
     if (in.simmetrixMesh == 0)
@@ -239,11 +222,11 @@ namespace ph {
 #endif
     if (in.adaptFlag)
       ph::goToParentDir();
-    if(in.printIOtime) chefio_printStats();
+    if(in.printIOtime) phastaio_printStats();
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     gmi_model* g = m->getModel();
-    assert(g);
+    PCU_ALWAYS_ASSERT(g);
     BCs bcs;
     ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     if (!in.solutionMigration)
@@ -257,7 +240,7 @@ namespace ph {
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
-    assert(PCU_Comm_Peers() % in.splitFactor == 0);
+    PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
     loadCommon(in, bcs, g);

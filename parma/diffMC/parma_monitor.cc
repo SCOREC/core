@@ -1,5 +1,5 @@
 #include "parma_monitor.h"
-#include <assert.h>
+#include <pcu_util.h>
 #include <stdlib.h>
 namespace {
   const unsigned int order = 2;
@@ -17,7 +17,7 @@ namespace parma {
   unsigned int CircBuffer::length() { return len; }
   unsigned int CircBuffer::size() { return sz; }
   double CircBuffer::get(unsigned int item) { 
-    assert(item < sz);
+    PCU_ALWAYS_ASSERT(item < sz);
     unsigned int tail = next;
     if( sz < len )
       tail = 0;
@@ -31,7 +31,7 @@ namespace parma {
   }
   Slope::Slope() : CircBuffer(order+1) {}
   double Slope::slope() {
-    assert( full() );
+    PCU_ALWAYS_ASSERT( full() );
     double s = 0;
     for(unsigned int i=0; i<length(); i++)
       s += c[i]*get(i);
