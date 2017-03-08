@@ -244,6 +244,8 @@ void phastaio_printStats() {
 }
 
 void phastaio_initStats() {
+  if( !PCU_Comm_Initialized() )
+    PCU_Comm_Init();
 #ifdef __INTEL_COMPILER
   phastaio_global_stats.cpus = phastaio_getCyclesPerMicroSec();
 #endif
