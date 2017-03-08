@@ -269,10 +269,8 @@ static void writeEdges(Output& o, FILE* f)
   }
 }
 
-static void writeBoundaryLayer(Output& o, FILE* f)
+static void writeGrowthCurves(Output& o, FILE* f)
 {
-  o.nGrowthCurves = 0;         // JUST FOR NOW. Need data from generateOutput
-  o.nLayeredMeshVertices = 0;  // JUST FOR NOW. Need data from generateOutput
   if (o.nGrowthCurves > 0) {
     writeInt(f, "number of growth curves", o.nGrowthCurves);
     writeInt(f, "number of layered mesh vertices", o.nLayeredMeshVertices);
@@ -341,7 +339,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   writeElementGraph(o, f);
   writeEdges(o, f);
-  writeBoundaryLayer(o, f);
+  writeGrowthCurves(o, f);
   chefioTime ct0,ct1;
   chefio_time(&ct0);
   fclose(f);

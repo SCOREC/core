@@ -380,6 +380,7 @@ static void getInterfaceElements(Output& o)
 }
 
 static void getGrowthCurves(Output& o, apf::Numbering* n)
+//static void getGrowthCurves(Output& o)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -409,6 +410,7 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     pGFace modelFace;
     pVertex meshVertex;
     pEntity seed;
+//  pGEntity into = NULL;
     GFIter fIter;
     VIter vIter;
     pPList vertices = PList_new();
@@ -422,15 +424,36 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     while((modelFace=GFIter_next(fIter))){
       vIter = M_classifiedVertexIter(mesh, modelFace, 1);
       while((meshVertex=VIter_next(vIter))){
+//      if(GEN_tag(modelFace)==39){
+//        std::cout<<"vertex"<<EN_id(meshVertex)<<std::endl;
+//      }
+
+//      int is_base = BL_isBaseEntity(meshVertex, modelFace);
+
+//      if(GEN_tag(modelFace)==39){
+//      V_coord(meshVertex, xyz);
+//      std::cout<<"model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<"is_base"<<is_base<<std::endl;
+//      std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+//      }
+
+
         // should add some error catch later
-        if(BL_isBaseEntity(meshVertex, modelFace) == 0 )
+        if(BL_isBaseEntity(meshVertex, modelFace) == 0)
           continue;
 
-        for(int faceSide = 0; faceSide < 2; faceSide++){
-          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 ) // should try both side 0 & 1
+        //print some message
+      //V_coord(meshVertex, xyz);
+      //std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
+      //std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+
+        for(int faceSide = 0; faceSide < 1; faceSide++){
+          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
             continue;
 
-          ngc++;
+          std::cout << "found_seed," << "GEN_tag"<<GEN_tag(modelFace)<<"vertex"<<EN_id(meshVertex)<<"faceSide"<<faceSide << std::endl;
+          V_coord(meshVertex, xyz);
+          std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+
 
           if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
             printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
@@ -438,17 +461,19 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
   
           // assert
           assert(PList_size(vertices) > 1);
-          assert(PList_size(edges) > 0);
           assert(PList_size(vertices) == PList_size(edges) + 1);
 
+          // increment counter
+          ngc++;
           nv += PList_size(vertices);
   
           // clean up
           PList_clear(vertices);
           PList_clear(edges);
-        }//vertex loop
-        VIter_delete(vIter);
-      }//faceSide loop
+
+        }//faceSide loop
+      }//vertex loop
+      VIter_delete(vIter);
     }//modelFace loop
     GFIter_delete(fIter);
 
@@ -460,17 +485,24 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     o.arrays.igcnv = new int[ngc];
     o.arrays.igclv = new int[nv];
 
+
+    //print
+    std::cout<<"ngc,nv"<<ngc<<","<<nv<<std::endl;
+
+    // initialize counter
+    ngc = 0;
+    nv = 0;
+
     fIter = GM_faceIter(model);
     while((modelFace=GFIter_next(fIter))){
       printf("**Processing model face: %d\n", GEN_tag(modelFace));
 
       vIter = M_classifiedVertexIter(mesh, modelFace, 1);
       while((meshVertex=VIter_next(vIter))){
-        // should add some error catch later
-        if(BL_isBaseEntity(meshVertex, modelFace) == 0 )
+        if(BL_isBaseEntity(meshVertex, modelFace) == 0 )// should add some error catch later
           continue;
 
-        for(int faceSide = 0; faceSide < 2; faceSide++){
+        for(int faceSide = 0; faceSide < 1; faceSide++){
           if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
             continue;
   
@@ -481,7 +513,6 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
   
           // assert
           assert(PList_size(vertices) > 1);
-          assert(PList_size(edges) > 0);
           assert(PList_size(vertices) == PList_size(edges) + 1);
   
           o.arrays.igcnv[ngc] = PList_size(vertices);
@@ -515,14 +546,14 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
           
           // increment counter
           nv += PList_size(vertices);
-          ngc += 1;
+          ngc++;
           
           // clean up
           PList_clear(vertices);
           PList_clear(edges);
-        }//vertex loop
-        VIter_delete(vIter);
-      }//faceSide loop
+        }//faceSide loop
+      }//vertex loop
+      VIter_delete(vIter);
     }//modelFace loop
     GFIter_delete(fIter);
 
@@ -534,6 +565,8 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
   }
   else {
     printf("wrong! getGrowthCurves: not implemented for non-simmetrix mesh");
+    o.nGrowthCurves = 0;
+    o.nLayeredMeshVertices = 0;
   }
   return;
 }
@@ -846,6 +879,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o, n);
+//getGrowthCurves(o);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
