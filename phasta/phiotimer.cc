@@ -2,6 +2,8 @@
 #include <pcu_util.h>
 #include <phiotimer.h>
 #include <PCU.h>
+
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h> /* PRIu64 */
 #include <time.h> /* clock_gettime */
 #include <unistd.h> /* usleep */
