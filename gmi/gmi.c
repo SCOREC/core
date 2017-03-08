@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+#include <pcu_util.h>
 
 struct creator {
   gmi_creator f;
