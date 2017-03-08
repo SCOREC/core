@@ -1,6 +1,6 @@
 #include "mthQR.h"
 #include "mth_def.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace mth {
 
@@ -110,7 +110,7 @@ unsigned decomposeQR(
 {
   unsigned m = a.rows();
   unsigned n = a.cols();
-  assert(m >= n);
+  PCU_ALWAYS_ASSERT(m >= n);
   q.resize(m, m);
   fill_identity(q);
   Vector<T,M> v_scratch;
@@ -136,7 +136,7 @@ void backsubUT(
 {
   unsigned m = r.rows();
   unsigned n = r.cols();
-  assert(m >= n);
+  PCU_ALWAYS_ASSERT(m >= n);
   x.resize(n);
   for (unsigned ii = 0; ii < n; ++ii) {
     unsigned i = n - ii - 1;
@@ -173,7 +173,7 @@ bool solveQR(Matrix<T,M,N> const& a,
   Matrix<T,M,M> q;
   Matrix<T,M,N> r;
   unsigned rank = decomposeQR(a, q, r);
-  assert(r.cols() > 0);
+  PCU_ALWAYS_ASSERT(r.cols() > 0);
   if (rank != a.cols())
     return false;
   solveFromQR(q, r, b, x);
@@ -188,7 +188,7 @@ void reduceToHessenberg(Matrix<T,M,M> const& a, Matrix<T,M,M>& q,
     Matrix<T,M,M>& h)
 {
   unsigned m = a.rows();
-  assert(a.cols() == m);
+  PCU_ALWAYS_ASSERT(a.cols() == m);
   q.resize(m,m);
   fill_identity(q);
   h = a;
@@ -225,7 +225,7 @@ static double get_wilkinson_shift(Matrix<T,M,M> const& a, unsigned red_m)
   double bmm1 = a(red_m-2, red_m-1);
   double sig = (amm1 - am) / 2;
   double denom = ( fabs(sig) + sqrt(square(sig) + square(bmm1)));
-  assert(fabs(denom) > 1e-10);
+  PCU_ALWAYS_ASSERT(fabs(denom) > 1e-10);
   double mu = am - ((sign(sig) * square(bmm1)) / denom);
   return mu;
 }
