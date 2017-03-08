@@ -1,5 +1,5 @@
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include "apfMesh2.h"
 #include "apfField.h"
 #include "apf.h"
@@ -277,7 +277,7 @@ static Field* unpackFieldClone(Mesh2* m)
   PCU_COMM_UNPACK(components);
   std::string shapeName = unpackString();
   FieldShape* shape = getShapeByName(shapeName.c_str());
-  assert(shape);
+  PCU_ALWAYS_ASSERT(shape);
   /* warning! this only supports tag-stored fields */
   return makeField(m, name.c_str(), valueType, components, shape, new TagDataOf<double>);
 }
@@ -308,7 +308,7 @@ static void unpackMeshShape(Mesh2* m)
 {
   std::string shapeName = unpackString();
   FieldShape* shape = getShapeByName(shapeName.c_str());
-  assert(shape);
+  PCU_ALWAYS_ASSERT(shape);
   if (shape != m->getShape()) {
     m->changeShape(shape, /*project=*/false);
   }

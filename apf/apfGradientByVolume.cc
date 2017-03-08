@@ -1,6 +1,6 @@
 #include <apfCavityOp.h>
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -176,7 +176,7 @@ Field* recoverGradientByVolume(Field* f)
   if (valueType==SCALAR)
     recoverGradientByVolume<double>(f,gradf);
   else
-  { assert(valueType==VECTOR);
+  { PCU_ALWAYS_ASSERT(valueType==VECTOR);
     recoverGradientByVolume<Vector3>(f,gradf);
   }
   return gradf;

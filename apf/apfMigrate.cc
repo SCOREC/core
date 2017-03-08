@@ -9,7 +9,7 @@
 #include "apfMesh2.h"
 #include "apfCavityOp.h"
 #include "apf.h"
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace apf {
@@ -33,7 +33,7 @@ static void getAffected(
   {
     MeshEntity* e = plan->get(i);
     if (plan->sending(e) != self) {
-      assert(apf::getDimension(m, e) == m->getDimension());
+      PCU_ALWAYS_ASSERT(apf::getDimension(m, e) == m->getDimension());
       affected[maxDimension].push_back(e);
     }
   }
@@ -327,7 +327,7 @@ static void packReference(
     Copies ghosts;
     m->getGhosts(e,ghosts);
     found = ghosts.find(to);
-    assert(found!=ghosts.end());
+    PCU_ALWAYS_ASSERT(found!=ghosts.end());
     MeshEntity* ghost = found->second;
     PCU_COMM_PACK(to,ghost);
   }
@@ -570,7 +570,7 @@ static void receiveRemotes(Mesh2* m)
       PCU_COMM_UNPACK(sender);
       MeshEntity* entity;
       PCU_COMM_UNPACK(entity);
-      assert(entity);
+      PCU_ALWAYS_ASSERT(entity);
       m->addRemote(sender, from, entity);
     }
   }
@@ -622,7 +622,7 @@ static void unpackCopies(
     PCU_COMM_UNPACK(part);
     MeshEntity* remote;
     PCU_COMM_UNPACK(remote);
-    assert(remote);
+    PCU_ALWAYS_ASSERT(remote);
     copies[part]=remote;
   }
 }

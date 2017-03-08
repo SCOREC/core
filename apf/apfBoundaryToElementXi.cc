@@ -1,7 +1,7 @@
 #include "apf.h"
 #include "apfMesh.h"
 #include "apfShape.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -57,7 +57,7 @@ Vector3 boundaryToElementXi(
   Vector3 exi(0,0,0);
   for (int i = 0; i < nbv; ++i) {
     int evi = findIn(ev, nev, bv[i]);
-    assert(evi >= 0);
+    PCU_ALWAYS_ASSERT(evi >= 0);
     exi += elem_vert_xi[et][evi] * shape_vals[i];
   }
   return exi;

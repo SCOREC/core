@@ -10,17 +10,17 @@
 #include "apfShape.h"
 #include <PCU.h>
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 #include <list>
 
 namespace apf {
 
 static void verify_fields(std::vector<Field*> const& f) {
-  assert(f.size() > 0);
+  PCU_ALWAYS_ASSERT(f.size() > 0);
   for (size_t i=0; i < f.size()-1; ++i) {
     Mesh* m1 = getMesh(f[i+1]);
     Mesh* m0 = getMesh(f[i]);
-    assert(m1 == m0);
+    PCU_ALWAYS_ASSERT(m1 == m0);
   }
 }
 
@@ -194,7 +194,7 @@ static int number_owned(
     }
   }
   m->end(verts);
-  assert(idx == dofs);
+  PCU_ALWAYS_ASSERT(idx == dofs);
   return dofs;
 }
 
@@ -221,7 +221,7 @@ static int number_ghost(
     }
   }
   m->end(verts);
-  assert(idx == dofs);
+  PCU_ALWAYS_ASSERT(idx == dofs);
   return dofs;
 }
 
