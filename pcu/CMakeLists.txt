@@ -18,7 +18,6 @@ set(SOURCES
   pcu_msg.c
   pcu_order.c
   pcu_pmpi.c
-  pcu_util.c
   noto/noto_malloc.c
   reel/reel.c
 )
@@ -26,16 +25,11 @@ set(SOURCES
 # Package headers
 set(HEADERS
   PCU.h
-  pcu_util.h
   pcu_io.h
   reel/reel.h
 )
 
 # Add the pcu library
-message("AT PCU: CMAKE_C_FLAGS \"${CMAKE_C_FLAGS}\"")
-message("AT PCU: CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\"")
-string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPER_BUILD_TYPE)
-message("AT PCU: CMAKE_C_FLAGS_${UPPER_BUILD_TYPE} \"${CMAKE_C_FLAGS_${UPPER_BUILD_TYPE}}\"")
 add_library(pcu ${SOURCES})
 
 # Include directories
