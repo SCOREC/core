@@ -8,7 +8,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <stdlib.h>
 
 namespace {
@@ -25,7 +25,7 @@ namespace {
 }
 int main(int argc, char** argv)
 {
-  assert(argc == 5);
+  PCU_ALWAYS_ASSERT(argc == 5);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   if ( argc != 5 ) {

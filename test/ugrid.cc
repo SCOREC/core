@@ -5,7 +5,7 @@
 #include <PCU.h>
 #include <parma.h>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 
 apf::Migration* getPlan(apf::Mesh* m, const int partitionFactor)
 {
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   }
   gmi_register_null();
   const int partitionFactor = atoi(argv[4]);
-  assert(partitionFactor <= PCU_Comm_Peers());
+  PCU_ALWAYS_ASSERT(partitionFactor <= PCU_Comm_Peers());
   bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
   gmi_model* g = gmi_load(".null");
   apf::Mesh2* m = 0;

@@ -50,13 +50,13 @@ if(ENABLE_SIMMETRIX)
 endif(ENABLE_SIMMETRIX)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND PCU_COMPRESS)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
     "${MDIR}/model.smd"
     "${MDIR}/mesh_.smb"
     WORKING_DIRECTORY ${MDIR})
-endif(ENABLE_SIMMETRIX)
+endif(ENABLE_SIMMETRIX AND PCU_COMPRESS)
 
 mpi_test(pumi3d-1p 4
   ./test_pumi
@@ -157,7 +157,7 @@ mpi_test(aniso_ma_serial 1
   ./aniso_ma_test
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb")
-mpi_test(torus_ma_paralle 4
+mpi_test(torus_ma_parallel 4
   ./torus_ma_test
   "${MESHES}/torus/torus.dmg"
   "${MESHES}/torus/4imb/torus.smb")
@@ -398,15 +398,17 @@ if(ENABLE_SIMMETRIX)
     ./ma_test
     "${MDIR}/upright.smd"
     "67k/")
-  set(MDIR ${MESHES}/curved)
-  mpi_test(curvedSphere 1
-    ./curvetest
-    "${MDIR}/sphere1.xmt_txt"
-    "${MDIR}/sphere1_4.smb")
-  mpi_test(curvedKova 1
-    ./curvetest
-    "${MDIR}/Kova.xmt_txt"
-    "${MDIR}/Kova.smb")
+  if(SIM_PARASOLID)
+    set(MDIR ${MESHES}/curved)
+    mpi_test(curvedSphere 1
+      ./curvetest
+      "${MDIR}/sphere1.xmt_txt"
+      "${MDIR}/sphere1_4.smb")
+    mpi_test(curvedKova 1
+      ./curvetest
+      "${MDIR}/Kova.xmt_txt"
+      "${MDIR}/Kova.smb")
+  endif(SIM_PARASOLID)
 endif()
 if (PCU_COMPRESS)
   if(ENABLE_SIMMETRIX)

@@ -1,7 +1,7 @@
 #include "phBC.h"
 #include <apfGeometry.h>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 
 namespace ph {
@@ -138,7 +138,7 @@ struct LineConstraint : public Constraint
         std::swap(a,b);
       b[comp0] = 0;
       int comp1 = maxComponent(b);
-      assert(comp0 != comp1);
+      PCU_ALWAYS_ASSERT(comp0 != comp1);
     }
     int bit0 = comp0 + 3;
     int bit1 = comp1 + 3;
@@ -181,7 +181,7 @@ struct LineConstraintElas : public Constraint
         std::swap(a,b);
       b[comp0] = 0;
       int comp1 = maxComponent(b);
-      assert(comp0 != comp1);
+      PCU_ALWAYS_ASSERT(comp0 != comp1);
     }
     int bit0 = comp0 + 14;
     int bit1 = comp1 + 14;
@@ -429,7 +429,7 @@ static Constraint* combine(Constraint* a, Constraint* b,
 {
   if (!a)
     return b;
-  assert(a->degreesOfFreedom <= b->degreesOfFreedom);
+  PCU_ALWAYS_ASSERT(a->degreesOfFreedom <= b->degreesOfFreedom);
   if (a->degreesOfFreedom == 0) {
     /* Rule #1: a point constraint beats anything else */
     if (b->degreesOfFreedom != 0)
@@ -453,7 +453,7 @@ static Constraint* combineElas(Constraint* a, Constraint* b,
 {
   if (!a)
     return b;
-  assert(a->degreesOfFreedom <= b->degreesOfFreedom);
+  PCU_ALWAYS_ASSERT(a->degreesOfFreedom <= b->degreesOfFreedom);
   if (a->degreesOfFreedom == 0) {
     /* Rule #1: a point constraint beats anything else */
     if (b->degreesOfFreedom != 0)

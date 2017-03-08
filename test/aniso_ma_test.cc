@@ -4,7 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 class AnIso : public ma::AnisotropicFunction
 {
@@ -36,7 +36,7 @@ class AnIso : public ma::AnisotropicFunction
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);

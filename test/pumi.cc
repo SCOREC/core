@@ -4,7 +4,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <apfZoltan.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <pumi.h>
 #include <unistd.h>
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     {
       int id = pumi_gent_getID(*gent_it);
       pGeomEnt ge = pumi_geom_findEnt(g, 2, id);
-      assert (ge == *gent_it);
+      PCU_ALWAYS_ASSERT(ge == *gent_it);
       std::vector<pGeomEnt> adj_edges;
       pumi_gent_getAdj(ge, 1, adj_edges);
       std::vector<pGeomEnt> adj_vertices;
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
         pGeomEnt gv=adj_vertices.at(nv);
         std::vector<pGeomEnt> adj_faces;
         pumi_gent_getAdj(gv, 2, adj_faces);
-        assert(std::find(adj_faces.begin(), adj_faces.end(), ge)!=adj_faces.end());
+        PCU_ALWAYS_ASSERT(std::find(adj_faces.begin(), adj_faces.end(), ge)!=adj_faces.end());
       }
 
     }
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
   }
  
   // load mesh per process group
-  assert(pumi_size()%num_in_part==0);
+  PCU_ALWAYS_ASSERT(pumi_size()%num_in_part==0);
 
   double begin_mem = pumi_getMem(), begin_time=pumi_getTime();
 
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
     pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
 
   int num_mesh_rg=pumi_mesh_getNumEnt(m,3);
-  assert(pumi_mesh_findEnt(m, 3, num_mesh_rg+1)==NULL);
+  PCU_ALWAYS_ASSERT(pumi_mesh_findEnt(m, 3, num_mesh_rg+1)==NULL);
 
   // create global ID
   pumi_mesh_createGlobalID(m);
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
   int num_gn=pumi_mesh_getNumGlobalNumbering(m);
   for (int i=0; i<num_gn;++i)
     numberings.push_back(pumi_mesh_getGlobalNumbering(m, i));
-  assert (pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
+  PCU_ALWAYS_ASSERT(pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
 
   for (int i=0; i<(int)numberings.size(); ++i)
     pumi_numbering_deleteGlobal(numberings.at(i));
@@ -236,20 +236,20 @@ void TEST_MESH(pMesh m)
   pMeshIter mit = m->begin(mesh_dim);
   while ((e = m->iterate(mit)))
   {
-    assert(pumi_ment_getDim(e)==mesh_dim);
-    assert(pumi_ment_getNumAdj(e, mesh_dim+1)==0);
+    PCU_ALWAYS_ASSERT(pumi_ment_getDim(e)==mesh_dim);
+    PCU_ALWAYS_ASSERT(pumi_ment_getNumAdj(e, mesh_dim+1)==0);
     // check adjacency
     adj_vtx.clear();
     pumi_ment_getAdj(e, 0, adj_vtx);
-    assert((size_t)pumi_ment_getNumAdj(e, 0)==adj_vtx.size());
+    PCU_ALWAYS_ASSERT((size_t)pumi_ment_getNumAdj(e, 0)==adj_vtx.size());
 
     adj_elem.clear();
     pumi_ment_getAdj(adj_vtx.at(0), mesh_dim, adj_elem);
-    assert(std::find(adj_elem.begin(), adj_elem.end(), e)!=adj_elem.end());
+    PCU_ALWAYS_ASSERT(std::find(adj_elem.begin(), adj_elem.end(), e)!=adj_elem.end());
 
     apf::Adjacent adjacent;
     m->getAdjacent(adj_vtx.at(0), mesh_dim,adjacent);      
-    assert(adjacent.getSize()==adj_elem.size());
+    PCU_ALWAYS_ASSERT(adjacent.getSize()==adj_elem.size());
 
     if (!pumi_ment_isOnBdry(e)) continue; // skip internal entity
     // if entity is on part boundary, count remote copies    
@@ -257,16 +257,16 @@ void TEST_MESH(pMesh m)
     pumi_ment_getAllRmt(e,copies);
     // loop over remote copies and increase the counter
     // check #remotes
-    assert (pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
+    PCU_ALWAYS_ASSERT(pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
     Parts parts;
     pumi_ment_getResidence(e, parts);
-    assert(parts.size()==copies.size()+1);
+    PCU_ALWAYS_ASSERT(parts.size()==copies.size()+1);
 
     for (pCopyIter it = copies.begin();
            it != copies.end(); ++it)
-      assert(it->first!=pumi_rank());
+      PCU_ALWAYS_ASSERT(it->first!=pumi_rank());
     // check the entity is not ghost or ghosted
-    assert(!pumi_ment_isGhost(e) && !pumi_ment_isGhosted(e));
+    PCU_ALWAYS_ASSERT(!pumi_ment_isGhost(e) && !pumi_ment_isGhosted(e));
   }
   m->end(mit);
 
@@ -287,10 +287,10 @@ void TEST_TAG (pTag tag, char const* in_name, int name_len, int in_type, int in_
   int tag_type= pumi_tag_getType (tag);
   int tag_size = pumi_tag_getSize (tag);
   int tag_byte= pumi_tag_getByte (tag);
-  assert(!strncmp(tag_name, in_name, name_len));
-  assert(tag_type == in_type);
-  assert(tag_size == in_size);
-  assert(size_t(tag_byte)==sizeof(T)*tag_size);
+  PCU_ALWAYS_ASSERT(!strncmp(tag_name, in_name, name_len));
+  PCU_ALWAYS_ASSERT(tag_type == in_type);
+  PCU_ALWAYS_ASSERT(tag_size == in_size);
+  PCU_ALWAYS_ASSERT(size_t(tag_byte)==sizeof(T)*tag_size);
 }
 
 
@@ -317,31 +317,31 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_setPtrTag (ent, pointer_tag, (void*)(data));
   void* void_data = (void*)calloc(strlen(data), sizeof(char));
   pumi_gent_getPtrTag (ent, pointer_tag, &void_data);
-  assert(!strcmp((char*)void_data, data));
+  PCU_ALWAYS_ASSERT(!strcmp((char*)void_data, data));
 
   // pumi_gent_set/getIntTag 
   pumi_gent_setIntTag(ent, int_tag, 1000);
   int int_data;
   pumi_gent_getIntTag (ent, int_tag, &int_data);
-  assert(int_data == 1000);
+  PCU_ALWAYS_ASSERT(int_data == 1000);
 
   // pumi_gent_set/getLongTag
   pumi_gent_setLongTag(ent, long_tag, 3000);
   long long_data; 
   pumi_gent_getLongTag (ent, long_tag, &long_data);
-  assert(long_data==3000);
+  PCU_ALWAYS_ASSERT(long_data==3000);
 
   // pumi_gent_set/getDblTag
   pumi_gent_setDblTag (ent, dbl_tag, 1000.37);
   double dbl_data;
   pumi_gent_getDblTag (ent, dbl_tag, &dbl_data);
-  assert(is_double_isequal(dbl_data,1000.37));
+  PCU_ALWAYS_ASSERT(is_double_isequal(dbl_data,1000.37));
 
   // pumi_gent_set/getEntTag
   pumi_gent_setEntTag (ent, ent_tag, ent_tag_data);
   pGeomEnt ent_data; 
   pumi_gent_getEntTag (ent, ent_tag, &ent_data);
-  assert(ent_data == ent_tag_data);
+  PCU_ALWAYS_ASSERT(ent_data == ent_tag_data);
 
 
  // pumi_gent_set/GetIntArrTag with integer arr tag
@@ -350,7 +350,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_setIntArrTag (ent, intarr_tag, int_arr);
   int* int_arr_back = new int[4];
   pumi_gent_getIntArrTag (ent, intarr_tag, &int_arr_back, &arr_size);
-  assert(arr_size==3 && int_arr_back[0] == int_arr[0] && int_arr_back[1] == int_arr[1] && int_arr_back[2] == int_arr[2]);
+  PCU_ALWAYS_ASSERT(arr_size==3 && int_arr_back[0] == int_arr[0] && int_arr_back[1] == int_arr[1] && int_arr_back[2] == int_arr[2]);
             
  // pumi_gent_set/getLongArrTag 
   long long_arr[] = {4,8,12};
@@ -358,7 +358,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   long* long_arr_back = new long[4];
   pumi_gent_getLongArrTag (ent, longarr_tag, &long_arr_back, &arr_size);
 // FIXME: this fails
-//  assert(arr_size==3 && long_arr_back[0] == long_arr[0] 
+//  PCU_ALWAYS_ASSERT(arr_size==3 && long_arr_back[0] == long_arr[0] 
 //         && long_arr_back[1] == long_arr[1] && long_arr_back[2] == long_arr[2]);
 
    // pumi_gent_set/getDblArrTag
@@ -366,7 +366,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_setDblArrTag (ent, dblarr_tag, dbl_arr);
   double* dbl_arr_back = new double[4];
   pumi_gent_getDblArrTag (ent, dblarr_tag, &dbl_arr_back, &arr_size);
-  assert(arr_size==3 && dbl_arr_back[0] == dbl_arr[0] && dbl_arr_back[1] == dbl_arr[1] && 
+  PCU_ALWAYS_ASSERT(arr_size==3 && dbl_arr_back[0] == dbl_arr[0] && dbl_arr_back[1] == dbl_arr[1] && 
          dbl_arr_back[2] == dbl_arr[2]);
 
   // pumi_gent_set/getEntArrTag
@@ -375,7 +375,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_setEntArrTag (ent, entarr_tag, ent_arr);
   pGeomEnt* ent_arr_back = new pGeomEnt[4];
   pumi_gent_getEntArrTag (ent, entarr_tag, &ent_arr_back, &arr_size);
-  assert(arr_size==3 && ent_arr_back[0] == ent_tag_data && ent_arr_back[1] == 
+  PCU_ALWAYS_ASSERT(arr_size==3 && ent_arr_back[0] == ent_tag_data && ent_arr_back[1] == 
            ent_tag_data && ent_arr_back[2] == ent_tag_data
            && ent_arr[0]==ent_arr_back[0] && ent_arr[1]==ent_arr_back[1] && 
            ent_arr[2] == ent_arr_back[2]);
@@ -411,15 +411,15 @@ void TEST_GENT_DEL_TAG (pGeom g, pGeomEnt ent)
   pumi_gent_deleteTag(ent, dblarr_tag);
   pumi_gent_deleteTag(ent, entarr_tag);
 
-  assert(!pumi_gent_hasTag(ent, pointer_tag));
-  assert(!pumi_gent_hasTag(ent, int_tag));
-  assert(!pumi_gent_hasTag(ent, long_tag));
-  assert(!pumi_gent_hasTag(ent, dbl_tag));
-  assert(!pumi_gent_hasTag(ent, ent_tag));
-  assert(!pumi_gent_hasTag(ent, intarr_tag));
-  assert(!pumi_gent_hasTag(ent, longarr_tag));
-  assert(!pumi_gent_hasTag(ent, dblarr_tag));
-  assert(!pumi_gent_hasTag(ent, entarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, pointer_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, int_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, long_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, dbl_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, ent_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, intarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, longarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, dblarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_gent_hasTag(ent, entarr_tag));
 }
 
 void TEST_GEOM_TAG(pGeom g)
@@ -447,12 +447,12 @@ void TEST_GEOM_TAG(pGeom g)
   TEST_TAG<double>(dblarr_tag, "double array", strlen("double array"), PUMI_DBL, 3);
   TEST_TAG<pMeshEnt>(entarr_tag, "entity array", strlen("entity array"), PUMI_ENT, 3);
 
-  assert(pumi_geom_hasTag(g, int_tag));
+  PCU_ALWAYS_ASSERT(pumi_geom_hasTag(g, int_tag));
   pTag cloneTag = pumi_geom_findTag(g, "pointer");
-  assert(cloneTag);
+  PCU_ALWAYS_ASSERT(cloneTag);
   std::vector<pTag> tags;
   pumi_geom_getTag(g, tags);
-  assert(cloneTag == pointer_tag && tags.size()==9);
+  PCU_ALWAYS_ASSERT(cloneTag == pointer_tag && tags.size()==9);
 
   for (pGeomIter gent_it = g->begin(0); gent_it!=g->end(0);++gent_it)
   {
@@ -467,7 +467,7 @@ void TEST_GEOM_TAG(pGeom g)
   tags.clear();
   pumi_geom_getTag(g, tags);
 
-  assert(!tags.size());
+  PCU_ALWAYS_ASSERT(!tags.size());
 }
 
 //*********************************************************
@@ -485,40 +485,40 @@ void TEST_MENT_SETGET_TAG (pMesh m, pMeshEnt ent)
   int int_value=pumi_ment_getID(ent), int_data;
   pumi_ment_setIntTag(ent, int_tag, &int_value);
   pumi_ment_getIntTag (ent, int_tag, &int_data);
-  assert(int_data == int_value);
+  PCU_ALWAYS_ASSERT(int_data == int_value);
 
   // pumi_ment_set/getLongTag
   long long_value=3000, long_data;
   pumi_ment_setLongTag(ent, long_tag, &long_value);
   pumi_ment_getLongTag (ent, long_tag, &long_data);
-  assert(long_data==long_value);
+  PCU_ALWAYS_ASSERT(long_data==long_value);
 
   // pumi_gent_set/getDblTag
   double dbl_value=1000.37, dbl_data;
   pumi_ment_setDblTag (ent, dbl_tag, &dbl_value);
   pumi_ment_getDblTag (ent, dbl_tag, &dbl_data);
-  assert(is_double_isequal(dbl_data,dbl_value));
+  PCU_ALWAYS_ASSERT(is_double_isequal(dbl_data,dbl_value));
 
  // pumi_ment_set/getIntTag with integer arr
   int int_arr[] = {4,8,12};
   pumi_ment_setIntTag (ent, intarr_tag, int_arr);
   int* int_arr_back = new int[3];
   pumi_ment_getIntTag (ent, intarr_tag, int_arr_back);
-  assert(int_arr_back[0] == 4 && int_arr_back[1] == 8 && int_arr_back[2] == 12);
+  PCU_ALWAYS_ASSERT(int_arr_back[0] == 4 && int_arr_back[1] == 8 && int_arr_back[2] == 12);
             
  // pumi_ment_set/getLongTag with long arr
   long long_arr[] = {4,8,12};
   pumi_ment_setLongTag (ent, longarr_tag, long_arr);
   long* long_arr_back = new long[3];
   pumi_ment_getLongTag (ent, longarr_tag, long_arr_back);
-  assert(long_arr_back[0] == long_arr[0] && long_arr_back[1] == long_arr[1] && long_arr_back[2] == long_arr[2]);
+  PCU_ALWAYS_ASSERT(long_arr_back[0] == long_arr[0] && long_arr_back[1] == long_arr[1] && long_arr_back[2] == long_arr[2]);
 
    // pumi_ment_set/getDblTag with double arr
   double dbl_arr[] = {4.1,8.2,12.3};
   pumi_ment_setDblTag (ent, dblarr_tag, dbl_arr);
   double* dbl_arr_back = new double[3];
   pumi_ment_getDblTag (ent, dblarr_tag, dbl_arr_back);
-  assert(dbl_arr_back[0] == dbl_arr[0] && dbl_arr_back[1] == dbl_arr[1] && dbl_arr_back[2] == dbl_arr[2]);
+  PCU_ALWAYS_ASSERT(dbl_arr_back[0] == dbl_arr[0] && dbl_arr_back[1] == dbl_arr[1] && dbl_arr_back[2] == dbl_arr[2]);
 
   delete [] int_arr_back;
   delete [] long_arr_back;
@@ -543,12 +543,12 @@ void TEST_MENT_DEL_TAG (pMesh m, pMeshEnt ent)
   pumi_ment_deleteTag(ent, longarr_tag);
   pumi_ment_deleteTag(ent, dblarr_tag);
 
-  assert(!pumi_ment_hasTag(ent, int_tag));
-  assert(!pumi_ment_hasTag(ent, long_tag));
-  assert(!pumi_ment_hasTag(ent, dbl_tag));
-  assert(!pumi_ment_hasTag(ent, intarr_tag));
-  assert(!pumi_ment_hasTag(ent, longarr_tag));
-  assert(!pumi_ment_hasTag(ent, dblarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_ment_hasTag(ent, int_tag));
+  PCU_ALWAYS_ASSERT(!pumi_ment_hasTag(ent, long_tag));
+  PCU_ALWAYS_ASSERT(!pumi_ment_hasTag(ent, dbl_tag));
+  PCU_ALWAYS_ASSERT(!pumi_ment_hasTag(ent, intarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_ment_hasTag(ent, longarr_tag));
+  PCU_ALWAYS_ASSERT(!pumi_ment_hasTag(ent, dblarr_tag));
 }
 
 //*********************************************************
@@ -563,19 +563,19 @@ void TEST_MESH_TAG(pMesh m)
   pMeshTag longarr_tag=pumi_mesh_createLongTag(m, "long array", 3);
   pMeshTag dblarr_tag = pumi_mesh_createDblTag(m, "double array", 3);
 
-  assert(pumi_mesh_hasTag(m, int_tag));
-  assert(pumi_mesh_hasTag(m, long_tag));
-  assert(pumi_mesh_hasTag(m, dbl_tag));
+  PCU_ALWAYS_ASSERT(pumi_mesh_hasTag(m, int_tag));
+  PCU_ALWAYS_ASSERT(pumi_mesh_hasTag(m, long_tag));
+  PCU_ALWAYS_ASSERT(pumi_mesh_hasTag(m, dbl_tag));
 
-  assert(pumi_mesh_hasTag(m, intarr_tag));
-  assert(pumi_mesh_hasTag(m, longarr_tag));
-  assert(pumi_mesh_hasTag(m, dblarr_tag));
+  PCU_ALWAYS_ASSERT(pumi_mesh_hasTag(m, intarr_tag));
+  PCU_ALWAYS_ASSERT(pumi_mesh_hasTag(m, longarr_tag));
+  PCU_ALWAYS_ASSERT(pumi_mesh_hasTag(m, dblarr_tag));
 
   pMeshTag cloneTag = pumi_mesh_findTag(m, "double");
-  assert(cloneTag);
+  PCU_ALWAYS_ASSERT(cloneTag);
   std::vector<pMeshTag> tags;
   pumi_mesh_getTag(m, tags);
-  assert(cloneTag == dbl_tag);
+  PCU_ALWAYS_ASSERT(cloneTag == dbl_tag);
 
   pMeshIter it = m->begin(0);
   pMeshEnt e;
@@ -594,7 +594,7 @@ void TEST_MESH_TAG(pMesh m)
   tags.clear();
   pumi_mesh_getTag(m, tags);
 
-  assert(!tags.size());
+  PCU_ALWAYS_ASSERT(!tags.size());
 }
 
 
@@ -602,10 +602,10 @@ void TEST_NEW_MESH(pMesh m)
 {
   // change chape of the mesh
   pShape s = pumi_mesh_getShape(m);
-  assert(pumi_shape_getNumNode(s, 1)==0);
+  PCU_ALWAYS_ASSERT(pumi_shape_getNumNode(s, 1)==0);
 
   pumi_mesh_setShape(m, pumi_shape_getLagrange(2));
-  assert(pumi_shape_getNumNode(pumi_mesh_getShape(m), 1)==1);
+  PCU_ALWAYS_ASSERT(pumi_shape_getNumNode(pumi_mesh_getShape(m), 1)==1);
 
   // create an empty mesh
   pGeom new_g = pumi_geom_load (NULL, "null");
@@ -643,7 +643,7 @@ void TEST_NEW_MESH(pMesh m)
   }
 
   for (int d=0; d<=pumi_mesh_getDim(new_m);++d)
-    assert(pumi_mesh_getNumEnt(new_m,d));
+    PCU_ALWAYS_ASSERT(pumi_mesh_getNumEnt(new_m,d));
 
 //  pumi_mesh_freeze(new_m);
 
@@ -672,9 +672,9 @@ void TEST_FIELD(pMesh m)
     // create global numbering
     pumi_numbering_createGlobal(m, "xyz_numbering", pumi_field_getShape(f));
 
-    assert(pumi_field_getName(f)==std::string("xyz_field"));
-    assert(pumi_field_getType(f)==PUMI_PACKED);
-    assert(pumi_field_getSize(f)==num_dofs_per_node);
+    PCU_ALWAYS_ASSERT(pumi_field_getName(f)==std::string("xyz_field"));
+    PCU_ALWAYS_ASSERT(pumi_field_getType(f)==PUMI_PACKED);
+    PCU_ALWAYS_ASSERT(pumi_field_getSize(f)==num_dofs_per_node);
     it = m->begin(0);
     
     while ((e = m->iterate(it)))
@@ -699,9 +699,9 @@ void TEST_FIELD(pMesh m)
     pumi_ment_getField(e, f, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e)) 
-        assert(data[i] == pumi_ment_getGlobalID(e));
+        PCU_ALWAYS_ASSERT(data[i] == pumi_ment_getGlobalID(e));
       else
-        assert(data[i] == xyz[i]);
+        PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);
   pumi_field_verify(m, f);
@@ -756,17 +756,17 @@ void TEST_GHOSTING(pMesh m)
     if (pumi_ment_isGhost(e))
     {
       ++num_ghost_vtx;
-     assert(pumi_ment_getOwnPID(e)!=pumi_rank());
+     PCU_ALWAYS_ASSERT(pumi_ment_getOwnPID(e)!=pumi_rank());
     }
   }   
   m->end(mit);
-  assert(num_ghost_vtx+num_org_vtx==pumi_mesh_getNumEnt(m,0));
+  PCU_ALWAYS_ASSERT(num_ghost_vtx+num_org_vtx==pumi_mesh_getNumEnt(m,0));
   pumi_mesh_verify(m);
   TEST_FIELD(m);
   pumi_ghost_delete(m);
   
   for (int i=0; i<4; ++i)
-    assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
+    PCU_ALWAYS_ASSERT(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
 
   // layer-wise ghosting test
   for (int brg_dim=mesh_dim-1; brg_dim>=0; --brg_dim)
@@ -782,7 +782,7 @@ void TEST_GHOSTING(pMesh m)
         TEST_FIELD(m);
         pumi_ghost_delete(m);
         for (int i=0; i<4; ++i)
-          assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
+          PCU_ALWAYS_ASSERT(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
       }
   
   // accumulative layer-ghosting
@@ -813,9 +813,9 @@ void TEST_GHOSTING(pMesh m)
     pumi_ment_getField(e, f, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e))
-        assert(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));
+        PCU_ALWAYS_ASSERT(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));
       else
-        assert(data[i] == xyz[i]);
+        PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);
 
@@ -825,7 +825,7 @@ void TEST_GHOSTING(pMesh m)
   {
     if (org_mcount[i] != pumi_mesh_getNumEnt(m, i))
        std::cout<<"("<<pumi_rank()<<") ERROR dim "<<i<<": org ent count "<<org_mcount[i]<<", current ent count "<<pumi_mesh_getNumEnt(m, i)<<"\n";
-    assert(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
+    PCU_ALWAYS_ASSERT(org_mcount[i] == pumi_mesh_getNumEnt(m, i));
   }
   
   delete [] org_mcount;

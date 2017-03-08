@@ -6,13 +6,13 @@
 #include <apfZoltan.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
 apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
 {
-  assert(in.splitFactor >= 1);
+  PCU_ALWAYS_ASSERT(in.splitFactor >= 1);
   apf::Migration* plan;
   if (in.splitFactor != 1) {
     apf::Splitter* splitter;

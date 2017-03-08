@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string>
-#include <assert.h>
+#include <pcu_util.h>
 #include "phstream.h"
 #include <mpi.h>
 
@@ -123,7 +123,7 @@ void whichStream(const char* name, bool& isR, bool& isG) {
   std::string geombcStr("geombc");
   isR = (fname.find(restartStr) != std::string::npos);
   isG = (fname.find(geombcStr)  != std::string::npos);
-  assert(isR != isG);
+  PCU_ALWAYS_ASSERT(isR != isG);
   printTime(__func__, getTime()-t0);
 }
 

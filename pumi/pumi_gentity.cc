@@ -15,7 +15,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
-#include <assert.h>
+#include <pcu_util.h>
 
 using std::vector;
 
@@ -39,7 +39,7 @@ int pumi_gent_getID(pGeomEnt ge)
 
 void pumi_gent_getRevClas (pGeomEnt ge, std::vector<pMeshEnt>& ents)
 {
-  assert(!ents.size());
+  PCU_ALWAYS_ASSERT(!ents.size());
   int dim=gmi_dim(pumi::instance()->model->getGmi(), ge->getGmi());
   pMesh m = pumi::instance()->mesh;
   pMeshEnt e;

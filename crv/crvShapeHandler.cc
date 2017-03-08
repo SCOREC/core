@@ -18,7 +18,7 @@
 #include <maShape.h>
 #include <mth_def.h>
 #include <math.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
@@ -378,7 +378,7 @@ class BezierHandler : public ma::ShapeHandler
           }
         }
       }
-      assert(edgeTris[0] && edgeTris[1]);
+      PCU_ALWAYS_ASSERT(edgeTris[0] && edgeTris[1]);
       return true;
     }
     void evaluateBlendedQuad(ma::Entity* verts[4], ma::Entity* edges[4],
@@ -496,8 +496,8 @@ class BezierHandler : public ma::ShapeHandler
       index[2] = apf::findIn(vB,3,edgeVerts[1]);
       index[3] = apf::findIn(vB,3,
           ma::getTriVertOppositeEdge(mesh,edgeTris[1],edge));
-      assert(index[0] >= 0 && index[1] >= 0);
-      assert(index[2] >= 0 && index[3] >= 0);
+      PCU_ALWAYS_ASSERT(index[0] >= 0 && index[1] >= 0);
+      PCU_ALWAYS_ASSERT(index[2] >= 0 && index[3] >= 0);
       ma::Entity* verts[4] = {vA[index[0]], vA[index[1]],
           vB[index[2]],vB[index[3]]};
       ma::Entity* edges[4];

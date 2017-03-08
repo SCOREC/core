@@ -9,12 +9,12 @@
 #include <SimUtil.h>
 #include <SimModel.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <stdlib.h>
 
 int main(int argc, char** argv)
 {
-  assert(argc==2);
+  PCU_ALWAYS_ASSERT(argc==2);
   const char* modelFile = argv[1];
 
   MPI_Init(&argc,&argv);

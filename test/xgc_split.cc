@@ -3,7 +3,7 @@
 #include <apf.h>
 #include <cstring>
 #include <mpi.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 #include "apfMDS.h"
@@ -37,7 +37,7 @@ Migration* get_xgc_plan(pGeom g, pMesh m)
 
   pMeshEnt e;
   int num_gface = pumi_geom_getNumEnt(g, dim);
-  assert(num_gface==pumi_size());
+  PCU_ALWAYS_ASSERT(num_gface==pumi_size());
   int gface_id;
   int dest_pid;
   pMeshIter it = m->begin(2); // face

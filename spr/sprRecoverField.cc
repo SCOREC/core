@@ -16,7 +16,7 @@
 #include <mthQR.h>
 
 #include <set>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace spr {
 
@@ -290,7 +290,7 @@ static bool preparePolynomialFit(
 {
   unsigned m = num_points;
   unsigned n = countPolynomialTerms(dim, order);
-  assert(m >= n);
+  PCU_ALWAYS_ASSERT(m >= n);
   mth::Matrix<double> A(m,n);
   mth::Vector<double> p;
   for (unsigned i = 0; i < m; ++i) {

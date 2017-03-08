@@ -8,7 +8,7 @@
  
 *******************************************************************************/
 #include "pumi.h"
-#include <assert.h>
+#include <pcu_util.h>
 #include "GenTag.h"
 #include <iostream>
 
@@ -83,7 +83,7 @@ bool pumi_geom_hasTag (pGeom m, const pTag tag)
 //**********************************************************
 { 
   int exist;
-  assert(!TagHolder_HasTag (static_cast<pTagHolder>(m), tag, &exist));
+  PCU_ALWAYS_ASSERT(!TagHolder_HasTag (static_cast<pTagHolder>(m), tag, &exist));
   if (exist) 
     return true;
   else
@@ -137,91 +137,91 @@ void pumi_gent_getStringTag(pGeomEnt ent, pTag tag, const char*& s)
 void pumi_gent_setPtrTag (pGeomEnt ent, pTag tag, void* data)
 //**********************************************************
 { 
-  assert(!Taggable_SetData<void*>(static_cast<pTaggable>(ent), tag, &data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<void*>(static_cast<pTaggable>(ent), tag, &data));
  }
 
 //**********************************************************
 void pumi_gent_getPtrTag (pGeomEnt ent, pTag tag, void** data)
 //**********************************************************
 { 
-  assert(!Taggable_GetData<void*>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<void*>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_setIntTag (pGeomEnt ent, pTag tag, const int data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<int>(static_cast<pTaggable>(ent), tag, &data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<int>(static_cast<pTaggable>(ent), tag, &data));
 }
 
 //**********************************************************
 void pumi_gent_getIntTag (pGeomEnt ent, pTag tag, int* data)
 //**********************************************************
 {
-  assert(!Taggable_GetData<int>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<int>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_setLongTag (pGeomEnt ent, pTag tag, const long data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<long>(static_cast<pTaggable>(ent), tag, &data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<long>(static_cast<pTaggable>(ent), tag, &data));
 }
 
 //**********************************************************
 void pumi_gent_getLongTag (pGeomEnt ent, pTag tag, long* data)
 //**********************************************************
 {
-  assert(!Taggable_GetData<long>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<long>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_setDblTag (pGeomEnt ent, pTag tag, const double data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<double>(static_cast<pTaggable>(ent), tag, &data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<double>(static_cast<pTaggable>(ent), tag, &data));
 }
 
 //**********************************************************
 void pumi_gent_getDblTag (pGeomEnt ent, pTag tag, double* data)
 //**********************************************************
 {
-  assert(!Taggable_GetData<double>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<double>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_setEntTag (pGeomEnt ent, pTag tag, const pGeomEnt data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, &data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, &data));
 }
 
 //**********************************************************
 void pumi_gent_getEntTag (pGeomEnt ent, pTag tag, pGeomEnt *data)
 //**********************************************************
 {
-  assert(!Taggable_GetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_setPtrArrTag (pGeomEnt ent, pTag tag, void* const* data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<void*>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<void*>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_getPtrArrTag (pGeomEnt ent, pTag tag, void** data)
 //**********************************************************
 {
-  assert(!Taggable_GetData<void*>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<void*>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
 void pumi_gent_setIntArrTag (pGeomEnt ent, pTag tag, const int* data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<int>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<int>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
@@ -229,14 +229,14 @@ void pumi_gent_getIntArrTag (pGeomEnt ent, pTag tag, int** data, int* data_size)
 //**********************************************************
 {
   *data_size=Tag_GetSize(tag);
-  assert(!Taggable_GetData<int>(static_cast<pTaggable>(ent), tag, *data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<int>(static_cast<pTaggable>(ent), tag, *data));
 }
 
 //**********************************************************
 void pumi_gent_setLongArrTag (pGeomEnt ent, pTag tag, const long* data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<long>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<long>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
@@ -244,14 +244,14 @@ void pumi_gent_getLongArrTag (pGeomEnt ent, pTag tag, long** data, int* data_siz
 //**********************************************************
 {
   *data_size=Tag_GetSize(tag);
-  assert(!Taggable_GetData<long>(static_cast<pTaggable>(ent), tag, *data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<long>(static_cast<pTaggable>(ent), tag, *data));
 }
 
 //**********************************************************
 void pumi_gent_setDblArrTag (pGeomEnt ent, pTag tag, const double* data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<double>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<double>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
@@ -259,14 +259,14 @@ void pumi_gent_getDblArrTag (pGeomEnt ent, pTag tag, double** data, int* data_si
 //**********************************************************
 {
   *data_size=Tag_GetSize(tag);
-  assert(!Taggable_GetData<double>(static_cast<pTaggable>(ent), tag, *data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<double>(static_cast<pTaggable>(ent), tag, *data));
 }
 
 //**********************************************************
 void pumi_gent_setEntArrTag (pGeomEnt ent, pTag tag, const pGeomEnt* data)
 //**********************************************************
 {
-  assert(!Taggable_SetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, data));
+  PCU_ALWAYS_ASSERT(!Taggable_SetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, data));
 }
 
 //**********************************************************
@@ -274,5 +274,5 @@ void pumi_gent_getEntArrTag (pGeomEnt ent, pTag tag, pGeomEnt** data, int* data_
 //**********************************************************
 {
   *data_size=Tag_GetSize(tag);
-  assert(!Taggable_GetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, *data));
+  PCU_ALWAYS_ASSERT(!Taggable_GetData<pGeomEnt>(static_cast<pTaggable>(ent), tag, *data));
 }

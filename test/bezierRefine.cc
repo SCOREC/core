@@ -12,7 +12,7 @@
 #include <PCU.h>
 
 #include <math.h>
-#include <cassert>
+#include <pcu_util.h>
 
 // face areas are 1/2 and 19/30
 void vert0(double const p[2], double x[3], void*)
@@ -200,7 +200,7 @@ void test2D()
         ma::adapt(inRefine);
       double v1 = measureMesh(m);
       if(order > 1){
-        assert( std::fabs(v1-v0) < 0.05 );
+        PCU_ALWAYS_ASSERT( std::fabs(v1-v0) < 0.05 );
       }
       m->destroyNative();
       apf::destroyMesh(m);
@@ -246,7 +246,7 @@ void test3D()
     else
       ma::adapt(inRefine);
     double v1 = measureMesh(m);
-    assert( std::fabs(v1-v0) < 0.05 );
+    PCU_ALWAYS_ASSERT( std::fabs(v1-v0) < 0.05 );
 
     m->destroyNative();
     apf::destroyMesh(m);
@@ -266,10 +266,10 @@ void test3D()
     else
       ma::adapt(inRefine);
     double v1 = measureMesh(m);
-    assert( std::fabs(v1-v0) < 0.05 );
+    PCU_ALWAYS_ASSERT( std::fabs(v1-v0) < 0.05 );
 
     int numinvalid = crv::countNumberInvalidElements(m);
-    assert(numinvalid == 0);
+    PCU_ALWAYS_ASSERT(numinvalid == 0);
 
     m->destroyNative();
     apf::destroyMesh(m);

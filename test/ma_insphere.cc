@@ -3,7 +3,7 @@
 #include <gmi_null.h>
 #include <PCU.h>
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 int main(int argc, char** argv)
 {
@@ -21,12 +21,12 @@ int main(int argc, char** argv)
   for (int j = 0; j < 4; ++j)
     matrix[i][j] = input[i][j];
 
-	assert(apf::getDeterminant(apf::getMinor(matrix,0,0)) == 135);
-	assert(apf::getDeterminant(apf::getMinor(matrix,1,0)) == 145);
-	assert(apf::getDeterminant(apf::getMinor(matrix,2,0)) == 35);
-	assert(apf::getDeterminant(apf::getMinor(matrix,3,0)) == -45);
+	PCU_ALWAYS_ASSERT(apf::getDeterminant(apf::getMinor(matrix,0,0)) == 135);
+	PCU_ALWAYS_ASSERT(apf::getDeterminant(apf::getMinor(matrix,1,0)) == 145);
+	PCU_ALWAYS_ASSERT(apf::getDeterminant(apf::getMinor(matrix,2,0)) == 35);
+	PCU_ALWAYS_ASSERT(apf::getDeterminant(apf::getMinor(matrix,3,0)) == -45);
 
-	assert(apf::getDeterminant(matrix) == -1485);
+	PCU_ALWAYS_ASSERT(apf::getDeterminant(matrix) == -1485);
 
 	// Test insphere (create a mesh with one tet)
 	PCU_Comm_Init();
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 
 	apf::MeshEntity* e = apf::buildElement(mesh, m, apf::Mesh::TET, v);
 
-	assert(ma::getInsphere(mesh, e) == 1.5);
+	PCU_ALWAYS_ASSERT(ma::getInsphere(mesh, e) == 1.5);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);

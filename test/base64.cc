@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cassert>
+#include <pcu_util.h>
 
 #include <lionBase64.h>
 
@@ -10,37 +10,37 @@ void runEncodeTests ()
   testStr3[0] = 'a';
   testStr3[1] = 'a';
   testStr3[2] = 'a';
-  assert(lion::base64Encode3Bytes(testStr3) == "YWFh");
+  PCU_ALWAYS_ASSERT(lion::base64Encode3Bytes(testStr3) == "YWFh");
 
   //test2, encode3({'x','y','z'}) == "eHl6"
   testStr3[0] = 'x';
   testStr3[1] = 'y';
   testStr3[2] = 'z';
-  assert(lion::base64Encode3Bytes(testStr3) == "eHl6");
+  PCU_ALWAYS_ASSERT(lion::base64Encode3Bytes(testStr3) == "eHl6");
 
   //test3, encode2({'a','a'}) == "YWE="
   char testStr2[2];
   testStr2[0] = 'a';
   testStr2[1] = 'a';
-  assert(lion::base64Encode2Bytes(testStr2) == "YWE=");
-  assert(lion::base64Encode(testStr2, 2) == "YWE=");
+  PCU_ALWAYS_ASSERT(lion::base64Encode2Bytes(testStr2) == "YWE=");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr2, 2) == "YWE=");
 
   //test4, encode2({'x','y'}) == "eHk=""
   testStr2[0] = 'x';
   testStr2[1] = 'y';
-  assert(lion::base64Encode2Bytes(testStr2) == "eHk=");
-  assert(lion::base64Encode(testStr2, 2) == "eHk=");
+  PCU_ALWAYS_ASSERT(lion::base64Encode2Bytes(testStr2) == "eHk=");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr2, 2) == "eHk=");
 
   //test5, encode1('a') == "YQ=="
   char testStr1[1];
   testStr1[0] = 'a';
-  assert(lion::base64Encode1Byte(testStr1[0]) == "YQ==");
-  assert(lion::base64Encode(testStr1, 1) == "YQ==");
+  PCU_ALWAYS_ASSERT(lion::base64Encode1Byte(testStr1[0]) == "YQ==");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr1, 1) == "YQ==");
 
   //test6, encode1('z') == "eg=="
   testStr1[0] = 'z';
-  assert(lion::base64Encode1Byte(testStr1[0]) == "eg==");
-  assert(lion::base64Encode(testStr1, 1) == "eg==");
+  PCU_ALWAYS_ASSERT(lion::base64Encode1Byte(testStr1[0]) == "eg==");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr1, 1) == "eg==");
 
   //test7, encodeStr({'a','b','c','d','e','f'}) == "YWJjZGVm"
   char testStr6[6];
@@ -50,7 +50,7 @@ void runEncodeTests ()
   testStr6[3] = 'd';
   testStr6[4] = 'e';
   testStr6[5] = 'f';
-  assert(lion::base64Encode(testStr6, 6) == "YWJjZGVm");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr6, 6) == "YWJjZGVm");
 
   //test8, encodeStr({'u','v','w','x','y','z'}) == "dXZ3eHl6"
   testStr6[0] = 'u';
@@ -59,7 +59,7 @@ void runEncodeTests ()
   testStr6[3] = 'x';
   testStr6[4] = 'y';
   testStr6[5] = 'z';
-  assert(lion::base64Encode(testStr6, 6) == "dXZ3eHl6");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr6, 6) == "dXZ3eHl6");
 
   //test9, encodeStr({'a','b','c','d','e','f','g'}) == "YWJjZGVmZw=="
   char testStr7[7];
@@ -70,7 +70,7 @@ void runEncodeTests ()
   testStr7[4] = 'e';
   testStr7[5] = 'f';
   testStr7[6] = 'g';
-  assert(lion::base64Encode(testStr7, 7) == "YWJjZGVmZw==");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr7, 7) == "YWJjZGVmZw==");
 
   //test10, encodeStr({'t','u','v','w','x','y','z'}) == "dHV2d3h5eg=="
   testStr7[0] = 't';
@@ -80,7 +80,7 @@ void runEncodeTests ()
   testStr7[4] = 'x';
   testStr7[5] = 'y';
   testStr7[6] = 'z';
-  assert(lion::base64Encode(testStr7, 7) == "dHV2d3h5eg==");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr7, 7) == "dHV2d3h5eg==");
 
   //test11, encodeStr({'a','b','c','d','e','f','g','h'}) == "YWJjZGVmZ2g="
   char testStr8[8];
@@ -92,7 +92,7 @@ void runEncodeTests ()
   testStr8[5] = 'f';
   testStr8[6] = 'g';
   testStr8[7] = 'h';
-  assert(lion::base64Encode(testStr8, 8) == "YWJjZGVmZ2g=");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr8, 8) == "YWJjZGVmZ2g=");
 
   //test12, encodeStr({'s','t','u','v','w','x','y','z'}) == "c3R1dnd4eXo="
   testStr8[0] = 's';
@@ -103,7 +103,7 @@ void runEncodeTests ()
   testStr8[5] = 'x';
   testStr8[6] = 'y';
   testStr8[7] = 'z';
-  assert(lion::base64Encode(testStr8, 8) == "c3R1dnd4eXo=");
+  PCU_ALWAYS_ASSERT(lion::base64Encode(testStr8, 8) == "c3R1dnd4eXo=");
 
   std::cout << "Encode tests pass!" << std::endl;
 }
@@ -118,7 +118,7 @@ void runDecodeTests ()
   {
     unsigned int base64Code =
         lion::getDecodedBase64Char(base64CharsNoEquals[i]);
-    assert(i == base64Code);
+    PCU_ALWAYS_ASSERT(i == base64Code);
   }
 
   //test2, decode4({'Y','W','F','h'}) == "aaa"
@@ -127,60 +127,60 @@ void runDecodeTests ()
   testStr4[1] = 'W';
   testStr4[2] = 'F';
   testStr4[3] = 'h';
-  assert(lion::base64Decode4Bytes(testStr4) == "aaa");
-  assert(lion::base64Decode("YWFh") == "aaa");
+  PCU_ALWAYS_ASSERT(lion::base64Decode4Bytes(testStr4) == "aaa");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("YWFh") == "aaa");
 
   //test3, decode4({'Y','W','F','='}) == "aa"
   testStr4[0] = 'Y';
   testStr4[1] = 'W';
   testStr4[2] = 'F';
   testStr4[3] = '=';
-  assert(lion::base64Decode4Bytes(testStr4) == "aa");
-  assert(lion::base64Decode("YWF=") == "aa");
+  PCU_ALWAYS_ASSERT(lion::base64Decode4Bytes(testStr4) == "aa");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("YWF=") == "aa");
 
   //test4, decode4({'Y','W','=','='}) == "a"
   testStr4[0] = 'Y';
   testStr4[1] = 'W';
   testStr4[2] = '=';
   testStr4[3] = '=';
-  assert(lion::base64Decode4Bytes(testStr4) == "a");
-  assert(lion::base64Decode("YW==") == "a");
+  PCU_ALWAYS_ASSERT(lion::base64Decode4Bytes(testStr4) == "a");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("YW==") == "a");
 
   //test5, decode({'e','H','l','6'}) == "xyz"
   testStr4[0] = 'e';
   testStr4[1] = 'H';
   testStr4[2] = 'l';
   testStr4[3] = '6';
-  assert(lion::base64Decode4Bytes(testStr4) == "xyz");
-  assert(lion::base64Decode("eHl6") == "xyz");
+  PCU_ALWAYS_ASSERT(lion::base64Decode4Bytes(testStr4) == "xyz");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("eHl6") == "xyz");
 
   //test6, decode({'e','H','l','='}) == "xy"
   testStr4[0] = 'e';
   testStr4[1] = 'H';
   testStr4[2] = 'l';
   testStr4[3] = '=';
-  assert(lion::base64Decode4Bytes(testStr4) == "xy");
-  assert(lion::base64Decode("eHl=") == "xy");
+  PCU_ALWAYS_ASSERT(lion::base64Decode4Bytes(testStr4) == "xy");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("eHl=") == "xy");
 
   //test7, decode({'e','H','=','='}) == "x"
   testStr4[0] = 'e';
   testStr4[1] = 'H';
   testStr4[2] = '=';
   testStr4[3] = '=';
-  assert(lion::base64Decode4Bytes(testStr4) == "x");
-  assert(lion::base64Decode("eH==") == "x");
+  PCU_ALWAYS_ASSERT(lion::base64Decode4Bytes(testStr4) == "x");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("eH==") == "x");
 
   //test8, decode("YWJjZGVm") == "abcdef"
-  assert(lion::base64Decode("YWJjZGVm") == "abcdef");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("YWJjZGVm") == "abcdef");
 
   //test9, decode("dXZ3eHl6") = "uvwxyz"
-  assert(lion::base64Decode("dXZ3eHl6") == "uvwxyz");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("dXZ3eHl6") == "uvwxyz");
 
   //test10, decode("dnd4eXo=") == "vwxyz"
-  assert(lion::base64Decode("dnd4eXo=") == "vwxyz");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("dnd4eXo=") == "vwxyz");
 
   //test11, decode("d3h5eg==") = "wxyz"
-  assert(lion::base64Decode("d3h5eg==") == "wxyz");
+  PCU_ALWAYS_ASSERT(lion::base64Decode("d3h5eg==") == "wxyz");
 
   std::cout << "Decode tests pass!" << std::endl;
 }
@@ -195,7 +195,7 @@ void runCombinedTests()
       lion::base64Decode(
           lion::base64Encode( alphabet0.c_str(), alphabet0.length() )
       );
-  assert(resultStr  == alphabet0);
+  PCU_ALWAYS_ASSERT(resultStr  == alphabet0);
 
   //test2, encode and decode more characters
   std::string alphabet1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -207,7 +207,7 @@ void runCombinedTests()
           lion::base64Encode(alphabet1.c_str(), alphabet1.length() )
       );
 
-  assert(resultStr == alphabet1);
+  PCU_ALWAYS_ASSERT(resultStr == alphabet1);
 
   std::cout << "Combined tests pass!" << std::endl;
 }

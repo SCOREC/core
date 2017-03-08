@@ -13,7 +13,7 @@
 #include "maCollapse.h"
 #include "maMatchedCollapse.h"
 #include "maOperator.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -37,7 +37,7 @@ class CollapseChecker : public apf::CavityOp
       if (md!=modelDimension)
         return SKIP;
       bool ok = collapse.setEdge(e);
-      assert(ok);
+      PCU_ALWAYS_ASSERT(ok);
       if ( ! collapse.requestLocality(this))
         return REQUEST;
       return OK;
@@ -60,8 +60,8 @@ void checkAllEdgeCollapses(Adapt* a, int modelDimension)
   CollapseChecker checker(a,modelDimension);
   checker.applyToDimension(1);
   clearFlagFromDimension(a,CHECKED,1);
-  assert(checkFlagConsistency(a,1,COLLAPSE));
-  assert(checkFlagConsistency(a,0,COLLAPSE));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,COLLAPSE));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,0,COLLAPSE));
 }
 
 class IndependentSetFinder : public apf::CavityOp
@@ -100,7 +100,7 @@ void findIndependentSet(Adapt* a)
   IndependentSetFinder finder(a);
   finder.applyToDimension(0);
   clearFlagFromDimension(a,CHECKED,0);
-  assert(checkFlagConsistency(a, 0, COLLAPSE));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a, 0, COLLAPSE));
 }
 
 class AllEdgeCollapser : public Operator
@@ -127,7 +127,7 @@ class AllEdgeCollapser : public Operator
       if (md!=modelDimension)
         return false;
       bool ok = collapse.setEdge(e);
-      assert(ok);
+      PCU_ALWAYS_ASSERT(ok);
       return true;
     }
     virtual bool requestLocality(apf::CavityOp* o)
@@ -236,7 +236,7 @@ bool coarsen(Adapt* a)
     return false;
   Mesh* m = a->mesh;
   int maxDimension = m->getDimension();
-  assert(checkFlagConsistency(a,1,COLLAPSE));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,COLLAPSE));
   long successCount = 0;
   for (int modelDimension=1; modelDimension <= maxDimension; ++modelDimension)
   {

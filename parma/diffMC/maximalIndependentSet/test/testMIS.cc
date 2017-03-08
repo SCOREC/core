@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <set>
 #include <vector>
-#include <assert.h>
 #include <algorithm>
 #include "mis.h"
 #include "math.h"

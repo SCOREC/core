@@ -3,11 +3,11 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();

@@ -24,10 +24,10 @@
 #include <gmi_mesh.h>
 #include <PCU.h>
 #include <pcu_io.h>
+#include <pcu_util.h>
 #include <string>
 #include <stdlib.h>
 #include <cstring>
-#include <assert.h>
 #include <iostream>
 
 #define SIZET(a) static_cast<size_t>(a)
@@ -226,7 +226,7 @@ namespace ph {
   }
   void preprocess(apf::Mesh2* m, Input& in, Output& out) {
     gmi_model* g = m->getModel();
-    assert(g);
+    PCU_ALWAYS_ASSERT(g);
     BCs bcs;
     ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     if (!in.solutionMigration)
@@ -240,7 +240,7 @@ namespace ph {
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
-    assert(PCU_Comm_Peers() % in.splitFactor == 0);
+    PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
     loadCommon(in, bcs, g);

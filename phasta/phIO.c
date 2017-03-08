@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +49,7 @@ static void parse_header(char* header, char** name, long* bytes,
 {
   char* saveptr = NULL;
   int i = 0;
-  assert(header != NULL);
+  PCU_ALWAYS_ASSERT(header != NULL);
   header = strtok_r(header, ":", &saveptr);
   if (name) {
     *name = header;
@@ -110,7 +110,7 @@ static int seek_after_header(FILE* f, const char* name)
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
 {
   size_t r = fread(p, size, nmemb, f);
-  assert(r == nmemb);
+  PCU_ALWAYS_ASSERT(r == nmemb);
 }
 
 static int read_magic_number(FILE* f)
@@ -176,9 +176,9 @@ int ph_read_field(FILE* f, const char* field, int swap,
   parse_params(header, &bytes, nodes, vars, step);
   if(!bytes) /* empty data block */
     return 1;
-  assert(((bytes - 1) % sizeof(double)) == 0);
+  PCU_ALWAYS_ASSERT(((bytes - 1) % sizeof(double)) == 0);
   n = (bytes - 1) / sizeof(double);
-  assert((int)n == (*nodes) * (*vars));
+  PCU_ALWAYS_ASSERT((int)n == (*nodes) * (*vars));
   *data = malloc(bytes);
   PHASTAIO_READTIME(my_fread(*data, sizeof(double), n, f);, (sizeof(double)*n))
   if (swap)

@@ -7,7 +7,7 @@
 
 #include <apf_stkConfig.h>
 #include <apfNumbering.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 #if HAS_STK
@@ -212,8 +212,8 @@ static void declarePart(StkModel* model,
 void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
 {
   int d = m->getDimension();
-  assert(d >= 0);
-  assert(d <= 3);
+  PCU_ALWAYS_ASSERT(d >= 0);
+  PCU_ALWAYS_ASSERT(d <= 3);
   const CellTopologyData* topo[4];
   stk::mesh::EntityRank ranks[4];
   for (int i = 0; i <= d; ++i)

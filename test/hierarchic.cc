@@ -6,7 +6,7 @@
 #include <apfNumbering.h>
 #include <gmi_mesh.h>
 #include <mthQR.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {
@@ -160,7 +160,7 @@ void L2Projector::compare() {
     apf::mapLocalToGlobal(me, p, x);
     double v = function(p_order, d, x);
     double vh = apf::getScalar(e, p);
-    assert(std::abs(v - vh) < 1.0e-13);
+    PCU_ALWAYS_ASSERT(std::abs(v - vh) < 1.0e-13);
     apf::destroyElement(e);
     apf::destroyMeshElement(me);
   }
@@ -191,10 +191,10 @@ void test(apf::Mesh* m, int p_order) {
 
 int main(int argc, char** argv)
 {
-  assert(argc==4);
+  PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  assert(! PCU_Comm_Self());
+  PCU_ALWAYS_ASSERT(! PCU_Comm_Self());
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
   apf::reorderMdsMesh(m);

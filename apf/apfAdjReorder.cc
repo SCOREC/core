@@ -11,7 +11,7 @@
 #include "apfShape.h"
 
 #include <list>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -269,8 +269,8 @@ MeshTag* reorder(Mesh* mesh, const char* name)
   MeshTag* numbering = mesh->createIntTag(name,1);
   while (node_label >= 0)
     reorderConnected(mesh,numbering,node_label,element_label);
-  assert(node_label==-1);
-  assert(element_label==-1);
+  PCU_ALWAYS_ASSERT(node_label==-1);
+  PCU_ALWAYS_ASSERT(element_label==-1);
   return numbering;
 }
 

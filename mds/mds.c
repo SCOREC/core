@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include <reel.h>
 
@@ -207,7 +207,7 @@ static void resize_up(struct mds* m, int from, int to,
     } else if (mds_dim[t] == from) {
       REALLOC(m->first_up[to][t],new_cap[t]);
       for (i = old_cap[t]; i < new_cap[t]; ++i) {
-        assert(m->first_up[to][t]);
+        PCU_ALWAYS_ASSERT(m->first_up[to][t]);
         m->first_up[to][t][i] = MDS_NONE;
       }
     }
@@ -485,7 +485,7 @@ static void unite(struct mds_set* s, struct mds_set* with)
   int j = s->n;
   for (i = 0; i < with->n; ++i)
     if ( ! contains(s,with->e[i])) {
-      assert(j < MDS_SET_MAX);
+      PCU_ALWAYS_ASSERT(j < MDS_SET_MAX);
       s->e[j++] = with->e[i];
     }
   s->n = j;
@@ -548,7 +548,7 @@ static mds_id alloc_ent(struct mds* m, int t)
     m->free[t][m->end[t]] = MDS_LIVE;
     ++(m->end[t]);
   }
-  assert(m->end[t] >= m->n[t]);
+  PCU_ALWAYS_ASSERT(m->end[t] >= m->n[t]);
   return id;
 }
 
@@ -579,12 +579,12 @@ static void check_ent(struct mds* m, mds_id e)
 {
   int t;
   mds_id i;
-  assert(e >= 0);
+  PCU_ALWAYS_ASSERT(e >= 0);
   t = TYPE(e);
-  assert(t < MDS_TYPES);
+  PCU_ALWAYS_ASSERT(t < MDS_TYPES);
   i = INDEX(e);
-  assert(i < m->end[t]);
-  assert(m->free[t][i] == MDS_LIVE);
+  PCU_ALWAYS_ASSERT(i < m->end[t]);
+  PCU_ALWAYS_ASSERT(m->free[t][i] == MDS_LIVE);
 }
 
 static void unrelate_ent(struct mds* m, mds_id e)
@@ -663,8 +663,8 @@ static void convert_down(struct mds* m,
 
 mds_id mds_create_entity(struct mds* m, int t, mds_id* from)
 {
-  assert(0 <= t);
-  assert(t < MDS_TYPES);
+  PCU_ALWAYS_ASSERT(0 <= t);
+  PCU_ALWAYS_ASSERT(t < MDS_TYPES);
   if (t == MDS_VERTEX)
     return alloc_ent(m, t);
   return add_ent(m, t, from);
@@ -676,7 +676,7 @@ static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
   int dim;
   struct mds_set up;
   to->n = 0;
-  assert(from->n);
+  PCU_ALWAYS_ASSERT(from->n);
   dim = mds_dim[TYPE(from->e[0])];
   for (i = 0; i < from->n; ++i) {
     look_up(m,from->e[i],dim + 1,&up);
@@ -804,7 +804,7 @@ static void increase_dimension(struct mds* m)
   int old_d;
   old_d = m->d;
   ++(m->d);
-  assert(old_d < m->d);
+  PCU_ALWAYS_ASSERT(old_d < m->d);
   mds_add_adjacency(m, old_d, m->d);
   mds_add_adjacency(m, m->d, old_d);
 }

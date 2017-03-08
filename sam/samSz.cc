@@ -1,7 +1,7 @@
 #include "samSz.h"
 #include <apf.h>
 #include <apfField.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace {
 

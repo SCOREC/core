@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <pcu_util.h>
 #include "parma.h"
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
@@ -148,7 +149,7 @@ namespace parma {
         }
       }
       if( !sent && disconnected(mesh, plan, cavity) ) {
-        assert(peers->l);
+        PCU_ALWAYS_ASSERT(peers->l);
         int destPid = TO_INT(peers->d[0]);
         dcCnt++;
         double ew = add(e, cavity, destPid, plan);

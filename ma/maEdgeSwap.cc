@@ -12,7 +12,7 @@
 #include "maShape.h"
 #include "maShapeHandler.h"
 #include <cstdio>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -253,7 +253,7 @@ static void getTriangulation_7(int i, apf::DynamicArray<int>& t)
 
 static void getTriangulation(int loopSize, int i, apf::DynamicArray<int>& t)
 {
-  assert(t.getSize() == static_cast<size_t>(triangulation_size[loopSize]));
+  PCU_ALWAYS_ASSERT(t.getSize() == static_cast<size_t>(triangulation_size[loopSize]));
   typedef void (*GetTriangulationFunction)(int,apf::DynamicArray<int>&);
   static GetTriangulationFunction table[MAX_VERTS+1] =
   {0
@@ -449,12 +449,12 @@ class SwapLoop
       int n = findIn(tv0,4,vert);
       Entity* tv[4];
       rotateTet(tv0,n*3,tv);
-      assert(tv[0]==vert);
+      PCU_ALWAYS_ASSERT(tv[0]==vert);
       int a = findIn(tv+1,3,edge_verts[0]);
       int b = findIn(tv+1,3,edge_verts[1]);
       if (b == ((a+1)%3))
         return true;
-      assert(a == ((b+1)%3));
+      PCU_ALWAYS_ASSERT(a == ((b+1)%3));
       return false;
     }
     Entity* findInitialTet(Entity* vert, Entity* face)
@@ -498,7 +498,7 @@ class SwapLoop
           break; /* this is analogous to (!tet) when
                     we cross a non-manifold face */
         face = getOtherFace(face,tet);
-        assert(face);
+        PCU_ALWAYS_ASSERT(face);
         if (face == startFace)
           break;
       }
@@ -742,7 +742,7 @@ class EdgeSwap3D : public EdgeSwap
       else
       {
         cavityExists[0] = halves[0].setFromEdge(edge);
-        assert(cavityExists[0]);
+        PCU_ALWAYS_ASSERT(cavityExists[0]);
         if ( ! halves[0].findGoodTriangulation(oldQuality,oldTets))
           return false;
         cavity.beforeBuilding();

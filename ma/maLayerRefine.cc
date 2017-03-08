@@ -2,7 +2,7 @@
 #include "maCrawler.h"
 #include "maRefine.h"
 #include "maLayer.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -142,7 +142,7 @@ static int getPrismTriCurl(Mesh* m, Entity* prism, Entity* tri)
   Entity** ptv;
   if (tri == pf[0])
     ptv = pv;
-  else { assert(tri == pf[4]);
+  else { PCU_ALWAYS_ASSERT(tri == pf[4]);
     ptv = pv + 3;
   }
   return isSameCurl(ptv, tv, 3) ? 0 : 1;

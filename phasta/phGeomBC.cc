@@ -3,7 +3,7 @@
 #include "phIO.h"
 #include "phiotimer.h"
 #include <sstream>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace ph {
@@ -29,7 +29,7 @@ void getInteriorConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
       c[i++] = o.arrays.ien[block][elem][vert] + 1; /* FORTRAN indexing */
-  assert(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
 void getBoundaryConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
@@ -41,7 +41,7 @@ void getBoundaryConnectivity(Output& o, int block, apf::DynamicArray<int>& c)
   for (int vert = 0; vert < nvert; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
       c[i++] = o.arrays.ienb[block][elem][vert] + 1;
-  assert(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
 void getInterfaceConnectivity
@@ -62,7 +62,7 @@ void getInterfaceConnectivity
   for (int vert = 0; vert < nvert1; ++vert)
     for (int elem = 0; elem < nelem; ++elem)
       c[i++] = o.arrays.ienif1[block][elem][vert] + 1;
-  assert(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
 void getInteriorMaterialType
@@ -77,7 +77,7 @@ void getInteriorMaterialType
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     c[i++] = o.arrays.mattype[block][elem];
-  assert(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
 void getBoundaryMaterialType
@@ -92,7 +92,7 @@ void getBoundaryMaterialType
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     c[i++] = o.arrays.mattypeb[block][elem];
-  assert(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
 void getInterfaceMaterialType
@@ -109,7 +109,7 @@ void getInterfaceMaterialType
     c[i++] = o.arrays.mattypeif0[block][elem];
   for (int elem = 0; elem < nelem; ++elem) 
     c[i++] = o.arrays.mattypeif1[block][elem];
-  assert(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
 void getNaturalBCCodes(Output& o, int block, apf::DynamicArray<int>& codes)
@@ -120,7 +120,7 @@ void getNaturalBCCodes(Output& o, int block, apf::DynamicArray<int>& codes)
   for (int j = 0; j < 2; ++j)
     for (int elem = 0; elem < nelem; ++elem)
       codes[i++] = o.arrays.ibcb[block][elem][j];
-  assert(i == codes.getSize());
+  PCU_ALWAYS_ASSERT(i == codes.getSize());
 }
 
 void getNaturalBCValues(Output& o, int block, apf::DynamicArray<double>& values)
@@ -132,7 +132,7 @@ void getNaturalBCValues(Output& o, int block, apf::DynamicArray<double>& values)
   for (int bc = 0; bc < nbc; ++bc)
     for (int elem = 0; elem < nelem; ++elem)
       values[i++] = o.arrays.bcb[block][elem][bc];
-  assert(i == values.getSize());
+  PCU_ALWAYS_ASSERT(i == values.getSize());
 }
 
 void getEssentialBCValues(Output& o, apf::DynamicArray<double>& values)
@@ -144,7 +144,7 @@ void getEssentialBCValues(Output& o, apf::DynamicArray<double>& values)
   for (int bc = 0; bc < nbc; ++bc)
     for (int node = 0; node < nnode; ++node)
       values[i++] = o.arrays.bc[node][bc];
-  assert(i == values.getSize());
+  PCU_ALWAYS_ASSERT(i == values.getSize());
 }
 
 void fillBlockKeyParams(int* params, BlockKey& k)

@@ -6,7 +6,7 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <apfPartition.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {
@@ -66,7 +66,7 @@ void getConfig(int argc, char** argv)
   inputPartCount = atoi(argv[2]);
   meshFile = argv[3];
   outFile = argv[4];
-  assert(inputPartCount <= PCU_Comm_Peers());
+  PCU_ALWAYS_ASSERT(inputPartCount <= PCU_Comm_Peers());
 }
 
 void balance(apf::Mesh2* m)

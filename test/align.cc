@@ -4,7 +4,7 @@
 #include <apfMesh2.h>
 #include <PCU.h>
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 void testTriEdge()
 {
@@ -24,9 +24,9 @@ void testTriEdge()
     apf::MeshEntity* t =
         apf::buildElement(m, 0, apf::Mesh::TRIANGLE, v);
     apf::getAlignment(m, t, e, which, flip, rotate);
-    assert(which == (ed % 3));
-    assert(flip == (ed >= 3));
-    assert(rotate == 0);
+    PCU_ALWAYS_ASSERT(which == (ed % 3));
+    PCU_ALWAYS_ASSERT(flip == (ed >= 3));
+    PCU_ALWAYS_ASSERT(rotate == 0);
     m->destroyNative();
     apf::destroyMesh(m);
   }
@@ -49,9 +49,9 @@ void testTetEdge()
     apf::MeshEntity* t =
         apf::buildElement(m, 0, apf::Mesh::TET, v);
     apf::getAlignment(m, t, e, which, flip, rotate);
-    assert(which == (ed % 6));
-    assert(flip == (ed >= 6));
-    assert(rotate == 0);
+    PCU_ALWAYS_ASSERT(which == (ed % 6));
+    PCU_ALWAYS_ASSERT(flip == (ed >= 6));
+    PCU_ALWAYS_ASSERT(rotate == 0);
     m->destroyNative();
     apf::destroyMesh(m);
   }
@@ -79,9 +79,9 @@ void testTetTri()
       apf::MeshEntity* t =
           apf::buildElement(m, 0, apf::Mesh::TET, v);
       apf::getAlignment(m, t, e, which, flip, rotate);
-      assert(which == fa % 4);
-      assert(flip == flipped);
-      assert(rotate == r[flipped*3+fa/4]);
+      PCU_ALWAYS_ASSERT(which == fa % 4);
+      PCU_ALWAYS_ASSERT(flip == flipped);
+      PCU_ALWAYS_ASSERT(rotate == r[flipped*3+fa/4]);
       m->destroyNative();
       apf::destroyMesh(m);
     }

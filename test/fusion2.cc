@@ -5,7 +5,7 @@
 #include <PCU.h>
 #include <parma.h>
 #include <apfZoltan.h>
-#include <cassert>
+#include <pcu_util.h>
 
 static apf::Mesh2* makeEmptyMesh()
 {
@@ -82,7 +82,7 @@ static void checkValues(apf::Mesh2* m)
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;
   while ((v = m->iterate(it)))
-    assert( apf::hasEntity(f, v) );
+    PCU_ALWAYS_ASSERT( apf::hasEntity(f, v) );
   m->end(it);
 }
 
@@ -140,7 +140,7 @@ int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  assert(PCU_Comm_Peers() == 2);
+  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 2);
   gmi_register_null();
   GroupCode code;
   int const groupSize = 1;

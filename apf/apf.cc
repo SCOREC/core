@@ -19,7 +19,7 @@
 #include "apfUserData.h"
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -54,7 +54,7 @@ Field* makeField(
     FieldShape* shape,
     FieldData* data)
 {
-  assert( ! m->findField(name));
+  PCU_ALWAYS_ASSERT( ! m->findField(name));
   Field* f = 0;
   if (valueType == SCALAR)
     f = new ScalarField();
@@ -444,7 +444,7 @@ void axpy(double a, Field* x, Field* y)
 void renameField(Field* f, const char* name)
 {
   Mesh* m = f->getMesh();
-  assert( ! m->findField(name));
+  PCU_ALWAYS_ASSERT( ! m->findField(name));
   f->rename(name);
 }
 

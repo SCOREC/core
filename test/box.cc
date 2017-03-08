@@ -4,7 +4,7 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {

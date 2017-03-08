@@ -3,7 +3,7 @@
 
 #include <apfMesh.h>
 #include <map>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace parma {
   struct Greater {
@@ -70,7 +70,7 @@ namespace parma {
 
     DistanceQIter erase(int dist, apf::MeshEntity* e)
     {
-      assert( m->hasTag(e, t) );
+      PCU_ALWAYS_ASSERT( m->hasTag(e, t) );
       DistanceQIter it = q.find(dist);
       DistanceQIter rit = ( it != q.begin() ) ? it-- : q.end();
       while( it != q.end() ) {

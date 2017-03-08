@@ -12,7 +12,7 @@
 #include "maTables.h"
 #include <algorithm>
 #include <cfloat>
-#include <cassert>
+#include <pcu_util.h>
 #include <apf.h>
 
 namespace ma {
@@ -153,7 +153,7 @@ Entity* getTriEdgeOppositeVert(Mesh* m, Entity* tri, Entity* v)
   m->getDownward(tri,1,te);
   static int const table[3] = {1,2,0};
   int n = findIn(tv,3,v);
-  assert(n >= 0);
+  PCU_ALWAYS_ASSERT(n >= 0);
   return te[table[n]];
 }
 
@@ -165,7 +165,7 @@ Entity* getTriVertOppositeEdge(Mesh* m, Entity* tri, Entity* e)
   m->getDownward(tri,1,te);
   static int const table[3] = {2,0,1};
   int n = findIn(te,3,e);
-  assert(n >= 0);
+  PCU_ALWAYS_ASSERT(n >= 0);
   return tv[table[n]];
 }
 
@@ -218,7 +218,7 @@ Entity* rebuildElement(
   int type = m->getType(original);
   if (type == apf::Mesh::VERTEX)
   {
-    assert(original != newVert);
+    PCU_ALWAYS_ASSERT(original != newVert);
     if (original==oldVert)
       return newVert;
     return original;

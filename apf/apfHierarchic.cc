@@ -10,7 +10,7 @@
 #include "apfFieldOf.h"
 #include "apfElement.h"
 #include "apfVectorElement.h"
-#include <cassert>
+#include <pcu_util.h>
 
 #include <iostream>
 
@@ -400,7 +400,7 @@ void projectHierarchicField(Field* to, Field* from)
 {
   int ttype = to->getValueType();
   int ftype = from->getValueType();
-  assert(ttype == ftype);
+  PCU_ALWAYS_ASSERT(ttype == ftype);
   if (ttype == SCALAR) {
     Projector<double> projector(to,from);
     projector.run();

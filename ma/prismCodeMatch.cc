@@ -2,7 +2,7 @@
 #include <apfMesh.h>
 #include <cstdlib>
 #include <cstdio>
-#include <cassert>
+#include <pcu_util.h>
 
 int getOldEdge(int newEdge, int rotation)
 {
@@ -34,7 +34,7 @@ int getNewCode(int oldCode, int rotation)
       newCode |= (1<<newEdge);
   }
   if (rotation == 0)
-    assert(oldCode == newCode);
+    PCU_ALWAYS_ASSERT(oldCode == newCode);
   return newCode;
 }
 

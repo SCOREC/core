@@ -11,7 +11,7 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <ma.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -28,7 +28,7 @@ static void fixMatches(apf::Mesh2* m)
       printf("fixed misaligned matches\n");
     else
       printf("matches were aligned\n");
-    assert( ! apf::alignMdsMatches(m));
+    PCU_ALWAYS_ASSERT( ! apf::alignMdsMatches(m));
   }
 }
 

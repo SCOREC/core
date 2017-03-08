@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include <pcu_io.h>
 #include <reel.h>
@@ -89,14 +89,14 @@ static void read_links(struct pcu_file* f, struct mds_links* l)
   PCU_READ_UNSIGNED(f, l->np);
   if (!l->np)
     return;
-  assert(l->np < MAX_PEERS); /* reasonable limit on number of peers */
+  PCU_ALWAYS_ASSERT(l->np < MAX_PEERS); /* reasonable limit on number of peers */
   l->p = malloc(l->np * sizeof(unsigned));
   pcu_read_unsigneds(f, l->p, l->np);
   l->n = malloc(l->np * sizeof(unsigned));
   l->l = malloc(l->np * sizeof(unsigned*));
   pcu_read_unsigneds(f, l->n, l->np);
   for (i = 0; i < l->np; ++i) {
-    if (sizeof(mds_id) == 4) assert(l->n[i] < MAX_ENTITIES);
+    if (sizeof(mds_id) == 4) PCU_ALWAYS_ASSERT(l->n[i] < MAX_ENTITIES);
     l->l[i] = malloc(l->n[i] * sizeof(unsigned));
     pcu_read_unsigneds(f, l->l[i], l->n[i]);
   }
@@ -110,7 +110,7 @@ static void write_links(struct pcu_file* f, struct mds_links* l)
     return;
   pcu_write_unsigneds(f, l->p, l->np);
   pcu_write_unsigneds(f, l->n, l->np);
-  assert(l->l != 0);
+  PCU_ALWAYS_ASSERT(l->l != 0);
   for (i = 0; i < l->np; ++i)
     pcu_write_unsigneds(f, l->l[i], l->n[i]);
 }
@@ -121,7 +121,7 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim,
   unsigned magic, np;
   PCU_READ_UNSIGNED(f, magic);
   PCU_READ_UNSIGNED(f, *version);
-  assert(*version <= SMB_VERSION);
+  PCU_ALWAYS_ASSERT(*version <= SMB_VERSION);
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1 && (!ignore_peers))
@@ -178,7 +178,7 @@ static void read_conn(struct pcu_file* f, struct mds_apf* m)
       mds_create_entity(&m->mds, type_mds, down.e);
     }
     free(conn);
-    assert(m->mds.n[type_mds] == m->mds.cap[type_mds]);
+    PCU_ALWAYS_ASSERT(m->mds.n[type_mds] == m->mds.cap[type_mds]);
   }
 }
 
@@ -245,7 +245,7 @@ static void read_class(struct pcu_file* f, struct mds_apf* m)
     for (j = 0; j < cap; ++j) {
       m->model[type_mds][j] =
         mds_find_model(m, class[2 * j + 1], class[2 * j]);
-      assert(m->model[type_mds][j]);
+      PCU_ALWAYS_ASSERT(m->model[type_mds][j]);
     }
     free(class);
   }
@@ -286,7 +286,7 @@ static struct mds_tag* read_tag_header(struct pcu_file* f, struct mds_apf* m)
   bytes[SMB_INT] = sizeof(int);
   bytes[SMB_DBL] = sizeof(double);
   PCU_READ_UNSIGNED(f, type);
-  assert(SMB_INT == type || SMB_DBL == type);
+  PCU_ALWAYS_ASSERT(SMB_INT == type || SMB_DBL == type);
   PCU_READ_UNSIGNED(f, count);
   pcu_read_string(f, &name);
   t = mds_create_tag(&m->tags, name,
@@ -376,7 +376,7 @@ static void write_int_tag(struct pcu_file* f, struct mds_apf* m,
       q[j] = p[j];
     ++k;
   }
-  assert(k == count);
+  PCU_ALWAYS_ASSERT(k == count);
   pcu_write_unsigneds(f, ids, count);
   pcu_write_unsigneds(f, tmp, size * count);
   free(tmp);
@@ -436,7 +436,7 @@ static void write_dbl_tag(struct pcu_file* f, struct mds_apf* m,
       q[j] = p[j];
     ++k;
   }
-  assert(k == count);
+  PCU_ALWAYS_ASSERT(k == count);
   pcu_write_unsigneds(f, ids, count);
   pcu_write_doubles(f, tmp, size * count);
   free(tmp);
@@ -451,7 +451,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
   unsigned i,j;
   int type_mds;
   PCU_READ_UNSIGNED(f,n);
-  assert(n < MAX_TAGS);
+  PCU_ALWAYS_ASSERT(n < MAX_TAGS);
   tags = malloc(n * sizeof(*tags));
   sizes = malloc(n * sizeof(*sizes));
   for (i = 0; i < n; ++i)
@@ -460,7 +460,7 @@ static void read_tags(struct pcu_file* f, struct mds_apf* m)
     pcu_read_unsigneds(f, sizes, n);
     type_mds = smb2mds(i);
     for (j = 0; j < n; ++j) {
-      if (sizeof(mds_id) == 4) assert(sizes[j] < MAX_ENTITIES);
+      if (sizeof(mds_id) == 4) PCU_ALWAYS_ASSERT(sizes[j] < MAX_ENTITIES);
       if (tags[j]->user_type == mds_apf_int)
         read_int_tag(f, m, tags[j], sizes[j], type_mds);
       else
@@ -569,12 +569,12 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   unsigned tmp;
   unsigned pi, pj;
   f = pcu_fopen(filename, 0, zip);
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   read_header(f, &version, &dim, ignore_peers);
   pcu_read_unsigneds(f, n, SMB_TYPES);
   for (i = 0; i < MDS_TYPES; ++i) {
     tmp = n[mds2smb(i)];
-    if (sizeof(mds_id) == 4) assert(tmp < MAX_ENTITIES);
+    if (sizeof(mds_id) == 4) PCU_ALWAYS_ASSERT(tmp < MAX_ENTITIES);
     cap[i] = tmp;
   }
   m = mds_apf_create(model, dim, cap);
@@ -618,7 +618,7 @@ static void write_smb(struct mds_apf* m, const char* filename,
   unsigned n[SMB_TYPES] = {0};
   int i;
   f = pcu_fopen(filename, 1, zip);
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   write_header(f, m->mds.d, ignore_peers);
   for (i = 0; i < MDS_TYPES; ++i)
     n[mds2smb(i)] = m->mds.end[i];

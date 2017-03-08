@@ -10,7 +10,7 @@
 #include "maInput.h"
 #include <apfShape.h>
 #include <cstdio>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace ma {
@@ -40,7 +40,7 @@ void setDefaultValues(Input* in)
     in->maximumEdgeRatio = 2.0;
   }
   else
-  { assert(in->mesh->getDimension()==2);
+  { PCU_ALWAYS_ASSERT(in->mesh->getDimension()==2);
     //old MA says .04, but that rarely kicks in.
     //.2 is strict, but at least quality goes up
     in->goodQuality = 0.2;

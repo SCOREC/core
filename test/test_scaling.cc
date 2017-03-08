@@ -1,4 +1,4 @@
-#include <cassert>
+#include <pcu_util.h>
 #include <iostream>
 
 #include <gmi_mesh.h>
@@ -11,7 +11,7 @@
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
@@ -20,8 +20,8 @@ int main(int argc, char** argv)
   double scaling_factor = sam::getIsoLengthScalar(identity_size,
       m->count(m->getDimension()));
   std::cout << "scaling factor " << scaling_factor << '\n';
-  assert(scaling_factor < 2.0);
-  assert(0.5 < scaling_factor);
+  PCU_ALWAYS_ASSERT(scaling_factor < 2.0);
+  PCU_ALWAYS_ASSERT(0.5 < scaling_factor);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();

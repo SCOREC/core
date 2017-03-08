@@ -4,7 +4,7 @@
 #include <gmi.h>
 #include <sstream>
 #include <apfGeometry.h>
-#include <cassert>
+#include <pcu_util.h>
 #include "stdlib.h" // malloc
 
 namespace apf {
@@ -53,11 +53,11 @@ static void verifyDown(Mesh* m, MeshEntity* e, int gd, int ed)
   for (int i = 0; i < nd; ++i)
   {
     int dgd = m->getModelType(m->toModel(d[i]));
-    assert(dgd <= gd);
+    PCU_ALWAYS_ASSERT(dgd <= gd);
   }
   Parts r;
   m->getResidence(e, r);
-  assert(isSubset(r, getCandidateParts(m, e)));
+  PCU_ALWAYS_ASSERT(isSubset(r, getCandidateParts(m, e)));
 }
 
 typedef std::map<ModelEntity*, int> UpwardCounts;
@@ -91,7 +91,7 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   int meshDimension = m->getDimension();
   int entityDimension = getDimension(m, e);
   int difference = meshDimension - entityDimension;
-  assert(difference);
+  PCU_ALWAYS_ASSERT(difference);
   ModelEntity* ge = m->toModel(e);
   int modelDimension = m->getModelType(ge);
   int modelUpwardCount = guc[ge];
@@ -180,21 +180,21 @@ static void verifyResidence(Mesh* m, MeshEntity* e)
 {
   Parts p;
   m->getResidence(e, p);
-  assert(p.count(m->getOwner(e)));
+  PCU_ALWAYS_ASSERT(p.count(m->getOwner(e)));
   Copies r;
   m->getRemotes(e, r);
-  assert(r.size() + 1 == p.size());
+  PCU_ALWAYS_ASSERT(r.size() + 1 == p.size());
   APF_ITERATE(Copies, r, it)
-    assert(p.count(it->first));
+    PCU_ALWAYS_ASSERT(p.count(it->first));
 }
 
 static void verifyEntity(Mesh* m, UpwardCounts& guc, MeshEntity* e, bool abort_on_error)
 {
   int ed = getDimension(m, e);
   int md = m->getDimension();
-  assert(md >= ed);
+  PCU_ALWAYS_ASSERT(md >= ed);
   int gd = m->getModelType(m->toModel(e));
-  assert(gd >= ed);
+  PCU_ALWAYS_ASSERT(gd >= ed);
   if (ed)
     verifyDown(m, e, gd, ed);
   if (ed < md)
@@ -214,8 +214,8 @@ static void verifyAllCopies(Copies& a)
 {
   APF_ITERATE(Copies, a, it)
   {
-    assert(it->first >= 0);
-    assert(it->first < PCU_Comm_Peers());
+    PCU_ALWAYS_ASSERT(it->first >= 0);
+    PCU_ALWAYS_ASSERT(it->first < PCU_Comm_Peers());
   }
 }
 
@@ -243,7 +243,7 @@ static void unpackCopies(
     PCU_COMM_UNPACK(part);
     MeshEntity* remote;
     PCU_COMM_UNPACK(remote);
-    assert(remote);
+    PCU_ALWAYS_ASSERT(remote);
     copies[part]=remote;
   }
 }
@@ -255,7 +255,7 @@ static void sendAllCopies(Mesh* m, MeshEntity* e)
   a = getAllCopies(m, e);
   verifyAllCopies(a);
   m->getRemotes(e, r);
-  assert(!r.count(PCU_Comm_Self()));
+  PCU_ALWAYS_ASSERT(!r.count(PCU_Comm_Self()));
   APF_ITERATE(Copies, r, it)
   {
     PCU_COMM_PACK(it->first, it->second);
@@ -270,7 +270,7 @@ static void receiveAllCopies(Mesh* m)
   Copies a;
   unpackCopies(a);
   Copies b = getAllCopies(m, e);
-  assert(a == b);
+  PCU_ALWAYS_ASSERT(a == b);
 }
 
 static void verifyRemoteCopies(Mesh* m)
@@ -295,7 +295,7 @@ static void sendGhostCopies(Mesh* m, MeshEntity* e)
 {
   Copies g;
   m->getGhosts(e, g);
-  assert(g.size());
+  PCU_ALWAYS_ASSERT(g.size());
   APF_ITERATE(Copies, g, it)
   {
     PCU_COMM_PACK(it->first, it->second);
@@ -310,16 +310,16 @@ static void receiveGhostCopies(Mesh* m)
   PCU_COMM_UNPACK(e);
   MeshEntity* g;
   PCU_COMM_UNPACK(g);
-  assert(m->isGhost(e) || m->isGhosted(e));
+  PCU_ALWAYS_ASSERT(m->isGhost(e) || m->isGhosted(e));
   Copies ghosts;
   m->getGhosts(e,ghosts);
   if (m->isGhosted(e))
   {
-    assert(ghosts.count(from));
+    PCU_ALWAYS_ASSERT(ghosts.count(from));
   }
   if (m->isGhost(e) && m->getOwner(e)==from)
   {
-    assert(ghosts.size()==1);
+    PCU_ALWAYS_ASSERT(ghosts.size()==1);
   }
 }
 
@@ -357,7 +357,7 @@ static void sendSelfToMatches(MeshEntity* e, Matches& matches)
 {
   APF_ITERATE(Matches, matches, it)
   {
-    assert(!((it->peer == PCU_Comm_Self())&&(it->entity == e)));
+    PCU_ALWAYS_ASSERT(!((it->peer == PCU_Comm_Self())&&(it->entity == e)));
     PCU_COMM_PACK(it->peer, e);
     PCU_COMM_PACK(it->peer, it->entity);
   }
@@ -371,7 +371,7 @@ static void receiveMatches(Mesh* m)
   PCU_COMM_UNPACK(e);
   Matches matches;
   m->getMatches(e, matches);
-  assert(hasMatch(matches, PCU_Comm_Sender(), source));
+  PCU_ALWAYS_ASSERT(hasMatch(matches, PCU_Comm_Sender(), source));
 }
 
 static bool hasDuplicates(Matches const& matches) {
@@ -393,7 +393,7 @@ static void verifyMatches(Mesh* m)
     while ((e = m->iterate(it))) {
       Matches matches;
       m->getMatches(e, matches);
-      assert(!hasDuplicates(matches));
+      PCU_ALWAYS_ASSERT(!hasDuplicates(matches));
       sendSelfToMatches(e, matches);
     }
     m->end(it);
@@ -509,7 +509,7 @@ static void receiveAlignment(Mesh* m)
   int nd = m->getDownward(e, d - 1, down);
   for (int i = 0; i < nd; ++i) {
     PCU_COMM_UNPACK(e);
-    assert(down[i] == e);
+    PCU_ALWAYS_ASSERT(down[i] == e);
   }
 }
 
@@ -569,15 +569,15 @@ static void verifyFields(Mesh* m)
   while (PCU_Comm_Receive()) {
     int n;
     PCU_COMM_UNPACK(n);
-    assert(fields.size() == (size_t)n);
+    PCU_ALWAYS_ASSERT(fields.size() == (size_t)n);
     for (int i = 0; i < n; ++i) {
       std::string name;
       int type;
       int size;
       unpackTagInfo(name, type, size);
-      assert(name == getName(fields[i]));
-      assert(type == getValueType(fields[i]));
-      assert(size == countComponents(fields[i]));
+      PCU_ALWAYS_ASSERT(name == getName(fields[i]));
+      PCU_ALWAYS_ASSERT(type == getValueType(fields[i]));
+      PCU_ALWAYS_ASSERT(size == countComponents(fields[i]));
     }
   }
 }
@@ -607,7 +607,7 @@ static void sendTagData(Mesh* m, MeshEntity* e, DynamicArray<MeshTag*>& tags, Co
         case Mesh::LONG:  msg_size=sizeof(MeshEntity*)+sizeof(int)+tag_size*sizeof(long); break;
         default: msg_size=0;
       }
-      assert(msg_size);
+      PCU_ALWAYS_ASSERT(msg_size);
       msg_send = malloc(msg_size);
       s_ent = (MeshEntity**)msg_send; 
       *s_ent = it->second; 
@@ -666,7 +666,7 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
       case Mesh::DOUBLE: {
                            double* r_data = (double*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
                            int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(double);
-                           assert(num_data==tag_size);
+                           PCU_ALWAYS_ASSERT(num_data==tag_size);
                            double *tag_data = new double[tag_size];
                            m->getDoubleTag(e, tag, tag_data);
                            for (int i=0; i<num_data; ++i)
@@ -683,7 +683,7 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
       case Mesh::INT: {
                            int* r_data = (int*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
                            int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(int);
-                           assert(num_data==tag_size);
+                           PCU_ALWAYS_ASSERT(num_data==tag_size);
                            int *tag_data = new int[tag_size];
                            m->getIntTag(e, tag, tag_data);
                            for (int i=0; i<num_data; ++i)
@@ -700,7 +700,7 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
       case Mesh::LONG: {
                            long* r_data = (long*)((char*)msg_recv+sizeof(MeshEntity*)+sizeof(int)); 
                            int num_data = (msg_size-sizeof(MeshEntity*)-sizeof(int))/sizeof(long);
-                           assert(num_data==tag_size);
+                           PCU_ALWAYS_ASSERT(num_data==tag_size);
                            long *tag_data = new long[tag_size];
                            m->getLongTag(e, tag, tag_data);
                            for (int i=0; i<num_data; ++i)
@@ -753,15 +753,15 @@ static void verifyTags(Mesh* m)
   while (PCU_Comm_Receive()) {
     int n;
     PCU_COMM_UNPACK(n);
-    assert(tags.getSize() == (size_t)n);
+    PCU_ALWAYS_ASSERT(tags.getSize() == (size_t)n);
     for (int i = 0; i < n; ++i) {
       std::string name;
       int type;
       int size;
       unpackTagInfo(name, type, size);
-      assert(name == m->getTagName(tags[i]));
-      assert(type == m->getTagType(tags[i]));
-      assert(size == m->getTagSize(tags[i]));
+      PCU_ALWAYS_ASSERT(name == m->getTagName(tags[i]));
+      PCU_ALWAYS_ASSERT(type == m->getTagType(tags[i]));
+      PCU_ALWAYS_ASSERT(size == m->getTagSize(tags[i]));
     }
   }
   
@@ -815,9 +815,9 @@ void verify(Mesh* m, bool abort_on_error)
       ++n;
     }
     m->end(it);
-    assert(n == m->count(d));
+    PCU_ALWAYS_ASSERT(n == m->count(d));
     if (d > m->getDimension())
-      assert(!n);
+      PCU_ALWAYS_ASSERT(!n);
   }
   guc.clear();
   verifyRemoteCopies(m);

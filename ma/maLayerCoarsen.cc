@@ -5,7 +5,7 @@
 #include "maCoarsen.h"
 #include "maCrawler.h"
 #include "maLayerCollapse.h"
-#include <cassert>
+#include <pcu_util.h>
 
 /* see maCoarsen.cc for the unstructured equivalent. */
 namespace ma {
@@ -128,7 +128,7 @@ struct CurveLocalizer : public Crawler
     if (!ov)
       return ov;
     bool ok = handle(ov, getVertDest(v));
-    assert(ok);
+    PCU_ALWAYS_ASSERT(ok);
     return ov;
   }
   void send(Entity* v, int to)
@@ -185,7 +185,7 @@ static void migrateForLayerCollapse(Adapt* a, int d, int round)
 {
   apf::Migration* plan = planLayerCollapseMigration(a, d, round);
   /* before looking for a fix, lets just detect if this ever happens */
-  assert( ! wouldEmptyParts(plan));
+  PCU_ALWAYS_ASSERT( ! wouldEmptyParts(plan));
   a->mesh->migrate(plan);
 }
 
@@ -269,7 +269,7 @@ bool coarsenLayer(Adapt* a)
   long count = markBaseEdgesToCollapse(a);
   if ( ! count)
     return false;
-  assert(checkFlagConsistency(a,1,COLLAPSE));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,COLLAPSE));
   Mesh* m = a->mesh;
   long successCount = 0;
   /* LAYER_BASE is on surface only */

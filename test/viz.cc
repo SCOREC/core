@@ -19,7 +19,7 @@ namespace {
 
   void getConfig(int argc, char** argv)
   {
-    assert(argc==3);
+    PCU_ALWAYS_ASSERT(argc==3);
     modelFile = argv[1];
     meshFile = argv[2];
   }
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 {
   int provided;
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
-  assert(provided==MPI_THREAD_MULTIPLE);
+  PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
   gmi_register_mesh();
   getConfig(argc,argv);

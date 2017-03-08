@@ -1,6 +1,6 @@
 #include "mersenne_twister.h"
 #include "PCU.h"
-#include <assert.h>
+#include <pcu_util.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -42,7 +42,7 @@ namespace {
 
 void mersenne_twister_seed(unsigned seed)
 {
-  assert(seed);
+  PCU_ALWAYS_ASSERT(seed);
   /* setting initial seeds to mt[N] using
      the generator Line 25 of Table 1 in
      [KNUTH 1981, The Art of Computer Programming
