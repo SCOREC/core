@@ -132,3 +132,18 @@ starting with the project prefix.
 
 	double gmi_compute(struct gmi_model* m);
 
+## Assertions ##
+
+Four macros have been defined:
+```
+PCU_ALWAYS_ASSERT(cond)
+PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)
+PCU_DEBUG_ASSERT(cond)
+PCU_DEBUG_ASSERT_VERBOSE(cond, msg)
+```
+All `assert`'s have been replaced with `PCU_ALWAYS_ASSERT()`.  As the name suggests, this assert is never disabled. Developers can now implement or revise asserts that should get disabled with `-DNDEBUG=ON` using the `PCU_DEBUG*` methods. The rationale for this is to minimize the impact of making "fast code" choices in the code base, so that the onus of making these decisions is placed on the developers who must carefully choose in which instances they should occur. This is in contrast to going through the entire code base and removing warnings=errors that are associated with unused variables when `-DNDEBUG=ON.`
+
+tldr; asserts in the code do some pretty important stuff. you now have to choose where you want "fast code" to get executed with `-DNDEBUG=ON`
+
+Additionally, the `*ASSERT_VERBOSE` options now provide developers the ability to print a user-friendly error message along with the assertion failure so that user's don't have to decipher cryptic messages like:
+`r == n failed`
