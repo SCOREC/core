@@ -35,7 +35,7 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 #define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)      \
   do {                                            \
     if (! (cond)) {                               \
-      char omsg[248];                             \
+      char omsg[2048];                            \
       sprintf(omsg, "%s failed at %s + %d \n %s", \
         #cond, __FILE__, __LINE__, msg);          \
       PCU_Assert_Fail(omsg);                      \
