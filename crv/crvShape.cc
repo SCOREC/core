@@ -13,7 +13,7 @@
 #include <maCoarsen.h>
 #include <maEdgeSwap.h>
 #include <maOperator.h>
-#include <cassert>
+#include <pcu_util.h>
 
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
@@ -68,7 +68,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
         edges[0] = ed[index];
         edges[1] = ed[(index+2) % 3];
       } else {
-        assert(index < 4);
+        PCU_ALWAYS_ASSERT(index < 4);
         edges[0] = ed[vertEdges[index][0]];
         edges[1] = ed[vertEdges[index][1]];
         edges[2] = ed[vertEdges[index][2]];
@@ -229,7 +229,7 @@ private:
       mesh->getDownward(edge,0,edgeVerts);
       apf::Matrix3x3 J;
       pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
-      assert(pivotIndex >= 0);
+      PCU_ALWAYS_ASSERT(pivotIndex >= 0);
 
       ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
       apf::getJacobian(me,xi,J);
@@ -238,7 +238,7 @@ private:
       pivotVert = edgeVerts[0];
 
       int index = apf::findIn(verts,4,edgeVerts[1]);
-      assert(index >= 0);
+      PCU_ALWAYS_ASSERT(index >= 0);
       xi = crv::elem_vert_xi[apf::Mesh::TET][index];
       apf::getJacobian(me,xi,J);
       if (apf::getJacobianDeterminant(J,3) < j){
@@ -260,7 +260,7 @@ private:
       if (edges[vertEdges[pivotIndex][i]] == edge)
         edgeIndex = i;
     }
-    assert(edgeIndex >= 0);
+    PCU_ALWAYS_ASSERT(edgeIndex >= 0);
     ma::Vector normal = apf::cross(edgeVectors[(1+edgeIndex) % 3],
         edgeVectors[(2+edgeIndex) % 3]);
     double length = normal.getLength();
@@ -481,7 +481,7 @@ static int markEdgesOppLargeAnglesTri(Adapt* a)
       ma::Entity* edge = isLargeAngleTri(a,e);
       if (edge)
       {
-        assert(m->getType(edge) == 1);
+        PCU_ALWAYS_ASSERT(m->getType(edge) == 1);
         ma::setFlag(a,edge,ma::SPLIT);
         ma::setFlag(a,edge,ma::BAD_QUALITY);
         if (a->mesh->isOwned(edge))
@@ -509,7 +509,7 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
       ma::Entity* edge = isLargeAngleTet(a,e);
       if (edge && !ma::getFlag(a,edge,ma::SPLIT))
       {
-        assert(m->getType(edge) == 1);
+        PCU_ALWAYS_ASSERT(m->getType(edge) == 1);
         ma::setFlag(a,edge,ma::SPLIT);
         ma::setFlag(a,edge,ma::BAD_QUALITY);
         if (a->mesh->isOwned(edge))
@@ -543,7 +543,7 @@ static int markEdgesToFix(Adapt* a, int flag)
     int n = markEdges(m,e,tag,edges);
     for (int i = 0; i < n; ++i){
       ma::Entity* edge = edges[i];
-      assert(edge);
+      PCU_ALWAYS_ASSERT(edge);
       if (edge && !ma::getFlag(a,edge,flag))
       {
         ma::setFlag(a,edge,flag);
@@ -578,7 +578,7 @@ static void collapseInvalidEdges(Adapt* a)
   double t0 = PCU_Time();
   ma::Mesh* m = a->mesh;
   int maxDimension = m->getDimension();
-  assert(checkFlagConsistency(a,1,ma::COLLAPSE));
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,ma::COLLAPSE));
   int successCount = 0;
   for (int modelDimension=1; modelDimension <= maxDimension; ++modelDimension)
   {

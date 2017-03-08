@@ -9,7 +9,7 @@
 #include "crvQuality.h"
 #include "crvShape.h"
 #include "crvTables.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
