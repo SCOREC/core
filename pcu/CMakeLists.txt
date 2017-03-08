@@ -18,6 +18,7 @@ set(SOURCES
   pcu_msg.c
   pcu_order.c
   pcu_pmpi.c
+  pcu_util.c
   noto/noto_malloc.c
   reel/reel.c
 )
@@ -26,6 +27,7 @@ set(SOURCES
 set(HEADERS
   PCU.h
   pcu_io.h
+  pcu_util.h
   reel/reel.h
 )
 
