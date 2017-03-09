@@ -208,11 +208,15 @@ void phastaio_printStats() {
     fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
   }
   for(int chefFile=0; chefFile<NUM_PHASTA_FILES; chefFile++) {
+    size_t totalus = 0;
+    size_t totalbytes = 0;
     phastaio_setfile(chefFile);
     if(!PCU_Comm_Self())
       fprintf(stderr, "phastaio_filename %s\n", getFileName());
     int reads = PCU_Max_Int((int)phastaio_getReads());
     if(reads) {
+      totalus += phastaio_getReadTime();
+      totalbytes += phastaio_getReadBytes();
       printMinMaxAvgSzt("reads", phastaio_getReads());
       printMinMaxAvgSzt("readTime (us)", phastaio_getReadTime());
       printMinMaxAvgSzt("readBytes (B)", phastaio_getReadBytes());
@@ -225,6 +229,8 @@ void phastaio_printStats() {
     }
     int writes = PCU_Max_Int((int)phastaio_getWrites());
     if(writes) {
+      totalus += phastaio_getWriteTime();
+      totalbytes += phastaio_getWriteBytes();
       printMinMaxAvgSzt("writes", phastaio_getWrites());
       printMinMaxAvgSzt("writeTime (us)", phastaio_getWriteTime());
       printMinMaxAvgSzt("writeBytes (B)", phastaio_getWriteBytes());
@@ -233,13 +239,21 @@ void phastaio_printStats() {
     }
     int opens = PCU_Max_Int((int)phastaio_getOpens());
     if(opens) {
+      totalus += phastaio_getOpenTime();
       printMinMaxAvgSzt("opens", phastaio_getOpens());
       printMinMaxAvgSzt("openTime (us)", phastaio_getOpenTime());
     }
     int closes = PCU_Max_Int((int)phastaio_getCloses());
     if(closes) {
+      totalus += phastaio_getCloseTime();
       printMinMaxAvgSzt("closes", phastaio_getCloses());
       printMinMaxAvgSzt("closeTime (us)", phastaio_getCloseTime());
+    }
+    if(totalbytes) {
+      printMinMaxAvgSzt("totalTime (us)", totalus);
+      printMinMaxAvgSzt("totalBytes (B)", totalbytes);
+      printMinMaxAvgDbl("effectiveBandwidth (MB/s)",
+          ((double)totalbytes)/totalus);
     }
   }
 }
