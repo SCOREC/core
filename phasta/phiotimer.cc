@@ -12,16 +12,16 @@
 #define MILLION 1000L*1000L
 struct phastaio_stats {
   size_t cpus;
-  size_t readTime[NUM_PHASTA_FILES];
-  size_t writeTime[NUM_PHASTA_FILES];
-  size_t readBytes[NUM_PHASTA_FILES];
-  size_t writeBytes[NUM_PHASTA_FILES];
-  size_t reads[NUM_PHASTA_FILES];
-  size_t writes[NUM_PHASTA_FILES];
-  size_t openTime[NUM_PHASTA_FILES];
-  size_t closeTime[NUM_PHASTA_FILES];
-  size_t opens[NUM_PHASTA_FILES];
-  size_t closes[NUM_PHASTA_FILES];
+  size_t readTime[NUM_PHASTAIO_MODES];
+  size_t writeTime[NUM_PHASTAIO_MODES];
+  size_t readBytes[NUM_PHASTAIO_MODES];
+  size_t writeBytes[NUM_PHASTAIO_MODES];
+  size_t reads[NUM_PHASTAIO_MODES];
+  size_t writes[NUM_PHASTAIO_MODES];
+  size_t openTime[NUM_PHASTAIO_MODES];
+  size_t closeTime[NUM_PHASTAIO_MODES];
+  size_t opens[NUM_PHASTAIO_MODES];
+  size_t closes[NUM_PHASTAIO_MODES];
   int fileIdx;
 };
 static struct phastaio_stats phastaio_global_stats;
@@ -101,7 +101,7 @@ void phastaio_addWriteTime(size_t t) {
 
 void phastaio_setfile(int f) {
   char msg[64]; sprintf(msg, "f %d", f);
-  PCU_ALWAYS_ASSERT_VERBOSE(f >= 0 && f < NUM_PHASTA_FILES, msg);
+  PCU_ALWAYS_ASSERT_VERBOSE(f >= 0 && f < NUM_PHASTAIO_MODES, msg);
   phastaio_global_stats.fileIdx = f;
 }
 
@@ -118,11 +118,11 @@ void phastaio_addCloseTime(size_t t) {
 }
 
 static const char* getFileName() {
-  const char* names[NUM_PHASTA_FILES] = {
-    "chef_geombc",
-    "chef_restart",
-    "phasta_geombc",
-    "phasta_restart"};
+  const char* names[NUM_PHASTAIO_MODES] = {
+    "geombc_read",
+    "geombc_write",
+    "restart_read",
+    "restart_write"};
   return names[phastaio_global_stats.fileIdx];
 }
 
@@ -207,7 +207,7 @@ void phastaio_printStats() {
     elapsed = phastaio_time_diff(&t0,&t1);
     fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
   }
-  for(int chefFile=0; chefFile<NUM_PHASTA_FILES; chefFile++) {
+  for(int chefFile=0; chefFile<NUM_PHASTAIO_MODES; chefFile++) {
     size_t totalus = 0;
     size_t totalbytes = 0;
     phastaio_setfile(chefFile);
@@ -264,7 +264,7 @@ void phastaio_initStats() {
 #ifdef __INTEL_COMPILER
   phastaio_global_stats.cpus = phastaio_getCyclesPerMicroSec();
 #endif
-  for(int i=0; i<NUM_PHASTA_FILES; i++) {
+  for(int i=0; i<NUM_PHASTAIO_MODES; i++) {
     phastaio_global_stats.readTime[i] = 0;
     phastaio_global_stats.writeTime[i] = 0;
     phastaio_global_stats.readBytes[i] = 0;

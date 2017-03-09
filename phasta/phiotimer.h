@@ -49,11 +49,11 @@ extern "C" {
 
 /* \brief constants to identify the different phasta and chef files */
 enum phastaio_file {
-  CHEF_GEOMBC,
-  CHEF_RESTART,
-  PHASTA_GEOMBC,
-  PHASTA_RESTART,
-  NUM_PHASTA_FILES
+  GEOMBC_READ,
+  GEOMBC_WRITE,
+  RESTART_READ,
+  RESTART_WRITE,
+  NUM_PHASTAIO_MODES
 };
 
 #ifdef __INTEL_COMPILER

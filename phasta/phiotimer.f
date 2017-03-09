@@ -2,9 +2,9 @@
       use :: iso_c_binding
       public
         enum, bind(C)
-          enumerator :: CHEF_GEOMBC, CHEF_RESTART,
-     &                  PHASTA_GEOMBC, PHASTA_RESTART,
-     &                  NUM_PHASTA_FILES
+          enumerator :: GEOMBC_READ, GEOMBC_WRITE,
+     &                  RESTART_READ, RESTART_WRITE,
+     &                  NUM_PHASTAIO_MODES
         end enum
       interface 
         subroutine phastaio_setfile(fileidx)
