@@ -38,6 +38,12 @@ class MeshSIM : public Mesh2
     MeshIterator* begin(int dimension);
     MeshEntity* iterate(MeshIterator* it);
     void end(MeshIterator* it);
+    // return true if adjacency *from_dim <--> to_dim*  is stored
+    bool hasAdjacency(int from_dim, int to_dim) { return (abs(from_dim-to_dim)==1); }
+    // store adjacency *from_dim <--> to_dim* if not stored
+    void createAdjacency(int from_dim, int to_dim) {}
+    // remove adjacency *from_dim <--> to_dim* except for one-level apart adjacency
+    void deleteAdjacency(int from_dim, int to_dim) {}
     bool isShared(MeshEntity* e);
     bool isOwned(MeshEntity* e);
     int getOwner(MeshEntity* e);
