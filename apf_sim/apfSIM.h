@@ -5,6 +5,7 @@
 
 #include <apfMesh2.h>
 #include <PartitionedMeshTypes.h>
+#include <stdlib.h>
 
 void P_setPos(pPoint,double,double,double);
 class Field;
