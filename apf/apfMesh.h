@@ -124,6 +124,14 @@ class Mesh
         \details an end() call should match every begin()
                  call to prevent memory leaks */
     virtual void end(MeshIterator* it) = 0;
+// seol
+    // return true if adjacency *from_dim <--> to_dim*  is stored
+    virtual bool hasAdjacency(int from_dim, int to_dim) = 0;
+    // store adjacency *from_dim <--> to_dim* if not stored
+    virtual void createAdjacency(int from_dim, int to_dim) = 0;
+    // remove adjacency *from_dim <--> to_dim* except for one-level apart adjacency
+    virtual void deleteAdjacency(int from_dim, int to_dim) = 0;
+
     /** \brief Returns true if the entity is shared in parallel */
     virtual bool isShared(MeshEntity* e) = 0;
 //seol

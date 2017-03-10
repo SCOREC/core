@@ -436,6 +436,35 @@ void pumi_mesh_delete(pMesh m)
   apf::destroyMesh(m);
 }
 
+// create/delete direct Adjacency for all entities except for one-level apart
+bool pumi_mesh_hasAdjacency(pMesh m, int from_dim, int to_dim)
+{
+  return m->hasAdjacency(from_dim, to_dim);
+}
+
+void pumi_mesh_createAdjacency(pMesh m, int from_dim, int to_dim)
+{
+  m->createAdjacency(from_dim, to_dim);
+}
+
+void pumi_mesh_deleteAdjacency(pMesh m, int from_dim, int to_dim)
+{
+  m->deleteAdjacency(from_dim, to_dim);
+}
+
+void pumi_mesh_createFullAdjacency(pMesh m)
+{
+  if (m->getDimension()==3)
+  {
+    pumi_mesh_createAdjacency(m,3,1);
+    pumi_mesh_createAdjacency(m,1,3);
+    pumi_mesh_createAdjacency(m,3,0);
+    pumi_mesh_createAdjacency(m,0,3);
+  }
+  pumi_mesh_createAdjacency(m,2,0);
+  pumi_mesh_createAdjacency(m,0,2);
+}
+
 void pumi_mesh_verify(pMesh m, bool abort_on_error)
 {
   apf::verify(m, abort_on_error);

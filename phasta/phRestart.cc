@@ -375,7 +375,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t0 = PCU_Time();
   setupInputSubdir(in.restartFileName);
   std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
-  phastaio_setfile(CHEF_RESTART);
+  phastaio_setfile(RESTART_READ);
   FILE* f = in.openfile_read(in, filename.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
@@ -423,7 +423,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
 {
   double t0 = PCU_Time();
   path += buildRestartFileName("restart", in.timeStepNumber);
-  phastaio_setfile(CHEF_RESTART);
+  phastaio_setfile(RESTART_WRITE);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
     fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());

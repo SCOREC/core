@@ -12,16 +12,16 @@
 #define MILLION 1000L*1000L
 struct phastaio_stats {
   size_t cpus;
-  size_t readTime[NUM_PHASTA_FILES];
-  size_t writeTime[NUM_PHASTA_FILES];
-  size_t readBytes[NUM_PHASTA_FILES];
-  size_t writeBytes[NUM_PHASTA_FILES];
-  size_t reads[NUM_PHASTA_FILES];
-  size_t writes[NUM_PHASTA_FILES];
-  size_t openTime[NUM_PHASTA_FILES];
-  size_t closeTime[NUM_PHASTA_FILES];
-  size_t opens[NUM_PHASTA_FILES];
-  size_t closes[NUM_PHASTA_FILES];
+  size_t readTime[NUM_PHASTAIO_MODES];
+  size_t writeTime[NUM_PHASTAIO_MODES];
+  size_t readBytes[NUM_PHASTAIO_MODES];
+  size_t writeBytes[NUM_PHASTAIO_MODES];
+  size_t reads[NUM_PHASTAIO_MODES];
+  size_t writes[NUM_PHASTAIO_MODES];
+  size_t openTime[NUM_PHASTAIO_MODES];
+  size_t closeTime[NUM_PHASTAIO_MODES];
+  size_t opens[NUM_PHASTAIO_MODES];
+  size_t closes[NUM_PHASTAIO_MODES];
   int fileIdx;
 };
 static struct phastaio_stats phastaio_global_stats;
@@ -100,7 +100,8 @@ void phastaio_addWriteTime(size_t t) {
 }
 
 void phastaio_setfile(int f) {
-  PCU_ALWAYS_ASSERT(f >= 0 && f < NUM_PHASTA_FILES);
+  char msg[64]; sprintf(msg, "f %d", f);
+  PCU_ALWAYS_ASSERT_VERBOSE(f >= 0 && f < NUM_PHASTAIO_MODES, msg);
   phastaio_global_stats.fileIdx = f;
 }
 
@@ -117,11 +118,11 @@ void phastaio_addCloseTime(size_t t) {
 }
 
 static const char* getFileName() {
-  const char* names[NUM_PHASTA_FILES] = {
-    "chef_geombc",
-    "chef_restart",
-    "phasta_geombc",
-    "phasta_restart"};
+  const char* names[NUM_PHASTAIO_MODES] = {
+    "geombc_read",
+    "geombc_write",
+    "restart_read",
+    "restart_write"};
   return names[phastaio_global_stats.fileIdx];
 }
 
@@ -206,12 +207,16 @@ void phastaio_printStats() {
     elapsed = phastaio_time_diff(&t0,&t1);
     fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
   }
-  for(int chefFile=0; chefFile<NUM_PHASTA_FILES; chefFile++) {
+  for(int chefFile=0; chefFile<NUM_PHASTAIO_MODES; chefFile++) {
+    size_t totalus = 0;
+    size_t totalbytes = 0;
     phastaio_setfile(chefFile);
     if(!PCU_Comm_Self())
       fprintf(stderr, "phastaio_filename %s\n", getFileName());
     int reads = PCU_Max_Int((int)phastaio_getReads());
     if(reads) {
+      totalus += phastaio_getReadTime();
+      totalbytes += phastaio_getReadBytes();
       printMinMaxAvgSzt("reads", phastaio_getReads());
       printMinMaxAvgSzt("readTime (us)", phastaio_getReadTime());
       printMinMaxAvgSzt("readBytes (B)", phastaio_getReadBytes());
@@ -224,6 +229,8 @@ void phastaio_printStats() {
     }
     int writes = PCU_Max_Int((int)phastaio_getWrites());
     if(writes) {
+      totalus += phastaio_getWriteTime();
+      totalbytes += phastaio_getWriteBytes();
       printMinMaxAvgSzt("writes", phastaio_getWrites());
       printMinMaxAvgSzt("writeTime (us)", phastaio_getWriteTime());
       printMinMaxAvgSzt("writeBytes (B)", phastaio_getWriteBytes());
@@ -232,22 +239,32 @@ void phastaio_printStats() {
     }
     int opens = PCU_Max_Int((int)phastaio_getOpens());
     if(opens) {
+      totalus += phastaio_getOpenTime();
       printMinMaxAvgSzt("opens", phastaio_getOpens());
       printMinMaxAvgSzt("openTime (us)", phastaio_getOpenTime());
     }
     int closes = PCU_Max_Int((int)phastaio_getCloses());
     if(closes) {
+      totalus += phastaio_getCloseTime();
       printMinMaxAvgSzt("closes", phastaio_getCloses());
       printMinMaxAvgSzt("closeTime (us)", phastaio_getCloseTime());
+    }
+    if(totalbytes) {
+      printMinMaxAvgSzt("totalTime (us)", totalus);
+      printMinMaxAvgSzt("totalBytes (B)", totalbytes);
+      printMinMaxAvgDbl("effectiveBandwidth (MB/s)",
+          ((double)totalbytes)/totalus);
     }
   }
 }
 
 void phastaio_initStats() {
+  if( !PCU_Comm_Initialized() )
+    PCU_Comm_Init();
 #ifdef __INTEL_COMPILER
   phastaio_global_stats.cpus = phastaio_getCyclesPerMicroSec();
 #endif
-  for(int i=0; i<NUM_PHASTA_FILES; i++) {
+  for(int i=0; i<NUM_PHASTAIO_MODES; i++) {
     phastaio_global_stats.readTime[i] = 0;
     phastaio_global_stats.writeTime[i] = 0;
     phastaio_global_stats.readBytes[i] = 0;

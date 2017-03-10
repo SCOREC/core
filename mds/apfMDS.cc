@@ -176,6 +176,24 @@ class MeshMDS : public Mesh2
     {
       freeIter(it);
     }
+    // return true if adjacency *from_dim <--> to_dim*  is stored
+    bool hasAdjacency(int from_dim, int to_dim)
+    {
+      return (mesh->mds.mrm[from_dim][to_dim] == 1);
+    }
+
+    // store adjacency *from_dim <--> to_dim* if not stored
+    void createAdjacency(int from_dim, int to_dim)
+    {
+      if (mesh->mds.mrm[from_dim][to_dim] != 1)
+        mds_add_adjacency(&(mesh->mds), from_dim, to_dim);
+    }
+    // remove adjacency *from_dim <--> to_dim* except for one-level apart adjacency
+    void deleteAdjacency(int from_dim, int to_dim)
+    {
+      if (mesh->mds.mrm[from_dim][to_dim] == 1 && (abs(from_dim-to_dim)>1))
+        mds_remove_adjacency(&(mesh->mds), from_dim, to_dim);
+    }
     bool isShared(MeshEntity* e)
     {
       return mds_get_copies(&mesh->remotes, fromEnt(e));
