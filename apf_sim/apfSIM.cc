@@ -233,6 +233,23 @@ int MeshSIM::getOwner(MeshEntity* e)
   return EN_ownerProc(reinterpret_cast<pEntity>(e));
 }
 
+bool MeshSIM::hasAdjacency(int from_dim, int to_dim)
+{
+  return (abs(from_dim-to_dim)==1);
+}
+
+void MeshSIM::createAdjacency(int from_dim, int to_dim)
+{
+  (void)from_dim;
+  (void)to_dim;
+}
+
+void MeshSIM::deleteAdjacency(int from_dim, int to_dim)
+{
+  (void)from_dim;
+  (void)to_dim;
+}
+
 static int pListToArray(pPList list, MeshEntity** array)
 {
   int n = PList_size(list);
