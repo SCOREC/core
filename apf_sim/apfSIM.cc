@@ -242,12 +242,14 @@ void MeshSIM::createAdjacency(int from_dim, int to_dim)
 {
   (void)from_dim;
   (void)to_dim;
+  apf::fail("MeshSIM::createAdjacency called!\n");
 }
 
 void MeshSIM::deleteAdjacency(int from_dim, int to_dim)
 {
   (void)from_dim;
   (void)to_dim;
+  apf::fail("MeshSIM::deleteAdjacency called!\n");
 }
 
 static int pListToArray(pPList list, MeshEntity** array)
