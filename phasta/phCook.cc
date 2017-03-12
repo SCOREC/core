@@ -214,7 +214,8 @@ namespace ph {
       out.openfile_write = fn;
     }
     ph::writeGeomBC(out, subDirPath); //write geombc
-    ph::writeAuxiliaryFiles(path, in.timeStepNumber);
+    if(!PCU_Comm_Self())
+      ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
 #ifdef HAVE_SIMMETRIX
     gmi_model* g = m->getModel();
