@@ -383,7 +383,6 @@ static void getInterfaceElements(Output& o)
 }
 
 static void getGrowthCurves(Output& o, apf::Numbering* n)
-//static void getGrowthCurves(Output& o)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -882,7 +881,6 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o, n);
-//getGrowthCurves(o);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
