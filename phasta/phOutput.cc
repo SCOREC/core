@@ -448,7 +448,7 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
       //std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
       //std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
 
-        for(int faceSide = 0; faceSide < 1; faceSide++){
+        for(int faceSide = 0; faceSide < 2; faceSide++){
           if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
             continue;
 
@@ -504,7 +504,7 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
         if(BL_isBaseEntity(meshVertex, modelFace) == 0 )// should add some error catch later
           continue;
 
-        for(int faceSide = 0; faceSide < 1; faceSide++){
+        for(int faceSide = 0; faceSide < 2; faceSide++){
           if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
             continue;
   
