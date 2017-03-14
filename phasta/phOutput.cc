@@ -380,8 +380,7 @@ static void getInterfaceElements(Output& o)
   o.nInterfaceElements = n;
 }
 
-void getGrowthCurves(Output& o, apf::Numbering* n)
-//static void getGrowthCurves(Output& o, apf::Numbering* n)
+static void getGrowthCurves(Output& o, apf::Numbering* n)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -569,8 +568,7 @@ void getGrowthCurves(Output& o, apf::Numbering* n)
   return;
 }
 
-//static void checkBLVerticesAndEdges(Output& o)
-void checkBLVerticesAndEdges(Output& o)
+static void checkBLVerticesAndEdges(Output& o)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
