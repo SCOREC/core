@@ -568,7 +568,8 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
   return;
 }
 
-static void checkBLVerticesAndEdges(Output& o)
+void checkBLVerticesAndEdges(Output& o)
+//static void checkBLVerticesAndEdges(Output& o)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -675,7 +676,6 @@ static void checkBLVerticesAndEdges(Output& o)
   }
   else {
     printf("wrong! getBLVerticesAndEdges: not implemented for non-simmetrix mesh");
-    exit(EXIT_FAILURE);
   }
 }
 
