@@ -127,7 +127,7 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.mattype = mattype;
 }
 
-static void alignInterfaceVertex(apf::Mesh* m,
+static void checkBoundaryVertex(apf::Mesh* m,
   apf::MeshEntity* boundary, apf::MeshEntity** ev, int type) {
 // make sure the first n vertices are those on boundary
   apf::Downward bv;
@@ -198,6 +198,9 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::Downward v;
     getBoundaryVertices(m, e, f, v);
     ienb[i][j] = new int[nv];
+	/* assume the first face is the tri on boundary */
+	if(k.elementType == WEDGE)
+      checkBoundaryVertex(m, f, v, k.elementType);
     for (int k = 0; k < nv; ++k)
       ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
     bcb[i][j] = new double[nbc]();
@@ -329,8 +332,8 @@ static void getInterface
     getBoundaryVertices(m, e1, matches[0].entity, v1);
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
-    alignInterfaceVertex(m, face,              v0, k.elementType );
-    alignInterfaceVertex(m, matches[0].entity, v1, k.elementType1);
+    checkBoundaryVertex(m, face,              v0, k.elementType );
+    checkBoundaryVertex(m, matches[0].entity, v1, k.elementType1);
     for (int k = 0; k < nv0; ++k)
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)
