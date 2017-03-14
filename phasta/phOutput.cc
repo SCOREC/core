@@ -15,6 +15,7 @@
 #include <cassert>
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <typeinfo>
 
 namespace ph {
@@ -379,7 +380,8 @@ static void getInterfaceElements(Output& o)
   o.nInterfaceElements = n;
 }
 
-static void getGrowthCurves(Output& o, apf::Numbering* n)
+void getGrowthCurves(Output& o, apf::Numbering* n)
+//static void getGrowthCurves(Output& o, apf::Numbering* n)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -392,6 +394,7 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(o.mesh);
     pParMesh parMesh = apf_msim->getMesh();
     pMesh mesh = PM_mesh(parMesh,0);
+
     // get simmetrix model
     gmi_model* gmiModel = apf_msim->getModel();
     pGModel model = gmi_export_sim(gmiModel);
@@ -406,75 +409,69 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     printf("rank %d,  Num. mesh faces :  %d\n",  PCU_Comm_Self(), M_numFaces(mesh));
     printf("rank %d,  Num. mesh rngs  :  %d\n",  PCU_Comm_Self(), M_numRegions(mesh));
 
-    pGFace modelFace;
-    pVertex meshVertex;
     pEntity seed;
-//  pGEntity into = NULL;
-    GFIter fIter;
-    VIter vIter;
-    pPList vertices = PList_new();
+    pGRegion gRegion;
+    pGFace gFace;
+    pVertex vertex;
     pPList edges = PList_new();
-    double xyz[3];
+    pPList vertices = PList_new();
 
-    // number of growth curves
+    // base is vertex
     int ngc = 0;
-    int nv  = 0;
-    fIter = GM_faceIter(model);
-    while((modelFace=GFIter_next(fIter))){
-      vIter = M_classifiedVertexIter(mesh, modelFace, 1);
-      while((meshVertex=VIter_next(vIter))){
-//      if(GEN_tag(modelFace)==39){
-//        std::cout<<"vertex"<<EN_id(meshVertex)<<std::endl;
-//      }
+    int nv = 0;
+    int ne = 0;
 
-//      int is_base = BL_isBaseEntity(meshVertex, modelFace);
+    //gFace loop
+    GFIter gFIter = GM_faceIter(model);
+    while((gFace = GFIter_next(gFIter))){
 
-//      if(GEN_tag(modelFace)==39){
-//      V_coord(meshVertex, xyz);
-//      std::cout<<"model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<"is_base"<<is_base<<std::endl;
-//      std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
-//      }
-
-
-        // should add some error catch later
-        if(BL_isBaseEntity(meshVertex, modelFace) == 0)
+      //faceSide loop
+      for(int faceSide = 0; faceSide < 2; faceSide++){
+        if(!(gRegion = GF_region(gFace,faceSide)))
           continue;
 
-        //print some message
-      //V_coord(meshVertex, xyz);
-      //std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
-      //std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
-
-        for(int faceSide = 0; faceSide < 1; faceSide++){
-          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
+        //vertex loop
+        VIter vIter = M_classifiedVertexIter(mesh, gFace, 1);
+        while((vertex = VIter_next(vIter))){
+          if(BL_isBaseEntity(vertex,gFace) == 0)
             continue;
 
-          std::cout << "found_seed," << "GEN_tag"<<GEN_tag(modelFace)<<"vertex"<<EN_id(meshVertex)<<"faceSide"<<faceSide << std::endl;
-          V_coord(meshVertex, xyz);
-          std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+          if(BL_stackSeedEntity(vertex,gFace,faceSide,gRegion,&seed) == 0)
+            continue;
 
-
-          if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
-            printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
+          if(BL_growthVerticesAndEdges((pEdge)seed,vertices,edges) != 1){
+            printf("wrong! getGrowthCurves: found a seed vertices, but no stack\n");
+            exit(EXIT_FAILURE);
           }
-  
+
           // assert
-          assert(PList_size(vertices) > 1);
           assert(PList_size(vertices) == PList_size(edges) + 1);
+          assert(PList_size(edges) > 0);
+
+          // check if all entities retrieved on a stack belong to the same mesh part
+          for(int i = 0; i < PList_size(vertices); i++){
+            pEntity e = (pEntity)PList_item(vertices,i);
+            assert(EN_gid(e) == PMU_gid(PMU_rank(),0));
+          }
+          for(int i = 0; i < PList_size(edges); i++){
+            pEntity e = (pEntity)PList_item(edges,i);
+            assert(EN_gid(e) == PMU_gid(PMU_rank(),0));
+          }
 
           // increment counter
           ngc++;
           nv += PList_size(vertices);
-  
+          ne += PList_size(edges);
+
           // clean up
           PList_clear(vertices);
           PList_clear(edges);
+        }//vertex loop
+        VIter_delete(vIter);
+      }//faceSide loop
+    }//gFace loop
 
-        }//faceSide loop
-      }//vertex loop
-      VIter_delete(vIter);
-    }//modelFace loop
-    GFIter_delete(fIter);
+    GFIter_delete(gFIter);
 
     // generate output
     o.nGrowthCurves = ngc;
@@ -484,56 +481,48 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     o.arrays.igcnv = new int[ngc];
     o.arrays.igclv = new int[nv];
 
-
-    //print
-    std::cout<<"ngc,nv"<<ngc<<","<<nv<<std::endl;
-
     // initialize counter
     ngc = 0;
     nv = 0;
+    ne = 0;
 
-    fIter = GM_faceIter(model);
-    while((modelFace=GFIter_next(fIter))){
-      printf("**Processing model face: %d\n", GEN_tag(modelFace));
+    double xyz[3];
 
-      vIter = M_classifiedVertexIter(mesh, modelFace, 1);
-      while((meshVertex=VIter_next(vIter))){
-        if(BL_isBaseEntity(meshVertex, modelFace) == 0 )// should add some error catch later
+    //gFace loop
+    gFIter = GM_faceIter(model);
+    while((gFace = GFIter_next(gFIter))){
+
+      //faceSide loop
+      for(int faceSide = 0; faceSide < 2; faceSide++){
+        if(!(gRegion = GF_region(gFace,faceSide)))
           continue;
 
-        for(int faceSide = 0; faceSide < 1; faceSide++){
-          if (BL_stackSeedEntity(meshVertex,modelFace,faceSide,NULL,&seed) == 0 )
+        //vertex loop
+        VIter vIter = M_classifiedVertexIter(mesh, gFace, 1);
+        while((vertex = VIter_next(vIter))){
+          if(BL_isBaseEntity(vertex,gFace) == 0)
             continue;
-  
-          // list of vertices on growth curve
-          if(BL_growthVerticesAndEdges((pEdge)seed, vertices, edges) != 1){
-            printf("wrong! getGrowthCurves: found a seed, but cannot find vertices stack\n");
+
+          if(BL_stackSeedEntity(vertex,gFace,faceSide,gRegion,&seed) == 0)
+            continue;
+
+          if(BL_growthVerticesAndEdges((pEdge)seed,vertices,edges) != 1){
+            printf("wrong! getGrowthCurves: found a seed vertices, but no stack\n");
+            exit(EXIT_FAILURE);
           }
-  
-          // assert
-          assert(PList_size(vertices) > 1);
-          assert(PList_size(vertices) == PList_size(edges) + 1);
-  
+
+          //generate info
           o.arrays.igcnv[ngc] = PList_size(vertices);
-  
-          //print some message
-          V_coord(meshVertex, xyz);
-          std::cout<<"Base vertex found belonging to model entity of type "<<EN_whatInType(meshVertex)<<" and tag "<<GEN_tag(EN_whatIn(meshVertex))<<std::endl;
-          std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
-  
-          printf("stack vertices size: %d, stack vertices id:", PList_size(vertices));
-  
+
           for(int i = 0; i < PList_size(vertices); i++){
             pVertex v = (pVertex) PList_item(vertices,i);
+            if(EN_whatInType(vertex) == 0 || EN_whatInType(vertex) == 1){
+              printf("rank %d, gFace tag %d, model type %d, model tag %d\n", PCU_Comm_Self(), GEN_tag(gFace), EN_whatInType(v), GEN_tag(EN_whatIn(v)));
+            }
             apf::MeshEntity* me = reinterpret_cast<apf::MeshEntity*> (v);
             o.arrays.igclv[nv+i] = apf::getNumber(n, me, 0, 0);
-  
-            int vid = EN_id(v);
-            printf("%d,",vid);
           }
-          printf("\n");
   
-          // generate info
           double l0 = E_length((pEdge)PList_item(edges,0));
           o.arrays.gcflt[ngc] = l0;
           if( PList_size(edges) > 1 ){
@@ -543,18 +532,28 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
           else
             o.arrays.gcgr[ngc] = 1.0;
           
+          //print
+          V_coord(vertex, xyz);
+          std::cout<<"Base vertex found on model entity of type "<<EN_whatInType(vertex)<<" and tag "<<GEN_tag(EN_whatIn(vertex))<<std::endl;
+          std::cout<<"V coords = ("<< xyz[0]<<","<< xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+          printf("stack vertices size: %d, stack vertices numbering:", PList_size(vertices));
+          for(int i = 0; i < PList_size(vertices); i++)
+            printf("%d,",o.arrays.igclv[nv+i]);
+          printf("\n");
+  
           // increment counter
-          nv += PList_size(vertices);
           ngc++;
+          nv += PList_size(vertices);
+          ne += PList_size(edges);
           
           // clean up
           PList_clear(vertices);
           PList_clear(edges);
-        }//faceSide loop
-      }//vertex loop
-      VIter_delete(vIter);
-    }//modelFace loop
-    GFIter_delete(fIter);
+        }//vertex loop
+        VIter_delete(vIter);
+      }//faceSide loop
+    }//gFace loop
+    GFIter_delete(gFIter);
 
     PList_delete(vertices);
     PList_delete(edges);
@@ -568,6 +567,118 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
     o.nLayeredMeshVertices = 0;
   }
   return;
+}
+
+//static void checkBLVerticesAndEdges(Output& o)
+void checkBLVerticesAndEdges(Output& o)
+{
+  Input& in = *o.in;
+  if (in.simmetrixMesh == 1) {
+    pProgress progress = Progress_new();
+    Progress_setDefaultCallback(progress);
+
+    // get simmetrix mesh
+    apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(o.mesh);
+    pParMesh parMesh = apf_msim->getMesh();
+    pMesh mesh = PM_mesh(parMesh,0);
+
+    // get simmetrix model
+    gmi_model* gmiModel = apf_msim->getModel();
+    pGModel model = gmi_export_sim(gmiModel);
+
+    pEntity seed;
+    pGRegion gRegion;
+    pGFace gFace;
+    pVertex vertex;
+    pPList edges = PList_new();
+    pPList vertices = PList_new();
+
+    // base is vertex
+    int ngc = 0;
+    int nv = 0;
+    int ne = 0;
+
+    //gFace loop
+    GFIter gFIter = GM_faceIter(model);
+    while((gFace = GFIter_next(gFIter))){
+
+      //faceSide loop
+      for(int faceSide = 0; faceSide < 2; faceSide++){
+        if(!(gRegion = GF_region(gFace,faceSide)))
+          continue;
+
+        //vertex loop
+        VIter vIter = M_classifiedVertexIter(mesh, gFace, 1);
+        printf("rank %d, gFace tag %d, # of vertice %d\n", PCU_Comm_Self(), GEN_tag(gFace), VIter_size(vIter));
+        while((vertex = VIter_next(vIter))){
+          if(BL_isBaseEntity(vertex,gFace) == 0)
+            continue;
+
+          switch(BL_stackSeedEntity(vertex,gFace,faceSide,gRegion,&seed)){
+            case 0:
+              continue;
+              break;
+            case 1:
+              break;
+            case -1:
+              printf("BL query for blend entity is not implemented, rank %d, gFace tag %d, model type %d, model tag %d\n", PCU_Comm_Self(), GEN_tag(gFace), EN_whatInType(vertex), GEN_tag(EN_whatIn(vertex)));
+              exit(EXIT_FAILURE);
+              break;
+            case -2:
+              printf("not enough info provided, rank %d, gFace tag %d, model type %d, model tag %d\n", PCU_Comm_Self(), GEN_tag(gFace), EN_whatInType(vertex), GEN_tag(EN_whatIn(vertex)));
+              exit(EXIT_FAILURE);
+              break;
+            default:
+              printf("BL_stackSeedEntity return value unexpected, rank %d, gFace tag %d, model type %d, model tag %d\n", PCU_Comm_Self(), GEN_tag(gFace), EN_whatInType(vertex), GEN_tag(EN_whatIn(vertex)));
+              exit(EXIT_FAILURE);
+              break;
+          }
+
+          if(BL_growthVerticesAndEdges((pEdge)seed,vertices,edges) != 1){
+            printf("wrong! checkBLVerticesAndEdges: found a seed vertices, but no stack\n");
+            exit(EXIT_FAILURE);
+          }
+
+          // assert
+          assert(PList_size(vertices) == PList_size(edges) + 1);
+          assert(PList_size(edges) > 0);
+
+          // check
+          for(int i = 0; i < PList_size(vertices); i++){
+            pEntity e = (pEntity)PList_item(vertices,i);
+            assert(EN_gid(e) == PMU_gid(PMU_rank(),0));
+          //assert(EN_isOwnerPart(e,0) == EN_isOwnerPart((pEntity)PList_item(vertices,0),0));
+          }
+          for(int i = 0; i < PList_size(edges); i++){
+            pEntity e = (pEntity)PList_item(edges,i);
+            assert(EN_gid(e) == PMU_gid(PMU_rank(),0));
+          //assert(EN_isOwnerPart(e,0) == EN_isOwnerPart((pEntity)PList_item(edges,0),0));
+          }
+
+          // increment counter
+          ngc++;
+          nv += PList_size(vertices);
+          ne += PList_size(edges);
+
+          // clean up
+          PList_clear(vertices);
+          PList_clear(edges);
+        }//vertex loop
+        VIter_delete(vIter);
+      }//faceSide loop
+    }//gFace loop
+
+    GFIter_delete(gFIter);
+    PList_delete(vertices);
+    PList_delete(edges);
+    Progress_delete(progress);
+
+    printf("checkBLVerticesAndEdges: rank %d, ngc %d, nv %d, ne %d\n", PCU_Comm_Self(), ngc, nv, ne);
+  }
+  else {
+    printf("wrong! getBLVerticesAndEdges: not implemented for non-simmetrix mesh");
+    exit(EXIT_FAILURE);
+  }
 }
 
 static void getMaxElementNodes(Output& o)
@@ -877,6 +988,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   checkInterface(o,bcs);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
+  checkBLVerticesAndEdges(o);
   getGrowthCurves(o, n);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
