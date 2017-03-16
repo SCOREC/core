@@ -59,6 +59,7 @@ enum phastaio_file {
 #ifdef __INTEL_COMPILER
 typedef size_t phastaioTime;
 #else
+#include <time.h>
 typedef struct timespec phastaioTime;
 #endif
 /* \brief get the current time */
