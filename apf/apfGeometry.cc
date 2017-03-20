@@ -1,6 +1,7 @@
 #include "apfGeometry.h"
 #include "apfMatrix.h"
 #include <cmath>
+#include <cassert>
 
 namespace apf {
 
@@ -188,6 +189,53 @@ double getDistance(LineSegment const& ls, Vector3 const& p)
   if (along.getLength() > direction.getLength())
     return (p - ls.end).getLength();
   return away.getLength();
+}
+
+/* assume the box aligned with x-y-z coordinate */
+bool withinBox(Vector3 const& point, Vector3 const& center, Vector3 const& size)
+{
+  assert(size[0]>0 && size[1]>0 && size[2]>0);
+  if ( fabs(point[0]-center[0]) <= size[0] &&
+       fabs(point[1]-center[1]) <= size[1] &&
+	   fabs(point[2]-center[2]) <= size[2] )
+	return true;
+  else
+    return false;
+}
+
+/* any alignment of the box */
+bool withinBox(Vector3 const& point, Vector3 const& center, Vector3 const& size,
+               Vector3 const& normal1, Vector3 const& normal2)
+{
+  assert(areOrthogonal(normal1, normal2, 0.0));
+  Vector3 xAxis = Vector3(1,0,0);
+  Vector3 yAxis = Vector3(0,1,0);
+  Frame frame1 = Frame::forRotation(normal1, getAngle(normal1,xAxis));
+  Frame frame2 = Frame::forRotation(normal2, getAngle(normal2,yAxis));
+  return withinBox(frame1*frame2*point, frame1*frame2*center, size);
+}
+
+/* assume the cylinder axis along x-axis */
+bool withinCyl(Vector3 const& point, Vector3 const& center,
+               double hlen, double radius)
+{
+  assert(hlen>0 && radius>0);
+  Vector3 start = center - Vector3(hlen,0,0);
+  Vector3 end   = center + Vector3(hlen,0,0);
+  if( fabs(point[0]-center[0]) <= hlen &&
+      getDistance(LineSegment(start, end),point) <= radius )
+	return true;
+  else
+    return false;
+}
+
+/* any alignment of the cylinder */
+bool withinCyl(Vector3 const& point, Vector3 const& center,
+               double hlen, double radius, Vector3 const& normal)
+{
+  Vector3 xAxis = Vector3(1,0,0);
+  Frame frame = Frame::forRotation(normal, getAngle(normal,xAxis));
+  return withinCyl(frame*point, frame*center, hlen, radius);
 }
 
 }
