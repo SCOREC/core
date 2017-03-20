@@ -57,6 +57,19 @@ double getAngle(Vector3 const& a, Vector3 const& b);
 
 double getDistance(LineSegment const& ls, Vector3 const& p);
 
+/* size is defined as half width(x), half length(y) and half height(z) */
+bool withinBox(Vector3 const& point, Vector3 const& center, Vector3 const& size);
+
+bool withinBox(Vector3 const& point, Vector3 const& center, Vector3 const& size,
+               Vector3 const& normal1, Vector3 const& normal2);
+
+/* hlen is the half of the length */
+bool withinCyl(Vector3 const& point, Vector3 const& center,
+               double hlen, double radius);
+
+bool withinCyl(Vector3 const& point, Vector3 const& center,
+               double hlen, double radius, Vector3 const& normal);
+
 }
 
 #endif

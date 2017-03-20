@@ -1,5 +1,6 @@
 #include "sam.h"
 #include "samSz.h"
+#include <apfGeometry.h>
 #include <apfField.h>
 #include <pcu_util.h>
 #include <stdio.h>
@@ -77,34 +78,6 @@ apf::Field* specifiedIso(apf::Mesh* m, const char* fieldName, const unsigned idx
   return newSz;
 }
 
-static bool withinBox(apf::Vector3 points, double* box) {
-  if ( fabs(points[0]- box[0]) <= box[3] &&
-       fabs(points[1]- box[1]) <= box[4] &&
-       fabs(points[2]- box[2]) <= box[5] )
-    return true;
-  else
-    return false;
-}
-
-static bool withinCyl(apf::Vector3 points, double* cyl) {
-  double length = sqrt(cyl[3]*cyl[3]+cyl[4]*cyl[4]+cyl[5]*cyl[5]);
-  cyl[3] = cyl[3] / length;
-  cyl[4] = cyl[4] / length;
-  cyl[5] = cyl[5] / length;
-  if((fabs((points[0]- cyl[0])*cyl[3]+
-           (points[1]- cyl[1])*cyl[4]+
-		   (points[2]- cyl[2])*cyl[5]) <= cyl[6]) &&
-  sqrt(((points[0]- cyl[0])*cyl[4] - (points[1]- cyl[1])*cyl[3])*
-       ((points[0]- cyl[0])*cyl[4] - (points[1]- cyl[1])*cyl[3])+
-	   ((points[0]- cyl[0])*cyl[5] - (points[2]- cyl[2])*cyl[3])*
-	   ((points[0]- cyl[0])*cyl[5] - (points[2]- cyl[2])*cyl[3])+
-	   ((points[1]- cyl[1])*cyl[5] - (points[2]- cyl[2])*cyl[4])*
-	   ((points[1]- cyl[1])*cyl[5] - (points[2]- cyl[2])*cyl[4]) <= cyl[7]))
-    return true;
-  else
-    return false;
-}
-
 void multiplySF(apf::Mesh* m, apf::Field* sf, double factor) {
   PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   apf::MeshEntity* vtx;
@@ -120,11 +93,13 @@ void multiplySFBox(apf::Mesh* m, apf::Field* sf, double factor, double* box) {
   PCU_ALWAYS_ASSERT(box[3] > 0 && box[4] > 0 && box[5] > 0);
   PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   apf::Vector3 points;
+  apf::Vector3 center = apf::Vector3(box[0],box[1],box[2]);
+  apf::Vector3 size   = apf::Vector3(box[3],box[4],box[5]);
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
     m->getPoint(vtx, 0, points);
-    if (withinBox(points, box)) {
+    if (apf::withinBox(points, center, size)) {
       double h = apf::getScalar(sf,vtx,0);
       apf::setScalar(sf,vtx,0,h*factor);
 	}
@@ -138,11 +113,13 @@ void multiplySFCyl(apf::Mesh* m, apf::Field* sf, double factor, double* cyl) {
   PCU_ALWAYS_ASSERT(cyl[6] > 0 && cyl[7] > 0);
   PCU_ALWAYS_ASSERT(m->findField(apf::getName(sf)));
   apf::Vector3 points;
+  apf::Vector3 center = apf::Vector3(cyl[0],cyl[1],cyl[2]);
+  apf::Vector3 normal = apf::Vector3(cyl[3],cyl[4],cyl[5]);
   apf::MeshEntity* vtx;
   apf::MeshIterator* itr = m->begin(0);
   while( (vtx = m->iterate(itr)) ) {
     m->getPoint(vtx, 0, points);
-    if (withinCyl(points, cyl)) {
+    if (apf::withinCyl(points, center, cyl[6], cyl[7], normal)) {
       double h = apf::getScalar(sf,vtx,0);
       apf::setScalar(sf,vtx,0,h*factor);
 	}
