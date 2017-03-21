@@ -295,6 +295,13 @@ mpi_test(parmaSerial 1
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb"
   "cubeBal.smb/")
+if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
+  set(MDIR ${MESHES}/annular)
+  mpi_test(simZBalance_4 4
+    ./simZBalance
+    "${MDIR}/annular.smd"
+    "${MDIR}/annular_4_part.sms")
+endif()
 set(MDIR ${MESHES}/cube)
 if(ENABLE_ZOLTAN)
   mpi_test(ptnParma_cube 4
