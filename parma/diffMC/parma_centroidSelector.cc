@@ -1,4 +1,5 @@
 #include "PCU.h"
+#include <pcu_util.h>
 #include "parma_selector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
@@ -111,7 +112,7 @@ namespace parma {
       void trySending(Targets* tgts, DistanceQueue* distQ, 
           apf::Migration* plan) {
         apf::MeshEntity* e = distQ->pop();
-        assert( ! plan->has(e));
+        PCU_ALWAYS_ASSERT( ! plan->has(e));
         int peer = getTaggedSend(e);
         if (sending[peer] >= tgts->get(peer))
           return;

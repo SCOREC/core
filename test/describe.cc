@@ -13,7 +13,7 @@
 #else
 #include <cstdlib>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 
 #ifdef __bgq__
 #include <spi/include/kernel/memory.h>
@@ -84,7 +84,7 @@ static void list_tags(apf::Mesh* m)
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
 #ifdef HAVE_SIMMETRIX

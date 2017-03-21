@@ -12,7 +12,7 @@
 #include <PCU.h>
 #include <mth.h>
 #include <mth_def.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <ostream>
 /* This file contains miscellaneous tests relating to ordering, math
  * and transformation matrices
@@ -54,14 +54,14 @@ void testNodeIndexing(){
   for(int P = 1; P <= 10; ++P)
     for(int i = 0; i <= P; ++i)
       for(int j = 0; j <= P-i; ++j)
-        assert(crv::computeTriNodeIndex(P,i,j)
+        PCU_ALWAYS_ASSERT(crv::computeTriNodeIndex(P,i,j)
   == crv::getTriNodeIndex(P,i,j));
 
   for(int P = 1; P <= 4; ++P)
     for(int i = 0; i <= P; ++i)
       for(int j = 0; j <= P-i; ++j)
         for(int k = 0; k <= P-i-j; ++k)
-          assert(crv::computeTetNodeIndex(P,i,j,k)
+          PCU_ALWAYS_ASSERT(crv::computeTetNodeIndex(P,i,j,k)
   == crv::getTetNodeIndex(P,i,j,k));
 }
 
@@ -155,10 +155,10 @@ void testMatrixInverse(){
 
   for (int i = 0; i < 35; ++i)
     for (int j = 0; j < 35; ++j){
-      assert(fabs(AiQR(i,j) - a_invdata[i][j]) < 1e-14);
-      assert(fabs(eyeQR(i,j) - (i == j)) < 1e-14);
-      assert(fabs(AiPLU(i,j) - a_invdata[i][j]) < 1e-14);
-      assert(fabs(eyePLU(i,j) - (i == j)) < 1e-14);
+      PCU_ALWAYS_ASSERT(fabs(AiQR(i,j) - a_invdata[i][j]) < 1e-14);
+      PCU_ALWAYS_ASSERT(fabs(eyeQR(i,j) - (i == j)) < 1e-14);
+      PCU_ALWAYS_ASSERT(fabs(AiPLU(i,j) - a_invdata[i][j]) < 1e-14);
+      PCU_ALWAYS_ASSERT(fabs(eyePLU(i,j) - (i == j)) < 1e-14);
     }
 
 }

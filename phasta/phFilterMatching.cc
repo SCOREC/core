@@ -6,7 +6,7 @@
 #include <set>
 #include <apf.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -92,7 +92,7 @@ static void getAttributeMatching(gmi_model* gm, BCs& bcs, ModelMatching& mm)
   APF_ITERATE(FieldBCs::Set, fbcs.bcs, it) {
     BC* bc = *it;
     gmi_ent* e = gmi_find(gm, bc->dim, bc->tag);
-    assert(e);
+    PCU_ALWAYS_ASSERT(e);
     double* val = bc->eval(apf::Vector3(0,0,0));
     int otherTag = *val;
     gmi_ent* oe = gmi_find(gm, bc->dim, otherTag);
@@ -102,7 +102,7 @@ static void getAttributeMatching(gmi_model* gm, BCs& bcs, ModelMatching& mm)
           apf::dimName[bc->dim], bc->tag, name.c_str(),
           apf::dimName[bc->dim], otherTag,
           apf::dimName[bc->dim], otherTag);
-    assert(oe);
+    PCU_ALWAYS_ASSERT(oe);
     addMatch(e, oe, mm);
   }
 }
@@ -123,7 +123,7 @@ static void closeFaceMatchingWithFrame(gmi_model* gm, gmi_ent* f, gmi_ent* of,
     gmi_set* os = gmi_adjacent(gm, of, dim);
     /* these faces are matched, they should have the
        same layout of bounding entities with only geometric differences */
-    assert(s->n == os->n);
+    PCU_ALWAYS_ASSERT(s->n == os->n);
     /* warning! this is an O(N^2) comparison.
        if it takes up a large part of your runtime,
        you should rethink your life. */
@@ -148,11 +148,11 @@ static void closeFaceMatchingWithFrame(gmi_model* gm, gmi_ent* f, gmi_ent* of,
 
 static void closeFaceMatching(gmi_model* gm, gmi_ent* f, ModelMatching& mm)
 {
-  assert(mm[f].size() == 1);
+  PCU_ALWAYS_ASSERT(mm[f].size() == 1);
   gmi_ent* of = *(mm[f].begin());
   if (f < of)
     return;
-  assert(f != of);
+  PCU_ALWAYS_ASSERT(f != of);
   /* the key assumptions are these:
      1) both faces are planar
      2) the periodic mapping between them is either:
@@ -175,7 +175,7 @@ static void closeFaceMatching(gmi_model* gm, gmi_ent* f, ModelMatching& mm)
   } else {
     apf::Plane p = getFacePlane(gm, f);
     apf::Plane op = getFacePlane(gm, of);
-    assert( ! apf::areClose(p, op, ph::tolerance));
+    PCU_ALWAYS_ASSERT( ! apf::areClose(p, op, ph::tolerance));
     apf::Vector3 o = p.normal * p.radius;
     apf::Vector3 oo = op.normal * op.radius;
     frame = apf::Frame::forTranslation(oo - o);
@@ -207,7 +207,7 @@ static void checkFilteredMatching(apf::Mesh* m, ModelMatching& mm, int dim)
     m->getMatches(e, matches);
     gmi_ent* ge = (gmi_ent*) m->toModel(e);
     if (!mm.count(ge)) {
-      assert(matches.getSize() == 0);
+      PCU_ALWAYS_ASSERT(matches.getSize() == 0);
       continue;
     }
     if (matches.getSize() < mm[ge].size()) {

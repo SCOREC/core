@@ -1,6 +1,6 @@
 #include "dspGraphDistance.h"
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace dsp {
 
@@ -44,7 +44,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
     while (first < layer_end) {
       v = pop(vs, first);
       int prev_val = apf::getNumber(dst, v, 0, 0);
-      assert(prev_val == layer);
+      PCU_ALWAYS_ASSERT(prev_val == layer);
       apf::Up up;
       m->getUp(v, up);
       apf::MeshEntity* ov;
@@ -63,7 +63,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
       if (!m->isShared(sv))
         continue;
       int val = apf::getNumber(dst, sv, 0, 0);
-      assert(val == layer + 1);
+      PCU_ALWAYS_ASSERT(val == layer + 1);
       apf::Copies remotes;
       m->getRemotes(sv, remotes);
       APF_ITERATE(apf::Copies, remotes, rit)
@@ -78,7 +78,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
       }
     }
   }
-  assert(vs.size() == m->count(0));
+  PCU_ALWAYS_ASSERT(vs.size() == m->count(0));
   return dst;
 }
 

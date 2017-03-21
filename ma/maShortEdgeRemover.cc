@@ -11,7 +11,7 @@
 #include "maShape.h"
 #include "maAdapt.h"
 #include <apfCavityOp.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ma {
 
@@ -57,7 +57,7 @@ bool ShortEdgeRemover::requestLocality(apf::CavityOp* o)
       if (e == edge) continue;
       otherVerts[k++] = getEdgeVertOppositeVert(mesh,e,verts[i]);
     }
-  assert(k==otherVerts.getSize());
+  PCU_ALWAYS_ASSERT(k==otherVerts.getSize());
 /* omitting the two original verts does not remove elements
    from the cavity being requested */
   return o->requestLocality(&(otherVerts[0]),otherVerts.getSize());

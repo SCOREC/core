@@ -12,7 +12,7 @@
 #define MTH_TENSOR_H
 
 #include "mthMatrix.h"
-#include <cassert>
+#include <pcu_util.h>
 
 /** \file mthTensor.h
   * \brief Small run-time tensor. */
@@ -33,7 +33,7 @@ class Tensor : public Matrix<T>
     /** \brief construct with dimension d */
     Tensor(unsigned d) : mth::Matrix<T>(d,d)
     {
-      assert((d==2) || (d==3));
+      PCU_ALWAYS_ASSERT((d==2) || (d==3));
     }
     /** \brief copy constructor */
     Tensor(Tensor<T> const& b) : mth::Matrix<T>() {copy(b);}
@@ -105,7 +105,7 @@ class Tensor : public Matrix<T>
       * \details d must be 2 or 3 */
     void resize(unsigned d)
     {
-      assert((d==2) || (d==3));
+      PCU_ALWAYS_ASSERT((d==2) || (d==3));
       this->columns = d;
       this->elems.resize(d*d);
     }
@@ -114,8 +114,8 @@ class Tensor : public Matrix<T>
       * ensure that a Tensor is not improperly resized */
     void resize(unsigned m, unsigned n)
     {
-      assert(m==n);
-      assert((m==2) || (m==3));
+      PCU_ALWAYS_ASSERT(m==n);
+      PCU_ALWAYS_ASSERT((m==2) || (m==3));
       this->columns = m;
       this->elems.resize(m*m);
     }

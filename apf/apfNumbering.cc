@@ -12,7 +12,7 @@
 #include "apfMesh.h"
 #include "apfShape.h"
 #include "apfTagData.h"
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -146,14 +146,14 @@ bool isNumbered(Numbering* n, MeshEntity* e, int node, int component)
 
 void number(Numbering* n, MeshEntity* e, int node, int component, int number)
 {
-  assert( ! isFixed(n,e,node,component));
-  assert(number >= 0);
+  PCU_ALWAYS_ASSERT( ! isFixed(n,e,node,component));
+  PCU_ALWAYS_ASSERT(number >= 0);
   n->set(e,node,component,number);
 }
 
 int getNumber(Numbering* n, MeshEntity* e, int node, int component)
 {
-  assert(isNumbered(n,e,node,component));
+  PCU_ALWAYS_ASSERT(isNumbered(n,e,node,component));
   return n->get(e,node,component);
 }
 
@@ -348,7 +348,7 @@ static void getFieldNodes(FieldBase* f, DynamicArray<Node>& nodes)
     }
     mesh->end(it);
   }
-  assert(i == nodes.getSize());
+  PCU_ALWAYS_ASSERT(i == nodes.getSize());
 }
 
 void getNodes(Numbering* n, DynamicArray<Node>& nodes)
@@ -415,7 +415,7 @@ static void getNodesOnEntitySet(
     for (int j=0; j < nen; ++j)
       n[i++] = Node(*it,j);
   }
-  assert(i==size);
+  PCU_ALWAYS_ASSERT(i==size);
 }
 
 void getNodesOnClosure(

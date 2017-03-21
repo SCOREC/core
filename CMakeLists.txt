@@ -32,6 +32,9 @@ message(STATUS "IS_TESTING: ${IS_TESTING}")
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 
+option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
+message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
+
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
 set(MPIRUN_PROCFLAG "-np" CACHE string

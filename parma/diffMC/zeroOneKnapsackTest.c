@@ -1,6 +1,6 @@
 #include "zeroOneKnapsack.h"
 #include <stdio.h>
-#include <assert.h>
+#include <pcu_util.h>
 #include <stdlib.h>
 
 void test1() {
@@ -14,11 +14,11 @@ void test1() {
   val = solve(k);
   printTable(k);
   printf("val %lu\n", val);
-  assert(val == 4);
+  PCU_ALWAYS_ASSERT(val == 4);
   soln = getSolution(k, &size);
   printf("size %lu soln[0] %lu\n", size, soln[0]);
-  assert(size == 1);
-  assert(soln[0] == 2);
+  PCU_ALWAYS_ASSERT(size == 1);
+  PCU_ALWAYS_ASSERT(soln[0] == 2);
   destroyKnapsack(k);
   free(soln);
 }
@@ -35,11 +35,11 @@ void test2() {
   val = solve(k);
   printTable(k);
   printf("val %lu\n", val);
-  assert(val == 7);
+  PCU_ALWAYS_ASSERT(val == 7);
   soln = getSolution(k, &size);
   printf("size %lu soln[0] %lu soln[1] %lu\n", size, soln[0], soln[1]);
-  assert(size == 2);
-  assert(soln[0] == 1 && soln[1] == 0);
+  PCU_ALWAYS_ASSERT(size == 2);
+  PCU_ALWAYS_ASSERT(soln[0] == 1 && soln[1] == 0);
   destroyKnapsack(k);
   free(soln);
 }

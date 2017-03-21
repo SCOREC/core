@@ -95,9 +95,9 @@ Quality* makeQuality(apf::Mesh* m, int algorithm)
 Quality::Quality(apf::Mesh* m, int algorithm_) :
   mesh(m), algorithm(algorithm_)
 {
-  assert(algorithm >= 0 && algorithm <= 2);
+  PCU_ALWAYS_ASSERT(algorithm >= 0 && algorithm <= 2);
   order = mesh->getShape()->getOrder();
-  assert(order >= 1);
+  PCU_ALWAYS_ASSERT(order >= 1);
 };
 
 /* This work is based on the approach of Geometric Validity of high-order

@@ -8,7 +8,7 @@
 #include "apfMatrix.h"
 #include "apf2mth.h"
 #include <mthQR.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace apf {
 
@@ -73,7 +73,7 @@ int eigen(Matrix3x3 const& A,
   mth::Matrix<double,3,3> L;
   mth::Matrix<double,3,3> Q;
   bool converged = mth::eigenQR(A2, L, Q, 100);
-  assert(converged);
+  PCU_ALWAYS_ASSERT(converged);
   for (unsigned i = 0; i < 3; ++i)
     eigenValues[i] = L(i,i);
   for (unsigned i = 0; i < 3; ++i)

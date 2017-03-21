@@ -1,7 +1,7 @@
 #include <PCU.h>
 #include "parma_rib.h"
 #include <apfPartition.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <apf2mth.h>
 
 namespace parma {
@@ -31,7 +31,7 @@ static apf::Migration* splitMesh(apf::Mesh* m, apf::MeshTag* weights, int depth)
     elems[i] = e;
     ++i;
   }
-  assert(i == m->count(dim));
+  PCU_ALWAYS_ASSERT(i == m->count(dim));
   m->end(it);
   Bodies all;
   all.body = makeBodies(arr);
@@ -65,7 +65,7 @@ class RibSplitter : public apf::Splitter
       double t0 = PCU_Time();
       int depth;
       for (depth = 0; (1 << depth) < multiple; ++depth);
-      assert((1 << depth) == multiple);
+      PCU_ALWAYS_ASSERT((1 << depth) == multiple);
       apf::Migration* plan = splitMesh(mesh, weights, depth);
       if (sync) {
         int offset = mesh->getId() * multiple;

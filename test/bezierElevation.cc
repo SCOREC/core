@@ -9,7 +9,7 @@
 #include <PCU.h>
 #include <mth.h>
 #include <mth_def.h>
-#include <cassert>
+#include <pcu_util.h>
 
 /*
  * This contains all the tests for bezier elevation
@@ -223,7 +223,7 @@ void testEdgeElevation()
     for (int i = 0; i <= 100; ++i){
       p[0] = 0.02*i-1.;
       apf::getVector(elem,p,pt);
-      assert(std::abs((pts[i]-pt).getLength()) < 1e-15);
+      PCU_ALWAYS_ASSERT(std::abs((pts[i]-pt).getLength()) < 1e-15);
     }
     apf::destroyElement(elem);
 
@@ -292,7 +292,7 @@ void testTriElevation()
       for (int i = 0; i <= 10-j; ++i){
         p[0] = 1.*i/10;
         apf::getVector(elem,p,pt);
-        assert(std::abs((pts[n]-pt).getLength()) < 1e-15);
+        PCU_ALWAYS_ASSERT(std::abs((pts[n]-pt).getLength()) < 1e-15);
         n++;
       }
     }
@@ -383,7 +383,7 @@ void testTetElevation()
         for (int i = 0; i <= 4-j-k; ++i){
           p[0] = 0.25*i;
           apf::getVector(elem,p,pt);
-          assert(std::abs((pts[n]-pt).getLength()) < 1e-15);
+          PCU_ALWAYS_ASSERT(std::abs((pts[n]-pt).getLength()) < 1e-15);
           n++;
         }
       }

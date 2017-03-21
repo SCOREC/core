@@ -19,7 +19,7 @@
 #include <apfPartition.h>
 #include <apfFile.h>
 #include <cstring>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 #include<stdint.h>
 
@@ -176,6 +176,24 @@ class MeshMDS : public Mesh2
     {
       freeIter(it);
     }
+    // return true if adjacency *from_dim <--> to_dim*  is stored
+    bool hasAdjacency(int from_dim, int to_dim)
+    {
+      return (mesh->mds.mrm[from_dim][to_dim] == 1);
+    }
+
+    // store adjacency *from_dim <--> to_dim* if not stored
+    void createAdjacency(int from_dim, int to_dim)
+    {
+      if (mesh->mds.mrm[from_dim][to_dim] != 1)
+        mds_add_adjacency(&(mesh->mds), from_dim, to_dim);
+    }
+    // remove adjacency *from_dim <--> to_dim* except for one-level apart adjacency
+    void deleteAdjacency(int from_dim, int to_dim)
+    {
+      if (mesh->mds.mrm[from_dim][to_dim] == 1 && (abs(from_dim-to_dim)>1))
+        mds_remove_adjacency(&(mesh->mds), from_dim, to_dim);
+    }
     bool isShared(MeshEntity* e)
     {
       return mds_get_copies(&mesh->remotes, fromEnt(e));
@@ -224,7 +242,7 @@ class MeshMDS : public Mesh2
     }
     int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent)
     {
-      assert((0 <= dimension) && (dimension <= 3));
+      PCU_ALWAYS_ASSERT((0 <= dimension) && (dimension <= 3));
       mds_set s;
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,dimension,&s);
@@ -244,7 +262,7 @@ class MeshMDS : public Mesh2
       mds_set s;
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,mds_dim[mds_type(id)] + 1,&s);
-      assert(i < s.n);
+      PCU_ALWAYS_ASSERT(i < s.n);
       return toEnt(s.e[i]);
     }
     void getUp(MeshEntity* e, Up& up)
@@ -293,7 +311,7 @@ class MeshMDS : public Mesh2
       if (!isShared(e))
         return;
       mds_copies* c = mds_get_copies(&mesh->remotes, fromEnt(e));
-      assert(c != NULL);
+      PCU_ALWAYS_ASSERT(c != NULL);
       for (int i = 0; i < c->n; ++i)
         remotes[c->c[i].p] = toEnt(c->c[i].e);
     }
@@ -318,7 +336,7 @@ class MeshMDS : public Mesh2
     MeshTag* createDoubleTag(const char* name, int size)
     {
       mds_tag* tag;
-      assert(!mds_find_tag(&mesh->tags, name));
+      PCU_ALWAYS_ASSERT(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),name,
           sizeof(double)*size, Mesh::DOUBLE);
       return reinterpret_cast<MeshTag*>(tag);
@@ -326,7 +344,7 @@ class MeshMDS : public Mesh2
     MeshTag* createIntTag(const char* name, int size)
     {
       mds_tag* tag;
-      assert(!mds_find_tag(&mesh->tags, name));
+      PCU_ALWAYS_ASSERT(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
@@ -334,7 +352,7 @@ class MeshMDS : public Mesh2
     MeshTag* createLongTag(const char* name, int size)
     {
       mds_tag* tag;
-      assert(!mds_find_tag(&mesh->tags, name));
+      PCU_ALWAYS_ASSERT(!mds_find_tag(&mesh->tags, name));
       tag = mds_create_tag(&(mesh->tags),name,
           sizeof(long)*size, Mesh::LONG);
       return reinterpret_cast<MeshTag*>(tag);
@@ -630,7 +648,7 @@ class MeshMDS : public Mesh2
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
-      assert(isMatched);
+      PCU_ALWAYS_ASSERT(isMatched);
       mds_copy c;
       c.e = fromEnt(match);
       c.p = peer;
@@ -708,7 +726,7 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
   mds_tag* vert_nums;
   if (t) {
-    assert(mesh->getTagType(t) == Mesh::INT);
+    PCU_ALWAYS_ASSERT(mesh->getTagType(t) == Mesh::INT);
     vert_nums = reinterpret_cast<mds_tag*>(t);
   } else {
     vert_nums = mds_number_verts_bfs(m->mesh);
@@ -730,7 +748,7 @@ Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
   bool isMatched;
   PCU_Comm_Begin();
   if (isOriginal) {
-    assert(m != 0);
+    PCU_ALWAYS_ASSERT(m != 0);
     dim = m->getDimension();
     isMatched = m->hasMatching();
     for (int i = self + 1; i < outputPartCount && !contract.isValid(i); ++i) {
@@ -746,7 +764,7 @@ Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
     m = makeEmptyMdsMesh(g, dim, isMatched);
     unpackDataClone(m);
   }
-  assert(m != 0);
+  PCU_ALWAYS_ASSERT(m != 0);
   apf::remapPartition(m, expand);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

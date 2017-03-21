@@ -9,7 +9,7 @@
 #include <SimPartitionedMesh.h>
 #include <SimAdvMeshing.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <chef.h>
 
 /** \file chef.cc

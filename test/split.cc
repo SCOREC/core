@@ -8,7 +8,7 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {
@@ -65,7 +65,7 @@ void getConfig(int argc, char** argv)
   meshFile = argv[2];
   outFile = argv[3];
   partitionFactor = atoi(argv[4]);
-  assert(partitionFactor <= PCU_Comm_Peers());
+  PCU_ALWAYS_ASSERT(partitionFactor <= PCU_Comm_Peers());
 }
 
 }

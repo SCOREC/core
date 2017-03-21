@@ -8,7 +8,7 @@
 #include <gmi_sim.h>
 #include <apf_simConfig.h>
 #include <cstdlib>
-#include <cassert>
+#include <pcu_util.h>
 #include <algorithm>
 
 #ifdef USE_FIELDSIM
@@ -231,6 +231,25 @@ bool MeshSIM::isOwned(MeshEntity* e)
 int MeshSIM::getOwner(MeshEntity* e)
 {
   return EN_ownerProc(reinterpret_cast<pEntity>(e));
+}
+
+bool MeshSIM::hasAdjacency(int from_dim, int to_dim)
+{
+  return (abs(from_dim-to_dim)==1);
+}
+
+void MeshSIM::createAdjacency(int from_dim, int to_dim)
+{
+  (void)from_dim;
+  (void)to_dim;
+  apf::fail("MeshSIM::createAdjacency called!\n");
+}
+
+void MeshSIM::deleteAdjacency(int from_dim, int to_dim)
+{
+  (void)from_dim;
+  (void)to_dim;
+  apf::fail("MeshSIM::deleteAdjacency called!\n");
 }
 
 static int pListToArray(pPList list, MeshEntity** array)
@@ -878,7 +897,7 @@ void MeshSIM::destroyNative()
 
 void MeshSIM::verify()
 {
-  assert(PM_verify(mesh,0,NULL));
+  PCU_ALWAYS_ASSERT(PM_verify(mesh,0,NULL));
 }
 
 void MeshSIM::getMatches(MeshEntity* e, Matches& m)
@@ -907,7 +926,7 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
     m[j].entity = reinterpret_cast<MeshEntity*>(match_ent);
     j++;
   }
-  assert(EN_isOwnerProc(ent)?j == n - 1:j == n);
+  PCU_ALWAYS_ASSERT(EN_isOwnerProc(ent)?j == n - 1:j == n);
   PList_delete(l);
 }
 
@@ -987,7 +1006,7 @@ static bool findMatches(Mesh* m)
 Mesh2* createMesh(pParMesh mesh)
 {
   /* require one part per process currently for SIM */
-  assert(PM_numParts(mesh)==1);
+  PCU_ALWAYS_ASSERT(PM_numParts(mesh)==1);
   MeshSIM* m = new MeshSIM(mesh);
   int order = 1;
   bool serendipity = false;

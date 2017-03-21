@@ -12,7 +12,7 @@
 #include <apfMesh2.h>
 #include <ma.h>
 #include <parma.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 #ifndef AdvMeshing_EXPORT
@@ -54,7 +54,7 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
   if(0==PCU_Comm_Self())
     fprintf(stdout, "Loading mesh case %s...\n", meshCaseName.c_str());
   pACase mcaseFile = AMAN_findCase(attmngr, meshCaseName.c_str());
-  assert(mcaseFile);
+  PCU_ALWAYS_ASSERT(mcaseFile);
 
   AttCase_setModel(mcaseFile, mdl);
   pACase mcase = MS_newMeshCase(mdl);
@@ -110,7 +110,7 @@ void fixMatches(apf::Mesh2* m)
       printf("fixed misaligned matches\n");
     else
       printf("matches were aligned\n");
-    assert( ! apf::alignMdsMatches(m));
+    PCU_ALWAYS_ASSERT( ! apf::alignMdsMatches(m));
   }
 }
 

@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
@@ -40,7 +40,7 @@ namespace {
   double* runBFS(apf::Mesh* m, int layers, std::vector<apf::MeshEntity*> current,
       apf::MeshTag* visited, apf::MeshTag* wtag, int peer)
   {
-    assert(layers>=0);
+    PCU_ALWAYS_ASSERT(layers>=0);
     const int elmDim = m->getDimension();
     double* weight = new double[4];
     for(unsigned int i=0; i<4; i++)
@@ -91,7 +91,7 @@ namespace {
     double entW = 0;
     double sum = 0;
     while ((e = m->iterate(it))) {
-      assert(m->hasTag(e,w));
+      PCU_ALWAYS_ASSERT(m->hasTag(e,w));
       if (parma::isOwned(m,e)) {
         m->getDoubleTag(e,w,&entW);
         sum += entW;

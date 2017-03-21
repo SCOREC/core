@@ -76,6 +76,7 @@ typedef apf::FieldShape* pShape;
 typedef apf::Numbering* pNumbering;
 typedef apf::GlobalNumbering* pGlobalNumbering;
 typedef apf::Vector3 Vector3; // 3d vector
+typedef apf::Adjacent Adjacent; // adjacency container
 
 // singleton to save model/mesh
 class pumi
@@ -194,6 +195,13 @@ pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const ch
 
 // delete mesh
 void pumi_mesh_delete(pMesh m);
+
+// create/delete direct Adjacency for all entities except for one-level apart
+bool pumi_mesh_hasAdjacency(pMesh m, int from_dim, int to_dim);
+void pumi_mesh_createAdjacency(pMesh m, int from_dim, int to_dim);
+void pumi_mesh_deleteAdjacency(pMesh m, int from_dim, int to_dim);
+void pumi_mesh_createFullAdjacency(pMesh m);
+
 // write mesh into a file - mesh_type should be "mds" or "vtk"
 void pumi_mesh_write (pMesh m, const char* fileName, const char* mesh_type="mds");
 pGeom pumi_mesh_getGeom(pMesh m);
@@ -347,11 +355,13 @@ int pumi_ment_getGlobalID(pMeshEnt e);
 // get # adjacent entities
 int pumi_ment_getNumAdj(pMeshEnt e, int tgtType);
 
-// get adjacent entities
+// get adjacent entitities with std::vector
 void pumi_ment_getAdj(pMeshEnt e, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
-
-// get 2nd-order adjacent entities
 void pumi_ment_get2ndAdj (pMeshEnt e, int brgType, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
+
+// get adjacent entitities with Adjacenct and return #result entities (faster than std::vector)
+int pumi_ment_getAdjacent(pMeshEnt e, int tgtType, Adjacent& result);
+int pumi_ment_get2ndAdjacent(pMeshEnt e, int brgType, int tgtType, Adjacent& result);
 
 // return entity's geometric classification
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);

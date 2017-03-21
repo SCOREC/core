@@ -4,7 +4,7 @@
 #include <gmi_null.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 int main(int argc, char** argv)

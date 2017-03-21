@@ -10,7 +10,7 @@
 #include "crvShape.h"
 #include "crvSnap.h"
 
-#include <cassert>
+#include <pcu_util.h>
 
 namespace crv {
 
@@ -46,7 +46,7 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
 
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  assert(m->canSnap());
+  PCU_ALWAYS_ASSERT(m->canSnap());
   int type = m->getType(e);
   if(type == apf::Mesh::VERTEX){
     apf::Vector3 p, pt(0,0,0);
@@ -78,7 +78,7 @@ void MeshCurver::synchronize()
 
 void MeshCurver::snapToInterpolate(int dim)
 {
-  assert(m_mesh->canSnap());
+  PCU_ALWAYS_ASSERT(m_mesh->canSnap());
   apf::MeshEntity* e;
   apf::MeshIterator* it = m_mesh->begin(dim);
   while ((e = m_mesh->iterate(it))) {

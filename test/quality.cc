@@ -5,7 +5,7 @@
 #include <gmi_mesh.h>
 #include <ma.h>
 #include <maShape.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {
@@ -88,7 +88,7 @@ void printDiagnostics()
 
 int main(int argc, char** argv)
 {
-  assert(argc==4);
+  PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();

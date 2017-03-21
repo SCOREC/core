@@ -1,6 +1,6 @@
 #include "phModelGeometry.h"
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -54,8 +54,8 @@ apf::Plane getFacePlane(gmi_model* gm, gmi_ent* f)
 apf::Vector3 getAnyPointOnFace(gmi_model* gm, gmi_ent* f)
 {
   gmi_set* s = gmi_adjacent(gm, f, 1);
-  assert(s);
-  assert(s->n >= 1);
+  PCU_ALWAYS_ASSERT(s);
+  PCU_ALWAYS_ASSERT(s->n >= 1);
   apf::Vector3 p = getEdgeCenter(gm, s->e[0]);
   gmi_free_set(s);
   return p;

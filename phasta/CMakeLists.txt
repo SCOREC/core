@@ -20,7 +20,15 @@ set(SOURCES
   phAxisymmetry.cc
   phInterfaceCutter.cc
   phstream.cc
+  phiotimer.cc
 )
+
+if(PUMI_FORTRAN_INTERFACE)
+  enable_language(Fortran)
+  set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod_files)
+  set(SOURCES ${SOURCES} phiotimer.f)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
+endif()
 
 if(ENABLE_SIMMETRIX)
   set(SOURCES ${SOURCES}
@@ -33,6 +41,7 @@ set(HEADERS
   chef.h
   phInput.h
   phstream.h
+  phiotimer.h
 )
 
 # Add the ph library

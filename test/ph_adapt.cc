@@ -14,13 +14,13 @@
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
-#include <cassert>
+#include <pcu_util.h>
 
 static bool overwriteAPFCoord(apf::Mesh2* m) {
   apf::Field* f = m->findField("motion_coords");
-  assert(f);
+  PCU_ALWAYS_ASSERT(f);
   double* vals = new double[apf::countComponents(f)];
-  assert(apf::countComponents(f) == 3);
+  PCU_ALWAYS_ASSERT(apf::countComponents(f) == 3);
   apf::MeshEntity* vtx;
   apf::Vector3 points;
   apf::MeshIterator* itr = m->begin(0);
@@ -40,7 +40,7 @@ static FILE* openfile_read(ph::Input&, const char* path) {
 
 int main(int argc, char** argv)
 {
-  assert(argc==3);
+  PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
   in.openfile_read = openfile_read;
   /* attach solution and other fields */
   ph::readAndAttachFields(in,m);
-  assert(overwriteAPFCoord(m));
+  PCU_ALWAYS_ASSERT(overwriteAPFCoord(m));
   if (m->findField("material_type"))
     apf::destroyField(m->findField("material_type"));
   if (m->findField("meshQ"))

@@ -2,7 +2,7 @@
 
 #include "apfMDS.h"
 #include <gmi_lookup.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace apf {
@@ -152,7 +152,7 @@ gmi_model* BoxBuilder::buildModel()
     at = agm_type_from_dim(i);
     gmi_freeze_lookup(gb->lookup, at);
     gb->model.n[i] = agm_ent_count(gb->topo, at);
-    assert(gb->model.n[i] == modelCounts[i]);
+    PCU_ALWAYS_ASSERT(gb->model.n[i] == modelCounts[i]);
   }
   for (int i = 0; i < mgrid.total(); ++i) {
     int mdim = modelTable[i].dim;

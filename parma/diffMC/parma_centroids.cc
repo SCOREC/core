@@ -1,11 +1,11 @@
-#include <assert.h>
+#include <pcu_util.h>
 #include <PCU.h>
 #include "parma_centroids.h"
 #include "parma_sides.h"
 
 namespace {
   double getEntWeight(apf::Mesh* m, apf::MeshTag* w, apf::MeshEntity* e) {
-    assert(m->hasTag(e,w));
+    PCU_ALWAYS_ASSERT(m->hasTag(e,w));
     double entW = 0;
     m->getDoubleTag(e,w,&entW);
     return entW;

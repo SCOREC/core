@@ -15,7 +15,7 @@
 #include "PCU.h"
 #include <iostream>
 #include <cstring>
-#include <assert.h>
+#include <pcu_util.h>
 #include "GenIterator.h"
 
 gModel::gModel(gmi_model* model) : TagHolder() 
@@ -75,7 +75,7 @@ void pumi_geom_freeze(pGeom g)
   for (int i=0; i<=3; ++i)
   {
     if (g->getGmi()->n[i]==g->size(i)) continue;
-    assert(g->size(i)==0);
+    PCU_ALWAYS_ASSERT(g->size(i)==0);
     gmi_iter* giter = gmi_begin(g->getGmi(), i);
     while(gmi_ent* gent = gmi_next(g->getGmi(), giter))
       g->add(i, new gEntity(gent));

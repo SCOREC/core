@@ -3,7 +3,7 @@
 #include "phAdjacent.h"
 #include <apf.h>
 #include <phInterfaceCutter.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace ph {
 
@@ -165,7 +165,7 @@ void encodeILWORK(apf::Numbering* n, Links& links, int& size, int*& a)
       a[i++] = 1;
     }
   }
-  assert(i == size);
+  PCU_ALWAYS_ASSERT(i == size);
 }
 
 static apf::MeshEntity* getSideElement(apf::Mesh* m, apf::MeshEntity* s)
@@ -195,7 +195,7 @@ void encodeILWORKF(apf::Numbering* n, Links& links, int& size, int*& a)
       a[i++] = apf::getNumber(n, e, 0, 0) + 1;
     }
   }
-  assert(i == size);
+  PCU_ALWAYS_ASSERT(i == size);
 }
 
 static apf::MeshEntity* getOtherElem(apf::Mesh* m, apf::MeshEntity* elem,
@@ -229,8 +229,8 @@ int* formIENNEIGH(apf::Numbering* ln)
   apf::MeshEntity* e;
   int i = 0;
   while ((e = m->iterate(it))) {
-    assert(m->getType(e) == type);
-    assert(face_apf2ph[type]);
+    PCU_ALWAYS_ASSERT(m->getType(e) == type);
+    PCU_ALWAYS_ASSERT(face_apf2ph[type]);
     apf::Downward sides;
     m->getDownward(e, sideDim, sides);
     for (int j = 0; j < nsides; ++j) {

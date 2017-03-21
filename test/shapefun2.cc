@@ -5,7 +5,7 @@
 #include <apfMesh2.h>
 #include <crv.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 namespace test {
 
@@ -86,7 +86,7 @@ static void checkEntityShape(apf::Mesh* lm, apf::Mesh* m,
   apf::Matrix3x3 lJacobian, Jacobian;
 
   int type = lm->getType(le);
-  assert(lm->getType(le) == m->getType(e));
+  PCU_ALWAYS_ASSERT(lm->getType(le) == m->getType(e));
 
   int typeDim = apf::Mesh::typeDimension[type];
 
@@ -111,14 +111,14 @@ static void checkEntityShape(apf::Mesh* lm, apf::Mesh* m,
     apf::getJacobian(lme,xi[i][typeDim-1],lJacobian);
     apf::getJacobian(me,xi[i][typeDim-1],Jacobian);
     // check particular point location
-    assert(std::abs((lvalue-value).getLength()) < 1e-15);
+    PCU_ALWAYS_ASSERT(std::abs((lvalue-value).getLength()) < 1e-15);
     // check length/area/volume
-    assert(std::abs(apf::measure(lme)-apf::measure(me)) < 1e-15);
+    PCU_ALWAYS_ASSERT(std::abs(apf::measure(lme)-apf::measure(me)) < 1e-15);
 
     // check Jacobians are identical
     for (int i = 0; i < 3; ++i)
       for (int j = 0; j < 3; ++j)
-        assert(std::abs(Jacobian[i][j]-lJacobian[i][j]) < 1e-15);
+        PCU_ALWAYS_ASSERT(std::abs(Jacobian[i][j]-lJacobian[i][j]) < 1e-15);
   }
   // clean up
   apf::destroyMeshElement(lme);

@@ -16,7 +16,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
-#include <assert.h>
+#include <pcu_util.h>
 
 using std::vector;
 // mesh entity functions
@@ -33,20 +33,29 @@ int pumi_ment_getTopo(pMeshEnt e)
 int pumi_ment_getNumAdj(pMeshEnt e, int target_dim)
 {
   int ent_dim= apf::getDimension(pumi::instance()->mesh, e);
-  if (ent_dim<target_dim) // upward
+  if (ent_dim==target_dim) 
   {
-    apf::Adjacent adjacent;
-    pumi::instance()->mesh->getAdjacent(e,target_dim,adjacent);      
-    return adjacent.getSize();
+    if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<": invalid target dimension "<<target_dim<<"\n";
+    return 0;
   }
-  else if (ent_dim>target_dim)
-  {
-    apf::Downward adjacent;
-    return pumi::instance()->mesh->getDownward(e,target_dim,adjacent); 
-  }
-  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<": invalid target dimension "<<target_dim<<"\n";
-  return 0;
+
+  apf::Adjacent adjacent;
+  pumi::instance()->mesh->getAdjacent(e,target_dim,adjacent);      
+  return adjacent.getSize();
 }
+
+int pumi_ment_getAdjacent(pMeshEnt e, int target_dim, Adjacent& adjacent)
+{
+  pumi::instance()->mesh->getAdjacent(e,target_dim, adjacent);
+  return adjacent.getSize();
+}
+
+int pumi_ment_get2ndAdjacent(pMeshEnt e, int bridge_dim, int target_dim, Adjacent& adjacent)
+{
+  apf::getBridgeAdjacent(pumi::instance()->mesh, e, bridge_dim, target_dim, adjacent);
+  return adjacent.getSize();
+}
+
 
 // if target_dim=-1, get all downward adjacent entities
 void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjEnt)
@@ -68,7 +77,7 @@ void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjE
       for (int j = 0; j < num_adj; ++j) 
         vecAdjEnt.push_back(adjacent[j]);
     }
-    else // get all downward adjacent entities
+    else // if target_dim<0, get all downward adjacent entities
     {
       switch (ent_dim)
       {
@@ -89,7 +98,7 @@ void pumi_ment_getAdj(pMeshEnt e, int target_dim, std::vector<pMeshEnt>& vecAdjE
             int num_vertices= pumi::instance()->mesh->getDownward(e,0,vertices);
             for (int j=0; j<num_vertices;++j)
               vecAdjEnt.push_back(vertices[j]);
-            if (num_vertices==4) assert(vecAdjEnt.size()==14);
+            if (num_vertices==4) PCU_ALWAYS_ASSERT(vecAdjEnt.size()==14);
             break;
           }
         case 2:// face

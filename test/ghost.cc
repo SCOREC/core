@@ -4,7 +4,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <parma.h>
-#include <cassert>
+#include <pcu_util.h>
 #include <cstdlib>
 
 namespace {
@@ -30,7 +30,7 @@ namespace {
   }
 
   double getFun3dW(int type) {
-    assert( type >= apf::Mesh::VERTEX && type <= apf::Mesh::PYRAMID );
+    PCU_ALWAYS_ASSERT( type >= apf::Mesh::VERTEX && type <= apf::Mesh::PYRAMID );
     const double vtxw = 1.0;
     const double edgew = 1.0;
     const double triw = 1.0;

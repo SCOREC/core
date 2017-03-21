@@ -4,22 +4,22 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
-#include <cassert>
+#include <pcu_util.h>
 
 #include <iostream>
 
 void testNodeValues(apf::EntityShape* shp, apf::Vector3 const* nodes, int nnodes)
 {
-  assert( shp->countNodes() == nnodes );
+  PCU_ALWAYS_ASSERT( shp->countNodes() == nnodes );
   double tol = 1.0e-15;
   for (int i = 0; i < nnodes; ++i) {
     apf::NewArray<double> values;
     shp->getValues(0, 0, nodes[i], values);
     for (int j = 0; j < nnodes; ++j) {
       if (j == i)
-        assert(fabs(values[j] - 1) < tol);
+        PCU_ALWAYS_ASSERT(fabs(values[j] - 1) < tol);
       else
-        assert(fabs(values[j] - 0) < tol);
+        PCU_ALWAYS_ASSERT(fabs(values[j] - 0) < tol);
     }
   }
 }
@@ -212,7 +212,7 @@ void testVolume(int type, apf::Vector3 const* points, double volume)
   apf::MeshEntity* e = apf::buildOneElement(
       m, m->findModelEntity(3,0), type, points);
   double v = apf::measure(m,e);
-  assert( fabs(v - volume) < 1e-10 );
+  PCU_ALWAYS_ASSERT( fabs(v - volume) < 1e-10 );
   m->destroyNative();
   apf::destroyMesh(m);
 }

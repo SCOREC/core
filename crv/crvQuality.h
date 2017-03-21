@@ -10,7 +10,7 @@
 
 #include "crv.h"
 #include <apf.h>
-#include <cassert>
+#include <pcu_util.h>
 
 /** \file crvQuality.h
     \brief main file for quality functions defined outside of crvQuality.cc */
