@@ -570,6 +570,222 @@ static void getGrowthCurves(Output& o, apf::Numbering* n)
   }
   return;
 }
+static woid chechCheck(Output$ o)
+{
+    typedef std::pair <pGEntity, pGFace> gPair_t;
+    typedef std::multimap <pGEntity, pGFace> gPairMap_t;
+    typedef std::pair <gPairMap_t::iterator, gPairMap_t::iterator> gPairMap_equalRange_t;
+
+//  Algorithm: Get growth curve info
+ 
+//  Create an empty list (gEntities) for storing gEntity
+//  Create an empty multimap (gPairMap) for storing pairs gPair {KEY: gEntity, CONTENT: gFace}
+//  //gEntity is the model entity where a base mesh vertex is classified
+//  //gFace is the model face where 3D boundary layer attribute is placed
+    pPList gEntities = PList_new();
+    gPairMap_t gPairs;
+    gPairMap_t::iterator gPairIter;
+    gPair_t gPair;
+
+    pGEntity gEntity;
+    pGFace gFace;
+    pGEdge gEdge;
+    pGVertex gVertex;
+    pVertex vertex;
+
+    pPList gEdges = PList_new();
+    pPList gVertices = PList_new();
+
+//  //generate gEntities and gPairs
+//  //gEntities contains non-duplicated items
+//  //gPairs may contain duplicated items
+    PList_clear(gEntities);
+    gPairIter = gPairs.begin();
+//  FOR each model face (gFace)
+    GFIter gFIter = GM_faceIter(model);
+    while((gFace = GFIter_next(gFIter))){
+//    IF gFace has 3D boundary layer attribute
+  	  bool isBoundaryLayerFace = false;
+      VIter vIter = M_classifiedVertexIter(mesh, gFace, 1);
+      while((vertex = VIter_next(vIter))){
+        if(BL_isBaseEntity(vertex,gFace) == 1){
+          isBoundaryLayerFace = true;
+          break;
+        }
+      }
+
+      if(isBoundaryLayerFace){
+//      Add gFace to gEntities
+//  		Add gPair {gFace, gFace} to gPairMap
+        PList_appUnique(gEntities,gFace);
+        gPair = std::make_pair(gFace,gFace);
+        gPairIter = gPairs.insert(gPairIter,gPair);
+
+//      FOR each model edge (gEdge) on the closure of gFace
+        gEdges = GF_edges(gFace);
+        for(int i = 0; i < PList_size(gEdges); i++){
+//  	    Add gEdge to gEntities
+//  		  Add gPair {gEdge, gFace} to gPairMap
+          gEdge = (pGEdge)PList_item(gEdges,i);
+          PList_appUnique(gEntities,gEdge);
+          gPair = std::make_pair(gEdge,gFace);
+          gPairIter = gPairs.insert(gPairIter,gPair);
+
+//  	    FOR each model vertex (gVertex) on the closure of gEdge
+          gVertices = GE_vertices(gEdge);
+          for(int j = 0; j < PList_size(gVertices); j++){
+//  		    Add gVertex to gEntities
+//  			  Add gPair {gVertex, gFace} to gPairMap
+  				  gVertex = (pGVertex)PList_item(gVertices,j);
+            PList_appUnique(gEntities,gVertex);
+            gPair = std::make_pair(gVertex,gFace);
+            gPairIter = gPairs.insert(gPairIter,gPair);
+    	    }
+        }
+      }
+    }
+
+    std::cout << "gEntities contains:\n";
+    for (int i = 0; i < PList_size(gEntities); i++){
+      gEntity = (pGEntity)PList_item(gEntities,i);
+      std::cout << GEN_type(gEntity) << ", " << GEN_tag(gEntity) << std::endl ;
+    }
+
+    std::cout << "gPairs contains:\n";
+    for (gPairIter = gPairs.begin(); gPairIter != gPairs.end(); gPairIter++)
+      std::cout << GEN_type(gPairIter->first) << ", " << GEN_tag(gPairIter->first) << "; " << GEN_type(gPairIter->second) << ", " << GEN_tag(gPairIter->second) << std::endl ;
+
+    PList_delete(gEdges);
+    PList_delete(gVertices);
+
+//  //get growth curves
+    pPList gFaces = PList_new();
+    gPairMap_equalRange_t gPair_equalRange;
+
+    pPList seeds = PList_new();
+    pPList blendSeeds = PList_new();
+    pPList growthVertices = PList_new();
+    pPList growthEdges = PList_new();
+    pEntity seed;
+    pGRegion gRegion;
+
+    int ngc = 0, nv = 0;
+
+    int itmp;
+
+//  FOR each gEntity in gEntities
+    for(int i = 0; i < PList_size(gEntities); i++){
+      gEntity = (pGEntity)PList_item(gEntities,i);
+
+//    Generate a non-duplicated list (gFaces) for storing model faces associated with the key gEntity in gPairMap
+      PList_clear(gFaces);
+      gPair_equalRange = gPairs.equal_range(gEntity);
+      for(gPairIter = gPair_equalRange.first; gPairIter != gPair_equalRange.second; gPairIter++){
+        gFace = gPairIter->second;
+        PList_appUnique(gFaces,gFace);
+      }
+
+      printf("gEntity %d %d\n", GEN_type(gEntity), GEN_tag(gEntity));
+      printf("gFaces: ");
+      for(int is = 0; is < PList_size(gFaces); is++){
+        gFace = (pGFace)PList_item(gFaces,is);
+        printf("%d %d, ", GEN_type(gFace), GEN_tag(gFace));
+      }
+      printf("\n");
+
+//    Get mesh vertices (vertices) classified on gEntity excluding the closure
+      VIter vIter = M_classifiedVertexIter(mesh, gEntity, 0);
+
+//    FOR each vertex in vertices
+      while((vertex = VIter_next(vIter))){
+//      Create an empty list (seeds) for storing potential seed edges of vertex
+        PList_clear(seeds);
+
+//      FOR each gFace in gFaces
+        for(int j = 0; j < PList_size(gFaces); j++){
+          gFace = (pGFace)(PList_item(gFaces,j));
+//        FOR each side (faceSide) of gFace where a model region (gRegion) exists
+          for(int faceSide = 0; faceSide < 2; faceSide++){
+            if(!(gRegion = GF_region(gFace,faceSide)))
+              continue;
+
+            if(BL_isBaseEntity(vertex,gFace) == 0)
+              continue;
+
+            int hasSeed = BL_stackSeedEntity(vertex, gFace, faceSide, gRegion, &seed);
+
+            switch(hasSeed){
+              case 1:
+                //there is 1 seed edge
+              //printf("this is non-blend, base vertex id: %d\n", EN_id(vertex));
+                PList_appUnique(seeds,seed);
+                break;
+              case -1:
+                //this is a blend, there will be multiple seeds
+              //printf("this is a blend, base vertex id: %d, classification %d %d\n", EN_id(vertex), GEN_type(gEntity), GEN_tag(gEntity));
+                PList_clear(blendSeeds);
+                if(!(BL_blendSeedEdges(vertex, gFace, faceSide, gRegion, blendSeeds) == 1)){
+                  printf("unexpected BL_blendSeedEdges return value\n");
+                  exit(EXIT_FAILURE);
+                };
+                PList_appPListUnique(seeds, blendSeeds);
+                break;
+              case 0:
+                //there is no seed edge
+                break;
+              default:
+                printf("unexpected BL_stackSeedEntity return value\n");
+                exit(EXIT_FAILURE);
+    	  		}
+    	  	}
+    		}
+
+        if(PList_size(seeds) > 1){
+          printf("# of seeds %d\n", PList_size(seeds));
+        //printf("seed id:\n");
+        }
+
+
+//  		FOR each seed in seeds
+        for(int j = 0; j < PList_size(seeds); j++){
+          seed = (pEdge)PList_item(seeds,j);
+
+          PList_clear(growthVertices);
+          PList_clear(growthEdges);
+
+          if(!(itmp = BL_growthVerticesAndEdges((pEdge)seed, growthVertices, growthEdges) == 1)){
+            printf("unexpected BL_growthVerticesAndEdges return value: %d \n", itmp);
+            exit(EXIT_FAILURE);
+          }
+
+        //if(PList_size(seeds) > 1){
+        //  printf(" %d", EN_id(seed));
+        //}
+ 
+         //if(PList_size(growthVertices) != 5){
+         //  printf("# of growthVertices %d, base vertex id: %d, classification %d %d\n", PList_size(growthVertices), EN_id(vertex), GEN_type(gEntity), GEN_tag(gEntity));
+         //}
+
+          ngc++;
+          nv += PList_size(growthVertices);
+
+//  			Get info of this growth curve (growth ratio, etc)
+    		}
+        if(PList_size(seeds) > 1){
+          printf("\n");
+        }
+      }
+    }
+
+    printf("ngc, nv: %d, %d\n", ngc, nv);
+
+    PList_delete(gEntities);
+    PList_delete(gFaces);
+    PList_delete(seeds);
+    PList_delete(blendSeeds);
+    PList_delete(growthVertices);
+    PList_delete(growthEdges);
+}
 
 static void checkBLVerticesAndEdges(Output& o)
 {
