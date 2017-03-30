@@ -84,6 +84,11 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   m->getUp(e, up);
   int upwardCount = up.n;
 
+  /* check for duplicates in the upward list */
+  for (int i = 0; i < upwardCount; ++i)
+    for (int j = i + 1; j < upwardCount; ++j)
+      PCU_ALWAYS_ASSERT(up.e[i] != up.e[j]);
+
   bool adjacentToUpwardGhost=false;
   for (int i=0; i<upwardCount; ++i)
     if (m->isGhost(up.e[i])) adjacentToUpwardGhost=true;

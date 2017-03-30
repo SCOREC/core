@@ -367,8 +367,11 @@ class Mesh
     /** \brief get the i'th associated numbering */
     Numbering* getNumbering(int i);
     void addGlobalNumbering(GlobalNumbering* f);
-    void removeGlobalNumbering(GlobalNumbering* f);
+    void removeGlobalNumbering(GlobalNumbering* f);    
     int countGlobalNumberings();
+    /** \brief lookup a numbering by its unique name */
+    GlobalNumbering* findGlobalNumbering(const char* name);
+
     GlobalNumbering* getGlobalNumbering(int i);
     /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
