@@ -58,11 +58,13 @@ if(ENABLE_SIMMETRIX AND PCU_COMPRESS)
     WORKING_DIRECTORY ${MDIR})
 endif(ENABLE_SIMMETRIX AND PCU_COMPRESS)
 
-mpi_test(pumi3d-1p 4
-  ./test_pumi
-  ${MESHES}/pumi/3d-1p/model.dmg
-  ${MESHES}/pumi/3d-1p/part.smb
-  out.smb 1 0)
+if(ENABLE_ZOLTAN)
+  mpi_test(pumi3d-1p 4
+    ./test_pumi
+    ${MESHES}/pumi/3d-1p/model.dmg
+    ${MESHES}/pumi/3d-1p/part.smb
+    out.smb 1 0)
+endif()
 mpi_test(test_scaling 1
   ./test_scaling
   ${MESHES}/cube/cube.dmg
@@ -157,10 +159,12 @@ mpi_test(aniso_ma_serial 1
   ./aniso_ma_test
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb")
-mpi_test(torus_ma_parallel 4
-  ./torus_ma_test
-  "${MESHES}/torus/torus.dmg"
-  "${MESHES}/torus/4imb/torus.smb")
+if(ENABLE_ZOLTAN)
+  mpi_test(torus_ma_parallel 4
+    ./torus_ma_test
+    "${MESHES}/torus/torus.dmg"
+    "${MESHES}/torus/4imb/torus.smb")
+endif()
 mpi_test(tet_serial 1
   ./tetrahedronize
   "${MDIR}/pipe.${GXT}"
