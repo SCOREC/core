@@ -278,7 +278,7 @@ static void writeGrowthCurves(Output& o, FILE* f)
     writeDoubles(f, "first layer thickness", o.arrays.gcflt, o.nGrowthCurves);
     writeDoubles(f, "growth ratio", o.arrays.gcgr, o.nGrowthCurves);
     writeInts(f, "number of vertices on growth curve", o.arrays.igcnv, o.nGrowthCurves);
-  //writeInts(f, "list of vertices on growth curve", o.arrays.igclv, o.nLayeredMeshVertices);
+    writeInts(f, "list of vertices on growth curve", o.arrays.igclvid, o.nLayeredMeshVertices);
   }
 }
 
