@@ -384,8 +384,7 @@ static void getInterfaceElements(Output& o)
   o.nInterfaceElements = n;
 }
 
-void getGrowthCurves(Output& o, apf::Numbering* n)
-//static void getGrowthCurves(Output& o, apf::Numbering* n)
+static void getGrowthCurves(Output& o)
 {
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
@@ -607,13 +606,13 @@ void getGrowthCurves(Output& o, apf::Numbering* n)
     int nv = PList_size(allGrowthVertices);
 
     o.nLayeredMeshVertices = nv;
-    o.arrays.igclv = new int[nv];
+    o.arrays.igclv = new apf::MeshEntity*[nv];
 
     for(int i = 0; i < PList_size(allGrowthVertices); i++){
       vertex = (pVertex)PList_item(allGrowthVertices,i);
 
       apf::MeshEntity* me = reinterpret_cast<apf::MeshEntity*> (vertex);
-      o.arrays.igclv[i] = apf::getNumber(n, me, 0, 0) ;
+      o.arrays.igclv[i] = me;
     }
 
     printf("getGrowthCurves: rank %d, ngc, nv: %d, %d\n", PCU_Comm_Self(), ngc, nv);
@@ -954,7 +953,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   checkInterface(o,bcs);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
-  getGrowthCurves(o, n);
+  getGrowthCurves(o);
   apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
