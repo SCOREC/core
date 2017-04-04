@@ -7,6 +7,7 @@
 
 namespace apf {
 class Mesh;
+class MeshEntity;
 }
 
 struct GRStream;
@@ -110,7 +111,7 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
 /* layered mesh growth curves: number of vertices on each growth curve */
   int* igcnv;
 /* layered mesh growth curves: list of vertices */
-  int* igclv;
+  apf::MeshEntity** igclv;
 };
 
 

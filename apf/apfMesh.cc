@@ -303,6 +303,15 @@ Numbering* Mesh::findNumbering(const char* name)
   return 0;
 }
 
+GlobalNumbering* Mesh::findGlobalNumbering(const char* name)
+{
+  std::string n(name);
+  for (size_t i=0; i < globalNumberings.size(); ++i)
+    if (n==getName(globalNumberings[i]))
+      return globalNumberings[i];
+  return 0;
+}
+
 int Mesh::countNumberings()
 {
   return static_cast<int>(numberings.size());

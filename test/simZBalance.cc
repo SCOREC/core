@@ -49,7 +49,8 @@ int main(int argc, char** argv) {
   pGModel sim_model = gmi_export_sim(apf_model);
   pParMesh sim_mesh = PM_load(sms_file, sim_model, NULL);
   apf::Mesh2* apf_mesh = apf::createMesh(sim_mesh);
-  apf_mesh->verify();
+  //apf_mesh->verify(); <- this calls Simmetrix's verify function
+  apf::verify(apf_mesh);
   load_balance(apf_mesh);
   apf_mesh->destroyNative();
   apf::destroyMesh(apf_mesh);
