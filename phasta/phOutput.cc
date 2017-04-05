@@ -602,7 +602,7 @@ static void getGrowthCurves(Output& o)
         o.arrays.gcgr[i] = 1.0;
     }
 
-//  get info grwoth curves
+//  get info growth curves
     int nv = PList_size(allGrowthVertices);
 
     o.nLayeredMeshVertices = nv;
@@ -774,47 +774,68 @@ static void getEssentialBCs(BCs& bcs, Output& o)
 
 static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 {
-  if(o.nGrowthCurves <= 0)
-    return;
+  PCU_Comm_Begin();
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
-//  gmi_model* gm = m->getModel();
-//  int nec = countEssentialBCs(in);
+
+  if(!in.ensa_melas_dof)
+    return;
+
+  int nec = countEssentialBCs(in);
   int& ei = o.nEssentialBCNodes;
 
-  printf("already %d entries in iBC array. \n", ei);
+  printf("rank: %d; already %d entries in iBC array. \n", PCU_Comm_Self(), ei);
 
 //  int nv = m->count(0);
   int ibc = 0;
+  double* bc = new double[nec];
   apf::Copies remotes;
   apf::MeshEntity* vent;
   apf::MeshEntity* base;
   int vID = 0;
   int bID = 0;
+  int k = 0;
+
+  double* bc_zero = new double[nec];
+  printf("rank: %d; there are %d slots in bc array\n",PCU_Comm_Self(),nec);
+  for (int inec = 0; inec < nec; ++inec)
+    bc_zero[inec] = 0;
 
 // loop over growth curves
   int lc = 0; // list counter
   for(int i = 0; i < o.nGrowthCurves; i++){
     int igcnv = o.arrays.igcnv[i];
-    for(int j = 0; j < igcnv; j++){
+    for(int j = 1; j < igcnv; j++){ // skip the base
       vent = o.arrays.igclv[lc+j];
       base = o.arrays.igclv[lc];
-	  vID  = apf::getNumber(n, vent, 0, 0);
-	  bID  = apf::getNumber(n, base, 0, 0);
+	  vID = apf::getNumber(n, vent, 0, 0);
+	  bID = apf::getNumber(n, base, 0, 0);
 	  int bMID = o.arrays.nbc[bID]-1; // mapping ID
 	  assert(bMID >= 0); // should already in array
 	  int bibc = o.arrays.ibc[bMID];
+	  double* bbc = o.arrays.bc[bMID];
 	  ibc |= (bibc & (1<<14 | 1<<15 | 1<<16));
-	  if(o.arrays.nbc[vID] == 0){ // not in array
+	  if(o.arrays.nbc[vID] <= 0){ // not in array
         o.arrays.nbc[vID] = ei + 1;
         o.arrays.ibc[ei] = ibc;
+		bc = bc_zero;
+		for(k = 16; k < 24; k++)
+		  bc[k] = bbc[k];
+		o.arrays.bc[ei] = bc;
         ++ei;
 
-        printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
+        printf("rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
 
 	  }
 	  else{
 	    o.arrays.ibc[o.arrays.nbc[vID]-1] |= ibc;
+		bc = o.arrays.bc[o.arrays.nbc[vID]-1];
+		for(k = 16; k < 24; k++)
+		  bc[k] = bbc[k];
+		o.arrays.bc[o.arrays.nbc[vID]-1] = bc;
+
+//        printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
+
 	  }
 	  // top most node
 	  if(j == igcnv - 1 && m->isShared(vent)){
@@ -825,6 +846,7 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 		APF_ITERATE(apf::Copies, remotes, rit) {
           PCU_COMM_PACK(rit->first, rit->second);
 		  PCU_COMM_PACK(rit->first, ibc);
+		  PCU_COMM_PACK(rit->first, bc);
 
 		  std::cout<<"("<<rit->first<<", "<<rit->second<<")"<<std::endl;
 
@@ -840,21 +862,27 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
   while (PCU_Comm_Receive()) {
     PCU_COMM_UNPACK(e);
 	PCU_COMM_UNPACK(ibc);
+	PCU_COMM_UNPACK(bc);
 	vID = apf::getNumber(n, e, 0, 0);
-    if(o.arrays.nbc[vID] == 0){
+    if(o.arrays.nbc[vID] <= 0){
       o.arrays.nbc[vID] = ei + 1;
       o.arrays.ibc[ei] = ibc;
+      o.arrays.bc[ei] = bc;
 	  ++ei;
 
-      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
+      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
 
 	}
 	else{
 	  o.arrays.ibc[o.arrays.nbc[vID]-1] |= ibc;
+	  o.arrays.bc[o.arrays.nbc[vID]-1] = bc;
+
+//      printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
+
 	}
   }
 
-  printf("end with %d entries in iBC array. \n", o.nEssentialBCNodes);
+  printf("rank: %d; end with %d entries in iBC array. \n", PCU_Comm_Self(), o.nEssentialBCNodes);
 
 // transfer entity to numbering
   o.arrays.igclvid = new int[o.nLayeredMeshVertices];
@@ -1045,7 +1073,6 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o);
-  apf::destroyNumbering(n);
   getBoundaryElements(o);
   getInterfaceElements(o);
   getMaxElementNodes(o);
@@ -1053,6 +1080,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getGCEssentialBCs(o, n);
   getInitialConditions(bcs, o);
   getElementGraph(o, rn, bcs);
+  apf::destroyNumbering(n);
   apf::destroyNumbering(rn);
   if (in.initBubbles)
     initBubbles(o.mesh, in);

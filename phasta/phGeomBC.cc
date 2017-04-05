@@ -138,12 +138,20 @@ void getNaturalBCValues(Output& o, int block, apf::DynamicArray<double>& values)
 void getEssentialBCValues(Output& o, apf::DynamicArray<double>& values)
 {
   int nnode = o.nEssentialBCNodes;
+//debugging
+  printf("rank: %d; nnode: %d\n", PCU_Comm_Self(), o.nEssentialBCNodes);
+//end debugging
   int nbc = countEssentialBCs(*o.in);
   values.setSize(nnode * nbc);
   size_t i = 0;
-  for (int bc = 0; bc < nbc; ++bc)
-    for (int node = 0; node < nnode; ++node)
+  for (int bc = 0; bc < nbc; ++bc) {
+    for (int node = 0; node < nnode; ++node) {
+//debugging
+      printf("rank: %d; node: %d; bc: %d\n", PCU_Comm_Self(), node, bc);
+//end debugging
       values[i++] = o.arrays.bc[node][bc];
+    }
+  }
   PCU_ALWAYS_ASSERT(i == values.getSize());
 }
 
