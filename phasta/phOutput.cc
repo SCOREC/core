@@ -783,23 +783,18 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 
   int nec = countEssentialBCs(in);
   int& ei = o.nEssentialBCNodes;
+  int nv = m->count(0);
 
-  printf("rank: %d; already %d entries in iBC array. \n", PCU_Comm_Self(), ei);
+  printf("rank: %d; already %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), ei, nv);
 
-//  int nv = m->count(0);
   int ibc = 0;
-  double* bc = new double[nec];
+  int bibc = 0;
   apf::Copies remotes;
   apf::MeshEntity* vent;
   apf::MeshEntity* base;
   int vID = 0;
   int bID = 0;
   int k = 0;
-
-  double* bc_zero = new double[nec];
-  printf("rank: %d; there are %d slots in bc array\n",PCU_Comm_Self(),nec);
-  for (int inec = 0; inec < nec; ++inec)
-    bc_zero[inec] = 0;
 
 // loop over growth curves
   int lc = 0; // list counter
@@ -812,27 +807,27 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 	  bID = apf::getNumber(n, base, 0, 0);
 	  int bMID = o.arrays.nbc[bID]-1; // mapping ID
 	  assert(bMID >= 0); // should already in array
-	  int bibc = o.arrays.ibc[bMID];
+	  bibc = o.arrays.ibc[bMID];
 	  double* bbc = o.arrays.bc[bMID];
 	  ibc |= (bibc & (1<<14 | 1<<15 | 1<<16));
 	  if(o.arrays.nbc[vID] <= 0){ // not in array
         o.arrays.nbc[vID] = ei + 1;
         o.arrays.ibc[ei] = ibc;
-		bc = bc_zero;
-		for(k = 16; k < 24; k++)
-		  bc[k] = bbc[k];
-		o.arrays.bc[ei] = bc;
+        double* bc_new = new double[nec];
+		for(k = 0; k < 16; k++)
+		  bc_new[k] = 0;
+        for(k = 16; k < 24; k++)
+		  bc_new[k] = bbc[k];
+		o.arrays.bc[ei] = bc_new;
         ++ei;
 
-        printf("rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
+//        printf("rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
 
 	  }
 	  else{
 	    o.arrays.ibc[o.arrays.nbc[vID]-1] |= ibc;
-		bc = o.arrays.bc[o.arrays.nbc[vID]-1];
-		for(k = 16; k < 24; k++)
-		  bc[k] = bbc[k];
-		o.arrays.bc[o.arrays.nbc[vID]-1] = bc;
+  		for(k = 16; k < 24; k++)
+		  o.arrays.bc[o.arrays.nbc[vID]-1][k] = bbc[k];
 
 //        printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
 
@@ -846,7 +841,7 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 		APF_ITERATE(apf::Copies, remotes, rit) {
           PCU_COMM_PACK(rit->first, rit->second);
 		  PCU_COMM_PACK(rit->first, ibc);
-		  PCU_COMM_PACK(rit->first, bc);
+		  PCU_Comm_Pack(rit->first, bbc, nec*sizeof(double));
 
 		  std::cout<<"("<<rit->first<<", "<<rit->second<<")"<<std::endl;
 
@@ -857,32 +852,42 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
   }
 
 // receive top most node
-  apf::MeshEntity* e;
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(e);
-	PCU_COMM_UNPACK(ibc);
-	PCU_COMM_UNPACK(bc);
-	vID = apf::getNumber(n, e, 0, 0);
+    apf::MeshEntity* rvent;
+    PCU_COMM_UNPACK(rvent);
+    int ribc = 0;
+	PCU_COMM_UNPACK(ribc);
+	double* rbc = new double[nec];
+	PCU_Comm_Unpack(rbc, nec*sizeof(double));
+	vID = apf::getNumber(n, rvent, 0, 0);
     if(o.arrays.nbc[vID] <= 0){
       o.arrays.nbc[vID] = ei + 1;
-      o.arrays.ibc[ei] = ibc;
-      o.arrays.bc[ei] = bc;
+      o.arrays.ibc[ei] = ribc;
+      double* rbc_new = new double[nec];
+      for(k = 0; k < 16; k++)
+	    rbc_new[k] = 0;
+	  for(k = 16; k < 24; k++)
+	    rbc_new[k] = rbc[k];
+      o.arrays.bc[ei] = rbc_new;
 	  ++ei;
 
-      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
+//      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
 
 	}
 	else{
-	  o.arrays.ibc[o.arrays.nbc[vID]-1] |= ibc;
-	  o.arrays.bc[o.arrays.nbc[vID]-1] = bc;
+	  o.arrays.ibc[o.arrays.nbc[vID]-1] |= ribc;
+      for(k = 16; k < 24; k++){
+	    printf("rank: %d, rbc[%d] = %f\n",PCU_Comm_Self(),k,rbc[k]);
+		o.arrays.bc[o.arrays.nbc[vID]-1][k] = rbc[k];
+      }
 
-//      printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
+      printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
 
 	}
   }
 
-  printf("rank: %d; end with %d entries in iBC array. \n", PCU_Comm_Self(), o.nEssentialBCNodes);
+  printf("rank: %d; end with %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), o.nEssentialBCNodes, nv);
 
 // transfer entity to numbering
   o.arrays.igclvid = new int[o.nLayeredMeshVertices];
