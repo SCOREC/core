@@ -774,12 +774,11 @@ static void getEssentialBCs(BCs& bcs, Output& o)
 
 static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 {
-  PCU_Comm_Begin();
   Input& in = *o.in;
   apf::Mesh* m = o.mesh;
-
   if(!in.ensa_melas_dof)
     return;
+  PCU_Comm_Begin();
 
   int nec = countEssentialBCs(in);
   int& ei = o.nEssentialBCNodes;
