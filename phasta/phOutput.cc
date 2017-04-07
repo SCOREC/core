@@ -833,16 +833,13 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 	  }
 	  // top most node
 	  if(j == igcnv - 1 && m->isShared(vent)){
-
-	    std::cout<<"v "<<vID<<" has remote copies: "<<std::endl;
-
 	    m->getRemotes(vent, remotes);
 		APF_ITERATE(apf::Copies, remotes, rit) {
           PCU_COMM_PACK(rit->first, rit->second);
-		  PCU_COMM_PACK(rit->first, ibc);
-		  PCU_Comm_Pack(rit->first, bbc, nec*sizeof(double));
+		  PCU_Comm_Pack(rit->first, &ibc, sizeof(int));
+		  PCU_Comm_Pack(rit->first, &(bbc[0]), nec*sizeof(double));
 
-		  std::cout<<"("<<rit->first<<", "<<rit->second<<")"<<std::endl;
+		  printf("rank: %d: v %d has remote copies on rank %d\n",PCU_Comm_Self(),vID,rit->first);
 
 		}
 	  }
@@ -856,9 +853,9 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
     apf::MeshEntity* rvent;
     PCU_COMM_UNPACK(rvent);
     int ribc = 0;
-	PCU_COMM_UNPACK(ribc);
+	PCU_Comm_Unpack(&ribc, sizeof(int));
 	double* rbc = new double[nec];
-	PCU_Comm_Unpack(rbc, nec*sizeof(double));
+	PCU_Comm_Unpack(&(rbc[0]), nec*sizeof(double));
 	vID = apf::getNumber(n, rvent, 0, 0);
     if(o.arrays.nbc[vID] <= 0){
       o.arrays.nbc[vID] = ei + 1;
@@ -876,12 +873,10 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 	}
 	else{
 	  o.arrays.ibc[o.arrays.nbc[vID]-1] |= ribc;
-      for(k = 16; k < 24; k++){
-	    printf("rank: %d, rbc[%d] = %f\n",PCU_Comm_Self(),k,rbc[k]);
+      for(k = 16; k < 24; k++)
 		o.arrays.bc[o.arrays.nbc[vID]-1][k] = rbc[k];
-      }
 
-      printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
+//      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
 
 	}
   }
