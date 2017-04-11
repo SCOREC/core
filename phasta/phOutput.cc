@@ -808,7 +808,7 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 	  vID = apf::getNumber(n, vent, 0, 0);
 	  bID = apf::getNumber(n, base, 0, 0);
 	  int bMID = o.arrays.nbc[bID]-1; // mapping ID
-	  assert(bMID >= 0); // should already in array
+	  PCU_ALWAYS_ASSERT(bMID >= 0); // should already in array
 	  bibc = o.arrays.ibc[bMID];
 	  double* bbc = o.arrays.bc[bMID];
 	  ibc |= (bibc & (1<<eibcStr | 1<<(eibcStr+1) | 1<<(eibcStr+2)));
