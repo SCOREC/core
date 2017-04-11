@@ -786,14 +786,17 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 
   printf("rank: %d; already %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), ei, nv);
 
-  int ibc = 0;
-  int bibc = 0;
   apf::Copies remotes;
   apf::MeshEntity* vent;
   apf::MeshEntity* base;
+  int ibc = 0;
+  int bibc = 0;
   int vID = 0;
   int bID = 0;
   int k = 0;
+  int ebcStr = 3+2+4+7; // 16; it depends on how BC array is arranged.
+  int ebcEnd = 3+2+4+7+8; // 24; 8 slots for mesh elas BCs
+  int eibcStr = 14; // it depends on how iBC bits are arranged.
 
 // loop over growth curves
   int lc = 0; // list counter
@@ -808,28 +811,22 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 	  assert(bMID >= 0); // should already in array
 	  bibc = o.arrays.ibc[bMID];
 	  double* bbc = o.arrays.bc[bMID];
-	  ibc |= (bibc & (1<<14 | 1<<15 | 1<<16));
+	  ibc |= (bibc & (1<<eibcStr | 1<<(eibcStr+1) | 1<<(eibcStr+2)));
 	  if(o.arrays.nbc[vID] <= 0){ // not in array
         o.arrays.nbc[vID] = ei + 1;
         o.arrays.ibc[ei] = ibc;
         double* bc_new = new double[nec];
-		for(k = 0; k < 16; k++)
+		for(k = 0; k < ebcStr; k++)
 		  bc_new[k] = 0;
-        for(k = 16; k < 24; k++)
+        for(k = ebcStr; k < ebcEnd; k++)
 		  bc_new[k] = bbc[k];
 		o.arrays.bc[ei] = bc_new;
         ++ei;
-
-//        printf("rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
-
 	  }
 	  else{
 	    o.arrays.ibc[o.arrays.nbc[vID]-1] |= ibc;
-  		for(k = 16; k < 24; k++)
+  		for(k = ebcStr; k < ebcEnd; k++)
 		  o.arrays.bc[o.arrays.nbc[vID]-1][k] = bbc[k];
-
-//        printf("rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
-
 	  }
 	  // top most node
 	  if(j == igcnv - 1 && m->isShared(vent)){
@@ -838,9 +835,6 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
           PCU_COMM_PACK(rit->first, rit->second);
 		  PCU_Comm_Pack(rit->first, &ibc, sizeof(int));
 		  PCU_Comm_Pack(rit->first, &(bbc[0]), nec*sizeof(double));
-
-		  printf("rank: %d: v %d has remote copies on rank %d\n",PCU_Comm_Self(),vID,rit->first);
-
 		}
 	  }
     }
@@ -861,23 +855,17 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
       o.arrays.nbc[vID] = ei + 1;
       o.arrays.ibc[ei] = ribc;
       double* rbc_new = new double[nec];
-      for(k = 0; k < 16; k++)
+      for(k = 0; k < ebcStr; k++)
 	    rbc_new[k] = 0;
-	  for(k = 16; k < 24; k++)
+	  for(k = ebcStr; k < ebcEnd; k++)
 	    rbc_new[k] = rbc[k];
       o.arrays.bc[ei] = rbc_new;
 	  ++ei;
-
-//      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to new entry %d\n",PCU_Comm_Self(),bID,vID,ibc,ei);
-
 	}
 	else{
 	  o.arrays.ibc[o.arrays.nbc[vID]-1] |= ribc;
-      for(k = 16; k < 24; k++)
+      for(k = ebcStr; k < ebcEnd; k++)
 		o.arrays.bc[o.arrays.nbc[vID]-1][k] = rbc[k];
-
-//      printf("parallel: rank: %d, base: %d, v: %d, iBC: %d added to entry %d\n",PCU_Comm_Self(),bID,vID,ibc,o.arrays.nbc[vID]-1);
-
 	}
   }
 
