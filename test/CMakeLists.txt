@@ -175,6 +175,7 @@ if(ENABLE_SIMMETRIX)
   if(SIM_PARASOLID)
     util_exe_func(sim_part sim_part.cc)
     util_exe_func(simSpjToSmd simSpjToSmd.cc)
+    util_exe_func(simDiscrete simDiscrete.cc)
   endif()
 endif()
 
