@@ -318,7 +318,7 @@ static void writeDataHeader(std::ostream& file,
 }
 
 static void writeEncodedArray(std::ostream& file,
-    unsigned int dataLenBytes,
+    unsigned long dataLenBytes,
     char* dataToEncode)
 {
   if ( lion::can_compress )
@@ -456,7 +456,12 @@ static void writeConnectivity(std::ostream& file,
       dataLen += countElementNodes(n,e);
     }
     m->end(elements);
-    unsigned int dataLenBytes = dataLen*sizeof(int);
+    unsigned int dataLenBytes_i32 = dataLen*sizeof(int);
+    fprintf(stderr, "%s dataLen %d dataLenBytes %d \n",
+      __func__, dataLen, dataLenBytes_i32);
+    unsigned long dataLenBytes = dataLen*sizeof(int);
+    fprintf(stderr, "%s sizeof(unsigned long) %d dataLen %d dataLenBytes %ld \n",
+      __func__, sizeof(dataLenBytes), dataLen, dataLenBytes);
     int* dataToEncode = new int[dataLen]();
     elements = m->begin(cellDim);
     unsigned int dataIndex = 0;
@@ -1010,7 +1015,7 @@ void writeVtkFiles(
     std::vector<std::string> writeFields,
     int cellDim)
 {
-  writeVtkFilesRunner(prefix, m, writeFields, true, cellDim);
+  writeVtkFilesRunner(prefix, m, writeFields, false, cellDim);
 }
 
 void writeVtkFiles(const char* prefix, Mesh* m, int cellDim)

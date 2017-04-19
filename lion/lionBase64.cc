@@ -133,7 +133,7 @@ std::string base64Encode (const char* input, const unsigned long len )
 {
   std::string encoded;
   char inputChars[3];
-  unsigned int index = 0;
+  unsigned long index = 0;
 
   //encode all the string in 3 byte sections, this loop won't encode the last
   // 1 or 2 bytes if the len is not divisible by 3

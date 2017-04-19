@@ -198,7 +198,7 @@ static void verifyEntity(Mesh* m, UpwardCounts& guc, MeshEntity* e, bool abort_o
   if (ed)
     verifyDown(m, e, gd, ed);
   if (ed < md)
-    verifyUp(m, guc, e, abort_on_error);
+// disabling    verifyUp(m, guc, e, abort_on_error);
   verifyResidence(m, e);
 }
 
