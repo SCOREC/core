@@ -474,15 +474,6 @@ static void getGrowthCurves(Output& o)
       }
     }
 
-  //for (int i = 0; i < PList_size(gEntities); i++){
-  //  gEntity = (pGEntity)PList_item(gEntities,i);
-  //  printf("getGrowthCurves: rank %d gEntities %d %d\n", PCU_Comm_Self(), GEN_type(gEntity), GEN_tag(gEntity));
-  //}
-
-  //std::cout << "gPairs contains:\n";
-  //for (gPairIter = gPairs.begin(); gPairIter != gPairs.end(); gPairIter++)
-  //  std::cout << GEN_type(gPairIter->first) << ", " << GEN_tag(gPairIter->first) << "; " << GEN_type(gPairIter->second) << ", " << GEN_tag(gPairIter->second) << std::endl ;
-
 //  get seeds of all growth curves
     pPList allSeeds = PList_new();
     pPList gFaces = PList_new();
@@ -529,12 +520,10 @@ static void getGrowthCurves(Output& o)
             switch(hasSeed){
               case 1:
                 //there is 1 seed edge
-              //printf("this is non-blend, base vertex id: %d\n", EN_id(vertex));
                 PList_appUnique(seeds,seed);
                 break;
               case -1:
                 //this is a blend, there will be multiple seeds
-              //printf("this is a blend, base vertex id: %d, classification %d %d\n", EN_id(vertex), GEN_type(gEntity), GEN_tag(gEntity));
                 PList_clear(blendSeeds);
                 if(!(BL_blendSeedEdges(vertex, gFace, faceSide, gRegion, blendSeeds) == 1)){
                   printf("unexpected BL_blendSeedEdges return value\n");
@@ -551,10 +540,6 @@ static void getGrowthCurves(Output& o)
     	  		}
     	  	}
     		}
-
-      //if(PList_size(seeds) > 1){
-      //  printf("getGrowthCurves: rank %d, gEntity %d %d, # of seeds %d\n", PCU_Comm_Self(), GEN_type(gEntity), GEN_tag(gEntity), PList_size(seeds));
-      //}
 
         //Append seeds to allSeeds
         PList_appPList(allSeeds,seeds);
