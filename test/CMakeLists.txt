@@ -33,6 +33,8 @@ util_exe_func(uniform uniform.cc)
 util_exe_func(refine2x refine2x.cc)
 util_exe_func(serialize serialize.cc)
 util_exe_func(tetrahedronize tetrahedronize.cc)
+util_exe_func(intrude intrude.cc)
+util_exe_func(extrude extrude.cc)
 
 # Mesh conversion/formatting utilities
 util_exe_func(from_gmsh gmsh.cc)
@@ -138,8 +140,6 @@ test_exe_func(prismCodeMatch ../ma/prismCodeMatch.cc)
 test_exe_func(pyramidCodeMatch ../ma/pyramidCodeMatch.cc)
 test_exe_func(newdim newdim.cc)
 test_exe_func(construct construct.cc)
-util_exe_func(intrude intrude.cc)
-util_exe_func(extrude extrude.cc)
 test_exe_func(test_scaling test_scaling.cc)
 test_exe_func(mixedNumbering mixedNumbering.cc)
 test_exe_func(test_verify test_verify.cc)
@@ -157,6 +157,7 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(inClosureOf_test inClosureOf_test.cc)
   test_exe_func(simZBalance simZBalance.cc)
 endif()
+
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
