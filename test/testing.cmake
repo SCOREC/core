@@ -49,6 +49,15 @@ if(ENABLE_SIMMETRIX)
     "${MDIR}/4/")
 endif(ENABLE_SIMMETRIX)
 
+if(ENABLE_SIMMETRIX)
+  set(MDIR ${MESHES}/phasta/BL_query)
+  mpi_test(chef-BL_query 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/run_case)
+  add_test(NAME chef-BL_query-diff
+    COMMAND diff -r run_case/4-procs_case/ good_case/4-procs_case
+    WORKING_DIRECTORY ${MDIR})
+endif(ENABLE_SIMMETRIX)
+
 set(MDIR ${MESHES}/phasta/loopDriver)
 if(ENABLE_SIMMETRIX AND PCU_COMPRESS)
   mpi_test(ph_adapt 1
