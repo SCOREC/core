@@ -5,11 +5,13 @@
 #include "phBubble.h"
 #include "phAxisymmetry.h"
 #include "phInterfaceCutter.h"
+#ifdef HAVE_SIMMETRIX
 #include "apfSIM.h"
 #include "gmi_sim.h"
 #include <SimUtil.h>
 #include <SimPartitionedMesh.h>
 #include <SimAdvMeshing.h>
+#endif
 #include <fstream>
 #include <sstream>
 #include <cassert>
@@ -386,8 +388,12 @@ static void getInterfaceElements(Output& o)
 
 static void getGrowthCurves(Output& o)
 {
+  o.nGrowthCurves = 0;
+  o.nLayeredMeshVertices = 0;
+
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
+#ifdef HAVE_SIMMETRIX
     Sim_logOn("getGrowthCurves.log");
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);
@@ -526,16 +532,16 @@ static void getGrowthCurves(Output& o)
                 //this is a blend, there will be multiple seeds
                 PList_clear(blendSeeds);
                 if(!(BL_blendSeedEdges(vertex, gFace, faceSide, gRegion, blendSeeds) == 1)){
-                  printf("unexpected BL_blendSeedEdges return value\n");
+                  printf("%s: unexpected BL_blendSeedEdges return value\n",__func__);
                   exit(EXIT_FAILURE);
-                };
+                }
                 PList_appPListUnique(seeds, blendSeeds);
                 break;
               case 0:
                 //there is no seed edge
                 break;
               default:
-                printf("unexpected BL_stackSeedEntity return value\n");
+                printf("%s: unexpected BL_stackSeedEntity return value\n",__func__);
                 exit(EXIT_FAILURE);
     	  		}
     	  	}
@@ -569,7 +575,7 @@ static void getGrowthCurves(Output& o)
 
 //    get growth vertices (growthVertices) and edges for seed
       if(!(BL_growthVerticesAndEdges((pEdge)seed, growthVertices, growthEdges) == 1)){
-        printf("unexpected BL_growthVerticesAndEdges return value\n");
+        printf("%s: unexpected BL_growthVerticesAndEdges return value\n",__func__);
         exit(EXIT_FAILURE);
       }
 
@@ -600,13 +606,13 @@ static void getGrowthCurves(Output& o)
       o.arrays.igclv[i] = me;
     }
 
-    printf("getGrowthCurves: rank %d, ngc, nv: %d, %d\n", PCU_Comm_Self(), ngc, nv);
+    printf("%s: rank %d, ngc, nv: %d, %d\n", __func__, PCU_Comm_Self(), ngc, nv);
 
     PCU_Add_Ints(&ngc,sizeof(ngc));
     PCU_Add_Ints(&nv,sizeof(nv));
 
     if(PCU_Comm_Self() == 0)
-      printf("getGrowthCurves: total ngc, nv: %d, %d\n", ngc, nv);
+      printf("%s: total ngc, nv: %d, %d\n", __func__, ngc, nv);
 
     PList_delete(gEdges);
     PList_delete(gVertices);
@@ -622,11 +628,10 @@ static void getGrowthCurves(Output& o)
     //clean up utility
     Progress_delete(progress);
     Sim_logOff();
+#endif
   }
   else {
-    printf("wrong! getGrowthCurves: not implemented for non-simmetrix mesh");
-    o.nGrowthCurves = 0;
-    o.nLayeredMeshVertices = 0;
+    printf("%s: warning! not implemented for MDS mesh\n",__func__);
   }
   return;
 }
