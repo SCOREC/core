@@ -1,5 +1,7 @@
+#include "apf.h"
 #include "apfMDS.h"
 #include "apfMesh2.h"
+#include "apfShape.h"
 #include "gmi.h" /* this is for gmi_getline... */
 
 #include <cstdio>
@@ -8,6 +10,16 @@
 #include <cstdlib>
 
 namespace {
+
+bool isQuadratic(int gmshType)
+{
+  switch (gmshType) {
+    case 8: return true;
+    case 9: return true;
+    case 11: return true;
+    default: return false;
+  }
+}
 
 int apfFromGmsh(int gmshType)
 {
@@ -19,6 +31,9 @@ int apfFromGmsh(int gmshType)
     case 5: return apf::Mesh::HEX;
     case 6: return apf::Mesh::PRISM;
     case 7: return apf::Mesh::PYRAMID;
+    case 8: return apf::Mesh::EDGE;
+    case 9: return apf::Mesh::TRIANGLE;
+    case 11: return apf::Mesh::TET;
     case 15: return apf::Mesh::VERTEX;
     default: return -1;
   }
@@ -36,7 +51,9 @@ struct Reader {
   char* line;
   char* word;
   size_t linecap;
+  bool isQuadratic;
   std::map<long, Node> nodeMap;
+  std::map<long, apf::MeshEntity*> entMap[4];
 };
 
 void initReader(Reader* r, apf::Mesh2* m, const char* filename)
@@ -50,6 +67,7 @@ void initReader(Reader* r, apf::Mesh2* m, const char* filename)
   r->line = static_cast<char*>(malloc(1));
   r->line[0] = '\0';
   r->linecap = 1;
+  r->isQuadratic = false;
 }
 
 void freeReader(Reader* r)
@@ -129,8 +147,10 @@ apf::MeshEntity* lookupVert(Reader* r, long nodeId, apf::ModelEntity* g)
 
 void readElement(Reader* r)
 {
-  /* long id = */ getLong(r);
+  long id = getLong(r);
   long gmshType = getLong(r);
+  if (isQuadratic(gmshType))
+    r->isQuadratic = true;
   int apfType = apfFromGmsh(gmshType);
   PCU_ALWAYS_ASSERT(0 <= apfType);
   int nverts = apf::Mesh::adjacentCount[apfType][0];
@@ -149,8 +169,10 @@ void readElement(Reader* r)
   }
   if (dim != 0) {
     if (dim > r->mesh->getDimension())
-      apf::changeMdsDimension(r->mesh, dim); 
-    apf::buildElement(r->mesh, g, apfType, verts);
+      apf::changeMdsDimension(r->mesh, dim);
+    apf::MeshEntity* ent = apf::buildElement(r->mesh, g, apfType, verts);
+    if (r->isQuadratic)
+      r->entMap[dim][id] = ent;
   }
   getLine(r);
 }
@@ -165,6 +187,50 @@ void readElements(Reader* r)
   checkMarker(r, "$EndElements");
 }
 
+void readQuadraticElement(Reader* r)
+{
+  long id = getLong(r);
+  long gmshType = getLong(r);
+  int apfType = apfFromGmsh(gmshType);
+  if (apfType == apf::Mesh::VERTEX) return;
+  PCU_ALWAYS_ASSERT(0 <= apfType);
+  PCU_ALWAYS_ASSERT_VERBOSE(isQuadratic(gmshType),
+      "no support for variable p-order meshes");
+  int nverts = apf::Mesh::adjacentCount[apfType][0];
+  int nedges = apf::Mesh::adjacentCount[apfType][1];
+  int dim = apf::Mesh::typeDimension[apfType];
+  long ntags = getLong(r);
+  getLong(r); /* discard physical type */
+  getLong(r); /* discard geometric tag */
+  for (long i = 2; i < ntags; ++i)
+    getLong(r); /* discard all other tags */
+  for (long i = 0; i < nverts; ++i)
+    getLong(r); /* discard all vertex nodes */
+  apf::Downward edges;
+  apf::MeshEntity* ent = r->entMap[dim][id];
+  r->mesh->getDownward(ent, 1, edges);
+  apf::Field* coord = r->mesh->getCoordinateField();
+  for (long i = 0; i < nedges; ++i) {
+    long nid = getLong(r);
+    apf::Vector3 point = r->nodeMap[nid].point;
+    apf::setVector(coord, edges[i], 0, point);
+  }
+}
+
+void readQuadratic(Reader* r, apf::Mesh2* m, const char* filename)
+{
+  m->changeShape(apf::getSerendipity());
+  initReader(r, m, filename);
+  seekMarker(r, "$Elements");
+  long n = getLong(r);
+  getLine(r);
+  for (long i = 0; i < n; ++i) {
+    readQuadraticElement(r);
+    getLine(r);
+  }
+  checkMarker(r, "$EndElements");
+}
+
 void readGmsh(apf::Mesh2* m, const char* filename)
 {
   Reader r;
@@ -173,6 +239,8 @@ void readGmsh(apf::Mesh2* m, const char* filename)
   readElements(&r);
   freeReader(&r);
   m->acceptChanges();
+  if (r.isQuadratic)
+    readQuadratic(&r, m, filename);
 }
 
 }
