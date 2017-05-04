@@ -128,7 +128,7 @@ void mds_give_tag(struct mds_tag* tag, struct mds* m, mds_id e)
   t = mds_type(e);
   if ( ! tag->has[t]) {
     tag->has[t] = calloc((m->cap[t] / 8) + 1, 1);
-    tag->data[t] = malloc(tag->bytes * m->cap[t]);
+    tag->data[t] = calloc(tag->bytes * m->cap[t], 1);
   }
   i = mds_index(e);
   c = i / 8;
