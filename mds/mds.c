@@ -34,8 +34,6 @@ static void* mds_realloc(void* p, size_t n)
 #define REALLOC(p,n) ((p)=mds_realloc(p,(n)*sizeof(*(p))))
 #define ZERO(o) memset(&(o),0,sizeof(o))
 
-#define MDS_LIVE -2
-
 int const mds_dim[MDS_TYPES] =
 {0 /* MDS_VERTEX */
 ,1 /* MDS_EDGE */
