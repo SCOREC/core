@@ -28,6 +28,7 @@ enum {
 typedef MDS_ID_TYPE mds_id;
 
 #define MDS_NONE -1
+#define MDS_LIVE -2
 
 struct mds {
   int d;

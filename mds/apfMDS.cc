@@ -472,10 +472,15 @@ class MeshMDS : public Mesh2
     {
       mds_tag* tag;
       tag = reinterpret_cast<mds_tag*>(t);
-      int nWords = tag->bytes*mesh->mds.cap[type] / sizeof(uint16_t);
+      /* count the number of 'live' indices */
+      int numLive = 0;
+      for (int i=0; i < mesh->mds.end[type]; ++i) {
+        if (mesh->mds.free[type][i] == MDS_LIVE)
+          numLive++;
+      }
+      int nWords = numLive / sizeof(uint16_t);
       uint16_t* data = reinterpret_cast<uint16_t*>(tag->data[type]);
       uint32_t sum = 0;
-      /* IP headers always contain an even number of bytes. */
       while (nWords-- > 0)
         sum += *(data++);
       /* Use carries to compute 1's complement sum. */
