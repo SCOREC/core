@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <MeshSim.h>
+#include <SimAdvMeshing.h>
 #include <SimPartitionedMesh.h>
 #include <SimModelerAdvUtil.h>
 #include <SimModelerUtil.h>
@@ -142,6 +143,7 @@ int main(int argc, char** argv)
   SimUtil_start();
   Sim_readLicenseFile(NULL);
   MS_init();
+  SimAdvMeshing_start();
   Sim_setMessageHandler(messageHandler);
 
   pGModel simModel = GM_load(modelFile.c_str(), NULL, NULL);
@@ -165,6 +167,7 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
 
+  SimAdvMeshing_stop();
   SimModel_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
