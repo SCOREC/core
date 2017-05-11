@@ -73,8 +73,8 @@ string(REGEX REPLACE
   "\\1.\\2" SIM_DOT_VERSION
   "${SIM_VERSION}")
 
-set(MIN_VALID_SIM_VERSION 11.0.170119)
-set(MAX_VALID_SIM_VERSION 11.0.170317)
+set(MIN_VALID_SIM_VERSION 11.0.170411)
+set(MAX_VALID_SIM_VERSION 11.0.170427)
 if( (SIM_DOT_VERSION VERSION_LESS MIN_VALID_SIM_VERSION) OR
     (SIM_DOT_VERSION VERSION_GREATER MAX_VALID_SIM_VERSION) )
   MESSAGE(FATAL_ERROR 
@@ -96,10 +96,11 @@ math(EXPR len "${archEnd}-${archStart}")
 string(SUBSTRING "${SIMMODSUITE_LIBS}" "${archStart}" "${len}" SIM_ARCHOS)
 message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
+set(SIM_PARASOLID_VERSION 280)
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
   getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}" 
-    SimParasolid simParaLib)
+    SimParasolid${SIM_PARASOLID_VERSION} simParaLib)
   set(SIM_CAD_LIB_NAMES
     ${simParaLib}
     pskernel)
@@ -118,6 +119,7 @@ endif()
 simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
 
 set(SIM_OPT_LIB_NAMES
+  SimDiscrete
   SimField
   SimAdvMeshing)
 

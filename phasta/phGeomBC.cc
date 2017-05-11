@@ -270,17 +270,15 @@ static void writeEdges(Output& o, FILE* f)
   }
 }
 
-static void writeBoundaryLayer(Output& o, FILE* f)
+static void writeGrowthCurves(Output& o, FILE* f)
 {
-  o.nGrowthCurves = 0;         // JUST FOR NOW. Need data from generateOutput
-  o.nLayeredMeshVertices = 0;  // JUST FOR NOW. Need data from generateOutput
   if (o.nGrowthCurves > 0) {
     writeInt(f, "number of growth curves", o.nGrowthCurves);
-    writeInt(f, "number of layered mesh vertices", o.nGrowthCurves);
-    writeDoubles(f, "first layer thickness", o.arrays.blflt, o.nGrowthCurves);
-    writeDoubles(f, "growth ratio", o.arrays.blgr, o.nGrowthCurves);
-    writeInts(f, "total number of vertices", o.arrays.bltnv, o.nGrowthCurves);
-    writeInts(f, "growth curve connectivity", o.arrays.bllist, o.nLayeredMeshVertices);
+    writeInt(f, "number of layered mesh vertices", o.nLayeredMeshVertices);
+    writeDoubles(f, "first layer thickness", o.arrays.gcflt, o.nGrowthCurves);
+    writeDoubles(f, "growth ratio", o.arrays.gcgr, o.nGrowthCurves);
+    writeInts(f, "number of vertices on growth curve", o.arrays.igcnv, o.nGrowthCurves);
+    writeInts(f, "list of vertices on growth curve", o.arrays.igclvid, o.nLayeredMeshVertices);
   }
 }
 
@@ -342,7 +340,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeInts(f, "periodic masters array", o.arrays.iper, m->count(0));
   writeElementGraph(o, f);
   writeEdges(o, f);
-  writeBoundaryLayer(o, f);
+  writeGrowthCurves(o, f);
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

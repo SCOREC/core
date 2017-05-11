@@ -22,11 +22,13 @@
 //
 
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
+#include <PCU.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 
 #ifdef HAVE_SIMMETRIX
 #include "SimPartitionedMesh.h"
+#include "SimAdvMeshing.h"
 #include "SimModel.h"
 #include "SimUtil.h"
 #ifdef SIM_PARASOLID
@@ -59,9 +61,13 @@ void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
+  MPI_Init(&argc,&argv);
+  PCU_Comm_Init();
+  PCU_Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
+  SimAdvMeshing_start();
 #ifdef SIM_PARASOLID
   SimParasolid_start(1);
 #endif
@@ -92,11 +98,13 @@ int main(int argc, char **argv)
   outmeshFilename = tmp.c_str();
 
   /* print message */
-  cout<<endl;
-  cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
-  cout<<"Partitioning into "<< desiredTotNumParts <<" parts."<<endl;
-  cout<<"Simmetrix says..."<<endl;
-  cout<<"**********************************"<<endl;
+  if (PCU_Comm_Self()==0) {
+    cout<<endl;
+    cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
+    cout<<"Partitioning into "<< desiredTotNumParts <<" parts."<<endl;
+    cout<<"Simmetrix says..."<<endl;
+    cout<<"**********************************"<<endl;
+  }
 
   // NOTE: Sim_readLicenseFile() is for internal testing only.  To use,
   // pass in the location of a file containing your keys.  For a release 
@@ -137,17 +145,22 @@ int main(int argc, char **argv)
   NM_release(nmodel);
 #endif
 
-  cout<<"**********************************"<<endl;
-  cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
-  cout<<endl;
+  if (PCU_Comm_Self()==0) {
+    cout<<"**********************************"<<endl;
+    cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
+    cout<<endl;
+  }
 
-  Progress_delete(progress); 
+  Progress_delete(progress);
   Sim_logOff();
+  SimAdvMeshing_stop();
 #ifdef SIM_PARASOLID
   SimParasolid_stop(1);
 #endif
   Sim_unregisterAllKeys();
   SimPartitionedMesh_stop();
+  PCU_Comm_Free();
+  MPI_Finalize();
   return 0;
 }
 

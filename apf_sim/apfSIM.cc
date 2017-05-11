@@ -865,8 +865,7 @@ gmi_model* MeshSIM::getModel()
 
 void MeshSIM::migrate(Migration* plan)
 {
-  pMigrator migrator = Migrator_new(mesh,0);
-  Migrator_reset(migrator,this->getDimension());
+  pMigrator migrator = Migrator_new(mesh,this->getDimension(),0);
   int gid = PMU_gid(getId(),0);
   for (int i=0; i < plan->count(); ++i)
   {

@@ -7,6 +7,7 @@
 
 namespace apf {
 class Mesh;
+class MeshEntity;
 }
 
 struct GRStream;
@@ -103,14 +104,16 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
   int* ileo;
 /* edges to tetrahedra adjacencies */
   int* ile;
-/* boundary layer mesh: first layer thickness */
-  double* blflt;
-/* boundary layer mesh: growth ratio */
-  double* blgr;
-/* boundary layer mesh: total number of vertices */
-  int* bltnv;
-/* boundary layer mesh: connectivity */
-  int* bllist;
+/* layered mesh growth curves: first layer thickness */
+  double* gcflt;
+/* layered mesh growth curves: growth ratio */
+  double* gcgr;
+/* layered mesh growth curves: number of vertices on each growth curve */
+  int* igcnv;
+/* layered mesh growth curves: list of vertices */
+  apf::MeshEntity** igclv;
+/* layered mesh growth curves: list of vertice IDs */
+  int* igclvid;
 };
 
 
