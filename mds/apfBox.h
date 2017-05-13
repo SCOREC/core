@@ -58,7 +58,7 @@ struct BoxBuilder
   void buildCellRegion(int i);
   void buildCell(int i, int d);
   void buildDimension(int d);
-  void buildMeshAndModel();
+  void buildMesh(gmi_model* gm);
 };
 
 /** \brief create a box from an MDS mesh
