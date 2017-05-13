@@ -67,8 +67,8 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::makeMdsBox(nx,ny,nz,wx,wy,wz,is);
   gmi_model* g = m->getModel();
   m->verify();
-  m->writeNative(modelFile);
-  gmi_write_dmg(g, meshFile);
+  m->writeNative(meshFile);
+  gmi_write_dmg(g, modelFile);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
