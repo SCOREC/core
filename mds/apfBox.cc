@@ -76,6 +76,10 @@ BoxBuilder::BoxBuilder(int nx, int ny, int nz,
   w[2] = nz ? (wz / nz) : 0;
   is_simplex = is;
   formModelTable();
+  gmi_model* gm = buildModel();
+  m = makeEmptyMdsMesh(gm, dim, false);
+  v.resize(grid.total());
+  buildMeshAndModel();
 }
 
 void BoxBuilder::formModelTable()
@@ -315,10 +319,8 @@ void BoxBuilder::buildDimension(int d)
     buildCell(i, d);
 }
 
-void BoxBuilder::buildMesh(gmi_model* gm)
+void BoxBuilder::buildMeshAndModel()
 {
-  m = makeEmptyMdsMesh(gm, dim, false);
-  v.resize(grid.total());
   for (int d = 0; d <= dim; ++d)
     buildDimension(d);
   m->acceptChanges();
@@ -329,8 +331,6 @@ Mesh2* makeMdsBox(
     double wx, double wy, double wz, bool is)
 {
   BoxBuilder bb(nex, ney, nez, wx, wy, wz, is);
-  gmi_model* gm = bb.buildModel();
-  bb.buildMesh(gm);
   return bb.m;
 }
 
