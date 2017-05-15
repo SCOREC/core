@@ -159,6 +159,24 @@ namespace {
     }
     m->end(it);
   }
+
+  int countDisconnectedVtx(apf::Mesh* m) {
+    int numDcVtx = 0;
+    apf::MeshIterator *it = m->begin(0);
+    apf::MeshEntity* v;
+    while ((v = m->iterate(it))) {
+      if( ! m->isOwned(v) ) continue;
+      apf::Up up;
+      m->getUp(v,up);
+      int numAdjOwned = 0;
+      for(int i=0; i<up.n; i++)
+        if( m->isOwned(v) )
+          numAdjOwned++;
+      numDcVtx += (numAdjOwned > 0);
+    }
+    m->end(it);
+    return numDcVtx;
+  }
 }
 
 void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
@@ -308,6 +326,11 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   Parma_GetDisconnectedStats(m, maxDc, avgDc, locDc);
   PCU_Debug_Print("%s dc %d\n", key.c_str(), locDc);
 
+  int locVtxDc = countDisconnectedVtx(m);
+  int maxVtxDc = PCU_Max_Int(locVtxDc);
+  double avgVtxDc = TO_DOUBLE( PCU_Add_Int(locVtxDc) ) / PCU_Comm_Peers();
+  PCU_Debug_Print("%s dc vtx %d\n", key.c_str(), locVtxDc);
+
   int maxNb = 0, maxNbParts = 0;
   double avgNb = 0;
   int locNb = 0;
@@ -350,6 +373,8 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   PCU_Debug_Print("\n");
 
   if( 0 == PCU_Comm_Self() ) {
+    status("%s disconnected vertices <max avg> %d %.3f\n",
+        key.c_str(), maxVtxDc, avgVtxDc);
     status("%s disconnected <max avg> %d %.3f\n",
         key.c_str(), maxDc, avgDc);
     status("%s neighbors <max avg> %d %.3f\n",
