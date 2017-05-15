@@ -172,7 +172,7 @@ namespace {
       for(int i=0; i<up.n; i++)
         if( m->isOwned(v) )
           numAdjOwned++;
-      numDcVtx += (numAdjOwned > 0);
+      numDcVtx += (numAdjOwned == 0);
     }
     m->end(it);
     return numDcVtx;
