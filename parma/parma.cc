@@ -174,8 +174,9 @@ namespace {
         apf::MeshEntity* edge = up.e[i];
         m->getDownward(edge, 0, vs);
         for (int j=0; j < 2; ++j)
-          if( m->isOwned(vs[j]) )
-            numAdjOwned++;
+          if (vs[j] != v)
+            if (m->isOwned(vs[j]))
+              numAdjOwned++;
       }
       if (numAdjOwned == 0) numDcVtx++;
     }
