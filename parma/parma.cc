@@ -163,16 +163,21 @@ namespace {
   int countDisconnectedVtx(apf::Mesh* m) {
     int numDcVtx = 0;
     apf::MeshIterator *it = m->begin(0);
+    apf::Up up;
     apf::MeshEntity* v;
+    apf::MeshEntity* vs[2];
     while ((v = m->iterate(it))) {
       if( ! m->isOwned(v) ) continue;
-      apf::Up up;
       m->getUp(v,up);
       int numAdjOwned = 0;
-      for(int i=0; i<up.n; i++)
-        if( m->isOwned(v) )
-          numAdjOwned++;
-      numDcVtx += (numAdjOwned == 0);
+      for(int i=0; i<up.n; i++) {
+        apf::MeshEntity* edge = up.e[i];
+        m->getDownward(edge, 0, vs);
+        for (int j=0; j < 2; ++j)
+          if( m->isOwned(vs[j]) )
+            numAdjOwned++;
+      }
+      if (numAdjOwned == 0) numDcVtx++;
     }
     m->end(it);
     return numDcVtx;
