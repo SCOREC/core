@@ -161,6 +161,9 @@ namespace {
   }
 
   int countDisconnectedVtx(apf::Mesh* m) {
+    apf::Field* f = apf::createFieldOn(m, "disconnected", 0);
+    apf::Field* g = apf::createFieldOn(m, "owned", 0);
+    apf::zeroField(f);
     int numDcVtx = 0;
     apf::MeshIterator *it = m->begin(0);
     apf::Up up;
@@ -173,14 +176,21 @@ namespace {
       for(int i=0; i<up.n; i++) {
         apf::MeshEntity* edge = up.e[i];
         m->getDownward(edge, 0, vs);
-        for (int j=0; j < 2; ++j)
-          if (vs[j] != v)
-            if (m->isOwned(vs[j]))
-              numAdjOwned++;
+        apf::MeshEntity* v2 = apf::getEdgeVertOppositeVert(m, edge, v);
+        if (m->isOwned(v2))
+          numAdjOwned++;
       }
-      if (numAdjOwned == 0) numDcVtx++;
+      if (numAdjOwned == 0) {
+        numDcVtx++;
+        apf::setScalar(f, v, 0, 1.0);
+      }
+      apf::setScalar(g, v, 0, (double)PCU_Comm_Self());
     }
     m->end(it);
+    apf::synchronize(g);
+    apf::writeVtkFiles("disconnected", m);
+    apf::destroyField(f);
+    apf::destroyField(g);
     return numDcVtx;
   }
 }
