@@ -119,6 +119,7 @@ endif()
 simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
 
 set(SIM_OPT_LIB_NAMES
+  SimDiscrete
   SimField
   SimAdvMeshing)
 

@@ -792,15 +792,18 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
   int lc = 0; // list counter
   for(int i = 0; i < o.nGrowthCurves; i++){
     int igcnv = o.arrays.igcnv[i];
+    base = o.arrays.igclv[lc];
+	bID = apf::getNumber(n, base, 0, 0);
+	int bMID = o.arrays.nbc[bID]-1; // mapping ID
+    if (bMID < 0){ // no BC on base; skip this growth curve
+      lc = lc + igcnv;
+      continue;
+    }
+	bibc = o.arrays.ibc[bMID];
+	double* bbc = o.arrays.bc[bMID];
     for(int j = 1; j < igcnv; j++){ // skip the base
       vent = o.arrays.igclv[lc+j];
-      base = o.arrays.igclv[lc];
 	  vID = apf::getNumber(n, vent, 0, 0);
-	  bID = apf::getNumber(n, base, 0, 0);
-	  int bMID = o.arrays.nbc[bID]-1; // mapping ID
-	  PCU_ALWAYS_ASSERT(bMID >= 0); // should already in array
-	  bibc = o.arrays.ibc[bMID];
-	  double* bbc = o.arrays.bc[bMID];
 	  ibc |= (bibc & (1<<eibcStr | 1<<(eibcStr+1) | 1<<(eibcStr+2)));
 	  if(o.arrays.nbc[vID] <= 0){ // not in array
         o.arrays.nbc[vID] = ei + 1;
@@ -827,7 +830,7 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 		  PCU_Comm_Pack(rit->first, &(bbc[0]), nec*sizeof(double));
 		}
 	  }
-    }
+    } // end loop over nodes on a growth curve
 	lc = lc + igcnv;
   }
 
@@ -1029,6 +1032,13 @@ Output::~Output()
   delete [] arrays.iel;
   delete [] arrays.ileo;
   delete [] arrays.ile;
+  if (nGrowthCurves > 0) {
+    delete [] arrays.gcflt;
+    delete [] arrays.gcgr;
+    delete [] arrays.igcnv;
+    delete [] arrays.igclv;
+    delete [] arrays.igclvid;
+  }
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
