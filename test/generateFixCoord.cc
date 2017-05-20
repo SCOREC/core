@@ -61,38 +61,43 @@ static void FixTensorProductCoordinates(apf::Mesh2* mesh)
 
   int jlayer,jconstlayer;  
 // start of mesh specific information
-  double gr=1.2;   // growth factor
-  int ny=30;  // how many layers in y
-  int nstretch=24;  // how many layers to stretch
-  double dy1=1e-6; // height of first point off the wall
-  double Ly_mesh=8.18e-4;  // how  long in BL growth/y direction 
+  double gr1=1.1;   // growth factor near wall
+  double gr2=1.1;   // growth factor above BL
+  int ny=148;  // how many layers in y
+  int nstretch1=39;  // how many layers to stretch
+  double dy1=1.37e-7; // height of first point off the wall
+  double Ly_meshBL;  //  height of stop to const
+  double Ly_mesh=1.17e-3;  // Total heigh
   double Ly_model=1.0; // how long is the model
-  int nconst=ny-nstretch;  //how many layers in constant region after stretch
+  int nconst=122;  //how many layers in constant region after stretch
 // compute the height of the end of stretching
-  double Ly_stretch=dy1*(pow(gr,nstretch)-1.0)/(gr-1.0);
+  double Ly_stretch1=dy1*(pow(gr1,nstretch1)-1.0)/(gr1-1.0);
 // compute the height of the constant layers after stretching
-  double dyconst=(Ly_mesh-Ly_stretch)/nconst;
+  double dyconst=5.48e-6; // (Ly_meshBL-Ly_stretch1)/nconst;
+  Ly_meshBL=Ly_stretch1+(nconst-nstretch1)*dyconst; //5.4998e-5
+  int jstretch2;
 // compute the dy in the original unstructed mesh to help find layer number
-  double dyinv=(ny + 0.5)/Ly_model;
+  double dyinv=(ny + 0.5)/Ly_model; // the 0.5 is security for meshsim not making equal spaced meshes
 // end of mesh specific information
 
-  fprintf(stdout, "dyconst,Ly_stretch, %f,%f \n",dyconst,Ly_stretch);
+//  fprintf(stdout, "dyconst,Ly_stretch, %f,%f \n",dyconst,Ly_stretch);
  
   while ((v = m->iterate(it))) {
     apf::Vector3 p;
     m->getPoint(v, 0, p);
     p[0]=p[0]*1.353701006e-3;
     p[2]=p[2]*5.454804022e-4;
-//    p[1]=p[1]*8.18e-4;
     jlayer=p[1]*dyinv;
-//    pstretch=dy1*(pow(gr,jlayer)-1.0)/(gr-1.0);
-    jconstlayer= jlayer-nstretch;
+    jconstlayer=jlayer-nstretch1;
+    jstretch2=jlayer-nconst;
     if(p[0]<1.0e-9 && p[2]<1.0e-9) 
-       fprintf(stdout, "stretch %d,%d,%f \n",jlayer,jconstlayer,p[1]);
-    if(jlayer<nstretch)
-       p[1]=dy1*(pow(gr,jlayer)-1.0)/(gr-1.0);
-    else 
-       p[1]=Ly_stretch+jconstlayer*dyconst;
+       fprintf(stdout, "stretch %d,%d,%d,%f \n",jlayer,jconstlayer,jstretch2,p[1]);
+    if(jlayer<nstretch1+1)
+       p[1]=dy1*(pow(gr1,jlayer)-1.0)/(gr1-1.0);
+    else if(jlayer<nconst) 
+       p[1]=Ly_stretch1+jconstlayer*dyconst;
+    else
+       p[1]=Ly_meshBL+dyconst*(pow(gr2,jstretch2)-1.0)/(gr2-1.0);
 //debug
     if(p[0]<1.0e-9 && p[2]<1.0e-9) 
        fprintf(stdout, "stretch %d,%d,%f \n",jlayer,jconstlayer,p[1]);
