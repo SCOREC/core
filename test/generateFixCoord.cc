@@ -51,9 +51,9 @@ void messageHandler(int type, const char* msg)
 }
 
 
-static void FixTensorProductCoordinates(apf::Mesh* mesh)
+static void FixTensorProductCoordinates(apf::Mesh2* mesh)
 {
-  apf::Mesh* m = mesh;
+  apf::Mesh2* m = mesh;
   int n = m->count(0);
   apf::MeshEntity* v;
   int i = 0;
@@ -67,7 +67,7 @@ static void FixTensorProductCoordinates(apf::Mesh* mesh)
     m->setPoint(v, 0, p);
 //    for (int j = 0; j < 3; ++j)
 //      x[j * n + i] = p[j]; /* FORTRAN indexing */
-//    ++i;
+    ++i;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
