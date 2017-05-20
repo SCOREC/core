@@ -61,13 +61,13 @@ static void FixTensorProductCoordinates(apf::Mesh2* mesh)
 
   int jlayer,jconstlayer;  
 // start of mesh specific information
-  int ny=10;  // how many layers in y
-  double Ly_model=1.0; // how long is the model
+  double gr=1.2;   // growth factor
+  int ny=30;  // how many layers in y
+  int nstretch=24;  // how many layers to stretch
+  double dy1=1e-6; // height of first point off the wall
   double Ly_mesh=8.18e-4;  // how  long in BL growth/y direction 
-  double dy1=2e-5; // height of first point off the wall
-  int nstretch=8;  // how many layers to stretch
+  double Ly_model=1.0; // how long is the model
   int nconst=ny-nstretch;  //how many layers in constant region after stretch
-  double gr=1.3;   // growth factor
 // compute the height of the end of stretching
   double Ly_stretch=dy1*(pow(gr,nstretch)-1.0)/(gr-1.0);
 // compute the height of the constant layers after stretching
