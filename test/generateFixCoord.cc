@@ -58,12 +58,45 @@ static void FixTensorProductCoordinates(apf::Mesh2* mesh)
   apf::MeshEntity* v;
   int i = 0;
   apf::MeshIterator* it = m->begin(0);
+
+  int jlayer,jconstlayer;  
+// start of mesh specific information
+  int ny=10;  // how many layers in y
+  double Ly_model=1.0; // how long is the model
+  double Ly_mesh=8.18e-4;  // how  long in BL growth/y direction 
+  double dy1=2e-5; // height of first point off the wall
+  int nstretch=8;  // how many layers to stretch
+  int nconst=ny-nstretch;  //how many layers in constant region after stretch
+  double gr=1.3;   // growth factor
+// compute the height of the end of stretching
+  double Ly_stretch=dy1*(pow(gr,nstretch)-1.0)/(gr-1.0);
+// compute the height of the constant layers after stretching
+  double dyconst=(Ly_mesh-Ly_stretch)/nconst;
+// compute the dy in the original unstructed mesh to help find layer number
+  double dyinv=(ny + 0.5)/Ly_model;
+// end of mesh specific information
+
+  fprintf(stdout, "dyconst,Ly_stretch, %f,%f \n",dyconst,Ly_stretch);
+ 
   while ((v = m->iterate(it))) {
     apf::Vector3 p;
     m->getPoint(v, 0, p);
     p[0]=p[0]*1.353701006e-3;
     p[2]=p[2]*5.454804022e-4;
-    p[1]=p[1]*8.18e-4;
+//    p[1]=p[1]*8.18e-4;
+    jlayer=p[1]*dyinv;
+//    pstretch=dy1*(pow(gr,jlayer)-1.0)/(gr-1.0);
+    jconstlayer= jlayer-nstretch;
+    if(p[0]<1.0e-9 && p[2]<1.0e-9) 
+       fprintf(stdout, "stretch %d,%d,%f \n",jlayer,jconstlayer,p[1]);
+    if(jlayer<nstretch)
+       p[1]=dy1*(pow(gr,jlayer)-1.0)/(gr-1.0);
+    else 
+       p[1]=Ly_stretch+jconstlayer*dyconst;
+//debug
+    if(p[0]<1.0e-9 && p[2]<1.0e-9) 
+       fprintf(stdout, "stretch %d,%d,%f \n",jlayer,jconstlayer,p[1]);
+
     m->setPoint(v, 0, p);
 //    for (int j = 0; j < 3; ++j)
 //      x[j * n + i] = p[j]; /* FORTRAN indexing */
