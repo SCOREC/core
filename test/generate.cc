@@ -160,7 +160,8 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::createMdsMesh(model, simApfMesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
-  postConvert(mesh);
+  mesh->verify();
+  //postConvert(mesh);
   Parma_PrintPtnStats(mesh, "");
   mesh->writeNative(outMeshFile.c_str());
 
