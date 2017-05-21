@@ -133,16 +133,22 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
     m = gmi_load(modelfile);
 #ifdef HAVE_SIMMETRIX
   /* cases 2: Simmetrix model (and possibly attributes) file */
-  else if (gmi_has_ext(modelfile, "smd"))
+  else if (gmi_has_ext(modelfile, "smd")){
+    if (!PCU_Comm_Self()) printf("Calling gmi_sim_load 1 \n ");
     m = gmi_sim_load(0, modelfile);
+  }
   /* cases 3&4: assuming native model file */
   else {
     /* case 3: native model and Simmetrix attributes file */
-    if (gmi_has_ext(attribfile, "smd"))
+    if (gmi_has_ext(attribfile, "smd")){
+      if (!PCU_Comm_Self()) printf("Calling gmi_sim_load 2 \n ");
       m = gmi_sim_load(modelfile, attribfile);
+    }
     /* case 4: just a native model */
-    else
+    else {
+      if (!PCU_Comm_Self()) printf("Calling gmi_sim_load 3 \n ");
       m = gmi_sim_load(modelfile, 0);
+    }
   }
 #endif
   /* load attributes */

@@ -63,11 +63,10 @@ static void FixTensorProductCoordinates(apf::Mesh2* mesh)
 // start of mesh specific information
   double gr1=1.1;   // growth factor near wall
   double gr2=1.1;   // growth factor above BL
-  int ny=148;  // how many layers in y
+  int ny=160;  // how many layers in y
   int nstretch1=39;  // how many layers to stretch
   double dy1=1.37e-7; // height of first point off the wall
   double Ly_meshBL;  //  height of stop to const
-  double Ly_mesh=1.17e-3;  // Total heigh
   double Ly_model=1.0; // how long is the model
   int nconst=122;  //how many layers in constant region after stretch
 // compute the height of the end of stretching

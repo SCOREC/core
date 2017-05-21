@@ -67,6 +67,7 @@ void switchToAll()
 
 void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 {
+  if( !PCU_Comm_Self() ) printf("Calling loadModelAndBCs \n");
   ph::loadModelAndBCs(in, g, bcs);
 }
 
@@ -241,18 +242,25 @@ namespace ph {
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
+    if( !PCU_Comm_Self() ) printf("inside back \n");
     PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
+    if( !PCU_Comm_Self() ) printf("Calling loadCommon \n");
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
+    if( !PCU_Comm_Self() ) printf("Calling switchToMasters \n");
+
     switchToMasters(in.splitFactor);
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
+    if( !PCU_Comm_Self() ) printf("Calling switchToAll \n");
     switchToAll();
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
+    if( !PCU_Comm_Self() ) printf("Calling checkBalance \n");
     ph::checkBalance(m,in);
+    if( !PCU_Comm_Self() ) printf("Calling preprocess \n");
     ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
@@ -261,6 +269,8 @@ namespace chef {
     in.openfile_read = openfile_read;
     ph::Output out;
     out.openfile_write = openfile_write;
+    if( !PCU_Comm_Self() ) printf("Calling bake \n");
+
     bake(g,m,in,out);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m,
