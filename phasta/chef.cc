@@ -31,19 +31,12 @@ int main(int argc, char** argv)
   if( !PCU_Comm_Self() )
     printf("PUMI Git hash %s\n", pumi_version());
 #ifdef HAVE_SIMMETRIX
-  if( !PCU_Comm_Self() ) printf("Going into from SimUtil_start \n");
   SimUtil_start();
-  if( !PCU_Comm_Self() ) printf("Returned from SimUtil_start \n");
   Sim_readLicenseFile(0);
-  if( !PCU_Comm_Self() ) printf("Returned from Sim_readLicenseFile \n");
   SimPartitionedMesh_start(0, 0);
-  if( !PCU_Comm_Self() ) printf("Returned from SimPartitionedMesh_start \n");
   SimAdvMeshing_start();
-  if( !PCU_Comm_Self() ) printf("Returned from SimAdvMeshing_start \n");
   gmi_sim_start();
-  if( !PCU_Comm_Self() ) printf("Returned from gmi_sim_start \n");
   gmi_register_sim();
-  if( !PCU_Comm_Self() ) printf("Returned from gmi_register_sim \n");
 #endif
   gmi_register_mesh();
   gmi_model* g = 0;
