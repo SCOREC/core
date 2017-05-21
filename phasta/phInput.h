@@ -58,10 +58,32 @@ class Input
        ACIS (.sat), and Simmetrix GeomSim (.smd) models are supported */
     std::string modelFileName;
     std::string outputFormat;
+    /** \brief select the method used to increase the number of parts in the mesh.
+        \details partitionMethod can be set to 'graph' to use multi-level
+      ParMETIS Part k-way, 'rib' to use SCOREC's recursive inertial bisection,
+      and 'zrib' to use Zoltan's recursive inertial bisection. */
     std::string partitionMethod;
+    /** \brief select the method used to balance the mesh prior to adaptation.
+        \details valid options are 'graph', 'zrib', 'parma', and 'none'.  Selecting
+      'parma' balances the elements via a diffusive method and selecting 'none' will
+      disable balancing prior to adaptation.  See the partitionMethod documentation
+      for a description of the other methods. */
     std::string preAdaptBalanceMethod;
+    /** \brief select the method used to balance the mesh during adaptation.
+        \details valid options are 'graph', 'parma', and 'none'.  See the 
+      partitionMethod and preAdaptBalanceMethod documentation for a description
+      of the methods. */
     std::string midAdaptBalanceMethod;
+    /** \brief select the method used to balance the mesh after adaptation.
+        \details valid options are 'graph', 'zrib', 'parma', 'parma-gap', and 'none'.
+      Selecting 'parma-gap' balances the mesh elements and reduces the number of parts
+      that share mesh entities with each part (neighbors).  See the partitionMethod
+      and preAdaptBalanceMethod documentation for a description of the methods. */
     std::string postAdaptBalanceMethod;
+    /** \brief select the method used to balance the mesh prior to pre-processing.
+        \details valid options are 'graph', 'zrib', 'parma', 'parma-gap', and 'none'.
+      See the partitionMethod, preAdaptBalanceMethod, and postAdaptBalanceMethod
+      documentation for a description of the methods. */
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
@@ -84,6 +106,12 @@ class Input
     int isReorder;
     /** \brief tetrahedronize a mixed mesh if set to 1. */
     int tetrahedronize;
+    /** \brief enables the use of local partitioning methods.
+        \details when set to '1' each process will run a serial instance of the method
+      selected with partitionMethod.  When set to '0' all processes coordinate to run
+      a parallel instance of the selected partitioning method.  For part counts over 32Ki,
+      the memory requirements of a parallel instance of the 'graph' method typically exceeds
+      available memory. */
     int localPtn;
     int recursiveUR;
     int dwalMigration;
