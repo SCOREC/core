@@ -631,7 +631,8 @@ static void getGrowthCurves(Output& o)
 #endif
   }
   else {
-    printf("%s: warning! not implemented for MDS mesh\n",__func__);
+    if(PCU_Comm_Self() == 0)
+      printf("%s: warning! not implemented for MDS mesh\n",__func__);
   }
   return;
 }
