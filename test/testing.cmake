@@ -37,7 +37,7 @@ else()
 endif()
 
 set(MDIR ${MESHES}/phasta/dg)
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(migrate_interface 4
     ./migrate_interface
     "${MDIR}/box.smd"
@@ -47,25 +47,25 @@ if(ENABLE_SIMMETRIX)
     ./dg_ma_test
     "${MDIR}/box.smd"
     "${MDIR}/4/")
-endif(ENABLE_SIMMETRIX)
+endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set(MDIR ${MESHES}/phasta/BL_query)
   mpi_test(chef-BL_query 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR}/run_case)
   add_test(NAME chef-BL_query-diff
     COMMAND diff -r run_case/4-procs_case/ good_case/4-procs_case
     WORKING_DIRECTORY ${MDIR})
-endif(ENABLE_SIMMETRIX)
+endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_SIMMETRIX AND PCU_COMPRESS)
+if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
     "${MDIR}/model.smd"
     "${MDIR}/mesh_.smb"
     WORKING_DIRECTORY ${MDIR})
-endif(ENABLE_SIMMETRIX AND PCU_COMPRESS)
+endif(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID)
 
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
