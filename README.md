@@ -46,6 +46,7 @@ For more information, start at our
 * See the `STYLE` file
 * If in doubt, make a branch
 * Run the ctest suite
+* Don't try to force push to `master` or `develop`; it is disabled
 
 ### Who do I talk to? ###
 

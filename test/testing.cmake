@@ -124,7 +124,7 @@ mpi_test(verify_serial 1
   ./verify
   "${MDIR}/pipe.${GXT}"
   "pipe.smb")
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(convert_2d_quads 1
     ./convert
     "${MESHES}/disk/disk.smd"
@@ -133,7 +133,7 @@ if(ENABLE_SIMMETRIX)
 else()
   file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(convert_2d_tris 1
     ./convert
     "${MESHES}/disk/disk.smd"

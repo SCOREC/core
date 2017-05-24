@@ -9,6 +9,10 @@
 
 #include <iostream>
 
+#include <Omega_h_library.hpp>
+#include <Omega_h_mesh.hpp>
+#include <Omega_h_file.hpp>
+
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
