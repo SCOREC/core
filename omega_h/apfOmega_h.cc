@@ -9,7 +9,9 @@
 #include <apfShape.h>
 #include <PCU.h>
 #include <apf.h>
-#include <Omega_h_math.hpp>
+
+#include <Omega_h_array.hpp>
+#include <Omega_h_mesh.hpp>
 
 namespace apf {
 
@@ -114,16 +116,13 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
   auto am = apf::getMesh(f);
   std::string name = apf::getName(f);
   int ent_dim;
-  Omega_h_Xfer xfer;
   if (apf::getShape(f) == apf::getLagrange(1)) {
     ent_dim = 0;
-    xfer = OMEGA_H_LINEAR_INTERP;
   } else if (
       apf::getShape(f) == apf::getVoronoiShape(dim, 1) ||
       apf::getShape(f) == apf::getIPFitShape(dim, 1)
       ) {
     ent_dim = dim;
-    xfer = OMEGA_H_POINTWISE;
   } else {
     if (!PCU_Comm_Self()) {
       std::cout << "not copying field " << name << " to Omega_h\n";
@@ -148,8 +147,7 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
     if (dim == 3) matrices_to_osh<3>(f, it, data);
   } else components_to_osh(f, it, data);
   am->end(it);
-  om->add_tag(ent_dim, name, nc, xfer, OMEGA_H_DO_OUTPUT,
-      osh::Reals(data.write()));
+  om->add_tag(ent_dim, name, nc, osh::Reals(data.write()));
 }
 
 static void field_from_osh(apf::Field* f, osh::Tag<osh::Real> const* tag,
@@ -236,10 +234,8 @@ static void class_to_osh(osh::Mesh* mesh_osh, apf::Mesh* mesh_apf, int dim) {
     ++i;
   }
   mesh_apf->end(iter);
-  mesh_osh->add_tag(dim, "class_dim", 1, OMEGA_H_INHERIT, OMEGA_H_DO_OUTPUT,
-      osh::Read<osh::I8>(host_class_dim.write()));
-  mesh_osh->add_tag(dim, "class_id", 1, OMEGA_H_INHERIT, OMEGA_H_DO_OUTPUT,
-      osh::LOs(host_class_id.write()));
+  mesh_osh->add_tag(dim, "class_dim", 1, osh::Read<osh::I8>(host_class_dim.write()));
+  mesh_osh->add_tag(dim, "class_id", 1, osh::LOs(host_class_id.write()));
 }
 
 static void conn_to_osh(osh::Mesh* mesh_osh, apf::Mesh* mesh_apf,
@@ -288,7 +284,7 @@ static void globals_to_osh(
   mesh_apf->end(iter);
   apf::destroyGlobalNumbering(globals_apf);
   auto globals = osh::Read<osh::GO>(host_globals.write());
-  mesh_osh->add_tag(dim, "global", 1, OMEGA_H_GLOBAL, OMEGA_H_DO_OUTPUT,
+  mesh_osh->add_tag(dim, "global", 1,
       osh::Read<osh::GO>(host_globals.write()));
   auto owners = osh::owners_from_globals(
       mesh_osh->comm(), globals, osh::Read<osh::I32>());
@@ -384,12 +380,14 @@ static void owners_from_osh(
     apf::MeshTag* own_tag = am->findTag("owner");
     if (!own_tag) own_tag = am->createIntTag("owner", 1);
     for (int i = 0; i < om->nents(ent_dim); ++i) {
-      am->setIntTag(ents[i], own_tag, &own_ranks[i]);
+      int tmp = own_ranks[i];
+      am->setIntTag(ents[i], own_tag, &tmp);
     }
   }
   PCU_Comm_Begin();
   for (int i = 0; i < om->nents(ent_dim); ++i) {
-    PCU_COMM_PACK(own_ranks[i], own_ids[i]);
+    osh::LO tmp = own_ids[i];
+    PCU_COMM_PACK(own_ranks[i], tmp);
     PCU_COMM_PACK(own_ranks[i], ents[i]);
   }
   PCU_Comm_Send();

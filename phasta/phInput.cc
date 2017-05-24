@@ -52,7 +52,7 @@ static void setDefaults(Input& in)
   in.restartFileName = "restart";
   in.phastaIO = 1;
   in.snap = 0;
-  in.transferParametric = 1;
+  in.transferParametric = 0;
   in.splitAllLayerEdges = 0;
   in.filterMatches = 0;
   in.axisymmetry = 0;
