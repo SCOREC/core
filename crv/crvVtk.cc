@@ -9,6 +9,7 @@
 #include "PCU.h"
 #include "apfDynamicVector.h"
 #include "apfFieldData.h"
+#include "apfMDS.h"
 #include <sstream>
 #include <fstream>
 #include <pcu_util.h>
@@ -970,6 +971,60 @@ static void makeDirectories(const char* prefix, int type, int n)
 
   // make the second level subdir
   safe_mkdir(getVtuDirectoryStr(prefix, type, n).c_str());
+}
+
+void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
+{
+  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(0, 1, false);
+  apf::Field* f = m->getCoordinateField();
+  apf::MeshEntity* ent;
+  apf::MeshIterator* it;
+  it = m->begin(1);
+  int count = 0;
+  while( (ent = m->iterate(it)) )
+  {
+    if(!m->isOwned(ent)) continue;
+    // make the array of vertex coordinates in the physical space
+    std::vector<apf::Vector3> ps;
+    std::vector<apf::Vector3> us;
+    apf::Element* elem = apf::createElement(f,ent);
+    for (int i = 0; i <= n; ++i){
+      apf::Vector3 u;
+      u[0] = 2.*i/n-1.;
+      double v[3];
+      apf::getComponents(elem,u,&v[0]);
+      apf::Vector3 p(v[0], v[1], v[2]);
+      ps.push_back(p);
+      us.push_back(u);
+    }
+    apf::destroyElement(elem);
+
+    // make the vertexes and set the coordinates using the array
+    std::vector<apf::MeshEntity*> vs;
+    for (size_t i = 0; i < ps.size(); i++) {
+      apf::MeshEntity* vert = wireMesh->createVert(0);
+      wireMesh->setPoint(vert, 0, ps[i]);
+      vs.push_back(vert);
+    }
+
+    PCU_ALWAYS_ASSERT(vs.size() == ps.size());
+
+    ma::Entity* v[2];
+    for (int i = 0; i < n; i++) {
+      v[0] = vs[i];
+      v[1] = vs[i+1];
+      apf::buildElement(wireMesh, 0, apf::Mesh::EDGE, v);
+    }
+    count++;
+  }
+  // wireMesh is not a valid mesh, so neither of the following will work!
+  /* apf::deriveMdsModel(wireMesh); */
+  /* wireMesh->acceptChanges(); */
+  /* wireMesh->verify(); */
+  apf::printStats(wireMesh);
+  std::stringstream ss;
+  ss << prefix << "_wire";
+  apf::writeVtkFiles(ss.str().c_str(),wireMesh);
 }
 
 
