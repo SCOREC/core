@@ -176,6 +176,11 @@ double interpolationError(apf::Mesh* m, apf::MeshEntity* e, int n);
    but bigger file */
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
 
+/** \brief Visualization, writes wireframe of the curved mesh, n is
+   number of subdivisions, higher number -> better resolution,
+   but bigger file */
+void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix);
+
 /** \brief Visualization, writes file of control nodes for each entity */
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief Visualization, writes file of shapes evaluated at node xi

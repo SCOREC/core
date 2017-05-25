@@ -9,11 +9,20 @@
 #include "PCU.h"
 #include "apfDynamicVector.h"
 #include "apfFieldData.h"
+#include "apfMDS.h"
 #include <sstream>
 #include <fstream>
 #include <pcu_util.h>
 
+// === includes for safe_mkdir ===
+#include <reel.h>
+#include <sys/types.h> /*required for mode_t for mkdir on some systems*/
+#include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
+// ===============================
+
 namespace crv {
+
 
 /* this file has all the VTK commands for curved meshing,
    it is more meant as a debugging tool as proper visualization
@@ -728,7 +737,7 @@ static void writePvtuFile(const char* prefix, const char* suffix,
     apf::Mesh* m, int type)
 {
   std::stringstream ss;
-  ss << prefix << suffix << "_"
+  ss << prefix << "/order_"
      << m->getShape()->getOrder()
      << ".pvtu";
   std::string fileName = ss.str();
@@ -757,9 +766,9 @@ static void writePvtuFile(const char* prefix, const char* suffix,
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
     std::stringstream ssPart;
-    ssPart << prefix << i
-       << suffix << "_"
-       << m->getShape()->getOrder()<< ".vtu";
+    ssPart << "vtu/"
+       << "order_" << m->getShape()->getOrder()
+       << "_" << i << suffix <<".vtu";
     file << "<Piece Source=\"" << ssPart.str() << "\"/>\n";
   }
 
@@ -921,18 +930,117 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 }
 
+static void safe_mkdir(const char* path)
+{
+  mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+  int err;
+  errno = 0;
+  err = mkdir(path, mode);
+  if (err != 0 && errno != EEXIST)
+  {
+    reel_fail("MDS: could not create directory \"%s\"\n", path);
+  }
+}
+
+static std::string getPvtuDirectoryStr(const char* prefix, int type, int n)
+{
+  std::stringstream ss;
+  ss << prefix << "/rep"
+     << getSuffix(type) << "_"
+     << n << "_levels";
+  return ss.str();
+}
+
+static std::string getVtuDirectoryStr(const char* prefix, int type, int n)
+{
+  std::stringstream ss;
+  ss << getPvtuDirectoryStr(prefix, type, n) << "/vtu";
+  return ss.str();
+}
+
+static void makeDirectories(const char* prefix, int type, int n)
+{
+  // this is the pattern you want
+  // prefix/type_{"type" = tri/tet}_level_"n"/vtk/
+
+  // make the parent dir
+  safe_mkdir(prefix);
+
+  // make the first level subdir
+  safe_mkdir(getPvtuDirectoryStr(prefix, type, n).c_str());
+
+  // make the second level subdir
+  safe_mkdir(getVtuDirectoryStr(prefix, type, n).c_str());
+}
+
+void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
+{
+  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(0, 1, false);
+  apf::Field* f = m->getCoordinateField();
+  apf::MeshEntity* ent;
+  apf::MeshIterator* it;
+  it = m->begin(1);
+  int count = 0;
+  while( (ent = m->iterate(it)) )
+  {
+    if(!m->isOwned(ent)) continue;
+    // make the array of vertex coordinates in the physical space
+    std::vector<apf::Vector3> ps;
+    std::vector<apf::Vector3> us;
+    apf::Element* elem = apf::createElement(f,ent);
+    for (int i = 0; i <= n; ++i){
+      apf::Vector3 u;
+      u[0] = 2.*i/n-1.;
+      double v[3];
+      apf::getComponents(elem,u,&v[0]);
+      apf::Vector3 p(v[0], v[1], v[2]);
+      ps.push_back(p);
+      us.push_back(u);
+    }
+    apf::destroyElement(elem);
+
+    // make the vertexes and set the coordinates using the array
+    std::vector<apf::MeshEntity*> vs;
+    for (size_t i = 0; i < ps.size(); i++) {
+      apf::MeshEntity* vert = wireMesh->createVert(0);
+      wireMesh->setPoint(vert, 0, ps[i]);
+      vs.push_back(vert);
+    }
+
+    PCU_ALWAYS_ASSERT(vs.size() == ps.size());
+
+    ma::Entity* v[2];
+    for (int i = 0; i < n; i++) {
+      v[0] = vs[i];
+      v[1] = vs[i+1];
+      apf::buildElement(wireMesh, 0, apf::Mesh::EDGE, v);
+    }
+    count++;
+  }
+  // wireMesh is not a valid mesh, so neither of the following will work!
+  /* apf::deriveMdsModel(wireMesh); */
+  /* wireMesh->acceptChanges(); */
+  /* wireMesh->verify(); */
+  apf::printStats(wireMesh);
+  std::stringstream ss;
+  ss << prefix << "_wire";
+  apf::writeVtkFiles(ss.str().c_str(),wireMesh);
+}
+
+
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
   double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
-    writePvtuFile(prefix,getSuffix(type),m,type);
-
+  if (!PCU_Comm_Self()) {
+    makeDirectories(prefix, type, n);
+    writePvtuFile(getPvtuDirectoryStr(prefix, type, n).c_str(),"",m,type);
+  }
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self()
-     << getSuffix(type)
-     << "_" << m->getShape()->getOrder()
+  ss << getVtuDirectoryStr(prefix, type, n) << "/order_"
+     << m->getShape()->getOrder() << "_"
+     << PCU_Comm_Self()
      << ".vtu";
   std::string fileName = ss.str();
   std::stringstream buf;
@@ -980,7 +1088,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("%s vtk files %s written in %f seconds\n",
-        apf::Mesh::typeName[type],prefix, t1 - t0);
+        apf::Mesh::typeName[type],getPvtuDirectoryStr(prefix, type, n).c_str(),t1 - t0);
 }
 
 } //namespace crv

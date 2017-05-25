@@ -308,7 +308,7 @@ mpi_test(parmaSerial 1
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb"
   "cubeBal.smb/")
-if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
+if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set(MDIR ${MESHES}/annular)
   mpi_test(simZBalance_4 4
     ./simZBalance
