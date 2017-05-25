@@ -13,7 +13,15 @@
 #include <fstream>
 #include <pcu_util.h>
 
+// === includes for safe_mkdir ===
+#include <reel.h>
+#include <sys/types.h> /*required for mode_t for mkdir on some systems*/
+#include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
+// ===============================
+
 namespace crv {
+
 
 /* this file has all the VTK commands for curved meshing,
    it is more meant as a debugging tool as proper visualization
@@ -728,7 +736,7 @@ static void writePvtuFile(const char* prefix, const char* suffix,
     apf::Mesh* m, int type)
 {
   std::stringstream ss;
-  ss << prefix << suffix << "_"
+  ss << prefix << "/order_"
      << m->getShape()->getOrder()
      << ".pvtu";
   std::string fileName = ss.str();
@@ -757,9 +765,9 @@ static void writePvtuFile(const char* prefix, const char* suffix,
   for (int i=0; i < PCU_Comm_Peers(); ++i)
   {
     std::stringstream ssPart;
-    ssPart << prefix << i
-       << suffix << "_"
-       << m->getShape()->getOrder()<< ".vtu";
+    ssPart << "vtu/"
+       << "order_" << m->getShape()->getOrder()
+       << "_" << i << suffix <<".vtu";
     file << "<Piece Source=\"" << ssPart.str() << "\"/>\n";
   }
 
@@ -921,18 +929,63 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
   PCU_Barrier();
 }
 
+static void safe_mkdir(const char* path)
+{
+  mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+  int err;
+  errno = 0;
+  err = mkdir(path, mode);
+  if (err != 0 && errno != EEXIST)
+  {
+    reel_fail("MDS: could not create directory \"%s\"\n", path);
+  }
+}
+
+static std::string getPvtuDirectoryStr(const char* prefix, int type, int n)
+{
+  std::stringstream ss;
+  ss << prefix << "/rep"
+     << getSuffix(type) << "_"
+     << n << "_levels";
+  return ss.str();
+}
+
+static std::string getVtuDirectoryStr(const char* prefix, int type, int n)
+{
+  std::stringstream ss;
+  ss << getPvtuDirectoryStr(prefix, type, n) << "/vtu";
+  return ss.str();
+}
+
+static void makeDirectories(const char* prefix, int type, int n)
+{
+  // this is the pattern you want
+  // prefix/type_{"type" = tri/tet}_level_"n"/vtk/
+
+  // make the parent dir
+  safe_mkdir(prefix);
+
+  // make the first level subdir
+  safe_mkdir(getPvtuDirectoryStr(prefix, type, n).c_str());
+
+  // make the second level subdir
+  safe_mkdir(getVtuDirectoryStr(prefix, type, n).c_str());
+}
+
+
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
   double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
-    writePvtuFile(prefix,getSuffix(type),m,type);
-
+  if (!PCU_Comm_Self()) {
+    makeDirectories(prefix, type, n);
+    writePvtuFile(getPvtuDirectoryStr(prefix, type, n).c_str(),"",m,type);
+  }
   PCU_Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self()
-     << getSuffix(type)
-     << "_" << m->getShape()->getOrder()
+  ss << getVtuDirectoryStr(prefix, type, n) << "/order_"
+     << m->getShape()->getOrder() << "_"
+     << PCU_Comm_Self()
      << ".vtu";
   std::string fileName = ss.str();
   std::stringstream buf;
@@ -980,7 +1033,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     printf("%s vtk files %s written in %f seconds\n",
-        apf::Mesh::typeName[type],prefix, t1 - t0);
+        apf::Mesh::typeName[type],getPvtuDirectoryStr(prefix, type, n).c_str(),t1 - t0);
 }
 
 } //namespace crv
