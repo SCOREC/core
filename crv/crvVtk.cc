@@ -1025,8 +1025,8 @@ void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
   std::stringstream ss;
   ss << prefix << "_wire";
   apf::writeVtkFiles(ss.str().c_str(),wireMesh);
-  wireMesh->destroyNative();
-  apf::destroyMesh(wireMesh);
+  /* wireMesh->destroyNative(); */
+  /* apf::destroyMesh(wireMesh); */
 }
 
 
