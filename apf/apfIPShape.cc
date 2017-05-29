@@ -179,6 +179,7 @@ class VoronoiShape : public IPBase
 
 FieldShape* getVoronoiShape(int dimension, int order)
 {
+  static VoronoiShape d1o1(1,1);
   static VoronoiShape d2o1(2,1);
   static VoronoiShape d2o2(2,2);
   static VoronoiShape d2o3(2,3);
@@ -189,7 +190,7 @@ FieldShape* getVoronoiShape(int dimension, int order)
   static VoronoiShape d3o4(3,4);
   static VoronoiShape* table[4][5] =
   {{0,0,0,0,0}//vertex
-  ,{0,0,0,0,0}//edge
+  ,{0,&d1o1,0,0,0}//edge
   ,{0,&d2o1,&d2o2,&d2o3,&d2o4}//face
   ,{0,&d3o1,&d3o2,&d3o3,&d3o4}//region
   };
