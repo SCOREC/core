@@ -516,6 +516,7 @@ void pumi_field_verify(pMesh m, pField f)
   {
     for (int d=0; d < 4; ++d)
     {
+      // FIXME: this crashes with m3dc1 fields
       if (!static_cast<apf::FieldBase*>(fields[nf])->getShape()->hasNodesIn(d))
         continue;
 
@@ -523,15 +524,23 @@ void pumi_field_verify(pMesh m, pField f)
       pMeshIter it = m->begin(d);
       pMeshEnt e;
       while ((e = m->iterate(it)))
-        sendFieldData(m, e, f, nf);
+        sendFieldData(m, e, fields[nf], nf);
       m->end(it);
       PCU_Comm_Send();
       receiveFieldData(fields,mismatch_fields); 
     }
   }
   int global_size = PCU_Max_Int((int)mismatch_fields.size());
-  if (global_size&&!PCU_Comm_Self())
+  if (global_size)
+  {
+    if (!PCU_Comm_Self())
     for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
-      printf("%s: \"%s\" data mismatch over remote/ghost copies\n", __func__, getName(*it));
+      printf("%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
+  }
+  else
+  {
+    if (!PCU_Comm_Self())
+      printf("%s: \"%s\" no DOF mismatch\n", __func__);
+  }
 }
 
