@@ -187,6 +187,18 @@ void readElements(Reader* r)
   checkMarker(r, "$EndElements");
 }
 
+static const double gmshTet10EdgeIndices[6] = {0, 1, 2, 3, 5, 4};
+
+static int getQuadGmshIdx(const int apfIdx, const int apfType) {
+  switch (apfType) {
+    case apf::Mesh::TET :
+      return gmshTet10EdgeIndices[apfIdx];
+      break;
+    default:
+      return apfIdx;
+  }
+}
+
 void readQuadraticElement(Reader* r)
 {
   long id = getLong(r);
@@ -210,8 +222,11 @@ void readQuadraticElement(Reader* r)
   apf::MeshEntity* ent = r->entMap[dim][id];
   r->mesh->getDownward(ent, 1, edges);
   apf::Field* coord = r->mesh->getCoordinateField();
+  std::vector<long> nids(nedges);
+  for (long i = 0; i < nedges; ++i)
+    nids[i] = getLong(r);
   for (long i = 0; i < nedges; ++i) {
-    long nid = getLong(r);
+    long nid = nids[ getQuadGmshIdx(i, apfType) ];
     apf::Vector3 point = r->nodeMap[nid].point;
     apf::setVector(coord, edges[i], 0, point);
   }
@@ -229,6 +244,7 @@ void readQuadratic(Reader* r, apf::Mesh2* m, const char* filename)
     getLine(r);
   }
   checkMarker(r, "$EndElements");
+  freeReader(r);
 }
 
 void readGmsh(apf::Mesh2* m, const char* filename)
