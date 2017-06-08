@@ -427,11 +427,11 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   delete plan;
   m->acceptChanges();
 
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
+
   for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
-  {    
-    // true - update the existing numbering as the mesh has been changed
     apf::freeze(*fit);    
-  }
+
   if (!PCU_Comm_Self())
     printf("mesh ghosted in %f seconds\n", PCU_Time()-t0);
 }
@@ -887,6 +887,8 @@ void pumi_ghost_delete (pMesh m)
     pumi::instance()->ghost_vec[d].clear();
     pumi::instance()->ghosted_vec[d].clear();
   }
+
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
 
   for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
     apf::freeze(*fit);    

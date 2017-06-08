@@ -17,8 +17,13 @@ class ArrayDataOf : public FieldDataOf<T>
       FieldShape* s = f->getShape();
       const char* name = s->getName();
       Numbering* n = f->getMesh()->findNumbering(name);
-      if (n) apf::destroyNumbering(n);
-      num_var = numberOverlapNodes(f->getMesh(),name,s);
+// OLD: this causes a dangling pointer in all existing array-type fields resulting seg fault
+//    if (n) apf::destroyNumbering(n);
+//    num_var = numberOverlapNodes(f->getMesh(),name,s);
+// NEW: keep the numbering for field shape 
+//    all existing local numbering should be removed before mesh is changed
+      if (!n) n = numberOverlapNodes(f->getMesh(),name,s);   
+      num_var = n;
       arraySize = f->countComponents()*countNodes(num_var);
       dataArray = new T[arraySize];
     }

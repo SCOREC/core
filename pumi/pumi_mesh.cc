@@ -254,6 +254,8 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
 
 void pumi_mesh_migrate(pMesh m, Migration* plan)
 {
+  // remove local numbering
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
   apf::migrate(m, plan);
 }
 
@@ -672,5 +674,6 @@ void pumi_mesh_distribute(pMesh m, Distribution* plan)
     if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
     return;
   }
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
   distribute(m, plan);
 }
