@@ -4,7 +4,7 @@
 #include <apfMDS.h>
 #include <PCU.h>
 #include <apfZoltan.h>
-#include <cassert>
+#include <assert.h>
 #include <cstdlib>
 #include <pumi.h>
 #include <unistd.h>
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     {
       int id = pumi_gent_getID(*gent_it);
       pGeomEnt ge = pumi_geom_findEnt(g, 2, id);
-      assert (ge == *gent_it);
+      assert(ge == *gent_it);
       std::vector<pGeomEnt> adj_edges;
       pumi_gent_getAdj(ge, 1, adj_edges);
       std::vector<pGeomEnt> adj_vertices;
@@ -130,7 +130,16 @@ int main(int argc, char** argv)
       pumi_mesh_write(m,"mesh.smb");
   }
 
+  pNumbering ln=pumi_numbering_createLocalNode (m, "local");
   pMeshEnt e;
+  pMeshIter mit = m->begin(0);
+  while ((e = m->iterate(mit)))
+  {
+    assert(pumi_ment_isNumbered(e, ln));
+    assert(pumi_ment_getNumber(e, ln)==pumi_ment_getID(e));
+  }
+  m->end(mit);
+  pumi_numbering_delete(ln);
 
   // distribution: sending an element to multiple parts. Element may have remote copies.
   if (do_distr)
@@ -201,7 +210,7 @@ int main(int argc, char** argv)
   int num_gn=pumi_mesh_getNumGlobalNumbering(m);
   for (int i=0; i<num_gn;++i)
     numberings.push_back(pumi_mesh_getGlobalNumbering(m, i));
-  assert (pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
+  assert(pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
 
   for (int i=0; i<(int)numberings.size(); ++i)
     pumi_numbering_deleteGlobal(numberings.at(i));
@@ -257,7 +266,7 @@ void TEST_MESH(pMesh m)
     pumi_ment_getAllRmt(e,copies);
     // loop over remote copies and increase the counter
     // check #remotes
-    assert (pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
+    assert(pumi_ment_getNumRmt(e)==int(copies.size()) && copies.size()>0);
     Parts parts;
     pumi_ment_getResidence(e, parts);
     assert(parts.size()==copies.size()+1);

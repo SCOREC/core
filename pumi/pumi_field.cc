@@ -132,6 +132,12 @@ pNumbering pumi_numbering_create
   return createNumbering(m, name, shape, num_component);
 }
 
+pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape)
+{
+  if (!shape) shape= m->getShape();
+  return numberOverlapNodes(m, name, shape);
+}
+
 pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape)
 {
    if (!shape) shape= m->getShape();
@@ -540,7 +546,7 @@ void pumi_field_verify(pMesh m, pField f)
   else
   {
     if (!PCU_Comm_Self())
-      printf("%s: \"%s\" no DOF mismatch\n", __func__);
+      printf("%s: no DOF mismatch\n", __func__);
   }
 }
 

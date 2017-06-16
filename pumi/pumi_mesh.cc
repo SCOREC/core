@@ -248,7 +248,7 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   }
   else
     pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
-  pumi_mesh_print(pumi::instance()->mesh);
+
   return pumi::instance()->mesh;
 }
 
