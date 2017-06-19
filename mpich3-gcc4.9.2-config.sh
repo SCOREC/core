@@ -1,5 +1,5 @@
-ZOLTAN_DIR=/lore/seol/mpich3-gcc4.9.2-install
-PARMETIS_DIR=/lore/esyoon/openlib/petsc-3.7.5-gcc-4.9.2
+ZOLTAN_DIR=/usr/local/zoltan/3.81/mpich3.1.2
+PARMETIS_DIR=/usr/local/parmetis/4.0.3/mpich3.1.2
 PREFIX=/lore/seol/mpich3-gcc4.9.2-install
 
 cmake .. \

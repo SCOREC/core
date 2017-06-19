@@ -426,12 +426,15 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   
   delete plan;
   m->acceptChanges();
-
+  
+  // frozen (array-based) field relies on local numbering of default field shape for accessing DOF
+  // if no default local numbering is found for default field shape, 
+  // apf::freeze creates a new local numbering. 
+  // local numbering has to be deleted after mesh modification and before freezing the field
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
   for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
-  {    
-    // true - update the existing numbering as the mesh has been changed
     apf::freeze(*fit);    
-  }
+
   if (!PCU_Comm_Self())
     printf("mesh ghosted in %f seconds\n", PCU_Time()-t0);
 }
@@ -888,6 +891,11 @@ void pumi_ghost_delete (pMesh m)
     pumi::instance()->ghosted_vec[d].clear();
   }
 
+  // frozen (array-based) field relies on local numbering of default field shape for accessing DOF
+  // if no default local numbering is found for default field shape, 
+  // apf::freeze creates a new local numbering. 
+  // local numbering has to be deleted after mesh modification and before freezing the field
+  while (m->countNumberings()) destroyNumbering(m->getNumbering(0));
   for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
     apf::freeze(*fit);    
 }

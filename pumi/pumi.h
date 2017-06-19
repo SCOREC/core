@@ -432,11 +432,10 @@ pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 //************************************
 // Mesh entity numbering
 //************************************
-
 void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component, long number);
-long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component);
+long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node=0, int component=0);
 void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number);
-int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component);
+int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node=0, int component=0);
 bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n);
 
 //************************************
@@ -472,6 +471,7 @@ int pumi_mesh_getNumGlobalNumbering (pMesh m);
 pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i);
 
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
+pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape=NULL);
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim);
 pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL);
 void pumi_numbering_delete(pNumbering n);
