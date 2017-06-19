@@ -120,6 +120,12 @@ long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int co
   return apf::getNumber(gn, e, node, component);
 }
 
+pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape)
+{
+  if (!shape) shape= m->getShape();
+  return numberOverlapNodes(m, name, shape);
+}
+
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim)
 {
   return numberOwnedDimension(m, name, dim);
