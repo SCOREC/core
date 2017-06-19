@@ -27,9 +27,9 @@ class ArrayDataOf : public FieldDataOf<T>
 //      (e.g. migration, ghosting, load balancing, adaptation)
 //   - after mesh is modified and before freeze the fields, remove all local numberings 
 //     by calling "while (m->countNumberings()) destroyNumbering(m->getNumbering(0));"
-
       if (!n) n = numberOverlapNodes(f->getMesh(),name,s);   
-      num_var = n;      arraySize = f->countComponents()*countNodes(num_var);
+      num_var = n;      
+      arraySize = f->countComponents()*countNodes(num_var);
       dataArray = new T[arraySize];
     }
     virtual ~ArrayDataOf()
