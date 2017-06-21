@@ -55,17 +55,6 @@ void destroyMesh(Mesh* m);
   */
 MeshElement* createMeshElement(Mesh* m, MeshEntity* e);
 
-/** \brief Creates a non-standard Mesh Element over an entity.
-  *
-  * \details Warning: most users should use the above function unless
-  * you know this is the right one for you. This function is useful for
-  * creating a mesh element over a coordinate field c that may be
-  * distinct from the mesh's underlying coordinate field. This may
-  * be useful for updated-Lagrangian simulations, where quantities
-  * must be computed on reference and updated configurations.
-  */
-MeshElement* createMeshElement(Field* c, MeshEntity* e);
-
 /** \brief Retrieve the mesh entity associated with an apf::MeshElement.
   */
 MeshEntity * getMeshEntity(MeshElement * me);

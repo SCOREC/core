@@ -41,12 +41,6 @@ MeshElement* createMeshElement(Mesh* m, MeshEntity* e)
         m->getCoordinateField()), e);
 }
 
-MeshElement* createMeshElement(apf::Field* f, MeshEntity*e)
-{
-  PCU_DEBUG_ASSERT(apf::getValueType(f) == apf::VECTOR);
-  return new VectorElement(static_cast<VectorField*>(f), e);
-}
-
 void destroyMeshElement(MeshElement* e)
 {
   delete e;
