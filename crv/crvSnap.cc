@@ -21,6 +21,8 @@ namespace crv {
      changed. If a surface has degenerate coordinates,
      every point on it needs to be checked for degeneracy
      for edge splitting, or similar processes. */
+  // TODO: Remove this if not used anywhere else since a better
+  // version is now implemented in ma/maSnap.cc
 static bool checkIsDegenerate(apf::Mesh* m, apf::ModelEntity* g,
     apf::Vector3 const& p, int axis)
 {
@@ -54,23 +56,9 @@ static void interpolateParametricCoordinates(
     apf::Vector3 const& b,
     apf::Vector3& p)
 {
+  // the corresponding function in ma takes care of degenerate
+  // cases, now. So it is enough to just call that!
   ma::interpolateParametricCoordinates(m, g, t, a, b, p);
-  if(m->getModelType(g) == 2) {
-    bool isDegenerate[4];
-    for (int d=0; d < 2; ++d) {
-      isDegenerate[2*d] = checkIsDegenerate(m,g,a,d);
-      isDegenerate[2*d+1] = isDegenerate[2*d] ? false :
-          checkIsDegenerate(m,g,b,d);
-    }
-    for (int d=0; d < 2; ++d) {
-      int other = d ? 0 : 1;
-      if (isDegenerate[2*other]) {
-        p[d] = b[d];
-      } else if (isDegenerate[2*other+1]) {
-        p[d] = a[d];
-      }
-    }
-  }
 }
 
 static void transferParametricBetween(
