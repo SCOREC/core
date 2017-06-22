@@ -97,6 +97,8 @@ class Input
     bool shouldCoarsenLayer;
 /** \brief set to true during UR to get splits in the normal direction */
     bool splitAllLayerEdges;
+/** \brief this a folder that debugging meshes will be written to, if provided! */
+    const char* debugFolder;
 };
 
 /** \brief generate a configuration based on an anisotropic function.
