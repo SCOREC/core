@@ -17,8 +17,61 @@
 #include <apfGeometry.h>
 #include <pcu_util.h>
 #include <iostream>
+#include <algorithm>
 
 namespace ma {
+
+static size_t isSurfUnderlyingFaceDegenerate(
+    apf::Mesh* m,
+    Model* g, // this the model entity in question
+    int& axis,
+    std::vector<double>& values) // sorted in ascending order
+{
+  int md = m->getModelType(g);
+  PCU_ALWAYS_ASSERT(md == 2);
+
+
+  double tol = 1.0e-12;
+  values.clear();
+
+  bool isPeriodic[2];
+  double range[2][2];
+  int numPeriodicDims = 0;
+  for (int i = 0; i < md; i++) {
+    isPeriodic[i] = m->getPeriodicRange(g,i,range[i]);
+    if (isPeriodic[i])
+      numPeriodicDims++;
+    if (range[i][0] > range[i][1])
+      std::swap(range[i][0], range[i][1]);
+  }
+
+  if (numPeriodicDims != 1) return 0;
+
+  int periodicAxes = isPeriodic[0] ? 0 : 1;
+  int degenAxes = 1 - periodicAxes;
+  for (int i = 0; i < 2; i++) {
+    double candidateDegenParam = range[degenAxes][i];
+    double param[2];
+    Vector uTan;
+    Vector vTan;
+    param[periodicAxes] = candidateDegenParam;
+    param[degenAxes] = candidateDegenParam;
+    Vector p(param[0], param[1], 0.0);
+    m->getFirstDerivative(g, param, uTan, vTan);
+    double uTanSize = uTan.getLength();
+    double vTanSize = vTan.getLength();
+    if (uTanSize < tol || vTanSize < tol) {
+      axis = degenAxes;
+      values.push_back(candidateDegenParam);
+    }
+  }
+
+  std::sort(values.begin(), values.end());
+  if (values.size() == 2)
+    PCU_ALWAYS_ASSERT(values[1] >= values[0]);
+  return values.size();
+}
+
 
 /* this is the logic to deal with discontinuous
    periodic parametric coordinates.
@@ -71,12 +124,185 @@ static double interpolateParametricCoordinate(
   return result;
 }
 
-void interpolateParametricCoordinates(
+static void interpolateParametricCoordinateOnEdge(
     apf::Mesh* m,
     Model* g,
     double t,
-    Vector const& a,
-    Vector const& b,
+    const Vector& a,
+    const Vector& b,
+    Vector& p)
+{
+
+  double range[2];
+  bool isPeriodic = m->getPeriodicRange(g,0,range);
+  p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 0);
+  p[1] = 0.0;
+  p[2] = 0.0;
+}
+
+// TODO: This needs to be more generalized for cases where one of
+// the poles is missing. For example, in the case of a cut-sphere!
+static void interpolateParametricCoordinatesOnDegenerateFace(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    const Vector& a, // the parametric coords of the 1st point
+    const Vector& b, // the parametric coords of the 2nd point
+    int d_axes, // the degenerate axes. Can be either 0 or 1
+    const std::vector<double>& vals, // singular points on the degenerate axes
+    Vector& p)
+{
+
+  // convert vectors to uv matrix such that:
+  // uv[0][] is the parametric coordinates of the 1st point, and
+  // uv[1][] is the parametric coordinates of the 2nd point.
+  double uv[2][2]; // = {{a.x(), a.y()} ,
+		   //   {b.x(), b.y()}};
+  uv[0][0] = a.x();
+  uv[0][1] = b.x();
+  uv[1][0] = a.y();
+  uv[1][1] = b.y();
+  // these are constants
+  // TODO: figure out what is the best choice!
+  double d_ratio = 0.01;
+  double p_ratio = 0.05;
+  double d_range[2];
+  double p_range[2];
+  int p_axes;
+  double d_threshold, p_threshold;
+  double d_size, p_size, sd_size;
+
+
+  p_axes = 1 - d_axes;
+  m->getPeriodicRange(g, d_axes, d_range);
+  m->getPeriodicRange(g, p_axes, p_range);
+  d_size = std::abs(d_range[1] - d_range[0]);
+  p_size = std::abs(p_range[1] - p_range[0]);
+  sd_size = std::abs(vals[1] - vals[0]); // size of the degenerate coordinate of the underlying surf
+  d_threshold = d_ratio * d_size;
+  p_threshold = p_ratio * p_size;
+
+  // From now on
+  // the(ta) is the degenerate coordinate
+  // phi     is the periodic   coordinate
+
+  // the corresponding interpolated values
+  double the_t = 0.0;
+  double phi_t = 0.0;
+  double phi_1 = uv[p_axes][0];
+  double phi_2 = uv[p_axes][1];
+  double the_1 = uv[d_axes][0];
+  double the_2 = uv[d_axes][1];
+
+  double phi_span = std::abs(phi_2 - phi_1);
+
+  // First, take care of the cases where one or both of the
+  // thetas (degenerate coord) are close to the poles
+  bool flag = false;
+  // sort points such that the_1 < the_2
+  if (the_1 > the_2) {
+    std::swap(phi_1, phi_2);
+    std::swap(the_1, the_2);
+    t = 1 - t;
+  }
+  the_t = (1 - t) * the_1 + t * the_2;
+  double phi_tmp = interpolateParametricCoordinate(t, phi_1, phi_2, p_range, true, 0);
+  double np = vals[1];
+  double sp = vals[0];
+
+  // check the south pole (i.e., at least one point inside south pole space)
+  if (std::abs(the_1 - sp) <= d_threshold) {
+    if (std::abs(the_2 - sp) <= d_threshold) {
+      if (std::abs(phi_span - p_size/2.) > p_threshold) {
+	phi_t = phi_tmp;
+	flag = true;
+      }
+    }
+    else {
+      phi_t = phi_2;
+      flag = true;
+    }
+  }
+  // check the north pole (i.e., at lease one point inside north pole space)
+  if (std::abs(the_2 - np) <= d_threshold) {
+    if (std::abs(the_1 - np) <= d_threshold) {
+      if (std::abs(phi_span - p_size/2.) > p_threshold) {
+	phi_t = phi_tmp;
+	flag = true;
+      }
+    }
+    else {
+      phi_t = phi_1;
+      flag = true;
+    }
+  }
+  // check the case when neither of the points falls in any of the poles
+  if (std::abs(the_2 - np) > d_threshold &&
+      std::abs(the_1 - sp) > d_threshold) {
+    if (std::abs(phi_span - p_size/2.) > p_threshold) {
+      phi_t = phi_tmp;
+      flag = true;
+    }
+  }
+
+  // Second, take care of the cases where the connecting line should
+  // pass over a pole.
+  if (!flag && std::abs(phi_span - p_size/2.) <= p_threshold) {
+    // sort points such that phi_1 < phi_2
+    if (phi_1 > phi_2) {
+      std::swap(phi_1, phi_2);
+      std::swap(the_1, the_2);
+      t = 1 - t;
+    }
+
+    double the_1p, the_2p, the_tp, pole;
+
+    if (the_1 >= 0) {
+      pole = vals[1];
+      if (the_1 + the_2 >= 0) {
+	the_1p = the_1;
+	the_2p = the_2;
+	the_tp = (1 - t) * the_1p + t * (sd_size - the_2p);
+	the_t = (the_tp <= pole) ? the_tp : sd_size - the_tp;
+	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
+      }
+      else { // the_1 + the_2 < 0
+	the_1p =  the_1;
+	the_2p = -the_2;
+	the_tp = (1 - t) * the_1p + t * (sd_size - the_2p);
+	the_t = (the_tp <= pole) ? the_tp : sd_size - the_tp;
+	the_t = -the_t;
+	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
+      }
+    }
+    else { // the_1 < 0
+      pole = vals[0];
+      if (the_1 + the_2 <= 0) {
+	the_1p = the_1;
+	the_2p = the_2;
+	the_tp = (1 - t) * the_1p + t * (-sd_size - the_2p);
+	the_t = (the_tp >= pole) ? the_tp : -sd_size - the_tp;
+	phi_t = (the_tp >= pole) ? phi_1 : phi_2;
+      }
+      else { // the_1 + the_2 > 0
+	the_1p =  the_1;
+	the_2p = -the_2;
+	the_tp = (1 - t) * the_1p + t * (-sd_size - the_2p);
+	the_t = (the_tp >= pole) ? the_tp : -sd_size - the_tp;
+	the_t = -the_t;
+	phi_t = (the_tp >= pole) ? phi_1 : phi_2;
+      }
+    }
+  }
+  p = (d_axes == 0) ? Vector(the_t, phi_t, 0.0) : Vector(phi_t, the_t, 0.0);
+}
+
+static void interpolateParametricCoordinatesOnRegularFace(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    const Vector& a, // the parametric coords of the 1st point
+    const Vector& b, // the parametric coords of the 2nd point
     Vector& p)
 {
   double range[2];
@@ -108,6 +334,42 @@ void interpolateParametricCoordinates(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
+
+}
+
+static void interpolateParametricCoordinatesOnFace(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    const Vector& a, // the parametric coords of the 1st point
+    const Vector& b, // the parametric coords of the 2nd point
+    Vector& p)
+{
+  std::vector<double> vals;
+  int axes;
+  size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
+  if (num > 0) // the underlying surface is degenerate
+    interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
+  else
+    interpolateParametricCoordinatesOnRegularFace(m, g, t, a, b, p);
+}
+
+
+void interpolateParametricCoordinates(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    Vector const& a,
+    Vector const& b,
+    Vector& p)
+{
+  int md = m->getModelType(g);
+  if (md == 1)
+    interpolateParametricCoordinateOnEdge(m, g, t, a, b, p);
+  else if (md == 2)
+    interpolateParametricCoordinatesOnFace(m, g, t, a, b, p);
+  else
+    printf("model entity must be an edge or a face\n");
 }
 
 static void transferParametricBetween(
