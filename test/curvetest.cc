@@ -6,6 +6,8 @@
 #include <gmi_sim.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <MeshSim.h>
+#include <SimModel.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
 #include <pcu_util.h>
@@ -188,7 +190,8 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
@@ -205,6 +208,7 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   gmi_sim_stop();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
   MPI_Finalize();
 }

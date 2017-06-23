@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <SimUtil.h>
+#include <MeshSim.h>
+#include <SimModel.h>
 #include "gmi_sim.h"
 #include "gmi_mesh.h"
 
@@ -10,7 +12,8 @@ int main(int argc, char** argv)
     printf("Usage: %s <simmetrix smd model> <gmi dmg model>\n", argv[0]);
     return 0;
   }
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_mesh();
@@ -20,6 +23,7 @@ int main(int argc, char** argv)
   gmi_destroy(m);
   gmi_sim_stop();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
   return 0;
 }

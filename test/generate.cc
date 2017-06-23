@@ -140,7 +140,8 @@ int main(int argc, char** argv)
 
   SimModel_start();
   SimPartitionedMesh_start(NULL,NULL);
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(NULL);
   MS_init();
   SimAdvMeshing_start();
@@ -171,7 +172,8 @@ int main(int argc, char** argv)
   SimModel_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
   PCU_Comm_Free();
   MPI_Finalize();
 }
