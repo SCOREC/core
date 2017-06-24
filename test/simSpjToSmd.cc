@@ -26,7 +26,6 @@ int main(int argc, char* argv[])
   MS_init();
   SimModel_start();
   SimParasolid_start(1);
-  SimUtil_start();
   Sim_readLicenseFile(0);
 
   pProgress prog = Progress_new();

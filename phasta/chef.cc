@@ -6,6 +6,8 @@
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
+#include <MeshSim.h>
+#include <SimModel.h>
 #include <SimPartitionedMesh.h>
 #include <SimAdvMeshing.h>
 #endif
@@ -31,7 +33,8 @@ int main(int argc, char** argv)
   if( !PCU_Comm_Self() )
     printf("PUMI Git hash %s\n", pumi_version());
 #ifdef HAVE_SIMMETRIX
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
   SimAdvMeshing_start();
@@ -48,7 +51,8 @@ int main(int argc, char** argv)
   SimPartitionedMesh_stop();
   SimAdvMeshing_stop();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
 #endif
   PCU_Comm_Free();
   MPI_Finalize();

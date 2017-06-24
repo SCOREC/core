@@ -7,6 +7,8 @@
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
+#include <MeshSim.h>
+#include <SimModel.h>
 #endif
 #include <pcu_util.h>
 #include <stdlib.h>
@@ -35,7 +37,8 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
   gmi_register_sim();
@@ -60,7 +63,8 @@ int main(int argc, char** argv)
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
 #endif
   PCU_Comm_Free();
   MPI_Finalize();

@@ -7,13 +7,16 @@
 #include <gmi_sim.h>
 #include <PCU.h>
 #include <SimUtil.h>
+#include <MeshSim.h>
+#include <SimModel.h>
 #include <cstdlib>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   if ( argc != 5 ) {
@@ -46,7 +49,8 @@ int main(int argc, char** argv)
 
   gmi_sim_stop();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
   PCU_Comm_Free();
   MPI_Finalize();
 }
