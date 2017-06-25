@@ -155,6 +155,7 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(curvetest curvetest.cc)
   test_exe_func(curve_to_bezier curve_to_bezier.cc)
   test_exe_func(inClosureOf_test inClosureOf_test.cc)
+  test_exe_func(degenerate_test degenerateSurfs.cc)
   test_exe_func(simZBalance simZBalance.cc)
 endif()
 
