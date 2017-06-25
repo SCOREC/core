@@ -34,7 +34,8 @@ int main(int argc, char *argv[])
 
   Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
   Sim_logOn("createDM.log");
-  SimUtil_start();
+  MS_init();
+  SimModel_start();
   MS_init(); // initial MeshSim library
   SimParasolid_start(1);
   SimDiscrete_start(0);
@@ -106,7 +107,8 @@ int main(int argc, char *argv[])
   SimParasolid_stop(1);
   MS_exit();
   Sim_unregisterAllKeys();
-  SimUtil_stop();
+  SimModel_stop();
+  MS_exit();
   Sim_logOff();
 }
 

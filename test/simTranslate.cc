@@ -120,8 +120,8 @@ int main(int argc, char* argv[])
   try {
     MS_init();
     gmi_sim_start();
-    SimUtil_start();
-  Sim_readLicenseFile(0);
+    SimModel_start();
+    Sim_readLicenseFile(0);
 
     Sim_setMessageHandler(messageHandler);
     progress = Progress_new();
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
 
     gmi_sim_stop();
     Sim_unregisterAllKeys();
-  SimUtil_stop();
+    SimModel_stop();
     MS_exit();
   } catch(pSimError err) {
     printf("Cleanup Failed\n");
