@@ -18,6 +18,24 @@ const char* outFile = 0;
 int num_in_part = 0;
 int do_distr=0;
 
+struct testSharing : public Sharing 
+{
+  testSharing(pMesh m)
+  { shr = new apf::NormalSharing(m); }
+  ~testSharing()
+  { delete shr; }
+  int getOwner(pMeshEnt e)
+  { return shr->getOwner(e); }
+  bool isOwned(pMeshEnt e)
+  { return shr->isOwned(e); }
+  /* this will only be called for global masters */
+  void getCopies(pMeshEnt e, CopyArray& copies)
+  { shr->getCopies(e, copies); }
+  bool isShared(pMeshEnt  e)
+  { return shr->isShared(e); }
+  pSharing shr;
+};
+
 void getConfig(int argc, char** argv)
 {
   if ( argc < 4 ) {
@@ -31,7 +49,7 @@ void getConfig(int argc, char** argv)
   outFile = argv[3];
   if (argc>=4)
     num_in_part = atoi(argv[4]);
-if (argc>=5)
+  if (argc>=5)
     do_distr = atoi(argv[5]);
 }
 
@@ -698,7 +716,7 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_synchronize(f);
+    pumi_field_synchronize(f, new testSharing(m));
   }
 
   it = m->begin(0);
@@ -713,7 +731,7 @@ void TEST_FIELD(pMesh m)
         assert(data[i] == xyz[i]);
   }
   m->end(it);
-  pumi_field_verify(m, f);
+  pumi_field_verify(m, f, new testSharing(m));
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -813,7 +831,7 @@ void TEST_GHOSTING(pMesh m)
   double data[3];
   double xyz[3];
 
-  pumi_field_accumulate(f);
+  pumi_field_accumulate(f, new testSharing(m));
 
   pMeshIter it = m->begin(0);
   while ((e = m->iterate(it)))

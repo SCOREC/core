@@ -217,6 +217,7 @@ void synchronize(Numbering * n, Sharing* shr)
 
 struct NoSharing : public Sharing
 {
+  int getOwner(MeshEntity*) {return PCU_Comm_Self();}
   bool isOwned(MeshEntity*) {return true;}
   virtual void getCopies(MeshEntity*, CopyArray&) {}
   bool isShared(MeshEntity*) {return false;}

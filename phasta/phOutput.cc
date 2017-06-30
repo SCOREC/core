@@ -395,7 +395,7 @@ static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
 {
   if ( ! sh)
     return e;
-  apf::Copy globalMaster = sh->getOwner(e);
+  apf::Copy globalMaster = sh->getOwnerCopy(e);
   if (globalMaster.peer == PCU_Comm_Self())
     return globalMaster.entity;
   else

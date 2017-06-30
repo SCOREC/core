@@ -17,7 +17,8 @@ bool LinkKey::operator<(LinkKey const& other) const
 /* the PhastaSharing class is responsible for ensuring that
    ILWORK links matched entities correctly. */
 
-struct PhastaSharing : public apf::Sharing {
+struct PhastaSharing : public apf::Sharing 
+{
   PhastaSharing(apf::Mesh* m)
   {
     mesh = m;
@@ -28,6 +29,12 @@ struct PhastaSharing : public apf::Sharing {
   {
     delete helperN;
     delete helperM;
+  }
+  int getOwner(apf::MeshEntity* e)
+  {
+    if (isDG)
+      return helperN->getOwner(e);
+    return helperM->getOwner(e);
   }
   bool isOwned(apf::MeshEntity* e)
   {

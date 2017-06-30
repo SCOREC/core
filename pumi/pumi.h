@@ -68,6 +68,7 @@ typedef apf::EntityVector EntityVector;
 typedef apf::MeshIterator* pMeshIter;
 typedef apf::Copies Copies;
 typedef apf::Copies::iterator pCopyIter;
+typedef apf::CopyArray CopyArray;
 typedef apf::MeshTag* pMeshTag;
 typedef apf::Parts Parts;
 typedef apf::Migration Migration;
@@ -76,7 +77,8 @@ typedef apf::FieldShape* pShape;
 typedef apf::Numbering* pNumbering;
 typedef apf::GlobalNumbering* pGlobalNumbering;
 typedef apf::Vector3 Vector3; // 3d vector
-
+typedef apf::Sharing Sharing;
+typedef apf::Sharing* pSharing;
 // singleton to save model/mesh
 class pumi
 {
@@ -370,21 +372,21 @@ void pumi_ment_getLongTag(pMeshEnt e, pMeshTag tag, long* data);
 void pumi_ment_setDblTag(pMeshEnt e, pMeshTag tag, double const* data);
 void pumi_ment_getDblTag(pMeshEnt e, pMeshTag tag, double* data);
 
-// return owning part id. if ghosted mesh, vertex or element only
-int pumi_ment_getOwnPID(pMeshEnt e); 
-
-// return owner entity copy. if ghoted mesh, vertex or element only
-pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e); 
-
-// return true if the entity is an owner copy
-bool pumi_ment_isOwned(pMeshEnt e);
-
 // return true if the entity exists on the part
 bool pumi_ment_isOn(pMeshEnt e, int partID);
 
-// return true if entity is on part boundary, ghosted, or ghost
-//  - this will fixed to consider only part boundary entities later
+// return true if entity is on part boundary
 bool pumi_ment_isOnBdry (pMeshEnt e); 
+
+// return owning part id. if ghosted mesh, vertex or element only
+int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr=NULL); 
+
+// return owner entity copy. if ghoted mesh, vertex or element only
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr=NULL); 
+
+// return true if the entity is an owner copy
+bool pumi_ment_isOwned(pMeshEnt e, pSharing shr=NULL);
+
 
 // return # remote and ghost copies
 //  - this will fixed to consider only part boundary entities later
@@ -479,8 +481,8 @@ int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
 pShape pumi_field_getShape (pField f);
 void pumi_field_delete(pField f);
-void pumi_field_synchronize(pField f);
-void pumi_field_accumulate(pField f);
+void pumi_field_synchronize(pField f, pSharing shr=NULL);
+void pumi_field_accumulate(pField f, pSharing shr=NULL);
 void pumi_field_freeze(pField f);
 void pumi_field_unfreeze(pField f);
 pField pumi_mesh_findField(pMesh m, const char* name);
@@ -489,6 +491,6 @@ pField pumi_mesh_getField(pMesh m, int i);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field
-void pumi_field_verify(pMesh m, pField f=NULL);
+void pumi_field_verify(pMesh m, pField f=NULL, pSharing shr=NULL);
 void pumi_field_print(pField f);
 #endif

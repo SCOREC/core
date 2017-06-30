@@ -450,6 +450,8 @@ class Migration
 struct Sharing
 {
   virtual ~Sharing() {}
+/** \brief return owner part ID */
+  virtual int getOwner(MeshEntity* e) = 0;
 /** \brief return true if the entity is owned */
   virtual bool isOwned(MeshEntity* e) = 0;
 /** \brief get the copies of the entity */
@@ -461,6 +463,7 @@ struct Sharing
 struct NormalSharing : public Sharing
 {
   NormalSharing(Mesh* m);
+  virtual int getOwner(MeshEntity* e);
   virtual bool isOwned(MeshEntity* e);
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies);
@@ -472,7 +475,8 @@ private:
 struct MatchedSharing : public Sharing
 {
   MatchedSharing(Mesh* m);
-  Copy getOwner(MeshEntity* e);
+  Copy getOwnerCopy(MeshEntity* e);
+  virtual int getOwner(MeshEntity* e);
   virtual bool isOwned(MeshEntity* e);
   virtual void getCopies(MeshEntity* e,
       CopyArray& copies);
