@@ -152,6 +152,8 @@ class Input
     double adaptShrinkLimit;
     /** \brief report the time spent in IO */
     int printIOtime;
+	/** \brief flag of writing m2g fields to geomBC files */
+	int mesh2geom;
 };
 
 int countNaturalBCs(Input& in);

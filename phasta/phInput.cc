@@ -70,6 +70,7 @@ static void setDefaults(Input& in)
   in.adaptShrinkLimit = 10000;
   in.validQuality = 1.0e-10;
   in.printIOtime = 0;
+  in.mesh2geom = 0;
 }
 
 Input::Input()
@@ -139,6 +140,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["simmetrixMesh"] = &in.simmetrixMesh;
   intMap["maxAdaptIterations"] = &in.maxAdaptIterations;
   intMap["printIOtime"] = &in.printIOtime;
+  intMap["mesh2geom"] = &in.mesh2geom;
 }
 
 template <class T>
