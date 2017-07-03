@@ -153,19 +153,24 @@ pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
 // FIXME: based on sharing
 int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr)
 {
-  return pumi::instance()->mesh->getOwner(e);
+  if (!shr)
+    return pumi::instance()->mesh->getOwner(e);
+  return shr->getOwner(e);
+  
 }
 
 // FIXME: based on sharing
 pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr)
 {
-
   if (!(pumi::instance()->mesh->isShared(e))) // internal ent
     return e;
+  int own_partid;
+  if (!shr)
+    own_partid= pumi::instance()->mesh->getOwner(e);
+  else
+    own_partid=shr->getOwner(e);
 
-  int own_partid = pumi_ment_getOwnPID(e);
   if (own_partid==pumi_rank()) return e;
-
   return pumi_ment_getRmt(e, own_partid);
 }
 

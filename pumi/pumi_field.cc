@@ -196,7 +196,7 @@ void pumi_field_synchronize(pField f, pSharing shr)
 
 void pumi_field_accumulate(pField f, pSharing shr)
 {  
-  apf::accumulate(f,shr);
+  apf::accumulate(f, shr);
 }
 
 void pumi_field_freeze(pField f)

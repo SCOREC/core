@@ -387,7 +387,6 @@ pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr=NULL);
 // return true if the entity is an owner copy
 bool pumi_ment_isOwned(pMeshEnt e, pSharing shr=NULL);
 
-
 // return # remote and ghost copies
 //  - this will fixed to consider only part boundary entities later
 int pumi_ment_getNumRmt (pMeshEnt e); 
