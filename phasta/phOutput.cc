@@ -49,6 +49,39 @@ static void getCoordinates(Output& o)
   o.arrays.coordinates = x;
 }
 
+static void getM2GFields(Output& o) {
+  apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
+  int n = m->count(0);
+  int* classinfo = new int[n * 2];
+  double* params = new double[n * 2];
+  apf::MeshEntity* v;
+  apf::Vector3 pm;
+  int i = 0;
+  apf::MeshIterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*)m->toModel(v);
+	int dim = gmi_dim(gm,ge);
+	int tag = gmi_tag(gm,ge);
+	if (dim > 2) { // region vertex has no param coord
+	  for (int j = 0; j < 3; ++j)
+        pm[j] = 0.0;
+	}
+	else {
+	  m->getParam(v, pm);
+	}
+	classinfo[i]   = dim;
+    classinfo[n+i] = tag;
+	for (int j = 0; j < 2; ++j)
+      params[j * n + i] = pm[j];
+	++i;
+  }
+  m->end(it);
+  PCU_ALWAYS_ASSERT(i == n);
+  o.arrays.m2gClsfcn = classinfo;
+  o.arrays.m2gParCoord = params;
+}
+
 /* so apparently old phParAdapt just used EN_id,
    and the id generator from pumi would do things
    like this. I guess PHASTA is ok with a unique
@@ -979,6 +1012,10 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
 Output::~Output()
 {
   delete [] arrays.coordinates;
+  if (in->mesh2geom) {
+    delete [] arrays.m2gClsfcn;
+    delete [] arrays.m2gParCoord;
+  }
   delete [] arrays.ilwork;
   delete [] arrays.ilworkf;
   delete [] arrays.iper;
@@ -1049,6 +1086,8 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   o.mesh = mesh;
   getCounts(o);
   getCoordinates(o);
+  if (in.mesh2geom)
+    getM2GFields(o);
   getGlobal(o);
   getAllBlocks(o.mesh, bcs, o.blocks);
   apf::Numbering* n = apf::numberOverlapNodes(mesh, "ph_local");

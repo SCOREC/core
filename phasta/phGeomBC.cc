@@ -320,6 +320,16 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   if (o.hasDGInterface)
     writeInt(f, "number of interface tpblocks", o.blocks.interface.getSize());
   writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
+
+  if (o.in->mesh2geom) {
+    params[0] = m->count(0);
+    params[1] = 2;
+    ph_write_ints(f, "m2g classification", o.arrays.m2gClsfcn,
+      params[0] * params[1], 2, params);
+    ph_write_doubles(f, "m2g parametric coordinate", o.arrays.m2gParCoord,
+      params[0] * params[1], 2, params);
+  }
+
   params[0] = m->count(0);
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
