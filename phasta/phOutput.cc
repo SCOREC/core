@@ -21,10 +21,6 @@
 #include <typeinfo>
 #include <pcu_util.h>
 
-//for debugging
-#include <math.h>
-//end debugging
-
 namespace ph {
 
 static void getCounts(Output& o)
@@ -74,13 +70,6 @@ static void getM2GFields(Output& o) {
 	else {
 	  m->getParam(v, pm);
 	}
-// for debugging
-    apf::Vector3 p;
-    m->getPoint(v, 0, p);
-	double r = sqrt(p[1]*p[1] + p[2]*p[2]);
-	double theta = atan(p[2]/p[1]);
-    printf("rank=%d; (z,r,theta)=(%f,%f,%f); dim=%d; tag=%d; param=(%f,%f,%f)\n",PCU_Comm_Self(),p[0],r,theta,dim,tag,pm[0],pm[1],pm[2]);
-// end debugging
 	classinfo[i]   = dim;
     classinfo[n+i] = tag;
 	for (int j = 0; j < 2; ++j)
