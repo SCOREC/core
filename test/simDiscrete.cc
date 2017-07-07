@@ -32,11 +32,10 @@ int main(int argc, char *argv[])
 
   cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
 
+  MS_init(); // initial MeshSim library
+  SimModel_start();
   Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
   Sim_logOn("createDM.log");
-  MS_init();
-  SimModel_start();
-  MS_init(); // initial MeshSim library
   SimParasolid_start(1);
   SimDiscrete_start(0);
 
@@ -105,7 +104,6 @@ int main(int argc, char *argv[])
   Progress_delete(progress);
   SimDiscrete_stop(0);
   SimParasolid_stop(1);
-  MS_exit();
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
