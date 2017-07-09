@@ -58,7 +58,7 @@ static void setDefaults(Input& in)
   in.axisymmetry = 0;
   in.parmaLoops = 3; //a magical value
   in.parmaVerbosity = 1; //fairly quiet
-  in.writeGeomBCFiles = 1;
+  in.writeGeomBCFiles = 0;  // write additional geombc file for vis in streaming
   in.ramdisk = 0;
   in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
