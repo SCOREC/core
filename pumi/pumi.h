@@ -77,6 +77,9 @@ typedef apf::Numbering* pNumbering;
 typedef apf::GlobalNumbering* pGlobalNumbering;
 typedef apf::Vector3 Vector3; // 3d vector
 typedef apf::Adjacent Adjacent; // adjacency container
+typedef apf::Sharing Sharing; // sharing
+typedef apf::Sharing* pSharing; 
+typedef apf::CopyArray CopyArray; // array type for remote copies
 
 // singleton to save model/mesh
 class pumi
@@ -381,13 +384,13 @@ void pumi_ment_setDblTag(pMeshEnt e, pMeshTag tag, double const* data);
 void pumi_ment_getDblTag(pMeshEnt e, pMeshTag tag, double* data);
 
 // return owning part id. if ghosted mesh, vertex or element only
-int pumi_ment_getOwnPID(pMeshEnt e); 
+int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr=NULL); 
 
 // return owner entity copy. if ghoted mesh, vertex or element only
-pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e); 
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr=NULL); 
 
 // return true if the entity is an owner copy
-bool pumi_ment_isOwned(pMeshEnt e);
+bool pumi_ment_isOwned(pMeshEnt e, pSharing shr=NULL);
 
 // return true if the entity exists on the part
 bool pumi_ment_isOn(pMeshEnt e, int partID);
@@ -488,8 +491,8 @@ int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
 pShape pumi_field_getShape (pField f);
 void pumi_field_delete(pField f);
-void pumi_field_synchronize(pField f);
-void pumi_field_accumulate(pField f);
+void pumi_field_synchronize(pField f, pSharing shr=NULL);
+void pumi_field_accumulate(pField f, pSharing shr=NULL);
 void pumi_field_freeze(pField f);
 void pumi_field_unfreeze(pField f);
 pField pumi_mesh_findField(pMesh m, const char* name);
@@ -498,6 +501,6 @@ pField pumi_mesh_getField(pMesh m, int i);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field
-void pumi_field_verify(pMesh m, pField f=NULL);
+void pumi_field_verify(pMesh m, pField f=NULL, pSharing shr=NULL);
 void pumi_field_print(pField f);
 #endif
