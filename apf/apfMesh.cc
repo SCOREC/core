@@ -831,6 +831,11 @@ static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)
 
 NormalSharing::NormalSharing(Mesh* m):mesh(m) {}
 
+int NormalSharing::getOwner(MeshEntity* e)
+{
+  return mesh->getOwner(e);
+}
+
 bool NormalSharing::isOwned(MeshEntity* e)
 {
   return mesh->isOwned(e);
@@ -880,7 +885,7 @@ bool MatchedSharing::isLess(Copy const& a, Copy const& b)
   return a.entity < b.entity;
 }
 
-Copy MatchedSharing::getOwner(MeshEntity* e)
+Copy MatchedSharing::getOwnerCopy(MeshEntity* e)
 {
   Copy owner(PCU_Comm_Self(), e);
   CopyArray copies;
@@ -891,9 +896,15 @@ Copy MatchedSharing::getOwner(MeshEntity* e)
   return owner;
 }
 
+int MatchedSharing::getOwner(MeshEntity* e)
+{
+  Copy owner = this->getOwnerCopy(e);
+  return owner.peer;
+}
+
 bool MatchedSharing::isOwned(MeshEntity* e)
 {
-  Copy owner = this->getOwner(e);
+  Copy owner = this->getOwnerCopy(e);
   return owner.peer == PCU_Comm_Self() && owner.entity == e;
 }
 

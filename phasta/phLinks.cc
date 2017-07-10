@@ -29,6 +29,14 @@ struct PhastaSharing : public apf::Sharing {
     delete helperN;
     delete helperM;
   }
+  
+  int getOwner(apf::MeshEntity* e)
+  {
+    if (isDG)
+      return helperN->getOwner(e);
+    return helperM->getOwner(e);
+  }
+
   bool isOwned(apf::MeshEntity* e)
   {
     if (isDG)
