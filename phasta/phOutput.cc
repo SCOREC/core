@@ -366,6 +366,26 @@ static void getInterface
     apf::Downward v0, v1;
     getBoundaryVertices(m, e0, face, v0);
     getBoundaryVertices(m, e1, matches[0].entity, v1);
+
+    /* make sure the first vertex on side 0 is the first on side 1 */
+    apf::Vector3 p0,p1;
+	m->getPoint(v0[0],0,p0);
+	m->getPoint(v1[0],0,p1);
+	int loopCounter = 0;
+    while (abs(p0[0]-p1[0]) > 0.0 ||
+	       abs(p0[1]-p1[1]) > 0.0 ||
+		   abs(p0[2]-p1[2]) > 0.0) {
+	  PCU_ALWAYS_ASSERT(loopCounter < 2); // shall not rotate more than 2 times
+      int type1 = m->getType(e1);
+      apf::Downward v1_old;
+      int nv = apf::Mesh::adjacentCount[type1][0];
+	  for (int i = 0; i < nv; ++i)
+	    v1_old[i] = v1[i];
+      orderForPhastaInterface(type1, v1_old, v1);
+	  m->getPoint(v1[0],0,p1);
+	  loopCounter++;
+    }
+
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
     checkBoundaryVertex(m, face,              v0, k.elementType );
