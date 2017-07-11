@@ -189,14 +189,14 @@ void pumi_field_delete(pField f)
   apf::destroyField(f);
 }
 
-void pumi_field_synchronize(pField f)
+void pumi_field_synchronize(pField f, pSharing shr)
 {  
-  apf::synchronize(f, getSharing(getMesh(f)));
+  apf::synchronize(f, shr);
 }
 
-void pumi_field_accumulate(pField f)
+void pumi_field_accumulate(pField f, pSharing shr)
 {  
-  apf::accumulate(f, getSharing(getMesh(f)));
+  apf::accumulate(f, shr);
 }
 
 void pumi_field_freeze(pField f)
@@ -401,14 +401,12 @@ void pumi_field_print(pField f)
 }
 
 // VERIFY FIELDS
-static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf)
+static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pSharing shr)
 {
   void* msg_send;
   pMeshEnt* s_ent;
   size_t msg_size;
 
-  apf::Sharing* shr = getSharing(m);
-    
   apf::FieldDataOf<double>* data = static_cast<apf::FieldDataOf<double>*>(f->getData());
 
   if ((!data->hasEntity(e))|| (!shr->isOwned(e)))
@@ -493,7 +491,7 @@ static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mism
   } // while
 }
 
-void pumi_field_verify(pMesh m, pField f)
+void pumi_field_verify(pMesh m, pField f, pSharing shr)
 {
   int n = m->countFields();
   if (!n) return;
@@ -505,6 +503,8 @@ void pumi_field_verify(pMesh m, pField f)
   }
   else 
     fields.push_back(f);
+
+  if (!shr) shr = getSharing(m);
 
   if (!pumi_rank()) // master
   {
@@ -529,7 +529,7 @@ void pumi_field_verify(pMesh m, pField f)
       pMeshIter it = m->begin(d);
       pMeshEnt e;
       while ((e = m->iterate(it)))
-        sendFieldData(m, e, f, nf);
+        sendFieldData(m, e, f, nf, shr);
       m->end(it);
       PCU_Comm_Send();
       receiveFieldData(fields,mismatch_fields); 
