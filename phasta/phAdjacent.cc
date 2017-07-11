@@ -34,6 +34,28 @@ void orderForPhasta(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
     vout[i] = vin[ph2apf[t][i]];
 }
 
+/* this is used to make sure the first vtx on side 0 is the first on side 1 */
+void orderForPhastaInterface(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
+{
+  static int const tet_phif[4] = {2,0,1,3};
+  static int const pyr_phif[5] = {0,1,2,3,4};
+  static int const pri_phif[6] = {2,0,1,5,3,4};
+  static int const hex_phif[8] = {0,1,2,3,4,5,6,7};
+  static int const* const phif[apf::Mesh::TYPES] =
+  {0 //vertex
+  ,0 //edge
+  ,0 //triangle
+  ,0 //quad
+  ,tet_phif
+  ,hex_phif
+  ,pri_phif
+  ,pyr_phif};
+  PCU_ALWAYS_ASSERT(phif[t]);
+  int nv = apf::Mesh::adjacentCount[t][0];
+  for (int i = 0; i < nv; ++i)
+    vout[i] = vin[phif[t][i]];
+}
+
 /* phasta defines its faces with the same local vertex indices as
    we define our faces, but their local vertex indices differ
    as seen above. this results in the following table of
