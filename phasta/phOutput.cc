@@ -368,23 +368,44 @@ static void getInterface
     getBoundaryVertices(m, e1, matches[0].entity, v1);
 
     /* make sure the first vertex on side 0 is the first on side 1 */
-    apf::Vector3 p0,p1;
-	m->getPoint(v0[0],0,p0);
-	m->getPoint(v1[0],0,p1);
-	int loopCounter = 0;
-    while (abs(p0[0]-p1[0]) > 0.0 ||
-	       abs(p0[1]-p1[1]) > 0.0 ||
-		   abs(p0[2]-p1[2]) > 0.0) {
-	  PCU_ALWAYS_ASSERT(loopCounter < 2); // shall not rotate more than 2 times
-      int type1 = m->getType(e1);
-      apf::Downward v1_old;
-      int nv = apf::Mesh::adjacentCount[type1][0];
-	  for (int i = 0; i < nv; ++i)
-	    v1_old[i] = v1[i];
-      orderForPhastaInterface(type1, v1_old, v1);
-	  m->getPoint(v1[0],0,p1);
-	  loopCounter++;
-    }
+  assert(m->getType(e1) == 4); // only for tet now
+
+  apf::Downward fverts0, fverts1;
+
+  int nbv0 = m->getDownward(face,0,fverts0);
+  int nbv1 = m->getDownward(matches[0].entity,0,fverts1);
+
+  PCU_ALWAYS_ASSERT(nbv0 == nbv1);
+
+  int voffset0 = -1;
+  for (int i = 0; i < nbv0; i++){
+    if(v0[0]==fverts0[i]){
+       voffset0 = i;
+	   break;
+	}
+  }
+
+  PCU_ALWAYS_ASSERT(voffset0>=0);
+
+  int voffset1 = -1;
+  for (int i = 0; i < nbv1; i++){
+	if(v1[i]==fverts1[voffset0]){
+	   voffset1 = i;
+	   break;
+	}
+  }
+
+  PCU_ALWAYS_ASSERT(voffset1>=0);
+
+  apf::Downward v1_rot;
+  for (int i = 0; i < nv1; i++)
+    if(i<nbv1)
+      v1_rot[i] = v1[(i+voffset1)%nbv1]; // v1[voffset1] is v1_rot[0]
+    else
+      v1_rot[i] = v1[i];
+
+  for (int i = 0; i < nv1; i++)
+    v1[i] = v1_rot[i];
 
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
