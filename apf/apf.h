@@ -302,6 +302,10 @@ void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
   *
   * \param param The local coordinates in the element.
   * \param value The field value at that point.
+  * \details Note: The return parameter component value[j][i] stores the
+  * value (grad u)_{i,j} = \frac{\partial u_i} / \frac{\partial x_j},
+  * where u is the vector field of interest, i is the vector index,
+  * and j is the derivative index.
   */
 void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value);
 
