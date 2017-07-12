@@ -295,6 +295,10 @@ void getCurl(Element* e, Vector3 const& param, Vector3& curl);
   *
   * \param param The local coordinates in the element.
   * \param deriv The gradient matrix at that point.
+  * \details Note: The return parameter component deriv[j][i] stores the
+  * value (grad u)_{i,j} = \frac{\partial u_i} / \frac{\partial x_j},
+  * where u is the vector field of interest, i is the vector index,
+  * and j is the derivative index.
   */
 void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
 
