@@ -35,13 +35,15 @@ void orderForPhasta(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
 }
 
 /* this is used to make sure the first vtx on side 0 is the first on side 1 */
-void orderForPhastaInterface(int t, apf::MeshEntity** vin, apf::MeshEntity** vout)
+void orderForPhastaInterface(int t, apf::MeshEntity** vin, apf::MeshEntity** vout, int offset)
 {
-  static int const tet_phif[4] = {2,0,1,3};
-  static int const pyr_phif[5] = {0,1,2,3,4};
-  static int const pri_phif[6] = {2,0,1,5,3,4};
-  static int const hex_phif[8] = {0,1,2,3,4,5,6,7};
-  static int const* const phif[apf::Mesh::TYPES] =
+  static int const max_row = 4;
+  static int const max_col = 8;
+  static int const tet_phif[max_row][max_col] = {{0,1,2,3},{1,2,0,3},{2,0,1,3}};
+  static int const pyr_phif[max_row][max_col] = {{0,1,2,3,4},{1,2,3,0,4},{2,3,0,1,4},{3,0,1,2,4}};
+  static int const pri_phif[max_row][max_col] = {{0,1,2,3,4,5},{1,2,0,4,5,3},{2,0,1,5,3,4}};
+  static int const hex_phif[max_row][max_col] = {{0,1,2,3,4,5,6,7},{1,2,3,0,5,6,7,4},{2,3,0,1,6,7,4,5},{3,0,1,2,7,4,5,6}};
+  static int const (*phif[apf::Mesh::TYPES])[max_col] =
   {0 //vertex
   ,0 //edge
   ,0 //triangle
@@ -53,7 +55,7 @@ void orderForPhastaInterface(int t, apf::MeshEntity** vin, apf::MeshEntity** vou
   PCU_ALWAYS_ASSERT(phif[t]);
   int nv = apf::Mesh::adjacentCount[t][0];
   for (int i = 0; i < nv; ++i)
-    vout[i] = vin[phif[t][i]];
+    vout[i] = vin[phif[t][offset][i]];
 }
 
 /* phasta defines its faces with the same local vertex indices as
