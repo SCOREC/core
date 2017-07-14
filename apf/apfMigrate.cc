@@ -445,6 +445,8 @@ void unpackTags(
 {
   size_t n;
   PCU_COMM_UNPACK(n);
+  PCU_ALWAYS_ASSERT_VERBOSE(n<=tags.size(),
+      "A tag was created that does not exist on all processes.");
   for (size_t t=0; t < n; ++t)
   {
     size_t i;
