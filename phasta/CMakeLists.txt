@@ -21,12 +21,13 @@ set(SOURCES
   phInterfaceCutter.cc
   phstream.cc
   phiotimer.cc
+  phSnap.cc
 )
 
 if(PUMI_FORTRAN_INTERFACE)
   enable_language(Fortran)
   set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod_files)
-  set(SOURCES ${SOURCES} phiotimer.f)
+  set(SOURCES ${SOURCES} phiotimer.f phSnap.f)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
 endif()
 
@@ -42,6 +43,7 @@ set(HEADERS
   phInput.h
   phstream.h
   phiotimer.h
+  phSnap.h
 )
 
 # Add the ph library
