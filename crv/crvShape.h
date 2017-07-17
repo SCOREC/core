@@ -59,6 +59,10 @@ int fixLargeBoundaryAngles(Adapt* a);
     try and collapse or swap it away */
 int fixInvalidEdges(Adapt* a);
 
+/** \brief attempts to fix the shape of the
+    elements in a same manner as ma::fixElementShape */
+void fixCrvElementShapes(Adapt* a);
+
 /** \brief get bezier shape handler */
 ma::ShapeHandler* getShapeHandler(ma::Adapt* a);
 
