@@ -34,18 +34,18 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
     apf::Vector3 p;
     m->getPoint(v, 0, p);
     pVertex meshVertex = reinterpret_cast<pVertex>(v);
-	if(V_whatInType(meshVertex)==2){
+    if(V_whatInType(meshVertex)==2){
       const double disp[3] = {dx[counter]-p[0],dy[counter]-p[1],dz[counter]-p[2]};
       V_movedParamPoint(meshVertex,disp,newpar,newpt);
       px[counter] = newpt[0];
       py[counter] = newpt[1];
       pz[counter] = newpt[2];
-	}
-	else {
+    }
+    else {
       px[counter] = dx[counter];
       py[counter] = dy[counter];
       pz[counter] = dz[counter];
-	}
+    }
     counter++;
   }
   m->end(it);
