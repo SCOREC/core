@@ -21,7 +21,6 @@ set(SOURCES
   phInterfaceCutter.cc
   phstream.cc
   phiotimer.cc
-  phSnap.cc
 )
 
 if(PUMI_FORTRAN_INTERFACE)
@@ -34,6 +33,7 @@ endif()
 if(ENABLE_SIMMETRIX)
   set(SOURCES ${SOURCES}
       phAttrib.cc
+      phSnap.cc
      )
 endif()
 

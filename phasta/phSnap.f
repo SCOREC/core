@@ -2,11 +2,14 @@
       use iso_c_binding
 c
       interface
-        subroutine sim_get_pos_on_surf ( dx, dy, dz, id )
+        subroutine sim_get_pos_on_surf ( dx, dy, dz, numnp, px, py, pz )
      &    bind(C, NAME='sim_get_pos_on_surf')
         use iso_c_binding
-          real(c_double), value :: dx, dy, dz
-          integer(c_int), value :: id
+          integer(c_int),value :: numnp
+          real(c_double),intent(out),dimension(:) ::
+     &                               dx(numnp), dy(numnp), dz(numnp)
+          real(c_double),intent(in),dimension(:) ::
+     &                               px(numnp), py(numnp), pz(numnp)
         end subroutine
 c
 c        subroutine get_model_velocity (v)
