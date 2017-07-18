@@ -11,13 +11,5 @@ c
           real(c_double),intent(in),dimension(:) ::
      &                               px(numnp), py(numnp), pz(numnp)
         end subroutine
-c
-c        subroutine get_model_velocity (v)
-c     &    bind(C, NAME='get_model_velocity')
-c        use iso_c_binding
-c          real(c_double) :: v
-c        end subroutine
       end interface
-c
       end module
-
