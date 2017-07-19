@@ -241,7 +241,7 @@ static double computeFaceFaceCosAngleInTet(Mesh* m, MeshEntity* tet,
 
   MeshEntity* f1e[3];
   MeshEntity* f2e[3];
-  MeshEntity* sharedEdge;
+  MeshEntity* sharedEdge = 0;
 
   m->getDownward(face1, 1, f1e);
   m->getDownward(face2, 1, f2e);
@@ -277,7 +277,7 @@ static double computeEdgeFaceCosAngleInTet(Mesh* m, MeshEntity* tet,
   // find the share vertex
   MeshEntity* ev[2];
   MeshEntity* fv[3];
-  MeshEntity* sharedVert;
+  MeshEntity* sharedVert = 0;
 
   m->getDownward(edge, 0, ev);
   m->getDownward(face, 0, fv);
@@ -313,7 +313,7 @@ static double computeEdgeEdgeCosAngleInTet(Mesh* m, MeshEntity* tet,
   // find the share vertex
   MeshEntity* e1v[2];
   MeshEntity* e2v[2];
-  MeshEntity* sharedVert;
+  MeshEntity* sharedVert = 0;
 
   m->getDownward(edge1, 0, e1v);
   m->getDownward(edge2, 0, e2v);
