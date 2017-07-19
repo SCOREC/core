@@ -187,8 +187,9 @@ static void flagCleaner(crv::Adapt* a)
 {
   int dim = a->mesh->getDimension();
 
-  for (int d = 0; d < dim; d++) {
-    ma::clearFlagFromDimension(a, ma::BAD_QUALITY | ma::OK_QUALITY, d);
+  for (int d = 0; d <= dim; d++) {
+    ma::clearFlagFromDimension(a, ma::BAD_QUALITY, d);
+    ma::clearFlagFromDimension(a, ma::OK_QUALITY, d);
   }
 }
 
@@ -215,16 +216,15 @@ void adapt(ma::Input* in)
     ma::midBalance(a);
     crv::refine(a);
     allowSplitCollapseOutsideLayer(a);
-    if (in->maximumIterations > 0) {
-      fixInvalidElements(a);
-      fixCrvElementShapes(a);
-    }
+    flagCleaner(a); // all true-flags must be false before using markEntities
+    fixCrvElementShapes(a);
   }
 
   allowSplitCollapseOutsideLayer(a);
 
   if (in->maximumIterations > 0) {
     fixInvalidElements(a);
+    flagCleaner(a); // all true-flags must be false before using markEntities
     fixCrvElementShapes(a);
   }
   cleanupLayer(a);

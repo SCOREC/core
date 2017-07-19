@@ -843,7 +843,6 @@ static void repositionInvalidEdges(Adapt* a)
 int fixInvalidEdges(Adapt* a)
 {
   int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
-  printf("IN markInvalidEdge count == %d\n", count);
   if (! count){
     return 0;
   }
@@ -910,10 +909,10 @@ void fixCrvElementShapes(Adapt* a)
       break;
     prev_count = count;
     int numOpSuccess = fixLargeAngles(a); // update this
-    printf("==%d large angle fix operations succeeded.\n", numOpSuccess);
+    printf("==> %d large angle fix operations succeeded.\n", numOpSuccess);
     markCrvBadQuality(a);
     int numEdgeRemoved = fixShortEdgeElements(a); // update this
-    printf("==%d edges removal operations succeeded.\n", numEdgeRemoved);
+    printf("==> %d edges removal operations succeeded.\n", numEdgeRemoved);
     count = markCrvBadQuality(a);
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long
