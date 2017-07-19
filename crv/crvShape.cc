@@ -304,60 +304,6 @@ public:
   int nr;
 };
 
-static bool isCornerTriAngleLarge(crv::Adapt *a,
-    ma::Entity* tri, int index)
-{
-  ma::Mesh* m = a->mesh;
-  apf::Element* elem = apf::createElement(m->getCoordinateField(),tri);
-  apf::NewArray<apf::Vector3> nodes;
-  apf::getVectorNodes(elem,nodes);
-  apf::destroyElement(elem);
-
-  ma::Vector normal = ma::getTriNormal(m,tri);
-
-  int P = m->getShape()->getOrder();
-  int r = index*(P-1)+3; // index to the right
-  int l = ((index+2) % 3)*(P-1)+3+P-2; // index to the left
-
-  ma::Vector cornerNormal = apf::cross((nodes[r]-nodes[index]),
-      (nodes[l]-nodes[index]));
-
-  // this statement is not exactly a fair comparison, but at least gives
-  // some level of control over what is considered an invalid angle
-  // an angle is "too large" if the dot product between the corner triangle
-  // and the triangle formed by its vertices is negative
-  if (cornerNormal*normal < a->input->validQuality)
-    return true;
-
-  // one final check to handle the odd case where one of the two tets shared
-  // by the angle is invalid at the vertex between the two edges,
-  // but all of the faces do not have large angles
-  // check both its tets are okay
-  if (m->getDimension() == 3 && !isBoundaryEntity(m,tri)){
-    ma::Entity* triVerts[3];
-    m->getDownward(tri,0,triVerts);
-    apf::Up up;
-    m->getUp(tri,up);
-
-    apf::Matrix3x3 J;
-    for (int i = 0; i < up.n; ++i){
-      apf::MeshElement* me = apf::createMeshElement(m,up.e[i]);
-      ma::Entity* verts[4];
-      m->getDownward(up.e[i],0,verts);
-
-      int tetIndex = apf::findIn(verts,4,triVerts[index]);
-      ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][tetIndex];
-      apf::getJacobian(me,xi,J);
-      apf::destroyMeshElement(me);
-
-      if(apf::getJacobianDeterminant(J,3) < a->input->validQuality){
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 static bool isCornerTriAngleLargeMetric(crv::Adapt *a,
     ma::Entity* tri, int index)
 {
@@ -412,7 +358,10 @@ static bool isCornerTriAngleLargeMetric(crv::Adapt *a,
   return false;
 }
 
-
+/* Checks if an angle of a triangle is large (>= 180 degrees)
+ * which can be caused by two edges on the boundary curved to it
+ *
+ */
 static ma::Entity* isLargeAngleTriMetric(crv::Adapt* a, ma::Entity* e)
 {
   ma::Mesh* m = a->mesh;
@@ -438,33 +387,16 @@ static ma::Entity* isLargeAngleTriMetric(crv::Adapt* a, ma::Entity* e)
   }
   return 0;
 }
-/* Checks if an angle of a triangle is large (>= 180 degrees)
+
+/* Checks if an angle of a tet is large (>= 180 degrees)
  * which can be caused by two edges on the boundary curved to it
  *
+ * An analytic approach, looking at the control point net of points
+ * by comparing surface normals of each pair of control net points
+ * adjacent to the triangle is an incredibly complex ordering exercise
+ * Rather than attempt to do the ordering, sampling the Jacobian at
+ * P+1 points is used. A validity check on this edge could also be used
  */
-
-static ma::Entity* isLargeAngleTri(crv::Adapt* a, ma::Entity* e)
-{
-  ma::Mesh* m = a->mesh;
-  ma::Entity* edges[3];
-  m->getDownward(e,1,edges);
-  for (int i = 0; i < 3; ++i)
-  {
-    ma::Entity* e0 = edges[i];
-    ma::Entity* e1 = edges[(i+1) % 3];
-    if(isBoundaryEntity(m,e0) && isBoundaryEntity(m,e1))
-    {
-      if(isCornerTriAngleLarge(a,e,(i+1) % 3)){
-        ma::Entity* edge = edges[(i+2) % 3];
-        if(!ma::getFlag(a,edge,ma::SPLIT) && !isBoundaryEntity(m,edge)){
-          return edge;
-        }
-      }
-    }
-  }
-  return 0;
-}
-
 
 static ma::Entity* isLargeAngleTetMetric(crv::Adapt* a, ma::Entity* e)
 {
@@ -505,164 +437,8 @@ static ma::Entity* isLargeAngleTetMetric(crv::Adapt* a, ma::Entity* e)
     edge = edges[oppEdges[index]];
 
   return edge;
-
-  // the following is for debug
-  /* double minCosAngle = 1.0; */
-  /* int    minIndex = 0; */
-
-  /* std::vector<double> cosAngles; */
-
-  /* for (int i = 0; i < 6; i++) { */
-  /*   ma::Entity* leftFace  = faces[edgeFaces[i][0]]; */
-  /*   ma::Entity* rightFace = faces[edgeFaces[i][1]]; */
-  /*   double cosAngle = apf::computeCosAngleInTet(m, e, leftFace, rightFace, Q); */
-  /*   cosAngles.push_back(cosAngle); */
-  /*   if (cosAngle < minCosAngle) { */
-  /*     minCosAngle = cosAngle; */
-  /*     minIndex = i; */
-  /*   } */
-  /* } */
-
-  /* printf("\n======================\n"); */
-  /* printf("cos(largest face-face angle in the Tet) is %f\n", minCosAngle); */
-  /* printf("angles are: %f %f %f %f %f %f\n", cosAngles[0], */
-					    /* cosAngles[1], */
-					    /* cosAngles[2], */
-					    /* cosAngles[3], */
-					    /* cosAngles[4], */
-					    /* cosAngles[5]); */
-
-  /* printf("======================\n"); */
-
-
-  /* ma::Entity* edge = 0; */
-  /* if (minCosAngle < -0.9) */
-  /*   edge = edges[oppEdges[minIndex]]; */
-  /* return edge; */
 }
 
-
-
-
-/* Checks if an angle of a tet is large (>= 180 degrees)
- * which can be caused by two edges on the boundary curved to it
- *
- * An analytic approach, looking at the control point net of points
- * by comparing surface normals of each pair of control net points
- * adjacent to the triangle is an incredibly complex ordering exercise
- * Rather than attempt to do the ordering, sampling the Jacobian at
- * P+1 points is used. A validity check on this edge could also be used
- */
-
-static ma::Entity* isLargeAngleTet(crv::Adapt* a, ma::Entity* e)
-{
-  ma::Mesh* m = a->mesh;
-
-  ma::Entity* faces[4];
-  m->getDownward(e,2,faces);
-
-  int index = -1;
-  int P = m->getShape()->getOrder();
-  // find edge that matters
-  for (int i = 0; i < 6; ++i){
-    if(isBoundaryEntity(m,faces[edgeFaces[i][0]]) &&
-        isBoundaryEntity(m,faces[edgeFaces[i][1]])){
-      index = i;
-      break;
-    }
-  }
-  if(index < 0) return 0;
-
-  apf::FieldShape* fs = m->getShape();
-  ma::Entity* edges[6];
-  m->getDownward(e,1,edges);
-  if(!isBoundaryEntity(m,edges[index])) return 0;
-  ma::Entity* edge = 0;
-
-  // lets do a sampling approach. At each point on the edge
-  int bt = apf::Mesh::EDGE;
-  ma::Entity* leftFace = faces[edgeFaces[index][0]];
-  ma::Entity* rightFace = faces[edgeFaces[index][1]];
-  apf::MeshElement* leftMe = apf::createMeshElement(m,leftFace);
-  apf::MeshElement* rightMe = apf::createMeshElement(m,rightFace);
-  apf::Vector3 leftXi,rightXi;
-
-  apf::NewArray<apf::Vector3> nodeXi(P+1);
-  nodeXi[0] = apf::Vector3(-1,0,0);
-  for (int i = 0; i < P-1; ++i)
-    fs->getNodeXi(bt,i,nodeXi[i+1]);
-  nodeXi[P] = apf::Vector3(1,0,0);
-
-  std::vector<double> cosAngle, cosAngleQ;
-  for (int i = 0; i < P+1; ++i){
-    leftXi = apf::boundaryToElementXi(m,edges[index],leftFace,nodeXi[i]);
-    rightXi = apf::boundaryToElementXi(m,edges[index],rightFace,nodeXi[i]);
-    apf::Matrix3x3 leftJ,rightJ;
-
-    apf::getJacobian(leftMe,leftXi,leftJ);
-    apf::getJacobian(rightMe,rightXi,rightJ);
-
-    /* leftJ = apf::transpose(leftJ); */
-    /* rightJ = apf::transpose(rightJ); */
-
-    // find the Jacobian in metric space
-    ma::SizeField* sf = a->sizeField;
-
-    apf::Matrix3x3 leftQ, rightQ;
-    apf::Matrix3x3 leftQJ, rightQJ;
-
-    sf->getTransform(leftMe, leftXi, leftQ);
-    sf->getTransform(rightMe, rightXi, rightQ);
-
-    leftQ  = apf::transpose(leftQ);
-    rightQ = apf::transpose(rightQ);
-
-    leftQJ = leftQ * leftJ;
-    rightQJ = rightQ * rightJ;
-
-
-    /* std::cout << "left/right Q " << std::endl << leftQ << std::endl << rightQ << std::endl; */
-
-    apf::Vector3 leftN = (apf::cross(leftJ[0],leftJ[1])).normalize();
-    apf::Vector3 rightN = (apf::cross(rightJ[0],rightJ[1])).normalize();
-
-    apf::Vector3 leftNQ = (apf::cross(leftQJ[0],leftQJ[1])).normalize();
-    apf::Vector3 rightNQ = (apf::cross(rightQJ[0],rightQJ[1])).normalize();
-
-    cosAngle.push_back(std::fabs(leftN * rightN));
-    cosAngleQ.push_back(std::fabs(leftNQ * rightNQ));
-
-    /* std::cout << "left/right N  are" << leftN << "/" << rightN << std::endl; */
-    /* std::cout << "left/right NQ are" << leftNQ << "/" << rightNQ << std::endl; */
-
-    // jacobian has two rows, each with a vector
-    // these two vectors form the plane
-    // compare their directions to see if they are close to coplanar)
-    // 10 degree tolerance
-    /* if(std::fabs(leftN*rightN) > 0.9){ */
-    /*   edge = edges[oppEdges[index]]; */
-    /*   break; */
-    /* } */
-  }
-
-  /* for (size_t i = 0; i < cosAngle.size(); i++) { */
-  /*   printf("cos angle  no_metric/metric is %f/%f \n", cosAngle[i], cosAngleQ[i]); */
-  /*   std::cout << "cos angle  no_metric/metric is " << cosAngle[i] << "/" << cosAngleQ[i] << std::endl; */
-  /* } */
-
-
-  for (size_t i = 0; i < cosAngleQ.size(); i++) {
-    if(cosAngleQ[i] > 0.9){
-      edge = edges[oppEdges[index]];
-      break;
-    }
-  }
-
-  apf::destroyMeshElement(leftMe);
-  apf::destroyMeshElement(rightMe);
-
-  return edge;
-}
 
 // BAD_QUALITY flag is used on edges to identify them
 // as splits for quality, rather than for size refinement
@@ -711,18 +487,12 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
   ma::Mesh* m = a->mesh;
   ma::Entity* e;
 
-  /* do { */
+  do {
     ma::Iterator* it = m->begin(3);
     prev_count = count;
-    int counter = 0;
     while ((e = m->iterate(it)))
     {
-      /* ma::Entity* edge = isLargeAngleTet(a,e); */
       ma::Entity* edge = isLargeAngleTetMetric(a,e);
-      /* if (edge) */
-      /* 	printf("FOUND AN EDGE FOR LARGEANGLETET \n"); */
-      /* else */
-      /* 	printf("DID NOT FOUND AN EDGE FOR LARGEANGLETET \n"); */
       if (edge && !ma::getFlag(a,edge,ma::SPLIT))
       {
         PCU_ALWAYS_ASSERT(m->getType(edge) == 1);
@@ -731,20 +501,11 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
         if (a->mesh->isOwned(edge))
           ++count;
       }
-      counter++;
     }
-    /* printf("INSIDE MARKEEDGEOPPLARGANGLETET COUNT/PREV_COUNT ARE %d/%d \n", count, prev_count); */
     m->end(it);
-  /* } while(count > prev_count); */
+  } while(count > prev_count);
   return PCU_Add_Long(count);
 }
-
-// TODO
-// write a routine for internal faces (not just the ones
-// on the boundary) that takes care of large angle (metric)
-// by marking appropriate edges for collapse.
-/* static int markLargeAngleTetsForEdge */
-
 
 /* The whole idea is to do the quality check once,
  * and then use the results to mark edges, etc for
@@ -881,10 +642,12 @@ int fixLargeAngles(Adapt *a)
     applyOperator(a, &tetFixer);
     return tetFixer.getSuccessCount();
   }
+  // TODO: complete the large angle fix for Triangles
   /* else { */
   /*   CrvLargeAngleTriFixer triFixer(a); */
   /*   applyOperator(a, &triFixer); */
   /* } */
+  return 0;
 }
 
 static int fixShortEdgeElements(Adapt* a)
