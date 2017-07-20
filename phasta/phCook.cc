@@ -205,7 +205,7 @@ namespace ph {
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     if ( in.writeGeomBCFiles ) {
-	  if(!PCU_Comm_Self()) printf("write additional geomBC file for visualization\n");
+      if(!PCU_Comm_Self()) printf("write additional geomBC file for visualization\n");
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
