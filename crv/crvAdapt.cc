@@ -199,7 +199,6 @@ void adapt(ma::Input* in)
   if(name != std::string("Bezier"))
     fail("mesh must be bezier to adapt\n");
 
-  in->shouldFixShape = true;
   in->shapeHandler = crv::getShapeHandler;
   ma::print("Curved Adaptation Version 2.0 !");
   double t0 = PCU_Time();
