@@ -640,12 +640,12 @@ int fixLargeAngles(Adapt *a)
   if (a->mesh->getDimension() == 3) {
     CrvLargeAngleTetFixer tetFixer(a);
     applyOperator(a, &tetFixer);
-    return tetFixer.getSuccessCount();
+    /* return tetFixer.getSuccessCount(); */
   }
   else {
     CrvLargeAngleTriFixer triFixer(a);
     applyOperator(a, &triFixer);
-    return triFixer.getSuccessCount();
+    /* return triFixer.getSuccessCount(); */
   }
   return 0;
 }
@@ -671,11 +671,17 @@ void fixCrvElementShapes(Adapt* a)
     if ( ! count)
       break;
     prev_count = count;
-    int numOpSuccess = fixLargeAngles(a); // update this
-    printf("==> %d large angle fix operations succeeded.\n", numOpSuccess);
+    fixLargeAngles(a); // update this
+    /* int numOpSuccess = fixLargeAngles(a); // update this */
+    /* PCU_Add_Ints(&numOpSuccess,1); */
+    /* if (PCU_Comm_Self() == 0) */
+    /*   printf("==> %d large angle fix operations succeeded.\n", numOpSuccess); */
     markCrvBadQuality(a);
-    int numEdgeRemoved = fixShortEdgeElements(a); // update this
-    printf("==> %d edges removal operations succeeded.\n", numEdgeRemoved);
+    fixShortEdgeElements(a); // update this
+    /* int numEdgeRemoved = fixShortEdgeElements(a); // update this */
+    /* PCU_Add_Ints(&numEdgeRemoved,1); */
+    /* if (PCU_Comm_Self() == 0) */
+    /*   printf("==> %d edges removal operations succeeded.\n", numEdgeRemoved); */
     count = markCrvBadQuality(a);
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long
