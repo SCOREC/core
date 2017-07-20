@@ -87,6 +87,27 @@ class CrvLargeAngleTetFixer : public ma::Operator
     CrvTetFixerBase* fixer;
 };
 
+// For now this is a dummy class to make sure
+// 2D examples don't fail.
+// TODO: Implement this
+class CrvLargeAngleTriFixer : public ma::Operator
+{
+  public:
+    CrvLargeAngleTriFixer(Adapt* a);
+    virtual ~CrvLargeAngleTriFixer();
+    virtual int getTargetDimension();
+    virtual bool shouldApply(apf::MeshEntity* e);
+    virtual bool requestLocality(apf::CavityOp* o);
+    virtual void apply();
+    int getSuccessCount();
+  private:
+    Adapt* adapter;
+    apf::Mesh2* mesh;
+    apf::MeshEntity* tri;
+    ma::ShortEdgeRemover remover;
+};
+
+
 class CrvShortEdgeFixer : public ma::Operator
 {
   public:

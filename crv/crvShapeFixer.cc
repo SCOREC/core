@@ -235,6 +235,48 @@ int CrvLargeAngleTetFixer::getSuccessCount()
   return fixer->getSuccessCount();
 }
 
+CrvLargeAngleTriFixer::CrvLargeAngleTriFixer(Adapt* a):
+  remover(a)
+{
+  adapter = a;
+  mesh = a->mesh;
+  tri = 0;
+}
+
+CrvLargeAngleTriFixer::~CrvLargeAngleTriFixer()
+{
+}
+
+int CrvLargeAngleTriFixer::getTargetDimension()
+{
+  return 2;
+}
+
+bool CrvLargeAngleTriFixer::shouldApply(apf::MeshEntity* e)
+{
+  tri = e;
+  apf::Downward edges;
+  mesh->getDownward(tri, 1, edges);
+  remover.setEdge(edges[0]);
+  return true;
+}
+
+bool CrvLargeAngleTriFixer::requestLocality(apf::CavityOp* o)
+{
+  return remover.requestLocality(o);
+}
+
+void CrvLargeAngleTriFixer::apply()
+{
+  ma::clearFlag(adapter, tri, ma::BAD_QUALITY);
+  return;
+}
+
+int CrvLargeAngleTriFixer::getSuccessCount()
+{
+  return 0;
+}
+
 CrvShortEdgeFixer::CrvShortEdgeFixer(Adapt* a):
   remover(a)
 {

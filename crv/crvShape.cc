@@ -642,11 +642,11 @@ int fixLargeAngles(Adapt *a)
     applyOperator(a, &tetFixer);
     return tetFixer.getSuccessCount();
   }
-  // TODO: complete the large angle fix for Triangles
-  /* else { */
-  /*   CrvLargeAngleTriFixer triFixer(a); */
-  /*   applyOperator(a, &triFixer); */
-  /* } */
+  else {
+    CrvLargeAngleTriFixer triFixer(a);
+    applyOperator(a, &triFixer);
+    return triFixer.getSuccessCount();
+  }
   return 0;
 }
 
