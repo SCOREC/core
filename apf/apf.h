@@ -442,6 +442,33 @@ void getJacobian(MeshElement* e, Vector3 const& local, Matrix3x3& j);
   */
 void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv);
 
+/** \brief Returns the cosine of the angle between 2 entities of
+  * the parent entity.
+  *
+  * \param m	mesh
+  * \param pe	parent entity
+  * \param e1	first entity
+  * \param e2	second entity
+  * \param Q	metric
+  *
+  * \details All the angles are computed based on the Jacobian, and
+  * therefore, this function will work for curved elements as well. For
+  * anisotropic meshes the user can provide Q (he metric value of the parent)
+  * to get the angles in the metric space. Otherwise and Identity matrix must
+  * be given for Q.
+  */
+double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
+    const Matrix3x3& Q);
+
+double computeCosAngleInTri(Mesh* m, MeshEntity* tri,
+    MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
+
+double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
+    MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
+
+Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
+    MeshEntity* vert, const Matrix3x3& Q);
+
 /** \brief Returns the number of element nodes.
   *
   * \details This is the number of nodes affecting an

@@ -13,6 +13,7 @@ set(SOURCES
   crvMath.cc
   crvReposition.cc
   crvShape.cc
+  crvShapeFixer.cc
   crvShapeHandler.cc
   crvSnap.cc
   crvSubdivision.cc

@@ -145,6 +145,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
     in->shouldSnap = true;
     in->shouldTransferParametric = true;
     in->maximumIterations = 1;
+    in->shouldFixShape = false;
     crv::adapt(in);
     m->destroyNative();
     apf::destroyMesh(m);
@@ -159,6 +160,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
     in->shouldSnap = true;
     in->shouldTransferParametric = true;
     in->maximumIterations = 1;
+    in->shouldFixShape = false;
     crv::adapt(in);
     m->destroyNative();
     apf::destroyMesh(m);
