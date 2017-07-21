@@ -167,12 +167,14 @@ static int fixInvalidElements(crv::Adapt* a)
             + crv::fixInvalidEdges(a);
   int originalCount = count;
   int prev_count;
+  int i = 0;
   do {
     if ( ! count)
       break;
     prev_count = count;
     count = crv::fixLargeBoundaryAngles(a)
           + crv::fixInvalidEdges(a);
+    ++i;
   } while(count < prev_count);
 
   crv::fixLargeBoundaryAngles(a);
@@ -181,13 +183,22 @@ static int fixInvalidElements(crv::Adapt* a)
   return originalCount - count;
 }
 
+static void flagCleaner(crv::Adapt* a)
+{
+  int dim = a->mesh->getDimension();
+
+  for (int d = 0; d <= dim; d++) {
+    ma::clearFlagFromDimension(a, ma::BAD_QUALITY, d);
+    ma::clearFlagFromDimension(a, ma::OK_QUALITY, d);
+  }
+}
+
 void adapt(ma::Input* in)
 {
   std::string name = in->mesh->getShape()->getName();
   if(name != std::string("Bezier"))
     fail("mesh must be bezier to adapt\n");
 
-  in->shouldFixShape = true;
   in->shapeHandler = crv::getShapeHandler;
   ma::print("Curved Adaptation Version 2.0 !");
   double t0 = PCU_Time();
@@ -203,10 +214,18 @@ void adapt(ma::Input* in)
     ma::coarsen(a);
     ma::midBalance(a);
     crv::refine(a);
+    allowSplitCollapseOutsideLayer(a);
+    flagCleaner(a); // all true-flags must be false before using markEntities
+    fixCrvElementShapes(a);
   }
+
   allowSplitCollapseOutsideLayer(a);
-  if (in->maximumIterations > 0)
+
+  if (in->maximumIterations > 0) {
     fixInvalidElements(a);
+    flagCleaner(a); // all true-flags must be false before using markEntities
+    fixCrvElementShapes(a);
+  }
   cleanupLayer(a);
   ma::printQuality(a);
   ma::postBalance(a);

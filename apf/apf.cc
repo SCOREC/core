@@ -328,6 +328,41 @@ void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv)
   jinv = getJacobianInverse(j, e->getDimension());
 }
 
+double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
+    const Matrix3x3& Q)
+{
+  int peType = m->getType(pe);
+  int e1Type = m->getType(e1);
+  int e2Type = m->getType(e2);
+  double cosAngle = 1.0; // assuming default value for angle is 0.0
+  if (peType == Mesh::TET) {
+    if (e1Type == Mesh::VERTEX || e2Type == Mesh::VERTEX) {
+      printf("Cannot compute angle b/w vert and another entity. Aborting!\n");
+      abort();
+    }
+    if (e1Type == Mesh::TET || e2Type == Mesh::TET) {
+      printf("e1 and e2 must be of type TRIANGLE or EDGE. Aborting!\n");
+      abort();
+    }
+    cosAngle = computeCosAngleInTet(m, pe, e1, e2, Q);
+  }
+  else if (peType == Mesh::TRIANGLE) {
+    if (e1Type == Mesh::VERTEX || e2Type == Mesh::VERTEX) {
+      printf("Cannot compute angle b/w vert and another entity. Aborting!\n");
+      abort();
+    }
+    if (e1Type == Mesh::TRIANGLE || e2Type == Mesh::TRIANGLE) {
+      printf("e1 and e2 must be of type EDGE. Aborting!\n");
+      abort();
+    }
+    cosAngle = computeCosAngleInTri(m, pe, e1, e2, Q);
+  } else {
+    printf("The requested angle computation is not implemented. Aborting!\n");
+    abort();
+  }
+  return cosAngle;
+}
+
 int countNodes(Element* e)
 {
   return e->getShape()->countNodes();
