@@ -193,8 +193,22 @@ static void flagCleaner(crv::Adapt* a)
   }
 }
 
+static bool isSimplexMesh(apf::Mesh2* m)
+{
+  int count = 0;
+  if (m->getDimension() == 2)
+    count = apf::countEntitiesOfType(m, apf::Mesh2::QUAD);
+  else
+    count = apf::countEntitiesOfType(m, apf::Mesh2::HEX) +
+            apf::countEntitiesOfType(m, apf::Mesh2::PRISM) +
+            apf::countEntitiesOfType(m, apf::Mesh2::PYRAMID);
+  return (count == 0) ? true : false;
+}
+
 void adapt(ma::Input* in)
 {
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(in->mesh),
+      "Curved Adaptation expects an all simplex mesh!");
   std::string name = in->mesh->getShape()->getName();
   if(name != std::string("Bezier"))
     fail("mesh must be bezier to adapt\n");
