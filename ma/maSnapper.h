@@ -22,6 +22,8 @@ namespace ma {
    a mesh by collapsing edges in the direction
    of desired snapping */
 
+class FirstProblemPlane;
+
 class Snapper
 {
   public:
@@ -29,7 +31,6 @@ class Snapper
     bool setVert(Entity* v, apf::CavityOp* o);
     bool run();
     bool dug;
-    bool toFPP;
   private:
     Adapt* adapter;
     Tag* snapTag;
@@ -43,30 +44,32 @@ struct Ray{
   Vector dir;
 };
 
-class FPPSnapper
+class FirstProblemPlane
 {
   public:
-    FPPSnapper(Adapt* a, Collapse& c, Tag* st, Entity* v, apf::Up& badElements);
-    bool findFPP();
-    bool snapToFPP();
+    FirstProblemPlane(Adapt* a, Tag* st);
+    void setVertex(Entity* v);
+    void setBadElements(apf::Up& badElements);
+    void getCandidateEdges(std::vector<Entity*> &edges);
   private:
     Adapt* adapter;
     Tag* snapTag;
     Entity* vert;
-    Collapse collapse;
     apf::Up problemRegions;
     Entity* problemFace;
     Entity* problemRegion;
     Vector intersection;
     apf::Up commEdges;
     double tol;
-    Entity* faceOppositeOfVert(Entity* e, Entity* v);
-    void getFaceCoords(Entity* face, std::vector<Vector>& coords);
+    bool find();
+    void findCandidateEdges(std::vector<Entity*> &edges);
     bool intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
     	Vector& intersection, bool& isInf);
     void findCommonEdges(apf::Up& cpRegions);
 };
 
+Entity* getTetFaceOppositeVert(Mesh* m, Entity* e, Entity* v);
+void getFaceCoords(Mesh* m, Entity* face, std::vector<Vector>& coords);
 Vector getCenter(Mesh* mesh, Entity* face);
 bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt);
 

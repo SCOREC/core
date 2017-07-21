@@ -64,7 +64,8 @@ void Rebuilds::match(apf::Sharing* sh)
 {
   /* the ma::rebuildElement call will produce more logs than we want:
      1) entities which don't really change show up as rebuilds of themselves,
-        i.e. edges along the boundary of the cavity.
+        i.e. edges along the boundary of the cavity. TODO: This seems
+        unnecessary. Double check before removing it.
      2) rebuilds required my multiple elements show up multiple times
      below we filter out each of these cases to obtain the real rebuilds
      we're interested in */
@@ -183,6 +184,10 @@ bool MatchedCollapse::checkTopo()
 
 void MatchedCollapse::unmark()
 {
+  // TODO: Something seems to be wrong with this.
+  // -- in the second for loop the condition doesn't
+  // seem to be the write one [look, for example, to
+  // the corresponding function in maCollapse.cc]
   for (unsigned i = 0; i < collapses.getSize(); ++i)
     clearFlag(adapt, collapses[i].edge, COLLAPSE);
   bool required[2] = {false,false};

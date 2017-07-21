@@ -265,28 +265,13 @@ class BezierHandler : public ma::ShapeHandler
     virtual double getQuality(apf::MeshEntity* e)
     {
       if (mesh->getType(e) == apf::Mesh::TRIANGLE){
-        ma::Vector p[3];
-        ma::getVertPoints(mesh,e,p);
-        double l[3];
-        for (int i=0; i < 3; ++i)
-          l[i] = (p[(i+1)%3]-p[i]).getLength();
-        double A = 0.5*apf::cross(p[1]-p[0],p[2]-p[0])[2];
-        double s=0;
-        for (int i=0; i < 3; ++i)
-          s += l[i]*l[i];
-        double lq;
-        if (A < 0)
-          lq = -48*(A*A)/(s*s);
-        else
-          lq = 48*(A*A)/(s*s);
+	double lq = ma::measureTriQuality(mesh, sizeField, e);
         if (lq < 0)
           return lq;
         else return lq*crv::getQuality(mesh,e);
       }
       if (mesh->getType(e) == apf::Mesh::TET){
-        ma::Vector p[4];
-        ma::getVertPoints(mesh,e,p);
-        double lq = ma::measureLinearTetQuality(p);
+        double lq = ma::measureTetQuality(mesh, sizeField, e);
         if (lq < 0)
           return lq;
         else return lq*qual->getQuality(e);

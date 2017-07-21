@@ -1,6 +1,7 @@
 #include "maTables.h"
 #include <cstdlib>
 #include <cstdio>
+#include <pcu_util.h>
 
 /* This program automatically generates the
    matching table from the projection code
