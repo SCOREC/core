@@ -88,72 +88,6 @@ Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
   return cross(J[0], J[1]).normalize();
 }
 
-/* void computeEdgeEdgeTangentsInTri(Mesh* m, MeshEntity* tri, MeshEntity* e1, MeshEntity* e2, */
-/*     const Matrix3x3& Q, Vector3& t1, Vector3& t2) */
-/* { */
-/*   PCU_ALWAYS_ASSERT(m->getType(tri) == Mesh::TRIANGLE); */
-/*   PCU_ALWAYS_ASSERT(m->getType(e1) == Mesh::EDGE); */
-/*   PCU_ALWAYS_ASSERT(m->getType(e2) == Mesh::EDGE); */
-
-/*   // get the shared vertex */
-/*   MeshEntity* e1v[2]; */
-/*   MeshEntity* e2v[2]; */
-/*   MeshEntity* sharedVert; */
-
-/*   m->getDownward(e1, 0, e1v); */
-/*   m->getDownward(e2, 0, e2v); */
-
-/*   if (e1v[0] == e2v[0] || e1v[0] == e2v[1]) */
-/*     sharedVert = e1v[0]; */
-/*   else */
-/*     sharedVert = e1v[1]; */
-
-/*   PCU_ALWAYS_ASSERT(sharedVert); */
-
-/*   // find the index of the shared vertex in the triangle */
-/*   MeshEntity* fv[3]; */
-/*   m->getDownward(tri, 0, fv); */
-/*   int index = -1; */
-/*   for (int i = 0; i < 3; i++) */
-/*     if (fv[i] == sharedVert) { */
-/*       index = i; */
-/*       break; */
-/*     } */
-
-/*   PCU_ALWAYS_ASSERT(index > -1); */
-/*   // get the Jacobian at the parametric coordinate of the */
-/*   // sharedVert in the face */
-/*   MeshElement* faceElem = createMeshElement(m, tri); */
-
-/*   Vector3 xi = boundaryToElementXi(m, sharedVert, faceElem, 0); */
-/*   Matrix3x3 J; */
-/*   getJacobian(faceElem, xi, J); */
-/*   destroyMeshElement(faceElem); */
-
-/*   // transform the Jacobian to Metric space */
-/*   J = getJacobianInMetric(J, Q); */
-
-/*   Vector3 t1, t2; // the tangent vectors (not normalized yet) */
-/*   switch (index) { */
-/*     case 0: */
-/*       t1 = J[0]; */
-/*       t2 = J[1]; */
-/*       break; */
-/*     case 1: */
-/*       t1 = J[1] - J[0]; */
-/*       t2 = -J[0]; */
-/*       break; */
-/*     case 2: */
-/*       t1 = -J[1]; */
-/*       t2 = J[0] - J[1]; */
-/*       break; */
-/*     default: */
-/*       break; */
-/*   } */
-/*   t1 = t1.normalized(); */
-/*   t2 = t2.normalized(); */
-/* } */
-
 static double computeEdgeEdgeCosAngleInTri(Mesh* m, MeshEntity* tri,
     MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q)
 {
@@ -211,18 +145,10 @@ static Vector3 computeFaceNormalAtEdge(Mesh* m, /*MeshEntity* tet,*/
     default:
       break;
   }
-  /* Vector3 xi_2 = apf::boundaryToElementXi(m, edge, face, Vector3(0.0, 0.0, 0.0)); */
-  /* std::cout << "\n" << xi << " " <<  xi_2 << " " << (xi_2 - xi).getLength() << "\n" << std::endl; */
   MeshElement* faceElem = createMeshElement(m, face);
   Matrix3x3 J;
   getJacobian(faceElem, xi, J);
   destroyMeshElement(faceElem);
-
-  /* Vector3 xi_tet = apf::boundaryToElementXi(m, edge, tet, Vector3(0.0, 0.0, 0.0)); // apf::boundaryToElementXi(m, face, tet, xi); */
-  /* MeshElement* tetElem = createMeshElement(m, tet); */
-  /* Matrix3x3 JTet; */
-  /* getJacobian(tetElem, xi_tet, JTet); */
-  /* destroyMeshElement(tetElem); */
 
   // transform Jacobian into Metric space
   J = getJacobianInMetric(J, Q);

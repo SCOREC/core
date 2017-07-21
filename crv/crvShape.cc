@@ -328,33 +328,6 @@ static bool isCornerTriAngleLargeMetric(crv::Adapt *a,
   if (cornerNormal*normal < a->input->validQuality)
     return true;
 
-  // TODO: Take care of this later!
-  /* // one final check to handle the odd case where one of the two tets shared */
-  /* // by the angle is invalid at the vertex between the two edges, */
-  /* // but all of the faces do not have large angles */
-  /* // check both its tets are okay */
-  /* if (m->getDimension() == 3 && !isBoundaryEntity(m,tri)){ */
-  /*   ma::Entity* triVerts[3]; */
-  /*   m->getDownward(tri,0,triVerts); */
-  /*   apf::Up up; */
-  /*   m->getUp(tri,up); */
-
-  /*   apf::Matrix3x3 J; */
-  /*   for (int i = 0; i < up.n; ++i){ */
-  /*     apf::MeshElement* me = apf::createMeshElement(m,up.e[i]); */
-  /*     ma::Entity* verts[4]; */
-  /*     m->getDownward(up.e[i],0,verts); */
-
-  /*     int tetIndex = apf::findIn(verts,4,triVerts[index]); */
-  /*     ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][tetIndex]; */
-  /*     apf::getJacobian(me,xi,J); */
-  /*     apf::destroyMeshElement(me); */
-
-  /*     if(apf::getJacobianDeterminant(J,3) < a->input->validQuality){ */
-  /*       return true; */
-  /*     } */
-  /*   } */
-  /* } */
   return false;
 }
 
@@ -523,7 +496,6 @@ static int markEdgesToFix(Adapt* a, int flag)
   ma::Entity* e;
 
   // markEdges could have upto 6 edges marked!!!
-  /* ma::Entity* edges[3]; */
   ma::Entity* edges[6];
   ma::Iterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it)))
