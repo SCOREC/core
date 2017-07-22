@@ -46,6 +46,7 @@ set(APF_SOURCES
   apfVerify.cc
   apfGeometry.cc
   apfBoundaryToElementXi.cc
+  apfSimplexAngleCalcs.cc
   apfFile.cc
 )
 
