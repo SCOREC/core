@@ -692,6 +692,17 @@ void TEST_FIELD(pMesh m)
   double data[3];
   double xyz[3];
 
+
+  pSharing shr=new testSharing(m);
+// user-defined sharing can be fed to the following functions 
+//int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr=NULL); 
+//pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr=NULL); 
+//bool pumi_ment_isOwned(pMeshEnt e, pSharing shr=NULL);
+// void pumi_field_synchronize(pField f, pSharing shr=NULL);
+//void pumi_field_accumulate(pField f, pSharing shr=NULL);
+//void pumi_field_synchronize(pField f, pSharing shr=NULL);
+//void pumi_field_verify(pMesh m, pField f=NULL, pSharing shr=NULL);
+
   // create field and set the field data
   if (!f)
   {
@@ -706,7 +717,8 @@ void TEST_FIELD(pMesh m)
     
     while ((e = m->iterate(it)))
     {
-      if (!pumi_ment_isOwned(e)) continue;
+      if (!pumi_ment_isOwned(e, new testSharing(m))) continue;
+      assert (pumi_ment_getOwnPID(e, new testSharing(m))==shr->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
           xyz[i] = pumi_ment_getGlobalID(e);
@@ -716,7 +728,8 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_synchronize(f, new testSharing(m));
+    pumi_field_accumulate(f, new testSharing(m)); // FIXME: crash if use "shr"
+    pumi_field_synchronize(f, new testSharing(m)); // FIXME: crash if use "shr"
   }
 
   it = m->begin(0);

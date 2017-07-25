@@ -177,7 +177,7 @@ pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr)
 bool pumi_ment_isOwned(pMeshEnt e, pSharing shr)
 {  
   if (!shr) 
-    return (pumi_ment_getOwnPID(e)==pumi_rank());
+    return (pumi::instance()->mesh->getOwner(e)==pumi_rank());
   return shr->isOwned(e);
 }
 
