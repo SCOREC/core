@@ -151,34 +151,34 @@ pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
 
 // owner part information
 // FIXME: based on sharing
-int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr)
+int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o)
 {
-  if (!shr)
+  if (!o)
     return pumi::instance()->mesh->getOwner(e);
-  return shr->getOwner(e);
+  return o->getOwner(e);
   
 }
 
 // FIXME: based on sharing
-pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr)
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 {
   if (!(pumi::instance()->mesh->isShared(e))) // internal ent
     return e;
   int own_partid;
-  if (!shr)
+  if (!o)
     own_partid= pumi::instance()->mesh->getOwner(e);
   else
-    own_partid=shr->getOwner(e);
+    own_partid=o->getOwner(e);
 
   if (own_partid==pumi_rank()) return e;
   return pumi_ment_getRmt(e, own_partid);
 }
 
-bool pumi_ment_isOwned(pMeshEnt e, pSharing shr)
+bool pumi_ment_isOwned(pMeshEnt e, pOwnership o)
 {  
-  if (!shr) 
+  if (!o) 
     return (pumi::instance()->mesh->getOwner(e)==pumi_rank());
-  return shr->isOwned(e);
+  return o->isOwned(e);
 }
 
 bool pumi_ment_isOn(pMeshEnt e, int partID)

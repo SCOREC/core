@@ -447,8 +447,9 @@ class Migration
   matching, and possible user-defined sharing models.
   For example, users can define a new Sharing object
   that uses a different ownership rule. */
-struct Sharing
+class Sharing
 {
+public:
   virtual ~Sharing() {}
 /** \brief return owner part ID */
   virtual int getOwner(MeshEntity* e) = 0;
@@ -460,8 +461,9 @@ struct Sharing
   virtual bool isShared(MeshEntity* e) = 0;
 };
 
-struct NormalSharing : public Sharing
+class NormalSharing : public Sharing
 {
+public:
   NormalSharing(Mesh* m);
   virtual int getOwner(MeshEntity* e);
   virtual bool isOwned(MeshEntity* e);
@@ -472,8 +474,9 @@ private:
   Mesh* mesh;
 };
 
-struct MatchedSharing : public Sharing
+class MatchedSharing : public Sharing
 {
+public:
   MatchedSharing(Mesh* m);
   Copy getOwnerCopy(MeshEntity* e);
   virtual int getOwner(MeshEntity* e);

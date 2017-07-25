@@ -18,22 +18,22 @@ const char* outFile = 0;
 int num_in_part = 0;
 int do_distr=0;
 
-struct testSharing : public Sharing 
+struct testOwnership : public Ownership 
 {
-  testSharing(pMesh m)
-  { shr = new apf::NormalSharing(m); }
-  ~testSharing()
-  { delete shr; }
+  testOwnership(pMesh m)
+  { o = new apf::NormalSharing(m); }
+  ~testOwnership()
+  { delete o; }
   int getOwner(pMeshEnt e)
-  { return shr->getOwner(e); }
+  { return o->getOwner(e); }
   bool isOwned(pMeshEnt e)
-  { return shr->isOwned(e); }
+  { return o->isOwned(e); }
   /* this will only be called for global masters */
   void getCopies(pMeshEnt e, CopyArray& copies)
-  { shr->getCopies(e, copies); }
+  { o->getCopies(e, copies); }
   bool isShared(pMeshEnt  e)
-  { return shr->isShared(e); }
-  pSharing shr;
+  { return o->isShared(e); }
+  pOwnership o;
 };
 
 void getConfig(int argc, char** argv)
@@ -693,15 +693,15 @@ void TEST_FIELD(pMesh m)
   double xyz[3];
 
 
-  pSharing shr=new testSharing(m);
-// user-defined sharing can be fed to the following functions 
-//int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr=NULL); 
-//pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr=NULL); 
-//bool pumi_ment_isOwned(pMeshEnt e, pSharing shr=NULL);
-// void pumi_field_synchronize(pField f, pSharing shr=NULL);
-//void pumi_field_accumulate(pField f, pSharing shr=NULL);
-//void pumi_field_synchronize(pField f, pSharing shr=NULL);
-//void pumi_field_verify(pMesh m, pField f=NULL, pSharing shr=NULL);
+  pOwnership o=new testOwnership(m);
+// user-defined ownership can be fed to the following functions 
+//int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o=NULL); 
+//pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o=NULL); 
+//bool pumi_ment_isOwned(pMeshEnt e, pOwnership o=NULL);
+// void pumi_field_synchronize(pField f, pOwnership o=NULL);
+//void pumi_field_accumulate(pField f, pOwnership o=NULL);
+//void pumi_field_synchronize(pField f, pOwnership o=NULL);
+//void pumi_field_verify(pMesh m, pField f=NULL, pOwnership o=NULL);
 
   // create field and set the field data
   if (!f)
@@ -717,8 +717,8 @@ void TEST_FIELD(pMesh m)
     
     while ((e = m->iterate(it)))
     {
-      if (!pumi_ment_isOwned(e, new testSharing(m))) continue;
-      assert (pumi_ment_getOwnPID(e, new testSharing(m))==shr->getOwner(e));
+      if (!pumi_ment_isOwned(e, new testOwnership(m))) continue;
+      assert (pumi_ment_getOwnPID(e, new testOwnership(m))==o->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
           xyz[i] = pumi_ment_getGlobalID(e);
@@ -728,8 +728,8 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_accumulate(f, new testSharing(m)); // FIXME: crash if use "shr"
-    pumi_field_synchronize(f, new testSharing(m)); // FIXME: crash if use "shr"
+    pumi_field_accumulate(f, new testOwnership(m)); // FIXME: crash if use "o"
+    pumi_field_synchronize(f, new testOwnership(m)); // FIXME: crash if use "o"
   }
 
   it = m->begin(0);
@@ -744,7 +744,7 @@ void TEST_FIELD(pMesh m)
         assert(data[i] == xyz[i]);
   }
   m->end(it);
-  pumi_field_verify(m, f, new testSharing(m));
+  pumi_field_verify(m, f, new testOwnership(m));
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -844,7 +844,7 @@ void TEST_GHOSTING(pMesh m)
   double data[3];
   double xyz[3];
 
-  pumi_field_accumulate(f, new testSharing(m));
+  pumi_field_accumulate(f, new testOwnership(m));
 
   pMeshIter it = m->begin(0);
   while ((e = m->iterate(it)))

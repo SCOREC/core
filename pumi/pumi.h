@@ -77,8 +77,8 @@ typedef apf::FieldShape* pShape;
 typedef apf::Numbering* pNumbering;
 typedef apf::GlobalNumbering* pGlobalNumbering;
 typedef apf::Vector3 Vector3; // 3d vector
-typedef apf::Sharing Sharing;
-typedef apf::Sharing* pSharing;
+typedef apf::Sharing Ownership;
+typedef apf::Sharing* pOwnership;
 // singleton to save model/mesh
 class pumi
 {
@@ -379,13 +379,13 @@ bool pumi_ment_isOn(pMeshEnt e, int partID);
 bool pumi_ment_isOnBdry (pMeshEnt e); 
 
 // return owning part id. if ghosted mesh, vertex or element only
-int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr=NULL); 
+int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o=NULL); 
 
 // return owner entity copy. if ghoted mesh, vertex or element only
-pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr=NULL); 
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o=NULL); 
 
 // return true if the entity is an owner copy
-bool pumi_ment_isOwned(pMeshEnt e, pSharing shr=NULL);
+bool pumi_ment_isOwned(pMeshEnt e, pOwnership o=NULL);
 
 // return # remote and ghost copies
 //  - this will fixed to consider only part boundary entities later
@@ -456,15 +456,15 @@ pShape pumi_shape_getHierarchic (int order);
 //  Node numbering
 //************************************
 pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, 
-                 pShape shape=NULL, int num_component=1, pSharing shr=NULL);
+                 pShape shape=NULL, int num_component=1, pOwnership o=NULL);
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
 int pumi_mesh_getNumGlobalNumbering (pMesh m);
 pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i);
 
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
 pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape=NULL);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pSharing shr=NULL);
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pSharing shr=NULL);
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
 void pumi_numbering_delete(pNumbering n);
 int pumi_numbering_getNumNode(pNumbering n);
 
@@ -479,8 +479,8 @@ int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
 pShape pumi_field_getShape (pField f);
 void pumi_field_delete(pField f);
-void pumi_field_synchronize(pField f, pSharing shr=NULL);
-void pumi_field_accumulate(pField f, pSharing shr=NULL);
+void pumi_field_synchronize(pField f, pOwnership o=NULL);
+void pumi_field_accumulate(pField f, pOwnership o=NULL);
 void pumi_field_freeze(pField f);
 void pumi_field_unfreeze(pField f);
 pField pumi_mesh_findField(pMesh m, const char* name);
@@ -489,6 +489,6 @@ pField pumi_mesh_getField(pMesh m, int i);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
 // verify field
-void pumi_field_verify(pMesh m, pField f=NULL, pSharing shr=NULL);
+void pumi_field_verify(pMesh m, pField f=NULL, pOwnership o=NULL);
 void pumi_field_print(pField f);
 #endif

@@ -88,7 +88,7 @@ pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); 
 //************************************
 // FIXME: assign global numbers based on sharing
 pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape,
- int num_component, pSharing shr)
+ int num_component, pOwnership o)
 {
   if (!shape) shape= m->getShape();
   return apf::createGlobalNumbering(m, name, shape, num_component);
@@ -123,9 +123,9 @@ long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int co
   return apf::getNumber(gn, e, node, component);
 }
 
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pSharing shr)
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o)
 {
-  return numberOwnedDimension(m, name, dim, shr);
+  return numberOwnedDimension(m, name, dim, o);
 }
 
 pNumbering pumi_numbering_create
@@ -141,10 +141,10 @@ pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape sha
   return numberOverlapNodes(m, name, shape);
 }
 
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape, pSharing shr)
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape, pOwnership o)
 {
    if (!shape) shape= m->getShape();
-   return numberOwnedNodes(m, name, shape, shr);
+   return numberOwnedNodes(m, name, shape, o);
 }
 void pumi_numbering_delete(pNumbering n)
 {
@@ -192,14 +192,14 @@ void pumi_field_delete(pField f)
   apf::destroyField(f);
 }
 
-void pumi_field_synchronize(pField f, pSharing shr)
+void pumi_field_synchronize(pField f, pOwnership o)
 {  
-  apf::synchronize(f, shr);
+  apf::synchronize(f, o);
 }
 
-void pumi_field_accumulate(pField f, pSharing shr)
+void pumi_field_accumulate(pField f, pOwnership o)
 {  
-  apf::accumulate(f, shr);
+  apf::accumulate(f, o);
 }
 
 void pumi_field_freeze(pField f)
@@ -404,7 +404,7 @@ void pumi_field_print(pField f)
 }
 
 // VERIFY FIELDS
-static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pSharing shr)
+static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pOwnership shr)
 {
   void* msg_send;
   pMeshEnt* s_ent;
@@ -494,7 +494,7 @@ static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mism
   } // while
 }
 
-void pumi_field_verify(pMesh m, pField f, pSharing shr)
+void pumi_field_verify(pMesh m, pField f, pOwnership shr)
 {
   int n = m->countFields();
   if (!n) return;
