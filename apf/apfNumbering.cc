@@ -251,11 +251,12 @@ Numbering* numberNodes(
   return n;
 }
 
-Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim)
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim,
+    Sharing* shr)
 {
-  FieldShape* s = getConstant(dim);
-  Sharing* shr = getSharing(mesh);
-  return numberNodes(mesh, name, s, shr);
+  if (!shr)
+    shr = getSharing(mesh);
+  return numberNodes(mesh, name, getConstant(dim), shr);
 }
 
 Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim)

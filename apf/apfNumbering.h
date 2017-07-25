@@ -94,8 +94,11 @@ int countFixed(Numbering* n);
               and copies, otherwise call apf::getSharing */
 void synchronize(Numbering * n, Sharing* shr = 0);
 
-/** \brief number the local owned entities of a given dimension */
-Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
+/** \brief number the local owned entities of a given dimension
+  \param shr if non-zero, use this Sharing to determine ownership,
+             otherwise call apf::getSharing */
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim,
+		Sharing* shr = 0);
 /** \brief number all local entities of a given dimension */
 Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim);
 /** \brief number the local elements */

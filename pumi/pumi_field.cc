@@ -86,8 +86,9 @@ pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); 
 //************************************
 // Node numbering
 //************************************
-
-pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape, int num_component)
+// FIXME: assign global numbers based on sharing
+pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape,
+ int num_component, pSharing shr)
 {
   if (!shape) shape= m->getShape();
   return apf::createGlobalNumbering(m, name, shape, num_component);
@@ -108,21 +109,23 @@ pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i)
   return m->getGlobalNumbering(i);
 }
 
+/*
 void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
     int node, int component, long number)
 {
   apf::Node n(e,node);
   apf::number(gn, n, component, number);
 }
+*/
 
 long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
 {
   return apf::getNumber(gn, e, node, component);
 }
 
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim)
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pSharing shr)
 {
-  return numberOwnedDimension(m, name, dim);
+  return numberOwnedDimension(m, name, dim, shr);
 }
 
 pNumbering pumi_numbering_create
@@ -138,10 +141,10 @@ pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape sha
   return numberOverlapNodes(m, name, shape);
 }
 
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape)
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape, pSharing shr)
 {
    if (!shape) shape= m->getShape();
-   return numberOwnedNodes(m, name, shape);
+   return numberOwnedNodes(m, name, shape, shr);
 }
 void pumi_numbering_delete(pNumbering n)
 {
