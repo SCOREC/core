@@ -18,8 +18,9 @@ const char* outFile = 0;
 int num_in_part = 0;
 int do_distr=0;
 
-struct testOwnership : public Ownership 
+class testOwnership : public Ownership 
 {
+public:
   testOwnership(pMesh m)
   { o = new apf::NormalSharing(m); }
   ~testOwnership()
@@ -717,8 +718,9 @@ void TEST_FIELD(pMesh m)
     
     while ((e = m->iterate(it)))
     {
-      if (!pumi_ment_isOwned(e, new testOwnership(m))) continue;
-      assert (pumi_ment_getOwnPID(e, new testOwnership(m))==o->getOwner(e));
+      // FIXME: if use "new testOwnership(m)", memory leak
+      if (!pumi_ment_isOwned(e, o)) continue; 
+      assert (pumi_ment_getOwnPID(e, o)==o->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
           xyz[i] = pumi_ment_getGlobalID(e);
@@ -728,9 +730,9 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_accumulate(f, new testOwnership(m)); // FIXME: crash if use "o"
-    pumi_field_synchronize(f, new testOwnership(m)); // FIXME: crash if use "o"
-  }
+    pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
+    pumi_field_synchronize(f, new testOwnership(m));  // ownership object is deleted apf::synchronizeFieldData
+  } 
 
   it = m->begin(0);
   while ((e = m->iterate(it)))
@@ -744,7 +746,8 @@ void TEST_FIELD(pMesh m)
         assert(data[i] == xyz[i]);
   }
   m->end(it);
-  pumi_field_verify(m, f, new testOwnership(m));
+  pumi_field_verify(m, f, o);
+  delete o;
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -844,7 +847,7 @@ void TEST_GHOSTING(pMesh m)
   double data[3];
   double xyz[3];
 
-  pumi_field_accumulate(f, new testOwnership(m));
+  pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
 
   pMeshIter it = m->begin(0);
   while ((e = m->iterate(it)))

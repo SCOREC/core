@@ -88,7 +88,7 @@ pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); 
 //************************************
 // FIXME: assign global numbers based on sharing
 pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape,
- int num_component, pOwnership o)
+ int num_component) //, pOwnership o)
 {
   if (!shape) shape= m->getShape();
   return apf::createGlobalNumbering(m, name, shape, num_component);

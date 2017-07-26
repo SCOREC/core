@@ -456,7 +456,7 @@ pShape pumi_shape_getHierarchic (int order);
 //  Node numbering
 //************************************
 pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, 
-                 pShape shape=NULL, int num_component=1, pOwnership o=NULL);
+                 pShape shape=NULL, int num_component=1); //, pOwnership o=NULL);
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
 int pumi_mesh_getNumGlobalNumbering (pMesh m);
 pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i);
