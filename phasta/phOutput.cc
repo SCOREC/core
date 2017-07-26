@@ -61,20 +61,20 @@ static void getM2GFields(Output& o) {
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
     gmi_ent* ge = (gmi_ent*)m->toModel(v);
-	int dim = gmi_dim(gm,ge);
-	int tag = gmi_tag(gm,ge);
-	if (dim > 2) { // region vertex has no param coord
-	  for (int j = 0; j < 3; ++j)
+    int dim = gmi_dim(gm,ge);
+    int tag = gmi_tag(gm,ge);
+    if (dim > 2) { // region vertex has no param coord
+      for (int j = 0; j < 3; ++j)
         pm[j] = 0.0;
-	}
-	else {
-	  m->getParam(v, pm);
-	}
-	classinfo[i]   = dim;
+    }
+    else {
+      m->getParam(v, pm);
+    }
+    classinfo[i]   = dim;
     classinfo[n+i] = tag;
-	for (int j = 0; j < 2; ++j)
+    for (int j = 0; j < 2; ++j)
       params[j * n + i] = pm[j];
-	++i;
+    ++i;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
