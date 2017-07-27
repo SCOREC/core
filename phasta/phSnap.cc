@@ -1,8 +1,10 @@
 #include <phSnap.h>
+#include <gmi_mesh.h>
 
 #include "apfSIM.h"
 #include "gmi_sim.h"
 #include <SimUtil.h>
+#include <SimModel.h>
 #include <SimPartitionedMesh.h>
 #include <SimMeshTools.h>
 #include <SimAdvMeshing.h>
@@ -34,7 +36,8 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
     apf::Vector3 p;
     m->getPoint(v, 0, p);
     pVertex meshVertex = reinterpret_cast<pVertex>(v);
-    if(V_whatInType(meshVertex)==2){
+    // only call this on face or edge mesh vertex
+    if(V_whatInType(meshVertex)==2 || V_whatInType(meshVertex)==1){
       const double disp[3] = {dx[counter]-p[0],dy[counter]-p[1],dz[counter]-p[2]};
       V_movedParamPoint(meshVertex,disp,newpar,newpt);
       px[counter] = newpt[0];
@@ -51,6 +54,14 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
   m->end(it);
   PCU_ALWAYS_ASSERT(counter==numnp);
   Sim_logOff();
+}
+
+void sim_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
+  answer = 0;
+  apf::ModelEntity* e  = m->findModelEntity(e_dim, e_tag);
+  apf::ModelEntity* et = m->findModelEntity(t_dim, t_tag);
+  answer = m->isInClosureOf(e, et);
+  PCU_ALWAYS_ASSERT(answer == 0 || answer == 1);
 }
 
 #ifdef __cplusplus
