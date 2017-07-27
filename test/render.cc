@@ -1,4 +1,5 @@
 #include <apf.h>
+#include <crv.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -10,6 +11,7 @@
 #include <SimModel.h>
 #endif
 #include <cstdlib>
+#include <string>
 
 int main(int argc, char** argv)
 {
@@ -29,8 +31,22 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+
+  // This (hack) is here to make sure loadMdsMehs
+  // does not fail when the input mesh is curved!
+  crv::getBezier(2);
+
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
-  apf::writeVtkFiles(argv[3], m);
+
+  std::string name = m->getShape()->getName();
+  int        order = m->getShape()->getOrder();
+
+  if (name == std::string("Bezier")) {
+    crv::writeCurvedVtuFiles(m, apf::Mesh::TRIANGLE, order + 2, argv[3]);
+    crv::writeCurvedWireFrame(m, order + 8, argv[3]);
+  }
+  else
+    apf::writeVtkFiles(argv[3], m);
   m->destroyNative();
   apf::destroyMesh(m);
 #ifdef HAVE_SIMMETRIX

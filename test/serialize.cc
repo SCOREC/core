@@ -2,6 +2,7 @@
 #include <PCU.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
+#include <crv.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -39,6 +40,7 @@ int main( int argc, char* argv[])
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+  crv::getBezier(2);//hack to make sure curved meshes can be serialized!
   GroupCode code;
   code.mesh = apf::loadMdsMesh(argv[1], argv[2]);
   code.meshFile = argv[3];
