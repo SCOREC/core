@@ -58,10 +58,9 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
 
 void sim_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
   answer = 0;
-  gmi_model* gm = m->getModel();
-  gmi_ent* e  = (gmi_ent*)m->findModelEntity(e_dim, e_tag);
-  gmi_ent* et = (gmi_ent*)m->findModelEntity(t_dim, t_tag);
-  answer = gmi_is_in_closure_of(gm, e, et);
+  apf::ModelEntity* e  = m->findModelEntity(e_dim, e_tag);
+  apf::ModelEntity* et = m->findModelEntity(t_dim, t_tag);
+  answer = m->isInClosureOf(e, et);
   PCU_ALWAYS_ASSERT(answer == 0 || answer == 1);
 }
 
