@@ -91,6 +91,7 @@ int main(int argc, char** argv) {
       else
       	printf("Shape is Lagrange(2).\n");
       PCU_ALWAYS_ASSERT(apf::countNodes(elem) == 10);
+      break;
     default:
       printf("Serify_shape is not implemented for "
       	  "elements of type %d. Aborting!", type);

@@ -23,7 +23,6 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is)
   collapse.Init(a);
   isSimple = is;
   dug = false;
-  toFPP = false;
   vert = 0;
 }
 
@@ -130,49 +129,66 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
   return true;
 }
 
-#ifdef DO_FPP
-  static bool trySnappingToFPP2(Adapt* a, Collapse& c, Tag* st, Entity* v,
-      apf::Up& badElements)
-  {
-    // make a FPPSnapper Object
-    FPPSnapper fpps(a, c, st, v, badElements);
-    return fpps.findFPP() ? fpps.snapToFPP() : false;
-  }
+/* #ifdef DO_FPP */
+/*   static bool trySnappingToFPP2(Adapt* a, Collapse& c, Tag* st, Entity* v, */
+/*       apf::Up& badElements) */
+/*   { */
+/*     // make a FirstProblemPlane Object */
+/*     FirstProblemPlane fpps(a, c, st, v, badElements); */
+/*     return fpps.find() ? fpps.snapToFPP() : false; */
+/*   } */
 
-  static bool trySnappingToFPP(Adapt* a, Collapse& c, Tag* st, Entity* v,
-      apf::Up& badElements)
-  {
-    bool hadItBefore = getFlag(a, v, DONT_COLLAPSE);
-    setFlag(a, v, DONT_COLLAPSE);
-    bool ok = trySnappingToFPP2(a, c, st, v, badElements);
-    if (!hadItBefore)
-      clearFlag(a, v, DONT_COLLAPSE);
-    return ok;
-  }
-#endif
+/*   static bool trySnappingToFPP(Adapt* a, Collapse& c, Tag* st, Entity* v, */
+/*       apf::Up& badElements) */
+/*   { */
+/*     bool hadItBefore = getFlag(a, v, DONT_COLLAPSE); */
+/*     setFlag(a, v, DONT_COLLAPSE); */
+/*     bool ok = trySnappingToFPP2(a, c, st, v, badElements); */
+/*     if (!hadItBefore) */
+/*       clearFlag(a, v, DONT_COLLAPSE); */
+/*     return ok; */
+/*   } */
+/* #endif */
 
-static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements)
+static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
+    FirstProblemPlane* FPP)
 {
+
   Mesh* m = a->mesh;
+
+  // first go through the candidate edges found by the first problem plane
+  // (if any)
+  std::vector<Entity*> edgesFromFPP;
+  edgesFromFPP.clear();
+  if (FPP) {
+    FPP->setBadElements(badElements);
+    FPP->getCandidateEdges(edgesFromFPP);
+  }
+  for (size_t i = 0; i < edgesFromFPP.size(); ++i) {
+    if (tryDiggingEdge(a, c, edgesFromFPP[i]))
+      return true;
+  }
+
+  // next try all the edges
   for (int i = 0; i < badElements.n; ++i) {
     Entity* elem = badElements.e[i];
     Downward edges;
     int nedges;
     nedges = m->getDownward(elem, 1, edges);
     for (int j = 0; j < nedges; ++j){
-      /* std::cout << "(i,j) is (" << i << "," << j << ")" << std::endl; */
       if (tryDiggingEdge(a, c, edges[j]))
 	return true;
     }
   }
   return false;
 }
+
 static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
-    apf::Up& badElements)
+    apf::Up& badElements, FirstProblemPlane* FPP = 0)
 {
   bool hadItBefore = getFlag(a, v, DONT_COLLAPSE);
   setFlag(a, v, DONT_COLLAPSE);
-  bool ok = tryDigging2(a, c, badElements);
+  bool ok = tryDigging2(a, c, badElements, FPP);
   if (!hadItBefore)
     clearFlag(a, v, DONT_COLLAPSE);
   return ok;
@@ -181,50 +197,51 @@ static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
 bool Snapper::run()
 {
   dug = false;
-  toFPP = false;
   apf::Up badElements;
   bool ok = trySnapping(adapter, snapTag, vert, badElements);
   if (isSimple)
     return ok;
-  if (ok)
-    return true;
-#ifdef DO_FPP
-  Mesh* mesh = adapter->mesh;
-  PCU_ALWAYS_ASSERT(mesh->hasTag(vert, snapTag));
-  toFPP = trySnappingToFPP(adapter, collapse, snapTag, vert, badElements);
-  if (!toFPP) {
-    return false;
-    trySnapping(adapter, snapTag, vert, badElements);
-    dug = tryDigging(adapter, collapse, vert, badElements);
-    if (!dug)
-      return false;
-  }
-  #else
-  dug = tryDigging(adapter, collapse, vert, badElements);
+  FirstProblemPlane* FPP = new FirstProblemPlane(adapter, snapTag);
+  FPP->setVertex(vert);
+  dug = tryDigging(adapter, collapse, vert, badElements, FPP);
+  delete FPP;
   if (!dug)
     return false;
-#endif
   return trySnapping(adapter, snapTag, vert, badElements);
 }
 
-
-FPPSnapper::FPPSnapper(Adapt* a, Collapse& c, Tag* st, Entity* v, apf::Up& badElements)
+FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
 {
   adapter = a;
   snapTag = st;
-  collapse = c;
-  vert = v;
-  problemRegions.n = badElements.n;
-  for (int i = 0; i < badElements.n; i++) {
-    problemRegions.e[i] = badElements.e[i];
-  }
   problemFace = 0;
   problemRegion = 0;
   commEdges.n = 0;
   tol = 1.0e-14;
 }
 
-bool FPPSnapper::findFPP()
+void FirstProblemPlane::setVertex(Entity* v)
+{
+  vert = v;
+}
+
+void FirstProblemPlane::setBadElements(apf::Up& badElements)
+{
+  problemRegions.n = badElements.n;
+  for (int i = 0; i < badElements.n; i++) {
+    problemRegions.e[i] = badElements.e[i];
+  }
+}
+
+
+void FirstProblemPlane::getCandidateEdges(std::vector<Entity*> &edges)
+{
+  edges.clear();
+  if (find())
+    findCandidateEdges(edges);
+}
+
+bool FirstProblemPlane::find()
 {
   Mesh* mesh = adapter->mesh;
   std::vector<double> dists;
@@ -246,9 +263,9 @@ bool FPPSnapper::findFPP()
   dists.clear();
   for (int i = 0; i < n; i++) {
     elem = problemRegions.e[i];
-    face = faceOppositeOfVert(elem, vert);
+    face = getTetFaceOppositeVert(mesh, elem, vert);
     std::vector<Vector> coords;
-    getFaceCoords(face, coords);
+    getFaceCoords(mesh, face, coords);
 
     Vector intersect;
     bool isInf;
@@ -279,7 +296,7 @@ bool FPPSnapper::findFPP()
 
   if (!problemRegion) {
     problemRegion = problemRegions.e[0];
-    problemFace = faceOppositeOfVert(problemRegion, vert);
+    problemFace = getTetFaceOppositeVert(mesh, problemRegion, vert);
     coplanarProblemRegions.n = n;
     for (int i = 0; i < n; i++) {
       coplanarProblemRegions.e[i] = problemRegions.e[i];
@@ -300,9 +317,9 @@ bool FPPSnapper::findFPP()
   return true;
 }
 
-bool FPPSnapper::snapToFPP()
+void FirstProblemPlane::findCandidateEdges(std::vector<Entity*> &edges)
 {
-  bool snapped = false;
+  edges.clear();
   Mesh* mesh = adapter->mesh;
 
   // We deny collapsing that moves further away form the current target
@@ -328,62 +345,15 @@ bool FPPSnapper::snapToFPP()
     double candidateDist = (vCoord - t).getLength();
     if (candidateDist > dist)
       continue;
-
-    // try digging edge here
-    snapped = tryDiggingEdge(adapter, collapse, edge);
-    if (snapped)
-      return true;
-  }
-  return snapped;
-}
-
-Entity* FPPSnapper::faceOppositeOfVert(Entity* e, Entity* v)
-{
-  Mesh* mesh = adapter->mesh;
-  Downward faces;
-  Entity* oppositeFace = 0;
-  int nDownFaces = mesh->getDownward(e, 2, faces);
-  for (int i = 0; i < nDownFaces; i++) {
-    Downward verts;
-    int nDownVerts = mesh->getDownward(faces[i], 0, verts);
-    int j;
-    for (j = 0; j < nDownVerts; j++) {
-      if (v == verts[j])
-      	break;
-    }
-    if (j == nDownVerts)
-      oppositeFace = faces[i];
     else
-      continue;
+      edges.push_back(edge);
   }
-
-  // make sure that oppositeFace is what it is meant to be!
-  Downward verts;
-  int numDownVerts = mesh->getDownward(oppositeFace, 0, verts);
-  bool flag = true;
-  for (int i = 0; i < numDownVerts; i++) {
-    if (v == verts[i]){
-      flag = false;
-      break;
-    }
-  }
-  PCU_ALWAYS_ASSERT(flag);
-
-  return oppositeFace;
 }
 
-void FPPSnapper::getFaceCoords(Entity* face, std::vector<Vector>& coords)
-{
-  Mesh* mesh = adapter->mesh;
-  Downward verts;
-  int nDownVerts = mesh->getDownward(face, 0, verts);
-  PCU_ALWAYS_ASSERT(nDownVerts);
-  for (int i = 0; i < nDownVerts; i++)
-    coords.push_back(getPosition(mesh, verts[i]));
-}
+
 
 bool
-FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
+FirstProblemPlane::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
     Vector& intersection, bool& isInf)
 {
   bool res = false;
@@ -431,7 +401,7 @@ FPPSnapper::intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
   return res;
 }
 
-void FPPSnapper::findCommonEdges(apf::Up& cpRegions)
+void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
 {
   Mesh* mesh = adapter->mesh;
   if (cpRegions.n == 1) {
@@ -457,7 +427,7 @@ void FPPSnapper::findCommonEdges(apf::Up& cpRegions)
   for (int i = 0; i < cpRegions.n; i++) {
     region = cpRegions.e[i];
     if (region == tmpRegion) continue;
-    face = faceOppositeOfVert(region, vert);
+    face = getTetFaceOppositeVert(mesh, region, vert);
     ctrToIntersect = getCenter(mesh, face) - intersection;
     double dist = ctrToIntersect.getLength();
     if (dist < minDist) {
@@ -487,6 +457,50 @@ void FPPSnapper::findCommonEdges(apf::Up& cpRegions)
       }
     }
   }
+}
+
+Entity* getTetFaceOppositeVert(Mesh* m, Entity* e, Entity* v)
+{
+  Downward faces;
+  Entity* oppositeFace = 0;
+  int nDownFaces = m->getDownward(e, 2, faces);
+  for (int i = 0; i < nDownFaces; i++) {
+    Downward verts;
+    int nDownVerts = m->getDownward(faces[i], 0, verts);
+    int j;
+    for (j = 0; j < nDownVerts; j++) {
+      if (v == verts[j])
+      	break;
+    }
+    if (j == nDownVerts)
+      oppositeFace = faces[i];
+    else
+      continue;
+  }
+
+  // make sure that oppositeFace is what it is meant to be!
+  Downward verts;
+  int numDownVerts = m->getDownward(oppositeFace, 0, verts);
+  bool flag = true;
+  for (int i = 0; i < numDownVerts; i++) {
+    if (v == verts[i]){
+      flag = false;
+      break;
+    }
+  }
+
+  PCU_ALWAYS_ASSERT(flag);
+
+  return oppositeFace;
+}
+
+void getFaceCoords(Mesh* m, Entity* face, std::vector<Vector>& coords)
+{
+  Downward verts;
+  int nDownVerts = m->getDownward(face, 0, verts);
+  PCU_ALWAYS_ASSERT(nDownVerts);
+  for (int i = 0; i < nDownVerts; i++)
+    coords.push_back(getPosition(m, verts[i]));
 }
 
 Vector getCenter(Mesh* mesh, Entity* face)

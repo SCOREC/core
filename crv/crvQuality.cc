@@ -638,7 +638,7 @@ int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
       interNodes[index] = apf::getDV(me,xi[index]);
       if(interNodes[index] < 1e-10){
         apf::destroyMeshElement(me);
-        return i+8;
+        return edge+8;
       }
     }
   }
@@ -648,7 +648,7 @@ int Quality3D::computeJacDetNodes(apf::MeshEntity* e,
       interNodes[index] = apf::getDV(me,xi[index]);
       if(interNodes[index] < 1e-10){
         apf::destroyMeshElement(me);
-        return i+14;
+        return face+14;
       }
     }
   }
