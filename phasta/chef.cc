@@ -10,7 +10,6 @@
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
 #include <SimAdvMeshing.h>
-#include <SimDiscrete.h>
 #endif
 #include <pcu_util.h>
 #include <chef.h>
@@ -39,7 +38,6 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
   SimAdvMeshing_start();
-  SimDiscrete_start(0);
   gmi_sim_start();
   gmi_register_sim();
 #endif
@@ -50,7 +48,6 @@ int main(int argc, char** argv)
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
-  SimDiscrete_stop(0);
   SimPartitionedMesh_stop();
   SimAdvMeshing_stop();
   Sim_unregisterAllKeys();

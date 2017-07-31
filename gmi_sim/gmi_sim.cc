@@ -25,6 +25,10 @@
 #include "SimAcisKrnl.h"
 #endif
 
+#ifdef SIM_DISCRETE
+#include "SimDiscrete.h"
+#endif
+
 struct sim_model {
   struct gmi_model model;
   SGModel* sim;
@@ -367,6 +371,10 @@ static gmi_model* create_native(const char* filename)
 void gmi_sim_start(void)
 {
   SimModel_start();
+#ifdef SIM_DISCRETE
+  int ignored = 0;
+  SimDiscrete_start(ignored);
+#endif
 #ifdef SIM_PARASOLID
   SimParasolid_start(1);
 #endif
@@ -377,6 +385,10 @@ void gmi_sim_start(void)
 
 void gmi_sim_stop(void)
 {
+#ifdef SIM_DISCRETE
+  int ignored = 0;
+  SimDiscrete_stop(ignored);
+#endif
 #ifdef SIM_ACIS
   SimAcis_stop(1);
 #endif

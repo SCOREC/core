@@ -116,10 +116,18 @@ if (SIM_ACIS)
       SpaACIS)
 endif()
 
+option(SIM_DISCRETE "Use Simmetrix discrete modeling" OFF)
+if (SIM_DISCRETE)
+  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
+    SimDiscrete simDiscreteLib)
+  set(SIM_CAD_LIB_NAMES
+      ${simDiscreteLib}
+      ${SIM_CAD_LIB_NAMES})
+endif()
+
 simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
 
 set(SIM_OPT_LIB_NAMES
-  SimDiscrete
   SimField
   SimAdvMeshing)
 
