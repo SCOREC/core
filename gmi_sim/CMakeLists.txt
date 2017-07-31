@@ -9,7 +9,7 @@ endif()
 
 option(SIM_PARASOLID "Enable Parasolid interface" OFF)
 option(SIM_ACIS "Enable Acis interface" OFF)
-option(SIM_DISCRETE "Enable Acis interface" ON)
+option(SIM_DISCRETE "Enable Simmetrix discrete modeler interface" ON)
 # this file brings SIM_PARASOLID, SIM_ACIS, SIM_DISCRETE from CMake to C++
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_sim_config.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/gmi_sim_config.h")
