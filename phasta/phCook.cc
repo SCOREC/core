@@ -70,18 +70,11 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
   ph::loadModelAndBCs(in, g, bcs);
 }
 
-static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
+static apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
   apf::Mesh2* mesh;
-  const char* meshfile = in.meshFileName.c_str();
 #ifdef HAVE_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (mesh_has_ext(meshfile, "sms")) {
-    if (in.simmetrixMesh == 0) {
-      if (PCU_Comm_Self()==0)
-        fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
-      in.simmetrixMesh = 1;
-      in.filterMatches = 0; //not support
-    }
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);
 
@@ -97,6 +90,19 @@ static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
     mesh = apf::loadMdsMesh(g, meshfile);
   }
   return mesh;
+}
+
+static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
+  const char* meshfile = in.meshFileName.c_str();
+  if (mesh_has_ext(meshfile, "sms")) {
+    if (in.simmetrixMesh == 0) {
+      if (PCU_Comm_Self()==0)
+        fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
+      in.simmetrixMesh = 1;
+      in.filterMatches = 0; //not support
+    }
+  }
+  return loadMesh(g, meshfile);
 }
 
 void originalMain(apf::Mesh2*& m, ph::Input& in,
