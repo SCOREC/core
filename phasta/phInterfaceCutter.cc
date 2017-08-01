@@ -214,6 +214,7 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
       printf("num. of mesh vertices on interface after cut: %d\n",counter);
     }
   }
+  gmi_end(gm, git);
 
 //update hasMacthes
 /*  may not need this for simmetrix mesh */
