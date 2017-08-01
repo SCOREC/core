@@ -185,6 +185,7 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
 #ifdef HAVE_SIMMETRIX
 void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
 {
+  printf("execute simmetrix cut interface\n");
   std::string name("DG interface");
   if (!haveBC(bcs, name))
     ph::fail("no DG interface attributes!");
@@ -207,10 +208,10 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
     if (ph::isInterface(gm, ge, fbcs)) {
       modelFace = (pGFace) ge;
       counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of. mesh vertices on interface before cut: %d\n",counter);
+      printf("num. of mesh vertices on interface before cut: %d\n",counter);
       M_splitMeshOnGFace(mesh, modelFace, 0, 0);
       counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of. mesh vertices on interface after cut: %d\n",counter);
+      printf("num. of mesh vertices on interface after cut: %d\n",counter);
     }
   }
 
