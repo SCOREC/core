@@ -1,11 +1,25 @@
 #include "phInterfaceCutter.h"
 #include <apfMDS.h>
+#include <apfSIM.h>
 #include <PCU.h>
 #include <apf.h>
 #include <ph.h>
 #include <pcu_util.h>
 #include <iostream>
 #include <stdio.h>
+
+#ifdef HAVE_SIMMETRIX
+#include "SimAdvMeshing.h"
+#include "SimPartitionedMesh.h"
+#include "SimModel.h"
+#include "SimUtil.h"
+#endif
+
+/* forward declare simmetrix API M_splitMeshOnGFace;
+   once it is ready in published code, remove this */
+#ifdef HAVE_SIMMETRIX
+extern void M_splitMeshOnGFace(pUnstructuredMesh, pGFace, int keepOrig, pPList nosplit);
+#endif
 
 namespace apf {
 /* so dangerous is this function that it
@@ -167,19 +181,47 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
   findMaterials(m->getModel(), fbcs, mm);
   cutEntities(m, fbcs, mm);
 }
-/*
-static int countMatchedFaces(apf::Mesh2* m, apf::MeshEntity* e) {
-  apf::Downward f;
-  apf::Matches matches;
-  int numFaces = m->getDownward(e,2,f);
-  int countFaces = 0;
-  for (int i = 0; i < numFaces; i++) {
-    m->getMatches(f[i],matches);
-    if (matches.getSize() > 0) countFaces++;
+
+#ifdef HAVE_SIMMETRIX
+void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
+{
+  printf("execute simmetrix cut interface\n");
+  std::string name("DG interface");
+  if (!haveBC(bcs, name))
+    ph::fail("no DG interface attributes!");
+  FieldBCs& fbcs = bcs.fields[name];
+
+//get simmetrix mesh
+  apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(m);
+  pParMesh pmesh = apf_msim->getMesh();
+  pMesh mesh = PM_mesh(pmesh,0);
+  PCU_ALWAYS_ASSERT(PM_totalNumParts(pmesh) == 1);
+
+//get gmi model
+  gmi_model* gm = m->getModel();
+  gmi_iter* git = gmi_begin(gm, 2);
+  gmi_ent* ge;
+  pGFace modelFace;
+  int counter;
+
+  while ((ge = gmi_next(gm, git))) {
+    if (ph::isInterface(gm, ge, fbcs)) {
+      modelFace = (pGFace) ge;
+      counter = M_numClassifiedVertices(mesh, modelFace);
+      printf("num. of mesh vertices on interface before cut: %d\n",counter);
+      M_splitMeshOnGFace(mesh, modelFace, 0, 0);
+      counter = M_numClassifiedVertices(mesh, modelFace);
+      printf("num. of mesh vertices on interface after cut: %d\n",counter);
+    }
   }
-  return countFaces;
+  gmi_end(gm, git);
+
+//update hasMacthes
+/*  may not need this for simmetrix mesh */
+  apf_msim->hasMatches = true;
 }
-*/
+#endif
+
 int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   std::string name("DG interface");
   if (!haveBC(bcs, name)) {
@@ -209,9 +251,6 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
     m->getMatches(f,matches);
 
     apf::MeshEntity* e = m->getUpward(f, 0);
-
-//    if (countMatchedFaces(m,e) > 1)
-//      printf("an element has more than one matched element\n");
 
     int remoteResidence = -1;
     for (size_t j = 0; j != matches.getSize(); ++j) {
