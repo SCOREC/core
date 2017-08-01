@@ -10,6 +10,8 @@ bool isInterface(gmi_model* gm, gmi_ent* ge, FieldBCs& fbcs);
 
 void cutInterface(apf::Mesh2* m, BCs& bcs);
 
+void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs);
+
 int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs);
 
 bool migrateInterfaceItr(apf::Mesh2*& m, ph::BCs& bcs);

@@ -1,8 +1,14 @@
+#include "ph.h"
 #include "phInterfaceCutter.h"
 #include "phAttrib.h"
 #include <PCU.h>
+#ifdef HAVE_SIMMETRIX
 #include <SimUtil.h>
+#include <SimModel.h>
+#include <SimPartitionedMesh.h>
+#include <SimAdvMeshing.h>
 #include <gmi_sim.h>
+#endif
 #include <apfMDS.h>
 #include <apf.h>
 #include <pcu_util.h>
@@ -24,9 +30,14 @@ int main(int argc, char** argv)
   }
   PCU_Comm_Init();
   PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 1);
+#ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
+  SimModel_start();
+  SimPartitionedMesh_start(0, 0);
+  SimAdvMeshing_start();
   gmi_sim_start();
   gmi_register_sim();
+#endif
   if (argc == 5) {
     modelfile = argv[1];
     attribfile = argv[2];
@@ -43,14 +54,25 @@ int main(int argc, char** argv)
   gm = gmi_sim_load(modelfile, attribfile);
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
-  apf::Mesh2* m = apf::loadMdsMesh(gm, meshfile);
+  apf::Mesh2* m = ph::loadMesh(gm, meshfile);
   m->verify();
-  ph::cutInterface(m, bcs);
+#ifdef HAVE_SIMMETRIX
+  if (ph::mesh_has_ext(meshfile, "sms"))
+    ph::cutInterfaceSIM(m, bcs);
+  else
+#endif
+    ph::cutInterface(m, bcs);
   m->verify();
   m->writeNative(outfile);
   m->destroyNative();
   apf::destroyMesh(m);
+#ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
+  SimPartitionedMesh_stop();
+  SimAdvMeshing_stop();
+  SimModel_stop();
+  Sim_unregisterAllKeys();
+#endif
   PCU_Comm_Free();
   MPI_Finalize();
 }
