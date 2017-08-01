@@ -88,8 +88,10 @@ typedef Copy Match;
 
 /** \brief a set of copies, possibly multiple copies per part */
 typedef DynamicArray<Copy> CopyArray;
-/** \brief a set of matched copies */
+/** \brief a set of periodic copies */
 typedef CopyArray Matches;
+/** \brief a set of DG copies */
+typedef CopyArray DgCopies;
 
 /** \brief Interface to a mesh part
   \details This base class is the interface for almost all mesh
@@ -330,8 +332,10 @@ class Mesh
     virtual void verify() = 0;
     /** \brief return true if the mesh has matched entities */
     virtual bool hasMatching() = 0;
-    /** \brief get the matches of an entity */
+    /** \brief get the periodic copies of an entity */
     virtual void getMatches(MeshEntity* e, Matches& m) = 0;
+    /** \brief get the DG copies of an entity */
+    virtual void getDgCopies(MeshEntity* e, DgCopies& dgCopies) = 0;
     /** \brief estimate mesh entity memory usage.
       \details this is used by Parma_WeighByMemory
       \param type a value from apf::Mesh::Type
