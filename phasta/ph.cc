@@ -1,6 +1,7 @@
 #include <PCU.h>
 
 #include "ph.h"
+#include <apfMDS.h>
 #include <cstdio>
 #include <cstdlib>
 #include <stdarg.h>
@@ -8,6 +9,14 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <cstring>
+
+#ifdef HAVE_SIMMETRIX
+#include <phAttrib.h>
+#include <apfSIM.h>
+#include <gmi_sim.h>
+#include <SimPartitionedMesh.h>
+#endif
 
 /* OS-specific things try to stay here */
 #include <sys/stat.h>
@@ -134,6 +143,39 @@ void writeAuxiliaryFiles(std::string path, int timestep_or_dat)
   PCU_ALWAYS_ASSERT(numstart.is_open());
   numstart << timestep_or_dat << '\n';
   numstart.close();
+}
+
+bool mesh_has_ext(const char* filename, const char* ext)
+{
+  const char* c = strrchr(filename, '.');
+  if (c) {
+    ++c; /* exclude the dot itself */
+    return !strcmp(c, ext);
+  } else {
+    return false;
+  }
+}
+
+apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
+  apf::Mesh2* mesh;
+#ifdef HAVE_SIMMETRIX
+  /* if it is a simmetrix mesh */
+  if (mesh_has_ext(meshfile, "sms")) {
+    pProgress progress = Progress_new();
+    Progress_setDefaultCallback(progress);
+
+    pGModel simModel = gmi_export_sim(g);
+    pParMesh sim_mesh = PM_load(meshfile, simModel, progress);
+    mesh = apf::createMesh(sim_mesh);
+
+    Progress_delete(progress);
+  } else
+#endif
+  /* if it is a SCOREC mesh */
+  {
+    mesh = apf::loadMdsMesh(g, meshfile);
+  }
+  return mesh;
 }
 
 }
