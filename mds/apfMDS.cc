@@ -655,7 +655,7 @@ class MeshMDS : public Mesh2
     {
       (void) e;
       (void) dgCopies;
-      fprintf(stderr,"error: getDgCopies for MDS is not implemented yet\n");
+      PCU_ALWAYS_ASSERT_VERBOSE(false, "error: getDgCopies for MDS is not implemented yet! ");
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)
     {
