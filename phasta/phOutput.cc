@@ -347,11 +347,11 @@ static void getInterface
       continue;
     /* turn on hasDGInterface */
     o.hasDGInterface = 1;
-    apf::Matches matches;
-    m->getMatches(face, matches);
-    PCU_ALWAYS_ASSERT(matches.getSize() == 1);
+    apf::DgCopies dgCopies;
+    m->getDgCopies(face, dgCopies);
+    PCU_ALWAYS_ASSERT(dgCopies.getSize() == 1);
     apf::MeshEntity* e0 = m->getUpward(face, 0);
-    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    apf::MeshEntity* e1 = m->getUpward(dgCopies[0].entity, 0);
     /* in order to avoid repeatation of elements */
     if (e0 > e1)
       continue;
@@ -365,13 +365,13 @@ static void getInterface
     int nv1 = k.nElementVertices1;
     apf::Downward v0, v1;
     getBoundaryVertices(m, e0, face, v0);
-    getBoundaryVertices(m, e1, matches[0].entity, v1);
+    getBoundaryVertices(m, e1, dgCopies[0].entity, v1);
 
     /* make sure the first vertex on side 0 is the first on side 1 */
     apf::Downward fverts0, fverts1;
 
     int nbv0 = m->getDownward(face,0,fverts0);
-    int nbv1 = m->getDownward(matches[0].entity,0,fverts1);
+    int nbv1 = m->getDownward(dgCopies[0].entity,0,fverts1);
 
     PCU_ALWAYS_ASSERT(nbv0 == nbv1);
 
@@ -403,7 +403,7 @@ static void getInterface
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
     checkBoundaryVertex(m, face,              v0, k.elementType );
-    checkBoundaryVertex(m, matches[0].entity, v1, k.elementType1);
+    checkBoundaryVertex(m, dgCopies[0].entity, v1, k.elementType1);
     for (int k = 0; k < nv0; ++k)
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)

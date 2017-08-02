@@ -195,13 +195,13 @@ void getInterfaceBlocks(apf::Mesh* m, BCs& bcs, BlocksInterface& b)
       continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
-    apf::Matches matches;
-    m->getMatches(face, matches);
-    if (matches.getSize() != 1)
+    apf::DgCopies dgCopies;
+    m->getDgCopies(face, dgCopies);
+    if (dgCopies.getSize() != 1)
       continue;
     apf::MeshEntity* e0 = m->getUpward(face, 0);
-    PCU_ALWAYS_ASSERT(matches[0].peer == PCU_Comm_Self());
-    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    PCU_ALWAYS_ASSERT(dgCopies[0].peer == PCU_Comm_Self());
+    apf::MeshEntity* e1 = m->getUpward(dgCopies[0].entity, 0);
     /* in order to avoid repetition of elements */
     if (e0 > e1)
       continue;
