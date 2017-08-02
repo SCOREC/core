@@ -247,15 +247,15 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
       continue;
 
     ++nDG;
-    apf::Matches matches;
-    m->getMatches(f,matches);
+    apf::DgCopies dgCopies;
+    m->getDgCopies(f, dgCopies);
 
     apf::MeshEntity* e = m->getUpward(f, 0);
 
     int remoteResidence = -1;
-    for (size_t j = 0; j != matches.getSize(); ++j) {
-      if (matches[j].peer != PCU_Comm_Self())
-        remoteResidence = matches[j].peer;
+    for (size_t j = 0; j != dgCopies.getSize(); ++j) {
+      if (dgCopies[j].peer != PCU_Comm_Self())
+        remoteResidence = dgCopies[j].peer;
     }
 
     if (remoteResidence > PCU_Comm_Self())
