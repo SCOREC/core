@@ -209,7 +209,7 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
       modelFace = (pGFace) ge;
       counter = M_numClassifiedVertices(mesh, modelFace);
       printf("num. of mesh vertices on interface before cut: %d\n",counter);
-      M_splitMeshOnGFace(mesh, modelFace, 0, 0);
+      M_splitMeshOnGFace(pmesh, modelFace, 0, 0);
       counter = M_numClassifiedVertices(mesh, modelFace);
       printf("num. of mesh vertices on interface after cut: %d\n",counter);
     }
