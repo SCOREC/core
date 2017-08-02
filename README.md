@@ -51,5 +51,5 @@ For more information, start at our
 ### Who do I talk to? ###
 
 * PUMI administrator <pumi@scorec.rpi.edu>
-* Dan Ibanez <daibane@sandia.gov>
+* Dan Ibanez <ibaned@rpi.edu>
 * [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith)
