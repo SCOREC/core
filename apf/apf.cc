@@ -428,7 +428,8 @@ Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
 
 void copyData(Field* to, Field* from)
 {
-  copyFieldData(to->getData(), from->getData());
+//  copyFieldData(to->getData(), from->getData());
+  copyFieldData(from->getData(), to->getData());
 }
 
 void projectField(Field* to, Field* from)

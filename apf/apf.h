@@ -547,7 +547,8 @@ int getDimension(MeshElement* me);
 /** \brief Synchronize field values along partition boundary.
   \details Using the ownership and copies described by an apf::Sharing
   object, copy values from the owned nodes to their copies,
-  possibly assigning them values for the first time.
+  possibly assigning them values for the first time. 
+  Sharing is deleted automatically.
   */
 void synchronize(Field* f, Sharing* shr = 0);
 
@@ -555,7 +556,7 @@ void synchronize(Field* f, Sharing* shr = 0);
   \details Using the copies described by
   an apf::Sharing object, add up the field values of
   all copies of an entity and assign the sum as the
-  value for all copies.
+  value for all copies. Sharing is deleted automatically.
   */
 void accumulate(Field* f, Sharing* shr = 0);
 

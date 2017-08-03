@@ -21,7 +21,7 @@ void FieldData::rename(const char*)
 }
 
 template <class T>
-void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr)
+void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
@@ -70,13 +70,13 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr)
       data->set(e,&(values[0]));
     }
   }
-  delete shr;
+  if (delete_shr) delete shr;
 }
 
 /* instantiate here */
-template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*);
-template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*);
-template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*);
+template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*, bool);
+template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*, bool);
+template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*, bool);
 
 template <class T>
 class CopyOp : public FieldOp
@@ -105,7 +105,7 @@ class CopyOp : public FieldOp
 };
 
 template <class T>
-void copyFieldData(FieldDataOf<T>* to, FieldDataOf<T>* from)
+void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to)
 {
   CopyOp<T> copier(from,to);
   copier.run();
@@ -113,19 +113,22 @@ void copyFieldData(FieldDataOf<T>* to, FieldDataOf<T>* from)
 
 /* instantiate here */
 template void copyFieldData<int>(
-    FieldDataOf<int>* to, FieldDataOf<int>* from);
+    FieldDataOf<int>* to, FieldDataOf<int>*);
 template void copyFieldData<double>(
-    FieldDataOf<double>* to, FieldDataOf<double>* from);
+    FieldDataOf<double>* to, FieldDataOf<double>*);
 template void copyFieldData<long>(
-    FieldDataOf<long>* to, FieldDataOf<long>* from);
+    FieldDataOf<long>* to, FieldDataOf<long>*);
 
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
+void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
   FieldShape* s = f->getShape();
   if (!shr)
+  {
     shr = getSharing(m);
+    delete_shr=true;
+  }
   for (int d=0; d < 4; ++d)
   {
     if ( ! s->hasNodesIn(d))
@@ -170,7 +173,7 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
         data->set(e,&(values[0]));
       }
   } /* broadcast back out to non-owners */
-  synchronizeFieldData(data, shr);
+  synchronizeFieldData(data, shr, delete_shr);
 }
 
 template <class T>
