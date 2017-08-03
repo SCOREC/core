@@ -207,11 +207,12 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
   while ((ge = gmi_next(gm, git))) {
     if (ph::isInterface(gm, ge, fbcs)) {
       modelFace = (pGFace) ge;
+      printf("cutting face %d:\n",GEN_tag(modelFace));
       counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of mesh vertices on interface before cut: %d\n",counter);
+      printf("  num. of mesh vertices on interface before cut: %d\n",counter);
       M_splitMeshOnGFace(pmesh, modelFace, 0, 0);
       counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of mesh vertices on interface after cut: %d\n",counter);
+      printf("  num. of mesh vertices on interface after cut: %d\n",counter);
     }
   }
   gmi_end(gm, git);
