@@ -651,10 +651,11 @@ class MeshMDS : public Mesh2
         m[i].peer = c->c[i].p;
       }
     }
-    void getDgCopies(MeshEntity* e, DgCopies& dgCopies)
+    void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
     {
       (void) e;
       (void) dgCopies;
+      (void) me;
       PCU_ALWAYS_ASSERT_VERBOSE(false, "error: getDgCopies for MDS is not implemented yet! ");
     }
     void addMatch(MeshEntity* e, int peer, MeshEntity* match)

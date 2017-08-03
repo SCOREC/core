@@ -1,6 +1,5 @@
 #include "phInterfaceCutter.h"
 #include <apfMDS.h>
-#include <apfSIM.h>
 #include <PCU.h>
 #include <apf.h>
 #include <ph.h>
@@ -9,6 +8,7 @@
 #include <stdio.h>
 
 #ifdef HAVE_SIMMETRIX
+#include <apfSIM.h>
 #include "SimAdvMeshing.h"
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
