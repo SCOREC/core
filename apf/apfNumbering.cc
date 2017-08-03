@@ -215,9 +215,8 @@ void synchronize(Numbering * n, Sharing* shr)
   synchronizeFieldData<int>(n->getData(), shr);
 }
 
-class NoSharing : public Sharing
+struct NoSharing : public Sharing
 {
-public:
   int getOwner(MeshEntity*) {return PCU_Comm_Self();}
   bool isOwned(MeshEntity*) {return true;}
   virtual void getCopies(MeshEntity*, CopyArray&) {}

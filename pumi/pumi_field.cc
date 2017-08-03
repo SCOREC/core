@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -11,6 +11,7 @@
 #include "apf.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
+#include "apfFieldData.h"
 #include <assert.h>
 #include <PCU.h>
 #include <cstdlib> // for malloc and free
@@ -86,12 +87,9 @@ pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); 
 //************************************
 // Node numbering
 //************************************
-// FIXME: assign global numbers based on sharing
-pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape,
- int num_component) //, pOwnership o)
+pGlobalNumbering pumi_numbering_globalize(pNumbering n)
 {
-  if (!shape) shape= m->getShape();
-  return apf::createGlobalNumbering(m, name, shape, num_component);
+  return apf::makeGlobal(n, false);
 }
 
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn)
@@ -108,15 +106,6 @@ pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i)
 {
   return m->getGlobalNumbering(i);
 }
-
-/*
-void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
-    int node, int component, long number)
-{
-  apf::Node n(e,node);
-  apf::number(gn, n, component, number);
-}
-*/
 
 long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
 {
@@ -194,12 +183,12 @@ void pumi_field_delete(pField f)
 
 void pumi_field_synchronize(pField f, pOwnership o)
 {  
-  apf::synchronize(f, o);
+  apf::synchronizeFieldData<double>(f->getData(), o, false);
 }
 
 void pumi_field_accumulate(pField f, pOwnership o)
 {  
-  apf::accumulate(f, o);
+  apf::accumulateFieldData(f->getData(), o, false);
 }
 
 void pumi_field_freeze(pField f)
@@ -240,6 +229,25 @@ void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data)
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data)
 {
   apf::setComponents(f, e, i, dof_data);
+}
+
+// copy f1 to f2
+void pumi_field_copy(pField f1, pField f2)
+{
+  copyFieldData(f1->getData(), f2->getData());
+}
+
+// add f1 to f2 and save it to f3
+void pumi_field_add(pField f1, pField f2, pField f3)
+{
+  addFieldData(f1->getData(), f2->getData(),f3->getData());
+}
+
+
+// multiply f1 and d and save it to f2
+void pumi_field_multiply(pField f1, double d, pField f2)
+{
+  multiplyFieldData(f1->getData(), d, f2->getData());
 }
 
 #include "apfField.h"

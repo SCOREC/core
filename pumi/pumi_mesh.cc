@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -57,7 +57,7 @@ pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int ent_topology, pMeshEnt* 
   return apf::buildElement(m, (apf::ModelEntity*)ge, ent_topology, vertices);
 }
 
-void generate_globalid(pMesh m, pMeshTag tag, int dim)
+void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
 {
   pMeshEnt e;
   int own_partid, num_own=0, myrank=PCU_Comm_Self();
@@ -78,30 +78,29 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
   it = m->begin(dim);
   while ((e = m->iterate(it)))
   {
-    own_partid = m->getOwner(e);
-    if (own_partid==myrank)
+    if ((o && !o->isOwned(e)) || (!o && !m->isOwned(e)))
+      continue;
+
+    m->setIntTag(e, tag, &initial_id);
+    Copies remotes;
+    m->getRemotes(e, remotes);
+    APF_ITERATE(Copies, remotes, it)
     {
-      m->setIntTag(e, tag, &initial_id);
-      Copies remotes;
-      m->getRemotes(e, remotes);
-      APF_ITERATE(Copies, remotes, it)
+      PCU_COMM_PACK(it->first, it->second);
+      PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
+    }
+
+    if (m->isGhosted(e))
+    {
+      Copies ghosts;
+      m->getGhosts(e, ghosts);
+      APF_ITERATE(Copies, ghosts, it)
       {
         PCU_COMM_PACK(it->first, it->second);
         PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
       }
-
-      if (m->isGhosted(e))
-      {
-        Copies ghosts;
-        m->getGhosts(e, ghosts);
-        APF_ITERATE(Copies, ghosts, it)
-        {
-          PCU_COMM_PACK(it->first, it->second);
-          PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
-        }
-      }
-      ++initial_id;
     }
+    ++initial_id;
   }
   m->end(it);
 
@@ -118,7 +117,7 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim)
 }
 
 //*******************************************************
-void pumi_mesh_createGlobalID(pMesh m)
+void pumi_mesh_createGlobalID(pMesh m, pOwnership o)
 //*******************************************************
 {
   pMeshTag tag = m->findTag("global_id");
@@ -131,7 +130,7 @@ void pumi_mesh_createGlobalID(pMesh m)
     tag = m->createIntTag("global_id",1);
 
   for (int i=0; i<=m->getDimension(); ++i)
-    generate_globalid(m, tag, i);
+    generate_globalid(m, tag, i, o);
 }
 
 //*******************************************************
@@ -152,10 +151,19 @@ pumi::pumi(): mesh(NULL), model(NULL)
 {
   ghost_tag=NULL;
   ghosted_tag=NULL;
+  num_local_ent = NULL;
+  num_own_ent = NULL;
+  num_global_ent = NULL;
 }
 
 pumi::~pumi()
 {
+  if (num_own_ent) 
+  {
+    delete [] num_local_ent;
+    delete [] num_own_ent;
+    delete [] num_global_ent;
+  }
   delete _instance;
   _instance = NULL;
 }
@@ -264,9 +272,55 @@ int pumi_mesh_getDim(pMesh m)
   return m->getDimension();
 }
 
-int pumi_mesh_getNumEnt(pMesh m, int dim)
-{ return m->count(dim); }
+void pumi_mesh_setCount(pMesh m, pOwnership o)
+{
+  if (!pumi::instance()->num_local_ent)
+  { 
+    pumi::instance()->num_local_ent = new int[4];
+    pumi::instance()->num_own_ent = new int[4];
+    pumi::instance()->num_global_ent = new int[4];
+  }
 
+  for (int dim=0; dim<4; ++dim)
+  {
+    pumi::instance()->num_local_ent[dim]=m->count(dim);
+    if (!o) // NULL
+      pumi::instance()->num_own_ent[dim] = countOwned(m, dim);
+    else
+    {
+      apf::MeshIterator* it = m->begin(dim);
+      apf::MeshEntity* e;
+      int n = 0;
+      while ((e = m->iterate(it)))
+        if (o->isOwned(e))
+          ++n;
+      m->end(it);
+      pumi::instance()->num_own_ent[dim] = n;
+    }
+  }
+  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, PCU_Get_Comm());
+}
+
+int pumi_mesh_getNumEnt(pMesh m, int dim)
+{ 
+  return m->count(dim); 
+}
+
+int pumi_mesh_getNumOwnEnt(pMesh m, int dim)
+{ 
+  assert(pumi::instance()->num_own_ent);
+  if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 
+    std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is out-dated. Please call pumi_mesh_setCount\n";
+  return pumi::instance()->num_own_ent[dim];
+}
+
+int pumi_mesh_getNumGlobalEnt(pMesh m, int dim)
+{ 
+  assert(pumi::instance()->num_global_ent);
+  if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 
+    std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is out-dated. Please call pumi_mesh_setCount\n";
+  return pumi::instance()->num_global_ent[dim];
+}
 pMeshEnt pumi_mesh_findEnt(pMesh m, int d, int id)
 {
   return getMdsEntity(m, d, id);

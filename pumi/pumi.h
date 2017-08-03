@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -89,6 +89,9 @@ public:
 
   pMesh mesh;
   pGeom model;
+  int* num_local_ent;
+  int* num_own_ent;
+  int* num_global_ent;
   pMeshTag ghosted_tag;
   pMeshTag ghost_tag;
   std::vector<pMeshEnt> ghost_vec[4];
@@ -124,6 +127,7 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 // create a model from a file
 pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
                       void (*fp)(const char*)=NULL);
+void pumi_geom_delete(pGeom g);
 void pumi_geom_freeze(pGeom g); // shall be called after modifying model entities
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
@@ -203,8 +207,12 @@ pGeom pumi_mesh_getGeom(pMesh m);
 // get mesh dimension
 int pumi_mesh_getDim(pMesh m);
 
-// get # mesh entities of type d on local process
-int pumi_mesh_getNumEnt(pMesh m, int d);
+// set/get # mesh entities of type d
+void pumi_mesh_setCount(pMesh m, pOwnership o=NULL);
+ int pumi_mesh_getNumEnt(pMesh m, int d);
+int pumi_mesh_getNumGlobalEnt(pMesh m, int d);
+int pumi_mesh_getNumOwnEnt(pMesh m, int d);
+
 pMeshEnt pumi_mesh_findEnt(pMesh m, int d, int id);
 
 //************************************
@@ -323,7 +331,7 @@ void pumi_ghost_delete (pMesh m);
 // MISCELLANEOUS
 //************************************
 // create/delete global ID using tag "global_id"
-void pumi_mesh_createGlobalID(pMesh m);
+void pumi_mesh_createGlobalID(pMesh m, pOwnership o = NULL);
 void pumi_mesh_deleteGlobalID(pMesh m);
 
 // verify mesh
@@ -455,8 +463,7 @@ pShape pumi_shape_getHierarchic (int order);
 //************************************
 //  Node numbering
 //************************************
-pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, 
-                 pShape shape=NULL, int num_component=1); //, pOwnership o=NULL);
+pGlobalNumbering pumi_numbering_globalize(pNumbering n);
 void pumi_numbering_deleteGlobal(pGlobalNumbering gn);
 int pumi_mesh_getNumGlobalNumbering (pMesh m);
 pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i);
@@ -488,6 +495,10 @@ int pumi_mesh_getNumField(pMesh m);
 pField pumi_mesh_getField(pMesh m, int i);
 void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
 void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
+void pumi_field_copy(pField f, pField r);
+void pumi_field_add(pField f1, pField f2, pField r);
+void pumi_field_multiply(pField f, double d, pField r);
+
 // verify field
 void pumi_field_verify(pMesh m, pField f=NULL, pOwnership o=NULL);
 void pumi_field_print(pField f);

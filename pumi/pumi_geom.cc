@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -67,6 +67,13 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
     printf("model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
 
   return pumi::instance()->model;
+}
+
+void pumi_geom_delete(pGeom g)
+{
+  for (int i=0; i<4; ++i)
+    for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
+      delete *gent_it;
 }
 
 void pumi_geom_freeze(pGeom g)

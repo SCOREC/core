@@ -18,9 +18,8 @@ const char* outFile = 0;
 int num_in_part = 0;
 int do_distr=0;
 
-class testOwnership : public Ownership 
+struct testOwnership : public Ownership 
 {
-public:
   testOwnership(pMesh m)
   { o = new apf::NormalSharing(m); }
   ~testOwnership()
@@ -224,15 +223,7 @@ int main(int argc, char** argv)
 
   TEST_GHOSTING(m);
 
-  // delete numbering and ID
-  std::vector<pGlobalNumbering> numberings;
-  int num_gn=pumi_mesh_getNumGlobalNumbering(m);
-  for (int i=0; i<num_gn;++i)
-    numberings.push_back(pumi_mesh_getGlobalNumbering(m, i));
-  assert(pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
-
-  for (int i=0; i<(int)numberings.size(); ++i)
-    pumi_numbering_deleteGlobal(numberings.at(i));
+  // delete global ID
   pumi_mesh_deleteGlobalID(m);
 
   // delete fields
@@ -245,6 +236,7 @@ int main(int argc, char** argv)
   TEST_MESH_TAG(m);
 
   // clean-up 
+  pumi_geom_delete(g);
   pumi_mesh_delete(m);
 
   // print elapsed time and increased heap memory
@@ -708,9 +700,6 @@ void TEST_FIELD(pMesh m)
   if (!f)
   {
     f=pumi_field_create(m, "xyz_field", num_dofs_per_node);
-    // create global numbering
-    pumi_numbering_createGlobal(m, "xyz_numbering", pumi_field_getShape(f));
-
     assert(pumi_field_getName(f)==std::string("xyz_field"));
     assert(pumi_field_getType(f)==PUMI_PACKED);
     assert(pumi_field_getSize(f)==num_dofs_per_node);
