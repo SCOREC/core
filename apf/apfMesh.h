@@ -334,8 +334,8 @@ class Mesh
     virtual bool hasMatching() = 0;
     /** \brief get the periodic copies of an entity */
     virtual void getMatches(MeshEntity* e, Matches& m) = 0;
-    /** \brief get the DG copies of an entity */
-    virtual void getDgCopies(MeshEntity* e, DgCopies& dgCopies) = 0;
+    /** \brief get the DG copies of an entity on optional model entity filter */
+    virtual void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me = 0) = 0;
     /** \brief estimate mesh entity memory usage.
       \details this is used by Parma_WeighByMemory
       \param type a value from apf::Mesh::Type

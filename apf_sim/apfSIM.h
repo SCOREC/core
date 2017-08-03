@@ -86,7 +86,7 @@ class MeshSIM : public Mesh2
     void verify();
     bool hasMatching() {return hasMatches;}
     void getMatches(MeshEntity* e, Matches& m);
-    void getDgCopies(MeshEntity* e, DgCopies& dgCopies);
+    void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me = 0);
     bool hasMatches;
     bool isGhosted(MeshEntity*) { return false; }
     bool isGhost(MeshEntity*) { return false; }

@@ -933,14 +933,20 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
   PList_delete(l);
 }
 
-void MeshSIM::getDgCopies(MeshEntity* e, DgCopies& dgCopies)
+void MeshSIM::getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
 {
   pEntity ent = reinterpret_cast<pEntity>(e);
-  pGEntity model_ent = EN_whatIn(ent);
+  pGEntity model_ent;
+
+  /* if no filter; find modelFace of which ent is in closure */
+  /* if has filter; use filter */
+  if (!me)
+    model_ent = EN_whatIn(ent);
+  else
+    model_ent = reinterpret_cast<pGEntity>(me);
+
   pPList modelFaceList = GEN_faces(model_ent);
-
   PCU_ALWAYS_ASSERT(PList_size(modelFaceList));
-
   pPList dgCopy_ents = PList_new();
   for (int i = 0; i < PList_size(modelFaceList); i++) {
     pGFace modelFace = (pGFace) PList_item(modelFaceList, i);
