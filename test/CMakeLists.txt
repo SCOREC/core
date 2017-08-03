@@ -94,6 +94,9 @@ util_exe_func(fixDisconnected fixDisconnected.cc)
 
 # Phasta utilities
 util_exe_func(chef ../phasta/chef.cc)
+if(SIMMODSUITE_SimAdvMeshing_FOUND)
+  target_compile_definitions(chef PRIVATE -DHAVE_SIMADVMESHING)
+endif()
 util_exe_func(condense ../phasta/condense.cc)
 util_exe_func(threshold ../phasta/threshold.cc)
 util_exe_func(chefReadUrPrep ../phasta/readUrPrep.cc)
