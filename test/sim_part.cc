@@ -28,7 +28,6 @@
 
 #ifdef HAVE_SIMMETRIX
 #include "SimPartitionedMesh.h"
-#include "SimAdvMeshing.h"
 #include "SimModel.h"
 #include "SimUtil.h"
 #ifdef SIM_PARASOLID
@@ -67,7 +66,6 @@ int main(int argc, char **argv)
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
-  SimAdvMeshing_start();
 #ifdef SIM_PARASOLID
   SimParasolid_start(1);
 #endif
@@ -153,7 +151,6 @@ int main(int argc, char **argv)
 
   Progress_delete(progress);
   Sim_logOff();
-  SimAdvMeshing_stop();
 #ifdef SIM_PARASOLID
   SimParasolid_stop(1);
 #endif

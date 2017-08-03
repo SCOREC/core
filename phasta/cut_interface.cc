@@ -6,7 +6,6 @@
 #include <SimUtil.h>
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
-#include <SimAdvMeshing.h>
 #include <gmi_sim.h>
 #endif
 #include <apfMDS.h>
@@ -34,7 +33,6 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(0);
   SimModel_start();
   SimPartitionedMesh_start(0, 0);
-  SimAdvMeshing_start();
   gmi_sim_start();
   gmi_register_sim();
 #endif
@@ -69,7 +67,6 @@ int main(int argc, char** argv)
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   SimPartitionedMesh_stop();
-  SimAdvMeshing_stop();
   SimModel_stop();
   Sim_unregisterAllKeys();
 #endif

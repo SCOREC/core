@@ -11,7 +11,6 @@
 #include "gmi_sim.h"
 #include <SimUtil.h>
 #include <SimPartitionedMesh.h>
-#include <SimAdvMeshing.h>
 #endif
 #include <fstream>
 #include <sstream>

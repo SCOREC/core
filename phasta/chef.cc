@@ -9,7 +9,6 @@
 #include <MeshSim.h>
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
-#include <SimAdvMeshing.h>
 #endif
 #include <pcu_util.h>
 #include <chef.h>
@@ -37,7 +36,6 @@ int main(int argc, char** argv)
   SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
-  SimAdvMeshing_start();
   gmi_sim_start();
   gmi_register_sim();
 #endif
@@ -49,7 +47,6 @@ int main(int argc, char** argv)
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   SimPartitionedMesh_stop();
-  SimAdvMeshing_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
