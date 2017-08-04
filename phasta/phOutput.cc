@@ -319,22 +319,15 @@ static void getInterfaceFlag(Output& o, BCs& bcs) {
   }
   apf::MeshEntity* v;
   int i = 0;
-  int counter = 0; // for debugging
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(v);
     bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
     if (isDG) f[i] = 1;
-// debugging
-    if (isDG) counter++;
-// end debugging
     i++;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
-// debugging
-  printf("rank: %d; there are %d v on interface\n",PCU_Comm_Self(),counter);
-// end debugging
   o.arrays.interfaceFlag = f;
 }
 
