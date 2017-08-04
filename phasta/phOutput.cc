@@ -308,6 +308,36 @@ bool checkInterface(Output& o, BCs& bcs) {
   return true;
 }
 
+static void getInterfaceFlag(Output& o, BCs& bcs) {
+  apf::Mesh* m = o.mesh;
+  int n = m->count(0);
+  int* f = new int[n];
+  // if no interface, no need to loop over mesh
+  if (o.hasDGInterface == 0) {
+    o.arrays.interfaceFlag = f;
+    return;
+  }
+  apf::MeshEntity* v;
+  int i = 0;
+  int counter = 0; // for debugging
+  apf::MeshIterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    apf::ModelEntity* me = m->toModel(v);
+    bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
+    if (isDG) f[i] = 1;
+// debugging
+    if (isDG) counter++;
+// end debugging
+    i++;
+  }
+  m->end(it);
+  PCU_ALWAYS_ASSERT(i == n);
+// debugging
+  printf("rank: %d; there are %d v on interface\n",PCU_Comm_Self(),counter);
+// end debugging
+  o.arrays.interfaceFlag = f;
+}
+
 static void getInterface
 (
   Output&         o,
@@ -1046,10 +1076,6 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
 Output::~Output()
 {
   delete [] arrays.coordinates;
-  if (in->mesh2geom) {
-    delete [] arrays.m2gClsfcn;
-    delete [] arrays.m2gParCoord;
-  }
   delete [] arrays.ilwork;
   delete [] arrays.ilworkf;
   delete [] arrays.iper;
@@ -1111,6 +1137,11 @@ Output::~Output()
     delete [] arrays.igclv;
     delete [] arrays.igclvid;
   }
+  if (in->mesh2geom) {
+    delete [] arrays.m2gClsfcn;
+    delete [] arrays.m2gParCoord;
+  }
+  delete [] arrays.interfaceFlag;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -1131,6 +1162,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getBoundary(o, bcs, n);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
+  getInterfaceFlag(o, bcs);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o);
