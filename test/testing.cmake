@@ -58,6 +58,38 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
     WORKING_DIRECTORY ${MDIR})
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+  set(MDIR ${MESHES}/phasta/BL_query/cut_and_partition)
+  add_test(NAME cut_interface_sim
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cut_interface
+   "${MDIR}/model_nat.x_t"
+   "${MDIR}/model.smd"
+   "${MDIR}/mesh.sms"
+   "${MDIR}/mesh_cut.sms"
+   WORKING_DIRECTORY ${MDIR})
+  add_test(NAME partition_sim
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_part
+   "${MDIR}/model_nat.x_t"
+   "${MDIR}/model.smd"
+   "${MDIR}/mesh_cut.sms"
+   4
+   WORKING_DIRECTORY ${MDIR})
+  add_test(NAME countBL_cut_mesh
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+   "${MDIR}/model_nat.x_t"
+   "${MDIR}/model.smd"
+   "${MDIR}/mesh_cut.sms"
+   3504
+   WORKING_DIRECTORY ${MDIR})
+  mpi_test(countBL_part_mesh 4
+   ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+   "${MDIR}/model_nat.x_t"
+   "${MDIR}/model.smd"
+   "${MDIR}/outmesh_4_parts.sms"
+   3504
+   WORKING_DIRECTORY ${MDIR})
+endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+
 set(MDIR ${MESHES}/phasta/loopDriver)
 if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID)
   mpi_test(ph_adapt 1

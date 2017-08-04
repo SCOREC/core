@@ -116,7 +116,7 @@ if (SIM_ACIS)
       SpaACIS)
 endif()
 
-option(SIM_DISCRETE "Use Simmetrix discrete modeling" OFF)
+option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
 if (SIM_DISCRETE)
   getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
     SimDiscrete simDiscreteLib)
