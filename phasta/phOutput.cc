@@ -312,29 +312,25 @@ static void getInterfaceFlag(Output& o, BCs& bcs) {
   apf::Mesh* m = o.mesh;
   int n = m->count(0);
   int* f = new int[n];
-  // if no interface, no need to loop over mesh
-  if (o.hasDGInterface == 0) {
-    o.arrays.interfaceFlag = f;
-    return;
-  }
   apf::MeshEntity* v;
   int i = 0;
-  int counter = 0; // for debugging
+  o.hasDGInterface = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(v);
     bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
-    if (isDG) f[i] = 1;
-// debugging
-    if (isDG) counter++;
-// end debugging
+    if (isDG) {
+      /* turn on hasDGInterface */
+      o.hasDGInterface = 1;
+      f[i] = 1;
+    }
+    else {
+      f[i] = 0;
+    }
     i++;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
-// debugging
-  printf("rank: %d; there are %d v on interface\n",PCU_Comm_Self(),counter);
-// end debugging
   o.arrays.interfaceFlag = f;
 }
 
@@ -364,7 +360,6 @@ static void getInterface
     if (mattypeif1) mattypeif1[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
-  o.hasDGInterface = 0;
   int interfaceDim = m->getDimension() - 1;
   apf::MeshEntity*   face;
   apf::MeshIterator* it = m->begin(interfaceDim);
@@ -375,8 +370,6 @@ static void getInterface
       continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
-    /* turn on hasDGInterface */
-    o.hasDGInterface = 1;
     apf::DgCopies dgCopies;
     m->getDgCopies(face, dgCopies);
     PCU_ALWAYS_ASSERT(dgCopies.getSize() == 1);
@@ -1160,9 +1153,9 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getVertexLinks(o, n, bcs);
   getInterior(o, bcs, n);
   getBoundary(o, bcs, n);
+  getInterfaceFlag(o, bcs);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
-  getInterfaceFlag(o, bcs);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o);
