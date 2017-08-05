@@ -323,7 +323,10 @@ static void getInterfaceFlag(Output& o, BCs& bcs) {
   while ((v = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(v);
     bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
-    if (isDG) f[i] = 1;
+    if (isDG)
+      f[i] = 1;
+    else
+      f[i] = 0;
     i++;
   }
   m->end(it);
