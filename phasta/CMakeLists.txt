@@ -35,6 +35,11 @@ if(ENABLE_SIMMETRIX)
       phAttrib.cc
       phSnap.cc
      )
+  if(SIMMODSUITE_SimAdvMeshing_FOUND)
+    set(SOURCES ${SOURCES} phGrowthCurves.cc)
+  else()
+    set(SOURCES ${SOURCES} phGrowthCurves_empty.cc)
+  endif()
 endif()
 
 # Package headers
