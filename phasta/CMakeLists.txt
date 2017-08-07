@@ -37,6 +37,15 @@ if(ENABLE_SIMMETRIX)
      )
 endif()
 
+if(SIMMODSUITE_SimAdvMeshing_FOUND) # simmetrix enabled
+  set(SOURCES ${SOURCES} phGrowthCurves.cc)
+endif()
+if(NOT ENABLE_SIMMETRIX # no simmetrix
+   OR
+   NOT SIMMODSUITE_SimAdvMeshing_FOUND) # have simmetrix, but not advMeshing
+  set(SOURCES ${SOURCES} phGrowthCurves_empty.cc)
+endif()
+
 # Package headers
 set(HEADERS
   chef.h
