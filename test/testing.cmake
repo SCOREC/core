@@ -74,20 +74,22 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
    "${MDIR}/mesh_cut.sms"
    4
    WORKING_DIRECTORY ${MDIR})
-  add_test(NAME countBL_cut_mesh
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
-   "${MDIR}/model_nat.x_t"
-   "${MDIR}/model.smd"
-   "${MDIR}/mesh_cut.sms"
-   3504
-   WORKING_DIRECTORY ${MDIR})
-  mpi_test(countBL_part_mesh 4
-   ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
-   "${MDIR}/model_nat.x_t"
-   "${MDIR}/model.smd"
-   "${MDIR}/outmesh_4_parts.sms"
-   3504
-   WORKING_DIRECTORY ${MDIR})
+  if(SIMMODSUITE_SimAdvMeshing_FOUND)
+    add_test(NAME countBL_cut_mesh
+      COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+     "${MDIR}/model_nat.x_t"
+     "${MDIR}/model.smd"
+     "${MDIR}/mesh_cut.sms"
+     3504
+     WORKING_DIRECTORY ${MDIR})
+    mpi_test(countBL_part_mesh 4
+     ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+     "${MDIR}/model_nat.x_t"
+     "${MDIR}/model.smd"
+     "${MDIR}/outmesh_4_parts.sms"
+     3504
+     WORKING_DIRECTORY ${MDIR})
+  endif()
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
