@@ -383,18 +383,18 @@ mpi_test(mixedNumbering 4
   "${MDIR}/square.smb"
   out)
 set(MDIR ${MESHES}/square)
-add_test(hierarchic_2p_2D
-  ./hierarchic
+mpi_test(hierarchic_2p_2D 1
+  ./hierarchic 
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
-add_test(hierarchic_3p_2D
+mpi_test(hierarchic_3p_2D 1
   ./hierarchic
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   3)
 set(MDIR ${MESHES}/cube/pumi24)
-add_test(hierarchic_2p_3D
+mpi_test(hierarchic_2p_3D 1
   ./hierarchic
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb"
