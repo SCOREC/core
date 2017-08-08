@@ -9,7 +9,6 @@
 
 #ifdef HAVE_SIMMETRIX
 #include <apfSIM.h>
-#include "SimAdvMeshing.h"
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
