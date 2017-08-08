@@ -118,11 +118,7 @@ endif()
 
 option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
 if (SIM_DISCRETE)
-  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
-    SimDiscrete simDiscreteLib)
-  set(SIM_CAD_LIB_NAMES
-      ${simDiscreteLib}
-      ${SIM_CAD_LIB_NAMES})
+  set(SIM_CAD_LIB_NAMES SimDiscrete ${SIM_CAD_LIB_NAMES})
 endif()
 
 simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
