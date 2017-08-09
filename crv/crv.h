@@ -13,6 +13,7 @@
 #include <ma.h>
 #include <mth.h>
 #include <stdio.h>
+#include <vector>
 
 /** \file crv.h
   * \brief main file for curved element support */
@@ -117,6 +118,17 @@ ma::Input* configureShapeCorrection(
   \details see maInput.h for details.
   note that this function will delete the Input object */
 void adapt(ma::Input* in);
+
+/** \brief crv stats to get statistic information about the mesh
+  \details statistic considered are (1)final/desired edge-lengths
+  (2) linear quality (3) curved quality (minJ/maxJ)
+  */
+void stats(ma::Input* in,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities,
+    std::vector<double> &curvedQualities,
+    bool inMetric=true);
+
 
 /** \brief Get the Bezier Curve or Shape of some order
  \details goes from first to sixth order */
