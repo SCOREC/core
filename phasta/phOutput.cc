@@ -217,9 +217,9 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
-    apf::Matches matches;
-    m->getMatches(f, matches);
-    if (matches.getSize() == 1) // This prevents adding interface elements...
+    apf::DgCopies dgCopies;
+    m->getDgCopies(f, dgCopies);
+    if (dgCopies.getSize() == 1) // This prevents adding interface elements...
       continue;
     if (m->countUpward(f)>1)   // don't want interior region boundaries here...
       continue;
