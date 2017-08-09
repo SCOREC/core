@@ -201,6 +201,8 @@ bool Snapper::run()
   bool ok = trySnapping(adapter, snapTag, vert, badElements);
   if (isSimple)
     return ok;
+  // there is no need for the following if there exists no bad elements
+  if (badElements.n == 0) return true;
   FirstProblemPlane* FPP = new FirstProblemPlane(adapter, snapTag);
   FPP->setVertex(vert);
   dug = tryDigging(adapter, collapse, vert, badElements, FPP);
