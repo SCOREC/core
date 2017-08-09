@@ -182,6 +182,18 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
 }
 
 #ifdef HAVE_SIMMETRIX
+int M_numVerticesInClosure(pMesh mesh, pGEntity model){
+  int counter = 0;
+  pVertex meshVertex;
+  VIter vIter = M_vertexIter(mesh);
+  while((meshVertex = VIter_next(vIter))) {
+    if (GEN_inClosure(model, EN_whatIn(meshVertex)))
+      counter++;
+  }
+  VIter_delete(vIter);
+  return counter;
+}
+
 void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
 {
   printf("execute simmetrix cut interface\n");
@@ -207,10 +219,10 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
     if (ph::isInterface(gm, ge, fbcs)) {
       modelFace = (pGFace) ge;
       printf("cutting face %d:\n",GEN_tag(modelFace));
-      counter = M_numClassifiedVertices(mesh, modelFace);
+      counter = M_numVerticesInClosure(mesh, modelFace);
       printf("  num. of mesh vertices on interface before cut: %d\n",counter);
       M_splitMeshOnGFace(pmesh, modelFace, 0, 0);
-      counter = M_numClassifiedVertices(mesh, modelFace);
+      counter = M_numVerticesInClosure(mesh, modelFace);
       printf("  num. of mesh vertices on interface after cut: %d\n",counter);
     }
   }
