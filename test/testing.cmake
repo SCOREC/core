@@ -67,8 +67,8 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
    "${MDIR}/mesh.sms"
    "${MDIR}/mesh_cut.sms"
    WORKING_DIRECTORY ${MDIR})
-  add_test(NAME partition_sim
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_part
+  mpi_test(partition_sim 4
+   ${CMAKE_CURRENT_BINARY_DIR}/sim_part
    "${MDIR}/model_nat.x_t"
    "${MDIR}/model.smd"
    "${MDIR}/mesh_cut.sms"
