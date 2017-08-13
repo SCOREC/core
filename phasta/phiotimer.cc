@@ -26,7 +26,7 @@ struct phastaio_stats {
 };
 static struct phastaio_stats phastaio_global_stats;
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER)
 /* return the cycle count */
 void phastaio_time(phastaioTime* t) {
   *t = _rdtsc(); //intel intrinsic
@@ -53,6 +53,15 @@ size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
   size_t cycles = *end - *start;
   size_t us = ((double)cycles)/phastaio_global_stats.cpus;
   return us;
+}
+#elif defined(__bgq__)
+void phastaio_time(phastaioTime* t) {
+  *t = PCU_Time();
+}
+/*return elapsed time in micro seconds*/
+size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
+  size_t elapsed = static_cast<size_t>((end-start)/MILLION);
+  return elapsed;
 }
 #else
 void phastaio_time(phastaioTime* t) {
