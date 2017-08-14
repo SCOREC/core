@@ -33,8 +33,8 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 1);
 #ifdef HAVE_SIMMETRIX
-  Sim_readLicenseFile(0);
   SimModel_start();
+  Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
   SimPartitionedMesh_start(0, 0);
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_start();
