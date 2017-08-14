@@ -30,6 +30,7 @@
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
+#include "SimDiscrete.h"
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
 #endif
@@ -69,6 +70,7 @@ int main(int argc, char **argv)
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
+  SimDiscrete_start(0);
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_start();
 #endif
@@ -164,6 +166,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_stop();
 #endif
+  SimDiscrete_stop(0);
   SimPartitionedMesh_stop();
   PCU_Comm_Free();
   MPI_Finalize();
