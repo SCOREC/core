@@ -27,6 +27,11 @@ static void getCounts(Output& o)
 {
   o.nOwnedNodes = apf::countOwned(o.mesh, 0);
   o.nOverlapNodes = o.mesh->count(0);
+  int totalNodes = PCU_Add_Int(o.nOwnedNodes);
+  double lbratio = o.nOwnedNodes / totalNodes;
+  double max = PCU_Max_Double(lbratio) * PCU_Comm_Peers();
+  if (!PCU_Comm_Self())
+    printf("load balance of partitioned mesh = %f\n",max);
 }
 
 static void getCoordinates(Output& o)
