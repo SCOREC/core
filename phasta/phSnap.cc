@@ -7,7 +7,6 @@
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
 #include <SimMeshTools.h>
-#include <SimAdvMeshing.h>
 
 #include <pcu_util.h>
 #include <cstdio>

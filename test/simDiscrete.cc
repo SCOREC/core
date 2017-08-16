@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
   if (argc == 5) {
     modelFilename    = argv[1];
     attribFilename   = argv[2];
-	meshFilename     = argv[3];
-	outmodelFilename = argv[4];
+    meshFilename     = argv[3];
+    outmodelFilename = argv[4];
   }
   else {
     cout<<"Usage:"<<argv[0]<<" [model.x_t][model.smd][mesh.sms][output_model.smd]"<<endl;
@@ -47,41 +47,19 @@ int main(int argc, char *argv[])
   pGModel model = GM_load(attribFilename, nmodel, progress);
   pMesh mesh = M_load(meshFilename, model, progress);
   pDiscreteModel dmodel = 0;
+  NM_release(nmodel);
 
-  // check the input mesh for intersections
-  // this call must occur before the discrete model is created
-  if(MS_checkMeshIntersections(mesh,0,progress)) {
-    cerr<<"There are intersections in the input mesh"<<endl;
-    M_release(mesh);
-    GM_release(model);
-	NM_release(nmodel);
-    return 1;
-  }
+  // Print out info of mesh
+  cout<<"Input mesh: "<<endl;
+  cout<<"Number of mesh vertices: "<<M_numVertices(mesh)<<endl;
+  cout<<"Number of mesh edges: "<<M_numEdges(mesh)<<endl;
+  cout<<"Number of mesh faces: "<<M_numFaces(mesh)<<endl;
+  cout<<"Number of mesh regions: "<<M_numRegions(mesh)<<endl;
 
-  // create the Discrete model
-  dmodel = DM_createFromMesh(mesh, 1, progress);
-  if(!dmodel) { //check for error
-    cerr<<"Error creating Discrete model from mesh"<<endl;
-    M_release(mesh);
-    GM_release(model);
-	NM_release(nmodel);
-    return 1;
-  }
+  // load discrete model from parasolid model and mesh
+  dmodel = DM_createFromModel(model,mesh);
 
-  // define the Discrete model
-  DM_findEdgesByFaceNormals(dmodel, 20, progress);
-  DM_eliminateDanglingEdges(dmodel, progress);
-  if(DM_completeTopology(dmodel, progress)) { //check for error
-    cerr<<"Error completing Discrete model topology"<<endl;
-    M_release(mesh);
-    GM_release(model);
-    GM_release(dmodel);
-	NM_release(nmodel);
-    return 1;
-  }
-
-  // Since we told the Discrete model to use the input mesh, we release our
-  // pointer to it.  It will be fully released when the Discrete model is released.
+  // release the original mesh
   M_release(mesh);
 
   // Print out information about the model
@@ -100,7 +78,26 @@ int main(int argc, char *argv[])
   GM_write(dmodel,outmodelFilename,0,progress); // save the discrete model
   GM_release(model);
   GM_release(dmodel);
-  NM_release(nmodel);
+
+  // load discrete model again
+  dmodel = (pDiscreteModel) GM_load(outmodelFilename, 0, progress);
+  mesh = DM_getMeshCopy(dmodel,0);
+
+  // Print out info of mesh
+  cout<<"Internal mesh: "<<endl;
+  cout<<"Number of mesh vertices: "<<M_numVertices(mesh)<<endl;
+  cout<<"Number of mesh edges: "<<M_numEdges(mesh)<<endl;
+  cout<<"Number of mesh faces: "<<M_numFaces(mesh)<<endl;
+  cout<<"Number of mesh regions: "<<M_numRegions(mesh)<<endl;
+
+  cout<<"load and check again Discrete model: "<<endl;
+  cout<<"Number of model vertices: "<<GM_numVertices(dmodel)<<endl;
+  cout<<"Number of model edges: "<<GM_numEdges(dmodel)<<endl;
+  cout<<"Number of model faces: "<<GM_numFaces(dmodel)<<endl;
+  cout<<"Number of model regions: "<<GM_numRegions(dmodel)<<endl;
+
+  M_release(mesh);
+  GM_release(dmodel);
   Progress_delete(progress);
   SimDiscrete_stop(0);
   SimParasolid_stop(1);

@@ -15,6 +15,10 @@
 
 #include "apfSIMDataOf.h"
 
+/* forward declare simmetrix API M_splitMatch;
+   once it is ready in published code, remove this */
+extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
+
 apf::Field* apf::createSIMGeneralField(
     Mesh* m,
     const char* name,
@@ -927,6 +931,47 @@ void MeshSIM::getMatches(MeshEntity* e, Matches& m)
   }
   PCU_ALWAYS_ASSERT(EN_isOwnerProc(ent)?j == n - 1:j == n);
   PList_delete(l);
+}
+
+void MeshSIM::getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
+{
+  pEntity ent = reinterpret_cast<pEntity>(e);
+  pGEntity model_ent;
+
+  /* if no filter; find modelFace of which ent is in closure */
+  /* if has filter; use filter */
+  if (!me)
+    model_ent = EN_whatIn(ent);
+  else
+    model_ent = reinterpret_cast<pGEntity>(me);
+
+  pPList modelFaceList = GEN_faces(model_ent);
+  PCU_ALWAYS_ASSERT(PList_size(modelFaceList));
+  pPList dgCopy_ents = PList_new();
+  for (int i = 0; i < PList_size(modelFaceList); i++) {
+    pGFace modelFace = (pGFace) PList_item(modelFaceList, i);
+    pEntity dgCopy_ent = M_splitMatch(part, ent, modelFace);
+    if (dgCopy_ent) {
+      PList_appUnique(dgCopy_ents, dgCopy_ent);
+    }
+  }
+  PList_delete(modelFaceList);
+
+  int n = PList_size(dgCopy_ents);
+  dgCopies.setSize(n);
+
+  if(!n) {
+    PList_delete(dgCopy_ents);
+    return;
+  }
+
+  for (int j = 0; j < n; j++) {
+    pEntity dgCopy_ent = (pEntity) PList_item(dgCopy_ents, j);
+    dgCopies[j].peer = EN_gid(dgCopy_ent);
+    dgCopies[j].entity = reinterpret_cast<MeshEntity*>(dgCopy_ent);
+  }
+
+  PList_delete(dgCopy_ents);
 }
 
 void MeshSIM::setPoint_(MeshEntity * me, int node, Vector3 const & p)

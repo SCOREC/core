@@ -34,19 +34,6 @@
 
 namespace {
 
-#ifdef HAVE_SIMMETRIX
-static bool mesh_has_ext(const char* filename, const char* ext)
-{
-  const char* c = strrchr(filename, '.');
-  if (c) {
-    ++c; /* exclude the dot itself */
-    return !strcmp(c, ext);
-  } else {
-    return false;
-  }
-}
-#endif
-
 void switchToMasters(int splitFactor)
 {
   int self = PCU_Comm_Self();
@@ -71,32 +58,16 @@ void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g)
 }
 
 static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
-  apf::Mesh2* mesh;
   const char* meshfile = in.meshFileName.c_str();
-#ifdef HAVE_SIMMETRIX
-  /* if it is a simmetrix mesh */
-  if (mesh_has_ext(meshfile, "sms")) {
+  if (ph::mesh_has_ext(meshfile, "sms")) {
     if (in.simmetrixMesh == 0) {
       if (PCU_Comm_Self()==0)
         fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
       in.simmetrixMesh = 1;
       in.filterMatches = 0; //not support
     }
-    pProgress progress = Progress_new();
-    Progress_setDefaultCallback(progress);
-
-    pGModel simModel = gmi_export_sim(g);
-    pParMesh sim_mesh = PM_load(meshfile, simModel, progress);
-    mesh = apf::createMesh(sim_mesh);
-
-    Progress_delete(progress);
-  } else
-#endif
-  /* if it is a SCOREC mesh */
-  {
-    mesh = apf::loadMdsMesh(g, meshfile);
   }
-  return mesh;
+  return ph::loadMesh(g, meshfile);
 }
 
 void originalMain(apf::Mesh2*& m, ph::Input& in,

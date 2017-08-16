@@ -7,10 +7,12 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
+#ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
 #include <SimModel.h>
+#endif
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
@@ -56,13 +58,14 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+#ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
-  gmi_register_mesh();
   gmi_register_sim();
-
+#endif
+  gmi_register_mesh();
   getConfig(argc,argv);
 
   gmi_model* gm;
@@ -78,10 +81,12 @@ int main(int argc, char** argv)
   apf::writeVtkFiles("test", m);
   freeMesh(m);
 
+#ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
+#endif
   PCU_Comm_Free();
   MPI_Finalize();
 }

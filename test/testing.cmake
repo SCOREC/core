@@ -49,23 +49,58 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
     "${MDIR}/4/")
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   set(MDIR ${MESHES}/phasta/BL_query)
   mpi_test(chef-BL_query 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR}/run_case)
   add_test(NAME chef-BL_query-diff
     COMMAND diff -r run_case/4-procs_case/ good_case/4-procs_case
     WORKING_DIRECTORY ${MDIR})
+endif()
+
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+  set(MDIR ${MESHES}/phasta/BL_query/cut_and_partition)
+  add_test(NAME cut_interface_sim
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cut_interface
+   "${MDIR}/model_nat.x_t"
+   "${MDIR}/model.smd"
+   "${MDIR}/mesh.sms"
+   "${MDIR}/mesh_cut.sms"
+   WORKING_DIRECTORY ${MDIR})
+  add_test(NAME partition_sim
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_part
+   "${MDIR}/model_nat.x_t"
+   "${MDIR}/model.smd"
+   "${MDIR}/mesh_cut.sms"
+   4
+   WORKING_DIRECTORY ${MDIR})
+  if(SIMMODSUITE_SimAdvMeshing_FOUND)
+    add_test(NAME countBL_cut_mesh
+      COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+     "${MDIR}/model_nat.x_t"
+     "${MDIR}/model.smd"
+     "${MDIR}/mesh_cut.sms"
+     3504
+     WORKING_DIRECTORY ${MDIR})
+    mpi_test(countBL_part_mesh 4
+     ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+     "${MDIR}/model_nat.x_t"
+     "${MDIR}/model.smd"
+     "${MDIR}/outmesh_4_parts.sms"
+     3504
+     WORKING_DIRECTORY ${MDIR})
+  endif()
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID)
+if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
+    AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
     "${MDIR}/model.smd"
     "${MDIR}/mesh_.smb"
     WORKING_DIRECTORY ${MDIR})
-endif(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID)
+endif()
 
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
@@ -348,18 +383,18 @@ mpi_test(mixedNumbering 4
   "${MDIR}/square.smb"
   out)
 set(MDIR ${MESHES}/square)
-add_test(hierarchic_2p_2D
-  ./hierarchic
+mpi_test(hierarchic_2p_2D 1
+  ./hierarchic 
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
-add_test(hierarchic_3p_2D
+mpi_test(hierarchic_3p_2D 1
   ./hierarchic
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   3)
 set(MDIR ${MESHES}/cube/pumi24)
-add_test(hierarchic_2p_3D
+mpi_test(hierarchic_2p_3D 1
   ./hierarchic
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb"
@@ -410,14 +445,17 @@ mpi_test(ma_insphere 1
   ./ma_insphere)
 if(ENABLE_SIMMETRIX)
   set(MDIR ${MESHES}/upright)
-  mpi_test(parallel_meshgen 4
-    ./generate
-    "${MDIR}/upright.smd"
-    "67k")
-  mpi_test(adapt_meshgen 4
-    ./ma_test
-    "${MDIR}/upright.smd"
-    "67k/")
+  if(SIMMODSUITE_SimAdvMeshing_FOUND)
+    mpi_test(parallel_meshgen 4
+      ./generate
+      "${MDIR}/upright.smd"
+      "67k")
+    # adapt_meshgen uses the output of parallel_meshgen
+    mpi_test(adapt_meshgen 4
+      ./ma_test
+      "${MDIR}/upright.smd"
+      "67k/")
+  endif()
   if(SIM_PARASOLID)
     set(MDIR ${MESHES}/curved)
     mpi_test(curvedSphere 1

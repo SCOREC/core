@@ -56,8 +56,10 @@ enum phastaio_file {
   NUM_PHASTAIO_MODES
 };
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER)
 typedef size_t phastaioTime;
+#elif defined(__bgq__)
+typedef double phastaioTime;
 #else
 #include <time.h>
 typedef struct timespec phastaioTime;
