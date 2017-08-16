@@ -16,12 +16,17 @@
 #include "maShape.h"
 #include "maBalance.h"
 #include "maLayer.h"
+#include "maDBG.h"
+#include <pcu_util.h>
 
 namespace ma {
 
-void adapt(Input* in)
+void adapt(Input* in, bool verbose)
 {
   print("version 2.0 !");
+  if (verbose)
+    PCU_ALWAYS_ASSERT_VERBOSE(PCU_Comm_Peers() == 1,
+    	"Verbose mesh adapt only works for 1 part meshes. Aborting!");
   double t0 = PCU_Time();
   validateInput(in);
   Adapt* a = new Adapt(in);
@@ -30,18 +35,21 @@ void adapt(Input* in)
   {
     print("iteration %d",i);
     coarsen(a);
+    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_coarsening");
     coarsenLayer(a);
     midBalance(a);
     refine(a);
+    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_refining");
 #ifdef DO_FPP
     snap(a);
 #endif
+    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_snapping");
   }
   allowSplitCollapseOutsideLayer(a);
 #ifndef DO_FPP
   snap(a);
 #endif
-  fixElementShapes(a);
+  fixElementShapes(a,verbose);
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);

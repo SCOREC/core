@@ -47,8 +47,10 @@ void adapt(Mesh* m, IsotropicFunction* f, SolutionTransfer* s=0);
 void adapt(Mesh* m, AnisotropicFunction* f, SolutionTransfer* s=0);
 /** \brief adapt with custom configuration
   \details see maInput.h for details.
-  note that this function will delete the Input object */
-void adapt(Input* in);
+  note that this function will delete the Input object.
+  If verbose=true is passed to the function the mesh will be
+  written (vtk-format) at each operation stage */
+void adapt(Input* in, bool verbose=false);
 /** \brief run uniform refinement, plus snapping and shape correction */
 void runUniformRefinement(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief run uniform refinement with matched entity support

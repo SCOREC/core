@@ -62,7 +62,7 @@ CodeMatch matchSliver(
     Mesh* m,
     Entity* tet);
 
-void fixElementShapes(Adapt* a);
+void fixElementShapes(Adapt* a, bool verbose=false);
 void printQuality(Adapt* a);
 
 }

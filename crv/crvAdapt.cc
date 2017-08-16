@@ -292,7 +292,7 @@ static void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
   m->end(it);
 }
 
-static void getStatsInPhysicalSpaces(ma::Mesh* m, ma::SizeField* sf,
+static void getStatsInPhysicalSpaces(ma::Mesh* m,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities,
     std::vector<double> &curvedQualities)
@@ -368,17 +368,13 @@ void stats(ma::Input* in,
   PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(in->mesh),
       "crv::stats expects an all simplex mesh!");
   std::string name = in->mesh->getShape()->getName();
-  int order = in->mesh->getShape()->getOrder();
-  /* if(name != std::string("Bezier")) */
-  /*   fail("mesh must be bezier to adapt\n"); */
+  /* int order = in->mesh->getShape()->getOrder(); */
+  if(name != std::string("Bezier"))
+    fail("mesh must be bezier to adapt\n");
 
   edgeLengths.clear();
   linearQualities.clear();
   curvedQualities.clear();
-
-  /* if (order > 1) */
-  /*   in->shapeHandler = crv::getShapeHandler(a); */
-  /* else */
 
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
@@ -386,10 +382,15 @@ void stats(ma::Input* in,
   ma::Mesh* m = a->mesh;
   ma::SizeField* sf = a->sizeField;
 
+  /* if (order > 1) */
+  /*   in->shapeHandler = crv::getShapeHandler(a); */
+  /* else */
+
+
   if (inMetric)
     getStatsInMetricSpace(m, sf, edgeLengths, linearQualities, curvedQualities);
   else
-    getStatsInPhysicalSpaces(m, sf, edgeLengths, linearQualities, curvedQualities);
+    getStatsInPhysicalSpaces(m, edgeLengths, linearQualities, curvedQualities);
 
   delete a;
   delete in;
