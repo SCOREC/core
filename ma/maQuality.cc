@@ -80,15 +80,48 @@ double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
   return integrator.measurement;
 }
 
-double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
+static Matrix getMetricWithMaxJacobean(Mesh* m, SizeField* sf,
+    Entity* e)
 {
-  /* currently, we are using Q at the center of the tri.
-   * In the future we may want to used average of Q over the tri */
+  int dim = m->getDimension();
+  int type = m->getType(e);
+  PCU_ALWAYS_ASSERT(type == apf::Mesh::TRIANGLE ||
+		    type == apf::Mesh::TET);
+  Downward dv;
+  int nd = m->getDownward(e, 0, dv);
+
   Matrix Q;
-  apf::MeshElement* me = createMeshElement(m, tri);
-  Vector xi(1./3., 1./3., 1./3.);
-  f->getTransform(me, xi, Q);
-  apf::destroyMeshElement(me);
+  double maxJ = -1.0;
+
+  for (int i = 0; i < nd; i++) {
+    apf::MeshElement* me = createMeshElement(m, dv[i]);
+    Matrix currentQ;
+    sf->getTransform(me, Vector(0.0, 0.0, 0.0), currentQ);
+    double currentJ = apf::getJacobianDeterminant(currentQ, dim);
+    if (currentJ > maxJ) {
+      maxJ = currentJ;
+      Q = currentQ;
+    }
+    apf::destroyMeshElement(me);
+  }
+  return Q;
+}
+
+double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax)
+{
+  /* By default, we are using Q at the center of the tri.
+   * If useMax is true metric at a (downward) vertex with the
+   * largest determinant is used.
+   * Note: In the future we may want to used average of Q over the tri */
+  Matrix Q;
+  if (useMax)
+    Q = getMetricWithMaxJacobean(m, f, tri);
+  else {
+    apf::MeshElement* me = createMeshElement(m, tri);
+    Vector xi(1./3., 1./3., 1./3.);
+    f->getTransform(me, xi, Q);
+    apf::destroyMeshElement(me);
+  }
 
   Entity* e[3];
   m->getDownward(tri,1,e);
@@ -103,15 +136,21 @@ double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
 }
 
 /* applies the mean ratio cubed formula from Li's thesis */
-double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
+double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax)
 {
-  /* currently, we are using Q at the center of the tet.
-   * In the future we may want to used average of Q over the tet */
+  /* By default, we are using Q at the center of the tet.
+   * If useMax is true metric at a (downward) vertex with the
+   * largest determinant is used.
+   * Note: In the future we may want to used average of Q over the tet */
   Matrix Q;
-  apf::MeshElement* me = createMeshElement(m, tet);
-  Vector xi(0.25, 0.25, 0.25);
-  f->getTransform(me, xi, Q);
-  apf::destroyMeshElement(me);
+  if (useMax)
+    Q = getMetricWithMaxJacobean(m, f, tet);
+  else {
+    apf::MeshElement* me = createMeshElement(m, tet);
+    Vector xi(0.25, 0.25, 0.25);
+    f->getTransform(me, xi, Q);
+    apf::destroyMeshElement(me);
+  }
 
   Entity* e[6];
   m->getDownward(tet,1,e);
@@ -127,9 +166,9 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
   return 15552*(V*V)/(s*s*s);
 }
 
-double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
+double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax)
 {
-  typedef double (*MeasureQualityFunction)(Mesh*,SizeField*,Entity*);
+  typedef double (*MeasureQualityFunction)(Mesh*,SizeField*,Entity*,bool);
   static MeasureQualityFunction table[apf::Mesh::TYPES] =
   {0
   ,0
@@ -139,7 +178,7 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
   ,0
   ,0
   ,0};
-  return table[m->getType(e)](m,f,e);
+  return table[m->getType(e)](m,f,e,useMax);
 }
 
 double getWorstQuality(Adapt* a, Entity** e, size_t n)
