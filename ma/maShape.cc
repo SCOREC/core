@@ -16,6 +16,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
+#include "maDBG.h"
 #include <pcu_util.h>
 
 namespace ma {
@@ -426,7 +427,7 @@ static void fixLargeAngles(Adapt* a)
     fixLargeAngleTris(a);
 }
 
-void fixElementShapes(Adapt* a)
+void fixElementShapes(Adapt* a, bool verbose)
 {
   if ( ! a->input->shouldFixShape)
     return;
@@ -434,14 +435,18 @@ void fixElementShapes(Adapt* a)
   int count = markBadQuality(a);
   int originalCount = count;
   int prev_count;
+  int i = 0;
   do {
     if ( ! count)
       break;
     prev_count = count;
     fixLargeAngles(a);
+    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_large_angle_fixing");
     markBadQuality(a);
     fixShortEdgeElements(a);
+    if(verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_short_edge_fixing");
     count = markBadQuality(a);
+    ++i;
   } while(count < prev_count);
   double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",
