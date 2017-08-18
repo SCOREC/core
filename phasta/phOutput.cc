@@ -27,11 +27,24 @@ static void getCounts(Output& o)
 {
   o.nOwnedNodes = apf::countOwned(o.mesh, 0);
   o.nOverlapNodes = o.mesh->count(0);
+}
+
+static void checkLoadBalance(Output& o)
+{
   int totalNodes = PCU_Add_Int(o.nOwnedNodes);
-  double lbratio = o.nOwnedNodes / (double) totalNodes;
-  double max = PCU_Max_Double(lbratio) * PCU_Comm_Peers();
+  double lbratioNode = o.nOwnedNodes * PCU_Comm_Peers() / (double) totalNodes;
+  double maxNode = PCU_Max_Double(lbratioNode);
   if (!PCU_Comm_Self())
-    printf("load balance of partitioned mesh = %f\n",max);
+    printf("node-wise load balance of partitioned mesh = %f\n",maxNode);
+
+  apf::Mesh* m = o.mesh;
+  int dim = m->getDimension();
+  int ownedElms = apf::countOwned(m, dim);
+  int totalElms = PCU_Add_Int(ownedElms);
+  double lbratioElm = ownedElms * PCU_Comm_Peers() / (double) totalElms;
+  double maxElm = PCU_Max_Double(lbratioElm);
+  if (!PCU_Comm_Self())
+    printf("element-wise load balance of partitioned mesh = %f\n",maxElm);
 }
 
 static void getCoordinates(Output& o)
@@ -897,6 +910,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   o.in = &in;
   o.mesh = mesh;
   getCounts(o);
+  checkLoadBalance(o);
   getCoordinates(o);
   if (in.mesh2geom)
     getM2GFields(o);
