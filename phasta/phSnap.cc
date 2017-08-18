@@ -25,7 +25,6 @@ void pass_mesh_to_phasta(apf::Mesh* mesh){
   output px,py,pz are corrected coordinates of mesh */
 void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
                           double px[], double py[], double pz[]) {
-  Sim_logOn("../callcore.log");
   double newpar[2];
   double newpt[3];
   int counter = 0;
@@ -52,7 +51,6 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(counter==numnp);
-  Sim_logOff();
 }
 
 void sim_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
