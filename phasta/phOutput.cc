@@ -31,20 +31,23 @@ static void getCounts(Output& o)
 
 static void checkLoadBalance(Output& o)
 {
-  int totalNodes = PCU_Add_Int(o.nOwnedNodes);
-  double lbratioNode = o.nOwnedNodes * PCU_Comm_Peers() / (double) totalNodes;
-  double maxNode = PCU_Max_Double(lbratioNode);
+  int sumOwnedNodes = PCU_Add_Int(o.nOwnedNodes);
+  double vlbratio = o.nOverlapNodes * PCU_Comm_Peers() / (double) sumOwnedNodes;
+  double vlbratio_max = PCU_Max_Double(vlbratio);
   if (!PCU_Comm_Self())
-    printf("node-wise load balance of partitioned mesh = %f\n",maxNode);
+    printf("max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
 
-  apf::Mesh* m = o.mesh;
-  int dim = m->getDimension();
-  int ownedElms = apf::countOwned(m, dim);
-  int totalElms = PCU_Add_Int(ownedElms);
-  double lbratioElm = ownedElms * PCU_Comm_Peers() / (double) totalElms;
-  double maxElm = PCU_Max_Double(lbratioElm);
+  int sumAllNodes = PCU_Add_Int(o.nOverlapNodes);
   if (!PCU_Comm_Self())
-    printf("element-wise load balance of partitioned mesh = %f\n",maxElm);
+    printf("ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
+
+  int dim = o.mesh->getDimension();
+  int numElms = o.mesh->count(dim);
+  int sumElms = PCU_Add_Int(numElms);
+  double elbratio = numElms * PCU_Comm_Peers() / (double) sumElms;
+  double elbratio_max = PCU_Max_Double(elbratio);
+  if (!PCU_Comm_Self())
+    printf("max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
 }
 
 static void getCoordinates(Output& o)
