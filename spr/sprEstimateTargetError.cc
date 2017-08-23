@@ -152,6 +152,7 @@ static double getNewSize(Estimation* e, apf::MeshEntity* ent)
   ElementError elemError(e);
   apf::MeshElement* elem = apf::createMeshElement(e->mesh, ent);
   elemError.process(elem);
+  apf::destroyMeshElement(elem);
   int p = e->recovered_order;
   int d = e->mesh->getDimension();
   double h = getCurrentSize(e->mesh, ent);
