@@ -633,9 +633,6 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 
   int nec = countEssentialBCs(in);
   int& ei = o.nEssentialBCNodes;
-  int nv = m->count(0);
-
-  printf("rank: %d; already %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), ei, nv);
 
   apf::Copies remotes;
   apf::MeshEntity* vent;
@@ -722,8 +719,6 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
         o.arrays.bc[o.arrays.nbc[vID]-1][k] = rbc[k];
     }
   }
-
-  printf("rank: %d; end with %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), o.nEssentialBCNodes, nv);
 
 // transfer entity to numbering
   o.arrays.igclvid = new int[o.nLayeredMeshVertices];
