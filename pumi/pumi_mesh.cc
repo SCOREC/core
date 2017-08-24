@@ -369,7 +369,7 @@ void pumi_mesh_print (pMesh m, int print_ent)
   if (!PCU_Comm_Self())
   {
     for (int p=0; p<PCU_Comm_Peers(); ++p)
-      std::cout<<"(p"<<p<<") # local ent: v "<<global_entity_count[p*4]
+      std::cout<<"(p"<<p<<") # local mesh ent: v "<<global_entity_count[p*4]
         <<", e "<<global_entity_count[p*4+1]
         <<", f "<<global_entity_count[p*4+2]
         <<", r "<<global_entity_count[p*4+3]<<"\n";

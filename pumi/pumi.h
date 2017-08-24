@@ -132,14 +132,17 @@ void pumi_geom_freeze(pGeom g); // shall be called after modifying model entitie
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
+void pumi_geom_print(pGeom g, int print_ent=0);
+
 // Geometric Entity
 // get geometric entity's dimension
 int pumi_gent_getDim(pGeomEnt ge);
 // get geometric entity's local id (note local==global for geometric model)
 int pumi_gent_getID(pGeomEnt ge);
 void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
-int pumi_gent_getNumAdj (pGeomEnt g, int target_dim);
-void pumi_gent_getAdj (pGeomEnt g, int target_dim, std::vector<pGeomEnt>& ents);
+int pumi_gent_getNumAdj (pGeomEnt g, int tgtType);
+void pumi_gent_getAdj (pGeomEnt g, int tgtType, std::vector<pGeomEnt>& ents);
+void pumi_gent_get2ndAdj (pGeomEnt e, int brgType, int tgtType, std::vector<pGeomEnt>& ents);
 
 // Tag management
 pTag pumi_geom_createTag (pGeom g, const char* tagName, int tagType, int tagSize);
@@ -185,7 +188,7 @@ void pumi_gent_getEntArrTag (pGeomEnt ent, pTag tag, pGeomEnt** data, int* data_
 //************************************
 
 // create an empty mesh
-pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic=false);
+pMesh pumi_mesh_create(pGeom g, int meshDim, bool periodic=false);
 void pumi_mesh_freeze(pMesh m);
 pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz);
 //ent_topology: VERTEX (0), EDGE (1), TRIANGLE (2), QUAD (3), TET (4), HEX (5), PRISM (6), PYRAMID (7)
