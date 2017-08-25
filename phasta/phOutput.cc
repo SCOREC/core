@@ -186,27 +186,39 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
 
 static void checkBoundaryVertex(apf::Mesh* m,
   apf::MeshEntity* boundary, apf::MeshEntity** ev, int type) {
-// make sure the first n vertices are those on boundary
+/* make sure the first n vertices are those on boundary
+   for all types of element except wedge_quad and pyramid_tri */
   apf::Downward bv;
   int flag = 0;
   int nbv = m->getDownward(boundary, 0, bv);
+
+  const int id[2][5] = {{0,1,2,3,4}, {0,1,4,3,2}};
+  int row;
+
+  if (type == WEDGE_QUAD || type == PYRAMID_TRI)
+    row = 1;
+  else
+    row = 0;
+
   for (int k = 0; k < nbv; ++k) {
-    for (int kk = 0; kk < nbv; ++kk)
-      if (ev[kk] == bv[k]) {
+    for (int kk = 0; kk < nbv; ++kk) {
+      if (ev[id[row][kk]] == bv[k]) {
         flag = 1;
         break;
       }
+    }
     PCU_ALWAYS_ASSERT(flag == 1);
-	flag = 0;
+    flag = 0;
   }
+
 // make sure the normal direction is consistent with PHASTA
   apf::Vector3 p[4];
   for (int i = 0; i < 3; ++i)
-    m->getPoint(ev[i], 0, p[i]);
-  m->getPoint(ev[nbv], 0, p[3]);
-  if (type == TETRAHEDRON) // outward
+    m->getPoint(ev[id[row][i]], 0, p[i]);
+  m->getPoint(ev[id[row][nbv]], 0, p[3]);
+  if (type == TETRAHEDRON || type == WEDGE_QUAD || type == PYRAMID_TRI) // outward
     PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
-  else if (type == WEDGE) // inward
+  else // inward
     PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) > 0);
 }
 
@@ -255,9 +267,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::Downward v;
     getBoundaryVertices(m, e, f, v);
     ienb[i][j] = new int[nv];
-	/* assume the first face is the tri on boundary */
-	if(k.elementType == WEDGE)
-      checkBoundaryVertex(m, f, v, k.elementType);
+    checkBoundaryVertex(m, f, v, k.elementType);
     for (int k = 0; k < nv; ++k)
       ienb[i][j][k] = apf::getNumber(n, v[k], 0, 0);
     bcb[i][j] = new double[nbc]();
@@ -633,9 +643,6 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 
   int nec = countEssentialBCs(in);
   int& ei = o.nEssentialBCNodes;
-  int nv = m->count(0);
-
-  printf("rank: %d; already %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), ei, nv);
 
   apf::Copies remotes;
   apf::MeshEntity* vent;
@@ -722,8 +729,6 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
         o.arrays.bc[o.arrays.nbc[vID]-1][k] = rbc[k];
     }
   }
-
-  printf("rank: %d; end with %d entries in iBC array. nv = %d\n", PCU_Comm_Self(), o.nEssentialBCNodes, nv);
 
 // transfer entity to numbering
   o.arrays.igclvid = new int[o.nLayeredMeshVertices];
