@@ -167,11 +167,13 @@ static void cutEntities(apf::Mesh2* m, FieldBCs& fbcs, MaterialMap& mm)
     m->end(it);
     for (size_t i = 0; i < toCut.size(); ++i)
       cutEntity(m, mm, toCut[i]);
+    printf("cut %zd entities in dimension %d\n",toCut.size(),d);
   }
 }
 
 void cutInterface(apf::Mesh2* m, BCs& bcs)
 {
+  printf("execute PUMI cut interface\n");
   std::string name("DG interface");
   if (!haveBC(bcs, name))
     ph::fail("no DG interface attributes!");
