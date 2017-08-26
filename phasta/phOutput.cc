@@ -184,6 +184,8 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.mattype = mattype;
 }
 
+/* make sure the ordering of boundary vertices consistent
+   with SCOREC/phasta wiki "ordering of vertices by topology" */
 static void checkBoundaryVertex(apf::Mesh* m,
   apf::MeshEntity* boundary, apf::MeshEntity** ev, int type) {
 /* make sure the first n vertices are those on boundary
