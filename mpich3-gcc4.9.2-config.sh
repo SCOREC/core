@@ -1,5 +1,5 @@
 ZOLTAN_DIR=/lore/seol/mpich3-gcc4.9.2-install
-PARMETIS_DIR=/lore/esyoon/openlib/petsc-3.7.5-gcc-4.9.2
+PARMETIS_DIR=/lore/esyoon/openlib/petsc-3.7.5-mpich3-gcc-4.9.2
 PREFIX=/lore/seol/mpich3-gcc4.9.2-install
 
 cmake .. \
@@ -17,6 +17,6 @@ cmake .. \
   -DCMAKE_BUILD_TYPE=Debug \
   -DBUILD_EXES=ON \
   -DIS_TESTING=ON \
-  -DMESHES=/users/seol/develop/meshes \
+  -DMESHES=/fasttmp/seol/scorec/meshes \
   -DMPIRUN=/usr/local/mpich3/latest/bin/mpirun
 

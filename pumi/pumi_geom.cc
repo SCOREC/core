@@ -63,8 +63,8 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
     return NULL;
   }
 
-  if (!PCU_Comm_Self() && filename)
-    printf("model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+//  if (!PCU_Comm_Self() && filename)
+    printf("(%d) model %s loaded in %f seconds\n", PCU_Comm_Self(), filename, PCU_Time() - t0);
 
   return pumi::instance()->model;
 }
@@ -154,7 +154,7 @@ void pumi_giter_reset(gIter iter)
   iter->reset();
 }
 
-void pumi_geom_print (pGeom g, int print_ent)
+void pumi_geom_print (pGeom g, bool print_ent)
 {
   if (PCU_Comm_Self()) return;
   std::cout<<"\n=== model entity and tag info === \n";

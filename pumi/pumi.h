@@ -132,7 +132,7 @@ void pumi_geom_freeze(pGeom g); // shall be called after modifying model entitie
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
-void pumi_geom_print(pGeom g, int print_ent=0);
+void pumi_geom_print(pGeom g, bool print_ent=false);
 
 // Geometric Entity
 // get geometric entity's dimension
@@ -341,7 +341,7 @@ void pumi_mesh_deleteGlobalID(pMesh m);
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
 
 // print mesh size info - global and local
-void pumi_mesh_print(pMesh m, int print_ent=0);
+void pumi_mesh_print(pMesh m, bool print_ent=false);
 
 //************************************
 //  Mesh Entity

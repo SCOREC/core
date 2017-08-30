@@ -350,7 +350,7 @@ void print_copies(pMesh m, pMeshEnt e)
   }
 }
 
-void pumi_mesh_print (pMesh m, int print_ent)
+void pumi_mesh_print (pMesh m, bool print_ent)
 {
   if (!m->findTag("global_id")) pumi_mesh_createGlobalID(m);
 
