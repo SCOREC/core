@@ -87,31 +87,6 @@ pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); 
 //************************************
 // Node numbering
 //************************************
-pGlobalNumbering pumi_numbering_globalize(pNumbering n)
-{
-  return apf::makeGlobal(n, false);
-}
-
-void pumi_numbering_deleteGlobal(pGlobalNumbering gn)
-{
-  apf::destroyGlobalNumbering(gn);
-}
-
-int pumi_mesh_getNumGlobalNumbering (pMesh m)
-{
-  return m->countGlobalNumberings();
-}
-
-pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i)
-{
-  return m->getGlobalNumbering(i);
-}
-
-long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
-{
-  return apf::getNumber(gn, e, node, component);
-}
-
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o)
 {
   return numberOwnedDimension(m, name, dim, o);
@@ -145,6 +120,10 @@ int pumi_numbering_getNumNode(pNumbering n)
   return apf::countNodes(n);
 }
 
+void pumi_numbering_globalize(pNumbering n)
+{
+  return apf::globalize(n);
+}
 //************************************
 //  Field Management
 //************************************ 
@@ -171,9 +150,17 @@ std::string pumi_field_getName(pField f)
 { 
   return apf::getName(f); 
 }
+
 pShape pumi_field_getShape (pField f)
 {
   return apf::getShape(f);
+}
+
+pNumbering pumi_field_getNumbering (pField f)
+{
+  pNumbering n = f->getMesh()->findNumbering(apf::getShape(f)->getName());
+  if (n) return n;
+  return NULL;
 }
 
 void pumi_field_delete(pField f)
