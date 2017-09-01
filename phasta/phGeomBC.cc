@@ -321,6 +321,9 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     writeInt(f, "number of interface tpblocks", o.blocks.interface.getSize());
   writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
 
+  if (o.arrays.gmattype)
+    writeInts(f, "material type of all elements", o.arrays.gmattype, m->count(m->getDimension()));
+
   if (o.hasDGInterface)
     writeInts(f, "DG interface flag", o.arrays.interfaceFlag, m->count(0));
 
