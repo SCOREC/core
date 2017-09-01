@@ -87,29 +87,80 @@ pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); 
 //************************************
 // Node numbering
 //************************************
+
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o)
-{
+{  
+  pNumbering n = m->findNumbering(name);
+  if (n) 
+  {
+    if (!pumi_rank()) 
+      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
+    return n;
+  }
+
   return numberOwnedDimension(m, name, dim, o);
 }
 
 pNumbering pumi_numbering_create
    (pMesh m, const char* name, pShape shape, int num_component)
 {
+  pNumbering n = m->findNumbering(name);
+  if (n) 
+  {
+    if (!pumi_rank()) 
+      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
+    return n;
+  }
+
   if (!shape) shape= m->getShape();
   return createNumbering(m, name, shape, num_component);
 }
 
 pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape)
 {
+  pNumbering n = m->findNumbering(name);
+  if (n) 
+  {
+    if (!pumi_rank()) 
+      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
+    return n;
+  }
+
   if (!shape) shape= m->getShape();
   return numberOverlapNodes(m, name, shape);
 }
 
 pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape, pOwnership o)
 {
+  pNumbering n = m->findNumbering(name);
+  if (n) 
+  {
+    if (!pumi_rank()) 
+      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
+    return n;
+  }
+
    if (!shape) shape= m->getShape();
    return numberOwnedNodes(m, name, shape, o);
 }
+
+pNumbering pumi_numbering_createGlobalNode(pMesh m, const char* name, pShape s, pOwnership o)
+{
+  pNumbering n = m->findNumbering(name);
+  if (n) 
+  {
+    if (!pumi_rank()) 
+      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
+    return n;
+  }
+
+  if (!s) s= m->getShape();
+  n = numberOwnedNodes(m, name, s, o);
+  apf::globalize(n);
+  synchronize(n, o); 
+  return n;
+}
+
 void pumi_numbering_delete(pNumbering n)
 {
   destroyNumbering(n);
@@ -120,10 +171,7 @@ int pumi_numbering_getNumNode(pNumbering n)
   return apf::countNodes(n);
 }
 
-void pumi_numbering_globalize(pNumbering n)
-{
-  return apf::globalize(n);
-}
+
 //************************************
 //  Field Management
 //************************************ 

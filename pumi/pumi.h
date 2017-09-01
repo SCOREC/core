@@ -464,17 +464,17 @@ pShape pumi_shape_getHierarchic (int order);
 //  Node numbering
 //************************************
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
-pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape=NULL);
 pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o=NULL);
+pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape=NULL);
 pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
+pNumbering pumi_numbering_createGlobalNode(pMesh m, const char* name, pShape s=NULL, pOwnership o=NULL);
 void pumi_numbering_delete(pNumbering n);
 int pumi_numbering_getNumNode(pNumbering n);
-void pumi_numbering_globalize(pNumbering n);
+
 
 //************************************
 //  Field Management
 //************************************
-
 pField pumi_field_create(pMesh m, const char* name,
     int num_dof_per_node, int field_type=PUMI_PACKED, pShape shape = NULL);
 int pumi_field_getSize(pField f);
