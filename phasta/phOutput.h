@@ -45,9 +45,6 @@ struct EnsaArrays
  */
   int*** ienif0;
   int*** ienif1;
-/* gmattype[i] is the material type of
-   each element */
-  int* gmattype;
 /* mattype[i][j] is the material type of
    element j of
    interior block i */

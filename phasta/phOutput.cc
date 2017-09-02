@@ -139,7 +139,6 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   Blocks& bs = o.blocks.interior;
   int*** ien     = new int**[bs.getSize()];
   int**  mattype = 0;
-  int*  gmattype = new int[m->count(m->getDimension())];
   if (bcs.fields.count("material type"))
     mattype = new int* [bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
@@ -149,7 +148,6 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
       mattype[i] = new int [bs.nElements[i]];
     js[i] = 0;
   }
-  int iel = 0;
   gmi_model* gm = m->getModel();
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(m->getDimension());
@@ -175,8 +173,6 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
       std::string s("material type");
       FieldBCs& fbcs = bcs.fields[s];
       double* matval = getBCValue(gm, fbcs, ge, x);
-      gmattype[iel] = *matval;
-      iel++;
       mattype[i][j] = *matval;
     }
     ++js[i];
@@ -186,7 +182,6 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
     PCU_ALWAYS_ASSERT(js[i] == bs.nElements[i]);
   o.arrays.ien     = ien;
   o.arrays.mattype = mattype;
-  o.arrays.gmattype = gmattype;
 }
 
 /* make sure the ordering of boundary vertices consistent
@@ -856,7 +851,6 @@ Output::~Output()
   delete [] arrays.iper;
   delete [] arrays.globalNodeNumbers;
   Blocks& ibs = blocks.interior;
-  if (arrays.gmattype) delete [] arrays.gmattype;
   for (int i = 0; i < ibs.getSize(); ++i) {
     for (int j = 0; j < ibs.nElements[i]; ++j)
       delete [] arrays.ien    [i][j];
