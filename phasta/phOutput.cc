@@ -139,7 +139,7 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
   Blocks& bs = o.blocks.interior;
   int*** ien     = new int**[bs.getSize()];
   int**  mattype = 0;
-  int*  gmattype = 0;
+  int*  gmattype = new int[m->count(m->getDimension())];
   if (bcs.fields.count("material type"))
     mattype = new int* [bs.getSize()];
   apf::NewArray<int> js(bs.getSize());
@@ -150,8 +150,6 @@ static void getInterior(Output& o, BCs& bcs, apf::Numbering* n)
     js[i] = 0;
   }
   int iel = 0;
-  if (mattype)
-    gmattype = new int[m->count(m->getDimension())];
   gmi_model* gm = m->getModel();
   apf::MeshEntity* e;
   apf::MeshIterator* it = m->begin(m->getDimension());
