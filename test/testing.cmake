@@ -67,13 +67,15 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
    "${MDIR}/mesh.sms"
    "${MDIR}/mesh_cut.sms"
    WORKING_DIRECTORY ${MDIR})
-  add_test(NAME partition_sim
-    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_part
-   "${MDIR}/model_nat.x_t"
-   "${MDIR}/model.smd"
-   "${MDIR}/mesh_cut.sms"
-   4
-   WORKING_DIRECTORY ${MDIR})
+  if(SIM_DOT_VERSION VERSION_GREATER 11.0-170826)
+    mpi_test(partition_sim 4
+     ${CMAKE_CURRENT_BINARY_DIR}/sim_part
+     "${MDIR}/model_nat.x_t"
+     "${MDIR}/model.smd"
+     "${MDIR}/mesh_cut.sms"
+     4
+     WORKING_DIRECTORY ${MDIR})
+  endif()
   if(SIMMODSUITE_SimAdvMeshing_FOUND)
     add_test(NAME countBL_cut_mesh
       COMMAND ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
@@ -82,13 +84,15 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
      "${MDIR}/mesh_cut.sms"
      3504
      WORKING_DIRECTORY ${MDIR})
-    mpi_test(countBL_part_mesh 4
-     ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
-     "${MDIR}/model_nat.x_t"
-     "${MDIR}/model.smd"
-     "${MDIR}/outmesh_4_parts.sms"
-     3504
-     WORKING_DIRECTORY ${MDIR})
+    if(SIM_DOT_VERSION VERSION_GREATER 11.0-170826)
+      mpi_test(countBL_part_mesh 4
+       ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
+       "${MDIR}/model_nat.x_t"
+       "${MDIR}/model.smd"
+       "${MDIR}/outmesh_4_parts.sms"
+       3504
+       WORKING_DIRECTORY ${MDIR})
+    endif()
   endif()
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
