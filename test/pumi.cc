@@ -148,13 +148,13 @@ int main(int argc, char** argv)
       pumi_mesh_write(m,"mesh.smb");
   }
 
-  pNumbering ln=pumi_numbering_createLocalNode (m, "local");
+  pNumbering ln=pumi_numbering_createLocal (m, "local");
   pMeshEnt e;
   pMeshIter mit = m->begin(0);
   while ((e = m->iterate(mit)))
   {
-    assert(pumi_ment_isNumbered(e, ln));
-    assert(pumi_ment_getNumber(e, ln)==pumi_ment_getID(e));
+    assert(pumi_node_isNumbered(ln, e));
+    assert(pumi_node_getNumber(ln, e)==pumi_ment_getID(e));
   }
   m->end(mit);
   pumi_numbering_delete(ln);
@@ -715,7 +715,7 @@ void TEST_FIELD(pMesh m)
           xyz[i] = pumi_ment_getGlobalID(e);
       else 
         pumi_node_getCoord(e, 0, xyz);
-      pumi_ment_setField(e, f, 0, xyz);
+      pumi_node_setField(f, e, 0, xyz);
     }
     m->end(it);
 
@@ -727,7 +727,7 @@ void TEST_FIELD(pMesh m)
   while ((e = m->iterate(it)))
   {
     pumi_node_getCoord(e, 0, xyz);
-    pumi_ment_getField(e, f, 0, data);
+    pumi_node_getField(f, e, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e)) 
         assert(data[i] == pumi_ment_getGlobalID(e));
@@ -842,7 +842,7 @@ void TEST_GHOSTING(pMesh m)
   while ((e = m->iterate(it)))
   {
     pumi_node_getCoord(e, 0, xyz);
-    pumi_ment_getField(e, f, 0, data);
+    pumi_node_getField(f, e, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e))
         assert(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));

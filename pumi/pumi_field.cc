@@ -10,11 +10,11 @@
 #include "pumi.h"
 #include "apf.h"
 #include "apfShape.h"
-#include "apfNumbering.h"
 #include "apfFieldData.h"
 #include <assert.h>
 #include <PCU.h>
 #include <cstdlib> // for malloc and free
+#include <iostream>
 
 //************************************
 // Field shape and nodes
@@ -56,7 +56,7 @@ void pumi_node_getCoordVector(pMeshEnt e, int i, Vector3& xyz)
 }
 
 
-void pumi_node_setCoord(pMeshEnt e,int i, double* xyz)
+void pumi_node_setCoord(pMeshEnt e, int i, double* xyz)
 {
   Vector3 coord;
   for (int k=0; k<3; ++k)
@@ -83,93 +83,6 @@ pShape pumi_shape_getIP (int dimension, int order) { return apf::getIPShape(dime
 pShape pumi_shape_getVoronoi (int dimension, int order) { return apf::getVoronoiShape(dimension, order); }
 pShape pumi_shape_getIPFit(int dimension, int order) { return apf::getIPFitShape(dimension, order); }
 pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); }
-
-//************************************
-// Node numbering
-//************************************
-
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o)
-{  
-  pNumbering n = m->findNumbering(name);
-  if (n) 
-  {
-    if (!pumi_rank()) 
-      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
-    return n;
-  }
-
-  return numberOwnedDimension(m, name, dim, o);
-}
-
-pNumbering pumi_numbering_create
-   (pMesh m, const char* name, pShape shape, int num_component)
-{
-  pNumbering n = m->findNumbering(name);
-  if (n) 
-  {
-    if (!pumi_rank()) 
-      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
-    return n;
-  }
-
-  if (!shape) shape= m->getShape();
-  return createNumbering(m, name, shape, num_component);
-}
-
-pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape)
-{
-  pNumbering n = m->findNumbering(name);
-  if (n) 
-  {
-    if (!pumi_rank()) 
-      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
-    return n;
-  }
-
-  if (!shape) shape= m->getShape();
-  return numberOverlapNodes(m, name, shape);
-}
-
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape, pOwnership o)
-{
-  pNumbering n = m->findNumbering(name);
-  if (n) 
-  {
-    if (!pumi_rank()) 
-      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
-    return n;
-  }
-
-   if (!shape) shape= m->getShape();
-   return numberOwnedNodes(m, name, shape, o);
-}
-
-pNumbering pumi_numbering_createGlobalNode(pMesh m, const char* name, pShape s, pOwnership o)
-{
-  pNumbering n = m->findNumbering(name);
-  if (n) 
-  {
-    if (!pumi_rank()) 
-      std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
-    return n;
-  }
-
-  if (!s) s= m->getShape();
-  n = numberOwnedNodes(m, name, s, o);
-  apf::globalize(n);
-  synchronize(n, o); 
-  return n;
-}
-
-void pumi_numbering_delete(pNumbering n)
-{
-  destroyNumbering(n);
-}
-
-int pumi_numbering_getNumNode(pNumbering n)
-{
-  return apf::countNodes(n);
-}
 
 
 //************************************
@@ -255,13 +168,13 @@ pField pumi_mesh_getField(pMesh m, int i)
 }
 
 //*******************************************************
-void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data)
+void pumi_node_getField ( pField f, pMeshEnt e, int i, double* dof_data)
 //*******************************************************
 {
   apf::getComponents(f, e, i, dof_data);
 }    
 
-void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data)
+void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data)
 {
   apf::setComponents(f, e, i, dof_data);
 }

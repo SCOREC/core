@@ -63,7 +63,7 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
     return NULL;
   }
 
-//  if (!PCU_Comm_Self() && filename)
+  if (!PCU_Comm_Self() && filename)
     printf("(%d) model %s loaded in %f seconds\n", PCU_Comm_Self(), filename, PCU_Time() - t0);
 
   return pumi::instance()->model;

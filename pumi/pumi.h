@@ -431,11 +431,24 @@ void pumi_ment_getAllGhost (pMeshEnt e, Copies&);
 pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 
 //************************************
-// Mesh entity numbering
+//  Node numbering
 //************************************
-void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number);
-int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node=0, int component=0);
-bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n);
+pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
+pNumbering pumi_numbering_createLocal (pMesh m, const char* name, pShape shape=NULL);
+pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
+pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s=NULL, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o=NULL);
+
+void pumi_numbering_delete(pNumbering n);
+int pumi_numbering_getNumNode(pNumbering n);
+
+void pumi_node_setNumber(pNumbering nb, pMeshEnt e, int n, int c, int number);
+int pumi_node_getNumber(pNumbering nb, pMeshEnt e, int n=0, int c=0);
+bool pumi_node_isNumbered(pNumbering nb, pMeshEnt e, int n=0, int c=0);
+
+void pumi_node_getField (pField f, pMeshEnt e, int i, double* dof_data);
+void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data);
 
 //************************************
 // Field shape and nodes
@@ -461,27 +474,18 @@ pShape pumi_shape_getIPFit(int dimension, int order);
 pShape pumi_shape_getHierarchic (int order);
 
 //************************************
-//  Node numbering
-//************************************
-pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o=NULL);
-pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape=NULL);
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
-pNumbering pumi_numbering_createGlobalNode(pMesh m, const char* name, pShape s=NULL, pOwnership o=NULL);
-void pumi_numbering_delete(pNumbering n);
-int pumi_numbering_getNumNode(pNumbering n);
-
-
-//************************************
 //  Field Management
 //************************************
 pField pumi_field_create(pMesh m, const char* name,
     int num_dof_per_node, int field_type=PUMI_PACKED, pShape shape = NULL);
+
+void pumi_node_getField (pField f, pMeshEnt e, int i, double* dof_data);
+void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data);
+
 int pumi_field_getSize(pField f);
 int pumi_field_getType(pField f);
 std::string pumi_field_getName(pField f);
 pShape pumi_field_getShape (pField f);
-
 pNumbering pumi_field_getNumbering(pField f);
 
 void pumi_field_delete(pField f);
@@ -492,8 +496,7 @@ void pumi_field_unfreeze(pField f);
 pField pumi_mesh_findField(pMesh m, const char* name);
 int pumi_mesh_getNumField(pMesh m);
 pField pumi_mesh_getField(pMesh m, int i);
-void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data);
-void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data);
+
 void pumi_field_copy(pField f, pField r);
 void pumi_field_add(pField f1, pField f2, pField r);
 void pumi_field_multiply(pField f, double d, pField r);

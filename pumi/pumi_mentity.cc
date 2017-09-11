@@ -12,7 +12,6 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
-#include <apfNumbering.h>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -253,7 +252,11 @@ void pumi_ment_setPtnTopology (pMeshEnt)
 int pumi_ment_getGlobalID(pMeshEnt e)
 {
   pMeshTag tag = pumi::instance()->mesh->findTag("global_id");
-  if (!tag) return -1;
+  if (!tag) 
+  {
+    std::cout<<"[PUMI ERROR] "<<__func__<<": call pumi_mesh__createGlobalID first\n";
+    return -1;
+  }
   int global_id;
   pumi::instance()->mesh->getIntTag(e, tag, &global_id);
   return global_id;
@@ -321,19 +324,4 @@ pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int pid)
   Copies ghosts;
   pumi::instance()->mesh->getGhosts(e,ghosts);
   return ghosts[pid];
-}
-
-void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number)
-{
-  apf::number(n, e, node, component, number);
-}
-
-int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
-{
-  return apf::getNumber(n, e, node, component);
-}
-
-bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n)
-{
-  return apf::isNumbered(n, e, 0, 0);
 }

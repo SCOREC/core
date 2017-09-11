@@ -310,7 +310,10 @@ int pumi_mesh_getNumOwnEnt(pMesh m, int dim)
 { 
   assert(pumi::instance()->num_own_ent);
   if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 
-    std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is out-dated. Please call pumi_mesh_setCount\n";
+  {
+    std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is not set. Please call pumi_mesh_setCount\n";
+    return -1;
+  }
   return pumi::instance()->num_own_ent[dim];
 }
 
@@ -318,9 +321,13 @@ int pumi_mesh_getNumGlobalEnt(pMesh m, int dim)
 { 
   assert(pumi::instance()->num_global_ent);
   if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 
-    std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is out-dated. Please call pumi_mesh_setCount\n";
+  {
+    std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is not set. Please call pumi_mesh_setCount\n";
+    return -1;
+  }
   return pumi::instance()->num_global_ent[dim];
 }
+
 pMeshEnt pumi_mesh_findEnt(pMesh m, int d, int id)
 {
   return getMdsEntity(m, d, id);
