@@ -76,6 +76,7 @@ typedef apf::Field* pField;
 typedef apf::FieldShape* pShape;
 typedef apf::Numbering* pNumbering;
 typedef apf::Vector3 Vector3; // 3d vector
+typedef apf::Adjacent Adjacent; // adjacency container
 typedef apf::Sharing Ownership;
 typedef apf::Sharing* pOwnership;
 // singleton to save model/mesh
@@ -359,11 +360,13 @@ int pumi_ment_getGlobalID(pMeshEnt e);
 // get # adjacent entities
 int pumi_ment_getNumAdj(pMeshEnt e, int tgtType);
 
-// get adjacent entities
+// get adjacent entitities with std::vector
 void pumi_ment_getAdj(pMeshEnt e, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
-
-// get 2nd-order adjacent entities
 void pumi_ment_get2ndAdj (pMeshEnt e, int brgType, int tgtType, std::vector<pMeshEnt>& vecAdjEnt);
+
+// get adjacent entitities with Adjacenct and return #result entities (faster than std::vector)
+int pumi_ment_getAdjacent(pMeshEnt e, int tgtType, Adjacent& result);
+int pumi_ment_get2ndAdjacent(pMeshEnt e, int brgType, int tgtType, Adjacent& result);
 
 // return entity's geometric classification
 pGeomEnt pumi_ment_getGeomClas(pMeshEnt e);
@@ -435,10 +438,9 @@ pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 //************************************
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
 pNumbering pumi_numbering_createLocal (pMesh m, const char* name, pShape shape=NULL);
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
 pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s=NULL, pOwnership o=NULL);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwn (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwnDim (pMesh m, const char* name, int dim, pOwnership o=NULL);
 
 void pumi_numbering_delete(pNumbering n);
 int pumi_numbering_getNumNode(pNumbering n);
@@ -478,9 +480,6 @@ pShape pumi_shape_getHierarchic (int order);
 //************************************
 pField pumi_field_create(pMesh m, const char* name,
     int num_dof_per_node, int field_type=PUMI_PACKED, pShape shape = NULL);
-
-void pumi_node_getField (pField f, pMeshEnt e, int i, double* dof_data);
-void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data);
 
 int pumi_field_getSize(pField f);
 int pumi_field_getType(pField f);
