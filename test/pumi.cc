@@ -18,22 +18,22 @@ const char* outFile = 0;
 int num_in_part = 0;
 int do_distr=0;
 
-struct testSharing : public Sharing 
+struct testOwnership : public Ownership 
 {
-  testSharing(pMesh m)
-  { shr = new apf::NormalSharing(m); }
-  ~testSharing()
-  { delete shr; }
+  testOwnership(pMesh m)
+  { o = new apf::NormalSharing(m); }
+  ~testOwnership()
+  { delete o; }
   int getOwner(pMeshEnt e)
-  { return shr->getOwner(e); }
+  { return o->getOwner(e); }
   bool isOwned(pMeshEnt e)
-  { return shr->isOwned(e); }
+  { return o->isOwned(e); }
   /* this will only be called for global masters */
-  void getCopies(pMeshEnt e, apf::CopyArray& copies)
-  { shr->getCopies(e, copies); }
+  void getCopies(pMeshEnt e, CopyArray& copies)
+  { o->getCopies(e, copies); }
   bool isShared(pMeshEnt  e)
-  { return shr->isShared(e); }
-  pSharing shr;
+  { return o->isShared(e); }
+  pOwnership o;
 };
 
 void getConfig(int argc, char** argv)
@@ -49,7 +49,7 @@ void getConfig(int argc, char** argv)
   outFile = argv[3];
   if (argc>=4)
     num_in_part = atoi(argv[4]);
-if (argc>=5)
+  if (argc>=5)
     do_distr = atoi(argv[5]);
 }
 
@@ -148,7 +148,16 @@ int main(int argc, char** argv)
       pumi_mesh_write(m,"mesh.smb");
   }
 
+  pNumbering ln=pumi_numbering_createLocal (m, "local");
   pMeshEnt e;
+  pMeshIter mit = m->begin(0);
+  while ((e = m->iterate(mit)))
+  {
+    PCU_ALWAYS_ASSERT(pumi_node_isNumbered(ln, e));
+    PCU_ALWAYS_ASSERT(pumi_node_getNumber(ln, e)==pumi_ment_getID(e));
+  }
+  m->end(mit);
+  pumi_numbering_delete(ln);
 
   // distribution: sending an element to multiple parts. Element may have remote copies.
   if (do_distr)
@@ -214,15 +223,7 @@ int main(int argc, char** argv)
 
   TEST_GHOSTING(m);
 
-  // delete numbering and ID
-  std::vector<pGlobalNumbering> numberings;
-  int num_gn=pumi_mesh_getNumGlobalNumbering(m);
-  for (int i=0; i<num_gn;++i)
-    numberings.push_back(pumi_mesh_getGlobalNumbering(m, i));
-  PCU_ALWAYS_ASSERT(pumi_mesh_getNumGlobalNumbering(m)==(int)numberings.size());
-
-  for (int i=0; i<(int)numberings.size(); ++i)
-    pumi_numbering_deleteGlobal(numberings.at(i));
+  // delete global ID
   pumi_mesh_deleteGlobalID(m);
 
   // delete fields
@@ -235,6 +236,7 @@ int main(int argc, char** argv)
   TEST_MESH_TAG(m);
 
   // clean-up 
+  pumi_geom_delete(g);
   pumi_mesh_delete(m);
 
   // print elapsed time and increased heap memory
@@ -683,13 +685,21 @@ void TEST_FIELD(pMesh m)
   double data[3];
   double xyz[3];
 
+
+  pOwnership o=new testOwnership(m);
+// user-defined ownership can be fed to the following functions 
+//int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o=NULL); 
+//pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o=NULL); 
+//bool pumi_ment_isOwned(pMeshEnt e, pOwnership o=NULL);
+// void pumi_field_synchronize(pField f, pOwnership o=NULL);
+//void pumi_field_accumulate(pField f, pOwnership o=NULL);
+//void pumi_field_synchronize(pField f, pOwnership o=NULL);
+//void pumi_field_verify(pMesh m, pField f=NULL, pOwnership o=NULL);
+
   // create field and set the field data
   if (!f)
   {
     f=pumi_field_create(m, "xyz_field", num_dofs_per_node);
-    // create global numbering
-    pumi_numbering_createGlobal(m, "xyz_numbering", pumi_field_getShape(f));
-
     PCU_ALWAYS_ASSERT(pumi_field_getName(f)==std::string("xyz_field"));
     PCU_ALWAYS_ASSERT(pumi_field_getType(f)==PUMI_PACKED);
     PCU_ALWAYS_ASSERT(pumi_field_getSize(f)==num_dofs_per_node);
@@ -697,24 +707,27 @@ void TEST_FIELD(pMesh m)
     
     while ((e = m->iterate(it)))
     {
-      if (!pumi_ment_isOwned(e)) continue;
+      // FIXME: if use "new testOwnership(m)", memory leak
+      if (!pumi_ment_isOwned(e, o)) continue; 
+      PCU_ALWAYS_ASSERT (pumi_ment_getOwnPID(e, o)==o->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
           xyz[i] = pumi_ment_getGlobalID(e);
       else 
         pumi_node_getCoord(e, 0, xyz);
-      pumi_ment_setField(e, f, 0, xyz);
+      pumi_node_setField(f, e, 0, xyz);
     }
     m->end(it);
 
-    pumi_field_synchronize(f, new testSharing(m));
-  }
+    pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
+    pumi_field_synchronize(f, new testOwnership(m));  // ownership object is deleted apf::synchronizeFieldData
+  } 
 
   it = m->begin(0);
   while ((e = m->iterate(it)))
   {
     pumi_node_getCoord(e, 0, xyz);
-    pumi_ment_getField(e, f, 0, data);
+    pumi_node_getField(f, e, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e)) 
         PCU_ALWAYS_ASSERT(data[i] == pumi_ment_getGlobalID(e));
@@ -722,7 +735,8 @@ void TEST_FIELD(pMesh m)
         PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);
-  pumi_field_verify(m, f, new testSharing(m));
+  pumi_field_verify(m, f, o);
+  delete o;
 }
 
 Ghosting* getGhostingPlan(pMesh m)
@@ -822,13 +836,13 @@ void TEST_GHOSTING(pMesh m)
   double data[3];
   double xyz[3];
 
-  pumi_field_accumulate(f, new testSharing(m));
+  pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
 
   pMeshIter it = m->begin(0);
   while ((e = m->iterate(it)))
   {
     pumi_node_getCoord(e, 0, xyz);
-    pumi_ment_getField(e, f, 0, data);
+    pumi_node_getField(f, e, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e))
         PCU_ALWAYS_ASSERT(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));

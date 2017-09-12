@@ -21,7 +21,7 @@ void FieldData::rename(const char*)
 }
 
 template <class T>
-void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr)
+void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
@@ -70,62 +70,24 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr)
       data->set(e,&(values[0]));
     }
   }
-  delete shr;
+  if (delete_shr) delete shr;
 }
 
 /* instantiate here */
-template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*);
-template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*);
-template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*);
+template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*, bool);
+template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*, bool);
+template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*, bool);
 
-template <class T>
-class CopyOp : public FieldOp
-{
-  public:
-    CopyOp(FieldDataOf<T>* ld,
-         FieldDataOf<T>* rd)
-    {
-      from = ld;
-      to = rd;
-    }
-    bool inEntity(MeshEntity* e)
-    {
-      if (from->hasEntity(e))
-      {
-        int n = from->getField()->countValuesOn(e);
-        NewArray<T> v(n);
-        from->get(e,&(v[0]));
-        to->set(e,&(v[0]));
-      }
-      return false;
-    }
-    void run() {apply(to->getField());}
-    FieldDataOf<T>* from;
-    FieldDataOf<T>* to;
-};
-
-template <class T>
-void copyFieldData(FieldDataOf<T>* to, FieldDataOf<T>* from)
-{
-  CopyOp<T> copier(from,to);
-  copier.run();
-}
-
-/* instantiate here */
-template void copyFieldData<int>(
-    FieldDataOf<int>* to, FieldDataOf<int>* from);
-template void copyFieldData<double>(
-    FieldDataOf<double>* to, FieldDataOf<double>* from);
-template void copyFieldData<long>(
-    FieldDataOf<long>* to, FieldDataOf<long>* from);
-
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
+void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
   FieldShape* s = f->getShape();
   if (!shr)
+  {
     shr = getSharing(m);
+    delete_shr=true;
+  }
   for (int d=0; d < 4; ++d)
   {
     if ( ! s->hasNodesIn(d))
@@ -170,7 +132,7 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr)
         data->set(e,&(values[0]));
       }
   } /* broadcast back out to non-owners */
-  synchronizeFieldData(data, shr);
+  synchronizeFieldData(data, shr, delete_shr);
 }
 
 template <class T>
@@ -265,5 +227,139 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 template class FieldDataOf<double>;
 template class FieldDataOf<int>;
 template class FieldDataOf<long>;
+
+template <class T>
+class CopyOp : public FieldOp
+{
+  public:
+    CopyOp(FieldDataOf<T>* ld,
+         FieldDataOf<T>* rd)
+    {
+      from = ld;
+      to = rd;
+    }
+    bool inEntity(MeshEntity* e)
+    {
+      if (from->hasEntity(e))
+      {
+        int n = from->getField()->countValuesOn(e);
+        NewArray<T> v(n);
+        from->get(e,&(v[0]));
+        to->set(e,&(v[0]));
+      }
+      return false;
+    }
+    void run() {apply(to->getField());}
+    FieldDataOf<T>* from;
+    FieldDataOf<T>* to;
+};
+
+template <class T>
+void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to)
+{
+  CopyOp<T> copier(from,to);
+  copier.run();
+}
+
+/* instantiate here */
+template void copyFieldData<int>(
+    FieldDataOf<int>* from, FieldDataOf<int>* to);
+template void copyFieldData<double>(
+    FieldDataOf<double>* from, FieldDataOf<double>* to);
+template void copyFieldData<long>(
+    FieldDataOf<long>* from, FieldDataOf<long>* to);
+
+template <class T>
+class MultiplyOp : public FieldOp
+{
+  public:
+    MultiplyOp(FieldDataOf<T>* ld, T d,
+         FieldDataOf<T>* rd)
+    {
+      from = ld;
+      to = rd;
+      mult = d;
+    }
+    bool inEntity(MeshEntity* e)
+    {
+      if (from->hasEntity(e))
+      {
+        int n = from->getField()->countValuesOn(e);
+        NewArray<T> v(n);
+        from->get(e,&(v[0]));
+        for (int i=0; i<n; ++i)
+          v[i]*=mult;
+        to->set(e,&(v[0]));
+      }
+      return false;
+    }
+    void run() {apply(to->getField());}
+    FieldDataOf<T>* from;
+    T mult;
+    FieldDataOf<T>* to;
+};
+
+template <class T>
+void multiplyFieldData(FieldDataOf<T>* from, T d, FieldDataOf<T>* to)
+{
+  MultiplyOp<T> multiplier(from,d,to);
+  multiplier.run();
+}
+
+/* instantiate here */
+template void multiplyFieldData<int>(
+    FieldDataOf<int>* from, int d, FieldDataOf<int>* to);
+template void multiplyFieldData<double>(
+    FieldDataOf<double>* from, double d, FieldDataOf<double>* to);
+template void multiplyFieldData<long>(
+    FieldDataOf<long>* from, long d, FieldDataOf<long>* to);
+
+
+template <class T>
+class AddOp : public FieldOp
+{
+  public:
+    AddOp(FieldDataOf<T>* ld1, FieldDataOf<T>* ld2,
+         FieldDataOf<T>* rd)
+    {
+      from1 = ld1;
+      from2 = ld2;
+      to = rd;
+    }
+    bool inEntity(MeshEntity* e)
+    {
+      if (from1->hasEntity(e) && from2->hasEntity(e))
+      {
+        int n = from1->getField()->countValuesOn(e);
+        NewArray<T> v1(n);
+        from1->get(e,&(v1[0]));
+        NewArray<T> v2(n);
+        from2->get(e,&(v2[0]));
+        for (int i=0; i<n; ++i)
+          v1[i]+=v2[i];
+        to->set(e,&(v1[0]));
+      }
+      return false;
+    }
+    void run() {apply(to->getField());}
+    FieldDataOf<T>* from1;
+    FieldDataOf<T>* from2;
+    FieldDataOf<T>* to;
+};
+
+template <class T>
+void addFieldData(FieldDataOf<T>* from1, FieldDataOf<T>* from2, FieldDataOf<T>* to)
+{
+  AddOp<T> adder(from1,from2,to);
+  adder.run();
+}
+
+/* instantiate here */
+template void addFieldData<int>(
+    FieldDataOf<int>*, FieldDataOf<int>*,FieldDataOf<int>*);
+template void addFieldData<double>(
+    FieldDataOf<double>*, FieldDataOf<double>*, FieldDataOf<double>*);
+template void addFieldData<long>(
+    FieldDataOf<long>*, FieldDataOf<long>*, FieldDataOf<long>*);
 
 }
