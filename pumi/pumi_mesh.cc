@@ -302,7 +302,7 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
 int pumi_mesh_getNumEnt(pMesh m, int dim)
 { return m->count(dim); }
 
-int pumi_mesh_getNumOwnedEnt(pMesh m, int dim)
+int pumi_mesh_getNumOwnEnt(pMesh m, int dim)
 { 
   PCU_ALWAYS_ASSERT(pumi::instance()->num_own_ent);
   if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 

@@ -222,7 +222,7 @@ int pumi_mesh_getDim(pMesh m);
 void pumi_mesh_setCount(pMesh m, pOwnership o=NULL);
  int pumi_mesh_getNumEnt(pMesh m, int d);
 int pumi_mesh_getNumGlobalEnt(pMesh m, int d);
-int pumi_mesh_getNumOwnedEnt(pMesh m, int d);
+int pumi_mesh_getNumOwnEnt(pMesh m, int d);
 pMeshEnt pumi_mesh_findEnt(pMesh m, int d, int id);
 
 //************************************
@@ -446,10 +446,9 @@ pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int partID);
 //************************************
 pNumbering pumi_numbering_create (pMesh m, const char* name, pShape shape=NULL, int num_component=1);
 pNumbering pumi_numbering_createLocal (pMesh m, const char* name, pShape shape=NULL);
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
 pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s=NULL, pOwnership o=NULL);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwn (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
+pNumbering pumi_numbering_createOwnDim (pMesh m, const char* name, int dim, pOwnership o=NULL);
 
 void pumi_numbering_delete(pNumbering n);
 int pumi_numbering_getNumNode(pNumbering n);
