@@ -227,7 +227,8 @@ Numbering* numberNodes(
     Mesh* mesh,
     const char* name,
     FieldShape* s,
-    Sharing* shr)
+    Sharing* shr, 
+    bool delete_shr)
 {
   Numbering* n = createNumbering(mesh,name,s,1);
   int i=0;
@@ -247,22 +248,27 @@ Numbering* numberNodes(
     }
     mesh->end(it);
   }
-  delete shr;
+  if (delete_shr) delete shr;
   return n;
 }
 
-Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim)
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim,
+    Sharing* shr)
 {
-  FieldShape* s = getConstant(dim);
-  Sharing* shr = getSharing(mesh);
-  return numberNodes(mesh, name, s, shr);
+  bool delete_shr=false;
+  if (!shr) 
+  {
+    shr = getSharing(mesh);
+    delete_shr=true;
+  }
+  return numberNodes(mesh, name, getConstant(dim), shr, delete_shr);
 }
 
 Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim)
 {
   FieldShape* s = getConstant(dim);
   Sharing* shr = new NoSharing();
-  return numberNodes(mesh, name, s, shr);
+  return numberNodes(mesh, name, s, shr, true);
 }
 
 Numbering* numberElements(Mesh* mesh, const char* name)
@@ -275,7 +281,7 @@ Numbering* numberOverlapNodes(Mesh* mesh, const char* name, FieldShape* s)
   if (!s)
     s = mesh->getShape();
   Sharing* shr = new NoSharing();
-  return numberNodes(mesh, name, s, shr);
+  return numberNodes(mesh, name, s, shr, true);
 }
 
 Numbering* numberOwnedNodes(
@@ -286,9 +292,13 @@ Numbering* numberOwnedNodes(
 {
   if (!s)
     s = mesh->getShape();
+  bool delete_shr=false;
   if (!shr)
+  {
     shr = getSharing(mesh);
-  return numberNodes(mesh, name, s, shr);
+    delete_shr=true;
+  }
+  return numberNodes(mesh, name, s, shr, delete_shr);
 }
 
 class Counter : public FieldOp

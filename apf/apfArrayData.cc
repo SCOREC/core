@@ -97,7 +97,7 @@ void freezeFieldData(FieldBase* field)
   /* get the old data store */
   FieldDataOf<T>* oldData = static_cast<FieldDataOf<T>*>(field->getData());
   /* call the set function to fill with values */
-  copyFieldData<T>(newData,oldData);
+  copyFieldData<T>(oldData,newData);
   /* replace the old data store with this one */
   field->changeData(newData);
 }
@@ -111,7 +111,7 @@ void unfreezeFieldData(FieldBase* field) {
   // get the old data store
   FieldDataOf<T>* oldData = static_cast<FieldDataOf<T>*>(field->getData());
   // call set function to fill with values
-  copyFieldData<T>(newData,oldData);
+  copyFieldData<T>(oldData,newData);
   // replace old data store with this one
   field->changeData(newData);
 }

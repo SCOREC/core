@@ -14,9 +14,10 @@ cmake .. \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.so" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.so" \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
-  -DCMAKE_BUILD_TYPE=Debug \
+  -DSCOREC_CXX_WARNINGS=ON \
   -DBUILD_EXES=ON \
   -DIS_TESTING=ON \
-  -DMESHES=/users/seol/develop/meshes \
-  -DMPIRUN=/usr/local/mpich3/latest/bin/mpirun
+  -DMESHES=/fasttmp/seol/scorec/meshes \
+  -DMPIRUN=/usr/local/mpich3/latest/bin/mpirun \
+  -DCMAKE_BUILD_TYPE=Debug
 

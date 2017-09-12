@@ -33,12 +33,18 @@ template <class T>
 class FieldDataOf;
 
 template <class T>
-void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr);
+void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr=true);
+
+void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=true);
 
 template <class T>
-void copyFieldData(FieldDataOf<T>* to, FieldDataOf<T>* from);
+void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to);
 
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr);
+template <class T>
+void multiplyFieldData(FieldDataOf<T>* from, T d, FieldDataOf<T>* to);
+
+template <class T>
+void addFieldData(FieldDataOf<T>* from1, FieldDataOf<T>* from2, FieldDataOf<T>* to);
 
 template <class T>
 class FieldDataOf : public FieldData

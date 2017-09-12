@@ -19,6 +19,7 @@ set(SOURCES
   pumi_mesh.cc
   pumi_mentity.cc
   pumi_mtag.cc
+  pumi_numbering.cc
   pumi_sys.cc
 )
 
