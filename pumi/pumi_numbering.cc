@@ -49,7 +49,7 @@ pNumbering pumi_numbering_createLocal (pMesh m, const char* name, pShape shape)
   return numberOverlapNodes(m, name, shape);
 }
 
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape, pOwnership o)
+pNumbering pumi_numbering_createOwn (pMesh m, const char* name, pShape shape, pOwnership o)
 {
   pNumbering n = m->findNumbering(name);
   if (n) 
@@ -80,12 +80,7 @@ pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s, pOwn
   return n;
 }
 
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, pShape shape, pOwnership o)
-{
-  return pumi_numbering_createOwnedNode (m, name, shape, o);
-}
-
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim, pOwnership o)
+pNumbering pumi_numbering_createOwnDim (pMesh m, const char* name, int dim, pOwnership o)
 {  
   pNumbering n = m->findNumbering(name);
   if (n) 

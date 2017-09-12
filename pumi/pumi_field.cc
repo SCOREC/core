@@ -178,6 +178,25 @@ void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data)
   apf::setComponents(f, e, i, dof_data);
 }
 
+// copy f1 to f2
+void pumi_field_copy(pField f1, pField f2)
+{
+  copyFieldData(f1->getData(), f2->getData());
+}
+
+// add f1 to f2 and save it to f3
+void pumi_field_add(pField f1, pField f2, pField f3)
+{
+  addFieldData(f1->getData(), f2->getData(),f3->getData());
+}
+
+
+// multiply f1 and d and save it to f2
+void pumi_field_multiply(pField f1, double d, pField f2)
+{
+  multiplyFieldData(f1->getData(), d, f2->getData());
+}
+
 #include "apfField.h"
 #include "apfFieldData.h"
 #include <iostream>
@@ -468,15 +487,23 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
       pMeshIter it = m->begin(d);
       pMeshEnt e;
       while ((e = m->iterate(it)))
-        sendFieldData(m, e, f, nf, shr);
+        sendFieldData(m, e, fields[nf], nf, shr);
       m->end(it);
       PCU_Comm_Send();
       receiveFieldData(fields,mismatch_fields); 
     }
   }
   int global_size = PCU_Max_Int((int)mismatch_fields.size());
-  if (global_size&&!PCU_Comm_Self())
+  if (global_size)
+  {
+    if (!PCU_Comm_Self())
     for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
-      printf("%s: \"%s\" data mismatch over remote/ghost copies\n", __func__, getName(*it));
+      printf("%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
+  }
+  else
+  {
+    if (!PCU_Comm_Self())
+      printf("%s: no DOF mismatch\n", __func__);
+  }
 }
 
