@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -10,6 +10,7 @@
 #include "pumi.h"
 #include "apf.h"
 #include "apfShape.h"
+#include "apfFieldData.h"
 #include "apfNumbering.h"
 #include <pcu_util.h>
 #include <PCU.h>
@@ -84,76 +85,6 @@ pShape pumi_shape_getIPFit(int dimension, int order) { return apf::getIPFitShape
 pShape pumi_shape_getHierarchic (int order) { return apf::getHierarchic(order); }
 
 //************************************
-// Node numbering
-//************************************
-
-pGlobalNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape shape, int num_component)
-{
-  if (!shape) shape= m->getShape();
-  return apf::createGlobalNumbering(m, name, shape, num_component);
-}
-
-void pumi_numbering_deleteGlobal(pGlobalNumbering gn)
-{
-  apf::destroyGlobalNumbering(gn);
-}
-
-int pumi_mesh_getNumGlobalNumbering (pMesh m)
-{
-  return m->countGlobalNumberings();
-}
-
-pGlobalNumbering pumi_mesh_getGlobalNumbering (pMesh m, int i)
-{
-  return m->getGlobalNumbering(i);
-}
-
-void pumi_ment_setGlobalNumber(pMeshEnt e, pGlobalNumbering gn,
-    int node, int component, long number)
-{
-  apf::Node n(e,node);
-  apf::number(gn, n, component, number);
-}
-
-long pumi_ment_getGlobalNumber(pMeshEnt e, pGlobalNumbering gn, int node, int component)
-{
-  return apf::getNumber(gn, e, node, component);
-}
-
-pNumbering pumi_numbering_createLocalNode (pMesh m, const char* name, pShape shape)
-{
-  if (!shape) shape= m->getShape();
-  return numberOverlapNodes(m, name, shape);
-}
-
-pNumbering pumi_numbering_createOwned (pMesh m, const char* name, int dim)
-{
-  return numberOwnedDimension(m, name, dim);
-}
-
-pNumbering pumi_numbering_create
-   (pMesh m, const char* name, pShape shape, int num_component)
-{
-  if (!shape) shape= m->getShape();
-  return createNumbering(m, name, shape, num_component);
-}
-
-pNumbering pumi_numbering_createOwnedNode (pMesh m, const char* name, pShape shape)
-{
-   if (!shape) shape= m->getShape();
-   return numberOwnedNodes(m, name, shape);
-}
-void pumi_numbering_delete(pNumbering n)
-{
-  destroyNumbering(n);
-}
-
-int pumi_numbering_getNumNode(pNumbering n)
-{
-  return apf::countNodes(n);
-}
-
-//************************************
 //  Field Management
 //************************************ 
 
@@ -179,9 +110,17 @@ std::string pumi_field_getName(pField f)
 { 
   return apf::getName(f); 
 }
+
 pShape pumi_field_getShape (pField f)
 {
   return apf::getShape(f);
+}
+
+pNumbering pumi_field_getNumbering (pField f)
+{
+  pNumbering n = f->getMesh()->findNumbering(apf::getShape(f)->getName());
+  if (n) return n;
+  return NULL;
 }
 
 void pumi_field_delete(pField f)
@@ -189,14 +128,14 @@ void pumi_field_delete(pField f)
   apf::destroyField(f);
 }
 
-void pumi_field_synchronize(pField f, pSharing shr)
+void pumi_field_synchronize(pField f, pOwnership o)
 {  
-  apf::synchronize(f, shr);
+  apf::synchronizeFieldData<double>(f->getData(), o, false);
 }
 
-void pumi_field_accumulate(pField f, pSharing shr)
+void pumi_field_accumulate(pField f, pOwnership o)
 {  
-  apf::accumulate(f, shr);
+  apf::accumulateFieldData(f->getData(), o, false);
 }
 
 void pumi_field_freeze(pField f)
@@ -228,15 +167,34 @@ pField pumi_mesh_getField(pMesh m, int i)
 }
 
 //*******************************************************
-void pumi_ment_getField (pMeshEnt e, pField f, int i, double* dof_data)
+void pumi_node_getField (pField f, pMeshEnt e, int i, double* dof_data)
 //*******************************************************
 {
   apf::getComponents(f, e, i, dof_data);
 }    
 
-void pumi_ment_setField (pMeshEnt e, pField f, int i, double* dof_data)
+void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data)
 {
   apf::setComponents(f, e, i, dof_data);
+}
+
+// copy f1 to f2
+void pumi_field_copy(pField f1, pField f2)
+{
+  copyFieldData(f1->getData(), f2->getData());
+}
+
+// add f1 to f2 and save it to f3
+void pumi_field_add(pField f1, pField f2, pField f3)
+{
+  addFieldData(f1->getData(), f2->getData(),f3->getData());
+}
+
+
+// multiply f1 and d and save it to f2
+void pumi_field_multiply(pField f1, double d, pField f2)
+{
+  multiplyFieldData(f1->getData(), d, f2->getData());
 }
 
 #include "apfField.h"
@@ -401,7 +359,7 @@ void pumi_field_print(pField f)
 }
 
 // VERIFY FIELDS
-static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pSharing shr)
+static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pOwnership shr)
 {
   void* msg_send;
   pMeshEnt* s_ent;
@@ -491,7 +449,7 @@ static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mism
   } // while
 }
 
-void pumi_field_verify(pMesh m, pField f, pSharing shr)
+void pumi_field_verify(pMesh m, pField f, pOwnership shr)
 {
   int n = m->countFields();
   if (!n) return;
@@ -529,15 +487,23 @@ void pumi_field_verify(pMesh m, pField f, pSharing shr)
       pMeshIter it = m->begin(d);
       pMeshEnt e;
       while ((e = m->iterate(it)))
-        sendFieldData(m, e, f, nf, shr);
+        sendFieldData(m, e, fields[nf], nf, shr);
       m->end(it);
       PCU_Comm_Send();
       receiveFieldData(fields,mismatch_fields); 
     }
   }
   int global_size = PCU_Max_Int((int)mismatch_fields.size());
-  if (global_size&&!PCU_Comm_Self())
+  if (global_size)
+  {
+    if (!PCU_Comm_Self())
     for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
-      printf("%s: \"%s\" data mismatch over remote/ghost copies\n", __func__, getName(*it));
+      printf("%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
+  }
+  else
+  {
+    if (!PCU_Comm_Self())
+      printf("%s: no DOF mismatch\n", __func__);
+  }
 }
 

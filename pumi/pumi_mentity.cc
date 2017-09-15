@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -159,33 +159,32 @@ pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
 }
 
 // owner part information
-int pumi_ment_getOwnPID(pMeshEnt e, pSharing shr)
+int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o)
 {
-  if (!shr)
+  if (!o)
     return pumi::instance()->mesh->getOwner(e);
-  return shr->getOwner(e);
+  return o->getOwner(e); 
 }
 
-pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pSharing shr)
+pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 {
   if (!(pumi::instance()->mesh->isShared(e))) // internal ent
     return e;
-
   int own_partid;
-  if (!shr)
-    own_partid=pumi::instance()->mesh->getOwner(e);
+  if (!o)
+    own_partid= pumi::instance()->mesh->getOwner(e);
   else
-    own_partid=shr->getOwner(e);
+    own_partid=o->getOwner(e);
 
   if (own_partid==pumi_rank()) return e;
   return pumi_ment_getRmt(e, own_partid);
 }
 
-bool pumi_ment_isOwned(pMeshEnt e, pSharing shr)
+bool pumi_ment_isOwned(pMeshEnt e, pOwnership o)
 {  
-  if (!shr) 
+  if (!o) 
     return (pumi::instance()->mesh->getOwner(e)==pumi_rank());
-  return shr->isOwned(e);
+  return o->isOwned(e);
 }
 
 bool pumi_ment_isOn(pMeshEnt e, int partID)
@@ -260,7 +259,11 @@ void pumi_ment_setPtnTopology (pMeshEnt)
 int pumi_ment_getGlobalID(pMeshEnt e)
 {
   pMeshTag tag = pumi::instance()->mesh->findTag("global_id");
-  if (!tag) return -1;
+  if (!tag) 
+  {
+    std::cout<<"[PUMI ERROR] "<<__func__<<": call pumi_mesh__createGlobalID first\n";
+    return -1;
+  }
   int global_id;
   pumi::instance()->mesh->getIntTag(e, tag, &global_id);
   return global_id;
@@ -328,19 +331,4 @@ pMeshEnt pumi_ment_getGhost(pMeshEnt& e, int pid)
   Copies ghosts;
   pumi::instance()->mesh->getGhosts(e,ghosts);
   return ghosts[pid];
-}
-
-void pumi_ment_setNumber(pMeshEnt e, pNumbering n, int node, int component, int number)
-{
-  apf::number(n, e, node, component, number);
-}
-
-int pumi_ment_getNumber(pMeshEnt e, pNumbering n, int node, int component)
-{
-  return apf::getNumber(n, e, node, component);
-}
-
-bool pumi_ment_isNumbered(pMeshEnt e, pNumbering n)
-{
-  return apf::isNumbered(n, e, 0, 0);
 }

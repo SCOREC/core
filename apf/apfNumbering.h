@@ -95,7 +95,7 @@ int countFixed(Numbering* n);
 void synchronize(Numbering * n, Sharing* shr = 0);
 
 /** \brief number the local owned entities of a given dimension */
-Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim);
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim, Sharing* shr = 0);
 /** \brief number all local entities of a given dimension */
 Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim);
 /** \brief number the local elements */

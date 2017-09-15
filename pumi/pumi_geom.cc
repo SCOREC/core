@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2016 Scientific Computation Research Center, 
+  (c) 2004-2017 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -67,6 +67,13 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
     printf("model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
 
   return pumi::instance()->model;
+}
+
+void pumi_geom_delete(pGeom g)
+{
+  for (int i=0; i<4; ++i)
+    for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
+      delete *gent_it;
 }
 
 void pumi_geom_freeze(pGeom g)
@@ -145,4 +152,48 @@ void pumi_giter_delete(gIter iter)
 void pumi_giter_reset(gIter iter)
 {
   iter->reset();
+}
+
+void pumi_geom_print (pGeom g, bool print_ent)
+{
+  if (PCU_Comm_Self()) return;
+  std::cout<<"\n=== model entity and tag info === \n";
+  std::cout<<"# global geom ent: v "<<g->size(0)<<", e "
+           <<g->size(1)<<", f "<<g->size(2)<<", r "<<g->size(3)<<"\n";
+
+  std::vector<pTag> tags;
+  pumi_geom_getTag (g, tags);
+  int n = (int) tags.size();
+  for (int i = 0; i < n; ++i) 
+    std::cout<<"tag "<<i<<": \""<< Tag_GetName(tags[i])<<"\", type "
+             << pumi_tag_getType(tags[i])<<", size "<< pumi_tag_getSize(tags[i])<<"\n";
+
+  // print model entities
+  if (!print_ent) return;
+
+  const char* name[4] = {"vtx", "edge", "face", "rgn"};
+  for (int d=0; d<4; ++d)
+  {
+    for (pGeomIter gent_it = g->begin(d); gent_it!=g->end(d);++gent_it)
+    {
+      std::cout<<"geom "<<name[d]<<" "<<pumi_gent_getID(*gent_it)<<": ";
+      if (d) 
+      {
+        for (int adj_d=0; adj_d<d; ++adj_d)
+        {
+          std::vector<pGeomEnt> adj;
+          pumi_gent_getAdj (*gent_it, adj_d, adj);
+          if (adj.size()) 
+          {
+            if (adj_d) std::cout<<", ";
+            std::cout<<name[adj_d];
+            for (std::vector<pGeomEnt>::iterator git=adj.begin(); git!=adj.end(); ++git)
+              std::cout<<" "<<pumi_gent_getID(*git);
+          }        
+        }
+      }
+      std::cout<<"\n";
+    }
+  }
+  std::cout<<"\n";
 }
