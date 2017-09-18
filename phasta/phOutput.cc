@@ -74,7 +74,7 @@ static void getM2GFields(Output& o) {
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
   int n = m->count(0);
-  int* classinfo = new int[n * 2];
+  int* classinfo = new int[n * 3];
   double* params = new double[n * 2];
   apf::MeshEntity* v;
   apf::Vector3 pm;
@@ -84,6 +84,7 @@ static void getM2GFields(Output& o) {
     gmi_ent* ge = (gmi_ent*)m->toModel(v);
     int dim = gmi_dim(gm,ge);
     int tag = gmi_tag(gm,ge);
+    int dis = gmi_is_discrete_ent(gm,ge);
     if (dim > 2) { // region vertex has no param coord
       for (int j = 0; j < 3; ++j)
         pm[j] = 0.0;
@@ -91,8 +92,9 @@ static void getM2GFields(Output& o) {
     else {
       m->getParam(v, pm);
     }
-    classinfo[i]   = dim;
-    classinfo[n+i] = tag;
+    classinfo[i]     = dim;
+    classinfo[n+i]   = tag;
+    classinfo[2*n+i] = dis;
     for (int j = 0; j < 2; ++j)
       params[j * n + i] = pm[j];
     ++i;
