@@ -346,6 +346,11 @@ static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   return 0;
 }
 
+static int is_discrete_ent(struct gmi_model*, struct gmi_ent* e)
+{
+  return GEN_isDiscreteEntity((pGEntity)e);
+}
+
 static void destroy(gmi_model* m)
 {
   sim_model* mm = (sim_model*)m;
@@ -416,6 +421,7 @@ void gmi_register_sim(void)
   ops.first_derivative = first_derivative;
   ops.is_point_in_region = is_point_in_region;
   ops.is_in_closure_of = is_in_closure_of;
+  ops.is_discrete_ent = is_discrete_ent;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
   gmi_register(create_native, "xmt_txt");

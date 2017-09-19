@@ -138,6 +138,11 @@ int gmi_is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   return m->ops->is_in_closure_of(m, e, et);
 }
 
+int gmi_is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
+{
+  return m->ops->is_discrete_ent(m, e);
+}
+
 void gmi_destroy(struct gmi_model* m)
 {
   m->ops->destroy(m);
