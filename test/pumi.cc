@@ -198,6 +198,10 @@ int main(int argc, char** argv)
     m = pumi_mesh_load(g, meshFile, num_in_part); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
 
+  pOwnership o=new testOwnership(m);
+  pumi_ownership_verify(m, o);
+  delete o;
+
   if (!pumi_rank()) std::cout<<"\n[test_pumi] clean loaded tags from the mesh file\n";
   std::vector<pMeshTag> tag_vec;
   for (size_t n = 0; n<tag_vec.size(); ++n)
@@ -687,6 +691,7 @@ void TEST_FIELD(pMesh m)
 
 
   pOwnership o=new testOwnership(m);
+
 // user-defined ownership can be fed to the following functions 
 //int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o=NULL); 
 //pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o=NULL); 
