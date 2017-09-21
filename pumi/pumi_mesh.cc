@@ -504,6 +504,67 @@ void pumi_mesh_verify(pMesh m, bool abort_on_error)
   apf::verify(m, abort_on_error);
 }
 
+#include <assert.h>
+
+void pumi_ownership_verify(pMesh m, pOwnership o)
+{
+  if (!pumi::instance()->num_local_ent)
+    pumi_mesh_setCount(m, o);
+
+    int num_own_ent, own_partid, mesh_dim = m->getDimension()-1;
+    pMeshEnt e;
+    pMeshEnt own_copy;
+    pMeshEnt remote_copy;
+
+    for (int d=0; d<mesh_dim+1; ++d)
+    {
+      num_own_ent=0;
+      pMeshIter it = m->begin(d);
+      while ((e = m->iterate(it)))
+      {
+          own_partid = pumi_ment_getOwnPID(e,o);
+          own_copy = pumi_ment_getOwnEnt(e,o);
+          if (!own_copy)
+          {
+            std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getOwnEnt(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<") not found\n";
+            print_copies(m,e);
+          }
+          assert(own_copy);
+          if (own_partid==PCU_Comm_Self()) 
+          {
+            ++num_own_ent;
+            if (own_copy!=e)
+            {
+              std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getOwnEnt(dim "<<d<<", id "<<pumi_ment_getID(e)<<") is not self copy\n";
+              print_copies(m,e);
+            }
+            assert(own_copy==e);
+          }
+          else
+          {
+            remote_copy = pumi_ment_getRmt(e, own_partid); 
+            if (!remote_copy)
+            {
+              std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getRmt(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<") not found\n";
+              print_copies(m,e);
+            }
+            if (own_copy!=remote_copy)
+            {
+              std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getRmt and pumi_ment_getOwnEnt mismatch for e(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<")\n";
+              print_copies(m,e);
+            }
+            assert(own_copy==remote_copy);
+          }
+      }
+      m->end(it);
+      if (pumi_mesh_getNumOwnEnt(m, d) != num_own_ent)
+         std::cout<<"[ERROR] "<<__func__<<": (pumi_mesh_getNumOwnEnt(m, "<<d<<")"<<pumi_mesh_getNumOwnEnt(m, d)<<", num_own_ent "<<num_own_ent<<"\n";
+      assert (pumi_mesh_getNumOwnEnt(m, d) == num_own_ent);
+    } // for
+
+  if (!pumi_rank()) std::cout<<__func__<<": ownership is valid\n";
+}
+
 Distribution::Distribution(pMesh mesh)
 {
   m = mesh;

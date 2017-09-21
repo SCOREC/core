@@ -339,7 +339,8 @@ void pumi_mesh_deleteGlobalID(pMesh m);
 
 // verify mesh
 void pumi_mesh_verify(pMesh m, bool abort_on_error=true);
-
+// verify user-defined ownership and mesh counter
+void pumi_ownership_verify(pMesh m, pOwnership o);
 // print mesh size info - global and local
 void pumi_mesh_print(pMesh m, bool print_ent=false);
 
