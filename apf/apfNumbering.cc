@@ -212,7 +212,9 @@ int countFixed(Numbering* n)
 
 void synchronize(Numbering * n, Sharing* shr)
 {
-  synchronizeFieldData<int>(n->getData(), shr);
+  bool delete_shr = true;
+  if (shr) delete_shr = false;
+  synchronizeFieldData<int>(n->getData(), shr, delete_shr);
 }
 
 struct NoSharing : public Sharing
