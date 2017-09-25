@@ -251,4 +251,149 @@ void adapt(ma::Input* in)
   delete in;
 }
 
+
+static void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities,
+    std::vector<double> &curvedQualities)
+{
+  int order = m->getShape()->getOrder();
+
+  ma::Entity* e;
+  ma::Iterator* it;
+
+  // linear qualities
+  it = m->begin(m->getDimension());
+  while( (e = m->iterate(it)) )
+    linearQualities.push_back(ma::measureElementQuality(m, sf, e));
+  m->end(it);
+
+  // curved qualities
+  if (order == 1)
+    curvedQualities = std::vector<double>(linearQualities.size(), 0.0);
+  else {
+    crv::Quality* qual = makeQuality(m, 2);
+    it = m->begin(m->getDimension());
+    while( (e = m->iterate(it)) ) {
+      curvedQualities.push_back(qual->getQuality(e));
+    }
+    m->end(it);
+  }
+
+  // edge lengths
+  it = m->begin(1);
+  while( (e = m->iterate(it)) ) {
+    apf::MeshElement* me = createMeshElement(m, e);
+    ma::Matrix Q;
+    sf->getTransform(me, ma::Vector(0., 0., 0.), Q);
+    apf::destroyMeshElement(me);
+    edgeLengths.push_back(ma::qMeasure(m, e, Q));
+  }
+  m->end(it);
+}
+
+static void getStatsInPhysicalSpaces(ma::Mesh* m,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities,
+    std::vector<double> &curvedQualities)
+{
+  int order = m->getShape()->getOrder();
+
+  ma::Entity* e;
+  ma::Iterator* it;
+
+  // linear qualities
+  it = m->begin(m->getDimension());
+  while( (e = m->iterate(it)) ) {
+    if (m->getType(e) == apf::Mesh::TRIANGLE) {
+      ma::Vector p[3];
+      ma::getVertPoints(m, e, p);
+      double l[3];
+      for (int i = 0; i < 3; i++)
+	l[i] = (p[(i+1)%3] - p[i]).getLength();
+      double A = 0.5 * apf::cross(p[1] - p[0], p[2] - p[0])[2];
+      double s = 0;
+      for (int i = 0; i < 3; i++)
+	s += l[i] * l[i];
+      double lq;
+      if (A < 0)
+	lq = -48. * (A*A) / (s*s);
+      else
+	lq =  48. * (A*A) / (s*s);
+      linearQualities.push_back(lq);
+    }
+    else if (m->getType(e) == apf::Mesh::TET){
+      ma::Vector p[4];
+      ma::getVertPoints(m, e, p);
+      linearQualities.push_back(ma::measureLinearTetQuality(p));
+    }
+  }
+  m->end(it);
+
+  // curved qualities
+  if (order == 1)
+    curvedQualities = std::vector<double>(linearQualities.size(), 0.0);
+  else {
+    crv::Quality* qual = makeQuality(m, 2);
+    it = m->begin(m->getDimension());
+    while( (e = m->iterate(it)) ) {
+      curvedQualities.push_back(qual->getQuality(e));
+    }
+    m->end(it);
+  }
+
+  // edge lengths
+  it = m->begin(1);
+  while( (e = m->iterate(it)) ) {
+    apf::MeshElement* me = createMeshElement(m, e);
+    ma::Matrix Q = ma::Matrix(1.0, 0.0, 0.0,
+			      0.0, 1.0, 0.0,
+			      0.0, 0.0, 1.0);;
+    apf::destroyMeshElement(me);
+    edgeLengths.push_back(ma::qMeasure(m, e, Q));
+  }
+  m->end(it);
+}
+
+/** \brief Measures entity related quantities for a given mesh
+  \details  quantities include normalized edge length, linear quality
+  and curved quality. The values can be computed in both metric (if
+  inMetric = true) and physical (if inMetric = false) spaces.*/
+void stats(ma::Input* in,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities,
+    std::vector<double> &curvedQualities,
+    bool inMetric)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(in->mesh),
+      "crv::stats expects an all simplex mesh!");
+  std::string name = in->mesh->getShape()->getName();
+  /* int order = in->mesh->getShape()->getOrder(); */
+  if(name != std::string("Bezier"))
+    fail("mesh must be bezier to adapt\n");
+
+  edgeLengths.clear();
+  linearQualities.clear();
+  curvedQualities.clear();
+
+  ma::validateInput(in);
+  Adapt* a = new Adapt(in);
+
+  ma::Mesh* m = a->mesh;
+  ma::SizeField* sf = a->sizeField;
+
+  /* if (order > 1) */
+  /*   in->shapeHandler = crv::getShapeHandler(a); */
+  /* else */
+
+
+  if (inMetric)
+    getStatsInMetricSpace(m, sf, edgeLengths, linearQualities, curvedQualities);
+  else
+    getStatsInPhysicalSpaces(m, edgeLengths, linearQualities, curvedQualities);
+
+  delete a;
+  delete in;
+}
+
 }
