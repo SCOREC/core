@@ -10,11 +10,12 @@
 #include "pumi.h"
 #include "apf.h"
 #include "apfShape.h"
+#include "apfFieldData.h"
 #include "apfNumbering.h"
+#include "apfNumberingClass.h"
 #include <assert.h>
 #include <PCU.h>
 #include <iostream>
-
 
 //************************************
 // Node numbering
@@ -63,6 +64,7 @@ pNumbering pumi_numbering_createOwn (pMesh m, const char* name, pShape shape, pO
    return numberOwnedNodes(m, name, shape, o);
 }
 
+
 pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s, pOwnership o)
 {
   pNumbering n = m->findNumbering(name);
@@ -76,7 +78,7 @@ pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s, pOwn
   if (!s) s= m->getShape();
   n = numberOwnedNodes(m, name, s, o);
   apf::globalize(n);
-  synchronize(n, o); 
+  apf::synchronizeFieldData<int>(n->getData(), o, false); //synchronize(n, o); 
   return n;
 }
 

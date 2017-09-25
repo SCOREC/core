@@ -590,7 +590,7 @@ void pumi_ownership_verify(pMesh m, pOwnership o)
       }
       m->end(it);
       if (pumi_mesh_getNumOwnEnt(m, d) != num_own_ent)
-         std::cout<<"[ERROR] "<<__func__<<": (pumi_mesh_getNumOwnEnt(m, "<<d<<")"<<pumi_mesh_getNumOwnEnt(m, d)<<", num_own_ent "<<num_own_ent<<"\n";
+         std::cout<<"[ERROR] "<<__func__<<": pumi_mesh_getNumOwnEnt(m, "<<d<<") "<<pumi_mesh_getNumOwnEnt(m, d)<<", num_own_ent "<<num_own_ent<<" -- check isOwned!\n";
       assert (pumi_mesh_getNumOwnEnt(m, d) == num_own_ent);
     } // for
 
