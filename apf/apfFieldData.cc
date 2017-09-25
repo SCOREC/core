@@ -27,7 +27,10 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
   Mesh* m = f->getMesh();
   FieldShape* s = f->getShape();
   if (!shr)
+  {
     shr = getSharing(m);
+    delete_shr=true;
+  }
   for (int d=0; d < 4; ++d)
   {
     if ( ! s->hasNodesIn(d))
