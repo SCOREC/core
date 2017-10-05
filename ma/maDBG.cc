@@ -63,11 +63,12 @@ void measureLinearQualties(ma::Adapt* a,
     std::vector<double> &lq, bool inMetric)
 {
   ma::Mesh* m = a->mesh;
+  int dim = m->getDimension();
   ma::SizeField* sf = a->sizeField;
   ma::Entity* e;
   ma::Iterator* it;
 
-  it = m->begin(3);
+  it = m->begin(dim);
   while ( (e = m->iterate(it)) ) {
     if (inMetric) {
       lq.push_back(ma::measureElementQuality(m, sf, e, true));
@@ -113,8 +114,8 @@ void dumpMeshWithQualities(ma::Adapt* a, int iter, const char* prefix)
     lq_metric[i] = cbrt(lq_metric[i]);
     lq_no_metric[i] = cbrt(lq_no_metric[i]);
   }
-  colorEntitiesOfDimWithQual(a, 3, lq_metric, "qual_metric");
-  colorEntitiesOfDimWithQual(a, 3, lq_no_metric, "qual_no_metric");
+  colorEntitiesOfDimWithQual(a, a->mesh->getDimension(), lq_metric, "qual_metric");
+  colorEntitiesOfDimWithQual(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
 
   // setup file name and write the mesh
   std::stringstream ss;
