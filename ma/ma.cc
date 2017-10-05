@@ -44,6 +44,7 @@ void adapt(Input* in, bool verbose)
     snap(a);
 #endif
     if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_snapping");
+    alignElements(a, i, true);
   }
   allowSplitCollapseOutsideLayer(a);
 #ifndef DO_FPP
