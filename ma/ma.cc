@@ -40,16 +40,11 @@ void adapt(Input* in, bool verbose)
     midBalance(a);
     refine(a);
     if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_refining");
-#ifdef DO_FPP
     snap(a);
-#endif
     if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_snapping");
     alignElements(a, i, true);
   }
   allowSplitCollapseOutsideLayer(a);
-#ifndef DO_FPP
-  snap(a);
-#endif
   fixElementShapes(a,verbose);
   cleanupLayer(a);
   tetrahedronize(a);

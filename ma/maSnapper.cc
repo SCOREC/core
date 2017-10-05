@@ -129,27 +129,6 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
   return true;
 }
 
-/* #ifdef DO_FPP */
-/*   static bool trySnappingToFPP2(Adapt* a, Collapse& c, Tag* st, Entity* v, */
-/*       apf::Up& badElements) */
-/*   { */
-/*     // make a FirstProblemPlane Object */
-/*     FirstProblemPlane fpps(a, c, st, v, badElements); */
-/*     return fpps.find() ? fpps.snapToFPP() : false; */
-/*   } */
-
-/*   static bool trySnappingToFPP(Adapt* a, Collapse& c, Tag* st, Entity* v, */
-/*       apf::Up& badElements) */
-/*   { */
-/*     bool hadItBefore = getFlag(a, v, DONT_COLLAPSE); */
-/*     setFlag(a, v, DONT_COLLAPSE); */
-/*     bool ok = trySnappingToFPP2(a, c, st, v, badElements); */
-/*     if (!hadItBefore) */
-/*       clearFlag(a, v, DONT_COLLAPSE); */
-/*     return ok; */
-/*   } */
-/* #endif */
-
 static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
     FirstProblemPlane* FPP)
 {
@@ -203,8 +182,13 @@ bool Snapper::run()
     return ok;
   // there is no need for the following if there exists no bad elements
   if (badElements.n == 0) return true;
-  FirstProblemPlane* FPP = new FirstProblemPlane(adapter, snapTag);
+  FirstProblemPlane* FPP;
+#ifdef DO_FPP
+  FPP = new FirstProblemPlane(adapter, snapTag);
   FPP->setVertex(vert);
+#else
+  FPP = 0;
+#endif
   dug = tryDigging(adapter, collapse, vert, badElements, FPP);
   delete FPP;
   if (!dug)
