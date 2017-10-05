@@ -540,8 +540,9 @@ void pumi_mesh_verify(pMesh m, bool abort_on_error)
 
 void pumi_ownership_verify(pMesh m, pOwnership o)
 {
-  if (!pumi::instance()->num_local_ent)
+  if (!pumi::instance()->num_local_ent) {
     pumi_mesh_setCount(m, o);
+  }
 
     int num_own_ent, own_partid, mesh_dim = m->getDimension()-1;
     pMeshEnt e;
