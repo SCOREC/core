@@ -60,14 +60,12 @@ pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int ent_topology, pMeshEnt* 
 void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
 {
   pMeshEnt e;
-  int own_partid, num_own=0, myrank=PCU_Comm_Self();
+  int num_own=0;
 
   apf::MeshIterator* it = m->begin(dim);
   while ((e = m->iterate(it)))
-  {
     if ((o && o->isOwned(e)) || (!o && m->isOwned(e)))
       ++num_own;
-  }
   m->end(it);
 
   PCU_Exscan_Ints(&num_own,1);

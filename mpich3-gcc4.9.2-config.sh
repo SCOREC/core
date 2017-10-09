@@ -16,7 +16,7 @@ cmake .. \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DSCOREC_CXX_WARNINGS=ON \
   -DBUILD_EXES=ON \
-  -DIS_TESTING=OFF \
+  -DIS_TESTING=ON \
   -DMESHES=/fasttmp/seol/scorec/meshes \
   -DMPIRUN=/usr/local/mpich3/latest/bin/mpirun \
   -DCMAKE_BUILD_TYPE=Debug
