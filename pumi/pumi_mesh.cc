@@ -65,8 +65,7 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
   apf::MeshIterator* it = m->begin(dim);
   while ((e = m->iterate(it)))
   {
-    own_partid = m->getOwner(e);
-    if (own_partid==myrank)
+    if ((o && o->isOwned(e)) || (!o && m->isOwned(e)))
       ++num_own;
   }
   m->end(it);
