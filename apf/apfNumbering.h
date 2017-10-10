@@ -166,6 +166,8 @@ Mesh* getMesh(GlobalNumbering* n);
 /** \brief get the components associated with a global numbering */
 int countComponents(GlobalNumbering* n);
 /** \brief assign a global number */
+void number(GlobalNumbering* n, MeshEntity* e, int node, long number);
+/** \brief assign a global number */
 void number(GlobalNumbering* n, Node node, long number, int component=0);
 /** \brief get a global number */
 long getNumber(GlobalNumbering* n, Node node, int component=0);
