@@ -30,6 +30,7 @@ class Converter
       convertQuadratic();
       convertFields();
       convertNumberings();
+      convertGlobalNumberings();
       outMesh->acceptChanges();
     }
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
@@ -189,6 +190,26 @@ class Converter
         }
       }
     }
+    void convertGlobalNumbering(
+        GlobalNumbering* in, GlobalNumbering* out)
+    {
+      FieldShape* s = getShape(in);
+      int nc = countComponents(in);
+      PCU_DEBUG_ASSERT(nc == 1);
+      for (int d = 0; d <= 3; ++d) {
+        if (s->hasNodesIn(d)) {
+          MeshIterator* it = inMesh->begin(d);
+          MeshEntity* e;
+          while ((e = inMesh->iterate(it))) {
+            int nn = s->countNodesOn(inMesh->getType(e));
+            for (int i = 0; i < nn; ++i)
+              number(out, newFromOld[e], i,
+                  getNumber(in, e, i, 0));
+          }
+          inMesh->end(it);
+        }
+      }
+    }
     void convertFields()
     {
       for (int i = 0; i < inMesh->countFields(); ++i) {
@@ -204,6 +225,15 @@ class Converter
         Numbering* out = createNumbering(outMesh,
             getName(in), getShape(in), countComponents(in));
         convertNumbering(in, out);
+      }
+    }
+    void convertGlobalNumberings()
+    {
+      for (int i = 0; i < inMesh->countGlobalNumberings(); ++i) {
+        GlobalNumbering* in = inMesh->getGlobalNumbering(i);
+        GlobalNumbering* out = createGlobalNumbering(outMesh,
+            getName(in), getShape(in), countComponents(in));
+        convertGlobalNumbering(in, out);
       }
     }
     void convertQuadratic()
