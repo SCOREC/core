@@ -454,6 +454,13 @@ if(ENABLE_SIMMETRIX)
       ./generate
       "${MDIR}/upright.smd"
       "67k")
+    if(SIM_PARASOLID)
+      mpi_test(parallel_meshgen_para 4
+      ./generate
+      "${MDIR}/upright.smd"
+      "${MDIR}/upright.x_t"
+      "67k")
+    endif()
     # adapt_meshgen uses the output of parallel_meshgen
     mpi_test(adapt_meshgen 4
       ./ma_test
@@ -461,6 +468,12 @@ if(ENABLE_SIMMETRIX)
       "67k/")
   endif()
   if(SIM_PARASOLID)
+    mpi_test(convert_para 1
+      ./convert
+      "--native-model=${MDIR}/upright.x_t"
+      "${MDIR}/upright.smd"
+      "${MDIR}/67k.sms"
+      "67k.smb")
     set(MDIR ${MESHES}/curved)
     mpi_test(curvedSphere 1
       ./curvetest
