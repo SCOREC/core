@@ -28,16 +28,24 @@
 namespace ma_dbg {
 
 
-void writeMesh(ma::Mesh* m, const char* prefix, const char* suffix)
+void writeMesh(ma::Mesh* m,
+    const char* prefix,
+    const char* suffix)
 {
   std::stringstream ss;
-  ss << prefix << "/" << suffix;
+  if (std::string(suffix) != "")
+    ss << prefix << "/" << suffix;
+  else
+    ss << prefix;
   std::string tmp = ss.str();
   const char* fileName = tmp.c_str();
   apf::writeVtkFiles(fileName, m);
 }
 
-void colorEntitiesOfDimWithQual(ma::Adapt* a, int dim, const std::vector<double> & quals, const char* fieldName)
+void colorEntitiesOfDimWithValues(ma::Adapt* a,
+    int dim,
+    const std::vector<double> & vals,
+    const char* fieldName)
 {
   ma::Mesh* m = a->mesh;
   apf::Field* colorField;
@@ -52,7 +60,7 @@ void colorEntitiesOfDimWithQual(ma::Adapt* a, int dim, const std::vector<double>
   it = m->begin(dim);
   int index = 0;
   while ( (ent = m->iterate(it)) ){
-    double color = quals[index];
+    double color = (double) vals[index];
     apf::setComponents(colorField , ent, 0, &color);
     index++;
   }
@@ -60,7 +68,8 @@ void colorEntitiesOfDimWithQual(ma::Adapt* a, int dim, const std::vector<double>
 }
 
 void measureLinearQualties(ma::Adapt* a,
-    std::vector<double> &lq, bool inMetric)
+    std::vector<double> &lq,
+    bool inMetric)
 {
   ma::Mesh* m = a->mesh;
   int dim = m->getDimension();
@@ -101,7 +110,26 @@ void measureLinearQualties(ma::Adapt* a,
   m->end(it);
 }
 
-void dumpMeshWithQualities(ma::Adapt* a, int iter, const char* prefix)
+void evaluateFlags(ma::Adapt* a,
+    int dim,
+    int flag,
+    std::vector<double> &flgs)
+{
+  ma::Mesh* m = a->mesh;
+  ma::Entity* e;
+  ma::Iterator* it;
+
+  it = m->begin(dim);
+  while ( (e = m->iterate(it)) ) {
+    bool hasFlag = ma::getFlag(a, e, flag);
+    flgs.push_back(hasFlag ? 1.0 : 0.0);
+  }
+  m->end(it);
+}
+
+void dumpMeshWithQualities(ma::Adapt* a,
+    int iter,
+    const char* prefix)
 {
   // measure qualities
   std::vector<double> lq_metric;
@@ -114,8 +142,8 @@ void dumpMeshWithQualities(ma::Adapt* a, int iter, const char* prefix)
     lq_metric[i] = cbrt(lq_metric[i]);
     lq_no_metric[i] = cbrt(lq_no_metric[i]);
   }
-  colorEntitiesOfDimWithQual(a, a->mesh->getDimension(), lq_metric, "qual_metric");
-  colorEntitiesOfDimWithQual(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
+  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
+  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
 
   // setup file name and write the mesh
   std::stringstream ss;
@@ -133,5 +161,32 @@ void dumpMeshWithQualities(ma::Adapt* a, int iter, const char* prefix)
   if (colorField)
     apf::destroyField(colorField);
 }
+
+void dumpMeshWithFlag(ma::Adapt* a,
+    int iter,
+    int dim,
+    int flag,
+    const char* flagName,
+    const char* prefix)
+{
+  // evaluate flags
+  std::vector<double> ent_flags;
+  evaluateFlags(a, dim, flag, ent_flags);
+
+  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), ent_flags, flagName);
+
+  // setup file name and write the mesh
+  std::stringstream ss;
+  ss << a->input->debugFolder << "/";
+  ss << prefix << "_" << std::setfill('0') << std::setw(3) << iter;
+
+  writeMesh(a->mesh, ss.str().c_str(), "");
+
+  apf::Field* colorField;
+  colorField = a->mesh->findField(flagName);
+  if (colorField)
+    apf::destroyField(colorField);
+}
+
 
 }

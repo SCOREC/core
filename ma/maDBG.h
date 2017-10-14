@@ -20,11 +20,34 @@
 
 namespace ma_dbg {
 
-void colorEntitiesOfDimWithQual(ma::Adapt* a, int dim, const std::vector<double> & quals, const char* fieldName);
-void writeMesh(ma::Mesh* m, const char* prefix, const char* suffix);
+void writeMesh(ma::Mesh* m,
+    const char* prefix,
+    const char* suffix);
+
+void colorEntitiesOfDimWithValues(ma::Adapt* a,
+    int dim,
+    const std::vector<double> & quals,
+    const char* fieldName);
+
 void measureLinearQualties(ma::Adapt* a,
-     std::vector<double> &lq, bool inMetric = true);
-void dumpMeshWithQualities(ma::Adapt* a, int iter, const char* prefix);
+     std::vector<double> &lq,
+     bool inMetric = true);
+
+void evaluateFlags(ma::Adapt* a,
+    int dim,
+    int flag,
+    std::vector<double> &flgs);
+
+void dumpMeshWithQualities(ma::Adapt* a,
+    int iter,
+    const char* prefix);
+
+void dumpMeshWithFlag(ma::Adapt* a,
+    int iter,
+    int dim,
+    int flag,
+    const char* flagName,
+    const char* prefix);
 
 }
 #endif
