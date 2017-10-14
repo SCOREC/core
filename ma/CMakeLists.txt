@@ -43,6 +43,7 @@ set(SOURCES
   maReposition.cc
   maExtrude.cc
   maDBG.cc
+  maStats.cc
 )
 
 # Package headers
@@ -56,6 +57,7 @@ set(HEADERS
   maSolutionTransfer.h
   maExtrude.h
   maDBG.h
+  maStats.h
 )
 
 # Add the ma library
