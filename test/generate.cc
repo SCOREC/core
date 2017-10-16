@@ -7,6 +7,7 @@
 #include <SimUtil.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
+#include "gmi_sim_config.h"
 #include <gmi_sim.h>
 #include <apf.h>
 #include <apfConvert.h>
@@ -15,6 +16,15 @@
 #include <parma.h>
 #include <pcu_util.h>
 #include <cstdlib>
+
+#ifdef SIM_PARASOLID
+#include "SimParasolidKrnl.h"
+#endif
+
+#ifdef SIM_ACIS
+#include "SimAcisKrnl.h"
+#endif
+
 
 #ifndef AdvMeshing_EXPORT
 #define AdvMeshing_EXPORT
@@ -28,6 +38,7 @@ pAManager SModel_attManager(pModel model);
 namespace {
 
 std::string modelFile;
+std::string nativeModelFile;
 std::string caseName;
 std::string outMeshFile;
 
@@ -91,17 +102,30 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
 
 void getConfig(int argc, char** argv)
 {
-  if (argc != 3) {
-    if(0==PCU_Comm_Self())
-      printf("Usage: %s <model (.smd)> <mesh case name>\n", argv[0]);
+  if (argc < 3) {
+    if(0==PCU_Comm_Self()) {
+      printf("Usage: %s <GeomSim model (.smd)> <mesh case name> ", argv[0]);
+      printf("       to generate a mesh on a GeomSim model\n");
+      printf("   or: %s <SimModeler model (.smd)> <parasolid or acis native model> <mesh case name>\n", argv[0]);
+      printf("       to generate a mesh using the specified case name using the SimModeler"
+                     "model which references the native parasolid or acis model\n");
+    }
     MPI_Finalize();
     exit(EXIT_SUCCESS);
   }
   modelFile = argv[1];
-  outMeshFile = caseName = argv[2];
+  if (argc == 3) {
+    nativeModelFile = "";
+    outMeshFile = caseName = argv[2];
+  } else if (argc == 4) {
+    nativeModelFile = argv[2];
+    outMeshFile = caseName = argv[3];
+  }
   outMeshFile.append("/");
-  if(0==PCU_Comm_Self())
-    printf("Inputs: model %s case %s\n", modelFile.c_str(), caseName.c_str());
+  if(0==PCU_Comm_Self()) {
+    printf("Inputs: model \'%s\' native model \'%s\' case \'%s\'\n",
+        modelFile.c_str(), nativeModelFile.c_str(), caseName.c_str());
+  }
 }
 
 void fixMatches(apf::Mesh2* m)
@@ -129,6 +153,72 @@ void postConvert(apf::Mesh2* m)
   m->verify();
 }
 
+bool hasExtension(std::string s, std::string ext) {
+  if(s.substr(s.find_last_of(".") + 1) == ext) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+pNativeModel loadNativeModel() {
+  enum { TEXT_FORMAT = 0 };
+  pNativeModel nm = 0;
+  if ( nativeModelFile.empty() ) {
+    nm = 0;
+#ifdef SIM_ACIS
+  } else if (hasExtension(nativeModelFile, "sat")) {
+    nm = AcisNM_createFromFile(nativeModelFile.c_str(), TEXT_FORMAT);
+    if(!PCU_Comm_Self())
+      printf("loaded acis native model\n");
+#endif
+#ifdef SIM_PARASOLID
+  } else if (hasExtension(nativeModelFile, "xmt_txt") ||
+             hasExtension(nativeModelFile, "x_t")        ) {
+    nm = ParasolidNM_createFromFile(nativeModelFile.c_str(), TEXT_FORMAT);
+    if(!PCU_Comm_Self())
+      printf("loaded parasolid native model\n");
+#endif
+  } else {
+    if(!PCU_Comm_Self())
+      printf("native model file has bad extension");
+    exit(EXIT_FAILURE);
+  }
+  return nm;
+}
+
+void simStart() {
+  SimModel_start();
+  SimPartitionedMesh_start(NULL,NULL);
+  MS_init();
+  SimModel_start();
+#ifdef SIM_PARASOLID
+  SimParasolid_start(1);
+#endif
+#ifdef SIM_ACIS
+  SimAcis_start(1);
+#endif
+  Sim_readLicenseFile(NULL);
+  MS_init();
+  SimAdvMeshing_start();
+  Sim_setMessageHandler(messageHandler);
+}
+
+void simStop() {
+  SimAdvMeshing_stop();
+  SimModel_stop();
+  SimPartitionedMesh_stop();
+  Sim_unregisterAllKeys();
+  SimModel_stop();
+#ifdef SIM_ACIS
+  SimAcis_stop(1);
+#endif
+#ifdef SIM_PARASOLID
+  SimParasolid_stop(1);
+#endif
+  MS_exit();
+}
+
 } //end unnamed namespace
 
 int main(int argc, char** argv)
@@ -138,24 +228,17 @@ int main(int argc, char** argv)
   PCU_Protect();
   getConfig(argc,argv);
 
-  SimModel_start();
-  SimPartitionedMesh_start(NULL,NULL);
-  MS_init();
-  SimModel_start();
-  Sim_readLicenseFile(NULL);
-  MS_init();
-  SimAdvMeshing_start();
-  Sim_setMessageHandler(messageHandler);
-
-  pGModel simModel = GM_load(modelFile.c_str(), NULL, NULL);
+  simStart();
+  pNativeModel nm = loadNativeModel();
+  pGModel simModel = GM_load(modelFile.c_str(), nm, NULL);
 
   const double t0 = MPI_Wtime();
   pParMesh sim_mesh = generate(simModel, caseName);
   const double t1 = MPI_Wtime();
-  if(0==PCU_Comm_Self())
+  if(!PCU_Comm_Self())
     printf("Mesh generated in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
-  
+
   gmi_register_sim();
   gmi_model* model = gmi_import_sim(simModel);
   apf::Mesh2* mesh = apf::createMdsMesh(model, simApfMesh);
@@ -168,12 +251,7 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
 
-  SimAdvMeshing_stop();
-  SimModel_stop();
-  SimPartitionedMesh_stop();
-  Sim_unregisterAllKeys();
-  SimModel_stop();
-  MS_exit();
+  simStop();
   PCU_Comm_Free();
   MPI_Finalize();
 }

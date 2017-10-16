@@ -486,6 +486,11 @@ void number(GlobalNumbering* n, Node node, long number, int component)
   n->set(node.entity,node.node,component,number);
 }
 
+void number(GlobalNumbering* n, MeshEntity* e, int node, long number)
+{
+  n->set(e, node, 0, number);
+}
+
 long getNumber(GlobalNumbering* n, Node node, int component)
 {
   return n->get(node.entity,node.node,component);
