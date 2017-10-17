@@ -118,7 +118,7 @@ void getBoundaryBlockKey(apf::Mesh* m, apf::MeshEntity* e,
   applyTriQuadHack(k);
 }
 
-void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
+void getBoundaryBlocks(apf::Mesh* m, BCs& bcs, Blocks& b)
 {
   int boundaryDim = m->getDimension() - 1;
   apf::MeshIterator* it = m->begin(boundaryDim);
@@ -127,10 +127,12 @@ void getBoundaryBlocks(apf::Mesh* m, Blocks& b)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
-    apf::DgCopies dgCopies;
-    m->getDgCopies(f, dgCopies);
-    if (dgCopies.getSize() == 1) // This prevents adding interface elements...
-      continue;
+    if (getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) != 0) {
+      apf::DgCopies dgCopies;
+      m->getDgCopies(f, dgCopies);
+      if (dgCopies.getSize() == 1) // This prevents adding interface elements...
+        continue;
+    }
     if (m->countUpward(f)>1)   // don't want interior region boundaries here...
       continue;
     apf::MeshEntity* e = m->getUpward(f, 0);
@@ -216,7 +218,7 @@ void getInterfaceBlocks(apf::Mesh* m, BCs& bcs, BlocksInterface& b)
 void getAllBlocks(apf::Mesh* m, BCs& bcs, AllBlocks& b)
 {
   getInteriorBlocks(m, b.interior);
-  getBoundaryBlocks(m, b.boundary);
+  getBoundaryBlocks(m, bcs, b.boundary);
   getInterfaceBlocks(m, bcs, b.interface);
 }
 

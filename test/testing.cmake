@@ -37,17 +37,6 @@ else()
 endif()
 
 set(MDIR ${MESHES}/phasta/dg)
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
-  mpi_test(migrate_interface 4
-    ./migrate_interface
-    "${MDIR}/box.smd"
-    "${MDIR}/box.smb"
-    "${MDIR}/4/")
-  mpi_test(dg_ma_test 4
-    ./dg_ma_test
-    "${MDIR}/box.smd"
-    "${MDIR}/4/")
-endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   set(MDIR ${MESHES}/phasta/BL_query)

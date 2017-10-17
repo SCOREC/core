@@ -254,10 +254,12 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
-    apf::DgCopies dgCopies;
-    m->getDgCopies(f, dgCopies);
-    if (dgCopies.getSize() == 1) // This prevents adding interface elements...
-      continue;
+    if (getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) != 0){
+      apf::DgCopies dgCopies;
+      m->getDgCopies(f, dgCopies);
+      if (dgCopies.getSize() == 1) // This prevents adding interface elements...
+        continue;
+    }
     if (m->countUpward(f)>1)   // don't want interior region boundaries here...
       continue;
     gmi_ent* gf = (gmi_ent*)me;
