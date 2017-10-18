@@ -697,7 +697,7 @@ void TEST_FIELD(pMesh m)
 //pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o=NULL); 
 //bool pumi_ment_isOwned(pMeshEnt e, pOwnership o=NULL);
 // void pumi_field_synchronize(pField f, pOwnership o=NULL);
-//void pumi_field_accumulate(pField f, pOwnership o=NULL);
+//void pumi_field_accumulate(pField f);
 //void pumi_field_synchronize(pField f, pOwnership o=NULL);
 //void pumi_field_verify(pMesh m, pField f=NULL, pOwnership o=NULL);
 
@@ -724,8 +724,7 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
-    pumi_field_synchronize(f, new testOwnership(m));  // ownership object is deleted apf::synchronizeFieldData
+    pumi_field_accumulate(f); // this routine synchronizes after sum-up fields over remote copies
   } 
 
   it = m->begin(0);
@@ -769,6 +768,7 @@ Ghosting* getGhostingPlan(pMesh m)
 
 void TEST_GHOSTING(pMesh m)
 {  
+  pOwnership o = new testOwnership(m);
   int mesh_dim=pumi_mesh_getDim(m);
   pMeshEnt e;
   // element-wise ghosting test
@@ -841,7 +841,7 @@ void TEST_GHOSTING(pMesh m)
   double data[3];
   double xyz[3];
 
-  pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
+  pumi_field_accumulate(f); // synchronizeFieldData is called at the end of accumulate
 
   pMeshIter it = m->begin(0);
   while ((e = m->iterate(it)))
@@ -866,4 +866,5 @@ void TEST_GHOSTING(pMesh m)
   }
   
   delete [] org_mcount;
+  delete o;
 }
