@@ -184,6 +184,18 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
 }
 
 #ifdef HAVE_SIMMETRIX
+int M_numVerticesInClosure(pMesh mesh, pGEntity model){
+  int counter = 0;
+  pVertex meshVertex;
+  VIter vIter = M_vertexIter(mesh);
+  while((meshVertex = VIter_next(vIter))) {
+    if (GEN_inClosure(model, EN_whatIn(meshVertex)))
+      counter++;
+  }
+  VIter_delete(vIter);
+  return counter;
+}
+
 void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
 {
   printf("execute simmetrix cut interface\n");
@@ -208,11 +220,12 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
   while ((ge = gmi_next(gm, git))) {
     if (ph::isInterface(gm, ge, fbcs)) {
       modelFace = (pGFace) ge;
-      counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of mesh vertices on interface before cut: %d\n",counter);
+      printf("cutting face %d:\n",GEN_tag(modelFace));
+      counter = M_numVerticesInClosure(mesh, modelFace);
+      printf("  num. of mesh vertices on interface before cut: %d\n",counter);
       M_splitMeshOnGFace(pmesh, modelFace, 0, 0);
-      counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of mesh vertices on interface after cut: %d\n",counter);
+      counter = M_numVerticesInClosure(mesh, modelFace);
+      printf("  num. of mesh vertices on interface after cut: %d\n",counter);
     }
   }
   gmi_end(gm, git);
@@ -248,15 +261,15 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
       continue;
 
     ++nDG;
-    apf::Matches matches;
-    m->getMatches(f,matches);
+    apf::DgCopies dgCopies;
+    m->getDgCopies(f, dgCopies);
 
     apf::MeshEntity* e = m->getUpward(f, 0);
 
     int remoteResidence = -1;
-    for (size_t j = 0; j != matches.getSize(); ++j) {
-      if (matches[j].peer != PCU_Comm_Self())
-        remoteResidence = matches[j].peer;
+    for (size_t j = 0; j != dgCopies.getSize(); ++j) {
+      if (dgCopies[j].peer != PCU_Comm_Self())
+        remoteResidence = dgCopies[j].peer;
     }
 
     if (remoteResidence > PCU_Comm_Self())
