@@ -16,6 +16,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
+#include "maDBG.h"
 #include <pcu_util.h>
 
 namespace ma {
@@ -88,6 +89,21 @@ int markBadQuality(Adapt* a)
 {
   IsBadQuality p(a);
   return markEntities(a, a->mesh->getDimension(), p, BAD_QUALITY, OK_QUALITY);
+}
+
+void unMarkBadQuality(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  Iterator* it;
+  Entity* e;
+  int count = 0;
+  it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+    if (getFlag(a, e, ma::BAD_QUALITY))
+      clearFlag(a, e, ma::BAD_QUALITY);
+    count++;
+  }
+  m->end(it);
 }
 
 double getMinQuality(Adapt* a)
@@ -190,6 +206,75 @@ class TetFixerBase
     virtual void setTet(Entity** v) = 0;
     virtual bool requestLocality(apf::CavityOp* o) = 0;
     virtual bool run() = 0;
+};
+
+class FixBySwap : public TetFixerBase
+{
+  public:
+    FixBySwap(Adapt* a):
+      adapter(a)
+    {
+      mesh = a->mesh;
+      edgeSwap = makeEdgeSwap(a);
+      nes = nf = numToTry = 0;
+      edges[0] = 0;
+      edges[1] = 0;
+      edges[2] = 0;
+    }
+    ~FixBySwap()
+    {
+      delete edgeSwap;
+    }
+    virtual void setTet(Entity** v)
+    {
+      Entity* tet = apf::findElement(mesh, apf::Mesh::TET, v);
+      PCU_ALWAYS_ASSERT(tet);
+      match = matchSliver(adapter, tet);
+      Entity* dv[4];
+      mesh->getDownward(tet, 0, dv);
+      Entity* rv[4];
+      rotateTet(dv,match.rotation,rv);
+
+      enum { EDGE_EDGE, FACE_VERT };
+      if (match.code_index==EDGE_EDGE) {
+	Entity* ev[2];
+	ev[0] = rv[0]; ev[1] = rv[2];
+	edges[0] = findUpward(mesh, apf::Mesh::EDGE, ev);
+	ev[0] = rv[1]; ev[1] = rv[3];
+	edges[1] = findUpward(mesh, apf::Mesh::EDGE, ev);
+	numToTry = 2;
+      }
+      else
+      {
+      	PCU_ALWAYS_ASSERT(match.code_index==FACE_VERT);
+	apf::findTriDown(mesh,rv,edges);
+	numToTry = 3;
+      }
+    }
+    virtual bool requestLocality(apf::CavityOp* o)
+    {
+      return o->requestLocality(edges, numToTry);
+    }
+    virtual bool run()
+    {
+      for (int i=0; i < numToTry; ++i)
+        if (edgeSwap->run(edges[i]))
+        {
+          ++nes;
+          return true;
+        }
+      ++nf;
+      return false;
+    }
+  private:
+    Adapt* adapter;
+    Mesh* mesh;
+    Entity* edges[3];
+    EdgeSwap* edgeSwap;
+    CodeMatch match;
+    int numToTry;
+    int nes;
+    int nf;
 };
 
 class FaceVertFixer : public TetFixerBase
@@ -350,6 +435,57 @@ class LargeAngleTetFixer : public Operator
     TetFixerBase* fixer;
 };
 
+class LargeAngleTetAligner : public Operator
+{
+  public:
+    LargeAngleTetAligner(Adapt* a):
+      fixer(a)
+    {
+      adapter = a;
+      mesh = a->mesh;
+      tet = 0;
+    }
+    virtual ~LargeAngleTetAligner()
+    {
+    }
+    virtual int getTargetDimension() {return 3;}
+    virtual bool shouldApply(Entity* e)
+    {
+      if ( ! getFlag(adapter,e,BAD_QUALITY))
+        return false;
+      tet = e;
+      /* PCU_ALWAYS_ASSERT(mesh->getType(e) == apf::Mesh::TET); */
+      enum { EDGE_EDGE, FACE_VERT };
+      CodeMatch match = matchSliver(adapter,e);
+      if (match.code_index==EDGE_EDGE) {
+        clearFlag(adapter,tet,BAD_QUALITY);
+      	return false;
+      }
+      /* else */
+      /* { PCU_ALWAYS_ASSERT(match.code_index==FACE_VERT); */
+      /*   fixer = &faceVertFixer; */
+      /* } */
+      Entity* v[4];
+      mesh->getDownward(e,0,v);
+      fixer.setTet(v);
+      return true;
+    }
+    virtual bool requestLocality(apf::CavityOp* o)
+    {
+      return fixer.requestLocality(o);
+    }
+    virtual void apply()
+    {
+      if ( ! fixer.run())
+        clearFlag(adapter,tet,BAD_QUALITY);
+    }
+  private:
+    Adapt* adapter;
+    Mesh* mesh;
+    Entity* tet;
+    FixBySwap fixer;
+};
+
 class LargeAngleTriFixer : public Operator
 {
   public:
@@ -418,12 +554,32 @@ static void fixLargeAngleTris(Adapt* a)
   applyOperator(a,&fixer);
 }
 
+static void alignLargeAngleTets(Adapt* a)
+{
+  LargeAngleTetAligner aligner(a);
+  applyOperator(a,&aligner);
+}
+
+static void alignLargeAngleTris(Adapt* a)
+{
+  LargeAngleTriFixer aligner(a);
+  applyOperator(a,&aligner);
+}
+
 static void fixLargeAngles(Adapt* a)
 {
   if (a->mesh->getDimension()==3)
     fixLargeAngleTets(a);
   else
     fixLargeAngleTris(a);
+}
+
+static void alignLargeAngles(Adapt* a)
+{
+  if (a->mesh->getDimension()==3)
+    alignLargeAngleTets(a);
+  else
+    alignLargeAngleTris(a);
 }
 
 void fixElementShapes(Adapt* a)
@@ -442,9 +598,37 @@ void fixElementShapes(Adapt* a)
     markBadQuality(a);
     fixShortEdgeElements(a);
     count = markBadQuality(a);
+    if (count >= prev_count)
+      unMarkBadQuality(a); // to make sure markEntities does not complain!
   } while(count < prev_count);
   double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",
+        originalCount,count,t1-t0);
+}
+
+void alignElements(Adapt* a)
+{
+  int max_iter = 5;
+  if ( ! a->input->shouldFixShape)
+    return;
+  double t0 = PCU_Time();
+  int count = markBadQuality(a);
+  int originalCount = count;
+  int prev_count;
+  int i = 0;
+  do {
+    if ( ! count)
+      break;
+    prev_count = count;
+    alignLargeAngles(a);
+    count = markBadQuality(a);
+    ++i;
+    if (count >= prev_count || i >= max_iter)
+      unMarkBadQuality(a);
+  } while(count < prev_count && i < max_iter);
+
+  double t1 = PCU_Time();
+  print("non-aligned elements down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
 }
 
