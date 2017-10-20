@@ -3,7 +3,7 @@
 c
       interface
 c
-        subroutine core_get_pos_on_surf ( dx, dy, dz, numnp, px, py, pz )
+        subroutine core_get_pos_on_surf (dx, dy, dz, numnp, px, py, pz)
      &    bind(C, NAME='core_get_pos_on_surf')
         use iso_c_binding
           integer(c_int),value :: numnp
