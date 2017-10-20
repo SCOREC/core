@@ -469,6 +469,7 @@ if(ENABLE_SIMMETRIX)
   if(SIM_PARASOLID)
     mpi_test(convert_para 1
       ./convert
+      "--enable-log"
       "--native-model=${MDIR}/upright.x_t"
       "${MDIR}/upright.smd"
       "${MDIR}/67k.sms"
