@@ -1,4 +1,4 @@
-      module simmetrix_snap
+      module core_snap
       use iso_c_binding
 c
       interface
