@@ -23,7 +23,7 @@ void pass_mesh_to_phasta(apf::Mesh* mesh){
 
 /* input dx,dy,dz are current coordinates of mesh in phatsa
   output px,py,pz are corrected coordinates of mesh */
-void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
+void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
                           double px[], double py[], double pz[]) {
   double newpar[2];
   double newpt[3];
@@ -53,7 +53,7 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
   PCU_ALWAYS_ASSERT(counter==numnp);
 }
 
-void sim_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
+void core_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
   answer = 0;
   apf::ModelEntity* e  = m->findModelEntity(e_dim, e_tag);
   apf::ModelEntity* et = m->findModelEntity(t_dim, t_tag);
