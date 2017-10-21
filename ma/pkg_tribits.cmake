@@ -39,6 +39,8 @@ set(SOURCES
   maMap.cc
   maReposition.cc
   maExtrude.cc
+  maDBG.cc
+  maStats.cc
 )
 
 set(HEADERS
@@ -50,6 +52,8 @@ set(HEADERS
   maTables.h
   maSolutionTransfer.h
   maExtrude.h
+  maDBG.h
+  maStats.h
 )
 
 # THIS IS WHERE TRIBITS GETS HEADERS
