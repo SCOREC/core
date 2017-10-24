@@ -125,6 +125,16 @@ mpi_test(reorder_serial 1
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi7k/cube.smb
   cube_bfs.smb)
+mpi_test(create_misCube 1
+  ./create_mis
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi670/cube.smb
+  mis_test)
+mpi_test(create_misSquare 1
+  ./create_mis
+  ${MESHES}/square/square.dmg
+  ${MESHES}/square/square.smb
+  mis_test)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 4
