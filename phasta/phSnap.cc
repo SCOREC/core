@@ -15,14 +15,12 @@
 extern"C"{
 #endif
 
-static apf::Mesh* m;
-
-void pass_mesh_to_phasta(apf::Mesh* mesh){
+void pass_mesh_to_phasta(apf::Mesh2* mesh){
   m = mesh;
 }
 
-/* input dx,dy,dz are current coordinates of mesh in phatsa
-  output px,py,pz are corrected coordinates of mesh */
+/* input dx,dy,dz are current coordinates of mesh in phastsa
+   output px,py,pz are corrected coordinates of mesh */
 void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
                           double px[], double py[], double pz[]) {
   double newpar[2];
