@@ -10,7 +10,9 @@
 extern "C" {
 #endif
 
-static apf::Mesh2* m;
+extern apf::Mesh2* m;
+
+void pass_mesh_to_phasta(apf::Mesh2* mesh);
 
 void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
                           double px[], double py[], double pz[]);

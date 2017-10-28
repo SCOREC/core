@@ -15,6 +15,8 @@
 extern"C"{
 #endif
 
+apf::Mesh2* m;
+
 void pass_mesh_to_phasta(apf::Mesh2* mesh){
   m = mesh;
 }

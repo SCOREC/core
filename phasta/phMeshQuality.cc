@@ -28,8 +28,10 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
   int counter = 0;
   double size[1];
   double anisosize[3][3];
-  apf::Field* sf_mag = apf::createFieldOn(m, "sizes", apf::VECTOR);
-  apf::Field* sf_dir = apf::createFieldOn(m, "frames", apf::MATRIX);
+
+// this is for simmetrix mesh, should be generalized
+  apf::Field* sf_mag = apf::createSIMFieldOn(m, "sizes", apf::VECTOR);
+  apf::Field* sf_dir = apf::createSIMFieldOn(m, "frames", apf::MATRIX);
 
 // loop over all vertices
   apf::MeshEntity* v;
@@ -43,6 +45,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
     m->setPoint(v, 0, p);
 
 // get sim size field
+// this is for simmetrix mesh, should be generalized
     pVertex meshVertex = reinterpret_cast<pVertex>(v);
     int sztype = V_size(meshVertex, size, anisosize);
     PCU_ALWAYS_ASSERT(sztype == 1 || sztype == 2);
@@ -67,6 +70,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
              anisosize[0][2]/v_mag[0], anisosize[1][2]/v_mag[1], anisosize[2][2]/v_mag[2]);
     apf::setVector(sf_mag, v, 0, v_mag);
     apf::setMatrix(sf_dir, v, 0, v_dir);
+    counter++;
   }
   m->end(vit);
   PCU_ALWAYS_ASSERT(counter==numnp);
