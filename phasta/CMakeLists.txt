@@ -26,7 +26,7 @@ set(SOURCES
 if(PUMI_FORTRAN_INTERFACE)
   enable_language(Fortran)
   set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod_files)
-  set(SOURCES ${SOURCES} phiotimer.f phSnap.f)
+  set(SOURCES ${SOURCES} phiotimer.f phastaChef.f)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
 endif()
 
@@ -34,6 +34,7 @@ if(ENABLE_SIMMETRIX)
   set(SOURCES ${SOURCES}
       phAttrib.cc
       phSnap.cc
+      phMeshQuality.cc
      )
 endif()
 
@@ -52,7 +53,7 @@ set(HEADERS
   phInput.h
   phstream.h
   phiotimer.h
-  phSnap.h
+  phastaChef.h
 )
 
 # Add the ph library
