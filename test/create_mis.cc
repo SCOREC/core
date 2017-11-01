@@ -4,12 +4,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
-#ifdef HAVE_SIMMETRIX
-#include <gmi_sim.h>
-#include <SimUtil.h>
-#include <MeshSim.h>
-#include <SimModel.h>
-#endif
 #include <cstdlib>
 #include <apfShape.h>
 
@@ -23,13 +17,6 @@ int main(int argc, char** argv)
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-#ifdef HAVE_SIMMETRIX
-  MS_init();
-  SimModel_start();
-  Sim_readLicenseFile(NULL);
-  gmi_sim_start();
-  gmi_register_sim();
-#endif
   
   gmi_register_mesh();
 
@@ -70,12 +57,7 @@ int main(int argc, char** argv)
   apf::writeVtkFiles(argv[3], m);
   m->destroyNative();
   apf::destroyMesh(m);
-#ifdef HAVE_SIMMETRIX
-  gmi_sim_stop();
-  Sim_unregisterAllKeys();
-  SimModel_stop();
-  MS_exit();
-#endif
+
   PCU_Comm_Free();
   MPI_Finalize();
 }
