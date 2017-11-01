@@ -45,6 +45,7 @@ set(SOURCES
   apfBoundaryToElementXi.cc
   apfSimplexAngleCalcs.cc
   apfFile.cc
+  apfMIS.cc
 )
 
 # Package headers
@@ -67,6 +68,7 @@ set(HEADERS
   apfConvert.h
   apfGeometry.h
   apf2mth.h
+  apfMIS.h
 )
 
 # Add the apf library
