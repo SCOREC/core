@@ -194,14 +194,14 @@ static gmi_set* edge_regions(pGEdge e)
 
   // do the first one outside of the loop
   gmi_set* regions_set = face_regions((pGFace)PList_item(list, 0));
-  if (regions_set->n != 1)
+  if (regions_set->n > 1)
     gmi_fail("no support for non-manifold surfaces!\n");
   pGRegion r = (pGRegion)regions_set->e[0];
 
   // do the rest inside of the loop
   for (int i = 1; i < PList_size(list); i++) {
     regions_set = face_regions((pGFace)PList_item(list, i));
-    if (regions_set->n != 1)
+    if (regions_set->n > 1)
       gmi_fail("no support for non-manifold surfaces!\n");
     if (r != (pGRegion)regions_set->e[0])
       gmi_fail("no support for non-manifold surfaces!\n");

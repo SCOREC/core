@@ -62,6 +62,26 @@ void reparam_one(double const from[2], double to[2], void*)
   to[0] = 1;
   to[1] = 0;
 }
+void face_reparam_zero(double const from[2], double to[2], void*)
+{
+  to[0] = from[0];
+  to[1] = 0;
+}
+void face_reparam_one(double const from[2], double to[2], void*)
+{
+  to[0] = 1.0;
+  to[1] = from[0];
+}
+void face_reparam_two(double const from[2], double to[2], void*)
+{
+  to[0] = 1.0 - from[0];
+  to[1] = 1.0;
+}
+void face_reparam_three(double const from[2], double to[2], void*)
+{
+  to[0] = 0.0;
+  to[1] = 1.0 - from[0];
+}
 
 agm_bdry add_bdry(gmi_model* m, gmi_ent* e)
 {
@@ -85,6 +105,7 @@ void make_edge_topo(gmi_model* m, gmi_ent* e, int v0tag, int v1tag)
   gmi_add_analytic_reparam(m, u1, reparam_one, 0);
 }
 
+
 gmi_model* makeModel()
 {
   gmi_model* model = gmi_make_analytic();
@@ -101,7 +122,17 @@ gmi_model* makeModel()
     make_edge_topo(model, eds[i], i, (i+1) % 4);
   int faPer[2] = {0, 0};
   double faRan[2][2] = {{0,1},{0,1}};
-  gmi_add_analytic(model, 2, 0, face0, faPer, faRan, 0);
+  gmi_ent* f = gmi_add_analytic(model, 2, 0, face0, faPer, faRan, 0);
+  // make the face topo
+  agm_bdry b = add_bdry(model, f);
+  agm_use eu0 = add_adj(model, b, 0);
+  gmi_add_analytic_reparam(model, eu0, face_reparam_zero, 0);
+  agm_use eu1 = add_adj(model, b, 1);
+  gmi_add_analytic_reparam(model, eu1, face_reparam_one , 0);
+  agm_use eu2 = add_adj(model, b, 2);
+  gmi_add_analytic_reparam(model, eu2, face_reparam_two , 0);
+  agm_use eu3 = add_adj(model, b, 3);
+  gmi_add_analytic_reparam(model, eu3, face_reparam_three, 0);
 
   return model;
 }

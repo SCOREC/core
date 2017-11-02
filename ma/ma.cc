@@ -78,6 +78,9 @@ void adaptVerbose(Input* in, bool verbose)
   // final refine to get rid of long edges created during shape fix
   refine(a);
   if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine");
+  // final snap to make sure everything is on the boundary
+  snap(a);
+  if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_snap");
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);
