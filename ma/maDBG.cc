@@ -42,6 +42,34 @@ void writeMesh(ma::Mesh* m,
   apf::writeVtkFiles(fileName, m);
 }
 
+void addTargetLocation(ma::Adapt* a,
+    const char* fieldName)
+{
+  ma::Mesh* m = a->mesh;
+  apf::Field* paramField;
+  paramField = m->findField(fieldName);
+  if (paramField)
+    apf::destroyField(paramField);
+
+  paramField = apf::createFieldOn(m, fieldName, apf::VECTOR);
+  ma::Entity* ent;
+  ma::Iterator* it;
+  it = m->begin(0);
+  while ( (ent = m->iterate(it)) ){
+    ma::Vector p;
+    m->getParam(ent, p);
+    ma::Vector x;
+    if (m->getModelType(m->toModel(ent)) != 3)
+      m->snapToModel(m->toModel(ent), p, x);
+    else
+      x = ma::getPosition(m, ent);
+
+    x = x - ma::getPosition(m, ent);
+    apf::setVector(paramField , ent, 0, x);
+  }
+  m->end(it);
+}
+
 void colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & vals,
@@ -145,6 +173,10 @@ void dumpMeshWithQualities(ma::Adapt* a,
   colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
   colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
 
+  // for snap debug
+  addTargetLocation(a, "target_for_snap");
+
+
   // setup file name and write the mesh
   std::stringstream ss;
   ss << a->input->debugFolder << "/";
@@ -158,6 +190,10 @@ void dumpMeshWithQualities(ma::Adapt* a,
     apf::destroyField(colorField);
 
   colorField = a->mesh->findField("qual_no_metric");
+  if (colorField)
+    apf::destroyField(colorField);
+
+  colorField = a->mesh->findField("target_for_snap");
   if (colorField)
     apf::destroyField(colorField);
 }

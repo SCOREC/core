@@ -11,6 +11,7 @@
 #include "maShape.h"
 #include "maSize.h"
 #include "maAdapt.h"
+#include "maSnap.h"
 #include "maOperator.h"
 #include "maEdgeSwap.h"
 #include "maDoubleSplitCollapse.h"
@@ -595,6 +596,7 @@ void fixElementShapes(Adapt* a)
       break;
     prev_count = count;
     fixLargeAngles(a);
+    snap(a);
     markBadQuality(a);
     fixShortEdgeElements(a);
     count = markBadQuality(a);

@@ -226,7 +226,10 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
   PCU_ALWAYS_ASSERT(dim == 1 || dim == 2);
   gmi_ent* e = (gmi_ent*)g;
   gmi_set* adjRegions = gmi_adjacent(getModel(), e, 3);
-  PCU_ALWAYS_ASSERT(adjRegions->n == 1);
+  // for 2D models
+  if (adjRegions->n == 0)
+    return true;
+  PCU_ALWAYS_ASSERT(adjRegions->n <= 1);
   gmi_ent* r = (gmi_ent*)adjRegions->e[0];
   gmi_eval(getModel(), (gmi_ent*)g, &param[0], &x[0]);
   int res = gmi_is_point_in_region(getModel(), r, &x[0]);

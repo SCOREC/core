@@ -134,12 +134,24 @@ static void interpolateParametricCoordinateOnEdge(
     const Vector& b,
     Vector& p)
 {
-
+  int dim = m->getModelType(g);
   double range[2];
   bool isPeriodic = m->getPeriodicRange(g,0,range);
   p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 0);
   p[1] = 0.0;
   p[2] = 0.0;
+
+  // this need to be done for edges or edges, only
+  if (dim != 1)
+    return;
+
+  Vector x;
+  bool ok;
+  ok = m->isParamPointInsideModel(g, &p[0], x);
+  if (ok)
+    return;
+
+  p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 1);
 }
 
 
@@ -553,7 +565,7 @@ void transferParametricOnEdgeSplit(
 {
   Model* g = m->toModel(e);
   int modelDimension = m->getModelType(g);
-  if (modelDimension==m->getDimension()) return;
+  if (m->getDimension()==3 && modelDimension==3) return;
   Entity* ev[2];
   m->getDownward(e,0,ev);
   ma::transferParametricBetween(m, g, ev, t, p);
@@ -635,7 +647,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
   Iterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
     int md = m->getModelType(m->toModel(v));
-    if (md == dim)
+    if (dim == 3 && md == 3)
       continue;
     Vector s;
     getSnapPoint(m, v, s);

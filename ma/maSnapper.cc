@@ -134,12 +134,13 @@ static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
 {
 
   Mesh* m = a->mesh;
+  int dim = m->getDimension();
 
   // first go through the candidate edges found by the first problem plane
   // (if any)
   std::vector<Entity*> edgesFromFPP;
   edgesFromFPP.clear();
-  if (FPP) {
+  if (FPP && dim == 3) {
     FPP->setBadElements(badElements);
     FPP->getCandidateEdges(edgesFromFPP);
   }
