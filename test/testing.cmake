@@ -474,6 +474,14 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "${MDIR}/67k.sms"
       "67k.smb")
+    mpi_test(ph_convert_para 1
+      ./ph_convert
+      "--enable-log"
+      "--attach-order"
+      "--native-model=${MDIR}/upright.x_t"
+      "${MDIR}/upright.smd"
+      "${MDIR}/67k.sms"
+      "67k.smb")
     set(MDIR ${MESHES}/curved)
     mpi_test(curvedSphere 1
       ./curvetest
