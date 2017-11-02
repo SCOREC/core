@@ -134,24 +134,11 @@ static void interpolateParametricCoordinateOnEdge(
     const Vector& b,
     Vector& p)
 {
-  int dim = m->getModelType(g);
   double range[2];
   bool isPeriodic = m->getPeriodicRange(g,0,range);
   p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 0);
   p[1] = 0.0;
   p[2] = 0.0;
-
-  // this need to be done for edges or edges, only
-  if (dim != 1)
-    return;
-
-  Vector x;
-  bool ok;
-  ok = m->isParamPointInsideModel(g, &p[0], x);
-  if (ok)
-    return;
-
-  p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 1);
 }
 
 
