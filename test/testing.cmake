@@ -490,6 +490,9 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/sph_vertical_slice.smb"
       "sph_vertical_slice_refine"
       "3")
+    mpi_test(crack_test 1
+      ./crack_test
+      "${MDIR}/crack_nat.x_t")
   endif(SIM_PARASOLID)
 endif()
 if (PCU_COMPRESS)

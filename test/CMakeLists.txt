@@ -161,6 +161,7 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(inClosureOf_test inClosureOf_test.cc)
   test_exe_func(degenerate_test degenerateSurfs.cc)
   test_exe_func(simZBalance simZBalance.cc)
+  test_exe_func(crack_test crack_test.cc)
 endif()
 
 
