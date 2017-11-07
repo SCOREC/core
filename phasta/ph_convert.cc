@@ -270,6 +270,8 @@ int main(int argc, char** argv)
   phIn.displacementMigration = false;
   phIn.dwalMigration = false;
   phIn.buildMapping = true;
+  ph::BCs bcs;
+  ph::generateOutput(phIn, bcs, mesh, phOut);
   ph::detachAndWriteSolution(phIn, phOut, mesh, restartPath);
 
   mesh->destroyNative();
