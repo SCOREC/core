@@ -9,9 +9,9 @@
 namespace {
 
 struct Scale {
-  int x;
-  int y;
-  int z;
+  double x;
+  double y;
+  double z;
   double s;
 };
 
@@ -61,9 +61,9 @@ int main(int argc, char** argv) {
   const char* mfile = argv[2];
   const char* ofile = argv[3];
   Scale scale;
-  scale.x = atoi(argv[4]);
-  scale.y = atoi(argv[5]);
-  scale.z = atoi(argv[6]);
+  scale.x = atof(argv[4]);
+  scale.y = atof(argv[5]);
+  scale.z = atof(argv[6]);
   scale.s = atof(argv[7]);
   apf::Mesh2* m = apf::loadMdsMesh(gfile, mfile);
   m->verify();
