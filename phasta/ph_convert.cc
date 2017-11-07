@@ -81,11 +81,15 @@ void getConfig(int argc, char** argv) {
 
   const char* usage=""
     "[options] <model file> <simmetrix mesh> <scorec mesh>\n"
-    "options:\n"
-    "  --no-pyramid-fix                Disable quad-connected pyramid tetrahedronization\n"
-    "  --attach-order                  Attach the Simmetrix element order as a Numbering\n"
-    "  --enable-log                    Enable Simmetrix logging\n"
-    "  --native-model=/path/to/model   Load the native Parasolid or ACIS model that the GeomSim model uses\n";
+    "Convert a Simmetrix mesh classified on a GeomSim, and/or a Parasolid/ACIS native model, to a PUMI mesh.\n"
+    "During conversion, the ordering of mesh entities in the Simmetrix mesh is attached to the PUMI mesh.\n"
+    "This information primarily supports transferring size fields from the PUMI mesh to the Simmetrix mesh to\n"
+    "drive Simmetrix mesh adaptation.\n\n"
+    "<options> <default value> <brief description>:\n"
+    "  --no-pyramid-fix                on   Disable quad-connected pyramid tetrahedronization\n"
+    "  --attach-order                  off   Attach the Simmetrix element order as a Numbering\n"
+    "  --enable-log                    off  Enable Simmetrix logging\n"
+    "  --native-model=/path/to/model        Load the native Parasolid or ACIS model that the GeomSim model uses\n";
 
   int option_index = 0;
   while(1) {
