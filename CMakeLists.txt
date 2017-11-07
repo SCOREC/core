@@ -1,10 +1,10 @@
-# This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.0)
-
 if(DEFINED TRIBITS_PACKAGE)
   include(pkg_tribits.cmake)
   return()
 endif()
+
+# This is the top level CMake file for the SCOREC build
+cmake_minimum_required(VERSION 3.0)
 
 project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
 
