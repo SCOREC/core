@@ -91,6 +91,7 @@ util_exe_func(reorder reorder.cc)
 util_exe_func(fixshape fixshape.cc)
 util_exe_func(fixlayer fixlayer.cc)
 util_exe_func(fixDisconnected fixDisconnected.cc)
+util_exe_func(scale scale.cc) 
 
 # Phasta utilities
 util_exe_func(chef ../phasta/chef.cc)
@@ -164,7 +165,6 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(simZBalance simZBalance.cc)
   test_exe_func(crack_test crack_test.cc)
 endif()
-
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
