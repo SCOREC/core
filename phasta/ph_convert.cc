@@ -9,6 +9,7 @@
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMesh2.h>
+#include <apfNumbering.h>
 #include <ma.h>
 #include <ph.h>
 #include <phRestart.h>
@@ -16,8 +17,16 @@
 #include <apfGeometry.h>
 #include <pcu_util.h>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
+#include <getopt.h>
+
+
+static void attachOrder(apf::Mesh* m)
+{
+  apf::numberOverlapDimension(m, "sim_order", m->getDimension());
+}
 namespace {
   static FILE* openFileRead(ph::Input&, const char* path) {
     return fopen(path, "r");
@@ -41,10 +50,88 @@ static void fixMatches(apf::Mesh2* m)
 
 static void fixPyramids(apf::Mesh2* m)
 {
+  if (m->getDimension() != 3)
+    return; /* no pyramids exist in 2D */
+  if (apf::countEntitiesOfType(m, apf::Mesh::HEX))
+    return; /* meshadapt can't even look at hexes */
   ma::Input* in = ma::configureIdentity(m);
   in->shouldCleanupLayer = true;
   ma::adapt(in);
 }
+const char* gmi_path = NULL;
+const char* gmi_native_path = NULL;
+const char* sms_path = NULL;
+const char* smb_path = NULL;
+int should_log = 0;
+int should_fix_pyramids = 1;
+int should_attach_order = 0;
+bool found_bad_arg = false;
+
+void getConfig(int argc, char** argv) {
+
+  opterr = 0;
+
+  static struct option long_opts[] = {
+    {"no-pyramid-fix", no_argument, &should_fix_pyramids, 0},
+    {"attach-order", no_argument, &should_attach_order, 1},
+    {"enable-log", no_argument, &should_log, 2},
+    {"native-model", required_argument, 0, 'n'},
+    {0, 0, 0, 0}  // terminate the option array
+  };
+
+  const char* usage=""
+    "[options] <model file> <simmetrix mesh> <scorec mesh>\n"
+    "Convert a Simmetrix mesh classified on a GeomSim, and/or a Parasolid/ACIS native model, to a PUMI mesh.\n"
+    "During conversion, the ordering of mesh entities in the Simmetrix mesh is attached to the PUMI mesh.\n"
+    "This information primarily supports transferring size fields from the PUMI mesh to the Simmetrix mesh to\n"
+    "drive Simmetrix mesh adaptation.\n\n"
+    "<options> <default value> <brief description>:\n"
+    "  --no-pyramid-fix                on   Disable quad-connected pyramid tetrahedronization\n"
+    "  --attach-order                  off   Attach the Simmetrix element order as a Numbering\n"
+    "  --enable-log                    off  Enable Simmetrix logging\n"
+    "  --native-model=/path/to/model        Load the native Parasolid or ACIS model that the GeomSim model uses\n";
+
+  int option_index = 0;
+  while(1) {
+    int c = getopt_long(argc, argv, "", long_opts, &option_index);
+    if (c == -1) break; //end of options
+    switch (c) {
+      case 0: // pyramid fix flag
+      case 1: // attach order flag
+      case 2: // enable simmetrix logging
+        break;
+      case 'n':
+        gmi_native_path = optarg;
+        break;
+      case '?':
+        if (!PCU_Comm_Self())
+          printf ("warning: skipping unrecognized option\n");
+        break;
+      default:
+        if (!PCU_Comm_Self())
+          printf("Usage %s %s", argv[0], usage);
+        exit(EXIT_FAILURE);
+    }
+  }
+
+  if(argc-optind != 3) {
+    if (!PCU_Comm_Self())
+      printf("Usage %s %s", argv[0], usage);
+    exit(EXIT_FAILURE);
+  }
+  int i=optind;
+  gmi_path = argv[i++];
+  sms_path = argv[i++];
+  smb_path = argv[i++];
+
+  if (!PCU_Comm_Self()) {
+    printf ("fix_pyramids %d attach_order %d enable_log %d\n",
+            should_fix_pyramids, should_attach_order, should_log);
+    printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
+      gmi_native_path, gmi_path, sms_path, smb_path);
+  }
+}
+
 
 static void fixCoords(apf::Mesh2* m)
 {
@@ -129,31 +216,54 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
-  if (argc != 4) {
-    if(0==PCU_Comm_Self())
-      std::cerr << "usage: " << argv[0] << " <model file> <simmetrix mesh> <scorec mesh>\n";
-    return EXIT_FAILURE;
-  }
+  MS_init();
+  SimModel_start();
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
+
+  getConfig(argc, argv);
+  if( should_log )
+    Sim_logOn("convert.sim.log");
+
+  if (should_attach_order && should_fix_pyramids) {
+    if (!PCU_Comm_Self())
+      std::cout << "disabling pyramid fix because --attach-order was given\n";
+    should_fix_pyramids = false;
+  }
+
   gmi_sim_start();
   gmi_register_sim();
-  PCU_Protect();
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
-  gmi_model* mdl = gmi_load(argv[1]);
+  gmi_model* mdl;
+  if( gmi_native_path )
+    mdl = gmi_sim_load(gmi_native_path,gmi_path);
+  else
+    mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
-  pParMesh sim_mesh = PM_load(argv[2], simModel, progress);
+  double t0 = PCU_Time();
+  pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
+  double t1 = PCU_Time();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  double t2 = PCU_Time();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
+  if (should_attach_order) attachOrder(simApfMesh);
   ph::buildMapping(simApfMesh);
-  
+
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
+  double t3 = PCU_Time();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "created the apf_mds mesh in %f seconds\n", t3-t2);
+
   apf::printStats(mesh);
   apf::destroyMesh(simApfMesh);
   M_release(sim_mesh);
   postConvert(mesh);
-  mesh->writeNative(argv[3]);
+  mesh->writeNative(smb_path);
   std::string restartPath = ph::setupOutputDir();
   ph::Input phIn;
   phIn.openfile_read = openFileRead;
@@ -164,6 +274,8 @@ int main(int argc, char** argv)
   phIn.displacementMigration = false;
   phIn.dwalMigration = false;
   phIn.buildMapping = true;
+  ph::BCs bcs;
+  ph::generateOutput(phIn, bcs, mesh, phOut);
   ph::detachAndWriteSolution(phIn, phOut, mesh, restartPath);
 
   mesh->destroyNative();
@@ -173,7 +285,10 @@ int main(int argc, char** argv)
   gmi_sim_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
+  SimModel_stop();
+  MS_exit();
+  if( should_log )
+    Sim_logOff();
   PCU_Comm_Free();
   MPI_Finalize();
 }
-

@@ -233,6 +233,7 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
   gmi_ent* r = (gmi_ent*)adjRegions->e[0];
   gmi_eval(getModel(), (gmi_ent*)g, &param[0], &x[0]);
   int res = gmi_is_point_in_region(getModel(), r, &x[0]);
+  gmi_free_set(adjRegions);
   return (res == 1) ? true : false;
 }
 

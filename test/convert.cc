@@ -50,6 +50,7 @@ const char* gmi_path = NULL;
 const char* gmi_native_path = NULL;
 const char* sms_path = NULL;
 const char* smb_path = NULL;
+int should_log = 0;
 int should_fix_pyramids = 1;
 int should_attach_order = 0;
 bool found_bad_arg = false;
@@ -61,6 +62,7 @@ void getConfig(int argc, char** argv) {
   static struct option long_opts[] = {
     {"no-pyramid-fix", no_argument, &should_fix_pyramids, 0},
     {"attach-order", no_argument, &should_attach_order, 1},
+    {"enable-log", no_argument, &should_log, 2},
     {"native-model", required_argument, 0, 'n'},
     {0, 0, 0, 0}  // terminate the option array
   };
@@ -70,6 +72,7 @@ void getConfig(int argc, char** argv) {
     "options:\n"
     "  --no-pyramid-fix                Disable quad-connected pyramid tetrahedronization\n"
     "  --attach-order                  Attach the Simmetrix element order as a Numbering\n"
+    "  --enable-log                    Enable Simmetrix logging\n"
     "  --native-model=/path/to/model   Load the native Parasolid or ACIS model that the GeomSim model uses\n";
 
   int option_index = 0;
@@ -79,6 +82,7 @@ void getConfig(int argc, char** argv) {
     switch (c) {
       case 0: // pyramid fix flag
       case 1: // attach order flag
+      case 2: // enable simmetrix logging
         break;
       case 'n':
         gmi_native_path = optarg;
@@ -105,7 +109,8 @@ void getConfig(int argc, char** argv) {
   smb_path = argv[i++];
 
   if (!PCU_Comm_Self()) {
-    printf ("fix_pyramids %d attach_order %d\n", should_fix_pyramids, should_attach_order);
+    printf ("fix_pyramids %d attach_order %d enable_log %d\n",
+            should_fix_pyramids, should_attach_order, should_log);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
       gmi_native_path, gmi_path, sms_path, smb_path);
   }
@@ -121,6 +126,8 @@ int main(int argc, char** argv)
   SimPartitionedMesh_start(&argc,&argv);
 
   getConfig(argc, argv);
+  if( should_log )
+    Sim_logOn("convert.sim.log");
 
   if (should_attach_order && should_fix_pyramids) {
     if (!PCU_Comm_Self())
@@ -136,7 +143,7 @@ int main(int argc, char** argv)
   gmi_model* mdl;
   if( gmi_native_path )
     mdl = gmi_sim_load(gmi_native_path,gmi_path);
-  else 
+  else
     mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
   double t0 = PCU_Time();
@@ -149,7 +156,7 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
-  
+
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   double t3 = PCU_Time();
   if(!PCU_Comm_Self())
@@ -172,6 +179,8 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
+  if( should_log )
+    Sim_logOff();
   PCU_Comm_Free();
   MPI_Finalize();
 }
