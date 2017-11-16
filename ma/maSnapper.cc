@@ -163,6 +163,51 @@ static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
   return false;
 }
 
+static void updateVertexParametricCoords(
+    Mesh* m,
+    Entity* vert,
+    Vector& newTarget)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(vert) == apf::Mesh::VERTEX, "expecting a vertex!");
+
+  apf::Up edges;
+  m->getUp(vert,edges);
+  apf::Up ovs;
+  ovs.n = edges.n;
+  for (int i = 0; i < edges.n; ++i)
+    ovs.e[i] = apf::getEdgeVertOppositeVert(m, edges.e[i], vert);
+
+
+  Vector pBar(0., 0., 0.);
+  for (int i = 0; i < ovs.n; i++) {
+    Vector pTmp;
+    m->getParamOn(m->toModel(vert), ovs.e[i], pTmp);
+    pBar += pTmp;
+  }
+  pBar = pBar / ovs.n;
+
+  m->snapToModel(m->toModel(vert), pBar, newTarget);
+  m->setParam(vert, pBar);
+}
+
+static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
+{
+  Mesh* m = adapter->mesh;
+  int dim = m->getDimension();
+  PCU_ALWAYS_ASSERT_VERBOSE(dim == 2,
+      "expecting a 2D surface meshe!");
+  PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),
+      "expecting the vertex to have a tag!");
+  bool hadItBefore = getFlag(adapter, v, DONT_MOVE);
+  setFlag(adapter, v, DONT_MOVE);
+  Vector newTarget;
+  updateVertexParametricCoords(m, v, newTarget);
+  m->setDoubleTag(v, tag, &newTarget[0]);
+  if (!hadItBefore)
+    clearFlag(adapter, v, DONT_MOVE);
+  return true;
+}
+
 static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
     apf::Up& badElements, FirstProblemPlane* FPP = 0)
 {
@@ -177,6 +222,7 @@ static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
 bool Snapper::run()
 {
   dug = false;
+  moved = false;
   apf::Up badElements;
   bool ok = trySnapping(adapter, snapTag, vert, badElements);
   if (isSimple)
@@ -190,9 +236,12 @@ bool Snapper::run()
 #else
   FPP = 0;
 #endif
-  dug = tryDigging(adapter, collapse, vert, badElements, FPP);
+  if (adapter->mesh->getDimension() == 2)
+    moved = tryMoving(adapter, vert, snapTag);
+  else
+    dug = tryDigging(adapter, collapse, vert, badElements, FPP);
   delete FPP;
-  if (!dug)
+  if (!dug && !moved)
     return false;
   return trySnapping(adapter, snapTag, vert, badElements);
 }
