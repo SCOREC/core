@@ -174,13 +174,16 @@ void dumpMeshWithQualities(ma::Adapt* a,
   colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
 
   // for snap debug
-  addTargetLocation(a, "target_for_snap");
+  if (a->mesh->canSnap())
+    addTargetLocation(a, "target_for_snap");
 
 
   // setup file name and write the mesh
   std::stringstream ss;
+
   ss << a->input->debugFolder << "/";
-  ss << prefix << "_" << std::setfill('0') << std::setw(3) << iter;
+  ss << std::setfill('0') << std::setw(3) << iter << "_";
+  ss << prefix;
 
   writeMesh(a->mesh, ss.str().c_str(), "");
 
