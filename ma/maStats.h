@@ -18,6 +18,7 @@
 #include <pcu_util.h>
 
 #include <vector>
+#include <math.h>
 
 namespace ma {
 
