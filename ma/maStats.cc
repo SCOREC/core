@@ -4,6 +4,7 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
+
 #include "maStats.h"
 
 namespace ma {
@@ -35,12 +36,7 @@ void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
   while( (e = m->iterate(it)) ) {
     if (! m->isOwned(e))
       continue;
-    double lq = ma::measureElementQuality(m, sf, e);
-    if (m->getDimension() == 2)
-      lq = (lq > 0) ? std::sqrt(lq) : -std::sqrt(-lq);
-    else
-      lq = cbrt(lq);
-    linearQualities.push_back(lq);
+    linearQualities.push_back(ma::measureElementQuality(m, sf, e));
   }
   m->end(it);
 
@@ -70,7 +66,6 @@ void getStatsInPhysicalSpace(ma::Mesh* m,
   // linear qualities
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
-    double lq;
     if (m->getType(e) == apf::Mesh::TRIANGLE) {
       ma::Vector p[3];
       ma::getVertPoints(m, e, p);
@@ -81,21 +76,18 @@ void getStatsInPhysicalSpace(ma::Mesh* m,
       double s = 0;
       for (int i = 0; i < 3; i++)
 	s += l[i] * l[i];
+      double lq;
       if (A < 0)
 	lq = -48. * (A*A) / (s*s);
       else
 	lq =  48. * (A*A) / (s*s);
+      linearQualities.push_back(lq);
     }
     else if (m->getType(e) == apf::Mesh::TET){
       ma::Vector p[4];
       ma::getVertPoints(m, e, p);
-      lq = ma::measureLinearTetQuality(p);
+      linearQualities.push_back(ma::measureLinearTetQuality(p));
     }
-    if (m->getDimension() == 2)
-      lq = (lq > 0) ? std::sqrt(lq) : -std::sqrt(-lq);
-    else
-      lq = cbrt(lq);
-    linearQualities.push_back(lq);
   }
   m->end(it);
 
