@@ -56,6 +56,9 @@ if(ENABLE_VIZ)
   test_exe_func(viz_test viz.cc)
 endif()
 
+# Mesh statistic measurement utilities
+util_exe_func(measureAnisoStats measureAnisoStats.cc)
+
 if(ENABLE_SIMMETRIX)
   util_exe_func(convert convert.cc)
   util_exe_func(ph_convert ../phasta/ph_convert.cc)
