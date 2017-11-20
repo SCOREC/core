@@ -31,6 +31,7 @@ class Snapper
     bool setVert(Entity* v, apf::CavityOp* o);
     bool run();
     bool dug;
+    bool moved;
   private:
     Adapt* adapter;
     Tag* snapTag;

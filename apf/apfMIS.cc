@@ -247,6 +247,7 @@ namespace apf {
       if (c == color)
         ents[n++] = ent;
     }
+    m->end(vitr);
   }
     
 }

@@ -497,7 +497,7 @@ class LargeAngleTriFixer : public Operator
       edgeSwap = makeEdgeSwap(a);
       ns = nf = 0;
       tri = 0;
-      edges[0] = edges[1] = edges[2] = 0;
+      edge = 0;
     }
     virtual ~LargeAngleTriFixer()
     {
@@ -509,17 +509,35 @@ class LargeAngleTriFixer : public Operator
       if ( ! getFlag(adapter,e,BAD_QUALITY))
         return false;
       tri = e;
+      // get the metric Q for angle computations
+      SizeField* sf = adapter->sizeField;
+      Matrix Q;
+      apf::MeshElement* me = apf::createMeshElement(mesh, tri);
+      Vector center(1./3.,1./3.,1./3.);
+      sf->getTransform(me,center,Q);
+
+      // pick the edge opposite to the largest angle (in metric) for swap
+      Entity* edges[3];
       mesh->getDownward(e,1,edges);
+      double minCos = 1.0;
+      for (int i = 0; i < 3; i++) {
+        Entity* current = edges[i%3];
+        Entity*    next = edges[(i+1)%3];
+        double cosAngle = apf::computeCosAngle(mesh, tri, current, next, Q);
+        if (cosAngle < minCos) {
+          minCos = cosAngle;
+          edge = edges[(i+2)%3];
+	}
+      }
       return true;
     }
     virtual bool requestLocality(apf::CavityOp* o)
     {
-      return o->requestLocality(edges,3);
+      return o->requestLocality(&edge,1);
     }
     virtual void apply()
     {
-      for (int i=0; i < 3; ++i)
-        if (edgeSwap->run(edges[i]))
+        if (edgeSwap->run(edge))
         {
           ++ns;
           return;
@@ -531,7 +549,7 @@ class LargeAngleTriFixer : public Operator
     Adapt* adapter;
     Mesh* mesh;
     Entity* tri;
-    Entity* edges[3];
+    Entity* edge;
     EdgeSwap* edgeSwap;
     int ns;
     int nf;
@@ -596,7 +614,13 @@ void fixElementShapes(Adapt* a)
       break;
     prev_count = count;
     fixLargeAngles(a);
-    snap(a);
+    /* We need to snap the new verts as soon as they are
+     * created (to avoid future problems). At the moment
+     * new verts are created only during 3D mesh adapt, so
+     * we only run a bulk snap operation if the mesh is 3D.
+     */
+    if (a->mesh->getDimension() == 3)
+      snap(a);
     markBadQuality(a);
     fixShortEdgeElements(a);
     count = markBadQuality(a);
