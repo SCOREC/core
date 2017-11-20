@@ -301,6 +301,14 @@ int mds_align_remotes(struct mds_apf* m)
   return align_copies(&m->remotes, &m->mds);
 }
 
+void mds_update_model_for_entity(struct mds_apf* m, mds_id e,
+				   int dim, int modelTag)
+{
+  struct gmi_ent* modelEntity = mds_find_model(m, dim, modelTag);
+  m->model[mds_type(e)][mds_index(e)] = modelEntity;
+  // TODO: Also classify the closure?
+}
+
 /* uses the null model to classify a mesh
    that did not have a model in such a way
    that verification will accept it */
