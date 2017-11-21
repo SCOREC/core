@@ -211,6 +211,98 @@ bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat)
   return false;
 }
 
+Entity* getMaxEdgeLength(Adapt* a, EntityArray& ents, double& maxLength,
+    bool useMax)
+{
+  Mesh* m = a->mesh;
+  SizeField* sf = a->sizeField;
+
+  int type;
+  for (int i = 0; i < ents.getSize(); i++) {
+    type = m->getType(ents[0]);
+    PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
+  }
+
+  Vector xi;
+  if (type == apf::Mesh::TRIANGLE)
+    xi = Vector(1./3., 1./3., 1./3.);
+  else
+    xi = Vector(1./4., 1./4., 1./4.);
+
+
+  maxLength = 0.;
+  Entity* longEdge = 0;
+  for (int i = 0; i < ents.getSize(); i++) {
+    // get the Q
+    Entity* ent = ents[i];
+    Matrix Q;
+    if (!useMax) {
+      apf::MeshElement* me = createMeshElement(m, ent);
+      sf->getTransform(me, xi, Q);
+      apf::destroyMeshElement(me);
+    }
+    else
+      Q = getMetricWithMaxJacobean(m, sf, ent);
+    // iter over downward edges and update {min,max}length
+    Downward down;
+    int nd = m->getDownward(ent, 1, down);
+    for (int j = 0; j < nd; j++) {
+      double length = qMeasure(m, down[j], Q);
+      if (length > maxLength) {
+      	maxLength = length;
+      	longEdge = down[j];
+      }
+    }
+  }
+  return longEdge;
+}
+
+Entity* getMinEdgeLength(Adapt* a, EntityArray& ents, double& minLength,
+    bool useMax)
+{
+  Mesh* m = a->mesh;
+  SizeField* sf = a->sizeField;
+
+  int type;
+  for (int i = 0; i < ents.getSize(); i++) {
+    type = m->getType(ents[0]);
+    PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
+  }
+
+  Vector xi;
+  if (type == apf::Mesh::TRIANGLE)
+    xi = Vector(1./3., 1./3., 1./3.);
+  else
+    xi = Vector(1./4., 1./4., 1./4.);
+
+
+  minLength = 1.e12;
+  Entity* shortEdge = 0;
+  for (int i = 0; i < ents.getSize(); i++) {
+    // get the Q
+    Entity* ent = ents[i];
+    Matrix Q;
+    if (!useMax) {
+      apf::MeshElement* me = createMeshElement(m, ent);
+      sf->getTransform(me, xi, Q);
+      apf::destroyMeshElement(me);
+    }
+    else
+      Q = getMetricWithMaxJacobean(m, sf, ent);
+    // iter over downward edges and update {min,max}length
+    Downward down;
+    int nd = m->getDownward(ent, 1, down);
+    for (int j = 0; j < nd; j++) {
+      double length = qMeasure(m, down[j], Q);
+      if (length < minLength) {
+      	minLength = length;
+      	shortEdge = down[j];
+      }
+    }
+  }
+  return shortEdge;
+}
+
 /* applies the same measure as measureTetQuality
    but works directly off the points. */
 double measureLinearTetQuality(Vector xyz[4])
