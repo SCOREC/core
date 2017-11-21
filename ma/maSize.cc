@@ -133,7 +133,7 @@ class SizeFieldIntegrator : public apf::Integrator
 {
   public:
     SizeFieldIntegrator(SizeField* sF):
-      Integrator(1),
+      Integrator(2),
       measurement(0),
       sizeField(sF),
       meshElement(0),
@@ -566,5 +566,26 @@ double getAverageEdgeLength(Mesh* m)
   PCU_Add_Doubles(sums,2);
   return length_sum / edge_count;
 }
+
+double getMaximumEdgeLength(Mesh* m, SizeField* sf)
+{
+  if (!sf)
+    sf = new IdentitySizeField(m);
+  double maxLength = 0.0;
+  apf::MeshIterator* it = m->begin(1);
+  Entity* e;
+  while ((e = m->iterate(it)))
+  {
+    if (!m->isOwned(e))
+      continue;
+    double length = sf->measure(e);
+    if (length > maxLength)
+      maxLength = length;
+  }
+  m->end(it);
+  PCU_Max_Doubles(&maxLength,1);
+  return maxLength;
+}
+
 
 }

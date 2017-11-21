@@ -95,6 +95,7 @@ SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f, int const interpolatio
 SizeField* makeSizeField(Mesh* m, IsotropicFunction* f);
 
 double getAverageEdgeLength(Mesh* m);
+double getMaximumEdgeLength(Mesh* m, SizeField* sf = 0);
 
 }
 
