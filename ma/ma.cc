@@ -87,6 +87,7 @@ void adaptVerbose(Input* in, bool verbose)
     if (PCU_Comm_Self() == 1) {
       printf("%dth additional refine-snap call\n", count);
       printf("Maximum (metric) edge length in the mesh is %f\n", lMax);
+    }
     refine(a);
     snap(a);
     lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
