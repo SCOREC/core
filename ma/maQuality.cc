@@ -71,7 +71,7 @@ class FixedMetricIntegrator : public apf::Integrator
 };
 
 
-double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
+static double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
 {
   FixedMetricIntegrator integrator(mesh, Q);
   apf::MeshElement* me = apf::createMeshElement(mesh, e);

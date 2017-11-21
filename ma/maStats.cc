@@ -49,11 +49,7 @@ void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
   while( (e = m->iterate(it)) ) {
     if (! m->isOwned(e))
       continue;
-    apf::MeshElement* me = createMeshElement(m, e);
-    ma::Matrix Q;
-    sf->getTransform(me, ma::Vector(0., 0., 0.), Q);
-    apf::destroyMeshElement(me);
-    edgeLengths.push_back(ma::qMeasure(m, e, Q));
+    edgeLengths.push_back(sf->measure(e));
   }
   m->end(it);
 }
@@ -102,12 +98,8 @@ void getStatsInPhysicalSpace(ma::Mesh* m,
   // edge lengths
   it = m->begin(1);
   while( (e = m->iterate(it)) ) {
-    apf::MeshElement* me = createMeshElement(m, e);
-    ma::Matrix Q = ma::Matrix(1.0, 0.0, 0.0,
-			      0.0, 1.0, 0.0,
-			      0.0, 0.0, 1.0);;
-    apf::destroyMeshElement(me);
-    edgeLengths.push_back(ma::qMeasure(m, e, Q));
+    SizeField* sf = new IdentitySizeField(m);
+    edgeLengths.push_back(sf->measure(e));
   }
   m->end(it);
 }
