@@ -18,13 +18,25 @@
 #include <pcu_util.h>
 
 #include <vector>
+#include <math.h>
 
 namespace ma {
+
+void getLinearQualitiesInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
+    std::vector<double> &linearQualities);
+
+void getEdgeLengthsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
+    std::vector<double> &edgeLengths);
+
+void getLinearQualitiesInPhysicalSpace(ma::Mesh* m,
+    std::vector<double> &linearQualities);
+
+void getEdgeLengthsInPhysicalSpace(ma::Mesh* m,
+    std::vector<double> &edgeLengths);
 
 void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities);
-
 
 void getStatsInPhysicalSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,

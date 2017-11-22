@@ -208,7 +208,6 @@ static void updateVertexParametricCoords(
 static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
 {
   Mesh* m = adapter->mesh;
-  int dim = m->getDimension();
   /* PCU_ALWAYS_ASSERT_VERBOSE(dim == 2, */
   /*     "expecting a 2D surface meshe!"); */
   PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),

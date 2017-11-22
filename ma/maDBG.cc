@@ -95,49 +95,6 @@ void colorEntitiesOfDimWithValues(ma::Adapt* a,
   m->end(it);
 }
 
-void measureLinearQualties(ma::Adapt* a,
-    std::vector<double> &lq,
-    bool inMetric)
-{
-  ma::Mesh* m = a->mesh;
-  int dim = m->getDimension();
-  ma::SizeField* sf = a->sizeField;
-  ma::Entity* e;
-  ma::Iterator* it;
-
-  it = m->begin(dim);
-  while ( (e = m->iterate(it)) ) {
-    if (inMetric) {
-      lq.push_back(ma::measureElementQuality(m, sf, e, true));
-    }
-    else {
-      if (m->getType(e) == apf::Mesh::TRIANGLE) {
-    ma::Vector p[3];
-    ma::getVertPoints(m, e, p);
-    double l[3];
-    for (int i = 0; i < 3; i++)
-       l[i] = (p[(i+1)%3] - p[i]).getLength();
-    double A = 0.5 * apf::cross(p[1] - p[0], p[2] - p[0])[2];
-    double s = 0;
-    for (int i = 0; i < 3; i++)
-      s += l[i] * l[i];
-    double q;
-    if (A < 0)
-      q = -48. * (A*A) / (s*s);
-    else
-      q =  48. * (A*A) / (s*s);
-    lq.push_back(q);
-  }
-  else if (m->getType(e) == apf::Mesh::TET){
-    ma::Vector p[4];
-    ma::getVertPoints(m, e, p);
-    lq.push_back(ma::measureLinearTetQuality(p));
-  }
-    }
-  }
-  m->end(it);
-}
-
 void evaluateFlags(ma::Adapt* a,
     int dim,
     int flag,
@@ -162,14 +119,9 @@ void dumpMeshWithQualities(ma::Adapt* a,
   // measure qualities
   std::vector<double> lq_metric;
   std::vector<double> lq_no_metric;
-  measureLinearQualties(a, lq_metric, true);
-  measureLinearQualties(a, lq_no_metric, false);
+  ma::getLinearQualitiesInMetricSpace(a->mesh, a->sizeField, lq_metric);
+  ma::getLinearQualitiesInPhysicalSpace(a->mesh, lq_no_metric);
 
-
-  for (size_t i = 0; i < lq_metric.size(); i++) {
-    lq_metric[i] = cbrt(lq_metric[i]);
-    lq_no_metric[i] = cbrt(lq_no_metric[i]);
-  }
   colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
   colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
 

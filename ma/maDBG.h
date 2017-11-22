@@ -14,6 +14,7 @@
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include "maAdapt.h"
+#include "maStats.h"
 
 #include <vector>
 #include <assert.h>
@@ -31,10 +32,6 @@ void colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & quals,
     const char* fieldName);
-
-void measureLinearQualties(ma::Adapt* a,
-     std::vector<double> &lq,
-     bool inMetric = true);
 
 void evaluateFlags(ma::Adapt* a,
     int dim,

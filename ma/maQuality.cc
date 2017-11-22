@@ -71,7 +71,7 @@ class FixedMetricIntegrator : public apf::Integrator
 };
 
 
-double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
+static double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
 {
   FixedMetricIntegrator integrator(mesh, Q);
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
@@ -217,8 +217,8 @@ Entity* getMaxEdgeLength(Adapt* a, EntityArray& ents, double& maxLength,
   Mesh* m = a->mesh;
   SizeField* sf = a->sizeField;
 
-  int type;
-  for (int i = 0; i < ents.getSize(); i++) {
+  int type = 0;
+  for (size_t i = 0; i < ents.getSize(); i++) {
     type = m->getType(ents[0]);
     PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
   }
@@ -232,7 +232,7 @@ Entity* getMaxEdgeLength(Adapt* a, EntityArray& ents, double& maxLength,
 
   maxLength = 0.;
   Entity* longEdge = 0;
-  for (int i = 0; i < ents.getSize(); i++) {
+  for (size_t i = 0; i < ents.getSize(); i++) {
     // get the Q
     Entity* ent = ents[i];
     Matrix Q;
@@ -263,8 +263,8 @@ Entity* getMinEdgeLength(Adapt* a, EntityArray& ents, double& minLength,
   Mesh* m = a->mesh;
   SizeField* sf = a->sizeField;
 
-  int type;
-  for (int i = 0; i < ents.getSize(); i++) {
+  int type = 0;
+  for (size_t i = 0; i < ents.getSize(); i++) {
     type = m->getType(ents[0]);
     PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
   }
@@ -278,7 +278,7 @@ Entity* getMinEdgeLength(Adapt* a, EntityArray& ents, double& minLength,
 
   minLength = 1.e12;
   Entity* shortEdge = 0;
-  for (int i = 0; i < ents.getSize(); i++) {
+  for (size_t i = 0; i < ents.getSize(); i++) {
     // get the Q
     Entity* ent = ents[i];
     Matrix Q;

@@ -75,6 +75,8 @@ int mds_align_ghosts(struct mds_apf* m);
 int mds_align_remotes(struct mds_apf* m);
 
 void mds_derive_model(struct mds_apf* m);
+  void mds_update_model_for_entity(struct mds_apf* m, mds_id e,
+				   int dim, int modelTag);
 
 extern int const mds_apf_double;
 extern int const mds_apf_int;
