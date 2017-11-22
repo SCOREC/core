@@ -6,6 +6,8 @@
 #include <PCU.h>
 #include <pcu_util.h>
 
+#include <stdlib.h>
+
 class AnIso : public ma::AnisotropicFunction
 {
   public:
@@ -19,7 +21,9 @@ class AnIso : public ma::AnisotropicFunction
     {
       ma::Vector p = ma::getPosition(mesh,v);
       double x = (p[0] - lower[0])/(upper[0] - lower[0]);
-      double sizeFactor = x + 2.0;
+      double sizeFactor = 2.;
+      if (x < 0.5)
+	sizeFactor = 3.;
       ma::Vector h(average, average/sizeFactor, average/sizeFactor);
       ma::Matrix r(1.0, 0.0, 0.0,
 		   0.0, 1.0, 0.0,
@@ -36,9 +40,10 @@ class AnIso : public ma::AnisotropicFunction
 
 int main(int argc, char** argv)
 {
-  PCU_ALWAYS_ASSERT(argc==3);
+  PCU_ALWAYS_ASSERT(argc==4);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
+  bool logInterpolation = atoi(argv[3]) > 0 ? true : false;
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   gmi_register_mesh();
@@ -46,14 +51,18 @@ int main(int argc, char** argv)
   m->verify();
   apf::writeVtkFiles("aniso_before",m);
   AnIso sf(m);
-  ma::Input* in = ma::configure(m, &sf);
+  ma::Input* in = ma::configure(m, &sf, 0, logInterpolation);
   in->shouldRunPreZoltan = true;
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;
   in->shouldRefineLayer = true;
+  in->goodQuality = 0.2;
   ma::adapt(in);
   m->verify();
-  apf::writeVtkFiles("aniso_after",m);
+  if (logInterpolation)
+    apf::writeVtkFiles("aniso_log_interpolation_after",m);
+  else
+    apf::writeVtkFiles("aniso_after",m);
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
