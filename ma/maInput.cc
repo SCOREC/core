@@ -139,7 +139,8 @@ Input* configure(
 Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
-    SolutionTransfer* s)
+    SolutionTransfer* s,
+    bool logInterpolation)
 {
 /* AutoSolutionTransfer object has to be created
    before the MetricSizeField, to avoid
@@ -147,7 +148,7 @@ Input* configure(
    the metric field, which has its own built-in
    solution transfer */
   Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, f, 0);
+  in->sizeField = makeSizeField(m, f, logInterpolation);
   return in;
 }
 
@@ -175,10 +176,11 @@ Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
-    SolutionTransfer* s)
+    SolutionTransfer* s,
+    bool logInterpolation)
 {
   Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, sizes, frames);
+  in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
   return in;
 }
 

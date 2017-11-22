@@ -422,6 +422,9 @@ struct AnisoSizeField : public MetricSizeField
 
 struct LogAnisoSizeField : public MetricSizeField
 {
+  LogAnisoSizeField()
+  {
+  }
   LogAnisoSizeField(Mesh* m, AnisotropicFunction* f):
     logMEval(f)
   {
@@ -433,10 +436,22 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     apf::destroyField(logMField);
   }
-  void init(Mesh* m, apf::Field* logM)
+  void init(Mesh* m, apf::Field* logSizes, apf::Field* frames)
   {
     mesh = m;
-    logMField = logM;
+    logMField = apf::createFieldOn(m, "ma_logM", apf::MATRIX);
+    Entity* v;
+    Iterator* it = m->begin(0);
+    while ( (v = m->iterate(it)) ) {
+      Vector s;
+      Matrix f;
+      apf::getVector(logSizes, v, 0, s);
+      apf::getMatrix(frames, v, 0, f);
+      Matrix S(s[0], 0   , 0,
+              0    , s[1], 0,
+              0    , 0   , s[2]);
+      apf::setMatrix(logMField, v, 0, f * S * transpose(f));
+    }
   }
   void getTransform(
       apf::MeshElement* me,
@@ -522,17 +537,27 @@ struct IsoUserField : public IsoSizeField
   FieldReader reader;
 };
 
-SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames)
+SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames,
+    bool logInterpolation)
 {
-  AnisoSizeField* f = new AnisoSizeField();
-  f->init(m, sizes, frames);
-  return f;
+  // logInterpolation is "false" by default
+  if (! logInterpolation) {
+    AnisoSizeField* anisoF = new AnisoSizeField();
+    anisoF->init(m, sizes, frames);
+    return anisoF;
+  }
+  else {
+    LogAnisoSizeField* logAnisoF = new LogAnisoSizeField();
+    logAnisoF->init(m, sizes, frames);
+    return logAnisoF;
+  }
 }
 
-SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f, int const interpolationOption)
+SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f,
+    bool logInterpolation)
 {
-  // interpolationOption is 0 by default
-  if(interpolationOption == 0) 
+  // logInterpolation is "false" by default
+  if(! logInterpolation)
     return new AnisoSizeField(m, f);
   else
     return new LogAnisoSizeField(m,f);
