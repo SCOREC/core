@@ -17,6 +17,13 @@
 
 namespace apf {
 
+typedef std::vector<apf::MeshEntity*> ElemSet;
+typedef std::vector<apf::MeshEntity*> SideSet;
+typedef std::vector<apf::Node> NodeSet;
+typedef std::map<std::string, ElemSet> ElemSets;
+typedef std::map<std::string, SideSet> SideSets;
+typedef std::map<std::string, NodeSet> NodeSets;
+
 struct StkModel {
   std::string stkName;
   typedef std::vector<apf::ModelEntity*> Vector;
@@ -52,6 +59,11 @@ int getLocalSideId(Mesh* m, MeshEntity* e,
     MeshEntity* side);
 
 long getStkId(GlobalNumbering* numbers, Node node);
+
+StkModels* create_sets(apf::Mesh* m, const char* assoc_file);
+ElemSets get_elem_sets(apf::Mesh* m, StkModels* sets);
+SideSets get_side_sets(apf::Mesh* m, StkModels* sets);
+NodeSets get_node_sets(apf::Mesh* m, StkModels* sets, GlobalNumbering* n);
 
 }
 
