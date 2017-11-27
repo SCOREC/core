@@ -667,17 +667,23 @@ bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
 long snapTaggedVerts(Adapt* a, Tag* tag)
 {
   long successCount = 0;
-  /* first snap all the vertices we can without digging.
-     This is fast because it uses just the elements around
-     the vertex and doesn't think much, it should also handle
-     the vast majority of vertices */
-  while (snapOneRound(a, tag, true, successCount));
-  /* all the remaining vertices now need some kind of modification
-     in order to snap.
-     Here we turn on the "try digging before snapping" flag,
-     which requires two-layer cavities so hopefully fewer vertices
-     are involved here */
+  /* there are two approaches possible here:
+   * 1- first snap all the vertices we can without any additional
+   * operation such as digging (simple snap). And then try snapping
+   * the remaining vertices that will need extra modifications (non-
+   * simple snap).
+   * 2- first do the non-simple snaps and then the simple snaps.
+   *
+   * Here we choose approach 2 for the following reasons
+   * (a) approach 2 is approximately as fast as approach 1
+   * (b) the problematic snaps will be attempted as soon as possible.
+   * This is extremely helpful because if we wait until later on
+   * bringing the vert to-be-snapped to the boundary might become more
+   * difficult due to the change in location of neighboring verticies
+   * that will be snapped before the problematic vert to-be-snapped.
+   */
   while (snapOneRound(a, tag, false, successCount));
+  while (snapOneRound(a, tag, true, successCount));
   return successCount;
 }
 
