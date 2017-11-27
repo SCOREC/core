@@ -5,6 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include <PCU.h>
 #include <apf_stkConfig.h>
 #include "apfAlbany.h"
 #include <apfMesh.h>
@@ -12,6 +13,7 @@
 #include <gmi.h>
 #include <pcu_util.h>
 #include <cstdlib>
+#include <fstream>
 
 #if HAS_STK
 #include "apfSTK.h"
@@ -752,5 +754,121 @@ long getStkId(GlobalNumbering* numbers, Node node)
 {
   return getNumber(numbers, node) + 1;
 }
+
+StkModels* create_sets(Mesh* m, const char* filename) {
+  StkModels* sets = new StkModels;
+  if (! PCU_Comm_Self())
+    printf("reading association file: %s\n", filename);
+  static std::string const setNames[3] = {
+    "node set", "side set", "elem set"};
+  auto d = m->getDimension();
+  int dims[3] = {0, d - 1, d};
+  std::ifstream f(filename);
+  if (!f.good()) {
+    printf("cannot open file: %s\n", filename);
+    abort();
+  }
+  std::string sline;
+  int lc = 0;
+  while (std::getline(f, sline)) {
+    if (!sline.length()) break;
+    ++lc;
+    int sdi = -1;
+    for (int di = 0; di < 3; ++di)
+      if (sline.compare(0, setNames[di].length(), setNames[di]) == 0) sdi = di;
+    if (sdi == -1) {
+      printf("invalid association line # %d:\n\t%s\n", lc, sline.c_str());
+      abort();
+    }
+    int sd = dims[sdi];
+    std::stringstream strs(sline.substr(setNames[sdi].length()));
+    auto set = new apf::StkModel();
+    strs >> set->stkName;
+    int nents;
+    strs >> nents;
+    if (!strs) {
+      printf("invalid association line # %d:\n\t%s\n", lc, sline.c_str());
+      abort();
+    }
+    for (int ei = 0; ei < nents; ++ei) {
+      std::string eline;
+      std::getline(f, eline);
+      if (!f || !eline.length()) {
+        printf("invalid association after line # %d\n", lc);
+        abort();
+      }
+      ++lc;
+      std::stringstream strs2(eline);
+      int mdim, mtag;
+      strs2 >> mdim >> mtag;
+      if (!strs2) {
+        printf("bad associations line # %d:\n\t%s\n", lc, eline.c_str());
+        abort();
+      }
+      set->ents.push_back(m->findModelEntity(mdim, mtag));
+      if (!set->ents.back()) {
+        printf("no model entity with dim: %d and tag: %d\n", mdim, mtag);
+        abort();
+      }
+    }
+    sets->models[sd].push_back(set);
+  }
+  sets->computeInverse();
+  return sets;
+}
+
+ElemSets get_elem_sets(Mesh* mesh, StkModels* sets) {
+  ElemSets elem_sets;
+  auto dim = mesh->getDimension();
+  apf::MeshEntity* elem;
+  auto it = mesh->begin(dim);
+  while ((elem = mesh->iterate(it))) {
+    auto mr = mesh->toModel(elem);
+    auto stkm = sets->invMaps[dim][mr];
+    auto name = stkm->stkName;
+    elem_sets[name].push_back(elem);
+  }
+  mesh->end(it);
+  return elem_sets;
+}
+
+SideSets get_side_sets(Mesh* mesh, StkModels* sets) {
+  SideSets side_sets;
+  auto dim = mesh->getDimension();
+  apf::MeshEntity* side;
+  auto it = mesh->begin(dim-1);
+  while ((side = mesh->iterate(it))) {
+    auto me = mesh->toModel(side);
+    if (! sets->invMaps[dim-1].count(me))
+      continue;
+    auto stkm = sets->invMaps[dim-1][me];
+    auto name = stkm->stkName;
+    side_sets[name].push_back(side);
+  }
+  mesh->end(it);
+  return side_sets;
+}
+
+NodeSets get_node_sets(Mesh* mesh, StkModels* sets, GlobalNumbering* nmbr) {
+  NodeSets node_sets;
+  apf::DynamicArray<apf::Node> nodes;
+  apf::getNodes(nmbr, nodes);
+  for (size_t n = 0; n < nodes.size(); ++n) {
+    auto node = nodes[n];
+    auto ent = node.entity;
+    if (! mesh->isOwned(ent))
+      continue;
+    std::set<apf::StkModel*> mset;
+    apf::collectEntityModels(mesh, sets->invMaps[0],
+        mesh->toModel(ent), mset);
+    if (mset.empty()) continue;
+    APF_ITERATE(std::set<apf::StkModel*>, mset, mit) {
+      auto ns = *mit;
+      auto nsn = ns->stkName;
+      node_sets[nsn].push_back(node);
+    }
+  }
+  return node_sets;
+};
 
 }
