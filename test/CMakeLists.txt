@@ -56,8 +56,9 @@ if(ENABLE_VIZ)
   test_exe_func(viz_test viz.cc)
 endif()
 
-# Mesh statistic measurement utilities
+# Aniso statistic ans size-field visualization utilities
 util_exe_func(measureAnisoStats measureAnisoStats.cc)
+util_exe_func(visualizeAnisoSizes visualizeAnisoSizes.cc)
 
 if(ENABLE_SIMMETRIX)
   util_exe_func(convert convert.cc)

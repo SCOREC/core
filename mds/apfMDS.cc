@@ -1,8 +1,8 @@
-/****************************************************************************** 
+/******************************************************************************
 
-  Copyright 2014 Scientific Computation Research Center, 
+  Copyright 2014 Scientific Computation Research Center,
       Rensselaer Polytechnic Institute. All rights reserved.
-  
+
   This work is open source software, licensed under the terms of the
   BSD license as described in the LICENSE file in the top-level directory.
 
@@ -21,7 +21,8 @@
 #include <cstring>
 #include <pcu_util.h>
 #include <cstdlib>
-#include<stdint.h>
+#include <stdint.h>
+#include <limits>
 
 extern "C" {
 
@@ -31,7 +32,46 @@ int const mds_apf_long = apf::Mesh::LONG;
 
 }
 
+typedef std::map<std::pair<int, int>, int> ModelEdgeTags;
+
 namespace apf {
+
+static int getModelEdgeTag(int facetag1, int facetag2, ModelEdgeTags &tags,
+                    long *minAvbl)
+{
+  std::pair<int, int> key;
+  key.first = (facetag1 < facetag2) ? facetag1 : facetag2;
+  key.second = (facetag1 < facetag2) ? facetag2 : facetag1;
+  if (tags.count(key) == 0) {
+    tags[key] = *minAvbl;
+    (*minAvbl)++;
+  }
+  return tags[key];
+}
+
+static int getFaceIdInRegion(apf::Mesh* mesh, apf::MeshEntity* region,
+                      int* bface_data)
+{
+  apf::Downward verts;
+  apf::MeshTag* vIDTag = mesh->findTag("vert_id");
+  int vID;
+  mesh->getDownward(region, 0, verts);
+  // Go through all vertices. What vertex is not on the face can be used to determine the face id.
+  // TODO: Good way to assert that the rest of the 3 actually exist?
+  mesh->getIntTag(verts[0], vIDTag, &vID);
+  if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
+    return 2;
+  mesh->getIntTag(verts[1], vIDTag, &vID);
+  if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
+    return 3;
+  mesh->getIntTag(verts[2], vIDTag, &vID);
+  if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
+    return 1;
+  mesh->getIntTag(verts[3], vIDTag, &vID);
+  if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
+    return 0;
+  return 12; // Should give segmentation fault
+}
 
 static MeshEntity* toEnt(mds_id id)
 {
@@ -820,6 +860,105 @@ void deriveMdsModel(Mesh2* in)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
   return mds_derive_model(m->mesh);
+}
+
+void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
+                           int nBFaces, int (*bFaces)[5],
+                           GlobalToVert &globalToVert,
+                           std::map<int, apf::MeshEntity*> &globalToRegion)
+{
+  apf::MeshTag* classifnTag = mesh->createIntTag("classifn_data", 2);
+  int tagData[2], newTagData[2];
+  long minAvbl = 0;
+
+  // Reserve tags used for model faces
+  for (int i = 0; i < nBFaces ; ++i) {
+    // TODO: How to assert, when bFaces is already all integers?
+    minAvbl = (minAvbl <= bFaces[i][0]) ? (bFaces[i][0]+1) : minAvbl;
+    PCU_ALWAYS_ASSERT(minAvbl < std::numeric_limits<int>::max());
+  }
+
+  // Set classifn tags for vertices
+  for (uint i = 0; i < mesh->count(0); ++i) {
+    if (isModelVert[i]) {
+      tagData[0] = 0;
+      tagData[1] = minAvbl;
+      minAvbl++;
+      mesh->setIntTag(globalToVert[i], classifnTag, tagData);
+    }
+  }
+
+  // Classification on boundary faces and their closure
+  apf::Downward facesAdjToRegion, edgesAdjToFace, vertsAdjToEdge;
+  ModelEdgeTags modelEdgeTags;
+  int faceIdInReg = 12;
+  for (int i = 0; i < nBFaces; ++i) {
+    mesh->getDownward(globalToRegion[bFaces[i][1]], 2, facesAdjToRegion);
+    faceIdInReg = getFaceIdInRegion(mesh,
+				    globalToRegion[bFaces[i][1]], bFaces[i]);
+    apf::MeshEntity* face = facesAdjToRegion[faceIdInReg];
+    tagData[0] = 2;
+    tagData[1] = bFaces[i][0];
+    mesh->setIntTag(face, classifnTag, tagData);
+
+    // Tag closure for classification
+    mesh->getDownward(face, 1, edgesAdjToFace);
+    for (int j = 0; j < 3; ++j) {
+      if (mesh->hasTag(edgesAdjToFace[j], classifnTag)) {
+        mesh->getIntTag(edgesAdjToFace[j], classifnTag, tagData);
+        PCU_ALWAYS_ASSERT(tagData[0] == 2);
+        if (tagData[0] != 2 || tagData[1] != bFaces[i][0]) {
+          // Mesh edge is classified previously in another boundary
+          // face's loop on a separate model face,
+          // thus it has to be on a model edge
+          newTagData[0] = 1;
+          newTagData[1] = getModelEdgeTag(tagData[1], bFaces[i][0],
+					  modelEdgeTags, &minAvbl);
+          mesh->setIntTag(edgesAdjToFace[j], classifnTag, newTagData);
+        } else {
+          newTagData[0] = tagData[0];
+          newTagData[1] = tagData[1];
+        }
+      } else {
+        // Edge is seen first time, apply face's classification
+        newTagData[0] = 2;
+        newTagData[1] = bFaces[i][0];
+        mesh->setIntTag(edgesAdjToFace[j], classifnTag, newTagData);
+      }
+      // vertices of the edge
+      mesh->getDownward(edgesAdjToFace[j], 0, vertsAdjToEdge);
+      for (int k = 0; k < 2; ++k) {
+        if (mesh->hasTag(vertsAdjToEdge[k], classifnTag)) {
+          mesh->getIntTag(vertsAdjToEdge[k], classifnTag, tagData);
+          if (tagData[0] > newTagData[0]) {
+            mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+          }
+        } else {
+          // Vertex has no classification, use the edge's
+          mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+        }
+      }
+    }
+  }
+
+  MeshMDS* m = static_cast<MeshMDS*>(mesh);
+  if ((classifnTag)) {
+    int tagData[2];
+    MeshEntity* ent;
+    mds_id id;
+    for (int dim = m->getDimension(); dim >= 0; --dim) {
+      apf::MeshIterator* it = m->begin(dim);
+      while ((ent = m->iterate(it))) {
+        id = fromEnt(ent);
+        if (m->hasTag(ent, classifnTag)) {
+          m->getIntTag(ent, classifnTag, tagData);
+          mds_update_model_for_entity(m->mesh, id, tagData[0], tagData[1]);
+        } else {
+          mds_update_model_for_entity(m->mesh, id, 3, minAvbl);
+        }
+      }
+    }
+  }
 }
 
 void changeMdsDimension(Mesh2* in, int d)

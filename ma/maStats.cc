@@ -20,8 +20,7 @@ static bool isSimplexMesh(ma::Mesh* m)
   return (count == 0);
 }
 
-void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
-    std::vector<double> &edgeLengths,
+void getLinearQualitiesInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &linearQualities)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
@@ -29,8 +28,6 @@ void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
 
   ma::Entity* e;
   ma::Iterator* it;
-
-  // linear qualities
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
     if (! m->isOwned(e))
@@ -43,31 +40,32 @@ void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
     linearQualities.push_back(lq);
   }
   m->end(it);
+}
 
-  // edge lengths
+void getEdgeLengthsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
+    std::vector<double> &edgeLengths)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
+      "expecting an all simplex mesh!");
+
+  ma::Entity* e;
+  ma::Iterator* it;
   it = m->begin(1);
   while( (e = m->iterate(it)) ) {
     if (! m->isOwned(e))
       continue;
-    apf::MeshElement* me = createMeshElement(m, e);
-    ma::Matrix Q;
-    sf->getTransform(me, ma::Vector(0., 0., 0.), Q);
-    apf::destroyMeshElement(me);
-    edgeLengths.push_back(ma::qMeasure(m, e, Q));
+    edgeLengths.push_back(sf->measure(e));
   }
   m->end(it);
 }
 
-void getStatsInPhysicalSpace(ma::Mesh* m,
-    std::vector<double> &edgeLengths,
+void getLinearQualitiesInPhysicalSpace(ma::Mesh* m,
     std::vector<double> &linearQualities)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
       "expecting an all simplex mesh!");
   ma::Entity* e;
   ma::Iterator* it;
-
-  // linear qualities
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
     double lq;
@@ -98,18 +96,47 @@ void getStatsInPhysicalSpace(ma::Mesh* m,
     linearQualities.push_back(lq);
   }
   m->end(it);
+}
 
-  // edge lengths
+void getEdgeLengthsInPhysicalSpace(ma::Mesh* m,
+    std::vector<double> &edgeLengths)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
+      "expecting an all simplex mesh!");
+  ma::Entity* e;
+  ma::Iterator* it;
   it = m->begin(1);
   while( (e = m->iterate(it)) ) {
-    apf::MeshElement* me = createMeshElement(m, e);
-    ma::Matrix Q = ma::Matrix(1.0, 0.0, 0.0,
-			      0.0, 1.0, 0.0,
-			      0.0, 0.0, 1.0);;
-    apf::destroyMeshElement(me);
-    edgeLengths.push_back(ma::qMeasure(m, e, Q));
+    SizeField* sf = new IdentitySizeField(m);
+    edgeLengths.push_back(sf->measure(e));
   }
   m->end(it);
+}
+
+void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
+      "expecting an all simplex mesh!");
+
+  // linear qualities
+  getLinearQualitiesInMetricSpace(m, sf, linearQualities);
+  // edge lengths
+  getEdgeLengthsInMetricSpace(m, sf, edgeLengths);
+}
+
+void getStatsInPhysicalSpace(ma::Mesh* m,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
+      "expecting an all simplex mesh!");
+
+  // linear qualities
+  getLinearQualitiesInPhysicalSpace(m, linearQualities);
+  // edge lengths
+  getEdgeLengthsInPhysicalSpace(m, edgeLengths);
 }
 
 /** \brief Measures mesh statistics using and adapt input object

@@ -75,12 +75,25 @@ void adaptVerbose(Input* in, bool verbose)
   allowSplitCollapseOutsideLayer(a);
   fixElementShapes(a);
   if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_fix");
-  // final refine to get rid of long edges created during shape fix
-  refine(a);
-  if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine");
-  // final snap to make sure everything is on the boundary
-  snap(a);
-  if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_snap");
+  /* The following loop ensures that no long edges are left in
+   * the mesh. Note that at this point all elements are of "good"
+   * quality and a few refinement iterations will not depreciate
+   * the overall quality of the mesh, significantly.
+   */
+  int count = 0;
+  double lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
+  while (lMax > 1.5)
+  {
+    if (PCU_Comm_Self() == 1) {
+      printf("%dth additional refine-snap call\n", count);
+      printf("Maximum (metric) edge length in the mesh is %f\n", lMax);
+    }
+    refine(a);
+    snap(a);
+    lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
+    count++;
+  }
+  if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine_snap_loop");
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);

@@ -103,11 +103,13 @@ class Input
 
 /** \brief generate a configuration based on an anisotropic function.
  \param s if non-zero, use that to transfer all fields. otherwise,
-          transfer any associated fields with default algorithms */
+          transfer any associated fields with default algorithms
+ \param logInterpolation if true uses logarithmic interpolation */
 Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
-    SolutionTransfer* s=0);
+    SolutionTransfer* s=0,
+    bool logInterpolation=false);
 /** \brief generate a configuration based on an isotropic function
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
@@ -121,12 +123,14 @@ Input* configure(
  \param frames a matrix field containing anisotropic frames
                for each vertex
  \param s if non-zero, use that to transfer all fields. otherwise,
-          transfer any associated fields with default algorithms */
+          transfer any associated fields with default algorithms
+ \param logInterpolation if true uses logarithmic interpolation */
 Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
-    SolutionTransfer* s=0);
+    SolutionTransfer* s=0,
+    bool logInterpolation=false);
 /** \brief generate a configuration based on an isotropic field
  \param size a scalar field of desired element size
  \param s if non-zero, use that to transfer all fields. otherwise,
