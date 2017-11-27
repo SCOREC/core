@@ -208,8 +208,6 @@ static void updateVertexParametricCoords(
 static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
 {
   Mesh* m = adapter->mesh;
-  /* PCU_ALWAYS_ASSERT_VERBOSE(dim == 2, */
-  /*     "expecting a 2D surface meshe!"); */
   PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),
       "expecting the vertex to have a tag!");
   bool hadItBefore = getFlag(adapter, v, DONT_MOVE);

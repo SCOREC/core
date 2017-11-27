@@ -366,15 +366,6 @@ class EdgeSwap2D : public EdgeSwap
       return getWorstQuality(adapter,newFaces,2)
            > getWorstQuality(adapter,oldFaces);
     }
-    /* bool didCreateLargeEdges() */
-    /* { */
-    /*   EntityArray faces; */
-    /*   faces.setSize(2); */
-    /*   faces[0] = newFaces[0]; */
-    /*   faces[1] = newFaces[1]; */
-    /*   double length = getMaxEdgeLength(adapter, faces, true); */
-    /*   return length > 1.5; */
-    /* } */
     void destroyOldFaces()
     {
       destroyElement(adapter,oldFaces[0]);
@@ -410,7 +401,6 @@ class EdgeSwap2D : public EdgeSwap
       makeNewFaces();
       cavity.afterBuilding();
       cavity.fit(oldFaces);
-      /* if ( ! didImproveQuality() || didCreateLargeEdges()) */
       if ( ! didImproveQuality())
       {
         cancel();
@@ -728,7 +718,6 @@ class EdgeSwap3D : public EdgeSwap
       edge = e;
       mesh->getAdjacent(edge,3,oldTets);
       double oldQuality = getWorstQuality(adapter,oldTets);
-      /* double oldLength = getMaxEdgeLength(adapter, oldTets); */
       if (isOnModelFace(mesh,edge))
       {
 /* note that only one model face may cross the cavity; otherwise

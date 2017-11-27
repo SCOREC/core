@@ -25,7 +25,6 @@ double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax=false);
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax=false);
 double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax=false);
 
-
 /* gets the quality of an element based on
  * the vertices used for curved elements
  */
@@ -34,7 +33,6 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
-
 
 /* has worse quality than qualityToBeat
  */
@@ -45,7 +43,6 @@ bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
  */
 Entity* getMaxEdgeLength(Adapt* a, EntityArray& tets, double& maxLength);
 Entity* getMinEdgeLength(Adapt* a, EntityArray& tets, double& minLength);
-
 
 /* checks whether a prism is safe to tetrahedronize.
  * the optional "good_diagonal_codes" integer
