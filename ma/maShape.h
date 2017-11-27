@@ -43,10 +43,8 @@ bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
 /* measures the min and max edge lengths (in metric space)
  * among all the entities in tets
  */
-Entity* getMaxEdgeLength(Adapt* a, EntityArray& tets, double& maxLength,
-    bool useMax=false);
-Entity* getMinEdgeLength(Adapt* a, EntityArray& tets, double& minLength,
-    bool useMax=false);
+Entity* getMaxEdgeLength(Adapt* a, EntityArray& tets, double& maxLength);
+Entity* getMinEdgeLength(Adapt* a, EntityArray& tets, double& minLength);
 
 
 /* checks whether a prism is safe to tetrahedronize.
