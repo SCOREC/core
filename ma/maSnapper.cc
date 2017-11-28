@@ -168,18 +168,33 @@ static void updateVertexParametricCoords(
     Entity* vert,
     Vector& newTarget)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(vert) == apf::Mesh::VERTEX, "expecting a vertex!");
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(vert) == apf::Mesh::VERTEX,
+      "expecting a vertex!");
 
+  // if vert is classified on a model vert or edge return
+  Model* g = m->toModel(vert);
+  if (m->getModelType(g) != 2)
+    return;
+
+  // get the list of upward adj edges that are
+  // classified on the same model face as vert
   apf::Up edges;
   m->getUp(vert,edges);
   apf::Up ovs;
   ovs.n = edges.n;
-  for (int i = 0; i < edges.n; ++i)
-    ovs.e[i] = apf::getEdgeVertOppositeVert(m, edges.e[i], vert);
-
+  int counter = 0;
+  for (int i = 0; i < edges.n; ++i) {
+    Model* h = m->toModel(edges.e[i]);
+    if (m->getModelType(h) == 3)
+      continue;
+    PCU_ALWAYS_ASSERT_VERBOSE(g == h,
+    	"expecting the model to be the same for current edge and vert");
+    ovs.e[counter] = apf::getEdgeVertOppositeVert(m, edges.e[i], vert);
+    counter++;
+  }
 
   Vector pBar(0., 0., 0.);
-  for (int i = 0; i < ovs.n; i++) {
+  for (int i = 0; i < counter; i++) {
     Vector pTmp;
     m->getParamOn(m->toModel(vert), ovs.e[i], pTmp);
     pBar += pTmp;
@@ -193,14 +208,12 @@ static void updateVertexParametricCoords(
 static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
 {
   Mesh* m = adapter->mesh;
-  int dim = m->getDimension();
-  PCU_ALWAYS_ASSERT_VERBOSE(dim == 2,
-      "expecting a 2D surface meshe!");
   PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),
       "expecting the vertex to have a tag!");
   bool hadItBefore = getFlag(adapter, v, DONT_MOVE);
   setFlag(adapter, v, DONT_MOVE);
   Vector newTarget;
+  m->getDoubleTag(v, tag, &newTarget[0]); // default
   updateVertexParametricCoords(m, v, newTarget);
   m->setDoubleTag(v, tag, &newTarget[0]);
   if (!hadItBefore)

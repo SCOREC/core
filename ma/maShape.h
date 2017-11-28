@@ -38,6 +38,12 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n);
  */
 bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
 
+/* measures the min and max edge lengths (in metric space)
+ * among all the entities in tets
+ */
+Entity* getMaxEdgeLength(Adapt* a, EntityArray& tets, double& maxLength);
+Entity* getMinEdgeLength(Adapt* a, EntityArray& tets, double& minLength);
+
 /* checks whether a prism is safe to tetrahedronize.
  * the optional "good_diagonal_codes" integer
  * is a bit vector containing 8 bits, one

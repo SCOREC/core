@@ -211,6 +211,60 @@ bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat)
   return false;
 }
 
+enum {MIN, MAX};
+
+static Entity* getMinOrMaxEdgeLength(Adapt* a, EntityArray& ents, double& minOrMax
+    , int mode)
+{
+  Mesh* m = a->mesh;
+  SizeField* sf = a->sizeField;
+
+  int type = 0;
+  for (size_t i = 0; i < ents.getSize(); i++) {
+    type = m->getType(ents[0]);
+    PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
+  }
+
+  double maxLength = 0.;
+  double minLength = 1.e10;
+  Entity* longEdge = 0;
+  Entity* shortEdge = 0;
+  Entity* edge = 0;
+  for (size_t i = 0; i < ents.getSize(); i++) {
+    Entity* ent = ents[i];
+    // iter over downward edges and update {min,max}length
+    Downward down;
+    int nd = m->getDownward(ent, 1, down);
+    for (int j = 0; j < nd; j++) {
+      double length = sf->measure(down[j]);
+      if (length > maxLength) {
+      	maxLength = length;
+      	longEdge = down[j];
+      }
+      if (length < minLength) {
+      	minLength = length;
+      	shortEdge = down[j];
+      }
+    }
+  }
+
+  PCU_ALWAYS_ASSERT(longEdge != shortEdge);
+
+  minOrMax = (mode == MIN) ? minLength : maxLength;
+  edge     = (mode == MIN) ? shortEdge : longEdge;
+  return edge;
+}
+
+Entity* getMaxEdgeLength(Adapt* a, EntityArray& ents, double& maxLength)
+{
+  return getMinOrMaxEdgeLength(a, ents, maxLength, MAX);
+}
+
+Entity* getMinEdgeLength(Adapt* a, EntityArray& ents, double& minLength)
+{
+  return getMinOrMaxEdgeLength(a, ents, minLength, MIN);
+}
+
 /* applies the same measure as measureTetQuality
    but works directly off the points. */
 double measureLinearTetQuality(Vector xyz[4])
