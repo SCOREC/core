@@ -53,7 +53,7 @@ static int getFaceIdInRegion(apf::Mesh* mesh, apf::MeshEntity* region,
                       int* bface_data)
 {
   apf::Downward verts;
-  apf::MeshTag* vIDTag = mesh->findTag("vert_id");
+  apf::MeshTag* vIDTag = mesh->findTag("_vert_id");
   int vID;
   mesh->getDownward(region, 0, verts);
   // Go through all vertices. What vertex is not on the face can be used to determine the face id.
@@ -867,9 +867,19 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
                            GlobalToVert &globalToVert,
                            std::map<int, apf::MeshEntity*> &globalToRegion)
 {
-  apf::MeshTag* classifnTag = mesh->createIntTag("classifn_data", 2);
+  PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_classifn_data"),
+          "MeshTag name \"_classifn_data\" is used internally in this method\n");
+  apf::MeshTag* classifnTag = mesh->createIntTag("_classifn_data", 2);
   int tagData[2], newTagData[2];
   long minAvbl = 0;
+
+  PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
+          "MeshTag name \"_vert_id\" is used internally in this method\n");
+  apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
+  for (apf::GlobalToVert::iterator vit = globalToVert.begin();
+       vit != globalToVert.end(); vit++) {
+    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+  }
 
   // Reserve tags used for model faces
   for (int i = 0; i < nBFaces ; ++i) {
@@ -959,6 +969,9 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
       }
     }
   }
+
+  mesh->destroyTag(classifnTag);
+  mesh->destroyTag(vIDTag);
 }
 
 void changeMdsDimension(Mesh2* in, int d)
