@@ -17,6 +17,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
+#include "maBalance.h"
 #include "maDBG.h"
 #include <pcu_util.h>
 
@@ -626,6 +627,8 @@ void fixElementShapes(Adapt* a)
     count = markBadQuality(a);
     if (count >= prev_count)
       unMarkBadQuality(a); // to make sure markEntities does not complain!
+    // balance the mesh to avoid empty parts
+    midBalance(a);
   } while(count < prev_count);
   double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",
