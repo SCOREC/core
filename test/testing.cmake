@@ -48,6 +48,14 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 endif()
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+  if(SIM_DOT_VERSION VERSION_GREATER 12.0-171000)
+    set(MDIR ${MESHES}/faceExtrusion)
+    mpi_test(rm_extrusion 1
+      ${CMAKE_CURRENT_BINARY_DIR}/rm_extrusion
+      ${MDIR}/plate.x_t
+      ${MDIR}/extrusion.sms
+      ${MDIR}/extrusion_noatts.sms)
+  endif()
   set(MDIR ${MESHES}/phasta/BL_query/cut_and_partition)
   add_test(NAME cut_interface_sim
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cut_interface
