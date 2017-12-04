@@ -48,7 +48,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 endif()
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
-  if(SIM_DOT_VERSION VERSION_GREATER 12.0-171000)
+  if(SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
     set(MDIR ${MESHES}/faceExtrusion)
     mpi_test(rm_extrusion 1
       ${CMAKE_CURRENT_BINARY_DIR}/rm_extrusion
@@ -64,7 +64,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
    "${MDIR}/mesh.sms"
    "${MDIR}/mesh_cut.sms"
    WORKING_DIRECTORY ${MDIR})
-  if(SIM_DOT_VERSION VERSION_GREATER 11.0-170826)
+  if(SIM_DOT_VERSION VERSION_GREATER 11.0.170826)
     mpi_test(partition_sim 4
      ${CMAKE_CURRENT_BINARY_DIR}/sim_part
      "${MDIR}/model_nat.x_t"
@@ -81,7 +81,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
      "${MDIR}/mesh_cut.sms"
      3504
      WORKING_DIRECTORY ${MDIR})
-    if(SIM_DOT_VERSION VERSION_GREATER 11.0-170826)
+    if(SIM_DOT_VERSION VERSION_GREATER 11.0.170826)
       mpi_test(countBL_part_mesh 4
        ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
        "${MDIR}/model_nat.x_t"

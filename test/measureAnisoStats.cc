@@ -1,5 +1,6 @@
 #include <apf.h>
 #include <apfMDS.h>
+#include <apfShape.h>
 #include <maStats.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
@@ -127,6 +128,24 @@ void getStats(
   std::vector<double> el, lq;
   ma::stats(in, el, lq, true);
 
+
+  // create field for visualizaition
+  apf::Field* f_lq = apf::createField(m, "linear_quality", apf::SCALAR, apf::getConstant(m->getDimension()));
+
+  // attach cell-based mesh quality
+  size_t n, i;
+  apf::MeshEntity* r;
+  n = m->count(m->getDimension());
+  i = 0;
+  apf::MeshIterator* rit = m->begin(m->getDimension());
+  while ((r = m->iterate(rit))) {
+    apf::setScalar(f_lq, r, 0, lq[i]);
+    ++i;
+  }
+  m->end(rit);
+  PCU_ALWAYS_ASSERT(i == n);
+
+
   std::vector<std::vector<double> > qtable;
   for (size_t i = 0; i < lq.size(); i++) {
     std::vector<double> r;
@@ -141,15 +160,17 @@ void getStats(
     etable.push_back(r);
   }
 
-  std::stringstream ss, sse, ssq;
+  std::stringstream ss, sse, ssq, ssm;
   ss << outputPrefix << "/" << "linear_tables";
   const char* pathName = ss.str().c_str();
   safe_mkdir(pathName);
 
   ssq << pathName << "/linearQTable_" << PCU_Comm_Self() << ".dat";
   sse << pathName << "/linearETable_" << PCU_Comm_Self() << ".dat";
+  ssm << pathName << "/mesh_quality_vis";
   writeTable(ssq.str().c_str(), qtable);
   writeTable(sse.str().c_str(), etable);
+  apf::writeVtkFiles(ssm.str().c_str(), m);
 
   m->destroyNative();
   apf::destroyMesh(m);
