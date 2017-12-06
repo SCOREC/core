@@ -221,7 +221,7 @@ void printModelStats(pGModel model)
   cout<<"    Vertex tags: ";
   GVIter modelVertices = GM_vertexIter(model);  // initialize the iterator
   pGVertex modelVertex;
-  while(modelVertex=GVIter_next(modelVertices)){ // get next vertex
+  while( (modelVertex=GVIter_next(modelVertices)) ){ // get next vertex
     cout<<" "<<GEN_tag(modelVertex);
   }
   GVIter_delete(modelVertices);
@@ -231,7 +231,7 @@ void printModelStats(pGModel model)
   cout<<"    Face tags: ";
   GFIter modelFaces = GM_faceIter(model);  // initialize the iterator
   pGFace modelFace;
-  while(modelFace=GFIter_next(modelFaces)){ // get next face
+  while( (modelFace=GFIter_next(modelFaces)) ){ // get next face
     cout<<" " << GEN_tag(modelFace);
   }
   GFIter_delete(modelFaces);
@@ -290,6 +290,7 @@ bool checkVertexOrder(
     pVertex* vReturn,
     int nverts)
 {
+  PCU_ALWAYS_ASSERT((size_t)nverts == mesh->count(0));
   double tol = 1.e-12;
   apf::MeshEntity* ent;
   apf::MeshIterator* it;
@@ -370,10 +371,10 @@ pMSAdapt addSizesToSimxMesh(
     const vector<apf::Vector3>& sizes,
     const vector<apf::Matrix3x3>& frames)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(nverts == sizes.size(),
+  PCU_ALWAYS_ASSERT_VERBOSE((size_t)nverts == sizes.size(),
       "Expecting the size of the vector to be the same as nverts!\n");
 
-  PCU_ALWAYS_ASSERT_VERBOSE(nverts == frames.size(),
+  PCU_ALWAYS_ASSERT_VERBOSE((size_t)nverts == frames.size(),
       "Expecting the size of the vector to be the same as nverts!\n");
 
   pMSAdapt adapter = MSA_new(mesh, 1);
@@ -421,7 +422,7 @@ static int countVerts(pMesh mesh)
   pVertex vert;
   vit = M_vertexIter(mesh);
   int count = 0;
-  while(vert = VIter_next(vit))
+  while( (vert = VIter_next(vit)) )
     count++;
   VIter_delete(vit);
   return count;
@@ -433,7 +434,7 @@ static int countRegions(pMesh mesh)
   pRegion region;
   rit = M_regionIter(mesh);
   int count = 0;
-  while(region = RIter_next(rit))
+  while( (region = RIter_next(rit)) )
     count++;
   RIter_delete(rit);
   return count;
@@ -488,7 +489,7 @@ void destructSimxMesh(
   int i,j;
   vertices = M_vertexIter(mesh);
   i=0;
-  while(vertex=VIter_next(vertices)){
+  while( (vertex=VIter_next(vertices)) ){
     V_coord(vertex,xyz);
     adaptedCoords[i*3] = xyz[0];
     adaptedCoords[i*3+1] = xyz[1];
@@ -506,7 +507,7 @@ void destructSimxMesh(
   VIter_delete(vertices);
   regions = M_regionIter(mesh);
   i=0;
-  while(region = RIter_next(regions)){
+  while( (region = RIter_next(regions)) ){
     regionVerts = R_vertices(region,0);
     vector<int> ids;
     for(j=0; j < 4; j++){
