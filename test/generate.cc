@@ -8,6 +8,7 @@
 #include <apfSIM.h>
 #include <apfMDS.h>
 #include "gmi_sim_config.h"
+#include <apf_simConfig.h>
 #include <gmi_sim.h>
 #include <apf.h>
 #include <apfConvert.h>
@@ -72,7 +73,9 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
   pACase mcase = MS_newMeshCase(mdl);
   MeshingOptions meshingOptions;
   MS_processSimModelerMeshingAtts(mcaseFile, mcase, &meshingOptions);
+#ifdef USE_SIM_ADVMESHING
   MS_processSimModelerAdvMeshingAtts(mcaseFile, mcase);
+#endif
   AttCase_setModel(mcase, mdl);
 
   pParMesh pmesh = PM_new(0, mdl, PMU_size());
@@ -200,12 +203,16 @@ void simStart() {
 #endif
   Sim_readLicenseFile(NULL);
   MS_init();
+#ifdef USE_SIM_ADVMESHING
   SimAdvMeshing_start();
+#endif
   Sim_setMessageHandler(messageHandler);
 }
 
 void simStop() {
+#ifdef USE_SIM_ADVMESHING
   SimAdvMeshing_stop();
+#endif
   SimModel_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();

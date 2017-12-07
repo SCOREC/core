@@ -7,9 +7,15 @@ if(NOT ENABLE_SIMMETRIX)
   return()
 endif()
 
+set(USE_FIELDSIM ${SIMMODSUITE_SimField_FOUND})
+set(USE_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/apf_simConfig.h")
+
 #Sources & Headers
 set(SOURCES apfSIM.cc)
-set(HEADERS apfSIM.h)
+set(HEADERS apfSIM.h ${CMAKE_CURRENT_BINARY_DIR}/apf_simConfig.h)
 
 #Library
 add_library(apf_sim ${SOURCES})
@@ -21,12 +27,9 @@ target_include_directories(apf_sim PUBLIC
     $<INSTALL_INTERFACE:include>
     )
 
-set(USE_FIELDSIM ${SIMMODSUITE_SimField_FOUND})
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/apf_simConfig.h")
-#directory containing apf_simConfig.h
-target_include_directories(apf_sim PRIVATE
+#directory containing apf_simConfig.h for the build environment,
+#the install environment will use the <prefix>/include directory
+target_include_directories(apf_sim PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 scorec_export_library(apf_sim)

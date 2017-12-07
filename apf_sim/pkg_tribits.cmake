@@ -5,6 +5,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(SCORECapf_sim_ENABLE_SimField)
   add_definitions(-DUSE_FIELDSIM)
 endif()
+if(SCORECapf_sim_ENABLE_SimAdvMeshing)
+  add_definitions(-DUSE_SIM_ADVMESHING)
+endif()
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.h.in"
