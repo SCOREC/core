@@ -47,6 +47,7 @@ class Adapt
     Input* input;
     Mesh* mesh;
     Tag* flagsTag;
+    Tag* qualityCache; // to avoid repeated quality computations
     DeleteCallback* deleteCallback;
     apf::BuildCallback* buildCallback;
     SizeField* sizeField;
@@ -72,6 +73,11 @@ void clearFlag(Adapt* a, Entity* e, int flag);
 void clearFlagMatched(Adapt* a, Entity* e, int flag);
 
 void clearFlagFromDimension(Adapt* a, int flag, int dimension);
+
+void setupQualityCache(Adapt* a);
+void clearQualityCache(Adapt* a);
+double getCachedQuality(Adapt* a, Entity* e);
+void   setCachedQuality(Adapt* a, Entity* e, double q);
 
 void destroyElement(Adapt* a, Entity* e);
 
