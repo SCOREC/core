@@ -62,15 +62,19 @@ void adaptVerbose(Input* in, bool verbose)
   {
     print("iteration %d",i);
     coarsen(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
+    if (verbose && in->shouldCoarsen)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
     coarsenLayer(a);
     midBalance(a);
     refine(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_refine");
+    if (verbose)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_refine");
     snap(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
+    if (verbose && in->shouldSnap)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
     fixElementShapes(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
+    if (verbose && in->shouldFixShape)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
   allowSplitCollapseOutsideLayer(a);
   fixElementShapes(a);
