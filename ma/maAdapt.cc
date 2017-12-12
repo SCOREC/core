@@ -29,6 +29,7 @@ Adapt::Adapt(Input* in)
   input = in;
   mesh = in->mesh;
   setupFlags(this);
+  setupQualityCache(this);
   deleteCallback = 0;
   buildCallback = 0;
   sizeField = in->sizeField;
@@ -51,6 +52,7 @@ Adapt::Adapt(Input* in)
 Adapt::~Adapt()
 {
   clearFlags(this);
+  clearQualityCache(this);
   delete refine;
   delete shape;
 }
@@ -143,6 +145,49 @@ void clearFlagFromDimension(Adapt* a, int flag, int dimension)
   while ((e = m->iterate(it)))
     clearFlag(a,e,flag);
   m->end(it);
+}
+
+void setupQualityCache(Adapt* a)
+{
+  a->qualityCache = a->mesh->createDoubleTag("ma_qual_cache",1);
+}
+
+void clearQualityCache(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  Entity* e;
+  // only faces and regions can have the quality tag
+  for (int d=2; d <= 3; ++d)
+  {
+    Iterator* it = m->begin(d);
+    while ((e = m->iterate(it)))
+      if (m->hasTag(e,a->qualityCache))
+        m->removeTag(e,a->qualityCache);
+    m->end(it);
+  }
+  m->destroyTag(a->qualityCache);
+}
+
+double getCachedQuality(Adapt* a, Entity* e)
+{
+  Mesh* m = a->mesh;
+  int type = m->getType(e);
+  int ed = apf::Mesh::typeDimension[type];
+  PCU_ALWAYS_ASSERT(ed == 2 || ed == 3);
+  if ( ! m->hasTag(e,a->qualityCache))
+    return 0.0; //we assume 0.0 is the default value for all qualities
+  double qual;
+  m->getDoubleTag(e,a->qualityCache,&qual);
+  return qual;
+}
+
+void setCachedQuality(Adapt* a, Entity* e, double q)
+{
+  Mesh* m = a->mesh;
+  int type = m->getType(e);
+  int ed = apf::Mesh::typeDimension[type];
+  PCU_ALWAYS_ASSERT(ed == 2 || ed == 3);
+  m->setDoubleTag(e,a->qualityCache,&q);
 }
 
 void destroyElement(Adapt* a, Entity* e)

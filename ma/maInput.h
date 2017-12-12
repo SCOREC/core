@@ -62,6 +62,9 @@ class Input
 /** \brief minimum desired mean ratio cubed for simplex elements
    \details a different measure is used for curved elements */
     double goodQuality;
+/** \brief whether to check the quality of split elems in DoubleSplitsCollapse
+   (default false) */
+    double shouldCheckQualityForDoubleSplits;
 /** \brief minimum valid mean ratio cubed for simplex elements (default 1e-10)
    \details used to define inside-out tetrahedra.
    a different measure is used for curved elements */

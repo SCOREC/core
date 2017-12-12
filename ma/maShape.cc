@@ -556,10 +556,13 @@ class LargeAngleTriFixer : public Operator
     int nf;
 };
 
-static void fixShortEdgeElements(Adapt* a)
+static double fixShortEdgeElements(Adapt* a)
 {
+  double t0 = PCU_Time();
   ShortEdgeFixer fixer(a);
   applyOperator(a,&fixer);
+  double t1 = PCU_Time();
+  return t1 - t0;
 }
 
 static void fixLargeAngleTets(Adapt* a)
@@ -586,12 +589,15 @@ static void alignLargeAngleTris(Adapt* a)
   applyOperator(a,&aligner);
 }
 
-static void fixLargeAngles(Adapt* a)
+static double fixLargeAngles(Adapt* a)
 {
+  double t0 = PCU_Time();
   if (a->mesh->getDimension()==3)
     fixLargeAngleTets(a);
   else
     fixLargeAngleTris(a);
+  double t1 = PCU_Time();
+  return t1 - t0;
 }
 
 static void alignLargeAngles(Adapt* a)
@@ -610,11 +616,14 @@ void fixElementShapes(Adapt* a)
   int count = markBadQuality(a);
   int originalCount = count;
   int prev_count;
+  double time;
+  int iter = 0;
   do {
     if ( ! count)
       break;
     prev_count = count;
-    fixLargeAngles(a);
+    print("--iter %d of shape correction loop: #bad elements %d", iter, count);
+    time = fixLargeAngles(a);
     /* We need to snap the new verts as soon as they are
      * created (to avoid future problems). At the moment
      * new verts are created only during 3D mesh adapt, so
@@ -622,13 +631,18 @@ void fixElementShapes(Adapt* a)
      */
     if (a->mesh->getDimension() == 3)
       snap(a);
-    markBadQuality(a);
-    fixShortEdgeElements(a);
     count = markBadQuality(a);
+    print("--fixLargeAngles       in %f seconds: #bad elements %d",time,count);
+    time = fixShortEdgeElements(a);
+    count = markBadQuality(a);
+    print("--fixShortEdgeElements in %f seconds: #bad elements %d",time,count);
     if (count >= prev_count)
       unMarkBadQuality(a); // to make sure markEntities does not complain!
     // balance the mesh to avoid empty parts
     midBalance(a);
+    print("--percent change in number of bad elements %f",
+	((double) prev_count - (double) count) / (double) prev_count);
+    iter++;
   } while(count < prev_count);
   double t1 = PCU_Time();
   print("bad shapes down from %d to %d in %f seconds",

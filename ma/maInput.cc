@@ -47,6 +47,7 @@ void setDefaultValues(Input* in)
     //this basically turns off short edge removal...
     in->maximumEdgeRatio = 100.0;
   }
+  in->shouldCheckQualityForDoubleSplits = false;
   in->validQuality = 1e-10;
   in->maximumImbalance = 1.10;
   in->shouldRunPreZoltan = false;
