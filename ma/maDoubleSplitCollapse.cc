@@ -68,6 +68,55 @@ bool DoubleSplitCollapse::run(Entity** edges)
   splitVerts[0] = splits.getSplitVert(0);
   splitVerts[1] = splits.getSplitVert(1);
   Entity* edge = findUpward(m, apf::Mesh::EDGE, splitVerts);
+
+  /* This is to make sure the quality of newly created elements
+   * by the double splits is not less than the in->goodQuality
+   */
+  if (a->input->shouldCheckQualityForDoubleSplits) {
+    EntityArray toCheck;
+    Upward regionsToSplitVert0;
+    Upward regionsToSplitVert1;
+    Upward regionsToEdge;
+    m->getAdjacent(splitVerts[0], m->getDimension(), regionsToSplitVert0);
+    m->getAdjacent(splitVerts[1], m->getDimension(), regionsToSplitVert1);
+    m->getAdjacent(edge, m->getDimension(), regionsToEdge);
+    PCU_ALWAYS_ASSERT(regionsToEdge.getSize() == 4);
+    toCheck.setSize(regionsToSplitVert0.getSize() +
+		    regionsToSplitVert1.getSize() -
+		    2*regionsToEdge.getSize());
+    size_t count = 0;
+    for (size_t i = 0; i < regionsToSplitVert0.getSize(); i++) {
+      Entity* region = regionsToSplitVert0[i];
+      if (region == regionsToEdge[0] ||
+	  region == regionsToEdge[1] ||
+	  region == regionsToEdge[2] ||
+	  region == regionsToEdge[3])
+	continue;
+      else {
+	toCheck[count] = region;
+	count++;
+      }
+    }
+    for (size_t i = 0; i < regionsToSplitVert1.getSize(); i++) {
+      Entity* region = regionsToSplitVert1[i];
+      if (region == regionsToEdge[0] ||
+	  region == regionsToEdge[1] ||
+	  region == regionsToEdge[2] ||
+	  region == regionsToEdge[3])
+	continue;
+      else {
+	toCheck[count] = region;
+	count++;
+      }
+    }
+    PCU_ALWAYS_ASSERT(count == toCheck.getSize());
+    double toCheckQuality = getWorstQuality(a, toCheck);
+    if (toCheckQuality < a->input->goodQuality) {
+      splits.cancel();
+      return false;
+    }
+  }
+
   if (tryBothCollapses(edge))
   {
     accept();

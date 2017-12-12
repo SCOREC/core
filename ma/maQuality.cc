@@ -184,10 +184,24 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax)
 double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
   PCU_ALWAYS_ASSERT(n);
+  Mesh* m = a->mesh;
   ShapeHandler* sh = a->shape;
-  double worst = sh->getQuality(e[0]);
+  double worst;
+  if (m->hasTag(e[0], a->qualityCache))
+    worst = getCachedQuality(a, e[0]);
+  else {
+    worst = sh->getQuality(e[0]);
+    setCachedQuality(a, e[0], worst);
+  }
   for (size_t i = 1; i < n; ++i) {
-    double quality = sh->getQuality(e[i]);
+    double quality;
+    if (m->hasTag(e[i], a->qualityCache)) {
+      quality = getCachedQuality(a, e[i]);
+    }
+    else {
+      quality = sh->getQuality(e[i]);
+      setCachedQuality(a, e[i], quality);
+    }
     if (quality < worst)
       worst = quality;
   }
