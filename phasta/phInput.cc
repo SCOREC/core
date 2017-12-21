@@ -59,6 +59,7 @@ static void setDefaults(Input& in)
   in.parmaLoops = 3; //a magical value
   in.parmaVerbosity = 1; //fairly quiet
   in.writeGeomBCFiles = 0;  // write additional geombc file for vis in streaming
+  in.writeRestartFiles = 0;  // write additional restart file for vis in streaming
   in.ramdisk = 0;
   in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
@@ -130,6 +131,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["parmaLoops"] = &in.parmaLoops;
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
   intMap["writeGeomBCFiles"] = &in.writeGeomBCFiles;
+  intMap["writeRestartFiles"] = &in.writeRestartFiles;
   intMap["ramdisk"] = &in.ramdisk;
   dblMap["validQuality"] = &in.validQuality;
   dblMap["meshqCrtn"] = &in.meshqCrtn;
