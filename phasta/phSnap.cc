@@ -17,8 +17,11 @@ extern"C"{
 
 apf::Mesh2* m;
 
-void pass_mesh_to_phasta(apf::Mesh2* mesh){
-  m = mesh;
+ph::Input in;
+
+void pass_info_to_phasta(apf::Mesh2* mesh, ph::Input ctrl){
+  m  = mesh;
+  in = ctrl;
 }
 
 /* input dx,dy,dz are current coordinates of mesh in phastsa

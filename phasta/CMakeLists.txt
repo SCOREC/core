@@ -54,6 +54,8 @@ set(HEADERS
   phstream.h
   phiotimer.h
   phastaChef.h
+  phBC.h
+  ph.h
 )
 
 # Add the ph library

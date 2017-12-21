@@ -22,6 +22,7 @@ target_include_directories(apf_sim PUBLIC
     )
 
 set(USE_FIELDSIM ${SIMMODSUITE_SimField_FOUND})
+set(USE_SIM_ADVMESHING ${HAVE_SIMADVMESHING})
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/apf_simConfig.h")
