@@ -133,6 +133,9 @@ class Input
     /** \brief write the geombc file during in-memory data transfer
        between phasta and chef. */
     int writeGeomBCFiles;
+    /** \brief write the restart file during in-memory data transfer
+       between phasta and chef. */
+    int writeRestartFiles;
     int ramdisk;
     /** \brief the value of criteria for the mesh measure.
         \details this is only used in solver-adaptor (phastaChef) loop.
