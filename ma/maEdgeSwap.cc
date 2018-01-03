@@ -571,12 +571,7 @@ class SwapCavity
     bool isTetOk(Entity* tet)
     {
       double quality = shape->getQuality(tet);
-      EntityArray tets;
-      tets.setSize(1);
-      tets[0] = tet;
-      double length;
-      getMaxEdgeLength(adapter, tets, length);
-      return ((quality > qualityToBeat) && (length <= 1.5));
+      return (quality > qualityToBeat);
     }
     void getTriVerts(int tri, Entity** v)
     {
