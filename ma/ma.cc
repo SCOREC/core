@@ -86,18 +86,16 @@ void adaptVerbose(Input* in, bool verbose)
    */
   int count = 0;
   double lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
-  double prev_lMax;
-  do {
-    if (PCU_Comm_Self() == 1) {
-      printf("%dth additional refine-snap call\n", count);
-      printf("Maximum (metric) edge length in the mesh is %f\n", lMax);
-    }
-    prev_lMax = lMax;
+  print("Maximum (metric) edge length in the mesh is %f", lMax);
+  while (lMax > 1.5) {
+    print("%dth additional refine-snap call", count);
     refine(a);
     snap(a);
     lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
     count++;
-  } while (lMax < prev_lMax);
+    print("Maximum (metric) edge length in the mesh is %f", lMax);
+    if (count > 5) break;
+  }
   if (verbose)
     ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine_snap_loop");
   cleanupLayer(a);
