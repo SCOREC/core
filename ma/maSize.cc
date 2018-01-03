@@ -435,18 +435,23 @@ struct LogAnisoSizeField : public MetricSizeField
   ~LogAnisoSizeField()
   {
     apf::destroyField(logMField);
+    apf::destroyField(hField);
+    apf::destroyField(rField);
   }
-  void init(Mesh* m, apf::Field* logSizes, apf::Field* frames)
+  void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
+    hField = sizes;
+    rField = frames;
     logMField = apf::createFieldOn(m, "ma_logM", apf::MATRIX);
     Entity* v;
     Iterator* it = m->begin(0);
     while ( (v = m->iterate(it)) ) {
-      Vector s;
+      Vector h;
       Matrix f;
-      apf::getVector(logSizes, v, 0, s);
-      apf::getMatrix(frames, v, 0, f);
+      apf::getVector(hField, v, 0, h);
+      apf::getMatrix(rField, v, 0, f);
+      Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
       Matrix S(s[0], 0   , 0,
               0    , s[1], 0,
               0    , 0   , s[2]);
@@ -498,6 +503,8 @@ struct LogAnisoSizeField : public MetricSizeField
   }
   apf::Field* logMField;
   LogMEval logMEval;
+  apf::Field* hField;
+  apf::Field* rField;
 };
 
 struct IsoSizeField : public AnisoSizeField
