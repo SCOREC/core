@@ -172,7 +172,19 @@ namespace ph {
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
     // a path is not needed for inmem
-    ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+    if ( in.writeRestartFiles ) {
+      if(!PCU_Comm_Self()) printf("write file-based restart file\n");
+      // store the value of the function pointer
+      FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
+      // set function pointer for file writing
+      out.openfile_write = chef::openfile_write;
+      ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+      // reset the function pointer to the original value
+      out.openfile_write = fn;
+    }
+    else {
+      ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+    }
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     if ( in.writeGeomBCFiles ) {
