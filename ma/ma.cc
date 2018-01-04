@@ -62,15 +62,19 @@ void adaptVerbose(Input* in, bool verbose)
   {
     print("iteration %d",i);
     coarsen(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
+    if (verbose && in->shouldCoarsen)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
     coarsenLayer(a);
     midBalance(a);
     refine(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_refine");
+    if (verbose)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_refine");
     snap(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
+    if (verbose && in->shouldSnap)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
     fixElementShapes(a);
-    if (verbose) ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
+    if (verbose && in->shouldFixShape)
+      ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
   allowSplitCollapseOutsideLayer(a);
   fixElementShapes(a);
@@ -82,18 +86,16 @@ void adaptVerbose(Input* in, bool verbose)
    */
   int count = 0;
   double lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
-  double prev_lMax;
-  do {
-    if (PCU_Comm_Self() == 1) {
-      printf("%dth additional refine-snap call\n", count);
-      printf("Maximum (metric) edge length in the mesh is %f\n", lMax);
-    }
-    prev_lMax = lMax;
+  print("Maximum (metric) edge length in the mesh is %f", lMax);
+  while (lMax > 1.5) {
+    print("%dth additional refine-snap call", count);
     refine(a);
     snap(a);
     lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
     count++;
-  } while (lMax < prev_lMax);
+    print("Maximum (metric) edge length in the mesh is %f", lMax);
+    if (count > 5) break;
+  }
   if (verbose)
     ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine_snap_loop");
   cleanupLayer(a);

@@ -29,6 +29,7 @@ using namespace std;
 typedef vector<double> vec;
 typedef vector<vec>    mat;
 
+
 void printModelStats(pGModel model);
 void makeSimxModelAndMesh(
     double* coords, int nverts,
@@ -55,7 +56,10 @@ pMSAdapt addSizesToSimxMesh(
     pVertex* vReturn,
     const vector<apf::Vector3>& sizes,
     const vector<apf::Matrix3x3>& frames);
-void runSimxAdapt(pMSAdapt adapter);
+double runSimxAdapt(pMSAdapt adapter);
+double runSimxMeshImprover(
+    pMesh mesh,
+    double minQuality);
 void destructSimxMesh(
     pMesh simxMesh,
     double*& adaptedCoords,
@@ -80,10 +84,10 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(0);
   SimDiscrete_start(0);  // initialize GeomSim Discrete library
 
-  if (argc < 6) {
+  if (argc < 7) {
     if (PCU_Comm_Self() == 0) {
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
-      	  "<scale field name> <frame field name>\n", argv[0]);
+      	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -100,24 +104,24 @@ int main(int argc, char** argv)
   const char* prefix = argv[3];
   const char* sizeName = argv[4];
   const char* frameName = argv[5];
+  double minQuality = atof(argv[6]);
 
   char outSimxModel[256];
   char outInitialSimxMesh[256];
   char outAdaptedSimxMesh[256];
   char outAdaptedPumiMesh[256];
+  char outImprovedSimxMesh[256];
+  char outImprovedPumiMesh[256];
 
   sprintf(outSimxModel, "%s.smd", prefix);
   sprintf(outInitialSimxMesh, "%s_initial.sms", prefix);
   sprintf(outAdaptedSimxMesh, "%s_adapted.sms", prefix);
   sprintf(outAdaptedPumiMesh, "%s_adapted.smb", prefix);
-
-  printf("\nreading the mesh/model %s/%s\n", inputPumiMesh, inputPumiModel);
-  printf("==============================\n");
+  sprintf(outImprovedSimxMesh, "%s_adapted_improved.sms", prefix);
+  sprintf(outImprovedPumiMesh, "%s_adapted_improved.smb", prefix);
 
   apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh);
 
-  printf("\ncleaning up the input mesh  %s\n", inputPumiMesh);
-  printf("==============================\n");
   char message[512];
   // first find the sizes field
   apf::Field* sizes  = m->findField(sizeName);
@@ -156,53 +160,69 @@ int main(int argc, char** argv)
   destruct(m, conn, nelem, etype);
 
   // make/save Simx mesh and model
-  printf("\nconverting the pumi mesh to simx\n");
-  printf("==============================\n");
+  printf("\n===CONVERTING THE PUMI MESH TO SIMX===\n");
   pMesh simxMesh = 0;
   pDiscreteModel simxModel = 0;
   pVertex* vReturn = new pVertex[nverts];
   pEntity* eReturn = new pEntity[nelem];
-
   makeSimxModelAndMesh(coords, nverts, conn, nelem, simxMesh, simxModel, vReturn, eReturn);
+  printf("===DONE===\n");
 
-  printf("\nwriting the simx model %s\n", outSimxModel);
-  printf("==============================\n");
+  printf("\n===WRITING THE SIMX MODEL %s===\n", outSimxModel);
   GM_write(simxModel,outSimxModel,0,0); // save the discrete model
   cout<<"Model stats: "<<endl;
   printModelStats(simxModel);
+  printf("===DONE===\n");
 
-  printf("\nwriting the simx initial mesh %s\n", outInitialSimxMesh);
-  printf("==============================\n");
+  printf("\n===WRITING THE SIMX INITIAL MESH %s===\n", outInitialSimxMesh);
   M_write(simxMesh,outInitialSimxMesh, 0,0);  // write out the initial mesh data
+  printf("===DONE===\n");
 
+  printf("\n===RUNNING SIMX ADAPT===\n");
   PCU_ALWAYS_ASSERT_VERBOSE(checkVertexOrder(m, vReturn, nverts),
       "The verts orders in the pumi mesh and the created simx mesh appear to be different!\n");
-
-  printf("\nrunning simx adapt \n");
-  printf("==============================\n");
   vector<apf::Vector3> sz;
   vector<apf::Matrix3x3> fr;
   getSizesAndFrames(m, sizes, frames, sz, fr);
 
   pMSAdapt adapter = addSizesToSimxMesh(simxMesh, nverts, vReturn, sz, fr);
-  runSimxAdapt(adapter);
+  double adaptTime = runSimxAdapt(adapter);
+  printf("\nSIMX ADAPT RUN-TIME: %f \n", adaptTime);
+  printf("===DONE===\n");
 
-  printf("\nwriting the simx adapted mesh %s\n", outAdaptedSimxMesh);
-  printf("==============================\n");
+
+  printf("\n===WRITING THE SIMX/SMB ADAPTED MESHES===\n");
+  printf("%s\n", outAdaptedSimxMesh);
+  printf("%s\n", outAdaptedPumiMesh);
   M_write(simxMesh,outAdaptedSimxMesh, 0,0);  // write out the initial mesh data
+  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName);
 
-  printf("\nconverting the simx adapted mesh to pumi mesh with fields\n");
-  printf("==============================\n");
+  m2->writeNative(outAdaptedPumiMesh);
+  printf("===DONE===\n");
 
+  printf("\n===RUNNING SIMX IMPROVER WITH TARGET QUALITY %f===\n", minQuality);
+  double improveTime = runSimxMeshImprover(simxMesh, minQuality);
+  printf("\nSIMX IMPROVER RUN-TIME: %f \n", improveTime);
+  printf("===DONE===\n");
+
+  printf("\n===WRITING THE SIMX/SMB IMPROVED MESHES===\n");
+  printf("%s\n", outImprovedSimxMesh);
+  printf("%s\n", outImprovedPumiMesh);
+  M_write(simxMesh,outImprovedSimxMesh, 0,0);  // write out the initial mesh data
   apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName);
-  m3->writeNative(outAdaptedPumiMesh);
 
-  // cleanup
+  m3->writeNative(outImprovedPumiMesh);
+  printf("===DONE===\n");
+
+    // cleanup
   M_release(simxMesh);
   GM_release(simxModel);
 
   m->destroyNative();
   apf::destroyMesh(m);
+
+  m2->destroyNative();
+  apf::destroyMesh(m2);
 
   m3->destroyNative();
   apf::destroyMesh(m3);
@@ -213,7 +233,6 @@ int main(int argc, char** argv)
   PCU_Comm_Free();
   MPI_Finalize();
 }
-
 
 void printModelStats(pGModel model)
 {
@@ -410,10 +429,24 @@ pMSAdapt addSizesToSimxMesh(
 }
 
 
-void runSimxAdapt(pMSAdapt adapter)
+double runSimxAdapt(pMSAdapt adapter)
 {
+  double t0 = PCU_Time();
   MSA_adapt(adapter, 0);
   MSA_delete(adapter);
+  double t1 = PCU_Time();
+  return t1 - t0;
+}
+
+double runSimxMeshImprover(pMesh mesh, double minQuality)
+{
+  double t0 = PCU_Time();
+  pVolumeMeshImprover vmi = VolumeMeshImprover_new(mesh);
+  VolumeMeshImprover_setShapeMetric(vmi, ShapeMetricType_VolLenRatio, minQuality);
+  VolumeMeshImprover_execute(vmi, 0);
+  VolumeMeshImprover_delete(vmi);
+  double t1 = PCU_Time();
+  return t1 - t0;
 }
 
 static int countVerts(pMesh mesh)
@@ -557,16 +590,13 @@ apf::Mesh2* convertToPumi(
   destructSimxMesh(simxMesh, adaptedCoords, adaptedConns,
       adaptedNumVerts, adaptedNumElems, adaptedSizes, adaptedFrames);
 
-  printf("ch point 01\n");
   gmi_model* nullModel = gmi_load(".null");
   apf::Mesh2* m2 = apf::makeEmptyMdsMesh(nullModel, dim, false);
   apf::GlobalToVert outMap;
   apf::construct(m2, adaptedConns, adaptedNumElems, apf::Mesh::TET, outMap);;
-  printf("ch point 02\n");
   apf::alignMdsRemotes(m2);
   apf::deriveMdsModel(m2);
   apf::setCoords(m2, adaptedCoords, adaptedNumVerts, outMap);
-  printf("ch point 03\n");
   m2->verify();
 
   // make sure ordering of verts is what it is supposed to be.

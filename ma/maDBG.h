@@ -49,5 +49,13 @@ void dumpMeshWithFlag(ma::Adapt* a,
     const char* flagName,
     const char* prefix);
 
+void createCavityMesh(ma::Adapt* a,
+    ma::EntityArray& tets,
+    const char* prefix);
+
+void createCavityMesh(ma::Adapt* a,
+    ma::EntitySet& tets,
+    const char* prefix);
+
 }
 #endif

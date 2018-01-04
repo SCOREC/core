@@ -9,9 +9,10 @@
 *******************************************************************************/
 #include "maDBG.h"
 #include "maShape.h"
+#include <gmi.h>
+#include <gmi_null.h>
 #include <PCU.h>
 #include <apf.h>
-/* #include <apfMesh2.h> */
 #include <apfMDS.h>
 #include <apfConvert.h>
 #include <apfDynamicArray.h>
@@ -177,6 +178,51 @@ void dumpMeshWithFlag(ma::Adapt* a,
   colorField = a->mesh->findField(flagName);
   if (colorField)
     apf::destroyField(colorField);
+}
+
+void createCavityMesh(ma::Adapt* a,
+    ma::EntityArray& tets,
+    const char* prefix)
+{
+  ma::Mesh* m = a->mesh;
+
+  gmi_register_null();
+  ma::Mesh* cavityMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 3, false);
+
+  size_t n = tets.getSize();
+  for (size_t i = 0; i < n; ++i) {
+    ma::Entity* down[4];
+    ma::Entity* newVerts[4];
+    m->getDownward(tets[i], 0, down);
+    for (int j = 0; j < 4; j++) {
+      ma::Vector position;
+      m->getPoint(down[j], 0, position);
+      newVerts[j] = cavityMesh->createVertex(NULL, position, ma::Vector(0,0,0));
+    }
+    apf::buildElement(cavityMesh, NULL, apf::Mesh::TET, newVerts);
+  }
+
+  cavityMesh->acceptChanges();
+  std::stringstream ss;
+  ss << a->input->debugFolder << "/";
+  ss << prefix;
+
+
+  apf::writeVtkFiles(ss.str().c_str(),cavityMesh);
+  cavityMesh->destroyNative();
+  apf::destroyMesh(cavityMesh);
+}
+
+void createCavityMesh(ma::Adapt* a,
+    ma::EntitySet& tets,
+    const char* prefix)
+{
+  ma::EntityArray tetsArray;
+  tetsArray.setSize(tets.size());
+  int count = 0;
+  APF_ITERATE(ma::EntitySet,tets,it)
+    tetsArray[count++] = *it;
+  createCavityMesh(a, tetsArray, prefix);
 }
 
 
