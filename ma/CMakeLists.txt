@@ -32,6 +32,7 @@ set(SOURCES
   maSplits.cc
   maFaceSplit.cc
   maDoubleSplitCollapse.cc
+  maFaceSplitCollapse.cc
   maShortEdgeRemover.cc
   maVertRemover.cc
   maSnapper.cc
