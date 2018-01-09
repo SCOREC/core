@@ -655,12 +655,25 @@ static void markVertsToSnap(Adapt* a, Tag* t)
   markEntities(a, 0, p, SNAP, DONT_SNAP);
 }
 
+static void cleanSnapFlag(Adapt* a)
+{
+  Mesh* m = a->mesh;
+  Entity* v;
+  Iterator* it = m->begin(0);
+  while( (v = m->iterate(it)) ) {
+    clearFlagMatched(a, v, SNAP);
+  }
+  m->end(it);
+}
+
 bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   markVertsToSnap(a, t);
   SnapAll op(a, t, isSimple);
   applyOperator(a, &op);
   successCount += PCU_Add_Long(op.successCount);
+  if (a->mesh->hasMatching())
+    cleanSnapFlag(a);
   return PCU_Or(op.didAnything);
 }
 
