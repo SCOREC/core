@@ -601,11 +601,12 @@ class SnapAll : public Operator
       if ( ! getFlag(adapter, e, SNAP))
         return false;
       vert = e;
+      snapper.setVert(e);
       return true;
     }
     bool requestLocality(apf::CavityOp* o)
     {
-      return snapper.setVert(vert, o);
+      return snapper.requestLocality(o);
     }
     void apply()
     {
@@ -623,6 +624,14 @@ class SnapAll : public Operator
     Entity* vert;
     Snapper snapper;
 };
+
+bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+{
+  SnapAll op(a, t, isSimple);
+  applyOperator(a, &op);
+  successCount += PCU_Add_Long(op.successCount);
+  return PCU_Or(op.didAnything);
+}
 
 long tagVertsToSnap(Adapt* a, Tag*& t)
 {
@@ -666,15 +675,18 @@ static void cleanSnapFlag(Adapt* a)
   m->end(it);
 }
 
+bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+{
+  return false;
+}
+
 bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   markVertsToSnap(a, t);
-  SnapAll op(a, t, isSimple);
-  applyOperator(a, &op);
-  successCount += PCU_Add_Long(op.successCount);
   if (a->mesh->hasMatching())
-    cleanSnapFlag(a);
-  return PCU_Or(op.didAnything);
+    return snapMatchedVerts(a, t, isSimple, successCount);
+  else
+    return snapAllVerts(a, t, isSimple, successCount);
 }
 
 long snapTaggedVerts(Adapt* a, Tag* tag)

@@ -26,9 +26,13 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is)
   vert = 0;
 }
 
-bool Snapper::setVert(Entity* v, apf::CavityOp* o)
+void Snapper::setVert(Entity* v)
 {
   vert = v;
+}
+
+bool Snapper::requestLocality(apf::CavityOp* o)
+{
   if (!o->requestLocality(&vert, 1))
     return false;
   if (isSimple)

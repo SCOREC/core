@@ -28,7 +28,8 @@ class Snapper
 {
   public:
     Snapper(Adapt* a, Tag* st, bool is);
-    bool setVert(Entity* v, apf::CavityOp* o);
+    void setVert(Entity* v);
+    bool requestLocality(apf::CavityOp* o);
     bool run();
     bool dug;
     bool moved;
