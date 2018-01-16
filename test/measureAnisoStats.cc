@@ -133,17 +133,25 @@ void getStats(
   apf::Field* f_lq = apf::createField(m, "linear_quality", apf::SCALAR, apf::getConstant(m->getDimension()));
 
   // attach cell-based mesh quality
-  size_t n, i;
+  int n;
   apf::MeshEntity* r;
-  n = m->count(m->getDimension());
-  i = 0;
+  if (m->getDimension() == 3)
+    n = apf::countEntitiesOfType(m, apf::Mesh::TET);
+  else
+    n = apf::countEntitiesOfType(m, apf::Mesh::TRIANGLE);
+  size_t i = 0;
   apf::MeshIterator* rit = m->begin(m->getDimension());
   while ((r = m->iterate(rit))) {
-    apf::setScalar(f_lq, r, 0, lq[i]);
-    ++i;
+    if (! apf::isSimplex(m->getType(r))) {// ignore non-simplex elements
+      apf::setScalar(f_lq, r, 0, 100.0); // set as 100
+    }
+    else {
+      apf::setScalar(f_lq, r, 0, lq[i]);
+      ++i;
+    }
   }
   m->end(rit);
-  PCU_ALWAYS_ASSERT(i == n);
+  PCU_ALWAYS_ASSERT(i == (size_t) n);
 
 
   std::vector<std::vector<double> > qtable;
