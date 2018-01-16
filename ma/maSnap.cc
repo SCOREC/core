@@ -12,8 +12,10 @@
 #include "maAdapt.h"
 #include "maOperator.h"
 #include "maSnapper.h"
+#include "maMatchedSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
+#include "maDBG.h"
 #include <apfGeometry.h>
 #include <pcu_util.h>
 #include <iostream>
@@ -633,6 +635,57 @@ bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
   return PCU_Or(op.didAnything);
 }
 
+class SnapMatched : public Operator
+{
+  public:
+    SnapMatched(Adapt* a, Tag* t, bool simple):
+      snapper(a, t, simple)
+    {
+      adapter = a;
+      tag = t;
+      successCount = 0;
+      didAnything = false;
+      vert = 0;
+    }
+    int getTargetDimension() {return 0;}
+    bool shouldApply(Entity* e)
+    {
+      if ( ! getFlag(adapter, e, SNAP))
+        return false;
+      vert = e;
+      snapper.setVert(e);
+      return true;
+    }
+    bool requestLocality(apf::CavityOp* o)
+    {
+      return snapper.requestLocality(o);
+    }
+    void apply()
+    {
+      snapper.setVerts();
+      bool snapped = snapper.trySnaps();
+      didAnything = didAnything || snapped;
+      if (snapped)
+        ++successCount;
+      clearFlagMatched(adapter, vert, SNAP);
+    }
+    int successCount;
+    bool didAnything;
+  private:
+    Adapt* adapter;
+    Tag* tag;
+    Entity* vert;
+    MatchedSnapper snapper;
+};
+
+bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+{
+  SnapMatched op(a, t, isSimple);
+  applyOperator(a, &op);
+  successCount += PCU_Add_Long(op.successCount);
+  return PCU_Or(op.didAnything);
+}
+
 long tagVertsToSnap(Adapt* a, Tag*& t)
 {
   Mesh* m = a->mesh;
@@ -648,7 +701,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
     Vector s;
     getSnapPoint(m, v, s);
     Vector x = getPosition(m, v);
-    if (apf::areClose(s, x, 0.0))
+    if (apf::areClose(s, x, 1e-12))
       continue;
     m->setDoubleTag(v, t, &s[0]);
     if (m->isOwned(v))
@@ -662,22 +715,6 @@ static void markVertsToSnap(Adapt* a, Tag* t)
 {
   HasTag p(a->mesh, t);
   markEntities(a, 0, p, SNAP, DONT_SNAP);
-}
-
-static void cleanSnapFlag(Adapt* a)
-{
-  Mesh* m = a->mesh;
-  Entity* v;
-  Iterator* it = m->begin(0);
-  while( (v = m->iterate(it)) ) {
-    clearFlagMatched(a, v, SNAP);
-  }
-  m->end(it);
-}
-
-bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
-{
-  return false;
 }
 
 bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)

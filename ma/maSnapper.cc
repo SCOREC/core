@@ -31,6 +31,11 @@ void Snapper::setVert(Entity* v)
   vert = v;
 }
 
+Entity* Snapper::getVert()
+{
+  return vert;
+}
+
 bool Snapper::requestLocality(apf::CavityOp* o)
 {
   if (!o->requestLocality(&vert, 1))
@@ -234,6 +239,12 @@ static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
   if (!hadItBefore)
     clearFlag(a, v, DONT_COLLAPSE);
   return ok;
+}
+
+bool Snapper::trySimpleSnap()
+{
+  apf::Up badElements;
+  return trySnapping(adapter, snapTag, vert, badElements);
 }
 
 bool Snapper::run()
