@@ -31,6 +31,7 @@ set(SOURCES
   maShortEdgeRemover.cc
   maVertRemover.cc
   maSnapper.cc
+  maMatchedSnapper.cc
   maBalance.cc
   maLayer.cc
   maCrawler.cc
