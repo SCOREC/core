@@ -83,7 +83,10 @@ void colorEntitiesOfDimWithValues(ma::Adapt* a,
     apf::destroyField(colorField);
 
 
-  colorField = apf::createField(m, fieldName, apf::SCALAR, apf::getConstant(dim));
+  if (dim == 0)
+    colorField = apf::createFieldOn(m, fieldName, apf::SCALAR);
+  else
+    colorField = apf::createField(m, fieldName, apf::SCALAR, apf::getConstant(dim));
   ma::Entity* ent;
   ma::Iterator* it;
   it = m->begin(dim);
@@ -165,7 +168,7 @@ void dumpMeshWithFlag(ma::Adapt* a,
   std::vector<double> ent_flags;
   evaluateFlags(a, dim, flag, ent_flags);
 
-  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), ent_flags, flagName);
+  colorEntitiesOfDimWithValues(a, dim, ent_flags, flagName);
 
   // setup file name and write the mesh
   std::stringstream ss;
