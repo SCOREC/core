@@ -11,6 +11,7 @@ class ShapeHandler : public SolutionTransfer
 {
   public:
     virtual double getQuality(Entity* e) = 0;
+    virtual bool isElementInverted(Entity* e) = 0;
 };
 
 ShapeHandler* getShapeHandler(Adapt* a);

@@ -278,6 +278,10 @@ class BezierHandler : public ma::ShapeHandler
       }
       return -1;
     }
+    virtual bool isElementInverted(apf::MeshEntity* e)
+    {
+      return this->getQuality(e) < adapt->input->validQuality;
+    }
     virtual bool hasNodesOn(int dimension)
     {
       return bt->hasNodesOn(dimension);

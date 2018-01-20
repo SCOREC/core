@@ -60,7 +60,7 @@ void phastaio_time(phastaioTime* t) {
 }
 /*return elapsed time in micro seconds*/
 size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
-  size_t elapsed = static_cast<size_t>((end-start)/MILLION);
+  size_t elapsed = static_cast<size_t>((*end-*start)*MILLION);
   return elapsed;
 }
 #else
