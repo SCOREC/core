@@ -289,4 +289,59 @@ double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
     return computeEdgeEdgeCosAngleInTet(m, tet, e1, e2, Q);
 }
 
+static double getEdgeLength(Mesh* m, MeshEntity* e)
+{
+  PCU_ALWAYS_ASSERT(m->getType(e) == Mesh::EDGE);
+  MeshEntity* vs[2];
+  m->getDownward(e, 0, vs);
+  Vector3 p0, p1;
+  m->getPoint(vs[0], 0, p0);
+  m->getPoint(vs[1], 0, p1);
+  return (p1 - p0).getLength();
+}
+
+double computeShortesHeightInTet(Mesh* m, MeshEntity* tet,
+    const Matrix3x3& Q)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(tet) == Mesh::TET,
+      "Expecting a tet. Aborting! ");
+
+  double minHeight = 1.0e12;
+
+  MeshEntity* faces[4];
+  MeshEntity* edges[6];
+
+  m->getDownward(tet, 2, faces);
+  m->getDownward(tet, 1, edges);
+
+  // iterate over faces
+  for (int i = 0; i < 4; i++) {
+    MeshEntity* currentFace = faces[i];
+    MeshEntity* outOfFaceEdge = 0;
+    MeshEntity* es[3];
+    m->getDownward(currentFace, 1, es);
+    // get the out of face edge
+    for (int j = 0; j < 6; j++) {
+      int index = findIn(es, 3, edges[j]);
+      if (index == -1) {
+      	outOfFaceEdge = edges[j];
+      	break;
+      }
+    }
+    PCU_ALWAYS_ASSERT(outOfFaceEdge);
+    // compute the cos angle
+    double edgeFaceCosAngle =
+      computeEdgeFaceCosAngleInTet(m, tet, outOfFaceEdge, currentFace, Q);
+    // compute the sin angle
+    double edgeFaceSinAngle = std::sqrt(
+    	1 - edgeFaceCosAngle*edgeFaceCosAngle);
+    // height is sinAngle*edgeLen
+    double currentHeight = edgeFaceSinAngle * getEdgeLength(m, outOfFaceEdge);
+
+    if (currentHeight < minHeight)
+      minHeight = currentHeight;
+  }
+  return minHeight;
+}
+
 }
