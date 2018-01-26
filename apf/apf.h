@@ -460,6 +460,16 @@ void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv);
 double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
     const Matrix3x3& Q);
 
+/** \brief Returns the shortest height in a tet
+  *
+  * \param m	mesh
+  * \param tet  tet
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeShortesHeightInTet(Mesh* m, MeshEntity* tet,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
 double computeCosAngleInTri(Mesh* m, MeshEntity* tri,
     MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
 
