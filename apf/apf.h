@@ -467,7 +467,7 @@ double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
   * \param Q	metric (default Identity)
   *
   */
-double computeShortesHeightInTet(Mesh* m, MeshEntity* tet,
+double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
     const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
 
 double computeCosAngleInTri(Mesh* m, MeshEntity* tri,

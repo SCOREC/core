@@ -300,7 +300,7 @@ static double getEdgeLength(Mesh* m, MeshEntity* e)
   return (p1 - p0).getLength();
 }
 
-double computeShortesHeightInTet(Mesh* m, MeshEntity* tet,
+double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
     const Matrix3x3& Q)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(m->getType(tet) == Mesh::TET,
