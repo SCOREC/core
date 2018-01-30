@@ -242,6 +242,12 @@ mpi_test(split_2 2
   "pipe.smb"
   ${MESHFILE}
   2)
+mpi_test(collapse_2 2
+  ./collapse
+  "${MDIR}/pipe.${GXT}"
+  ${MESHFILE}
+  pipe_p1_.smb
+  2)
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x
