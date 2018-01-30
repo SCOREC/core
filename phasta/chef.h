@@ -50,6 +50,8 @@ namespace chef {
   void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& ctrl);
   /** @brief uniformly refine the mesh */
   void uniformRefinement(ph::Input& ctrl, apf::Mesh2* m);
+  /** @brief adapt around the zero level set */
+  void adaptLevelSet(ph::Input& ctrl, apf::Mesh2* m);
   /** @brief read fields from the mesh and write to files */
   void preprocess(apf::Mesh2*& m, ph::Input& ctrl);
   /** @brief read fields from the mesh and write to streams */
