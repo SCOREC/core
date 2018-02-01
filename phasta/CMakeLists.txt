@@ -47,6 +47,18 @@ if(NOT ENABLE_SIMMETRIX # no simmetrix
   set(SOURCES ${SOURCES} phGrowthCurves_empty.cc)
 endif()
 
+#from https://github.com/abduld/libwb/issues/5
+include(CheckFunctionExists)
+CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME)
+if(NOT HAVE_CLOCK_GETTIME)
+  find_library(LIBRT_LIBRARIES rt)
+  if(NOT LIBRT_LIBRARIES)
+    message(FATAL_ERROR "librt not found")
+  else(NOT LIBRT_LIBRARIES)
+    message(STATUS "librt found: ${LIBRT_LIBRARIES}")
+  endif(NOT LIBRT_LIBRARIES)
+endif(NOT HAVE_CLOCK_GETTIME)
+
 # Package headers
 set(HEADERS
   chef.h
@@ -81,6 +93,9 @@ if(ENABLE_SIMMETRIX)
       gmi_sim
       apf_sim
     )
+endif()
+if(LIBRT_LIBRARIES)
+  target_link_libraries(ph PUBLIC ${LIBRT_LIBRARIES})
 endif()
 
 scorec_export_library(ph)
