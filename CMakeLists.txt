@@ -104,12 +104,17 @@ set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+option(ENABLE_CAPSTONE "Build with Capstone support" OFF)
+message(STATUS "ENABLE_CAPSTONE: ${ENABLE_CAPSTONE}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
 option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
+endif()
+if(ENABLE_CAPSTONE)
+  add_definitions(-DHAVE_CAPSTONE)
 endif()
 
 option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
@@ -125,6 +130,10 @@ endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
+endif()
+
+if(ENABLE_CAPSTONE)
+  find_package(CreateMG)
 endif()
 
 if(ENABLE_OMEGA_H)

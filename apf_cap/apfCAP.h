@@ -1,6 +1,10 @@
 #ifndef APFCAP
 #define APFCAP
 
+#include "CapstoneInterface.h"
+#include "CreateMG_Framework_Application.h"
+#include "CreateMG_Framework_Core.h"
+
 #include <apfMesh2.h>
 
 class capEntity;

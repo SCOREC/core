@@ -10,6 +10,8 @@ set(HEADERS apfCAP.h)
 #Library
 add_library(apf_cap ${SOURCES})
 target_link_libraries(apf_cap PUBLIC apf)
+target_link_libraries(apf_cap PUBLIC capstone_module
+				     framework_testing)
 target_include_directories(apf_cap PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
