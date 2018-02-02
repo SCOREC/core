@@ -1,11 +1,23 @@
 #ifndef APFCAP
 #define APFCAP
 
-#include "CapstoneInterface.h"
-#include "CreateMG_Framework_Application.h"
-#include "CreateMG_Framework_Core.h"
-
 #include <apfMesh2.h>
+
+#include "CapstoneModule.h"
+#include "CreateMG_Framework_Core.h"
+#include "CreateMG_Framework_Analysis.h"
+#include "CreateMG_Framework_Application.h"
+#include "CreateMG_Framework_Attributes.h"
+#include "CreateMG_Framework_Core.h"
+#include "CreateMG_Framework_Geometry.h"
+#include "CreateMG_Framework_Mesh.h"
+
+using namespace CreateMG;
+using namespace CreateMG::Attribution;
+using namespace CreateMG::Mesh;
+using namespace CreateMG::Geometry;
+
+
 
 class capEntity;
 class capMesh;
@@ -17,7 +29,7 @@ namespace apf {
  *
  * \details This object should be destroyed by apf::destroyMesh.
  */
-Mesh2* createMesh(capMesh* mesh);
+Mesh2* createMesh(MeshDatabaseInterface* mdb);
 
 /**
   * \brief Casts a CapStone entity to an apf::MeshEntity.
@@ -29,7 +41,7 @@ MeshEntity* castEntity(capEntity* entity);
 class MeshCAP : public Mesh2
 {
   public:
-    MeshCAP(capMesh* m);
+    MeshCAP(MeshDatabaseInterface* mdb);
     virtual ~MeshCAP();
     /* --------------------------------------------------------------------- */
     /* Category 00: General Mesh APIs */
@@ -50,7 +62,7 @@ class MeshCAP : public Mesh2
     void getPoint_(MeshEntity* e, int, Vector3& point);
     void setPoint_(MeshEntity* e, int, Vector3 const& p);
     void getParam(MeshEntity* e, Vector3& p);
-    void setParam(MeshEntity* e, Vector3 const& p);
+    void setParam(MeshEntity*, Vector3 const&) {}
 
     /* --------------------------------------------------------------------- */
     /* Category 02: Iterators */
@@ -59,9 +71,9 @@ class MeshCAP : public Mesh2
     MeshIterator* begin(int dimension);
     MeshEntity* iterate(MeshIterator* it);
     void end(MeshIterator* it);
-    void increment(MeshIterator* it);
-    bool isDone(MeshIterator* it);
-    MeshEntity* deref(MeshIterator* it);
+    void increment(MeshIterator*) {}
+    bool isDone(MeshIterator*) { return true; }
+    MeshEntity* deref(MeshIterator*) { return NULL; }
 
     /* --------------------------------------------------------------------- */
     /* Category 03: Adjacencies */
@@ -85,16 +97,15 @@ class MeshCAP : public Mesh2
     ModelEntity* toModel(MeshEntity* e);
     // OPTIONAL Member Functions //
     gmi_model* getModel();
-    void setModelEntity(MeshEntity* e, ModelEntity* c);
+    void setModelEntity(MeshEntity*, ModelEntity*) {}
 
     /* --------------------------------------------------------------------- */
     /* Category 05: Entity Creation/Deletion */
     /* --------------------------------------------------------------------- */
     // REQUIRED Member Functions //
-    MeshEntity* createVert_(ModelEntity* c);
-    MeshEntity* createEntity_(int type, ModelEntity* c,
-                                      MeshEntity** down);
-    void destroy_(MeshEntity* e);
+    MeshEntity* createVert_(ModelEntity*) { return NULL; }
+    MeshEntity* createEntity_(int, ModelEntity*, MeshEntity**) { return NULL; }
+    void destroy_(MeshEntity*) {}
 
     /* --------------------------------------------------------------------- */
     /* Category 06: Attachable Data Functionality */
@@ -102,8 +113,10 @@ class MeshCAP : public Mesh2
     // REQUIRED Member Functions //
     MeshTag* createDoubleTag(const char* name, int size);
     MeshTag* createIntTag(const char* name, int size);
+    MeshTag* createLongTag(const char* name, int size);
     MeshTag* findTag(const char* name);
     void destroyTag(MeshTag* t);
+    void renameTag(MeshTag* t, const char*);
     void getTags(DynamicArray<MeshTag*>& tags);
     void getTag(MeshEntity* e, MeshTag* t, void* data);
     void setTag(MeshEntity* e, MeshTag* t, void const* data);
@@ -111,8 +124,13 @@ class MeshCAP : public Mesh2
     void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data);
     void getIntTag(MeshEntity* e, MeshTag* tag, int* data);
     void setIntTag(MeshEntity* e, MeshTag* tag, int const* data);
+    void getLongTag(MeshEntity* e, MeshTag* tag, long* data);
+    void setLongTag(MeshEntity* e, MeshTag* tag, long const* data);
     void removeTag(MeshEntity* e, MeshTag* t);
     bool hasTag(MeshEntity* e, MeshTag* t);
+    int getTagType(MeshTag* t);
+    int getTagSize(MeshTag* t);
+    const char* getTagName(MeshTag* t);
     unsigned getTagChecksum(MeshTag*,int);
 
 
@@ -121,40 +139,44 @@ class MeshCAP : public Mesh2
     /* --------------------------------------------------------------------- */
     // REQUIRED Member Functions //
     bool isShared(MeshEntity* e);
-    bool isGhost(MeshEntity* e);
-    bool isGhosted(MeshEntity* e);
+    bool isGhost(MeshEntity*) { return false; }
+    bool isGhosted(MeshEntity*) { return false; }
     bool isOwned(MeshEntity* e);
     int getOwner(MeshEntity* e);
     void getRemotes(MeshEntity* e, Copies& remotes);
     void getResidence(MeshEntity* e, Parts& residence);
     int getId();
-    void setResidence(MeshEntity* e, Parts& residence);
-    void acceptChanges();
+    void setResidence(MeshEntity*, Parts&) {}
+    void acceptChanges() {}
     // OPTIONAL Member Functions //
-    void deleteGhost(MeshEntity* e);
-    void addGhost(MeshEntity* e, int p, MeshEntity* r);
-    int getGhosts(MeshEntity* e, Copies& ghosts);
+    void deleteGhost(MeshEntity*) {}
+    void addGhost(MeshEntity*, int, MeshEntity*) {}
+    int getGhosts(MeshEntity*, Copies&) { return 0; }
     void migrate(Migration* plan);
-    void setRemotes(MeshEntity* e, Copies& remotes);
-    void addRemote(MeshEntity* e, int p, MeshEntity* r);
+    void setRemotes(MeshEntity*, Copies&) {}
+    void addRemote(MeshEntity*, int, MeshEntity*) {}
 
 
     /* --------------------------------------------------------------------- */
     /* Category 08: Periodic Meshes */
     /* --------------------------------------------------------------------- */
     // REQUIRED Member Functions //
-    bool hasMatching();
+    bool hasMatching() { return false; }
     void getMatches(MeshEntity* e, Matches& m);
     // OPTIONAL Member Functions //
-    void addMatch(MeshEntity* e, int peer, MeshEntity* match);
-    void clearMatches(MeshEntity* e);
+    void addMatch(MeshEntity*, int, MeshEntity*) {}
+    void clearMatches(MeshEntity*) {}
+    void clear_() {}
     void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me);
 
 
 
-    capMesh* getMesh() { return mesh; }
+    capMesh* getMesh() { return 0; }
   protected:
-    capMesh* mesh;
+    /* CapstoneModule capModule; */
+    /* GeometryDatabaseInterface  *geomInterface; */
+    MeshDatabaseInterface* meshInterface;
+    /* AppContext                 *c; */
     int iterDim;
     int d;
     gmi_model* model;

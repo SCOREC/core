@@ -6,12 +6,20 @@
 #include <pcu_util.h>
 #include <algorithm>
 
+
 namespace apf {
 
 
-MeshCAP::MeshCAP(capMesh* m):
-  mesh(m)
+MeshCAP::MeshCAP(MeshDatabaseInterface* mdb):
+  meshInterface(mdb)
 {
+  PCU_ALWAYS_ASSERT(meshInterface);
+
+  std::size_t numRegions = 0;
+  meshInterface->get_num_topos(TOPO_REGION, numRegions);
+  d = numRegions ? 3 : 2;
+  iterDim = -1;
+  model = 0;
 }
 
 MeshCAP::~MeshCAP()
@@ -195,6 +203,14 @@ MeshTag* MeshCAP::createIntTag(const char* name, int size)
   return 0;
 }
 
+MeshTag* MeshCAP::createLongTag(const char* name, int size)
+{
+  (void)name;
+  (void)size;
+  apf::fail("MeshCAP::createLongTag called!\n");
+  return 0;
+}
+
 MeshTag* MeshCAP::findTag(const char* name)
 {
   (void)name;
@@ -206,6 +222,12 @@ void MeshCAP::destroyTag(MeshTag* tag)
 {
   (void)tag;
   apf::fail("MeshCAP::destroyTag called!\n");
+}
+
+void MeshCAP::renameTag(MeshTag* tag, const char*)
+{
+  (void)tag;
+  apf::fail("MeshCAP::renameTag called!\n");
 }
 
 unsigned MeshCAP::getTagChecksum(MeshTag*,int)
@@ -251,6 +273,23 @@ void MeshCAP::setIntTag(MeshEntity* e, MeshTag* tag, int const* data)
   apf::fail("MeshCAP::setIntTag called!\n");
 }
 
+void MeshCAP::getLongTag(MeshEntity* e, MeshTag* tag, long* data)
+{
+  (void)e;
+  (void)tag;
+  (void)data;
+  apf::fail("MeshCAP::getLongTag called!\n");
+}
+
+void MeshCAP::setLongTag(MeshEntity* e, MeshTag* tag, long const* data)
+{
+  (void)e;
+  (void)tag;
+  (void)data;
+  apf::fail("MeshCAP::setLongTag called!\n");
+}
+
+
 void MeshCAP::removeTag(MeshEntity* e, MeshTag* tag)
 {
   (void)e;
@@ -263,6 +302,24 @@ bool MeshCAP::hasTag(MeshEntity* e, MeshTag* tag)
   (void)e;
   (void)tag;
   apf::fail("MeshCAP::hasTag called!\n");
+}
+
+int MeshCAP::getTagType(MeshTag* tag)
+{
+  (void)tag;
+  apf::fail("MeshCAP::getTagType called!\n");
+}
+
+int MeshCAP::getTagSize(MeshTag* tag)
+{
+  (void)tag;
+  apf::fail("MeshCAP::getTagSize called!\n");
+}
+
+const char* MeshCAP::getTagName(MeshTag* tag)
+{
+  (void)tag;
+  apf::fail("MeshCAP::getTagName called!\n");
 }
 
 ModelEntity* MeshCAP::toModel(MeshEntity* e)
@@ -339,5 +396,13 @@ MeshEntity* castEntity(capEntity* entity)
   apf::fail("MeshCAP::castEntity called!\n");
   return 0;
 }
+
+Mesh2* createMesh(MeshDatabaseInterface* mdb)
+{
+  MeshCAP* m = new MeshCAP(mdb);
+  m->init(getLagrange(1));
+  return m;
+}
+
 
 }//namespace apf
