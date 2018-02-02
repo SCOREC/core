@@ -213,6 +213,7 @@ namespace ph {
     gmi_model* g = m->getModel();
     PCU_ALWAYS_ASSERT(g);
     BCs bcs;
+    fprintf(stderr, "reading %s\n", in.attributeFileName.c_str());
     ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     if (!in.solutionMigration)
       ph::attachZeroSolution(in, m);

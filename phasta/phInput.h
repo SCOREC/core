@@ -119,6 +119,7 @@ class Input
     int elementsPerMigration;
     int threaded;
     int initBubbles;
+    std::string bubbleFileName;
     int formElementGraph;
     int snap;
     int transferParametric;
@@ -155,8 +156,20 @@ class Input
     double adaptShrinkLimit;
     /** \brief report the time spent in IO */
     int printIOtime;
-	/** \brief flag of writing m2g fields to geomBC files */
-	int mesh2geom;
+    /** \brief flag of writing m2g fields to geomBC files */
+    int mesh2geom;
+    /** \brief closest distance from zero level set for banded refinement */
+    double alphaDist;
+    /** \brief absolute isotropic size within [0:alphaDist) of zero level set */
+    double alphaSize;
+    /** \brief second closest distance from zero level set for banded refinement */
+    double betaDist;
+    /** \brief absolute isotropic size within [alphaDist:betaDist) of zero level set */
+    double betaSize;
+    /** \brief furthest distance from zero level set for banded refinement */
+    double gammaDist;
+    /** \brief absolute isotropic size within [betaDist:gammDist) of zero level set */
+    double gammaSize;
 };
 
 int countNaturalBCs(Input& in);
