@@ -33,29 +33,60 @@ int MeshCAP::getDimension()
 
 std::size_t MeshCAP::count(int dimension)
 {
-  (void)dimension;
-  apf::fail("MeshCAP::count called!\n");
-  return 0;
+  std::size_t count = 0;
+  if (dimension == 0)
+    meshInterface->get_num_topos(TOPO_VERTEX, count);
+  if (dimension == 1)
+    meshInterface->get_num_topos(TOPO_EDGE, count);
+  if (dimension == 2)
+    meshInterface->get_num_topos(TOPO_FACE, count);
+  if (dimension == 3)
+    meshInterface->get_num_topos(TOPO_REGION, count);
+  return count;
 }
 
 MeshIterator* MeshCAP::begin(int dimension)
 {
-  (void)dimension;
-  apf::fail("MeshCAP::begin called!\n");
-  return 0;
+  MeshSmartIterator* miter = new MeshSmartIterator(meshInterface);
+  if (dimension == 0)
+    meshInterface->get_topo_iterator(TOPO_VERTEX, *miter);
+  if (dimension == 1)
+    meshInterface->get_topo_iterator(TOPO_EDGE, *miter);
+  if (dimension == 2)
+    meshInterface->get_topo_iterator(TOPO_FACE, *miter);
+  if (dimension == 3)
+    meshInterface->get_topo_iterator(TOPO_REGION, *miter);
+  meshInterface->iterator_begin(*miter);
+  return reinterpret_cast<MeshIterator*>(miter);
 }
+
+class CapstoneEntity
+{
+  public:
+    CapstoneEntity(M_MTopo inEnt):
+      ent(inEnt) {}
+    M_MTopo get()
+    {
+      return ent;
+    }
+  private:
+    M_MTopo ent;
+};
 
 MeshEntity* MeshCAP::iterate(MeshIterator* it)
 {
-  (void)it;
-  apf::fail("MeshCAP::iterate called!\n");
-  return 0;
+  MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
+  if (meshInterface->iterator_end(*miter))
+    return 0;
+  meshInterface->iterator_next(*miter);
+  CapstoneEntity* ce = new CapstoneEntity(meshInterface->iterator_value(*miter));
+  return reinterpret_cast<MeshEntity*>(ce);
 }
 
 void MeshCAP::end(MeshIterator* it)
 {
-  (void)it;
-  apf::fail("MeshCAP::end called!\n");
+  MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
+  delete miter;
 }
 
 bool MeshCAP::isShared(MeshEntity* e)
@@ -153,10 +184,13 @@ bool MeshCAP::hasUp(MeshEntity* e)
 
 void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
 {
-  (void)e;
   (void)node;
-  (void)point;
-  apf::fail("MeshCAP::getPoint_ called!\n");
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->get();
+  if (meshInterface->is_vertex(topo))
+    meshInterface->get_vertex_coord(topo, &(point[0]));
+  else
+    apf::fail("MeshCAP::getPoint_ is called for entity other than vertex!\n");
 }
 
 void MeshCAP::getParam(MeshEntity* e, Vector3& point)
@@ -168,9 +202,28 @@ void MeshCAP::getParam(MeshEntity* e, Vector3& point)
 
 Mesh::Type MeshCAP::getType(MeshEntity* e)
 {
-  (void)e;
-  apf::fail("MeshCAP::getType called!\n");
-  return Mesh::VERTEX;
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->get();
+  MeshShape topoShape;
+  meshInterface->get_topo_shape(topo, topoShape);
+  if (topoShape == SHAPE_NODE)
+    return Mesh::VERTEX;
+  else if (topoShape == SHAPE_SEGMENT)
+    return Mesh::EDGE;
+  else if (topoShape == SHAPE_TRIANGLE)
+    return Mesh::TRIANGLE;
+  else if (topoShape == SHAPE_QUAD)
+    return Mesh::QUAD;
+  else if (topoShape == SHAPE_TETRA)
+    return Mesh::TET;
+  else if (topoShape == SHAPE_HEX)
+    return Mesh::HEX;
+  else if (topoShape == SHAPE_PRISM)
+    return Mesh::PRISM;
+  else if (topoShape == SHAPE_PYRAMID)
+    return Mesh::PYRAMID;
+  else
+    apf::fail("MeshCAP::getType encountered an unknown entity type!\n");
 }
 
 void MeshCAP::getRemotes(MeshEntity* e, Copies& remotes)
