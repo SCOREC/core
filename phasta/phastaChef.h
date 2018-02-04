@@ -7,6 +7,10 @@
 #include <phInput.h>
 #include <stdlib.h>
 
+namespace ph {
+  void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif

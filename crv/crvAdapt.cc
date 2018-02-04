@@ -266,6 +266,8 @@ void stats(ma::Input* in,
     while( (e = m->iterate(it)) ) {
       if (! m->isOwned(e))
 	continue;
+      if (! apf::isSimplex(m->getType(e))) // ignore non-simplex elements
+        continue;
       curvedQualities.push_back(qual->getQuality(e));
     }
     m->end(it);

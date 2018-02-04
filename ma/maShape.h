@@ -21,9 +21,9 @@ class Adapt;
 /* quick check of positivity of volumes based on vertices */
 bool areTetsValid(Mesh* m, EntityArray& tets);
 
-double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax=false);
-double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax=false);
-double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax=false);
+double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax=true);
+double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax=true);
+double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax=true);
 
 /* gets the quality of an element based on
  * the vertices used for curved elements

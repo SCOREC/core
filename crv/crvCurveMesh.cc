@@ -73,6 +73,10 @@ void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
 
 void MeshCurver::synchronize()
 {
+  // this causes the matched entities to collapse onto each other.
+  // In other words, the matched vertexes will have the same coords
+  // after the following call. This is not a desired behavior.
+  // TODO: fix this!
   apf::synchronize(m_mesh->getCoordinateField());
 }
 
