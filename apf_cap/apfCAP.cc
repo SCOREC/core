@@ -104,13 +104,21 @@ class CapstoneEntity
     M_MTopo topo;
 };
 
+/* NOTE: miter is located at the first item in the list, therefore
+ * iterate has to return it before calling iterator_next on miter
+ */
+
 MeshEntity* MeshCAP::iterate(MeshIterator* it)
 {
   MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
-  if (meshInterface->iterator_end(*miter))
-    return 0;
-  meshInterface->iterator_next(*miter);
+
   CapstoneEntity* ce = new CapstoneEntity(meshInterface->iterator_value(*miter));
+
+  if (!meshInterface->iterator_end(*miter))
+    meshInterface->iterator_next(*miter);
+  else
+    return 0;
+
   return reinterpret_cast<MeshEntity*>(ce);
 }
 
