@@ -9,6 +9,38 @@
 
 namespace apf {
 
+/* static void setupAdjacencies(MeshDatabaseInterface* mdb) */
+/* { */
+/*   // downward adjacencies */
+/*   MStatus st; */
+/*   if( !mdb->adjacency_exists(TOPO_EDGE, TOPO_VERTEX)) { */
+/*     st = mdb->compute_adjacency(TOPO_EDGE, TOPO_VERTEX); */
+/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
+/*   } */
+
+/*   if( !mdb->adjacency_exists(TOPO_FACE, TOPO_VERTEX)) { */
+/*     st = mdb->compute_adjacency(TOPO_FACE, TOPO_VERTEX); */
+/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
+/*   } */
+/*   if( !mdb->adjacency_exists(TOPO_FACE, TOPO_EDGE)) { */
+/*     st = mdb->compute_adjacency(TOPO_FACE, TOPO_EDGE); */
+/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
+/*   } */
+
+/*   if( !mdb->adjacency_exists(TOPO_REGION, TOPO_VERTEX)) { */
+/*     st = mdb->compute_adjacency(TOPO_REGION, TOPO_VERTEX); */
+/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
+/*   } */
+/*   if( !mdb->adjacency_exists(TOPO_REGION, TOPO_EDGE)) { */
+/*     st = mdb->compute_adjacency(TOPO_REGION, TOPO_EDGE); */
+/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
+/*   } */
+/*   if( !mdb->adjacency_exists(TOPO_REGION, TOPO_FACE)) { */
+/*     st = mdb->compute_adjacency(TOPO_REGION, TOPO_FACE); */
+/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
+/*   } */
+/*   // upward adjacencies */
+/* } */
 
 MeshCAP::MeshCAP(MeshDatabaseInterface* mdb):
   meshInterface(mdb)
@@ -20,6 +52,10 @@ MeshCAP::MeshCAP(MeshDatabaseInterface* mdb):
   d = numRegions ? 3 : 2;
   iterDim = -1;
   model = 0;
+  /* setupAdjacencies(meshInterface); */
+  /* MStatus stat = meshInterface->compute_adjacency(); */
+  /* /1* MStatus stat = meshInterface->compute_adjacency(TOPO_FACE, TOPO_EDGE); *1/ */
+  /* PCU_ALWAYS_ASSERT(stat == STATUS_OK); */
 }
 
 MeshCAP::~MeshCAP()
@@ -63,14 +99,9 @@ MeshIterator* MeshCAP::begin(int dimension)
 class CapstoneEntity
 {
   public:
-    CapstoneEntity(M_MTopo inEnt):
-      ent(inEnt) {}
-    M_MTopo get()
-    {
-      return ent;
-    }
-  private:
-    M_MTopo ent;
+    CapstoneEntity(M_MTopo inTopo):
+      topo(inTopo) {}
+    M_MTopo topo;
 };
 
 MeshEntity* MeshCAP::iterate(MeshIterator* it)
@@ -146,11 +177,44 @@ int MeshCAP::getDownward(MeshEntity* e,
     int dimension,
     MeshEntity** down)
 {
-  (void)e;
-  (void)dimension;
-  (void)down;
-  apf::fail("MeshCAP::getDownward called!\n");
-  return 0;
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  MeshTopo type;
+  meshInterface->get_topo_type(topo, type);
+  std::vector<M_MTopo> adjTopos;
+  if (apf::getDimension(this, e) == dimension)
+  {
+    down[0] = e;
+    return 1;
+  }
+  else if (type == TOPO_EDGE)
+  {
+    PCU_ALWAYS_ASSERT(dimension == 0);
+    meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
+  }
+  else if (type == TOPO_FACE)
+  {
+    PCU_ALWAYS_ASSERT(dimension == 0 || dimension == 1);
+    if (dimension == 0)
+      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
+    if (dimension == 1)
+      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+  }
+  else if (type == TOPO_REGION)
+  {
+    PCU_ALWAYS_ASSERT(dimension == 0 || dimension == 1 || dimension == 2);
+    if (dimension == 0)
+      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
+    if (dimension == 1)
+      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+    if (dimension == 2)
+      meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+  }
+  for (std::size_t i = 0; i < adjTopos.size(); i++)
+    down[i] = reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+  std::cout << adjTopos.size() << "," << Mesh::adjacentCount[getType(e)][dimension] << std::endl;
+  PCU_ALWAYS_ASSERT(adjTopos.size() == (std::size_t)Mesh::adjacentCount[getType(e)][dimension]);
+  return adjTopos.size();
 }
 
 int MeshCAP::countUpward(MeshEntity* e)
@@ -186,7 +250,7 @@ void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
 {
   (void)node;
   CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->get();
+  M_MTopo topo = ce->topo;
   if (meshInterface->is_vertex(topo))
     meshInterface->get_vertex_coord(topo, &(point[0]));
   else
@@ -203,7 +267,7 @@ void MeshCAP::getParam(MeshEntity* e, Vector3& point)
 Mesh::Type MeshCAP::getType(MeshEntity* e)
 {
   CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->get();
+  M_MTopo topo = ce->topo;
   MeshShape topoShape;
   meshInterface->get_topo_shape(topo, topoShape);
   if (topoShape == SHAPE_NODE)
