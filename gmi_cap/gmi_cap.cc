@@ -136,9 +136,19 @@ static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
   cap_model* cm = (cap_model*)m;
   CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
   M_GTopo topo = ce->topo;
-  double period;
-  cm->geomInterface->get_parametrization_period(topo, dim, period);
-  return (period > 0);
+  int paramType;
+  cm->geomInterface->get_parametrization_info(topo, dim, paramType);
+  // paramType is a bit mask with the following definitions
+  // the bit value at location 1 determines periodicity
+  /* enum ParametrizationType */
+  /* { */
+  /*     PARAM_UNKNOWN=0,      //!< Unknown parametrization */
+  /*     PARAM_CONTINUOUS=1,   //!< Continuous parametrization */
+  /*     PARAM_PERIODIC=2,     //!< Periodic parametrization */
+  /*     PARAM_COMPOSITE=4,    //!< parametrization of a composite edge or face */
+  /*     PARAM_UNBOUNDED=8     //!< infinite parametrization */
+  /* }; */
+  return paramType & (1<<1);
 }
 
 static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
