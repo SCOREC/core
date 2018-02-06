@@ -24,7 +24,13 @@ using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
-
+class CapstoneModelEntity
+{
+  public:
+    CapstoneModelEntity(M_GTopo inTopo):
+      topo(inTopo) {}
+    M_GTopo topo;
+};
 
 void gmi_cap_start(void);
 void gmi_cap_stop(void);

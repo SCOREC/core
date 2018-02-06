@@ -2,6 +2,7 @@
 #include <apf.h>
 #include <apfShape.h>
 #include <gmi.h>
+#include <gmi_cap.h>
 #include <cstdlib>
 #include <pcu_util.h>
 #include <algorithm>
@@ -42,8 +43,8 @@ namespace apf {
 /*   // upward adjacencies */
 /* } */
 
-MeshCAP::MeshCAP(MeshDatabaseInterface* mdb):
-  meshInterface(mdb)
+MeshCAP::MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb):
+  meshInterface(mdb), geomInterface(gdb)
 {
   PCU_ALWAYS_ASSERT(meshInterface);
 
@@ -51,7 +52,7 @@ MeshCAP::MeshCAP(MeshDatabaseInterface* mdb):
   meshInterface->get_num_topos(TOPO_REGION, numRegions);
   d = numRegions ? 3 : 2;
   iterDim = -1;
-  model = 0;
+  model = gmi_import_cap(geomInterface);
   /* setupAdjacencies(meshInterface); */
   /* MStatus stat = meshInterface->compute_adjacency(); */
   /* /1* MStatus stat = meshInterface->compute_adjacency(TOPO_FACE, TOPO_EDGE); *1/ */
@@ -220,7 +221,7 @@ int MeshCAP::getDownward(MeshEntity* e,
   }
   for (std::size_t i = 0; i < adjTopos.size(); i++)
     down[i] = reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
-  std::cout << adjTopos.size() << "," << Mesh::adjacentCount[getType(e)][dimension] << std::endl;
+  /* std::cout << adjTopos.size() << "," << Mesh::adjacentCount[getType(e)][dimension] << std::endl; */
   PCU_ALWAYS_ASSERT(adjTopos.size() == (std::size_t)Mesh::adjacentCount[getType(e)][dimension]);
   return adjTopos.size();
 }
@@ -267,9 +268,14 @@ void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
 
 void MeshCAP::getParam(MeshEntity* e, Vector3& point)
 {
-  (void)e;
-  (void)point;
-  apf::fail("MeshCAP::getParam called!\n");
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  /* int d = getModelType(toModel(e)); */
+  /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
+  double u, v;
+  GeometryTopoType gtype;
+  meshInterface->get_vertex_uv_parameters(topo, u, v, gtype);
+  point = Vector3(u, v, 0.);
 }
 
 Mesh::Type MeshCAP::getType(MeshEntity* e)
@@ -449,13 +455,18 @@ const char* MeshCAP::getTagName(MeshTag* tag)
 
 ModelEntity* MeshCAP::toModel(MeshEntity* e)
 {
-  (void)e;
-  apf::fail("MeshCAP::toModel called!\n");
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  M_GTopo gtopo;
+  GeometryTopoType gtype;
+  meshInterface->get_geom_entity(topo, gtype, gtopo);
+  CapstoneModelEntity* cm = new CapstoneModelEntity(gtopo);
+  return reinterpret_cast<ModelEntity*>(cm);
 }
 
 gmi_model* MeshCAP::getModel()
 {
-  apf::fail("MeshCAP::getModel called!\n");
+  return model;
 }
 
 void MeshCAP::migrate(Migration* plan)
@@ -522,9 +533,9 @@ MeshEntity* castEntity(capEntity* entity)
   return 0;
 }
 
-Mesh2* createMesh(MeshDatabaseInterface* mdb)
+Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)
 {
-  MeshCAP* m = new MeshCAP(mdb);
+  MeshCAP* m = new MeshCAP(mdb, gdb);
   m->init(getLagrange(1));
   return m;
 }

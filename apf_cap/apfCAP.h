@@ -29,7 +29,7 @@ namespace apf {
  *
  * \details This object should be destroyed by apf::destroyMesh.
  */
-Mesh2* createMesh(MeshDatabaseInterface* mdb);
+Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
 
 /**
   * \brief Casts a CapStone entity to an apf::MeshEntity.
@@ -41,7 +41,7 @@ MeshEntity* castEntity(capEntity* entity);
 class MeshCAP : public Mesh2
 {
   public:
-    MeshCAP(MeshDatabaseInterface* mdb);
+    MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
     virtual ~MeshCAP();
     /* --------------------------------------------------------------------- */
     /* Category 00: General Mesh APIs */
@@ -174,8 +174,8 @@ class MeshCAP : public Mesh2
     capMesh* getMesh() { return 0; }
   protected:
     /* CapstoneModule capModule; */
-    /* GeometryDatabaseInterface  *geomInterface; */
     MeshDatabaseInterface* meshInterface;
+    GeometryDatabaseInterface  *geomInterface;
     /* AppContext                 *c; */
     int iterDim;
     int d;

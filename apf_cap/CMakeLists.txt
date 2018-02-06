@@ -9,7 +9,7 @@ set(HEADERS apfCAP.h)
 
 #Library
 add_library(apf_cap ${SOURCES})
-target_link_libraries(apf_cap PUBLIC apf)
+target_link_libraries(apf_cap PUBLIC apf gmi_cap)
 target_link_libraries(apf_cap PUBLIC capstone_module
 				     framework_testing)
 target_include_directories(apf_cap PUBLIC
