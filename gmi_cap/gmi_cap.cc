@@ -94,7 +94,7 @@ static gmi_ent* find(gmi_model* m, int dim, int tag)
   (void)m;
   (void)dim;
   (void)tag;
-  printf("not implemented!\n");
+  printf("_find_ not implemented!\n");
   return 0;
 }
 
@@ -103,7 +103,7 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
   (void)m;
   (void)e;
   (void)dim;
-  printf("not implemented!\n");
+  printf("_adjacent_ not implemented!\n");
   return 0;
 }
 
@@ -128,7 +128,7 @@ static void reparam(struct gmi_model* m, struct gmi_ent* from,
   (void)from_p;
   (void)to;
   (void)to_p;
-  printf("not implemented!\n");
+  printf("_reparam_ not implemented!\n");
 }
 
 static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
@@ -161,7 +161,7 @@ static void closest_point(struct gmi_model* m, struct gmi_ent* e,
   (void)e;
   (void)to;
   (void)to_p;
-  printf("not implemented!\n");
+  printf("_closest_point_ not implemented!\n");
 }
 
 static void normal(struct gmi_model* m, struct gmi_ent* e,
@@ -171,7 +171,7 @@ static void normal(struct gmi_model* m, struct gmi_ent* e,
   (void)e;
   (void)p;
   (void)n;
-  printf("not implemented!\n");
+  printf("_normal_ not implemented!\n");
 }
 
 static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
@@ -182,7 +182,7 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
   (void)p;
   (void)t0;
   (void)t1;
-  printf("first_derivative not implemented!\n");
+  printf("_first_derivative_ not implemented!\n");
 }
 
 static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
@@ -191,7 +191,7 @@ static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
   (void)m;
   (void)e;
   (void)point;
-  printf("not implemented!\n");
+  printf("_is_point_in_region_ not implemented!\n");
   return 0;
 }
 
@@ -201,21 +201,21 @@ static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   (void)m;
   (void)e;
   (void)et;
-  printf("not implemented!\n");
+  printf("_is_in_closure_of_ not implemented!\n");
   return 0;
 }
 
 static int is_discrete_ent(struct gmi_model*, struct gmi_ent* e)
 {
   (void)e;
-  printf("not implemented!\n");
+  printf("_is_discrete_ent_ not implemented!\n");
   return 0;
 }
 
 static void destroy(gmi_model* m)
 {
   (void)m;
-  printf("not implemented!\n");
+  printf("_destroy_ not implemented!\n");
 }
 
 static struct gmi_model_ops ops;
