@@ -39,14 +39,6 @@ static gmi_iter* begin(gmi_model* m, int dim)
   return (gmi_iter*)(giter);
 }
 
-class CapstoneModelEntity
-{
-  public:
-    CapstoneModelEntity(M_GTopo inTopo):
-      topo(inTopo) {}
-    M_GTopo topo;
-};
-
 /* NOTE: giter is located at the first item in the list, therefore
  * gmi_next has to return it before calling iterator_next on giter
  */
@@ -118,11 +110,14 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
 static void eval(struct gmi_model* m, struct gmi_ent* e,
       double const p[2], double x[3])
 {
-  (void)m;
-  (void)e;
-  (void)p;
-  (void)x;
-  printf("not implemented!\n");
+  cap_model* cm = (cap_model*)m;
+  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
+  M_GTopo topo = ce->topo;
+  vec3d point;
+  cm->geomInterface->get_point(topo, vec3d(p[0], p[1], 0.0), point);
+  x[0] = point[0];
+  x[1] = point[1];
+  x[2] = point[2];
 }
 
 static void reparam(struct gmi_model* m, struct gmi_ent* from,
@@ -138,21 +133,24 @@ static void reparam(struct gmi_model* m, struct gmi_ent* from,
 
 static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
 {
-  (void)m;
-  (void)e;
-  (void)dim;
-  printf("not implemented!\n");
-  return 0;
+  cap_model* cm = (cap_model*)m;
+  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
+  M_GTopo topo = ce->topo;
+  double period;
+  cm->geomInterface->get_parametrization_period(topo, dim, period);
+  return (period > 0);
 }
 
 static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
     double r[2])
 {
-  (void)m;
-  (void)e;
-  (void)dim;
-  (void)r;
-  printf("not implemented!\n");
+  cap_model* cm = (cap_model*)m;
+  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
+  M_GTopo topo = ce->topo;
+  double lower, upper;
+  cm->geomInterface->get_parametrization_range(topo, dim, lower, upper);
+  r[0] = lower;
+  r[1] = upper;
 }
 
 static void closest_point(struct gmi_model* m, struct gmi_ent* e,
