@@ -10,6 +10,14 @@
 
 namespace apf {
 
+class CapstoneEntity
+{
+  public:
+    CapstoneEntity(M_MTopo inTopo):
+      topo(inTopo) {}
+    M_MTopo topo;
+};
+
 /* static void setupAdjacencies(MeshDatabaseInterface* mdb) */
 /* { */
 /*   // downward adjacencies */
@@ -82,6 +90,79 @@ std::size_t MeshCAP::count(int dimension)
   return count;
 }
 
+Mesh::Type MeshCAP::getType(MeshEntity* e)
+{
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  MeshShape topoShape;
+  meshInterface->get_topo_shape(topo, topoShape);
+  if (topoShape == SHAPE_NODE)
+    return Mesh::VERTEX;
+  else if (topoShape == SHAPE_SEGMENT)
+    return Mesh::EDGE;
+  else if (topoShape == SHAPE_TRIANGLE)
+    return Mesh::TRIANGLE;
+  else if (topoShape == SHAPE_QUAD)
+    return Mesh::QUAD;
+  else if (topoShape == SHAPE_TETRA)
+    return Mesh::TET;
+  else if (topoShape == SHAPE_HEX)
+    return Mesh::HEX;
+  else if (topoShape == SHAPE_PRISM)
+    return Mesh::PRISM;
+  else if (topoShape == SHAPE_PYRAMID)
+    return Mesh::PYRAMID;
+  else
+    apf::fail("MeshCAP::getType encountered an unknown entity type!\n");
+}
+
+void MeshCAP::verify()
+{
+  apf::fail("MeshCAP::verify called!\n");
+}
+
+void MeshCAP::writeNative(const char* fileName)
+{
+  (void)fileName;
+  apf::fail("MeshCAP::writeNative called!\n");
+}
+
+void MeshCAP::destroyNative()
+{
+  apf::fail("MeshCAP::destroyNative called!\n");
+}
+
+void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
+{
+  (void)node;
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  if (meshInterface->is_vertex(topo))
+    meshInterface->get_vertex_coord(topo, &(point[0]));
+  else
+    apf::fail("MeshCAP::getPoint_ is called for entity other than vertex!\n");
+}
+
+void MeshCAP::setPoint_(MeshEntity * me, int node, Vector3 const & p)
+{
+  (void)me;
+  (void)node;
+  (void)p;
+  apf::fail("MeshCAP::setPoint_ called!\n");
+}
+
+void MeshCAP::getParam(MeshEntity* e, Vector3& point)
+{
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  /* int d = getModelType(toModel(e)); */
+  /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
+  double u, v;
+  GeometryTopoType gtype;
+  meshInterface->get_vertex_uv_parameters(topo, u, v, gtype);
+  point = Vector3(u, v, 0.);
+}
+
 MeshIterator* MeshCAP::begin(int dimension)
 {
   MeshSmartIterator* miter = new MeshSmartIterator(meshInterface);
@@ -97,18 +178,9 @@ MeshIterator* MeshCAP::begin(int dimension)
   return reinterpret_cast<MeshIterator*>(miter);
 }
 
-class CapstoneEntity
-{
-  public:
-    CapstoneEntity(M_MTopo inTopo):
-      topo(inTopo) {}
-    M_MTopo topo;
-};
-
 /* NOTE: miter is located at the first item in the list, therefore
  * iterate has to return it before calling iterator_next on miter
  */
-
 MeshEntity* MeshCAP::iterate(MeshIterator* it)
 {
   MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
@@ -127,49 +199,6 @@ void MeshCAP::end(MeshIterator* it)
 {
   MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
   delete miter;
-}
-
-bool MeshCAP::isShared(MeshEntity* e)
-{
-  (void)e;
-  apf::fail("MeshCAP::isShared called!\n");
-  return false;
-}
-
-bool MeshCAP::isOwned(MeshEntity* e)
-{
-  (void)e;
-  apf::fail("MeshCAP::isOwned called!\n");
-  return false;
-}
-
-int MeshCAP::getOwner(MeshEntity* e)
-{
-  (void)e;
-  apf::fail("MeshCAP::getOwner called!\n");
-  return 0;
-}
-
-bool MeshCAP::hasAdjacency(int from_dim, int to_dim)
-{
-  (void)from_dim;
-  (void)to_dim;
-  apf::fail("MeshCAP::hasAdjacency called!\n");
-  return false;
-}
-
-void MeshCAP::createAdjacency(int from_dim, int to_dim)
-{
-  (void)from_dim;
-  (void)to_dim;
-  apf::fail("MeshCAP::createAdjacency called!\n");
-}
-
-void MeshCAP::deleteAdjacency(int from_dim, int to_dim)
-{
-  (void)from_dim;
-  (void)to_dim;
-  apf::fail("MeshCAP::deleteAdjacency called!\n");
 }
 
 void MeshCAP::getAdjacent(MeshEntity* e,
@@ -226,26 +255,12 @@ int MeshCAP::getDownward(MeshEntity* e,
   return adjTopos.size();
 }
 
-int MeshCAP::countUpward(MeshEntity* e)
-{
-  (void)e;
-  apf::fail("MeshCAP::countUpward called!\n");
-  return 0;
-}
-
 MeshEntity* MeshCAP::getUpward(MeshEntity* e, int i)
 {
   (void)e;
   (void)i;
   apf::fail("MeshCAP::getUpward called!\n");
   return 0;
-}
-
-void MeshCAP::getUp(MeshEntity* e, Up& up)
-{
-  (void)e;
-  (void)up;
-  apf::fail("MeshCAP::getUp called!\n");
 }
 
 bool MeshCAP::hasUp(MeshEntity* e)
@@ -255,67 +270,85 @@ bool MeshCAP::hasUp(MeshEntity* e)
   return false;
 }
 
-void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
+bool MeshCAP::hasAdjacency(int from_dim, int to_dim)
 {
-  (void)node;
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
-  if (meshInterface->is_vertex(topo))
-    meshInterface->get_vertex_coord(topo, &(point[0]));
-  else
-    apf::fail("MeshCAP::getPoint_ is called for entity other than vertex!\n");
+  (void)from_dim;
+  (void)to_dim;
+  apf::fail("MeshCAP::hasAdjacency called!\n");
+  return false;
 }
 
-void MeshCAP::getParam(MeshEntity* e, Vector3& point)
+void MeshCAP::createAdjacency(int from_dim, int to_dim)
+{
+  (void)from_dim;
+  (void)to_dim;
+  apf::fail("MeshCAP::createAdjacency called!\n");
+}
+
+void MeshCAP::deleteAdjacency(int from_dim, int to_dim)
+{
+  (void)from_dim;
+  (void)to_dim;
+  apf::fail("MeshCAP::deleteAdjacency called!\n");
+}
+
+void MeshCAP::getUp(MeshEntity* e, Up& up)
+{
+  (void)e;
+  (void)up;
+  apf::fail("MeshCAP::getUp called!\n");
+}
+
+int MeshCAP::countUpward(MeshEntity* e)
+{
+  (void)e;
+  apf::fail("MeshCAP::countUpward called!\n");
+  return 0;
+}
+
+ModelEntity* MeshCAP::toModel(MeshEntity* e)
 {
   CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
   M_MTopo topo = ce->topo;
-  /* int d = getModelType(toModel(e)); */
-  /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
-  double u, v;
+  M_GTopo gtopo;
   GeometryTopoType gtype;
-  meshInterface->get_vertex_uv_parameters(topo, u, v, gtype);
-  point = Vector3(u, v, 0.);
+  meshInterface->get_geom_entity(topo, gtype, gtopo);
+  CapstoneModelEntity* cm = new CapstoneModelEntity(gtopo);
+  return reinterpret_cast<ModelEntity*>(cm);
 }
 
-Mesh::Type MeshCAP::getType(MeshEntity* e)
+gmi_model* MeshCAP::getModel()
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
-  MeshShape topoShape;
-  meshInterface->get_topo_shape(topo, topoShape);
-  if (topoShape == SHAPE_NODE)
-    return Mesh::VERTEX;
-  else if (topoShape == SHAPE_SEGMENT)
-    return Mesh::EDGE;
-  else if (topoShape == SHAPE_TRIANGLE)
-    return Mesh::TRIANGLE;
-  else if (topoShape == SHAPE_QUAD)
-    return Mesh::QUAD;
-  else if (topoShape == SHAPE_TETRA)
-    return Mesh::TET;
-  else if (topoShape == SHAPE_HEX)
-    return Mesh::HEX;
-  else if (topoShape == SHAPE_PRISM)
-    return Mesh::PRISM;
-  else if (topoShape == SHAPE_PYRAMID)
-    return Mesh::PYRAMID;
-  else
-    apf::fail("MeshCAP::getType encountered an unknown entity type!\n");
+  return model;
 }
 
-void MeshCAP::getRemotes(MeshEntity* e, Copies& remotes)
+void setModelEntity(MeshEntity* e, ModelEntity* me)
 {
   (void)e;
-  (void)remotes;
-  apf::fail("MeshCAP::getRemotes called!\n");
+  (void)me;
+  apf::fail("MeshCAP::setModelEntity called!\n");
 }
 
-void MeshCAP::getResidence(MeshEntity* e, Parts& residence)
+MeshEntity* createVert_(ModelEntity* me)
+{
+  (void)me;
+  apf::fail("MeshCAP::createVert_ called!\n");
+  return 0;
+}
+
+MeshEntity* createEntity_(int type, ModelEntity* me, MeshEntity** down)
+{
+  (void)type;
+  (void)me;
+  (void)down;
+  apf::fail("MeshCAP::createEntity_ called!\n");
+  return 0;
+}
+
+void destroy_(MeshEntity* e)
 {
   (void)e;
-  (void)residence;
-  apf::fail("MeshCAP::getResidence called!\n");
+  apf::fail("MeshCAP::destroy_ called!\n");
 }
 
 MeshTag* MeshCAP::createDoubleTag(const char* name, int size)
@@ -420,7 +453,6 @@ void MeshCAP::setLongTag(MeshEntity* e, MeshTag* tag, long const* data)
   apf::fail("MeshCAP::setLongTag called!\n");
 }
 
-
 void MeshCAP::removeTag(MeshEntity* e, MeshTag* tag)
 {
   (void)e;
@@ -453,26 +485,39 @@ const char* MeshCAP::getTagName(MeshTag* tag)
   apf::fail("MeshCAP::getTagName called!\n");
 }
 
-ModelEntity* MeshCAP::toModel(MeshEntity* e)
+bool MeshCAP::isShared(MeshEntity* e)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
-  M_GTopo gtopo;
-  GeometryTopoType gtype;
-  meshInterface->get_geom_entity(topo, gtype, gtopo);
-  CapstoneModelEntity* cm = new CapstoneModelEntity(gtopo);
-  return reinterpret_cast<ModelEntity*>(cm);
+  (void)e;
+  apf::fail("MeshCAP::isShared called!\n");
+  return false;
 }
 
-gmi_model* MeshCAP::getModel()
+bool MeshCAP::isOwned(MeshEntity* e)
 {
-  return model;
+  (void)e;
+  apf::fail("MeshCAP::isOwned called!\n");
+  return false;
 }
 
-void MeshCAP::migrate(Migration* plan)
+int MeshCAP::getOwner(MeshEntity* e)
 {
-  (void)plan;
-  apf::fail("MeshCAP::migrate called!\n");
+  (void)e;
+  apf::fail("MeshCAP::getOwner called!\n");
+  return 0;
+}
+
+void MeshCAP::getRemotes(MeshEntity* e, Copies& remotes)
+{
+  (void)e;
+  (void)remotes;
+  apf::fail("MeshCAP::getRemotes called!\n");
+}
+
+void MeshCAP::getResidence(MeshEntity* e, Parts& residence)
+{
+  (void)e;
+  (void)residence;
+  apf::fail("MeshCAP::getResidence called!\n");
 }
 
 int MeshCAP::getId()
@@ -480,20 +525,10 @@ int MeshCAP::getId()
   apf::fail("MeshCAP::getId called!\n");
 }
 
-void MeshCAP::writeNative(const char* fileName)
+void MeshCAP::migrate(Migration* plan)
 {
-  (void)fileName;
-  apf::fail("MeshCAP::writeNative called!\n");
-}
-
-void MeshCAP::destroyNative()
-{
-  apf::fail("MeshCAP::destroyNative called!\n");
-}
-
-void MeshCAP::verify()
-{
-  apf::fail("MeshCAP::verify called!\n");
+  (void)plan;
+  apf::fail("MeshCAP::migrate called!\n");
 }
 
 void MeshCAP::getMatches(MeshEntity* e, Matches& m)
@@ -509,14 +544,6 @@ void MeshCAP::getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
   (void)dgCopies;
   (void)me;
   apf::fail("MeshCAP::getDgCopies called!\n");
-}
-
-void MeshCAP::setPoint_(MeshEntity * me, int node, Vector3 const & p)
-{
-  (void)me;
-  (void)node;
-  (void)p;
-  apf::fail("MeshCAP::setPoint_ called!\n");
 }
 
 Mesh2* createMesh(capMesh* mesh)

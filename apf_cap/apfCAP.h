@@ -97,15 +97,15 @@ class MeshCAP : public Mesh2
     ModelEntity* toModel(MeshEntity* e);
     // OPTIONAL Member Functions //
     gmi_model* getModel();
-    void setModelEntity(MeshEntity*, ModelEntity*) {}
+    void setModelEntity(MeshEntity* e, ModelEntity* me);
 
     /* --------------------------------------------------------------------- */
     /* Category 05: Entity Creation/Deletion */
     /* --------------------------------------------------------------------- */
     // REQUIRED Member Functions //
-    MeshEntity* createVert_(ModelEntity*) { return NULL; }
-    MeshEntity* createEntity_(int, ModelEntity*, MeshEntity**) { return NULL; }
-    void destroy_(MeshEntity*) {}
+    MeshEntity* createVert_(ModelEntity* me);
+    MeshEntity* createEntity_(int type, ModelEntity* me, MeshEntity** down);
+    void destroy_(MeshEntity* e);
 
     /* --------------------------------------------------------------------- */
     /* Category 06: Attachable Data Functionality */
