@@ -322,21 +322,42 @@ gmi_model* MeshCAP::getModel()
   return model;
 }
 
-void setModelEntity(MeshEntity* e, ModelEntity* me)
+void MeshCAP::setModelEntity(MeshEntity* e, ModelEntity* me)
 {
   (void)e;
   (void)me;
   apf::fail("MeshCAP::setModelEntity called!\n");
 }
 
-MeshEntity* createVert_(ModelEntity* me)
+MeshEntity* MeshCAP::createVert_(ModelEntity* me)
 {
-  (void)me;
-  apf::fail("MeshCAP::createVert_ called!\n");
-  return 0;
+  CapstoneModelEntity* cm =  reinterpret_cast<CapstoneModelEntity*>(me);
+  M_GTopo gtopo = cm->topo;
+  GeometryTopoType gtype;
+  int d = getModelType(me);
+  switch (d) {
+    case 0:
+      gtype = GVERTEX;
+      break;
+    case 1:
+      gtype = GEDGE;
+      break;
+    case 2:
+      gtype = GFACE;
+      break;
+    case 3:
+      gtype = GREGION;
+      break;
+    default:
+      break;
+  }
+  M_MTopo vertex; // to be created
+  double xyz[3] = {0., 0., 0.}; // this will be set later
+  meshInterface->create_vertex(xyz, vertex, gtype, gtopo);
+  return reinterpret_cast<MeshEntity*>(new CapstoneEntity(vertex));
 }
 
-MeshEntity* createEntity_(int type, ModelEntity* me, MeshEntity** down)
+MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 {
   (void)type;
   (void)me;
@@ -345,7 +366,7 @@ MeshEntity* createEntity_(int type, ModelEntity* me, MeshEntity** down)
   return 0;
 }
 
-void destroy_(MeshEntity* e)
+void MeshCAP::destroy_(MeshEntity* e)
 {
   (void)e;
   apf::fail("MeshCAP::destroy_ called!\n");
