@@ -462,7 +462,6 @@ class TagCAP
       M_MTopo topo = ce->topo;
       std::size_t id;
       mesh->get_id(topo, id);
-      /* std::cout << "tagContainer's size is " << tagContainer.size() << std::endl; */
       int count = tagContainer.count(id);
       return count > 0;
     }
@@ -496,9 +495,7 @@ class TagCAP
     }
     MeshDatabaseInterface* mesh;
     int count;
-    /* pMeshDataId id; */
-    /* pAttachDataCommu comm; */
-    std::string name; //Simmetrix has no "get tag name" API
+    std::string name;
     std::map<std::size_t, void*> tagContainer;
 };
 
