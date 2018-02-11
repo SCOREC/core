@@ -441,12 +441,105 @@ void MeshCAP::destroy_(MeshEntity* e)
   apf::fail("MeshCAP::destroy_ called!\n");
 }
 
+class TagCAP
+{
+  public:
+    TagCAP(MeshDatabaseInterface* m,
+	   const char* n,
+           int c):
+      mesh(m),
+      count(c),
+      name(n)
+    {}
+    virtual ~TagCAP()
+    {}
+    virtual void* allocate() = 0;
+    virtual void deallocate(void* p) = 0;
+    virtual int getType() = 0;
+    bool has(MeshEntity* e)
+    {
+      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+      M_MTopo topo = ce->topo;
+      std::size_t id;
+      mesh->get_id(topo, id);
+      /* std::cout << "tagContainer's size is " << tagContainer.size() << std::endl; */
+      int count = tagContainer.count(id);
+      return count > 0;
+    }
+    void set(MeshEntity* e, void* p)
+    {
+      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+      M_MTopo topo = ce->topo;
+      std::size_t id;
+      mesh->get_id(topo, id);
+      tagContainer[id] = p;
+    }
+    void* get(MeshEntity* e)
+    {
+      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+      M_MTopo topo = ce->topo;
+      std::size_t id;
+      mesh->get_id(topo, id);
+      if ( ! has(e))
+        set(e,this->allocate());
+      void* p = tagContainer[id];
+      return p;
+    }
+    void remove(MeshEntity* e)
+    {
+      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+      M_MTopo topo = ce->topo;
+      std::size_t id;
+      mesh->get_id(topo, id);
+      this->deallocate(this->get(e));
+      tagContainer.erase(id);
+    }
+    MeshDatabaseInterface* mesh;
+    int count;
+    /* pMeshDataId id; */
+    /* pAttachDataCommu comm; */
+    std::string name; //Simmetrix has no "get tag name" API
+    std::map<std::size_t, void*> tagContainer;
+};
+
+class DoubleTagCAP : public TagCAP
+{
+  public:
+    DoubleTagCAP(MeshDatabaseInterface* m, const char* name, int c):
+      TagCAP(m, name,c)
+    {}
+    virtual void* allocate()
+    {
+      return count == 1 ? new double() : new double[count]();
+    }
+    virtual void deallocate(void* p)
+    {
+      double* p2 = static_cast<double*>(p);
+      if (count == 1)
+        delete p2;
+      else
+        delete [] p2;
+    }
+    virtual int getType() {return Mesh::DOUBLE;}
+    void get(MeshEntity* e, double* p)
+    {
+      double* internal = static_cast<double*>(TagCAP::get(e));
+      for (int i=0; i < count; ++i)
+        p[i] = internal[i];
+    }
+    void set(MeshEntity* e, double const* p)
+    {
+      double* internal = static_cast<double*>(TagCAP::get(e));
+      for (int i=0; i < count; ++i)
+        internal[i] = p[i];
+    }
+};
+
 MeshTag* MeshCAP::createDoubleTag(const char* name, int size)
 {
-  (void)name;
-  (void)size;
-  apf::fail("MeshCAP::createDoubleTag called!\n");
-  return 0;
+  TagCAP* tag = new DoubleTagCAP(meshInterface, name,size);
+  tags.push_back(tag);
+  return reinterpret_cast<MeshTag*>(tag);
 }
 
 MeshTag* MeshCAP::createIntTag(const char* name, int size)
@@ -467,15 +560,17 @@ MeshTag* MeshCAP::createLongTag(const char* name, int size)
 
 MeshTag* MeshCAP::findTag(const char* name)
 {
-  (void)name;
-  apf::fail("MeshCAP::findTag called!\n");
+  for (size_t i=0; i < tags.size(); ++i)
+    if (tags[i]->name == name)
+      return reinterpret_cast<MeshTag*>(tags[i]);
   return 0;
 }
 
 void MeshCAP::destroyTag(MeshTag* tag)
 {
-  (void)tag;
-  apf::fail("MeshCAP::destroyTag called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  tags.erase(std::find(tags.begin(),tags.end(),tagCap));
+  delete tagCap;;
 }
 
 void MeshCAP::renameTag(MeshTag* tag, const char*)
@@ -491,24 +586,21 @@ unsigned MeshCAP::getTagChecksum(MeshTag*,int)
 
 void MeshCAP::getTags(DynamicArray<MeshTag*>& ts)
 {
-  (void)ts;
-  apf::fail("MeshCAP::getTags called!\n");
+  ts.setSize(tags.size());
+  for (size_t i=0; i < tags.size(); ++i)
+    ts[i] = reinterpret_cast<MeshTag*>(tags[i]);
 }
 
 void MeshCAP::getDoubleTag(MeshEntity* e, MeshTag* tag, double* data)
 {
-  (void)e;
-  (void)tag;
-  (void)data;
-  apf::fail("MeshCAP::getDoubleTag called!\n");
+  DoubleTagCAP* tagCap = reinterpret_cast<DoubleTagCAP*>(tag);
+  tagCap->get(e,data);
 }
 
 void MeshCAP::setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data)
 {
-  (void)e;
-  (void)tag;
-  (void)data;
-  apf::fail("MeshCAP::setDoubleTag called!\n");
+  DoubleTagCAP* tagCap = reinterpret_cast<DoubleTagCAP*>(tag);
+  tagCap->set(e,data);
 }
 
 void MeshCAP::getIntTag(MeshEntity* e, MeshTag* tag, int* data)
@@ -545,34 +637,32 @@ void MeshCAP::setLongTag(MeshEntity* e, MeshTag* tag, long const* data)
 
 void MeshCAP::removeTag(MeshEntity* e, MeshTag* tag)
 {
-  (void)e;
-  (void)tag;
-  apf::fail("MeshCAP::removeTag called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  tagCap->remove(e);
 }
 
 bool MeshCAP::hasTag(MeshEntity* e, MeshTag* tag)
 {
-  (void)e;
-  (void)tag;
-  apf::fail("MeshCAP::hasTag called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  return tagCap->has(e);
 }
 
 int MeshCAP::getTagType(MeshTag* tag)
 {
-  (void)tag;
-  apf::fail("MeshCAP::getTagType called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  return tagCap->getType();
 }
 
 int MeshCAP::getTagSize(MeshTag* tag)
 {
-  (void)tag;
-  apf::fail("MeshCAP::getTagSize called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  return tagCap->count;
 }
 
 const char* MeshCAP::getTagName(MeshTag* tag)
 {
-  (void)tag;
-  apf::fail("MeshCAP::getTagName called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  return tagCap->name.c_str();
 }
 
 bool MeshCAP::isShared(MeshEntity* e)

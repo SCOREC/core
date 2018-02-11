@@ -38,6 +38,8 @@ Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
   */
 MeshEntity* castEntity(capEntity* entity);
 
+class TagCAP;
+
 class MeshCAP : public Mesh2
 {
   public:
@@ -118,8 +120,8 @@ class MeshCAP : public Mesh2
     void destroyTag(MeshTag* t);
     void renameTag(MeshTag* t, const char*);
     void getTags(DynamicArray<MeshTag*>& tags);
-    void getTag(MeshEntity* e, MeshTag* t, void* data);
-    void setTag(MeshEntity* e, MeshTag* t, void const* data);
+    /* void getTag(MeshEntity* e, MeshTag* t, void* data); */
+    /* void setTag(MeshEntity* e, MeshTag* t, void const* data); */
     void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data);
     void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data);
     void getIntTag(MeshEntity* e, MeshTag* tag, int* data);
@@ -180,6 +182,7 @@ class MeshCAP : public Mesh2
     int iterDim;
     int d;
     gmi_model* model;
+    std::vector<TagCAP*> tags;
 };
 
 
