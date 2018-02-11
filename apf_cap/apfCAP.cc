@@ -11,13 +11,21 @@
 
 namespace apf {
 
-class CapstoneEntity
+
+MeshEntity* toEntity(M_MTopo topo)
 {
-  public:
-    CapstoneEntity(M_MTopo inTopo):
-      topo(inTopo) {}
-    M_MTopo topo;
-};
+  std::size_t hdl = topo.get();
+  PCU_ALWAYS_ASSERT(hdl > 0);
+  return reinterpret_cast<MeshEntity*>(hdl);
+}
+
+M_MTopo fromEntity(MeshEntity* e)
+{
+  std::size_t hdl = reinterpret_cast<std::size_t>(e);
+  M_MTopo topo;
+  topo.set(hdl);
+  return topo;
+}
 
 /* static void setupAdjacencies(MeshDatabaseInterface* mdb) */
 /* { */
@@ -93,8 +101,7 @@ std::size_t MeshCAP::count(int dimension)
 
 Mesh::Type MeshCAP::getType(MeshEntity* e)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   MeshShape topoShape;
   meshInterface->get_topo_shape(topo, topoShape);
   if (topoShape == SHAPE_NODE)
@@ -136,8 +143,7 @@ void MeshCAP::destroyNative()
 void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
 {
   (void)node;
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   if (meshInterface->is_vertex(topo))
     meshInterface->get_vertex_coord(topo, &(point[0]));
   else
@@ -154,8 +160,7 @@ void MeshCAP::setPoint_(MeshEntity * me, int node, Vector3 const & p)
 
 void MeshCAP::getParam(MeshEntity* e, Vector3& point)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   /* int d = getModelType(toModel(e)); */
   /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
   double u, v;
@@ -186,14 +191,14 @@ MeshEntity* MeshCAP::iterate(MeshIterator* it)
 {
   MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
 
-  CapstoneEntity* ce = new CapstoneEntity(meshInterface->iterator_value(*miter));
+  M_MTopo topo = meshInterface->iterator_value(*miter);
 
   if (!meshInterface->iterator_end(*miter))
     meshInterface->iterator_next(*miter);
   else
     return 0;
 
-  return reinterpret_cast<MeshEntity*>(ce);
+  return toEntity(topo);
 }
 
 void MeshCAP::end(MeshIterator* it)
@@ -206,8 +211,7 @@ void MeshCAP::getAdjacent(MeshEntity* e,
     int dimension,
     DynamicArray<MeshEntity*>& adjacent)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
   std::vector<M_MTopo> adjTopos;
@@ -255,7 +259,7 @@ void MeshCAP::getAdjacent(MeshEntity* e,
   }
   adjacent.setSize(adjTopos.size());
   for (size_t i = 0; i < adjTopos.size(); i++) {
-    adjacent[i] = reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+    adjacent[i] = toEntity(adjTopos[i]);
   }
 }
 
@@ -263,8 +267,7 @@ int MeshCAP::getDownward(MeshEntity* e,
     int dimension,
     MeshEntity** down)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
   std::vector<M_MTopo> adjTopos;
@@ -297,7 +300,7 @@ int MeshCAP::getDownward(MeshEntity* e,
       meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
   }
   for (std::size_t i = 0; i < adjTopos.size(); i++)
-    down[i] = reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+    down[i] = toEntity(adjTopos[i]);
   /* std::cout << adjTopos.size() << "," << Mesh::adjacentCount[getType(e)][dimension] << std::endl; */
   PCU_ALWAYS_ASSERT(adjTopos.size() == (std::size_t)Mesh::adjacentCount[getType(e)][dimension]);
   return adjTopos.size();
@@ -305,25 +308,24 @@ int MeshCAP::getDownward(MeshEntity* e,
 
 MeshEntity* MeshCAP::getUpward(MeshEntity* e, int i)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
   std::vector<M_MTopo> adjTopos;
   if (type == TOPO_VERTEX)
   {
     meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
-    return reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+    return toEntity(adjTopos[i]);
   }
   if (type == TOPO_EDGE)
   {
     meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
-    return reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+    return toEntity(adjTopos[i]);
   }
   if (type == TOPO_FACE)
   {
     meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
-    return reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+    return toEntity(adjTopos[i]);
   }
   return 0;
 }
@@ -362,8 +364,7 @@ void MeshCAP::getUp(MeshEntity* e, Up& up)
 
 int MeshCAP::countUpward(MeshEntity* e)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
   std::vector<M_MTopo> adjTopos;
@@ -378,8 +379,7 @@ int MeshCAP::countUpward(MeshEntity* e)
 
 ModelEntity* MeshCAP::toModel(MeshEntity* e)
 {
-  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-  M_MTopo topo = ce->topo;
+  M_MTopo topo = fromEntity(e);
   M_GTopo gtopo;
   GeometryTopoType gtype;
   meshInterface->get_geom_entity(topo, gtype, gtopo);
@@ -424,7 +424,7 @@ MeshEntity* MeshCAP::createVert_(ModelEntity* me)
   M_MTopo vertex; // to be created
   double xyz[3] = {0., 0., 0.}; // this will be set later
   meshInterface->create_vertex(xyz, vertex, gtype, gtopo);
-  return reinterpret_cast<MeshEntity*>(new CapstoneEntity(vertex));
+  return toEntity(vertex);
 }
 
 MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
@@ -459,45 +459,29 @@ class TagCAP
     virtual int getType() = 0;
     bool has(MeshEntity* e)
     {
-      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-      M_MTopo topo = ce->topo;
-      std::size_t id;
-      mesh->get_id(topo, id);
-      int count = tagContainer.count(id);
+      int count = tagContainer.count(e);
       return count > 0;
     }
     void set(MeshEntity* e, void* p)
     {
-      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-      M_MTopo topo = ce->topo;
-      std::size_t id;
-      mesh->get_id(topo, id);
-      tagContainer[id] = p;
+      tagContainer[e] = p;
     }
     void* get(MeshEntity* e)
     {
-      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-      M_MTopo topo = ce->topo;
-      std::size_t id;
-      mesh->get_id(topo, id);
       if ( ! has(e))
         set(e,this->allocate());
-      void* p = tagContainer[id];
+      void* p = tagContainer[e];
       return p;
     }
     void remove(MeshEntity* e)
     {
-      CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
-      M_MTopo topo = ce->topo;
-      std::size_t id;
-      mesh->get_id(topo, id);
       this->deallocate(this->get(e));
-      tagContainer.erase(id);
+      tagContainer.erase(e);
     }
     MeshDatabaseInterface* mesh;
     int count;
     std::string name;
-    std::map<std::size_t, void*> tagContainer;
+    std::map<MeshEntity*, void*> tagContainer;
 };
 
 class DoubleTagCAP : public TagCAP
