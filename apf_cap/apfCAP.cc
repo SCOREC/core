@@ -205,10 +205,57 @@ void MeshCAP::getAdjacent(MeshEntity* e,
     int dimension,
     DynamicArray<MeshEntity*>& adjacent)
 {
-  (void)e;
-  (void)dimension;
-  (void)adjacent;
-  apf::fail("MeshCAP::getAdjacent called!\n");
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  MeshTopo type;
+  meshInterface->get_topo_type(topo, type);
+  std::vector<M_MTopo> adjTopos;
+  if (apf::getDimension(this, e) == dimension)
+  {
+    adjacent.setSize(1);
+    adjacent[0] = e;
+    return;
+  }
+  if (type == TOPO_VERTEX)
+  {
+    if (dimension == 1)
+      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+    if (dimension == 2)
+      meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+    if (dimension == 3)
+      meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+  }
+  if (type == TOPO_EDGE)
+  {
+    if (dimension == 0)
+      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
+    if (dimension == 2)
+      meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+    if (dimension == 3)
+      meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+  }
+  if (type == TOPO_FACE)
+  {
+    if (dimension == 0)
+      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
+    if (dimension == 1)
+      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+    if (dimension == 3)
+      meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+  }
+  if (type == TOPO_REGION)
+  {
+    if (dimension == 0)
+      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
+    if (dimension == 1)
+      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+    if (dimension == 2)
+      meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+  }
+  adjacent.setSize(adjTopos.size());
+  for (size_t i = 0; i < adjTopos.size(); i++) {
+    adjacent[i] = reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+  }
 }
 
 int MeshCAP::getDownward(MeshEntity* e,
@@ -257,25 +304,37 @@ int MeshCAP::getDownward(MeshEntity* e,
 
 MeshEntity* MeshCAP::getUpward(MeshEntity* e, int i)
 {
-  (void)e;
-  (void)i;
-  apf::fail("MeshCAP::getUpward called!\n");
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  MeshTopo type;
+  meshInterface->get_topo_type(topo, type);
+  std::vector<M_MTopo> adjTopos;
+  if (type == TOPO_VERTEX)
+  {
+    meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+    return reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+  }
+  if (type == TOPO_EDGE)
+  {
+    meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+    return reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+  }
+  if (type == TOPO_FACE)
+  {
+    meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+    return reinterpret_cast<MeshEntity*>(new CapstoneEntity(adjTopos[i]));
+  }
   return 0;
 }
 
 bool MeshCAP::hasUp(MeshEntity* e)
 {
-  (void)e;
-  apf::fail("MeshCAP::hasUp called!\n");
-  return false;
+  return countUpward(e) != 0;
 }
 
 bool MeshCAP::hasAdjacency(int from_dim, int to_dim)
 {
-  (void)from_dim;
-  (void)to_dim;
-  apf::fail("MeshCAP::hasAdjacency called!\n");
-  return false;
+  return (abs(from_dim - to_dim) == 1);
 }
 
 void MeshCAP::createAdjacency(int from_dim, int to_dim)
@@ -294,16 +353,26 @@ void MeshCAP::deleteAdjacency(int from_dim, int to_dim)
 
 void MeshCAP::getUp(MeshEntity* e, Up& up)
 {
-  (void)e;
-  (void)up;
-  apf::fail("MeshCAP::getUp called!\n");
+  up.n = countUpward(e);
+  for (int i = 0; i < up.n; i++) {
+    up.e[i] = getUpward(e, i);
+  }
 }
 
 int MeshCAP::countUpward(MeshEntity* e)
 {
-  (void)e;
-  apf::fail("MeshCAP::countUpward called!\n");
-  return 0;
+  CapstoneEntity* ce = reinterpret_cast<CapstoneEntity*>(e);
+  M_MTopo topo = ce->topo;
+  MeshTopo type;
+  meshInterface->get_topo_type(topo, type);
+  std::vector<M_MTopo> adjTopos;
+  if (type == TOPO_VERTEX)
+    meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+  if (type == TOPO_EDGE)
+    meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+  if (type == TOPO_FACE)
+    meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+  return (int)adjTopos.size();
 }
 
 ModelEntity* MeshCAP::toModel(MeshEntity* e)
