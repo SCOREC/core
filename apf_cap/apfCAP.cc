@@ -383,8 +383,8 @@ ModelEntity* MeshCAP::toModel(MeshEntity* e)
   M_GTopo gtopo;
   GeometryTopoType gtype;
   meshInterface->get_geom_entity(topo, gtype, gtopo);
-  CapstoneModelEntity* cm = new CapstoneModelEntity(gtopo);
-  return reinterpret_cast<ModelEntity*>(cm);
+  gmi_ent* g = toGmiEntity(gtopo);
+  return reinterpret_cast<ModelEntity*>(g);
 }
 
 gmi_model* MeshCAP::getModel()
@@ -401,8 +401,8 @@ void MeshCAP::setModelEntity(MeshEntity* e, ModelEntity* me)
 
 MeshEntity* MeshCAP::createVert_(ModelEntity* me)
 {
-  CapstoneModelEntity* cm =  reinterpret_cast<CapstoneModelEntity*>(me);
-  M_GTopo gtopo = cm->topo;
+  gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
+  M_GTopo gtopo = fromGmiEntity(g);
   GeometryTopoType gtype;
   int d = getModelType(me);
   switch (d) {

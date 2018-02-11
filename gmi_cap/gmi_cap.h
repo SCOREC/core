@@ -10,6 +10,8 @@
 #ifndef GMI_CAP_H
 #define GMI_CAP_H
 
+
+#include "gmi.h"
 #include "CapstoneModule.h"
 #include "CreateMG_Framework_Core.h"
 #include "CreateMG_Framework_Analysis.h"
@@ -24,13 +26,8 @@ using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
-class CapstoneModelEntity
-{
-  public:
-    CapstoneModelEntity(M_GTopo inTopo):
-      topo(inTopo) {}
-    M_GTopo topo;
-};
+gmi_ent* toGmiEntity(M_GTopo topo);
+M_GTopo fromGmiEntity(gmi_ent* g);
 
 void gmi_cap_start(void);
 void gmi_cap_stop(void);
