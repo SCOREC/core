@@ -9,11 +9,27 @@
 *******************************************************************************/
 #include <PCU.h>
 #include "gmi_cap.h"
-#include <gmi.h>
 #include <stdlib.h>
 #include <gmi.h>
 #include <vector>
 #include <pcu_util.h>
+
+
+gmi_ent* toGmiEntity(M_GTopo topo)
+{
+  std::size_t hdl = topo.get();
+  PCU_ALWAYS_ASSERT(hdl > 0);
+  return reinterpret_cast<gmi_ent*>(hdl);
+}
+
+M_GTopo fromGmiEntity(gmi_ent* g)
+{
+  std::size_t hdl = reinterpret_cast<std::size_t>(g);
+  M_GTopo topo;
+  topo.set(hdl);
+  return topo;
+}
+
 
 struct cap_model {
   struct gmi_model model;
@@ -47,14 +63,14 @@ static gmi_ent* next(gmi_model*m, gmi_iter* i)
   cap_model* cm = (cap_model*)m;
   GeometrySmartIterator* giter = (GeometrySmartIterator*)i;
 
-  CapstoneModelEntity* ce = new CapstoneModelEntity(cm->geomInterface->iterator_value(*giter));
+  M_GTopo topo = cm->geomInterface->iterator_value(*giter);
 
   if (!cm->geomInterface->iterator_end(*giter))
     cm->geomInterface->iterator_next(*giter);
   else
     return 0;
 
-  return (gmi_ent*)ce;
+  return toGmiEntity(topo);
 }
 
 static void end(gmi_model*, gmi_iter* i)
@@ -66,8 +82,7 @@ static void end(gmi_model*, gmi_iter* i)
 static int get_dim(gmi_model* m, gmi_ent* e)
 {
   cap_model* cm = (cap_model*)m;
-  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
-  M_GTopo topo = ce->topo;
+  M_GTopo topo = fromGmiEntity(e);
   if (cm->geomInterface->is_vertex(topo))
     return 0;
   if (cm->geomInterface->is_edge(topo))
@@ -82,8 +97,7 @@ static int get_dim(gmi_model* m, gmi_ent* e)
 static int get_tag(gmi_model* m, gmi_ent* e)
 {
   cap_model* cm = (cap_model*)m;
-  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
-  M_GTopo topo = ce->topo;
+  M_GTopo topo = fromGmiEntity(e);
   std::size_t id;
   cm->geomInterface->get_id(topo, id);
   return (int)id;
@@ -111,8 +125,7 @@ static void eval(struct gmi_model* m, struct gmi_ent* e,
       double const p[2], double x[3])
 {
   cap_model* cm = (cap_model*)m;
-  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
-  M_GTopo topo = ce->topo;
+  M_GTopo topo = fromGmiEntity(e);
   vec3d point;
   cm->geomInterface->get_point(topo, vec3d(p[0], p[1], 0.0), point);
   x[0] = point[0];
@@ -134,8 +147,7 @@ static void reparam(struct gmi_model* m, struct gmi_ent* from,
 static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
 {
   cap_model* cm = (cap_model*)m;
-  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
-  M_GTopo topo = ce->topo;
+  M_GTopo topo = fromGmiEntity(e);
   int paramType;
   cm->geomInterface->get_parametrization_info(topo, dim, paramType);
   // paramType is a bit mask with the following definitions
@@ -155,8 +167,7 @@ static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
     double r[2])
 {
   cap_model* cm = (cap_model*)m;
-  CapstoneModelEntity* ce = (CapstoneModelEntity*)e;
-  M_GTopo topo = ce->topo;
+  M_GTopo topo = fromGmiEntity(e);
   double lower, upper;
   cm->geomInterface->get_parametrization_range(topo, dim, lower, upper);
   r[0] = lower;
