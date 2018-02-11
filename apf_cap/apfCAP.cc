@@ -1,4 +1,5 @@
 #include "apfCAP.h"
+#include <PCU.h>
 #include <apf.h>
 #include <apfShape.h>
 #include <gmi.h>
@@ -532,6 +533,40 @@ class DoubleTagCAP : public TagCAP
     }
 };
 
+class IntTagCAP : public TagCAP
+{
+  public:
+    IntTagCAP(MeshDatabaseInterface* m, const char* name, int c):
+      TagCAP(m, name,c)
+    {}
+    virtual void* allocate()
+    {
+      return count == 1 ? new int() : new int[count]();
+    }
+    virtual void deallocate(void* p)
+    {
+      int* p2 = static_cast<int*>(p);
+      if (count == 1)
+        delete p2;
+      else
+        delete [] p2;
+    }
+    virtual int getType() {return Mesh::INT;}
+    void get(MeshEntity* e, int* p)
+    {
+      int* internal = static_cast<int*>(TagCAP::get(e));
+      for (int i=0; i < count; ++i)
+        p[i] = internal[i];
+    }
+    void set(MeshEntity* e, int const* p)
+    {
+      int* internal = static_cast<int*>(TagCAP::get(e));
+      for (int i=0; i < count; ++i)
+        internal[i] = p[i];
+    }
+};
+
+
 MeshTag* MeshCAP::createDoubleTag(const char* name, int size)
 {
   TagCAP* tag = new DoubleTagCAP(meshInterface, name,size);
@@ -541,10 +576,9 @@ MeshTag* MeshCAP::createDoubleTag(const char* name, int size)
 
 MeshTag* MeshCAP::createIntTag(const char* name, int size)
 {
-  (void)name;
-  (void)size;
-  apf::fail("MeshCAP::createIntTag called!\n");
-  return 0;
+  TagCAP* tag = new IntTagCAP(meshInterface, name,size);
+  tags.push_back(tag);
+  return reinterpret_cast<MeshTag*>(tag);
 }
 
 MeshTag* MeshCAP::createLongTag(const char* name, int size)
@@ -602,18 +636,14 @@ void MeshCAP::setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data)
 
 void MeshCAP::getIntTag(MeshEntity* e, MeshTag* tag, int* data)
 {
-  (void)e;
-  (void)tag;
-  (void)data;
-  apf::fail("MeshCAP::getIntTag called!\n");
+  IntTagCAP* tagCap = reinterpret_cast<IntTagCAP*>(tag);
+  tagCap->get(e,data);
 }
 
 void MeshCAP::setIntTag(MeshEntity* e, MeshTag* tag, int const* data)
 {
-  (void)e;
-  (void)tag;
-  (void)data;
-  apf::fail("MeshCAP::setIntTag called!\n");
+  IntTagCAP* tagCap = reinterpret_cast<IntTagCAP*>(tag);
+  tagCap->set(e,data);
 }
 
 void MeshCAP::getLongTag(MeshEntity* e, MeshTag* tag, long* data)
@@ -672,7 +702,10 @@ bool MeshCAP::isShared(MeshEntity* e)
 bool MeshCAP::isOwned(MeshEntity* e)
 {
   (void)e;
-  apf::fail("MeshCAP::isOwned called!\n");
+  if (PCU_Comm_Peers() == 1)
+    return true;
+  else
+    apf::fail("MeshCAP::isOwned called in a parallel run!\n");
   return false;
 }
 
