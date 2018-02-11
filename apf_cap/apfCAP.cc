@@ -695,18 +695,17 @@ const char* MeshCAP::getTagName(MeshTag* tag)
 bool MeshCAP::isShared(MeshEntity* e)
 {
   (void)e;
-  apf::fail("MeshCAP::isShared called!\n");
+  if (PCU_Comm_Peers() != 1)
+    apf::fail("MeshCAP::isShared called in a parallel run!\n");
   return false;
 }
 
 bool MeshCAP::isOwned(MeshEntity* e)
 {
   (void)e;
-  if (PCU_Comm_Peers() == 1)
-    return true;
-  else
+  if (PCU_Comm_Peers() != 1)
     apf::fail("MeshCAP::isOwned called in a parallel run!\n");
-  return false;
+  return true;
 }
 
 int MeshCAP::getOwner(MeshEntity* e)
