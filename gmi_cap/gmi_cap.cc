@@ -136,12 +136,14 @@ static void eval(struct gmi_model* m, struct gmi_ent* e,
 static void reparam(struct gmi_model* m, struct gmi_ent* from,
       double const from_p[2], struct gmi_ent* to, double to_p[2])
 {
-  (void)m;
-  (void)from;
-  (void)from_p;
-  (void)to;
-  (void)to_p;
-  printf("_reparam_ not implemented!\n");
+  cap_model* cm = (cap_model*)m;
+  M_GTopo fromTopo = fromGmiEntity(from);
+  M_GTopo toTopo   = fromGmiEntity(to);
+  vec3d fromParam(from_p[0], from_p[1], 0.0);
+  vec3d toParam;
+  cm->geomInterface->reparametrize(fromTopo, fromParam, toTopo, toParam);
+  to_p[0] = toParam[0];
+  to_p[1] = toParam[1];
 }
 
 static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
@@ -198,12 +200,17 @@ static void normal(struct gmi_model* m, struct gmi_ent* e,
 static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double t0[3], double t1[3])
 {
-  (void)m;
-  (void)e;
-  (void)p;
-  (void)t0;
-  (void)t1;
-  printf("_first_derivative_ not implemented!\n");
+  cap_model* cm = (cap_model*)m;
+  M_GTopo topo = fromGmiEntity(e);
+  vec3d param(p[0], p[1], 0.0);
+  std::vector<double> dxyz;
+  cm->geomInterface->get_derivative(topo, param, 1, dxyz);
+  t0[0] = dxyz[0];
+  t0[1] = dxyz[1];
+  t0[2] = dxyz[2];
+  t1[0] = dxyz[3];
+  t1[1] = dxyz[4];
+  t1[2] = dxyz[5];
 }
 
 static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
