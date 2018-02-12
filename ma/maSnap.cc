@@ -479,6 +479,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 2) we only check for faces that are periodic
    */
 
+#ifndef HAVE_CAPSTONE
   // this need to be done for faces, only
   if (dim != 2)
     return;
@@ -493,7 +494,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
-
+#endif
 }
 
 static void interpolateParametricCoordinatesOnFace(
