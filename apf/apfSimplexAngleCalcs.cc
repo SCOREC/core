@@ -344,4 +344,35 @@ double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
   return minHeight;
 }
 
+double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
+    const Matrix3x3& Q)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(tri) == Mesh::TRIANGLE,
+      "Expecting a tri. Aborting! ");
+
+  double minHeight = 1.0e12;
+
+  MeshEntity* edges[3];
+
+  m->getDownward(tri, 1, edges);
+
+  // iterate over edges
+  for (int i = 0; i < 3; i++) {
+    MeshEntity* currentEdge = edges[i];
+    MeshEntity*	   nextEdge = edges[(i+1)%3];
+    // compute the cos angle
+    double edgeEdgeCosAngle =
+      computeEdgeEdgeCosAngleInTri(m, tri, currentEdge, nextEdge, Q);
+    // compute the sin angle
+    double edgeEdgeSinAngle = std::sqrt(
+    	1 - edgeEdgeCosAngle*edgeEdgeCosAngle);
+    // height is sinAngle*edgeLen
+    double currentHeight = edgeEdgeSinAngle * getEdgeLength(m, nextEdge);
+
+    if (currentHeight < minHeight)
+      minHeight = currentHeight;
+  }
+  return minHeight;
+}
+
 }

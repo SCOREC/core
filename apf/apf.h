@@ -460,6 +460,15 @@ void getJacobianInv(MeshElement* e, Vector3 const& local, Matrix3x3& jinv);
 double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
     const Matrix3x3& Q);
 
+double computeCosAngleInTri(Mesh* m, MeshEntity* tri,
+    MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
+
+double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
+    MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
+
+Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
+    MeshEntity* vert, const Matrix3x3& Q);
+
 /** \brief Returns the shortest height in a tet
   *
   * \param m	mesh
@@ -470,14 +479,15 @@ double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
 double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
     const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
 
-double computeCosAngleInTri(Mesh* m, MeshEntity* tri,
-    MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
-
-double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
-    MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
-
-Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
-    MeshEntity* vert, const Matrix3x3& Q);
+/** \brief Returns the shortest height in a tri
+  *
+  * \param m	mesh
+  * \param tri  tri
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
 
 /** \brief Returns the number of element nodes.
   *
