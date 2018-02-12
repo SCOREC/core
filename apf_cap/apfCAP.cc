@@ -152,10 +152,12 @@ void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
 
 void MeshCAP::setPoint_(MeshEntity * me, int node, Vector3 const & p)
 {
-  (void)me;
   (void)node;
-  (void)p;
-  apf::fail("MeshCAP::setPoint_ called!\n");
+  M_MTopo topo = fromEntity(me);
+  if (meshInterface->is_vertex(topo))
+    meshInterface->set_vertex_coord(topo, &(p[0]));
+  else
+    apf::fail("MeshCAP::getPoint_ is called for entity other than vertex!\n");
 }
 
 void MeshCAP::getParam(MeshEntity* e, Vector3& point)
@@ -427,13 +429,80 @@ MeshEntity* MeshCAP::createVert_(ModelEntity* me)
   return toEntity(vertex);
 }
 
+int const degree[Mesh::TYPES][4] =
+{{1, 0,0,0} /* MDS_VERTEX */
+,{2, 1,0,0} /* MDS_EDGE */
+,{3, 3,1,0} /* MDS_TRIANGLE */
+,{4, 4,1,0} /* MDS_QUADRILATERAL */
+,{4, 6,4,1} /* MDS_TETRAHEDRON */
+,{8,12,6,1} /* MDS_HEXAHEDRON */
+,{6, 9,5,1} /* MDS_WEDGE */
+,{5, 8,5,1} /* MDS_PYRAMID */
+};
+
 MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 {
-  (void)type;
-  (void)me;
-  (void)down;
-  apf::fail("MeshCAP::createEntity_ called!\n");
-  return 0;
+  MeshShape shape;
+  switch (type) {
+    case Mesh::VERTEX:
+      shape = SHAPE_NODE;
+      break;
+    case Mesh::EDGE:
+      shape = SHAPE_SEGMENT;
+      break;
+    case Mesh::TRIANGLE:
+      shape = SHAPE_TRIANGLE;
+      break;
+    case Mesh::QUAD:
+      shape = SHAPE_QUAD;
+      break;
+    case Mesh::TET:
+      shape = SHAPE_TETRA;
+      break;
+    case Mesh::HEX:
+      shape = SHAPE_HEX;
+      break;
+    case Mesh::PRISM:
+      shape = SHAPE_PRISM;
+      break;
+    case Mesh::PYRAMID:
+      shape = SHAPE_PYRAMID;
+      break;
+    default:
+      break;
+  }
+  GeometryTopoType gtype;
+  int d = getModelType(me);
+  switch (d) {
+    case 0:
+      gtype = GVERTEX;
+      break;
+    case 1:
+      gtype = GEDGE;
+      break;
+    case 2:
+      gtype = GFACE;
+      break;
+    case 3:
+      gtype = GREGION;
+      break;
+    default:
+      break;
+  }
+
+  int dim = apf::getDimension(this, down[0]);
+  int n = degree[type][dim];
+
+  gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
+  M_GTopo gtopo = fromGmiEntity(g);
+
+  std::vector<M_MTopo> mtopos;
+  for (int i = 0; i < n; i++)
+    mtopos.push_back(fromEntity(down[i]));
+
+  M_MTopo topo;
+  meshInterface->create_topo(shape, mtopos, topo, gtype, gtopo);
+  return toEntity(topo);
 }
 
 void MeshCAP::destroy_(MeshEntity* e)
