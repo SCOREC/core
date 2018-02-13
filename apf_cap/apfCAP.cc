@@ -171,6 +171,15 @@ void MeshCAP::getParam(MeshEntity* e, Vector3& point)
   point = Vector3(u, v, 0.);
 }
 
+void MeshCAP::setParam(MeshEntity* e, Vector3 const& point)
+{
+  M_MTopo topo = fromEntity(e);
+  /* int d = getModelType(toModel(e)); */
+  /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
+  meshInterface->set_vertex_uv_parameters(topo, point[0], point[1]);
+}
+
+
 MeshIterator* MeshCAP::begin(int dimension)
 {
   MeshSmartIterator* miter = new MeshSmartIterator(meshInterface);

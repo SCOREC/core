@@ -64,7 +64,7 @@ class MeshCAP : public Mesh2
     void getPoint_(MeshEntity* e, int, Vector3& point);
     void setPoint_(MeshEntity* e, int, Vector3 const& p);
     void getParam(MeshEntity* e, Vector3& p);
-    void setParam(MeshEntity*, Vector3 const&) {}
+    void setParam(MeshEntity* e, Vector3 const& point);
 
     /* --------------------------------------------------------------------- */
     /* Category 02: Iterators */
