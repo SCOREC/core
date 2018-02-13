@@ -533,8 +533,8 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 
 void MeshCAP::destroy_(MeshEntity* e)
 {
-  (void)e;
-  apf::fail("MeshCAP::destroy_ called!\n");
+  M_MTopo topo = fromEntity(e);
+  meshInterface->delete_topo(topo);
 }
 
 class TagCAP
