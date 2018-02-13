@@ -73,9 +73,9 @@ class MeshCAP : public Mesh2
     MeshIterator* begin(int dimension);
     MeshEntity* iterate(MeshIterator* it);
     void end(MeshIterator* it);
-    void increment(MeshIterator*) {}
-    bool isDone(MeshIterator*) { return true; }
-    MeshEntity* deref(MeshIterator*) { return NULL; }
+    void increment(MeshIterator* it);
+    bool isDone(MeshIterator* it);
+    MeshEntity* deref(MeshIterator* it);
 
     /* --------------------------------------------------------------------- */
     /* Category 03: Adjacencies */
@@ -173,7 +173,7 @@ class MeshCAP : public Mesh2
 
 
 
-    capMesh* getMesh() { return 0; }
+    MeshDatabaseInterface* getMesh() { return meshInterface; }
   protected:
     /* CapstoneModule capModule; */
     MeshDatabaseInterface* meshInterface;

@@ -209,6 +209,26 @@ void MeshCAP::end(MeshIterator* it)
   delete miter;
 }
 
+void MeshCAP::increment(MeshIterator* it)
+{
+  MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
+  meshInterface->iterator_next(*miter);
+  it = reinterpret_cast<MeshIterator*>(miter);
+}
+
+bool MeshCAP::isDone(MeshIterator* it)
+{
+  MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
+  return meshInterface->iterator_end(*miter);
+}
+
+MeshEntity* MeshCAP::deref(MeshIterator* it)
+{
+  MeshSmartIterator* miter = reinterpret_cast<MeshSmartIterator*>(it);
+  M_MTopo topo = meshInterface->iterator_value(*miter);
+  return toEntity(topo);
+}
+
 void MeshCAP::getAdjacent(MeshEntity* e,
     int dimension,
     DynamicArray<MeshEntity*>& adjacent)
