@@ -403,6 +403,12 @@ void MeshCAP::setModelEntity(MeshEntity* e, ModelEntity* me)
 
 MeshEntity* MeshCAP::createVert_(ModelEntity* me)
 {
+  double xyz[3] = {0., 0., 0.}; // this will be set later by setPoint_
+  M_MTopo vertex; // to be created
+  if ( !me ) {
+    meshInterface->create_vertex(xyz, vertex);
+    return toEntity(vertex);
+  }
   gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
   M_GTopo gtopo = fromGmiEntity(g);
   GeometryTopoType gtype;
@@ -423,8 +429,6 @@ MeshEntity* MeshCAP::createVert_(ModelEntity* me)
     default:
       break;
   }
-  M_MTopo vertex; // to be created
-  double xyz[3] = {0., 0., 0.}; // this will be set later
   meshInterface->create_vertex(xyz, vertex, gtype, gtopo);
   return toEntity(vertex);
 }
@@ -471,6 +475,36 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
     default:
       break;
   }
+
+
+  int dim = apf::getDimension(this, down[0]);
+  int n = degree[type][dim];
+
+  if (dim == 2) {
+    for (int i = 0; i < 4; i++) {
+      MeshEntity* dv[3];
+      getDownward(down[i], 0, dv);
+      for (int j = 0; j < 3; j++) {
+      	Vector3 p;
+        getPoint_(dv[j], 0, p);
+        std::cout << p << std::endl;
+      }
+
+    }
+  }
+
+  std::vector<M_MTopo> mtopos;
+  for (int i = 0; i < n; i++)
+    mtopos.push_back(fromEntity(down[i]));
+
+  M_MTopo topo;
+
+  // first take care of the case where model is 0
+  if ( !me ) {
+    meshInterface->create_topo(shape, mtopos, topo);
+    return toEntity(topo);
+  }
+
   GeometryTopoType gtype;
   int d = getModelType(me);
   switch (d) {
@@ -490,17 +524,9 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
       break;
   }
 
-  int dim = apf::getDimension(this, down[0]);
-  int n = degree[type][dim];
-
   gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
   M_GTopo gtopo = fromGmiEntity(g);
 
-  std::vector<M_MTopo> mtopos;
-  for (int i = 0; i < n; i++)
-    mtopos.push_back(fromEntity(down[i]));
-
-  M_MTopo topo;
   meshInterface->create_topo(shape, mtopos, topo, gtype, gtopo);
   return toEntity(topo);
 }
