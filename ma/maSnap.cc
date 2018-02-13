@@ -893,7 +893,9 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
    * difficult due to the change in location of neighboring verticies
    * that will be snapped before the problematic vert to-be-snapped.
    */
+#ifndef HAVE_CAPSTONE
   while (snapOneRound(a, tag, false, successCount));
+#endif
   while (snapOneRound(a, tag, true, successCount));
   return successCount;
 }
