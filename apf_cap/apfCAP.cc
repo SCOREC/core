@@ -562,6 +562,10 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 
 void MeshCAP::destroy_(MeshEntity* e)
 {
+  // remove the tags manually first
+  for (std::size_t i = 0; i < tags.size(); i++)
+    removeTag(e, reinterpret_cast<MeshTag*>(tags[i]));
+  // now delete the entity
   M_MTopo topo = fromEntity(e);
   meshInterface->delete_topo(topo);
 }
