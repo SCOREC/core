@@ -234,6 +234,9 @@ Entity* rebuildElement(
     RebuildCallback* rcb)
 {
   int type = m->getType(original);
+  Entity* e;
+  bool made;
+#ifndef HAVE_CAPSTONE
   if (type == apf::Mesh::VERTEX)
   {
     PCU_ALWAYS_ASSERT(original != newVert);
@@ -246,8 +249,22 @@ Entity* rebuildElement(
   int nd = m->getDownward(original,d-1,down);
   for (int i=0; i < nd; ++i)
     down[i] = rebuildElement(m, down[i], oldVert, newVert, cb, rcb);
-  bool made;
-  Entity* e = apf::makeOrFind(m, m->toModel(original), type, down, cb, &made);
+  e = apf::makeOrFind(m, m->toModel(original), type, down, cb, &made);
+#else
+  (void)cb;
+  Entity* down[12];
+  int nd = m->getDownward(original, 0, down);
+  PCU_ALWAYS_ASSERT(nd == 4);
+  Entity* verts[4];
+  for (int i = 0; i < nd; i++) {
+    if (down[i] == oldVert)
+      verts[i] = newVert;
+    else
+      verts[i] = down[i];
+  }
+  made = true;
+  e = m->createEntity_(type, m->toModel(original), verts);
+#endif
   if (made && rcb)
     rcb->rebuilt(e, original);
   return e;
