@@ -823,7 +823,8 @@ bool MeshCAP::isOwned(MeshEntity* e)
 int MeshCAP::getOwner(MeshEntity* e)
 {
   (void)e;
-  apf::fail("MeshCAP::getOwner called!\n");
+  if (PCU_Comm_Peers() != 1)
+    apf::fail("MeshCAP::getOwner called in a parallel run!\n");
   return 0;
 }
 
