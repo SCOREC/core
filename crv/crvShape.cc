@@ -381,6 +381,8 @@ static ma::Entity* isLargeAngleTetMetric(crv::Adapt* a, ma::Entity* e)
 
   sf->getTransform(element, apf::Vector3(0.25,0.25,0.25), Q);
 
+  apf::destroyMeshElement(element);
+
   ma::Entity* edges[6];
   ma::Entity* faces[4];
   m->getDownward(e,1,edges);
@@ -590,13 +592,20 @@ int fixInvalidEdges(Adapt* a)
 
 struct IsBadCrvQuality : public ma::Predicate
 {
-  IsBadCrvQuality(Adapt* a_):a(a_) {}
+  IsBadCrvQuality(Adapt* a_):a(a_)
+  {
+    sh = crv::getShapeHandler(a);
+  }
+  ~IsBadCrvQuality()
+  {
+    delete sh;
+  }
   bool operator()(apf::MeshEntity* e)
   {
-    ma::ShapeHandler* sh = crv::getShapeHandler(a);
     return sh->getQuality(e) < a->input->goodQuality;
   }
   Adapt* a;
+  ma::ShapeHandler* sh;
 };
 
 int markCrvBadQuality(Adapt* a)
