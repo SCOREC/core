@@ -112,13 +112,40 @@ static gmi_ent* find(gmi_model* m, int dim, int tag)
   return 0;
 }
 
+static gmi_set* vector_to_set(std::vector<M_GTopo> gtopos)
+{
+  gmi_set* s = gmi_make_set(gtopos.size());
+  for (int i = 0; i < s->n; i++) {
+    s->e[i] = toGmiEntity(gtopos[i]);
+  }
+  return s;
+}
+
 static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
 {
-  (void)m;
-  (void)e;
-  (void)dim;
-  printf("_adjacent_ not implemented!\n");
-  return 0;
+  cap_model* cm = (cap_model*)m;
+  M_GTopo gtopo = fromGmiEntity(e);
+  int edim = gmi_dim(m, e);
+  std::vector<M_GTopo> gtopos;
+  if (edim == 0 && dim == 1)
+    cm->geomInterface->get_adjacency(gtopo, EDGE, gtopos);
+  else if (edim == 1 && dim == 0)
+    cm->geomInterface->get_adjacency(gtopo, VERTEX, gtopos);
+  else if (edim == 1 && dim == 2)
+    cm->geomInterface->get_adjacency(gtopo, FACE, gtopos);
+  else if (edim == 2 && dim == 0)
+    cm->geomInterface->get_adjacency(gtopo, VERTEX, gtopos);
+  else if (edim == 2 && dim == 1)
+    cm->geomInterface->get_adjacency(gtopo, EDGE, gtopos);
+  else if (edim == 2 && dim == 3)
+    cm->geomInterface->get_adjacency(gtopo, REGION, gtopos);
+  else if (edim == 1 && dim == 3)
+    cm->geomInterface->get_adjacency(gtopo, REGION, gtopos);
+  else if (edim == 3 && dim == 2)
+    cm->geomInterface->get_adjacency(gtopo, FACE, gtopos);
+  else
+    gmi_fail("requested adjacency not available\n");
+  return vector_to_set(gtopos);
 }
 
 static void eval(struct gmi_model* m, struct gmi_ent* e,
