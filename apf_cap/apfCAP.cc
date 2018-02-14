@@ -832,14 +832,16 @@ void MeshCAP::getRemotes(MeshEntity* e, Copies& remotes)
 {
   (void)e;
   (void)remotes;
-  apf::fail("MeshCAP::getRemotes called!\n");
+  if (PCU_Comm_Peers() != 1)
+    apf::fail("MeshCAP::getRemotes called in a parallel run!\n");
 }
 
 void MeshCAP::getResidence(MeshEntity* e, Parts& residence)
 {
   (void)e;
-  (void)residence;
-  apf::fail("MeshCAP::getResidence called!\n");
+  if (PCU_Comm_Peers() != 1)
+    apf::fail("MeshCAP::getResidence called in a parallel run!\n");
+  residence.insert(0);
 }
 
 int MeshCAP::getId()
