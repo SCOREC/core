@@ -859,7 +859,8 @@ void MeshCAP::getMatches(MeshEntity* e, Matches& m)
 {
   (void)e;
   (void)m;
-  apf::fail("MeshCAP::getMatches called!\n");
+  if (PCU_Comm_Peers() != 1)
+    apf::fail("MeshCAP::getMatches called in a parallel run!\n");
 }
 
 void MeshCAP::getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
