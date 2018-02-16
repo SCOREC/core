@@ -342,21 +342,24 @@ MeshEntity* MeshCAP::getUpward(MeshEntity* e, int i)
   M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
-  std::vector<M_MTopo> adjTopos;
+  std::vector<std::size_t> adjId;
   if (type == TOPO_VERTEX)
   {
-    meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
-    return toEntity(adjTopos[i]);
+    meshInterface->get_adjacency_id_vector(topo, TOPO_EDGE, adjId);
+    M_MTopo topo = meshInterface->get_topo_by_id(TOPO_EDGE, adjId[i]);
+    return toEntity(topo);
   }
   if (type == TOPO_EDGE)
   {
-    meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
-    return toEntity(adjTopos[i]);
+    meshInterface->get_adjacency_id_vector(topo, TOPO_FACE, adjId);
+    M_MTopo topo = meshInterface->get_topo_by_id(TOPO_FACE, adjId[i]);
+    return toEntity(topo);
   }
   if (type == TOPO_FACE)
   {
-    meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
-    return toEntity(adjTopos[i]);
+    meshInterface->get_adjacency_id_vector(topo, TOPO_REGION, adjId);
+    M_MTopo topo = meshInterface->get_topo_by_id(TOPO_REGION, adjId[i]);
+    return toEntity(topo);
   }
   return 0;
 }
@@ -387,9 +390,19 @@ void MeshCAP::deleteAdjacency(int from_dim, int to_dim)
 
 void MeshCAP::getUp(MeshEntity* e, Up& up)
 {
-  up.n = countUpward(e);
+  M_MTopo topo = fromEntity(e);
+  MeshTopo type;
+  meshInterface->get_topo_type(topo, type);
+  std::vector<M_MTopo> adjTopos;
+  if (type == TOPO_VERTEX)
+    meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+  if (type == TOPO_EDGE)
+    meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+  if (type == TOPO_FACE)
+    meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+  up.n = adjTopos.size();
   for (int i = 0; i < up.n; i++) {
-    up.e[i] = getUpward(e, i);
+    up.e[i] = toEntity(adjTopos[i]);
   }
 }
 
