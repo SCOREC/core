@@ -440,7 +440,7 @@ MeshEntity* MeshCAP::createVert_(ModelEntity* me)
   }
   gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
   M_GTopo gtopo = fromGmiEntity(g);
-  GeometryTopoType gtype;
+  GeometryTopoType gtype = GVERTEX;
   int d = getModelType(me);
   switch (d) {
     case 0:
@@ -475,7 +475,61 @@ int const degree[Mesh::TYPES][4] =
 
 MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 {
-  MeshShape shape;
+  int downType = getType(down[0]);
+  int dimDown = apf::getDimension(this, down[0]);
+  int numDown = degree[type][dimDown];
+
+  std::vector<M_MTopo> mtopos;
+  std::vector<M_MTopo>::iterator it;
+
+  if (type == Mesh::TET && downType == Mesh::TRIANGLE)
+  {
+    mtopos.clear();
+    for (int i = 0; i < numDown; i++) {
+      MeshEntity* dv[3];
+      int nv = getDownward(down[i], 0, dv);
+      PCU_ALWAYS_ASSERT(nv == 3);
+      for (int j = 0; j < nv; j++) {
+	it = std::find(mtopos.begin(), mtopos.end(), fromEntity(dv[j]));
+	if (it != mtopos.end())
+	  continue;
+	else
+	  mtopos.push_back(fromEntity(dv[j]));
+      }
+    }
+    PCU_ALWAYS_ASSERT(mtopos.size() == 4);
+  }
+  else if (type == Mesh::TRIANGLE && downType == Mesh::EDGE)
+  {
+    mtopos.clear();
+    for (int i = 0; i < numDown; i++) {
+      MeshEntity* dv[2];
+      int nv = getDownward(down[i], 0, dv);
+      PCU_ALWAYS_ASSERT(nv == 2);
+      for (int j = 0; j < nv; j++) {
+	it = std::find(mtopos.begin(), mtopos.end(), fromEntity(dv[j]));
+	if (it != mtopos.end())
+	  continue;
+	else
+	  mtopos.push_back(fromEntity(dv[j]));
+      }
+    }
+    PCU_ALWAYS_ASSERT(mtopos.size() == 3);
+  }
+  /* else if ((type == Mesh::EDGE && downType == Mesh::VERTEX) || */
+  /*          (type == Mesh::TET  && downType == Mesh::VERTEX)) */
+  else if (downType == Mesh::VERTEX)
+  {
+    for (int i = 0; i < numDown; i++)
+      mtopos.push_back(fromEntity(down[i]));
+    /* PCU_ALWAYS_ASSERT(mtopos.size() == 2); */
+  }
+  else
+  {
+    apf::fail("MeshCAP::createEntity_ called for unsupported type!\n");
+  }
+
+  MeshShape shape = SHAPE_UNKNOWN;
   switch (type) {
     case Mesh::VERTEX:
       shape = SHAPE_NODE;
@@ -505,36 +559,14 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
       break;
   }
 
-
-  int dim = apf::getDimension(this, down[0]);
-  int n = degree[type][dim];
-
-  if (dim == 2) {
-    for (int i = 0; i < 4; i++) {
-      MeshEntity* dv[3];
-      getDownward(down[i], 0, dv);
-      for (int j = 0; j < 3; j++) {
-      	Vector3 p;
-        getPoint_(dv[j], 0, p);
-        std::cout << p << std::endl;
-      }
-
-    }
-  }
-
-  std::vector<M_MTopo> mtopos;
-  for (int i = 0; i < n; i++)
-    mtopos.push_back(fromEntity(down[i]));
-
   M_MTopo topo;
-
   // first take care of the case where model is 0
   if ( !me ) {
     meshInterface->create_topo(shape, mtopos, topo);
     return toEntity(topo);
   }
-
-  GeometryTopoType gtype;
+  // if model is not 0 figure out its type
+  GeometryTopoType gtype = GVERTEX;
   int d = getModelType(me);
   switch (d) {
     case 0:
@@ -557,6 +589,8 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
   M_GTopo gtopo = fromGmiEntity(g);
 
   meshInterface->create_topo(shape, mtopos, topo, gtype, gtopo);
+  PCU_ALWAYS_ASSERT(getType(toEntity(topo)) == type);
+
   return toEntity(topo);
 }
 
