@@ -115,7 +115,7 @@ int main(int argc, char **argv)
   // NOTE: Sim_readLicenseFile() is for internal testing only.  To use,
   // pass in the location of a file containing your keys.  For a release 
   // product, use Sim_registerKey() 
-  Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
+  Sim_readLicenseFile(0);
   Sim_logOn("partition.log");
 
   Sim_setMessageHandler(messageHandler);
