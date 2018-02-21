@@ -5,6 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include "maStats.h"
+#include "maAdapt.h"
 
 namespace ma {
 
