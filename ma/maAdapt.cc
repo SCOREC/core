@@ -436,11 +436,7 @@ Entity* buildElement(
     int type,
     Entity** verts)
 {
-#ifdef HAVE_CAPSTONE
-  return a->mesh->createEntity_(type, c, verts);
-#else
   return apf::buildElement(a->mesh,c,type,verts,a->buildCallback);
-#endif
 }
 
 Entity* rebuildElement(
