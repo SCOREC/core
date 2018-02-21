@@ -526,6 +526,27 @@ static MeshShape getCapShape(int type)
   return shape;
 }
 
+int const tet_rotation[12][4] =
+{{0,1,2,3}//0
+,{0,2,3,1}//1
+,{0,3,1,2}//2
+,{1,0,3,2}//3
+,{1,3,2,0}//4
+,{1,2,0,3}//5
+,{2,0,1,3}//6
+,{2,1,3,0}//7
+,{2,3,0,1}//8
+,{3,0,2,1}//9
+,{3,2,1,0}//10
+,{3,1,0,2}//11
+};
+
+static void rotateTet(MeshEntity** iv, int n, MeshEntity** ov)
+{
+  for (int i = 0; i < 4; i++)
+    ov[i] = iv[tet_rotation[n][i]];
+}
+
 MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 {
   int downType = getType(down[0]);
@@ -541,17 +562,12 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
   {
     // for now we create the regions from face vertexes
     // so first get the vertexes
-    mtopos.clear();
     MeshEntity* dv1st[3];
     MeshEntity* dv2nd[3];
-    MeshEntity* dv3rd[3];
-    MeshEntity* dv4th[3];
     MeshEntity* unorientedTet[4];
     int nv1st = getDownward(down[0], 0, dv1st);
     int nv2nd = getDownward(down[1], 0, dv2nd);
-    int nv3rd = getDownward(down[1], 0, dv3rd);
-    int nv4th = getDownward(down[1], 0, dv4th);
-    PCU_ALWAYS_ASSERT(nv1st == 3 && nv2nd == 3 && nv3rd == 3 && nv4th == 3);
+    PCU_ALWAYS_ASSERT(nv1st == 3 && nv2nd == 3);
     for (int i = 0; i < 3; i++)
       unorientedTet[i] = dv1st[i];
     for (int i = 0; i < 3; i++)
@@ -559,46 +575,81 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
       	unorientedTet[3] = dv2nd[i];
       	break;
       }
-    for (int i = 0; i < 4; i++) {
-      mtopos1.push_back(fromEntity(unorientedTet[i]));
-    }
 
-    mtopos2.push_back(mtopos1[2]);
-    mtopos2.push_back(mtopos1[1]);
-    mtopos2.push_back(mtopos1[0]);
-    mtopos2.push_back(mtopos1[3]);
-
-    MeshShape shape = getCapShape(type);
     M_MTopo topo1;
     M_MTopo topo2;
-    // first take care of the case where model is 0
-    if ( !me ) {
-      meshInterface->create_region(mtopos1, shape, topo1);
-      meshInterface->create_region(mtopos2, shape, topo2);
-    }
-    // if model is not 0 figure out its type
-    else {
-      int d = getModelType(me);
-      GeometryTopoType gtype = getCapGeomType(d);
-      gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
-      M_GTopo gtopo = fromGmiEntity(g);
-      meshInterface->create_region(mtopos1, shape, topo1, gtype, gtopo);
-      meshInterface->create_region(mtopos2, shape, topo2, gtype, gtopo);
+    MeshShape shape = getCapShape(type);
+    bool foundTet = false;
+    int which = 0;
+    for (int i = 0; i < 12; i++) {
+      mtopos1.clear();
+      mtopos2.clear();
+      MeshEntity* rotatedTet[4];
+      rotateTet(unorientedTet, i, rotatedTet);
+      for (int j = 0; j < 4; j++)
+	mtopos1.push_back(fromEntity(rotatedTet[j]));
+
+      mtopos2.push_back(mtopos1[2]);
+      mtopos2.push_back(mtopos1[1]);
+      mtopos2.push_back(mtopos1[0]);
+      mtopos2.push_back(mtopos1[3]);
+
+      if ( !me ) {
+	meshInterface->create_region(mtopos1, shape, topo1);
+	meshInterface->create_region(mtopos2, shape, topo2);
+      }
+      // if model is not 0 figure out its type
+      else {
+	int d = getModelType(me);
+	GeometryTopoType gtype = getCapGeomType(d);
+	gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
+	M_GTopo gtopo = fromGmiEntity(g);
+	meshInterface->create_region(mtopos1, shape, topo1, gtype, gtopo);
+	meshInterface->create_region(mtopos2, shape, topo2, gtype, gtopo);
+      }
+
+      double V1 = measure(this, toEntity(topo1));
+      double V2 = measure(this, toEntity(topo2));
+      if (V1 > 0) {
+      	foundTet = true;
+      	meshInterface->delete_topo(topo2);
+      	which = 1;
+      	break;
+      }
+      else if (V2 > 0) {
+      	foundTet = true;
+      	meshInterface->delete_topo(topo1);
+      	which = 2;
+      	break;
+      }
+      else {
+      	meshInterface->delete_topo(topo1);
+      	meshInterface->delete_topo(topo2);
+      }
     }
 
-    double V1 = measure(this, toEntity(topo1));
-    double V2 = measure(this, toEntity(topo2));
-
-    PCU_ALWAYS_ASSERT(V1 > 0 || V2 > 0);
-    if (V1 > 0) {
-      PCU_ALWAYS_ASSERT(getType(toEntity(topo1)) == type);
-      meshInterface->delete_topo(topo2);
+    /* PCU_ALWAYS_ASSERT(foundTet); */
+    if (foundTet && which == 1)
       return toEntity(topo1);
-    }
-    else {
-      PCU_ALWAYS_ASSERT(getType(toEntity(topo2)) == type);
-      meshInterface->delete_topo(topo1);
+    else if (foundTet && which == 2)
       return toEntity(topo2);
+    else {
+      mtopos1.clear();
+      M_MTopo topo3;
+      for (int j = 0; j < 4; j++)
+	mtopos1.push_back(fromEntity(unorientedTet[j]));
+      if ( !me ) {
+	meshInterface->create_region(mtopos1, shape, topo3);
+      }
+      // if model is not 0 figure out its type
+      else {
+	int d = getModelType(me);
+	GeometryTopoType gtype = getCapGeomType(d);
+	gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
+	M_GTopo gtopo = fromGmiEntity(g);
+	meshInterface->create_region(mtopos1, shape, topo3, gtype, gtopo);
+      }
+      return toEntity(topo3);
     }
   }
   else if (type == Mesh::TRIANGLE && downType == Mesh::EDGE)
