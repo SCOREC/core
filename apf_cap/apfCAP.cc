@@ -526,63 +526,6 @@ static MeshShape getCapShape(int type)
   return shape;
 }
 
-/* static bool isAligned(MeshEntity** f, MeshEntity** fp) */
-/* { */
-/*   bool aligned = f[0]==fp[0] && f[1]==fp[1] && f[2] == fp[2]; */
-/*   aligned     |= f[0]==fp[2] && f[1]==fp[0] && f[2] == fp[1]; */
-/*   aligned     |= f[0]==fp[1] && f[1]==fp[2] && f[2] == fp[0]; */
-/*   return aligned; */
-/* } */
-/* static void findOrientedTet(MeshEntity** in, */
-/*     MeshEntity** f0, MeshEntity** f1, MeshEntity** f2, MeshEntity** f3, */
-/*     std::vector<MeshEntity*>& out) */
-/* { */
-/*   MeshEntity* f0p[3] = {in[tet_tri_verts[0][0]], */
-/* 			in[tet_tri_verts[0][1]], */
-/* 			in[tet_tri_verts[0][2]]}; */
-/*   MeshEntity* f1p[3] = {in[tet_tri_verts[1][0]], */
-/* 			in[tet_tri_verts[1][1]], */
-/* 			in[tet_tri_verts[1][2]]}; */
-/*   MeshEntity* f2p[3] = {in[tet_tri_verts[2][0]], */
-/* 			in[tet_tri_verts[2][1]], */
-/* 			in[tet_tri_verts[2][2]]}; */
-/*   MeshEntity* f3p[3] = {in[tet_tri_verts[3][0]], */
-/* 			in[tet_tri_verts[3][1]], */
-/* 			in[tet_tri_verts[3][2]]}; */
-/*   int alignedCount = 0; */
-/*   if (isAligned(f0, f0p)) alignedCount++; */
-/*   if (isAligned(f1, f1p)) alignedCount++; */
-/*   if (isAligned(f2, f2p)) alignedCount++; */
-/*   if (isAligned(f3, f3p)) alignedCount++; */
-
-/*   MeshEntity* reverseIn[4] = {in[2], in[1], in[0], in[3]}; */
-
-/*   MeshEntity* f0pp[3] = {reverseIn[tet_tri_verts[0][0]], */
-/* 			 reverseIn[tet_tri_verts[0][1]], */
-/* 			 reverseIn[tet_tri_verts[0][2]]}; */
-/*   MeshEntity* f1pp[3] = {reverseIn[tet_tri_verts[1][0]], */
-/* 			 reverseIn[tet_tri_verts[1][1]], */
-/* 			 reverseIn[tet_tri_verts[1][2]]}; */
-/*   MeshEntity* f2pp[3] = {reverseIn[tet_tri_verts[2][0]], */
-/* 			 reverseIn[tet_tri_verts[2][1]], */
-/* 			 reverseIn[tet_tri_verts[2][2]]}; */
-/*   MeshEntity* f3pp[3] = {reverseIn[tet_tri_verts[3][0]], */
-/* 			 reverseIn[tet_tri_verts[3][1]], */
-/* 			 reverseIn[tet_tri_verts[3][2]]}; */
-/*   int alignedCountReverse = 0; */
-/*   if (isAligned(f0, f0pp)) alignedCountReverse++; */
-/*   if (isAligned(f1, f1pp)) alignedCountReverse++; */
-/*   if (isAligned(f2, f2pp)) alignedCountReverse++; */
-/*   if (isAligned(f3, f3pp)) alignedCountReverse++; */
-
-/*   for (int i = 0; i < 4; i++) { */
-/*     if (alignedCount < alignedCountReverse) */
-/*       out.push_back(in[i]); */
-/*     else */
-/*       out.push_back(reverseIn[i]); */
-/*   } */
-/* } */
-
 MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 {
   int downType = getType(down[0]);
@@ -616,8 +559,6 @@ MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
       	unorientedTet[3] = dv2nd[i];
       	break;
       }
-    /* std::vector<MeshEntity*> orientedTet; */
-    /* findOrientedTet(unorientedTet, dv1st, dv2nd, dv3rd, dv4th, orientedTet); */
     for (int i = 0; i < 4; i++) {
       mtopos1.push_back(fromEntity(unorientedTet[i]));
     }
