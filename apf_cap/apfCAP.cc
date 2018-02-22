@@ -11,6 +11,74 @@
 
 namespace apf {
 
+/* These tables are taken from ../mds/mds.c
+ * Here they are used to figure out the order
+ * of verts in a tet given the downward faces,
+ * for example.
+ */
+static int const t01[] =     {0,1,1,2,2,0};
+static int const t10[] = {2,0,0,1,1,2};
+
+static int const q01[] = {};
+static int const q10[] = {};
+
+static int const T01[] = {0,1,1,2,2,0
+                         ,0,3,1,3,2,3};
+static int const T10[] = {2,0,0,1,1,2,3,4};
+static int const T12[] = {0,1,2
+                         ,0,4,3
+                         ,1,5,4
+                         ,2,3,5};
+static int const T21[] = {0,1
+                         ,0,2
+                         ,0,3
+                         ,1,3
+                         ,1,2
+                         ,2,3};
+
+/* static int const H01 = {}; */
+/* static int const H10 = {}; */
+/* static int const H12 = {}; */
+/* static int const H21 = {}; */
+
+/* static int const W01 = {}; */
+/* static int const W10 = {}; */
+/* static int const W12 = {}; */
+/* static int const W21 = {}; */
+
+/* static int const P01 = {}; */
+/* static int const P10 = {}; */
+/* static int const P12 = {}; */
+/* static int const P21 = {}; */
+
+static int const* convs[Mesh::TYPES][4][4] =
+{{{0,0  ,0,0},{0  ,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
+,{{0,0  ,0,0},{0  ,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
+,{{0,t01,0,0},{t10,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
+,{{0,q01,0,0},{q10,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
+,{{0,T01,0,0},{T10,0,T12,0},{0,T21,0,0},{0,0,0,0}}
+,{{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
+,{{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
+,{{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
+/* ,{{0,H01,0,0},{H10,0,H12,0},{0,H21,0,0},{0,0,0,0}} */
+/* ,{{0,W01,0,0},{W10,0,W12,0},{0,W21,0,0},{0,0,0,0}} */
+/* ,{{0,P01,0,0},{P10,0,P12,0},{0,P21,0,0},{0,0,0,0}} */
+};
+
+// entity type-dimension count table
+int const degree[Mesh::TYPES][4] =
+{{1, 0,0,0} /* MDS_VERTEX */
+,{2, 1,0,0} /* MDS_EDGE */
+,{3, 3,1,0} /* MDS_TRIANGLE */
+,{4, 4,1,0} /* MDS_QUADRILATERAL */
+,{4, 6,4,1} /* MDS_TETRAHEDRON */
+,{8,12,6,1} /* MDS_HEXAHEDRON */
+,{6, 9,5,1} /* MDS_WEDGE */
+,{5, 8,5,1} /* MDS_PYRAMID */
+};
+
+
+
 
 MeshEntity* toEntity(M_MTopo topo)
 {
@@ -481,17 +549,6 @@ MeshEntity* MeshCAP::createVert_(ModelEntity* me)
   return toEntity(vertex);
 }
 
-int const degree[Mesh::TYPES][4] =
-{{1, 0,0,0} /* MDS_VERTEX */
-,{2, 1,0,0} /* MDS_EDGE */
-,{3, 3,1,0} /* MDS_TRIANGLE */
-,{4, 4,1,0} /* MDS_QUADRILATERAL */
-,{4, 6,4,1} /* MDS_TETRAHEDRON */
-,{8,12,6,1} /* MDS_HEXAHEDRON */
-,{6, 9,5,1} /* MDS_WEDGE */
-,{5, 8,5,1} /* MDS_PYRAMID */
-};
-
 static MeshShape getCapShape(int type)
 {
   MeshShape shape = SHAPE_UNKNOWN;
@@ -526,198 +583,79 @@ static MeshShape getCapShape(int type)
   return shape;
 }
 
-int const tet_rotation[12][4] =
-{{0,1,2,3}//0
-,{0,2,3,1}//1
-,{0,3,1,2}//2
-,{1,0,3,2}//3
-,{1,3,2,0}//4
-,{1,2,0,3}//5
-,{2,0,1,3}//6
-,{2,1,3,0}//7
-,{2,3,0,1}//8
-,{3,0,2,1}//9
-,{3,2,1,0}//10
-,{3,1,0,2}//11
-};
-
-static void rotateTet(MeshEntity** iv, int n, MeshEntity** ov)
+static MeshEntity* commonDown(Mesh2* m, MeshEntity* a, MeshEntity* b, int dim)
 {
-  for (int i = 0; i < 4; i++)
-    ov[i] = iv[tet_rotation[n][i]];
+  MeshEntity* aDown[12];
+  MeshEntity* bDown[12];
+  int na = m->getDownward(a, dim, aDown);
+  int nb = m->getDownward(b, dim, bDown);
+  PCU_ALWAYS_ASSERT( na == degree[m->getType(a)][dim] );
+  PCU_ALWAYS_ASSERT( na == nb );
+  for (int i = 0; i < na; i++)
+    for (int j = 0; j < nb; j++)
+      if (aDown[i] == bDown[j])
+      	return aDown[i];
+  return 0;
+}
+
+static void stepDown(Mesh2* m, int type, int fromDim, MeshEntity** from, MeshEntity** to)
+{
+  PCU_ALWAYS_ASSERT(fromDim > 0);
+  int toDim = fromDim - 1;
+  int const* conversion = convs[type][fromDim][toDim];
+  int toCount = degree[type][toDim];
+  for (int i = 0; i < toCount; i++) {
+    MeshEntity* a = from[conversion[2*i]];
+    MeshEntity* b = from[conversion[2*i+1]];
+    to[i] = commonDown(m, a, b, toDim);
+  }
 }
 
 MeshEntity* MeshCAP::createEntity_(int type, ModelEntity* me, MeshEntity** down)
 {
   int downType = getType(down[0]);
-  int dimDown = apf::getDimension(this, down[0]);
-  int numDown = degree[type][dimDown];
-
   std::vector<M_MTopo> mtopos;
-  std::vector<M_MTopo> mtopos1;
-  std::vector<M_MTopo> mtopos2;
-  std::vector<M_MTopo>::iterator it;
-
-  if (type == Mesh::TET && downType == Mesh::TRIANGLE)
-  {
-    // for now we create the regions from face vertexes
-    // so first get the vertexes
-    MeshEntity* dv1st[3];
-    MeshEntity* dv2nd[3];
-    MeshEntity* unorientedTet[4];
-    int nv1st = getDownward(down[0], 0, dv1st);
-    int nv2nd = getDownward(down[1], 0, dv2nd);
-    PCU_ALWAYS_ASSERT(nv1st == 3 && nv2nd == 3);
-    for (int i = 0; i < 3; i++)
-      unorientedTet[i] = dv1st[i];
-    for (int i = 0; i < 3; i++)
-      if (findIn(dv1st, 3, dv2nd[i]) == -1) {
-      	unorientedTet[3] = dv2nd[i];
-      	break;
-      }
-
-    M_MTopo topo1;
-    M_MTopo topo2;
-    MeshShape shape = getCapShape(type);
-    bool foundTet = false;
-    int which = 0;
-    for (int i = 0; i < 12; i++) {
-      mtopos1.clear();
-      mtopos2.clear();
-      MeshEntity* rotatedTet[4];
-      rotateTet(unorientedTet, i, rotatedTet);
-      for (int j = 0; j < 4; j++)
-	mtopos1.push_back(fromEntity(rotatedTet[j]));
-
-      mtopos2.push_back(mtopos1[2]);
-      mtopos2.push_back(mtopos1[1]);
-      mtopos2.push_back(mtopos1[0]);
-      mtopos2.push_back(mtopos1[3]);
-
-      if ( !me ) {
-	meshInterface->create_region(mtopos1, shape, topo1);
-	meshInterface->create_region(mtopos2, shape, topo2);
-      }
-      // if model is not 0 figure out its type
-      else {
-	int d = getModelType(me);
-	GeometryTopoType gtype = getCapGeomType(d);
-	gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
-	M_GTopo gtopo = fromGmiEntity(g);
-	meshInterface->create_region(mtopos1, shape, topo1, gtype, gtopo);
-	meshInterface->create_region(mtopos2, shape, topo2, gtype, gtopo);
-      }
-
-      double V1 = measure(this, toEntity(topo1));
-      double V2 = measure(this, toEntity(topo2));
-      if (V1 > 0) {
-      	foundTet = true;
-      	meshInterface->delete_topo(topo2);
-      	which = 1;
-      	break;
-      }
-      else if (V2 > 0) {
-      	foundTet = true;
-      	meshInterface->delete_topo(topo1);
-      	which = 2;
-      	break;
-      }
-      else {
-      	meshInterface->delete_topo(topo1);
-      	meshInterface->delete_topo(topo2);
-      }
-    }
-
-    /* PCU_ALWAYS_ASSERT(foundTet); */
-    if (foundTet && which == 1)
-      return toEntity(topo1);
-    else if (foundTet && which == 2)
-      return toEntity(topo2);
-    else {
-      mtopos1.clear();
-      M_MTopo topo3;
-      for (int j = 0; j < 4; j++)
-	mtopos1.push_back(fromEntity(unorientedTet[j]));
-      if ( !me ) {
-	meshInterface->create_region(mtopos1, shape, topo3);
-      }
-      // if model is not 0 figure out its type
-      else {
-	int d = getModelType(me);
-	GeometryTopoType gtype = getCapGeomType(d);
-	gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
-	M_GTopo gtopo = fromGmiEntity(g);
-	meshInterface->create_region(mtopos1, shape, topo3, gtype, gtopo);
-      }
-      return toEntity(topo3);
-    }
+  if (type == Mesh::TET && downType == Mesh::TRIANGLE) {
+    // going from faces to verts
+    // 1- go from faces to edges
+    MeshEntity* downEdges[6];
+    stepDown(this, Mesh::TET, 2, down, downEdges);
+    // 2- go from edges to verts
+    MeshEntity* downVerts[4];
+    stepDown(this, Mesh::TET, 1, downEdges, downVerts);
+    for (int i = 0; i < 4; i++)
+      mtopos.push_back(fromEntity(downVerts[i]));
   }
-  else if (type == Mesh::TRIANGLE && downType == Mesh::EDGE)
-  {
-    mtopos.clear();
-    for (int i = 0; i < numDown; i++) {
-      MeshEntity* dvCurr[2];
-      MeshEntity* dvNext[2];
-      int nvCurr = getDownward(down[i], 0, dvCurr);
-      int nvNext = getDownward(down[(i+1)%numDown], 0, dvNext);
-      PCU_ALWAYS_ASSERT(nvCurr == 2 && nvNext == 2);
-      if (dvCurr[1] == dvNext[0]) {
-      	mtopos.push_back(fromEntity(dvCurr[0]));
-      	mtopos.push_back(fromEntity(dvCurr[1]));
-      	mtopos.push_back(fromEntity(dvNext[1]));
-      	break;
-      }
-      else if (dvNext[1] == dvCurr[0]) {
-      	mtopos.push_back(fromEntity(dvCurr[1]));
-      	mtopos.push_back(fromEntity(dvCurr[0]));
-      	mtopos.push_back(fromEntity(dvNext[0]));
-      	break;
-      }
-    }
-    PCU_ALWAYS_ASSERT(mtopos.size() == 3);
-
-    M_MTopo topo;
-    // first take care of the case where model is 0
-    if ( !me ) {
-      meshInterface->create_face(mtopos, topo);
-      return toEntity(topo);
-    }
-    // if model is not 0 figure out its type
-    int d = getModelType(me);
-    GeometryTopoType gtype = getCapGeomType(d);
-    gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
-    M_GTopo gtopo = fromGmiEntity(g);
-    meshInterface->create_face(mtopos, topo, gtype, gtopo);
-    PCU_ALWAYS_ASSERT(getType(toEntity(topo)) == type);
-    return toEntity(topo);
+  else if (type == Mesh::TRIANGLE && downType == Mesh::EDGE) {
+    // going from edges to verts
+    MeshEntity* downVerts[3];
+    stepDown(this, Mesh::TRIANGLE, 1, down, downVerts);
+    for (int i = 0; i < 3; i++)
+      mtopos.push_back(fromEntity(downVerts[i]));
   }
-  /* else if ((type == Mesh::EDGE && downType == Mesh::VERTEX) || */
-  /*          (type == Mesh::TET  && downType == Mesh::VERTEX)) */
-  else if (downType == Mesh::VERTEX)
-  {
-    for (int i = 0; i < numDown; i++)
+  else if (type == Mesh::EDGE && downType == Mesh::VERTEX) {
+    for (int i = 0; i < 2; i++)
       mtopos.push_back(fromEntity(down[i]));
-    /* PCU_ALWAYS_ASSERT(mtopos.size() == 2); */
-    M_MTopo topo;
-    // first take care of the case where model is 0
-    if ( !me ) {
-      meshInterface->create_edge(mtopos, topo);
-      return toEntity(topo);
-    }
-    // if model is not 0 figure out its type
+  }
+  else {
+    apf::fail("MeshCAP::createEntity_ called for unsupported types!\n");
+  }
+
+  M_MTopo topo;
+  MeshShape shape = getCapShape(type);
+  if ( !me ) {
+    meshInterface->create_topo(shape, mtopos, topo);
+  }
+  // if model is not 0 figure out its type
+  else {
     int d = getModelType(me);
     GeometryTopoType gtype = getCapGeomType(d);
     gmi_ent* g = reinterpret_cast<gmi_ent*>(me);
     M_GTopo gtopo = fromGmiEntity(g);
-    meshInterface->create_edge(mtopos, topo, gtype, gtopo);
-    PCU_ALWAYS_ASSERT(getType(toEntity(topo)) == type);
-    return toEntity(topo);
+    meshInterface->create_topo(shape, mtopos, topo, gtype, gtopo);
   }
-  else
-  {
-    apf::fail("MeshCAP::createEntity_ called for unsupported type!\n");
-    return 0;
-  }
+
+  return toEntity(topo);
 }
 
 void MeshCAP::destroy_(MeshEntity* e)
