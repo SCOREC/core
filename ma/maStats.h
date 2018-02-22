@@ -10,10 +10,7 @@
 #ifndef MA_STATS_H
 #define MA_STATS_H
 
-/* #include <apfMesh2.h> */
-/* #include <apfShape.h> */
-/* #include <apfNumbering.h> */
-#include "maAdapt.h"
+#include "maInput.h"
 #include "maShape.h"
 #include <pcu_util.h>
 
