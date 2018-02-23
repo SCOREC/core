@@ -194,7 +194,8 @@ Mesh::Type MeshCAP::getType(MeshEntity* e)
 
 void MeshCAP::verify()
 {
-  apf::fail("MeshCAP::verify called!\n");
+  apf::verify(this);
+  // other verification using Capstone APIs can go here.
 }
 
 void MeshCAP::writeNative(const char* fileName)
