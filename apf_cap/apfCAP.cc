@@ -945,7 +945,9 @@ void MeshCAP::getResidence(MeshEntity* e, Parts& residence)
 
 int MeshCAP::getId()
 {
-  apf::fail("MeshCAP::getId called!\n");
+  if (PCU_Comm_Peers() != 1)
+    apf::fail("MeshCAP::getId called in a parallel run!\n");
+  return PCU_Comm_Self();
 }
 
 void MeshCAP::migrate(Migration* plan)
