@@ -20,6 +20,7 @@
 //#endif
 #endif
 
+#include <PCU.h>
 #include <pcu_util.h>
 #include <cstdio>
 
@@ -147,8 +148,8 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
       continue;
     }
 #endif
-    double vq = ma::measureElementQuality(m, sf, e);
-    printf(" vq = %f\n",vq); // for debugging
+    double vq = ma::measureElementQuality(m, sf, e); // cubic mean ratio
+    vq = cbrt(vq); // mean ratio
     if (vq < minvq)
       minvq = vq;
   }
@@ -187,8 +188,8 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
                       ((pRegion)seedRegion,growthRegion,growthLayerFace,Layer_Entity) == 1);
             for (int iglf = 0; iglf < PList_size(growthLayerFace); iglf++) {
               pFace blFace = (pFace)PList_item(growthLayerFace, iglf);
-              double fq = ma::measureElementQuality(m, sf, reinterpret_cast<apf::MeshEntity*> (blFace));
-              printf(" fq = %f\n",fq); // for debugging
+              double fq = ma::measureElementQuality(m, sf, reinterpret_cast<apf::MeshEntity*> (blFace)); // squared mean ratio
+              fq = sqrt(fq); // mean ratio
               if (fq < minfq)
                 minfq = fq;
             }
