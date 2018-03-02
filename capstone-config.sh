@@ -1,5 +1,6 @@
 # # # #
 export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/path/to/capstone/install
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/path/to/mpich/install
 # # # #
 
 flags="-g -O0"
