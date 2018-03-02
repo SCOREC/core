@@ -136,6 +136,11 @@ endif()
 #PUMIPic print partition utility
 util_exe_func(print_pumipic_partition print_pumipic_partition.cc)
 
+# Capstone utilities
+if(ENABLE_CAPSTONE)
+  util_exe_func(capStoneAdapt capStoneAdapt.cc)
+endif()
+
 # Unit tests / functionality regression tests
 test_exe_func(swapDoubles swapDoubles.cc)
 test_exe_func(qr qr.cc)
