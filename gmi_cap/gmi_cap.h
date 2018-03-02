@@ -13,13 +13,7 @@
 
 #include "gmi.h"
 #include "CapstoneModule.h"
-#include "CreateMG_Framework_Core.h"
-#include "CreateMG_Framework_Analysis.h"
-#include "CreateMG_Framework_Application.h"
-#include "CreateMG_Framework_Attributes.h"
-#include "CreateMG_Framework_Core.h"
 #include "CreateMG_Framework_Geometry.h"
-#include "CreateMG_Framework_Mesh.h"
 
 using namespace CreateMG;
 using namespace CreateMG::Attribution;
