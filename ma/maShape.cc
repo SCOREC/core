@@ -1,4 +1,3 @@
-
 /****************************************************************************** 
 
   Copyright 2013 Scientific Computation Research Center, 
@@ -16,7 +15,6 @@
 #include "maOperator.h"
 #include "maEdgeSwap.h"
 #include "maDoubleSplitCollapse.h"
-#include "maFaceSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
 #include "maBalance.h"
@@ -200,7 +198,6 @@ class ShortEdgeFixer : public Operator
     SizeField* sizeField;
     ShortEdgeRemover remover;
     double shortEdgeRatio;
-  public:
     int nr;
     int nf;
 };
@@ -285,12 +282,11 @@ class FixBySwap : public TetFixerBase
 class FaceVertFixer : public TetFixerBase
 {
   public:
-    FaceVertFixer(Adapt* a):
-      faceSplitCollapse(a)
+    FaceVertFixer(Adapt* a)
     {
       mesh = a->mesh;
       edgeSwap = makeEdgeSwap(a);
-      nes = nf = nfsc = 0;
+      nes = nf = 0;
       edges[0] = 0;
       edges[1] = 0;
       edges[2] = 0;
@@ -305,8 +301,6 @@ class FaceVertFixer : public TetFixerBase
    are too close, the key edges are those that bound
    face v(0,1,2) */
       apf::findTriDown(mesh,v,edges);
-      face = apf::findUpward(mesh, apf::Mesh::TRIANGLE, edges);
-      tet = apf::findElement(mesh, apf::Mesh::TET, v);
     }
     virtual bool requestLocality(apf::CavityOp* o)
     {
@@ -320,25 +314,15 @@ class FaceVertFixer : public TetFixerBase
           ++nes;
           return true;
         }
-      if (faceSplitCollapse.run(face, tet))
-      {
-        ++nfsc;
-        return true;
-      }
       ++nf;
       return false;
     }
   private:
     Mesh* mesh;
     Entity* edges[3];
-    Entity* face;
-    Entity* tet;
-    FaceSplitCollapse faceSplitCollapse;
     EdgeSwap* edgeSwap;
-  public:
-    int nes; /* number of edge swaps done */
-    int nfsc; /* number of FSCs done */
-    int nf; /* number of failures */
+    int nes;
+    int nf;
 };
 
 class EdgeEdgeFixer : public TetFixerBase
@@ -375,7 +359,7 @@ class EdgeEdgeFixer : public TetFixerBase
     virtual bool run()
     {
       for (int i=0; i < 2; ++i)
-	if (edgeSwap->run(edges[i]))
+        if (edgeSwap->run(edges[i]))
         {
           ++nes;
           return true;
@@ -393,11 +377,10 @@ class EdgeEdgeFixer : public TetFixerBase
     Entity* edges[2];
     EdgeSwap* edgeSwap;
     DoubleSplitCollapse doubleSplitCollapse;
-    SizeField* sf;
-  public:
     int nes;
     int ndsc;
     int nf;
+    SizeField* sf;
 };
 
 class LargeAngleTetFixer : public Operator
@@ -449,10 +432,9 @@ class LargeAngleTetFixer : public Operator
     Adapt* adapter;
     Mesh* mesh;
     Entity* tet;
-    TetFixerBase* fixer;
-  public:
     EdgeEdgeFixer edgeEdgeFixer;
     FaceVertFixer faceVertFixer;
+    TetFixerBase* fixer;
 };
 
 class LargeAngleTetAligner : public Operator
@@ -580,9 +562,6 @@ static double fixShortEdgeElements(Adapt* a)
   ShortEdgeFixer fixer(a);
   applyOperator(a,&fixer);
   double t1 = PCU_Time();
-#ifndef NDEBUG
-  print("--fixShortEdgeElements: %d successes, %d failures", fixer.nr, fixer.nf);
-#endif
   return t1 - t0;
 }
 
@@ -590,14 +569,6 @@ static void fixLargeAngleTets(Adapt* a)
 {
   LargeAngleTetFixer fixer(a);
   applyOperator(a,&fixer);
-#ifndef NDEBUG
-  print("--fixLargeAngles: %d edge-edge successes by swap",fixer.edgeEdgeFixer.nes);
-  print("--fixLargeAngles: %d edge-edge successes by double-split-collapse",fixer.edgeEdgeFixer.ndsc);
-  print("--fixLargeAngles: %d edge-edge failures",fixer.edgeEdgeFixer.nf);
-  print("--fixLargeAngles: %d face-vert successes by swap",fixer.faceVertFixer.nes);
-  print("--fixLargeAngles: %d face-vert successes by face-split-collapse",fixer.faceVertFixer.nfsc);
-  print("--fixLargeAngles: %d face-vert failures",fixer.faceVertFixer.nf);
-#endif
 }
 
 static void fixLargeAngleTris(Adapt* a)
