@@ -580,6 +580,9 @@ static double fixShortEdgeElements(Adapt* a)
   ShortEdgeFixer fixer(a);
   applyOperator(a,&fixer);
   double t1 = PCU_Time();
+#ifndef NDEBUG
+  print("--fixShortEdgeElements: %d successes, %d failures", fixer.nr, fixer.nf);
+#endif
   return t1 - t0;
 }
 
@@ -587,13 +590,14 @@ static void fixLargeAngleTets(Adapt* a)
 {
   LargeAngleTetFixer fixer(a);
   applyOperator(a,&fixer);
-  PCU_Debug_Open();
-  PCU_Debug_Print("--fixLargeAngles: %d edge-edge successes by swap",fixer.edgeEdgeFixer.nes);
-  PCU_Debug_Print("--fixLargeAngles: %d edge-edge successes by double-split-collapse",fixer.edgeEdgeFixer.ndsc);
-  PCU_Debug_Print("--fixLargeAngles: %d edge-edge failures",fixer.edgeEdgeFixer.nf);
-  PCU_Debug_Print("--fixLargeAngles: %d face-vert successes by swap",fixer.faceVertFixer.nes);
-  PCU_Debug_Print("--fixLargeAngles: %d face-vert successes by face-split-collapse",fixer.faceVertFixer.nfsc);
-  PCU_Debug_Print("--fixLargeAngles: %d face-vert failures",fixer.faceVertFixer.nf);
+#ifndef NDEBUG
+  print("--fixLargeAngles: %d edge-edge successes by swap",fixer.edgeEdgeFixer.nes);
+  print("--fixLargeAngles: %d edge-edge successes by double-split-collapse",fixer.edgeEdgeFixer.ndsc);
+  print("--fixLargeAngles: %d edge-edge failures",fixer.edgeEdgeFixer.nf);
+  print("--fixLargeAngles: %d face-vert successes by swap",fixer.faceVertFixer.nes);
+  print("--fixLargeAngles: %d face-vert successes by face-split-collapse",fixer.faceVertFixer.nfsc);
+  print("--fixLargeAngles: %d face-vert failures",fixer.faceVertFixer.nf);
+#endif
 }
 
 static void fixLargeAngleTris(Adapt* a)
