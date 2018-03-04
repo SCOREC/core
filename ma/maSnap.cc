@@ -560,6 +560,27 @@ void transferParametricOnEdgeSplit(
   ma::transferParametricBetween(m, g, ev, t, p);
 }
 
+void transferParametricOnTriSplit(
+    Mesh* m,
+    Entity* face,
+    const Vector& xi,
+    Vector& param)
+{
+  Model* g = m->toModel(face);
+  int modelDimension = m->getModelType(g);
+  if (m->getDimension() == 3 && modelDimension == 3) return;
+  Entity* tv[3];
+  m->getDownward(face, 0, tv);
+  Vector ep[3], pTemp;
+  for (int i = 0; i < 3; ++i) {
+    m->getParamOn(g, tv[i], ep[i]);
+  }
+  // TODO: Might be missing some cases here
+  for (int d = 0; d < modelDimension; ++d) {
+    param[d] = xi[0]*ep[0][d] + xi[1]*ep[1][d] + xi[2]*ep[2][d];
+  }
+}
+
 void transferParametricOnQuadSplit(
     Mesh* m,
     Entity* quad,
