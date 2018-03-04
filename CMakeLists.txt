@@ -90,7 +90,7 @@ if(ENABLE_SIMMETRIX)
 endif()
 
 if(ENABLE_CAPSTONE)
-  find_package(CreateMG)
+  find_package(CreateMG REQUIRED)
 endif()
 
 if(ENABLE_OMEGA_H)
