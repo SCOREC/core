@@ -33,6 +33,11 @@ void transferParametricOnEdgeSplit(
     Entity* e,
     double t,
     Vector& p);
+void transferParametricOnTriSplit(
+    Mesh* m,
+    Entity* face,
+    const Vector& xi,
+    Vector& param);
 void transferParametricOnQuadSplit(
     Mesh* m,
     Entity* quad,
