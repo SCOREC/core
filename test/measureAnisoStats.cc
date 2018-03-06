@@ -173,9 +173,9 @@ void getStats(
   if (PCU_Comm_Self() == 0)
     printf("\n evaluating the statistics! \n");
   // get the stats
-  ma::Input* in = ma::configure(m, sizes, frames);
+  ma::SizeField* sf = ma::makeSizeField(m, sizes, frames, true);
   std::vector<double> el, lq;
-  ma::stats(in, el, lq, true);
+  ma::stats(m, sf, el, lq, true);
 
 
   // create field for visualizaition
