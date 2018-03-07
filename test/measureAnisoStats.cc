@@ -173,9 +173,9 @@ void getStats(
   if (PCU_Comm_Self() == 0)
     printf("\n evaluating the statistics! \n");
   // get the stats
-  ma::Input* in = ma::configure(m, sizes, frames);
+  ma::SizeField* sf = ma::makeSizeField(m, sizes, frames, true);
   std::vector<double> el, lq;
-  ma::stats(in, el, lq, true);
+  ma::stats(m, sf, el, lq, true);
 
 
   // create field for visualizaition
@@ -217,7 +217,7 @@ void getStats(
     etable.push_back(r);
   }
 
-  std::stringstream ss, sse, ssq, ssm;
+  std::stringstream ss, sse, ssq, ssm, ssl;
   ss << outputPrefix << "/" << "linear_tables";
   const char* pathName = ss.str().c_str();
   safe_mkdir(pathName);
@@ -225,9 +225,35 @@ void getStats(
   ssq << pathName << "/linearQTable_" << PCU_Comm_Self() << ".dat";
   sse << pathName << "/linearETable_" << PCU_Comm_Self() << ".dat";
   ssm << pathName << "/mesh_quality_vis";
+  ssl << pathName << "/mesh_edge_length_vis";
+
   writeTable(ssq.str().c_str(), qtable);
   writeTable(sse.str().c_str(), etable);
   apf::writeVtkFiles(ssm.str().c_str(), m);
+
+  // create field for visualizaition of edge lengths
+  apf::Field* f_el = apf::createField(m, "edge_length", apf::SCALAR, apf::getConstant(1));
+
+  // attach edge-based lengths
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(1);
+  i = 0;
+  while ((e = m->iterate(it))) {
+    apf::setScalar(f_el, e, 0, el[i]);
+    ++i;
+  }
+  m->end(it);
+
+  for (int dim = m->getDimension(); dim > 1  ; dim--) {
+    it = m->begin(dim);
+    while ( (e = m->iterate(it)) ){
+      	m->destroy(e);
+    }
+    m->end(it);
+  }
+  apf::changeMdsDimension(m, 1);
+  apf::writeVtkFiles(ssl.str().c_str(), m);
+
 
   m->destroyNative();
   apf::destroyMesh(m);

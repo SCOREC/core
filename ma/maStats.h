@@ -39,7 +39,7 @@ void getStatsInPhysicalSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities);
 
-void stats(ma::Input* in,
+void stats(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities,
     bool inMetric);
