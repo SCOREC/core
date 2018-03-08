@@ -30,7 +30,10 @@ int main(int argc, char** argv)
                                           apf::getConstant(m->getDimension()));
 
   //Set up a MIS with primary type as elements and adjacencies as vertices.
+  double t0 = PCU_Time(); 
   apf::MIS* mis = apf::initializeMIS(m,m->getDimension(),0);
+  double t1 = PCU_Time();
+  std::cout << "Initialize MIS: " << t1-t0 <<"s"<<std::endl;
 
   //Map to track the colors and size of the associated independent set
   std::vector<int> colors;
