@@ -1,11 +1,12 @@
-/****************************************************************************** 
 
-  Copyright 2013 Scientific Computation Research Center, 
+/******************************************************************************
+
+  Copyright 2013 Scientific Computation Research Center,
       Rensselaer Polytechnic Institute. All rights reserved.
-  
+
   The LICENSE file included with this distribution describes the terms
   of the SCOREC Non-Commercial License this program is distributed under.
- 
+
 *******************************************************************************/
 #include <PCU.h>
 #include "maShape.h"
@@ -15,6 +16,7 @@
 #include "maOperator.h"
 #include "maEdgeSwap.h"
 #include "maDoubleSplitCollapse.h"
+#include "maFaceSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
 #include "maBalance.h"
@@ -198,6 +200,7 @@ class ShortEdgeFixer : public Operator
     SizeField* sizeField;
     ShortEdgeRemover remover;
     double shortEdgeRatio;
+  public:
     int nr;
     int nf;
 };
@@ -282,14 +285,18 @@ class FixBySwap : public TetFixerBase
 class FaceVertFixer : public TetFixerBase
 {
   public:
-    FaceVertFixer(Adapt* a)
+    FaceVertFixer(Adapt* a):
+      faceSplitCollapse(a)
     {
       mesh = a->mesh;
       edgeSwap = makeEdgeSwap(a);
-      nes = nf = 0;
+      nes = nf = nfsc = 0;
       edges[0] = 0;
       edges[1] = 0;
       edges[2] = 0;
+      face = 0;
+      oppVert = 0;
+      tet = 0;
     }
     ~FaceVertFixer()
     {
@@ -301,10 +308,17 @@ class FaceVertFixer : public TetFixerBase
    are too close, the key edges are those that bound
    face v(0,1,2) */
       apf::findTriDown(mesh,v,edges);
+      face = apf::findUpward(mesh, apf::Mesh::TRIANGLE, edges);
+      tet = apf::findElement(mesh, apf::Mesh::TET, v);
+      oppVert = v[3];
     }
     virtual bool requestLocality(apf::CavityOp* o)
     {
-      return o->requestLocality(edges,3);
+      /* Request locality for edges (for swaps) and v[3] (for face-split-
+	 collapse, the face is already handled by the edges) */
+      bool edgesLocalized = o->requestLocality(edges,3);
+      bool oppVertLocalized = o->requestLocality(&oppVert,1);
+      return edgesLocalized && oppVertLocalized;
     }
     virtual bool run()
     {
@@ -314,15 +328,25 @@ class FaceVertFixer : public TetFixerBase
           ++nes;
           return true;
         }
+      if (faceSplitCollapse.run(face, tet))
+      {
+        ++nfsc;
+        return true;
+      }
       ++nf;
       return false;
     }
   private:
     Mesh* mesh;
     Entity* edges[3];
+    Entity *face, *oppVert;
+    Entity* tet;
+    FaceSplitCollapse faceSplitCollapse;
     EdgeSwap* edgeSwap;
-    int nes;
-    int nf;
+  public:
+    int nes; /* number of edge swaps done */
+    int nfsc; /* number of FSCs done */
+    int nf; /* number of failures */
 };
 
 class EdgeEdgeFixer : public TetFixerBase
@@ -359,7 +383,7 @@ class EdgeEdgeFixer : public TetFixerBase
     virtual bool run()
     {
       for (int i=0; i < 2; ++i)
-        if (edgeSwap->run(edges[i]))
+	if (edgeSwap->run(edges[i]))
         {
           ++nes;
           return true;
@@ -377,10 +401,11 @@ class EdgeEdgeFixer : public TetFixerBase
     Entity* edges[2];
     EdgeSwap* edgeSwap;
     DoubleSplitCollapse doubleSplitCollapse;
+    SizeField* sf;
+  public:
     int nes;
     int ndsc;
     int nf;
-    SizeField* sf;
 };
 
 class LargeAngleTetFixer : public Operator
@@ -432,9 +457,10 @@ class LargeAngleTetFixer : public Operator
     Adapt* adapter;
     Mesh* mesh;
     Entity* tet;
+    TetFixerBase* fixer;
+  public:
     EdgeEdgeFixer edgeEdgeFixer;
     FaceVertFixer faceVertFixer;
-    TetFixerBase* fixer;
 };
 
 class LargeAngleTetAligner : public Operator
