@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <apfShape.h>
 #include <iostream>
-#include <map>
+#include <vector>
 #include <iomanip>
 
 int main(int argc, char** argv)
@@ -33,14 +33,19 @@ int main(int argc, char** argv)
   apf::MIS* mis = apf::initializeMIS(m,m->getDimension(),0);
 
   //Map to track the colors and size of the associated independent set
-  std::map<int,int> colors;
+  std::vector<int> colors;
+  colors.push_back(0);
 
   while (apf::getIndependentSet(mis)) {
     //This for loop can be thread parallized safetly
     for (int i=0;i<mis->n;i++) {
       //Independent work can be done here
       apf::setScalar(coloring,mis->ents[i],0,mis->color);
-      ++colors[mis->color];
+      if (mis->color-1 == (int)colors.size()) {
+        colors.push_back(1);
+      } else {
+        ++colors[mis->color-1];
+      }
     }
   }
   apf::finalizeMIS(mis); 
@@ -53,25 +58,30 @@ int main(int argc, char** argv)
   mis = apf::initializeMIS(m,0,1);
 
   //second map to track colors_vertex_edge
-  std::map<int,int> colors2;
+  std::vector<int> colors2;
+  colors2.push_back(0);
 
   while (apf::getIndependentSet(mis)) {
     for (int i=0;i<mis->n;i++) {
       apf::setScalar(coloring2,mis->ents[i],0,mis->color);
-      ++colors2[mis->color];
+      if (mis->color-1 == (int)colors2.size()) {
+        colors2.push_back(1); 
+      } else {
+        ++colors2[mis->color-1];
+      }
     }
   }
   apf::finalizeMIS(mis);
 
   std::cout << "MIS tests for " << argv[1] << ", " << argv[2] << std::endl;
   std::cout << "Test 1:" << std::endl;
-  for (std::map<int,int>::iterator itr = colors.begin(); itr != colors.end(); ++itr) {
-    std::cout << std::setw(6) << itr->second;
+  for (unsigned int i=0; i<colors.size(); ++i) {
+    std::cout << std::setw(6) << colors[i];
   }
   std::cout << std::endl;
   std::cout << "Test 2:" <<std::endl;
-  for (std::map<int,int>::iterator itr = colors2.begin(); itr != colors2.end(); ++itr) {
-    std::cout << std::setw(6) << itr->second;
+  for (unsigned int i=0; i<colors2.size(); ++i) {
+    std::cout << std::setw(6) << colors2[i];
   }
   std::cout << std::endl;
 
