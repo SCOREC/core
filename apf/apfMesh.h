@@ -285,6 +285,8 @@ class Mesh
     ModelEntity* findModelEntity(int type, int tag);
     /** \brief return true if the geometric model supports snapping */
     bool canSnap();
+    /** \brief return true if the geometric model supports normal computation */
+    bool canGetModelNormal();
     /** \brief evaluate parametric coordinate (p) as a spatial point (x) */
     void snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x);
     /** \brief reparameterize mesh vertex (e) onto model entity (g) */
