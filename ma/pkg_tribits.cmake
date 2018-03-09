@@ -28,6 +28,7 @@ set(SOURCES
   maQuality.cc
   maSplits.cc
   maDoubleSplitCollapse.cc
+  maFaceSplitCollapse.cc
   maShortEdgeRemover.cc
   maVertRemover.cc
   maSnapper.cc
