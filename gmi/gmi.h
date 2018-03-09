@@ -145,6 +145,8 @@ struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag);
 struct gmi_set* gmi_adjacent(struct gmi_model* m, struct gmi_ent* e, int dim);
 /** \brief check whether the model implements gmi_eval */
 int gmi_can_eval(struct gmi_model* m);
+/** \brief check whether the model implements gmi_normal */
+int gmi_has_normal(struct gmi_model* m);
 /** \brief evaluate the parametric definition of a model boundary entity
   \param p ignored for vertices. for edges, p[0] should be the edge
            parametric coordinate. for faces, p should contain the

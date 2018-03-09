@@ -175,6 +175,11 @@ bool Mesh::canSnap()
   return gmi_can_eval(getModel());
 }
 
+bool Mesh::canGetModelNormal()
+{
+  return gmi_has_normal(getModel());
+}
+
 void Mesh::snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
 {
   gmi_eval(getModel(), (gmi_ent*)m, &p[0], &x[0]);
