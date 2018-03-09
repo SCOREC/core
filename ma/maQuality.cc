@@ -215,27 +215,11 @@ double getWorstQuality(Adapt* a, EntityArray& e)
 
 bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat)
 {
-  // if force adapt we only need to check volume of elements instead of
-  // their qualities (this would save some time off coarsening when
-  // shouldForceAdapt is set to true)
-  if (a->input->shouldForceAdaptation || qualityToBeat < a->input->validQuality)
-    return hasNegativeElement(a, e);
   size_t n = e.getSize();
   ShapeHandler* sh = a->shape;
   for (size_t i = 0; i < n; ++i) {
     double quality = sh->getQuality(e[i]);
     if (quality < qualityToBeat)
-      return true;
-  }
-  return false;
-}
-
-bool hasNegativeElement(Adapt* a, EntityArray& e)
-{
-  size_t n = e.getSize();
-  ShapeHandler* sh = a->shape;
-  for (size_t i = 0; i < n; ++i) {
-    if (sh->isElementInverted(e[i]))
       return true;
   }
   return false;

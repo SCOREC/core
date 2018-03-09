@@ -38,10 +38,6 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n);
  */
 bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
 
-/* checks whether any of the entities has negative volume
- */
-bool hasNegativeElement(Adapt* a, EntityArray& e);
-
 /* measures the min and max edge lengths (in metric space)
  * among all the entities in tets
  */
