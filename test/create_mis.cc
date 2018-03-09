@@ -76,7 +76,6 @@ int main(int argc, char** argv)
   }
   apf::finalizeMIS(mis);
 
-  std::cout << "MIS tests for " << argv[1] << ", " << argv[2] << std::endl;
   std::cout << "Test 1:" << std::endl;
   for (unsigned int i=0; i<colors.size(); ++i) {
     std::cout << std::setw(6) << colors[i];
