@@ -113,7 +113,7 @@ class MeshCAP : public Mesh2
     MeshTag* createLongTag(const char* name, int size);
     MeshTag* findTag(const char* name);
     void destroyTag(MeshTag* t);
-    void renameTag(MeshTag* t, const char*);
+    void renameTag(MeshTag* t, const char* name);
     void getTags(DynamicArray<MeshTag*>& tags);
     /* void getTag(MeshEntity* e, MeshTag* t, void* data); */
     /* void setTag(MeshEntity* e, MeshTag* t, void const* data); */

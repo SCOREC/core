@@ -705,6 +705,10 @@ class TagCAP
       this->deallocate(this->get(e));
       tagContainer.erase(e);
     }
+    void rename(const char* n)
+    {
+      this->name = n;
+    }
     MeshDatabaseInterface* mesh;
     int count;
     std::string name;
@@ -815,10 +819,10 @@ void MeshCAP::destroyTag(MeshTag* tag)
   delete tagCap;;
 }
 
-void MeshCAP::renameTag(MeshTag* tag, const char*)
+void MeshCAP::renameTag(MeshTag* tag, const char* name)
 {
-  (void)tag;
-  apf::fail("MeshCAP::renameTag called!\n");
+  TagCAP* tagCap = reinterpret_cast<TagCAP*>(tag);
+  tagCap->rename(name);
 }
 
 unsigned MeshCAP::getTagChecksum(MeshTag*,int)
