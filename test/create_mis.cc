@@ -83,7 +83,10 @@ int main(int argc, char** argv)
   std::cout << std::endl;
   std::cout << "Test 2:" <<std::endl;
   for (unsigned int i=0; i<colors2.size(); ++i) {
-    std::cout << std::setw(6) << colors2[i];
+    std::cout << std::setw(8) << colors2[i];
+    if ((i+1)%10 == 0) {
+      std::cout<<std::endl;
+    }
   }
   std::cout << std::endl;
 

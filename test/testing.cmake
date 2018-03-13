@@ -143,6 +143,41 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.dmg
   ${MESHES}/square/square.smb
   mis_test)
+mpi_test(create_mis67k 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/67k.smb
+  mis_test)
+mpi_test(create_mis190k 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/190k.smb
+  mis_test)
+mpi_test(create_mis400k 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/400k.smb
+  mis_test)
+mpi_test(create_mis890k 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/890k.smb
+  mis_test)
+mpi_test(create_mis1.6M 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/1.6M.smb
+  mis_test)
+mpi_test(create_mis13M 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/13M.smb
+  mis_test)
+mpi_test(create_mis28M 1
+  ./create_mis
+  ${MESHES}/uprightMeshes/upright.dmg
+  ${MESHES}/uprightMeshes/28M.smb
+  mis_test)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 4
