@@ -44,7 +44,6 @@ void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir) {
 #ifdef HAVE_SIMMETRIX
 // get sim size field
 // this is for simmetrix mesh, should be generalized
-    if (in.simmetrixMesh == 1)
     {
       pVertex meshVertex = reinterpret_cast<pVertex>(v);
       int sztype = V_size(meshVertex, size, anisosize);
@@ -58,20 +57,12 @@ void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir) {
         anisosize[2][2] = size[0];
       }
     }
-    else
-#endif
+#else
     {
-      /* for now, we only use isotropic size field
-         for PUMI-based mesh in phasta */
-      PCU_ALWAYS_ASSERT_VERBOSE(m->findField("isoSize"),
-             "we assume size field name is isosize.\n");
-      apf::Field* apfSz = m->findField("isoSize");
-      size[0] = apf::getScalar(apfSz,v,0);
-      initArray(anisosize);
-      anisosize[0][0] = size[0];
-      anisosize[1][1] = size[0];
-      anisosize[2][2] = size[0];
+      PCU_ALWAYS_ASSERT_VERBOSE(0,
+         "please turn on Simmetrix and re-compile the code.\n");
     }
+#endif
 
 // transfer to apf field sf_mag and sf_dir
 /* note that the frame in Simmetrix is stored by row
@@ -126,9 +117,10 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
 // transfer to apf sizefield
   if(m->findField("sizes")) apf::destroyField(m->findField("sizes"));
   if(m->findField("frames")) apf::destroyField(m->findField("frames"));
-// this is for simmetrix mesh, should be generalized
   apf::Field* sf_mag = apf::createSIMFieldOn(m, "sizes", apf::VECTOR);
   apf::Field* sf_dir = apf::createSIMFieldOn(m, "frames", apf::MATRIX);
+// this is for simmetrix mesh, should be generalized
+  PCU_ALWAYS_ASSERT_VERBOSE(in.simmetrixMesh, "core_measure_mesh only supports Simmetrix mesh!\n");
   ph::attachSIMSizeField(m, sf_mag, sf_dir);
   ma::SizeField* sf = ma::makeSizeField(m, sf_mag, sf_dir);
 
