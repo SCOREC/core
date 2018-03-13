@@ -153,6 +153,7 @@ void postConvert(apf::Mesh2* m)
   m->verify();
 }
 
+#if defined(SIM_ACIS) || defined(SIM_PARASOLID)
 bool hasExtension(std::string s, std::string ext) {
   if(s.substr(s.find_last_of(".") + 1) == ext) {
     return true;
@@ -160,6 +161,7 @@ bool hasExtension(std::string s, std::string ext) {
     return false;
   }
 }
+#endif
 
 pNativeModel loadNativeModel() {
   enum { TEXT_FORMAT = 0 };

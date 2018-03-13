@@ -23,10 +23,19 @@ class LinearHandler : public ShapeHandler
     {
       mesh = a->mesh;
       sizeField = a->sizeField;
+      // root is because we are checking volume
+      // in isElementInverted
+      // Note: for 3D we should use cube-root but
+      // square-root seems to work fine
+      tol = std::sqrt(a->input->validQuality);
     }
     virtual double getQuality(Entity* e)
     {
       return measureElementQuality(mesh, sizeField, e);
+    }
+    virtual bool isElementInverted(Entity* e)
+    {
+      return measure(mesh, e) < tol;
     }
     virtual bool hasNodesOn(int dimension)
     {
@@ -44,6 +53,7 @@ class LinearHandler : public ShapeHandler
   private:
     Mesh* mesh;
     SizeField* sizeField;
+    double tol;
 };
 
 class QuadraticHandler : public ShapeHandler
@@ -53,6 +63,7 @@ class QuadraticHandler : public ShapeHandler
     {
       mesh = a->mesh;
       st = createFieldTransfer(mesh->getCoordinateField());
+      tol = a->input->validQuality;
     }
     ~QuadraticHandler()
     {
@@ -62,6 +73,10 @@ class QuadraticHandler : public ShapeHandler
     {
       PCU_ALWAYS_ASSERT( mesh->getType(e) == apf::Mesh::TET );
       return measureQuadraticTetQuality(mesh,e);
+    }
+    virtual bool isElementInverted(Entity* e)
+    {
+      return this->getQuality(e) < tol;
     }
     virtual bool hasNodesOn(int dimension)
     {
@@ -89,6 +104,7 @@ class QuadraticHandler : public ShapeHandler
   private:
     Mesh* mesh;
     SolutionTransfer* st;
+    double tol;
 };
 
 ShapeHandler* getShapeHandler(Adapt* a)

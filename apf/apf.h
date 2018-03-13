@@ -469,6 +469,26 @@ double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
 Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
     MeshEntity* vert, const Matrix3x3& Q);
 
+/** \brief Returns the shortest height in a tet
+  *
+  * \param m	mesh
+  * \param tet  tet
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
+/** \brief Returns the shortest height in a tri
+  *
+  * \param m	mesh
+  * \param tri  tri
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
 /** \brief Returns the number of element nodes.
   *
   * \details This is the number of nodes affecting an

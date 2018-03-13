@@ -178,10 +178,10 @@ bool BezierCurver::run()
 
   convertInterpolatingToBezier();
 
-//  if( m_mesh->getDimension() >= 2 && m_order > 1){
-//    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
-//    crv::adapt(shapeFixer);
-//  }
+  if( m_mesh->getDimension() >= 2 && m_order == 2){
+    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
+    crv::adapt(shapeFixer);
+  }
 
   m_mesh->acceptChanges();
   m_mesh->verify();

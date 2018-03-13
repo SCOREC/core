@@ -57,7 +57,10 @@ void getConfig(int argc, char** argv)
   if ( argc != 5 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: mpirun -n <outPartCount> %s"
-             " <model> <inPartCount> <inMesh> <outMesh>\n",
+             " <model> <inPartCount> <inMesh> <outMesh>\n"
+             "Increase the part count of inMesh from inPartCount to outPartCount.\n"
+             "Unlike the [z]split tool, outPartCount does not have to be an integer\n"
+             "multiple of inPartCount.\n",
              argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
