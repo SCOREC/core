@@ -1,3 +1,6 @@
 function(xsdk_compiler_flags)
   message(STATUS "Using XSDK default compiler flags")
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug" PARENT_SCOPE)
+  endif()
 endfunction(xsdk_compiler_flags)
