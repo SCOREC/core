@@ -9,13 +9,22 @@ cmake_minimum_required(VERSION 3.0)
 project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
+include(cmake/xsdk.cmake)
 
 bob_begin_package()
 
+option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+message(STATUS "USE_XSDK_DEFAULTS: ${USE_XSDK_DEFAULTS}")
+
 # Set some default compiler flags that should always be used
-bob_begin_cxx_flags()
-bob_end_cxx_flags()
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+if(USE_XSDK_DEFAULTS)
+  xsdk_compiler_flags()
+else()
+  bob_begin_cxx_flags()
+  bob_end_cxx_flags()
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
 # Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
@@ -35,8 +44,6 @@ message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
 message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
-option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
-message(STATUS "USE_XSDK_DEFAULTS: ${USE_XSDK_DEFAULTS}")
 
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
