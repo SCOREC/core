@@ -104,6 +104,15 @@ class Matrix : public Array<Vector<N>,M>
       }
       return r;
     }
+    bool operator==(Matrix<M,N> const & other) const {
+      for(int i=0; i<M; ++i) {
+        for(int j=0; j<N; ++j) {
+          if(!(*this)[i][j] == other[i][j])
+            return false;
+        }
+      }
+      return true;
+    }
 };
 
 /** \brief transpose a matrix */
