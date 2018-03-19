@@ -11,15 +11,18 @@ project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
 
+option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+
+xsdk_begin_package()
 bob_begin_package()
 
-option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
-message(STATUS "USE_XSDK_DEFAULTS: ${USE_XSDK_DEFAULTS}")
-
-# Set some default compiler flags that should always be used
 if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
-else()
+endif()
+
+# Set some default compiler flags that should always be used
+if(NOT USE_XSDK_DEFAULTS)
+  bob_set_shared_libs()
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
