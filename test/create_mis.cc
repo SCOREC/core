@@ -39,6 +39,7 @@ int main(int argc, char** argv)
   std::vector<int> colors;
   colors.push_back(0);
 
+  double t0 = PCU_Time();
   while (apf::getIndependentSet(mis)) {
     //This for loop can be thread parallized safetly
     for (int i=0;i<mis->n;i++) {
@@ -51,6 +52,8 @@ int main(int argc, char** argv)
       }
     }
   }
+  double t1 = PCU_Time();
+  std::cout << "MIS test 1: " << t1-t0 <<"s"<<std::endl;
   apf::finalizeMIS(mis); 
 
   //A second coloring over the vertices
@@ -64,6 +67,7 @@ int main(int argc, char** argv)
   std::vector<int> colors2;
   colors2.push_back(0);
 
+  double t0 = PCU_Time();
   while (apf::getIndependentSet(mis)) {
     for (int i=0;i<mis->n;i++) {
       apf::setScalar(coloring2,mis->ents[i],0,mis->color);
@@ -74,6 +78,8 @@ int main(int argc, char** argv)
       }
     }
   }
+  double t1 = PCU_Time();
+  std::cout << "MIS test 2: " << t1-t0 <<"s"<<std::endl;
   apf::finalizeMIS(mis);
 
   std::cout << "Test 1:" << std::endl;
@@ -83,10 +89,7 @@ int main(int argc, char** argv)
   std::cout << std::endl;
   std::cout << "Test 2:" <<std::endl;
   for (unsigned int i=0; i<colors2.size(); ++i) {
-    std::cout << std::setw(8) << colors2[i];
-    if ((i+1)%10 == 0) {
-      std::cout<<std::endl;
-    }
+    std::cout << std::setw(8) << colors2[i];  
   }
   std::cout << std::endl;
 
