@@ -58,6 +58,11 @@ set(VALGRIND "" CACHE string
 set(VALGRIND_ARGS "" CACHE string
   "the command line arguments to VALGRIND")
 
+# smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
+add_custom_target(test_install
+  COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
+  COMMENT "running a smoke test on the installed binaries")
+
 # Set options for doxygen documentation
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
