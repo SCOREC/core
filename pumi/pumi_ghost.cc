@@ -40,7 +40,7 @@ Ghosting::~Ghosting()
 {
   for (int i=0; i<4; ++i)
   {
-    for (std::vector<Parts*>::iterator vit=parts_vec[i].begin(); vit!=parts_vec[i].begin(); ++vit)
+    for (std::vector<Parts*>::iterator vit=parts_vec[i].begin(); vit!=parts_vec[i].end(); ++vit)
       delete *vit;
     parts_vec[i].clear();
   }

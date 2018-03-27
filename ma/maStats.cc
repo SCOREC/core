@@ -5,6 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include "maStats.h"
+#include "maAdapt.h"
 
 namespace ma {
 
@@ -113,13 +114,13 @@ void getStatsInPhysicalSpace(ma::Mesh* m,
   getEdgeLengthsInPhysicalSpace(m, edgeLengths);
 }
 
-/** \brief Measures mesh statistics using and adapt input object
+/** \brief Measures mesh statistics given a sizeField
   \details  quantities measured are:
   1) normalized edge length
   2) linear quality
   The values can be computed in both metric (if inMetric = true)
   and physical (if inMetric = false) spaces.*/
-void stats(ma::Input* in,
+void stats(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities,
     bool inMetric)
@@ -127,19 +128,10 @@ void stats(ma::Input* in,
   edgeLengths.clear();
   linearQualities.clear();
 
-  ma::validateInput(in);
-  Adapt* a = new Adapt(in);
-
-  ma::Mesh* m = a->mesh;
-  ma::SizeField* sf = a->sizeField;
-
   if (inMetric)
     getStatsInMetricSpace(m, sf, edgeLengths, linearQualities);
   else
     getStatsInPhysicalSpace(m, edgeLengths, linearQualities);
-
-  delete a;
-  delete in;
 }
 
 }
