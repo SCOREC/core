@@ -19,7 +19,7 @@ apf::Mesh2* m;
 
 ph::Input in;
 
-void pass_info_to_phasta(apf::Mesh2* mesh, ph::Input ctrl){
+void pass_info_to_phasta(apf::Mesh2* mesh, ph::Input& ctrl){
   m  = mesh;
   in = ctrl;
 }
@@ -27,7 +27,7 @@ void pass_info_to_phasta(apf::Mesh2* mesh, ph::Input ctrl){
 /* input dx,dy,dz are current coordinates of mesh in phastsa
    output px,py,pz are corrected coordinates of mesh */
 void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
-                          double px[], double py[], double pz[]) {
+                           int f[], double px[], double py[], double pz[]) {
   double newpar[2];
   double newpt[3];
   int counter = 0;
@@ -38,7 +38,8 @@ void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
     m->getPoint(v, 0, p);
     pVertex meshVertex = reinterpret_cast<pVertex>(v);
     // only call this on face or edge mesh vertex
-    if(V_whatInType(meshVertex)==2 || V_whatInType(meshVertex)==1){
+    if((V_whatInType(meshVertex)==2 || V_whatInType(meshVertex)==1)
+       && (f[counter] == 1)) {
       const double disp[3] = {dx[counter]-p[0],dy[counter]-p[1],dz[counter]-p[2]};
       V_movedParamPoint(meshVertex,disp,newpar,newpt);
       px[counter] = newpt[0];
