@@ -9,13 +9,25 @@ cmake_minimum_required(VERSION 3.0)
 project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
+include(cmake/xsdk.cmake)
 
+option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+
+xsdk_begin_package()
 bob_begin_package()
 
+if(USE_XSDK_DEFAULTS)
+  xsdk_compiler_flags()
+endif()
+
 # Set some default compiler flags that should always be used
-bob_begin_cxx_flags()
-bob_end_cxx_flags()
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+if(NOT USE_XSDK_DEFAULTS)
+  bob_set_shared_libs()
+  bob_begin_cxx_flags()
+  bob_end_cxx_flags()
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
 # Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
@@ -35,6 +47,7 @@ message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
 message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
+
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
 set(MPIRUN_PROCFLAG "-np" CACHE string
@@ -44,6 +57,11 @@ set(VALGRIND "" CACHE string
   "the valgrind executable")
 set(VALGRIND_ARGS "" CACHE string
   "the command line arguments to VALGRIND")
+
+# smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
+add_custom_target(test_install
+  COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
+  COMMENT "running a smoke test on the installed binaries")
 
 # Set options for doxygen documentation
 find_package(Doxygen)

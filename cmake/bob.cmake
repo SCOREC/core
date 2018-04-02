@@ -27,16 +27,19 @@ macro(bob_begin_package)
   include(CTest)
   enable_testing()
   option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+  bob_always_full_rpath()
+  message(STATUS "BUILD_TESTING: ${BUILD_TESTING}")
+  message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+endmacro(bob_begin_package)
+
+macro(bob_set_shared_libs)
   #If not building shared libs, then prefer static
   #dependency libs
   if(NOT BUILD_SHARED_LIBS)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" ".dylib")
   endif()
-  bob_always_full_rpath()
-  message(STATUS "BUILD_TESTING: ${BUILD_TESTING}")
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-  message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
-endmacro(bob_begin_package)
+endmacro(bob_set_shared_libs)
 
 function(bob_begin_cxx_flags)
   option(${PROJECT_NAME}_CXX_OPTIMIZE "Compile C++ with optimization" ON)

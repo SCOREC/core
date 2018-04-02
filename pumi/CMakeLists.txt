@@ -5,6 +5,7 @@ endif()
 
 include(GetGitRevisionDescription)
 get_git_head_revision(PUMI_GIT_REFSPEC PUMI_GIT_SHA1)
+set(PUMI_VERSION ${PROJECT_VERSION})
 configure_file( pumi_version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/pumi_version.h )
 
 #Sources & Headers

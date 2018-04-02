@@ -46,6 +46,7 @@ target_include_directories(pcu
 
 # Check for and enable compression support
 if(PCU_COMPRESS)
+  xsdk_add_tpl(BZIP2)
   find_package(BZip2 REQUIRED)
   target_include_directories(pcu PRIVATE ${BZIP2_INCLUDE_DIR})
   target_link_libraries(pcu PRIVATE ${BZIP2_LIBRARIES})
