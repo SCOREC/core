@@ -253,6 +253,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "time derivative of solution",
     "motion_coords",
     "mesh_vel",
+    "residual",
     "ybar",
     "wss",
     "wssbar",
@@ -437,6 +438,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "solution");
   if (m->findField("time derivative of solution"))
     detachAndWriteField(in, m, f, "time derivative of solution");
+  if (m->findField("motion_coords"))
+    detachAndWriteField(in, m, f, "motion_coords");
   if (m->findField("mesh_vel"))
     detachAndWriteField(in, m, f, "mesh_vel");
   if (in.displacementMigration)
