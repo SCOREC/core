@@ -92,7 +92,7 @@ int countFixed(Numbering* n);
    assigned, after this they are all numbered
    \param shr if non-zero, use this Sharing model to determine ownership
               and copies, otherwise call apf::getSharing */
-void synchronize(Numbering * n, Sharing* shr = 0);
+void synchronize(Numbering * n, Sharing* shr = 0, bool delete_shr=true);
 
 /** \brief number the local owned entities of a given dimension */
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim, Sharing* shr = 0);
