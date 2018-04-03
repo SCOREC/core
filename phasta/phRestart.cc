@@ -253,6 +253,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "time derivative of solution",
     "motion_coords",
     "mesh_vel",
+    "residual",
     "ybar",
     "wss",
     "wssbar",
