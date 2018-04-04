@@ -210,9 +210,9 @@ int countFixed(Numbering* n)
   return num_fixed;
 }
 
-void synchronize(Numbering * n, Sharing* shr)
+void synchronize(Numbering * n, Sharing* shr, bool delete_shr)
 {
-  synchronizeFieldData<int>(n->getData(), shr);
+  synchronizeFieldData<int>(n->getData(), shr, delete_shr);
 }
 
 struct NoSharing : public Sharing
