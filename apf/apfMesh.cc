@@ -831,7 +831,8 @@ static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)
   m->getRemotes(e, remotes);
   a.setSize(remotes.size());
   size_t i = 0;
-  APF_ITERATE(Copies, remotes, it) {
+  APF_ITERATE(Copies, remotes, it) 
+  {
     a[i].peer = it->first;
     a[i].entity = it->second;
     ++i;
