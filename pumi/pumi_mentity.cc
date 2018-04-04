@@ -162,18 +162,22 @@ pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
 int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o)
 {
   if (!o)
+  {
+    if (m3dc1_mesh::instance()->mesh->isGhost(e))
+    {
+      Copies ghosts;
+      pumi::instance()->mesh->getGhosts(e,ghosts);
+      return ghosts.begin()->first;
+    }
+    // this return the owner based on partition classification
     return pumi::instance()->mesh->getOwner(e);
+  }
   return o->getOwner(e); 
 }
 
 pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 {
-  int own_partid;
-  if (!o)
-    own_partid= pumi::instance()->mesh->getOwner(e);
-  else
-    own_partid=o->getOwner(e);
-
+  int own_partid = pumi_ment_getOwnPID(e, o);
   if (own_partid==pumi_rank()) return e;
 
   if (pumi::instance()->mesh->isShared(e))
@@ -191,7 +195,7 @@ pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 bool pumi_ment_isOwned(pMeshEnt e, pOwnership o)
 {  
   if (!o) 
-    return (pumi::instance()->mesh->getOwner(e)==pumi_rank());
+    return (pumi_ment_getOwnPID(e, o)==pumi_rank());
   return o->isOwned(e);
 }
 
