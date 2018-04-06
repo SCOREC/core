@@ -32,9 +32,10 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   PCU_Protect();
-  if( !PCU_Comm_Self() )
+  if( !PCU_Comm_Self() ) {
     printf("PUMI Git hash %s\n", pumi_version());
     printf("PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
+  }
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
