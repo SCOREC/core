@@ -251,7 +251,6 @@ void getStats(
     }
     m->end(it);
   }
-  apf::changeMdsDimension(m, 1);
   apf::writeVtkFiles(ssl.str().c_str(), m);
 
 
