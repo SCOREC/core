@@ -12,6 +12,18 @@
   \brief The APF linear algebra matrix interface */
 
 #include "apfVector.h"
+#include <limits> // epsilon value
+
+// this function doesn't use the "best" method for floating point comparison
+// FIXME update this with something like:
+// https://github.com/google/googletest/blob/dccc2d67547a5a3a97e4f211f39df931c6fbd5d5/googletest/include/gtest/internal/gtest-internal.h#L334-L347
+/*
+ * \brief checks if to floating point numbers are close
+ */
+
+static bool isClose(double a, double b, double eps) {
+  return fabs(a - b) <= ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * eps);
+}
 
 namespace apf {
 
@@ -104,16 +116,29 @@ class Matrix : public Array<Vector<N>,M>
       }
       return r;
     }
+
     bool operator==(Matrix<M,N> const & other) const {
-      for(int i=0; i<M; ++i) {
-        for(int j=0; j<N; ++j) {
-          if(!((*this)[i][j] == other[i][j]))
-            return false;
-        }
-      }
-      return true;
+      return equal(*this, other);
     }
 };
+// make this a separate function from the operator, so we can pass a epsilon value
+// if the default doesn't work.
+
+/* \brief computes the equality of two M by N matrices
+ * \param m first matrix to compare
+ * \param other second matrix to compare
+ * \param eps epsilon value for the floating point comparison
+ */
+template <std::size_t M, std::size_t N>
+bool equal(Matrix<M,N> const & m ,Matrix<M,N> const & other, double eps=std::numeric_limits<double>::epsilon()) {
+  for(int i=0; i<M; ++i) {
+    for(int j=0; j<N; ++j) {
+      if(!(::isClose(m[i][j],other[i][j],eps)))
+        return false;
+    }
+  }
+  return true;
+}
 
 /** \brief transpose a matrix */
 template <std::size_t M, std::size_t N>
