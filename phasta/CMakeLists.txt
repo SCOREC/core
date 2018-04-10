@@ -35,6 +35,7 @@ if(ENABLE_SIMMETRIX)
       phAttrib.cc
       phSnap.cc
       phMeshQuality.cc
+      phRigidBody.cc
      )
 endif()
 
