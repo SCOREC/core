@@ -187,6 +187,7 @@ endif()
 if(ENABLE_SIMMETRIX)
   #executables which call only Simmetrix functions
   include_directories(${PROJECT_BINARY_DIR}/gmi_sim)
+  include_directories(${PROJECT_BINARY_DIR}/apf_sim)
   util_exe_func(simTranslate simTranslate.cc)
   if(SIM_PARASOLID)
     util_exe_func(sim_part sim_part.cc)
