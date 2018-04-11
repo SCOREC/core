@@ -7,7 +7,7 @@
 #include <phInput.h>
 #include <stdlib.h>
 #include <cstring>
-#include <list>
+#include <vector>
 
 namespace ph {
   void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir);
@@ -65,7 +65,7 @@ void core_update_rbms (double tx[], double ty[], double tz[],
                          double ag[], double sc[],
                          int tags[],  int numRbm);
 
-void core_get_rbms (std::list<ph::rigidBodyMotion> &rbms);
+void core_get_rbms (std::vector<ph::rigidBodyMotion> &rbms);
 
 void core_get_centroid (int r_tag, double ct[]);
 

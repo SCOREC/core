@@ -15,7 +15,7 @@
 extern"C"{
 #endif
 
-std::list<ph::rigidBodyMotion> RBMs;
+std::vector<ph::rigidBodyMotion> RBMs;
 
 // update rbms
 void core_update_rbms (double tx[], double ty[], double tz[],
@@ -34,7 +34,7 @@ void core_update_rbms (double tx[], double ty[], double tz[],
 }
 
 // get rbms
-void core_get_rbms (std::list<ph::rigidBodyMotion> &rbms) {
+void core_get_rbms (std::vector<ph::rigidBodyMotion> &rbms) {
   rbms = RBMs;
 }
 
