@@ -560,8 +560,9 @@ void unfreezeFields(Mesh* m);
 /** \brief count the number of mesh entities classified on a model entity */
 int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
 
-/** \brief count the number of owned entities of dimension (dim) */
-int countOwned(Mesh* m, int dim);
+/** \brief count the number of owned entities of dimension (dim) using sharing shr
+           the default sharing is used if none is provided */
+int countOwned(Mesh* m, int dim, Sharing * shr = NULL);
 
 /** \brief print global mesh entity counts per dimension */
 void printStats(Mesh* m);
