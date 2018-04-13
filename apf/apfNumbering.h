@@ -92,7 +92,7 @@ int countFixed(Numbering* n);
    assigned, after this they are all numbered
    \param shr if non-zero, use this Sharing model to determine ownership
               and copies, otherwise call apf::getSharing */
-void synchronize(Numbering * n, Sharing* shr = 0, bool delete_shr=false);
+void synchronize(Numbering * n, Sharing* shr = 0, bool delete_shr = false);
 
 /** \brief number the local owned entities of a given dimension */
 Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim, Sharing* shr = 0);
@@ -186,7 +186,7 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
    on parts [0,P-1].
 
    this is done in O(log N) time in parallel, where N is the part count.
- 
+
    this function has no intrinsic knowledge of ownership,
    it operates simply on nodes which have been explicitly numbered.
    the input to this function is usually a numbering produced by
@@ -213,17 +213,23 @@ MeshTag* reorder(Mesh* mesh, const char* name);
 
 void globalize(Numbering* n);
 
-/** \brief number all components by simple iteration
- \todo name should be lower-case */
-int NaiveOrder(Numbering * num);
+/** \brief number all components by simple iteration */
+int naiveOrder(Numbering * num, Sharing * sharing = NULL);
+// Exposing capital version for legacy API purposes
+/// todo : mark as deprecated
+inline int NaiveOrder(Numbering * num) { return naiveOrder(num); }
 
-/** \brief like apf::reorder, but numbers all free nodal components
- \todo name should be lower-case */
-int AdjReorder(Numbering * num);
+/** \brief like apf::reorder, but numbers all free nodal components */
+int adjReorder(Numbering * num, Sharing * sharing = NULL);
+// Exposing capital version for legacy API purposes
+/// todo : mark as deprecated
+inline int AdjReorder(Numbering * num) { return adjReorder(num); }
 
-/** \brief add an offset to all free nodal component numbers
- \todo name should be lower-case */
-void SetNumberingOffset(Numbering * num, int off);
+/** \brief add an offset to all free nodal component numbers */
+void setNumberingOffset(Numbering * num, int off, Sharing * sharing = NULL);
+// Exposing capital version for legacy API purposes
+/// todo : mark as deprecated
+inline void SetNumberingOffset(Numbering * num, int off) { setNumberingOffset(num,off); }
 
 }
 
