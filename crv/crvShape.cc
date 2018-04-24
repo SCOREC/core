@@ -285,7 +285,7 @@ private:
     mesh->setPoint(edge,0,newPoint);
 
     for (std::size_t i = 0; i < adjacent.getSize(); ++i){
-      if (qual->checkValidity(adjacent[i]) > 0){
+      if (qual->checkValidity(adjacent[i]) < 0){
         mesh->setPoint(edge,0,oldPoint);
         return false;
       }
