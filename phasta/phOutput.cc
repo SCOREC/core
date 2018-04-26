@@ -301,6 +301,48 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.bcb = bcb;
 }
 
+static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
+  apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
+  std::string name("rigid body");
+  FieldBCs& fbcs = bcs.fields[name];
+  int rbID = 0;
+  int nv = m->count(0);
+  int* f = new int[nv];
+  o.hasRigidBody = 0;
+
+// initialize f with -1 for all mesh vertices
+  for(int i = 0; i < nv; i++) f[i] = -1;
+
+// set rigid body tag on mesh vertices
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it))) {
+    gmi_ent* ge = (gmi_ent*) m->toModel(e);
+    apf::Vector3 x = apf::getLinearCentroid(m, e);
+    double* floatID = getBCValue(gm, fbcs, ge);
+    if (floatID) {
+      PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
+      o.hasRigidBody = 1;
+      rbID = (int)(*floatID+0.5);
+// loop over downward vertices
+      apf::Downward dv;
+      int ndv = m->getDownward(e,0,dv);
+      for (int i = 0; i < ndv; i++) {
+        int vID = apf::getNumber(n, dv[i], 0, 0);
+        if(f[vID] > -1 && f[vID] != rbID) {
+          fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
+        }
+        else if (f[vID] == -1) {
+          f[vID] = rbID;
+        }
+      }
+    }
+  }
+  m->end(it);
+  o.arrays.rigidBodyTag = f;
+}
+
 bool checkInterface(Output& o, BCs& bcs) {
   if (o.hasDGInterface == 0)
     return false;
@@ -916,6 +958,7 @@ Output::~Output()
     delete [] arrays.m2gParCoord;
   }
   delete [] arrays.interfaceFlag;
+  delete [] arrays.rigidBodyTag;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -938,6 +981,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getInterfaceFlag(o, bcs);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
+  getRigidBody(o,bcs,n);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o);

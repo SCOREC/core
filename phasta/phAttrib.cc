@@ -178,6 +178,7 @@ static void formFactories(BCFactories& fs)
   fs["periodic slave"]       = intFactory;
   fs["DG interface"]         = intFactory;
   fs["material type"]        = intFactory;
+  fs["rigid body"]           = intFactory;
 }
 
 static std::string getType(pAttribute a)
