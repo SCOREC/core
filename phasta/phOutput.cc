@@ -307,9 +307,11 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   std::string name("rigid body");
   FieldBCs& fbcs = bcs.fields[name];
   int rbID = 0;
+  std::set<int> rbIDset;
+  std::set<int>::iterator rit;
   int nv = m->count(0);
   int* f = new int[nv];
-  o.hasRigidBody = 0;
+  o.numRigidBody = 0;
 
 // initialize f with -1 for all mesh vertices
   for(int i = 0; i < nv; i++) f[i] = -1;
@@ -323,8 +325,11 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
     double* floatID = getBCValue(gm, fbcs, ge);
     if (floatID) {
       PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
-      o.hasRigidBody = 1;
       rbID = (int)(*floatID+0.5);
+// add to set if not find
+      rit = rbIDset.find(rbID);
+      if(rit == rbIDset.end())
+        rbIDset.insert(rbID);
 // loop over downward vertices
       apf::Downward dv;
       int ndv = m->getDownward(e,0,dv);
@@ -340,6 +345,17 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
     }
   }
   m->end(it);
+
+  int* rbIDs = new int[rbIDset.size()];
+  int count = 0;
+  for (rit=rbIDset.begin(); rit!=rbIDset.end(); rit++) {
+    rbIDs[count] = *rit;
+    count++;
+  }
+
+// attach data
+  o.numRigidBody = rbIDset.size();
+  o.arrays.rigidBodyIDs = rbIDs;
   o.arrays.rigidBodyTag = f;
 }
 
@@ -958,6 +974,7 @@ Output::~Output()
     delete [] arrays.m2gParCoord;
   }
   delete [] arrays.interfaceFlag;
+  delete [] arrays.rigidBodyIDs;
   delete [] arrays.rigidBodyTag;
 }
 
