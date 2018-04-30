@@ -18,11 +18,10 @@ typedef std::vector<Bubble> Bubbles;
 
 void readBubbles(Bubbles& bubbles, std::string bubbleFileName)
 {
-  char bubblefname[1024];
   FILE *filebubble;
   Bubble readbubble;
 
-  sprintf(bubblefname,bubbleFileName.c_str());
+  const char* bubblefname = bubbleFileName.c_str();
   if (!PCU_Comm_Self())
     printf("reading bubbles info from %s\n",bubblefname);
 
