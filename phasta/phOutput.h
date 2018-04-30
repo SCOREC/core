@@ -120,6 +120,10 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
   double* m2gParCoord;
 /* an integer to indicate if a vertex is on interface */
   int* interfaceFlag;
+/* tags of rigid bodies */
+  int* rigidBodyIDs;
+/* an integer to indicate rigid body tag of a vertex */
+  int* rigidBodyTag;
 };
 
 
@@ -141,6 +145,7 @@ struct Output
   int nGrowthCurves; /* number of growth curves */
   int nLayeredMeshVertices; /* number of layered mesh vertices */
   bool hasDGInterface;
+  bool numRigidBody;
   FILE* (*openfile_write)(Output& out, const char* path);
   GRStream* grs;
   AllBlocks blocks;

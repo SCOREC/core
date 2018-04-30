@@ -324,6 +324,11 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   if (o.hasDGInterface)
     writeInts(f, "DG interface flag", o.arrays.interfaceFlag, m->count(0));
 
+  if (o.numRigidBody) {
+    writeInts(f, "rigid body IDs", o.arrays.rigidBodyIDs, o.numRigidBody);
+    writeInts(f, "rigid body tag", o.arrays.rigidBodyTag, m->count(0));
+  }
+
   if (o.in->mesh2geom) {
     params[0] = m->count(0);
     params[1] = 3;
