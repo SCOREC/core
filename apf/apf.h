@@ -469,6 +469,9 @@ double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
 Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
     MeshEntity* vert, const Matrix3x3& Q);
 
+Vector3 computeEdgeTangentAtVertex(Mesh* m, MeshEntity* edge,
+    MeshEntity* vert, const Matrix3x3& Q);
+
 /** \brief Returns the shortest height in a tet
   *
   * \param m	mesh
