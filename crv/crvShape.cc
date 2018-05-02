@@ -264,9 +264,16 @@ private:
       if (edges[vertEdges[pivotIndex][i]] == edge)
         edgeIndex = i;
     }
+
     PCU_ALWAYS_ASSERT(edgeIndex >= 0);
-    ma::Vector normal = apf::cross(edgeVectors[(1+edgeIndex) % 3],
-        edgeVectors[(2+edgeIndex) % 3]);
+
+    ma::Entity* edge1 = edges[vertEdges[pivotIndex][(edgeIndex+1)%3]];
+    ma::Entity* edge2 = edges[vertEdges[pivotIndex][(edgeIndex+2)%3]];
+
+    ma::Vector t1 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+    ma::Vector t2 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+
+    ma::Vector normal = apf::cross(t1, t2);
     double length = normal.getLength();
     double validity = edgeVectors[edgeIndex]*normal;
 
@@ -276,16 +283,19 @@ private:
     apf::Adjacent adjacent;
     mesh->getAdjacent(edge,3,adjacent);
 
-    // places the new point at a 20 degree angle with the plane
-    double angle = apf::pi/9.;
-    ma::Vector newPoint = edgeVectors[edgeIndex] + pivotPoint
-        + normal/length*(-validity/length +
-            edgeVectors[edgeIndex].getLength()*sin(angle));
+    /* mirror the vector edgeVectors[edgeIndex] with respect to the plane
+     * perpendicular to the normal. The parameter alpha scales the normal
+     * (to the plane) component of the mirrored vector.
+     */
+    double alpha = 0.5;
+
+    ma::Vector newPoint = pivotPoint + edgeVectors[edgeIndex] -
+      normal * (normal * edgeVectors[edgeIndex]) * (1 + alpha) / length / length;
 
     mesh->setPoint(edge,0,newPoint);
 
     for (std::size_t i = 0; i < adjacent.getSize(); ++i){
-      if (qual->checkValidity(adjacent[i]) > 0){
+      if (qual->checkValidity(adjacent[i]) < 0){
         mesh->setPoint(edge,0,oldPoint);
         return false;
       }

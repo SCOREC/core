@@ -13,7 +13,7 @@ static Matrix3x3 getJacobianInMetric(const Matrix3x3& J, const Matrix3x3& Q)
   return transpose(JT);
 }
 
-static Vector3 computeEdgeTangentAtVertex(Mesh* m, MeshEntity* edge,
+Vector3 computeEdgeTangentAtVertex(Mesh* m, MeshEntity* edge,
     MeshEntity* vert,
     const Matrix3x3& Q)
 {
