@@ -302,6 +302,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
+  PCU_Comm_Begin();
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
   std::string name("rigid body");
@@ -328,8 +329,10 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
       rbID = (int)(*floatID+0.5);
 // add to set if not find
       rit = rbIDset.find(rbID);
-      if(rit == rbIDset.end())
+      if(rit == rbIDset.end()) {
         rbIDset.insert(rbID);
+        PCU_Comm_Pack(0, &rbID, sizeof(int));
+      }
 // loop over downward vertices
       apf::Downward dv;
       int ndv = m->getDownward(e,0,dv);
@@ -346,15 +349,32 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   }
   m->end(it);
 
-  int* rbIDs = new int[rbIDset.size()];
-  int count = 0;
-  for (rit=rbIDset.begin(); rit!=rbIDset.end(); rit++) {
-    rbIDs[count] = *rit;
-    count++;
+// master receives and form the complete set
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int rrbID = 0;
+    PCU_Comm_Unpack(&rrbID, sizeof(int));
+    rit = rbIDset.find(rrbID);
+    if(rit == rbIDset.end())
+      rbIDset.insert(rrbID);
   }
 
+  int rbIDs_size = PCU_Max_Int(rbIDset.size());
+  int* rbIDs = new int[rbIDs_size];
+  if (!PCU_Comm_Self()) {
+    int count = 0;
+    for (rit=rbIDset.begin(); rit!=rbIDset.end(); rit++) {
+      rbIDs[count] = *rit;
+      count++;
+    }
+    PCU_ALWAYS_ASSERT(count == rbIDs_size);
+  }
+
+// allreduce the set
+  PCU_Max_Ints(rbIDs, rbIDs_size);
+
 // attach data
-  o.numRigidBody = rbIDset.size();
+  o.numRigidBody = rbIDs_size;
   o.arrays.rigidBodyIDs = rbIDs;
   o.arrays.rigidBodyTag = f;
 }
