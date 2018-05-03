@@ -305,8 +305,6 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   PCU_Comm_Begin();
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
-  std::string name("rigid body");
-  FieldBCs& fbcs = bcs.fields[name];
   int rbID = 0;
   std::set<int> rbIDset;
   std::set<int>::iterator rit;
@@ -318,41 +316,45 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   for(int i = 0; i < nv; i++) f[i] = -1;
 
 // set rigid body tag on mesh vertices
-  apf::MeshIterator* it = m->begin(0);
-  apf::MeshEntity* e;
-  while ((e = m->iterate(it))) {
-    double* floatID = NULL;
-    gmi_ent* ge = (gmi_ent*) m->toModel(e);
-    /* actually rigid body not support 2D currently */
-    if (gmi_dim(gm, ge) == m->getDimension()) {
-      floatID = getBCValue(gm, fbcs, ge);
-    }
-    else {
-      gmi_set* s = gmi_adjacent(gm, ge, m->getDimension());
-      for (int i = 0; i < s->n; i++) {
-        floatID = getBCValue(gm, fbcs, s->e[i]);
-        if (floatID) break;
+  std::string name("rigid body");
+  if (haveBC(bcs, name)) {
+    FieldBCs& fbcs = bcs.fields[name];
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))) {
+      double* floatID = NULL;
+      gmi_ent* ge = (gmi_ent*) m->toModel(e);
+      /* actually rigid body not support 2D currently */
+      if (gmi_dim(gm, ge) == m->getDimension()) {
+       floatID = getBCValue(gm, fbcs, ge);
       }
-    }
-    if (floatID) {
-      PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
-      rbID = (int)(*floatID+0.5);
+      else {
+        gmi_set* s = gmi_adjacent(gm, ge, m->getDimension());
+        for (int i = 0; i < s->n; i++) {
+          floatID = getBCValue(gm, fbcs, s->e[i]);
+          if (floatID) break;
+        }
+      }
+      if (floatID) {
+        PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
+        rbID = (int)(*floatID+0.5);
 // add to set if not find
-      rit = rbIDset.find(rbID);
-      if(rit == rbIDset.end()) {
-        rbIDset.insert(rbID);
-        PCU_Comm_Pack(0, &rbID, sizeof(int));
-      }
-      int vID = apf::getNumber(n, e, 0, 0);
-      if(f[vID] > -1 && f[vID] != rbID) {
-        fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
-      }
-      else if (f[vID] == -1) {
-        f[vID] = rbID;
+        rit = rbIDset.find(rbID);
+        if(rit == rbIDset.end()) {
+          rbIDset.insert(rbID);
+          PCU_Comm_Pack(0, &rbID, sizeof(int));
+        }
+        int vID = apf::getNumber(n, e, 0, 0);
+        if(f[vID] > -1 && f[vID] != rbID) {
+          fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
+        }
+        else if (f[vID] == -1) {
+          f[vID] = rbID;
+        }
       }
     }
-  }
-  m->end(it);
+    m->end(it);
+  } // end if rigid body attribute exists
 
 // master receives and form the complete set
   PCU_Comm_Send();
