@@ -318,12 +318,22 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   for(int i = 0; i < nv; i++) f[i] = -1;
 
 // set rigid body tag on mesh vertices
-  apf::MeshIterator* it = m->begin(m->getDimension());
+  apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* e;
   while ((e = m->iterate(it))) {
+    double* floatID = NULL;
     gmi_ent* ge = (gmi_ent*) m->toModel(e);
-    apf::Vector3 x = apf::getLinearCentroid(m, e);
-    double* floatID = getBCValue(gm, fbcs, ge);
+    /* actually rigid body not support 2D currently */
+    if (gmi_dim(gm, ge) == m->getDimension()) {
+      floatID = getBCValue(gm, fbcs, ge);
+    }
+    else {
+      gmi_set* s = gmi_adjacent(gm, ge, m->getDimension());
+      for (int i = 0; i < s->n; i++) {
+        floatID = getBCValue(gm, fbcs, s->e[i]);
+        if (floatID) break;
+      }
+    }
     if (floatID) {
       PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
       rbID = (int)(*floatID+0.5);
@@ -333,17 +343,12 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
         rbIDset.insert(rbID);
         PCU_Comm_Pack(0, &rbID, sizeof(int));
       }
-// loop over downward vertices
-      apf::Downward dv;
-      int ndv = m->getDownward(e,0,dv);
-      for (int i = 0; i < ndv; i++) {
-        int vID = apf::getNumber(n, dv[i], 0, 0);
-        if(f[vID] > -1 && f[vID] != rbID) {
-          fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
-        }
-        else if (f[vID] == -1) {
-          f[vID] = rbID;
-        }
+      int vID = apf::getNumber(n, e, 0, 0);
+      if(f[vID] > -1 && f[vID] != rbID) {
+        fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
+      }
+      else if (f[vID] == -1) {
+        f[vID] = rbID;
       }
     }
   }
