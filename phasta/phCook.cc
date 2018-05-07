@@ -40,14 +40,14 @@ void switchToMasters(int splitFactor)
   int groupRank = self / splitFactor;
   int group = self % splitFactor;
   MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  MPI_Comm_split(PCU_Get_Comm(), group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
 }
 
-void switchToAll()
+void switchToAll(MPI_Comm orig)
 {
   MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(MPI_COMM_WORLD);
+  PCU_Switch_Comm(orig);
   MPI_Comm_free(&prevComm);
   PCU_Barrier();
 }
@@ -231,10 +231,11 @@ namespace chef {
     ph::BCs bcs;
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
+    MPI_Comm comm = PCU_Get_Comm();
     switchToMasters(in.splitFactor);
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
-    switchToAll();
+    switchToAll(comm);
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
     ph::checkBalance(m,in);

@@ -215,6 +215,8 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
   int edim = gmi_dim(m, e);
   if (edim == 0 && dim == 1)
     return plist_to_set(GV_edges((pGVertex)e));
+  if (edim == 0 && dim == 3)
+    return plist_to_set(GV_regions((pGVertex)e));
   if (edim == 1 && dim == 0)
     return plist_to_set(GE_vertices((pGEdge)e));
   if (edim == 1 && dim == 2)

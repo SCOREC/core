@@ -768,15 +768,22 @@ int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
   return n;
 }
 
-int countOwned(Mesh* m, int dim)
+int countOwned(Mesh* m, int dim, Sharing * shr)
 {
+  bool dlt = false;
+  if(shr == NULL)
+  {
+    shr = getSharing(m);
+    dlt = true;
+  }
   MeshIterator* it = m->begin(dim);
   MeshEntity* e;
   int n = 0;
   while ((e = m->iterate(it)))
-    if (m->isOwned(e))
+    if (shr->isOwned(e))
       ++n;
   m->end(it);
+  if(dlt) delete shr;
   return n;
 }
 
@@ -831,7 +838,8 @@ static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)
   m->getRemotes(e, remotes);
   a.setSize(remotes.size());
   size_t i = 0;
-  APF_ITERATE(Copies, remotes, it) {
+  APF_ITERATE(Copies, remotes, it) 
+  {
     a[i].peer = it->first;
     a[i].entity = it->second;
     ++i;

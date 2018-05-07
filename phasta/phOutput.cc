@@ -301,6 +301,91 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.bcb = bcb;
 }
 
+static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
+  PCU_Comm_Begin();
+  apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
+  int rbID = 0;
+  std::set<int> rbIDset;
+  std::set<int>::iterator rit;
+  int nv = m->count(0);
+  int* f = new int[nv];
+  o.numRigidBody = 0;
+
+// initialize f with -1 for all mesh vertices
+  for(int i = 0; i < nv; i++) f[i] = -1;
+
+// set rigid body tag on mesh vertices
+  std::string name("rigid body");
+  if (haveBC(bcs, name)) {
+    FieldBCs& fbcs = bcs.fields[name];
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))) {
+      double* floatID = NULL;
+      gmi_ent* ge = (gmi_ent*) m->toModel(e);
+      /* actually rigid body not support 2D currently */
+      if (gmi_dim(gm, ge) == m->getDimension()) {
+       floatID = getBCValue(gm, fbcs, ge);
+      }
+      else {
+        gmi_set* s = gmi_adjacent(gm, ge, m->getDimension());
+        for (int i = 0; i < s->n; i++) {
+          floatID = getBCValue(gm, fbcs, s->e[i]);
+          if (floatID) break;
+        }
+      }
+      if (floatID) {
+        PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
+        rbID = (int)(*floatID+0.5);
+// add to set if not find
+        rit = rbIDset.find(rbID);
+        if(rit == rbIDset.end()) {
+          rbIDset.insert(rbID);
+          PCU_Comm_Pack(0, &rbID, sizeof(int));
+        }
+        int vID = apf::getNumber(n, e, 0, 0);
+        if(f[vID] > -1 && f[vID] != rbID) {
+          fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
+        }
+        else if (f[vID] == -1) {
+          f[vID] = rbID;
+        }
+      }
+    }
+    m->end(it);
+  } // end if rigid body attribute exists
+
+// master receives and form the complete set
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int rrbID = 0;
+    PCU_Comm_Unpack(&rrbID, sizeof(int));
+    rit = rbIDset.find(rrbID);
+    if(rit == rbIDset.end())
+      rbIDset.insert(rrbID);
+  }
+
+  int rbIDs_size = PCU_Max_Int(rbIDset.size());
+  int* rbIDs = new int[rbIDs_size];
+  if (!PCU_Comm_Self()) {
+    int count = 0;
+    for (rit=rbIDset.begin(); rit!=rbIDset.end(); rit++) {
+      rbIDs[count] = *rit;
+      count++;
+    }
+    PCU_ALWAYS_ASSERT(count == rbIDs_size);
+  }
+
+// allreduce the set
+  PCU_Max_Ints(rbIDs, rbIDs_size);
+
+// attach data
+  o.numRigidBody = rbIDs_size;
+  o.arrays.rigidBodyIDs = rbIDs;
+  o.arrays.rigidBodyTag = f;
+}
+
 bool checkInterface(Output& o, BCs& bcs) {
   if (o.hasDGInterface == 0)
     return false;
@@ -916,6 +1001,8 @@ Output::~Output()
     delete [] arrays.m2gParCoord;
   }
   delete [] arrays.interfaceFlag;
+  delete [] arrays.rigidBodyIDs;
+  delete [] arrays.rigidBodyTag;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -938,6 +1025,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getInterfaceFlag(o, bcs);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
+  getRigidBody(o,bcs,n);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o);
