@@ -326,6 +326,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
 
   if (o.numRigidBody) {
     writeInts(f, "rigid body IDs", o.arrays.rigidBodyIDs, o.numRigidBody);
+    writeInts(f, "rigid body MTs", o.arrays.rigidBodyMTs, o.numRigidBody);
     writeInts(f, "rigid body tag", o.arrays.rigidBodyTag, m->count(0));
   }
 
