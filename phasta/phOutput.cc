@@ -302,13 +302,13 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
+  PCU_Comm_Begin();
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
-  std::string name("rigid body");
-  FieldBCs& fbcs = bcs.fields[name];
-  int rbID = 0;
-  std::set<int> rbIDset;
-  std::set<int>::iterator rit;
+  int rbID = 0; // id - set by user
+  int rbMT = 0; // model tag
+  std::map<int, int> rbIDmap; // map id to model tag
+  std::map<int, int>::iterator rit;
   int nv = m->count(0);
   int* f = new int[nv];
   o.numRigidBody = 0;
@@ -317,24 +317,38 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   for(int i = 0; i < nv; i++) f[i] = -1;
 
 // set rigid body tag on mesh vertices
-  apf::MeshIterator* it = m->begin(m->getDimension());
-  apf::MeshEntity* e;
-  while ((e = m->iterate(it))) {
-    gmi_ent* ge = (gmi_ent*) m->toModel(e);
-    apf::Vector3 x = apf::getLinearCentroid(m, e);
-    double* floatID = getBCValue(gm, fbcs, ge);
-    if (floatID) {
-      PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
-      rbID = (int)(*floatID+0.5);
-// add to set if not find
-      rit = rbIDset.find(rbID);
-      if(rit == rbIDset.end())
-        rbIDset.insert(rbID);
-// loop over downward vertices
-      apf::Downward dv;
-      int ndv = m->getDownward(e,0,dv);
-      for (int i = 0; i < ndv; i++) {
-        int vID = apf::getNumber(n, dv[i], 0, 0);
+  std::string name("rigid body");
+  if (haveBC(bcs, name)) {
+    FieldBCs& fbcs = bcs.fields[name];
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))) {
+      double* floatID = NULL;
+      gmi_ent* ge = (gmi_ent*) m->toModel(e);
+      /* actually rigid body not support 2D currently */
+      if (gmi_dim(gm, ge) == m->getDimension()) {
+        floatID = getBCValue(gm, fbcs, ge);
+        rbMT = gmi_tag(gm, ge);
+      }
+      else {
+        gmi_set* s = gmi_adjacent(gm, ge, m->getDimension());
+        for (int i = 0; i < s->n; i++) {
+          floatID = getBCValue(gm, fbcs, s->e[i]);
+          rbMT = gmi_tag(gm, s->e[i]);
+          if (floatID) break;
+        }
+      }
+      if (floatID) {
+        PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
+        rbID = (int)(*floatID+0.5);
+// add to map if not find
+        rit = rbIDmap.find(rbID);
+        if(rit == rbIDmap.end()) {
+          rbIDmap[rbID] = rbMT;
+          PCU_Comm_Pack(0, &rbID, sizeof(int));
+          PCU_Comm_Pack(0, &rbMT, sizeof(int));
+        }
+        int vID = apf::getNumber(n, e, 0, 0);
         if(f[vID] > -1 && f[vID] != rbID) {
           fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
         }
@@ -343,19 +357,42 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
         }
       }
     }
-  }
-  m->end(it);
+    m->end(it);
+  } // end if rigid body attribute exists
 
-  int* rbIDs = new int[rbIDset.size()];
-  int count = 0;
-  for (rit=rbIDset.begin(); rit!=rbIDset.end(); rit++) {
-    rbIDs[count] = *rit;
-    count++;
+// master receives and form the complete set
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int rrbID = 0;
+    int rrbMT = 0;
+    PCU_Comm_Unpack(&rrbID, sizeof(int));
+    PCU_Comm_Unpack(&rrbMT, sizeof(int));
+    rit = rbIDmap.find(rrbID);
+    if(rit == rbIDmap.end())
+      rbIDmap[rrbID] = rrbMT;
   }
+
+  int rbIDs_size = PCU_Max_Int(rbIDmap.size());
+  int* rbIDs = new int[rbIDs_size];
+  int* rbMTs = new int[rbIDs_size];
+  if (!PCU_Comm_Self()) {
+    int count = 0;
+    for (rit=rbIDmap.begin(); rit!=rbIDmap.end(); rit++) {
+      rbIDs[count] = rit->first;
+      rbMTs[count] = rit->second;
+      count++;
+    }
+    PCU_ALWAYS_ASSERT(count == rbIDs_size);
+  }
+
+// allreduce the set
+  PCU_Max_Ints(rbIDs, rbIDs_size);
+  PCU_Max_Ints(rbMTs, rbIDs_size);
 
 // attach data
-  o.numRigidBody = rbIDset.size();
+  o.numRigidBody = rbIDs_size;
   o.arrays.rigidBodyIDs = rbIDs;
+  o.arrays.rigidBodyMTs = rbMTs;
   o.arrays.rigidBodyTag = f;
 }
 
@@ -975,6 +1012,7 @@ Output::~Output()
   }
   delete [] arrays.interfaceFlag;
   delete [] arrays.rigidBodyIDs;
+  delete [] arrays.rigidBodyMTs;
   delete [] arrays.rigidBodyTag;
 }
 
