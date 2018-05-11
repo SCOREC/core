@@ -891,7 +891,10 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           "MeshTag name \"_classifn_data\" is used internally in this method\n");
   apf::MeshTag* classifnTag = mesh->createIntTag("_classifn_data", 2);
   int tagData[2], newTagData[2];
-  long minAvbl = 0;
+  long minAvbl = 1;
+  // This is set by during apf::construct, and using anything else leads to an
+  // additional region
+  long DEFAULT_REGION_ID = 0;
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
@@ -984,7 +987,8 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           m->getIntTag(ent, classifnTag, tagData);
           mds_update_model_for_entity(m->mesh, id, tagData[0], tagData[1]);
         } else {
-          mds_update_model_for_entity(m->mesh, id, m->getDimension(), minAvbl);
+          mds_update_model_for_entity(m->mesh, id, m->getDimension(), 
+              DEFAULT_REGION_ID);
         }
       }
     }
@@ -1003,7 +1007,10 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           "MeshTag name \"_classifn_data\" is used internally in this method\n");
   apf::MeshTag* classifnTag = mesh->createIntTag("_classifn_data", 2);
   int tagData[2], newTagData[2];
-  long minAvbl = 0;
+  long minAvbl = 1;
+  // This is set by during apf::construct, and using anything else leads to an
+  // additional region
+  long DEFAULT_REGION_ID = 0;
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
@@ -1069,7 +1076,8 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           m->getIntTag(ent, classifnTag, tagData);
           mds_update_model_for_entity(m->mesh, id, tagData[0], tagData[1]);
         } else {
-          mds_update_model_for_entity(m->mesh, id, m->getDimension(), minAvbl);
+          mds_update_model_for_entity(m->mesh, id, m->getDimension(),
+              DEFAULT_REGION_ID);
         }
       }
     }
