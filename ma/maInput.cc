@@ -46,6 +46,8 @@ void setDefaultValues(Input* in)
     in->goodQuality = 0.2;
     //this basically turns off short edge removal...
     in->maximumEdgeRatio = 100.0;
+    //2D mesh adapt performs better if forceAdapt is on
+    in->shouldForceAdaptation = true;
   }
   in->shouldCheckQualityForDoubleSplits = false;
   in->validQuality = 1e-10;
