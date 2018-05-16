@@ -30,6 +30,7 @@ void setDefaultValues(Input* in)
   in->shouldCoarsen = true;
   in->shouldSnap = in->mesh->canSnap();
   in->shouldTransferParametric = in->mesh->canSnap();
+  in->shouldTransferToClosestPoint = false;
   in->shouldHandleMatching = in->mesh->hasMatching();
   in->shouldFixShape = true;
   in->shouldForceAdaptation = false;
@@ -93,8 +94,13 @@ void validateInput(Input* in)
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested parametric coordinate transfer "
                 "but the geometric model does not support it");
-  if (in->shouldSnap && ( ! in->shouldTransferParametric))
-    rejectInput("snapping requires parametric coordinate transfer");
+  if (in->shouldTransferToClosestPoint
+    &&( ! in->mesh->canSnap()))
+    rejectInput("user requested transfer to closest point on model"
+                "but the geometric model does not support it");
+  if (in->shouldSnap && ( ! (in->shouldTransferParametric ||
+			     in->shouldTransferToClosestPoint)))
+    rejectInput("snapping requires parametric coordinate transfer or transfer to closest point");
   if ((in->mesh->hasMatching())
     &&( ! in->shouldHandleMatching))
     rejectInput("the mesh has matching entities but matched support is off");

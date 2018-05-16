@@ -597,6 +597,79 @@ void transferParametricOnQuadSplit(
   ma::transferParametricBetween(m, g, v, y, p);
 }
 
+void getClosestPointParametricCoordinates(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    Vector const& a,
+    Vector const& b,
+    Vector& p)
+{
+  Vector testPt = a * (1 - t) + b * t;
+  Vector targetPt;
+  m->getClosestPoint(g, testPt, targetPt, p);
+  (void) targetPt;
+}
+
+void transferToClosestPointOnEdgeSplit(
+    Mesh* m,
+    Entity* e,
+    double t,
+    Vector& p)
+{
+  Model* g = m->toModel(e);
+  int modelDimension = m->getModelType(g);
+  if (m->getDimension()==3 && modelDimension==3) return;
+  Entity* ev[2];
+  m->getDownward(e,0,ev);
+  Vector a = getPosition(m, ev[0]);
+  Vector b = getPosition(m, ev[1]);
+  getClosestPointParametricCoordinates(m, g, t, a, b, p);
+}
+
+void transferToClosestPointOnTriSplit(
+    Mesh* m,
+    Entity* face,
+    const Vector& xi,
+    Vector& param)
+{
+  Model* g = m->toModel(face);
+  int modelDimension = m->getModelType(g);
+  if (m->getDimension() == 3 && modelDimension == 3) return;
+  Entity* tv[3];
+  m->getDownward(face, 0, tv);
+  Vector x[3];
+
+  for (int i = 0; i < 3; i++) {
+    x[i] = getPosition(m, tv[i]);
+  }
+
+  Vector testPt = x[0] * xi[0] + x[1] * xi[1] + x[2] * xi[3];
+  Vector targetPt;
+
+  m->getClosestPoint(g, testPt, targetPt, param);
+  (void) targetPt;
+}
+
+void transferToClosestPointOnQuadSplit(
+    Mesh* m,
+    Entity* quad,
+    Entity* v01,
+    Entity* v32,
+    double y,
+    Vector& p)
+{
+  Model* g = m->toModel(quad);
+  int modelDimension = m->getModelType(g);
+  if (modelDimension==m->getDimension()) return;
+  Vector a = getPosition(m, v01);
+  Vector b = getPosition(m, v32);
+  Vector testPt = a * (1 - y) + b * y;
+  Vector targetPt;
+  m->getClosestPoint(g, testPt, targetPt, p);
+  (void) targetPt;
+}
+
 static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
 {
   m->getPoint(v,0,x);

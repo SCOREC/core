@@ -51,6 +51,8 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
     transferParametricOnQuadSplit(m, q, sv[0] ,sv[2], 0.5, param);
+  if (a->input->shouldTransferToClosestPoint)
+    transferToClosestPointOnQuadSplit(m, q, sv[0] ,sv[2], 0.5, param);
   Entity* cv = buildVertex(a, m->toModel(q), point, param);
   a->solutionTransfer->onVertex(me,xi,cv);
   a->sizeField->interpolate(me,xi,cv);

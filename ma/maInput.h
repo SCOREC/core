@@ -51,6 +51,9 @@ class Input
 /** \brief whether to transfer parametric coordinates
   \details requires modeler support, see gmi_reparam */
     bool shouldTransferParametric;
+/** \brief whether to transfer to the parametric coords of the closest point
+  \details requires modeler support, see gmi_closest_point */
+    bool shouldTransferToClosestPoint;
 /** \brief whether to update matched entity info (limited support) */
     bool shouldHandleMatching;
 /** \brief whether to run shape correction (default true) */
