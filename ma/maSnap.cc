@@ -644,7 +644,7 @@ void transferToClosestPointOnTriSplit(
     x[i] = getPosition(m, tv[i]);
   }
 
-  Vector testPt = x[0] * xi[0] + x[1] * xi[1] + x[2] * xi[3];
+  Vector testPt = x[0] * xi[0] + x[1] * xi[1] + x[2] * xi[2];
   Vector targetPt;
 
   m->getClosestPoint(g, testPt, targetPt, param);
