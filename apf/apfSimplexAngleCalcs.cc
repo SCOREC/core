@@ -116,22 +116,23 @@ static double computeEdgeEdgeCosAngleInTri(Mesh* m, MeshEntity* tri,
   return t1*t2;
 }
 
-static Vector3 computeFaceNormalAtEdge(Mesh* m, /*MeshEntity* tet,*/
+Vector3 computeFaceNormalAtEdgeInTet(Mesh* m, MeshEntity* tet,
     MeshEntity* face, MeshEntity* edge, Matrix3x3 Q)
 {
+  PCU_ALWAYS_ASSERT(m->getType(tet) == Mesh::TET);
   PCU_ALWAYS_ASSERT(m->getType(face) == Mesh::TRIANGLE);
   PCU_ALWAYS_ASSERT(m->getType(edge) == Mesh::EDGE);
 
-  MeshEntity* fe[3];
-  m->getDownward(face, 1, fe);
+  MeshEntity* te[6];
+  m->getDownward(tet, 1, te);
   int index = -1;
-  for (int i = 0; i < 3; i++)
-    if (fe[i] == edge) {
+  for (int i = 0; i < 6; i++)
+    if (te[i] == edge) {
       index = i;
       break;
     }
-  PCU_ALWAYS_ASSERT(index > -1 && index < 3);
-  Vector3 xi; // corresponding parametric coord in tri of the mid-edge point
+  PCU_ALWAYS_ASSERT(index > -1 && index < 6);
+  Vector3 xi; // corresponding parametric coord in tet for the mid-edge point
   switch (index) {
     case 0:
       xi = Vector3(0.5, 0.0, 0.0);
@@ -142,17 +143,44 @@ static Vector3 computeFaceNormalAtEdge(Mesh* m, /*MeshEntity* tet,*/
     case 2:
       xi = Vector3(0.0, 0.5, 0.0);
       break;
+    case 3:
+      xi = Vector3(0.0, 0.0, 0.5);
+      break;
+    case 4:
+      xi = Vector3(0.5, 0.0, 0.5);
+      break;
+    case 5:
+      xi = Vector3(0.0, 0.5, 0.5);
+      break;
     default:
       break;
   }
-  MeshElement* faceElem = createMeshElement(m, face);
+  MeshElement* tetElem = createMeshElement(m, tet);
   Matrix3x3 J;
-  getJacobian(faceElem, xi, J);
-  destroyMeshElement(faceElem);
+  getJacobian(tetElem, xi, J);
+  destroyMeshElement(tetElem);
+
+  // get the two columns of Jacobian corresponding to face tangents
+  MeshEntity* tf[4];
+  m->getDownward(tet, 2, tf);
+  index = -1;
+  for (int i = 0; i < 4; i++)
+    if (tf[i] == face) {
+      index = i;
+      break;
+    }
+  PCU_ALWAYS_ASSERT(index > -1 && index < 4);
 
   // transform Jacobian into Metric space
   J = getJacobianInMetric(J, Q);
-  return cross(J[0], J[1]).normalize();
+  if (index == 0)
+    return cross(J[0], J[1]).normalize();
+  else if (index == 1)
+    return cross(J[2], J[0]).normalize();
+  else if (index == 2)
+    return cross(J[2]-J[0], J[1]-J[0]).normalize();
+  else
+    return cross(J[1], J[2]).normalize();
 }
 
 
@@ -180,8 +208,8 @@ static double computeFaceFaceCosAngleInTet(Mesh* m, MeshEntity* tet,
       }
 
   PCU_ALWAYS_ASSERT(sharedEdge);
-  Vector3 f1n = computeFaceNormalAtEdge(m, /*tet,*/ face1, sharedEdge, Q);
-  Vector3 f2n = computeFaceNormalAtEdge(m, /*tet,*/ face2, sharedEdge, Q);
+  Vector3 f1n = computeFaceNormalAtEdgeInTet(m, tet, face1, sharedEdge, Q);
+  Vector3 f2n = computeFaceNormalAtEdgeInTet(m, tet, face2, sharedEdge, Q);
   // turn f2n so you get the inside angle
   f2n = Vector3(0.0, 0.0, 0.0) - f2n;
   return f1n * f2n;
