@@ -142,6 +142,8 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
     transferParametricOnEdgeSplit(m,edge,0.5,param);
+  if (a->input->shouldTransferToClosestPoint)
+    transferToClosestPointOnEdgeSplit(m,edge,0.5,param);
   Entity* vert = buildVertex(a,c,point,param);
   st->onVertex(me,xi,vert);
   sf->interpolate(me,xi,vert);
