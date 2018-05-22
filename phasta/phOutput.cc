@@ -373,8 +373,9 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   }
 
   int rbIDs_size = PCU_Max_Int(rbIDmap.size());
-  int* rbIDs = new int[rbIDs_size];
-  int* rbMTs = new int[rbIDs_size];
+  int* rbIDs = new int[rbIDs_size]();
+  int* rbMTs = new int[rbIDs_size]();
+
   if (!PCU_Comm_Self()) {
     int count = 0;
     for (rit=rbIDmap.begin(); rit!=rbIDmap.end(); rit++) {
