@@ -183,8 +183,7 @@ static gmi_set* region_faces(pGRegion region)
   return s;
 }
 
-/* getting the region adj to an edge. This version
- * does not support non-manifold models
+/* getting the region adj to an edge.
  */
 // NOTE: the corresponding functionality does not exist
 // in gmi_base!
