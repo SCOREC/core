@@ -466,6 +466,9 @@ double computeCosAngleInTri(Mesh* m, MeshEntity* tri,
 double computeCosAngleInTet(Mesh* m, MeshEntity* tet,
     MeshEntity* e1, MeshEntity* e2, const Matrix3x3& Q);
 
+Vector3 computeFaceNormalAtEdgeInTet(Mesh* m, MeshEntity* tet,
+    MeshEntity* face, MeshEntity* edge, Matrix3x3 Q);
+
 Vector3 computeFaceNormalAtVertex(Mesh* m, MeshEntity* face,
     MeshEntity* vert, const Matrix3x3& Q);
 

@@ -172,6 +172,8 @@ Entity* makeSplitVertOnFace(Adapt* a, Entity* face)
   Vector param(0,0,0);
   if (a->input->shouldTransferParametric)
     transferParametricOnTriSplit(m, face, xi, param);
+  if (a->input->shouldTransferToClosestPoint)
+    transferToClosestPointOnTriSplit(m, face, xi, param);
   Entity* vert = buildVertex(a, c, point, param);
   st->onVertex(me, xi, vert);
   sf->interpolate(me, xi, vert);

@@ -113,6 +113,9 @@ void deriveMdsModel(Mesh2* in);
  *  \details Only for tetrahedral mesh with single model region.
  *  The tags provided for face classification are treated as reserved,
  *  and all newly generated tags are distinct regardless of dimension.
+ *  It is assumed that the mesh was created using apf::construct, which
+ *  by default assigns a tag 0 to the model region. Due to this, it is
+ *  advised to provide face tags starting from 1 if uniqueness is desired.
  *  It is assumed that both mesh vertices are indexed from 0 to
  *  (n_verts - 1) and mesh regions from 0 to (n_regions -1).
  *
