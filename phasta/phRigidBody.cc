@@ -24,6 +24,7 @@ void core_update_rbms (double tx[], double ty[], double tz[],
                        double ag[], double sc[],
                        int tags[],  int numRbm)
 {
+  RBMs.clear();
   for(int i = 0; i < numRbm; i++) {
     ph::rigidBodyMotion rbm = ph::rigidBodyMotion(tags[i], ag[i], sc[i]);
     rbm.set_trans(tx[i], ty[i], tz[i]);
