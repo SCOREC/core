@@ -69,6 +69,8 @@ set(HEADERS
   apfGeometry.h
   apf2mth.h
   apfMIS.h
+  apfField.h
+  apfFieldData.h
 )
 
 # Add the apf library
