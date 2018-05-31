@@ -71,6 +71,7 @@ set(HEADERS
   apfMIS.h
   apfField.h
   apfFieldData.h
+  apfNumberingClass.h
 )
 
 # Add the apf library
