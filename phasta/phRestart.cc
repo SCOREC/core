@@ -169,6 +169,28 @@ void attachField(
   PCU_ALWAYS_ASSERT(i == n);
 }
 
+bool attachRandField(
+    Input& in,
+    const char* fieldname,
+    double* data,
+    int nnodes,
+    int nvars)
+{
+  if(!strcmp(fieldname, "rbParams")) {
+    in.nRigidBody = nnodes;
+    in.nRBParam   = nvars;
+    in.rbParamData.clear();
+    for (int i = 0; i < nnodes; i++) {
+      for (int j = 0; j < nvars; j++) {
+        in.rbParamData.push_back(data[j*nnodes + i]);
+      }
+    }
+    PCU_ALWAYS_ASSERT((size_t) nnodes * nvars == in.rbParamData.size());
+    return true;
+  }
+  return false;
+}
+
 void attachCellField(
     apf::Mesh* m,
     const char* fieldname,
@@ -266,17 +288,27 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "meshQ",
     "material_type"
   };
+  static char const* const known_rand_fields[] = {
+    "rbParams"
+  };
   int known_nodal_field_count =
     sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);
   int known_cell_field_count =
     sizeof(known_cell_fields) / sizeof(known_cell_fields[0]);
+  int known_rand_field_count =
+    sizeof(known_rand_fields) / sizeof(known_rand_fields[0]);
   for (int i = 0; i < known_nodal_field_count; ++i)
     if (!strcmp(fieldname, known_nodal_fields[i])) {
       PCU_ALWAYS_ASSERT(static_cast<size_t>(nnodes) == m->count(0));
       return true;
     }
   for (int i = 0; i < known_cell_field_count; ++i)
-    if (!strcmp(fieldname, known_cell_fields[i]))
+    if (!strcmp(fieldname, known_cell_fields[i])) {
+      PCU_ALWAYS_ASSERT(static_cast<size_t>(nnodes) == m->count(m->getDimension()));
+      return false;
+    }
+  for (int i = 0; i < known_rand_field_count; ++i)
+    if (!strcmp(fieldname, known_rand_fields[i]))
       return false;
   if( !PCU_Comm_Self() ) {
     fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
@@ -307,6 +339,10 @@ int readAndAttachField(
   if(ret==0 || ret==1)
     return ret;
   if (!isNodalField(hname, nodes, m)) {
+    if (attachRandField(in, hname, data, nodes, vars)) {
+      free(data);
+      return 1;
+    }
     attachCellField(m, hname, data, vars, vars);
     free(data);
     return 1;
@@ -337,6 +373,28 @@ void detachAndWriteField(
   detachField(m, fieldname, data, size);
   ph_write_field(f, fieldname, data, m->count(0), size, in.timeStepNumber);
   free(data);
+}
+
+void detachAndWriteRandField(
+    Input& in,
+    FILE* f,
+    const char* fieldname)
+{
+  if (!strcmp(fieldname, "rbParams")) {
+    int nnodes = in.nRigidBody;
+    int nvars  = in.nRBParam;
+    double* data = (double*) malloc(sizeof(double) * nnodes * nvars);
+    size_t iv = 0;
+    for (int i = 0; i< nnodes; i++) {
+      for (int j = 0; j < nvars; j++) {
+        data[j*nnodes + i] = in.rbParamData[iv];
+        iv++;
+      }
+    }
+    ph_write_field(f, fieldname, data, nnodes, nvars, in.timeStepNumber);
+    free(data);
+    in.rbParamData.clear();
+  }
 }
 
 /* silliest darn fields I ever did see */
@@ -450,6 +508,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
+  if (in.nRigidBody)
+    detachAndWriteRandField(in, f, "rbParams");
   /* destroy any remaining fields */
   while(m->countFields())
     apf::destroyField( m->getField(0) );
