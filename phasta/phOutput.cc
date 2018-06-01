@@ -1000,13 +1000,13 @@ Output::~Output()
   delete [] arrays.iel;
   delete [] arrays.ileo;
   delete [] arrays.ile;
-  if (nGrowthCurves > 0) {
-    delete [] arrays.gcflt;
-    delete [] arrays.gcgr;
-    delete [] arrays.igcnv;
-    delete [] arrays.igclv;
-    delete [] arrays.igclvid;
-  }
+//-------growth curve--------
+  delete [] arrays.gcflt;
+  delete [] arrays.gcgr;
+  delete [] arrays.igcnv;
+  delete [] arrays.igclv;
+  delete [] arrays.igclvid;
+//---------------------------
   if (in->mesh2geom) {
     delete [] arrays.m2gClsfcn;
     delete [] arrays.m2gParCoord;
