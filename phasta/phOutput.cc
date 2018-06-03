@@ -337,6 +337,7 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
           rbMT = gmi_tag(gm, s->e[i]);
           if (floatID) break;
         }
+        gmi_free_set(s);
       }
       if (floatID) {
         PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));

@@ -51,22 +51,22 @@ apf::Field* extractField(apf::Mesh* m,
   {
     rf = apf::createFieldOn(m, requestFieldname, valueType);
   }
-  double* inVal = new double[apf::countComponents(f)];
-  double* outVal = new double[numOfComp];
+  apf::NewArray<double> inVal(apf::countComponents(f));
+  apf::NewArray<double> outVal(numOfComp);
   int endComp = firstComp + numOfComp - 1;
   PCU_ALWAYS_ASSERT(firstComp >= 1);
   PCU_ALWAYS_ASSERT(endComp <= apf::countComponents(f));
   apf::MeshEntity* vtx;
   apf::MeshIterator* it = m->begin(0);
   while ((vtx = m->iterate(it))) {
-    apf::getComponents(f, vtx, 0, inVal);
+    apf::getComponents(f, vtx, 0, &inVal[0]);
     int j = 0;
     for (int i = firstComp-1; i < endComp; i++){
       outVal[j] = inVal[i];
       j++;
     }
     PCU_ALWAYS_ASSERT(j == numOfComp);
-    apf::setComponents(rf,vtx, 0, outVal);
+    apf::setComponents(rf,vtx, 0, &outVal[0]);
   }
   m->end(it);
   return rf;
@@ -93,17 +93,17 @@ apf::Field* combineField(apf::Mesh* m,
   if (rf)
     apf::destroyField(rf);
   rf = apf::createPackedField(m, packedFieldname, out_size);
-  double* inVal1 = new double[in_size1];
-  double* inVal2 = new double[in_size2];
-  double* inVal3 = new double[in_size3];
-  double* outVal = new double[out_size];
+  apf::NewArray<double> inVal1(in_size1);
+  apf::NewArray<double> inVal2(in_size2);
+  apf::NewArray<double> inVal3(in_size3);
+  apf::NewArray<double> outVal(out_size);
   /* copy data */
   apf::MeshEntity* vtx;
   apf::MeshIterator* it = m->begin(0);
   while ((vtx = m->iterate(it))) {
-    apf::getComponents(f1, vtx, 0, inVal1);
-    apf::getComponents(f2, vtx, 0, inVal2);
-    apf::getComponents(f3, vtx, 0, inVal3);
+    apf::getComponents(f1, vtx, 0, &inVal1[0]);
+    apf::getComponents(f2, vtx, 0, &inVal2[0]);
+    apf::getComponents(f3, vtx, 0, &inVal3[0]);
 /* simpler, test later, need algorithm header */
 /*
     copy(inVal1, inVal2 + in_size1, outVal);
@@ -125,7 +125,7 @@ apf::Field* combineField(apf::Mesh* m,
       j++;
     }
     PCU_ALWAYS_ASSERT(j == out_size);
-    apf::setComponents(rf, vtx, 0, outVal);
+    apf::setComponents(rf, vtx, 0, &outVal[0]);
   }
   m->end(it);
   /* destroy input fields */
