@@ -78,6 +78,7 @@ static void getM2GFields(Output& o) {
   o.arrays.m2gParCoord = new double[n * 2];
   apf::MeshEntity* v;
   apf::Vector3 pm;
+  for (int j = 0; j < 3; ++j) pm[j] = 0.0;
   int i = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
@@ -85,18 +86,14 @@ static void getM2GFields(Output& o) {
     int dim = gmi_dim(gm,ge);
     int tag = gmi_tag(gm,ge);
     int dis = gmi_is_discrete_ent(gm,ge);
-    if (dim > 2) { // region vertex has no param coord
-      for (int j = 0; j < 3; ++j)
-        pm[j] = 0.0;
-    }
-    else {
+    if (dim < 3) { // region vertex has no param coord
       m->getParam(v, pm);
     }
     o.arrays.m2gClsfcn[i]     = dim;
     o.arrays.m2gClsfcn[n+i]   = tag;
     o.arrays.m2gClsfcn[2*n+i] = dis;
-    for (int j = 0; j < 2; ++j)
-      o.arrays.m2gParCoord[j * n + i] = pm[j];
+    o.arrays.m2gParCoord[i]   = pm[0];
+    o.arrays.m2gParCoord[n+i] = pm[1];
     ++i;
   }
   m->end(it);

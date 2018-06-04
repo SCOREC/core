@@ -193,7 +193,7 @@ static gmi_set* edge_regions(pGEdge e)
   pPList list = GE_faces((pGEdge)e);
 
   std::set<pGRegion> rgns;
-  gmi_set* regions_set;
+  gmi_set* regions_set = NULL;
   for (int i = 0; i < PList_size(list); i++) {
    regions_set = face_regions((pGFace)PList_item(list, i));
    for (int j = 0; j < regions_set->n; j++) {
@@ -207,6 +207,9 @@ static gmi_set* edge_regions(pGEdge e)
     s->e[count] = (gmi_ent*)*it;
     count++;
   }
+
+  PList_delete(list);
+  gmi_free_set(regions_set);
 
   return s;
 }
