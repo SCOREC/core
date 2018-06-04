@@ -74,8 +74,8 @@ static void getM2GFields(Output& o) {
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
   int n = m->count(0);
-  int* classinfo = new int[n * 3];
-  double* params = new double[n * 2];
+  o.arrays.m2gClsfcn = new int[n * 3];
+  o.arrays.m2gParCoord = new double[n * 2];
   apf::MeshEntity* v;
   apf::Vector3 pm;
   int i = 0;
@@ -92,17 +92,15 @@ static void getM2GFields(Output& o) {
     else {
       m->getParam(v, pm);
     }
-    classinfo[i]     = dim;
-    classinfo[n+i]   = tag;
-    classinfo[2*n+i] = dis;
+    o.arrays.m2gClsfcn[i]     = dim;
+    o.arrays.m2gClsfcn[n+i]   = tag;
+    o.arrays.m2gClsfcn[2*n+i] = dis;
     for (int j = 0; j < 2; ++j)
-      params[j * n + i] = pm[j];
+      o.arrays.m2gParCoord[j * n + i] = pm[j];
     ++i;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
-  o.arrays.m2gClsfcn = classinfo;
-  o.arrays.m2gParCoord = params;
 }
 
 /* so apparently old phParAdapt just used EN_id,
