@@ -997,11 +997,13 @@ Output::~Output()
   delete [] arrays.ileo;
   delete [] arrays.ile;
 //-------growth curve--------
-  delete [] arrays.gcflt;
-  delete [] arrays.gcgr;
-  delete [] arrays.igcnv;
-  delete [] arrays.igclv;
-  delete [] arrays.igclvid;
+  if (in->simmetrixMesh) {
+    delete [] arrays.gcflt;
+    delete [] arrays.gcgr;
+    delete [] arrays.igcnv;
+    delete [] arrays.igclv;
+    delete [] arrays.igclvid;
+  }
 //---------------------------
   if (in->mesh2geom) {
     delete [] arrays.m2gClsfcn;
