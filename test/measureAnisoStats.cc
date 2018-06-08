@@ -219,7 +219,8 @@ void getStats(
 
   std::stringstream ss, sse, ssq, ssm, ssl;
   ss << outputPrefix << "/" << "linear_tables";
-  const char* pathName = ss.str().c_str();
+  const std::string& tmp = ss.str();
+  const char* pathName = tmp.c_str();
   safe_mkdir(pathName);
 
   ssq << pathName << "/linearQTable_" << PCU_Comm_Self() << ".dat";

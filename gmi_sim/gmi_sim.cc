@@ -14,6 +14,7 @@
 #include <gmi.h>
 #include <SimModel.h>
 #include <vector>
+#include <set>
 
 #include "gmi_sim_config.h"
 
@@ -182,8 +183,7 @@ static gmi_set* region_faces(pGRegion region)
   return s;
 }
 
-/* getting the region adj to an edge. This version
- * does not support non-manifold models
+/* getting the region adj to an edge.
  */
 // NOTE: the corresponding functionality does not exist
 // in gmi_base!
@@ -192,22 +192,23 @@ static gmi_set* edge_regions(pGEdge e)
 {
   pPList list = GE_faces((pGEdge)e);
 
-  // do the first one outside of the loop
-  gmi_set* regions_set = face_regions((pGFace)PList_item(list, 0));
-  if (regions_set->n > 1)
-    gmi_fail("no support for non-manifold surfaces!\n");
-  pGRegion r = (pGRegion)regions_set->e[0];
-
-  // do the rest inside of the loop
-  for (int i = 1; i < PList_size(list); i++) {
-    regions_set = face_regions((pGFace)PList_item(list, i));
-    if (regions_set->n > 1)
-      gmi_fail("no support for non-manifold surfaces!\n");
-    if (r != (pGRegion)regions_set->e[0])
-      gmi_fail("no support for non-manifold surfaces!\n");
+  std::set<pGRegion> rgns;
+  gmi_set* regions_set;
+  for (int i = 0; i < PList_size(list); i++) {
+   regions_set = face_regions((pGFace)PList_item(list, i));
+   for (int j = 0; j < regions_set->n; j++) {
+     rgns.insert( (pGRegion) regions_set->e[j] );
+   }
   }
-  PList_delete(list);
-  return regions_set;
+
+  int count = 0;
+  gmi_set* s = gmi_make_set(rgns.size());
+  for (std::set<pGRegion>::iterator it=rgns.begin(); it!=rgns.end(); ++it) {
+    s->e[count] = (gmi_ent*)*it;
+    count++;
+  }
+
+  return s;
 }
 
 static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
