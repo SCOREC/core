@@ -79,6 +79,7 @@ static Entity* getTetVertOppositeFace(Mesh* m, Entity* r, Entity* f)
     if (index == -1)
       return rvs[i];
   }
+  return 0;
 }
 
 Vector faceNormal(Mesh* mesh, Entity* face, Entity* rgn)
@@ -209,8 +210,8 @@ bool RegionCollapse::checkTopo()
 	}
 	reclassifyEdge = f2es[j]; // this is the edge being reclassified
 
-	Entity* f0es[0];
-	Entity* f1es[1];
+	Entity* f0es[3];
+	Entity* f1es[3];
 	mesh->getDownward(faces[0], 1, f0es);
 	mesh->getDownward(faces[1], 1, f1es);
 	for (j = 0; j < 3; j++) {
@@ -239,7 +240,7 @@ bool RegionCollapse::checkTopo()
 	      return false;
 	  }
 	}
-	Entity* vert = getTetVertOppositeFace(mesh, region, vert);
+	Entity* vert = getTetVertOppositeFace(mesh, region, faces[3]);
 	if (mesh->getModelType(mesh->toModel(vert)) != 2)
 	  return false;
 	if (mesh->countUpward(vert) != 3)
