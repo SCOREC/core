@@ -294,6 +294,10 @@ class FaceVertFixer : public TetFixerBase
       edges[0] = 0;
       edges[1] = 0;
       edges[2] = 0;
+      verts[0] = 0;
+      verts[1] = 0;
+      verts[2] = 0;
+      verts[3] = 0;
       face = 0;
       oppVert = 0;
       tet = 0;
@@ -308,17 +312,18 @@ class FaceVertFixer : public TetFixerBase
    are too close, the key edges are those that bound
    face v(0,1,2) */
       apf::findTriDown(mesh,v,edges);
-      face = apf::findUpward(mesh, apf::Mesh::TRIANGLE, edges);
       tet = apf::findElement(mesh, apf::Mesh::TET, v);
       oppVert = v[3];
+      verts[0] = v[0];
+      verts[1] = v[1];
+      verts[2] = v[2];
+      verts[3] = v[3];
     }
     virtual bool requestLocality(apf::CavityOp* o)
     {
-      /* Request locality for edges (for swaps) and v[3] (for face-split-
-	 collapse, the face is already handled by the edges) */
-      bool edgesLocalized = o->requestLocality(edges,3);
-      bool oppVertLocalized = o->requestLocality(&oppVert,1);
-      return edgesLocalized && oppVertLocalized;
+      /* by requesting locality for all the verts we can be sure
+       * that all the desired entities for this operator are local */
+      return o->requestLocality(verts,4);
     }
     virtual bool run()
     {
@@ -328,6 +333,7 @@ class FaceVertFixer : public TetFixerBase
           ++nes;
           return true;
         }
+      face = apf::findUpward(mesh, apf::Mesh::TRIANGLE, edges);
       if (faceSplitCollapse.run(face, tet))
       {
         ++nfsc;
@@ -339,6 +345,7 @@ class FaceVertFixer : public TetFixerBase
   private:
     Mesh* mesh;
     Entity* edges[3];
+    Entity* verts[4];
     Entity *face, *oppVert;
     Entity* tet;
     FaceSplitCollapse faceSplitCollapse;
