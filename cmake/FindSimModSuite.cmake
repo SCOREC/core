@@ -138,6 +138,13 @@ set(SIM_CORE_LIB_NAMES
 
 simLibCheck("${SIM_CORE_LIB_NAMES}" TRUE)
 
+if (SIM_PARASOLID OR SIM_ACIS)
+  if (UNIX AND NOT APPLE)
+    find_package(Threads REQUIRED)
+    set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  endif()
+endif()
+
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set SIMMODSUITE_FOUND to TRUE
 # if all listed variables are TRUE
