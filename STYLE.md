@@ -82,6 +82,10 @@ Do not mix tabs and spaces, be consistent.
 
 Do not leave trailing whitespace.
 
+### Controlling Whitespace ###
+ 
+If you would like to render the leading whitespaces differently in your text editor or IDE without Git seeing a diff on every line when a file is committed:
+
 ## Comments ##
 
 Reserve the use of comments for describing functionality, why some code exists, etc. .
