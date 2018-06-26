@@ -114,7 +114,7 @@ grep -P "\t" -r --include="*.cc" .
 ```
 which means recursively (`-r`) find the ocurence of special character tab (`-P “\t”`) in all files ending with `.cc` (`—include=“*.cc”`) starting from this directory (`.`). 
 
-Finally, github diff files will by default show whitespace changes including all these manual tab to space conversions if they happen. While it is necessary to view them, in order to filter them out and see the actual code changes one can add `?w=1` [at the end of the current github diff url](https://github.com/tiimgreen/github-cheat-sheet#ignore-whitespace). Literally, if the url is for example https://github.com/SCOREC/repo-1/pull/20/commits/lots-of-chars change the url in the url tab to https://github.com/SCOREC/repo-1/pull/20/commits/lots-of-char?w=1. This seems to be also available in Diff settings menu as part of the web GUI at least on some web browsers.
+Finally, github diff files will by default show whitespace changes including all these manual tab to space conversions if they happen. While it is necessary to view them, in order to filter them out and see the actual code changes one can add `?w=1` [at the end of the current github diff url](https://github.com/tiimgreen/github-cheat-sheet#ignore-whitespace). Literally, if the url is for example https://github.com/repo-1 change the url in the url tab to https://github.com/repo-1?w=1. This seems to be also available in Diff settings menu as part of the web GUI at least on some web browsers.
 
 ## Comments ##
 
