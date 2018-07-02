@@ -189,7 +189,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
             for (int iglf = 0; iglf < PList_size(growthLayerFace); iglf++) {
               pFace blFace = (pFace)PList_item(growthLayerFace, iglf);
               double fq = ma::measureElementQuality(m, sf, reinterpret_cast<apf::MeshEntity*> (blFace)); // squared mean ratio
-              fq = sqrt(fq); // mean ratio
+              fq = (fq > 0) ? sqrt(fq) : -sqrt(-fq); // mean ratio
               if (fq < minfq)
                 minfq = fq;
             }
