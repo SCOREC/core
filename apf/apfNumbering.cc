@@ -20,6 +20,7 @@ enum { FIXED = -2, FREE_BUT_NOT_NUMBERED = -1 };
 
 template <class T>
 NumberingOf<T>::NumberingOf()
+  : FieldBase()
 {
   field = 0;
   components = 0;

@@ -10,26 +10,46 @@
 
 #include "apfFieldData.h"
 
-namespace apf {
-
-struct UserData : public FieldDataOf<double>
+namespace apf
 {
-  UserData(Function* f);
-  void init(FieldBase* f);
-  bool hasEntity(MeshEntity* e);
-  void removeEntity(MeshEntity* e);
-  void get(MeshEntity* e, double* data);
-  void set(MeshEntity* e, double const* data);
-  bool isFrozen();
-  virtual FieldData* clone();
-  // using const * const gives an error on gcc/7.3.0 because the return is an
-  // r-value which cannot be modified anyways
-  Function const* getFunction() const { return function; }
-  void setFunction(Function* func) { function = func; }
-  private:
-  Function* function;
+template <class T>
+struct UserDataBase : public FieldDataOf<T>
+{
+  UserDataBase(FunctionBase<T> * f)
+    : function(f)
+  { }
+  void init(FieldBase * f)
+  {
+    FieldDataOf<T>::field = f;
+  }
+  bool hasEntity(MeshEntity * e)
+  {
+    return FieldDataOf<T>::field->getShape()->countNodesOn(FieldDataOf<T>::field->getMesh()->getType(e)) > 0;
+  }
+  void removeEntity(MeshEntity * e) {}
+  void get(MeshEntity * e, T * data)
+  {
+    function->eval(e,data);
+  }
+  void set(MeshEntity * e, T const * data) {}
+  bool isFrozen() { return false; }
+  virtual FieldData* clone()
+  {
+    FieldData* newData = new UserDataBase<T>(function);
+    newData->init(FieldDataOf<T>::field);
+    copyFieldData(static_cast<FieldDataOf<T>*>(newData),
+                  static_cast<FieldDataOf<T>*>(FieldDataOf<T>::field->getData()));
+    return newData;
+  }
+  FunctionBase<T> const* getFunction() const { return function; }
+  void setFunction(FunctionBase<T>* func) { function = func; }
+private:
+  FunctionBase<T> * function;
 };
-
+typedef UserDataBase<double> UserData;
+typedef UserDataBase<int> UserDataInt;
+typedef UserDataBase<long> UserDataLong;
+typedef UserDataBase<size_t> UserDataSizeT;
 }
 
 #endif

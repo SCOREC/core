@@ -80,6 +80,16 @@ int PCU_Max_Int(int x);
 int PCU_Or(int c);
 int PCU_And(int c);
 
+/*collective allgathers*/
+void PCU_Allgather_Doubles(double* i, size_t ni, double* o);
+void PCU_Allgather_Double(double i, double* o);
+void PCU_Allgather_Ints(int* i, size_t n, int* o);
+void PCU_Allgather_Int(int i, int* o);
+void PCU_Allgather_Longs(long* i, size_t n, long* o);
+void PCU_Allgather_Long(long i, long* o);
+void PCU_Allgather_SizeTs(size_t* i, size_t n, size_t* o);
+void PCU_Allgather_SizeT(size_t i, size_t* o);
+
 /*process-level self/peers (mpi wrappers)*/
 int PCU_Proc_Self(void);
 int PCU_Proc_Peers(void);
@@ -119,6 +129,8 @@ int PCU_Comm_Start(PCU_Method method);
 /*special MPI_Comm replacement API*/
 void PCU_Switch_Comm(MPI_Comm new_comm);
 MPI_Comm PCU_Get_Comm(void);
+int PCU_Local_To_Foreign(int local_rank, MPI_Comm foreign_comm);
+int PCU_Foreign_To_Local(int foreign_rank, MPI_Comm foreign_comm);
 
 /*stack trace helpers using GNU/Linux*/
 void PCU_Protect(void);

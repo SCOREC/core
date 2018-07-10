@@ -654,19 +654,22 @@ double* getArrayData(Field* f);
 /** \brief Initialize all nodal values with all-zero components */
 void zeroField(Field* f);
 
-/** \brief User-defined Analytic Function. */
-struct Function
+/** \brief User-defined Analytic Function for arbitrary scalar type. */
+template <class T>
+struct FunctionBase
 {
   /** \brief Possible user-defined cleanup */
-  virtual ~Function();
+  virtual ~FunctionBase() {}
   /** \brief The user's analytic function call.
-    \details For simplicity, this
-    currently only supports one node per entity.
-    \param e the entity on which the node is
-    \param result the field component values for that node
-    */
-  virtual void eval(MeshEntity* e, double* result) = 0;
+      \details For simplicity, this
+      currently only supports one node per entity.
+      \param e the entity on which the node is
+      \param result the field component values for that node
+  */
+  virtual void eval(MeshEntity * e, T * result) = 0;
 };
+typedef FunctionBase<double> Function;
+
 
 /* \brief Create a Field from a user's analytic function.
  * \details This field will use no memory, has values on all
