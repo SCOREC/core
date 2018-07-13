@@ -559,8 +559,9 @@ class MeshMDS : public Mesh2
     }
     void acceptChanges()
     {
-      updateOwners(this, parts);
+      updateOwners(this, pmodel);
     }
+
     void migrate(Migration* plan)
     {
       apf::migrate(this,plan);
@@ -626,17 +627,47 @@ class MeshMDS : public Mesh2
       mds_add_copy(&mesh->ghosts, &mesh->mds, fromEnt(e), c);
     }
 
+    void resetPmodel()
+    {
+      deletePM(pmodel); // delete all PME in pmodel
+      MeshEntity* e;
+      Parts empty_parts;
+      for (int dim=0; dim<4; ++dim)
+      {
+        MeshIterator* it = begin(dim);
+        while ((e = iterate(it)))
+          setPtnClas(e, empty_parts, -1); // set NULL to ptn classification of each entity
+        end(it);
+      }
+      printf("(%d) %s: #pmodel ent = %d\n", PCU_Comm_Self(), __func__, pmodel.size());
+    }
+
+    void setPtnClas(MeshEntity* e, Parts& residence, int owner)
+    {
+      mds_id id = fromEnt(e);
+      PME* p=NULL;
+      if (residence.size())
+      {
+        p = getPMent(pmodel, residence, owner);
+        PCU_ALWAYS_ASSERT(p);
+        //printf("(%d) setPtnClas e %d (id %d, owner=%d)\n", PCU_Comm_Self(), getMdsIndex(this,e), p->ID, p->owner);
+      }
+      mds_set_part(mesh, id, (void*)p);
+      PCU_ALWAYS_ASSERT(mds_get_part(mesh, id)==(void*)p);
+      if (p) PCU_ALWAYS_ASSERT(getOwner(e)==p->owner);
+    }
+
     void setResidence(MeshEntity* e, Parts& residence)
     {
       mds_id id = fromEnt(e);
-      PME* p = getPME(parts, residence);
+      PME* p = getPME(pmodel, residence);
       void* vp = static_cast<void*>(p);
       void* ovp = mds_get_part(mesh, id);
       if (ovp) { /* partition model classification can be NULL during
         early mesh initialization, such as after reading SMB or in
         createEntity_ */
         PME* op = static_cast<PME*>(ovp);
-        putPME(parts, op);
+        putPME(pmodel, op);
       }
       mds_set_part(mesh, id, vp);
     }
@@ -686,7 +717,7 @@ class MeshMDS : public Mesh2
       mds_id id = fromEnt(e);
       void* ovp = mds_get_part(mesh, id);
       PME* op = static_cast<PME*>(ovp);
-      putPME(parts, op);
+      putPME(pmodel, op);
       mds_apf_destroy_entity(mesh,id);
     }
     void setModelEntity(MeshEntity* e, ModelEntity* c)
@@ -749,7 +780,7 @@ class MeshMDS : public Mesh2
       return table[type];
     }
     mds_apf* mesh;
-    PM parts;
+    PM pmodel;
     bool isMatched;
     bool ownsModel;
 };
