@@ -639,7 +639,6 @@ class MeshMDS : public Mesh2
           setPtnClas(e, empty_parts, -1); // set NULL to ptn classification of each entity
         end(it);
       }
-      printf("(%d) %s: #pmodel ent = %d\n", PCU_Comm_Self(), __func__, pmodel.size());
     }
 
     void setPtnClas(MeshEntity* e, Parts& residence, int owner)

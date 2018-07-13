@@ -299,7 +299,7 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename)
   // clear pmodel and partition classification
   m->resetPmodel();
 
-  int from, self = pumi_rank();
+  int from = pumi_rank();
 
   // stitch links
   pMeshEnt e;
