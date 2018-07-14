@@ -381,7 +381,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   }
   int swap = ph_should_swap(f);
   /* stops when ph_read_field returns 0 */
-  while( readAndAttachField(in,f,m,swap) );
+  while( readAndAttachField(in,f,m,swap) ) {}
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

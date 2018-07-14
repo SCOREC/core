@@ -142,7 +142,7 @@ static void printMinMaxAvgSzt(const char* key, size_t v) {
   double avg = ((double)tot)/PCU_Comm_Peers();
   if(!PCU_Comm_Self())
     fprintf(stderr, "%s_%s min max avg %" PRIu64 " %" PRIu64 " %f\n",
-        getFileName(), key, min, max, avg);
+        getFileName(), key, (long long)min, (long long)max, avg);
 }
 
 static void printMinMaxAvgDbl(const char* key, double v) {
@@ -214,7 +214,8 @@ void phastaio_printStats() {
     usleep(us);
     phastaio_time(&t1);
     elapsed = phastaio_time_diff(&t0,&t1);
-    fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
+    fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n",
+        (long long)us, (long long)elapsed);
   }
   for(int chefFile=0; chefFile<NUM_PHASTAIO_MODES; chefFile++) {
     size_t totalus = 0;
