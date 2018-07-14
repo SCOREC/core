@@ -108,6 +108,8 @@ class MeshSIM : public Mesh2
     void clearMatches(MeshEntity*) {}
     void clear_() {}
     void acceptChanges() {}
+    void resetPmodel() {} 
+    void setPtnClas(MeshEntity*, Parts&, int) {}
     void addGhost(MeshEntity*, int, MeshEntity*) {}
     void deleteGhost(MeshEntity*) {}
     pParMesh getMesh() { return mesh; }

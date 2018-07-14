@@ -15,11 +15,62 @@
 
 namespace apf {
 
+int pme_id=0;
+
+// the last arg "owner" is used only if a new pmodel entity is created
+PME* getPMent(PM& ps, apf::Parts const& pids, int owner)
+{
+  APF_ITERATE(PM, ps, it) 
+  {
+    bool equal=true;
+    APF_ITERATE(Parts,pids,pit)
+    {
+      bool found=false;
+      for (size_t i = 0; i < (*it).ids.size(); ++i)
+        if ((*it).ids[i]==*pit)
+          found=true;
+      if (!found)
+      {
+        equal=false;
+        break;
+      }
+    }
+
+    if (equal)
+    {  
+      PME& p = const_cast<PME&>(*it);
+      ++(p.refs);
+      return &p;
+    }
+  }
+  PME *pme = new PME(pme_id++, pids, owner);
+  ps.insert(*pme);
+  ++(pme->refs);
+  return pme;
+}
+
+// the partition classification of mesh entities has to be updated separately
+void deletePM(PM& ps)
+{  
+  APF_ITERATE(PM, ps, it) 
+  {
+    printf("(%d) %s: delete PME %d\n", PCU_Comm_Self(), __func__, it->ID);
+    ps.erase(*it);
+  }
+}
+
+void deletePMent(PM& ps, PME* p)
+{
+  printf("(%d) %s: delete PME %d\n", PCU_Comm_Self(), __func__, p->ID);
+  ps.erase(*p);
+}
+
+
 typedef std::map<int,size_t> CountMap;
 
 PME* getPME(PM& ps, apf::Parts const& ids)
 {
-  PME const& cp = *(ps.insert(PME(ids)).first);
+  PME const& cp = *(ps.insert(PME(pme_id++, ids, -1)).first);
   /* always annoyed by this flaw in std::set */
   PME& p = const_cast<PME&>(cp);
   ++(p.refs);

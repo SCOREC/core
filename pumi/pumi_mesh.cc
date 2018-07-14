@@ -257,6 +257,97 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   return pumi::instance()->mesh;
 }
 
+
+
+void send_entities(pMesh mesh, int dim)
+{
+  int local_id, self = PCU_Comm_Self();
+  pMeshEnt e;
+  pMeshIter it = mesh->begin(dim);
+  while ((e = mesh->iterate(it)))
+  {
+    local_id = getMdsIndex(mesh, e);
+    for (int pid=0; pid<PCU_Comm_Peers(); ++pid)
+    {
+      if (pid==self) continue;
+      PCU_Comm_Pack(pid, &local_id, sizeof(int));
+      PCU_COMM_PACK(pid, e);
+    }
+  }
+  mesh->end(it);
+}
+
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename)
+{
+  if (pumi_size()==1) 
+  {
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
+    return pumi::instance()->mesh;
+  }
+
+  MPI_Comm prevComm = PCU_Get_Comm();
+  int num_target_part = PCU_Comm_Peers();
+  split_comm(num_target_part);
+  pMesh m = apf::loadMdsMesh(g->getGmi(), filename);
+  merge_comm(prevComm);
+
+#ifdef DEBUG
+  if (!pumi_rank()) 
+    std::cout<<"[PUMI INFO] "<<__func__<<" serial mesh loaded on all processes\n";
+#endif
+
+  // clear pmodel and partition classification
+  m->resetPmodel();
+
+  int from = pumi_rank();
+
+  // stitch links
+  pMeshEnt e;
+  for (int dim=0; dim<=3; ++dim)
+  {
+    PCU_Comm_Begin();
+    send_entities(m, dim);
+    PCU_Comm_Send();
+
+    // receive phase begins
+    while (PCU_Comm_Listen())
+    {
+      from = PCU_Comm_Sender();
+      while (!PCU_Comm_Unpacked())
+      {
+        pMeshEnt r;
+        int id;
+        PCU_COMM_UNPACK(r);
+        PCU_Comm_Unpack(&id,sizeof(int));
+        e = getMdsEntity(m, dim, id); 
+        m->addRemote(e, from, r);
+      }
+    }
+  }
+
+  apf::Parts parts;
+  for (int i=0; i<PCU_Comm_Peers(); ++i)
+    parts.insert(i);
+
+  // update partition classification
+  for (int d=0; d<=3; ++d)
+  {
+    pMeshIter it = m->begin(d);
+    while ((e = m->iterate(it))) 
+      m->setPtnClas(e, parts, 0); // set owner to 0
+    m->end(it);
+  }
+
+#ifdef DEBUG
+  if (!pumi_rank()) 
+    std::cout<<"[PUMI INFO] "<<__func__<<" updated comm links and ptn classification\n";
+  pumi_mesh_print(m);
+#endif
+
+  pumi::instance()->mesh = m;
+  return pumi::instance()->mesh;
+} 
+
 void pumi_mesh_migrate(pMesh m, Migration* plan)
 {
   apf::migrate(m, plan);

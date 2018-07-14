@@ -196,11 +196,15 @@ pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz);
 pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* down);
 pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* vertices); 
 
-// load a serial mesh. 
+// load a serial mesh and no partitioning
 pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type="mds");
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
+
+// load a serial mesh on all processes and set up comm links and ptn classification 
+// note that the default owning PID is 0
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename);
 
 // delete mesh
 void pumi_mesh_delete(pMesh m);
