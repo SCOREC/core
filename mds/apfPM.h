@@ -24,9 +24,6 @@ struct PME
     if (o>-1) owner = o;
     ids.assign(i.begin(), i.end());
     refs = 0;
-#ifdef DEBUG
-  printf("(%d) create a new PME %d (pids.size=%d, ownder=%d)\n", PCU_Comm_Self(), ID, ids.size(), owner);
-#endif
   }
 
   bool operator<(PME const& other) const
@@ -36,14 +33,14 @@ struct PME
   int owner;
   std::vector<int> ids;
   int refs;
-  int ID;
+  int ID; // debugging purpose
 };
 
 typedef std::set<PME> PM;
 
 void deletePM (PM& ps);
 void deletePMent(PM& ps, PME* p);
-PME* getPMent(PM& ps, apf::Parts const& pids, int);
+PME* getPMent(PM& ps, apf::Parts const& pids, int o = -1);
 
 PME* getPME(PM& ps, Parts const& ids);
 void putPME(PM& ps, PME* p);
@@ -51,8 +48,7 @@ void updateOwners(Mesh* m, PM& ps);
 
 void stitchMesh(Mesh2* m);
 
-void remapPM(PM& pm,
-    int (*map)(int, void*), void* user);
+void remapPM(PM& pm, int (*map)(int, void*), void* user);
 
 }
 
