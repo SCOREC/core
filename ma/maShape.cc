@@ -80,7 +80,7 @@ CodeMatch matchSliver(
      {{ 0, 1}, { 5, 2}, { 6, 2}, { 6, 3}, { 0, 2}, { 5, 3}, { 0, 3}, {-1,-1}}
     };
   int code = getSliverCode(a,tet);
-  return table[code & 7][0];
+  return table[code & 7][(code >> 3) & 7];
 }
 
 struct IsBadQuality : public Predicate
@@ -442,10 +442,17 @@ class LargeAngleTetFixer : public Operator
         return false;
       tet = e;
       CodeMatch match = matchSliver(adapter,e);
-      if (match.code_index==EDGE_EDGE)
+      if (match.code_index==EDGE_EDGE) {
+        ees.append(e);
         fixer = &edgeEdgeFixer;
-      else
-      { PCU_ALWAYS_ASSERT(match.code_index==FACE_VERT);
+      } else if (match.code_index==FACE_VERT) {
+        fvs.append(e);
+        fixer = &faceVertFixer;
+      } else if (match.code_index==EDGE_VERT) {
+        evs.append(e);
+        fixer = &faceVertFixer;
+      } else if (match.code_index==VERT_VERT) {
+        vvs.append(e);
         fixer = &faceVertFixer;
       }
       Entity* v[4];
@@ -470,6 +477,7 @@ class LargeAngleTetFixer : public Operator
     Entity* tet;
     TetFixerBase* fixer;
   public:
+    EntityArray ees, fvs, evs, vvs;
     EdgeEdgeFixer edgeEdgeFixer;
     FaceVertFixer faceVertFixer;
 };
@@ -651,6 +659,10 @@ static void fixLargeAngleTets(Adapt* a)
 {
   LargeAngleTetFixer fixer(a);
   applyOperator(a,&fixer);
+  ma_dbg::createCavityMesh(a, fixer.ees, "edge_edge_bad_tets");
+  ma_dbg::createCavityMesh(a, fixer.fvs, "face_vert_bad_tets");
+  ma_dbg::createCavityMesh(a, fixer.evs, "edge_vert_bad_tets");
+  ma_dbg::createCavityMesh(a, fixer.vvs, "vert_vert_bad_tets");
 }
 
 static void fixLargeAngleTris(Adapt* a)
