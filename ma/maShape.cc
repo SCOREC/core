@@ -47,7 +47,10 @@ int getSliverCode(
   apf::destroyMeshElement(me);
   int code = 0;
   // check first face
-  if (true) {
+  Entity* fs[4];
+  m->getDownward(tet, 2, fs);
+  double f0Qual = a->shape->getQuality(fs[0]); print("f0Qual = %f", f0Qual);
+  if ((f0Qual*f0Qual*f0Qual > a->input->goodQuality*a->input->goodQuality)) {
     // if its okay, use it for projection
     Vector v03 = J[2];
     J[2] = apf::cross(J[0],J[1]); //face normal towards v[3]
@@ -79,7 +82,7 @@ int getSliverCode(
       if (areaPoint[i] > 0)
         code |= ((1<<i) << 7);
     for (int i=0; i < 3; ++i)
-      if (areaPoint[i] > -0.10 && areaPoint[i] < 0.10)
+      if (areaPoint[i] > -0.20 && areaPoint[i] < 0.20)
         code |= ((1<<i) << 9);
   }
   PCU_ALWAYS_ASSERT(code);
