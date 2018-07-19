@@ -3,8 +3,7 @@
 #include <phiotimer.h>
 #include <PCU.h>
 
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h> /* PRIu64 */
+#include <iostream> /* cerr */
 #include <time.h> /* clock_gettime */
 #include <unistd.h> /* usleep */
 
@@ -141,8 +140,8 @@ static void printMinMaxAvgSzt(const char* key, size_t v) {
   size_t tot = PCU_Add_SizeT(v);
   double avg = ((double)tot)/PCU_Comm_Peers();
   if(!PCU_Comm_Self())
-    fprintf(stderr, "%s_%s min max avg %" PRIu64 " %" PRIu64 " %f\n",
-        getFileName(), key, (long long)min, (long long)max, avg);
+    std::cerr << getFileName() << "_" << key << "min max avg"
+              << min << " " << max << " " << avg << "\n";
 }
 
 static void printMinMaxAvgDbl(const char* key, double v) {
@@ -214,8 +213,7 @@ void phastaio_printStats() {
     usleep(us);
     phastaio_time(&t1);
     elapsed = phastaio_time_diff(&t0,&t1);
-    fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n",
-        (long long)us, (long long)elapsed);
+    std::cerr << us << " us measured as " << elapsed << "us\n";
   }
   for(int chefFile=0; chefFile<NUM_PHASTAIO_MODES; chefFile++) {
     size_t totalus = 0;
