@@ -143,10 +143,8 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
     if (m->getType(e) != apf::Mesh::TET)
       continue;
 #ifdef HAVE_SIMMETRIX
-    if (EN_isBLEntity(reinterpret_cast<pEntity>(e))) {
-      printf("  skip one BL entity\n");
+    if (EN_isBLEntity(reinterpret_cast<pEntity>(e)))
       continue;
-    }
 #endif
     double vq = ma::measureElementQuality(m, sf, e); // cubic mean ratio
     vq = cbrt(vq); // mean ratio
