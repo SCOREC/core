@@ -22,7 +22,7 @@ void readBubbles(Bubbles& bubbles, std::string bubbleFileName)
   FILE *filebubble;
   Bubble readbubble;
 
-  sprintf(bubblefname,bubbleFileName.c_str());
+  sprintf(bubblefname, "%s", bubbleFileName.c_str());
   if (!PCU_Comm_Self())
     printf("reading bubbles info from %s\n",bubblefname);
 

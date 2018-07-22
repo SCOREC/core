@@ -41,7 +41,6 @@ class FaceSplit
     Adapt* getAdapt() {return adapter;}
   private:
     Adapt* adapter;
-    bool shouldCollect[4];
     EntityArray toSplit[4];
     apf::DynamicArray<EntityArray> newEntities[4];
 };

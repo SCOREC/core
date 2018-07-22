@@ -649,7 +649,6 @@ class MeshMDS : public Mesh2
       {
         p = getPMent(pmodel, residence, owner);
         PCU_ALWAYS_ASSERT(p);
-        //printf("(%d) setPtnClas e %d (id %d, owner=%d)\n", PCU_Comm_Self(), getMdsIndex(this,e), p->ID, p->owner);
       }
       mds_set_part(mesh, id, (void*)p);
       PCU_ALWAYS_ASSERT(mds_get_part(mesh, id)==(void*)p);

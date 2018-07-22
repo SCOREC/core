@@ -23,6 +23,14 @@ set(SOURCES
   phiotimer.cc
 )
 
+if(ENABLE_SIMMETRIX AND SIMMODSUITE_SimAdvMeshing_FOUND)
+  if(SIM_DOT_VERSION VERSION_GREATER 12.0.180605)
+    set(SOURCES ${SOURCES} splitMeshOnGFace_2arg.cpp)
+  else()
+    set(SOURCES ${SOURCES} splitMeshOnGFace_4arg.cpp)
+  endif()
+endif()
+
 if(PUMI_FORTRAN_INTERFACE)
   enable_language(Fortran)
   set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod_files)

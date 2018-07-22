@@ -69,6 +69,7 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
   PCU_ALWAYS_ASSERT(mcaseFile);
 
   AttCase_setModel(mcaseFile, mdl);
+  AttCase_associate(mcaseFile, NULL);
   pACase mcase = MS_newMeshCase(mdl);
   MeshingOptions meshingOptions;
   MS_processSimModelerMeshingAtts(mcaseFile, mcase, &meshingOptions);
@@ -231,6 +232,7 @@ int main(int argc, char** argv)
   getConfig(argc,argv);
 
   simStart();
+  Sim_logOn("generate_sim.log");
   pNativeModel nm = loadNativeModel();
   pGModel simModel = GM_load(modelFile.c_str(), nm, NULL);
 
@@ -254,6 +256,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(mesh);
 
   simStop();
+  Sim_logOff();
   PCU_Comm_Free();
   MPI_Finalize();
 }

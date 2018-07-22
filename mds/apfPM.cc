@@ -15,8 +15,7 @@
 
 namespace apf {
 
-int pme_id=0;
-
+// the following three functions are for exclusive use by pumi_mesh_loadAll
 // the last arg "owner" is used only if a new pmodel entity is created
 PME* getPMent(PM& ps, apf::Parts const& pids, int owner)
 {
@@ -43,6 +42,7 @@ PME* getPMent(PM& ps, apf::Parts const& pids, int owner)
       return &p;
     }
   }
+  static int pme_id=ps.size();
   PME *pme = new PME(pme_id++, pids, owner);
   ps.insert(*pme);
   ++(pme->refs);
@@ -53,15 +53,11 @@ PME* getPMent(PM& ps, apf::Parts const& pids, int owner)
 void deletePM(PM& ps)
 {  
   APF_ITERATE(PM, ps, it) 
-  {
-    printf("(%d) %s: delete PME %d\n", PCU_Comm_Self(), __func__, it->ID);
     ps.erase(*it);
-  }
 }
 
 void deletePMent(PM& ps, PME* p)
 {
-  printf("(%d) %s: delete PME %d\n", PCU_Comm_Self(), __func__, p->ID);
   ps.erase(*p);
 }
 
@@ -70,7 +66,7 @@ typedef std::map<int,size_t> CountMap;
 
 PME* getPME(PM& ps, apf::Parts const& ids)
 {
-  PME const& cp = *(ps.insert(PME(pme_id++, ids, -1)).first);
+  PME const& cp = *(ps.insert(PME(ps.size(), ids, -1)).first);
   /* always annoyed by this flaw in std::set */
   PME& p = const_cast<PME&>(cp);
   ++(p.refs);
