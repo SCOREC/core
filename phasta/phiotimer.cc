@@ -44,7 +44,8 @@ static size_t phastaio_getCyclesPerMicroSec() {
   cycles = t1 - t0;
   cpus = ((double)cycles)/(usec);
   if(!PCU_Comm_Self())
-    fprintf(stderr, "cycles %" PRIu64 " us %" PRIu64 " cycles per micro second %" PRIu64"\n", cycles, usec, cpus);
+    cerr << "cycles " << cycles << " us " << usec
+         << " cycles per micro second " << cpus << "\n";
   return cpus;
 }
 /*return elapsed time in micro seconds*/
