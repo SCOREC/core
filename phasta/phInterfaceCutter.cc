@@ -17,7 +17,7 @@
 /* forward declare simmetrix API M_splitMeshOnGFace;
    once it is ready in published code, remove this */
 #ifdef HAVE_SIMMETRIX
-extern void M_splitMeshOnGFace(pUnstructuredMesh, pGFace, int keepOrig, pPList nosplit);
+extern void M_splitMeshOnGFace(pUnstructuredMesh, pGFace);
 #endif
 
 namespace apf {
@@ -223,7 +223,7 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
       printf("cutting face %d:\n",GEN_tag(modelFace));
       counter = M_numVerticesInClosure(mesh, modelFace);
       printf("  num. of mesh vertices on interface before cut: %d\n",counter);
-      M_splitMeshOnGFace(pmesh, modelFace, 0, 0);
+      M_splitMeshOnGFace(pmesh, modelFace);
       counter = M_numVerticesInClosure(mesh, modelFace);
       printf("  num. of mesh vertices on interface after cut: %d\n",counter);
     }

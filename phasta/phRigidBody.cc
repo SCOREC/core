@@ -55,7 +55,7 @@ void core_get_centroid (int r_tag, double ct[]){
   double totalVol = 0.0;
   RIter rIter = M_classifiedRegionIter(pm, modelRegion);
   while((meshRegion=RIter_next(rIter))){
-    R_centroid(meshRegion, cent);
+    EN_centroid(meshRegion, cent);
     double vol = R_volume(meshRegion);
     totalVol += vol;
     for (int i = 0; i < 3; i++)
