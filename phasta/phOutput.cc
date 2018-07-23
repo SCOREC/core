@@ -74,10 +74,11 @@ static void getM2GFields(Output& o) {
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
   int n = m->count(0);
-  int* classinfo = new int[n * 3];
-  double* params = new double[n * 2];
+  o.arrays.m2gClsfcn = new int[n * 3];
+  o.arrays.m2gParCoord = new double[n * 2];
   apf::MeshEntity* v;
   apf::Vector3 pm;
+  for (int j = 0; j < 3; ++j) pm[j] = 0.0;
   int i = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
@@ -85,24 +86,18 @@ static void getM2GFields(Output& o) {
     int dim = gmi_dim(gm,ge);
     int tag = gmi_tag(gm,ge);
     int dis = gmi_is_discrete_ent(gm,ge);
-    if (dim > 2) { // region vertex has no param coord
-      for (int j = 0; j < 3; ++j)
-        pm[j] = 0.0;
-    }
-    else {
+    if (dim < 3) { // region vertex has no param coord
       m->getParam(v, pm);
     }
-    classinfo[i]     = dim;
-    classinfo[n+i]   = tag;
-    classinfo[2*n+i] = dis;
-    for (int j = 0; j < 2; ++j)
-      params[j * n + i] = pm[j];
+    o.arrays.m2gClsfcn[i]     = dim;
+    o.arrays.m2gClsfcn[n+i]   = tag;
+    o.arrays.m2gClsfcn[2*n+i] = dis;
+    o.arrays.m2gParCoord[i]   = pm[0];
+    o.arrays.m2gParCoord[n+i] = pm[1];
     ++i;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
-  o.arrays.m2gClsfcn = classinfo;
-  o.arrays.m2gParCoord = params;
 }
 
 /* so apparently old phParAdapt just used EN_id,
@@ -337,6 +332,7 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
           rbMT = gmi_tag(gm, s->e[i]);
           if (floatID) break;
         }
+        gmi_free_set(s);
       }
       if (floatID) {
         PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
@@ -1000,13 +996,15 @@ Output::~Output()
   delete [] arrays.iel;
   delete [] arrays.ileo;
   delete [] arrays.ile;
-  if (nGrowthCurves > 0) {
+//-------growth curve--------
+  if (in->simmetrixMesh) {
     delete [] arrays.gcflt;
     delete [] arrays.gcgr;
     delete [] arrays.igcnv;
     delete [] arrays.igclv;
     delete [] arrays.igclvid;
   }
+//---------------------------
   if (in->mesh2geom) {
     delete [] arrays.m2gClsfcn;
     delete [] arrays.m2gParCoord;

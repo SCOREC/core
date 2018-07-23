@@ -11,6 +11,7 @@
 */
 
 #include <string>
+#include <vector>
 
 struct RStream;
 
@@ -170,6 +171,12 @@ class Input
     double gammaDist;
     /** \brief absolute isotropic size within [betaDist:gammDist) of zero level set */
     double gammaSize;
+    /** \brief number of rigid bodies */
+    int nRigidBody;
+    /** \brief number of parameters for each rigid body */
+    int nRBParam;
+    /** \brief parameter data for rigid body */
+    std::vector<double> rbParamData;
 };
 
 int countNaturalBCs(Input& in);
