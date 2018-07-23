@@ -50,12 +50,11 @@ void core_get_centroid (int r_tag, double ct[]){
 
   pGRegion modelRegion = (pGRegion) GM_entityByTag(model, 3, r_tag);
   pRegion meshRegion;
-  double cent[3];
   double modelCent[3] = {0.0, 0.0, 0.0};
   double totalVol = 0.0;
   RIter rIter = M_classifiedRegionIter(pm, modelRegion);
   while((meshRegion=RIter_next(rIter))){
-    EN_centroid(meshRegion, cent);
+    apf::Vector3 cent = apf::getLinearCentroid(m, reinterpret_cast<apf::MeshEntity*> (meshRegion));
     double vol = R_volume(meshRegion);
     totalVol += vol;
     for (int i = 0; i < 3; i++)
