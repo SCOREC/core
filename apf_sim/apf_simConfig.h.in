@@ -1,1 +1,2 @@
 #cmakedefine USE_FIELDSIM
+#cmakedefine USE_SIM_ADVMESHING

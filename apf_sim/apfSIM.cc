@@ -896,6 +896,8 @@ void MeshSIM::writeNative(const char* fileName)
 
 void MeshSIM::destroyNative()
 {
+  while(this->countFields())
+    apf::destroyField(this->getField(0));
   M_release(mesh);
 }
 

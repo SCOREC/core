@@ -335,6 +335,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     params[1] = 3;
     ph_write_ints(f, "m2g classification", o.arrays.m2gClsfcn,
       params[0] * params[1], 2, params);
+    params[0] = m->count(0);
     params[1] = 2;
     ph_write_doubles(f, "m2g parametric coordinate", o.arrays.m2gParCoord,
       params[0] * params[1], 2, params);

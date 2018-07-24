@@ -43,6 +43,7 @@ if(ENABLE_SIMMETRIX)
       phAttrib.cc
       phSnap.cc
       phMeshQuality.cc
+      phRigidBody.cc
      )
 endif()
 
@@ -62,6 +63,8 @@ set(HEADERS
   phstream.h
   phiotimer.h
   phastaChef.h
+  phBC.h
+  ph.h
 )
 
 # Add the ph library
