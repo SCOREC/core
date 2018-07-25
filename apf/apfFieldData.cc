@@ -138,6 +138,64 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
   synchronizeFieldData(data, shr, delete_shr);
 }
 
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, const apf::ReductionOp<double>& reduce_op /* =ReductionSum<double>() */)
+{
+  FieldBase* f = data->getField();
+  Mesh* m = f->getMesh();
+  FieldShape* s = f->getShape();
+  if (!shr)
+  {
+    shr = getSharing(m);
+    delete_shr=true;
+  }
+  for (int d=0; d < 4; ++d)
+  {
+    if ( ! s->hasNodesIn(d))
+      continue;
+    MeshEntity* e;
+    MeshIterator* it = m->begin(d);
+    PCU_Comm_Begin();
+    while ((e = m->iterate(it)))
+    {
+      if (( ! data->hasEntity(e)) || m->isGhost(e) )
+        continue; /* send to all parts that can see this entity */
+      
+      CopyArray copies;
+      shr->getCopies(e, copies);
+      int n = f->countValuesOn(e);
+      NewArray<double> values(n);
+      data->get(e,&(values[0]));
+      for (size_t i = 0; i < copies.getSize(); ++i)
+      {
+        PCU_COMM_PACK(copies[i].peer, copies[i].entity);
+        PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
+      }
+    }
+    m->end(it);
+    PCU_Comm_Send();
+    while (PCU_Comm_Listen())
+      while ( ! PCU_Comm_Unpacked())
+      { /* receive and add. we only care about correctness
+           on the owners */
+        MeshEntity* e;
+        PCU_COMM_UNPACK(e);
+        int n = f->countValuesOn(e);
+        NewArray<double> values(n);
+        NewArray<double> inValues(n);
+        PCU_Comm_Unpack(&(inValues[0]),n*sizeof(double));
+        data->get(e,&(values[0]));
+        for (int i = 0; i < n; ++i)
+          values[i] = reduce_op.apply(values[i], inValues[i]);
+        data->set(e,&(values[0]));
+      }
+  }
+  // every partition did the reduction, so no need to broadcast result 
+  if (delete_shr) delete shr;
+}
+
+
+
+
 template <class T>
 void FieldDataOf<T>::setNodeComponents(MeshEntity* e, int node,
     T const* components)
