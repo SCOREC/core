@@ -37,6 +37,50 @@ class VectorElement;
 typedef VectorElement MeshElement;
 class FieldShape;
 struct Sharing;
+template <class T> class ReductionOp;
+template <class T> class ReductionSum;
+
+/** \brief Base class for applying operations to make a Field consistent
+  * in parallel 
+  * \details This function gets applied pairwise to the Field values
+  * from every partition, resulting in a single unique value.  No guarantees
+  * are made about the order in which this function is applied to the
+  * values.
+  */
+template <class T>
+class ReductionOp
+{
+  public:
+    /* \brief apply operation, returning a single value */
+    virtual T apply(T val1, T val2) const = 0;
+};
+
+template <class T>
+class ReductionSum : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return val1 + val2; };
+};
+
+template <class T>
+class ReductionMin : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val1 : val2 ); };
+};
+
+template <class T>
+class ReductionMax : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val2 : val1 ); };
+};
+
+
+/* instantiate (is this necessary with the global consts below?) */
+template class ReductionSum<double>;
+template class ReductionMin<double>;
+template class ReductionMax<double>;
+
+
+
 
 /** \brief Destroys an apf::Mesh.
   *
@@ -625,7 +669,16 @@ void synchronize(Field* f, Sharing* shr = 0);
   all copies of an entity and assign the sum as the
   value for all copies.
   */
-void accumulate(Field* f, Sharing* shr = 0);
+void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
+
+/** \brief Apply a reduction operator along a partition boundary
+  \details Using the copies described by an apf::Sharing object, applies
+  the specified operation pairwise to the values of the field on each
+  partition.  No guarantee is made about the order of the pairwise
+  application.
+  */
+void sharedReduction(Field* f, Sharing* shr = 0, bool delete_shr=false,
+            const ReductionOp<double>& reduce_op = ReductionSum<double>());
 
 /** \brief Declare failure of code inside APF.
   \details This function prints the string as an APF
