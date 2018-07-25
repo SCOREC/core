@@ -37,6 +37,43 @@ class VectorElement;
 typedef VectorElement MeshElement;
 class FieldShape;
 struct Sharing;
+template <class T> class ReductionOp;
+template <class T> class ReductionSum;
+
+// different reduction operations for Fields
+template <class T>
+class ReductionOp
+{
+  public:
+    virtual T apply(T val1, T val2) const = 0;
+};
+
+template <class T>
+class ReductionSum : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return val1 + val2; };
+};
+
+template <class T>
+class ReductionMin : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val1 : val2 ); };
+};
+
+template <class T>
+class ReductionMax : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val2 : val1 ); };
+};
+
+
+/* instantiate (is this necessary with the global consts below?) */
+template class ReductionSum<double>;
+template class ReductionMin<double>;
+template class ReductionMax<double>;
+
+
+
 
 /** \brief Destroys an apf::Mesh.
   *
@@ -626,6 +663,15 @@ void synchronize(Field* f, Sharing* shr = 0);
   value for all copies.
   */
 void accumulate(Field* f, Sharing* shr = 0);
+
+/** \brief Apply a reduction operator along a partition boundary
+  \details Using the copies described by an apf::Sharing object, applies
+  the specified operation pairwise to the values of the field on each
+  partition.  No guarantee is made about the order of the pairwise
+  application.
+  */
+void reduce(Field* f, Sharing* shr = 0, bool delete_shr=false,
+            const ReductionOp<double>& reduce_op = ReductionSum<double>());
 
 /** \brief Declare failure of code inside APF.
   \details This function prints the string as an APF

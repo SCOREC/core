@@ -429,6 +429,11 @@ void accumulate(Field* f, Sharing* shr)
   accumulateFieldData(f->getData(), shr);
 }
 
+void reduce(Field* f, Sharing* shr, bool delete_shr, 
+            const ReductionOp<double>& reduce_op )
+{
+  reduceFieldData(f->getData(), shr, delete_shr, reduce_op);
+}
 void fail(const char* why)
 {
   fprintf(stderr,"APF FAILED: %s\n",why);

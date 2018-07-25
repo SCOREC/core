@@ -138,7 +138,7 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
   synchronizeFieldData(data, shr, delete_shr);
 }
 
-void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, const apf::ReductionOp<double>& reduce_op /* =ReductionSum<double>() */)
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, const ReductionOp<double>& reduce_op /* =ReductionSum<double>() */)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
