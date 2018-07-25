@@ -32,10 +32,46 @@ class FieldData
 template <class T>
 class FieldDataOf;
 
+// different reduction operations for Fields
+template <class T>
+class ReductionOp
+{
+  public:
+    virtual T apply(T val1, T val2) const = 0;
+};
+
+template <class T>
+class ReductionSum : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return val1 + val2; };
+};
+
+template <class T>
+class ReductionMin : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val1 : val2 ); };
+};
+
+template <class T>
+class ReductionMax : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val2 : val1 ); };
+};
+
+
+/* instantiate (is this necessary with the global consts below?) */
+template class ReductionSum<double>;
+template class ReductionMin<double>;
+template class ReductionMax<double>;
+
+
+
 template <class T>
 void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr=false);
 
 void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false);
+
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false, const apf::ReductionOp<double>& reduce_op=ReductionSum<double>());
 
 template <class T>
 void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to);
@@ -56,6 +92,7 @@ class FieldDataOf : public FieldData
     void getNodeComponents(MeshEntity* e, int node, T* components);
     int getElementData(MeshEntity* entity, NewArray<T>& data);
 };
+
 
 } //namespace apf
 
