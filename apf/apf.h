@@ -40,11 +40,18 @@ struct Sharing;
 template <class T> class ReductionOp;
 template <class T> class ReductionSum;
 
-// different reduction operations for Fields
+/** \brief Base class for applying operations to make a Field consistent
+  * in parallel 
+  * \details This function gets applied pairwise to the Field values
+  * from every partition, resulting in a single unique value.  No guarantees
+  * are made about the order in which this function is applied to the
+  * values.
+  */
 template <class T>
 class ReductionOp
 {
   public:
+    /* \brief apply operation, returning a single value */
     virtual T apply(T val1, T val2) const = 0;
 };
 
