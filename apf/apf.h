@@ -662,7 +662,7 @@ void synchronize(Field* f, Sharing* shr = 0);
   all copies of an entity and assign the sum as the
   value for all copies.
   */
-void accumulate(Field* f, Sharing* shr = 0);
+void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
 
 /** \brief Apply a reduction operator along a partition boundary
   \details Using the copies described by an apf::Sharing object, applies
@@ -670,7 +670,7 @@ void accumulate(Field* f, Sharing* shr = 0);
   partition.  No guarantee is made about the order of the pairwise
   application.
   */
-void reduce(Field* f, Sharing* shr = 0, bool delete_shr=false,
+void sharedReduction(Field* f, Sharing* shr = 0, bool delete_shr=false,
             const ReductionOp<double>& reduce_op = ReductionSum<double>());
 
 /** \brief Declare failure of code inside APF.
