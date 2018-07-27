@@ -424,11 +424,16 @@ void synchronize(Field* f, Sharing* shr)
   synchronizeFieldData<double>(f->getData(), shr);
 }
 
-void accumulate(Field* f, Sharing* shr)
+void accumulate(Field* f, Sharing* shr, bool delete_shr)
 {
-  accumulateFieldData(f->getData(), shr);
+  sharedReduction(f, shr, delete_shr, ReductionSum<double>() );
 }
 
+void sharedReduction(Field* f, Sharing* shr, bool delete_shr, 
+            const ReductionOp<double>& reduce_op )
+{
+  reduceFieldData(f->getData(), shr, delete_shr, reduce_op);
+}
 void fail(const char* why)
 {
   fprintf(stderr,"APF FAILED: %s\n",why);

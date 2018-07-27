@@ -81,7 +81,7 @@ template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*, bool);
 template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*, bool);
 template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*, bool);
 
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr)
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, const ReductionOp<double>& reduce_op /* =ReductionSum<double>() */)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
@@ -100,17 +100,14 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
     PCU_Comm_Begin();
     while ((e = m->iterate(it)))
     {
-      if (( ! data->hasEntity(e)) || m->isGhost(e) ||
-          (shr->isOwned(e)))
-        continue; /* non-owners send to owners */
+      if (( ! data->hasEntity(e)) || m->isGhost(e) )
+        continue; /* send to all parts that can see this entity */
       
       CopyArray copies;
       shr->getCopies(e, copies);
       int n = f->countValuesOn(e);
       NewArray<double> values(n);
       data->get(e,&(values[0]));
-      /* actually, non-owners send to all others,
-         since apf::Sharing doesn't identify the owner */
       for (size_t i = 0; i < copies.getSize(); ++i)
       {
         PCU_COMM_PACK(copies[i].peer, copies[i].entity);
@@ -131,12 +128,16 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
         PCU_Comm_Unpack(&(inValues[0]),n*sizeof(double));
         data->get(e,&(values[0]));
         for (int i = 0; i < n; ++i)
-          values[i] += inValues[i];
+          values[i] = reduce_op.apply(values[i], inValues[i]);
         data->set(e,&(values[0]));
       }
-  } /* broadcast back out to non-owners */
-  synchronizeFieldData(data, shr, delete_shr);
+  }
+  // every partition did the reduction, so no need to broadcast result 
+  if (delete_shr) delete shr;
 }
+
+
+
 
 template <class T>
 void FieldDataOf<T>::setNodeComponents(MeshEntity* e, int node,
