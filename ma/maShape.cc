@@ -16,6 +16,7 @@
 #include "maOperator.h"
 #include "maEdgeSwap.h"
 #include "maDoubleSplitCollapse.h"
+#include "maSingleSplitCollapse.h"
 #include "maFaceSplitCollapse.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
@@ -49,7 +50,7 @@ int getSliverCode(
   // check first face
   Entity* fs[4];
   m->getDownward(tet, 2, fs);
-  double f0Qual = a->shape->getQuality(fs[0]); print("f0Qual = %f", f0Qual);
+  double f0Qual = a->shape->getQuality(fs[0]);
   if ((f0Qual*f0Qual*f0Qual > a->input->goodQuality*a->input->goodQuality)) {
     // if its okay, use it for projection
     Vector v03 = J[2];
@@ -322,6 +323,63 @@ class FixBySwap : public TetFixerBase
     int nf;
 };
 
+class EdgeVertFixer : public TetFixerBase
+{
+public:
+  EdgeVertFixer(Adapt* a):
+    singleSplitCollapse(a)
+  {
+    mesh = a->mesh;
+    edgeSwap = makeEdgeSwap(a);
+    nes = nssc = nf = 0;
+    edge = 0;
+    oppVert = 0;
+  }
+  ~EdgeVertFixer()
+  {
+    delete edgeSwap;
+  }
+  virtual void setTet(Entity** v)
+  {
+    /* In this template, the edge v[0]--v[1] and vert v[3]
+       are too close*/
+    edge = apf::findElement(mesh, apf::Mesh::EDGE, v);
+    oppVert = v[3];
+    verts[0] = v[0];
+    verts[1] = v[1];
+    verts[2] = v[3];
+  }
+  virtual bool requestLocality(apf::CavityOp* o)
+  {
+    /* by requesting locality for all the verts we can be sure
+     * that all the desired entities for this operator are local */
+    return o->requestLocality(verts,3);
+  }
+  virtual bool run() {
+    if (edgeSwap->run(edge)) {
+      ++nes;
+      return true;
+    }
+    if (singleSplitCollapse.run(edge, oppVert))
+    {
+      ++nssc;
+      return true;
+    }
+    ++nf;
+    return false;
+  }
+private:
+  Mesh* mesh;
+  Entity* verts[3];
+  Entity *edge, *oppVert;
+  SingleSplitCollapse singleSplitCollapse;
+  EdgeSwap* edgeSwap;
+public:
+  int nes; /* number of edge swaps done */
+  int nssc; /* number of SSCs done */
+  int nf; /* number of failures */
+};
+
 class FaceVertFixer : public TetFixerBase
 {
   public:
@@ -460,6 +518,7 @@ class LargeAngleTetFixer : public Operator
   public:
     LargeAngleTetFixer(Adapt* a):
       edgeEdgeFixer(a),
+      edgeVertFixer(a),
       faceVertFixer(a)
     {
       adapter = a;
@@ -479,16 +538,12 @@ class LargeAngleTetFixer : public Operator
       tet = e;
       CodeMatch match = matchSliver(adapter,e);
       if (match.code_index==EDGE_EDGE) {
-        ees.append(e);
         fixer = &edgeEdgeFixer;
       } else if (match.code_index==FACE_VERT) {
-        fvs.append(e);
         fixer = &faceVertFixer;
       } else if (match.code_index==EDGE_VERT) {
-        evs.append(e);
-        fixer = &faceVertFixer;
+        fixer = &edgeVertFixer;
       } else if (match.code_index==VERT_VERT) {
-        vvs.append(e);
         fixer = &faceVertFixer;
       }
       Entity* v[4];
@@ -504,7 +559,7 @@ class LargeAngleTetFixer : public Operator
     }
     virtual void apply()
     {
-      // if ( ! fixer->run())
+      if ( ! fixer->run())
         clearFlag(adapter,tet,BAD_QUALITY);
     }
   private:
@@ -513,8 +568,8 @@ class LargeAngleTetFixer : public Operator
     Entity* tet;
     TetFixerBase* fixer;
   public:
-    EntityArray ees, fvs, evs, vvs;
     EdgeEdgeFixer edgeEdgeFixer;
+    EdgeVertFixer edgeVertFixer;
     FaceVertFixer faceVertFixer;
 };
 
@@ -695,10 +750,6 @@ static void fixLargeAngleTets(Adapt* a)
 {
   LargeAngleTetFixer fixer(a);
   applyOperator(a,&fixer);
-  ma_dbg::createCavityMesh(a, fixer.ees, "edge_edge_bad_tets");
-  ma_dbg::createCavityMesh(a, fixer.fvs, "face_vert_bad_tets");
-  ma_dbg::createCavityMesh(a, fixer.evs, "edge_vert_bad_tets");
-  ma_dbg::createCavityMesh(a, fixer.vvs, "vert_vert_bad_tets");
 }
 
 static void fixLargeAngleTris(Adapt* a)
