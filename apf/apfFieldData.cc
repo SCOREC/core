@@ -10,11 +10,6 @@ FieldData::~FieldData()
 {
 }
 
-FieldData* FieldData::clone()
-{
-  abort();
-}
-
 void FieldData::rename(const char*)
 {
   abort();

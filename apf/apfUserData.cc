@@ -42,4 +42,13 @@ bool UserData::isFrozen()
   return false;
 }
 
+FieldData* UserData::clone()
+{
+  FieldData* newData = new UserData(function);
+  newData->init(field);
+  copyFieldData(static_cast<FieldDataOf<double>*>(newData),
+                static_cast<FieldDataOf<double>*>(field->getData()));
+  return newData;
+}
+
 }

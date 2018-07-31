@@ -33,6 +33,7 @@ class CoordData : public FieldDataOf<double>
     virtual void get(MeshEntity* e, double* data);
     virtual void set(MeshEntity* e, double const* data);
     virtual bool isFrozen() { return false; }
+    virtual FieldData* clone();
   private:
     Mesh* mesh;
     FieldShape* shape;
