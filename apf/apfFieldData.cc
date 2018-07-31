@@ -83,12 +83,6 @@ template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*, bool);
 
 void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, const ReductionOp<double>& reduce_op /* =ReductionSum<double>() */)
 {
-  char fname[255];
-  std::sprintf(fname, "debug2_%d.txt", PCU_Comm_Self());
-  std::cout << "opening file " << fname << std::endl;
-  std::ofstream fout;
-  fout.open(fname);
-  fout << "Reducing field data 2" << std::endl;
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
   FieldShape* s = f->getShape();
@@ -98,19 +92,16 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
     delete_shr=true;
   }
 
-  fout << "apf::Sharing* = " << shr << std::endl;
   for (int d=0; d < 4; ++d)
   {
     if ( ! s->hasNodesIn(d))
       continue;
 
-    fout << "d = " << d << std::endl;
     MeshEntity* e;
     MeshIterator* it = m->begin(d);
     PCU_Comm_Begin();
     while ((e = m->iterate(it)))
     {
-      fout << "considering entity " << e << ", hasEntity = " << data->hasEntity(e) << ", isGhost = " << m->isGhost(e) << std::endl;
       if (( ! data->hasEntity(e)) || m->isGhost(e) )
         continue; /* send to all parts that can see this entity */
       
@@ -120,14 +111,8 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
       NewArray<double> values(n);
       data->get(e,&(values[0]));
 
-      if (copies.getSize() > 0)
-        fout << "\nentity = " << e << std::endl;
-      else
-        fout << "no copies, skipping" << std::endl;
-
       for (size_t i = 0; i < copies.getSize(); ++i)
       {
-        fout << "sending entity " << copies[i].entity << " to peer " << copies[i].peer << " with value " << values[0] << std::endl;
         PCU_COMM_PACK(copies[i].peer, copies[i].entity);
         PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
       }
@@ -143,7 +128,6 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
         NewArray<double> values(n);
         NewArray<double> inValues(n);
         PCU_Comm_Unpack(&(inValues[0]),n*sizeof(double));
-        fout << "receiving entity " << e << " with value " << inValues[0] << std::endl;
         data->get(e,&(values[0]));
         for (int i = 0; i < n; ++i)
         {
@@ -153,7 +137,6 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
       }
   }
 
-  fout << "finished reduction" << std::endl;
   // every partition did the reduction, so no need to broadcast result 
   if (delete_shr) delete shr;
 }
