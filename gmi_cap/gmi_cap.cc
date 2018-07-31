@@ -91,7 +91,7 @@ static int get_dim(gmi_model* m, gmi_ent* e)
     return 2;
   if (cm->geomInterface->is_region(topo))
     return 3;
-  return 0;
+  gmi_fail("unable to determine model dimension\n");
 }
 
 static int get_tag(gmi_model* m, gmi_ent* e)
