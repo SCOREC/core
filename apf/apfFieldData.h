@@ -13,6 +13,8 @@
 #include "apfShape.h"
 #include "apf.h"  // needed for ReductionOp
 
+#include <fstream>  // DEBUGGING
+#include <iostream>
 namespace apf {
 
 class FieldData
