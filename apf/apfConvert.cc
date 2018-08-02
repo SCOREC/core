@@ -31,6 +31,9 @@ class Converter
       convertFields();
       convertNumberings();
       convertGlobalNumberings();
+      // this must be called after anything that might create tags e.g. fields
+      // or numberings to avoid problems with tag duplication
+      convertTags();
       outMesh->acceptChanges();
     }
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
@@ -210,6 +213,48 @@ class Converter
         }
       }
     }
+    void convertTag(Mesh* inMesh, MeshTag* in, Mesh* outMesh, MeshTag* out)
+    {
+      for (int d = 0; d <= 3; ++d) {
+        int tagType = inMesh->getTagType(in);
+        int tagSize = inMesh->getTagSize(in);
+        PCU_DEBUG_ASSERT(tagType == outMesh->getTagType(out));
+        PCU_DEBUG_ASSERT(tagSize == outMesh->getTagSize(out));
+        MeshIterator* it = inMesh->begin(d);
+        MeshEntity* e;
+        while ((e = inMesh->iterate(it))) {
+          if(inMesh->hasTag(e, in)) {
+            // these initializations cannot go into the cases due to compiler
+            // warnings on gcc 7.3.0
+            double* dblData;
+            int* intData;
+            long* lngData; 
+            switch (tagType) {
+              case apf::Mesh::TagType::DOUBLE:
+                dblData = new double[tagSize];
+                inMesh->getDoubleTag(e, in, dblData);
+                outMesh->setDoubleTag(newFromOld[e], out, dblData);
+                break;
+              case apf::Mesh::TagType::INT:
+                intData = new int[tagSize];
+                inMesh->getIntTag(e, in, intData);
+                outMesh->setIntTag(newFromOld[e], out, intData);
+                break;
+              case apf::Mesh::TagType::LONG:
+                lngData = new long[tagSize];
+                inMesh->getLongTag(e, in, lngData);
+                outMesh->setLongTag(newFromOld[e], out, lngData);
+                break;
+              default:
+                std::cerr << "Tried to convert unknown tag type\n";
+                abort();
+                break;
+            }
+        }
+        }
+        inMesh->end(it);
+      }
+    }
     void convertFields()
     {
       for (int i = 0; i < inMesh->countFields(); ++i) {
@@ -254,6 +299,42 @@ class Converter
                                       countComponents(in));
         }
         convertGlobalNumbering(in, out);
+      }
+    }
+    void convertTags()
+    {
+      DynamicArray<MeshTag*> tags;
+      inMesh->getTags(tags);
+      for (std::size_t i = 0; i < tags.getSize(); ++i) {
+        apf::MeshTag* in = tags[i];
+        PCU_DEBUG_ASSERT(in);
+        // create a new tag on the outMesh
+        int tagType = inMesh->getTagType(in);
+        int tagSize = inMesh->getTagSize(in);
+        const char* tagName = inMesh->getTagName(in);
+        PCU_DEBUG_ASSERT(tagName);
+        // need to make sure that the tag wasn't already created by a field or
+        // numbering
+        if (!outMesh->findTag(tagName)) {
+          apf::MeshTag* out = NULL;
+          switch (tagType) {
+            case apf::Mesh::TagType::DOUBLE:
+              out = outMesh->createDoubleTag(tagName, tagSize);
+              break;
+            case apf::Mesh::TagType::INT:
+              out = outMesh->createIntTag(tagName, tagSize);
+              break;
+            case apf::Mesh::TagType::LONG:
+              out = outMesh->createLongTag(tagName, tagSize);
+              break;
+            default:
+              std::cerr << "Tried to convert unknown tag type\n";
+              abort();
+          }
+          PCU_DEBUG_ASSERT(out);
+          // copy the tag on the inMesh to the outMesh
+          convertTag(inMesh, in, outMesh, out);
+        }
       }
     }
     void convertQuadratic()

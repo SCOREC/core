@@ -1,6 +1,6 @@
 /*
  * this test verifies that the convert process properly clones the underlying
- * fields and numberings
+ * fields, numberings, and tags
  */
 #include <PCU.h>
 #include <apf.h>
@@ -58,6 +58,8 @@ int main(int argc, char* argv[])
   apf::GlobalNumbering* globalNumWithField = apf::createGlobalNumbering(f);
   apf::GlobalNumbering* globalNumNoField = apf::createGlobalNumbering(
       m1, "noField", apf::getShape(f), apf::countComponents(f));
+  // create an integer tag
+  apf::MeshTag* intTag = m1->createIntTag("intTag", 1);
   // loop over all vertices in mesh and set values
   int count = 1;
   apf::MeshIterator* it = m1->begin(0);
@@ -68,6 +70,9 @@ int main(int argc, char* argv[])
     apf::number(numNoField, vert, 0, 0, count);
     apf::number(globalNumWithField, vert, 0, count);
     apf::number(globalNumNoField, vert, 0, count);
+    // set the tag
+    // int tagData[1] = {count};
+    m1->setIntTag(vert, intTag, &count);
     ++count;
   }
   m1->end(it);
@@ -99,6 +104,9 @@ int main(int argc, char* argv[])
   assert(getField(globalNumWithField2) == f2);
   // update the user field to reference the field in mesh 2
   apf::updateUserField(uf2, new twox(f2));
+  // find the copied tag data
+  apf::MeshTag* intTag2 = m2->findTag("intTag");
+  assert(intTag2);
   count = 1;
   it = m2->begin(0);
   while (apf::MeshEntity* vert = m2->iterate(it)) {
@@ -115,6 +123,11 @@ int main(int argc, char* argv[])
     assert(getNumber(numNoField2, vert, 0, 0) == count);
     assert(getNumber(globalNumWithField2, vert, 0, 0) == count);
     assert(getNumber(globalNumNoField2, vert, 0, 0) == count);
+    // check that the correct tag data was recovered
+    int* data = new int[1];
+    m2->getIntTag(vert, intTag2, data);
+    assert(*data == count);
+    delete[] data;
     ++count;
   }
   m2->end(it);
