@@ -461,6 +461,14 @@ GlobalNumbering* createGlobalNumbering(
   return n;
 }
 
+GlobalNumbering* createGlobalNumbering(Field* f)
+{
+  GlobalNumbering* n = new GlobalNumbering();
+  n->init(f);
+  f->getMesh()->addGlobalNumbering(n);
+  return n;
+}
+
 FieldShape* getShape(GlobalNumbering* n)
 {
   return n->getShape();
@@ -601,5 +609,5 @@ void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes)
   getFieldNodes(n,nodes);
 }
 
+Field* getField(GlobalNumbering* n) { return n->getField(); }
 }
-

@@ -222,8 +222,18 @@ class Converter
     {
       for (int i = 0; i < inMesh->countNumberings(); ++i) {
         Numbering* in = inMesh->getNumbering(i);
-        Numbering* out = createNumbering(outMesh,
-            getName(in), getShape(in), countComponents(in));
+        Numbering* out;
+        if (getField(in)) {
+          // here we assume that the fields have already been copied into the
+          // mesh
+          Field* outField = outMesh->findField(getName(getField(in)));
+          PCU_DEBUG_ASSERT(outField);
+          out = createNumbering(outField);
+        }
+        else {
+          out = createNumbering(outMesh, getName(in), getShape(in),
+                                countComponents(in));
+        }
         convertNumbering(in, out);
       }
     }
@@ -231,8 +241,18 @@ class Converter
     {
       for (int i = 0; i < inMesh->countGlobalNumberings(); ++i) {
         GlobalNumbering* in = inMesh->getGlobalNumbering(i);
-        GlobalNumbering* out = createGlobalNumbering(outMesh,
-            getName(in), getShape(in), countComponents(in));
+        GlobalNumbering* out;
+        if (getField(in)) {
+          // here we assume that the fields have already been copied into the
+          // mesh
+          Field* outField = outMesh->findField(getName(getField(in)));
+          PCU_DEBUG_ASSERT(outField);
+          out = createGlobalNumbering(outField);
+        }
+        else {
+          out = createGlobalNumbering(outMesh, getName(in), getShape(in),
+                                      countComponents(in));
+        }
         convertGlobalNumbering(in, out);
       }
     }

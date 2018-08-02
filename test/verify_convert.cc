@@ -1,12 +1,13 @@
 /*
  * this test verifies that the convert process properly clones the underlying
- * fields
+ * fields and numberings
  */
 #include <PCU.h>
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
+#include <apfNumbering.h>
 #include <gmi_null.h>
 #include <pcu_util.h>
 #include <cassert>
@@ -49,11 +50,25 @@ int main(int argc, char* argv[])
   apf::Function* func = new twox(f);
   apf::Field* uf =
       apf::createUserField(m1, "ufield1", apf::SCALAR, apf::getShape(f), func);
+  // create numbering and global numbering with and without fields to make sure
+  // they transfer properly
+  apf::Numbering* numWithField = apf::createNumbering(f);
+  apf::Numbering* numNoField = apf::createNumbering(
+      m1, "noField", apf::getShape(f), apf::countComponents(f));
+  apf::GlobalNumbering* globalNumWithField = apf::createGlobalNumbering(f);
+  apf::GlobalNumbering* globalNumNoField = apf::createGlobalNumbering(
+      m1, "noField", apf::getShape(f), apf::countComponents(f));
   // loop over all vertices in mesh and set values
   int count = 1;
   apf::MeshIterator* it = m1->begin(0);
   while (apf::MeshEntity* vert = m1->iterate(it)) {
-    apf::setScalar(f, vert, 0, count++);
+    apf::setScalar(f, vert, 0, count);
+    // set the numberings
+    apf::number(numWithField, vert, 0, 0, count);
+    apf::number(numNoField, vert, 0, 0, count);
+    apf::number(globalNumWithField, vert, 0, count);
+    apf::number(globalNumNoField, vert, 0, count);
+    ++count;
   }
   m1->end(it);
   // verify the user field works on mesh 1
@@ -68,6 +83,20 @@ int main(int argc, char* argv[])
   apf::convert(m1, m2);
   apf::Field* f2 = m2->findField("field1");
   apf::Field* uf2 = m2->findField("ufield1");
+
+  apf::Numbering* numWithField2 = m2->findNumbering(apf::getName(numWithField));
+  apf::Numbering* numNoField2 = m2->findNumbering(apf::getName(numNoField));
+  apf::GlobalNumbering* globalNumWithField2 =
+      m2->findGlobalNumbering(apf::getName(globalNumWithField));
+  apf::GlobalNumbering* globalNumNoField2 =
+      m2->findGlobalNumbering(apf::getName(globalNumNoField));
+  // all of these numberings should exist
+  assert(numWithField2 && numNoField2 && globalNumWithField2 &&
+         globalNumNoField2);
+  // make sure the fields of the numberings match up properly as they should be
+  // the new field copied into the new mesh
+  assert(getField(numWithField2) == f2);
+  assert(getField(globalNumWithField2) == f2);
   // update the user field to reference the field in mesh 2
   apf::updateUserField(uf2, new twox(f2));
   count = 1;
@@ -81,6 +110,11 @@ int main(int argc, char* argv[])
     // make sure that the function updated properly
     uval = apf::getScalar(uf2, vert, 0);
     assert(std::abs(uval - 36.0) < 1E-15);
+    // check to make sure the numberings have the correct values
+    assert(getNumber(numWithField2, vert, 0, 0) == count);
+    assert(getNumber(numNoField2, vert, 0, 0) == count);
+    assert(getNumber(globalNumWithField2, vert, 0, 0) == count);
+    assert(getNumber(globalNumNoField2, vert, 0, 0) == count);
     ++count;
   }
   m2->end(it);

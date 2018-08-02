@@ -159,6 +159,11 @@ GlobalNumbering* createGlobalNumbering(
     const char* name,
     FieldShape* shape,
     int components=1);
+
+/** \brief Create a Numbering of degrees of freedom of a Field.
+ */
+GlobalNumbering* createGlobalNumbering(Field* f);
+
 FieldShape* getShape(GlobalNumbering* n);
 const char* getName(GlobalNumbering* n);
 /** \brief get the mesh associated with a global numbering */
@@ -176,6 +181,9 @@ long getNumber(GlobalNumbering* n, MeshEntity* e, int node, int component=0);
 /** \brief get an element's global node numbers */
 int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
     NewArray<long>& numbers);
+/** \brief get the field being numbered
+ */
+Field* getField(GlobalNumbering* n);
 
 /** \brief converts a local numbering into a global numbering.
   \param destroy Should the input Numbering* be destroyed?
