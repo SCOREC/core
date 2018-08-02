@@ -105,6 +105,7 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
       if (( ! data->hasEntity(e)) || m->isGhost(e) )
         continue; /* send to all parts that can see this entity */
       
+      // copies
       CopyArray copies;
       shr->getCopies(e, copies);
       int n = f->countValuesOn(e);
@@ -115,6 +116,15 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
       {
         PCU_COMM_PACK(copies[i].peer, copies[i].entity);
         PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
+      }
+
+      // ghosts
+      apf::Copies ghosts;
+      if (m->getGhosts(e, ghosts))
+      APF_ITERATE(Copies, ghosts, it)
+      {
+        PCU_COMM_PACK(it->first, it->second);
+        PCU_Comm_Pack(it->first, &(values[0]), n*sizeof(double));
       }
     }
     m->end(it);
