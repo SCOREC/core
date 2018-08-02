@@ -99,6 +99,7 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
           (shr->isOwned(e)))
         continue; /* non-owners send to owners */
       
+      // copies
       CopyArray copies;
       shr->getCopies(e, copies);
       int n = f->countValuesOn(e);
@@ -110,6 +111,15 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
       {
         PCU_COMM_PACK(copies[i].peer, copies[i].entity);
         PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
+      }
+
+      // ghosts
+      apf::Copies ghosts;
+      if (m->getGhosts(e, ghosts))
+      APF_ITERATE(Copies, ghosts, it)
+      {
+        PCU_COMM_PACK(it->first, it->second);
+        PCU_Comm_Pack(it->first, &(values[0]), n*sizeof(double));
       }
     }
     m->end(it);
