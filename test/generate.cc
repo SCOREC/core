@@ -261,6 +261,8 @@ pNativeModel loadNativeModel() {
 void simStart() {
   SimModel_start();
   SimPartitionedMesh_start(NULL,NULL);
+  if(should_log)
+    Sim_logOn("generate_sim.log");
   MS_init();
   SimModel_start();
 #ifdef SIM_PARASOLID
@@ -300,7 +302,6 @@ int main(int argc, char** argv)
   getConfig(argc,argv);
 
   simStart();
-  Sim_logOn("generate_sim.log");
   pNativeModel nm = loadNativeModel();
   pGModel simModel = GM_load(modelFile.c_str(), nm, NULL);
 
