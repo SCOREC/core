@@ -141,10 +141,11 @@ void getConfig(int argc, char** argv) {
   const char* usage=""
     "[options] <GeomSim model (.smd)> <mesh case name>\n"
     "options:\n"
-    "  --enable-log                    Enable Simmetrix logging\n"
-    "  --disable-volume                Disable volume mesh generation\n"
-    "  --disable-surface               Disable suface mesh generation\n"
-    "  --native-model=/path/to/model   Load the native Parasolid or ACIS model that the GeomSim model uses\n";
+    "  --enable-log                            Enable Simmetrix logging\n"
+    "  --disable-volume                        Disable volume mesh generation\n"
+    "  --disable-surface                       Disable suface mesh generation\n"
+    "  --native-model=/path/to/model           Load the native Parasolid or ACIS model that the GeomSim model uses\n"
+    "  --surfaceMeshFile=/path/to/surfaceMesh  read or write the surface mesh - depends on generation mode\n";
 
   nativeModelFile = "";
   surfaceMeshFile = "";
