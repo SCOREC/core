@@ -214,9 +214,7 @@ int main(int argc, char** argv)
   // create global ID
   pumi_mesh_createGlobalID(m);
 
-  if (!pumi_rank()) std::cout << "about to TEST_FIELD" << std::endl;
   TEST_FIELD(m);
-  if (!pumi_rank()) std::cout << "finished to TEST_FIELD" << std::endl;
 
   int num_field=pumi_mesh_getNumField(m);
   std::vector<pField> fields;
@@ -686,10 +684,8 @@ void TEST_NEW_MESH(pMesh m)
 void TEST_FIELD(pMesh m)
 {
   int num_dofs_per_node=3;
-  if (!pumi_rank()) std::cout << "trying to find field" << std::endl;
   pField f = pumi_mesh_findField(m, "xyz_field");
 
-  if (!pumi_rank()) std::cout << "found field" << f << std::endl;
   pMeshIter it;
   pMeshEnt e;
   double data[3];
@@ -710,12 +706,6 @@ void TEST_FIELD(pMesh m)
   // create field and set the field data
   if (!f)
   {
-    char fname[256];
-    sprintf(fname, "debug%d.txt", pumi_rank());
-    std::ofstream fout;
-    fout.open(fname, std::ofstream::out);
-
-    if (!pumi_rank()) std::cout << "creating field" << std::endl;
     f=pumi_field_create(m, "xyz_field", num_dofs_per_node);
     PCU_ALWAYS_ASSERT(pumi_field_getName(f)==std::string("xyz_field"));
     PCU_ALWAYS_ASSERT(pumi_field_getType(f)==PUMI_PACKED);
@@ -727,10 +717,6 @@ void TEST_FIELD(pMesh m)
       // FIXME: if use "new testOwnership(m)", memory leak
       if (!pumi_ment_isOwned(e, o)) continue; 
 
-      if (!pumi_rank()) std::cout << "pumi_ment_getOwnPID = " << pumi_ment_getOwnPID(e, o) << ", getOwner = " << o->getOwner(e) << " globalID = " << pumi_ment_getGlobalID(e) << std::endl;
-
-
-      fout << "globalID of owned entity = " << pumi_ment_getGlobalID(e) << std::endl;
       PCU_ALWAYS_ASSERT (pumi_ment_getOwnPID(e, o)==o->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
@@ -742,7 +728,6 @@ void TEST_FIELD(pMesh m)
     m->end(it);
 
     pumi_field_synchronize(f); // broadcast result to other partitions
-    fout.close();
   } 
 
 
@@ -872,16 +857,8 @@ void TEST_GHOSTING(pMesh m)
     pumi_node_getField(f, e, 0, data);
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e))
-      {
-        MPI_Barrier(PCU_Get_Comm());
-        if (pumi_rank() == 2)
-        {
-          std::cout << "i = " << i << ", data[i] = " << data[i] << " global ID = " << pumi_ment_getGlobalID(e) << ", numRemote = " << pumi_ment_getNumRmt(e) << std::endl;
-          std::cout << "isGhost = " << m->isGhost(e) << std::endl;
-        }
-        MPI_Barrier(PCU_Get_Comm());
         PCU_ALWAYS_ASSERT(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));
-      } else
+       else
         PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);

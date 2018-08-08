@@ -328,6 +328,11 @@ if(ENABLE_ZOLTAN)
     "pipe_4_.smb"
     "tet.smb")
 endif()
+mpi_test(fieldReduce 4
+  ./fieldReduce
+  "${MDIR}/pipe.${GXT}"
+  "pip_4_.smb")
+
 set(MDIR ${MESHES}/torus)
 mpi_test(reorder 4
   ./reorder

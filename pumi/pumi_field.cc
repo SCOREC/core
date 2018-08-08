@@ -134,8 +134,8 @@ void pumi_field_synchronize(pField f, pOwnership o)
 }
 
 void pumi_field_accumulate(pField f, pOwnership o)
-{  
-  apf::accumulateFieldData(f->getData(), o, false);
+{ 
+  apf::accumulate(f, o, false);
 }
 
 void pumi_field_freeze(pField f)

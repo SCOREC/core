@@ -13,6 +13,8 @@
 #include "apfDynamicArray.h"
 
 #include <vector>
+#include <limits>
+
 /** \file apf.h
   * \brief The APF Field interface
   */
@@ -37,6 +39,55 @@ class VectorElement;
 typedef VectorElement MeshElement;
 class FieldShape;
 struct Sharing;
+template <class T> class ReductionOp;
+template <class T> class ReductionSum;
+
+/** \brief Base class for applying operations to make a Field consistent
+  * in parallel 
+  * \details This function gets applied pairwise to the Field values
+  * from every partition, resulting in a single unique value.  No guarantees
+  * are made about the order in which this function is applied to the
+  * values.
+  */
+template <class T>
+class ReductionOp
+{
+  public:
+    /* \brief apply operation, returning a single value */
+    virtual T apply(T val1, T val2) const = 0;
+
+    /* \brief returns a value such that apply(val, neutral_val) == val */
+    virtual T getNeutralElement() const = 0;
+};
+
+template <class T>
+class ReductionSum : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return val1 + val2; };
+  T getNeutralElement() const { return 0; };
+};
+
+template <class T>
+class ReductionMin : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val1 : val2 ); };
+  T getNeutralElement() const { return std::numeric_limits<T>::max(); };
+};
+
+template <class T>
+class ReductionMax : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val2 : val1 ); };
+  T getNeutralElement() const { return std::numeric_limits<T>::min(); };
+};
+
+
+/* instantiate (is this necessary with the global consts below?) */
+template class ReductionSum<double>;
+template class ReductionMin<double>;
+template class ReductionMax<double>;
+
+
 
 /** \brief Destroys an apf::Mesh.
   *
@@ -625,7 +676,17 @@ void synchronize(Field* f, Sharing* shr = 0);
   all copies of an entity and assign the sum as the
   value for all copies.
   */
-void accumulate(Field* f, Sharing* shr = 0);
+void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = true);
+
+/** \brief Apply a reudction operator along partition boundaries
+  \details Using the copies described by an apf::Sharing object, applied
+  the specified operation pairwise to the values of the field on each
+  partition.  No guarantee is made about hte order of the pairwise
+  application
+  */
+void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
+           const ReductionOp<double>& sum = ReductionSum<double>());
+
 
 /** \brief Declare failure of code inside APF.
   \details This function prints the string as an APF
