@@ -13,6 +13,8 @@
 #include "apfDynamicArray.h"
 
 #include <vector>
+#include <limits>
+
 /** \file apf.h
   * \brief The APF Field interface
   */
@@ -53,24 +55,30 @@ class ReductionOp
   public:
     /* \brief apply operation, returning a single value */
     virtual T apply(T val1, T val2) const = 0;
+
+    /* \brief returns a value such that apply(val, neutral_val) == val */
+    virtual T getNeutralElement() const = 0;
 };
 
 template <class T>
 class ReductionSum : public ReductionOp<T>
 {
   T apply(T val1, T val2) const { return val1 + val2; };
+  T getNeutralElement() const { return 0; };
 };
 
 template <class T>
 class ReductionMin : public ReductionOp<T>
 {
   T apply(T val1, T val2) const { return ( (val1 < val2) ? val1 : val2 ); };
+  T getNeutralElement() const { return std::numeric_limits<T>::max(); };
 };
 
 template <class T>
 class ReductionMax : public ReductionOp<T>
 {
   T apply(T val1, T val2) const { return ( (val1 < val2) ? val2 : val1 ); };
+  T getNeutralElement() const { return std::numeric_limits<T>::min(); };
 };
 
 

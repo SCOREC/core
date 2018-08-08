@@ -97,14 +97,28 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
     if ( ! s->hasNodesIn(d))
       continue;
 
+ 
     MeshEntity* e;
     MeshIterator* it = m->begin(d);
     PCU_Comm_Begin();
     while ((e = m->iterate(it)))
     {
-      if (( ! data->hasEntity(e)) || m->isGhost(e) )
-        continue; /* send to all parts that can see this entity */
-      
+      /* send to all parts that can see this entity */
+      if ( ! data->hasEntity(e) )
+        continue;
+ 
+      if (m->isGhost(e) && shr->isShared(e))
+      {
+        // zero out ghost values (because we reduce only over non-ghost values)
+        int n = f->countValuesOn(e);
+        NewArray<double> values(n);
+        for (int i=0; i < n; ++i)
+          values[i] = reduce_op.getNeutralElement();
+
+        data->set(e, &(values[0]));
+        continue;
+      }
+
       // copies
       CopyArray copies;
       shr->getCopies(e, copies);
@@ -118,13 +132,16 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
         PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
       }
 
-      // ghosts
-      apf::Copies ghosts;
-      if (m->getGhosts(e, ghosts))
-      APF_ITERATE(Copies, ghosts, it)
+      // ghosts - only do them if this entity is on a partition boundary
+      if (copies.getSize() > 0)
       {
-        PCU_COMM_PACK(it->first, it->second);
-        PCU_Comm_Pack(it->first, &(values[0]), n*sizeof(double));
+        apf::Copies ghosts;
+        if (m->getGhosts(e, ghosts))
+        APF_ITERATE(Copies, ghosts, it)
+        {
+          PCU_COMM_PACK(it->first, it->second);
+          PCU_Comm_Pack(it->first, &(values[0]), n*sizeof(double));
+        }
       }
     }
     m->end(it);
