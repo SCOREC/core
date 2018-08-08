@@ -11,7 +11,6 @@
 #include <iostream>
 #include <algorithm>
 #include <mpi.h>
-#include <fstream>  // DEBUGGING
 
 const char* modelFile = 0;
 const char* meshFile = 0;
@@ -858,7 +857,7 @@ void TEST_GHOSTING(pMesh m)
     for (int i=0; i<3;++i) 
       if (pumi_ment_isOnBdry(e))
         PCU_ALWAYS_ASSERT(data[i] == pumi_ment_getGlobalID(e)*(1+pumi_ment_getNumRmt(e)));
-       else
+      else
         PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);
