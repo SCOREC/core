@@ -7,6 +7,7 @@
 #include "apfNumbering.h"
 #include <map>
 #include <pcu_util.h>
+#include <iostream>
 
 namespace apf {
 
