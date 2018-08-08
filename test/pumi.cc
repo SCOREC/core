@@ -730,7 +730,6 @@ void TEST_FIELD(pMesh m)
   } 
 
 
-  if (!pumi_rank()) std::cout << "about to do the test" << std::endl;
   it = m->begin(0);
   while ((e = m->iterate(it)))
   {
@@ -744,7 +743,6 @@ void TEST_FIELD(pMesh m)
   }
   m->end(it);
 
-  if (!pumi_rank()) std::cout << "finished doing the test" << std::endl;
   pumi_field_verify(m, f, o);
   delete o;
 }
