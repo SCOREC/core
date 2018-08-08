@@ -11,10 +11,7 @@
 #include <string>
 #include "apfField.h"
 #include "apfShape.h"
-#include "apf.h"  // needed for ReductionOp
 
-#include <fstream>  // DEBUGGING
-#include <iostream>
 namespace apf {
 
 class FieldData
@@ -38,7 +35,7 @@ class FieldDataOf;
 template <class T>
 void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr=false);
 
-void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false, const ReductionOp<double>& reduce_op=ReductionSum<double>());
+void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false);
 
 template <class T>
 void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to);
@@ -59,7 +56,6 @@ class FieldDataOf : public FieldData
     void getNodeComponents(MeshEntity* e, int node, T* components);
     int getElementData(MeshEntity* entity, NewArray<T>& data);
 };
-
 
 } //namespace apf
 
