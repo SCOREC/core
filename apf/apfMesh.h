@@ -285,6 +285,8 @@ class Mesh
     ModelEntity* findModelEntity(int type, int tag);
     /** \brief return true if the geometric model supports snapping */
     bool canSnap();
+    /** \brief return true if the geometric model supports get closest point */
+    bool canGetClosestPoint();
     /** \brief return true if the geometric model supports normal computation */
     bool canGetModelNormal();
     /** \brief evaluate parametric coordinate (p) as a spatial point (x) */
@@ -310,6 +312,8 @@ class Mesh
       Vector3 const& param, Vector3& x);
     /** \brief checks if g is in the closure of the target */
     bool isInClosureOf(ModelEntity* g, ModelEntity* target);
+    /** \brief checks if p is on model g */
+    bool isOnModel(ModelEntity* g, Vector3 p, double scale);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */

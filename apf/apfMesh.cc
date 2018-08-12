@@ -175,6 +175,11 @@ bool Mesh::canSnap()
   return gmi_can_eval(getModel());
 }
 
+bool Mesh::canGetClosestPoint()
+{
+  return gmi_can_get_closest_point(getModel());
+}
+
 bool Mesh::canGetModelNormal()
 {
   return gmi_has_normal(getModel());
@@ -250,6 +255,16 @@ bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
   gmi_ent* et = (gmi_ent*)target;
   int res = gmi_is_in_closure_of(getModel(), e, et);
   return (res == 1) ? true : false;
+}
+
+bool Mesh::isOnModel(ModelEntity* g, Vector3 p, double scale)
+{
+  Vector3 to;
+  double param[2];
+  gmi_ent* c = (gmi_ent*)g;
+  gmi_closest_point(getModel(), c, &p[0], &to[0], param);
+  double ratio = (to - p).getLength() / scale;
+  return ratio < 0.001;
 }
 
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
