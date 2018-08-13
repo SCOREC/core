@@ -79,6 +79,14 @@ class ArrayDataOf : public FieldDataOf<T>
     T* getDataArray() {
       return this->dataArray;
     }
+    virtual FieldData* clone() {
+      //FieldData* newData = new TagDataOf<double>();
+      FieldData* newData = new ArrayDataOf<T>();
+      newData->init(this->field);
+      copyFieldData(static_cast<FieldDataOf<T>*>(newData),
+                    static_cast<FieldDataOf<T>*>(this->field->getData()));
+      return newData;
+    }
 
   private:
     /* data variables go here */
