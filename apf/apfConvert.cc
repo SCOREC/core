@@ -8,6 +8,7 @@
 #include <map>
 #include <pcu_util.h>
 #include <iostream>
+#include <cstdlib>
 
 namespace apf {
 
@@ -231,17 +232,17 @@ class Converter
             int* intData;
             long* lngData; 
             switch (tagType) {
-              case apf::Mesh::TagType::DOUBLE:
+              case apf::Mesh::DOUBLE:
                 dblData = new double[tagSize];
                 inMesh->getDoubleTag(e, in, dblData);
                 outMesh->setDoubleTag(newFromOld[e], out, dblData);
                 break;
-              case apf::Mesh::TagType::INT:
+              case apf::Mesh::INT:
                 intData = new int[tagSize];
                 inMesh->getIntTag(e, in, intData);
                 outMesh->setIntTag(newFromOld[e], out, intData);
                 break;
-              case apf::Mesh::TagType::LONG:
+              case apf::Mesh::LONG:
                 lngData = new long[tagSize];
                 inMesh->getLongTag(e, in, lngData);
                 outMesh->setLongTag(newFromOld[e], out, lngData);
@@ -319,13 +320,13 @@ class Converter
         if (!outMesh->findTag(tagName)) {
           apf::MeshTag* out = NULL;
           switch (tagType) {
-            case apf::Mesh::TagType::DOUBLE:
+            case apf::Mesh::DOUBLE:
               out = outMesh->createDoubleTag(tagName, tagSize);
               break;
-            case apf::Mesh::TagType::INT:
+            case apf::Mesh::INT:
               out = outMesh->createIntTag(tagName, tagSize);
               break;
-            case apf::Mesh::TagType::LONG:
+            case apf::Mesh::LONG:
               out = outMesh->createLongTag(tagName, tagSize);
               break;
             default:
