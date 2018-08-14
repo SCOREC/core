@@ -490,12 +490,7 @@ void PCU_Allgather_Doubles(double* i, size_t ni, double* o)
 {
   if(global_state == uninit)
     reel_fail("Allgather_Doubles called before Comm_Init");
-  int rnk = pcu_pmpi_rank();
-  int sz = pcu_pmpi_size();
-  memset(o,0,sz*ni*sizeof(double));
-  memcpy(o+(rnk*ni),i,ni*sizeof(double));
-  pcu_reduce(&(get_msg()->coll),pcu_add_doubles,o,sz*ni*sizeof(double));
-  pcu_bcast(&(get_msg()->coll),o,sz*ni*sizeof(double));
+  MPI_Allgather(i,ni,MPI_DOUBLE,o,ni,MPI_DOUBLE,PCU_Get_Comm());
 }
 
 void PCU_Allgather_Double(double i, double* o)
@@ -509,12 +504,7 @@ void PCU_Allgather_Ints(int* i, size_t ni, int* o)
 {
   if(global_state == uninit)
     reel_fail("Allgather_Ints called before Comm_Init");
-  int rnk = pcu_pmpi_rank();
-  int sz = pcu_pmpi_size();
-  memset(o,0,sz*ni*sizeof(int));
-  memcpy(o+(rnk*ni),i,ni*sizeof(int));
-  pcu_reduce(&(get_msg()->coll),pcu_add_ints,o,sz*ni*sizeof(int));
-  pcu_bcast(&(get_msg()->coll),o,sz*ni*sizeof(int));
+  MPI_Allgather(i,ni,MPI_INTEGER,o,ni,MPI_INTEGER,PCU_Get_Comm());
 }
 
 void PCU_Allgather_Int(int i, int* o)
@@ -528,12 +518,7 @@ void PCU_Allgather_Longs(long* i, size_t ni, long* o)
 {
   if(global_state == uninit)
     reel_fail("Allgather_Longs called before Comm_Init");
-  int rnk = pcu_pmpi_rank();
-  int sz = pcu_pmpi_size();
-  memset(o,0,sz*ni*sizeof(long));
-  memcpy(o+(rnk*ni),i,ni*sizeof(long));
-  pcu_reduce(&(get_msg()->coll),pcu_add_longs,o,sz*ni*sizeof(long));
-  pcu_bcast(&(get_msg()->coll),o,sz*ni*sizeof(long));
+  MPI_Allgather(i,ni,MPI_LONG,o,ni,MPI_LONG,PCU_Get_Comm());
 }
 
 void PCU_Allgather_Long(long i, long* o)
@@ -547,12 +532,7 @@ void PCU_Allgather_SizeTs(size_t* i, size_t ni, size_t *o)
 {
   if(global_state == uninit)
     reel_fail("Allgather_SizeTs called before Comm_Init");
-  int rnk = pcu_pmpi_rank();
-  int sz = pcu_pmpi_size();
-  memset(o,0,sz*ni*sizeof(size_t));
-  memcpy(o+(rnk*ni),i,ni*sizeof(size_t));
-  pcu_reduce(&(get_msg()->coll),pcu_add_sizets,o,sz*ni*sizeof(size_t));
-  pcu_bcast(&(get_msg()->coll),o,sz*ni*sizeof(size_t));
+  MPI_Allgather(i,ni*sizeof(size_t),MPI_BYTE,o,ni*sizeof(size_t),MPI_BYTE,PCU_Get_Comm());
 }
 
 void PCU_Allgather_SizeT(size_t i, size_t* o)
