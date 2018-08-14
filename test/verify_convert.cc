@@ -24,7 +24,7 @@ apf::Mesh2* createMesh()
       m->createVertex(NULL, apf::Vector3(0, 0, 0), apf::Vector3(0, 0, 0));
   verts[1] =
       m->createVertex(NULL, apf::Vector3(1, 0, 0), apf::Vector3(1, 0, 0));
-  m->createEntity(apf::Mesh::Type::EDGE, NULL, verts);
+  m->createEntity(apf::Mesh::EDGE, NULL, verts);
   return m;
 }
 class twox : public apf::Function {
