@@ -44,7 +44,7 @@ static size_t phastaio_getCyclesPerMicroSec() {
   cycles = t1 - t0;
   cpus = ((double)cycles)/(usec);
   if(!PCU_Comm_Self())
-    cerr << "cycles " << cycles << " us " << usec
+    std::cerr << "cycles " << cycles << " us " << usec
          << " cycles per micro second " << cpus << "\n";
   return cpus;
 }

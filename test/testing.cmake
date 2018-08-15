@@ -33,6 +33,7 @@ mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
+mpi_test(verify_convert 1 ./verify_convert)
 
 if(ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
@@ -506,11 +507,23 @@ if(ENABLE_SIMMETRIX)
       ./generate
       "${MDIR}/upright.smd"
       "67k")
+    mpi_test(parallel_meshgen_surf 4
+      ./generate
+      "--disable-volume"
+      "--surface-mesh=${MDIR}/67k_surf.sms"
+      "${MDIR}/upright.smd"
+      "67k")
+    mpi_test(parallel_meshgen_vol 4
+      ./generate
+      "--disable-surface"
+      "--surface-mesh=${MDIR}/67k_surf_ref.sms"
+      "${MDIR}/upright.smd"
+      "67k")
     if(SIM_PARASOLID)
       mpi_test(parallel_meshgen_para 4
       ./generate
+      "--native-model=${MDIR}/upright.x_t"
       "${MDIR}/upright.smd"
-      "${MDIR}/upright.x_t"
       "67k")
     endif()
     # adapt_meshgen uses the output of parallel_meshgen

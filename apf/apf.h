@@ -668,13 +668,21 @@ struct Function
   virtual void eval(MeshEntity* e, double* result) = 0;
 };
 
-/** \brief Create a Field from a user's analytic function.
-  \details This field will use no memory, has values on all
-  nodes, and calls the user Function for all value queries.
-  Writing to this field does nothing.
-  */
+/* \brief Create a Field from a user's analytic function.
+ * \details This field will use no memory, has values on all
+ * nodes, and calls the user Function for all value queries.
+ * Writing to this field does nothing.
+ * \warning if you copy the mesh with apf::convert you may want to use
+ * apf::updateUserField to update function that this field refers to. This is
+ * extremely important if the analytic function you use references user fields.
+ */
 Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
     Function* f);
+
+/* \brief update the analytic function from a user field
+ * \details this field updates the apf::Function which the UserField refers to
+ */
+void updateUserField(Field* field, Function* newFunc);
 
 /** \brief Compute a nodal gradient field from a nodal input field
   \details given a nodal field, compute approximate nodal gradient
