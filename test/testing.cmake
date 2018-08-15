@@ -33,6 +33,7 @@ mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
+mpi_test(verify_convert 1 ./verify_convert)
 
 if(ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
