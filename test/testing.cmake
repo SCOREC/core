@@ -480,6 +480,10 @@ set(MDIR ${MESHES}/fusion)
 mpi_test(mkmodel_fusion 1
   ./mkmodel
   "${MDIR}/fusion.smb"
+  "fusionNull.dmg")
+mpi_test(mktopomodel_fusion 1
+  ./mktopomodel
+  "${MDIR}/fusion.smb"
   "fusion.dmg")
 mpi_test(split_fusion 2
   ./split
