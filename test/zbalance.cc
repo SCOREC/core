@@ -7,6 +7,7 @@
 #include <parma.h>
 #include <PCU.h>
 #include <pcu_util.h>
+#include <cstdlib> // exit and EXIT_FAILURE
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
