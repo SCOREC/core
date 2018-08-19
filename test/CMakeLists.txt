@@ -27,6 +27,7 @@ if(ENABLE_SIMMETRIX)
   util_exe_func(mdlConvert mdlConvert.cc)
 endif()
 util_exe_func(mkmodel mkmodel.cc)
+util_exe_func(mktopomodel mktopomodel.cc)
 
 # Mesh generation utilities
 util_exe_func(box box.cc)
