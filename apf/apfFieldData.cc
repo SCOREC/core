@@ -90,6 +90,7 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
   {
     if ( ! s->hasNodesIn(d))
       continue;
+
     MeshEntity* e;
     MeshIterator* it = m->begin(d);
     PCU_Comm_Begin();
@@ -131,7 +132,6 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
         if (m->getGhosts(e, ghosts))
         APF_ITERATE(Copies, ghosts, it2)
         {
-
           PCU_COMM_PACK(it2->first, it2->second);
           PCU_Comm_Pack(it2->first, &(values[0]), n*sizeof(double));
         }
