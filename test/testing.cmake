@@ -331,7 +331,7 @@ endif()
 mpi_test(fieldReduce 4
   ./fieldReduce
   "${MDIR}/pipe.${GXT}"
-  "pip_4_.smb")
+  "pipe_4_.smb")
 
 set(MDIR ${MESHES}/torus)
 mpi_test(reorder 4

@@ -129,14 +129,16 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
       {
         apf::Copies ghosts;
         if (m->getGhosts(e, ghosts))
-        APF_ITERATE(Copies, ghosts, it)
+        APF_ITERATE(Copies, ghosts, it2)
         {
-          PCU_COMM_PACK(it->first, it->second);
-          PCU_Comm_Pack(it->first, &(values[0]), n*sizeof(double));
+
+          PCU_COMM_PACK(it2->first, it2->second);
+          PCU_Comm_Pack(it2->first, &(values[0]), n*sizeof(double));
         }
       }
     }
     m->end(it);
+
     PCU_Comm_Send();
     while (PCU_Comm_Listen())
       while ( ! PCU_Comm_Unpacked())
@@ -150,7 +152,7 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
         PCU_Comm_Unpack(&(inValues[0]),n*sizeof(double));
         data->get(e,&(values[0]));
         for (int i = 0; i < n; ++i)
-          values[i] += inValues[i];
+          values[i] = reduce_op.apply(values[i], inValues[i]);
         data->set(e,&(values[0]));
       }
   }

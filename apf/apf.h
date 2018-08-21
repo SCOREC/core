@@ -676,7 +676,7 @@ void synchronize(Field* f, Sharing* shr = 0);
   all copies of an entity and assign the sum as the
   value for all copies.
   */
-void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = true);
+void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
 
 /** \brief Apply a reudction operator along partition boundaries
   \details Using the copies described by an apf::Sharing object, applied
