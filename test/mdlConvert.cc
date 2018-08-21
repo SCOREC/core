@@ -8,8 +8,9 @@
 int main(int argc, char** argv)
 {
   if (argc != 3) {
-    printf("Convert simmetrix smd model to a gmi dmg model\n");
-    printf("Usage: %s <simmetrix smd model> <gmi dmg model>\n", argv[0]);
+    printf("Convert parasolid or simmetrix geomsim model to "
+           "a gmi topological model\n");
+    printf("Usage: %s <input model> <output model prefix>.dmg\n", argv[0]);
     return 0;
   }
   MS_init();
