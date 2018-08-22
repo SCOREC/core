@@ -105,11 +105,19 @@ static int get_tag(gmi_model* m, gmi_ent* e)
 
 static gmi_ent* find(gmi_model* m, int dim, int tag)
 {
-  (void)m;
-  (void)dim;
-  (void)tag;
-  printf("_find_ not implemented!\n");
-  return 0;
+  cap_model* cm = (cap_model*)m;
+  M_GTopo topo;
+  if (dim == 0)
+    topo = cm->geomInterface->get_topo_by_id(VERTEX, tag);
+  else if (dim == 1)
+    topo = cm->geomInterface->get_topo_by_id(EDGE, tag);
+  else if (dim == 2)
+    topo = cm->geomInterface->get_topo_by_id(FACE, tag);
+  else if (dim == 3)
+    topo = cm->geomInterface->get_topo_by_id(REGION, tag);
+  else
+    gmi_fail("input dim is out of range.");
+  return toGmiEntity(topo);
 }
 
 static gmi_set* vector_to_set(std::vector<M_GTopo> gtopos)
@@ -269,9 +277,14 @@ static int is_discrete_ent(struct gmi_model*, struct gmi_ent* e)
 
 static void destroy(gmi_model* m)
 {
-  (void)m;
-  printf("_destroy_ not implemented!\n");
+  cap_model* cm = (cap_model*)m;
+  free(cm);
 }
+
+/* static gmi_model* create_cre(const char* filename) */
+/* { */
+/*   return gmi_cap_load(filename); */
+/* } */
 
 static struct gmi_model_ops ops;
 
@@ -304,7 +317,7 @@ void gmi_register_cap(void)
   ops.is_in_closure_of = is_in_closure_of;
   ops.is_discrete_ent = is_discrete_ent;
   ops.destroy = destroy;
-  /* gmi_register(create_smd, "smd"); */
+  /* gmi_register(create_cre, "cre"); */
   /* gmi_register(create_native, "xmt_txt"); */
   /* gmi_register(create_native, "x_t"); */
   /* gmi_register(create_native, "sat"); */
@@ -312,9 +325,39 @@ void gmi_register_cap(void)
 
 /* static gmi_model* owned_import(GeometryDatabaseInterface* gi) */
 /* { */
-/*   (void)gi; */
-/*   printf("not implemented!\n"); */
-/*   return 0; */
+/*   gmi_model* m = gmi_import_cap(gi); */
+/*   ((cap_model*)m)->owned = true; */
+/*   return m; */
+/* } */
+
+/* struct gmi_model* gmi_cap_load(const char* creFileName) */
+/* { */
+/*   if (!gmi_has_ext(creFileName, "cre")) */
+/*     gmi_fail("gmi_cap_load: cre file must have .cre extension"); */
+/*   const std::string gdbName("Geometry Database : SMLIB");// Switch Create with SMLIB for CAD */
+/*   const std::string mdbName("Mesh Database : Create"); */
+/*   const std::string adbName("Attribution Database : Create"); */
+
+/*   CapstoneModule  cs("test", gdbName.c_str(), mdbName.c_str(), adbName.c_str()); */
+
+/*   GeometryDatabaseInterface     *g = cs.get_geometry(); */
+/*   MeshDatabaseInterface         *m = cs.get_mesh(); */
+/*   AppContext                    *c = cs.get_context(); */
+
+/*   PCU_ALWAYS_ASSERT(g); */
+/*   PCU_ALWAYS_ASSERT(m); */
+/*   PCU_ALWAYS_ASSERT(c); */
+
+/*   v_string filenames; */
+/*   filenames.push_back(creFileName); */
+
+/*   M_GModel gmodel = cs.load_files(filenames); */
+
+/*   int numBreps; */
+/*   g->get_num_breps(numBreps); */
+/*   PCU_ALWAYS_ASSERT(numBreps == 1); */
+
+/*   return owned_import(g); */
 /* } */
 
 gmi_model* gmi_import_cap(GeometryDatabaseInterface* gi)
