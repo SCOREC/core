@@ -370,37 +370,35 @@ int MeshCAP::getDownward(MeshEntity* e,
   M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
+
+  int from;
+  if (type == TOPO_VERTEX)
+    from = 0;
+  else if(type == TOPO_EDGE)
+    from = 1;
+  else if(type == TOPO_FACE)
+    from = 2;
+  else
+    from = 3;
+
   std::vector<M_MTopo> adjTopos;
-  if (apf::getDimension(this, e) == dimension)
+  if (from == dimension)
   {
     down[0] = e;
     return 1;
   }
-  else if (type == TOPO_EDGE)
-  {
-    PCU_ALWAYS_ASSERT(dimension == 0);
+
+  PCU_ALWAYS_ASSERT(from > dimension);
+  if (dimension == 0)
     meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
-  }
-  else if (type == TOPO_FACE)
-  {
-    PCU_ALWAYS_ASSERT(dimension == 0 || dimension == 1);
-    if (dimension == 0)
-      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
-    if (dimension == 1)
-      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
-  }
-  else if (type == TOPO_REGION)
-  {
-    PCU_ALWAYS_ASSERT(dimension == 0 || dimension == 1 || dimension == 2);
-    if (dimension == 0)
-      meshInterface->get_adjacency_vector(topo, TOPO_VERTEX, adjTopos);
-    if (dimension == 1)
-      meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
-    if (dimension == 2)
-      meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
-  }
+  if (dimension == 1)
+    meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+  if (dimension == 2)
+    meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+
   for (std::size_t i = 0; i < adjTopos.size(); i++)
     down[i] = toEntity(adjTopos[i]);
+
   /* std::cout << adjTopos.size() << "," << Mesh::adjacentCount[getType(e)][dimension] << std::endl; */
   PCU_ALWAYS_ASSERT(adjTopos.size() == (std::size_t)Mesh::adjacentCount[getType(e)][dimension]);
   return adjTopos.size();
@@ -480,13 +478,13 @@ int MeshCAP::countUpward(MeshEntity* e)
   M_MTopo topo = fromEntity(e);
   MeshTopo type;
   meshInterface->get_topo_type(topo, type);
-  std::vector<M_MTopo> adjTopos;
+  std::vector<std::size_t> adjTopos;
   if (type == TOPO_VERTEX)
-    meshInterface->get_adjacency_vector(topo, TOPO_EDGE, adjTopos);
+    meshInterface->get_adjacency_id_vector(topo, TOPO_EDGE, adjTopos);
   if (type == TOPO_EDGE)
-    meshInterface->get_adjacency_vector(topo, TOPO_FACE, adjTopos);
+    meshInterface->get_adjacency_id_vector(topo, TOPO_FACE, adjTopos);
   if (type == TOPO_FACE)
-    meshInterface->get_adjacency_vector(topo, TOPO_REGION, adjTopos);
+    meshInterface->get_adjacency_id_vector(topo, TOPO_REGION, adjTopos);
   return (int)adjTopos.size();
 }
 
