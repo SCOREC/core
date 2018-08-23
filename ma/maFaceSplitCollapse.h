@@ -17,6 +17,13 @@ namespace ma {
 
 class FaceSplitCollapse
 {
+  class IgnoringCollapse : public Collapse
+  {
+  public:
+    EntitySet elementsToIgnore;
+    virtual void computeElementSets();
+  };
+
   public:
     FaceSplitCollapse(Adapt* a);
     void getNewElements(EntityArray& e);
@@ -26,7 +33,7 @@ class FaceSplitCollapse
     Adapt* getAdapt();
   private:
     FaceSplit faceSplit;
-    Collapse collapse;
+    IgnoringCollapse collapse;
     double oldQuality;
 };
 

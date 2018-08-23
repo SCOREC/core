@@ -37,7 +37,11 @@ namespace ma {
       return false;
     if ( ! collapse.checkTopo())
       return false;
+    EntityArray& preSplit = faceSplit.getTets();
+    for (size_t i=0; i < preSplit.getSize(); ++i)
+      collapse.elementsToIgnore.insert(preSplit[i]);
     return collapse.tryBothDirections(oldQuality);
+    collapse.elementsToIgnore.clear();
   }
 
   void FaceSplitCollapse::accept()
@@ -76,5 +80,16 @@ namespace ma {
   {
     return collapse.adapt;
   }
+
+void FaceSplitCollapse::IgnoringCollapse::computeElementSets()
+{
+  Collapse::computeElementSets();
+  APF_ITERATE(EntitySet, elementsToIgnore, it) {
+    if (elementsToKeep.count(*it))
+      elementsToKeep.erase(*it);
+    if (elementsToCollapse.count(*it))
+      elementsToCollapse.erase(*it);
+  }
+}
 
 }

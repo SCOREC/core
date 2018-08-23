@@ -32,7 +32,7 @@ class Collapse
     bool checkTopo();
     void unmark();
     void setVerts();
-    void computeElementSets();
+    virtual void computeElementSets();
     void rebuildElements();
     void fitElements();
     bool isGood2DMesh();

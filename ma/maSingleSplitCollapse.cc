@@ -46,7 +46,11 @@ bool SingleSplitCollapse::tryBothCollapses(Entity* e)
     return false;
   if ( ! collapse.checkTopo())
     return false;
+  EntityArray& preSplit = splits.getTets();
+  for (size_t i=0; i < preSplit.getSize(); ++i)
+    collapse.elementsToIgnore.insert(preSplit[i]);
   return collapse.tryBothDirections(oldQuality);
+  collapse.elementsToIgnore.clear();
 }
 
 void SingleSplitCollapse::accept()
@@ -123,6 +127,17 @@ bool SingleSplitCollapse::run(Entity* edge, Entity* vert)
 Adapt* SingleSplitCollapse::getAdapt()
 {
   return collapse.adapt;
+}
+
+void SingleSplitCollapse::IgnoringCollapse::computeElementSets()
+{
+  Collapse::computeElementSets();
+  APF_ITERATE(EntitySet, elementsToIgnore, it) {
+    if (elementsToKeep.count(*it))
+      elementsToKeep.erase(*it);
+    if (elementsToCollapse.count(*it))
+      elementsToCollapse.erase(*it);
+  }
 }
 
 }
