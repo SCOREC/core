@@ -17,6 +17,14 @@ namespace ma {
 
 class SingleSplitCollapse
 {
+  class IgnoringCollapse : public Collapse
+  {
+  public:
+    EntitySet elementsToIgnore;
+    virtual void computeElementSets();
+    virtual bool setEdge(Entity* e);
+  };
+
 public:
   SingleSplitCollapse(Adapt* a);
   void getNewElements(EntityArray& e);
@@ -29,7 +37,7 @@ public:
 private:
   Entity *oldVert, *oldEdge;
   Splits splits;
-  Collapse collapse;
+  IgnoringCollapse collapse;
   double oldQuality;
 };
 
