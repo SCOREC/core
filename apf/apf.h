@@ -369,9 +369,9 @@ class Integrator
     Integrator(int o);
     virtual ~Integrator();
     /** \brief Run the Integrator over the local Mesh. */
-    void process(Mesh* m);
+    virtual void process(Mesh* m);
     /** \brief Run the Integrator over a Mesh Element. */
-    void process(MeshElement* e);
+    virtual void process(MeshElement* e);
     /** \brief User callback: element entry.
       *
       * \details APF will call this function every time the
