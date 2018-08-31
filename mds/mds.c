@@ -216,8 +216,8 @@ static void resize_adjacency(struct mds* m, int from, int to,
     mds_id old_cap[MDS_TYPES],
     mds_id new_cap[MDS_TYPES])
 {
-  PCU_ALWAYS_ASSERT(from >= 1);
-  PCU_ALWAYS_ASSERT(to >= 1);
+  PCU_ALWAYS_ASSERT(from >= 0);
+  PCU_ALWAYS_ASSERT(to >= 0);
   PCU_ALWAYS_ASSERT(from <= 3);
   PCU_ALWAYS_ASSERT(to <= 3);
   if (from < to)
