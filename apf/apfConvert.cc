@@ -199,8 +199,7 @@ class Converter
         GlobalNumbering* in, GlobalNumbering* out)
     {
       FieldShape* s = getShape(in);
-      int nc = countComponents(in);
-      PCU_DEBUG_ASSERT(nc == 1);
+      PCU_DEBUG_ASSERT(countComponents(in) == 1);
       for (int d = 0; d <= 3; ++d) {
         if (s->hasNodesIn(d)) {
           MeshIterator* it = inMesh->begin(d);
