@@ -83,13 +83,33 @@ namespace ma {
 
 void FaceSplitCollapse::IgnoringCollapse::computeElementSets()
 {
-  Collapse::computeElementSets();
-  APF_ITERATE(EntitySet, elementsToIgnore, it) {
-    if (elementsToKeep.count(*it))
-      elementsToKeep.erase(*it);
-    if (elementsToCollapse.count(*it))
-      elementsToCollapse.erase(*it);
-  }
+  Upward adjacent;
+  Mesh* m = adapt->mesh;
+  m->getAdjacent(edge,m->getDimension(),adjacent);
+  elementsToCollapse.clear();
+  APF_ITERATE(Upward,adjacent,it)
+    if ( ! elementsToIgnore.count(*it))
+      elementsToCollapse.insert(*it);
+  m->getAdjacent(vertToCollapse,m->getDimension(),adjacent);
+  elementsToKeep.clear();
+  APF_ITERATE(Upward,adjacent,it)
+    if ( ! (elementsToCollapse.count(*it) ||
+            elementsToIgnore.count(*it)))
+      elementsToKeep.insert(*it);
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+}
+
+bool FaceSplitCollapse::IgnoringCollapse::setEdge(Entity* e)
+{
+  if (getFlag(adapt,e,DONT_COLLAPSE))
+    return false;
+  edge = e;
+  vertToCollapse = 0;
+  vertToKeep = 0;
+  elementsToCollapse.clear();
+  elementsToKeep.clear();
+  elementsToIgnore.clear();
+  return true;
 }
 
 }

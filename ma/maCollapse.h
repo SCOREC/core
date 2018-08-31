@@ -27,7 +27,7 @@ class Collapse
     bool requestLocality(apf::CavityOp* o);
     void destroyOldElements();
     void destroyNewElements();
-    bool setEdge(Entity* e);
+    virtual bool setEdge(Entity* e);
     bool checkClass();
     bool checkTopo();
     void unmark();

@@ -22,6 +22,7 @@ class FaceSplitCollapse
   public:
     EntitySet elementsToIgnore;
     virtual void computeElementSets();
+    virtual bool setEdge(Entity* e);
   };
 
   public:
