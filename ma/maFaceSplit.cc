@@ -84,7 +84,6 @@ void FaceSplit::makeNewElements()
   cb.reset();
   Entity* tri = toSplit[2][0];
   // Split vertex. Also makes the new faces.
-  // TODO: Add all these to newEntities, or do something similar
   Entity* sv = splitTri0(adapter, tri);
   cb.retrieve(newEntities[2][0]);
   newEntities[3].setSize(toSplit[3].getSize());
@@ -109,7 +108,7 @@ void FaceSplit::makeNewElements()
 void FaceSplit::cancel()
 {
   Mesh* m = adapter->mesh;
-  // TODO Find Split vert and delete all adjacent regions
+  // Find Split vert and delete all adjacent regions
   Entity* sv = getSplitVert();
   Upward deleting; // We'll delete all regions adjacent to sv
   m->getAdjacent(sv, m->getDimension(), deleting);
@@ -124,7 +123,6 @@ void FaceSplit::cancel()
 void FaceSplit::transfer()
 {
   Mesh* m = adapter->mesh;
-  // TODO
   SolutionTransfer* st = adapter->solutionTransfer;
   int td = st->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
