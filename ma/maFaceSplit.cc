@@ -87,10 +87,11 @@ void FaceSplit::makeNewElements()
   // TODO: Add all these to newEntities, or do something similar
   Entity* sv = splitTri0(adapter, tri);
   cb.retrieve(newEntities[2][0]);
-  clearBuildCallback(adapter);
+  newEntities[3].setSize(toSplit[3].getSize());
   Downward tetv, ntetv;
   for (size_t i = 0; i < toSplit[3].getSize(); ++i) {
     Entity* tet = toSplit[3][i];
+    cb.reset();
     // Orient Tets
     rotateForFaceSplit(adapter, tet, tri, tetv);
     // Create splits
@@ -100,7 +101,9 @@ void FaceSplit::makeNewElements()
     buildElement(adapter, m->toModel(tet), apf::Mesh::TET, ntetv);
     ntetv[0] = tetv[2]; ntetv[1] = tetv[0]; ntetv[2] = sv; ntetv[3] = tetv[3];
     buildElement(adapter, m->toModel(tet), apf::Mesh::TET, ntetv);
+    cb.retrieve(newEntities[3][i]);
   }
+  clearBuildCallback(adapter);
 }
 
 void FaceSplit::cancel()
