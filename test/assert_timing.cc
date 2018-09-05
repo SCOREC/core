@@ -8,9 +8,7 @@
 double check_c_assert() {
   double t0 = PCU_Time();
   for (int i = 0; i < 100000000; ++i) {
-    double j = (double)i;
-    double k = (double)i + 1.0;
-    assert(pow(j, 1.01) < pow(k, 1.02));
+    assert(pow((double)i, 1.01) < pow((double)i +1.0, 1.02));
   }
   double t1 = PCU_Time();
   return t1-t0;

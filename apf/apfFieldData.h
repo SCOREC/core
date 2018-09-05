@@ -22,7 +22,7 @@ class FieldData
     virtual bool hasEntity(MeshEntity* e) = 0;
     virtual void removeEntity(MeshEntity* e) = 0;
     virtual bool isFrozen() = 0;
-    virtual FieldData* clone();
+    virtual FieldData* clone() = 0;
     virtual void rename(const char* newName);
     FieldBase* getField() {return field;}
   protected:
@@ -55,6 +55,7 @@ class FieldDataOf : public FieldData
     void setNodeComponents(MeshEntity* e, int node, T const* components);
     void getNodeComponents(MeshEntity* e, int node, T* components);
     int getElementData(MeshEntity* entity, NewArray<T>& data);
+    virtual FieldData* clone()=0;
 };
 
 } //namespace apf

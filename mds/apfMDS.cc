@@ -559,8 +559,9 @@ class MeshMDS : public Mesh2
     }
     void acceptChanges()
     {
-      updateOwners(this, parts);
+      updateOwners(this, pmodel);
     }
+
     void migrate(Migration* plan)
     {
       apf::migrate(this,plan);
@@ -629,14 +630,14 @@ class MeshMDS : public Mesh2
     void setResidence(MeshEntity* e, Parts& residence)
     {
       mds_id id = fromEnt(e);
-      PME* p = getPME(parts, residence);
+      PME* p = getPME(pmodel, residence);
       void* vp = static_cast<void*>(p);
       void* ovp = mds_get_part(mesh, id);
       if (ovp) { /* partition model classification can be NULL during
         early mesh initialization, such as after reading SMB or in
         createEntity_ */
         PME* op = static_cast<PME*>(ovp);
-        putPME(parts, op);
+        putPME(pmodel, op);
       }
       mds_set_part(mesh, id, vp);
     }
@@ -685,10 +686,14 @@ class MeshMDS : public Mesh2
     {
       mds_id id = fromEnt(e);
       void* ovp = mds_get_part(mesh, id);
-      PME* op = static_cast<PME*>(ovp);
-      putPME(parts, op);
+      if (ovp)
+      {
+        PME* op = static_cast<PME*>(ovp);
+        putPME(pmodel, op);
+      }
       mds_apf_destroy_entity(mesh,id);
     }
+
     void setModelEntity(MeshEntity* e, ModelEntity* c)
     {
       mds_apf_set_model(mesh, fromEnt(e),
@@ -749,7 +754,7 @@ class MeshMDS : public Mesh2
       return table[type];
     }
     mds_apf* mesh;
-    PM parts;
+    PM pmodel;
     bool isMatched;
     bool ownsModel;
 };
@@ -766,6 +771,12 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
   return new MeshMDS(model, from);
 }
 
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)
+{
+  Mesh2* m = new MeshMDS(model, meshfile);
+  return m;
+}
+
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
 {
   double t0 = PCU_Time();
@@ -773,9 +784,9 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
   initResidence(m, m->getDimension());
   stitchMesh(m);
   m->acceptChanges();
-  double t1 = PCU_Time();
+
   if (!PCU_Comm_Self())
-    printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
+    printf("mesh %s loaded in %f seconds\n", meshfile, PCU_Time() - t0);
   printStats(m);
   warnAboutEmptyParts(m);
   return m;
@@ -786,9 +797,9 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   double t0 = PCU_Time();
   static gmi_model* model;
   model = gmi_load(modelfile);
-  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
+    printf("model %s loaded in %f seconds\n", modelfile, PCU_Time() - t0);
+
   return loadMdsMesh(model, meshfile);
 }
 

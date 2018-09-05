@@ -12,6 +12,12 @@ if(NOT EXISTS "${PARMETIS_INCLUDE_DIR}")
   message(FATAL_ERROR "parmetis include dir not found")
 endif()
 
+find_path(METIS_INCLUDE_DIR metis.h PATHS "${PARMETIS_PREFIX}/include")
+if(NOT EXISTS "${METIS_INCLUDE_DIR}")
+  message(FATAL_ERROR "metis include dir not found")
+endif()
+
+
 find_library(PARMETIS_LIBRARY parmetis PATHS "${PARMETIS_PREFIX}/lib")
 if(NOT EXISTS "${PARMETIS_LIBRARY}")
   message(FATAL_ERROR "parmetis library not found")
@@ -23,7 +29,7 @@ if(NOT EXISTS "${METIS_LIBRARY}")
 endif()
 
 set(PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
-set(PARMETIS_INCLUDE_DIRS ${PARMETIS_INCLUDE_DIR} )
+set(PARMETIS_INCLUDE_DIRS ${PARMETIS_INCLUDE_DIR} ${METIS_INCLUDE_DIR})
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set PARMETIS_FOUND to TRUE

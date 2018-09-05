@@ -73,6 +73,7 @@ void getGrowthCurves(Output& o)
           break;
         }
       }
+      VIter_delete(vIter);
 
       if(isBoundaryLayerFace){
 //      Add gFace to gEntities
@@ -104,6 +105,7 @@ void getGrowthCurves(Output& o)
         }
       }
     }
+    GFIter_delete(gFIter);
 
 //  get seeds of all growth curves
     pPList allSeeds = PList_new();
@@ -175,6 +177,7 @@ void getGrowthCurves(Output& o)
         //Append seeds to allSeeds
         PList_appPList(allSeeds,seeds);
       }
+      VIter_delete(vIter);
     }
 
 //  get info of growth curves
