@@ -6,7 +6,6 @@ sudo: true
 branches:
   only:
    - develop
-   - wrt/travis-ci
 
 addons:
   apt:
