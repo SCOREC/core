@@ -42,6 +42,9 @@ class MeshTag;
 class MeshEntity;
 class Migration;
 
+/** \brief a map from global ids to vertex objects */
+typedef std::map<int, MeshEntity*> GlobalToVert;
+
 /** \brief create an empty MDS part
   \param model the geometric model interface
   \param dim the eventual mesh dimension. MDS needs to allocate
@@ -49,8 +52,9 @@ class Migration;
   \param isMatched whether or not there will be matched entities */
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
-/** \brief a map from global ids to vertex objects */
-typedef std::map<int, MeshEntity*> GlobalToVert;
+/** \brief load an MDS mesh and model from file
+  \param modelfile will be passed to gmi_load to get the model */
+Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
 /** \brief load an MDS mesh from files
   \param model the geometric model interface
@@ -67,9 +71,8 @@ typedef std::map<int, MeshEntity*> GlobalToVert;
                   resulting object will do the same in reverse. */
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
-/** \brief load an MDS mesh and model from file
-  \param modelfile will be passed to gmi_load to get the model */
-Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
+// make a serial mesh on all processes - no pmodel & remote link setup
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile);
 
 /** \brief create an MDS mesh from an existing mesh
   \param from the mesh to copy

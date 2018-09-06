@@ -204,10 +204,15 @@ pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const ch
 
 // load a serial mesh on all processes and set up comm links and ptn classification 
 // note that the default owning PID is 0
-pMesh pumi_mesh_loadAll(pGeom g, const char* filename);
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stich_link=true);
 
 // delete mesh
 void pumi_mesh_delete(pMesh m);
+
+// given a mesh with vertex remote link properly setup, 
+// stitch all other entities and set partition model.
+// if dup=true, the elements are duplicated on multiple parts 
+void pumi_mesh_stitch(pMesh m, bool dup=false);
 
 // create/delete direct Adjacency for all entities except for one-level apart
 bool pumi_mesh_hasAdjacency(pMesh m, int from_dim, int to_dim);
