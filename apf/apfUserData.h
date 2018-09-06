@@ -21,11 +21,15 @@ struct UserData : public FieldDataOf<double>
   void get(MeshEntity* e, double* data);
   void set(MeshEntity* e, double const* data);
   bool isFrozen();
+  virtual FieldData* clone();
+  // using const * const gives an error on gcc/7.3.0 because the return is an
+  // r-value which cannot be modified anyways
+  Function const* getFunction() const { return function; }
+  void setFunction(Function* func) { function = func; }
+  private:
   Function* function;
 };
 
 }
 
 #endif
-
-

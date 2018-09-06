@@ -116,10 +116,6 @@ class Mesh2 : public Mesh
   mesh modifications so that all structures are properly updated before
   using the mesh any further. */
     virtual void acceptChanges() = 0;
-
-/** \brief clear partition model and partition classification of mesh entities  */
-    virtual void resetPmodel() = 0;
-    virtual void setPtnClas(MeshEntity*, Parts&, int owner) = 0;
 };
 
 /** \brief APF's migration function, works on apf::Mesh2

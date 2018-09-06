@@ -33,6 +33,7 @@ mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
+mpi_test(verify_convert 1 ./verify_convert)
 
 if(ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
@@ -478,6 +479,10 @@ mpi_test(nonmanif_verify2 2
 set(MDIR ${MESHES}/fusion)
 mpi_test(mkmodel_fusion 1
   ./mkmodel
+  "${MDIR}/fusion.smb"
+  "fusionNull.dmg")
+mpi_test(mktopomodel_fusion 1
+  ./mktopomodel
   "${MDIR}/fusion.smb"
   "fusion.dmg")
 mpi_test(split_fusion 2

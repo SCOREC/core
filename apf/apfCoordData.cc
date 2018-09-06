@@ -11,6 +11,14 @@
 
 namespace apf {
 
+FieldData* CoordData::clone() {
+  FieldData* newData = new CoordData();
+  newData->init(field);
+  copyFieldData(static_cast<FieldDataOf<double>*>(newData),
+                static_cast<FieldDataOf<double>*>(field->getData()));
+  return newData;
+
+}
 void CoordData::init(FieldBase* f)
 {
   FieldData::field = f;

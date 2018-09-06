@@ -463,6 +463,13 @@ Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
   return makeField(m, name, valueType, 0, s, new UserData(f));
 }
 
+void updateUserField(Field* field, Function* newFunc)
+{
+  UserData* ud = dynamic_cast<UserData*>(field->getData());
+  // ud will be null if the data is not user data
+  if (ud) ud->setFunction(newFunc);
+}
+
 void copyData(Field* to, Field* from)
 {
   copyFieldData(from->getData(), to->getData());
