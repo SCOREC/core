@@ -45,9 +45,9 @@ script:
   - mkdir -p ${DEVROOT}/SCOREC/core/build
   - cd build
   - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Release -DMESHES=${DEVROOT}/meshes
-  - make -j ${NP} VERBOSE=1
+  - make -j ${NP}
   - ctest
   - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Debug -DMESHES=${DEVROOT}/meshes
-  - make -j ${NP} VERBOSE=1
+  - make -j ${NP}
   - ctest
 
