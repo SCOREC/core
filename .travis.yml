@@ -38,7 +38,7 @@ before_install:
   - cmake --version
   - export PATH=/usr/local/bin:${PATH}
   - cd ${DEVROOT}
-  - git clone git@github.com:SCOREC/pumi-meshes.git meshes
+  - git clone https://github.com/SCOREC/pumi-meshes.git meshes
 
 script:
   - cd ${DEVROOT}/SCOREC/core
