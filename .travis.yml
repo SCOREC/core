@@ -6,6 +6,7 @@ sudo: true
 branches:
   only:
    - develop
+   - wrt/travis-ci
 
 addons:
   apt:
@@ -41,10 +42,10 @@ script:
   - cd ${DEVROOT}/SCOREC/core
   - mkdir -p ${DEVROOT}/SCOREC/core/build
   - cd build
-  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=OFF -DCMAKE_BUILD_TYPE=Release
+  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Release
   - make -j ${NP} VERBOSE=1
   - ctest
-  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=OFF -DCMAKE_BUILD_TYPE=Debug
+  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Debug
   - make -j ${NP} VERBOSE=1
   - ctest
 
