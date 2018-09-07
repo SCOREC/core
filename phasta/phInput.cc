@@ -81,6 +81,7 @@ static void setDefaults(Input& in)
   in.gammaSize = 3e-5;
   in.nRigidBody = 0;
   in.nRBParam = 12;
+  in.gradingFactor = 1.25;
 }
 
 Input::Input()
@@ -161,6 +162,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["gammaSize"] = &in.gammaSize;
   intMap["nRigidBody"] = &in.nRigidBody;
   intMap["nRBParam"] = &in.nRBParam;
+  dblMap["gradingFactor"] = &in.gradingFactor;
 }
 
 template <class T>

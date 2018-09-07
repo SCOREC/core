@@ -177,6 +177,8 @@ class Input
     int nRBParam;
     /** \brief parameter data for rigid body */
     std::vector<double> rbParamData;
+    /** \brief factor \beta used for mesh smooth/gradation */
+    double gradingFactor;
 };
 
 int countNaturalBCs(Input& in);
