@@ -225,11 +225,14 @@ static void closest_point(struct gmi_model* m, struct gmi_ent* e,
 static void normal(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double n[3])
 {
-  (void)m;
-  (void)e;
-  (void)p;
-  (void)n;
-  printf("_normal_ not implemented!\n");
+  cap_model* cm = (cap_model*)m;
+  M_GTopo topo = fromGmiEntity(e);
+  vec2d param(p[0], p[1]);
+  vec3d norm;
+  cm->geomInterface->get_face_normal_parametrization(topo, param, norm);
+  n[0] = norm[0];
+  n[1] = norm[1];
+  n[2] = norm[2];
 }
 
 static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
