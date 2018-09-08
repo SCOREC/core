@@ -210,9 +210,9 @@ int countFixed(Numbering* n)
   return num_fixed;
 }
 
-void synchronize(Numbering * n, Sharing* shr)
+void synchronize(Numbering * n, Sharing* shr, bool delete_shr)
 {
-  synchronizeFieldData<int>(n->getData(), shr);
+  synchronizeFieldData<int>(n->getData(), shr, delete_shr);
 }
 
 struct NoSharing : public Sharing
@@ -461,6 +461,14 @@ GlobalNumbering* createGlobalNumbering(
   return n;
 }
 
+GlobalNumbering* createGlobalNumbering(Field* f)
+{
+  GlobalNumbering* n = new GlobalNumbering();
+  n->init(f);
+  f->getMesh()->addGlobalNumbering(n);
+  return n;
+}
+
 FieldShape* getShape(GlobalNumbering* n)
 {
   return n->getShape();
@@ -601,5 +609,5 @@ void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes)
   getFieldNodes(n,nodes);
 }
 
+Field* getField(GlobalNumbering* n) { return n->getField(); }
 }
-

@@ -40,14 +40,14 @@ void switchToMasters(int splitFactor)
   int groupRank = self / splitFactor;
   int group = self % splitFactor;
   MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  MPI_Comm_split(PCU_Get_Comm(), group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
 }
 
-void switchToAll()
+void switchToAll(MPI_Comm orig)
 {
   MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(MPI_COMM_WORLD);
+  PCU_Switch_Comm(orig);
   MPI_Comm_free(&prevComm);
   PCU_Barrier();
 }
@@ -172,7 +172,19 @@ namespace ph {
     ph::generateOutput(in, bcs, m, out);
     ph::exitFilteredMatching(m);
     // a path is not needed for inmem
-    ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+    if ( in.writeRestartFiles ) {
+      if(!PCU_Comm_Self()) printf("write file-based restart file\n");
+      // store the value of the function pointer
+      FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
+      // set function pointer for file writing
+      out.openfile_write = chef::openfile_write;
+      ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+      // reset the function pointer to the original value
+      out.openfile_write = fn;
+    }
+    else {
+      ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
+    }
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     if ( in.writeGeomBCFiles ) {
@@ -201,6 +213,7 @@ namespace ph {
     gmi_model* g = m->getModel();
     PCU_ALWAYS_ASSERT(g);
     BCs bcs;
+    fprintf(stderr, "reading %s\n", in.attributeFileName.c_str());
     ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     if (!in.solutionMigration)
       ph::attachZeroSolution(in, m);
@@ -218,10 +231,11 @@ namespace chef {
     ph::BCs bcs;
     loadCommon(in, bcs, g);
     const int worldRank = PCU_Comm_Self();
+    MPI_Comm comm = PCU_Get_Comm();
     switchToMasters(in.splitFactor);
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
-    switchToAll();
+    switchToAll(comm);
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
     ph::checkBalance(m,in);

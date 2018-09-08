@@ -149,7 +149,7 @@ class BezierTransfer : public ma::SolutionTransfer
       for (int i = 0; i < ne; ++i){
         if(shouldSnap && midEdgeVerts[i] &&
             isBoundaryEntity(mesh,midEdgeVerts[i])){
-          snapToInterpolate(mesh,midEdgeVerts[i]);
+          snapToInterpolate(mesh,midEdgeVerts[i],true);
         }
       }
       int np = mesh->getShape()->getEntityShape(parentType)->countNodes();
@@ -173,7 +173,7 @@ class BezierTransfer : public ma::SolutionTransfer
 
           // do snapping here, inside refinement
           if (isBdryEnt && shouldSnap){
-            snapToInterpolate(mesh,newEntities[i]);
+            snapToInterpolate(mesh,newEntities[i],true);
           } else if (useLinear && !isBdryEnt) {
             // boundary entities that don't get snapped should interpolate
             if(childType == apf::Mesh::EDGE){
@@ -538,7 +538,7 @@ class BezierHandler : public ma::ShapeHandler
         if (newType != apf::Mesh::EDGE)
         {
           if (snap && P > 2){
-            snapToInterpolate(mesh,newEntities[i]);
+            snapToInterpolate(mesh,newEntities[i],true);
             convertInterpolationPoints(mesh,newEntities[i],n,ni,bt->coeffs[2]);
           } else {
             for (int j = 0; j < ni; ++j){
@@ -548,7 +548,7 @@ class BezierHandler : public ma::ShapeHandler
           }
         } else {
           if (snap){
-            snapToInterpolate(mesh,newEntities[i]);
+            snapToInterpolate(mesh,newEntities[i],true);
             convertInterpolationPoints(mesh,newEntities[i],n,ni,bt->coeffs[1]);
           } else {
             setLinearEdgePoints(mesh,newEntities[i]);

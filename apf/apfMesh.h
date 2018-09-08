@@ -285,6 +285,10 @@ class Mesh
     ModelEntity* findModelEntity(int type, int tag);
     /** \brief return true if the geometric model supports snapping */
     bool canSnap();
+    /** \brief return true if the geometric model supports get closest point */
+    bool canGetClosestPoint();
+    /** \brief return true if the geometric model supports normal computation */
+    bool canGetModelNormal();
     /** \brief evaluate parametric coordinate (p) as a spatial point (x) */
     void snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x);
     /** \brief reparameterize mesh vertex (e) onto model entity (g) */
@@ -308,6 +312,8 @@ class Mesh
       Vector3 const& param, Vector3& x);
     /** \brief checks if g is in the closure of the target */
     bool isInClosureOf(ModelEntity* g, ModelEntity* target);
+    /** \brief checks if p is on model g */
+    bool isOnModel(ModelEntity* g, Vector3 p, double scale);
     /** \brief get the distribution of the mesh's coordinate field */
     FieldShape* getShape() const;
     /** \brief get the mesh's coordinate field */
@@ -558,8 +564,9 @@ void unfreezeFields(Mesh* m);
 /** \brief count the number of mesh entities classified on a model entity */
 int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
 
-/** \brief count the number of owned entities of dimension (dim) */
-int countOwned(Mesh* m, int dim);
+/** \brief count the number of owned entities of dimension (dim) using sharing shr
+           the default sharing is used if none is provided */
+int countOwned(Mesh* m, int dim, Sharing * shr = NULL);
 
 /** \brief print global mesh entity counts per dimension */
 void printStats(Mesh* m);

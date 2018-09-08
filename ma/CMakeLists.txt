@@ -20,6 +20,7 @@ set(SOURCES
   maSize.cc
   maOperator.cc
   maCollapse.cc
+  maRegionCollapse.cc
   maMatchedCollapse.cc
   maLayerCollapse.cc
   maMatch.cc
@@ -30,10 +31,13 @@ set(SOURCES
   maShapeHandler.cc
   maQuality.cc
   maSplits.cc
+  maFaceSplit.cc
   maDoubleSplitCollapse.cc
+  maFaceSplitCollapse.cc
   maShortEdgeRemover.cc
   maVertRemover.cc
   maSnapper.cc
+  maMatchedSnapper.cc
   maBalance.cc
   maLayer.cc
   maCrawler.cc

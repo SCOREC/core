@@ -3,8 +3,7 @@
 #include <phiotimer.h>
 #include <PCU.h>
 
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h> /* PRIu64 */
+#include <iostream> /* cerr */
 #include <time.h> /* clock_gettime */
 #include <unistd.h> /* usleep */
 
@@ -26,7 +25,7 @@ struct phastaio_stats {
 };
 static struct phastaio_stats phastaio_global_stats;
 
-#if defined(__INTEL_COMPILER)
+#if defined(HAVE_INTEL_RDTSC)
 /* return the cycle count */
 void phastaio_time(phastaioTime* t) {
   *t = _rdtsc(); //intel intrinsic
@@ -45,7 +44,8 @@ static size_t phastaio_getCyclesPerMicroSec() {
   cycles = t1 - t0;
   cpus = ((double)cycles)/(usec);
   if(!PCU_Comm_Self())
-    fprintf(stderr, "cycles %" PRIu64 " us %" PRIu64 " cycles per micro second %" PRIu64"\n", cycles, usec, cpus);
+    std::cerr << "cycles " << cycles << " us " << usec
+         << " cycles per micro second " << cpus << "\n";
   return cpus;
 }
 /*return elapsed time in micro seconds*/
@@ -54,16 +54,16 @@ size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
   size_t us = ((double)cycles)/phastaio_global_stats.cpus;
   return us;
 }
-#elif defined(__bgq__)
+#elif defined(USE_PCU_TIME)
 void phastaio_time(phastaioTime* t) {
   *t = PCU_Time();
 }
 /*return elapsed time in micro seconds*/
 size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
-  size_t elapsed = static_cast<size_t>((end-start)/MILLION);
+  size_t elapsed = static_cast<size_t>((*end-*start)*MILLION);
   return elapsed;
 }
-#else
+#elif defined(HAVE_CLOCK_GETTIME)
 void phastaio_time(phastaioTime* t) {
   int err;
   err = clock_gettime(CLOCK_MONOTONIC,t);
@@ -141,8 +141,8 @@ static void printMinMaxAvgSzt(const char* key, size_t v) {
   size_t tot = PCU_Add_SizeT(v);
   double avg = ((double)tot)/PCU_Comm_Peers();
   if(!PCU_Comm_Self())
-    fprintf(stderr, "%s_%s min max avg %" PRIu64 " %" PRIu64 " %f\n",
-        getFileName(), key, min, max, avg);
+    std::cerr << getFileName() << "_" << key << "min max avg"
+              << min << " " << max << " " << avg << "\n";
 }
 
 static void printMinMaxAvgDbl(const char* key, double v) {
@@ -214,7 +214,7 @@ void phastaio_printStats() {
     usleep(us);
     phastaio_time(&t1);
     elapsed = phastaio_time_diff(&t0,&t1);
-    fprintf(stderr, "%" PRIu64 " us measured as %" PRIu64 " us\n", us, elapsed);
+    std::cerr << us << " us measured as " << elapsed << "us\n";
   }
   for(int chefFile=0; chefFile<NUM_PHASTAIO_MODES; chefFile++) {
     size_t totalus = 0;

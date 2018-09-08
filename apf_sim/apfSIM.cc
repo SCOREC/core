@@ -11,13 +11,14 @@
 #include <pcu_util.h>
 #include <algorithm>
 
+/* forward declare simmetrix API M_splitMatch;
+   once it is ready in published code, remove this
+   - defined in libSimMeshTools.a */
+extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
+
 #ifdef USE_FIELDSIM
 
 #include "apfSIMDataOf.h"
-
-/* forward declare simmetrix API M_splitMatch;
-   once it is ready in published code, remove this */
-extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
 
 apf::Field* apf::createSIMGeneralField(
     Mesh* m,
@@ -54,12 +55,12 @@ apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
 
 #else
 
-apf::Field* createSIMGeneralField(
-    Mesh* m,
+apf::Field* apf::createSIMGeneralField(
+    apf::Mesh* m,
     const char* name,
     int valueType,
     int components,
-    FieldShape* shape)
+    apf::FieldShape* shape)
 {
   (void)m; 
   (void)name;
@@ -75,7 +76,7 @@ apf::Field* createSIMGeneralField(
   apf::fail("SimField not found when APF_SIM compiled");
 }
 
-apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
+apf::Field* apf::wrapSIMField(Mesh* m, ::Field* fd)
 {
   (void)m;
   (void)fd;
@@ -895,6 +896,8 @@ void MeshSIM::writeNative(const char* fileName)
 
 void MeshSIM::destroyNative()
 {
+  while(this->countFields())
+    apf::destroyField(this->getField(0));
   M_release(mesh);
 }
 

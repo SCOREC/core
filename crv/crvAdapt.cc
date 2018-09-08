@@ -242,13 +242,13 @@ void adapt(ma::Input* in)
   \details  quantities include normalized edge length, linear quality
   and curved quality. The values can be computed in both metric (if
   inMetric = true) and physical (if inMetric = false) spaces.*/
-void stats(ma::Input* in,
+void stats(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities,
     std::vector<double> &curvedQualities,
     bool inMetric)
 {
-  ma::stats(in, edgeLengths, linearQualities, inMetric);
+  ma::stats(m, sf, edgeLengths, linearQualities, inMetric);
 
 
   /* curved qualities are approximately the same in both
@@ -256,7 +256,6 @@ void stats(ma::Input* in,
      metric quality = min(QJ) / max(QJ) ~ min(J) / max(J)
    */
   curvedQualities.clear();
-  ma::Mesh* m = in->mesh;
   if (m->getShape()->getOrder() == 1)
     curvedQualities = std::vector<double>(linearQualities.size(), 0.0);
   else {
@@ -266,12 +265,12 @@ void stats(ma::Input* in,
     while( (e = m->iterate(it)) ) {
       if (! m->isOwned(e))
 	continue;
+      if (! apf::isSimplex(m->getType(e))) // ignore non-simplex elements
+        continue;
       curvedQualities.push_back(qual->getQuality(e));
     }
     m->end(it);
   }
-
-  delete in;
 }
 
 }

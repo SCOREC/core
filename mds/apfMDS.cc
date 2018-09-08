@@ -73,6 +73,26 @@ static int getFaceIdInRegion(apf::Mesh* mesh, apf::MeshEntity* region,
   return 12; // Should give segmentation fault
 }
 
+static int getEdgeIdInFace(apf::Mesh* mesh, apf::MeshEntity* face,
+                      int* bedge_data)
+{
+  apf::Downward verts, edges;
+  apf::MeshTag* vIDTag = mesh->findTag("_vert_id");
+  int vID[2], eID;
+  mesh->getDownward(face, 1, edges);
+  for (eID = 0; eID < 3; ++eID) {
+    mesh->getDownward(edges[eID], 0, verts);
+    mesh->getIntTag(verts[0], vIDTag, &vID[0]);
+    mesh->getIntTag(verts[1], vIDTag, &vID[1]);
+    if((vID[0] == bedge_data[2] && vID[1] == bedge_data[3]) ||
+       (vID[0] == bedge_data[3] && vID[1] == bedge_data[2])) {
+      return eID;
+    }
+  }
+
+  return 12; // Should give segmentation fault
+}
+
 static MeshEntity* toEnt(mds_id id)
 {
   //for pointers 0 is null, but mds_id 0 is ok and -1 is null
@@ -539,8 +559,9 @@ class MeshMDS : public Mesh2
     }
     void acceptChanges()
     {
-      updateOwners(this, parts);
+      updateOwners(this, pmodel);
     }
+
     void migrate(Migration* plan)
     {
       apf::migrate(this,plan);
@@ -609,14 +630,14 @@ class MeshMDS : public Mesh2
     void setResidence(MeshEntity* e, Parts& residence)
     {
       mds_id id = fromEnt(e);
-      PME* p = getPME(parts, residence);
+      PME* p = getPME(pmodel, residence);
       void* vp = static_cast<void*>(p);
       void* ovp = mds_get_part(mesh, id);
       if (ovp) { /* partition model classification can be NULL during
         early mesh initialization, such as after reading SMB or in
         createEntity_ */
         PME* op = static_cast<PME*>(ovp);
-        putPME(parts, op);
+        putPME(pmodel, op);
       }
       mds_set_part(mesh, id, vp);
     }
@@ -665,10 +686,14 @@ class MeshMDS : public Mesh2
     {
       mds_id id = fromEnt(e);
       void* ovp = mds_get_part(mesh, id);
-      PME* op = static_cast<PME*>(ovp);
-      putPME(parts, op);
+      if (ovp)
+      {
+        PME* op = static_cast<PME*>(ovp);
+        putPME(pmodel, op);
+      }
       mds_apf_destroy_entity(mesh,id);
     }
+
     void setModelEntity(MeshEntity* e, ModelEntity* c)
     {
       mds_apf_set_model(mesh, fromEnt(e),
@@ -729,7 +754,7 @@ class MeshMDS : public Mesh2
       return table[type];
     }
     mds_apf* mesh;
-    PM parts;
+    PM pmodel;
     bool isMatched;
     bool ownsModel;
 };
@@ -746,6 +771,12 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
   return new MeshMDS(model, from);
 }
 
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)
+{
+  Mesh2* m = new MeshMDS(model, meshfile);
+  return m;
+}
+
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
 {
   double t0 = PCU_Time();
@@ -753,9 +784,9 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
   initResidence(m, m->getDimension());
   stitchMesh(m);
   m->acceptChanges();
-  double t1 = PCU_Time();
+
   if (!PCU_Comm_Self())
-    printf("mesh %s loaded in %f seconds\n", meshfile, t1 - t0);
+    printf("mesh %s loaded in %f seconds\n", meshfile, PCU_Time() - t0);
   printStats(m);
   warnAboutEmptyParts(m);
   return m;
@@ -766,9 +797,9 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   double t0 = PCU_Time();
   static gmi_model* model;
   model = gmi_load(modelfile);
-  double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("model %s loaded in %f seconds\n", modelfile, t1 - t0);
+    printf("model %s loaded in %f seconds\n", modelfile, PCU_Time() - t0);
+
   return loadMdsMesh(model, meshfile);
 }
 
@@ -871,7 +902,10 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           "MeshTag name \"_classifn_data\" is used internally in this method\n");
   apf::MeshTag* classifnTag = mesh->createIntTag("_classifn_data", 2);
   int tagData[2], newTagData[2];
-  long minAvbl = 0;
+  long minAvbl = 1;
+  // This is set by during apf::construct, and using anything else leads to an
+  // additional region
+  long DEFAULT_REGION_ID = 0;
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
@@ -964,7 +998,97 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           m->getIntTag(ent, classifnTag, tagData);
           mds_update_model_for_entity(m->mesh, id, tagData[0], tagData[1]);
         } else {
-          mds_update_model_for_entity(m->mesh, id, 3, minAvbl);
+          mds_update_model_for_entity(m->mesh, id, m->getDimension(), 
+              DEFAULT_REGION_ID);
+        }
+      }
+    }
+  }
+
+  mesh->destroyTag(classifnTag);
+  mesh->destroyTag(vIDTag);
+}
+
+void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
+			     int nBEdges, int (*bEdges)[4],
+			     GlobalToVert &globalToVert,
+			     std::map<int, apf::MeshEntity*> &globalToFace)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_classifn_data"),
+          "MeshTag name \"_classifn_data\" is used internally in this method\n");
+  apf::MeshTag* classifnTag = mesh->createIntTag("_classifn_data", 2);
+  int tagData[2], newTagData[2];
+  long minAvbl = 1;
+  // This is set by during apf::construct, and using anything else leads to an
+  // additional region
+  long DEFAULT_REGION_ID = 0;
+
+  PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
+          "MeshTag name \"_vert_id\" is used internally in this method\n");
+  apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
+  for (apf::GlobalToVert::iterator vit = globalToVert.begin();
+       vit != globalToVert.end(); vit++) {
+    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+  }
+
+  // Reserve tags used for model edges
+  for (int i = 0; i < nBEdges; ++i) {
+    // TODO: How to assert, when bEdges is already all integers?
+    minAvbl = (minAvbl <= bEdges[i][0]) ? (bEdges[i][0]+1) : minAvbl;
+    PCU_ALWAYS_ASSERT(minAvbl < std::numeric_limits<int>::max());
+  }
+
+  // Set classifn tags for vertices
+  for (uint i = 0; i < mesh->count(0); ++i) {
+    if (isModelVert[i]) {
+      tagData[0] = 0;
+      tagData[1] = minAvbl;
+      minAvbl++;
+      mesh->setIntTag(globalToVert[i], classifnTag, tagData);
+    }
+  }
+
+  // Classification of boundary edges and their closure
+  apf::Downward edgesAdjToFace, vertsAdjToEdge;
+  int edgeIdInFace = 12;
+  for (int i = 0; i < nBEdges; ++i) {
+    mesh->getDownward(globalToFace[bEdges[i][1]], 1, edgesAdjToFace);
+    edgeIdInFace = getEdgeIdInFace(mesh, globalToFace[bEdges[i][1]], bEdges[i]);
+    apf::MeshEntity* edge = edgesAdjToFace[edgeIdInFace];
+    tagData[0] = newTagData[0] = 1;
+    tagData[1] = newTagData[1] = bEdges[i][0];
+    mesh->setIntTag(edge, classifnTag, tagData);
+
+    mesh->getDownward(edge, 0, vertsAdjToEdge);
+    for (int k = 0; k <2; ++k) {
+      if (mesh->hasTag(vertsAdjToEdge[k], classifnTag)) {
+	mesh->getIntTag(vertsAdjToEdge[k], classifnTag, tagData);
+        if (tagData[0] > newTagData[0]) {
+	  mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+        }
+      } else {
+        // Vertex has no classification, use the edge's
+        mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+      }
+    }
+  }
+
+  // TODO: Use classifnTag to classify
+  MeshMDS* m = static_cast<MeshMDS*>(mesh);
+  if ((classifnTag)) {
+    int tagData[2];
+    MeshEntity* ent;
+    mds_id id;
+    for (int dim = m->getDimension(); dim >= 0; --dim) {
+      apf::MeshIterator* it = m->begin(dim);
+      while ((ent = m->iterate(it))) {
+        id = fromEnt(ent);
+        if (m->hasTag(ent, classifnTag)) {
+          m->getIntTag(ent, classifnTag, tagData);
+          mds_update_model_for_entity(m->mesh, id, tagData[0], tagData[1]);
+        } else {
+          mds_update_model_for_entity(m->mesh, id, m->getDimension(),
+              DEFAULT_REGION_ID);
         }
       }
     }

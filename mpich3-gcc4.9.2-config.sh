@@ -1,5 +1,5 @@
-ZOLTAN_DIR=/usr/local/zoltan/3.81/mpich3.1.2
-PARMETIS_DIR=/usr/local/parmetis/4.0.3/mpich3.1.2
+PARMETIS_DIR=/lore/esyoon/openlib/petsc-3.7.5-mpich3-gcc-4.9.2
+ZOLTAN_DIR=/lore/seol/mpich3-gcc4.9.2-install
 PREFIX=/lore/seol/mpich3-gcc4.9.2-install
 
 cmake .. \
@@ -12,6 +12,7 @@ cmake .. \
   -DZOLTAN_LIBRARY="$ZOLTAN_DIR/lib/libzoltan.a" \
   -DPARMETIS_INCLUDE_DIR="$PARMETIS_DIR/include" \
   -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.so" \
+  -DMETIS_INCLUDE_DIR="$PARMETIS_DIR/include" \
   -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.so" \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DSCOREC_CXX_WARNINGS=ON \

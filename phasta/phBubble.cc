@@ -16,13 +16,13 @@ struct Bubble {
 
 typedef std::vector<Bubble> Bubbles;
 
-void readBubbles(Bubbles& bubbles)
+void readBubbles(Bubbles& bubbles, std::string bubbleFileName)
 {
-  char bubblefname[256];
+  char bubblefname[1024];
   FILE *filebubble;
   Bubble readbubble;
 
-  sprintf(bubblefname,"bubbles.inp");
+  sprintf(bubblefname, "%s", bubbleFileName.c_str());
   if (!PCU_Comm_Self())
     printf("reading bubbles info from %s\n",bubblefname);
 
@@ -89,7 +89,7 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
 void initBubbles(apf::Mesh* m, Input& in)
 {
   Bubbles bubbles;
-  readBubbles(bubbles);
+  readBubbles(bubbles, in.bubbleFileName);
   PCU_ALWAYS_ASSERT(in.ensa_dof >= 7);
   apf::NewArray<double> s(in.ensa_dof);
   apf::Field* f = m->findField("solution");

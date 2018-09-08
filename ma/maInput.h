@@ -51,6 +51,9 @@ class Input
 /** \brief whether to transfer parametric coordinates
   \details requires modeler support, see gmi_reparam */
     bool shouldTransferParametric;
+/** \brief whether to transfer to the parametric coords of the closest point
+  \details requires modeler support, see gmi_closest_point */
+    bool shouldTransferToClosestPoint;
 /** \brief whether to update matched entity info (limited support) */
     bool shouldHandleMatching;
 /** \brief whether to run shape correction (default true) */
@@ -112,7 +115,7 @@ Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s=0,
-    bool logInterpolation=false);
+    bool logInterpolation=true);
 /** \brief generate a configuration based on an isotropic function
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
@@ -133,7 +136,7 @@ Input* configure(
     apf::Field* sizes,
     apf::Field* frames,
     SolutionTransfer* s=0,
-    bool logInterpolation=false);
+    bool logInterpolation=true);
 /** \brief generate a configuration based on an isotropic field
  \param size a scalar field of desired element size
  \param s if non-zero, use that to transfer all fields. otherwise,

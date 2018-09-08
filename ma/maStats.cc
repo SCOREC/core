@@ -5,32 +5,20 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include "maStats.h"
+#include "maAdapt.h"
 
 namespace ma {
-
-static bool isSimplexMesh(ma::Mesh* m)
-{
-  int count = 0;
-  if (m->getDimension() == 2)
-    count = apf::countEntitiesOfType(m, apf::Mesh2::QUAD);
-  else
-    count = apf::countEntitiesOfType(m, apf::Mesh2::HEX) +
-            apf::countEntitiesOfType(m, apf::Mesh2::PRISM) +
-            apf::countEntitiesOfType(m, apf::Mesh2::PYRAMID);
-  return (count == 0);
-}
 
 void getLinearQualitiesInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &linearQualities)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
-      "expecting an all simplex mesh!");
-
   ma::Entity* e;
   ma::Iterator* it;
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
     if (! m->isOwned(e))
+      continue;
+    if (! apf::isSimplex(m->getType(e))) // ignore non-simplex elements
       continue;
     double lq = ma::measureElementQuality(m, sf, e);
     if (m->getDimension() == 2)
@@ -45,9 +33,6 @@ void getLinearQualitiesInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
 void getEdgeLengthsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
-      "expecting an all simplex mesh!");
-
   ma::Entity* e;
   ma::Iterator* it;
   it = m->begin(1);
@@ -62,8 +47,6 @@ void getEdgeLengthsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
 void getLinearQualitiesInPhysicalSpace(ma::Mesh* m,
     std::vector<double> &linearQualities)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
-      "expecting an all simplex mesh!");
   ma::Entity* e;
   ma::Iterator* it;
   it = m->begin(m->getDimension());
@@ -101,8 +84,6 @@ void getLinearQualitiesInPhysicalSpace(ma::Mesh* m,
 void getEdgeLengthsInPhysicalSpace(ma::Mesh* m,
     std::vector<double> &edgeLengths)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
-      "expecting an all simplex mesh!");
   ma::Entity* e;
   ma::Iterator* it;
   it = m->begin(1);
@@ -117,9 +98,6 @@ void getStatsInMetricSpace(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
-      "expecting an all simplex mesh!");
-
   // linear qualities
   getLinearQualitiesInMetricSpace(m, sf, linearQualities);
   // edge lengths
@@ -130,44 +108,30 @@ void getStatsInPhysicalSpace(ma::Mesh* m,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(m),
-      "expecting an all simplex mesh!");
-
   // linear qualities
   getLinearQualitiesInPhysicalSpace(m, linearQualities);
   // edge lengths
   getEdgeLengthsInPhysicalSpace(m, edgeLengths);
 }
 
-/** \brief Measures mesh statistics using and adapt input object
+/** \brief Measures mesh statistics given a sizeField
   \details  quantities measured are:
   1) normalized edge length
   2) linear quality
   The values can be computed in both metric (if inMetric = true)
   and physical (if inMetric = false) spaces.*/
-void stats(ma::Input* in,
+void stats(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &edgeLengths,
     std::vector<double> &linearQualities,
     bool inMetric)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(in->mesh),
-      "ma::stats expects and all simplex mesh!");
   edgeLengths.clear();
   linearQualities.clear();
-
-  ma::validateInput(in);
-  Adapt* a = new Adapt(in);
-
-  ma::Mesh* m = a->mesh;
-  ma::SizeField* sf = a->sizeField;
 
   if (inMetric)
     getStatsInMetricSpace(m, sf, edgeLengths, linearQualities);
   else
     getStatsInPhysicalSpace(m, edgeLengths, linearQualities);
-
-  delete a;
-  delete in;
 }
 
 }

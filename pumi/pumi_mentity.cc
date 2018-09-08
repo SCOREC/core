@@ -161,29 +161,42 @@ pMeshEnt pumi_medge_getOtherVtx(pMeshEnt edge, pMeshEnt vtx)
 // owner part information
 int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o)
 {
+  pMesh m = pumi::instance()->mesh;
   if (!o)
-    return pumi::instance()->mesh->getOwner(e);
+  {
+    if (m->isGhost(e))
+    {
+      Copies ghosts;
+      m->getGhosts(e,ghosts);
+      return ghosts.begin()->first;
+    }
+    // this return the owner based on partition classification
+    return m->getOwner(e);
+  }
   return o->getOwner(e); 
 }
 
 pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 {
-  if (!(pumi::instance()->mesh->isShared(e))) // internal ent
-    return e;
-  int own_partid;
-  if (!o)
-    own_partid= pumi::instance()->mesh->getOwner(e);
-  else
-    own_partid=o->getOwner(e);
-
+  int own_partid = pumi_ment_getOwnPID(e, o);
   if (own_partid==pumi_rank()) return e;
-  return pumi_ment_getRmt(e, own_partid);
+
+  if (pumi::instance()->mesh->isShared(e))
+  {
+    Copies remotes;
+    pumi::instance()->mesh->getRemotes(e,remotes);
+    return remotes[own_partid];
+  }
+
+  Copies ghosts;
+  pumi::instance()->mesh->getGhosts(e,ghosts);
+  return ghosts[own_partid];
 }
 
 bool pumi_ment_isOwned(pMeshEnt e, pOwnership o)
 {  
   if (!o) 
-    return (pumi::instance()->mesh->getOwner(e)==pumi_rank());
+    return (pumi_ment_getOwnPID(e)==pumi_rank());
   return o->isOwned(e);
 }
 

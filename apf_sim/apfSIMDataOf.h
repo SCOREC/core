@@ -20,6 +20,11 @@ public:
     fd = fd_in;
     pf = static_cast<pPolyField>(Field_def(fd));
   }
+  ~SIMDataOf()
+  {
+    Field_release(fd);
+    FieldDef_delete(pf);
+  }
   virtual void init(FieldBase * f)
   {
     FieldData::field = f;

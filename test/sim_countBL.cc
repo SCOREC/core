@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     cout<<"**********************************"<<endl;
   }
 
-  Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
+  Sim_readLicenseFile(0);
   Sim_logOn("countBL.log");
   SimParasolid_start(1);
   SimAdvMeshing_start();

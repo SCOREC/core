@@ -85,6 +85,16 @@ int gmi_can_eval(struct gmi_model* m)
   return m->ops->eval != NULL;
 }
 
+int gmi_can_get_closest_point(struct gmi_model* m)
+{
+  return m->ops->closest_point != NULL;
+}
+
+int gmi_has_normal(struct gmi_model* m)
+{
+  return m->ops->normal != NULL;
+}
+
 void gmi_eval(struct gmi_model* m, struct gmi_ent* e,
     double const p[2], double x[3])
 {

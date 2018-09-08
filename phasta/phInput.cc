@@ -48,6 +48,7 @@ static void setDefaults(Input& in)
   in.elementsPerMigration = 1000*1000; // 100k elms per round
   in.threaded = 1;
   in.initBubbles = 0;
+  in.bubbleFileName = "bubbles.inp";
   in.formElementGraph = 0;
   in.restartFileName = "restart";
   in.phastaIO = 1;
@@ -59,6 +60,7 @@ static void setDefaults(Input& in)
   in.parmaLoops = 3; //a magical value
   in.parmaVerbosity = 1; //fairly quiet
   in.writeGeomBCFiles = 0;  // write additional geombc file for vis in streaming
+  in.writeRestartFiles = 0;  // write additional restart file for vis in streaming
   in.ramdisk = 0;
   in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
@@ -71,6 +73,14 @@ static void setDefaults(Input& in)
   in.validQuality = 1.0e-10;
   in.printIOtime = 0;
   in.mesh2geom = 0;
+  in.alphaDist = 1e-6;
+  in.alphaSize = 1e-5;
+  in.betaDist = 2e-6;
+  in.betaSize = 2e-5;
+  in.gammaDist = 3e-6;
+  in.gammaSize = 3e-5;
+  in.nRigidBody = 0;
+  in.nRBParam = 12;
 }
 
 Input::Input()
@@ -121,6 +131,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["elementsPerMigration"] = &in.elementsPerMigration;
   intMap["threaded"] = &in.threaded;
   intMap["initBubbles"] = &in.initBubbles;
+  stringMap["bubbleFileName"] = &in.bubbleFileName;
   intMap["formElementGraph"] = &in.formElementGraph;
   intMap["snap"] = &in.snap;
   intMap["transferParametric"] = &in.transferParametric;
@@ -130,6 +141,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["parmaLoops"] = &in.parmaLoops;
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
   intMap["writeGeomBCFiles"] = &in.writeGeomBCFiles;
+  intMap["writeRestartFiles"] = &in.writeRestartFiles;
   intMap["ramdisk"] = &in.ramdisk;
   dblMap["validQuality"] = &in.validQuality;
   dblMap["meshqCrtn"] = &in.meshqCrtn;
@@ -141,6 +153,14 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["maxAdaptIterations"] = &in.maxAdaptIterations;
   intMap["printIOtime"] = &in.printIOtime;
   intMap["mesh2geom"] = &in.mesh2geom;
+  dblMap["alphaDist"] = &in.alphaDist;
+  dblMap["alphaSize"] = &in.alphaSize;
+  dblMap["betaDist"] = &in.betaDist;
+  dblMap["betaSize"] = &in.betaSize;
+  dblMap["gammaDist"] = &in.gammaDist;
+  dblMap["gammaSize"] = &in.gammaSize;
+  intMap["nRigidBody"] = &in.nRigidBody;
+  intMap["nRBParam"] = &in.nRBParam;
 }
 
 template <class T>

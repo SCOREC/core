@@ -15,11 +15,58 @@
 
 namespace apf {
 
+// the following three functions are for exclusive use by pumi_mesh_loadAll
+// the last arg "owner" is used only if a new pmodel entity is created
+PME* getPMent(PM& ps, apf::Parts const& pids, int owner)
+{
+  APF_ITERATE(PM, ps, it) 
+  {
+    bool equal=true;
+    APF_ITERATE(Parts,pids,pit)
+    {
+      bool found=false;
+      for (size_t i = 0; i < (*it).ids.size(); ++i)
+        if ((*it).ids[i]==*pit)
+          found=true;
+      if (!found)
+      {
+        equal=false;
+        break;
+      }
+    }
+
+    if (equal)
+    {  
+      PME& p = const_cast<PME&>(*it);
+      ++(p.refs);
+      return &p;
+    }
+  }
+  static int pme_id=ps.size();
+  PME *pme = new PME(pme_id++, pids, owner);
+  ps.insert(*pme);
+  ++(pme->refs);
+  return pme;
+}
+
+// the partition classification of mesh entities has to be updated separately
+void deletePM(PM& ps)
+{  
+  APF_ITERATE(PM, ps, it) 
+    ps.erase(*it);
+}
+
+void deletePMent(PM& ps, PME* p)
+{
+  ps.erase(*p);
+}
+
+
 typedef std::map<int,size_t> CountMap;
 
 PME* getPME(PM& ps, apf::Parts const& ids)
 {
-  PME const& cp = *(ps.insert(PME(ids)).first);
+  PME const& cp = *(ps.insert(PME(ps.size(), ids, -1)).first);
   /* always annoyed by this flaw in std::set */
   PME& p = const_cast<PME&>(cp);
   ++(p.refs);

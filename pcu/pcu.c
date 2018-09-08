@@ -37,6 +37,9 @@
 #include "pcu_order.h"
 #include "noto_malloc.h"
 #include "reel.h"
+#include <sys/types.h> /*required for mode_t for mkdir on some systems*/
+#include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
 
 enum state { uninit, init };
 static enum state global_state = uninit;
@@ -604,14 +607,49 @@ bool PCU_Comm_Read(int* from_rank, void** data, size_t* size)
   return true;
 }
 
-/** \brief Open file debugN.txt, where N = PCU_Comm_Self(). */
+static void safe_mkdir(const char* path, mode_t mode)
+{
+  int err;
+  errno = 0;
+  err = mkdir(path, mode);
+  if (err != 0 && errno != EEXIST)
+    reel_fail("PCU: could not create directory \"%s\"\n", path);
+}
+
+static void append(char* s, size_t size, const char* format, ...)
+{
+  int len = strlen(s);
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(s + len, size - len, format, ap);
+  va_end(ap);
+}
+
+
 void PCU_Debug_Open(void)
 {
   if (global_state == uninit)
     reel_fail("Debug_Open called before Comm_Init");
+
+  const int fanout = 2048;
+  const int bufsize = 1024;
+  char* path = noto_malloc(bufsize);
+  if (PCU_Comm_Peers() > fanout) {
+    mode_t const dir_perm = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+    strcpy(path, "debug/");
+    safe_mkdir(path, dir_perm);
+    int self = PCU_Comm_Self();
+    append(path, bufsize, "%d/", self / fanout);
+    if (self % fanout == 0)
+      safe_mkdir(path, dir_perm);
+    PCU_Barrier();
+  }
+
+  append(path,bufsize, "%s", "debug");
   pcu_msg* msg = get_msg();
   if ( ! msg->file)
-    msg->file = pcu_open_parallel("debug","txt");
+    msg->file = pcu_open_parallel(path,"txt");
+  noto_free(path);
 }
 
 /** \brief like fprintf, contents go to debugN.txt */

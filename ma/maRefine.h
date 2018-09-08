@@ -29,9 +29,24 @@ class Refine
     bool shouldCollect[4];
 };
 
+/** \name Methods for adding edges
+ *
+ * As a side effect, also sets the cavity (as arrays of toSplit).
+ *
+ * Identification of cavity is done in three steps: first, the number of
+ * entities of each dimension are identified, then the sizes of toSplit are
+ * set, and finally each of the arrays of toSplit is populated with the
+ * cavity entities of that dimension.
+ *
+ * \param r (pointer to) the instance of Refine
+ * \param edge (pointer to) the edge to be added
+ * \param counts array containing the number of entities of the given dimension
+ */
+//\{
 void addEdgePreAllocation(Refine* r, Entity* edge, int counts[4]);
 void allocateRefine(Refine* r, int counts[4]);
 void addEdgePostAllocation(Refine* r, Entity* edge, int counts[4]);
+//\}
 
 void addAllMarkedEdges(Refine* r);
 long markEdgesToSplit(Adapt* a);

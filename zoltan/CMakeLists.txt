@@ -5,6 +5,8 @@ endif()
 
 # Package options
 option(ENABLE_ZOLTAN "Enable Zoltan interface [ON|OFF]" OFF)
+xsdk_add_tpl(ZOLTAN)
+xsdk_add_tpl(PARMETIS)
 message(STATUS "ENABLE_ZOLTAN: " ${ENABLE_ZOLTAN})
 
 # Let CMake know where to find custom find package implementations

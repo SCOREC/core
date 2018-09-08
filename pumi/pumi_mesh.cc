@@ -257,6 +257,54 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   return pumi::instance()->mesh;
 }
 
+
+
+void send_entities(pMesh mesh, int dim)
+{
+  int local_id, self = PCU_Comm_Self();
+  pMeshEnt e;
+  pMeshIter it = mesh->begin(dim);
+  while ((e = mesh->iterate(it)))
+  {
+    local_id = getMdsIndex(mesh, e);
+    for (int pid=0; pid<PCU_Comm_Peers(); ++pid)
+    {
+      if (pid==self) continue;
+      PCU_Comm_Pack(pid, &local_id, sizeof(int));
+      PCU_COMM_PACK(pid, e);
+    }
+  }
+  mesh->end(it);
+}
+
+#include "apfMDS.h"
+#include "apfPM.h"
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
+{
+  if (pumi_size()==1) 
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
+  else
+  {
+    double t0 = PCU_Time();
+    MPI_Comm prevComm = PCU_Get_Comm();
+    int num_target_part = PCU_Comm_Peers();
+    split_comm(num_target_part);
+    // no pmodel & remote links setup
+    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename); 
+    merge_comm(prevComm);
+    if (!PCU_Comm_Self())
+      printf("serial mesh %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+  }
+
+  if (pumi_size()>1 && stitch_link) 
+  {
+    stitchMesh(pumi::instance()->mesh);
+    pumi::instance()->mesh->acceptChanges();
+  }
+
+  return pumi::instance()->mesh;
+}
+
 void pumi_mesh_migrate(pMesh m, Migration* plan)
 {
   apf::migrate(m, plan);
@@ -359,31 +407,73 @@ void print_copies(pMesh m, pMeshEnt e)
 
 void pumi_mesh_print (pMesh m, bool print_ent)
 {
-  if (!m->findTag("global_id")) pumi_mesh_createGlobalID(m);
-
-  if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \nglobal ";
-  printStats(m);
+  if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \n";
 
   int* local_entity_count = new int[4*PCU_Comm_Peers()];
-  for (int i=0; i<4*PCU_Comm_Peers();++i)
-    local_entity_count[i]=0;
-  for (int d=0; d<4;++d)
-    local_entity_count[4*pumi_rank()+d] = m->count(d);
-  
-  int* global_entity_count = new int[4*PCU_Comm_Peers()]; 
+  int* own_entity_count = new int[4*PCU_Comm_Peers()];
 
-  MPI_Allreduce(local_entity_count, global_entity_count, 4*PCU_Comm_Peers(), MPI_INT, MPI_SUM, PCU_Get_Comm());
+  for (int i=0; i<4*PCU_Comm_Peers();++i)
+    local_entity_count[i]=own_entity_count[i]=0;
+
+  pMeshEnt e;
+  int self = pumi_rank();
+
+  for (int d=0; d<4;++d)
+  {
+    local_entity_count[4*self+d] = m->count(d);
+    pMeshIter it = m->begin(d); // face
+    while ((e = m->iterate(it)))
+    {
+      if (m->getOwner(e)==self)
+        ++own_entity_count[4*pumi_rank()+d];
+    }
+    m->end(it);
+  }
+  
+  int* global_local_entity_count = new int[4*PCU_Comm_Peers()]; 
+  int* global_own_entity_count = new int[4*PCU_Comm_Peers()]; 
+
+  MPI_Allreduce(local_entity_count, global_local_entity_count, 4*PCU_Comm_Peers(), 
+                MPI_INT, MPI_SUM, PCU_Get_Comm());
+
+  MPI_Allreduce(own_entity_count, global_own_entity_count, 4*PCU_Comm_Peers(), 
+                MPI_INT, MPI_SUM, PCU_Get_Comm());
+
+ 
   if (!PCU_Comm_Self())
   {
+    int* global_entity_count = new int[4]; 
+    global_entity_count[0]=global_entity_count[1]=global_entity_count[2]=global_entity_count[3]=0;
+    for (int d=0; d<4;++d)
+    {
+      for (int p=0; p<4*PCU_Comm_Peers();++p)
+        global_entity_count[d] += global_own_entity_count[p*4+d];
+    }
+
+     std::cout<<"# global ent: v "<<global_entity_count[0]<<", e "<<global_entity_count[1]
+              <<", f "<<global_entity_count[2]<<", r "<<global_entity_count[3]<<"\n\n";
+
+    delete [] global_entity_count;
+
     for (int p=0; p<PCU_Comm_Peers(); ++p)
-      std::cout<<"(p"<<p<<") # local ent: v "<<global_entity_count[p*4]
-        <<", e "<<global_entity_count[p*4+1]
-        <<", f "<<global_entity_count[p*4+2]
-        <<", r "<<global_entity_count[p*4+3]<<"\n";
+      std::cout<<"(p"<<p<<") # local ent: v "<<global_local_entity_count[p*4]
+        <<", e "<<global_local_entity_count[p*4+1]
+        <<", f "<<global_local_entity_count[p*4+2]
+        <<", r "<<global_local_entity_count[p*4+3]<<"\n";
+    std::cout<<"\n";
+    for (int p=0; p<PCU_Comm_Peers(); ++p)
+      if (global_own_entity_count[p*4])
+        std::cout<<"(p"<<p<<") # own ent: v "<<global_own_entity_count[p*4]
+          <<", e "<<global_own_entity_count[p*4+1]
+          <<", f "<<global_own_entity_count[p*4+2]
+          <<", r "<<global_own_entity_count[p*4+3]<<"\n";
+    std::cout<<"\n";
   }
 
   delete [] local_entity_count;
-  delete [] global_entity_count;
+  delete [] global_local_entity_count;
+  delete [] own_entity_count;
+  delete [] global_own_entity_count;
 
   if (!PCU_Comm_Self()) 
   {
@@ -416,7 +506,12 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   // print mesh entities
   if (!print_ent) return;
 
-  pMeshEnt e;
+  if (!m->findTag("global_id")) 
+  {  
+    pumi_mesh_createGlobalID(m);
+    if (!PCU_Comm_Self()) std::cout<<__func__<<": global id generated\n";
+  }
+
   int global_id;
   apf::MeshIterator* vit = m->begin(0);
   while ((e = m->iterate(vit)))

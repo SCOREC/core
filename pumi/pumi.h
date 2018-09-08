@@ -1,6 +1,6 @@
 /****************************************************************************** 
 
-  (c) 2004-2017 Scientific Computation Research Center, 
+  (c) 2004-2018 Scientific Computation Research Center, 
       Rensselaer Polytechnic Institute. All rights reserved.
   
   This work is open source software, licensed under the terms of the
@@ -196,14 +196,23 @@ pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz);
 pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* down);
 pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* vertices); 
 
-// load a serial mesh. 
+// load a serial mesh and no partitioning
 pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type="mds");
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
 
+// load a serial mesh on all processes and set up comm links and ptn classification 
+// note that the default owning PID is 0
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stich_link=true);
+
 // delete mesh
 void pumi_mesh_delete(pMesh m);
+
+// given a mesh with vertex remote link properly setup, 
+// stitch all other entities and set partition model.
+// if dup=true, the elements are duplicated on multiple parts 
+void pumi_mesh_stitch(pMesh m, bool dup=false);
 
 // create/delete direct Adjacency for all entities except for one-level apart
 bool pumi_mesh_hasAdjacency(pMesh m, int from_dim, int to_dim);
@@ -450,6 +459,8 @@ pNumbering pumi_numbering_createLocal (pMesh m, const char* name, pShape shape=N
 pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s=NULL, pOwnership o=NULL);
 pNumbering pumi_numbering_createOwn (pMesh m, const char* name, pShape shape=NULL, pOwnership o=NULL);
 pNumbering pumi_numbering_createOwnDim (pMesh m, const char* name, int dim, pOwnership o=NULL);
+pNumbering pumi_numbering_createProcGrp (pMesh m, const char* name, int num_proc_grp, 
+                                         int dim, pOwnership o=NULL);
 
 void pumi_numbering_delete(pNumbering n);
 int pumi_numbering_getNumNode(pNumbering n);
@@ -457,10 +468,7 @@ int pumi_numbering_getNumNode(pNumbering n);
 void pumi_node_setNumber(pNumbering nb, pMeshEnt e, int n, int c, int number);
 int pumi_node_getNumber(pNumbering nb, pMeshEnt e, int n=0, int c=0);
 bool pumi_node_isNumbered(pNumbering nb, pMeshEnt e, int n=0, int c=0);
-
-void pumi_node_getField (pField f, pMeshEnt e, int i, double* dof_data);
-void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data);
-
+void pumi_numbering_print(pNumbering nb, int rank = -1);
 //************************************
 // Field shape and nodes
 //************************************
@@ -473,6 +481,10 @@ void pumi_node_getCoord(pMeshEnt e, int i, double* xyz);
 void pumi_node_setCoord(pMeshEnt e, int i, double* xyz);
 void pumi_node_getCoordVector(pMeshEnt e, int i, Vector3& xyz);
 void pumi_node_setCoordVector(pMeshEnt e, int i, Vector3 const& xyz);
+
+void pumi_node_getField (pField f, pMeshEnt e, int i, double* dof_data);
+void pumi_node_setField (pField f, pMeshEnt e, int i, double* dof_data);
+
 /** double[3] cross product */
 Vector3 pumi_vector3_cross(Vector3 const& a, Vector3 const& b);
 

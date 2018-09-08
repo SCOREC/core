@@ -263,7 +263,7 @@ static void conn_to_osh(osh::Mesh* mesh_osh, apf::Mesh* mesh_apf,
   } else {
     auto lv2v = mesh_osh->ask_verts_of(d - 1);
     auto v2l = mesh_osh->ask_up(0, d - 1);
-    high2low = osh::reflect_down(ev2v, lv2v, v2l, d, d - 1);
+    high2low = osh::reflect_down(ev2v, lv2v, v2l, mesh_osh->family(), d, d - 1);
   }
   mesh_osh->set_ents(d, high2low);
 }
