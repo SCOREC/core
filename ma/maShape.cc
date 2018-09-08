@@ -589,6 +589,51 @@ class LargeAngleTriFixer : public Operator
     int nf;
 };
 
+class QualityImprover2D : public Operator
+{
+  public:
+    QualityImprover2D(Adapt* a)
+    {
+      adapter = a;
+      mesh = a->mesh;
+      edgeSwap = makeEdgeSwap(a);
+      ns = nf = 0;
+      edge = 0;
+    }
+    virtual ~QualityImprover2D()
+    {
+      delete edgeSwap;
+    }
+    virtual int getTargetDimension() {return 1;}
+    virtual bool shouldApply(Entity* e)
+    {
+      if ( getFlag(adapter,e,DONT_SWAP))
+        return false;
+      edge = e;
+      return true;
+    }
+    virtual bool requestLocality(apf::CavityOp* o)
+    {
+      return o->requestLocality(&edge,1);
+    }
+    virtual void apply()
+    {
+      if (edgeSwap->run(edge))
+      {
+	++ns;
+	return;
+      }
+      ++nf;
+    }
+  private:
+    Adapt* adapter;
+    Mesh* mesh;
+    Entity* edge;
+    EdgeSwap* edgeSwap;
+    int ns;
+    int nf;
+};
+
 static double fixShortEdgeElements(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -622,6 +667,12 @@ static void alignLargeAngleTris(Adapt* a)
   applyOperator(a,&aligner);
 }
 
+static void improveQualities2D(Adapt* a)
+{
+  QualityImprover2D improver(a);
+  applyOperator(a, &improver);
+}
+
 static double fixLargeAngles(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -639,6 +690,17 @@ static void alignLargeAngles(Adapt* a)
     alignLargeAngleTets(a);
   else
     alignLargeAngleTris(a);
+}
+
+double improveQualities(Adapt* a)
+{
+  double t0 = PCU_Time();
+  if (a->mesh->getDimension() == 0)
+    return 0; // TODO: implement this for 3D
+  else
+    improveQualities2D(a);
+  double t1 = PCU_Time();
+  return t1 - t0;
 }
 
 void fixElementShapes(Adapt* a)

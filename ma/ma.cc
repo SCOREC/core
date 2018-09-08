@@ -98,6 +98,10 @@ void adaptVerbose(Input* in, bool verbose)
   }
   if (verbose)
     ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine_snap_loop");
+  printQuality(a);
+  improveQualities(a);
+  if (verbose)
+    ma_dbg::dumpMeshWithQualities(a,999,"after_improveQualities");
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);
