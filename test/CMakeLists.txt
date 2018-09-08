@@ -139,6 +139,8 @@ util_exe_func(print_pumipic_partition print_pumipic_partition.cc)
 # Capstone utilities
 if(ENABLE_CAPSTONE)
   util_exe_func(capStoneAdapt capStoneAdapt.cc)
+  util_exe_func(capStoneIsoAdapt capStoneIsoAdapt.cc)
+  util_exe_func(capStoneGeomTest capStoneGeomTest.cc)
 endif()
 
 # Unit tests / functionality regression tests
