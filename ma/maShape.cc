@@ -695,7 +695,7 @@ static void alignLargeAngles(Adapt* a)
 double improveQualities(Adapt* a)
 {
   double t0 = PCU_Time();
-  if (a->mesh->getDimension() == 0)
+  if (a->mesh->getDimension() == 3)
     return 0; // TODO: implement this for 3D
   else
     improveQualities2D(a);
