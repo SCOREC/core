@@ -35,7 +35,7 @@ class FieldDataOf;
 template <class T>
 void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr=false);
 
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false);
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false, const ReductionOp<double>& reduce_op=ReductionSum<double>() );
 
 template <class T>
 void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to);
