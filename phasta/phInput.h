@@ -124,6 +124,7 @@ class Input
     int formElementGraph;
     int snap;
     int transferParametric;
+    /** \brief enable splitting triangle edges of a prismatic boundary layer stack*/
     int splitAllLayerEdges;
     /** \brief filter out a subset of 3-way periodic matches.
        it also filters out DG interface matches. */

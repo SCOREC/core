@@ -424,10 +424,18 @@ void synchronize(Field* f, Sharing* shr)
   synchronizeFieldData<double>(f->getData(), shr);
 }
 
-void accumulate(Field* f, Sharing* shr)
+void accumulate(Field* f, Sharing* shr, bool delete_shr)
 {
-  accumulateFieldData(f->getData(), shr);
+  reduceFieldData(f->getData(), shr, delete_shr, ReductionSum<double>());
 }
+
+void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
+           const ReductionOp<double>& sum)
+{
+  reduceFieldData(f->getData(), shr, delete_shr, sum);
+}
+
+
 
 void fail(const char* why)
 {
