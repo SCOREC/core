@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
 SET(CTEST_DO_SUBMIT ON)
+set(CTEST_DO_MEMCHECK ON)
+set(CTEST_DO_COVERAGE ON) 
 SET(CTEST_TEST_TYPE Nightly)
 
 set(CTEST_NIGHTLY_START_TIME "17:00:00 EST")
@@ -42,6 +44,10 @@ file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}")
 
 find_program(CTEST_GIT_COMMAND NAMES git)
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
+find_program(CTEST_COVERAGE_COMMAND NAMES gcov)
+set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "")
+set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
 
 function(setup_repo)
   if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
@@ -171,6 +177,12 @@ ${BRANCH_NAME} build failed!
     set(${ERRVAR} False PARENT_SCOPE)
   endif()
 
+  if(CTEST_DO_COVERAGE)
+    ctest_coverage(BUILD "${BUILD_DIRECTORY}")
+  endif(CTEST_DO_COVERAGE)
+  if(CTEST_DO_MEMCHECK)
+    ctest_memcheck(BUILD "${BUILD_DIRECTORY}")
+  endif(CTEST_DO_MEMCHECK)
   if(CTEST_DO_SUBMIT)
     ctest_submit(PARTS Update Configure Build Test
         RETRY_COUNT 4
@@ -307,6 +319,9 @@ SET(CONFIGURE_OPTIONS
   "-DPCU_COMPRESS:BOOL=ON"
   "-DIS_TESTING:BOOL=True"
   "-DMESHES:STRING=${MESHES}"
+  "-DCMAKE_CXX_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
+  "-DCMAKE_C_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
+  "-DCMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
 )
 
 SET(CONFIGURE_OPTIONS-sim
