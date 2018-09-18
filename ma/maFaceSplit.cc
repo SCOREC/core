@@ -84,13 +84,13 @@ void FaceSplit::makeNewElements()
   cb.reset();
   Entity* tri = toSplit[2][0];
   // Split vertex. Also makes the new faces.
-  // TODO: Add all these to newEntities, or do something similar
   Entity* sv = splitTri0(adapter, tri);
   cb.retrieve(newEntities[2][0]);
-  clearBuildCallback(adapter);
+  newEntities[3].setSize(toSplit[3].getSize());
   Downward tetv, ntetv;
   for (size_t i = 0; i < toSplit[3].getSize(); ++i) {
     Entity* tet = toSplit[3][i];
+    cb.reset();
     // Orient Tets
     rotateForFaceSplit(adapter, tet, tri, tetv);
     // Create splits
@@ -100,13 +100,15 @@ void FaceSplit::makeNewElements()
     buildElement(adapter, m->toModel(tet), apf::Mesh::TET, ntetv);
     ntetv[0] = tetv[2]; ntetv[1] = tetv[0]; ntetv[2] = sv; ntetv[3] = tetv[3];
     buildElement(adapter, m->toModel(tet), apf::Mesh::TET, ntetv);
+    cb.retrieve(newEntities[3][i]);
   }
+  clearBuildCallback(adapter);
 }
 
 void FaceSplit::cancel()
 {
   Mesh* m = adapter->mesh;
-  // TODO Find Split vert and delete all adjacent regions
+  // Find Split vert and delete all adjacent regions
   Entity* sv = getSplitVert();
   Upward deleting; // We'll delete all regions adjacent to sv
   m->getAdjacent(sv, m->getDimension(), deleting);
@@ -121,7 +123,6 @@ void FaceSplit::cancel()
 void FaceSplit::transfer()
 {
   Mesh* m = adapter->mesh;
-  // TODO
   SolutionTransfer* st = adapter->solutionTransfer;
   int td = st->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)

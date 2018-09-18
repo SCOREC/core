@@ -684,6 +684,7 @@ void TEST_FIELD(pMesh m)
 {
   int num_dofs_per_node=3;
   pField f = pumi_mesh_findField(m, "xyz_field");
+
   pMeshIter it;
   pMeshEnt e;
   double data[3];
@@ -714,6 +715,7 @@ void TEST_FIELD(pMesh m)
     {
       // FIXME: if use "new testOwnership(m)", memory leak
       if (!pumi_ment_isOwned(e, o)) continue; 
+
       PCU_ALWAYS_ASSERT (pumi_ment_getOwnPID(e, o)==o->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
@@ -724,8 +726,9 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_accumulate(f); // this routine synchronizes after sum-up fields over remote copies
+    pumi_field_synchronize(f); // broadcast result to other partitions
   } 
+
 
   it = m->begin(0);
   while ((e = m->iterate(it)))
@@ -739,6 +742,7 @@ void TEST_FIELD(pMesh m)
         PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);
+
   pumi_field_verify(m, f, o);
   delete o;
 }
