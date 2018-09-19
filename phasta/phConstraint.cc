@@ -297,11 +297,11 @@ static Constraint* combinePointsElas(Constraint* a, Constraint* b,
 {
   PointConstraintElas* pa = static_cast<PointConstraintElas*>(a);
   PointConstraintElas* pb = static_cast<PointConstraintElas*>(b);
-  /* same points, arbitrary victory */
-  if (apf::areClose(pa->point, pb->point, 0.0))
-    return takeFirst(a, b);
   double ma = pa->point.getLength();
   double mb = pb->point.getLength();
+  /* same points, arbitrary victory */
+  if (apf::areClose(pa->point, pb->point, ma*1e-12)) // allow machine epsilon
+    return takeFirst(a, b);
   /* any zero magnitude wins (no-slip wins over weaker constraints) */
   if (ma == 0)
     return takeFirst(a, b);
