@@ -14,6 +14,7 @@
 #include "apfNumbering.h"
 #include <pcu_util.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <cstdlib> // for malloc and free
 
 //************************************
@@ -466,13 +467,13 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
 
   if (!pumi_rank()) // master
   {
-    printf("  - verifying fields: ");
+    lion_oprint(1,"  - verifying fields: ");
     for (size_t nf = 0; nf < fields.size(); ++nf)
     {
-      printf("%s", getName(fields[nf]));
-      if (nf<fields.size()-1) printf(", ");      
+      lion_oprint(1,"%s", getName(fields[nf]));
+      if (nf<fields.size()-1) lion_oprint(1,", ");
     }
-    printf("\n");
+    lion_oprint(1,"\n");
   }
 
   std::set<pField> mismatch_fields;
@@ -498,12 +499,12 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
   {
     if (!PCU_Comm_Self())
     for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
-      printf("%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
+      lion_oprint(1,"%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
   }
   else
   {
     if (!PCU_Comm_Self())
-      printf("%s: no DOF mismatch\n", __func__);
+      lion_oprint(1,"%s: no DOF mismatch\n", __func__);
   }
 }
 

@@ -14,6 +14,7 @@
 #include <apfNumbering.h>
 #include <pcu_util.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <vector>
 #include <cassert>
 #include <stdlib.h>
@@ -55,6 +56,7 @@ int main(int argc, char** argv)
   const char* modelFile   = argv[1];
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

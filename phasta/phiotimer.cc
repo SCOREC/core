@@ -2,8 +2,9 @@
 #include <pcu_util.h>
 #include <phiotimer.h>
 #include <PCU.h>
+#include <lionPrint.h>
+#include <sstream>
 
-#include <iostream> /* cerr */
 #include <time.h> /* clock_gettime */
 #include <unistd.h> /* usleep */
 
@@ -43,9 +44,13 @@ static size_t phastaio_getCyclesPerMicroSec() {
   phastaio_time(&t1);
   cycles = t1 - t0;
   cpus = ((double)cycles)/(usec);
-  if(!PCU_Comm_Self())
-    std::cerr << "cycles " << cycles << " us " << usec
-         << " cycles per micro second " << cpus << "\n";
+  if(!PCU_Comm_Self()) {
+    std::stringstream ss;
+    ss << "cycles " << cycles << " us " << usec
+       << " cycles per micro second " << cpus << "\n";
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
+  }
   return cpus;
 }
 /*return elapsed time in micro seconds*/
@@ -140,9 +145,13 @@ static void printMinMaxAvgSzt(const char* key, size_t v) {
   size_t max = PCU_Max_SizeT(v);
   size_t tot = PCU_Add_SizeT(v);
   double avg = ((double)tot)/PCU_Comm_Peers();
-  if(!PCU_Comm_Self())
-    std::cerr << getFileName() << "_" << key << "min max avg"
-              << min << " " << max << " " << avg << "\n";
+  if(!PCU_Comm_Self()) {
+    std::stringstream ss;
+    ss << getFileName() << "_" << key << "min max avg"
+       << min << " " << max << " " << avg << "\n";
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
+  }
 }
 
 static void printMinMaxAvgDbl(const char* key, double v) {
@@ -151,7 +160,7 @@ static void printMinMaxAvgDbl(const char* key, double v) {
   double tot = PCU_Add_Double(v);
   double avg = tot/PCU_Comm_Peers();
   if(!PCU_Comm_Self())
-    fprintf(stderr, "%s_%s min max avg %f %f %f\n",
+    lion_eprint(1, "%s_%s min max avg %f %f %f\n",
         getFileName(), key, min, max, avg);
 }
 
@@ -214,14 +223,17 @@ void phastaio_printStats() {
     usleep(us);
     phastaio_time(&t1);
     elapsed = phastaio_time_diff(&t0,&t1);
-    std::cerr << us << " us measured as " << elapsed << "us\n";
+    std::stringstream ss;
+    ss << us << " us measured as " << elapsed << "us\n";
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
   }
   for(int chefFile=0; chefFile<NUM_PHASTAIO_MODES; chefFile++) {
     size_t totalus = 0;
     size_t totalbytes = 0;
     phastaio_setfile(chefFile);
     if(!PCU_Comm_Self())
-      fprintf(stderr, "phastaio_filename %s\n", getFileName());
+      lion_eprint(1, "phastaio_filename %s\n", getFileName());
     int reads = PCU_Max_Int((int)phastaio_getReads());
     if(reads) {
       totalus += phastaio_getReadTime();

@@ -5,6 +5,7 @@
 #include "maShape.h"
 #include <sstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 namespace ma {
 
@@ -165,7 +166,7 @@ void checkLayerShape(Mesh* m, const char* key)
            << " at " << apf::getLinearCentroid(m, e)
            << " is unsafe to tetrahedronize\n";
         std::string s = ss.str();
-        fprintf(stdout,"%s",s.c_str());
+        lion_oprint(1,"%s",s.c_str());
         fflush(stdout);
         ++n;
       }

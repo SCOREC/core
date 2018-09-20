@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <PCU.h>
+#include <lionPrint.h>
 
 #ifdef HAVE_SIMMETRIX
 #include <ph.h>
@@ -59,6 +60,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if (argc < 8) {
     if (PCU_Comm_Self() == 0) {
       printf("USAGE1: %s <mesh.smb> <output_prefix> <scale field name>"

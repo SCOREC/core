@@ -7,6 +7,7 @@
 #include "apfNumbering.h"
 #include <map>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
 #include <cstdlib>
 
@@ -247,7 +248,7 @@ class Converter
                 outMesh->setLongTag(newFromOld[e], out, lngData);
                 break;
               default:
-                std::cerr << "Tried to convert unknown tag type\n";
+                lion_eprint(1,"Tried to convert unknown tag type\n");
                 abort();
                 break;
             }
@@ -329,7 +330,7 @@ class Converter
               out = outMesh->createLongTag(tagName, tagSize);
               break;
             default:
-              std::cerr << "Tried to convert unknown tag type\n";
+              lion_eprint(1,"Tried to convert unknown tag type\n");
               abort();
           }
           PCU_DEBUG_ASSERT(out);
@@ -343,7 +344,7 @@ class Converter
       if (inMesh->getShape() != getLagrange(2) && inMesh->getShape() != getSerendipity())
         return;
       if ( ! PCU_Comm_Self())
-        fprintf(stderr,"transferring quadratic mesh\n");
+        lion_eprint(1,"transferring quadratic mesh\n");
       changeMeshShape(outMesh,inMesh->getShape(),/*project=*/false);
       convertField(inMesh->getCoordinateField(),outMesh->getCoordinateField());
     }

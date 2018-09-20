@@ -6,6 +6,7 @@
 #include <apfMDS.h>
 #include <apf.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfDynamicMatrix.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -585,6 +586,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   test2D();
   test3DBlended();
   test3DFull();

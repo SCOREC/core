@@ -4,6 +4,7 @@
 #include <mthQR.h>
 #include <mth_def.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 #include <iostream>
 #include <iomanip>
@@ -66,8 +67,6 @@ static mth::Matrix3x3<double> normalize(mth::Matrix3x3<double> const& A)
 static void getWeakestEigenvector(mth::Matrix3x3<double> const& A_in,
     mth::Vector3<double>& v)
 {
-  std::cout << std::scientific << std::setprecision(10);
-  std::cerr << std::scientific << std::setprecision(10);
   mth::Matrix3x3<double> A, l, q;
   /* this will help with general conditioning of the eigenvalue solve,
      mostly superstition at this point */

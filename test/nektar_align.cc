@@ -4,6 +4,7 @@
 #include <apfNumbering.h>
 #include <apf.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <vector>
 #include <algorithm>
 #ifdef HAVE_SIMMETRIX
@@ -110,6 +111,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

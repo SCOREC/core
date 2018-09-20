@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "phBC.h"
 #ifdef HAVE_SIMMETRIX
 #include "phAttrib.h"
@@ -149,7 +150,7 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
   readBCs(m, attribfile, in.axisymmetry, bcs);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);
+    lion_oprint(1,"\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);
 }
 
 struct KnownBC

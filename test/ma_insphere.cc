@@ -2,6 +2,7 @@
 #include <maMesh.h>
 #include <gmi_null.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf.h>
 #include <pcu_util.h>
 
@@ -30,6 +31,7 @@ int main(int argc, char** argv)
 
 	// Test insphere (create a mesh with one tet)
 	PCU_Comm_Init();
+  lion_set_verbosity(1);
 	apf::Vector3 a(0, 0, 0);
 	apf::Vector3 b(-6, 0, 0);
 	apf::Vector3 c(0, -6, 0);

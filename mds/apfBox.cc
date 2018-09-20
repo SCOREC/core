@@ -3,6 +3,7 @@
 #include "apfMDS.h"
 #include <gmi_lookup.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 namespace apf {
@@ -17,7 +18,7 @@ int& Indices::operator[](int i)
     case 0: return x;
     case 1: return y;
     case 2: return z;
-    default: printf("i must be in {0,1,2}"); abort(); return x;
+    default: lion_oprint(1,"i must be in {0,1,2}"); abort(); return x;
   }
 }
 

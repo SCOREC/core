@@ -3,6 +3,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
 #ifdef HAVE_SIMMETRIX
@@ -85,6 +86,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if (argc != 5) {
     if(0==PCU_Comm_Self())
       std::cerr << "usage: " << argv[0] 

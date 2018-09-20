@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "phRestart.h"
 #include <apf.h>
 #include <apfField.h>
@@ -29,7 +30,7 @@ apf::Field* extractField(apf::Mesh* m,
 {
   apf::Field* f = m->findField(packedFieldname);
   if(!f && PCU_Comm_Self() == 0)
-    fprintf(stderr, "No packed field \"%s\"", packedFieldname);
+    lion_eprint(1, "No packed field \"%s\"", packedFieldname);
   PCU_ALWAYS_ASSERT(f);
   apf::Field* rf = m->findField(requestFieldname);
   if (rf)
@@ -148,7 +149,7 @@ void attachField(
     int out_size)
 {
   if (!(in_size <= out_size))
-    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
+    lion_eprint(1, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   PCU_ALWAYS_ASSERT(in_size <= out_size);
   apf::Field* f = m->findField(fieldname);
   if( f )
@@ -199,7 +200,7 @@ void attachCellField(
     int out_size)
 {
   if (!(in_size <= out_size))
-    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
+    lion_eprint(1, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   PCU_ALWAYS_ASSERT(in_size <= out_size);
   apf::Field* f = m->findField(fieldname);
   if( f )
@@ -311,12 +312,12 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     if (!strcmp(fieldname, known_rand_fields[i]))
       return false;
   if( !PCU_Comm_Self() ) {
-    fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
-    fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
+    lion_eprint(1, "unknown restart field name \"%s\"\n", fieldname);
+    lion_eprint(1, "please add \"%s\" to isNodalField above line %d of %s\n",
         fieldname, __LINE__, __FILE__);
   }
   if (static_cast<size_t>(nnodes) == m->count(0)) {
-    fprintf(stderr, "assuming \"%s\" is a nodal field,\n"
+    lion_eprint(1, "assuming \"%s\" is a nodal field,\n"
                     "it is the right size...\n", fieldname);
     return true;
   }
@@ -353,7 +354,7 @@ int readAndAttachField(
     out_size = in.ensa_dof;
   if (m->findField(hname)) {
     if (!PCU_Comm_Self())
-      fprintf(stderr, "field \"%s\" already attached to the mesh, "
+      lion_eprint(1, "field \"%s\" already attached to the mesh, "
                       "ignoring request to re-attach...\n", hname);
   } else {
     attachField(m, hname, data, vars, out_size);
@@ -434,7 +435,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   phastaio_setfile(RESTART_READ);
   FILE* f = in.openfile_read(in, filename.c_str());
   if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
+    lion_eprint(1,"failed to open \"%s\"!\n", filename.c_str());
     abort();
   }
   int swap = ph_should_swap(f);
@@ -443,7 +444,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("fields read and attached in %f seconds\n", t1 - t0);
+    lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
   if(in.printIOtime) phastaio_printStats();
 }
 
@@ -482,7 +483,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   phastaio_setfile(RESTART_WRITE);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
+    lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
     abort();
   }
   ph_write_preamble(f);
@@ -516,7 +517,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("solution written in %f seconds\n", t1 - t0);
+    lion_oprint(1,"solution written in %f seconds\n", t1 - t0);
 }
 
 } //end namespace ph

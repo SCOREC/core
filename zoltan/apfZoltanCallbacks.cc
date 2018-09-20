@@ -12,6 +12,7 @@
 #include <PCU.h>
 #include <metis.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -34,8 +35,7 @@ static int setZoltanLbMethod(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
       Zoltan_Set_Param(ztn, "GRAPH_PACKAGE", "PARMETIS"); // instead of PHG
       break;
     default:
-      std::cout << "ERROR " << __func__ << " Invalid LB_METHOD "
-        << zb->method << "\n";
+      lion_oprint(1,"ERROR %s Invalid LB_METHOD %d\n",__func__, zb->method);
       return 1;
   }
   Zoltan_Set_Param(ztn, "LB_METHOD", lbMethod.c_str());
@@ -65,8 +65,7 @@ static int setZoltanLbApproach(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
     case REFINE_KWAY:
       pMethod = "RefineKway"; break;
     default:
-      std::cout << "ERROR " << __func__ << " Invalid LB_Approach "
-        << zb->approach << "\n";
+      lion_oprint(1,"ERROR %s Invalid LB_Approach %d\n",__func__, zb->approach);
       return 1;
   }
   Zoltan_Set_Param(ztn, "LB_APPROACH", ptnAp.c_str());
@@ -267,7 +266,7 @@ ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
   float ver;
   int ret = Zoltan_Initialize(0,0,&ver);
   if (ZOLTAN_OK != ret) {
-    fprintf(stderr, "ERROR: Zoltan initialization failed\n");
+    lion_eprint(1, "ERROR: Zoltan initialization failed\n");
     exit(1);
   }
   MPI_Comm comm;
@@ -374,7 +373,7 @@ void ZoltanData::ptn()
       &export_lids, &export_procs, &export_to_part);
   if( ZOLTAN_OK != ret ) {
     if( 0 == PCU_Comm_Self() )
-      fprintf(stderr, "ERROR Zoltan partitioning failed\n");
+      lion_eprint(1, "ERROR Zoltan partitioning failed\n");
     exit(EXIT_FAILURE);
   }
   //writeZoltanDbgFiles(ztn, "kddParted");

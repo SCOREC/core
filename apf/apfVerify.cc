@@ -5,6 +5,7 @@
 #include <sstream>
 #include <apfGeometry.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include "stdlib.h" // malloc
 
 namespace apf {
@@ -177,7 +178,7 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
       << upwardCount << " upward adjacencies\n";
     // use a stringstream to prevent output from different procs mixing
     std::string s = ss.str();
-    fprintf(stderr,"%s",s.c_str());
+    lion_eprint(1,"%s",s.c_str());
   }
 }
 
@@ -473,7 +474,7 @@ long verifyVolumes(Mesh* m, bool printVolumes)
         ss << "warning: element volume " << v
           << " at " << getLinearCentroid(m, e) << '\n';
         std::string s = ss.str();
-        fprintf(stdout, "%s", s.c_str());
+        lion_oprint(1, "%s", s.c_str());
         fflush(stdout);
       }
       ++n;
@@ -724,7 +725,7 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
   int global_size = PCU_Max_Int((int)mismatch_tags.size());
   if (global_size&&!PCU_Comm_Self())
     for (std::set<MeshTag*>::iterator it=mismatch_tags.begin(); it!=mismatch_tags.end(); ++it)
-      printf("  - tag \"%s\" data mismatch over remote/ghost copies\n", m->getTagName(*it));
+      lion_oprint(1,"  - tag \"%s\" data mismatch over remote/ghost copies\n", m->getTagName(*it));
 }
 
 static void verifyTags(Mesh* m)
@@ -745,13 +746,13 @@ static void verifyTags(Mesh* m)
   {
     if (n)
     {
-      printf("  - verifying tags: ");
+      lion_oprint(1,"  - verifying tags: ");
       for (int i = 0; i < n; ++i)
       {
-        printf("%s", m->getTagName(tags[i]));
-        if (i<n-1) printf(", ");      
+        lion_oprint(1,"%s", m->getTagName(tags[i]));
+        if (i<n-1) lion_oprint(1,", ");
       }
-      printf("\n");
+      lion_oprint(1,"\n");
     }
   }
   PCU_Comm_Send();
@@ -831,13 +832,13 @@ void verify(Mesh* m, bool abort_on_error)
   verifyMatches(m);
   long n = verifyCoords(m);
   if (n && (!PCU_Comm_Self()))
-    fprintf(stderr,"apf::verify fail: %ld coordinate mismatches\n", n);
+    lion_eprint(1,"apf::verify fail: %ld coordinate mismatches\n", n);
   n = verifyVolumes(m);
   if (n && (!PCU_Comm_Self()))
-    fprintf(stderr,"apf::verify warning: %ld negative simplex elements\n", n);
+    lion_eprint(1,"apf::verify warning: %ld negative simplex elements\n", n);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("mesh verified in %f seconds\n", t1 - t0);
+    lion_oprint(1,"mesh verified in %f seconds\n", t1 - t0);
 }
 
 }

@@ -6,6 +6,7 @@
  */
 
 #include <PCU.h>
+#include <lionPrint.h>
 
 #include "spr.h"
 
@@ -316,7 +317,7 @@ apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio)
   estimateError(&e);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    fprintf(stderr,"SPR: error estimated in %f seconds\n",t1-t0);
+    lion_eprint(1,"SPR: error estimated in %f seconds\n",t1-t0);
   return e.size;
 }
 

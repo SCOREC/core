@@ -4,6 +4,7 @@
 #include "phiotimer.h"
 #include <sstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 namespace ph {
@@ -298,7 +299,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   phastaio_setfile(GEOMBC_WRITE);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
+    lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
     abort();
   }
   ph_write_preamble(f);
@@ -365,7 +366,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("geombc file written in %f seconds\n", t1 - t0);
+    lion_oprint(1,"geombc file written in %f seconds\n", t1 - t0);
 }
 
 }

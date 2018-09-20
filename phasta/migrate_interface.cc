@@ -3,6 +3,7 @@
 #include "phInterfaceCutter.h"
 #include <ph.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -34,10 +35,10 @@ void getConfig(int argc, char** argv)
 {
   if (argc < 4 || argc > 5) {
     if ( !PCU_Comm_Self() ) {
-      fprintf(stderr,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
-      fprintf(stderr,"       to take model and attributes in separate files\n");
-      fprintf(stderr,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
-      fprintf(stderr,"       to take combined model and attributes file (by simTranslate)\n");}
+      lion_eprint(1,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
+      lion_eprint(1,"       to take model and attributes in separate files\n");
+      lion_eprint(1,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
+      lion_eprint(1,"       to take combined model and attributes file (by simTranslate)\n");}
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
@@ -58,6 +59,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

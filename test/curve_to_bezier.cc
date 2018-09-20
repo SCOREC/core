@@ -6,6 +6,7 @@
 #include <gmi_mesh.h>
 #include <gmi_sim.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
 #include <SimModel.h>
@@ -15,6 +16,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);

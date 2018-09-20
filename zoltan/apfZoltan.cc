@@ -9,6 +9,7 @@
 #include "apfZoltanMesh.h"
 #include <apfPartition.h>
 #include <PCU.h>
+#include <lionPrint.h>
 
 namespace apf {
 
@@ -36,7 +37,7 @@ class ZoltanSplitter : public Splitter
       }
       double t1 = PCU_Time();
       if (!PCU_Comm_Self())
-        fprintf(stdout, "planned Zoltan split factor %d to target"
+        lion_oprint(1, "planned Zoltan split factor %d to target"
             " imbalance %f in %f seconds\n", multiple, tolerance, t1 - t0);
       return plan;
     }
@@ -57,13 +58,13 @@ class ZoltanBalancer : public Balancer
       double t0 = PCU_Time();
       Migration* plan = bridge.run(weights, tolerance, 1);
       if (!PCU_Comm_Self())
-        fprintf(stdout, "planned Zoltan balance to target "
+        lion_oprint(1, "planned Zoltan balance to target "
             "imbalance %f in %f seconds\n",
             tolerance, PCU_Time() - t0);
       bridge.mesh->migrate(plan);
       double t1 = PCU_Time();
       if (!PCU_Comm_Self())
-        printf("Zoltan balanced to %f in %f seconds\n",
+        lion_oprint(1,"Zoltan balanced to %f in %f seconds\n",
             tolerance, t1-t0);
     }
   private:

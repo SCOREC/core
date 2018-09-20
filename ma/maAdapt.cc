@@ -8,6 +8,7 @@
  
 *******************************************************************************/
 #include <PCU.h>
+#include <lionPrint.h>
 #include "maAdapt.h"
 #include "maInput.h"
 #include "maTables.h"
@@ -463,12 +464,12 @@ void print(const char* format, ...)
 {
   if (PCU_Comm_Self())
     return;
-  printf("\nMeshAdapt: ");
+  lion_oprint(1,"\nMeshAdapt: ");
   va_list ap;
   va_start(ap,format);
-  vfprintf(stdout,format,ap);
+  lion_voprint(1,format,ap);
   va_end(ap);
-  printf("\n");
+  lion_oprint(1,"\n");
 }
 
 void setFlagOnClosure(Adapt* a, Entity* element, int flag)

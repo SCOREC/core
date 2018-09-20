@@ -5,6 +5,7 @@
 #include <pcu_io.h>
 #include <phIO.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <phiotimer.h>
 
 #define PH_LINE 1024
@@ -87,7 +88,7 @@ static int find_header(FILE* f, const char* name, char* found, char header[PH_LI
     fseek(f, bytes, SEEK_CUR);
   }
   if (!PCU_Comm_Self() && strlen(name) > 0)
-    fprintf(stderr,"warning: phIO could not find \"%s\"\n",name);
+    lion_eprint(1,"warning: phIO could not find \"%s\"\n",name);
   return 0;
 }
 
@@ -118,7 +119,7 @@ static int read_magic_number(FILE* f)
   int magic;
   if (!seek_after_header(f, magic_name)) {
     if (!PCU_Comm_Self())
-      fprintf(stderr,"warning: not swapping bytes\n");
+      lion_eprint(1,"warning: not swapping bytes\n");
     rewind(f);
     return 0;
   }

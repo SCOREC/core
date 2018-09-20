@@ -8,7 +8,7 @@ if (LION_COMPRESS)
 endif()
 
 # Package sources
-set(SOURCES lionBase64.cc)
+set(SOURCES lionBase64.cc lionPrint.c)
 if(LION_COMPRESS)
   set(SOURCES ${SOURCES} lionZLib.cc)
 else()
@@ -19,6 +19,7 @@ endif()
 set(HEADERS
   lionBase64.h
   lionCompress.h
+  lionPrint.h
 )
 
 # Add the lion Library

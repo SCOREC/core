@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -163,6 +164,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   MPI_Comm_rank(PCU_Get_Comm(), &myrank);
   MPI_Comm_size(PCU_Get_Comm(), &commsize);
 #ifdef HAVE_SIMMETRIX

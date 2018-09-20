@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <parma.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 
 int main(int argc, char** argv)
@@ -11,6 +12,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc == 4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);

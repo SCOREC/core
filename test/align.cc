@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf.h>
 #include <pcu_util.h>
 
@@ -91,6 +92,7 @@ int main()
 {
   MPI_Init(0,0);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_null();
   testTriEdge();
   testTetEdge();
