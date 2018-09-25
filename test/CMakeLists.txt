@@ -126,7 +126,7 @@ endif()
 
 # Capstone utilities
 if(ENABLE_CAPSTONE)
-  util_exe_func(capStoneAdapt capStoneAdapt.cc)
+  util_exe_func(capStoneAnisoAdapt capStoneAnisoAdapt.cc)
   util_exe_func(capStoneIsoAdapt capStoneIsoAdapt.cc)
   util_exe_func(capStoneGeomTest capStoneGeomTest.cc)
 endif()
