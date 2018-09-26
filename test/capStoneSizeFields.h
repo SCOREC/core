@@ -230,10 +230,10 @@ class Linear3 : public ma::IsotropicFunction
     ma::Vector lower;
 };
 
-class Geom : public ma::IsotropicFunction
+class GeomB737 : public ma::IsotropicFunction
 {
   public:
-    Geom(ma::Mesh* m, double inFactor)
+    GeomB737(ma::Mesh* m, double inFactor)
     {
       mesh = m;
       factor = inFactor;
@@ -282,10 +282,10 @@ class Geom : public ma::IsotropicFunction
 };
 
 
-class GeomR : public ma::IsotropicFunction
+class GeomRobin : public ma::IsotropicFunction
 {
   public:
-    GeomR(ma::Mesh* m, double inFactor)
+    GeomRobin(ma::Mesh* m, double inFactor)
     {
       mesh = m;
       factor = inFactor;
