@@ -127,7 +127,8 @@ endif()
 # Capstone utilities
 if(ENABLE_CAPSTONE)
   util_exe_func(capStoneAnisoAdapt capStoneAnisoAdapt.cc)
-  util_exe_func(capStoneIsoAdapt capStoneIsoAdapt.cc)
+  util_exe_func(capStoneAnisoAdaptWing capStoneAnisoAdaptWing.cc)
+  util_exe_func(capStoneIsoAdaptB737 capStoneIsoAdaptB737.cc)
   util_exe_func(capStoneGeomTest capStoneGeomTest.cc)
 endif()
 

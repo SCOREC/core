@@ -153,13 +153,31 @@ int main(int argc, char** argv)
       sf = new Shock(apfCapMesh);
       break;
   }
-  in = ma::configure(apfCapMesh, sf);
+
+  // make pumi fields that hold the "frames" and "scales" for anisotropic size fields
+  // here we are using user-defined size-fields. Usually, "frames" and "scales" come
+  // from a solution driven error estimation procedure
+  apf::Field* frameField = apf::createFieldOn(apfCapMesh, "adapt_frames", apf::MATRIX);
+  apf::Field* scaleField = apf::createFieldOn(apfCapMesh, "adapt_scales", apf::VECTOR);
+
+  apf::MeshEntity* v;
+  it = apfCapMesh->begin(0);
+  while( (v = apfCapMesh->iterate(it)) ) {
+    apf::Vector3 s;
+    apf::Matrix3x3 f;
+    sf->getValue(v, f, s);
+    apf::setVector(scaleField, v, 0, s);
+    apf::setMatrix(frameField, v, 0, f);
+  }
+  apfCapMesh->end(it);
+
+  in = ma::configure(apfCapMesh, scaleField, frameField);
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
   in->shouldFixShape = true;
   in->shouldForceAdaptation = true;
   if (apfCapMesh->getDimension() == 2)
-    in->goodQuality = 0.2;
+    in->goodQuality = 0.04; // this is mean-ratio squared
   else // 3D meshes
     in->goodQuality = 0.027; // this is the mean-ratio cubed
   in->maximumIterations = 10;
