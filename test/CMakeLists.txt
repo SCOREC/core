@@ -15,6 +15,7 @@ function(test_exe_func exename srcname)
 endfunction(test_exe_func)
 
 # Mesh validity/statistics utilities
+util_exe_func(issue180 issue180.cc)
 util_exe_func(verify verify.cc)
 util_exe_func(describe describe.cc)
 test_exe_func(quality quality.cc)
