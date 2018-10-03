@@ -4,6 +4,7 @@
 #include <apfMesh2.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <vector>
 #include <sstream>
 #include <pcu_util.h>
@@ -12,6 +13,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(argc == 3);
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);

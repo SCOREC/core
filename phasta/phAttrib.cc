@@ -1,5 +1,6 @@
 #include "phAttrib.h"
 #include "gmi_sim.h"
+#include <lionPrint.h>
 #include <SimAttribute.h>
 #include <SimUtil.h>
 #include <cstdlib>
@@ -27,7 +28,7 @@ struct Tensor0BC : public SimBC
   Tensor0BC(pAttribute a, pGEntity ge):SimBC(ge)
   {
     if (Attribute_repType(a) != Att_tensor0) {
-      fprintf(stderr, "tensor 0 attribute does not match type\n");
+      lion_eprint(1, "tensor 0 attribute does not match type\n");
       abort();
     }
     attribute = (pAttributeTensor0)a;
@@ -45,7 +46,7 @@ struct Tensor1BC : public SimBC {
   Tensor1BC(pAttribute a, pGEntity ge):SimBC(ge)
   {
     if (Attribute_repType(a) != Att_tensor1) {
-      fprintf(stderr, "tensor 1 attribute does not match type\n");
+      lion_eprint(1, "tensor 1 attribute does not match type\n");
       abort();
     }
     attribute = (pAttributeTensor1)a;
@@ -64,7 +65,7 @@ struct CompBC : public SimBC {
   CompBC(pAttribute a, pGEntity ge):SimBC(ge)
   {
     if (Attribute_repType(a) != Att_void) {
-      fprintf(stderr, "comp1/3 attribute does not match type\n");
+      lion_eprint(1, "comp1/3 attribute does not match type\n");
       abort();
     }
     pPList children = Attribute_children(a);
@@ -77,15 +78,15 @@ struct CompBC : public SimBC {
       else if (Attribute_repType(child) == Att_tensor1)
         direction = (pAttributeTensor1) child;
       else
-        fprintf(stderr,"ignored some comp1/3 attributes...\n");
+        lion_eprint(1,"ignored some comp1/3 attributes...\n");
     }
     PList_delete(children);
     if (!magnitude) {
-      fprintf(stderr, "comp1/3 attribute does not have magnitude\n");
+      lion_eprint(1, "comp1/3 attribute does not have magnitude\n");
       abort();
     }
     if (!direction) {
-      fprintf(stderr, "comp1/3 attribute does not have direction\n");
+      lion_eprint(1, "comp1/3 attribute does not have direction\n");
       abort();
     }
   }
@@ -106,7 +107,7 @@ struct IntBC : public SimBC
   IntBC(pAttribute a, pGEntity ge):SimBC(ge)
   {
     if (Attribute_repType(a) != Att_int) {
-      fprintf(stderr, "int attribute does not match type\n");
+      lion_eprint(1, "int attribute does not match type\n");
       abort();
     }
     attribute = (pAttributeInt)a;
@@ -199,8 +200,8 @@ static void addAttribute(BCFactories& fs, pAttribute a, pGEntity ge,
 {
   std::string type = getType(a);
   if (!fs.count(type)) {
-    fprintf(stderr,"unknown attribute type \"%s\", ignoring !\n", type.c_str());
-    fprintf(stderr,"it had repType %d\n",
+    lion_eprint(1,"unknown attribute type \"%s\", ignoring !\n", type.c_str());
+    lion_eprint(1,"it had repType %d\n",
         Attribute_repType(a));
     return;
   }
@@ -225,12 +226,12 @@ namespace {
     smdl = gmi_export_sim(m);
     pAManager mngr = SModel_attManager(smdl);
     if (!mngr) {
-      fprintf(stderr,"Simmetrix model did not come with an Attribute Manager\n");
+      lion_eprint(1,"Simmetrix model did not come with an Attribute Manager\n");
       abort();
     }
     pd = AMAN_findCaseByType(mngr, "problem definition");
     if (!pd) {
-      fprintf(stderr,"no Attribute Case \"problem definition\"\n");
+      lion_eprint(1,"no Attribute Case \"problem definition\"\n");
       abort();
     }
   }

@@ -81,7 +81,7 @@ class MeshTag;
               multiply the part ids in the resulting apf::Migration
               accordingly */
 Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
-    bool debug = true, bool sync = true);
+    bool debug = false, bool sync = true);
 
 /** \brief Make a Zoltan Splitter object
   \details the resulting splitter will apply Zoltan
@@ -91,7 +91,7 @@ Splitter* makeZoltanSplitter(Mesh* mesh, int method, int approach,
   \param debug print the full Zoltan configuration when splitting
   */
 Splitter* makeZoltanGlobalSplitter(Mesh* mesh, int method, int approach,
-    bool debug = true);
+    bool debug = false);
 
 /** \brief Make a Zoltan Balancer object
   \details this Balancer will apply Zoltan to the global mesh
@@ -103,7 +103,7 @@ Splitter* makeZoltanGlobalSplitter(Mesh* mesh, int method, int approach,
   \param approach select from apf::ZoltanApproach
   \param debug print the full Zoltan configuration */
 Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach,
-    bool debug = true);
+    bool debug = false);
 
 /** \brief Tag global ids of opposite elements to boundary faces
   \details this function creates a LONG tag of one value

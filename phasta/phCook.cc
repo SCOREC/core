@@ -25,6 +25,7 @@
 #include <PCU.h>
 #include <pcu_io.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <string>
 #include <stdlib.h>
 #include <cstring>
@@ -62,7 +63,7 @@ static apf::Mesh2* loadMesh(gmi_model*& g, ph::Input& in) {
   if (ph::mesh_has_ext(meshfile, "sms")) {
     if (in.simmetrixMesh == 0) {
       if (PCU_Comm_Self()==0)
-        fprintf(stderr, "oops, turn on flag: simmetrixMesh\n");
+        lion_eprint(1, "oops, turn on flag: simmetrixMesh\n");
       in.simmetrixMesh = 1;
       in.filterMatches = 0; //not support
     }
@@ -121,7 +122,7 @@ namespace chef {
     if( fname.find(restartStr) != std::string::npos )
       PHASTAIO_OPENTIME(f = openRStreamRead(in.rs);)
     else {
-      fprintf(stderr,
+      lion_eprint(1,
         "ERROR %s type of stream %s is unknown... exiting\n",
         __func__, fname.c_str());
       exit(1);
@@ -173,7 +174,7 @@ namespace ph {
     ph::exitFilteredMatching(m);
     // a path is not needed for inmem
     if ( in.writeRestartFiles ) {
-      if(!PCU_Comm_Self()) printf("write file-based restart file\n");
+      if(!PCU_Comm_Self()) lion_oprint(1,"write file-based restart file\n");
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
@@ -188,7 +189,7 @@ namespace ph {
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     if ( in.writeGeomBCFiles ) {
-      if(!PCU_Comm_Self()) printf("write additional geomBC file for visualization\n");
+      if(!PCU_Comm_Self()) lion_oprint(1,"write additional geomBC file for visualization\n");
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
@@ -213,7 +214,7 @@ namespace ph {
     gmi_model* g = m->getModel();
     PCU_ALWAYS_ASSERT(g);
     BCs bcs;
-    fprintf(stderr, "reading %s\n", in.attributeFileName.c_str());
+    lion_eprint(1, "reading %s\n", in.attributeFileName.c_str());
     ph::readBCs(g, in.attributeFileName.c_str(), in.axisymmetry, bcs);
     if (!in.solutionMigration)
       ph::attachZeroSolution(in, m);

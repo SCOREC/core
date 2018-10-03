@@ -3,6 +3,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -87,6 +88,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   pumi_start();
+  lion_set_verbosity(1);
   pumi_printSys();
 
 #if 0

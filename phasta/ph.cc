@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 
 #include "ph.h"
 #include <apfMDS.h>
@@ -29,9 +30,9 @@ void fail(const char* format, ...)
 {
   va_list ap;
   va_start(ap, format);
-  vfprintf(stderr, format, ap);
+  lion_veprint(1, format, ap);
   va_end(ap);
-  fprintf(stderr,"\n");
+  lion_eprint(1,"\n");
   abort();
 }
 
@@ -124,7 +125,7 @@ void setupInputSubdir(std::string& path)
     ss << path.substr(0,found) << "/" << subGroup << "/" << path.substr(found+1);
   }
 
-//  printf("Rank: %d - Path in setupInputSubdir: %s\n", self, ss.str().c_str());
+//  lion_oprint(1,"Rank: %d - Path in setupInputSubdir: %s\n", self, ss.str().c_str());
   path = ss.str();
   PCU_Barrier();
 }

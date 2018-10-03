@@ -7,6 +7,7 @@
 #include <apfShape.h>
 #include <apf.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 
 #include "MeshSim.h"
@@ -80,6 +81,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   MS_init(); // Call before calling Sim_readLicenseFile
   Sim_readLicenseFile(0);
   SimDiscrete_start(0);  // initialize GeomSim Discrete library

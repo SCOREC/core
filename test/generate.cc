@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimAdvMeshing.h>
 #include <SimPartitionedMesh.h>
@@ -299,6 +300,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_Protect();
   getConfig(argc,argv);
 

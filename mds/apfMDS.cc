@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include <PCU.h>
+#include <lionPrint.h>
 #include "apfMDS.h"
 #include "mds_apf.h"
 #include "apfPM.h"
@@ -442,7 +443,7 @@ class MeshMDS : public Mesh2
     void getTag(MeshEntity* e, MeshTag* t, void* data)
     {
       if (!hasTag(e,t)) {
-        fprintf(stderr, "expected tag \"%s\" on entity type %d\n",
+        lion_eprint(1, "expected tag \"%s\" on entity type %d\n",
             getTagName(t), getType(e));
         abort();
       }
@@ -576,7 +577,7 @@ class MeshMDS : public Mesh2
       mesh = mds_write_smb(mesh, fileName, 0, this);
       double t1 = PCU_Time();
       if (!PCU_Comm_Self())
-        printf("mesh %s written in %f seconds\n", fileName, t1 - t0);
+        lion_oprint(1,"mesh %s written in %f seconds\n", fileName, t1 - t0);
     }
     void destroyNative()
     {
@@ -663,9 +664,9 @@ class MeshMDS : public Mesh2
       int t = apf2mds(type);
       int dim = mds_dim[t];
       if (dim > mesh->mds.d) {
-        fprintf(stderr,"error: creating entity of dimension %d "
+        lion_eprint(1,"error: creating entity of dimension %d "
                        "in mesh of dimension %d\n", dim, mesh->mds.d);
-        fprintf(stderr,"please use apf::changeMdsDimension\n");
+        lion_eprint(1,"please use apf::changeMdsDimension\n");
         abort();
       }
       mds_set s;
@@ -786,7 +787,7 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
   m->acceptChanges();
 
   if (!PCU_Comm_Self())
-    printf("mesh %s loaded in %f seconds\n", meshfile, PCU_Time() - t0);
+    lion_oprint(1,"mesh %s loaded in %f seconds\n", meshfile, PCU_Time() - t0);
   printStats(m);
   warnAboutEmptyParts(m);
   return m;
@@ -798,7 +799,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
   static gmi_model* model;
   model = gmi_load(modelfile);
   if (!PCU_Comm_Self())
-    printf("model %s loaded in %f seconds\n", modelfile, PCU_Time() - t0);
+    lion_oprint(1,"model %s loaded in %f seconds\n", modelfile, PCU_Time() - t0);
 
   return loadMdsMesh(model, meshfile);
 }
@@ -816,7 +817,7 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
   }
   m->mesh = mds_reorder(m->mesh, 0, vert_nums);
   if (!PCU_Comm_Self())
-    printf("mesh reordered in %f seconds\n", PCU_Time()-t0);
+    lion_oprint(1,"mesh reordered in %f seconds\n", PCU_Time()-t0);
 }
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
@@ -851,7 +852,7 @@ Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
   apf::remapPartition(m, expand);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("mesh expanded from %d to %d parts in %f seconds\n",
+    lion_oprint(1,"mesh expanded from %d to %d parts in %f seconds\n",
         inputPartCount, outputPartCount, t1 - t0);
   return m;
 }
@@ -866,7 +867,7 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
   m->migrate(plan);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("mesh migrated from %d to %d in %f seconds\n",
+    lion_oprint(1,"mesh migrated from %d to %d in %f seconds\n",
         PCU_Comm_Peers() / factor,
         PCU_Comm_Peers(),
         t1 - t0);

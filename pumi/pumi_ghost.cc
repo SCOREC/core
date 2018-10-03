@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 #include "apf.h"
@@ -436,7 +437,7 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
     apf::freeze(*fit);    
 
   if (!PCU_Comm_Self())
-    printf("mesh ghosted in %f seconds\n", PCU_Time()-t0);
+    lion_oprint(1,"mesh ghosted in %f seconds\n", PCU_Time()-t0);
 }
 
 // *********************************************************
@@ -840,7 +841,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 // STEP 3: perform ghosting
 // ********************************************
   if (!PCU_Comm_Self())
-    printf("ghosting plan computed in %f seconds\n", PCU_Time()-t0);
+    lion_oprint(1,"ghosting plan computed in %f seconds\n", PCU_Time()-t0);
 
   pumi_ghost_create(m, plan);
 }

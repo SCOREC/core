@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <cstdlib>
 #include <pcu_util.h>
@@ -39,6 +40,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <in .[b8|lb8].ugrid> <out .dmg> <out .smb> <partition factor>\n", argv[0]);

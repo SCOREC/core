@@ -13,6 +13,7 @@
 #include "spr.h"
 
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfMesh.h>
 #include <apfShape.h>
 #include <apfCavityOp.h>
@@ -253,7 +254,7 @@ apf::Field* getTargetSPRSizeField(
   target::estimateError(&e);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    fprintf(stderr, "SPR (target): error estimated in %f seconds\n",t1-t0);
+    lion_eprint(1, "SPR (target): error estimated in %f seconds\n",t1-t0);
   return e.vtx_size;
 }
 

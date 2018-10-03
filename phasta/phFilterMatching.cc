@@ -7,6 +7,7 @@
 #include <apf.h>
 #include <PCU.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -97,7 +98,7 @@ static void getAttributeMatching(gmi_model* gm, BCs& bcs, ModelMatching& mm)
     int otherTag = *val;
     gmi_ent* oe = gmi_find(gm, bc->dim, otherTag);
     if (!oe)
-      fprintf(stderr, "model %s %d has %s %s %d,\n"
+      lion_eprint(1, "model %s %d has %s %s %d,\n"
                       "but %s %d doesn not exist in the model\n",
           apf::dimName[bc->dim], bc->tag, name.c_str(),
           apf::dimName[bc->dim], otherTag,
@@ -211,9 +212,9 @@ static void checkFilteredMatching(apf::Mesh* m, ModelMatching& mm, int dim)
       continue;
     }
     if (matches.getSize() < mm[ge].size()) {
-      std::cerr << "solution periodicity requested "
-                << "where mesh periodicity does not exist.\n"
-                << "rebuild mesh to match solution request\n";
+      lion_eprint(1,"solution periodicity requested "
+                    "where mesh periodicity does not exist.\n"
+                    "rebuild mesh to match solution request\n");
       abort();
     }
   }

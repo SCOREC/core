@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <ma.h>
 #include <MeshSim.h>
 #include <SimUtil.h>
@@ -14,6 +15,7 @@
 static void initialize(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
   gmi_register_sim();

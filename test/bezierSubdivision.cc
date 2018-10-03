@@ -7,6 +7,7 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <mth.h>
 #include <mth_def.h>
 #include <pcu_util.h>
@@ -482,6 +483,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   testEdgeSubdivision();
   testTriSubdivision1();
   testTriSubdivision4();

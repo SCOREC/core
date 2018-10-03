@@ -5,6 +5,7 @@
 #include <apfConvert.h>
 #include <apf.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
 #include <string.h>
@@ -486,6 +487,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
 
