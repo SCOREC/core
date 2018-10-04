@@ -3,6 +3,7 @@
 #include <apfPartition.h>
 #include <pcu_util.h>
 #include <apf2mth.h>
+#include <lionPrint.h>
 
 namespace parma {
 
@@ -76,7 +77,7 @@ class RibSplitter : public apf::Splitter
         }
         double t1 = PCU_Time();
         if (!PCU_Comm_Self())
-          printf("planned RIB factor %d in %f seconds\n",
+          lion_oprint(1,"planned RIB factor %d in %f seconds\n",
               multiple, t1 - t0);
       }
       return plan;

@@ -6,6 +6,7 @@
  */
 
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf_stkConfig.h>
 #include "apfAlbany.h"
 #include <apfMesh.h>
@@ -758,14 +759,14 @@ long getStkId(GlobalNumbering* numbers, Node node)
 StkModels* create_sets(Mesh* m, const char* filename) {
   StkModels* sets = new StkModels;
   if (! PCU_Comm_Self())
-    printf("reading association file: %s\n", filename);
+    lion_oprint(1,"reading association file: %s\n", filename);
   static std::string const setNames[3] = {
     "node set", "side set", "elem set"};
   auto d = m->getDimension();
   int dims[3] = {0, d - 1, d};
   std::ifstream f(filename);
   if (!f.good()) {
-    printf("cannot open file: %s\n", filename);
+    lion_oprint(1,"cannot open file: %s\n", filename);
     abort();
   }
   std::string sline;
@@ -777,7 +778,7 @@ StkModels* create_sets(Mesh* m, const char* filename) {
     for (int di = 0; di < 3; ++di)
       if (sline.compare(0, setNames[di].length(), setNames[di]) == 0) sdi = di;
     if (sdi == -1) {
-      printf("invalid association line # %d:\n\t%s\n", lc, sline.c_str());
+      lion_oprint(1,"invalid association line # %d:\n\t%s\n", lc, sline.c_str());
       abort();
     }
     int sd = dims[sdi];
@@ -787,14 +788,14 @@ StkModels* create_sets(Mesh* m, const char* filename) {
     int nents;
     strs >> nents;
     if (!strs) {
-      printf("invalid association line # %d:\n\t%s\n", lc, sline.c_str());
+      lion_oprint(1,"invalid association line # %d:\n\t%s\n", lc, sline.c_str());
       abort();
     }
     for (int ei = 0; ei < nents; ++ei) {
       std::string eline;
       std::getline(f, eline);
       if (!f || !eline.length()) {
-        printf("invalid association after line # %d\n", lc);
+        lion_oprint(1,"invalid association after line # %d\n", lc);
         abort();
       }
       ++lc;
@@ -802,12 +803,12 @@ StkModels* create_sets(Mesh* m, const char* filename) {
       int mdim, mtag;
       strs2 >> mdim >> mtag;
       if (!strs2) {
-        printf("bad associations line # %d:\n\t%s\n", lc, eline.c_str());
+        lion_oprint(1,"bad associations line # %d:\n\t%s\n", lc, eline.c_str());
         abort();
       }
       set->ents.push_back(m->findModelEntity(mdim, mtag));
       if (!set->ents.back()) {
-        printf("no model entity with dim: %d and tag: %d\n", mdim, mtag);
+        lion_oprint(1,"no model entity with dim: %d and tag: %d\n", mdim, mtag);
         abort();
       }
     }

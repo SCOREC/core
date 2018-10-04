@@ -13,6 +13,7 @@
 #include <sstream>
 #include <fstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -371,7 +372,7 @@ static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
           ss << "warning: Tri Jacobian Determinant is negative,  " << detJ[j]
               << '\n';
           std::string s = ss.str();
-          fprintf(stderr, "%s", s.c_str());
+          lion_eprint(1, "%s", s.c_str());
           isValid = false;
         }
         maxJ = std::max(detJ[count],maxJ);
@@ -451,7 +452,7 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               ss << "warning: Tet Jacobian Determinant is negative,  "
                  << detJ[count] << '\n';
               std::string s = ss.str();
-              fprintf(stderr, "%s", s.c_str());
+              lion_eprint(1, "%s", s.c_str());
               isValid = false;
             }
             maxJ = std::max(detJ[count],maxJ);
@@ -536,7 +537,7 @@ static void writeMinTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               ss << "warning: Tet Jacobian Determinant is negative,  "
                  << detJ[count] << '\n';
               std::string s = ss.str();
-              fprintf(stderr, "%s", s.c_str());
+              lion_eprint(1, "%s", s.c_str());
               isValid = false;
             }
             maxJ = std::max(detJ[count],maxJ);
@@ -1089,7 +1090,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   PCU_Barrier();
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("%s vtk files %s written in %f seconds\n",
+    lion_oprint(1,"%s vtk files %s written in %f seconds\n",
         apf::Mesh::typeName[type],getPvtuDirectoryStr(prefix, type, n).c_str(),t1 - t0);
 }
 

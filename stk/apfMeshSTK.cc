@@ -150,9 +150,9 @@ static void buildElements(
   while ((e = m->iterate(it))) {
     ModelEntity* me = m->toModel(e);
     if (!models.invMaps[d].count(me)) {
-      std::cerr << "apf::copyMeshToBulk: element in unknown element block, "
-                << "geometry " << m->getModelType(me)
-                << ", " << m->getModelTag(me) << '\n';
+      lion_eprint(1,"apf::copyMeshToBulk: element in unknown element block, "
+                    "geometry %d, %d\n", m->getModelType(me),
+                    m->getModelTag(me));
       continue;
     }
     StkModel* model = models.invMaps[d][me];

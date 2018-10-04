@@ -1,5 +1,6 @@
 #include <parma.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <crv.h>
@@ -26,6 +27,7 @@ int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <out prefix> <reduction-factor>\n", argv[0]);

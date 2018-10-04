@@ -17,6 +17,7 @@ endfunction(test_exe_func)
 # Mesh validity/statistics utilities
 util_exe_func(verify verify.cc)
 util_exe_func(describe describe.cc)
+test_exe_func(outputcontrol outputcontrol.cc)
 test_exe_func(quality quality.cc)
 test_exe_func(writeVtxPtn writeVtxPtn.cc)
 test_exe_func(verify_2nd_order_shapes verify_2nd_order_shapes.cc)

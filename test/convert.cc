@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
 #include <SimUtil.h>
@@ -120,6 +121,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);

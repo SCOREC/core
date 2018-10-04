@@ -22,6 +22,7 @@
 
 #include <PCU.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdio>
 
 namespace ph {
@@ -205,7 +206,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
   else
 #endif
   {
-    printf("PUMI-based mesh doesn't have BL info. minfq is set to be 1.0\n");
+    lion_oprint(1,"PUMI-based mesh doesn't have BL info. minfq is set to be 1.0\n");
   }
 
 // restore mesh

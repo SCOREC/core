@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
@@ -26,6 +27,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+  lion_set_verbosity(1);
   ph::Input in;
   apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
   m->verify();
@@ -49,7 +51,7 @@ int main(int argc, char** argv)
     total_volume += process_element(x, sol);
   }
   m->end(it);
-  printf("volume %f\n", total_volume);
+  lion_oprint(1,"volume %f\n", total_volume);
   m->destroyNative();
   apf::destroyMesh(m);
 #ifdef HAVE_SIMMETRIX

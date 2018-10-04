@@ -372,6 +372,8 @@ mpi_test(fixDisconnected 4
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusDcFix4p/")
+mpi_test(outputcontrol 1
+  ./outputcontrol 2)
 mpi_test(quality 4
   ./quality
   "${MDIR}/torus.dmg"

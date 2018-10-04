@@ -6,6 +6,7 @@
 #include <maSize.h>
 #include <maMesh.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <sstream>
 
 static void writeStep(apf::Mesh* m, int i)
@@ -20,6 +21,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if ( argc != 3 ) {
     fprintf(stderr, "Usage: %s <model> <mesh>\n", argv[0]);
     return 0;

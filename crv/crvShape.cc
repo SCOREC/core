@@ -6,6 +6,7 @@
  */
 
 #include <PCU.h>
+#include <lionPrint.h>
 #include "crv.h"
 #include "crvAdapt.h"
 #include "crvShape.h"
@@ -666,13 +667,13 @@ void fixCrvElementShapes(Adapt* a)
     /* int numOpSuccess = fixLargeAngles(a); // update this */
     /* PCU_Add_Ints(&numOpSuccess,1); */
     /* if (PCU_Comm_Self() == 0) */
-    /*   printf("==> %d large angle fix operations succeeded.\n", numOpSuccess); */
+    /*   lion_oprint(1,"==> %d large angle fix operations succeeded.\n", numOpSuccess); */
     markCrvBadQuality(a);
     fixShortEdgeElements(a); // update this
     /* int numEdgeRemoved = fixShortEdgeElements(a); // update this */
     /* PCU_Add_Ints(&numEdgeRemoved,1); */
     /* if (PCU_Comm_Self() == 0) */
-    /*   printf("==> %d edges removal operations succeeded.\n", numEdgeRemoved); */
+    /*   lion_oprint(1,"==> %d edges removal operations succeeded.\n", numEdgeRemoved); */
     count = markCrvBadQuality(a);
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long

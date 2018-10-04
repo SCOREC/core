@@ -3,9 +3,11 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfZoltan.h>
 #include <parma.h>
 #include <pumi_version.h>
+#include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -157,7 +159,7 @@ void getConfig(int argc, char** argv)
   approach = argv[6];
   isLocal = atoi(argv[7]);
   if(!PCU_Comm_Self())
-    fprintf(stderr, "INPUTS model %s mesh %s out %s factor %d "
+    lion_eprint(1, "INPUTS model %s mesh %s out %s factor %d "
        "method %s approach %s isLocal %d\n", modelFile, meshFile, outFile,
        partitionFactor, method, approach, isLocal);
 }
@@ -168,8 +170,9 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if( !PCU_Comm_Self() )
-    printf("PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
+    lion_oprint(1, "PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
@@ -178,6 +181,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+  lion_set_verbosity(1);
   getConfig(argc,argv);
   if (PCU_Comm_Self() % partitionFactor)
     mymain(false);

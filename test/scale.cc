@@ -4,6 +4,7 @@
 #include <apfShape.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 namespace {
@@ -55,6 +56,7 @@ static void scale_mesh(apf::Mesh2* m, Scale const& s) {
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   if (argc != 8) print_usage(argv);
   const char* gfile = argv[1];

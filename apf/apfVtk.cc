@@ -16,6 +16,7 @@
 #include <sstream>
 #include <fstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include <stdint.h>
 #include <vector>
@@ -896,7 +897,7 @@ static void writeVtuFile(const char* prefix,
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
   {
-    printf("writeVtuFile into buffers: %f seconds\n", t1 - t0);
+    lion_oprint(1,"writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
   { //block forces std::ofstream destructor call
     std::ofstream file(fileNameAndPath.c_str());
@@ -906,7 +907,7 @@ static void writeVtuFile(const char* prefix,
   double t2 = PCU_Time();
   if (!PCU_Comm_Self())
   {
-    printf("writeVtuFile buffers to disk: %f seconds\n", t2 - t1);
+    lion_oprint(1,"writeVtuFile buffers to disk: %f seconds\n", t2 - t1);
   }
 }
 
@@ -961,7 +962,7 @@ void writeVtkFilesRunner(const char* prefix,
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
   {
-    printf("vtk files %s written in %f seconds\n", prefix, t1 - t0);
+    lion_oprint(1,"vtk files %s written in %f seconds\n", prefix, t1 - t0);
   }
   delete n;
 }

@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
@@ -160,6 +161,7 @@ int main( int argc, char* argv[])
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   GroupCode code;
   code.model = makeModel();
   code.meshFile = argv[1];

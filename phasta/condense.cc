@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -29,12 +30,12 @@ namespace {
   void checkInputs(int argc, char** argv) {
     if ( argc != 3 ) {
       if ( !PCU_Comm_Self() )
-        printf("Usage: %s <control .inp> <reduction-factor>\n", argv[0]);
+        lion_oprint(1,"Usage: %s <control .inp> <reduction-factor>\n", argv[0]);
       MPI_Finalize();
       exit(EXIT_FAILURE);
     }
     if ( !PCU_Comm_Self() )
-      printf("Input control file %s reduction factor %s\n", argv[1], argv[2]);
+      lion_oprint(1,"Input control file %s reduction factor %s\n", argv[1], argv[2]);
   }
 }
 
@@ -42,6 +43,7 @@ int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   PCU_Protect();
+  lion_set_verbosity(1);
   checkInputs(argc,argv);
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);

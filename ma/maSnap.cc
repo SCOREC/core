@@ -18,6 +18,7 @@
 #include "maDBG.h"
 #include <apfGeometry.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
 #include <algorithm>
 
@@ -530,7 +531,7 @@ void interpolateParametricCoordinates(
   else if (md == 2)
     interpolateParametricCoordinatesOnFace(m, g, t, a, b, p);
   else
-    printf("model entity must be an edge or a face\n");
+    lion_oprint(1,"model entity must be an edge or a face\n");
 }
 
 static void transferParametricBetween(

@@ -9,6 +9,7 @@
 #include "crvBezier.h"
 #include "crvTables.h"
 #include "crvQuality.h"
+#include <lionPrint.h>
 #include <cstdlib>
 
 namespace crv {
@@ -174,7 +175,7 @@ int countNumberInvalidElements(apf::Mesh2* m)
 
 void fail(const char* why)
 {
-  fprintf(stderr,"CRV FAILED: %s\n",why);
+  lion_eprint(1,"CRV FAILED: %s\n",why);
   abort();
 }
 

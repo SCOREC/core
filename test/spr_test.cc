@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
 
@@ -19,6 +20,7 @@ int main(int argc, char** argv)
   const int order = atoi(argv[4]);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile);
   if (mesh->findTag("coordinates_edg"))

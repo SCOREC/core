@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 namespace apf {
 
@@ -353,7 +354,7 @@ double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
 
     cosAngle = computeCosAngleInTri(m, pe, e1, e2, Q);
   } else {
-    printf("The requested angle computation is not implemented. Aborting! \n");
+    lion_oprint(1,"The requested angle computation is not implemented. Aborting! \n");
     abort();
   }
   return cosAngle;
@@ -439,7 +440,7 @@ void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
 
 void fail(const char* why)
 {
-  fprintf(stderr,"APF FAILED: %s\n",why);
+  lion_eprint(1,"APF FAILED: %s\n",why);
   abort();
 }
 

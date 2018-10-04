@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <maExtrude.h>
 #include <cstdlib>
 #include <iostream>
@@ -11,6 +12,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <nlayers> <out mesh>\n", argv[0]);

@@ -13,10 +13,10 @@ void test1() {
   Knapsack k = makeKnapsack(maxw, n, w, v);
   val = solve(k);
   printTable(k);
-  printf("val %lu\n", val);
+  lion_oprint(1,"val %lu\n", val);
   PCU_ALWAYS_ASSERT(val == 4);
   soln = getSolution(k, &size);
-  printf("size %lu soln[0] %lu\n", size, soln[0]);
+  lion_oprint(1,"size %lu soln[0] %lu\n", size, soln[0]);
   PCU_ALWAYS_ASSERT(size == 1);
   PCU_ALWAYS_ASSERT(soln[0] == 2);
   destroyKnapsack(k);
@@ -34,10 +34,10 @@ void test2() {
   Knapsack k = makeKnapsack(maxw, n, w, v);
   val = solve(k);
   printTable(k);
-  printf("val %lu\n", val);
+  lion_oprint(1,"val %lu\n", val);
   PCU_ALWAYS_ASSERT(val == 7);
   soln = getSolution(k, &size);
-  printf("size %lu soln[0] %lu soln[1] %lu\n", size, soln[0], soln[1]);
+  lion_oprint(1,"size %lu soln[0] %lu soln[1] %lu\n", size, soln[0], soln[1]);
   PCU_ALWAYS_ASSERT(size == 2);
   PCU_ALWAYS_ASSERT(soln[0] == 1 && soln[1] == 0);
   destroyKnapsack(k);

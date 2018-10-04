@@ -5,6 +5,7 @@
 #include <set>
 #include "ph.h"
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 /** \file phInput.cc
     \brief The implementation of Chef's interface for execution control */
@@ -193,7 +194,7 @@ static bool deprecated(stringset& old, std::string const& name)
 {
   if( old.count(name) ) {
     if( !PCU_Comm_Self() )
-      fprintf(stderr, "WARNING deprecated input \"%s\" ... "
+      lion_eprint(1, "WARNING deprecated input \"%s\" ... "
           "carefully check stderr and stdout for unexpected behavior\n",
           name.c_str());
     return true;

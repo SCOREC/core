@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdio>
 #include <cstdlib>
@@ -30,6 +31,7 @@ int main(int argc, char** argv) {
   int opt = atoi(argv[1]);
   MPI_Init(0,0);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   /* i'm avoiding conditionals inside for loops b/c
      i'm paranoid about the timings even though timings
      should not be affected by them at all... */

@@ -16,6 +16,7 @@
 #include <iostream>
 #include <cstring>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include "GenIterator.h"
 
 gModel::gModel(gmi_model* model) : TagHolder() 
@@ -59,12 +60,12 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
   }
   else
   {
-    if (!pumi_rank()) std::cerr<<"[PUMI ERROR] unsupported model type "<<model_type<<"\n";
+    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
     return NULL;
   }
 
   if (!PCU_Comm_Self() && filename)
-    printf("model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+    lion_oprint(1,"model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
 
   return pumi::instance()->model;
 }

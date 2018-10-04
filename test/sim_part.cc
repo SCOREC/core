@@ -23,6 +23,7 @@
 
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include <PCU.h>
+#include <lionPrint.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
