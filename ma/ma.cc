@@ -77,7 +77,6 @@ void adaptVerbose(Input* in, bool verbose)
       ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
   allowSplitCollapseOutsideLayer(a);
-  fixElementShapes(a);
   if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_fix");
   /* The following loop ensures that no long edges are left in
    * the mesh. Note that at this point all elements are of "good"
