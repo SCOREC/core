@@ -8,6 +8,7 @@
 #include <apf_stkConfig.h>
 #include <apfNumbering.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 #if HAS_STK

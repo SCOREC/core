@@ -1,7 +1,4 @@
-if(DEFINED TRIBITS_PACKAGE)
-  include(pkg_tribits.cmake)
-  return()
-endif()
+tribits_package(SCOREClion)
 
 # Package options
 option(LION_COMPRESS "Enable zlib compression [ON|OFF]" OFF)
@@ -27,21 +24,19 @@ set(HEADERS
   lionPrint.h
 )
 
-# Add the lion Library
-add_library(lion ${SOURCES})
+# THIS IS WHERE TRIBITS GETS HEADERS
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Include directories
-target_include_directories(lion INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
-    )
+#Library
+tribits_add_library(
+   lion
+   HEADERS ${HEADERS}
+   SOURCES ${SOURCES})
 
 # Do extra work if compression is enabled
 if(LION_COMPRESS)
-  target_include_directories(lion PRIVATE ${ZLIB_INCLUDE_DIR})
-  target_link_libraries(lion PUBLIC ${ZLIB_LIBRARIES})
+  include_directories(${ZLIB_INCLUDE_DIR})
+  target_link_libraries(lion ${ZLIB_LIBRARIES})
 endif()
 
-scorec_export_library(lion)
-
-bob_end_subdir()
+tribits_package_postprocess()
