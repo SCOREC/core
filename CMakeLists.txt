@@ -115,12 +115,12 @@ if(ENABLE_OMEGA_H)
 endif()
 
 # Include the SCOREC project packages
+add_subdirectory(lion)
 add_subdirectory(pcu)
 add_subdirectory(gmi)
 add_subdirectory(gmi_sim)
 add_subdirectory(can)
 add_subdirectory(mth)
-add_subdirectory(lion)
 add_subdirectory(apf)
 add_subdirectory(apf_sim)
 add_subdirectory(mds)
