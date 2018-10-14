@@ -22,6 +22,22 @@ static long markLayerElements(Adapt* a)
       ++n;
     }
   m->end(it);
+  // set LAYER flag for user defined boundary layer elements if they exist.
+  Tag* layerTag = m->findTag(a->input->userDefinedLayerTagName);
+  if (layerTag){
+    PCU_ALWAYS_ASSERT(m->getTagType(layerTag) == apf::Mesh::INT);
+    it = m->begin(meshDimension);
+    while ((e = m->iterate(it))) {
+      if (!m->hasTag(e, layerTag))
+      	continue;
+      int tagValue;
+      m->getIntTag(e, layerTag, &tagValue);
+      if (tagValue) {
+      	setFlagOnClosure(a, e, LAYER);
+      	n++;
+      }
+    }
+  }
   n = PCU_Add_Long(n);
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
