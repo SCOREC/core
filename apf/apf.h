@@ -81,14 +81,6 @@ class ReductionMax : public ReductionOp<T>
   T getNeutralElement() const { return std::numeric_limits<T>::min(); };
 };
 
-
-/* instantiate (is this necessary with the global consts below?) */
-template class ReductionSum<double>;
-template class ReductionMin<double>;
-template class ReductionMax<double>;
-
-
-
 /** \brief Destroys an apf::Mesh.
   *
   * \details This only destroys the apf::Mesh object, the underlying
