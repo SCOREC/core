@@ -595,12 +595,12 @@ int countComponents(Field* f);
   this macro fills in the boilerplate of a for() loop over this container.
  */
 #define APF_ITERATE(t,w,i) \
-for (t::iterator (i) = (w).begin(); \
+for (t::iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief APF_ITERATE for const containers. */
 #define APF_CONST_ITERATE(t,w,i) \
-for (t::const_iterator (i) = (w).begin(); \
+for (t::const_iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
