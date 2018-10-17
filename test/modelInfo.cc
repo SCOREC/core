@@ -2,7 +2,6 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <PCU.h>
-#include <iostream>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -10,6 +9,7 @@
 #include <MeshSim.h>
 #include <SimModel.h>
 #endif
+#include <cstdlib> //exit and exit_failure
 
 int main(int argc, char** argv)
 {
