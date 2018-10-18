@@ -35,9 +35,15 @@ mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
 mpi_test(verify_convert 1 ./verify_convert)
 
+mpi_test(modelInfo_dmg 1
+  ./modelInfo
+  "${MESHES}/cube/cube.dmg")
 if(ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
     ./inClosureOf_test
+    "${MESHES}/cube/cube.smd")
+  mpi_test(modelInfo_smd 1
+    ./modelInfo
     "${MESHES}/cube/cube.smd")
 endif(ENABLE_SIMMETRIX)
 

@@ -13,7 +13,7 @@
 #include "PCU.h"
 
 #define MIS_ITERATE(t,w,i) \
-for (t::iterator (i) = (w).begin(); \
+for (t::iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 #define MIS_FAIL(message)\

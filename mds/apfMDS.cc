@@ -924,7 +924,7 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
   }
 
   // Set classifn tags for vertices
-  for (uint i = 0; i < mesh->count(0); ++i) {
+  for (size_t i = 0; i < mesh->count(0); ++i) {
     if (isModelVert[i]) {
       tagData[0] = 0;
       tagData[1] = minAvbl;
@@ -1040,7 +1040,7 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
   }
 
   // Set classifn tags for vertices
-  for (uint i = 0; i < mesh->count(0); ++i) {
+  for (size_t i = 0; i < mesh->count(0); ++i) {
     if (isModelVert[i]) {
       tagData[0] = 0;
       tagData[1] = minAvbl;
