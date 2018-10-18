@@ -411,8 +411,13 @@ class Integrator
     /** \brief Construct an Integrator given an order of accuracy. */
     Integrator(int o);
     virtual ~Integrator();
-    /** \brief Run the Integrator over the local Mesh. */
-    void process(Mesh* m);
+    /** \brief Run the Integrator over the local Mesh.
+     * \param m mesh to integrate over
+     * \param dim optional dimension to integrate over. This defaults to
+     * integration over the mesh dimesion which may not be correct e.g. in the case
+     * of a 1D element embeded in 3D space.
+     * */
+    void process(Mesh* m, int dim=-1);
     /** \brief Run the Integrator over a Mesh Element. */
     void process(MeshElement* e);
     /** \brief User callback: element entry.
