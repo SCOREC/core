@@ -53,7 +53,12 @@ typedef std::map<int, MeshEntity*> GlobalToVert;
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
 /** \brief load an MDS mesh and model from file
-  \param modelfile will be passed to gmi_load to get the model */
+  \param modelfile will be passed to gmi_load to get the model
+  \note gmi_register_mesh and gmi_register_null need to be
+        called before this function. Also, gmi_register_sim
+        may also be called to enable loading of GeomSim, 
+        Parasolid, and ACIS models
+  */
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
 /** \brief load an MDS mesh from files
