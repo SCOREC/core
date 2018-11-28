@@ -15,9 +15,9 @@
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
 #include <SimMeshTools.h>
-//#ifdef HAVE_SIMADVMESHING
-#include <SimAdvMeshing.h>
-//#endif
+#ifdef HAVE_SIMADVMESHING
+  #include <SimAdvMeshing.h>
+#endif
 #endif
 
 #include <PCU.h>
@@ -143,7 +143,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
     /* not support other mesh region type */
     if (m->getType(e) != apf::Mesh::TET)
       continue;
-#ifdef HAVE_SIMMETRIX
+#ifdef HAVE_SIMADVMESHING
     if (EN_isBLEntity(reinterpret_cast<pEntity>(e)))
       continue;
 #endif
@@ -156,7 +156,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
 
 // measure mesh face in layered mesh
   minfq = 1.0;
-#ifdef HAVE_SIMMETRIX
+#ifdef HAVE_SIMADVMESHING
   if (in.simmetrixMesh == 1) {
 // get simmetrix mesh
     apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(m);
