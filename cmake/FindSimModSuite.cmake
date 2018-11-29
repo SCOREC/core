@@ -81,6 +81,7 @@ if( (SIM_DOT_VERSION VERSION_LESS MIN_VALID_SIM_VERSION) OR
     "invalid Simmetrix version: ${SIM_DOT_VERSION}, \
     valid versions are ${MIN_VALID_SIM_VERSION} to ${MAX_VALID_SIM_VERSION}")
 endif()
+message(STATUS "Building with SimModSuite ${SIM_DOT_VERSION}")
 
 set(SIMMODSUITE_LIBS "")
 

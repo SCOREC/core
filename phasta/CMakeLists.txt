@@ -23,7 +23,7 @@ set(SOURCES
   phiotimer.cc
 )
 
-if(ENABLE_SIMMETRIX AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(ENABLE_SIMMETRIX)
   if(SIM_DOT_VERSION VERSION_GREATER 12.0.180605)
     set(SOURCES ${SOURCES} splitMeshOnGFace_2arg.cpp)
   else()
@@ -69,6 +69,11 @@ set(HEADERS
 
 # Add the ph library
 add_library(ph ${SOURCES})
+
+# Add the SimAdvMeshing flag
+if(SIMMODSUITE_SimAdvMeshing_FOUND) # simmetrix enabled
+  target_compile_definitions(ph PRIVATE -DHAVE_SIMADVMESHING)
+endif()
 
 #determine which timer to use based on the target system and compiler
 if(CMAKE_SYSTEM_NAME MATCHES BlueGeneQ*)
