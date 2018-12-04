@@ -33,12 +33,11 @@ static void getCounts(Output& o)
 static void checkLoadBalance(Output& o)
 {
   int sumOwnedNodes = PCU_Add_Int(o.nOwnedNodes);
-  double vlbratio = o.nOverlapNodes * PCU_Comm_Peers() / (double) sumOwnedNodes;
+  int sumAllNodes = PCU_Add_Int(o.nOverlapNodes);
+  double vlbratio = o.nOverlapNodes * PCU_Comm_Peers() / (double) sumAllNodes;
   double vlbratio_max = PCU_Max_Double(vlbratio);
   if (!PCU_Comm_Self())
     lion_oprint(1,"max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
-
-  int sumAllNodes = PCU_Add_Int(o.nOverlapNodes);
   if (!PCU_Comm_Self())
     lion_oprint(1,"ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
 
