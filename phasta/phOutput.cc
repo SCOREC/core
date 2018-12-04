@@ -32,9 +32,10 @@ static void getCounts(Output& o)
 
 static void checkLoadBalance(Output& o)
 {
-  int sumOwnedNodes = PCU_Add_Int(o.nOwnedNodes);
-  int sumAllNodes = PCU_Add_Int(o.nOverlapNodes);
-  double vlbratio = o.nOverlapNodes * PCU_Comm_Peers() / (double) sumAllNodes;
+  long sumOwnedNodes = PCU_Add_Long(o.nOwnedNodes);
+  long sumAllNodes = PCU_Add_Long(o.nOverlapNodes);
+  double avgNodes = static_cast<double>(sumAllNodes) / PCU_Comm_Peers();
+  double vlbratio = o.nOverlapNodes / avgNodes;
   double vlbratio_max = PCU_Max_Double(vlbratio);
   if (!PCU_Comm_Self())
     lion_oprint(1,"max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
@@ -43,8 +44,9 @@ static void checkLoadBalance(Output& o)
 
   int dim = o.mesh->getDimension();
   int numElms = o.mesh->count(dim);
-  int sumElms = PCU_Add_Int(numElms);
-  double elbratio = numElms * PCU_Comm_Peers() / (double) sumElms;
+  long sumElms = PCU_Add_Long(numElms);
+  double avgElms = static_cast<double>(sumElms) / PCU_Comm_Peers();
+  double elbratio = numElms / avgElms;
   double elbratio_max = PCU_Max_Double(elbratio);
   if (!PCU_Comm_Self())
     lion_oprint(1,"max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
