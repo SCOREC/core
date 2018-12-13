@@ -684,6 +684,10 @@ void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
 void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
            const ReductionOp<double>& sum = ReductionSum<double>());
 
+/** \brief Checks whether a Field/Numbering/GlobalNumbering is complete and
+ * therefore printable to visualization files
+ */
+bool isPrintable(Field* f);
 
 /** \brief Declare failure of code inside APF.
   \details This function prints the string as an APF
