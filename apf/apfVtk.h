@@ -35,9 +35,7 @@ class HasAll : public FieldOp
 };
 
 
-
 bool isPrintable(FieldBase* f);
-
 
 } // namespace apf
 
