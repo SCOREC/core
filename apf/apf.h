@@ -685,7 +685,7 @@ void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
            const ReductionOp<double>& sum = ReductionSum<double>());
 
 /** \brief Checks whether a Field/Numbering/GlobalNumbering is complete and
- * therefore printable to visualization files
+ * therefore printable to visualization files.  This is a collective operation.
  */
 bool isPrintable(Field* f);
 
