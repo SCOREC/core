@@ -39,6 +39,11 @@ mpi_test(test_integrator 1
          "${MESHES}/cube/cube.dmg"
          "${MESHES}/cube/pumi11/cube.smb"
          )
+mpi_test(test_matrix_gradient 1
+         ./test_matrix_gradient
+         "${MESHES}/cube/cube.dmg"
+         "${MESHES}/cube/pumi11/cube.smb"
+         )
 
 mpi_test(modelInfo_dmg 1
   ./modelInfo
