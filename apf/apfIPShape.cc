@@ -68,6 +68,12 @@ class IPShape : public IPBase
 
 FieldShape* getIPShape(int dimension, int order)
 {
+  static IPShape d1o1(1,1);
+  static IPShape d1o2(1,2);
+  static IPShape d1o3(1,3);
+  static IPShape d1o4(1,4);
+  static IPShape d1o5(1,5);
+  static IPShape d1o6(1,6);
   static IPShape d2o1(2,1);
   static IPShape d2o2(2,2);
   static IPShape d2o3(2,3);
@@ -81,8 +87,8 @@ FieldShape* getIPShape(int dimension, int order)
   static IPShape d3o6(3,6);
   static IPShape d3o7(3,7);
   static IPShape* table[4][8] =
-  {{0,0,0,0,0}//vertex
-  ,{0,0,0,0,0}//edge
+  {{0,0,0,0,0,0,0,0}//vertex
+  ,{0,&d1o1,&d1o2,&d1o3,&d1o4,&d1o5,&d1o6,0}//edge
   ,{0,&d2o1,&d2o2,&d2o3,&d2o4,&d2o5,0,0}//face
   ,{0,&d3o1,&d3o2,&d3o3,&d3o4,&d3o5,&d3o6,&d3o7}//region
   };
