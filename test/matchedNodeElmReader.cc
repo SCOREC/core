@@ -38,6 +38,7 @@ void getNumElms(FILE* f, unsigned& elms) {
     if( ! skipLine(line) )
       elms++;
   }
+  delete [] line;
 }
 
 void getNumVerts(FILE* f, unsigned& verts) {
@@ -49,6 +50,7 @@ void getNumVerts(FILE* f, unsigned& verts) {
     if( ! skipLine(line) )
       verts++;
   }
+  delete [] line;
 }
 
 void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
