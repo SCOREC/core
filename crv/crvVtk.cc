@@ -10,6 +10,7 @@
 #include "apfDynamicVector.h"
 #include "apfFieldData.h"
 #include "apfMDS.h"
+#include "apfVtk.h"
 #include <sstream>
 #include <fstream>
 #include <pcu_util.h>
@@ -28,34 +29,6 @@ namespace crv {
 /* this file has all the VTK commands for curved meshing,
    it is more meant as a debugging tool as proper visualization
    does not exist in paraview past second order */
-
-class HasAll : public apf::FieldOp
-{
-  public:
-      virtual bool inEntity(apf::MeshEntity* e)
-      {
-        if (!f->getData()->hasEntity(e) && f->countNodesOn(e))
-          ok = false;
-        return false;
-      }
-      bool run(apf::FieldBase* f_)
-      {
-        f = f_;
-        ok = true;
-        this->apply(f);
-        return ok;
-      }
-  private:
-    bool ok;
-    apf::FieldBase* f;
-};
-
-static bool isPrintable(apf::FieldBase* f)
-{
-  HasAll op;
-  return op.run(f);
-}
-
 static void describeArray(
     std::ostream& file,
     const char* name,
