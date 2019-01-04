@@ -53,28 +53,30 @@ void getNumVerts(FILE* f, unsigned& verts) {
   delete [] line;
 }
 
-void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
+void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordinates) {
+  const int self = PCU_Comm_Self();
+  const int peers = PCU_Comm_Peers();
+  localnumvtx = numvtx/peers;
+  if( self == peers-1 ) //last rank
+    if( localnumvtx*peers < numvtx )
+      localnumvtx += numvtx - localnumvtx*peers;
+  const long firstVtx = PCU_Exscan_Long(localnumvtx);
+  const long lastVtx = firstVtx+localnumvtx;
+  fprintf(stderr, "%d localnumvtx %u firstVtx %ld lastVtx %ld\n",
+      self, localnumvtx, firstVtx, lastVtx);
+  *coordinates = new double[localnumvtx*3];
   rewind(f);
-  const double huge = 1024*1024;
-  double min[3] = {huge,huge,huge};
-  double max[3] = {-huge,-huge,-huge};
+  int vidx = 0;
   for(unsigned i=0; i<numvtx; i++) {
     int id;
-    gmi_fscanf(f, 1, "%d", &id);
-    for(unsigned j=0; j<3; j++) {
-      double pos = 0;
-      gmi_fscanf(f, 1, "%lf", &pos);
-      coordinates[i*3+j] = pos;
-      if( pos < min[j] )
-        min[j] = pos;
-      if( pos > max[j] )
-        max[j] = pos;
+    double pos[3];
+    gmi_fscanf(f, 4, "%d %lf %lf %lf", &id, pos+0, pos+1, pos+2);
+    if( i > firstVtx && i < lastVtx ) {
+      for(unsigned j=0; j<3; j++)
+        (*coordinates)[vidx*3+j] = pos[j];
+      vidx++;
     }
   }
-  char d[3] = {'x','y','z'};
-  fprintf(stderr, "mesh bounding box:\n");
-  for(unsigned i=0; i<3; i++)
-    fprintf(stderr, "%c %lf %lf \n", d[i], min[i], max[i]);
 }
 
 void readMatches(FILE* f, unsigned numvtx, int* matches) {
@@ -113,6 +115,7 @@ struct MeshInfo {
   int* matches;
   unsigned elementType;
   unsigned numVerts;
+  unsigned localNumVerts;
   unsigned numElms;
   unsigned numVtxPerElm;
 };
@@ -129,8 +132,7 @@ void readMesh(const char* meshfilename,
   getNumVerts(fc,mesh.numVerts);
   fprintf(stderr, "numElms %u numVerts %u\n",
       mesh.numElms, mesh.numVerts);
-  mesh.coords = new double[mesh.numVerts*3];
-  readCoords(fc, mesh.numVerts, mesh.coords);
+  readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
   if( strcmp(matchfilename, "NULL") ) {
     FILE* fm = fopen(matchfilename, "r");
@@ -192,7 +194,7 @@ int main(int argc, char** argv)
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
   apf::deriveMdsModel(mesh);
-  apf::setCoords(mesh, m.coords, m.numVerts, outMap);
+  apf::setCoords(mesh, m.coords, m.localNumVerts, outMap);
   delete [] m.coords;
   if( isMatched ) {
     setMatches(mesh,m.numVerts,m.matches,outMap);
