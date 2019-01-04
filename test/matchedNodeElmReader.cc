@@ -27,7 +27,7 @@ bool skipLine(char* line) {
   // lines that start with either a '#' or a single white space
   // are skipped
   return (line[0] == '#' || line[0] == ' ' );
-} 
+}
 
 void getNumElms(FILE* f, unsigned& elms) {
   rewind(f);
@@ -130,11 +130,13 @@ void readMesh(const char* meshfilename,
   mesh.coords = new double[mesh.numVerts*3];
   readCoords(fc, mesh.numVerts, mesh.coords);
   fclose(fc);
-  FILE* fm = fopen(matchfilename, "r");
-  PCU_ALWAYS_ASSERT(fm);
-  mesh.matches = new int[mesh.numVerts];
-  readMatches(fm, mesh.numVerts, mesh.matches);
-  fclose(fm);
+  if( strcmp(matchfilename, "NULL") ) {
+    FILE* fm = fopen(matchfilename, "r");
+    PCU_ALWAYS_ASSERT(fm);
+    mesh.matches = new int[mesh.numVerts];
+    readMatches(fm, mesh.numVerts, mesh.matches);
+    fclose(fm);
+  }
   mesh.numVtxPerElm = 8; //hack!
   mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
   readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.numVerts, mesh.elements);
@@ -174,8 +176,15 @@ int main(int argc, char** argv)
   MeshInfo m;
   readMesh(argv[1],argv[2],argv[3],m);
 
+  bool isMatched = true;
+  if( !strcmp(argv[3], "NULL") )
+    isMatched = false;
+
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "isMatched %d\n", isMatched);
+
   const int dim = 3;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, true);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, isMatched);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.numElms, m.elementType, outMap);
   delete [] m.elements;
@@ -183,8 +192,10 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
-  setMatches(mesh,m.numVerts,m.matches,outMap);
-  delete [] m.matches;
+  if( isMatched ) {
+    setMatches(mesh,m.numVerts,m.matches,outMap);
+    delete [] m.matches;
+  }
   outMap.clear();
   fprintf(stderr, "verifying mesh...\n");
   mesh->verify();
