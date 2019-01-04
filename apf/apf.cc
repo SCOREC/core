@@ -280,6 +280,13 @@ void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value)
   value = element->getValue(param);
 }
 
+
+void getMatrixGrad(Element* e, Vector3 const& param, Vector<27>& deriv)
+{
+  MatrixElement* element = static_cast<MatrixElement*>(e);
+  return element->grad(param,deriv);
+}
+
 void getComponents(Element* e, Vector3 const& param, double* components)
 {
   e->getComponents(param,components);

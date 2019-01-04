@@ -18,6 +18,7 @@ class MatrixElement : public ElementOf<Matrix3x3>
 {
   public:
     MatrixElement(MatrixField* f, VectorElement* e);
+    void grad(Vector3 const& xi, Vector<27>& g);
     virtual ~MatrixElement();
 };
 
