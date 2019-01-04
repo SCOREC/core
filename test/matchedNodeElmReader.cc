@@ -242,12 +242,11 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  //gmi_model* model = gmi_load(".null");
+  gmi_model* model = gmi_load(".null");
 
   MeshInfo m;
   readMesh(argv[1],argv[2],m);
 
-  /*
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
   apf::GlobalToVert outMap;
@@ -266,7 +265,6 @@ int main(int argc, char** argv)
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  */
   PCU_Comm_Free();
   MPI_Finalize();
 }
