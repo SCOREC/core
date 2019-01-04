@@ -15,6 +15,8 @@ unsigned getElmType(int numVtxPerElm) {
     return apf::Mesh::TET;
   } else if (numVtxPerElm == 6) {
     return apf::Mesh::PRISM;
+  } else if (numVtxPerElm == 8) {
+    return apf::Mesh::HEX;
   } else {
     fprintf(stderr, "unknown element type in %s\n", __func__);
     exit(EXIT_FAILURE);
@@ -28,6 +30,8 @@ bool skipLine(char* line) {
 } 
 
 void getNumElms(FILE* f, unsigned& elms) {
+  rewind(f);
+  elms = 0;
   size_t linelimit = 1024;
   char* line = new char[linelimit];
   while( gmi_getline(&line,&linelimit,f) != -1 ) {
@@ -36,11 +40,25 @@ void getNumElms(FILE* f, unsigned& elms) {
   }
 }
 
+void getNumVerts(FILE* f, unsigned& verts) {
+  rewind(f);
+  verts = 0;
+  size_t linelimit = 1024;
+  char* line = new char[linelimit];
+  while( gmi_getline(&line,&linelimit,f) != -1 ) {
+    if( ! skipLine(line) )
+      verts++;
+  }
+}
+
 void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
+  rewind(f);
   const double huge = 1024*1024;
   double min[3] = {huge,huge,huge};
   double max[3] = {-huge,-huge,-huge};
   for(unsigned i=0; i<numvtx; i++) {
+    int id;
+    gmi_fscanf(f, 1, "%d", &id);
     for(unsigned j=0; j<3; j++) {
       double pos = 0;
       gmi_fscanf(f, 1, "%lf", &pos);
@@ -57,15 +75,21 @@ void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
     fprintf(stderr, "%c %lf %lf \n", d[i], min[i], max[i]);
 }
 
-void readElements(FILE* f, unsigned numelms, int numVtxPerElm,
+void readElements(FILE* f, unsigned numelms, unsigned numVtxPerElm,
     unsigned numVerts, int* elements) {
-  unsigned i;
+  rewind(f);
+  unsigned i, j;
   std::map<int, int> count;
-  for (i = 0; i < numelms*numVtxPerElm; i++) {
-    int vtxid;
-    gmi_fscanf(f, 1, "%u", &vtxid);
-    elements[i] = --vtxid; //export from matlab using 1-based indices
-    count[elements[i]]++;
+  for (i = 0; i < numelms; i++) {
+    int elmid;
+    gmi_fscanf(f, 1, "%u", &elmid);
+    for (j = 0; j < numVtxPerElm; j++) {
+      int elmVtxIdx = i*numVtxPerElm+j;
+      int vtxid;
+      gmi_fscanf(f, 1, "%u", &vtxid);
+      elements[elmVtxIdx] = --vtxid; //export from matlab using 1-based indices
+      count[elements[elmVtxIdx]]++;
+    }
   }
   PCU_ALWAYS_ASSERT(count.size() == numVerts);
 }
@@ -82,19 +106,19 @@ struct MeshInfo {
 void readMesh(const char* meshfilename, const char* coordfilename, MeshInfo& mesh) {
   FILE* f = fopen(meshfilename, "r");
   PCU_ALWAYS_ASSERT(f);
-  getNumElms(f,mesh.numElms);
-  fprintf(stderr, "numElms %u\n",
-      mesh.numElms);
-  (void)coordfilename;
-  /*
-  mesh.coords = new double[mesh.numVerts*3];
   FILE* fc = fopen(coordfilename, "r");
+  PCU_ALWAYS_ASSERT(fc);
+  getNumElms(f,mesh.numElms);
+  getNumVerts(fc,mesh.numVerts);
+  fprintf(stderr, "numElms %u numVerts %u\n",
+      mesh.numElms, mesh.numVerts);
+  mesh.coords = new double[mesh.numVerts*3];
   readCoords(fc, mesh.numVerts, mesh.coords);
   fclose(fc);
+  mesh.numVtxPerElm = 8; //hack!
   mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
   readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.numVerts, mesh.elements);
   mesh.elementType = getElmType(mesh.numVtxPerElm);
-  */
   fclose(f);
 }
 
