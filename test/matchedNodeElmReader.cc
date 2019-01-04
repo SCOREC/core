@@ -199,7 +199,6 @@ int main(int argc, char** argv)
     delete [] m.matches;
   }
   outMap.clear();
-  fprintf(stderr, "verifying mesh...\n");
   mesh->verify();
 
   gmi_write_dmg(model, argv[4]);
