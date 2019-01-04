@@ -75,6 +75,17 @@ void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
     fprintf(stderr, "%c %lf %lf \n", d[i], min[i], max[i]);
 }
 
+void readMatches(FILE* f, unsigned numvtx, int* matches) {
+  rewind(f);
+  for(unsigned i=0; i<numvtx; i++) {
+    int ignored, matchedVtx;
+    gmi_fscanf(f, 2, "%d %d", &ignored, &matchedVtx); //export from matlab using 1-based indices
+    PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
+        ( matchedVtx > 1 && matchedVtx <= static_cast<int>(numvtx) ));
+    matches[i] = matchedVtx--;
+  }
+}
+
 void readElements(FILE* f, unsigned numelms, unsigned numVtxPerElm,
     unsigned numVerts, int* elements) {
   rewind(f);
@@ -97,13 +108,17 @@ void readElements(FILE* f, unsigned numelms, unsigned numVtxPerElm,
 struct MeshInfo {
   double* coords;
   int* elements;
+  int* matches;
   unsigned elementType;
   unsigned numVerts;
   unsigned numElms;
   unsigned numVtxPerElm;
 };
 
-void readMesh(const char* meshfilename, const char* coordfilename, MeshInfo& mesh) {
+void readMesh(const char* meshfilename,
+    const char* coordfilename,
+    const char* matchfilename,
+    MeshInfo& mesh) {
   FILE* f = fopen(meshfilename, "r");
   PCU_ALWAYS_ASSERT(f);
   FILE* fc = fopen(coordfilename, "r");
@@ -115,6 +130,11 @@ void readMesh(const char* meshfilename, const char* coordfilename, MeshInfo& mes
   mesh.coords = new double[mesh.numVerts*3];
   readCoords(fc, mesh.numVerts, mesh.coords);
   fclose(fc);
+  FILE* fm = fopen(matchfilename, "r");
+  PCU_ALWAYS_ASSERT(fm);
+  mesh.matches = new int[mesh.numVerts];
+  readMatches(fm, mesh.numVerts, mesh.matches);
+  fclose(fm);
   mesh.numVtxPerElm = 8; //hack!
   mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
   readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.numVerts, mesh.elements);
@@ -122,6 +142,15 @@ void readMesh(const char* meshfilename, const char* coordfilename, MeshInfo& mes
   fclose(f);
 }
 
+void setMatches(apf::Mesh2* m, unsigned numVerts, int* matches,
+    apf::GlobalToVert& globToVtx) {
+  int self = PCU_Comm_Self();
+  for(unsigned i=0; i<numVerts; i++) {
+    if( matches[i] != -1 ) {
+      m->addMatch(globToVtx[i], self, globToVtx[matches[i]]);
+    }
+  }
+}
 
 int main(int argc, char** argv)
 {
@@ -143,10 +172,10 @@ int main(int argc, char** argv)
   gmi_model* model = gmi_load(".null");
 
   MeshInfo m;
-  readMesh(argv[1],argv[2],m);
+  readMesh(argv[1],argv[2],argv[3],m);
 
   const int dim = 3;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, true);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.numElms, m.elementType, outMap);
   delete [] m.elements;
@@ -154,7 +183,10 @@ int main(int argc, char** argv)
   apf::deriveMdsModel(mesh);
   apf::setCoords(mesh, m.coords, m.numVerts, outMap);
   delete [] m.coords;
+  setMatches(mesh,m.numVerts,m.matches,outMap);
+  delete [] m.matches;
   outMap.clear();
+  fprintf(stderr, "verifying mesh...\n");
   mesh->verify();
 
   gmi_write_dmg(model, argv[4]);
