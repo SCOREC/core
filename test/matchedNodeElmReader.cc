@@ -77,7 +77,7 @@ void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordi
     int id;
     double pos[3];
     gmi_fscanf(f, 4, "%d %lf %lf %lf", &id, pos+0, pos+1, pos+2);
-    if( i > firstVtx && i < lastVtx ) {
+    if( i >= firstVtx && i < lastVtx ) {
       for(unsigned j=0; j<3; j++)
         (*coordinates)[vidx*3+j] = pos[j];
       vidx++;
