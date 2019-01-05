@@ -68,8 +68,6 @@ void getNumVerts(FILE* f, unsigned& verts) {
 void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordinates) {
   long firstVtx, lastVtx;
   getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
-  fprintf(stderr, "%d localnumvtx %u firstVtx %ld lastVtx %ld\n",
-      PCU_Comm_Self(), localnumvtx, firstVtx, lastVtx);
   *coordinates = new double[localnumvtx*3];
   rewind(f);
   int vidx = 0;
@@ -100,8 +98,6 @@ void readElements(FILE* f, unsigned numelms, unsigned numVtxPerElm,
     unsigned& localNumElms, int** elements) {
   long firstElm, lastElm;
   getLocalRange(numelms, localNumElms, firstElm, lastElm);
-  fprintf(stderr, "%d localNumElms %u firstElm %ld lastElm %ld\n",
-      PCU_Comm_Self(), localNumElms, firstElm, lastElm);
   *elements = new int[localNumElms*numVtxPerElm];
   rewind(f);
   unsigned i, j;
@@ -145,8 +141,8 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(fc);
   getNumElms(f,mesh.numElms);
   getNumVerts(fc,mesh.numVerts);
-  fprintf(stderr, "numElms %u numVerts %u\n",
-      mesh.numElms, mesh.numVerts);
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "numElms %u numVerts %u\n", mesh.numElms, mesh.numVerts);
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
   if( strcmp(matchfilename, "NULL") ) {
@@ -192,6 +188,7 @@ int main(int argc, char** argv)
 
   gmi_model* model = gmi_load(".null");
 
+  double t0 = PCU_Time();
   MeshInfo m;
   readMesh(argv[1],argv[2],argv[3],m);
 
@@ -216,6 +213,8 @@ int main(int argc, char** argv)
     delete [] m.matches;
   }
   outMap.clear();
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
   mesh->verify();
 
   gmi_write_dmg(model, argv[4]);
