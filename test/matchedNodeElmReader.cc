@@ -10,6 +10,18 @@
 #include <cstdlib>
 #include <string.h>
 
+void getLocalRange(unsigned total, unsigned& local,
+    long& first, long& last) {
+  const int self = PCU_Comm_Self();
+  const int peers = PCU_Comm_Peers();
+  local = total/peers;
+  if( self == peers-1 ) //last rank
+    if( local*peers < total )
+      local += total - local*peers;
+  first = PCU_Exscan_Long(local);
+  last = first+local;
+}
+
 unsigned getElmType(int numVtxPerElm) {
   if (numVtxPerElm == 4) {
     return apf::Mesh::TET;
@@ -54,16 +66,10 @@ void getNumVerts(FILE* f, unsigned& verts) {
 }
 
 void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordinates) {
-  const int self = PCU_Comm_Self();
-  const int peers = PCU_Comm_Peers();
-  localnumvtx = numvtx/peers;
-  if( self == peers-1 ) //last rank
-    if( localnumvtx*peers < numvtx )
-      localnumvtx += numvtx - localnumvtx*peers;
-  const long firstVtx = PCU_Exscan_Long(localnumvtx);
-  const long lastVtx = firstVtx+localnumvtx;
+  long firstVtx, lastVtx;
+  getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
   fprintf(stderr, "%d localnumvtx %u firstVtx %ld lastVtx %ld\n",
-      self, localnumvtx, firstVtx, lastVtx);
+      PCU_Comm_Self(), localnumvtx, firstVtx, lastVtx);
   *coordinates = new double[localnumvtx*3];
   rewind(f);
   int vidx = 0;
