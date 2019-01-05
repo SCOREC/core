@@ -97,22 +97,30 @@ void readMatches(FILE* f, unsigned numvtx, int* matches) {
 }
 
 void readElements(FILE* f, unsigned numelms, unsigned numVtxPerElm,
-    unsigned numVerts, int* elements) {
+    unsigned& localNumElms, int** elements) {
+  long firstElm, lastElm;
+  getLocalRange(numelms, localNumElms, firstElm, lastElm);
+  fprintf(stderr, "%d localNumElms %u firstElm %ld lastElm %ld\n",
+      PCU_Comm_Self(), localNumElms, firstElm, lastElm);
+  *elements = new int[localNumElms*numVtxPerElm];
   rewind(f);
   unsigned i, j;
-  std::map<int, int> count;
+  unsigned elmIdx = 0;
+  int* elmVtx = new int[numVtxPerElm];
   for (i = 0; i < numelms; i++) {
-    int elmid;
-    gmi_fscanf(f, 1, "%u", &elmid);
-    for (j = 0; j < numVtxPerElm; j++) {
-      int elmVtxIdx = i*numVtxPerElm+j;
-      int vtxid;
-      gmi_fscanf(f, 1, "%u", &vtxid);
-      elements[elmVtxIdx] = --vtxid; //export from matlab using 1-based indices
-      count[elements[elmVtxIdx]]++;
+    int ignored;
+    gmi_fscanf(f, 1, "%u", &ignored);
+    for (j = 0; j < numVtxPerElm; j++)
+      gmi_fscanf(f, 1, "%u", elmVtx+j);
+    if (i >= firstElm && i < lastElm) {
+      for (j = 0; j < numVtxPerElm; j++) {
+        const unsigned elmVtxIdx = elmIdx*numVtxPerElm+j;
+        (*elements)[elmVtxIdx] = --(elmVtx[j]); //export from matlab using 1-based indices
+      }
+      elmIdx++;
     }
   }
-  PCU_ALWAYS_ASSERT(count.size() == numVerts);
+  delete [] elmVtx;
 }
 
 struct MeshInfo {
@@ -123,6 +131,7 @@ struct MeshInfo {
   unsigned numVerts;
   unsigned localNumVerts;
   unsigned numElms;
+  unsigned localNumElms;
   unsigned numVtxPerElm;
 };
 
@@ -148,8 +157,8 @@ void readMesh(const char* meshfilename,
     fclose(fm);
   }
   mesh.numVtxPerElm = 8; //hack!
-  mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
-  readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.numVerts, mesh.elements);
+  readElements(f, mesh.numElms, mesh.numVtxPerElm,
+      mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.numVtxPerElm);
   fclose(f);
 }
@@ -196,7 +205,7 @@ int main(int argc, char** argv)
   const int dim = 3;
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, isMatched);
   apf::GlobalToVert outMap;
-  apf::construct(mesh, m.elements, m.numElms, m.elementType, outMap);
+  apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
   apf::deriveMdsModel(mesh);
