@@ -17,6 +17,8 @@
 #include "apfArrayData.h"
 #include "apfTagData.h"
 #include "apfUserData.h"
+#include "apfVtk.h"
+#include "apfNumberingClass.h"
 #include <cstdio>
 #include <cstdlib>
 #include <pcu_util.h>
@@ -278,6 +280,13 @@ void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value)
   value = element->getValue(param);
 }
 
+
+void getMatrixGrad(Element* e, Vector3 const& param, Vector<27>& deriv)
+{
+  MatrixElement* element = static_cast<MatrixElement*>(e);
+  return element->grad(param,deriv);
+}
+
 void getComponents(Element* e, Vector3 const& param, double* components)
 {
   e->getComponents(param,components);
@@ -436,7 +445,12 @@ void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
   reduceFieldData(f->getData(), shr, delete_shr, sum);
 }
 
-
+bool isPrintable(Field* f)
+{
+  // cast to FieldBase and call the other method
+  FieldBase* f2 = f;
+  return isPrintable(f2);
+}
 
 void fail(const char* why)
 {

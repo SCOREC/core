@@ -74,6 +74,8 @@ Field* getField(Numbering* n);
 FieldShape* getShape(Numbering* n);
 /** \brief get the name of a Numbering */
 const char* getName(Numbering* n);
+
+bool isPrintable(Numbering* f);
 /** \brief get the mesh associated with a Numbering */
 Mesh* getMesh(Numbering* n);
 int countComponents(Numbering* n);
@@ -166,6 +168,7 @@ GlobalNumbering* createGlobalNumbering(Field* f);
 
 FieldShape* getShape(GlobalNumbering* n);
 const char* getName(GlobalNumbering* n);
+bool isPrintable(GlobalNumbering* f);
 /** \brief get the mesh associated with a global numbering */
 Mesh* getMesh(GlobalNumbering* n);
 /** \brief get the components associated with a global numbering */

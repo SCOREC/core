@@ -16,6 +16,7 @@ set(SOURCES
   apfDynamicMatrix.cc
   apfDynamicVector.cc
   apfMatrixField.cc
+  apfMatrixElement.cc
   apfMesh.cc
   apfMesh2.cc
   apfMigrate.cc

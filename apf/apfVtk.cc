@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <stdint.h>
 #include <vector>
+#include <apfVtk.h>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -29,27 +30,6 @@
 // ===============================
 
 namespace apf {
-
-class HasAll : public FieldOp
-{
-  public:
-    virtual bool inEntity(MeshEntity* e)
-    {
-      if (!f->getData()->hasEntity(e))
-        ok = false;
-      return false;
-    }
-    bool run(FieldBase* f_)
-    {
-      f = f_;
-      ok = true;
-      this->apply(f);
-      return ok;
-    }
-  private:
-    bool ok;
-    FieldBase* f;
-};
 
 static bool shouldPrint(
     FieldBase* f,
@@ -63,7 +43,7 @@ static bool shouldPrint(
   return print;
 }
 
-static bool isPrintable(FieldBase* f)
+bool isPrintable(FieldBase* f)
 {
   HasAll op;
   return PCU_And(op.run(f));

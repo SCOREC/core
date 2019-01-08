@@ -339,8 +339,8 @@ void getCurl(Element* e, Vector3 const& param, Vector3& curl);
   * \param param The local coordinates in the element.
   * \param deriv The gradient matrix at that point.
   * \details Note: The return parameter component deriv[j][i] stores the
-  * value (grad u)_{i,j} = \frac{\partial u_i} / \frac{\partial x_j},
-  * where u is the vector field of interest, i is the vector index,
+  * value $(grad u)_{i,j} = \frac{\partial u_i} / \frac{\partial x_j}$,
+  * where $u$ is the vector field of interest, i is the vector index,
   * and j is the derivative index.
   */
 void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
@@ -351,6 +351,13 @@ void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
   * \param value The field value at that point.
   */
 void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value);
+
+/** \brief get the gradient of a matrix field
+ * \param param The local coordinate in the element.
+ * \param value the gradient of the field at a point. If the matrix is defined by A_{ij},
+ * the gradient $\frac{\partial A_{ij}}{\partial X_k}=value[i*3+j+9*k]$ .
+ */
+void getMatrixGrad(Element* e, Vector3 const& param, Vector<27>& value);
 
 /** \brief Evaluate a field into an array of component values. */
 void getComponents(Element* e, Vector3 const& param, double* components);
@@ -684,6 +691,10 @@ void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
 void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
            const ReductionOp<double>& sum = ReductionSum<double>());
 
+/** \brief Checks whether a Field/Numbering/GlobalNumbering is complete and
+ * therefore printable to visualization files.  This is a collective operation.
+ */
+bool isPrintable(Field* f);
 
 /** \brief Declare failure of code inside APF.
   \details This function prints the string as an APF
