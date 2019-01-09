@@ -168,18 +168,20 @@ void readMesh(const char* meshfilename,
 
 int main(int argc, char** argv)
 {
-  if( argc != 6 ) {
-    printf("Usage: %s <ascii mesh connectivity .cnn> "
-        "<ascii vertex coordinates .crd> "
-        "<ascii vertex matching flag .match> "
-        "<output model .dmg> <output mesh .smb>\n",
-        argv[0]);
-    return 0;
-  }
-
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
+  if( argc != 6 ) {
+    if( !PCU_Comm_Self() ) {
+      printf("Usage: %s <ascii mesh connectivity .cnn> "
+          "<ascii vertex coordinates .crd> "
+          "<ascii vertex matching flag .match> "
+          "<output model .dmg> <output mesh .smb>\n",
+          argv[0]);
+    }
+    return 0;
+  }
+
   gmi_register_mesh();
   gmi_register_null();
 
