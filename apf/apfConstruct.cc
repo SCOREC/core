@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include "pcu_util.h"
 #include "apfConvert.h"
 #include "apfMesh2.h"
 #include "apf.h"
@@ -314,6 +315,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(gid);
     int match;
     PCU_COMM_UNPACK(match);
+    PCU_ALWAYS_ASSERT(gid != match);
     m->setIntTag(globalToVert[gid], matchGidTag, &match);
   }
 
@@ -389,6 +391,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(match);
     int owner;
     PCU_COMM_UNPACK(owner);
+    PCU_ALWAYS_ASSERT(match != globalToVert[gid] && owner != self);
     m->addMatch(globalToVert[gid], owner, match);
   }
 
