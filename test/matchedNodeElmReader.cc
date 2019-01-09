@@ -96,7 +96,9 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
           ( matchedVtx > 1 && matchedVtx <= static_cast<int>(numvtx) ));
-      (*matches)[vidx] = matchedVtx--;
+      if( matchedVtx != -1 )
+        --matchedVtx;
+      (*matches)[vidx] = matchedVtx;
       vidx++;
     }
   }
