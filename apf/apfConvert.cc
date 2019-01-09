@@ -21,7 +21,7 @@ class Converter
       inMesh = a;
       outMesh = b;
     }
-    void run()
+    void run(bool copy_data=true)
     {
       createVertices();
       createEntities();
@@ -31,12 +31,15 @@ class Converter
         for (int i = 0; i <= inMesh->getDimension(); ++i)
           createMatches(i);
       convertQuadratic();
-      convertFields();
-      convertNumberings();
-      convertGlobalNumberings();
-      // this must be called after anything that might create tags e.g. fields
-      // or numberings to avoid problems with tag duplication
-      convertTags();
+      if (copy_data)
+      {
+        convertFields();
+        convertNumberings();
+        convertGlobalNumberings();
+        // this must be called after anything that might create tags e.g. fields
+        // or numberings to avoid problems with tag duplication
+        convertTags();
+      }
       outMesh->acceptChanges();
     }
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
@@ -389,10 +392,10 @@ class Converter
     std::map<MeshEntity*,MeshEntity*> newFromOld;
 };
 
-void convert(Mesh *in, Mesh2 *out)
+void convert(Mesh *in, Mesh2 *out, bool copy_data/* =true */)
 {
   Converter c(in,out);
-  c.run();
+  c.run(copy_data);
 }
 
 }

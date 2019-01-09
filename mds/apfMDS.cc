@@ -174,7 +174,7 @@ class MeshMDS : public Mesh2
       isMatched = isMatched_;
       ownsModel = true;
     }
-    MeshMDS(gmi_model* m, Mesh* from)
+    MeshMDS(gmi_model* m, Mesh* from, bool copy_data=true)
     {
       init(apf::getLagrange(1));
       mds_id cap[MDS_TYPES];
@@ -190,7 +190,7 @@ class MeshMDS : public Mesh2
       mesh = mds_apf_create(m,d,cap);
       isMatched = from->hasMatching();
       ownsModel = true;
-      apf::convert(from,this);
+      apf::convert(from,this, copy_data);
     }
     MeshMDS(gmi_model* m, const char* pathname)
     {
@@ -767,9 +767,9 @@ Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched)
   return m;
 }
 
-Mesh2* createMdsMesh(gmi_model* model, Mesh* from)
+Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool copy_data/* =true */)
 {
-  return new MeshMDS(model, from);
+  return new MeshMDS(model, from, copy_data);
 }
 
 Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)
