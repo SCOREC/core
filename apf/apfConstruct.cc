@@ -325,6 +325,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
   typedef std::vector< apf::MeshEntity* > EntPtrs;
   EntPtrs verts(mySize);
   int* owners = new int[mySize];
+  PCU_Comm_Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
     MeshEntity* e = it->second;
     if( m->isOwned(e) ) {
