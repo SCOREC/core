@@ -237,6 +237,164 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   delete [] c;
 }
 
+void setMatches(Mesh2* m, const int* matches, int nverts,
+    GlobalToVert& globalToVert)
+{
+  Gid max = getMax(globalToVert);
+  Gid total = max + 1;
+  int peers = PCU_Comm_Peers();
+  int quotient = total / peers;
+  int remainder = total % peers;
+  int mySize = quotient;
+  int self = PCU_Comm_Self();
+  if (self == (peers - 1))
+    mySize += remainder;
+  int myOffset = self * quotient;
+
+  /* Force each peer to have exactly mySize verts.
+     This means we might need to send and recv some matches */
+  int* c = new int[mySize];
+
+  int start = PCU_Exscan_Int(nverts);
+
+  PCU_Comm_Begin();
+  int to = std::min(peers - 1, start / quotient);
+  int n = std::min((to+1)*quotient-start, nverts);
+  while (nverts > 0) {
+    PCU_COMM_PACK(to, start);
+    PCU_COMM_PACK(to, n);
+    PCU_Comm_Pack(to, matches, n*sizeof(int));
+
+    nverts -= n;
+    start += n;
+    matches += n;
+    to = std::min(peers - 1, to + 1);
+    n = std::min(quotient, nverts);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    PCU_COMM_UNPACK(start);
+    PCU_COMM_UNPACK(n);
+    PCU_Comm_Unpack(&c[(start - myOffset)], n*sizeof(int));
+  }
+
+
+  /* Tell all the owners of the matches what we need */
+  typedef std::vector< std::vector<int> > TmpParts;
+  TmpParts tmpParts(mySize);
+  PCU_Comm_Begin();
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
+    int gid = it->first;
+    int to = std::min(peers - 1, gid / quotient);
+    PCU_COMM_PACK(to, gid);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    int from = PCU_Comm_Sender();
+    tmpParts.at(gid - myOffset).push_back(from);
+  }
+ 
+  MeshTag* matchGidTag = m->createIntTag("matchGids", 1);
+  /* Send the matches to everybody who wants them */
+  PCU_Comm_Begin();
+  for (int i = 0; i < mySize; ++i) {
+    std::vector<int>& parts = tmpParts[i];
+    for (size_t j = 0; j < parts.size(); ++j) {
+      int to = parts[j];
+      int gid = i + myOffset;
+      PCU_COMM_PACK(to, gid);
+      PCU_COMM_PACK(to, c[i]);
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    int match;
+    PCU_COMM_UNPACK(match);
+    m->setIntTag(globalToVert[gid], matchGidTag, &match);
+  }
+
+  /* Use the 1D partitioning of global ids to distribute the 
+   * entity pointers and their owning ranks. Process 0 will hold
+   * the entity pointers and owners for mesh vertex gid [0..quotient),
+   * process 1 for gids [quotient..2*quotient), ...
+   */
+  typedef std::vector< apf::MeshEntity* > EntPtrs;
+  EntPtrs verts(mySize);
+  int* owners = new int[mySize];
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
+    MeshEntity* e = it->second;
+    if( m->isOwned(e) ) {
+      int gid = it->first;
+      int to = std::min(peers - 1, gid / quotient);
+      PCU_COMM_PACK(to, gid);
+      PCU_COMM_PACK(to, e);
+      PCU_COMM_PACK(to, self);
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    MeshEntity* vert;
+    PCU_COMM_UNPACK(vert);
+    int owner;
+    PCU_COMM_UNPACK(owner);
+    verts[gid-myOffset] = vert;
+    owners[gid-myOffset] = owner;
+  }
+
+  /* Tell all the owners of the matches what we need */
+  typedef std::vector< std::vector<int> > TmpParts;
+  TmpParts matchParts(mySize);
+  PCU_Comm_Begin();
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
+    int matchGid;
+    m->getIntTag(it->second, matchGidTag, &matchGid);
+    if( matchGid != -1 ) {  // marker for an unmatched vertex
+      int to = std::min(peers - 1, matchGid / quotient);
+      PCU_COMM_PACK(to, matchGid);
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    int from = PCU_Comm_Sender();
+    matchParts.at(gid - myOffset).push_back(from);
+  }
+ 
+  /* Send the match pointer and owner process to everybody
+   * who wants them */
+  PCU_Comm_Begin();
+  for (int i = 0; i < mySize; ++i) {
+    std::vector<int>& parts = matchParts[i];
+    for (size_t j = 0; j < parts.size(); ++j) {
+      int to = parts[j];
+      int gid = i + myOffset;
+      PCU_COMM_PACK(to, gid);
+      PCU_COMM_PACK(to, verts[i]);
+      PCU_COMM_PACK(to, owners[i]);
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    MeshEntity* match;
+    PCU_COMM_UNPACK(match);
+    int owner;
+    PCU_COMM_UNPACK(owner);
+    m->addMatch(globalToVert[gid], owner, match);
+  }
+
+  delete [] c;
+  delete [] owners;
+}
+
 void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
 {
   int dim = m->getDimension();

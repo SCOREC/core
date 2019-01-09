@@ -83,14 +83,22 @@ void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordi
   }
 }
 
-void readMatches(FILE* f, unsigned numvtx, int* matches) {
+void readMatches(FILE* f, unsigned numvtx, int** matches) {
+  long firstVtx, lastVtx;
+  unsigned localnumvtx;
+  getLocalRange(numvtx, localnumvtx, firstVtx, lastVtx);
+  *matches = new int[localnumvtx];
   rewind(f);
+  int vidx = 0;
   for(unsigned i=0; i<numvtx; i++) {
     int ignored, matchedVtx;
     gmi_fscanf(f, 2, "%d %d", &ignored, &matchedVtx); //export from matlab using 1-based indices
-    PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
-        ( matchedVtx > 1 && matchedVtx <= static_cast<int>(numvtx) ));
-    matches[i] = matchedVtx--;
+    if( i >= firstVtx && i < lastVtx ) {
+      PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
+          ( matchedVtx > 1 && matchedVtx <= static_cast<int>(numvtx) ));
+      (*matches)[vidx] = matchedVtx--;
+      vidx++;
+    }
   }
 }
 
@@ -148,8 +156,7 @@ void readMesh(const char* meshfilename,
   if( strcmp(matchfilename, "NULL") ) {
     FILE* fm = fopen(matchfilename, "r");
     PCU_ALWAYS_ASSERT(fm);
-    mesh.matches = new int[mesh.numVerts];
-    readMatches(fm, mesh.numVerts, mesh.matches);
+    readMatches(fm, mesh.numVerts, &(mesh.matches));
     fclose(fm);
   }
   mesh.numVtxPerElm = 8; //hack!
@@ -157,16 +164,6 @@ void readMesh(const char* meshfilename,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.numVtxPerElm);
   fclose(f);
-}
-
-void setMatches(apf::Mesh2* m, unsigned numVerts, int* matches,
-    apf::GlobalToVert& globToVtx) {
-  int self = PCU_Comm_Self();
-  for(unsigned i=0; i<numVerts; i++) {
-    if( matches[i] != -1 ) {
-      m->addMatch(globToVtx[i], self, globToVtx[matches[i]]);
-    }
-  }
 }
 
 int main(int argc, char** argv)
@@ -209,7 +206,8 @@ int main(int argc, char** argv)
   apf::setCoords(mesh, m.coords, m.localNumVerts, outMap);
   delete [] m.coords;
   if( isMatched ) {
-    setMatches(mesh,m.numVerts,m.matches,outMap);
+    apf::setMatches(mesh, m.matches, m.localNumVerts, outMap);
+    mesh->acceptChanges();
     delete [] m.matches;
   }
   outMap.clear();

@@ -59,6 +59,19 @@ void construct(Mesh2* m, const int* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert);
 
+/** \brief Assign matching to the mesh
+  * \details
+  * Each peer provides a set of the matched entity global ids. An id set
+  * to -1 indicates that the vertex is not matched.  The ids most be ordered
+  * according to the global ids of the vertices. Peer 0 provides the ids
+  * for vertices 0 to m-1, peer to for m to n-1, ...
+  * After this call, all vertices in the apf::Mesh2 object have correct
+  * coordinates assigned.
+  */
+void setMatches(Mesh2* m, const int* matches, int nverts,
+    GlobalToVert& globalToVert);
+
+
 /** \brief convert an apf::Mesh2 object into a connectivity array
   \details this is useful for debugging the apf::convert function */
 void destruct(Mesh2* m, int*& conn, int& nelem, int &etype);
