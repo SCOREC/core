@@ -9,6 +9,7 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <string.h>
+#include <cassert>
 
 void getLocalRange(unsigned total, unsigned& local,
     long& first, long& last) {
@@ -87,17 +88,24 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   long firstVtx, lastVtx;
   unsigned localnumvtx;
   getLocalRange(numvtx, localnumvtx, firstVtx, lastVtx);
+  fprintf(stderr, "%d readMatches numvtx %d localnumvtx %u firstVtx %ld lastVtx %ld\n",
+      PCU_Comm_Self(), numvtx, localnumvtx, firstVtx, lastVtx);
   *matches = new int[localnumvtx];
   rewind(f);
   int vidx = 0;
   for(unsigned i=0; i<numvtx; i++) {
-    int ignored, matchedVtx;
-    gmi_fscanf(f, 2, "%d %d", &ignored, &matchedVtx); //export from matlab using 1-based indices
+    int gid, matchedVtx;
+    int cnt = fscanf(f, "%d %d", &gid, &matchedVtx); //export from matlab using 1-based indices
+    assert(cnt == 2);
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
           ( matchedVtx >= 1 && matchedVtx <= static_cast<int>(numvtx) ));
       if( matchedVtx != -1 )
         --matchedVtx;
+      if( matchedVtx == 66350 || matchedVtx == 65075 ) {
+        fprintf(stderr, "%d reader found match %d at gid %d i %d vidx %d\n",
+            PCU_Comm_Self(), matchedVtx, gid, i, vidx);
+      }
       (*matches)[vidx] = matchedVtx;
       vidx++;
     }

@@ -255,6 +255,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some matches */
   int* c = new int[mySize];
+  fprintf(stderr, "%d mysize %d\n", self, mySize);
 
   int start = PCU_Exscan_Int(nverts);
 
@@ -265,6 +266,8 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_PACK(to, start);
     PCU_COMM_PACK(to, n);
     PCU_Comm_Pack(to, matches, n*sizeof(int));
+    fprintf(stderr, "%d sending start %d n %d to %d\n",
+        self, start, n, to);
 
     nverts -= n;
     start += n;
@@ -277,6 +280,16 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(start);
     PCU_COMM_UNPACK(n);
     PCU_Comm_Unpack(&c[(start - myOffset)], n*sizeof(int));
+    fprintf(stderr, "%d reciving start %d n %d from %d\n",
+        self, start, n, PCU_Comm_Sender());
+  }
+
+  for (int i = 0; i < mySize; ++i) {
+    int match = c[i];
+    if( match == 66350 || match == 65075 ) {
+      fprintf(stderr, "%d found match %d at gid %d\n",
+          self, match, i+myOffset);
+    }
   }
 
   /* Tell all the owners of the matches what we need */
@@ -304,8 +317,13 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     for (size_t j = 0; j < parts.size(); ++j) {
       int to = parts[j];
       int gid = i + myOffset;
+      int matchGid = c[i];
       PCU_COMM_PACK(to, gid);
-      PCU_COMM_PACK(to, c[i]);
+      PCU_COMM_PACK(to, matchGid);
+      if( matchGid == 66350 || matchGid == 65075 ) {
+        fprintf(stderr, "%d packing i %d gid %d matchGid %d to %d\n",
+            self, i, gid, matchGid, to);
+      }
     }
   }
   PCU_Comm_Send();
@@ -316,6 +334,10 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(match);
     PCU_ALWAYS_ASSERT(gid != match);
     m->setIntTag(globalToVert[gid], matchGidTag, &match);
+    if( match == 66350 || match == 65075 ) {
+      fprintf(stderr, "%d attaching match %d to gid %d\n",
+          self, match, gid);
+    }
   }
 
   /* Use the 1D partitioning of global ids to distribute the 
@@ -361,6 +383,10 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     if( matchGid != -1 ) {  // marker for an unmatched vertex
       int to = std::min(peers - 1, matchGid / quotient);
       PCU_COMM_PACK(to, gid);
+      if( matchGid == 66350 || matchGid == 65075 ) {
+        fprintf(stderr, "%d packing gid %d matchGid %d to %d\n",
+            self, gid, matchGid, to);
+      }
       PCU_COMM_PACK(to, matchGid);
     }
   }
@@ -372,7 +398,10 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(matchGid);
     MatchingPair mp(gid,matchGid);
     int from = PCU_Comm_Sender();
-    fprintf(stderr, "%d received gid %d from %d\n", self, gid, from);
+    if( matchParts.count(mp) ) {
+      fprintf(stderr, "%d received gid %d matchGid %d from %d matchParts.count(mp) %lu\n",
+          self, gid, matchGid, from, matchParts.count(mp));
+    }
     PCU_ALWAYS_ASSERT( ! matchParts.count(mp) ); // only allow single matching
     matchParts[mp] = from;
   }
@@ -385,7 +414,6 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     int to = it->second;
     int gid = mp.first;
     int matchGid = mp.second;
-    fprintf(stderr, "%d %d packing gid %d matchGid %d to %d\n", self, gid, matchGid, gid, to);
     PCU_COMM_PACK(to, gid);
     PCU_COMM_PACK(to, verts[matchGid-myOffset]);
     PCU_COMM_PACK(to, owners[matchGid-myOffset]);
