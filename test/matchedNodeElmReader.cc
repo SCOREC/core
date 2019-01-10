@@ -95,7 +95,7 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
     gmi_fscanf(f, 2, "%d %d", &ignored, &matchedVtx); //export from matlab using 1-based indices
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
-          ( matchedVtx > 1 && matchedVtx <= static_cast<int>(numvtx) ));
+          ( matchedVtx >= 1 && matchedVtx <= static_cast<int>(numvtx) ));
       if( matchedVtx != -1 )
         --matchedVtx;
       (*matches)[vidx] = matchedVtx;
