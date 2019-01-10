@@ -141,6 +141,7 @@ namespace ph {
   void checkReorder(apf::Mesh2* m, ph::Input& in, int numMasters) {
     /* check if the mesh changed at all */
     if ( (PCU_Comm_Peers()!=numMasters) ||
+        in.splitFactor > 1 ||
         in.adaptFlag ||
         in.prePhastaBalanceMethod != "none" ||
         in.tetrahedronize ||
