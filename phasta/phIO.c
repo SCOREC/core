@@ -81,8 +81,7 @@ static int find_header(FILE* f, const char* name, char* found, char header[PH_LI
     tmp[PH_LINE-1] = '\0';
     parse_header(tmp, &hname, &bytes, 0, NULL);
     if (!strncmp(name, hname, strlen(name))) {
-      strncpy(found, hname, strlen(hname));
-      found[strlen(hname)] = '\0';
+      strcpy(found, hname);
       return 1;
     }
     fseek(f, bytes, SEEK_CUR);
