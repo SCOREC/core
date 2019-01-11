@@ -806,7 +806,7 @@ int classifDim(gmi_model* model, Mesh* m, apf::MeshEntity* e)
   return gmi_dim(model, clas);
 }
 
-apf::MeshEntity* findFirst(gmi_model* model, apf::Mesh* m)
+apf::MeshEntity* findFirst(apf::Mesh* m)
 {
   apf::MeshEntity* v;
   apf::MeshEntity* best;
@@ -852,7 +852,7 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder)
   apf::Numbering* en = apf::createNumbering(from, "elem", getConstant(mesh_dim), 1);
 
   Queue q;
-  q.push(findFirst(model, from));
+  q.push(findFirst(from));
 
   // node and element number starts from 0
   int labelnode = 0;
@@ -864,7 +864,6 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder)
   node_arr.resize(from->count(0)+1);
   elem_arr.resize(from->count(mesh_dim)+1);
 
-  MeshEntity* vtx;
   MeshEntity* otherVtx;
   MeshEntity* edge;
   MeshEntity* elem;
