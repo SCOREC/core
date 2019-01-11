@@ -277,6 +277,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "motion_coords",
     "mesh_vel",
     "residual",
+    "dc_lag",
     "ybar",
     "wss",
     "wssbar",
@@ -287,6 +288,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   static char const* const known_cell_fields[] = {
     "VOF solution",
     "meshQ",
+    "meshCFL",
     "material_type"
   };
   static char const* const known_rand_fields[] = {
@@ -501,6 +503,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "motion_coords");
   if (m->findField("mesh_vel"))
     detachAndWriteField(in, m, f, "mesh_vel");
+  if (m->findField("dc_lag"))
+    detachAndWriteField(in, m, f, "dc_lag");
   if (m->findField("pressure projection vectors"))
     detachAndWriteField(in, m, f, "pressure projection vectors");
   if (in.displacementMigration)
