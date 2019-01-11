@@ -93,10 +93,9 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   *matches = new int[localnumvtx];
   rewind(f);
   int vidx = 0;
-  for(unsigned i=0; i<numvtx; i++) {
-    int gid, matchedVtx;
-    int cnt = fscanf(f, "%d %d", &gid, &matchedVtx); //export from matlab using 1-based indices
-    assert(cnt == 2);
+  int gid, matchedVtx;
+  int i = 0;
+  while( 2 == fscanf(f, "%d %d", &gid, &matchedVtx) ) {
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
           ( matchedVtx >= 1 && matchedVtx <= static_cast<int>(numvtx) ));
@@ -109,6 +108,7 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
       (*matches)[vidx] = matchedVtx;
       vidx++;
     }
+    i++;
   }
 }
 
@@ -195,7 +195,6 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  gmi_model* model = gmi_load(".null");
 
   double t0 = PCU_Time();
   MeshInfo m;
@@ -209,6 +208,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "isMatched %d\n", isMatched);
 
   const int dim = 3;
+  gmi_model* model = gmi_load(".null");
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, isMatched);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);

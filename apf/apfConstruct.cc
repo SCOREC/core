@@ -286,10 +286,9 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
 
   for (int i = 0; i < mySize; ++i) {
     int match = c[i];
-    if( match == 66350 || match == 65075 ) {
+    if( match != -1 )
       fprintf(stderr, "%d found match %d at gid %d\n",
           self, match, i+myOffset);
-    }
   }
 
   /* Tell all the owners of the matches what we need */
@@ -300,6 +299,10 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     int gid = it->first;
     int to = std::min(peers - 1, gid / quotient);
     PCU_COMM_PACK(to, gid);
+    if( gid == 66300 || gid == 66350 ) {
+      fprintf(stderr, "%d requesting matches of gid %d from %d\n",
+          self, gid, to);
+    }
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
@@ -320,7 +323,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
       int matchGid = c[i];
       PCU_COMM_PACK(to, gid);
       PCU_COMM_PACK(to, matchGid);
-      if( matchGid == 66350 || matchGid == 65075 ) {
+      if( matchGid != -1 ) {
         fprintf(stderr, "%d packing i %d gid %d matchGid %d to %d\n",
             self, i, gid, matchGid, to);
       }
@@ -333,8 +336,9 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     int match;
     PCU_COMM_UNPACK(match);
     PCU_ALWAYS_ASSERT(gid != match);
+    PCU_ALWAYS_ASSERT(globalToVert.count(gid));
     m->setIntTag(globalToVert[gid], matchGidTag, &match);
-    if( match == 66350 || match == 65075 ) {
+    if( match != -1 ) {
       fprintf(stderr, "%d attaching match %d to gid %d\n",
           self, match, gid);
     }
@@ -356,7 +360,10 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
       int to = std::min(peers - 1, gid / quotient);
       PCU_COMM_PACK(to, gid);
       PCU_COMM_PACK(to, e);
-      PCU_COMM_PACK(to, self);
+      if( gid == 50 || gid == 0 || gid == 66300 || gid == 66350 ) {
+        fprintf(stderr, "%d packing pointer to %d gid %d vert %p\n",
+            self, to, gid, (void*)e);
+      }
     }
   }
   PCU_Comm_Send();
@@ -365,15 +372,18 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(gid);
     MeshEntity* vert;
     PCU_COMM_UNPACK(vert);
-    int owner;
-    PCU_COMM_UNPACK(owner);
+    int owner = PCU_Comm_Sender();
     verts[gid-myOffset] = vert;
     owners[gid-myOffset] = owner;
+    if( gid == 50 || gid == 0 || gid == 66300 || gid == 66350 ) {
+      fprintf(stderr, "%d unpacking pointer from %d gid %d vert %p\n",
+          self, owner, gid, (void*)vert);
+    }
   }
 
-  /* Tell all the owners of the matches what we need */
+  /* Tell the brokers of the matches we need */
   typedef std::pair<int,int> MatchingPair;
-  typedef std::map< MatchingPair, int > MatchMap;
+  typedef std::map< MatchingPair, std::vector<int> > MatchMap;
   MatchMap matchParts;
   PCU_Comm_Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
@@ -383,11 +393,9 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     if( matchGid != -1 ) {  // marker for an unmatched vertex
       int to = std::min(peers - 1, matchGid / quotient);
       PCU_COMM_PACK(to, gid);
-      if( matchGid == 66350 || matchGid == 65075 ) {
-        fprintf(stderr, "%d packing gid %d matchGid %d to %d\n",
-            self, gid, matchGid, to);
-      }
       PCU_COMM_PACK(to, matchGid);
+      fprintf(stderr, "%d packing req ptr to %d gid %d matchGid %d\n",
+          self, to, gid, matchGid);
     }
   }
   PCU_Comm_Send();
@@ -398,45 +406,86 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(matchGid);
     MatchingPair mp(gid,matchGid);
     int from = PCU_Comm_Sender();
-    if( matchParts.count(mp) ) {
-      fprintf(stderr, "%d received gid %d matchGid %d from %d matchParts.count(mp) %lu\n",
-          self, gid, matchGid, from, matchParts.count(mp));
-    }
-    PCU_ALWAYS_ASSERT( ! matchParts.count(mp) ); // only allow single matching
-    matchParts[mp] = from;
+    matchParts[mp].push_back(from);
+    fprintf(stderr, "%d unpacking ptr req from %d gid %d matchGid %d\n",
+        self, from, gid, matchGid);
   }
- 
+
   /* Send the match pointer and owner process to everybody
    * who wants them */
   PCU_Comm_Begin();
   APF_ITERATE(MatchMap,matchParts,it) {
     MatchingPair mp = it->first;
-    int to = it->second;
     int gid = mp.first;
     int matchGid = mp.second;
-    PCU_COMM_PACK(to, gid);
-    PCU_COMM_PACK(to, verts[matchGid-myOffset]);
-    PCU_COMM_PACK(to, owners[matchGid-myOffset]);
+    std::vector<int> parts = it->second;
+    for(size_t i=0; i<parts.size(); i++) {
+      const int to = parts[i];
+      PCU_COMM_PACK(to, gid);
+      PCU_COMM_PACK(to, matchGid);
+      PCU_COMM_PACK(to, verts[matchGid-myOffset]);
+      PCU_COMM_PACK(to, owners[matchGid-myOffset]);
+      fprintf(stderr, "%d packing match ptr to %d gid %d matchGid %d vert %p owner %d\n",
+          self, to, gid, matchGid,
+          (void*)verts[matchGid-myOffset], owners[matchGid-myOffset]);
+    }
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
     int gid;
     PCU_COMM_UNPACK(gid);
+    int matchGid;
+    PCU_COMM_UNPACK(matchGid);
     MeshEntity* match;
     PCU_COMM_UNPACK(match);
     int owner;
     PCU_COMM_UNPACK(owner);
+    fprintf(stderr, "%d unpacked match ptr from %d gid %d matchGid %d matchPtr %p owner %d\n",
+        self, PCU_Comm_Sender(), gid, matchGid, (void*)match, owner);
+    PCU_ALWAYS_ASSERT(globalToVert.count(gid));
     MeshEntity* partner = globalToVert[gid];
     if(match == partner && owner == self) {
-      fprintf(stderr, "%d match %p globalToVert[gid] %p owner %d\n",
-          self, match, partner, owner);
+      fprintf(stderr, "%d match == partner owner == self match %p partner %p owner %d\n",
+          self, (void*)match, (void*)partner, owner);
     }
     PCU_ALWAYS_ASSERT(! (match == partner && owner == self) );
     m->addMatch(partner, owner, match);
   }
 
+
   delete [] c;
   delete [] owners;
+
+  /* Owners send match info to copies */
+  /*
+  PCU_Comm_Begin();
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
+    // send matches to remotes
+    int vtx = it->second;
+    apf::Matches matches;
+    m->getMatches(vtx, matches);
+    if( matches.getSize() ) {
+      apf::Copies remotes;
+      m->getRemotes(vtx, remotes);
+      APF_ITERATE(apf::Copies, remotes, r) {
+        int peer = r->first;
+        apf::MeshEntity* rmtVtx = r->second;
+        for (size_t j=0; j < matches.getSize(); ++j)
+          PCU_COMM_PACK(matches[j].peer,matches[j].entity);
+        fprintf(stderr, "%d packing req ptr to %d gid %d matchGid %d\n",
+            self, to, gid, matchGid);
+      }
+    }
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    //unpack and create matches
+  }
+  */
+
+
+  apf::removeTagFromDimension(m, matchGidTag, 0);
+  m->destroyTag(matchGidTag);
 }
 
 void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
