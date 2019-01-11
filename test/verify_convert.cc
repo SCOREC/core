@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 
   // check that not transfering Fields/Numberings/Tags also works
   apf::Mesh2* m3 = createEmptyMesh();
-  apf::convert(m1, m3, false);
+  apf::convert(m1, m3, NULL, NULL, false);
   m3->verify();
 
   assert(!m3->findNumbering(apf::getName(numWithField)));

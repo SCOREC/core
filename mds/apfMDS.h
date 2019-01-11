@@ -81,10 +81,11 @@ Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile);
 
 /** \brief create an MDS mesh from an existing mesh
   \param from the mesh to copy
-  \details this function uses apf::convert to copy any apf::Mesh,
-           Fields/Numberings/Tags are copied if copy_data is true (default)
-  */
-Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool copy_data=true);
+  \param reorder if true reorder mesh vertices and elements 
+         (start from a vertex with minimum Y)
+  \param copy_data if true (default), copy Fields/Numberings/Tags
+  \details this function uses apf::convert to copy any apf::Mesh */
+Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy_data=true);
 
 /** \brief apply adjacency-based reordering
   \param t Optional user-defined ordering of the vertices.

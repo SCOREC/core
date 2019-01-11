@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <stdint.h>
 #include <limits>
+#include <deque>
 
 extern "C" {
 
@@ -174,7 +175,8 @@ class MeshMDS : public Mesh2
       isMatched = isMatched_;
       ownsModel = true;
     }
-    MeshMDS(gmi_model* m, Mesh* from, bool copy_data=true)
+    MeshMDS(gmi_model* m, Mesh* from, 
+            apf::MeshEntity** nodes, apf::MeshEntity** elems, bool copy_data=true)
     {
       init(apf::getLagrange(1));
       mds_id cap[MDS_TYPES];
@@ -190,8 +192,9 @@ class MeshMDS : public Mesh2
       mesh = mds_apf_create(m,d,cap);
       isMatched = from->hasMatching();
       ownsModel = true;
-      apf::convert(from,this, copy_data);
+      apf::convert(from, this, nodes, elems, copy_data);
     }
+
     MeshMDS(gmi_model* m, const char* pathname)
     {
       init(apf::getLagrange(1));
@@ -233,10 +236,12 @@ class MeshMDS : public Mesh2
       toIter(id,it);
       return e;
     }
+
     void end(MeshIterator* it)
     {
       freeIter(it);
     }
+
     // return true if adjacency *from_dim <--> to_dim*  is stored
     bool hasAdjacency(int from_dim, int to_dim)
     {
@@ -767,9 +772,141 @@ Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched)
   return m;
 }
 
-Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool copy_data/* =true */)
+// seol -- reorder input mesh before conversion
+//         starting vtx: a vtx with min Y
+struct Queue {
+  bool has(apf::MeshEntity* e) { return h.count(e); }
+  void push(apf::MeshEntity* e)
+  {
+    q.push_back(e);
+    h.insert(e);
+  }
+  void pushVector(std::vector<apf::MeshEntity*> const& l)
+  {
+    for (size_t i = 0; i < l.size(); ++i)
+      push(l[i]);
+  }
+  apf::MeshEntity* pop()
+  {
+    apf::MeshEntity* e;
+    e = q.front();
+    q.pop_front();
+    h.erase(e);
+    return e;
+  }
+  bool empty() { return q.empty(); }
+  std::deque<apf::MeshEntity*> q;
+  std::set<apf::MeshEntity*> h;
+};
+
+int classifDim(gmi_model* model, Mesh* m, apf::MeshEntity* e)
 {
-  return new MeshMDS(model, from, copy_data);
+  gmi_ent* clas=(gmi_ent*)m->toModel(e);
+  return gmi_dim(model, clas);
+}
+
+apf::MeshEntity* findFirst(apf::Mesh* m)
+{
+  apf::MeshEntity* v;
+  apf::MeshEntity* best;
+  apf::MeshIterator* it = m->begin(0);
+  best = m->iterate(it);
+  Vector3 coord;
+  m->getPoint(best, 0, coord);
+  double min_Y=coord[1];
+  while ((v = m->iterate(it)))
+  {
+    m->getPoint(v, 0, coord);  
+    if (min_Y > coord[1])
+    {
+      best = v;
+      min_Y = coord[1];
+    }
+  }
+  m->end(it);
+  return best;
+}
+
+bool visited(Queue& q, apf::Numbering* nn, MeshEntity* e)
+{
+  return apf::isNumbered(nn, e, 0, 0) || q.has(e);
+}
+
+bool hasNode(Mesh* m, MeshEntity* e)
+{
+  if (m->getShape()->countNodesOn(m->getType(e))>0) 
+    return true;
+  return false;
+}
+
+Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder, bool copy_data)
+{
+  if (!reorder)
+    return new MeshMDS(model, from, NULL, NULL, copy_data);
+
+  int mesh_dim = from->getDimension();
+
+  // reorder and create mesh
+  apf::Numbering* nn = apf::createNumbering(from, "node", getConstant(0), 1);
+  apf::Numbering* en = apf::createNumbering(from, "elem", getConstant(mesh_dim), 1);
+
+  Queue q;
+  q.push(findFirst(from));
+
+  // node and element number starts from 0
+  int labelnode = 0;
+  int labelelem = 0;
+
+  std::vector<MeshEntity*> node_arr;
+  std::vector<MeshEntity*> elem_arr;
+
+  node_arr.resize(from->count(0)+1);
+  elem_arr.resize(from->count(mesh_dim)+1);
+
+  MeshEntity* otherVtx;
+  MeshEntity* edge;
+  MeshEntity* elem;
+
+  while (!q.empty()) 
+  {
+    MeshEntity* vtx = q.pop();
+    if (!apf::isNumbered(nn, vtx, 0, 0))
+    {
+      node_arr[labelnode] = vtx;
+      apf::number(nn, vtx, 0, 0, labelnode);
+
+      ++labelnode;
+    }
+
+    std::vector<MeshEntity*> entities;
+    apf::Adjacent edges;
+    from->getAdjacent(vtx,1, edges);
+    for (size_t i = 0; i < edges.getSize(); ++i) 
+    {
+      edge = edges[i];
+      apf::Adjacent adjacent;
+      from->getAdjacent(edge, mesh_dim, adjacent);      
+      for (size_t j = 0; j < adjacent.getSize(); ++j) 
+      {
+        elem = adjacent[j];
+        if (!apf::isNumbered(en, elem, 0, 0))
+        {
+          elem_arr[labelelem] = elem;
+          apf::number(en, elem, 0, 0, labelelem);
+          ++labelelem;
+        }
+      }
+      otherVtx = apf::getEdgeVertOppositeVert(from, edge, vtx);
+      if (!visited(q, nn, otherVtx))
+        entities.push_back(otherVtx);
+    }
+    q.pushVector(entities);
+  } // while
+
+  destroyNumbering(nn);
+  destroyNumbering(en);
+
+  return new MeshMDS(model, from, &(node_arr[0]), &(elem_arr[0]), copy_data);
 }
 
 Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)
