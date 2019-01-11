@@ -81,7 +81,7 @@ class Converter
     void createVertices(MeshEntity** nodes)
     {
       MeshEntity *oldV;
-      for (int i=0; i<inMesh->count(0); ++i)
+      for (unsigned int i=0; i<inMesh->count(0); ++i)
       { 
         oldV=nodes[i];
 
@@ -129,7 +129,7 @@ class Converter
     void createDimension(int dim, MeshEntity** elems)
     { 
       MeshEntity *oldE;
-      for (int i=0; i<inMesh->count(dim); ++i)
+      for (unsigned int i=0; i<inMesh->count(dim); ++i)
       {
         oldE = elems[i];
         int type = inMesh->getType(oldE);
