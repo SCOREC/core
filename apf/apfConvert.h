@@ -25,7 +25,8 @@ class MeshEntity;
   implements apf::Mesh2 by using information from an implementation
   of apf::Mesh. This is a fully scalable parallel mesh conversion
   tool. */
-void convert(Mesh *in, Mesh2 *out);
+void convert(Mesh *in, Mesh2 *out,
+             MeshEntity** nodes=NULL, MeshEntity** elems=NULL);
 
 /** \brief a map from global ids to vertex objects */
 typedef std::map<int, MeshEntity*> GlobalToVert;
