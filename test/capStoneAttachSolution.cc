@@ -53,9 +53,6 @@ apf::Field* addScalarField(apf::Mesh2* m, const std::vector<row> t, const char* 
 apf::Field* addVector3Field(apf::Mesh2* m, const std::vector<row> t, const char* name,
     int col0, int col1, int col2, int strandSize);
 
-void checkParametrization(apf::Mesh2* m, int modelDim);
-void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
-
 struct SortingStruct
 {
   apf::Vector3 v;
@@ -426,9 +423,6 @@ int main(int argc, char** argv)
   MG_API_CALL(m, compute_adjacency());
 
 
-  // check parametrization using capstone apis
-  /* checkParametrization(m, g); */
-
   gmi_cap_start();
   gmi_register_cap();
 
@@ -473,11 +467,8 @@ int main(int argc, char** argv)
   printf("number of mesh regions: %d\n", volMesh->count(3));
   printf("---- Printing Mesh Stats: Done. \n");
 
-  // check parametrization using pumi apis
-  /* checkParametrization(mesh, 2); */
 
   //Get Size Field for Adapt
-  
   apf::Field* gradRhoField = apf::recoverGradientByVolume(rhoField); 
   apf::Field* hessianRhoField = apf::recoverGradientByVolume(gradRhoField); 
   apf::Field* gradEField  = apf::recoverGradientByVolume(eField); 
@@ -868,94 +859,4 @@ apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s)
   apf::deriveMdsModel(vMesh);
   apf::verify(vMesh);
   return vMesh;
-}
-
-/* void checkParametrization(apf::Mesh2* m, int modelDim) */
-/* { */
-/*   apf::MeshEntity* e; */
-/*   apf::MeshIterator* it = m->begin(0); */
-/*   int count = 0; */
-/*   while ( (e = m->iterate(it)) ) { */
-/*     apf::ModelEntity* c = m->toModel(e); */
-/*     int dim = m->getModelType(c); */
-/*     int tag = m->getModelTag(c); */
-/*     if (dim != 2) continue; */
-/*     double range_u[2]; */
-/*     double range_v[2]; */
-/*     m->getPeriodicRange(c, 0, range_u); */
-/*     m->getPeriodicRange(c, 1, range_v); */
-/*     apf::Vector3 param; */
-/*     /1* m->getParamOn(c, e, param); *1/ */
-/*     m->getParam(e, param); */
-/*     bool cond1 = (param[0] < range_u[0]) || (param[0] > range_u[1]); */
-/*     bool cond2 = (param[1] < range_v[0]) || (param[1] > range_v[1]); */
-/*     if (cond1 || cond2) { */
-/*       apf::Vector3 coord; */
-/*       m->getPoint(e, 0, coord); */
-/*       printf("at vertex %d with coords (%f,%f,%f)\n", count, coord[0], coord[1], coord[2]); */
-/*       printf("u param is %f given range [%f,%f]\n", param[0], range_u[0], range_u[1]); */
-/*       printf("v param is %f given range [%f,%f]\n", param[1], range_v[0], range_v[1]); */
-/*     } */
-/*     count++; */
-/*   } */
-/*   m->end(it); */
-/* } */
-
-void checkParametrization(apf::Mesh2* m, int modelDim)
-{
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m->begin(0);
-  int count = 0;
-  while ( (e = m->iterate(it)) ) {
-    apf::ModelEntity* c = m->toModel(e);
-    int dim = m->getModelType(c);
-    int tag = m->getModelTag(c);
-    if (dim != 2) continue;
-    double range_u[2];
-    double range_v[2];
-    m->getPeriodicRange(c, 0, range_u);
-    m->getPeriodicRange(c, 1, range_v);
-    apf::Vector3 param;
-    /* m->getParamOn(c, e, param); */
-    m->getParam(e, param);
-    printf("%d, %e, %e, [%e, %e], [%e, %e]\n", count, param[0], param[1], range_u[0], range_u[1], range_v[0], range_v[1]);
-    count++;
-  }
-  m->end(it);
-}
-
-void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)
-{
-   MeshSmartIterator miter(mdb);
-   mdb->get_topo_iterator(TOPO_VERTEX, miter);
-   int count = 0;
-   for(mdb->iterator_begin(miter); !mdb->iterator_end(miter); mdb->iterator_next(miter)) {
-     M_MTopo vert = mdb->iterator_value(miter);
-     M_GTopo geom;
-     GeometryTopoType gtype;
-     mdb->get_geom_entity(vert, gtype, geom);
-     if (!gdb->is_face(geom)) continue;
-     double range_u[2];
-     double range_v[2];
-     gdb->get_parametrization_range(geom, 0, range_u[0], range_u[1]);
-     gdb->get_parametrization_range(geom, 1, range_v[0], range_v[1]);
-     GeometryTopoType gtype1;
-     double u,v;
-     mdb->get_vertex_uv_parameters(vert, u, v, gtype1);
-     PCU_ALWAYS_ASSERT(gtype1 == gtype);
-
-     // coordinate from mesh
-     apf::Vector3 coord;
-     mdb->get_vertex_coord(vert, &(coord[0]));
-
-     // coordinate from surface
-     vec3d x;
-     /* gdb->get_point(geom, vec3d(u, v, 0.0), x); */
-     gdb->get_point(geom, vec3d(v, u, 0.0), x);
-     apf::Vector3 pcoord(x[0], x[1], x[2]);
-
-     printf("%d, %e, %e, %e, %e, %e, %e, %e\n", count, u, v, range_u[0], range_u[1], range_v[0], range_v[1], (coord-pcoord).getLength());
-     count++;
-     if (count > 50) break;
-   }
 }
