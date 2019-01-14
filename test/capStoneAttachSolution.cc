@@ -53,6 +53,8 @@ apf::Field* addScalarField(apf::Mesh2* m, const std::vector<row> t, const char* 
 apf::Field* addVector3Field(apf::Mesh2* m, const std::vector<row> t, const char* name,
     int col0, int col1, int col2, int strandSize);
 
+void writeCre(CapstoneModule& cs, const std::string& fileName);
+
 struct SortingStruct
 {
   apf::Vector3 v;
@@ -76,6 +78,7 @@ int gradeSizeModify(apf::Mesh* m, double gradingFactor,
 
 //General function to actually modify sizes
 {
+    (void)vecPos;
     //Determine a switching scheme depending on which vertex needs a modification
     int idx1,idx2;
     if(idxFlag == 0){
@@ -167,7 +170,6 @@ int serialGradation(apf::Mesh* m, std::queue<apf::MeshEntity*> &markedEdges,doub
   apf::Adjacent edgAdjVert;
   apf::Adjacent vertAdjEdg;
   apf::MeshEntity* edge;
-  apf::MeshIterator* it = m->begin(1);
   int needsParallel=0;
 
   //perform serial gradation while packing necessary info for parallel
@@ -206,7 +208,6 @@ int gradeMesh(apf::Mesh* m)
   apf::MeshEntity* edge;
   apf::Adjacent edgAdjVert;
   apf::Adjacent vertAdjEdg;
-  double size[2];
   std::queue<apf::MeshEntity*> markedEdges;
   apf::MeshTag* isMarked = m->createIntTag("isMarked",1);
 
@@ -217,7 +218,6 @@ int gradeMesh(apf::Mesh* m)
   markEdgesInitial(m,markedEdges,gradingFactor);
 
   int needsParallel=1;
-  int nCount=1;
   while(needsParallel)
   {
     PCU_Comm_Begin();
@@ -439,9 +439,11 @@ int main(int argc, char** argv)
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // remove unused verts
-  printf("\n---- Removing Extra Verts. \n");
-  removeUnusedVerts(mesh, offset);
-  printf("---- Removing Extra Verts: Done. \n");
+  if (offset > 0) {
+    printf("\n---- Removing Extra Verts. \n");
+    removeUnusedVerts(mesh, offset);
+    printf("---- Removing Extra Verts: Done. \n");
+  }
 
   // make the volume mesh (this one is MDS underneath)
   printf("\n---- Creating Volume Mesh. \n");
@@ -457,15 +459,10 @@ int main(int argc, char** argv)
   apf::Field* nuField      = addScalarField(volMesh, table, "nu", 8, strandSize);
   printf("---- Adding Fields to Volume Mesh: Done. \n");
 
-
-  printf("\n---- Writing Volume Mesh/Fields to VTK. \n");
-  apf::writeVtkFiles("v_mesh", volMesh);
-  printf("---- Writing Volume Mesh/Fields to VTK: Done. \n");
-
-  printf("\n---- Printing Mesh Stats. \n");
-  printf("number of mesh verts: %d\n", volMesh->count(0));
-  printf("number of mesh regions: %d\n", volMesh->count(3));
-  printf("---- Printing Mesh Stats: Done. \n");
+  printf("\n---- Printing Volume/Strand Mesh Stats. \n");
+  printf("number of mesh verts: %zu\n", volMesh->count(0));
+  printf("number of mesh regions(hexes): %zu\n", volMesh->count(3));
+  printf("---- Printing Volume/Strand Mesh Stats: Done. \n");
 
 
   //Get Size Field for Adapt
@@ -626,15 +623,17 @@ int main(int argc, char** argv)
   in->maximumIterations = 10;
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
-  //in->shouldTransferToClosestPoint = true;
   in->shouldForceAdaptation = true;
-  //in->debugFolder = "./debug";
   ma::adaptVerbose(in);
-  //ma::adaptVerbose(in, true);
-  //
+
+
+  // write the adapted mesh to vtk
   apf::writeVtkFiles("adaptedMesh", mesh);
+  // write the adapted mesh to cre
+  writeCre(cs, "adaptedMesh.cre");
 
 
+  // clean up and exit calls
   apf::destroyField(gradRhoField);
   apf::destroyField(hessianRhoField);
   apf::destroyField(gradEField);
@@ -650,10 +649,7 @@ int main(int argc, char** argv)
   apf::destroyField(gradSpeedField);
   apf::destroyField(hessianSpeedField);
 
-  //End TODO
-
   gmi_cap_stop();
-
   PCU_Comm_Free();
   MPI_Finalize();
 }
@@ -859,4 +855,26 @@ apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s)
   apf::deriveMdsModel(vMesh);
   apf::verify(vMesh);
   return vMesh;
+}
+
+void writeCre(CapstoneModule& cs, const std::string& fileName)
+{
+  GeometryDatabaseInterface    *gdbi = cs.get_geometry();
+  MeshDatabaseInterface        *mdbi = cs.get_mesh();
+  AppContext                   *ctx = cs.get_context();
+
+  // Get the VTK writer.
+  Writer *creWriter = get_writer(ctx, "Create Native Writer");
+  if (!creWriter)
+          error(HERE, ERR_GENERIC, "Could not find the CRE writer");
+
+  IdMapping idmapping;
+  std::vector<M_MModel> mmodels;
+  M_GModel gmodel;
+  M_MModel mmodel;
+  gdbi->get_current_model(gmodel);
+  mdbi->get_current_model(mmodel);
+  mmodels.clear();
+  mmodels.push_back(mmodel);
+  creWriter->write(ctx, gmodel, mmodels, fileName.c_str(), idmapping);
 }
