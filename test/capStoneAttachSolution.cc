@@ -46,7 +46,8 @@ std::vector<double> extractSurfaceData(const std::vector<row> &table,
 
 void removeUnusedVerts(apf::Mesh2* m, int offset);
 
-apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s);
+apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s,
+    std::vector<std::vector<apf::MeshEntity*> > &surfToStrandMap);
 
 apf::Field* addScalarField(apf::Mesh2* m, const std::vector<row> t, const char* name, int col, int strandSize);
 
@@ -349,7 +350,7 @@ int main(int argc, char** argv)
   const char* creFileName = argv[1];
   const char* dataFileName = argv[2];
   int offset = atoi(argv[3]);
-  int strandSize = atoi(argv[4]);
+  const int strandSize = atoi(argv[4]);
   double h_global = atof(argv[5]);
   double factor = atof(argv[6]);
 
@@ -447,9 +448,11 @@ int main(int argc, char** argv)
 
   // make the volume mesh (this one is MDS underneath)
   printf("\n---- Creating Volume Mesh. \n");
-  apf::Mesh2* volMesh = createVolumeMesh(mesh, table, strandSize);
+  // create an empty array with the correct sizes to hold the surface 2 strand map
+  std::vector<std::vector<apf::MeshEntity*> > surfToStrandMap(mesh->count(0),
+      std::vector<apf::MeshEntity*>(strandSize, NULL));
+  apf::Mesh2* volMesh = createVolumeMesh(mesh, table, strandSize, surfToStrandMap);
   printf("---- Creating Volume Mesh: Done. \n");
-
 
   // get all fields and add them to the mesh
   printf("\n---- Adding Fields to Volume Mesh. \n");
@@ -773,7 +776,7 @@ readLayerCoordinates(int layer, const std::vector<row> &t, int s)
 }
 
 
-apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s)
+apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s, std::vector<std::vector<apf::MeshEntity*> > &surfToStrandMap)
 {
   // add numbering to the surface mash
   apf::Numbering* n = apf::createNumbering(m, "surf_verts_num", apf::getLagrange(1) , 1);
@@ -854,6 +857,19 @@ apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s)
   vMesh->acceptChanges();
   apf::deriveMdsModel(vMesh);
   apf::verify(vMesh);
+
+  // create the surface to strand map
+  it = vMesh->begin(0);
+  while ( (e = vMesh->iterate(it)) ) {
+    int layer = apf::getNumber(nLayer, e, 0, 0) - 1;
+    int vid   = apf::getNumber(nVID, e, 0, 0);
+    PCU_ALWAYS_ASSERT((layer >= 0) && (layer < s));
+    PCU_ALWAYS_ASSERT((vid   >= 0) && (vid   < (int)m->count(0)));
+    surfToStrandMap[vid][layer] = e;
+  }
+  vMesh->end(it);
+
+  // return the volume mesh
   return vMesh;
 }
 
