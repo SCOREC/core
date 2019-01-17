@@ -301,8 +301,8 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     int to = std::min(peers - 1, gid / quotient);
     PCU_COMM_PACK(to, gid);
     if( gid == 66300 || gid == 66350 ) {
-      PCU_Debug_Print("%d requesting matches of gid %d from %d\n",
-          self, gid, to);
+      PCU_Debug_Print("%d requesting matches of gid %d isShared %d isOwned %d from %d\n",
+          self, gid, m->isShared(it->second), m->isOwned(it->second), to);
     }
   }
   PCU_Comm_Send();
@@ -350,32 +350,29 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
    * the entity pointers and owners for mesh vertex gid [0..quotient),
    * process 1 holds gids [quotient..2*quotient), ...
    */
-  typedef std::vector< apf::MeshEntity* > EntPtrs;
-  EntPtrs verts(mySize);
-  int* owners = new int[mySize];
   PCU_Comm_Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
     MeshEntity* e = it->second;
-    if( m->isOwned(e) ) {
-      int gid = it->first;
-      int to = std::min(peers - 1, gid / quotient);
-      PCU_COMM_PACK(to, gid);
-      PCU_COMM_PACK(to, e);
-      if( gid == 50 || gid == 0 || gid == 66300 || gid == 66350 ) {
-        PCU_Debug_Print("%d packing pointer to %d gid %d vert %p\n",
-            self, to, gid, (void*)e);
-      }
+    int gid = it->first;
+    int to = std::min(peers - 1, gid / quotient);
+    PCU_COMM_PACK(to, gid);
+    PCU_COMM_PACK(to, e);
+    if( gid == 50 || gid == 0 || gid == 66300 || gid == 66350 ) {
+      PCU_Debug_Print("%d packing pointer to %d gid %d vert %p\n",
+          self, to, gid, (void*)e);
     }
   }
   PCU_Comm_Send();
+  typedef std::pair< int, apf::MeshEntity* > EntOwnerPtrs;
+  typedef std::map< int, std::vector< EntOwnerPtrs > > GidPtrs;
+  GidPtrs gidPtrs;
   while (PCU_Comm_Receive()) {
     int gid;
     PCU_COMM_UNPACK(gid);
     MeshEntity* vert;
     PCU_COMM_UNPACK(vert);
     int owner = PCU_Comm_Sender();
-    verts[gid-myOffset] = vert;
-    owners[gid-myOffset] = owner;
+    gidPtrs[gid-myOffset].push_back(EntOwnerPtrs(owner,vert));
     if( gid == 50 || gid == 0 || gid == 66300 || gid == 66350 ) {
       PCU_Debug_Print("%d unpacking pointer from %d gid %d vert %p\n",
           self, owner, gid, (void*)vert);
@@ -424,11 +421,17 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
       const int to = parts[i];
       PCU_COMM_PACK(to, gid);
       PCU_COMM_PACK(to, matchGid);
-      PCU_COMM_PACK(to, verts[matchGid-myOffset]);
-      PCU_COMM_PACK(to, owners[matchGid-myOffset]);
-      PCU_Debug_Print("%d packing match ptr to %d gid %d matchGid %d vert %p owner %d\n",
-          self, to, gid, matchGid,
-          (void*)verts[matchGid-myOffset], owners[matchGid-myOffset]);
+      size_t numMatches = gidPtrs[matchGid-myOffset].size();
+      PCU_COMM_PACK(to, numMatches);
+      for( size_t i=0; i<gidPtrs[matchGid-myOffset].size(); i++) {
+        EntOwnerPtrs eop = gidPtrs[matchGid-myOffset][i];
+        int owner = eop.first;
+        PCU_COMM_PACK(to, owner);
+        apf::MeshEntity* ent = eop.second;
+        PCU_COMM_PACK(to, ent);
+        PCU_Debug_Print("%d packing match ptr to %d gid %d matchGid %d vert %p owner %d\n",
+            self, to, gid, matchGid, (void*)ent, owner);
+      }
     }
   }
   PCU_Comm_Send();
@@ -437,25 +440,28 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     PCU_COMM_UNPACK(gid);
     int matchGid;
     PCU_COMM_UNPACK(matchGid);
-    MeshEntity* match;
-    PCU_COMM_UNPACK(match);
-    int owner;
-    PCU_COMM_UNPACK(owner);
-    PCU_Debug_Print("%d unpacked match ptr from %d gid %d matchGid %d matchPtr %p owner %d\n",
-        self, PCU_Comm_Sender(), gid, matchGid, (void*)match, owner);
-    PCU_ALWAYS_ASSERT(globalToVert.count(gid));
-    MeshEntity* partner = globalToVert[gid];
-    if(match == partner && owner == self) {
-      PCU_Debug_Print("%d match == partner owner == self match %p partner %p owner %d\n",
-          self, (void*)match, (void*)partner, owner);
+    size_t numMatches;
+    PCU_COMM_UNPACK(numMatches);
+    for(size_t i=0; i<numMatches; i++) {
+      int owner;
+      PCU_COMM_UNPACK(owner);
+      MeshEntity* match;
+      PCU_COMM_UNPACK(match);
+      PCU_Debug_Print("%d unpacked match ptr from %d gid %d matchGid %d matchPtr %p owner %d\n",
+          self, PCU_Comm_Sender(), gid, matchGid, (void*)match, owner);
+      PCU_ALWAYS_ASSERT(globalToVert.count(gid));
+      MeshEntity* partner = globalToVert[gid];
+      if(match == partner && owner == self) {
+        PCU_Debug_Print("%d match == partner owner == self match %p partner %p owner %d\n",
+            self, (void*)match, (void*)partner, owner);
+      }
+      PCU_ALWAYS_ASSERT(! (match == partner && owner == self) );
+      m->addMatch(partner, owner, match);
     }
-    PCU_ALWAYS_ASSERT(! (match == partner && owner == self) );
-    m->addMatch(partner, owner, match);
   }
 
 
   delete [] c;
-  delete [] owners;
 
   /* Owners send match info to copies */
   /*
