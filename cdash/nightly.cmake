@@ -4,14 +4,14 @@ SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
 
 set(CTEST_NIGHTLY_START_TIME "17:00:00 EST")
-set(CTEST_SITE "jenga.scorec.rpi.edu" )
+set(CTEST_SITE "pachisi.scorec.rpi.edu" )
 set(CTEST_DROP_METHOD "http")
 set(CTEST_DROP_SITE "my.cdash.org")
 set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
 set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
-set(CTEST_DASHBOARD_ROOT "/fasttmp/seol/scorec/cdash" )
+set(CTEST_DASHBOARD_ROOT "/lore/cwsmith/nightlyBuilds/" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 set(CTEST_BUILD_FLAGS -j4)
@@ -27,8 +27,7 @@ set(MERGE_AUTHOR "Nightly Bot <donotemail@scorec.rpi.edu>")
 set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
 set(MESH_URL_BASE "git@github.com:SCOREC/pumi-meshes")
-set(MESHES "/fasttmp/seol/scorec/meshes")
-set(SCOREC "/fasttmp/seol/scorec")
+set(MESHES "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}/")
 
 set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION} "tmpnam")
 
@@ -64,11 +63,11 @@ function(setup_repo)
 endfunction(setup_repo)
 
 function(setup_meshes)
-  execute_process(COMMAND rm -rf "${MESHES}"
-        WORKING_DIRECTORY "${SCOREC}"
+  execute_process(COMMAND rm -rf "${MESHES}/meshes"
+        WORKING_DIRECTORY "${MESHES}"
         RESULT_VARIABLE RM_RET)
   execute_process(COMMAND "${CTEST_GIT_COMMAND}" clone ${MESH_URL_BASE}.git meshes
-        WORKING_DIRECTORY "${SCOREC}"
+        WORKING_DIRECTORY "${MESHES}"
         RESULT_VARIABLE RETVAR)
   if(RETVAR)
     message(FATAL_ERROR "failed to clone meshes repository")
@@ -306,14 +305,14 @@ SET(CONFIGURE_OPTIONS
   "-DENABLE_ZOLTAN:BOOL=ON"
   "-DPCU_COMPRESS:BOOL=ON"
   "-DIS_TESTING:BOOL=True"
-  "-DMESHES:STRING=${MESHES}"
+  "-DMESHES:STRING=${MESHES}/meshes"
 )
 
 SET(CONFIGURE_OPTIONS-sim
   "${CONFIGURE_OPTIONS}"
   "-DENABLE_SIMMETRIX:BOOL=ON"
   "-DSIM_PARASOLID:BOOL=ON"
-  "-DSIM_MPI:STRING=mpich3.1.2"
+  "-DSIM_MPI:STRING=mpich3.2.1"
 )
 
 setup_repo()
