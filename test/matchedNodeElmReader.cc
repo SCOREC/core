@@ -23,15 +23,35 @@ void getLocalRange(unsigned total, unsigned& local,
   last = first+local;
 }
 
-unsigned getElmType(int numVtxPerElm) {
-  if (numVtxPerElm == 4) {
-    return apf::Mesh::TET;
-  } else if (numVtxPerElm == 6) {
-    return apf::Mesh::PRISM;
-  } else if (numVtxPerElm == 8) {
-    return apf::Mesh::HEX;
+void printElmTypeError(int dim, int numVtxPerElm) {
+  fprintf(stderr, "unknown element type for"
+      "dim %d and numVtxPerElm %d in %s\n",
+      dim, numVtxPerElm, __func__);
+}
+
+unsigned getElmType(int dim, int numVtxPerElm) {
+  if (dim == 2) {
+    if (numVtxPerElm == 3)
+      return apf::Mesh::TRIANGLE;
+    if (numVtxPerElm == 4)
+      return apf::Mesh::QUAD;
+    else {
+      printElmTypeError(dim, numVtxPerElm);
+      exit(EXIT_FAILURE);
+    }
+  } else if (dim == 3) {
+    if (numVtxPerElm == 4)
+      return apf::Mesh::TET;
+    else if (numVtxPerElm == 6)
+      return apf::Mesh::PRISM;
+    else if (numVtxPerElm == 8)
+      return apf::Mesh::HEX;
+    else {
+      printElmTypeError(dim, numVtxPerElm);
+      exit(EXIT_FAILURE);
+    }
   } else {
-    fprintf(stderr, "unknown element type in %s\n", __func__);
+    printElmTypeError(dim, numVtxPerElm);
     exit(EXIT_FAILURE);
   }
 }
@@ -40,18 +60,6 @@ bool skipLine(char* line) {
   // lines that start with either a '#' or a single white space
   // are skipped
   return (line[0] == '#' || line[0] == ' ' );
-}
-
-void getNumElms(FILE* f, unsigned& elms) {
-  rewind(f);
-  elms = 0;
-  size_t linelimit = 1024;
-  char* line = new char[linelimit];
-  while( gmi_getline(&line,&linelimit,f) != -1 ) {
-    if( ! skipLine(line) )
-      elms++;
-  }
-  delete [] line;
 }
 
 void getNumVerts(FILE* f, unsigned& verts) {
@@ -112,16 +120,21 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   }
 }
 
-void readElements(FILE* f, unsigned numelms, unsigned numVtxPerElm,
-    unsigned& localNumElms, int** elements) {
-  long firstElm, lastElm;
-  getLocalRange(numelms, localNumElms, firstElm, lastElm);
-  *elements = new int[localNumElms*numVtxPerElm];
+void readElements(FILE* f, unsigned &dim, unsigned& numElms,
+    unsigned& numVtxPerElm, unsigned& localNumElms, int** elements) {
   rewind(f);
+  int dimHeader[2];
+  gmi_fscanf(f, 2, "%u %u", dimHeader, dimHeader+1);
+  assert( dimHeader[0] == 1 && dimHeader[1] == 1);
+  gmi_fscanf(f, 1, "%u", &dim);
+  gmi_fscanf(f, 2, "%u %u", &numElms, &numVtxPerElm);
+  long firstElm, lastElm;
+  getLocalRange(numElms, localNumElms, firstElm, lastElm);
+  *elements = new int[localNumElms*numVtxPerElm];
   unsigned i, j;
   unsigned elmIdx = 0;
   int* elmVtx = new int[numVtxPerElm];
-  for (i = 0; i < numelms; i++) {
+  for (i = 0; i < numElms; i++) {
     int ignored;
     gmi_fscanf(f, 1, "%u", &ignored);
     for (j = 0; j < numVtxPerElm; j++)
@@ -141,6 +154,7 @@ struct MeshInfo {
   double* coords;
   int* elements;
   int* matches;
+  unsigned dim;
   unsigned elementType;
   unsigned numVerts;
   unsigned localNumVerts;
@@ -157,10 +171,9 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(f);
   FILE* fc = fopen(coordfilename, "r");
   PCU_ALWAYS_ASSERT(fc);
-  getNumElms(f,mesh.numElms);
   getNumVerts(fc,mesh.numVerts);
   if(!PCU_Comm_Self())
-    fprintf(stderr, "numElms %u numVerts %u\n", mesh.numElms, mesh.numVerts);
+    fprintf(stderr, "numVerts %u\n", mesh.numVerts);
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
   if( strcmp(matchfilename, "NULL") ) {
@@ -169,10 +182,9 @@ void readMesh(const char* meshfilename,
     readMatches(fm, mesh.numVerts, &(mesh.matches));
     fclose(fm);
   }
-  mesh.numVtxPerElm = 8; //hack!
-  readElements(f, mesh.numElms, mesh.numVtxPerElm,
+  readElements(f, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
-  mesh.elementType = getElmType(mesh.numVtxPerElm);
+  mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
   fclose(f);
 }
 
@@ -207,9 +219,8 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
-  const int dim = 3;
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, isMatched);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
   delete [] m.elements;
