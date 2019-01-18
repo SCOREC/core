@@ -213,7 +213,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
     int from = PCU_Comm_Sender();
     tmpParts.at(gid - myOffset).push_back(from);
   }
-  
+
   /* Send the coords to everybody who want them */
   PCU_Comm_Begin();
   for (int i = 0; i < mySize; ++i) {
@@ -236,6 +236,89 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   }
 
   delete [] c;
+}
+
+apf::MeshTag* setIntTag(Mesh2* m, const int* vals, const int entries,
+    int nverts, GlobalToVert& globalToVert)
+{
+  Gid max = getMax(globalToVert);
+  Gid total = max + 1;
+  int peers = PCU_Comm_Peers();
+  int quotient = total / peers;
+  int remainder = total % peers;
+  int mySize = quotient;
+  int self = PCU_Comm_Self();
+  if (self == (peers - 1))
+    mySize += remainder;
+  int myOffset = self * quotient;
+
+  /* Force each peer to have exactly mySize verts.
+     This means we might need to send and recv some coords */
+  int* c = new int[mySize*entries];
+
+  int start = PCU_Exscan_Int(nverts);
+
+  PCU_Comm_Begin();
+  int to = std::min(peers - 1, start / quotient);
+  int n = std::min((to+1)*quotient-start, nverts);
+  while (nverts > 0) {
+    PCU_COMM_PACK(to, start);
+    PCU_COMM_PACK(to, n);
+    PCU_Comm_Pack(to, vals, n*entries*sizeof(int));
+
+    nverts -= n;
+    start += n;
+    vals += n*entries;
+    to = std::min(peers - 1, to + 1);
+    n = std::min(quotient, nverts);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    PCU_COMM_UNPACK(start);
+    PCU_COMM_UNPACK(n);
+    PCU_Comm_Unpack(&c[(start - myOffset) * entries], n*entries*sizeof(int));
+  }
+
+  /* Tell all the owners of the data what we need */
+  typedef std::vector< std::vector<int> > TmpParts;
+  TmpParts tmpParts(mySize);
+  PCU_Comm_Begin();
+  APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
+    int gid = it->first;
+    int to = std::min(peers - 1, gid / quotient);
+    PCU_COMM_PACK(to, gid);
+  }
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    int from = PCU_Comm_Sender();
+    tmpParts.at(gid - myOffset).push_back(from);
+  }
+
+  /* Send the data to everybody who want them */
+  PCU_Comm_Begin();
+  for (int i = 0; i < mySize; ++i) {
+    std::vector<int>& parts = tmpParts[i];
+    for (size_t j = 0; j < parts.size(); ++j) {
+      int to = parts[j];
+      int gid = i + myOffset;
+      PCU_COMM_PACK(to, gid);
+      PCU_Comm_Pack(to, &c[i*entries], entries*sizeof(int));
+    }
+  }
+  PCU_Comm_Send();
+  apf::MeshTag* t = m->createIntTag("userInts",entries);
+  int* v = new int[entries];
+  while (PCU_Comm_Receive()) {
+    int gid;
+    PCU_COMM_UNPACK(gid);
+    PCU_Comm_Unpack(v, entries*sizeof(int));
+    m->setIntTag(globalToVert[gid],t,v);
+  }
+  delete [] v;
+  delete [] c;
+  return t;
 }
 
 void setMatches(Mesh2* m, const int* matches, int nverts,
