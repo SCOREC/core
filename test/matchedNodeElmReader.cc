@@ -11,6 +11,82 @@
 #include <string.h>
 #include <cassert>
 
+/* from https://github.com/SCOREC/core/issues/205
+0=fully interior of the volume
+1-6 =classified on face (not edge or vertex)
+11-22 = classified on model edge (not end points which are model vertices)
+31-38 = classified on a model vertex.
+*/
+
+/* tags on vertices */
+#define INTERIORTAG  0
+#define FACE 1
+#define FACE_LAST 1
+#define EDGE 11
+#define EDGE_LAST 22
+#define VERTEX 31
+#define VERTEX_LAST 38
+
+/* model entity ids */
+#define INTERIOR_REGION 1
+
+apf::ModelEntity* getMdlRgn(gmi_model* model) {
+  apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
+      gmi_find(model, 3, INTERIOR_REGION));
+  PCU_ALWAYS_ASSERT(rgn);
+  return rgn;
+}
+
+apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* edge = mesh->findModelEntity(1,tag);
+  PCU_ALWAYS_ASSERT(edge);
+  return edge;
+}
+
+apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* face = mesh->findModelEntity(2,tag);
+  PCU_ALWAYS_ASSERT(face);
+  return face;
+}
+
+void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
+  (void)model;
+  (void)mesh;
+  (void)t;
+}
+
+void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
+  (void)model;
+  (void)mesh;
+}
+
+void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxType) {
+  (void)model;
+  (void)mesh;
+  (void)vtxType;
+}
+
+/** \brief set the mesh region classification
+  \details hacked to set the classification to the same geometric model region
+*/
+void setRgnClassification(gmi_model* model, apf::Mesh2* mesh) {
+  apf::ModelEntity* mdlRgn = getMdlRgn(model);
+  apf::MeshIterator* it = mesh->begin(3);
+  apf::MeshEntity* rgn;
+  while( (rgn = mesh->iterate(it)) )
+    mesh->setModelEntity(rgn,mdlRgn);
+  mesh->end(it);
+}
+
+void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
+  setRgnClassification(model,mesh);
+  setFaceClassification(model,mesh,t);
+  setEdgeClassification(model,mesh);
+  setVtxClassification(model,mesh,t);
+  mesh->acceptChanges();
+}
+
+
 void getLocalRange(unsigned total, unsigned& local,
     long& first, long& last) {
   const int self = PCU_Comm_Self();
@@ -72,6 +148,24 @@ void getNumVerts(FILE* f, unsigned& verts) {
       verts++;
   }
   delete [] line;
+}
+
+void readClassification(FILE* f, unsigned numVtx, int** classification) {
+  long firstVtx, lastVtx;
+  unsigned localNumVtx;
+  getLocalRange(numVtx,localNumVtx,firstVtx,lastVtx);
+  *classification = new int[localNumVtx];
+  rewind(f);
+  int vidx = 0;
+  for(unsigned i=0; i<numVtx; i++) {
+    int id;
+    int mdlId;
+    gmi_fscanf(f, 2, "%d %d", &id, &mdlId);
+    if( i >= firstVtx && i < lastVtx ) {
+      (*classification)[vidx] = mdlId;
+      vidx++;
+    }
+  }
 }
 
 void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordinates) {
@@ -154,6 +248,7 @@ struct MeshInfo {
   double* coords;
   int* elements;
   int* matches;
+  int* classification;
   unsigned dim;
   unsigned elementType;
   unsigned numVerts;
@@ -166,9 +261,8 @@ struct MeshInfo {
 void readMesh(const char* meshfilename,
     const char* coordfilename,
     const char* matchfilename,
+    const char* classfilename,
     MeshInfo& mesh) {
-  FILE* f = fopen(meshfilename, "r");
-  PCU_ALWAYS_ASSERT(f);
   FILE* fc = fopen(coordfilename, "r");
   PCU_ALWAYS_ASSERT(fc);
   getNumVerts(fc,mesh.numVerts);
@@ -176,12 +270,21 @@ void readMesh(const char* meshfilename,
     fprintf(stderr, "numVerts %u\n", mesh.numVerts);
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
+
+  FILE* ff = fopen(classfilename, "r");
+  PCU_ALWAYS_ASSERT(ff);
+  readClassification(ff, mesh.numVerts, &(mesh.classification));
+  fclose(ff);
+
   if( strcmp(matchfilename, "NULL") ) {
     FILE* fm = fopen(matchfilename, "r");
     PCU_ALWAYS_ASSERT(fm);
     readMatches(fm, mesh.numVerts, &(mesh.matches));
     fclose(fm);
   }
+
+  FILE* f = fopen(meshfilename, "r");
+  PCU_ALWAYS_ASSERT(f);
   readElements(f, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
@@ -193,11 +296,12 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  if( argc != 6 ) {
+  if( argc != 7 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
+          "<ascii vertex classification flag .class> "
           "<output model .dmg> <output mesh .smb>\n",
           argv[0]);
     }
@@ -210,7 +314,7 @@ int main(int argc, char** argv)
 
   double t0 = PCU_Time();
   MeshInfo m;
-  readMesh(argv[1],argv[2],argv[3],m);
+  readMesh(argv[1],argv[2],argv[3],argv[4],m);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
@@ -233,7 +337,12 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
+  apf::MeshTag* t = setIntTag(mesh, m.classification, 1,
+      m.localNumVerts, outMap);
   outMap.clear();
+  setClassification(model,mesh,t);
+  apf::removeTagFromDimension(mesh, t, 0);
+  mesh->destroyTag(t);
   if(!PCU_Comm_Self())
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
   mesh->verify();
