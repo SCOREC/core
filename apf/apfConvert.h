@@ -26,7 +26,7 @@ class MeshEntity;
   of apf::Mesh. This is a fully scalable parallel mesh conversion
   tool. */
 void convert(Mesh *in, Mesh2 *out,
-             MeshEntity** nodes=NULL, MeshEntity** elems=NULL);
+             MeshEntity** nodes=NULL, MeshEntity** elems=NULL, bool copy_data=true);
 
 /** \brief a map from global ids to vertex objects */
 typedef std::map<int, MeshEntity*> GlobalToVert;

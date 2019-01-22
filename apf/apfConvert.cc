@@ -22,7 +22,7 @@ class Converter
       outMesh = b;
     }
      
-    void run(MeshEntity** nodes, MeshEntity** elems)
+    void run(MeshEntity** nodes, MeshEntity** elems, bool copy_data=true)
     {
       if (nodes==NULL)
       {
@@ -43,12 +43,15 @@ class Converter
         for (int i = 0; i <= inMesh->getDimension(); ++i)
           createMatches(i);
       convertQuadratic();
-      convertFields();
-      convertNumberings();
-      convertGlobalNumberings();
-      // this must be called after anything that might create tags e.g. fields
-      // or numberings to avoid problems with tag duplication
-      convertTags();
+      if (copy_data)
+      {
+        convertFields();
+        convertNumberings();
+        convertGlobalNumberings();
+        // this must be called after anything that might create tags e.g. fields
+        // or numberings to avoid problems with tag duplication
+        convertTags();
+      }
       outMesh->acceptChanges();
     }
 
@@ -447,10 +450,10 @@ class Converter
     std::map<MeshEntity*,MeshEntity*> newFromOld;
 };
 
-void convert(Mesh *in, Mesh2 *out, MeshEntity** nodes, MeshEntity** elems)
+void convert(Mesh *in, Mesh2 *out, MeshEntity** nodes, MeshEntity** elems, bool copy_data)
 {
   Converter c(in,out);
-  c.run(nodes, elems);
+  c.run(nodes, elems, copy_data);
 }
 
 }

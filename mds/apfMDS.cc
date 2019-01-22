@@ -175,9 +175,8 @@ class MeshMDS : public Mesh2
       isMatched = isMatched_;
       ownsModel = true;
     }
-
     MeshMDS(gmi_model* m, Mesh* from, 
-            apf::MeshEntity** nodes, apf::MeshEntity** elems)
+            apf::MeshEntity** nodes, apf::MeshEntity** elems, bool copy_data=true)
     {
       init(apf::getLagrange(1));
       mds_id cap[MDS_TYPES];
@@ -193,7 +192,7 @@ class MeshMDS : public Mesh2
       mesh = mds_apf_create(m,d,cap);
       isMatched = from->hasMatching();
       ownsModel = true;
-      apf::convert(from, this, nodes, elems);
+      apf::convert(from, this, nodes, elems, copy_data);
     }
 
     MeshMDS(gmi_model* m, const char* pathname)
@@ -840,10 +839,10 @@ bool hasNode(Mesh* m, MeshEntity* e)
   return false;
 }
 
-Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder)
+Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder, bool copy_data)
 {
   if (!reorder)
-    return new MeshMDS(model, from, NULL, NULL);
+    return new MeshMDS(model, from, NULL, NULL, copy_data);
 
   int mesh_dim = from->getDimension();
 
@@ -907,7 +906,7 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder)
   destroyNumbering(nn);
   destroyNumbering(en);
 
-  return new MeshMDS(model, from, &(node_arr[0]), &(elem_arr[0]));
+  return new MeshMDS(model, from, &(node_arr[0]), &(elem_arr[0]), copy_data);
 }
 
 Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)

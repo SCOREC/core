@@ -46,6 +46,8 @@ int main(int argc, char* argv[])
   PCU_Comm_Init();
   lion_set_verbosity(1);
   gmi_register_null();
+
+  // create meshes and write data to one of them
   apf::Mesh* m1 = createMesh();
   apf::Mesh2* m2 = createEmptyMesh();
   // create field on m1
@@ -88,6 +90,8 @@ int main(int argc, char* argv[])
     if (!(std::abs(uval - 2 * double(val)) < 1E-15)) return 1;
   }
   m1->end(it);
+
+
   // copy m1 to m2
   apf::convert(m1, m2);
   m2->verify();
@@ -129,11 +133,30 @@ int main(int argc, char* argv[])
     ++count;
   }
   m2->end(it);
+
+  // check that not transfering Fields/Numberings/Tags also works
+  apf::Mesh2* m3 = createEmptyMesh();
+  apf::convert(m1, m3, NULL, NULL, false);
+  m3->verify();
+
+  assert(!m3->findNumbering(apf::getName(numWithField)));
+  assert(!m3->findNumbering(apf::getName(numNoField)));
+  assert(!m3->findGlobalNumbering(apf::getName(globalNumWithField)));
+  assert(!m3->findGlobalNumbering(apf::getName(globalNumNoField)));
+  assert(!m3->findNumbering(apf::getName(numWithField)));
+  assert(!m3->findGlobalNumbering(apf::getName(globalNumWithField)));
+  assert(!m3->findTag("intTag"));
+
+
+
+  // cleanup
   delete func;
   m1->destroyNative();
   m2->destroyNative();
+  m3->destroyNative();
   apf::destroyMesh(m1);
   apf::destroyMesh(m2);
+  apf::destroyMesh(m3);
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;
