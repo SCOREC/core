@@ -56,6 +56,7 @@ void get_one_level_adj (pGeom g, std::set<pGeomEnt>& ents,
     gmi_set* g_adj = gmi_adjacent(g->getGmi(), (*it)->getGmi(), dim);
     for (int i=0; i<g_adj->n; ++i)
       adj_ents.insert(g->getGeomEnt(dim, g_adj->e[i]));
+    gmi_free_set(g_adj);
   }
 }
 
