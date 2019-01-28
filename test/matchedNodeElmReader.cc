@@ -60,10 +60,31 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
   (void)mesh;
 }
 
-void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxType) {
+/* if any of four vertices are classified on region -> region
+ * else on model face and it is impossible to have more than one face in the 4
+ * vertices classification
+ * */
+void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
   (void)model;
   (void)mesh;
-  (void)vtxType;
+
+  apf::MeshIterator* it = mesh->begin(2);
+  apf::MeshEntity* f;
+  int c;
+
+  apf::Adjacent verts;
+  while( (f = mesh->iterate(it)) ) {
+    m->getAdjacent(f, 0, verts) = 0;
+    bool hasRgClass = false;
+    for(int i=0; i<verts.size(); i++) {
+      m->getIntTag(f,vtxClass,&c);
+      if( c == INTERIORTAG )
+        mesh->setModelEntity(f,mdlRgn);
+      }
+      
+    }
+  }
+  mesh->end(it);
 }
 
 /** \brief set the mesh region classification
@@ -85,7 +106,6 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setVtxClassification(model,mesh,t);
   mesh->acceptChanges();
 }
-
 
 void getLocalRange(unsigned total, unsigned& local,
     long& first, long& last) {
