@@ -470,7 +470,7 @@ void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList,apf:
   while(!sizeFieldList.empty())
   {
     field = sizeFieldList.front();
-    while(vert = m->iterate(it))
+    while( (vert = m->iterate(it)) )
     {
       double value1 = apf::getScalar(finalSizeField,vert,0);
       double value2 = apf::getScalar(field,vert,0);
@@ -642,7 +642,6 @@ int main(int argc, char** argv)
   double getHessianTime = PCU_Time();
   std::cout<<"TIMER: Finished obtaining hessians "<<getHessianTime-constructionTime<<std::endl;
 
-  apf::Field* metricField = apf::createLagrangeField(volMesh,"metric",apf::MATRIX,1);
   apf::Field* lambdaMaxField = apf::createLagrangeField(volMesh,"lambdaMax",apf::SCALAR,1);
   apf::Field* finalSizeField = apf::createLagrangeField(mesh,"final_size",apf::SCALAR,1);
   
@@ -673,8 +672,6 @@ int main(int argc, char** argv)
       minNu = apf::getScalar(nuField,vert,0);
   }
   volMesh->end(it);
-  apf::Field* gradSpeedField = apf::recoverGradientByVolume(speedField); 
-  apf::Field* hessianSpeedField = apf::recoverGradientByVolume(gradSpeedField); 
   //End getSpeed
   
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
