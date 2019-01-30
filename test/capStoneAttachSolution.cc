@@ -56,6 +56,8 @@ apf::Field* addVector3Field(apf::Mesh2* m, const std::vector<row> t, const char*
 
 void writeCre(CapstoneModule& cs, const std::string& fileName);
 
+void writeMdsMesh(apf::Mesh2* m, const char* name, const char* fieldName);
+
 struct SortingStruct
 {
   apf::Vector3 v;
@@ -846,6 +848,12 @@ int main(int argc, char** argv)
 
   // write the adapted mesh to vtk
   apf::writeVtkFiles("adaptedMesh", mesh);
+  // write the adapted mesh to smb
+  // Note: This is for statistic measurements using
+  // measureIsoStats.cc
+  // The last argument is the name of the field to be used
+  // in measureIsoStats.cc
+  writeMdsMesh(mesh, "adaptedMesh.smb", "adapt_size");
   // write the adapted mesh to cre
   writeCre(cs, "adaptedMesh.cre");
 
@@ -1102,4 +1110,77 @@ void writeCre(CapstoneModule& cs, const std::string& fileName)
   mmodels.clear();
   mmodels.push_back(mmodel);
   creWriter->write(ctx, gmodel, mmodels, fileName.c_str(), idmapping);
+}
+
+void writeMdsMesh(apf::Mesh2* m, const char* name, const char* fieldName)
+{
+  // this would be the smb mesh with a field associated with it
+  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
+
+  // add numbering to the surface mash
+  apf::Numbering* n = apf::createNumbering(m, "v_num", apf::getLagrange(1) , 1);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(0);
+  int count = 0;
+  while ( (e = m->iterate(it)) ) {
+    apf::number(n, e, 0, 0, count);
+    count++;
+  }
+  m->end(it);
+
+
+  int numVerts = m->count(0);
+  apf::MeshEntity* vMap[numVerts];
+
+  apf::MeshEntity* v;
+  it = m->begin(0);
+  while( (v = m->iterate(it)) ) {
+    apf::Vector3 p;
+    m->getPoint(v, 0, p);
+    apf::MeshEntity* nv = outMesh->createVertex(0, p, apf::Vector3(0, 0, 0));
+    int id = apf::getNumber(n, v, 0, 0);
+    vMap[id] = nv;
+  }
+  m->end(it);
+
+  it = m->begin(2);
+  while( (e = m->iterate(it)) ) {
+    apf::MeshEntity* vs[3];
+    m->getDownward(e, 0, vs);
+    apf::MeshEntity* triVs[3];
+    triVs[0] = vMap[apf::getNumber(n, vs[0], 0, 0)];
+    triVs[1] = vMap[apf::getNumber(n, vs[1], 0, 0)];
+    triVs[2] = vMap[apf::getNumber(n, vs[2], 0, 0)];
+    apf::buildElement(outMesh, 0, apf::Mesh::TRIANGLE, triVs);
+  }
+  m->end(it);
+
+  outMesh->acceptChanges();
+  apf::deriveMdsModel(outMesh);
+  outMesh->verify();
+  apf::verify(outMesh);
+
+  apf::destroyNumbering(n);
+
+  // get the field on input mesh
+  apf::Field* inputField = m->findField(fieldName);
+  PCU_ALWAYS_ASSERT(inputField);
+
+  // create the corresponding field for the out mesh
+  apf::Field* outputField  = apf::createFieldOn(outMesh, "sizes", apf::SCALAR);
+
+  it = m->begin(0);
+  apf::MeshIterator* outIt = outMesh->begin(0);
+  while( (v = m->iterate(it)) ) {
+    double value = apf::getScalar(inputField, v, 0);
+    apf::MeshEntity* outV = outMesh->iterate(outIt);
+    apf::setScalar(outputField, outV, 0, value);
+  }
+  m->end(it);
+  outMesh->end(outIt);
+  outMesh->writeNative(name);
+
+  // clean up outMesh
+  outMesh->destroyNative();
+  apf::destroyMesh(outMesh);
 }
