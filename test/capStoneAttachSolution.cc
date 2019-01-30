@@ -20,6 +20,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <math.h>
 
 
 #include "CapstoneModule.h"
@@ -837,7 +838,7 @@ int main(int argc, char** argv)
   in->shouldRunMidZoltan = true;
   in->shouldRunPostZoltan = true;
   in->maximumImbalance = 1.05;
-  in->maximumIterations = 10;
+  in->maximumIterations = log2(factor) + 1;
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
   in->shouldForceAdaptation = true;
