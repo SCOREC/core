@@ -1,6 +1,7 @@
 #include "mersenne_twister.h"
 #include "PCU.h"
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -35,7 +36,7 @@ static int mti = N + 1; /* mti == N + 1 means mt is not initialized */
 namespace {
   void fail(const char* msg) {
     if( ! PCU_Comm_Self() )
-      fprintf(stderr, "%s", msg);
+      lion_eprint(1, "%s", msg);
     exit(EXIT_FAILURE);
   }
 }

@@ -634,6 +634,7 @@ void PCU_Debug_Open(void)
   const int fanout = 2048;
   const int bufsize = 1024;
   char* path = noto_malloc(bufsize);
+  path[0] = '\0';
   if (PCU_Comm_Peers() > fanout) {
     mode_t const dir_perm = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
     strcpy(path, "debug/");

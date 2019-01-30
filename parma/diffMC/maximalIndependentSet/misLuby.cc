@@ -7,6 +7,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <locale>
 
 #include <map>

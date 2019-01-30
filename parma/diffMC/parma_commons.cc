@@ -1,5 +1,6 @@
 #include "parma_commons.h"
 #include "PCU.h"
+#include <lionPrint.h>
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -50,26 +51,25 @@ void parmaCommons::printElapsedTime(const char* fn, double elapsed) {
       status("%s elapsed time %lf seconds\n", fn, elapsed);
 }
 
-#define print(fmt) \
-  va_list ap; \
-  va_start(ap,fmt); \
-  vfprintf(stdout,fmt,ap); \
-  va_end(ap);
-
 void parmaCommons::debug(bool isActive, const char* fmt,...) {
   if(!isActive) return;
-  printf("PARMA_DEBUG ");
-  print(fmt);
+  lion_oprint(2,"PARMA_DEBUG ");
+  lion_oprint(2,fmt);
 }
 
 void parmaCommons::status(const char* fmt,...) {
-  printf("PARMA_STATUS ");
-  print(fmt);
+  lion_oprint(1, "PARMA_STATUS ");
+  va_list ap;
+  va_start(ap,fmt);
+  lion_voprint(1, fmt, ap);
+  va_end(ap);
 }
 
 void parmaCommons::error(const char* fmt,...) {
-  printf("PARMA_ERROR ");
-  print(fmt);
+  lion_oprint(1,"PARMA_ERROR ");
+  va_list ap;
+  va_start(ap,fmt);
+  lion_voprint(1, fmt, ap);
+  va_end(ap);
 }
-
 

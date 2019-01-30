@@ -3,6 +3,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <apfPartition.h>
@@ -95,6 +96,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
   gmi_model* g = gmi_load(modelFile);

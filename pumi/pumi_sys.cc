@@ -9,6 +9,7 @@
 *******************************************************************************/
 #include <PCU.h>
 #include "pumi.h"
+#include <lionPrint.h>
 #include <mpi.h>
 
 //************************************
@@ -49,7 +50,7 @@ void pumi_printSys()
   if (PCU_Comm_Self()) return;
   struct utsname u;
   if (uname(&u) == 0)
-    printf("[%s] %s %s %s %s %s\n\n",
+    lion_oprint(1,"[%s] %s %s %s %s %s\n\n",
            __func__, u.sysname, u.nodename, u.release, u.version, u.machine);
   fflush(stdout);
 }
@@ -111,7 +112,7 @@ void pumi_printTimeMem(const char* msg, double time, double memory)
 {
   if (!PCU_Comm_Self())
   {
-    printf("%-20s %6.3f sec %7.3f MB \n", msg, time, memory);
+    lion_oprint(1,"%-20s %6.3f sec %7.3f MB \n", msg, time, memory);
     fflush(stdout);
   }
 }

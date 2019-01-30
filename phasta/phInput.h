@@ -68,23 +68,32 @@ class Input
         \details valid options are 'graph', 'zrib', 'parma', and 'none'.  Selecting
       'parma' balances the elements via a diffusive method and selecting 'none' will
       disable balancing prior to adaptation.  See the partitionMethod documentation
-      for a description of the other methods. */
+      for a description of the other methods.  Note, the 'LocalPtn' parameter
+      does not apply as balancing is a global operation.
+     */
     std::string preAdaptBalanceMethod;
     /** \brief select the method used to balance the mesh during adaptation.
-        \details valid options are 'graph', 'parma', and 'none'.  See the 
+        \details valid options are 'graph', 'parma', and 'none'.  See the
       partitionMethod and preAdaptBalanceMethod documentation for a description
-      of the methods. */
+      of the methods.  Note, the 'LocalPtn' parameter does not apply as
+      balancing is a global operation.
+      */
     std::string midAdaptBalanceMethod;
     /** \brief select the method used to balance the mesh after adaptation.
         \details valid options are 'graph', 'zrib', 'parma', 'parma-gap', and 'none'.
       Selecting 'parma-gap' balances the mesh elements and reduces the number of parts
       that share mesh entities with each part (neighbors).  See the partitionMethod
-      and preAdaptBalanceMethod documentation for a description of the methods. */
+      and preAdaptBalanceMethod documentation for a description of the methods.
+      Note, the 'LocalPtn' parameter does not apply as balancing is a global
+      operation.
+      */
     std::string postAdaptBalanceMethod;
     /** \brief select the method used to balance the mesh prior to pre-processing.
         \details valid options are 'graph', 'zrib', 'parma', 'parma-gap', and 'none'.
       See the partitionMethod, preAdaptBalanceMethod, and postAdaptBalanceMethod
-      documentation for a description of the methods. */
+      documentation for a description of the methods.  Note, the 'LocalPtn'
+      parameter does not apply as balancing is a global operation.
+      */
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
@@ -124,6 +133,7 @@ class Input
     int formElementGraph;
     int snap;
     int transferParametric;
+    /** \brief enable splitting triangle edges of a prismatic boundary layer stack*/
     int splitAllLayerEdges;
     /** \brief filter out a subset of 3-way periodic matches.
        it also filters out DG interface matches. */
@@ -177,6 +187,8 @@ class Input
     int nRBParam;
     /** \brief parameter data for rigid body */
     std::vector<double> rbParamData;
+    /** \brief factor \beta used for mesh smooth/gradation */
+    double gradingFactor;
 };
 
 int countNaturalBCs(Input& in);

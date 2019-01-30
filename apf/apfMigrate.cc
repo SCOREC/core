@@ -10,6 +10,7 @@
 #include "apfCavityOp.h"
 #include "apf.h"
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 namespace apf {
@@ -861,7 +862,7 @@ void setMigrationLimit(size_t maxElements)
 {
   if( maxElements >= maxMigrationLimit ) {
     if(!PCU_Comm_Self())
-      fprintf(stderr, "ERROR requested migration limit exceeds"
+      lion_eprint(1, "ERROR requested migration limit exceeds"
                       " %lu... exiting\n", maxMigrationLimit);
     abort();
   }

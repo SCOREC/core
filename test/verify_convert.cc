@@ -3,6 +3,7 @@
  * fields, numberings, and tags
  */
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMDS.h>
@@ -14,17 +15,18 @@
 apf::Mesh2* createEmptyMesh()
 {
   gmi_model* mdl = gmi_load(".null");
-  return apf::makeEmptyMdsMesh(mdl, 3, false);
+  return apf::makeEmptyMdsMesh(mdl, 1, false);
 }
 apf::Mesh2* createMesh()
 {
   apf::Mesh2* m = createEmptyMesh();
+  apf::Vector3 pts[2] = {apf::Vector3(0,0,0), apf::Vector3(1,0,0)};
   apf::MeshEntity* verts[2];
-  verts[0] =
-      m->createVertex(NULL, apf::Vector3(0, 0, 0), apf::Vector3(0, 0, 0));
-  verts[1] =
-      m->createVertex(NULL, apf::Vector3(1, 0, 0), apf::Vector3(1, 0, 0));
-  m->createEntity(apf::Mesh::EDGE, NULL, verts);
+  for( int i=0; i<2; i++)
+    verts[i] = m->createVertex(m->findModelEntity(0,i), pts[i], pts[i]);
+  apf::buildElement(m, m->findModelEntity(1,2), apf::Mesh::EDGE,verts);
+  m->acceptChanges();
+  m->verify();
   return m;
 }
 class twox : public apf::Function {
@@ -42,7 +44,10 @@ int main(int argc, char* argv[])
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_null();
+
+  // create meshes and write data to one of them
   apf::Mesh* m1 = createMesh();
   apf::Mesh2* m2 = createEmptyMesh();
   // create field on m1
@@ -61,7 +66,7 @@ int main(int argc, char* argv[])
   // create an integer tag
   apf::MeshTag* intTag = m1->createIntTag("intTag", 1);
   // loop over all vertices in mesh and set values
-  int count = 1;
+  long count = 1;
   apf::MeshIterator* it = m1->begin(0);
   while (apf::MeshEntity* vert = m1->iterate(it)) {
     apf::setScalar(f, vert, 0, count);
@@ -72,7 +77,8 @@ int main(int argc, char* argv[])
     apf::number(globalNumNoField, vert, 0, count);
     // set the tag
     // int tagData[1] = {count};
-    m1->setIntTag(vert, intTag, &count);
+    int v = static_cast<int>(count);
+    m1->setIntTag(vert, intTag, &v);
     ++count;
   }
   m1->end(it);
@@ -84,8 +90,11 @@ int main(int argc, char* argv[])
     if (!(std::abs(uval - 2 * double(val)) < 1E-15)) return 1;
   }
   m1->end(it);
+
+
   // copy m1 to m2
   apf::convert(m1, m2);
+  m2->verify();
   apf::Field* f2 = m2->findField("field1");
   apf::Field* uf2 = m2->findField("ufield1");
 
@@ -124,11 +133,30 @@ int main(int argc, char* argv[])
     ++count;
   }
   m2->end(it);
+
+  // check that not transfering Fields/Numberings/Tags also works
+  apf::Mesh2* m3 = createEmptyMesh();
+  apf::convert(m1, m3, NULL, NULL, false);
+  m3->verify();
+
+  assert(!m3->findNumbering(apf::getName(numWithField)));
+  assert(!m3->findNumbering(apf::getName(numNoField)));
+  assert(!m3->findGlobalNumbering(apf::getName(globalNumWithField)));
+  assert(!m3->findGlobalNumbering(apf::getName(globalNumNoField)));
+  assert(!m3->findNumbering(apf::getName(numWithField)));
+  assert(!m3->findGlobalNumbering(apf::getName(globalNumWithField)));
+  assert(!m3->findTag("intTag"));
+
+
+
+  // cleanup
   delete func;
   m1->destroyNative();
   m2->destroyNative();
+  m3->destroyNative();
   apf::destroyMesh(m1);
   apf::destroyMesh(m2);
+  apf::destroyMesh(m3);
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;

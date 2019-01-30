@@ -2,7 +2,9 @@
 #include <apfGeometry.h>
 #include <cstdlib>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
+#include <sstream>
 
 namespace ph {
 
@@ -286,8 +288,11 @@ static Constraint* combinePoints(Constraint* a, Constraint* b,
   if (mb == 0)
     return takeFirst(b, a);
   /* multiple non-zero point constraints ? we got a problem. */
-  std::cerr << "ph error: point overconstraint (velocity): ";
-  std::cerr << pa->point << " and " << pb->point << dbg;
+  std::stringstream ss;
+  ss << "ph error: point overconstraint (velocity): ";
+  ss << pa->point << " and " << pb->point << dbg;
+  std::string s = ss.str();
+  lion_eprint(1,"%s",s.c_str());
   abort();
   return 0;
 }
@@ -297,19 +302,22 @@ static Constraint* combinePointsElas(Constraint* a, Constraint* b,
 {
   PointConstraintElas* pa = static_cast<PointConstraintElas*>(a);
   PointConstraintElas* pb = static_cast<PointConstraintElas*>(b);
-  /* same points, arbitrary victory */
-  if (apf::areClose(pa->point, pb->point, 0.0))
-    return takeFirst(a, b);
   double ma = pa->point.getLength();
   double mb = pb->point.getLength();
+  /* same points, arbitrary victory */
+  if (apf::areClose(pa->point, pb->point, ma*1e-12)) // allow machine epsilon
+    return takeFirst(a, b);
   /* any zero magnitude wins (no-slip wins over weaker constraints) */
   if (ma == 0)
     return takeFirst(a, b);
   if (mb == 0)
     return takeFirst(b, a);
   /* multiple non-zero point constraints ? we got a problem. */
-  std::cerr << "ph error: point overconstraint (mesh-elas): ";
-  std::cerr << pa->point << " and " << pb->point << dbg;
+  std::stringstream ss;
+  ss << "ph error: point overconstraint (mesh-elas): ";
+  ss << pa->point << " and " << pb->point << dbg;
+  std::string s = ss.str();
+  lion_eprint(1,"%s",s.c_str());
   abort();
   return 0;
 }
@@ -324,7 +332,10 @@ static Constraint* combinePlanes(Constraint* a, Constraint* b,
     return takeFirst(a, b);
   /* the planes are different, so make sure they're not parallel */
   if (apf::areParallel(pa->plane, pb->plane, 0.0)) {
-    std::cerr << "ph error: different parallel planes (velocity)" << dbg;
+    std::stringstream ss;
+    ss << "ph error: different parallel planes (velocity)" << dbg;
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
     abort();
   }
   /* different intersecting planes, combine into a line constraint */
@@ -344,7 +355,10 @@ static Constraint* combinePlanesElas(Constraint* a, Constraint* b,
     return takeFirst(a, b);
   /* the planes are different, so make sure they're not parallel */
   if (apf::areParallel(pa->plane, pb->plane, 0.0)) {
-    std::cerr << "ph error: different parallel planes (mesh-elas)" << dbg;
+    std::stringstream ss;
+    ss << "ph error: different parallel planes (mesh-elas)" << dbg;
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
     abort();
   }
   /* different intersecting planes, combine into a line constraint */
@@ -373,7 +387,10 @@ static Constraint* combineLinePlane(Constraint* a, Constraint* b,
     return takeFirst(a, b); /* keep the line */
   /* it may never intersect */
   if (apf::areParallel(line, pb->plane, 0.0)) {
-    std::cerr << "line doesn't intersect plane (velocity)" << dbg;
+    std::stringstream ss;
+    ss << "line doesn't intersect plane (velocity)" << dbg;
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
     abort();
   }
   /* okay, there is a legit intersection point. find it. */
@@ -405,7 +422,10 @@ static Constraint* combineLinePlaneElas(Constraint* a, Constraint* b,
     return takeFirst(a, b); /* keep the line */
   /* it may never intersect */
   if (apf::areParallel(line, pb->plane, 0.0)) {
-    std::cerr << "line doesn't intersect plane (mesh-elas)" << dbg;
+    std::stringstream ss;
+    ss << "line doesn't intersect plane (mesh-elas)" << dbg;
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
     abort();
   }
   /* okay, there is a legit intersection point. find it. */

@@ -15,13 +15,14 @@
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
 #include <SimMeshTools.h>
-//#ifdef HAVE_SIMADVMESHING
-#include <SimAdvMeshing.h>
-//#endif
+#ifdef HAVE_SIMADVMESHING
+  #include <SimAdvMeshing.h>
+#endif
 #endif
 
 #include <PCU.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdio>
 
 namespace ph {
@@ -88,6 +89,56 @@ void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir) {
   m->end(vit);
 }
 
+// the same as above but for isotropic size fields
+void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag) {
+// loop over all vertices
+  double size[1];
+  double anisosize[3][3];
+  apf::MeshEntity* v;
+  apf::MeshIterator* vit = m->begin(0);
+  while ((v = m->iterate(vit))) {
+#ifdef HAVE_SIMMETRIX
+// get sim size field
+// this is for simmetrix mesh, should be generalized
+    {
+      pVertex meshVertex = reinterpret_cast<pVertex>(v);
+      int sztype = V_size(meshVertex, size, anisosize);
+      PCU_ALWAYS_ASSERT(sztype == 1 || sztype == 2);
+
+      // consider iso size field as anisotropic size field
+      if (sztype == 1) {
+        initArray(anisosize);
+        anisosize[0][0] = size[0];
+        anisosize[1][1] = size[0];
+        anisosize[2][2] = size[0];
+      }
+    }
+#else
+    {
+      PCU_ALWAYS_ASSERT_VERBOSE(0,
+         "please turn on Simmetrix and re-compile the code.\n");
+    }
+#endif
+
+// transfer to apf field sf_mag
+/* note that the frame in Simmetrix is stored by row
+   while in PUMI, it is stored by column */
+    apf::Vector3 v_mag;
+    v_mag[0] = sqrt(anisosize[0][0]*anisosize[0][0]
+                  + anisosize[0][1]*anisosize[0][1]
+                  + anisosize[0][2]*anisosize[0][2]);
+    v_mag[1] = sqrt(anisosize[1][0]*anisosize[1][0]
+                  + anisosize[1][1]*anisosize[1][1]
+                  + anisosize[1][2]*anisosize[1][2]);
+    v_mag[2] = sqrt(anisosize[2][0]*anisosize[2][0]
+                  + anisosize[2][1]*anisosize[2][1]
+                  + anisosize[2][2]*anisosize[2][2]);
+    apf::setVector(sf_mag, v, 0, v_mag);
+  }
+  m->end(vit);
+}
+
+
 } // end namespace ph
 
 #ifdef __cplusplus
@@ -142,7 +193,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
     /* not support other mesh region type */
     if (m->getType(e) != apf::Mesh::TET)
       continue;
-#ifdef HAVE_SIMMETRIX
+#ifdef HAVE_SIMADVMESHING
     if (EN_isBLEntity(reinterpret_cast<pEntity>(e)))
       continue;
 #endif
@@ -155,7 +206,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
 
 // measure mesh face in layered mesh
   minfq = 1.0;
-#ifdef HAVE_SIMMETRIX
+#ifdef HAVE_SIMADVMESHING
   if (in.simmetrixMesh == 1) {
 // get simmetrix mesh
     apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(m);
@@ -205,7 +256,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
   else
 #endif
   {
-    printf("PUMI-based mesh doesn't have BL info. minfq is set to be 1.0\n");
+    lion_oprint(1,"PUMI-based mesh doesn't have BL info. minfq is set to be 1.0\n");
   }
 
 // restore mesh

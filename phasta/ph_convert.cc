@@ -16,6 +16,7 @@
 #include <phInput.h>
 #include <apfGeometry.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -41,9 +42,9 @@ static void fixMatches(apf::Mesh2* m)
 {
   if (m->hasMatching()) {
     if (apf::alignMdsMatches(m))
-      printf("fixed misaligned matches\n");
+      lion_oprint(1,"fixed misaligned matches\n");
     else
-      printf("matches were aligned\n");
+      lion_oprint(1,"matches were aligned\n");
     PCU_ALWAYS_ASSERT( ! apf::alignMdsMatches(m));
   }
 }
@@ -105,18 +106,18 @@ void getConfig(int argc, char** argv) {
         break;
       case '?':
         if (!PCU_Comm_Self())
-          printf ("warning: skipping unrecognized option\n");
+          lion_oprint(1,"warning: skipping unrecognized option\n");
         break;
       default:
         if (!PCU_Comm_Self())
-          printf("Usage %s %s", argv[0], usage);
+          lion_oprint(1,"Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
   }
 
   if(argc-optind != 3) {
     if (!PCU_Comm_Self())
-      printf("Usage %s %s", argv[0], usage);
+      lion_oprint(1,"Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
   int i=optind;
@@ -125,9 +126,9 @@ void getConfig(int argc, char** argv) {
   smb_path = argv[i++];
 
   if (!PCU_Comm_Self()) {
-    printf ("fix_pyramids %d attach_order %d enable_log %d\n",
+    lion_oprint(1,"fix_pyramids %d attach_order %d enable_log %d\n",
             should_fix_pyramids, should_attach_order, should_log);
-    printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
+    lion_oprint(1,"native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
       gmi_native_path, gmi_path, sms_path, smb_path);
   }
 }
@@ -197,10 +198,10 @@ static void fixCoords(apf::Mesh2* m)
   /* admittedly not the best way of checking
      which processor had the max */
   if (global_diffs[0] && (global_max[0] == max_x_diff))
-    fprintf(stderr, "%ld spatial mismatches corrected, max distance %e\n",
+    lion_eprint(1, "%ld spatial mismatches corrected, max distance %e\n",
         global_diffs[0], global_max[0]);
   if (global_diffs[1] && (global_max[1] == max_p_diff))
-    fprintf(stderr, "%ld parametric mismatches corrected, max distance %e\n",
+    lion_eprint(1, "%ld parametric mismatches corrected, max distance %e\n",
         global_diffs[1], global_max[1]);
 }
 
@@ -246,18 +247,18 @@ int main(int argc, char** argv)
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
   double t1 = PCU_Time();
   if(!PCU_Comm_Self())
-    fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
+    lion_eprint(1, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
   double t2 = PCU_Time();
   if(!PCU_Comm_Self())
-    fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
+    lion_eprint(1, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
   ph::buildMapping(simApfMesh);
 
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   double t3 = PCU_Time();
   if(!PCU_Comm_Self())
-    fprintf(stderr, "created the apf_mds mesh in %f seconds\n", t3-t2);
+    lion_eprint(1, "created the apf_mds mesh in %f seconds\n", t3-t2);
 
   apf::printStats(mesh);
   apf::destroyMesh(simApfMesh);

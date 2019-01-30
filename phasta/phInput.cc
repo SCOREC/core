@@ -5,6 +5,7 @@
 #include <set>
 #include "ph.h"
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 /** \file phInput.cc
     \brief The implementation of Chef's interface for execution control */
@@ -81,6 +82,7 @@ static void setDefaults(Input& in)
   in.gammaSize = 3e-5;
   in.nRigidBody = 0;
   in.nRBParam = 12;
+  in.gradingFactor = 1.25;
 }
 
 Input::Input()
@@ -161,6 +163,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["gammaSize"] = &in.gammaSize;
   intMap["nRigidBody"] = &in.nRigidBody;
   intMap["nRBParam"] = &in.nRBParam;
+  dblMap["gradingFactor"] = &in.gradingFactor;
 }
 
 template <class T>
@@ -191,7 +194,7 @@ static bool deprecated(stringset& old, std::string const& name)
 {
   if( old.count(name) ) {
     if( !PCU_Comm_Self() )
-      fprintf(stderr, "WARNING deprecated input \"%s\" ... "
+      lion_eprint(1, "WARNING deprecated input \"%s\" ... "
           "carefully check stderr and stdout for unexpected behavior\n",
           name.c_str());
     return true;

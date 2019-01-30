@@ -7,6 +7,7 @@
 #include "apfNumbering.h"
 #include <map>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
 #include <cstdlib>
 
@@ -20,30 +21,47 @@ class Converter
       inMesh = a;
       outMesh = b;
     }
-    void run()
+     
+    void run(MeshEntity** nodes, MeshEntity** elems, bool copy_data=true)
     {
-      createVertices();
-      createEntities();
+      if (nodes==NULL)
+      {
+        createVertices();
+        createEntities();
+      }    
+      else
+      {
+        createVertices(nodes);
+        for (int i=1; i<inMesh->getDimension(); ++i)
+          createDimension(i);
+        createDimension(inMesh->getDimension(), elems);
+      }
+
       for (int i = 0; i <= inMesh->getDimension(); ++i)
         createRemotes(i);
       if (inMesh->hasMatching())
         for (int i = 0; i <= inMesh->getDimension(); ++i)
           createMatches(i);
       convertQuadratic();
-      convertFields();
-      convertNumberings();
-      convertGlobalNumberings();
-      // this must be called after anything that might create tags e.g. fields
-      // or numberings to avoid problems with tag duplication
-      convertTags();
+      if (copy_data)
+      {
+        convertFields();
+        convertNumberings();
+        convertGlobalNumberings();
+        // this must be called after anything that might create tags e.g. fields
+        // or numberings to avoid problems with tag duplication
+        convertTags();
+      }
       outMesh->acceptChanges();
     }
+
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
     {
       int type = inMesh->getModelType(oldC);
       int tag = inMesh->getModelTag(oldC);
       return outMesh->findModelEntity(type,tag);
     }
+
     void createVertices()
     {
       MeshIterator* it = inMesh->begin(0);
@@ -62,11 +80,32 @@ class Converter
       inMesh->end(it);
       PCU_ALWAYS_ASSERT(outMesh->count(0) == inMesh->count(0));
     }
+
+    void createVertices(MeshEntity** nodes)
+    {
+      MeshEntity *oldV;
+      for (unsigned int i=0; i<inMesh->count(0); ++i)
+      { 
+        oldV=nodes[i];
+
+        ModelEntity *oldC = inMesh->toModel(oldV);
+        ModelEntity *newC = getNewModelFromOld(oldC);
+        Vector3 xyz;
+        inMesh->getPoint(oldV, 0, xyz);
+        Vector3 param(0,0,0);
+        inMesh->getParam(oldV,param);
+        MeshEntity* newV = outMesh->createVertex(newC, xyz, param);
+        newFromOld[oldV] = newV;
+      }
+      PCU_ALWAYS_ASSERT(outMesh->count(0) == inMesh->count(0));
+    }
+
     void createEntities()
     { 
-      for (int i = 1; i < (inMesh->getDimension())+1; ++i)
+      for (int i = 1; i < inMesh->getDimension()+1; ++i)
         createDimension(i);
     }
+
     void createDimension(int dim)
     { 
       MeshIterator* it = inMesh->begin(dim);
@@ -89,6 +128,29 @@ class Converter
       inMesh->end(it);
       PCU_ALWAYS_ASSERT(outMesh->count(dim) == inMesh->count(dim));
     }
+
+    void createDimension(int dim, MeshEntity** elems)
+    { 
+      MeshEntity *oldE;
+      for (unsigned int i=0; i<inMesh->count(dim); ++i)
+      {
+        oldE = elems[i];
+        int type = inMesh->getType(oldE);
+        ModelEntity *oldC = inMesh->toModel(oldE);
+        ModelEntity *newC = getNewModelFromOld(oldC);
+        Downward down;
+        int ne = inMesh->getDownward(oldE, dim-1, down);
+        Downward new_down;
+        for(int i=0; i<ne; ++i)
+        {
+          new_down[i]=newFromOld[down[i]];
+        }
+        MeshEntity *newE = outMesh->createEntity(type, newC, new_down); 
+        newFromOld[oldE] = newE;
+      }
+      PCU_ALWAYS_ASSERT(outMesh->count(dim) == inMesh->count(dim));
+    }
+
     void createRemotes(int dim)
     {
       /*    O-------------|---|----->O
@@ -247,7 +309,7 @@ class Converter
                 outMesh->setLongTag(newFromOld[e], out, lngData);
                 break;
               default:
-                std::cerr << "Tried to convert unknown tag type\n";
+                lion_eprint(1,"Tried to convert unknown tag type\n");
                 abort();
                 break;
             }
@@ -329,7 +391,7 @@ class Converter
               out = outMesh->createLongTag(tagName, tagSize);
               break;
             default:
-              std::cerr << "Tried to convert unknown tag type\n";
+              lion_eprint(1,"Tried to convert unknown tag type\n");
               abort();
           }
           PCU_DEBUG_ASSERT(out);
@@ -343,7 +405,7 @@ class Converter
       if (inMesh->getShape() != getLagrange(2) && inMesh->getShape() != getSerendipity())
         return;
       if ( ! PCU_Comm_Self())
-        fprintf(stderr,"transferring quadratic mesh\n");
+        lion_eprint(1,"transferring quadratic mesh\n");
       changeMeshShape(outMesh,inMesh->getShape(),/*project=*/false);
       convertField(inMesh->getCoordinateField(),outMesh->getCoordinateField());
     }
@@ -388,10 +450,10 @@ class Converter
     std::map<MeshEntity*,MeshEntity*> newFromOld;
 };
 
-void convert(Mesh *in, Mesh2 *out)
+void convert(Mesh *in, Mesh2 *out, MeshEntity** nodes, MeshEntity** elems, bool copy_data)
 {
   Converter c(in,out);
-  c.run();
+  c.run(nodes, elems, copy_data);
 }
 
 }

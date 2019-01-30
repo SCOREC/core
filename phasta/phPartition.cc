@@ -7,6 +7,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 #ifdef HAVE_SIMMETRIX
 #include <apfSIM.h>
@@ -128,7 +129,7 @@ void parmaTet(Input& in, apf::Mesh2* m, bool runGap) {
     double vtxImb = Parma_GetWeightedEntImbalance(m, weights, 0);
     if( vtxImb <= in.vertexImbalance ) {
       if( !PCU_Comm_Self() )
-        fprintf(stdout, "STATUS vtx imbalance target %.3f reached\n",
+        lion_oprint(1, "STATUS vtx imbalance target %.3f reached\n",
             in.vertexImbalance);
       break;
     }
@@ -190,7 +191,7 @@ void simmetrixBalance(apf::Mesh2* m)
   int currentTotalNumParts = PM_totalNumParts(pmesh);
   if (currentTotalNumParts > totalNumParts) {
     if( !PCU_Comm_Self() )
-      fprintf(stderr, "Error: cannot reduce number of partitions %d->%d\n",
+      lion_eprint(1, "Error: cannot reduce number of partitions %d->%d\n",
               currentTotalNumParts, totalNumParts);
     totalNumParts = currentTotalNumParts;
   }

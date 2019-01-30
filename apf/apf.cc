@@ -17,9 +17,12 @@
 #include "apfArrayData.h"
 #include "apfTagData.h"
 #include "apfUserData.h"
+#include "apfVtk.h"
+#include "apfNumberingClass.h"
 #include <cstdio>
 #include <cstdlib>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 namespace apf {
 
@@ -277,6 +280,13 @@ void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value)
   value = element->getValue(param);
 }
 
+
+void getMatrixGrad(Element* e, Vector3 const& param, Vector<27>& deriv)
+{
+  MatrixElement* element = static_cast<MatrixElement*>(e);
+  return element->grad(param,deriv);
+}
+
 void getComponents(Element* e, Vector3 const& param, double* components)
 {
   e->getComponents(param,components);
@@ -353,7 +363,7 @@ double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
 
     cosAngle = computeCosAngleInTri(m, pe, e1, e2, Q);
   } else {
-    printf("The requested angle computation is not implemented. Aborting! \n");
+    lion_oprint(1,"The requested angle computation is not implemented. Aborting! \n");
     abort();
   }
   return cosAngle;
@@ -424,14 +434,27 @@ void synchronize(Field* f, Sharing* shr)
   synchronizeFieldData<double>(f->getData(), shr);
 }
 
-void accumulate(Field* f, Sharing* shr)
+void accumulate(Field* f, Sharing* shr, bool delete_shr)
 {
-  accumulateFieldData(f->getData(), shr);
+  reduceFieldData(f->getData(), shr, delete_shr, ReductionSum<double>());
+}
+
+void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
+           const ReductionOp<double>& sum)
+{
+  reduceFieldData(f->getData(), shr, delete_shr, sum);
+}
+
+bool isPrintable(Field* f)
+{
+  // cast to FieldBase and call the other method
+  FieldBase* f2 = f;
+  return isPrintable(f2);
 }
 
 void fail(const char* why)
 {
-  fprintf(stderr,"APF FAILED: %s\n",why);
+  lion_eprint(1,"APF FAILED: %s\n",why);
   abort();
 }
 

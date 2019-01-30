@@ -13,6 +13,7 @@
 #include "apfTagData.h"
 #include <gmi.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <algorithm>
 
 namespace apf {
@@ -834,11 +835,11 @@ void printTypes(Mesh* m)
   m->end(it);
   PCU_Add_Longs(typeCnt,Mesh::TYPES);
   if (!PCU_Comm_Self()) {
-    printf("number of");
+    lion_oprint(1,"number of");
     for (int i=0; i<Mesh::TYPES; i++)
       if (dim == Mesh::typeDimension[i])
-        printf(" %s %ld", Mesh::typeName[i], typeCnt[i]);
-    printf("\n");
+        lion_oprint(1," %s %ld", Mesh::typeName[i], typeCnt[i]);
+    lion_oprint(1,"\n");
   }
 }
 
@@ -850,7 +851,7 @@ void printStats(Mesh* m)
   PCU_Add_Longs(n, 4);
   printTypes(m);
   if (!PCU_Comm_Self())
-    printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
+    lion_oprint(1,"mesh entity counts: v %ld e %ld f %ld r %ld\n",
         n[0], n[1], n[2], n[3]);
 }
 
@@ -861,7 +862,7 @@ void warnAboutEmptyParts(Mesh* m)
     ++emptyParts;
   emptyParts = PCU_Add_Int(emptyParts);
   if (emptyParts && (!PCU_Comm_Self()))
-    fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
+    lion_eprint(1,"APF warning: %d empty parts\n",emptyParts);
 }
 
 static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)

@@ -19,6 +19,7 @@
 #include <string.h>
 #include <map>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include "apf.h"
 #include "apfShape.h"
@@ -293,7 +294,7 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
     pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename); 
     merge_comm(prevComm);
     if (!PCU_Comm_Self())
-      printf("serial mesh %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+      lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, PCU_Time() - t0);
   }
 
   if (pumi_size()>1 && stitch_link) 

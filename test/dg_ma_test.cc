@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -41,6 +42,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

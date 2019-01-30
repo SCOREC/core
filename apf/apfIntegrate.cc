@@ -8,6 +8,7 @@
 #include "apfIntegrate.h"
 #include "apfMesh.h"
 #include "apf.h"
+#include "pcu_util.h"
 
 namespace apf {
 
@@ -640,9 +641,11 @@ void Integrator::parallelReduce()
 {
 }
 
-void Integrator::process(Mesh* m)
+void Integrator::process(Mesh* m, int d)
 {
-  int d = m->getDimension();
+  if(d<0)
+    d = m->getDimension();
+  PCU_DEBUG_ASSERT(d<=m->getDimension());
   MeshEntity* entity;
   MeshIterator* elements = m->begin(d);
   while ((entity = m->iterate(elements)))

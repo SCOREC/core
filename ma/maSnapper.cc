@@ -12,6 +12,7 @@
 #include "maShapeHandler.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
 
 namespace ma {
@@ -337,8 +338,7 @@ bool FirstProblemPlane::find()
 
     if (ok){
       if (isInf)
-      	std::cout << "Info: Found Infinitely Many Intersection Points!" <<
-      	  std::endl;
+        lion_oprint(1, "Info: Found Infinitely Many Intersection Points!\n");
       Vector newDirection = intersect - ray.start;
       if (newDirection.getLength() < minDist) {
 	dists.push_back(newDirection.getLength());
@@ -423,8 +423,8 @@ FirstProblemPlane::intersectRayFace(const Ray& ray, const std::vector<Vector>& c
   bool res = false;
   isInf = false;
   if (coords.size() != 3){
-    std::cout << "coords.size() is " << coords.size() << std::endl;
-    std::cout << "No implementation for non-tri faces!" << std::endl;
+    lion_oprint(1,"coords.size() is %d\n", coords.size());
+    lion_oprint(1,"No implementation for non-tri faces!\n");
     res = false;
   }
 

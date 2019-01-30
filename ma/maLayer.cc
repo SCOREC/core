@@ -5,6 +5,7 @@
 #include "maShape.h"
 #include <sstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 namespace ma {
 
@@ -21,6 +22,22 @@ static long markLayerElements(Adapt* a)
       ++n;
     }
   m->end(it);
+  // set LAYER flag for user defined boundary layer elements if they exist.
+  Tag* layerTag = m->findTag(a->input->userDefinedLayerTagName);
+  if (layerTag){
+    PCU_ALWAYS_ASSERT(m->getTagType(layerTag) == apf::Mesh::INT);
+    it = m->begin(meshDimension);
+    while ((e = m->iterate(it))) {
+      if (!m->hasTag(e, layerTag))
+      	continue;
+      int tagValue;
+      m->getIntTag(e, layerTag, &tagValue);
+      if (tagValue) {
+      	setFlagOnClosure(a, e, LAYER);
+      	n++;
+      }
+    }
+  }
   n = PCU_Add_Long(n);
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
@@ -165,7 +182,7 @@ void checkLayerShape(Mesh* m, const char* key)
            << " at " << apf::getLinearCentroid(m, e)
            << " is unsafe to tetrahedronize\n";
         std::string s = ss.str();
-        fprintf(stdout,"%s",s.c_str());
+        lion_oprint(1,"%s",s.c_str());
         fflush(stdout);
         ++n;
       }

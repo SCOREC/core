@@ -16,6 +16,7 @@
 #include <pcu_util.h>
 #include <PCU.h>
 #include <pcu_io.h>
+#include <lionPrint.h>
 #include <reel.h>
 #include <sys/types.h> /*required for mode_t for mkdir on some systems*/
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
@@ -756,11 +757,11 @@ struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
   char* filename;
   int zip;
   if (ignore_peers && (!is_compact(m))) {
-    if(!PCU_Comm_Self()) fprintf(stderr, "%s", reorderWarning);
+    if(!PCU_Comm_Self()) lion_eprint(1, "%s", reorderWarning);
     m = mds_reorder(m, 1, mds_number_verts_bfs(m));
   }
   if ((!ignore_peers) && PCU_Or(!is_compact(m))) {
-    if(!PCU_Comm_Self()) fprintf(stderr, "%s", reorderWarning);
+    if(!PCU_Comm_Self()) lion_eprint(1, "%s", reorderWarning);
     m = mds_reorder(m, 0, mds_number_verts_bfs(m));
   }
   filename = handle_path(pathname, 1, &zip, ignore_peers);

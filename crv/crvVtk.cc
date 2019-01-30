@@ -10,9 +10,11 @@
 #include "apfDynamicVector.h"
 #include "apfFieldData.h"
 #include "apfMDS.h"
+#include "apfVtk.h"
 #include <sstream>
 #include <fstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -27,34 +29,6 @@ namespace crv {
 /* this file has all the VTK commands for curved meshing,
    it is more meant as a debugging tool as proper visualization
    does not exist in paraview past second order */
-
-class HasAll : public apf::FieldOp
-{
-  public:
-      virtual bool inEntity(apf::MeshEntity* e)
-      {
-        if (!f->getData()->hasEntity(e) && f->countNodesOn(e))
-          ok = false;
-        return false;
-      }
-      bool run(apf::FieldBase* f_)
-      {
-        f = f_;
-        ok = true;
-        this->apply(f);
-        return ok;
-      }
-  private:
-    bool ok;
-    apf::FieldBase* f;
-};
-
-static bool isPrintable(apf::FieldBase* f)
-{
-  HasAll op;
-  return op.run(f);
-}
-
 static void describeArray(
     std::ostream& file,
     const char* name,
@@ -371,7 +345,7 @@ static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
           ss << "warning: Tri Jacobian Determinant is negative,  " << detJ[j]
               << '\n';
           std::string s = ss.str();
-          fprintf(stderr, "%s", s.c_str());
+          lion_eprint(1, "%s", s.c_str());
           isValid = false;
         }
         maxJ = std::max(detJ[count],maxJ);
@@ -451,7 +425,7 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               ss << "warning: Tet Jacobian Determinant is negative,  "
                  << detJ[count] << '\n';
               std::string s = ss.str();
-              fprintf(stderr, "%s", s.c_str());
+              lion_eprint(1, "%s", s.c_str());
               isValid = false;
             }
             maxJ = std::max(detJ[count],maxJ);
@@ -536,7 +510,7 @@ static void writeMinTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
               ss << "warning: Tet Jacobian Determinant is negative,  "
                  << detJ[count] << '\n';
               std::string s = ss.str();
-              fprintf(stderr, "%s", s.c_str());
+              lion_eprint(1, "%s", s.c_str());
               isValid = false;
             }
             maxJ = std::max(detJ[count],maxJ);
@@ -1089,7 +1063,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   PCU_Barrier();
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("%s vtk files %s written in %f seconds\n",
+    lion_oprint(1,"%s vtk files %s written in %f seconds\n",
         apf::Mesh::typeName[type],getPvtuDirectoryStr(prefix, type, n).c_str(),t1 - t0);
 }
 

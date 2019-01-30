@@ -3,12 +3,14 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <in .msh> <out .smb>\n", argv[0]);

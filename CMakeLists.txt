@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.8)
 
-project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -124,13 +124,13 @@ if(ENABLE_OMEGA_H)
 endif()
 
 # Include the SCOREC project packages
+add_subdirectory(lion)
 add_subdirectory(pcu)
 add_subdirectory(gmi)
 add_subdirectory(gmi_sim)
 add_subdirectory(gmi_cap)
 add_subdirectory(can)
 add_subdirectory(mth)
-add_subdirectory(lion)
 add_subdirectory(apf)
 add_subdirectory(apf_sim)
 add_subdirectory(apf_cap)

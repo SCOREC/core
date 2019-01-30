@@ -8,6 +8,7 @@
  
 *******************************************************************************/
 #include "maInput.h"
+#include <lionPrint.h>
 #include <apfShape.h>
 #include <cstdio>
 #include <pcu_util.h>
@@ -66,13 +67,14 @@ void setDefaultValues(Input* in)
   in->shouldRefineLayer = false;
   in->shouldCoarsenLayer = false;
   in->splitAllLayerEdges = false;
+  in->userDefinedLayerTagName = "";
   in->shapeHandler = 0;
 }
 
 void rejectInput(const char* str)
 {
-  fprintf(stderr,"MeshAdapt input error:\n");
-  fprintf(stderr,"%s\n",str);
+  lion_eprint(1,"MeshAdapt input error:\n");
+  lion_eprint(1,"%s\n",str);
   abort();
 }
 

@@ -4,6 +4,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include "../viz/viz.h"
 
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);

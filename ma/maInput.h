@@ -103,6 +103,10 @@ class Input
     bool shouldCoarsenLayer;
 /** \brief set to true during UR to get splits in the normal direction */
     bool splitAllLayerEdges;
+/** \brief the name of the (user defined) INT tag specifying the boundary
+    layer elements. Use the value of 0 for non-layer elements and a non-zero value
+    for layer elements. (default "") */
+    const char* userDefinedLayerTagName;
 /** \brief this a folder that debugging meshes will be written to, if provided! */
     const char* debugFolder;
 };

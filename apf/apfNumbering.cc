@@ -12,6 +12,7 @@
 #include "apfMesh.h"
 #include "apfShape.h"
 #include "apfTagData.h"
+#include "apfVtk.h"
 #include <pcu_util.h>
 
 namespace apf {
@@ -170,6 +171,12 @@ FieldShape* getShape(Numbering* n)
 const char* getName(Numbering* n)
 {
   return n->getName();
+}
+
+bool isPrintable(Numbering* f)
+{
+  FieldBase* f2 = f;
+  return isPrintable(f2);
 }
 
 Mesh* getMesh(Numbering* n)
@@ -477,6 +484,12 @@ FieldShape* getShape(GlobalNumbering* n)
 const char* getName(GlobalNumbering* n)
 {
   return n->getName();
+}
+
+bool isPrintable(GlobalNumbering* f)
+{
+  FieldBase* f2 = f;
+  return isPrintable(f2);
 }
 
 Mesh* getMesh(GlobalNumbering* n)

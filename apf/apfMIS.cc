@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include "apfMIS.h"
 #include "apf.h"
+#include <lionPrint.h>
 #include <stdio.h>
 namespace apf {    
   MIS::MIS(Mesh* mesh, int vtx_dim_, int edge_dim_)
@@ -12,7 +13,7 @@ namespace apf {
   MIS* initializeMIS(Mesh* mesh, int vtx_dim, int edge_dim) {
     MeshTag* coloring = mesh->findTag("coloring");
     if (coloring!=NULL) {
-      printf("[ERROR] Only one MIS can exist at a time.\n");
+      lion_oprint(1,"[ERROR] Only one MIS can exist at a time.\n");
       return NULL;
     }
     MIS* mis = new MIS(mesh,vtx_dim,edge_dim);

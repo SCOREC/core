@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
 #include <apfBox.h>
@@ -252,6 +253,7 @@ int main(int argc, char** argv) {
   PCU_ALWAYS_ASSERT(argc == 3);
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(! PCU_Comm_Self());
   int dim = atoi(argv[1]);
   int p = atoi(argv[2]);

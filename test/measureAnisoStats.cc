@@ -5,6 +5,7 @@
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 
 #ifdef HAVE_SIMMETRIX
@@ -13,7 +14,9 @@
 #include <gmi_sim.h>
 #include <phastaChef.h>
 #include <SimPartitionedMesh.h>
-#include <SimAdvMeshing.h>
+#ifdef HAVE_SIMADVMESHING
+  #include <SimAdvMeshing.h>
+#endif
 #endif
 
 #include <stdlib.h>
@@ -41,6 +44,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if (argc < 5) {
     if (PCU_Comm_Self() == 0) {
       printf("USAGE1: %s <mesh.smb> <output_prefix> <scale field name>"
@@ -56,7 +60,9 @@ int main(int argc, char** argv)
   SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
+#ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_start();
+#endif
   gmi_sim_start();
   gmi_register_sim();
 #endif
@@ -75,7 +81,9 @@ int main(int argc, char** argv)
 
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
+#ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_stop();
+#endif
   SimPartitionedMesh_stop();
   SimModel_stop();
   Sim_unregisterAllKeys();
@@ -237,7 +245,7 @@ void getStats(
   apf::writeVtkFiles(ssm.str().c_str(), m);
 
 // measure the triangular mesh face in the BL mesh
-#ifdef HAVE_SIMMETRIX
+#ifdef HAVE_SIMADVMESHING
   if (ph::mesh_has_ext(meshFile, "sms")) {
 // get simmetrix mesh
     apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(m);

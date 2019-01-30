@@ -53,7 +53,12 @@ typedef std::map<int, MeshEntity*> GlobalToVert;
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
 
 /** \brief load an MDS mesh and model from file
-  \param modelfile will be passed to gmi_load to get the model */
+  \param modelfile will be passed to gmi_load to get the model
+  \note gmi_register_mesh and gmi_register_null need to be
+        called before this function. Also, gmi_register_sim
+        may also be called to enable loading of GeomSim, 
+        Parasolid, and ACIS models
+  */
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
 /** \brief load an MDS mesh from files
@@ -76,8 +81,11 @@ Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile);
 
 /** \brief create an MDS mesh from an existing mesh
   \param from the mesh to copy
+  \param reorder if true reorder mesh vertices and elements 
+         (start from a vertex with minimum Y)
+  \param copy_data if true (default), copy Fields/Numberings/Tags
   \details this function uses apf::convert to copy any apf::Mesh */
-Mesh2* createMdsMesh(gmi_model* model, Mesh* from);
+Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy_data=true);
 
 /** \brief apply adjacency-based reordering
   \param t Optional user-defined ordering of the vertices.

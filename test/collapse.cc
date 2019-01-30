@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -46,6 +47,7 @@ namespace {
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);

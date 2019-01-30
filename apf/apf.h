@@ -13,6 +13,8 @@
 #include "apfDynamicArray.h"
 
 #include <vector>
+#include <limits>
+
 /** \file apf.h
   * \brief The APF Field interface
   */
@@ -37,6 +39,47 @@ class VectorElement;
 typedef VectorElement MeshElement;
 class FieldShape;
 struct Sharing;
+template <class T> class ReductionOp;
+template <class T> class ReductionSum;
+
+/** \brief Base class for applying operations to make a Field consistent
+  * in parallel 
+  * \details This function gets applied pairwise to the Field values
+  * from every partition, resulting in a single unique value.  No guarantees
+  * are made about the order in which this function is applied to the
+  * values.
+  */
+template <class T>
+class ReductionOp
+{
+  public:
+    /* \brief apply operation, returning a single value */
+    virtual T apply(T val1, T val2) const = 0;
+
+    /* \brief returns a value such that apply(val, neutral_val) == val */
+    virtual T getNeutralElement() const = 0;
+};
+
+template <class T>
+class ReductionSum : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return val1 + val2; };
+  T getNeutralElement() const { return 0; };
+};
+
+template <class T>
+class ReductionMin : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val1 : val2 ); };
+  T getNeutralElement() const { return std::numeric_limits<T>::max(); };
+};
+
+template <class T>
+class ReductionMax : public ReductionOp<T>
+{
+  T apply(T val1, T val2) const { return ( (val1 < val2) ? val2 : val1 ); };
+  T getNeutralElement() const { return std::numeric_limits<T>::min(); };
+};
 
 /** \brief Destroys an apf::Mesh.
   *
@@ -296,8 +339,8 @@ void getCurl(Element* e, Vector3 const& param, Vector3& curl);
   * \param param The local coordinates in the element.
   * \param deriv The gradient matrix at that point.
   * \details Note: The return parameter component deriv[j][i] stores the
-  * value (grad u)_{i,j} = \frac{\partial u_i} / \frac{\partial x_j},
-  * where u is the vector field of interest, i is the vector index,
+  * value $(grad u)_{i,j} = \frac{\partial u_i} / \frac{\partial x_j}$,
+  * where $u$ is the vector field of interest, i is the vector index,
   * and j is the derivative index.
   */
 void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
@@ -308,6 +351,13 @@ void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv);
   * \param value The field value at that point.
   */
 void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value);
+
+/** \brief get the gradient of a matrix field
+ * \param param The local coordinate in the element.
+ * \param value the gradient of the field at a point. If the matrix is defined by A_{ij},
+ * the gradient $\frac{\partial A_{ij}}{\partial X_k}=value[i*3+j+9*k]$ .
+ */
+void getMatrixGrad(Element* e, Vector3 const& param, Vector<27>& value);
 
 /** \brief Evaluate a field into an array of component values. */
 void getComponents(Element* e, Vector3 const& param, double* components);
@@ -368,8 +418,13 @@ class Integrator
     /** \brief Construct an Integrator given an order of accuracy. */
     Integrator(int o);
     virtual ~Integrator();
-    /** \brief Run the Integrator over the local Mesh. */
-    void process(Mesh* m);
+    /** \brief Run the Integrator over the local Mesh.
+     * \param m mesh to integrate over
+     * \param dim optional dimension to integrate over. This defaults to
+     * integration over the mesh dimesion which may not be correct e.g. in the case
+     * of a 1D element embeded in 3D space.
+     * */
+    void process(Mesh* m, int dim=-1);
     /** \brief Run the Integrator over a Mesh Element. */
     void process(MeshElement* e);
     /** \brief User callback: element entry.
@@ -544,12 +599,12 @@ int countComponents(Field* f);
   this macro fills in the boilerplate of a for() loop over this container.
  */
 #define APF_ITERATE(t,w,i) \
-for (t::iterator (i) = (w).begin(); \
+for (t::iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief APF_ITERATE for const containers. */
 #define APF_CONST_ITERATE(t,w,i) \
-for (t::const_iterator (i) = (w).begin(); \
+for (t::const_iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
@@ -625,7 +680,21 @@ void synchronize(Field* f, Sharing* shr = 0);
   all copies of an entity and assign the sum as the
   value for all copies.
   */
-void accumulate(Field* f, Sharing* shr = 0);
+void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
+
+/** \brief Apply a reudction operator along partition boundaries
+  \details Using the copies described by an apf::Sharing object, applied
+  the specified operation pairwise to the values of the field on each
+  partition.  No guarantee is made about hte order of the pairwise
+  application
+  */
+void sharedReduction(Field* f, Sharing* shr, bool delete_shr,
+           const ReductionOp<double>& sum = ReductionSum<double>());
+
+/** \brief Checks whether a Field/Numbering/GlobalNumbering is complete and
+ * therefore printable to visualization files.  This is a collective operation.
+ */
+bool isPrintable(Field* f);
 
 /** \brief Declare failure of code inside APF.
   \details This function prints the string as an APF

@@ -5,6 +5,7 @@
 #include "diffMC/parma_commons.h"
 #include "diffMC/parma_convert.h"
 #include <parma_dcpart.h>
+#include <lionPrint.h>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -128,7 +129,7 @@ namespace {
        << locV[0]  << ' ' <<  locV[1]  << ' ' <<  locV[2]  << ' '
        << surf/TO_DOUBLE(vol);
     std::string s = ss.str();
-    fprintf(stderr, "%s\n", s.c_str());
+    lion_eprint(1, "%s\n", s.c_str());
     PCU_Barrier();
   }
 

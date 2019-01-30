@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include <pcu_util.h>
 
@@ -11,6 +12,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 1);
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )

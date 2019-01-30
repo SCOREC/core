@@ -10,6 +10,7 @@
 #include <apf.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <mth.h>
 #include <mth_def.h>
 #include <pcu_util.h>
@@ -167,6 +168,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   testNodeIndexing();
   testMatrixInverse();
   PCU_Comm_Free();

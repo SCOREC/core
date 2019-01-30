@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "phOutput.h"
 #include "phGrowthCurves.h"
 #include "phLinks.h"
@@ -31,23 +32,24 @@ static void getCounts(Output& o)
 
 static void checkLoadBalance(Output& o)
 {
-  int sumOwnedNodes = PCU_Add_Int(o.nOwnedNodes);
-  double vlbratio = o.nOverlapNodes * PCU_Comm_Peers() / (double) sumOwnedNodes;
+  long sumOwnedNodes = PCU_Add_Long(o.nOwnedNodes);
+  long sumAllNodes = PCU_Add_Long(o.nOverlapNodes);
+  double avgNodes = static_cast<double>(sumAllNodes) / PCU_Comm_Peers();
+  double vlbratio = o.nOverlapNodes / avgNodes;
   double vlbratio_max = PCU_Max_Double(vlbratio);
   if (!PCU_Comm_Self())
-    printf("max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
-
-  int sumAllNodes = PCU_Add_Int(o.nOverlapNodes);
+    lion_oprint(1,"max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
   if (!PCU_Comm_Self())
-    printf("ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
+    lion_oprint(1,"ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
 
   int dim = o.mesh->getDimension();
   int numElms = o.mesh->count(dim);
-  int sumElms = PCU_Add_Int(numElms);
-  double elbratio = numElms * PCU_Comm_Peers() / (double) sumElms;
+  long sumElms = PCU_Add_Long(numElms);
+  double avgElms = static_cast<double>(sumElms) / PCU_Comm_Peers();
+  double elbratio = numElms / avgElms;
   double elbratio_max = PCU_Max_Double(elbratio);
   if (!PCU_Comm_Self())
-    printf("max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
+    lion_oprint(1,"max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
 }
 
 static void getCoordinates(Output& o)
@@ -346,7 +348,7 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
         }
         int vID = apf::getNumber(n, e, 0, 0);
         if(f[vID] > -1 && f[vID] != rbID) {
-          fprintf(stderr,"not support multiple rigid bodies on one mesh vertex\n");
+          lion_eprint(1,"not support multiple rigid bodies on one mesh vertex\n");
         }
         else if (f[vID] == -1) {
           f[vID] = rbID;
@@ -433,7 +435,7 @@ bool checkInterface(Output& o, BCs& bcs) {
   PCU_ALWAYS_ASSERT(aID!=bID); //assert different material ID on two sides
   PCU_ALWAYS_ASSERT(a==b); //assert same number of faces on each side
   if (PCU_Comm_Self() == 0)
-    printf("Checked! Same number of faces on each side of interface.\n");
+    lion_oprint(1,"Checked! Same number of faces on each side of interface.\n");
   return true;
 }
 
@@ -840,7 +842,7 @@ static void getInitialConditions(BCs& bcs, Output& o)
   Input& in = *o.in;
   if (in.solutionMigration) {
     if (!PCU_Comm_Self())
-      printf("All attribute-based initial conditions, "
+      lion_oprint(1,"All attribute-based initial conditions, "
              "if any, "
              "are ignored due to request for SolutionMigration\n");
     return;
@@ -1052,7 +1054,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
     initBubbles(o.mesh, in);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("generated output structs in %f seconds\n",t1 - t0);
+    lion_oprint(1,"generated output structs in %f seconds\n",t1 - t0);
 }
 
 }

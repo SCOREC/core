@@ -34,10 +34,26 @@ mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
 mpi_test(verify_convert 1 ./verify_convert)
+mpi_test(test_integrator 1
+         ./test_integrator
+         "${MESHES}/cube/cube.dmg"
+         "${MESHES}/cube/pumi11/cube.smb"
+         )
+mpi_test(test_matrix_gradient 1
+         ./test_matrix_gradient
+         "${MESHES}/cube/cube.dmg"
+         "${MESHES}/cube/pumi11/cube.smb"
+         )
 
+mpi_test(modelInfo_dmg 1
+  ./modelInfo
+  "${MESHES}/cube/cube.dmg")
 if(ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
     ./inClosureOf_test
+    "${MESHES}/cube/cube.smd")
+  mpi_test(modelInfo_smd 1
+    ./modelInfo
     "${MESHES}/cube/cube.smd")
 endif(ENABLE_SIMMETRIX)
 
@@ -58,7 +74,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
     WORKING_DIRECTORY ${MDIR})
 endif()
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   if(SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
     set(MDIR ${MESHES}/faceExtrusion)
     mpi_test(rm_extrusion 1
@@ -102,7 +118,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
        WORKING_DIRECTORY ${MDIR})
     endif()
   endif()
-endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
 if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
@@ -328,6 +344,11 @@ if(ENABLE_ZOLTAN)
     "pipe_4_.smb"
     "tet.smb")
 endif()
+mpi_test(fieldReduce 4
+  ./fieldReduce
+  "${MDIR}/pipe.${GXT}"
+  "pipe_4_.smb")
+
 set(MDIR ${MESHES}/torus)
 mpi_test(reorder 4
   ./reorder
@@ -367,6 +388,8 @@ mpi_test(fixDisconnected 4
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusDcFix4p/")
+mpi_test(outputcontrol 1
+  ./outputcontrol 2)
 mpi_test(quality 4
   ./quality
   "${MDIR}/torus.dmg"
