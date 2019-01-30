@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <string.h>
 #include <cassert>
+#include <algorithm>
 
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
@@ -21,7 +22,7 @@
 /* tags on vertices */
 #define INTERIORTAG  0
 #define FACE 1
-#define FACE_LAST 1
+#define FACE_LAST 6
 #define EDGE 11
 #define EDGE_LAST 22
 #define VERTEX 31
@@ -37,27 +38,84 @@ apf::ModelEntity* getMdlRgn(gmi_model* model) {
   return rgn;
 }
 
-apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
-  apf::ModelEntity* edge = mesh->findModelEntity(1,tag);
-  PCU_ALWAYS_ASSERT(edge);
-  return edge;
-}
-
 apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* face = mesh->findModelEntity(2,tag);
   PCU_ALWAYS_ASSERT(face);
   return face;
 }
 
-void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
-  (void)model;
-  (void)mesh;
-  (void)t;
+apf::ModelEntity* getMdlEdge(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* edge = mesh->findModelEntity(1,tag);
+  PCU_ALWAYS_ASSERT(edge);
+  return edge;
 }
 
-void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
+apf::ModelEntity* getMdlVtx(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* vertex = mesh->findModelEntity(0,tag);
+  PCU_ALWAYS_ASSERT(vertex);
+  return vertex;
+}
+
+void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
   (void)model;
   (void)mesh;
+  (void)vtxClass;
+  apf::MeshIterator* it = mesh->begin(0);
+  apf::MeshEntity* v;
+  apf::Vector3 vCoord;
+  int c;
+  //int count=0,cint=0,cface=0,cedge=0,cvtx=0;
+  while( (v = mesh->iterate(it)) ) {
+    mesh->getPoint(v, 0, vCoord);
+    //std::cout<<"Coordinates: "<<vCoord[0]<<" "<<vCoord[1]<<" "<<vCoord[2]<<std::endl;
+    mesh->getIntTag(v,vtxClass,&c);
+    //std::cout<<"Returned tag is c= "<<c<<std::endl;
+    //std::cout<<" "<<std::endl;
+    //count++;
+    if (c == INTERIORTAG) {
+       mesh->setModelEntity(v,getMdlRgn(model));
+       //cint++;
+    } else if (c >= FACE && c <= FACE_LAST) {
+       mesh->setModelEntity(v,getMdlFace(mesh,c));
+       //cface++;
+    } else if (c >= EDGE && c <= EDGE_LAST) {
+       mesh->setModelEntity(v,getMdlEdge(mesh,c));
+       //cedge++;
+    } else if (c >= VERTEX && c <= VERTEX_LAST) {
+       mesh->setModelEntity(v,getMdlVtx(mesh,c));
+       //cvtx++;
+    }
+  }
+  //std::cout<<"count is "<<cvtx<<std::endl;
+  mesh->end(it);
+}
+
+void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxClass) {
+  (void)model;
+  (void)mesh;
+  (void)vtxClass;
+  apf::MeshIterator* it = mesh->begin(1);
+  apf::MeshEntity* e;
+  int c;
+  apf::Adjacent verts;
+  while( (e = mesh->iterate(it)) ) {
+    mesh->getAdjacent(e, 0, verts);
+    int cmin=100;
+    for(int i=0; i<verts.size(); i++) {
+      mesh->getIntTag(verts[i],vtxClass,&c);
+      cmin=std::min(cmin,c);
+    }
+    if (cmin == INTERIORTAG) {
+       mesh->setModelEntity(e,getMdlRgn(model));
+    } else if (cmin >= FACE && cmin <= FACE_LAST) {
+       mesh->setModelEntity(e,getMdlFace(mesh,cmin));
+    } else if (cmin >= EDGE && cmin <= EDGE_LAST) {
+       mesh->setModelEntity(e,getMdlEdge(mesh,cmin));
+    } else if (cmin >= VERTEX && cmin <= VERTEX_LAST) {
+       mesh->setModelEntity(e,getMdlVtx(mesh,cmin));
+    }
+  }
+  mesh->end(it);
 }
 
 /* if any of four vertices are classified on region -> region
@@ -67,21 +125,41 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh) {
 void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
   (void)model;
   (void)mesh;
+  (void)vtxClass;
 
   apf::MeshIterator* it = mesh->begin(2);
   apf::MeshEntity* f;
   int c;
-
+/* What was here before was commented when we went to simple min rule
   apf::Adjacent verts;
   while( (f = mesh->iterate(it)) ) {
     m->getAdjacent(f, 0, verts) = 0;
     bool hasRgClass = false;
     for(int i=0; i<verts.size(); i++) {
-      m->getIntTag(f,vtxClass,&c);
+      m->getIntTag(i,vtxClass,&c);
       if( c == INTERIORTAG )
         mesh->setModelEntity(f,mdlRgn);
       }
       
+    }
+  }
+*/
+  apf::Adjacent verts;
+  while( (f = mesh->iterate(it)) ) {
+    mesh->getAdjacent(f, 0, verts);
+    int cmin=100;
+    for(int i=0; i<verts.size(); i++) {
+      mesh->getIntTag(verts[i],vtxClass,&c);
+      cmin=std::min(cmin,c);
+    }
+    if (cmin == INTERIORTAG) {
+       mesh->setModelEntity(f,getMdlRgn(model));
+    } else if (cmin >= FACE && cmin <= FACE_LAST) {
+       mesh->setModelEntity(f,getMdlFace(mesh,cmin));
+    } else if (cmin >= EDGE && cmin <= EDGE_LAST) {
+       mesh->setModelEntity(f,getMdlEdge(mesh,cmin));
+    } else if (cmin >= VERTEX && cmin <= VERTEX_LAST) {
+       mesh->setModelEntity(f,getMdlVtx(mesh,cmin));
     }
   }
   mesh->end(it);
@@ -102,7 +180,7 @@ void setRgnClassification(gmi_model* model, apf::Mesh2* mesh) {
 void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   setRgnClassification(model,mesh);
   setFaceClassification(model,mesh,t);
-  setEdgeClassification(model,mesh);
+  setEdgeClassification(model,mesh,t);
   setVtxClassification(model,mesh,t);
   mesh->acceptChanges();
 }
@@ -181,11 +259,17 @@ void readClassification(FILE* f, unsigned numVtx, int** classification) {
     int id;
     int mdlId;
     gmi_fscanf(f, 2, "%d %d", &id, &mdlId);
+    //std::cout<<"read id is "<<id<<std::endl;
+    //std::cout<<"read model id is "<<mdlId<<std::endl;
     if( i >= firstVtx && i < lastVtx ) {
       (*classification)[vidx] = mdlId;
       vidx++;
     }
   }
+  /*std::cout<<"numVtx is "<<numVtx<<std::endl;
+  for (int i=0;i<numVtx;i++) {
+      std::cout<<"vtx num "<<i<<" has class "<<(*classification)[i]<<std::endl;
+  }*/
 }
 
 void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordinates) {
@@ -350,6 +434,9 @@ int main(int argc, char** argv)
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
   apf::deriveMdsModel(mesh);
+  /*for (int i=0; i<81; i++) {
+  std::cout<<m.coords[i]<<std::endl;
+  }*/
   apf::setCoords(mesh, m.coords, m.localNumVerts, outMap);
   delete [] m.coords;
   if( isMatched ) {
@@ -367,8 +454,8 @@ int main(int argc, char** argv)
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
   mesh->verify();
 
-  gmi_write_dmg(model, argv[4]);
-  mesh->writeNative(argv[5]);
+  gmi_write_dmg(model, argv[5]);
+  mesh->writeNative(argv[6]);
   apf::writeVtkFiles("rendered",mesh);
 
   mesh->destroyNative();
