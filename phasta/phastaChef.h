@@ -11,6 +11,7 @@
 
 namespace ph {
   void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir);
+  void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag);
 
   struct rigidBodyMotion {
     rigidBodyMotion(int t = 0, double r = 0.0, double s = 0.0)
