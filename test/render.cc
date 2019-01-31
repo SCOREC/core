@@ -1,6 +1,7 @@
 #include <apf.h>
 #include <crv.h>
 #include <gmi_mesh.h>
+#include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <PCU.h>
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+  gmi_register_null();
 
   // This (hack) is here to make sure loadMdsMehs
   // does not fail when the input mesh is curved!
