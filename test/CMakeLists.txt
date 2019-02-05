@@ -143,6 +143,7 @@ if(ENABLE_CAPSTONE)
   util_exe_func(capStoneIsoAdaptB737 capStoneIsoAdaptB737.cc)
   util_exe_func(capStoneGeomTest capStoneGeomTest.cc)
   util_exe_func(capStoneAttachSolution capStoneAttachSolution.cc)
+  util_exe_func(capStoneCheckParametrization capStoneCheckParametrization.cc)
 endif()
 
 # Unit tests / functionality regression tests
