@@ -135,6 +135,7 @@ if(ENABLE_CAPSTONE)
   util_exe_func(capStoneGeomTest capStoneGeomTest.cc)
   util_exe_func(capStoneAttachSolution capStoneAttachSolution.cc)
   util_exe_func(capStoneCheckParametrization capStoneCheckParametrization.cc)
+  util_exe_func(capStone2VTK capStone2VTK.cc)
 endif()
 
 # Unit tests / functionality regression tests
