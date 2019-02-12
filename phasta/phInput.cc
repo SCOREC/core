@@ -83,6 +83,10 @@ static void setDefaults(Input& in)
   in.nRigidBody = 0;
   in.nRBParam = 12;
   in.gradingFactor = 1.25;
+  in.simCooperation = 1;
+  in.simAdaptDesiredErrorMass = 1.0;
+  in.simAdaptDesiredErrorMomt = 1.0;
+  in.simAdaptDesiredErrorEnrg = 1.0;
 }
 
 Input::Input()
@@ -164,6 +168,10 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["nRigidBody"] = &in.nRigidBody;
   intMap["nRBParam"] = &in.nRBParam;
   dblMap["gradingFactor"] = &in.gradingFactor;
+  intMap["simCooperation"] = &in.simCooperation;
+  dblMap["simAdaptDesiredErrorMass"] = &in.simAdaptDesiredErrorMass;
+  dblMap["simAdaptDesiredErrorMomt"] = &in.simAdaptDesiredErrorMomt;
+  dblMap["simAdaptDesiredErrorEnrg"] = &in.simAdaptDesiredErrorEnrg;
 }
 
 template <class T>
