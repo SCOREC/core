@@ -11,6 +11,7 @@
 #include <string.h>
 #include <cassert>
 #include <algorithm>
+//#include <apfBox.h>
 
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
@@ -29,7 +30,7 @@
 #define VERTEX_LAST 38
 
 /* model entity ids */
-#define INTERIOR_REGION 1
+#define INTERIOR_REGION 0
 
 apf::ModelEntity* getMdlRgn(gmi_model* model) {
   apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
@@ -62,11 +63,11 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
   (void)vtxClass;
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* v;
-  apf::Vector3 vCoord;
+  //apf::Vector3 vCoord;
   int c;
   //int count=0,cint=0,cface=0,cedge=0,cvtx=0;
   while( (v = mesh->iterate(it)) ) {
-    mesh->getPoint(v, 0, vCoord);
+    //mesh->getPoint(v, 0, vCoord);
     //std::cout<<"Coordinates: "<<vCoord[0]<<" "<<vCoord[1]<<" "<<vCoord[2]<<std::endl;
     mesh->getIntTag(v,vtxClass,&c);
     //std::cout<<"Returned tag is c= "<<c<<std::endl;
@@ -96,15 +97,23 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
   (void)vtxClass;
   apf::MeshIterator* it = mesh->begin(1);
   apf::MeshEntity* e;
+  //apf::Vector3 vCoord;
   int c;
+  //int count=0;
   apf::Adjacent verts;
   while( (e = mesh->iterate(it)) ) {
+    //std::cout<<"Edge number "<<count++<<" with nodes"<<std::endl;
     mesh->getAdjacent(e, 0, verts);
     int cmin=100;
-    for(int i=0; i<verts.size(); i++) {
+// won't compile now??    for(int i=0; i<verts.size(); i++) {
+    for(int i=0; i<2; i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
+      //mesh->getPoint(verts[i], 0, vCoord);
+      //std::cout<<vCoord[0]<<" "<<vCoord[1]<<" "<<vCoord[2]<<std::endl;
       cmin=std::min(cmin,c);
     }
+    //std::cout<<"has classification "<<cmin<<std::endl;
+    //std::cout<<" "<<std::endl;
     if (cmin == INTERIORTAG) {
        mesh->setModelEntity(e,getMdlRgn(model));
     } else if (cmin >= FACE && cmin <= FACE_LAST) {
@@ -148,7 +157,8 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   while( (f = mesh->iterate(it)) ) {
     mesh->getAdjacent(f, 0, verts);
     int cmin=100;
-    for(int i=0; i<verts.size(); i++) {
+// won't comile now    for(int i=0; i<verts.size(); i++) {
+    for(int i=0; i<4; i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
       cmin=std::min(cmin,c);
     }
@@ -375,10 +385,12 @@ void readMesh(const char* meshfilename,
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
 
-  FILE* ff = fopen(classfilename, "r");
-  PCU_ALWAYS_ASSERT(ff);
-  readClassification(ff, mesh.numVerts, &(mesh.classification));
-  fclose(ff);
+  if( strcmp(matchfilename, "NULL") ) {
+    FILE* ff = fopen(classfilename, "r");
+    PCU_ALWAYS_ASSERT(ff);
+    readClassification(ff, mesh.numVerts, &(mesh.classification));
+    fclose(ff);
+  }
 
   if( strcmp(matchfilename, "NULL") ) {
     FILE* fm = fopen(matchfilename, "r");
@@ -395,6 +407,7 @@ void readMesh(const char* meshfilename,
   fclose(f);
 }
 
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
@@ -406,7 +419,7 @@ int main(int argc, char** argv)
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
           "<ascii vertex classification flag .class> "
-          "<output model .dmg> <output mesh .smb>\n",
+          "<input model .dmg> <output mesh .smb>\n",
           argv[0]);
     }
     return 0;
@@ -427,13 +440,21 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
-  gmi_model* model = gmi_load(".null");
+  gmi_model* model = gmi_load("modbox.dmg");
+/*  int nx=3;
+  int ny=3;
+  int nz=3;
+  mgrid(nx ? 3 : 1, ny ? 3 : 1, nz ? 3 : 1);  
+  formModelTable();
+  gmi_model* model = buildModel(); 
+*/
+
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
-  apf::deriveMdsModel(mesh);
+//  apf::deriveMdsModel(mesh);
   /*for (int i=0; i<81; i++) {
   std::cout<<m.coords[i]<<std::endl;
   }*/
