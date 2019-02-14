@@ -11,7 +11,7 @@
 #include <string.h>
 #include <cassert>
 #include <algorithm>
-//#include <apfBox.h>
+#include <apfBox.h>
 
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
@@ -77,13 +77,65 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
        mesh->setModelEntity(v,getMdlRgn(model));
        //cint++;
     } else if (c >= FACE && c <= FACE_LAST) {
-       mesh->setModelEntity(v,getMdlFace(mesh,c));
+       if (c == 1) { //face tag 1 corresponds to model face 0
+          mesh->setModelEntity(v,getMdlFace(mesh,0));
+       } else if (c == 2) { //face tag 2 corresponds to model face 1
+          mesh->setModelEntity(v,getMdlFace(mesh,1));
+       } else if (c == 3) { //face tag 3 corresponds to model face 3
+          mesh->setModelEntity(v,getMdlFace(mesh,3));
+       } else if (c == 4) { //face tag 4 corresponds to model face 4
+          mesh->setModelEntity(v,getMdlFace(mesh,4));
+       } else if (c == 5) { //face tag 5 corresponds to model face 2
+          mesh->setModelEntity(v,getMdlFace(mesh,2));
+       } else if (c == 6) { //face tag 6 corresponds to model face 5
+          mesh->setModelEntity(v,getMdlFace(mesh,5));
+       }
        //cface++;
     } else if (c >= EDGE && c <= EDGE_LAST) {
-       mesh->setModelEntity(v,getMdlEdge(mesh,c));
+       if (c == 11) { //edge tag 11 corresponds to model edge 0
+          mesh->setModelEntity(v,getMdlEdge(mesh,0));
+       } else if (c == 12) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,2));
+       } else if (c == 13) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,3));
+       } else if (c == 14) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,1));
+       } else if (c == 15) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,4));
+       } else if (c == 16) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,5));
+       } else if (c == 17) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,7));
+       } else if (c == 18) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,6));
+       } else if (c == 19) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,8));
+       } else if (c == 20) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,10));
+       } else if (c == 21) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,11));
+       } else if (c == 22) {
+          mesh->setModelEntity(v,getMdlEdge(mesh,9));
+       }
        //cedge++;
     } else if (c >= VERTEX && c <= VERTEX_LAST) {
-       mesh->setModelEntity(v,getMdlVtx(mesh,c));
+       if (c == 31) { //vertex tag 31 corresponds to model vertex 0
+          mesh->setModelEntity(v,getMdlVtx(mesh,0));
+       } else if (c == 32) { //vertex tag 32 corresponds to model vertex 1
+          mesh->setModelEntity(v,getMdlVtx(mesh,1));
+       } else if (c == 33) { //vertex tag 33 corresponds to model vertex 3
+          mesh->setModelEntity(v,getMdlVtx(mesh,3));
+       } else if (c == 34) { //vertex tag 34 corresponds to model vertex 2
+          mesh->setModelEntity(v,getMdlVtx(mesh,2));
+       } else if (c == 35) { //vertex tag 35 corresponds to model vertex 4
+          mesh->setModelEntity(v,getMdlVtx(mesh,4));
+       } else if (c == 36) { //vertex tag 36 corresponds to model vertex 5
+          mesh->setModelEntity(v,getMdlVtx(mesh,5));
+       } else if (c == 37) { //vertex tag 37 corresponds to model vertex 7
+          mesh->setModelEntity(v,getMdlVtx(mesh,7));
+       } else if (c == 38) { //vertex tag 38 corresponds to model vertex 6
+          mesh->setModelEntity(v,getMdlVtx(mesh,6));
+       }
        //cvtx++;
     }
   }
@@ -105,8 +157,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
     //std::cout<<"Edge number "<<count++<<" with nodes"<<std::endl;
     mesh->getAdjacent(e, 0, verts);
     int cmin=100;
-// won't compile now??    for(int i=0; i<verts.size(); i++) {
-    for(int i=0; i<2; i++) {
+    for(size_t i=0; i<verts.size(); i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
       //mesh->getPoint(verts[i], 0, vCoord);
       //std::cout<<vCoord[0]<<" "<<vCoord[1]<<" "<<vCoord[2]<<std::endl;
@@ -116,12 +167,68 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
     //std::cout<<" "<<std::endl;
     if (cmin == INTERIORTAG) {
        mesh->setModelEntity(e,getMdlRgn(model));
+       //cint++;
     } else if (cmin >= FACE && cmin <= FACE_LAST) {
-       mesh->setModelEntity(e,getMdlFace(mesh,cmin));
+       if (cmin == 1) { //face tag 1 corresponds to model face 0
+          mesh->setModelEntity(e,getMdlFace(mesh,0));
+       } else if (cmin == 2) { //face tag 2 corresponds to model face 1
+          mesh->setModelEntity(e,getMdlFace(mesh,1));
+       } else if (cmin == 3) { //face tag 3 corresponds to model face 3
+          mesh->setModelEntity(e,getMdlFace(mesh,3));
+       } else if (cmin == 4) { //face tag 4 corresponds to model face 4
+          mesh->setModelEntity(e,getMdlFace(mesh,4));
+       } else if (cmin == 5) { //face tag 5 corresponds to model face 2
+          mesh->setModelEntity(e,getMdlFace(mesh,2));
+       } else if (cmin == 6) { //face tag 6 corresponds to model face 5
+          mesh->setModelEntity(e,getMdlFace(mesh,5));
+       }
+       //cface++;
     } else if (cmin >= EDGE && cmin <= EDGE_LAST) {
-       mesh->setModelEntity(e,getMdlEdge(mesh,cmin));
+       if (cmin == 11) { //edge tag 11 corresponds to model edge 0
+          mesh->setModelEntity(e,getMdlEdge(mesh,0));
+       } else if (cmin == 12) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,2));
+       } else if (cmin == 13) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,3));
+       } else if (cmin == 14) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,1));
+       } else if (cmin == 15) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,4));
+       } else if (cmin == 16) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,5));
+       } else if (cmin == 17) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,7));
+       } else if (cmin == 18) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,6));
+       } else if (cmin == 19) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,8));
+       } else if (cmin == 20) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,10));
+       } else if (cmin == 21) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,11));
+       } else if (cmin == 22) {
+          mesh->setModelEntity(e,getMdlEdge(mesh,9));
+       }
+       //cedge++;
     } else if (cmin >= VERTEX && cmin <= VERTEX_LAST) {
-       mesh->setModelEntity(e,getMdlVtx(mesh,cmin));
+       if (cmin == 31) { //vertex tag 31 corresponds to model vertex 0
+          mesh->setModelEntity(e,getMdlVtx(mesh,0));
+       } else if (cmin == 32) { //vertex tag 32 corresponds to model vertex 1
+          mesh->setModelEntity(e,getMdlVtx(mesh,1));
+       } else if (cmin == 33) { //vertex tag 33 corresponds to model vertex 3
+          mesh->setModelEntity(e,getMdlVtx(mesh,3));
+       } else if (cmin == 34) { //vertex tag 34 corresponds to model vertex 2
+          mesh->setModelEntity(e,getMdlVtx(mesh,2));
+       } else if (cmin == 35) { //vertex tag 35 corresponds to model vertex 4
+          mesh->setModelEntity(e,getMdlVtx(mesh,4));
+       } else if (cmin == 36) { //vertex tag 36 corresponds to model vertex 5
+          mesh->setModelEntity(e,getMdlVtx(mesh,5));
+       } else if (cmin == 37) { //vertex tag 37 corresponds to model vertex 7
+          mesh->setModelEntity(e,getMdlVtx(mesh,7));
+       } else if (cmin == 38) { //vertex tag 38 corresponds to model vertex 6
+          mesh->setModelEntity(e,getMdlVtx(mesh,6));
+       }
+       //cvtx++;
     }
   }
   mesh->end(it);
@@ -157,19 +264,74 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   while( (f = mesh->iterate(it)) ) {
     mesh->getAdjacent(f, 0, verts);
     int cmin=100;
-// won't comile now    for(int i=0; i<verts.size(); i++) {
-    for(int i=0; i<4; i++) {
+    for(size_t i=0; i<verts.size(); i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
       cmin=std::min(cmin,c);
     }
     if (cmin == INTERIORTAG) {
        mesh->setModelEntity(f,getMdlRgn(model));
+       //cint++;
     } else if (cmin >= FACE && cmin <= FACE_LAST) {
-       mesh->setModelEntity(f,getMdlFace(mesh,cmin));
+       if (cmin == 1) { //face tag 1 corresponds to model face 0
+          mesh->setModelEntity(f,getMdlFace(mesh,0));
+       } else if (cmin == 2) { //face tag 2 corresponds to model face 1
+          mesh->setModelEntity(f,getMdlFace(mesh,1));
+       } else if (cmin == 3) { //face tag 3 corresponds to model face 3
+          mesh->setModelEntity(f,getMdlFace(mesh,3));
+       } else if (cmin == 4) { //face tag 4 corresponds to model face 4
+          mesh->setModelEntity(f,getMdlFace(mesh,4));
+       } else if (cmin == 5) { //face tag 5 corresponds to model face 2
+          mesh->setModelEntity(f,getMdlFace(mesh,2));
+       } else if (cmin == 6) { //face tag 6 corresponds to model face 5
+          mesh->setModelEntity(f,getMdlFace(mesh,5));
+       }
+       //cface++;
     } else if (cmin >= EDGE && cmin <= EDGE_LAST) {
-       mesh->setModelEntity(f,getMdlEdge(mesh,cmin));
+       if (cmin == 11) { //edge tag 11 corresponds to model edge 0
+          mesh->setModelEntity(f,getMdlEdge(mesh,0));
+       } else if (cmin == 12) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,2));
+       } else if (cmin == 13) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,3));
+       } else if (cmin == 14) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,1));
+       } else if (cmin == 15) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,4));
+       } else if (cmin == 16) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,5));
+       } else if (cmin == 17) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,7));
+       } else if (cmin == 18) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,6));
+       } else if (cmin == 19) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,8));
+       } else if (cmin == 20) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,10));
+       } else if (cmin == 21) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,11));
+       } else if (cmin == 22) {
+          mesh->setModelEntity(f,getMdlEdge(mesh,9));
+       }
+       //cedge++;
     } else if (cmin >= VERTEX && cmin <= VERTEX_LAST) {
-       mesh->setModelEntity(f,getMdlVtx(mesh,cmin));
+       if (cmin == 31) { //vertex tag 31 corresponds to model vertex 0
+          mesh->setModelEntity(f,getMdlVtx(mesh,0));
+       } else if (cmin == 32) { //vertex tag 32 corresponds to model vertex 1
+          mesh->setModelEntity(f,getMdlVtx(mesh,1));
+       } else if (cmin == 33) { //vertex tag 33 corresponds to model vertex 3
+          mesh->setModelEntity(f,getMdlVtx(mesh,3));
+       } else if (cmin == 34) { //vertex tag 34 corresponds to model vertex 2
+          mesh->setModelEntity(f,getMdlVtx(mesh,2));
+       } else if (cmin == 35) { //vertex tag 35 corresponds to model vertex 4
+          mesh->setModelEntity(f,getMdlVtx(mesh,4));
+       } else if (cmin == 36) { //vertex tag 36 corresponds to model vertex 5
+          mesh->setModelEntity(f,getMdlVtx(mesh,5));
+       } else if (cmin == 37) { //vertex tag 37 corresponds to model vertex 7
+          mesh->setModelEntity(f,getMdlVtx(mesh,7));
+       } else if (cmin == 38) { //vertex tag 38 corresponds to model vertex 6
+          mesh->setModelEntity(f,getMdlVtx(mesh,6));
+       }
+       //cvtx++;
     }
   }
   mesh->end(it);
@@ -385,12 +547,10 @@ void readMesh(const char* meshfilename,
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
 
-  if( strcmp(matchfilename, "NULL") ) {
-    FILE* ff = fopen(classfilename, "r");
-    PCU_ALWAYS_ASSERT(ff);
-    readClassification(ff, mesh.numVerts, &(mesh.classification));
-    fclose(ff);
-  }
+  FILE* ff = fopen(classfilename, "r");
+  PCU_ALWAYS_ASSERT(ff);
+  readClassification(ff, mesh.numVerts, &(mesh.classification));
+  fclose(ff);
 
   if( strcmp(matchfilename, "NULL") ) {
     FILE* fm = fopen(matchfilename, "r");
@@ -419,7 +579,7 @@ int main(int argc, char** argv)
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
           "<ascii vertex classification flag .class> "
-          "<input model .dmg> <output mesh .smb>\n",
+          "<output model .dmg> <output mesh .smb>\n",
           argv[0]);
     }
     return 0;
@@ -440,21 +600,14 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
-  gmi_model* model = gmi_load("modbox.dmg");
-/*  int nx=3;
-  int ny=3;
-  int nz=3;
-  mgrid(nx ? 3 : 1, ny ? 3 : 1, nz ? 3 : 1);  
-  formModelTable();
-  gmi_model* model = buildModel(); 
-*/
-
+  //gmi_model* model = gmi_load(".null");
+  gmi_model* model = apf::makeMdsBox(2,2,2,1,1,1,0);
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
-//  apf::deriveMdsModel(mesh);
+  apf::deriveMdsModel(mesh);
   /*for (int i=0; i<81; i++) {
   std::cout<<m.coords[i]<<std::endl;
   }*/
