@@ -600,7 +600,7 @@ int main(int argc, char** argv)
 
   double t0 = PCU_Time();
   MeshInfo m;
-  readMesh(argv[1],argv[2],argv[3],argv[4],arg[5],m);
+  readMesh(argv[1],argv[2],argv[3],argv[4],argv[5],m);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
