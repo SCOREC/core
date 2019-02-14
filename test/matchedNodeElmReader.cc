@@ -525,6 +525,7 @@ struct MeshInfo {
   int* elements;
   int* matches;
   int* classification;
+  int* fathers2D;
   unsigned dim;
   unsigned elementType;
   unsigned numVerts;
@@ -538,6 +539,7 @@ void readMesh(const char* meshfilename,
     const char* coordfilename,
     const char* matchfilename,
     const char* classfilename,
+    const char* fathers2Dfilename,
     MeshInfo& mesh) {
   FILE* fc = fopen(coordfilename, "r");
   PCU_ALWAYS_ASSERT(fc);
@@ -551,6 +553,12 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(ff);
   readClassification(ff, mesh.numVerts, &(mesh.classification));
   fclose(ff);
+
+  //add an argument to readMesh for the fathers2D
+  FILE* fff = fopen(fathers2Dfilename, "r");
+  PCU_ALWAYS_ASSERT(fff);
+  readClassification(fff, mesh.numVerts, &(mesh.fathers2D)); // note we re-use classification reader
+  fclose(fff);
 
   if( strcmp(matchfilename, "NULL") ) {
     FILE* fm = fopen(matchfilename, "r");
@@ -573,12 +581,13 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  if( argc != 7 ) {
+  if( argc != 8 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
           "<ascii vertex classification flag .class> "
+          "<ascii vertex fathers2D flag .fathers2D> "
           "<output model .dmg> <output mesh .smb>\n",
           argv[0]);
     }
@@ -591,7 +600,7 @@ int main(int argc, char** argv)
 
   double t0 = PCU_Time();
   MeshInfo m;
-  readMesh(argv[1],argv[2],argv[3],argv[4],m);
+  readMesh(argv[1],argv[2],argv[3],argv[4],arg[5],m);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
@@ -620,6 +629,8 @@ int main(int argc, char** argv)
   }
   apf::MeshTag* t = setIntTag(mesh, m.classification, 1,
       m.localNumVerts, outMap);
+  apf::MeshTag* tfathers2D = setIntTag(mesh, m.fathers2D, 1,
+      m.localNumVerts, outMap);
   outMap.clear();
   setClassification(model,mesh,t);
   apf::removeTagFromDimension(mesh, t, 0);
@@ -628,9 +639,13 @@ int main(int argc, char** argv)
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
   mesh->verify();
 
-  gmi_write_dmg(model, argv[5]);
-  mesh->writeNative(argv[6]);
+  gmi_write_dmg(model, argv[6]);
+  mesh->writeNative(argv[7]);
   apf::writeVtkFiles("rendered",mesh);
+
+  // clean up the tag for the fathers2D array
+  apf::removeTagFromDimension(mesh, tfathers2D, 0);
+  mesh->destroyTag(tfathers2D);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
