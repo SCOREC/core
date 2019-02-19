@@ -618,8 +618,8 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
-  apf::MeshTag* t = setIntTag(mesh, m.classification, 1,
-      m.localNumVerts, outMap);
+  apf::MeshTag* t = setIntTag(mesh, "classification",
+      m.classification, 1, m.localNumVerts, outMap);
   outMap.clear();
   setClassification(model,mesh,t);
   apf::removeTagFromDimension(mesh, t, 0);

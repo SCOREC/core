@@ -62,6 +62,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
 
 /** \brief Assign coordinates to the mesh
   * \param vals (in) array of nverts ints
+  * \param name (in) name to assign the created tag
   * \param entries (in) number of ints per vertex
   * \param nverts (in) number of vertices for this process
   * \param globalToVert (in) map from global mesh vertex ids
@@ -69,8 +70,8 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   * \details
   * See 'setCoords' for distribution details
   */
-MeshTag* setIntTag(Mesh2* m, const int* vals, const int entries,
-    int nverts, GlobalToVert& globalToVert);
+MeshTag* setIntTag(Mesh2* m, const char* name, const int* vals,
+    const int entries, int nverts, GlobalToVert& globalToVert);
 
 /** \brief Assign matching to the mesh
   * \details
