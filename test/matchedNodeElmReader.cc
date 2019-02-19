@@ -627,14 +627,18 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
-  apf::MeshTag* t = setIntTag(mesh, m.classification, 1,
+  //apf::MeshTag* tc = setIntTag(mesh, m.classification, 1,
+  //    m.localNumVerts, outMap);
+  //outMap.clear();
+  //setClassification(model,mesh,tc);
+  //apf::removeTagFromDimension(mesh, tc, 0);
+  //mesh->destroyTag(tc);
+ 
+  apf::MeshTag* tf = setIntTag(mesh, m.fathers2D, 1,
       m.localNumVerts, outMap);
-  apf::MeshTag* tfathers2D = setIntTag(mesh, m.fathers2D, 1,
-      m.localNumVerts, outMap);
-  outMap.clear();
-  setClassification(model,mesh,t);
-  apf::removeTagFromDimension(mesh, t, 0);
-  mesh->destroyTag(t);
+  apf::removeTagFromDimension(mesh, tf, 0);
+  mesh->destroyTag(tf);
+
   if(!PCU_Comm_Self())
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
   mesh->verify();
@@ -642,10 +646,6 @@ int main(int argc, char** argv)
   gmi_write_dmg(model, argv[6]);
   mesh->writeNative(argv[7]);
   apf::writeVtkFiles("rendered",mesh);
-
-  // clean up the tag for the fathers2D array
-  apf::removeTagFromDimension(mesh, tfathers2D, 0);
-  mesh->destroyTag(tfathers2D);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
