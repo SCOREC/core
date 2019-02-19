@@ -629,7 +629,6 @@ int main(int argc, char** argv)
   }
   apf::MeshTag* tc = setIntTag(mesh, "classification", m.classification, 1,
       m.localNumVerts, outMap);
-  outMap.clear();
   setClassification(model,mesh,tc);
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
@@ -643,6 +642,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
   mesh->verify();
 
+  outMap.clear();
   gmi_write_dmg(model, argv[6]);
   mesh->writeNative(argv[7]);
   apf::writeVtkFiles("rendered",mesh);
