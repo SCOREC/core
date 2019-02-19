@@ -238,7 +238,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   delete [] c;
 }
 
-apf::MeshTag* setIntTag(Mesh2* m, const int* vals, const int entries,
+apf::MeshTag* setIntTag(Mesh2* m, const char* name, const int* vals, const int entries,
     int nverts, GlobalToVert& globalToVert)
 {
   Gid max = getMax(globalToVert);
@@ -308,7 +308,7 @@ apf::MeshTag* setIntTag(Mesh2* m, const int* vals, const int entries,
     }
   }
   PCU_Comm_Send();
-  apf::MeshTag* t = m->createIntTag("userInts",entries);
+  apf::MeshTag* t = m->createIntTag(name,entries);
   int* v = new int[entries];
   while (PCU_Comm_Receive()) {
     int gid;

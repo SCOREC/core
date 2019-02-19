@@ -627,14 +627,14 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
-  //apf::MeshTag* tc = setIntTag(mesh, m.classification, 1,
-  //    m.localNumVerts, outMap);
-  //outMap.clear();
-  //setClassification(model,mesh,tc);
-  //apf::removeTagFromDimension(mesh, tc, 0);
-  //mesh->destroyTag(tc);
+  apf::MeshTag* tc = setIntTag(mesh, "classification", m.classification, 1,
+      m.localNumVerts, outMap);
+  outMap.clear();
+  setClassification(model,mesh,tc);
+  apf::removeTagFromDimension(mesh, tc, 0);
+  mesh->destroyTag(tc);
  
-  apf::MeshTag* tf = setIntTag(mesh, m.fathers2D, 1,
+  apf::MeshTag* tf = setIntTag(mesh, "fathers2D", m.fathers2D, 1,
       m.localNumVerts, outMap);
   apf::removeTagFromDimension(mesh, tf, 0);
   mesh->destroyTag(tf);
