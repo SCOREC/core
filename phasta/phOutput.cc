@@ -220,7 +220,7 @@ static void checkBoundaryVertex(apf::Mesh* m,
   if (type == TETRAHEDRON || type == WEDGE_QUAD || type == PYRAMID_TRI) // outward
     PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
   else // inward
-    PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) > 0);
+    PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
@@ -941,6 +941,41 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
   }
 }
 
+static void getSpanwiseAverageArrays(Input& in, Output& o) {
+  apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
+  int nnodes = m->count(0); // number of nodes of wole mesh or part??
+  /* this will come from the adapt.inp file and is constant for all geombc
+     it is the total number of father nodes, nx*ny, and each geombc loads this */
+  int nfather = 9;
+  o.arrays.nfather = nfather;
+  /* this will come from the adapt.inp file and is constant for all geombc
+     this is the number of son nodes for each father, nz, and each geombc loads this
+     loading from adapt.inp only works when all fathers have same nz */
+  int nsons = 3;
+  o.arrays.nsons = nsons;
+  o.arrays.nsonsArr = new int[nfather]; //initialize nsonsArr
+  for (int i=0; i<nfather; i++) { // fill nsonsArr
+    /* set each entry in nsonsArr[nfather] to equal nsons */
+    o.arrays.nsonsArr[i] = nsons; // this is point2nsons(nfath) in PHASTA
+  }
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = m->begin(0);
+  o.arrays.ifather = new int[nnodes]; //initialize ifath
+  apf::MeshTag* t = m->findTag("fathers2D");
+  if (t==NULL) {std::cout<<"Didn't find tag"<<std::endl;}
+  int tagNum; 
+  int count = 0;
+  while ((v = m->iterate(it))) { // loop over mesh vertices
+    m->getIntTag(v,t,&tagNum);
+    o.arrays.ifather[count] = tagNum;
+    count++;
+  }
+  m->end(it);
+  m->destroyTag(t);
+  PCU_ALWAYS_ASSERT(count == nnodes);
+}
+
 Output::~Output()
 {
   delete [] arrays.coordinates;
@@ -1048,6 +1083,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getGCEssentialBCs(o, n);
   getInitialConditions(bcs, o);
   getElementGraph(o, rn, bcs);
+  getSpanwiseAverageArrays(in, o);
   apf::destroyNumbering(n);
   apf::destroyNumbering(rn);
   if (in.initBubbles)
