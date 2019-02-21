@@ -189,6 +189,10 @@ class Input
     std::vector<double> rbParamData;
     /** \brief factor \beta used for mesh smooth/gradation */
     double gradingFactor;
+    /* Stuff for spanwise averaging */
+    int spanAvg;
+    int nfathers;
+    int nsons;
 };
 
 int countNaturalBCs(Input& in);
