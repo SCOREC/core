@@ -635,8 +635,21 @@ int main(int argc, char** argv)
  
   apf::MeshTag* tf = setIntTag(mesh, "fathers2D", m.fathers2D, 1,
       m.localNumVerts, outMap);
-  apf::removeTagFromDimension(mesh, tf, 0);
-  mesh->destroyTag(tf);
+  //mesh->destroyTag(tf);
+
+  /* // Print the father2D tags
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = mesh->begin(0);
+  apf::MeshTag* t = mesh->findTag("fathers2D");
+  if (t==NULL) {std::cout<<"Didn't find tag"<<std::endl;}
+  int tagNum; 
+  int count = 0;
+  while ((v = mesh->iterate(it))) { // loop over mesh vertices
+    mesh->getIntTag(v,t,&tagNum);
+    std::cout<<"Tag number "<<tagNum<<std::endl;
+    count++;
+  }
+  mesh->end(it);*/
 
   if(!PCU_Comm_Self())
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);

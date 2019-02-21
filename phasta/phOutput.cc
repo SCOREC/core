@@ -963,12 +963,17 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
   apf::MeshIterator* it = m->begin(0);
   o.arrays.ifather = new int[nnodes]; //initialize ifath
   apf::MeshTag* t = m->findTag("fathers2D");
-  if (t==NULL) {std::cout<<"Didn't find tag"<<std::endl;}
+  if (t==NULL) {
+      std::cout<<"Did not find tag fathers2D"<<std::endl;
+  } else if (t != NULL) {
+      std::cout<<"Found tag fathers2D"<<std::endl;
+  }
   int tagNum; 
   int count = 0;
   while ((v = m->iterate(it))) { // loop over mesh vertices
     m->getIntTag(v,t,&tagNum);
     o.arrays.ifather[count] = tagNum;
+    std::cout<<"Tag number "<<tagNum<<std::endl;
     count++;
   }
   m->end(it);
