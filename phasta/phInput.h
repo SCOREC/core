@@ -189,6 +189,14 @@ class Input
     std::vector<double> rbParamData;
     /** \brief factor \beta used for mesh smooth/gradation */
     double gradingFactor;
+    /** \brief option used for wrapping sim mesh adapter and improver into mover */
+    int simCooperation;
+    /** \brief desired error of mass equation for sim adapter */
+    double simAdaptDesiredErrorMass;
+    /** \brief desired error of momentum equation for sim adapter */
+    double simAdaptDesiredErrorMomt;
+    /** \brief desired error of energy equation for sim adapter */
+    double simAdaptDesiredErrorEnrg;
 };
 
 int countNaturalBCs(Input& in);
