@@ -34,7 +34,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
   PCU_ALWAYS_ASSERT(md == 2);
 
 
-  double tol = 1.0e-12;
+  double tol = 1.0e-10;
   values.clear();
 
   bool isPeriodic[2];
