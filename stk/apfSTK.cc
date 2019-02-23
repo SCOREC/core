@@ -76,7 +76,7 @@ void collectEntityModels(
  *   \brief Implement an shards::ArrayDimTag for Quadrature points
  *
  *   Note that QPDimTag::Size does not dictate the size of that dimension,
- *   put_field does.
+ *   put_field_on_mesh does.
  */
 struct QPDimTag : public shards::ArrayDimTag {
   enum { Size = 1 };                    ///< default size
@@ -127,9 +127,10 @@ StkScalarField* makeStkField<StkScalarField>(
   StkScalarField* result;
   result = &(metaData->declare_field<StkScalarField>(
         stk::topology::NODE_RANK, name));
-  stk::mesh::put_field(
+  stk::mesh::put_field_on_mesh(
       *result,
-      metaData->universal_part());
+      metaData->universal_part(),
+      NULL);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
@@ -142,10 +143,11 @@ StkVectorField* makeStkField<StkVectorField>(
   StkVectorField* result;
   result = &(metaData->declare_field<StkVectorField>(
         stk::topology::NODE_RANK, name));
-  stk::mesh::put_field(
+  stk::mesh::put_field_on_mesh(
       *result,
       metaData->universal_part(),
-      3);
+      3,
+      NULL);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
@@ -158,10 +160,12 @@ StkTensorField* makeStkField<StkTensorField>(
   StkTensorField* result;
   result = &(metaData->declare_field<StkTensorField>(
         stk::topology::NODE_RANK, name));
-  stk::mesh::put_field(
+  stk::mesh::put_field_on_mesh(
       *result,
       metaData->universal_part(),
-      3,3);
+      3,
+      3,
+      NULL);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
@@ -175,10 +179,11 @@ StkQPScalarField* makeStkQPField<StkQPScalarField>(
   StkQPScalarField* result;
   result = &(metaData->declare_field<StkQPScalarField>(
         stk::topology::ELEMENT_RANK, name));
-  stk::mesh::put_field(
+  stk::mesh::put_field_on_mesh(
       *result,
       metaData->universal_part(),
-      nqp);
+      nqp,
+      NULL);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
@@ -192,10 +197,12 @@ StkQPVectorField* makeStkQPField<StkQPVectorField>(
   StkQPVectorField* result;
   result = &(metaData->declare_field<StkQPVectorField>(
         stk::topology::ELEMENT_RANK, name));
-  stk::mesh::put_field(
+  stk::mesh::put_field_on_mesh(
       *result,
       metaData->universal_part(),
-      3,nqp);
+      3,
+      nqp,
+      NULL);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }
@@ -209,10 +216,13 @@ StkQPTensorField* makeStkQPField<StkQPTensorField>(
   StkQPTensorField* result;
   result = &(metaData->declare_field<StkQPTensorField>(
         stk::topology::ELEMENT_RANK, name));
-  stk::mesh::put_field(
+  stk::mesh::put_field_on_mesh(
       *result,
       metaData->universal_part(),
-      3,3,nqp);
+      3,
+      3,
+      nqp,
+      NULL);
   stk::io::set_field_role(*result,Ioss::Field::TRANSIENT);
   return result;
 }

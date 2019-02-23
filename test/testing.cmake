@@ -26,6 +26,7 @@ mpi_test(bezierMisc 1 ./bezierMisc)
 mpi_test(bezierRefine 1 ./bezierRefine)
 mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
+mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
