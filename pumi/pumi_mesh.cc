@@ -447,7 +447,7 @@ void pumi_mesh_print (pMesh m, bool print_ent)
     global_entity_count[0]=global_entity_count[1]=global_entity_count[2]=global_entity_count[3]=0;
     for (int d=0; d<4;++d)
     {
-      for (int p=0; p<4*PCU_Comm_Peers();++p)
+      for (int p=0; p<PCU_Comm_Peers();++p)
         global_entity_count[d] += global_own_entity_count[p*4+d];
     }
 
