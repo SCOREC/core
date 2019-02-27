@@ -220,7 +220,7 @@ static void checkBoundaryVertex(apf::Mesh* m,
   if (type == TETRAHEDRON || type == WEDGE_QUAD || type == PYRAMID_TRI) // outward
     PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
   else // inward
-    PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) < 0);
+    PCU_ALWAYS_ASSERT((p[3]-p[0]) * apf::cross((p[1]-p[0]), (p[2]-p[0])) > 0);
 }
 
 static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
