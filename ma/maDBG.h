@@ -28,6 +28,9 @@ void writeMesh(ma::Mesh* m,
 void addTargetLocation(ma::Adapt* a,
     const char* fieldName);
 
+void addParamCoords(ma::Adapt* a,
+    const char* fieldName);
+
 void colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & quals,

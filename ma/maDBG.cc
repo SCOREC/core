@@ -71,6 +71,27 @@ void addTargetLocation(ma::Adapt* a,
   m->end(it);
 }
 
+void addParamCoords(ma::Adapt* a,
+    const char* fieldName)
+{
+  ma::Mesh* m = a->mesh;
+  apf::Field* paramField;
+  paramField = m->findField(fieldName);
+  if (paramField)
+    apf::destroyField(paramField);
+
+  paramField = apf::createFieldOn(m, fieldName, apf::VECTOR);
+  ma::Entity* ent;
+  ma::Iterator* it;
+  it = m->begin(0);
+  while ( (ent = m->iterate(it)) ){
+    ma::Vector p;
+    m->getParam(ent, p);
+    apf::setVector(paramField , ent, 0, p);
+  }
+  m->end(it);
+}
+
 void colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & vals,
@@ -133,6 +154,8 @@ void dumpMeshWithQualities(ma::Adapt* a,
   if (a->mesh->canSnap())
     addTargetLocation(a, "target_for_snap");
 
+  // parametric coordinates
+  addParamCoords(a, "param_coords");
 
   // setup file name and write the mesh
   std::stringstream ss;
@@ -153,6 +176,10 @@ void dumpMeshWithQualities(ma::Adapt* a,
     apf::destroyField(colorField);
 
   colorField = a->mesh->findField("target_for_snap");
+  if (colorField)
+    apf::destroyField(colorField);
+
+  colorField = a->mesh->findField("param_coords");
   if (colorField)
     apf::destroyField(colorField);
 }
