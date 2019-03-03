@@ -289,6 +289,20 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
   }
 }
 
+static void bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3])
+{
+  (void) m;
+  (void) e;
+  bmin[0] = 0.0;
+  bmin[1] = 0.0;
+  bmin[2] = 0.0;
+  bmax[0] = 1.0;
+  bmax[1] = 1.0;
+  bmax[2] = 1.0;
+}
+
+
 static struct gmi_model_ops ops = {
   .begin    = gmi_base_begin,
   .next     = gmi_base_next,
@@ -302,6 +316,7 @@ static struct gmi_model_ops ops = {
   .periodic = periodic,
   .range    = range,
   .first_derivative = first_derivative,
+  .bbox = bbox,
   .destroy  = gmi_base_destroy
 };
 

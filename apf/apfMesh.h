@@ -312,6 +312,8 @@ class Mesh
       Vector3 const& param, Vector3& x);
     /** \brief checks if g is in the closure of the target */
     bool isInClosureOf(ModelEntity* g, ModelEntity* target);
+    /** \brief get the bounding box of the model entity g */
+    void boundingBox(ModelEntity* g, Vector3& bmin, Vector3& bmax);
     /** \brief checks if p is on model g */
     bool isOnModel(ModelEntity* g, Vector3 p, double scale);
     /** \brief get the distribution of the mesh's coordinate field */

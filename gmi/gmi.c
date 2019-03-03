@@ -149,6 +149,12 @@ int gmi_is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   return m->ops->is_in_closure_of(m, e, et);
 }
 
+void gmi_bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3])
+{
+  return m->ops->bbox(m, e, bmin, bmax);
+}
+
 int gmi_is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 {
   return m->ops->is_discrete_ent(m, e);

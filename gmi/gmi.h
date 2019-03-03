@@ -96,6 +96,9 @@ struct gmi_model_ops {
   /** \brief implement gmi_is_point_in_region */
   int (*is_point_in_region)(struct gmi_model* m, struct gmi_ent* e,
       double p[3]);
+  /** \brief implement gmi_bbox */
+  void (*bbox)(struct gmi_model* m, struct gmi_ent* e,
+      double bmin[3], double bmax[3]);
   /** \brief implement gmi_is_in_closure_of */
   int (*is_in_closure_of)(struct gmi_model* m, struct gmi_ent* e,
       struct gmi_ent* et);
@@ -185,6 +188,9 @@ int gmi_is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
 /** \brief check if e is in the closure of et*/
 int gmi_is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
     struct gmi_ent* et);
+/** \brief get the bounding box of model entity e*/
+void gmi_bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3]);
 /** \brief check if e is a discrete entity */
 int gmi_is_discrete_ent(struct gmi_model* m, struct gmi_ent* e);
 /** \brief destroy a geometric model */
