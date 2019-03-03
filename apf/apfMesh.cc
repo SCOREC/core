@@ -258,6 +258,13 @@ bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
   return (res == 1) ? true : false;
 }
 
+void Mesh::boundingBox(ModelEntity* g,
+    Vector3& bmin, Vector3& bmax)
+{
+  gmi_ent* e  = (gmi_ent*)g;
+  gmi_bbox(getModel(), e, &bmin[0], &bmax[0]);
+}
+
 bool Mesh::isOnModel(ModelEntity* g, Vector3 p, double scale)
 {
   Vector3 to;

@@ -351,6 +351,13 @@ static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   return 0;
 }
 
+static void bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3])
+{
+  (void) m;
+  GEN_bounds((pGEntity)e, bmin, bmax);
+}
+
 static int is_discrete_ent(struct gmi_model*, struct gmi_ent* e)
 {
   return GEN_isDiscreteEntity((pGEntity)e);
@@ -426,6 +433,7 @@ void gmi_register_sim(void)
   ops.first_derivative = first_derivative;
   ops.is_point_in_region = is_point_in_region;
   ops.is_in_closure_of = is_in_closure_of;
+  ops.bbox = bbox;
   ops.is_discrete_ent = is_discrete_ent;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
