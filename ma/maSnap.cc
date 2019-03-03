@@ -33,9 +33,13 @@ static size_t isSurfUnderlyingFaceDegenerate(
   int md = m->getModelType(g);
   PCU_ALWAYS_ASSERT(md == 2);
 
-
-  double tol = 1.0e-10;
   values.clear();
+
+  Vector bmin;
+  Vector bmax;
+
+  m->boundingBox(g, bmin, bmax);
+  double tol = 1.0e-6 * (bmax - bmin).getLength();
 
   bool isPeriodic[2];
   double range[2][2];
@@ -149,6 +153,7 @@ static Vector interpolateParametricCoordinatesDoublePoles(
     double t,
     double uv[2][2],
     double p_range[2],
+    double d_range[2],
     int p_axes,
     int d_axes,
     double p_ratio,
@@ -158,6 +163,7 @@ static Vector interpolateParametricCoordinatesDoublePoles(
 {
   double d_threshold, p_threshold, p_size, d_size;
   p_size = std::abs(p_range[1] - p_range[0]);
+  d_size = std::abs(d_range[1] - d_range[0]);
   d_size = std::abs(np - sp);
   p_threshold = p_ratio * p_size;
   d_threshold = d_ratio * d_size;
@@ -280,6 +286,7 @@ static Vector interpolateParametricCoordinatesSinglePole(
     double t,
     double uv[2][2],
     double p_range[2],
+    double d_range[2],
     int p_axes,
     int d_axes,
     double p_ratio,
@@ -288,7 +295,7 @@ static Vector interpolateParametricCoordinatesSinglePole(
 {
   double d_threshold, p_threshold, p_size, d_size;
   p_size = std::abs(p_range[1] - p_range[0]);
-  d_size = std::abs(2.0 * pp);
+  d_size = std::abs(d_range[1] - d_range[0]);
   p_threshold = p_ratio * p_size;
   d_threshold = d_ratio * d_size;
 
@@ -319,7 +326,8 @@ static Vector interpolateParametricCoordinatesSinglePole(
   double phi_tmp = interpolateParametricCoordinate(t, phi_1, phi_2, p_range, true, 0);
 
   // check the south pole (i.e., at least one point inside south pole space)
-  if (pp < 0) {
+  // definition of south-pole := pole is at the beginning of the d_range
+  if (std::abs(pp - d_range[0]) < 1.e-6) {
     double sp = pp;
     if (std::abs(the_1 - sp) <= d_threshold) {
       if (std::abs(the_2 - sp) <= d_threshold) {
@@ -341,7 +349,8 @@ static Vector interpolateParametricCoordinatesSinglePole(
     }
   }
   // check the north pole (i.e., at lease one point inside north pole space)
-  if (pp > 0) {
+  // definition of north-pole := pole is at the end of the d_range
+  if (std::abs(pp - d_range[1]) < 1.e-6) {
     double np = pp;
     if (std::abs(the_2 - np) <= d_threshold) {
       if (std::abs(the_1 - np) <= d_threshold) {
@@ -374,7 +383,7 @@ static Vector interpolateParametricCoordinatesSinglePole(
     }
 
     double the_1p, the_2p, the_tp, pole;
-    if (pp > 0) {
+    if (std::abs(pp - d_range[1]) < 1.e-6) {
       pole = pp;
       if (the_1 + the_2 >= 0) {
 	the_1p = the_1;
@@ -392,7 +401,7 @@ static Vector interpolateParametricCoordinatesSinglePole(
 	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
       }
     }
-    if (pp < 0) {
+    if (std::abs(pp - d_range[0]) < 1.e-6) {
       pole = pp;
       if (the_1 + the_2 <= 0) {
 	the_1p = the_1;
@@ -444,17 +453,19 @@ static void interpolateParametricCoordinatesOnDegenerateFace(
   double p_ratio = 0.05;
 
   double p_range[2];
+  double d_range[2];
   int p_axes = 1 - d_axes;
 
   PCU_ALWAYS_ASSERT(m->getPeriodicRange(g, p_axes, p_range));
+  PCU_ALWAYS_ASSERT(!m->getPeriodicRange(g, d_axes, d_range));
 
   if (numPoles == 2) {
-    p = interpolateParametricCoordinatesDoublePoles(t, uv, p_range,
+    p = interpolateParametricCoordinatesDoublePoles(t, uv, p_range, d_range,
     	p_axes, d_axes, p_ratio, d_ratio, vals[0], vals[1]);
   }
 
   if (numPoles == 1) {
-    p = interpolateParametricCoordinatesSinglePole(t, uv, p_range,
+    p = interpolateParametricCoordinatesSinglePole(t, uv, p_range, d_range,
     	p_axes, d_axes, p_ratio, d_ratio, vals[0]);
   }
 }
@@ -496,7 +507,6 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
-
 }
 
 static void interpolateParametricCoordinatesOnFace(
