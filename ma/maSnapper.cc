@@ -10,6 +10,7 @@
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
+#include "maSnap.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -190,8 +191,8 @@ static void updateVertexParametricCoords(
   // classified on the same model face as vert
   apf::Up edges;
   m->getUp(vert,edges);
-  apf::Up ovs;
-  ovs.n = edges.n;
+  apf::Up oes;
+  oes.n = edges.n;
   int counter = 0;
   for (int i = 0; i < edges.n; ++i) {
     Model* h = m->toModel(edges.e[i]);
@@ -199,17 +200,17 @@ static void updateVertexParametricCoords(
       continue;
     PCU_ALWAYS_ASSERT_VERBOSE(g == h,
     	"expecting the model to be the same for current edge and vert");
-    ovs.e[counter] = apf::getEdgeVertOppositeVert(m, edges.e[i], vert);
+    oes.e[counter] = edges.e[i];
     counter++;
   }
 
   Vector pBar(0., 0., 0.);
   for (int i = 0; i < counter; i++) {
     Vector pTmp;
-    m->getParamOn(m->toModel(vert), ovs.e[i], pTmp);
+    transferParametricOnEdgeSplit(m, oes.e[i], 0.5, pTmp);
     pBar += pTmp;
   }
-  pBar = pBar / ovs.n;
+  pBar = pBar / oes.n;
 
   m->snapToModel(m->toModel(vert), pBar, newTarget);
   m->setParam(vert, pBar);
