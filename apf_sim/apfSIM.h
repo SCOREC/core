@@ -79,6 +79,7 @@ class MeshSIM : public Mesh2
     const char* getTagName(MeshTag* t);
     ModelEntity* toModel(MeshEntity* e);
     gmi_model* getModel();
+    void setModel(gmi_model* newModel);
     void migrate(Migration* plan);
     int getId();
     void writeNative(const char* fileName);
