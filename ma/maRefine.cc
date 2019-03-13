@@ -385,7 +385,8 @@ struct ShouldSplit : public Predicate
 long markEdgesToSplit(Adapt* a)
 {
   ShouldSplit p(a);
-  return markEntities(a, 1, p, SPLIT, DONT_SPLIT);
+  return markEntities(a, 1, p, SPLIT, NEED_NOT_SPLIT,
+                      DONT_SPLIT | NEED_NOT_SPLIT);
 }
 
 void processNewElements(Refine* r)
