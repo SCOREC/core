@@ -31,6 +31,14 @@ void ShortEdgeRemover::setEdge(Entity* e)
   mesh->getDownward(edge,0,verts);
   vertRemovers[0].setVert(verts[0]);
   vertRemovers[1].setVert(verts[1]);
+  // It is more logical to give priority to the vertex that
+  // is classified on higher order model dimension, e.g., the
+  // vertex classified on a model region should be tried before
+  // the vertex classified on the model face. The reason behind this
+  // is that the vertex on the higher dimension model will have more
+  // space and has a higher chance of success.
+  if (mesh->getModelType(mesh->toModel(verts[1])) > mesh->getModelType(mesh->toModel(verts[0])))
+    std::swap(vertRemovers[0], vertRemovers[1]);
 }
 
 void ShortEdgeRemover::findEdges()
