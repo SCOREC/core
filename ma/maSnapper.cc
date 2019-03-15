@@ -134,8 +134,11 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
   if ( ! collapse.checkTopo())
     return false;
   double q = adapter->input->validQuality;
+  bool oldShouldForce = adapter->input->shouldForceAdaptation;
+  adapter->input->shouldForceAdaptation = true;
   if ( ! collapse.tryBothDirections(q))
     return false;
+  adapter->input->shouldForceAdaptation = oldShouldForce;
   collapse.destroyOldElements();
   return true;
 }
