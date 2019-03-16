@@ -868,6 +868,11 @@ gmi_model* MeshSIM::getModel()
   return model;
 }
 
+void MeshSIM::setModel(gmi_model* newModel)
+{
+  model = newModel;
+}
+
 void MeshSIM::migrate(Migration* plan)
 {
   pMigrator migrator = Migrator_new(mesh,this->getDimension(),0);
