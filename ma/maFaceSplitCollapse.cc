@@ -37,7 +37,11 @@ namespace ma {
       return false;
     if ( ! collapse.checkTopo())
       return false;
+    EntityArray& preSplit = faceSplit.getTets();
+    for (size_t i=0; i < preSplit.getSize(); ++i)
+      collapse.elementsToIgnore.insert(preSplit[i]);
     return collapse.tryBothDirections(oldQuality);
+    collapse.elementsToIgnore.clear();
   }
 
   void FaceSplitCollapse::accept()
@@ -76,5 +80,36 @@ namespace ma {
   {
     return collapse.adapt;
   }
+
+void FaceSplitCollapse::IgnoringCollapse::computeElementSets()
+{
+  Upward adjacent;
+  Mesh* m = adapt->mesh;
+  m->getAdjacent(edge,m->getDimension(),adjacent);
+  elementsToCollapse.clear();
+  APF_ITERATE(Upward,adjacent,it)
+    if ( ! elementsToIgnore.count(*it))
+      elementsToCollapse.insert(*it);
+  m->getAdjacent(vertToCollapse,m->getDimension(),adjacent);
+  elementsToKeep.clear();
+  APF_ITERATE(Upward,adjacent,it)
+    if ( ! (elementsToCollapse.count(*it) ||
+            elementsToIgnore.count(*it)))
+      elementsToKeep.insert(*it);
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+}
+
+bool FaceSplitCollapse::IgnoringCollapse::setEdge(Entity* e)
+{
+  if (getFlag(adapt,e,DONT_COLLAPSE))
+    return false;
+  edge = e;
+  vertToCollapse = 0;
+  vertToKeep = 0;
+  elementsToCollapse.clear();
+  elementsToKeep.clear();
+  elementsToIgnore.clear();
+  return true;
+}
 
 }
