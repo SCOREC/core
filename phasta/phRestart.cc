@@ -291,6 +291,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "VOF solution",
     "meshQ",
     "meshCFL",
+    "VMS_error",
     "material_type"
   };
   static char const* const known_rand_fields[] = {
