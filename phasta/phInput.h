@@ -197,6 +197,8 @@ class Input
     double simAdaptDesiredErrorMomt;
     /** \brief desired error of energy equation for sim adapter */
     double simAdaptDesiredErrorEnrg;
+    /** \brief flag for writing simmetrix log file */
+    int writeSimLog;
 };
 
 int countNaturalBCs(Input& in);

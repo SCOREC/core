@@ -20,7 +20,8 @@ void getGrowthCurves(Output& o)
 
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
-    Sim_logOn("getGrowthCurves.log");
+    if (in.writeSimLog)
+      Sim_logOn("getGrowthCurves.log");
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);
 
@@ -256,7 +257,8 @@ void getGrowthCurves(Output& o)
 
     //clean up utility
     Progress_delete(progress);
-    Sim_logOff();
+    if (in.writeSimLog)
+      Sim_logOff();
   }
   else {
     if(PCU_Comm_Self() == 0)
