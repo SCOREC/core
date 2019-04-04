@@ -712,6 +712,8 @@ class QualityImprover2D : public Operator
     {
       if ( getFlag(adapter,e,DONT_SWAP))
         return false;
+      if ( mesh->isShared(e) )
+      	return false;
       edge = e;
       return true;
     }
