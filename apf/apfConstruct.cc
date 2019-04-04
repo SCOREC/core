@@ -237,14 +237,15 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   delete [] c;
 }
 
-void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
+void destruct(Mesh2* m, int*& conn, int& nelem, int &etype, int cellDim)
 {
-  int dim = m->getDimension();
-  nelem = m->count(dim);
+  if(cellDim == -1) cellDim = m->getDimension();
+  //int dim = m->getDimension();
+  nelem = m->count(cellDim);
   conn = 0;
   GlobalNumbering* global = makeGlobal(numberOwnedNodes(m, "apf_destruct"));
   synchronize(global);
-  MeshIterator* it = m->begin(dim);
+  MeshIterator* it = m->begin(cellDim);
   MeshEntity* e;
   int i = 0;
   while ((e = m->iterate(it))) {
