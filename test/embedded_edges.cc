@@ -8,6 +8,10 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cassert>
+#include <iostream>
+// this test checks that the destruct function works
+// with meshes that have a lower dimension than the manifold
+// which tey reside in. E.g. a truss or beam in 3D space
 
 int main(int argc, char** argv)
 {
@@ -25,6 +29,7 @@ int main(int argc, char** argv)
 
   gmi_model* model = gmi_load(".null");
   apf::Mesh2* m = apf::loadMdsMesh(model, argv[1]);
+  apf::deriveMdsModel(m);
   int dim = m->getDimension();
   extractCoords(m, coords, nverts);
   destruct(m, conn, nelem, etype, 1);
@@ -32,7 +37,10 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
 
-  m = apf::makeEmptyMdsMesh(model, dim, false);
+  std::cout<<m->typeDimension[apf::Mesh::EDGE]<<std::endl;
+
+  gmi_model* model2 = gmi_load(".null");
+  m = apf::makeEmptyMdsMesh(model2, dim, false);
   apf::GlobalToVert outMap;
   apf::construct(m, conn, nelem, etype, outMap);
   delete [] conn;
@@ -41,9 +49,6 @@ int main(int argc, char** argv)
   apf::setCoords(m, coords, nverts, outMap);
   delete [] coords;
   outMap.clear();
-  //m->verify();
-
-  //apf::writeVtkFiles("after", m);
 
   m->destroyNative();
   apf::destroyMesh(m);
