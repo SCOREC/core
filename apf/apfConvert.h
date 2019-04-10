@@ -60,8 +60,13 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert);
 
 /** \brief convert an apf::Mesh2 object into a connectivity array
-  \details this is useful for debugging the apf::convert function */
-void destruct(Mesh2* m, int*& conn, int& nelem, int &etype);
+  \details this is useful for debugging the apf::convert function
+  \param mesh the apf mesh
+  \param nelem number of elements
+  \param etype apf::Mesh::Type
+  \param cellDim dimension of elements (if embedded in a higher dimension manifold)
+  */
+void destruct(Mesh2* m, int*& conn, int& nelem, int &etype, int cellDim = -1);
 
 /** \brief get a contiguous set of global vertex coordinates
   \details this is used for debugging apf::setCoords */
