@@ -127,17 +127,6 @@ if(SIMMODSUITE_SimAdvMeshing_FOUND)
   target_compile_definitions(cut_interface PRIVATE -DHAVE_SIMADVMESHING)
 endif()
 
-# Capstone utilities
-if(ENABLE_CAPSTONE)
-  util_exe_func(capStoneAnisoAdapt capStoneAnisoAdapt.cc)
-  util_exe_func(capStoneAnisoAdaptWing capStoneAnisoAdaptWing.cc)
-  util_exe_func(capStoneIsoAdaptB737 capStoneIsoAdaptB737.cc)
-  util_exe_func(capStoneGeomTest capStoneGeomTest.cc)
-  util_exe_func(capStoneAttachSolution capStoneAttachSolution.cc)
-  util_exe_func(capStoneCheckParametrization capStoneCheckParametrization.cc)
-  util_exe_func(capStone2VTK capStone2VTK.cc)
-endif()
-
 # Unit tests / functionality regression tests
 test_exe_func(qr qr.cc)
 test_exe_func(eigen_test eigen_test.cc)
