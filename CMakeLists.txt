@@ -146,7 +146,6 @@ add_subdirectory(phasta)
 add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(omega_h)
-add_subdirectory(capstone_clis)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
@@ -156,5 +155,11 @@ scorec_export_library(core)
 if(BUILD_EXES)
   add_subdirectory(test)
 endif()
+
+if(ENABLE_CAPSTONE)
+  add_subdirectory(capstone_clis)
+endif()
+
+
 
 bob_end_package()
