@@ -15,6 +15,7 @@
 #include <apfShape.h>
 #include <ma.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -58,6 +59,9 @@ apf::Field* addVector3Field(apf::Mesh2* m, const std::vector<row> t, const char*
 void writeCre(CapstoneModule& cs, const std::string& fileName);
 
 void writeMdsMesh(apf::Mesh2* m, const char* name, const char* fieldName);
+
+void computeSizeDistribution(apf::Mesh2* m, int factor,
+    std::vector<int>& binCount, std::vector<double>& binArea);
 
 struct SortingStruct
 {
@@ -497,13 +501,13 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
-
+  lion_set_verbosity(1);
   double initialTime = PCU_Time();
 
   if (argc != 7) {
     if(0==PCU_Comm_Self())
       std::cerr << "usage: " << argv[0]
-        << " <cre file .cre> <data file .txt> <data offset> <strand size> <desired max size> <error reduction factor>\n";
+        << " <cre file .cre> <data file .txt> <strand size> <desired max size> <error reduction factor> <max refinement level>\n";
     return EXIT_FAILURE;
   }
 
@@ -513,10 +517,10 @@ int main(int argc, char** argv)
 
   const char* creFileName = argv[1];
   const char* dataFileName = argv[2];
-  int offset = atoi(argv[3]);
-  const int strandSize = atoi(argv[4]);
-  double h_global = atof(argv[5]);
-  double factor = atof(argv[6]);
+  const int strandSize = atoi(argv[3]);
+  double h_global = atof(argv[4]);
+  double factor = atof(argv[5]);
+  const int maxLevel = atoi(argv[6]);
 
   // load capstone mesh
   // create an instance of the Capstone Module activating CREATE/CREATE/CREATE
@@ -838,14 +842,27 @@ int main(int argc, char** argv)
   in->shouldRunMidZoltan = true;
   in->shouldRunPostZoltan = true;
   in->maximumImbalance = 1.05;
-  in->maximumIterations = log2(factor) + 1;
+  in->maximumIterations = log2(factor) + 2;
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
+  /* in->shouldTransferToClosestPoint = true; */
   in->shouldForceAdaptation = true;
-  ma::adaptVerbose(in);
+  in->debugFolder = "debug";
+  ma::adaptVerbose(in, true);
 
   double adaptTime = PCU_Time();
   std::cout<<"TIMER: adaptMesh "<<adaptTime-getGradationTime<<std::endl;
+
+
+  // add size distribution based on area
+  std::vector<int> binCount;
+  std::vector<double> binArea;
+  computeSizeDistribution(mesh, factor, binCount, binArea);
+
+  for (std::size_t i = 0; i < binCount.size(); i++) {
+    printf("bin %lu's count/area is %d/%g \n", i, binCount[i], binArea[i]);
+  }
+
 
   // write the adapted mesh to vtk
   apf::writeVtkFiles("adaptedMesh", mesh);
@@ -857,7 +874,6 @@ int main(int argc, char** argv)
   writeMdsMesh(mesh, "adaptedMesh.smb", "adapt_size");
   // write the adapted mesh to cre
   writeCre(cs, "adaptedMesh.cre");
-
 
   // clean up and exit calls
   //destroy all fields...
@@ -1184,4 +1200,46 @@ void writeMdsMesh(apf::Mesh2* m, const char* name, const char* fieldName)
   // clean up outMesh
   outMesh->destroyNative();
   apf::destroyMesh(outMesh);
+}
+
+
+void computeSizeDistribution(apf::Mesh2* m, int factor,
+    std::vector<int>& binCount, std::vector<double>& binArea)
+{
+  // find the min length edge
+  apf::MeshEntity* e;
+  apf::MeshIterator* it;
+
+  double minLength = 1.0e12;
+  it = m->begin(1);
+  while ( (e = m->iterate(it)) ) {
+    double l = apf::measure(m, e);
+    if (l < minLength)
+      minLength = l;
+  }
+  m->end(it);
+
+  double minArea = minLength * minLength / 2.;
+
+  // initialize the arrays
+  for (int i = 1; i <= factor; i*=2) {
+    binCount.push_back(0);
+    binArea.push_back(0.0);
+  }
+
+
+  it = m->begin(2);
+  while ( (e = m->iterate(it)) ) {
+    double a = apf::measure(m, e);
+    int count = 0;
+    for (int i = 1; i <= factor; i*=2) {
+      if (a >= i * minArea && a < 4 * i * minArea) {
+      	binCount[count] += 1;
+      	binArea[count] += a;
+      	break;
+      }
+      count++;
+    }
+  }
+  m->end(it);
 }
