@@ -128,6 +128,18 @@ int main(int argc, char** argv)
   printf("\n");
   printInfo(model, 3);
 
+    // faces in separate meshes named by tags
+  gmi_ent* ge;
+  gmi_iter* gi;
+
+  gi = gmi_begin(model, 2);
+  while( (ge = gmi_next(model, gi)) ){
+    std::stringstream name_str;
+    name_str << "face_" << gmi_tag(model, ge) << "_mesh";
+    visualizeFace(model, ge, 100, 100, name_str.str().c_str());
+  }
+  gmi_end(model, gi);
+
   printf("------------------------\n");
   printf("creating mesh with param field\n");
 
