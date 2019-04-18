@@ -271,6 +271,26 @@ static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   return 0;
 }
 
+static void bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3])
+{
+  cap_model* cm = (cap_model*)m;
+  M_GTopo topo = fromGmiEntity(e);
+  BBox bbox;
+  cm->geomInterface->get_bounding_box(topo, bbox);
+  vec3d bmi = bbox.min_value();
+  vec3d bma = bbox.max_value();
+
+  bmin[0] = bmi[0];
+  bmin[1] = bmi[1];
+  bmin[2] = bmi[2];
+  bmax[0] = bma[0];
+  bmax[1] = bma[1];
+  bmax[2] = bma[2];
+}
+
+
+
 static int is_discrete_ent(struct gmi_model*, struct gmi_ent* e)
 {
   (void)e;
@@ -318,6 +338,7 @@ void gmi_register_cap(void)
   ops.first_derivative = first_derivative;
   ops.is_point_in_region = is_point_in_region;
   ops.is_in_closure_of = is_in_closure_of;
+  ops.bbox = bbox;
   ops.is_discrete_ent = is_discrete_ent;
   ops.destroy = destroy;
   /* gmi_register(create_cre, "cre"); */
