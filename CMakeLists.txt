@@ -177,7 +177,6 @@ add_subdirectory(phasta)
 add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(omega_h)
-add_subdirectory(capstone_clis)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
@@ -206,6 +205,10 @@ endif()
 
 if(PUMI_PYTHON_INTERFACE)
   add_subdirectory(python_wrappers)
+endif()
+
+if(ENABLE_CAPSTONE)
+  add_subdirectory(capstone_clis)
 endif()
 
 bob_end_package()
