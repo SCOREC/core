@@ -94,6 +94,7 @@ class MeshCAP : public Mesh2
     ModelEntity* toModel(MeshEntity* e);
     // OPTIONAL Member Functions //
     gmi_model* getModel();
+    void setModel(gmi_model* newModel);
     void setModelEntity(MeshEntity* e, ModelEntity* me);
 
     /* --------------------------------------------------------------------- */

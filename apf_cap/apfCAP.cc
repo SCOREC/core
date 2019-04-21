@@ -503,6 +503,11 @@ gmi_model* MeshCAP::getModel()
   return model;
 }
 
+void MeshCAP::setModel(gmi_model* newModel)
+{
+  model = newModel;
+}
+
 void MeshCAP::setModelEntity(MeshEntity* e, ModelEntity* me)
 {
   (void)e;
