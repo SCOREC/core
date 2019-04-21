@@ -1225,7 +1225,6 @@ void adjustRefinementLevel(apf::Mesh2* m, apf::Field* finalSize,
     double currnetS = apf::getScalar(currentSize, v, 0);
     double finalS   = apf::getScalar(finalSize, v, 0);
     if (currnetS < finalS) continue;
-    printf("cs/fs/log2csfs  is %f/%f/%f\n", currnetS, finalS, log2(currnetS/finalS));
     if (log2(currnetS/finalS) > maxLevel)
       finalS = currnetS / pow(2, maxLevel);
     apf::setScalar(finalSize, v, 0, finalS);
