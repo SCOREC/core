@@ -835,8 +835,8 @@ int main(int argc, char** argv)
   in->shouldTransferParametric = true;
   /* in->shouldTransferToClosestPoint = true; */
   in->shouldForceAdaptation = true;
-  in->debugFolder = "debug";
-  ma::adaptVerbose(in, true);
+  /* in->debugFolder = "debug"; */
+  ma::adaptVerbose(in, false);
 
   double adaptTime = PCU_Time();
   std::cout<<"TIMER: adaptMesh "<<adaptTime-getGradationTime<<std::endl;
