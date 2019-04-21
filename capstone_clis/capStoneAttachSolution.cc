@@ -41,12 +41,27 @@ using namespace CreateMG::Geometry;
 
 typedef std::vector<double> row;
 
+struct FieldOfInterest{
+  FieldOfInterest()
+  {
+    lambda_max = 0.0;
+    h_lambdamax = 0.0;
+  }
+  double lambda_max;
+  double h_lambdamax;
+  apf::Field* lambdaMaxField;
+  apf::Field* lambdaStrandMax;
+  apf::Field* sizeField;
+  double lambda_cutoff()
+  {
+    return lambda_max*1e-10;
+  }
+};
+
 std::vector<row> readTable(const char* name);
 
 std::vector<double> extractSurfaceData(const std::vector<row> &table,
     const int strandSize, const int col);
-
-void removeUnusedVerts(apf::Mesh2* m, int offset);
 
 apf::Mesh2* createVolumeMesh(apf::Mesh2* m, const std::vector<row> &t, int s,
     std::vector<std::vector<apf::MeshEntity*> > &surfToStrandMap);
@@ -62,6 +77,10 @@ void writeMdsMesh(apf::Mesh2* m, const char* name, const char* fieldName);
 
 void computeSizeDistribution(apf::Mesh2* m, int factor,
     std::vector<int>& binCount, std::vector<double>& binArea);
+
+
+void adjustRefinementLevel(apf::Mesh2* m, apf::Field* finalSize,
+    apf::Field* currentSize, int maxLevel);
 
 struct SortingStruct
 {
@@ -369,34 +388,14 @@ void getLambdaMax(apf::Mesh* mesh,apf::Field* hessianField,apf::Field* lambdaMax
   mesh->end(it);
 }   
 
-/*
-void getVolMaxPair(apf::Mesh* mesh,apf::Mesh* volMesh,apf::Field* lambdaMaxField,apf::Field* currentSize,double &lambda_max,double &h_lambdamax)
-{
-  apf::MeshIterator* it = mesh->begin(0);
-  apf::MeshIterator* itVol = volMesh->begin(0); 
-  apf::MeshEntity* vert, *vertVol;
-  while( (vert = mesh->iterate(it)) )
-  {
-    apf::MeshEntity* vertVol = volMesh->iterate(itVol);
-    if(lambda_max < apf::getScalar(lambdaMaxField,vertVol,0))
-    {
-      lambda_max = apf::getScalar(lambdaMaxField,vertVol,0);
-      h_lambdamax = apf::getScalar(currentSize,vert,0);
-    }
-  }
-  volMesh->end(itVol);
-  mesh->end(it);
-}
-*/
-
 void getVolMaxPair(apf::Mesh* mesh,std::vector<std::vector<apf::MeshEntity*> > surfToStrandMap, apf::Field* lambdaMaxField,apf::Field* lambdaStrandMax, apf::Field* currentSize,double &lambda_max,double &h_lambdamax)
 {
-  apf::MeshIterator* it = mesh->begin(0); 
+  apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vert, *vertVol;
-  int counter = 0; 
+  int counter = 0;
   while( (vert = mesh->iterate(it)) )
   {
-    //the goal of this loop is to identify lambda max global, find corresponding surface h-max global, and then set the surface lambda field 
+    //the goal of this loop is to identify lambda max global, find corresponding surface h-max global, and then set the surface lambda field
     int strandSize = surfToStrandMap[counter].size();
     for(int i=0; i<strandSize;i++)
     {
@@ -419,7 +418,7 @@ void getVolMaxPair(apf::Mesh* mesh,std::vector<std::vector<apf::MeshEntity*> > s
       }
     }
     apf::setScalar(lambdaStrandMax,vert,0,lambda_local);
-   
+
     counter++;
   }
   mesh->end(it);
@@ -465,8 +464,27 @@ void setSizeField(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeFi
 
 }
 
-void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList,apf::Field* finalSizeField,apf::Field* finalChoiceField)
+static std::vector<bool> decodeBitFields(const char* bitFields)
 {
+  std::vector<bool> res;
+  res.resize(strlen(bitFields));
+  printf("length is %d\n", strlen(bitFields));
+  for (int i = 0; i < strlen(bitFields); i++) {
+    if (bitFields[i] == '0')
+      res[i] = false;
+    else if (bitFields[i] == '1')
+      res[i] = true;
+    else
+      PCU_ALWAYS_ASSERT(0);
+  }
+  return res;
+}
+
+void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList, const char* bitFields, apf::Field* finalSizeField,apf::Field* finalChoiceField)
+{
+  std::vector<bool> userInput = decodeBitFields(bitFields);
+  PCU_ALWAYS_ASSERT(userInput.size() == sizeFieldList.size());
+  printf("HERE\n");
   apf::MeshEntity *vert;
   apf::MeshIterator *it = m->begin(0);
 
@@ -481,6 +499,8 @@ void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList,apf:
     {
       double value1 = apf::getScalar(finalSizeField,vert,0);
       double value2 = apf::getScalar(field,vert,0);
+      if (!userInput[0]) value1 *= 1.e16;
+      if (!userInput[1]) value2 *= 1.e16;
       double minValue = std::min(value1,value2);
       apf::setScalar(finalSizeField,vert,0,minValue);
       if(value1 > value2)
@@ -504,10 +524,14 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   double initialTime = PCU_Time();
 
-  if (argc != 7) {
-    if(0==PCU_Comm_Self())
+  if (argc != 8) {
+    if(0==PCU_Comm_Self()) {
       std::cerr << "usage: " << argv[0]
-        << " <cre file .cre> <data file .txt> <strand size> <desired max size> <error reduction factor> <max refinement level>\n";
+        << " <cre file .cre> <data file .txt> <target field(s)> <strand size> <desired max size> <error reduction factor> <max refinement level>\n";
+      std::cerr << "*target field(s) is a bit string to select which field(s) are used for error estimation\n";
+      std::cerr << "1st bit --- pressure\n";
+      std::cerr << "2nd bit --- skin friction\n";
+    }
     return EXIT_FAILURE;
   }
 
@@ -517,10 +541,11 @@ int main(int argc, char** argv)
 
   const char* creFileName = argv[1];
   const char* dataFileName = argv[2];
-  const int strandSize = atoi(argv[3]);
-  double h_global = atof(argv[4]);
-  double factor = atof(argv[5]);
-  const int maxLevel = atoi(argv[6]);
+  const char* bitFields = argv[3];
+  const int strandSize = atoi(argv[4]);
+  double h_global = atof(argv[5]);
+  double factor = atof(argv[6]);
+  const int maxLevel = atoi(argv[7]);
 
   // load capstone mesh
   // create an instance of the Capstone Module activating CREATE/CREATE/CREATE
@@ -607,13 +632,6 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::createMesh(m,g);
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
-  // remove unused verts
-  if (offset > 0) {
-    printf("\n---- Removing Extra Verts. \n");
-    removeUnusedVerts(mesh, offset);
-    printf("---- Removing Extra Verts: Done. \n");
-  }
-
   // make the volume mesh (this one is MDS underneath)
   printf("\n---- Creating Volume Mesh. \n");
   // create an empty array with the correct sizes to hold the surface 2 strand map
@@ -639,19 +657,9 @@ int main(int argc, char** argv)
   std::cout<<"TIMER: Finished converting capstone mesh to volume mesh "<<constructionTime-initialTime<<std::endl;
 
   //Get Size Field for Adapt
-  std::cout<<"Creating Hessian Fields for Rho and E\n";
-  //apf::Field* gradRhoField = apf::recoverGradientByVolume(rhoField); 
-  //apf::Field* hessianRhoField = apf::recoverGradientByVolume(gradRhoField); 
-  //apf::Field* gradEField  = apf::recoverGradientByVolume(eField); 
-  //apf::Field* hessianEField  = apf::recoverGradientByVolume(gradEField); 
-  std::cout<<"Finished Hessian Fields for Rho and E\n";
-
-  double getHessianTime = PCU_Time();
-  std::cout<<"TIMER: Finished obtaining hessians "<<getHessianTime-constructionTime<<std::endl;
-
   apf::Field* lambdaMaxField = apf::createLagrangeField(volMesh,"lambdaMax",apf::SCALAR,1);
   apf::Field* finalSizeField = apf::createLagrangeField(mesh,"final_size",apf::SCALAR,1);
-  
+
   //get current size field
   apf::Field* currentSize = samSz::isoSize(mesh);
 
@@ -659,7 +667,6 @@ int main(int argc, char** argv)
   apf::MeshEntity* vert;
 
   //transfer rho and e field to surface mesh
-  
   std::cout<<"Get surface fields from volume\n";
   apf::Field* surfaceRhoField = apf::createLagrangeField(mesh,"surfaceDensity",apf::SCALAR,1);
   apf::Field* surfaceEField = apf::createLagrangeField(mesh,"surfaceE",apf::SCALAR,1);
@@ -667,30 +674,26 @@ int main(int argc, char** argv)
   //getSpeed
   apf::Field* speedField = apf::createLagrangeField(volMesh,"speed",apf::SCALAR,1);
   it = volMesh->begin(0);
-  double minNu = 1.0;
   while( (vert = volMesh->iterate(it)) )
   {
-    double rhoVal = apf::getScalar(rhoField,vert,0); 
+    double rhoVal = apf::getScalar(rhoField,vert,0);
     apf::Vector3 rhoVelocity;
-    apf::getVector(rho_uvwField,vert,0,rhoVelocity); 
+    apf::getVector(rho_uvwField,vert,0,rhoVelocity);
     double speed = rhoVelocity.getLength()/rhoVal;
     apf::setScalar(speedField,vert,0,speed);
-    if(apf::getScalar(nuField,vert,0)<minNu)
-      minNu = apf::getScalar(nuField,vert,0);
   }
   volMesh->end(it);
   //End getSpeed
-  
+
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
   it = mesh->begin(0);
-  apf::MeshIterator* itVol = volMesh->begin(0); 
-
+  apf::MeshIterator* itVol = volMesh->begin(0);
   while( (vert = mesh->iterate(it)) )
   {
     apf::MeshEntity* vertVol = volMesh->iterate(itVol);
-    double rhoVal = apf::getScalar(rhoField,vertVol,0); 
-    double eVal = apf::getScalar(eField,vertVol,0); 
-    double speedVal = apf::getScalar(speedField,vertVol,0); 
+    double rhoVal = apf::getScalar(rhoField,vertVol,0);
+    double eVal = apf::getScalar(eField,vertVol,0);
+    double speedVal = apf::getScalar(speedField,vertVol,0);
     apf::setScalar(surfaceRhoField,vert,0,rhoVal);
     apf::setScalar(surfaceEField,vert,0,eVal);
     apf::setScalar(surfaceSpeedField,vert,0,speedVal);
@@ -700,7 +703,7 @@ int main(int argc, char** argv)
   std::cout<<"Finished surface fields from volume\n";
 
   double getSurfaceTime = PCU_Time();
-  std::cout<<"TIMER: Finished computing speed and transferring fields to surface "<<getSurfaceTime-getHessianTime<<std::endl;
+  std::cout<<"TIMER: Finished computing speed and transferring fields to surface "<<getSurfaceTime-constructionTime <<std::endl;
 
   //get the true pressure field
   apf::Field* pressureField = apf::createLagrangeField(volMesh,"pressure",apf::SCALAR,1);
@@ -710,33 +713,15 @@ int main(int argc, char** argv)
     double rho_e = apf::getScalar(eField,vert,0);
     double rho = apf::getScalar(rhoField,vert,0);
     double speedVal = apf::getScalar(speedField,vert,0);
-    double pressure_gamma = rho_e-0.5*rho*speedVal*speedVal;  
+    double pressure_gamma = rho_e-0.5*rho*speedVal*speedVal;
     apf::setScalar(pressureField,vert,0,pressure_gamma);
   }
   volMesh->end(itVol);
-  apf::Field* gradPressureField = apf::recoverGradientByVolume(pressureField); 
-  apf::Field* hessianPressureField = apf::recoverGradientByVolume(gradPressureField); 
+  apf::Field* gradPressureField = apf::recoverGradientByVolume(pressureField);
+  apf::Field* hessianPressureField = apf::recoverGradientByVolume(gradPressureField);
 
   //get eigenvalues in the volume mesh
   getLambdaMax(volMesh,hessianPressureField,lambdaMaxField);
-  //getLambdaMax(volMesh,hessianEField,lambdaMaxField);
-
-  struct FieldOfInterest{
-    FieldOfInterest()
-    {
-      lambda_max = 0.0;
-      h_lambdamax = 0.0;
-    }
-    double lambda_max;
-    double h_lambdamax;
-    apf::Field* lambdaMaxField;
-    apf::Field* lambdaStrandMax;
-    apf::Field* sizeField;
-    double lambda_cutoff()
-    {
-      return lambda_max*1e-10;
-    }
-  };
 
 
   FieldOfInterest eBased;
@@ -778,7 +763,7 @@ int main(int argc, char** argv)
   FieldOfInterest shearBased;
   shearBased.lambdaMaxField = apf::createLagrangeField(mesh,"surflambdaMax",apf::SCALAR,1);
   shearBased.sizeField = apf::createLagrangeField(mesh,"surface_size",apf::SCALAR,1);
-  
+
   //get surface shear gradient
   std::cout<<"Reached gradshearfield\n";
   apf::Field* gradShearField = apf::recoverGradientByVolume(surfaceShearField);
@@ -787,7 +772,7 @@ int main(int argc, char** argv)
   it=mesh->begin(0);
   while( (vert = mesh->iterate(it)) )
   {
-    apf::Vector3 gradShear; 
+    apf::Vector3 gradShear;
     apf::getVector(gradShearField,vert,0,gradShear);
     apf::setScalar(shearBased.lambdaMaxField,vert,0,gradShear.getLength());
   }
@@ -811,12 +796,12 @@ int main(int argc, char** argv)
   sizeFieldList.push(shearBased.sizeField);
   apf::Field* finalChoiceField = apf::createLagrangeField(mesh,"finalChoice",apf::SCALAR,1);
   it = mesh->begin(0);
-  while( (vert = mesh->iterate(it)) )  
+  while( (vert = mesh->iterate(it)) )
   {
     apf::setScalar(finalChoiceField,vert,0,0);
   }
 
-  isotropicIntersect(mesh,sizeFieldList,finalSizeField,finalChoiceField);
+  isotropicIntersect(mesh,sizeFieldList,bitFields,finalSizeField,finalChoiceField);
 
   double getIntersectionTime = PCU_Time();
   std::cout<<"TIMER: get mesh intersection "<<getIntersectionTime-getShearTime<<std::endl;
@@ -827,6 +812,9 @@ int main(int argc, char** argv)
 
   double getGradationTime = PCU_Time();
   std::cout<<"TIMER: get graded size field "<<getGradationTime-getIntersectionTime<<std::endl;
+
+  //adjust refinement level
+  adjustRefinementLevel(mesh,finalSizeField,currentSize,maxLevel);
 
   //Save initial meshes
   apf::writeVtkFiles("initialSurfaceMesh", mesh);
@@ -976,23 +964,6 @@ apf::Field* addVector3Field(apf::Mesh2* m, const std::vector<row> t, const char*
 }
 
 
-
-void removeUnusedVerts(apf::Mesh2* m, int offset)
-{
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m->begin(0);
-  int count = 0;
-  while ( (e = m->iterate(it)) ) {
-    if (count < offset) {
-      PCU_ALWAYS_ASSERT(m->countUpward(e) == 0);
-      m->destroy(e);
-    }
-    else
-      PCU_ALWAYS_ASSERT(m->countUpward(e) != 0);
-    count++;
-  }
-  m->end(it);
-}
 
 static std::vector<apf::Vector3>
 readLayerCoordinates(int layer, const std::vector<row> &t, int s)
@@ -1240,6 +1211,24 @@ void computeSizeDistribution(apf::Mesh2* m, int factor,
       }
       count++;
     }
+  }
+  m->end(it);
+}
+
+void adjustRefinementLevel(apf::Mesh2* m, apf::Field* finalSize,
+    apf::Field* currentSize, int maxLevel)
+{
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = m->begin(0);
+
+  while( (v = m->iterate(it)) ) {
+    double currnetS = apf::getScalar(currentSize, v, 0);
+    double finalS   = apf::getScalar(finalSize, v, 0);
+    if (currnetS < finalS) continue;
+    printf("cs/fs/log2csfs  is %f/%f/%f\n", currnetS, finalS, log2(currnetS/finalS));
+    if (log2(currnetS/finalS) > maxLevel)
+      finalS = currnetS / pow(2, maxLevel);
+    apf::setScalar(finalSize, v, 0, finalS);
   }
   m->end(it);
 }
