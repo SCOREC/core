@@ -296,8 +296,10 @@ long markEntities(
     int dimension,
     Predicate& predicate,
     int trueFlag,
-    int falseFlag)
+    int setFalseFlag,
+    int allFalseFlags)
 {
+  if (!allFalseFlags) allFalseFlags = setFalseFlag;
   Entity* e;
   long count = 0;
   Mesh* m = a->mesh;
@@ -307,7 +309,7 @@ long markEntities(
     PCU_ALWAYS_ASSERT( ! getFlag(a,e,trueFlag));
     /* this skip conditional is powerful: it affords us a
        3X speedup of the entire adaptation in some cases */
-    if (getFlag(a,e,falseFlag))
+    if (allFalseFlags & getFlags(a,e))
       continue;
     if (predicate(e))
     {
@@ -316,7 +318,7 @@ long markEntities(
         ++count;
     }
     else
-      setFlag(a,e,falseFlag);
+      setFlag(a,e,setFalseFlag);
   }
   m->end(it);
   return PCU_Add_Long(count);

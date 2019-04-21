@@ -277,6 +277,8 @@ class Mesh
     virtual ModelEntity* toModel(MeshEntity* e) = 0;
     /** \brief get a GMI interface to the geometric model */
     virtual gmi_model* getModel() = 0;
+    /** \brief set the geometric model */
+    virtual void setModel(gmi_model* newModel) = 0;
     /** \brief return the model entity dimension */
     int getModelType(ModelEntity* e);
     /** \brief get the dimension-unique model entity identifier */

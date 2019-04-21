@@ -563,6 +563,11 @@ class MeshMDS : public Mesh2
     {
       return mesh->user_model;
     }
+    void setModel(gmi_model* newModel)
+    {
+      mesh->user_model = newModel;
+      return;
+    }
     void acceptChanges()
     {
       updateOwners(this, pmodel);

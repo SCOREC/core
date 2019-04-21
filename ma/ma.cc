@@ -77,8 +77,12 @@ void adaptVerbose(Input* in, bool verbose)
       ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
   allowSplitCollapseOutsideLayer(a);
-  fixElementShapes(a);
   if (verbose) ma_dbg::dumpMeshWithQualities(a,999,"after_final_fix");
+  // The following is applied to 2D surface meshes only and has no effect
+  // on 3D meshes
+  improveQualities(a);
+  if (verbose)
+    ma_dbg::dumpMeshWithQualities(a,999,"after_improveQualities");
   /* The following loop ensures that no long edges are left in
    * the mesh. Note that at this point all elements are of "good"
    * quality and a few refinement iterations will not depreciate
@@ -99,9 +103,6 @@ void adaptVerbose(Input* in, bool verbose)
   if (verbose)
     ma_dbg::dumpMeshWithQualities(a,999,"after_final_refine_snap_loop");
   printQuality(a);
-  improveQualities(a);
-  if (verbose)
-    ma_dbg::dumpMeshWithQualities(a,999,"after_improveQualities");
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);

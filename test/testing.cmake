@@ -445,6 +445,10 @@ mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+set(MDIR ${MESHES}/embeddedEdges)
+mpi_test(embedded_edges 1
+  ./embedded_edges
+  "${MDIR}/edges-embedded-in-3D.smb")
 set(MDIR ${MESHES}/spr)
 mpi_test(spr_3D 4
   ./spr_test

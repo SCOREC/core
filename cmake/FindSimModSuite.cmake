@@ -40,11 +40,11 @@ macro(simLibCheck libs isRequired)
 endmacro(simLibCheck)
 
 
-macro(getSimCadLib searchPath libName lib)
+macro(getSimCadLib searchPath libName lib check)
   file(GLOB cadLib
     RELATIVE ${searchPath}/
     ${searchPath}/lib${libName}*)
-  if( NOT cadLib )
+  if( check AND NOT cadLib )
     message(FATAL_ERROR "lib${libName} not found")
   endif()
   set(${lib} "${cadLib}")
@@ -74,7 +74,7 @@ string(REGEX REPLACE
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 11.0.170826)
-set(MAX_VALID_SIM_VERSION 12.0.181124)
+set(MAX_VALID_SIM_VERSION 12.0.190225)
 if( (SIM_DOT_VERSION VERSION_LESS MIN_VALID_SIM_VERSION) OR
     (SIM_DOT_VERSION VERSION_GREATER MAX_VALID_SIM_VERSION) )
   MESSAGE(FATAL_ERROR 
@@ -97,20 +97,25 @@ math(EXPR len "${archEnd}-${archStart}")
 string(SUBSTRING "${SIMMODSUITE_LIBS}" "${archStart}" "${len}" SIM_ARCHOS)
 message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
-set(SIM_PARASOLID_VERSION 290)
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
-  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}" 
-    SimParasolid${SIM_PARASOLID_VERSION} simParaLib)
-  set(SIM_CAD_LIB_NAMES
-    ${simParaLib}
-    pskernel)
+  set(SIM_PARASOLID_VERSION 300)
+  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
+    SimParasolid${SIM_PARASOLID_VERSION} simParaLib FALSE)
+  if(NOT EXISTS ${simParaLib})
+    set(SIM_PARASOLID_VERSION 290)
+    getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
+      SimParasolid${SIM_PARASOLID_VERSION} simParaLib TRUE)
+    set(SIM_CAD_LIB_NAMES
+      ${simParaLib}
+      pskernel)
+  endif()
 endif()
 
 option(SIM_ACIS "Use Acis through Simmetrix" OFF)
 if (SIM_ACIS)
-  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}" 
-    SimAcis simAcisLib)
+  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
+    SimAcis simAcisLib TRUE)
   set(SIM_CAD_LIB_NAMES
       ${simAcisLib}
       ${SIM_CAD_LIB_NAMES}

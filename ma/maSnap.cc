@@ -69,6 +69,10 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, param, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
+#ifdef HAVE_CAPSTONE
+    uTanSize = uTan * uTan;
+    vTanSize = vTan * vTan;
+#endif
     if (uTanSize < tol || vTanSize < tol) {
       axis = degenAxes;
       values.push_back(candidateDegenParam);
@@ -146,281 +150,243 @@ static void interpolateParametricCoordinateOnEdge(
   p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 0);
   p[1] = 0.0;
   p[2] = 0.0;
+
+#ifdef HAVE_CAPSTONE
+  // account for non-uniform parameterization of model-edge
+  Vector X[3];
+  Vector para[2] = {a, b};
+  for (int i = 0; i < 2; i++)
+    m->snapToModel(g, para[i], X[i]);
+
+  double tMax = 1., tMin = 0.;
+  m->snapToModel(g, p, X[2]);
+
+  // check if the snap point on the model edge is
+  // approximately at same length from either vertices
+
+  double r = (X[0]-X[2]).getLength();
+  double s = (X[1]-X[2]).getLength();
+
+  double alpha = t/(1. - t); //parametric ratio
+
+  int num_it = 0;
+  while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+    if ( r/s > alpha) {
+      tMax = t;
+      t = (tMin + t) / 2.;
+    }
+    else {
+      tMin = t;
+      t = (t + tMax) / 2.;
+    }
+
+    p[0] = interpolateParametricCoordinate(t, a[0], b[0], range, isPeriodic, 0);
+
+    m->snapToModel(g, p, X[2]);
+
+    r = (X[0]-X[2]).getLength();
+    s = (X[1]-X[2]).getLength();
+
+    if ( num_it > 20) break;
+      num_it++;
+  }
+#endif
+}
+
+// convert (phi,theta) on unit sphere to (x,y,z)
+// x = sin(theta) cos(phi)
+// y = sin(theta) sin(phi)
+// z = cos(theta)
+// phi in [0 to 2pi]
+// theta in [0 to pi]
+static Vector getSphere(const Vector& p)
+{
+  double phi = p[0];
+  double the = p[1];
+  Vector res(sin(the)*cos(phi),
+             sin(the)*sin(phi),
+             cos(the));
+  return res;
+}
+
+// convert (x,y,z) on unit sphere to (theta,phi)
+// x = sin(theta) cos(phi)
+// y = sin(theta) sin(phi)
+// z = cos(theta)
+// phi in [0 to 2pi]
+// theta in [0 to pi]
+static Vector getInvSphere(const Vector& x)
+{
+  double phi = atan2(x[1], x[0]);
+  if (phi < 0)
+    phi = phi + 2 * M_PI;
+  double the = acos(x[2]);
+  Vector res(phi, the, 0.0);
+  return res;
+}
+
+// map the periodic range [phiMin,phiMax] to [0,2pi]
+static double mapPeriodic(double phi, double phiMin, double phiMax){
+  return 2. * M_PI * (phi - phiMin) / (phiMax - phiMin);
+}
+
+// map the periodic range [0,2pi] back to [phiMin,phiMax]
+static double invMapPeriodic(double x, double phiMin, double phiMax){
+  return phiMin + x * (phiMax - phiMin) / 2. / M_PI;
+}
+
+// map the degenerate range [theMin,theMax] to [0,pi]
+// *** for cases where both poles are present.
+static double mapDegenerateBoth(double the, double theMin, double theMax)
+{
+  return M_PI * (the - theMin) / (theMax - theMin);
+}
+
+// map the degenerate range [0,pi] back to[theMin,theMax]
+// *** for cases where both poles are present.
+static double invMapDegenerateBoth(double x, double theMin, double theMax)
+{
+  return theMin + x * (theMax - theMin) / M_PI;
+}
+
+// map the degenerate range [theMin,theMax] to [0,theRef]
+// *** for cases where only north  pole is present.
+// *** north pole is the pole corresponding to the lower limit
+// *** theRef is angle between the following vectors
+// *** vectors connecting the center of the degenerate range
+// *** vector connecting the center and the pole
+// *** vector connecting the center and any point on the trim edge
+static double mapDegenerateNorth(double the, double theMin, double theMax, double theRef)
+{
+  return theRef * (the - theMin) / (theMax - theMin);
+}
+
+// map the degenerate range [0,theRef] back to [theMin, theMax]
+// *** for cases where only north  pole is present.
+// *** north pole is the pole corresponding to the lower limit
+static double invMapDegenerateNorth(double x, double theMin, double theMax, double theRef)
+{
+  return theMin + x * (theMax - theMin) / theRef;
 }
 
 
+// map the degenerate range [theMin,theMax] to [pi-theRef,pi]
+// *** for cases where only south  pole is present.
+// *** south pole is the pole corresponding to the upper limit limit
+// *** theRef is angle between the following vectors
+// *** vectors connecting the center of the degenerate range
+// *** vector connecting the center and the pole
+// *** vector connecting the center and any point on the trim edge
+static double mapDegenerateSouth(double the, double theMin, double theMax, double theRef)
+{
+  return M_PI - theRef + theRef * (the - theMin) / (theMax - theMin);
+}
+
+// map the degenerate range [pi-theRef,pi] back to [theMin,theMax]
+// *** for cases where only south  pole is present.
+// *** south pole is the pole corresponding to the upper limit limit
+static double invMapDegenerateSouth(double x, double theMin, double theMax, double theRef)
+{
+  return theMin + (x + theRef - M_PI) * (theMax - theMin) / theRef;
+}
+
+// computes the slerp between to spherical coordinates
+// see https://en.wikipedia.org/wiki/Slerp
+static Vector getSlerp(double t, Vector a, Vector b)
+{
+  double omega = acos(a*b/a.getLength()/b.getLength());
+  return (a * sin((1.-t)*omega) + b * sin(t*omega)) / sin(omega);
+}
+
 static Vector interpolateParametricCoordinatesDoublePoles(
     double t,
-    double uv[2][2],
+    Vector a,
+    Vector b,
     double p_range[2],
     double d_range[2],
     int p_axes,
-    int d_axes,
-    double p_ratio,
-    double d_ratio,
-    double sp,
-    double np)
+    int d_axes)
 {
-  double d_threshold, p_threshold, p_size, d_size;
-  p_size = std::abs(p_range[1] - p_range[0]);
-  d_size = std::abs(d_range[1] - d_range[0]);
-  d_size = std::abs(np - sp);
-  p_threshold = p_ratio * p_size;
-  d_threshold = d_ratio * d_size;
 
-  // From now on
-  // the(ta) is the degenerate coordinate
-  // phi     is the periodic   coordinate
+  double a_the = mapDegenerateBoth(a[d_axes], d_range[0], d_range[1]);
+  double a_phi = mapPeriodic(a[p_axes], p_range[0], p_range[1]);
+  Vector aTransformed = Vector(a_phi, a_the, 0.0);
 
-  // the corresponding interpolated values
-  double the_t = 0.0;
-  double phi_t = 0.0;
-  double phi_1 = uv[p_axes][0];
-  double phi_2 = uv[p_axes][1];
-  double the_1 = uv[d_axes][0];
-  double the_2 = uv[d_axes][1];
+  double b_the = mapDegenerateBoth(b[d_axes], d_range[0], d_range[1]);
+  double b_phi = mapPeriodic(b[p_axes], p_range[0], p_range[1]);
+  Vector bTransformed = Vector(b_phi, b_the, 0.0);
 
-  double phi_span = std::abs(phi_2 - phi_1);
+  Vector xa = getSphere(aTransformed);
+  Vector xb = getSphere(bTransformed);
 
-  // First, take care of the cases where one or both of the
-  // thetas (degenerate coord) are close to the poles
-  bool flag = false;
-  // sort points such that the_1 < the_2
-  if (the_1 > the_2) {
-    std::swap(phi_1, phi_2);
-    std::swap(the_1, the_2);
-    t = 1 - t;
-  }
-  the_t = (1 - t) * the_1 + t * the_2;
-  double phi_tmp = interpolateParametricCoordinate(t, phi_1, phi_2, p_range, true, 0);
+  Vector xs = getSlerp(t, xa, xb);
 
-  // check the south pole (i.e., at least one point inside south pole space)
-  if (std::abs(the_1 - sp) <= d_threshold) {
-    if (std::abs(the_2 - sp) <= d_threshold) {
-      if (std::abs(phi_span - p_size/2.) > p_threshold) {
-	phi_t = phi_tmp;
-	flag = true;
-      }
-    }
-    else {
-      phi_t = phi_2;
-      flag = true;
-    }
-  }
-  // check the north pole (i.e., at lease one point inside north pole space)
-  if (std::abs(the_2 - np) <= d_threshold) {
-    if (std::abs(the_1 - np) <= d_threshold) {
-      if (std::abs(phi_span - p_size/2.) > p_threshold) {
-	phi_t = phi_tmp;
-	flag = true;
-      }
-    }
-    else {
-      phi_t = phi_1;
-      flag = true;
-    }
-  }
-  // check the case when neither of the points falls in any of the poles
-  if (std::abs(the_2 - np) > d_threshold &&
-      std::abs(the_1 - sp) > d_threshold) {
-    if (std::abs(phi_span - p_size/2.) > p_threshold) {
-      phi_t = phi_tmp;
-      flag = true;
-    }
-  }
+  Vector sTransformed = getInvSphere(xs);
 
+  double s_phi = invMapPeriodic(sTransformed[0], p_range[0], p_range[1]);
+  double s_the = invMapDegenerateBoth(sTransformed[1], d_range[0], d_range[1]);
 
-  // Second, take care of the cases where the connecting line should
-  // pass over a pole.
-  if (!flag && std::abs(phi_span - p_size/2.) <= p_threshold) {
-    // sort points such that phi_1 < phi_2
-    if (phi_1 > phi_2) {
-      std::swap(phi_1, phi_2);
-      std::swap(the_1, the_2);
-      t = 1 - t;
-    }
-
-    double the_1p, the_2p, the_tp, pole;
-    if (the_1 >= 0) {
-      pole = np;
-      if (the_1 + the_2 >= 0) {
-	the_1p = the_1;
-	the_2p = the_2;
-	the_tp = (1 - t) * the_1p + t * (d_size - the_2p);
-	the_t = (the_tp <= pole) ? the_tp : d_size - the_tp;
-	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
-      }
-      else { // the_1 + the_2 < 0
-	the_1p =  the_1;
-	the_2p = -the_2;
-	the_tp = (1 - t) * the_1p + t * (d_size - the_2p);
-	the_t = (the_tp <= pole) ? the_tp : d_size - the_tp;
-	the_t = -the_t;
-	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
-      }
-    }
-    else { // the_1 < 0
-      pole = sp;
-      if (the_1 + the_2 <= 0) {
-	the_1p = the_1;
-	the_2p = the_2;
-	the_tp = (1 - t) * the_1p + t * (-d_size - the_2p);
-	the_t = (the_tp >= pole) ? the_tp : -d_size - the_tp;
-	phi_t = (the_tp >= pole) ? phi_1 : phi_2;
-      }
-      else { // the_1 + the_2 > 0
-	the_1p =  the_1;
-	the_2p = -the_2;
-	the_tp = (1 - t) * the_1p + t * (-d_size - the_2p);
-	the_t = (the_tp >= pole) ? the_tp : -d_size - the_tp;
-	the_t = -the_t;
-	phi_t = (the_tp >= pole) ? phi_1 : phi_2;
-      }
-    }
-  }
-  return (d_axes == 0) ? Vector(the_t, phi_t, 0.0) : Vector(phi_t, the_t, 0.0);
+  return (d_axes == 0) ? Vector(s_the, s_phi, 0.0) : Vector(s_phi, s_the, 0.0);
 }
 
 
 static Vector interpolateParametricCoordinatesSinglePole(
     double t,
-    double uv[2][2],
+    Vector a,
+    Vector b,
     double p_range[2],
     double d_range[2],
     int p_axes,
     int d_axes,
-    double p_ratio,
-    double d_ratio,
+    double theRef,
     double pp)
 {
-  double d_threshold, p_threshold, p_size, d_size;
-  p_size = std::abs(p_range[1] - p_range[0]);
-  d_size = std::abs(d_range[1] - d_range[0]);
-  p_threshold = p_ratio * p_size;
-  d_threshold = d_ratio * d_size;
-
-  // From now on
-  // the(ta) is the degenerate coordinate
-  // phi     is the periodic   coordinate
-
-  // the corresponding interpolated values
-  double the_t = 0.0;
-  double phi_t = 0.0;
-  double phi_1 = uv[p_axes][0];
-  double phi_2 = uv[p_axes][1];
-  double the_1 = uv[d_axes][0];
-  double the_2 = uv[d_axes][1];
-
-  double phi_span = std::abs(phi_2 - phi_1);
-
-  // First, take care of the cases where one or both of the
-  // thetas (degenerate coord) are close to the poles
-  bool flag = false;
-  // sort points such that the_1 < the_2
-  if (the_1 > the_2) {
-    std::swap(phi_1, phi_2);
-    std::swap(the_1, the_2);
-    t = 1 - t;
-  }
-  the_t = (1 - t) * the_1 + t * the_2;
-  double phi_tmp = interpolateParametricCoordinate(t, phi_1, phi_2, p_range, true, 0);
-
-  // check the south pole (i.e., at least one point inside south pole space)
-  // definition of south-pole := pole is at the beginning of the d_range
+  double s_phi = 0.0 , s_the = 0.0;
+  // check the NORTH pole (i.e., at least one point inside NORTH pole space)
+  // definition of NORTH = pp is at the beginning of the d_range
   if (std::abs(pp - d_range[0]) < 1.e-6) {
-    double sp = pp;
-    if (std::abs(the_1 - sp) <= d_threshold) {
-      if (std::abs(the_2 - sp) <= d_threshold) {
-	if (std::abs(phi_span - p_size/2.) > p_threshold) {
-	  phi_t = phi_tmp;
-	  flag = true;
-	}
-      }
-      else {
-	phi_t = phi_2;
-	flag = true;
-      }
-    }
-    else {
-      if (std::abs(phi_span - p_size/2.) > p_threshold) {
-	phi_t = phi_tmp;
-	flag = true;
-      }
-    }
+    double a_the = mapDegenerateNorth(a[d_axes], d_range[0], d_range[1], theRef);
+    double a_phi = mapPeriodic(a[p_axes], p_range[0], p_range[1]);
+    Vector aTransformed = Vector(a_phi, a_the, 0.0);
+
+    double b_the = mapDegenerateNorth(b[d_axes], d_range[0], d_range[1], theRef);
+    double b_phi = mapPeriodic(b[p_axes], p_range[0], p_range[1]);
+    Vector bTransformed = Vector(b_phi, b_the, 0.0);
+
+    Vector xa = getSphere(aTransformed);
+    Vector xb = getSphere(bTransformed);
+
+    Vector xs = getSlerp(t, xa, xb);
+
+    Vector sTransformed = getInvSphere(xs);
+
+    s_phi = invMapPeriodic(sTransformed[0], p_range[0], p_range[1]);
+    s_the = invMapDegenerateNorth(sTransformed[1], d_range[0], d_range[1], theRef);
   }
-  // check the north pole (i.e., at lease one point inside north pole space)
-  // definition of north-pole := pole is at the end of the d_range
+
+  // check the SOUTH pole (i.e., at lease one point inside SOUTH pole space)
+  // definition of SOUTH = pp is at the end of the d_range
   if (std::abs(pp - d_range[1]) < 1.e-6) {
-    double np = pp;
-    if (std::abs(the_2 - np) <= d_threshold) {
-      if (std::abs(the_1 - np) <= d_threshold) {
-	if (std::abs(phi_span - p_size/2.) > p_threshold) {
-	  phi_t = phi_tmp;
-	  flag = true;
-	}
-      }
-      else {
-	phi_t = phi_1;
-	flag = true;
-      }
-    }
-    else {
-      if (std::abs(phi_span - p_size/2.) > p_threshold) {
-	phi_t = phi_tmp;
-	flag = true;
-      }
-    }
+    double a_the = mapDegenerateSouth(a[d_axes], d_range[0], d_range[1], theRef);
+    double a_phi = mapPeriodic(a[p_axes], p_range[0], p_range[1]);
+    Vector aTransformed = Vector(a_phi, a_the, 0.0);
+
+    double b_the = mapDegenerateSouth(b[d_axes], d_range[0], d_range[1], theRef);
+    double b_phi = mapPeriodic(b[p_axes], p_range[0], p_range[1]);
+    Vector bTransformed = Vector(b_phi, b_the, 0.0);
+
+    Vector xa = getSphere(aTransformed);
+    Vector xb = getSphere(bTransformed);
+
+    Vector xs = getSlerp(t, xa, xb);
+
+    Vector sTransformed = getInvSphere(xs);
+
+    s_phi = invMapPeriodic(sTransformed[0], p_range[0], p_range[1]);
+    s_the = invMapDegenerateSouth(sTransformed[1], d_range[0], d_range[1], theRef);
   }
 
-  // Second, take care of the cases where the connecting line should
-  // pass over a pole.
-  if (!flag && std::abs(phi_span - p_size/2.) <= p_threshold) {
-    // sort points such that phi_1 < phi_2
-    if (phi_1 > phi_2) {
-      std::swap(phi_1, phi_2);
-      std::swap(the_1, the_2);
-      t = 1 - t;
-    }
-
-    double the_1p, the_2p, the_tp, pole;
-    if (std::abs(pp - d_range[1]) < 1.e-6) {
-      pole = pp;
-      if (the_1 + the_2 >= 0) {
-	the_1p = the_1;
-	the_2p = the_2;
-	the_tp = (1 - t) * the_1p + t * (d_size - the_2p);
-	the_t = (the_tp <= pole) ? the_tp : d_size - the_tp;
-	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
-      }
-      else { // the_1 + the_2 < 0
-	the_1p =  the_1;
-	the_2p = -the_2;
-	the_tp = (1 - t) * the_1p + t * (d_size - the_2p);
-	the_t = (the_tp <= pole) ? the_tp : d_size - the_tp;
-	the_t = -the_t;
-	phi_t = (the_tp <= pole) ? phi_1 : phi_2;
-      }
-    }
-    if (std::abs(pp - d_range[0]) < 1.e-6) {
-      pole = pp;
-      if (the_1 + the_2 <= 0) {
-	the_1p = the_1;
-	the_2p = the_2;
-	the_tp = (1 - t) * the_1p + t * (-d_size - the_2p);
-	the_t = (the_tp >= pole) ? the_tp : -d_size - the_tp;
-	phi_t = (the_tp >= pole) ? phi_1 : phi_2;
-      }
-      else { // the_1 + the_2 > 0
-	the_1p =  the_1;
-	the_2p = -the_2;
-	the_tp = (1 - t) * the_1p + t * (-d_size - the_2p);
-	the_t = (the_tp >= pole) ? the_tp : -d_size - the_tp;
-	the_t = -the_t;
-	phi_t = (the_tp >= pole) ? phi_1 : phi_2;
-      }
-    }
-  }
-  return (d_axes == 0) ? Vector(the_t, phi_t, 0.0) : Vector(phi_t, the_t, 0.0);
+  return (d_axes == 0) ? Vector(s_the, s_phi, 0.0) : Vector(s_phi, s_the, 0.0);
 }
 
 // This handles the following cases:
@@ -438,19 +404,19 @@ static void interpolateParametricCoordinatesOnDegenerateFace(
 {
   int numPoles = vals.size();
   PCU_ALWAYS_ASSERT(numPoles == 1 || numPoles == 2);
-  // convert vectors to uv matrix such that:
-  // uv[0][] is the parametric coordinates of the 1st point, and
-  // uv[1][] is the parametric coordinates of the 2nd point.
-  double uv[2][2]; // = {{a.x(), a.y()} ,
-		   //   {b.x(), b.y()}};
-  uv[0][0] = a.x();
-  uv[0][1] = b.x();
-  uv[1][0] = a.y();
-  uv[1][1] = b.y();
-  // these are constants
-  // TODO: figure out what is the best choice!
-  double d_ratio = 0.01;
-  double p_ratio = 0.05;
+  /* // convert vectors to uv matrix such that: */
+  /* // uv[0][] is the parametric coordinates of the 1st point, and */
+  /* // uv[1][] is the parametric coordinates of the 2nd point. */
+  /* double uv[2][2]; // = {{a.x(), a.y()} , */
+		   /* //   {b.x(), b.y()}}; */
+  /* uv[0][0] = a.x(); */
+  /* uv[0][1] = b.x(); */
+  /* uv[1][0] = a.y(); */
+  /* uv[1][1] = b.y(); */
+  /* // these are constants */
+  /* // TODO: figure out what is the best choice! */
+  /* double d_ratio = 0.01; */
+  /* double p_ratio = 0.05; */
 
   double p_range[2];
   double d_range[2];
@@ -459,14 +425,40 @@ static void interpolateParametricCoordinatesOnDegenerateFace(
   PCU_ALWAYS_ASSERT(m->getPeriodicRange(g, p_axes, p_range));
   PCU_ALWAYS_ASSERT(!m->getPeriodicRange(g, d_axes, d_range));
 
+
   if (numPoles == 2) {
-    p = interpolateParametricCoordinatesDoublePoles(t, uv, p_range, d_range,
-    	p_axes, d_axes, p_ratio, d_ratio, vals[0], vals[1]);
+    p = interpolateParametricCoordinatesDoublePoles(t, a, b, p_range, d_range,
+    	p_axes, d_axes);
   }
 
   if (numPoles == 1) {
-    p = interpolateParametricCoordinatesSinglePole(t, uv, p_range, d_range,
-    	p_axes, d_axes, p_ratio, d_ratio, vals[0]);
+    Vector x1;
+    Vector x2;
+    Vector x3;
+    Vector p1;
+    Vector p2;
+    Vector p3;
+
+    if (std::abs(vals[0]-d_range[0]) < 1e-6) { // north pole
+      p1 = (d_axes == 0) ? Vector(d_range[0], p_range[0], 0.0) : Vector(p_range[0], d_range[0], 0.0);
+      p2 = (d_axes == 0) ? Vector(d_range[1], p_range[0], 0.0) : Vector(p_range[0], d_range[1], 0.0);
+      p3 = (d_axes == 0) ? Vector(d_range[1], (p_range[0]+p_range[1])/2, 0.0) :
+			   Vector((p_range[0]+p_range[1])/2, d_range[1], 0.0);
+    }
+    else { // south pole
+      p1 = (d_axes == 0) ? Vector(d_range[1], p_range[0], 0.0) : Vector(p_range[0], d_range[1], 0.0);
+      p2 = (d_axes == 0) ? Vector(d_range[0], p_range[0], 0.0) : Vector(p_range[0], d_range[0], 0.0);
+      p3 = (d_axes == 0) ? Vector(d_range[0], (p_range[0]+p_range[1])/2, 0.0) :
+			   Vector((p_range[0]+p_range[1])/2, d_range[0], 0.0);
+    }
+    m->snapToModel(g, p1, x1);
+    m->snapToModel(g, p2, x2);
+    m->snapToModel(g, p3, x3);
+
+    double theRef = acos((x2-x1) * (x3-x1) / (x2-x1).getLength() / (x3-x1).getLength());
+
+    p = interpolateParametricCoordinatesSinglePole(t, a, b, p_range, d_range,
+    	p_axes, d_axes, theRef, vals[0]);
   }
 }
 
@@ -522,8 +514,53 @@ static void interpolateParametricCoordinatesOnFace(
   std::vector<double> vals;
   int axes;
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
-  if (num > 0) // the underlying surface is degenerate
+
+  if (num > 0) { // the underlying surface is degenerate
+#ifndef HAVE_CAPSTONE
     interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
+#else
+    // account for non-uniform parameterization of model-edge
+    Vector X[3];
+    Vector para[2] = {a, b};
+    for (int i = 0; i < 2; i++)
+      m->snapToModel(g, para[i], X[i]);
+
+    interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+    double tMax = 1., tMin = 0.;
+    m->snapToModel(g, p, X[2]);
+
+    // check if the snap point on the model edge is
+    // approximately at same length from either vertices
+
+    double r = (X[0]-X[2]).getLength();
+    double s = (X[1]-X[2]).getLength();
+
+    double alpha = t/(1. - t); //parametric ratio
+
+    int num_it = 0;
+    while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+      if ( r/s > alpha) {
+	tMax = t;
+	t = (tMin + t) / 2.;
+      }
+      else {
+	tMin = t;
+	t = (t + tMax) / 2.;
+      }
+
+      interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+      m->snapToModel(g, p, X[2]);
+
+      r = (X[0]-X[2]).getLength();
+      s = (X[1]-X[2]).getLength();
+
+      if ( num_it > 20) break;
+	num_it++;
+    }
+#endif
+  }
   else
     interpolateParametricCoordinatesOnRegularFace(m, g, t, a, b, p);
 }

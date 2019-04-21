@@ -302,6 +302,14 @@ static void bbox(struct gmi_model* m, struct gmi_ent* e,
   bmax[2] = 1.0;
 }
 
+static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
+    double point[3])
+{
+  (void) m;
+  (void) e;
+  (void) point;
+  return 1;
+}
 
 static struct gmi_model_ops ops = {
   .begin    = gmi_base_begin,
@@ -317,6 +325,7 @@ static struct gmi_model_ops ops = {
   .range    = range,
   .first_derivative = first_derivative,
   .bbox = bbox,
+  .is_point_in_region = is_point_in_region,
   .destroy  = gmi_base_destroy
 };
 

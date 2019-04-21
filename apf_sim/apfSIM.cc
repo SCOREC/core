@@ -540,6 +540,8 @@ class TagSIM
       mesh(m),
       name(n)
     {
+      // make sure n is not in use
+      PCU_ALWAYS_ASSERT(!MD_lookupMeshDataId(n));
       id = MD_newMeshDataId(n);
       comm = AttachDataCommu_new(unitSize/sizeof(int),0,count);
       PM_setMigrId(mesh,id);
@@ -866,6 +868,11 @@ ModelEntity* MeshSIM::toModel(MeshEntity* e)
 gmi_model* MeshSIM::getModel()
 {
   return model;
+}
+
+void MeshSIM::setModel(gmi_model* newModel)
+{
+  model = newModel;
 }
 
 void MeshSIM::migrate(Migration* plan)
