@@ -69,6 +69,10 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, param, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
+#ifdef HAVE_CAPSTONE
+    uTanSize = uTan * uTan;
+    vTanSize = vTan * vTan;
+#endif
     if (uTanSize < tol || vTanSize < tol) {
       axis = degenAxes;
       values.push_back(candidateDegenParam);
@@ -146,6 +150,47 @@ static void interpolateParametricCoordinateOnEdge(
   p[0] = interpolateParametricCoordinate(t,a[0],b[0],range,isPeriodic, 0);
   p[1] = 0.0;
   p[2] = 0.0;
+
+#ifdef HAVE_CAPSTONE
+  // account for non-uniform parameterization of model-edge
+  Vector X[3];
+  Vector para[2] = {a, b};
+  for (int i = 0; i < 2; i++)
+    m->snapToModel(g, para[i], X[i]);
+
+  double tMax = 1., tMin = 0.;
+  m->snapToModel(g, p, X[2]);
+
+  // check if the snap point on the model edge is
+  // approximately at same length from either vertices
+
+  double r = (X[0]-X[2]).getLength();
+  double s = (X[1]-X[2]).getLength();
+
+  double alpha = t/(1. - t); //parametric ratio
+
+  int num_it = 0;
+  while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+    if ( r/s > alpha) {
+      tMax = t;
+      t = (tMin + t) / 2.;
+    }
+    else {
+      tMin = t;
+      t = (t + tMax) / 2.;
+    }
+
+    p[0] = interpolateParametricCoordinate(t, a[0], b[0], range, isPeriodic, 0);
+
+    m->snapToModel(g, p, X[2]);
+
+    r = (X[0]-X[2]).getLength();
+    s = (X[1]-X[2]).getLength();
+
+    if ( num_it > 20) break;
+      num_it++;
+  }
+#endif
 }
 
 // convert (phi,theta) on unit sphere to (x,y,z)
@@ -440,6 +485,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 2) we only check for faces that are periodic
    */
 
+#ifndef HAVE_CAPSTONE
   // this need to be done for faces, only
   if (dim != 2)
     return;
@@ -454,6 +500,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
+#endif
 }
 
 static void interpolateParametricCoordinatesOnFace(
@@ -467,8 +514,53 @@ static void interpolateParametricCoordinatesOnFace(
   std::vector<double> vals;
   int axes;
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
-  if (num > 0) // the underlying surface is degenerate
+
+  if (num > 0) { // the underlying surface is degenerate
+#ifndef HAVE_CAPSTONE
     interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
+#else
+    // account for non-uniform parameterization of model-edge
+    Vector X[3];
+    Vector para[2] = {a, b};
+    for (int i = 0; i < 2; i++)
+      m->snapToModel(g, para[i], X[i]);
+
+    interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+    double tMax = 1., tMin = 0.;
+    m->snapToModel(g, p, X[2]);
+
+    // check if the snap point on the model edge is
+    // approximately at same length from either vertices
+
+    double r = (X[0]-X[2]).getLength();
+    double s = (X[1]-X[2]).getLength();
+
+    double alpha = t/(1. - t); //parametric ratio
+
+    int num_it = 0;
+    while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+      if ( r/s > alpha) {
+	tMax = t;
+	t = (tMin + t) / 2.;
+      }
+      else {
+	tMin = t;
+	t = (t + tMax) / 2.;
+      }
+
+      interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+      m->snapToModel(g, p, X[2]);
+
+      r = (X[0]-X[2]).getLength();
+      s = (X[1]-X[2]).getLength();
+
+      if ( num_it > 20) break;
+	num_it++;
+    }
+#endif
+  }
   else
     interpolateParametricCoordinatesOnRegularFace(m, g, t, a, b, p);
 }
