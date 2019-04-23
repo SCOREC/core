@@ -70,6 +70,9 @@ set(APF_HEADERS
   apfConvert.h
   apfGeometry.h
   apf2mth.h
+  apfField.h
+  apfFieldData.h
+  apfNumberingClass.h
 )
 
 set(APF_SOURCES
