@@ -82,11 +82,11 @@ static void setDefaults(Input& in)
   in.gammaSize = 3e-5;
   in.nRigidBody = 0;
   in.nRBParam = 12;
-  in.gradingFactor = 1.25;
+  in.gradingFactor = 2.0;
   in.simCooperation = 1;
-  in.simAdaptDesiredErrorMass = 1.0;
-  in.simAdaptDesiredErrorMomt = 1.0;
-  in.simAdaptDesiredErrorEnrg = 1.0;
+  in.simAdaptDesiredErrorMass = 1.0e16;
+  in.simAdaptDesiredErrorMomt = 1.0e16;
+  in.simAdaptDesiredErrorEnrg = 1.0e16;
   in.writeSimLog = 0;
 }
 
