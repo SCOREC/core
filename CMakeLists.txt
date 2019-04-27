@@ -55,12 +55,12 @@ message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
-set(MPIRUN_PROCFLAG "-np" CACHE string
+set(MPIRUN_PROCFLAG "-np" CACHE STRING
   "the command line flag to give process count to MPIRUN")
 message(STATUS "MPIRUN: ${MPIRUN} ${MPIRUN_PROCFLAG}")
-set(VALGRIND "" CACHE string
+set(VALGRIND "" CACHE STRING
   "the valgrind executable")
-set(VALGRIND_ARGS "" CACHE string
+set(VALGRIND_ARGS "" CACHE STRING
   "the command line arguments to VALGRIND")
 
 # smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
