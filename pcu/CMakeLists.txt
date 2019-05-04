@@ -53,6 +53,29 @@ if(PCU_COMPRESS)
   target_compile_definitions(pcu PRIVATE "-DPCU_BZIP")
 endif()
 
+
+#######################
+## Python Packaging  ##
+#######################
+if(ENABLE_PYTHON)
+	set(MPICH_LNK "/usr/lib/x86_64-linux-gnu/libmpich.so")
+	set(MPI_INC "/usr/include/mpich")
+  find_package(SWIG REQUIRED)
+  include(${SWIG_USE_FILE})
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+	include_directories(${PYTHON_INCLUDE_DIRS})
+	include_directories(${MPI4PY_INCLUDE_DIR})
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/noto)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/reel)
+  set(CMAKE_SWIG_FLAGS "")
+
+	set_source_files_properties(PCU.i PROPERTIES CPLUSPLUS ON)
+	set_source_files_properties(PCU.i PROPERTIES SWIG_FLAGS "-includeall")
+	swig_add_library(PCU LANGUAGE python SOURCES PCU.i pcu.c)
+	swig_link_libraries(PCU ${PYTHON_LIBRARIES} pcu)
+endif()
+
 scorec_export_library(pcu)
 
 bob_end_subdir()
