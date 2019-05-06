@@ -114,48 +114,6 @@ if(ENABLE_OMEGA_H)
   bob_public_dep(Omega_h)
 endif()
 
-# PYTHON_WRAPPER Related setups
-# libs need to be position indepenent for the wrappers to compile
-# we need MPI4PY
-# TODO: MPI4PY mpich build has to be the same as the one scorec is
-# built with. That is if OPENMPI is being used for building scorec,
-# an MPI4PY build with OPENMPI must be used.
-option(ENABLE_PYTHON "Build Python wrappers" OFF)
-message(STATUS "ENABLE_PYTHON: ${ENABLE_PYTHON}")
-if(ENABLE_PYTHON)
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
-  find_package(PythonInterp 2.7)
-	if(NOT PYTHONINTERP_FOUND)
-		message(STATUS "Did not find python interpretor.")
-		message(STATUS "Unable to build python-wrappers.")
-		set(ENABLE_PYTHON FALSE)
-	endif()
-	find_package(MPI4PY)
-	if(NOT MPI4PY_FOUND)
-		message(STATUS "Did not find mpi4py.")
-		message(STATUS "Unable to build python-wrappers.")
-		set(ENABLE_PYTHON FALSE)
-	endif()
-	if(MPI4PY_FOUND)
-		message(STATUS "MPI4PY_VENDOR is ${MPI4PY_VENDOR}")
-	endif()
-	## check mpi4py version
-
-	find_package(PythonLibs)
-	if(NOT PYTHONLIBS_FOUND)
-		message(STATUS "Did not find pythonlibs.")
-		message(STATUS "Unable to build python-wrappers.")
-		set(ENABLE_PYTHON FALSE)
-	endif()
-
-
-	if(ENABLE_PYTHON)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-		set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-	endif()
-endif()
-
-
 # Include the SCOREC project packages
 add_subdirectory(lion)
 add_subdirectory(pcu)

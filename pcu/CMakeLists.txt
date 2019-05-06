@@ -53,28 +53,6 @@ if(PCU_COMPRESS)
   target_compile_definitions(pcu PRIVATE "-DPCU_BZIP")
 endif()
 
-
-#######################
-## Python Packaging  ##
-#######################
-if(ENABLE_PYTHON)
-	set(PY_SOURCES
-		pcu.i)
-  find_package(SWIG REQUIRED)
-  include(${SWIG_USE_FILE})
-	include_directories(${PYTHON_INCLUDE_DIRS})
-	include_directories(${MPI4PY_INCLUDE_DIR})
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/noto)
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/reel)
-  set(CMAKE_SWIG_FLAGS "")
-
-	set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
-	set_source_files_properties(${PY_SOURCES} PROPERTIES SWIG_FLAGS "-includeall")
-	swig_add_library(pcu LANGUAGE python SOURCES ${PY_SOURCES})
-	swig_link_libraries(pcu ${PYTHON_LIBRARIES} pcu)
-endif()
-
 scorec_export_library(pcu)
 
 bob_end_subdir()
