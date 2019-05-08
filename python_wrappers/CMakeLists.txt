@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(PyCore VERSION 1.0.0 LANGUAGES CXX C)
+project(pyCore VERSION 1.0.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 
@@ -92,18 +92,24 @@ endif()
 
 if(ENABLE_PYTHON)
   set(PY_SOURCES
-    pcu.i)
+    apf.i)
   find_package(SWIG REQUIRED)
   include(${SWIG_USE_FILE})
   include_directories(${PYTHON_INCLUDE_DIRS})
   include_directories(${MPI4PY_INCLUDE_DIR})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  include_directories("/usr/local/core_install/include")
   set(CMAKE_SWIG_FLAGS "")
 
   set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
-  set_source_files_properties(${PY_SOURCES} PROPERTIES SWIG_FLAGS "-includeall")
-  swig_add_library(pcu LANGUAGE python SOURCES ${PY_SOURCES})
-	swig_link_libraries(pcu ${PYTHON_LIBRARIES} SCOREC::core)
+  # set_source_files_properties(${PY_SOURCES} PROPERTIES SWIG_FLAGS "-includeall")
+
+	# swig_add_library(pcu LANGUAGE python SOURCES pcu.i)
+	# swig_link_libraries(pcu ${PYTHON_LIBRARIES} SCOREC::core)
+	swig_add_library(pyCore LANGUAGE python SOURCES apf.i)
+	swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
+	# swig_add_library(gmi LANGUAGE python SOURCES gmi.i)
+	# swig_link_libraries(gmi ${PYTHON_LIBRARIES} SCOREC::core)
 endif()
 
 

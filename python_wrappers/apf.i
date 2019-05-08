@@ -1,0 +1,88 @@
+%module pyCore
+%{
+#include <vector>
+#include <PCU.h>
+#include <pcu_util.h>
+#include <gmi.h>
+#include <gmi_mesh.h>
+#include <gmi_null.h>
+/* #include <gmi_sim.h> */
+#include <apfMesh.h>
+#include <apfMesh2.h>
+#include <apfMDS.h>
+#include <apf.h>
+
+#include <maInput.h>
+#include <ma.h>
+%}
+
+
+%include mpi4py/mpi4py.i
+%mpi4py_typemap(Comm, MPI_Comm);
+
+/* PCU RELATED WRAPPERS */
+/* ==== FROM PCU.h ====*/
+int PCU_Comm_Init(void);
+int PCU_Comm_Free(void);
+
+int PCU_Comm_Self(void);
+int PCU_Comm_Peers(void)
+;
+double PCU_Time(void); 
+
+/* ==== FROM pcu_util.h ====*/
+void PCU_Assert_Fail(const char* msg);
+
+/* This are defined as macros in the .h file. Apparaently, it is OK to Lie
+to SWIG that these are functions ;) 
+*/
+void PCU_ALWAYS_ASSERT(int cond);
+void PCU_ALWAYS_ASSERT_VERBOSE(int cond, const char* msg);
+
+
+
+/* GMI RELATED WRAPPERS */
+void gmi_register_mesh(void);
+/* void gmi_register_sim(void); */
+void gmi_register_null(void);
+
+
+
+/* APF RELATED WRAPPERS */
+namespace apf {
+  apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
+  apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
+  void writeASCIIVtkFiles(const char* prefix, apf::Mesh2* m);
+  /* void writeVtkFiles(const char* prefix, apf::Mesh* m, int cellDim = -1); */
+  /* void writeVtkFiles(const char* prefix, apf::Mesh* m, */
+  /*   std::vector<std::string> writeFields, int cellDim = -1); */
+}
+/* void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary, */
+/*     int& which, bool& flip, int& rotate); */
+
+/* MA RELATED WRAPPERS */
+/* let swig know about the typedefs */
+namespace ma {
+  typedef apf::Vector3 Vector;
+  typedef apf::Matrix3x3 Matrix;
+  typedef apf::Mesh2 Mesh;
+  typedef apf::MeshEntity Entity;
+  typedef apf::MeshIterator Iterator;
+  typedef apf::MeshTag Tag;
+  typedef apf::DynamicArray<Entity*> EntityArray;
+  typedef std::set<Entity*> EntitySet;
+  typedef EntityArray Upward;
+  typedef apf::Downward Downward;
+  typedef apf::ModelEntity Model;
+  Vector getPosition(Mesh* m, Entity* vertex);
+  typedef apf::Copies Remotes;
+  typedef apf::Parts Parts;
+}
+
+%include <maSolutionTransfer.h>
+%include <maSize.h>
+%include <maInput.h>
+
+namespace ma {
+  void adapt(Input* in);
+}
