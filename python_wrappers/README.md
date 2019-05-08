@@ -1,1 +1,38 @@
-## Building the python wrappers for mesh adapt
+## What is _pyCore_
+_pyCore_ is a python module intended to expose a minimal set of APIs from SCOREC::core so mesh adapt can be called from python. The set will include the following basic functionality:
+
+0. Basic pcu initializations and timing functionality
+1. Loading meshes and models
+2. Size field computaiton
+3. Call to SCOREC mesh adapt
+4. Basic vtk visualization APIs
+
+## How to build _pyCore_
+
+### Dependencies
+To build _pyCore_ the following are needed
+
+1. [cmake](https://cmake.org/)
+2. [mpi4py](https://mpi4py.readthedocs.io/en/stable/)
+3. [swig](http://www.swig.org/)
+4. [SCOREC::core](git@github.com:SCOREC/core.git)
+
+__NOTE__ If making core as a static libraries the `-fPIC` flag must be used. You can also make core as shared libraries by using the flag `-DBUILD_SHARED_LIBS=ON` option during cmake configuraiton.
+
+### Build instructions
+
+First update `./python_wrappers/example_config.sh` to point to `SCOREC::core`'s install and then follow the steps:
+
+1. `mkdir build`
+2. `cd build`
+3. `source ../example_config`
+4. `make`
+
+If everything goes correctly, you will have `_pyCore.so` in your build directory. This is all you need to be able to `import` this module into python. See the example below. Note you either need to copy this file to where `PYTHONPATH` points to, or alternatively you can add the locaiton of this file to your `PYTHONPATH`.
+
+## How to use the _pyCore_
+An example of using this module is provided in `test_pyCore.py`. You can run this code as follows
+
+`python test_pyCore.py`
+
+You may need to update the path to the model file `cube.dmg` and the mesh file `cube0.smb` inside `test_pyCore.py`, first.
