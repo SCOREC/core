@@ -33,6 +33,6 @@ If everything goes correctly, you will have `_pyCore.so` in your build directory
 ## How to use the _pyCore_
 An example of using this module is provided in `test_pyCore.py`. You can run this code as follows
 
-`python test_pyCore.py`
+`test_pytCore.py -g path/to/model -m path/to/mesh`
 
-You may need to update the path to the model file `cube.dmg` and the mesh file `cube0.smb` inside `test_pyCore.py`, first.
+where `path/to/model` and `path/tp/mesh` are pointing to the location of the model and mesh files.
