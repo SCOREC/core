@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 OLD)
+endif()
+
 project(pyCore VERSION 1.0.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
@@ -41,14 +45,14 @@ else()
 # IF SCOREC_PREFIX was not specified, look in typical system directories,
 # and also in CMAKE_PREFIX_PATH (environment variable)
   find_package(
-      SCOREC #package name, has to be SCOREC
-      2.1.0  #version. can be omitted, and will match any installed version
-             #greater than or equal to this one, as long as the major number
-             #is the same
-      REQUIRED #indicate that SCOREC is really needed to compile
-      CONFIG   #skip the 'MODULE' search system, save some time and confusion
-      )   
-endif() 
+    SCOREC #package name, has to be SCOREC
+    2.1.0  #version. can be omitted, and will match any installed version
+           #greater than or equal to this one, as long as the major number
+           #is the same
+    REQUIRED #indicate that SCOREC is really needed to compile
+    CONFIG   #skip the 'MODULE' search system, save some time and confusion
+    )
+endif()
 
 # PYTHON_WRAPPER Related setups
 # libs need to be position indepenent for the wrappers to compile
@@ -59,34 +63,34 @@ endif()
 option(ENABLE_PYTHON "Build Python wrappers" OFF)
 message(STATUS "ENABLE_PYTHON: ${ENABLE_PYTHON}")
 if(ENABLE_PYTHON)
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
   find_package(PythonInterp 2.7)
-	if(NOT PYTHONINTERP_FOUND)
-		message(STATUS "Did not find python interpretor.")
-		message(STATUS "Unable to build python-wrappers.")
-		set(ENABLE_PYTHON FALSE)
-	endif()
-	find_package(MPI4PY)
-	if(NOT MPI4PY_FOUND)
-		message(STATUS "Did not find mpi4py.")
-		message(STATUS "Unable to build python-wrappers.")
-		set(ENABLE_PYTHON FALSE)
-	endif()
-	if(MPI4PY_FOUND)
-		message(STATUS "MPI4PY_VENDOR is ${MPI4PY_VENDOR}")
-	endif()
-	## check mpi4py version
+  if(NOT PYTHONINTERP_FOUND)
+    message(STATUS "Did not find python interpretor.")
+    message(STATUS "Unable to build python-wrappers.")
+    set(ENABLE_PYTHON FALSE)
+  endif()
+  find_package(MPI4PY)
+  if(NOT MPI4PY_FOUND)
+    message(STATUS "Did not find mpi4py.")
+    message(STATUS "Unable to build python-wrappers.")
+    set(ENABLE_PYTHON FALSE)
+  endif()
+  if(MPI4PY_FOUND)
+    message(STATUS "MPI4PY_VENDOR is ${MPI4PY_VENDOR}")
+  endif()
+  ## check mpi4py version
 
-	find_package(PythonLibs)
-	if(NOT PYTHONLIBS_FOUND)
-		message(STATUS "Did not find pythonlibs.")
-		message(STATUS "Unable to build python-wrappers.")
-		set(ENABLE_PYTHON FALSE)
-	endif()
-	if(ENABLE_PYTHON)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-		set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-	endif()
+  find_package(PythonLibs)
+  if(NOT PYTHONLIBS_FOUND)
+    message(STATUS "Did not find pythonlibs.")
+    message(STATUS "Unable to build python-wrappers.")
+    set(ENABLE_PYTHON FALSE)
+  endif()
+  if(ENABLE_PYTHON)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+  endif()
 endif()
 
 
@@ -98,18 +102,18 @@ if(ENABLE_PYTHON)
   include_directories(${PYTHON_INCLUDE_DIRS})
   include_directories(${MPI4PY_INCLUDE_DIR})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-  include_directories("/usr/local/core_install/include")
+  include_directories("${SCOREC_PREFIX}/include")
   set(CMAKE_SWIG_FLAGS "")
 
   set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
   # set_source_files_properties(${PY_SOURCES} PROPERTIES SWIG_FLAGS "-includeall")
 
-	# swig_add_library(pcu LANGUAGE python SOURCES pcu.i)
-	# swig_link_libraries(pcu ${PYTHON_LIBRARIES} SCOREC::core)
-	swig_add_library(pyCore LANGUAGE python SOURCES apf.i)
-	swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
-	# swig_add_library(gmi LANGUAGE python SOURCES gmi.i)
-	# swig_link_libraries(gmi ${PYTHON_LIBRARIES} SCOREC::core)
+  # swig_add_library(pcu LANGUAGE python SOURCES pcu.i)
+  # swig_link_libraries(pcu ${PYTHON_LIBRARIES} SCOREC::core)
+  swig_add_library(pyCore LANGUAGE python SOURCES apf.i)
+  swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
+  # swig_add_library(gmi LANGUAGE python SOURCES gmi.i)
+  # swig_link_libraries(gmi ${PYTHON_LIBRARIES} SCOREC::core)
 endif()
 
 
