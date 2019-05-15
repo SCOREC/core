@@ -1,22 +1,47 @@
 from mpi4py import MPI
 import pyCore
 
-# PCU initialization
-pyCore.PCU_Comm_Init()
+import sys, getopt
 
-# gmi initialization
-pyCore.gmi_register_mesh()
+def main(argv):
+   model = ''
+   mesh  = ''
+   try:
+      opts, args = getopt.getopt(argv,"hg:m:",["model=","mesh="])
+   except getopt.GetoptError:
+      print 'test_pytCore.py -g <model> -m <mesh>'
+      sys.exit(2)
+   for opt, arg in opts:
+      if opt == '-h':
+         print 'test_pytCore.py -g <model> -m <mesh>'
+         sys.exit()
+      elif opt in ("-g", "--model"):
+         model = arg
+      elif opt in ("-m", "--mesh"):
+         mesh = arg
+   print 'Model file is "', model
+   print 'Mesh  file is "', mesh
 
-# load the mesh and model and write the initial mesh to vtk
-mesh = pyCore.loadMdsMesh('../cube.dmg', '../cube.smb')
-pyCore.writeASCIIVtkFiles('before', mesh);
+   # PCU initialization
+   pyCore.PCU_Comm_Init()
 
-# setup uniform refiner and call mesh adapt
-ma_input = pyCore.configureUniformRefine(mesh, 2);
-pyCore.adapt(ma_input);
+   # gmi initialization
+   pyCore.gmi_register_mesh()
 
-# write the adapted mesh to vtk
-pyCore.writeASCIIVtkFiles('after', mesh);
+   # load the mesh and model and write the initial mesh to vtk
+   mesh = pyCore.loadMdsMesh(model, mesh)
+   pyCore.writeASCIIVtkFiles('before', mesh);
 
-# gmi finalization
-pyCore.PCU_Comm_Free()
+   # setup uniform refiner and call mesh adapt
+   ma_input = pyCore.configureUniformRefine(mesh, 2);
+   pyCore.adapt(ma_input);
+
+   # write the adapted mesh to vtk
+   pyCore.writeASCIIVtkFiles('after', mesh);
+
+   # gmi finalization
+   pyCore.PCU_Comm_Free()
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
+
