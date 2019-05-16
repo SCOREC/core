@@ -6,7 +6,7 @@
 #include <gmi.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
-/* #include <gmi_sim.h> */
+#include <gmi_sim.h>
 #include <apfMesh.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -14,6 +14,8 @@
 
 #include <maInput.h>
 #include <ma.h>
+
+#include <sim_helper.h>
 %}
 
 
@@ -28,23 +30,27 @@ int PCU_Comm_Free(void);
 int PCU_Comm_Self(void);
 int PCU_Comm_Peers(void)
 ;
-double PCU_Time(void); 
+double PCU_Time(void);
 
 /* ==== FROM pcu_util.h ====*/
 void PCU_Assert_Fail(const char* msg);
 
 /* This are defined as macros in the .h file. Apparaently, it is OK to Lie
-to SWIG that these are functions ;) 
+to SWIG that these are functions ;)
 */
 void PCU_ALWAYS_ASSERT(int cond);
 void PCU_ALWAYS_ASSERT_VERBOSE(int cond, const char* msg);
 
-
+/* These are helper functions used to inintialize/finalize SimModSuite */
+void start_sim(const char* logfile = 0);
+void stop_sim();
 
 /* GMI RELATED WRAPPERS */
 void gmi_register_mesh(void);
-/* void gmi_register_sim(void); */
+void gmi_register_sim(void);
 void gmi_register_null(void);
+void gmi_sim_start(void);
+void gmi_sim_stop(void);
 
 
 

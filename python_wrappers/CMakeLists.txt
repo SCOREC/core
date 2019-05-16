@@ -54,6 +54,16 @@ else()
     )
 endif()
 
+# Compile the simmetrix helpers
+option(ENABLE_SIMX "Build With SimModSuite" OFF)
+message(STATUS "ENABLE_SIMX: ${ENABLE_SIMX}")
+if(ENABLE_SIMX)
+  find_package(SimModSuite MODULE REQUIRED)
+  add_library(simhelper SHARED ${CMAKE_CURRENT_SOURCE_DIR}/sim_helper.cc)
+  include_directories(${SIMMODSUITE_INCLUDE_DIR})
+  target_link_libraries(simhelper ${SIMMODSUITE_LIBS})
+endif()
+
 # PYTHON_WRAPPER Related setups
 # libs need to be position indepenent for the wrappers to compile
 # we need MPI4PY
@@ -108,12 +118,12 @@ if(ENABLE_PYTHON)
   set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
   # set_source_files_properties(${PY_SOURCES} PROPERTIES SWIG_FLAGS "-includeall")
 
-  # swig_add_library(pcu LANGUAGE python SOURCES pcu.i)
-  # swig_link_libraries(pcu ${PYTHON_LIBRARIES} SCOREC::core)
   swig_add_library(pyCore LANGUAGE python SOURCES apf.i)
-  swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
-  # swig_add_library(gmi LANGUAGE python SOURCES gmi.i)
-  # swig_link_libraries(gmi ${PYTHON_LIBRARIES} SCOREC::core)
+  if(ENABLE_SIMX)
+    swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core simhelper)
+  else()
+    swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
+  endif()
 endif()
 
 
