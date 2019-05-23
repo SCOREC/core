@@ -141,7 +141,7 @@ static double getTetPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
  * 2D planar meshes.
  *
  */
-static double Nijk(apf::NewArray<apf::Vector3>& nodes,
+double Nijk(apf::NewArray<apf::Vector3>& nodes,
     int d, int I, int J)
 {
   double sum = 0.;
@@ -157,7 +157,7 @@ static double Nijk(apf::NewArray<apf::Vector3>& nodes,
   return sum*d*d/CD;
 }
 
-static double Nijkl(apf::NewArray<apf::Vector3>& nodes,
+double Nijkl(apf::NewArray<apf::Vector3>& nodes,
     int d, int I, int J, int K)
 {
   double sum = 0.;

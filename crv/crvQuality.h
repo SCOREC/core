@@ -38,6 +38,10 @@ extern const SubdivisionFunction subdivideBezierJacobianDet[apf::Mesh::TYPES];
 void elevateBezierJacobianDet(int type, int P, int r,
     apf::NewArray<double>& nodes,
     apf::NewArray<double>& elevatedNodes);
+
+double Nijk(apf::NewArray<apf::Vector3>& nodes, int d, int I, int J);
+double Nijkl(apf::NewArray<apf::Vector3>& nodes, int d, int I, int J, int K);
+
 }
 
 #endif
