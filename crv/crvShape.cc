@@ -19,6 +19,7 @@
 #include <maShape.h>
 #include <pcu_util.h>
 #include <iostream>
+#include "crvEdgeOptim.h"
 
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
@@ -315,6 +316,55 @@ public:
   int nr;
 };
 
+class EdgeOptimizer : public ma::Operator
+{
+public:
+  EdgeOptimizer(Adapt* a) {
+    adapter = a;
+    mesh = a->mesh;
+    edge = 0;
+    ns = 0;
+    nf = 0;
+  }
+  ~EdgeOptimizer() {
+  }
+  virtual int getTargetDimension() {return 1;}
+  virtual bool shouldApply(ma::Entity* e) {
+    if (ma::getFlag(adapter, e, ma::COLLAPSE) || ma::getFlag(adapter, e, ma::BAD_QUALITY) || isBoundaryEntity(mesh, e)) 
+      return false;
+    else {
+      edge = e;
+      return true;
+    }
+  }
+
+  virtual bool requestLocality(apf::CavityOp* o)
+  {
+    return o->requestLocality(&edge,1);
+  }
+
+  virtual void apply(){
+    CrvEdgeOptim *ceo = new CrvEdgeOptim(mesh, edge);
+    ceo->setMaxIter(100);
+    ceo->setTol(1e-8);
+
+    if (ceo->run()) ns++;
+    else nf++;
+
+    ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
+
+    delete(ceo);
+  }
+private:
+protected:
+  Adapt* adapter;
+  ma::Mesh* mesh;
+  ma::Entity* edge;
+public:
+  int ns;
+  int nf;
+};
+
 static bool isCornerTriAngleLargeMetric(crv::Adapt *a,
     ma::Entity* tri, int index)
 {
@@ -586,6 +636,16 @@ static void repositionInvalidEdges(Adapt* a)
       "in %f seconds",es.nr, t1-t0);
 }
 
+static void optimizeInvalidEdges(Adapt* a)
+{
+  double t0 = PCU_Time();
+  EdgeOptimizer eo(a);
+  ma::applyOperator(a,&eo);
+  double t1 = PCU_Time();
+  ma::print("Optimized %d bad edges "
+      "in %f seconds",eo.ns, t1-t0);
+}
+
 int fixInvalidEdges(Adapt* a)
 {
   int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
@@ -595,6 +655,9 @@ int fixInvalidEdges(Adapt* a)
 
   if(a->mesh->getShape()->getOrder() == 2)
     repositionInvalidEdges(a);
+  else
+    optimizeInvalidEdges(a);
+
   collapseInvalidEdges(a);
   swapInvalidEdges(a);
   return count;
