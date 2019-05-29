@@ -88,6 +88,9 @@ static void setDefaults(Input& in)
   in.simAdaptDesiredErrorMomt = 1.0e16;
   in.simAdaptDesiredErrorEnrg = 1.0e16;
   in.writeSimLog = 0;
+  in.measureAdaptedMesh = 0;
+  in.simSizeLowerBound = 0.0;
+  in.simSizeUpperBound = 1.0e16;
 }
 
 Input::Input()
@@ -174,6 +177,9 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["simAdaptDesiredErrorMomt"] = &in.simAdaptDesiredErrorMomt;
   dblMap["simAdaptDesiredErrorEnrg"] = &in.simAdaptDesiredErrorEnrg;
   intMap["writeSimLog"] = &in.writeSimLog;
+  intMap["measureAdaptedMesh"] = &in.measureAdaptedMesh;
+  dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
+  dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
 }
 
 template <class T>
