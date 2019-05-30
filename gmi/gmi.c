@@ -74,6 +74,7 @@ struct gmi_ent* gmi_find(struct gmi_model* m, int dim, int tag)
   return m->ops->find(m, dim, tag);
 }
 
+// one-level adjacency only
 struct gmi_set* gmi_adjacent(struct gmi_model* m, struct gmi_ent* e, int dim)
 {
   if (m->ops->adjacent)
