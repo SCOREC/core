@@ -94,8 +94,8 @@ struct SortingStruct
 
 //gradation routines from Proteus
 
-int gradeSizeModify(apf::Mesh* m, apf::Field* size_iso,double gradingFactor, 
-    double size[2], apf::Adjacent edgAdjVert, 
+int gradeSizeModify(apf::Mesh* m, apf::Field* size_iso,double gradingFactor,
+    double size[2], apf::Adjacent edgAdjVert,
     apf::Adjacent vertAdjEdg,
     std::queue<apf::MeshEntity*> &markedEdges,
     apf::MeshTag* isMarked,
@@ -111,13 +111,13 @@ int gradeSizeModify(apf::Mesh* m, apf::Field* size_iso,double gradingFactor,
     if(idxFlag == 0){
       idx1=0;
       idx2=1;
-    } 
+    }
     else{
       idx1=1;
       idx2 = 0;
-    } 
-    
-    int marker[3] = {0,1,0}; 
+    }
+
+    int marker[3] = {0,1,0};
     double marginVal = 0.01;
     int needsParallel=0;
 
@@ -160,7 +160,7 @@ void markEdgesInitial(apf::Mesh* m, apf::Field* size_iso, std::queue<apf::MeshEn
 //Function used to initially determine which edges need to be considered for gradation
 {
   //marker structure for 0) not marked 1) marked 2)storage
-  int marker[3] = {0,1,0}; 
+  int marker[3] = {0,1,0};
 
   double size[2];
   apf::MeshTag* isMarked = m->findTag("isMarked");
@@ -174,16 +174,16 @@ void markEdgesInitial(apf::Mesh* m, apf::Field* size_iso, std::queue<apf::MeshEn
       size[i]=apf::getScalar(size_iso,edgAdjVert[i],0);
     }
     if( (size[0] > gradingFactor*size[1]) || (size[1] > gradingFactor*size[0]) ){
-      //add edge to a queue 
+      //add edge to a queue
       markedEdges.push(edge);
-      //tag edge to indicate that it is part of queue 
-      m->setIntTag(edge,isMarked,&marker[1]); 
+      //tag edge to indicate that it is part of queue
+      m->setIntTag(edge,isMarked,&marker[1]);
     }
     else{
-      m->setIntTag(edge,isMarked,&marker[0]); 
+      m->setIntTag(edge,isMarked,&marker[0]);
     }
   }
-  m->end(it); 
+  m->end(it);
 }
 
 int serialGradation(apf::Mesh* m,apf::Field* size_iso, std::queue<apf::MeshEntity*> &markedEdges,double gradingFactor)
@@ -191,7 +191,7 @@ int serialGradation(apf::Mesh* m,apf::Field* size_iso, std::queue<apf::MeshEntit
 {
   double size[2];
   //marker structure for 0) not marked 1) marked 2)storage
-  int marker[3] = {0,1,0}; 
+  int marker[3] = {0,1,0};
   apf::MeshTag* isMarked = m->findTag("isMarked");
 //  apf::Field* size_iso = m->findField("size");
   apf::Adjacent edgAdjVert;
@@ -200,16 +200,16 @@ int serialGradation(apf::Mesh* m,apf::Field* size_iso, std::queue<apf::MeshEntit
   int needsParallel=0;
 
   //perform serial gradation while packing necessary info for parallel
-  while(!markedEdges.empty()){ 
+  while(!markedEdges.empty()){
     edge = markedEdges.front();
     m->getAdjacent(edge, 0, edgAdjVert);
     for (std::size_t i=0; i < edgAdjVert.getSize(); ++i){
       size[i] = apf::getScalar(size_iso,edgAdjVert[i],0);
     }
 
-    needsParallel+=gradeSizeModify(m,size_iso, gradingFactor, size, edgAdjVert, 
+    needsParallel+=gradeSizeModify(m,size_iso, gradingFactor, size, edgAdjVert,
       vertAdjEdg, markedEdges, isMarked, apf::SCALAR,0, 0);
-    needsParallel+=gradeSizeModify(m,size_iso, gradingFactor, size, edgAdjVert, 
+    needsParallel+=gradeSizeModify(m,size_iso, gradingFactor, size, edgAdjVert,
       vertAdjEdg, markedEdges, isMarked, apf::SCALAR,0, 1);
 
     m->setIntTag(edge,isMarked,&marker[0]);
@@ -221,7 +221,7 @@ int serialGradation(apf::Mesh* m,apf::Field* size_iso, std::queue<apf::MeshEntit
 int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
 //Function to grade isotropic mesh through comparison of edge vertex size ratios
 //This implementation accounts for parallel meshes as well
-//First do serial gradation. 
+//First do serial gradation.
 //If a shared entity has its size modified, then send new size to owning copy.
 //After full loop over entities, have owning copy take minimum of all sizes received
 //Flag adjacent entities to owning copy.
@@ -239,7 +239,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
   apf::MeshTag* isMarked = m->createIntTag("isMarked",1);
 
   //marker structure for 0) not marked 1) marked 2)storage
-  int marker[3] = {0,1,0}; 
+  int marker[3] = {0,1,0};
 
   apf::MeshIterator* it;
   markEdgesInitial(m,size_iso,markedEdges,gradingFactor);
@@ -251,7 +251,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     needsParallel = serialGradation(m,size_iso,markedEdges,gradingFactor);
 
     PCU_Add_Ints(&needsParallel,1);
-    PCU_Comm_Send(); 
+    PCU_Comm_Send();
 
     apf::MeshEntity* ent;
     double receivedSize;
@@ -276,7 +276,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
       currentSize = apf::getScalar(size_iso,ent,0);
       newSize = std::min(receivedSize,currentSize);
       apf::setScalar(size_iso,ent,0,newSize);
-      
+
       //add adjacent edges into Q
       m->getAdjacent(ent, 1, vertAdjEdg);
       for (std::size_t i=0; i<vertAdjEdg.getSize();++i)
@@ -286,7 +286,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
         if(!marker[2])
         {
           markedEdges.push(edge);
-          //tag edge to indicate that it is part of queue 
+          //tag edge to indicate that it is part of queue
           m->setIntTag(edge,isMarked,&marker[1]);
         }
       }
@@ -296,7 +296,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     PCU_Comm_Begin();
 
     while(!updateRemoteVertices.empty())
-    { 
+    {
       ent = updateRemoteVertices.front();
       //get remote copies and send updated mesh sizes
       m->getRemotes(ent,remotes);
@@ -331,7 +331,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
         if(!marker[2])
         {
           markedEdges.push(edge);
-          //tag edge to indicate that it is part of queue 
+          //tag edge to indicate that it is part of queue
           m->setIntTag(edge,isMarked,&marker[1]);
         }
       }
@@ -345,7 +345,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
   while((edge=m->iterate(it))){
     m->removeTag(edge,isMarked);
   }
-  m->end(it); 
+  m->end(it);
   m->destroyTag(isMarked);
 
   //apf::synchronize(size_iso);
@@ -386,7 +386,7 @@ void getLambdaMax(apf::Mesh* mesh,apf::Field* hessianField,apf::Field* lambdaMax
       apf::setScalar(lambdaMaxField,vert,0,ssa[2].wm);
   }
   mesh->end(it);
-}   
+}
 
 void getVolMaxPair(apf::Mesh* mesh,std::vector<std::vector<apf::MeshEntity*> > surfToStrandMap, apf::Field* lambdaMaxField,apf::Field* lambdaStrandMax, apf::Field* currentSize,double &lambda_max,double &h_lambdamax)
 {
@@ -446,7 +446,7 @@ void setSizeField(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeFi
   int counter3 = 0;
   double h_special = -1;
   while( (vert = mesh->iterate(it)) )
-  {    
+  {
     double h_v = h_special; //set default size as user specified input
     double lambda_vert = apf::getScalar(lambdaMaxField,vert,0);
     if(lambda_vert > lambda_cutoff)
@@ -486,32 +486,38 @@ void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList, con
   PCU_ALWAYS_ASSERT(userInput.size() == sizeFieldList.size());
   printf("HERE\n");
   apf::MeshEntity *vert;
-  apf::MeshIterator *it = m->begin(0);
 
   apf::Field *field = sizeFieldList.front();
-  apf::copyData(finalSizeField,field);
-  sizeFieldList.pop();
-  int choiceIdx = 1; //assumes the initial field was set to choice 0
+  apf::MeshIterator *it = m->begin(0);
+  double largeNum = 1.e16;
+  while( (vert = m->iterate(it)) )
+  {
+    apf::setScalar(finalSizeField,vert,0,largeNum);
+    apf::setScalar(finalChoiceField,vert,0,-1);
+  }
+  m->end(it);
+  int choiceIdx = 0; //assumes the initial field was set to choice 0
   while(!sizeFieldList.empty())
   {
-    field = sizeFieldList.front();
-    while( (vert = m->iterate(it)) )
-    {
-      double value1 = apf::getScalar(finalSizeField,vert,0);
-      double value2 = apf::getScalar(field,vert,0);
-      if (!userInput[0]) value1 *= 1.e16;
-      if (!userInput[1]) value2 *= 1.e16;
-      double minValue = std::min(value1,value2);
-      apf::setScalar(finalSizeField,vert,0,minValue);
-      if(value1 > value2)
+    if (userInput[choiceIdx]) {
+      field = sizeFieldList.front();
+      apf::MeshIterator *it = m->begin(0);
+      while( (vert = m->iterate(it)) )
       {
-        apf::setScalar(finalChoiceField,vert,0,choiceIdx);  
+        double value1 = apf::getScalar(finalSizeField,vert,0);
+        double value2 = apf::getScalar(field,vert,0);
+        double minValue = std::min(value1,value2);
+        apf::setScalar(finalSizeField,vert,0,minValue);
+        if(value1 > value2)
+        {
+          apf::setScalar(finalChoiceField,vert,0,choiceIdx);
+        }
       }
+      m->end(it);
     }
     sizeFieldList.pop();
     choiceIdx++;
   }
-  m->end(it);
 }
 
 
@@ -524,10 +530,10 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   double initialTime = PCU_Time();
 
-  if (argc != 8) {
+  if (argc != 9) {
     if(0==PCU_Comm_Self()) {
       std::cerr << "usage: " << argv[0]
-        << " <cre file .cre> <data file .txt> <target field(s)> <strand size> <desired max size> <error reduction factor> <max refinement level>\n";
+        << " <cre file .cre> <data file .txt> <target field(s)> <strand size> <desired max size> <error reduction factor> <max refinement level> <boundary layer thickness>\n";
       std::cerr << "*target field(s) is a bit string to select which field(s) are used for error estimation\n";
       std::cerr << "1st bit --- pressure\n";
       std::cerr << "2nd bit --- skin friction\n";
@@ -546,6 +552,7 @@ int main(int argc, char** argv)
   double h_global = atof(argv[5]);
   double factor = atof(argv[6]);
   const int maxLevel = atoi(argv[7]);
+  const int nIgnoredLayers = atoi(argv[8]);
 
   // load capstone mesh
   // create an instance of the Capstone Module activating CREATE/CREATE/CREATE
@@ -658,6 +665,7 @@ int main(int argc, char** argv)
 
   //Get Size Field for Adapt
   apf::Field* lambdaMaxField = apf::createLagrangeField(volMesh,"lambdaMax",apf::SCALAR,1);
+  apf::Field* speedLambdaMaxField = apf::createLagrangeField(volMesh,"speedLambdaMax",apf::SCALAR,1);
   apf::Field* finalSizeField = apf::createLagrangeField(mesh,"final_size",apf::SCALAR,1);
 
   //get current size field
@@ -683,7 +691,32 @@ int main(int argc, char** argv)
     apf::setScalar(speedField,vert,0,speed);
   }
   volMesh->end(it);
+  // Also get its Hessian
+  apf::Field* gradSpeedField = apf::recoverGradientByVolume(speedField);
+  apf::Field* hessianSpeedField = apf::recoverGradientByVolume(gradSpeedField);
   //End getSpeed
+
+  //get eigenvalues in the volume mesh
+  getLambdaMax(volMesh,hessianSpeedField,speedLambdaMaxField);
+  // TODO: Put in logic to ignore speed Hessian values in boundary layer
+  APF_ITERATE(std::vector<std::vector<apf::MeshEntity*> >,surfToStrandMap,it)
+  {
+    for (int i = 0; i < nIgnoredLayers; i++)
+    {
+      apf::setScalar(speedLambdaMaxField, (*it)[i], 0, 0);
+    }
+  }
+
+  FieldOfInterest speedBased;
+  speedBased.lambdaMaxField = speedLambdaMaxField;
+  speedBased.lambdaStrandMax = apf::createLagrangeField(mesh,"surf_speed_lambda_strandMax",apf::SCALAR,1);
+  speedBased.sizeField = apf::createLagrangeField(mesh,"surface_size_speed",apf::SCALAR,1);
+
+  getVolMaxPair(mesh,surfToStrandMap,speedBased.lambdaMaxField,speedBased.lambdaStrandMax,currentSize,speedBased.lambda_max,speedBased.h_lambdamax);
+
+  //set size field
+
+  setSizeField(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,speedBased.lambda_max,speedBased.lambda_cutoff(),speedBased.h_lambdamax,h_global,factor);
 
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
   it = mesh->begin(0);
@@ -794,6 +827,7 @@ int main(int argc, char** argv)
   std::queue<apf::Field*> sizeFieldList;
   sizeFieldList.push(eBased.sizeField);
   sizeFieldList.push(shearBased.sizeField);
+  sizeFieldList.push(speedBased.sizeField);
   apf::Field* finalChoiceField = apf::createLagrangeField(mesh,"finalChoice",apf::SCALAR,1);
   it = mesh->begin(0);
   while( (vert = mesh->iterate(it)) )
@@ -868,11 +902,11 @@ int main(int argc, char** argv)
   for(int i =0;i<mesh->countFields();i++)
   {
     apf::destroyField(mesh->getField(i));
-  } 
+  }
   for(int i =0;i<volMesh->countFields();i++)
   {
     apf::destroyField(volMesh->getField(i));
-  } 
+  }
 
   gmi_cap_stop();
   PCU_Comm_Free();
