@@ -46,12 +46,14 @@ struct FieldOfInterest{
   {
     lambda_max = 0.0;
     h_lambdamax = 0.0;
+    whichLayerHasLambdaMax = NULL;
   }
   double lambda_max;
   double h_lambdamax;
   apf::Field* lambdaMaxField;
   apf::Field* lambdaStrandMax;
   apf::Field* sizeField;
+  apf::Field* whichLayerHasLambdaMax;
   double lambda_cutoff()
   {
     return lambda_max*1e-10;
@@ -356,7 +358,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
 //
   //function to get volume-based eigenvalues
 //apf::Field* getLambdaMax(mesh,hessianField,)
-void getLambdaMax(apf::Mesh* mesh,apf::Field* hessianField,apf::Field* lambdaMaxField)
+void getLambdaMax(apf::Mesh* mesh,apf::Field* hessianField,apf::Field* lambdaMaxField, apf::Field* lambdaMaxEVecField = NULL)
 {
   apf::MeshEntity* vert;
   apf::MeshIterator* it;
@@ -384,11 +386,15 @@ void getLambdaMax(apf::Mesh* mesh,apf::Field* hessianField,apf::Field* lambdaMax
       assert(ssa[2].wm >= ssa[1].wm);
       assert(ssa[1].wm >= ssa[0].wm);
       apf::setScalar(lambdaMaxField,vert,0,ssa[2].wm);
+      if (lambdaMaxEVecField)
+      {
+        apf::setVector(lambdaMaxEVecField,vert,0,ssa[2].v);
+      }
   }
   mesh->end(it);
 }
 
-void getVolMaxPair(apf::Mesh* mesh,std::vector<std::vector<apf::MeshEntity*> > surfToStrandMap, apf::Field* lambdaMaxField,apf::Field* lambdaStrandMax, apf::Field* currentSize,double &lambda_max,double &h_lambdamax)
+void getVolMaxPair(apf::Mesh* mesh,std::vector<std::vector<apf::MeshEntity*> > surfToStrandMap, apf::Field* lambdaMaxField,apf::Field* lambdaStrandMax, apf::Field* currentSize,double &lambda_max,double &h_lambdamax, apf::Field* whichLayerHasLambdaMax = NULL)
 {
   apf::MeshIterator* it = mesh->begin(0);
   apf::MeshEntity* vert, *vertVol;
@@ -409,15 +415,21 @@ void getVolMaxPair(apf::Mesh* mesh,std::vector<std::vector<apf::MeshEntity*> > s
 
     //find local strand lambda max and set the field
     double lambda_local = 0.0;
+    int idx_lambda_local = -1;
     for(int i=0; i<strandSize;i++)
     {
       vertVol = surfToStrandMap[counter][i];
       if(lambda_local < apf::getScalar(lambdaMaxField,vertVol,0))
       {
         lambda_local = apf::getScalar(lambdaMaxField,vertVol,0);
+        idx_lambda_local = i;
       }
     }
     apf::setScalar(lambdaStrandMax,vert,0,lambda_local);
+    if (whichLayerHasLambdaMax)
+    {
+      apf::setScalar(whichLayerHasLambdaMax,vert,0,idx_lambda_local);
+    }
 
     counter++;
   }
@@ -696,11 +708,66 @@ int main(int argc, char** argv)
   apf::Field* hessianSpeedField = apf::recoverGradientByVolume(gradSpeedField);
   //End getSpeed
 
+  apf::Field* lmaxHSpeedH2Field = apf::createLagrangeField(volMesh,"lmax_hess_speed_x_h2",apf::SCALAR,1);
+  apf::Field* speedLambdaMaxEVecField = apf::createLagrangeField(volMesh,"speedLambdaMaxEVecField",apf::VECTOR,1);
+  apf::Field* lhSpeedDotNormal = apf::createLagrangeField(volMesh,"lhSpeedDotNormal",apf::SCALAR,1);
+
   //get eigenvalues in the volume mesh
-  getLambdaMax(volMesh,hessianSpeedField,speedLambdaMaxField);
-  // TODO: Put in logic to ignore speed Hessian values in boundary layer
+  getLambdaMax(volMesh,hessianSpeedField,speedLambdaMaxField,speedLambdaMaxEVecField);
+  // NOTE: Following loop assumes that each vector in surfToStrandMap contains
+  // vertices starting from layer_num 1 to 51 along a strand
   APF_ITERATE(std::vector<std::vector<apf::MeshEntity*> >,surfToStrandMap,it)
   {
+    double lhSpeed;
+    double h;
+    apf::Vector3 thisPoint, lastPoint, nextPoint;
+    apf::Vector3 diff0, diff1;
+    apf::Vector3 evec, strand_dir;
+    volMesh->getPoint((*it)[0], 0, thisPoint);
+    volMesh->getPoint((*it)[1], 0, nextPoint);
+    diff1 = nextPoint - thisPoint;
+    lhSpeed = apf::getScalar(speedLambdaMaxField, (*it)[0], 0);
+    strand_dir = diff1;
+    h = diff1.getLength();
+    apf::setScalar(lmaxHSpeedH2Field, (*it)[0], 0, lhSpeed * h * h);
+
+    apf::getVector(speedLambdaMaxEVecField, (*it)[0], 0, evec);
+    evec = evec.normalize();
+    strand_dir = strand_dir.normalize();
+    apf::setScalar(lhSpeedDotNormal, (*it)[0], 0, std::fabs(strand_dir * evec));
+
+    for (int i = 1; i < (strandSize - 1); i++)
+    {
+      lastPoint = thisPoint;
+      thisPoint = nextPoint;
+      volMesh->getPoint((*it)[i + 1], 0, nextPoint);
+      diff0 = thisPoint - lastPoint;
+      diff1 = nextPoint - thisPoint;
+      strand_dir = nextPoint - lastPoint;
+      lhSpeed = apf::getScalar(speedLambdaMaxField, (*it)[i], 0);
+      h = (diff0.getLength() + diff1.getLength()) / 2.0;
+      apf::setScalar(lmaxHSpeedH2Field, (*it)[i], 0, lhSpeed * h * h);
+
+      apf::getVector(speedLambdaMaxEVecField, (*it)[i], 0, evec);
+      evec = evec.normalize();
+      strand_dir = strand_dir.normalize();
+      apf::setScalar(lhSpeedDotNormal, (*it)[i], 0, std::fabs(strand_dir * evec));
+    }
+
+    lastPoint = thisPoint;
+    thisPoint = nextPoint;
+    diff0 = thisPoint - lastPoint;
+    strand_dir = thisPoint - lastPoint;
+    lhSpeed = apf::getScalar(speedLambdaMaxField, (*it)[strandSize - 1], 0);
+    h = diff0.getLength();
+    apf::setScalar(lmaxHSpeedH2Field, (*it)[strandSize - 1], 0, lhSpeed * h * h);
+
+    apf::getVector(speedLambdaMaxEVecField, (*it)[strandSize - 1], 0, evec);
+    evec = evec.normalize();
+    strand_dir = strand_dir.normalize();
+    apf::setScalar(lhSpeedDotNormal, (*it)[strandSize - 1], 0, std::fabs(strand_dir * evec));
+
+    // Logic to ignore speed Hessian values in boundary layer
     for (int i = 0; i < nIgnoredLayers; i++)
     {
       apf::setScalar(speedLambdaMaxField, (*it)[i], 0, 0);
@@ -710,6 +777,7 @@ int main(int argc, char** argv)
   FieldOfInterest speedBased;
   speedBased.lambdaMaxField = speedLambdaMaxField;
   speedBased.lambdaStrandMax = apf::createLagrangeField(mesh,"surf_speed_lambda_strandMax",apf::SCALAR,1);
+  speedBased.whichLayerHasLambdaMax = apf::createLagrangeField(mesh,"surf_idx_speed_lambda_strandMax",apf::SCALAR,1);
   speedBased.sizeField = apf::createLagrangeField(mesh,"surface_size_speed",apf::SCALAR,1);
 
   getVolMaxPair(mesh,surfToStrandMap,speedBased.lambdaMaxField,speedBased.lambdaStrandMax,currentSize,speedBased.lambda_max,speedBased.h_lambdamax);
@@ -717,6 +785,14 @@ int main(int argc, char** argv)
   //set size field
 
   setSizeField(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,speedBased.lambda_max,speedBased.lambda_cutoff(),speedBased.h_lambdamax,h_global,factor);
+
+  FieldOfInterest speedBased2;
+  speedBased2.lambdaMaxField = lmaxHSpeedH2Field;
+  speedBased2.lambdaStrandMax = apf::createLagrangeField(mesh,"surf_lhSpeed_x_h2_strandMax",apf::SCALAR,1);
+  speedBased2.whichLayerHasLambdaMax = apf::createLagrangeField(mesh,"surf_idx_lhSpeed_x_h2_strandMax",apf::SCALAR,1);
+  // speedBased.sizeField = apf::createLagrangeField(mesh,"surface_size_lhSpeed_x_h2",apf::SCALAR,1);
+
+  getVolMaxPair(mesh,surfToStrandMap,speedBased2.lambdaMaxField,speedBased2.lambdaStrandMax,currentSize,speedBased2.lambda_max,speedBased2.h_lambdamax,speedBased2.whichLayerHasLambdaMax);
 
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
   it = mesh->begin(0);
