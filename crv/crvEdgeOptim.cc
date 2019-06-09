@@ -223,7 +223,6 @@ double CrvEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
 	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
-	      std::cout<<f<<std::endl;
 	      sumf = sumf + weight*f*f;
 	    }
 	  }
@@ -324,26 +323,31 @@ bool CrvEdgeOptim :: run()
 {
   CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge);
   std::vector<double> x0 = objF->getInitialGuess();
-  double f0 = objF->getValue(x0);
-  std::cout<< "fval at x0 " << f0<<std::endl;
+  //double f0 = objF->getValue(x0);
+  //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
 
   if (l->run()) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
+   
     apf::Adjacent adjT;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
       if (checkValidity(mesh, adjT[i], 1) > 1) {
       	objF->restoreInitialNodes();
+	std::cout<<"optimization success but invalid entity+++++"<<std::endl;
       	return false;
       }
     }
+   
     return true;
   }
-  else
+  else {
+    std::cout<<"*****Optim FAILURE"<<std::endl;
     return false;
+  }
 }
 
 }

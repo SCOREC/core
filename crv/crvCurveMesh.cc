@@ -9,7 +9,8 @@
 #include "crvBezier.h"
 #include "crvShape.h"
 #include "crvSnap.h"
-
+#include <iostream>
+#include "crvMath.h"
 #include <pcu_util.h>
 
 namespace crv {
@@ -192,8 +193,126 @@ bool BezierCurver::run()
   }
 
   convertInterpolatingToBezier();
+/*  
+//-------------------------------------------------------------------
+//----------------------------------------------for testing cubic slab
+//-------------------------------------------------------------------
 
-  if (m_mesh->getDimension() >= 2) {
+  writeCurvedVtuFiles(m_mesh, apf::Mesh::TRIANGLE, 20, "slab-crv-before");
+  writeCurvedWireFrame(m_mesh, 20,"slabcrv-w-before");
+ 
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m_mesh->begin(1);
+
+  std::vector<apf::Vector3> frtwo;
+  frtwo.push_back({-0.1666667, -0.5, -0.46156});
+  frtwo.push_back({0.166667, -0.5, 0.361564});
+
+  std::vector<apf::Vector3> twfur;
+  twfur.push_back({-0.1666667, 0.5, -0.46156});
+  twfur.push_back({0.1666667, 0.5, 0.361564});
+
+  std::vector<apf::Vector3> nitwo;
+  nitwo.push_back({0.1666667, -0.16666667, 0.361564});
+  nitwo.push_back({-0.1666667, 0.16666667, -0.461564});
+
+  while ((e = m_mesh->iterate(it))){
+    
+    int tagEd = m_mesh->getModelTag(m_mesh->toModel(e));
+    apf::Vector3 nodex;
+
+    for (int i = 0; i < 2; i++) {
+      m_mesh->getPoint(e, i, nodex);
+      std::cout<<"tag "<< tagEd<< " {"<<nodex[0]<< " "<<nodex[1]<<" "<<nodex[2]<<"} "<<std::endl;
+    }
+
+    if( tagEd == 42 || tagEd == 24 || tagEd == 92) {
+
+      if (tagEd == 42) {
+      	for (int iia = 0; iia < 2; iia++) {
+	  apf::Vector3 p3;
+      	  m_mesh->getPoint(e, iia, p3);
+
+      	  if (p3[0] > 0)
+      	    m_mesh->setPoint(e, iia, frtwo[1]);
+	  else
+	    m_mesh->setPoint(e, iia, frtwo[0]);
+	}
+      }
+      else if (tagEd == 24) {
+      	for (int iia = 0; iia < 2; iia++) {
+	  apf::Vector3 p3;
+      	  m_mesh->getPoint(e, iia, p3);
+
+      	  if (p3[0] > 0)
+      	    m_mesh->setPoint(e, iia, twfur[1]);
+	  else
+	    m_mesh->setPoint(e, iia, twfur[0]);
+	}
+      }
+      else {
+      	for (int iia = 0; iia < 2; iia++) {
+	  apf::Vector3 p3;
+      	  m_mesh->getPoint(e, iia, p3);
+
+      	  if (p3[0] > 0)
+      	    m_mesh->setPoint(e, iia, nitwo[0]);
+	  else
+	    m_mesh->setPoint(e, iia, nitwo[1]);
+	}
+      }
+    }
+  }
+  m_mesh->end(it);
+
+  m_mesh->acceptChanges();
+
+  apf::MeshEntity* etet;
+  apf::MeshIterator* itt = m_mesh->begin(3);
+
+  while ((etet = m_mesh->iterate(itt))) {
+    apf::MeshEntity* es[12];
+    int ne = m_mesh->getDownward(etet, 1, es);
+
+    apf::MeshEntity* fs[12];
+    int nf = m_mesh->getDownward(etet, 2, fs);
+
+    for (int i = 0; i < nf; i++) {
+      apf::MeshEntity* fes[3];
+      apf::Vector3 ff(0., 0., 0.);
+
+      m_mesh->getDownward(fs[i], 1, fes);
+
+      for (int j = 0; j < 3; j++) {
+	int whe = apf::findIn(es, ne, fes[j]);
+
+	for (int jj = 0; jj < 2; jj++) {
+	  apf::Vector3 exyz(0.,0.,0);
+	  m_mesh->getPoint(es[whe], jj, exyz);
+	  ff = ff + exyz * 2./3.;
+	}
+      }
+      ff = ff * 1./4.;
+      m_mesh->setPoint(fs[i], 0, ff);
+    }
+    apf::NewArray<apf::Vector3> allNodes;
+    apf::Element* el = apf::createElement(m_mesh->getCoordinateField(), etet);
+    apf::getVectorNodes(el, allNodes);
+    for (int jjj = 0; jjj < 20; jjj++) 
+      std::cout<<allNodes[jjj]<<std::endl;
+
+    std::cout<<"--------------------------------"<<std::endl;
+  }
+  m_mesh->end(itt);
+  m_mesh->acceptChanges();
+  
+  writeCurvedVtuFiles(m_mesh, apf::Mesh::TRIANGLE, 20, "slab-crv-initial");
+  writeCurvedWireFrame(m_mesh, 20,"slabcrv-w-initial");
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+*/  
+  if(m_mesh->getDimension() >= 2) {
     if (m_order == 2 || m_order == 3) {
       ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
       crv::adapt(shapeFixer);

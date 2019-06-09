@@ -330,8 +330,14 @@ public:
   }
   virtual int getTargetDimension() {return 1;}
   virtual bool shouldApply(ma::Entity* e) {
-    if (ma::getFlag(adapter, e, ma::COLLAPSE) || ma::getFlag(adapter, e, ma::BAD_QUALITY) || isBoundaryEntity(mesh, e)) 
+    
+    if (!ma::getFlag(adapter, e, ma::COLLAPSE | ma::BAD_QUALITY)) {
       return false;
+    }
+    
+    if (isBoundaryEntity(mesh, e)) {
+      return false;
+    }
     else {
       edge = e;
       return true;
@@ -353,7 +359,6 @@ public:
 
     ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
 
-    delete(ceo);
   }
 private:
 protected:

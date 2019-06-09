@@ -62,7 +62,6 @@ double LBFGS::lineSearch(std::vector<double> &xold, std::vector<double> &g, std:
       
       double fnew = objFunc->getValue(xnew);
       if (alam < alamin || fnew <= fold + alpha*alam*slope) {
-        std::cout<<"fval "<<fnew<<std::endl;
         return alam;
       }
       else {
@@ -114,8 +113,6 @@ bool LBFGS::run()
   xs[0] = x0;
   gs[0] = objFunc->getGrad(x0);
   
-  //gdiffs[0] (gs[0]);
-
   for (std::size_t i = 0; i < xs[0].size(); i++) p[i] = -gs[0][i];
 
   for (int k = 0; k < iter; k++) {
@@ -131,10 +128,7 @@ bool LBFGS::run()
       moveArrayToLeft(xs, r);
       moveArrayToLeft(gs, r);
     }
-    double n = objFunc->getSpaceDim();
-    double m = sqrt(dotP(p, p));
-    //double stpmax = 100.0 * (std::max(sqrt(dotP(p,p)), double(objFunc->getSpaceDim())));
-    double stpmax = 100.0 * (std::max(m, n));
+    double stpmax = 100.0 * (std::max(sqrt(dotP(p,p)), double(objFunc->getSpaceDim())));
     double lambda = lineSearch(xs[J], gs[J], p, stpmax);
     
     for (std::size_t j = 0; j < xs[I].size(); j++) 
@@ -147,10 +141,10 @@ bool LBFGS::run()
       	gdiffs[I-1][jj] = gs[I][jj] - gs[I-1][jj];
     }
 
-    if ((dotP(gs[I],gs[I]) < tol) || (dotP(gdiffs[I-1], gdiffs[I-1])) < tol) {
+    if ((dotP(gs[I],gs[I]) < tol) || (dotP(gdiffs[I-1], gdiffs[I-1]) < tol)) {
       currentX = xs[I];
       fValAfter = objFunc->getValue(xs[I]);
-      std::cout<<"number of LBFGS iterations: "<<k<<std::endl;
+      //std::cout<<"number of LBFGS iterations: "<<k<<std::endl;
       return true;
     }
     
