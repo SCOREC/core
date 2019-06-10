@@ -130,6 +130,7 @@ pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh",
                       void (*fp)(const char*)=NULL);
 void pumi_geom_delete(pGeom g);
 void pumi_geom_freeze(pGeom g); // shall be called after modifying model entities
+void pumi_geom_createID(pGeom g); // generate sequential ID starting from 1
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 

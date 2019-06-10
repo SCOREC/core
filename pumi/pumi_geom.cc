@@ -72,9 +72,15 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
 
 void pumi_geom_delete(pGeom g)
 {
+  pTag id_tag=pumi_geom_findTag(g, "ID");
+
   for (int i=0; i<4; ++i)
     for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
+    {
+      if (id_tag) pumi_gent_deleteTag(*gent_it, id_tag);
       delete *gent_it;
+    }
+   pumi_geom_deleteTag(g, id_tag);
 }
 
 void pumi_geom_freeze(pGeom g)
@@ -89,6 +95,18 @@ void pumi_geom_freeze(pGeom g)
       g->add(i, new gEntity(gent));
     gmi_end(g->getGmi(), giter);
   }
+}
+
+void pumi_geom_createID(pGeom g) // ID starts from 1
+{
+  pTag id_tag = pumi_geom_createTag(g, "ID", PUMI_INT, 1);
+  int id;
+  for (int i=0; i<4; ++i)
+  {
+    id=1;
+    for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
+      pumi_gent_setIntTag(*gent_it, id_tag, id++);
+  } 
 }
 
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id)
