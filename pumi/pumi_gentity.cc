@@ -33,7 +33,15 @@ int pumi_gent_getDim(pGeomEnt ge)
 
 int pumi_gent_getID(pGeomEnt ge)
 {
-  return gmi_tag(pumi::instance()->model->getGmi(), ge->getGmi());
+  pTag id_tag=pumi_geom_findTag(pumi::instance()->model, "ID");
+  if (id_tag) 
+  { 
+    int int_data;
+    pumi_gent_getIntTag (ge, id_tag, &int_data);
+    return int_data;
+  }
+  else
+    return gmi_tag(pumi::instance()->model->getGmi(), ge->getGmi());
 }
 
 void pumi_gent_getRevClas (pGeomEnt ge, std::vector<pMeshEnt>& ents)
