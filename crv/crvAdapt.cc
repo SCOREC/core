@@ -163,7 +163,7 @@ ma::Input* configureShapeCorrection(
 
 static int fixInvalidElements(crv::Adapt* a)
 {
-  a->input->shouldForceAdaptation = true;
+  a->input->shouldForceAdaptation = false;
   int count = crv::fixLargeBoundaryAngles(a)
             + crv::fixInvalidEdges(a);
   int originalCount = count;
@@ -220,7 +220,7 @@ void adapt(ma::Input* in)
     fixCrvElementShapes(a);
   }
 
-  allowSplitCollapseOutsideLayer(a);
+  //allowSplitCollapseOutsideLayer(a);
 
   if (in->maximumIterations > 0) {
     fixInvalidElements(a);

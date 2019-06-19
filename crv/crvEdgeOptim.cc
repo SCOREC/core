@@ -55,16 +55,25 @@ void CrvEdgeReshapeObjFunc :: getInitTetN()
 
 std::vector<double> CrvEdgeReshapeObjFunc :: getInitialGuess()
 {
-  return convertNodeVectorToX(ien);
+  return convertNodeVectorToX(ien, ifn, itn);
 }
 
-std::vector<double> CrvEdgeReshapeObjFunc :: convertNodeVectorToX(std::vector<apf::Vector3> eftn)
+std::vector<double> CrvEdgeReshapeObjFunc :: convertNodeVectorToX(std::vector<apf::Vector3> en, std::vector<apf::Vector3> fn, std::vector<apf::Vector3> tn)
 {
   std::vector<double> x0;
   for (int i = 0; i < P-1; i++)
     for (int j = 0; j < 3; j++)
-      x0.push_back(eftn[i][j]);
+      x0.push_back(en[i][j]);
 
+  for (std::size_t i = 0; i < fn.size(); i++)
+    for (int j = 0; j < 3; j++)
+      x0.push_back(fn[i][j]);
+  
+  if (d > 2 && P > 3) {
+    for (std::size_t i = 0; i < tn.size(); i++)
+      for (int j = 0; j < 3; j++)
+      	x0.push_back(tn[i][j]);
+  }
   return x0;
 }
 
@@ -73,15 +82,18 @@ std::vector<apf::Vector3> CrvEdgeReshapeObjFunc :: convertXtoNodeVector(const st
   std::vector<apf::Vector3> a;
   apf::Vector3 v;
   if (d == 2) {
-    int numENodes = mesh->getShape()->countNodesOn(mesh->getType(edge));
-    for (int i = 0; i < numENodes; i++) {
+    std::size_t num = x.size()/d;
+    //int numENodes = mesh->getShape()->countNodesOn(mesh->getType(edge));
+    //check later for 2D case:: x should not include z coordinate in optim search
+    for (std::size_t i = 0; i < num; i++) {
       v = {x[d*i], x[d*i + 1], 0.0};
       a.push_back(v);
     }
   }
   if (d == 3) {
-    int numENodes = mesh->getShape()->countNodesOn(mesh->getType(edge));
-    for (int i = 0; i < numENodes; i++) {
+    std::size_t num = x.size()/d;
+    //int numENodes = mesh->getShape()->countNodesOn(mesh->getType(edge));
+    for (std::size_t i = 0; i < num; i++) {
       v = {x[d*i], x[d*i + 1], x[d*i + 2]};
       a.push_back(v);
     }
@@ -152,11 +164,29 @@ void CrvEdgeReshapeObjFunc :: updateNodes(std::vector<apf::Vector3> ed, std::vec
 
 void CrvEdgeReshapeObjFunc :: setNodes(std::vector<double> &x)
 {
-  std::vector<apf::Vector3> en (ien.begin(), ien.end());
-  std::vector<apf::Vector3> fn (ifn.begin(), ifn.end());
-  std::vector<apf::Vector3> tn (itn.begin(), itn.end());
-  en = convertXtoNodeVector(x);
-  blendTris(en, fn);
+  std::vector<apf::Vector3> en;// (ien.begin(), ien.end());
+  std::vector<apf::Vector3> fn;// (ifn.begin(), ifn.end());
+  std::vector<apf::Vector3> tn;// (itn.begin(), itn.end());
+  std::vector<apf::Vector3> nod = convertXtoNodeVector(x);
+  //blendTris(en, fn);
+  //from all internal node vector to distict vector of nodes
+  
+  int nEN = mesh->getShape()->countNodesOn(mesh->getType(edge));
+  for (int i = 0; i <nEN; i++)
+    en.push_back(nod[i]);
+
+  int nFN = mesh->getShape()->countNodesOn(mesh->TRIANGLE);
+  apf::Adjacent adjF;
+  mesh->getAdjacent(edge, 2, adjF);
+
+  for (std::size_t i = nEN; i < nEN + nFN*adjF.size(); i++)
+    fn.push_back(nod[i]);
+
+  if (d > 2 && P > 3) {
+    //int nTN = mesh->getShape()->countNodesOn(mesh->TET);
+    for (std::size_t i = nEN+nFN; i <nod.size(); i++)
+      tn.push_back(nod[i]);
+  }
 
   updateNodes(en, fn, tn);
 }
@@ -216,13 +246,14 @@ double CrvEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 4;
-	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
 	      weight = 2;
+	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
+	      weight = 1.5;
 	    else
-	      weight = 1;
+	      weight = 0.5;
 	    if (I + J + K + L == d*(P-1)) {
 	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
+	      //std::cout<<"["<<I<<","<<J<<","<<K<<","<<L<<"]   "<<f<<std::endl;
 	      sumf = sumf + weight*f*f;
 	    }
 	  }
@@ -291,20 +322,62 @@ double CrvEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
 std::vector<double> CrvEdgeReshapeObjFunc :: getGrad(std::vector<double> &x)
 {
   double fold = getValue(x);
-  double eps = 1.0e-4;
-  double h;
+  double eps = 1.0e-5;
+  double h = eps;
   std::vector<double> g;
+  double xmx = x[0];
+  double xmn = x[0];
+  double ymx = x[1];
+  double ymn = x[1];
+  double zmx = x[2];
+  double zmn = x[2];
+  double df = 0.0, dff = 0.0, dbb = 0.0;
+
+  for (std::size_t i = 0; i < x.size(); i+=3) {
+    if (x[i] >= xmx) xmx = x[i];
+    if (x[i] <= xmn) xmn = x[i];
+  }
+
+  for (std::size_t i = 1; i < x.size(); i+=3) {
+    if (x[i] >= ymx) ymx = x[i];
+    if (x[i] <= ymn) ymn = x[i];
+  }
+
+  for (std::size_t i = 2; i < x.size(); i+=3) {
+    if (x[i] >= zmx) zmx = x[i];
+    if (x[i] <= zmn) zmn = x[i];
+  }
+
+  double delx = std::abs(xmx - xmn);
+  double dely = std::abs(ymx - ymn);
+  double delz = std::abs(zmx - zmn);
+  double delta = 1.0;
 
   for (std::size_t i = 0; i < x.size(); i++) {
-    if (std::abs(x[i]) > eps)
-      h = eps * std::abs(x[i]);
-    else
-      h = eps;
+    if (i % 3 == 0) delta = delx;
+    if (i % 3 == 1) delta = dely;
+    if (i % 3 == 2) delta = delz;
+    
+    h = eps * delta;
+
+    //if (std::abs(x[i]) > eps)
+    //  h = eps * std::abs(x[i]);
+    //else
+    //  h = eps;
 
     x[i] = x[i] + h;
-    double fnew = getValue(x);
+    double ff = getValue(x);
     x[i] = x[i] - h;
-    g.push_back((fnew-fold)/h);
+    
+    x[i] = x[i] - h;
+    double fb = getValue(x);
+    x[i] = x[i] + h;
+
+    dff = (ff - fold)/h;
+    dbb = (fold - fb)/h;
+    df = (dff + dbb)/(2.0);
+
+    g.push_back(df);
   }
   return g;
 }
@@ -337,11 +410,11 @@ bool CrvEdgeOptim :: run()
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
       if (checkValidity(mesh, adjT[i], 1) > 1) {
       	objF->restoreInitialNodes();
-	std::cout<<"optimization success but invalid entity+++++"<<std::endl;
+	std::cout<<"invalid entity with code "<<checkValidity(mesh, adjT[i], 1) <<std::endl;
       	return false;
       }
     }
-   
+
     return true;
   }
   else {

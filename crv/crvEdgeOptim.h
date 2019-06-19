@@ -40,7 +40,7 @@ class CrvEdgeReshapeObjFunc : public ObjFunction
     void getInitEdgeN();
     void getInitFaceN();
     void getInitTetN();
-    std::vector<double> convertNodeVectorToX(std::vector<apf::Vector3> eftn);
+    std::vector<double> convertNodeVectorToX(std::vector<apf::Vector3> en, std::vector<apf::Vector3> fn, std::vector<apf::Vector3> tn);
     std::vector<apf::Vector3> convertXtoNodeVector(const std::vector<double> &x);
     void blendTris(const std::vector<apf::Vector3> &edgeNodes, std::vector<apf::Vector3> &faceNodes);
     //void blendTets(const std::vector<apf::Vector3> &edgeNodes, const std::vector<apf::Vector3> faceNodes, std::vector<apf::Vector3> &tetNodes);

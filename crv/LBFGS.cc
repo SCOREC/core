@@ -40,7 +40,7 @@ double LBFGS::lineSearch(std::vector<double> &xold, std::vector<double> &g, std:
   sum = sqrt(dotP(direction,direction));
   if (sum > stpmax) {
     for (int i = 0; i < n; i++) {
-      direction[i] *= stpmax/sum;
+      direction[i] = direction[i]*stpmax/sum;
     }
   }
 //  for (int i = 0; i < n; i++) slope += g[i]*p[i];
@@ -128,7 +128,7 @@ bool LBFGS::run()
       moveArrayToLeft(xs, r);
       moveArrayToLeft(gs, r);
     }
-    double stpmax = 100.0 * (std::max(sqrt(dotP(p,p)), double(objFunc->getSpaceDim())));
+    double stpmax = (std::max(sqrt(dotP(p,p)), double(objFunc->getSpaceDim())));
     double lambda = lineSearch(xs[J], gs[J], p, stpmax);
     
     for (std::size_t j = 0; j < xs[I].size(); j++) 

@@ -647,8 +647,8 @@ static void optimizeInvalidEdges(Adapt* a)
   EdgeOptimizer eo(a);
   ma::applyOperator(a,&eo);
   double t1 = PCU_Time();
-  ma::print("Optimized %d bad edges "
-      "in %f seconds",eo.ns, t1-t0);
+  ma::print("Optimized %d bad edges, failed %d edges "
+      "in %f seconds",eo.ns, eo.nf, t1-t0);
 }
 
 int fixInvalidEdges(Adapt* a)

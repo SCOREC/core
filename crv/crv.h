@@ -47,13 +47,16 @@ class MeshCurver
   public:
     MeshCurver(apf::Mesh2* m, int P) : m_mesh(m), m_order(P) {};
     virtual ~MeshCurver() {};
-    virtual bool run() = 0;
+    virtual bool run(bool flag) = 0;
 
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
 
     /** \brief wrapper around synchronizeFieldData */
     void synchronize();
+    
+  //public:
+  //  bool flag = 1;
 
   protected:
     apf::Mesh2* m_mesh;
@@ -88,9 +91,11 @@ class BezierCurver : public MeshCurver
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
       see crvBezier.cc */
-    virtual bool run();
+    virtual bool run(bool flag);
     /** \brief converts interpolating points to bezier control points */
     void convertInterpolatingToBezier();
+  //public: 
+  //  bool flag = true;
 };
 
 /** \brief this curves a mesh with 4th order G1 Patches
