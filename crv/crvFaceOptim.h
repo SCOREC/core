@@ -1,5 +1,5 @@
-#ifndef CRVEDGEOPTIM_H
-#define CRVEDGEOPTIM_H
+#ifndef CRVFACEOPTIM_H
+#define CRVFACEOPTIM_H
 
 #include <iostream>
 #include <pcu_util.h>
@@ -12,21 +12,20 @@
 
 namespace crv{
 
-class CrvEdgeReshapeObjFunc : public ObjFunction
+class CrvFaceReshapeObjFunc : public ObjFunction
 {
   public:
-    CrvEdgeReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* e) : 
-  	mesh(m), edge(e)
+    CrvFaceReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* f) : 
+  	mesh(m), face(f)
   {
     P = mesh->getShape()->getOrder();
     d = mesh->getDimension();
     getSpaceDim();
     getVolume();
-    getInitEdgeN();
     getInitFaceN();
     getInitTetN();
   }
-  ~CrvEdgeReshapeObjFunc(){}
+  ~CrvFaceReshapeObjFunc() {}
 
   public:
     int getSpaceDim();
@@ -39,31 +38,28 @@ class CrvEdgeReshapeObjFunc : public ObjFunction
     int d; //dimension
     
   private:
-    void getInitEdgeN();
     void getInitFaceN();
     void getInitTetN();
-    std::vector<double> convertNodeVectorToX(std::vector<apf::Vector3> en, std::vector<apf::Vector3> fn, std::vector<apf::Vector3> tn);
+    std::vector<double> convertNodeVectorToX(std::vector<apf::Vector3> fn);
     std::vector<apf::Vector3> convertXtoNodeVector(const std::vector<double> &x);
-    void blendTris(const std::vector<apf::Vector3> &edgeNodes, std::vector<apf::Vector3> &faceNodes);
     //void blendTets(const std::vector<apf::Vector3> &edgeNodes, const std::vector<apf::Vector3> faceNodes, std::vector<apf::Vector3> &tetNodes);
-    void updateNodes(std::vector<apf::Vector3> ed, std::vector<apf::Vector3> fa, std::vector<apf::Vector3> te);
+    void updateNodes(std::vector<apf::Vector3> fa, std::vector<apf::Vector3> te);
     std::vector<double> getVolume();
     double computeFValOfElement(apf::NewArray<apf::Vector3> &nodes, double volm);
   protected:
     apf::Mesh2* mesh;
-    apf::MeshEntity* edge;
+    apf::MeshEntity* face;
     std::vector<double> vol;
-    std::vector<apf::Vector3> ien;
     std::vector<apf::Vector3> ifn;
     std::vector<apf::Vector3> itn;
 };  
 
-class CrvEdgeOptim
+class CrvFaceOptim
 {
   public:
-    CrvEdgeOptim(apf::Mesh2* m, apf::MeshEntity* e) :
-    	mesh(m), edge(e) {}
-    ~CrvEdgeOptim(){}
+    CrvFaceOptim(apf::Mesh2* m, apf::MeshEntity* f) :
+    	mesh(m), face(f) {}
+    ~CrvFaceOptim(){}
 
   public:
     void setMaxIter(int n);
@@ -71,7 +67,7 @@ class CrvEdgeOptim
     bool run();
   public:
     apf::Mesh2* mesh;
-    apf::MeshEntity* edge;
+    apf::MeshEntity* face;
     int iter;
     double tol;
     std::vector<double> finalX;

@@ -246,11 +246,11 @@ double CrvEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 2;
+	      weight = 4;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 1.5;
+	      weight = 2;
 	    else
-	      weight = 0.5;
+	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
 	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
 	      //std::cout<<"["<<I<<","<<J<<","<<K<<","<<L<<"]   "<<f<<std::endl;
@@ -321,7 +321,7 @@ double CrvEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
 
 std::vector<double> CrvEdgeReshapeObjFunc :: getGrad(std::vector<double> &x)
 {
-  double fold = getValue(x);
+  //double fold = getValue(x);
   double eps = 1.0e-5;
   double h = eps;
   std::vector<double> g;
@@ -372,11 +372,12 @@ std::vector<double> CrvEdgeReshapeObjFunc :: getGrad(std::vector<double> &x)
     x[i] = x[i] - h;
     double fb = getValue(x);
     x[i] = x[i] + h;
-
+/*
     dff = (ff - fold)/h;
     dbb = (fold - fb)/h;
     df = (dff + dbb)/(2.0);
-
+*/
+    df = (ff - fb)/(2.0 * h);
     g.push_back(df);
   }
   return g;
@@ -410,7 +411,7 @@ bool CrvEdgeOptim :: run()
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
       if (checkValidity(mesh, adjT[i], 1) > 1) {
       	objF->restoreInitialNodes();
-	std::cout<<"invalid entity with code "<<checkValidity(mesh, adjT[i], 1) <<std::endl;
+	std::cout<<"invalid entity after edop with code "<<checkValidity(mesh, adjT[i], 1) <<std::endl;
       	return false;
       }
     }

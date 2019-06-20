@@ -22,11 +22,14 @@ set(SOURCES
   crvVtk.cc
   LBFGS.cc
   crvEdgeOptim.cc
+  crvFaceOptim.cc
 )
 
 # Package headers
 set(HEADERS
   crv.h
+  /lore/mohara/core/crv/crvEdgeOptim.h
+  /lore/mohara/core/crv/crvFaceOptim.h
 )
 
 # Add the crv library

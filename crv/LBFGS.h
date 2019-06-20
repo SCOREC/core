@@ -24,7 +24,10 @@ class LBFGS
 {
 public:
   LBFGS(double inTol, int inIter, const std::vector<double> &x, ObjFunction *inObjFunc):
-    tol(inTol), iter(inIter), x0(x), objFunc(inObjFunc) {}
+    tol(inTol), iter(inIter), x0(x), objFunc(inObjFunc) 
+  {
+    //setInitialValue(x0);
+  }
 
   ~LBFGS() {}
 
