@@ -91,6 +91,7 @@ static void setDefaults(Input& in)
   in.measureAdaptedMesh = 0;
   in.simSizeLowerBound = 0.0;
   in.simSizeUpperBound = 1.0e16;
+  in.simMaxAdaptMeshElements = 1.0e16;
 }
 
 Input::Input()
@@ -180,6 +181,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["measureAdaptedMesh"] = &in.measureAdaptedMesh;
   dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
   dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
+  dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
 }
 
 template <class T>
