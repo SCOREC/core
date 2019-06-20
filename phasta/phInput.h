@@ -205,6 +205,8 @@ class Input
     double simSizeLowerBound;
     /** \brief maximum desired mesh size for sim adapter */
     double simSizeUpperBound;
+    /** \brief number of allowed mesh elements of adapted mesh */
+    double simMaxAdaptMeshElements;
 };
 
 int countNaturalBCs(Input& in);
