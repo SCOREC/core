@@ -191,12 +191,6 @@ class Input
     double gradingFactor;
     /** \brief option used for wrapping sim mesh adapter and improver into mover */
     int simCooperation;
-    /** \brief desired error of mass equation for sim adapter */
-    double simAdaptDesiredErrorMass;
-    /** \brief desired error of momentum equation for sim adapter */
-    double simAdaptDesiredErrorMomt;
-    /** \brief desired error of energy equation for sim adapter */
-    double simAdaptDesiredErrorEnrg;
     /** \brief flag for writing simmetrix log file */
     int writeSimLog;
     /** \brief flag for measure the adapted mesh in phastaChef */

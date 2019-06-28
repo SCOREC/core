@@ -15,7 +15,7 @@ c
         end subroutine
 c
         subroutine core_is_in_closure ( e_dim, e_tag,
-     &                                 t_dim, t_tag, answer )
+     &                                  t_dim, t_tag, answer )
      &    bind(C, NAME='core_is_in_closure')
         use iso_c_binding
           integer(c_int),intent(in),value :: e_dim, e_tag, t_dim, t_tag
@@ -40,6 +40,23 @@ c
           real(c_double),intent(in),dimension(:) ::
      &                               x1(numnp), x2(numnp), x3(numnp)
           real(c_double),intent(out) :: minvq, minfq
+        end subroutine
+c
+      end interface
+c
+      end module
+c-----------------------------------------------------------------------
+c
+c-----------------------------------------------------------------------
+      module core_error
+      use iso_c_binding
+c
+      interface
+c
+        subroutine core_phasta_get_err_param(err_correct_f)
+     &    bind(C, NAME='core_phasta_get_err_param')
+        use iso_c_binding
+          real(c_double),intent(out) :: err_correct_f
         end subroutine
 c
       end interface
