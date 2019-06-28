@@ -279,7 +279,7 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
   free(op);
 }
 
-double err_correct_f_;
+double err_correct_f_ = 1.0;
 
 void core_phasta_get_err_param(double& err_correct_f) {
   // outputs:
