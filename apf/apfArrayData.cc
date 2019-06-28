@@ -1,4 +1,5 @@
 #include "apfArrayData.h"
+#include "apfComplex.h"
 #include "apfNumbering.h"
 #include "apfTagData.h"
 
@@ -125,19 +126,29 @@ void unfreezeFieldData(FieldBase* field) {
 }
 
 /* instantiate here */
+template void freezeFieldData<double_complex>(FieldBase* field);
 template void freezeFieldData<int>(FieldBase* field);
 template void freezeFieldData<double>(FieldBase* field);
+template void unfreezeFieldData<double_complex>(FieldBase * field);
 template void unfreezeFieldData<int>(FieldBase* field);
 template void unfreezeFieldData<double>(FieldBase* field);
 
-double* getArrayData(Field* f) {
-  if (!isFrozen(f)) {
+template <typename T>
+T* getArrayDataT(FieldBase* f)
+{
+  if(!isFrozen(f))
     return 0;
-  } else {
-    FieldDataOf<double>* p = f->getData();
-    ArrayDataOf<double>* a = static_cast<ArrayDataOf<double>* > (p);
+  else
+  {
+    FieldDataOf<T>* p = reinterpret_cast<FieldDataOf<T>*>(f->getData());
+    ArrayDataOf<T>* a = static_cast<ArrayDataOf<T>*>(p);
     return a->getDataArray();
   }
 }
+
+template double_complex* getArrayDataT(FieldBase* field);
+template int* getArrayDataT(FieldBase* field);
+template double* getArrayDataT(FieldBase* field);
+
 
 }

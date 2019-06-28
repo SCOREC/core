@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include "apfComplex.h"
 #include "apfFieldData.h"
 #include "apfShape.h"
 #include <pcu_util.h>
@@ -72,6 +73,7 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
 }
 
 /* instantiate here */
+template void synchronizeFieldData<double_complex>(FieldDataOf<double_complex>*, Sharing*, bool);
 template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*, bool);
 template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*, bool);
 template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*, bool);
@@ -250,6 +252,7 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
   return n;
 }
 
+template class FieldDataOf<double_complex>;
 template class FieldDataOf<double>;
 template class FieldDataOf<int>;
 template class FieldDataOf<long>;

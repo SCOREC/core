@@ -13,6 +13,7 @@
 #include "apfMatrixField.h"
 #include "apfMatrixElement.h"
 #include "apfPackedField.h"
+#include "apfComplexField.h"
 #include "apfIntegrate.h"
 #include "apfArrayData.h"
 #include "apfTagData.h"
@@ -73,6 +74,8 @@ Field* makeField(
     f = new MatrixField();
   else if (valueType == PACKED)
     f = new PackedField(components);
+  else if (valueType == COMPLEX_PACKED)
+    f = new ComplexPackedField(components);
   else
     fail("invalid valueType in field construction\n");
   f->init(name,m,shape,data);
