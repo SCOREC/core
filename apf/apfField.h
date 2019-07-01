@@ -78,6 +78,8 @@ Field* makeField(
     FieldShape* shape,
     FieldData* data);
 
+bool isFrozen(FieldBase * fb);
+
 } //namespace apf
 
 #endif

@@ -476,7 +476,7 @@ void unfreeze(Field* f)
 
 bool isFrozen(Field* f)
 {
-  return f->getData()->isFrozen();
+  return isFrozen(static_cast<FieldBase*>(f));
 }
 
 Function::~Function()

@@ -126,4 +126,9 @@ void zeroField(Field* f)
   op.apply(f);
 }
 
+bool isFrozen(FieldBase * fb)
+{
+  return fb->getData()->isFrozen();
+}
+
 } //namespace apf

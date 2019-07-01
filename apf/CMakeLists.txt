@@ -29,6 +29,7 @@ set(SOURCES
   apfVectorElement.cc
   apfVectorField.cc
   apfPackedField.cc
+  apfComplexField.cc
   apfNumbering.cc
   apfMixedNumbering.cc
   apfAdjReorder.cc
@@ -73,6 +74,7 @@ set(HEADERS
   apfField.h
   apfFieldData.h
   apfNumberingClass.h
+  apfComplex.h
 )
 
 # Add the apf library
