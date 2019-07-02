@@ -489,7 +489,7 @@ void setSizeFieldAlt2(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* si
     double h_v_curr = apf::getScalar(currentSize,vert,0);
     if(lambda_vert > lambda_cutoff)
     {
-      h_v = 0.5*h_v_curr;
+      h_v = h_v_curr / factor;
     }
     else
     {
@@ -540,7 +540,7 @@ static std::vector<bool> decodeBitFields(const char* bitFields)
   for (int i = 0; i < strlen(bitFields); i++) {
     if (bitFields[i] == '0')
       res[i] = false;
-    else if (bitFields[i] == '1')
+    else if (bitFields[i] == '1' || bitFields[i] == '2')
       res[i] = true;
     else
       PCU_ALWAYS_ASSERT(0);
@@ -876,8 +876,13 @@ int main(int argc, char** argv)
   // printf("after->speedBased2.h_lambdamax: %15.10e\n", speedBased2.h_lambdamax);
 
   // Using a separate size field computation to capture free shear layer
-  double factor_fsl = factor * 4.0;
-  setSizeFieldAlt(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor_fsl);
+  if (bitFields[2] == '2') {
+    // TODO: Change from hard-coding
+    double factor_fsl = 4.0;
+    setSizeFieldAlt2(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor_fsl);
+  } else if (bitFields[2] == '1') {
+    setSizeFieldAlt(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor);
+  }
 
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
   it = mesh->begin(0);
