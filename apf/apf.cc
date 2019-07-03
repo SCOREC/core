@@ -21,7 +21,6 @@
 #include "apfNumberingClass.h"
 #include <cstdio>
 #include <cstdlib>
-#include <PCU.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
 
@@ -139,46 +138,6 @@ Mesh* getMesh(Field* f)
 bool hasEntity(Field* f, MeshEntity* e)
 {
   return f->getData()->hasEntity(e);
-}
-
-int countLocalNodes(Field* f, Sharing* shr)
-{
-  Mesh * msh = getMesh(f);
-  FieldShape * shp = getShape(f);
-  return countLocalNodes(msh,shp,shr);
-}
-
-int countLocalNodes(Mesh* m, FieldShape * shp, Sharing * shr)
-{
-  // if shr is NULL, the default behavior of
-  //  countEntitiesOfType is to count ALL
-  //  entities on the local part of type tp
-  int nds = 0;
-  for(int tp = Mesh::VERTEX; tp != Mesh::TYPES; ++tp)
-    nds += countEntitiesOfType(m,tp,shr) * shp->countNodesOn(tp);
-  return nds;
-}
-
-int countGlobalNodes(Field* f, Sharing* shr)
-{
-  Mesh * msh = getMesh(f);
-  FieldShape * shp = getShape(f);
-  return countGlobalNodes(msh,shp,shr);
-}
-
-int countGlobalNodes(Mesh* m, FieldShape* shp, Sharing* shr)
-{
-  bool del = false;
-  if(shr == NULL)
-  {
-    shr = getSharing(m);
-    del = true;
-  }
-  int lcl_nds = countLocalNodes(m,shp,shr);
-  int gbl_nds = PCU_Add_Int(lcl_nds);
-  if(del)
-    delete shr;
-  return gbl_nds;
 }
 
 const char* getName(Field* f)
