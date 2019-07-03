@@ -676,13 +676,16 @@ MeshEntity* getEdgeVertOppositeVert(Mesh* m, MeshEntity* edge, MeshEntity* v)
   return ev[0];
 }
 
-int countEntitiesOfType(Mesh* m, int type)
+
+int countEntitiesOfType(Mesh* m, int type, Sharing * shr)
 {
+  if(shr == NULL)
+    shr = getNoSharing();
   MeshIterator* it = m->begin(Mesh::typeDimension[type]);
   MeshEntity* e;
   int count = 0;
   while ((e = m->iterate(it)))
-    if (m->getType(e)==type)
+    if (m->getType(e)==type && shr->isOwned(e))
       ++count;
   m->end(it);
   return count;
@@ -995,6 +998,36 @@ bool MatchedSharing::isShared(MeshEntity* e) {
       return true;
   return false;
 }
+
+// treat all entities as if they are not shared,
+//  used to count all local entities instead of
+//  all owned entities as the default
+// The ONLY justification for this being a
+//  singleton is that it is essentially a functor
+//  at this point, as it retains no state, so there
+//  only ever needs to be a single instance of this
+struct NoSharing : public Sharing
+{
+private:
+  static NoSharing * instance;
+  NoSharing() {}
+  ~NoSharing() {}
+public:
+  static NoSharing * Instance()
+  {
+    if(instance == NULL)
+      instance = new NoSharing;
+    return instance;
+  }
+  virtual int getOwner(MeshEntity*) { return PCU_Comm_Self(); }
+  virtual bool isOwned(MeshEntity*) { return true; }
+  virtual void getCopies(MeshEntity*,CopyArray&) { }
+  virtual bool isShared(MeshEntity*) { return false; }
+};
+NoSharing * NoSharing::instance = NULL;
+
+// obfuscate the singleton just a bit
+Sharing* getNoSharing() { return NoSharing::Instance(); }
 
 Sharing* getSharing(Mesh* m)
 {

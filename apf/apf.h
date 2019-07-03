@@ -682,7 +682,7 @@ void synchronize(Field* f, Sharing* shr = 0);
   */
 void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
 
-/** \brief Apply a reudction operator along partition boundaries
+/** \brief Apply a reduction operator along partition boundaries
   \details Using the copies described by an apf::Sharing object, applied
   the specified operation pairwise to the values of the field on each
   partition.  No guarantee is made about hte order of the pairwise
