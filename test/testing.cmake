@@ -35,10 +35,10 @@ mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
 mpi_test(verify_convert 1 ./verify_convert)
-mpi_test(count_entities_serial 1
+mpi_test(count_serial 1
          ./count_entities
          "${MESHES}/cube/pumi11/cube.smb")
-mpi_test(count_entities_parallel 2
+mpi_test(count_parallel 2
          ./count_entities
          "${MESHES}/cube/pumi670/2/cube.smb")
 mpi_test(test_integrator 1
