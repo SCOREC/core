@@ -430,9 +430,6 @@ MeshEntity* getEdgeVertOppositeVert(Mesh* m, MeshEntity* edge, MeshEntity* v);
 void getBridgeAdjacent(Mesh* m, MeshEntity* origin,
     int bridgeDimension, int targetDimension, Adjacent& result);
 
-/** \brief count all on-part entities of one topological type */
-int countEntitiesOfType(Mesh* m, int type);
-
 /** \brief return true if the topological type is a simplex */
 bool isSimplex(int type);
 
@@ -516,12 +513,20 @@ private:
   std::map<int, size_t> countMap;
 };
 
+Sharing* getNoSharing();
+
 /** \brief create a default sharing object for this mesh
   \details for normal meshes, the sharing object just
   describes remote copies. For matched meshes, the
   sharing object describes matches for matched entities
   and remote copies for other entities */
 Sharing* getSharing(Mesh* m);
+
+/** \brief count all on-part entities of one topological type,
+    \details if a sharing is provided, only 'owned' entities of
+    the specified type are counted, otherwise all on-part entities
+    are counted */
+int countEntitiesOfType(Mesh* m, int type, Sharing * shr = NULL);
 
 /** \brief map from triangle edge order to triangle vertex order */
 extern int const tri_edge_verts[3][2];
