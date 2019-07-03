@@ -204,24 +204,6 @@ Mesh* getMesh(Field* f);
   */
 bool hasEntity(Field* f, MeshEntity* e);
 
-/** \brief Count all field nodes owned according to shr, on all mesh
-    entities on the local part, default is all to count every node,
-    even those on owned entities
-  */
-int countLocalNodes(Field* f, Sharing* shr = NULL);
-/** \brief same as countLocalNodes but you don't need to allocate a field
-  */
-int countLocalNodes(Mesh* m, FieldShape* shp, Sharing* shr = NULL);
-
-/** \brief Count all field nodes owned according to shr, on all mesh
-    entities on all parts in PCU_COMM_WORLD, default is to use the
-    NormalSharing to define ownership.
-  */
-int countGlobalNodes(Field* f, Sharing* shr = NULL);
-/** \brief same as countGlobalNodes but you don't need to allocate a field
-  */
-int countGlobalNodes(Mesh* m, FieldShape* shp, Sharing* shr = NULL);
-
 /** \brief Get the name of a Field.
   *
   * \details Both for use convenience and for technical reasons
@@ -700,7 +682,7 @@ void synchronize(Field* f, Sharing* shr = 0);
   */
 void accumulate(Field* f, Sharing* shr = 0, bool delete_shr = false);
 
-/** \brief Apply a reduction operator along partition boundaries
+/** \brief Apply a reudction operator along partition boundaries
   \details Using the copies described by an apf::Sharing object, applied
   the specified operation pairwise to the values of the field on each
   partition.  No guarantee is made about hte order of the pairwise

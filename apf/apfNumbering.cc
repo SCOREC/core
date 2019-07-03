@@ -221,6 +221,14 @@ void synchronize(Numbering * n, Sharing* shr, bool delete_shr)
   synchronizeFieldData<int>(n->getData(), shr, delete_shr);
 }
 
+struct NoSharing : public Sharing
+{
+  int getOwner(MeshEntity*) {return PCU_Comm_Self();} 
+  bool isOwned(MeshEntity*) {return true;}
+  virtual void getCopies(MeshEntity*, CopyArray&) {}
+  bool isShared(MeshEntity*) {return false;}
+};
+
 Numbering* numberNodes(
     Mesh* mesh,
     const char* name,
@@ -250,13 +258,14 @@ Numbering* numberNodes(
   return n;
 }
 
-Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim, Sharing * shr)
+Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim,
+    Sharing* shr)
 {
-  bool delete_shr = false;
-  if (!shr)
+  bool delete_shr=false;
+  if (!shr) 
   {
     shr = getSharing(mesh);
-    delete_shr = true;
+    delete_shr=true;
   }
   return numberNodes(mesh, name, getConstant(dim), shr, delete_shr);
 }
@@ -264,8 +273,8 @@ Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim, Sharing *
 Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim)
 {
   FieldShape* s = getConstant(dim);
-  Sharing* shr = getNoSharing();
-  return numberNodes(mesh, name, s, shr, false);
+  Sharing* shr = new NoSharing();
+  return numberNodes(mesh, name, s, shr, true);
 }
 
 Numbering* numberElements(Mesh* mesh, const char* name)
@@ -277,7 +286,8 @@ Numbering* numberOverlapNodes(Mesh* mesh, const char* name, FieldShape* s)
 {
   if (!s)
     s = mesh->getShape();
-  return numberNodes(mesh, name, s, getNoSharing(), false);
+  Sharing* shr = new NoSharing();
+  return numberNodes(mesh, name, s, shr, true);
 }
 
 Numbering* numberOwnedNodes(
