@@ -37,11 +37,40 @@ def main(argv):
 
    # load the mesh and model and write the initial mesh to vtk
    mesh = pyCore.loadMdsMesh(model, mesh)
+   print("num verts in the mesh is ", mesh.count(0))
+
+   it = mesh.begin(0)
+   while True:
+     e = mesh.iterate(it)
+     if (not e):
+       break
+     p = pyCore.Vector3()
+     mesh.getPoint(e, 0, p)
+     print(p.x(), p.y(), p.z())
+     print(mesh.getModelTag(mesh.toModel(e)))
+   mesh.end(it)
+
+
+
    pyCore.writeASCIIVtkFiles('before', mesh);
 
    # setup uniform refiner and call mesh adapt
    ma_input = pyCore.configureUniformRefine(mesh, 2);
    pyCore.adapt(ma_input);
+
+   it = mesh.begin(0)
+   while True:
+     e = mesh.iterate(it)
+     if (not e):
+       break
+     p = pyCore.Vector3()
+     mesh.getPoint(e, 0, p)
+     print(p.x(), p.y(), p.z())
+     print(mesh.getModelTag(mesh.toModel(e)))
+   mesh.end(it)
+
+
+
 
    # write the adapted mesh to vtk
    pyCore.writeASCIIVtkFiles('after', mesh);
