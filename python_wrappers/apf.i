@@ -1,5 +1,6 @@
 %module pyCore
 %{
+#include <mpi.h>
 #include <vector>
 #include <PCU.h>
 #include <pcu_util.h>
@@ -7,11 +8,18 @@
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <gmi_sim.h>
+#include <lionPrint.h>
+
 #include <apfMesh.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <apf.h>
-
+#include <apfNumbering.h>
+/* #include <apfVector.h> */
+/* #include <apfMatrix.h> */
+/* #include <apfDynamicVector.h> */
+/* #include <canArray.h> */
+#include <spr.h>
 #include <maInput.h>
 #include <ma.h>
 
@@ -24,12 +32,12 @@
 
 /* PCU RELATED WRAPPERS */
 /* ==== FROM PCU.h ====*/
+MPI_Comm PCU_Get_Comm(void);
 int PCU_Comm_Init(void);
 int PCU_Comm_Free(void);
 
 int PCU_Comm_Self(void);
-int PCU_Comm_Peers(void)
-;
+int PCU_Comm_Peers(void);
 double PCU_Time(void);
 
 /* ==== FROM pcu_util.h ====*/
@@ -53,8 +61,83 @@ void gmi_sim_start(void);
 void gmi_sim_stop(void);
 
 
+/* LIONPRINT RELATED WRAPPER */
+void lion_set_verbosity(int lvl);
 
 /* APF RELATED WRAPPERS */
+%ignore can::Array::operator=;
+%ignore can::Array::operator[];
+%include<canArray.h>
+%template(dcanarry) can::Array<double,0>;
+%template(dcanarry3) can::Array<double,3>;
+
+
+%include<apfDynamicArray.h>
+/* %template(ddynamicarry) apf::DynamicArray<double>; */
+
+
+%include<apfArray.h>
+/* %template(darry3) apf::Array<double,3>; */
+%include<apfNew.h>
+
+%include<apfVector.h>
+/* %template(dvector3) apf::Vector<3>; */
+%include<apfMatrix.h>
+
+%ignore apf::ElementVertOp;
+%ignore apf::BuildCallback;
+%include<apfMesh.h>
+%include<apfMesh2.h>
+%extend apf::Mesh2{
+  void setVertScalarField(apf::Field* f, apf::MeshEntity* e, int downId, int downNode, double value)
+  {
+    apf::MeshEntity* downs[12];
+    int nd = self->getDownward(e, 0, downs);
+    PCU_ALWAYS_ASSERT(downId < nd);
+    apf::setScalar(f, downs[downId], downNode, value);
+  }
+  void setVertVectorField(apf::Field* f, apf::MeshEntity* e, int downId, int downNode,
+    double v1, double v2, double v3)
+  {
+    apf::MeshEntity* downs[12];
+    int nd = self->getDownward(e, 0, downs);
+    PCU_ALWAYS_ASSERT(downId < nd);
+    apf::setVector(f, downs[downId], downNode, apf::Vector3(v1, v2, v3));
+  }
+  double getVertScalarField(apf::Field* f, apf::MeshEntity* e, int downId, int downNode)
+  {
+    apf::MeshEntity* downs[12];
+    int nd = self->getDownward(e, 0, downs);
+    PCU_ALWAYS_ASSERT(downId < nd);
+    return apf::getScalar(f, downs[downId], downNode);
+  }
+  apf::Vector3 getVertVectorField(apf::Field* f, apf::MeshEntity* e, int downId, int downNode)
+  {
+    apf::MeshEntity* downs[12];
+    int nd = self->getDownward(e, 0, downs);
+    PCU_ALWAYS_ASSERT(downId < nd);
+    apf::Vector3 p;
+    apf::getVector(f, downs[downId], downNode, p);
+    return p;
+  }
+  double measureSize(apf::MeshEntity* v)
+  {
+    double sum = 0.0;
+    int count = 1;
+    int upCount = self->countUpward(v);
+    for(int i = 0; i < upCount; ++i) {
+      sum += measure(self, self->getUpward(v, i));
+      count++;
+    }
+    return sum/count;
+  }
+}
+%ignore apf::fail;
+%include<apf.h>
+%include<apfNumbering.h>
+
+
+
 namespace apf {
   apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
   apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
@@ -65,6 +148,10 @@ namespace apf {
 }
 /* void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary, */
 /*     int& which, bool& flip, int& rotate); */
+
+/* SPR RELATED WRAPPERS */
+%include<spr.h>
+
 
 /* MA RELATED WRAPPERS */
 /* let swig know about the typedefs */
