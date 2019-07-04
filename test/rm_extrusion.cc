@@ -4,6 +4,7 @@
 #include <SimPartitionedMesh.h>
 #include <SimUtil.h>
 #include <apfSIM.h>
+#include <../apf_sim/apf_simConfig.h>
 #include <apfMDS.h>
 #include <gmi.h>
 #include <gmi_sim.h>
@@ -28,8 +29,11 @@ const char* smsNew_path = NULL;
 int should_log = 0;
 bool found_bad_arg = false;
 
-
+#if SIMMODSUITE_MAJOR_VERSION >= 14
+void M_removeSurfaceExtrusionConstraints(pUnstructuredMesh, pPList);
+#else
 void M_removeSurfaceExtrusionConstraints(pMesh, pPList);
+#endif
 
 
 void getConfig(int argc, char** argv) {

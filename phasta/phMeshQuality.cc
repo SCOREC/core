@@ -279,6 +279,18 @@ void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
   free(op);
 }
 
+double err_correct_f_ = 1.0;
+
+void core_phasta_get_err_param(double& err_correct_f) {
+  // outputs:
+  err_correct_f = err_correct_f_;
+}
+
+void core_driver_set_err_param(double  err_correct_f) {
+  // inputs:
+  err_correct_f_ = err_correct_f;
+}
+
 #ifdef __cplusplus
 }
 #endif

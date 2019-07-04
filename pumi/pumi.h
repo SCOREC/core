@@ -130,6 +130,7 @@ pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh",
                       void (*fp)(const char*)=NULL);
 void pumi_geom_delete(pGeom g);
 void pumi_geom_freeze(pGeom g); // shall be called after modifying model entities
+void pumi_geom_createID(pGeom g); // generate sequential ID starting from 1
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
@@ -142,6 +143,8 @@ int pumi_gent_getDim(pGeomEnt ge);
 int pumi_gent_getID(pGeomEnt ge);
 void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
 int pumi_gent_getNumAdj (pGeomEnt g, int target_dim);
+void gmi_getAdj (gmi_model*, gmi_ent* ge, int tgt_dim, std::set<gmi_ent*>& result);
+void gmi_get2ndAdj(gmi_model*, gmi_ent* ge, int brg_dim, int tgt_dim, std::set<gmi_ent*>& result);
 void pumi_gent_getAdj (pGeomEnt g, int target_dim, std::vector<pGeomEnt>& ents);
 void pumi_gent_get2ndAdj (pGeomEnt e, int brgType, int tgtType, std::vector<pGeomEnt>& ents);
 

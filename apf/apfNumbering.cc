@@ -148,7 +148,6 @@ bool isNumbered(Numbering* n, MeshEntity* e, int node, int component)
 void number(Numbering* n, MeshEntity* e, int node, int component, int number)
 {
   PCU_ALWAYS_ASSERT( ! isFixed(n,e,node,component));
-  PCU_ALWAYS_ASSERT(number >= 0);
   n->set(e,node,component,number);
 }
 

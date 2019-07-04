@@ -3,6 +3,7 @@
 #include <apfShape.h>
 #include <SimModel.h>
 #include <MeshSim.h>
+#include <SimMeshTools.h> // M_splitMatch
 #include <SimPartitionedMesh.h>
 #include <gmi.h>
 #include <gmi_sim.h>
@@ -10,11 +11,6 @@
 #include <cstdlib>
 #include <pcu_util.h>
 #include <algorithm>
-
-/* forward declare simmetrix API M_splitMatch;
-   once it is ready in published code, remove this
-   - defined in libSimMeshTools.a */
-extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
 
 #ifdef USE_FIELDSIM
 
@@ -959,7 +955,11 @@ void MeshSIM::getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
   PCU_ALWAYS_ASSERT(PList_size(modelFaceList));
   pPList dgCopy_ents = PList_new();
   for (int i = 0; i < PList_size(modelFaceList); i++) {
+#if SIMMODSUITE_MAJOR_VERSION == 14 && SIMMODSUITE_MINOR_VERSION >= 190604
+    pGEntity modelFace = (pGEntity) PList_item(modelFaceList, i);
+#else
     pGFace modelFace = (pGFace) PList_item(modelFaceList, i);
+#endif
     pEntity dgCopy_ent = M_splitMatch(part, ent, modelFace);
     if (dgCopy_ent) {
       PList_appUnique(dgCopy_ents, dgCopy_ent);

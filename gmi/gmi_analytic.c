@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pcu_util.h>
+#include <math.h> //fabs
 
 typedef uint8_t periodic_t[2];
 typedef double ranges_t[2][2];
@@ -172,8 +173,8 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
     range(m, e, 1, r1);
     PCU_ALWAYS_ASSERT(r0[1] > r0[0]);
     PCU_ALWAYS_ASSERT(r1[1] > r1[0]);
-    double delta0 = abs(r0[1] - r0[0]) / denum;
-    double delta1 = abs(r1[1] - r1[0]) / denum;
+    double delta0 = fabs(r0[1] - r0[0]) / denum;
+    double delta1 = fabs(r1[1] - r1[0]) / denum;
 
     double x1[3];
     double x2[3];
@@ -248,7 +249,7 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
     double r0[2];
     range(m, e, 0, r0);
     PCU_ALWAYS_ASSERT(r0[1] > r0[0]);
-    double delta0 = abs(r0[1] - r0[0]) / denum;
+    double delta0 = fabs(r0[1] - r0[0]) / denum;
 
     double x1[3];
     double x2[3];
