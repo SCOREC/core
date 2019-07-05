@@ -17,7 +17,7 @@ To build _pyCore_ the following are needed
 3. [swig](http://www.swig.org/)
 4. [SCOREC::core](git@github.com:SCOREC/core.git)
 
-__NOTE__ If making core as a static libraries the `-fPIC` flag must be used. You can also make core as shared libraries by using the flag `-DBUILD_SHARED_LIBS=ON` option during cmake configuraiton.
+__NOTE__ If making core as a static libraries the `-fPIC` flag must be used. You can also make core as shared libraries by using the flag `-DBUILD_SHARED_LIBS=ON` option during cmake configuration.
 
 ### Build instructions
 
@@ -25,10 +25,10 @@ First update `./python_wrappers/example_config.sh` to point to `SCOREC::core`'s 
 
 1. `mkdir build`
 2. `cd build`
-3. `source ../example_config`
+3. `source ../example_config.sh`
 4. `make`
 
-If everything goes correctly, you will have `_pyCore.so` in your build directory. This is all you need to be able to `import` this module into python. See the example below. Note you either need to copy this file to where `PYTHONPATH` points to, or alternatively you can add the locaiton of this file to your `PYTHONPATH`.
+If everything goes correctly, you will have `_pyCore.so` in your build directory. This is all you need to be able to `import` this module into python. See the example below. Note you either need to copy this file to where `PYTHONPATH` points to, or alternatively you can add the location of this file to your `PYTHONPATH`.
 
 ## How to use the _pyCore_
 An example of using this module is provided in `test_pyCore.py`. You can run this code as follows
@@ -36,3 +36,7 @@ An example of using this module is provided in `test_pyCore.py`. You can run thi
 `test_pytCore.py -g path/to/model -m path/to/mesh`
 
 where `path/to/model` and `path/tp/mesh` are pointing to the location of the model and mesh files.
+
+There is a similar example named `test_pytCore_with_simx.py` when using simmetrix.
+
+If Simmetrix libraries are not available update the line `-DENABLE_SIMX=ON` in `example_config.sh` to `-DENABLE_SIMX=OFF`. Note that in that case some of the functionalities of the mesh adapt will not be available or will not work as intended.
