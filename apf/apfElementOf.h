@@ -14,7 +14,8 @@
 
 namespace apf {
 
-template <class T>
+template <class T,
+          std::enable_if_t<std::is_standard_layout<T>::value, bool> = 0 >
 class ElementOf : public Element
 {
   public:
@@ -37,11 +38,11 @@ class ElementOf : public Element
       getComponents(local, reinterpret_cast<double*>(value));
       return value[0];
     }
-    void getValues(NewArray<T>& values)
+    void getValues(NewArray<T>& values, int nc = 1)
     {
-      values.allocate(nen);
+      values.allocate(nen * nc);
       T* nodeValues = getNodeValues();
-      for (int i=0; i < nen; ++i)
+      for (int i=0; i < nen * nc; ++i)
         values[i] = nodeValues[i];
     }
 };
