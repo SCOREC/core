@@ -48,6 +48,7 @@ set(SOURCES
   apfSimplexAngleCalcs.cc
   apfFile.cc
   apfMIS.cc
+  apfZero.cc
 )
 
 # Package headers

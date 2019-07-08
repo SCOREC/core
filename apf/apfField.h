@@ -71,12 +71,12 @@ class FieldOp
 };
 
 Field* makeField(
-    Mesh* m,
-    const char* name,
-    int valueType,
-    int components,
-    FieldShape* shape,
-    FieldData* data);
+  Mesh* m,
+  const char* name,
+  int valueType,
+  int components,
+  FieldShape* shape,
+  FieldData* data);
 
 bool isFrozen(FieldBase * fb);
 

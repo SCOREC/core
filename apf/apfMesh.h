@@ -24,6 +24,7 @@ namespace apf {
 
 class FieldShape;
 class Field;
+class FieldBase;
 template <class T>
 class NumberingOf;
 /** \brief Numbering is meant to be a 32-bit local numbering */
@@ -365,16 +366,21 @@ class Mesh
       \details most users don't need this, functions in apf.h
                automatically call it */
     void addField(Field* f);
+    void addComplexField(ComplexField* f);
     /** \brief disassociate a field from this mesh
       \details most users don't need this, functions in apf.h
                automatically call it */
     void removeField(Field* f);
+    void removeComplexField(ComplexField* f);
     /** \brief lookup a field by its unique name */
     Field* findField(const char* name);
+    ComplexField* findComplexField(const char* name);
     /** \brief get the number of associated fields */
     int countFields();
+    int countComplexFields();
     /** \brief get the i'th associated field */
     Field* getField(int i);
+    ComplexField* getComplexField(int i);
     /** \brief associate a numbering with this mesh
       \details most users don't need this, functions in apfNumbering.h
                automatically call it */
@@ -401,6 +407,7 @@ class Mesh
   protected:
     Field* coordinateField;
     std::vector<Field*> fields;
+    std::vector<ComplexField*> ifields;
     std::vector<Numbering*> numberings;
     std::vector<GlobalNumbering*> globalNumberings;
 };

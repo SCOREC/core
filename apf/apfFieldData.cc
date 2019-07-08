@@ -297,6 +297,8 @@ template void copyFieldData<double>(
     FieldDataOf<double>* from, FieldDataOf<double>* to);
 template void copyFieldData<long>(
     FieldDataOf<long>* from, FieldDataOf<long>* to);
+template void copyFieldData<double_complex>(
+    FieldDataOf<double_complex> * from, FieldDataOf<double_complex>* to);
 
 template <class T>
 class MultiplyOp : public FieldOp

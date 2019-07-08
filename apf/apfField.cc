@@ -6,8 +6,10 @@
  */
 
 #include "apfField.h"
+#include "apfComplexField.h"
 #include "apfShape.h"
 #include "apfTagData.h"
+#include "apfZero.h"
 
 namespace apf {
 
@@ -82,8 +84,8 @@ void FieldOp::apply(FieldBase* f)
     while ((e = m->iterate(it)))
     {
       // this condition makes sure that the entity has node(s)
-	  if ( s->countNodesOn(m->getType(e)) == 0)
-		continue;
+      if ( s->countNodesOn(m->getType(e)) == 0)
+        continue;
       if ( ! this->inEntity(e))
         continue;
       int n = f->countNodesOn(e);
@@ -95,34 +97,9 @@ void FieldOp::apply(FieldBase* f)
   }
 }
 
-struct ZeroOp : public FieldOp
-{
-  ZeroOp(Field* f)
-  {
-    field = f;
-    int n = f->countComponents();
-    data.allocate(n);
-    for (int i = 0; i < n; ++i)
-      data[i] = 0;
-    ent = 0;
-  }
-  bool inEntity(MeshEntity* e)
-  {
-    ent = e;
-    return true;
-  }
-  void atNode(int n)
-  {
-    setComponents(field, ent, n, &data[0]);
-  }
-  Field* field;
-  MeshEntity* ent;
-  apf::NewArray<double> data;
-};
-
 void zeroField(Field* f)
 {
-  ZeroOp op(f);
+  ZeroOp<double> op(f);
   op.apply(f);
 }
 

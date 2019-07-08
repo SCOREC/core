@@ -13,7 +13,10 @@
 
 namespace apf {
 
-template <class T>
+template <class E>
+using enable = typename std::enable_if_t<std::is_standard_layout<E>::value, bool>;
+
+template <class T, typename = void>
 class FieldOf;
 
 template <class T>
@@ -24,7 +27,7 @@ template <class T>
 void axpy(double a, FieldOf<T>* x, FieldOf<T>* y);
 
 template <class T>
-class FieldOf : public Field
+class FieldOf<T, typename std::enable_if<std::is_standard_layout<T>::value>::type > : public Field
 {
   public:
     virtual ~FieldOf() {}
@@ -49,5 +52,4 @@ class FieldOf : public Field
 };
 
 }
-
 #endif
