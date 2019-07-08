@@ -11,6 +11,7 @@
 #include "apfMatrix.h"
 #include "apfNew.h"
 #include "apfDynamicArray.h"
+#include "apfComplex.h"
 
 #include <vector>
 #include <limits>
@@ -133,8 +134,6 @@ enum ValueType {
   MATRIX,
  /** \brief a user-defined set of components */
   PACKED,
- /** \brief a user-defined set of complex-components */
-  COMPLEX_PACKED,
  /** \brief placeholder used to set array sizes */
   VALUE_TYPES
 };
@@ -706,9 +705,6 @@ bool isPrintable(Field* f);
   */
 void fail(const char* why) __attribute__((noreturn));
 
-
-
-
 /** \brief Convert a Field from Tag to array storage. */
 void freeze(Field* f);
 
@@ -718,15 +714,32 @@ void unfreeze(Field* f);
 /** \brief Returns true iff the Field uses array storage. */
 bool isFrozen(Field* f);
 
-template <typename T>
-T* getArrayDataT(Field * f);
+/** \brief Return the contiguous array storing this field.
+  \details This function is only defined for fields
+  which are using array storage, for which apf::isFrozen
+  returns true.
+  \note If the underlying field data type is NOT double,
+  this will cause an assert fail in all compile modes.
+ */
+double* getArrayData(Field* f);
 
 /** \brief Return the contiguous array storing this field.
   \details This function is only defined for fields
   which are using array storage, for which apf::isFrozen
   returns true.
+  \note If the underlying field data type is NOT int,
+  this will cause an assert fail in all compile modes.
  */
-inline double * getArrayData(Field* f) { return getArrayDataT<double>(f); }
+int* getIntArrayData(Field* f);
+
+/** \brief Return the contiguous array storing this field.
+  \details This function is only defined for fields
+  which are using array storage, for which apf::isFrozen
+  returns true.
+  \note If the underlying field data type is NOT double_complex,
+  this will cause an assert fail in all compile modes.
+ */
+double_complex* getComplexArrayData(Field * f);
 
 /** \brief Initialize all nodal values with all-zero components */
 void zeroField(Field* f);

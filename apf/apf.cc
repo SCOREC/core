@@ -74,8 +74,6 @@ Field* makeField(
     f = new MatrixField();
   else if (valueType == PACKED)
     f = new PackedField(components);
-  else if (valueType == COMPLEX_PACKED)
-    f = new ComplexPackedField(components);
   else
     fail("invalid valueType in field construction\n");
   f->init(name,m,shape,data);
@@ -163,6 +161,7 @@ void destroyField(Field* f)
 
 void setScalar(Field* f, MeshEntity* e, int node, double value)
 {
+  PCU_DEBUG_ASSERT(f->getValueType() == SCALAR);
   ScalarField* field = static_cast<ScalarField*>(f);
   double tmp[1] = {value};
   field->setNodeValue(e,node,tmp);
@@ -170,6 +169,7 @@ void setScalar(Field* f, MeshEntity* e, int node, double value)
 
 double getScalar(Field* f, MeshEntity* e, int node)
 {
+  PCU_DEBUG_ASSERT(f->getValueType() == SCALAR);
   ScalarField* field = static_cast<ScalarField*>(f);
   double value[1];
   field->getNodeValue(e,node,value);
@@ -178,6 +178,7 @@ double getScalar(Field* f, MeshEntity* e, int node)
 
 void setVector(Field* f, MeshEntity* e, int node, Vector3 const& value)
 {
+  PCU_DEBUG_ASSERT(f->getValueType() == VECTOR);
   VectorField* field = static_cast<VectorField*>(f);
   Vector3 tmp[1] = {value};
   field->setNodeValue(e,node,tmp);
@@ -185,6 +186,7 @@ void setVector(Field* f, MeshEntity* e, int node, Vector3 const& value)
 
 void getVector(Field* f, MeshEntity* e, int node, Vector3& value)
 {
+  PCU_DEBUG_ASSERT(f->getValueType() == VECTOR);
   VectorField* field = static_cast<VectorField*>(f);
   Vector3 tmp[1];
   field->getNodeValue(e,node,tmp);
@@ -193,6 +195,7 @@ void getVector(Field* f, MeshEntity* e, int node, Vector3& value)
 
 void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value)
 {
+  PCU_DEBUG_ASSERT(f->getValueType() == MATRIX);
   MatrixField* field = static_cast<MatrixField*>(f);
   Matrix3x3 tmp[1] = {value};
   field->setNodeValue(e,node,tmp);
@@ -200,6 +203,7 @@ void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value)
 
 void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 {
+  PCU_DEBUG_ASSERT(f->getValueType() == MATRIX);
   MatrixField* field = static_cast<MatrixField*>(f);
   Matrix3x3 tmp[1];
   field->getNodeValue(e,node,tmp);
@@ -208,11 +212,15 @@ void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 
 void setComponents(Field* f, MeshEntity* e, int node, double const* components)
 {
+  PCU_DEBUG_ASSERT(f->getScalarType() == Mesh::DOUBLE &&
+                   (f->getValueType() == SCALAR || f->getValueType() == PACKED);
   f->getData()->setNodeComponents(e,node,components);
 }
 
 void getComponents(Field* f, MeshEntity* e, int node, double* components)
 {
+  PCU_DEBUG_ASSERT(f->getScalarType() == Mesh::DOUBLE &&
+                   (f->getValueType() == SCALAR || f->getValueType() == PACKED);
   f->getData()->getNodeComponents(e,node,components);
 }
 
