@@ -213,14 +213,14 @@ void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 void setComponents(Field* f, MeshEntity* e, int node, double const* components)
 {
   PCU_DEBUG_ASSERT(f->getScalarType() == Mesh::DOUBLE &&
-                   (f->getValueType() == SCALAR || f->getValueType() == PACKED);
+                   (f->getValueType() == SCALAR || f->getValueType() == PACKED));
   f->getData()->setNodeComponents(e,node,components);
 }
 
 void getComponents(Field* f, MeshEntity* e, int node, double* components)
 {
   PCU_DEBUG_ASSERT(f->getScalarType() == Mesh::DOUBLE &&
-                   (f->getValueType() == SCALAR || f->getValueType() == PACKED);
+                   (f->getValueType() == SCALAR || f->getValueType() == PACKED));
   f->getData()->getNodeComponents(e,node,components);
 }
 
