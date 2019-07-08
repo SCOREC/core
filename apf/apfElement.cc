@@ -12,7 +12,7 @@
 
 namespace apf {
 
-void Element::init(Field* f, MeshEntity* e, VectorElement* p)
+void ElementBase::init(FieldBase* f, MeshEntity* e, VectorElement* p)
 {
   field = f;
   mesh = f->getMesh();
@@ -24,18 +24,14 @@ void Element::init(Field* f, MeshEntity* e, VectorElement* p)
   getNodeData();
 }
 
-Element::Element(Field* f, MeshEntity* e)
+ElementBase::ElementBase(FieldBase* f, MeshEntity* e)
 {
   init(f,e,0);
 }
 
-Element::Element(Field* f, VectorElement* p)
+ElementBase::ElementBase(FieldBase* f, VectorElement* p)
 {
   init(f,p->getEntity(),p);
-}
-
-Element::~Element()
-{
 }
 
 Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
@@ -72,8 +68,13 @@ Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
   }
 }
 
-void Element::getGlobalGradients(Vector3 const& local,
-                                 NewArray<Vector3>& globalGradients)
+int countNodes(ElementBase * e)
+{
+  return e->getShape()->countNodes();
+}
+
+void ElementBase::getGlobalGradients(Vector3 const& local,
+                                     NewArray<Vector3>& globalGradients)
 {
   Matrix3x3 J;
   parent->getJacobian(local,J);
@@ -83,22 +84,6 @@ void Element::getGlobalGradients(Vector3 const& local,
   globalGradients.allocate(nen);
   for (int i=0; i < nen; ++i)
     globalGradients[i] = jinv * localGradients[i];
-}
-
-void Element::getComponents(Vector3 const& xi, double* c)
-{
-  NewArray<double> shapeValues;
-  shape->getValues(mesh, entity, xi, shapeValues);
-  for (int ci = 0; ci < nc; ++ci)
-    c[ci] = 0;
-  for (int ni = 0; ni < nen; ++ni)
-    for (int ci = 0; ci < nc; ++ci)
-      c[ci] += nodeData[ni * nc + ci] * shapeValues[ni];
-}
-
-void Element::getNodeData()
-{
-  field->getData()->getElementData(entity,nodeData);
 }
 
 }//namespace apf
