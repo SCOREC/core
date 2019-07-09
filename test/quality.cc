@@ -54,10 +54,10 @@ static void processMesh(apf::Mesh2* m)
   int d = m->getDimension();
   apf::MeshEntity* elem;
   apf::MeshIterator* elems = m->begin(d);
-  ma::IdentitySizeField I(m);
+  ma::IdentitySizeField II(m);
   while ((elem = m->iterate(elems)))
   {
-    double q = ma::measureElementQuality(m, &I, elem);
+    double q = ma::measureElementQuality(m, &II, elem);
     q = pow(q, (1.0/d));
     avgQuality += q;
     minQuality = fmin(minQuality, q);

@@ -21,6 +21,7 @@ int main(int ac, char** av)
   apf::ComplexField* f = apf::createComplexPackedField(m,"foo",cmps);
   int vrts = 0;
   apf::zeroField(f);
+  double_complex zero = {0,0};
   double_complex r[cmps];
   double_complex w[cmps] = { {1,2},{2,1} };
   {
@@ -29,7 +30,7 @@ int main(int ac, char** av)
     while ((vert = m->iterate(it)))
     {
       apf::getComponents(f,vert,0,&r[0]);
-      PCU_ALWAYS_ASSERT(r[0] == double_complex(0,0) && r[1] == double_complex(0,0));
+      PCU_ALWAYS_ASSERT(r[0] == zero && r[1] == zero);
       apf::setComponents(f,vert,0,&w[0]);
       apf::getComponents(f,vert,0,&r[0]);
       PCU_ALWAYS_ASSERT(r[0] == w[0] && r[1] == w[1]);

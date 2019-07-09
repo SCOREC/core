@@ -1,9 +1,7 @@
-#ifdef C_COMPLEX
-  #include <complex.h>
-#endif
-
-#define CXX_COMPLEX 1
-#ifdef CXX_COMPLEX
+#ifndef CXX_COMPLEX
+#include <complex.h>
+typedef double _Complex double_complex;
+#else
   #include <complex>
   using double_complex = std::complex<double>;
 #endif

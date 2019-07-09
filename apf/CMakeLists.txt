@@ -96,7 +96,7 @@ target_link_libraries(apf
      lion
      can
      mth
-   )
+     )
 
 scorec_export_library(apf)
 

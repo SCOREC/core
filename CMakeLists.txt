@@ -84,6 +84,11 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
+option(CXX_COMPLEX "Use std::complex<double> instead of double_complex" OFF)
+if(CXX_COMPLEX)
+  add_definitions(-DCXX_COMPLEX)
+endif()
+
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
