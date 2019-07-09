@@ -76,6 +76,7 @@ set(HEADERS
   apfFieldData.h
   apfNumberingClass.h
   apfComplex.h
+  apfComplexType.h
 )
 
 # Add the apf library
