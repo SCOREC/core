@@ -49,6 +49,8 @@ set(APF_SOURCES
   apfBoundaryToElementXi.cc
   apfSimplexAngleCalcs.cc
   apfFile.cc
+  apfComplex.h
+  apfComplexType.h
 )
 
 set(APF_HEADERS
