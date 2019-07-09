@@ -400,7 +400,7 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   std::vector<apf::Field*> frozen_fields;
   for (int i=0; i<m->countFields(); ++i)
   {
-    apf::Field * f = m->getField(i);
+    pField * f = m->getField(i);
     if (isFrozen(f))
     {
       frozen_fields.push_back(f); // turn field data from tag to array
