@@ -34,6 +34,10 @@ mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
+mpi_test(complex_test 1
+         ./complex
+         "${MESHES}/cube/cube.dmg"
+         "${MESHES}/cube/pumi11/cube.smb")
 mpi_test(verify_convert 1 ./verify_convert)
 mpi_test(test_integrator 1
          ./test_integrator

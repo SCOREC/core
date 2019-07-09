@@ -14,7 +14,7 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "apfComplex.h"
+#include "apfComplexType.h"
 #include "apfVector.h"
 #include "apfDynamicArray.h"
 
@@ -22,6 +22,7 @@ struct gmi_model;
 
 namespace apf {
 
+class ComplexField;
 class FieldShape;
 class Field;
 class FieldBase;

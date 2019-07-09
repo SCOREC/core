@@ -8,6 +8,7 @@
 #include <PCU.h>
 #include "apfCoordData.h"
 #include "apfVectorField.h"
+#include "apfComplex.h"
 #include "apfComplexField.h"
 #include "apfShape.h"
 #include "apfNumbering.h"

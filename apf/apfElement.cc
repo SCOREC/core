@@ -8,31 +8,38 @@
 #include "apfElement.h"
 #include "apfShape.h"
 #include "apfMesh.h"
+#include "apfComplexType.h"
 #include "apfVectorElement.h"
 
 namespace apf {
 
-void ElementBase::init(FieldBase* f, MeshEntity* e, VectorElement* p)
-{
-  field = f;
-  mesh = f->getMesh();
-  entity = e;
-  shape = f->getShape()->getEntityShape(mesh->getType(e));
-  parent = p;
-  nen = shape->countNodes();
-  nc = f->countComponents();
-  getNodeData();
-}
-
-ElementBase::ElementBase(FieldBase* f, MeshEntity* e)
+template <class T>
+ElementBase<T>::ElementBase(FieldBase* f, MeshEntity* e)
 {
   init(f,e,0);
 }
 
-ElementBase::ElementBase(FieldBase* f, VectorElement* p)
+template <class T>
+ElementBase<T>::ElementBase(FieldBase* f, VectorElement* p)
 {
   init(f,p->getEntity(),p);
 }
+
+template <class T>
+void ElementBase<T>::getGlobalGradients(Vector3 const& local, NewArray<Vector3>& globalGradients)
+{
+  Matrix3x3 J;
+  parent->getJacobian(local,J);
+  Matrix3x3 jinv = getJacobianInverse(J, getDimension());
+  NewArray<Vector3> localGradients;
+  shape->getLocalGradients(mesh, entity, local,localGradients);
+  globalGradients.allocate(nen);
+  for (int i=0; i < nen; ++i)
+    globalGradients[i] = jinv * localGradients[i];
+}
+
+template class ElementBase<double>;
+template class ElementBase<double_complex>;
 
 Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
 {
@@ -66,24 +73,6 @@ Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
     default:
       fail("getJacobianInverse: bad dimension");
   }
-}
-
-int countNodes(ElementBase * e)
-{
-  return e->getShape()->countNodes();
-}
-
-void ElementBase::getGlobalGradients(Vector3 const& local,
-                                     NewArray<Vector3>& globalGradients)
-{
-  Matrix3x3 J;
-  parent->getJacobian(local,J);
-  Matrix3x3 jinv = getJacobianInverse(J, getDimension());
-  NewArray<Vector3> localGradients;
-  shape->getLocalGradients(mesh, entity, local,localGradients);
-  globalGradients.allocate(nen);
-  for (int i=0; i < nen; ++i)
-    globalGradients[i] = jinv * localGradients[i];
 }
 
 }//namespace apf

@@ -1,6 +1,6 @@
 #include "apfComplexField.h"
 #include "apfArrayData.h"
-#include "apfElement.h"
+#include "apfElementOf.h"
 #include "apfTagData.h"
 #include "apfZero.h"
 #include <pcu_util.h>
@@ -28,12 +28,12 @@ void ComplexPackedField::axpy(double_complex, Field*)
   fail("ComplexPackedField::axpy is unimplemented");
 }
 
-ComplexField* makeComplexField(Mesh* m,
-                               const char* name,
-                               int valueType,
-                               int components,
-                               FieldShape * shape,
-                               FieldData * data)
+ComplexField* makeComplexGeneralField(Mesh* m,
+                                      const char* name,
+                                      int valueType,
+                                      int components,
+                                      FieldShape * shape,
+                                      FieldData * data)
 {
   PCU_ALWAYS_ASSERT(!m->findComplexField(name));
   ComplexField* f = 0;
@@ -48,12 +48,13 @@ ComplexField* makeComplexField(Mesh* m,
 
 ComplexField* createComplexPackedField(Mesh* m,
                                        const char* name,
-                                       int valueType,
                                        int components,
                                        FieldShape* shape)
 {
-  return makeComplexField(m,name,valueType,components,shape,
-                          new TagDataOf<double_complex>);
+  if(shape == NULL)
+    shape = m->getShape();
+  return makeComplexGeneralField(m,name,PACKED,components,shape,
+                                 new TagDataOf<double_complex>);
 }
 
 void freeze(ComplexField* f)
@@ -74,7 +75,7 @@ bool isFrozen(ComplexField* f)
   return isFrozen(static_cast<FieldBase*>(f));
 }
 
-void zero(ComplexField* f)
+void zeroField(ComplexField* f)
 {
   ZeroOp<double_complex> op(f);
   op.apply(f);
@@ -82,13 +83,11 @@ void zero(ComplexField* f)
 
 void setComponents(ComplexField* f, MeshEntity* e, int node, double_complex const * components)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == SCALAR || f->getValueType() == PACKED);
   f->getData()->setNodeComponents(e,node,components);
 }
 
 void getComponents(ComplexField* f, MeshEntity* e, int node, double_complex * components)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == SCALAR || f->getValueType() == PACKED);
   f->getData()->getNodeComponents(e,node,components);
 }
 
@@ -107,6 +106,16 @@ void destroyElement(ComplexElement* e)
   delete e;
 }
 
+MeshElement* getMeshElement(ComplexElement* e)
+{
+  return e->getParent();
+}
+
+MeshEntity* getMeshEntity(ComplexElement* e)
+{
+  return e->getEntity();
+}
+
 void getComponents(ComplexElement* e, Vector3 const& param, double_complex* components)
 {
   e->getComponents(param,components);
@@ -114,9 +123,23 @@ void getComponents(ComplexElement* e, Vector3 const& param, double_complex* comp
 
 int countNodes(ComplexElement* e)
 {
-  return countNodes(static_cast<ElementBase*>(e));
+  return countNodes<double_complex>(e);
 }
 
-
+void getShapeValues(ComplexElement* e, Vector3 const& local, NewArray<double>& values)
+{
+  getShapeValues<double_complex>(e,local,values);
+}
+void getShapeGrads(ComplexElement* e, Vector3 const& local, NewArray<Vector3>& grads)
+{
+  getShapeGrads<double_complex>(e,local,grads);
+}
+void getPackedNodes(ComplexElement* e, NewArray<double_complex>& values)
+{
+  FieldBase * f = e->getFieldBase();
+  int cmps = f->countComponents();
+  ComplexElementOf<double_complex>* element = static_cast<ComplexElementOf<double_complex>*>(e);
+  element->getValues(values,cmps);
+}
 
 }

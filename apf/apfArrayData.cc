@@ -163,8 +163,11 @@ template double_complex* getArrayDataT(FieldBase* field);
 template int* getArrayDataT(FieldBase* field);
 template double* getArrayDataT(FieldBase* field);
 
-double * getArrayData(Field * f) { return getArrayDataT<double>(f); }
+double * getDoubleArrayData(Field * f) { return getArrayDataT<double>(f); }
 int * getIntArrayData(Field * f) { return getArrayDataT<int>(f); }
-double_complex * getComplexArrayData(Field * f) { return getArrayDataT<double_complex>(f); }
+
+class ComplexField;
+double_complex * getComplexArrayData(ComplexField * f) { return getArrayDataT<double_complex>(reinterpret_cast<FieldBase*>(f)); }
+
 
 }

@@ -2,6 +2,7 @@
 #define APFZERO_H
 
 #include "apfField.h"
+#include "apfNew.h"
 
 namespace apf
 {

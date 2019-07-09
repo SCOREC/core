@@ -9,6 +9,7 @@
 #define APF_H
 
 #include "apfMatrix.h"
+#include "apfElementType.h"
 #include "apfNew.h"
 #include "apfDynamicArray.h"
 
@@ -31,7 +32,6 @@
 namespace apf {
 
 class Field;
-class Element;
 class Mesh;
 class MeshEntity;
 class VectorElement;
@@ -724,7 +724,9 @@ bool isFrozen(Field* f);
   \note If the underlying field data type is NOT double,
   this will cause an assert fail in all compile modes.
  */
-double* getArrayData(Field* f);
+double * getDoubleArrayData(Field* f);
+// \note deprecated, retained for legacy compatibility until C++14 switch
+inline double* getArrayData(Field* f) { return getDoubleArrayData(f); }
 
 /** \brief Return the contiguous array storing this field.
   \details This function is only defined for fields

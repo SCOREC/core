@@ -6,6 +6,7 @@
  */
 
 #include "apf.h"
+#include "apfElement.h"
 #include "apfScalarField.h"
 #include "apfScalarElement.h"
 #include "apfVectorField.h"
@@ -165,7 +166,6 @@ void destroyField(Field* f)
 
 void setScalar(Field* f, MeshEntity* e, int node, double value)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == SCALAR);
   ScalarField* field = static_cast<ScalarField*>(f);
   double tmp[1] = {value};
   field->setNodeValue(e,node,tmp);
@@ -173,7 +173,6 @@ void setScalar(Field* f, MeshEntity* e, int node, double value)
 
 double getScalar(Field* f, MeshEntity* e, int node)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == SCALAR);
   ScalarField* field = static_cast<ScalarField*>(f);
   double value[1];
   field->getNodeValue(e,node,value);
@@ -182,7 +181,6 @@ double getScalar(Field* f, MeshEntity* e, int node)
 
 void setVector(Field* f, MeshEntity* e, int node, Vector3 const& value)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == VECTOR);
   VectorField* field = static_cast<VectorField*>(f);
   Vector3 tmp[1] = {value};
   field->setNodeValue(e,node,tmp);
@@ -190,7 +188,6 @@ void setVector(Field* f, MeshEntity* e, int node, Vector3 const& value)
 
 void getVector(Field* f, MeshEntity* e, int node, Vector3& value)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == VECTOR);
   VectorField* field = static_cast<VectorField*>(f);
   Vector3 tmp[1];
   field->getNodeValue(e,node,tmp);
@@ -199,7 +196,6 @@ void getVector(Field* f, MeshEntity* e, int node, Vector3& value)
 
 void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == MATRIX);
   MatrixField* field = static_cast<MatrixField*>(f);
   Matrix3x3 tmp[1] = {value};
   field->setNodeValue(e,node,tmp);
@@ -207,7 +203,6 @@ void setMatrix(Field* f, MeshEntity* e, int node, Matrix3x3 const& value)
 
 void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 {
-  PCU_DEBUG_ASSERT(f->getValueType() == MATRIX);
   MatrixField* field = static_cast<MatrixField*>(f);
   Matrix3x3 tmp[1];
   field->getNodeValue(e,node,tmp);
@@ -216,15 +211,11 @@ void getMatrix(Field* f, MeshEntity* e, int node, Matrix3x3& value)
 
 void setComponents(Field* f, MeshEntity* e, int node, double const* components)
 {
-  PCU_DEBUG_ASSERT(f->getScalarType() == Mesh::DOUBLE &&
-                   (f->getValueType() == SCALAR || f->getValueType() == PACKED));
   f->getData()->setNodeComponents(e,node,components);
 }
 
 void getComponents(Field* f, MeshEntity* e, int node, double* components)
 {
-  PCU_DEBUG_ASSERT(f->getScalarType() == Mesh::DOUBLE &&
-                   (f->getValueType() == SCALAR || f->getValueType() == PACKED));
   f->getData()->getNodeComponents(e,node,components);
 }
 
@@ -255,49 +246,42 @@ MeshEntity* getMeshEntity(Element* e)
 
 double getScalar(Element* e, Vector3 const& param)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<ScalarElement*>(e) != NULL);
   ScalarElement* element = static_cast<ScalarElement*>(e);
   return element->getValue(param);
 }
 
 void getGrad(Element* e, Vector3 const& param, Vector3& g)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<ScalarElement*>(e) != NULL);
   ScalarElement* element = static_cast<ScalarElement*>(e);
   element->grad(param,g);
 }
 
 void getVector(Element* e, Vector3 const& param, Vector3& value)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<VectorElement*>(e) != NULL);
   VectorElement* element = static_cast<VectorElement*>(e);
   value = element->getValue(param);
 }
 
 double getDiv(Element* e, Vector3 const& param)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<VectorElement*>(e) != NULL);
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->div(param);
 }
 
 void getCurl(Element* e, Vector3 const& param, Vector3& c)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<VectorElement*>(e) != NULL);
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->curl(param,c);
 }
 
 void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<VectorElement*>(e) != NULL);
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->grad(param,deriv);
 }
 
 void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<MatrixElement*>(e) != NULL);
   MatrixElement* element = static_cast<MatrixElement*>(e);
   value = element->getValue(param);
 }
@@ -305,7 +289,6 @@ void getMatrix(Element* e, Vector3 const& param, Matrix3x3& value)
 
 void getMatrixGrad(Element* e, Vector3 const& param, Vector<27>& deriv)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<MatrixElement*>(e) != NULL);
   MatrixElement* element = static_cast<MatrixElement*>(e);
   return element->grad(param,deriv);
 }
@@ -394,26 +377,23 @@ double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
 
 int countNodes(Element* e)
 {
-  return countNodes(static_cast<ElementBase*>(e));
+  return countNodes<double>(e);
 }
 
 void getScalarNodes(Element* e, NewArray<double>& values)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<ElementOf<double>*>(e) != NULL);
   ElementOf<double>* element = static_cast<ElementOf<double>*>(e);
   element->getValues(values);
 }
 
 void getVectorNodes(Element* e, NewArray<Vector3>& values)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<ElementOf<Vector3>*>(e) != NULL);
   ElementOf<Vector3>* element = static_cast<ElementOf<Vector3>*>(e);
   element->getValues(values);
 }
 
 void getMatrixNodes(Element* e, NewArray<Matrix3x3>& values)
 {
-  PCU_DEBUG_ASSERT(dynamic_cast<ElementOf<Matrix3x3>*>(e) != NULL);
   ElementOf<Matrix3x3>* element = static_cast<ElementOf<Matrix3x3>*>(e);
   element->getValues(values);
 }
@@ -422,7 +402,6 @@ void getPackedNodes(Element* e, NewArray<double>& values)
 {
   FieldBase* f = e->getFieldBase();
   int cmps = f->countComponents();
-  PCU_DEBUG_ASSERT(dynamic_cast<ElementOf<double>*>(e) != NULL);
   ElementOf<double>* element = static_cast<ElementOf<double>*>(e);
   element->getValues(values,cmps);
 }
@@ -430,13 +409,13 @@ void getPackedNodes(Element* e, NewArray<double>& values)
 void getShapeValues(Element* e, Vector3 const& local,
     NewArray<double>& values)
 {
-  e->getShape()->getValues(e->getMesh(), e->getEntity(), local,values);
+  getShapeValues<double>(e,local,values);
 }
 
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads)
 {
-  e->getGlobalGradients(local,grads);
+  getShapeGrads<double>(e,local,grads);
 }
 
 FieldShape* getShape(Field* f)

@@ -15,9 +15,12 @@
 
 namespace apf {
 
+Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim);
+
 class EntityShape;
 class VectorElement;
 
+template <class T>
 class ElementBase
 {
 public:
@@ -34,28 +37,6 @@ public:
   Mesh* getMesh() { return mesh; }
   EntityShape * getShape() { return shape; }
   FieldBase* getFieldBase() { return field; }
-protected:
-  void init(FieldBase* f, MeshEntity* e, VectorElement* p);
-  virtual void getNodeData() = 0;
-  FieldBase* field;
-  Mesh* mesh;
-  MeshEntity* entity;
-  EntityShape* shape;
-  VectorElement* parent;
-  int nen;
-  int nc;
-};
-
-// not to be confused with ElementOf<T>, which is about
-//  Scalar/Vector/Matrix node/value types
-//  this is about the underlying scalar type (real/complex)
-template <class T>
-class ElementT : public ElementBase
-{
-public:
-  ElementT(FieldBase* f, MeshEntity* e) : ElementBase(f,e) { }
-  ElementT(FieldBase* f, VectorElement* p) : ElementBase(f,p) { }
-  virtual ~ElementT() {}
   void getComponents(Vector3 const& xi, T * c)
   {
     NewArray<double> shapeValues;
@@ -67,26 +48,49 @@ public:
         c[ci] += nodeData[ni * nc + ci] * shapeValues[ni];
   }
 protected:
-  virtual void getNodeData()
+  void init(FieldBase* f, MeshEntity* e, VectorElement* p)
+  {
+    field = f;
+    mesh = f->getMesh();
+    entity = e;
+    shape = f->getShape()->getEntityShape(mesh->getType(e));
+    parent = p;
+    nen = shape->countNodes();
+    nc = f->countComponents();
+    getNodeData();
+  }
+  void getNodeData()
   {
     reinterpret_cast<FieldDataOf<T>*>(field->getData())->getElementData(entity,nodeData);
   }
   NewArray<T> nodeData;
+  FieldBase* field;
+  Mesh* mesh;
+  MeshEntity* entity;
+  EntityShape* shape;
+  VectorElement* parent;
+  int nen;
+  int nc;
 };
 
-class Element : public ElementT<double>
+
+template <class T>
+int countNodes(ElementBase<T> * e)
 {
-  public:
-    Element(FieldBase* f, MeshEntity* e)
-      : ElementT<double>(f,e)
-    { }
-    Element(FieldBase* f, VectorElement* p)
-      : ElementT<double>(f,p)
-    { }
-};
+  return e->getShape()->countNodes();
+}
 
-Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim);
-int countNodes(ElementBase * e);
+template <class T>
+void getShapeValues(ElementBase<T> * e, Vector3 const& local, NewArray<double>& values)
+{
+  e->getShape()->getValues(e->getMesh(),e->getEntity(),local,values);
+}
+
+template <class T>
+void getShapeGrads(ElementBase<T> * e, Vector3 const& local, NewArray<Vector3>& grads)
+{
+  e->getGlobalGradients(local,grads);
+}
 
 }//namespace apf
 

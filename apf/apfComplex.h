@@ -1,22 +1,13 @@
 #ifndef APFCOMPLEX_H_
 #define APFCOMPLEX_H_
 
-#ifdef C_COMPLEX
-  #include <complex.h>
-#endif
-
-#define CXX_COMPLEX 1
-#ifdef CXX_COMPLEX
-  #include <complex>
-  using double_complex = std::complex<double>;
-#endif
+#include "apfComplexType.h"
+#include "apfComplexElement.h"
 
 namespace apf
 {
 
 // forward decls for the interface
-class ComplexElement;
-class ComplexField;
 class Mesh;
 class FieldShape;
 class MeshEntity;
@@ -26,11 +17,10 @@ class Vector3;
 template <class T>
 class NewArray;
 
-ComplexField* createComplexField(Mesh* m,
-                                 const char* name,
-                                 int valueType,
-                                 int components,
-                                 FieldShape* shape);
+ComplexField* createComplexPackedField(Mesh* m,
+                                       const char* name,
+                                       int components,
+                                       FieldShape* shape = NULL);
 
 void freeze(ComplexField* f);
 void unfreeze(ComplexField* f);
@@ -58,8 +48,8 @@ MeshEntity* getMeshEntity(ComplexElement* e);
 
 void getComponents(ComplexElement* e, Vector3 const& param, double_complex* components);
 int countNodes(ComplexElement* e);
-void getShapeValues(ComplexElement* e);
-void getShapeGrads(ComplexElement* e);
+void getShapeValues(ComplexElement* e, Vector3 const& local, NewArray<double>& values);
+void getShapeGrads(ComplexElement* e, Vector3 const& local, NewArray<double>& grades);
 void getPackedNodes(ComplexElement* e, NewArray<double_complex>& values);
 
 }

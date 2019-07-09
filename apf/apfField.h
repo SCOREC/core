@@ -10,10 +10,10 @@
 
 #include <string>
 #include "apfMesh.h"
+#include "apfElementType.h"
 
 namespace apf {
 
-class Element;
 class FieldData;
 
 class FieldBase
