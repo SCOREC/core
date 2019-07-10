@@ -14,8 +14,6 @@
 
 namespace apf {
 
-// std::enable_if_t<std::is_standard_layout<T>::value, bool> = 0 >
-
 template <class T>
 class ElementOf : public Element
 {

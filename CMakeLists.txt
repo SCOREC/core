@@ -84,9 +84,11 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
-option(CXX_COMPLEX "Use std::complex<double> instead of double_complex" OFF)
-if(CXX_COMPLEX)
-  add_definitions(-DCXX_COMPLEX)
+option(PUMI_CXX_COMPLEX "Use std::complex<double> instead of double_complex" OFF)
+if(PUMI_CXX_COMPLEX)
+  set(PUMI_COMPLEX PUMI_CXX_COMPLEX)
+else()
+  set(PUMI_COMPLEX PUMI_C_COMPLEX)
 endif()
 
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)

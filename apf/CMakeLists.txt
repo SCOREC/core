@@ -3,6 +3,9 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/apfComplexType.h.in
+               ${CMAKE_CURRENT_SOURCE_DIR}/apfComplexType.h @ONLY)
+
 # Package sources
 set(SOURCES
   apf.cc

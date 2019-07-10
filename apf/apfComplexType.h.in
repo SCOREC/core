@@ -1,4 +1,6 @@
-#ifndef CXX_COMPLEX
+#define @PUMI_COMPLEX@
+
+#ifndef PUMI_CXX_COMPLEX
 #include <complex.h>
 typedef double _Complex double_complex;
 #else
