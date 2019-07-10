@@ -2,11 +2,13 @@
 #define APFCOMPLEX_H_
 
 #include "apfComplexType.h"
+#include "apfElementType.h"
 
 namespace apf
 {
 
 // forward decls for the interface
+class ComplexField;
 class Mesh;
 class FieldShape;
 class MeshEntity;
