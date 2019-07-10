@@ -2,7 +2,6 @@
 #define APFCOMPLEX_H_
 
 #include "apfComplexType.h"
-#include "apfComplexElement.h"
 
 namespace apf
 {
