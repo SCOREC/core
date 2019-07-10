@@ -75,6 +75,7 @@ set(APF_HEADERS
   apfField.h
   apfFieldData.h
   apfNumberingClass.h
+  apfElementType.h
 )
 
 set(APF_SOURCES
