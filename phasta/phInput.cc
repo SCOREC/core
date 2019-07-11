@@ -85,8 +85,7 @@ static void setDefaults(Input& in)
   in.gradingFactor = 2.0;
   in.simCooperation = 1;
   in.writeSimLog = 0;
-  in.measureAdaptedMesh = 0;
-  in.simSizeLowerBound = 0.0;
+  in.simCFLUpperBound = 1.0e16;
   in.simSizeUpperBound = 1.0e16;
   in.simMaxAdaptMeshElements = 1.0e16;
 }
@@ -172,8 +171,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["gradingFactor"] = &in.gradingFactor;
   intMap["simCooperation"] = &in.simCooperation;
   intMap["writeSimLog"] = &in.writeSimLog;
-  intMap["measureAdaptedMesh"] = &in.measureAdaptedMesh;
-  dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
+  dblMap["simCFLUpperBound"] = &in.simCFLUpperBound;
   dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
   dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
 }
