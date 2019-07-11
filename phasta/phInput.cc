@@ -85,7 +85,7 @@ static void setDefaults(Input& in)
   in.gradingFactor = 2.0;
   in.simCooperation = 1;
   in.writeSimLog = 0;
-  in.simCFLUpperBound = 20.0;
+  in.simCFLUpperBound = 1.0e16;
   in.simSizeUpperBound = 1.0e16;
   in.simMaxAdaptMeshElements = 1.0e16;
 }
