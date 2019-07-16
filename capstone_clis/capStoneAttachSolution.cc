@@ -476,34 +476,6 @@ void setSizeField(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeFi
 
 }
 
-void setSizeFieldAlt2(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeField,apf::Field* currentSize,double lambda_max,double lambda_cutoff,double h_global,double factor)
-{
-  apf::MeshIterator* it=mesh->begin(0);
-  apf::MeshEntity* vert;
-  int counter3 = 0;
-  double h_special = -1;
-  while( (vert = mesh->iterate(it)) )
-  {
-    double h_v = h_special; //set default size as user specified input
-    double lambda_vert = apf::getScalar(lambdaMaxField,vert,0);
-    double h_v_curr = apf::getScalar(currentSize,vert,0);
-    if(lambda_vert > lambda_cutoff)
-    {
-      h_v = h_v_curr / factor;
-    }
-    else
-    {
-      h_v = h_global;
-    }
-    //h_global is user-specified max size
-    if(h_v > h_global) //maximum value for size field
-      h_v = h_global;
-    apf::setScalar(sizeField,vert,0,h_v);
-  }
-  mesh->end(it);
-
-}
-
 void setSizeFieldAlt(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeField,apf::Field* currentSize,double lambda_max,double lambda_cutoff,double h_global,double factor)
 {
   apf::MeshIterator* it=mesh->begin(0);
@@ -518,6 +490,34 @@ void setSizeFieldAlt(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* siz
     if(lambda_vert > lambda_cutoff)
     {
       h_v = sqrt(lambda_max/lambda_vert/factor)*h_v_curr;
+    }
+    else
+    {
+      h_v = h_global;
+    }
+    //h_global is user-specified max size
+    if(h_v > h_global) //maximum value for size field
+      h_v = h_global;
+    apf::setScalar(sizeField,vert,0,h_v);
+  }
+  mesh->end(it);
+
+}
+
+void setSizeFieldAlt2(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeField,apf::Field* currentSize,double lambda_max,double lambda_cutoff,double h_global,double factor)
+{
+  apf::MeshIterator* it=mesh->begin(0);
+  apf::MeshEntity* vert;
+  int counter3 = 0;
+  double h_special = -1;
+  while( (vert = mesh->iterate(it)) )
+  {
+    double h_v = h_special; //set default size as user specified input
+    double lambda_vert = apf::getScalar(lambdaMaxField,vert,0);
+    double h_v_curr = apf::getScalar(currentSize,vert,0);
+    if(lambda_vert > lambda_cutoff)
+    {
+      h_v = h_v_curr / factor;
     }
     else
     {
@@ -741,6 +741,7 @@ int main(int argc, char** argv)
   //Get Size Field for Adapt
   apf::Field* lambdaMaxField = apf::createLagrangeField(volMesh,"lambdaMax",apf::SCALAR,1);
   apf::Field* speedLambdaMaxField = apf::createLagrangeField(volMesh,"speedLambdaMax",apf::SCALAR,1);
+  apf::Field* speedLambdaMaxEVecField = apf::createLagrangeField(volMesh,"speedLambdaMaxEVecField",apf::VECTOR,1);
   apf::Field* finalSizeField = apf::createLagrangeField(mesh,"final_size",apf::SCALAR,1);
 
   //get current size field
@@ -772,7 +773,6 @@ int main(int argc, char** argv)
   //End getSpeed
 
   apf::Field* lmaxHSpeedH2Field = apf::createLagrangeField(volMesh,"lmax_hess_speed_x_h2",apf::SCALAR,1);
-  apf::Field* speedLambdaMaxEVecField = apf::createLagrangeField(volMesh,"speedLambdaMaxEVecField",apf::VECTOR,1);
   apf::Field* lhSpeedDotNormal = apf::createLagrangeField(volMesh,"lhSpeedDotNormal",apf::SCALAR,1);
 
   //get eigenvalues in the volume mesh
@@ -829,66 +829,48 @@ int main(int argc, char** argv)
     evec = evec.normalize();
     strand_dir = strand_dir.normalize();
     apf::setScalar(lhSpeedDotNormal, (*it)[strandSize - 1], 0, std::fabs(strand_dir * evec));
-
-    // Logic to ignore speed Hessian values in boundary layer
-    for (int i = 0; i < nIgnoredLayers; i++)
-    {
-      apf::setScalar(speedLambdaMaxField, (*it)[i], 0, 0);
-    }
   }
 
   FieldOfInterest speedBased;
-  speedBased.lambdaMaxField = speedLambdaMaxField;
-  speedBased.lambdaStrandMax = apf::createLagrangeField(mesh,"surf_speed_lambda_strandMax",apf::SCALAR,1);
-  speedBased.whichLayerHasLambdaMax = apf::createLagrangeField(mesh,"surf_idx_speed_lambda_strandMax",apf::SCALAR,1);
-  speedBased.sizeField = apf::createLagrangeField(mesh,"surface_size_speed",apf::SCALAR,1);
+  speedBased.lambdaMaxField = lmaxHSpeedH2Field;
+  speedBased.lambdaStrandMax = apf::createLagrangeField(mesh,"surf_lhSpeed_x_h2_strandMax",apf::SCALAR,1);
+  speedBased.whichLayerHasLambdaMax = apf::createLagrangeField(mesh,"surf_idx_lhSpeed_x_h2_strandMax",apf::SCALAR,1);
+  speedBased.sizeField = apf::createLagrangeField(mesh,"surface_size_lhSpeed_x_h2",apf::SCALAR,1);
 
-  getVolMaxPair(mesh,surfToStrandMap,speedBased.lambdaMaxField,speedBased.lambdaStrandMax,currentSize,speedBased.lambda_max,speedBased.h_lambdamax);
+  getVolMaxPair(mesh,surfToStrandMap,speedBased.lambdaMaxField,speedBased.lambdaStrandMax,currentSize,speedBased.lambda_max,speedBased.h_lambdamax,speedBased.whichLayerHasLambdaMax);
 
-  //set size field
-
-  setSizeField(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,speedBased.lambda_max,speedBased.lambda_cutoff(),speedBased.h_lambdamax,h_global,factor);
-
-  FieldOfInterest speedBased2;
-  speedBased2.lambdaMaxField = lmaxHSpeedH2Field;
-  speedBased2.lambdaStrandMax = apf::createLagrangeField(mesh,"surf_lhSpeed_x_h2_strandMax",apf::SCALAR,1);
-  speedBased2.whichLayerHasLambdaMax = apf::createLagrangeField(mesh,"surf_idx_lhSpeed_x_h2_strandMax",apf::SCALAR,1);
-  speedBased2.sizeField = apf::createLagrangeField(mesh,"surface_size_lhSpeed_x_h2",apf::SCALAR,1);
-
-  getVolMaxPair(mesh,surfToStrandMap,speedBased2.lambdaMaxField,speedBased2.lambdaStrandMax,currentSize,speedBased2.lambda_max,speedBased2.h_lambdamax,speedBased2.whichLayerHasLambdaMax);
-
-  // printf("before->speedBased2.lambda_max: %15.10e\n", speedBased2.lambda_max);
-  // printf("before->speedBased2.h_lambdamax: %15.10e\n", speedBased2.h_lambdamax);
-  double cutoff = speedBased2.lambda_max;
-  speedBased2.h_lambdamax = 0.0;
-  speedBased2.lambda_max = 0.0;
+  // printf("before->speedBased.lambda_max: %15.10e\n", speedBased.lambda_max);
+  // printf("before->speedBased.h_lambdamax: %15.10e\n", speedBased.h_lambdamax);
+  double cutoff = speedBased.lambda_max;
+  speedBased.h_lambdamax = 0.0;
+  speedBased.lambda_max = 0.0;
   it = mesh->begin(0);
   while( (vert = mesh->iterate(it)) )
   {
-    double idx_with_lmax = apf::getScalar(speedBased2.whichLayerHasLambdaMax, vert, 0);
+    double idx_with_lmax = apf::getScalar(speedBased.whichLayerHasLambdaMax, vert, 0);
     if (idx_with_lmax < nIgnoredLayers)
     {
-      apf::setScalar(speedBased2.lambdaStrandMax, vert, 0, 0.0);
+      apf::setScalar(speedBased.lambdaStrandMax, vert, 0, 0.0);
     }
-    else if (speedBased2.lambda_max < apf::getScalar(speedBased2.lambdaStrandMax, vert, 0))
+    else if (speedBased.lambda_max < apf::getScalar(speedBased.lambdaStrandMax, vert, 0))
     {
-      speedBased2.lambda_max = apf::getScalar(speedBased2.lambdaStrandMax, vert, 0);
-      // printf("->speedBased2.lambda_max: %15.10e\n", speedBased2.lambda_max);
-      // printf("->speedBased2.lambda_max should be: %15.10e\n", apf::getScalar(speedBased2.lambdaStrandMax, vert, 0));
-      speedBased2.h_lambdamax = apf::getScalar(currentSize,vert,0);
+      speedBased.lambda_max = apf::getScalar(speedBased.lambdaStrandMax, vert, 0);
+      // printf("->speedBased.lambda_max: %15.10e\n", speedBased.lambda_max);
+      // printf("->speedBased.lambda_max should be: %15.10e\n", apf::getScalar(speedBased.lambdaStrandMax, vert, 0));
+      speedBased.h_lambdamax = apf::getScalar(currentSize,vert,0);
     }
   }
   mesh->end(it);
-  // printf("after->speedBased2.lambda_max: %15.10e\n", speedBased2.lambda_max);
-  // printf("after->speedBased2.h_lambdamax: %15.10e\n", speedBased2.h_lambdamax);
+  // printf("after->speedBased.lambda_max: %15.10e\n", speedBased.lambda_max);
+  // printf("after->speedBased.h_lambdamax: %15.10e\n", speedBased.h_lambdamax);
 
   // Using a separate size field computation to capture free shear layer
   if (bitFields[2] == '1') {
-    setSizeFieldAlt(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor);
+    setSizeFieldAlt(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,currentSize,speedBased.lambda_max,speedBased.lambda_cutoff(),h_global,factor);
   } else if (bitFields[3] == '1') {
     // TODO: Change from hard-coding
     double factor_fsl = 4.0;
-    setSizeFieldAlt2(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor_fsl);
+    setSizeFieldAlt2(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,currentSize,speedBased.lambda_max,speedBased.lambda_cutoff(),h_global,factor_fsl);
   }
 
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
@@ -1000,8 +982,8 @@ int main(int argc, char** argv)
   std::queue<apf::Field*> sizeFieldList;
   sizeFieldList.push(eBased.sizeField);
   sizeFieldList.push(shearBased.sizeField);
-  sizeFieldList.push(speedBased2.sizeField);
-  sizeFieldList.push(speedBased2.sizeField);
+  sizeFieldList.push(speedBased.sizeField);
+  sizeFieldList.push(speedBased.sizeField);
   apf::Field* finalChoiceField = apf::createLagrangeField(mesh,"finalChoice",apf::SCALAR,1);
   it = mesh->begin(0);
   while( (vert = mesh->iterate(it)) )
