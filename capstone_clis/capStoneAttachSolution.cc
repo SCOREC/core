@@ -536,23 +536,27 @@ static std::vector<bool> decodeBitFields(const char* bitFields)
 {
   std::vector<bool> res;
   res.resize(strlen(bitFields));
-  printf("length is %d\n", strlen(bitFields));
+  printf("bitfields length is %d\n", strlen(bitFields));
+  PCU_ALWAYS_ASSERT_VERBOSE(strlen(bitFields) == 4, "bitfields length needs to be 4");
   for (int i = 0; i < strlen(bitFields); i++) {
     if (bitFields[i] == '0')
       res[i] = false;
-    else if (bitFields[i] == '1' || bitFields[i] == '2')
+    else if (bitFields[i] == '1')
       res[i] = true;
     else
-      PCU_ALWAYS_ASSERT(0);
+      PCU_ALWAYS_ASSERT_VERBOSE(0, "Bit fields need to be 0 or 1");
   }
+  PCU_ALWAYS_ASSERT_VERBOSE((bitFields[2] == '0') || (bitFields[3] == '0'),
+                            "Both bit field 2 and bit field 3 cannot be 1");
   return res;
 }
 
-void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList, const char* bitFields, apf::Field* finalSizeField,apf::Field* finalChoiceField)
+void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList,
+                        const std::vector<bool>& userInput, apf::Field* finalSizeField,
+                        apf::Field* finalChoiceField)
 {
-  std::vector<bool> userInput = decodeBitFields(bitFields);
+  // std::vector<bool> userInput = decodeBitFields(bitFields);
   PCU_ALWAYS_ASSERT(userInput.size() == sizeFieldList.size());
-  printf("HERE\n");
   apf::MeshEntity *vert;
 
   apf::Field *field = sizeFieldList.front();
@@ -621,6 +625,9 @@ int main(int argc, char** argv)
   double factor = atof(argv[6]);
   const int maxLevel = atoi(argv[7]);
   const int nIgnoredLayers = atoi(argv[8]);
+
+  // Some input validation
+  std::vector<bool> userInputFields = decodeBitFields(bitFields);
 
   // load capstone mesh
   // create an instance of the Capstone Module activating CREATE/CREATE/CREATE
@@ -876,12 +883,12 @@ int main(int argc, char** argv)
   // printf("after->speedBased2.h_lambdamax: %15.10e\n", speedBased2.h_lambdamax);
 
   // Using a separate size field computation to capture free shear layer
-  if (bitFields[2] == '2') {
+  if (bitFields[2] == '1') {
+    setSizeFieldAlt(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor);
+  } else if (bitFields[3] == '1') {
     // TODO: Change from hard-coding
     double factor_fsl = 4.0;
     setSizeFieldAlt2(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor_fsl);
-  } else if (bitFields[2] == '1') {
-    setSizeFieldAlt(mesh,speedBased2.lambdaStrandMax,speedBased2.sizeField,currentSize,speedBased2.lambda_max,speedBased2.lambda_cutoff(),h_global,factor);
   }
 
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);
@@ -994,6 +1001,7 @@ int main(int argc, char** argv)
   sizeFieldList.push(eBased.sizeField);
   sizeFieldList.push(shearBased.sizeField);
   sizeFieldList.push(speedBased2.sizeField);
+  sizeFieldList.push(speedBased2.sizeField);
   apf::Field* finalChoiceField = apf::createLagrangeField(mesh,"finalChoice",apf::SCALAR,1);
   it = mesh->begin(0);
   while( (vert = mesh->iterate(it)) )
@@ -1001,7 +1009,7 @@ int main(int argc, char** argv)
     apf::setScalar(finalChoiceField,vert,0,0);
   }
 
-  isotropicIntersect(mesh,sizeFieldList,bitFields,finalSizeField,finalChoiceField);
+  isotropicIntersect(mesh,sizeFieldList,userInputFields,finalSizeField,finalChoiceField);
 
   double getIntersectionTime = PCU_Time();
   std::cout<<"TIMER: get mesh intersection "<<getIntersectionTime-getShearTime<<std::endl;
