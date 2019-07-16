@@ -117,7 +117,7 @@ class Uniform : public ma::IsotropicFunction
     virtual double getValue(ma::Entity* v)
     {
       (void)v;
-      return 30;
+      return 0.03125;
     }
   private:
     ma::Mesh* mesh;

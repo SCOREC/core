@@ -22,55 +22,57 @@
 /* #include "CreateMG_Framework_Geometry.h" */
 /* #include "CreateMG_Framework_Mesh.h" */
 
+#include "capStoneSizeFields.h"
+
 using namespace CreateMG;
 using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
-class WingShock : public ma::AnisotropicFunction
-{
-  public:
-    WingShock(ma::Mesh* m, double inFactor)
-    {
-      mesh = m;
-      factor = inFactor;
-    }
-    virtual void getValue(ma::Entity* v, ma::Matrix& R, ma::Vector& H)
-    {
-      ma::Vector p = ma::getPosition(mesh,v);
-      double x = p[0];
-      double x0 = 0.5;
-      double planeSize = 0.03125;
-      double spanSize  = 0.5;
-      double delta = 0.5;
+/* class WingShock : public ma::AnisotropicFunction */
+/* { */
+/*   public: */
+/*     WingShock(ma::Mesh* m, double inFactor) */
+/*     { */
+/*       mesh = m; */
+/*       factor = inFactor; */
+/*     } */
+/*     virtual void getValue(ma::Entity* v, ma::Matrix& R, ma::Vector& H) */
+/*     { */
+/*       ma::Vector p = ma::getPosition(mesh,v); */
+/*       double x = p[0]; */
+/*       double x0 = 0.5; */
+/*       double planeSize = 0.03125; */
+/*       double spanSize  = 0.5; */
+/*       double delta = 0.5; */
 
-      double beta = 0.3;
-      double x1   = 0.2;
-      double f    = beta + x * (1. - beta) / x1;
-      double multipier = (x <= x1) ? 1.0 : f;
+/*       double beta = 0.3; */
+/*       double x1   = 0.2; */
+/*       double f    = beta + x * (1. - beta) / x1; */
+/*       double multipier = (x <= x1) ? 1.0 : f; */
 
-      double s0 = planeSize / factor;
-      double alpha = planeSize * (1. - 1./factor) / delta;
-      double hx = s0 + alpha * std::abs(x - x0);
-      double hy = spanSize;
-      double hz = spanSize;
-      hx *= multipier;
-      hy *= multipier;
+/*       double s0 = planeSize / factor; */
+/*       double alpha = planeSize * (1. - 1./factor) / delta; */
+/*       double hx = s0 + alpha * std::abs(x - x0); */
+/*       double hy = spanSize; */
+/*       double hz = spanSize; */
+/*       hx *= multipier; */
+/*       hy *= multipier; */
 
-      ma::Vector h;
+/*       ma::Vector h; */
 
-      h = ma::Vector(hx, hy, hz);
-      /* // principal directions */
-      ma::Matrix r(1.0, 0.0, 0.0,
-		   0.0, 1.0, 0.0,
-		   0.0, 0.0, 1.0);
-      H = h;
-      R = r;
-    }
-  private:
-    ma::Mesh* mesh;
-    double factor;
-};
+/*       h = ma::Vector(hx, hy, hz); */
+/*       /1* // principal directions *1/ */
+/*       ma::Matrix r(1.0, 0.0, 0.0, */
+/* 		   0.0, 1.0, 0.0, */
+/* 		   0.0, 0.0, 1.0); */
+/*       H = h; */
+/*       R = r; */
+/*     } */
+/*   private: */
+/*     ma::Mesh* mesh; */
+/*     double factor; */
+/* }; */
 
 void writeCre(CapstoneModule& cs, const std::string& vtkFileName)
 {
@@ -177,27 +179,27 @@ int main(int argc, char** argv)
   /* SETUP AND CALL ADAPT */
 
   // setting the aniso size field "scales" and "frames"
-  ma::AnisotropicFunction* sf = 0;
-  sf = new WingShock(apfCapMesh, 50);
+  ma::IsotropicFunction* sf = 0;
+  sf = new Uniform(apfCapMesh, 50);
   // make pumi fields that hold the "frames" and "scales" for anisotropic size fields
   // here we are using user-defined size-fields. Usually, "frames" and "scales" come
   // from a solution driven error estimation procedure
-  apf::Field* frameField = apf::createFieldOn(apfCapMesh, "adapt_frames", apf::MATRIX);
-  apf::Field* scaleField = apf::createFieldOn(apfCapMesh, "adapt_scales", apf::VECTOR);
+  /* apf::Field* frameField = apf::createFieldOn(apfCapMesh, "adapt_frames", apf::MATRIX); */
+  /* apf::Field* scaleField = apf::createFieldOn(apfCapMesh, "adapt_scales", apf::VECTOR); */
+  apf::Field* scaleField = apf::createFieldOn(apfCapMesh, "adapt_scales", apf::SCALAR);
   apf::MeshEntity* v;
   it = apfCapMesh->begin(0);
   while( (v = apfCapMesh->iterate(it)) ) {
-    apf::Vector3 s;
-    apf::Matrix3x3 f;
-    sf->getValue(v, f, s);
-    apf::setVector(scaleField, v, 0, s);
-    apf::setMatrix(frameField, v, 0, f);
+    /* apf::Vector3 s; */
+    /* apf::Matrix3x3 f; */
+    apf::setScalar(scaleField, v, 0, sf->getValue(v));
   }
   apfCapMesh->end(it);
 
   // adapt setup
   ma::Input* in;
-  in = ma::configure(apfCapMesh, scaleField, frameField);
+  in = ma::configure(apfCapMesh, scaleField);
+  /* in = ma::configure(apfCapMesh, scaleField, frameField); */
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
   in->shouldFixShape = true;
