@@ -86,6 +86,7 @@ static void setDefaults(Input& in)
   in.simCooperation = 1;
   in.writeSimLog = 0;
   in.simCFLUpperBound = 1.0e16;
+  in.simSizeLowerBound = 0.0;
   in.simSizeUpperBound = 1.0e16;
   in.simMaxAdaptMeshElements = 1.0e16;
 }
@@ -172,6 +173,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["simCooperation"] = &in.simCooperation;
   intMap["writeSimLog"] = &in.writeSimLog;
   dblMap["simCFLUpperBound"] = &in.simCFLUpperBound;
+  dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
   dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
   dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
 }
