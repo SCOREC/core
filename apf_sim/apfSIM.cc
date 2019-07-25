@@ -1042,7 +1042,7 @@ static bool findMatches(Mesh* m)
     while ((e = m->iterate(it)))
     {
       pEntity ent = reinterpret_cast<pEntity>(e);
-      pPList l = EN_getMatchingEnts(ent, NULL);
+      pPList l = EN_getMatchingEnts(ent, NULL, 0);
       if (l)
       {
         found = true;
