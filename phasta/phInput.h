@@ -195,6 +195,8 @@ class Input
     int writeSimLog;
     /** \brief maximum CFL number for mesh size */
     double simCFLUpperBound;
+    /** \brief minimum desired mesh size for sim adapter */
+    double simSizeLowerBound;
     /** \brief maximum desired mesh size for sim adapter */
     double simSizeUpperBound;
     /** \brief number of allowed mesh elements of adapted mesh */
