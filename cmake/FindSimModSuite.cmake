@@ -112,17 +112,26 @@ message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
-  set(SIM_PARASOLID_VERSION 300)
-  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
-    SimParasolid${SIM_PARASOLID_VERSION} simParaLib FALSE)
-  if(NOT EXISTS ${simParaLib})
-    set(SIM_PARASOLID_VERSION 290)
+  set(MIN_SIM_PARASOLID_VERSION 290)
+  set(MAX_SIM_PARASOLID_VERSION 310)
+  foreach(version RANGE
+      ${MAX_SIM_PARASOLID_VERSION}
+      ${MIN_SIM_PARASOLID_VERSION} -10)
+    set(SIM_PARASOLID_VERSION ${version})
     getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
-      SimParasolid${SIM_PARASOLID_VERSION} simParaLib TRUE)
-    set(SIM_CAD_LIB_NAMES
-      ${simParaLib}
-      pskernel)
+      SimParasolid${SIM_PARASOLID_VERSION} simParaLib FALSE)
+    if(simParaLib)
+      break()
+    endif()
+  endforeach()
+  if(NOT simParaLib)
+    message(FATAL_ERROR "libSimParasolid<#>.a "
+      "${MIN_SIM_PARASOLID_VERSION}-${MAX_SIM_PARASOLID_VERSION} "
+      "not found - check the version installed with SimModSuite")
   endif()
+  set(SIM_CAD_LIB_NAMES
+    ${simParaLib}
+    pskernel)
 endif()
 
 option(SIM_ACIS "Use Acis through Simmetrix" OFF)
