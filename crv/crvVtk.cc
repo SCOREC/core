@@ -311,6 +311,47 @@ static void writeEdgeJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   file << "</DataArray>\n";
 }
 
+static double getVolume(apf::Mesh* mesh, apf::MeshEntity* e)
+{
+  apf::MeshEntity* adjV[4];
+  mesh->getDownward(e, 0, adjV);
+  apf::Matrix3x3 m;
+  apf::Vector3 point0, point;
+  
+  for (std::size_t j = 0; j < 4; j++) {
+    if ( j == 0)
+      mesh->getPoint(adjV[j], 0, point0);
+    else {
+      mesh->getPoint(adjV[j], 0, point);
+      for (int k = 0; k < 3; k++)
+      	m[j-1][k] = point[k] - point0[k];
+    }
+  }
+  double v = apf::getDeterminant(m)/6.0;
+
+  return v;
+
+}
+
+static double getArea(apf::Mesh* mesh, apf::MeshEntity* e)
+{
+  apf::MeshEntity* ver[3];
+  mesh->getDownward(e, 0, ver);
+  apf::Vector3 point0, point1, point2;
+
+  mesh->getPoint(ver[0], 0, point0);
+  mesh->getPoint(ver[1], 0, point1);
+  mesh->getPoint(ver[2], 0, point2);
+
+  point1 = point1 - point0;
+  point2 = point2 - point0;
+
+  double area = (apf::cross(point1, point2)).getLength();
+
+  return (area/2.0);
+
+}
+
 static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
 {
   file << "<DataArray type=\"Float64\" Name=\"detJacobian\" "
@@ -352,10 +393,12 @@ static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
         ++count;
       }
     }
+    double area = getArea(m, e);
+    
     if(std::fabs(maxJ) < 1e-10) maxJ = 1e-10;
     for (int i = 0; i < (n+1)*(n+2)/2; ++i){
-      if(detJ[i] > 0) detJ[i] /= maxJ;
-      file << detJ[i] << '\n';
+      //if(detJ[i] > 0) detJ[i] /= maxJ;
+      file << detJ[i]/area << '\n';
     }
     apf::destroyMeshElement(me);
   }
@@ -436,10 +479,11 @@ static void writeTetJacobianDet(std::ostream& file, apf::Mesh* m, int n)
         }
       }
     }
+    double vol = getVolume(m, e);
     if(maxJ < 1e-10) maxJ = 1e-10;
     for (int i = 0; i < 4*(n+1)*(n+1)*(n+1); ++i){
-      if(detJ[i] > 0) detJ[i] /= maxJ;
-      file << detJ[i] << '\n';
+      //if(detJ[i] > 0) detJ[i] /= maxJ;
+      file << detJ[i]/vol << '\n';
     }
 
     apf::destroyMeshElement(me);

@@ -22,6 +22,7 @@ set(SOURCES
   crvVtk.cc
   LBFGS.cc
   crvEdgeOptim.cc
+  crvModelEdgeOptim.cc
   crvFaceOptim.cc
 )
 
@@ -29,6 +30,7 @@ set(SOURCES
 set(HEADERS
   crv.h
   /lore/mohara/core/crv/crvEdgeOptim.h
+  /lore/mohara/core/crv/crvModelEdgeOptim.h
   /lore/mohara/core/crv/crvFaceOptim.h
 )
 

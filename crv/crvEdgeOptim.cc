@@ -179,7 +179,7 @@ void CrvEdgeReshapeObjFunc :: setNodes(std::vector<double> &x)
   apf::Adjacent adjF;
   mesh->getAdjacent(edge, 2, adjF);
 
-  for (std::size_t i = nEN; i < nEN + nFN*adjF.size(); i++)
+  for (std::size_t i = nEN; i < nEN + nFN*adjF.getSize(); i++)
     fn.push_back(nod[i]);
 
   if (d > 2 && P > 3) {
@@ -189,6 +189,14 @@ void CrvEdgeReshapeObjFunc :: setNodes(std::vector<double> &x)
   }
 
   updateNodes(en, fn, tn);
+}
+
+static double getAr(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2)
+{
+  p1 = p1 - p0;
+  p2 = p2 - p0;
+  double area = (apf::cross(p1, p2)).getLength();
+  return (area/2.0);
 }
 
 std::vector<double> CrvEdgeReshapeObjFunc :: getVolume()
@@ -246,9 +254,9 @@ double CrvEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 4;
+	      weight = 14;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 2;
+	      weight = 4;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
@@ -301,7 +309,8 @@ double CrvEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       sum = sum + computeFValOfElement(allNodes, vol[i]);
       apf::destroyElement(el);
     }
-    restoreInitialNodes();
+
+restoreInitialNodes();
   }
 
   if (d == 3) {
@@ -314,6 +323,110 @@ double CrvEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       sum = sum + computeFValOfElement(allNodes, vol[i]);
       apf::destroyElement(el);
     }
+/*
+    apf::NewArray<apf::Vector3> eCP;
+    apf::Element* Edl = apf::createElement(mesh->getCoordinateField(), edge);
+    apf::getVectorNodes(Edl, eCP);
+
+    int nEN = mesh->getShape()->countNodesOn(mesh->getType(edge));
+
+    double xr = 1.0;
+    double xir = 1.0;
+    //double alpha = 1.0;
+    double beta = 0.0;
+    double ad = 0.0;
+    apf::Vector3 x1, x0;
+    apf::Vector3 xi2, xi1, xi0;
+
+    for (int i = 0; i < nEN; i++) {
+      getBezierNodeXi(mesh->getType(edge), P, i, xi1);
+      if (i > 0 && i < nEN - 1) {
+        getBezierNodeXi(mesh->getType(edge), P, i+1, xi2);
+        getBezierNodeXi(mesh->getType(edge), P, i-1, xi0);
+        x1 = eCP[2+i+1] - eCP[2+i];
+        x0 = eCP[2+i] - eCP[2+i-1];
+        xir = (xi2[0] - xi1[0])/(xi1[0] - xi0[0]);
+      }
+      else if ( i == 0) {
+        getBezierNodeXi(mesh->getType(edge), P, i+1, xi2);
+        x1 = eCP[2+i+1] - eCP[2+i];
+        x0 = eCP[2+i] - eCP[0];
+        xir = (xi2[0] - xi1[0])/(xi1[0] + 1); // parent coordinate[-1,1]
+      }
+      else {
+        getBezierNodeXi(mesh->getType(edge), P, i-1, xi0);
+        x1 = eCP[1] - eCP[2+i];
+        x0 = eCP[2+i] - eCP[2+i-1];
+        xir = (1 - xi1[0])/(xi1[0] - xi0[0]);
+      }
+
+     // if (0.5*(xi1[0]+1.0) < 1.0 - 0.5*(xi1[0]+1.0))
+     //   alpha = 0.5*(xi1[0]+1.0);
+     // else
+     //   alpha = 1.0 - 0.5*(xi1[0]+1.0);
+
+      xr = (x1.getLength()/x0.getLength());
+      ad = (xr/xir - 1);//(alpha*alpha);
+      beta = beta + ad*ad;
+
+      //sum = sum + ad*ad;
+    }
+
+    apf::destroyElement(Edl);
+    */
+/*
+    apf::Adjacent adjF;
+    mesh->getAdjacent(edge, 2, adjF);
+    apf::NewArray<apf::Vector3> fCP;
+    apf::Vector3 xif;
+    double a[3] = {1.0, 1.0, 1.0};
+    double b[3] = {1.0, 1.0, 1.0};
+    double aratio = 0.0;
+    //double wfactor = 1.0;
+    double gamma = 0.0;
+
+    for (std::size_t i = 0; i < adjF.getSize(); i++) {
+      apf::Element* Fal = apf::createElement(mesh->getCoordinateField(), adjF[i]);
+      apf::getVectorNodes(Fal, fCP);
+      int nFN = mesh->getShape()->countNodesOn(mesh->getType(adjF[i]));
+
+      int vN[3] = {getTriNodeIndex(P, P, 0), getTriNodeIndex(P, 0, P), getTriNodeIndex(P, 0, 0)};
+
+      double triAphys = getAr(fCP[0], fCP[1], fCP[2]);
+      apf::Vector3 prt0 = {1, 0, 0};
+      apf::Vector3 prt1 = {0, 1, 0};
+      apf::Vector3 prt2 = {0, 0, 1};
+      double triAparnt = getAr(prt0, prt1, prt2);
+
+      for (int j = 0; j < nFN; j++) {
+        getBezierNodeXi(mesh->getType(adjF[i]), P, j, xif);
+        apf::Vector3 xifm = {1.0-xif[0]-xif[1], xif[0], xif[1]};
+        a[0] = getAr(fCP[3*P + j], fCP[vN[0]], fCP[vN[1]]);
+        b[0] = getAr(xifm, prt0, prt1);
+        a[1] = getAr(fCP[3*P + j], fCP[vN[1]], fCP[vN[2]]);
+        b[1] = getAr(xifm, prt1, prt2);
+        a[2] = getAr(fCP[3*P + j], fCP[vN[2]], fCP[vN[0]]);
+        b[2] = getAr(xifm, prt2, prt1);
+
+        //for (int jj = 0; jj < 3; jj++) {
+        //  if (xifm[i] < wfactor)
+        //    wfactor = xifm[i];
+        //}
+
+        for (int k = 0; k < 3; k++) {
+          aratio = (a[k]*triAparnt/(b[k]*triAphys) - 1.0); //(wfactor*wfactor);
+          gamma = gamma + aratio*aratio;
+
+          //sum = sum + aratio *aratio;
+        }
+      }
+      //sum = sum*(1 + gamma);
+      //std::cout<<"sum and ratio------ "<< sum <<"  "<<aratio-3.0<<std::endl; 
+      apf::destroyElement(Fal);
+    }
+*/
+    //sum = sum*(1 + beta);// + gamma);
+
     restoreInitialNodes();
   }
   return sum;
@@ -405,7 +518,7 @@ bool CrvEdgeOptim :: run()
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
-   
+  /* 
     apf::Adjacent adjT;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
@@ -415,11 +528,11 @@ bool CrvEdgeOptim :: run()
       	return false;
       }
     }
-
+*/
     return true;
   }
   else {
-    std::cout<<"*****Optim FAILURE"<<std::endl;
+    std::cout<<"*****Edge Optim FAILURE"<<std::endl;
     return false;
   }
 }

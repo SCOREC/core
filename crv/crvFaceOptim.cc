@@ -132,6 +132,14 @@ std::vector<double> CrvFaceReshapeObjFunc :: getVolume()
   return vol;
 }
 
+static double getAr(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2)
+{
+    p1 = p1 - p0;
+    p2 = p2 - p0;
+    double area = (apf::cross(p1, p2)).getLength();
+    return (area/2.0);
+}
+
 double CrvFaceReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3> &nodes, double volm)
 {
   int weight = 1;
@@ -182,6 +190,47 @@ double CrvFaceReshapeObjFunc :: getValue(std::vector<double> &x)
       sum = sum + computeFValOfElement(allNodes, vol[i]);
       apf::destroyElement(el);
     }
+/*
+    apf::NewArray<apf::Vector3> fCP;
+    apf::Vector3 xif;
+    double a[3] = {1.0, 1.0, 1.0};
+    double b[3] = {1.0, 1.0, 1.0};
+    double aratio = 0.0;
+    //double wfactor = 1.0;
+    double gamma = 0.0;
+
+    apf::Element* Fal = apf::createElement(mesh->getCoordinateField(), face);
+    apf::getVectorNodes(Fal, fCP);
+    int nFN = mesh->getShape()->countNodesOn(mesh->getType(face));
+
+    int vN[3] = {getTriNodeIndex(P, P, 0), getTriNodeIndex(P, 0, P), getTriNodeIndex(P, 0, 0)};
+
+    double triAphys = getAr(fCP[0], fCP[1], fCP[2]);
+    apf::Vector3 prt0 = {1, 0, 0};
+    apf::Vector3 prt1 = {0, 1, 0};
+    apf::Vector3 prt2 = {0, 0, 1};
+    double triAparnt = getAr(prt0, prt1, prt2);
+
+    for (int j = 0; j < nFN; j++) {
+      getBezierNodeXi(mesh->getType(face), P, j, xif);
+      apf::Vector3 xifm = {1.0-xif[0]-xif[1], xif[0], xif[1]};
+      a[0] = getAr(fCP[3*P + j], fCP[vN[0]], fCP[vN[1]]);
+      b[0] = getAr(xifm, prt0, prt1);
+      a[1] = getAr(fCP[3*P + j], fCP[vN[1]], fCP[vN[2]]);
+      b[1] = getAr(xifm, prt1, prt2);
+      a[2] = getAr(fCP[3*P + j], fCP[vN[2]], fCP[vN[0]]);
+      b[2] = getAr(xifm, prt2, prt1);
+
+      for (int k = 0; k < 3; k++) {
+      	aratio = (a[k]*triAparnt/(b[k]*triAphys) - 1.0);
+      	gamma = gamma + aratio*aratio;
+      }
+    }
+
+    apf::destroyElement(Fal);
+
+    sum = sum*(1 + gamma);
+    */
     restoreInitialNodes();
   }
   return sum;
@@ -272,7 +321,7 @@ bool CrvFaceOptim :: run()
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
-/* 
+ /*
     apf::Adjacent adjT;
     mesh->getAdjacent(face, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
@@ -286,7 +335,7 @@ bool CrvFaceOptim :: run()
     return true;
   }
   else {
-    std::cout<<"*****Optim FAILURE"<<std::endl;
+    //std::cout<<"*****FaceOptim FAILURE"<<std::endl;
     return false;
   }
 }
