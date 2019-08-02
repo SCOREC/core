@@ -22,6 +22,7 @@
 #include "crvEdgeOptim.h"
 #include "crvModelEdgeOptim.h"
 #include "crvFaceOptim.h"
+#include "crvQuality.h"
 
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
@@ -115,9 +116,11 @@ static std::vector<int> getEdgeSequenceFromInvalidVertex(ma::Mesh* mesh, ma::Ent
   apf::MeshEntity* ef[3];
   apf::MeshEntity* ve[2];
   std::vector<int> aa;
-  std::vector<int> bb;
+  //std::vector<int> bb;
 
-  for (int i = 0; i < 2; i++) {
+  // need to flag all adjacent edges 
+  // hence only 2 faces would do
+  for (int i = 0; i < 2; i++) {  
     int nef = mesh->getDownward(f[a[cc[i]]], 1, ef);
     for (int j = 0; j < nef; j++) {
       mesh->getDownward(ef[j], 0, ve);
@@ -128,19 +131,19 @@ static std::vector<int> getEdgeSequenceFromInvalidVertex(ma::Mesh* mesh, ma::Ent
       	    for (int ii = 0; ii < 2; ii++) {
       	      if ( k != aa[ii] ) {
       	      	aa.push_back(k);
-      	      	bb.push_back(mesh->getModelType(mesh->toModel(ef[j])));
+      	      	//bb.push_back(mesh->getModelType(mesh->toModel(ef[j])));
 	      }
 	    }
 	  }
 	  else {
 	    aa.push_back(k);
-      	    bb.push_back(mesh->getModelType(mesh->toModel(ef[j])));
+      	    //bb.push_back(mesh->getModelType(mesh->toModel(ef[j])));
 	  }
 	}
       }
     }
   }
-
+/*
   if (bb[0] < bb[1] ) {
     int k = aa[0];
     int kk = bb[0];
@@ -149,12 +152,134 @@ static std::vector<int> getEdgeSequenceFromInvalidVertex(ma::Mesh* mesh, ma::Ent
     bb[0] = bb[1];
     bb[1] = kk;
   }
-  
+  */
   // aa has the index of the edges ordered 
   // min to max of adj face jacobian
 
   return aa;
 
+}
+static std::vector<int> sortEdgeIndexByType(ma::Mesh* mesh, ma::Entity* e, std::vector<int> all)
+{
+  apf::MeshEntity* ed[6];
+  mesh->getDownward(e, 1, ed);
+  //int n = all.size();
+
+  // sort all edges
+  // aim is to erase duplicate edges
+  for (size_t i = 0; i < all.size(); i++) {
+    for (int j = i-1; j >= 0; --j) {
+      int ko = all[j+1];
+      if ( ko < all[j]) {
+      	all[j+1] = all[j];
+      	all[j] = ko;
+      }
+    }
+  }
+
+  std::vector<int> b;
+  b.push_back(all[0]);
+  for (size_t i = 1; i < all.size(); i++) {
+    if (all[i] != all[i-1]) 
+      b.push_back(all[i]);
+  }
+
+  std::vector<int> bb;
+  //int nn = b.size();
+  //get type of each edge
+  for (size_t j = 0; j < b.size(); j++) {
+    bb.push_back(mesh->getModelType(mesh->toModel(ed[b[j]])));
+  }
+  
+  //sort type from 3-1
+  for (size_t i = 0; i < bb.size(); i++) {
+    for (int j = i-1; j >= 0; --j) {
+      int k = bb[j+1];
+      int kk = b[j+1];
+      if ( k > bb[j]) {
+      	bb[j+1] = bb[j];
+      	bb[j] = k;
+      	b[j+1] = b[j];
+      	b[j] = kk;
+      }
+    }
+  }
+
+  return b;
+}
+
+static int markAllEdges(ma::Mesh* m, ma::Entity* e,
+    std::vector<int> ai, ma::Entity* edges[6])
+{
+  std::vector<int> bb;
+  apf::MeshEntity* edf[3];
+  apf::MeshEntity* faces[4];
+  ma::Downward ed;
+  m->getDownward(e,1,ed);
+
+  for (size_t ii = 0; ii < ai.size(); ii++) {
+    int dim = (ai[ii]-2)/6;
+    int index = (ai[ii]-2) % 6;
+
+    switch (dim) {
+      case 0:
+      {
+      	//ma::Downward ed;
+      	//m->getDownward(e,1,ed);   
+
+      	std::vector<int> aa = getEdgeSequenceFromInvalidVertex(m, e, index);
+      	PCU_ALWAYS_ASSERT(index < 4);
+      	for (size_t i = 0; i < aa.size(); i++) 
+      	  bb.push_back(aa[i]);
+
+	break;
+      }
+
+      case 1:
+      {
+      	//ma::Downward ed;
+        //m->getDownward(e,1,ed);
+        bb.push_back(index);
+        break;
+      }
+      //break;
+      case 2:
+      {
+        // if we have an invalid face, operate on its edges
+        //ma::Downward edf, faces;
+        m->getDownward(e,2,faces);
+        m->getDownward(faces[index],1,edf);
+
+        for (int i = 0; i < 3; i++) {
+          int j = apf::findIn(ed, 6, edf[i]);
+          if (j != -1)
+            bb.push_back(j);
+	}
+        break;
+      }
+      //break;
+      case 3:
+      {
+        m->getDownward(e,1,edges);
+        return 6;
+      }
+      default:
+        fail("invalid quality tag in markEdges\n");
+        break;
+      }
+  }
+
+  int n = 0;
+  std::vector<int> allinvEdges = sortEdgeIndexByType(m, e, bb);
+
+  for (size_t i = 0; i < allinvEdges.size(); i++) {
+    if (m->getModelType(m->toModel(ed[allinvEdges[i]])) != 1) {
+      n++;
+      edges[n-1] = ed[allinvEdges[i]];
+    }
+  }
+
+  return n;
 }
 
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
@@ -175,18 +300,18 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       m->getDownward(e,1,ed);
       n = md;
 
-      std::vector<int> aa = getEdgeSequenceFromInvalidVertex(m, e, index);
+      //std::vector<int> aa = getEdgeSequenceFromInvalidVertex(m, e, index);
       if(md == 2){
         edges[0] = ed[index];
         edges[1] = ed[(index+2) % 3];
       } else {
         PCU_ALWAYS_ASSERT(index < 4);
-        edges[0] = ed[aa[0]];
-        edges[1] = ed[aa[1]];
-        edges[2] = ed[aa[2]];
-        //edges[0] = ed[vertEdges[index][0]];
-        //edges[1] = ed[vertEdges[index][1]];
-        //edges[2] = ed[vertEdges[index][2]];
+        //edges[0] = ed[aa[0]];
+        //edges[1] = ed[aa[1]];
+        //edges[2] = ed[aa[2]];
+        edges[0] = ed[vertEdges[index][0]];
+        edges[1] = ed[vertEdges[index][1]];
+        edges[2] = ed[vertEdges[index][2]];
       }
       break;
     }
@@ -563,7 +688,7 @@ public:
   virtual int getTargetDimension() {return 2;}
   virtual bool shouldApply(ma::Entity* e) {
     
-    if (!ma::getFlag(adapter, e, ma::SNAP | ma::BAD_QUALITY)) {
+    if (!ma::getFlag(adapter, e, ma::SNAP)) {
       return false;
     }
     
@@ -594,7 +719,8 @@ public:
       if (cfo->run()) ns++;
       else nf++;
 
-      ma::clearFlag(adapter, face, ma::SNAP | ma::BAD_QUALITY);
+      ma::clearFlag(adapter, face, ma::SNAP);
+      delete cfo;
     }
   }
 private:
@@ -630,6 +756,7 @@ public:
     //  return false;
     //}
     if (mesh->getModelType(mesh->toModel(e)) == 1) {
+      ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
       return false;
     }    	
     else {
@@ -653,6 +780,7 @@ public:
       else nf++;
 
       ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
+      delete ceo;
     }
     else if (mesh->getModelType(mesh->toModel(edge)) == 2) {
       CrvModelEdgeOptim *cmeo = new CrvModelEdgeOptim(mesh, edge);
@@ -663,6 +791,7 @@ public:
       else nf++;
 
       ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
+      delete cmeo;
     }
   }
 private:
@@ -871,22 +1000,33 @@ static int markEdgesToFix(Adapt* a, int flag)
   // markEdges could have upto 6 edges marked!!!
   ma::Entity* edges[6];
   ma::Iterator* it = m->begin(m->getDimension());
+  //std::vector<int> ai;
+  //Quality* qual = makeQuality(m, 2);
   while ((e = m->iterate(it)))
   {
-    int tag = crv::getTag(a,e);
-    int n = markEdges(m,e,tag,edges);
-    for (int i = 0; i < n; ++i){
-      ma::Entity* edge = edges[i];
-      PCU_ALWAYS_ASSERT(edge);
-      if (edge && !ma::getFlag(a,edge,flag))
-      {
-      	if (m->getModelType(m->toModel(edge)) != 1)
-      	  ma::setFlag(a,edge,flag);
-        if (a->mesh->isOwned(edge))
-          ++count;
+    //int tag = crv::getTag(a,e);
+    //int n = markEdges(m,e,tag,edges);
+
+    std::vector<int> ai = crv::getAllInvalidities(m, e);
+    //int niv = qual->checkValidity(e);
+    int niv = ai.size();
+    if (niv != 0) {
+      int n = markAllEdges(m, e, ai, edges);
+      for (int i = 0; i < n; ++i){
+      	ma::Entity* edge = edges[i];
+      	PCU_ALWAYS_ASSERT(edge);
+
+      	if (edge && !ma::getFlag(a,edge,flag)) {
+      	  if (m->getModelType(m->toModel(edge)) != 1) {
+      	    ma::setFlag(a,edge,flag);
+      	    if (a->mesh->isOwned(edge))
+      	      ++count;
+	  }
+	}
       }
     }
   }
+  //delete qual;
   m->end(it);
 
   return PCU_Add_Long(count);
@@ -1001,7 +1141,7 @@ static void optimizeInvalidFaces(Adapt* a)
 
 int fixInvalidFaces(Adapt* a)
 {
-  int count = markFacesToFix(a, ma::SNAP | ma::BAD_QUALITY);
+  int count = markFacesToFix(a, ma::SNAP);
   if (! count) {
     return 0;
   }

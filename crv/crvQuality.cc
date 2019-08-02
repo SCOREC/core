@@ -42,6 +42,7 @@ public:
   virtual ~Quality2D() {};
   double getQuality(apf::MeshEntity* e);
   int checkValidity(apf::MeshEntity* e);
+  std::vector<int> getAllInvalidities(apf::MeshEntity* e);
   int blendingOrder;
   int n;
   apf::NewArray<double> blendingCoeffs;
@@ -71,6 +72,7 @@ public:
   virtual ~Quality3D() {};
   double getQuality(apf::MeshEntity* e);
   int checkValidity(apf::MeshEntity* e);
+  std::vector<int> getAllInvalidities(apf::MeshEntity* e);
   // 3D uses an alternate method of computing these
   // returns a validity tag so both quality and validity can
   // quit early if this function thinks they should
@@ -374,6 +376,9 @@ static void getJacDetBySubdivisionMatrices(int type, int P,
   }
 }
 
+std::vector<int> Quality2D::getAllInvalidities(apf::MeshEntity* e)
+{}
+
 int Quality2D::checkValidity(apf::MeshEntity* e)
 {
 
@@ -612,6 +617,59 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   }
   apf::destroyElement(elem);
   return detJ;
+}
+
+std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
+{
+  int order = mesh->getShape()->getOrder();
+  int n = getNumControlPoints(apf::Mesh::TET, 3*(order-1));
+
+  apf::NewArray<apf::Vector3> xi;
+  xi.allocate(n);
+
+  std::vector<int> ai;
+  apf::NewArray<double> interNodes(n);
+  apf::MeshElement* me = apf::createMeshElement(mesh,e);
+  
+  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
+    int index = 18*order*order-36*order+20+i;
+    interNodes[index] = apf::getDV(me,xi[index]);
+    if(interNodes[index] < 1e-10){
+      ai.push_back(20);      
+    }
+  }
+
+  for (int face = 0; face < 4; ++face){
+    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
+      int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        ai.push_back(face+14);
+        break;
+      }
+    }
+  }
+
+  for (int edge = 0; edge < 6; ++edge){
+    for (int i = 0; i < 3*(order-1)-1; ++i){
+      int index = 4+edge*(3*(order-1)-1)+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        ai.push_back(edge+8);
+        break;
+      }
+    }
+  }
+
+  for (int i = 0; i < 4; ++i){
+    interNodes[i] = apf::getDV(me,xi[i]);
+    if(interNodes[i] < 1e-10){
+      ai.push_back(i+2);
+    }
+  }
+  apf::destroyMeshElement(me);
+
+  return ai;
 }
 
 int Quality3D::computeJacDetNodes(apf::MeshEntity* e,

@@ -177,8 +177,14 @@ static bool faceOp(apf::Mesh2* m, apf::MeshEntity* me)
   CrvFaceOptim *opF = new CrvFaceOptim(m, me);
   opF->setMaxIter(100);
   opF->setTol(1e-8);
-  if (opF->run()) return true;
-  else return false;
+  if (opF->run()) {
+    //delete opF;
+    return true;
+  }
+  else {
+    //delete opF;
+    return false;
+  }
 }
 
 bool BezierCurver::run(bool flag)
@@ -208,7 +214,7 @@ bool BezierCurver::run(bool flag)
   //crv::writeCurvedWireFrame(m_mesh, 40, "after-inflate");
 
   if (flag == 1) {
- /* 
+  
     apf::MeshEntity* f;
     apf::MeshIterator* it = m_mesh->begin(2);
     apf::Adjacent adjR;
@@ -225,7 +231,7 @@ bool BezierCurver::run(bool flag)
       }
     }
     m_mesh->end(it);
-   */ 
+    
     if(m_mesh->getDimension() >= 2) {
       if (m_order == 2 || m_order == 3) {
       	ma::Input* shapeFixer = configureShapeCorrection(m_mesh);

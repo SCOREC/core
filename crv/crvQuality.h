@@ -42,6 +42,7 @@ void elevateBezierJacobianDet(int type, int P, int r,
 double Nijk(apf::NewArray<apf::Vector3>& nodes, int d, int I, int J);
 double Nijkl(apf::NewArray<apf::Vector3>& nodes, int d, int I, int J, int K);
 
+std::vector<int> getAllInvalidities(apf::Mesh* mesh, apf::MeshEntity* e);
 }
 
 #endif

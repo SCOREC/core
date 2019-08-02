@@ -469,9 +469,9 @@ double CrvModelEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vec
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 14;
-	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
 	      weight = 4;
+	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
+	      weight = 2;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
@@ -573,13 +573,13 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
         getBezierNodeXi(mesh->getType(edge), P, i+1, xi2);
       	x1 = eCP[2+i+1] - eCP[2+i];
       	x0 = eCP[2+i] - eCP[0];
-      	xir = (xi2[0] - xi1[0])/(xi1[0] + 1); // parent coordinate[-1,1]
+      	xir = (xi2[0] - xi1[0])/(xi1[0] + 1.0); // parent coordinate[-1,1]
       }
       else {
         getBezierNodeXi(mesh->getType(edge), P, i-1, xi0);
       	x1 = eCP[1] - eCP[2+i];
       	x0 = eCP[2+i] - eCP[2+i-1];
-      	xir = (1 - xi1[0])/(xi1[0] - xi0[0]);
+      	xir = (1.0 - xi1[0])/(xi1[0] - xi0[0]);
       }
 
       //if (0.5*(xi1[0]+1.0) < 1.0 - 0.5*(xi1[0]+1.0))
@@ -588,19 +588,13 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       //	alpha = 1.0 - 0.5*(xi1[0]+1.0);
 
       xr = (x1.getLength()/x0.getLength());
-      ad = (xr/xir - 1);   //(alpha*alpha);
+      ad = (1.0*xr/xir - 1.0);   //(alpha*alpha);
       beta = beta + ad*ad;
       //sum = sum + ad*ad;
     }
     //sum = sum*(1 + beta);
     apf::destroyElement(Edl);
-/*
-    //if (mesh->getModelType(mesh->toModel(edge)) == 2) {
-    //  if (mesh->getModelTag(mesh->toModel(edge)) == 26) {
-//	double arandomnumber = 2;
- //     }
- //   }
- 
+
     apf::Adjacent adjF;
     mesh->getAdjacent(edge, 2, adjF);
     apf::NewArray<apf::Vector3> fCP;
@@ -652,8 +646,8 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
 	apf::destroyElement(Fal);
       }
     }
-*/
-    sum = sum*(1 + beta );//+ 0.3*gamma);
+
+    sum = sum*(1 + beta + 0.3*gamma);
 
     restoreInitialNodes();
   }
@@ -736,7 +730,7 @@ bool CrvModelEdgeOptim :: run()
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
-   
+  /* 
     apf::Adjacent adjT;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
@@ -746,7 +740,7 @@ bool CrvModelEdgeOptim :: run()
       	return false;
       }
     }
-    
+    */
     //std::cout<<"---------------------------------------------"<<std::endl;
     return true;
   }
