@@ -60,10 +60,6 @@ void core_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer
 void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
                         double& minvq, double& minfq);
 
-void core_phasta_get_err_param(double& err_correct_f);
-
-void core_driver_set_err_param(double  err_correct_f);
-
 void core_update_rbms (double tx[], double ty[], double tz[],
                          double ax[], double ay[], double az[],
                          double px[], double py[], double pz[],

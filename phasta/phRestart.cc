@@ -293,6 +293,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "meshQ",
     "meshCFL",
     "VMS_error",
+    "err_tri_f",
     "material_type"
   };
   static char const* const known_rand_fields[] = {
@@ -379,6 +380,35 @@ void detachAndWriteField(
   int size;
   detachField(m, fieldname, data, size);
   ph_write_field(f, fieldname, data, m->count(0), size, in.timeStepNumber);
+  free(data);
+}
+
+void detachAndWriteCellField(
+    Input& in,
+    apf::Mesh* m,
+    FILE* file,
+    const char* fieldname)
+{
+  apf::Field* f = m->findField(fieldname);
+  PCU_ALWAYS_ASSERT(f);
+  double* data;
+  int size = apf::countComponents(f);
+  size_t n = m->count(m->getDimension());
+  apf::NewArray<double> c(size);
+  data = (double*)malloc(sizeof(double) * size * m->count(m->getDimension()));
+  apf::MeshEntity* e;
+  size_t i = 0;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+    apf::getComponents(f, e, 0, &c[0]);
+    for (int j = 0; j < size; ++j)
+      data[j * n + i] = c[j];
+    ++i;
+  }
+  m->end(it);
+  PCU_ALWAYS_ASSERT(i == n);
+  apf::destroyField(f);
+  ph_write_field(file, fieldname, data, m->count(m->getDimension()), size, in.timeStepNumber);
   free(data);
 }
 
@@ -507,8 +537,6 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "motion_coords");
   if (m->findField("mesh_vel"))
     detachAndWriteField(in, m, f, "mesh_vel");
-  if (m->findField("tb_factor"))
-    detachAndWriteField(in, m, f, "tb_factor");
   if (m->findField("dc_lag"))
     detachAndWriteField(in, m, f, "dc_lag");
   if (m->findField("pressure projection vectors"))
@@ -521,6 +549,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
+  if (m->findField("err_tri_f"))
+    detachAndWriteCellField(in, m, f, "err_tri_f");
   if (in.nRigidBody)
     detachAndWriteRandField(in, f, "rbParams");
   /* destroy any remaining fields */
