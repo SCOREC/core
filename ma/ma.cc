@@ -25,9 +25,7 @@ void adapt(Input* in)
 {
   print("version 2.0 !");
   double t0 = PCU_Time();
-#ifdef DEBUG
   validateInput(in);
-#endif
   Adapt* a = new Adapt(in);
   preBalance(a);
   for (int i = 0; i < in->maximumIterations; ++i)
