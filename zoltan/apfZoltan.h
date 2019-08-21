@@ -29,6 +29,7 @@
   \brief Zoltan partitioning for apf::Mesh objects */
 
 #include <apfNumbering.h>
+#include <apfZoltanConfig.h>
 
 namespace apf {
 

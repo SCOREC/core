@@ -38,8 +38,14 @@ else()
   )
 endif()
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/apfZoltanConfig.h.in"
+               "${CMAKE_CURRENT_BINARY_DIR}/apfZoltanConfig.h")
+
+# Set include directory for building apf_zoltan target
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+
 # Package headers
-set(HEADERS apfZoltan.h)
+set(HEADERS apfZoltan.h "${CMAKE_CURRENT_BINARY_DIR}/apfZoltanConfig.h")
 
 # Add the apf_zoltan library
 add_library(apf_zoltan ${SOURCES})
@@ -49,6 +55,12 @@ target_include_directories(apf_zoltan INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
     )
+
+# Set include directory for generated header for targets linking to apf_zoltan
+target_include_directories(apf_zoltan INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    )
+
 
 # Link this package to these libraries
 target_link_libraries(apf_zoltan PUBLIC pcu apf)
