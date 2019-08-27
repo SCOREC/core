@@ -39,6 +39,7 @@ int PCU_Comm_Free(void);
 int PCU_Comm_Self(void);
 int PCU_Comm_Peers(void);
 double PCU_Time(void);
+bool PCU_Comm_Initialized(void);
 
 /* ==== FROM pcu_util.h ====*/
 void PCU_Assert_Fail(const char* msg);
