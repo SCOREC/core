@@ -81,7 +81,7 @@ static void setDefaults(Input& in)
   in.gammaDist = 3e-6;
   in.gammaSize = 3e-5;
   in.nRigidBody = 0;
-  in.nRBParam = 12;
+  in.nRBParam = 14;
   in.gradingFactor = 2.0;
   in.simCooperation = 1;
   in.writeSimLog = 0;
