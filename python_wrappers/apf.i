@@ -15,6 +15,7 @@
 #include <apfMDS.h>
 #include <apf.h>
 #include <apfNumbering.h>
+#include <apfShape.h>
 /* #include <apfVector.h> */
 /* #include <apfMatrix.h> */
 /* #include <apfDynamicVector.h> */
@@ -105,6 +106,13 @@ void lion_set_verbosity(int lvl);
     PCU_ALWAYS_ASSERT(downId < nd);
     apf::setVector(f, downs[downId], downNode, apf::Vector3(v1, v2, v3));
   }
+  int getVertNumbering(apf::Numbering* n, apf::MeshEntity* e, int downId, int downNode, int downComponent)
+  {
+    apf::MeshEntity* downs[12];
+    int nd = self->getDownward(e, 0, downs);
+    PCU_ALWAYS_ASSERT(downId < nd);
+    return apf::getNumber(n, downs[downId], downNode, downComponent);
+  }
   double getVertScalarField(apf::Field* f, apf::MeshEntity* e, int downId, int downNode)
   {
     apf::MeshEntity* downs[12];
@@ -136,6 +144,7 @@ void lion_set_verbosity(int lvl);
 %ignore apf::fail;
 %include<apf.h>
 %include<apfNumbering.h>
+%include<apfShape.h>
 
 
 
