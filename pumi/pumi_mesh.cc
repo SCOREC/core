@@ -229,6 +229,13 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
   return pumi::instance()->mesh;
 }
 
+pMesh pumi_mesh_load(pMesh m)
+{ //TODO add sanity checks
+  pumi::instance()->mesh = m;
+  pumi_mesh_print(pumi::instance()->mesh);
+  return pumi::instance()->mesh;
+}
+
 
 pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
 {

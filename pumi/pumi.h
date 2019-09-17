@@ -205,6 +205,9 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
 
+// load a mesh from a an existing partitioned apf mesh
+pMesh pumi_mesh_load(pMesh mesh);
+
 // load a serial mesh on all processes and set up comm links and ptn classification 
 // note that the default owning PID is 0
 pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stich_link=true);
