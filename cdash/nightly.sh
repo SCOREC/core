@@ -13,7 +13,7 @@ module load gcc/7.3.0-bt47fwr
 module load cmake/3.12.1-wfk2b7e
 module load mpich
 module load zoltan/3.83-int32-gx3prjr
-module load simmetrix-simmodsuite/12.0-190225-5euzhd5
+module load simmetrix-simmodsuite/14.0-190928-snlypqg
 
 #cdash output root
 d=/lore/cwsmith/nightlyBuilds/
