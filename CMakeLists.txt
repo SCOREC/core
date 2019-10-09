@@ -22,6 +22,10 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
+# require c++17
+option(ENABLE_CGNS "Enable the CGNS reader: requires c++17 extensions" OFF)
+message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
+
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()
@@ -29,7 +33,15 @@ if(NOT USE_XSDK_DEFAULTS)
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
   if(SCOREC_ENABLE_CXX11)
-    bob_cxx11_flags()
+    if(ENABLE_CGNS)
+      bob_cxx17_flags()
+    else()
+      bob_cxx11_flags()
+    endif()
+  else()
+    if(ENABLE_CGNS)
+      bob_cxx17_flags()
+    endif()
   endif()
 endif()
 message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
@@ -91,6 +103,7 @@ option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
+
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
@@ -115,6 +128,15 @@ if(ENABLE_OMEGA_H)
   set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
   set(Omega_h_REQUIRED_VERSION 9.0.0)
   bob_public_dep(Omega_h)
+endif()
+
+if(ENABLE_CGNS)
+  find_package(CGNS)
+  include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
+  #
+  find_package(HDF5) 
+  #
+  add_definitions(-DHAVE_CGNS)
 endif()
 
 # Include the SCOREC project packages
@@ -142,6 +164,9 @@ add_subdirectory(omega_h)
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
+if(ENABLE_CGNS)
+  target_link_libraries(core INTERFACE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif()
 scorec_export_library(core)
 
 if(BUILD_EXES)

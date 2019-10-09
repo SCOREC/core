@@ -20,6 +20,7 @@ set(MDS_SOURCES
   apfBox.cc
   mdsANSYS.cc
   mdsGmsh.cc
+  mdsCGNS.cc
   mdsUgrid.cc)
 
 set(MDS_HEADERS

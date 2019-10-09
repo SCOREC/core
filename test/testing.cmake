@@ -450,6 +450,50 @@ if(ENABLE_ZOLTAN)
     "4" "rib" "reptn" "1"
   )
 endif()
+
+if(ENABLE_CGNS)
+#
+# sort of an arbitrary choice
+set(numProcs 4)
+#
+set(CGNSDIR ${MESHES}/cgns)
+#
+# 2D
+mpi_test(cgns_2d_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/4quads.adf.hdf.cgns"
+  4quads.smb
+  additional)
+mpi_test(cgns_2d_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/5quad1Tri.adf.hdf.cgns"
+  5quad1Tri.smb
+  additional)
+mpi_test(cgns_2d_3 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/5quad2Tri.adf.hdf.cgns"
+  5quad2Tri.smb
+  additional)
+mpi_test(cgns_2d_4 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/9tris.adf.hdf.cgns"
+  9tris.smb
+  additional)
+#
+# 3D
+#
+mpi_test(cgns_3d_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/3D/tets_pyra.adf.hdf.cgns"
+  tets_pyra.smb
+  additional)
+mpi_test(cgns_3d_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/3D/hexs.adf.hdf.cgns"
+  hexs.smb
+  additional)
+endif()
+
 mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"

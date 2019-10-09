@@ -28,6 +28,7 @@ set(SOURCES
   apfBox.cc
   mdsANSYS.cc
   mdsGmsh.cc
+  mdsCGNS.cc
   mdsUgrid.cc
 )
 
@@ -58,6 +59,11 @@ target_link_libraries(mds
      gmi
      apf
    )
+
+if(ENABLE_CGNS)
+  message(STATUS ${CGNS_LIBRARIES})
+  target_link_libraries(mds PRIVATE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif()
 
 scorec_export_library(mds)
 
