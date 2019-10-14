@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include <lionPrint.h>
 #include <MeshSim.h>
+#include <SimDiscrete.h>
 #include <SimAdvMeshing.h>
 #include <SimPartitionedMesh.h>
 #include <SimModelerAdvUtil.h>
@@ -273,6 +274,7 @@ void simStart() {
 #ifdef SIM_ACIS
   SimAcis_start(1);
 #endif
+  SimDiscrete_start(0);
   Sim_readLicenseFile(NULL);
   MS_init();
   SimAdvMeshing_start();
@@ -285,6 +287,7 @@ void simStop() {
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
+  SimDiscrete_stop(0);
 #ifdef SIM_ACIS
   SimAcis_stop(1);
 #endif
