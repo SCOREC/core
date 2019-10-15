@@ -456,7 +456,7 @@ if(ENABLE_CGNS)
 # sort of an arbitrary choice
 set(numProcs 4)
 #
-set(CGNSDIR ${MESHES}/cgns)
+set(CGNSDIR ${MESHES}/cgns/basic)
 #
 # 2D
 mpi_test(cgns_2d_1 ${numProcs}
@@ -491,6 +491,18 @@ mpi_test(cgns_3d_2 ${numProcs}
   ./from_cgns
   "${CGNSDIR}/3D/hexs.adf.hdf.cgns"
   hexs.smb
+  additional)
+#
+# BCS tests
+#
+set(numProcs 5)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS)
+#
+mpi_test(cgns_bcs_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/Mesh_3.adf.hdf.cgns"
+  bcs1.smb
   additional)
 endif()
 
