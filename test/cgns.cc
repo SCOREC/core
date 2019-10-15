@@ -16,42 +16,10 @@
 #include <pumi.h>
 #include <apfZoltan.h>
 
-//https://github.com/SCOREC/core/blob/4b854ae996cb261a22f6ee6b704569b78866004c/test/repartition.cc
-// balance appears to delete the vertex and element numbering
-void balance(apf::Mesh2 *m)
-{
-  bool fineStats = false;                         // set to true for per part stats
-  Parma_PrintPtnStats(m, "preRefine", fineStats); //FIXME
-
-  apf::MeshTag *weights = m->createDoubleTag("zoltan_weight", 1);
-  {
-    apf::MeshIterator *it = m->begin(m->getDimension());
-    apf::MeshEntity *e;
-    double value = 1.0;
-    while ((e = m->iterate(it)))
-      m->setDoubleTag(e, weights, &value);
-    m->end(it);
-  }
-  apf::Balancer *b = apf::makeZoltanBalancer(m, apf::RCB, apf::REPARTITION, false);
-  b->balance(weights, 1.1);
-  m->destroyTag(weights);
-  delete b;
-
-  Parma_PrintPtnStats(m, "");
-}
-
-//https://github.com/SCOREC/core/blob/4b854ae996cb261a22f6ee6b704569b78866004c/test/reorder.cc
-void reorder(apf::Mesh2 *m)
-{
-  //apf::MeshTag *order = Parma_BfsReorder(m);
-  //apf::reorderMdsMesh(m, order);
-  apf::reorderMdsMesh(m);
-}
-
 // https://gist.github.com/bgranzow/98087114166956646da684ed98acab02
-apf::MeshTag *create_int_tag(apf::Mesh *m, int dim)
+apf::MeshTag *create_int_tag(const std::string &name, apf::Mesh *m, int dim)
 {
-  apf::MeshTag *tag = m->createIntTag("my_tag", 1); // 1 is size of tag
+  apf::MeshTag *tag = m->createIntTag(name.c_str(), 1); // 1 is size of tag
   apf::MeshEntity *elem;
   apf::MeshIterator *it = m->begin(dim);
   int vals[1];
@@ -63,12 +31,12 @@ apf::MeshTag *create_int_tag(apf::Mesh *m, int dim)
 }
 
 //https://github.com/CEED/PUMI/blob/master/ma/maDBG.cc
-apf::Field *convert_tag_doubleField(apf::Mesh *m, apf::MeshTag *t, int dim)
+apf::Field *convert_tag_doubleField(const std::string &name, apf::Mesh *m, apf::MeshTag *t, int dim)
 {
   apf::MeshEntity *elem;
   apf::MeshIterator *it = m->begin(dim);
   apf::Field *f = nullptr;
-  const auto fieldName = "my_field";
+  const auto fieldName = name.c_str();
   if (dim == 0)
     f = apf::createFieldOn(m, fieldName, apf::SCALAR);
   else
@@ -86,82 +54,121 @@ apf::Field *convert_tag_doubleField(apf::Mesh *m, apf::MeshTag *t, int dim)
   return f;
 }
 
-void additional(gmi_model *g, apf::Mesh2 *mesh)
+void balance(const std::string &prefix, const apf::ZoltanMethod& method, apf::Mesh2 *m)
 {
-  std::cout << mesh << std::endl;
+  const auto dim = m->getDimension();
+  convert_tag_doubleField("procID_prebalance", m, create_int_tag("procID_prebalance", m, dim), dim);
+
+  apf::MeshTag *weights = Parma_WeighByMemory(m);
+  apf::Balancer *balancer = makeZoltanBalancer(m, method, apf::REPARTITION);
+  balancer->balance(weights, 1.10);
+  delete balancer;
+  apf::removeTagFromDimension(m, weights, m->getDimension());
+  Parma_PrintPtnStats(m, "");
+  m->destroyTag(weights);
+
+  const std::string name = prefix + "_balance_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  apf::writeVtkFiles(name.c_str(), m);
+}
+
+//https://github.com/SCOREC/core/blob/4b854ae996cb261a22f6ee6b704569b78866004c/test/reorder.cc
+void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
+{
   {
-    balance(mesh);
-    const std::string name = "output_balance_" + std::to_string(PCU_Comm_Peers()) + "procs";
-    apf::writeVtkFiles(name.c_str(), mesh);
+    apf::GlobalNumbering *gn = nullptr;
+    gn = apf::makeGlobal(apf::numberOwnedNodes(m, "vertex Indices_prereorder"));
+    apf::synchronize(gn);
   }
+  // no synchronize call
+  // https://github.com/SNLComputation/Albany/blob/master/src/disc/pumi/Albany_APFDiscretization.cpp @ various place throughout file
+  // https://github.com/SCOREC/core/issues/249
   {
-    reorder(mesh);
-    const auto dim = mesh->getDimension();
-    convert_tag_doubleField(mesh, create_int_tag(mesh, dim), dim);
-
-    {
-      apf::GlobalNumbering *gn = nullptr;
-      gn = apf::makeGlobal(apf::numberOwnedNodes(mesh, "vertex Indices_postreorder"));
-      apf::synchronize(gn);
-    }
-    // no synchronize call
-    // https://github.com/SNLComputation/Albany/blob/master/src/disc/pumi/Albany_APFDiscretization.cpp @ various place throughout file
-    // https://github.com/SCOREC/core/issues/249
-    {
-      apf::GlobalNumbering *gn = nullptr;
-      gn = apf::makeGlobal(apf::numberElements(mesh, "element Indices_postreorder"));
-    }
-    const std::string name = "output_balance_reorder_" + std::to_string(PCU_Comm_Peers()) + "procs";
-    apf::writeVtkFiles(name.c_str(), mesh);
+    apf::GlobalNumbering *gn = nullptr;
+    gn = apf::makeGlobal(apf::numberElements(m, "element Indices_prereorder"));
   }
 
+  //apf::MeshTag *order = Parma_BfsReorder(m);
+  //apf::reorderMdsMesh(m, order);
+  apf::reorderMdsMesh(m);
+
   {
-    //create the pumi instance
-    pumi::instance()->model = new gModel(g);
-    pMesh pm = pumi_mesh_load(mesh);
-    std::cout << pm << std::endl;
-    pumi_mesh_verify(pm);
+    apf::GlobalNumbering *gn = nullptr;
+    gn = apf::makeGlobal(apf::numberOwnedNodes(m, "vertex Indices_postreorder"));
+    apf::synchronize(gn);
+  }
+  // no synchronize call
+  // https://github.com/SNLComputation/Albany/blob/master/src/disc/pumi/Albany_APFDiscretization.cpp @ various place throughout file
+  // https://github.com/SCOREC/core/issues/249
+  {
+    apf::GlobalNumbering *gn = nullptr;
+    gn = apf::makeGlobal(apf::numberElements(m, "element Indices_postreorder"));
+  }
 
-    // //create an element field
-    // const int mdim = pumi_mesh_getDim(pm);
-    // pShape s = pumi_shape_getConstant(mdim);
-    // const int dofPerElm = 1;
-    // pField f = pumi_field_create(pm, "elmField", dofPerElm, PUMI_PACKED, s);
+  const std::string name = prefix + "_reorder_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  apf::writeVtkFiles(name.c_str(), m);
+}
 
-    // pMeshIter it = pm->begin(mdim);
-    // pMeshEnt e;
-    // double v = 0;
-    // while ((e = pm->iterate(it)))
-    //   pumi_node_setField(f, e, 0, &v);
-    // pm->end(it);
+pMesh toPumi(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
+{
+  //create the pumi instance
+  pumi::instance()->model = new gModel(g);
+  pMesh pm = pumi_mesh_load(mesh);
+  std::cout << pm << std::endl;
+  pumi_mesh_verify(pm);
+  const std::string name = prefix + "_toPUMI_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  pumi_mesh_write(pm, name.c_str(), "vtk");
+  return pm;
+}
 
-    // const int ghost = mdim;
-    // const int bridge = ghost - 1;
-    // const int numLayers = 1;
-    // const int ghostAcrossCopies = 1;
-    // pumi_ghost_createLayer(pm, bridge, ghost, numLayers, ghostAcrossCopies);
+void additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
+{
+  // seems essential to make pm first before calling balance or reorder...
+  auto pm = toPumi(prefix, g, mesh);
+  balance(prefix, apf::RCB, pm);
+  simpleReorder(prefix, pm);
 
-    // it = pm->begin(mdim);
-    // v = 1;
-    // while ((e = pm->iterate(it)))
-    // {
-    //   if (!pumi_ment_isGhost(e))
-    //     pumi_node_setField(f, e, 0, &v);
-    // }
-    // pm->end(it);
+  {
+    //create an element field
+    const int mdim = pumi_mesh_getDim(pm);
+    pShape s = pumi_shape_getConstant(mdim);
+    const int dofPerElm = 1;
+    pField f = pumi_field_create(pm, "elmField", dofPerElm, PUMI_PACKED, s);
 
-    // // only the owned elements will have a elmField value of 1
-    // pumi_mesh_write(pm, "beforeSync", "vtk");
+    pMeshIter it = pm->begin(mdim);
+    pMeshEnt e;
+    double v = 0;
+    while ((e = pm->iterate(it)))
+      pumi_node_setField(f, e, 0, &v);
+    pm->end(it);
 
-    // pumi_field_synchronize(f);
+    const int ghost = mdim;
+    const int bridge = ghost - 1;
+    const int numLayers = 1;
+    const int ghostAcrossCopies = 1;
+    pumi_ghost_createLayer(pm, bridge, ghost, numLayers, ghostAcrossCopies);
 
-    // // owned and ghosted elements will have a elmField value of 1
-    // pumi_mesh_write(pm, "afterSync", "vtk");
+    it = pm->begin(mdim);
+    v = 1;
+    while ((e = pm->iterate(it)))
+    {
+      if (!pumi_ment_isGhost(e))
+        pumi_node_setField(f, e, 0, &v);
+    }
+    pm->end(it);
 
-    // // clean-up
-    // pumi_field_delete(f);
-    // pumi_ghost_delete(pm);
-    // pumi_mesh_delete(pm);
+    const std::string name = prefix + "_toPUMI_" + std::to_string(PCU_Comm_Peers()) + "procs";
+    // only the owned elements will have a elmField value of 1
+    pumi_mesh_write(pm, (name + "_beforeSync").c_str(), "vtk");
+
+    pumi_field_synchronize(f);
+
+    // owned and ghosted elements will have a elmField value of 1
+    pumi_mesh_write(pm, (name + "_afterSync").c_str(), "vtk");
+
+    // clean-up
+    pumi_field_delete(f);
+    pumi_ghost_delete(pm);
+    pumi_mesh_delete(pm);
   }
 }
 
@@ -205,23 +212,27 @@ int main(int argc, char **argv)
   gmi_register_null();
   gmi_register_mesh();
   gmi_model *g = gmi_load(".null");
-  apf::Mesh2 *m = apf::loadMdsFromCGNS(argv[1]);
+  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv[1]);
   m->verify();
   //
   m->writeNative(argv[2]);
   // so we can see the result
   const std::string path = argv[1];
   std::size_t found = path.find_last_of("/\\");
-  const auto name = path.substr(found + 1) + std::string("_toVTK");
+  const auto prefix = path.substr(found + 1);
+  const auto name = prefix + std::string("_toVTK");
   std::cout << path << " " << found << " " << name << std::endl;
   apf::writeVtkFiles(name.c_str(), m);
 
   // main purpose is to call additional tests through the test harness testing.cmake
   if (additionalTests)
-    additional(g, m);
+    additional(prefix, g, m);
 
-  m->destroyNative();
-  apf::destroyMesh(m);
+  if (!additionalTests)
+  {
+    m->destroyNative();
+    apf::destroyMesh(m);
+  }
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;
