@@ -260,7 +260,7 @@ auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one
   return std::make_tuple(vertexIDs, numberToReadPerProc[PCU_Comm_Self()]);
 }
 
-apf::Mesh2 *DoIt(const std::string &fname, int readDim = 0)
+apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
 {
   int cgid = -1;
   auto comm = PCU_Get_Comm();
@@ -287,9 +287,6 @@ apf::Mesh2 *DoIt(const std::string &fname, int readDim = 0)
     readDim = cellDim;
 
   // Salome cgns is a bit on the piss: cellDim, physDim, ncoords are not always consistent
-  gmi_register_mesh();
-  gmi_register_null();
-  gmi_model *g = gmi_load(".null");
   apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false);
   apf::GlobalToVert globalToVert;
 
@@ -451,10 +448,10 @@ namespace apf
 {
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
-Mesh2 *loadMdsFromCGNS(const char *fname)
+Mesh2 *loadMdsFromCGNS(gmi_model* g, const char *fname)
 {
 #ifdef HAVE_CGNS
-  Mesh2 *m = DoIt(fname);
+  Mesh2 *m = DoIt(g, fname);
   return m;
 #else
   Mesh2 *m = nullptr;
