@@ -22,15 +22,16 @@
 #include <pcu_util.h>
 #include <cstdlib>
 
-#ifdef HAVE_CGNS
-//
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <utility>
+//
+#ifdef HAVE_CGNS
 //
 #include <cgns_io.h>
 #include <pcgnslib.h>
@@ -39,13 +40,13 @@
 
 namespace
 {
-#ifdef DEBUG
+#ifndef NDEBUG // debug, cmake double negative
 static constexpr bool debugOutput = true;
-#else
+#else // optimised
 static constexpr bool debugOutput = false;
 #endif
 
-static std::string CGNSElementTypeToString(const CGNS_ENUMT(ElementType_t) & elementType)
+static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType_t) & elementType)
 {
   if (elementType == CGNS_ENUMV(NODE))
     return "NODE";
@@ -86,38 +87,55 @@ void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
         out << "\n";
         out << std::flush;
       }
-      PCU_Barrier();
+      // removed this: can't guarantee this is collectively called, order not ensured therefore.
+      //PCU_Barrier(); 
     }
   }
 }
 
-void Kill()
+template <typename... Args>
+void Kill(const int fid, Args &&... args)
 {
+  DebugParallelPrinter(std::cout, args...);
+
   if (PCU_Comm_Initialized())
   {
+    cgp_close(fid);
     // Finalize the MPI environment.
     PCU_Comm_Free();
     MPI_Finalize();
+    cgp_error_exit();
     exit(EXIT_FAILURE);
   }
   else
   {
+    cg_close(fid);
+    cg_error_exit();
+    exit(EXIT_FAILURE);
+  }
+}
+
+void Kill(const int fid)
+{
+  if (PCU_Comm_Initialized())
+  {
+    cgp_close(fid);
+    // Finalize the MPI environment.
+    PCU_Comm_Free();
+    MPI_Finalize();
+    cgp_error_exit();
+    exit(EXIT_FAILURE);
+  }
+  else
+  {
+    cg_close(fid);
+    cg_error_exit();
     exit(EXIT_FAILURE);
   }
 }
 
 auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
 {
-  // Read all
-  // const int lowest = 1;
-  // const int highest = nverts;
-
-  // Read min required as defined by consecutive range
-  // make one based as ReadElements makes zero based
-  // const int lowest = *std::min_element(vertexIDs.begin(), vertexIDs.end()) + 1;
-  // const int highest = *std::max_element(vertexIDs.begin(), vertexIDs.end()) + 1;
-  // DebugParallelPrinter(std::cout, "From vertexIDs ", lowest, highest, nverts);
-
   // Read min required as defined by consecutive range
   // make one based as ReadElements makes zero based
   const int lowest = globalToVert.begin()->first + 1;
@@ -152,7 +170,7 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
     if (cg_coord_info(cgid, base, zone, d + 1, &datatype, &coord_names[d][0]))
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill();
+      Kill(cgid);
     }
     const auto coord_name = std::string(coord_names[d].c_str());
     //boost::algorithm::trim(coord_name); // can't be bothered including boost
@@ -162,7 +180,7 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
                             ordinate.data()))
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill();
+      Kill(cgid);
     }
   }
   // to be clear, indices passed back are global, zero based
@@ -260,7 +278,231 @@ auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one
   return std::make_tuple(vertexIDs, numberToReadPerProc[PCU_Comm_Self()]);
 }
 
-apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
+struct CGNSBCMeta
+{
+  std::string bocoName;
+  CGNS_ENUMT(BCType_t)
+  bocoType = CGNS_ENUMV(BCTypeNull);
+  CGNS_ENUMT(PointSetType_t)
+  ptsetType = CGNS_ENUMV(PointSetTypeNull);
+  cgsize_t npnts = -1;
+  std::vector<int> normalindices;
+  cgsize_t normalListSize = -1;
+  CGNS_ENUMT(DataType_t)
+  normalDataType = CGNS_ENUMV(DataTypeNull);
+  int ndataset = -1;
+  CGNS_ENUMT(GridLocation_t)
+  location = CGNS_ENUMV(GridLocationNull);
+  std::string locationName;
+  cgsize_t minElementId = -1;
+  cgsize_t maxElementId = -1;
+  std::vector<cgsize_t> bcElementIds;
+
+  void Info() const
+  {
+    std::cout << "BC named: " << bocoName << ", located on: " << locationName << std::endl;
+    std::cout << "\tHas " << npnts << " elements on the bc stored as a " << cg_PointSetTypeName(ptsetType) << std::endl;
+    std::cout << "\tThe min and max Element Ids for this bcs are: " << minElementId << " " << maxElementId << std::endl;
+    if constexpr (debugOutput)
+    {
+      std::cout << "\tThe element Ids that are tagged with this bcs are: ";
+      for (const auto &i : bcElementIds)
+        std::cout << i << " ";
+      std::cout << std::endl;
+    }
+  }
+};
+
+struct BCInfo
+{
+  std::string bcName;       // user provided
+  std::string cgnsLocation; // for debug
+  std::unordered_set<cgsize_t> vertexIds;
+};
+
+void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections)
+{
+  // Read the BCS.
+  std::vector<CGNSBCMeta> bcMetas(nBocos);
+  std::vector<BCInfo> bcInfos(nBocos);
+  //
+  for (int boco = 1; boco <= nBocos; boco++)
+  {
+    auto &bcInfo = bcInfos[boco - 1];
+    auto &bcMeta = bcMetas[boco - 1];
+    bcMeta.normalindices.resize(physDim);
+
+    bcMeta.bocoName.resize(CGIO_MAX_NAME_LENGTH + 1, ' ');
+    bool pointRange = false;
+
+    if (cg_boco_info(cgid, base, zone, boco, &bcMeta.bocoName[0], &bcMeta.bocoType,
+                     &bcMeta.ptsetType, &bcMeta.npnts, bcMeta.normalindices.data(), &bcMeta.normalListSize,
+                     &bcMeta.normalDataType, &bcMeta.ndataset))
+      Kill(cgid, "Failed cg_boco_info");
+
+    if (bcMeta.ptsetType == CGNS_ENUMV(PointList) || (bcMeta.ptsetType == CGNS_ENUMV(PointRange)))
+    {
+      bcMeta.bocoName = std::string(bcMeta.bocoName.c_str());
+      //boost::algorithm::trim(bcMeta.bocoName); // can't be bothered including boost
+
+      if (cg_boco_gridlocation_read(cgid, base, zone, boco, &bcMeta.location))
+        Kill(cgid, "Failed cg_boco_gridlocation_read");
+
+      bcMeta.locationName = cg_GridLocationName(bcMeta.location);
+
+      if (bcMeta.ptsetType == CGNS_ENUMV(PointRange))
+        pointRange = true;
+    }
+    else
+    {
+      Kill(cgid,
+           "TODO: Can only work with "
+           "PointList and PointRange BC "
+           "types at the moment");
+    }
+
+    bcMeta.minElementId = -1;
+    bcMeta.maxElementId = -1;
+    bcMeta.bcElementIds.resize(bcMeta.npnts, -1);
+
+    // here I read say elements with bcs as: 5, 3, 7, 9, and then read below ALL elements from 3->9,
+    // but I only need, 3, 5, 7, 9, so don't need elements 4, 6, 8
+    {
+      if (bcMeta.locationName == "Vertex") // && cellDim == 1)
+      {
+        if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
+          Kill(cgid, "Failed cg_boco_read");
+      }
+      else if (bcMeta.locationName == "EdgeCenter") // && cellDim == 2)
+      {
+        if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
+          Kill(cgid, "Failed cg_boco_read");
+      }
+      else if (bcMeta.locationName == "FaceCenter") // && cellDim == 3)
+      {
+        if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
+          Kill(cgid, "Failed cg_boco_read");
+      }
+      else if (bcMeta.locationName == "CellCenter") // && cellDim == 3)
+      {
+        if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
+          Kill(cgid, "Failed cg_boco_read");
+      }
+      else
+        Kill(cgid, "Failed Location test for BC Type", bcMeta.locationName,
+             cellDim);
+
+      if (pointRange)
+      {
+        // Check this is correct, I'm just trying to fill a contiguous range from [start, end]
+        PCU_ALWAYS_ASSERT_VERBOSE(bcMeta.bcElementIds.size() == 2, "wrong size");
+        const auto start = bcMeta.bcElementIds[0];
+        const auto end = bcMeta.bcElementIds[1];
+        const auto size = end - start + 1;
+        bcMeta.bcElementIds.resize(size, -1);
+        std::iota(std::begin(bcMeta.bcElementIds), std::end(bcMeta.bcElementIds), start);
+      }
+
+      bcMeta.minElementId = *std::min_element(bcMeta.bcElementIds.begin(), bcMeta.bcElementIds.end());
+      bcMeta.maxElementId = *std::max_element(bcMeta.bcElementIds.begin(), bcMeta.bcElementIds.end());
+      bcMeta.Info();
+      bcInfo.bcName = bcMeta.bocoName;
+      bcInfo.cgnsLocation = bcMeta.locationName;
+    }
+
+    std::vector<cgsize_t> vertexIDs;
+    if (bcMeta.locationName != "Vertex")
+    {
+      std::unordered_set<cgsize_t> elementsToConsider;
+      for (const auto &j : bcMeta.bcElementIds)
+        elementsToConsider.insert(j);
+
+      for (int section = 1; section <= nsections; section++)
+      {
+        std::string sectionName;
+        sectionName.resize(CGIO_MAX_NAME_LENGTH + 1, ' ');
+
+        CGNS_ENUMT(ElementType_t)
+        elementType = CGNS_ENUMV(ElementTypeNull);
+        cgsize_t el_start = -1;
+        cgsize_t el_end = -1;
+        int num_bndry = -1;
+        int parent_flag = -1;
+        cgsize_t numElements = -1;
+        int verticesPerElement = -1;
+
+        cg_section_read(cgid, base, zone, section, &sectionName[0],
+                        &elementType, &el_start, &el_end,
+                        &num_bndry, &parent_flag);
+
+        numElements = el_end - el_start + 1;
+
+        cg_npe(elementType, &verticesPerElement);
+
+        const cgsize_t es = el_start;
+        const cgsize_t ee = el_end;
+
+        cgsize_t range_min = bcMeta.minElementId;
+        cgsize_t range_max = bcMeta.maxElementId;
+
+        bool doRead = true;
+        if (es < bcMeta.minElementId && ee < bcMeta.minElementId)
+          doRead = false;
+        if (es > bcMeta.maxElementId && es > bcMeta.maxElementId)
+          doRead = false;
+
+        if (doRead)
+        {
+          if (es < bcMeta.minElementId && ee < bcMeta.minElementId) // clip lower
+            range_max = ee;
+
+          if (es < bcMeta.maxElementId && ee > bcMeta.maxElementId) // clip higher
+            range_min = es;
+
+          range_min = std::max(es, bcMeta.minElementId);
+          range_max = std::min(ee, bcMeta.maxElementId);
+          const cgsize_t range_num = range_max - range_min + 1;
+
+          vertexIDs.resize(range_num * verticesPerElement,
+                           -1234567);
+
+          cg_elements_partial_read(cgid, base, zone, section, range_min,
+                                   range_max, vertexIDs.data(), nullptr);
+
+          cgsize_t counter = range_min;
+          for (size_t i = 0; i < vertexIDs.size(); i += verticesPerElement)
+          {
+            if (elementsToConsider.count(counter))
+            {
+              auto last = std::min(vertexIDs.size(), i + verticesPerElement);
+              std::vector<cgsize_t> vec(vertexIDs.begin() + i, vertexIDs.begin() + last);
+              // std::cout << counter << " ";
+              // for (const auto &j : vec)
+              //   std::cout << j << " ";
+              // std::cout << std::endl;
+
+              for (const auto &k : vec)
+                bcInfo.vertexIds.insert(k);
+            }
+            counter++;
+          }
+        }
+      }
+    }
+    else
+    {
+      vertexIDs = bcMeta.bcElementIds;
+      // std::cout << "Vertex BCS: ";
+      // for (const auto &j : vertexIDs)
+      //   std::cout << j << " ";
+      // std::cout << std::endl;
+      for (const auto &k : vertexIDs)
+        bcInfo.vertexIds.insert(k);
+    }
+  }
+}
+
+apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
 {
   int cgid = -1;
   auto comm = PCU_Get_Comm();
@@ -273,7 +515,7 @@ apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
   if (nbases > 1)
   {
     std::cout << __LINE__ << " CGNS is dead " << std::endl;
-    Kill();
+    Kill(cgid);
   }
 
   std::string basename;
@@ -283,8 +525,7 @@ apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
   int physDim = -1;
   const int base = 1;
   cg_base_read(cgid, base, &basename[0], &cellDim, &physDim);
-  if (readDim == 0)
-    readDim = cellDim;
+  const int readDim = cellDim;
 
   // Salome cgns is a bit on the piss: cellDim, physDim, ncoords are not always consistent
   apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false);
@@ -316,7 +557,7 @@ apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
     if (ngrids > 1)
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill();
+      Kill(cgid);
     }
     int ncoords = -1;
     cg_ncoords(cgid, base, zone, &ncoords);
@@ -333,11 +574,18 @@ apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
     else
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill();
+      Kill(cgid);
     }
 
     int nBocos = -1;
     cg_nbocos(cgid, base, zone, &nBocos);
+
+    if (nBocos > 0)
+    {
+      std::cout << "Attempting to read BCS info "
+                << " " << nBocos << std::endl;
+      ReadBCInfo(cgid, base, zone, nBocos, physDim, cellDim, nsections);
+    }
 
     for (int section = 1; section <= nsections; section++)
     {
@@ -357,7 +605,6 @@ apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
                       &elementType, &el_start, &el_end,
                       &num_bndry, &parent_flag);
 
-      CGNSElementTypeToString(elementType);
       numElements = el_end - el_start + 1;
 
       cg_npe(elementType, &verticesPerElement);
@@ -415,12 +662,16 @@ apf::Mesh2 *DoIt(gmi_model* g, const std::string &fname, int readDim = 0)
       else
       {
         std::cout << __LINE__ << " CGNS is dead "
-                  << " " << CGNSElementTypeToString(elementType) << std::endl;
-        Kill();
+                  << " " << SupportedCGNSElementTypeToString(elementType) << std::endl;
+        Kill(cgid);
       }
     }
   }
-  cgp_close(cgid);
+
+  if (PCU_Comm_Initialized())
+    cgp_close(cgid);
+  else
+    cg_close(cgid);
 
   apf::finalise(mesh, globalToVert);
   apf::alignMdsRemotes(mesh);
@@ -448,7 +699,7 @@ namespace apf
 {
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
-Mesh2 *loadMdsFromCGNS(gmi_model* g, const char *fname)
+Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname)
 {
 #ifdef HAVE_CGNS
   Mesh2 *m = DoIt(g, fname);
