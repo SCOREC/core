@@ -497,7 +497,7 @@ mpi_test(cgns_3d_2 ${numProcs}
 #
 set(numProcs 5)
 #
-set(CGNSDIR ${MESHES}/cgns/withBCS)
+set(CGNSDIR ${MESHES}/cgns/withBCS/3D)
 #
 mpi_test(cgns_bcs_1 ${numProcs}
   ./from_cgns
