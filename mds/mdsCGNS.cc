@@ -88,7 +88,7 @@ void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
         out << std::flush;
       }
       // removed this: can't guarantee this is collectively called, order not ensured therefore.
-      //PCU_Barrier(); 
+      //PCU_Barrier();
     }
   }
 }
@@ -96,7 +96,7 @@ void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
 template <typename... Args>
 void Kill(const int fid, Args &&... args)
 {
-  DebugParallelPrinter(std::cout, args...);
+  DebugParallelPrinter(std::cout, "***** CGNS ERROR", args...);
 
   if (PCU_Comm_Initialized())
   {
@@ -315,16 +315,61 @@ struct CGNSBCMeta
 
 struct BCInfo
 {
-  std::string bcName;       // user provided
-  std::string cgnsLocation; // for debug
-  std::unordered_set<cgsize_t> vertexIds;
+  std::string bcName;                     // user provided
+  std::string cgnsLocation;               // for debug
+  std::unordered_set<cgsize_t> vertexIds; // zero-based global to relate to GlobalToVert
+  apf::MeshTag *tag = nullptr;
+  apf::Field *field = nullptr;
+
+  void TagVertices(const int cgid, apf::Mesh *m, apf::GlobalToVert &globalToVert)
+  {
+    tag = m->createIntTag(bcName.c_str(), 1); // 1 is size of tag
+    apf::MeshEntity *elem = nullptr;
+    apf::MeshIterator *it = m->begin(0);
+    int vals[1];
+    vals[0] = 0;
+    while ((elem = m->iterate(it)))
+      m->setIntTag(elem, tag, vals);
+    m->end(it);
+
+    for (const auto &v : vertexIds)
+    {
+      auto iter = globalToVert.find(v);
+      if (iter != globalToVert.end())
+      {
+        apf::MeshEntity *elem = iter->second;
+        vals[0] = 1;
+        m->setIntTag(elem, tag, vals);
+      }
+      else
+      {
+        Kill(cgid, "GlobalToVert lookup problem", v);
+      }
+    }
+
+    {
+      apf::MeshEntity *elem;
+      apf::MeshIterator *it = m->begin(0);
+      field = apf::createFieldOn(m, bcName.c_str(), apf::SCALAR);
+
+      int vals[1];
+      while ((elem = m->iterate(it)))
+      {
+        m->getIntTag(elem, tag, vals);
+        double dval[1];
+        dval[0] = vals[0];
+        apf::setComponents(field, elem, 0, dval);
+      }
+      m->end(it);
+    }
+  }
 };
 
-void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections)
+void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections, std::vector<BCInfo> &bcInfos, const apf::GlobalToVert &globalToVert)
 {
   // Read the BCS.
   std::vector<CGNSBCMeta> bcMetas(nBocos);
-  std::vector<BCInfo> bcInfos(nBocos);
+  bcInfos.resize(nBocos);
   //
   for (int boco = 1; boco <= nBocos; boco++)
   {
@@ -470,6 +515,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
                                    range_max, vertexIDs.data(), nullptr);
 
           cgsize_t counter = range_min;
+
           for (size_t i = 0; i < vertexIDs.size(); i += verticesPerElement)
           {
             if (elementsToConsider.count(counter))
@@ -482,7 +528,12 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
               // std::cout << std::endl;
 
               for (const auto &k : vec)
-                bcInfo.vertexIds.insert(k);
+              {
+                const auto zb = k - 1; // make zero-based
+                auto iter = globalToVert.find(zb);
+                if (iter != globalToVert.end())
+                  bcInfo.vertexIds.insert(zb);
+              }
             }
             counter++;
           }
@@ -497,7 +548,12 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
       //   std::cout << j << " ";
       // std::cout << std::endl;
       for (const auto &k : vertexIDs)
-        bcInfo.vertexIds.insert(k);
+      {
+        const auto zb = k - 1; // make zero-based
+        auto iter = globalToVert.find(zb);
+        if (iter != globalToVert.end())
+          bcInfo.vertexIds.insert(zb);
+      }
     }
   }
 }
@@ -527,7 +583,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
   cg_base_read(cgid, base, &basename[0], &cellDim, &physDim);
   const int readDim = cellDim;
 
-  // Salome cgns is a bit on the piss: cellDim, physDim, ncoords are not always consistent
+  // Salome cgns is a bit on the odd side: cellDim, physDim, ncoords are not always consistent
   apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false);
   apf::GlobalToVert globalToVert;
 
@@ -537,6 +593,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
 
   int nfam = -1;
   cg_nfamilies(cgid, base, &nfam);
+
+  std::vector<BCInfo> bcInfos;
 
   for (int zone = 1; zone <= nzones; ++zone)
   {
@@ -580,13 +638,6 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
     int nBocos = -1;
     cg_nbocos(cgid, base, zone, &nBocos);
 
-    if (nBocos > 0)
-    {
-      std::cout << "Attempting to read BCS info "
-                << " " << nBocos << std::endl;
-      ReadBCInfo(cgid, base, zone, nBocos, physDim, cellDim, nsections);
-    }
-
     for (int section = 1; section <= nsections; section++)
     {
       std::string sectionName;
@@ -624,7 +675,15 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
           {
             const auto pp = ordinates.at(p.first);
             apf::Vector3 point(pp[0], pp[1], pp[2]);
-            mesh->setPoint(globalToVert[p.first], 0, point);
+            auto iter = globalToVert.find(p.first);
+            if (iter != globalToVert.end())
+            {
+              mesh->setPoint(iter->second, 0, point);
+            }
+            else
+            {
+              Kill(cgid, "GlobalToVert lookup problem");
+            }
           }
         }
       };
@@ -666,12 +725,14 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
         Kill(cgid);
       }
     }
-  }
 
-  if (PCU_Comm_Initialized())
-    cgp_close(cgid);
-  else
-    cg_close(cgid);
+    if (nBocos > 0)
+    {
+      std::cout << "Attempting to read BCS info "
+                << " " << nBocos << std::endl;
+      ReadBCInfo(cgid, base, zone, nBocos, physDim, cellDim, nsections, bcInfos, globalToVert);
+    }
+  }
 
   apf::finalise(mesh, globalToVert);
   apf::alignMdsRemotes(mesh);
@@ -690,6 +751,16 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
     apf::GlobalNumbering *gn = nullptr;
     gn = apf::makeGlobal(apf::numberElements(mesh, "element Indices"));
   }
+
+  for (auto &bc : bcInfos)
+  {
+    bc.TagVertices(cgid, mesh, globalToVert);
+  }
+
+  if (PCU_Comm_Initialized())
+    cgp_close(cgid);
+  else
+    cg_close(cgid);
 
   return mesh;
 }
