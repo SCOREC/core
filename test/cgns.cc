@@ -227,9 +227,26 @@ int main(int argc, char **argv)
   const auto prefix = path.substr(found + 1) + "_release";
 #endif
 
-  const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK");
-  std::cout << path << " " << found << " " << name << std::endl;
-  apf::writeVtkFiles(name.c_str(), m);
+  const auto dim = m->getDimension();
+  if (dim == 3)
+  {
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
+      apf::writeVtkFiles(name.c_str(), m, 3);
+    }
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_faceMesh");
+      apf::writeVtkFiles(name.c_str(), m, 2);
+    }
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh");
+      apf::writeVtkFiles(name.c_str(), m, 1);
+    }
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
+      apf::writeVtkFiles(name.c_str(), m, 0);
+    }
+  }
 
   // main purpose is to call additional tests through the test harness testing.cmake
   if (additionalTests)
