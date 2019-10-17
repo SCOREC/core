@@ -219,8 +219,14 @@ int main(int argc, char **argv)
   // so we can see the result
   const std::string path = argv[1];
   std::size_t found = path.find_last_of("/\\");
-  const auto prefix = path.substr(found + 1);
-  const auto name = prefix + std::string("_toVTK");
+
+#ifndef NDEBUG // debug settings, cmake double negative....
+  const auto prefix = path.substr(found + 1) + "_debug";
+#else // optimised setting
+  const auto prefix = path.substr(found + 1) + "_release";
+#endif
+
+  const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK");
   std::cout << path << " " << found << " " << name << std::endl;
   apf::writeVtkFiles(name.c_str(), m);
 
