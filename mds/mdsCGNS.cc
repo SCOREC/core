@@ -567,7 +567,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
   }
 }
 
-apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname)
+apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
 {
   int cgid = -1;
   auto comm = PCU_Get_Comm();
@@ -779,10 +779,10 @@ namespace apf
 {
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
-Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname)
+Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
 {
 #ifdef HAVE_CGNS
-  Mesh2 *m = DoIt(g, fname);
+  Mesh2 *m = DoIt(g, fname, cgnsBCMap);
   return m;
 #else
   Mesh2 *m = nullptr;
