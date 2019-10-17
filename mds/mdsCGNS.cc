@@ -40,10 +40,12 @@
 
 namespace
 {
-#ifndef NDEBUG // debug, cmake double negative
-static constexpr bool debugOutput = true;
-#else // optimised
-static constexpr bool debugOutput = false;
+#ifndef NDEBUG                 // debug settings, cmake double negative....
+const bool debugOutput = true; // probably will not get away with c++17
+//static constexpr bool debugOutput = true; // probably will not get away with c++17
+#else // optimised setting
+const bool debugOutput = false; // probably will not get away with c++17
+//static constexpr bool debugOutput = false; // probably will not get away with c++17
 #endif
 
 static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType_t) & elementType)
@@ -76,14 +78,17 @@ static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType
 template <typename Arg, typename... Args>
 void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
 {
-  if constexpr (debugOutput)
+  //  if constexpr (debugOutput) // probably will not get away with c++17
+  if (debugOutput)
   {
     for (int i = 0; i < PCU_Comm_Peers(); i++)
     {
       if (i == PCU_Comm_Self())
       {
         out << "Rank [" << i << "] " << std::forward<Arg>(arg);
-        ((out << ", " << std::forward<Args>(args)), ...);
+        //((out << ", " << std::forward<Args>(args)), ...); // probably will not get away with c++17
+        using expander = int[];
+        (void)expander{0, (void(out << ", " << std::forward<Args>(args)), 0)...};
         out << "\n";
         out << std::flush;
       }
@@ -303,7 +308,8 @@ struct CGNSBCMeta
     std::cout << "BC named: " << bocoName << ", located on: " << locationName << std::endl;
     std::cout << "\tHas " << npnts << " elements on the bc stored as a " << cg_PointSetTypeName(ptsetType) << std::endl;
     std::cout << "\tThe min and max Element Ids for this bcs are: " << minElementId << " " << maxElementId << std::endl;
-    if constexpr (debugOutput)
+    if (debugOutput)
+    //if constexpr (debugOutput)// probably will not get away with c++17
     {
       std::cout << "\tThe element Ids that are tagged with this bcs are: ";
       for (const auto &i : bcElementIds)
@@ -347,8 +353,11 @@ struct BCInfo
       }
     }
 
+    if (debugOutput)
+    //if constexpr (debugOutput) // probably will not get away with c++17
     {
-      apf::MeshEntity *elem;
+      // for debug output, tags aren't written to vtk...
+      apf::MeshEntity *elem = nullptr;
       apf::MeshIterator *it = m->begin(0);
       field = apf::createFieldOn(m, bcName.c_str(), apf::SCALAR);
 
