@@ -41,6 +41,7 @@ class Mesh2;
 class MeshTag;
 class MeshEntity;
 class Migration;
+class Field;
 
 /** \brief a map from global ids to vertex objects */
 typedef std::map<int, MeshEntity*> GlobalToVert;
@@ -192,7 +193,14 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
   so call apf::reorderMdsMesh after any mesh modification. */
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
-Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename);
+// Key [String] = Vertex/EdgeCenter/FaceCenter/CellCenter
+// Value [vector of Pairs per Key]; Pairs = cgns_bc_name, field value.
+//                                  Field value holds [0, 1] as a
+//                                  marker to indicate mesh_entities 
+//                                  within bc group 1="in group", 0="not in group"
+//                                  Fields set on vertices, edges, faces, and cells
+using CGNSBCMap = std::map<std::string, std::vector<std::pair<std::string, apf::Field *>>>;
+Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
 
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
 

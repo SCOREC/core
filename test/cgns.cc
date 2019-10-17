@@ -54,7 +54,7 @@ apf::Field *convert_tag_doubleField(const std::string &name, apf::Mesh *m, apf::
   return f;
 }
 
-void balance(const std::string &prefix, const apf::ZoltanMethod& method, apf::Mesh2 *m)
+void balance(const std::string &prefix, const apf::ZoltanMethod &method, apf::Mesh2 *m)
 {
   const auto dim = m->getDimension();
   convert_tag_doubleField("procID_prebalance", m, create_int_tag("procID_prebalance", m, dim), dim);
@@ -212,7 +212,8 @@ int main(int argc, char **argv)
   gmi_register_null();
   gmi_register_mesh();
   gmi_model *g = gmi_load(".null");
-  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv[1]);
+  apf::CGNSBCMap cgnsBCMap;
+  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv[1], cgnsBCMap);
   m->verify();
   //
   m->writeNative(argv[2]);
