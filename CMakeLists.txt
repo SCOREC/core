@@ -22,8 +22,8 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
-# require c++17
-option(ENABLE_CGNS "Enable the CGNS reader: requires c++17 extensions" OFF)
+# require c++14
+option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
 message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
 
 # Set some default compiler flags that should always be used
@@ -34,13 +34,13 @@ if(NOT USE_XSDK_DEFAULTS)
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
   if(SCOREC_ENABLE_CXX11)
     if(ENABLE_CGNS)
-      bob_cxx17_flags()
+      bob_cxx14_flags()
     else()
-      bob_cxx11_flags()
+      bob_cxx14_flags()
     endif()
   else()
     if(ENABLE_CGNS)
-      bob_cxx17_flags()
+      bob_cxx14_flags()
     endif()
   endif()
 endif()
