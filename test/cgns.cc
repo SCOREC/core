@@ -20,7 +20,7 @@
 apf::MeshTag *create_int_tag(const std::string &name, apf::Mesh *m, int dim)
 {
   apf::MeshTag *tag = m->createIntTag(name.c_str(), 1); // 1 is size of tag
-  apf::MeshEntity *elem;
+  apf::MeshEntity *elem = nullptr;
   apf::MeshIterator *it = m->begin(dim);
   int vals[1];
   vals[0] = PCU_Comm_Self();
@@ -33,7 +33,7 @@ apf::MeshTag *create_int_tag(const std::string &name, apf::Mesh *m, int dim)
 //https://github.com/CEED/PUMI/blob/master/ma/maDBG.cc
 apf::Field *convert_tag_doubleField(const std::string &name, apf::Mesh *m, apf::MeshTag *t, int dim)
 {
-  apf::MeshEntity *elem;
+  apf::MeshEntity *elem = nullptr;
   apf::MeshIterator *it = m->begin(dim);
   apf::Field *f = nullptr;
   const auto fieldName = name.c_str();
