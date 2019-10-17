@@ -458,7 +458,8 @@ set(numProcs 4)
 #
 set(CGNSDIR ${MESHES}/cgns/basic)
 #
-# 2D
+# 2D tests including for mixed cells
+#
 mpi_test(cgns_2d_1 ${numProcs}
   ./from_cgns
   "${CGNSDIR}/2D/4quads.adf.hdf.cgns"
@@ -480,7 +481,7 @@ mpi_test(cgns_2d_4 ${numProcs}
   9tris.smb
   additional)
 #
-# 3D
+# 3D tests including for mixed cells
 #
 mpi_test(cgns_3d_1 ${numProcs}
   ./from_cgns
@@ -493,7 +494,7 @@ mpi_test(cgns_3d_2 ${numProcs}
   hexs.smb
   additional)
 #
-# BCS tests
+# 3D BCS tests
 #
 set(numProcs 5)
 #
@@ -504,6 +505,31 @@ mpi_test(cgns_bcs_1 ${numProcs}
   "${CGNSDIR}/Mesh_3.adf.hdf.cgns"
   bcs1.smb
   additional)
+#
+# 2D BCS tests
+#
+set(numProcs 4)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/2D)
+#
+mpi_test(cgns_bcs_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/Mesh_4.adf.hdf.cgns"
+  bcs2.smb
+  additional)
+#
+# 1D BCS tests
+#
+set(numProcs 3)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/1D)
+#
+mpi_test(cgns_bcs_3 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/Mesh_5.adf.hdf.cgns"
+  bcs3.smb
+  additional)
+
 endif(ENABLE_CGNS)
 
 mpi_test(construct 4
