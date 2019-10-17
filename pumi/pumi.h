@@ -125,6 +125,11 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 //************************************
 
 // Geometric Model
+// create a model from gmi_model object
+pGeom pumi_geom_load(gmi_model* gm,
+                     const char* model_type="mesh",
+                     const char* fileName=NULL, 
+                     void (*fp)(const char*)=NULL);
 // create a model from a file
 pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
                       void (*fp)(const char*)=NULL);
