@@ -45,7 +45,7 @@ const bool debugOutput = true; // probably will not get away with c++17
 //static constexpr bool debugOutput = true; // probably will not get away with c++17
 #else // optimised setting
 const bool debugOutput = false; // probably will not get away with c++17
-//static constexpr bool debugOutput = false; // probably will not get away with c++17
+                                //static constexpr bool debugOutput = false; // probably will not get away with c++17
 #endif
 
 static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType_t) & elementType)
@@ -327,6 +327,14 @@ struct BCInfo
   apf::MeshTag *tag = nullptr;
   apf::Field *field = nullptr;
 
+  void Clean(apf::Mesh *m)
+  {
+    m->removeField(field);
+    apf::destroyField(field);
+    apf::removeTagFromDimension(m, tag, 0);
+    m->destroyTag(tag);
+  }
+
   void TagVertices(const int cgid, apf::Mesh *m, apf::GlobalToVert &globalToVert)
   {
     tag = m->createIntTag(bcName.c_str(), 1); // 1 is size of tag
@@ -362,17 +370,455 @@ struct BCInfo
       field = apf::createFieldOn(m, bcName.c_str(), apf::SCALAR);
 
       int vals[1];
+      double dval[1];
       while ((elem = m->iterate(it)))
       {
         m->getIntTag(elem, tag, vals);
-        double dval[1];
         dval[0] = vals[0];
         apf::setComponents(field, elem, 0, dval);
       }
       m->end(it);
     }
+
+    // Notes:
+    // I do not exchange the tag values (even if that can be done).
+    // I'm assuming in parallel all partition that need the vertex that
+    // falls within a given group mark that vertex accordingly.
+    // I assume therefore that vertices on a processor boundary, are marked
+    // by all procs that share it.
+    // TODO: generate test that proves this works
   }
-};
+
+  /**
+   * Meanings/concept follows: https://cgns.github.io/CGNS_docs_current/sids/misc.html section 12.4
+    +---------------+--------------+--------------+--------------+-------------------------+
+    |               | GridLocation | GridLocation | GridLocation |      GridLocation       |
+    +---------------+--------------+--------------+--------------+-------------------------+
+    | CellDimension | Vertex       | EdgeCenter   | *FaceCenter  | CellCenter              |
+    | 1             | vertices     | -            | -            | cells (line elements)   |
+    | 2             | vertices     | edges        | -            | cells (area elements)   |
+    | 3             | vertices     | edges        | faces        | cells (volume elements) |
+    +---------------+--------------+--------------+--------------+-------------------------+ 
+  **/
+  void TagBCEntities(const int cgid, apf::Mesh *m, apf::CGNSBCMap &cgnsBCMap)
+  {
+    if (m->getDimension() == 3) // working with a 3D mesh
+    {
+      if (cgnsLocation == "Vertex")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "VertBC_" + bcName;
+        field = apf::createFieldOn(m, fieldName.c_str(), apf::SCALAR);
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *vertIter = m->begin(0);
+        apf::MeshEntity *vert = nullptr;
+        while ((vert = m->iterate(vertIter)))
+        {
+          apf::setComponents(field, vert, 0, dval);
+        }
+        m->end(vertIter);
+
+        int vals[1];
+        vertIter = m->begin(0);
+        while ((vert = m->iterate(vertIter)))
+        {
+          bool allTagged = true;
+          m->getIntTag(vert, tag, vals);
+          if (vals[0] == 0)
+            allTagged = false;
+
+          if (allTagged)
+          {
+            std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, vert, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["Vertex"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+      else if (cgnsLocation == "EdgeCenter")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "EdgeBC_" + bcName;
+        field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(1));
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *edgeIter = m->begin(1);
+        apf::MeshEntity *edge = nullptr;
+        while ((edge = m->iterate(edgeIter)))
+        {
+          apf::setComponents(field, edge, 0, dval);
+        }
+        m->end(edgeIter);
+
+        apf::Downward verts;
+        int vals[1];
+        edgeIter = m->begin(1);
+        while ((edge = m->iterate(edgeIter)))
+        {
+          const auto numVerts = m->getDownward(edge, 0, verts);
+          bool allTagged = true;
+          for (int i = 0; i < numVerts; i++)
+          {
+            m->getIntTag(verts[i], tag, vals);
+            if (vals[0] == 0)
+              allTagged = false;
+          }
+          if (allTagged)
+          {
+            //std::cout << "Flagged edges " << numVerts << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, edge, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["EdgeCenter"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+      else if (cgnsLocation == "FaceCenter")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "FaceBC_" + bcName;
+        field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(2));
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *faceIter = m->begin(2);
+        apf::MeshEntity *face = nullptr;
+        while ((face = m->iterate(faceIter)))
+        {
+          apf::setComponents(field, face, 0, dval);
+        }
+        m->end(faceIter);
+
+        apf::Downward verts;
+        faceIter = m->begin(2);
+        int vals[1];
+        while ((face = m->iterate(faceIter)))
+        {
+          const auto numVerts = m->getDownward(face, 0, verts);
+          bool allTagged = true;
+          for (int i = 0; i < numVerts; i++)
+          {
+            m->getIntTag(verts[i], tag, vals);
+            if (vals[0] == 0)
+              allTagged = false;
+          }
+          if (allTagged)
+          {
+            //std::cout << "Flagged faces " << numVerts << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, face, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["FaceCenter"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+      else if (cgnsLocation == "CellCenter")
+      {
+        {
+          apf::Field *field = nullptr;
+          const std::string fieldName = "CellBC_" + bcName;
+          field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(3));
+
+          double dval[1];
+          dval[0] = 0.0;
+          apf::MeshIterator *cellIter = m->begin(3);
+          apf::MeshEntity *cell = nullptr;
+          while ((cell = m->iterate(cellIter)))
+          {
+            apf::setComponents(field, cell, 0, dval);
+          }
+          m->end(cellIter);
+
+          apf::Downward verts;
+          cellIter = m->begin(3);
+          int vals[1];
+          while ((cell = m->iterate(cellIter)))
+          {
+            const auto numVerts = m->getDownward(cell, 0, verts);
+            bool allTagged = true;
+            for (int i = 0; i < numVerts; i++)
+            {
+              m->getIntTag(verts[i], tag, vals);
+              if (vals[0] == 0)
+                allTagged = false;
+            }
+            if (allTagged)
+            {
+              //std::cout << "Flagged cells " << numVerts << " " << allTagged << std::endl;
+              dval[0] = 1.0;
+              apf::setComponents(field, cell, 0, dval);
+            }
+          }
+          auto iter = cgnsBCMap["CellCenter"];
+          iter.push_back(std::make_pair(fieldName, field));
+        }
+        // { // more verbose example of iterating the mesh
+        //   apf::Field *field = nullptr;
+        //   const std::string fieldName = "CellBC_other_" + bcName;
+        //   field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(3));
+
+        //   double dval[1];
+        //   dval[0] = 0.0;
+        //   apf::MeshIterator *cellIter = m->begin(3);
+        //   apf::MeshEntity *cell = nullptr;
+        //   while ((cell = m->iterate(cellIter)))
+        //   {
+        //     apf::setComponents(field, cell, 0, dval);
+        //   }
+        //   m->end(cellIter);
+
+        //   apf::Downward faces;
+        //   apf::Downward edges;
+        //   apf::Downward verts;
+        //   cellIter = m->begin(3);
+        //   int vals[1];
+        //   while ((cell = m->iterate(cellIter)))
+        //   {
+        //     bool allTagged = true;
+        //     const auto numFaces = m->getDownward(cell, 2, faces);
+        //     for (int f = 0; f < numFaces; f++)
+        //     {
+        //       const auto numEdges = m->getDownward(faces[f], 1, edges);
+        //       for (int e = 0; e < numEdges; e++)
+        //       {
+        //         const auto numVerts = m->getDownward(edges[e], 0, verts);
+        //         for (int i = 0; i < numVerts; i++)
+        //         {
+        //           m->getIntTag(verts[i], tag, vals);
+        //           if (vals[0] == 0)
+        //             allTagged = false;
+        //         }
+        //       }
+        //     }
+        //     if (allTagged)
+        //     {
+        //       std::cout << "Flagged cells " << allTagged << std::endl;
+        //       dval[0] = 1.0;
+        //       apf::setComponents(field, cell, 0, dval);
+        //     }
+        //   }
+        //   auto iter = cgnsBCMap["CellCenter"];
+        //   iter.push_back(std::make_pair(fieldName, field));
+        // }
+      }
+      else
+        Kill(cgid, "Unknown BC Type", cgnsLocation);
+    }
+    else if (m->getDimension() == 2) // working with a 2D mesh
+    {
+      if (cgnsLocation == "Vertex")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "VertBC_" + bcName;
+        field = apf::createFieldOn(m, fieldName.c_str(), apf::SCALAR);
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *vertIter = m->begin(0);
+        apf::MeshEntity *vert = nullptr;
+        while ((vert = m->iterate(vertIter)))
+        {
+          apf::setComponents(field, vert, 0, dval);
+        }
+        m->end(vertIter);
+
+        int vals[1];
+        vertIter = m->begin(0);
+        while ((vert = m->iterate(vertIter)))
+        {
+          bool allTagged = true;
+          m->getIntTag(vert, tag, vals);
+          if (vals[0] == 0)
+            allTagged = false;
+
+          if (allTagged)
+          {
+            std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, vert, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["Vertex"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+      else if (cgnsLocation == "EdgeCenter")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "EdgeBC_" + bcName;
+        field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(1));
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *edgeIter = m->begin(1);
+        apf::MeshEntity *edge = nullptr;
+        while ((edge = m->iterate(edgeIter)))
+        {
+          apf::setComponents(field, edge, 0, dval);
+        }
+        m->end(edgeIter);
+
+        apf::Downward verts;
+        int vals[1];
+        edgeIter = m->begin(1);
+        while ((edge = m->iterate(edgeIter)))
+        {
+          const auto numVerts = m->getDownward(edge, 0, verts);
+          bool allTagged = true;
+          for (int i = 0; i < numVerts; i++)
+          {
+            m->getIntTag(verts[i], tag, vals);
+            if (vals[0] == 0)
+              allTagged = false;
+          }
+          if (allTagged)
+          {
+            //std::cout << "Flagged edges " << numVerts << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, edge, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["EdgeCenter"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+      else if (cgnsLocation == "FaceCenter")
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Can't have a FaceCenter BC in a 2D mesh");
+      }
+      else if (cgnsLocation == "CellCenter")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "CellBC_" + bcName;
+        field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(2));
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *cellIter = m->begin(2);
+        apf::MeshEntity *cell = nullptr;
+        while ((cell = m->iterate(cellIter)))
+        {
+          apf::setComponents(field, cell, 0, dval);
+        }
+        m->end(cellIter);
+
+        apf::Downward verts;
+        cellIter = m->begin(2);
+        int vals[1];
+        while ((cell = m->iterate(cellIter)))
+        {
+          const auto numVerts = m->getDownward(cell, 0, verts);
+          bool allTagged = true;
+          for (int i = 0; i < numVerts; i++)
+          {
+            m->getIntTag(verts[i], tag, vals);
+            if (vals[0] == 0)
+              allTagged = false;
+          }
+          if (allTagged)
+          {
+            //std::cout << "Flagged cells " << numVerts << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, cell, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["CellCenter"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+    }
+    else if (m->getDimension() == 1) // working with a 1D mesh
+    {
+      if (cgnsLocation == "Vertex")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "VertBC_" + bcName;
+        field = apf::createFieldOn(m, fieldName.c_str(), apf::SCALAR);
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *vertIter = m->begin(0);
+        apf::MeshEntity *vert = nullptr;
+        while ((vert = m->iterate(vertIter)))
+        {
+          apf::setComponents(field, vert, 0, dval);
+        }
+        m->end(vertIter);
+
+        int vals[1];
+        vertIter = m->begin(0);
+        while ((vert = m->iterate(vertIter)))
+        {
+          bool allTagged = true;
+          m->getIntTag(vert, tag, vals);
+          if (vals[0] == 0)
+            allTagged = false;
+
+          if (allTagged)
+          {
+            std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, vert, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["Vertex"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+      else if (cgnsLocation == "EdgeCenter")
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Can't have a EdgeCenter BC in a 1D mesh");
+      }
+      else if (cgnsLocation == "FaceCenter")
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Can't have a FaceCenter BC in a 1D mesh");
+      }
+      else if (cgnsLocation == "CellCenter")
+      {
+        apf::Field *field = nullptr;
+        const std::string fieldName = "CellBC_" + bcName;
+        field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(1));
+
+        double dval[1];
+        dval[0] = 0.0;
+        apf::MeshIterator *cellIter = m->begin(1);
+        apf::MeshEntity *cell = nullptr;
+        while ((cell = m->iterate(cellIter)))
+        {
+          apf::setComponents(field, cell, 0, dval);
+        }
+        m->end(cellIter);
+
+        apf::Downward verts;
+        cellIter = m->begin(1);
+        int vals[1];
+        while ((cell = m->iterate(cellIter)))
+        {
+          const auto numVerts = m->getDownward(cell, 0, verts);
+          bool allTagged = true;
+          for (int i = 0; i < numVerts; i++)
+          {
+            m->getIntTag(verts[i], tag, vals);
+            if (vals[0] == 0)
+              allTagged = false;
+          }
+          if (allTagged)
+          {
+            //std::cout << "Flagged cells " << numVerts << " " << allTagged << std::endl;
+            dval[0] = 1.0;
+            apf::setComponents(field, cell, 0, dval);
+          }
+        }
+        auto iter = cgnsBCMap["CellCenter"];
+        iter.push_back(std::make_pair(fieldName, field));
+      }
+    }
+
+    if (!debugOutput)
+      Clean(m);
+  }
+}; // namespace
 
 void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections, std::vector<BCInfo> &bcInfos, const apf::GlobalToVert &globalToVert)
 {
@@ -764,6 +1210,11 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   for (auto &bc : bcInfos)
   {
     bc.TagVertices(cgid, mesh, globalToVert);
+  }
+
+  for (auto &bc : bcInfos)
+  {
+    bc.TagBCEntities(cgid, mesh, cgnsBCMap);
   }
 
   if (PCU_Comm_Initialized())
