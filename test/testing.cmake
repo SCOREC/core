@@ -504,7 +504,7 @@ mpi_test(cgns_bcs_1 ${numProcs}
   "${CGNSDIR}/Mesh_3.adf.hdf.cgns"
   bcs1.smb
   additional)
-endif()
+endif(ENABLE_CGNS)
 
 mpi_test(construct 4
   ./construct
