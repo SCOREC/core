@@ -256,10 +256,14 @@ int main(int argc, char **argv)
   //
   //
   if (additionalTests)
-    cleanUp();
-
+  {
+    //cleanUp();
+  }
+  else if (!additionalTests)
+  {
     m->destroyNative();
     apf::destroyMesh(m);
+  }
   //
   PCU_Comm_Free();
   MPI_Finalize();
