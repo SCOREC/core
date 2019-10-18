@@ -327,7 +327,7 @@ struct BCInfo
   apf::MeshTag *tag = nullptr;
   apf::Field *field = nullptr;
 
-  void Clean(apf::Mesh *m)
+  void Clean(apf::Mesh2 *m)
   {
     m->removeField(field);
     apf::destroyField(field);
@@ -335,7 +335,7 @@ struct BCInfo
     m->destroyTag(tag);
   }
 
-  void TagVertices(const int cgid, apf::Mesh *m, apf::GlobalToVert &globalToVert)
+  void TagVertices(const int cgid, apf::Mesh2 *m, apf::GlobalToVert &globalToVert)
   {
     tag = m->createIntTag(bcName.c_str(), 1); // 1 is size of tag
     apf::MeshEntity *elem = nullptr;
@@ -400,7 +400,7 @@ struct BCInfo
     | 3             | vertices     | edges        | faces        | cells (volume elements) |
     +---------------+--------------+--------------+--------------+-------------------------+ 
   **/
-  void TagBCEntities(const int cgid, apf::Mesh *m, apf::CGNSBCMap &cgnsBCMap)
+  void TagBCEntities(const int cgid, apf::Mesh2 *m, apf::CGNSBCMap &cgnsBCMap)
   {
     if (m->getDimension() == 3) // working with a 3D mesh
     {
@@ -1115,7 +1115,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
 
       cg_npe(elementType, &verticesPerElement);
 
-      const auto readElementsAndVerts = [&](const apf::Mesh::Type &type) {
+      const auto readElementsAndVerts = [&](const apf::Mesh2::Type &type) {
         const auto &ret = ReadElements(cgid, base, zone, section, el_start, el_end, numElements, verticesPerElement);
         if (std::get<1>(ret) > 0)
         {
@@ -1146,32 +1146,32 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
       if (elementType == CGNS_ENUMV(BAR_2))
       {
         if (readDim == 1)
-          readElementsAndVerts(apf::Mesh::EDGE);
+          readElementsAndVerts(apf::Mesh2::EDGE);
       }
       else if (elementType == CGNS_ENUMV(QUAD_4))
       {
         if (readDim == 2)
-          readElementsAndVerts(apf::Mesh::QUAD);
+          readElementsAndVerts(apf::Mesh2::QUAD);
       }
       else if (elementType == CGNS_ENUMV(TRI_3))
       {
         if (readDim == 2)
-          readElementsAndVerts(apf::Mesh::TRIANGLE);
+          readElementsAndVerts(apf::Mesh2::TRIANGLE);
       }
       else if (elementType == CGNS_ENUMV(TETRA_4))
       {
         if (readDim == 3)
-          readElementsAndVerts(apf::Mesh::TET);
+          readElementsAndVerts(apf::Mesh2::TET);
       }
       else if (elementType == CGNS_ENUMV(PYRA_5))
       {
         if (readDim == 3)
-          readElementsAndVerts(apf::Mesh::PYRAMID);
+          readElementsAndVerts(apf::Mesh2::PYRAMID);
       }
       else if (elementType == CGNS_ENUMV(HEXA_8))
       {
         if (readDim == 3)
-          readElementsAndVerts(apf::Mesh::HEX);
+          readElementsAndVerts(apf::Mesh2::HEX);
       }
       else
       {
