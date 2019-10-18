@@ -43,12 +43,14 @@ int main(int argc, char** argv)
   outMap.clear();
   m->verify();
 
-  //create the pumi instance
-  pGeom g=pumi_geom_load(model);
+  if (!pumi_rank()) std::cout<<"model/mesh converted to pumi instance\n";
 
-  if (!pumi_rank()) std::cout<<"[test_pumi] testing geometric model/entity api's\n\n";
+  //create the pumi instance to use pumi api's
+  pGeom g=pumi_geom_load(model);
+  pMesh pm = pumi_mesh_load(m);
+
+  // check pGeom and pMesh
   {
-    // test geom_find and gent_adj
     for (pGeomIter gent_it = g->begin(2); gent_it!=g->end(2);++gent_it)
     {
       int id = pumi_gent_getID(*gent_it);
@@ -75,10 +77,10 @@ int main(int argc, char** argv)
     pumi_geom_getTag(g, tags);
     for (std::vector<pTag>::iterator tag_it=tags.begin(); tag_it!=tags.end(); ++tag_it)
       pumi_geom_deleteTag(g, *tag_it);
+
+    pumi_mesh_verify(pm);
   }
 
-  pMesh pm = pumi_mesh_load(m);
-  pumi_mesh_verify(pm);
 
   //create an element field
   const int mdim = pumi_mesh_getDim(pm);
