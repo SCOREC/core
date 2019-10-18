@@ -120,14 +120,13 @@ pMesh toPumi(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return pm;
 }
 
-void additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
+auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
 {
   // seems essential to make pm first before calling balance or reorder...
   auto pm = toPumi(prefix, g, mesh);
   balance(prefix, apf::RCB, pm);
   simpleReorder(prefix, pm);
 
-  {
     //create an element field
     const int mdim = pumi_mesh_getDim(pm);
     pShape s = pumi_shape_getConstant(mdim);
@@ -165,11 +164,13 @@ void additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
     // owned and ghosted elements will have a elmField value of 1
     pumi_mesh_write(pm, (name + "_afterSync").c_str(), "vtk");
 
+  const auto clean = [&pm, &f]() {
     // clean-up
     pumi_field_delete(f);
     pumi_ghost_delete(pm);
     pumi_mesh_delete(pm);
-  }
+  };
+  return clean;
 }
 
 int main(int argc, char **argv)
@@ -249,14 +250,17 @@ int main(int argc, char **argv)
   }
 
   // main purpose is to call additional tests through the test harness testing.cmake
+  std::function<void()> cleanUp;
   if (additionalTests)
-    additional(prefix, g, m);
+    cleanUp = additional(prefix, g, m);
+  //
+  //
+  if (additionalTests)
+    cleanUp();
 
-  if (!additionalTests)
-  {
     m->destroyNative();
     apf::destroyMesh(m);
-  }
+  //
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;
