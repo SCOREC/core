@@ -367,6 +367,8 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
+mpi_test(applyMatrixFunc 1
+  ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
