@@ -48,39 +48,7 @@ int main(int argc, char** argv)
   //create the pumi instance to use pumi api's
   pGeom g=pumi_geom_load(model);
   pMesh pm = pumi_mesh_load(m);
-
-  // check pGeom and pMesh
-  {
-    for (pGeomIter gent_it = g->begin(2); gent_it!=g->end(2);++gent_it)
-    {
-      int id = pumi_gent_getID(*gent_it);
-      pGeomEnt ge = pumi_geom_findEnt(g, 2, id);
-      PCU_ALWAYS_ASSERT(ge == *gent_it);
-      std::vector<pGeomEnt> adj_edges;
-      pumi_gent_getAdj(ge, 1, adj_edges);
-      std::vector<pGeomEnt> adj_vertices;
-      pumi_gent_getAdj(ge, 0, adj_vertices);
-
-      for (size_t nv=0; nv<adj_vertices.size(); ++nv)
-      {
-        pGeomEnt gv=adj_vertices.at(nv);
-        std::vector<pGeomEnt> adj_faces;
-        pumi_gent_getAdj(gv, 2, adj_faces);
-      }
-    }
-    pTag intarr_tag=pumi_geom_createTag(g, "integer array", PUMI_INT, 3);
-    pTag longarr_tag=pumi_geom_createTag(g, "long array", PUMI_LONG, 3);
-    pTag dblarr_tag = pumi_geom_createTag(g, "double array", PUMI_DBL, 3);
-    pTag entarr_tag = pumi_geom_createTag(g, "entity array", PUMI_ENT, 3);
-
-    std::vector<pTag> tags;
-    pumi_geom_getTag(g, tags);
-    for (std::vector<pTag>::iterator tag_it=tags.begin(); tag_it!=tags.end(); ++tag_it)
-      pumi_geom_deleteTag(g, *tag_it);
-
-    pumi_mesh_verify(pm);
-  }
-
+  pumi_mesh_verify(pm);
 
   //create an element field
   const int mdim = pumi_mesh_getDim(pm);
