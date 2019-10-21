@@ -127,42 +127,42 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   balance(prefix, apf::RCB, pm);
   simpleReorder(prefix, pm);
 
-    //create an element field
-    const int mdim = pumi_mesh_getDim(pm);
-    pShape s = pumi_shape_getConstant(mdim);
-    const int dofPerElm = 1;
-    pField f = pumi_field_create(pm, "elmField", dofPerElm, PUMI_PACKED, s);
+  //create an element field
+  const int mdim = pumi_mesh_getDim(pm);
+  pShape s = pumi_shape_getConstant(mdim);
+  const int dofPerElm = 1;
+  pField f = pumi_field_create(pm, "elmField", dofPerElm, PUMI_PACKED, s);
 
-    pMeshIter it = pm->begin(mdim);
-    pMeshEnt e;
-    double v = 0;
-    while ((e = pm->iterate(it)))
+  pMeshIter it = pm->begin(mdim);
+  pMeshEnt e;
+  double v = 0;
+  while ((e = pm->iterate(it)))
+    pumi_node_setField(f, e, 0, &v);
+  pm->end(it);
+
+  const int ghost = mdim;
+  const int bridge = ghost - 1;
+  const int numLayers = 1;
+  const int ghostAcrossCopies = 1;
+  pumi_ghost_createLayer(pm, bridge, ghost, numLayers, ghostAcrossCopies);
+
+  it = pm->begin(mdim);
+  v = 1;
+  while ((e = pm->iterate(it)))
+  {
+    if (!pumi_ment_isGhost(e))
       pumi_node_setField(f, e, 0, &v);
-    pm->end(it);
+  }
+  pm->end(it);
 
-    const int ghost = mdim;
-    const int bridge = ghost - 1;
-    const int numLayers = 1;
-    const int ghostAcrossCopies = 1;
-    pumi_ghost_createLayer(pm, bridge, ghost, numLayers, ghostAcrossCopies);
+  const std::string name = prefix + "_toPUMI_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  // only the owned elements will have a elmField value of 1
+  pumi_mesh_write(pm, (name + "_beforeSync").c_str(), "vtk");
 
-    it = pm->begin(mdim);
-    v = 1;
-    while ((e = pm->iterate(it)))
-    {
-      if (!pumi_ment_isGhost(e))
-        pumi_node_setField(f, e, 0, &v);
-    }
-    pm->end(it);
+  pumi_field_synchronize(f);
 
-    const std::string name = prefix + "_toPUMI_" + std::to_string(PCU_Comm_Peers()) + "procs";
-    // only the owned elements will have a elmField value of 1
-    pumi_mesh_write(pm, (name + "_beforeSync").c_str(), "vtk");
-
-    pumi_field_synchronize(f);
-
-    // owned and ghosted elements will have a elmField value of 1
-    pumi_mesh_write(pm, (name + "_afterSync").c_str(), "vtk");
+  // owned and ghosted elements will have a elmField value of 1
+  pumi_mesh_write(pm, (name + "_afterSync").c_str(), "vtk");
 
   const auto clean = [&pm, &f]() {
     // clean-up
@@ -280,6 +280,7 @@ int main(int argc, char **argv)
   if (additionalTests)
     cleanUp = additional(prefix, g, m);
   //
+  apf::writeCGNS((prefix + "_outputFile.cgns").c_str(), m, cgnsBCMap);
   //
   if (additionalTests)
   {
