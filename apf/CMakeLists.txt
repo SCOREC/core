@@ -49,6 +49,10 @@ set(SOURCES
   apfMIS.cc
 )
 
+if(ENABLE_CGNS)
+  set(SOURCES ${SOURCES} apfCGNS.cc)
+endif(ENABLE_CGNS)
+
 # Package headers
 set(HEADERS
   apf.h
@@ -93,6 +97,12 @@ target_link_libraries(apf
      can
      mth
    )
+
+
+if(ENABLE_CGNS)
+  message(STATUS ${CGNS_LIBRARIES})
+  target_link_libraries(apf PRIVATE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif(ENABLE_CGNS)
 
 scorec_export_library(apf)
 
