@@ -88,7 +88,7 @@ endfunction(bob_cxx11_flags)
 
 function(bob_cxx14_flags)
   set(FLAGS "${CMAKE_CXX_FLAGS}")
-  set(FLAGS "${FLAGS} --std=c++14")
+  set(FLAGS "${FLAGS} --std=c++14 -Wall -Wextra -Wpedantic -Werror -Werror=return-stack-address -Werror=mismatched-tags -Wno-extra-semi -Werror=unused-parameter -Wno-error=deprecated-declarations")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (${PROJECT_NAME}_CXX_WARNINGS)
       set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")
