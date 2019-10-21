@@ -48,70 +48,10 @@ static auto count(apf::Mesh *m, int dim)
   return std::make_pair(total, local);
 }
 
-// void ShowNumbering(apf::Mesh *m)
-// {
-//   {
-//     apf::GlobalNumbering *gvn = nullptr;
-//     gvn = apf::makeGlobal(apf::numberOwnedNodes(m, "node-nums"));
-//     apf::synchronize(gvn);
-
-//     for (int i = 0; i < PCU_Comm_Peers(); ++i)
-//     {
-//       if (i == PCU_Comm_Self())
-//       {
-//         apf::MeshIterator *vertIter = m->begin(0);
-//         apf::MeshEntity *vert = nullptr;
-//         while ((vert = m->iterate(vertIter)))
-//         {
-//           if (m->isOwned(vert) && m->getOwner(vert) == i)
-//           {
-//             const auto n = apf::getNumber(gvn, vert, 0);
-//             std::cout << "Rank [vertex]: " << i << " " << n << " " << m->isOwned(vert) << " " << m->getOwner(vert) << std::endl;
-//           }
-//         }
-//         m->end(vertIter);
-
-//         destroyGlobalNumbering(gvn);
-//       }
-//       PCU_Barrier();
-//     }
-//   }
-//   std::cout << std::endl;
-//   PCU_Barrier();
-//   {
-//     apf::GlobalNumbering *gcn = nullptr;
-//     gcn = apf::makeGlobal(apf::numberElements(m, "element-nums"));
-
-//     for (int i = 0; i < PCU_Comm_Peers(); ++i)
-//     {
-//       if (i == PCU_Comm_Self())
-//       {
-//         apf::MeshIterator *cellIter = m->begin(m->getDimension());
-//         apf::MeshEntity *cell = nullptr;
-//         while ((cell = m->iterate(cellIter)))
-//         {
-//           if (m->isOwned(cell))
-//           {
-//             const auto n = apf::getNumber(gcn, cell, 0);
-//             std::cout << "Rank [element]: " << i << " " << n << " " << m->isOwned(cell) << " " << m->getOwner(cell) << std::endl;
-//           }
-//         }
-//         m->end(cellIter);
-
-//         destroyGlobalNumbering(gcn);
-//       }
-//       PCU_Barrier();
-//     }
-//   }
-// }
-
 void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap)
 {
-  std::cout << &cgnsBCMap << std::endl;
-
   //ShowNumbering(m);
 
-  // std::cout << prefix << " " << cellDimToWrite << std::endl;
   const auto myRank = PCU_Comm_Self();
   const auto vertexCount = count(m, 0);
   const auto edgeCount = count(m, 1);
@@ -226,7 +166,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap
         apf::MeshEntity *vert = nullptr;
         while ((vert = m->iterate(vertIter)))
         {
-          if (m->isOwned(vert) && m->getOwner(vert) == i)
+          if (m->isOwned(vert))
           {
             const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(gvn, vert, 0) + 1); // one based
             rmin[0] = std::min(rmin[0], n);
@@ -357,6 +297,8 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap
       globalStart += globalNumbersByElementType[o];
     }
   }
+  //
+  std::cout << &cgnsBCMap << std::endl;
 
   destroyGlobalNumbering(gvn);
   destroyGlobalNumbering(gcn);
