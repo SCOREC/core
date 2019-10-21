@@ -248,6 +248,32 @@ int main(int argc, char **argv)
       apf::writeVtkFiles(name.c_str(), m, 0);
     }
   }
+  else if(dim == 2)
+  {
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
+      apf::writeVtkFiles(name.c_str(), m, 2);
+    }
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh");
+      apf::writeVtkFiles(name.c_str(), m, 1);
+    }
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
+      apf::writeVtkFiles(name.c_str(), m, 0);
+    }    
+  }
+  else if(dim == 1)
+  {
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
+      apf::writeVtkFiles(name.c_str(), m, 1);
+    }
+    {
+      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
+      apf::writeVtkFiles(name.c_str(), m, 0);
+    }    
+  }
 
   // main purpose is to call additional tests through the test harness testing.cmake
   std::function<void()> cleanUp;
