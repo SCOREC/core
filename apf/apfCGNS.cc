@@ -323,7 +323,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
       for (const auto &p : iter->second)
       {
         std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
-        auto* field = m->findField(p.first.c_str());
+        auto* field = m->findTag(p.first.c_str());
         std::cout << field << " " << p.second << std::endl;
 
       }
