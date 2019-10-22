@@ -48,7 +48,7 @@ static auto count(apf::Mesh *m, int dim)
   return std::make_pair(total, local);
 }
 
-void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap)
+void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap)
 {
   //ShowNumbering(m);
 
@@ -246,7 +246,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap
   }
   cgsize_t allTotal = std::accumulate(globalNumbersByElementType.begin(), globalNumbersByElementType.end(), 0);
   PCU_ALWAYS_ASSERT_VERBOSE(allTotal == cellCount.first, ("Must be equal " + std::to_string(allTotal) + " " + std::to_string(cellCount.first)).c_str());
-  
+
   int globalStart = 1; // one-based
   for (std::size_t o = 0; o < apfElementOrder.size(); o++)
   {
@@ -280,14 +280,14 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap
 
       std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
       MPI_Allgather(&numbersByElementType[o], 1, MPI_INT, allNumbersForThisType.data(), 1,
-                                     MPI_INT, PCU_Get_Comm());
-      
+                    MPI_INT, PCU_Get_Comm());
+
       cgsize_t num = 0;
-      for(int i = 0; i < PCU_Comm_Self(); i++)
-        num+= allNumbersForThisType[i];
+      for (int i = 0; i < PCU_Comm_Self(); i++)
+        num += allNumbersForThisType[i];
 
       cgsize_t elStart = globalStart + num;
-      cgsize_t elEnd = elStart + numbersByElementType[o] -1; // one-based stuff
+      cgsize_t elEnd = elStart + numbersByElementType[o] - 1;                       // one-based stuff
       if (cgp_elements_write_data(index, base, zone, sectionNumber, elStart, elEnd, // per processor within the range[start, end]
                                   elements.data()))
         cgp_error_exit();
@@ -299,7 +299,45 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap
   }
   //
   std::cout << &cgnsBCMap << std::endl;
+  if (cell_dim == 3)
+  {
+    auto iter = cgnsBCMap.find("Vertex");
+    if (iter != cgnsBCMap.end())
+    {
+      for (const auto &p : iter->second)
+      {
+        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
+      }
+    }
+    iter = cgnsBCMap.find("EdgeCenter");
+    if (iter != cgnsBCMap.end())
+    {
+      for (const auto &p : iter->second)
+      {
+        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
+      }
+    }
+    iter = cgnsBCMap.find("FaceCenter");
+    if (iter != cgnsBCMap.end())
+    {
+      for (const auto &p : iter->second)
+      {
+        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
+        auto* field = m->findField(p.first.c_str());
+        std::cout << field << " " << p.second << std::endl;
 
+      }
+    }
+    iter = cgnsBCMap.find("CellCenter");
+    if (iter != cgnsBCMap.end())
+    {
+      for (const auto &p : iter->second)
+      {
+        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
+      }
+    }
+  }
+  //
   destroyGlobalNumbering(gvn);
   destroyGlobalNumbering(gcn);
   //
@@ -310,7 +348,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap& cgnsBCMap
 namespace apf
 {
 
-void writeCGNS(const char *prefix, Mesh *m, const apf::CGNSBCMap& cgnsBCMap)
+void writeCGNS(const char *prefix, Mesh *m, const apf::CGNSBCMap &cgnsBCMap)
 {
 #ifdef HAVE_CGNS
   WriteCGNS(prefix, m, cgnsBCMap);
