@@ -27,6 +27,7 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 #include <unordered_set>
 #include <utility>
@@ -382,7 +383,7 @@ struct BCInfo
 
     // Notes:
     // I do not exchange the tag values (even if that can be done).
-    // I'm assuming in parallel all partition that need the vertex that
+    // I'm assuming in parallel all partitions that need the vertex that
     // falls within a given group mark that vertex accordingly.
     // I assume therefore that vertices on a processor boundary, are marked
     // by all procs that share it.
@@ -402,6 +403,20 @@ struct BCInfo
   **/
   void TagBCEntities(const int cgid, apf::Mesh2 *m, apf::CGNSBCMap &cgnsBCMap)
   {
+    const auto Add = [&cgnsBCMap](const std::string &location, const std::string &fieldName, apf::Field *field) {
+      auto iter = cgnsBCMap.find(location);
+      if (iter != cgnsBCMap.end())
+      {
+        iter->second.push_back(std::make_pair(fieldName, field));
+      }
+      else
+      {
+        std::vector<std::pair<std::string, apf::Field *>> pair;
+        pair.push_back(std::make_pair(fieldName, field));
+        cgnsBCMap.insert(std::make_pair(location, pair));
+      }
+    };
+
     if (m->getDimension() == 3) // working with a 3D mesh
     {
       if (cgnsLocation == "Vertex")
@@ -431,13 +446,14 @@ struct BCInfo
 
           if (allTagged)
           {
-            std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
+            //std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
             dval[0] = 1.0;
             apf::setComponents(field, vert, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["Vertex"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(vertIter);
+
+        Add("Vertex", fieldName, field);
       }
       else if (cgnsLocation == "EdgeCenter")
       {
@@ -475,8 +491,9 @@ struct BCInfo
             apf::setComponents(field, edge, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["EdgeCenter"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(edgeIter);
+
+        Add("EdgeCenter", fieldName, field);
       }
       else if (cgnsLocation == "FaceCenter")
       {
@@ -514,8 +531,9 @@ struct BCInfo
             apf::setComponents(field, face, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["FaceCenter"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(faceIter);
+
+        Add("FaceCenter", fieldName, field);
       }
       else if (cgnsLocation == "CellCenter")
       {
@@ -554,57 +572,10 @@ struct BCInfo
               apf::setComponents(field, cell, 0, dval);
             }
           }
-          auto iter = cgnsBCMap["CellCenter"];
-          iter.push_back(std::make_pair(fieldName, field));
+          m->end(cellIter);
+
+          Add("CellCenter", fieldName, field);
         }
-        // { // more verbose example of iterating the mesh
-        //   apf::Field *field = nullptr;
-        //   const std::string fieldName = "CellBC_other_" + bcName;
-        //   field = apf::createField(m, fieldName.c_str(), apf::SCALAR, apf::getConstant(3));
-
-        //   double dval[1];
-        //   dval[0] = 0.0;
-        //   apf::MeshIterator *cellIter = m->begin(3);
-        //   apf::MeshEntity *cell = nullptr;
-        //   while ((cell = m->iterate(cellIter)))
-        //   {
-        //     apf::setComponents(field, cell, 0, dval);
-        //   }
-        //   m->end(cellIter);
-
-        //   apf::Downward faces;
-        //   apf::Downward edges;
-        //   apf::Downward verts;
-        //   cellIter = m->begin(3);
-        //   int vals[1];
-        //   while ((cell = m->iterate(cellIter)))
-        //   {
-        //     bool allTagged = true;
-        //     const auto numFaces = m->getDownward(cell, 2, faces);
-        //     for (int f = 0; f < numFaces; f++)
-        //     {
-        //       const auto numEdges = m->getDownward(faces[f], 1, edges);
-        //       for (int e = 0; e < numEdges; e++)
-        //       {
-        //         const auto numVerts = m->getDownward(edges[e], 0, verts);
-        //         for (int i = 0; i < numVerts; i++)
-        //         {
-        //           m->getIntTag(verts[i], tag, vals);
-        //           if (vals[0] == 0)
-        //             allTagged = false;
-        //         }
-        //       }
-        //     }
-        //     if (allTagged)
-        //     {
-        //       std::cout << "Flagged cells " << allTagged << std::endl;
-        //       dval[0] = 1.0;
-        //       apf::setComponents(field, cell, 0, dval);
-        //     }
-        //   }
-        //   auto iter = cgnsBCMap["CellCenter"];
-        //   iter.push_back(std::make_pair(fieldName, field));
-        // }
       }
       else
         Kill(cgid, "Unknown BC Type", cgnsLocation);
@@ -638,13 +609,14 @@ struct BCInfo
 
           if (allTagged)
           {
-            std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
+            //std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
             dval[0] = 1.0;
             apf::setComponents(field, vert, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["Vertex"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(vertIter);
+
+        Add("Vertex", fieldName, field);
       }
       else if (cgnsLocation == "EdgeCenter")
       {
@@ -682,8 +654,9 @@ struct BCInfo
             apf::setComponents(field, edge, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["EdgeCenter"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(edgeIter);
+
+        Add("EdgeCenter", fieldName, field);
       }
       else if (cgnsLocation == "FaceCenter")
       {
@@ -725,8 +698,9 @@ struct BCInfo
             apf::setComponents(field, cell, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["CellCenter"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(cellIter);
+
+        Add("CellCenter", fieldName, field);
       }
     }
     else if (m->getDimension() == 1) // working with a 1D mesh
@@ -758,13 +732,14 @@ struct BCInfo
 
           if (allTagged)
           {
-            std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
+            //std::cout << "Flagged vertices " << 1 << " " << allTagged << std::endl;
             dval[0] = 1.0;
             apf::setComponents(field, vert, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["Vertex"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(vertIter);
+
+        Add("Vertex", fieldName, field);
       }
       else if (cgnsLocation == "EdgeCenter")
       {
@@ -810,8 +785,9 @@ struct BCInfo
             apf::setComponents(field, cell, 0, dval);
           }
         }
-        auto iter = cgnsBCMap["CellCenter"];
-        iter.push_back(std::make_pair(fieldName, field));
+        m->end(cellIter);
+
+        Add("CellCenter", fieldName, field);
       }
     }
 
