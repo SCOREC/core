@@ -37,13 +37,19 @@ gEntity* gModel::getGeomEnt(int d, gmi_ent* ge)
 pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
 {
   if (!strcmp(model_type,"null"))
+  {
+    gmi_register_null();
     return pumi_geom_load(gmi_load(".null"), model_type);
+  }
   else if (!strcmp(model_type,"mesh"))
+  {
+    gmi_register_mesh();
     return pumi_geom_load(gmi_load(filename));
+  }
   else if (!strcmp(model_type,"analytic")) 
-   return pumi_geom_load(gmi_make_analytic(), model_type, filename, geom_load_fp);
+    return pumi_geom_load(gmi_make_analytic(), model_type, filename, geom_load_fp);
   else
-   if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
+    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
   
   return NULL;
 }
@@ -53,13 +59,9 @@ pGeom pumi_geom_load(gmi_model* gm, const char* model_type,
 {
   double t0 = PCU_Time();
   if (!strcmp(model_type,"null"))
-  {
-    gmi_register_null();
     pumi::instance()->model = new gModel(gm);
-  }
   else if (!strcmp(model_type,"mesh"))
   {
-    gmi_register_mesh();
     pumi::instance()->model = new gModel(gm);
     pumi_geom_freeze(pumi::instance()->model);
   }
