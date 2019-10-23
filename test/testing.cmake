@@ -18,6 +18,8 @@ function(smoke_test TESTNAME PROCS EXE)
   SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
 endfunction(smoke_test)
 
+mpi_test(pcu_test 8 ./pcu_test)
+
 mpi_test(shapefun 1 ./shapefun)
 mpi_test(shapefun2 1 ./shapefun2)
 mpi_test(bezierElevation 1 ./bezierElevation)

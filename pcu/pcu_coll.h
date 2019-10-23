@@ -27,6 +27,7 @@
 
 typedef void pcu_merge(void* local, void* incoming, size_t size);
 void pcu_merge_assign(void* local, void* incoming, size_t size);
+void pcu_merge_gather(void* local, void* incoming, size_t size);
 void pcu_add_doubles(void* local, void* incoming, size_t size);
 void pcu_max_doubles(void* local, void* incoming, size_t size);
 void pcu_min_doubles(void* local, void* incoming, size_t size);

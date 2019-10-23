@@ -6,6 +6,7 @@ endif()
 # Package sources
 set(SOURCES
   apf.cc
+  apfAggregateNumbering.cc
   apfCavityOp.cc
   apfElement.cc
   apfField.cc
@@ -52,6 +53,7 @@ set(SOURCES
 # Package headers
 set(HEADERS
   apf.h
+  apfAggregateNumbering.h
   apfMesh.h
   apfMesh2.h
   apfMatrix.h

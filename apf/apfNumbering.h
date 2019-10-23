@@ -68,7 +68,7 @@ int getNumber(Numbering* n, MeshEntity* e, int node, int component);
 
 /** \brief get the field being numbered
   */
-Field* getField(Numbering* n);
+Field * getField(Numbering* n);
 
 /** \brief get the FieldShape used by a Numbering */
 FieldShape* getShape(Numbering* n);

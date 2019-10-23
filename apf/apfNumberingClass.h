@@ -19,18 +19,18 @@ class NumberingOf : public FieldBase
     NumberingOf();
     virtual int countComponents() const;
     virtual int getScalarType();
-    void init(const char* n,
-              Mesh* m,
-              FieldShape* s,
+    void init(const char * n,
+              Mesh * m,
+              FieldShape * s,
               int c);
     void init(Field* f);
-    Field* getField();
-    FieldDataOf<T>* getData();
-    void getAll(MeshEntity* e, T* dat);
-    T get(MeshEntity* e, int node, int component);
-    void set(MeshEntity* e, int node, int component, T value);
-  private:
-    Field* field;
+    Field * getField();
+    FieldDataOf<T> * getData();
+    virtual void getAll(MeshEntity* e, T* dat);
+    virtual T get(MeshEntity* e, int node, int component);
+    virtual void set(MeshEntity* e, int node, int component, T value);
+  protected:
+    Field * field;
     int components;
 };
 

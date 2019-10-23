@@ -9,46 +9,9 @@
 
 namespace apf {
 
-UserData::UserData(Function* f)
-{
-  function = f;
-}
-
-void UserData::init(FieldBase* f)
-{
-  field = f;
-}
-
-bool UserData::hasEntity(MeshEntity* e)
-{
-  return field->getShape()->countNodesOn(field->getMesh()->getType(e)) > 0;
-}
-
-void UserData::removeEntity(MeshEntity*)
-{
-}
-
-void UserData::get(MeshEntity* e, double* data)
-{
-  function->eval(e, data);
-}
-
-void UserData::set(MeshEntity*, double const*)
-{
-}
-
-bool UserData::isFrozen()
-{
-  return false;
-}
-
-FieldData* UserData::clone()
-{
-  FieldData* newData = new UserData(function);
-  newData->init(field);
-  copyFieldData(static_cast<FieldDataOf<double>*>(newData),
-                static_cast<FieldDataOf<double>*>(field->getData()));
-  return newData;
-}
+template <> class UserDataBase<double>;
+template <> class UserDataBase<int>;
+template <> class UserDataBase<long>;
+template <> class UserDataBase<size_t>;
 
 }

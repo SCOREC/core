@@ -26,6 +26,8 @@ bool pcu_pmpi_done(pcu_message* m);
 
 void pcu_pmpi_switch(MPI_Comm new_comm);
 MPI_Comm pcu_pmpi_comm(void);
+int  pcu_pmpi_lcl_to_frn(int lcl, MPI_Comm frn_cm);
+int  pcu_pmpi_frn_to_lcl(int frn, MPI_Comm frn_cm);
 
 extern pcu_mpi pcu_pmpi;
 

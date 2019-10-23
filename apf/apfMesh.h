@@ -23,6 +23,7 @@ namespace apf {
 
 class FieldShape;
 class Field;
+
 template <class T>
 class NumberingOf;
 /** \brief Numbering is meant to be a 32-bit local numbering */
@@ -571,6 +572,10 @@ int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
 /** \brief count the number of owned entities of dimension (dim) using sharing shr
            the default sharing is used if none is provided */
 int countOwned(Mesh* m, int dim, Sharing * shr = NULL);
+
+/** \brief count the number of nodes on owned entities of dimension (dim) under FieldShape shape using sharing shr
+    the default sharing is used if none is provided */
+int countOwnedNodes(Mesh * m, int dim, FieldShape * shape, Sharing * shr = NULL);
 
 /** \brief print global mesh entity counts per dimension */
 void printStats(Mesh* m);

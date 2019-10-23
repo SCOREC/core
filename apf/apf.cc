@@ -476,10 +476,6 @@ bool isFrozen(Field* f)
   return f->getData()->isFrozen();
 }
 
-Function::~Function()
-{
-}
-
 Field* createUserField(Mesh* m, const char* name, int valueType, FieldShape* s,
     Function* f)
 {

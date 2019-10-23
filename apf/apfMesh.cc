@@ -810,6 +810,31 @@ int countOwned(Mesh* m, int dim, Sharing * shr)
   return n;
 }
 
+int countOwnedNodes(Mesh* m, int dim, FieldShape * shp, Sharing * shr)
+{
+  if(!shp->hasNodesIn(dim))
+    return 0;
+  bool dlt = false;
+  if(shr == NULL)
+  {
+    shr = getSharing(m);
+    dlt = true;
+  }
+  MeshIterator* it = m->begin(dim);
+  MeshEntity* e;
+  int n = 0;
+  while ((e = m->iterate(it)))
+    if (shr->isOwned(e))
+    {
+      int tp = m->getType(e);
+      int nds = shp->countNodesOn(tp);
+      n += nds;
+    }
+  m->end(it);
+  if(dlt) delete shr;
+  return n;
+}
+
 void printTypes(Mesh* m)
 {
   const int dim = m->getDimension();

@@ -118,3 +118,30 @@ MPI_Comm pcu_pmpi_comm(void)
   return original_comm;
 }
 
+int pcu_pmpi_lcl_to_frn(int lcl_rnk, MPI_Comm frn_cm)
+{
+  MPI_Group lcl_grp;
+  MPI_Group frn_grp;
+  int frn_rnk = -1;
+  MPI_Comm_group(original_comm,&lcl_grp);
+  if(frn_cm != MPI_COMM_NULL)
+  {
+    MPI_Comm_group(frn_cm,&frn_grp);
+    MPI_Group_translate_ranks(lcl_grp, 1, &lcl_rnk, frn_grp, &frn_rnk);
+  }
+  return frn_rnk;
+}
+
+int pcu_pmpi_frn_to_lcl(int frn_rnk, MPI_Comm frn_cm)
+{
+  MPI_Group lcl_grp;
+  MPI_Group frn_grp;
+  int lcl_rnk = -1;
+  MPI_Comm_group(original_comm,&lcl_grp);
+  if(frn_cm != MPI_COMM_NULL)
+  {
+    MPI_Comm_group(frn_cm,&frn_grp);
+    MPI_Group_translate_ranks(frn_grp,1,&frn_rnk,lcl_grp,&lcl_rnk);
+  }
+  return lcl_rnk;
+}

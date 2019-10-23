@@ -484,6 +484,62 @@ int PCU_And(int c)
   return PCU_Min_Int(c);
 }
 
+/** \brief Performs a parallel gather followed by a broadcast
+  */
+void PCU_Allgather_Doubles(double* i, size_t ni, double* o)
+{
+  if(global_state == uninit)
+    reel_fail("Allgather_Doubles called before Comm_Init");
+  MPI_Allgather(i,ni,MPI_DOUBLE,o,ni,MPI_DOUBLE,PCU_Get_Comm());
+}
+
+void PCU_Allgather_Double(double i, double* o)
+{
+  PCU_Allgather_Doubles(&i,1,o);
+}
+
+/** \brief Performs a parallel gather followed by a broadcast
+  */
+void PCU_Allgather_Ints(int* i, size_t ni, int* o)
+{
+  if(global_state == uninit)
+    reel_fail("Allgather_Ints called before Comm_Init");
+  MPI_Allgather(i,ni,MPI_INTEGER,o,ni,MPI_INTEGER,PCU_Get_Comm());
+}
+
+void PCU_Allgather_Int(int i, int* o)
+{
+  PCU_Allgather_Ints(&i,1,o);
+}
+
+/** \brief Performs a parallel gather followed by a broadcast
+  */
+void PCU_Allgather_Longs(long* i, size_t ni, long* o)
+{
+  if(global_state == uninit)
+    reel_fail("Allgather_Longs called before Comm_Init");
+  MPI_Allgather(i,ni,MPI_LONG,o,ni,MPI_LONG,PCU_Get_Comm());
+}
+
+void PCU_Allgather_Long(long i, long* o)
+{
+  PCU_Allgather_Longs(&i,1,o);
+}
+
+/** \brief Performs a parallel gather followed by a broadcast
+  */
+void PCU_Allgather_SizeTs(size_t* i, size_t ni, size_t *o)
+{
+  if(global_state == uninit)
+    reel_fail("Allgather_SizeTs called before Comm_Init");
+  MPI_Allgather(i,ni*sizeof(size_t),MPI_BYTE,o,ni*sizeof(size_t),MPI_BYTE,PCU_Get_Comm());
+}
+
+void PCU_Allgather_SizeT(size_t i, size_t* o)
+{
+  PCU_Allgather_SizeTs(&i,1,o);
+}
+
 /** \brief Returns the unique rank of the calling process.
  */
 int PCU_Proc_Self(void)
@@ -738,6 +794,20 @@ MPI_Comm PCU_Get_Comm(void)
   if (global_state == uninit)
     reel_fail("Get_Comm called before Comm_Init");
   return pcu_pmpi_comm();
+}
+
+int PCU_Local_To_Foreign(int local_rank, MPI_Comm foreign_comm)
+{
+  if (global_state == uninit)
+    reel_fail("Local_To_Foreign called before Comm_Init");
+  return pcu_pmpi_lcl_to_frn(local_rank,foreign_comm);
+}
+
+int PCU_Foreign_To_Local(int foreign_rank, MPI_Comm foreign_comm)
+{
+  if (global_state == uninit)
+    reel_fail("Foreign_To_Local called before Comm_Init");
+  return pcu_pmpi_frn_to_lcl(foreign_rank,foreign_comm);
 }
 
 /** \brief Return the time in seconds since some time in the past
