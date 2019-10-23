@@ -65,13 +65,11 @@ static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType
     return "TETRA_4";
   else if (elementType == CGNS_ENUMV(PYRA_5))
     return "PYRA_5";
-  else if (elementType == CGNS_ENUMV(PENTA_6))
-    return "PENTA_6";
   else
   {
     std::cout << __LINE__ << " "
-              << "No known element type "
-              << " " << cg_ElementTypeName(elementType) << std::endl;
+              << "Element type "
+              << " " << cg_ElementTypeName(elementType) << " not supported by apf/PUMI " << std::endl;
     return "";
   }
 }
