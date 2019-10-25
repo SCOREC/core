@@ -324,19 +324,19 @@ struct BCInfo
   std::string cgnsLocation;               // for debug
   std::unordered_set<cgsize_t> vertexIds; // zero-based global to relate to GlobalToVert
   apf::MeshTag *tag = nullptr;
-  apf::Field *field = nullptr;
+  //  apf::Field *field = nullptr; // debug, outputting to vtk
 
   void Clean(apf::Mesh2 *m)
   {
-    m->removeField(field);
-    apf::destroyField(field);
+    // m->removeField(field);
+    // apf::destroyField(field);
     apf::removeTagFromDimension(m, tag, 0);
     m->destroyTag(tag);
   }
 
   void TagVertices(const int cgid, apf::Mesh2 *m, apf::GlobalToVert &globalToVert)
   {
-    tag = m->createIntTag(bcName.c_str(), 1); // 1 is size of tag
+    tag = m->createIntTag(("marker_"+bcName).c_str(), 1); // 1 is size of tag
     apf::MeshEntity *elem = nullptr;
     apf::MeshIterator *it = m->begin(0);
     int vals[1];
@@ -360,24 +360,24 @@ struct BCInfo
       }
     }
 
-    if (debugOutput)
-    //if constexpr (debugOutput) // probably will not get away with c++17
-    {
-      // for debug output, tags aren't written to vtk...
-      apf::MeshEntity *elem = nullptr;
-      apf::MeshIterator *it = m->begin(0);
-      field = apf::createFieldOn(m, bcName.c_str(), apf::SCALAR);
+    // if (debugOutput)
+    // //if constexpr (debugOutput) // probably will not get away with c++17
+    // {
+    //   // for debug output, tags aren't written to vtk...
+    //   apf::MeshEntity *elem = nullptr;
+    //   apf::MeshIterator *it = m->begin(0);
+    //   field = apf::createFieldOn(m, bcName.c_str(), apf::SCALAR);
 
-      int vals[1];
-      double dval[1];
-      while ((elem = m->iterate(it)))
-      {
-        m->getIntTag(elem, tag, vals);
-        dval[0] = vals[0];
-        apf::setComponents(field, elem, 0, dval);
-      }
-      m->end(it);
-    }
+    //   int vals[1];
+    //   double dval[1];
+    //   while ((elem = m->iterate(it)))
+    //   {
+    //     m->getIntTag(elem, tag, vals);
+    //     dval[0] = vals[0];
+    //     apf::setComponents(field, elem, 0, dval);
+    //   }
+    //   m->end(it);
+    // }
 
     // Notes:
     // I do not exchange the tag values (even if that can be done).
