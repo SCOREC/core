@@ -145,70 +145,72 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
       cgp_error_exit();
   }
 
-  std::array<std::vector<double>, 3> coords;
+  apf::GlobalNumbering *gcn = nullptr;
+  gcn = apf::makeGlobal(apf::numberElements(m, "element-nums"));
 
   apf::GlobalNumbering *gvn = nullptr;
   gvn = apf::makeGlobal(apf::numberOwnedNodes(m, "node-nums"));
   apf::synchronize(gvn);
 
-  cgsize_t rmin[3];
-  cgsize_t rmax[3];
-  rmin[0] = std::numeric_limits<cgsize_t>::max();
-  rmax[0] = 0;
-
   {
-    apf::Vector3 point;
-    for (int i = 0; i < PCU_Comm_Peers(); ++i)
-    {
-      if (i == PCU_Comm_Self())
-      {
-        apf::MeshIterator *vertIter = m->begin(0);
-        apf::MeshEntity *vert = nullptr;
-        while ((vert = m->iterate(vertIter)))
-        {
-          if (m->isOwned(vert))
-          {
-            const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(gvn, vert, 0) + 1); // one based
-            rmin[0] = std::min(rmin[0], n);
-            rmax[0] = std::max(rmax[0], n);
+    std::array<std::vector<double>, 3> coords;
 
-            m->getPoint(vert, 0, point);
-            coords[0].push_back(point[0]);
-            coords[1].push_back(point[1]);
-            coords[2].push_back(point[2]);
+    cgsize_t rmin[3];
+    cgsize_t rmax[3];
+    rmin[0] = std::numeric_limits<cgsize_t>::max();
+    rmax[0] = 0;
+
+    {
+      apf::Vector3 point;
+      for (int i = 0; i < PCU_Comm_Peers(); ++i)
+      {
+        if (i == PCU_Comm_Self())
+        {
+          apf::MeshIterator *vertIter = m->begin(0);
+          apf::MeshEntity *vert = nullptr;
+          while ((vert = m->iterate(vertIter)))
+          {
+            if (m->isOwned(vert))
+            {
+              const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(gvn, vert, 0) + 1); // one based
+              rmin[0] = std::min(rmin[0], n);
+              rmax[0] = std::max(rmax[0], n);
+
+              m->getPoint(vert, 0, point);
+              coords[0].push_back(point[0]);
+              coords[1].push_back(point[1]);
+              coords[2].push_back(point[2]);
+            }
           }
+          m->end(vertIter);
         }
-        m->end(vertIter);
       }
+    }
+
+    // oddness of the api
+    rmin[1] = rmin[0];
+    rmin[2] = rmin[0];
+    rmax[1] = rmax[0];
+    rmax[2] = rmax[0];
+
+    if (phys_dim > 0)
+    {
+      if (cgp_coord_write_data(index, base, zone, Cx, &rmin[0], &rmax[0], coords[0].data()))
+        cgp_error_exit();
+    }
+    if (phys_dim > 1)
+    {
+      if (cgp_coord_write_data(index, base, zone, Cy, &rmin[0], &rmax[0], coords[1].data()))
+        cgp_error_exit();
+    }
+    if (phys_dim > 2)
+    {
+      if (cgp_coord_write_data(index, base, zone, Cz, &rmin[0], &rmax[0], coords[2].data()))
+        cgp_error_exit();
     }
   }
 
-  // oddness of the api
-  rmin[1] = rmin[0];
-  rmin[2] = rmin[0];
-  rmax[1] = rmax[0];
-  rmax[2] = rmax[0];
-
-  if (phys_dim > 0)
-  {
-    if (cgp_coord_write_data(index, base, zone, Cx, &rmin[0], &rmax[0], coords[0].data()))
-      cgp_error_exit();
-  }
-  if (phys_dim > 1)
-  {
-    if (cgp_coord_write_data(index, base, zone, Cy, &rmin[0], &rmax[0], coords[1].data()))
-      cgp_error_exit();
-  }
-  if (phys_dim > 2)
-  {
-    if (cgp_coord_write_data(index, base, zone, Cz, &rmin[0], &rmax[0], coords[2].data()))
-      cgp_error_exit();
-  }
-
-  apf::GlobalNumbering *gcn = nullptr;
-  gcn = apf::makeGlobal(apf::numberElements(m, "element-nums"));
-
-  std::vector<int> apfElementOrder;
+  std::vector<apf::Mesh::Type> apfElementOrder;
   apfElementOrder.push_back(apf::Mesh::HEX);
   apfElementOrder.push_back(apf::Mesh::TET);
   apfElementOrder.push_back(apf::Mesh::PYRAMID);
@@ -223,6 +225,14 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   cgnsElementOrder.push_back(CGNS_ENUMV(QUAD_4));
   cgnsElementOrder.push_back(CGNS_ENUMV(TRI_3));
   cgnsElementOrder.push_back(CGNS_ENUMV(BAR_2));
+
+  std::map<apf::Mesh::Type, CGNS_ENUMT(ElementType_t)> apf2cgns;
+  apf2cgns.insert(std::make_pair(apf::Mesh::HEX, CGNS_ENUMV(HEXA_8)));
+  apf2cgns.insert(std::make_pair(apf::Mesh::TET, CGNS_ENUMV(TETRA_4)));
+  apf2cgns.insert(std::make_pair(apf::Mesh::PYRAMID, CGNS_ENUMV(PYRA_5)));
+  apf2cgns.insert(std::make_pair(apf::Mesh::QUAD, CGNS_ENUMV(QUAD_4)));
+  apf2cgns.insert(std::make_pair(apf::Mesh::TRIANGLE, CGNS_ENUMV(TRI_3)));
+  apf2cgns.insert(std::make_pair(apf::Mesh::EDGE, CGNS_ENUMV(BAR_2)));
 
   std::vector<int> globalNumbersByElementType(apfElementOrder.size(), 0);
   std::vector<int> numbersByElementType(apfElementOrder.size(), 0);
@@ -298,43 +308,320 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     }
   }
   //
-  std::cout << &cgnsBCMap << std::endl;
+
+  const auto EdgeLoop = [&m](const auto &lambda, apf::MeshTag *edgeTag) {
+    apf::MeshIterator *edgeIter = m->begin(1);
+    apf::MeshEntity *edge = nullptr;
+    int vals[1];
+    vals[0] = -1;
+
+    while ((edge = m->iterate(edgeIter)))
+    {
+      m->getIntTag(edge, edgeTag, vals);
+      if (vals[0] == 1 && m->isOwned(edge))
+      {
+        lambda(edge);
+      }
+    }
+    m->end(edgeIter);
+  };
+
+  const auto FaceLoop = [&m](const auto &lambda, apf::MeshTag *faceTag) {
+    apf::MeshIterator *faceIter = m->begin(2);
+    apf::MeshEntity *face = nullptr;
+    int vals[1];
+    vals[0] = -1;
+
+    while ((face = m->iterate(faceIter)))
+    {
+      m->getIntTag(face, faceTag, vals);
+      if (vals[0] == 1 && m->isOwned(face))
+      {
+        lambda(face);
+      }
+    }
+    m->end(faceIter);
+  };
+
+  const auto BCEntityAdder = [&apf2cgns, &m, &index, &zone, &base, &gvn](const auto &Looper, const auto &bcGroup, int &startingLocation) {
+    std::map<apf::Mesh::Type, std::vector<apf::MeshEntity *>> bcEntTypes;
+    for (const auto &r : apf2cgns)
+      bcEntTypes.insert(std::make_pair(r.first, std::vector<apf::MeshEntity *>()));
+
+    const auto lambda = [&m, &bcEntTypes](apf::MeshEntity *entity) {
+      const auto type = m->getType(entity);
+      auto iter = bcEntTypes.find(type);
+      if (iter != bcEntTypes.end())
+      {
+        iter->second.push_back(entity);
+      }
+      else
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(true == false, "must not come in here");
+      }
+    };
+    //
+    Looper(lambda, bcGroup.second);
+    //
+    const int cacheStart = startingLocation + 1;
+    int cacheEnd = -1;
+    for (const auto &bc : bcEntTypes)
+    {
+      int startOfBCBlock = startingLocation + 1;
+      const int number = bc.second.size();
+      int total = number;
+      PCU_Add_Ints(&total, 1); // size of total array
+      if (total > 0)
+      {
+        const auto allEnd = startOfBCBlock + total - 1; //one-based
+        int sectionNumber = -1;
+        const std::string name = bcGroup.first + " " + std::to_string(startOfBCBlock) + "->" + std::to_string(allEnd); //cg_ElementTypeName(apf2cgns[bc.first]);
+        if (cgp_section_write(index, base, zone, name.c_str(), apf2cgns[bc.first], startOfBCBlock, allEnd, 0,
+                              &sectionNumber))
+          cgp_error_exit();
+
+        std::vector<cgsize_t> elements;
+        for (std::size_t e = 0; e < bc.second.size(); e++)
+        {
+          apf::Downward verts;
+          const auto numVerts = m->getDownward(bc.second[e], 0, verts);
+          for (int i = 0; i < numVerts; i++)
+          {
+            const auto n = apf::getNumber(gvn, verts[i], 0);
+            elements.push_back(n + 1); // one-based
+          }
+        }
+
+        std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
+        MPI_Allgather(&number, 1, MPI_INT, allNumbersForThisType.data(), 1,
+                      MPI_INT, PCU_Get_Comm());
+
+        cgsize_t num = 0;
+        for (int i = 0; i < PCU_Comm_Self(); i++)
+          num += allNumbersForThisType[i];
+
+        cgsize_t elStart = startOfBCBlock + num;
+        cgsize_t elEnd = elStart + number - 1; // one-based stuff
+
+        if (number == 0)
+        {
+          if (cgp_elements_write_data(index, base, zone, sectionNumber, elStart, elEnd, nullptr))
+            cgp_error_exit();
+        }
+        else
+        {
+          if (cgp_elements_write_data(index, base, zone, sectionNumber, elStart, elEnd,
+                                      elements.data()))
+            cgp_error_exit();
+        }
+
+        // Not parallel correct
+        startingLocation = allEnd;
+        cacheEnd = allEnd;
+      }
+    }
+    std::vector<int> cacheStarts(PCU_Comm_Peers(), 0);
+    MPI_Allgather(&cacheStart, 1, MPI_INT, cacheStarts.data(), 1,
+                  MPI_INT, PCU_Get_Comm());
+    std::vector<int> cacheEnds(PCU_Comm_Peers(), 0);
+    MPI_Allgather(&cacheEnd, 1, MPI_INT, cacheEnds.data(), 1,
+                  MPI_INT, PCU_Get_Comm());
+    return std::make_pair(cacheStarts, cacheEnds);
+  };
+
+  const auto globalElementList = [](const std::vector<cgsize_t> &bcList, std::vector<cgsize_t> &allElements) {
+    std::vector<int> sizes(PCU_Comm_Peers(), 0); // important initialiser
+    const int l = bcList.size();
+    MPI_Allgather(&l, 1, MPI_INT, sizes.data(), 1,
+                  MPI_INT, PCU_Get_Comm());
+
+    int totalLength = 0;
+    for (const auto &i : sizes)
+      totalLength += i;
+
+    std::vector<int> displacement(PCU_Comm_Peers(), -1);
+    displacement[0] = 0;
+    for (std::size_t i = 1; i < displacement.size(); i++)
+      displacement[i] = displacement[i - 1] + sizes[i - 1];
+
+    allElements.resize(totalLength);
+    MPI_Allgatherv(bcList.data(), bcList.size(), MPI_INT, allElements.data(),
+                   sizes.data(), displacement.data(), MPI_INT,
+                   PCU_Get_Comm());
+  };
+
+  const auto doVertexBC = [&](const auto &iter) {
+    for (const auto &p : iter->second)
+    {
+      std::vector<cgsize_t> bcList;
+      apf::MeshIterator *vertIter = m->begin(0);
+      apf::MeshEntity *vert = nullptr;
+      int vals[1];
+      vals[0] = -1;
+
+      while ((vert = m->iterate(vertIter)))
+      {
+        m->getIntTag(vert, p.second, vals);
+        if (vals[0] == 1 && m->isOwned(vert))
+        {
+          const auto n = apf::getNumber(gvn, vert, 0);
+          bcList.push_back(n + 1); // one-based
+        }
+      }
+      m->end(vertIter);
+
+      std::vector<cgsize_t> allElements;
+      globalElementList(bcList, allElements);
+
+      int bcIndex = -1;
+      if (cg_boco_write(index, base, zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointList), allElements.size(),
+                        allElements.data(), &bcIndex))
+        cg_error_exit();
+
+      CGNS_ENUMT(GridLocation_t)
+      location = CGNS_ENUMV(Vertex);
+      if (cg_boco_gridlocation_write(index, base, zone, bcIndex, location))
+        cg_error_exit();
+    }
+  };
+
+  const auto doEdgeBC = [&](const auto &iter, int& startingLocation) {
+    for (const auto &p : iter->second)
+    {
+      const auto se = BCEntityAdder(EdgeLoop, p, startingLocation);
+      for (int i = 0; i < PCU_Comm_Peers(); i++)
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(se.first[i] == se.first[0], "Must all be the same ");
+        PCU_ALWAYS_ASSERT_VERBOSE(se.second[i] == se.second[0], "Must all be the same ");
+      }
+
+      const std::array<cgsize_t, 2> bcRange = {{se.first[0], se.second[0]}};
+      int bcIndex = -1;
+      if (cg_boco_write(index, base, zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointRange), 2,
+                        bcRange.data(), &bcIndex))
+        cg_error_exit();
+
+      CGNS_ENUMT(GridLocation_t)
+      location = CGNS_ENUMV(EdgeCenter);
+      if (cg_boco_gridlocation_write(index, base, zone, bcIndex, location))
+        cg_error_exit();
+    }
+  };
+
+  const auto doFaceBC = [&](const auto &iter, int& startingLocation) {
+    for (const auto &p : iter->second)
+    {
+      const auto se = BCEntityAdder(FaceLoop, p, startingLocation);
+
+      for (int i = 0; i < PCU_Comm_Peers(); i++)
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(se.first[i] == se.first[0], "Must all be the same ");
+        PCU_ALWAYS_ASSERT_VERBOSE(se.second[i] == se.second[0], "Must all be the same ");
+      }
+      const std::array<cgsize_t, 2> bcRange = {{se.first[0], se.second[0]}};
+      int bcIndex = -1;
+      if (cg_boco_write(index, base, zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointRange), 2,
+                        bcRange.data(), &bcIndex))
+        cg_error_exit();
+
+      CGNS_ENUMT(GridLocation_t)
+      location = CGNS_ENUMV(FaceCenter);
+      if (cg_boco_gridlocation_write(index, base, zone, bcIndex, location))
+        cg_error_exit();
+    }
+  };
+
+  const auto doCellBC = [&](const auto &iter, const int& dim) {
+    for (const auto &p : iter->second)
+    {
+      std::vector<cgsize_t> bcList;
+      apf::MeshIterator *cellIter = m->begin(dim);
+      apf::MeshEntity *cell = nullptr;
+      int vals[1];
+      vals[0] = -1;
+
+      while ((cell = m->iterate(cellIter)))
+      {
+        m->getIntTag(cell, p.second, vals);
+        if (vals[0] == 1 && m->isOwned(cell))
+        {
+          const auto n = apf::getNumber(gcn, cell, 0);
+          bcList.push_back(n + 1); // one-based
+        }
+      }
+      m->end(cellIter);
+
+      std::vector<cgsize_t> allElements;
+      globalElementList(bcList, allElements);
+
+      int bcIndex = -1;
+      if (cg_boco_write(index, base, zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointList), allElements.size(),
+                        allElements.data(), &bcIndex))
+        cg_error_exit();
+
+      CGNS_ENUMT(GridLocation_t)
+      location = CGNS_ENUMV(CellCenter);
+      if (cg_boco_gridlocation_write(index, base, zone, bcIndex, location))
+        cg_error_exit();
+    }
+  };
+
   if (cell_dim == 3)
   {
+    int startingLocation = cellCount.first;
+
     auto iter = cgnsBCMap.find("Vertex");
     if (iter != cgnsBCMap.end())
     {
-      for (const auto &p : iter->second)
-      {
-        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
-      }
+      doVertexBC(iter);
     }
     iter = cgnsBCMap.find("EdgeCenter");
     if (iter != cgnsBCMap.end())
     {
-      for (const auto &p : iter->second)
-      {
-        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
-      }
+      doEdgeBC(iter, startingLocation);
     }
     iter = cgnsBCMap.find("FaceCenter");
     if (iter != cgnsBCMap.end())
     {
-      for (const auto &p : iter->second)
-      {
-        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
-        auto* field = m->findTag(p.first.c_str());
-        std::cout << field << " " << p.second << std::endl;
-
-      }
+      doFaceBC(iter, startingLocation);
     }
     iter = cgnsBCMap.find("CellCenter");
     if (iter != cgnsBCMap.end())
     {
-      for (const auto &p : iter->second)
-      {
-        std::cout << iter->first << " " << p.first << " " << p.second << std::endl;
-      }
+       doCellBC(iter, 3);
+    }
+  }
+  else if (cell_dim == 2)
+  {
+    int startingLocation = cellCount.first;
+
+    auto iter = cgnsBCMap.find("Vertex");
+    if (iter != cgnsBCMap.end())
+    {
+      doVertexBC(iter);
+    }
+    iter = cgnsBCMap.find("EdgeCenter");
+    if (iter != cgnsBCMap.end())
+    {
+      doEdgeBC(iter, startingLocation);
+    }
+    iter = cgnsBCMap.find("CellCenter");
+    if (iter != cgnsBCMap.end())
+    {
+       doCellBC(iter, 2);
+    }
+  }
+  else if (cell_dim == 1)
+  {
+    auto iter = cgnsBCMap.find("Vertex");
+    if (iter != cgnsBCMap.end())
+    {
+      doVertexBC(iter);
+    }
+    iter = cgnsBCMap.find("CellCenter");
+    if (iter != cgnsBCMap.end())
+    {
+       doCellBC(iter, 1);
     }
   }
   //
