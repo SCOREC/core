@@ -561,27 +561,23 @@ struct BCInfo
     {
       if (cgnsLocation == "Vertex")
       {
-        const std::string tagName = "VertBC_" + bcName;
-        apf::MeshTag *bcTag = VertexLoop(tagName, tag);
-        Add("Vertex", tagName, bcTag);
+        apf::MeshTag *bcTag = VertexLoop(bcName, tag);
+        Add("Vertex", bcName, bcTag);
       }
       else if (cgnsLocation == "EdgeCenter")
       {
-        const std::string tagName = "EdgeBC_" + bcName;
-        apf::MeshTag *bcTag = EdgeLoop(tagName, tag);
-        Add("EdgeCenter", tagName, bcTag);
+        apf::MeshTag *bcTag = EdgeLoop(bcName, tag);
+        Add("EdgeCenter", bcName, bcTag);
       }
       else if (cgnsLocation == "FaceCenter")
       {
-        const std::string tagName = "FaceBC_" + bcName;
-        apf::MeshTag *bcTag = FaceLoop(tagName, tag);
-        Add("FaceCenter", tagName, bcTag);
+        apf::MeshTag *bcTag = FaceLoop(bcName, tag);
+        Add("FaceCenter", bcName, bcTag);
       }
       else if (cgnsLocation == "CellCenter")
       {
-        const std::string tagName = "CellBC_" + bcName;
-        apf::MeshTag *bcTag = CellLoop(tagName, tag, m->getDimension());
-        Add("CellCenter", tagName, bcTag);
+        apf::MeshTag *bcTag = CellLoop(bcName, tag, m->getDimension());
+        Add("CellCenter", bcName, bcTag);
       }
       else
         Kill(cgid, "Unknown BC Type", cgnsLocation);
@@ -590,15 +586,13 @@ struct BCInfo
     {
       if (cgnsLocation == "Vertex")
       {
-        const std::string tagName = "VertBC_" + bcName;
-        apf::MeshTag *bcTag = VertexLoop(tagName, tag);
-        Add("Vertex", tagName, bcTag);
+        apf::MeshTag *bcTag = VertexLoop(bcName, tag);
+        Add("Vertex", bcName, bcTag);
       }
       else if (cgnsLocation == "EdgeCenter")
       {
-        const std::string tagName = "EdgeBC_" + bcName;
-        apf::MeshTag *bcTag = EdgeLoop(tagName, tag);
-        Add("EdgeCenter", tagName, bcTag);
+        apf::MeshTag *bcTag = EdgeLoop(bcName, tag);
+        Add("EdgeCenter", bcName, bcTag);
       }
       else if (cgnsLocation == "FaceCenter")
       {
@@ -606,18 +600,16 @@ struct BCInfo
       }
       else if (cgnsLocation == "CellCenter")
       {
-        const std::string tagName = "CellBC_" + bcName;
-        apf::MeshTag *bcTag = CellLoop(tagName, tag, m->getDimension());
-        Add("CellCenter", tagName, bcTag);
+        apf::MeshTag *bcTag = CellLoop(bcName, tag, m->getDimension());
+        Add("CellCenter", bcName, bcTag);
       }
     }
     else if (m->getDimension() == 1) // working with a 1D mesh
     {
       if (cgnsLocation == "Vertex")
       {
-        const std::string tagName = "VertBC_" + bcName;
-        apf::MeshTag *bcTag = VertexLoop(tagName, tag);
-        Add("Vertex", tagName, bcTag);
+        apf::MeshTag *bcTag = VertexLoop(bcName, tag);
+        Add("Vertex", bcName, bcTag);
       }
       else if (cgnsLocation == "EdgeCenter")
       {
@@ -629,9 +621,8 @@ struct BCInfo
       }
       else if (cgnsLocation == "CellCenter")
       {
-        const std::string tagName = "CellBC_" + bcName;
-        apf::MeshTag *bcTag = CellLoop(tagName, tag, m->getDimension());
-        Add("CellCenter", tagName, bcTag);
+        apf::MeshTag *bcTag = CellLoop(bcName, tag, m->getDimension());
+        Add("CellCenter", bcName, bcTag);
       }
     }
 
