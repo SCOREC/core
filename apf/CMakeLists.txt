@@ -3,6 +3,9 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/apfComplexType.h.in
+               ${CMAKE_CURRENT_SOURCE_DIR}/apfComplexType.h @ONLY)
+
 # Package sources
 set(SOURCES
   apf.cc
@@ -29,6 +32,7 @@ set(SOURCES
   apfVectorElement.cc
   apfVectorField.cc
   apfPackedField.cc
+  apfComplexField.cc
   apfNumbering.cc
   apfMixedNumbering.cc
   apfAdjReorder.cc
@@ -47,6 +51,7 @@ set(SOURCES
   apfSimplexAngleCalcs.cc
   apfFile.cc
   apfMIS.cc
+  apfZero.cc
 )
 
 # Package headers
@@ -73,6 +78,9 @@ set(HEADERS
   apfField.h
   apfFieldData.h
   apfNumberingClass.h
+  apfComplex.h
+  apfComplexType.h
+  apfElementType.h
 )
 
 # Add the apf library
@@ -92,7 +100,7 @@ target_link_libraries(apf
      lion
      can
      mth
-   )
+     )
 
 scorec_export_library(apf)
 

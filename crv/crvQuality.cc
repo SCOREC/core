@@ -142,26 +142,26 @@ static double getTetPartialJacobianDet(apf::NewArray<apf::Vector3>& nodes,
  *
  */
 static double Nijk(apf::NewArray<apf::Vector3>& nodes,
-    int d, int I, int J)
+    int d, int II, int J)
 {
   double sum = 0.;
-  int CD = trinomial(2*(d-1),I,J);
+  int CD = trinomial(2*(d-1),II,J);
   for(int j1 = 0; j1 <= J; ++j1){
-    int i1start = std::max(0,I+J-j1-(d-1));
-    int i1end = std::min(I,d-1-j1);
+    int i1start = std::max(0,II+J-j1-(d-1));
+    int i1end = std::min(II,d-1-j1);
     for(int i1 = i1start; i1 <= i1end; ++i1){
-      sum += trinomial(d-1,i1,j1)*trinomial(d-1,I-i1,J-j1)
-          *getTriPartialJacobianDet(nodes,d,i1,j1,I-i1,J-j1);
+      sum += trinomial(d-1,i1,j1)*trinomial(d-1,II-i1,J-j1)
+          *getTriPartialJacobianDet(nodes,d,i1,j1,II-i1,J-j1);
     }
   }
   return sum*d*d/CD;
 }
 
 static double Nijkl(apf::NewArray<apf::Vector3>& nodes,
-    int d, int I, int J, int K)
+    int d, int II, int J, int K)
 {
   double sum = 0.;
-  int CD = quadnomial(3*(d-1),I,J,K);
+  int CD = quadnomial(3*(d-1),II,J,K);
 
   for(int k1 = 0; k1 <= K; ++k1){
     int k2start = std::max(0,K-k1-(d-1));
@@ -169,12 +169,12 @@ static double Nijkl(apf::NewArray<apf::Vector3>& nodes,
       for (int j1 = 0; j1 <= J; ++j1){
         int j2start = std::max(0,J-j1-(d-1));
         for (int j2 = j2start; j2 <= J-j1; ++j2){
-          int i1end = std::min(I,d-1-j1-k1);
+          int i1end = std::min(II,d-1-j1-k1);
           for (int i1 = 0; i1 <= i1end; ++i1){
-            int i2start = std::max(0,I+J+K-i1-j1-k1-j2-k2-(d-1));
-            int i2end = std::min(I-i1,d-1-j2-k2);
+            int i2start = std::max(0,II+J+K-i1-j1-k1-j2-k2-(d-1));
+            int i2end = std::min(II-i1,d-1-j2-k2);
             for (int i2 = i2start; i2 <= i2end; ++i2){
-              int i3 = I-i1-i2;
+              int i3 = II-i1-i2;
               int j3 = J-j1-j2;
               int k3 = K-k1-k2;
               sum += quadnomial(d-1,i1,j1,k1)*quadnomial(d-1,i2,j2,k2)
@@ -215,9 +215,9 @@ static double calcMaxJacDet(int n, apf::NewArray<double>& nodes)
 static void getTriJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
     apf::NewArray<double>& nodes)
 {
-  for (int I = 0; I <= 2*(P-1); ++I)
-    for (int J = 0; J <= 2*(P-1)-I; ++J)
-      nodes[getTriNodeIndex(2*(P-1),I,J)] = Nijk(elemNodes,P,I,J);
+  for (int II = 0; II <= 2*(P-1); ++II)
+    for (int J = 0; J <= 2*(P-1)-II; ++J)
+      nodes[getTriNodeIndex(2*(P-1),II,J)] = Nijk(elemNodes,P,II,J);
 }
 //static void getTetJacDetNodes(int P, apf::NewArray<apf::Vector3>& elemNodes,
 //    apf::NewArray<double>& nodes)
@@ -581,11 +581,11 @@ double computeTriJacobianDetFromBezierFormulation(apf::Mesh* m,
   apf::NewArray<apf::Vector3> nodes;
   apf::getVectorNodes(elem,nodes);
 
-  for (int I = 0; I <= 2*(P-1); ++I){
-    for (int J = 0; J <= 2*(P-1)-I; ++J){
-      detJ += trinomial(2*(P-1),I,J)
-          *Bijk(I,J,2*(P-1)-I-J,1.-xi[0]-xi[1],xi[0],xi[1])
-          *Nijk(nodes,P,I,J);
+  for (int II = 0; II <= 2*(P-1); ++II){
+    for (int J = 0; J <= 2*(P-1)-II; ++J){
+      detJ += trinomial(2*(P-1),II,J)
+          *Bijk(II,J,2*(P-1)-II-J,1.-xi[0]-xi[1],xi[0],xi[1])
+          *Nijk(nodes,P,II,J);
     }
   }
   apf::destroyElement(elem);
@@ -601,12 +601,12 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   apf::getVectorNodes(elem,nodes);
 
   double detJ = 0.;
-  for (int I = 0; I <= 3*(P-1); ++I){
-    for (int J = 0; J <= 3*(P-1)-I; ++J){
-      for (int K = 0; K <= 3*(P-1)-I-J; ++K){
-        detJ += quadnomial(3*(P-1),I,J,K)*Bijkl(I,J,K,3*(P-1)-I-J-K,
+  for (int II = 0; II <= 3*(P-1); ++II){
+    for (int J = 0; J <= 3*(P-1)-II; ++J){
+      for (int K = 0; K <= 3*(P-1)-II-J; ++K){
+        detJ += quadnomial(3*(P-1),II,J,K)*Bijkl(II,J,K,3*(P-1)-II-J-K,
             1.-xi[0]-xi[1]-xi[2],xi[0],xi[1],xi[2])
-            *Nijkl(nodes,P,I,J,K);
+            *Nijkl(nodes,P,II,J,K);
       }
     }
   }

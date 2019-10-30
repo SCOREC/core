@@ -8,6 +8,8 @@
 #include <PCU.h>
 #include "apfCoordData.h"
 #include "apfVectorField.h"
+#include "apfComplex.h"
+#include "apfComplexField.h"
 #include "apfShape.h"
 #include "apfNumbering.h"
 #include "apfTagData.h"
@@ -290,19 +292,40 @@ void Mesh::addField(Field* f)
   fields.push_back(f);
 }
 
+void Mesh::addComplexField(ComplexField* f)
+{
+  ifields.push_back(f);
+}
+
 void Mesh::removeField(Field* f)
 {
-  std::vector<Field*>::iterator it = std::find(fields.begin(),fields.end(),f);
+  auto it = std::find(fields.begin(),fields.end(),f);
   if (it != fields.end())
     fields.erase(it);
+}
+
+void Mesh::removeComplexField(ComplexField* f)
+{
+  auto it = std::find(ifields.begin(),ifields.end(),f);
+  if(it != ifields.end())
+    ifields.erase(it);
 }
 
 Field* Mesh::findField(const char* name)
 {
   std::string n(name);
   for (size_t i=0; i < fields.size(); ++i)
-    if (n==getName(fields[i]))
-      return fields[i];
+    if (n == fields[i]->getName())
+      return dynamic_cast<Field*>(fields[i]);
+  return 0;
+}
+
+ComplexField* Mesh::findComplexField(const char* name)
+{
+  std::string n(name);
+  for(auto fld : ifields)
+    if(n == fld->getName())
+      return fld;
   return 0;
 }
 
@@ -311,9 +334,19 @@ int Mesh::countFields()
   return static_cast<int>(fields.size());
 }
 
+int Mesh::countComplexFields()
+{
+  return static_cast<int>(ifields.size());
+}
+
 Field* Mesh::getField(int i)
 {
   return fields[i];
+}
+
+ComplexField* Mesh::getComplexField(int i)
+{
+  return ifields[i];
 }
 
 void Mesh::addNumbering(Numbering* n)
@@ -727,13 +760,12 @@ void changeMeshShape(Mesh* m, FieldShape* newShape, bool project)
   m->changeShape(newShape, project);
 }
 
-void unfreezeFields(Mesh* m) {
-  Field* f;
-  for (int i=0; i<m->countFields(); i++) {
-    f = m->getField(i);
-    if (isFrozen(f)) 
-      unfreeze(f);
-  }
+void unfreezeFields(Mesh* m)
+{
+  for(int ii = 0; ii < m->countFields(); ++ii)
+    unfreeze(m->getField(ii));
+  for(int ii = 0; ii < m->countComplexFields(); ++ii)
+    unfreeze(m->getComplexField(ii));
   m->hasFrozenFields = false;
 }
 

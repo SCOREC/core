@@ -58,6 +58,24 @@ class TagHelper<double> : public TagMaker
 };
 
 template <>
+class TagHelper<double_complex> : public TagMaker
+{
+public:
+  MeshTag * make(Mesh * m, const char * n, int s)
+  {
+    return m->createComplexTag(n,s);
+  }
+  void get(Mesh * m, MeshEntity * e, MeshTag * t, double_complex * data)
+  {
+    m->getComplexTag(e,t,data);
+  }
+  void set(Mesh * m, MeshEntity * e, MeshTag * t, double_complex const* data)
+  {
+    return m->setComplexTag(e,t,data);
+  }
+};
+
+template <>
 class TagHelper<long> : public TagMaker
 {
   public:

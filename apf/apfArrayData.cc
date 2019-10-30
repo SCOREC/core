@@ -1,6 +1,9 @@
 #include "apfArrayData.h"
+#include "apfComplex.h"
 #include "apfNumbering.h"
 #include "apfTagData.h"
+#include <pcu_util.h>
+#include <type_traits>
 
 namespace apf {
 
@@ -125,19 +128,46 @@ void unfreezeFieldData(FieldBase* field) {
 }
 
 /* instantiate here */
+template void freezeFieldData<double_complex>(FieldBase* field);
 template void freezeFieldData<int>(FieldBase* field);
 template void freezeFieldData<double>(FieldBase* field);
+template void unfreezeFieldData<double_complex>(FieldBase * field);
 template void unfreezeFieldData<int>(FieldBase* field);
 template void unfreezeFieldData<double>(FieldBase* field);
 
-double* getArrayData(Field* f) {
-  if (!isFrozen(f)) {
+template <typename T>
+T* getArrayDataT(FieldBase* f)
+{
+  int scalar = f->getScalarType();
+  // having to assert this is terrible and if we add more field types
+  // unsustainable and bad practice, but the current other option is
+  // changing the API and being more explicit about type storage
+  // since Field assumes it has Scalars of type double
+  PCU_ALWAYS_ASSERT(
+    (scalar == Mesh::DOUBLE && std::is_same<T,double>::value) ||
+    (scalar == Mesh::INT && std::is_same<T,int>::value) ||
+    (scalar == Mesh::LONG && std::is_same<T,long>::value) ||
+    (scalar == Mesh::COMPLEX && std::is_same<T,double_complex>::value)
+    );
+  if(!isFrozen(f))
     return 0;
-  } else {
-    FieldDataOf<double>* p = f->getData();
-    ArrayDataOf<double>* a = static_cast<ArrayDataOf<double>* > (p);
+  else
+  {
+    FieldDataOf<T>* p = reinterpret_cast<FieldDataOf<T>*>(f->getData());
+    ArrayDataOf<T>* a = static_cast<ArrayDataOf<T>*>(p);
     return a->getDataArray();
   }
 }
+
+template double_complex* getArrayDataT(FieldBase* field);
+template int* getArrayDataT(FieldBase* field);
+template double* getArrayDataT(FieldBase* field);
+
+double * getDoubleArrayData(Field * f) { return getArrayDataT<double>(f); }
+int * getIntArrayData(Field * f) { return getArrayDataT<int>(f); }
+
+class ComplexField;
+double_complex * getComplexArrayData(ComplexField * f) { return getArrayDataT<double_complex>(reinterpret_cast<FieldBase*>(f)); }
+
 
 }

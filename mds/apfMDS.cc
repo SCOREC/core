@@ -407,6 +407,13 @@ class MeshMDS : public Mesh2
           sizeof(double)*size, Mesh::DOUBLE);
       return reinterpret_cast<MeshTag*>(tag);
     }
+    MeshTag* createComplexTag(const char* name, int size)
+    {
+      mds_tag* tag;
+      PCU_ALWAYS_ASSERT(!mds_find_tag(&mesh->tags,name));
+      tag = mds_create_tag(&(mesh->tags),name,sizeof(double_complex)*size, Mesh::COMPLEX);
+      return reinterpret_cast<MeshTag*>(tag);
+    }
     MeshTag* createIntTag(const char* name, int size)
     {
       mds_tag* tag;
@@ -471,6 +478,14 @@ class MeshMDS : public Mesh2
       getTag(e,tag,data);
     }
     void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data)
+    {
+      setTag(e,tag,data);
+    }
+    void getComplexTag(MeshEntity* e, MeshTag * tag, double_complex * data)
+    {
+      getTag(e,tag,data);
+    }
+    void setComplexTag(MeshEntity* e, MeshTag * tag, double_complex const* data)
     {
       setTag(e,tag,data);
     }

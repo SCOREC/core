@@ -6,6 +6,7 @@
  */
 
 #include "apf.h"
+#include "apfElement.h"
 #include "apfScalarField.h"
 #include "apfScalarElement.h"
 #include "apfVectorField.h"
@@ -13,6 +14,7 @@
 #include "apfMatrixField.h"
 #include "apfMatrixElement.h"
 #include "apfPackedField.h"
+#include "apfComplexField.h"
 #include "apfIntegrate.h"
 #include "apfArrayData.h"
 #include "apfTagData.h"
@@ -74,7 +76,7 @@ Field* makeField(
   else if (valueType == PACKED)
     f = new PackedField(components);
   else
-    fail("invalid valueType in field construction\n");
+    fail("invalid valueType in double field construction\n");
   f->init(name,m,shape,data);
   m->addField(f);
   return f;
@@ -126,8 +128,12 @@ Field* createPackedField(Mesh* m, const char* name, int components,
 
 Field* cloneField(Field* f, Mesh* onto)
 {
-  return makeField(onto, f->getName(), f->getValueType(), f->countComponents(),
-      f->getShape(), f->getData()->clone());
+  return makeField(onto,
+                   f->getName(),
+                   f->getValueType(),
+                   f->countComponents(),
+                   f->getShape(),
+                   f->getData()->clone());
 }
 
 Mesh* getMesh(Field* f)
@@ -371,7 +377,7 @@ double computeCosAngle(Mesh* m, MeshEntity* pe, MeshEntity* e1, MeshEntity* e2,
 
 int countNodes(Element* e)
 {
-  return e->getShape()->countNodes();
+  return countNodes<double>(e);
 }
 
 void getScalarNodes(Element* e, NewArray<double>& values)
@@ -392,16 +398,24 @@ void getMatrixNodes(Element* e, NewArray<Matrix3x3>& values)
   element->getValues(values);
 }
 
+void getPackedNodes(Element* e, NewArray<double>& values)
+{
+  FieldBase* f = e->getFieldBase();
+  int cmps = f->countComponents();
+  ElementOf<double>* element = static_cast<ElementOf<double>*>(e);
+  element->getValues(values,cmps);
+}
+
 void getShapeValues(Element* e, Vector3 const& local,
     NewArray<double>& values)
 {
-  e->getShape()->getValues(e->getMesh(), e->getEntity(), local,values);
+  getShapeValues<double>(e,local,values);
 }
 
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads)
 {
-  e->getGlobalGradients(local,grads);
+  getShapeGrads<double>(e,local,grads);
 }
 
 FieldShape* getShape(Field* f)
@@ -473,7 +487,7 @@ void unfreeze(Field* f)
 
 bool isFrozen(Field* f)
 {
-  return f->getData()->isFrozen();
+  return isFrozen(static_cast<FieldBase*>(f));
 }
 
 Function::~Function()

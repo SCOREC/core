@@ -13,6 +13,7 @@
 
 namespace apf {
 
+
 template <class T>
 class FieldOf;
 
@@ -23,6 +24,9 @@ void project(FieldOf<T>* to, FieldOf<T>* from);
 template <class T>
 void axpy(double a, FieldOf<T>* x, FieldOf<T>* y);
 
+// template <class T, typename = void>
+// class FieldOf;
+// typename std::enable_if<std::is_standard_layout<T>::value>::type
 template <class T>
 class FieldOf : public Field
 {
@@ -40,14 +44,13 @@ class FieldOf : public Field
     }
     void project(Field* from)
     {
-      apf::project<T>(this,static_cast<FieldOf<T>*>(from));
+      apf::project(this,static_cast<FieldOf<T>*>(from));
     }
     void axpy(double a, Field* x)
     {
-      apf::axpy<T>(a,static_cast<FieldOf<T>*>(x),this);
+      apf::axpy(a,static_cast<FieldOf<T>*>(x),this);
     }
 };
 
 }
-
 #endif

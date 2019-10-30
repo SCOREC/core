@@ -37,11 +37,11 @@ class ElementOf : public Element
       getComponents(local, reinterpret_cast<double*>(value));
       return value[0];
     }
-    void getValues(NewArray<T>& values)
+    void getValues(NewArray<T>& values, int nc = 1)
     {
-      values.allocate(nen);
+      values.allocate(nen * nc);
       T* nodeValues = getNodeValues();
-      for (int i=0; i < nen; ++i)
+      for (int i=0; i < nen * nc; ++i)
         values[i] = nodeValues[i];
     }
 };

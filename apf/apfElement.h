@@ -10,43 +10,87 @@
 
 #include "apfMesh.h"
 #include "apfField.h"
+#include "apfFieldData.h"
 #include "apfShape.h"
 
 namespace apf {
 
+Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim);
+
 class EntityShape;
 class VectorElement;
 
-class Element
+template <class T>
+class ElementBase
 {
-  public:
-    Element(Field* f, MeshEntity* e);
-    Element(Field* f, VectorElement* p);
-    virtual ~Element();
-    void getGlobalGradients(Vector3 const& local,
-                            NewArray<Vector3>& globalGradients);
-    int getType() {return mesh->getType(entity);}
-    int getDimension() {return Mesh::typeDimension[getType()];}
-    int getOrder() {return field->getShape()->getOrder();}
-    VectorElement* getParent() {return parent;}
-    MeshEntity* getEntity() {return entity;}
-    Mesh* getMesh() {return mesh;}
-    EntityShape* getShape() {return shape;}
-    void getComponents(Vector3 const& xi, double* c);
-  protected:
-    void init(Field* f, MeshEntity* e, VectorElement* p);
-    void getNodeData();
-    Field* field;
-    Mesh* mesh;
-    MeshEntity* entity;
-    EntityShape* shape;
-    VectorElement* parent;
-    int nen;
-    int nc;
-    NewArray<double> nodeData;
+public:
+  ElementBase(FieldBase* f, MeshEntity* e);
+  ElementBase(FieldBase* f, VectorElement* p);
+  virtual ~ElementBase() {}
+  void getGlobalGradients(Vector3 const& local,
+                          NewArray<Vector3>& globalGradients);
+  int getType() { return mesh->getType(entity); }
+  int getDimension() { return Mesh::typeDimension[getType()]; }
+  int getOrder() { return field->getShape()->getOrder(); }
+  VectorElement* getParent() { return parent; }
+  MeshEntity* getEntity() { return entity; }
+  Mesh* getMesh() { return mesh; }
+  EntityShape * getShape() { return shape; }
+  FieldBase* getFieldBase() { return field; }
+  void getComponents(Vector3 const& xi, T * c)
+  {
+    NewArray<double> shapeValues;
+    shape->getValues(mesh, entity, xi, shapeValues);
+    for (int ci = 0; ci < nc; ++ci)
+      c[ci] = 0;
+    for (int ni = 0; ni < nen; ++ni)
+      for (int ci = 0; ci < nc; ++ci)
+        c[ci] += nodeData[ni * nc + ci] * shapeValues[ni];
+  }
+protected:
+  void init(FieldBase* f, MeshEntity* e, VectorElement* p)
+  {
+    field = f;
+    mesh = f->getMesh();
+    entity = e;
+    shape = f->getShape()->getEntityShape(mesh->getType(e));
+    parent = p;
+    nen = shape->countNodes();
+    nc = f->countComponents();
+    getNodeData();
+  }
+  void getNodeData()
+  {
+    reinterpret_cast<FieldDataOf<T>*>(field->getData())->getElementData(entity,nodeData);
+  }
+  NewArray<T> nodeData;
+  FieldBase* field;
+  Mesh* mesh;
+  MeshEntity* entity;
+  EntityShape* shape;
+  VectorElement* parent;
+  int nen;
+  int nc;
 };
 
-Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim);
+
+template <class T>
+int countNodes(ElementBase<T> * e)
+{
+  return e->getShape()->countNodes();
+}
+
+template <class T>
+void getShapeValues(ElementBase<T> * e, Vector3 const& local, NewArray<double>& values)
+{
+  e->getShape()->getValues(e->getMesh(),e->getEntity(),local,values);
+}
+
+template <class T>
+void getShapeGrads(ElementBase<T> * e, Vector3 const& local, NewArray<Vector3>& grads)
+{
+  e->getGlobalGradients(local,grads);
+}
 
 }//namespace apf
 

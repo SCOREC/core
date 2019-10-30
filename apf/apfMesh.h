@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include "apfComplexType.h"
 #include "apfVector.h"
 #include "apfDynamicArray.h"
 
@@ -21,8 +22,10 @@ struct gmi_model;
 
 namespace apf {
 
+class ComplexField;
 class FieldShape;
 class Field;
+class FieldBase;
 template <class T>
 class NumberingOf;
 /** \brief Numbering is meant to be a 32-bit local numbering */
@@ -225,6 +228,8 @@ class Mesh
     virtual void getResidence(MeshEntity* e, Parts& residence) = 0;
     /** \brief Creates a double array tag over the mesh given a name and size */
     virtual MeshTag* createDoubleTag(const char* name, int size) = 0;
+    /** \brief creates a double_complex array tag over the mesh given a name and size */
+    virtual MeshTag* createComplexTag(const char* name, int size) = 0;
     /** \brief Creates an int array tag over the mesh given a name and size */
     virtual MeshTag* createIntTag(const char* name, int size) = 0;
     /** \brief Creates a long array tag over the mesh given a name and size */
@@ -239,6 +244,10 @@ class Mesh
     virtual void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data) = 0;
     /** \brief set double array tag data */
     virtual void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data) = 0;
+    /** \brief get a complex array tag */
+    virtual void getComplexTag(MeshEntity* e, MeshTag* tag, double_complex* data) = 0;
+    /** \brief set a complex array tag */
+    virtual void setComplexTag(MeshEntity* e, MeshTag* tag, double_complex const * data) = 0;
     /** \brief get int array tag data */
     virtual void getIntTag(MeshEntity* e, MeshTag* tag, int* data) = 0;
     /** \brief set int array tag data */
@@ -263,7 +272,9 @@ class Mesh
       /** \brief signed 32-bit integer */
       INT,
       /** \brief signed 64-bit integer */
-      LONG };
+      LONG,
+      /** \brief either std::complex<double> or double_complex (C) depending on configuration */
+      COMPLEX};
     /** \brief get the data type of a tag
         \return a value in apf::Mesh::TagType */
     virtual int getTagType(MeshTag* t) = 0;
@@ -356,16 +367,21 @@ class Mesh
       \details most users don't need this, functions in apf.h
                automatically call it */
     void addField(Field* f);
+    void addComplexField(ComplexField* f);
     /** \brief disassociate a field from this mesh
       \details most users don't need this, functions in apf.h
                automatically call it */
     void removeField(Field* f);
+    void removeComplexField(ComplexField* f);
     /** \brief lookup a field by its unique name */
     Field* findField(const char* name);
+    ComplexField* findComplexField(const char* name);
     /** \brief get the number of associated fields */
     int countFields();
+    int countComplexFields();
     /** \brief get the i'th associated field */
     Field* getField(int i);
+    ComplexField* getComplexField(int i);
     /** \brief associate a numbering with this mesh
       \details most users don't need this, functions in apfNumbering.h
                automatically call it */
@@ -392,6 +408,7 @@ class Mesh
   protected:
     Field* coordinateField;
     std::vector<Field*> fields;
+    std::vector<ComplexField*> ifields;
     std::vector<Numbering*> numberings;
     std::vector<GlobalNumbering*> globalNumberings;
 };

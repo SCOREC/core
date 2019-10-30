@@ -10,10 +10,10 @@
 
 #include <string>
 #include "apfMesh.h"
+#include "apfElementType.h"
 
 namespace apf {
 
-class Element;
 class FieldData;
 
 class FieldBase
@@ -71,12 +71,14 @@ class FieldOp
 };
 
 Field* makeField(
-    Mesh* m,
-    const char* name,
-    int valueType,
-    int components,
-    FieldShape* shape,
-    FieldData* data);
+  Mesh* m,
+  const char* name,
+  int valueType,
+  int components,
+  FieldShape* shape,
+  FieldData* data);
+
+bool isFrozen(FieldBase * fb);
 
 } //namespace apf
 
