@@ -485,7 +485,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     }
   };
 
-  const auto doEdgeBC = [&](const auto &iter, int& startingLocation) {
+  const auto doEdgeBC = [&](const auto &iter, int &startingLocation) {
     for (const auto &p : iter->second)
     {
       const auto se = BCEntityAdder(EdgeLoop, p, startingLocation);
@@ -508,7 +508,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     }
   };
 
-  const auto doFaceBC = [&](const auto &iter, int& startingLocation) {
+  const auto doFaceBC = [&](const auto &iter, int &startingLocation) {
     for (const auto &p : iter->second)
     {
       const auto se = BCEntityAdder(FaceLoop, p, startingLocation);
@@ -531,7 +531,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     }
   };
 
-  const auto doCellBC = [&](const auto &iter, const int& dim) {
+  const auto doCellBC = [&](const auto &iter, const int &dim) {
     for (const auto &p : iter->second)
     {
       std::vector<cgsize_t> bcList;
@@ -588,7 +588,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     iter = cgnsBCMap.find("CellCenter");
     if (iter != cgnsBCMap.end())
     {
-       doCellBC(iter, 3);
+      doCellBC(iter, 3);
     }
   }
   else if (cell_dim == 2)
@@ -608,7 +608,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     iter = cgnsBCMap.find("CellCenter");
     if (iter != cgnsBCMap.end())
     {
-       doCellBC(iter, 2);
+      doCellBC(iter, 2);
     }
   }
   else if (cell_dim == 1)
@@ -621,13 +621,41 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     iter = cgnsBCMap.find("CellCenter");
     if (iter != cgnsBCMap.end())
     {
-       doCellBC(iter, 1);
+      doCellBC(iter, 1);
     }
   }
+
   //
   destroyGlobalNumbering(gvn);
   destroyGlobalNumbering(gcn);
   //
+
+
+  apf::DynamicArray<apf::MeshTag *> tags;
+  m->getTags(tags);
+  for (std::size_t i = 0; i < tags.getSize(); ++i)
+  {
+    apf::MeshTag *t = tags[i];
+    // create a new tag on the outMesh
+    int tagType = m->getTagType(t);
+    int tagSize = m->getTagSize(t);
+    const char *tagName = m->getTagName(t);
+
+    apf::MeshEntity *e;
+    apf::MeshIterator *it = m->begin(m->getDimension());
+    bool keepGoing = true;
+    while ( (e = m->iterate(it)) && keepGoing )
+    {
+      if (m->hasTag(e, t))
+      {
+        std::cout << "Cell tags " << tagName << " " << tagType << " " << tagSize << std::endl;
+        keepGoing = false;
+      }
+    }
+    m->end(it);
+  }
+
+
   cgp_close(index);
 }
 } // namespace
