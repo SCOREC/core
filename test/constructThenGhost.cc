@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   outMap.clear();
   m->verify();
 
-  if (!pumi_rank()) std::cout<<"model/mesh converted to pumi instance\n";
+  if (!pumi_rank()) printf("model/mesh converted to pumi instance\n");
 
   //create the pumi instance to use pumi api's
   pGeom g=pumi_geom_load(model);
