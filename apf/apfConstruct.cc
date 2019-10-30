@@ -144,15 +144,26 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   }
 }
 
-void construct(Mesh2* m, const int* conn, int nelem, int etype,
-    GlobalToVert& globalToVert)
+void assemble(Mesh2* m, const int* conn, int nelem, int etype,
+     GlobalToVert& globalToVert)
 {
   constructVerts(m, conn, nelem, etype, globalToVert);
   constructElements(m, conn, nelem, etype, globalToVert);
+}
+
+void finalise(Mesh2* m, GlobalToVert& globalToVert)
+{
   constructResidence(m, globalToVert);
   constructRemotes(m, globalToVert);
   stitchMesh(m);
   m->acceptChanges();
+}
+ 
+void construct(Mesh2* m, const int* conn, int nelem, int etype,
+    GlobalToVert& globalToVert)
+{
+  assemble(m, conn, nelem, etype, globalToVert);
+  finalise(m, globalToVert);
 }
 
 void setCoords(Mesh2* m, const double* coords, int nverts,
