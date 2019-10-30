@@ -229,6 +229,13 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
   return pumi::instance()->mesh;
 }
 
+pMesh pumi_mesh_load(pMesh m)
+{ //TODO add sanity checks
+  pumi::instance()->mesh = m;
+  pumi_mesh_print(pumi::instance()->mesh);
+  return pumi::instance()->mesh;
+}
+
 
 pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
 {
@@ -452,7 +459,7 @@ void pumi_mesh_print (pMesh m, bool print_ent)
     }
 
      std::cout<<"# global ent: v "<<global_entity_count[0]<<", e "<<global_entity_count[1]
-              <<", f "<<global_entity_count[2]<<", r "<<global_entity_count[3]<<"\n\n";
+              <<", f "<<global_entity_count[2]<<", r "<<global_entity_count[3]<<"\n";
 
     delete [] global_entity_count;
 
@@ -461,7 +468,6 @@ void pumi_mesh_print (pMesh m, bool print_ent)
         <<", e "<<global_local_entity_count[p*4+1]
         <<", f "<<global_local_entity_count[p*4+2]
         <<", r "<<global_local_entity_count[p*4+3]<<"\n";
-    std::cout<<"\n";
     for (int p=0; p<PCU_Comm_Peers(); ++p)
       if (global_own_entity_count[p*4])
         std::cout<<"(p"<<p<<") # own ent: v "<<global_own_entity_count[p*4]
