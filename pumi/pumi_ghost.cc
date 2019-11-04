@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 #include "apf.h"
@@ -40,7 +41,7 @@ Ghosting::~Ghosting()
 {
   for (int i=0; i<4; ++i)
   {
-    for (std::vector<Parts*>::iterator vit=parts_vec[i].begin(); vit!=parts_vec[i].begin(); ++vit)
+    for (std::vector<Parts*>::iterator vit=parts_vec[i].begin(); vit!=parts_vec[i].end(); ++vit)
       delete *vit;
     parts_vec[i].clear();
   }
@@ -436,7 +437,7 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
     apf::freeze(*fit);    
 
   if (!PCU_Comm_Self())
-    printf("mesh ghosted in %f seconds\n", PCU_Time()-t0);
+    lion_oprint(1,"mesh ghosted in %f seconds\n", PCU_Time()-t0);
 }
 
 // *********************************************************
@@ -575,7 +576,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   for (int i=0; i<num_layer+1;++i)
     for (int j=0; j<pumi_size();++j)
       local_num_off_part+=off_bridge_set[i][j].size();
-  MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,PCU_Get_Comm());
 
   while (global_num_off_part)
   {
@@ -696,7 +697,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,PCU_Get_Comm());
   } // while global_off_part_brg
 }
 
@@ -820,7 +821,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,PCU_Get_Comm());
   }
 
   if (global_num_off_part)
@@ -840,7 +841,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 // STEP 3: perform ghosting
 // ********************************************
   if (!PCU_Comm_Self())
-    printf("ghosting plan computed in %f seconds\n", PCU_Time()-t0);
+    lion_oprint(1,"ghosting plan computed in %f seconds\n", PCU_Time()-t0);
 
   pumi_ghost_create(m, plan);
 }

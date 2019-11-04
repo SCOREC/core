@@ -13,6 +13,7 @@
 #include "apfTagData.h"
 #include <gmi.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <algorithm>
 
 namespace apf {
@@ -175,6 +176,16 @@ bool Mesh::canSnap()
   return gmi_can_eval(getModel());
 }
 
+bool Mesh::canGetClosestPoint()
+{
+  return gmi_can_get_closest_point(getModel());
+}
+
+bool Mesh::canGetModelNormal()
+{
+  return gmi_has_normal(getModel());
+}
+
 void Mesh::snapToModel(ModelEntity* m, Vector3 const& p, Vector3& x)
 {
   gmi_eval(getModel(), (gmi_ent*)m, &p[0], &x[0]);
@@ -226,10 +237,14 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
   PCU_ALWAYS_ASSERT(dim == 1 || dim == 2);
   gmi_ent* e = (gmi_ent*)g;
   gmi_set* adjRegions = gmi_adjacent(getModel(), e, 3);
-  PCU_ALWAYS_ASSERT(adjRegions->n == 1);
+  // for 2D models
+  if (adjRegions->n == 0)
+    return true;
+  PCU_ALWAYS_ASSERT(adjRegions->n <= 1);
   gmi_ent* r = (gmi_ent*)adjRegions->e[0];
   gmi_eval(getModel(), (gmi_ent*)g, &param[0], &x[0]);
   int res = gmi_is_point_in_region(getModel(), r, &x[0]);
+  gmi_free_set(adjRegions);
   return (res == 1) ? true : false;
 }
 
@@ -241,6 +256,23 @@ bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
   gmi_ent* et = (gmi_ent*)target;
   int res = gmi_is_in_closure_of(getModel(), e, et);
   return (res == 1) ? true : false;
+}
+
+void Mesh::boundingBox(ModelEntity* g,
+    Vector3& bmin, Vector3& bmax)
+{
+  gmi_ent* e  = (gmi_ent*)g;
+  gmi_bbox(getModel(), e, &bmin[0], &bmax[0]);
+}
+
+bool Mesh::isOnModel(ModelEntity* g, Vector3 p, double scale)
+{
+  Vector3 to;
+  double param[2];
+  gmi_ent* c = (gmi_ent*)g;
+  gmi_closest_point(getModel(), c, &p[0], &to[0], param);
+  double ratio = (to - p).getLength() / scale;
+  return ratio < 0.001;
 }
 
 void Mesh::getPoint(MeshEntity* e, int node, Vector3& p)
@@ -759,15 +791,22 @@ int countEntitiesOn(Mesh* m, ModelEntity* me, int dim)
   return n;
 }
 
-int countOwned(Mesh* m, int dim)
+int countOwned(Mesh* m, int dim, Sharing * shr)
 {
+  bool dlt = false;
+  if(shr == NULL)
+  {
+    shr = getSharing(m);
+    dlt = true;
+  }
   MeshIterator* it = m->begin(dim);
   MeshEntity* e;
   int n = 0;
   while ((e = m->iterate(it)))
-    if (m->isOwned(e))
+    if (shr->isOwned(e))
       ++n;
   m->end(it);
+  if(dlt) delete shr;
   return n;
 }
 
@@ -786,11 +825,11 @@ void printTypes(Mesh* m)
   m->end(it);
   PCU_Add_Longs(typeCnt,Mesh::TYPES);
   if (!PCU_Comm_Self()) {
-    printf("number of");
+    lion_oprint(1,"number of");
     for (int i=0; i<Mesh::TYPES; i++)
       if (dim == Mesh::typeDimension[i])
-        printf(" %s %ld", Mesh::typeName[i], typeCnt[i]);
-    printf("\n");
+        lion_oprint(1," %s %ld", Mesh::typeName[i], typeCnt[i]);
+    lion_oprint(1,"\n");
   }
 }
 
@@ -802,7 +841,7 @@ void printStats(Mesh* m)
   PCU_Add_Longs(n, 4);
   printTypes(m);
   if (!PCU_Comm_Self())
-    printf("mesh entity counts: v %ld e %ld f %ld r %ld\n",
+    lion_oprint(1,"mesh entity counts: v %ld e %ld f %ld r %ld\n",
         n[0], n[1], n[2], n[3]);
 }
 
@@ -813,7 +852,7 @@ void warnAboutEmptyParts(Mesh* m)
     ++emptyParts;
   emptyParts = PCU_Add_Int(emptyParts);
   if (emptyParts && (!PCU_Comm_Self()))
-    fprintf(stderr,"APF warning: %d empty parts\n",emptyParts);
+    lion_eprint(1,"APF warning: %d empty parts\n",emptyParts);
 }
 
 static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)
@@ -822,7 +861,8 @@ static void getRemotesArray(Mesh* m, MeshEntity* e, CopyArray& a)
   m->getRemotes(e, remotes);
   a.setSize(remotes.size());
   size_t i = 0;
-  APF_ITERATE(Copies, remotes, it) {
+  APF_ITERATE(Copies, remotes, it) 
+  {
     a[i].peer = it->first;
     a[i].entity = it->second;
     ++i;

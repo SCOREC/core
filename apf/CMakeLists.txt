@@ -16,6 +16,7 @@ set(SOURCES
   apfDynamicMatrix.cc
   apfDynamicVector.cc
   apfMatrixField.cc
+  apfMatrixElement.cc
   apfMesh.cc
   apfMesh2.cc
   apfMigrate.cc
@@ -45,6 +46,7 @@ set(SOURCES
   apfBoundaryToElementXi.cc
   apfSimplexAngleCalcs.cc
   apfFile.cc
+  apfMIS.cc
 )
 
 # Package headers
@@ -67,6 +69,10 @@ set(HEADERS
   apfConvert.h
   apfGeometry.h
   apf2mth.h
+  apfMIS.h
+  apfField.h
+  apfFieldData.h
+  apfNumberingClass.h
 )
 
 # Add the apf library

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include "phstream.h"
 #include <mpi.h>
 
@@ -15,7 +16,7 @@ namespace {
 #if PHSTREAM_TIMERS_ON==1
   inline bool isRankZero() {
     int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(PCU_Get_Comm(), &rank);
     return !rank;
   }
 #endif
@@ -24,7 +25,7 @@ namespace {
     (void) t;
 #if PHSTREAM_TIMERS_ON==1
     if( isRankZero() )
-      fprintf(stderr, "%s %f seconds\n", key, t);
+      lion_eprint(1, "%s %f seconds\n", key, t);
 #endif
   }
 }
@@ -128,7 +129,7 @@ void whichStream(const char* name, bool& isR, bool& isG) {
 }
 
 void writeUnknown(const char* fname) {
-  fprintf(stderr,
+  lion_eprint(1,
       "ERROR %s type of stream %s is unknown... exiting\n",
       __func__, fname);
 }

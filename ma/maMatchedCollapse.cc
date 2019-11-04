@@ -153,7 +153,7 @@ bool MatchedCollapse::checkTopo2()
   for (unsigned i = 1; i < collapses.getSize(); ++i) {
     unsigned j;
     bool ok = false;
-    for (j = 0; j < copies.getSize(); ++i) {
+    for (j = 0; j < copies.getSize(); ++j) {
       PCU_ALWAYS_ASSERT(copies[j].peer == PCU_Comm_Self());
       if (copies[j].entity == collapses[i].vertToCollapse) {
         ok = true;

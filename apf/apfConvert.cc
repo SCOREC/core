@@ -7,6 +7,9 @@
 #include "apfNumbering.h"
 #include <map>
 #include <pcu_util.h>
+#include <lionPrint.h>
+#include <iostream>
+#include <cstdlib>
 
 namespace apf {
 
@@ -18,27 +21,47 @@ class Converter
       inMesh = a;
       outMesh = b;
     }
-    void run()
+     
+    void run(MeshEntity** nodes, MeshEntity** elems, bool copy_data=true)
     {
-      createVertices();
-      createEntities();
+      if (nodes==NULL)
+      {
+        createVertices();
+        createEntities();
+      }    
+      else
+      {
+        createVertices(nodes);
+        for (int i=1; i<inMesh->getDimension(); ++i)
+          createDimension(i);
+        createDimension(inMesh->getDimension(), elems);
+      }
+
       for (int i = 0; i <= inMesh->getDimension(); ++i)
         createRemotes(i);
       if (inMesh->hasMatching())
         for (int i = 0; i <= inMesh->getDimension(); ++i)
           createMatches(i);
       convertQuadratic();
-      convertFields();
-      convertNumberings();
-      convertGlobalNumberings();
+      if (copy_data)
+      {
+        convertFields();
+        convertNumberings();
+        convertGlobalNumberings();
+        // this must be called after anything that might create tags e.g. fields
+        // or numberings to avoid problems with tag duplication
+        convertTags();
+      }
       outMesh->acceptChanges();
     }
+
     ModelEntity* getNewModelFromOld(ModelEntity* oldC)
     {
       int type = inMesh->getModelType(oldC);
       int tag = inMesh->getModelTag(oldC);
       return outMesh->findModelEntity(type,tag);
     }
+
     void createVertices()
     {
       MeshIterator* it = inMesh->begin(0);
@@ -57,11 +80,32 @@ class Converter
       inMesh->end(it);
       PCU_ALWAYS_ASSERT(outMesh->count(0) == inMesh->count(0));
     }
+
+    void createVertices(MeshEntity** nodes)
+    {
+      MeshEntity *oldV;
+      for (unsigned int i=0; i<inMesh->count(0); ++i)
+      { 
+        oldV=nodes[i];
+
+        ModelEntity *oldC = inMesh->toModel(oldV);
+        ModelEntity *newC = getNewModelFromOld(oldC);
+        Vector3 xyz;
+        inMesh->getPoint(oldV, 0, xyz);
+        Vector3 param(0,0,0);
+        inMesh->getParam(oldV,param);
+        MeshEntity* newV = outMesh->createVertex(newC, xyz, param);
+        newFromOld[oldV] = newV;
+      }
+      PCU_ALWAYS_ASSERT(outMesh->count(0) == inMesh->count(0));
+    }
+
     void createEntities()
     { 
-      for (int i = 1; i < (inMesh->getDimension())+1; ++i)
+      for (int i = 1; i < inMesh->getDimension()+1; ++i)
         createDimension(i);
     }
+
     void createDimension(int dim)
     { 
       MeshIterator* it = inMesh->begin(dim);
@@ -84,6 +128,29 @@ class Converter
       inMesh->end(it);
       PCU_ALWAYS_ASSERT(outMesh->count(dim) == inMesh->count(dim));
     }
+
+    void createDimension(int dim, MeshEntity** elems)
+    { 
+      MeshEntity *oldE;
+      for (unsigned int i=0; i<inMesh->count(dim); ++i)
+      {
+        oldE = elems[i];
+        int type = inMesh->getType(oldE);
+        ModelEntity *oldC = inMesh->toModel(oldE);
+        ModelEntity *newC = getNewModelFromOld(oldC);
+        Downward down;
+        int ne = inMesh->getDownward(oldE, dim-1, down);
+        Downward new_down;
+        for(int i=0; i<ne; ++i)
+        {
+          new_down[i]=newFromOld[down[i]];
+        }
+        MeshEntity *newE = outMesh->createEntity(type, newC, new_down); 
+        newFromOld[oldE] = newE;
+      }
+      PCU_ALWAYS_ASSERT(outMesh->count(dim) == inMesh->count(dim));
+    }
+
     void createRemotes(int dim)
     {
       /*    O-------------|---|----->O
@@ -194,8 +261,7 @@ class Converter
         GlobalNumbering* in, GlobalNumbering* out)
     {
       FieldShape* s = getShape(in);
-      int nc = countComponents(in);
-      PCU_DEBUG_ASSERT(nc == 1);
+      PCU_DEBUG_ASSERT(countComponents(in) == 1);
       for (int d = 0; d <= 3; ++d) {
         if (s->hasNodesIn(d)) {
           MeshIterator* it = inMesh->begin(d);
@@ -210,6 +276,48 @@ class Converter
         }
       }
     }
+    void convertTag(Mesh* inMesh, MeshTag* in, Mesh* outMesh, MeshTag* out)
+    {
+      for (int d = 0; d <= 3; ++d) {
+        int tagType = inMesh->getTagType(in);
+        int tagSize = inMesh->getTagSize(in);
+        PCU_DEBUG_ASSERT(tagType == outMesh->getTagType(out));
+        PCU_DEBUG_ASSERT(tagSize == outMesh->getTagSize(out));
+        MeshIterator* it = inMesh->begin(d);
+        MeshEntity* e;
+        while ((e = inMesh->iterate(it))) {
+          if(inMesh->hasTag(e, in)) {
+            // these initializations cannot go into the cases due to compiler
+            // warnings on gcc 7.3.0
+            double* dblData;
+            int* intData;
+            long* lngData; 
+            switch (tagType) {
+              case apf::Mesh::DOUBLE:
+                dblData = new double[tagSize];
+                inMesh->getDoubleTag(e, in, dblData);
+                outMesh->setDoubleTag(newFromOld[e], out, dblData);
+                break;
+              case apf::Mesh::INT:
+                intData = new int[tagSize];
+                inMesh->getIntTag(e, in, intData);
+                outMesh->setIntTag(newFromOld[e], out, intData);
+                break;
+              case apf::Mesh::LONG:
+                lngData = new long[tagSize];
+                inMesh->getLongTag(e, in, lngData);
+                outMesh->setLongTag(newFromOld[e], out, lngData);
+                break;
+              default:
+                lion_eprint(1,"Tried to convert unknown tag type\n");
+                abort();
+                break;
+            }
+        }
+        }
+        inMesh->end(it);
+      }
+    }
     void convertFields()
     {
       for (int i = 0; i < inMesh->countFields(); ++i) {
@@ -222,8 +330,18 @@ class Converter
     {
       for (int i = 0; i < inMesh->countNumberings(); ++i) {
         Numbering* in = inMesh->getNumbering(i);
-        Numbering* out = createNumbering(outMesh,
-            getName(in), getShape(in), countComponents(in));
+        Numbering* out;
+        if (getField(in)) {
+          // here we assume that the fields have already been copied into the
+          // mesh
+          Field* outField = outMesh->findField(getName(getField(in)));
+          PCU_DEBUG_ASSERT(outField);
+          out = createNumbering(outField);
+        }
+        else {
+          out = createNumbering(outMesh, getName(in), getShape(in),
+                                countComponents(in));
+        }
         convertNumbering(in, out);
       }
     }
@@ -231,9 +349,55 @@ class Converter
     {
       for (int i = 0; i < inMesh->countGlobalNumberings(); ++i) {
         GlobalNumbering* in = inMesh->getGlobalNumbering(i);
-        GlobalNumbering* out = createGlobalNumbering(outMesh,
-            getName(in), getShape(in), countComponents(in));
+        GlobalNumbering* out;
+        if (getField(in)) {
+          // here we assume that the fields have already been copied into the
+          // mesh
+          Field* outField = outMesh->findField(getName(getField(in)));
+          PCU_DEBUG_ASSERT(outField);
+          out = createGlobalNumbering(outField);
+        }
+        else {
+          out = createGlobalNumbering(outMesh, getName(in), getShape(in),
+                                      countComponents(in));
+        }
         convertGlobalNumbering(in, out);
+      }
+    }
+    void convertTags()
+    {
+      DynamicArray<MeshTag*> tags;
+      inMesh->getTags(tags);
+      for (std::size_t i = 0; i < tags.getSize(); ++i) {
+        apf::MeshTag* in = tags[i];
+        PCU_DEBUG_ASSERT(in);
+        // create a new tag on the outMesh
+        int tagType = inMesh->getTagType(in);
+        int tagSize = inMesh->getTagSize(in);
+        const char* tagName = inMesh->getTagName(in);
+        PCU_DEBUG_ASSERT(tagName);
+        // need to make sure that the tag wasn't already created by a field or
+        // numbering
+        if (!outMesh->findTag(tagName)) {
+          apf::MeshTag* out = NULL;
+          switch (tagType) {
+            case apf::Mesh::DOUBLE:
+              out = outMesh->createDoubleTag(tagName, tagSize);
+              break;
+            case apf::Mesh::INT:
+              out = outMesh->createIntTag(tagName, tagSize);
+              break;
+            case apf::Mesh::LONG:
+              out = outMesh->createLongTag(tagName, tagSize);
+              break;
+            default:
+              lion_eprint(1,"Tried to convert unknown tag type\n");
+              abort();
+          }
+          PCU_DEBUG_ASSERT(out);
+          // copy the tag on the inMesh to the outMesh
+          convertTag(inMesh, in, outMesh, out);
+        }
       }
     }
     void convertQuadratic()
@@ -241,7 +405,7 @@ class Converter
       if (inMesh->getShape() != getLagrange(2) && inMesh->getShape() != getSerendipity())
         return;
       if ( ! PCU_Comm_Self())
-        fprintf(stderr,"transferring quadratic mesh\n");
+        lion_eprint(1,"transferring quadratic mesh\n");
       changeMeshShape(outMesh,inMesh->getShape(),/*project=*/false);
       convertField(inMesh->getCoordinateField(),outMesh->getCoordinateField());
     }
@@ -286,10 +450,10 @@ class Converter
     std::map<MeshEntity*,MeshEntity*> newFromOld;
 };
 
-void convert(Mesh *in, Mesh2 *out)
+void convert(Mesh *in, Mesh2 *out, MeshEntity** nodes, MeshEntity** elems, bool copy_data)
 {
   Converter c(in,out);
-  c.run();
+  c.run(nodes, elems, copy_data);
 }
 
 }

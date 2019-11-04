@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include "parma.h"
 #include "parma_balancer.h"
 #include "parma_step.h"
@@ -20,7 +21,7 @@ namespace {
         sideTol = static_cast<int>(parma::avgSharedSides(s));
         delete s;
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "sideTol %d\n", sideTol);
+          lion_oprint(1, "sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
@@ -31,7 +32,7 @@ namespace {
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !PCU_Comm_Self() && verbose )
-          fprintf(stdout, "avgSides %f\n", avgSides);
+          lion_oprint(1, "avgSides %f\n", avgSides);
 
         parma::Weights* w =
           parma::makeGhostMPASWeights(mesh, wtag, s, layers, bridge);

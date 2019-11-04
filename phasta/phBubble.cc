@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "phBubble.h"
 #include "phInput.h"
 #include <apfMesh.h>
@@ -16,15 +17,15 @@ struct Bubble {
 
 typedef std::vector<Bubble> Bubbles;
 
-void readBubbles(Bubbles& bubbles)
+void readBubbles(Bubbles& bubbles, std::string bubbleFileName)
 {
-  char bubblefname[256];
+  char bubblefname[1024];
   FILE *filebubble;
   Bubble readbubble;
 
-  sprintf(bubblefname,"bubbles.inp");
+  sprintf(bubblefname, "%s", bubbleFileName.c_str());
   if (!PCU_Comm_Self())
-    printf("reading bubbles info from %s\n",bubblefname);
+    lion_oprint(1,"reading bubbles info from %s\n",bubblefname);
 
   filebubble = fopen(bubblefname, "r");
   PCU_ALWAYS_ASSERT(filebubble != NULL); 
@@ -38,11 +39,11 @@ void readBubbles(Bubbles& bubbles)
     bubbles.push_back(readbubble);
   }
   if(!feof(filebubble) && !PCU_Comm_Self()) // If while loop was exited for another reason then eof
-    printf("WARNING: data in %s does not match expected format\n",bubblefname);
+    lion_oprint(1,"WARNING: data in %s does not match expected format\n",bubblefname);
   fclose(filebubble);
 
   if (!PCU_Comm_Self())
-    printf("%lu bubbles found in %s\n", bubbles.size(), bubblefname);
+    lion_oprint(1,"%lu bubbles found in %s\n", bubbles.size(), bubblefname);
 
 }
 
@@ -89,7 +90,7 @@ void setBubbleScalars(apf::Mesh* m, apf::MeshEntity* v,
 void initBubbles(apf::Mesh* m, Input& in)
 {
   Bubbles bubbles;
-  readBubbles(bubbles);
+  readBubbles(bubbles, in.bubbleFileName);
   PCU_ALWAYS_ASSERT(in.ensa_dof >= 7);
   apf::NewArray<double> s(in.ensa_dof);
   apf::Field* f = m->findField("solution");

@@ -3,6 +3,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -87,6 +88,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   pumi_start();
+  lion_set_verbosity(1);
   pumi_printSys();
 
 #if 0
@@ -632,7 +634,7 @@ void TEST_NEW_MESH(pMesh m)
   PCU_ALWAYS_ASSERT(pumi_shape_getNumNode(pumi_mesh_getShape(m), 1)==1);
 
   // create an empty mesh
-  pGeom new_g = pumi_geom_load (NULL, "null");
+  pGeom new_g = pumi_geom_load("", "null");
   pMesh new_m = pumi_mesh_create(new_g, 2);
 
   double xyz[3];
@@ -684,6 +686,7 @@ void TEST_FIELD(pMesh m)
 {
   int num_dofs_per_node=3;
   pField f = pumi_mesh_findField(m, "xyz_field");
+
   pMeshIter it;
   pMeshEnt e;
   double data[3];
@@ -697,7 +700,7 @@ void TEST_FIELD(pMesh m)
 //pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o=NULL); 
 //bool pumi_ment_isOwned(pMeshEnt e, pOwnership o=NULL);
 // void pumi_field_synchronize(pField f, pOwnership o=NULL);
-//void pumi_field_accumulate(pField f, pOwnership o=NULL);
+//void pumi_field_accumulate(pField f);
 //void pumi_field_synchronize(pField f, pOwnership o=NULL);
 //void pumi_field_verify(pMesh m, pField f=NULL, pOwnership o=NULL);
 
@@ -714,6 +717,7 @@ void TEST_FIELD(pMesh m)
     {
       // FIXME: if use "new testOwnership(m)", memory leak
       if (!pumi_ment_isOwned(e, o)) continue; 
+
       PCU_ALWAYS_ASSERT (pumi_ment_getOwnPID(e, o)==o->getOwner(e));
       if (pumi_ment_isOnBdry(e)) 
         for (int i=0; i<3;++i) 
@@ -724,9 +728,9 @@ void TEST_FIELD(pMesh m)
     }
     m->end(it);
 
-    pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
-    pumi_field_synchronize(f, new testOwnership(m));  // ownership object is deleted apf::synchronizeFieldData
+    pumi_field_synchronize(f); // broadcast result to other partitions
   } 
+
 
   it = m->begin(0);
   while ((e = m->iterate(it)))
@@ -740,6 +744,7 @@ void TEST_FIELD(pMesh m)
         PCU_ALWAYS_ASSERT(data[i] == xyz[i]);
   }
   m->end(it);
+
   pumi_field_verify(m, f, o);
   delete o;
 }
@@ -769,6 +774,7 @@ Ghosting* getGhostingPlan(pMesh m)
 
 void TEST_GHOSTING(pMesh m)
 {  
+  pOwnership o = new testOwnership(m);
   int mesh_dim=pumi_mesh_getDim(m);
   pMeshEnt e;
   // element-wise ghosting test
@@ -841,7 +847,7 @@ void TEST_GHOSTING(pMesh m)
   double data[3];
   double xyz[3];
 
-  pumi_field_accumulate(f, new testOwnership(m)); // ownership object is deleted inside apf::synchronizeFieldData
+  pumi_field_accumulate(f); // synchronizeFieldData is called at the end of accumulate
 
   pMeshIter it = m->begin(0);
   while ((e = m->iterate(it)))
@@ -866,4 +872,5 @@ void TEST_GHOSTING(pMesh m)
   }
   
   delete [] org_mcount;
+  delete o;
 }

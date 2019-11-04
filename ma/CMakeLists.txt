@@ -20,6 +20,7 @@ set(SOURCES
   maSize.cc
   maOperator.cc
   maCollapse.cc
+  maRegionCollapse.cc
   maMatchedCollapse.cc
   maLayerCollapse.cc
   maMatch.cc
@@ -30,10 +31,14 @@ set(SOURCES
   maShapeHandler.cc
   maQuality.cc
   maSplits.cc
+  maFaceSplit.cc
   maDoubleSplitCollapse.cc
+  maSingleSplitCollapse.cc
+  maFaceSplitCollapse.cc
   maShortEdgeRemover.cc
   maVertRemover.cc
   maSnapper.cc
+  maMatchedSnapper.cc
   maBalance.cc
   maLayer.cc
   maCrawler.cc
@@ -42,6 +47,8 @@ set(SOURCES
   maMap.cc
   maReposition.cc
   maExtrude.cc
+  maDBG.cc
+  maStats.cc
 )
 
 # Package headers
@@ -54,6 +61,8 @@ set(HEADERS
   maTables.h
   maSolutionTransfer.h
   maExtrude.h
+  maDBG.h
+  maStats.h
 )
 
 # Add the ma library

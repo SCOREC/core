@@ -2,6 +2,7 @@
 #include "phInterfaceCutter.h"
 #include "phAttrib.h"
 #include <PCU.h>
+#include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <SimUtil.h>
 #include <SimModel.h>
@@ -23,18 +24,19 @@ char const* outfile;
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
+  lion_set_verbosity(1);
   if (argc < 4 || argc > 5) {
-    fprintf(stderr,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
-    fprintf(stderr,"       to take model and attributes in separate files\n");
-    fprintf(stderr,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
-    fprintf(stderr,"       to take combined model and attributes file (by simTranslate)\n");
+    lion_eprint(1,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
+    lion_eprint(1,"       to take model and attributes in separate files\n");
+    lion_eprint(1,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
+    lion_eprint(1,"       to take combined model and attributes file (by simTranslate)\n");
     return 0;
   }
   PCU_Comm_Init();
   PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 1);
 #ifdef HAVE_SIMMETRIX
-  Sim_readLicenseFile(0);
   SimModel_start();
+  Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_start();

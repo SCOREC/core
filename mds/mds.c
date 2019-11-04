@@ -15,6 +15,7 @@
 #include <pcu_util.h>
 #include <PCU.h>
 #include <reel.h>
+#include <lionPrint.h>
 
 static void* mds_realloc(void* p, size_t n)
 {
@@ -216,6 +217,8 @@ static void resize_adjacency(struct mds* m, int from, int to,
     mds_id old_cap[MDS_TYPES],
     mds_id new_cap[MDS_TYPES])
 {
+  PCU_ALWAYS_ASSERT(from >= 0);
+  PCU_ALWAYS_ASSERT(to >= 0);
   PCU_ALWAYS_ASSERT(from <= 3);
   PCU_ALWAYS_ASSERT(to <= 3);
   if (from < to)
@@ -535,10 +538,10 @@ static mds_id alloc_ent(struct mds* m, int t)
     grow(m,t);
   ++(m->n[t]);
   if ((sizeof(mds_id) < 8) && (m->n[t] == 10 * 1000 * 1000)) {
-    fprintf(stderr, "your mesh over %ld entities of type %d but sizeof(mds_id) = %zu !\n",
+    lion_eprint(1, "your mesh over %ld entities of type %d but sizeof(mds_id) = %zu !\n",
         ((long)(m->n[t])), t, sizeof(mds_id));
-    fprintf(stderr, "INTEGER OVERFLOW COULD OCCUR SOON\n");
-    fprintf(stderr, "please recompile with -DMDS_ID_TYPE=long\n");
+    lion_eprint(1, "INTEGER OVERFLOW COULD OCCUR SOON\n");
+    lion_eprint(1, "please recompile with -DMDS_ID_TYPE=long\n");
   }
   if (m->first_free[t] == MDS_NONE)
     id = ID(t,m->n[t] - 1);

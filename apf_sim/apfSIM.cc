@@ -3,6 +3,7 @@
 #include <apfShape.h>
 #include <SimModel.h>
 #include <MeshSim.h>
+#include <SimMeshTools.h> // M_splitMatch
 #include <SimPartitionedMesh.h>
 #include <gmi.h>
 #include <gmi_sim.h>
@@ -14,10 +15,6 @@
 #ifdef USE_FIELDSIM
 
 #include "apfSIMDataOf.h"
-
-/* forward declare simmetrix API M_splitMatch;
-   once it is ready in published code, remove this */
-extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
 
 apf::Field* apf::createSIMGeneralField(
     Mesh* m,
@@ -54,12 +51,12 @@ apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
 
 #else
 
-apf::Field* createSIMGeneralField(
-    Mesh* m,
+apf::Field* apf::createSIMGeneralField(
+    apf::Mesh* m,
     const char* name,
     int valueType,
     int components,
-    FieldShape* shape)
+    apf::FieldShape* shape)
 {
   (void)m; 
   (void)name;
@@ -75,7 +72,7 @@ apf::Field* createSIMGeneralField(
   apf::fail("SimField not found when APF_SIM compiled");
 }
 
-apf::Field* apf::wrapSIMField(Mesh* m, pField fd)
+apf::Field* apf::wrapSIMField(Mesh* m, ::Field* fd)
 {
   (void)m;
   (void)fd;
@@ -539,6 +536,8 @@ class TagSIM
       mesh(m),
       name(n)
     {
+      // make sure n is not in use
+      PCU_ALWAYS_ASSERT(!MD_lookupMeshDataId(n));
       id = MD_newMeshDataId(n);
       comm = AttachDataCommu_new(unitSize/sizeof(int),0,count);
       PM_setMigrId(mesh,id);
@@ -867,6 +866,11 @@ gmi_model* MeshSIM::getModel()
   return model;
 }
 
+void MeshSIM::setModel(gmi_model* newModel)
+{
+  model = newModel;
+}
+
 void MeshSIM::migrate(Migration* plan)
 {
   pMigrator migrator = Migrator_new(mesh,this->getDimension(),0);
@@ -895,6 +899,8 @@ void MeshSIM::writeNative(const char* fileName)
 
 void MeshSIM::destroyNative()
 {
+  while(this->countFields())
+    apf::destroyField(this->getField(0));
   M_release(mesh);
 }
 
@@ -949,7 +955,11 @@ void MeshSIM::getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me)
   PCU_ALWAYS_ASSERT(PList_size(modelFaceList));
   pPList dgCopy_ents = PList_new();
   for (int i = 0; i < PList_size(modelFaceList); i++) {
+#if SIMMODSUITE_MAJOR_VERSION == 14 && SIMMODSUITE_MINOR_VERSION >= 190604
+    pGEntity modelFace = (pGEntity) PList_item(modelFaceList, i);
+#else
     pGFace modelFace = (pGFace) PList_item(modelFaceList, i);
+#endif
     pEntity dgCopy_ent = M_splitMatch(part, ent, modelFace);
     if (dgCopy_ent) {
       PList_appUnique(dgCopy_ents, dgCopy_ent);
@@ -1032,7 +1042,11 @@ static bool findMatches(Mesh* m)
     while ((e = m->iterate(it)))
     {
       pEntity ent = reinterpret_cast<pEntity>(e);
+#if SIMMODSUITE_MAJOR_VERSION <= 14 && SIMMODSUITE_MINOR_VERSION < 190928
       pPList l = EN_getMatchingEnts(ent, NULL);
+#else
+      pPList l = EN_getMatchingEnts(ent, NULL, 0);
+#endif
       if (l)
       {
         found = true;

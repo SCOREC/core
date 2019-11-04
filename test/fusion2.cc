@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
@@ -140,6 +141,7 @@ int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 2);
   gmi_register_null();
   GroupCode code;

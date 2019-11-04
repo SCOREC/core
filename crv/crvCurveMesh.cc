@@ -44,7 +44,7 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
   apf::destroyElement(elem);
 }
 
-void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e, bool isNew)
 {
   PCU_ALWAYS_ASSERT(m->canSnap());
   int type = m->getType(e);
@@ -56,9 +56,18 @@ void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
     m->setPoint(e,0,pt);
     return;
   }
+  // e is an edge or a face
+  // either way, get a length-scale by computing
+  // the distance b/w first two downward verts
+  apf::MeshEntity* down[12];
+  m->getDownward(e, 0, down);
+  apf::Vector3 p0, p1;
+  m->getPoint(down[0], 0, p0);
+  m->getPoint(down[1], 0, p1);
+  double lengthScale = (p1 - p0).getLength();
   apf::FieldShape * fs = m->getShape();
   int non = fs->countNodesOn(type);
-  apf::Vector3 p, xi, pt(0,0,0);
+  apf::Vector3 p, xi, pt0, pt(0,0,0);
   for(int i = 0; i < non; ++i){
     apf::ModelEntity* g = m->toModel(e);
     fs->getNodeXi(type,i,xi);
@@ -67,12 +76,22 @@ void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e)
     else
       transferParametricOnTriSplit(m,e,xi,p);
     m->snapToModel(g,p,pt);
-    m->setPoint(e,i,pt);
+    if (isNew || !m->canGetClosestPoint()) {
+      m->setPoint(e,i,pt);
+      continue;
+    }
+    m->getPoint(e,i,pt0);
+    if (!m->isOnModel(g, pt0, lengthScale))
+      m->setPoint(e,i,pt);
   }
 }
 
 void MeshCurver::synchronize()
 {
+  // this causes the matched entities to collapse onto each other.
+  // In other words, the matched vertexes will have the same coords
+  // after the following call. This is not a desired behavior.
+  // TODO: fix this!
   apf::synchronize(m_mesh->getCoordinateField());
 }
 
@@ -174,10 +193,10 @@ bool BezierCurver::run()
 
   convertInterpolatingToBezier();
 
-//  if( m_mesh->getDimension() >= 2 && m_order > 1){
-//    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
-//    crv::adapt(shapeFixer);
-//  }
+  if( m_mesh->getDimension() >= 2 && m_order == 2){
+    ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
+    crv::adapt(shapeFixer);
+  }
 
   m_mesh->acceptChanges();
   m_mesh->verify();

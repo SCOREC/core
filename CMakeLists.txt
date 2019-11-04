@@ -1,21 +1,38 @@
-# This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.0)
-
 if(DEFINED TRIBITS_PACKAGE)
   include(pkg_tribits.cmake)
   return()
 endif()
 
-project(SCOREC VERSION 2.1.0 LANGUAGES CXX C)
+# This is the top level CMake file for the SCOREC build
+cmake_minimum_required(VERSION 3.0)
+
+project(SCOREC VERSION 2.2.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
+include(cmake/xsdk.cmake)
 
+option(SCOREC_ENABLE_CXX11 "enable compilation with c++11 support" NO)
+
+option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+
+xsdk_begin_package()
 bob_begin_package()
 
+if(USE_XSDK_DEFAULTS)
+  xsdk_compiler_flags()
+endif()
+
 # Set some default compiler flags that should always be used
-bob_begin_cxx_flags()
-bob_end_cxx_flags()
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+if(NOT USE_XSDK_DEFAULTS)
+  bob_set_shared_libs()
+  bob_begin_cxx_flags()
+  bob_end_cxx_flags()
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+  if(SCOREC_ENABLE_CXX11)
+    bob_cxx11_flags()
+  endif()
+endif()
+message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
 # Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
@@ -35,15 +52,21 @@ message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
 message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
+
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
-set(MPIRUN_PROCFLAG "-np" CACHE string
+set(MPIRUN_PROCFLAG "-np" CACHE STRING
   "the command line flag to give process count to MPIRUN")
 message(STATUS "MPIRUN: ${MPIRUN} ${MPIRUN_PROCFLAG}")
-set(VALGRIND "" CACHE string
+set(VALGRIND "" CACHE STRING
   "the valgrind executable")
-set(VALGRIND_ARGS "" CACHE string
+set(VALGRIND_ARGS "" CACHE STRING
   "the command line arguments to VALGRIND")
+
+# smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
+add_custom_target(test_install
+  COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
+  COMMENT "running a smoke test on the installed binaries")
 
 # Set options for doxygen documentation
 find_package(Doxygen)
@@ -61,6 +84,7 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
+option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
@@ -92,12 +116,12 @@ if(ENABLE_OMEGA_H)
 endif()
 
 # Include the SCOREC project packages
+add_subdirectory(lion)
 add_subdirectory(pcu)
 add_subdirectory(gmi)
 add_subdirectory(gmi_sim)
 add_subdirectory(can)
 add_subdirectory(mth)
-add_subdirectory(lion)
 add_subdirectory(apf)
 add_subdirectory(apf_sim)
 add_subdirectory(mds)

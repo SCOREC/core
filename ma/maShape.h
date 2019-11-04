@@ -21,10 +21,9 @@ class Adapt;
 /* quick check of positivity of volumes based on vertices */
 bool areTetsValid(Mesh* m, EntityArray& tets);
 
-double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q);
-double measureTriQuality(Mesh* m, SizeField* f, Entity* tri);
-double measureTetQuality(Mesh* m, SizeField* f, Entity* tet);
-double measureElementQuality(Mesh* m, SizeField* f, Entity* e);
+double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax=true);
+double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax=true);
+double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax=true);
 
 /* gets the quality of an element based on
  * the vertices used for curved elements
@@ -38,6 +37,12 @@ double getWorstQuality(Adapt* a, Entity** e, size_t n);
 /* has worse quality than qualityToBeat
  */
 bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat);
+
+/* measures the min and max edge lengths (in metric space)
+ * among all the entities in tets
+ */
+Entity* getMaxEdgeLength(Adapt* a, EntityArray& tets, double& maxLength);
+Entity* getMinEdgeLength(Adapt* a, EntityArray& tets, double& minLength);
 
 /* checks whether a prism is safe to tetrahedronize.
  * the optional "good_diagonal_codes" integer
@@ -62,7 +67,9 @@ CodeMatch matchSliver(
     Mesh* m,
     Entity* tet);
 
+double improveQualities(Adapt* a);
 void fixElementShapes(Adapt* a);
+void alignElements(Adapt* a);
 void printQuality(Adapt* a);
 
 }

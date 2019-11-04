@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
@@ -28,6 +29,14 @@ void faceFunction(double const p[2], double x[3], void*)
   (void)x;
 }
 
+agm_use add_adj(gmi_model* m, agm_bdry b, int tag)
+{
+  agm* topo = gmi_analytic_topo(m);
+  int dim = agm_dim_from_type(agm_bounds(topo, b).type);
+  gmi_ent* de = gmi_find(m, dim - 1, tag);
+  return agm_add_use(topo, b, agm_from_gmi(de));
+}
+
 gmi_model* makeModel()
 {
   gmi_model* model = gmi_make_analytic();
@@ -36,7 +45,13 @@ gmi_model* makeModel()
   gmi_add_analytic(model, 1, 1, edgeFunction, &edgePeriodic, &edgeRange, 0);
   int facePeriodic[2] = {0, 0};
   double faceRanges[2][2] = {{0,0},{0,0}};
-  gmi_add_analytic(model, 2, 1, faceFunction, facePeriodic, faceRanges, 0);
+  gmi_ent* face = gmi_add_analytic(model, 2, 1, faceFunction, facePeriodic, faceRanges, 0);
+
+
+  agm_bdry b = agm_add_bdry(gmi_analytic_topo(model), agm_from_gmi(face));
+  agm_use faceUse = add_adj(model, b, 1);
+  gmi_add_analytic_reparam(model, faceUse, faceFunction, 0);
+
   return model;
 }
 
@@ -146,6 +161,7 @@ int main( int argc, char* argv[])
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   GroupCode code;
   code.model = makeModel();
   code.meshFile = argv[1];

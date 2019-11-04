@@ -4,6 +4,7 @@
 #include <apf.h>
 #include <ph.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
 #include <stdio.h>
 
@@ -12,12 +13,7 @@
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
-#endif
-
-/* forward declare simmetrix API M_splitMeshOnGFace;
-   once it is ready in published code, remove this */
-#ifdef HAVE_SIMMETRIX
-extern void M_splitMeshOnGFace(pUnstructuredMesh, pGFace, int keepOrig, pPList nosplit);
+#include "splitMeshOnGFace.h"
 #endif
 
 namespace apf {
@@ -167,13 +163,13 @@ static void cutEntities(apf::Mesh2* m, FieldBCs& fbcs, MaterialMap& mm)
     m->end(it);
     for (size_t i = 0; i < toCut.size(); ++i)
       cutEntity(m, mm, toCut[i]);
-    printf("cut %zd entities in dimension %d\n",toCut.size(),d);
+    lion_oprint(1,"cut %zd entities in dimension %d\n",toCut.size(),d);
   }
 }
 
 void cutInterface(apf::Mesh2* m, BCs& bcs)
 {
-  printf("execute PUMI cut interface\n");
+  lion_oprint(1,"execute PUMI cut interface\n");
   std::string name("DG interface");
   if (!haveBC(bcs, name))
     ph::fail("no DG interface attributes!");
@@ -184,9 +180,21 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
 }
 
 #ifdef HAVE_SIMMETRIX
+int M_numVerticesInClosure(pMesh mesh, pGEntity model){
+  int counter = 0;
+  pVertex meshVertex;
+  VIter vIter = M_vertexIter(mesh);
+  while((meshVertex = VIter_next(vIter))) {
+    if (GEN_inClosure(model, EN_whatIn(meshVertex)))
+      counter++;
+  }
+  VIter_delete(vIter);
+  return counter;
+}
+
 void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
 {
-  printf("execute simmetrix cut interface\n");
+  lion_oprint(1,"execute simmetrix cut interface\n");
   std::string name("DG interface");
   if (!haveBC(bcs, name))
     ph::fail("no DG interface attributes!");
@@ -208,11 +216,12 @@ void cutInterfaceSIM(apf::Mesh2* m, BCs& bcs)
   while ((ge = gmi_next(gm, git))) {
     if (ph::isInterface(gm, ge, fbcs)) {
       modelFace = (pGFace) ge;
-      counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of mesh vertices on interface before cut: %d\n",counter);
-      M_splitMeshOnGFace(pmesh, modelFace, 0, 0);
-      counter = M_numClassifiedVertices(mesh, modelFace);
-      printf("num. of mesh vertices on interface after cut: %d\n",counter);
+      lion_oprint(1,"cutting face %d:\n",GEN_tag(modelFace));
+      counter = M_numVerticesInClosure(mesh, modelFace);
+      lion_oprint(1,"  num. of mesh vertices on interface before cut: %d\n",counter);
+      splitMeshOnGFace(pmesh, modelFace);
+      counter = M_numVerticesInClosure(mesh, modelFace);
+      lion_oprint(1,"  num. of mesh vertices on interface after cut: %d\n",counter);
     }
   }
   gmi_end(gm, git);
@@ -248,22 +257,22 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
       continue;
 
     ++nDG;
-    apf::Matches matches;
-    m->getMatches(f,matches);
+    apf::DgCopies dgCopies;
+    m->getDgCopies(f, dgCopies);
 
     apf::MeshEntity* e = m->getUpward(f, 0);
 
     int remoteResidence = -1;
-    for (size_t j = 0; j != matches.getSize(); ++j) {
-      if (matches[j].peer != PCU_Comm_Self())
-        remoteResidence = matches[j].peer;
+    for (size_t j = 0; j != dgCopies.getSize(); ++j) {
+      if (dgCopies[j].peer != PCU_Comm_Self())
+        remoteResidence = dgCopies[j].peer;
     }
 
     if (remoteResidence > PCU_Comm_Self())
       plan->send(e,remoteResidence);
   }
   m->end(it);
-  printf("proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
+  lion_oprint(1,"proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
 
   int totalPlan = plan->count();
   totalPlan = PCU_Add_Int(totalPlan);
@@ -280,7 +289,7 @@ bool migrateInterfaceItr(apf::Mesh2*& m, ph::BCs& bcs) {
     result = migrateInterface(m, bcs);
     itr++;
     if(itr >= maxItr) {
-      printf("migrate interface iteration more than maxItr");
+      lion_oprint(1,"migrate interface iteration more than maxItr");
       break;
     }
     if(result == -1)

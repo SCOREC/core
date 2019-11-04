@@ -1,49 +1,27 @@
 #!/bin/bash -x
+source /etc/profile
+source /users/cwsmith/.bash_profile
 
-# load environment variables
-source /usr/local/etc/bash_profile
-module load cmake/latest
-module load mpich3/3.1.2-thread-multiple
-module load parmetis/mpich3.1.2/4.0.3
-module load zoltan/mpich3.1.2/3.8
-module load simmetrix/simModSuite
-module load netcdf
-module load gcc/4.9.2
-module load git
-module load valgrind/3.8.1
+#setup lmod
+export PATH=/usr/share/lmod/lmod/libexec:$PATH
+
+#setup spack modules
+unset MODULEPATH
+module use /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core/
+
+module load gcc/7.3.0-bt47fwr
+module load cmake/3.12.1-wfk2b7e
+module load mpich
+module load zoltan/3.83-int32-gx3prjr
+module load simmetrix-simmodsuite/14.0-190928-snlypqg
 
 #cdash output root
-cd /fasttmp/seol/scorec/cdash
+d=/lore/cwsmith/nightlyBuilds/
+cd $d
 #remove compilation directories created by previous nightly.cmake runs
-rm -rf build/
+[ -d build ] && rm -rf build/
 
+touch $d/startedCoreNightly
 #run nightly.cmake script
-ctest --output-on-failure --script /fasttmp/seol/scorec/src/core/cdash/nightly.cmake &> cmake_log.txt
-cp cmake_log.txt /net/web/public/seol/scorec/cdash/nightly_cmake_log.txt
-
-if [ -d "/fasttmp/seol/scorec/cdash/build/master" ]; then
-  #core repository checked out by nightly.cmake
-  cd /fasttmp/seol/scorec/cdash/build/master
-  #build the Doxygen html documentation
-  make doc
-  if [ -d "$PWD/doc/html" ]; then
-    #remove the old web documentation
-    rm -rf /net/web/public/seol/scorec/doxygen
-    #replace it with the generated one
-    cp -r doc/html /net/web/public/seol/scorec/doxygen
-  fi
-fi
-
-#core repository checked out by nightly.cmake
-cd /fasttmp/seol/scorec/cdash/build/master
-#clean the build of object files
-make clean
-#run Coverity static analysis on the build
-export PATH=$PATH:/fasttmp/seol/scorec/cov-analysis-linux64-7.7.0.4/bin
-cov-build --dir cov-int make -j 4
-#pack up the tarball of results
-tar czvf pumi.tgz cov-int
-#cleanup the Chef test output
-cd /fasttmp/seol/scorec
-find meshes/phasta -name "*procs_case" | xargs rm -rf
-find meshes/phasta -name "out_mesh" | xargs rm -rf
+ctest -V --script $d/repos/core/cdash/nightly.cmake
+touch $d/doneCoreNightly

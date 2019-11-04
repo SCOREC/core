@@ -131,7 +131,7 @@ void getGregoryBlendedTransformationCoefficients(int blend, int type,
     apf::NewArray<double>& c);
 
 /** \brief a per entity version of above */
-void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e);
+void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e, bool isNew = false);
 
 /** \brief compute the matrix to transform between Bezier and Lagrange Points
     \details this is a support function, not actual ever needed.

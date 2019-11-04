@@ -15,22 +15,25 @@
 namespace ma {
 
 enum {
-  SPLIT         = (1<< 0),
-  DONT_SPLIT    = (1<< 1),
-  COLLAPSE      = (1<< 2),
-  DONT_COLLAPSE = (1<< 3),
-  CHECKED       = (1<< 4),
-  BAD_QUALITY   = (1<< 5),
-  OK_QUALITY    = (1<< 6),
-  SNAP          = (1<< 7),
-  DONT_SNAP     = (1<< 8),
-  DONT_SWAP     = (1<< 9),
-  LAYER         = (1<<10),
-  LAYER_BASE    = (1<<11),
-  LAYER_TOP     = (1<<12),
-  DIAGONAL_1    = (1<<13),
-  DIAGONAL_2    = (1<<14),
-  LAYER_UNSNAP  = (1<<15)
+  SPLIT             = (1<< 0),
+  DONT_SPLIT        = (1<< 1),
+  COLLAPSE          = (1<< 2),
+  DONT_COLLAPSE     = (1<< 3),
+  CHECKED           = (1<< 4),
+  BAD_QUALITY       = (1<< 5),
+  OK_QUALITY        = (1<< 6),
+  SNAP              = (1<< 7),
+  DONT_SNAP         = (1<< 8),
+  DONT_SWAP         = (1<< 9),
+  LAYER             = (1<<10),
+  LAYER_BASE        = (1<<11),
+  LAYER_TOP         = (1<<12),
+  DIAGONAL_1        = (1<<13),
+  DIAGONAL_2        = (1<<14),
+  LAYER_UNSNAP      = (1<<15),
+  DONT_MOVE         = (1<<16),
+  NEED_NOT_SPLIT    = (1<<17),
+  NEED_NOT_COLLAPSE = (1<<18)
 };
 
 class DeleteCallback;
@@ -46,6 +49,7 @@ class Adapt
     Input* input;
     Mesh* mesh;
     Tag* flagsTag;
+    Tag* qualityCache; // to avoid repeated quality computations
     DeleteCallback* deleteCallback;
     apf::BuildCallback* buildCallback;
     SizeField* sizeField;
@@ -71,6 +75,11 @@ void clearFlag(Adapt* a, Entity* e, int flag);
 void clearFlagMatched(Adapt* a, Entity* e, int flag);
 
 void clearFlagFromDimension(Adapt* a, int flag, int dimension);
+
+void setupQualityCache(Adapt* a);
+void clearQualityCache(Adapt* a);
+double getCachedQuality(Adapt* a, Entity* e);
+void   setCachedQuality(Adapt* a, Entity* e, double q);
 
 void destroyElement(Adapt* a, Entity* e);
 
@@ -101,7 +110,8 @@ long markEntities(
     int dimension,
     Predicate& predicate,
     int trueFlag,
-    int falseFlag);
+    int setFalseFlag,
+    int allFalseFlags = 0);
 
 class NewEntities : public apf::BuildCallback
 {

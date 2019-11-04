@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <sstream>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 namespace ma {
 
@@ -51,6 +52,8 @@ void splitQuad_4(Refine* r, Entity* q, Entity** v)
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
     transferParametricOnQuadSplit(m, q, sv[0] ,sv[2], 0.5, param);
+  if (a->input->shouldTransferToClosestPoint)
+    transferToClosestPointOnQuadSplit(m, q, sv[0] ,sv[2], 0.5, param);
   Entity* cv = buildVertex(a, m->toModel(q), point, param);
   a->solutionTransfer->onVertex(me,xi,cv);
   a->sizeField->interpolate(me,xi,cv);
@@ -94,15 +97,15 @@ void splitPrism_0(Refine* r, Entity* p, Entity** v)
     ss << "this should only be done to accomodate unsafe elements.\n";
     ss << "the new vertex position will be optimized.\n";
     std::string s = ss.str();
-    fprintf(stderr, "%s", s.c_str());
+    lion_eprint(1, "%s", s.c_str());
     Vector xi(1./3.,1./3.,0);
     apf::MeshElement* me = apf::createMeshElement(m, p);
     Entity* vert = prismToTetsBadCase(r, p, v, code, point);
     bool success = ma::repositionVertex(m, vert, 200, 0.05);
     if (success)
-      fprintf(stderr, "repositioning succeeded\n");
+      lion_eprint(1, "repositioning succeeded\n");
     else
-      fprintf(stderr, "repositioning failed\n");
+      lion_eprint(1, "repositioning failed\n");
     a->solutionTransfer->onVertex(me, xi, vert);
     a->sizeField->interpolate(me, xi, vert);
     apf::destroyMeshElement(me);

@@ -4,6 +4,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <vector>
@@ -283,6 +284,7 @@ int main(int argc, char * argv[])
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_model* model = makeModel();
   gmi_write_dmg(model, "made.dmg");
   apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1]);

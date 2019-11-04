@@ -23,6 +23,7 @@
 
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include <PCU.h>
+#include <lionPrint.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 
@@ -30,6 +31,7 @@
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"
+#include "SimDiscrete.h"
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
 #endif
@@ -65,10 +67,12 @@ int main(int argc, char **argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   PCU_Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
+  SimDiscrete_start(0);
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_start();
 #endif
@@ -113,7 +117,7 @@ int main(int argc, char **argv)
   // NOTE: Sim_readLicenseFile() is for internal testing only.  To use,
   // pass in the location of a file containing your keys.  For a release 
   // product, use Sim_registerKey() 
-  Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
+  Sim_readLicenseFile(0);
   Sim_logOn("partition.log");
 
   Sim_setMessageHandler(messageHandler);
@@ -164,6 +168,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_stop();
 #endif
+  SimDiscrete_stop(0);
   SimPartitionedMesh_stop();
   PCU_Comm_Free();
   MPI_Finalize();

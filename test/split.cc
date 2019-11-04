@@ -3,6 +3,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -76,6 +77,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

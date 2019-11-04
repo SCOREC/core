@@ -14,6 +14,7 @@
 #include <gmi.h>
 #include <SimModel.h>
 #include <vector>
+#include <set>
 
 #include "gmi_sim_config.h"
 
@@ -182,8 +183,7 @@ static gmi_set* region_faces(pGRegion region)
   return s;
 }
 
-/* getting the region adj to an edge. This version
- * does not support non-manifold models
+/* getting the region adj to an edge.
  */
 // NOTE: the corresponding functionality does not exist
 // in gmi_base!
@@ -192,22 +192,25 @@ static gmi_set* edge_regions(pGEdge e)
 {
   pPList list = GE_faces((pGEdge)e);
 
-  // do the first one outside of the loop
-  gmi_set* regions_set = face_regions((pGFace)PList_item(list, 0));
-  if (regions_set->n != 1)
-    gmi_fail("no support for non-manifold surfaces!\n");
-  pGRegion r = (pGRegion)regions_set->e[0];
-
-  // do the rest inside of the loop
-  for (int i = 1; i < PList_size(list); i++) {
-    regions_set = face_regions((pGFace)PList_item(list, i));
-    if (regions_set->n != 1)
-      gmi_fail("no support for non-manifold surfaces!\n");
-    if (r != (pGRegion)regions_set->e[0])
-      gmi_fail("no support for non-manifold surfaces!\n");
+  std::set<pGRegion> rgns;
+  for (int i = 0; i < PList_size(list); i++) {
+   gmi_set* regions_set = face_regions((pGFace)PList_item(list, i));
+   for (int j = 0; j < regions_set->n; j++) {
+     rgns.insert( (pGRegion) regions_set->e[j] );
+   }
+   gmi_free_set(regions_set);
   }
   PList_delete(list);
-  return regions_set;
+
+  int count = 0;
+  gmi_set* s = gmi_make_set(rgns.size());
+  for (std::set<pGRegion>::iterator it=rgns.begin(); it!=rgns.end(); ++it) {
+    s->e[count] = (gmi_ent*)*it;
+    count++;
+  }
+  rgns.clear();
+
+  return s;
 }
 
 static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
@@ -215,6 +218,8 @@ static gmi_set* adjacent(gmi_model* m, gmi_ent* e, int dim)
   int edim = gmi_dim(m, e);
   if (edim == 0 && dim == 1)
     return plist_to_set(GV_edges((pGVertex)e));
+  if (edim == 0 && dim == 3)
+    return plist_to_set(GV_regions((pGVertex)e));
   if (edim == 1 && dim == 0)
     return plist_to_set(GE_vertices((pGEdge)e));
   if (edim == 1 && dim == 2)
@@ -346,6 +351,13 @@ static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   return 0;
 }
 
+static void bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3])
+{
+  (void) m;
+  GEN_bounds((pGEntity)e, bmin, bmax);
+}
+
 static int is_discrete_ent(struct gmi_model*, struct gmi_ent* e)
 {
   return GEN_isDiscreteEntity((pGEntity)e);
@@ -421,6 +433,7 @@ void gmi_register_sim(void)
   ops.first_derivative = first_derivative;
   ops.is_point_in_region = is_point_in_region;
   ops.is_in_closure_of = is_in_closure_of;
+  ops.bbox = bbox;
   ops.is_discrete_ent = is_discrete_ent;
   ops.destroy = destroy;
   gmi_register(create_smd, "smd");
@@ -479,7 +492,7 @@ struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
   pGModel sm;
   if (!smdfile) {
     if (NM_isAssemblyModel(nm)) {
-      pGAModel am = GAM_createFromNativeModel(nm, NULL);
+      pGModel am = GAM_createFromNativeModel(nm, NULL);
       NM_release(nm);
       sm = GM_createFromAssemblyModel(am, NULL, NULL);
       GM_release(am);

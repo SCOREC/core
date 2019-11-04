@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pcu_util.h>
+#include <math.h> //fabs
 
 typedef uint8_t periodic_t[2];
 typedef double ranges_t[2][2];
@@ -159,6 +161,157 @@ static void range(struct gmi_model* m, struct gmi_ent* e, int dim, double r[2])
   r[1] = (*rp)[dim][1];
 }
 
+static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
+    double const p[2], double t0[3], double t1[3])
+{
+  int md = gmi_dim(m, e);
+  double denum = 1000000.;
+  if (md == 2) {
+    double r0[2];
+    double r1[2];
+    range(m, e, 0, r0);
+    range(m, e, 1, r1);
+    PCU_ALWAYS_ASSERT(r0[1] > r0[0]);
+    PCU_ALWAYS_ASSERT(r1[1] > r1[0]);
+    double delta0 = fabs(r0[1] - r0[0]) / denum;
+    double delta1 = fabs(r1[1] - r1[0]) / denum;
+
+    double x1[3];
+    double x2[3];
+    double p1[2];
+    double p2[2];
+
+    // compute t0
+    // first check if the point p[0] is within the interval r0
+    PCU_ALWAYS_ASSERT((p[0] >= r0[0]) && p[0] <= r0[1]);
+    // use center difference if away from the interval boundaries
+    if ( (p[0] - r0[0] > delta0/2) && (r0[1] - p[0] > delta0/2) ) {
+      p1[0] = p[0] - delta0/2;
+      p1[1] = p[1];
+      p2[0] = p[0] + delta0/2;
+      p2[1] = p[1];
+    }
+    // use forward difference if close to the lower boundary
+    else if (p[0] - r0[0] <= delta0/2) {
+      p1[0] = p[0];
+      p1[1] = p[1];
+      p2[0] = p[0] + delta0;
+      p2[1] = p[1];
+    }
+    // use backward difference if close to the upper boundary
+    else if (r0[1] - p[0] <= delta0/2) {
+      p1[0] = p[0] - delta0;
+      p1[1] = p[1];
+      p2[0] = p[0];
+      p2[1] = p[1];
+    }
+    else
+      PCU_ALWAYS_ASSERT(0);
+
+    eval(m, e, p1, x1);
+    eval(m, e, p2, x2);
+    for (int i = 0; i < 3; i++)
+      t0[i] = (x2[i] - x1[i]) / delta0;
+
+    // compute t1
+    // first check if the point p[1] is within the interval r1
+    PCU_ALWAYS_ASSERT((p[1] >= r1[0]) && p[1] <= r1[1]);
+    // use center difference if away from the interval boundaries
+    if ( (p[1] - r1[0] > delta1/2) && (r1[1] - p[1] > delta1/2) ) {
+      p1[0] = p[0];
+      p1[1] = p[1] - delta1/2;
+      p2[0] = p[0];
+      p2[1] = p[1] + delta1/2;
+    }
+    // use forward difference if close to the lower boundary
+    else if (p[1] - r1[0] <= delta1/2) {
+      p1[0] = p[0];
+      p1[1] = p[1];
+      p2[0] = p[0];
+      p2[1] = p[1] + delta1;
+    }
+    // use backward difference if close to the upper boundary
+    else if (r1[1] - p[1] <= delta1/2) {
+      p1[0] = p[0];
+      p1[1] = p[1] - delta1;
+      p2[0] = p[0];
+      p2[1] = p[1];
+    }
+    else
+      PCU_ALWAYS_ASSERT(0);
+
+    eval(m, e, p1, x1);
+    eval(m, e, p2, x2);
+    for (int i = 0; i < 3; i++)
+      t1[i] = (x2[i] - x1[i]) / delta1;
+  }
+  if (md == 1) {
+    double r0[2];
+    range(m, e, 0, r0);
+    PCU_ALWAYS_ASSERT(r0[1] > r0[0]);
+    double delta0 = fabs(r0[1] - r0[0]) / denum;
+
+    double x1[3];
+    double x2[3];
+    double p1[2];
+    double p2[2];
+
+    // compute t0
+    // first check if the point p[0] is within the interval r0
+    PCU_ALWAYS_ASSERT((p[0] >= r0[0]) && p[0] <= r0[1]);
+    // use center difference if away from the interval boundaries
+    if ( (p[0] - r0[0] > delta0/2) && (r0[1] - p[0] > delta0/2) ) {
+      p1[0] = p[0] - delta0/2;
+      p1[1] = p[1];
+      p2[0] = p[0] + delta0/2;
+      p2[1] = p[1];
+    }
+    // use forward difference if close to the lower boundary
+    else if (p[0] - r0[0] <= delta0/2) {
+      p1[0] = p[0];
+      p1[1] = p[1];
+      p2[0] = p[0] + delta0;
+      p2[1] = p[1];
+    }
+    // use backward difference if close to the upper boundary
+    else if (r0[1] - p[0] <= delta0/2) {
+      p1[0] = p[0] - delta0;
+      p1[1] = p[1];
+      p2[0] = p[0];
+      p2[1] = p[1];
+    }
+    else
+      PCU_ALWAYS_ASSERT(0);
+
+    eval(m, e, p1, x1);
+    eval(m, e, p2, x2);
+    for (int i = 0; i < 3; i++)
+      t0[i] = (x2[i] - x1[i]) / delta0;
+  }
+}
+
+static void bbox(struct gmi_model* m, struct gmi_ent* e,
+    double bmin[3], double bmax[3])
+{
+  (void) m;
+  (void) e;
+  bmin[0] = 0.0;
+  bmin[1] = 0.0;
+  bmin[2] = 0.0;
+  bmax[0] = 1.0;
+  bmax[1] = 1.0;
+  bmax[2] = 1.0;
+}
+
+static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
+    double point[3])
+{
+  (void) m;
+  (void) e;
+  (void) point;
+  return 1;
+}
+
 static struct gmi_model_ops ops = {
   .begin    = gmi_base_begin,
   .next     = gmi_base_next,
@@ -171,6 +324,9 @@ static struct gmi_model_ops ops = {
   .reparam  = reparam,
   .periodic = periodic,
   .range    = range,
+  .first_derivative = first_derivative,
+  .bbox = bbox,
+  .is_point_in_region = is_point_in_region,
   .destroy  = gmi_base_destroy
 };
 

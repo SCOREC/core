@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
   pNativeModel pnModel;
   pnModel = ParasolidNM_createFromFile(gname,0); 
   if(NM_isAssemblyModel(pnModel)) {
-    pGAModel amodel = GAM_createFromNativeModel(pnModel, prog);
+    pGModel amodel = GAM_createFromNativeModel(pnModel, prog);
     NM_release(pnModel);
     model = GM_createFromAssemblyModel(amodel, NULL, prog);
     GM_release(amodel);

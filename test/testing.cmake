@@ -7,6 +7,17 @@ function(mpi_test TESTNAME PROCS EXE)
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
 endfunction(mpi_test)
+
+function(smoke_test TESTNAME PROCS EXE)
+  set(tname smoke_test_${TESTNAME})
+  add_test(
+    NAME ${tname}
+    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
+    CONFIGURATIONS SMOKE_TEST_CONFIG
+    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
+  SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
+endfunction(smoke_test)
+
 mpi_test(shapefun 1 ./shapefun)
 mpi_test(shapefun2 1 ./shapefun2)
 mpi_test(bezierElevation 1 ./bezierElevation)
@@ -15,6 +26,7 @@ mpi_test(bezierMisc 1 ./bezierMisc)
 mpi_test(bezierRefine 1 ./bezierRefine)
 mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
+mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
@@ -22,11 +34,27 @@ mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
+mpi_test(verify_convert 1 ./verify_convert)
+mpi_test(test_integrator 1
+         ./test_integrator
+         "${MESHES}/cube/cube.dmg"
+         "${MESHES}/cube/pumi11/cube.smb"
+         )
+mpi_test(test_matrix_gradient 1
+         ./test_matrix_gradient
+         "${MESHES}/cube/cube.dmg"
+         "${MESHES}/cube/pumi11/cube.smb"
+         )
 
-
+mpi_test(modelInfo_dmg 1
+  ./modelInfo
+  "${MESHES}/cube/cube.dmg")
 if(ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
     ./inClosureOf_test
+    "${MESHES}/cube/cube.smd")
+  mpi_test(modelInfo_smd 1
+    ./modelInfo
     "${MESHES}/cube/cube.smd")
 endif(ENABLE_SIMMETRIX)
 
@@ -37,17 +65,6 @@ else()
 endif()
 
 set(MDIR ${MESHES}/phasta/dg)
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
-  mpi_test(migrate_interface 4
-    ./migrate_interface
-    "${MDIR}/box.smd"
-    "${MDIR}/box.smb"
-    "${MDIR}/4/")
-  mpi_test(dg_ma_test 4
-    ./dg_ma_test
-    "${MDIR}/box.smd"
-    "${MDIR}/4/")
-endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   set(MDIR ${MESHES}/phasta/BL_query)
@@ -58,7 +75,15 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
     WORKING_DIRECTORY ${MDIR})
 endif()
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+  if(SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
+    set(MDIR ${MESHES}/faceExtrusion)
+    mpi_test(rm_extrusion 1
+      ${CMAKE_CURRENT_BINARY_DIR}/rm_extrusion
+      ${MDIR}/plate.x_t
+      ${MDIR}/extrusion.sms
+      ${MDIR}/extrusion_noatts.sms)
+  endif()
   set(MDIR ${MESHES}/phasta/BL_query/cut_and_partition)
   add_test(NAME cut_interface_sim
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cut_interface
@@ -67,7 +92,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
    "${MDIR}/mesh.sms"
    "${MDIR}/mesh_cut.sms"
    WORKING_DIRECTORY ${MDIR})
-  if(SIM_DOT_VERSION VERSION_GREATER 11.0-170826)
+  if(SIM_DOT_VERSION VERSION_GREATER 11.0.170826)
     mpi_test(partition_sim 4
      ${CMAKE_CURRENT_BINARY_DIR}/sim_part
      "${MDIR}/model_nat.x_t"
@@ -84,7 +109,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
      "${MDIR}/mesh_cut.sms"
      3504
      WORKING_DIRECTORY ${MDIR})
-    if(SIM_DOT_VERSION VERSION_GREATER 11.0-170826)
+    if(SIM_DOT_VERSION VERSION_GREATER 11.0.170826)
       mpi_test(countBL_part_mesh 4
        ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
        "${MDIR}/model_nat.x_t"
@@ -94,7 +119,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
        WORKING_DIRECTORY ${MDIR})
     endif()
   endif()
-endif(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
 if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
@@ -112,6 +137,18 @@ if(ENABLE_ZOLTAN)
     ${MESHES}/pumi/3d-1p/model.dmg
     ${MESHES}/pumi/3d-1p/part.smb
     out.smb 1 0)
+endif()
+if(ENABLE_OMEGA_H)
+  mpi_test(mdsToOmega 1
+    ./smb2osh
+    ${MESHES}/cube/cube.dmg
+    ${MESHES}/cube/pumi670/cube.smb
+    cube.osh)
+  mpi_test(omegaToMds 1
+    ./osh2smb
+    cube.osh
+    ${MESHES}/cube/cube.dmg
+    converted.smb)
 endif()
 mpi_test(test_scaling 1
   ./test_scaling
@@ -136,6 +173,16 @@ mpi_test(reorder_serial 1
   ${MESHES}/cube/cube.dmg
   ${MESHES}/cube/pumi7k/cube.smb
   cube_bfs.smb)
+mpi_test(create_misCube 1
+  ./create_mis
+  ${MESHES}/cube/cube.dmg
+  ${MESHES}/cube/pumi670/cube.smb
+  mis_test)
+mpi_test(create_misSquare 1
+  ./create_mis
+  ${MESHES}/square/square.dmg
+  ${MESHES}/square/square.smb
+  mis_test)
 
 set(MDIR ${MESHES}/fun3d)
 mpi_test(inviscid_ugrid 4
@@ -192,6 +239,11 @@ mpi_test(uniform_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "pipe_unif.smb")
+smoke_test(uniform_serial 1
+  ./uniform
+  "${MDIR}/pipe.${GXT}"
+  "${MDIR}/pipe.smb"
+  "pipe_unif.smb")
 if(ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
@@ -206,7 +258,13 @@ mpi_test(ma_serial 1
 mpi_test(aniso_ma_serial 1
   ./aniso_ma_test
   "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb")
+  "${MESHES}/cube/pumi670/cube.smb"
+  "0")
+mpi_test(aniso_ma_serial_log_interpolation 1
+  ./aniso_ma_test
+  "${MESHES}/cube/cube.dmg"
+  "${MESHES}/cube/pumi670/cube.smb"
+  "1")
 if(ENABLE_ZOLTAN)
   mpi_test(torus_ma_parallel 4
     ./torus_ma_test
@@ -228,6 +286,18 @@ mpi_test(split_2 2
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   ${MESHFILE}
+  2)
+smoke_test(split_2 2
+  ./split
+  "${MDIR}/pipe.${GXT}"
+  "${MDIR}/pipe.smb"
+  ${MESHFILE}
+  2)
+mpi_test(collapse_2 2
+  ./collapse
+  "${MDIR}/pipe.${GXT}"
+  ${MESHFILE}
+  pipe_p1_.smb
   2)
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
@@ -275,6 +345,11 @@ if(ENABLE_ZOLTAN)
     "pipe_4_.smb"
     "tet.smb")
 endif()
+mpi_test(fieldReduce 4
+  ./fieldReduce
+  "${MDIR}/pipe.${GXT}"
+  "pipe_4_.smb")
+
 set(MDIR ${MESHES}/torus)
 mpi_test(reorder 4
   ./reorder
@@ -292,6 +367,8 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
+mpi_test(applyMatrixFunc 1
+  ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
@@ -314,6 +391,8 @@ mpi_test(fixDisconnected 4
   "${MDIR}/torus.dmg"
   "${MDIR}/4imb/torus.smb"
   "torusDcFix4p/")
+mpi_test(outputcontrol 1
+  ./outputcontrol 2)
 mpi_test(quality 4
   ./quality
   "${MDIR}/torus.dmg"
@@ -368,6 +447,14 @@ mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(constructThenGhost 4
+  ./constructThenGhost
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi7k/4/cube.smb")
+set(MDIR ${MESHES}/embeddedEdges)
+mpi_test(embedded_edges 1
+  ./embedded_edges
+  "${MDIR}/edges-embedded-in-3D.smb")
 set(MDIR ${MESHES}/spr)
 mpi_test(spr_3D 4
   ./spr_test
@@ -427,6 +514,10 @@ set(MDIR ${MESHES}/fusion)
 mpi_test(mkmodel_fusion 1
   ./mkmodel
   "${MDIR}/fusion.smb"
+  "fusionNull.dmg")
+mpi_test(mktopomodel_fusion 1
+  ./mktopomodel
+  "${MDIR}/fusion.smb"
   "fusion.dmg")
 mpi_test(split_fusion 2
   ./split
@@ -454,11 +545,23 @@ if(ENABLE_SIMMETRIX)
       ./generate
       "${MDIR}/upright.smd"
       "67k")
+    mpi_test(parallel_meshgen_surf 4
+      ./generate
+      "--disable-volume"
+      "--surface-mesh=${MDIR}/67k_surf.sms"
+      "${MDIR}/upright.smd"
+      "67k")
+    mpi_test(parallel_meshgen_vol 4
+      ./generate
+      "--disable-surface"
+      "--surface-mesh=${MDIR}/67k_surf_ref.sms"
+      "${MDIR}/upright.smd"
+      "67k")
     if(SIM_PARASOLID)
       mpi_test(parallel_meshgen_para 4
       ./generate
+      "--native-model=${MDIR}/upright.x_t"
       "${MDIR}/upright.smd"
-      "${MDIR}/upright.x_t"
       "67k")
     endif()
     # adapt_meshgen uses the output of parallel_meshgen
@@ -470,6 +573,15 @@ if(ENABLE_SIMMETRIX)
   if(SIM_PARASOLID)
     mpi_test(convert_para 1
       ./convert
+      "--enable-log"
+      "--native-model=${MDIR}/upright.x_t"
+      "${MDIR}/upright.smd"
+      "${MDIR}/67k.sms"
+      "67k.smb")
+    mpi_test(ph_convert_para 1
+      ./ph_convert
+      "--enable-log"
+      "--attach-order"
       "--native-model=${MDIR}/upright.x_t"
       "${MDIR}/upright.smd"
       "${MDIR}/67k.sms"
@@ -501,6 +613,9 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/sph_vertical_slice.smb"
       "sph_vertical_slice_refine"
       "3")
+    mpi_test(crack_test 1
+      ./crack_test
+      "${MDIR}/crack_nat.x_t")
   endif(SIM_PARASOLID)
 endif()
 if (PCU_COMPRESS)

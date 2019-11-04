@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <cstdlib>
 
 /*
@@ -42,7 +43,7 @@ namespace {
   struct header {
     unsigned nvtx, ntri, nquad, ntet, npyr, nprz, nhex;
     void print() {
-      fprintf(stderr,
+      lion_eprint(1,
           "nvtx %u ntri %u nquad %u ntet %u npyr %u nprz %u nhex %u\n",
           nvtx,ntri,nquad,ntet,npyr,nprz,nhex);
     }
@@ -52,7 +53,7 @@ namespace {
     r->mesh = m;
     r->file = fopen(filename, "rb");
     if (!r->file) {
-      fprintf(stderr,"ERROR couldn't open ugrid file \"%s\"\n",filename);
+      lion_eprint(1,"ERROR couldn't open ugrid file \"%s\"\n",filename);
       abort();
     }
     unsigned endian = -1;
@@ -61,7 +62,7 @@ namespace {
     } else if ( strstr(filename, ".lb8.ugrid") ) {
       endian = PCU_LITTLE_ENDIAN;
     } else {
-      fprintf(stderr,
+      lion_eprint(1,
           "ERROR file extension of \"%s\" is not supported\n", filename);
       exit(EXIT_FAILURE);
     }
@@ -129,7 +130,7 @@ namespace {
       r->nodeMap[id] = makeVtx(r,p,0);
     }
     free(xyz);
-    fprintf(stderr, "read %d vtx\n", h->nvtx);
+    lion_eprint(1, "read %d vtx\n", h->nvtx);
   }
 
   void setNodeIds(Reader* r, header* h) {
@@ -189,7 +190,7 @@ namespace {
     }
     free(vtx);
     free(tags);
-    fprintf(stderr, "set %d %s face tags\n",
+    lion_eprint(1, "set %d %s face tags\n",
         nfaces, apf::Mesh::typeName[apfType]);
   }
 
@@ -227,7 +228,7 @@ namespace {
       PCU_ALWAYS_ASSERT(elm);
     }
     free(vtx);
-    fprintf(stderr, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
+    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void readElms(Reader* r, header* h) {
@@ -299,7 +300,7 @@ namespace {
         }
         numparts++; //we want count, not rank
         fclose(f);
-        fprintf(stderr, "read ptn for %d parts\n", numparts);
+        lion_eprint(1, "read ptn for %d parts\n", numparts);
       }
       ~ptnstats() {
         delete [] ptn;
@@ -358,7 +359,7 @@ namespace {
       }
     }
     free(vtx);
-    fprintf(stderr, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
+    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void printPtnStats(apf::Mesh2* m, const char* ufile, const char* ptnFile,
@@ -397,7 +398,7 @@ namespace {
     double imbvtx = maxvtx / avgvtx;
     double imbelm = maxelm / avgelm;
     double imbelmW = maxelmW / avgelmW;
-    fprintf(stderr, "imbvtx %.3f imbelmW %.3f imbelm %.3f "
+    lion_eprint(1, "imbvtx %.3f imbelmW %.3f imbelm %.3f "
         "avgvtx %.3f avgelmW %.3f avgelm %.3f\n",
         imbvtx, imbelmW, imbelm, avgvtx, avgelmW, avgelm);
   }
@@ -409,7 +410,7 @@ namespace apf {
     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
     apf::changeMdsDimension(m, 3);
     readUgrid(m, filename);
-    fprintf(stderr,"vtx %lu edge %lu face %lu rgn %lu\n",
+    lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
         m->count(0), m->count(1), m->count(2), m->count(3));
     return m;
   }

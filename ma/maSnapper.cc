@@ -10,8 +10,10 @@
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
+#include "maSnap.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include <iostream>
 
 namespace ma {
@@ -26,9 +28,18 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is)
   vert = 0;
 }
 
-bool Snapper::setVert(Entity* v, apf::CavityOp* o)
+void Snapper::setVert(Entity* v)
 {
   vert = v;
+}
+
+Entity* Snapper::getVert()
+{
+  return vert;
+}
+
+bool Snapper::requestLocality(apf::CavityOp* o)
+{
   if (!o->requestLocality(&vert, 1))
     return false;
   if (isSimple)
@@ -123,44 +134,27 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
   if ( ! collapse.checkTopo())
     return false;
   double q = adapter->input->validQuality;
+  bool oldShouldForce = adapter->input->shouldForceAdaptation;
+  adapter->input->shouldForceAdaptation = true;
   if ( ! collapse.tryBothDirections(q))
     return false;
+  adapter->input->shouldForceAdaptation = oldShouldForce;
   collapse.destroyOldElements();
   return true;
 }
-
-/* #ifdef DO_FPP */
-/*   static bool trySnappingToFPP2(Adapt* a, Collapse& c, Tag* st, Entity* v, */
-/*       apf::Up& badElements) */
-/*   { */
-/*     // make a FirstProblemPlane Object */
-/*     FirstProblemPlane fpps(a, c, st, v, badElements); */
-/*     return fpps.find() ? fpps.snapToFPP() : false; */
-/*   } */
-
-/*   static bool trySnappingToFPP(Adapt* a, Collapse& c, Tag* st, Entity* v, */
-/*       apf::Up& badElements) */
-/*   { */
-/*     bool hadItBefore = getFlag(a, v, DONT_COLLAPSE); */
-/*     setFlag(a, v, DONT_COLLAPSE); */
-/*     bool ok = trySnappingToFPP2(a, c, st, v, badElements); */
-/*     if (!hadItBefore) */
-/*       clearFlag(a, v, DONT_COLLAPSE); */
-/*     return ok; */
-/*   } */
-/* #endif */
 
 static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
     FirstProblemPlane* FPP)
 {
 
   Mesh* m = a->mesh;
+  int dim = m->getDimension();
 
   // first go through the candidate edges found by the first problem plane
   // (if any)
   std::vector<Entity*> edgesFromFPP;
   edgesFromFPP.clear();
-  if (FPP) {
+  if (FPP && dim == 3) {
     FPP->setBadElements(badElements);
     FPP->getCandidateEdges(edgesFromFPP);
   }
@@ -183,6 +177,64 @@ static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
   return false;
 }
 
+static void updateVertexParametricCoords(
+    Mesh* m,
+    Entity* vert,
+    Vector& newTarget)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(vert) == apf::Mesh::VERTEX,
+      "expecting a vertex!");
+
+  // if vert is classified on a model vert or edge return
+  Model* g = m->toModel(vert);
+  if (m->getModelType(g) != 2)
+    return;
+
+  // get the list of upward adj edges that are
+  // classified on the same model face as vert
+  apf::Up edges;
+  m->getUp(vert,edges);
+  apf::Up oes;
+  oes.n = edges.n;
+  int counter = 0;
+  for (int i = 0; i < edges.n; ++i) {
+    Model* h = m->toModel(edges.e[i]);
+    if (m->getModelType(h) == 3)
+      continue;
+    PCU_ALWAYS_ASSERT_VERBOSE(g == h,
+    	"expecting the model to be the same for current edge and vert");
+    oes.e[counter] = edges.e[i];
+    counter++;
+  }
+
+  Vector pBar(0., 0., 0.);
+  for (int i = 0; i < counter; i++) {
+    Vector pTmp;
+    transferParametricOnEdgeSplit(m, oes.e[i], 0.5, pTmp);
+    pBar += pTmp;
+  }
+  pBar = pBar / oes.n;
+
+  m->snapToModel(m->toModel(vert), pBar, newTarget);
+  m->setParam(vert, pBar);
+}
+
+static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
+{
+  Mesh* m = adapter->mesh;
+  PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),
+      "expecting the vertex to have a tag!");
+  bool hadItBefore = getFlag(adapter, v, DONT_MOVE);
+  setFlag(adapter, v, DONT_MOVE);
+  Vector newTarget;
+  m->getDoubleTag(v, tag, &newTarget[0]); // default
+  updateVertexParametricCoords(m, v, newTarget);
+  m->setDoubleTag(v, tag, &newTarget[0]);
+  if (!hadItBefore)
+    clearFlag(adapter, v, DONT_MOVE);
+  return true;
+}
+
 static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
     apf::Up& badElements, FirstProblemPlane* FPP = 0)
 {
@@ -194,18 +246,35 @@ static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
   return ok;
 }
 
+bool Snapper::trySimpleSnap()
+{
+  apf::Up badElements;
+  return trySnapping(adapter, snapTag, vert, badElements);
+}
+
 bool Snapper::run()
 {
   dug = false;
+  moved = false;
   apf::Up badElements;
   bool ok = trySnapping(adapter, snapTag, vert, badElements);
   if (isSimple)
     return ok;
-  FirstProblemPlane* FPP = new FirstProblemPlane(adapter, snapTag);
+  // there is no need for the following if there exists no bad elements
+  if (badElements.n == 0) return true;
+  FirstProblemPlane* FPP;
+#ifdef DO_FPP
+  FPP = new FirstProblemPlane(adapter, snapTag);
   FPP->setVertex(vert);
-  dug = tryDigging(adapter, collapse, vert, badElements, FPP);
+#else
+  FPP = 0;
+#endif
+  if (adapter->mesh->getDimension() == 2)
+    moved = tryMoving(adapter, vert, snapTag);
+  else
+    dug = tryDigging(adapter, collapse, vert, badElements, FPP);
   delete FPP;
-  if (!dug)
+  if (!dug && !moved)
     return false;
   return trySnapping(adapter, snapTag, vert, badElements);
 }
@@ -273,8 +342,7 @@ bool FirstProblemPlane::find()
 
     if (ok){
       if (isInf)
-      	std::cout << "Info: Found Infinitely Many Intersection Points!" <<
-      	  std::endl;
+        lion_oprint(1, "Info: Found Infinitely Many Intersection Points!\n");
       Vector newDirection = intersect - ray.start;
       if (newDirection.getLength() < minDist) {
 	dists.push_back(newDirection.getLength());
@@ -359,8 +427,8 @@ FirstProblemPlane::intersectRayFace(const Ray& ray, const std::vector<Vector>& c
   bool res = false;
   isInf = false;
   if (coords.size() != 3){
-    std::cout << "coords.size() is " << coords.size() << std::endl;
-    std::cout << "No implementation for non-tri faces!" << std::endl;
+    lion_oprint(1,"coords.size() is %d\n", coords.size());
+    lion_oprint(1,"No implementation for non-tri faces!\n");
     res = false;
   }
 

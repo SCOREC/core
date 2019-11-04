@@ -83,7 +83,8 @@ static void compressed_write(pcu_file* pf, void const* data, size_t size)
   int bzerror;
   int len;
   void* bzip2_is_not_const_correct;
-  PCU_ALWAYS_ASSERT(size < INT_MAX);
+  PCU_ALWAYS_ASSERT_VERBOSE(size < INT_MAX, 
+    "partition the mesh further or disable bz2 mesh compression\n");
   len = size;
   bzip2_is_not_const_correct = (void*)data;
   BZ2_bzWrite(&bzerror, pf->bzf, bzip2_is_not_const_correct, len);

@@ -3,6 +3,7 @@
 #include "apfMesh2.h"
 #include "apfShape.h"
 #include "gmi.h" /* this is for gmi_getline... */
+#include <lionPrint.h>
 
 #include <cstdio>
 #include <cstring>
@@ -61,7 +62,7 @@ void initReader(Reader* r, apf::Mesh2* m, const char* filename)
   r->mesh = m;
   r->file = fopen(filename, "r");
   if (!r->file) {
-    fprintf(stderr,"couldn't open Gmsh file \"%s\"\n",filename);
+    lion_eprint(1,"couldn't open Gmsh file \"%s\"\n",filename);
     abort();
   }
   r->line = static_cast<char*>(malloc(1));

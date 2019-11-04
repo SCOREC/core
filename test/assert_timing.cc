@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdio>
 #include <cstdlib>
@@ -8,9 +9,7 @@
 double check_c_assert() {
   double t0 = PCU_Time();
   for (int i = 0; i < 100000000; ++i) {
-    double j = (double)i;
-    double k = (double)i + 1.0;
-    assert(pow(j, 1.01) < pow(k, 1.02));
+    assert(pow((double)i, 1.01) < pow((double)i +1.0, 1.02));
   }
   double t1 = PCU_Time();
   return t1-t0;
@@ -32,6 +31,7 @@ int main(int argc, char** argv) {
   int opt = atoi(argv[1]);
   MPI_Init(0,0);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   /* i'm avoiding conditionals inside for loops b/c
      i'm paranoid about the timings even though timings
      should not be affected by them at all... */

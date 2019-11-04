@@ -71,7 +71,7 @@ class FixedMetricIntegrator : public apf::Integrator
 };
 
 
-double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
+static double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
 {
   FixedMetricIntegrator integrator(mesh, Q);
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
@@ -80,15 +80,48 @@ double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
   return integrator.measurement;
 }
 
-double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
+static Matrix getMetricWithMaxJacobean(Mesh* m, SizeField* sf,
+    Entity* e)
 {
-  /* currently, we are using Q at the center of the tri.
-   * In the future we may want to used average of Q over the tri */
+  int dim = m->getDimension();
+  int type = m->getType(e);
+  PCU_ALWAYS_ASSERT(type == apf::Mesh::TRIANGLE ||
+		    type == apf::Mesh::TET);
+  Downward dv;
+  int nd = m->getDownward(e, 0, dv);
+
   Matrix Q;
-  apf::MeshElement* me = createMeshElement(m, tri);
-  Vector xi(1./3., 1./3., 1./3.);
-  f->getTransform(me, xi, Q);
-  apf::destroyMeshElement(me);
+  double maxJ = -1.0;
+
+  for (int i = 0; i < nd; i++) {
+    apf::MeshElement* me = createMeshElement(m, dv[i]);
+    Matrix currentQ;
+    sf->getTransform(me, Vector(0.0, 0.0, 0.0), currentQ);
+    double currentJ = apf::getJacobianDeterminant(currentQ, dim);
+    if (currentJ > maxJ) {
+      maxJ = currentJ;
+      Q = currentQ;
+    }
+    apf::destroyMeshElement(me);
+  }
+  return Q;
+}
+
+double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax)
+{
+  /* By default, we are using Q at the center of the tri.
+   * If useMax is true metric at a (downward) vertex with the
+   * largest determinant is used.
+   * Note: In the future we may want to used average of Q over the tri */
+  Matrix Q;
+  if (useMax)
+    Q = getMetricWithMaxJacobean(m, f, tri);
+  else {
+    apf::MeshElement* me = createMeshElement(m, tri);
+    Vector xi(1./3., 1./3., 1./3.);
+    f->getTransform(me, xi, Q);
+    apf::destroyMeshElement(me);
+  }
 
   Entity* e[3];
   m->getDownward(tri,1,e);
@@ -103,15 +136,21 @@ double measureTriQuality(Mesh* m, SizeField* f, Entity* tri)
 }
 
 /* applies the mean ratio cubed formula from Li's thesis */
-double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
+double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax)
 {
-  /* currently, we are using Q at the center of the tet.
-   * In the future we may want to used average of Q over the tet */
+  /* By default, we are using Q at the center of the tet.
+   * If useMax is true metric at a (downward) vertex with the
+   * largest determinant is used.
+   * Note: In the future we may want to used average of Q over the tet */
   Matrix Q;
-  apf::MeshElement* me = createMeshElement(m, tet);
-  Vector xi(0.25, 0.25, 0.25);
-  f->getTransform(me, xi, Q);
-  apf::destroyMeshElement(me);
+  if (useMax)
+    Q = getMetricWithMaxJacobean(m, f, tet);
+  else {
+    apf::MeshElement* me = createMeshElement(m, tet);
+    Vector xi(0.25, 0.25, 0.25);
+    f->getTransform(me, xi, Q);
+    apf::destroyMeshElement(me);
+  }
 
   Entity* e[6];
   m->getDownward(tet,1,e);
@@ -127,9 +166,9 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet)
   return 15552*(V*V)/(s*s*s);
 }
 
-double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
+double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax)
 {
-  typedef double (*MeasureQualityFunction)(Mesh*,SizeField*,Entity*);
+  typedef double (*MeasureQualityFunction)(Mesh*,SizeField*,Entity*,bool);
   static MeasureQualityFunction table[apf::Mesh::TYPES] =
   {0
   ,0
@@ -139,16 +178,30 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e)
   ,0
   ,0
   ,0};
-  return table[m->getType(e)](m,f,e);
+  return table[m->getType(e)](m,f,e,useMax);
 }
 
 double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
   PCU_ALWAYS_ASSERT(n);
+  Mesh* m = a->mesh;
   ShapeHandler* sh = a->shape;
-  double worst = sh->getQuality(e[0]);
+  double worst;
+  if (m->hasTag(e[0], a->qualityCache))
+    worst = getCachedQuality(a, e[0]);
+  else {
+    worst = sh->getQuality(e[0]);
+    setCachedQuality(a, e[0], worst);
+  }
   for (size_t i = 1; i < n; ++i) {
-    double quality = sh->getQuality(e[i]);
+    double quality;
+    if (m->hasTag(e[i], a->qualityCache)) {
+      quality = getCachedQuality(a, e[i]);
+    }
+    else {
+      quality = sh->getQuality(e[i]);
+      setCachedQuality(a, e[i], quality);
+    }
     if (quality < worst)
       worst = quality;
   }
@@ -170,6 +223,60 @@ bool hasWorseQuality(Adapt* a, EntityArray& e, double qualityToBeat)
       return true;
   }
   return false;
+}
+
+enum {MIN, MAX};
+
+static Entity* getMinOrMaxEdgeLength(Adapt* a, EntityArray& ents, double& minOrMax
+    , int mode)
+{
+  Mesh* m = a->mesh;
+  SizeField* sf = a->sizeField;
+
+  int type = 0;
+  for (size_t i = 0; i < ents.getSize(); i++) {
+    type = m->getType(ents[0]);
+    PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
+  }
+
+  double maxLength = 0.;
+  double minLength = 1.e10;
+  Entity* longEdge = 0;
+  Entity* shortEdge = 0;
+  Entity* edge = 0;
+  for (size_t i = 0; i < ents.getSize(); i++) {
+    Entity* ent = ents[i];
+    // iter over downward edges and update {min,max}length
+    Downward down;
+    int nd = m->getDownward(ent, 1, down);
+    for (int j = 0; j < nd; j++) {
+      double length = sf->measure(down[j]);
+      if (length > maxLength) {
+      	maxLength = length;
+      	longEdge = down[j];
+      }
+      if (length < minLength) {
+      	minLength = length;
+      	shortEdge = down[j];
+      }
+    }
+  }
+
+  PCU_ALWAYS_ASSERT(longEdge != shortEdge);
+
+  minOrMax = (mode == MIN) ? minLength : maxLength;
+  edge     = (mode == MIN) ? shortEdge : longEdge;
+  return edge;
+}
+
+Entity* getMaxEdgeLength(Adapt* a, EntityArray& ents, double& maxLength)
+{
+  return getMinOrMaxEdgeLength(a, ents, maxLength, MAX);
+}
+
+Entity* getMinEdgeLength(Adapt* a, EntityArray& ents, double& minLength)
+{
+  return getMinOrMaxEdgeLength(a, ents, minLength, MIN);
 }
 
 /* applies the same measure as measureTetQuality

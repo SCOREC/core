@@ -1,23 +1,32 @@
-ZOLTAN_DIR=/usr/local/zoltan/3.81/mpich3.1.2
-PARMETIS_DIR=/usr/local/parmetis/4.0.3/mpich3.1.2
 PREFIX=/lore/seol/mpich3-gcc4.9.2-install
-
+SIM_VER=14.0-190513dev
+SIM_ARCHOS=x64_rhel6_gcc44
+PARMETIS_INSTALL_DIR=/usr/local/parmetis/4.0.3/mpich3.1.2 
+ZOLTAN_INSTALL_DIR=/lore/seol/mpich3-gcc4.9.2-install
 cmake .. \
   -DCMAKE_C_COMPILER="/usr/local/mpich3/latest/bin/mpicc" \
   -DCMAKE_CXX_COMPILER="/usr/local/mpich3/latest/bin/mpicxx" \
   -DCMAKE_C_FLAGS=" -g -O0 -DDEBUG -Wall -Wextra -Werror" \
   -DCMAKE_CXX_FLAGS=" -g -O0 -DDEBUG -Wall -Wextra -Werror" \
   -DENABLE_ZOLTAN=ON \
-  -DZOLTAN_INCLUDE_DIR="$ZOLTAN_DIR/include" \
-  -DZOLTAN_LIBRARY="$ZOLTAN_DIR/lib/libzoltan.a" \
-  -DPARMETIS_INCLUDE_DIR="$PARMETIS_DIR/include" \
-  -DPARMETIS_LIBRARY="$PARMETIS_DIR/lib/libparmetis.so" \
-  -DMETIS_LIBRARY="$PARMETIS_DIR/lib/libmetis.so" \
+  -DZOLTAN_INCLUDE_DIR="$ZOLTAN_INSTALL_DIR/include" \
+  -DZOLTAN_LIBRARY="$ZOLTAN_INSTALL_DIR/lib/libzoltan.a" \
+  -DMETIS_INCLUDE_DIR="$PARMETIS_INSTALL_DIR/include" \
+  -DMETIS_LIBRARY="$PARMETIS_INSTALL_DIR/lib/libmetis.a" \
+  -DPARMETIS_INCLUDE_DIR="$PARMETIS_INSTALL_DIR/include" \
+  -DPARMETIS_LIBRARY="$PARMETIS_INSTALL_DIR/lib/libparmetis.a" \
+  -DENABLE_SIMMETRIX=OFF \
+  -DSIM_MPI=mpich3 \
+  -DSIM_DISCRETE=ON \
+  -DSIMMETRIX_INCLUDE_DIR=/net/common/meshSim/$SIM_VER/include \
+  -DSIMMETRIX_LIB_DIR=/net/common/meshSim/$SIM_VER/lib/$SIM_ARCHOS \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DSCOREC_CXX_WARNINGS=ON \
-  -DBUILD_EXES=ON \
-  -DIS_TESTING=ON \
-  -DMESHES=/fasttmp/seol/scorec/meshes \
+  -DSCOREC_CXX_OPTIMIZE=OFF \
+  -DUSE_XSDK_DEFAULTS=OFF \
+  -DSCOREC_ENABLE_CXX11=ON \
+  -DBUILD_EXES=OFF \
+  -DIS_TESTING=OFF \
+  -DMESHES=/lore/seol/meshes \
   -DMPIRUN=/usr/local/mpich3/latest/bin/mpirun \
   -DCMAKE_BUILD_TYPE=Debug
-

@@ -33,7 +33,37 @@ void transferParametricOnEdgeSplit(
     Entity* e,
     double t,
     Vector& p);
+void transferParametricOnTriSplit(
+    Mesh* m,
+    Entity* face,
+    const Vector& xi,
+    Vector& param);
 void transferParametricOnQuadSplit(
+    Mesh* m,
+    Entity* quad,
+    Entity* v01,
+    Entity* v32,
+    double y,
+    Vector& p);
+
+void getClosestPointParametricCoordinates(
+    apf::Mesh* m,
+    Model* g,
+    double t,
+    Vector const& a,
+    Vector const& b,
+    Vector& p);
+void transferToClosestPointOnEdgeSplit(
+    Mesh* m,
+    Entity* e,
+    double t,
+    Vector& p);
+void transferToClosestPointOnTriSplit(
+    Mesh* m,
+    Entity* face,
+    const Vector& xi,
+    Vector& param);
+void transferToClosestPointOnQuadSplit(
     Mesh* m,
     Entity* quad,
     Entity* v01,

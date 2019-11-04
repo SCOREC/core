@@ -1,4 +1,5 @@
 #include "apfMDS.h"
+#include <lionPrint.h>
 #include <apfMesh2.h>
 #include <apfShape.h>
 #include <apfNumbering.h>
@@ -79,7 +80,7 @@ static void parseNodes(const char* nodefile, Nodes& nodes)
 {
   std::ifstream f(nodefile);
   if (!f.is_open()) {
-    fprintf(stderr, "couldn't open ANSYS node file \"%s\"\n", nodefile);
+    lion_eprint(1, "couldn't open ANSYS node file \"%s\"\n", nodefile);
     abort();
   }
   std::pair<int, apf::Vector3> entry;
@@ -94,7 +95,7 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
   Mesh2* m = 0;
   std::ifstream f(elemfile);
   if (!f.is_open()) {
-    fprintf(stderr, "couldn't open ANSYS elem file \"%s\"\n", elemfile);
+    lion_eprint(1, "couldn't open ANSYS elem file \"%s\"\n", elemfile);
     abort();
   }
   Vertices verts;
@@ -118,7 +119,7 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
     Downward ev;
     for (int i = 0; i < nen; ++i)
       if (!nodes.count(en[i])) {
-        fprintf(stderr, "node %d in file \"%s\" not found in node file\n",
+        lion_eprint(1, "node %d in file \"%s\" not found in node file\n",
             en[i], elemfile);
         abort();
       }

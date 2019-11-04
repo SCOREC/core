@@ -3,6 +3,7 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <apfPartition.h>
@@ -57,7 +58,10 @@ void getConfig(int argc, char** argv)
   if ( argc != 5 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: mpirun -n <outPartCount> %s"
-             " <model> <inPartCount> <inMesh> <outMesh>\n",
+             " <model> <inPartCount> <inMesh> <outMesh>\n"
+             "Increase the part count of inMesh from inPartCount to outPartCount.\n"
+             "Unlike the [z]split tool, outPartCount does not have to be an integer\n"
+             "multiple of inPartCount.\n",
              argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -92,6 +96,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
   gmi_model* g = gmi_load(modelFile);

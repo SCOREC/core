@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
   MS_init(); // initial MeshSim library
   SimModel_start();
-  Sim_readLicenseFile("/net/common/meshSim/license/license.txt");
+  Sim_readLicenseFile(0);
   Sim_logOn("createDM.log");
   SimParasolid_start(1);
   SimDiscrete_start(0);

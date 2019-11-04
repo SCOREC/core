@@ -7,6 +7,7 @@
 
 #include "spr.h"
 #include "apfMesh.h"
+#include "apfShape.h"
 #include <pcu_util.h>
 
 namespace spr {
@@ -16,8 +17,16 @@ apf::Field* getGradIPField(apf::Field* f, const char* name, int order)
   PCU_ALWAYS_ASSERT(f);
   apf::Mesh* m = getMesh(f);
   int vt = apf::getValueType(f);
-  PCU_ALWAYS_ASSERT(vt == apf::SCALAR || vt == apf::VECTOR);
-  apf::Field* ip_field = apf::createIPField(m,name,vt+1,order);
+  PCU_ALWAYS_ASSERT(vt == apf::SCALAR || vt == apf::VECTOR || vt == apf::MATRIX);
+  apf::Field* ip_field = NULL;
+  if (vt == apf::MATRIX)
+  {
+    ip_field = apf::createPackedField(m, name, 27, apf::getIPShape(m->getDimension(), order));
+  }
+  else
+  {
+    ip_field = apf::createIPField(m,name,vt+1,order);
+  }
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
   while ((e = m->iterate(it)))
@@ -35,11 +44,17 @@ apf::Field* getGradIPField(apf::Field* f, const char* name, int order)
         apf::getGrad(fe,xi,value);
         apf::setVector(ip_field,e,p,value);
       }
-      else
+      else if (vt == apf::VECTOR)
       {
         apf::Matrix3x3 value;
         apf::getVectorGrad(fe,xi,value);
         apf::setMatrix(ip_field,e,p,value);
+      }
+      else if (vt == apf::MATRIX)
+      {
+        apf::Vector<27> value;
+        apf::getMatrixGrad(fe, xi, value);
+        apf::setComponents(ip_field, e, p, &value[0]);
       }
     }
     apf::destroyElement(fe);

@@ -19,6 +19,7 @@ set(APF_SOURCES
   apfDynamicMatrix.cc
   apfDynamicVector.cc
   apfMatrixField.cc
+  apfMatrixElement.cc
   apfMesh.cc
   apfMesh2.cc
   apfMigrate.cc
@@ -69,6 +70,9 @@ set(APF_HEADERS
   apfConvert.h
   apfGeometry.h
   apf2mth.h
+  apfField.h
+  apfFieldData.h
+  apfNumberingClass.h
 )
 
 set(APF_SOURCES

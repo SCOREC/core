@@ -10,11 +10,6 @@ FieldData::~FieldData()
 {
 }
 
-FieldData* FieldData::clone()
-{
-  abort();
-}
-
 void FieldData::rename(const char*)
 {
   abort();
@@ -81,7 +76,7 @@ template void synchronizeFieldData<int>(FieldDataOf<int>*, Sharing*, bool);
 template void synchronizeFieldData<double>(FieldDataOf<double>*, Sharing*, bool);
 template void synchronizeFieldData<long>(FieldDataOf<long>*, Sharing*, bool);
 
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr)
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, const ReductionOp<double>& reduce_op /* =ReductionSum<double>() */)
 {
   FieldBase* f = data->getField();
   Mesh* m = f->getMesh();
@@ -95,29 +90,55 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
   {
     if ( ! s->hasNodesIn(d))
       continue;
+
     MeshEntity* e;
     MeshIterator* it = m->begin(d);
     PCU_Comm_Begin();
     while ((e = m->iterate(it)))
     {
-      if (( ! data->hasEntity(e)) || m->isGhost(e) ||
-          (shr->isOwned(e)))
-        continue; /* non-owners send to owners */
-      
+      /* send to all parts that can see this entity */
+      if ( ! data->hasEntity(e) )
+        continue;
+ 
+      if (m->isGhost(e) && shr->isShared(e))
+      {
+        // zero out ghost values (because we reduce only over non-ghost values)
+        int n = f->countValuesOn(e);
+        NewArray<double> values(n);
+        for (int i=0; i < n; ++i)
+          values[i] = reduce_op.getNeutralElement();
+
+        data->set(e, &(values[0]));
+        continue;
+      }
+
+      // copies
       CopyArray copies;
       shr->getCopies(e, copies);
       int n = f->countValuesOn(e);
       NewArray<double> values(n);
       data->get(e,&(values[0]));
-      /* actually, non-owners send to all others,
-         since apf::Sharing doesn't identify the owner */
+
       for (size_t i = 0; i < copies.getSize(); ++i)
       {
         PCU_COMM_PACK(copies[i].peer, copies[i].entity);
         PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
       }
+
+      // ghosts - only do them if this entity is on a partition boundary
+      if (copies.getSize() > 0)
+      {
+        apf::Copies ghosts;
+        if (m->getGhosts(e, ghosts))
+        APF_ITERATE(Copies, ghosts, it2)
+        {
+          PCU_COMM_PACK(it2->first, it2->second);
+          PCU_Comm_Pack(it2->first, &(values[0]), n*sizeof(double));
+        }
+      }
     }
     m->end(it);
+
     PCU_Comm_Send();
     while (PCU_Comm_Listen())
       while ( ! PCU_Comm_Unpacked())
@@ -131,11 +152,13 @@ void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_sh
         PCU_Comm_Unpack(&(inValues[0]),n*sizeof(double));
         data->get(e,&(values[0]));
         for (int i = 0; i < n; ++i)
-          values[i] += inValues[i];
+          values[i] = reduce_op.apply(values[i], inValues[i]);
         data->set(e,&(values[0]));
       }
-  } /* broadcast back out to non-owners */
-  synchronizeFieldData(data, shr, delete_shr);
+  }
+
+  // every partition did the reduction,s o no need to broadcast the result
+  if (delete_shr) delete shr;
 }
 
 template <class T>

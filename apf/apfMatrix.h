@@ -237,6 +237,18 @@ int eigen(Matrix3x3 const& A,
           Vector<3>* eigenVectors,
           double* eigenValues);
 
+/**
+ * This function applies a function to a symmetric tensor. Using the
+ * polar decomposition theorem. One example is taking the sqrt of a
+ * tensor
+ * \param A a square matrix
+ * \param callback a function pointer that takes a double and returns
+ * a double. This is the function that will be applied to the matrix.
+ * \param newMat a matrix that contains the results of the operation
+ */
+template <std::size_t M>
+void applyMatrixFunc(Matrix<M,M> const& A, double (*callback)(double), Matrix<M,M> & newMat);
+
 }//namespace apf
 
 template <std::size_t M, std::size_t N>

@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maShape.h"
 #include "maShapeHandler.h"
+#include "maSnap.h"
 #include <cstdio>
 #include <pcu_util.h>
 
@@ -338,6 +339,7 @@ class EdgeSwap2D : public EdgeSwap
       on[0] = getTriNormal(mesh, otv[0]); on[1] = getTriNormal(mesh, otv[1]);
       Vector nn[2];
       nn[0] = getTriNormal(mesh, ntv[0]); nn[1] = getTriNormal(mesh, ntv[1]);
+      if (on[0] * on[1] < 1e-16) return false;
       if ((on[0] * nn[0] > 0) &&
           (on[0] * nn[1] > 0) &&
           (on[1] * nn[0] > 0) &&
@@ -365,6 +367,29 @@ class EdgeSwap2D : public EdgeSwap
     {
       return getWorstQuality(adapter,newFaces,2)
            > getWorstQuality(adapter,oldFaces);
+    }
+    bool didBreakGeomConsistency()
+    {
+      if (! mesh->canGetModelNormal())
+      	return false;
+      Vector faceNormal0 = getTriNormal(mesh, newFaces[0]);
+      Vector faceNormal1 = getTriNormal(mesh, newFaces[1]);
+
+      Vector p0;
+      Vector p1;
+      transferParametricOnTriSplit(mesh, newFaces[0],
+      	  Vector(1./3., 1./3., 1./3.), p0);
+      transferParametricOnTriSplit(mesh, newFaces[1],
+      	  Vector(1./3., 1./3., 1./3.), p1);
+
+      Vector modelNormal0;
+      Vector modelNormal1;
+      mesh->getNormal(mesh->toModel(newFaces[0]), p0, modelNormal0);
+      mesh->getNormal(mesh->toModel(newFaces[1]), p1, modelNormal1);
+
+      if ( (faceNormal0 * modelNormal0) * (faceNormal1 * modelNormal1) > 0)
+      	return false;
+      return true;
     }
     void destroyOldFaces()
     {
@@ -401,7 +426,7 @@ class EdgeSwap2D : public EdgeSwap
       makeNewFaces();
       cavity.afterBuilding();
       cavity.fit(oldFaces);
-      if ( ! didImproveQuality())
+      if ( ! didImproveQuality() || didBreakGeomConsistency() )
       {
         cancel();
         return false;

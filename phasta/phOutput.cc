@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "phOutput.h"
 #include "phGrowthCurves.h"
 #include "phLinks.h"
@@ -31,23 +32,24 @@ static void getCounts(Output& o)
 
 static void checkLoadBalance(Output& o)
 {
-  int sumOwnedNodes = PCU_Add_Int(o.nOwnedNodes);
-  double vlbratio = o.nOverlapNodes * PCU_Comm_Peers() / (double) sumOwnedNodes;
+  long sumOwnedNodes = PCU_Add_Long(o.nOwnedNodes);
+  long sumAllNodes = PCU_Add_Long(o.nOverlapNodes);
+  double avgNodes = static_cast<double>(sumAllNodes) / PCU_Comm_Peers();
+  double vlbratio = o.nOverlapNodes / avgNodes;
   double vlbratio_max = PCU_Max_Double(vlbratio);
   if (!PCU_Comm_Self())
-    printf("max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
-
-  int sumAllNodes = PCU_Add_Int(o.nOverlapNodes);
+    lion_oprint(1,"max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
   if (!PCU_Comm_Self())
-    printf("ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
+    lion_oprint(1,"ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
 
   int dim = o.mesh->getDimension();
   int numElms = o.mesh->count(dim);
-  int sumElms = PCU_Add_Int(numElms);
-  double elbratio = numElms * PCU_Comm_Peers() / (double) sumElms;
+  long sumElms = PCU_Add_Long(numElms);
+  double avgElms = static_cast<double>(sumElms) / PCU_Comm_Peers();
+  double elbratio = numElms / avgElms;
   double elbratio_max = PCU_Max_Double(elbratio);
   if (!PCU_Comm_Self())
-    printf("max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
+    lion_oprint(1,"max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
 }
 
 static void getCoordinates(Output& o)
@@ -74,10 +76,11 @@ static void getM2GFields(Output& o) {
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
   int n = m->count(0);
-  int* classinfo = new int[n * 3];
-  double* params = new double[n * 2];
+  o.arrays.m2gClsfcn = new int[n * 3];
+  o.arrays.m2gParCoord = new double[n * 2];
   apf::MeshEntity* v;
   apf::Vector3 pm;
+  for (int j = 0; j < 3; ++j) pm[j] = 0.0;
   int i = 0;
   apf::MeshIterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
@@ -85,24 +88,18 @@ static void getM2GFields(Output& o) {
     int dim = gmi_dim(gm,ge);
     int tag = gmi_tag(gm,ge);
     int dis = gmi_is_discrete_ent(gm,ge);
-    if (dim > 2) { // region vertex has no param coord
-      for (int j = 0; j < 3; ++j)
-        pm[j] = 0.0;
-    }
-    else {
+    if (dim < 3) { // region vertex has no param coord
       m->getParam(v, pm);
     }
-    classinfo[i]     = dim;
-    classinfo[n+i]   = tag;
-    classinfo[2*n+i] = dis;
-    for (int j = 0; j < 2; ++j)
-      params[j * n + i] = pm[j];
+    o.arrays.m2gClsfcn[i]     = dim;
+    o.arrays.m2gClsfcn[n+i]   = tag;
+    o.arrays.m2gClsfcn[2*n+i] = dis;
+    o.arrays.m2gParCoord[i]   = pm[0];
+    o.arrays.m2gParCoord[n+i] = pm[1];
     ++i;
   }
   m->end(it);
   PCU_ALWAYS_ASSERT(i == n);
-  o.arrays.m2gClsfcn = classinfo;
-  o.arrays.m2gParCoord = params;
 }
 
 /* so apparently old phParAdapt just used EN_id,
@@ -254,10 +251,12 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != boundaryDim)
       continue;
-    apf::Matches matches;
-    m->getMatches(f, matches);
-    if (matches.getSize() == 1) // This prevents adding interface elements...
-      continue;
+    if (getBCValue(m->getModel(), bcs.fields["DG interface"], (gmi_ent*) me) != 0){
+      apf::DgCopies dgCopies;
+      m->getDgCopies(f, dgCopies);
+      if (dgCopies.getSize() == 1) // This prevents adding interface elements...
+        continue;
+    }
     if (m->countUpward(f)>1)   // don't want interior region boundaries here...
       continue;
     gmi_ent* gf = (gmi_ent*)me;
@@ -297,6 +296,103 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
   o.arrays.mattypeb = mattypeb;
   o.arrays.ibcb = ibcb;
   o.arrays.bcb = bcb;
+}
+
+static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
+  PCU_Comm_Begin();
+  apf::Mesh* m = o.mesh;
+  gmi_model* gm = m->getModel();
+  int rbID = 0; // id - set by user
+  int rbMT = 0; // model tag
+  std::map<int, int> rbIDmap; // map id to model tag
+  std::map<int, int>::iterator rit;
+  int nv = m->count(0);
+  int* f = new int[nv];
+  o.numRigidBody = 0;
+
+// initialize f with -1 for all mesh vertices
+  for(int i = 0; i < nv; i++) f[i] = -1;
+
+// set rigid body tag on mesh vertices
+  std::string name("rigid body");
+  if (haveBC(bcs, name)) {
+    FieldBCs& fbcs = bcs.fields[name];
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* e;
+    while ((e = m->iterate(it))) {
+      double* floatID = NULL;
+      gmi_ent* ge = (gmi_ent*) m->toModel(e);
+      /* actually rigid body not support 2D currently */
+      if (gmi_dim(gm, ge) == m->getDimension()) {
+        floatID = getBCValue(gm, fbcs, ge);
+        rbMT = gmi_tag(gm, ge);
+      }
+      else {
+        gmi_set* s = gmi_adjacent(gm, ge, m->getDimension());
+        for (int i = 0; i < s->n; i++) {
+          floatID = getBCValue(gm, fbcs, s->e[i]);
+          rbMT = gmi_tag(gm, s->e[i]);
+          if (floatID) break;
+        }
+        gmi_free_set(s);
+      }
+      if (floatID) {
+        PCU_ALWAYS_ASSERT(!gmi_is_discrete_ent(gm,ge));
+        rbID = (int)(*floatID+0.5);
+// add to map if not find
+        rit = rbIDmap.find(rbID);
+        if(rit == rbIDmap.end()) {
+          rbIDmap[rbID] = rbMT;
+          PCU_Comm_Pack(0, &rbID, sizeof(int));
+          PCU_Comm_Pack(0, &rbMT, sizeof(int));
+        }
+        int vID = apf::getNumber(n, e, 0, 0);
+        if(f[vID] > -1 && f[vID] != rbID) {
+          lion_eprint(1,"not support multiple rigid bodies on one mesh vertex\n");
+        }
+        else if (f[vID] == -1) {
+          f[vID] = rbID;
+        }
+      }
+    }
+    m->end(it);
+  } // end if rigid body attribute exists
+
+// master receives and form the complete set
+  PCU_Comm_Send();
+  while (PCU_Comm_Receive()) {
+    int rrbID = 0;
+    int rrbMT = 0;
+    PCU_Comm_Unpack(&rrbID, sizeof(int));
+    PCU_Comm_Unpack(&rrbMT, sizeof(int));
+    rit = rbIDmap.find(rrbID);
+    if(rit == rbIDmap.end())
+      rbIDmap[rrbID] = rrbMT;
+  }
+
+  int rbIDs_size = PCU_Max_Int(rbIDmap.size());
+  int* rbIDs = new int[rbIDs_size]();
+  int* rbMTs = new int[rbIDs_size]();
+
+  if (!PCU_Comm_Self()) {
+    int count = 0;
+    for (rit=rbIDmap.begin(); rit!=rbIDmap.end(); rit++) {
+      rbIDs[count] = rit->first;
+      rbMTs[count] = rit->second;
+      count++;
+    }
+    PCU_ALWAYS_ASSERT(count == rbIDs_size);
+  }
+
+// allreduce the set
+  PCU_Max_Ints(rbIDs, rbIDs_size);
+  PCU_Max_Ints(rbMTs, rbIDs_size);
+
+// attach data
+  o.numRigidBody = rbIDs_size;
+  o.arrays.rigidBodyIDs = rbIDs;
+  o.arrays.rigidBodyMTs = rbMTs;
+  o.arrays.rigidBodyTag = f;
 }
 
 bool checkInterface(Output& o, BCs& bcs) {
@@ -339,7 +435,7 @@ bool checkInterface(Output& o, BCs& bcs) {
   PCU_ALWAYS_ASSERT(aID!=bID); //assert different material ID on two sides
   PCU_ALWAYS_ASSERT(a==b); //assert same number of faces on each side
   if (PCU_Comm_Self() == 0)
-    printf("Checked! Same number of faces on each side of interface.\n");
+    lion_oprint(1,"Checked! Same number of faces on each side of interface.\n");
   return true;
 }
 
@@ -405,11 +501,11 @@ static void getInterface
       continue;
     if (m->getModelType(me) != interfaceDim)
       continue;
-    apf::Matches matches;
-    m->getMatches(face, matches);
-    PCU_ALWAYS_ASSERT(matches.getSize() == 1);
+    apf::DgCopies dgCopies;
+    m->getDgCopies(face, dgCopies);
+    PCU_ALWAYS_ASSERT(dgCopies.getSize() == 1);
     apf::MeshEntity* e0 = m->getUpward(face, 0);
-    apf::MeshEntity* e1 = m->getUpward(matches[0].entity, 0);
+    apf::MeshEntity* e1 = m->getUpward(dgCopies[0].entity, 0);
     /* in order to avoid repeatation of elements */
     if (e0 > e1)
       continue;
@@ -423,13 +519,13 @@ static void getInterface
     int nv1 = k.nElementVertices1;
     apf::Downward v0, v1;
     getBoundaryVertices(m, e0, face, v0);
-    getBoundaryVertices(m, e1, matches[0].entity, v1);
+    getBoundaryVertices(m, e1, dgCopies[0].entity, v1);
 
     /* make sure the first vertex on side 0 is the first on side 1 */
     apf::Downward fverts0, fverts1;
 
     int nbv0 = m->getDownward(face,0,fverts0);
-    int nbv1 = m->getDownward(matches[0].entity,0,fverts1);
+    int nbv1 = m->getDownward(dgCopies[0].entity,0,fverts1);
 
     PCU_ALWAYS_ASSERT(nbv0 == nbv1);
 
@@ -461,7 +557,7 @@ static void getInterface
     ienif0[i][j] = new int[nv0];
     ienif1[i][j] = new int[nv1];
     checkBoundaryVertex(m, face,              v0, k.elementType );
-    checkBoundaryVertex(m, matches[0].entity, v1, k.elementType1);
+    checkBoundaryVertex(m, dgCopies[0].entity, v1, k.elementType1);
     for (int k = 0; k < nv0; ++k)
       ienif0[i][j][k] = apf::getNumber(n, v0[k], 0, 0);
     for (int k = 0; k < nv1; ++k)
@@ -746,7 +842,7 @@ static void getInitialConditions(BCs& bcs, Output& o)
   Input& in = *o.in;
   if (in.solutionMigration) {
     if (!PCU_Comm_Self())
-      printf("All attribute-based initial conditions, "
+      lion_oprint(1,"All attribute-based initial conditions, "
              "if any, "
              "are ignored due to request for SolutionMigration\n");
     return;
@@ -902,18 +998,23 @@ Output::~Output()
   delete [] arrays.iel;
   delete [] arrays.ileo;
   delete [] arrays.ile;
-  if (nGrowthCurves > 0) {
+//-------growth curve--------
+  if (in->simmetrixMesh) {
     delete [] arrays.gcflt;
     delete [] arrays.gcgr;
     delete [] arrays.igcnv;
     delete [] arrays.igclv;
     delete [] arrays.igclvid;
   }
+//---------------------------
   if (in->mesh2geom) {
     delete [] arrays.m2gClsfcn;
     delete [] arrays.m2gParCoord;
   }
   delete [] arrays.interfaceFlag;
+  delete [] arrays.rigidBodyIDs;
+  delete [] arrays.rigidBodyMTs;
+  delete [] arrays.rigidBodyTag;
 }
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
@@ -936,6 +1037,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   getInterfaceFlag(o, bcs);
   getInterface(o, bcs, n);
   checkInterface(o,bcs);
+  getRigidBody(o,bcs,n);
   getLocalPeriodicMasters(o, n, bcs);
   getEdges(o, n, rn, bcs);
   getGrowthCurves(o);
@@ -952,7 +1054,7 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
     initBubbles(o.mesh, in);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("generated output structs in %f seconds\n",t1 - t0);
+    lion_oprint(1,"generated output structs in %f seconds\n",t1 - t0);
 }
 
 }

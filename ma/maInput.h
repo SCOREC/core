@@ -51,6 +51,9 @@ class Input
 /** \brief whether to transfer parametric coordinates
   \details requires modeler support, see gmi_reparam */
     bool shouldTransferParametric;
+/** \brief whether to transfer to the parametric coords of the closest point
+  \details requires modeler support, see gmi_closest_point */
+    bool shouldTransferToClosestPoint;
 /** \brief whether to update matched entity info (limited support) */
     bool shouldHandleMatching;
 /** \brief whether to run shape correction (default true) */
@@ -62,6 +65,9 @@ class Input
 /** \brief minimum desired mean ratio cubed for simplex elements
    \details a different measure is used for curved elements */
     double goodQuality;
+/** \brief whether to check the quality of split elems in DoubleSplitsCollapse
+   (default false) */
+    double shouldCheckQualityForDoubleSplits;
 /** \brief minimum valid mean ratio cubed for simplex elements (default 1e-10)
    \details used to define inside-out tetrahedra.
    a different measure is used for curved elements */
@@ -97,17 +103,23 @@ class Input
     bool shouldCoarsenLayer;
 /** \brief set to true during UR to get splits in the normal direction */
     bool splitAllLayerEdges;
+/** \brief the name of the (user defined) INT tag specifying the boundary
+    layer elements. Use the value of 0 for non-layer elements and a non-zero value
+    for layer elements. (default "") */
+    const char* userDefinedLayerTagName;
 /** \brief this a folder that debugging meshes will be written to, if provided! */
     const char* debugFolder;
 };
 
 /** \brief generate a configuration based on an anisotropic function.
  \param s if non-zero, use that to transfer all fields. otherwise,
-          transfer any associated fields with default algorithms */
+          transfer any associated fields with default algorithms
+ \param logInterpolation if true uses logarithmic interpolation */
 Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
-    SolutionTransfer* s=0);
+    SolutionTransfer* s=0,
+    bool logInterpolation=true);
 /** \brief generate a configuration based on an isotropic function
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
@@ -121,12 +133,14 @@ Input* configure(
  \param frames a matrix field containing anisotropic frames
                for each vertex
  \param s if non-zero, use that to transfer all fields. otherwise,
-          transfer any associated fields with default algorithms */
+          transfer any associated fields with default algorithms
+ \param logInterpolation if true uses logarithmic interpolation */
 Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
-    SolutionTransfer* s=0);
+    SolutionTransfer* s=0,
+    bool logInterpolation=true);
 /** \brief generate a configuration based on an isotropic field
  \param size a scalar field of desired element size
  \param s if non-zero, use that to transfer all fields. otherwise,

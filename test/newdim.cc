@@ -3,11 +3,13 @@
 #include <apfMesh2.h>
 #include <gmi_null.h>
 #include <PCU.h>
+#include <lionPrint.h>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   gmi_register_null();
   gmi_model* model = gmi_load(".null");
   apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);

@@ -2,6 +2,7 @@
 #include <apfMesh.h>
 #include <gmi_mesh.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <pumi_version.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -32,8 +33,11 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   PCU_Protect();
-  if( !PCU_Comm_Self() )
-    printf("PUMI Git hash %s\n", pumi_version());
+  lion_set_verbosity(1);
+  if( !PCU_Comm_Self() ) {
+    lion_oprint(1,"PUMI Git hash %s\n", pumi_version());
+    lion_oprint(1,"PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
+  }
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

@@ -3,7 +3,9 @@
 #include "ph.h"
 #include <ma.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <sam.h>
+#include <samSz.h>
 #include <parma.h>
 
 #include <cstdio>
@@ -31,7 +33,7 @@ void setupBalance(const char* key, std::string& method,
     zoltanRibBal = false;
   } else {
     if (!PCU_Comm_Self())
-      fprintf(stderr,
+      lion_eprint(1,
           "warning: ignoring unknown value of %s = %s\n",
           key, method.c_str());
   }
@@ -39,7 +41,7 @@ void setupBalance(const char* key, std::string& method,
 
 void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
-    printf("Matched mesh: disabling"
+    lion_oprint(1,"Matched mesh: disabling"
            " snapping, and shape correction,\n");
   in.shouldSnap = false;
   in.shouldFixShape = false;
@@ -113,7 +115,7 @@ static int getShrinkFactor(apf::Mesh* m, double minPartDensity) {
 static void warnAboutShrinking(int factor) {
   int nprocs = PCU_Comm_Peers() / factor;
   if (!PCU_Comm_Self()) {
-    fprintf(stderr,"sensing mesh is spread too thin: "
+    lion_eprint(1,"sensing mesh is spread too thin: "
                    "adapting with %d procs\n", nprocs);
   }
 }
@@ -122,7 +124,7 @@ void adaptShrunken(apf::Mesh2* m, double minPartDensity,
                    Parma_GroupCode& callback) {
   int factor = getShrinkFactor(m, minPartDensity);
   if (!PCU_Comm_Self())
-    fprintf(stderr,"adaptShrunken limit set to %f factor computed as %d\n", minPartDensity, factor);
+    lion_eprint(1,"adaptShrunken limit set to %f factor computed as %d\n", minPartDensity, factor);
   if (factor == 1) {
     callback.run(0);
   } else {
@@ -173,12 +175,26 @@ void adapt(Input& in, apf::Mesh2* m)
   ,0//3
   ,0//4
   ,0//5
-  ,0//6
+  ,chef::adaptLevelSet//6
   ,chef::uniformRefinement //7
   ,0//8
   };
   table[in.adaptStrategy](in, m);
   m->verify();
+}
+
+void setLevelSetIsoField(apf::MeshEntity* v, double* sol,
+    ph::Input& in, apf::Field* szFld) {
+  int distIdx = 5;  // this is the component in the solution field that holds the distance field
+  const double dist = std::fabs(sol[distIdx]);
+  double h = apf::getScalar(szFld,v,0);
+  if ( dist < in.alphaDist )
+    h = in.alphaSize;
+  else if ( dist < in.betaDist )
+    h = in.betaSize;
+  else if ( dist < in.gammaDist )
+    h = in.gammaSize;
+  apf::setScalar(szFld,v,0,h);
 }
 
 }
@@ -192,6 +208,38 @@ namespace chef {
   void adapt(apf::Mesh2* m, apf::Field* szFld, ph::Input& in) {
     ph::AdaptCallback acb(m,szFld,&in);
     adaptShrunken(m,in.adaptShrinkLimit,acb);
+  }
+
+  void adaptLevelSet(ph::Input& in, apf::Mesh2* m)
+  {
+    ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
+    ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
+        ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
+        ma_in->shouldRunPreZoltanRib);
+    // get the level set
+    apf::Field* soln = m->findField("solution");
+    PCU_ALWAYS_ASSERT(soln);
+    // assert that there is a scalar component
+    int size = apf::countComponents(soln);
+    PCU_ALWAYS_ASSERT(size == in.ensa_dof);
+    lion_eprint(1, "found %d components in solution field\n", size);
+    // get the size field
+    apf::Field* szFld = samSz::isoSize(m);
+    apf::NewArray<double> s(in.ensa_dof);
+    apf::MeshIterator* it = m->begin(0);
+    apf::MeshEntity* v;
+    while ((v = m->iterate(it))) {
+      apf::getComponents(soln, v, 0, &s[0]);
+      setLevelSetIsoField(v, &s[0], in, szFld);
+    }
+    m->end(it);
+    if (in.snap) {
+      if (!ma_in->shouldSnap)
+        ph::fail("adapt.inp requests snapping but model doesn't support it\n");
+    } else {
+      ma_in->shouldSnap = false;
+    }
+    chef::adapt(m,szFld,in);
   }
 
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)

@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "maTetrahedronize.h"
 #include "maCrawler.h"
 #include "maAdapt.h"
@@ -210,12 +211,12 @@ static void overrideQuadDiagonal(Adapt* a, Entity* quad, int diagonal)
         << " has conflicting overrides on its diagonal.\n";
       ss << "a negative tet WILL get produced here.\n";
       std::string s = ss.str();
-      fprintf(stderr,"%s",s.c_str());
+      lion_eprint(1,"%s",s.c_str());
     } else {
       std::stringstream ss;
       ss << "overriding diagonal at " << apf::getLinearCentroid(mesh, quad) << '\n';
       std::string s = ss.str();
-      fprintf(stderr,"%s",s.c_str());
+      lion_eprint(1,"%s",s.c_str());
       int flag = getFlagFromDiagonal(diagonal);
       int old_flag = getFlagFromDiagonal(old_diagonal);
       clearFlag(a, quad, old_flag);
@@ -229,7 +230,7 @@ static void overrideQuadDiagonal(Adapt* a, Entity* quad, int diagonal)
     ss << "diagonal at " << apf::getLinearCentroid(mesh, quad)
        << " had a consistent override.\n";
     std::string s = ss.str();
-    fprintf(stderr,"%s",s.c_str());
+    lion_eprint(1,"%s",s.c_str());
   }
 }
 
@@ -261,7 +262,7 @@ struct UnsafePyramidOverride : public apf::CavityOp
          << " has no good rotation!\n";
       ss << "a negative tet WILL get produced here.\n";
       std::string s = ss.str();
-      fprintf(stderr,"%s",s.c_str());
+      lion_eprint(1,"%s",s.c_str());
       return SKIP;
     }
     Entity* faces[5];
@@ -320,7 +321,7 @@ struct UnsafePrismOverride : public apf::CavityOp
          << " has no good diagonals!\n";
       ss << "a negative tet WILL get produced here.\n";
       std::string s = ss.str();
-      fprintf(stderr,"%s",s.c_str());
+      lion_eprint(1,"%s",s.c_str());
       return SKIP;
     }
     Entity* faces[5];
@@ -391,7 +392,7 @@ struct UnsafePrismOverride : public apf::CavityOp
          << " has no safe acyclic diagonals\n";
       ss << "will try cyclic diagonals\n";
       std::string s = ss.str();
-      fprintf(stderr, "%s", s.c_str());
+      lion_eprint(1, "%s", s.c_str());
     }
     if (areDiagonalsAllowed(0, allowed_diagonals)) {
       enforceDiagonals(0);
@@ -407,7 +408,7 @@ struct UnsafePrismOverride : public apf::CavityOp
          << " has no safe diagonals!\n";
       ss << "A negative tet WILL get made here\n";
       std::string s = ss.str();
-      fprintf(stderr, "%s", s.c_str());
+      lion_eprint(1, "%s", s.c_str());
     }
   }
   Adapt* a;

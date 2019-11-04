@@ -7,6 +7,14 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
+
+#ifdef HAVE_SIMMETRIX
+#include <apfSIM.h>
+#include "SimPartitionedMesh.h"
+#include "SimModel.h"
+#include "SimUtil.h"
+#endif
 
 namespace ph {
 
@@ -121,7 +129,7 @@ void parmaTet(Input& in, apf::Mesh2* m, bool runGap) {
     double vtxImb = Parma_GetWeightedEntImbalance(m, weights, 0);
     if( vtxImb <= in.vertexImbalance ) {
       if( !PCU_Comm_Self() )
-        fprintf(stdout, "STATUS vtx imbalance target %.3f reached\n",
+        lion_oprint(1, "STATUS vtx imbalance target %.3f reached\n",
             in.vertexImbalance);
       break;
     }
@@ -153,6 +161,49 @@ void zoltanBalance(apf::Mesh2* m, Input& in, int method)
         m, method, apf::REPARTITION, dbg));
 }
 
+#ifdef HAVE_SIMMETRIX
+void setEqualWeights(pParMesh pmesh, int desiredTotNumParts, pProgress progress)
+{
+  pPartitionOpts pOpts = PartitionOpts_new();
+  // Set total no. of parts
+  PartitionOpts_setTotalNumParts(pOpts, desiredTotNumParts);
+  // Sets processes to be equally weighted
+  PartitionOpts_setProcWtEqual(pOpts);
+  PM_partition(pmesh, pOpts, progress);     // Do the partitioning
+  PartitionOpts_delete(pOpts);              // Done with options
+}
+
+void simmetrixBalance(apf::Mesh2* m)
+{
+  // start progress
+  pProgress progress = Progress_new();
+  Progress_setDefaultCallback(progress);
+
+  // get simmetrix mesh
+  apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(m);
+  pParMesh pmesh = apf_msim->getMesh();
+
+  // get total number of processors
+  // we assume one part per processor
+  int totalNumParts = PMU_size();
+
+  // current total num parts in pmesh cannot be more than requested
+  int currentTotalNumParts = PM_totalNumParts(pmesh);
+  if (currentTotalNumParts > totalNumParts) {
+    if( !PCU_Comm_Self() )
+      lion_eprint(1, "Error: cannot reduce number of partitions %d->%d\n",
+              currentTotalNumParts, totalNumParts);
+    totalNumParts = currentTotalNumParts;
+  }
+
+  // set weights and do balacing
+  setEqualWeights(pmesh, totalNumParts, progress);
+
+  // delete progress
+  Progress_delete(progress);
+}
+#endif
+
 void balance(Input& in, apf::Mesh2* m)
 {
   if(in.prePhastaBalanceMethod == "parma-gap" )
@@ -163,6 +214,10 @@ void balance(Input& in, apf::Mesh2* m)
     zoltanBalance(m,in,apf::RIB);
   else if(in.prePhastaBalanceMethod == "graph" )
     zoltanBalance(m,in,apf::GRAPH);
+#ifdef HAVE_SIMMETRIX
+  else if(in.prePhastaBalanceMethod == "simmetrix" )
+    simmetrixBalance(m);
+#endif
   else if(in.prePhastaBalanceMethod != "none" )
     fail("unknown setting for prePhastaBalanceMethod \"%s\"\n",
       in.prePhastaBalanceMethod.c_str());

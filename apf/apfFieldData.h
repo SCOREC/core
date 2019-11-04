@@ -22,7 +22,7 @@ class FieldData
     virtual bool hasEntity(MeshEntity* e) = 0;
     virtual void removeEntity(MeshEntity* e) = 0;
     virtual bool isFrozen() = 0;
-    virtual FieldData* clone();
+    virtual FieldData* clone() = 0;
     virtual void rename(const char* newName);
     FieldBase* getField() {return field;}
   protected:
@@ -33,9 +33,9 @@ template <class T>
 class FieldDataOf;
 
 template <class T>
-void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr=true);
+void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr=false);
 
-void accumulateFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=true);
+void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr=false, const ReductionOp<double>& reduce_op=ReductionSum<double>() );
 
 template <class T>
 void copyFieldData(FieldDataOf<T>* from, FieldDataOf<T>* to);
@@ -55,6 +55,7 @@ class FieldDataOf : public FieldData
     void setNodeComponents(MeshEntity* e, int node, T const* components);
     void getNodeComponents(MeshEntity* e, int node, T* components);
     int getElementData(MeshEntity* entity, NewArray<T>& data);
+    virtual FieldData* clone()=0;
 };
 
 } //namespace apf

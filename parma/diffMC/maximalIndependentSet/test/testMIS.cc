@@ -399,7 +399,7 @@ int test_StarA(const int rank, const int totNumParts,
         adjPIDItr != part.adjPartIds.end();
         adjPIDItr++) {
       if (*adjPIDItr < 0 || *adjPIDItr >= totNumParts) {
-        printf("ERROR [%d] adjPartId=%d\n", rank, *adjPIDItr);
+        lion_oprint(1,"ERROR [%d] adjPartId=%d\n", rank, *adjPIDItr);
         return 1;
       }
     }
@@ -520,20 +520,20 @@ int test_4partsA(const int rank, const int totNumParts,
                          1, MPI_INT, 0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
-        printf("MIS: ");
+        lion_oprint(1,"MIS: ");
         for (int i = 0; i < totNumParts; ++i) {
             if (globalIsInMIS[i]) {
-                printf(" %d ", i);
+                lion_oprint(1," %d ", i);
                 ++sizeIS;
             }
         }
-        printf("\n");
+        lion_oprint(1,"\n");
         delete [] globalIsInMIS;
 
         if (sizeIS < totNumParts / 3) {
             return 1;
         } else {
-            printf("\n\nDEBUG |independent set| = %d\n", sizeIS);
+            lion_oprint(1,"\n\nDEBUG |independent set| = %d\n", sizeIS);
             return 0;
         }
     } else {
@@ -593,20 +593,20 @@ int test_4partsB(const int rank, const int totNumParts,
         0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
-        printf("MIS: ");
+        lion_oprint(1,"MIS: ");
         for (int i = 0; i < totNumParts; ++i) {
             if (globalIsInMIS[i]) {
-                printf(" %d ", i);
+                lion_oprint(1," %d ", i);
                 ++sizeIS;
             }
         }
-        printf("\n");
+        lion_oprint(1,"\n");
         delete [] globalIsInMIS;
 
         if (sizeIS < totNumParts / 3) {
             return 1;
         } else {
-            printf("\n\nDEBUG |independent set| = %d\n", sizeIS);
+            lion_oprint(1,"\n\nDEBUG |independent set| = %d\n", sizeIS);
             return 0;
         }
     } else {
@@ -661,20 +661,20 @@ int test_4partsC(const int rank, const int totNumParts,
         0, MPI_COMM_WORLD);
     int sizeIS = 0;
     if (rank == 0) {
-        printf("MIS: ");
+        lion_oprint(1,"MIS: ");
         for (int i = 0; i < totNumParts; ++i) {
             if (globalIsInMIS[i]) {
-                printf(" %d ", i);
+                lion_oprint(1," %d ", i);
                 ++sizeIS;
             }
         }
-        printf("\n");
+        lion_oprint(1,"\n");
         delete [] globalIsInMIS;
 
         if (sizeIS < totNumParts / 3) {
             return 1;
         } else {
-            printf("\n\nDEBUG |independent set| = %d\n", sizeIS);
+            lion_oprint(1,"\n\nDEBUG |independent set| = %d\n", sizeIS);
             return 0;
         }
     } else {
@@ -683,8 +683,8 @@ int test_4partsC(const int rank, const int totNumParts,
 }
 
 void printUsage(char* exe) {
-    fprintf(stderr, "Usage: %s -t test [-n number of parts] [-s random number seed] [-d] \n", exe);
-    fprintf(stderr, "-d enables debug mode\n"
+    lion_eprint(1, "Usage: %s -t test [-n number of parts] [-s random number seed] [-d] \n", exe);
+    lion_eprint(1, "-d enables debug mode\n"
             "-s specify an unsigned integer to seed the random number generator\n"
             "-n specify the number of parts per process, default is 1\n"
             "-r disable pre-defined random numbers for test 0, 1 and 2\n"
@@ -758,7 +758,7 @@ int main(int argc, char** argv) {
       default:
       case -1:
         if (0 == rank) {
-          printf("Test number not recognized\n");
+          lion_oprint(1,"Test number not recognized\n");
           printUsage(argv[0]);
         }
         MPI_Finalize();
@@ -786,9 +786,9 @@ int main(int argc, char** argv) {
 
     if (0 == rank) {
         if (1 == ierr) {
-            printf("failed\n");
+            lion_oprint(1,"failed\n");
         } else {
-            printf("passed.\n");
+            lion_oprint(1,"passed.\n");
         }
     }
     misFinalize();

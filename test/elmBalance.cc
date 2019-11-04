@@ -4,6 +4,7 @@
 #include <gmi_mesh.h>
 #include <parma.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -29,6 +30,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc == 4);
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !PCU_Comm_Self() )
       printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);

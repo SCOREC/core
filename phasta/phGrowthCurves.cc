@@ -1,5 +1,6 @@
 #include <PCU.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 #include "phOutput.h"
 #include "phGrowthCurves.h"
 #include "phLinks.h"
@@ -19,7 +20,8 @@ void getGrowthCurves(Output& o)
 
   Input& in = *o.in;
   if (in.simmetrixMesh == 1) {
-    Sim_logOn("getGrowthCurves.log");
+    if (in.writeSimLog)
+      Sim_logOn("getGrowthCurves.log");
     pProgress progress = Progress_new();
     Progress_setDefaultCallback(progress);
 
@@ -73,6 +75,7 @@ void getGrowthCurves(Output& o)
           break;
         }
       }
+      VIter_delete(vIter);
 
       if(isBoundaryLayerFace){
 //      Add gFace to gEntities
@@ -104,6 +107,7 @@ void getGrowthCurves(Output& o)
         }
       }
     }
+    GFIter_delete(gFIter);
 
 //  get seeds of all growth curves
     pPList allSeeds = PList_new();
@@ -157,7 +161,7 @@ void getGrowthCurves(Output& o)
                 //this is a blend, there will be multiple seeds
                 PList_clear(blendSeeds);
                 if(!(BL_blendSeedEdges(vertex, gFace, faceSide, gRegion, blendSeeds) == 1)){
-                  printf("%s: unexpected BL_blendSeedEdges return value\n",__func__);
+                  lion_oprint(1,"%s: unexpected BL_blendSeedEdges return value\n",__func__);
                   exit(EXIT_FAILURE);
                 }
                 PList_appPListUnique(seeds, blendSeeds);
@@ -166,7 +170,7 @@ void getGrowthCurves(Output& o)
                 //there is no seed edge
                 break;
               default:
-                printf("%s: unexpected BL_stackSeedEntity return value\n",__func__);
+                lion_oprint(1,"%s: unexpected BL_stackSeedEntity return value\n",__func__);
                 exit(EXIT_FAILURE);
     	  		}
     	  	}
@@ -175,6 +179,7 @@ void getGrowthCurves(Output& o)
         //Append seeds to allSeeds
         PList_appPList(allSeeds,seeds);
       }
+      VIter_delete(vIter);
     }
 
 //  get info of growth curves
@@ -200,7 +205,7 @@ void getGrowthCurves(Output& o)
 
 //    get growth vertices (growthVertices) and edges for seed
       if(!(BL_growthVerticesAndEdges((pEdge)seed, growthVertices, growthEdges) == 1)){
-        printf("%s: unexpected BL_growthVerticesAndEdges return value\n",__func__);
+        lion_oprint(1,"%s: unexpected BL_growthVerticesAndEdges return value\n",__func__);
         exit(EXIT_FAILURE);
       }
 
@@ -231,13 +236,13 @@ void getGrowthCurves(Output& o)
       o.arrays.igclv[i] = me;
     }
 
-    printf("%s: rank %d, ngc, nv: %d, %d\n", __func__, PCU_Comm_Self(), ngc, nv);
+    lion_oprint(1,"%s: rank %d, ngc, nv: %d, %d\n", __func__, PCU_Comm_Self(), ngc, nv);
 
     PCU_Add_Ints(&ngc,sizeof(ngc));
     PCU_Add_Ints(&nv,sizeof(nv));
 
     if(PCU_Comm_Self() == 0)
-      printf("%s: total ngc, nv: %d, %d\n", __func__, ngc, nv);
+      lion_oprint(1,"%s: total ngc, nv: %d, %d\n", __func__, ngc, nv);
 
     PList_delete(gEdges);
     PList_delete(gVertices);
@@ -252,11 +257,12 @@ void getGrowthCurves(Output& o)
 
     //clean up utility
     Progress_delete(progress);
-    Sim_logOff();
+    if (in.writeSimLog)
+      Sim_logOff();
   }
   else {
     if(PCU_Comm_Self() == 0)
-      printf("%s: warning! not implemented for MDS mesh\n",__func__);
+      lion_oprint(1,"%s: warning! not implemented for MDS mesh\n",__func__);
   }
   return;
 }

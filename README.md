@@ -50,6 +50,5 @@ For more information, start at our
 
 ### Who do I talk to? ###
 
-* PUMI administrator <pumi@scorec.rpi.edu>
-* Dan Ibanez <daibane@sandia.gov>
-* [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith)
+* If you have a usage question or have found a bug please post an [issue](https://github.com/SCOREC/core/issues).
+* Otherwise, email [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith) and pumi@scorec.rpi.edu.

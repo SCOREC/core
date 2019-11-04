@@ -3,12 +3,14 @@
 #include <apfMDS.h>
 #include <apf.h>
 #include <PCU.h>
+#include <lionPrint.h>
 #include <maReposition.h>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
+  lion_set_verbosity(1);
 #if 0
   gmi_register_null();
   gmi_model* model = gmi_load(".null");

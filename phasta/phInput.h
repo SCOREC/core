@@ -11,6 +11,7 @@
 */
 
 #include <string>
+#include <vector>
 
 struct RStream;
 
@@ -67,23 +68,32 @@ class Input
         \details valid options are 'graph', 'zrib', 'parma', and 'none'.  Selecting
       'parma' balances the elements via a diffusive method and selecting 'none' will
       disable balancing prior to adaptation.  See the partitionMethod documentation
-      for a description of the other methods. */
+      for a description of the other methods.  Note, the 'LocalPtn' parameter
+      does not apply as balancing is a global operation.
+     */
     std::string preAdaptBalanceMethod;
     /** \brief select the method used to balance the mesh during adaptation.
-        \details valid options are 'graph', 'parma', and 'none'.  See the 
+        \details valid options are 'graph', 'parma', and 'none'.  See the
       partitionMethod and preAdaptBalanceMethod documentation for a description
-      of the methods. */
+      of the methods.  Note, the 'LocalPtn' parameter does not apply as
+      balancing is a global operation.
+      */
     std::string midAdaptBalanceMethod;
     /** \brief select the method used to balance the mesh after adaptation.
         \details valid options are 'graph', 'zrib', 'parma', 'parma-gap', and 'none'.
       Selecting 'parma-gap' balances the mesh elements and reduces the number of parts
       that share mesh entities with each part (neighbors).  See the partitionMethod
-      and preAdaptBalanceMethod documentation for a description of the methods. */
+      and preAdaptBalanceMethod documentation for a description of the methods.
+      Note, the 'LocalPtn' parameter does not apply as balancing is a global
+      operation.
+      */
     std::string postAdaptBalanceMethod;
     /** \brief select the method used to balance the mesh prior to pre-processing.
         \details valid options are 'graph', 'zrib', 'parma', 'parma-gap', and 'none'.
       See the partitionMethod, preAdaptBalanceMethod, and postAdaptBalanceMethod
-      documentation for a description of the methods. */
+      documentation for a description of the methods.  Note, the 'LocalPtn'
+      parameter does not apply as balancing is a global operation.
+      */
     std::string prePhastaBalanceMethod;
     int adaptFlag;
     int rRead;
@@ -119,9 +129,11 @@ class Input
     int elementsPerMigration;
     int threaded;
     int initBubbles;
+    std::string bubbleFileName;
     int formElementGraph;
     int snap;
     int transferParametric;
+    /** \brief enable splitting triangle edges of a prismatic boundary layer stack*/
     int splitAllLayerEdges;
     /** \brief filter out a subset of 3-way periodic matches.
        it also filters out DG interface matches. */
@@ -133,6 +145,9 @@ class Input
     /** \brief write the geombc file during in-memory data transfer
        between phasta and chef. */
     int writeGeomBCFiles;
+    /** \brief write the restart file during in-memory data transfer
+       between phasta and chef. */
+    int writeRestartFiles;
     int ramdisk;
     /** \brief the value of criteria for the mesh measure.
         \details this is only used in solver-adaptor (phastaChef) loop.
@@ -152,8 +167,40 @@ class Input
     double adaptShrinkLimit;
     /** \brief report the time spent in IO */
     int printIOtime;
-	/** \brief flag of writing m2g fields to geomBC files */
-	int mesh2geom;
+    /** \brief flag of writing m2g fields to geomBC files */
+    int mesh2geom;
+    /** \brief closest distance from zero level set for banded refinement */
+    double alphaDist;
+    /** \brief absolute isotropic size within [0:alphaDist) of zero level set */
+    double alphaSize;
+    /** \brief second closest distance from zero level set for banded refinement */
+    double betaDist;
+    /** \brief absolute isotropic size within [alphaDist:betaDist) of zero level set */
+    double betaSize;
+    /** \brief furthest distance from zero level set for banded refinement */
+    double gammaDist;
+    /** \brief absolute isotropic size within [betaDist:gammDist) of zero level set */
+    double gammaSize;
+    /** \brief number of rigid bodies */
+    int nRigidBody;
+    /** \brief number of parameters for each rigid body */
+    int nRBParam;
+    /** \brief parameter data for rigid body */
+    std::vector<double> rbParamData;
+    /** \brief factor \beta used for mesh smooth/gradation */
+    double gradingFactor;
+    /** \brief option used for wrapping sim mesh adapter and improver into mover */
+    int simCooperation;
+    /** \brief flag for writing simmetrix log file */
+    int writeSimLog;
+    /** \brief maximum CFL number for mesh size */
+    double simCFLUpperBound;
+    /** \brief minimum desired mesh size for sim adapter */
+    double simSizeLowerBound;
+    /** \brief maximum desired mesh size for sim adapter */
+    double simSizeUpperBound;
+    /** \brief number of allowed mesh elements of adapted mesh */
+    double simMaxAdaptMeshElements;
 };
 
 int countNaturalBCs(Input& in);

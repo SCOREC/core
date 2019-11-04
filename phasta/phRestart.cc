@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include <lionPrint.h>
 #include "phRestart.h"
 #include <apf.h>
 #include <apfField.h>
@@ -29,7 +30,7 @@ apf::Field* extractField(apf::Mesh* m,
 {
   apf::Field* f = m->findField(packedFieldname);
   if(!f && PCU_Comm_Self() == 0)
-    fprintf(stderr, "No packed field \"%s\"", packedFieldname);
+    lion_eprint(1, "No packed field \"%s\"", packedFieldname);
   PCU_ALWAYS_ASSERT(f);
   apf::Field* rf = m->findField(requestFieldname);
   if (rf)
@@ -51,22 +52,22 @@ apf::Field* extractField(apf::Mesh* m,
   {
     rf = apf::createFieldOn(m, requestFieldname, valueType);
   }
-  double* inVal = new double[apf::countComponents(f)];
-  double* outVal = new double[numOfComp];
+  apf::NewArray<double> inVal(apf::countComponents(f));
+  apf::NewArray<double> outVal(numOfComp);
   int endComp = firstComp + numOfComp - 1;
   PCU_ALWAYS_ASSERT(firstComp >= 1);
   PCU_ALWAYS_ASSERT(endComp <= apf::countComponents(f));
   apf::MeshEntity* vtx;
   apf::MeshIterator* it = m->begin(0);
   while ((vtx = m->iterate(it))) {
-    apf::getComponents(f, vtx, 0, inVal);
+    apf::getComponents(f, vtx, 0, &inVal[0]);
     int j = 0;
     for (int i = firstComp-1; i < endComp; i++){
       outVal[j] = inVal[i];
       j++;
     }
     PCU_ALWAYS_ASSERT(j == numOfComp);
-    apf::setComponents(rf,vtx, 0, outVal);
+    apf::setComponents(rf,vtx, 0, &outVal[0]);
   }
   m->end(it);
   return rf;
@@ -93,17 +94,17 @@ apf::Field* combineField(apf::Mesh* m,
   if (rf)
     apf::destroyField(rf);
   rf = apf::createPackedField(m, packedFieldname, out_size);
-  double* inVal1 = new double[in_size1];
-  double* inVal2 = new double[in_size2];
-  double* inVal3 = new double[in_size3];
-  double* outVal = new double[out_size];
+  apf::NewArray<double> inVal1(in_size1);
+  apf::NewArray<double> inVal2(in_size2);
+  apf::NewArray<double> inVal3(in_size3);
+  apf::NewArray<double> outVal(out_size);
   /* copy data */
   apf::MeshEntity* vtx;
   apf::MeshIterator* it = m->begin(0);
   while ((vtx = m->iterate(it))) {
-    apf::getComponents(f1, vtx, 0, inVal1);
-    apf::getComponents(f2, vtx, 0, inVal2);
-    apf::getComponents(f3, vtx, 0, inVal3);
+    apf::getComponents(f1, vtx, 0, &inVal1[0]);
+    apf::getComponents(f2, vtx, 0, &inVal2[0]);
+    apf::getComponents(f3, vtx, 0, &inVal3[0]);
 /* simpler, test later, need algorithm header */
 /*
     copy(inVal1, inVal2 + in_size1, outVal);
@@ -125,7 +126,7 @@ apf::Field* combineField(apf::Mesh* m,
       j++;
     }
     PCU_ALWAYS_ASSERT(j == out_size);
-    apf::setComponents(rf, vtx, 0, outVal);
+    apf::setComponents(rf, vtx, 0, &outVal[0]);
   }
   m->end(it);
   /* destroy input fields */
@@ -148,7 +149,7 @@ void attachField(
     int out_size)
 {
   if (!(in_size <= out_size))
-    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
+    lion_eprint(1, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   PCU_ALWAYS_ASSERT(in_size <= out_size);
   apf::Field* f = m->findField(fieldname);
   if( f )
@@ -169,6 +170,28 @@ void attachField(
   PCU_ALWAYS_ASSERT(i == n);
 }
 
+bool attachRandField(
+    Input& in,
+    const char* fieldname,
+    double* data,
+    int nnodes,
+    int nvars)
+{
+  if(!strcmp(fieldname, "rbParams")) {
+    in.nRigidBody = nnodes;
+    in.nRBParam   = nvars;
+    in.rbParamData.clear();
+    for (int i = 0; i < nnodes; i++) {
+      for (int j = 0; j < nvars; j++) {
+        in.rbParamData.push_back(data[j*nnodes + i]);
+      }
+    }
+    PCU_ALWAYS_ASSERT((size_t) nnodes * nvars == in.rbParamData.size());
+    return true;
+  }
+  return false;
+}
+
 void attachCellField(
     apf::Mesh* m,
     const char* fieldname,
@@ -177,7 +200,7 @@ void attachCellField(
     int out_size)
 {
   if (!(in_size <= out_size))
-    fprintf(stderr, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
+    lion_eprint(1, "field \"%s\" in_size %d out_size %d\n", fieldname, in_size, out_size);
   PCU_ALWAYS_ASSERT(in_size <= out_size);
   apf::Field* f = m->findField(fieldname);
   if( f )
@@ -189,10 +212,9 @@ void attachCellField(
   size_t i = 0;
   apf::MeshIterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it))) {
-//    for (int j = 0; j < in_size; ++j)
-//      c[j] = data[j * n + i];
-//    apf::setComponents(f, e, 0, &c[0]);
-    apf::setScalar(f, e, 0, data[i]);
+    for (int j = 0; j < in_size; ++j)
+      c[j] = data[j * n + i];
+    apf::setComponents(f, e, 0, &c[0]);
     ++i;
   }
   m->end(it);
@@ -256,6 +278,9 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "time derivative of solution",
     "motion_coords",
     "mesh_vel",
+    "tb_factor",
+    "residual",
+    "dc_lag",
     "ybar",
     "wss",
     "wssbar",
@@ -266,27 +291,40 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   static char const* const known_cell_fields[] = {
     "VOF solution",
     "meshQ",
+    "meshCFL",
+    "VMS_error",
+    "err_tri_f",
     "material_type"
+  };
+  static char const* const known_rand_fields[] = {
+    "rbParams"
   };
   int known_nodal_field_count =
     sizeof(known_nodal_fields) / sizeof(known_nodal_fields[0]);
   int known_cell_field_count =
     sizeof(known_cell_fields) / sizeof(known_cell_fields[0]);
+  int known_rand_field_count =
+    sizeof(known_rand_fields) / sizeof(known_rand_fields[0]);
   for (int i = 0; i < known_nodal_field_count; ++i)
     if (!strcmp(fieldname, known_nodal_fields[i])) {
       PCU_ALWAYS_ASSERT(static_cast<size_t>(nnodes) == m->count(0));
       return true;
     }
   for (int i = 0; i < known_cell_field_count; ++i)
-    if (!strcmp(fieldname, known_cell_fields[i]))
+    if (!strcmp(fieldname, known_cell_fields[i])) {
+      PCU_ALWAYS_ASSERT(static_cast<size_t>(nnodes) == m->count(m->getDimension()));
+      return false;
+    }
+  for (int i = 0; i < known_rand_field_count; ++i)
+    if (!strcmp(fieldname, known_rand_fields[i]))
       return false;
   if( !PCU_Comm_Self() ) {
-    fprintf(stderr, "unknown restart field name \"%s\"\n", fieldname);
-    fprintf(stderr, "please add \"%s\" to isNodalField above line %d of %s\n",
+    lion_eprint(1, "unknown restart field name \"%s\"\n", fieldname);
+    lion_eprint(1, "please add \"%s\" to isNodalField above line %d of %s\n",
         fieldname, __LINE__, __FILE__);
   }
   if (static_cast<size_t>(nnodes) == m->count(0)) {
-    fprintf(stderr, "assuming \"%s\" is a nodal field,\n"
+    lion_eprint(1, "assuming \"%s\" is a nodal field,\n"
                     "it is the right size...\n", fieldname);
     return true;
   }
@@ -309,6 +347,10 @@ int readAndAttachField(
   if(ret==0 || ret==1)
     return ret;
   if (!isNodalField(hname, nodes, m)) {
+    if (attachRandField(in, hname, data, nodes, vars)) {
+      free(data);
+      return 1;
+    }
     attachCellField(m, hname, data, vars, vars);
     free(data);
     return 1;
@@ -319,7 +361,7 @@ int readAndAttachField(
     out_size = in.ensa_dof;
   if (m->findField(hname)) {
     if (!PCU_Comm_Self())
-      fprintf(stderr, "field \"%s\" already attached to the mesh, "
+      lion_eprint(1, "field \"%s\" already attached to the mesh, "
                       "ignoring request to re-attach...\n", hname);
   } else {
     attachField(m, hname, data, vars, out_size);
@@ -339,6 +381,57 @@ void detachAndWriteField(
   detachField(m, fieldname, data, size);
   ph_write_field(f, fieldname, data, m->count(0), size, in.timeStepNumber);
   free(data);
+}
+
+void detachAndWriteCellField(
+    Input& in,
+    apf::Mesh* m,
+    FILE* file,
+    const char* fieldname)
+{
+  apf::Field* f = m->findField(fieldname);
+  PCU_ALWAYS_ASSERT(f);
+  double* data;
+  int size = apf::countComponents(f);
+  size_t n = m->count(m->getDimension());
+  apf::NewArray<double> c(size);
+  data = (double*)malloc(sizeof(double) * size * m->count(m->getDimension()));
+  apf::MeshEntity* e;
+  size_t i = 0;
+  apf::MeshIterator* it = m->begin(m->getDimension());
+  while ((e = m->iterate(it))) {
+    apf::getComponents(f, e, 0, &c[0]);
+    for (int j = 0; j < size; ++j)
+      data[j * n + i] = c[j];
+    ++i;
+  }
+  m->end(it);
+  PCU_ALWAYS_ASSERT(i == n);
+  apf::destroyField(f);
+  ph_write_field(file, fieldname, data, m->count(m->getDimension()), size, in.timeStepNumber);
+  free(data);
+}
+
+void detachAndWriteRandField(
+    Input& in,
+    FILE* f,
+    const char* fieldname)
+{
+  if (!strcmp(fieldname, "rbParams")) {
+    int nnodes = in.nRigidBody;
+    int nvars  = in.nRBParam;
+    double* data = (double*) malloc(sizeof(double) * nnodes * nvars);
+    size_t iv = 0;
+    for (int i = 0; i< nnodes; i++) {
+      for (int j = 0; j < nvars; j++) {
+        data[j*nnodes + i] = in.rbParamData[iv];
+        iv++;
+      }
+    }
+    ph_write_field(f, fieldname, data, nnodes, nvars, in.timeStepNumber);
+    free(data);
+    in.rbParamData.clear();
+  }
 }
 
 /* silliest darn fields I ever did see */
@@ -378,16 +471,16 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   phastaio_setfile(RESTART_READ);
   FILE* f = in.openfile_read(in, filename.c_str());
   if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", filename.c_str());
+    lion_eprint(1,"failed to open \"%s\"!\n", filename.c_str());
     abort();
   }
   int swap = ph_should_swap(f);
   /* stops when ph_read_field returns 0 */
-  while( readAndAttachField(in,f,m,swap) );
+  while( readAndAttachField(in,f,m,swap) ) {}
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("fields read and attached in %f seconds\n", t1 - t0);
+    lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
   if(in.printIOtime) phastaio_printStats();
 }
 
@@ -426,7 +519,7 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   phastaio_setfile(RESTART_WRITE);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
-    fprintf(stderr,"failed to open \"%s\"!\n", path.c_str());
+    lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
     abort();
   }
   ph_write_preamble(f);
@@ -440,8 +533,14 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "solution");
   if (m->findField("time derivative of solution"))
     detachAndWriteField(in, m, f, "time derivative of solution");
+  if (m->findField("motion_coords"))
+    detachAndWriteField(in, m, f, "motion_coords");
   if (m->findField("mesh_vel"))
     detachAndWriteField(in, m, f, "mesh_vel");
+  if (m->findField("dc_lag"))
+    detachAndWriteField(in, m, f, "dc_lag");
+  if (m->findField("pressure projection vectors"))
+    detachAndWriteField(in, m, f, "pressure projection vectors");
   if (in.displacementMigration)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)
@@ -450,13 +549,17 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "mapping_partid");
     detachAndWriteField(in, m, f, "mapping_vtxid");
   }
+  if (m->findField("err_tri_f"))
+    detachAndWriteCellField(in, m, f, "err_tri_f");
+  if (in.nRigidBody)
+    detachAndWriteRandField(in, f, "rbParams");
   /* destroy any remaining fields */
   while(m->countFields())
     apf::destroyField( m->getField(0) );
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
-    printf("solution written in %f seconds\n", t1 - t0);
+    lion_oprint(1,"solution written in %f seconds\n", t1 - t0);
 }
 
 } //end namespace ph

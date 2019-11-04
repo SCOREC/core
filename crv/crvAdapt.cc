@@ -13,6 +13,7 @@
 #include <maCoarsen.h>
 #include <maShape.h>
 #include <maSnap.h>
+#include <maStats.h>
 #include <maLayer.h>
 #include <PCU.h>
 #include <pcu_util.h>
@@ -193,22 +194,8 @@ static void flagCleaner(crv::Adapt* a)
   }
 }
 
-static bool isSimplexMesh(apf::Mesh2* m)
-{
-  int count = 0;
-  if (m->getDimension() == 2)
-    count = apf::countEntitiesOfType(m, apf::Mesh2::QUAD);
-  else
-    count = apf::countEntitiesOfType(m, apf::Mesh2::HEX) +
-            apf::countEntitiesOfType(m, apf::Mesh2::PRISM) +
-            apf::countEntitiesOfType(m, apf::Mesh2::PYRAMID);
-  return (count == 0) ? true : false;
-}
-
 void adapt(ma::Input* in)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(isSimplexMesh(in->mesh),
-      "Curved Adaptation expects an all simplex mesh!");
   std::string name = in->mesh->getShape()->getName();
   if(name != std::string("Bezier"))
     fail("mesh must be bezier to adapt\n");
@@ -249,6 +236,41 @@ void adapt(ma::Input* in)
   crv::clearTags(a);
   delete a;
   delete in;
+}
+
+/** \brief Measures entity related quantities for a given mesh
+  \details  quantities include normalized edge length, linear quality
+  and curved quality. The values can be computed in both metric (if
+  inMetric = true) and physical (if inMetric = false) spaces.*/
+void stats(ma::Mesh* m, ma::SizeField* sf,
+    std::vector<double> &edgeLengths,
+    std::vector<double> &linearQualities,
+    std::vector<double> &curvedQualities,
+    bool inMetric)
+{
+  ma::stats(m, sf, edgeLengths, linearQualities, inMetric);
+
+
+  /* curved qualities are approximately the same in both
+     metric and physical spaces
+     metric quality = min(QJ) / max(QJ) ~ min(J) / max(J)
+   */
+  curvedQualities.clear();
+  if (m->getShape()->getOrder() == 1)
+    curvedQualities = std::vector<double>(linearQualities.size(), 0.0);
+  else {
+    crv::Quality* qual = makeQuality(m, 2);
+    ma::Entity* e;
+    ma::Iterator* it = m->begin(m->getDimension());
+    while( (e = m->iterate(it)) ) {
+      if (! m->isOwned(e))
+	continue;
+      if (! apf::isSimplex(m->getType(e))) // ignore non-simplex elements
+        continue;
+      curvedQualities.push_back(qual->getQuality(e));
+    }
+    m->end(it);
+  }
 }
 
 }

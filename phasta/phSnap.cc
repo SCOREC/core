@@ -1,4 +1,4 @@
-#include <phSnap.h>
+#include <phastaChef.h>
 #include <gmi_mesh.h>
 
 #include "apfSIM.h"
@@ -15,16 +15,19 @@
 extern"C"{
 #endif
 
-static apf::Mesh* m;
+apf::Mesh2* m;
 
-void pass_mesh_to_phasta(apf::Mesh* mesh){
-  m = mesh;
+ph::Input in;
+
+void pass_info_to_phasta(apf::Mesh2* mesh, ph::Input& ctrl){
+  m  = mesh;
+  in = ctrl;
 }
 
-/* input dx,dy,dz are current coordinates of mesh in phatsa
-  output px,py,pz are corrected coordinates of mesh */
-void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
-                          double px[], double py[], double pz[]) {
+/* input dx,dy,dz are current coordinates of mesh in phastsa
+   output px,py,pz are corrected coordinates of mesh */
+void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
+                           int f[], double px[], double py[], double pz[]) {
   double newpar[2];
   double newpt[3];
   int counter = 0;
@@ -35,7 +38,8 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
     m->getPoint(v, 0, p);
     pVertex meshVertex = reinterpret_cast<pVertex>(v);
     // only call this on face or edge mesh vertex
-    if(V_whatInType(meshVertex)==2 || V_whatInType(meshVertex)==1){
+    if((V_whatInType(meshVertex)==2 || V_whatInType(meshVertex)==1)
+       && (f[counter] == 1)) {
       const double disp[3] = {dx[counter]-p[0],dy[counter]-p[1],dz[counter]-p[2]};
       V_movedParamPoint(meshVertex,disp,newpar,newpt);
       px[counter] = newpt[0];
@@ -53,7 +57,7 @@ void sim_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
   PCU_ALWAYS_ASSERT(counter==numnp);
 }
 
-void sim_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
+void core_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer) {
   answer = 0;
   apf::ModelEntity* e  = m->findModelEntity(e_dim, e_tag);
   apf::ModelEntity* et = m->findModelEntity(t_dim, t_tag);

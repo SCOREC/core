@@ -9,6 +9,7 @@
 #include <apfShape.h>
 #include <PCU.h>
 #include <apf.h>
+#include <lionPrint.h>
 
 #include <Omega_h_array.hpp>
 #include <Omega_h_mesh.hpp>
@@ -125,7 +126,7 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
     ent_dim = dim;
   } else {
     if (!PCU_Comm_Self()) {
-      std::cout << "not copying field " << name << " to Omega_h\n";
+      lion_oprint(1,"not copying field %s to Omega_h\n",name.c_str());
     }
     return;
   }
@@ -181,7 +182,7 @@ static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real> const* tag,
   else if (ent_dim == dim) shape = apf::getIPFitShape(dim, 1);
   else {
     if (!PCU_Comm_Self()) {
-      std::cout << "not copying field " << name << " from Omega_h\n";
+      lion_oprint(1,"not copying field %s to Omega_h\n",name.c_str());
     }
     return;
   }
@@ -263,7 +264,7 @@ static void conn_to_osh(osh::Mesh* mesh_osh, apf::Mesh* mesh_apf,
   } else {
     auto lv2v = mesh_osh->ask_verts_of(d - 1);
     auto v2l = mesh_osh->ask_up(0, d - 1);
-    high2low = osh::reflect_down(ev2v, lv2v, v2l, d, d - 1);
+    high2low = osh::reflect_down(ev2v, lv2v, v2l, mesh_osh->family(), d, d - 1);
   }
   mesh_osh->set_ents(d, high2low);
 }

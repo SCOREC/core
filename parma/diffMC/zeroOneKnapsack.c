@@ -1,4 +1,5 @@
 #include "zeroOneKnapsack.h"
+#include <lionPrint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -47,22 +48,22 @@ void destroyKnapsack(Knapsack knapsack) {
 void printTable(Knapsack knapsack) {
   size_t i, j;
   zoks k = (zoks) knapsack;
-  printf("===== Table =====\n");
-  printf("%3s | ", "");
+  lion_oprint(1,"===== Table =====\n");
+  lion_oprint(1,"%3s | ", "");
   for(j=0; j<k->numItems; j++)
-    printf("%3lu", k->weight[j]);
-  printf("\n");
-  printf("%3s  ","---");
+    lion_oprint(1,"%3lu", k->weight[j]);
+  lion_oprint(1,"\n");
+  lion_oprint(1,"%3s  ","---");
   for(j=0; j<k->numItems; j++)
-    printf("%3s","---");
-  printf("\n");
+    lion_oprint(1,"%3s","---");
+  lion_oprint(1,"\n");
   for(i=1; i<=k->maxWeight; i++){
-    printf("%3lu | ", i);
+    lion_oprint(1,"%3lu | ", i);
     for(j=0; j<k->numItems; j++)
-      printf("%3lu", k->M[j][i]);
-    printf("\n");
+      lion_oprint(1,"%3lu", k->M[j][i]);
+    lion_oprint(1,"\n");
   }
-  printf("===== Table =====\n");
+  lion_oprint(1,"===== Table =====\n");
 }
 
 size_t* getSolution(Knapsack knapsack, size_t* sz) {

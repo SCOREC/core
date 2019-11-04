@@ -8,6 +8,7 @@
  
 *******************************************************************************/
 #include "maInput.h"
+#include <lionPrint.h>
 #include <apfShape.h>
 #include <cstdio>
 #include <pcu_util.h>
@@ -30,6 +31,7 @@ void setDefaultValues(Input* in)
   in->shouldCoarsen = true;
   in->shouldSnap = in->mesh->canSnap();
   in->shouldTransferParametric = in->mesh->canSnap();
+  in->shouldTransferToClosestPoint = false;
   in->shouldHandleMatching = in->mesh->hasMatching();
   in->shouldFixShape = true;
   in->shouldForceAdaptation = false;
@@ -46,7 +48,10 @@ void setDefaultValues(Input* in)
     in->goodQuality = 0.2;
     //this basically turns off short edge removal...
     in->maximumEdgeRatio = 100.0;
+    //2D mesh adapt performs better if forceAdapt is on
+    in->shouldForceAdaptation = true;
   }
+  in->shouldCheckQualityForDoubleSplits = false;
   in->validQuality = 1e-10;
   in->maximumImbalance = 1.10;
   in->shouldRunPreZoltan = false;
@@ -62,13 +67,14 @@ void setDefaultValues(Input* in)
   in->shouldRefineLayer = false;
   in->shouldCoarsenLayer = false;
   in->splitAllLayerEdges = false;
+  in->userDefinedLayerTagName = "";
   in->shapeHandler = 0;
 }
 
 void rejectInput(const char* str)
 {
-  fprintf(stderr,"MeshAdapt input error:\n");
-  fprintf(stderr,"%s\n",str);
+  lion_eprint(1,"MeshAdapt input error:\n");
+  lion_eprint(1,"%s\n",str);
   abort();
 }
 
@@ -90,8 +96,13 @@ void validateInput(Input* in)
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested parametric coordinate transfer "
                 "but the geometric model does not support it");
-  if (in->shouldSnap && ( ! in->shouldTransferParametric))
-    rejectInput("snapping requires parametric coordinate transfer");
+  if (in->shouldTransferToClosestPoint
+    &&( ! in->mesh->canSnap()))
+    rejectInput("user requested transfer to closest point on model"
+                "but the geometric model does not support it");
+  if (in->shouldSnap && ( ! (in->shouldTransferParametric ||
+			     in->shouldTransferToClosestPoint)))
+    rejectInput("snapping requires parametric coordinate transfer or transfer to closest point");
   if ((in->mesh->hasMatching())
     &&( ! in->shouldHandleMatching))
     rejectInput("the mesh has matching entities but matched support is off");
@@ -139,7 +150,8 @@ Input* configure(
 Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
-    SolutionTransfer* s)
+    SolutionTransfer* s,
+    bool logInterpolation)
 {
 /* AutoSolutionTransfer object has to be created
    before the MetricSizeField, to avoid
@@ -147,7 +159,7 @@ Input* configure(
    the metric field, which has its own built-in
    solution transfer */
   Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, f, 1);
+  in->sizeField = makeSizeField(m, f, logInterpolation);
   return in;
 }
 
@@ -175,10 +187,11 @@ Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
-    SolutionTransfer* s)
+    SolutionTransfer* s,
+    bool logInterpolation)
 {
   Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, sizes, frames);
+  in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
   return in;
 }
 

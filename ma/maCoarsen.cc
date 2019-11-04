@@ -222,7 +222,8 @@ struct ShouldCollapse : public Predicate
 long markEdgesToCollapse(Adapt* a)
 {
   ShouldCollapse p(a);
-  return markEntities(a, 1, p, COLLAPSE, DONT_COLLAPSE);
+  return markEntities(a, 1, p, COLLAPSE, NEED_NOT_COLLAPSE,
+                      DONT_COLLAPSE | NEED_NOT_COLLAPSE);
 }
 
 bool coarsen(Adapt* a)
