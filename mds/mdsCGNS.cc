@@ -324,19 +324,20 @@ struct BCInfo
   std::string cgnsLocation;               // for debug
   std::unordered_set<cgsize_t> vertexIds; // zero-based global to relate to GlobalToVert
   apf::MeshTag *tag = nullptr;
-  //  apf::Field *field = nullptr; // debug, outputting to vtk
+  apf::Field *field = nullptr; // debug, outputting to vtk
 
   void Clean(apf::Mesh2 *m)
   {
-    // m->removeField(field);
-    // apf::destroyField(field);
+    m->removeField(field);
+    apf::destroyField(field);
     apf::removeTagFromDimension(m, tag, 0);
     m->destroyTag(tag);
   }
 
   void TagVertices(const int cgid, apf::Mesh2 *m, apf::GlobalToVert &globalToVert)
   {
-    tag = m->createIntTag(("marker_"+bcName).c_str(), 1); // 1 is size of tag
+    // tm = tag marker for that bcName, fm = field marker for that bcName
+    tag = m->createIntTag(("tm_" + bcName).c_str(), 1); // 1 is size of tag
     apf::MeshEntity *elem = nullptr;
     apf::MeshIterator *it = m->begin(0);
     int vals[1];
@@ -360,24 +361,24 @@ struct BCInfo
       }
     }
 
-    // if (debugOutput)
-    // //if constexpr (debugOutput) // probably will not get away with c++17
-    // {
-    //   // for debug output, tags aren't written to vtk...
-    //   apf::MeshEntity *elem = nullptr;
-    //   apf::MeshIterator *it = m->begin(0);
-    //   field = apf::createFieldOn(m, bcName.c_str(), apf::SCALAR);
+    if (debugOutput)
+    //if constexpr (debugOutput) // probably will not get away with c++17
+    {
+      // for debug output, tags aren't written to vtk...
+      apf::MeshEntity *elem = nullptr;
+      apf::MeshIterator *it = m->begin(0);
+      field = apf::createFieldOn(m, ("fm_" + bcName).c_str(), apf::SCALAR);
 
-    //   int vals[1];
-    //   double dval[1];
-    //   while ((elem = m->iterate(it)))
-    //   {
-    //     m->getIntTag(elem, tag, vals);
-    //     dval[0] = vals[0];
-    //     apf::setComponents(field, elem, 0, dval);
-    //   }
-    //   m->end(it);
-    // }
+      int vals[1];
+      double dval[1];
+      while ((elem = m->iterate(it)))
+      {
+        m->getIntTag(elem, tag, vals);
+        dval[0] = vals[0];
+        apf::setComponents(field, elem, 0, dval);
+      }
+      m->end(it);
+    }
 
     // Notes:
     // I do not exchange the tag values (even if that can be done).
@@ -444,6 +445,26 @@ struct BCInfo
         }
       }
       m->end(vertIter);
+
+      if (debugOutput)
+      //if constexpr (debugOutput) // probably will not get away with c++17
+      {
+        // for debug output, tags aren't written to vtk...
+        apf::MeshEntity *elem = nullptr;
+        apf::MeshIterator *it = m->begin(0);
+        auto* field = apf::createFieldOn(m, ("debug_" + tagName).c_str(), apf::SCALAR);
+
+        int vals[1];
+        double dval[1];
+        while ((elem = m->iterate(it)))
+        {
+          m->getIntTag(elem, bcTag, vals);
+          dval[0] = vals[0];
+          apf::setComponents(field, elem, 0, dval);
+        }
+        m->end(it);
+      }
+
       return bcTag;
     };
 
@@ -480,6 +501,26 @@ struct BCInfo
         }
       }
       m->end(edgeIter);
+
+      if (debugOutput)
+      //if constexpr (debugOutput) // probably will not get away with c++17
+      {
+        // for debug output, tags aren't written to vtk...
+        apf::MeshEntity *elem = nullptr;
+        apf::MeshIterator *it = m->begin(1);
+        auto* field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(1));
+
+        int vals[1];
+        double dval[1];
+        while ((elem = m->iterate(it)))
+        {
+          m->getIntTag(elem, bcTag, vals);
+          dval[0] = vals[0];
+          apf::setComponents(field, elem, 0, dval);
+        }
+        m->end(it);
+      }
+
       return bcTag;
     };
 
@@ -517,13 +558,32 @@ struct BCInfo
       }
       m->end(faceIter);
 
+      if (debugOutput)
+      //if constexpr (debugOutput) // probably will not get away with c++17
+      {
+        // for debug output, tags aren't written to vtk...
+        apf::MeshEntity *elem = nullptr;
+        apf::MeshIterator *it = m->begin(2);
+        auto* field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(2));
+
+        int vals[1];
+        double dval[1];
+        while ((elem = m->iterate(it)))
+        {
+          m->getIntTag(elem, bcTag, vals);
+          dval[0] = vals[0];
+          apf::setComponents(field, elem, 0, dval);
+        }
+        m->end(it);
+      }
+
       return bcTag;
     };
 
     const auto CellLoop = [&m](const std::string &tagName, apf::MeshTag *vertexTag, int dim) {
       apf::MeshTag *bcTag = nullptr;
       bcTag = m->createIntTag(tagName.c_str(), 1); // 1 is size of tag
-
+      
       apf::MeshIterator *cellIter = m->begin(dim);
       apf::MeshEntity *cell = nullptr;
       int vals[1];
@@ -553,6 +613,25 @@ struct BCInfo
         }
       }
       m->end(cellIter);
+
+      if (debugOutput)
+      //if constexpr (debugOutput) // probably will not get away with c++17
+      {
+        // for debug output, tags aren't written to vtk...
+        apf::MeshEntity *elem = nullptr;
+        apf::MeshIterator *it = m->begin(dim);
+        auto* field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(dim));
+
+        int vals[1];
+        double dval[1];
+        while ((elem = m->iterate(it)))
+        {
+          m->getIntTag(elem, bcTag, vals);
+          dval[0] = vals[0];
+          apf::setComponents(field, elem, 0, dval);
+        }
+        m->end(it);
+      }
 
       return bcTag;
     };
@@ -826,6 +905,8 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
 
 apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
 {
+  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
+
   int cgid = -1;
   auto comm = PCU_Get_Comm();
   cgp_mpi_comm(comm);
@@ -1007,7 +1088,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   apf::verify(mesh, true);
   {
     apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberOwnedNodes(mesh, "vertex Indices"));
+    gn = apf::makeGlobal(apf::numberOwnedNodes(mesh, "vert Idx"));
     apf::synchronize(gn);
   }
   // no synchronize call
@@ -1015,7 +1096,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   // https://github.com/SCOREC/core/issues/249
   {
     apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberElements(mesh, "element Indices"));
+    gn = apf::makeGlobal(apf::numberElements(mesh, "elem Idx"));
   }
 
   for (auto &bc : bcInfos)
