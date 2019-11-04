@@ -76,7 +76,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
 {
   {
     apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberOwnedNodes(m, "vertex Indices_prereorder"));
+    gn = apf::makeGlobal(apf::numberOwnedNodes(m, "vert Idx_preOrder"));
     apf::synchronize(gn);
   }
   // no synchronize call
@@ -84,7 +84,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
   // https://github.com/SCOREC/core/issues/249
   {
     apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberElements(m, "element Indices_prereorder"));
+    gn = apf::makeGlobal(apf::numberElements(m, "elem Idx_preOrder"));
   }
 
   //apf::MeshTag *order = Parma_BfsReorder(m);
@@ -93,7 +93,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
 
   {
     apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberOwnedNodes(m, "vertex Indices_postreorder"));
+    gn = apf::makeGlobal(apf::numberOwnedNodes(m, "vert Idx_pstOrder"));
     apf::synchronize(gn);
   }
   // no synchronize call
@@ -101,7 +101,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
   // https://github.com/SCOREC/core/issues/249
   {
     apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberElements(m, "element Indices_postreorder"));
+    gn = apf::makeGlobal(apf::numberElements(m, "elem Idx_pstOrder"));
   }
 
   const std::string name = prefix + "_reorder_" + std::to_string(PCU_Comm_Peers()) + "procs";
