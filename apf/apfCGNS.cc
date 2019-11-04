@@ -50,6 +50,8 @@ static auto count(apf::Mesh *m, int dim)
 
 void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap)
 {
+  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
+
   //ShowNumbering(m);
 
   const auto myRank = PCU_Comm_Self();
@@ -84,9 +86,9 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   }
 
   std::array<cgsize_t, 3> sizes;
-  sizes[0] = vertexCount.first;
-  sizes[1] = cellCount.first;
-  sizes[2] = 0; // nodes are unsorted.
+  sizes[0] = vertexCount.first; // global
+  sizes[1] = cellCount.first; // global
+  sizes[2] = 0; // nodes are unsorted, as defined by api
 
   // Copy communicator
   auto communicator = PCU_Get_Comm();
@@ -123,8 +125,6 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
       cg_error_exit();
   }
 
-  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
-
   int Cx = -1;
   int Cy = -1;
   int Cz = -1;
@@ -153,12 +153,12 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   apf::synchronize(gvn);
 
   {
+    cgsize_t vertexMin[3];
+    cgsize_t vertexMax[3];
     std::array<std::vector<double>, 3> coords;
 
-    cgsize_t rmin[3];
-    cgsize_t rmax[3];
-    rmin[0] = std::numeric_limits<cgsize_t>::max();
-    rmax[0] = 0;
+    vertexMin[0] = std::numeric_limits<cgsize_t>::max();
+    vertexMax[0] = 0;
 
     {
       apf::Vector3 point;
@@ -173,8 +173,8 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
             if (m->isOwned(vert))
             {
               const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(gvn, vert, 0) + 1); // one based
-              rmin[0] = std::min(rmin[0], n);
-              rmax[0] = std::max(rmax[0], n);
+              vertexMin[0] = std::min(vertexMin[0], n);
+              vertexMax[0] = std::max(vertexMax[0], n);
 
               m->getPoint(vert, 0, point);
               coords[0].push_back(point[0]);
@@ -188,24 +188,24 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     }
 
     // oddness of the api
-    rmin[1] = rmin[0];
-    rmin[2] = rmin[0];
-    rmax[1] = rmax[0];
-    rmax[2] = rmax[0];
+    vertexMin[1] = vertexMin[0];
+    vertexMin[2] = vertexMin[0];
+    vertexMax[1] = vertexMax[0];
+    vertexMax[2] = vertexMax[0];
 
     if (phys_dim > 0)
     {
-      if (cgp_coord_write_data(index, base, zone, Cx, &rmin[0], &rmax[0], coords[0].data()))
+      if (cgp_coord_write_data(index, base, zone, Cx, &vertexMin[0], &vertexMax[0], coords[0].data()))
         cgp_error_exit();
     }
     if (phys_dim > 1)
     {
-      if (cgp_coord_write_data(index, base, zone, Cy, &rmin[0], &rmax[0], coords[1].data()))
+      if (cgp_coord_write_data(index, base, zone, Cy, &vertexMin[0], &vertexMax[0], coords[1].data()))
         cgp_error_exit();
     }
     if (phys_dim > 2)
     {
-      if (cgp_coord_write_data(index, base, zone, Cz, &rmin[0], &rmax[0], coords[2].data()))
+      if (cgp_coord_write_data(index, base, zone, Cz, &vertexMin[0], &vertexMax[0], coords[2].data()))
         cgp_error_exit();
     }
   }
@@ -258,6 +258,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   PCU_ALWAYS_ASSERT_VERBOSE(allTotal == cellCount.first, ("Must be equal " + std::to_string(allTotal) + " " + std::to_string(cellCount.first)).c_str());
 
   int globalStart = 1; // one-based
+  std::vector<apf::MeshEntity *> orderedElements;
   for (std::size_t o = 0; o < apfElementOrder.size(); o++)
   {
     std::vector<cgsize_t> elements;
@@ -275,6 +276,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
           const auto n = apf::getNumber(gvn, verts[i], 0);
           elements.push_back(n + 1); // one-based
         }
+        orderedElements.push_back(cell);
       }
     }
     m->end(cellIter);
@@ -625,39 +627,180 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
     }
   }
 
+  const auto loopTags = [&m](const std::vector<apf::MeshEntity *> &orderedEnts, const int &solIndex, const auto &inner, const auto &post, apf::GlobalNumbering *numbering) {
+    apf::DynamicArray<apf::MeshTag *> tags;
+    m->getTags(tags);
+    for (std::size_t i = 0; i < tags.getSize(); ++i)
+    {
+      apf::MeshTag *t = tags[i];
+      const int tagType = m->getTagType(t);
+      const int tagSize = m->getTagSize(t);
+      std::string tagName(m->getTagName(t));
+      tagName.resize(32); // daft api
+      //std::cout << i << " " << tagName << " " << m->getTagName(t) << std::endl;
+
+      // boring... replace with variant
+      std::vector<int> idata;
+      std::vector<double> ddata;
+      std::vector<long> ldata;
+
+      if (tagSize != 1)
+      {
+        std::cout << "Not finished yet, can't be that hard..." << std::endl;
+        exit(-1);
+      }
+
+      cgsize_t rmin[3];
+      cgsize_t rmax[3];
+
+      rmin[0] = std::numeric_limits<cgsize_t>::max();
+      rmax[0] = 0;
+
+      for (const auto &e: orderedEnts)
+      {
+        if (m->hasTag(e, t) && m->isOwned(e))
+        {
+          //std::cout << "Tags for dim " << dim << " " << tagName << " " << tagType << " " << tagSize << std::endl;
+          inner(e, t, idata, ddata, ldata, tagType);
+          const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(numbering, e, 0) + 1); // one based
+          rmin[0] = std::min(rmin[0], n);
+          rmax[0] = std::max(rmax[0], n);
+        }
+      }
+
+      // oddness of the api
+      rmin[1] = rmin[0];
+      rmin[2] = rmin[0];
+      rmax[1] = rmax[0];
+      rmax[2] = rmax[0];
+
+      post(solIndex, tagName, idata, ddata, ldata, rmin, rmax);
+    }
+  };
+
+  const auto postLambda = [&index, &base, &zone](const int &solIndex, const std::string &name, std::vector<int> &idata, std::vector<double> &ddata, std::vector<long> &ldata, const cgsize_t *rmin, const cgsize_t *rmax) {
+    if (!ddata.empty())
+    {
+      int fieldIndex = -1;
+
+      if (cgp_field_write(index, base, zone, solIndex, CGNS_ENUMV(RealDouble), name.c_str(), &fieldIndex))
+        cgp_error_exit();
+
+      if (cgp_field_write_data(index, base, zone, solIndex, fieldIndex, &rmin[0], &rmax[0],
+                               ddata.data()))
+        cgp_error_exit();
+    }
+    else if (!idata.empty())
+    {
+      int fieldIndex = -1;
+
+      if (cgp_field_write(index, base, zone, solIndex, CGNS_ENUMV(Integer), name.c_str(), &fieldIndex))
+        cgp_error_exit();
+
+      if (cgp_field_write_data(index, base, zone, solIndex, fieldIndex, &rmin[0], &rmax[0],
+                               idata.data()))
+        cgp_error_exit();
+    }
+    else if (!ldata.empty())
+    {
+      int fieldIndex = -1;
+
+      if (cgp_field_write(index, base, zone, solIndex, CGNS_ENUMV(LongInteger), name.c_str(), &fieldIndex))
+        cgp_error_exit();
+
+      if (cgp_field_write_data(index, base, zone, solIndex, fieldIndex, &rmin[0], &rmax[0],
+                               ldata.data()))
+        cgp_error_exit();
+    }
+  };
+
+  const auto innerLambda = [&m](apf::MeshEntity *elem, apf::MeshTag *tag, std::vector<int> &idata, std::vector<double> &ddata, std::vector<long> &ldata, const int &tagType) {
+    if (tagType == apf::Mesh::TagType::DOUBLE)
+    {
+      double vals = -1;
+      m->getDoubleTag(elem, tag, &vals);
+      ddata.push_back(vals);
+    }
+    else if (tagType == apf::Mesh::TagType::INT)
+    {
+      int vals = -1;
+      m->getIntTag(elem, tag, &vals);
+      idata.push_back(vals);
+    }
+    else if (tagType == apf::Mesh::TagType::LONG)
+    {
+      long vals = -1;
+      m->getLongTag(elem, tag, &vals);
+      ldata.push_back(vals);
+    }
+    else
+    {
+      std::cout << "Strange" << std::endl;
+      exit(-1);
+    }
+  };
+
+  int solIndex = -1;
+
+  {
+    if (cg_sol_write(index, base, zone, "Vertex Data", CGNS_ENUMV(Vertex), &solIndex))
+      cg_error_exit();
+
+    std::vector<apf::MeshEntity *> orderedVertices;
+    apf::MeshIterator *vertIter = m->begin(0);
+    apf::MeshEntity *vert = nullptr;
+    while ((vert = m->iterate(vertIter)))
+    {
+      if (m->isOwned(vert))
+      {
+        orderedVertices.push_back(vert);
+      }
+    }
+    m->end(vertIter);
+
+    loopTags(orderedVertices, solIndex, innerLambda, postLambda, gvn);
+  }
+
+  {
+    if (cg_sol_write(index, base, zone, "Cell Data", CGNS_ENUMV(CellCenter), &solIndex))
+      cg_error_exit();
+
+    loopTags(orderedElements, solIndex, innerLambda, postLambda, gcn);
+  }
+
+  const auto loopFields = [&m](int dim) {
+    for (int i = 0; i < m->countFields(); ++i)
+    {
+      apf::Field *f = m->getField(i);
+      int fieldType = f->getScalarType();
+      int fieldSize = f->countComponents();
+      const char *fieldName = f->getName();
+
+      apf::MeshEntity *e;
+      apf::MeshIterator *it = m->begin(dim);
+      bool keepGoing = true;
+      apf::FieldData *fd = f->getData();
+      while ((e = m->iterate(it)) && keepGoing)
+      {
+        if (fd->hasEntity(e))
+        {
+          std::cout << "Fields for dim " << dim << " " << fieldName << " " << fieldType << " " << fieldSize << std::endl;
+          keepGoing = false;
+        }
+      }
+      m->end(it);
+    }
+  };
+
+  for (int i = 0; i <= m->getDimension(); i++)
+    loopFields(i);
+
   //
   destroyGlobalNumbering(gvn);
   destroyGlobalNumbering(gcn);
   //
-
-
-  apf::DynamicArray<apf::MeshTag *> tags;
-  m->getTags(tags);
-  for (std::size_t i = 0; i < tags.getSize(); ++i)
-  {
-    apf::MeshTag *t = tags[i];
-    // create a new tag on the outMesh
-    int tagType = m->getTagType(t);
-    int tagSize = m->getTagSize(t);
-    const char *tagName = m->getTagName(t);
-
-    apf::MeshEntity *e;
-    apf::MeshIterator *it = m->begin(m->getDimension());
-    bool keepGoing = true;
-    while ( (e = m->iterate(it)) && keepGoing )
-    {
-      if (m->hasTag(e, t))
-      {
-        std::cout << "Cell tags " << tagName << " " << tagType << " " << tagSize << std::endl;
-        keepGoing = false;
-      }
-    }
-    m->end(it);
-  }
-
-
   cgp_close(index);
-}
+} // namespace
 } // namespace
 
 namespace apf
