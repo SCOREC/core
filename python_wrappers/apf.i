@@ -85,6 +85,7 @@ void lion_set_verbosity(int lvl);
 %include<apfVector.h>
 /* %template(dvector3) apf::Vector<3>; */
 %include<apfMatrix.h>
+/* %ignore apf::Matrix; */
 
 %ignore apf::ElementVertOp;
 %ignore apf::BuildCallback;
@@ -128,6 +129,13 @@ void lion_set_verbosity(int lvl);
     apf::Vector3 p;
     apf::getVector(f, downs[downId], downNode, p);
     return p;
+  }
+  void setIPxyz(apf::Field* f, apf::MeshEntity* e, int node, double x, double y, double z)
+  {
+    int dim = self->getDimension();
+    PCU_ALWAYS_ASSERT(dim >= 2);
+    double vec[3] = {x, y, z};
+    apf::setComponents(f, e, node, vec);
   }
   double measureSize(apf::MeshEntity* v)
   {
@@ -188,4 +196,5 @@ namespace ma {
 
 namespace ma {
   void adapt(Input* in);
+  void adaptVerbose(Input* in, bool verbosef = false);
 }
