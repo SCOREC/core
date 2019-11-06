@@ -132,10 +132,13 @@ Matrix<M,N> tensorProduct(Vector<M> const& a, Vector<N> const& b)
 template <std::size_t M, std::size_t N>
 Matrix<M-1,N-1> getMinor(Matrix<M,N> const& A, std::size_t i, std::size_t j);
 
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 /** \brief get the cofactor associated with entry (i,j) of matrix A
  \details this is only instantiated for square matrices up to 4 by 4 */
 template <std::size_t M, std::size_t N>
 double getCofactor(Matrix<M,N> const& A, std::size_t i, std::size_t j);
+#pragma GCC pop_options
 
 /** \brief get the determinant of a matrix A
  \details this is only instantiated for square matrices up to 4 by 4 */

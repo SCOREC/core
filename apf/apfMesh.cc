@@ -237,8 +237,12 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
   PCU_ALWAYS_ASSERT(dim == 1 || dim == 2);
   gmi_ent* e = (gmi_ent*)g;
   gmi_set* adjRegions = gmi_adjacent(getModel(), e, 3);
-  // for 2D models
-  if (adjRegions->n == 0)
+  // for 2D models return true
+  if (adjRegions->n == 0 || adjRegions->n == 2)
+    return true;
+  // for faces with more than 1 adj model region return true for now
+  // TODO: update for future
+  if (adjRegions->n == 2)
     return true;
   PCU_ALWAYS_ASSERT(adjRegions->n <= 1);
   gmi_ent* r = (gmi_ent*)adjRegions->e[0];
