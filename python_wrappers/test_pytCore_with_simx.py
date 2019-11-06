@@ -22,6 +22,8 @@ def main(argv):
    print 'Model file is "', model
    print 'Mesh  file is "', mesh
 
+   pyCore.lion_set_verbosity(1)
+
    # PCU initialization
    pyCore.PCU_Comm_Init()
 
