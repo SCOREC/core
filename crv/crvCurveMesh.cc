@@ -202,6 +202,9 @@ bool BezierCurver::run(bool flag)
     apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   }
 
+  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 8, "mesh_after_shape_change");
+  writeCurvedWireFrame(m_mesh, 16, "mesh_after_shape_change");
+
   if (m_mesh->canSnap()){
     for(int d = 1; d <= 2; ++d)
       snapToInterpolate(d);
@@ -210,27 +213,27 @@ bool BezierCurver::run(bool flag)
 
   convertInterpolatingToBezier();
 
-  //crv::writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 10, "after-inflate");
-  //crv::writeCurvedWireFrame(m_mesh, 40, "after-inflate");
+  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 8, "mesh_after_inflate");
+  writeCurvedWireFrame(m_mesh, 16, "mesh_after_inflate");
 
   if (flag == 1) {
   
-    apf::MeshEntity* f;
-    apf::MeshIterator* it = m_mesh->begin(2);
-    apf::Adjacent adjR;
-    while ((f = m_mesh->iterate(it))){
-      int count = 0;
-      if(m_mesh->getModelType(m_mesh->toModel(f)) == 3) {
-	m_mesh->getAdjacent(f, 3, adjR);
-	for (std::size_t i = 0; i < adjR.getSize(); i++) {
-	  if (crv::checkValidity(m_mesh, adjR[i], 2) > 1) 
-	    count ++;
-	}
-	if (count > 0) 
-	  faceOp(m_mesh, f);
-      }
-    }
-    m_mesh->end(it);
+    /* apf::MeshEntity* f; */
+    /* apf::MeshIterator* it = m_mesh->begin(2); */
+    /* apf::Adjacent adjR; */
+    /* while ((f = m_mesh->iterate(it))){ */
+    /*   int count = 0; */
+    /*   if(m_mesh->getModelType(m_mesh->toModel(f)) == 3) { */
+	/* m_mesh->getAdjacent(f, 3, adjR); */
+	/* for (std::size_t i = 0; i < adjR.getSize(); i++) { */
+	  /* if (crv::checkValidity(m_mesh, adjR[i], 2) > 1) */ 
+	    /* count ++; */
+	/* } */
+	/* if (count > 0) */ 
+	  /* faceOp(m_mesh, f); */
+    /*   } */
+    /* } */
+    /* m_mesh->end(it); */
     
     if(m_mesh->getDimension() >= 2) {
       if (m_order == 2 || m_order == 3) {

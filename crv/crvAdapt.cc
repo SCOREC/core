@@ -163,6 +163,13 @@ ma::Input* configureShapeCorrection(
 
 static int fixInvalidElements(crv::Adapt* a)
 {
+
+  crv::fixLargeBoundaryAngles(a);
+  crv::fixInvalidEdges(a);
+
+  return 0;
+
+
   a->input->shouldForceAdaptation = false;
   int count = crv::fixLargeBoundaryAngles(a) 
     + crv::fixInvalidEdges(a);
@@ -213,6 +220,8 @@ void adapt(ma::Input* in)
   ma::preBalance(a);
 
   fixInvalidElements(a);
+
+  return;
 
   for (int i=0; i < in->maximumIterations; ++i)
   {

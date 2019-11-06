@@ -10,6 +10,7 @@
 #include "crvMath.h"
 #include "crvTables.h"
 #include "crvQuality.h"
+#include <iostream>
 
 namespace crv {
 
@@ -479,6 +480,7 @@ int Quality3D::checkValidity(apf::MeshEntity* e)
   int validityTag = computeJacDetNodes(e,nodes,true);
   if (validityTag > 1)
     return validityTag;
+  else return 1;
 // check verts
   apf::Downward verts;
   mesh->getDownward(e,0,verts);
@@ -487,6 +489,7 @@ int Quality3D::checkValidity(apf::MeshEntity* e)
       return 2+i;
     }
   }
+ // std::cout<<"reached here"<<std::endl;
 
   apf::MeshEntity* edges[6];
   mesh->getDownward(e,1,edges);
@@ -619,6 +622,220 @@ double computeTetJacobianDetFromBezierFormulation(apf::Mesh* m,
   return detJ;
 }
 
+std::vector<int> validityByAlgo(apf::Mesh* mesh, apf::MeshEntity* e, int algorithm)
+{
+
+  int order = mesh->getShape()->getOrder();
+  int n = getNumControlPoints(apf::Mesh::TET, 3*(order-1));
+  apf::NewArray<double> subdivisionCoeffs[4];
+ // apf::NewArray<apf::Vector3> xi;
+ // xi.allocate(n);
+  if (algorithm == 0 || algorithm == 2){
+    for (int d = 1; d <= 3; ++d)
+      getBezierJacobianDetSubdivisionCoefficients(
+      	  3*(order-1),apf::Mesh::simplexTypes[d],subdivisionCoeffs[d]);
+  }
+
+  apf::NewArray<double> nodes(n);
+
+  std::vector<int> ai = getAllInvaliditiesWNodes(mesh, e, nodes);
+  
+  std::vector<int> ainvA;
+
+  if (ai.size()==0) {
+    ainvA.push_back(-1);
+    return ainvA;
+  }
+
+  int flag = 3;
+  if (ai[0] == 20) flag = 0;
+  else if (ai[0] > 13 && ai[0] < 18) flag = 1;
+  else if (ai[0] > 7 && ai[0] < 14) flag = 2;
+
+  apf::Downward verts;
+  mesh->getDownward(e,0,verts);
+  for (int i = 0; i < 4; ++i){
+    if(nodes[i] < minAcceptable){
+      ainvA.push_back(2+i);
+    }
+  }
+
+  double minJ = 0, maxJ = 0;
+  if (flag == 0 || flag == 1 || flag == 2) {
+    apf::MeshEntity* edges[6];
+    mesh->getDownward(e,1,edges);
+    // Vertices will already be flagged in the first check
+    
+    for (int edge = 0; edge < 6; ++edge){
+      for (int i = 0; i < 3*(order-1)-1; ++i){
+        if (nodes[4+edge*(3*(order-1)-1)+i] < minAcceptable){
+          minJ = -1e10;
+          apf::NewArray<double> edgeNodes(3*(order-1)+1);
+ 
+          if(algorithm < 2){
+            edgeNodes[0] = nodes[apf::tet_edge_verts[edge][0]];
+            edgeNodes[3*(order-1)] = nodes[apf::tet_edge_verts[edge][1]];
+            for (int j = 0; j < 3*(order-1)-1; ++j)
+              edgeNodes[j+1] = nodes[4+edge*(3*(order-1)-1)+j];
+            // allows recursion stop on first "conclusive" invalidity
+            if(algorithm == 1)
+              getJacDetByElevation(apf::Mesh::EDGE,3*(order-1),
+                  edgeNodes,minJ,maxJ);
+            else {
+              bool done = false;
+              getJacDetBySubdivision(apf::Mesh::EDGE,3*(order-1),
+                  0,edgeNodes,minJ,maxJ,done);
+            }
+          } else {
+            edgeNodes[0] = nodes[apf::tet_edge_verts[edge][0]];
+            edgeNodes[1] = nodes[apf::tet_edge_verts[edge][1]];
+            for (int j = 0; j < 3*(order-1)-1; ++j)
+              edgeNodes[j+2] = nodes[4+edge*(3*(order-1)-1)+j];
+ 
+            bool done = false;
+            bool quality = false;
+            getJacDetBySubdivisionMatrices(apf::Mesh::EDGE,3*(order-1),
+                0,subdivisionCoeffs[1],edgeNodes,minJ,maxJ,done,quality);
+          }
+          if(minJ < minAcceptable){
+            ainvA.push_back(8+edge);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (flag == 0 || flag == 1) {
+    apf::MeshEntity* faces[4];
+    mesh->getDownward(e,2,faces);
+    for (int face = 0; face < 4; ++face){
+      double minJ = -1e10;
+      for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
+        if (nodes[18*order-20+face*(3*order-4)*(3*order-5)/2+i] < minAcceptable){
+          minJ = -1e10;
+          apf::NewArray<double> triNodes((3*order-2)*(3*order-1)/2);
+          getTriDetJacNodesFromTetDetJacNodes(face,3*(order-1),nodes,triNodes);
+          if(algorithm == 2){
+            bool done = false;
+            bool quality = false;
+            getJacDetBySubdivisionMatrices(apf::Mesh::TRIANGLE,3*(order-1),
+                0,subdivisionCoeffs[2],triNodes,minJ,maxJ,done,quality);
+          } else if(algorithm == 1)
+            getJacDetByElevation(apf::Mesh::TRIANGLE,3*(order-1),
+                triNodes,minJ,maxJ);
+          else {
+            bool done = false;
+            getJacDetBySubdivision(apf::Mesh::TRIANGLE,3*(order-1),
+                0,triNodes,minJ,maxJ,done);
+          }
+          if(minJ < minAcceptable){
+            ainvA.push_back(14+face);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (flag == 0) {
+    for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
+      if (nodes[18*order*order-36*order+20+i] < minAcceptable){
+        minJ = -1e10;
+        if(algorithm == 1){
+          getJacDetByElevation(apf::Mesh::TET,3*(order-1),nodes,minJ,maxJ);
+        } else {
+          bool done = false;
+          bool quality = false;
+          getJacDetBySubdivisionMatrices(apf::Mesh::TET,3*(order-1),
+              0,subdivisionCoeffs[3],nodes,minJ,maxJ,done,quality);
+        }
+        if(minJ < minAcceptable){
+          ainvA.push_back(20);
+          break;
+        }
+      }
+    }
+  }
+  return ainvA;
+}
+
+std::vector<int> getAllInvaliditiesWNodes(apf::Mesh* mesh,apf::MeshEntity* e, apf::NewArray<double>& nodes)
+{
+  int order = mesh->getShape()->getOrder();
+  int n = getNumControlPoints(apf::Mesh::TET, 3*(order-1));
+
+  apf::NewArray<apf::Vector3> xi;
+  xi.allocate(n);
+
+  collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
+      elem_vert_xi[apf::Mesh::TET], xi);
+  std::vector<int> ai;
+  apf::NewArray<double> interNodes(n);
+  apf::MeshElement* me = apf::createMeshElement(mesh,e);
+  
+  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
+    int index = 18*order*order-36*order+20+i;
+    interNodes[index] = apf::getDV(me,xi[index]);
+    if(interNodes[index] < 1e-10){
+      ai.push_back(20);      
+    }
+  }
+
+  for (int face = 0; face < 4; ++face){
+    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
+      int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        ai.push_back(face+14);
+        break;
+      }
+    }
+  }
+
+  for (int edge = 0; edge < 6; ++edge){
+    for (int i = 0; i < 3*(order-1)-1; ++i){
+      int index = 4+edge*(3*(order-1)-1)+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        ai.push_back(edge+8);
+        break;
+      }
+    }
+  }
+
+  for (int i = 0; i < 4; ++i){
+    interNodes[i] = apf::getDV(me,xi[i]);
+    if(interNodes[i] < 1e-10){
+      ai.push_back(i+2);
+    }
+  }
+  apf::destroyMeshElement(me);
+
+  //collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
+  //    elem_vert_xi[apf::Mesh::TET], xi);
+  //for (int i = 0; i < n; i++) {
+  //  std::cout<<"Determinant value at "<< xi[i] <<" "<< interNodes[i]<<std::endl;
+  //}
+
+  mth::Matrix<double> transformationMatrix;
+  mth::Matrix<double> A(n,n);
+  transformationMatrix.resize(n,n);
+  //collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
+  //    elem_vert_xi[apf::Mesh::TET], xi);
+  getBezierTransformationMatrix(apf::Mesh::TET, 3*(order-1), A,
+      elem_vert_xi[apf::Mesh::TET]);
+  invertMatrixWithPLU(n, A, transformationMatrix);
+
+  for (int i = 0; i < n; i++) {
+    nodes[i] = 0;
+    for (int j = 0; j < n; j++)
+      nodes[i] += interNodes[j]*transformationMatrix(i,j);
+  }
+
+  return ai;
+}
+
 std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
 {
   int order = mesh->getShape()->getOrder();
@@ -627,6 +844,8 @@ std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
   apf::NewArray<apf::Vector3> xi;
   xi.allocate(n);
 
+  collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
+      elem_vert_xi[apf::Mesh::TET], xi);
   std::vector<int> ai;
   apf::NewArray<double> interNodes(n);
   apf::MeshElement* me = apf::createMeshElement(mesh,e);
