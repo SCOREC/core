@@ -730,7 +730,6 @@ bool CrvModelEdgeOptim :: run()
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
-  /* 
     apf::Adjacent adjT;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
@@ -740,7 +739,6 @@ bool CrvModelEdgeOptim :: run()
       	return false;
       }
     }
-    */
     //std::cout<<"---------------------------------------------"<<std::endl;
     return true;
   }

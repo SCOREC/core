@@ -165,6 +165,7 @@ static int fixInvalidElements(crv::Adapt* a)
 {
 
   crv::fixLargeBoundaryAngles(a);
+  /* crv::fixInvalidFaces(a); */
   crv::fixInvalidEdges(a);
 
   return 0;

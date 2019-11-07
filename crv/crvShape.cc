@@ -71,6 +71,7 @@ static std::vector<int> getEdgeSequenceFromInvalidVertex(ma::Mesh* mesh, ma::Ent
   std::vector<int> a;
   std::vector<int> b;
   
+  // get the vertex local number for face from the invalid vertex
   for (int i = 0; i < nf; i++) {
     mesh->getDownward(f[i], 0, vf);
     int j = apf::findIn(vf, 3, vt[index]);
@@ -81,8 +82,9 @@ static std::vector<int> getEdgeSequenceFromInvalidVertex(ma::Mesh* mesh, ma::Ent
     }
   }
 
-  double c[3];
-  int cc[3];
+  //getJacobianDeterminant on each face at
+  double c[3]; //contains jacobian value
+  int cc[3];   //face index
   apf::Vector3 xi;
   apf::Matrix3x3 Jac;
   for(size_t k = 0; k < a.size(); k++) {
@@ -208,6 +210,84 @@ static std::vector<int> sortEdgeIndexByType(ma::Mesh* mesh, ma::Entity* e, std::
   return b;
 }
 
+static int getCommonEdgeIndexToFaces(int a, int b)
+{
+  int tb[4][4] = {{-1, 0, 1, 2},
+                  {0, -1, 4, 3},
+		  {1, 4, -1, 5},
+		  {2, 3, 5, -1}};
+  return tb[a][b] + 2;
+}
+
+// doess not account for TET(20) invalidity
+static int numOfUniqueFaces(std::vector<int> &ai)
+{
+  int num = 0;
+  std::vector<int> aiEdgeNVtx;
+  std::vector<int> aiOnlyFace;
+  std::vector<int> aiUniqueFace;
+
+  for (size_t i = 0; i < ai.size(); i++) {
+    if (ai[i] > 13 && ai[i] < 20)
+      aiOnlyFace.push_back(ai[i]);
+    else
+      aiEdgeNVtx.push_back(ai[i]);
+  }
+
+  int tbOfFaceToEdgeIndex[4][4] = {{-1, 0, 1, 2},
+				   {0, -1, 4, 3},
+				   {1, 4, -1, 5},
+				   {2, 3, 5, -1}};
+  
+  for (size_t j = 0; j < aiOnlyFace.size(); j++) {
+  bool isUnique = false;
+    for (int i = 0; i < 4; i++) {
+      for (size_t k = 0; k < aiEdgeNVtx.size(); k++) {
+      	isUnique = isUnique || (tbOfFaceToEdgeIndex[aiOnlyFace[j]-14][i] + 8 == aiEdgeNVtx[k]);
+      	//if (tbOfFaceToEdgeIndex[aiOnlyFace[j]-14][i] + 8 == aiEdgeNVtx[k]) // only for TET
+      }
+    }
+    if (isUnique == false)
+      aiUniqueFace.push_back(aiOnlyFace[j]);
+  }
+
+  ai.clear();
+
+  if (aiUniqueFace.size() > 0) {
+    for (std::size_t i = 0; i < aiUniqueFace.size(); i++)
+      ai.push_back(aiUniqueFace[i]);
+    for (std::size_t i = 0; i < aiEdgeNVtx.size(); i++)
+      ai.push_back(aiEdgeNVtx[i]);
+
+    num = aiUniqueFace.size();
+    return num;
+  }
+  else {
+    for (std::size_t i = 0; i < aiEdgeNVtx.size(); i++)
+      ai.push_back(aiEdgeNVtx[i]);
+    return 0;
+  }
+}
+
+static std::vector<int> inspectInvalidies(std::vector<int> ai)
+{
+  std::vector<int> aimod;
+  std::vector<int> a;
+
+  for (size_t i = 0; i < ai.size(); i++) {
+    if (ai[i] > 13) 
+      a.push_back(ai[i]);
+    else
+      aimod.push_back(ai[i]);
+  }
+  if (a.size() == 2) {
+    //aimod.push_back(getCommonEdgeIndexToFaces(a[0]-14,a[1]-14));
+    return aimod;
+  }
+  else 
+    return ai;
+}
+
 static int markAllEdges(ma::Mesh* m, ma::Entity* e,
     std::vector<int> ai, ma::Entity* edges[6])
 {
@@ -217,7 +297,12 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
   ma::Downward ed;
   m->getDownward(e,1,ed);
 
-  for (size_t ii = 0; ii < ai.size(); ii++) {
+ //std::vector<int> ai = inspectInvalidies(aiall);
+  int num = numOfUniqueFaces(ai);
+
+  if (ai.size() <= num) return 0;
+
+  for (size_t ii = num; ii < ai.size(); ii++) {
     int dim = (ai[ii]-2)/6;
     int index = (ai[ii]-2) % 6;
 
@@ -397,6 +482,31 @@ static std::vector<int> faceIndexAdjInvalidEdge(ma::Mesh* mesh, ma::Entity* e, i
   return a;
 }
 
+static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
+    ma::Entity* faces[4])
+{
+  int num = numOfUniqueFaces(ai);
+  int n = 0;
+
+  if (num > 0) {
+    for (std::size_t i = 0; i < num; i++) {
+      int index = (ai[i] -2) % 6;
+      int md = m->getDimension();
+
+      ma::Downward fc;
+      m->getDownward(e, 2, fc);
+
+      if (m->getModelType(m->toModel(fc[index])) == 3) {
+      	faces[n] = fc[index];
+      	n++;
+      }
+    }
+    return n;
+  }
+  else 
+    return 0;
+}
+
 static int markFaces(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* faces[4])
 {
@@ -444,7 +554,7 @@ static int markFaces(ma::Mesh* m, ma::Entity* e, int tag,
       ma::Downward fc;
       m->getDownward(e,2,fc);
       if (m->getModelType(m->toModel(fc[index])) == 3) {
-      	faces[0] = fc[index];
+      	faces[n] = fc[index];
       	n++;
       }
       break;
@@ -544,7 +654,10 @@ public:
   virtual bool shouldApply(ma::Entity* e)
   {
     int tag = crv::getTag(adapter,e);
-    ne = markEdges(mesh,e,tag,edges);
+
+    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    //ne = markEdges(mesh,e,tag,edges);
+    ne = markAllEdges(mesh, e, ai, edges);
     simplex = e;
     return (ne > 0);
   }
@@ -1046,8 +1159,10 @@ static int markFacesToFix(Adapt* a, int flag)
   ma::Iterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it)))
   {
-    int tag = crv::getTag(a, e);
-    int n = markFaces(m, e, tag, faces);
+    std::vector<int> ai = crv::getAllInvalidities(m, e);
+//    int tag = crv::getTag(a, e);
+//    int n = markFaces(m, e, tag, faces);
+    int n = markUniqueFaces(m, e, ai, faces); 
     for (int i = 0; i < n; i++) {
       ma::Entity* face = faces[i];
       PCU_ALWAYS_ASSERT(face);

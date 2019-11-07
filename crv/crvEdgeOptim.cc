@@ -1,11 +1,146 @@
 #include "crvEdgeOptim.h"
 #include "LBFGS.h"
 #include "crv.h"
+#include "gmi.h"
+#include "apfMDS.h"
 #include "crvQuality.h"
 #include "crvBezier.h"
 #include "crvMath.h"
 #include <iostream>
 #include "apfMatrix.h"
+
+static int global_counter = 0;
+
+static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], int count, int nat)
+{
+  printf("at edge %d\n", count);
+  for (int i = 0; i < nat; i++) {
+    std::vector<int> ai = crv::getAllInvalidities(m, e[i]);
+    for (std::size_t j = 0; j < ai.size(); j++) {
+      printf("%d ", ai[j]);
+    }
+    printf("\n");
+  }
+}
+
+
+static void makeMultipleEntityMesh(apf::Mesh2* m, apf::MeshEntity* e[99], int count, const char* prefix, int nat)
+{
+  int dim = 0;
+  if (m->getType(e[0]) == apf::Mesh::TRIANGLE)
+    dim = 2;
+  else if (m->getType(e[0]) == apf::Mesh::TET)
+    dim = 3;
+  else
+    PCU_ALWAYS_ASSERT(0);
+
+  gmi_model* g = gmi_load(".null");
+  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(g, dim, false);
+
+  apf::MeshEntity* newEnt[99];
+
+  for (int ii = 0; ii < nat; ii++) {
+    // Verts
+    apf::MeshEntity* vs[12];
+    apf::MeshEntity* newVs[12];
+    int nv = m->getDownward(e[ii], 0, vs);
+    for(int i = 0; i < nv; ++i)
+    {
+      apf::Vector3 p;
+      apf::Vector3 param(0., 0., 0.);
+      m->getPoint(vs[i], 0, p);
+      newVs[i] = outMesh->createVertex(0, p, param);
+    }
+ 
+    // Edges
+    apf::MeshEntity* es[12];
+    apf::MeshEntity* newEs[12];
+    int ne = m->getDownward(e[ii], 1, es);
+    for(int i = 0; i < ne; ++i)
+    {
+      apf::MeshEntity* evs[2];
+      apf::MeshEntity* new_evs[2];
+      m->getDownward(es[i], 0, evs);
+      for (int j = 0; j < 2; j++) {
+        new_evs[j] = newVs[apf::findIn(vs, nv, evs[j])];
+      }
+ 
+      newEs[i] = outMesh->createEntity(apf::Mesh::EDGE, 0, new_evs);
+    }
+ 
+    // Faces
+    apf::MeshEntity* fs[12];
+    apf::MeshEntity* newFs[12];
+    int nf = m->getDownward(e[ii], 2, fs);
+    for(int i = 0; i < nf; ++i)
+    {
+      apf::MeshEntity* fes[3];
+      apf::MeshEntity* new_fes[3];
+      m->getDownward(fs[i], 1, fes);
+      for (int j = 0; j < 3; j++) {
+        new_fes[j] = newEs[apf::findIn(es, ne, fes[j])];
+      }
+      newFs[i] = outMesh->createEntity(apf::Mesh::TRIANGLE, 0, new_fes);
+    }
+ 
+    // Regions
+    apf::MeshEntity* tet;
+    if (dim == 3) {
+      tet = outMesh->createEntity(apf::Mesh::TET, 0, newFs);
+    }
+ 
+    if (dim == 2)
+      newEnt[ii] = newFs[0];
+    else
+      newEnt[ii] = tet;
+ 
+    PCU_ALWAYS_ASSERT(m->getType(e[ii]) == outMesh->getType(newEnt[ii]));
+    //printf("HERE 02\n")liver tetrahedral element
+    outMesh->acceptChanges();
+  }
+     
+ // std::stringstream ss2;
+ // ss2 << "straight_sided_" << count;
+ // apf::writeVtkFiles(ss2.str().c_str(), outMesh);
+ 
+  apf::changeMeshShape(outMesh, crv::getBezier(3), true);
+  outMesh->acceptChanges();
+ 
+  for (int ii = 0; ii < nat; ii++) {
+    for (int d = 1; d <= dim; d++)
+    {
+      if (!m->getShape()->hasNodesIn(d)) continue;
+      apf::MeshEntity* eds[12];
+      int counter = m->getDownward(e[ii], d, eds);
+      apf::MeshEntity* new_eds[12];
+      outMesh->getDownward(newEnt[ii], d, new_eds);
+      int non = outMesh->getShape()->countNodesOn(apf::Mesh::simplexTypes[d]);
+      for(int n = 0; n < counter; ++n) {
+        for(int i = 0; i < non; ++i) {
+        apf::Vector3 p;
+        m->getPoint(eds[n], i, p);
+        outMesh->setPoint(new_eds[n], i, p);
+        }
+      }
+    }
+    outMesh->acceptChanges();
+  }
+ /*
+  apf::MeshEntity* es1[6];
+  apf::MeshEntity* es2[6];
+
+  outMesh->getDownward(newEnt, 1, es1);
+  m->getDownward(e, 1, es2);
+*/
+  std::stringstream ss;
+  ss << prefix<< count;
+  crv::writeCurvedVtuFiles(outMesh, apf::Mesh::TET, 20, ss.str().c_str());
+  crv::writeCurvedVtuFiles(outMesh, apf::Mesh::TRIANGLE, 20, ss.str().c_str());
+  crv::writeCurvedWireFrame(outMesh, 50, ss.str().c_str());
+
+  outMesh->destroyNative();
+  apf::destroyMesh(outMesh);
+}
 
 namespace crv{
 
@@ -508,6 +643,16 @@ void CrvEdgeOptim :: setTol(double t)
 
 bool CrvEdgeOptim :: run()
 {
+  global_counter++;
+  apf::MeshEntity* adj_array[99];
+  apf::Adjacent adj;
+  mesh->getAdjacent(edge, 3, adj);
+  for (int i = 0; i < adj.getSize(); i++) {
+    adj_array[i] = adj[i];
+  }
+
+  makeMultipleEntityMesh(mesh, adj_array, global_counter, "before_cavity_of_edge_", adj.getSize());
+  printInvalidities(mesh, adj_array, global_counter, adj.getSize());
   CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge);
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
@@ -529,6 +674,9 @@ bool CrvEdgeOptim :: run()
       }
     }
 */
+
+    makeMultipleEntityMesh(mesh, adj_array, global_counter, "after_cavity_of_edge_", adj.getSize());
+    printInvalidities(mesh, adj_array, global_counter, adj.getSize());
     return true;
   }
   else {
