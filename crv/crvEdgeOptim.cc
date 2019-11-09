@@ -3,19 +3,23 @@
 #include "crv.h"
 #include "gmi.h"
 #include "apfMDS.h"
+#include "apfNumbering.h"
 #include "crvQuality.h"
 #include "crvBezier.h"
 #include "crvMath.h"
 #include <iostream>
 #include "apfMatrix.h"
 
-static int global_counter = 0;
-static apf::MeshEntity* tetra[100];
-static int number = 0;
+/* static int global_counter = 0; */
+/* static apf::MeshEntity* tetra[100]; */
+/* static int number = 0; */
 
-static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], int count, int nat)
+static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, int nat)
 {
-  printf("at edge %d\n", count);
+  apf::Numbering* n = m->findNumbering("debug_num_edge");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, edge, 0, 0);
+  printf("at edge %d\n", num);
   for (int i = 0; i < nat; i++) {
     std::vector<int> ai = crv::getAllInvalidities(m, e[i]);
     for (std::size_t j = 0; j < ai.size(); j++) {
@@ -25,20 +29,27 @@ static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], int count, 
   }
 }
 
-static void printTetNumber(apf::MeshEntity* e)
+static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  int n = apf::findIn(tetra, number, e);
-  if (n == -1) {
-    tetra[number] = e;
-    number++;
-    std::cout<<"; TET:: "<< number-1<<std::endl;
-  }
-  else
-    std::cout<<"; TET:: "<<n<<std::endl;
+  apf::Numbering* n = m->findNumbering("debug_num_tet");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, e, 0, 0);
+  std::cout<<"; TET:: "<< num <<std::endl;
+  /* int n = apf::findIn(tetra, number, e); */
+  /* if (n == -1) { */
+  /*   tetra[number] = e; */
+  /*   number++; */
+  /*   std::cout<<"; TET:: "<< number-1<<std::endl; */
+  /* } */
+  /* else */
+  /*   std::cout<<"; TET:: "<<n<<std::endl; */
 }
 
-static void makeMultipleEntityMesh(apf::Mesh2* m, apf::MeshEntity* e[99], int count, const char* prefix, int nat)
+static void makeMultipleEntityMesh(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, const char* prefix, int nat)
 {
+  apf::Numbering* n = m->findNumbering("debug_num_edge");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, edge, 0, 0);
   int dim = 0;
   if (m->getType(e[0]) == apf::Mesh::TRIANGLE)
     dim = 2;
@@ -140,7 +151,7 @@ static void makeMultipleEntityMesh(apf::Mesh2* m, apf::MeshEntity* e[99], int co
   }
   
   std::stringstream ss;
-  ss << prefix<< count;
+  ss << prefix<< num;
   crv::writeCurvedVtuFiles(outMesh, apf::Mesh::TET, 8, ss.str().c_str());
   crv::writeCurvedVtuFiles(outMesh, apf::Mesh::TRIANGLE, 8, ss.str().c_str());
   crv::writeCurvedWireFrame(outMesh, 8, ss.str().c_str());
@@ -242,8 +253,12 @@ static void visualizeAllFacesOfTet(apf::Mesh2* m, apf::MeshEntity* e, int count,
   }
 }
 
-static void makeIndividualTetsFromFacesOrEdges(apf::Mesh2* m, apf::MeshEntity* e[99], int count, const char* prefix, int nat)
+static void makeIndividualTetsFromFacesOrEdges(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, const char* prefix, int nat)
 {
+  apf::Numbering* n = m->findNumbering("debug_num_edge");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, edge, 0, 0);
+  return;
   int dim = 0;
   if (m->getType(e[0]) == apf::Mesh::TRIANGLE)
     dim = 2;
@@ -341,7 +356,7 @@ static void makeIndividualTetsFromFacesOrEdges(apf::Mesh2* m, apf::MeshEntity* e
     outMesh[ii]->acceptChanges();
 
     std::stringstream ss;
-    ss << prefix<< count << "_TET_"<<ii;
+    ss << prefix<< num << "_TET_"<<ii;
     crv::writeCurvedVtuFiles(outMesh[ii], apf::Mesh::TET, 8, ss.str().c_str());
     crv::writeCurvedVtuFiles(outMesh[ii], apf::Mesh::TRIANGLE, 8, ss.str().c_str());
     crv::writeCurvedWireFrame(outMesh[ii], 8, ss.str().c_str());
@@ -855,7 +870,6 @@ void CrvEdgeOptim :: setTol(double t)
 
 bool CrvEdgeOptim :: run()
 {
-  global_counter++;
   apf::MeshEntity* adj_array[99];
   apf::Adjacent adj;
   mesh->getAdjacent(edge, 3, adj);
@@ -863,9 +877,9 @@ bool CrvEdgeOptim :: run()
     adj_array[i] = adj[i];
   }
 
-  //makeMultipleEntityMesh(mesh, adj_array, global_counter, "before_cavity_of_edge_", adj.getSize());
-  makeIndividualTetsFromFacesOrEdges(mesh, adj_array, global_counter, "before_cavity_indv_tet_of_edge_", adj.getSize());
-  printInvalidities(mesh, adj_array, global_counter, adj.getSize());
+  makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
+  makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
+  printInvalidities(mesh, adj_array, edge, adj.getSize());
   CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge);
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
@@ -880,7 +894,7 @@ bool CrvEdgeOptim :: run()
     mesh->getDownward(adjT[i], 1, ed);
     int edgeIndex = apf::findIn(ed, 6, edge);
     printf("reshape tried on %d edge", edgeIndex);
-    printTetNumber(adjT[i]);
+    printTetNumber(mesh, adjT[i]);
   }
 
   if (l->run()) {
@@ -899,14 +913,17 @@ bool CrvEdgeOptim :: run()
     }
 */
 
-    //makeMultipleEntityMesh(mesh, adj_array, global_counter, "after_cavity_of_edge_", adj.getSize());
-    makeIndividualTetsFromFacesOrEdges(mesh, adj_array, global_counter, "after_cavity_indv_tet_of_edge_", adj.getSize());
-    printInvalidities(mesh, adj_array, global_counter, adj.getSize());
+    //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+    makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
+    printInvalidities(mesh, adj_array, edge, adj.getSize());
     std::cout<<"--------------------------------------"<<std::endl;
     return true;
   }
   else {
-    std::cout<<"*****Edge Optim FAILURE"<<std::endl;
+    /* finalX = l->currentX; */
+    /* objF->setNodes(finalX); */
+    makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+    std::cout<<"*****Edge Optim FAILURE" <<std::endl;
     std::cout<<"--------------------------------------"<<std::endl;
     return false;
   }

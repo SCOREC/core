@@ -148,6 +148,7 @@ bool LBFGS::run()
       return true;
     }
     
+    currentX = xs[I];
     for (std::size_t j = 0; j < xs[I].size(); j++) p[j] = -gs[I][j];
 
     for (int i = I-1; i >= 0; --i) {
