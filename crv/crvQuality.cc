@@ -850,22 +850,10 @@ std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
   apf::NewArray<double> interNodes(n);
   apf::MeshElement* me = apf::createMeshElement(mesh,e);
   
-  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
-    int index = 18*order*order-36*order+20+i;
-    interNodes[index] = apf::getDV(me,xi[index]);
-    if(interNodes[index] < 1e-10){
-      ai.push_back(20);      
-    }
-  }
-
-  for (int face = 0; face < 4; ++face){
-    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
-      int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
-      interNodes[index] = apf::getDV(me,xi[index]);
-      if(interNodes[index] < 1e-10){
-        ai.push_back(face+14);
-        break;
-      }
+  for (int i = 0; i < 4; ++i){
+    interNodes[i] = apf::getDV(me,xi[i]);
+    if(interNodes[i] < 1e-10){
+      ai.push_back(i+2);
     }
   }
 
@@ -880,12 +868,26 @@ std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
     }
   }
 
-  for (int i = 0; i < 4; ++i){
-    interNodes[i] = apf::getDV(me,xi[i]);
-    if(interNodes[i] < 1e-10){
-      ai.push_back(i+2);
+  for (int face = 0; face < 4; ++face){
+    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
+      int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
+      interNodes[index] = apf::getDV(me,xi[index]);
+      if(interNodes[index] < 1e-10){
+        ai.push_back(face+14);
+        break;
+      }
     }
   }
+
+  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
+    int index = 18*order*order-36*order+20+i;
+    interNodes[index] = apf::getDV(me,xi[index]);
+    if(interNodes[index] < 1e-10){
+      ai.push_back(20);
+      break;
+    }
+  }
+
   apf::destroyMeshElement(me);
 
   return ai;
