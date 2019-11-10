@@ -35,14 +35,6 @@ static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, e, 0, 0);
   std::cout<<"; TET:: "<< num <<std::endl;
-  /* int n = apf::findIn(tetra, number, e); */
-  /* if (n == -1) { */
-  /*   tetra[number] = e; */
-  /*   number++; */
-  /*   std::cout<<"; TET:: "<< number-1<<std::endl; */
-  /* } */
-  /* else */
-  /*   std::cout<<"; TET:: "<<n<<std::endl; */
 }
 
 static void makeMultipleEntityMesh(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, const char* prefix, int nat)
@@ -165,7 +157,6 @@ static void visualizeAllFacesOfTet(apf::Mesh2* m, apf::MeshEntity* e, int count,
   int dim = 0; 
   if (m->getType(e) == apf::Mesh::TRIANGLE) {
     std::cout<<"the entity is not a TET"<<std::endl;
-    return;
   }
   else if (m->getType(e) == apf::Mesh::TET)
     dim = 3; 
@@ -258,7 +249,6 @@ static void makeIndividualTetsFromFacesOrEdges(apf::Mesh2* m, apf::MeshEntity* e
   apf::Numbering* n = m->findNumbering("debug_num_edge");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, edge, 0, 0);
-  return;
   int dim = 0;
   if (m->getType(e[0]) == apf::Mesh::TRIANGLE)
     dim = 2;
@@ -877,7 +867,7 @@ bool CrvEdgeOptim :: run()
     adj_array[i] = adj[i];
   }
 
-  makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
+  //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
   makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   printInvalidities(mesh, adj_array, edge, adj.getSize());
   CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge);
@@ -920,9 +910,9 @@ bool CrvEdgeOptim :: run()
     return true;
   }
   else {
-    /* finalX = l->currentX; */
-    /* objF->setNodes(finalX); */
-    makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+    //finalX = l->currentX; 
+    //objF->setNodes(finalX); 
+    //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
     std::cout<<"*****Edge Optim FAILURE" <<std::endl;
     std::cout<<"--------------------------------------"<<std::endl;
     return false;

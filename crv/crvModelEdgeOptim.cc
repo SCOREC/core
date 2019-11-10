@@ -1,6 +1,9 @@
 #include "crvModelEdgeOptim.h"
 #include "LBFGS.h"
 #include "crv.h"
+#include "gmi.h"
+#include "apfMDS.h"
+#include "apfNumbering.h"
 #include "crvQuality.h"
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
@@ -10,6 +13,349 @@
 #include <iostream>
 #include "apfMatrix.h"
 #include <mth_def.h>
+
+static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, int nat)
+{
+  apf::Numbering* n = m->findNumbering("debug_num_edge");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, edge, 0, 0); 
+  printf("at edge %d\n", num);
+  for (int i = 0; i < nat; i++) {
+    std::vector<int> ai = crv::getAllInvalidities(m, e[i]);
+    for (std::size_t j = 0; j < ai.size(); j++) {
+      printf("%d ", ai[j]);
+    }   
+    printf("\n");
+  }
+}
+
+static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
+{ 
+  apf::Numbering* n = m->findNumbering("debug_num_tet");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, e, 0, 0);
+  std::cout<<"; TET:: "<< num <<std::endl;
+}
+
+static void makeMultipleEntityMesh(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, const char* prefix, int nat)
+{
+  apf::Numbering* n = m->findNumbering("debug_num_edge");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, edge, 0, 0); 
+  int dim = 0;
+  if (m->getType(e[0]) == apf::Mesh::TRIANGLE)
+    dim = 2;
+  else if (m->getType(e[0]) == apf::Mesh::TET)
+    dim = 3;
+  else
+    PCU_ALWAYS_ASSERT(0);
+
+  gmi_model* g = gmi_load(".null");
+  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(g, dim, false);
+
+  apf::MeshEntity* newEnt[99];
+
+  for (int ii = 0; ii < nat; ii++) {
+    // Verts
+    apf::MeshEntity* vs[12];
+    apf::MeshEntity* newVs[12];
+    int nv = m->getDownward(e[ii], 0, vs);
+    for(int i = 0; i < nv; ++i)
+    {   
+      apf::Vector3 p;
+      apf::Vector3 param(0., 0., 0.);
+      m->getPoint(vs[i], 0, p); 
+      newVs[i] = outMesh->createVertex(0, p, param);
+    }
+
+    // Edges
+    apf::MeshEntity* es[12];
+    apf::MeshEntity* newEs[12];
+    int ne = m->getDownward(e[ii], 1, es);
+    for(int i = 0; i < ne; ++i)
+    {
+      apf::MeshEntity* evs[2];
+      apf::MeshEntity* new_evs[2];
+      m->getDownward(es[i], 0, evs);
+      for (int j = 0; j < 2; j++) {
+        new_evs[j] = newVs[apf::findIn(vs, nv, evs[j])];
+      }
+
+      newEs[i] = outMesh->createEntity(apf::Mesh::EDGE, 0, new_evs);
+    }
+
+    // Faces
+    apf::MeshEntity* fs[12];
+    apf::MeshEntity* newFs[12];
+    int nf = m->getDownward(e[ii], 2, fs);
+    for(int i = 0; i < nf; ++i)
+    {
+      apf::MeshEntity* fes[3];
+      apf::MeshEntity* new_fes[3];
+      m->getDownward(fs[i], 1, fes);
+      for (int j = 0; j < 3; j++) {
+        new_fes[j] = newEs[apf::findIn(es, ne, fes[j])];
+      }
+      newFs[i] = outMesh->createEntity(apf::Mesh::TRIANGLE, 0, new_fes);
+    }
+
+    // Regions
+    apf::MeshEntity* tet;
+    if (dim == 3) {
+      tet = outMesh->createEntity(apf::Mesh::TET, 0, newFs);
+    }
+
+    if (dim == 2)
+      newEnt[ii] = newFs[0];
+    else
+      newEnt[ii] = tet;
+
+    PCU_ALWAYS_ASSERT(m->getType(e[ii]) == outMesh->getType(newEnt[ii]));
+    //printf("HERE 02\n")liver tetrahedral element
+    outMesh->acceptChanges();
+  }
+
+ // std::stringstream ss2;
+ // ss2 << "straight_sided_" << count;
+ // apf::writeVtkFiles(ss2.str().c_str(), outMesh);
+
+  apf::changeMeshShape(outMesh, crv::getBezier(3), true);
+  outMesh->acceptChanges();
+
+  for (int ii = 0; ii < nat; ii++) {
+    for (int d = 1; d <= dim; d++)
+    {
+      if (!m->getShape()->hasNodesIn(d)) continue;
+      apf::MeshEntity* eds[12];
+      int counter = m->getDownward(e[ii], d, eds);
+      apf::MeshEntity* new_eds[12];
+      outMesh->getDownward(newEnt[ii], d, new_eds);
+      int non = outMesh->getShape()->countNodesOn(apf::Mesh::simplexTypes[d]);
+      for(int n = 0; n < counter; ++n) {
+        for(int i = 0; i < non; ++i) {
+        apf::Vector3 p;
+        m->getPoint(eds[n], i, p);
+        outMesh->setPoint(new_eds[n], i, p);
+        }
+      }
+    }
+    outMesh->acceptChanges();
+  }
+
+  std::stringstream ss;
+  ss << prefix<< num;
+  crv::writeCurvedVtuFiles(outMesh, apf::Mesh::TET, 8, ss.str().c_str());
+  crv::writeCurvedVtuFiles(outMesh, apf::Mesh::TRIANGLE, 8, ss.str().c_str());
+  crv::writeCurvedWireFrame(outMesh, 8, ss.str().c_str());
+
+  outMesh->destroyNative();
+  apf::destroyMesh(outMesh);
+}
+
+static void visualizeAllFacesOfTet(apf::Mesh2* m, apf::MeshEntity* e, int count, const char* prefix)
+{
+  int dim = 0;
+  if (m->getType(e) == apf::Mesh::TRIANGLE) {
+    std::cout<<"the entity is not a TET"<<std::endl;
+  }
+  else if (m->getType(e) == apf::Mesh::TET)
+    dim = 3;
+  else
+    PCU_ALWAYS_ASSERT(0);
+
+  gmi_model* g = gmi_load(".null");
+
+  apf::Mesh2* outMesh[4];
+  for (int i = 0; i < 4; i++) {
+    outMesh[i] = apf::makeEmptyMdsMesh(g, 2, false);
+  }
+
+  apf::MeshEntity* face[4];
+  apf::MeshEntity* newface[4];
+  int nf = m->getDownward(e, 2, face);
+  for (int i = 0; i < nf; i++) {
+
+    //Verts
+    apf::MeshEntity* vs[3];
+    apf::MeshEntity* newVs[3];
+    int nv = m->getDownward(face[i], 0, vs);
+    for (int j = 0; j < nv; j++) {
+      apf::Vector3 p;
+      apf::Vector3 param(0., 0., 0.);
+      m->getPoint(vs[j], 0, p);
+      newVs[j] = outMesh[i]->createVertex(0, p, param);
+    }
+    outMesh[i]->acceptChanges();
+
+    //Edges
+    apf::MeshEntity* es[3];
+    apf::MeshEntity* newEs[3];
+    int ne = m->getDownward(face[i], 1, es);
+    for (int j = 0; j < ne; j++) {
+      apf::MeshEntity* evs[2];
+      apf::MeshEntity* newEvs[2];
+      m->getDownward(es[j], 0, evs);
+      for (int k = 0; k < 2; k++) {
+        int kk = apf::findIn(vs,nv, evs[k]);
+        newEvs[k] = newVs[kk];
+      }
+
+      newEs[j] = outMesh[i]->createEntity(apf::Mesh::EDGE, 0, newEvs);
+    }
+
+    //Faces
+    apf::MeshEntity* fes[3];
+    apf::MeshEntity* newFes[3];
+    m->getDownward(face[i], 1, fes);
+    for (int j = 0; j < 3; j++)
+      newFes[j] = newEs[apf::findIn(es, ne, fes[j])];
+
+    newface[i] = outMesh[i]->createEntity(apf::Mesh::TRIANGLE, 0, newFes);
+
+    PCU_ALWAYS_ASSERT(m->getType(face[i]) == outMesh[i]->getType(newface[i]));
+    outMesh[i]->acceptChanges();
+
+    apf::changeMeshShape(outMesh[i], crv::getBezier(3), true);
+    outMesh[i]->acceptChanges();
+
+    for (int d = 1; d < dim; d++) {
+      if (!m->getShape()->hasNodesIn(d)) continue;
+      apf::MeshEntity* ent[10];
+      int counter = m->getDownward(face[i], d, ent);
+      apf::MeshEntity* newent[10];
+      outMesh[i]->getDownward(newface[i], d, newent);
+      int non = outMesh[i]->getShape()->countNodesOn(apf::Mesh::simplexTypes[d]);
+      for (int n = 0; n < counter; n++) {
+        for (int j = 0; j < non; j++) {
+          apf::Vector3 p;
+          m->getPoint(ent[n], j, p);
+          outMesh[i]->setPoint(newent[n], j, p);
+        }
+      }
+   }
+
+    outMesh[i]->acceptChanges();
+
+    std::stringstream ss;
+    ss << prefix << "_Face_"<< i;
+    crv::writeCurvedVtuFiles(outMesh[i], apf::Mesh::TRIANGLE, 40, ss.str().c_str());
+    crv::writeCurvedWireFrame(outMesh[i], 50, ss.str().c_str());
+  }
+}
+
+static void makeIndividualTetsFromFacesOrEdges(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, const char* prefix, int nat)
+{
+  apf::Numbering* n = m->findNumbering("debug_num_edge");
+  PCU_ALWAYS_ASSERT(n);
+  int num = apf::getNumber(n, edge, 0, 0);
+  int dim = 0;
+  if (m->getType(e[0]) == apf::Mesh::TRIANGLE)
+    dim = 2;
+  else if (m->getType(e[0]) == apf::Mesh::TET)
+    dim = 3;
+  else
+    PCU_ALWAYS_ASSERT(0);
+
+  gmi_model* g = gmi_load(".null");
+
+  apf::Mesh2* outMesh[nat];
+  for (int i = 0; i < nat; i++) {
+    outMesh[i] = apf::makeEmptyMdsMesh(g, dim, false);
+  }
+
+  apf::MeshEntity* newEnt[99];
+
+  for (int ii = 0; ii < nat; ii++) {
+    // Verts
+    apf::MeshEntity* vs[12];
+    apf::MeshEntity* newVs[12];
+    int nv = m->getDownward(e[ii], 0, vs);
+    for(int i = 0; i < nv; ++i)
+    {
+      apf::Vector3 p;
+      apf::Vector3 param(0., 0., 0.);
+      m->getPoint(vs[i], 0, p);
+      newVs[i] = outMesh[ii]->createVertex(0, p, param);
+    }
+
+   // Edges
+    apf::MeshEntity* es[12];
+    apf::MeshEntity* newEs[12];
+    int ne = m->getDownward(e[ii], 1, es);
+    for(int i = 0; i < ne; ++i)
+    {
+      apf::MeshEntity* evs[2];
+      apf::MeshEntity* new_evs[2];
+      m->getDownward(es[i], 0, evs);
+      for (int j = 0; j < 2; j++) {
+        new_evs[j] = newVs[apf::findIn(vs, nv, evs[j])];
+      }
+
+      newEs[i] = outMesh[ii]->createEntity(apf::Mesh::EDGE, 0, new_evs);
+    }
+   // Faces
+    apf::MeshEntity* fs[12];
+    apf::MeshEntity* newFs[12];
+    int nf = m->getDownward(e[ii], 2, fs);
+    for(int i = 0; i < nf; ++i)
+    {
+      apf::MeshEntity* fes[3];
+      apf::MeshEntity* new_fes[3];
+      m->getDownward(fs[i], 1, fes);
+      for (int j = 0; j < 3; j++) {
+        new_fes[j] = newEs[apf::findIn(es, ne, fes[j])];
+      }
+      newFs[i] = outMesh[ii]->createEntity(apf::Mesh::TRIANGLE, 0, new_fes);
+    }
+
+    // Regions
+    apf::MeshEntity* tet;
+    if (dim == 3) {
+      tet = outMesh[ii]->createEntity(apf::Mesh::TET, 0, newFs);
+    }
+
+    if (dim == 2)
+      newEnt[ii] = newFs[0];
+    else
+      newEnt[ii] = tet;
+
+    PCU_ALWAYS_ASSERT(m->getType(e[ii]) == outMesh[ii]->getType(newEnt[ii]));
+    outMesh[ii]->acceptChanges();
+
+    apf::changeMeshShape(outMesh[ii], crv::getBezier(3), true);
+    outMesh[ii]->acceptChanges();
+
+
+    for (int d = 1; d <= dim; d++)
+    {
+      if (!m->getShape()->hasNodesIn(d)) continue;
+      apf::MeshEntity* eds[12];
+      int counter = m->getDownward(e[ii], d, eds);
+      apf::MeshEntity* new_eds[12];
+      outMesh[ii]->getDownward(newEnt[ii], d, new_eds);
+      int non = outMesh[ii]->getShape()->countNodesOn(apf::Mesh::simplexTypes[d]);
+      for(int n = 0; n < counter; ++n) {
+        for(int i = 0; i < non; ++i) {
+        apf::Vector3 p;
+        m->getPoint(eds[n], i, p);
+        outMesh[ii]->setPoint(new_eds[n], i, p);
+        }
+      }
+    }
+    outMesh[ii]->acceptChanges();
+
+    std::stringstream ss;
+    ss << prefix<< num << "_TET_"<<ii;
+    crv::writeCurvedVtuFiles(outMesh[ii], apf::Mesh::TET, 8, ss.str().c_str());
+    crv::writeCurvedVtuFiles(outMesh[ii], apf::Mesh::TRIANGLE, 8, ss.str().c_str());
+    crv::writeCurvedWireFrame(outMesh[ii], 8, ss.str().c_str());
+
+    //outMesh[ii]->destroyNative();
+    //apf::destroyMesh(outMesh[ii]);
+
+    visualizeAllFacesOfTet(m, e[ii], ii, ss.str().c_str());
+  }
+}
 
 namespace crv{
 
@@ -720,16 +1066,42 @@ void CrvModelEdgeOptim :: setTol(double t)
 
 bool CrvModelEdgeOptim :: run()
 {
+
+
+
+  apf::MeshEntity* adj_array[99];
+  apf::Adjacent adj;
+  mesh->getAdjacent(edge, 3, adj);
+  for (int i = 0; i < adj.getSize(); i++) {
+    adj_array[i] = adj[i];
+  }
+
+  //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
+  //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
+  printInvalidities(mesh, adj_array, edge, adj.getSize());
+
   CrvModelEdgeReshapeObjFunc *objF = new CrvModelEdgeReshapeObjFunc(mesh, edge);
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
+  apf::Adjacent adjT;
+  mesh->getAdjacent(edge, 3, adjT);
+  apf::MeshEntity* ed[6];
+
+  for (std::size_t i = 0; i < adjT.getSize(); i++) {
+    mesh->getDownward(adjT[i], 1, ed); 
+    int edgeIndex = apf::findIn(ed, 6, edge);
+    printf("reshape tried on %d edge", edgeIndex);
+    printTetNumber(mesh, adjT[i]);
+  }
 
   if (l->run()) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
+
+    /*
     apf::Adjacent adjT;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
@@ -739,10 +1111,18 @@ bool CrvModelEdgeOptim :: run()
       	return false;
       }
     }
-    //std::cout<<"---------------------------------------------"<<std::endl;
+*/
+    //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+    //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
+    printInvalidities(mesh, adj_array, edge, adj.getSize());
+    std::cout<<"--------------------------------------"<<std::endl;
+
     return true;
   }
   else {
+    //finalX = l->currentX;
+    //objF->setNodes(finalX);
+
     std::cout<<"*****Optim FAILURE"<<std::endl;
     return false;
   }

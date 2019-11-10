@@ -192,19 +192,22 @@ static void sortDesWrtFreqVector(std::vector<int> &f, std::vector<int> &a)
 
 static std::vector<int> sortEdgeIndexByFrequency(std::vector<int> &all)
 {
-  sortDes(all);
   std::vector<int> freq, unqEntries;
   freq.push_back(1);
-  int ind = 0;
   unqEntries.push_back(all[0]);
 
   for (std::size_t i = 1; i < all.size(); i++) {
-    if (all[i] == all[i-1]) {
-      freq[ind] = freq[ind] + 1;
+    bool milila = false;
+
+    for (std::size_t j = 0; j < unqEntries.size(); j++) {
+      milila = milila || (all[i] == unqEntries[j]);
+
+      if (all[i] == unqEntries[j]) {
+      	freq[j] = freq[j] + 1;
+      }
     }
-    else {
+    if (milila == false) {
       unqEntries.push_back(all[i]);
-      ind++;
       freq.push_back(1);
     }
   }
@@ -445,6 +448,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
   int n = 0;
   //std::vector<int> allinvEdges = sortEdgeIndexByType(m, e, bb);
   std::vector<int> allinvEdges = sortEdgeIndexByFrequency(bb);
+
   for (size_t i = 0; i < allinvEdges.size(); i++) {
     if (m->getModelType(m->toModel(ed[allinvEdges[i]])) != 1) {
       n++;
@@ -454,7 +458,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
 
   return n;
 }
-
+/*
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[6])
 {
@@ -525,7 +529,8 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
 
   return n;
 }
-
+*/
+/*
 static std::vector<int> faceIndexAdjInvalidVertex(ma::Mesh* mesh, ma::Entity* e, int index)
 {
   apf::MeshEntity* f[4];
@@ -569,7 +574,7 @@ static std::vector<int> faceIndexAdjInvalidEdge(ma::Mesh* mesh, ma::Entity* e, i
   }
   return a;
 }
-
+*/
 static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
     ma::Entity* faces[4])
 {
@@ -632,7 +637,7 @@ static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
   return n;
 
 }
-
+/*
 static int markFaces(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* faces[4])
 {
@@ -706,7 +711,8 @@ static int markFaces(ma::Mesh* m, ma::Entity* e, int tag,
 
   return n;
 }
-
+*/
+/*
 class EdgeSwapper : public ma::Operator
 {
 public:
@@ -758,7 +764,7 @@ private:
 public:
   int ns;
 };
-
+*/
 class EdgeReshaper : public ma::Operator
 {
 public:
@@ -1339,7 +1345,7 @@ static void collapseInvalidEdges(Adapt* a)
   ma::print("Collapsed %d bad edges "
       "in %f seconds",successCount, t1-t0);
 }
-
+/*
 static void swapInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -1349,7 +1355,7 @@ static void swapInvalidEdges(Adapt* a)
   ma::print("Swapped %d bad edges "
       "in %f seconds",es.ns, t1-t0);
 }
-
+*/
 static void repositionInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -1404,8 +1410,8 @@ int fixInvalidEdges(Adapt* a)
   else
     optimizeInvalidEdges(a);
 
-  collapseInvalidEdges(a);
-  swapInvalidEdges(a);
+  //collapseInvalidEdges(a);
+  //swapInvalidEdges(a);
   return count;
 }
 
