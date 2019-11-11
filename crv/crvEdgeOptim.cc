@@ -853,9 +853,9 @@ void CrvEdgeOptim :: setMaxIter(int n)
   iter = n;
 }
 
-void CrvEdgeOptim :: setTol(double t)
+void CrvEdgeOptim :: setTol(double tolerance)
 {
-  tol = t;
+  tol = tolerance;
 }
 
 bool CrvEdgeOptim :: run()
@@ -867,10 +867,11 @@ bool CrvEdgeOptim :: run()
     adj_array[i] = adj[i];
   }
 
+  std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
   //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   printInvalidities(mesh, adj_array, edge, adj.getSize());
-  CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge);
+  CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge, tet);
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
@@ -891,6 +892,19 @@ bool CrvEdgeOptim :: run()
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
+    
+    std::vector<int> aiNew = crv::getAllInvalidities(mesh, tet);
+    if (aiNew.size() < ai.size()) {
+      //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+      //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
+      printInvalidities(mesh, adj_array, edge, adj.getSize());
+      std::cout<<"--------------------------------------"<<std::endl;
+      return true;
+    }
+    else {
+      objF->restoreInitialNodes();
+      return false;
+    }
 /*   
     apf::Adjacent adjT;
     mesh->getAdjacent(edge, 3, adjT);
@@ -905,9 +919,9 @@ bool CrvEdgeOptim :: run()
 
     //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
     //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
-    printInvalidities(mesh, adj_array, edge, adj.getSize());
-    std::cout<<"--------------------------------------"<<std::endl;
-    return true;
+    //printInvalidities(mesh, adj_array, edge, adj.getSize());
+    //std::cout<<"--------------------------------------"<<std::endl;
+    //return true;
   }
   else {
     //finalX = l->currentX; 

@@ -15,8 +15,8 @@ namespace crv{
 class CrvModelEdgeReshapeObjFunc : public ObjFunction
 {
   public:
-    CrvModelEdgeReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* e) : 
-  	mesh(m), edge(e)
+    CrvModelEdgeReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* e, apf::MeshEntity* t) : 
+  	mesh(m), edge(e), tet(t)
   {
     P = mesh->getShape()->getOrder();
     d = mesh->getDimension();
@@ -54,6 +54,7 @@ class CrvModelEdgeReshapeObjFunc : public ObjFunction
   protected:
     apf::Mesh2* mesh;
     apf::MeshEntity* edge;
+    apf::MeshEntity* tet;
     std::vector<double> vol;
     std::vector<apf::Vector3> ien;
     std::vector<apf::Vector3> ifn;
@@ -65,17 +66,18 @@ class CrvModelEdgeReshapeObjFunc : public ObjFunction
 class CrvModelEdgeOptim
 {
   public:
-    CrvModelEdgeOptim(apf::Mesh2* m, apf::MeshEntity* e) :
-    	mesh(m), edge(e) {}
+    CrvModelEdgeOptim(apf::Mesh2* m, apf::MeshEntity* e, apf::MeshEntity* t) :
+    	mesh(m), edge(e), tet(t) {}
     ~CrvModelEdgeOptim(){}
 
   public:
     void setMaxIter(int n);
-    void setTol(double t);
+    void setTol(double tolerance);
     bool run();
   public:
     apf::Mesh2* mesh;
     apf::MeshEntity* edge;
+    apf::MeshEntity* tet;
     int iter;
     double tol;
     std::vector<double> finalX;

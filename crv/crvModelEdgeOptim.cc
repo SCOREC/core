@@ -1059,28 +1059,28 @@ void CrvModelEdgeOptim :: setMaxIter(int n)
   iter = n;
 }
 
-void CrvModelEdgeOptim :: setTol(double t)
+void CrvModelEdgeOptim :: setTol(double tolerance)
 {
-  tol = t;
+  tol = tolerance;
 }
 
 bool CrvModelEdgeOptim :: run()
 {
-
-
-
   apf::MeshEntity* adj_array[99];
   apf::Adjacent adj;
   mesh->getAdjacent(edge, 3, adj);
+  int cInvT = 0;
+
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
   }
 
+  std::vector<int> ai = crv::getAllInvalidities(mesh,tet);
   //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   printInvalidities(mesh, adj_array, edge, adj.getSize());
 
-  CrvModelEdgeReshapeObjFunc *objF = new CrvModelEdgeReshapeObjFunc(mesh, edge);
+  CrvModelEdgeReshapeObjFunc *objF = new CrvModelEdgeReshapeObjFunc(mesh, edge, tet);
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
@@ -1112,12 +1112,18 @@ bool CrvModelEdgeOptim :: run()
       }
     }
 */
-    //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
-    //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
-    printInvalidities(mesh, adj_array, edge, adj.getSize());
-    std::cout<<"--------------------------------------"<<std::endl;
-
-    return true;
+    std::vector<int> aiNew = crv::getAllInvalidities(mesh,tet);
+    if (aiNew.size() < ai.size()) {
+      //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+      //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
+      printInvalidities(mesh, adj_array, edge, adj.getSize());
+      std::cout<<"--------------------------------------"<<std::endl;
+      return true;
+    }
+    else {
+      objF->restoreInitialNodes();
+      return false;
+    }
   }
   else {
     //finalX = l->currentX;

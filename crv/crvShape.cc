@@ -459,7 +459,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
 
   return n;
 }
-/*
+
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[6])
 {
@@ -530,7 +530,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
 
   return n;
 }
-*/
+
 /*
 static std::vector<int> faceIndexAdjInvalidVertex(ma::Mesh* mesh, ma::Entity* e, int index)
 {
@@ -713,7 +713,7 @@ static int markFaces(ma::Mesh* m, ma::Entity* e, int tag,
   return n;
 }
 */
-/*
+
 class EdgeSwapper : public ma::Operator
 {
 public:
@@ -765,7 +765,7 @@ private:
 public:
   int ns;
 };
-*/
+
 class EdgeReshaper : public ma::Operator
 {
 public:
@@ -985,59 +985,64 @@ public:
   EdgeOptimizer(Adapt* a) {
     adapter = a;
     mesh = a->mesh;
-    edge = 0;
+    edges[0] = edges[1] = edges[2] = edges[3] = edges[4] = edges[5] = 0;
+    simplex = 0;
+    md = mesh->getDimension();
     ns = 0;
     nf = 0;
+    ne = 0;
   }
   ~EdgeOptimizer() {
   }
-  virtual int getTargetDimension() {return 1;}
+  virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e) {
-    
-    if (!ma::getFlag(adapter, e, ma::COLLAPSE | ma::BAD_QUALITY)) {
-      return false;
+
+    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    int niv = ai.size();
+    if (niv != 0) {
+      ne = markAllEdges(mesh, e, ai, edges);
+      simplex = e;
+      return (ne > 0);
     }
     
-    //if (isBoundaryEntity(mesh, e)) {
-    //  return false;
-    //}
-    if (mesh->getModelType(mesh->toModel(e)) == 1) {
-      ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
-      return false;
-    }    	
-    else {
-      edge = e;
-      return true;
-    }
   }
 
   virtual bool requestLocality(apf::CavityOp* o)
   {
-    return o->requestLocality(&edge, 1);
+    return o->requestLocality(edges, ne);
   }
 
-  virtual void apply(){
-    if (mesh->getModelType(mesh->toModel(edge)) == 3) {
-      CrvEdgeOptim *ceo = new CrvEdgeOptim(mesh, edge);
-      ceo->setMaxIter(100);
-      ceo->setTol(1e-8);
+  virtual void apply() {
+    mesh->getDownward(simplex, 1, edges);
+    for (int i = 0; i < ne; i++ ) {
+      if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
+      	CrvEdgeOptim *ceo = new CrvEdgeOptim(mesh, edges[i], simplex);
+      	ceo->setMaxIter(100);
+      	ceo->setTol(1e-8);
 
-      if (ceo->run()) ns++;
-      else nf++;
+      	if (ceo->run()) {
+      	  ns++;
+      	  break;
+	}
+      	else nf++;
 
-      ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
-      delete ceo;
-    }
-    else if (mesh->getModelType(mesh->toModel(edge)) == 2) {
-      CrvModelEdgeOptim *cmeo = new CrvModelEdgeOptim(mesh, edge);
-      cmeo->setMaxIter(100);
-      cmeo->setTol(1e-8);
+      	delete ceo;
+      //ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
+      }
+      else if (mesh->getModelType(mesh->toModel(edges[i])) == 2) {
+      	CrvModelEdgeOptim *cmeo = new CrvModelEdgeOptim(mesh, edges[i], simplex);
+      	cmeo->setMaxIter(100);
+      	cmeo->setTol(1e-8);
 
-      if (cmeo->run()) ns++;
-      else nf++;
+      	if (cmeo->run()) {
+      	  ns++;
+      	  break;
+	}
+      	else nf++;
 
-      ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
-      delete cmeo;
+      	//ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
+      	delete cmeo;
+      }
     }
   }
 private:
@@ -1046,6 +1051,10 @@ protected:
   ma::Mesh* mesh;
   ma::Entity* edge;
 public:
+  int ne;
+  int md;
+  ma::Entity* edges[6];
+  ma::Entity* simplex;
   int ns;
   int nf;
 };
