@@ -393,7 +393,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
   if (ai.size() == 0) return 0;
   if (ai.size() == faceInvalid[0]) return 0;
 
-  for (size_t ii = faceInvalid[0]; ii < ai.size(); ii++) {
+  for (size_t ii = 0; ii < ai.size(); ii++) {
     int dim = (ai[ii]-2)/6;
     int index = (ai[ii]-2) % 6;
 
