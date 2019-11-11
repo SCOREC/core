@@ -448,6 +448,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
   int n = 0;
   //std::vector<int> allinvEdges = sortEdgeIndexByType(m, e, bb);
   std::vector<int> allinvEdges = sortEdgeIndexByFrequency(bb);
+  int k = 0;
 
   for (size_t i = 0; i < allinvEdges.size(); i++) {
     if (m->getModelType(m->toModel(ed[allinvEdges[i]])) != 1) {

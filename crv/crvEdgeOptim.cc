@@ -868,7 +868,7 @@ bool CrvEdgeOptim :: run()
   }
 
   //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
-  makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
+  //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   printInvalidities(mesh, adj_array, edge, adj.getSize());
   CrvEdgeReshapeObjFunc *objF = new CrvEdgeReshapeObjFunc(mesh, edge);
   std::vector<double> x0 = objF->getInitialGuess();
@@ -904,7 +904,7 @@ bool CrvEdgeOptim :: run()
 */
 
     //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
-    makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
+    //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
     printInvalidities(mesh, adj_array, edge, adj.getSize());
     std::cout<<"--------------------------------------"<<std::endl;
     return true;
