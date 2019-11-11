@@ -1411,9 +1411,9 @@ int fixInvalidFaces(Adapt* a)
 int fixInvalidEdges(Adapt* a)
 {
   int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
-  if (! count){
-    return 0;
-  }
+  //if (! count){
+  //  return 0;
+  //}
 
   if(a->mesh->getShape()->getOrder() == 2)
     repositionInvalidEdges(a);
