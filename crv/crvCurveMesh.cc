@@ -172,21 +172,6 @@ void BezierCurver::convertInterpolatingToBezier()
   synchronize();
 }
 
-static bool faceOp(apf::Mesh2* m, apf::MeshEntity* me) 
-{
-  CrvFaceOptim *opF = new CrvFaceOptim(m, me);
-  opF->setMaxIter(100);
-  opF->setTol(1e-8);
-  if (opF->run()) {
-    //delete opF;
-    return true;
-  }
-  else {
-    //delete opF;
-    return false;
-  }
-}
-
 bool BezierCurver::run(bool flag)
 {
   std::string name = m_mesh->getShape()->getName();
@@ -217,24 +202,6 @@ bool BezierCurver::run(bool flag)
   writeCurvedWireFrame(m_mesh, 16, "mesh_after_inflate");
 
   if (flag == 1) {
-  
-    /* apf::MeshEntity* f; */
-    /* apf::MeshIterator* it = m_mesh->begin(2); */
-    /* apf::Adjacent adjR; */
-    /* while ((f = m_mesh->iterate(it))){ */
-    /*   int count = 0; */
-    /*   if(m_mesh->getModelType(m_mesh->toModel(f)) == 3) { */
-	/* m_mesh->getAdjacent(f, 3, adjR); */
-	/* for (std::size_t i = 0; i < adjR.getSize(); i++) { */
-	  /* if (crv::checkValidity(m_mesh, adjR[i], 2) > 1) */ 
-	    /* count ++; */
-	/* } */
-	/* if (count > 0) */ 
-	  /* faceOp(m_mesh, f); */
-    /*   } */
-    /* } */
-    /* m_mesh->end(it); */
-    
     if(m_mesh->getDimension() >= 2) {
       if (m_order == 2 || m_order == 3) {
       	ma::Input* shapeFixer = configureShapeCorrection(m_mesh);

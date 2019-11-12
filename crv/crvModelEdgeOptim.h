@@ -73,7 +73,7 @@ class CrvModelEdgeOptim
   public:
     void setMaxIter(int n);
     void setTol(double tolerance);
-    bool run();
+    bool run(int &invaliditySize);
   public:
     apf::Mesh2* mesh;
     apf::MeshEntity* edge;

@@ -297,6 +297,13 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
 			     {1, 4, -1, 5},
 			     {2, 3, 5, -1}};
 
+  int edgeToFaceInd[6][2] = {{0, 1},
+			     {0, 2},
+			     {0, 3},
+			     {1, 3},
+			     {1, 2},
+			     {2, 3}};
+
   for (std::size_t i = 0; i < aiOnlyFace.size(); i++) {
     for (std::size_t j = 0; j < aiOnlyFace.size(); j++) {
       if ((i != j) && (j > i)) {
@@ -312,11 +319,14 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
       }
     }
   }
-    
+
+  /*
   for (size_t j = 0; j < aiOnlyFace.size(); j++) {
-  bool isUnique = false;
+    bool isUnique = false;
     for (int i = 0; i < 4; i++) {
       for (size_t k = 0; k < aiEdgeNVtx.size(); k++) {
+      	if (faceToEdgeInd[aiOnlyFace[j]-14][i] + 8 == aiEdgeNVtx[k]) 
+      	  aiUniqueFace.push_back(i+14);
       	isUnique = isUnique || (faceToEdgeInd[aiOnlyFace[j]-14][i] + 8 == aiEdgeNVtx[k]);
       }
     }
@@ -324,6 +334,25 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
       aiUniqueFace.push_back(aiOnlyFace[j]);
       aiOnlyFace.erase(aiOnlyFace.begin()+j);
     }
+  }
+*/
+  for (size_t j = 0; j < aiEdgeNVtx.size(); j++) {
+    bool alreadyIn = false;
+    if (aiEdgeNVtx[j] > 7 && aiEdgeNVtx[j] < 14) {
+      for (int i = 0; i < 2; i++) {
+      	for (size_t k = 0; k < aiOnlyFace.size(); k++) {
+      	  alreadyIn = alreadyIn || (edgeToFaceInd[aiEdgeNVtx[j]-8][i] == aiOnlyFace[k]-14);
+	}
+	if (alreadyIn == false) {
+	  aiOnlyFace.push_back(edgeToFaceInd[aiEdgeNVtx[j]-8][i] + 14);
+	}
+      }
+    }
+  }
+
+
+  for (size_t j = 0; j < aiOnlyFace.size(); j++) {
+    aiUniqueFace.push_back(aiOnlyFace[j]);
   }
 
   ai.clear();
@@ -788,9 +817,7 @@ public:
   {
     int tag = crv::getTag(adapter,e);
 
-    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
-    //ne = markEdges(mesh,e,tag,edges);
-    ne = markAllEdges(mesh, e, ai, edges);
+    ne = markEdges(mesh,e,tag,edges);
     simplex = e;
     return (ne > 0);
   }
@@ -925,56 +952,57 @@ public:
   FaceOptimizer(Adapt* a) {
     adapter = a;
     mesh = a->mesh;
-    face = 0;
+    faces[0] = faces[1] = faces[2] = faces[3] = 0;
+    simplex = 0;
+    md = mesh->getDimension();
+    numf = 0;
     ns = 0;
     nf = 0;
   }
   ~FaceOptimizer() {
   }
-  virtual int getTargetDimension() {return 2;}
+  virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e) {
-    
-    if (!ma::getFlag(adapter, e, ma::SNAP)) {
-      return false;
-    }
-    
-    if (isBoundaryEntity(mesh, e)) {
-      return false;
-    }
 
-    if (mesh->getModelType(mesh->toModel(e)) == 2) {
-      return false;
-    }    	
-    else {
-      face = e;
-      return true;
+    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    int niv = ai.size();
+    mesh->getDownward(e, 2, faces);
+    if (niv != 0) {
+      numf = markUniqueFaces(mesh, e, ai, faces);
+      simplex = e;
+      return (numf > 0);
     }
   }
 
   virtual bool requestLocality(apf::CavityOp* o)
   {
-    return o->requestLocality(&face, 1);
+    return o->requestLocality(faces, numf);
   }
 
   virtual void apply(){
-    if (mesh->getModelType(mesh->toModel(face)) == 3) {
-      CrvFaceOptim *cfo = new CrvFaceOptim(mesh, face);
-      cfo->setMaxIter(100);
-      cfo->setTol(1e-8);
+    //mesh->getDownward(simplex, 2, faces);
+    for (int i = 0; i < numf; i++ ) {
+      if (mesh->getModelType(mesh->toModel(faces[i])) == 3) {
+      	CrvFaceOptim *cfo = new CrvFaceOptim(mesh, faces[i]);
+      	cfo->setMaxIter(100);
+      	cfo->setTol(1e-4);
 
-      if (cfo->run()) ns++;
-      else nf++;
+      	if (cfo->run()) ns++;
+      	else nf++;
 
-      ma::clearFlag(adapter, face, ma::SNAP);
-      delete cfo;
+      	delete cfo;
+      }
     }
   }
 private:
 protected:
   Adapt* adapter;
   ma::Mesh* mesh;
-  ma::Entity* face;
 public:
+  ma::Entity* faces[4];
+  ma::Entity* simplex;
+  int numf;
+  int md;
   int ns;
   int nf;
 };
@@ -998,6 +1026,7 @@ public:
   virtual bool shouldApply(ma::Entity* e) {
 
     std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    mesh->getDownward(e, 1, edges);
     int niv = ai.size();
     if (niv != 0) {
       ne = markAllEdges(mesh, e, ai, edges);
@@ -1013,16 +1042,18 @@ public:
   }
 
   virtual void apply() {
-    mesh->getDownward(simplex, 1, edges);
+    //mesh->getDownward(simplex, 1, edges);
+    int invaliditySize = 0;
     for (int i = 0; i < ne; i++ ) {
       if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
       	CrvEdgeOptim *ceo = new CrvEdgeOptim(mesh, edges[i], simplex);
       	ceo->setMaxIter(100);
       	ceo->setTol(1e-8);
 
-      	if (ceo->run()) {
+      	if (ceo->run(invaliditySize)) {
       	  ns++;
-      	  break;
+      	  if (invaliditySize < 1)
+      	    break;
 	}
       	else nf++;
 
@@ -1034,9 +1065,10 @@ public:
       	cmeo->setMaxIter(100);
       	cmeo->setTol(1e-8);
 
-      	if (cmeo->run()) {
+      	if (cmeo->run(invaliditySize)) {
       	  ns++;
-      	  break;
+      	  if (invaliditySize < 1) 
+      	    break;
 	}
       	else nf++;
 
@@ -1398,19 +1430,19 @@ static void optimizeInvalidFaces(Adapt* a)
 
 int fixInvalidFaces(Adapt* a)
 {
-  int count = markFacesToFix(a, ma::SNAP);
-  if (! count) {
-    return 0;
-  }
+  //int count = markFacesToFix(a, ma::SNAP);
+  //if (! count) {
+  //  return 0;
+  //}
 
   optimizeInvalidFaces(a);
 
-  return count;
+  return 0;
 }
 
 int fixInvalidEdges(Adapt* a)
 {
-  int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
+  //int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
   //if (! count){
   //  return 0;
   //}
@@ -1422,7 +1454,7 @@ int fixInvalidEdges(Adapt* a)
 
   //collapseInvalidEdges(a);
   //swapInvalidEdges(a);
-  return count;
+  return 0;
 }
 
 
