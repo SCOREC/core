@@ -187,8 +187,8 @@ bool BezierCurver::run(bool flag)
     apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   }
 
-  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 8, "mesh_after_shape_change");
-  writeCurvedWireFrame(m_mesh, 16, "mesh_after_shape_change");
+  //writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 8, "mesh_after_shape_change");
+  //writeCurvedWireFrame(m_mesh, 16, "mesh_after_shape_change");
 
   if (m_mesh->canSnap()){
     for(int d = 1; d <= 2; ++d)
@@ -198,8 +198,8 @@ bool BezierCurver::run(bool flag)
 
   convertInterpolatingToBezier();
 
-  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 16, "mesh_after_inflate");
-  writeCurvedWireFrame(m_mesh, 16, "mesh_after_inflate");
+  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 16, "ant_mesh_after_inflate");
+  writeCurvedWireFrame(m_mesh, 16, "ant_mesh_after_inflate");
 
   if (flag == 1) {
     if(m_mesh->getDimension() >= 2) {

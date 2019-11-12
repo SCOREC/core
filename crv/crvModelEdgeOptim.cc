@@ -1080,8 +1080,8 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
   std::vector<int> ai = crv::getAllInvalidities(mesh,tet);
   //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
-  printTetNumber(mesh, tet);
-  printInvalidities(mesh, adj_array, edge, adj.getSize());
+  //printTetNumber(mesh, tet);
+  //printInvalidities(mesh, adj_array, edge, adj.getSize());
 
   CrvModelEdgeReshapeObjFunc *objF = new CrvModelEdgeReshapeObjFunc(mesh, edge, tet);
   std::vector<double> x0 = objF->getInitialGuess();
@@ -1094,9 +1094,9 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
 
   for (std::size_t i = 0; i < adjT.getSize(); i++) {
     mesh->getDownward(adjT[i], 1, ed); 
-    int edgeIndex = apf::findIn(ed, 6, edge);
-    printf("reshape tried on %d edge; ", edgeIndex);
-    printTetNumber(mesh, adjT[i]);
+    //int edgeIndex = apf::findIn(ed, 6, edge);
+    //printf("reshape tried on %d edge; ", edgeIndex);
+    //printTetNumber(mesh, adjT[i]);
   }
 
   if (l->run()) {
@@ -1120,13 +1120,13 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
     if (aiNew.size() < ai.size()) {
       //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
       //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
-      printInvalidities(mesh, adj_array, edge, adj.getSize());
+      //printInvalidities(mesh, adj_array, edge, adj.getSize());
       std::cout<<"--------------------------------------"<<std::endl;
       return true;
     }
     else {
       objF->restoreInitialNodes();
-      printInvalidities(mesh, adj_array, edge, adj.getSize());
+      //printInvalidities(mesh, adj_array, edge, adj.getSize());
       std::cout<<"size did not decrease"<<std::endl;
       std::cout<<"--------------------------------------"<<std::endl;
       return false;
