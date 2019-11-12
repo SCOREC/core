@@ -198,8 +198,8 @@ bool BezierCurver::run(bool flag)
 
   convertInterpolatingToBezier();
 
-  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 16, "ant_mesh_after_inflate");
-  writeCurvedWireFrame(m_mesh, 16, "ant_mesh_after_inflate");
+  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 16, "mesh_after_inflate");
+  writeCurvedWireFrame(m_mesh, 16, "mesh_after_inflate");
 
   if (flag == 1) {
     if(m_mesh->getDimension() >= 2) {

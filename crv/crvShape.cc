@@ -366,8 +366,8 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
     forFaceMarking.push_back(aiUniqueFace.size());
     for (std::size_t i = 0; i < aiEdgeNVtx.size(); i++)
       ai.push_back(aiEdgeNVtx[i]);
-    //for (std::size_t i = 0; i < aiOnlyFace.size(); i++)
-    //  ai.push_back(aiOnlyFace[i]);
+    for (std::size_t i = 0; i < aiOnlyFace.size(); i++)
+      ai.push_back(aiOnlyFace[i]);
     for (std::size_t i = 0; i < aiUniqueFace.size(); i++) {
       forFaceMarking.push_back(aiUniqueFace[i]);
     }
