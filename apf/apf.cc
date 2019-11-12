@@ -19,6 +19,7 @@
 #include "apfUserData.h"
 #include "apfVtk.h"
 #include "apfNumberingClass.h"
+#include "apfNumbering.h"
 #include <cstdio>
 #include <cstdlib>
 #include <pcu_util.h>
@@ -28,6 +29,11 @@ namespace apf {
 
 void destroyMesh(Mesh* m)
 {
+  // numberings must be destroyed before fields!
+  while(m->countNumberings())
+    destroyNumbering(m->getNumbering(0));
+  while(m->countGlobalNumberings())
+    destroyGlobalNumbering(m->getGlobalNumbering(0));
   while (m->countFields())
     destroyField(m->getField(0));
   delete m;
