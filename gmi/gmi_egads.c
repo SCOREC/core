@@ -9,6 +9,13 @@
 *******************************************************************************/
 #include "gmi_egads.h"
 
+// #include "egads.h"
+
+// initialize to NULL, will be properly set by `gmi_egads_start`
+ego *eg_context = NULL;
+// initialize to NULL, will be properly set by `gmi_egads_load`
+ego *eg_model = NULL;
+
 static struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
   /// implement
@@ -139,16 +146,26 @@ static void destroy(struct gmi_model* m)
 static struct gmi_model_ops ops;
 
 /// TODO: Come up with a better flag? 
-#ifdef HAVE_EGADS
+// #ifdef HAVE_EGADS
+#if 1
 static struct gmi_model* gmi_egads_load(const char* filename)
 {
+  int status = EG_loadModel(*eg_context, 0, filename, eg_model);
+  if (status != EGADS_SUCCESS)
+  {
+    char str[50]; // big enough
+    sprintf(str, "EGADS failed to load model with error code: %d", status);
+    gmi_fail(str);
+  }
+
   struct gmi_model *model;
   model = (struct gmi_model*)malloc(sizeof(*model));
   model->ops = &ops;
-  model->n[0] = 0; // function call for num vertices on geo model
-  model->n[1] = 0; // function call for num edges on geo model
-  model->n[2] = 0; // function call for num faces on geo model
-  model->n[3] = 0; // function call for num regions on geo model
+
+  model->n[0] = EG_getBodyNumNodes(eg_model); // function call for num vertices on geo model
+  model->n[1] = EG_getBodyNumEdges(eg_model); // function call for num edges on geo model
+  model->n[2] = EG_getBodyNumFaces(eg_model); // function call for num faces on geo model
+  model->n[3] = EG_getBodyNumShells(eg_model); // function call for num regions on geo model
 
   return model;
 }
@@ -161,6 +178,21 @@ static struct gmi_model* gmi_egads_load(const char* filename)
 }
 #endif
 
+void gmi_egads_start(void)
+{
+  int status = EG_open(eg_context);
+  if (status != EGADS_SUCCESS)
+  {
+    char str[50]; // big enough
+    sprintf(str, "EGADS failed to open with error code: %d", status);
+    gmi_fail(str);
+  }
+}
+
+void gmi_egads_stop(void)
+{
+  EG_close(*eg_context);
+}
 
 void gmi_register_egads(void)
 {
