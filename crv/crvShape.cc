@@ -983,14 +983,18 @@ public:
   }
 
   virtual void apply(){
+    bool hasDecreased = false;
     //mesh->getDownward(simplex, 2, faces);
     for (int i = 0; i < numf; i++ ) {
       if (mesh->getModelType(mesh->toModel(faces[i])) == 3) {
-      	CrvFaceOptim *cfo = new CrvFaceOptim(mesh, faces[i]);
+      	CrvFaceOptim *cfo = new CrvFaceOptim(mesh, faces[i], simplex);
       	cfo->setMaxIter(100);
       	cfo->setTol(1e-8);
 
-      	if (cfo->run()) ns++;
+      	if (cfo->run(hasDecreased)) {
+      	  if (hasDecreased == false)
+      	    ns++;
+	}
       	else nf++;
 
       	delete cfo;

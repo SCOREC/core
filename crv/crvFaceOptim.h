@@ -15,8 +15,8 @@ namespace crv{
 class CrvFaceReshapeObjFunc : public ObjFunction
 {
   public:
-    CrvFaceReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* f) : 
-  	mesh(m), face(f)
+    CrvFaceReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* f, apf::MeshEntity* t) : 
+  	mesh(m), face(f), tet(t)
   {
     P = mesh->getShape()->getOrder();
     d = mesh->getDimension();
@@ -49,6 +49,7 @@ class CrvFaceReshapeObjFunc : public ObjFunction
   protected:
     apf::Mesh2* mesh;
     apf::MeshEntity* face;
+    apf::MeshEntity* tet;
     std::vector<double> vol;
     std::vector<apf::Vector3> ifn;
     std::vector<apf::Vector3> itn;
@@ -57,17 +58,18 @@ class CrvFaceReshapeObjFunc : public ObjFunction
 class CrvFaceOptim
 {
   public:
-    CrvFaceOptim(apf::Mesh2* m, apf::MeshEntity* f) :
-    	mesh(m), face(f) {}
+    CrvFaceOptim(apf::Mesh2* m, apf::MeshEntity* f, apf::MeshEntity* t) :
+    	mesh(m), face(f), tet(t) {}
     ~CrvFaceOptim(){}
 
   public:
     void setMaxIter(int n);
-    void setTol(double t);
-    bool run();
+    void setTol(double tolerance);
+    bool run(bool &hasDecreased);
   public:
     apf::Mesh2* mesh;
     apf::MeshEntity* face;
+    apf::MeshEntity* tet;
     int iter;
     double tol;
     std::vector<double> finalX;

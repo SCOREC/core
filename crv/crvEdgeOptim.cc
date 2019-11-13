@@ -860,11 +860,14 @@ void CrvEdgeOptim :: setTol(double tolerance)
 
 bool CrvEdgeOptim :: run(int &invaliditySize)
 {
+  std::vector<int> sizeHolder;
   apf::MeshEntity* adj_array[99];
   apf::Adjacent adj;
   mesh->getAdjacent(edge, 3, adj);
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
+    std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    sizeHolder.push_back(ai.size());
   }
 
   std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
@@ -878,25 +881,30 @@ bool CrvEdgeOptim :: run(int &invaliditySize)
   //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
 
-  apf::Adjacent adjT;
-  mesh->getAdjacent(edge, 3, adjT);
   apf::MeshEntity* ed[6];
 
-  for (std::size_t i = 0; i < adjT.getSize(); i++) {
-    mesh->getDownward(adjT[i], 1, ed);
+  for (std::size_t i = 0; i < adj.getSize(); i++) {
+    mesh->getDownward(adj[i], 1, ed);
     int edgeIndex = apf::findIn(ed, 6, edge);
     printf("reshape tried on %d edge; ", edgeIndex);
-    printTetNumber(mesh, adjT[i]);
+    printTetNumber(mesh, adj[i]);
   }
+
+  bool hasDecreased = false;
 
   if (l->run()) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
-    
-    std::vector<int> aiNew = crv::getAllInvalidities(mesh, tet);
-    invaliditySize = aiNew.size();
-    if (aiNew.size() < ai.size()) {
+
+
+    for (int i = 0; i < adj.getSize(); i++) {
+      std::vector<int> aiNew = crv::getAllInvalidities(mesh, adj[i]);
+      invaliditySize = invaliditySize + aiNew.size();
+      hasDecreased = hasDecreased || (aiNew.size() > sizeHolder[i]);
+    }
+
+    if (hasDecreased == false) {
       //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
       //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
       printInvalidities(mesh, adj_array, edge, adj.getSize());
@@ -910,23 +918,6 @@ bool CrvEdgeOptim :: run(int &invaliditySize)
       std::cout<<"--------------------------------------"<<std::endl;
       return false;
     }
-/*   
-    apf::Adjacent adjT;
-    mesh->getAdjacent(edge, 3, adjT);
-    for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      if (checkValidity(mesh, adjT[i], 1) > 1) {
-      	objF->restoreInitialNodes();
-	std::cout<<"invalid entity after edop with code "<<checkValidity(mesh, adjT[i], 1) <<std::endl;
-      	return false;
-      }
-    }
-*/
-
-    //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
-    //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
-    //printInvalidities(mesh, adj_array, edge, adj.getSize());
-    //std::cout<<"--------------------------------------"<<std::endl;
-    //return true;
   }
   else {
     //finalX = l->currentX; 

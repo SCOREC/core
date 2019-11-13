@@ -1068,6 +1068,7 @@ void CrvModelEdgeOptim :: setTol(double tolerance)
 
 bool CrvModelEdgeOptim :: run(int &invaliditySize)
 {
+  std::vector<int> sizeHolder;
   apf::MeshEntity* adj_array[99];
   apf::Adjacent adj;
   mesh->getAdjacent(edge, 3, adj);
@@ -1075,9 +1076,11 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
 
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
+    std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    sizeHolder.push_back(ai.size());
   }
 
-  std::vector<int> ai = crv::getAllInvalidities(mesh,tet);
+  //std::vector<int> ai = crv::getAllInvalidities(mesh,tet);
   //makeMultipleEntityMesh(mesh, adj_array, edge, "before_cavity_of_edge_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   printTetNumber(mesh, tet);
@@ -1088,36 +1091,29 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
-  apf::Adjacent adjT;
-  mesh->getAdjacent(edge, 3, adjT);
   apf::MeshEntity* ed[6];
 
-  for (std::size_t i = 0; i < adjT.getSize(); i++) {
-    mesh->getDownward(adjT[i], 1, ed); 
+  for (std::size_t i = 0; i < adj.getSize(); i++) {
+    mesh->getDownward(adj[i], 1, ed); 
     int edgeIndex = apf::findIn(ed, 6, edge);
     printf("reshape tried on %d edge; ", edgeIndex);
-    printTetNumber(mesh, adjT[i]);
+    printTetNumber(mesh, adj[i]);
   }
+
+  bool hasDecreased = false;
 
   if (l->run()) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
 
-    /*
-    apf::Adjacent adjT;
-    mesh->getAdjacent(edge, 3, adjT);
-    for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      if (checkValidity(mesh, adjT[i], 2) > 1) {
-      	objF->restoreInitialNodes();
-//	std::cout<<"invalid entity after edop with code "<<checkValidity(mesh, adjT[i], 1) <<std::endl;
-      	return false;
-      }
+    for (int i = 0; i < adj.getSize(); i++) {
+      std::vector<int> aiNew = crv::getAllInvalidities(mesh, adj[i]);
+      invaliditySize = invaliditySize + aiNew.size();
+      hasDecreased = hasDecreased || (aiNew.size() > sizeHolder[i]);
     }
-*/
-    std::vector<int> aiNew = crv::getAllInvalidities(mesh,tet);
-    invaliditySize = aiNew.size();
-    if (aiNew.size() < ai.size()) {
+
+    if (hasDecreased == false) {
       //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
       //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
       printInvalidities(mesh, adj_array, edge, adj.getSize());
