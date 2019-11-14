@@ -24,6 +24,8 @@ extern "C" {
 extern ego *eg_context;
 /** \brief global variable for the EGADS model */
 extern ego *eg_model;
+/** \brief global variable for the EGADS body */
+extern ego *eg_body;
 
 /** \brief start the EGADS session */
 void gmi_egads_start(void);
