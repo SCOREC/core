@@ -146,8 +146,8 @@ static void destroy(struct gmi_model* m)
 static struct gmi_model_ops ops;
 
 /// TODO: Come up with a better flag? 
-// #ifdef HAVE_EGADS
-#if 1
+#ifdef HAVE_EGADS
+// #if 1
 static struct gmi_model* gmi_egads_load(const char* filename)
 {
   int status = EG_loadModel(*eg_context, 0, filename, eg_model);
@@ -158,14 +158,32 @@ static struct gmi_model* gmi_egads_load(const char* filename)
     gmi_fail(str);
   }
 
+  int oclass, mtype, nbody, *senses;
+  ego geom, *eg_bodies,
+  status = EG_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+                          &eg_bodies, &senses);
+  if (status != EGADS_SUCCESS)
+  {
+    char str[50]; // big enough
+    sprintf(str, "EGADS failed to get bodies with error code: %d", status);
+    gmi_fail(str);
+  }
+  else if (nbody > 1)
+  {
+    gmi_fail("EGADS model should only have one body");
+  }
+
+  ego eg_body = eg_bodies[0];
+  
+
   struct gmi_model *model;
   model = (struct gmi_model*)malloc(sizeof(*model));
   model->ops = &ops;
 
-  model->n[0] = EG_getBodyNumNodes(eg_model); // function call for num vertices on geo model
-  model->n[1] = EG_getBodyNumEdges(eg_model); // function call for num edges on geo model
-  model->n[2] = EG_getBodyNumFaces(eg_model); // function call for num faces on geo model
-  model->n[3] = EG_getBodyNumShells(eg_model); // function call for num regions on geo model
+  EG_getBodyTopos(eg_body, NULL, NODE, &(model->n[0]), NULL);
+  EG_getBodyTopos(eg_body, NULL, EDGE, &(model->n[1]), NULL);
+  EG_getBodyTopos(eg_body, NULL, FACE, &(model->n[2]), NULL);
+  EG_getBodyTopos(eg_body, NULL, SHELL, &(model->n[3]), NULL);
 
   return model;
 }
