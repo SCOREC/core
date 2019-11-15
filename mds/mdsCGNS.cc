@@ -336,8 +336,8 @@ struct BCInfo
 
   void TagVertices(const int cgid, apf::Mesh2 *m, apf::GlobalToVert &globalToVert)
   {
-    // tm = tag marker for that bcName, fm = field marker for that bcName
-    tag = m->createIntTag(("tm_" + bcName).c_str(), 1); // 1 is size of tag
+    // tm = "tag marker" for that bcName, fm = "field marker" for that bcName
+    tag = m->createIntTag(("debug_tm_" + bcName).c_str(), 1); // 1 is size of tag
     apf::MeshEntity *elem = nullptr;
     apf::MeshIterator *it = m->begin(0);
     int vals[1];
@@ -367,7 +367,7 @@ struct BCInfo
       // for debug output, tags aren't written to vtk...
       apf::MeshEntity *elem = nullptr;
       apf::MeshIterator *it = m->begin(0);
-      field = apf::createFieldOn(m, ("fm_" + bcName).c_str(), apf::SCALAR);
+      field = apf::createFieldOn(m, ("debug_fm_" + bcName).c_str(), apf::SCALAR);
 
       int vals[1];
       double dval[1];
@@ -383,7 +383,7 @@ struct BCInfo
     // Notes:
     // I do not exchange the tag values (even if that can be done).
     // I'm assuming in parallel all partitions that need the vertex that
-    // falls within a given group mark that vertex accordingly.
+    // falls within a given group will mark that vertex accordingly.
     // I assume therefore that vertices on a processor boundary, are marked
     // by all procs that share it.
     // TODO: generate test that proves this works. Done: for quads tested 4-way
