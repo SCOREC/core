@@ -283,14 +283,24 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
 {
   std::vector<int> aiEdgeNVtx;
   std::vector<int> aiOnlyFace;
+  std::vector<int> aiOnlyEdge;
+  std::vector<int> aiOnlyVtx;
+  std::vector<int> aiOnlyTet;
+
   std::vector<int> aiUniqueFace;
   std::vector<int> FFE;
 
   for (size_t i = 0; i < ai.size(); i++) {
+    if (ai[i] < 8) aiOnlyVtx.push_back(ai[i]);
+    else if (ai[i] > 7 && ai[i] < 14) aiOnlyEdge.push_back(ai[i]);
+    else if (ai[i] > 13 && ai[i] < 20) aiOnlyFace.push_back(ai[i]);
+    else aiOnlyTet.push_back(ai[i]);
+/*
     if (ai[i] > 13 && ai[i] < 20)
       aiOnlyFace.push_back(ai[i]);
     else
       aiEdgeNVtx.push_back(ai[i]);
+      */
   }
 
   int faceToEdgeInd[4][4] = {{-1, 0, 1, 2},
@@ -305,12 +315,19 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
 			     {1, 2},
 			     {2, 3}};
 
+  int edgeToVtx[6][2] = {{0, 1},
+			 {1, 2},
+			 {0, 2},
+			 {0, 3},
+			 {1, 3},
+			 {2, 3}};
+
   for (std::size_t i = 0; i < aiOnlyFace.size(); i++) {
     for (std::size_t j = 0; j < aiOnlyFace.size(); j++) {
       if ((i != j) && (j > i)) {
-      	for (std::size_t k = 0; k < aiEdgeNVtx.size(); k++) {
-      	  if (faceToEdgeInd[aiOnlyFace[i]-14][aiOnlyFace[j]-14] + 8 == aiEdgeNVtx[k]) {
-      	    FFE.push_back(aiEdgeNVtx[k]);
+      	for (std::size_t k = 0; k < aiOnlyEdge.size(); k++) {
+      	  if (faceToEdgeInd[aiOnlyFace[i]-14][aiOnlyFace[j]-14] + 8 == aiOnlyEdge[k]) {
+      	    FFE.push_back(aiOnlyEdge[k]);
       	    FFE.push_back(aiOnlyFace[j]);
       	    FFE.push_back(aiOnlyFace[i]);
       	    break;
@@ -337,20 +354,39 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
     }
   }
 */
-  for (size_t j = 0; j < aiEdgeNVtx.size(); j++) {
-    if (aiEdgeNVtx[j] > 7 && aiEdgeNVtx[j] < 14) {
+
+  bool hasDownVtx, alreadyIn;
+
+  for (size_t j = 0; j < aiOnlyEdge.size(); j++) {
+    hasDownVtx = false;
+    for (int jj = 0; jj < 2; jj++) {
+      //hasDownVtx = false;
+      for (size_t ii = 0; ii < aiOnlyVtx.size(); ii++) {
+      	hasDownVtx = hasDownVtx || (edgeToVtx[aiOnlyEdge[j]-8][jj] == aiOnlyVtx[ii] - 2);
+      }
+    }
+
+    if (hasDownVtx == false) {
       for (int i = 0; i < 2; i++) {
-      	bool alreadyIn = false;
+      	alreadyIn = false;
       	for (size_t k = 0; k < aiOnlyFace.size(); k++) {
-      	  alreadyIn = alreadyIn || (edgeToFaceInd[aiEdgeNVtx[j]-8][i] == aiOnlyFace[k]-14);
+      	  alreadyIn = alreadyIn || (edgeToFaceInd[aiOnlyEdge[j]-8][i] == aiOnlyFace[k]-14);
 	}
 	if (alreadyIn == false) {
-	  aiOnlyFace.push_back(edgeToFaceInd[aiEdgeNVtx[j]-8][i] + 14);
+	  aiOnlyFace.push_back(edgeToFaceInd[aiOnlyEdge[j]-8][i] + 14);
+	}
+      }
+    }
+    else {
+      for (int i = 0; i < 2; i++) {
+      	for (size_t k = 0; k < aiOnlyFace.size(); k++) {
+      	  if (edgeToFaceInd[aiOnlyEdge[j]-8][i] == aiOnlyFace[k]-14) {
+      	    aiOnlyFace.erase(aiOnlyFace.begin()+k);
+	  }
 	}
       }
     }
   }
-
 
   for (size_t j = 0; j < aiOnlyFace.size(); j++) {
     aiUniqueFace.push_back(aiOnlyFace[j]);
@@ -364,10 +400,14 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
 
   if (aiUniqueFace.size() > 0 && FFE.size() >= 0) {
     forFaceMarking.push_back(aiUniqueFace.size());
-    for (std::size_t i = 0; i < aiEdgeNVtx.size(); i++)
-      ai.push_back(aiEdgeNVtx[i]);
+    for (std::size_t i = 0; i < aiOnlyVtx.size(); i++)
+      ai.push_back(aiOnlyVtx[i]);
+    for (std::size_t i = 0; i < aiOnlyEdge.size(); i++)
+      ai.push_back(aiOnlyEdge[i]);
     for (std::size_t i = 0; i < aiOnlyFace.size(); i++)
       ai.push_back(aiOnlyFace[i]);
+    for (std::size_t i = 0; i < aiOnlyTet.size(); i++)
+      ai.push_back(aiOnlyTet[i]);
     for (std::size_t i = 0; i < aiUniqueFace.size(); i++) {
       forFaceMarking.push_back(aiUniqueFace[i]);
     }
@@ -381,8 +421,10 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
       for (std::size_t i = 0; i < FFE.size(); i++)
       	forFaceMarking.push_back(FFE[i]);
     }
-    for (std::size_t i = 0; i < aiEdgeNVtx.size(); i++)
-      ai.push_back(aiEdgeNVtx[i]);
+    for (std::size_t i = 0; i < aiOnlyVtx.size(); i++)
+      ai.push_back(aiOnlyVtx[i]);
+    for (std::size_t i = 0; i < aiOnlyEdge.size(); i++)
+      ai.push_back(aiOnlyEdge[i]);
     for (std::size_t i = 0; i < aiOnlyFace.size(); i++)
       ai.push_back(aiOnlyFace[i]);
   }
@@ -983,7 +1025,7 @@ public:
   }
 
   virtual void apply(){
-    bool hasDecreased = false;
+    int invaliditySize = 0;
     //mesh->getDownward(simplex, 2, faces);
     for (int i = 0; i < numf; i++ ) {
       if (mesh->getModelType(mesh->toModel(faces[i])) == 3) {
@@ -991,11 +1033,18 @@ public:
       	cfo->setMaxIter(100);
       	cfo->setTol(1e-8);
 
-      	if (cfo->run(hasDecreased)) {
-      	  if (hasDecreased == false)
+      	if (cfo->run(invaliditySize)) {
+      	  if (invaliditySize < 1) {
       	    ns++;
+      	    break;
+	  }
 	}
-      	else nf++;
+      	else {
+      	  if (invaliditySize < 1) {
+      	    break;
+	  }
+      	  nf++;
+	}
 
       	delete cfo;
       }
@@ -1050,8 +1099,8 @@ public:
 
   virtual void apply() {
     //mesh->getDownward(simplex, 1, edges);
-    int invaliditySize = 0;
     for (int i = 0; i < ne; i++ ) {
+    int invaliditySize = 0;
       if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
       	CrvEdgeOptim *ceo = new CrvEdgeOptim(mesh, edges[i], simplex);
       	ceo->setMaxIter(100);
@@ -1062,14 +1111,20 @@ public:
       	  if (invaliditySize < 1)
       	    break;
 	}
-      	else nf++;
+      	else {
+      	  if (invaliditySize < 1) {
+      	    break;
+	  }
+	  nf++;
+	}
+
 
       	delete ceo;
       //ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
       }
       else if (mesh->getModelType(mesh->toModel(edges[i])) == 2) {
       	CrvModelEdgeOptim *cmeo = new CrvModelEdgeOptim(mesh, edges[i], simplex);
-      	cmeo->setMaxIter(100);
+      	cmeo->setMaxIter(200);
       	cmeo->setTol(1e-8);
 
       	if (cmeo->run(invaliditySize)) {
@@ -1077,7 +1132,12 @@ public:
       	  if (invaliditySize < 1) 
       	    break;
 	}
-      	else nf++;
+      	else {
+      	  if (invaliditySize < 1) {
+      	    break;
+	  }
+      	  nf++;
+	}
 
       	//ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
       	delete cmeo;

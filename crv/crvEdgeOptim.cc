@@ -606,9 +606,9 @@ double CrvEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 14;
+	      weight = 6;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 4;
+	      weight = 3;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
@@ -725,8 +725,9 @@ restoreInitialNodes();
     }
 
     apf::destroyElement(Edl);
-    */
+*/
 /*
+
     apf::Adjacent adjF;
     mesh->getAdjacent(edge, 2, adjF);
     apf::NewArray<apf::Vector3> fCP;
@@ -776,11 +777,13 @@ restoreInitialNodes();
       //std::cout<<"sum and ratio------ "<< sum <<"  "<<aratio-3.0<<std::endl; 
       apf::destroyElement(Fal);
     }
-*/
-    //sum = sum*(1 + beta);// + gamma);
+
+    sum = sum*(1 + beta + gamma);
 
     restoreInitialNodes();
+    */
   }
+  
   return sum;
 }
 
@@ -864,10 +867,14 @@ bool CrvEdgeOptim :: run(int &invaliditySize)
   apf::MeshEntity* adj_array[99];
   apf::Adjacent adj;
   mesh->getAdjacent(edge, 3, adj);
+  int thisTetSize = 0;
+
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
     std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    if (adj[i] == tet) thisTetSize = ai.size();
     sizeHolder.push_back(ai.size());
+
   }
 
   std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
@@ -891,8 +898,9 @@ bool CrvEdgeOptim :: run(int &invaliditySize)
   }
 
   bool hasDecreased = false;
+  invaliditySize = 0;
 
-  if (l->run()) {
+  if (l->run() && thisTetSize > 0) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
@@ -904,7 +912,8 @@ bool CrvEdgeOptim :: run(int &invaliditySize)
       hasDecreased = hasDecreased || (aiNew.size() > sizeHolder[i]);
     }
 
-    if (hasDecreased == false) {
+    if (hasDecreased == false ) {
+      //invaliditySize = 0;
       //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
       //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "after_cavity_indv_tet_of_edge_", adj.getSize());
       printInvalidities(mesh, adj_array, edge, adj.getSize());
@@ -923,6 +932,11 @@ bool CrvEdgeOptim :: run(int &invaliditySize)
     //finalX = l->currentX; 
     //objF->setNodes(finalX); 
     //makeMultipleEntityMesh(mesh, adj_array, edge, "after_cavity_of_edge_", adj.getSize());
+    if (thisTetSize == 0) {
+      std::cout<<" No Optimization tried"<<std::endl;
+      std::cout<<"--------------------------------------"<<std::endl;
+      return false;
+    }
     std::cout<<"*****Edge Optim FAILURE" <<std::endl;
     std::cout<<"--------------------------------------"<<std::endl;
     return false;

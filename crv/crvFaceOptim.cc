@@ -495,9 +495,9 @@ double CrvFaceReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 4;
+	      weight = 6;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 2;
+	      weight = 3;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
@@ -654,7 +654,7 @@ void CrvFaceOptim :: setTol(double tolerance)
   tol = tolerance;
 }
 
-bool CrvFaceOptim :: run(bool &hasDecreased)
+bool CrvFaceOptim :: run(int &invaliditySize)
 {
   std::vector<int> sizeHolder;
   apf::MeshEntity* adj_array[99];
@@ -662,11 +662,12 @@ bool CrvFaceOptim :: run(bool &hasDecreased)
   mesh->getAdjacent(face, 3, adj);
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
-    std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
-    sizeHolder.push_back(ai.size());   
+    //std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    //sizeHolder.push_back(ai.size());   
   }
 
-  //std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
+  std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
+  invaliditySize = ai.size();
   //makeMultipleEntityMesh(mesh, adj_array, face, "before_cavity_of_face_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "before_cavity_indv_tet_of_face_", adj.getSize());
   printTetNumber(mesh, tet);
@@ -693,16 +694,20 @@ bool CrvFaceOptim :: run(bool &hasDecreased)
     fval = l->fValAfter;
     objF->setNodes(finalX);
 
+    std::vector<int> aiNew = crv::getAllInvalidities(mesh, tet);
 
+/*
     for (int i = 0; i < adjT.getSize(); i++) {
       std::vector<int> aiNew = crv::getAllInvalidities(mesh, adj[i]);
       //invaliditySize = invaliditySize + aiNew.size();
       hasDecreased = hasDecreased || (aiNew.size() > sizeHolder[i]);
     }
-
-    if (hasDecreased == false || hasDecreased == true) {
-      // makeMultipleEntityMesh(mesh, adj_array, face, "after_cavity_of_face_", adj.getSize());
-      // makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "after_cavity_indv_tet_of_face_", adj.getSize());
+*/
+   // if (hasDecreased == false || hasDecreased == true) {
+   if (aiNew.size() <= invaliditySize) {
+     invaliditySize = aiNew.size();
+      //makeMultipleEntityMesh(mesh, adj_array, face, "after_cavity_of_face_", adj.getSize());
+      //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "after_cavity_indv_tet_of_face_", adj.getSize());
       printInvalidities(mesh, adj_array, face, adj.getSize());
       std::cout<<"----------------------------------------------------"<<std::endl;
 
@@ -715,7 +720,6 @@ bool CrvFaceOptim :: run(bool &hasDecreased)
       std::cout<<"----------------------------------------------------"<<std::endl;
       return false;
     }
-
   }
   else {
     std::cout<<"*****FaceOptim FAILURE"<<std::endl;

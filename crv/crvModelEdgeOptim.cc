@@ -817,9 +817,9 @@ double CrvModelEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vec
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 4;
+	      weight = 6;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 2;
+	      weight = 3;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
@@ -1073,10 +1073,12 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
   apf::Adjacent adj;
   mesh->getAdjacent(edge, 3, adj);
   int cInvT = 0;
+  int thisTetSize = 0;
 
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
     std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    if (adj[i] == tet) thisTetSize = ai.size();
     sizeHolder.push_back(ai.size());
   }
 
@@ -1101,8 +1103,9 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
   }
 
   bool hasDecreased = false;
+  invaliditySize = 0;
 
-  if (l->run()) {
+  if (l->run() && thisTetSize > 0) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
@@ -1131,8 +1134,13 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
   else {
     //finalX = l->currentX;
     //objF->setNodes(finalX);
-
+    if (thisTetSize == 0) {
+      std::cout<<"No Optimization tried"<<std::endl;
+      std::cout<<"--------------------------------------"<<std::endl;
+      return false;
+    }
     std::cout<<"*****Optim FAILURE"<<std::endl;
+    std::cout<<"--------------------------------------"<<std::endl;
     return false;
   }
 }
