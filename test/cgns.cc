@@ -280,7 +280,7 @@ int main(int argc, char **argv)
   if (additionalTests)
     cleanUp = additional(prefix, g, m);
   //
-  apf::writeCGNS((prefix + "_outputFile.cgns").c_str(), m, cgnsBCMap);
+  apf::writeCGNS((prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns").c_str(), m, cgnsBCMap);
   //
   if (additionalTests)
   {
@@ -291,6 +291,8 @@ int main(int argc, char **argv)
     m->destroyNative();
     apf::destroyMesh(m);
   }
+  //
+  std::cout << "TODO: Must read in newly created mesh, and check that it can perform same functions as initial mesh: see if I can diff the two" << std::endl;
   //
   PCU_Comm_Free();
   MPI_Finalize();
