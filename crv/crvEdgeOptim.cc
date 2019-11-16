@@ -606,9 +606,9 @@ double CrvEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3>
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 6;
+	      weight = 4;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 3;
+	      weight = 2;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {

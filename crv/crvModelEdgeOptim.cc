@@ -442,12 +442,12 @@ std::vector<double> CrvModelEdgeReshapeObjFunc :: getParamCoords()
   std::vector<double> xp;
 
   int numENodes = mesh->getShape()->countNodesOn(mesh->getType(edge));
-
   for (int i = 0; i < numENodes; i++) {
     getBezierNodeXi(mesh->getType(edge), P, i, xi);
     transferParametricOnEdgeSplit(mesh, edge, 0.5*(xi[0]+1.0), param);
-    for (int j = 0; j < 3; j++) 
+    for (int j = 0; j < 3; j++) {
       xp.push_back(param[j]);
+    }
   }
 
   apf::Vector3 xif;
@@ -460,8 +460,9 @@ std::vector<double> CrvModelEdgeReshapeObjFunc :: getParamCoords()
       for (int j = 0; j < numFNodes; j++) {
       	getBezierNodeXi(mesh->getType(adjF[i]), P, j, xif);
       	transferParametricOnTriSplit(mesh, adjF[i], xif, paramf);
-      	for (int k = 0; k < 3; k++)
+      	for (int k = 0; k < 3; k++) {
       	  xp.push_back(paramf[k]);
+	}
       }
     }
     else {
@@ -473,7 +474,7 @@ std::vector<double> CrvModelEdgeReshapeObjFunc :: getParamCoords()
       }
     }
   }
-  
+
   return xp;
 }
 
@@ -483,7 +484,6 @@ std::vector<apf::Vector3> CrvModelEdgeReshapeObjFunc :: convertParamCoordsToNode
   std::vector<apf::Vector3> edn;
   std::vector<apf::Vector3> vn = convertXtoNodeVector(x);
   int nENodes = mesh->getShape()->countNodesOn(mesh->EDGE);
-  
   for (int i = 0; i < nENodes; i++) {
     apf::Vector3 coorde;
     mesh->snapToModel(me, vn[i], coorde);
@@ -817,9 +817,9 @@ double CrvModelEdgeReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vec
 	for (int K = 0; K <= d*(P-1); K++) {
 	  for (int L = 0; L <= d*(P-1); L++) {
 	    if ((I == J && J == K && I == 0) || (J == K && K == L && J == 0) || (I == K && K == L && I == 0) || (I == J && J == L && I == 0))
-	      weight = 6;
+	      weight = 4;
 	    else if ((I == J && I == 0) || (I == K && I == 0) || (I == L && I == 0) || (J == K && J == 0) || (J == L && J == 0) || (K == L && K == 0))
-	      weight = 3;
+	      weight = 2;
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
@@ -886,7 +886,7 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       sum = sum + computeFValOfElement(allNodes, vol[i]);
       apf::destroyElement(el);
     }
-
+/*    
     apf::NewArray<apf::Vector3> eCP;
     apf::Element* Edl = apf::createElement(mesh->getCoordinateField(), edge);
     apf::getVectorNodes(Edl, eCP);
@@ -995,8 +995,8 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       }
     }
 
-    sum = sum*(1 + beta + 0.3*gamma);
-
+    //sum = sum*(1 + beta + 0.3*gamma);
+*/
     restoreInitialNodes();
   }
   return sum;
@@ -1090,6 +1090,8 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
 
   CrvModelEdgeReshapeObjFunc *objF = new CrvModelEdgeReshapeObjFunc(mesh, edge, tet);
   std::vector<double> x0 = objF->getInitialGuess();
+
+
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
