@@ -886,62 +886,101 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       sum = sum + computeFValOfElement(allNodes, vol[i]);
       apf::destroyElement(el);
     }
-/*    
-    apf::NewArray<apf::Vector3> eCP;
-    apf::Element* Edl = apf::createElement(mesh->getCoordinateField(), edge);
-    apf::getVectorNodes(Edl, eCP);
-    int nEN = mesh->getShape()->countNodesOn(mesh->getType(edge));
+    
+    /* apf::NewArray<apf::Vector3> eCP; */
+    /* apf::Element* Edl = apf::createElement(mesh->getCoordinateField(), edge); */
+    /* apf::getVectorNodes(Edl, eCP); */
+    /* int nEN = mesh->getShape()->countNodesOn(mesh->getType(edge)); */
+    /* double xr = 1.0; */
+    /* double xir = 1.0; */
+    /* //double alpha = 1.0; */
+    /* double ad = 0.0; */
+    /* apf::Vector3 x1, x0; */
+    /* apf::Vector3 xi2, xi1, xi0; */
+    /* double beta = 0.0; */
+
+    /* apf::MeshElement* mEdl = apf::createMeshElement(mesh, edge); */
+    /* for (int i = 0; i <nEN; i++) { */
+    /*   apf::Vector3 scord; */
+    /*   getBezierNodeXi(mesh->getType(edge), P, i, xi1); */
+    /*   apf::mapLocalToGlobal(mEdl, xi1, scord); */
+    /*   eCP[2+i] = scord; */
+    /* } */
+    /* apf::destroyMeshElement(mEdl); */
+
+    double ad = 0.0;
     double xr = 1.0;
     double xir = 1.0;
-    //double alpha = 1.0;
-    double ad = 0.0;
-    apf::Vector3 x1, x0;
-    apf::Vector3 xi2, xi1, xi0;
+    int nEN = mesh->getShape()->countNodesOn(mesh->getType(edge));
     double beta = 0.0;
-
-    apf::MeshElement* mEdl = apf::createMeshElement(mesh, edge);
+    std::vector<apf::Vector3> xs;
+    xs.clear();
+    std::vector<apf::Vector3> xis;
+    xis.clear();
+    xis.push_back(apf::Vector3(-1.0, 0.0, 0.0));
     for (int i = 0; i <nEN; i++) {
-      apf::Vector3 scord;
-      getBezierNodeXi(mesh->getType(edge), P, i, xi1);
-      apf::mapLocalToGlobal(mEdl, xi1, scord);
-      eCP[2+i] = scord;
+      apf::Vector3 currentXi;
+      getBezierNodeXi(mesh->getType(edge), P, i, currentXi);
+      xis.push_back(currentXi);
     }
-    apf::destroyMeshElement(mEdl);
+    xis.push_back(apf::Vector3(+1.0, 0.0, 0.0));
 
-    for (int i = 0; i < nEN; i++) {
-      getBezierNodeXi(mesh->getType(edge), P, i, xi1);
-      if (i > 0 && i < nEN - 1) {
-        getBezierNodeXi(mesh->getType(edge), P, i+1, xi2);
-        getBezierNodeXi(mesh->getType(edge), P, i-1, xi0);
-      	x1 = eCP[2+i+1] - eCP[2+i];
-      	x0 = eCP[2+i] - eCP[2+i-1];
-      	xir = (xi2[0] - xi1[0])/(xi1[0] - xi0[0]);
-      }
-      else if ( i == 0) {
-        getBezierNodeXi(mesh->getType(edge), P, i+1, xi2);
-      	x1 = eCP[2+i+1] - eCP[2+i];
-      	x0 = eCP[2+i] - eCP[0];
-      	xir = (xi2[0] - xi1[0])/(xi1[0] + 1.0); // parent coordinate[-1,1]
-      }
-      else {
-        getBezierNodeXi(mesh->getType(edge), P, i-1, xi0);
-      	x1 = eCP[1] - eCP[2+i];
-      	x0 = eCP[2+i] - eCP[2+i-1];
-      	xir = (1.0 - xi1[0])/(xi1[0] - xi0[0]);
-      }
+    apf::MeshElement* me = apf::createMeshElement(mesh, edge);
+    for (int i = 0; i < xis.size(); i++) {
+      apf::Vector3 scord;
+      apf::mapLocalToGlobal(me, xis[i], scord);
+      xs.push_back(scord);
+    }
+    apf::destroyMeshElement(me);
 
-      //if (0.5*(xi1[0]+1.0) < 1.0 - 0.5*(xi1[0]+1.0))
-      //	alpha = 0.5*(xi1[0]+1.0);
-      //else
-      //	alpha = 1.0 - 0.5*(xi1[0]+1.0);
 
-      xr = (x1.getLength()/x0.getLength());
+
+    /* for (int i = 0; i < nEN; i++) { */
+    /*   getBezierNodeXi(mesh->getType(edge), P, i, xi1); */
+    /*   if (i > 0 && i < nEN - 1) { */
+    /*     getBezierNodeXi(mesh->getType(edge), P, i+1, xi2); */
+    /*     getBezierNodeXi(mesh->getType(edge), P, i-1, xi0); */
+    /*   	x1 = eCP[2+i+1] - eCP[2+i]; */
+    /*   	x0 = eCP[2+i] - eCP[2+i-1]; */
+    /*   	xir = (xi2[0] - xi1[0])/(xi1[0] - xi0[0]); */
+    /*   } */
+    /*   else if ( i == 0) { */
+    /*     getBezierNodeXi(mesh->getType(edge), P, i+1, xi2); */
+    /*   	x1 = eCP[2+i+1] - eCP[2+i]; */
+    /*   	x0 = eCP[2+i] - eCP[0]; */
+    /*   	xir = (xi2[0] - xi1[0])/(xi1[0] + 1.0); // parent coordinate[-1,1] */
+    /*   } */
+    /*   else { */
+    /*     getBezierNodeXi(mesh->getType(edge), P, i-1, xi0); */
+    /*   	x1 = eCP[1] - eCP[2+i]; */
+    /*   	x0 = eCP[2+i] - eCP[2+i-1]; */
+    /*   	xir = (1.0 - xi1[0])/(xi1[0] - xi0[0]); */
+    /*   } */
+
+    /*   //if (0.5*(xi1[0]+1.0) < 1.0 - 0.5*(xi1[0]+1.0)) */
+    /*   //	alpha = 0.5*(xi1[0]+1.0); */
+    /*   //else */
+    /*   //	alpha = 1.0 - 0.5*(xi1[0]+1.0); */
+
+    /*   xr = (x1.getLength()/x0.getLength()); */
+    /*   ad = (1.0*xr/xir - 1.0);   //(alpha*alpha); */
+    /*   beta = beta + ad*ad; */
+    /*   //sum = sum + ad*ad; */
+    /* } */
+
+    for (int i = 1; i < xs.size()-1; i++) {
+
+      xr = (xs[i] - xs[0]).getLength() /
+      	   (xs[xs.size()-1] - xs[0]).getLength();
+      xir = (xis[i] - xis[0]).getLength() /
+      	    (xis[xs.size()-1] - xis[0]).getLength();
       ad = (1.0*xr/xir - 1.0);   //(alpha*alpha);
       beta = beta + ad*ad;
       //sum = sum + ad*ad;
     }
+
     //sum = sum*(1 + beta);
-    apf::destroyElement(Edl);
+    /* apf::destroyElement(Edl); */
 
     apf::Adjacent adjF;
     mesh->getAdjacent(edge, 2, adjF);
@@ -972,8 +1011,8 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
 
       	double triAphys = getAr(fCP[0], fCP[1], fCP[2]);
       	apf::Vector3 prt0 = {0, 0, 0};
-      	apf::Vector3 prt1 = {0, 1, 0};
-      	apf::Vector3 prt2 = {0, 0, 1};
+      	apf::Vector3 prt1 = {1, 0, 0};
+      	apf::Vector3 prt2 = {0, 1, 0};
       	double triAparnt = getAr(prt0, prt1, prt2);
 
       	for (int j = 0; j < nFN; j++) {
@@ -995,8 +1034,9 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
       }
     }
 
-    //sum = sum*(1 + beta + 0.3*gamma);
-*/
+    /* double gamma = 0.0; */
+    sum = sum*(1 + beta + 0.3*gamma);
+
     restoreInitialNodes();
   }
   return sum;
