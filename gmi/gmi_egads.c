@@ -9,24 +9,28 @@
 *******************************************************************************/
 #include "gmi_egads.h"
 
-// initialize to NULL, will be properly set by `gmi_egads_start`
-ego *eg_context = NULL;
-// initialize to NULL, will be properly set by `gmi_egads_load`
-ego *eg_model = NULL;
-// initialize to NULL, will be properly set by `gmi_egads_load`
-ego *eg_body = NULL;
+/// What methods are necessary to implement for bare minimum
+/// what methods are necessary to implement for mesh adaptation
+/// what methods are necessary to implement for curved elements
+
+// will be initialized by `gmi_egads_start`
+ego *eg_context;
+// will be initialized by `gmi_egads_load`
+ego *eg_model;
+// will be initialized by `gmi_egads_load`
+ego *eg_body;
 
 static struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
   ego *eg_ents;
   if (dim = 0)
-    EG_getBodyTopos(eg_body, NULL, NODE, NULL, eg_ents);
+    EG_getBodyTopos(*eg_body, NULL, NODE, NULL, eg_ents);
   else if (dim = 1)
-    EG_getBodyTopos(eg_body, NULL, EDGE, NULL, eg_ents);
+    EG_getBodyTopos(*eg_body, NULL, EDGE, NULL, eg_ents);
   else if (dim = 2)
-    EG_getBodyTopos(eg_body, NULL, FACE, NULL, eg_ents);
+    EG_getBodyTopos(*eg_body, NULL, FACE, NULL, eg_ents);
   else if (dim = 3)
-    EG_getBodyTopos(eg_body, NULL, SHELL, NULL, eg_ents); // BODY?
+    EG_getBodyTopos(*eg_body, NULL, SHELL, NULL, eg_ents); // BODY?
   return (struct gmi_iter*)eg_ents;
 }
 
@@ -41,14 +45,14 @@ static void end(struct gmi_model* m, struct gmi_iter* i)
   // I think this will create a memory leak as it won't free any of the
   // values that came before
   ego *eg_ents = (ego*)i;
-  free(i);
+  EG_free(i);
 }
 
-static int gmi_dim(struct gmi_model* m, struct gmi_ent* e)
+static int get_dim(struct gmi_model* m, struct gmi_ent* e)
 {
   ego *eg_ent = (ego*)e;
-  int *ent_type;
-  EG_getInfo(eg_ent, ent_type, NULL, NULL, NULL, NULL);
+  int ent_type;
+  EG_getInfo(*eg_ent, &ent_type, NULL, NULL, NULL, NULL);
   if (ent_type == NODE)
     return 0;
   else if (ent_type == EDGE)
@@ -60,15 +64,25 @@ static int gmi_dim(struct gmi_model* m, struct gmi_ent* e)
   return -1;
 }
 
-static int gmi_tag(struct gmi_model* m, struct gmi_ent* e)
+static int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
-  /// implement
-  // ego *eg_ent = (ego*)e;
+  ego *eg_ent = (ego*)e;
+  return EG_indexBodyTopo(*eg_body, *eg_ent);
 }
 
 static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
-  /// implement
+  // ego *eg_ent = (ego*)e;
+  ego eg_ent;
+  if (dim == 0)
+    EG_objectBodyTopo(*eg_body, NODE, tag, &eg_ent);
+  else if (dim == 1)
+    EG_objectBodyTopo(*eg_body, EDGE, tag, &eg_ent);
+  else if (dim == 2)
+    EG_objectBodyTopo(*eg_body, FACE, tag, &eg_ent);
+  else if (dim == 3)
+    EG_objectBodyTopo(*eg_body, SHELL, tag, &eg_ent);
+  return (struct gmi_ent*)eg_ent;
 }
 
 static struct gmi_set* adjacent(struct gmi_model* m, 
@@ -76,7 +90,24 @@ static struct gmi_set* adjacent(struct gmi_model* m,
                                 int dim)
 {
   ego *eg_ent = (ego*)e;
-  // EG_getBodyTopos(eg_body, e, ...); something like this
+  int num_adjacent;
+  ego **adjacent_ents;
+  if (dim == 0)
+    EG_getBodyTopos(*eg_body, *eg_ent, NODE, &num_adjacent, adjacent_ents);
+  else if (dim == 1)
+    EG_getBodyTopos(*eg_body, *eg_ent, EDGE, &num_adjacent, adjacent_ents);
+  else if (dim == 2)
+    EG_getBodyTopos(*eg_body, *eg_ent, FACE, &num_adjacent, adjacent_ents);
+  else if (dim == 3)
+    EG_getBodyTopos(*eg_body, *eg_ent, SHELL, &num_adjacent, adjacent_ents);
+  
+  struct gmi_set *gmi_adj_ent = gmi_make_set(num_adjacent);
+  for (int i = 0; i < num_adjacent; ++i)
+  {
+    gmi_adj_ent->e[i] = (struct gmi_ent*)adjacent_ents[i];
+  }
+  EG_free(adjacent_ents);
+  return gmi_adj_ent;
 }
 
 static void eval(struct gmi_model* m, 
@@ -84,13 +115,12 @@ static void eval(struct gmi_model* m,
                  double const p[2],
                  double x[3])
 {
-  int *results;
+  double results[18];
   ego *eg_ent = (ego*)e;
-  EG_evaluate(eg_ent, p, results);
+  EG_evaluate(*eg_ent, p, results);
   x[0] = results[0];
   x[1] = results[1];
   x[2] = results[2];
-  free(results)
 }
 
 static void reparam(struct gmi_model* m,
@@ -99,47 +129,69 @@ static void reparam(struct gmi_model* m,
                     struct gmi_ent* to,
                     double to_p[2])
 {
-  /// implement
+  int from_dim, to_dim;
+  from_dim = get_dim(m, from);
+  to_dim = get_dim(m, to);
+  ego *eg_from = (ego*)from;
+  ego *eg_to = (ego*)to;
+  if ((from_dim == 1) && (to_dim == 2))
+  {
+    EG_getEdgeUV(*eg_to, *eg_from, from_p[0], 1, to_p);
+    return;
+  }
+  if ((from_dim == 0) && (to_dim == 2))
+  {
+    // Doesn't yet exist
+    // EG_getVertexUV(*eg_to, *eg_from, to_p);
+    gmi_fail("From node to surface reparam not implemented");
+    return;
+  }
+  if ((from_dim == 0) && (to_dim == 1))
+  {
+    // Doesn't yet exist
+    // EG_getVertexT(*eg_to, *eg_from, &to_p[0]);
+    gmi_fail("From node to edge reparam not implemented");
+    return;
+  }
+  gmi_fail("bad dimensions in gmi_egads reparam");
 }
 
 static int periodic(struct gmi_model* m,
                     struct gmi_ent* e,
-                    int dim)
+                    int dir)
 {
-  int ent_dim = gmi_dim(m, e);
-  int *periodic;
+  int ent_dim = get_dim(m, e);
+  int periodic;
   ego *eg_ent = (ego*)e;
-  EG_getRange(eg_ent, NULL, periodic);
+  EG_getRange(*eg_ent, NULL, &periodic);
 
-  if (dim == 2) // v direction
+  if (dir == 1) // v direction
   {
     if (ent_dim == 2) // FACE
     {
       if (periodic == 0)
-      {
         return 0;
-      }
-      else if (periodic == 2)
-      {
+      if (periodic == 2)
         return 1;
-      }
     }
     else
       gmi_fail("v direction only exists for faces");
   }
-  return periodic;
+  if (ent_dim == 1 || ent_dim == 2)
+    return periodic;
+  return 0;
 }
 
 static void range(struct gmi_model* m,
                   struct gmi_ent* e,
-                  int dim,
+                  int dir,
                   double r[2])
 {
-  int ent_dim = gmi_dim(m, e);
-  int *range;
+  int ent_dim = get_dim(m, e);
+  double range[4];
   ego *eg_ent = (ego*)e;
-  EG_getRange(eg_ent, range, NULL);
-  if (dim == 2)
+  EG_getRange(*eg_ent, range, NULL);
+  if (dir == 1)
   {
     if (ent_dim == 2)
     {
@@ -149,7 +201,7 @@ static void range(struct gmi_model* m,
     else 
       gmi_fail("v direction only exists for faces");
   }
-  else if (dim == 1)
+  else if (dir == 0)
   {
     r[0] = range[0];
     r[1] = range[1];
@@ -163,7 +215,7 @@ static void closest_point(struct gmi_model* m,
                           double to_p[2])
 {
   ego *eg_ent = (ego*)e;
-  EG_invEvaluate(e, &from[0], &to_p[0], &to[0]);
+  EG_invEvaluate(*eg_ent, &from[0], &to_p[0], &to[0]);
 }
 
 static void normal(struct gmi_model* m,
@@ -171,7 +223,22 @@ static void normal(struct gmi_model* m,
                    double const p[2],
                    double n[3])
 {
-  /// implement
+  double du[3], dv[3];
+  first_derivative(m, e, p, du, dv);
+  // cross du and dv to get n
+  n[0] = du[1]*dv[2] - du[2]*dv[1];
+  n[1] = du[2]*dv[0] - du[0]*dv[2];
+  n[2] = du[0]*dv[1] - du[1]*dv[0];
+
+  int mtype;
+  ego *eg_ent = (ego*)e;
+  // EG_getInfo(*eg_ent, NULL, &mtype, NULL, NULL, NULL);
+  EG_getTopology(*eg_ent, NULL, NULL, &mtype, NULL, NULL, NULL, NULL);
+
+  double n_mag = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+  n[0] *= mtype / n_mag;
+  n[1] *= mtype / n_mag;
+  n[2] *= mtype / n_mag;
 }
 
 static void first_derivative(struct gmi_model* m,
@@ -180,10 +247,10 @@ static void first_derivative(struct gmi_model* m,
                              double t0[3],
                              double t1[3])
 {
-  int ent_dim = gmi_dim(m, e);
-  double *results;
+  int ent_dim = get_dim(m, e);
+  double results[18];
   ego *eg_ent = (ego*)e;
-  EG_evaluate(eg_ent, p, results);
+  EG_evaluate(*eg_ent, p, results);
   t0[0] = results[3];
   t0[1] = results[4];
   t0[2] = results[5];
@@ -200,7 +267,7 @@ static int is_point_in_region(struct gmi_model* m,
                               double p[3])
 {
   ego *eg_ent = (ego*)e;
-  int status = EG_inTopology(e, p);
+  int status = EG_inTopology(*eg_ent, p);
   if (status == EGADS_SUCCESS)
     return 1;
   else
@@ -214,7 +281,7 @@ static void bbox(struct gmi_model* m,
 {
   double box[6];
   ego *eg_ent = (ego*)e;
-  EG_getBoundingBox(eg_ent, box);
+  EG_getBoundingBox(*eg_ent, box);
   bmin[0] = box[0];
   bmin[1] = box[1];
   bmin[2] = box[2];
@@ -223,26 +290,50 @@ static void bbox(struct gmi_model* m,
   bmax[2] = box[5];
 }
 
+/// For any given vertex, edge, or face, this function can be used
+/// to see if the vertex/edge/face is adjacent to region.
 static int is_in_closure_of(struct gmi_model* m,
                             struct gmi_ent* e,
                             struct gmi_ent* et)
 {
-  /// implement
+  ego *eg_ent = (ego*)e;
+  ego *eg_region = (ego*)et;
+  int ent_dim = get_dim(m, e);
+  int num_adjacent;
+  ego **adjacent_ents;
+  if (ent_dim == 0)
+    EG_getBodyTopos(*eg_body, *eg_region, NODE, &num_adjacent, adjacent_ents);
+  else if (ent_dim == 1)
+    EG_getBodyTopos(*eg_body, *eg_region, EDGE, &num_adjacent, adjacent_ents);
+  else if (ent_dim == 2)
+    EG_getBodyTopos(*eg_body, *eg_region, FACE, &num_adjacent, adjacent_ents);
+  else if (ent_dim == 3)
+    EG_getBodyTopos(*eg_body, *eg_region, SHELL, &num_adjacent, adjacent_ents);
+  for (int i = 0; i < num_adjacent; ++i)
+  {
+    if (EG_isEquivalent(*eg_ent, *(adjacent_ents[i])))
+      return 1;
+  }
+  EG_free(adjacent_ents);
+  return 0;
 }
 
+/// what does this function do?
 static int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 {
   /// implement
+  gmi_fail("is_discrete_ent not implemented");
 }
 
 static void destroy(struct gmi_model* m)
 {
-  /// implement
+  free(m);
 }
 
 static struct gmi_model_ops ops;
 
 /// TODO: Come up with a better flag? 
+/// TODO: re-write for EGADSlite - model loading is different
 // #ifdef HAVE_EGADS
 #if 1
 static struct gmi_model* gmi_egads_load(const char* filename)
@@ -258,7 +349,7 @@ static struct gmi_model* gmi_egads_load(const char* filename)
   /// TODO: only store the outputs I need, replace the rest with NULL
   int oclass, mtype, nbody, *senses;
   ego geom, *eg_bodies,
-  status = EG_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+  status = EG_getTopology(*eg_model, &geom, &oclass, &mtype, NULL, &nbody,
                           &eg_bodies, &senses);
   if (status != EGADS_SUCCESS)
   {
@@ -277,10 +368,10 @@ static struct gmi_model* gmi_egads_load(const char* filename)
   model = (struct gmi_model*)malloc(sizeof(*model));
   model->ops = &ops;
 
-  EG_getBodyTopos(eg_body, NULL, NODE, &(model->n[0]), NULL);
-  EG_getBodyTopos(eg_body, NULL, EDGE, &(model->n[1]), NULL);
-  EG_getBodyTopos(eg_body, NULL, FACE, &(model->n[2]), NULL);
-  EG_getBodyTopos(eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
+  EG_getBodyTopos(*eg_body, NULL, NODE, &(model->n[0]), NULL);
+  EG_getBodyTopos(*eg_body, NULL, EDGE, &(model->n[1]), NULL);
+  EG_getBodyTopos(*eg_body, NULL, FACE, &(model->n[2]), NULL);
+  EG_getBodyTopos(*eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
 
   return model;
 }
@@ -314,8 +405,8 @@ void gmi_register_egads(void)
   ops.begin = begin;
   ops.next = next;
   ops.end = end;
-  ops.dim = gmi_dim;
-  ops.tag = gmi_tag;
+  ops.dim = get_dim;
+  ops.tag = get_tag;
   ops.find = find;
   ops.adjacent = adjacent;
   ops.eval = eval;
