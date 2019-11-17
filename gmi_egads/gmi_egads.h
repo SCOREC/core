@@ -13,19 +13,9 @@
 /** \file gmi_egads.h
   \brief GMI EGADS model interface */
 
-#include "gmi.h"
-#include "egads.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** \brief global variable for the EGADS context */
-extern ego *eg_context;
-/** \brief global variable for the EGADS model */
-extern ego *eg_model;
-/** \brief global variable for the EGADS body */
-extern ego *eg_body;
 
 /** \brief start the EGADS session */
 void gmi_egads_start(void);

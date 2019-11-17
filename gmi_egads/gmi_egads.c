@@ -7,11 +7,11 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
+#include <gmi.h>
+#include "egads.h"
 #include "gmi_egads.h"
 
-/// What methods are necessary to implement for bare minimum
-/// what methods are necessary to implement for mesh adaptation
-/// what methods are necessary to implement for curved elements
+#include "gmi_egads_config.h"
 
 // will be initialized by `gmi_egads_start`
 ego *eg_context;
