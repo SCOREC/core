@@ -984,6 +984,67 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
 
     apf::Adjacent adjF;
     mesh->getAdjacent(edge, 2, adjF);
+
+    std::vector<apf::Vector3> xfs;
+    std::vector<apf::Vector3> xifs;
+    double arPhys[3] = {1.0, 1.0, 1.0};
+    double arParnt[3] = {1.0, 1.0, 1.0};
+    double adf;
+    double gamma = 0.0;
+
+    for (std::size_t i = 0; i < adjF.getSize(); i++) {
+      xfs.clear();
+      xifs.clear();
+      adf = 0.0;
+
+      if (mesh->getModelType(mesh->toModel(adjF[i])) == 2) {
+      	int nFN = mesh->getShape()->countNodesOn(mesh->getType(adjF[i]));
+	apf::Vector3 faceXi;
+	for (int j = 0; j < nFN; j++) {
+	  getBezierNodeXi(mesh->getType(adjF[i]), P, j, faceXi);
+	  xifs.push_back(faceXi);
+	}
+	xifs.push_back(apf::Vector3(0.0, 0.0, 0.0));
+	xifs.push_back(apf::Vector3(1.0, 0.0, 0.0));
+	xifs.push_back(apf::Vector3(0.0, 1.0, 0.0));
+      
+        apf::MeshElement* mef = apf::createMeshElement(mesh, adjF[i]);
+      	for (size_t k = 0; k < xifs.size(); k++) {
+	  apf::Vector3 fcord;
+	  apf::mapLocalToGlobal(mef, xifs[k], fcord);
+	  xfs.push_back(fcord);
+	}
+	apf::destroyMeshElement(mef);
+
+      	double triPhys = getAr(xfs[xifs.size()-1], xfs[xifs.size()-2], xfs[xifs.size()-3]);
+      	double triParnt = getAr(xifs[xifs.size()-1], xifs[xifs.size()-2], xifs[xifs.size()-3]);
+
+      	for (int j = 0; j < nFN; j++) {
+      	  /*
+      	  arPhys[0] = getAr(xfs[j], xfs[xifs.size()-1], xfs[xifs.size()-2]);
+      	  arParnt[0] = getAr(xifs[j], xifs[xifs.size()-1], xifs[xifs.size()-2]);
+
+      	  arPhys[1] = getAr(xfs[j], xfs[xifs.size()-2], xfs[xifs.size()-3]);
+      	  arParnt[1] = getAr(xifs[j], xifs[xifs.size()-2], xifs[xifs.size()-3]);
+
+      	  arPhys[2] = getAr(xfs[j], xfs[xifs.size()-1], xfs[xifs.size()-3]);
+      	  arParnt[2] = getAr(xifs[j], xifs[xifs.size()-1], xifs[xifs.size()-3]);
+	  */
+      	  for (int k = 0; k < 2; k++) {
+      	    arPhys[k] = getAr(xfs[j], xfs[xifs.size()-(3-k)], xfs[xifs.size()-(2-k)]);
+      	    arParnt[k] = getAr(xifs[j], xifs[xifs.size()-(3-k)], xifs[xifs.size()-(2-k)]);
+      	    adf = (1.0*arPhys[k]*triParnt/(arParnt[k]*triPhys) - 1);
+      	    gamma = gamma + adf*adf;
+	  }
+	}
+      }
+    }
+
+
+/*    
+    apf::Adjacent adjF;
+    mesh->getAdjacent(edge, 2, adjF);
+
     apf::NewArray<apf::Vector3> fCP;
     apf::Vector3 xif;
     double a[3] = {1.0, 1.0, 1.0};
@@ -1033,7 +1094,7 @@ double CrvModelEdgeReshapeObjFunc :: getValue(std::vector<double> &x)
 	apf::destroyElement(Fal);
       }
     }
-
+*/
     /* double gamma = 0.0; */
     sum = sum*(1 + beta + 0.3*gamma);
 
