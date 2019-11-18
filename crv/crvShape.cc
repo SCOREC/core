@@ -490,6 +490,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
       	//ma::Downward ed;
         //m->getDownward(e,1,ed);
         bb.push_back(index);
+        bb.push_back(index);
         break;
       }
       //break;
