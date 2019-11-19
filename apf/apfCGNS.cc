@@ -68,92 +68,33 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
       const int tagType = m->getTagType(t);
       const int tagSize = m->getTagSize(t);
       std::string tagName(m->getTagName(t));
-      tagName.resize(32); // daft api
+
+      if (tagName.size() > 32)
+        tagName.resize(32); // daft api
 
       // boring... replace with variant
       std::vector<int> idata;
       std::vector<double> ddata;
       std::vector<long> ldata;
 
-      if (tagSize != 1)
+      for (int ti = 0; ti < tagSize; ti++)
       {
-        std::cout << "Not finished yet, can't be that hard..." << tagSize << std::endl;
-        // one assumes this just needs to be a loop over components
-        exit(-1);
-      }
-
-      cgsize_t rmin[3];
-      cgsize_t rmax[3];
-
-      rmin[0] = start;
-      rmax[0] = end;
-      //std::cout << start << " " << end << std::endl;
-      int fieldIndex = -1;
-      for (const auto &e : orderedEnts)
-      {
-        if (m->hasTag(e, t) && m->isOwned(e))
-        {
-          inner(e, t, idata, ddata, ldata, tagType);
-        }
-      }
-
-      // ensure collectives are called by all, even if local has no data
-      int isize = idata.size();
-      PCU_Add_Ints(&isize, 1); // size of total array
-
-      int dsize = ddata.size();
-      PCU_Add_Ints(&dsize, 1); // size of total array
-
-      int lsize = ldata.size();
-      PCU_Add_Ints(&lsize, 1); // size of total array
-
-      // oddness of the api
-      rmin[1] = rmin[0];
-      rmin[2] = rmin[0];
-      rmax[1] = rmax[0];
-      rmax[2] = rmax[0];
-      post(solIndex, tagName, idata, ddata, ldata, rmin, rmax, isize, dsize, lsize, fieldIndex);
-    }
-  };
-
-  const auto loopCellTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const auto &ranges) {
-    apf::DynamicArray<apf::MeshTag *> tags;
-    m->getTags(tags);
-    for (std::size_t i = 0; i < tags.getSize(); ++i)
-    {
-      apf::MeshTag *t = tags[i];
-      const int tagType = m->getTagType(t);
-      const int tagSize = m->getTagSize(t);
-      std::string tagName(m->getTagName(t));
-      tagName.resize(32); // daft api
-
-      if (tagSize != 1)
-      {
-        std::cout << "Not finished yet, can't be that hard..." << tagSize << std::endl;
-        // one assumes this just needs to a loop over components
-        exit(-1);
-      }
-
-      int fieldIndex = -1;
-      for (std::size_t e = 0; e < orderedEnts.size(); e++)
-      {
-
-        // boring... replace with variant
-        std::vector<int> idata;
-        std::vector<double> ddata;
-        std::vector<long> ldata;
-
         cgsize_t rmin[3];
         cgsize_t rmax[3];
 
-        rmin[0] = ranges[e].first;
-        rmax[0] = ranges[e].second;
+        rmin[0] = start;
+        rmax[0] = end;
+        //std::cout << start << " " << end << std::endl;
+        int fieldIndex = -1;
+        auto tagNameNew = tagName;
+        if (tagSize > 0)
+          tagNameNew += "[" + std::to_string(ti) + "]";
 
-        for (const auto &elm : orderedEnts[e])
+        for (const auto &e : orderedEnts)
         {
-          if (m->hasTag(elm, t) && m->isOwned(elm))
+          if (m->hasTag(e, t) && m->isOwned(e))
           {
-            inner(elm, t, idata, ddata, ldata, tagType);
+            inner(e, t, tagSize, ti, idata, ddata, ldata, tagType);
           }
         }
 
@@ -172,15 +113,78 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
         rmin[2] = rmin[0];
         rmax[1] = rmax[0];
         rmax[2] = rmax[0];
-        
+
         if (isize > 0 || dsize > 0 || lsize > 0)
-          post(solIndex, tagName, idata, ddata, ldata, rmin, rmax, isize, dsize, lsize, fieldIndex);
+          post(solIndex, tagNameNew, idata, ddata, ldata, rmin, rmax, isize, dsize, lsize, fieldIndex);
+      }
+    }
+  };
+
+  const auto loopCellTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const auto &ranges) {
+    apf::DynamicArray<apf::MeshTag *> tags;
+    m->getTags(tags);
+    for (std::size_t i = 0; i < tags.getSize(); ++i)
+    {
+      apf::MeshTag *t = tags[i];
+      const int tagType = m->getTagType(t);
+      const int tagSize = m->getTagSize(t);
+      std::string tagName(m->getTagName(t));
+
+      if (tagName.size() > 32)
+        tagName.resize(32); // daft api
+
+      for (int ti = 0; ti < tagSize; ti++)
+      {
+        int fieldIndex = -1;
+        auto tagNameNew = tagName;
+        if (tagSize > 0)
+          tagNameNew += "[" + std::to_string(ti) + "]";
+
+        for (std::size_t e = 0; e < orderedEnts.size(); e++)
+        {
+          // boring... replace with variant
+          std::vector<int> idata;
+          std::vector<double> ddata;
+          std::vector<long> ldata;
+
+          cgsize_t rmin[3];
+          cgsize_t rmax[3];
+
+          rmin[0] = ranges[e].first;
+          rmax[0] = ranges[e].second;
+
+          for (const auto &elm : orderedEnts[e])
+          {
+            if (m->hasTag(elm, t) && m->isOwned(elm))
+            {
+              inner(elm, t, tagSize, ti, idata, ddata, ldata, tagType);
+            }
+          }
+
+          // ensure collectives are called by all, even if local has no data
+          int isize = idata.size();
+          PCU_Add_Ints(&isize, 1); // size of total array
+
+          int dsize = ddata.size();
+          PCU_Add_Ints(&dsize, 1); // size of total array
+
+          int lsize = ldata.size();
+          PCU_Add_Ints(&lsize, 1); // size of total array
+
+          // oddness of the api
+          rmin[1] = rmin[0];
+          rmin[2] = rmin[0];
+          rmax[1] = rmax[0];
+          rmax[2] = rmax[0];
+
+          if (isize > 0 || dsize > 0 || lsize > 0)
+            post(solIndex, tagNameNew, idata, ddata, ldata, rmin, rmax, isize, dsize, lsize, fieldIndex);
+        }
       }
     }
   };
 
   const auto postLambda = [&cgns](const int &solIndex, const std::string &name, std::vector<int> &idata, std::vector<double> &ddata, std::vector<long> &ldata, const cgsize_t *rmin, const cgsize_t *rmax, const int isize, const int dsize, const int lsize, int &fieldIndex) {
-    
     if (dsize > 0)
     {
       if (fieldIndex == -1)
@@ -217,24 +221,24 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
     }
   };
 
-  const auto innerLambda = [&m](apf::MeshEntity *elem, apf::MeshTag *tag, std::vector<int> &idata, std::vector<double> &ddata, std::vector<long> &ldata, const int &tagType) {
+  const auto innerLambda = [&m](apf::MeshEntity *elem, apf::MeshTag *tag, const int &tagSize, const int &ti, std::vector<int> &idata, std::vector<double> &ddata, std::vector<long> &ldata, const int &tagType) {
     if (tagType == apf::Mesh::TagType::DOUBLE)
     {
-      double vals = -1;
-      m->getDoubleTag(elem, tag, &vals);
-      ddata.push_back(vals);
+      std::vector<double> vals(tagSize, -12345);
+      m->getDoubleTag(elem, tag, vals.data());
+      ddata.push_back(vals[ti]);
     }
     else if (tagType == apf::Mesh::TagType::INT)
     {
-      int vals = -1;
-      m->getIntTag(elem, tag, &vals);
-      idata.push_back(vals);
+      std::vector<int> vals(tagSize, -12345);
+      m->getIntTag(elem, tag, vals.data());
+      idata.push_back(vals[ti]);
     }
     else if (tagType == apf::Mesh::TagType::LONG)
     {
-      long vals = -1;
-      m->getLongTag(elem, tag, &vals);
-      ldata.push_back(vals);
+      std::vector<long> vals(tagSize, -12345);
+      m->getLongTag(elem, tag, vals.data());
+      ldata.push_back(vals[ti]);
     }
     else
     {
@@ -262,14 +266,8 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
 
 void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
 {
-  const auto writeField = [&m, &cgns](apf::Field *f, const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &numComponents, const std::string &fieldName, const int &start, const int &end, int &fieldIndex) {
+  const auto writeField = [&m, &cgns](apf::Field *f, const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &numComponents, const int &component, const std::string &fieldName, const int &start, const int &end, int &fieldIndex) {
     std::vector<double> data;
-    if (numComponents != 1)
-    {
-      std::cout << "Not finished yet, can't be that hard..." << numComponents << std::endl;
-      // one assumes just a loop over components
-      exit(-1);
-    }
 
     cgsize_t rmin[3];
     cgsize_t rmax[3];
@@ -282,7 +280,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     {
       if (fieldData->hasEntity(e) && m->isOwned(e))
       {
-        inner(e, fieldData, data);
+        inner(e, fieldData, data, numComponents, component);
       }
     }
 
@@ -312,11 +310,20 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
       apf::Field *f = m->getField(i);
       const int numComponents = f->countComponents();
       std::string fieldName(f->getName());
-      fieldName.resize(32); // daft api
-      int fieldIndex = -1;
-      for (std::size_t e = 0; e < orderedEnts.size(); e++)
+      if (fieldName.size() > 32)
+        fieldName.resize(32); // daft api
+
+      for (int component = 0; component < numComponents; component++)
       {
-        writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, fieldName, ranges[e].first, ranges[e].second, fieldIndex);
+        int fieldIndex = -1;
+        auto fieldNameNew = fieldName;
+        if (numComponents > 0)
+          fieldNameNew += "[" + std::to_string(component) + "]";
+
+        for (std::size_t e = 0; e < orderedEnts.size(); e++)
+        {
+          writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, component, fieldNameNew, ranges[e].first, ranges[e].second, fieldIndex);
+        }
       }
     }
   };
@@ -327,9 +334,17 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
       apf::Field *f = m->getField(i);
       const int numComponents = f->countComponents();
       std::string fieldName(f->getName());
-      fieldName.resize(32); // daft api
-      int fieldIndex = -1;
-      writeField(f, orderedEnts, solIndex, inner, post, numComponents, fieldName, vStart, vEnd, fieldIndex);
+      if (fieldName.size() > 32)
+        fieldName.resize(32); // daft api
+
+      for (int component = 0; component < numComponents; component++)
+      {
+        int fieldIndex = -1;
+        auto fieldNameNew = fieldName;
+        if (numComponents > 0)
+          fieldNameNew += "[" + std::to_string(component) + "]";
+        writeField(f, orderedEnts, solIndex, inner, post, numComponents, component, fieldNameNew, vStart, vEnd, fieldIndex);
+      }
     }
   };
 
@@ -342,10 +357,10 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     }
   };
 
-  const auto innerLambda = [](apf::MeshEntity *elem, apf::FieldDataOf<double> *fieldData, std::vector<double> &ddata) {
-    double vals = -1;
-    fieldData->get(elem, &vals);
-    ddata.push_back(vals);
+  const auto innerLambda = [](apf::MeshEntity *elem, apf::FieldDataOf<double> *fieldData, std::vector<double> &ddata, const int &numComponents, const int &component) {
+    std::vector<double> vals(numComponents, -12345);
+    fieldData->get(elem, vals.data());
+    ddata.push_back(vals[component]);
   };
 
   int solIndex = -1;

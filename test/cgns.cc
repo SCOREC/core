@@ -122,6 +122,32 @@ pMesh toPumi(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
 
 auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
 {
+  // add dummy vector to mesh
+  const auto addVector = [&mesh](const int &dim) {
+    apf::Field *field = nullptr;
+    const std::string name = "DummyVector_" + std::to_string(dim);
+    if (dim != 0)
+      field = apf::createField(mesh, name.c_str(), apf::VECTOR, apf::getConstant(dim));
+    else if (dim == 0)
+      field = apf::createFieldOn(mesh, name.c_str(), apf::VECTOR);
+    std::cout << "*************************** "<< dim << std::endl;
+    apf::MeshIterator *it = mesh->begin(dim);
+    apf::MeshEntity *elm = nullptr;
+    while ((elm = mesh->iterate(it)))
+    {
+      apf::Vector3 v;
+      v[0] = 1.0;
+      v[1] = 2.0;
+      v[2] = 3.0;
+      apf::setVector(field, elm, 0, v);
+    }
+    mesh->end(it);
+    //apf::destroyField(field);
+  };
+
+  for(int i = 0; i <= mesh->getDimension(); i++)
+    addVector(i);
+
   // seems essential to make pm first before calling balance or reorder...
   auto pm = toPumi(prefix, g, mesh);
   balance(prefix, apf::RCB, pm);
@@ -248,7 +274,7 @@ int main(int argc, char **argv)
       apf::writeVtkFiles(name.c_str(), m, 0);
     }
   }
-  else if(dim == 2)
+  else if (dim == 2)
   {
     {
       const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
@@ -261,9 +287,9 @@ int main(int argc, char **argv)
     {
       const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
       apf::writeVtkFiles(name.c_str(), m, 0);
-    }    
+    }
   }
-  else if(dim == 1)
+  else if (dim == 1)
   {
     {
       const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
@@ -272,7 +298,7 @@ int main(int argc, char **argv)
     {
       const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
       apf::writeVtkFiles(name.c_str(), m, 0);
-    }    
+    }
   }
 
   // main purpose is to call additional tests through the test harness testing.cmake
