@@ -57,9 +57,9 @@ struct CGNS
   const int phys_dim = 3;
 };
 
-void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m, apf::GlobalNumbering *gvn, apf::GlobalNumbering *gcn)
+void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
 {
-  const auto loopVertexTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, apf::GlobalNumbering *numbering, const int &start, const int &end) {
+  const auto loopVertexTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &start, const int &end) {
     apf::DynamicArray<apf::MeshTag *> tags;
     m->getTags(tags);
     for (std::size_t i = 0; i < tags.getSize(); ++i)
@@ -116,7 +116,7 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
     }
   };
 
-  const auto loopCellTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, apf::GlobalNumbering *numbering, const auto &ranges) {
+  const auto loopCellTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const auto &ranges) {
     apf::DynamicArray<apf::MeshTag *> tags;
     m->getTags(tags);
     for (std::size_t i = 0; i < tags.getSize(); ++i)
@@ -249,20 +249,20 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
     if (cg_sol_write(cgns.index, cgns.base, cgns.zone, "Vertex Tag Data", CGNS_ENUMV(Vertex), &solIndex))
       cg_error_exit();
 
-    loopVertexTags(orderedVertices, solIndex, innerLambda, postLambda, gvn, vStart, vEnd);
+    loopVertexTags(orderedVertices, solIndex, innerLambda, postLambda, vStart, vEnd);
   }
 
   {
     if (cg_sol_write(cgns.index, cgns.base, cgns.zone, "Cell Tag Data", CGNS_ENUMV(CellCenter), &solIndex))
       cg_error_exit();
 
-    loopCellTags(orderedEnts, solIndex, innerLambda, postLambda, gcn, ranges);
+    loopCellTags(orderedEnts, solIndex, innerLambda, postLambda, ranges);
   }
 }
 
-void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m, apf::GlobalNumbering *gvn, apf::GlobalNumbering *gcn)
+void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
 {
-  const auto writeField = [&m, &cgns](apf::Field *f, const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &numComponents, const std::string &fieldName, apf::GlobalNumbering *numbering, const int &start, const int &end, int &fieldIndex) {
+  const auto writeField = [&m, &cgns](apf::Field *f, const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &numComponents, const std::string &fieldName, const int &start, const int &end, int &fieldIndex) {
     std::vector<double> data;
     if (numComponents != 1)
     {
@@ -302,11 +302,11 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
           cgp_error_exit();
       }
 
-      post(solIndex, fieldName, data, rmin, rmax, size, fieldIndex);
+      post(solIndex, data, rmin, rmax, size, fieldIndex);
     }
   };
 
-  const auto loopCellFields = [&m, &writeField](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, apf::GlobalNumbering *numbering, const auto &ranges) {
+  const auto loopCellFields = [&m, &writeField](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const auto &ranges) {
     for (int i = 0; i < m->countFields(); ++i)
     {
       apf::Field *f = m->getField(i);
@@ -316,12 +316,12 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
       int fieldIndex = -1;
       for (std::size_t e = 0; e < orderedEnts.size(); e++)
       {
-        writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, fieldName, numbering, ranges[e].first, ranges[e].second, fieldIndex);
+        writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, fieldName, ranges[e].first, ranges[e].second, fieldIndex);
       }
     }
   };
 
-  const auto loopVertexFields = [&m, &writeField](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, apf::GlobalNumbering *numbering, const int &vStart, const int &vEnd) {
+  const auto loopVertexFields = [&m, &writeField](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &vStart, const int &vEnd) {
     for (int i = 0; i < m->countFields(); ++i)
     {
       apf::Field *f = m->getField(i);
@@ -329,11 +329,11 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
       std::string fieldName(f->getName());
       fieldName.resize(32); // daft api
       int fieldIndex = -1;
-      writeField(f, orderedEnts, solIndex, inner, post, numComponents, fieldName, numbering, vStart, vEnd, fieldIndex);
+      writeField(f, orderedEnts, solIndex, inner, post, numComponents, fieldName, vStart, vEnd, fieldIndex);
     }
   };
 
-  const auto postLambda = [&cgns](const int &solIndex, const std::string &name, std::vector<double> &ddata, const cgsize_t *rmin, const cgsize_t *rmax, const int &globalSize, const int &fieldIndex) {
+  const auto postLambda = [&cgns](const int &solIndex, std::vector<double> &ddata, const cgsize_t *rmin, const cgsize_t *rmax, const int &globalSize, const int &fieldIndex) {
     if (globalSize > 0)
     {
       if (cgp_field_write_data(cgns.index, cgns.base, cgns.zone, solIndex, fieldIndex, &rmin[0], &rmax[0],
@@ -354,14 +354,14 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     if (cg_sol_write(cgns.index, cgns.base, cgns.zone, "Vertex Field Data", CGNS_ENUMV(Vertex), &solIndex))
       cg_error_exit();
 
-    loopVertexFields(orderedVertices, solIndex, innerLambda, postLambda, gvn, vStart, vEnd);
+    loopVertexFields(orderedVertices, solIndex, innerLambda, postLambda, vStart, vEnd);
   }
 
   {
     if (cg_sol_write(cgns.index, cgns.base, cgns.zone, "Cell Field Data", CGNS_ENUMV(CellCenter), &solIndex))
       cg_error_exit();
 
-    loopCellFields(orderedEnts, solIndex, innerLambda, postLambda, gcn, ranges);
+    loopCellFields(orderedEnts, solIndex, innerLambda, postLambda, ranges);
   }
 }
 
@@ -913,9 +913,9 @@ void Write3DFaces(CGNS cgns, apf::Mesh *m, const Count &faceCount, const Count &
       apf::numberOwnedDimension(m, "2D element-nums", 2));
   synchronize(gcn);
   //
-  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m, gvn, gcn);
+  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
-  WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m, gvn, gcn);
+  WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
 
   destroyGlobalNumbering(gcn);
 }
@@ -966,9 +966,9 @@ void Write2DEdges(CGNS cgns, apf::Mesh *m, const Count &edgeCount, const Count &
       apf::numberOwnedDimension(m, "1D element-nums", 1));
   synchronize(gcn);
   //
-  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m, gvn, gcn);
+  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
-  WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m, gvn, gcn);
+  WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
 
   destroyGlobalNumbering(gcn);
 }
@@ -1083,9 +1083,9 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   //
   AddBocosToMainBase(cgns, cellCount.first, m, cgnsBCMap, apf2cgns, gvn, gcn);
   //
-  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m, gvn, gcn);
+  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
-  WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m, gvn, gcn);
+  WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
   if (cell_dim == 3)
   {
