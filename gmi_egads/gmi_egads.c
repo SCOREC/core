@@ -10,6 +10,7 @@
 #include <gmi.h>
 #include "egads.h"
 #include "gmi_egads.h"
+#include <math.h>
 
 #include "gmi_egads_config.h"
 
@@ -23,13 +24,13 @@ ego *eg_body;
 static struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
   ego *eg_ents;
-  if (dim = 0)
+  if (dim == 0)
     EG_getBodyTopos(*eg_body, NULL, NODE, NULL, eg_ents);
-  else if (dim = 1)
+  else if (dim == 1)
     EG_getBodyTopos(*eg_body, NULL, EDGE, NULL, eg_ents);
-  else if (dim = 2)
+  else if (dim == 2)
     EG_getBodyTopos(*eg_body, NULL, FACE, NULL, eg_ents);
-  else if (dim = 3)
+  else if (dim == 3)
     EG_getBodyTopos(*eg_body, NULL, SHELL, NULL, eg_ents); // BODY?
   return (struct gmi_iter*)eg_ents;
 }
@@ -224,7 +225,7 @@ static void normal(struct gmi_model* m,
                    double n[3])
 {
   double du[3], dv[3];
-  first_derivative(m, e, p, du, dv);
+  m->ops->first_derivative(m, e, p, du, dv);
   // cross du and dv to get n
   n[0] = du[1]*dv[2] - du[2]*dv[1];
   n[1] = du[2]*dv[0] - du[0]*dv[2];
@@ -349,7 +350,7 @@ static struct gmi_model* gmi_egads_load(const char* filename)
   /// TODO: only store the outputs I need, replace the rest with NULL
   int oclass, mtype, nbody, *senses;
   ego geom, *eg_bodies,
-  status = EG_getTopology(*eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+  int status = EG_getTopology(*eg_model, &geom, &oclass, &mtype, NULL, &nbody,
                           &eg_bodies, &senses);
   if (status != EGADS_SUCCESS)
   {
