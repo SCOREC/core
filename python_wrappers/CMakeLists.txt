@@ -128,8 +128,11 @@ if(ENABLE_PYTHON)
     swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
   endif()
 
-  install(TARGETS pyCore
+  install(TARGETS ${SWIG_MODULE_pyCore_REAL_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+  install(FILES ${PROJECT_BINARY_DIR}/pyCore.py
           DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
 endif()
 
 
