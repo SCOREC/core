@@ -127,6 +127,9 @@ if(ENABLE_PYTHON)
   else()
     swig_link_libraries(pyCore ${PYTHON_LIBRARIES} SCOREC::core)
   endif()
+
+  install(TARGETS pyCore
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 endif()
 
 
