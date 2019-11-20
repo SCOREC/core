@@ -149,6 +149,7 @@ void lion_set_verbosity(int lvl);
     return sum/count;
   }
 }
+#define __attribute__(x)
 %ignore apf::fail;
 %include<apf.h>
 %include<apfNumbering.h>
