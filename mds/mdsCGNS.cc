@@ -917,8 +917,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   cg_nbases(cgid, &nbases);
   if (nbases > 1)
   {
-    std::cout << __LINE__ << " CGNS is dead " << std::endl;
-    Kill(cgid);
+    std::cout << "CGNS file has " << nbases << " nbases, only used base=1" << std::endl;
   }
 
   std::string basename;
