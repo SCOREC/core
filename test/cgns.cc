@@ -122,32 +122,6 @@ pMesh toPumi(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
 
 auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
 {
-  // add dummy vector to mesh
-  const auto addVector = [&mesh](const int &dim) {
-    apf::Field *field = nullptr;
-    const std::string name = "DummyVector_" + std::to_string(dim);
-    if (dim != 0)
-      field = apf::createField(mesh, name.c_str(), apf::VECTOR, apf::getConstant(dim));
-    else if (dim == 0)
-      field = apf::createFieldOn(mesh, name.c_str(), apf::VECTOR);
-    std::cout << "*************************** "<< dim << std::endl;
-    apf::MeshIterator *it = mesh->begin(dim);
-    apf::MeshEntity *elm = nullptr;
-    while ((elm = mesh->iterate(it)))
-    {
-      apf::Vector3 v;
-      v[0] = 1.0;
-      v[1] = 2.0;
-      v[2] = 3.0;
-      apf::setVector(field, elm, 0, v);
-    }
-    mesh->end(it);
-    //apf::destroyField(field);
-  };
-
-  for(int i = 0; i <= mesh->getDimension(); i++)
-    addVector(i);
-
   // seems essential to make pm first before calling balance or reorder...
   auto pm = toPumi(prefix, g, mesh);
   balance(prefix, apf::RCB, pm);
@@ -306,6 +280,58 @@ int main(int argc, char **argv)
   if (additionalTests)
     cleanUp = additional(prefix, g, m);
   //
+  if(additionalTests)
+  {
+    // add dummy vector to mesh
+    const auto addVector = [](apf::Mesh2 *mesh, const int &dim) {
+      apf::Field *field = nullptr;
+      const std::string name = "DummyVector_" + std::to_string(dim);
+      if (dim != 0)
+        field = apf::createField(mesh, name.c_str(), apf::VECTOR, apf::getConstant(dim));
+      else if (dim == 0)
+        field = apf::createFieldOn(mesh, name.c_str(), apf::VECTOR);
+      //std::cout << "*************************** "<< dim << std::endl;
+      apf::MeshIterator *it = mesh->begin(dim);
+      apf::MeshEntity *elm = nullptr;
+      while ((elm = mesh->iterate(it)))
+      {
+        apf::Vector3 v;
+        v[0] = 1.0;
+        v[1] = 2.0;
+        v[2] = 3.0;
+        apf::setComponents(field, elm, 0, &v[0]);
+      }
+      mesh->end(it);
+      //apf::destroyField(field);
+    };
+
+    for(int i = 0; i <= m->getDimension(); i++)
+      addVector(m, i);
+
+    // add dummy vector to mesh
+    const auto addScalar = [](apf::Mesh2 *mesh, const int &dim) {
+      apf::Field *field = nullptr;
+      const std::string name = "DummyScalar_" + std::to_string(dim);
+      if (dim != 0)
+        field = apf::createField(mesh, name.c_str(), apf::SCALAR, apf::getConstant(dim));
+      else if (dim == 0)
+        field = apf::createFieldOn(mesh, name.c_str(), apf::SCALAR);
+      //std::cout << "*************************** "<< dim << std::endl;
+      apf::MeshIterator *it = mesh->begin(dim);
+      apf::MeshEntity *elm = nullptr;
+      while ((elm = mesh->iterate(it)))
+      {
+        double v = 1.0;
+        apf::setComponents(field, elm, 0, &v);
+      }
+      mesh->end(it);
+      //apf::destroyField(field);
+    };    
+
+    for(int i = 0; i <= m->getDimension(); i++)
+      addScalar(m, i);
+
+  }
   apf::writeCGNS((prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns").c_str(), m, cgnsBCMap);
   //
   if (additionalTests)
