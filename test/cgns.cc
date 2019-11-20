@@ -173,59 +173,29 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return clean;
 }
 
-int main(int argc, char **argv)
+std::string doit(const std::string& argv1, const std::string& argv2, const bool& additionalTests)
 {
-#ifdef HAVE_CGNS
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
-  lion_set_verbosity(1);
-  bool additionalTests = false;
-  if (argc < 3)
-  {
-    if (!PCU_Comm_Self())
-      printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
-    MPI_Finalize();
-    exit(EXIT_FAILURE);
-    return -1;
-  }
-  else if (argc == 4)
-  {
-    if (std::string(argv[3]) == "additional")
-      additionalTests = true;
-    else
-    {
-      if (!PCU_Comm_Self())
-        printf("Usage: %s <in .cgns> <out .smb> additional\n", argv[0]);
-      MPI_Finalize();
-      exit(EXIT_FAILURE);
-      return -1;
-    }
-  }
-  else if (argc > 4)
-  {
-    if (!PCU_Comm_Self())
-      printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
-    MPI_Finalize();
-    exit(EXIT_FAILURE);
-    return -1;
-  }
-
   gmi_register_null();
   gmi_register_mesh();
   gmi_model *g = gmi_load(".null");
   apf::CGNSBCMap cgnsBCMap;
-  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv[1], cgnsBCMap);
+  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv1.c_str(), cgnsBCMap);
   m->verify();
   //
-  m->writeNative(argv[2]);
+  m->writeNative(argv2.c_str());
   // so we can see the result
-  const std::string path = argv[1];
-  std::size_t found = path.find_last_of("/\\");
+  const std::string path = argv1.c_str();
+  const std::size_t found = path.find_last_of("/\\");
+  std::size_t index = found + 1;
+  if(found > path.size())
+    index = 0; 
+    
+  //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
 
 #ifndef NDEBUG // debug settings, cmake double negative....
-  const auto prefix = path.substr(found + 1) + "_debug";
+  const auto prefix = path.substr(index) + "_debug";
 #else // optimised setting
-  const auto prefix = path.substr(found + 1) + "_release";
+  const auto prefix = path.substr(index) + "_release";
 #endif
 
   const auto dim = m->getDimension();
@@ -280,7 +250,7 @@ int main(int argc, char **argv)
   if (additionalTests)
     cleanUp = additional(prefix, g, m);
   //
-  if(additionalTests)
+  if (additionalTests)
   {
     // add dummy vector to mesh
     const auto addVector = [](apf::Mesh2 *mesh, const int &dim) {
@@ -305,7 +275,7 @@ int main(int argc, char **argv)
       //apf::destroyField(field);
     };
 
-    for(int i = 0; i <= m->getDimension(); i++)
+    for (int i = 0; i <= m->getDimension(); i++)
       addVector(m, i);
 
     // add dummy vector to mesh
@@ -326,13 +296,13 @@ int main(int argc, char **argv)
       }
       mesh->end(it);
       //apf::destroyField(field);
-    };    
+    };
 
-    for(int i = 0; i <= m->getDimension(); i++)
+    for (int i = 0; i <= m->getDimension(); i++)
       addScalar(m, i);
-
   }
-  apf::writeCGNS((prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns").c_str(), m, cgnsBCMap);
+  std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns";
+  apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
   //
   if (additionalTests)
   {
@@ -344,7 +314,56 @@ int main(int argc, char **argv)
     apf::destroyMesh(m);
   }
   //
-  std::cout << "TODO: Must read in newly created mesh, and check that it can perform same functions as initial mesh: see if I can diff the two" << std::endl;
+  return cgnsOutputName;
+}
+
+int main(int argc, char **argv)
+{
+#ifdef HAVE_CGNS
+  MPI_Init(&argc, &argv);
+  PCU_Comm_Init();
+  lion_set_verbosity(1);
+  bool additionalTests = false;
+  if (argc < 3)
+  {
+    if (!PCU_Comm_Self())
+      printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+    return -1;
+  }
+  else if (argc == 4)
+  {
+    if (std::string(argv[3]) == "additional")
+      additionalTests = true;
+    else
+    {
+      if (!PCU_Comm_Self())
+        printf("Usage: %s <in .cgns> <out .smb> additional\n", argv[0]);
+      MPI_Finalize();
+      exit(EXIT_FAILURE);
+      return -1;
+    }
+  }
+  else if (argc > 4)
+  {
+    if (!PCU_Comm_Self())
+      printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
+    return -1;
+  }
+
+  // Phase 1
+  std::string cgnsOutputName;
+  {
+    cgnsOutputName = doit(argv[1], argv[2], additionalTests);
+  }
+  // Phase 2
+  if (additionalTests)
+  {
+    doit(cgnsOutputName.c_str(), "tempy.smb", false);
+  }
   //
   PCU_Comm_Free();
   MPI_Finalize();
