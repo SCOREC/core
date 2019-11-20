@@ -1099,7 +1099,6 @@ public:
   }
 
   virtual void apply() {
-    //mesh->getDownward(simplex, 1, edges);
     for (int i = 0; i < ne; i++ ) {
     int invaliditySize = 0;
       if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
@@ -1119,9 +1118,7 @@ public:
 	  nf++;
 	}
 
-
       	delete ceo;
-      //ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
       }
       else if (mesh->getModelType(mesh->toModel(edges[i])) == 2) {
       	CrvModelEdgeOptim *cmeo = new CrvModelEdgeOptim(mesh, edges[i], simplex);
@@ -1140,7 +1137,6 @@ public:
       	  nf++;
 	}
 
-      	//ma::clearFlag(adapter, edge, ma::COLLAPSE | ma::BAD_QUALITY);
       	delete cmeo;
       }
     }
@@ -1455,7 +1451,7 @@ static void collapseInvalidEdges(Adapt* a)
   ma::print("Collapsed %d bad edges "
       "in %f seconds",successCount, t1-t0);
 }
-/*
+
 static void swapInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -1465,7 +1461,7 @@ static void swapInvalidEdges(Adapt* a)
   ma::print("Swapped %d bad edges "
       "in %f seconds",es.ns, t1-t0);
 }
-*/
+
 static void repositionInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
