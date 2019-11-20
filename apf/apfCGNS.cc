@@ -382,7 +382,189 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
   }
 }
 
-void AddBocosToMainBase(const CGNS &cgns, const int &cellCount, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap, const std::map<apf::Mesh::Type, CGNS_ENUMT(ElementType_t)> &apf2cgns, apf::GlobalNumbering *gvn, apf::GlobalNumbering *gcn)
+auto WriteVertices(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn)
+{
+  int Cx = -1;
+  int Cy = -1;
+  int Cz = -1;
+
+  if (cgns.phys_dim > 0)
+  {
+    if (cgp_coord_write(cgns.index, cgns.base, cgns.zone, CGNS_ENUMV(RealDouble), "CoordinateX", &Cx))
+      cgp_error_exit();
+  }
+  if (cgns.phys_dim > 1)
+  {
+    if (cgp_coord_write(cgns.index, cgns.base, cgns.zone, CGNS_ENUMV(RealDouble), "CoordinateY", &Cy))
+      cgp_error_exit();
+  }
+  if (cgns.phys_dim > 2)
+  {
+    if (cgp_coord_write(cgns.index, cgns.base, cgns.zone, CGNS_ENUMV(RealDouble), "CoordinateZ", &Cz))
+      cgp_error_exit();
+  }
+
+  std::vector<apf::MeshEntity *> orderedVertices;
+  cgsize_t vertexMin[3];
+  cgsize_t vertexMax[3];
+  cgsize_t contigRange = -1;
+  {
+    std::array<std::vector<double>, 3> coords;
+
+    vertexMin[0] = std::numeric_limits<cgsize_t>::max();
+    vertexMax[0] = 0;
+
+    apf::Vector3 point;
+    apf::MeshIterator *vertIter = m->begin(0);
+    apf::MeshEntity *vert = nullptr;
+    while ((vert = m->iterate(vertIter)))
+    {
+      if (m->isOwned(vert))
+      {
+        const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(gvn, vert, 0) + 1); // one based
+        if (contigRange == -1)
+        {
+          contigRange = n;
+        }
+        else
+        {
+          const auto predict = contigRange + 1;
+
+          if (n != predict)
+          {
+            //std::cout << std::string("Range must be contigious for vertices ") + std::to_string(n) + " " + std::to_string(contigRange) << std::endl;
+            PCU_ALWAYS_ASSERT_VERBOSE(true == false, (std::string("Range must be contigious for vertices ") + std::to_string(n) + " " + std::to_string(contigRange)).c_str());
+          }
+          else
+            contigRange = predict; // == n
+        }
+
+        vertexMin[0] = std::min(vertexMin[0], n);
+        vertexMax[0] = std::max(vertexMax[0], n);
+
+        m->getPoint(vert, 0, point);
+        coords[0].push_back(point[0]);
+        coords[1].push_back(point[1]);
+        coords[2].push_back(point[2]);
+
+        orderedVertices.push_back(vert);
+      }
+    }
+    m->end(vertIter);
+
+    // oddness of the api
+    vertexMin[1] = vertexMin[0];
+    vertexMin[2] = vertexMin[0];
+    vertexMax[1] = vertexMax[0];
+    vertexMax[2] = vertexMax[0];
+
+    if (cgns.phys_dim > 0)
+    {
+      if (cgp_coord_write_data(cgns.index, cgns.base, cgns.zone, Cx, &vertexMin[0], &vertexMax[0], coords[0].data()))
+        cgp_error_exit();
+    }
+    if (cgns.phys_dim > 1)
+    {
+      if (cgp_coord_write_data(cgns.index, cgns.base, cgns.zone, Cy, &vertexMin[0], &vertexMax[0], coords[1].data()))
+        cgp_error_exit();
+    }
+    if (cgns.phys_dim > 2)
+    {
+      if (cgp_coord_write_data(cgns.index, cgns.base, cgns.zone, Cz, &vertexMin[0], &vertexMax[0], coords[2].data()))
+        cgp_error_exit();
+    }
+  }
+  return std::make_tuple(orderedVertices, vertexMin[0], vertexMax[0]);
+}
+
+using CellElementReturn = std::tuple<std::vector<std::vector<apf::MeshEntity *>>, std::vector<std::pair<cgsize_t, cgsize_t>>>;
+CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn, const int cell_dim, const Count &cellCount, const std::vector<apf::Mesh::Type> &apfElementOrder, const std::vector<CGNS_ENUMT(ElementType_t)> &cgnsElementOrder)
+{
+  std::vector<int> globalNumbersByElementType(apfElementOrder.size(), 0);
+  std::vector<int> numbersByElementType(apfElementOrder.size(), 0);
+  for (std::size_t o = 0; o < apfElementOrder.size(); o++)
+  {
+    apf::MeshIterator *cellIter = m->begin(cell_dim);
+    apf::MeshEntity *cell = nullptr;
+    int counter = 0;
+    while ((cell = m->iterate(cellIter)))
+    {
+      if (m->getType(cell) == apfElementOrder[o] && m->isOwned(cell)) // must be same test as below
+      {
+        counter++;
+      }
+    }
+    m->end(cellIter);
+    numbersByElementType[o] = counter;
+    int total = counter;
+    PCU_Add_Ints(&total, 1); // size of total array
+    globalNumbersByElementType[o] = total;
+  }
+  cgsize_t allTotal = std::accumulate(globalNumbersByElementType.begin(), globalNumbersByElementType.end(), 0);
+  PCU_ALWAYS_ASSERT_VERBOSE(allTotal == cellCount.first, ("Must be equal " + std::to_string(allTotal) + " " + std::to_string(cellCount.first)).c_str());
+
+  int globalStart = 1; // one-based
+  std::vector<std::vector<apf::MeshEntity *>> orderedElements(apfElementOrder.size());
+  std::vector<std::pair<cgsize_t, cgsize_t>> ranges(apfElementOrder.size());
+  for (std::size_t o = 0; o < apfElementOrder.size(); o++)
+  {
+    std::vector<cgsize_t> elementVertices;
+    apf::MeshIterator *cellIter = m->begin(cell_dim);
+    apf::MeshEntity *cell = nullptr;
+    apf::Downward verts;
+
+    while ((cell = m->iterate(cellIter)))
+    {
+      if (m->getType(cell) == apfElementOrder[o] && m->isOwned(cell)) // must be same test as above
+      {
+        const auto numVerts = m->getDownward(cell, 0, verts);
+        for (int i = 0; i < numVerts; i++)
+        {
+          const auto n = apf::getNumber(gvn, verts[i], 0);
+          elementVertices.push_back(n + 1); // one-based
+        }
+        orderedElements[o].push_back(cell);
+      }
+    }
+    m->end(cellIter);
+
+    if (globalNumbersByElementType[o] > 0)
+    {
+      const int globalEnd = globalStart + globalNumbersByElementType[o] - 1; // one-based stuff
+      //
+      int sectionNumber = -1;
+      const std::string name = std::string(cg_ElementTypeName(cgnsElementOrder[o])) + " " + std::to_string(globalStart) + "->" + std::to_string(globalEnd);
+      //std::cout << "Section Name " << name << std::endl;
+      if (cgp_section_write(cgns.index, cgns.base, cgns.zone, name.c_str(), cgnsElementOrder[o], globalStart, globalEnd, 0, &sectionNumber)) // global start, end within the file for that element type
+        cgp_error_exit();
+
+      std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
+      MPI_Allgather(&numbersByElementType[o], 1, MPI_INT, allNumbersForThisType.data(), 1,
+                    MPI_INT, PCU_Get_Comm());
+
+      cgsize_t num = 0;
+      for (int i = 0; i < PCU_Comm_Self(); i++)
+        num += allNumbersForThisType[i];
+
+      cgsize_t elStart = globalStart + num;
+      cgsize_t elEnd = elStart + numbersByElementType[o] - 1;                                      // one-based stuff
+      if (cgp_elements_write_data(cgns.index, cgns.base, cgns.zone, sectionNumber, elStart, elEnd, // per processor within the range[start, end]
+                                  elementVertices.data()))
+        cgp_error_exit();
+
+      //std::cout << std::flush << "RANK: " << PCU_Comm_Self() << " ==> " << globalStart << " " << globalEnd << " elStart " << elStart << " elEnd " << elEnd << " numbersByElementType[o] " << numbersByElementType[o] << " of " << std::string(cg_ElementTypeName(cgnsElementOrder[o])) << std::flush << std::endl;
+
+      globalStart += globalNumbersByElementType[o];
+
+      ranges[o] = std::make_pair(elStart, elEnd);
+    }
+    else
+      ranges[o] = std::make_pair(-1, -1);
+  }
+  return std::make_tuple(orderedElements, ranges);
+}
+
+void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, const int &cellCount, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap, const std::map<apf::Mesh::Type, CGNS_ENUMT(ElementType_t)> &apf2cgns, apf::GlobalNumbering *gvn)
 {
   const auto EdgeLoop = [&m](const auto &lambda, apf::MeshTag *edgeTag) {
     apf::MeshIterator *edgeIter = m->begin(1);
@@ -545,6 +727,7 @@ void AddBocosToMainBase(const CGNS &cgns, const int &cellCount, apf::Mesh *m, co
       }
       m->end(vertIter);
 
+      // Annoying that the API requires this!
       std::vector<cgsize_t> allElements;
       globalElementList(bcList, allElements);
 
@@ -606,26 +789,31 @@ void AddBocosToMainBase(const CGNS &cgns, const int &cellCount, apf::Mesh *m, co
     }
   };
 
-  const auto doCellBC = [&](const auto &iter, const int &dim) {
+  const auto doCellBC = [&](const auto &iter, const int &) {
     for (const auto &p : iter->second)
     {
       std::vector<cgsize_t> bcList;
-      apf::MeshIterator *cellIter = m->begin(dim);
-      apf::MeshEntity *cell = nullptr;
       int vals[1];
       vals[0] = -1;
 
-      while ((cell = m->iterate(cellIter)))
+      const auto &elements = std::get<0>(cellResults);
+      const auto &ranges = std::get<1>(cellResults);
+
+      for (std::size_t e = 0; e < elements.size(); e++)
       {
-        m->getIntTag(cell, p.second, vals);
-        if (vals[0] == 1 && m->isOwned(cell))
+        std::size_t counter = ranges[e].first;
+        for (const auto &elm : elements[e])
         {
-          const auto n = apf::getNumber(gcn, cell, 0);
-          bcList.push_back(n + 1); // one-based
+          m->getIntTag(elm, p.second, vals);
+          if (vals[0] == 1 && m->isOwned(elm))
+          {
+            bcList.push_back(counter);
+          }
+          counter++;
         }
       }
-      m->end(cellIter);
 
+      // Annoying that the API requires this!
       std::vector<cgsize_t> allElements;
       globalElementList(bcList, allElements);
 
@@ -700,187 +888,6 @@ void AddBocosToMainBase(const CGNS &cgns, const int &cellCount, apf::Mesh *m, co
       doCellBC(iter, 1);
     }
   }
-}
-
-auto WriteVertices(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn)
-{
-  int Cx = -1;
-  int Cy = -1;
-  int Cz = -1;
-
-  if (cgns.phys_dim > 0)
-  {
-    if (cgp_coord_write(cgns.index, cgns.base, cgns.zone, CGNS_ENUMV(RealDouble), "CoordinateX", &Cx))
-      cgp_error_exit();
-  }
-  if (cgns.phys_dim > 1)
-  {
-    if (cgp_coord_write(cgns.index, cgns.base, cgns.zone, CGNS_ENUMV(RealDouble), "CoordinateY", &Cy))
-      cgp_error_exit();
-  }
-  if (cgns.phys_dim > 2)
-  {
-    if (cgp_coord_write(cgns.index, cgns.base, cgns.zone, CGNS_ENUMV(RealDouble), "CoordinateZ", &Cz))
-      cgp_error_exit();
-  }
-
-  std::vector<apf::MeshEntity *> orderedVertices;
-  cgsize_t vertexMin[3];
-  cgsize_t vertexMax[3];
-  cgsize_t contigRange = -1;
-  {
-    std::array<std::vector<double>, 3> coords;
-
-    vertexMin[0] = std::numeric_limits<cgsize_t>::max();
-    vertexMax[0] = 0;
-
-    apf::Vector3 point;
-    apf::MeshIterator *vertIter = m->begin(0);
-    apf::MeshEntity *vert = nullptr;
-    while ((vert = m->iterate(vertIter)))
-    {
-      if (m->isOwned(vert))
-      {
-        const cgsize_t n = static_cast<cgsize_t>(apf::getNumber(gvn, vert, 0) + 1); // one based
-        if (contigRange == -1)
-        {
-          contigRange = n;
-        }
-        else
-        {
-          const auto predict = contigRange + 1;
-
-          if (n != predict)
-          {
-            //std::cout << std::string("Range must be contigious for vertices ") + std::to_string(n) + " " + std::to_string(contigRange) << std::endl;
-            PCU_ALWAYS_ASSERT_VERBOSE(true == false, (std::string("Range must be contigious for vertices ") + std::to_string(n) + " " + std::to_string(contigRange)).c_str());
-          }
-          else
-            contigRange = predict; // == n
-        }
-
-        vertexMin[0] = std::min(vertexMin[0], n);
-        vertexMax[0] = std::max(vertexMax[0], n);
-
-        m->getPoint(vert, 0, point);
-        coords[0].push_back(point[0]);
-        coords[1].push_back(point[1]);
-        coords[2].push_back(point[2]);
-
-        orderedVertices.push_back(vert);
-      }
-    }
-    m->end(vertIter);
-
-    // oddness of the api
-    vertexMin[1] = vertexMin[0];
-    vertexMin[2] = vertexMin[0];
-    vertexMax[1] = vertexMax[0];
-    vertexMax[2] = vertexMax[0];
-
-    if (cgns.phys_dim > 0)
-    {
-      if (cgp_coord_write_data(cgns.index, cgns.base, cgns.zone, Cx, &vertexMin[0], &vertexMax[0], coords[0].data()))
-        cgp_error_exit();
-    }
-    if (cgns.phys_dim > 1)
-    {
-      if (cgp_coord_write_data(cgns.index, cgns.base, cgns.zone, Cy, &vertexMin[0], &vertexMax[0], coords[1].data()))
-        cgp_error_exit();
-    }
-    if (cgns.phys_dim > 2)
-    {
-      if (cgp_coord_write_data(cgns.index, cgns.base, cgns.zone, Cz, &vertexMin[0], &vertexMax[0], coords[2].data()))
-        cgp_error_exit();
-    }
-  }
-  return std::make_tuple(orderedVertices, vertexMin[0], vertexMax[0]);
-}
-
-auto WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn, const int cell_dim, const Count &cellCount, const std::vector<apf::Mesh::Type> &apfElementOrder, const std::vector<CGNS_ENUMT(ElementType_t)> &cgnsElementOrder)
-{
-  std::vector<int> globalNumbersByElementType(apfElementOrder.size(), 0);
-  std::vector<int> numbersByElementType(apfElementOrder.size(), 0);
-  for (std::size_t o = 0; o < apfElementOrder.size(); o++)
-  {
-    apf::MeshIterator *cellIter = m->begin(cell_dim);
-    apf::MeshEntity *cell = nullptr;
-    int counter = 0;
-    while ((cell = m->iterate(cellIter)))
-    {
-      if (m->getType(cell) == apfElementOrder[o] && m->isOwned(cell)) // must be same test as below
-      {
-        counter++;
-      }
-    }
-    m->end(cellIter);
-    numbersByElementType[o] = counter;
-    int total = counter;
-    PCU_Add_Ints(&total, 1); // size of total array
-    globalNumbersByElementType[o] = total;
-  }
-  cgsize_t allTotal = std::accumulate(globalNumbersByElementType.begin(), globalNumbersByElementType.end(), 0);
-  PCU_ALWAYS_ASSERT_VERBOSE(allTotal == cellCount.first, ("Must be equal " + std::to_string(allTotal) + " " + std::to_string(cellCount.first)).c_str());
-
-  int globalStart = 1; // one-based
-  std::vector<std::vector<apf::MeshEntity *>> orderedElements(apfElementOrder.size());
-  std::vector<std::pair<cgsize_t, cgsize_t>> ranges(apfElementOrder.size());
-  for (std::size_t o = 0; o < apfElementOrder.size(); o++)
-  {
-    std::vector<cgsize_t> elementVertices;
-    apf::MeshIterator *cellIter = m->begin(cell_dim);
-    apf::MeshEntity *cell = nullptr;
-    apf::Downward verts;
-
-    while ((cell = m->iterate(cellIter)))
-    {
-      if (m->getType(cell) == apfElementOrder[o] && m->isOwned(cell)) // must be same test as above
-      {
-        const auto numVerts = m->getDownward(cell, 0, verts);
-        for (int i = 0; i < numVerts; i++)
-        {
-          const auto n = apf::getNumber(gvn, verts[i], 0);
-          elementVertices.push_back(n + 1); // one-based
-        }
-        orderedElements[o].push_back(cell);
-      }
-    }
-    m->end(cellIter);
-
-    if (globalNumbersByElementType[o] > 0)
-    {
-      const int globalEnd = globalStart + globalNumbersByElementType[o] - 1; // one-based stuff
-      //
-      int sectionNumber = -1;
-      const std::string name = std::string(cg_ElementTypeName(cgnsElementOrder[o])) + " " + std::to_string(globalStart) + "->" + std::to_string(globalEnd);
-      //std::cout << "Section Name " << name << std::endl;
-      if (cgp_section_write(cgns.index, cgns.base, cgns.zone, name.c_str(), cgnsElementOrder[o], globalStart, globalEnd, 0, &sectionNumber)) // global start, end within the file for that element type
-        cgp_error_exit();
-
-      std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
-      MPI_Allgather(&numbersByElementType[o], 1, MPI_INT, allNumbersForThisType.data(), 1,
-                    MPI_INT, PCU_Get_Comm());
-
-      cgsize_t num = 0;
-      for (int i = 0; i < PCU_Comm_Self(); i++)
-        num += allNumbersForThisType[i];
-
-      cgsize_t elStart = globalStart + num;
-      cgsize_t elEnd = elStart + numbersByElementType[o] - 1;                                      // one-based stuff
-      if (cgp_elements_write_data(cgns.index, cgns.base, cgns.zone, sectionNumber, elStart, elEnd, // per processor within the range[start, end]
-                                  elementVertices.data()))
-        cgp_error_exit();
-
-      //std::cout << std::flush << "RANK: " << PCU_Comm_Self() << " ==> " << globalStart << " " << globalEnd << " elStart " << elStart << " elEnd " << elEnd << " numbersByElementType[o] " << numbersByElementType[o] << " of " << std::string(cg_ElementTypeName(cgnsElementOrder[o])) << std::flush << std::endl;
-
-      globalStart += globalNumbersByElementType[o];
-
-      ranges[o] = std::make_pair(elStart, elEnd);
-    }
-    else
-      ranges[o] = std::make_pair(-1, -1);
-  }
-  return std::make_tuple(orderedElements, ranges);
 }
 
 // copy is deliberate
@@ -1099,7 +1106,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   apf2cgns.insert(std::make_pair(apf::Mesh::TRIANGLE, CGNS_ENUMV(TRI_3)));
   apf2cgns.insert(std::make_pair(apf::Mesh::EDGE, CGNS_ENUMV(BAR_2)));
   //
-  AddBocosToMainBase(cgns, cellCount.first, m, cgnsBCMap, apf2cgns, gvn, gcn);
+  AddBocosToMainBase(cgns, cellResult, cellCount.first, m, cgnsBCMap, apf2cgns, gvn);
   //
   WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
