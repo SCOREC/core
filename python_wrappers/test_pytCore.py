@@ -9,18 +9,18 @@ def main(argv):
    try:
       opts, args = getopt.getopt(argv,"hg:m:",["model=","mesh="])
    except getopt.GetoptError:
-      print 'test_pytCore.py -g <model> -m <mesh>'
+      print('test_pytCore.py -g <model> -m <mesh>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print 'test_pytCore.py -g <model> -m <mesh>'
+         print('test_pytCore.py -g <model> -m <mesh>')
          sys.exit()
       elif opt in ("-g", "--model"):
          model = arg
       elif opt in ("-m", "--mesh"):
          mesh = arg
-   print 'Model file is "', model
-   print 'Mesh  file is "', mesh
+   print('Model file is "', model)
+   print('Mesh  file is "', mesh)
 
    # PCU initialization
    pyCore.PCU_Comm_Init()
