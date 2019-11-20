@@ -87,7 +87,7 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
         //std::cout << start << " " << end << std::endl;
         int fieldIndex = -1;
         auto tagNameNew = tagName;
-        if (tagSize > 0)
+        if (tagSize > 1)
           tagNameNew += "[" + std::to_string(ti) + "]";
 
         for (const auto &e : orderedEnts)
@@ -137,7 +137,7 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
       {
         int fieldIndex = -1;
         auto tagNameNew = tagName;
-        if (tagSize > 0)
+        if (tagSize > 1)
           tagNameNew += "[" + std::to_string(ti) + "]";
 
         for (std::size_t e = 0; e < orderedEnts.size(); e++)
@@ -317,11 +317,12 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
       {
         int fieldIndex = -1;
         auto fieldNameNew = fieldName;
-        if (numComponents > 0)
+        if (numComponents > 1)
           fieldNameNew += "[" + std::to_string(component) + "]";
 
         for (std::size_t e = 0; e < orderedEnts.size(); e++)
         {
+          //std::cout << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << " " << e << std::endl;
           writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, component, fieldNameNew, ranges[e].first, ranges[e].second, fieldIndex);
         }
       }
@@ -341,8 +342,9 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
       {
         int fieldIndex = -1;
         auto fieldNameNew = fieldName;
-        if (numComponents > 0)
+        if (numComponents > 1)
           fieldNameNew += "[" + std::to_string(component) + "]";
+        //std::cout << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << std::endl;
         writeField(f, orderedEnts, solIndex, inner, post, numComponents, component, fieldNameNew, vStart, vEnd, fieldIndex);
       }
     }
@@ -850,8 +852,9 @@ auto WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn, co
       const int globalEnd = globalStart + globalNumbersByElementType[o] - 1; // one-based stuff
       //
       int sectionNumber = -1;
-      if (cgp_section_write(cgns.index, cgns.base, cgns.zone, (std::string(cg_ElementTypeName(cgnsElementOrder[o])) + " " + std::to_string(globalStart) + "->" + std::to_string(globalEnd)).c_str(), cgnsElementOrder[o], globalStart,
-                            globalEnd, 0, &sectionNumber)) // global start, end within the file for that element type
+      const std::string name = std::string(cg_ElementTypeName(cgnsElementOrder[o])) + " " + std::to_string(globalStart) + "->" + std::to_string(globalEnd);
+      //std::cout << "Section Name " << name << std::endl;
+      if (cgp_section_write(cgns.index, cgns.base, cgns.zone, name.c_str(), cgnsElementOrder[o], globalStart, globalEnd, 0, &sectionNumber)) // global start, end within the file for that element type
         cgp_error_exit();
 
       std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
