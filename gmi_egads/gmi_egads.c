@@ -15,24 +15,24 @@
 #include "gmi_egads_config.h"
 
 // will be initialized by `gmi_egads_start`
-ego *eg_context = NULL;
+ego eg_context;
 // will be initialized by `gmi_egads_load`
-ego *eg_model = NULL;
+ego eg_model;
 // will be initialized by `gmi_egads_load`
-ego *eg_body = NULL;
+ego eg_body;
 
 static struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
   (void)m;
   ego *eg_ents = NULL;
   if (dim == 0)
-    EG_getBodyTopos(*eg_body, NULL, NODE, NULL, &eg_ents);
+    EG_getBodyTopos(eg_body, NULL, NODE, NULL, &eg_ents);
   else if (dim == 1)
-    EG_getBodyTopos(*eg_body, NULL, EDGE, NULL, &eg_ents);
+    EG_getBodyTopos(eg_body, NULL, EDGE, NULL, &eg_ents);
   else if (dim == 2)
-    EG_getBodyTopos(*eg_body, NULL, FACE, NULL, &eg_ents);
+    EG_getBodyTopos(eg_body, NULL, FACE, NULL, &eg_ents);
   else if (dim == 3)
-    EG_getBodyTopos(*eg_body, NULL, SHELL, NULL, &eg_ents); // BODY?
+    EG_getBodyTopos(eg_body, NULL, SHELL, NULL, &eg_ents); // BODY?
   return (struct gmi_iter*)eg_ents;
 }
 
@@ -73,7 +73,7 @@ static int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
   (void)m;
   ego *eg_ent = (ego*)e;
-  return EG_indexBodyTopo(*eg_body, *eg_ent);
+  return EG_indexBodyTopo(eg_body, *eg_ent);
 }
 
 static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
@@ -82,13 +82,13 @@ static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
   // ego *eg_ent = (ego*)e;
   ego eg_ent = NULL;
   if (dim == 0)
-    EG_objectBodyTopo(*eg_body, NODE, tag, &eg_ent);
+    EG_objectBodyTopo(eg_body, NODE, tag, &eg_ent);
   else if (dim == 1)
-    EG_objectBodyTopo(*eg_body, EDGE, tag, &eg_ent);
+    EG_objectBodyTopo(eg_body, EDGE, tag, &eg_ent);
   else if (dim == 2)
-    EG_objectBodyTopo(*eg_body, FACE, tag, &eg_ent);
+    EG_objectBodyTopo(eg_body, FACE, tag, &eg_ent);
   else if (dim == 3)
-    EG_objectBodyTopo(*eg_body, SHELL, tag, &eg_ent);
+    EG_objectBodyTopo(eg_body, SHELL, tag, &eg_ent);
   else
     gmi_fail("gmi_ent not found!");
   return (struct gmi_ent*)eg_ent;
@@ -103,13 +103,13 @@ static struct gmi_set* adjacent(struct gmi_model* m,
   int num_adjacent = 0;
   ego *adjacent_ents = NULL;
   if (dim == 0)
-    EG_getBodyTopos(*eg_body, *eg_ent, NODE, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_ent, NODE, &num_adjacent, &adjacent_ents);
   else if (dim == 1)
-    EG_getBodyTopos(*eg_body, *eg_ent, EDGE, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_ent, EDGE, &num_adjacent, &adjacent_ents);
   else if (dim == 2)
-    EG_getBodyTopos(*eg_body, *eg_ent, FACE, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_ent, FACE, &num_adjacent, &adjacent_ents);
   else if (dim == 3)
-    EG_getBodyTopos(*eg_body, *eg_ent, SHELL, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_ent, SHELL, &num_adjacent, &adjacent_ents);
   
   struct gmi_set *gmi_adj_ent = gmi_make_set(num_adjacent);
   for (int i = 0; i < num_adjacent; ++i)
@@ -317,13 +317,13 @@ static int is_in_closure_of(struct gmi_model* m,
   int num_adjacent = 0;
   ego *adjacent_ents = NULL;
   if (ent_dim == 0)
-    EG_getBodyTopos(*eg_body, *eg_region, NODE, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_region, NODE, &num_adjacent, &adjacent_ents);
   else if (ent_dim == 1)
-    EG_getBodyTopos(*eg_body, *eg_region, EDGE, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_region, EDGE, &num_adjacent, &adjacent_ents);
   else if (ent_dim == 2)
-    EG_getBodyTopos(*eg_body, *eg_region, FACE, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_region, FACE, &num_adjacent, &adjacent_ents);
   else if (ent_dim == 3)
-    EG_getBodyTopos(*eg_body, *eg_region, SHELL, &num_adjacent, &adjacent_ents);
+    EG_getBodyTopos(eg_body, *eg_region, SHELL, &num_adjacent, &adjacent_ents);
   for (int i = 0; i < num_adjacent; ++i)
   {
     if (EG_isEquivalent(*eg_ent, adjacent_ents[i]))
@@ -354,18 +354,20 @@ static struct gmi_model_ops ops;
 #if 1
 static struct gmi_model* gmi_egads_load(const char* filename)
 {
-  int load_status = EG_loadModel(*eg_context, 0, filename, eg_model);
+  printf("in gmi_egads_load\n");
+  int load_status = EG_loadModel(eg_context, 0, filename, &eg_model);
   if (load_status != EGADS_SUCCESS)
   {
     char str[50]; // big enough
     sprintf(str, "EGADS failed to load model with error code: %d", load_status);
     gmi_fail(str);
   }
+  printf("after EG_loadModel\n");
 
   /// TODO: only store the outputs I need, replace the rest with NULL
   int oclass, mtype, nbody, *senses;
   ego geom, *eg_bodies;
-  int status = EG_getTopology(*eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+  int status = EG_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
                           &eg_bodies, &senses);
   if (status != EGADS_SUCCESS)
   {
@@ -378,16 +380,17 @@ static struct gmi_model* gmi_egads_load(const char* filename)
     gmi_fail("EGADS model should only have one body");
   }
 
-  *eg_body = eg_bodies[0];
+  eg_body = eg_bodies[0];
 
   struct gmi_model *model;
   model = (struct gmi_model*)malloc(sizeof(*model));
   model->ops = &ops;
 
-  EG_getBodyTopos(*eg_body, NULL, NODE, &(model->n[0]), NULL);
-  EG_getBodyTopos(*eg_body, NULL, EDGE, &(model->n[1]), NULL);
-  EG_getBodyTopos(*eg_body, NULL, FACE, &(model->n[2]), NULL);
-  EG_getBodyTopos(*eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
+  EG_getBodyTopos(eg_body, NULL, NODE, &(model->n[0]), NULL);
+  EG_getBodyTopos(eg_body, NULL, EDGE, &(model->n[1]), NULL);
+  EG_getBodyTopos(eg_body, NULL, FACE, &(model->n[2]), NULL);
+  // I believe this should be shell, but always seems to result in 1 shell
+  EG_getBodyTopos(eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
 
   return model;
 }
@@ -402,7 +405,9 @@ static struct gmi_model* gmi_egads_load(const char* filename)
 
 void gmi_egads_start(void)
 {
-  int status = EG_open(eg_context);
+  printf("egads start\n");
+  int status = EG_open(&eg_context);
+  printf("after egads open\n");
   if (status != EGADS_SUCCESS)
   {
     char str[50]; // big enough
@@ -413,7 +418,7 @@ void gmi_egads_start(void)
 
 void gmi_egads_stop(void)
 {
-  EG_close(*eg_context);
+  EG_close(eg_context);
 }
 
 void gmi_register_egads(void)
