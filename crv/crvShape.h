@@ -58,6 +58,7 @@ int fixLargeBoundaryAngles(Adapt* a);
 /** \brief If an edge is flagged as invalid,
     try and collapse or swap it away */
 int fixInvalidEdges(Adapt* a);
+int fixInvalidEdgesCollapseAndSwap(Adapt* a);
 
 /** \brief If a face is flagged as invalid
     optimize the face nodes */

@@ -653,10 +653,14 @@ static std::vector<int> faceIndexAdjInvalidEdge(ma::Mesh* mesh, ma::Entity* e, i
 static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
     ma::Entity* faces[4])
 {
+
+  if (ai.size() == 0) return 0;
+/*
   for (int i = 0; i < ai.size(); i++) {
     if (ai[i] == 20)
       int j = 0;
   }
+  */
 
   std::vector<int> faceInvalid = numOfUniqueFaces(ai);
   int n = 0;
@@ -1337,6 +1341,7 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
  * and then use the results to mark edges, etc for
  * fixing
  */
+
 static int markEdgesToFix(Adapt* a, int flag)
 {
   // do a invalidity check first
@@ -1351,38 +1356,29 @@ static int markEdgesToFix(Adapt* a, int flag)
   // markEdges could have upto 6 edges marked!!!
   ma::Entity* edges[6];
   ma::Iterator* it = m->begin(m->getDimension());
-  //std::vector<int> ai;
-  //Quality* qual = makeQuality(m, 2);
+  
   while ((e = m->iterate(it)))
   {
-    //int tag = crv::getTag(a,e);
-    //int n = markEdges(m,e,tag,edges);
+    int tag = crv::getTag(a,e);
+    int n = markEdges(m,e,tag,edges);
 
-    std::vector<int> ai = crv::getAllInvalidities(m, e);
-    //int niv = qual->checkValidity(e);
-    int niv = ai.size();
-    if (niv != 0) {
-      int n = markAllEdges(m, e, ai, edges);
-      for (int i = 0; i < n; ++i){
-      	ma::Entity* edge = edges[i];
-      	PCU_ALWAYS_ASSERT(edge);
+    for (int i = 0; i < n; ++i){
+      ma::Entity* edge = edges[i];
+      PCU_ALWAYS_ASSERT(edge);
 
-      	if (edge && !ma::getFlag(a,edge,flag)) {
-      	  if (m->getModelType(m->toModel(edge)) != 1) {
-      	    ma::setFlag(a,edge,flag);
-      	    if (a->mesh->isOwned(edge))
-      	      ++count;
-	  }
-	}
+      if (edge && !ma::getFlag(a,edge,flag)) {
+      	ma::setFlag(a,edge,flag);
+      	if (a->mesh->isOwned(edge))
+      	  ++count;
       }
     }
   }
-  //delete qual;
   m->end(it);
 
   return PCU_Add_Long(count);
 }
 
+/*
 static int markFacesToFix(Adapt* a, int flag)
 {
   int invalid = markInvalidEntities(a);
@@ -1416,7 +1412,7 @@ static int markFacesToFix(Adapt* a, int flag)
 
   return PCU_Add_Long(count);
 }
-
+*/
 int fixLargeBoundaryAngles(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -1494,11 +1490,6 @@ static void optimizeInvalidFaces(Adapt* a)
 
 int fixInvalidFaces(Adapt* a)
 {
-  //int count = markFacesToFix(a, ma::SNAP);
-  //if (! count) {
-  //  return 0;
-  //}
-
   optimizeInvalidFaces(a);
 
   return 0;
@@ -1506,21 +1497,36 @@ int fixInvalidFaces(Adapt* a)
 
 int fixInvalidEdges(Adapt* a)
 {
-  //int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
-  //if (! count){
-  //  return 0;
-  //}
+
 
   if(a->mesh->getShape()->getOrder() == 2)
     repositionInvalidEdges(a);
   else
     optimizeInvalidEdges(a);
+/*
+  int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
+  if (! count){
+    return 0;
+  }
 
-  //collapseInvalidEdges(a);
-  //swapInvalidEdges(a);
+  collapseInvalidEdges(a);
+  swapInvalidEdges(a);
+*/
   return 0;
 }
 
+int fixInvalidEdgesCollapseAndSwap(Adapt* a)
+{
+  int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
+  if (! count){
+    return 0;
+  }
+
+  collapseInvalidEdges(a);
+  swapInvalidEdges(a);
+
+  return count;
+}
 
 struct IsBadCrvQuality : public ma::Predicate
 {
