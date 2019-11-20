@@ -105,6 +105,9 @@ endif()
 
 
 if(ENABLE_PYTHON)
+  if(ENABLE_SIMX)
+      add_definitions(-DHAVE_SIMMETRIX)
+  endif()
   set(PY_SOURCES
     apf.i)
   find_package(SWIG REQUIRED)

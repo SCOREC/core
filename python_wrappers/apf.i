@@ -7,7 +7,11 @@
 #include <gmi.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
-#include <gmi_sim.h>
+
+#ifdef HAVE_SIMMETRIX
+  #include <gmi_sim.h>
+#endif
+
 #include <lionPrint.h>
 
 #include <apfMesh.h>
@@ -24,7 +28,9 @@
 #include <maInput.h>
 #include <ma.h>
 
-#include <sim_helper.h>
+#ifdef HAVE_SIMMETRIX
+  #include <sim_helper.h>
+#endif
 %}
 
 
@@ -52,15 +58,20 @@ void PCU_ALWAYS_ASSERT(int cond);
 void PCU_ALWAYS_ASSERT_VERBOSE(int cond, const char* msg);
 
 /* These are helper functions used to inintialize/finalize SimModSuite */
-void start_sim(const char* logfile = 0);
-void stop_sim();
+#ifdef HAVE_SIMMETRIX
+  void start_sim(const char* logfile = 0);
+  void stop_sim();
+#endif
 
 /* GMI RELATED WRAPPERS */
 void gmi_register_mesh(void);
-void gmi_register_sim(void);
 void gmi_register_null(void);
-void gmi_sim_start(void);
-void gmi_sim_stop(void);
+
+#ifdef HAVE_SIMMETRIX
+  void gmi_register_sim(void);
+  void gmi_sim_start(void);
+  void gmi_sim_stop(void);
+#endif
 
 
 /* LIONPRINT RELATED WRAPPER */
