@@ -1,6 +1,7 @@
 #include <PCU.h>
 #include <lionPrint.h>
 #include <MeshSim.h>
+#include <SimDiscrete.h>
 #include <SimAdvMeshing.h>
 #include <SimPartitionedMesh.h>
 #include <SimModelerAdvUtil.h>
@@ -13,6 +14,7 @@
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMesh2.h>
+#include <apfNumbering.h>
 #include <ma.h>
 #include <parma.h>
 #include <pcu_util.h>
@@ -44,6 +46,8 @@ namespace {
 int should_log = 0;
 int disable_volume = 0;
 int disable_surface = 0;
+int should_fix_pyramids = 1;
+int should_attach_order = 0;
 std::string modelFile;
 std::string nativeModelFile;
 std::string surfaceMeshFile;
@@ -131,6 +135,8 @@ void getConfig(int argc, char** argv) {
   opterr = 0;
 
   static struct option long_opts[] = {
+    {"no-pyramid-fix", no_argument, &should_fix_pyramids, 0},
+    {"attach-order", no_argument, &should_attach_order, 1},
     {"enable-log", no_argument, &should_log, 1},
     {"disable-volume", no_argument, &disable_volume, 1},
     {"disable-surface", no_argument, &disable_surface, 1},
@@ -145,6 +151,8 @@ void getConfig(int argc, char** argv) {
     "  --enable-log                            Enable Simmetrix logging\n"
     "  --disable-volume                        Disable volume mesh generation\n"
     "  --disable-surface                       Disable suface mesh generation\n"
+    "  --no-pyramid-fix                        Disable quad-connected pyramid tetrahedronization\n"
+    "  --attach-order                          Attach the Simmetrix element order as a Numbering\n"
     "  --native-model=/path/to/model           Load the native Parasolid or ACIS model that the GeomSim model uses\n"
     "  --surface-mesh=/path/to/surfaceMesh  read or write the surface mesh - depends on generation mode\n";
 
@@ -191,12 +199,19 @@ void getConfig(int argc, char** argv) {
     std::cout << "enable_log " << should_log <<
                  " disable_surface " << disable_surface <<
                  " disable_volume " << disable_volume <<
+                 " fix_pyramids " << should_fix_pyramids <<
+                 " attach_order " << should_attach_order <<
                  " native-model " << nativeModelFile <<
                  " model " << modelFile <<
                  " surface mesh " << surfaceMeshFile <<
                  " case name " << caseName <<
                  " output mesh" << outMeshFile << "\n";
   }
+}
+
+static void attachOrder(apf::Mesh* m)
+{
+  apf::numberOverlapDimension(m, "sim_order", m->getDimension());
 }
 
 void fixMatches(apf::Mesh2* m)
@@ -220,7 +235,7 @@ void fixPyramids(apf::Mesh2* m)
 void postConvert(apf::Mesh2* m)
 {
   fixMatches(m);
-  fixPyramids(m);
+  if (should_fix_pyramids) fixPyramids(m);
   m->verify();
 }
 
@@ -273,6 +288,7 @@ void simStart() {
 #ifdef SIM_ACIS
   SimAcis_start(1);
 #endif
+  SimDiscrete_start(0);
   Sim_readLicenseFile(NULL);
   MS_init();
   SimAdvMeshing_start();
@@ -285,6 +301,7 @@ void simStop() {
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
+  SimDiscrete_stop(0);
 #ifdef SIM_ACIS
   SimAcis_stop(1);
 #endif
@@ -304,6 +321,12 @@ int main(int argc, char** argv)
   PCU_Protect();
   getConfig(argc,argv);
 
+  if (should_attach_order && should_fix_pyramids) {
+    if (!PCU_Comm_Self())
+      std::cout << "disabling pyramid fix because --attach-order was given\n";
+    should_fix_pyramids = 0;
+  }
+
   simStart();
   pNativeModel nm = loadNativeModel();
   pGModel simModel = GM_load(modelFile.c_str(), nm, NULL);
@@ -314,6 +337,7 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     printf("Mesh generated in %f seconds\n", t1-t0);
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  if (should_attach_order) attachOrder(simApfMesh);
 
   gmi_register_sim();
   gmi_model* model = gmi_import_sim(simModel);

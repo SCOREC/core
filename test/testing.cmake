@@ -367,6 +367,8 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
+mpi_test(applyMatrixFunc 1
+  ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
@@ -443,6 +445,10 @@ if(ENABLE_ZOLTAN)
 endif()
 mpi_test(construct 4
   ./construct
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(constructThenGhost 4
+  ./constructThenGhost
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
 set(MDIR ${MESHES}/embeddedEdges)

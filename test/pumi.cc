@@ -634,7 +634,7 @@ void TEST_NEW_MESH(pMesh m)
   PCU_ALWAYS_ASSERT(pumi_shape_getNumNode(pumi_mesh_getShape(m), 1)==1);
 
   // create an empty mesh
-  pGeom new_g = pumi_geom_load (NULL, "null");
+  pGeom new_g = pumi_geom_load("", "null");
   pMesh new_m = pumi_mesh_create(new_g, 2);
 
   double xyz[3];
