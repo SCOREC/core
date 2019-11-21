@@ -9,6 +9,7 @@
 *******************************************************************************/
 #include "maDBG.h"
 #include "maShape.h"
+#include "maAdapt.h"
 #include <gmi.h>
 #include <gmi_null.h>
 #include <PCU.h>
