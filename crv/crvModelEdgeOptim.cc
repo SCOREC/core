@@ -16,6 +16,7 @@
 
 static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 {
+  printf("\n");
   return;
   apf::Numbering* n = m->findNumbering("debug_num_tet");
   PCU_ALWAYS_ASSERT(n);
@@ -1171,7 +1172,7 @@ void CrvModelEdgeOptim :: setTol(double tolerance)
   tol = tolerance;
 }
 
-bool CrvModelEdgeOptim :: run(int &invaliditySize)
+bool CrvModelEdgeOptim :: run(int &invaliditySize, bool &hasDecreased)
 {
   std::vector<int> sizeHolder;
   apf::MeshEntity* adj_array[99];
@@ -1201,15 +1202,18 @@ bool CrvModelEdgeOptim :: run(int &invaliditySize)
   //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
   apf::MeshEntity* ed[6];
+  int thisTETnum = 0;
 
   for (std::size_t i = 0; i < adj.getSize(); i++) {
+    if (adj[i] == tet) thisTETnum = 1;
+    else thisTETnum = 0;
     mesh->getDownward(adj[i], 1, ed); 
     int edgeIndex = apf::findIn(ed, 6, edge);
-    printf("reshape tried on %d edge; ", edgeIndex);
+    printf("reshape tried on %d Medge, TET %d ", edgeIndex, thisTETnum);
     printTetNumber(mesh, adj[i]);
   }
 
-  bool hasDecreased = false;
+  hasDecreased = false;
   invaliditySize = 0;
 
   if (l->run() && thisTetSize > 0) {

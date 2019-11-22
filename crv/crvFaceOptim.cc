@@ -12,6 +12,7 @@
 
 static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 {
+  printf("\n");
   return;
   apf::Numbering* n = m->findNumbering("debug_num_tet");
   PCU_ALWAYS_ASSERT(n);
@@ -618,7 +619,7 @@ std::vector<double> CrvFaceReshapeObjFunc :: getGrad(std::vector<double> &x)
   double delx = std::abs(xmx - xmn);
   double dely = std::abs(ymx - ymn);
   double delz = std::abs(zmx - zmn);
-  double delta = 1.0;
+  double delta = 0.0;
 
   for (std::size_t i = 0; i < x.size(); i++) {
     if (i % 3 == 0) delta = delx;
@@ -665,14 +666,16 @@ bool CrvFaceOptim :: run(int &invaliditySize)
   apf::MeshEntity* adj_array[99];
   apf::Adjacent adj;
   mesh->getAdjacent(face, 3, adj);
+  int thisTetSize = 0;
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
-    //std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
-    //sizeHolder.push_back(ai.size());   
+    std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    if (adj[i] == tet) thisTetSize = ai.size();
+    sizeHolder.push_back(ai.size());   
   }
 
-  std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
-  invaliditySize = ai.size();
+  //std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
+  //invaliditySize = ai.size();
   //makeMultipleEntityMesh(mesh, adj_array, face, "before_cavity_of_face_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "before_cavity_indv_tet_of_face_", adj.getSize());
   printTetNumber(mesh, tet);
@@ -683,26 +686,34 @@ bool CrvFaceOptim :: run(int &invaliditySize)
   //std::cout<< "fval at x0 " << f0<<std::endl;
   LBFGS *l = new LBFGS(tol, iter, x0, objF);
 
-  apf::Adjacent adjT;
-  mesh->getAdjacent(face, 3, adjT);
   apf::MeshEntity* fc[4];
+  int thisTETnum = 0;
 
-  for (std::size_t i = 0; i < adjT.getSize(); i++) {
-    mesh->getDownward(adjT[i], 2, fc);
+  for (std::size_t i = 0; i < adj.getSize(); i++) {
+    if (adj[i] == tet) thisTETnum = 1;
+    else thisTETnum = 0;
+    mesh->getDownward(adj[i], 2, fc);
     int faceIndex = apf::findIn(fc, 4, face);
-    printf("reshape tried on %d face; ",faceIndex);
-    printTetNumber(mesh, adjT[i]);
+    printf("reshape tried on %d face, TET %d ",faceIndex, thisTETnum);
+    printTetNumber(mesh, adj[i]);
   }
 
-  if (l->run() && invaliditySize > 0) {
+  bool hasDecreased = false;
+  invaliditySize = 0;
+
+  if (l->run() && thisTetSize > 0) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
 
-    std::vector<int> aiNew = crv::getAllInvalidities(mesh, tet);
+    for (int i = 0; i < adj.getSize(); i++) {
+      std::vector<int> aiNew = crv::getAllInvalidities(mesh, adj[i]);
+      invaliditySize = invaliditySize + aiNew.size();
+      hasDecreased = hasDecreased || (aiNew.size() > sizeHolder[i]);
+    }
 
-    if (aiNew.size() <= invaliditySize) {
-      invaliditySize = aiNew.size();
+    if (hasDecreased == false ) {
+      //invaliditySize = aiNew.size();
       //makeMultipleEntityMesh(mesh, adj_array, face, "after_cavity_of_face_", adj.getSize());
       //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "after_cavity_indv_tet_of_face_", adj.getSize());
       printInvalidities(mesh, adj_array, face, adj.getSize());
@@ -719,7 +730,7 @@ bool CrvFaceOptim :: run(int &invaliditySize)
     }
   }
   else {
-    if (invaliditySize == 0) {
+    if (thisTetSize == 0) {
       std::cout<<" No Optimization tried"<<std::endl;
       std::cout<<"-------------------------------------------"<<std::endl;
       return false;

@@ -48,7 +48,7 @@ public:
   double fValAfter;
 
 private:
-  int r = 25;
+  int r = 40;
 };
 
 }
