@@ -619,7 +619,7 @@ std::vector<double> CrvFaceReshapeObjFunc :: getGrad(std::vector<double> &x)
   double delx = std::abs(xmx - xmn);
   double dely = std::abs(ymx - ymn);
   double delz = std::abs(zmx - zmn);
-  double delta = 0.0;
+  double delta = 1.0;
 
   for (std::size_t i = 0; i < x.size(); i++) {
     if (i % 3 == 0) delta = delx;
