@@ -147,7 +147,7 @@ struct Output
   int nGrowthCurves; /* number of growth curves */
   int nLayeredMeshVertices; /* number of layered mesh vertices */
   bool hasDGInterface;
-  bool numRigidBody;
+  int numRigidBody;
   FILE* (*openfile_write)(Output& out, const char* path);
   GRStream* grs;
   AllBlocks blocks;

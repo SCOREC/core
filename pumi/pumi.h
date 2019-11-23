@@ -125,6 +125,11 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 //************************************
 
 // Geometric Model
+// create a model from gmi_model object
+pGeom pumi_geom_load(gmi_model* gm,
+                     const char* model_type="mesh",
+                     const char* fileName=NULL, 
+                     void (*fp)(const char*)=NULL);
 // create a model from a file
 pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
                       void (*fp)(const char*)=NULL);
@@ -204,6 +209,9 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
+
+// load a mesh from a an existing partitioned apf mesh
+pMesh pumi_mesh_load(pMesh mesh);
 
 // load a serial mesh on all processes and set up comm links and ptn classification 
 // note that the default owning PID is 0

@@ -317,6 +317,7 @@ int Mesh::countFields()
 
 Field* Mesh::getField(int i)
 {
+  PCU_DEBUG_ASSERT(i < static_cast<int>(fields.size()) && i >= 0);
   return fields[i];
 }
 
@@ -327,7 +328,9 @@ void Mesh::addNumbering(Numbering* n)
 
 void Mesh::removeNumbering(Numbering* n)
 {
-  numberings.erase(std::find(numberings.begin(),numberings.end(),n));
+  std::vector<Numbering*>::iterator it = std::find(numberings.begin(),numberings.end(),n);
+  if (it != numberings.end())
+    numberings.erase(it);
 }
 
 Numbering* Mesh::findNumbering(const char* name)
@@ -355,6 +358,7 @@ int Mesh::countNumberings()
 
 Numbering* Mesh::getNumbering(int i)
 {
+  PCU_DEBUG_ASSERT(i < static_cast<int>(numberings.size()) && i >= 0);
   return numberings[i];
 }
 
@@ -365,8 +369,10 @@ void Mesh::addGlobalNumbering(GlobalNumbering* n)
 
 void Mesh::removeGlobalNumbering(GlobalNumbering* n)
 {
-  globalNumberings.erase(std::find(
-        globalNumberings.begin(), globalNumberings.end(), n));
+  std::vector<GlobalNumbering*>::iterator it = std::find(globalNumberings.begin(),
+                                                         globalNumberings.end(), n);
+  if(it != globalNumberings.end())
+    globalNumberings.erase(it);
 }
 
 int Mesh::countGlobalNumberings()
@@ -376,6 +382,7 @@ int Mesh::countGlobalNumberings()
 
 GlobalNumbering* Mesh::getGlobalNumbering(int i)
 {
+  PCU_DEBUG_ASSERT(i < static_cast<int>(globalNumberings.size()) && i >= 0);
   return globalNumberings[i];
 }
 

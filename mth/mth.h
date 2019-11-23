@@ -22,11 +22,11 @@ namespace mth {
 
 /** \brief returns vector cross product */
 template <class T>
-Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b);
+Vector3<T> cross(Vector<T,3> const& a, Vector<T,3> const& b);
 
 /** \brief returns the cross product matrix for the vector */
 template <class T>
-Matrix<T,3,3> cross(Vector<T,3> const& a);
+Matrix3x3<T> cross(Vector<T,3> const& a);
 
 /** \brief returns vector a projected onto vector b */
 template <class T, unsigned N>

@@ -372,6 +372,51 @@ double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
   return minHeight;
 }
 
+double computeLargestHeightInTet(Mesh* m, MeshEntity* tet,
+    const Matrix3x3& Q)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(tet) == Mesh::TET,
+      "Expecting a tet. Aborting! ");
+
+  double maxHeight = 0.0;
+
+  MeshEntity* faces[4];
+  MeshEntity* edges[6];
+
+  m->getDownward(tet, 2, faces);
+  m->getDownward(tet, 1, edges);
+
+  // iterate over faces
+  for (int i = 0; i < 4; i++) {
+    MeshEntity* currentFace = faces[i];
+    MeshEntity* outOfFaceEdge = 0;
+    MeshEntity* es[3];
+    m->getDownward(currentFace, 1, es);
+    // get the out of face edge
+    for (int j = 0; j < 6; j++) {
+      int index = findIn(es, 3, edges[j]);
+      if (index == -1) {
+      	outOfFaceEdge = edges[j];
+      	break;
+      }
+    }
+    PCU_ALWAYS_ASSERT(outOfFaceEdge);
+    // compute the cos angle
+    double edgeFaceCosAngle =
+      computeEdgeFaceCosAngleInTet(m, tet, outOfFaceEdge, currentFace, Q);
+    // compute the sin angle
+    double edgeFaceSinAngle = std::sqrt(
+    	1 - edgeFaceCosAngle*edgeFaceCosAngle);
+    // height is sinAngle*edgeLen
+    double currentHeight = edgeFaceSinAngle * getEdgeLength(m, outOfFaceEdge);
+
+    if (currentHeight > maxHeight)
+      maxHeight = currentHeight;
+  }
+  return maxHeight;
+}
+
+
 double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
     const Matrix3x3& Q)
 {
@@ -402,5 +447,37 @@ double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
   }
   return minHeight;
 }
+
+double computeLargestHeightInTri(Mesh* m, MeshEntity* tri,
+    const Matrix3x3& Q)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(tri) == Mesh::TRIANGLE,
+      "Expecting a tri. Aborting! ");
+
+  double maxHeight = 0.0;
+
+  MeshEntity* edges[3];
+
+  m->getDownward(tri, 1, edges);
+
+  // iterate over edges
+  for (int i = 0; i < 3; i++) {
+    MeshEntity* currentEdge = edges[i];
+    MeshEntity*	   nextEdge = edges[(i+1)%3];
+    // compute the cos angle
+    double edgeEdgeCosAngle =
+      computeEdgeEdgeCosAngleInTri(m, tri, currentEdge, nextEdge, Q);
+    // compute the sin angle
+    double edgeEdgeSinAngle = std::sqrt(
+    	1 - edgeEdgeCosAngle*edgeEdgeCosAngle);
+    // height is sinAngle*edgeLen
+    double currentHeight = edgeEdgeSinAngle * getEdgeLength(m, nextEdge);
+
+    if (currentHeight > maxHeight)
+      maxHeight = currentHeight;
+  }
+  return maxHeight;
+}
+
 
 }
