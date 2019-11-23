@@ -21,43 +21,135 @@ ego eg_model;
 // will be initialized by `gmi_egads_load`
 ego eg_body;
 
-static struct gmi_iter* begin(struct gmi_model* m, int dim)
+struct egads_iter
 {
+   ego *ents;
+   int nelem;
+   int idx;
+};
+
+// struct gmi_iter* begin(struct gmi_model* m, int dim)
+// {
+//   printf("begin\n");
+//   (void)m;
+//   ego *eg_ents;
+//   int nbodies = 0;
+//   if (dim == 0)
+//     EG_getBodyTopos(eg_body, NULL, NODE, &nbodies, &eg_ents);
+//   else if (dim == 1)
+//     EG_getBodyTopos(eg_body, NULL, EDGE, &nbodies, &eg_ents);
+//   else if (dim == 2)
+//     EG_getBodyTopos(eg_body, NULL, FACE, &nbodies, &eg_ents);
+//   else if (dim == 3)
+//     EG_getBodyTopos(eg_body, NULL, SHELL, &nbodies, &eg_ents); // BODY?
+//   printf("got body topops of dim %d with %d bodies\n", dim, nbodies);
+//   gmi_fail("oops\n");
+//   if (dim >= 0 && dim <= 3)
+//     return (struct gmi_iter*)eg_ents;
+//   return (struct gmi_iter*)NULL;
+// }
+
+// struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
+// {
+//   printf("next\n");
+//   (void)m;
+//   ego *eg_ents = (ego*)i;
+//   return (struct gmi_ent*)++eg_ents;
+// }
+
+// void end(struct gmi_model* m, struct gmi_iter* i)
+// {
+//   printf("end\n");
+//   (void)m;
+//   // I think this will create a memory leak as it won't free any of the
+//   // values that came before
+//   ego *eg_ents = (ego*)i;
+//   EG_free(eg_ents);
+// }
+
+struct gmi_iter* begin(struct gmi_model* m, int dim)
+{
+  printf("begin\n");
   (void)m;
-  ego *eg_ents = NULL;
+  ego *eg_ents;
+  int nbodies = 0;
   if (dim == 0)
-    EG_getBodyTopos(eg_body, NULL, NODE, NULL, &eg_ents);
+    EG_getBodyTopos(eg_body, NULL, NODE, &nbodies, &eg_ents);
   else if (dim == 1)
-    EG_getBodyTopos(eg_body, NULL, EDGE, NULL, &eg_ents);
+    EG_getBodyTopos(eg_body, NULL, EDGE, &nbodies, &eg_ents);
   else if (dim == 2)
-    EG_getBodyTopos(eg_body, NULL, FACE, NULL, &eg_ents);
+    EG_getBodyTopos(eg_body, NULL, FACE, &nbodies, &eg_ents);
   else if (dim == 3)
-    EG_getBodyTopos(eg_body, NULL, SHELL, NULL, &eg_ents); // BODY?
-  return (struct gmi_iter*)eg_ents;
+    EG_getBodyTopos(eg_body, NULL, SHELL, &nbodies, &eg_ents); // BODY?
+  printf("got body topops of dim %d with %d bodies\n", dim, nbodies);
+  struct egads_iter *eg_iter;
+  if (dim >= 0 && dim <= 3)
+  {
+    eg_iter = EG_alloc(sizeof(struct egads_iter));
+    if (eg_iter == NULL)
+    {
+      printf("failed to make memory\n");
+      gmi_fail("EG_alloc failed to allocate memory for iter");
+      return NULL;
+    }
+    printf("malloc success\n");
+    eg_iter->ents = eg_ents;
+    eg_iter->nelem = nbodies;
+    eg_iter->idx = 0;
+    return (struct gmi_iter*)eg_iter;
+  }
+  return (struct gmi_iter*)NULL;
 }
 
-static struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
+struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 {
+  printf("next\n");
   (void)m;
-  ego *eg_ents = (ego*)i;
-  return (struct gmi_ent*)++eg_ents;
+  struct egads_iter *eg_iter = (struct egads_iter*)i;
+  ego *eg_ent;
+  if (eg_iter->idx < eg_iter->nelem)
+  {
+    eg_ent = &(eg_iter->ents[eg_iter->idx]);
+    eg_iter->idx++;
+    return (struct gmi_ent*)eg_ent;
+  }
+  else
+    return NULL;
+  // return (struct gmi_ent*)eg_ent;
 }
 
-static void end(struct gmi_model* m, struct gmi_iter* i)
+void end(struct gmi_model* m, struct gmi_iter* i)
 {
+  printf("end\n");
   (void)m;
   // I think this will create a memory leak as it won't free any of the
   // values that came before
-  ego *eg_ents = (ego*)i;
-  EG_free(eg_ents);
+  // ego *eg_ents = (ego*)i;
+  struct egads_iter *eg_iter = (struct egads_iter*)i;
+
+  if (eg_iter != NULL)
+  {
+    EG_free(eg_iter->ents);
+    EG_free(eg_iter);
+  }
 }
 
-static int get_dim(struct gmi_model* m, struct gmi_ent* e)
+int get_dim(struct gmi_model* m, struct gmi_ent* e)
 {
+  printf("get dim\n");
   (void)m;
   ego *eg_ent = (ego*)e;
-  int ent_type = 0;
-  EG_getInfo(*eg_ent, &ent_type, NULL, NULL, NULL, NULL);
+  if (eg_ent == NULL)
+  {
+    printf("null ptr\n");
+  }
+  int ent_type;
+  int mtype;
+  ego topref, prev, next;
+  printf("above get info\n");
+  int status = EG_getInfo(*eg_ent, &ent_type, &mtype, &topref, &prev, &next);
+  printf("get info status: %d\n", status);
+  printf("above get info\n");
   if (ent_type == NODE)
     return 0;
   else if (ent_type == EDGE)
@@ -69,15 +161,17 @@ static int get_dim(struct gmi_model* m, struct gmi_ent* e)
   return -1;
 }
 
-static int get_tag(struct gmi_model* m, struct gmi_ent* e)
+int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
+  printf("tag\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   return EG_indexBodyTopo(eg_body, *eg_ent);
 }
 
-static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
+struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
+  printf("find\n");
   (void)m;
   // ego *eg_ent = (ego*)e;
   ego eg_ent = NULL;
@@ -94,10 +188,11 @@ static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
   return (struct gmi_ent*)eg_ent;
 }
 
-static struct gmi_set* adjacent(struct gmi_model* m, 
+struct gmi_set* adjacent(struct gmi_model* m, 
                                 struct gmi_ent* e, 
                                 int dim)
 {
+  printf("adjacent\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   int num_adjacent = 0;
@@ -120,11 +215,12 @@ static struct gmi_set* adjacent(struct gmi_model* m,
   return gmi_adj_ent;
 }
 
-static void eval(struct gmi_model* m, 
+void eval(struct gmi_model* m, 
                  struct gmi_ent* e,
                  double const p[2],
                  double x[3])
 {
+  printf("eval\n");
   (void)m;
   double results[18];
   ego *eg_ent = (ego*)e;
@@ -134,12 +230,13 @@ static void eval(struct gmi_model* m,
   x[2] = results[2];
 }
 
-static void reparam(struct gmi_model* m,
+void reparam(struct gmi_model* m,
                     struct gmi_ent* from,
                     double const from_p[2],
                     struct gmi_ent* to,
                     double to_p[2])
 {
+  printf("reparam\n");
   int from_dim, to_dim;
   from_dim = get_dim(m, from);
   to_dim = get_dim(m, to);
@@ -167,10 +264,11 @@ static void reparam(struct gmi_model* m,
   gmi_fail("bad dimensions in gmi_egads reparam");
 }
 
-static int periodic(struct gmi_model* m,
+int periodic(struct gmi_model* m,
                     struct gmi_ent* e,
                     int dir)
 {
+  printf("periodic\n");
   int ent_dim = get_dim(m, e);
   int periodic;
   ego *eg_ent = (ego*)e;
@@ -193,11 +291,12 @@ static int periodic(struct gmi_model* m,
   return 0;
 }
 
-static void range(struct gmi_model* m,
+void range(struct gmi_model* m,
                   struct gmi_ent* e,
                   int dir,
                   double r[2])
 {
+  printf("range\n");
   int ent_dim = get_dim(m, e);
   double range[4];
   ego *eg_ent = (ego*)e;
@@ -219,23 +318,25 @@ static void range(struct gmi_model* m,
   }
 }
 
-static void closest_point(struct gmi_model* m,
+void closest_point(struct gmi_model* m,
                           struct gmi_ent* e, 
                           double const from[3],
                           double to[3],
                           double to_p[2])
 {
+  printf("closest point\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   double xyz[] = {from[0], from[1], from[2]};
   EG_invEvaluate(*eg_ent, &xyz[0], &to_p[0], &to[0]);
 }
 
-static void normal(struct gmi_model* m,
+void normal(struct gmi_model* m,
                    struct gmi_ent* e,
                    double const p[2],
                    double n[3])
 {
+  printf("normal\n");
   double du[3], dv[3];
   m->ops->first_derivative(m, e, p, du, dv);
   // cross du and dv to get n
@@ -254,12 +355,13 @@ static void normal(struct gmi_model* m,
   n[2] *= mtype / n_mag;
 }
 
-static void first_derivative(struct gmi_model* m,
+void first_derivative(struct gmi_model* m,
                              struct gmi_ent* e,
                              double const p[2],
                              double t0[3],
                              double t1[3])
 {
+  printf("first derivative\n");
   int ent_dim = get_dim(m, e);
   double results[18];
   ego *eg_ent = (ego*)e;
@@ -275,10 +377,11 @@ static void first_derivative(struct gmi_model* m,
   }
 }
 
-static int is_point_in_region(struct gmi_model* m,
+int is_point_in_region(struct gmi_model* m,
                               struct gmi_ent* e,
                               double p[3])
 {
+  printf("is in region\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   int status = EG_inTopology(*eg_ent, p);
@@ -288,11 +391,12 @@ static int is_point_in_region(struct gmi_model* m,
     return 0;
 }
 
-static void bbox(struct gmi_model* m,
+void bbox(struct gmi_model* m,
                  struct gmi_ent* e,
                  double bmin[3],
                  double bmax[3])
 {
+  printf("bbox\n");
   (void)m;
   double box[6];
   ego *eg_ent = (ego*)e;
@@ -307,10 +411,11 @@ static void bbox(struct gmi_model* m,
 
 /// For any given vertex, edge, or face, this function can be used
 /// to see if the vertex/edge/face is adjacent to region.
-static int is_in_closure_of(struct gmi_model* m,
+int is_in_closure_of(struct gmi_model* m,
                             struct gmi_ent* e,
                             struct gmi_ent* et)
 {
+  printf("in closure of\n");
   ego *eg_ent = (ego*)e;
   ego *eg_region = (ego*)et;
   int ent_dim = get_dim(m, e);
@@ -334,25 +439,26 @@ static int is_in_closure_of(struct gmi_model* m,
 }
 
 /// what does this function do?
-static int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
+int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 {
   (void)m;
   (void)e;
   gmi_fail("is_discrete_ent not implemented");
 }
 
-static void destroy(struct gmi_model* m)
+void destroy(struct gmi_model* m)
 {
+  printf("destroy!\n");
   free(m);
 }
 
-static struct gmi_model_ops ops;
+struct gmi_model_ops ops;
 
 /// TODO: Come up with a better flag? 
 /// TODO: re-write for EGADSlite - model loading is different
 // #ifdef HAVE_EGADS
 #if 1
-static struct gmi_model* gmi_egads_load(const char* filename)
+struct gmi_model* gmi_egads_load(const char* filename)
 {
   printf("in gmi_egads_load\n");
   int load_status = EG_loadModel(eg_context, 0, filename, &eg_model);
@@ -395,7 +501,7 @@ static struct gmi_model* gmi_egads_load(const char* filename)
   return model;
 }
 #else
-static struct gmi_model* gmi_egads_load(const char* filename)
+struct gmi_model* gmi_egads_load(const char* filename)
 {
   (void)filename;
   /// TODO: chose a compile flag
