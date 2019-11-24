@@ -23,6 +23,7 @@
 #include "crvModelEdgeOptim.h"
 #include "crvFaceOptim.h"
 #include "crvQuality.h"
+#include "apfNumbering.h"
 
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
@@ -280,7 +281,7 @@ static int getCommonEdgeIndexToFaces(int a, int b)
 */
 // doess not account for TET(20) invalidity
 
-
+/*
 static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
 {
   std::vector<int> aiEdgeNVtx;
@@ -333,13 +334,13 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
     }
   }
 
-  /*
+ 
   for (size_t j = 0; j < aiOnlyEdge.size(); j++) {
     for (int i = 0; i < 2; i++) {
       aiOnlyFace.push_back(edgeToFaceInd[aiOnlyEdge[j]-8][i] + 14);
     }
   }
-  */
+ 
 
   for (size_t j = 0; j < aiOnlyTet.size(); j++) {
     for (int jj = 0; jj < 4; jj++) {
@@ -354,8 +355,8 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
   
   return allinvFaces;
 }
+*/
 
-/*
 static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
 {
   std::vector<int> aiEdgeNVtx;
@@ -409,9 +410,9 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
       }
     }
   }
-
- 
-  for (size_t j = 0; j < aiOnlyFace.size(); j++) {
+/////////
+/*
+   for (size_t j = 0; j < aiOnlyFace.size(); j++) {
     bool isUnique = false;
     for (int i = 0; i < 4; i++) {
       for (size_t k = 0; k < aiOnlyEdge.size(); k++) {
@@ -425,8 +426,8 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
       aiOnlyFace.erase(aiOnlyFace.begin()+j);
     }
   }
-
-  
+//////////
+*/  
 
   bool hasDownVtx, alreadyIn;
 
@@ -503,7 +504,7 @@ static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
   }
   return forFaceMarking;
 }
-*/
+
 /*
 static std::vector<int> inspectInvalidies(std::vector<int> ai)
 {
@@ -538,9 +539,10 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
   std::vector<int> faceInvalid = numOfUniqueFaces(ai);
 
   if (ai.size() == 0) return 0;
-  //if (ai.size() == faceInvalid[0]) return 0;
+  if (ai.size() == faceInvalid[0]) return 0;
 
   for (size_t ii = 0; ii < ai.size(); ii++) {
+
     int dim = (ai[ii]-2)/6;
     int index = (ai[ii]-2) % 6;
 
@@ -563,7 +565,7 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
       	//ma::Downward ed;
         //m->getDownward(e,1,ed);
         bb.push_back(index);
-        //bb.push_back(index);
+        bb.push_back(index);
         break;
       }
       //break;
@@ -576,8 +578,8 @@ static int markAllEdges(ma::Mesh* m, ma::Entity* e,
 
         for (int i = 0; i < 3; i++) {
           int j = apf::findIn(ed, 6, edf[i]);
-          if (j != -1)
-            bb.push_back(j);
+          //if (j != -1)
+            //bb.push_back(j);
 	}
         break;
       }
@@ -742,7 +744,7 @@ static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
   m->getDownward(e, 2, fc);
   ma::Downward ed;
   m->getDownward(e, 1, ed);
-
+/*
   for (std::size_t i = 0; i < faceInvalid.size();i++) {
     int index = (faceInvalid[i] - 2) % 6;
     int md = m->getDimension();
@@ -752,7 +754,8 @@ static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
       n++;
     }
   }
-  /*
+*/ 
+  
   if (faceInvalid[0] > 0) {
     for (std::size_t i = 1; i < faceInvalid[0]+1; i++) {
       int index = (faceInvalid[i] -2) % 6;
@@ -764,7 +767,7 @@ static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
       }
     }
   }
-  */
+  
 /*
   if (faceInvalid.size() > 1+faceInvalid[0]) {
     int kkk = faceInvalid.size()-faceInvalid[0]-1;
@@ -1614,19 +1617,91 @@ static void optimizeInvalidFaces(Adapt* a)
 
 int fixInvalidFaces(Adapt* a)
 {
+
+  ma::Mesh* mesh = a->mesh;
+  apf::Numbering* edge_num = apf::createNumbering(mesh, "debug_num_edge", apf::getConstant(1), 1);
+  apf::Numbering* face_num = apf::createNumbering(mesh, "debug_num_face", apf::getConstant(2), 1);
+  apf::Numbering* tet_num = apf::createNumbering(mesh, "debug_num_tet", apf::getConstant(3), 1);
+
+  apf::MeshEntity* ent;
+  apf::MeshIterator* it;
+
+  it = mesh->begin(1);
+  int count = 0;
+  while( (ent = mesh->iterate(it)) ) {
+    apf::number(edge_num, ent, 0, 0, count);
+    count++;
+  }
+  mesh->end(it);
+
+  it = mesh->begin(2);
+  count = 0;
+  while( (ent = mesh->iterate(it)) ) {
+    apf::number(face_num, ent, 0, 0, count);
+    count++;
+  }
+  mesh->end(it);
+
+  it = mesh->begin(3);
+  count = 0;
+  while( (ent = mesh->iterate(it)) ) {
+    apf::number(tet_num, ent, 0, 0, count);
+    count++;
+  }
+  mesh->end(it);
+
   optimizeInvalidFaces(a);
 
+  mesh->removeNumbering(edge_num);
+  mesh->removeNumbering(face_num);
+  mesh->removeNumbering(tet_num);
+  
   return 0;
 }
 
 int fixInvalidEdges(Adapt* a)
 {
 
+  ma::Mesh* mesh = a->mesh;
+  apf::Numbering* edge_num = apf::createNumbering(mesh, "debug_num_edge", apf::getConstant(1), 1);
+  apf::Numbering* face_num = apf::createNumbering(mesh, "debug_num_face", apf::getConstant(2), 1);
+  apf::Numbering* tet_num = apf::createNumbering(mesh, "debug_num_tet", apf::getConstant(3), 1);
+
+  apf::MeshEntity* ent;
+  apf::MeshIterator* it;
+
+  it = mesh->begin(1);
+  int count = 0;
+  while( (ent = mesh->iterate(it)) ) {
+    apf::number(edge_num, ent, 0, 0, count);
+    count++;
+  }
+  mesh->end(it);
+
+  it = mesh->begin(2);
+  count = 0;
+  while( (ent = mesh->iterate(it)) ) {
+    apf::number(face_num, ent, 0, 0, count);
+    count++;
+  }
+  mesh->end(it);
+
+  it = mesh->begin(3);
+  count = 0;
+  while( (ent = mesh->iterate(it)) ) {
+    apf::number(tet_num, ent, 0, 0, count);
+    count++;
+  }
+  mesh->end(it);
 
   if(a->mesh->getShape()->getOrder() == 2)
     repositionInvalidEdges(a);
   else
     optimizeInvalidEdges(a);
+  
+  mesh->removeNumbering(edge_num);
+  mesh->removeNumbering(face_num);
+  mesh->removeNumbering(tet_num);
 /*
   int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
   if (! count){

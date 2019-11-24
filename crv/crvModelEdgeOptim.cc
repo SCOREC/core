@@ -16,8 +16,8 @@
 
 static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  printf("\n");
-  return;
+  //printf("\n");
+  //return;
   apf::Numbering* n = m->findNumbering("debug_num_tet");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, e, 0, 0);
@@ -26,13 +26,14 @@ static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 
 static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, int nat)
 {
-  /*
-  return;
+  
+  //return;
   apf::Numbering* n = m->findNumbering("debug_num_edge");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, edge, 0, 0);
-  std::cout<<"at edge "<< num << std::endl;
-*/
+  int tag = m->getModelTag(m->toModel(edge));
+  std::cout<<"at edge "<< num <<" tag: "<<tag<< std::endl;
+
   for (int i = 0; i < nat; i++) {
     std::vector<int> ai = crv::getAllInvalidities(m, e[i]);
     for (std::size_t j = 0; j < ai.size(); j++) {

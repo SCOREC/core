@@ -12,8 +12,8 @@
 
 static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  printf("\n");
-  return;
+ // printf("\n");
+ // return;
   apf::Numbering* n = m->findNumbering("debug_num_tet");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, e, 0, 0);
@@ -22,13 +22,14 @@ static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 
 static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* face, int nat)
 {
-  /*
-  return;
+
+//  return;
   apf::Numbering* n = m->findNumbering("debug_num_face");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, face, 0, 0);
-  std::cout<<"at face "<< num << std::endl;
-  */
+  int tag = m->getModelTag(m->toModel(face));
+  std::cout<<"at face "<< num <<" tag: "<<tag<< std::endl;
+
   for (int i = 0; i < nat; i++) {
     std::vector<int> ai = crv::getAllInvalidities(m, e[i]);
     for (std::size_t j = 0; j < ai.size(); j++) {
@@ -669,13 +670,13 @@ bool CrvFaceOptim :: run(int &invaliditySize)
   int thisTetSize = 0;
   for (int i = 0; i < adj.getSize(); i++) {
     adj_array[i] = adj[i];
-    std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
-    if (adj[i] == tet) thisTetSize = ai.size();
-    sizeHolder.push_back(ai.size());   
+    //std::vector<int> ai = crv::getAllInvalidities(mesh, adj[i]);
+    //if (adj[i] == tet) thisTetSize = ai.size();
+    //sizeHolder.push_back(ai.size());   
   }
 
-  //std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
-  //invaliditySize = ai.size();
+  std::vector<int> ai = crv::getAllInvalidities(mesh, tet);
+  invaliditySize = ai.size();
   //makeMultipleEntityMesh(mesh, adj_array, face, "before_cavity_of_face_", adj.getSize());
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "before_cavity_indv_tet_of_face_", adj.getSize());
   printTetNumber(mesh, tet);
@@ -698,22 +699,26 @@ bool CrvFaceOptim :: run(int &invaliditySize)
     printTetNumber(mesh, adj[i]);
   }
 
-  bool hasDecreased = false;
-  invaliditySize = 0;
+  //bool hasDecreased = false;
+  //invaliditySize = 0;
 
-  if (l->run() && thisTetSize > 0) {
+  //if (l->run() && thisTetSize > 0) {
+  if (l->run() && invaliditySize > 0) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
 
+    std::vector<int> aiNew = crv::getAllInvalidities(mesh, tet);
+    /*
     for (int i = 0; i < adj.getSize(); i++) {
       std::vector<int> aiNew = crv::getAllInvalidities(mesh, adj[i]);
       invaliditySize = invaliditySize + aiNew.size();
       hasDecreased = hasDecreased || (aiNew.size() > sizeHolder[i]);
     }
-
-    if (hasDecreased == false ) {
-      //invaliditySize = aiNew.size();
+*/
+   // if (hasDecreased == false ) {
+    if (aiNew.size() <= invaliditySize) {
+      invaliditySize = aiNew.size();
       //makeMultipleEntityMesh(mesh, adj_array, face, "after_cavity_of_face_", adj.getSize());
       //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "after_cavity_indv_tet_of_face_", adj.getSize());
       printInvalidities(mesh, adj_array, face, adj.getSize());
