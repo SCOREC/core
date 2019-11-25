@@ -33,10 +33,19 @@ If everything goes correctly, you will have `_pyCore.so` in your build directory
 ## How to use the _pyCore_
 An example of using this module is provided in `test_pyCore.py`. You can run this code as follows
 
-`test_pytCore.py -g path/to/model -m path/to/mesh`
+`test_pytCore.py -g ./input/cube.dmg -m ./input/cube.smb`
 
 where `path/to/model` and `path/tp/mesh` are pointing to the location of the model and mesh files.
 
-There is a similar example named `test_pytCore_with_simx.py` when using simmetrix.
+There is a similar example named `test_pytCore_with_simx.py` when using simmetrix:
+`test_pytCore_with_simx.py -g ./input/sphere.x_t -m ./input/sphere.smb`
+
 
 If Simmetrix libraries are not available update the line `-DENABLE_SIMX=ON` in `example_config.sh` to `-DENABLE_SIMX=OFF`. Note that in that case some of the functionalities of the mesh adapt will not be available or will not work as intended.
+
+## Example models and meshes
+1. `./input/cube.dmg` dmg model for the cube example
+2. `./input/cube0.smb` smb (scorec format) mesh for the cube example
+3. `./input/sphere.x_t` native Parasolid model the sphere example
+4. `./input/sphere0.smb` smb (scorec format) mesh for the sphere example
+
