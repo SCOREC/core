@@ -105,8 +105,9 @@ endif()
 
 
 if(ENABLE_PYTHON)
+  # make sure when building apf_wrap_cxx the compiler knows about simmetrix
   if(ENABLE_SIMX)
-      add_definitions(-DHAVE_SIMMETRIX)
+    add_definitions(-DHAVE_SIMMETRIX)
   endif()
   set(PY_SOURCES
     apf.i)
@@ -116,7 +117,11 @@ if(ENABLE_PYTHON)
   include_directories(${MPI4PY_INCLUDE_DIR})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   include_directories("${SCOREC_PREFIX}/include")
-  set(CMAKE_SWIG_FLAGS "")
+
+  # make sure swig knows about simmetrix
+  if(ENABLE_SIMX)
+    set(CMAKE_SWIG_FLAGS "-DHAVE_SIMMETRIX")
+  endif()
 
   set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
   # set_source_files_properties(${PY_SOURCES} PROPERTIES SWIG_FLAGS "-includeall")
