@@ -868,7 +868,7 @@ void CrvEdgeOptim :: setTol(double tolerance)
   tol = tolerance;
 }
 
-bool CrvEdgeOptim :: run(int &invaliditySize, bool &hasDecreased)
+bool CrvEdgeOptim :: run(int &invaliditySize)
 {
   std::vector<int> sizeHolder;
   apf::MeshEntity* adj_array[99];
@@ -907,7 +907,7 @@ bool CrvEdgeOptim :: run(int &invaliditySize, bool &hasDecreased)
     printTetNumber(mesh, adj[i]);
   }
 
-  hasDecreased = false;
+  bool hasDecreased = false;
   invaliditySize = 0;
 
   if (l->run() && thisTetSize > 0) {

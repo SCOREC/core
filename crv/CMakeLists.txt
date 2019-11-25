@@ -24,7 +24,6 @@ set(SOURCES
   crvEdgeOptim.cc
   crvModelEdgeOptim.cc
   crvFaceOptim.cc
-  optim.cc
 )
 
 # Package headers
@@ -34,7 +33,6 @@ set(HEADERS
   crvModelEdgeOptim.h
   crvFaceOptim.h
   LBFGS.h
-  optim.h
   crvBezier.h
   crvTables.h
   crvQuality.h

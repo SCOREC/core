@@ -1219,7 +1219,7 @@ public:
       	ceo->setMaxIter(100);
       	ceo->setTol(1e-8);
 
-      	if (ceo->run(invaliditySize, hasDecreased)) {
+      	if (ceo->run(invaliditySize)) {
       	  ns++;
       	  if (invaliditySize < 1)
       	    break;
@@ -1228,12 +1228,6 @@ public:
       	  if (invaliditySize < 1) {
       	    break;
 	  }
-	  /*
-	  if (hasDecreased && ne < 7) {
-	    edges[ne] = edges[i];
-	    ne++;
-	  }
-	  */
 	  nf++;
 	}
 
@@ -1244,7 +1238,7 @@ public:
       	cmeo->setMaxIter(200);
       	cmeo->setTol(1e-8);
 
-      	if (cmeo->run(invaliditySize, hasDecreased)) {
+      	if (cmeo->run(invaliditySize)) {
       	  ns++;
       	  if (invaliditySize < 1) 
       	    break;
@@ -1253,12 +1247,6 @@ public:
       	  if (invaliditySize < 1) {
       	    break;
 	  }
-	  /*
-	  if (hasDecreased && ne < 7) {
-	    edges[ne] = edges[i];
-	    ne++;
-	  }
-	  */
       	  nf++;
 	}
 
