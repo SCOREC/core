@@ -173,7 +173,7 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return clean;
 }
 
-std::string doit(const std::string& argv1, const std::string& argv2, const bool& additionalTests)
+std::string doit(const std::string &argv1, const std::string &argv2, const bool &additionalTests)
 {
   gmi_register_null();
   gmi_register_mesh();
@@ -187,10 +187,10 @@ std::string doit(const std::string& argv1, const std::string& argv2, const bool&
   const std::string path = argv1.c_str();
   const std::size_t found = path.find_last_of("/\\");
   std::size_t index = found + 1;
-  if(found > path.size())
-    index = 0; 
-    
-  //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
+  if (found == std::string::npos)
+    index = 0;
+
+    //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
 
 #ifndef NDEBUG // debug settings, cmake double negative....
   const auto prefix = path.substr(index) + "_debug";
@@ -252,6 +252,29 @@ std::string doit(const std::string& argv1, const std::string& argv2, const bool&
   //
   if (additionalTests)
   {
+    // add dummy matrix to mesh
+    const auto addMatrix = [](apf::Mesh2 *mesh, const int &dim) {
+      apf::Field *field = nullptr;
+      const std::string name = "DummyMatrix_" + std::to_string(dim);
+      if (dim != 0)
+        field = apf::createField(mesh, name.c_str(), apf::MATRIX, apf::getConstant(dim));
+      else if (dim == 0)
+        field = apf::createFieldOn(mesh, name.c_str(), apf::MATRIX);
+      //std::cout << "*************************** "<< dim << std::endl;
+      apf::MeshIterator *it = mesh->begin(dim);
+      apf::MeshEntity *elm = nullptr;
+      while ((elm = mesh->iterate(it)))
+      {
+        apf::Matrix3x3 m(11, 12, 13, 21, 22, 23, 31, 32, 33);
+        apf::setMatrix(field, elm, 0, m);
+      }
+      mesh->end(it);
+      //apf::destroyField(field);
+    };
+
+    for (int i = 0; i <= m->getDimension(); i++)
+      addMatrix(m, i);
+
     // add dummy vector to mesh
     const auto addVector = [](apf::Mesh2 *mesh, const int &dim) {
       apf::Field *field = nullptr;
@@ -269,7 +292,7 @@ std::string doit(const std::string& argv1, const std::string& argv2, const bool&
         v[0] = 1.0;
         v[1] = 2.0;
         v[2] = 3.0;
-        apf::setComponents(field, elm, 0, &v[0]);
+        apf::setVector(field, elm, 0, v);
       }
       mesh->end(it);
       //apf::destroyField(field);
@@ -278,7 +301,7 @@ std::string doit(const std::string& argv1, const std::string& argv2, const bool&
     for (int i = 0; i <= m->getDimension(); i++)
       addVector(m, i);
 
-    // add dummy vector to mesh
+    // add dummy scalar to mesh
     const auto addScalar = [](apf::Mesh2 *mesh, const int &dim) {
       apf::Field *field = nullptr;
       const std::string name = "DummyScalar_" + std::to_string(dim);
@@ -292,7 +315,7 @@ std::string doit(const std::string& argv1, const std::string& argv2, const bool&
       while ((elm = mesh->iterate(it)))
       {
         double v = 1.0;
-        apf::setComponents(field, elm, 0, &v);
+        apf::setScalar(field, elm, 0, v);
       }
       mesh->end(it);
       //apf::destroyField(field);
