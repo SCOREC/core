@@ -8,6 +8,7 @@
 #include "crvQuality.h"
 #include "crvBezier.h"
 #include "crvMath.h"
+#include "crvDBG.h"
 #include <iostream>
 #include "apfMatrix.h"
 #include <Eigen/Core>
@@ -128,7 +129,7 @@ bool CrvInternalEdgeOptim :: run(int &invaliditySize)
     mesh->getDownward(adj[i], 1, ed);
     int edgeIndex = apf::findIn(ed, 6, edge);
     printf("reshape tried on %d edge, TET %d; ", edgeIndex, thisTETnum);
-    /* printTetNumber(mesh, adj[i]); */
+    crv_dbg::printTetNumber(mesh, adj[i], "debug_num_tet");
   }
 
   bool hasDecreased = false;
