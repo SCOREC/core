@@ -6,12 +6,8 @@
  */
 
 #include <PCU.h>
+#include <apfNumbering.h>
 #include <lionPrint.h>
-#include "crv.h"
-#include "crvAdapt.h"
-#include "crvShape.h"
-#include "crvTables.h"
-#include "crvShapeFixer.h"
 #include <maCoarsen.h>
 #include <maEdgeSwap.h>
 #include <maOperator.h>
@@ -19,11 +15,13 @@
 #include <maShape.h>
 #include <pcu_util.h>
 #include <iostream>
-#include "crvEdgeOptim.h"
-#include "crvModelEdgeOptim.h"
-#include "crvFaceOptim.h"
+#include "crv.h"
+#include "crvAdapt.h"
 #include "crvQuality.h"
-#include "apfNumbering.h"
+#include "crvShape.h"
+#include "crvTables.h"
+#include "crvShapeFixer.h"
+#include "crvOptimizations.h"
 
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
@@ -1139,29 +1137,27 @@ public:
     //mesh->getDownward(simplex, 2, faces);
     if (numf == 0) return;
     for (int i = 0; i < numf; i++ ) {
-      if (mesh->getModelType(mesh->toModel(faces[i])) == 3) {
-      	CrvFaceOptim *cfo = new CrvFaceOptim(mesh, faces[i], simplex);
-      	cfo->setMaxIter(100);
-      	cfo->setTol(1e-8);
-
-      	if (cfo->run(invaliditySize)) {
-      	  if (invaliditySize < 1) {
-      	    ns++;
-      	    break;
-	  }
+      if (mesh->getModelType(mesh->toModel(faces[i])) != 3) continue;
+      CrvFaceOptim *cfo = new CrvFaceOptim(mesh, faces[i], simplex);
+      cfo->setMaxIter(100);
+      cfo->setTol(1e-8);
+      if (cfo->run(invaliditySize)) {
+	if (invaliditySize < 1) {
+	  ns++;
+	  delete cfo;
+	  break;
 	}
-      	else {
-      	  if (invaliditySize < 1) {
-      	    break;
-	  }
-      	  nf++;
-	}
-
-      	delete cfo;
       }
+      else {
+	nf++;
+	if (invaliditySize < 1) {
+	  delete cfo;
+	  break;
+	}
+      }
+      delete cfo;
     }
   }
-private:
 protected:
   Adapt* adapter;
   ma::Mesh* mesh;
@@ -1191,7 +1187,6 @@ public:
   }
   virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e) {
-
     std::vector<int> ai = crv::getAllInvalidities(mesh, e);
     mesh->getDownward(e, 1, edges);
     int niv = ai.size();
@@ -1201,7 +1196,6 @@ public:
       simplex = e;
     }
     return (ne > 0);
-    
   }
 
   virtual bool requestLocality(apf::CavityOp* o)
@@ -1212,49 +1206,35 @@ public:
   virtual void apply() {
     if (ne == 0) return;
     for (int i = 0; i < ne; i++ ) {
-    int invaliditySize = 0;
-    bool hasDecreased = false;
-      if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
-      	CrvEdgeOptim *ceo = new CrvEdgeOptim(mesh, edges[i], simplex);
-      	ceo->setMaxIter(100);
-      	ceo->setTol(1e-8);
+      int invaliditySize = 0;
+      bool hasDecreased = false;
+      CrvEntityOptim* ceo;
 
-      	if (ceo->run(invaliditySize)) {
-      	  ns++;
-      	  if (invaliditySize < 1)
-      	    break;
-	}
-      	else {
-      	  if (invaliditySize < 1) {
-      	    break;
-	  }
-	  nf++;
-	}
+      if (mesh->getModelType(mesh->toModel(edges[i])) == 3)
+      	ceo = new CrvInternalEdgeOptim(mesh, edges[i], simplex);
+      else
+      	ceo = new CrvBoundaryEdgeOptim(mesh, edges[i], simplex);
 
-      	delete ceo;
+      ceo->setMaxIter(100);
+      ceo->setTol(1e-8);
+
+      if (ceo->run(invaliditySize)) {
+	ns++;
+	if (invaliditySize < 1) {
+	  break;
+	  delete ceo;
+	}
       }
-      else if (mesh->getModelType(mesh->toModel(edges[i])) == 2) {
-      	CrvModelEdgeOptim *cmeo = new CrvModelEdgeOptim(mesh, edges[i], simplex);
-      	cmeo->setMaxIter(200);
-      	cmeo->setTol(1e-8);
-
-      	if (cmeo->run(invaliditySize)) {
-      	  ns++;
-      	  if (invaliditySize < 1) 
-      	    break;
+      else {
+	nf++;
+	if (invaliditySize < 1) {
+	  delete ceo;
+	  break;
 	}
-      	else {
-      	  if (invaliditySize < 1) {
-      	    break;
-	  }
-      	  nf++;
-	}
-
-      	delete cmeo;
       }
+      delete ceo;
     }
   }
-private:
 protected:
   Adapt* adapter;
   ma::Mesh* mesh;
@@ -1638,7 +1618,7 @@ int fixInvalidFaces(Adapt* a)
   }
   mesh->end(it);
 
-  optimizeInvalidFaces(a);
+  /* optimizeInvalidFaces(a); */
 
   mesh->removeNumbering(edge_num);
   mesh->removeNumbering(face_num);

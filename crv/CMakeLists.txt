@@ -1,6 +1,7 @@
 # Package sources
 set(SOURCES
   crv.cc
+  crvDBG.cc
   crvAdapt.cc
   crvBernstein.cc
   crvBezier.cc
@@ -20,19 +21,16 @@ set(SOURCES
   crvTables.cc
   crvQuality.cc
   crvVtk.cc
-  LBFGS.cc
-  crvEdgeOptim.cc
-  crvModelEdgeOptim.cc
-  crvFaceOptim.cc
+  crvOptimizations.cc
+  crvObjectiveFunctions.cc
 )
 
 # Package headers
 set(HEADERS
   crv.h
-  crvEdgeOptim.h
-  crvModelEdgeOptim.h
-  crvFaceOptim.h
-  LBFGS.h
+  crvDBG.h
+  crvOptimizations.h
+  crvObjectiveFunctions.h
   crvBezier.h
   crvTables.h
   crvQuality.h
@@ -47,6 +45,13 @@ target_include_directories(crv INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
+# TODO: Add these to the higher lever cmake file in a proper form
+target_include_directories(crv PUBLIC
+  "/lore/hakimm2/opt/eigen/include/eigen3"
+  )
+target_include_directories(crv PUBLIC
+  "/lore/hakimm2/opt/LBFGSpp/include"
+  )
 # Link this package to these libraries
 target_link_libraries(crv
     PUBLIC

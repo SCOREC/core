@@ -9,10 +9,9 @@
 #include "crvBezier.h"
 #include "crvShape.h"
 #include "crvSnap.h"
-#include <iostream>
 #include "crvMath.h"
 #include <pcu_util.h>
-#include "crvFaceOptim.h"
+#include <iostream>
 
 namespace crv {
 
