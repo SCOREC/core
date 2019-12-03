@@ -202,6 +202,9 @@ MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 using CGNSBCMap = std::map<std::string, std::vector<std::pair<std::string, apf::MeshTag *>>>;
 Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
 
+// names of mesh data to read from file: (VERTEX, VelocityX; CellCentre, Pressure)
+Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap, const std::vector<std::pair<std::string, std::string>>& meshData);
+
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
 
 Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);

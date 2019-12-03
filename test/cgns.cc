@@ -173,13 +173,13 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return clean;
 }
 
-std::string doit(const std::string &argv1, const std::string &argv2, const bool &additionalTests)
+std::string doit(const std::string &argv1, const std::string &argv2, const bool &additionalTests, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
   gmi_register_null();
   gmi_register_mesh();
   gmi_model *g = gmi_load(".null");
   apf::CGNSBCMap cgnsBCMap;
-  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv1.c_str(), cgnsBCMap);
+  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv1.c_str(), cgnsBCMap, meshData);
   m->verify();
   //
   m->writeNative(argv2.c_str());
@@ -248,9 +248,12 @@ std::string doit(const std::string &argv1, const std::string &argv2, const bool 
   // main purpose is to call additional tests through the test harness testing.cmake
   std::function<void()> cleanUp;
   if (additionalTests)
+  {
     cleanUp = additional(prefix, g, m);
-  //
-  if (additionalTests)
+    //
+  }
+
+  if(additionalTests)
   {
     // add dummy matrix to mesh
     const auto addMatrix = [](apf::Mesh2 *mesh, const int &dim) {
@@ -323,7 +326,54 @@ std::string doit(const std::string &argv1, const std::string &argv2, const bool 
 
     for (int i = 0; i <= m->getDimension(); i++)
       addScalar(m, i);
+
+    if (dim == 3)
+    {
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 3);
+      }
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_faceMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 2);
+      }
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 1);
+      }
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 0);
+      }
+    }
+    else if (dim == 2)
+    {
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 2);
+      }
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 1);
+      }
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 0);
+      }
+    }
+    else if (dim == 1)
+    {
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 1);
+      }
+      {
+        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
+        apf::writeVtkFiles(name.c_str(), m, 0);
+      }
+    }
   }
+
   std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns";
   apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
   //
@@ -380,12 +430,20 @@ int main(int argc, char **argv)
   // Phase 1
   std::string cgnsOutputName;
   {
-    cgnsOutputName = doit(argv[1], argv[2], additionalTests);
+    std::vector<std::pair<std::string, std::string>> meshData;
+    cgnsOutputName = doit(argv[1], argv[2], additionalTests, meshData);
   }
   // Phase 2
   if (additionalTests)
   {
-    doit(cgnsOutputName.c_str(), "tempy.smb", false);
+    std::vector<std::pair<std::string, std::string>> meshData;
+    meshData.push_back(std::make_pair("Vertex", "DummyScalar_0"));
+    meshData.push_back(std::make_pair("Vertex", "DummyVector_0"));
+    meshData.push_back(std::make_pair("Vertex", "DummyMatrix_0"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyScalar_3"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyVector_3"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_3"));
+    doit(cgnsOutputName.c_str(), "tempy.smb", false, meshData);
   }
   //
   PCU_Comm_Free();
