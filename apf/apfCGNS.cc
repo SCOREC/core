@@ -57,6 +57,8 @@ struct CGNS
   const int phys_dim = 3;
 };
 
+/*
+* Disable this until I find out why all tags get an _tet_ or _pyr_ fieldname, makes the output file super messy, and fields seem duplicated in tags
 void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
 {
   const auto loopVertexTags = [&m](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &start, const int &end) {
@@ -88,7 +90,7 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
         int fieldIndex = -1;
         auto tagNameNew = tagName;
         if (tagSize > 1)
-          tagNameNew += "[" + std::to_string(ti) + "]";
+          tagNameNew += "_[" + std::to_string(ti) + "]";
 
         for (const auto &e : orderedEnts)
         {
@@ -138,7 +140,7 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
         int fieldIndex = -1;
         auto tagNameNew = tagName;
         if (tagSize > 1)
-          tagNameNew += "[" + std::to_string(ti) + "]";
+          tagNameNew += "_[" + std::to_string(ti) + "]";
 
         for (std::size_t e = 0; e < orderedEnts.size(); e++)
         {
@@ -263,7 +265,7 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
     loopCellTags(orderedEnts, solIndex, innerLambda, postLambda, ranges);
   }
 }
-
+*/
 void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
 {
   const auto writeField = [&m, &cgns](apf::Field *f, const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &numComponents, const int &component, const std::string &fieldName, const int &start, const int &end, int &fieldIndex) {
@@ -296,6 +298,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     {
       if (fieldIndex == -1)
       {
+        //std::cout << "FieldName " << fieldName << std::endl;
         if (cgp_field_write(cgns.index, cgns.base, cgns.zone, solIndex, CGNS_ENUMV(RealDouble), fieldName.c_str(), &fieldIndex))
           cgp_error_exit();
       }
@@ -318,11 +321,11 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
         int fieldIndex = -1;
         auto fieldNameNew = fieldName;
         if (numComponents > 1)
-          fieldNameNew += "[" + std::to_string(component) + "]";
+          fieldNameNew += "_[" + std::to_string(component) + "]";
 
         for (std::size_t e = 0; e < orderedEnts.size(); e++)
         {
-          //std::cout << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << " " << e << std::endl;
+          //std::cout << "CELL " << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << " " << e << std::endl;
           writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, component, fieldNameNew, ranges[e].first, ranges[e].second, fieldIndex);
         }
       }
@@ -343,8 +346,9 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
         int fieldIndex = -1;
         auto fieldNameNew = fieldName;
         if (numComponents > 1)
-          fieldNameNew += "[" + std::to_string(component) + "]";
-        //std::cout << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << std::endl;
+          fieldNameNew += "_[" + std::to_string(component) + "]";
+        
+        //std::cout << "VERTEX " << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << std::endl;
         writeField(f, orderedEnts, solIndex, inner, post, numComponents, component, fieldNameNew, vStart, vEnd, fieldIndex);
       }
     }
@@ -938,7 +942,7 @@ void Write3DFaces(CGNS cgns, apf::Mesh *m, const Count &faceCount, const Count &
       apf::numberOwnedDimension(m, "2D element-nums", 2));
   synchronize(gcn);
   //
-  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
+  //WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
   WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
 
@@ -991,7 +995,7 @@ void Write2DEdges(CGNS cgns, apf::Mesh *m, const Count &edgeCount, const Count &
       apf::numberOwnedDimension(m, "1D element-nums", 1));
   synchronize(gcn);
   //
-  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
+  //WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
   WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
 
@@ -1108,7 +1112,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   //
   AddBocosToMainBase(cgns, cellResult, cellCount.first, m, cgnsBCMap, apf2cgns, gvn);
   //
-  WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
+  //WriteTags(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
   WriteFields(cgns, std::get<0>(cellResult), std::get<1>(cellResult), std::get<0>(vertResult), std::get<1>(vertResult), std::get<2>(vertResult), m);
   //
