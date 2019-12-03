@@ -13,6 +13,7 @@
 #include <PCU.h>
 #include <apf.h>
 #include <apfConvert.h>
+#include "apfFieldData.h"
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apfNumbering.h>
@@ -29,6 +30,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <list>
 #include <unordered_set>
 #include <utility>
 //
@@ -73,6 +75,124 @@ static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType
     return "";
   }
 }
+
+struct MeshData
+{
+  MeshData(const int &s, const int &f, const CGNS_ENUMT(DataType_t) & dt, const CGNS_ENUMT(GridLocation_t) & l, const std::string &n) : si(s), fi(f), datatype(dt), location(l), name(n)
+  {
+  }
+
+  int si = -1;
+  int fi = -1;
+  CGNS_ENUMT(DataType_t)
+  datatype;
+  CGNS_ENUMT(GridLocation_t)
+  location;
+  std::string name;
+  bool process = true;
+
+  bool operator==(const MeshData &other) const
+  {
+    if (si != other.si)
+      return false;
+
+    if (fi != other.fi)
+      return false;
+
+    if (datatype != other.datatype)
+      return false;
+
+    if (location != other.location)
+      return false;
+
+    if (name != other.name)
+      return false;
+
+    return true;
+  }
+
+  bool operator!=(const MeshData &other) const
+  {
+    return !this->operator==(other);
+  }
+};
+
+struct MeshDataGroup
+{
+  std::map<int, MeshData> components;
+  bool process = true;
+
+  CGNS_ENUMT(GridLocation_t)
+  location() const
+  {
+    return components.at(0).location;
+  }
+
+  CGNS_ENUMT(DataType_t)
+  datatype() const
+  {
+    return components.at(0).datatype;
+  }
+
+  std::string name() const
+  {
+    // pattern matching component writer in apfCGNS.cc, patterns must be kept in-sync with this file
+    const std::string end("_[");
+    const std::size_t found = components.at(0).name.find(end);
+    if (found != std::string::npos)
+      return components.at(0).name.substr(0, found);
+    else if (components.size() == 1)
+      return components.at(0).name;
+    else
+    {
+      info();
+      PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Problem with name");
+      return "";
+    }
+  }
+
+  std::size_t size() const
+  {
+    return components.size();
+  }
+
+  int sIndex(const int index) const
+  {
+    return components.at(index).si;
+  }
+
+  int fIndex(const int index) const
+  {
+    return components.at(index).fi;
+  }
+
+  void insert(int i, MeshData &d)
+  {
+    components.insert(std::make_pair(i, d));
+  }
+
+  void info() const
+  {
+    if (components.size() == 1)
+    {
+      std::cout << "Scalar Group has " << components.size() << " related componenets: " << std::endl;
+      for (const auto m : components)
+        std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
+    }
+    else if (components.size() == 3)
+    {
+      std::cout << "Vector Group has " << components.size() << " related componenets: " << std::endl;
+      for (const auto m : components)
+        std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
+    }
+    else if (components.size() == 9)
+    {
+      std::cout << "Matrix Group has " << components.size() << " related componenets: " << std::endl;
+      for (const auto m : components)
+        std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
+    }
+  }
+};
 
 template <typename Arg, typename... Args>
 void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
@@ -121,6 +241,8 @@ void Kill(const int fid, Args &&... args)
 
 void Kill(const int fid)
 {
+  DebugParallelPrinter(std::cout, "***** CGNS ERROR");
+
   if (PCU_Comm_Initialized())
   {
     cgp_close(fid);
@@ -142,8 +264,8 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
 {
   // Read min required as defined by consecutive range
   // make one based as ReadElements makes zero based
-  const int lowest = globalToVert.begin()->first + 1;
-  const int highest = globalToVert.rbegin()->first + 1;
+  const cgsize_t lowest = globalToVert.begin()->first + 1;
+  const cgsize_t highest = globalToVert.rbegin()->first + 1;
   DebugParallelPrinter(std::cout, "From globalToVert ", lowest, highest, nverts);
 
   cgsize_t range_min[3];
@@ -156,7 +278,7 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
   range_max[2] = highest;
 
   std::vector<std::vector<double>> ordinates(3);
-  const auto numToRead = range_max[0] - range_min[0] + 1;
+  const cgsize_t numToRead = range_max[0] - range_min[0] + 1; // one based
   ordinates[0].resize(numToRead, 0.0);
   ordinates[1].resize(numToRead, 0.0);
   ordinates[2].resize(numToRead, 0.0);
@@ -188,12 +310,17 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
     }
   }
   // to be clear, indices passed back are global, zero based
+  // should only return what's inside globalToVert, but above I have to read more....
   std::map<int, std::array<double, 3>> points;
   int counter = lowest;
   for (int i = 0; i < numToRead; i++)
   {
-    int zeroBased = counter - 1;
-    points.insert(std::make_pair(zeroBased, std::array<double, 3>{{ordinates[0][i], ordinates[1][i], ordinates[2][i]}}));
+    int zeroBased = counter - 1; // remove as per the addition above
+    auto iter = globalToVert.find(zeroBased);
+    if (iter != globalToVert.end())
+    {
+      points.insert(std::make_pair(zeroBased, std::array<double, 3>{{ordinates[0][i], ordinates[1][i], ordinates[2][i]}}));
+    }
     counter++;
   }
 
@@ -254,7 +381,10 @@ void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vec
   DebugParallelPrinter(std::cout, "Returning from SimpleElementPartition \n");
 }
 
-auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement)
+using Pair = std::pair<cgsize_t, cgsize_t>;
+using LocalElementRanges = std::vector<Pair>; // one based
+
+auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
 {
   std::vector<cgsize_t> numberToReadPerProc;
   std::vector<cgsize_t> startingIndex;
@@ -271,6 +401,11 @@ auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one
   //
   cgp_elements_read_data(cgid, base, zone, section, start,
                          end, vertexIDs.data());
+
+  if (numberToReadPerProc[PCU_Comm_Self()] > 0)
+  {
+    localElementRanges.push_back(std::make_pair(start, end));
+  }
 
   // remove CGNS one-based offset
   // to be clear these are the node ids defining the elements, not element ids
@@ -452,7 +587,7 @@ struct BCInfo
         // for debug output, tags aren't written to vtk...
         apf::MeshEntity *elem = nullptr;
         apf::MeshIterator *it = m->begin(0);
-        auto* field = apf::createFieldOn(m, ("debug_" + tagName).c_str(), apf::SCALAR);
+        auto *field = apf::createFieldOn(m, ("debug_" + tagName).c_str(), apf::SCALAR);
 
         int vals[1];
         double dval[1];
@@ -508,7 +643,7 @@ struct BCInfo
         // for debug output, tags aren't written to vtk...
         apf::MeshEntity *elem = nullptr;
         apf::MeshIterator *it = m->begin(1);
-        auto* field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(1));
+        auto *field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(1));
 
         int vals[1];
         double dval[1];
@@ -564,7 +699,7 @@ struct BCInfo
         // for debug output, tags aren't written to vtk...
         apf::MeshEntity *elem = nullptr;
         apf::MeshIterator *it = m->begin(2);
-        auto* field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(2));
+        auto *field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(2));
 
         int vals[1];
         double dval[1];
@@ -583,7 +718,7 @@ struct BCInfo
     const auto CellLoop = [&m](const std::string &tagName, apf::MeshTag *vertexTag, int dim) {
       apf::MeshTag *bcTag = nullptr;
       bcTag = m->createIntTag(tagName.c_str(), 1); // 1 is size of tag
-      
+
       apf::MeshIterator *cellIter = m->begin(dim);
       apf::MeshEntity *cell = nullptr;
       int vals[1];
@@ -620,7 +755,7 @@ struct BCInfo
         // for debug output, tags aren't written to vtk...
         apf::MeshEntity *elem = nullptr;
         apf::MeshIterator *it = m->begin(dim);
-        auto* field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(dim));
+        auto *field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(dim));
 
         int vals[1];
         double dval[1];
@@ -903,7 +1038,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
   }
 }
 
-apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
+apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &readMeshData)
 {
   static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
@@ -932,6 +1067,10 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   // Salome cgns is a bit on the odd side: cellDim, physDim, ncoords are not always consistent
   apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false);
   apf::GlobalToVert globalToVert;
+
+  LocalElementRanges localElementRanges;
+  using NewElements = std::vector<apf::MeshEntity *>;
+  std::vector<NewElements> localElements;
 
   int nzones = -1;
   cg_nzones(cgid, base, &nzones);
@@ -1007,13 +1146,11 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
       cg_npe(elementType, &verticesPerElement);
 
       const auto readElementsAndVerts = [&](const apf::Mesh2::Type &type) {
-        const auto &ret = ReadElements(cgid, base, zone, section, el_start, el_end, numElements, verticesPerElement);
+        const auto &ret = ReadElements(cgid, base, zone, section, el_start, el_end, numElements, verticesPerElement, localElementRanges);
         if (std::get<1>(ret) > 0)
         {
           const std::vector<cgsize_t> vertexIDs = std::get<0>(ret);
-          //apf::construct(mesh, vertexIDs.data(), std::get<1>(ret), type, globalToVert);
-          apf::assemble(mesh, vertexIDs.data(), std::get<1>(ret), type, globalToVert); // corresponding finalize below
-
+          localElements.emplace_back(apf::assemble(mesh, vertexIDs.data(), std::get<1>(ret), type, globalToVert)); // corresponding finalize below
           const auto nverts = sizes[0];
           const auto ordinates = ReadCGNSCoords(cgid, base, zone, ncoords, nverts, vertexIDs, globalToVert);
 
@@ -1021,15 +1158,18 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
           {
             const auto pp = ordinates.at(p.first);
             apf::Vector3 point(pp[0], pp[1], pp[2]);
-            auto iter = globalToVert.find(p.first);
-            if (iter != globalToVert.end())
-            {
-              mesh->setPoint(iter->second, 0, point);
-            }
-            else
-            {
-              Kill(cgid, "GlobalToVert lookup problem");
-            }
+            mesh->setPoint(p.second, 0, point);
+
+            // Don't know why I wrote it like this...
+            // auto iter = globalToVert.find(p.first);
+            // if (iter != globalToVert.end())
+            // {
+            //   mesh->setPoint(iter->second, 0, point);
+            // }
+            // else
+            // {
+            //   Kill(cgid, "GlobalToVert lookup problem");
+            // }
           }
         }
       };
@@ -1078,6 +1218,342 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                 << " " << nBocos << std::endl;
       ReadBCInfo(cgid, base, zone, nBocos, physDim, cellDim, nsections, bcInfos, globalToVert);
     }
+
+    int nsols = -1;
+    if (cg_nsols(cgid, base, zone, &nsols))
+      Kill(cgid, "1, ", nsols);
+
+    std::vector<MeshData> meshData;
+    if (nsols > 0)
+    {
+      for (int ns = 1; ns <= nsols; ns++)
+      {
+        CGNS_ENUMT(GridLocation_t)
+        location;
+        char sname[33];
+        if (cg_sol_info(cgid, base, zone, ns,
+                        sname, &location))
+          Kill(cgid, "2");
+
+        int nflds = -1;
+        if (cg_nfields(cgid, base, zone, ns, &nflds))
+          Kill(cgid, "3");
+
+        if (nflds > 0)
+        {
+          for (int f = 1; f <= nflds; f++)
+          {
+            CGNS_ENUMT(DataType_t)
+            datatype;
+            char name[33];
+            if (cg_field_info(cgid, base, zone, ns, f,
+                              &datatype, name))
+              Kill(cgid, "4");
+
+            //std::cout << sname << " " << name << " " << f << " " << ns << " " << cg_DataTypeName(datatype) << " " << cg_GridLocationName(location) << std::endl;
+            meshData.push_back(MeshData(ns, f, datatype, location, name));
+          }
+        }
+      }
+    }
+
+    const auto index = [](const std::string &name) {
+      for (int i = 0; i < 9; i++) // check for vectors and matrices
+      {
+        // pattern matching component writer in apfCGNS.cc, patterns must be kept in-sync with this file
+        const std::string end("_[" + std::to_string(i) + "]");
+        const std::size_t found = name.find(end);
+        if (found != std::string::npos) // does name contain a [x] where x[0,9)
+        {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    // process meshData and find vectors (and matrices)
+    const auto findMatch = [&meshData, &index, &cgid](MeshData &other, std::vector<MeshDataGroup> &meshDataGroups) {
+      MeshDataGroup group;
+      for (auto &md : meshData)
+      {
+        if (md != other) // don't compare with yourself
+        {
+          if (md.process) // make sure md has not be marked as a component already
+          {
+            if (md.name.size() == other.name.size())
+            {
+              for (int i = 0; i < 9; i++) // check for vectors and matrices
+              {
+                // pattern matching component writer in apfCGNS.cc, patterns must be kept in-sync with this file
+                const std::string end("_[" + std::to_string(i) + "]");
+                const std::size_t found = md.name.find(end);
+                if (found != std::string::npos) // does md contain a [x] where x[0,9)
+                {
+                  const auto stub = md.name.substr(0, found);         // get the part of the string not with a component index
+                  const auto stubOther = other.name.substr(0, found); // get the part of the string not with a component index
+
+                  if (stub == stubOther)
+                  {
+                    if (md.location == other.location) // are at the same location in the mesh
+                    {
+                      if (md.datatype == other.datatype) // have same data type
+                      {
+                        md.process = false;
+                        other.process = false;
+                        const auto otherIndex = index(other.name);
+                        if (otherIndex != -1)
+                          group.insert(otherIndex, other);
+                        else
+                          Kill(cgid, "Bad fail");
+                        group.insert(i, md);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (group.size() > 0)
+        meshDataGroups.push_back(group);
+    };
+
+    // If a field or tag is already present, don't over-write or try to add
+    // Can modify this later for different behaviour, but useful default.
+    std::vector<std::string> existingNames;
+    {
+      apf::DynamicArray<apf::MeshTag *> tags;
+      mesh->getTags(tags);
+      for (std::size_t i = 0; i < tags.getSize(); ++i)
+      {
+        apf::MeshTag *t = tags[i];
+        const std::string tagName(mesh->getTagName(t));
+        existingNames.push_back(tagName);
+      }
+      for (int i = 0; i < mesh->countFields(); ++i)
+      {
+        apf::Field *f = mesh->getField(i);
+        const std::string fieldName(f->getName());
+        existingNames.push_back(fieldName);
+      }
+    }
+
+    for (auto &md : meshData)
+    {
+      if (md.process)
+      {
+        for (const auto &n : existingNames)
+        {
+          if (n == md.name)
+            md.process = false;
+        }
+      }
+    }
+
+    std::vector<MeshDataGroup> meshDataGroups;
+    for (auto &md : meshData)
+    {
+      if (md.process)
+        findMatch(md, meshDataGroups);
+    }
+
+    for (auto &md : meshData)
+    {
+      if (md.process)
+      {
+        MeshDataGroup group;
+        group.insert(0, md);
+        meshDataGroups.push_back(group);
+        md.process = false;
+      }
+    }
+
+    for (auto &md : meshDataGroups)
+    {
+      if (md.process)
+      {
+        bool read = false;
+        for (const auto &n : readMeshData)
+        {
+          if (n.second == md.name())
+          {
+            if (n.first == cg_GridLocationName(md.location()))
+            {
+              std::cout << md.name() << " " << n.first << " " << n.second << " " << cg_GridLocationName(md.location()) << std::endl;
+              read = true;
+            }
+          }
+        }
+        if (!read)
+          md.process = false;
+      }
+    }
+
+    // add all double's as fields, even though they once may have been tags, since
+    // that info is lost in the cgns-writer (cos of cgns...)
+    for (const auto &md : meshDataGroups)
+    {
+      if (md.process)
+      {
+        if (md.location() == CGNS_ENUMV(Vertex))
+        {
+          if (md.datatype() == CGNS_ENUMV(Integer))
+          {
+          }
+          else if (md.datatype() == CGNS_ENUMV(RealDouble))
+          {
+            const cgsize_t lowest = globalToVert.begin()->first + 1;   // one based
+            const cgsize_t highest = globalToVert.rbegin()->first + 1; // one based
+
+            cgsize_t range_min[3];
+            range_min[0] = lowest;
+            range_min[1] = lowest;
+            range_min[2] = lowest;
+            cgsize_t range_max[3];
+            range_max[0] = highest;
+            range_max[1] = highest;
+            range_max[2] = highest;
+            const cgsize_t numToRead = range_max[0] - range_min[0] + 1; // one based
+
+            apf::Field *field = nullptr;
+            if (md.size() == 1)
+              field = apf::createFieldOn(mesh, md.name().c_str(), apf::SCALAR);
+            else if (md.size() == 3)
+              field = apf::createFieldOn(mesh, md.name().c_str(), apf::VECTOR);
+            else if (md.size() == 9)
+              field = apf::createFieldOn(mesh, md.name().c_str(), apf::MATRIX);
+            else
+              Kill(cgid, "Tensor size not accounted for");
+
+            apf::MeshEntity *elem = nullptr;
+            apf::MeshIterator *it = mesh->begin(0);
+            using Type = double;
+            std::vector<Type> compData(md.size(), Type(-123456));
+            while ((elem = mesh->iterate(it)))
+            {
+              apf::setComponents(field, elem, 0, compData.data());
+            }
+            mesh->end(it);
+
+            using CGNSType = double;
+            std::vector<CGNSType> meshVals(numToRead, -123456.0);
+            for (std::size_t i = 0; i < md.size(); i++)
+            {
+              if (cgp_field_read_data(cgid, base, zone, md.sIndex(i), md.fIndex(i),
+                                      &range_min[0], &range_max[0], meshVals.data()))
+                Kill(cgid, "Failed cgp_field_read_data");
+
+              cgsize_t counter = lowest;
+              for (cgsize_t it = 0; it < numToRead; it++)
+              {
+                cgsize_t zeroBased = counter - 1; // remove as per the addition above
+                auto iter = globalToVert.find(zeroBased);
+                if (iter != globalToVert.end())
+                {
+                  apf::getComponents(field, iter->second, 0, compData.data());
+                  compData.at(i) = meshVals.at(it);
+                  apf::setComponents(field, iter->second, 0, compData.data());
+                }
+                counter++;
+              }
+            }
+          }
+          else if (md.datatype() == CGNS_ENUMV(LongInteger))
+          {
+          }
+          else
+          {
+            Kill(cgid, "Don't know how to process this at the moment");
+          }
+        }
+        else if (md.location() == CGNS_ENUMV(CellCenter))
+        {
+          if (md.datatype() == CGNS_ENUMV(Integer))
+          {
+          }
+          else if (md.datatype() == CGNS_ENUMV(RealDouble))
+          {
+            // HUGE assumption here, I assume the order the cgns elements are read (and therefore their global number in the file)
+            // is the same order they are created and added to the mesh by buildElements.
+            // I combine localElementRanges to give me the global indices, with vector<NewElements> and hope it works
+            PCU_ALWAYS_ASSERT_VERBOSE(localElementRanges.size() == localElements.size(),
+                                      "Size don't match for element/number ranges");
+
+            const auto dim = mesh->getDimension();
+            apf::Field *field = nullptr;
+            md.info();
+            if (md.size() == 1)
+              field = apf::createField(mesh, md.name().c_str(), apf::SCALAR, apf::getConstant(dim));
+            else if (md.size() == 3)
+              field = apf::createField(mesh, md.name().c_str(), apf::VECTOR, apf::getConstant(dim));
+            else if (md.size() == 9)
+              field = apf::createField(mesh, md.name().c_str(), apf::MATRIX, apf::getConstant(dim));
+            else
+              Kill(cgid, "Tensor size not accounted for");
+              
+            using Type = double;
+            std::vector<Type> compData(md.size(), Type(-123456));
+
+            for (std::size_t r = 0; r < localElementRanges.size(); r++)
+            {
+              const auto range = localElementRanges[r];
+              const cgsize_t lowest = range.first;   // one based
+              const cgsize_t highest = range.second; // one based
+
+              cgsize_t range_min[3];
+              range_min[0] = lowest;
+              range_min[1] = lowest;
+              range_min[2] = lowest;
+              cgsize_t range_max[3];
+              range_max[0] = highest;
+              range_max[1] = highest;
+              range_max[2] = highest;
+              const std::size_t numToRead = range_max[0] - range_min[0] + 1; // one based
+              PCU_ALWAYS_ASSERT_VERBOSE(numToRead == localElements[r].size(),
+                                        "Size don't match for element/number sub-ranges");
+
+              apf::MeshEntity *elem = nullptr;
+              apf::MeshIterator *it = mesh->begin(dim);
+              while ((elem = mesh->iterate(it)))
+              {
+                apf::setComponents(field, elem, 0, compData.data());
+              }
+              mesh->end(it);
+
+              using CGNSType = double;
+              std::vector<CGNSType> meshVals(numToRead, -123456.0);
+              for (std::size_t i = 0; i < md.size(); i++)
+              {
+                if (cgp_field_read_data(cgid, base, zone, md.sIndex(i), md.fIndex(i),
+                                        &range_min[0], &range_max[0], meshVals.data()))
+                  Kill(cgid, "Failed cgp_field_read_data");
+
+                for (std::size_t it = 0; it < numToRead; it++)
+                {
+                  elem = localElements[r][it];
+                  apf::getComponents(field, elem, 0, compData.data());
+                  compData.at(i) = meshVals.at(it);
+                  apf::setComponents(field, elem, 0, compData.data());
+                }
+              }
+            }
+          }
+          else if (md.datatype() == CGNS_ENUMV(LongInteger))
+          {
+          }
+          else
+          {
+            Kill(cgid, "Don't know how to process this at the moment");
+          }
+        }
+        else
+        {
+          Kill(cgid, "Don't know how to process this at the moment");
+        }
+      }
+    }
   }
 
   apf::finalise(mesh, globalToVert);
@@ -1085,6 +1561,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   apf::deriveMdsModel(mesh);
   mesh->acceptChanges();
   apf::verify(mesh, true);
+
   {
     apf::GlobalNumbering *gn = nullptr;
     gn = apf::makeGlobal(apf::numberOwnedNodes(mesh, "vert Idx"));
@@ -1114,11 +1591,33 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
     cg_close(cgid);
 
   return mesh;
+} // namespace
+
+apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
+{
+  std::vector<std::pair<std::string, std::string>> meshData;
+  return DoIt(g, fname, cgnsBCMap, meshData);
 }
+
 } // namespace
 
 namespace apf
 {
+
+// caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
+Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
+{
+#ifdef HAVE_CGNS
+  Mesh2 *m = DoIt(g, fname, cgnsBCMap, meshData);
+  return m;
+#else
+  Mesh2 *m = nullptr;
+  PCU_ALWAYS_ASSERT_VERBOSE(m != nullptr,
+                            "Build with ENABLE_CGNS to allow this functionality.");
+  exit(EXIT_FAILURE);
+  return m;
+#endif
+}
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
 Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
