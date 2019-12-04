@@ -6,7 +6,7 @@ endif()
 
 project(pyCore VERSION 1.0.0 LANGUAGES CXX C)
 
-include(cmake/bob.cmake)
+include(../cmake/bob.cmake)
 
 option(PYCORE_ENABLE_CXX11 "enable compilation with c++11 support" NO)
 
@@ -25,7 +25,7 @@ message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
 # Let CMake know where to find custom FindFoo.cmake files
 set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+  ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
