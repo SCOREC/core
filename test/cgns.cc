@@ -173,12 +173,11 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return clean;
 }
 
-std::string doit(const std::string &argv1, const std::string &argv2, const bool &additionalTests, const std::vector<std::pair<std::string, std::string>> &meshData)
+std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std::string &argv2, const std::string& post, const bool &additionalTests, const bool &writeCGNS, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
   gmi_register_null();
   gmi_register_mesh();
   gmi_model *g = gmi_load(".null");
-  apf::CGNSBCMap cgnsBCMap;
   apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv1.c_str(), cgnsBCMap, meshData);
   m->verify();
   //
@@ -193,9 +192,9 @@ std::string doit(const std::string &argv1, const std::string &argv2, const bool 
     //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
 
 #ifndef NDEBUG // debug settings, cmake double negative....
-  const auto prefix = path.substr(index) + "_debug";
+  const auto prefix = path.substr(index) + "_debug" + post;
 #else // optimised setting
-  const auto prefix = path.substr(index) + "_release";
+  const auto prefix = path.substr(index) + "_release" + post;
 #endif
 
   const auto dim = m->getDimension();
@@ -245,6 +244,13 @@ std::string doit(const std::string &argv1, const std::string &argv2, const bool 
     }
   }
 
+  std::string cgnsOutputName;
+  if (writeCGNS)
+  {
+    cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns";
+    apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
+  }
+
   // main purpose is to call additional tests through the test harness testing.cmake
   std::function<void()> cleanUp;
   if (additionalTests)
@@ -253,7 +259,7 @@ std::string doit(const std::string &argv1, const std::string &argv2, const bool 
     //
   }
 
-  if(additionalTests)
+  if (additionalTests)
   {
     // add dummy matrix to mesh
     const auto addMatrix = [](apf::Mesh2 *mesh, const int &dim) {
@@ -372,11 +378,37 @@ std::string doit(const std::string &argv1, const std::string &argv2, const bool 
         apf::writeVtkFiles(name.c_str(), m, 0);
       }
     }
+
+    if (writeCGNS)
+    {
+      std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_additional_outputFile.cgns";
+      apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
+    }
+    //
+    {
+      apf::Field *field = nullptr;
+      const std::string name = "displace";
+      field = field = apf::createFieldOn(m, name.c_str(), apf::VECTOR);
+      apf::MeshIterator *it = m->begin(0);
+      apf::MeshEntity *elm = nullptr;
+      while ((elm = m->iterate(it)))
+      {
+        apf::Vector3 v;
+        v[0] = 0.25;
+        v[1] = 0.25;
+        v[2] = 0.35;
+        apf::setVector(field, elm, 0, v);
+      }
+      m->end(it);
+      apf::displaceMesh(m, field);
+      if (writeCGNS)
+      {
+        std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_additional_moved_outputFile.cgns";
+        apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
+      }
+    }
   }
 
-  std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns";
-  apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
-  //
   if (additionalTests)
   {
     //cleanUp();
@@ -430,8 +462,9 @@ int main(int argc, char **argv)
   // Phase 1
   std::string cgnsOutputName;
   {
+    apf::CGNSBCMap cgnsBCMap;
     std::vector<std::pair<std::string, std::string>> meshData;
-    cgnsOutputName = doit(argv[1], argv[2], additionalTests, meshData);
+    cgnsOutputName = doit(cgnsBCMap, argv[1], argv[2], "", additionalTests, additionalTests, meshData);
   }
   // Phase 2
   if (additionalTests)
@@ -443,7 +476,8 @@ int main(int argc, char **argv)
     meshData.push_back(std::make_pair("CellCenter", "DummyScalar_3"));
     meshData.push_back(std::make_pair("CellCenter", "DummyVector_3"));
     meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_3"));
-    doit(cgnsOutputName.c_str(), "tempy.smb", false, meshData);
+    apf::CGNSBCMap cgnsBCMap;
+    doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData);
   }
   //
   PCU_Comm_Free();
