@@ -17,7 +17,7 @@ To build _pyCore_ the following are needed
 3. [swig](http://www.swig.org/)
 4. [SCOREC::core](git@github.com:SCOREC/core.git)
 
-__NOTE__ If making core as a static libraries the `-fPIC` flag must be used. You can also make core as shared libraries by using the flag `-DBUILD_SHARED_LIBS=ON` option during cmake configuration.
+__NOTE__ If making core as a static libraries the `-fPIC` flag must be used. You can also make core as shared libraries by using the flag `-DBUILD_SHARED_LIBS=ON` option during cmake configuration. Also use the flag `-DCMAKE_SHARED_LINKER_FLAGS="-Wl,-no-as-needed` when making core with optimization on.
 
 ### Build instructions
 
@@ -48,4 +48,5 @@ If Simmetrix libraries are not available update the line `-DENABLE_SIMX=ON` in `
 2. `./input/cube0.smb` smb (scorec format) mesh for the cube example
 3. `./input/sphere.x_t` native Parasolid model the sphere example
 4. `./input/sphere0.smb` smb (scorec format) mesh for the sphere example
+
 
