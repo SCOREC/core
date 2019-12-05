@@ -7,29 +7,38 @@
 find_package(Python2 REQUIRED COMPONENTS Interpreter Development)
 find_package(MPI4PY REQUIRED)
 message(STATUS "MPI4PY_VENDOR is ${MPI4PY_VENDOR}")
+include_directories(${MPI4PY_INCLUDE_DIR})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-
-# make sure when building apf_wrap_cxx the compiler knows about simmetrix
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
-include_directories(${MPI4PY_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+set(UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
 
 set(PY_SOURCES apf.i)
 set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
 swig_add_library(pyCore LANGUAGE python SOURCES ${PY_SOURCES})
+set_property(TARGET pyCore
+  PROPERTY SWIG_INCLUDE_DIRECTORIES
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/apf
+  ${CMAKE_SOURCE_DIR}/pcu
+  ${CMAKE_SOURCE_DIR}/ma
+  ${CMAKE_SOURCE_DIR}/can
+  ${CMAKE_SOURCE_DIR}/spr
+)
+set(pyCoreDepLibs
+  Python2::Python
+  core)
 if(ENABLE_SIMMETRIX)
+  #not tested
   set(CMAKE_SWIG_FLAGS "-DHAVE_SIMMETRIX")
-  swig_link_libraries(pyCore ${PYTHON_LIBRARIES} core simhelper)
+  target_link_libraries(pyCore PUBLIC ${pyCoreDepLibs} simhelper)
 else()
-  swig_link_libraries(pyCore PUBLIC Python2::Python core) #does not add include dirs
+  target_link_libraries(pyCore PUBLIC ${pyCoreDepLibs})
 endif()
 
-install(TARGETS ${SWIG_MODULE_pyCore_REAL_NAME}
+install(TARGETS pyCore
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ${PROJECT_BINARY_DIR}/pyCore.py
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pyCore.py
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 bob_end_subdir()
