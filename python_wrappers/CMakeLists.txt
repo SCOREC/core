@@ -13,9 +13,29 @@ find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 set(UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
 
+# build simhelper if using Simmetrix
+if(ENABLE_SIMMETRIX)
+  set(SOURCES sim_helper.cc)
+  set(HEADERS sim_helper.h)
+  add_library(simhelper SHARED ${SOURCES})
+  target_include_directories(simhelper PUBLIC ${SIMMODSUITE_INCLUDE_DIR})
+  target_include_directories(simhelper PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+    )
+  target_link_libraries(simhelper ${SIMMODSUITE_LIBS})
+  install(TARGETS simhelper
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
+
+
 set(PY_SOURCES apf.i)
 set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
 swig_add_library(pyCore LANGUAGE python SOURCES ${PY_SOURCES})
+# let swig know about the HAVE_SIMMETRIX
+if(ENABLE_SIMMETRIX)
+  set_property(TARGET pyCore PROPERTY SWIG_COMPILE_DEFINITIONS HAVE_SIMMETRIX)
+endif()
 set_property(TARGET pyCore
   PROPERTY SWIG_INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -25,12 +45,12 @@ set_property(TARGET pyCore
   ${CMAKE_SOURCE_DIR}/can
   ${CMAKE_SOURCE_DIR}/spr
 )
+
 set(pyCoreDepLibs
   Python2::Python
   core)
+
 if(ENABLE_SIMMETRIX)
-  #not tested
-  set(CMAKE_SWIG_FLAGS "-DHAVE_SIMMETRIX")
   target_link_libraries(pyCore PUBLIC ${pyCoreDepLibs} simhelper)
 else()
   target_link_libraries(pyCore PUBLIC ${pyCoreDepLibs})
