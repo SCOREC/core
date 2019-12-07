@@ -9,7 +9,7 @@
 
 if(NOT MPI4PY_INCLUDE_DIR)
     execute_process(COMMAND
-      "${PYTHON_EXECUTABLE}" "-c" "import mpi4py; print(mpi4py.get_include())"
+      "${Python2_EXECUTABLE}" "-c" "import mpi4py; print(mpi4py.get_include())"
       OUTPUT_VARIABLE MPI4PY_INCLUDE_DIR
       RESULT_VARIABLE MPI4PY_COMMAND_RESULT
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -33,7 +33,7 @@ endif(NOT MPI4PY_INCLUDE_DIR)
 
 if(MPI4PY_FOUND)
 	execute_process(COMMAND
-	        "${PYTHON_EXECUTABLE}" "-c" "from mpi4py import MPI; print(MPI.get_vendor())"
+	        "${Python2_EXECUTABLE}" "-c" "from mpi4py import MPI; print(MPI.get_vendor())"
 		OUTPUT_VARIABLE MPI4PY_VENDOR
 		OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
