@@ -523,17 +523,20 @@ int main(int argc, char **argv)
   {
     std::vector<std::pair<std::string, std::string>> meshData;
     meshData.push_back(std::make_pair("Vertex", "DummyScalar_0"));
-    // meshData.push_back(std::make_pair("Vertex", "DummyVector_0"));
-    // meshData.push_back(std::make_pair("Vertex", "DummyMatrix_0"));
+    meshData.push_back(std::make_pair("Vertex", "DummyVector_0"));
+    meshData.push_back(std::make_pair("Vertex", "DummyMatrix_0"));
+
     meshData.push_back(std::make_pair("CellCenter", "DummyScalar_3"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyVector_3"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_3"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyScalar_2"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyVector_2"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_2"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyScalar_1"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyVector_1"));
-    // meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_1"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyVector_3"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_3"));
+
+    meshData.push_back(std::make_pair("CellCenter", "DummyScalar_2"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyVector_2"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_2"));
+
+    meshData.push_back(std::make_pair("CellCenter", "DummyScalar_1"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyVector_1"));
+    meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_1"));
     apf::CGNSBCMap cgnsBCMap;
     std::cout << "RE-READING " << std::endl;
     doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData);
