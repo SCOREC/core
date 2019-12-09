@@ -16,8 +16,8 @@
 
 static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 {
-  //printf("\n");
-  //return;
+  printf("\n");
+  return;
   apf::Numbering* n = m->findNumbering("debug_num_tet");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, e, 0, 0);
@@ -27,7 +27,7 @@ static void printTetNumber(apf::Mesh2* m, apf::MeshEntity* e)
 static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, int nat)
 {
   
-  //return;
+  return;
   apf::Numbering* n = m->findNumbering("debug_num_edge");
   PCU_ALWAYS_ASSERT(n);
   int num = apf::getNumber(n, edge, 0, 0);
