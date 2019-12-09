@@ -505,6 +505,12 @@ mpi_test(cgns_bcs_1 ${numProcs}
   "${CGNSDIR}/Mesh_3.adf.hdf.cgns"
   bcs1.smb
   additional)
+
+mpi_test(cgns_bcs_hex ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/8hexs.adf.hdf.cgns"
+  bcshex.smb
+  additional)
 #
 # 2D BCS tests
 #
