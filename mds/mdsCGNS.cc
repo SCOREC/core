@@ -505,12 +505,12 @@ struct BCInfo
       field = apf::createFieldOn(m, ("debug_fm_" + bcName).c_str(), apf::SCALAR);
 
       int vals[1];
-      double dval[1];
+      double dval;
       while ((elem = m->iterate(it)))
       {
         m->getIntTag(elem, tag, vals);
-        dval[0] = vals[0];
-        apf::setComponents(field, elem, 0, dval);
+        dval = vals[0];
+        apf::setScalar(field, elem, 0, dval);
       }
       m->end(it);
     }
@@ -590,12 +590,12 @@ struct BCInfo
         auto *field = apf::createFieldOn(m, ("debug_" + tagName).c_str(), apf::SCALAR);
 
         int vals[1];
-        double dval[1];
+        double dval;
         while ((elem = m->iterate(it)))
         {
           m->getIntTag(elem, bcTag, vals);
-          dval[0] = vals[0];
-          apf::setComponents(field, elem, 0, dval);
+          dval = vals[0];
+          apf::setScalar(field, elem, 0, dval);
         }
         m->end(it);
       }
@@ -646,12 +646,12 @@ struct BCInfo
         auto *field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(1));
 
         int vals[1];
-        double dval[1];
+        double dval;
         while ((elem = m->iterate(it)))
         {
           m->getIntTag(elem, bcTag, vals);
-          dval[0] = vals[0];
-          apf::setComponents(field, elem, 0, dval);
+          dval = vals[0];
+          apf::setScalar(field, elem, 0, dval);
         }
         m->end(it);
       }
@@ -702,12 +702,12 @@ struct BCInfo
         auto *field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(2));
 
         int vals[1];
-        double dval[1];
+        double dval;
         while ((elem = m->iterate(it)))
         {
           m->getIntTag(elem, bcTag, vals);
-          dval[0] = vals[0];
-          apf::setComponents(field, elem, 0, dval);
+          dval = vals[0];
+          apf::setScalar(field, elem, 0, dval);
         }
         m->end(it);
       }
@@ -758,12 +758,12 @@ struct BCInfo
         auto *field = apf::createField(m, ("debug_" + tagName).c_str(), apf::SCALAR, apf::getConstant(dim));
 
         int vals[1];
-        double dval[1];
+        double dval;
         while ((elem = m->iterate(it)))
         {
           m->getIntTag(elem, bcTag, vals);
-          dval[0] = vals[0];
-          apf::setComponents(field, elem, 0, dval);
+          dval = vals[0];
+          apf::setScalar(field, elem, 0, dval);
         }
         m->end(it);
       }
@@ -1214,9 +1214,11 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
 
     if (nBocos > 0)
     {
+      std::cout << std::endl;
       std::cout << "Attempting to read BCS info "
                 << " " << nBocos << std::endl;
       ReadBCInfo(cgid, base, zone, nBocos, physDim, cellDim, nsections, bcInfos, globalToVert);
+      std::cout << std::endl;
     }
 
     int nsols = -1;
@@ -1427,13 +1429,22 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
             else
               Kill(cgid, "Tensor size not accounted for");
 
+            double scalar(-123456.0);
+            apf::Vector3 vector3(-123456.0, -123456.0, -123456.0);
+            apf::Matrix3x3 matrix3x3(-123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0);
+
             apf::MeshEntity *elem = nullptr;
             apf::MeshIterator *it = mesh->begin(0);
-            using Type = double;
-            std::vector<Type> compData(md.size(), Type(-123456));
             while ((elem = mesh->iterate(it)))
             {
-              apf::setComponents(field, elem, 0, compData.data());
+              if (md.size() == 1)
+                apf::setScalar(field, elem, 0, scalar);
+              else if (md.size() == 3)
+                apf::setVector(field, elem, 0, vector3);
+              else if (md.size() == 9)
+                apf::setMatrix(field, elem, 0, matrix3x3);
+              else
+                Kill(cgid, "Tensor size not accounted for");
             }
             mesh->end(it);
 
@@ -1452,9 +1463,28 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                 auto iter = globalToVert.find(zeroBased);
                 if (iter != globalToVert.end())
                 {
-                  apf::getComponents(field, iter->second, 0, compData.data());
-                  compData.at(i) = meshVals.at(it);
-                  apf::setComponents(field, iter->second, 0, compData.data());
+                  auto* elem = iter->second;
+                  if (md.size() == 1)
+                  {
+                    apf::setScalar(field, elem, 0, meshVals.at(it));
+                  }
+                  else if (md.size() == 3)
+                  {
+                    apf::getVector(field, elem, 0, vector3);
+                    vector3[i] = meshVals.at(i);
+                    apf::setVector(field, elem, 0, vector3);
+                  }
+                  else if (md.size() == 9)
+                  {
+                    apf::getMatrix(field, elem, 0, matrix3x3);
+                    if (i < 3)
+                      matrix3x3[0][i] = meshVals.at(it);
+                    else if (i > 2 && i < 6)
+                      matrix3x3[1][i - 3] = meshVals.at(it);
+                    else if (i > 5 && i < 9)
+                      matrix3x3[2][i - 6] = meshVals.at(it);
+                    apf::setMatrix(field, elem, 0, matrix3x3);
+                  }
                 }
                 counter++;
               }
@@ -1492,9 +1522,25 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
               field = apf::createField(mesh, md.name().c_str(), apf::MATRIX, apf::getConstant(dim));
             else
               Kill(cgid, "Tensor size not accounted for");
-              
-            using Type = double;
-            std::vector<Type> compData(md.size(), Type(-123456));
+
+            double scalar(-123456.0);
+            apf::Vector3 vector3(-123456.0, -123456.0, -123456.0);
+            apf::Matrix3x3 matrix3x3(-123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0, -123456.0);
+
+            apf::MeshEntity *elem = nullptr;
+            apf::MeshIterator *it = mesh->begin(dim);
+            while ((elem = mesh->iterate(it)))
+            {
+              if (md.size() == 1)
+                apf::setScalar(field, elem, 0, scalar);
+              else if (md.size() == 3)
+                apf::setVector(field, elem, 0, vector3);
+              else if (md.size() == 9)
+                apf::setMatrix(field, elem, 0, matrix3x3);
+              else
+                Kill(cgid, "Tensor size not accounted for");
+            }
+            mesh->end(it);
 
             for (std::size_t r = 0; r < localElementRanges.size(); r++)
             {
@@ -1514,14 +1560,6 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
               PCU_ALWAYS_ASSERT_VERBOSE(numToRead == localElements[r].size(),
                                         "Size don't match for element/number sub-ranges");
 
-              apf::MeshEntity *elem = nullptr;
-              apf::MeshIterator *it = mesh->begin(dim);
-              while ((elem = mesh->iterate(it)))
-              {
-                apf::setComponents(field, elem, 0, compData.data());
-              }
-              mesh->end(it);
-
               using CGNSType = double;
               std::vector<CGNSType> meshVals(numToRead, -123456.0);
               for (std::size_t i = 0; i < md.size(); i++)
@@ -1533,9 +1571,28 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                 for (std::size_t it = 0; it < numToRead; it++)
                 {
                   elem = localElements[r][it];
-                  apf::getComponents(field, elem, 0, compData.data());
-                  compData.at(i) = meshVals.at(it);
-                  apf::setComponents(field, elem, 0, compData.data());
+
+                  if (md.size() == 1)
+                  {
+                    apf::setScalar(field, elem, 0, meshVals.at(it));
+                  }
+                  else if (md.size() == 3)
+                  {
+                    apf::getVector(field, elem, 0, vector3);
+                    vector3[i] = meshVals.at(i);
+                    apf::setVector(field, elem, 0, vector3);
+                  }
+                  else if (md.size() == 9)
+                  {
+                    apf::getMatrix(field, elem, 0, matrix3x3);
+                    if (i < 3)
+                      matrix3x3[0][i] = meshVals.at(it);
+                    else if (i > 2 && i < 6)
+                      matrix3x3[1][i - 3] = meshVals.at(it);
+                    else if (i > 5 && i < 9)
+                      matrix3x3[2][i - 6] = meshVals.at(it);
+                    apf::setMatrix(field, elem, 0, matrix3x3);
+                  }
                 }
               }
             }
@@ -1556,6 +1613,45 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
     }
   }
 
+  {
+    apf::MeshTag *tag = nullptr;
+    tag = mesh->createIntTag("origCGNSGlobalVertID", 1);       // 1 is size of tag
+    const cgsize_t lowest = globalToVert.begin()->first + 1;   // one based
+    const cgsize_t highest = globalToVert.rbegin()->first + 1; // one based
+    const cgsize_t numToRead = highest - lowest + 1;           // one based
+    cgsize_t counter = lowest;
+    for (cgsize_t it = 0; it < numToRead; it++)
+    {
+      cgsize_t zeroBased = counter - 1; // remove as per the addition above
+      auto iter = globalToVert.find(zeroBased);
+      if (iter != globalToVert.end())
+      {
+        const int oneBased = zeroBased + 1;
+        mesh->setIntTag(iter->second, tag, &oneBased);
+      }
+      counter++;
+    }
+  }
+
+  {
+    apf::MeshTag *tag = nullptr;
+    tag = mesh->createIntTag("origCGNSGlobalElemID", 1); // 1 is size of tag
+    for (std::size_t r = 0; r < localElementRanges.size(); r++)
+    {
+      const auto range = localElementRanges[r];
+      const cgsize_t lowest = range.first;                // one based
+      const cgsize_t highest = range.second;              // one based
+      const std::size_t numToRead = highest - lowest + 1; // one based
+      int counter = lowest;
+      for (std::size_t it = 0; it < numToRead; it++)
+      {
+        apf::MeshEntity *elem = nullptr;
+        elem = localElements[r][it];
+        mesh->setIntTag(elem, tag, &counter);
+        counter++;
+      }
+    }
+  }
   apf::finalise(mesh, globalToVert);
   apf::alignMdsRemotes(mesh);
   apf::deriveMdsModel(mesh);

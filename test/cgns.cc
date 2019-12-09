@@ -46,9 +46,9 @@ apf::Field *convert_tag_doubleField(const std::string &name, apf::Mesh2 *m, apf:
   while ((elem = m->iterate(it)))
   {
     m->getIntTag(elem, t, vals);
-    double dval[1];
-    dval[0] = vals[0];
-    apf::setComponents(f, elem, 0, dval);
+    double dval;
+    dval = vals[0];
+    apf::setScalar(f, elem, 0, dval);
   }
   m->end(it);
   return f;
@@ -173,7 +173,7 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return clean;
 }
 
-std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std::string &argv2, const std::string& post, const bool &additionalTests, const bool &writeCGNS, const std::vector<std::pair<std::string, std::string>> &meshData)
+std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std::string &argv2, const std::string &post, const bool &additionalTests, const bool &writeCGNS, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
   gmi_register_null();
   gmi_register_mesh();
@@ -189,7 +189,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
   if (found == std::string::npos)
     index = 0;
 
-    //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
+  //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
 
 #ifndef NDEBUG // debug settings, cmake double negative....
   const auto prefix = path.substr(index) + "_debug" + post;
@@ -265,16 +265,32 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
     const auto addMatrix = [](apf::Mesh2 *mesh, const int &dim) {
       apf::Field *field = nullptr;
       const std::string name = "DummyMatrix_" + std::to_string(dim);
+      apf::MeshTag *tag = nullptr;
       if (dim != 0)
+      {
         field = apf::createField(mesh, name.c_str(), apf::MATRIX, apf::getConstant(dim));
+        if (dim == mesh->getDimension())
+          tag = mesh->findTag("origCGNSGlobalElemID");
+      }
       else if (dim == 0)
+      {
         field = apf::createFieldOn(mesh, name.c_str(), apf::MATRIX);
+        tag = mesh->findTag("origCGNSGlobalVertID");
+      }
       //std::cout << "*************************** "<< dim << std::endl;
       apf::MeshIterator *it = mesh->begin(dim);
       apf::MeshEntity *elm = nullptr;
+      int vals[1];
       while ((elm = mesh->iterate(it)))
       {
         apf::Matrix3x3 m(11, 12, 13, 21, 22, 23, 31, 32, 33);
+        if (tag)
+        {
+          mesh->getIntTag(elm, tag, vals);
+          m[0][0] = vals[0];
+          m[1][1] = -vals[0];
+          m[2][2] = vals[0] * vals[0];
+        }
         apf::setMatrix(field, elm, 0, m);
       }
       mesh->end(it);
@@ -288,19 +304,39 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
     const auto addVector = [](apf::Mesh2 *mesh, const int &dim) {
       apf::Field *field = nullptr;
       const std::string name = "DummyVector_" + std::to_string(dim);
+      apf::MeshTag *tag = nullptr;
       if (dim != 0)
+      {
         field = apf::createField(mesh, name.c_str(), apf::VECTOR, apf::getConstant(dim));
+        if (dim == mesh->getDimension())
+          tag = mesh->findTag("origCGNSGlobalElemID");
+      }
       else if (dim == 0)
+      {
         field = apf::createFieldOn(mesh, name.c_str(), apf::VECTOR);
+        tag = mesh->findTag("origCGNSGlobalVertID");
+      }
       //std::cout << "*************************** "<< dim << std::endl;
       apf::MeshIterator *it = mesh->begin(dim);
       apf::MeshEntity *elm = nullptr;
+      int vals[1];
       while ((elm = mesh->iterate(it)))
       {
         apf::Vector3 v;
-        v[0] = 1.0;
-        v[1] = 2.0;
-        v[2] = 3.0;
+        if (tag)
+        {
+          mesh->getIntTag(elm, tag, vals);
+          v[0] = vals[0];
+          v[1] = -vals[0];
+          v[2] = vals[0] * vals[0];
+        }
+        else
+        {
+          v[0] = 1.0;
+          v[1] = 2.0;
+          v[2] = 3.0;
+        }
+
         apf::setVector(field, elm, 0, v);
       }
       mesh->end(it);
@@ -314,16 +350,31 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
     const auto addScalar = [](apf::Mesh2 *mesh, const int &dim) {
       apf::Field *field = nullptr;
       const std::string name = "DummyScalar_" + std::to_string(dim);
+      apf::MeshTag *tag = nullptr;
       if (dim != 0)
+      {
         field = apf::createField(mesh, name.c_str(), apf::SCALAR, apf::getConstant(dim));
+        if (dim == mesh->getDimension())
+          tag = mesh->findTag("origCGNSGlobalElemID");
+      }
       else if (dim == 0)
+      {
         field = apf::createFieldOn(mesh, name.c_str(), apf::SCALAR);
+        tag = mesh->findTag("origCGNSGlobalVertID");
+      }
       //std::cout << "*************************** "<< dim << std::endl;
       apf::MeshIterator *it = mesh->begin(dim);
       apf::MeshEntity *elm = nullptr;
+      int vals[1];
+      vals[0] = -1234567;
       while ((elm = mesh->iterate(it)))
       {
         double v = 1.0;
+        if (tag)
+        {
+          mesh->getIntTag(elm, tag, vals);
+          v = double(vals[0]);
+        }
         apf::setScalar(field, elm, 0, v);
       }
       mesh->end(it);
@@ -381,7 +432,8 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
 
     if (writeCGNS)
     {
-      std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_additional_outputFile.cgns";
+      // what this one to be re-read if doing re-reading so that the dummy variables (vector/matrix/scalar) are there
+      cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_additional_outputFile.cgns";
       apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
     }
     //
@@ -471,12 +523,19 @@ int main(int argc, char **argv)
   {
     std::vector<std::pair<std::string, std::string>> meshData;
     meshData.push_back(std::make_pair("Vertex", "DummyScalar_0"));
-    meshData.push_back(std::make_pair("Vertex", "DummyVector_0"));
-    meshData.push_back(std::make_pair("Vertex", "DummyMatrix_0"));
+    // meshData.push_back(std::make_pair("Vertex", "DummyVector_0"));
+    // meshData.push_back(std::make_pair("Vertex", "DummyMatrix_0"));
     meshData.push_back(std::make_pair("CellCenter", "DummyScalar_3"));
-    meshData.push_back(std::make_pair("CellCenter", "DummyVector_3"));
-    meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_3"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyVector_3"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_3"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyScalar_2"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyVector_2"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_2"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyScalar_1"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyVector_1"));
+    // meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_1"));
     apf::CGNSBCMap cgnsBCMap;
+    std::cout << "RE-READING " << std::endl;
     doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData);
   }
   //

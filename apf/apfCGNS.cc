@@ -55,6 +55,7 @@ struct CGNS
   int base = -1;
   int zone = -1;
   const int phys_dim = 3;
+  std::string fname;
 };
 
 /*
@@ -325,7 +326,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
 
         for (std::size_t e = 0; e < orderedEnts.size(); e++)
         {
-          //std::cout << "CELL " << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << " " << e << std::endl;
+          //std::cout << "CELL " << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << " " << e << " " << ranges[e].first << " " << ranges[e].second << std::endl;
           writeField(f, orderedEnts[e], solIndex, inner, post, numComponents, component, fieldNameNew, ranges[e].first, ranges[e].second, fieldIndex);
         }
       }
@@ -347,7 +348,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
         auto fieldNameNew = fieldName;
         if (numComponents > 1)
           fieldNameNew += "_[" + std::to_string(component) + "]";
-        
+
         //std::cout << "VERTEX " << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << std::endl;
         writeField(f, orderedEnts, solIndex, inner, post, numComponents, component, fieldNameNew, vStart, vEnd, fieldIndex);
       }
@@ -366,6 +367,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
   const auto innerLambda = [](apf::MeshEntity *elem, apf::FieldDataOf<double> *fieldData, std::vector<double> &ddata, const int &numComponents, const int &component) {
     std::vector<double> vals(numComponents, -12345);
     fieldData->get(elem, vals.data());
+    //std::cout << numComponents << " " << component << " " << vals[0] << std::endl;
     ddata.push_back(vals[component]);
   };
 
@@ -1050,6 +1052,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
 
   CGNS cgns;
+  cgns.fname = std::string(prefix);
   if (cgp_open(prefix, CGNS_ENUMV(CG_MODE_WRITE), &cgns.index))
     cgp_error_exit();
 
