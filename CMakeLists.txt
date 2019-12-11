@@ -52,6 +52,8 @@ message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
 message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
+option(PUMI_PYTHON_INTERFACE "enable python interface" OFF)
+message(STATUS "PUMI_PYTHON_INTERFACE: ${PUMI_PYTHON_INTERFACE}")
 
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
@@ -144,6 +146,10 @@ scorec_export_library(core)
 
 if(BUILD_EXES)
   add_subdirectory(test)
+endif()
+
+if(PUMI_PYTHON_INTERFACE)
+  add_subdirectory(python_wrappers)
 endif()
 
 bob_end_package()
