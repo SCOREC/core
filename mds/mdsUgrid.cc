@@ -323,7 +323,11 @@ namespace {
         apf::buildElement(r->mesh, g, apfType, verts);
       PCU_ALWAYS_ASSERT(elm);
     }
+    unsigned* dummy_id = (unsigned*) calloc(nelms,sizeof(unsigned));
+    readUnsigneds(r->file, dummy_id, cnt, r->swapBytes);
+
     free(vtx);
+    free(dummy_id);
     lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
