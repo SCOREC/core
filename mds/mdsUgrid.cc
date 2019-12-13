@@ -10,6 +10,8 @@
 #include <lionPrint.h>
 #include <cstdlib>
 
+#include <iostream>
+
 /*
 read files in the AFLR3 format from Dave Marcum at Mississippi State
 -little-endian if file has suffix '.lb8.ugrid'
@@ -37,11 +39,13 @@ namespace {
     std::map<long, apf::MeshEntity*> nodeMap;
     unsigned* faceVerts[2];
     unsigned* faceTags[2];
+    unsigned* edgeVerts;
+    unsigned* edgeTags;
     bool swapBytes;
   };
 
   struct header {
-    unsigned nvtx, ntri, nquad, ntet, npyr, nprz, nhex;
+    unsigned nvtx, ntri, nquad, ntet, npyr, nprz, nhex, nbdry;
     void print() {
       lion_eprint(1,
           "nvtx %u ntri %u nquad %u ntet %u npyr %u nprz %u nhex %u\n",
@@ -99,6 +103,15 @@ namespace {
     h->npyr = headerVals[4];
     h->nprz = headerVals[5];
     h->nhex = headerVals[6];
+    h->nbdry = 0;
+  }
+
+  void readNumBdryElms(Reader* r, header* h) {
+    const unsigned biggest = 100*1000*1000;
+    unsigned nbdry_elem;
+    readUnsigneds(r->file, &nbdry_elem, 1, r->swapBytes);
+    PCU_ALWAYS_ASSERT(nbdry_elem < biggest);
+    h->nbdry = nbdry_elem;
   }
 
   apf::MeshEntity* makeVtx(Reader* r,
@@ -165,6 +178,33 @@ namespace {
     readTags(r,h->nquad,apf::Mesh::QUAD);
   }
 
+  void readBdryElmsAndTags(Reader* r, unsigned nbdry, int apfType) {
+    const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
+    size_t cnt = nbdry * (nverts + 1);
+    unsigned* data = (unsigned*) calloc(cnt,sizeof(unsigned));
+    readUnsigneds(r->file, data, cnt, r->swapBytes);
+
+    unsigned* vtx = (unsigned*) calloc(nbdry*nverts,sizeof(unsigned));    
+    r->edgeVerts = vtx;
+
+    unsigned* tags = (unsigned*) calloc(nbdry,sizeof(unsigned));
+    r->edgeTags = tags;
+
+    for (size_t i = 0; i < cnt; ++i) {
+      if ((i+1) % (nverts+1) != 0) {
+        vtx[i - i / (nverts+1)] = data[i];
+      }
+      else {
+        tags[i / 3] = data[i];
+      }
+    }
+    free(data);
+  }
+
+  void readBdryElmsAndTags(Reader* r, header* h) {
+    readBdryElmsAndTags(r, h->nbdry, apf::Mesh::EDGE);    
+  }
+
   void checkFilePos(Reader* r, header* h) {
     // seven headers, vtx coords, face vertex ids, and face tags
     long expected = h->nvtx*3*sizeof(double) +
@@ -200,15 +240,44 @@ namespace {
     setFaceTags(r,t,h->nquad,apf::Mesh::QUAD);
   }
 
+  void setBoundaryTags(Reader* r, apf::MeshTag* t, unsigned nbdry, int apfType)
+  {
+    const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
+    unsigned* vtx = r->edgeVerts;
+    unsigned* tags = r->edgeTags;
+    for(unsigned id=0; id<nbdry; id++) {
+      apf::Downward verts;
+      for(unsigned j=0; j<nverts; j++) {
+        verts[j] = lookupVert(r, vtx[id*nverts+j]);
+      }
+      apf::MeshEntity* f =
+        apf::findElement(r->mesh, apfType, verts);
+      PCU_ALWAYS_ASSERT(f);
+      int val = tags[id];
+      r->mesh->setIntTag(f, t, &val);
+    }
+    free(vtx);
+    free(tags);
+    lion_eprint(1, "set %d %s face tags\n",
+        nbdry, apf::Mesh::typeName[apfType]);
+  }
+
+  void setBoundaryTags(Reader* r, header* h) {
+    apf::MeshTag* t = r->mesh->createIntTag("ugrid-boundary-tag", 1);
+    setBoundaryTags(r,t,h->nbdry,apf::Mesh::EDGE);
+  }
+
   inline unsigned ugridToMdsElmIdx(int apfType, int ugridIdx) {
-    static int ugrid_to_mds_verts[4][8] = {
+    static int ugrid_to_mds_verts[6][8] = {
+      {0, 1, 2,-1, -1, -1, -1, -1}, //tri
+      {0, 1, 2, 3, -1, -1, -1, -1}, //quad
       {0, 1, 2, 3, -1, -1, -1, -1}, //tet
       {0, 1, 2, 3,  4,  5,  6,  7}, //hex
       {0, 1, 2, 3,  4,  5, -1, -1}, //prism
       {3, 2, 4, 0,  1, -1, -1, -1}  //pyramid
     };
-    PCU_ALWAYS_ASSERT(apfType >= 4);
-    return ugrid_to_mds_verts[apfType-4][ugridIdx];
+    PCU_ALWAYS_ASSERT(apfType >= 2);
+    return ugrid_to_mds_verts[apfType-2][ugridIdx];
   }
 
   void readElms(Reader* r, unsigned nelms, int apfType) {
@@ -238,6 +307,31 @@ namespace {
     readElms(r,h->nhex,apf::Mesh::HEX);
   }
 
+  void read2DElms(Reader* r, unsigned nelms, int apfType) {
+    const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
+    apf::ModelEntity* g = r->mesh->findModelEntity(2, 0);
+    size_t cnt = nelms*nverts;
+    unsigned* vtx = (unsigned*) calloc(cnt,sizeof(unsigned));
+    readUnsigneds(r->file, vtx, cnt, r->swapBytes);
+    for(unsigned i=0; i<nelms; i++) {
+      apf::Downward verts;
+      for(unsigned j=0; j<nverts; j++) {
+        const unsigned mdsIdx = ugridToMdsElmIdx(apfType,j);
+        verts[mdsIdx] = lookupVert(r, vtx[i*nverts+j]);
+      }
+      apf::MeshEntity* elm =
+        apf::buildElement(r->mesh, g, apfType, verts);
+      PCU_ALWAYS_ASSERT(elm);
+    }
+    free(vtx);
+    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
+  }
+
+  void read2DElms(Reader* r, header* h) {
+    read2DElms(r,h->ntri,apf::Mesh::TRIANGLE);
+    read2DElms(r,h->nquad,apf::Mesh::QUAD);
+  }
+
   void freeReader(Reader* r) {
     fclose(r->file);
   }
@@ -257,6 +351,32 @@ namespace {
     setFaceTags(&r,&hdr);
     freeReader(&r);
     m->acceptChanges();
+  }
+
+  void readUgrid2D(apf::Mesh2* m, const char* filename)
+  {
+    header hdr;
+    Reader r;
+    initReader(&r, m, filename);
+    readHeader(&r, &hdr);
+    hdr.print();
+    readNodes(&r, &hdr);
+    setNodeIds(&r, &hdr);
+    // readFacesAndTags(&r,&hdr);
+    std::cout << "set faces and tags\n";
+    read2DElms(&r,&hdr);
+    std::cout << "read elems\n";
+    checkFilePos(&r,&hdr);
+    std::cout << "check file pos\n";
+    readNumBdryElms(&r, &hdr);
+    readBdryElmsAndTags(&r, &hdr);
+    setBoundaryTags(&r,&hdr);
+    std::cout << "set face tags\n";
+    freeReader(&r);
+    std::cout << "free reader\n";
+    m->acceptChanges();
+    std::cout << "accepted changes\n";
+
   }
 
   void getMaxAndAvg(std::set<int>*& cnt, int numparts, int& max, double& avg) {
@@ -414,6 +534,30 @@ namespace apf {
         m->count(0), m->count(1), m->count(2), m->count(3));
     return m;
   }
+
+  Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename,
+                          const int mesh_dim)
+  {
+    PCU_ALWAYS_ASSERT(mesh_dim >= 2);
+    if (3 == mesh_dim)
+      return loadMdsFromUgrid(g, filename);
+    else if (2 == mesh_dim)
+    {
+      Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+      apf::changeMdsDimension(m, 3);
+      readUgrid2D(m, filename);
+      std::cout << "read ugrid\n";
+      lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
+                  m->count(0), m->count(1), m->count(2), m->count(3));
+      return m;
+    }
+    else // silence compiler warning
+    {
+      Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+      return m;
+    }
+  }
+
   void printUgridPtnStats(gmi_model* g, const char* ufile, const char* vtxptn,
       const double elmWeights[]) {
     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
