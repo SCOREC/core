@@ -324,7 +324,7 @@ namespace {
       PCU_ALWAYS_ASSERT(elm);
     }
     unsigned* dummy_id = (unsigned*) calloc(nelms,sizeof(unsigned));
-    readUnsigneds(r->file, dummy_id, cnt, r->swapBytes);
+    readUnsigneds(r->file, dummy_id, nelms, r->swapBytes);
 
     free(vtx);
     free(dummy_id);
