@@ -396,10 +396,16 @@ void normal(struct gmi_model* m,
   n[1] = du[2]*dv[0] - du[0]*dv[2];
   n[2] = du[0]*dv[1] - du[1]*dv[0];
 
-  int mtype = 0;
+  // int mtype = 0;
   ego *eg_ent = (ego*)e;
   // EG_getInfo(*eg_ent, NULL, &mtype, NULL, NULL, NULL);
-  EG_getTopology(*eg_ent, NULL, NULL, &mtype, NULL, NULL, NULL, NULL);
+  // EG_getTopology(*eg_ent, NULL, NULL, &mtype, NULL, NULL, NULL, NULL);
+  double data[4];
+  int oclass, mtype, nbody, *senses;
+  ego geom, *eg_bodies;
+  // EG_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+  //                       &eg_bodies, &senses);
+  EG_getTopology(*eg_ent, &geom, &oclass, &mtype, data, &nbody, &eg_bodies, &senses);
 
   double n_mag = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
   n[0] *= mtype / n_mag;
