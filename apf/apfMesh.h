@@ -233,19 +233,27 @@ class Mesh
     virtual MeshTag* findTag(const char* name) = 0;
     /** \brief Removes a mesh tag. This does not detach data from entities. */
     virtual void destroyTag(MeshTag* tag) = 0;
-    /** \brief Get all the tags on a mesh part. */
+    /** \brief Get all the tags on a mesh part.
+     *  \details this returns a DynamicArray filled with pointers
+     *  to the underlying tags.*/
     virtual void getTags(DynamicArray<MeshTag*>& tags) = 0;
-    /** \brief get double array tag data */
+    /** \brief get double array tag data 
+     *  \details copies the data from the tag to the provided array */
     virtual void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data) = 0;
-    /** \brief set double array tag data */
+    /** \brief set double array tag data
+     *  \details copies the data from provided array to the tag data */
     virtual void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data) = 0;
-    /** \brief get int array tag data */
+    /** \brief get int array tag data
+     *  \details copies the data from the tag to the provided array*/
     virtual void getIntTag(MeshEntity* e, MeshTag* tag, int* data) = 0;
-    /** \brief set int array tag data */
+    /** \brief set int array tag data
+     *  \details copies the data from provided array to the tag data */
     virtual void setIntTag(MeshEntity* e, MeshTag* tag, int const* data) = 0;
-    /** \brief get long array tag data */
+    /** \brief get long array tag data
+     *  \details copies the data from the tag to the provided array*/
     virtual void getLongTag(MeshEntity* e, MeshTag* tag, long* data) = 0;
-    /** \brief set long array tag data */
+    /** \brief set long array tag data
+     *  \details copies the data from provided array to the tag data */
     virtual void setLongTag(MeshEntity* e, MeshTag* tag, long const* data) = 0;
     /** \brief detach tag data from an entity.
         \details data must be attached already. */

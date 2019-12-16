@@ -1042,7 +1042,7 @@ static bool findMatches(Mesh* m)
     while ((e = m->iterate(it)))
     {
       pEntity ent = reinterpret_cast<pEntity>(e);
-#if SIMMODSUITE_MAJOR_VERSION <= 14 && SIMMODSUITE_MINOR_VERSION < 190928
+#if SIMMODSUITE_MAJOR_VERSION <= 14 && SIMMODSUITE_MINOR_VERSION < 190921
       pPList l = EN_getMatchingEnts(ent, NULL);
 #else
       pPList l = EN_getMatchingEnts(ent, NULL, 0);

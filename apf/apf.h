@@ -540,6 +540,17 @@ Vector3 computeEdgeTangentAtVertex(Mesh* m, MeshEntity* edge,
 double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
     const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
 
+/** \brief Returns the largest height in a tet
+  *
+  * \param m	mesh
+  * \param tet  tet
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeLargestHeightInTet(Mesh* m, MeshEntity* tet,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
+
 /** \brief Returns the shortest height in a tri
   *
   * \param m	mesh
@@ -549,6 +560,17 @@ double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
   */
 double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
     const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
+/** \brief Returns the largest height in a tri
+  *
+  * \param m	mesh
+  * \param tri  tri
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeLargestHeightInTri(Mesh* m, MeshEntity* tri,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
 
 /** \brief Returns the number of element nodes.
   *

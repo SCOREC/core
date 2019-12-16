@@ -13,8 +13,8 @@
 #include <apfMesh2.h>
 #include <apfShape.h>
 #include <apfNumbering.h>
-#include "maAdapt.h"
 #include "maStats.h"
+
 
 #include <vector>
 #include <assert.h>
