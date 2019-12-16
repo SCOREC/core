@@ -28,6 +28,42 @@ struct egads_iter
    int idx;
 };
 
+/// reparameterize a vertex onto an edge
+void getVertexT(struct gmi_model* m, const ego to, const ego from, double* t)
+{
+  double diff;
+  double t_range[2];
+  m->ops->range(m, (struct gmi_ent*)to, 1, &(t_range[0]));
+
+  double vtx_pnt[3];
+  double p[] = {0, 0};
+  m->ops->eval(m, (struct gmi_ent*)from, p, &(vtx_pnt[0]));
+
+  double t_pnt[3];
+  m->ops->eval(m, (struct gmi_ent*)to, &(t_range[0]), &(t_pnt[0]));
+  diff = sqrt(pow(vtx_pnt[0] - t_pnt[0], 2) + 
+              pow(vtx_pnt[1] - t_pnt[1], 2) + 
+              pow(vtx_pnt[2] - t_pnt[2], 2));
+  if (diff < 0.001)
+  {
+    *t = t_range[0];
+  }
+  else
+  {
+    m->ops->eval(m, (struct gmi_ent*)to, &(t_range[1]), &(t_pnt[0]));
+    diff = sqrt(pow(vtx_pnt[0] - t_pnt[0], 2) + 
+                pow(vtx_pnt[1] - t_pnt[1], 2) + 
+                pow(vtx_pnt[2] - t_pnt[2], 2));
+    printf("diff (if here should be small): %f", diff);
+    *t = t_range[1];
+  }
+}
+
+// void getVertexUV(const ego to, const ego from, double to_p[2])
+// {
+
+// }
+
 // struct gmi_iter* begin(struct gmi_model* m, int dim)
 // {
 //   printf("begin\n");
@@ -311,8 +347,8 @@ void reparam(struct gmi_model* m,
   {
     printf("reparam from %d to %d not implemented", from_dim, to_dim);
     // Doesn't yet exist
-    // EG_getVertexT(*eg_to, *eg_from, &to_p[0]);
-    gmi_fail("From node to edge reparam not implemented");
+    getVertexT(m, *eg_to, *eg_from, &to_p[0]);
+    // gmi_fail("From node to edge reparam not implemented");
     return;
   }
   gmi_fail("bad dimensions in gmi_egads reparam");
