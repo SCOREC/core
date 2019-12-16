@@ -103,7 +103,7 @@ struct gmi_iter* begin(struct gmi_model* m, int dim)
 
 struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 {
-  // printf("next\n");
+  printf("next\n");
   (void)m;
   struct egads_iter *eg_iter = (struct egads_iter*)i;
   // ego *eg_ent;
@@ -124,7 +124,7 @@ struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 
 void end(struct gmi_model* m, struct gmi_iter* i)
 {
-  // printf("end\n");
+  printf("end\n");
   (void)m;
   (void)i;
   // I think this will create a memory leak as it won't free any of the
@@ -142,7 +142,7 @@ void end(struct gmi_model* m, struct gmi_iter* i)
 
 int get_dim(struct gmi_model* m, struct gmi_ent* e)
 {
-  // printf("get dim\n");
+  printf("get dim\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   if (eg_ent == NULL)
@@ -178,7 +178,7 @@ int get_dim(struct gmi_model* m, struct gmi_ent* e)
 
 int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
-  // printf("tag\n");
+  printf("tag\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   return EG_indexBodyTopo(eg_body, *eg_ent);
@@ -186,7 +186,7 @@ int get_tag(struct gmi_model* m, struct gmi_ent* e)
 
 struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
-  // printf("find\n");
+  printf("find\n");
   (void)m;
 
   /// Not sure if this is the best way to handle this, previously was returning
@@ -211,7 +211,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
                                 struct gmi_ent* e, 
                                 int dim)
 {
-  // printf("adjacent\n");
+  printf("adjacent\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   int num_adjacent = 0;
@@ -253,7 +253,7 @@ void eval(struct gmi_model* m,
                  double const p[2],
                  double x[3])
 {
-  // printf("eval\n");
+  printf("eval\n");
   // (void)m;
   double results[18];
   ego *eg_ent = (ego*)e;
@@ -288,7 +288,7 @@ void reparam(struct gmi_model* m,
                     struct gmi_ent* to,
                     double to_p[2])
 {
-  // printf("reparam\n");
+  printf("reparam\n");
   int from_dim, to_dim;
   from_dim = get_dim(m, from);
   to_dim = get_dim(m, to);
@@ -301,6 +301,7 @@ void reparam(struct gmi_model* m,
   }
   if ((from_dim == 0) && (to_dim == 2))
   {
+    printf("reparam from %d to %d not implemented", from_dim, to_dim);
     // Doesn't yet exist
     // EG_getVertexUV(*eg_to, *eg_from, to_p);
     gmi_fail("From node to surface reparam not implemented");
@@ -308,6 +309,7 @@ void reparam(struct gmi_model* m,
   }
   if ((from_dim == 0) && (to_dim == 1))
   {
+    printf("reparam from %d to %d not implemented", from_dim, to_dim);
     // Doesn't yet exist
     // EG_getVertexT(*eg_to, *eg_from, &to_p[0]);
     gmi_fail("From node to edge reparam not implemented");
@@ -320,7 +322,7 @@ int periodic(struct gmi_model* m,
                     struct gmi_ent* e,
                     int dir)
 {
-  // printf("periodic\n");
+  printf("periodic\n");
   int ent_dim = get_dim(m, e);
   int periodic;
   ego *eg_ent = (ego*)e;
@@ -348,7 +350,7 @@ void range(struct gmi_model* m,
                   int dir,
                   double r[2])
 {
-  // printf("range\n");
+  printf("range\n");
   int ent_dim = get_dim(m, e);
   double range[4];
   ego *eg_ent = (ego*)e;
@@ -376,7 +378,7 @@ void closest_point(struct gmi_model* m,
                           double to[3],
                           double to_p[2])
 {
-  // printf("closest point\n");
+  printf("closest point\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   double xyz[] = {from[0], from[1], from[2]};
@@ -388,7 +390,7 @@ void normal(struct gmi_model* m,
                    double const p[2],
                    double n[3])
 {
-  // printf("normal\n");
+  printf("normal\n");
   double du[3], dv[3];
   m->ops->first_derivative(m, e, p, du, dv);
   // cross du and dv to get n
@@ -419,7 +421,7 @@ void first_derivative(struct gmi_model* m,
                              double t0[3],
                              double t1[3])
 {
-  // printf("first derivative\n");
+  printf("first derivative\n");
   int ent_dim = get_dim(m, e);
   double results[18];
   ego *eg_ent = (ego*)e;
@@ -439,7 +441,7 @@ int is_point_in_region(struct gmi_model* m,
                               struct gmi_ent* e,
                               double p[3])
 {
-  // printf("is in region\n");
+  printf("is in region\n");
   (void)m;
   ego *eg_ent = (ego*)e;
   int status = EG_inTopology(*eg_ent, p);
@@ -454,7 +456,7 @@ void bbox(struct gmi_model* m,
                  double bmin[3],
                  double bmax[3])
 {
-  // printf("bbox\n");
+  printf("bbox\n");
   (void)m;
   double box[6];
   ego *eg_ent = (ego*)e;
