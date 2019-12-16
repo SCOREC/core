@@ -11,7 +11,7 @@
 #include <cstdlib>
 
 #include <gmi.h>
-
+#include <algorithm>
 #include <iostream>
 
 /*
