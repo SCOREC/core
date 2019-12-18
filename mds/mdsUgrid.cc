@@ -321,14 +321,14 @@ namespace {
         upward_dim[id] = m->getModelType(gent);
         upward_id[id] = m->getModelTag(gent);
       }
-      std::cout << "model classification dim on upward adjactent edges: ";
-      for (int i = 0; i < num_up; i++)
-      {
-        std::cout << upward_dim[i] << ", ";
-      }
+      // std::cout << "model classification dim on upward adjactent edges: ";
+      // for (int i = 0; i < num_up; i++)
+      // {
+      //   std::cout << upward_dim[i] << ", ";
+      // }
       apf::Vector3 vtx_coord;
       m->getPoint(vtx, 0, vtx_coord);
-      std::cout << "on vertex at point: (" << vtx_coord[0] << ", " << vtx_coord[1] << ", " << vtx_coord[2] << ")\n";
+      // std::cout << "on vertex at point: (" << vtx_coord[0] << ", " << vtx_coord[1] << ", " << vtx_coord[2] << ")\n";
       bool same_dim = std::all_of(upward_dim.begin(), upward_dim.end(), 
                                   [upward_dim](const int i) {
                                     return upward_dim[0] == i;
@@ -345,6 +345,15 @@ namespace {
         ///   then classify the vertex on that same geometric entity
         apf::ModelEntity* gent = m->findModelEntity(upward_dim[0], upward_id[0]);
         m->setModelEntity(vtx, gent);
+
+        if (gmi_can_get_closest_point(m->getModel()))
+        {
+          apf::Vector3 from, to, param;
+          m->getPoint(vtx, 0, from);
+          m->getClosestPoint(gent, from, to, param);
+          std::cout << "param from: " << from << " and param to: " << to << "\n";
+          m->setParam(vtx, param);
+        }
       }
       else
       {
@@ -376,6 +385,16 @@ namespace {
           /// (for a vertex on the boundary)
           apf::ModelEntity* gent = m->findModelEntity(1, edge_id[0]);
           m->setModelEntity(vtx, gent);
+
+          /// specify parametric coordinate of vertex on edge
+          if (gmi_can_get_closest_point(m->getModel()))
+          {
+            apf::Vector3 from, to, param;
+            m->getPoint(vtx, 0, from);
+            m->getClosestPoint(gent, from, to, param);
+            std::cout << "param from: " << from << " and param to: " << to << "\n";
+            m->setParam(vtx, param);
+          }
         }
         else /// a mesh vertex whose adjacent edges are classified on different
              ///   model edges must be classified on a model vertex
