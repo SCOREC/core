@@ -48,7 +48,13 @@ static bool const flip_tet_tri_edges[4][3] =
 /** \brief edge indices connected to a vertex of a tet, this does not
     comment on their orientation wrt to the vertex
     \details ordered as XJ Luo's thesis */
-static int const vertEdges[4][3] = {{3,0,2},{0,4,1},{1,5,2},{3,5,4}};
+static int const tetVertEdges[4][3] = {{3,0,2},{0,4,1},{1,5,2},{3,5,4}};
+
+
+/** \brief edge indices connected to a vertex of a tri, this does not
+    comment on their orientation wrt to the vertex
+    \details [refer to the comment for tets] */
+static int const triVertEdges[3][2] = {{2,0},{0,1},{1,2}};
 
 /** \brief indices of opposite edges of an edge to a tet */
 static int const oppEdges[6] = {5,3,4,1,2,0};
