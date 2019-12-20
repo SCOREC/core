@@ -29,4 +29,4 @@ touch $d/doneCoreNightly
 #create doxygen docs
 cd build/master
 make doc
-cp -r doc/html /net/web/scorec/scorec-web/htdocs/pumi/doxygen
+cp -r doc/html/* /net/web/scorec/scorec-web/htdocs/pumi/doxygen/.
