@@ -944,8 +944,8 @@ static void getEdges(Output& o, apf::Numbering* vn, apf::Numbering* rn, BCs& bcs
 static void getSpanwiseAverageArrays(Input& in, Output& o) {
   if (in.spanAvg == 1) {
     apf::Mesh* m = o.mesh;
-    gmi_model* gm = m->getModel();
-    int nnodes = m->count(0); // number of nodes of wole mesh or part??
+// not used    gmi_model* gm = m->getModel();
+    int nnodes = m->count(0); // number of nodes of whole mesh or part??
     /* this will come from the adapt.inp file and is constant for all geombc
      it is the total number of father nodes, nx*ny, and each geombc loads this */
     int nfather = in.nfathers;
@@ -958,7 +958,8 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     o.arrays.nsonsArr = new int[nfather]; //initialize nsonsArr
     for (int i=0; i<nfather; i++) { // fill nsonsArr
       /* set each entry in nsonsArr[nfather] to equal nsons */
-      o.arrays.nsonsArr[i] = nsons; // this is point2nsons(nfath) in PHASTA
+      o.arrays.nsonsArr[i] = 0; // not alwasy structured nsons; // this is point2nsons(nfath) in PHASTA
+                           // -1 if father is not counted in sons .... I think it is so leaving it at 0
     }
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
@@ -974,6 +975,9 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     while ((v = m->iterate(it))) { // loop over mesh vertices
       m->getIntTag(v,t,&tagNum);
       o.arrays.ifather[count] = tagNum;
+//      o.arrays.nsonsArr[tagNum] =o.arrays.nsonArr[tagNum]+1;  // increment the nsons counter 
+//      o.arrays.nsonsArr[tagNum]+=1;  // increment the nsons counter 
+      ++o.arrays.nsonsArr[tagNum];  // increment the nsons counter 
       //std::cout<<"Tag number "<<tagNum<<std::endl;
       count++;
     }

@@ -84,8 +84,8 @@ static void setDefaults(Input& in)
   in.nRBParam = 12;
   in.gradingFactor = 1.25;
   in.spanAvg = 0; // prepare and write spanwise average arrays
-  in.nfathers = 0; // number of father nodes (nx*ny for z averaging)
-  in.nsons = 0; // number of sons for each father (constant nz for each father)
+  in.nfathers = 0; // number of father nodes (# of pts in xy (2D) plane for z averaging)
+  in.nsons = 0; // number of sons for each father (constant nz for each father ONLY for ijk grids)
 }
 
 Input::Input()

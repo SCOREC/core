@@ -242,96 +242,111 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   (void)model;
   (void)mesh;
   (void)vtxClass;
-
   apf::MeshIterator* it = mesh->begin(2);
   apf::MeshEntity* f;
   int c;
-/* What was here before was commented when we went to simple min rule
   apf::Adjacent verts;
+  double xd1=0.914478; double yd1=0.0145401; double zd1=0.04;
+  double xd2=-0.548533; double yd2=7.46251e-06; double zd2=0.0399287;
+  double dx1,dy1,dz1,distFromDebug1;
+  double dx2,dy2,dz2,distFromDebug2;
+  int edgesOfFaces[6][4];
+  int vertsOfEdges[12][2];
+  edgesOfFaces[0][0]=0;
   while( (f = mesh->iterate(it)) ) {
-    m->getAdjacent(f, 0, verts) = 0;
-    bool hasRgClass = false;
-    for(int i=0; i<verts.size(); i++) {
-      m->getIntTag(i,vtxClass,&c);
-      if( c == INTERIORTAG )
-        mesh->setModelEntity(f,mdlRgn);
-      }
-      
+    apf::Vector3 Centroid=apf::getLinearCentroid(mesh,f);
+    dx1=xd1-Centroid[0];
+    dy1=yd1-Centroid[1];
+    dz1=zd1-Centroid[2];
+    dx2=xd2-Centroid[0];
+    dy2=yd2-Centroid[1];
+    dz2=zd2-Centroid[2];
+    distFromDebug1=dx1*dx1+dy1*dy1+dz1*dz1;
+    distFromDebug2=dx2*dx2+dy2*dy2+dz2*dz2;
+    if(std::min(distFromDebug1,distFromDebug2) < 1e-12) {
+         apf::MeshEntity*  stophere=f;  fprintf(stderr, "%d \n", stophere);
+         (void) stophere;
     }
-  }
-*/
-  apf::Adjacent verts;
-  while( (f = mesh->iterate(it)) ) {
     mesh->getAdjacent(f, 0, verts);
     int cmin=100;
+    int cmax=-100;
+    int cmid=-100;
+    int ctri[4];  // up to 4 points on a face
     for(size_t i=0; i<verts.size(); i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
       cmin=std::min(cmin,c);
+      cmax=std::max(cmax,c);
+      ctri[i]=c;
     }
+       for(size_t i=0; i<verts.size(); i++) {
+         if((ctri[i] != cmin) && (ctri[i] != cmax)) cmid=std::max(cmid,ctri[i]);  // max is to catch lowest dim/highest code for quads....actually not necessary since either of the other two will follow switches as noted below.
+       }
     if (cmin == INTERIORTAG) {
        mesh->setModelEntity(f,getMdlRgn(model));
        //cint++;
-    } else if (cmin >= FACE && cmin <= FACE_LAST) {
-       if (cmin == 1) { //face tag 1 corresponds to model face 0
-          mesh->setModelEntity(f,getMdlFace(mesh,0));
-       } else if (cmin == 2) { //face tag 2 corresponds to model face 1
-          mesh->setModelEntity(f,getMdlFace(mesh,1));
-       } else if (cmin == 3) { //face tag 3 corresponds to model face 3
-          mesh->setModelEntity(f,getMdlFace(mesh,3));
-       } else if (cmin == 4) { //face tag 4 corresponds to model face 4
-          mesh->setModelEntity(f,getMdlFace(mesh,4));
-       } else if (cmin == 5) { //face tag 5 corresponds to model face 2
-          mesh->setModelEntity(f,getMdlFace(mesh,2));
-       } else if (cmin == 6) { //face tag 6 corresponds to model face 5
-          mesh->setModelEntity(f,getMdlFace(mesh,5));
-       }
-       //cface++;
-    } else if (cmin >= EDGE && cmin <= EDGE_LAST) {
-       if (cmin == 11) { //edge tag 11 corresponds to model edge 0
-          mesh->setModelEntity(f,getMdlEdge(mesh,0));
-       } else if (cmin == 12) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,2));
-       } else if (cmin == 13) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,3));
-       } else if (cmin == 14) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,1));
-       } else if (cmin == 15) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,4));
-       } else if (cmin == 16) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,5));
-       } else if (cmin == 17) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,7));
-       } else if (cmin == 18) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,6));
-       } else if (cmin == 19) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,8));
-       } else if (cmin == 20) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,10));
-       } else if (cmin == 21) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,11));
-       } else if (cmin == 22) {
-          mesh->setModelEntity(f,getMdlEdge(mesh,9));
-       }
-       //cedge++;
-    } else if (cmin >= VERTEX && cmin <= VERTEX_LAST) {
-       if (cmin == 31) { //vertex tag 31 corresponds to model vertex 0
-          mesh->setModelEntity(f,getMdlVtx(mesh,0));
-       } else if (cmin == 32) { //vertex tag 32 corresponds to model vertex 1
-          mesh->setModelEntity(f,getMdlVtx(mesh,1));
-       } else if (cmin == 33) { //vertex tag 33 corresponds to model vertex 3
-          mesh->setModelEntity(f,getMdlVtx(mesh,3));
-       } else if (cmin == 34) { //vertex tag 34 corresponds to model vertex 2
-          mesh->setModelEntity(f,getMdlVtx(mesh,2));
-       } else if (cmin == 35) { //vertex tag 35 corresponds to model vertex 4
-          mesh->setModelEntity(f,getMdlVtx(mesh,4));
-       } else if (cmin == 36) { //vertex tag 36 corresponds to model vertex 5
-          mesh->setModelEntity(f,getMdlVtx(mesh,5));
-       } else if (cmin == 37) { //vertex tag 37 corresponds to model vertex 7
-          mesh->setModelEntity(f,getMdlVtx(mesh,7));
-       } else if (cmin == 38) { //vertex tag 38 corresponds to model vertex 6
-          mesh->setModelEntity(f,getMdlVtx(mesh,6));
-       }
-       //cvtx++;
+    } else  if(cmax <= FACE_LAST && cmin >= FACE) { // all nodes on  model face(s?)
+         if(cmax != cmin) { // all on faces but not all on same so classified on interior
+             mesh->setModelEntity(f,getMdlRgn(model));
+         } else { // all on same face so classify on that one
+          mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1)));
+         }
+    } else if (cmin <= FACE_LAST) {  // one or two but not more on model faces 
+         if( cmid > FACE_LAST || cmin==cmid) {   // for tris, the first happens if 2 other on e and or v;  second happens if 2 on SAME face and max NOT on face due to previous else...this also catches quads of both types that can be on a face
+             mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1))); // classified on cmin face either way
+         } else { // getting here only if cmid is a different face so must be interior
+             mesh->setModelEntity(f,getMdlRgn(model));
+         }
+    } else if (cmax <= EDGE_LAST){  // since none on face and none on verts must be on 
+        mesh->setModelEntity(f,getMdlRgn(model));
+    } else { // getting here only if none of the face verts are interior or on model face so must be 2 e and 1 v but
+// none of these nodal classifications know directly the face to classify this face on.  HARD CODE for now to our case
+         int iface=0;
+         if(cmax==31) {
+            if( cmin== 11) {
+              if( cmid==14) iface=1; else iface=2;
+           }
+           else iface=5;
+         } else if(cmax==32) {
+            if( cmin== 11) {
+              if( cmid==12) iface=1; else iface=2;
+            }
+            else iface=3;
+         } else if(cmax==33) {
+            if( cmin== 12) {
+              if( cmid==13) iface=1; else iface=3;
+            }
+            else iface=4;
+         } else if(cmax==34) {
+            if( cmin== 13) {
+              if( cmid==14) iface=1; else iface=4;
+            }
+            else iface=5;
+         } else if(cmax==35) {
+            if( cmin== 15) {
+              if( cmid==19) iface=2; else iface=5;
+            }
+            else iface=6;
+         } else if(cmax==36) {
+            if( cmin== 16) {
+              if( cmid==19) iface=2; else iface=3;
+            }
+            else iface=6;
+         } else if(cmax==37) {
+            if( cmin== 17) {
+              if( cmid==20) iface=3; else iface=4;
+            }
+            else iface=6;
+         } else if(cmax==38) {
+            if( cmin== 18) {
+              if( cmid==21) iface=4; else iface=5;
+            }
+            else iface=6;
+         }
+         if(iface==0){
+            fprintf(stderr, "%d %d  %d \n", cmin, cmid, cmax);
+         }
+         PCU_ALWAYS_ASSERT(iface != 0);
+         mesh->setModelEntity(f,getMdlFace(mesh,(iface-1))); // classified on chosen face 
     }
   }
   mesh->end(it);
@@ -634,7 +649,8 @@ int main(int argc, char** argv)
   mesh->destroyTag(tc);
  
   apf::MeshTag* tf = setIntTag(mesh, "fathers2D", m.fathers2D, 1,
-      m.localNumVerts, outMap);
+       m.localNumVerts, outMap);
+  (void) tf;
   //mesh->destroyTag(tf);
 
   /* // Print the father2D tags
