@@ -245,13 +245,6 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   apf::MeshIterator* it = mesh->begin(2);
   apf::MeshEntity* f;
   int c;
-  apf::Adjacent verts;
-  double xd1[3]={-0.54864, 7.44015e-06, 0.0397148 };
-  double xd2[3]={0.914478, 0.0145401, 0.04 };
-//  double xd1=0.914478; double yd1=0.0145401; double zd1=0.04;
-//  double xd2=-0.548533; double yd2=7.46251e-06; double zd2=0.0399287;
-  double dx1,dy1,dz1,distFromDebug1;
-  double dx2,dy2,dz2,distFromDebug2;
   // int EofF[6][4];
   // int VofE[12][2];
   int FofE[12][2];
@@ -329,16 +322,27 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   EofF[5][2]=10;
   EofF[5][3]=9;
 */
+  apf::Adjacent verts;
+//  double xd1[3]={-0.54864, 7.44015e-06, 0.0397148 };
+//  double xd2[3]={0.914478, 0.0145401, 0.04 };
+//  double dx1,dy1,dz1,distFromDebug1;
+//  double dx2,dy2,dz2,distFromDebug2;
+  apf::Vector3 xd1(-0.54864, 7.44015e-06, 0.0397148 );
+  apf::Vector3 xd2(0.914478, 0.0145401, 0.04 );
+  apf::Vector3 tmp;
+  apf::Vector3 Centroid;
   while( (f = mesh->iterate(it)) ) {
-    apf::Vector3 Centroid=apf::getLinearCentroid(mesh,f);
-    dx1=xd1[0]-Centroid[0];
-    dy1=xd1[1]-Centroid[1];
-    dz1=xd1[2]-Centroid[2];
-    dx2=xd2[0]-Centroid[0];
-    dy2=xd2[1]-Centroid[1];
-    dz2=xd2[2]-Centroid[2];
-    distFromDebug1=dx1*dx1+dy1*dy1+dz1*dz1;
-    distFromDebug2=dx2*dx2+dy2*dy2+dz2*dz2;
+    mesh->getAdjacent(f, 0, verts);
+    int nverts = verts.size();
+    Centroid=apf::getLinearCentroid(mesh,f);
+    dx1=xd1-Centroid;
+    dx2=xd2-Centroid;
+    distFromDebug1=dx1[0]*dx1[0]
+                  +dx1[1]*dx1[1]
+                  +dx1[2]*dx1[2];
+    distFromDebug2=dx2[0]*dx2[0]
+                  +dx2[1]*dx2[1]
+                  +dx2[2]*dx2[2];
     int cmin=100;
     int cmax=-100;
     int cmid=-100;
@@ -355,8 +359,11 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     }
     if(std::min(distFromDebug1,distFromDebug2) < 1e-12) {
          fprintf(stderr, "%d %d %d %.15e %.15E %.15E \n", cmin, cmid, cmax, Centroid[0], Centroid[1], Centroid[2]);
+         for (size_t i=0; i < nverts; i++) {
+            mesh->getPoint(verts[i],0,tmp);
+            fprintf(stderr, "%d %.15e %.15E %.15E \n", i , tmp[0], tmp[1], tmp[2]);
+         }
     }
-    mesh->getAdjacent(f, 0, verts);
     if (cmin == INTERIORTAG) {  // no brainer since a point on the interior always classifies interior
        mesh->setModelEntity(f,getMdlRgn(model));
        //cint++;
