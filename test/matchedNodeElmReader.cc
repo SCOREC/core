@@ -327,8 +327,11 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
 //  double xd2[3]={0.914478, 0.0145401, 0.04 };
 //  double dx1,dy1,dz1,distFromDebug1;
 //  double dx2,dy2,dz2,distFromDebug2;
+  double distFromDebug1, distFromDebug2;
   apf::Vector3 xd1(-0.54864, 7.44015e-06, 0.0397148 );
   apf::Vector3 xd2(0.914478, 0.0145401, 0.04 );
+  apf::Vector3 dx1;
+  apf::Vector3 dx2;
   apf::Vector3 tmp;
   apf::Vector3 Centroid;
   while( (f = mesh->iterate(it)) ) {
@@ -354,8 +357,22 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       cmax=std::max(cmax,c);
       ctri[i]=c;
     }
-    for(size_t i=0; i<verts.size(); i++) {
-      if((ctri[i] != cmin) && (ctri[i] != cmax)) cmid=std::max(cmid,ctri[i]);  // max is to catch lowest dim/highest code for quads....actually not necessary since either of the other two will follow switches as noted below.
+    int imax=0;  
+    int imin=0;  
+    for(size_t i=0; i<nverts; i++) {
+      if(ctri[i]==cmax) imax++;
+      if(ctri[i]==cmin) imin++;
+    }
+    if(cmax==cmin) { 
+       cmid= cmin;  // all nverts on same face
+    } else if (imax>=2) { // >=2 but not all with cmax
+       cmid=cmax;
+    } else if (imin>=2 ) { // >=2 but not all with min
+       cmid=cmin;
+    } else { // not 2 of either so mid is distinct
+      for(size_t i=0; i<nverts; i++) { // find it
+        if((ctri[i] != cmin) && (ctri[i] != cmax)) cmid=std::max(cmid,ctri[i]);  // max is to catch lowest dim/highest code for quads....actually not necessary since either of the other two will follow switches as noted below.
+      }
     }
     if(std::min(distFromDebug1,distFromDebug2) < 1e-12) {
          fprintf(stderr, "%d %d %d %.15e %.15E %.15E \n", cmin, cmid, cmax, Centroid[0], Centroid[1], Centroid[2]);
