@@ -245,6 +245,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   apf::MeshIterator* it = mesh->begin(2);
   apf::MeshEntity* f;
   int c;
+  int TofM[6] = {0, 1, 3, 4, 2, 5}; // tags of discrete model are NOT same as model faces
   // int EofF[6][4];
   // int VofE[12][2];
   int FofE[12][2];
@@ -322,6 +323,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   EofF[5][2]=10;
   EofF[5][3]=9;
 */
+
   apf::Adjacent verts;
 //  double xd1[3]={-0.54864, 7.44015e-06, 0.0397148 };
 //  double xd2[3]={0.914478, 0.0145401, 0.04 };
@@ -388,17 +390,17 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
          if(cmax != cmin) { // all on faces but not all on same so classified on interior
              mesh->setModelEntity(f,getMdlRgn(model));
          } else { // all on same face so classify on that one
-          mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1)));
+          mesh->setModelEntity(f,getMdlFace(mesh,TofM[cmin]));
          }
     } else if (cmid <= FACE_LAST )   {  // two points on face(s?)
          if( cmin==cmid) {   // happens if 2 on SAME face
              if( cmax > EDGE_LAST) {   // happens if third is a model vert which is ALWAYS in the same plane
-               mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1))); // classified on cmin face either way
+               mesh->setModelEntity(f,getMdlFace(mesh,TofM[cmin])); // classified on cmin face either way
              } else {  // third on a model edge but might not be in closure of the face
                f1=1+FofE[(cmax-11)][0];
                f2=1+FofE[(cmax-11)][1];
                if(f1==cmin || f2==cmin) { // if either face usage of this edge is cmin (or cmid) then class on face
-                   mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1)));  
+                   mesh->setModelEntity(f,getMdlFace(mesh,TofM[cmin]));  
                } else mesh->setModelEntity(f,getMdlRgn(model));  // edge not in face closure so class on region
              }
           } else mesh->setModelEntity(f,getMdlRgn(model)); // cmin != cmid means on different faces so clas on region
@@ -407,7 +409,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
                f1=1+FofE[(cmid-11)][0];  // get two uses of the edge which is cmid
                f2=1+FofE[(cmid-11)][1];
                if(f1==cmin || f2==cmin) { // one of the usages is on cmin face and vertex is always so class on face
-                   mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1)));  
+                   mesh->setModelEntity(f,getMdlFace(mesh,TofM[cmin]));  
                } else mesh->setModelEntity(f,getMdlRgn(model));  // edge not in closor so classify on region
          } else { // getting here only if 1face and 2 edges...most complicated case only face if  both edges in closure
                f1x=1+FofE[(cmax-11)][0]; // first two find 2 face usages of max edge
@@ -416,7 +418,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
                f2d=1+FofE[(cmid-11)][1];
                if(   (f1x==cmin || f2x==cmin)   // cmax edge is in cmin closure
                   && (f1d==cmin || f2d==cmin) ) { // cmid edge is in cmin closure -- must have both to class on face
-                     mesh->setModelEntity(f,getMdlFace(mesh,(cmin-1)));  
+                     mesh->setModelEntity(f,getMdlFace(mesh,TofM[cmin]));  
                   } else mesh->setModelEntity(f,getMdlRgn(model)); // at least one of the edges not in face closure so clssify on region
          }
     } else if (cmax <= EDGE_LAST){  // since none on face (3, 2, and 1 done above) and none on verts, 3 edges-> interior 
@@ -427,9 +429,9 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
         f1d=1+FofE[(cmid-11)][0]; // next two find 2 face usages of mid edge
         f2d=1+FofE[(cmid-11)][1];
         if (f1x==f1d || f2x==f1d) {  // these two check if ether face using cmin match first face using cmid
-              mesh->setModelEntity(f,getMdlFace(mesh,(f1d-1)));  
+              mesh->setModelEntity(f,getMdlFace(mesh,TofM[f1d]));  
         } else if ( f1x==f2d || f2x==f2d) {  // these two check if ether face using cmin match second face using cmid
-              mesh->setModelEntity(f,getMdlFace(mesh,(f2d-1)));  
+              mesh->setModelEntity(f,getMdlFace(mesh,TofM[f2d]));  
         } else {
             fprintf(stderr, "face classification of these vert classification failed %d %d  %d \n", cmin, cmid, cmax);
         }
@@ -483,7 +485,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
             fprintf(stderr, "%d %d  %d \n", cmin, cmid, cmax);
          }
          PCU_ALWAYS_ASSERT(iface != 0);
-         mesh->setModelEntity(f,getMdlFace(mesh,(iface-1))); // classified on chosen face 
+         mesh->setModelEntity(f,getMdlFace(mesh,TofM[iface-1])); // classified on chosen face 
         }
     }
   }
