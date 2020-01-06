@@ -206,7 +206,7 @@ static void declarePart(StkModel* model,
     StkMetaData* meta)
 {
   stk::mesh::Part& part = meta->declare_part(model->stkName, rank);
-  stk::mesh::set_cell_topology(part, topo);
+  stk::mesh::set_topology(part, topo);
   stk::io::put_io_part_attribute(part);
 }
 
@@ -224,7 +224,7 @@ void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
   ranks[2] = stk::topology::FACE_RANK;
   ranks[d] = stk::topology::ELEMENT_RANK;
   for (int i = 0; i <= d; ++i)
-    meta->register_cell_topology(topo[i], ranks[i]);
+    meta->register_topology(topo[i], ranks[i]);
   for (int i = 0; i <= d; ++i)
     for (size_t j = 0; j < models.models[i].size(); ++j)
       declarePart(models.models[i][j], ranks[i], topo[i], meta);
