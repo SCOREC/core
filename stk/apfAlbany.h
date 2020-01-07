@@ -53,8 +53,8 @@ void collectEntityModels(
 void makeStkNumberings(Mesh* m, GlobalNumbering* n[4]);
 void freeStkNumberings(Mesh* m, GlobalNumbering* n[4]);
 
-shards::CellTopology getDimTopology(Mesh* m, int dim);
-shards::CellTopology getCellTopology(Mesh* m);
+const shards::CellTopology getDimTopology(Mesh* m, int dim);
+const shards::CellTopology getCellTopology(Mesh* m);
 
 int getLocalSideId(Mesh* m, MeshEntity* e,
     MeshEntity* side);

@@ -713,7 +713,7 @@ void copyFieldsFromBulk(
 }
 #endif
 
-shards::CellTopology getTopology(Mesh* m, int t)
+const shards::CellTopology getTopology(Mesh* m, int t)
 {
   FieldShape* s = m->getShape();
   if (t == Mesh::VERTEX)
@@ -752,12 +752,12 @@ shards::CellTopology getTopology(Mesh* m, int t)
   return 0;
 }
 
-shards::CellTopology getDimTopology(Mesh* m, int dim)
+const shards::CellTopology getDimTopology(Mesh* m, int dim)
 {
   return getTopology(m, getFirstType(m, dim));
 }
 
-shards::CellTopology getCellTopology(Mesh* m)
+const shards::CellTopology getCellTopology(Mesh* m)
 {
   return getDimTopology(m, m->getDimension());
 }
