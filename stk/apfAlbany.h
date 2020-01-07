@@ -12,6 +12,7 @@
 #include <apfMesh.h>
 #include <apfNumbering.h>
 #include <Shards_BasicTopologies.hpp>
+#include <Shards_CellTopology.hpp>
 #include <vector>
 #include <map>
 
@@ -52,8 +53,8 @@ void collectEntityModels(
 void makeStkNumberings(Mesh* m, GlobalNumbering* n[4]);
 void freeStkNumberings(Mesh* m, GlobalNumbering* n[4]);
 
-const CellTopologyData* getDimTopology(Mesh* m, int dim);
-const CellTopologyData* getCellTopology(Mesh* m);
+shards::CellTopology getDimTopology(Mesh* m, int dim);
+shards::CellTopology getCellTopology(Mesh* m);
 
 int getLocalSideId(Mesh* m, MeshEntity* e,
     MeshEntity* side);
