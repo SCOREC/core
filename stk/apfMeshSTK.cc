@@ -205,9 +205,8 @@ static void declarePart(StkModel* model,
     const shards::CellTopology topo,
     StkMetaData* meta)
 {
-  stk::mesh::Part& part = meta->declare_part(model->stkName, rank);
   stk::topology t = stk::mesh::get_topology(topo);
-  stk::mesh::set_topology(part, t);
+  stk::mesh::Part& part = meta->declare_part_with_topology(model->stkName, t);
   stk::io::put_io_part_attribute(part);
 }
 
