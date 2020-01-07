@@ -124,7 +124,7 @@ static void reparam_path(struct gmi_analytic* m, struct agm_use* path,
     return;
   }
   reparam_across(m, *path, from_p, tmp);
-  reparam_path(m, path + 1, pathlen - 1, tmp, to_p);
+//  reparam_path(m, (path + 1), (pathlen - 1), tmp, to_p);
 }
 
 static void reparam(struct gmi_model* m, struct gmi_ent* from,
