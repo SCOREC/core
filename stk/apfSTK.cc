@@ -18,6 +18,7 @@
 
 #if HAS_STK
 #include "apfSTK.h"
+#include <stk_mesh/base/MetaData.hpp>
 #include <stk_io/IossBridge.hpp>
 #include <stk_mesh/base/GetBuckets.hpp>
 #include <stk_mesh/base/FindRestriction.hpp>
@@ -712,7 +713,7 @@ void copyFieldsFromBulk(
 }
 #endif
 
-const CellTopologyData* getTopology(Mesh* m, int t)
+const shards::CellTopology getTopology(Mesh* m, int t)
 {
   FieldShape* s = m->getShape();
   if (t == Mesh::VERTEX)
@@ -751,12 +752,12 @@ const CellTopologyData* getTopology(Mesh* m, int t)
   return 0;
 }
 
-const CellTopologyData* getDimTopology(Mesh* m, int dim)
+const shards::CellTopology getDimTopology(Mesh* m, int dim)
 {
   return getTopology(m, getFirstType(m, dim));
 }
 
-const CellTopologyData* getCellTopology(Mesh* m)
+const shards::CellTopology getCellTopology(Mesh* m)
 {
   return getDimTopology(m, m->getDimension());
 }
@@ -880,6 +881,6 @@ NodeSets get_node_sets(Mesh* mesh, StkModels* sets, GlobalNumbering* nmbr) {
     }
   }
   return node_sets;
-};
+}
 
 }

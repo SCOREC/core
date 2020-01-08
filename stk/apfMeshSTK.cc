@@ -202,11 +202,11 @@ static void buildNodes(
 
 static void declarePart(StkModel* model,
     stk::mesh::EntityRank rank,
-    const CellTopologyData* topo,
+    const shards::CellTopology topo,
     StkMetaData* meta)
 {
-  stk::mesh::Part& part = meta->declare_part(model->stkName, rank);
-  stk::mesh::set_cell_topology(part, topo);
+  stk::topology t = stk::mesh::get_topology(topo);
+  stk::mesh::Part& part = meta->declare_part_with_topology(model->stkName, t);
   stk::io::put_io_part_attribute(part);
 }
 
@@ -215,7 +215,7 @@ void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
   int d = m->getDimension();
   PCU_ALWAYS_ASSERT(d >= 0);
   PCU_ALWAYS_ASSERT(d <= 3);
-  const CellTopologyData* topo[4];
+  shards::CellTopology topo[4];
   stk::mesh::EntityRank ranks[4];
   for (int i = 0; i <= d; ++i)
     topo[i] = getDimTopology(m, i);
@@ -223,8 +223,10 @@ void copyMeshToMeta(Mesh* m, StkModels& models, StkMetaData* meta)
   ranks[1] = stk::topology::EDGE_RANK;
   ranks[2] = stk::topology::FACE_RANK;
   ranks[d] = stk::topology::ELEMENT_RANK;
-  for (int i = 0; i <= d; ++i)
-    meta->register_cell_topology(topo[i], ranks[i]);
+  for (int i = 0; i <= d; ++i) {
+    stk::topology t = stk::mesh::get_topology(topo[i]);
+    meta->register_topology(t);
+  }
   for (int i = 0; i <= d; ++i)
     for (size_t j = 0; j < models.models[i].size(); ++j)
       declarePart(models.models[i][j], ranks[i], topo[i], meta);
