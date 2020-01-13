@@ -638,14 +638,14 @@ for (t::const_iterator i = (w).begin(); \
  * to stop this type being defined twice in two includes...
 
 // Key [String] = Vertex/EdgeCenter/FaceCenter/CellCenter
-// Value [vector of Pairs per Key]; Pairs = cgns_bc_name, tag value.
+// Value [vector of Tuples per Key]; Tuple = cgns_bc_name, tag value.
 //                                  Tag value holds [0, 1] as a
 //                                  marker to indicate mesh_entities 
 //                                  within bc group. 1="in group", 0="not in group"
 //                                  Tags set on vertices, edges, faces, and cells
 
 */
-using CGNSBCMap = std::map<std::string, std::vector<std::pair<std::string, apf::MeshTag *>>>;
+using CGNSBCMap = std::map<std::string, std::vector<std::tuple<std::string, apf::MeshTag *>>>;
 void writeCGNS(const char *prefix, Mesh *m, const CGNSBCMap &cgnsBCMap);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh

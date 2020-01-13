@@ -194,12 +194,12 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 // Key [String] = Vertex/EdgeCenter/FaceCenter/CellCenter
-// Value [vector of Pairs per Key]; Pairs = cgns_bc_name, tag value.
+// Value [vector of Tuples per Key]; Tuple = cgns_bc_name, tag value.
 //                                  Tag value holds [0, 1] as a
 //                                  marker to indicate mesh_entities 
 //                                  within bc group. 1="in group", 0="not in group"
 //                                  Tags set on vertices, edges, faces, and cells
-using CGNSBCMap = std::map<std::string, std::vector<std::pair<std::string, apf::MeshTag *>>>;
+using CGNSBCMap = std::map<std::string, std::vector<std::tuple<std::string, apf::MeshTag *>>>;
 Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
 
 // names of mesh data to read from file: (VERTEX, VelocityX; CellCentre, Pressure)

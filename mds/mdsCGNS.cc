@@ -550,8 +550,8 @@ struct BCInfo
       }
       else
       {
-        std::vector<std::pair<std::string, apf::MeshTag *>> pair;
-        pair.push_back(std::make_pair(tagName, field));
+        std::vector<std::tuple<std::string, apf::MeshTag *>> pair;
+        pair.push_back(std::make_tuple(tagName, field));
         cgnsBCMap.insert(std::make_pair(location, pair));
       }
     };

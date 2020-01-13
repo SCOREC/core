@@ -626,7 +626,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       }
     };
     //
-    Looper(lambda, bcGroup.second);
+    Looper(lambda, std::get<1>(bcGroup));
     //
     const int cacheStart = startingLocation + 1;
     int cacheEnd = -1;
@@ -640,8 +640,8 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       {
         const auto allEnd = startOfBCBlock + total - 1; //one-based
         int sectionNumber = -1;
-        const std::string name = bcGroup.first + " " + std::to_string(startOfBCBlock) + "->" + std::to_string(allEnd); //cg_ElementTypeName(apf2cgns[bc.first]);
-        if (cgp_section_write(cgns.index, cgns.base, cgns.zone, name.c_str(), apf2cgns.at(bc.first), startOfBCBlock, allEnd, 0,
+        const std::string name = std::get<0>(bcGroup) + " " + std::to_string(startOfBCBlock) + "->" + std::to_string(allEnd); //cg_ElementTypeName(apf2cgns[bc.first]);
+        if (cgp_section_write(cgns.index, cgns.base, cgns.zone, name.c_str(), apf2cgns.at(std::get<0>(bc)), startOfBCBlock, allEnd, 0,
                               &sectionNumber))
           cgp_error_exit();
 
@@ -726,7 +726,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
 
       while ((vert = m->iterate(vertIter)))
       {
-        m->getIntTag(vert, p.second, vals);
+        m->getIntTag(vert, std::get<1>(p), vals);
         if (vals[0] == 1 && m->isOwned(vert))
         {
           const auto n = apf::getNumber(gvn, vert, 0);
@@ -740,7 +740,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       globalElementList(bcList, allElements);
 
       int bcIndex = -1;
-      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointList), allElements.size(),
+      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, std::get<0>(p).c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointList), allElements.size(),
                         allElements.data(), &bcIndex))
         cg_error_exit();
 
@@ -763,7 +763,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
 
       const std::array<cgsize_t, 2> bcRange = {{se.first[0], se.second[0]}};
       int bcIndex = -1;
-      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointRange), 2,
+      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, std::get<0>(p).c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointRange), 2,
                         bcRange.data(), &bcIndex))
         cg_error_exit();
 
@@ -786,7 +786,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       }
       const std::array<cgsize_t, 2> bcRange = {{se.first[0], se.second[0]}};
       int bcIndex = -1;
-      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointRange), 2,
+      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, std::get<0>(p).c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointRange), 2,
                         bcRange.data(), &bcIndex))
         cg_error_exit();
 
@@ -812,7 +812,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
         std::size_t counter = ranges[e].first;
         for (const auto &elm : elements[e])
         {
-          m->getIntTag(elm, p.second, vals);
+          m->getIntTag(elm, std::get<1>(p), vals);
           if (vals[0] == 1 && m->isOwned(elm))
           {
             bcList.push_back(counter);
@@ -826,7 +826,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       globalElementList(bcList, allElements);
 
       int bcIndex = -1;
-      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, p.first.c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointList), allElements.size(),
+      if (cg_boco_write(cgns.index, cgns.base, cgns.zone, std::get<0>(p).c_str(), CGNS_ENUMV(BCGeneral), CGNS_ENUMV(PointList), allElements.size(),
                         allElements.data(), &bcIndex))
         cg_error_exit();
 
