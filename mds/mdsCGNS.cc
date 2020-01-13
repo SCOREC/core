@@ -191,6 +191,11 @@ struct MeshDataGroup
       for (const auto m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
+    else
+    {
+       PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Tensor not accounted for");
+    }
+    
   }
 };
 
@@ -1471,7 +1476,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                   else if (md.size() == 3)
                   {
                     apf::getVector(field, elem, 0, vector3);
-                    vector3[i] = meshVals.at(i);
+                    vector3[i] = meshVals.at(it);
                     apf::setVector(field, elem, 0, vector3);
                   }
                   else if (md.size() == 9)
@@ -1485,6 +1490,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                       matrix3x3[2][i - 6] = meshVals.at(it);
                     apf::setMatrix(field, elem, 0, matrix3x3);
                   }
+                  else
+                     Kill(cgid, "Tensor size not accounted for");
                 }
                 counter++;
               }
@@ -1579,7 +1586,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                   else if (md.size() == 3)
                   {
                     apf::getVector(field, elem, 0, vector3);
-                    vector3[i] = meshVals.at(i);
+                    vector3[i] = meshVals.at(it);
                     apf::setVector(field, elem, 0, vector3);
                   }
                   else if (md.size() == 9)
@@ -1593,6 +1600,11 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                       matrix3x3[2][i - 6] = meshVals.at(it);
                     apf::setMatrix(field, elem, 0, matrix3x3);
                   }
+                  else
+                  {
+                     Kill(cgid, "Tensor size not accounted for");
+                  }
+                  
                 }
               }
             }

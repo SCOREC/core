@@ -37,6 +37,8 @@
 //
 #endif
 
+// Note: currently, even in 2D or 1D a full 3D vector and matrix are written out to the file
+
 namespace
 {
 //https://proteustoolkit.org/capi/html/_parallel_mesh_converter_8cpp_source.html
