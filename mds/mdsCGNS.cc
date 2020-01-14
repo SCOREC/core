@@ -193,9 +193,8 @@ struct MeshDataGroup
     }
     else
     {
-       PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Tensor not accounted for");
+      PCU_ALWAYS_ASSERT_VERBOSE(true == false, "Tensor not accounted for");
     }
-    
   }
 };
 
@@ -546,13 +545,19 @@ struct BCInfo
       auto iter = cgnsBCMap.find(location);
       if (iter != cgnsBCMap.end())
       {
-        iter->second.push_back(std::make_pair(tagName, field));
+        apf::CGNSInfo info;
+        info.cgnsBCSName = tagName;
+        info.bcsMarkerTag = field;
+        iter->second.push_back(info);
       }
       else
       {
-        std::vector<std::tuple<std::string, apf::MeshTag *>> pair;
-        pair.push_back(std::make_tuple(tagName, field));
-        cgnsBCMap.insert(std::make_pair(location, pair));
+        std::vector<apf::CGNSInfo> infos;
+        apf::CGNSInfo info;
+        info.cgnsBCSName = tagName;
+        info.bcsMarkerTag = field;
+        infos.push_back(info);
+        cgnsBCMap.insert(std::make_pair(location, infos));
       }
     };
 
@@ -1468,7 +1473,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                 auto iter = globalToVert.find(zeroBased);
                 if (iter != globalToVert.end())
                 {
-                  auto* elem = iter->second;
+                  auto *elem = iter->second;
                   if (md.size() == 1)
                   {
                     apf::setScalar(field, elem, 0, meshVals.at(it));
@@ -1491,7 +1496,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                     apf::setMatrix(field, elem, 0, matrix3x3);
                   }
                   else
-                     Kill(cgid, "Tensor size not accounted for");
+                    Kill(cgid, "Tensor size not accounted for");
                 }
                 counter++;
               }
@@ -1602,9 +1607,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                   }
                   else
                   {
-                     Kill(cgid, "Tensor size not accounted for");
+                    Kill(cgid, "Tensor size not accounted for");
                   }
-                  
                 }
               }
             }

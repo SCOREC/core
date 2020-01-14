@@ -631,21 +631,26 @@ for (t::iterator i = (w).begin(); \
 for (t::const_iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
 
-/** \brief Write a CGNS file
- * 
- * CGNSBCMap type is already defined in apfMDS.h. 
- * Would be better if there were a base include that this and apfMDS.h could include
- * to stop this type being defined twice in two includes...
+struct CGNSInfo
+{
+  // cgns_bc_name
+  std::string cgnsBCSName;
+  /* tag value
 
-// Key [String] = Vertex/EdgeCenter/FaceCenter/CellCenter
-// Value [vector of Tuples per Key]; Tuple = cgns_bc_name, tag value.
-//                                  Tag value holds [0, 1] as a
-//                                  marker to indicate mesh_entities 
-//                                  within bc group. 1="in group", 0="not in group"
-//                                  Tags set on vertices, edges, faces, and cells
+    Tag value holds [0, 1] as a
+    marker to indicate mesh_entities 
+    within bc group. 1="in group", 0="not in group"
+    Tags set on vertices, edges, faces, and cells
+  */
+  apf::MeshTag* bcsMarkerTag = nullptr;
+  // model dimension
+  int mdlDim = -1;
+  // model id
+  int mdlId = -1;
+};
 
-*/
-using CGNSBCMap = std::map<std::string, std::vector<std::tuple<std::string, apf::MeshTag *>>>;
+//using CGNSBCMap = std::map<std::string, std::vector<std::tuple<std::string, apf::MeshTag *, int>>>;
+using CGNSBCMap = std::map<std::string, std::vector<CGNSInfo>>;
 void writeCGNS(const char *prefix, Mesh *m, const CGNSBCMap &cgnsBCMap);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
