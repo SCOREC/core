@@ -50,7 +50,7 @@ namespace {
     unsigned nvtx, ntri, nquad, ntet, npyr, nprz, nhex, nbdry;
     void print() {
       lion_eprint(1,
-          "nvtx %u ntri %u nquad %u ntet %u npyr %u nprz %u nhex %u\n",        
+          "nvtx %u ntri %u nquad %u ntet %u npyr %u nprz %u nhex %u\n",
           nvtx,ntri,nquad,ntet,npyr,nprz,nhex);
     }
   };
@@ -114,7 +114,6 @@ namespace {
     readUnsigneds(r->file, &nbdry_elem, 1, r->swapBytes);
     PCU_ALWAYS_ASSERT(nbdry_elem < biggest);
     h->nbdry = nbdry_elem;
-    std::cout << nbdry_elem << " boundary elements\n";
   }
 
   apf::MeshEntity* makeVtx(Reader* r,
@@ -273,7 +272,6 @@ namespace {
   void classifyBoundaryElms(Reader* r, unsigned nbdry, int apfType)
   {
     const unsigned nverts = apf::Mesh::adjacentCount[apfType][0];
-    std::cout << "nverts: " << nverts << "\n";
     unsigned* vtx = r->edgeVerts;
     unsigned* tags = r->edgeTags;
     for(unsigned id=0; id<nbdry; id++) {
@@ -305,7 +303,6 @@ namespace {
 
   void classifyVtx(Reader *r, header* h) {
     (void)h;
-    // const unsigned nvtx = h->nvtx;
     apf::Mesh2* m = r->mesh;
     apf::MeshIterator* it = m->begin(0);
     apf::MeshEntity* vtx;
@@ -321,14 +318,9 @@ namespace {
         upward_dim[id] = m->getModelType(gent);
         upward_id[id] = m->getModelTag(gent);
       }
-      // std::cout << "model classification dim on upward adjactent edges: ";
-      // for (int i = 0; i < num_up; i++)
-      // {
-      //   std::cout << upward_dim[i] << ", ";
-      // }
+
       apf::Vector3 vtx_coord;
       m->getPoint(vtx, 0, vtx_coord);
-      // std::cout << "on vertex at point: (" << vtx_coord[0] << ", " << vtx_coord[1] << ", " << vtx_coord[2] << ")\n";
       bool same_dim = std::all_of(upward_dim.begin(), upward_dim.end(), 
                                   [upward_dim](const int i) {
                                     return upward_dim[0] == i;
@@ -503,17 +495,17 @@ namespace {
       PCU_ALWAYS_ASSERT(elm);
 
       r->mesh->setModelEntity(elm, g);
-      // /// tag all downward adjacent entities with the element's model ent
-      // const unsigned nadj = apf::Mesh::adjacentCount[apfType][0];
-      // apf::Downward down;
-      // for (int dim = 1; dim >= 0; dim--)
-      // {
-      //   r->mesh->getDownward(elm, dim, down);
-      //   for (unsigned i = 0; i < nadj; i++)
-      //   {
-      //     r->mesh->setModelEntity(down[i], g);
-      //   }
-      // }
+      /// tag all downward adjacent entities with the element's model ent
+      const unsigned nadj = apf::Mesh::adjacentCount[apfType][0];
+      apf::Downward down;
+      for (int dim = 1; dim >= 0; dim--)
+      {
+        r->mesh->getDownward(elm, dim, down);
+        for (unsigned i = 0; i < nadj; i++)
+        {
+          r->mesh->setModelEntity(down[i], g);
+        }
+      }
     }
     free(vtx);
     free(elm_model_id);
@@ -555,22 +547,15 @@ namespace {
     hdr.print();
     readNodes(&r, &hdr);
     setNodeIds(&r, &hdr);
-    std::cout << "set faces and tags\n";
     read2DElms(&r,&hdr);
-    std::cout << "read elems\n";
     checkFilePos(&r,&hdr);
-    std::cout << "check file pos\n";
     readNumBdryElms(&r, &hdr);
     readBdryElmsAndTags(&r, &hdr);
     setBoundaryTags(&r,&hdr);
     classifyBoundaryElms(&r, &hdr);
     classifyVtx(&r, &hdr);
-    std::cout << "set face tags\n";
     freeReader(&r);
-    std::cout << "free reader\n";
     m->acceptChanges();
-    std::cout << "accepted changes\n";
-
   }
 
   void getMaxAndAvg(std::set<int>*& cnt, int numparts, int& max, double& avg) {
@@ -719,39 +704,6 @@ namespace {
 }
 
 namespace apf {
-  // Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename)
-  // {
-  //   Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-  //   apf::changeMdsDimension(m, 3);
-  //   readUgrid(m, filename);
-  //   lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
-  //       m->count(0), m->count(1), m->count(2), m->count(3));
-  //   return m;
-  // }
-
-  // Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename,
-  //                         const int mesh_dim)
-  // {
-  //   PCU_ALWAYS_ASSERT(mesh_dim >= 2);
-  //   if (3 == mesh_dim)
-  //     return loadMdsFromUgrid(g, filename);
-  //   else if (2 == mesh_dim)
-  //   {
-  //     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-  //     apf::changeMdsDimension(m, mesh_dim);
-  //     readUgrid2D(m, filename);
-  //     std::cout << "read ugrid\n";
-  //     lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
-  //                 m->count(0), m->count(1), m->count(2), m->count(3));
-  //     return m;
-  //   }
-  //   else // silence compiler warning
-  //   {
-  //     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-  //     return m;
-  //   }
-  // }
-
   Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename)
   {
     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
@@ -770,7 +722,7 @@ namespace apf {
     else if (3 == dim)
       read3DUgrid(m, filename);
     lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
-                  m->count(0), m->count(1), m->count(2), m->count(3));
+        m->count(0), m->count(1), m->count(2), m->count(3));
     return m;
   }
 
