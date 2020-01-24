@@ -25,7 +25,7 @@ void gmi_egads_stop(void);
 void gmi_register_egads(void);
 
 /** \brief load an EGADS file into a gmi_model object */
-static struct gmi_model* gmi_egads_load(const char* filename);
+struct gmi_model* gmi_egads_load(const char* filename);
 
 #ifdef __cplusplus
 }
